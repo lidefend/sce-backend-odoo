@@ -20,6 +20,7 @@ def validate(list_source: str | None = None, cell_source: str | None = None, css
         "onOpenRecord: () => handleRow(row)",
         "onOpenAttachment: (link:",
         "onOpenAttachmentCount: () => previewRecordAttachmentCount(row, columnValue(row, field))",
+        "relationItems,",
     )
     for marker in required_list:
         if marker not in list_text:
@@ -41,11 +42,12 @@ def validate(list_source: str | None = None, cell_source: str | None = None, css
         "'open-record': []",
         "'open-attachment': [link: CollectionAttachmentLink]",
         "'open-attachment-count': []",
+        "data-semantic-cell-kind=\"relation-tags\"",
     )
     for marker in required_cell:
         if marker not in cell_text:
             failures.append(f"CollectionRowCell missing {marker}")
-    for selector in (".favorite-toggle", ".status-badge", ".cell-primary-link", ".attachment-links", ".attachment-count-link"):
+    for selector in (".favorite-toggle", ".status-badge", ".cell-primary-link", ".attachment-links", ".attachment-count-link", ".relation-tags", ".relation-tag"):
         if selector not in css_text:
             failures.append(f"CollectionRowCell missing style ownership {selector}")
     for marker in ("white-space: nowrap", "overflow: hidden", "text-overflow: ellipsis"):

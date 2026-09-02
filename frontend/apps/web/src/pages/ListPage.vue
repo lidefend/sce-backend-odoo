@@ -634,6 +634,21 @@ function normalizeCellRawValue(value: unknown) {
   }
   return value;
 }
+function relationDisplayItems(row: Record<string, unknown>, field: string): Array<{ id: number; label: string }> {
+  const displayValues = row.__display_values;
+  if (!displayValues || typeof displayValues !== 'object' || Array.isArray(displayValues)) return [];
+  const values = (displayValues as Record<string, unknown>)[field];
+  if (!Array.isArray(values)) return [];
+  return values
+    .map((item) => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
+      const rowValue = item as Record<string, unknown>;
+      const id = Number(rowValue.id || 0);
+      const label = String(rowValue.label || '').trim();
+      return Number.isInteger(id) && id > 0 && label ? { id, label } : null;
+    })
+    .filter((item): item is { id: number; label: string } => Boolean(item));
+}
 function scalarTexts(value: unknown): string[] {
   if (Array.isArray(value)) {
     return value
@@ -659,8 +674,11 @@ function selectionLabel(option: ColumnOption | null, value: unknown) {
   if (!key || !Array.isArray(option?.selection)) return '';
   return option.selection.find((item) => item.value === key)?.label || '';
 }
-function semanticCell(field: string, value: unknown) {
+function semanticCell(field: string, value: unknown, relationItems: Array<{ id: number; label: string }> = []) {
   const option = columnOption(field);
+  if (option?.widget === 'many2many_tags') {
+    return { text: relationItems.map((item) => item.label).join('、') || '--', tone: 'neutral' };
+  }
   const raw = normalizeCellRawValue(value);
   const rawText = typeof raw === 'string' ? raw : '';
   const attachmentText = rawText && /\|\s*(?:legacy-file-id|legacy-file|https?|file):\/\//i.test(rawText)
@@ -687,7 +705,7 @@ function mobileRecordFacts(row: Record<string, unknown>): CollectionMobileRecord
   return mobileFactColumns.value.map((column) => ({
     key: column,
     label: columnLabel(column),
-    value: semanticCell(column, columnValue(row, column)).text,
+    value: semanticCell(column, columnValue(row, column), relationDisplayItems(row, column)).text,
   }));
 }
 function attachmentLinks(value: unknown) {
@@ -766,7 +784,8 @@ function favoriteTitle(field: string) {
 
 function collectionRowCellProps(row: Record<string, unknown>, field: string) {
   const value = columnValue(row, field);
-  const presentation = semanticCell(field, value);
+  const relationItems = relationDisplayItems(row, field);
+  const presentation = semanticCell(field, value, relationItems);
   const links = attachmentLinks(value);
   let kind: CollectionRowCellKind = 'text';
   if (isFavoriteColumn(field)) kind = 'favorite';
@@ -774,6 +793,7 @@ function collectionRowCellProps(row: Record<string, unknown>, field: string) {
   else if (isPrimaryTextColumn(field)) kind = 'primary';
   else if (links.length) kind = 'attachments';
   else if (isAttachmentCountCell(field, value)) kind = 'attachment-count';
+  else if (relationItems.length) kind = 'relation-tags';
   return {
     kind,
     text: presentation.text,
@@ -785,6 +805,7 @@ function collectionRowCellProps(row: Record<string, unknown>, field: string) {
       ? semanticCell(rowSecondary.value, columnValue(row, rowSecondary.value)).text
       : '',
     links,
+    relationItems,
   };
 }
 

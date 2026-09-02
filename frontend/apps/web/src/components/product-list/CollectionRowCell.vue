@@ -45,6 +45,14 @@
   >
     {{ text }}
   </ScButton>
+  <span
+    v-else-if="kind === 'relation-tags'"
+    data-semantic-component="CollectionRowCell"
+    data-semantic-cell-kind="relation-tags"
+    class="collection-row-cell relation-tags"
+  >
+    <span v-for="item in relationItems" :key="item.id" class="relation-tag">{{ item.label }}</span>
+  </span>
   <span v-else data-semantic-component="CollectionRowCell" class="collection-row-cell" :title="text">{{ text }}</span>
 </template>
 
@@ -53,8 +61,9 @@ import ScIcon from '../design-system/ScIcon.vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScIconButton from '../design-system/ScIconButton.vue';
 
-export type CollectionRowCellKind = 'favorite' | 'status' | 'primary' | 'attachments' | 'attachment-count' | 'text';
+export type CollectionRowCellKind = 'favorite' | 'status' | 'primary' | 'attachments' | 'attachment-count' | 'relation-tags' | 'text';
 export type CollectionAttachmentLink = { name: string; url: string };
+export type CollectionRelationDisplayItem = { id: number; label: string };
 
 withDefaults(defineProps<{
   kind: CollectionRowCellKind;
@@ -65,6 +74,7 @@ withDefaults(defineProps<{
   disabled?: boolean;
   secondaryText?: string;
   links?: CollectionAttachmentLink[];
+  relationItems?: CollectionRelationDisplayItem[];
 }>(), {
   tone: 'neutral',
   label: '',
@@ -72,6 +82,7 @@ withDefaults(defineProps<{
   disabled: false,
   secondaryText: '',
   links: () => [],
+  relationItems: () => [],
 });
 
 defineEmits<{

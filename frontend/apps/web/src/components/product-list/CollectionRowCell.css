@@ -8,6 +8,24 @@
   vertical-align: middle;
 }
 
+.relation-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sc-space-1, 4px);
+  min-width: 0;
+}
+
+.relation-tag {
+  max-width: 100%;
+  padding: 2px 8px;
+  overflow: hidden;
+  color: var(--sc-color-text-secondary, #4b5563);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--sc-color-bg-secondary, #f3f4f6);
+  border-radius: var(--sc-radius-small, 4px);
+}
+
 .cell-primary {
   min-width: 0;
   max-width: 100%;

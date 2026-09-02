@@ -128,6 +128,7 @@ export function extractListFieldSemanticsFromContract(store: ContractV2Normalize
         value_field: valueField,
         aggregation_field: String(row.aggregation_field || (aggregate === 'sum' ? valueField : '')).trim(),
         data_type: String(row.data_type || row.type || '').trim(),
+        widget: String(row.widget || '').trim(),
         currency_field: String(row.currency_field || '').trim(),
         precision: row.precision,
         aggregate,

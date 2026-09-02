@@ -26,8 +26,12 @@ class CollectionRowCellGuardTest(unittest.TestCase):
         self.assertTrue(any("shared event contract" in item for item in validate(altered, self.cell_source, self.css_source)))
 
     def test_missing_semantic_identity_fails(self):
-        altered = self.cell_source.replace('data-semantic-component="CollectionRowCell"', '', 6)
+        altered = self.cell_source.replace('data-semantic-component="CollectionRowCell"', '')
         self.assertTrue(any("semantic-component" in item for item in validate(self.list_source, altered, self.css_source)))
+
+    def test_missing_relation_tag_semantics_fails(self):
+        altered = self.cell_source.replace('data-semantic-cell-kind="relation-tags"', '')
+        self.assertTrue(any("relation-tags" in item for item in validate(self.list_source, altered, self.css_source)))
 
     def test_missing_style_owner_fails(self):
         altered = self.css_source.replace(".status-badge", ".legacy-status-badge")
