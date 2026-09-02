@@ -7963,3 +7963,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   typecheck, production and development builds, refreshed zero-gap
   productization inventories, and the complete `make
   verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Collaboration attachment upload-authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `49176be5`.
+- Product defect and repair: the backend collaboration contract already
+  distinguishes aggregate attachment availability from explicit upload and
+  download authority, but the professional attachment manager exposed upload
+  whenever the aggregate attachment contract was enabled. Direct selection and
+  deferred post-create upload handlers also omitted the upload decision. The
+  component now consumes only `attachments.upload.enabled=true`, and both
+  immediate and deferred handlers independently repeat that exact authority.
+  Download-only, missing, and denied upload contracts therefore fail closed;
+  they cannot display an uploader or queue a file for a later side effect.
+- Real-page evidence: the rebuilt project-create/project-workspace/payment
+  journey passed with three independent activity pages, retained unsaved draft
+  and dirty-close warning, two readable project tender rows, one explicitly
+  authorized editable payment attachment uploader, zero browser errors, zero
+  mutations, zero execute requests, and no desktop or 390px horizontal
+  overflow.
+- Verification: twenty-two collaboration model cases, fourteen structural and
+  counterexample tests, strict Vue typecheck, development build, refreshed
+  zero-gap productization inventories, and the complete `make
+  verify.frontend.quick.gate` passed.

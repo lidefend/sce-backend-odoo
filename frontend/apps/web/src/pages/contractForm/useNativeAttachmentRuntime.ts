@@ -16,6 +16,7 @@ export function useNativeAttachmentRuntime(params: {
   model: () => string;
   recordId: () => number;
   maxBytes: () => number;
+  canUpload: () => boolean;
   resolveLabel: (key: string, fallback: string) => string;
   reloadTimeline: (resId?: number, model?: string) => Promise<void>;
   viewerRef: Ref<NativeAttachmentViewerLike | null>;
@@ -34,7 +35,7 @@ export function useNativeAttachmentRuntime(params: {
   }
 
   async function onAttachmentSelected(file: File | null) {
-    if (!file || !params.model() || uploading.value) return;
+    if (!file || !params.model() || uploading.value || !params.canUpload()) return;
     error.value = '';
     if (file.size > params.maxBytes()) {
       error.value = params.resolveLabel('size_exceeded', '文件过大');
@@ -78,6 +79,7 @@ export function useNativeAttachmentRuntime(params: {
   async function uploadPendingAttachments(resId: number): Promise<boolean> {
     const modelName = params.model();
     if (!pendingAttachments.value.length || !modelName) return true;
+    if (!params.canUpload()) return false;
     error.value = '';
     uploading.value = true;
     try {

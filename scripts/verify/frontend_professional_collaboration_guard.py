@@ -45,6 +45,10 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("collaboration attachment download authority does not fail closed")
     if "att.can_download !== true" not in attachment_runtime:
         failures.append("attachment open handler must independently reject missing or denied authority")
+    if attachment_runtime.count("!params.canUpload()") < 2:
+        failures.append("attachment upload handlers must independently reject missing or denied authority")
+    if ':enabled="attachmentUploadEnabled"' not in panel:
+        failures.append("attachment upload presentation must consume explicit upload authority")
     if "canUpdateCollaborationActivity(entry, action)" not in chatter_runtime:
         failures.append("activity update handler must independently enforce explicit backend authority")
     if chatter_runtime.count("canExecuteCollaborationCreateAction(") < 2:

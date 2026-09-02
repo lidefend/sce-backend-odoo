@@ -60,7 +60,7 @@
     <ScInlineState v-if="chatterError" class="validation-error native-chatter-message" state="error" :label="chatterError" />
     <ProfessionalAttachmentManager
       :editable="!readonly"
-      :enabled="hasAttachments"
+      :enabled="attachmentUploadEnabled"
       :uploading="attachmentUploading"
       :upload-label="attachmentUploadLabel"
       :uploading-label="attachmentUploadingLabel"
@@ -135,6 +135,7 @@ export type NativeCollaborationPanelProps = {
   chatterError: string;
   hasAttachments: boolean;
   attachmentUploading: boolean;
+  attachmentUploadEnabled: boolean;
   attachmentUploadLabel: string;
   attachmentUploadingLabel: string;
   attachmentViewLabel: string;

@@ -31,6 +31,20 @@ class ProfessionalCollaborationGuardTests(unittest.TestCase):
                 return value.replace(" || att.can_download !== true", "")
             return value
         self.assertTrue(any("independently reject" in item for item in validate(read_text)))
+    def test_attachment_upload_handler_cannot_bypass_authority(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useNativeAttachmentRuntime.ts"):
+                return value.replace(" || !params.canUpload()", "", 1)
+            return value
+        self.assertTrue(any("upload handlers" in item for item in validate(read_text)))
+    def test_attachment_upload_control_cannot_use_aggregate_authority(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("NativeCollaborationPanel.vue"):
+                return value.replace(':enabled="attachmentUploadEnabled"', ':enabled="hasAttachments"')
+            return value
+        self.assertTrue(any("upload presentation" in item for item in validate(read_text)))
     def test_activity_update_handler_cannot_bypass_authority(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")

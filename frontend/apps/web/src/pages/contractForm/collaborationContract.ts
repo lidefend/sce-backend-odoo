@@ -76,6 +76,16 @@ export function nativeAttachmentMaxBytes(raw: Record<string, unknown> | null | u
   return Number.isFinite(value) && value > 0 ? value : 5 * 1024 * 1024;
 }
 
+export function nativeAttachmentUploadEnabled(raw: Record<string, unknown> | null | undefined) {
+  const upload = raw?.upload;
+  return Boolean(
+    upload
+    && typeof upload === 'object'
+    && !Array.isArray(upload)
+    && (upload as Record<string, unknown>).enabled === true,
+  );
+}
+
 export function nativeActivityFieldLabel(
   action: NativeChatterAction | null | undefined,
   name: string,

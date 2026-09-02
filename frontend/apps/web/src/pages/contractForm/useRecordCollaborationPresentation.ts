@@ -14,6 +14,7 @@ import {
   nativeAttachmentLabel,
   nativeAttachmentLabelsFromContract,
   nativeAttachmentMaxBytes as nativeAttachmentMaxBytesFromContract,
+  nativeAttachmentUploadEnabled as nativeAttachmentUploadEnabledFromContract,
   nativeChatterActionsFromContract,
   nativeCollaborationUnavailableMessage as nativeCollaborationUnavailableMessageFromState,
   resolveNativeAttachmentContract,
@@ -110,6 +111,7 @@ export function useRecordCollaborationPresentation(context: {
   const nativeAttachmentUploadingLabel = computed(() => resolveNativeAttachmentLabel('uploading', '上传中...'));
   const nativeAttachmentViewLabel = computed(() => resolveNativeAttachmentLabel('view', '查看'));
   const nativeAttachmentMaxBytes = computed(() => nativeAttachmentMaxBytesFromContract(nativeAttachments.value));
+  const nativeAttachmentUploadEnabled = computed(() => nativeAttachmentUploadEnabledFromContract(nativeAttachments.value));
   const nativeCollaborationPanelProps = computed<NativeCollaborationPanelProps>(() => ({
     actions: nativeChatterActions.value, activityAssigneeId: context.activityAssigneeId.value,
     activityAssigneeLabel: activityAssigneeLabel.value, activityAssigneeOptions: activityAssigneeOptions.value,
@@ -122,6 +124,7 @@ export function useRecordCollaborationPresentation(context: {
     activeSubmitLabel: activeChatterSubmitLabel.value, activityUpdatingIds: context.activityUpdatingIds.value,
     attachmentError: context.attachmentError.value, attachmentUploadLabel: nativeAttachmentUploadLabel.value,
     attachmentUploading: context.attachmentUploading.value, attachmentUploadingLabel: nativeAttachmentUploadingLabel.value,
+    attachmentUploadEnabled: nativeAttachmentUploadEnabled.value,
     attachmentViewLabel: nativeAttachmentViewLabel.value, busy: context.busy.value, chatterDraft: context.chatterDraft.value,
     chatterError: context.chatterError.value, collaborationUserChoices: context.collaborationUserChoices.value,
     collaborationUserQuery: context.collaborationUserQuery.value, hasAttachments: Boolean(nativeAttachments.value),
@@ -150,6 +153,7 @@ export function useRecordCollaborationPresentation(context: {
     activeChatterAction,
     activeActivityAction,
     nativeAttachmentMaxBytes,
+    nativeAttachmentUploadEnabled,
     nativeChatterActions,
     nativeAttachments,
     nativeCollaborationPanelProps,

@@ -930,6 +930,7 @@ const {
   model: () => model.value,
   recordId: () => recordId.value,
   maxBytes: () => nativeAttachmentMaxBytes.value,
+  canUpload: () => nativeAttachmentUploadEnabled.value,
   resolveLabel: (key, fallback) => resolveNativeAttachmentLabel(key, fallback),
   reloadTimeline: loadNativeChatterTimeline,
   viewerRef: attachmentViewerRef,
@@ -1539,7 +1540,7 @@ function completeRelationCreateDialog(result: RelationCreatedDialogResult) {
 }
 const {
   workflowEvidenceGateRows, contractActions, headerActions, bodyActions, contractFieldLabels,
-  contractFieldLabel, activeChatterAction, activeActivityAction, nativeAttachmentMaxBytes, nativeChatterActions, nativeAttachments,
+  contractFieldLabel, activeChatterAction, activeActivityAction, nativeAttachmentMaxBytes, nativeAttachmentUploadEnabled, nativeChatterActions, nativeAttachments,
   nativeCollaborationPanelProps, nativeCollaborationPanelListeners, resolveNativeAttachmentLabel, hasNativeChatterNode, nativeLayoutContainsType,
   contractActionFromNativeRow, resolveNativeActionState, isUnifiedSubmitMethod, isUnifiedSubmitAction,
   primarySubmitAction, primaryCreateFooterAction, runNativeLayoutAction, advancedFieldNames, contractVisibleFields,
