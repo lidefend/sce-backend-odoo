@@ -7190,3 +7190,81 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   into the funding model rollback unit.
 - Detailed evidence and the Batch-E acceptance boundary are recorded in
   `docs/ops/iterations/p1_business_fact_authority_inventory_batch_d_20260902.md`.
+
+### Batch-E project funding baseline and actual-allocation authority
+
+- Branch / entry HEAD: `refactor/p1-business-facts-professionalization-v1` /
+  `d1f695fb91310ee5c59da7427e01ec3654853616`.
+- Formal Product Layer / Layer Target / Module: P1 construction industry
+  standard / project funding authority and actual-payment attribution /
+  `smart_construction_core`.
+- The model was upgraded instead of patched: baselines now have a stable
+  project-scoped version, explicit control period, project-serialized
+  activation, one-active database backstop, immutable terminal history and
+  reasoned successor revisions. Payment requests freeze the applicable
+  normalized authority at submission.
+- Actual allocation is now an append-only signed journal created only by the
+  payment-ledger service. Idempotency keys, a fixed request-project-baseline-
+  line-ledger lock order and four conservation checks close retry, concurrent
+  over-allocation and payment-reversal gaps. Reversal appends linked negative
+  facts and never deletes history.
+- Native finance users can complete the lifecycle without the custom frontend:
+  finance readers receive an active allocation-journal menu and read-only
+  views; operators allocate through a payment-ledger wizard; managers activate,
+  close and revise through reasoned lifecycle actions. All paths call the same
+  ORM authority.
+- Migration `17.0.0.143` never invents historical periods, versions, relation
+  ownership or conservation. It quarantines ambiguity and installs shape-
+  checked covering indexes. Governed module upgrade, focused ORM/native tests,
+  business-model standard audit and ACL guard pass. The known missing P4
+  business-fact replay script remains external and continues to prohibit
+  `make pr.push`.
+
+### Batch-E funding-authority review hardening and model upgrade
+
+- Three independent reviews rejected the first Batch-E candidate and identified
+  forgeable lifecycle/binding contexts, mutable line ownership, stale-lock batch
+  submission, unconditional successor/amount constraints, non-idempotent index
+  handling, reversal races and an obsolete direct-CRUD ORM suite. The candidate
+  was explicitly thawed; none of those findings was waived.
+- The revised model uses in-process authority tokens, server-owned version and
+  line identities, immutable project/line parents, sorted project/baseline locks,
+  request-first fresh-scope submission locks and aggregate batch-cap enforcement.
+  Allocation, correction and reversal use separate service namespaces, append-only
+  signed facts and full idempotent-payload validation.
+- Migration `17.0.0.144` now performs the conditional constraint transition and
+  live-successor partial uniqueness without rebuilding correct structures on
+  replay. A governed upgrade exposed an older premature model-`init()` backfill;
+  the backfill was moved after registry schema creation and the next governed
+  upgrade passed through 0.144 with demo authority verification.
+- A later exact-fingerprint review thawed the candidate again for complete-set
+  operation-key semantics, closed-predecessor successor symmetry, full-plan
+  correction, bounded submit queries, currency rounding, real role journeys and
+  dual-cursor evidence. Those findings were implemented rather than waived. The
+  final finance overlay also restores `payment.ledger` from an inactive legacy
+  analysis parent. Payment-execution chatter is isolated in a per-notification
+  database savepoint; a regression injects an invalid SQL statement and proves
+  that the paid/reversal facts and caller cursor remain valid. The dual-cursor
+  activation case now requires an observed `SerializationFailure`, retries from
+  a fresh transaction and cleans its committed project/baseline/chatter fixture
+  through a registered independent-cursor cleanup.
+- A final model review then rejected mutable related company/currency identity
+  and a repeatable-read stale-snapshot submit race. Version `17.0.0.145` replaces
+  those fields with immutable economic snapshots, quarantines unresolved legacy
+  identity and adds a writable per-project reservation version. A real two-cursor
+  same-project submit test now observes serialization retry and proves exactly one
+  60-unit reservation can enter a 100-unit cap.
+- The follow-up model upgrade makes activation and close advance that same writable
+  reservation authority, so activate-versus-submit also serializes and retries onto
+  the current baseline. Historical reversals inherit their original allocation's
+  project/company/currency snapshot after project ownership changes. Global record
+  rules keep unresolved 0.145 baseline, line and allocation evidence out of all
+  user-facing company scopes, while a direct replay test proves the migration does
+  not invent identity or change an already classified row.
+- Focused funding authority passed 18 methods / 20 statistics; the registered
+  legacy allocation ORM suite passed 38 post-test executions / 21 statistics;
+  the final post-0.145 `sc_gate` passed 307 methods with 390 core and 11 demo
+  statistics, all at zero failures/errors. Model/projection audits and minimum ACL
+  passed with zero undeclared gaps; personal-data and secret scans passed with zero
+  confirmed matches. The known P4 missing replay-script defect remains external,
+  so browser/release evidence and `make pr.push` remain prohibited.

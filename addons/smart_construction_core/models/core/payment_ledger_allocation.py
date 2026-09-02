@@ -177,39 +177,6 @@ class PaymentLedgerAllocation(models.Model):
         )
         self.env.cr.execute(
             """
-            WITH allocation_totals AS (
-                SELECT ledger_id,
-                       COALESCE(SUM(allocated_amount), 0) AS allocated_amount,
-                       COUNT(*) FILTER (WHERE allocation_state != 'allocated') AS unresolved_count
-                  FROM payment_ledger_allocation
-              GROUP BY ledger_id
-            ), desired AS (
-                SELECT l.id AS ledger_id,
-                       t.allocated_amount,
-                       GREATEST(l.amount - t.allocated_amount, 0) AS unallocated_amount,
-                       CASE
-                           WHEN t.unresolved_count = 0 AND t.allocated_amount = l.amount
-                           THEN 'complete'
-                           ELSE 'review_required'
-                       END AS allocation_status
-                  FROM payment_ledger l
-                  JOIN allocation_totals t ON t.ledger_id = l.id
-            )
-            UPDATE payment_ledger l
-               SET contract_allocated_amount = d.allocated_amount,
-                   contract_unallocated_amount = d.unallocated_amount,
-                   contract_allocation_status = d.allocation_status
-              FROM desired d
-             WHERE d.ledger_id = l.id
-               AND (
-                    l.contract_allocated_amount IS DISTINCT FROM d.allocated_amount
-                 OR l.contract_unallocated_amount IS DISTINCT FROM d.unallocated_amount
-                 OR l.contract_allocation_status IS DISTINCT FROM d.allocation_status
-               )
-            """
-        )
-        self.env.cr.execute(
-            """
             UPDATE payment_ledger_allocation a
                SET payment_request_id = l.payment_request_id,
                    project_id = r.project_id,

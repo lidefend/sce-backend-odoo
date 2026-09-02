@@ -26,9 +26,12 @@ class TestPaymentRequestWorkItemService(TransactionCase):
                 "funding_enabled": True,
             }
         )
-        cls.env["project.funding.baseline"].create(
-            {"project_id": cls.project.id, "total_amount": 1000.0, "state": "active"}
-        )
+        baseline = cls.env["project.funding.baseline"].create({
+            "project_id": cls.project.id, "total_amount": 1000.0,
+            "period_start": "2020-01-01", "period_end": "2099-12-31",
+            "line_ids": [(0, 0, {"name": "综合资金计划", "planned_amount": 1000.0})],
+        })
+        baseline.action_activate()
         cls.contract = cls.env["construction.contract"].create(
             {
                 "subject": "Work Item Contract",

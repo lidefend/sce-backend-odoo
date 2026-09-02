@@ -12,6 +12,7 @@ from ..support.state_guard import raise_guard
 from ..support.state_machine import ScStateMachine
 
 _logger = logging.getLogger(__name__)
+_FUNDING_BINDING_TOKEN = object()
 
 PAYMENT_REQUEST_DOCUMENT_STATE_LABELS = {
     "-1": "已作废",
@@ -647,6 +648,15 @@ class PaymentRequest(models.Model):
     date_request = fields.Date(
         string="单据日期",
         default=fields.Date.context_today,
+    )
+    funding_baseline_id = fields.Many2one(
+        "project.funding.baseline",
+        string="资金基线版本",
+        readonly=True,
+        copy=False,
+        index=True,
+        ondelete="restrict",
+        help="付款申请首次提交时快照绑定，后续不随项目当前生效版本漂移。",
     )
     legacy_source_table = fields.Char(string="历史来源表", index=True, readonly=True)
     legacy_record_id = fields.Char(string="历史记录ID", index=True, readonly=True)
@@ -1364,6 +1374,7 @@ class PaymentRequest(models.Model):
                 [
                     ("project_id", "=", project.id),
                     ("state", "=", "active"),
+                    ("normalization_state", "=", "normalized"),
                 ],
                 limit=2,
             )
@@ -1379,7 +1390,120 @@ class PaymentRequest(models.Model):
             )
         return baseline
 
-    def _get_reserved_amount(self, project, exclude_ids=None, evaluation_cache=None):
+    def _resolve_funding_baseline_binding(self, evaluation_cache=None):
+        self.ensure_one()
+        if self.type != "pay":
+            return self.env["project.funding.baseline"]
+        baseline = self.funding_baseline_id or self._get_active_funding_baseline(
+            self.project_id, evaluation_cache=evaluation_cache
+        )
+        if baseline.normalization_state != "normalized":
+            raise_guard(
+                "P0_PAYMENT_FUNDING_BASELINE_INVALID",
+                f"项目[{self.project_id.display_name}]",
+                "提交付款申请",
+                reasons=["资金基线版本或控制期尚未标准化"],
+                hints=["请由财务经理创建并生效标准化修订版本"],
+            )
+        request_date = self.date_request or fields.Date.context_today(self)
+        if not baseline.period_start or not baseline.period_end or not (
+            baseline.period_start <= request_date <= baseline.period_end
+        ):
+            raise_guard(
+                "P0_PAYMENT_FUNDING_BASELINE_INVALID",
+                f"项目[{self.project_id.display_name}]",
+                "提交付款申请",
+                reasons=["付款申请日期不在资金基线控制期内"],
+                hints=["请核对申请日期或创建正确控制期的资金基线版本"],
+            )
+        mismatches = []
+        if baseline.project_id.id != self.project_id.id:
+            mismatches.append("项目不一致")
+        if baseline.company_id.id != self.project_id.company_id.id:
+            mismatches.append("公司不一致")
+        if baseline.currency_id.id != self.currency_id.id:
+            mismatches.append("币种不一致")
+        if mismatches:
+            raise_guard(
+                "P0_PAYMENT_FUNDING_BASELINE_INVALID",
+                f"项目[{self.project_id.display_name}]",
+                "提交付款申请",
+                reasons=mismatches,
+            )
+        return baseline
+
+    def _optional_funding_baseline_binding(self):
+        """Bind when an authority exists; preserve the governed advisory-only mode."""
+        self.ensure_one()
+        candidates = self.env["project.funding.baseline"].sudo().search([
+            ("project_id", "=", self.project_id.id),
+            ("state", "=", "active"),
+            ("normalization_state", "=", "normalized"),
+        ], limit=2)
+        force_binding = any(
+            self._payment_force_block_enabled(code)
+            for code in (
+                "P0_PAYMENT_FUNDING_NOT_READY",
+                "P0_PAYMENT_FUNDING_BASELINE_INVALID",
+                "P0_PAYMENT_FUNDING_CAP_EXCEEDED",
+            )
+        )
+        if not candidates and not force_binding:
+            return self.env["project.funding.baseline"]
+        return self._resolve_funding_baseline_binding()
+
+    def _get_reserved_amount(
+        self, project, exclude_ids=None, evaluation_cache=None, baseline=None
+    ):
+        if baseline and baseline.normalization_state == "normalized":
+            excluded = sorted(
+                {int(item) for item in (exclude_ids or []) if int(item or 0) > 0}
+            )
+            cache = evaluation_cache if isinstance(evaluation_cache, dict) else None
+            cache_excluded = tuple(excluded)
+            if (
+                excluded == self.ids
+                and all(record.state in ("draft", "rejected", "cancel") for record in self)
+            ):
+                cache_excluded = ()
+            cache_key = (
+                "baseline_reserved_amount",
+                baseline.id,
+                cache_excluded,
+            )
+            if cache is not None and cache_key in cache:
+                return cache[cache_key]
+            self.env.cr.execute(
+                """
+                WITH scoped_requests AS (
+                    SELECT id, state, amount
+                      FROM payment_request
+                     WHERE type = 'pay'
+                       AND funding_baseline_id = %s
+                       AND NOT (id = ANY(%s))
+                ), posted AS (
+                    SELECT ledger.payment_request_id, SUM(ledger.amount) AS amount
+                      FROM payment_ledger AS ledger
+                      JOIN scoped_requests AS request
+                        ON request.id = ledger.payment_request_id
+                     WHERE ledger.state = 'posted'
+                     GROUP BY ledger.payment_request_id
+                )
+                SELECT COALESCE(SUM(COALESCE(posted.amount, 0)), 0)
+                     + COALESCE(SUM(
+                           CASE WHEN request.state IN ('submit', 'approve', 'approved')
+                                THEN GREATEST(request.amount - COALESCE(posted.amount, 0), 0)
+                                ELSE 0 END
+                       ), 0)
+                  FROM scoped_requests AS request
+                  LEFT JOIN posted ON posted.payment_request_id = request.id
+                """,
+                [baseline.id, excluded],
+            )
+            reserved = self.env.cr.fetchone()[0] or 0.0
+            if cache is not None:
+                cache[cache_key] = reserved
+            return reserved
         domain = [
             ("project_id", "=", project.id),
             ("type", "=", "pay"),
@@ -1416,7 +1540,11 @@ class PaymentRequest(models.Model):
                 reasons=["项目未满足资金承载条件"],
                 hints=["请先完成项目资金承载设置后再提交付款申请"],
             )
-        baseline = self._get_active_funding_baseline(project, evaluation_cache=evaluation_cache)
+        baseline = (
+            self.funding_baseline_id
+            if len(self) == 1 and self.funding_baseline_id
+            else self._get_active_funding_baseline(project, evaluation_cache=evaluation_cache)
+        )
         cap = baseline.total_amount or 0.0
         if cap <= 0.0:
             raise_guard(
@@ -1432,6 +1560,7 @@ class PaymentRequest(models.Model):
             project,
             exclude_ids=exclude_ids,
             evaluation_cache=evaluation_cache,
+            baseline=baseline,
         )
         rounding = project.company_currency_id.rounding if project.company_currency_id else 0.01
         if float_compare((used or 0.0) + (amount or 0.0), cap, precision_rounding=rounding) == 1:
@@ -1465,6 +1594,65 @@ class PaymentRequest(models.Model):
             if req_type == "pay" and state in ("submit", "approve", "approved"):
                 self._check_project_funding_gate(project, amount, exclude_ids=rec.ids)
 
+    def _lock_funding_submission_scope(self):
+        """Serialize funding reservation and authority selection per project."""
+        request_ids = sorted(set(self.ids))
+        if request_ids:
+            self.env.cr.execute(
+                "SELECT id FROM payment_request WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
+                [request_ids],
+            )
+        self.invalidate_recordset([
+            "state", "type", "project_id", "amount", "date_request",
+            "currency_id", "funding_baseline_id",
+        ])
+        project_ids = sorted(set(
+            self.filtered(lambda row: row.type == "pay").mapped("project_id").ids
+        ))
+        if project_ids:
+            self.env.cr.execute(
+                "SELECT id FROM project_project WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
+                [project_ids],
+            )
+            self.env.cr.execute(
+                "UPDATE project_project "
+                "SET funding_reservation_revision = "
+                "COALESCE(funding_reservation_revision, 0) + 1 "
+                "WHERE id = ANY(%s)",
+                [project_ids],
+            )
+
+    def _enforce_batch_funding_submit_gate(self, evaluation_cache=None):
+        if self.env.context.get("payment_soft_gate") and not any(
+            self._payment_force_block_enabled(code)
+            for code in (
+                "P0_PAYMENT_FUNDING_NOT_READY",
+                "P0_PAYMENT_FUNDING_BASELINE_INVALID",
+                "P0_PAYMENT_FUNDING_CAP_EXCEEDED",
+            )
+        ):
+            return
+        payments = self.filtered(lambda record: record.type == "pay")
+        groups = {}
+        evaluation_cache = (
+            evaluation_cache if isinstance(evaluation_cache, dict) else {}
+        )
+        for record in payments:
+            baseline = record._resolve_funding_baseline_binding(
+                evaluation_cache=evaluation_cache
+            )
+            key = (record.project_id.id, baseline.id)
+            groups[key] = groups.get(key, self.env["payment.request"]) | record
+        for records in groups.values():
+            project = records[:1].project_id
+            total = sum(records.mapped("amount"))
+            records[:1]._check_project_funding_gate(
+                project,
+                total,
+                exclude_ids=records.ids,
+                evaluation_cache=evaluation_cache,
+            )
+
     def _check_project_lifecycle(self, project, target_state):
         if not project:
             return
@@ -1497,6 +1685,12 @@ class PaymentRequest(models.Model):
             project_id = self._context_project_id()
             if project_id:
                 vals.setdefault("project_id", project_id)
+            resolved_project_id = vals.get("project_id")
+            if resolved_project_id and not vals.get("currency_id"):
+                project = self.env["project.project"].browse(resolved_project_id)
+                vals["currency_id"] = (
+                    project.company_id.currency_id or self.env.company.currency_id
+                ).id
             for field_name, value in self._basis_payment_request_values(vals).items():
                 vals.setdefault(field_name, value)
             vals.setdefault("business_category_id", self._resolve_business_category_id(vals))
@@ -1537,6 +1731,12 @@ class PaymentRequest(models.Model):
 
     def write(self, vals):
         changed_business_facts = self._business_fact_fields.intersection(vals)
+        if "funding_baseline_id" in vals and self.env.context.get(
+            "_sc_funding_baseline_binding_token"
+        ) is not _FUNDING_BINDING_TOKEN:
+            raise AccessError(_("付款申请的资金基线快照只能在首次提交时绑定。"))
+        if "funding_baseline_id" in vals and self.filtered("funding_baseline_id"):
+            raise AccessError(_("付款申请的资金基线快照一经绑定不可变更。"))
         locked = self.filtered(lambda rec: rec.state not in ("draft", "rejected", "cancel"))
         if changed_business_facts and locked and not self.env.context.get("allow_payment_business_fact_write"):
             raise UserError(
@@ -2256,7 +2456,9 @@ class PaymentRequest(models.Model):
     def action_submit(self):
         if not self._has_submit_access():
             raise ValidationError(_("你没有提交付款/收款申请的权限。"))
+        self._lock_funding_submission_scope()
         advisory_result = {}
+        funding_evaluation_cache = {}
         for rec in self:
             if rec.state not in ("draft", "rejected"):
                 raise UserError(
@@ -2277,8 +2479,13 @@ class PaymentRequest(models.Model):
             rec._check_material_settlement_remaining_amount()
             advisory_result[rec.id] = rec._handle_payment_advisories(
                 "提交付款申请",
-                rec._collect_payment_advisories("submit"),
+                rec._collect_payment_advisories(
+                    "submit", evaluation_cache=funding_evaluation_cache
+                ),
             )
+        self.with_context(payment_soft_gate=True)._enforce_batch_funding_submit_gate(
+            evaluation_cache=funding_evaluation_cache
+        )
         for rec in self:
             before = rec._snapshot_audit_payload()
             # The action has already enforced submit capability, record readability,
@@ -2287,9 +2494,16 @@ class PaymentRequest(models.Model):
             # sudo mode preserves the initiating uid while avoiding a post-transition
             # record-rule intersection from breaking the approved workflow action.
             submitted = rec.sudo()
-            submitted.with_context(allow_transition=True, payment_soft_gate=True).write(
-                {"state": "submit", "reject_reason": False}
-            )
+            transition_values = {"state": "submit", "reject_reason": False}
+            if rec.type == "pay" and not rec.funding_baseline_id:
+                binding = rec._optional_funding_baseline_binding()
+                if binding:
+                    transition_values["funding_baseline_id"] = binding.id
+            submitted.with_context(
+                allow_transition=True,
+                payment_soft_gate=True,
+                _sc_funding_baseline_binding_token=_FUNDING_BINDING_TOKEN,
+            ).write(transition_values)
             after = submitted._snapshot_audit_payload()
             submitted._audit_transition("payment_submitted", before, after, action_name="action_submit")
         submitted_records = self.sudo()

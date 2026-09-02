@@ -81,12 +81,16 @@ class TestPaymentRequestPermission(TransactionCase):
                 "code": "PERM-PAY",
                 "funding_enabled": True,
                 "user_id": user.id,
+                "company_id": self.env.company.id,
             }
         )
         project.message_subscribe(partner_ids=[user.partner_id.id])
-        self.env["project.funding.baseline"].sudo().create(
-            {"project_id": project.id, "total_amount": 1000.0, "state": "active"}
-        )
+        baseline = self.env["project.funding.baseline"].sudo().create({
+            "project_id": project.id, "total_amount": 1000.0,
+            "period_start": "2020-01-01", "period_end": "2099-12-31",
+            "line_ids": [(0, 0, {"name": "综合资金计划", "planned_amount": 1000.0})],
+        })
+        baseline.action_activate()
         contract = self.env["construction.contract"].sudo().create(
             {
                 "subject": "Permission Contract",

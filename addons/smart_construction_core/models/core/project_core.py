@@ -482,6 +482,13 @@ class ProjectProject(models.Model):
         default=False,
         help='用于控制项目是否具备资金承载资格的最小语义。',
     )
+    funding_reservation_revision = fields.Integer(
+        string="资金占用并发版本",
+        default=0,
+        readonly=True,
+        copy=False,
+        help="付款申请资金占用串行化的内部版本；不承载业务金额。",
+    )
 
     lifecycle_state = fields.Selection(
         ScStateMachine.selection(ScStateMachine.PROJECT),

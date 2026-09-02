@@ -64,6 +64,17 @@
             <field name="model">payment.ledger</field>
             <field name="arch" type="xml">
                 <form string="支付台账" create="false" edit="false" delete="false">
+                    <header>
+                        <button name="action_open_funding_allocation_wizard" type="object"
+                                string="资金计划分配" class="oe_highlight"
+                                invisible="state != 'posted' or fund_plan_unallocated_amount &lt;= 0"
+                                groups="smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager"/>
+                        <button name="action_open_funding_allocation_wizard" type="object"
+                                string="纠正资金分配"
+                                context="{'funding_allocation_mode': 'correct'}"
+                                invisible="state != 'posted' or fund_plan_allocated_amount &lt;= 0"
+                                groups="smart_construction_core.group_sc_cap_finance_manager"/>
+                    </header>
                     <sheet>
                         <group>
                             <group>
@@ -92,6 +103,20 @@
                             <field name="reversal_execution_id" readonly="1"/>
                             <field name="reversal_reason" readonly="1"/>
                         </group>
+                        <notebook>
+                            <page string="资金分配日记">
+                                <field name="fund_plan_allocation_ids" readonly="1">
+                                    <tree create="false" edit="false" delete="false">
+                                        <field name="entry_type"/>
+                                        <field name="plan_line_id"/>
+                                        <field name="allocated_amount"/>
+                                        <field name="effective_amount"/>
+                                        <field name="effective_at"/>
+                                        <field name="currency_id" column_invisible="1"/>
+                                    </tree>
+                                </field>
+                            </page>
+                        </notebook>
                     </sheet>
                 </form>
             </field>

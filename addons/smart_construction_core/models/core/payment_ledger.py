@@ -3,6 +3,8 @@ from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tools.float_utils import float_compare
 
+from .funding_baseline import _FUNDING_ALLOCATION_TOKEN
+
 
 class PaymentLedger(models.Model):
     _name = "payment.ledger"
@@ -11,6 +13,7 @@ class PaymentLedger(models.Model):
     _sc_readonly_navigation_button_methods = {
         "action_open_payment_request",
         "action_open_settlement",
+        "action_open_funding_allocation_wizard",
     }
 
     _sql_constraints = []
@@ -368,12 +371,30 @@ class PaymentLedger(models.Model):
             "WHERE payment_execution_id IS NOT NULL AND state = 'posted'"
         )
 
-    @api.depends("amount", "fund_plan_allocation_ids.allocated_amount")
+    @api.depends(
+        "amount",
+        "fund_plan_allocation_ids.effective_amount",
+        "fund_plan_allocation_ids.normalization_state",
+    )
     def _compute_fund_plan_allocation_amounts(self):
-        for record in self:
-            allocated = sum(
-                record.fund_plan_allocation_ids.mapped("allocated_amount")
+        totals = {}
+        if self.ids:
+            rows = self.env["project.funding.actual.event.allocation"].read_group(
+                [
+                    ("actual_event_id", "in", self.ids),
+                    ("normalization_state", "in", ["normalized", "legacy_unresolved_period"]),
+                ],
+                ["effective_amount:sum"],
+                ["actual_event_id"],
             )
+            totals = {
+                row["actual_event_id"][0]: row.get(
+                    "effective_amount_sum", row.get("effective_amount", 0.0)
+                )
+                for row in rows
+            }
+        for record in self:
+            allocated = totals.get(record.id, 0.0)
             record.fund_plan_allocated_amount = allocated
             record.fund_plan_unallocated_amount = (
                 (record.amount or 0.0) - allocated
@@ -487,6 +508,377 @@ class PaymentLedger(models.Model):
         records._ensure_contract_allocations()
         return records
 
+    def _lock_funding_authority(self, lines):
+        """Lock every funding authority tier once, in the repository-wide order."""
+        request_ids = sorted(set(self.mapped("payment_request_id").ids))
+        project_ids = sorted(set(self.mapped("project_id").ids))
+        baseline_ids = sorted(set(lines.mapped("baseline_id").ids))
+        line_ids = sorted(set(lines.ids))
+        ledger_ids = sorted(set(self.ids))
+        for table, ids in (
+            ("payment_request", request_ids),
+            ("project_project", project_ids),
+            ("project_funding_baseline", baseline_ids),
+            ("project_funding_baseline_line", line_ids),
+            ("payment_ledger", ledger_ids),
+        ):
+            if ids:
+                self.env.cr.execute(
+                    f"SELECT id FROM {table} WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
+                    [ids],
+                )
+        self.invalidate_recordset(["state", "amount", "payment_request_id", "project_id"])
+        lines.invalidate_recordset()
+        lines.mapped("baseline_id").invalidate_recordset()
+
+    def _caller_visible_funding_ledger(self):
+        relation_ids = self.ids
+        if len(relation_ids) != 1:
+            raise AccessError(_("付款台账不存在或当前用户无权访问。"))
+        ledger = self.env["payment.ledger"].search(
+            [("id", "=", relation_ids[0])], limit=1
+        )
+        if not ledger:
+            raise AccessError(_("付款台账不存在或当前用户无权访问。"))
+        return ledger
+
+    def action_open_funding_allocation_wizard(self):
+        self = self._caller_visible_funding_ledger()
+        mode = self.env.context.get("funding_allocation_mode", "allocate")
+        if not self.env.su and not (
+            self.env.user.has_group("smart_construction_core.group_sc_cap_finance_user")
+            or self.env.user.has_group("smart_construction_core.group_sc_cap_finance_manager")
+        ):
+            raise AccessError(_("当前用户没有办理资金分配的权限。"))
+        if self.state != "posted":
+            raise UserError(_("只有有效付款台账可以进行资金计划分配。"))
+        baseline = self.payment_request_id.funding_baseline_id
+        if not baseline or baseline.normalization_state != "normalized":
+            raise UserError(_("付款申请未绑定标准化资金基线版本。"))
+        if mode == "correct" and not self.env.su and not self.env.user.has_group(
+            "smart_construction_core.group_sc_cap_finance_manager"
+        ):
+            raise AccessError(_("只有财务经理可以纠正资金计划分配。"))
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("分配实际付款至资金计划"),
+            "res_model": "payment.ledger.funding.allocation.wizard",
+            "view_mode": "form",
+            "target": "new",
+            "context": {"default_ledger_id": self.id, "default_mode": mode},
+        }
+
+    def action_allocate_funding(self, lines, operation_key):
+        """Append idempotent authoritative allocation facts for one posted ledger.
+
+        ``lines`` is a list of ``{plan_line_id, amount}``; direct journal CRUD is
+        deliberately unavailable to RPC callers.
+        """
+        self = self._caller_visible_funding_ledger()
+        if not operation_key:
+            raise ValidationError(_("资金分配必须提供不可变操作幂等键。"))
+        if not self.env.su and not self.env.user.has_group(
+            "smart_construction_core.group_sc_cap_finance_user"
+        ) and not self.env.user.has_group(
+            "smart_construction_core.group_sc_cap_finance_manager"
+        ):
+            raise AccessError(_("当前用户没有办理资金分配的权限。"))
+        specs = list(lines or [])
+        if not specs:
+            raise ValidationError(_("资金分配至少需要一条计划明细。"))
+        line_ids = [int(item.get("plan_line_id") or 0) for item in specs]
+        if len(line_ids) != len(set(line_ids)):
+            raise ValidationError(_("同一操作中每条资金计划明细只能出现一次。"))
+        plan_lines = self.env["project.funding.baseline.line"].search(
+            [("id", "in", line_ids)]
+        )
+        if len(plan_lines) != len(set(line_ids)):
+            raise AccessError(_("计划明细不存在或当前用户无权访问。"))
+        self._lock_funding_authority(plan_lines)
+        request = self.payment_request_id
+        baseline = request.funding_baseline_id
+        if self.state != "posted":
+            raise UserError(_("只有有效付款台账可以进行资金计划分配。"))
+        if not baseline or baseline.normalization_state != "normalized":
+            raise UserError(_("付款申请未绑定标准化资金基线版本。"))
+        if any(line.baseline_id.id != baseline.id for line in plan_lines):
+            raise ValidationError(_("资金分配明细必须属于付款申请锁定的资金基线版本。"))
+        if (
+            baseline.project_id.id != self.project_id.id
+            or baseline.company_id.id != self.project_id.company_id.id
+            or baseline.currency_id.id != self.currency_id.id
+        ):
+            raise ValidationError(_("资金基线与付款台账的项目、公司或币种不一致。"))
+        paid_date = fields.Date.to_date(self.paid_at)
+        if not paid_date or not (
+            baseline.period_start <= paid_date <= baseline.period_end
+        ):
+            raise ValidationError(_("实际付款日期必须落在申请锁定的资金基线控制期内。"))
+        Allocation = self.env["project.funding.actual.event.allocation"].sudo()
+        operation_namespace = f"allocation:{operation_key}"
+        keys = [f"{operation_namespace}:{line_id}" for line_id in line_ids]
+        rounding = self.currency_id.rounding or 0.01
+        amounts_by_line = {}
+        for spec, line_id in zip(specs, line_ids):
+            amount = float(spec.get("amount") or 0.0)
+            if float_compare(amount, 0.0, precision_rounding=rounding) <= 0:
+                raise ValidationError(_("资金分配金额必须大于 0。"))
+            amounts_by_line[line_id] = amount
+        existing = Allocation.search([("operation_key", "=", operation_namespace)])
+        if existing:
+            existing_by_line = {row.plan_line_id.id: row for row in existing}
+            payload_matches = (
+                len(existing) == len(amounts_by_line)
+                and set(existing_by_line) == set(amounts_by_line)
+                and all(
+                    row.entry_type == "allocation"
+                    and row.actual_event_id == self
+                    and row.normalization_state == "normalized"
+                    and float_compare(
+                        row.allocated_amount,
+                        amounts_by_line[line_id],
+                        precision_rounding=rounding,
+                    ) == 0
+                    and float_compare(
+                        row.effective_amount,
+                        amounts_by_line[line_id],
+                        precision_rounding=rounding,
+                    ) == 0
+                    for line_id, row in existing_by_line.items()
+                )
+            )
+            if not payload_matches:
+                raise UserError(_("资金分配幂等键已被不同完整业务载荷占用。"))
+            return existing
+        pending = []
+        pending_line = {}
+        for line_id, key in zip(line_ids, keys):
+            amount = amounts_by_line[line_id]
+            pending_line[line_id] = pending_line.get(line_id, 0.0) + amount
+            effective_at = self.paid_at or fields.Datetime.now()
+            pending.append({
+                "plan_line_id": line_id,
+                "actual_event_id": self.id,
+                "allocated_amount": amount,
+                "effective_amount": amount,
+                "operation_key": operation_namespace,
+                "allocation_key": key,
+                "entry_type": "allocation",
+                "effective_at": effective_at,
+                "effective_date": fields.Date.to_date(effective_at),
+                "normalization_state": "normalized",
+            })
+        if pending:
+            current_rows = Allocation.read_group(
+                [("normalization_state", "=", "normalized"), ("plan_line_id", "in", line_ids)],
+                ["effective_amount:sum"], ["plan_line_id"],
+            )
+            current_line = {
+                row["plan_line_id"][0]: row.get(
+                    "effective_amount_sum", row.get("effective_amount", 0.0)
+                )
+                for row in current_rows
+            }
+            for line in plan_lines:
+                if float_compare(
+                    current_line.get(line.id, 0.0) + pending_line.get(line.id, 0.0),
+                    line.planned_amount,
+                    precision_rounding=self.currency_id.rounding or 0.01,
+                ) > 0:
+                    raise ValidationError(_("资金计划明细累计分配不得超过计划金额。"))
+            grouped_totals = Allocation.read_group(
+                [("normalization_state", "=", "normalized"), "|",
+                 ("actual_event_id", "=", self.id), ("baseline_id", "=", baseline.id)],
+                ["effective_amount:sum", "actual_event_id", "baseline_id"],
+                ["actual_event_id", "baseline_id"],
+                lazy=False,
+            )
+            event_total = sum(
+                row.get("effective_amount_sum", row.get("effective_amount", 0.0))
+                for row in grouped_totals
+                if row.get("actual_event_id") and row["actual_event_id"][0] == self.id
+            ) + sum(item["effective_amount"] for item in pending)
+            baseline_total = sum(
+                row.get("effective_amount_sum", row.get("effective_amount", 0.0))
+                for row in grouped_totals
+                if row.get("baseline_id") and row["baseline_id"][0] == baseline.id
+            ) + sum(item["effective_amount"] for item in pending)
+            rounding = self.currency_id.rounding or 0.01
+            if float_compare(event_total, self.amount, precision_rounding=rounding) > 0:
+                raise ValidationError(_("付款台账累计分配不得超过实付金额。"))
+            if float_compare(baseline_total, baseline.total_amount, precision_rounding=rounding) > 0:
+                raise ValidationError(_("资金基线累计分配不得超过资金上限。"))
+            created = Allocation.with_context(
+                _sc_funding_allocation_token=_FUNDING_ALLOCATION_TOKEN
+            ).create(pending)
+            return created
+        return Allocation
+
+    @staticmethod
+    def _grouped_effective_amount(Allocation, domain):
+        rows = Allocation.read_group(domain, ["effective_amount:sum"], [])
+        if not rows:
+            return 0.0
+        return rows[0].get(
+            "effective_amount_sum", rows[0].get("effective_amount", 0.0)
+        ) or 0.0
+
+    def _append_funding_reversals(self, originals, operation_key, reason):
+        Allocation = self.env["project.funding.actual.event.allocation"].sudo()
+        operation_namespace = f"reversal:{operation_key}"
+        keys = [f"{operation_namespace}:{original.id}" for original in originals]
+        existing = Allocation.search([("operation_key", "=", operation_namespace)])
+        reason_text = (reason or "").strip()
+        rounding = self.currency_id.rounding or 0.01
+        if existing:
+            existing_by_original = {
+                record.reverses_id.id: record
+                for record in existing
+                if record.reverses_id
+            }
+            payload_matches = (
+                len(existing) == len(originals)
+                and set(existing_by_original) == set(originals.ids)
+                and all(
+                    reversal.entry_type == "reversal"
+                    and reversal.actual_event_id == self
+                    and reversal.plan_line_id == original.plan_line_id
+                    and reversal.normalization_state == "normalized"
+                    and (reversal.reason or "").strip() == reason_text
+                    and float_compare(
+                        reversal.allocated_amount,
+                        original.allocated_amount,
+                        precision_rounding=rounding,
+                    ) == 0
+                    and float_compare(
+                        reversal.effective_amount,
+                        -original.allocated_amount,
+                        precision_rounding=rounding,
+                    ) == 0
+                    for original in originals
+                    for reversal in [existing_by_original.get(original.id)]
+                    if reversal
+                )
+                and len(existing_by_original) == len(originals)
+            )
+            if not payload_matches:
+                raise UserError(_("资金冲销幂等键已被不同完整业务载荷占用。"))
+            return existing
+        values = []
+        for original, key in zip(originals, keys):
+            effective_at = fields.Datetime.now()
+            values.append({
+                "plan_line_id": original.plan_line_id.id,
+                "actual_event_id": self.id,
+                "allocated_amount": original.allocated_amount,
+                "effective_amount": -original.allocated_amount,
+                "operation_key": operation_namespace,
+                "allocation_key": key,
+                "entry_type": "reversal",
+                "reverses_id": original.id,
+                "effective_at": effective_at,
+                "effective_date": fields.Date.to_date(effective_at),
+                "normalization_state": "normalized",
+                "reason": reason_text,
+            })
+        if values:
+            existing = Allocation.with_context(
+                _sc_funding_allocation_token=_FUNDING_ALLOCATION_TOKEN
+            ).create(values)
+        reverse_by_original = {
+            reversal.reverses_id.id: reversal.id
+            for reversal in existing
+            if reversal.reverses_id
+        }
+        if reverse_by_original:
+            self.env.cr.execute(
+                """
+                UPDATE project_funding_actual_event_allocation AS original
+                   SET reversed_by_id = links.reversal_id
+                  FROM unnest(%s::integer[], %s::integer[])
+                       AS links(original_id, reversal_id)
+                 WHERE original.id = links.original_id
+                   AND original.reversed_by_id IS NULL
+                """,
+                [list(reverse_by_original), list(reverse_by_original.values())],
+            )
+            originals.invalidate_recordset(["reversed_by_id"])
+        return existing
+
+    def action_reallocate_funding(
+        self, original_allocation_ids, lines, operation_key, reason
+    ):
+        self = self._caller_visible_funding_ledger()
+        if not self.env.su and not self.env.user.has_group(
+            "smart_construction_core.group_sc_cap_finance_manager"
+        ):
+            raise AccessError(_("只有财务经理可以纠正资金计划分配。"))
+        if not operation_key or not (reason or "").strip():
+            raise ValidationError(_("分配纠正必须提供幂等键和可审计原因。"))
+        original_ids = sorted({int(item) for item in original_allocation_ids or []})
+        if not original_ids or not lines:
+            raise ValidationError(_("分配纠正必须选择原分配并填写新的分配明细。"))
+        originals = self.env["project.funding.actual.event.allocation"].search([
+            ("id", "in", original_ids),
+            ("actual_event_id", "=", self.id),
+            ("entry_type", "=", "allocation"),
+            ("normalization_state", "=", "normalized"),
+        ])
+        if len(originals) != len(original_ids):
+            raise AccessError(_("待纠正分配不存在或当前用户无权访问。"))
+        replacement_ids = [int(item.get("plan_line_id") or 0) for item in (lines or [])]
+        replacement_lines = self.env["project.funding.baseline.line"].search([
+            ("id", "in", replacement_ids),
+        ])
+        if len(replacement_lines) != len(set(replacement_ids)):
+            raise AccessError(_("纠正后的计划明细不存在或当前用户无权访问。"))
+        all_lines = originals.mapped("plan_line_id") | replacement_lines
+        self._lock_funding_authority(all_lines)
+        originals = self.env["project.funding.actual.event.allocation"].search([
+            ("id", "in", original_ids),
+            ("actual_event_id", "=", self.id),
+            ("entry_type", "=", "allocation"),
+            ("normalization_state", "=", "normalized"),
+        ])
+        reversal_operation = f"reallocation:{operation_key}"
+        expected_prefix = f"reversal:{reversal_operation}"
+        for original in originals:
+            if original.reversed_by_id and not original.reversed_by_id.allocation_key.startswith(
+                f"{expected_prefix}:"
+            ):
+                raise UserError(_("所选分配已经由另一业务操作冲销。"))
+        reversals = self._append_funding_reversals(
+            originals, reversal_operation, (reason or "").strip()
+        )
+        replacements = self.action_allocate_funding(
+            lines, f"reallocation:{operation_key}:replacement"
+        )
+        return reversals | replacements
+
+    def _reverse_funding_allocations(self, execution, reason):
+        self.ensure_one()
+        Allocation = self.env["project.funding.actual.event.allocation"].sudo()
+        baseline = self.payment_request_id.funding_baseline_id
+        authority_lines = baseline.line_ids if baseline else self.env[
+            "project.funding.baseline.line"
+        ]
+        self._lock_funding_authority(authority_lines)
+        originals = Allocation.search([
+            ("actual_event_id", "=", self.id),
+            ("entry_type", "=", "allocation"),
+            ("normalization_state", "=", "normalized"),
+            ("reversed_by_id", "=", False),
+        ])
+        self._append_funding_reversals(
+            originals, f"reverse:{execution.id}", reason
+        )
+        total = self._grouped_effective_amount(Allocation, [
+            ("actual_event_id", "=", self.id),
+            ("normalization_state", "=", "normalized"),
+        ])
+        if float_compare(total, 0.0, precision_rounding=self.currency_id.rounding or 0.01):
+            raise ValidationError(_("付款冲销后资金计划分配净额必须为零。"))
+
     def write(self, vals):
         if not self.env.su:
             raise AccessError(_("付款台账属于受控财务事实，不允许直接修改。"))
@@ -516,14 +908,11 @@ class PaymentLedger(models.Model):
         self.ensure_one()
         if not self.env.su:
             raise AccessError(_("付款台账只能由受控付款执行服务冲销。"))
-        if self.fund_plan_allocation_ids:
-            raise UserError(
-                _("已有资金计划分配的付款台账不能直接冲销，请先办理分配调整。")
-            )
         if not execution or execution.payment_request_id != self.payment_request_id:
             raise UserError(_("冲销来源付款登记与付款台账不一致。"))
         if self.payment_execution_id and self.payment_execution_id != execution:
             raise UserError(_("只能由生成该台账的付款登记发起冲销。"))
+        self._reverse_funding_allocations(execution, reason or _("付款登记撤销"))
         self.with_context(_sc_payment_ledger_internal_reversal=True).write(
             {
                 "state": "reversed",

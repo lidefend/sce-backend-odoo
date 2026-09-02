@@ -7,6 +7,9 @@
             <field name="arch" type="xml">
                 <search string="资金计划申报">
                     <field name="project_id"/>
+                    <field name="version_no"/>
+                    <field name="period_start"/>
+                    <field name="period_end"/>
                     <filter string="草稿" name="state_draft" domain="[('state', '=', 'draft')]"/>
                     <filter string="生效" name="state_active" domain="[('state', '=', 'active')]"/>
                     <filter string="关闭" name="state_closed" domain="[('state', '=', 'closed')]"/>
@@ -37,29 +40,61 @@
             <field name="arch" type="xml">
                 <form string="资金计划申报">
                     <header>
-                        <field name="state" widget="statusbar" statusbar_visible="draft,active,closed"/>
+                        <button name="action_activate" type="object" string="生效"
+                                class="oe_highlight" invisible="state != 'draft'"
+                                groups="smart_construction_core.group_sc_cap_finance_manager"/>
+                        <button name="action_open_transition_wizard" type="object" string="创建修订"
+                                context="{'funding_baseline_operation': 'revision'}"
+                                invisible="state not in ['active', 'closed']"
+                                groups="smart_construction_core.group_sc_cap_finance_manager"/>
+                        <button name="action_open_transition_wizard" type="object" string="关闭"
+                                context="{'funding_baseline_operation': 'close'}"
+                                invisible="state != 'active'"
+                                groups="smart_construction_core.group_sc_cap_finance_manager"/>
+                        <button name="action_cancel" type="object" string="取消"
+                                invisible="state != 'draft'"
+                                groups="smart_construction_core.group_sc_cap_finance_manager"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,active,superseded,closed,cancelled,legacy_unresolved"/>
                     </header>
                     <sheet>
                         <group>
-                            <field name="project_id"/>
-                            <field name="total_amount"/>
+                            <field name="project_id" readonly="state != 'draft'"/>
+                            <field name="version_no" readonly="1"/>
+                            <field name="version_key" readonly="1"/>
+                            <field name="normalization_state" readonly="1"/>
+                            <field name="period_start" readonly="state != 'draft'"/>
+                            <field name="period_end" readonly="state != 'draft'"/>
+                            <field name="supersedes_id" readonly="1"/>
+                            <field name="total_amount" readonly="state != 'draft'"/>
                             <field name="allocated_amount" readonly="1"/>
                             <field name="remaining_amount" readonly="1"/>
                             <field name="currency_id" readonly="1" invisible="1"/>
-                            <field name="attachment_ids" widget="many2many_binary"/>
+                            <field name="attachment_ids" widget="many2many_binary" readonly="state != 'draft'"/>
                         </group>
                         <notebook>
                             <page string="资金计划明细">
-                                <field name="line_ids">
+                                <field name="line_ids" readonly="state != 'draft'">
                                     <tree editable="bottom">
                                         <field name="sequence" widget="handle"/>
                                         <field name="name"/>
+                                        <field name="line_key" optional="hide"/>
                                         <field name="planned_amount"/>
                                         <field name="allocated_amount" readonly="1"/>
                                         <field name="remaining_amount" readonly="1"/>
                                         <field name="currency_id" column_invisible="1"/>
                                     </tree>
                                 </field>
+                            </page>
+                            <page string="版本审计">
+                                <group>
+                                    <field name="revision_reason" readonly="1"/>
+                                    <field name="superseded_by_id" readonly="1"/>
+                                    <field name="activated_at" readonly="1"/>
+                                    <field name="activated_by_id" readonly="1"/>
+                                    <field name="ended_at" readonly="1"/>
+                                    <field name="ended_by_id" readonly="1"/>
+                                    <field name="end_reason" readonly="1"/>
+                                </group>
                             </page>
                         </notebook>
                     </sheet>

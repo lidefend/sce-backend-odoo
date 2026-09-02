@@ -21,12 +21,17 @@
             <field name="name">project.funding.actual.event.allocation.tree</field>
             <field name="model">project.funding.actual.event.allocation</field>
             <field name="arch" type="xml">
-                <tree string="资金计划实际付款分配">
+                <tree string="资金计划实际付款分配日记" create="false" edit="false" delete="false">
+                    <field name="entry_type"/>
                     <field name="plan_line_id"/>
+                    <field name="baseline_id"/>
                     <field name="actual_event_id"/>
                     <field name="project_id"/>
                     <field name="company_id"/>
                     <field name="allocated_amount" sum="分配金额合计"/>
+                    <field name="effective_amount" sum="净影响金额合计"/>
+                    <field name="normalization_state"/>
+                    <field name="effective_at"/>
                     <field name="currency_id" column_invisible="1"/>
                     <field name="source_created_by" string="录入人" optional="show"/>
                     <field name="source_created_at" string="录入时间" optional="show"/>
@@ -38,18 +43,27 @@
             <field name="name">project.funding.actual.event.allocation.form</field>
             <field name="model">project.funding.actual.event.allocation</field>
             <field name="arch" type="xml">
-                <form string="资金计划实际付款分配">
+                <form string="资金计划实际付款分配日记" create="false" edit="false" delete="false">
                     <sheet>
                         <group>
                             <group>
                                 <field name="plan_line_id"/>
+                                <field name="baseline_id"/>
                                 <field name="actual_event_id"/>
+                                <field name="entry_type"/>
                                 <field name="allocated_amount"/>
+                                <field name="effective_amount"/>
+                                <field name="reverses_id"/>
                             </group>
                             <group>
                                 <field name="project_id" readonly="1"/>
                                 <field name="company_id" readonly="1"/>
                                 <field name="currency_id" readonly="1"/>
+                                <field name="allocation_key" readonly="1"/>
+                                <field name="operation_key" readonly="1"/>
+                                <field name="normalization_state" readonly="1"/>
+                                <field name="effective_at" readonly="1"/>
+                                <field name="reason" readonly="1"/>
                                 <field name="source_created_by" string="录入人" readonly="1"/>
                                 <field name="source_created_at" string="录入时间" readonly="1"/>
                             </group>

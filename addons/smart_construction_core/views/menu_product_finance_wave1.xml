@@ -2,7 +2,18 @@
 <odoo>
     <!-- P1 finance-center wave one: preserve existing menu/action identities. -->
     <data>
-        <record id="menu_project_funding_actual_event_allocation" model="ir.ui.menu"><field name="active">False</field></record>
+        <record id="menu_project_funding_actual_event_allocation" model="ir.ui.menu">
+            <field name="parent_id" ref="smart_construction_core.menu_sc_finance_center"/>
+            <field name="sequence">112</field>
+            <field name="active">True</field>
+        </record>
+        <record id="menu_payment_ledger" model="ir.ui.menu">
+            <field name="name">支付台账</field>
+            <field name="parent_id" ref="smart_construction_core.menu_sc_finance_center"/>
+            <field name="action" ref="smart_construction_core.action_payment_ledger"/>
+            <field name="sequence">111</field>
+            <field name="active">True</field>
+        </record>
         <record id="menu_sc_noncash_business_group" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_historical_payment_fact" model="ir.ui.menu"><field name="active">False</field></record>
         <record id="menu_sc_arrival_confirmation" model="ir.ui.menu"><field name="active">False</field></record>

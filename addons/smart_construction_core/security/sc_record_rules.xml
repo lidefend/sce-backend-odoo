@@ -910,7 +910,7 @@
         <record id="rule_project_funding_baseline_company" model="ir.rule">
             <field name="name">Project Funding Baseline - allowed company</field>
             <field name="model_id" ref="model_project_funding_baseline"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['&amp;', ('normalization_state', '!=', 'legacy_unresolved_identity'), ('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -942,7 +942,7 @@
         <record id="rule_project_funding_baseline_line_company" model="ir.rule">
             <field name="name">Project Funding Baseline Line - allowed company</field>
             <field name="model_id" ref="model_project_funding_baseline_line"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['&amp;', ('baseline_id.normalization_state', '!=', 'legacy_unresolved_identity'), ('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -974,7 +974,7 @@
         <record id="rule_project_funding_actual_event_allocation_company" model="ir.rule">
             <field name="name">Fund Plan Actual Event Allocation - allowed company</field>
             <field name="model_id" ref="model_project_funding_actual_event_allocation"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['&amp;', ('normalization_state', '!=', 'legacy_unresolved_relation'), ('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>

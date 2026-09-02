@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import uuid
+
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
@@ -78,13 +80,14 @@ class TestUmP3FundPlanActualEventAllocationOrm(TransactionCase):
         )
 
         def baseline(label, project_record, state, line_amounts):
-            return cls.env["project.funding.baseline"].with_context(
+            record = cls.env["project.funding.baseline"].with_context(
                 cls.setup_context
             ).create(
                 {
                     "project_id": project_record.id,
                     "total_amount": sum(line_amounts),
-                    "state": state,
+                    "period_start": "2026-01-01",
+                    "period_end": "2026-12-31",
                     "line_ids": [
                         (
                             0,
@@ -98,6 +101,9 @@ class TestUmP3FundPlanActualEventAllocationOrm(TransactionCase):
                     ],
                 }
             )
+            if state == "active":
+                record.action_activate()
+            return record
 
         cls.baseline_a = baseline(
             "baseline-a",
@@ -105,11 +111,8 @@ class TestUmP3FundPlanActualEventAllocationOrm(TransactionCase):
             "active",
             [500.0, 500.0],
         )
-        cls.baseline_a_next = baseline(
-            "baseline-a-next",
-            cls.project_a,
-            "draft",
-            [1000.0],
+        cls.baseline_a_next = cls.baseline_a.action_create_revision(
+            "UM-P3 S02 authority revision"
         )
         cls.baseline_a_other = baseline(
             "baseline-a-other-project",
@@ -180,6 +183,7 @@ class TestUmP3FundPlanActualEventAllocationOrm(TransactionCase):
                     "type": "pay",
                 }
             )
+            request.action_submit()
             cls.env.cr.execute(
                 """
                 UPDATE payment_request
@@ -237,12 +241,9 @@ class TestUmP3FundPlanActualEventAllocationOrm(TransactionCase):
 
     def _allocation(self, line, event, amount, env=None):
         env = env or self.caller_env
-        return env["project.funding.actual.event.allocation"].create(
-            {
-                "plan_line_id": line.id,
-                "actual_event_id": event.id,
-                "allocated_amount": amount,
-            }
+        return env["payment.ledger"].browse(event.id).action_allocate_funding(
+            [{"plan_line_id": line.id, "amount": amount}],
+            f"um-p3-s02:{uuid.uuid4().hex}",
         )
 
     def test_single_plan_line_allocates_single_actual_event(self):
@@ -275,13 +276,17 @@ class TestUmP3FundPlanActualEventAllocationOrm(TransactionCase):
 
     def test_partial_exact_and_unallocated_events_are_valid(self):
         self.assertFalse(self.event_a1.fund_plan_allocation_ids)
-        partial = self._allocation(
+        self._allocation(
             self.baseline_a.line_ids[0],
             self.event_a1,
             25.0,
         )
         self.assertEqual(self.event_a1.fund_plan_unallocated_amount, 75.0)
-        partial.write({"allocated_amount": 100.0})
+        self._allocation(
+            self.baseline_a.line_ids[0],
+            self.event_a1,
+            75.0,
+        )
         self.assertEqual(self.event_a1.fund_plan_unallocated_amount, 0.0)
 
     def test_overallocation_and_nonpositive_amounts_are_rejected(self):
@@ -341,8 +346,7 @@ class TestUmP3FundPlanActualEventAllocationOrm(TransactionCase):
             self.event_a1,
             50.0,
         )
-        self.baseline_a.write({"state": "closed"})
-        self.baseline_a_next.write({"state": "active"})
+        self.baseline_a_next.action_activate()
         self.assertEqual(allocation.plan_line_id.baseline_id, self.baseline_a)
         self.assertEqual(allocation.allocated_amount, 50.0)
 
@@ -353,37 +357,36 @@ class TestUmP3FundPlanActualEventAllocationOrm(TransactionCase):
             40.0,
             env=self.env,
         )
-        allocation.write(
-            {
-                "plan_line_id": self.baseline_a.line_ids[1].id,
-                "allocated_amount": 60.0,
-            }
-        )
-        self.assertEqual(
-            allocation.plan_line_id,
-            self.baseline_a.line_ids[1],
-        )
-        with self.env.cr.savepoint(), self.assertRaises(ValidationError):
+        with self.env.cr.savepoint(), self.assertRaises(AccessError):
+            allocation.write(
+                {
+                    "plan_line_id": self.baseline_a.line_ids[1].id,
+                    "allocated_amount": 60.0,
+                }
+            )
+        with self.env.cr.savepoint(), self.assertRaises(AccessError):
             self.event_a1.write({"amount": 59.0})
-        allocation.unlink()
-        self.assertFalse(self.event_a1.fund_plan_allocation_ids)
+        with self.env.cr.savepoint(), self.assertRaises(AccessError):
+            allocation.unlink()
+        self.assertEqual(self.event_a1.fund_plan_allocation_ids, allocation)
 
     def test_one2many_and_import_context_cannot_bypass_validation(self):
-        self.event_a1.write(
-            {
-                "fund_plan_allocation_ids": [
-                    (
-                        0,
-                        0,
-                        {
-                            "plan_line_id": self.baseline_a.line_ids[0].id,
-                            "allocated_amount": 50.0,
-                        },
-                    )
-                ]
-            }
-        )
-        with self.env.cr.savepoint(), self.assertRaises(ValidationError):
+        with self.env.cr.savepoint(), self.assertRaises(AccessError):
+            self.event_a1.write(
+                {
+                    "fund_plan_allocation_ids": [
+                        (
+                            0,
+                            0,
+                            {
+                                "plan_line_id": self.baseline_a.line_ids[0].id,
+                                "allocated_amount": 50.0,
+                            },
+                        )
+                    ]
+                }
+            )
+        with self.env.cr.savepoint(), self.assertRaises(AccessError):
             self.caller_env[
                 "project.funding.actual.event.allocation"
             ].with_context(import_file=True).create(
@@ -422,7 +425,8 @@ class TestUmP3FundPlanActualEventAllocationOrm(TransactionCase):
             env=self.env,
         )
         self.assertEqual(allocation.company_id, self.company_b)
-        allocation.unlink()
+        with self.env.cr.savepoint(), self.assertRaises(AccessError):
+            allocation.unlink()
 
     def test_allocated_plan_line_and_event_deletion_are_blocked(self):
         allocation = self._allocation(
@@ -455,6 +459,8 @@ class TestUmP3FundPlanActualEventAllocationOrm(TransactionCase):
                     {
                         "project_id": project_id,
                         "total_amount": 10.0,
+                        "period_start": "2026-01-01",
+                        "period_end": "2026-12-31",
                     }
                 )
             observations.append((type(raised.exception), str(raised.exception)))
@@ -465,6 +471,8 @@ class TestUmP3FundPlanActualEventAllocationOrm(TransactionCase):
             {
                 "project_id": self.project_a.id,
                 "total_amount": 10.0,
+                "period_start": "2026-01-01",
+                "period_end": "2026-12-31",
             }
         )
         observations = []
@@ -499,11 +507,19 @@ class TestUmP3FundPlanActualEventAllocationOrm(TransactionCase):
                 {
                     "project_id": self.project_b.id,
                     "total_amount": 10.0,
+                    "period_start": "2026-01-01",
+                    "period_end": "2026-12-31",
                 }
             )
-        self.assertEqual(
-            self.env["project.funding.baseline"].with_context(
-                allowed_company_ids=[self.company_a.id, self.company_b.id]
-            ).search_count([]),
-            5,
+        visible = self.env["project.funding.baseline"].with_context(
+            allowed_company_ids=[self.company_a.id, self.company_b.id]
+        ).search([])
+        self.assertTrue(
+            (
+                self.baseline_a
+                | self.baseline_a_next
+                | self.baseline_a_other
+                | self.hidden_baseline
+                | self.baseline_b
+            ) <= visible
         )

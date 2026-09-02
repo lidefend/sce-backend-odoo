@@ -207,11 +207,16 @@ class TestValidatorSmoke(TransactionCase):
             )
 
     def test_payment_request_overpay_can_be_approved_with_advisory(self):
-        project = self.env["project.project"].create({"name": "Overpay Project"})
+        project = self.env["project.project"].create({
+            "name": "Overpay Project", "company_id": self.env.company.id,
+        })
         project.write({"code": "OVERPAY-PROJ", "funding_enabled": True})
-        self.env["project.funding.baseline"].create(
-            {"project_id": project.id, "total_amount": 100.0, "state": "active"}
-        )
+        baseline = self.env["project.funding.baseline"].create({
+            "project_id": project.id, "total_amount": 100.0,
+            "period_start": "2020-01-01", "period_end": "2099-12-31",
+            "line_ids": [(0, 0, {"name": "综合资金计划", "planned_amount": 100.0})],
+        })
+        baseline.action_activate()
         partner = self.env["res.partner"].create({"name": "Overpay Vendor"})
         company = self.env.ref("base.main_company")
         contract = self.env["construction.contract"].create(
@@ -312,11 +317,16 @@ class TestValidatorSmoke(TransactionCase):
 
     def test_payment_request_paid_payable_consistent(self):
         """口径一致性：已付/可付/风险/validator 同源。"""
-        project = self.env["project.project"].create({"name": "PaidPayable Project"})
+        project = self.env["project.project"].create({
+            "name": "PaidPayable Project", "company_id": self.env.company.id,
+        })
         project.write({"code": "PAID-PAYABLE-PROJ", "funding_enabled": True})
-        self.env["project.funding.baseline"].create(
-            {"project_id": project.id, "total_amount": 100.0, "state": "active"}
-        )
+        baseline = self.env["project.funding.baseline"].create({
+            "project_id": project.id, "total_amount": 100.0,
+            "period_start": "2020-01-01", "period_end": "2099-12-31",
+            "line_ids": [(0, 0, {"name": "综合资金计划", "planned_amount": 100.0})],
+        })
+        baseline.action_activate()
         partner = self.env["res.partner"].create({"name": "PaidPayable Vendor"})
         contract = self.env["construction.contract"].create(
             {"subject": "PaidPayable Contract", "type": "in", "project_id": project.id, "partner_id": partner.id}

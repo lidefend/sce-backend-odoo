@@ -171,9 +171,12 @@ class TestP0StateClosure(TransactionCase):
 
     def _enable_funding(self, project, cap=1000.0):
         project.write({"funding_enabled": True})
-        self.env["project.funding.baseline"].create(
-            {"project_id": project.id, "total_amount": cap, "state": "active"}
-        )
+        baseline = self.env["project.funding.baseline"].create({
+            "project_id": project.id, "total_amount": cap,
+            "period_start": "2020-01-01", "period_end": "2099-12-31",
+            "line_ids": [(0, 0, {"name": "综合资金计划", "planned_amount": cap})],
+        })
+        baseline.action_activate()
 
     def _create_settlement_order(
         self, project, partner, contract, amount=100.0, state="approve", purchase_orders=None

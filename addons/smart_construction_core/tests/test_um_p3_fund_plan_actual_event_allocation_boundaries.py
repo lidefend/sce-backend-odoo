@@ -80,64 +80,50 @@ class TestUmP3FundPlanActualEventAllocationBoundaries(unittest.TestCase):
         )
         self.assertIn("line_ids = fields.One2many(", self.baseline_source)
 
-    def test_allocation_pair_enforces_company_project_currency_and_amount(self):
-        method = self.allocation_methods["_validate_pair"]
-        self.assertIn("plan_line.company_id != actual_event.project_id.company_id", method)
-        self.assertIn("plan_line.project_id != actual_event.project_id", method)
-        self.assertIn("plan_line.currency_id != actual_event.currency_id", method)
-        self.assertIn("float_compare(", method)
-        self.assertIn("资金计划分配金额必须大于 0", method)
+    def test_allocation_service_enforces_identity_amount_and_conservation(self):
+        method = self.ledger_methods["action_allocate_funding"]
+        self.assertIn("baseline.project_id.id != self.project_id.id", method)
+        self.assertIn("baseline.company_id.id != self.project_id.company_id.id", method)
+        self.assertIn("baseline.currency_id.id != self.currency_id.id", method)
+        self.assertIn("float_compare(amount, 0.0", method)
+        self.assertIn("资金分配金额必须大于 0", method)
+        self.assertIn("Allocation.read_group(", method)
+        self.assertIn("付款台账累计分配不得超过实付金额", method)
+        self.assertIn("资金基线累计分配不得超过资金上限", method)
 
-    def test_actual_event_total_is_locked_and_cannot_be_overallocated(self):
-        method = self.allocation_methods["_check_actual_event_totals"]
-        self.assertIn("FOR UPDATE", method)
-        self.assertIn("self.read_group(", method)
-        self.assertIn("event.amount", method)
-        self.assertIn("不得超过实际付款金额", method)
+    def test_authority_lock_order_covers_every_mutable_tier(self):
+        method = self.ledger_methods["_lock_funding_authority"]
+        for table in (
+            "payment_request",
+            "project_project",
+            "project_funding_baseline",
+            "project_funding_baseline_line",
+            "payment_ledger",
+        ):
+            self.assertIn(table, method)
+        self.assertIn("ORDER BY id FOR UPDATE", method)
 
-    def test_create_write_unlink_revalidate_final_state(self):
-        for name in ("create", "write"):
-            self.assertIn(
-                "_validate_relation_state",
-                self.allocation_methods[name],
-            )
-        self.assertIn(
-            "_check_actual_event_totals",
-            self.allocation_methods["unlink"],
-        )
-        self.assertIn(
-            "_validate_relation_state",
-            self.baseline_methods["write"],
-        )
-        self.assertIn(
-            "_validate_relation_state",
-            self.line_methods["write"],
-        )
-        self.assertIn(
-            "_validate_relation_state",
-            self.ledger_methods["write"],
-        )
+    def test_journal_crud_is_service_only_and_immutable(self):
+        self.assertIn("_sc_funding_allocation_token", self.allocation_methods["create"])
+        self.assertIn("raise AccessError", self.allocation_methods["write"])
+        self.assertIn("raise AccessError", self.allocation_methods["unlink"])
+        self.assertIn("action_allocate_funding", self.ledger_methods)
+        self.assertIn("_reverse_funding_allocations", self.ledger_methods)
 
-    def test_allocated_relations_block_destructive_parent_deletion(self):
-        self.assertIn("line_ids.allocation_ids", self.baseline_methods["unlink"])
-        self.assertIn("self.allocation_ids", self.line_methods["unlink"])
-        self.assertIn(
-            "self.fund_plan_allocation_ids",
-            self.ledger_methods["unlink"],
-        )
+    def test_authority_and_journal_are_never_destructively_deleted(self):
+        self.assertIn("不允许删除", self.baseline_methods["unlink"])
+        self.assertIn("state != \"draft\"", self.line_methods["unlink"])
+        self.assertIn("不可删除", self.allocation_methods["unlink"])
+        self.assertIn("不允许删除", self.ledger_methods["unlink"])
         self.assertIn('ondelete="restrict"', self.allocation_source)
 
     def test_relation_resolution_is_caller_scoped_and_non_heuristic(self):
-        helper = self.allocation_methods["_caller_visible_relation"]
-        combined = "".join(self.allocation_methods.values())
-        self.assertIn("self.env[model_name].search(", helper)
+        combined = self.ledger_methods["action_allocate_funding"]
+        self.assertIn('self.env["project.funding.baseline.line"].search(', combined)
         for forbidden in (
-            ".sudo(",
-            ".browse(",
             ".exists(",
             "name_search",
             "ilike",
-            "paid_at",
             "create_date",
             "current_active",
         ):
@@ -169,6 +155,10 @@ class TestUmP3FundPlanActualEventAllocationBoundaries(unittest.TestCase):
                     "smart_construction_core.group_sc_cap_finance_manager",
                 },
             )
+            if model_id == "model_project_funding_actual_event_allocation":
+                self.assertTrue(all(row["perm_write"] == "0" for row in scoped))
+                self.assertTrue(all(row["perm_create"] == "0" for row in scoped))
+                self.assertTrue(all(row["perm_unlink"] == "0" for row in scoped))
 
     def test_record_rules_and_audit_views_are_explicit(self):
         rules = RULES.read_text(encoding="utf-8")
@@ -181,8 +171,9 @@ class TestUmP3FundPlanActualEventAllocationBoundaries(unittest.TestCase):
         self.assertIn("[('company_id', 'in', company_ids)]", rules)
         self.assertIn("project_id.user_id", rules)
         self.assertIn("project_id.message_is_follower", rules)
-        self.assertIn('name="create_uid"', views)
-        self.assertIn('name="create_date"', views)
+        self.assertIn('create="false"', views)
+        self.assertIn('name="allocation_key"', views)
+        self.assertIn('name="effective_amount"', views)
 
 
 if __name__ == "__main__":

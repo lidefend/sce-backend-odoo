@@ -36,7 +36,8 @@ class TestUmP3FundingBaselineProjectVisibilityBoundaries(unittest.TestCase):
         self.assertNotIn(".browse(", resolver)
         self.assertNotIn(".exists(", resolver)
         self.assertIn("_caller_visible_project(project_id)", methods["create"])
-        self.assertIn("_caller_visible_project(project_id)", methods["write"])
+        self.assertIn("_sc_funding_baseline_token", methods["write"])
+        self.assertIn("is _FUNDING_BASELINE_TOKEN", methods["write"])
 
     def test_header_rules_reuse_company_and_project_boundaries(self):
         self.assertIn("rule_project_funding_baseline_company", self.rules)

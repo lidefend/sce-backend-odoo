@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import logging
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools.float_utils import float_compare
@@ -7,11 +9,26 @@ from psycopg2.errors import UniqueViolation
 from ..support.state_guard import raise_guard
 
 
+_logger = logging.getLogger(__name__)
+
+
 class ScPaymentExecution(models.Model):
     _name = "sc.payment.execution"
     _description = "付款执行"
     _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation", "sc.company.contractor.responsibility.context.mixin"]
     _order = "date_payment desc, id desc"
+
+    def _message_post_non_blocking(self, body):
+        for record in self:
+            try:
+                with record.env.cr.savepoint():
+                    record.message_post(body=body)
+            except Exception as exc:
+                _logger.warning(
+                    "Skip sc.payment.execution chatter message for id=%s: %s",
+                    record.id,
+                    exc,
+                )
 
     name = fields.Char(string="单据号", required=True, default="新建", copy=False)
     source_origin = fields.Selection(
@@ -777,7 +794,7 @@ class ScPaymentExecution(models.Model):
                 raise UserError(_("付款执行尚未完成统一审批流程。"))
             rec.state = "paid"
             rec._sync_payment_request_done()
-            rec.message_post(body=_("付款登记已完成，付款申请、付款台账与审计状态已同步。"))
+            rec._message_post_non_blocking(_("付款登记已完成，付款申请、付款台账与审计状态已同步。"))
 
     def _has_finance_confirm_access(self):
         return self.env.user.has_group("smart_construction_core.group_sc_cap_finance_manager")
@@ -912,7 +929,7 @@ class ScPaymentExecution(models.Model):
             )
             after = request._snapshot_audit_payload()
             request._audit_transition("payment_reversed", before, after, action_name="payment_execution_cancel")
-            rec.message_post(body=_("已撤销付款登记，并将付款申请退回已批准状态。"))
+            rec._message_post_non_blocking(_("已撤销付款登记，并将付款申请退回已批准状态。"))
 
     def _check_business_anchor_or_raise(self):
         for rec in self:

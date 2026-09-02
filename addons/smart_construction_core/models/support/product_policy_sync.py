@@ -95,7 +95,6 @@ LOCKED_TARGET_UNPUBLISHED_MENU_XMLIDS = {
     "smart_construction_core.menu_sc_project_wbs_cost",
     "smart_construction_core.menu_sc_cost_forecast_roadmap_v2",
     "smart_construction_core.menu_sc_cost_cashflow_roadmap_v2",
-    "smart_construction_core.menu_project_funding_actual_event_allocation",
     "smart_construction_core.menu_sc_noncash_business_group",
     "smart_construction_core.menu_sc_historical_payment_fact",
     "smart_construction_core.menu_sc_arrival_confirmation",
