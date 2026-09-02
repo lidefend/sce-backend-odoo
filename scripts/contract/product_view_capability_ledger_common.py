@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import ast
 from pathlib import Path
 import re
 from typing import Any, Iterator
@@ -64,11 +65,12 @@ ACTION_IDENTITY_FIELDS = {
 }
 READY_FINAL_ACTION_CAPABILITIES = {"action.confirm", "action.icon", "action.identity", "action.label", "action.type"}
 READY_FINAL_FIELD_DESCRIPTOR_CAPABILITIES = {
-    "field.identity", "field.label", "field.relation", "field.type", "field.widget",
+    "field.identity", "field.label", "field.options", "field.relation", "field.type", "field.widget",
 }
 FIELD_DESCRIPTOR_KEYS = {
     "field.identity": "name",
     "field.label": "label",
+    "field.options": "widget_options",
     "field.relation": "relation",
     "field.type": "type",
     "field.widget": "widget",
@@ -76,11 +78,25 @@ FIELD_DESCRIPTOR_KEYS = {
 FINAL_FIELD_PROJECTION_KEYS = {
     "field.identity": ("name", "name"),
     "field.label": ("label", "label"),
+    "field.options": ("componentConfig", "widgetOptions"),
     "field.relation": ("fieldInfo", "relation"),
     "field.type": ("fieldInfo", "type"),
     "field.widget": ("componentConfig", "nativeWidget"),
 }
 NATIVE_FONT_AWESOME_ICON = re.compile(r"^fa-[a-z0-9]+(?:-[a-z0-9]+)*$")
+
+
+def static_field_descriptor_value(capability_key: str, value: Any) -> Any:
+    """Return the safe semantic value for a native descriptor attribute."""
+    if capability_key != "field.options":
+        return value
+    if not isinstance(value, str):
+        return None
+    try:
+        parsed = ast.literal_eval(value)
+    except (SyntaxError, ValueError):
+        return None
+    return parsed if isinstance(parsed, dict) else None
 
 
 def static_boolean_value(value: Any) -> bool | None:
@@ -184,6 +200,9 @@ def match_normalized_atom(
         if atom.get("view_type") != "form" or key not in READY_FINAL_FIELD_DESCRIPTOR_CAPABILITIES:
             return []
         attribute = FIELD_DESCRIPTOR_KEYS[key]
+        expected_value = static_field_descriptor_value(key, atom.get("canonical_value"))
+        if expected_value is None:
+            return []
         matches: list[dict[str, Any]] = []
         for carrier in carrier_entry.get("normalized_carriers", []):
             if carrier.get("source_selector") not in mapping.get("source_selectors", []):
@@ -201,19 +220,27 @@ def match_normalized_atom(
                         continue
                     if row.get("occurrence_index") != atom.get("occurrence_index"):
                         continue
+                    attributes = row.get("attributes") if isinstance(row.get("attributes"), dict) else {}
                     descriptor = row.get("fieldInfo") if isinstance(row.get("fieldInfo"), dict) else {}
-                    if descriptor.get(attribute) != atom.get("canonical_value"):
+                    if key == "field.options" and attributes.get("options") != atom.get("canonical_value"):
                         continue
+                    if descriptor.get(attribute) != expected_value:
+                        continue
+                    raw_region = "attributes" if key == "field.options" else "fieldInfo"
+                    raw_key = "options" if key == "field.options" else attribute
                     selector = (
                         str(carrier.get("artifact_selector") or "")
                         + relative_pointer
-                        + "/fieldInfo/"
-                        + _pointer_escape(attribute)
+                        + f"/{raw_region}/"
+                        + _pointer_escape(raw_key)
                     )
                     matches.append({
                         "raw_selector": selector,
-                        "raw_value": descriptor[attribute],
-                        "semantic_selector": selector,
+                        "raw_value": attributes["options"] if key == "field.options" else descriptor[attribute],
+                        "semantic_selector": (
+                            str(carrier.get("artifact_selector") or "")
+                            + relative_pointer + "/fieldInfo/" + _pointer_escape(attribute)
+                        ),
                         "semantic_value": descriptor[attribute],
                     })
         return matches
@@ -361,6 +388,9 @@ def match_final_field_descriptor(atom: dict[str, Any], carrier_entry: dict[str, 
     ), None)
     rows = carrier.get("value") if isinstance(carrier, dict) and isinstance(carrier.get("value"), list) else []
     attribute = FIELD_DESCRIPTOR_KEYS[key]
+    expected_value = static_field_descriptor_value(key, atom.get("canonical_value"))
+    if expected_value is None:
+        return []
     projection_region, projection_key = FINAL_FIELD_PROJECTION_KEYS[key]
     component_key = "fieldType" if key == "field.type" else "relation" if key == "field.relation" else ""
     matches: list[dict[str, Any]] = []
@@ -373,10 +403,10 @@ def match_final_field_descriptor(atom: dict[str, Any], carrier_entry: dict[str, 
             continue
         descriptor = row.get("fieldInfo") if isinstance(row.get("fieldInfo"), dict) else {}
         component = row.get("componentConfig") if isinstance(row.get("componentConfig"), dict) else {}
-        if descriptor.get(attribute) != atom.get("canonical_value"):
+        if descriptor.get(attribute) != expected_value:
             continue
         projection = row if projection_region in {"name", "label"} else descriptor if projection_region == "fieldInfo" else component
-        if projection.get(projection_key) != atom.get("canonical_value"):
+        if projection.get(projection_key) != expected_value:
             continue
         if component_key and component.get(component_key) != atom.get("canonical_value"):
             continue

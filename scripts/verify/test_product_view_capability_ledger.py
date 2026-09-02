@@ -250,6 +250,34 @@ class ProductViewCapabilityLedgerTests(unittest.TestCase):
         carrier["normalized_carriers"][0]["value"]["layout"][0]["fieldInfo"]["name"] = "company_id"
         self.assertEqual(match_normalized_atom(atom, mapping, carrier), [])
 
+    def test_form_field_options_require_safe_literal_and_structured_equivalence(self) -> None:
+        atom = {
+            "view_type": "form", "capability_key": "field.options", "attribute": "options",
+            "native_locator": "/form[1]/field[1]", "occurrence_index": 1,
+            "canonical_value": "{'no_create': True}",
+        }
+        mapping = {
+            "mapping_status": "proven", "matcher": "native_field_descriptor_identity",
+            "source_selectors": ["/data/views/form"], "value_regions": ["/layout"],
+        }
+        carrier = {"normalized_carriers": [{
+            "source_selector": "/data/views/form",
+            "artifact_selector": "/entries/0/normalized_carriers/0/value",
+            "value": {"layout": [{
+                "native_locator": atom["native_locator"], "occurrence_index": 1,
+                "attributes": {"options": "{'no_create': True}"},
+                "fieldInfo": {"widget_options": {"no_create": True}},
+            }]},
+        }]}
+
+        matches = match_normalized_atom(atom, mapping, carrier)
+
+        self.assertEqual(len(matches), 1)
+        self.assertEqual(matches[0]["raw_value"], "{'no_create': True}")
+        self.assertEqual(matches[0]["semantic_value"], {"no_create": True})
+        atom["canonical_value"] = "dict(no_create=True)"
+        self.assertEqual(match_normalized_atom(atom, mapping, carrier), [])
+
     def test_final_field_descriptor_match_requires_contract_v2_projection_equivalence(self) -> None:
         atom = {
             "view_type": "form", "capability_key": "field.type", "attribute": "type",
@@ -315,6 +343,27 @@ class ProductViewCapabilityLedgerTests(unittest.TestCase):
 
         self.assertEqual(len(match_final_field_descriptor(atom, carrier)), 1)
         carrier["final_contract_capture"]["carriers"][0]["value"][0]["name"] = "company_id"
+        self.assertEqual(match_final_field_descriptor(atom, carrier), [])
+
+    def test_final_field_options_require_descriptor_and_component_agreement(self) -> None:
+        atom = {
+            "view_type": "form", "capability_key": "field.options", "attribute": "options",
+            "native_locator": "/form[1]/field[1]", "occurrence_index": 1,
+            "canonical_value": "{'no_create': True}",
+        }
+        carrier = {"final_contract_capture": {"status": "complete", "carriers": [{
+            "source_selector": "/data/layoutContract/containerTree",
+            "artifact_selector": "/entries/0/final_contract_capture/carriers/0/value",
+            "value": [{
+                "type": "field", "name": "partner_id",
+                "nativeLocator": atom["native_locator"], "occurrenceIndex": 1,
+                "fieldInfo": {"widget_options": {"no_create": True}},
+                "componentConfig": {"widgetOptions": {"no_create": True}},
+            }],
+        }]}}
+
+        self.assertEqual(len(match_final_field_descriptor(atom, carrier)), 1)
+        carrier["final_contract_capture"]["carriers"][0]["value"][0]["componentConfig"]["widgetOptions"] = {}
         self.assertEqual(match_final_field_descriptor(atom, carrier), [])
 
     def test_final_object_action_match_requires_exact_rule_and_status(self) -> None:

@@ -89,24 +89,24 @@ goal:
       title: form_tree_search_kanban_semantic_closure
       status: planned
       current_increment:
-        id: Q3-3
-        title: final_contract_field_identity_label_widget_closure
+        id: Q3-4
+        title: static_field_options_contract_consumption_closure
         status: verified
         result:
-          - form_field_identity_label_and_widget_require_exact_native_locator_and_occurrence_equivalence
-          - normalized_field_info_and_final_contract_v2_projection_must_preserve_the_same_canonical_value
-          - field_identity_requires_top_level_name_and_descriptor_name_agreement
-          - field_widget_requires_component_native_widget_and_descriptor_widget_agreement
-          - missing_final_field_projection_is_classified_as_semantic_carrier_missing_not_dynamic_fallback
+          - static_native_field_options_are_safely_parsed_without_expression_evaluation
+          - normalized_widget_options_and_final_component_widget_options_must_be_structurally_equivalent
+          - contract_v2_field_descriptor_store_preserves_widget_options_for_canonical_field_rendering
+          - dynamic_or_unattributed_options_remain_fail_closed_as_unsupported
           - local_clean_capability_ledger_gate_passes_with_zero_silent_loss
         terminal_counts:
-          ready: 6448
+          ready: 6492
           fallback: 797
-          unsupported: 25406
+          unsupported: 25362
           silent_loss: 0
         promoted_form_field_descriptors:
           field_identity_ready: 2136
           field_label_ready: 108
+          field_options_ready: 44
           field_relation_ready: 489
           field_type_ready: 2136
           field_widget_ready: 12

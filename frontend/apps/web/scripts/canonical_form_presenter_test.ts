@@ -1122,6 +1122,16 @@ assert.deepEqual(
   [['draft', 'Draft'], ['done', 'Done']],
   'native fieldDescriptor selection must remain available to statusbar rendering',
 );
+const descriptorWidgetOptionsSnapshot = snapshot();
+descriptorWidgetOptionsSnapshot.layoutContract.containerTree[0].children[0].widgetList[0].componentConfig.widgetOptions = {
+  no_create: true,
+  no_quick_create: true,
+};
+assert.deepEqual(
+  resolveContractV2FieldDescriptorMap(createContractV2Store(descriptorWidgetOptionsSnapshot)).name?.widgetOptions,
+  { no_create: true, no_quick_create: true },
+  'canonical widget options must remain structured and available to field rendering',
+);
 const model = presentContractV2Form(store, 'edit');
 assert.deepEqual(model.responsive, {
   adaptMode: 'pc',

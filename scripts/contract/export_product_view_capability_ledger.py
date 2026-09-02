@@ -26,6 +26,9 @@ INTERACTION_EVIDENCE_SYMBOL = "validateCanonicalFormActionExecutors"
 
 def _interaction_evidence_symbol(capability_key: str) -> str:
     return (
+        "resolveContractV2FieldDescriptorMap"
+        if capability_key == "field.options"
+        else
         "presentContractV2Form"
         if capability_key in READY_FINAL_FIELD_DESCRIPTOR_CAPABILITIES
         else
