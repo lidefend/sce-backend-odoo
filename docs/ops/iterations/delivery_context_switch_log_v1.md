@@ -7118,3 +7118,28 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   acceptance for payment and project remains pending because the governed demo
   synchronization expired the existing session; no browser result is claimed
   until a user login is available.
+
+## 2026-09-02 — Canonical action execution identity closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `5bbe56dc`.
+- Formal Product Layer / Layer Target / Module: P0 canonical action execution /
+  Contract V2 normalized status and form-action projection /
+  `frontend/apps/web`.
+- Product defect and repair: a real finance-manager payment request supplied
+  one authorised native action with an exact backend identity and native
+  occurrence, but the normalized status projection discarded the backend
+  identity and the runtime action projection discarded the native occurrence.
+  The unified executor therefore failed closed with
+  `CANONICAL_FORM_ACTION_EXECUTION_ADAPTER_MISSING`. Both authority fields now
+  survive the existing Contract V2 projection chain; no action inference,
+  model special case, alternate contract, or permission expansion was added.
+- Acceptance evidence: the 142-case canonical presenter suite and development
+  frontend build passed. In the logged-in browser, real
+  `payment.request/167` rendered without the adapter error, exposed exactly one
+  enabled primary action (`提交审批`), placed current task and blockers before
+  required input, kept supplemental information collapsed, and retained
+  relation and audit regions. Real project creation then rendered with exactly
+  one enabled primary action (`创建项目`); its project-manager relation displayed
+  `Demo-全能力` rather than raw value `50`. The activity-page component retained
+  both the payment request and project-initiation pages simultaneously.

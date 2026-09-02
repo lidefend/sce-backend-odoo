@@ -138,6 +138,7 @@ export function collectContractV2ButtonStatusById(store: ContractV2NormalizedSto
   store.buttonStatusById.forEach((status, btnId) => {
     out[btnId] = {
       btnId,
+      ...(status.backendIdentity ? { backendIdentity: status.backendIdentity } : {}),
       ...(typeof status.visible === 'boolean' ? { visible: status.visible } : {}),
       ...(typeof status.disabled === 'boolean' ? { disabled: status.disabled } : {}),
       ...(status.reasonCode ? { reasonCode: status.reasonCode } : {}),

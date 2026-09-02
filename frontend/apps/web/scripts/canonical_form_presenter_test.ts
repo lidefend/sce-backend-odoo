@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import contractV2Schema from '../../../../docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json';
 import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 import {
-  createContractV2Store, resolveContractV2EffectiveFormCapabilities, resolveContractV2FieldDescriptorMap,
+  collectContractV2ButtonStatusById, createContractV2Store,
+  resolveContractV2EffectiveFormCapabilities, resolveContractV2FieldDescriptorMap,
 } from '../src/app/contracts/v2/store';
 import type { ContractV2FormStructureRoleName, ContractV2Snapshot } from '../src/app/contracts/v2/types';
 import {
@@ -2300,6 +2301,11 @@ resolvedDuplicateSubmit.statusContract.buttonStatus = [
   },
 ];
 const decodedResolvedDuplicateSubmit = decodeContractV2Snapshot(resolvedDuplicateSubmit);
+assert.equal(
+  collectContractV2ButtonStatusById(createContractV2Store(decodedResolvedDuplicateSubmit))['btn.native_submit']?.backendIdentity,
+  'native_button:object:action_submit:/form[1]/header[1]/button[1]:1',
+  'button status projection must preserve the backend identity used by the unified action executor',
+);
 assert.deepEqual(
   decodedResolvedDuplicateSubmit.actionContract.primaryResolution,
   resolvedDuplicateSubmit.actionContract.primaryResolution,
@@ -2395,6 +2401,7 @@ const mergedWinner = {
   actionId: 'action.product_submit',
   actionKey: 'product_action_submit',
   button: { name: 'action_submit', type: 'object' },
+  nativeIdentity: occurrenceIdentity,
 };
 const mergedWinnerStatus = {
   btnId: 'native_action_submit', visible: true, disabled: false,
@@ -2409,6 +2416,11 @@ assert.deepEqual(
   runtimeActions.map((action) => action.authorityActionId),
   ['action.product_submit'],
   'runtime action projection must join merged winners to status by backend identity',
+);
+assert.deepEqual(
+  runtimeActions[0]?.nativeIdentity,
+  occurrenceIdentity,
+  'runtime action projection must retain the authoritative native occurrence for exact executor matching',
 );
 assert.deepEqual(
   buildContractFormActions({

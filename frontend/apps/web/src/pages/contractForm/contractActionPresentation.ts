@@ -239,6 +239,7 @@ export function buildContractFormActions(params: {
       key,
       authorityActionId,
       backendIdentity,
+      nativeIdentity: parseMaybeJsonRecord(row.nativeIdentity || row.native_identity),
       label: normalizeActionLabel(row.label, key),
       kind: effectiveKind,
       level,
