@@ -57,6 +57,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection silently narrows aggregation to the first monetary column")
     if "one2manyCanUnlink: (name: string) => boolean;" not in relation_types:
         failures.append("detail collection adapter omits backend unlink authority")
+    if "return policies.can_create === true;" not in relation_utils:
+        failures.append("detail collection create authority does not fail closed")
     if "return policies.can_unlink === true;" not in relation_utils:
         failures.append("detail collection unlink authority does not fail closed")
     if 'v-if="adapter.one2manyCanUnlink(field.name)"' not in renderer:
@@ -71,6 +73,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection inputs do not consistently consume inline-edit authority")
     if "if (!one2manyCanInlineEdit(fieldName)) return;" not in action_presentation:
         failures.append("detail collection field update handler does not fail closed")
+    if "if (!one2manyCanCreate(fieldName)) return;" not in action_presentation:
+        failures.append("detail collection row creation handler does not fail closed")
     if "<ScInput" not in renderer or "<ScSelect" not in renderer:
         failures.append("editable detail rows bypass the governed input/select primitives")
     if "--sc-component-relation-dropdown-z-index" not in renderer or "--sc-component-relation-dropdown-shadow" not in renderer:

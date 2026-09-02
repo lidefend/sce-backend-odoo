@@ -131,6 +131,26 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
         failures = validate(read_text)
         self.assertTrue(any("field update handler" in item for item in failures))
 
+    def test_create_policy_default_allow_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("one2manyUtils.ts"):
+                return value.replace("return policies.can_create === true;", "return policies.can_create !== false;")
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("create authority does not fail closed" in item for item in failures))
+
+    def test_unguarded_create_handler_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordActionPresentation.ts"):
+                return value.replace("if (!one2manyCanCreate(fieldName)) return;", "")
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("row creation handler" in item for item in failures))
+
 
 if __name__ == "__main__":
     unittest.main()

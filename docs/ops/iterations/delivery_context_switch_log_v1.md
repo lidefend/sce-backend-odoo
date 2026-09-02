@@ -7669,3 +7669,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   x2many inline-edit wiring guard, strict Vue typecheck, development build,
   refreshed productization inventories with zero gaps, and the complete
   `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — One2many create authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `32fc4de1`.
+- Product defect and repair: the shared detail adapter treated an absent
+  `policies.can_create` value as permission to add a row, and the creation
+  handler called the draft runtime without an independent authority check.
+  Create now requires an explicit backend grant; both the governed button and
+  handler fail closed. The implementation consumes the existing subview policy
+  and adds no parallel contract or frontend business inference.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey passed after rebuilding, preserving three independent activity
+  pages, unsaved draft and dirty-close behavior, readable project relation
+  facts, one editable payment attachment entry, zero browser errors, zero
+  mutations, zero execute requests, and no 390px horizontal overflow.
+- Verification: 15 professional detail collection counterexample tests,
+  strict Vue typecheck, development build, refreshed productization
+  inventories with zero gaps, and the complete `make
+  verify.frontend.quick.gate` passed.

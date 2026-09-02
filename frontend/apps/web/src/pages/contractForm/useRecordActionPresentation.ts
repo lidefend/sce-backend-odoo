@@ -338,7 +338,10 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     one2manyCanInlineEdit,
     one2manyCanUnlink,
     one2manyCreateLabel,
-    addOne2manyRow,
+    addOne2manyRow: (fieldName: string) => {
+      if (!one2manyCanCreate(fieldName)) return;
+      addOne2manyRow(fieldName);
+    },
     one2manySummary,
     isOne2manyHydrating,
     visibleOne2manyRows,

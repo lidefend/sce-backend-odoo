@@ -246,7 +246,7 @@ export function one2manyRowActionsFromSubview(subview: unknown) {
 }
 
 export function one2manyCanCreateFromPolicies(policies: Record<string, unknown>) {
-  return policies.can_create !== false;
+  return policies.can_create === true;
 }
 
 export function one2manyCanUnlinkFromPolicies(policies: Record<string, unknown>) {
