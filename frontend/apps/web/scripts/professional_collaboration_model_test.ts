@@ -21,9 +21,11 @@ assert.equal(canDeleteCollaborationAttachment({ key: 'missing-delete', type: 'at
 assert.equal(canDeleteCollaborationAttachment({ key: 'wrong-intent', type: 'attachment', attachment: { id: 1, can_delete: true, delete_intent: 'file.delete' } } as never), false);
 assert.equal(canDeleteCollaborationAttachment({ key: 'delete', type: 'attachment', attachment: { id: 1, can_delete: true, delete_intent: 'chatter.attachment.delete' } } as never), true);
 assert.equal(canUpdateCollaborationActivity({ key: 'missing', type: 'activity', activity: { id: 1 } } as never, 'done'), false);
-assert.equal(canUpdateCollaborationActivity({ key: 'denied', type: 'activity', activity: { id: 1, can_cancel: false } } as never, 'cancel'), false);
-assert.equal(canUpdateCollaborationActivity({ key: 'complete', type: 'activity', activity: { id: 1, can_complete: true } } as never, 'done'), true);
-assert.equal(canUpdateCollaborationActivity({ key: 'cancel', type: 'activity', activity: { id: 1, can_cancel: true } } as never, 'cancel'), true);
+assert.equal(canUpdateCollaborationActivity({ key: 'wrong-intent', type: 'activity', activity: { id: 1, can_complete: true, update_intent: 'mail.activity.update' } } as never, 'done'), false);
+assert.equal(canUpdateCollaborationActivity({ key: 'missing-id', type: 'activity', activity: { can_complete: true, update_intent: 'chatter.activity.update' } } as never, 'done'), false);
+assert.equal(canUpdateCollaborationActivity({ key: 'denied', type: 'activity', activity: { id: 1, can_cancel: false, update_intent: 'chatter.activity.update' } } as never, 'cancel'), false);
+assert.equal(canUpdateCollaborationActivity({ key: 'complete', type: 'activity', activity: { id: 1, can_complete: true, update_intent: 'chatter.activity.update' } } as never, 'done'), true);
+assert.equal(canUpdateCollaborationActivity({ key: 'cancel', type: 'activity', activity: { id: 1, can_cancel: true, update_intent: 'chatter.activity.update' } } as never, 'cancel'), true);
 assert.equal(canExecuteCollaborationCreateAction(null, 'message'), false);
 assert.equal(canExecuteCollaborationCreateAction({ enabled: false, mode: 'message' } as never, 'message'), false);
 assert.equal(canExecuteCollaborationCreateAction({ enabled: true, mode: 'note' } as never, 'message'), false);

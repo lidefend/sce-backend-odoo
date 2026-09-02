@@ -122,6 +122,16 @@ class TestChatterTimelineBoundaries(unittest.TestCase):
             {"code": "pending", "label": "待处理"},
         )
 
+    def test_activity_projection_exposes_only_exact_update_authority(self):
+        source = (Path(__file__).resolve().parents[1] / "handlers" / "chatter_timeline.py").read_text(encoding="utf-8")
+        activity_projection = source.split('"type": "activity"', 1)[1].split("return items", 1)[0]
+
+        self.assertIn('"update_intent": "chatter.activity.update"', activity_projection)
+        self.assertIn('"can_complete": is_assignee or is_admin', activity_projection)
+        self.assertIn('"can_cancel": is_assignee or is_admin or is_owner', activity_projection)
+        self.assertNotIn('"can_edit"', activity_projection)
+        self.assertNotIn('"can_delete"', activity_projection)
+
     def test_attachment_download_projection_requires_exact_authorized_subject(self):
         project = self.module._attachment_download_projection(
             "project.project", 7, "project.project", 7, {"project.project"},

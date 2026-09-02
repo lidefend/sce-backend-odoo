@@ -341,8 +341,7 @@ class ChatterTimelineHandler(BaseIntentHandler):
                         "status_label": status["label"],
                         "can_complete": is_assignee or is_admin,
                         "can_cancel": is_assignee or is_admin or is_owner,
-                        "can_edit": is_assignee or is_admin or is_owner,
-                        "can_delete": is_admin or is_owner,
+                        "update_intent": "chatter.activity.update",
                     },
                 }
             )

@@ -978,6 +978,21 @@ async function confirmAndDeleteNativeMessage(entry: ChatterTimelineEntry) {
   if (confirmed !== true) return;
   await deleteNativeMessage(entry);
 }
+async function confirmAndUpdateNativeActivity(entry: ChatterTimelineEntry, action: 'done' | 'cancel') {
+  if (action === 'done') {
+    await updateNativeActivity(entry, action);
+    return;
+  }
+  const activityTitle = String(entry.title || entry.body || '当前计划').trim() || '当前计划';
+  const assignee = String(entry.activity?.assignee_name || '').trim();
+  const target = assignee ? `计划“${activityTitle}”（负责人：${assignee}）` : `计划“${activityTitle}”`;
+  const confirmed = await intentConfirmationRef.value?.confirm({
+    actionLabel: '取消计划',
+    message: `${target}取消后将从待办中移除，是否继续？`,
+  });
+  if (confirmed !== true) return;
+  await updateNativeActivity(entry, action);
+}
 const model = computed(() => String(route.params.model || v2ContractStore.value?.snapshot.pageInfo.model || ''));
 const isManagedRelationCreateDialog = computed(() => Boolean(
   resolveRelationCreateDialogCancelMessage({
@@ -1643,7 +1658,7 @@ const {
   setRelationMultiField: (...args: Parameters<typeof setRelationMultiField>) => setRelationMultiField(...args), setSelectionField: (...args: Parameters<typeof setSelectionField>) => setSelectionField(...args), setTechnicalCompanionTextField: (...args: Parameters<typeof setTechnicalCompanionTextField>) => setTechnicalCompanionTextField(...args), setTextField: (...args: Parameters<typeof setTextField>) => setTextField(...args),
   shouldShowWorkflowAction, showHud, showOne2manyErrors,
   toDateInputValue, toDatetimeInputValue, toPositiveInt,
-  updateNativeActivity, useRecordCollaborationPresentation, useRecordContractSemantics,
+  updateNativeActivity: confirmAndUpdateNativeActivity, useRecordCollaborationPresentation, useRecordContractSemantics,
   useRecordFormFieldSchemas, useRecordFormLayout, v2ContractStore,
   validationErrors, visibleOne2manyRows,
 });

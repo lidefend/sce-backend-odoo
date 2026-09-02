@@ -8124,3 +8124,28 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   restored, three activity pages and the unsaved draft were retained, and the
   run reported zero intent failures, browser errors, unrelated mutations,
   execute requests, or desktop/390px overflow.
+
+## 2026-09-02 — Collaboration activity authority and cancellation closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `6287f40c`.
+- Product defect and repair: activity rows still exposed unused edit/delete
+  booleans and the frontend treated local action knowledge as sufficient
+  authority. The backend now projects the exact
+  `chatter.activity.update` intent, while the professional collaboration model
+  requires that intent, a positive activity identity, and the action-specific
+  backend capability. Cancelling a plan now uses the shared professional
+  confirmation dialog; cancelling the dialog preserves the activity and only
+  an explicit confirmation invokes the mutation.
+- Runtime correction: cancellation no longer posts a synthetic note. That note
+  accidentally coupled activity cancellation to outbound-email sender
+  configuration and caused an otherwise authorized cancellation to fail. The
+  activity update remains the sole cancellation mutation.
+- Real-page evidence: governed `project.project` and `payment.request` journeys
+  each cancelled the dialog once with the fixture preserved, then confirmed
+  one exact cancellation and observed the activity removed. The run retained
+  three independent activity pages and the unsaved project draft, restored
+  follower state, and reported zero intent failures, browser errors, unrelated
+  mutations, execute requests, or desktop/390px overflow. The complete
+  `verify.frontend.quick.gate` also passed after refreshing its generated
+  productization inventories.

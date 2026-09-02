@@ -349,7 +349,7 @@ export function useNativeChatterRuntime(params: {
         res_id: recordId,
         activity_id: activityId,
         action,
-        note: action === 'done' ? '计划已完成。' : '计划已取消。',
+        note: action === 'done' ? '计划已完成。' : undefined,
       });
       await loadTimeline();
     } catch (err) {

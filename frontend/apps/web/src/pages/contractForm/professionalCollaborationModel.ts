@@ -39,7 +39,9 @@ export function canUpdateCollaborationActivity(
   entry: ChatterTimelineEntry,
   action: 'done' | 'cancel',
 ): boolean {
-  if (entry.type !== 'activity') return false;
+  if (entry.type !== 'activity'
+    || entry.activity?.update_intent !== 'chatter.activity.update'
+    || Number(entry.activity.id || entry.id || 0) <= 0) return false;
   return action === 'done'
     ? entry.activity?.can_complete === true
     : entry.activity?.can_cancel === true;

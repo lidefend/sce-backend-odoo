@@ -27,8 +27,7 @@ export interface ChatterTimelineEntry {
     status_label?: string;
     can_complete?: boolean;
     can_cancel?: boolean;
-    can_edit?: boolean;
-    can_delete?: boolean;
+    update_intent?: string;
   };
   attachment?: {
     id?: number;

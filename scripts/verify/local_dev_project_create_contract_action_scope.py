@@ -444,6 +444,51 @@ for target_record in (project_record, payment_record):
         "delete_intent": "chatter.message.delete",
     })
 
+activity_cancel_journeys = []
+activity_type = env.ref("mail.mail_activity_data_todo")
+for target_record in (project_record, payment_record):
+    fixture_summary = "codex-activity-cancel-journey-%s-%s" % (
+        target_record._name.replace(".", "-"),
+        uuid.uuid4().hex[:10],
+    )
+    activity = user_env["mail.activity"].create({
+        "activity_type_id": int(activity_type.id),
+        "summary": fixture_summary,
+        "note": "temporary governed activity cancellation fixture",
+        "date_deadline": "2026-12-31",
+        "res_model_id": int(env["ir.model"]._get_id(target_record._name)),
+        "res_id": int(target_record.id),
+        "user_id": int(user.id),
+    })
+    timeline = _handler_data(ChatterTimelineHandler, {
+        "model": target_record._name,
+        "res_id": int(target_record.id),
+        "limit": 80,
+        "include_audit": False,
+    })
+    row = next((
+        item for item in timeline.get("items", [])
+        if isinstance(item, dict)
+        and item.get("type") == "activity"
+        and int((item.get("activity") or {}).get("id") or 0) == int(activity.id)
+    ), None)
+    if not row or (row.get("activity") or {}).get("can_cancel") is not True:
+        raise AssertionError("activity cancel authority was not projected: %s" % {
+            "model": target_record._name, "activity_id": activity.id, "row": row,
+        })
+    if (row.get("activity") or {}).get("update_intent") != "chatter.activity.update":
+        raise AssertionError("activity update intent was not exact: %s" % row)
+    if "can_edit" in (row.get("activity") or {}) or "can_delete" in (row.get("activity") or {}):
+        raise AssertionError("activity projection retained ghost capabilities: %s" % row)
+    activity_cancel_journeys.append({
+        "model": target_record._name,
+        "record_id": int(target_record.id),
+        "activity_id": int(activity.id),
+        "summary": fixture_summary,
+        "can_cancel": True,
+        "update_intent": "chatter.activity.update",
+    })
+
 # The browser runs in a separate Odoo transaction. Persist only these uniquely
 # prefixed fixtures; the shell wrapper's EXIT trap removes any survivor.
 env.cr.commit()
@@ -492,4 +537,5 @@ print("LOCAL_DEV_PROJECT_CREATE_ACTION_SCOPE_JSON=" + json.dumps({
     "follower_journeys": follower_journeys,
     "attachment_delete_journeys": attachment_delete_journeys,
     "message_delete_journeys": message_delete_journeys,
+    "activity_cancel_journeys": activity_cancel_journeys,
 }, ensure_ascii=False, sort_keys=True))

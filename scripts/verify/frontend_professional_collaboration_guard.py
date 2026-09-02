@@ -91,6 +91,12 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("activity composer authority must not fall back to an unrelated contract action")
     if "entry.activity?.can_complete === true" not in model or "entry.activity?.can_cancel === true" not in model:
         failures.append("activity update authority resolver must fail closed for both actions")
+    if "entry.activity?.update_intent !== 'chatter.activity.update'" not in model or "Number(entry.activity.id || entry.id || 0) <= 0" not in model:
+        failures.append("activity update authority must require the exact backend intent and activity identity")
+    if "confirmAndUpdateNativeActivity" not in contract_page or "actionLabel: '取消计划'" not in contract_page or "updateNativeActivity(entry, action)" not in contract_page:
+        failures.append("activity cancellation must settle through the professional confirmation component")
+    if "note: action === 'done' ? '计划已完成。' : undefined" not in chatter_runtime:
+        failures.append("activity cancellation must not require a mail-post side effect")
     if "activity.status === 'pending' || activity.status === 'overdue'" not in model or "'unknown'" not in model:
         failures.append("activity presentation must consume explicit backend status and fail closed when absent")
     if "deadline < now" in model or "new Date()" in model:
@@ -105,7 +111,7 @@ def main() -> int:
         print("[frontend_professional_collaboration_guard] FAIL")
         for failure in failures: print(f" - {failure}")
         return 1
-    print("[frontend_professional_collaboration_guard] PASS components=1 follower=backend_authoritative attachment_download=exact_intent attachment_delete=confirmed message_delete=confirmed")
+    print("[frontend_professional_collaboration_guard] PASS components=1 follower=backend_authoritative attachment_download=exact_intent attachment_delete=confirmed message_delete=confirmed activity_update=exact_intent activity_cancel=confirmed")
     return 0
 
 if __name__ == "__main__": raise SystemExit(main())
