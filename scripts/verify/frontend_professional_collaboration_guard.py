@@ -51,7 +51,13 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("attachment upload presentation must consume explicit upload authority")
     if "canUpdateCollaborationActivity(entry, action)" not in chatter_runtime:
         failures.append("activity update handler must independently enforce explicit backend authority")
-    if chatter_runtime.count("canExecuteCollaborationCreateAction(") < 2:
+    if "canReplyCollaborationMessage(entry)" not in timeline:
+        failures.append("message reply presentation must consume explicit backend authority")
+    if "entry.message?.can_reply !== true" not in chatter_runtime or "parent_id: replyTarget.value?.id" not in chatter_runtime:
+        failures.append("message reply handler must enforce authority and preserve the parent relation")
+    if "@reply=\"$emit('reply', $event)\"" not in panel:
+        failures.append("professional collaboration panel must settle the reply action")
+    if "canExecuteCollaborationCreateAction(action, 'activity')" not in chatter_runtime or "canExecuteCollaborationCreateAction(action, activeMode.value)" not in chatter_runtime:
         failures.append("collaboration create handlers must independently enforce the active contract action")
     if "nativeChatterActions.value.find((item) => item.mode === 'activity')" in read_text("frontend/apps/web/src/pages/contractForm/useRecordCollaborationPresentation.ts"):
         failures.append("activity composer authority must not fall back to an unrelated contract action")

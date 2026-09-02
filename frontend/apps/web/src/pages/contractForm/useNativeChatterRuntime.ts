@@ -28,6 +28,7 @@ export function useNativeChatterRuntime(params: {
   model: () => string;
   recordId: () => number;
   activeChatterAction: () => NativeChatterAction | null;
+  messageAction: () => NativeChatterAction | null;
 }) {
   const activeMode = ref('');
   const activeLabel = ref('');
@@ -47,6 +48,7 @@ export function useNativeChatterRuntime(params: {
   const timelineHasMore = ref(false);
   const timelineNextOffset = ref(0);
   const activityUpdatingIds = ref<number[]>([]);
+  const replyTarget = ref<{ id: number; author: string; body: string } | null>(null);
   let timelineRequestToken = 0;
 
   const selectedMentionUsers = computed(() => {
@@ -77,6 +79,7 @@ export function useNativeChatterRuntime(params: {
     selectedMentionUserIds.value = [];
     activityAssigneeId.value = 0;
     userQuery.value = '';
+    replyTarget.value = null;
   }
 
   async function loadTimeline(targetResId = params.recordId(), targetModel = params.model(), append = false) {
@@ -169,6 +172,22 @@ export function useNativeChatterRuntime(params: {
     error.value = `${action.label} 缺少可执行配置`;
   }
 
+  async function openReply(entry: ChatterTimelineEntry) {
+    const action = params.messageAction();
+    const messageId = Number(entry.message?.id || entry.id || 0);
+    if (entry.type !== 'message' || entry.message?.can_reply !== true || !messageId
+      || !canExecuteCollaborationCreateAction(action, 'message')) return;
+    activeMode.value = 'message';
+    activeLabel.value = action!.label;
+    replyTarget.value = {
+      id: messageId,
+      author: String(entry.message?.author_name || entry.typeLabel || '消息').trim(),
+      body: String(entry.body || entry.title || '').trim(),
+    };
+    error.value = '';
+    if (!userOptions.value.length && !usersLoading.value) await loadUsers('');
+  }
+
   async function scheduleActivity() {
     const action = params.activeChatterAction();
     if (!canExecuteCollaborationCreateAction(action, 'activity')) return;
@@ -226,9 +245,11 @@ export function useNativeChatterRuntime(params: {
         subject: activeLabel.value,
         mode: activeMode.value === 'note' ? 'note' : 'message',
         mention_user_ids: selectedMentionUserIds.value,
+        parent_id: replyTarget.value?.id,
       });
       draft.value = '';
       selectedMentionUserIds.value = [];
+      replyTarget.value = null;
       error.value = '';
       await loadTimeline();
     } catch (err) {
@@ -286,6 +307,7 @@ export function useNativeChatterRuntime(params: {
     timeline,
     timelineHasMore,
     activityUpdatingIds,
+    replyTarget,
     clearForRecordLoad,
     closeComposer,
     loadTimeline,
@@ -294,6 +316,7 @@ export function useNativeChatterRuntime(params: {
     selectMentionUser,
     removeMentionUser,
     openAction,
+    openReply,
     send,
     updateActivity,
   };

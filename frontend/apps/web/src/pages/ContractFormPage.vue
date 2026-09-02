@@ -899,6 +899,7 @@ const {
   timeline: chatterTimeline,
   timelineHasMore: chatterTimelineHasMore,
   activityUpdatingIds,
+  replyTarget,
   clearForRecordLoad: clearNativeChatterForRecordLoad,
   closeComposer: closeNativeChatterComposer,
   loadTimeline: loadNativeChatterTimeline,
@@ -907,12 +908,14 @@ const {
   selectMentionUser,
   removeMentionUser,
   openAction: openNativeChatterAction,
+  openReply: replyNativeChatter,
   send: sendNativeChatter,
   updateActivity: updateNativeActivity,
 } = useNativeChatterRuntime({
   model: () => model.value,
   recordId: () => recordId.value,
   activeChatterAction: () => activeChatterAction.value,
+  messageAction: () => messageAction.value,
 });
 const attachmentViewerRef = ref<NativeAttachmentViewerLike | null>(null);
 const chatterTimelineLoading = chatterLoading;
@@ -1540,7 +1543,7 @@ function completeRelationCreateDialog(result: RelationCreatedDialogResult) {
 }
 const {
   workflowEvidenceGateRows, contractActions, headerActions, bodyActions, contractFieldLabels,
-  contractFieldLabel, activeChatterAction, activeActivityAction, nativeAttachmentMaxBytes, nativeAttachmentUploadEnabled, nativeChatterActions, nativeAttachments,
+  contractFieldLabel, activeChatterAction, messageAction, activeActivityAction, nativeAttachmentMaxBytes, nativeAttachmentUploadEnabled, nativeChatterActions, nativeAttachments,
   nativeCollaborationPanelProps, nativeCollaborationPanelListeners, resolveNativeAttachmentLabel, hasNativeChatterNode, nativeLayoutContainsType,
   contractActionFromNativeRow, resolveNativeActionState, isUnifiedSubmitMethod, isUnifiedSubmitAction,
   primarySubmitAction, primaryCreateFooterAction, runNativeLayoutAction, advancedFieldNames, contractVisibleFields,
@@ -1561,7 +1564,7 @@ const {
   addOne2manyRow, advancedExpanded, applyPageStatusEvent,
   applyWorkflowAvailability, attachmentError, attachmentUploading,
   buildContractFormActions, busy, busyKind,
-  canOpenRelationRecordForm, changedFieldGroupDraft, chatterDraft,
+  canOpenRelationRecordForm, changedFieldGroupDraft, chatterDraft, replyTarget,
   chatterError, chatterPosting, chatterTimeline, chatterTimelineHasMore, chatterTimelineLoading,
   closeNativeChatterComposer, collaborationUserChoices, collaborationUserOptions,
   collaborationUserQuery, collaborationUsersLoading, collectContractV2ButtonStatusById,
@@ -1585,7 +1588,7 @@ const {
   one2manyColumnDisplayValue, one2manyColumnInputType, one2manyColumns,
   one2manyCreateLabel, one2manyRowErrors, one2manyRowHints,
   one2manyRowLabel, one2manyRowStateLabel, one2manySummary, isOne2manyHydrating,
-  openNativeAttachment, openNativeChatterAction, openRelationCreateForm,
+  openNativeAttachment, openNativeChatterAction, replyNativeChatter, openRelationCreateForm,
   parseMaybeJsonRecord, pendingNativeAttachments, policyContext,
   queryMany2oneInline: (...args: Parameters<typeof queryMany2oneInline>) => queryMany2oneInline(...args), recordId, relationCreateMode,
   relationIds, relationInlineCreate, relationKeyword,

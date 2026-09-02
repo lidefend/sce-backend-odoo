@@ -110,7 +110,14 @@ class ChatterTimelineHandler(BaseIntentHandler):
 
         try:
             fetch_limit = offset + limit + 1
-            messages = self._load_messages(model, record.id, fetch_limit)
+            can_reply = False
+            try:
+                Model.check_access_rights("write")
+                record.check_access_rule("write")
+                can_reply = True
+            except AccessError:
+                can_reply = False
+            messages = self._load_messages(model, record.id, fetch_limit, can_reply=can_reply)
             attachments = self._load_attachments(model, record.id, fetch_limit)
             activity_items = self._load_activities(model, record.id, fetch_limit)
             audit_items = self._load_audit_items(model, record.id, fetch_limit) if include_audit else []
@@ -164,7 +171,7 @@ class ChatterTimelineHandler(BaseIntentHandler):
             "meta": {"trace_id": trace_id, "source_authority": self.source_authority_contract()},
         }
 
-    def _load_messages(self, model: str, res_id: int, limit: int) -> List[Dict[str, Any]]:
+    def _load_messages(self, model: str, res_id: int, limit: int, *, can_reply: bool = False) -> List[Dict[str, Any]]:
         Message = self.env["mail.message"]
         rows = Message.search(
             [("model", "=", model), ("res_id", "=", res_id)],
@@ -191,6 +198,8 @@ class ChatterTimelineHandler(BaseIntentHandler):
                     "subtype": subtype_xmlid,
                     "message": {
                         "id": row.id,
+                        "author_name": _message_author_display(row),
+                        "can_reply": bool(can_reply),
                         "can_edit": is_admin or is_owner,
                         "can_delete": is_admin or is_owner,
                     },

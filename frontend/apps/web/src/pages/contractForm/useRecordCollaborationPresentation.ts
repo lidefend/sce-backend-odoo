@@ -32,6 +32,7 @@ export function useRecordCollaborationPresentation(context: {
   activeChatterMode: MutableRef<string>;
   activeChatterLabel: MutableRef<string>;
   chatterDraft: MutableRef<string>;
+  replyTarget: MutableRef<{ id: number; author: string; body: string } | null>;
   activitySummary: MutableRef<string>;
   activityDeadline: MutableRef<string>;
   activityNote: MutableRef<string>;
@@ -59,6 +60,7 @@ export function useRecordCollaborationPresentation(context: {
   removePendingNativeAttachment: (...args: any[]) => unknown;
   selectMentionUser: (...args: any[]) => unknown;
   sendNativeChatter: (...args: any[]) => unknown;
+  replyNativeChatter: (...args: any[]) => unknown;
   updateNativeActivity: (...args: any[]) => unknown;
   loadMoreNativeChatterTimeline: (...args: any[]) => unknown;
 }) {
@@ -95,6 +97,7 @@ export function useRecordCollaborationPresentation(context: {
   const activeActivityAction = computed(() => activeChatterAction.value?.mode === 'activity'
     ? activeChatterAction.value
     : null);
+  const messageAction = computed(() => nativeChatterActions.value.find((item) => item.mode === 'message' && item.enabled) || null);
   const activityFieldLabel = (name: string, fallback: string) => nativeActivityFieldLabel(activeActivityAction.value, name, fallback);
   const activitySummaryLabel = computed(() => activityFieldLabel('summary', '摘要'));
   const activityDeadlineLabel = computed(() => activityFieldLabel('date_deadline', '截止日期'));
@@ -126,7 +129,7 @@ export function useRecordCollaborationPresentation(context: {
     attachmentUploading: context.attachmentUploading.value, attachmentUploadingLabel: nativeAttachmentUploadingLabel.value,
     attachmentUploadEnabled: nativeAttachmentUploadEnabled.value,
     attachmentViewLabel: nativeAttachmentViewLabel.value, busy: context.busy.value, chatterDraft: context.chatterDraft.value,
-    chatterError: context.chatterError.value, collaborationUserChoices: context.collaborationUserChoices.value,
+    chatterError: context.chatterError.value, replyTarget: context.replyTarget.value, collaborationUserChoices: context.collaborationUserChoices.value,
     collaborationUserQuery: context.collaborationUserQuery.value, hasAttachments: Boolean(nativeAttachments.value),
     pendingAttachments: context.pendingNativeAttachments.value, posting: context.chatterPosting.value,
     selectedMentionUsers: context.selectedMentionUsers.value, submitDisabled: isNativeChatterSubmitDisabled.value,
@@ -143,6 +146,7 @@ export function useRecordCollaborationPresentation(context: {
     'remove-pending-attachment': context.removePendingNativeAttachment,
     'select-activity-assignee': (id) => { context.activityAssigneeId.value = id; },
     'select-mention-user': context.selectMentionUser, 'send-chatter': context.sendNativeChatter,
+    reply: context.replyNativeChatter,
     'update-activity': context.updateNativeActivity, 'update:activityDeadline': (value) => { context.activityDeadline.value = value; },
     'update:activityNote': (value) => { context.activityNote.value = value; },
     'update:activitySummary': (value) => { context.activitySummary.value = value; },
@@ -151,6 +155,7 @@ export function useRecordCollaborationPresentation(context: {
   };
   return {
     activeChatterAction,
+    messageAction,
     activeActivityAction,
     nativeAttachmentMaxBytes,
     nativeAttachmentUploadEnabled,

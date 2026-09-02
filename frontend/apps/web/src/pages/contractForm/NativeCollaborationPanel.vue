@@ -27,6 +27,7 @@
       :posting="posting"
       :users-loading="usersLoading"
       :draft="chatterDraft"
+      :reply-target="replyTarget"
       :placeholder="activePlaceholder"
       :submit-label="activeSubmitLabel"
       :posting-label="activePostingLabel"
@@ -84,6 +85,7 @@
       :timeline-loading="timelineLoading"
       @update-activity="forwardActivityUpdate"
       @open-attachment="$emit('open-attachment', $event)"
+      @reply="$emit('reply', $event)"
       @load-more="$emit('load-more-timeline')"
     />
   </section>
@@ -117,6 +119,7 @@ export type NativeCollaborationPanelProps = {
   activeSubmitLabel: string;
   activePostingLabel: string;
   chatterDraft: string;
+  replyTarget: { id: number; author: string; body: string } | null;
   collaborationUserQuery: string;
   selectedMentionUsers: CollaborationUserOption[];
   collaborationUserChoices: CollaborationUserOption[];
@@ -165,6 +168,7 @@ export type NativeCollaborationPanelListeners = {
   'update-activity': (entry: ChatterTimelineEntry, action: 'done' | 'cancel') => void;
   'open-attachment': (attachment: NonNullable<ChatterTimelineEntry['attachment']>) => void;
   'load-more-timeline': () => void;
+  reply: (entry: ChatterTimelineEntry) => void;
 };
 
 const props = defineProps<NativeCollaborationPanelProps>();
@@ -195,6 +199,7 @@ const emit = defineEmits<{
   'update-activity': [entry: ChatterTimelineEntry, action: 'done' | 'cancel'];
   'open-attachment': [attachment: NonNullable<ChatterTimelineEntry['attachment']>];
   'load-more-timeline': [];
+  reply: [entry: ChatterTimelineEntry];
 }>();
 
 function forwardActivityUpdate(entry: ChatterTimelineEntry, action: 'done' | 'cancel') {

@@ -52,6 +52,20 @@ class ProfessionalCollaborationGuardTests(unittest.TestCase):
                 return value.replace(" || !canUpdateCollaborationActivity(entry, action)", "")
             return value
         self.assertTrue(any("activity update handler" in item for item in validate(read_text)))
+    def test_message_reply_cannot_fail_open(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalCollaborationTimeline.vue"):
+                return value.replace("canReplyCollaborationMessage(entry)", "true")
+            return value
+        self.assertTrue(any("reply presentation" in item for item in validate(read_text)))
+    def test_message_reply_handler_must_preserve_parent(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useNativeChatterRuntime.ts"):
+                return value.replace("parent_id: replyTarget.value?.id,", "")
+            return value
+        self.assertTrue(any("preserve the parent" in item for item in validate(read_text)))
     def test_activity_update_missing_authority_cannot_fail_open(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")

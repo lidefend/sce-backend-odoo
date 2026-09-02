@@ -35,6 +35,10 @@ export function canUpdateCollaborationActivity(
     : entry.activity?.can_cancel === true;
 }
 
+export function canReplyCollaborationMessage(entry: ChatterTimelineEntry): boolean {
+  return entry.type === 'message' && entry.message?.can_reply === true && Number(entry.message.id || entry.id || 0) > 0;
+}
+
 export function canExecuteCollaborationCreateAction(
   action: NativeChatterAction | null | undefined,
   mode: string,

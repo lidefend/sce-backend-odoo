@@ -41,7 +41,11 @@ class _EmptySearchModel:
 
 
 class _Env(dict):
-    pass
+    user = types.SimpleNamespace(
+        _is_admin=lambda: False,
+        partner_id=types.SimpleNamespace(id=1),
+        id=1,
+    )
 
 
 def _load_handler():
@@ -201,7 +205,7 @@ class TestChatterTimelineBoundaries(unittest.TestCase):
             env=_Env({"x.model": _Model()}),
             params={"model": "x.model", "res_id": 7, "limit": 2, "offset": 2, "include_audit": False},
         )
-        handler._load_messages = lambda model, res_id, limit: [
+        handler._load_messages = lambda model, res_id, limit, can_reply=False: [
             {"key": "m-1", "type": "message", "at": "2026-08-11T12:00:00"},
             {"key": "m-2", "type": "message", "at": "2026-08-11T10:00:00"},
         ]
@@ -217,6 +221,20 @@ class TestChatterTimelineBoundaries(unittest.TestCase):
         self.assertEqual([item["key"] for item in data["items"]], ["m-2", "a-2"])
         self.assertEqual(data["paging"], {"offset": 2, "limit": 2, "next_offset": 4, "has_more": True})
         self.assertEqual(data["counts"]["total"], 2)
+
+    def test_message_loader_receives_explicit_write_authority(self):
+        handler = self.module.ChatterTimelineHandler(
+            env=_Env({"x.model": _Model()}),
+            params={"model": "x.model", "res_id": 7, "include_audit": False},
+        )
+        observed = []
+        handler._load_messages = lambda model, res_id, limit, can_reply=False: observed.append(can_reply) or []
+        handler._load_attachments = lambda model, res_id, limit: []
+        handler._load_activities = lambda model, res_id, limit: []
+
+        handler.handle()
+
+        self.assertEqual(observed, [True])
 
     def test_technical_audit_identifiers_are_not_product_labels(self):
         self.assertEqual(

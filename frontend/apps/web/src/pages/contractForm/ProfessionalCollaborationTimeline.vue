@@ -37,7 +37,7 @@
               <div class="native-chatter-message-header">
                 <span class="native-chatter-message-author">{{ messageInfo(entry).author }}</span>
                 <span v-if="messageInfo(entry).atLabel" class="native-chatter-message-time">{{ messageInfo(entry).atLabel }}</span>
-                <ScButton variant="ghost" size="small" class="native-chatter-message-reply" @click="emit('reply', entry)">回复</ScButton>
+                <ScButton v-if="canReplyCollaborationMessage(entry)" variant="ghost" size="small" class="native-chatter-message-reply" @click="emit('reply', entry)">回复</ScButton>
               </div>
               <span class="native-chatter-message-body">{{ messageInfo(entry).body }}</span>
             </div>
@@ -92,7 +92,7 @@ import type { ChatterTimelineEntry } from '../../api/chatter';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScInlineState from '../../components/design-system/ScInlineState.vue';
 import ScList, { type ScListItem } from '../../components/design-system/ScList.vue';
-import { canDownloadCollaborationAttachment, formatCollaborationTimelineMeta, parseAttachmentEntry, parseMessageEntry, parseActivityEntry, type ParsedAttachmentInfo, type ParsedMessageInfo, type ParsedActivityInfo } from './professionalCollaborationModel';
+import { canDownloadCollaborationAttachment, canReplyCollaborationMessage, formatCollaborationTimelineMeta, parseAttachmentEntry, parseMessageEntry, parseActivityEntry, type ParsedAttachmentInfo, type ParsedMessageInfo, type ParsedActivityInfo } from './professionalCollaborationModel';
 
 const props = defineProps<{ entries: ChatterTimelineEntry[]; activityUpdatingIds: number[]; attachmentViewLabel: string; timelineHasMore: boolean; timelineLoading: boolean }>();
 const emit = defineEmits<{

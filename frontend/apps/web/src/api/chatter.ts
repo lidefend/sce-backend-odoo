@@ -39,6 +39,8 @@ export interface ChatterTimelineEntry {
   };
   message?: {
     id?: number;
+    author_name?: string;
+    can_reply?: boolean;
     can_edit?: boolean;
     can_delete?: boolean;
   };

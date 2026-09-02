@@ -31,6 +31,13 @@
       </label>
     </template>
     <template v-else>
+      <div v-if="replyTarget" class="native-chatter-reply-target">
+        <span class="native-chatter-reply-icon">↩</span>
+        <div class="native-chatter-reply-content">
+          <span class="native-chatter-reply-author">回复 {{ replyTarget.author }}</span>
+          <span class="native-chatter-reply-body">{{ replyTarget.body }}</span>
+        </div>
+      </div>
       <label class="native-chatter-field">
         <span>提醒对象</span>
         <ScInput type="search" :model-value="collaborationUserQuery" :disabled="posting || usersLoading" :loading="usersLoading" placeholder="搜索姓名或账号" @update:model-value="emitCollaborationUserQuery" />
@@ -66,6 +73,7 @@ defineProps<{
   posting: boolean;
   usersLoading: boolean;
   draft: string;
+  replyTarget: { id: number; author: string; body: string } | null;
   placeholder: string;
   submitLabel: string;
   postingLabel: string;

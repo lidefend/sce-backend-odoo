@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { canDownloadCollaborationAttachment, canExecuteCollaborationCreateAction, canUpdateCollaborationActivity, collaborationCapabilityReadiness, formatCollaborationTimelineMeta, parseActivityEntry, visibleCollaborationTimeline } from '../src/pages/contractForm/professionalCollaborationModel';
+import { canDownloadCollaborationAttachment, canExecuteCollaborationCreateAction, canReplyCollaborationMessage, canUpdateCollaborationActivity, collaborationCapabilityReadiness, formatCollaborationTimelineMeta, parseActivityEntry, visibleCollaborationTimeline } from '../src/pages/contractForm/professionalCollaborationModel';
 import { nativeAttachmentUploadEnabled } from '../src/pages/contractForm/collaborationContract';
 
 assert.deepEqual(collaborationCapabilityReadiness({ hasCommentAction: true, hasAttachmentAuthority: true, hasActivityAction: true }), {
@@ -27,6 +27,9 @@ assert.equal(canExecuteCollaborationCreateAction({ enabled: true, mode: 'activit
 assert.equal(nativeAttachmentUploadEnabled({ enabled: true }), false);
 assert.equal(nativeAttachmentUploadEnabled({ enabled: true, upload: { enabled: false } }), false);
 assert.equal(nativeAttachmentUploadEnabled({ enabled: true, upload: { enabled: true } }), true);
+assert.equal(canReplyCollaborationMessage({ key: 'missing-reply', type: 'message', message: { id: 1 } } as never), false);
+assert.equal(canReplyCollaborationMessage({ key: 'missing-id', type: 'message', message: { can_reply: true } } as never), false);
+assert.equal(canReplyCollaborationMessage({ key: 'reply', type: 'message', message: { id: 1, can_reply: true } } as never), true);
 assert.deepEqual(parseActivityEntry({ key: 'missing-status', type: 'activity', title: '计划', activity: { id: 1, deadline: '2020-01-01' } } as never).status, 'unknown');
 assert.deepEqual(parseActivityEntry({ key: 'overdue', type: 'activity', title: '计划', activity: { id: 1, status: 'overdue', status_label: '已逾期' } } as never).statusLabel, '已逾期');
-console.log('[professional_collaboration_model_test] PASS cases=22');
+console.log('[professional_collaboration_model_test] PASS cases=25');

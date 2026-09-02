@@ -7987,3 +7987,26 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   counterexample tests, strict Vue typecheck, development build, refreshed
   zero-gap productization inventories, and the complete `make
   verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Collaboration message reply closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `9b709607`.
+- Product defect and repair: every message card displayed a reply action, but
+  the professional panel did not settle the emitted event, so clicking it had
+  no effect. The backend timeline now projects `can_reply` from the target
+  record's write ACL and record rule plus the authoritative message ID and
+  author. The timeline displays reply only for an explicit grant; the runtime
+  independently repeats that grant, binds the current message action, shows the
+  reply target, and sends the actual `parent_id` already supported by the
+  backend post handler. Missing, denied, stale, and non-message targets fail
+  closed without frontend model or role inference.
+- Real-page evidence: the rebuilt project-create/project-workspace/payment
+  journey passed with three independent activity pages, retained unsaved draft
+  and dirty-close warning, two readable project tender rows, one authorized
+  editable payment attachment uploader, zero browser errors, zero mutations,
+  zero execute requests, and no desktop or 390px horizontal overflow.
+- Verification: twenty-five collaboration model cases, sixteen structural and
+  counterexample tests, eleven backend timeline boundary tests, strict Vue
+  typecheck, development build, refreshed zero-gap productization inventories,
+  and the complete `make verify.frontend.quick.gate` passed.
