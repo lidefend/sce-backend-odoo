@@ -2203,6 +2203,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 unique=unique,
                 field_label=field_label,
                 governance=form_structure_governance,
+                navigation_title=str(source_contract.get("title") or "").strip(),
             )
             if attachment_field:
                 collaboration = source_contract.get("collaboration") if isinstance(source_contract.get("collaboration"), dict) else {}
@@ -2597,6 +2598,7 @@ class UiContractV2Handler(BaseIntentHandler):
         unique,
         field_label,
         governance: dict[str, Any] | None = None,
+        navigation_title: str = "",
     ) -> dict[str, Any]:
         common_source = (
             profile.get("form_structure_common_fields")
@@ -2765,7 +2767,7 @@ class UiContractV2Handler(BaseIntentHandler):
                         "kind": "business_form",
                         "factAuthority": "business_object_model_and_view",
                     },
-                    "navigation": {"title": "业务办理"},
+                    "navigation": {"title": navigation_title or "业务办理"},
                     "sourceSectionTitles": [row.get("title") for row in group_rows if row.get("title")],
                     "slots": [{
                         "slot": "configured_form",
@@ -2986,7 +2988,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 "kind": "business_form",
                 "factAuthority": "business_object_model_and_view",
             },
-            "navigation": {"title": "业务办理"},
+            "navigation": {"title": navigation_title or "业务办理"},
             "sourceSectionTitles": source_section_titles,
             "slots": slots,
             "fieldRoles": field_roles,
