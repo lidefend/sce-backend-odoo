@@ -14,6 +14,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     assembler = read_text("addons/smart_core/core/unified_page_contract_v2_assembler.py")
     x2many = read_text("frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue")
     relationship_fields = read_text("frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts")
+    relation_descriptor = read_text("frontend/apps/web/src/pages/contractForm/relationDescriptor.ts")
+    form_state = read_text("frontend/apps/web/src/pages/contractForm/useRecordFormState.ts")
     for key in ("sc.relation.many2one", "sc.relation.many2many", "sc.select.tags"):
         if key not in model or key not in registry or key not in assembler:
             failures.append(f"relation authority is incomplete for {key}")
@@ -59,6 +61,12 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     ):
         if marker not in relationship_fields:
             failures.append(f"one2many hydration lifecycle is incomplete: {marker}")
+    if "entry?.canCreate === true && entry.inlineCreate?.enabled" not in relation_descriptor:
+        failures.append("relation inline-create authority does not fail closed")
+    if "if (ttype === 'many2many')" in relation_descriptor:
+        failures.append("many2many inline-create retains a frontend default-allow fallback")
+    if "entry?.canCreate!==true||!relation" not in form_state:
+        failures.append("many2many quick-create handler does not independently fail closed")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
         if forbidden in component or forbidden in many2one or forbidden in model:
             failures.append(f"relation family contains forbidden product special case {forbidden}")

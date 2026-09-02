@@ -66,6 +66,27 @@ class ProfessionalRelationFieldGuardTests(unittest.TestCase):
             return value
         self.assertTrue(any("hydration lifecycle" in item for item in validate(read_text)))
 
+    def test_many2many_inline_create_default_allow_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("relationDescriptor.ts"):
+                return value.replace(
+                    "entry?.canCreate === true && entry.inlineCreate?.enabled",
+                    "entry?.canCreate !== false && entry.inlineCreate?.enabled",
+                )
+            return value
+
+        self.assertTrue(any("does not fail closed" in item for item in validate(read_text)))
+
+    def test_unguarded_many2many_quick_create_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordFormState.ts"):
+                return value.replace("entry?.canCreate!==true||!relation", "!relation")
+            return value
+
+        self.assertTrue(any("handler does not independently" in item for item in validate(read_text)))
+
 
 if __name__ == "__main__":
     unittest.main()

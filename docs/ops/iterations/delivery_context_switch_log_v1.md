@@ -7734,3 +7734,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   guard, strict Vue typecheck, development build, refreshed productization
   inventories with zero gaps, and the complete `make
   verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Many2many inline-create authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `c50860c9`.
+- Product defect and repair: when a relation-entry contract was absent, the
+  frontend still enabled inline creation for every many2many field, and the
+  quick-create handler relied only on that derived flag. The compatibility
+  default was removed. Inline create now requires both explicit backend
+  `can_create=true` and an enabled inline-create contract, while the write
+  handler independently verifies `can_create` before any create request. No
+  model-specific exception or client-side ACL inference was introduced.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey passed after rebuilding, preserving three independent activity
+  pages, unsaved draft and dirty-close behavior, readable relation facts, one
+  editable payment attachment entry, zero browser errors, zero mutations,
+  zero execute requests, and no 390px horizontal overflow.
+- Verification: 11 professional relation counterexample tests, relation-entry
+  guard, strict Vue typecheck, development build, refreshed productization
+  inventories with zero gaps, and the complete `make
+  verify.frontend.quick.gate` passed.
