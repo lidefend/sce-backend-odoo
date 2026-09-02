@@ -52,6 +52,7 @@ export type RelationFieldAdapter = {
   one2manyCreateLabel: (name: string, fieldLabel?: string) => string;
   addOne2manyRow: (name: string) => void;
   one2manySummary: (name: string) => string;
+  isOne2manyHydrating: (name: string) => boolean;
   visibleOne2manyRows: (name: string) => RelationFieldRow[];
   one2manyRowStateLabel: (row: RelationFieldRow) => string;
   one2manyColumns: (name: string) => RelationFieldColumn[];

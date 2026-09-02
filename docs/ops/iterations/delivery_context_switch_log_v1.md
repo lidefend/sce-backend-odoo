@@ -7482,3 +7482,29 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `联系人 / 银行` relation controls, kept one primary action on both pages, and
   showed zero horizontal overflow at 390px. No mutation or execute request was
   performed.
+
+## 2026-09-02 — Readonly relation hydration state closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `80a62588`.
+- Formal Product Layer / Layer Target / Module: P0 professional relation
+  presentation / canonical contract-form one2many hydration /
+  `frontend/apps/web`.
+- Product defect and repair: the record surface became visible before readable
+  one2many child records completed hydration, so a populated project tender
+  relation could briefly claim `暂无可展示记录`. Hydration state is now owned per
+  relation field and projected through the existing relation adapter; the
+  TDesign-backed inline state renders loading until that field settles, then
+  renders rows or a truthful empty state. No model, label, role, or status
+  special case and no parallel contract were added.
+- Browser evidence: the governed project-create/project-workspace/payment
+  journey resolved two populated tender rows with zero readonly empty labels,
+  kept three independent activity pages, retained the unsaved project draft,
+  preserved dirty-close confirmation, reported zero browser errors and zero
+  mutations, and showed no 390px horizontal overflow. The payment golden-page
+  readonly journey passed with 9 regions, zero false blocked primary actions,
+  zero mobile overflow, and an unchanged business fingerprint.
+- Verification: the professional relation guard executes 9 tests including
+  loading-authority and failure-reset counterexamples. Strict typecheck,
+  development build, refreshed repository-owned rendering inventories, and
+  the complete `make verify.frontend.quick.gate` passed.

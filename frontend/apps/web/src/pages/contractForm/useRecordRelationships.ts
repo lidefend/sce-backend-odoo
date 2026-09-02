@@ -126,6 +126,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     one2manySummary,
     hydrateOne2manyRows,
     hydrateVisibleOne2manyRows,
+    isOne2manyHydrating,
     one2manyRowErrors,
   } = useRecordRelationshipFields({
     ApiError,
@@ -561,6 +562,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     one2manySummary,
     hydrateOne2manyRows,
     hydrateVisibleOne2manyRows,
+    isOne2manyHydrating,
     one2manyRowErrors,
     setRelationKeyword,
     filteredRelationOptions,

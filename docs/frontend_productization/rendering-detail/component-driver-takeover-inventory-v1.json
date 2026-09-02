@@ -39,7 +39,7 @@
         "TDesignAlert"
       ],
       "officialComponent": "alert",
-      "productionConsumerCount": 40,
+      "productionConsumerCount": 41,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -678,7 +678,7 @@
         "TDesignLoading"
       ],
       "officialComponent": "loading",
-      "productionConsumerCount": 36,
+      "productionConsumerCount": 37,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1296,7 +1296,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "99a1319326292684b2ce758ece7fd206467776a889a88a301eedbeaea080c9c6",
+  "inputDigest": "ff598ac0b296e64b70a562155343e620d184ecc92a22337e19f967707a63ddf3",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",

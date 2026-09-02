@@ -190,6 +190,9 @@ try {
     document.querySelectorAll('[data-contract-form-driver]').length
     + document.querySelectorAll('[data-contract-form-driver-error]').length === 1
   ), undefined, { timeout: 45000 });
+  await page.waitForFunction(() => (
+    document.querySelectorAll('[data-readonly-relation-loading]').length === 0
+  ), undefined, { timeout: 45000 });
   const workspaceResult = {
     url: page.url(),
     drivers: await workspaceSurface.locator('[data-contract-form-driver]').count(),
@@ -228,6 +231,9 @@ try {
   }
   if (workspaceResult.readonlyRelationRows.some((values) => values.every((value) => !value || value === '—'))) {
     throw new Error(`project workspace rendered empty readonly relation rows: ${JSON.stringify(workspaceResult.readonlyRelationRows)}`);
+  }
+  if (workspaceResult.readonlyRelationRows.length > 0 && workspaceResult.readonlyRelationEmptyLabels.length > 0) {
+    throw new Error(`project workspace mixed hydrated relation rows with an empty state: ${JSON.stringify(workspaceResult)}`);
   }
   if (workspaceResult.readonlyRelationRows.length === 0
     && (workspaceResult.readonlyRelationEmptyLabels.length === 0

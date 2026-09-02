@@ -50,6 +50,22 @@ class ProfessionalRelationFieldGuardTests(unittest.TestCase):
             return value.replace('<ScInput\n              v-else-if="fieldConfigEditable"', '<input\n              v-else-if="fieldConfigEditable"', 1)
         self.assertTrue(any("label editor" in item for item in validate(read_text)))
 
+    def test_readonly_one2many_cannot_show_empty_before_hydration_finishes(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace("adapter.isOne2manyHydrating(field.name)", "adapter.busy", 1)
+            return value
+        self.assertTrue(any("readonly one2many loading semantics" in item for item in validate(read_text)))
+
+    def test_one2many_hydration_state_must_reset_on_failure(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordRelationshipFields.ts"):
+                return value.replace("finally {", "if (false) {", 1)
+            return value
+        self.assertTrue(any("hydration lifecycle" in item for item in validate(read_text)))
+
 
 if __name__ == "__main__":
     unittest.main()

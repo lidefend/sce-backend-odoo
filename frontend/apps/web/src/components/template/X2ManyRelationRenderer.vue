@@ -64,6 +64,13 @@
           </dl>
         </article>
       </div>
+      <ScInlineState
+        v-else-if="adapter.isOne2manyHydrating(field.name)"
+        class="relation-readonly-loading"
+        state="loading"
+        label="正在加载关系记录"
+        data-readonly-relation-loading
+      />
       <ScInlineState v-else class="relation-readonly-empty" state="empty" label="暂无可展示记录" data-readonly-relation-empty />
     </div>
         <template v-else>
