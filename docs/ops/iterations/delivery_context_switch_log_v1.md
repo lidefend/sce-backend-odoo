@@ -8173,3 +8173,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   draft, restored follower state, completed attachment and activity journeys,
   and reported zero intent failures, browser errors, unrelated mutations,
   execute requests, or desktop/390px overflow.
+
+## 2026-09-02 — Collaboration attachment-upload authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `8b1af6b3`.
+- Product defect and repair: the professional attachment manager treated an
+  enabled upload descriptor as sufficient authority even when its executable
+  intent was absent or changed. Upload readiness now fails closed unless the
+  backend descriptor carries the exact `file.upload` intent; model tests and
+  the static guard include missing- and wrong-intent counterexamples.
+- Real-page evidence: governed `project.project` and `payment.request` journeys
+  each uploaded one unique text attachment through the professional component,
+  observed it in the canonical timeline, and confirmed one exact governed
+  deletion. The combined run observed exactly two uploads, two downloads, and
+  four deletes while retaining the existing message-reply, activity-cancel,
+  three-page activity-tab, unsaved-draft, follower restoration, and desktop /
+  390px checks. It reported zero intent failures, browser errors, unrelated
+  record mutations, or execute requests.

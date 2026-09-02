@@ -94,6 +94,26 @@ async function verifyAttachmentDeleteJourney(surface, model) {
   await timelineEntry.waitFor({ state: 'detached', timeout: 30000 });
   return { attachmentId: expected.attachment_id, fileName, downloaded: true, cancelPreserved: true, confirmed: true, deleted: true, remainingEntries: await timelineEntry.count() };
 }
+async function verifyAttachmentUploadJourney(surface, model) {
+  const fileName = `codex-upload-journey-${model.replaceAll('.', '-')}-${Date.now()}.txt`;
+  const manager = surface.locator('[data-professional-collaboration-component="attachments"][data-attachment-readiness="ready"]');
+  await manager.waitFor({ state: 'visible', timeout: 15000 });
+  await manager.locator('input[type="file"]').setInputFiles({
+    name: fileName,
+    mimeType: 'text/plain',
+    buffer: Buffer.from(`governed upload journey for ${model}`, 'utf8'),
+  });
+  const timeline = surface.locator('[data-professional-collaboration-component="timeline"]');
+  const timelineEntry = surface.locator('.native-chatter-entry:visible').filter({ hasText: fileName });
+  await timelineEntry.waitFor({ state: 'visible', timeout: 30000 });
+  const deleteButton = timelineEntry.getByRole('button', { name: '删除', exact: true });
+  await deleteButton.click();
+  const confirmation = page.locator('[data-professional-workflow-component="confirm-dialog"][data-state="open"]');
+  await confirmation.waitFor({ state: 'visible', timeout: 15000 });
+  await confirmation.getByRole('button', { name: '确认删除附件', exact: true }).click();
+  await timelineEntry.waitFor({ state: 'detached', timeout: 30000 });
+  return { fileName, uploaded: true, deleted: true, timelineReady: await timeline.count() === 1 };
+}
 async function verifyMessageDeleteJourney(surface, model) {
   const expected = (target.message_delete_journeys || []).find((row) => row.model === model);
   if (!expected?.body || !expected?.message_id) throw new Error(`missing message delete fixture authority for ${model}`);
@@ -382,6 +402,7 @@ try {
   await workspaceSurface.locator('[data-professional-collaboration-component="followers"][data-state="ready"]')
     .waitFor({ state: 'visible', timeout: 45000 });
   const workspaceFollowerJourney = await verifyFollowerMutation(workspaceSurface, 'project.project');
+  const workspaceAttachmentUploadJourney = await verifyAttachmentUploadJourney(workspaceSurface, 'project.project');
   const workspaceAttachmentDeleteJourney = await verifyAttachmentDeleteJourney(workspaceSurface, 'project.project');
   const workspaceMessageReplyJourney = await verifyMessageReplyJourney(workspaceSurface, 'project.project');
   const workspaceMessageDeleteJourney = await verifyMessageDeleteJourney(workspaceSurface, 'project.project');
@@ -405,6 +426,7 @@ try {
     }))),
     followerReadiness: await workspaceSurface.locator('[data-professional-collaboration-component="panel"]').getAttribute('data-follower-readiness'),
     followerJourney: workspaceFollowerJourney,
+    attachmentUploadJourney: workspaceAttachmentUploadJourney,
     attachmentDeleteJourney: workspaceAttachmentDeleteJourney,
     messageReplyJourney: workspaceMessageReplyJourney,
     messageDeleteJourney: workspaceMessageDeleteJourney,
@@ -467,6 +489,7 @@ try {
   await paymentSurface.locator('[data-professional-collaboration-component="followers"][data-state="ready"]')
     .waitFor({ state: 'visible', timeout: 45000 });
   const paymentFollowerJourney = await verifyFollowerMutation(paymentSurface, 'payment.request');
+  const paymentAttachmentUploadJourney = await verifyAttachmentUploadJourney(paymentSurface, 'payment.request');
   const paymentAttachmentDeleteJourney = await verifyAttachmentDeleteJourney(paymentSurface, 'payment.request');
   const paymentMessageReplyJourney = await verifyMessageReplyJourney(paymentSurface, 'payment.request');
   const paymentMessageDeleteJourney = await verifyMessageDeleteJourney(paymentSurface, 'payment.request');
@@ -497,6 +520,7 @@ try {
     }))),
     followerReadiness: await paymentSurface.locator('[data-professional-collaboration-component="panel"]').getAttribute('data-follower-readiness'),
     followerJourney: paymentFollowerJourney,
+    attachmentUploadJourney: paymentAttachmentUploadJourney,
     attachmentDeleteJourney: paymentAttachmentDeleteJourney,
     messageReplyJourney: paymentMessageReplyJourney,
     messageDeleteJourney: paymentMessageDeleteJourney,
@@ -667,10 +691,10 @@ try {
   }));
   if (mutations.length) throw new Error('read-only project create driver probe observed mutation');
   if (executeRequests.length) throw new Error(`read-only browser driver probe observed execute request: ${executeRequests.length}`);
-  if (attachmentMutations.filter((row) => row.intent === 'file.upload').length !== 0
+  if (attachmentMutations.filter((row) => row.intent === 'file.upload').length !== 2
     || attachmentMutations.filter((row) => row.intent === 'file.download').length !== 2
-    || attachmentMutations.filter((row) => row.intent === 'chatter.attachment.delete').length !== 2) {
-    throw new Error(`attachment delete journey did not preserve dual-model mutation symmetry: ${JSON.stringify(attachmentMutations)}`);
+    || attachmentMutations.filter((row) => row.intent === 'chatter.attachment.delete').length !== 4) {
+    throw new Error(`attachment lifecycle journey did not preserve dual-model mutation symmetry: ${JSON.stringify(attachmentMutations)}`);
   }
   if (messageMutations.filter((row) => row.intent === 'chatter.message.delete').length !== 2) {
     throw new Error(`message delete journey did not preserve dual-model mutation symmetry: ${JSON.stringify(messageMutations)}`);

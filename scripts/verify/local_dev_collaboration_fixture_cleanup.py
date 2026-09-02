@@ -1,7 +1,12 @@
 """Remove only temporary collaboration fixtures created by the governed browser journey."""
 
 prefix = "codex-delete-journey-"
-fixtures = env["ir.attachment"].sudo().search([("name", "like", prefix + "%")])
+upload_prefix = "codex-upload-journey-"
+fixtures = env["ir.attachment"].sudo().search([
+    "|",
+    ("name", "like", prefix + "%"),
+    ("name", "like", upload_prefix + "%"),
+])
 removed = fixtures.ids
 fixtures.unlink()
 message_prefix = "codex-message-delete-journey-"

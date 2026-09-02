@@ -33,7 +33,9 @@ assert.equal(canExecuteCollaborationCreateAction({ enabled: true, mode: 'message
 assert.equal(canExecuteCollaborationCreateAction({ enabled: true, mode: 'activity' } as never, 'activity'), true);
 assert.equal(nativeAttachmentUploadEnabled({ enabled: true }), false);
 assert.equal(nativeAttachmentUploadEnabled({ enabled: true, upload: { enabled: false } }), false);
-assert.equal(nativeAttachmentUploadEnabled({ enabled: true, upload: { enabled: true } }), true);
+assert.equal(nativeAttachmentUploadEnabled({ enabled: true, upload: { enabled: true } }), false);
+assert.equal(nativeAttachmentUploadEnabled({ enabled: true, upload: { enabled: true, intent: 'ir.attachment.create' } }), false);
+assert.equal(nativeAttachmentUploadEnabled({ enabled: true, upload: { enabled: true, intent: 'file.upload' } }), true);
 assert.equal(canReplyCollaborationMessage({ key: 'missing-reply', type: 'message', message: { id: 1 } } as never), false);
 assert.equal(canReplyCollaborationMessage({ key: 'missing-intent', type: 'message', message: { id: 1, can_reply: true } } as never), false);
 assert.equal(canReplyCollaborationMessage({ key: 'wrong-intent', type: 'message', message: { id: 1, can_reply: true, reply_intent: 'mail.message.reply' } } as never), false);
@@ -44,4 +46,4 @@ assert.equal(canDeleteCollaborationMessage({ key: 'wrong-delete', type: 'message
 assert.equal(canDeleteCollaborationMessage({ key: 'delete', type: 'message', message: { id: 1, can_delete: true, delete_intent: 'chatter.message.delete' } } as never), true);
 assert.deepEqual(parseActivityEntry({ key: 'missing-status', type: 'activity', title: '计划', activity: { id: 1, deadline: '2020-01-01' } } as never).status, 'unknown');
 assert.deepEqual(parseActivityEntry({ key: 'overdue', type: 'activity', title: '计划', activity: { id: 1, status: 'overdue', status_label: '已逾期' } } as never).statusLabel, '已逾期');
-console.log('[professional_collaboration_model_test] PASS cases=35');
+console.log('[professional_collaboration_model_test] PASS cases=37');

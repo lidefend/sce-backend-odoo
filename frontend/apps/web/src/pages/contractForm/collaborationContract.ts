@@ -114,7 +114,8 @@ export function nativeAttachmentUploadEnabled(raw: Record<string, unknown> | nul
     upload
     && typeof upload === 'object'
     && !Array.isArray(upload)
-    && (upload as Record<string, unknown>).enabled === true,
+    && (upload as Record<string, unknown>).enabled === true
+    && (upload as Record<string, unknown>).intent === 'file.upload',
   );
 }
 

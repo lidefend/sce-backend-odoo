@@ -68,6 +68,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("attachment deletion must settle through the professional confirmation component")
     if attachment_runtime.count("!params.canUpload()") < 2:
         failures.append("attachment upload handlers must independently reject missing or denied authority")
+    if "(upload as Record<string, unknown>).intent === 'file.upload'" not in read_text("frontend/apps/web/src/pages/contractForm/collaborationContract.ts"):
+        failures.append("attachment upload authority must require the exact backend intent")
     if ':enabled="attachmentUploadEnabled"' not in panel:
         failures.append("attachment upload presentation must consume explicit upload authority")
     if "canUpdateCollaborationActivity(entry, action)" not in chatter_runtime:

@@ -80,6 +80,13 @@ class ProfessionalCollaborationGuardTests(unittest.TestCase):
                 return value.replace(" || !params.canUpload()", "", 1)
             return value
         self.assertTrue(any("upload handlers" in item for item in validate(read_text)))
+    def test_attachment_upload_cannot_accept_an_unrelated_intent(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("collaborationContract.ts"):
+                return value.replace("(upload as Record<string, unknown>).intent === 'file.upload'", "Boolean((upload as Record<string, unknown>).intent)")
+            return value
+        self.assertTrue(any("upload authority" in item for item in validate(read_text)))
     def test_attachment_upload_control_cannot_use_aggregate_authority(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
