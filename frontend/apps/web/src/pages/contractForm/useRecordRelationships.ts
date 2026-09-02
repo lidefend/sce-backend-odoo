@@ -19,6 +19,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
   const {
     ApiError,
     actionId,
+    canonicalFieldWritable,
     clearedDynamicRelationFields,
     closeRelationSearchDialog,
     confirmRelationSearchSelectionFromRuntime,
@@ -40,6 +41,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     formUiLabelsFromFormView,
     invalidatedRelationKeywords,
     isWritableFieldVisible,
+    layoutNodes,
     listContractFormRecords,
     loadModelContractV2,
     markFieldChanged,
@@ -451,6 +453,9 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
   }
 
   function setMany2oneOption(fieldName: string, option: RelationOption) {
+    const canonicalWritable = canonicalFieldWritable(fieldName);
+    const layoutField = layoutNodes.value.find((node: any) => node.kind === 'field' && node.name === fieldName);
+    if (canonicalWritable === false || (canonicalWritable !== true && (!layoutField || layoutField.readonly))) return;
     const previousValue = formData[fieldName];
     const previousKeyword = relationKeywords[fieldName] || '';
     formData[fieldName] = option.id;

@@ -1505,6 +1505,7 @@ const {
   fieldType, filteredRelationOptionsFromRuntime, findNativeFieldNodeInTree,
   formData, formUiLabelFromLabels, formUiLabelsFromFormView,
   invalidatedRelationKeywords,
+  canonicalFieldWritable: (...args: [string]) => canonicalFieldWritable(...args),
   isWritableFieldVisible: (...args: [string]) => isWritableFieldVisible(...args), layoutNodes: computed(() => layoutNodes.value),
   listContractFormRecords, loadModelContractV2, markFieldChanged,
   menuId, mergeHydratedOne2manyRecords, mergeRelationDomains,

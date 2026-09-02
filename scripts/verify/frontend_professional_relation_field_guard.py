@@ -19,6 +19,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     action_presentation = read_text("frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts")
     relationship_navigation = read_text("frontend/apps/web/src/pages/contractForm/useRecordRelationshipNavigation.ts")
     relationships = read_text("frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts")
+    page = read_text("frontend/apps/web/src/pages/ContractFormPage.vue")
     for key in ("sc.relation.many2one", "sc.relation.many2many", "sc.select.tags"):
         if key not in model or key not in registry or key not in assembler:
             failures.append(f"relation authority is incomplete for {key}")
@@ -85,6 +86,17 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
             failures.append(f"relation search read authority is incomplete: {marker}")
     if "if (entry && entry.canRead === false)" in relationships:
         failures.append("relation search rows retain fail-open read authority")
+    for marker in (
+        "if(!isFieldWritable(name))return;const normalized=",
+        "if(!isFieldWritable(name))return;const keyword=",
+        "const setRelationIds=(name:string,ids:number[])=>{if(!isFieldWritable(name))return;",
+    ):
+        if marker not in form_state:
+            failures.append(f"relation selection write authority is incomplete: {marker}")
+    if "canonicalWritable === false || (canonicalWritable !== true && (!layoutField || layoutField.readonly))" not in relationships:
+        failures.append("relation search selection does not fail closed on canonical write authority")
+    if "canonicalFieldWritable: (...args: [string]) => canonicalFieldWritable(...args)" not in page:
+        failures.append("relation runtime does not receive canonical field write authority")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
         if forbidden in component or forbidden in many2one or forbidden in model:
             failures.append(f"relation family contains forbidden product special case {forbidden}")

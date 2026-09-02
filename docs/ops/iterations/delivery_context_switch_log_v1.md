@@ -7799,3 +7799,26 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   loading, strict Vue typecheck, development build, refreshed productization
   inventories with zero gaps, and the complete `make
   verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Relation selection write-authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `4824ca6e`.
+- Product defect and repair: professional relation components disabled readonly
+  fields visually, but direct many2one selection/commit and many2many ID-write
+  handlers did not repeat the field write decision. Those handlers now require
+  the Canonical field to be writable, with the already-resolved native layout
+  state used only while the Canonical render model is still loading. An
+  explicit Canonical denial always wins. No model, label, role, or status
+  inference was added.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey passed after rebuilding. It preserved three independent activity
+  pages, the unsaved project draft and dirty-close warning, two readable tender
+  rows, one editable payment attachment entry, zero browser errors, zero
+  mutations, zero execute requests, and no desktop or 390px overflow. An
+  initial strict-loading implementation was rejected by this journey because
+  it lost the unsaved draft; the accepted implementation passed the complete
+  roundtrip.
+- Verification: 18 professional relation counterexample tests, strict Vue
+  typecheck, development build, refreshed productization inventories with zero
+  gaps, and the complete `make verify.frontend.quick.gate` passed.

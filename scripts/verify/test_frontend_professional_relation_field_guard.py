@@ -144,6 +144,30 @@ class ProfessionalRelationFieldGuardTests(unittest.TestCase):
 
         self.assertTrue(any("fail-open read authority" in item for item in validate(read_text)))
 
+    def test_relation_ids_without_field_write_authority_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordFormState.ts"):
+                return value.replace(
+                    "const setRelationIds=(name:string,ids:number[])=>{if(!isFieldWritable(name))return;",
+                    "const setRelationIds=(name:string,ids:number[])=>{",
+                )
+            return value
+
+        self.assertTrue(any("selection write authority" in item for item in validate(read_text)))
+
+    def test_relation_search_selection_without_canonical_write_authority_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordRelationships.ts"):
+                return value.replace(
+                    "canonicalWritable === false || (canonicalWritable !== true && (!layoutField || layoutField.readonly))",
+                    "false",
+                )
+            return value
+
+        self.assertTrue(any("canonical write authority" in item for item in validate(read_text)))
+
 
 if __name__ == "__main__":
     unittest.main()
