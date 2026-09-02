@@ -108,6 +108,19 @@ def scan(root: Path) -> list[Finding]:
             )
             if any(item not in text for item in required):
                 findings.add(Finding("GA012", relative, "PROFESSIONAL_TRUST_BOUNDARY_INCOMPLETE"))
+            shard_calls = (
+                "make ci.professional.backend.shard-verify",
+                "python3 scripts/verify/ci_artifact_host_write_guard.py",
+                "make ci.professional.backend.shard-reports",
+                "make ci.professional.backend.shard-tests",
+            )
+            positions = [text.find(item) for item in shard_calls]
+            if (
+                any(position < 0 for position in positions)
+                or positions != sorted(positions)
+                or re.search(r"make ci\.professional\.backend\.shard-(?:verify|reports|tests)\s*&", text)
+            ):
+                findings.add(Finding("GA018", relative, "PROFESSIONAL_ARTIFACT_WRITERS_NOT_SERIALIZED"))
         if path.name == "backend_test_suite.yml":
             required = (
                 "CI_PROJECT_NAME: sc-suite-${{ github.run_id }}",
@@ -119,6 +132,13 @@ def scan(root: Path) -> list[Finding]:
                 findings.add(Finding("GA016", relative, "BACKEND_SUITE_CLEANUP_SCOPE_INCOMPLETE"))
             if "bash scripts/ci/self_hosted_runner_cleanup.sh || true" in text:
                 findings.add(Finding("GA017", relative, "BACKEND_SUITE_CLEANUP_FAILURE_MASKED"))
+            mask_requirements = (
+                'for secret_value in "${db_password}" "${admin_password}" "${jwt_secret}" "${bootstrap_secret}"; do',
+                'echo "::add-mask::${secret_value}"',
+                'echo "::add-mask::${demo_password}"',
+            )
+            if any(item not in text for item in mask_requirements):
+                findings.add(Finding("GA019", relative, "BACKEND_SUITE_DYNAMIC_SECRET_MASKING_INCOMPLETE"))
         if path.name == "frontend_release_gate.yml":
             required = (
                 "push:\n    branches: [main]",

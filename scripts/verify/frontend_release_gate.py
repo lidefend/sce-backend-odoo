@@ -10,7 +10,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 POLICY = ROOT / "config/ci/frontend_release_gate_v1.json"
 EXPECTED_SCHEMA = "frontend-release-audit/v2"
-VALID_EVENTS = {"pull_request", "push", "workflow_dispatch", "local"}
+VALID_EVENTS = {"pull_request", "push", "schedule", "workflow_dispatch", "local"}
 FAILED_OUTCOMES = {"failure", "cancelled", "skipped", "not_run", "NOT_RUN"}
 
 

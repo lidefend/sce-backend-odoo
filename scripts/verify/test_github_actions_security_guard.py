@@ -206,6 +206,36 @@ jobs:
             classes = {item.classification for item in guard.scan(root)}
             self.assertIn("BACKEND_SUITE_CLEANUP_FAILURE_MASKED", classes)
 
+    def test_professional_artifact_writers_must_remain_serialized(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            workflow = root / ".github/workflows/professional_quality_gate.yml"
+            workflow.parent.mkdir(parents=True)
+            source = (ROOT / workflow.relative_to(root)).read_text(encoding="utf-8")
+            workflow.write_text(
+                source.replace(
+                    "make ci.professional.backend.shard-verify\n",
+                    "make ci.professional.backend.shard-verify &\n",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            classes = {item.classification for item in guard.scan(root)}
+            self.assertIn("PROFESSIONAL_ARTIFACT_WRITERS_NOT_SERIALIZED", classes)
+
+    def test_backend_suite_dynamic_secrets_must_remain_masked(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            workflow = root / ".github/workflows/backend_test_suite.yml"
+            workflow.parent.mkdir(parents=True)
+            source = (ROOT / workflow.relative_to(root)).read_text(encoding="utf-8")
+            workflow.write_text(
+                source.replace('echo "::add-mask::${demo_password}"\n', "", 1),
+                encoding="utf-8",
+            )
+            classes = {item.classification for item in guard.scan(root)}
+            self.assertIn("BACKEND_SUITE_DYNAMIC_SECRET_MASKING_INCOMPLETE", classes)
+
     def run_cleanup_fixture(self, project: str) -> tuple[subprocess.CompletedProcess[str], str]:
         with tempfile.TemporaryDirectory() as directory:
             fixture = Path(directory)
