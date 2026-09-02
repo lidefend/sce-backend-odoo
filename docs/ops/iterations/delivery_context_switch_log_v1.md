@@ -3,6 +3,29 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-09-02 — ACTIVITY-DRAFT-INSTANCE-OWNERSHIP-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `f171ba70`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / retained
+  activity-page form lifecycle / `frontend/apps/web`, the state-dashboard unit
+  aggregate, and the governed project/payment browser journey.
+- Root cause and product result: cached form instances observed the global route
+  before Vue completed deactivation, followed the next model route, and reloaded
+  their own form state. Each form instance now binds to a stable generic owner
+  identity, including independent create-page IDs, so another activity cannot
+  clear its unsaved business draft.
+- Real-page evidence: a logged-in five-page session retained an unsaved project
+  name through project-create -> payment request `167` -> project-create. The
+  independent governed probe repeated the journey across project and payment
+  models, retained all three pages and the exact unsaved value, and observed
+  zero mutations, execute requests, browser errors, or 390px header overflow.
+- Standard vs User-Specific: ownership is derived only from canonical route
+  identity and the existing activity instance ID; no model label, role, status,
+  customer, or business-state inference is introduced.
+- Boundary: no backend or database change, autosave, new contract, page-specific
+  exception, push, PR, or merge.
+
 ## 2026-09-02 — RESPONSIVE-ACTIVITY-TAB-ACTIVATION-CLOSURE-01
 
 - Branch / anchor: `feature/native-view-action-semantics-closure-v1` after

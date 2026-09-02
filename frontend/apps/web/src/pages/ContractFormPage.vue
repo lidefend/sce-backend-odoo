@@ -678,6 +678,7 @@ import { useFormNavigationActionsRuntime } from './contractForm/useFormNavigatio
 import { useContractV2ShadowDiagnostics } from './contractForm/useContractV2ShadowDiagnostics';
 import { useContractFormPageState } from './contractForm/useContractFormPageState';
 import { buildFormRequestContext } from './contractForm/formRequestContext';
+import { normalizeFormRouteOwnerIdentity } from './contractForm/formRouteInstanceIdentity';
 import { collectActionParams as collectActionParamsFromPlan } from './contractForm/actionExecutionPlan';
 import {
   createRouteDefaultsFingerprint,
@@ -751,6 +752,19 @@ function formRouteIdentity() {
     String(recordId.value ? '' : (query.allowed_business_category_codes || '')),
     String(recordId.value ? '' : createRouteDefaultsFingerprint(query)),
   ].join('|');
+}
+function formRouteOwnerIdentity() {
+  const query = route.query as Record<string, unknown>;
+  return normalizeFormRouteOwnerIdentity({
+    routeName: route.name,
+    model: route.params.model,
+    recordId: route.params.id,
+    activityPageId: query.activity_page_id,
+    actionId: query.action_id,
+    menuId: query.menu_id,
+    viewId: query.view_id || query.viewId,
+    sceneKey: route.params.sceneKey || route.meta?.sceneKey || query.scene_key || query.scene,
+  });
 }
 const {
   v2ShadowStoreReady, v2ShadowWidgetCount, v2ShadowActionCount, v2ShadowButtonStatusCount,
@@ -1736,7 +1750,7 @@ const {
   fieldOrderDraft, fieldVisibilityBase, fieldVisibilityDirtyKeys,
   fieldVisibilityDraft, focusFirstValidationError, formConfigAuditResult,
   formConflict, formCreateContextFromState, formData, formFields: canonicalFormFields,
-  formDesignFieldLabel, formDesignerGroupNavigatorItems, formRouteIdentity,
+  formDesignFieldLabel, formDesignerGroupNavigatorItems, formRouteIdentity, formRouteOwnerIdentity,
   formSettingsActiveTab, formUiLabel, handleRecordContextChanged,
   hasChanges, hasCurrentFormFieldDraftChanges, instanceRouteIdentity,
   intentConfirmationRef, isBusinessConfigMode, isBusinessConfigRuntimeModel,

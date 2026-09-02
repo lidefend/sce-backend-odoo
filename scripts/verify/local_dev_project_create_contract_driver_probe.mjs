@@ -291,13 +291,15 @@ try {
   const projectActivityIndex = activityTabKeys.findIndex((item) => (
     item.key.includes(`record:project.project:${target.project_record_id}`)
   ));
+  const projectCreateActivityIndex = activityTabKeys.findIndex((item) => item.key.startsWith('new:project.project:'));
   const paymentActivityIndex = activityTabKeys.findIndex((item) => (
     item.key.includes(`record:payment.request:${target.payment_record_id}`)
   ));
-  if (activityTabKeys.length < 2 || projectActivityIndex < 0 || paymentActivityIndex < 0) {
+  if (activityTabKeys.length < 2 || projectActivityIndex < 0 || projectCreateActivityIndex < 0 || paymentActivityIndex < 0) {
     throw new Error(`cross-model activity pages are incomplete: ${JSON.stringify(activityTabKeys)}`);
   }
   const projectActivityKey = activityTabKeys[projectActivityIndex].key;
+  const projectCreateActivityKey = activityTabKeys[projectCreateActivityIndex].key;
   const paymentActivityKey = activityTabKeys[paymentActivityIndex].key;
   await page.locator(`[data-activity-page-key="${projectActivityKey}"]`).click();
   await page.waitForURL((url) => url.pathname === `/r/project.project/${target.project_record_id}`, { timeout: 15000 });
@@ -316,6 +318,29 @@ try {
     || retainedAfterPaymentActivation !== activityTabKeys.length) {
     throw new Error(`activity page activation collapsed independent pages: ${JSON.stringify(activityTabJourney)}`);
   }
+  const unsavedProjectName = '活动页签未保存草稿保留验证';
+  await page.locator(`[data-activity-page-key="${projectCreateActivityKey}"]`).click();
+  await page.waitForURL((url) => url.pathname === new URL(projectCreateRoute).pathname, { timeout: 15000 });
+  const projectNameInput = page.locator('[data-field-name="name"] input').first();
+  await projectNameInput.fill(unsavedProjectName);
+  await page.locator(`[data-activity-page-key="${paymentActivityKey}"]`).click();
+  await page.waitForURL((url) => url.pathname === new URL(paymentRoute).pathname, { timeout: 15000 });
+  await page.locator(`[data-activity-page-key="${projectCreateActivityKey}"]`).click();
+  await page.waitForURL((url) => url.pathname === new URL(projectCreateRoute).pathname, { timeout: 15000 });
+  const retainedUnsavedProjectName = await projectNameInput.inputValue();
+  const retainedAfterDraftRoundtrip = await activityTabLabels.count();
+  const activityDraftJourney = {
+    projectCreateActivityKey,
+    unsavedProjectName,
+    retainedUnsavedProjectName,
+    retainedAfterDraftRoundtrip,
+  };
+  if (retainedUnsavedProjectName !== unsavedProjectName
+    || retainedAfterDraftRoundtrip !== activityTabKeys.length) {
+    throw new Error(`activity page lost its unsaved business draft: ${JSON.stringify(activityDraftJourney)}`);
+  }
+  await page.locator(`[data-activity-page-key="${paymentActivityKey}"]`).click();
+  await page.waitForURL((url) => url.pathname === new URL(paymentRoute).pathname, { timeout: 15000 });
   await page.setViewportSize({ width: 390, height: 844 });
   const mobileResults = {};
   for (const [key, currentRoute, selector] of [
@@ -344,6 +369,7 @@ try {
     workspace: workspaceResult,
     payment: paymentResult,
     activityTabJourney,
+    activityDraftJourney,
     mobile: mobileResults,
     contractPresentations,
     mutations,
