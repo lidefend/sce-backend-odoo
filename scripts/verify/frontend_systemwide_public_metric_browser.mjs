@@ -99,9 +99,11 @@ try {
       const fakeReadonly = [...patternNode?.querySelectorAll('input:disabled, textarea:disabled, select:disabled') || []]
         .filter(visible);
       const selectedNav = document.querySelectorAll(`#primary-sidebar [data-navigation-menu-id="${menuId}"][aria-current="page"]`).length;
+      const visibleHeadings = [...document.querySelectorAll('h1')].filter(visible);
       return {
         url: location.href,
-        h1: document.querySelectorAll('h1').length,
+        h1: visibleHeadings.length,
+        h1Text: visibleHeadings.map((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim()),
         pageHeader: document.querySelectorAll('[data-product-page-header]').length,
         pattern: patternNode?.getAttribute('data-product-page-pattern') || '',
         presentationMode: header?.getAttribute('data-presentation-mode') || '',
@@ -142,6 +144,10 @@ try {
     metrics.contractMenuId = candidateContracts.map((row) => findKey(row.request, 'menu_id')).find(Boolean);
 
     check(metrics.h1 === 1 && metrics.pageHeader === 1, `${spec.key}: page identity is not unique`, metrics);
+    check(typeof spec.expectedTitle === 'string' && spec.expectedTitle.trim(),
+      `${spec.key}: authoritative action title is absent`, spec);
+    check(metrics.h1Text[0] === spec.expectedTitle.trim(),
+      `${spec.key}: page title differs from action authority`, metrics);
     check(['collection', 'task', 'workspace'].includes(metrics.contractPresentationMode),
       `${spec.key}: Contract presentation mode is invalid`, metrics);
     check(['readonly', 'edit', 'create'].includes(metrics.contractRenderProfile),

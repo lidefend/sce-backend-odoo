@@ -86,6 +86,14 @@ class SystemwidePublicMetricReportTest(unittest.TestCase):
         self.assertNotIn('"presentationMode":', target_source)
         self.assertNotIn('"renderProfile":', target_source)
 
+    def test_browser_page_title_expectation_comes_from_action_authority(self):
+        browser_source = Path("scripts/verify/frontend_systemwide_public_metric_browser.mjs").read_text(encoding="utf-8")
+        target_source = Path("scripts/verify/local_dev_systemwide_public_metric_ids.py").read_text(encoding="utf-8")
+        self.assertIn("metrics.h1Text[0] === spec.expectedTitle.trim()", browser_source)
+        self.assertIn('"expectedTitle": report_action.name', target_source)
+        self.assertIn('"expectedTitle": payment_action.name', target_source)
+        self.assertIn('"expectedTitle": project_action.name', target_source)
+
 
 if __name__ == "__main__":
     unittest.main()

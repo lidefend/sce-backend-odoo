@@ -53,6 +53,7 @@ payload = {
             "menuId": int(report_menu.id),
             "actionId": int(report_action.id),
             "model": report_action.res_model,
+            "expectedTitle": report_action.name,
         },
         {
             "key": "payment-task-edit",
@@ -62,6 +63,7 @@ payload = {
             "actionId": int(payment_action.id),
             "model": "payment.request",
             "recordId": int(payment.id),
+            "expectedTitle": payment_action.name,
         },
         {
             "key": "project-workspace-readonly",
@@ -71,6 +73,7 @@ payload = {
             "actionId": int(project_action.id),
             "model": "project.project",
             "recordId": int(project.id),
+            "expectedTitle": project_action.name,
         },
     ],
     "businessFingerprint": hashlib.sha256(
