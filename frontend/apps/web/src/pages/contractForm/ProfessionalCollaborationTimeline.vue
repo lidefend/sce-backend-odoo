@@ -20,7 +20,7 @@
               </span>
             </div>
             <ScButton
-              v-if="entry.attachment?.can_download !== false"
+              v-if="canDownloadCollaborationAttachment(entry)"
               variant="ghost"
               size="small"
               class="native-attachment-download"
@@ -92,7 +92,7 @@ import type { ChatterTimelineEntry } from '../../api/chatter';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScInlineState from '../../components/design-system/ScInlineState.vue';
 import ScList, { type ScListItem } from '../../components/design-system/ScList.vue';
-import { formatCollaborationTimelineMeta, parseAttachmentEntry, parseMessageEntry, parseActivityEntry, type ParsedAttachmentInfo, type ParsedMessageInfo, type ParsedActivityInfo } from './professionalCollaborationModel';
+import { canDownloadCollaborationAttachment, formatCollaborationTimelineMeta, parseAttachmentEntry, parseMessageEntry, parseActivityEntry, type ParsedAttachmentInfo, type ParsedMessageInfo, type ParsedActivityInfo } from './professionalCollaborationModel';
 
 const props = defineProps<{ entries: ChatterTimelineEntry[]; activityUpdatingIds: number[]; attachmentViewLabel: string; timelineHasMore: boolean; timelineLoading: boolean }>();
 const emit = defineEmits<{

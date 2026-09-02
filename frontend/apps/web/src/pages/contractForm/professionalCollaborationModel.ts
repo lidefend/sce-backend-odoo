@@ -20,6 +20,10 @@ export function visibleCollaborationTimeline(entries: readonly ChatterTimelineEn
   return entries.filter((entry) => entry.type !== 'audit');
 }
 
+export function canDownloadCollaborationAttachment(entry: ChatterTimelineEntry): boolean {
+  return entry.type === 'attachment' && entry.attachment?.can_download === true;
+}
+
 export function formatCollaborationTimelineMeta(value: string): string {
   return String(value || '').replace(
     /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?/g,

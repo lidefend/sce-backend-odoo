@@ -17,4 +17,18 @@ class ProfessionalCollaborationGuardTests(unittest.TestCase):
     def test_raw_attachment_input_fails(self):
         def read_text(path): return (ROOT / path).read_text(encoding="utf-8").replace("<ScFileField", '<input type="file"')
         self.assertTrue(any("file primitive" in item for item in validate(read_text)))
+    def test_attachment_download_fail_open_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalCollaborationTimeline.vue"):
+                return value.replace("canDownloadCollaborationAttachment(entry)", "entry.attachment?.can_download !== false")
+            return value
+        self.assertTrue(any("fail-open authority" in item for item in validate(read_text)))
+    def test_attachment_open_handler_cannot_bypass_authority(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useNativeAttachmentRuntime.ts"):
+                return value.replace(" || att.can_download !== true", "")
+            return value
+        self.assertTrue(any("independently reject" in item for item in validate(read_text)))
 if __name__ == "__main__": unittest.main()

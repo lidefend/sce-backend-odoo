@@ -7865,3 +7865,28 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Verification: 19 professional relation counterexample tests, strict Vue
   typecheck, development build, refreshed zero-gap productization inventories,
   and the complete `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Collaboration attachment download-authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `494fb9a9`.
+- Product defect and repair: the professional collaboration timeline treated a
+  missing attachment `can_download` flag as allowed, exposing a download action
+  without explicit backend authority. Attachment presentation now uses a
+  shared semantic resolver and appears only when `can_download=true`; the
+  attachment runtime independently repeats the same decision before opening
+  the viewer. Missing and denied authority therefore fail closed at both the
+  component and handler boundaries. The backend already supplies explicit
+  authority after access-controlled attachment search, so authorized behavior
+  is preserved without frontend model, role, label, or status inference.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey passed with three independent activity pages, retained unsaved draft
+  and dirty-close warning, two readable project tender rows, one editable
+  payment attachment entry, zero browser errors, zero mutations, zero execute
+  requests, and no desktop or 390px horizontal overflow. Two preceding journey
+  attempts exposed activity-page timing instability and were not counted as
+  acceptance; the fixed Node 24 rerun completed the full roundtrip.
+- Verification: eight collaboration model cases, seven structural and
+  counterexample tests, strict Vue typecheck, development build, refreshed
+  zero-gap productization inventories, and the complete `make
+  verify.frontend.quick.gate` passed.

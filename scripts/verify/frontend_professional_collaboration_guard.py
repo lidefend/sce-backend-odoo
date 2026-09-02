@@ -10,6 +10,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     composer = read_text("frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationComposer.vue")
     attachments = read_text("frontend/apps/web/src/pages/contractForm/ProfessionalAttachmentManager.vue")
     model = read_text("frontend/apps/web/src/pages/contractForm/professionalCollaborationModel.ts")
+    attachment_runtime = read_text("frontend/apps/web/src/pages/contractForm/useNativeAttachmentRuntime.ts")
     for marker in ('data-professional-collaboration-component="timeline"', "data-collaboration-entry-type", "update-activity", "open-attachment"):
         if marker not in timeline: failures.append(f"collaboration timeline missing {marker}")
     if "<ProfessionalCollaborationTimeline" not in panel or "visibleCollaborationTimeline" not in panel:
@@ -35,6 +36,14 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         if marker not in panel: failures.append(f"collaboration panel missing {marker}")
     if "follower: 'fail_closed'" not in model:
         failures.append("undeclared follower runtime must fail closed")
+    if "canDownloadCollaborationAttachment(entry)" not in timeline:
+        failures.append("collaboration attachment download bypasses the shared authority resolver")
+    if "entry.attachment?.can_download !== false" in timeline:
+        failures.append("collaboration attachment download retains fail-open authority")
+    if "entry.attachment?.can_download === true" not in model:
+        failures.append("collaboration attachment download authority does not fail closed")
+    if "att.can_download !== true" not in attachment_runtime:
+        failures.append("attachment open handler must independently reject missing or denied authority")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
         if forbidden in model or forbidden in timeline: failures.append(f"collaboration components contain forbidden product special case {forbidden}")
     return failures
