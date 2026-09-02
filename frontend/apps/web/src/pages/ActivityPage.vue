@@ -18,27 +18,35 @@
       :description="model.reasonCode"
     />
     <div v-else-if="model.records.length" class="activity-page__grid">
-      <ScButton
+      <article
         v-for="(record, recordIndex) in model.records"
         :key="String(record.id || recordIndex)"
         :data-record-id="record.id || undefined"
         :data-record-ordinal="recordIndex + 1"
         data-activity-card="record"
         :aria-label="`${labels.record} ${recordIndex + 1}`"
-        type="button"
-        variant="ghost"
         class="activity-card"
-        appearance="surface-tile"
-        @click="$emit('open-record', record)"
       >
-        <span class="activity-card__identity">{{ labels.record }} {{ recordIndex + 1 }}</span>
+        <header class="activity-card__head">
+          <ScButton
+            type="button"
+            variant="ghost"
+            size="small"
+            appearance="context-action"
+            class="activity-card__open"
+            :aria-label="`${labels.record} ${recordIndex + 1}`"
+            @click="$emit('open-record', record)"
+          >
+            {{ labels.record }} {{ recordIndex + 1 }}
+          </ScButton>
+        </header>
         <ActivityTemplateNode
           v-for="node in model.templateNodes"
           :key="node.key"
           :node="node"
           :record="record"
         />
-      </ScButton>
+      </article>
     </div>
     <ScEmptyState v-else class="activity-page__state" :title="labels.emptyTitle" :description="labels.emptyHint" />
   </section>
@@ -72,18 +80,14 @@ defineEmits<{ 'open-record': [record: Record<string, unknown>] }>();
 .activity-page__eyebrow { margin: 0; color: var(--sc-text-link); font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
 .activity-page__count { color: var(--sc-app-text-secondary); font-size: 13px; }
 .activity-page__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.activity-card { display: grid; height: auto; min-height: 132px; gap: 10px; padding: 0; text-align: left; white-space: normal; }
-.activity-page__grid :deep(.activity-card.t-button) { height: auto !important; min-height: 132px; padding: 0 !important; align-items: stretch; justify-content: flex-start; }
-.activity-card :deep(.sc-btn__content) { display: grid; width: 100%; box-sizing: border-box; gap: 10px; padding: 16px; align-items: stretch; }
-.activity-card :deep(.t-button__text) { display: block; width: 100%; }
-.activity-card:hover { transform: translateY(-1px); }
-.activity-card__identity { color: var(--sc-text-link); font-size: 12px; font-weight: 700; }
+.activity-card { display: grid; min-width: 0; min-height: 132px; gap: 10px; padding: 16px; border: 1px solid var(--sc-app-border); border-radius: 14px; background: var(--sc-app-panel); text-align: left; }
+.activity-card__head { display: flex; justify-content: flex-start; }
+.activity-card__open { font-weight: 700; }
 .activity-card__field { display: grid; grid-template-columns: minmax(90px, .7fr) 1.3fr; gap: 10px; align-items: baseline; }
 .activity-card__label { color: var(--sc-app-text-secondary); font-size: 12px; }
 .activity-card__value { overflow-wrap: anywhere; font-weight: 600; }
 .activity-page__state { display: grid; gap: 4px; min-height: 130px; place-content: center; text-align: center; color: var(--sc-app-text-secondary); }
 .activity-page__state--error { color: var(--sc-app-danger-text); }
-@media (prefers-reduced-motion: reduce) { .activity-card { transition: none; } .activity-card:hover { transform: none; } }
 @media (max-width: 960px) { .activity-page__grid { grid-template-columns: 1fr; } }
 @media (max-width: 680px) { .activity-page { padding: 16px; } .activity-page__head { align-items: center; } }
 </style>
