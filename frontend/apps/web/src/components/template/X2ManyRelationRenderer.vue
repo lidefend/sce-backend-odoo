@@ -306,30 +306,25 @@ const o2mTableFootData = computed(() => {
     _stateLabel: `全部 ${one2manyRows.value.length} 条合计`,
     _messages: [],
   };
-  const amountCol = aggregateAmountColumn.value;
-  if (!amountCol || !one2manyRows.value.length) return [];
-  footRow[amountCol.name] = o2mAmountTotalText.value;
+  const amountColumns = aggregateAmountColumns.value;
+  if (!amountColumns.length || !one2manyRows.value.length) return [];
+  amountColumns.forEach((column) => {
+    footRow[column.name] = props.adapter.one2manyColumnDisplayValue(column, o2mAmountTotal(column));
+  });
   return [footRow];
 });
 
-const o2mAmountTotal = computed(() => {
-  const amountCol = aggregateAmountColumn.value;
-  if (!amountCol) return 0;
+function o2mAmountTotal(column: RelationFieldColumn) {
   // The footer is the collection total, so pagination must not narrow the
   // authoritative business amount to the currently visible window.
   return one2manyRows.value.reduce((sum, row) => {
-    const value = Number(row.values[amountCol.name]);
+    const value = Number(row.values[column.name]);
     return sum + (Number.isFinite(value) ? value : 0);
   }, 0);
-});
+}
 
-const o2mAmountTotalText = computed(() => {
-  const amountCol = aggregateAmountColumn.value;
-  return amountCol ? props.adapter.one2manyColumnDisplayValue(amountCol, o2mAmountTotal.value) : '';
-});
-
-const aggregateAmountColumn = computed(() => (
-  props.adapter.one2manyColumns(props.field.name).find(isO2mAmountColumn)
+const aggregateAmountColumns = computed(() => (
+  props.adapter.one2manyColumns(props.field.name).filter(isO2mAmountColumn)
 ));
 
 function o2mRowHasMessages(row: RelationFieldRow) {

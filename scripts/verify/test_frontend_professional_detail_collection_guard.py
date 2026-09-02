@@ -40,7 +40,7 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("X2ManyRelationRenderer.vue"):
                 return value.replace(
-                    "if (!amountCol || !one2manyRows.value.length) return [];",
+                    "if (!amountColumns.length || !one2manyRows.value.length) return [];",
                     "if (!o2mAmountTotal.value) return [];",
                 )
             return value
@@ -60,6 +60,16 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
 
         failures = validate(read_text)
         self.assertTrue(any("aggregate scope" in item for item in failures))
+
+    def test_first_monetary_column_only_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace(".filter(isO2mAmountColumn)", ".find(isO2mAmountColumn)")
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("first monetary column" in item for item in failures))
 
 
 if __name__ == "__main__":

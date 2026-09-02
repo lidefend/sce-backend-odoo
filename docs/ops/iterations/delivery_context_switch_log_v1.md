@@ -7607,3 +7607,22 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   missing-scope-label counterexample, strict Vue typecheck, development build,
   refreshed repository-owned productization inventories with zero gaps, and
   the complete `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Multi-monetary detail aggregation closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `fd2e8c3f`.
+- Product defect and repair: the shared detail table previously aggregated
+  only the first monetary column and silently omitted every subsequent amount
+  field. It now derives all monetary columns from the authoritative relation
+  descriptor and renders a full-collection total for each one. No model,
+  label, role, status, or frontend business special case was introduced.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey retained three independent activity pages, unsaved draft and
+  dirty-close behavior, readable project relation facts, one editable payment
+  attachment upload entry, zero browser errors, zero mutations, zero execute
+  requests, and no 390px horizontal overflow.
+- Verification: 7 professional detail collection guard tests including a
+  first-monetary-column-only counterexample, strict Vue typecheck, development
+  build, refreshed repository-owned productization inventories with zero gaps,
+  and the complete `make verify.frontend.quick.gate` passed.
