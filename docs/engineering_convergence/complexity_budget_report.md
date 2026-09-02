@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4181`
+- Scanned files: `4183`
 - Files requiring split plan: `45`
 - Files above warning threshold: `80`
 
@@ -53,7 +53,7 @@ Generated from repository source files. This report is informational during the 
 | 1588 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1547 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1543 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
-| 638 | YAML workflow | `scripts/verify/registry.yaml` |
+| 632 | YAML workflow | `scripts/verify/registry.yaml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
 | 513 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
@@ -136,9 +136,9 @@ Generated from repository source files. This report is informational during the 
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
 | 423 | Shell script | `scripts/demo/verify.sh` |
 | 343 | YAML workflow | `.github/workflows/infra-stage-gate.yml` |
-| 315 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 314 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |
 | 313 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |
+| 310 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 305 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 302 | Shell script | `scripts/deploy/prod_sim_fresh_replay.sh` |
 | 287 | Shell script | `scripts/common/frontend_release_ci_identity.sh` |
