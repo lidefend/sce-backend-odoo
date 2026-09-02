@@ -48,6 +48,19 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
         failures = validate(read_text)
         self.assertTrue(any("when it is zero" in item for item in failures))
 
+    def test_amount_total_without_scope_label_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace(
+                    "_stateLabel: `全部 ${one2manyRows.value.length} 条合计`,",
+                    "_stateLabel: '',",
+                )
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("aggregate scope" in item for item in failures))
+
 
 if __name__ == "__main__":
     unittest.main()

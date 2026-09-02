@@ -7588,3 +7588,22 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   hidden-zero counterexample, strict Vue typecheck, development build,
   refreshed repository-owned productization inventories with zero gaps, and
   the complete `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Detail total scope presentation closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `a68b53a1`.
+- Product defect and repair: the shared detail table rendered a bare footer
+  amount without identifying whether it represented the current page or the
+  full business collection. The existing state column now labels the footer
+  `全部 N 条合计`, making the all-visible-row aggregate scope explicit without
+  adding a parallel component or product-specific inference.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey retained three independent activity pages, draft round-trip and
+  dirty-close confirmation, readable project relation facts, one editable
+  payment attachment upload entry, zero browser errors, zero mutations, zero
+  execute requests, and no 390px horizontal overflow.
+- Verification: 6 professional detail collection guard tests including a
+  missing-scope-label counterexample, strict Vue typecheck, development build,
+  refreshed repository-owned productization inventories with zero gaps, and
+  the complete `make verify.frontend.quick.gate` passed.

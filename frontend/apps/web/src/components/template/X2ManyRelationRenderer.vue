@@ -301,7 +301,11 @@ const o2mTableData = computed(() => paginatedOne2manyRows.value.map((row) => {
 }));
 
 const o2mTableFootData = computed(() => {
-  const footRow: Record<string, unknown> = { id: '__total__' };
+  const footRow: Record<string, unknown> = {
+    id: '__total__',
+    _stateLabel: `全部 ${one2manyRows.value.length} 条合计`,
+    _messages: [],
+  };
   const amountCol = aggregateAmountColumn.value;
   if (!amountCol || !one2manyRows.value.length) return [];
   footRow[amountCol.name] = o2mAmountTotalText.value;
