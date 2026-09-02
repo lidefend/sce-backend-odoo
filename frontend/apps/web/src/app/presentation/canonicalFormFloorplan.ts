@@ -454,7 +454,7 @@ export function composeCanonicalFormFloorplan(
   const subordinateRelationNodes = semanticProductMode ? relationRoleNodes(subordinateNodes.filter(nodeHasRelationCapability)) : [];
   const relationNodes = [...primaryRelationNodes, ...subordinateRelationNodes];
   const allContextNodes = semanticProductMode
-    ? (writeMode ? [] : contextRoleNodes(primaryNodes))
+    ? (writeMode ? [] : deduplicateProductFields(contextRoleNodes(primaryNodes)))
     : primaryNodes.filter((node) => !taskNodes.includes(node));
   const readonlyContextNodes = semanticProductMode && writeMode
     ? fieldNodes(primaryNodes, (field) => (

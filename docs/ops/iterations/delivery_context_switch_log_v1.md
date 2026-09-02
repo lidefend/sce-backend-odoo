@@ -3,6 +3,27 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-09-02 — READONLY-BUSINESS-FACT-TRUST-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1`; this batch
+  remains local until its final verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / Canonical
+  Render Model and Product Floorplan readonly fact presentation /
+  `frontend/apps/web` and the governed local-dev browser probe.
+- Standard vs User-Specific: generic relation-value presentation and canonical
+  field-identity de-duplication only; no model name, Chinese label, role, status,
+  customer preference, backend fact, or new contract is inferred.
+- Product result: readonly one2many relation facts present authoritative business
+  names instead of raw `[id, label]` tuples, and readonly task pages keep one
+  strongest visible occurrence of each repeated business-context fact.
+- Real-page evidence: the project workspace no longer renders the raw `10,` ID
+  prefix for its owner relation, while payment request `167` renders each visible
+  canonical field identity once. The governed project-create/project-workspace/
+  payment journey also checks desktop and 390px layouts, at most one primary
+  action, zero horizontal overflow, zero mutations and zero browser errors.
+- Boundary: no page-specific frontend branch, parallel scene contract, component
+  supplier switch, business write, environment rebuild, push, PR, or merge.
+
 ## 2026-08-31 — AUTH-SURFACE-GUARD-CONSUMPTION-CLOSURE-01
 
 - Branch / anchor: `audit/professional-component-residual-closure-v1` at

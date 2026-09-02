@@ -2085,6 +2085,22 @@ assert.deepEqual(
   ],
   'canonical form must preserve same-field occurrences and their independent status',
 );
+const readonlyTaskDuplicateOccurrences = structuredClone(duplicateOccurrences);
+readonlyTaskDuplicateOccurrences.formStructureContract = governedFormStructure('context');
+const readonlyTaskDuplicateFloorplan = composeCanonicalFormFloorplan(presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(readonlyTaskDuplicateOccurrences)),
+  'readonly',
+));
+assert.deepEqual(
+  collectFields([
+    ...readonlyTaskDuplicateFloorplan.summaryNodes,
+    ...readonlyTaskDuplicateFloorplan.taskNodes,
+    ...readonlyTaskDuplicateFloorplan.contextNodes,
+    ...readonlyTaskDuplicateFloorplan.overflowContextNodes,
+  ]).filter((field) => field.fieldCode === 'name').map((field) => field.widgetId),
+  ['field.name.occ.second'],
+  'readonly task Floorplans must show one strongest occurrence for a repeated business fact',
+);
 const equivalentCreateOccurrences = structuredClone(duplicateOccurrences);
 equivalentCreateOccurrences.statusContract.widgetStatus = [
   { widgetId: 'field.name.occ.first', visible: true, readonly: false, required: true, disabled: false, auth: 'edit' },

@@ -105,6 +105,13 @@ const selectionColumn = {
 };
 assert.equal(one2manyColumnDisplayValue(selectionColumn, 'won'), '已中标');
 assert.equal(one2manyColumnDisplayValue(selectionColumn, 'unknown'), 'unknown');
+const many2oneColumn = { name: 'partner_id', label: '往来单位', ttype: 'many2one', required: false };
+assert.equal(one2manyColumnDisplayValue(many2oneColumn, [10, '德阳市某产业发展有限公司']), '德阳市某产业发展有限公司');
+assert.equal(one2manyColumnDisplayValue(many2oneColumn, { id: 10, display_name: '德阳市某产业发展有限公司' }), '德阳市某产业发展有限公司');
+assert.equal(one2manyColumnDisplayValue(many2oneColumn, 10), '', 'bare many2one ids must fail closed instead of leaking into product text');
+const many2manyColumn = { name: 'tag_ids', label: '标签', ttype: 'many2many', required: false };
+assert.equal(one2manyColumnDisplayValue(many2manyColumn, [[2, '重点'], { id: 3, name: '在建' }]), '重点、在建');
+assert.equal(one2manyColumnDisplayValue(many2manyColumn, [2, 3]), '', 'bare many2many ids must fail closed instead of leaking into product text');
 const schemaSelectionColumns = one2manyColumnsFromSubview({ tree: {
   columns: ['state'],
   columns_schema: [{ name: 'state', label: '状态', type: 'selection', selection: [

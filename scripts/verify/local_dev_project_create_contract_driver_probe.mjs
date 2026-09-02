@@ -197,6 +197,7 @@ try {
     taskPage: await workspaceSurface.locator('[data-object-task-page]').count(),
     nativeStructure: await workspaceSurface.locator('[data-native-contract-structure]').count(),
     notebookPages: await workspaceSurface.locator('[data-native-contract-structure] .native-tabs .native-tab').count(),
+    readonlyRelationFacts: await workspaceSurface.locator('.o2m-readonly-fact dd').allTextContents(),
     header: await captureHeaderPresentation(workspaceSurface),
   };
   const workspacePresentation = contractPresentations
@@ -217,6 +218,9 @@ try {
   if (workspaceResult.header.commandBars !== 1 || workspaceResult.header.scButtons < 1
     || workspaceResult.header.primaryActions > 1 || workspaceResult.header.rawButtonsOutsideWorkflow !== 0) {
     throw new Error(`project workspace header primitive boundary failed: ${JSON.stringify(workspaceResult.header)}`);
+  }
+  if (workspaceResult.readonlyRelationFacts.some((value) => /^\s*\d+\s*,/.test(value))) {
+    throw new Error(`project workspace leaked raw relation ids: ${JSON.stringify(workspaceResult.readonlyRelationFacts)}`);
   }
 
   contractActions.length = 0;
@@ -240,6 +244,9 @@ try {
     drivers: paymentDrivers,
     errors: paymentErrors,
     contractActions: [...contractActions],
+    visibleFieldNames: await paymentSurface
+      .locator('[data-field-name]')
+      .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-field-name')).filter(Boolean)),
     header: await captureHeaderPresentation(paymentSurface),
   };
   if (paymentDrivers !== 1 || paymentErrors.length !== 0) {
@@ -248,6 +255,10 @@ try {
   if (paymentResult.header.commandBars !== 1 || paymentResult.header.scButtons < 1
     || paymentResult.header.primaryActions !== 1 || paymentResult.header.rawButtonsOutsideWorkflow !== 0) {
     throw new Error(`payment task header primitive boundary failed: ${JSON.stringify(paymentResult.header)}`);
+  }
+  if (paymentResult.visibleFieldNames.length === 0
+    || new Set(paymentResult.visibleFieldNames).size !== paymentResult.visibleFieldNames.length) {
+    throw new Error(`payment page repeated canonical facts: ${JSON.stringify(paymentResult.visibleFieldNames)}`);
   }
   await page.setViewportSize({ width: 390, height: 844 });
   const mobileResults = {};

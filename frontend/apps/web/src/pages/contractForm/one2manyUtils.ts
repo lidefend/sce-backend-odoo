@@ -539,6 +539,28 @@ export function one2manyColumnInputType(column: One2ManyColumn): 'text' | 'numbe
 export function one2manyColumnDisplayValue(column: One2ManyColumn, value: unknown) {
   const ttype = String(column.ttype || '').trim().toLowerCase();
   if (value === false || value === null || value === undefined) return '';
+  if (ttype === 'many2one') {
+    if (Array.isArray(value)) return value.length > 1 ? String(value[1] ?? '').trim() : '';
+    if (typeof value === 'object') {
+      const row = value as Record<string, unknown>;
+      return String(row.displayName || row.display_name || row.name || row.label || '').trim();
+    }
+    // A bare relation id is not a product-facing value. The relation read
+    // carrier must provide its authoritative display name before we render it.
+    return '';
+  }
+  if (ttype === 'many2many') {
+    if (!Array.isArray(value)) return '';
+    return value.flatMap((item) => {
+      if (Array.isArray(item)) return item.length > 1 ? [String(item[1] ?? '').trim()] : [];
+      if (item && typeof item === 'object') {
+        const row = item as Record<string, unknown>;
+        const label = String(row.displayName || row.display_name || row.name || row.label || '').trim();
+        return label ? [label] : [];
+      }
+      return [];
+    }).filter(Boolean).join('、');
+  }
   if (ttype === 'date') return toDateInputValue(value);
   if (ttype === 'datetime') return toDatetimeInputValue(value);
   if (ttype === 'selection') {
