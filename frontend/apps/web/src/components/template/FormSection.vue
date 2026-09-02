@@ -1,5 +1,6 @@
 <template>
   <ScCard
+    v-if="displayFields.length || fieldSelectionMode || fieldConfigEditable || slots.action || hint"
     :class="['template-form-section', toneClass, { 'template-form-section--readonly': allFieldsReadonly }]"
     data-component="FormSection"
     data-semantic-component="FormSection"
@@ -10,9 +11,9 @@
     <template v-if="showHead && $slots.action" #actions><slot name="action" /></template>
     <p v-if="hint" class="template-form-section-hint">{{ hint }}</p>
     <div :class="['template-form-section-grid', `template-form-section-grid--columns-${columns}`]">
-      <template v-if="fields.length">
+      <template v-if="displayFields.length">
         <div
-          v-for="(field, index) in fields"
+          v-for="(field, index) in displayFields"
           :key="field.key"
           :class="fieldClass(field, index)"
           :data-field-name="field.name"
@@ -618,6 +619,12 @@ function readonlyText(field: FormSectionFieldSchema) {
 }
 
 const taskActionResolver = inject(ScTaskActionResolverKey, null);
+
+const displayFields = computed(() => props.fields.filter((field) => {
+  if (!props.preferReadonlyFacts || props.fieldSelectionMode || props.fieldConfigEditable) return true;
+  if (!field.readonly || field.type === 'one2many' || !fieldHasEmptyValue(field)) return true;
+  return Boolean(taskActionFor(field));
+}));
 
 /**
  * Resolve a readonly fact into a clickable business action, when the page

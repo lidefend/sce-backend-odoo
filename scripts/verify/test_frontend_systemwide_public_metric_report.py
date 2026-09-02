@@ -100,6 +100,13 @@ class SystemwidePublicMetricReportTest(unittest.TestCase):
         self.assertIn("metrics.primaryActions <= 1", source)
         self.assertIn("metrics.enabledPrimaryActions <= 1", source)
 
+    def test_browser_rejects_empty_readonly_scalar_facts(self):
+        source = Path("scripts/verify/frontend_systemwide_public_metric_browser.mjs").read_text(encoding="utf-8")
+        self.assertIn("emptyReadonlyScalarFacts", source)
+        self.assertIn("readonly surface exposes empty scalar facts", source)
+        self.assertIn("emptyFormSections", source)
+        self.assertIn("readonly surface exposes empty form sections", source)
+
 
 if __name__ == "__main__":
     unittest.main()

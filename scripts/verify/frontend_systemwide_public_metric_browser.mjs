@@ -98,6 +98,11 @@ try {
       const enabledPrimary = primary.filter((node) => !(node instanceof HTMLButtonElement) || !node.disabled);
       const fakeReadonly = [...patternNode?.querySelectorAll('input:disabled, textarea:disabled, select:disabled') || []]
         .filter(visible);
+      const emptyReadonlyScalarFacts = [...patternNode?.querySelectorAll(
+        '.field--empty[data-field-state="readonly"]:not([data-field-type="one2many"])',
+      ) || []].filter(visible);
+      const emptyFormSections = [...patternNode?.querySelectorAll('[data-component="FormSection"]') || []]
+        .filter((node) => visible(node) && !String(node.textContent || '').trim());
       const selectedNav = document.querySelectorAll(`#primary-sidebar [data-navigation-menu-id="${menuId}"][aria-current="page"]`).length;
       const visibleHeadings = [...document.querySelectorAll('h1')].filter(visible);
       return {
@@ -119,6 +124,8 @@ try {
         titles,
         duplicateTitles: [...new Set(titles.filter((value, index) => titles.indexOf(value) !== index))],
         disabledFakeReadonlyControls: fakeReadonly.length,
+        emptyReadonlyScalarFacts: emptyReadonlyScalarFacts.length,
+        emptyFormSections: emptyFormSections.length,
         disabledFakeReadonlyControlDetails: fakeReadonly.map((node) => ({
           tag: node.tagName.toLowerCase(), type: node.getAttribute('type') || '',
           value: String(node.value || ''), field: node.closest('[data-field-name]')?.getAttribute('data-field-name') || '',
@@ -180,6 +187,10 @@ try {
       check(metrics.saveActions === 0, `${spec.key}: readonly surface exposes save`, metrics);
       check(metrics.disabledFakeReadonlyControls === 0,
         `${spec.key}: readonly facts use disabled fake controls`, metrics);
+      check(metrics.emptyReadonlyScalarFacts === 0,
+        `${spec.key}: readonly surface exposes empty scalar facts`, metrics);
+      check(metrics.emptyFormSections === 0,
+        `${spec.key}: readonly surface exposes empty form sections`, metrics);
     }
     if (spec.route.startsWith('/r/')) {
       check(new URL(metrics.url).pathname.startsWith('/r/'), `${spec.key}: explicit readonly route was promoted`, metrics);
