@@ -67,7 +67,7 @@ goal:
     environment_reuse_only: true
     shared_database_mutation: serialized
 
-  current_batch:
+  completed_batch_c:
     id: Batch-C
     title: authoritative_cost_fact_model_v2
     status: completed
@@ -154,9 +154,27 @@ goal:
       - v8_exact_fingerprint_fact_native_and_orm_reviews_approved_zero_s0_s1_s2_s3
       - p4_missing_business_fact_upgrade_replay_flow_still_blocks_pr_push
 
+  current_batch:
+    id: Batch-D
+    title: remaining_p1_fact_authority_inventory
+    status: completed
+    audit_head: aa182665401640d3bde058c61135bf49c389d9e5
+    result:
+      - structural_registry_compliance_does_not_prove_fact_authority
+      - project_funding_baseline_and_actual_allocation_selected_for_next_model_upgrade
+      - canonical_finance_lifecycle_and_currency_aggregation_retained_as_independent_slice
+      - native_project_and_company_isolation_gaps_retained_as_independent_slice
+      - three_independent_read_only_audits_found_zero_s0
+
   next_batches:
-    - id: Batch-D
-      title: remaining_p1_fact_authority_inventory
+    - id: Batch-E
+      title: project_funding_baseline_and_actual_allocation_authority_v1
+      status: planned
+    - id: Batch-F
+      title: canonical_finance_projection_lifecycle
+      status: planned
+    - id: Batch-G
+      title: native_fact_access_and_project_isolation
       status: planned
 
   acceptance:

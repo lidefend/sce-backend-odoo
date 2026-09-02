@@ -7171,3 +7171,22 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   reviewers then independently approved the same 7146-path candidate with zero
   S0-S3 findings: digest `7201b1ae2f6a7d8e88f937cedd54440a94f7da33793191d00785ca5985e359cb`,
   scope `9f6415a689d869b18a24ce0a9ac370e9b0b205874cf573ba3b512f301e75057f`.
+
+### Batch-D remaining P1 fact-authority inventory
+
+- Bound clean source: `aa182665401640d3bde058c61135bf49c389d9e5`.
+- Formal Product Layer / Layer Target: P1 construction standard /
+  `smart_construction_core` fact models, native Odoo surfaces, security and ORM.
+- Three independent read-only audits found zero S0 and showed that structural
+  registry compliance does not prove lifecycle, conservation, isolation or
+  concurrency authority.
+- The next independently acceptable model upgrade is the project funding
+  baseline and actual payment allocation chain. It currently permits direct
+  active-state writes, lock-free duplicate activation, mutable active history,
+  incomplete four-level amount conservation, mutable/deletable allocations and
+  destructive allocation cleanup before payment reversal.
+- Canonical finance lifecycle/currency aggregation and native project/company
+  isolation remain documented as separate later slices; they are not mixed
+  into the funding model rollback unit.
+- Detailed evidence and the Batch-E acceptance boundary are recorded in
+  `docs/ops/iterations/p1_business_fact_authority_inventory_batch_d_20260902.md`.
