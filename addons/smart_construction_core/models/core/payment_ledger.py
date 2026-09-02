@@ -99,6 +99,34 @@ class PaymentLedger(models.Model):
         "actual_event_id",
         string="资金计划分配",
     )
+    contract_allocation_ids = fields.One2many(
+        "payment.ledger.allocation",
+        "ledger_id",
+        string="合同分摊事实",
+        readonly=True,
+    )
+    contract_allocated_amount = fields.Monetary(
+        string="合同已分摊金额",
+        currency_field="currency_id",
+        compute="_compute_contract_allocation_totals",
+        store=True,
+        readonly=True,
+    )
+    contract_unallocated_amount = fields.Monetary(
+        string="合同待核对金额",
+        currency_field="currency_id",
+        compute="_compute_contract_allocation_totals",
+        store=True,
+        readonly=True,
+    )
+    contract_allocation_status = fields.Selection(
+        [("complete", "分摊完整"), ("review_required", "待核对")],
+        string="合同分摊状态",
+        compute="_compute_contract_allocation_totals",
+        store=True,
+        readonly=True,
+        index=True,
+    )
     fund_plan_allocated_amount = fields.Monetary(
         string="计划已分配金额",
         currency_field="currency_id",
@@ -113,6 +141,219 @@ class PaymentLedger(models.Model):
         store=True,
         readonly=True,
     )
+
+    @api.depends(
+        "amount",
+        "contract_allocation_ids.allocated_amount",
+        "contract_allocation_ids.allocation_state",
+    )
+    def _compute_contract_allocation_totals(self):
+        for ledger in self:
+            allocated = sum(ledger.contract_allocation_ids.mapped("allocated_amount"))
+            currency = ledger.currency_id
+            allocated = currency.round(allocated) if currency else allocated
+            unallocated = max((ledger.amount or 0.0) - allocated, 0.0)
+            unallocated = currency.round(unallocated) if currency else unallocated
+            unresolved = ledger.contract_allocation_ids.filtered(
+                lambda row: row.allocation_state != "allocated"
+            )
+            exact_total = (
+                float_compare(
+                    allocated,
+                    ledger.amount or 0.0,
+                    precision_rounding=currency.rounding if currency else 0.01,
+                )
+                == 0
+            )
+            complete = bool(ledger.contract_allocation_ids) and not unresolved and exact_total
+            ledger.contract_allocated_amount = allocated
+            ledger.contract_unallocated_amount = unallocated
+            ledger.contract_allocation_status = "complete" if complete else "review_required"
+
+    @staticmethod
+    def _allocation_contract_candidates(line):
+        return (
+            line.contract_id
+            | line.settlement_line_id.contract_id
+            | line.settlement_id.contract_id
+        )
+
+    def _allocation_contract_is_consistent(self, contract, request):
+        return (
+            contract
+            and (not request.project_id or contract.project_id == request.project_id)
+            and (not request.company_id or contract.company_id == request.company_id)
+            and (not request.currency_id or contract.currency_id == request.currency_id)
+        )
+
+    def _rounded_ratio_allocations(self, basis_rows):
+        """Largest-remainder allocation with deterministic line-id tie-breaking."""
+        self.ensure_one()
+        currency = self.currency_id
+        precision = currency.rounding if currency and currency.rounding else 0.01
+        basis_total = sum(item["basis_amount"] for item in basis_rows)
+        raw_rows = []
+        for item in basis_rows:
+            raw = (self.amount or 0.0) * item["basis_amount"] / basis_total
+            rounded = currency.round(raw) if currency else round(raw, 2)
+            raw_rows.append({**item, "raw_amount": raw, "allocated_amount": rounded})
+        delta = (self.amount or 0.0) - sum(item["allocated_amount"] for item in raw_rows)
+        delta = currency.round(delta) if currency else round(delta, 2)
+        units = int(round(delta / precision)) if precision else 0
+        if units:
+            reverse = units > 0
+            ranked = sorted(
+                raw_rows,
+                key=lambda item: (
+                    item["raw_amount"] - item["allocated_amount"],
+                    -item["payment_request_line_id"],
+                ),
+                reverse=reverse,
+            )
+            step = precision if units > 0 else -precision
+            for index in range(abs(units)):
+                row = ranked[index % len(ranked)]
+                row["allocated_amount"] = (
+                    currency.round(row["allocated_amount"] + step)
+                    if currency
+                    else round(row["allocated_amount"] + step, 2)
+                )
+        return raw_rows
+
+    def _unresolved_contract_allocation_values(self, contracts, reason_code):
+        self.ensure_one()
+        values = []
+        for contract in contracts.sorted("id"):
+            values.append(
+                {
+                    "ledger_id": self.id,
+                    "contract_id": contract.id,
+                    "basis_amount": 0.0,
+                    "allocated_amount": 0.0,
+                    "allocation_state": "unresolved_candidate",
+                    "reason_code": reason_code,
+                    "allocation_key": f"candidate:{contract.id}",
+                }
+            )
+        if not values:
+            values.append(
+                {
+                    "ledger_id": self.id,
+                    "basis_amount": 0.0,
+                    "allocated_amount": 0.0,
+                    "allocation_state": "unresolved_global",
+                    "reason_code": reason_code,
+                    "allocation_key": "unresolved:global",
+                }
+            )
+        return values
+
+    def _prepare_contract_allocation_values(self):
+        self.ensure_one()
+        request = self.payment_request_id
+        currency = self.currency_id or request.currency_id
+        precision = currency.rounding if currency and currency.rounding else 0.01
+        lines = request.outflow_line_ids.filtered("active").sorted("id")
+        if lines:
+            basis_rows = []
+            candidate_contracts = self.env["construction.contract"]
+            reason_code = False
+            for line in lines:
+                candidates = self._allocation_contract_candidates(line)
+                candidate_contracts |= candidates
+                if float_compare(
+                    line.current_pay_amount or 0.0,
+                    0.0,
+                    precision_rounding=precision,
+                ) <= 0:
+                    reason_code = "invalid_basis_amount"
+                    continue
+                if len(candidates) != 1:
+                    reason_code = "unresolved_contract"
+                    continue
+                contract = candidates
+                if not self._allocation_contract_is_consistent(contract, request):
+                    reason_code = (
+                        "currency_mismatch"
+                        if contract.currency_id != request.currency_id
+                        else "project_company_mismatch"
+                    )
+                    continue
+                basis_rows.append(
+                    {
+                        "payment_request_line_id": line.id,
+                        "contract_id": contract.id,
+                        "settlement_id": line.settlement_id.id or False,
+                        "settlement_line_id": line.settlement_line_id.id or False,
+                        "basis_amount": line.current_pay_amount,
+                    }
+                )
+            basis_total = sum(item["basis_amount"] for item in basis_rows)
+            if float_compare(
+                basis_total,
+                request.amount or 0.0,
+                precision_rounding=precision,
+            ):
+                reason_code = reason_code or "basis_total_mismatch"
+            if reason_code or len(basis_rows) != len(lines):
+                return self._unresolved_contract_allocation_values(
+                    candidate_contracts, reason_code or "unresolved_contract"
+                )
+            return [
+                {
+                    "ledger_id": self.id,
+                    "payment_request_line_id": item["payment_request_line_id"],
+                    "contract_id": item["contract_id"],
+                    "settlement_id": item["settlement_id"],
+                    "settlement_line_id": item["settlement_line_id"],
+                    "basis_amount": item["basis_amount"],
+                    "allocated_amount": item["allocated_amount"],
+                    "allocation_state": "allocated",
+                    "reason_code": "request_line_ratio",
+                    "allocation_key": f"line:{item['payment_request_line_id']}",
+                }
+                for item in self._rounded_ratio_allocations(basis_rows)
+            ]
+
+        direct_contracts = request.contract_id
+        if len(direct_contracts) == 1 and self._allocation_contract_is_consistent(
+            direct_contracts, request
+        ):
+            return [
+                {
+                    "ledger_id": self.id,
+                    "contract_id": direct_contracts.id,
+                    "settlement_id": request.settlement_id.id or False,
+                    "basis_amount": request.amount or self.amount,
+                    "allocated_amount": self.amount,
+                    "allocation_state": "allocated",
+                    "reason_code": "direct_contract",
+                    "allocation_key": f"direct:{direct_contracts.id}",
+                }
+            ]
+        return self._unresolved_contract_allocation_values(
+            direct_contracts,
+            "unresolved_contract" if direct_contracts else "missing_basis",
+        )
+
+    def _ensure_contract_allocations(self):
+        if not self:
+            return
+        self.env.cr.execute(
+            "SELECT id FROM payment_ledger WHERE id IN %s FOR UPDATE",
+            [tuple(sorted(self.ids))],
+        )
+        self.invalidate_recordset(["contract_allocation_ids"])
+        Allocation = self.env["payment.ledger.allocation"].sudo().with_context(
+            _sc_payment_ledger_allocation_build=True
+        )
+        values = []
+        for ledger in self:
+            if ledger.contract_allocation_ids:
+                continue
+            values.extend(ledger._prepare_contract_allocation_values())
+        if values:
+            Allocation.create(values)
 
     def init(self):
         """Keep every installment while preventing duplicate ledgering per execution."""
@@ -243,6 +484,7 @@ class PaymentLedger(models.Model):
         records._check_amount()
         if not audited_history_import:
             records._check_overpay()
+        records._ensure_contract_allocations()
         return records
 
     def write(self, vals):
@@ -263,16 +505,9 @@ class PaymentLedger(models.Model):
             if any(record.state != "posted" for record in self):
                 raise UserError(_("只有有效付款台账可以冲销。"))
             return super().write(vals)
-        allocations = self.fund_plan_allocation_ids
-        for rec in self:
-            request_id = vals.get("payment_request_id", rec.payment_request_id.id)
-            request = self.env["payment.request"].browse(request_id)
-            self._check_request_state(request)
-        res = super().write(vals)
-        self._check_amount()
-        self._check_overpay(exclude_ids=self.ids)
-        allocations._validate_relation_state()
-        return res
+        raise AccessError(
+            _("付款台账是不可变现金事实，不允许修改；请通过受控冲销保留审计链。")
+        )
 
     def unlink(self):
         raise UserError(_("付款台账属于财务事实，不允许删除；请通过受控冲销保留审计链。"))

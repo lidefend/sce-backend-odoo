@@ -80,12 +80,12 @@
       "business_object": "expense",
       "responsibility_type": "industry source-of-truth",
       "solution_layer": "industry",
-      "source_of_truth": "payment.request for intent/approval and sc.payment.execution for paid fact",
+      "source_of_truth": "payment.request for intent/approval, sc.payment.execution for controlled workflow evidence, payment.ledger for actual cash, and payment.ledger.allocation for immutable contract attribution",
       "native_dependency": "project.project, res.partner, account, approval",
-      "representative_models": ["payment.request", "payment.request.line", "sc.payment.execution"],
+      "representative_models": ["payment.request", "payment.request.line", "sc.payment.execution", "payment.ledger", "payment.ledger.allocation"],
       "owned_models": ["sc.team.loan.deduction.workspace"],
       "target_problem": "Separate expense payment intent, approval, and actual cash movement.",
-      "boundary_rule": "Request owns workflow intent; execution owns the business fact that payment happened.",
+      "boundary_rule": "Request owns workflow intent, execution proves controlled processing, ledger owns actual cash, and immutable allocation owns contract attribution.",
       "status": "clear enough"
     },
     {

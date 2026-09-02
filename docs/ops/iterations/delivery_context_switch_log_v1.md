@@ -7064,3 +7064,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   write smoke but did not complete because the local environment exposed only
   one valid probe login while the gate requires two; this prerequisite failure
   is recorded as unresolved and is not represented as a security-gate pass.
+
+## 2026-09-02 — P1 immutable actual-payment contract allocation
+
+- Branch / baseline: `refactor/p1-business-facts-professionalization-v1` /
+  `394b2ffe20c48255d2c8c0788fbfc36456c7d007`; Batch-B entry HEAD is
+  `3d6d3382c18b288fc0142afc71c862d5ea2a6b4a`.
+- Formal Product Layer / Layer Target / Module: P1 construction industry
+  standard / actual-payment contract attribution / `smart_construction_core`.
+- Reason: `payment.ledger` is already the sole actual-payment fact, but
+  multi-contract attribution is currently recomputed from mutable request
+  lines or omitted when an execution header has no unique contract. The batch
+  freezes allocation evidence in the ledger transaction and represents
+  ambiguity explicitly instead of guessing.
+- Why here / why not elsewhere: contract attribution is construction-domain
+  accounting semantics. It does not belong in `smart_core`, the custom
+  frontend, customer configuration, or an ops replay script.
+- Blast radius: payment ledger creation, payment request line immutability,
+  contract actual-paid aggregation, allocation security, module upgrade, and
+  focused Odoo tests. Contract-position UI, settlement freezing, cost facts,
+  public contracts, startup chain, and frontend are excluded.

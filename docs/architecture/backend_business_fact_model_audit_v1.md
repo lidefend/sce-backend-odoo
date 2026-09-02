@@ -38,14 +38,14 @@ The current static inventory reports:
 
 | category | count | meaning |
 | --- | ---: | --- |
-| total model classes | 370 | all Python model classes under smart construction core, including abstract architecture models |
+| total model classes | 371 | all Python model classes under smart construction core, including abstract architecture models |
 | abstract models | 9 | non-instantiable mixins and projection/governance helpers retained in architecture inventory |
 | native model extensions | 131 | models that extend existing Odoo/OCA models through `_inherit` without a new `_name` |
-| custom models | 110 | new instantiable models defined by this module without mixin inheritance |
+| custom models | 111 | new instantiable models defined by this module without mixin inheritance |
 | custom models with mixin/inherit | 120 | new instantiable models that reuse mail, approval, delete guard, business fact, or compatibility mixins |
 | legacy fact models | 0 | no current `sc.legacy.*` carrier class is shipped; retired tooling is recorded separately |
 | formal fact models | 10 | runtime models with `source_origin`, `legacy_source_model`, and `legacy_record_id` |
-| projection/read models | 34 | SQL/physical projections, controlled ledgers, runtime facts, computed summaries, and controlled snapshots |
+| projection/read models | 35 | SQL/physical projections, controlled ledgers, runtime facts, computed summaries, and controlled snapshots |
 | traceable models | 86 | models with legacy or source trace fields |
 | stateful models | 92 | models with a `state` field |
 | registered formal models | 10 | formal runtime facts declared in the standard registry |
@@ -58,7 +58,7 @@ The current static inventory reports:
 | industry model families | 13 | reusable construction-industry business families |
 | customer model families | 1 | legacy replay/evidence only; not core runtime ownership |
 | ownership specs | 18 | explicit boundary specs for the highest-risk overlapping families |
-| projection registry entries | 34 | every detected projection/read surface split by source-verified implementation mode |
+| projection registry entries | 35 | every detected projection/read surface split by source-verified implementation mode |
 | management hierarchy rows | 19 | every model family declares who manages what and project carrier role |
 | universal abstraction concepts | 8 | platform kernel concepts registered for cross-industry use |
 | carrier bindings | 1 | construction binds carrier type `project` to `project.project` |
@@ -73,12 +73,12 @@ The earlier `formal_fact_model_count=10` is not the total backend model count. I
 The broader backend model design surface is:
 
 - 131 native model extensions reuse Odoo/OCA as the system-of-record where it already has strong semantics.
-- 230 instantiable custom model classes comprise 110 direct custom models and 120 custom models with mixin/inherit.
+- 231 instantiable custom model classes comprise 111 direct custom models and 120 custom models with mixin/inherit.
 - 9 abstract model classes preserve architecture mixins and helpers without entering persistence gates.
-- 34 projection/read models include SQL/physical projections, controlled ledgers, runtime facts, computed summaries, and a controlled BOQ snapshot.
+- 35 projection/read models include SQL/physical projections, controlled ledgers, runtime facts, computed summaries, and a controlled BOQ snapshot.
 - 10 explicit retirement groups preserve the provenance of 36 removed migration/probe paths without treating them as current runtime tooling.
 
-So the audit answer is not "we only have 10 models." The correct answer is: we have 370 backend model classes, and 10 of them currently qualify as formal runtime fact carriers under the strict provenance standard.
+So the audit answer is not "we only have 10 models." The correct answer is: we have 371 backend model classes, and 10 of them currently qualify as formal runtime fact carriers under the strict provenance standard.
 
 ## What Problem Are We Solving?
 
@@ -316,7 +316,7 @@ It fails when any of these are present:
 
 ## Family Registry
 
-The family registry is the binding audit input for the broader 370-class model surface. It follows the hierarchy:
+The family registry is the binding audit input for the broader 371-class model surface. It follows the hierarchy:
 
 ```text
 company -> business -> income/expense -> project as the typical construction carrier
@@ -366,7 +366,7 @@ The static audit now also assigns every detected model class to one family. Curr
 | progress quality safety risk and diary | 41 |
 | project budget BOQ and cost control | 33 |
 | project identity and execution carrier | 21 |
-| projection summaries and management visibility | 33 |
+| projection summaries and management visibility | 34 |
 | receipt income invoice and tax realization | 13 |
 | scene capability subscription and frontend contract runtime | 9 |
 | treasury account reconciliation and ledger | 6 |
@@ -442,13 +442,13 @@ These specs answer the "current state reasonable?" question more concretely:
 
 ## Projection Registry
 
-The projection registry splits all 34 detected projection/read surfaces by implementation mode and verifies every declaration against source storage strategy:
+The projection registry splits all 35 detected projection/read surfaces by implementation mode and verifies every declaration against source storage strategy:
 
 | implementation mode | count | meaning |
 | --- | ---: | --- |
 | `sql_view` | 25 | read-only SQL view rebuilt by model init, including explicitly typed-empty product-owned surfaces |
 | `physical_refresh_table` | 2 | read-only Odoo model backed by a rebuilt table or governed external physical provider |
-| `controlled_generated_ledger` | 3 | physical ledger table with guarded creation/write path |
+| `controlled_generated_ledger` | 4 | physical ledger table with guarded creation/write path |
 | `runtime_workbench_fact` | 2 | runtime-produced cockpit/workbench fact surface |
 | `computed_runtime_summary` | 1 | normal model with computed summary fields |
 | `controlled_writable_snapshot` | 1 | source-faithful BOQ snapshot writable in draft and immutable after validation/publication |
@@ -534,8 +534,8 @@ Current summary:
 - `ownership_spec_count=18`
 - `ownership_spec_shape_gap_count=0`
 - `ownership_spec_reference_gap_count=0`
-- `projection_registry_count=34`
-- `projection_mode_counts={"computed_runtime_summary": 1, "controlled_generated_ledger": 3, "controlled_writable_snapshot": 1, "physical_refresh_table": 2, "runtime_workbench_fact": 2, "sql_view": 25}`
+- `projection_registry_count=35`
+- `projection_mode_counts={"computed_runtime_summary": 1, "controlled_generated_ledger": 4, "controlled_writable_snapshot": 1, "physical_refresh_table": 2, "runtime_workbench_fact": 2, "sql_view": 25}`
 - `unregistered_projection_models=[]`
 - `management_hierarchy_count=19`
 - `management_subject_counts={"business": 5, "company": 9, "platform": 4, "source_system": 1}`
@@ -544,4 +544,4 @@ Current summary:
 - `carrier_binding_count=1`
 - `has_construction_project_binding=true`
 - `unclassified_model_count=0`
-- `implementation_counts={"abstract_model": 9, "custom_model": 110, "custom_model_with_mixin_or_inherit": 120, "native_model_extension": 131}`
+- `implementation_counts={"abstract_model": 9, "custom_model": 111, "custom_model_with_mixin_or_inherit": 120, "native_model_extension": 131}`

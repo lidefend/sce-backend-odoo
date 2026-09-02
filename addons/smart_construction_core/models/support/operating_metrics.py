@@ -9,7 +9,6 @@ RESERVED_STATES: Sequence[str] = ("submit", "approve", "approved", "done")
 # Compatibility aliases: existing callers and public fields historically call
 # the reservation amount "paid". New code must use the explicit reserved name.
 PAID_STATES: Sequence[str] = RESERVED_STATES
-PAYMENT_EXECUTION_ACTUAL_PAID_STATES: Sequence[str] = ("paid",)
 # 已申请口径：包含草稿在内的所有有效申请（不含驳回/取消），用于结算单侧"资金执行"展示。
 APPLIED_STATES: Sequence[str] = ("draft", "submit", "approve", "approved", "done")
 INVALID_APPLIED_STATES: Sequence[str] = ("rejected", "cancel", "cancelled")
@@ -263,20 +262,24 @@ def settlement_actual_paid_amount_map(env, settlement_ids: Iterable[int]) -> Dic
 
 
 def contract_actual_paid_amount_map(env, contract_ids: Iterable[int]) -> Dict[int, float]:
-    """Aggregate only executions whose state is proven to mean payment done."""
+    """Aggregate posted actual-payment allocation facts by contract."""
     ids = list(contract_ids)
     if not ids:
         return {}
-    rows = env["sc.payment.execution"].sudo().read_group(
+    rows = env["payment.ledger.allocation"].sudo().read_group(
         [
             ("contract_id", "in", ids),
-            ("state", "in", list(PAYMENT_EXECUTION_ACTUAL_PAID_STATES)),
+            ("allocation_state", "=", "allocated"),
+            ("ledger_id.state", "=", "posted"),
         ],
-        ["paid_amount:sum"],
+        ["allocated_amount:sum"],
         ["contract_id"],
     )
     return {
-        row["contract_id"][0]: row.get("paid_amount_sum", row.get("paid_amount", 0.0)) or 0.0
+        row["contract_id"][0]: row.get(
+            "allocated_amount_sum", row.get("allocated_amount", 0.0)
+        )
+        or 0.0
         for row in rows
         if row.get("contract_id")
     }

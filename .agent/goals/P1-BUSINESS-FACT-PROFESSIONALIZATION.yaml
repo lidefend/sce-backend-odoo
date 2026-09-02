@@ -68,34 +68,39 @@ goal:
     shared_database_mutation: serialized
 
   current_batch:
-    id: Batch-A
-    title: restore_exact_head_p1_fact_audit_authority
-    status: completed
-    objective: make_the_p1_fact_inventory_and_static_model_standard_truthful_for_the_exact_head
+    id: Batch-B
+    title: immutable_payment_ledger_contract_allocation
+    status: review_ready
+    objective: persist_authoritative_immutable_contract_allocation_for_each_actual_payment_ledger
     scope:
-      - p1_fact_goal_and_iteration_contract
-      - backend_business_fact_registries
-      - backend_business_fact_static_audit
+      - payment_ledger_allocation_fact_model
+      - controlled_allocation_builder
+      - post_approval_payment_request_line_immutability
+      - contract_actual_paid_aggregation_authority
+      - allocation_acl_and_record_rules
+      - non_zero_targeted_odoo_tests
     exclude:
-      - business_runtime_model_changes
-      - security_acl_or_record_rule_changes
-      - manifest_views_menus_or_actions
-      - runtime_or_database_writes
-      - frontend_or_contract_changes
-    candidate_evidence:
-      model_count: 370
-      abstract_model_count: 9
-      formal_fact_count: 10
-      projection_count: 34
-      model_family_count: 19
-      ownership_spec_count: 18
-      targeted_static_tests: 11
-      model_standard_gate: pass
-      restricted_gate: blocked_by_shared_system_init_500
-      independent_review: approve_no_s1_s2
+      - contract_execution_position_views_actions_or_menus
+      - settlement_line_fact_freezing
+      - cost_ledger_idempotency_or_batching
+      - frontend_or_smart_core_contract_changes
+      - startup_chain_or_runtime_profile_changes
+      - new_database_port_volume_fixture_or_credentials
+    semantic_freeze:
+      actual_payment_authority: payment_ledger
+      allocation_authority: immutable_payment_ledger_allocation_snapshot
+      reversal_policy: retain_allocation_rows_but_exclude_reversed_parent_from_net_actual
+      unresolved_policy: explicit_review_required_without_guessing_or_equal_split
+      line_basis_priority: payment_request_line_then_unique_direct_contract
+      compatibility: existing_payment_ledger_fields_and_intents_unchanged
+    entry_fingerprint:
+      git_head: 3d6d3382c18b288fc0142afc71c862d5ea2a6b4a
+      digest: 55bb7f7918f6705564866dec9b1edcbb5b89a38099d57efead548de7b2a00065
+      scope_manifest_sha256: 7ff095b6be6c5b35c0522b4525748365daf6b5813eadeef83e1e3b750227306a
+      entry_count: 7132
 
   next_batches:
-    - id: Batch-B
+    - id: Batch-B2
       title: contract_execution_position_v1
       status: planned
     - id: Batch-C

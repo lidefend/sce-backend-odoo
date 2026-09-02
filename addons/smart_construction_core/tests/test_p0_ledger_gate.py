@@ -538,7 +538,7 @@ class TestCorePaymentAmountSemantics(TransactionCase):
         self.assertEqual(ledger.reversal_execution_id, execution)
         self.assertEqual(opm.settlement_actual_paid_amount_map(self.env, [self.settlement.id]), {})
 
-    def test_contract_actual_paid_state_matrix(self):
+    def test_contract_actual_paid_uses_posted_ledger_allocation_only(self):
         Execution = self._model("sc.payment.execution")
         common = {
             "project_id": self.project.id,
@@ -547,25 +547,27 @@ class TestCorePaymentAmountSemantics(TransactionCase):
             "currency_id": self.currency.id,
         }
         Execution.create({**common, "name": "T1-B Draft", "paid_amount": 10.0, "state": "draft"})
-        # 12. Draft and 13. confirmed are excluded.
+        # 12. Payment registrations are workflow evidence, not actual-cash facts.
         self.assertEqual(self._contract_paid(), 0.0)
         Execution.create({**common, "name": "T1-B Confirmed", "paid_amount": 20.0, "state": "confirmed"})
         self.assertEqual(self._contract_paid(), 0.0)
-        paid = Execution.create({**common, "name": "T1-B Paid", "paid_amount": 30.0, "state": "paid"})
-        # 14. Paid increases contract actual paid.
-        self.assertEqual(self._contract_paid(), 30.0)
-        paid.write({"state": "cancel"})
+        Execution.create({**common, "name": "T1-B Paid", "paid_amount": 30.0, "state": "paid"})
+        # 13. Even a paid registration cannot bypass the immutable cash ledger.
         self.assertEqual(self._contract_paid(), 0.0)
-        paid.write({"state": "paid"})
-        paid.flush_recordset(["state"])
-        self.env.cr.execute("UPDATE sc_payment_execution SET state='cancelled' WHERE id=%s", (paid.id,))
-        self.env.invalidate_all()
-        # 15. cancel/cancelled are excluded.
-        self.assertEqual(self._contract_paid(), 0.0)
-        for number, amount in enumerate((10.0, 20.0, 30.0), 1):
-            Execution.create({**common, "name": f"T1-B Paid {number}", "paid_amount": amount, "state": "paid"})
-        # 16. Three paid executions accumulate.
+
+        request = self._request("T1-B Contract Actual", 60.0, "submit")
+        request.flush_recordset(["state"])
+        self.env.cr.execute("UPDATE payment_request SET state='approved' WHERE id=%s", (request.id,))
+        request.invalidate_recordset(["state"])
+        ledger = request._ensure_payment_ledger(amount=60.0)
+        # 14. The posted ledger allocation is the sole contract actual-paid authority.
         self.assertEqual(self._contract_paid(), 60.0)
+        ledger.sudo().with_context(_sc_payment_ledger_internal_reversal=True).write(
+            {"state": "reversed"}
+        )
+        # 15. Reversal preserves allocation evidence but removes it from net actual paid.
+        self.assertTrue(ledger.contract_allocation_ids)
+        self.assertEqual(self._contract_paid(), 0.0)
 
     def test_project_company_and_currency_isolation(self):
         partner = self.env["res.partner"].create({"name": "T1-B Other Vendor"})

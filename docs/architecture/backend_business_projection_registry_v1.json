@@ -49,6 +49,15 @@
       "acceptance_probe": "payment request ledger tests"
     },
     {
+      "model": "payment.ledger.allocation",
+      "implementation_mode": "controlled_generated_ledger",
+      "write_policy": "immutable rows created only in the controlled payment-ledger transaction; reversal preserves rows and changes only parent ledger state",
+      "source_models": ["payment.ledger", "payment.request.line", "construction.contract"],
+      "refresh_owner": "payment ledger controlled allocation builder and governed historical upgrade backfill",
+      "idempotency_key": "ledger_id, allocation_key",
+      "acceptance_probe": "p1_contract_payment_allocation focused Odoo tests"
+    },
+    {
       "model": "sc.ar.ap.company.summary",
       "implementation_mode": "physical_refresh_table",
       "write_policy": "create/write/unlink blocked; table rebuilt by init/projection refresh",

@@ -40,12 +40,12 @@
       "spec": "payment_request_execution_split",
       "risk_family": "payment request and execution",
       "business_object": "expense",
-      "fact_source_model": ["payment.request", "sc.payment.execution"],
+      "fact_source_model": ["payment.request", "sc.payment.execution", "payment.ledger"],
       "allowed_support_models": ["payment.request.line", "sc.expense.claim"],
-      "projection_models": ["sc.ar.ap.project.summary", "sc.ar.ap.company.summary", "sc.expense.reimbursement.summary"],
-      "boundary_rule": "Payment request owns business intent and approval; payment execution owns confirmed payment fact; expense claim owns reimbursement/deposit/deduction claims before settlement or execution.",
-      "forbidden_drift": "Do not mark a payment request as the final cash fact unless sc.payment.execution or an accounting integration fact exists.",
-      "decision": "Keep request, claim, and execution separate, with projections aggregating their state instead of replacing them."
+      "projection_models": ["payment.ledger.allocation", "sc.ar.ap.project.summary", "sc.ar.ap.company.summary", "sc.expense.reimbursement.summary"],
+      "boundary_rule": "Payment request owns intent and approval; payment execution owns the controlled payment workflow event; payment.ledger owns actual cash amount; payment.ledger.allocation freezes contract attribution without changing the parent cash fact; expense claim remains pre-payment evidence.",
+      "forbidden_drift": "Do not treat request amount or execution header contract as final allocated cash, and never infer ambiguous multi-contract attribution in a frontend or report.",
+      "decision": "Keep request, execution, actual ledger, immutable allocation, and derived projections separate, with explicit unresolved allocation evidence."
     },
     {
       "spec": "project_salary_calculation_payment_split",

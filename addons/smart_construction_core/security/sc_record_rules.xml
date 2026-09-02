@@ -832,6 +832,50 @@
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_manager'))]"/>
         </record>
 
+        <record id="rule_payment_ledger_allocation_company" model="ir.rule">
+            <field name="name">Payment Ledger Allocation - allowed company</field>
+            <field name="model_id" ref="model_payment_ledger_allocation"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="rule_sc_finance_read_payment_ledger_allocation" model="ir.rule">
+            <field name="name">SC Finance Read - payment ledger allocation by project member</field>
+            <field name="model_id" ref="model_payment_ledger_allocation"/>
+            <field name="domain_force">['|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_read'))]"/>
+        </record>
+
+        <record id="rule_sc_finance_user_payment_ledger_allocation" model="ir.rule">
+            <field name="name">SC Finance User - payment ledger allocation by project member</field>
+            <field name="model_id" ref="model_payment_ledger_allocation"/>
+            <field name="domain_force">['|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_user'))]"/>
+        </record>
+
+        <record id="rule_sc_finance_manager_payment_ledger_allocation" model="ir.rule">
+            <field name="name">SC Finance Manager - payment ledger allocation allowed companies</field>
+            <field name="model_id" ref="model_payment_ledger_allocation"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_manager'))]"/>
+        </record>
+
         <!-- =========================================================
              资金计划 / 明细 / 实际付款分配
              - global: 所有调用者都受 allowed_company_ids 约束

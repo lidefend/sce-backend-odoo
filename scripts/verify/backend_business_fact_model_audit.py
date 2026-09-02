@@ -436,6 +436,7 @@ def classify_projection_semantic_modes(
 
     controlled_ledger_markers = (
         "_sc_payment_ledger_internal_create",
+        "_sc_payment_ledger_allocation_build",
         "allow_ledger_auto",
         "_ensure_period_unlocked",
     )
@@ -446,7 +447,7 @@ def classify_projection_semantic_modes(
     }.issubset(field_names) or "payment_request_id" in field_names
     if (
         model_name
-        and model_name.endswith("ledger")
+        and "ledger" in model_name
         and ledger_source_identity
         and "def create" in class_source
         and any(marker in class_source for marker in controlled_ledger_markers)
