@@ -1600,7 +1600,7 @@ const {
   selectedMentionUsers, selectedRelationOptions, sendNativeChatter,
   session, setBooleanField: (...args: Parameters<typeof setBooleanField>) => setBooleanField(...args), setMany2oneField: (...args: Parameters<typeof setMany2oneField>) => setMany2oneField(...args),
   setOne2manyRowField, createContractFormRecord, setRelationIds: (...args: Parameters<typeof setRelationIds>) => setRelationIds(...args), setRelationKeyword,
-  setRelationMultiField: (...args: Parameters<typeof setRelationMultiField>) => setRelationMultiField(...args), setSelectionField: (...args: Parameters<typeof setSelectionField>) => setSelectionField(...args), setTextField: (...args: Parameters<typeof setTextField>) => setTextField(...args),
+  setRelationMultiField: (...args: Parameters<typeof setRelationMultiField>) => setRelationMultiField(...args), setSelectionField: (...args: Parameters<typeof setSelectionField>) => setSelectionField(...args), setTechnicalCompanionTextField: (...args: Parameters<typeof setTechnicalCompanionTextField>) => setTechnicalCompanionTextField(...args), setTextField: (...args: Parameters<typeof setTextField>) => setTextField(...args),
   shouldShowWorkflowAction, showHud, showOne2manyErrors,
   toDateInputValue, toDatetimeInputValue, toPositiveInt,
   updateNativeActivity, useRecordCollaborationPresentation, useRecordContractSemantics,
@@ -1689,7 +1689,7 @@ const {
   addRelationId, collectWritableValues, commitMany2oneInline, comparableFieldValue, isFieldWritable,
   normalizeFieldValue, queryMany2oneInline, quickCreateMany2manyTag, resolvePendingInlineRelationCreates,
   resolvePendingMany2manyTagCreates, setBooleanField, setMany2oneField, setRelationIds,
-  setRelationMultiField, setSelectionField, setTextField,
+  setRelationMultiField, setSelectionField, setTechnicalCompanionTextField, setTextField,
 } = recordFormStateRuntime;
 const {
   resolveNavigationUrl, viewOrchestrationHudSummary, hudEntries, loadContract,

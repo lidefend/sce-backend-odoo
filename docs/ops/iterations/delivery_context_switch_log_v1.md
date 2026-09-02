@@ -7822,3 +7822,26 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Verification: 18 professional relation counterexample tests, strict Vue
   typecheck, development build, refreshed productization inventories with zero
   gaps, and the complete `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Base field handler write-authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `2703aace`.
+- Product defect and repair: professional base controls projected readonly and
+  disabled state, but boolean, selection, text, and many2one query handlers
+  could still be invoked directly. Each public field handler now repeats the
+  resolved field-writable decision before changing form state or starting a
+  relation query. Binary filename companion updates use a separate narrow
+  technical-field path, preserving Odoo's invisible companion-field behavior
+  without reopening the public text handler.
+- Real-page evidence: the rebuilt project-create/project-workspace/payment
+  journey passed with three independent activity pages, retained unsaved draft,
+  dirty-close protection, readable project relation rows, editable payment
+  attachment state, zero browser errors, zero mutations, zero execute requests,
+  and no desktop or 390px overflow. The journey first rejected a direct
+  dependency injection that caused a Vue setup initialization error; the final
+  delayed adapter passed the complete route and draft roundtrip.
+- Verification: five professional base-field counterexample tests, 18 relation
+  counterexample tests through the full gate, strict Vue typecheck, development
+  build, refreshed zero-gap inventories, and the complete `make
+  verify.frontend.quick.gate` passed.

@@ -11,6 +11,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     section = read_text("frontend/apps/web/src/components/template/FormSection.vue")
     renderer = read_text("frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts")
     registry = read_text("frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts")
+    form_state = read_text("frontend/apps/web/src/pages/contractForm/useRecordFormState.ts")
+    action_presentation = read_text("frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts")
     for field_type in ("char", "text", "html", "integer", "float", "date", "datetime", "boolean", "selection"):
         if f"'{field_type}'" not in model:
             failures.append(f"base field model missing {field_type}")
@@ -27,6 +29,18 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     for marker in ("presentationMode: field.presentationMode", "renderProfile: field.renderProfile"):
         if marker not in renderer:
             failures.append(f"canonical renderer missing profile projection {marker}")
+    for marker in (
+        "const setBooleanField=(name:string,checked:boolean)=>{if(!isFieldWritable(name))return;",
+        "const queryMany2oneInline=(name:string,_descriptor:FieldDescriptor|undefined,value:string)=>{if(!isFieldWritable(name))return;",
+        "const setSelectionField=(name:string,value:string)=>{if(!isFieldWritable(name))return;",
+        "const setTextField=(name:string,value:string)=>{if(!isFieldWritable(name))return;",
+    ):
+        if marker not in form_state:
+            failures.append(f"base field handler does not fail closed: {marker}")
+    if "setTechnicalCompanionTextField(filenameField, payload.fileName);" not in action_presentation:
+        failures.append("binary filename companion does not use its narrow technical write path")
+    if "setTextField(filenameField, payload.fileName);" in action_presentation:
+        failures.append("binary filename companion bypasses the technical write path")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
         if forbidden in component or forbidden in model:
             failures.append(f"base field family contains forbidden product special case {forbidden}")

@@ -16,6 +16,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
   const chatterTimelineHasMore = dependencies.chatterTimelineHasMore;
   const chatterTimelineLoading = dependencies.chatterTimelineLoading;
   const loadMoreNativeChatterTimeline = dependencies.loadMoreNativeChatterTimeline;
+  const setTechnicalCompanionTextField = dependencies.setTechnicalCompanionTextField;
   const formFields = computed(() => resolveContractV2FormFieldMap(v2ContractStore.value));
 
   // Workflow evidence is display-only. Executable availability is already
@@ -245,7 +246,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     });
     const filenameField = String(payload.descriptor?.filename || '').trim();
     if (String(payload.type || '').trim().toLowerCase() === 'binary' && filenameField && payload.fileName) {
-      setTextField(filenameField, payload.fileName);
+      setTechnicalCompanionTextField(filenameField, payload.fileName);
     }
   }
 
