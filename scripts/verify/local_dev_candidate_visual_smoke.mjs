@@ -433,6 +433,12 @@ try {
         const navigationSearch = document.querySelector('.product-side-navigation__search [data-semantic-component="ScInput"]');
         const navigationSearchPrefix = navigationSearch?.querySelector('.t-input__prefix-icon');
         const navigationSearchInput = navigationSearch?.querySelector('input');
+        const analysisRoot = document.querySelector('[data-analysis-view]');
+        const analysisView = analysisRoot?.getAttribute('data-analysis-view') || '';
+        const analysisState = analysisRoot?.getAttribute('data-analysis-state') || '';
+        const analysisReason = analysisRoot?.getAttribute('data-analysis-reason') || '';
+        const analysisPivotRows = analysisRoot?.querySelectorAll('.t-table__body tr, tbody tr').length || 0;
+        const analysisGraphRows = analysisRoot?.querySelectorAll('.analysis-bar-row').length || 0;
         return {
           h1: document.querySelectorAll('h1').length,
           pageHeaders: document.querySelectorAll('.template-page-header, [data-product-page-header]').length,
@@ -467,6 +473,16 @@ try {
               && publishedApps.every((entry) => entry.label && entry.contentDisplay === 'grid' && entry.contentColumns !== 'none' && entry.labelWidth >= 32 && entry.ordered)
               && Boolean(navigationSearch && navigationSearchPrefix && navigationSearchInput),
           },
+          analysisEvidence: analysisRoot ? {
+            view: analysisView,
+            state: analysisState,
+            reason: analysisReason,
+            pivotRowCount: analysisPivotRows,
+            graphRowCount: analysisGraphRows,
+            pass: analysisState === 'ready'
+              && !analysisReason
+              && (analysisView === 'pivot' ? analysisPivotRows > 0 : analysisView === 'graph' && analysisGraphRows > 0),
+          } : null,
           visibleActions: [...document.querySelectorAll('main button, [data-workspace-primary-content] button')]
             .filter((element) => element instanceof HTMLElement && element.offsetParent !== null)
             .map((element) => ({
@@ -1208,6 +1224,10 @@ for (const item of report.routes) {
   }
   if (item.path && item.expectedNativeNotebookPageCount !== null && item.nativeNotebookPageCount !== item.expectedNativeNotebookPageCount) {
     failures.push({ name: item.name, expectedNativeNotebookPageCount: item.expectedNativeNotebookPageCount, actualNativeNotebookPageCount: item.nativeNotebookPageCount });
+  }
+  const expectedAnalysisView = routes.find((target) => target.name === item.name)?.expectedAnalysisView;
+  if (item.path && expectedAnalysisView && (!item.analysisEvidence?.pass || item.analysisEvidence.view !== expectedAnalysisView)) {
+    failures.push({ name: item.name, expectedAnalysisView, analysisEvidence: item.analysisEvidence || null });
   }
   if (item.sidebarScrollEvidence && !item.sidebarScrollEvidence.pass) failures.push({ name: item.name, sidebarScrollEvidence: item.sidebarScrollEvidence });
   if (item.taskDensityEvidence && (!item.taskDensityEvidence.present || !item.taskDensityEvidence.summary?.pass)) failures.push({ name: item.name, taskDensityEvidence: item.taskDensityEvidence });
