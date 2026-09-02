@@ -124,6 +124,11 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
     return one2manyCanInlineEditFromPolicies(one2manyPolicies(name));
   }
 
+  function one2manyRowRecordId(row: One2ManyInlineRow) {
+    const id = Number(row.id || 0);
+    return !row.isNew && Number.isFinite(id) && id > 0 ? Math.trunc(id) : 0;
+  }
+
   function one2manyCreateLabel(name: string, fieldLabel = '') {
     const label = String(fieldLabel || contractFieldLabel(name) || formFields()[name]?.string || '').trim();
     return one2manyCreateLabelFromPolicies(one2manyPolicies(name), label);
@@ -197,5 +202,5 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   }
 
 
-  return { relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions, one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor, nativeFieldSubview, one2manyColumns, one2manyPolicies, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink, one2manyCreateLabel, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows, prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows, isOne2manyHydrating, one2manyRowErrors };
+  return { relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions, one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor, nativeFieldSubview, one2manyColumns, one2manyPolicies, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink, one2manyRowRecordId, one2manyCreateLabel, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows, prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows, isOne2manyHydrating, one2manyRowErrors };
 }

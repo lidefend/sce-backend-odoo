@@ -8,6 +8,8 @@ export type RelationFieldOption = {
 
 export type RelationFieldRow = {
   key: string;
+  id?: number | null;
+  isNew?: boolean;
   values: Record<string, unknown>;
 };
 
@@ -51,6 +53,8 @@ export type RelationFieldAdapter = {
   one2manyCanCreate: (name: string) => boolean;
   one2manyCanInlineEdit: (name: string) => boolean;
   one2manyCanUnlink: (name: string) => boolean;
+  one2manyCanOpenRow: (name: string, row: RelationFieldRow) => boolean;
+  openOne2manyRow: (name: string, row: RelationFieldRow) => void;
   one2manyCreateLabel: (name: string, fieldLabel?: string) => string;
   addOne2manyRow: (name: string) => void;
   one2manySummary: (name: string) => string;

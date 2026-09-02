@@ -151,6 +151,24 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
         failures = validate(read_text)
         self.assertTrue(any("row creation handler" in item for item in failures))
 
+    def test_missing_row_open_authority_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace('v-if="adapter.one2manyCanOpenRow(field.name, row._row)"', '')
+            return value
+
+        self.assertTrue(any("hide row-open" in item for item in validate(read_text)))
+
+    def test_unguarded_row_open_handler_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordActionPresentation.ts"):
+                return value.replace("recordId <= 0 || !dependencies.canOpenRelationRecord(", "recordId <= 0 || false && dependencies.canOpenRelationRecord(")
+            return value
+
+        self.assertTrue(any("row-open handler" in item for item in validate(read_text)))
+
 
 if __name__ == "__main__":
     unittest.main()

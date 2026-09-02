@@ -122,17 +122,21 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
     return Number.isFinite(id) && id > 0 ? Math.trunc(id) : 0;
   }
 
-  function canOpenRelationRecordForm(fieldName: string, descriptor?: FieldDescriptor) {
+  function canOpenRelationRecord(fieldName: string, recordId: number, descriptor?: FieldDescriptor) {
     const relation = relationModel(fieldName);
     const entry = relationEntry(descriptor);
-    return Boolean(relation && currentRelationRecordId(fieldName) > 0 && entry?.canRead === true && entry?.canOpen === true);
+    return Boolean(relation && Number.isFinite(recordId) && recordId > 0
+      && entry?.canRead === true && entry?.canOpen === true);
   }
 
-  async function openRelationRecordForm(fieldName: string, descriptor?: FieldDescriptor) {
+  function canOpenRelationRecordForm(fieldName: string, descriptor?: FieldDescriptor) {
+    return canOpenRelationRecord(fieldName, currentRelationRecordId(fieldName), descriptor);
+  }
+
+  async function openRelationRecord(fieldName: string, recordId: number, descriptor?: FieldDescriptor) {
     const relation = relationModel(fieldName);
-    const recordId = currentRelationRecordId(fieldName);
     const entry = relationEntry(descriptor);
-    if (!relation || recordId <= 0) return;
+    if (!relation || !Number.isFinite(recordId) || recordId <= 0) return;
     if (entry?.canRead !== true || entry?.canOpen !== true) {
       validationErrors.value = [relationUiLabel(descriptor, 'missing_read_entry')];
       return;
@@ -168,6 +172,10 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
     }
   }
 
+  async function openRelationRecordForm(fieldName: string, descriptor?: FieldDescriptor) {
+    await openRelationRecord(fieldName, currentRelationRecordId(fieldName), descriptor);
+  }
+
   async function quickCreateRelation(
     fieldName: string,
     descriptor: FieldDescriptor | undefined,
@@ -200,5 +208,5 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
     }
   }
 
-  return { ensureRelationFieldDescriptors, openRelationCreateForm, currentRelationRecordId, canOpenRelationRecordForm, openRelationRecordForm, quickCreateRelation };
+  return { ensureRelationFieldDescriptors, openRelationCreateForm, currentRelationRecordId, canOpenRelationRecord, canOpenRelationRecordForm, openRelationRecord, openRelationRecordForm, quickCreateRelation };
 }

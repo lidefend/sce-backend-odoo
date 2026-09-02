@@ -75,6 +75,12 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection field update handler does not fail closed")
     if "if (!one2manyCanCreate(fieldName)) return;" not in action_presentation:
         failures.append("detail collection row creation handler does not fail closed")
+    if "one2manyCanOpenRow: (name: string, row: RelationFieldRow) => boolean;" not in relation_types:
+        failures.append("detail collection adapter omits governed row-open authority")
+    if 'v-if="adapter.one2manyCanOpenRow(field.name, row._row)"' not in renderer:
+        failures.append("detail collection does not hide row-open without authority")
+    if "recordId <= 0 || !dependencies.canOpenRelationRecord(" not in action_presentation:
+        failures.append("detail collection row-open handler does not fail closed")
     if "<ScInput" not in renderer or "<ScSelect" not in renderer:
         failures.append("editable detail rows bypass the governed input/select primitives")
     if "--sc-component-relation-dropdown-z-index" not in renderer or "--sc-component-relation-dropdown-shadow" not in renderer:

@@ -168,6 +168,16 @@
           </template>
           <template #_action="{ row }">
             <ScButton
+              v-if="adapter.one2manyCanOpenRow(field.name, row._row)"
+              class="o2m-row-open"
+              type="button"
+              variant="text"
+              size="small"
+              :aria-label="`打开${adapter.one2manyRowLabel(field.name, row._row)}`"
+              :disabled="adapter.busy"
+              @click="adapter.openOne2manyRow(field.name, row._row)"
+            >打开</ScButton>
+            <ScButton
               v-if="adapter.one2manyCanUnlink(field.name)"
               class="o2m-row-remove"
               type="button"

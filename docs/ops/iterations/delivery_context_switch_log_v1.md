@@ -7710,3 +7710,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   fail-open expressions; 30 relation guard tests, strict Vue typecheck,
   development build, refreshed productization inventories with zero gaps, and
   the complete `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Governed one2many record-open closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `b0f2abeb`.
+- Product defect and repair: persisted rows in the professional detail table
+  had no route to their complete child record even when the existing backend
+  relation entry explicitly authorized reading and opening. The shared
+  relation navigation runtime now accepts an explicit record id, while the
+  professional adapter exposes a governed `ScButton` only for saved rows with
+  `can_read=true` and `can_open=true`. The click handler repeats the same
+  authority check; unsaved draft rows and missing grants remain closed. Model,
+  action, menu, write intent, and return navigation all continue to come from
+  the existing relation-entry contract.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey passed after rebuilding, preserving three independent activity
+  pages, unsaved draft and dirty-close behavior, two readable project tender
+  rows, one editable payment attachment entry, zero browser errors, zero
+  mutations, zero execute requests, and no 390px horizontal overflow.
+- Verification: 31 professional detail/relational primitive tests including
+  missing-authority and unguarded-handler counterexamples, relation authority
+  guard, strict Vue typecheck, development build, refreshed productization
+  inventories with zero gaps, and the complete `make
+  verify.frontend.quick.gate` passed.

@@ -337,6 +337,27 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     one2manyCanCreate,
     one2manyCanInlineEdit,
     one2manyCanUnlink,
+    one2manyCanOpenRow: (fieldName: string, row: RelationFieldRow) => {
+      const recordId = dependencies.one2manyRowRecordId(row);
+      return recordId > 0 && dependencies.canOpenRelationRecord(
+        fieldName,
+        recordId,
+        dependencies.effectiveFieldDescriptor(fieldName),
+      );
+    },
+    openOne2manyRow: (fieldName: string, row: RelationFieldRow) => {
+      const recordId = dependencies.one2manyRowRecordId(row);
+      if (recordId <= 0 || !dependencies.canOpenRelationRecord(
+        fieldName,
+        recordId,
+        dependencies.effectiveFieldDescriptor(fieldName),
+      )) return;
+      void dependencies.openRelationRecord(
+        fieldName,
+        recordId,
+        dependencies.effectiveFieldDescriptor(fieldName),
+      );
+    },
     one2manyCreateLabel,
     addOne2manyRow: (fieldName: string) => {
       if (!one2manyCanCreate(fieldName)) return;

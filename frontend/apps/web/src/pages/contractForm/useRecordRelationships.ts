@@ -518,7 +518,9 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     ensureRelationFieldDescriptors,
     openRelationCreateForm,
     currentRelationRecordId,
+    canOpenRelationRecord,
     canOpenRelationRecordForm,
+    openRelationRecord,
     openRelationRecordForm,
     quickCreateRelation,
   } = useRecordRelationshipNavigation({
@@ -600,7 +602,9 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     ensureRelationFieldDescriptors,
     openRelationCreateForm,
     currentRelationRecordId,
+    canOpenRelationRecord,
     canOpenRelationRecordForm,
+    openRelationRecord,
     openRelationRecordForm,
     quickCreateRelation,
   };
