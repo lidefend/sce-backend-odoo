@@ -509,7 +509,7 @@
     },
     {
       "category": "overlay",
-      "digest": "73a65f7f768d2dc7f35c0f8d09a0b347d354733f2b33da831cafa2dc6d8bb3da",
+      "digest": "eb506c13a3d3305720e6dee7e72d3a2c1898f6fae513a40c406e7c9ecffd2cf4",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScDialog.vue",
       "referenceNativeStyleSelectors": [],
@@ -2596,7 +2596,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "26268ee9e267af71a4b462a4de81e2aee27c08947d75b1f989411851210f9971",
+  "currentInputDigest": "88aa40563b997085e2baf35d9d5e169c7a9644261c410dc87fa7902b753b490d",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

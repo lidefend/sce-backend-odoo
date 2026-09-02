@@ -5,12 +5,12 @@ const entryId = '\0overlay-lifecycle-browser-entry';
 const server = await createServer({
   root: new URL('../../frontend/apps/web', import.meta.url).pathname,
   logLevel: 'error',
-  server: { host: '127.0.0.1', port: 0 },
+  server: { host: '127.0.0.1', port: 0, hmr: false },
   plugins: [{
     name: 'overlay-lifecycle-browser-harness',
     configureServer(vite) {
       vite.middlewares.use('/__overlay_lifecycle.html', (_request, response) => {
-        response.setHeader('content-type', 'text/html');
+        response.setHeader('content-type', 'text/html; charset=utf-8');
         response.end('<!doctype html><html><head><link rel="icon" href="data:,"></head><body><button id="opener">打开</button><div id="app"></div><script type="module" src="/__overlay_lifecycle.js"></script></body></html>');
       });
     },
@@ -93,7 +93,9 @@ try {
   await page.keyboard.press('Escape');
   await locked.dispatchEvent('mousedown', { bubbles: true });
   const lockedRemains = await locked.count() === 1;
-  await page.evaluate(() => { window.overlayState.locked = false; window.overlayState.empty = true; });
+  await page.evaluate(() => { window.overlayState.locked = false; });
+  await locked.waitFor({ state: 'hidden' });
+  await page.evaluate(() => { window.overlayState.empty = true; });
   const emptySurface = page.locator('[data-overlay-kind="dialog"][data-state="open"]');
   await emptySurface.waitFor();
   await waitForActiveWithin('[data-overlay-kind="dialog"][data-state="open"]');

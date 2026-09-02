@@ -3,6 +3,26 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-09-02 — DIALOG-OFFICIAL-CLOSE-LIFECYCLE-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `456fed5e`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 primitive component authority /
+  modal lifecycle / `ScDialog` and its isolated browser harness.
+- Root cause and product result: closed dialogs depended on a page-level CSS
+  patch that inspected TDesign's private wrapper classes and inline display
+  state. `ScDialog` now uses the official `destroyOnClose` capability, so masks
+  and panels leave the DOM under component lifecycle authority. The private
+  wrapper workaround is removed without weakening focus, scroll-lock, escape,
+  backdrop, or non-dismissible behavior.
+- Acceptance evidence: overlay lifecycle unit and isolated browser checks pass,
+  including zero initial residue, nested focus/restore, nested body locking,
+  locked-dialog persistence, empty-dialog focus containment, and zero browser
+  errors. The harness disables HMR and sequences dialog teardown before opening
+  the next overlay so a running development server cannot contaminate the gate.
+  The official design inventory moved from 10 to 9 internal-selector gaps and
+  retains zero visual-literal gaps.
+
 ## 2026-09-02 — X2MANY-TABLE-PROFESSIONAL-APPEARANCE-CLOSURE-01
 
 - Branch / anchor: `feature/native-view-action-semantics-closure-v1` after

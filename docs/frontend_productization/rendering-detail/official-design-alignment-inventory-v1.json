@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "6e3c89f4c9b2f6c4c9196b66ff0e3acdf5a5662aaf986088bb214ebddc5abf12",
+  "inputDigest": "661c98ccc5fe9060f3586006f7ab0bec39c359f6d18be2a3e1061bd3db19ed00",
   "internalVendorSelectorGaps": [
     {
       "file": "frontend/apps/web/src/styles/product-patterns.css",
@@ -68,12 +68,6 @@
       "file": "frontend/apps/web/src/styles/product-patterns.css",
       "line": 592,
       "selector": ".page[data-product-page-mode='list'] .t-table td.column-layout-date",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/styles/product-patterns.css",
-      "line": 612,
-      "selector": "/* TDesign Dialog 遮罩修复：确保父容器隐藏时遮罩也被隐藏 * 问题：t-dialog__ctx 设置 display:none 后，position:fixed 的遮罩仍然可见 */ .t-dialog__ctx[style*=\"display: none\"] .t-dialog__mask, .t-dialog__ctx[style*=\"display: none\"] .t-dialog__wrap",
       "status": "legacy_override_gap"
     }
   ],
@@ -638,7 +632,7 @@
   "scope": "formal P0/P1 frontend TDesign driver and product adapter styling",
   "summary": {
     "formalStyleSourceCount": 200,
-    "internalVendorSelectorGapCount": 10,
+    "internalVendorSelectorGapCount": 9,
     "officialPublicTokenCount": 240,
     "orphanedProductAppearanceVariantCount": 0,
     "productAppearanceVariantCount": 37,

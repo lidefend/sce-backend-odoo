@@ -27,6 +27,10 @@ class OverlayLifecycleGuardTest(unittest.TestCase):
         errors = validate(self.altered("dialog", ":data-state=\"open ? 'open' : 'closed'\"", 'data-state="open"'))
         self.assertTrue(any("data-state" in error for error in errors))
 
+    def test_dialog_destroy_on_close_is_authoritative(self):
+        errors = validate(self.altered("dialog", ':destroy-on-close="true"'))
+        self.assertTrue(any("destroy-on-close" in error for error in errors))
+
     def test_action_view_cannot_restore_private_dialog(self):
         values = self.altered("action_view", "<ScDialog", '<div class="business-category-picker-backdrop" role="dialog"')
         self.assertTrue(any("action_view" in error for error in validate(values)))
