@@ -7064,3 +7064,28 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   write smoke but did not complete because the local environment exposed only
   one valid probe login while the gate requires two; this prerequisite failure
   is recorded as unresolved and is not represented as a security-gate pass.
+
+## 2026-09-02 — Invalid contract-record trust boundary closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `68742999`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / generic
+  contract-form failure presentation / `frontend/apps/web`.
+- Product defect and repair: a missing record could finish contract loading
+  without a row, while the live form command header still rendered against
+  incomplete workflow state. Vue captured that secondary render exception and
+  replaced the governed missing-record state with the raw
+  `Cannot read properties of undefined (reading 'current')` message. The form
+  command header is now withheld for missing, render-error, and load-error
+  states so the existing fail-closed `记录不存在` surface remains authoritative.
+- Why here / why not elsewhere: this is generic form lifecycle presentation;
+  no payment/project branch, backend permission change, status inference, or
+  alternate contract was added.
+- Acceptance evidence: `make local.dev.frontend` completed, and the logged-in
+  browser reproduced record `payment.request/157` before the repair and then
+  verified the governed `记录不存在` / `返回安全页面` surface with no JavaScript
+  exception text after rebuild. `git diff --check`, the professional workflow
+  unit target, and canonical form presenter target passed. The broader detail
+  productization guard remains blocked by its pre-existing expectation of the
+  old statusbar readonly expression; that baseline drift is not represented as
+  a pass or changed in this batch.

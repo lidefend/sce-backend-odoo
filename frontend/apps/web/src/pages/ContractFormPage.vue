@@ -22,7 +22,7 @@
   >
     <h1 v-if="initialFormLoading" class="sc-visually-hidden">{{ pageDisplayTitle }}</h1>
     <ContractFormProductHeader
-      v-if="!initialFormLoading"
+      v-if="!initialFormLoading && !recordMissing && !renderErrorMessage && status !== 'error'"
       :title="pageDisplayTitle" :subtitle="pageDisplaySubtitle" :hide-title="suppressPageHeaderTitle" :show-hud="showHud"
       :model="model" :record-id-display="recordIdDisplay" :action-id="actionId" :contract-meta-line="contractMetaLine"
       :intake-mode="isIntakeCreateMode" :intake-required-summary="intakeRequiredSummary" :intake-missing-summary="intakeMissingSummary" :statusbar="nativeStatusbar"
