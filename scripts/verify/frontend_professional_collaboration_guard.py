@@ -56,6 +56,12 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("collaboration attachment download authority does not fail closed")
     if "att.can_download !== true" not in attachment_runtime:
         failures.append("attachment open handler must independently reject missing or denied authority")
+    if "canDeleteCollaborationAttachment(entry)" not in timeline or "delete-attachment" not in timeline:
+        failures.append("attachment deletion presentation must consume explicit backend authority")
+    if "entry.attachment?.can_delete === true" not in model or "entry.attachment.delete_intent === 'chatter.attachment.delete'" not in model:
+        failures.append("attachment deletion authority must require the exact backend intent")
+    if "!canDeleteCollaborationAttachment(entry)" not in attachment_runtime or "deleteChatterAttachment" not in attachment_runtime:
+        failures.append("attachment delete handler must independently reject missing or denied authority")
     if attachment_runtime.count("!params.canUpload()") < 2:
         failures.append("attachment upload handlers must independently reject missing or denied authority")
     if ':enabled="attachmentUploadEnabled"' not in panel:

@@ -1,6 +1,8 @@
 """Read-only probe for governed action scopes on the local.dev project create form."""
 
+import base64
 import json
+import uuid
 
 from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
 from odoo.addons.smart_core.handlers.execute_button import ExecuteButtonHandler
@@ -8,6 +10,7 @@ from odoo.addons.smart_core.handlers.chatter_followers import (
     ChatterFollowersListHandler,
     ChatterFollowersUpdateHandler,
 )
+from odoo.addons.smart_core.handlers.chatter_timeline import ChatterTimelineHandler
 
 
 def _layout_occurrence_integrity(contract):
@@ -316,7 +319,7 @@ def _handler_data(handler_class, params):
     else:
         data = result.data if hasattr(result, "data") and isinstance(result.data, dict) else result
     if not isinstance(data, dict) or data.get("ok") is False:
-        raise AssertionError("follower handler failed: %r" % (result,))
+        raise AssertionError("collaboration handler failed: %r" % (result,))
     return data
 
 
@@ -357,6 +360,51 @@ for target_record in (project_record, payment_record):
         },
         "write_result": changed.get("result"),
     })
+
+attachment_delete_journeys = []
+for target_record in (project_record, payment_record):
+    fixture_name = "codex-delete-journey-%s-%s.txt" % (
+        target_record._name.replace(".", "-"),
+        uuid.uuid4().hex[:10],
+    )
+    attachment = user_env["ir.attachment"].create({
+        "name": fixture_name,
+        "type": "binary",
+        "mimetype": "text/plain",
+        "datas": base64.b64encode(("temporary %s attachment" % target_record._name).encode("utf-8")),
+        "res_model": target_record._name,
+        "res_id": int(target_record.id),
+    })
+    timeline = _handler_data(ChatterTimelineHandler, {
+        "model": target_record._name,
+        "res_id": int(target_record.id),
+        "limit": 80,
+        "include_audit": False,
+    })
+    row = next((
+        item for item in timeline.get("items", [])
+        if isinstance(item, dict)
+        and item.get("type") == "attachment"
+        and int((item.get("attachment") or {}).get("id") or 0) == int(attachment.id)
+    ), None)
+    if not row or (row.get("attachment") or {}).get("can_delete") is not True:
+        raise AssertionError("attachment delete authority was not projected: %s" % {
+            "model": target_record._name, "attachment_id": attachment.id, "row": row,
+        })
+    if (row.get("attachment") or {}).get("delete_intent") != "chatter.attachment.delete":
+        raise AssertionError("attachment delete intent was not exact: %s" % row)
+    attachment_delete_journeys.append({
+        "model": target_record._name,
+        "record_id": int(target_record.id),
+        "attachment_id": int(attachment.id),
+        "name": fixture_name,
+        "can_delete": True,
+        "delete_intent": "chatter.attachment.delete",
+    })
+
+# The browser runs in a separate Odoo transaction. Persist only these uniquely
+# prefixed fixtures; the shell wrapper's EXIT trap removes any survivor.
+env.cr.commit()
 
 print("LOCAL_DEV_PROJECT_CREATE_ACTION_SCOPE_JSON=" + json.dumps({
     "database": env.cr.dbname,
@@ -400,4 +448,5 @@ print("LOCAL_DEV_PROJECT_CREATE_ACTION_SCOPE_JSON=" + json.dumps({
     },
     "intake_semantic_roles": actual_roles,
     "follower_journeys": follower_journeys,
+    "attachment_delete_journeys": attachment_delete_journeys,
 }, ensure_ascii=False, sort_keys=True))

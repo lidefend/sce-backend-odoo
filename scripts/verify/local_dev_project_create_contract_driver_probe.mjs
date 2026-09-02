@@ -17,6 +17,7 @@ const contractActions = [];
 const contractPresentations = [];
 const browserErrors = [];
 const followerUpdates = [];
+const attachmentMutations = [];
 async function captureHeaderPresentation(surface) {
   const header = surface.locator('.contract-form-command-bar');
   await header.waitFor({ state: 'visible', timeout: 45000 });
@@ -55,6 +56,25 @@ async function verifyFollowerMutation(surface, model) {
     restoredText: String(await manager.textContent() || '').replace(/\s+/g, ' ').trim(),
   };
 }
+async function verifyAttachmentDeleteJourney(surface, model) {
+  const expected = (target.attachment_delete_journeys || []).find((row) => row.model === model);
+  if (!expected?.name || !expected?.attachment_id) throw new Error(`missing attachment delete fixture authority for ${model}`);
+  const fileName = String(expected.name);
+  const timelineEntry = surface.locator('.native-chatter-entry:visible').filter({ hasText: fileName });
+  const timeline = surface.locator('[data-professional-collaboration-component="timeline"]');
+  for (let pageIndex = 0; pageIndex < 3 && await timelineEntry.count() === 0; pageIndex += 1) {
+    const loadMore = timeline.getByRole('button', { name: '加载更多', exact: true });
+    if (await loadMore.count() === 0) break;
+    await loadMore.click();
+    await page.waitForTimeout(750);
+  }
+  await timelineEntry.waitFor({ state: 'visible', timeout: 30000 });
+  const deleteButton = timelineEntry.getByRole('button', { name: '删除', exact: true });
+  await deleteButton.waitFor({ state: 'visible', timeout: 15000 });
+  await deleteButton.click();
+  await timelineEntry.waitFor({ state: 'detached', timeout: 30000 });
+  return { attachmentId: expected.attachment_id, fileName, deleted: true, remainingEntries: await timelineEntry.count() };
+}
 page.on('console', (message) => {
   if (message.type() === 'error') browserErrors.push(`console:${message.text()}`);
 });
@@ -74,6 +94,13 @@ page.on('request', (request) => {
     model: payload?.params?.model,
     recordId: payload?.params?.res_id,
     action: payload?.params?.action,
+  });
+  if (intent === 'file.upload' || intent === 'chatter.attachment.delete') attachmentMutations.push({
+    intent,
+    model: payload?.params?.model,
+    recordId: payload?.params?.res_id,
+    attachmentId: payload?.params?.attachment_id,
+    name: payload?.params?.name,
   });
   if (['create', 'write', 'unlink'].includes(op)) mutations.push({ intent, op });
 });
@@ -225,6 +252,7 @@ try {
   await workspaceSurface.locator('[data-professional-collaboration-component="followers"][data-state="ready"]')
     .waitFor({ state: 'visible', timeout: 45000 });
   const workspaceFollowerJourney = await verifyFollowerMutation(workspaceSurface, 'project.project');
+  const workspaceAttachmentDeleteJourney = await verifyAttachmentDeleteJourney(workspaceSurface, 'project.project');
   const workspaceResult = {
     url: page.url(),
     drivers: await workspaceSurface.locator('[data-contract-form-driver]').count(),
@@ -244,6 +272,7 @@ try {
     }))),
     followerReadiness: await workspaceSurface.locator('[data-professional-collaboration-component="panel"]').getAttribute('data-follower-readiness'),
     followerJourney: workspaceFollowerJourney,
+    attachmentDeleteJourney: workspaceAttachmentDeleteJourney,
   };
   const workspacePresentation = contractPresentations
     .filter((row) => row.actionId === String(target.workspace_action_id))
@@ -303,6 +332,7 @@ try {
   await paymentSurface.locator('[data-professional-collaboration-component="followers"][data-state="ready"]')
     .waitFor({ state: 'visible', timeout: 45000 });
   const paymentFollowerJourney = await verifyFollowerMutation(paymentSurface, 'payment.request');
+  const paymentAttachmentDeleteJourney = await verifyAttachmentDeleteJourney(paymentSurface, 'payment.request');
   const paymentDrivers = await paymentSurface.locator('[data-contract-form-driver]').count();
   const paymentErrors = await paymentSurface.locator('[data-contract-form-driver-error]').allTextContents();
   const paymentResult = {
@@ -329,6 +359,7 @@ try {
     }))),
     followerReadiness: await paymentSurface.locator('[data-professional-collaboration-component="panel"]').getAttribute('data-follower-readiness'),
     followerJourney: paymentFollowerJourney,
+    attachmentDeleteJourney: paymentAttachmentDeleteJourney,
   };
   if (paymentDrivers !== 1 || paymentErrors.length !== 0) {
     throw new Error(`payment record canonical driver did not load: ${JSON.stringify(paymentResult)}`);
@@ -487,10 +518,15 @@ try {
     mutations,
     executeRequests,
     followerUpdates,
+    attachmentMutations,
     browserErrors,
   }));
   if (mutations.length) throw new Error('read-only project create driver probe observed mutation');
   if (executeRequests.length) throw new Error(`read-only browser driver probe observed execute request: ${executeRequests.length}`);
+  if (attachmentMutations.filter((row) => row.intent === 'file.upload').length !== 0
+    || attachmentMutations.filter((row) => row.intent === 'chatter.attachment.delete').length !== 2) {
+    throw new Error(`attachment delete journey did not preserve dual-model mutation symmetry: ${JSON.stringify(attachmentMutations)}`);
+  }
   if (browserErrors.length) throw new Error(`browser errors observed: ${JSON.stringify(browserErrors)}`);
 } catch (error) {
   const diagnostics = {

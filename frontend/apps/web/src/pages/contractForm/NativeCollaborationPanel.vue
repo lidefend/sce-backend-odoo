@@ -93,11 +93,13 @@
       v-if="!unavailableMessage"
       :entries="visibleTimeline"
       :activity-updating-ids="activityUpdatingIds"
+      :attachment-deleting-ids="attachmentDeletingIds"
       :attachment-view-label="attachmentViewLabel"
       :timeline-has-more="timelineHasMore"
       :timeline-loading="timelineLoading"
       @update-activity="forwardActivityUpdate"
       @open-attachment="$emit('open-attachment', $event)"
+      @delete-attachment="$emit('delete-attachment', $event)"
       @reply="$emit('reply', $event)"
       @load-more="$emit('load-more-timeline')"
     />
@@ -152,6 +154,7 @@ export type NativeCollaborationPanelProps = {
   chatterError: string;
   hasAttachments: boolean;
   attachmentUploading: boolean;
+  attachmentDeletingIds: number[];
   attachmentUploadEnabled: boolean;
   attachmentUploadLabel: string;
   attachmentUploadingLabel: string;
@@ -191,6 +194,7 @@ export type NativeCollaborationPanelListeners = {
   'remove-pending-attachment': (key: string) => void;
   'update-activity': (entry: ChatterTimelineEntry, action: 'done' | 'cancel') => void;
   'open-attachment': (attachment: NonNullable<ChatterTimelineEntry['attachment']>) => void;
+  'delete-attachment': (entry: ChatterTimelineEntry) => void;
   'load-more-timeline': () => void;
   reply: (entry: ChatterTimelineEntry) => void;
   'update-follower': (action: 'follow' | 'unfollow') => void;
@@ -224,6 +228,7 @@ const emit = defineEmits<{
   'remove-pending-attachment': [key: string];
   'update-activity': [entry: ChatterTimelineEntry, action: 'done' | 'cancel'];
   'open-attachment': [attachment: NonNullable<ChatterTimelineEntry['attachment']>];
+  'delete-attachment': [entry: ChatterTimelineEntry];
   'load-more-timeline': [];
   reply: [entry: ChatterTimelineEntry];
   'update-follower': [action: 'follow' | 'unfollow'];

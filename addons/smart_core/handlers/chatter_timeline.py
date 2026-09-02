@@ -235,6 +235,15 @@ class ChatterTimelineHandler(BaseIntentHandler):
         for row in rows:
             date_value = _to_iso(row.create_date) or _to_iso(row.write_date)
             is_owner = bool(row.create_uid and row.create_uid.id == self.env.user.id)
+            is_direct_attachment = row.res_model == model and int(row.res_id or 0) == int(res_id)
+            can_delete = False
+            if is_direct_attachment and (is_admin or is_owner):
+                try:
+                    can_delete = bool(AttachmentModel.check_access_rights("unlink", raise_exception=False))
+                    if can_delete:
+                        row.check_access_rule("unlink")
+                except AccessError:
+                    can_delete = False
             items.append(
                 {
                     "key": f"a-{row.id}",
@@ -250,7 +259,8 @@ class ChatterTimelineHandler(BaseIntentHandler):
                         "name": row.name or "",
                         "mimetype": row.mimetype or "",
                         "can_download": True,
-                        "can_delete": is_admin or is_owner,
+                        "can_delete": can_delete,
+                        "delete_intent": "chatter.attachment.delete" if can_delete else "",
                     },
                 }
             )

@@ -58,12 +58,14 @@ export function useRecordCollaborationPresentation(context: {
   followerError: MutableRef<string>;
   attachmentError: MutableRef<string>;
   attachmentUploading: MutableRef<boolean>;
+  attachmentDeletingIds: MutableRef<number[]>;
   pendingNativeAttachments: MutableRef<PendingNativeAttachment[]>;
   onNativeAttachmentSelected: (...args: any[]) => unknown;
   closeNativeChatterComposer: (...args: any[]) => unknown;
   loadCollaborationUsers: (...args: any[]) => unknown;
   openNativeChatterAction: (...args: any[]) => unknown;
   openNativeAttachment: (...args: any[]) => unknown;
+  deleteNativeAttachment: (...args: any[]) => unknown;
   removeMentionUser: (...args: any[]) => unknown;
   removePendingNativeAttachment: (...args: any[]) => unknown;
   selectMentionUser: (...args: any[]) => unknown;
@@ -137,6 +139,7 @@ export function useRecordCollaborationPresentation(context: {
     activeSubmitLabel: activeChatterSubmitLabel.value, activityUpdatingIds: context.activityUpdatingIds.value,
     attachmentError: context.attachmentError.value, attachmentUploadLabel: nativeAttachmentUploadLabel.value,
     attachmentUploading: context.attachmentUploading.value, attachmentUploadingLabel: nativeAttachmentUploadingLabel.value,
+    attachmentDeletingIds: context.attachmentDeletingIds.value,
     attachmentUploadEnabled: nativeAttachmentUploadEnabled.value,
     attachmentViewLabel: nativeAttachmentViewLabel.value, busy: context.busy.value, chatterDraft: context.chatterDraft.value,
     followerEnabled: Boolean(nativeFollowerContract.value), followerLabel: nativeFollowerContract.value?.label || '关注者',
@@ -157,7 +160,8 @@ export function useRecordCollaborationPresentation(context: {
     'attachment-selected': context.onNativeAttachmentSelected, 'close-composer': context.closeNativeChatterComposer,
     'load-users': context.loadCollaborationUsers, 'open-action': context.openNativeChatterAction,
     'load-more-timeline': context.loadMoreNativeChatterTimeline,
-    'open-attachment': context.openNativeAttachment, 'remove-mention-user': context.removeMentionUser,
+    'open-attachment': context.openNativeAttachment, 'delete-attachment': context.deleteNativeAttachment,
+    'remove-mention-user': context.removeMentionUser,
     'remove-pending-attachment': context.removePendingNativeAttachment,
     'select-activity-assignee': (id) => { context.activityAssigneeId.value = id; },
     'select-mention-user': context.selectMentionUser, 'send-chatter': context.sendNativeChatter,

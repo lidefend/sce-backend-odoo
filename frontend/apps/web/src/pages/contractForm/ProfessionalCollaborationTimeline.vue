@@ -26,6 +26,15 @@
               class="native-attachment-download"
               @click="emit('open-attachment', entry.attachment!)"
             >{{ attachmentViewLabel }}</ScButton>
+            <ScButton
+              v-if="canDeleteCollaborationAttachment(entry)"
+              variant="ghost"
+              size="small"
+              class="native-attachment-delete"
+              :loading="isDeletingAttachment(entry)"
+              :disabled="isDeletingAttachment(entry)"
+              @click="emit('delete-attachment', entry)"
+            >删除</ScButton>
           </div>
           <span v-if="entry.at" class="native-chatter-meta">{{ formatCollaborationTimelineMeta(entry.at) }}</span>
         </template>
@@ -92,18 +101,20 @@ import type { ChatterTimelineEntry } from '../../api/chatter';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScInlineState from '../../components/design-system/ScInlineState.vue';
 import ScList, { type ScListItem } from '../../components/design-system/ScList.vue';
-import { canDownloadCollaborationAttachment, canReplyCollaborationMessage, formatCollaborationTimelineMeta, parseAttachmentEntry, parseMessageEntry, parseActivityEntry, type ParsedAttachmentInfo, type ParsedMessageInfo, type ParsedActivityInfo } from './professionalCollaborationModel';
+import { canDeleteCollaborationAttachment, canDownloadCollaborationAttachment, canReplyCollaborationMessage, formatCollaborationTimelineMeta, parseAttachmentEntry, parseMessageEntry, parseActivityEntry, type ParsedAttachmentInfo, type ParsedMessageInfo, type ParsedActivityInfo } from './professionalCollaborationModel';
 
-const props = defineProps<{ entries: ChatterTimelineEntry[]; activityUpdatingIds: number[]; attachmentViewLabel: string; timelineHasMore: boolean; timelineLoading: boolean }>();
+const props = defineProps<{ entries: ChatterTimelineEntry[]; activityUpdatingIds: number[]; attachmentDeletingIds: number[]; attachmentViewLabel: string; timelineHasMore: boolean; timelineLoading: boolean }>();
 const emit = defineEmits<{
   'update-activity': [entry: ChatterTimelineEntry, action: 'done' | 'cancel'];
   'open-attachment': [attachment: NonNullable<ChatterTimelineEntry['attachment']>];
+  'delete-attachment': [entry: ChatterTimelineEntry];
   'load-more': [];
   'reply': [entry: ChatterTimelineEntry];
 }>();
 
 function entryId(entry: ChatterTimelineEntry) { return Number(entry.activity?.id || entry.id || 0); }
 function isUpdating(entry: ChatterTimelineEntry) { const id = entryId(entry); return Boolean(id && props.activityUpdatingIds.includes(id)); }
+function isDeletingAttachment(entry: ChatterTimelineEntry) { const id = Number(entry.attachment?.id || entry.id || 0); return Boolean(id && props.attachmentDeletingIds.includes(id)); }
 function entryFrom(item: ScListItem): ChatterTimelineEntry | null { return item as unknown as ChatterTimelineEntry; }
 function attachmentInfo(entry: ChatterTimelineEntry): ParsedAttachmentInfo { return parseAttachmentEntry(entry); }
 function messageInfo(entry: ChatterTimelineEntry): ParsedMessageInfo { return parseMessageEntry(entry); }

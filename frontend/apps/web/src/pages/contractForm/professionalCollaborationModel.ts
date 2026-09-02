@@ -26,6 +26,13 @@ export function canDownloadCollaborationAttachment(entry: ChatterTimelineEntry):
   return entry.type === 'attachment' && entry.attachment?.can_download === true;
 }
 
+export function canDeleteCollaborationAttachment(entry: ChatterTimelineEntry): boolean {
+  return entry.type === 'attachment'
+    && entry.attachment?.can_delete === true
+    && entry.attachment.delete_intent === 'chatter.attachment.delete'
+    && Number(entry.attachment.id || entry.id || 0) > 0;
+}
+
 export function canUpdateCollaborationActivity(
   entry: ChatterTimelineEntry,
   action: 'done' | 'cancel',

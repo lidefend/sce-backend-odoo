@@ -36,6 +36,7 @@ export interface ChatterTimelineEntry {
     mimetype?: string;
     can_download?: boolean;
     can_delete?: boolean;
+    delete_intent?: string;
   };
   message?: {
     id?: number;
@@ -198,6 +199,17 @@ export async function updateCollaborationFollower(params: {
 }) {
   return intentRequest<{ result: { action: string; partner_id: number; is_following: boolean } }>({
     intent: 'chatter.followers.update',
+    params,
+  });
+}
+
+export async function deleteChatterAttachment(params: {
+  model: string;
+  res_id: number;
+  attachment_id: number;
+}) {
+  return intentRequest<{ result: { attachment_id: number; deleted: boolean } }>({
+    intent: 'chatter.attachment.delete',
     params,
   });
 }

@@ -1,5 +1,7 @@
 import { ref, type Ref } from 'vue';
+import { deleteChatterAttachment, type ChatterTimelineEntry } from '../../api/chatter';
 import { fileToBase64, uploadFile } from '../../api/files';
+import { canDeleteCollaborationAttachment } from './professionalCollaborationModel';
 
 export type PendingNativeAttachment = {
   key: string;
@@ -23,6 +25,7 @@ export function useNativeAttachmentRuntime(params: {
   onPendingUploadFailed: (message: string) => void;
 }) {
   const uploading = ref(false);
+  const deletingIds = ref<number[]>([]);
   const error = ref('');
   const pendingAttachments = ref<PendingNativeAttachment[]>([]);
 
@@ -115,8 +118,26 @@ export function useNativeAttachmentRuntime(params: {
     }
   }
 
+  async function deleteAttachment(entry: ChatterTimelineEntry) {
+    const attachmentId = Number(entry.attachment?.id || entry.id || 0);
+    const modelName = params.model();
+    const recordId = params.recordId();
+    if (!modelName || !recordId || !attachmentId || !canDeleteCollaborationAttachment(entry) || deletingIds.value.includes(attachmentId)) return;
+    error.value = '';
+    deletingIds.value = [...deletingIds.value, attachmentId];
+    try {
+      await deleteChatterAttachment({ model: modelName, res_id: recordId, attachment_id: attachmentId });
+      await params.reloadTimeline(recordId, modelName);
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : params.resolveLabel('delete_failed', '附件删除失败');
+    } finally {
+      deletingIds.value = deletingIds.value.filter((id) => id !== attachmentId);
+    }
+  }
+
   return {
     uploading,
+    deletingIds,
     error,
     pendingAttachments,
     clearError,
@@ -125,5 +146,6 @@ export function useNativeAttachmentRuntime(params: {
     removePendingAttachment,
     uploadPendingAttachments,
     openAttachment,
+    deleteAttachment,
   };
 }

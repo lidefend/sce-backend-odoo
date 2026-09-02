@@ -14,6 +14,12 @@ set +a
 [[ "${DB_NAME:-}" == "sc_dev_demo" ]] || { echo "expected sc_dev_demo" >&2; exit 2; }
 [[ "${ODOO_DBFILTER:-}" == "^sc_dev_demo$" ]] || { echo "expected local.dev dbfilter" >&2; exit 2; }
 
+cleanup_collaboration_fixtures() {
+  DB_NAME="${DB_NAME}" bash "${ROOT_DIR}/scripts/ops/odoo_shell_exec.sh" \
+    < "${ROOT_DIR}/scripts/verify/local_dev_collaboration_fixture_cleanup.py" >/dev/null || true
+}
+trap cleanup_collaboration_fixtures EXIT
+
 probe_output="$(DB_NAME="${DB_NAME}" bash "${ROOT_DIR}/scripts/ops/odoo_shell_exec.sh" \
   < "${ROOT_DIR}/scripts/verify/local_dev_project_create_contract_action_scope.py")"
 printf '%s\n' "${probe_output}"

@@ -8035,3 +8035,31 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   typecheck, development build, refreshed zero-gap productization inventories,
   and the complete `make verify.frontend.quick.gate` passed. These results prove
   this generic follower workflow; they do not claim broader page completion.
+
+## 2026-09-02 — Collaboration attachment-delete authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `b52493eb`.
+- Product defect and repair: collaboration attachments could be downloaded but
+  had no governed deletion path. The backend timeline now projects deletion
+  only for a direct attachment when the current user is its uploader (or an
+  administrator) and unlink ACL plus record rules allow it. The dedicated
+  `chatter.attachment.delete` handler independently repeats record access,
+  business scope, direct ownership, attachment unlink, and uploader checks.
+  The professional timeline and runtime consume only the exact `can_delete`
+  and `delete_intent` decision; missing, related-only, foreign-owner, stale,
+  cross-record, and unauthorized requests fail closed.
+- Real-page evidence: the governed journey created uniquely prefixed temporary
+  direct attachments under the authentic demo user, then deleted one through
+  the professional timeline on both `project.project` and `payment.request`.
+  Both entries disappeared, exactly two delete intents were observed, and the
+  EXIT cleanup removed any survivor. The same journey restored both follower
+  states, retained three independent activity pages and the unsaved draft,
+  preserved the dirty-close warning, reported zero unrelated mutations,
+  execute requests, or browser errors, and had no desktop or 390px horizontal
+  overflow.
+- Verification: four backend delete-boundary tests, twenty-eight collaboration
+  model cases, twenty structural and counterexample tests, strict Vue
+  typecheck, and the complete frontend quick gate. These results prove this
+  generic attachment-delete workflow; they do not claim broader page
+  completion.

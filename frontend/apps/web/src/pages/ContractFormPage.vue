@@ -930,6 +930,7 @@ const attachmentViewerRef = ref<NativeAttachmentViewerLike | null>(null);
 const chatterTimelineLoading = chatterLoading;
 const {
   uploading: attachmentUploading,
+  deletingIds: attachmentDeletingIds,
   error: attachmentError,
   pendingAttachments: pendingNativeAttachments,
   clearError: clearNativeAttachmentError,
@@ -938,6 +939,7 @@ const {
   removePendingAttachment: removePendingNativeAttachment,
   uploadPendingAttachments: uploadPendingNativeAttachments,
   openAttachment: openNativeAttachment,
+  deleteAttachment: deleteNativeAttachment,
 } = useNativeAttachmentRuntime({
   model: () => model.value,
   recordId: () => recordId.value,
@@ -1571,7 +1573,7 @@ const {
   activeChatterMode, activityAssigneeId, activityDeadline,
   activityNote, activitySummary, activityUpdatingIds,
   addOne2manyRow, advancedExpanded, applyPageStatusEvent,
-  applyWorkflowAvailability, attachmentError, attachmentUploading,
+  applyWorkflowAvailability, attachmentError, attachmentUploading, attachmentDeletingIds,
   buildContractFormActions, busy, busyKind,
   canOpenRelationRecordForm, changedFieldGroupDraft, chatterDraft, replyTarget,
   chatterError, chatterPosting, chatterTimeline, chatterTimelineHasMore, chatterTimelineLoading,
@@ -1598,7 +1600,7 @@ const {
   one2manyColumnDisplayValue, one2manyColumnInputType, one2manyColumns,
   one2manyCreateLabel, one2manyRowErrors, one2manyRowHints,
   one2manyRowLabel, one2manyRowStateLabel, one2manySummary, isOne2manyHydrating,
-  openNativeAttachment, openNativeChatterAction, replyNativeChatter, openRelationCreateForm,
+  openNativeAttachment, deleteNativeAttachment, openNativeChatterAction, replyNativeChatter, openRelationCreateForm,
   parseMaybeJsonRecord, pendingNativeAttachments, policyContext,
   queryMany2oneInline: (...args: Parameters<typeof queryMany2oneInline>) => queryMany2oneInline(...args), recordId, relationCreateMode,
   relationIds, relationInlineCreate, relationKeyword,

@@ -45,6 +45,20 @@ class ProfessionalCollaborationGuardTests(unittest.TestCase):
                 return value.replace(" || att.can_download !== true", "")
             return value
         self.assertTrue(any("independently reject" in item for item in validate(read_text)))
+    def test_attachment_delete_cannot_use_a_non_authoritative_intent(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("professionalCollaborationModel.ts"):
+                return value.replace("entry.attachment.delete_intent === 'chatter.attachment.delete'", "Boolean(entry.attachment.delete_intent)")
+            return value
+        self.assertTrue(any("exact backend intent" in item for item in validate(read_text)))
+    def test_attachment_delete_handler_cannot_bypass_authority(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useNativeAttachmentRuntime.ts"):
+                return value.replace(" || !canDeleteCollaborationAttachment(entry)", "")
+            return value
+        self.assertTrue(any("delete handler" in item for item in validate(read_text)))
     def test_attachment_upload_handler_cannot_bypass_authority(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
