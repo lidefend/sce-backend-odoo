@@ -198,6 +198,10 @@ try {
     nativeStructure: await workspaceSurface.locator('[data-native-contract-structure]').count(),
     notebookPages: await workspaceSurface.locator('[data-native-contract-structure] .native-tabs .native-tab').count(),
     readonlyRelationFacts: await workspaceSurface.locator('.o2m-readonly-fact dd').allTextContents(),
+    readonlyRelationRows: await workspaceSurface.locator('.o2m-readonly-row').evaluateAll((rows) => rows.map((row) => (
+      [...row.querySelectorAll('.o2m-readonly-fact dd')].map((node) => (node.textContent || '').trim())
+    ))),
+    readonlyRelationEmptyLabels: await workspaceSurface.locator('.relation-readonly-empty').allTextContents(),
     header: await captureHeaderPresentation(workspaceSurface),
   };
   const workspacePresentation = contractPresentations
@@ -219,8 +223,16 @@ try {
     || workspaceResult.header.primaryActions > 1 || workspaceResult.header.rawButtonsOutsideWorkflow !== 0) {
     throw new Error(`project workspace header primitive boundary failed: ${JSON.stringify(workspaceResult.header)}`);
   }
-  if (workspaceResult.readonlyRelationFacts.some((value) => /^\s*\d+\s*,/.test(value))) {
+  if (workspaceResult.readonlyRelationFacts.some((value) => /^\s*\d+\s*,/.test(value) || /^#\d+$/.test(value))) {
     throw new Error(`project workspace leaked raw relation ids: ${JSON.stringify(workspaceResult.readonlyRelationFacts)}`);
+  }
+  if (workspaceResult.readonlyRelationRows.some((values) => values.every((value) => !value || value === '—'))) {
+    throw new Error(`project workspace rendered empty readonly relation rows: ${JSON.stringify(workspaceResult.readonlyRelationRows)}`);
+  }
+  if (workspaceResult.readonlyRelationRows.length === 0
+    && (workspaceResult.readonlyRelationEmptyLabels.length === 0
+      || workspaceResult.readonlyRelationEmptyLabels.some((value) => !value.includes('暂无可展示记录')))) {
+    throw new Error(`project workspace relation empty state is misleading: ${JSON.stringify(workspaceResult.readonlyRelationEmptyLabels)}`);
   }
 
   contractActions.length = 0;

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import {
   collectOne2manyDraftValidationFromRows,
+  initOne2manyRowsFromRelationSource,
+  mergeOne2manyHydratedRecords,
   one2manyColumnDisplayValue,
   one2manyColumnsFromSubview,
   one2manyRowActionsFromSubview,
@@ -112,6 +114,18 @@ assert.equal(one2manyColumnDisplayValue(many2oneColumn, 10), '', 'bare many2one 
 const many2manyColumn = { name: 'tag_ids', label: '标签', ttype: 'many2many', required: false };
 assert.equal(one2manyColumnDisplayValue(many2manyColumn, [[2, '重点'], { id: 3, name: '在建' }]), '重点、在建');
 assert.equal(one2manyColumnDisplayValue(many2manyColumn, [2, 3]), '', 'bare many2many ids must fail closed instead of leaking into product text');
+const unresolvedRows = initOne2manyRowsFromRelationSource({ source: [2], relationOptions: [], primary: 'display_name' });
+assert.equal(unresolvedRows[0]?.values.display_name, '', 'unresolved one2many records must not synthesize #id labels');
+const syntheticOptionRows = initOne2manyRowsFromRelationSource({
+  source: [2], relationOptions: [{ id: 2, label: '#2' }], primary: 'display_name',
+});
+assert.equal(syntheticOptionRows[0]?.values.display_name, '', 'synthetic relation option labels must fail closed');
+mergeOne2manyHydratedRecords({
+  rows: unresolvedRows,
+  columns: [{ name: 'display_name', label: '名称', ttype: 'char', required: false }],
+  records: [{ id: 2, display_name: false }],
+});
+assert.equal(unresolvedRows[0]?.values.display_name, false, 'hydration must preserve the authoritative empty value without restoring #id text');
 const schemaSelectionColumns = one2manyColumnsFromSubview({ tree: {
   columns: ['state'],
   columns_schema: [{ name: 'state', label: '状态', type: 'selection', selection: [

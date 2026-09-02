@@ -1741,7 +1741,7 @@
     },
     {
       "category": "relations-x2many",
-      "digest": "e47fd0856c68f3c2c84103fbd99b12572b52d9f9d9fe92e4f58595aadf90fa59",
+      "digest": "388dd7d207e446e4ccd94d839669e044efd3c7886d6fd1cb8741e77ff8d762a9",
       "nativeStyleSelectors": [
         ".o2m-input-amount input"
       ],
@@ -2596,7 +2596,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "502d7cd0d00d48128ccf2756e8c0a0af8c60134d64762b70b8ac82dc133ea6bf",
+  "currentInputDigest": "e139c10d45882cef73b3cf2ea99b38b1d9c7a78a814747daf75ffad19c389df3",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
@@ -2794,7 +2794,7 @@
   "scAdapterWithNativeSelectorCandidates": [
     {
       "category": "relations-x2many",
-      "digest": "e47fd0856c68f3c2c84103fbd99b12572b52d9f9d9fe92e4f58595aadf90fa59",
+      "digest": "388dd7d207e446e4ccd94d839669e044efd3c7886d6fd1cb8741e77ff8d762a9",
       "nativeStyleSelectors": [
         ".o2m-input-amount input"
       ],

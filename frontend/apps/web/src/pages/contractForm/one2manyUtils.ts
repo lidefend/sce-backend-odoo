@@ -266,10 +266,14 @@ export function one2manyPrimaryColumnFromColumns(columns: One2ManyColumn[]) {
   return columns.length ? columns[0].name : 'name';
 }
 
+function authoritativeOne2manyRelationLabel(value: unknown) {
+  const label = String(value ?? '').trim();
+  return /^#\d+$/.test(label) ? '' : label;
+}
+
 export function one2manyRowLabelFromPrimary(primary: string, row: One2ManyInlineRow) {
   const value = String(row.values?.[primary] ?? row.values?.name ?? '').trim();
   if (value) return value;
-  if (row.id) return `#${row.id}`;
   return '未命名';
 }
 
@@ -414,7 +418,7 @@ export function mergeOne2manyHydratedRecords(params: {
     }, {
       id: record.id,
       display_name: record.display_name,
-      name: record.name ?? record.display_name ?? row.values?.name ?? `#${row.id}`,
+      name: authoritativeOne2manyRelationLabel(record.name ?? record.display_name ?? row.values?.name),
     });
   });
 }
@@ -425,7 +429,10 @@ export function initOne2manyRowsFromRelationSource(params: {
   primary: string;
 }): One2ManyInlineRow[] {
   const ids = normalizeRelationIds(params.source);
-  const optionMap = new Map(params.relationOptions.map((item) => [item.id, item.label]));
+  const optionMap = new Map(params.relationOptions.map((item) => [
+    item.id,
+    authoritativeOne2manyRelationLabel(item.label),
+  ]));
   return ids.map((id) => ({
     key: `o2m_id_${id}`,
     id,
@@ -434,8 +441,8 @@ export function initOne2manyRowsFromRelationSource(params: {
     dirty: false,
     dirtyFields: [],
     values: {
-      [params.primary]: optionMap.get(id) || `#${id}`,
-      name: optionMap.get(id) || `#${id}`,
+      [params.primary]: optionMap.get(id) || '',
+      name: optionMap.get(id) || '',
     },
   }));
 }

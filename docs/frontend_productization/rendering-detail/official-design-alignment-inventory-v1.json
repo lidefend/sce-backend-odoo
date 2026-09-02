@@ -150,31 +150,31 @@
     },
     {
       "file": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
-      "line": 870,
+      "line": 878,
       "selector": ".o2m-table-scroll :deep(.t-table)",
       "status": "legacy_override_gap"
     },
     {
       "file": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
-      "line": 874,
+      "line": 882,
       "selector": ".o2m-table-scroll :deep(.t-table__th)",
       "status": "legacy_override_gap"
     },
     {
       "file": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
-      "line": 882,
+      "line": 890,
       "selector": ".o2m-table-scroll :deep(.t-table__td)",
       "status": "legacy_override_gap"
     },
     {
       "file": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
-      "line": 887,
+      "line": 895,
       "selector": ".o2m-table-scroll :deep(.t-table__tr--hover .t-table__td)",
       "status": "legacy_override_gap"
     },
     {
       "file": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
-      "line": 891,
+      "line": 899,
       "selector": ".o2m-table-scroll :deep(.t-table__foot .t-table__td)",
       "status": "legacy_override_gap"
     }

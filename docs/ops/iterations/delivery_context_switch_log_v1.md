@@ -3,6 +3,28 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-09-02 — READONLY-RELATION-EMPTY-ROW-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `a6b2520c`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / semantic
+  relation component readonly presentation / `frontend/apps/web` and the
+  governed project/payment browser journey.
+- Product result: unresolved one2many carriers no longer synthesize `#ID` as a
+  business label, and readonly collections omit rows that contain no
+  presentable business fact. The empty state says “暂无可展示记录” instead of
+  incorrectly claiming that no related records exist.
+- Standard vs User-Specific: the rule applies to the generic relation renderer
+  and relation-value normalizer only. It does not branch on project models,
+  Chinese labels, roles, statuses, customers, or component suppliers.
+- Real-page evidence: project workspace record `2` changed from two seven-field
+  rows headed `#2` / `#1` with all remaining facts empty to zero raw-ID facts and
+  zero empty readonly rows. The same governed journey keeps project create and
+  payment task pages healthy at desktop and 390px with zero mutations, execute
+  requests, overflow, or browser errors.
+- Boundary: no backend fact change, database write, environment rebuild, new
+  contract, page-specific exception, push, PR, or merge.
+
 ## 2026-09-02 — READONLY-BUSINESS-FACT-TRUST-CLOSURE-01
 
 - Branch / anchor: `feature/native-view-action-semantics-closure-v1`; this batch

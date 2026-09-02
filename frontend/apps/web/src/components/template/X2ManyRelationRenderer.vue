@@ -43,7 +43,7 @@
   </div>
   <div v-else-if="field.type === 'one2many'" class="relation-editor">
     <div v-if="field.readonly" class="o2m-readonly" data-readonly-relation>
-      <div v-if="adapter.visibleOne2manyRows(field.name).length" class="o2m-readonly-list">
+      <div v-if="one2manyRows.length" class="o2m-readonly-list">
         <article
           v-for="row in paginatedOne2manyRows"
           :key="row.key"
@@ -64,7 +64,7 @@
           </dl>
         </article>
       </div>
-      <ScInlineState v-else class="relation-readonly-empty" state="empty" label="暂无记录" data-readonly-relation-empty />
+      <ScInlineState v-else class="relation-readonly-empty" state="empty" label="暂无可展示记录" data-readonly-relation-empty />
     </div>
         <template v-else>
     <div class="o2m-card">
@@ -222,7 +222,15 @@ import type { RelationFieldColumn, RelationFieldRow, X2ManyRelationRendererProps
 const props = defineProps<X2ManyRelationRendererProps>();
 const one2manyPage = ref(1);
 const one2manyPageSize = 20;
-const one2manyRows = computed(() => props.field.type === 'one2many' ? props.adapter.visibleOne2manyRows(props.field.name) : []);
+const one2manyRows = computed(() => {
+  if (props.field.type !== 'one2many') return [];
+  const rows = props.adapter.visibleOne2manyRows(props.field.name);
+  if (!props.field.readonly) return rows;
+  const columns = props.adapter.one2manyColumns(props.field.name);
+  return rows.filter((row) => columns.some((column) => (
+    Boolean(props.adapter.one2manyColumnDisplayValue(column, row.values[column.name]))
+  )));
+});
 const one2manyPageCount = computed(() => Math.max(1, Math.ceil(one2manyRows.value.length / one2manyPageSize)));
 const paginatedOne2manyRows = computed(() => {
   const start = (one2manyPage.value - 1) * one2manyPageSize;
