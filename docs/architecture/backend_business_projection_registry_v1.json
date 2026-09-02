@@ -1,6 +1,6 @@
 {
   "schema": "backend_business_projection_registry_v1",
-  "status": "draft architecture audit",
+  "status": "active exact-head audit authority",
   "purpose": "Classify projection/read surfaces by implementation mode so SQL views, physical refresh tables, runtime facts, and controlled ledgers are not conflated.",
   "projections": [
     {
@@ -49,15 +49,6 @@
       "acceptance_probe": "payment request ledger tests"
     },
     {
-      "model": "sc.account.income.expense.summary",
-      "implementation_mode": "sql_view",
-      "write_policy": "read-only SQL view",
-      "source_models": ["sc.treasury.ledger"],
-      "refresh_owner": "model init SQL view",
-      "idempotency_key": "SQL aggregate key",
-      "acceptance_probe": "formal projection refresh probe"
-    },
-    {
       "model": "sc.ar.ap.company.summary",
       "implementation_mode": "physical_refresh_table",
       "write_policy": "create/write/unlink blocked; table rebuilt by init/projection refresh",
@@ -78,18 +69,18 @@
     {
       "model": "sc.company.operation.summary",
       "implementation_mode": "sql_view",
-      "write_policy": "read-only SQL view",
-      "source_models": ["sc.receipt.income", "sc.payment.execution", "sc.treasury.reconciliation"],
+      "write_policy": "product-owned typed-empty read-only SQL view; no current live provider ownership",
+      "source_models": [],
       "refresh_owner": "model init SQL view",
       "idempotency_key": "period label",
       "acceptance_probe": "formal projection refresh probe"
     },
     {
       "model": "sc.comprehensive.cost.summary",
-      "implementation_mode": "physical_refresh_table",
-      "write_policy": "create/write/unlink blocked; table rebuilt by init/projection refresh",
-      "source_models": ["sc.expense.claim", "project.cost.ledger", "sc.payment.execution"],
-      "refresh_owner": "model init physical table refresh",
+      "implementation_mode": "sql_view",
+      "write_policy": "product-owned typed-empty read-only SQL view; no current live provider ownership",
+      "source_models": [],
+      "refresh_owner": "model init typed-empty SQL view",
       "idempotency_key": "project/category aggregate key",
       "acceptance_probe": "formal projection refresh probe"
     },
@@ -114,8 +105,8 @@
     {
       "model": "sc.fund.daily.summary",
       "implementation_mode": "sql_view",
-      "write_policy": "read-only SQL view",
-      "source_models": ["sc.fund.account.operation"],
+      "write_policy": "product-owned typed-empty read-only SQL view; no current live provider ownership",
+      "source_models": [],
       "refresh_owner": "model init SQL view",
       "idempotency_key": "date/account/project aggregate key",
       "acceptance_probe": "formal projection refresh probe"
@@ -132,8 +123,8 @@
     {
       "model": "sc.material.stock.summary",
       "implementation_mode": "sql_view",
-      "write_policy": "read-only SQL view",
-      "source_models": ["sc.material.inbound", "sc.material.outbound", "sc.legacy.material.stock.fact"],
+      "write_policy": "product-owned typed-empty read-only SQL view; no current live provider ownership",
+      "source_models": [],
       "refresh_owner": "model init SQL view",
       "idempotency_key": "project/material/warehouse aggregate key",
       "acceptance_probe": "formal projection refresh probe"
@@ -164,6 +155,159 @@
       "refresh_owner": "payment/receipt actions and treasury ledger projection writer",
       "idempotency_key": "payment_request_id or legacy source reference",
       "acceptance_probe": "ledger ACL and formal projection refresh probes"
+    },
+    {
+      "model": "sc.expense.contract.ledger",
+      "implementation_mode": "sql_view",
+      "write_policy": "read-only SQL view",
+      "source_models": ["construction.contract.expense", "sc.general.contract", "sc.settlement.order", "sc.invoice.registration", "sc.payment.execution"],
+      "refresh_owner": "model init SQL view",
+      "idempotency_key": "source_model, source_record_id",
+      "acceptance_probe": "contract ledger source and amount guards"
+    },
+    {
+      "model": "sc.income.contract.ledger",
+      "implementation_mode": "sql_view",
+      "write_policy": "read-only SQL view",
+      "source_models": ["construction.contract.income", "sc.general.contract"],
+      "refresh_owner": "model init SQL view",
+      "idempotency_key": "source_model, source_record_id",
+      "acceptance_probe": "contract ledger source and amount guards"
+    },
+    {
+      "model": "sc.output.invoice.ledger",
+      "implementation_mode": "sql_view",
+      "write_policy": "read-only SQL view",
+      "source_models": ["sc.invoice.registration", "sc.receipt.invoice.line"],
+      "refresh_owner": "model init SQL view",
+      "idempotency_key": "source_model, source_record_id",
+      "acceptance_probe": "output invoice source and amount guards"
+    },
+    {
+      "model": "sc.ar.ap.report.summary",
+      "implementation_mode": "sql_view",
+      "write_policy": "product-owned typed-empty read-only SQL view; no external provider ownership",
+      "source_models": [],
+      "refresh_owner": "model init SQL view",
+      "idempotency_key": "project_id",
+      "acceptance_probe": "typed-empty ownership and schema guard"
+    },
+    {
+      "model": "sc.finance.business.fact",
+      "implementation_mode": "sql_view",
+      "write_policy": "read-only SQL view",
+      "source_models": ["sc.expense.claim", "sc.tax.deduction.registration", "sc.self.funding.registration", "tender.guarantee"],
+      "refresh_owner": "model init SQL view",
+      "idempotency_key": "fact_type, source_model, source_res_id",
+      "acceptance_probe": "finance business fact projection guards"
+    },
+    {
+      "model": "sc.finance.business.project.summary",
+      "implementation_mode": "sql_view",
+      "write_policy": "read-only SQL view",
+      "source_models": ["sc.finance.business.fact"],
+      "refresh_owner": "model init SQL view",
+      "idempotency_key": "business_domain, project_id",
+      "acceptance_probe": "finance business project summary guards"
+    },
+    {
+      "model": "sc.interfund.movement.fact",
+      "implementation_mode": "sql_view",
+      "write_policy": "read-only SQL view",
+      "source_models": ["sc.financing.loan", "sc.expense.claim", "sc.fund.account.operation"],
+      "refresh_owner": "model init SQL view",
+      "idempotency_key": "movement_type, source_model, source_res_id, direction",
+      "acceptance_probe": "interfund movement fact guards"
+    },
+    {
+      "model": "sc.interfund.movement.project.summary",
+      "implementation_mode": "sql_view",
+      "write_policy": "read-only SQL view",
+      "source_models": ["sc.interfund.movement.fact"],
+      "refresh_owner": "model init SQL view",
+      "idempotency_key": "project_id, movement_type",
+      "acceptance_probe": "interfund project summary guards"
+    },
+    {
+      "model": "sc.finance.project.capital.position",
+      "implementation_mode": "sql_view",
+      "write_policy": "read-only SQL view",
+      "source_models": ["sc.finance.business.project.summary", "sc.interfund.movement.project.summary"],
+      "refresh_owner": "model init SQL view",
+      "idempotency_key": "project_id",
+      "acceptance_probe": "project capital position guards"
+    },
+    {
+      "model": "sc.finance.project.counterparty.position",
+      "implementation_mode": "sql_view",
+      "write_policy": "read-only SQL view",
+      "source_models": ["sc.finance.business.fact", "sc.interfund.movement.fact"],
+      "refresh_owner": "model init SQL view",
+      "idempotency_key": "project_id, counterparty_type, counterparty identity",
+      "acceptance_probe": "project counterparty position guards"
+    },
+    {
+      "model": "sc.finance.counterparty.position.summary",
+      "implementation_mode": "sql_view",
+      "write_policy": "read-only SQL view",
+      "source_models": ["sc.finance.project.counterparty.position"],
+      "refresh_owner": "model init SQL view",
+      "idempotency_key": "company_id, counterparty_type, counterparty identity",
+      "acceptance_probe": "counterparty position summary guards"
+    },
+    {
+      "model": "sc.company.contractor.responsibility.fact",
+      "implementation_mode": "sql_view",
+      "write_policy": "read-only SQL view",
+      "source_models": ["sc.finance.business.fact"],
+      "refresh_owner": "model init SQL view",
+      "idempotency_key": "responsibility_type, source_fact_id",
+      "acceptance_probe": "company contractor responsibility fact guards"
+    },
+    {
+      "model": "sc.company.contractor.responsibility.summary",
+      "implementation_mode": "sql_view",
+      "write_policy": "read-only SQL view",
+      "source_models": ["sc.company.contractor.responsibility.fact"],
+      "refresh_owner": "model init SQL view",
+      "idempotency_key": "project_id, partner identity",
+      "acceptance_probe": "company contractor responsibility summary guards"
+    },
+    {
+      "model": "sc.labor.subcontract.report",
+      "implementation_mode": "sql_view",
+      "write_policy": "read-only SQL view",
+      "source_models": ["sc.labor.usage", "sc.subcontract.register", "sc.subcontract.settlement"],
+      "refresh_owner": "model init SQL view",
+      "idempotency_key": "fact_type, source_model, source_res_id",
+      "acceptance_probe": "labor subcontract report guards"
+    },
+    {
+      "model": "sc.p1.relationship.review.queue",
+      "implementation_mode": "sql_view",
+      "write_policy": "read-only SQL view",
+      "source_models": ["payment.request", "sc.receipt.income", "sc.invoice.registration", "sc.financing.loan", "sc.settlement.order", "project.project", "project.cost.ledger"],
+      "refresh_owner": "model init SQL view",
+      "idempotency_key": "source_model, target_field, candidate_field, recommendation",
+      "acceptance_probe": "P1 relationship review queue guards"
+    },
+    {
+      "model": "sc.p1.relationship.suggestion",
+      "implementation_mode": "sql_view",
+      "write_policy": "product-owned typed-empty read-only SQL view; no external provider ownership",
+      "source_models": [],
+      "refresh_owner": "model init SQL view",
+      "idempotency_key": "source_model, source_res_id, target_field",
+      "acceptance_probe": "typed-empty ownership and schema guard"
+    },
+    {
+      "model": "project.boq.summary.component",
+      "implementation_mode": "controlled_writable_snapshot",
+      "write_policy": "import-owned source-faithful snapshot; writable only while the BOQ version is draft and locked after validation or publication",
+      "source_models": ["project.boq.version", "BOQ import workbook summary rows"],
+      "refresh_owner": "governed BOQ import on a draft version",
+      "idempotency_key": "version_id, source_sheet_index, source_row, sequence",
+      "acceptance_probe": "BOQ draft mutation and published-version immutability tests"
     }
   ]
 }

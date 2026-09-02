@@ -1,0 +1,123 @@
+goal:
+  id: P1-BUSINESS-FACT-PROFESSIONALIZATION
+  title: p1_business_fact_professionalization
+  status: active
+  objective: establish_authoritative_auditable_and_efficient_construction_business_facts
+
+  baseline:
+    branch: refactor/p1-business-facts-professionalization-v1
+    full_sha: 394b2ffe20c48255d2c8c0788fbfc36456c7d007
+    source: origin/main
+    worktree: /home/lidefend/workspace/sce-backend-odoo-p1-business-facts-v1
+    initial_status_sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+    tracked_index_sha256: 4f4f6af129cc8b166e340efd76b23b9b6bcad4327046f89827ef1e8c73d5b285
+
+  product_boundary:
+    formal_product_layer: P1
+    layer_target:
+      - smart_construction_core_business_models
+      - smart_construction_core_native_views
+      - smart_construction_core_security
+      - smart_construction_core_orm_performance
+    standard_vs_user_specific: construction_industry_standard
+    why_here: construction_contract_settlement_payment_cost_and_finance_semantics_are_industry_product_facts
+    why_not_elsewhere:
+      - no_industry_semantics_in_smart_core
+      - no_business_fact_inference_in_frontend
+      - no_customer_specific_baseline_in_public_industry_module
+      - no_ops_script_as_long_term_business_authority
+    blast_radius:
+      - project_contract_settlement_payment_and_cost_models
+      - native_odoo_menus_actions_views_and_role_visibility
+      - p1_fact_registries_tests_and_generated_reports
+
+  product_result:
+    statement: construction_business_facts_are_single_source_traceable_permission_correct_and_query_efficient
+    independently_acceptable: true
+    native_acceptance_authority: odoo_web
+    custom_frontend_dependency: none
+
+  scope:
+    include:
+      - exact_head_fact_model_registry
+      - contract_execution_position
+      - settlement_and_payment_fact_authority
+      - cross_company_and_project_visibility
+      - native_odoo_business_journeys
+      - deterministic_query_budgets
+      - cost_fact_idempotency_and_batching
+    exclude:
+      - frontend
+      - smart_core_public_contracts
+      - login_system_init_ui_contract_semantics
+      - customer_specific_data_or_preferences
+      - new_runtime_database_port_volume_fixture_or_credentials
+      - manually_assembled_browser_or_database_commands
+
+  governed_infrastructure:
+    runtime_profile: local.dev
+    compose_project: sc-local-dev
+    database_role: development_demo_backed_feature_database
+    database: sc_dev_demo
+    tenant: platform_internal_demo_tenant
+    database_filter: ^sc_dev_demo$
+    filestore_identity: sc_local_dev_*
+    backend_port: 8070
+    frontend_port: 18081
+    environment_reuse_only: true
+    shared_database_mutation: serialized
+
+  current_batch:
+    id: Batch-A
+    title: restore_exact_head_p1_fact_audit_authority
+    status: completed
+    objective: make_the_p1_fact_inventory_and_static_model_standard_truthful_for_the_exact_head
+    scope:
+      - p1_fact_goal_and_iteration_contract
+      - backend_business_fact_registries
+      - backend_business_fact_static_audit
+    exclude:
+      - business_runtime_model_changes
+      - security_acl_or_record_rule_changes
+      - manifest_views_menus_or_actions
+      - runtime_or_database_writes
+      - frontend_or_contract_changes
+    candidate_evidence:
+      model_count: 370
+      abstract_model_count: 9
+      formal_fact_count: 10
+      projection_count: 34
+      model_family_count: 19
+      ownership_spec_count: 18
+      targeted_static_tests: 11
+      model_standard_gate: pass
+      restricted_gate: blocked_by_shared_system_init_500
+      independent_review: approve_no_s1_s2
+
+  next_batches:
+    - id: Batch-B
+      title: contract_execution_position_v1
+      status: planned
+    - id: Batch-C
+      title: cost_fact_idempotency_and_batch_write
+      status: planned
+
+  acceptance:
+    - exact_head_static_fact_model_standard_passes
+    - zero_unregistered_formal_fact_models
+    - zero_unregistered_projection_models
+    - zero_unclassified_p1_models
+    - all_registry_paths_exist_or_have_explicit_current_policy
+    - every_product_batch_has_non_zero_targeted_orm_tests
+    - native_odoo_journey_is_the_business_acceptance_authority
+    - custom_frontend_startup_and_contract_semantics_remain_unchanged
+
+  known_external_gate:
+    owner_layer: P4
+    gap: no_registered_native_odoo_web_write_journey_make_target
+    policy: do_not_build_an_in_topic_workaround
+
+  rollback:
+    - batch_scoped_commits
+    - registry_changes_land_before_business_model_refactors
+    - module_runtime_changes_require_governed_incremental_upgrade

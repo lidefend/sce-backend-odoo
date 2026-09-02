@@ -1,6 +1,6 @@
 {
   "schema": "backend_business_model_ownership_specs_v1",
-  "status": "draft architecture audit",
+  "status": "active exact-head audit authority",
   "purpose": "Declare ownership boundaries for model families where current architecture is reasonable but overlap risk remains.",
   "ownership_specs": [
     {
@@ -20,7 +20,7 @@
       "business_object": "bilateral_mixed",
       "fact_source_model": ["sc.fund.account", "sc.treasury.reconciliation"],
       "allowed_support_models": ["sc.fund.account.operation"],
-      "projection_models": ["sc.treasury.ledger", "sc.fund.daily.summary", "sc.account.income.expense.summary"],
+      "projection_models": ["sc.treasury.ledger", "sc.fund.daily.summary"],
       "boundary_rule": "Fund account is account master data; treasury reconciliation is an auditable reconciliation document; treasury ledger and fund summaries are rebuildable read models.",
       "forbidden_drift": "Do not write cash movement workflow facts directly into ledger/summary models, and do not use fund account master as a transaction table.",
       "decision": "Keep account master, reconciliation, and ledger separate; add new treasury behavior only to the layer that owns the fact."
@@ -30,7 +30,7 @@
       "risk_family": "product and material identity",
       "business_object": "expense",
       "fact_source_model": ["product.template", "sc.material.catalog"],
-      "allowed_support_models": ["sc.material.price", "sc.legacy.material.category", "sc.legacy.material.detail"],
+      "allowed_support_models": ["sc.material.price"],
       "projection_models": ["sc.material.stock.summary"],
       "boundary_rule": "Native product owns product identity and integration; material catalog owns construction-visible classification, legacy material surface, and industry search semantics.",
       "forbidden_drift": "Do not create a second independent product identity in sc.material.catalog; catalog records must map or project to native product identity when operational flow requires it.",
@@ -283,7 +283,7 @@
     {
       "spec": "project_special_tax_deduction_scope",
       "risk_family": "tax entry overlap and noncash conservation",
-      "business_object": "tax_deduction",
+      "business_object": "expense",
       "fact_source_model": ["sc.tax.deduction.registration"],
       "allowed_support_models": ["sc.business.category", "project.project", "res.partner"],
       "projection_models": ["sc.finance.business.fact", "sc.finance.business.project.summary", "sc.finance.project.capital.position"],
@@ -337,7 +337,7 @@
     {
       "spec": "policy_document_fact_scope",
       "risk_family": "document semantic aliasing and entry overlap",
-      "business_object": "policy_document",
+      "business_object": "governance",
       "fact_source_model": ["sc.document.admin.document"],
       "allowed_support_models": ["ir.attachment", "hr.department", "res.users"],
       "projection_models": [],
@@ -388,7 +388,7 @@
     {
       "spec": "social_and_provident_fund_fact_scope",
       "risk_family": "hr contribution semantic aliasing",
-      "business_object": "social_fund_contribution",
+      "business_object": "expense",
       "fact_source_model": ["sc.hr.payroll.document"],
       "allowed_support_models": ["res.users", "hr.department", "ir.attachment"],
       "projection_models": [],
@@ -431,7 +431,7 @@
     {
       "spec": "product_system_parameter_write_facade",
       "risk_family": "configuration overlap and secret exposure",
-      "business_object": "product_system_parameter",
+      "business_object": "governance",
       "fact_source_model": ["sc.product.system.settings", "ir.config_parameter"],
       "allowed_support_models": ["sc.product.system.settings", "res.company"],
       "projection_models": [],
@@ -471,7 +471,7 @@
     {
       "spec": "product_data_permission_surface",
       "risk_family": "permission model bypass and configuration overlap",
-      "business_object": "data_permission_assignment",
+      "business_object": "governance",
       "fact_source_model": ["res.users"],
       "allowed_support_models": ["res.groups", "res.company", "sc.project.member.assignment"],
       "projection_models": [],
@@ -487,7 +487,7 @@
     {
       "spec": "product_numbering_rule_authority",
       "risk_family": "sequence authority duplication and technical exposure",
-      "business_object": "numbering_rule",
+      "business_object": "governance",
       "fact_source_model": ["ir.sequence"],
       "allowed_support_models": ["res.company"], "projection_models": [],
       "boundary_rule": "Odoo ir.sequence remains the single numbering authority; product configuration exposes only backend-classified business sequences and safe format fields.",
@@ -503,7 +503,7 @@
     {
       "spec": "product_job_master_authority",
       "risk_family": "duplicate organization master data",
-      "business_object": "job_position",
+      "business_object": "company",
       "fact_source_model": ["hr.job"],
       "allowed_support_models": ["hr.department", "hr.employee", "res.company"], "projection_models": [],
       "boundary_rule": "Odoo hr.job is the single position master and employee job_id remains the assignment authority.",
@@ -518,7 +518,7 @@
     {
       "spec": "office_asset_master_and_lifecycle",
       "risk_family": "asset master aliased to approval documents",
-      "business_object": "office_asset",
+      "business_object": "company",
       "fact_source_model": ["sc.office.asset"],
       "allowed_support_models": ["hr.employee", "hr.department", "res.company", "ir.attachment"], "projection_models": [],
       "boundary_rule": "Office assets are durable master records with custody lifecycle; leave and seal approval documents cannot own asset state.",
