@@ -197,24 +197,18 @@ export interface ParsedActivityInfo {
   at?: string;
   atLabel?: string;
   icon: string;
-  status: 'pending' | 'done' | 'canceled' | 'overdue';
+  status: 'pending' | 'overdue' | 'unknown';
   statusLabel: string;
 }
 
 export function parseActivityEntry(entry: ChatterTimelineEntry): ParsedActivityInfo {
   const activity = entry.activity || {};
   const title = entry.title || entry.body || '待办活动';
-  const now = new Date();
   const deadline = activity.deadline ? new Date(activity.deadline) : undefined;
-
-  let status: ParsedActivityInfo['status'] = 'pending';
-  let statusLabel = '待处理';
-
-  // 简单状态判断（实际状态应从后端获取）
-  if (deadline && deadline < now) {
-    status = 'overdue';
-    statusLabel = '已逾期';
-  }
+  const status: ParsedActivityInfo['status'] = activity.status === 'pending' || activity.status === 'overdue'
+    ? activity.status
+    : 'unknown';
+  const statusLabel = activity.status_label || '状态未知';
 
   return {
     title,

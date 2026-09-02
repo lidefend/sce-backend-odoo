@@ -45,4 +45,11 @@ class ProfessionalCollaborationGuardTests(unittest.TestCase):
                 return value.replace("entry.activity?.can_complete === true", "entry.activity?.can_complete !== false")
             return value
         self.assertTrue(any("both actions" in item for item in validate(read_text)))
+    def test_activity_status_cannot_be_inferred_from_client_clock(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("professionalCollaborationModel.ts"):
+                return value.replace("const deadline =", "const now = new Date();\n  const deadline =")
+            return value
+        self.assertTrue(any("client clock" in item for item in validate(read_text)))
 if __name__ == "__main__": unittest.main()

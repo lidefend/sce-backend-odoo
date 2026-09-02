@@ -3,6 +3,7 @@ import importlib.util
 import sys
 import types
 import unittest
+from datetime import date, timedelta
 from pathlib import Path
 
 
@@ -105,6 +106,17 @@ def _load_handler():
 class TestChatterTimelineBoundaries(unittest.TestCase):
     def setUp(self):
         self.module = _load_handler()
+
+    def test_activity_status_projection_is_backend_authoritative(self):
+        today = date(2026, 9, 2)
+        self.assertEqual(
+            self.module._activity_status_projection(today - timedelta(days=1), today),
+            {"code": "overdue", "label": "已逾期"},
+        )
+        self.assertEqual(
+            self.module._activity_status_projection(today, today),
+            {"code": "pending", "label": "待处理"},
+        )
 
     def test_missing_target_returns_structured_error(self):
         handler = self.module.ChatterTimelineHandler(env={}, params={}, context={"trace_id": "trace"})

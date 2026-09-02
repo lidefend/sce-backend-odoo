@@ -23,6 +23,8 @@ export interface ChatterTimelineEntry {
     assignee_name?: string;
     deadline?: string;
     activity_type?: string;
+    status?: 'pending' | 'overdue';
+    status_label?: string;
     can_complete?: boolean;
     can_cancel?: boolean;
     can_edit?: boolean;

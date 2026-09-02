@@ -49,6 +49,10 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("activity update handler must independently enforce explicit backend authority")
     if "entry.activity?.can_complete === true" not in model or "entry.activity?.can_cancel === true" not in model:
         failures.append("activity update authority resolver must fail closed for both actions")
+    if "activity.status === 'pending' || activity.status === 'overdue'" not in model or "'unknown'" not in model:
+        failures.append("activity presentation must consume explicit backend status and fail closed when absent")
+    if "deadline < now" in model or "new Date()" in model:
+        failures.append("activity presentation must not infer business status from the client clock")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
         if forbidden in model or forbidden in timeline: failures.append(f"collaboration components contain forbidden product special case {forbidden}")
     return failures

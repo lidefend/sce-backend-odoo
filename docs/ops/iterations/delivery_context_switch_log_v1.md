@@ -7912,3 +7912,29 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   counterexample tests, strict Vue typecheck, development build, refreshed
   zero-gap productization inventories, and the complete `make
   verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Collaboration activity status-authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `b8c7baf3`.
+- Product defect and repair: the collaboration activity card inferred pending
+  versus overdue state from the browser clock even though activity state is a
+  backend business projection. The generic chatter timeline now supplies
+  explicit `status` and `status_label`; the frontend consumes only the declared
+  values and falls back to `unknown` / `状态未知` when the status contract is
+  absent. No model, role, label, or client-clock business inference remains in
+  the component.
+- Real-page evidence: the rebuilt project-create/project-workspace/payment
+  journey passed with three independent activity pages, retained unsaved draft
+  and dirty-close warning, two readable project tender rows, one editable
+  payment attachment entry, zero browser errors, zero mutations, zero execute
+  requests, and no desktop or 390px horizontal overflow.
+- Verification: backend status projection boundary cases, fourteen frontend
+  collaboration model cases, ten structural/counterexample tests, strict Vue
+  typecheck, development build, refreshed zero-gap inventories, and the
+  complete `make verify.frontend.quick.gate` passed. The isolated real-Odoo
+  authorization run reported 5 tests with 0 failures/errors and confirmed the
+  status carrier; its wrapper exited 86 only after the tests because the volume
+  baseline hash changed during cleanup, while also reporting both the temporary
+  database and temporary resources removed. This cleanup-harness result is not
+  recorded as a green gate.

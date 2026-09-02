@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from datetime import datetime
+from datetime import date, datetime
 from email.header import decode_header, make_header
 from email.utils import parseaddr
 from typing import Any, Dict, List, Optional
@@ -31,6 +31,13 @@ from ..utils.reason_codes import (
     REASON_USER_ERROR,
     failure_meta_for_reason,
 )
+
+
+def _activity_status_projection(deadline: Optional[date], today: Optional[date] = None) -> Dict[str, str]:
+    reference_date = today or datetime.now().date()
+    if deadline and deadline < reference_date:
+        return {"code": "overdue", "label": "已逾期"}
+    return {"code": "pending", "label": "待处理"}
 
 
 class ChatterTimelineHandler(BaseIntentHandler):
@@ -257,6 +264,7 @@ class ChatterTimelineHandler(BaseIntentHandler):
         items: List[Dict[str, Any]] = []
         for row in rows:
             deadline = _to_iso(row.date_deadline)
+            status = _activity_status_projection(row.date_deadline)
             assignee = row.user_id.display_name or "Unknown"
             is_assignee = bool(row.user_id and row.user_id.id == self.env.user.id)
             is_owner = bool(row.create_uid and row.create_uid.id == self.env.user.id)
@@ -276,6 +284,8 @@ class ChatterTimelineHandler(BaseIntentHandler):
                         "assignee_name": assignee,
                         "deadline": deadline,
                         "activity_type": row.activity_type_id.display_name or "",
+                        "status": status["code"],
+                        "status_label": status["label"],
                         "can_complete": is_assignee or is_admin,
                         "can_cancel": is_assignee or is_admin or is_owner,
                         "can_edit": is_assignee or is_admin or is_owner,

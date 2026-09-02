@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { canDownloadCollaborationAttachment, canUpdateCollaborationActivity, collaborationCapabilityReadiness, formatCollaborationTimelineMeta, visibleCollaborationTimeline } from '../src/pages/contractForm/professionalCollaborationModel';
+import { canDownloadCollaborationAttachment, canUpdateCollaborationActivity, collaborationCapabilityReadiness, formatCollaborationTimelineMeta, parseActivityEntry, visibleCollaborationTimeline } from '../src/pages/contractForm/professionalCollaborationModel';
 
 assert.deepEqual(collaborationCapabilityReadiness({ hasCommentAction: true, hasAttachmentAuthority: true, hasActivityAction: true }), {
   comment: 'ready', attachment: 'ready', activity: 'ready', follower: 'fail_closed',
@@ -18,4 +18,6 @@ assert.equal(canUpdateCollaborationActivity({ key: 'missing', type: 'activity', 
 assert.equal(canUpdateCollaborationActivity({ key: 'denied', type: 'activity', activity: { id: 1, can_cancel: false } } as never, 'cancel'), false);
 assert.equal(canUpdateCollaborationActivity({ key: 'complete', type: 'activity', activity: { id: 1, can_complete: true } } as never, 'done'), true);
 assert.equal(canUpdateCollaborationActivity({ key: 'cancel', type: 'activity', activity: { id: 1, can_cancel: true } } as never, 'cancel'), true);
-console.log('[professional_collaboration_model_test] PASS cases=12');
+assert.deepEqual(parseActivityEntry({ key: 'missing-status', type: 'activity', title: '计划', activity: { id: 1, deadline: '2020-01-01' } } as never).status, 'unknown');
+assert.deepEqual(parseActivityEntry({ key: 'overdue', type: 'activity', title: '计划', activity: { id: 1, status: 'overdue', status_label: '已逾期' } } as never).statusLabel, '已逾期');
+console.log('[professional_collaboration_model_test] PASS cases=14');
