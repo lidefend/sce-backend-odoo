@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "a2b0951005f1dce1f0d1353e283a6b6512a8f401e59d31da0d3dbfecf95f17bb",
+  "inputDigest": "6e3c89f4c9b2f6c4c9196b66ff0e3acdf5a5662aaf986088bb214ebddc5abf12",
   "internalVendorSelectorGaps": [
     {
       "file": "frontend/apps/web/src/styles/product-patterns.css",
@@ -74,36 +74,6 @@
       "file": "frontend/apps/web/src/styles/product-patterns.css",
       "line": 612,
       "selector": "/* TDesign Dialog 遮罩修复：确保父容器隐藏时遮罩也被隐藏 * 问题：t-dialog__ctx 设置 display:none 后，position:fixed 的遮罩仍然可见 */ .t-dialog__ctx[style*=\"display: none\"] .t-dialog__mask, .t-dialog__ctx[style*=\"display: none\"] .t-dialog__wrap",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
-      "line": 878,
-      "selector": ".o2m-table-scroll :deep(.t-table)",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
-      "line": 882,
-      "selector": ".o2m-table-scroll :deep(.t-table__th)",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
-      "line": 890,
-      "selector": ".o2m-table-scroll :deep(.t-table__td)",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
-      "line": 895,
-      "selector": ".o2m-table-scroll :deep(.t-table__tr--hover .t-table__td)",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
-      "line": 899,
-      "selector": ".o2m-table-scroll :deep(.t-table__foot .t-table__td)",
       "status": "legacy_override_gap"
     }
   ],
@@ -437,6 +407,21 @@
       "status": "registered_product_variance"
     },
     {
+      "appearance": "relation-detail",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScTable.vue",
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue"
+      ],
+      "selectors": [
+        "[data-semantic-component='ScTable'][data-appearance='relation-detail']",
+        "[data-semantic-component='ScTable'][data-appearance='relation-detail'] tbody tr:hover td",
+        "[data-semantic-component='ScTable'][data-appearance='relation-detail'] td",
+        "[data-semantic-component='ScTable'][data-appearance='relation-detail'] tfoot td",
+        "[data-semantic-component='ScTable'][data-appearance='relation-detail'] th"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
       "appearance": "relation-tag",
       "consumers": [
         "frontend/apps/web/src/components/design-system/ScButton.vue"
@@ -653,10 +638,10 @@
   "scope": "formal P0/P1 frontend TDesign driver and product adapter styling",
   "summary": {
     "formalStyleSourceCount": 200,
-    "internalVendorSelectorGapCount": 15,
+    "internalVendorSelectorGapCount": 10,
     "officialPublicTokenCount": 240,
     "orphanedProductAppearanceVariantCount": 0,
-    "productAppearanceVariantCount": 36,
+    "productAppearanceVariantCount": 37,
     "projectPublicTokenOverrideCount": 38,
     "unknownProjectTokenOverrideCount": 0,
     "visualLiteralGapCount": 0

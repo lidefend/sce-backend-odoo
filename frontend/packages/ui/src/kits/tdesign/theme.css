@@ -392,6 +392,11 @@
 [data-semantic-component='ScTable'][data-appearance='worksheet'] tr.selected td { background: var(--sc-app-selected-bg); }
 [data-semantic-component='ScTable'][data-appearance='worksheet'] :is(.group-row, .heading-row) td { background: var(--sc-app-subtle-bg); font-weight: 600; }
 [data-semantic-component='ScTable'][data-appearance='worksheet'] .summary-row td { background: var(--sc-app-selected-bg); font-weight: 600; }
+[data-semantic-component='ScTable'][data-appearance='relation-detail'] { width: 100%; font-size: var(--sc-product-text-body); }
+[data-semantic-component='ScTable'][data-appearance='relation-detail'] th { padding: calc(var(--sc-component-table-cell-padding-y) * 1px) calc(var(--sc-component-table-cell-padding-x) * 1px); background: var(--sc-app-muted-bg); color: var(--sc-app-text-secondary); font-size: var(--sc-product-text-sm); font-weight: 600; }
+[data-semantic-component='ScTable'][data-appearance='relation-detail'] td { padding: var(--sc-space-xs) calc(var(--sc-component-table-cell-padding-x) * 1px); vertical-align: middle; }
+[data-semantic-component='ScTable'][data-appearance='relation-detail'] tbody tr:hover td { background: var(--sc-app-hover-bg); }
+[data-semantic-component='ScTable'][data-appearance='relation-detail'] tfoot td { padding: calc(var(--sc-component-table-cell-padding-y) * 1px) calc(var(--sc-component-table-cell-padding-x) * 1px); background: var(--sc-app-muted-bg); font-weight: 600; font-variant-numeric: tabular-nums; }
 .sc-btn[data-appearance='menu-item'] small { color: var(--sc-app-text-secondary); }
 [data-semantic-component='ScDialog'][data-appearance='workspace'] { background: var(--sc-app-panel); color: var(--sc-app-text-primary); }
 [data-semantic-component='ScDrawer'][data-appearance='workspace'] { background: var(--sc-app-panel); color: var(--sc-app-text-primary); }

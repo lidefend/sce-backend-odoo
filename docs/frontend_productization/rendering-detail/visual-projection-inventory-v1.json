@@ -875,7 +875,7 @@
     },
     {
       "category": "other",
-      "digest": "6dccc5c9a3395d6e25fd397af49e4e277a93b21e085e0a01e83b5b89d9e8bc9e",
+      "digest": "2b21c873162bdac95302a1336b0294cdd78ab1bbf464253ba5e6fc56d2e05ac5",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScTable.vue",
       "referenceNativeStyleSelectors": [],
@@ -1741,7 +1741,7 @@
     },
     {
       "category": "relations-x2many",
-      "digest": "388dd7d207e446e4ccd94d839669e044efd3c7886d6fd1cb8741e77ff8d762a9",
+      "digest": "a37c136ba672ff9b7cbe971522ab83a8f057967d6719f886d3306a43c0d7052b",
       "nativeStyleSelectors": [
         ".o2m-input-amount input"
       ],
@@ -2596,7 +2596,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "866bd6eba923613a87e05cbbfb7cc6a46f4666a236f732835f0e060dfedd57da",
+  "currentInputDigest": "26268ee9e267af71a4b462a4de81e2aee27c08947d75b1f989411851210f9971",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
@@ -2794,7 +2794,7 @@
   "scAdapterWithNativeSelectorCandidates": [
     {
       "category": "relations-x2many",
-      "digest": "388dd7d207e446e4ccd94d839669e044efd3c7886d6fd1cb8741e77ff8d762a9",
+      "digest": "a37c136ba672ff9b7cbe971522ab83a8f057967d6719f886d3306a43c0d7052b",
       "nativeStyleSelectors": [
         ".o2m-input-amount input"
       ],

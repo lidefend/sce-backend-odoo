@@ -99,6 +99,7 @@
           :hover="true"
           :stripe="false"
           :foot-data="o2mTableFootData"
+          appearance="relation-detail"
           label="明细列表"
         >
           <template #_state="{ row }">
@@ -875,34 +876,6 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
   flex-direction: column;
   gap: 4px;
   align-items: flex-start;
-}
-
-.o2m-table-scroll :deep(.t-table) {
-  font-size: 13px;
-}
-
-.o2m-table-scroll :deep(.t-table__th) {
-  padding: 8px 10px;
-  background: var(--sc-app-muted-bg);
-  color: var(--sc-app-text-secondary);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.o2m-table-scroll :deep(.t-table__td) {
-  padding: 6px 10px;
-  vertical-align: middle;
-}
-
-.o2m-table-scroll :deep(.t-table__tr--hover .t-table__td) {
-  background: var(--sc-app-hover-bg);
-}
-
-.o2m-table-scroll :deep(.t-table__foot .t-table__td) {
-  padding: 8px 10px;
-  background: var(--sc-app-muted-bg);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
 }
 
 .o2m-tr-msgs td {

@@ -3,6 +3,25 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-09-02 — X2MANY-TABLE-PROFESSIONAL-APPEARANCE-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `500f4237`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 semantic business components /
+  relation-detail tables / `ScTable` and `X2ManyRelationRenderer`.
+- Product result: editable relation details retain their compact header, body,
+  hover, and summary-row presentation through the public `relation-detail`
+  appearance of `ScTable`. Five private TDesign table selectors were removed;
+  relation commands, inline-edit behavior, backend field authority, and totals
+  semantics are unchanged.
+- Acceptance evidence: the x2many inline-edit and rendering-detail guards pass.
+  The governed project/payment journey revalidated three independent activity
+  pages, unsaved-draft preservation, dirty-close cancellation, desktop/390px
+  headers, zero mutations, zero execute requests, and zero browser errors. Its
+  current payment fixture exposes an empty readonly relation, so it is not
+  claimed as editable-row browser evidence. The official design inventory moved
+  from 15 to 10 internal-selector gaps and retains zero visual-literal gaps.
+
 ## 2026-09-02 — PAGINATION-TOTAL-PUBLIC-AUTHORITY-CLOSURE-01
 
 - Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
