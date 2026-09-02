@@ -33,6 +33,10 @@ def main() -> int:
     activity_row = next((line for line in registry.splitlines() if "semantic: 'activity'" in line), "")
     if "status: 'ready'" not in activity_row or "activeRendererKey: 'core.activity'" not in activity_row or "outlet: 'standard'" not in activity_row:
         errors.append("activity renderer must use the native ready standard outlet")
+    frontend_map = (ROOT / "contracts/product/native-view-frontend-capability-map-v1.yaml").read_text(encoding="utf-8")
+    activity_mapping = next((line for line in frontend_map.splitlines() if "id: activity," in line), "")
+    if "renderer_key: 'registry:core.activity'" not in activity_mapping or "reason_code: CAPABILITY_INTERACTION_EVIDENCE_MISSING" not in activity_mapping:
+        errors.append("activity capability classification must identify the professional renderer without claiming static interaction readiness")
     for activity_marker in ("activityProfile", "ActivityPage", "resolveActivitySurfaceModel"):
         target = v2_assembler if activity_marker == "activityProfile" else action_view
         if activity_marker not in target:

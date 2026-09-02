@@ -40,6 +40,7 @@ const activity = ACTION_SURFACE_RENDERER_REGISTRY.activity;
 assert.equal(activity?.status, 'ready');
 assert.equal(activity?.activeRendererKey, 'core.activity');
 assert.equal(activity?.outlet, 'standard');
+assert.equal(activity?.reasonCode, '');
 assert.equal(shouldUseCanonicalCollectionDetail({ viewMode: 'activity', collectionSemantic: 'activity' }), true);
 assert.equal(shouldUseCanonicalCollectionDetail({ viewMode: 'activity', collectionSemantic: '' }), true);
 
