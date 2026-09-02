@@ -1866,6 +1866,49 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             "button:object:action_view_result",
         )
 
+    def test_single_primary_prefers_header_workflow_over_layout_tool_on_equal_authority(self):
+        contract = {
+            "actionContract": {
+                "actionRuleList": [
+                    {
+                        "actionId": "action.import_lines",
+                        "backendIdentity": "button:object:action_import_lines",
+                        "sourceChannel": "native_form_layout_button",
+                        "allowed": True,
+                        "enabled": True,
+                        "disabled": False,
+                        "presentationPriority": 100,
+                        "presentation": {"tier": "primary"},
+                    },
+                    {
+                        "actionId": "action.submit",
+                        "backendIdentity": "button:object:action_submit",
+                        "sourceChannel": "native_form_header",
+                        "allowed": True,
+                        "enabled": True,
+                        "disabled": False,
+                        "presentationPriority": 100,
+                        "presentation": {"tier": "primary"},
+                    },
+                ]
+            },
+            "statusContract": {"buttonStatus": []},
+            "dataContract": {"mainData": {}},
+        }
+
+        assembler._enforce_single_effective_primary_action(contract)
+
+        self.assertEqual(
+            contract["actionContract"]["primaryResolution"]["winner"],
+            "button:object:action_submit",
+        )
+        tiers = {
+            row["backendIdentity"]: row["presentation"]["tier"]
+            for row in contract["actionContract"]["actionRuleList"]
+        }
+        self.assertEqual(tiers["button:object:action_submit"], "primary")
+        self.assertEqual(tiers["button:object:action_import_lines"], "secondary")
+
     def test_final_modifier_hydration_recomputes_status_and_primary_from_complete_record(self):
         contract = {
             "actionContract": {

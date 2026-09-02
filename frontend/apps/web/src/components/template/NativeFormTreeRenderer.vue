@@ -805,6 +805,7 @@ function nativeActionEvidenceAttributes(node: NativeFormLayoutNode) {
   return {
     'data-action-key': String(action.actionKey || action.key || '').trim() || undefined,
     'data-action-ref': String(action.actionId || action.actionRef || '').trim() || undefined,
+    'data-action-tier': String(action.tier || '').trim() || undefined,
     'data-backend-identity': String(action.backendIdentity || '').trim() || undefined,
   };
 }

@@ -284,6 +284,7 @@ import NativeCollaborationPanel, {
 } from './contractForm/NativeCollaborationPanel.vue';
 import ContractFormDriverHost from './contractForm/ContractFormDriverHost.vue';
 import { composeCanonicalFormFloorplan } from '../app/presentation/canonicalFormFloorplan';
+import type { CanonicalFormNode } from '../app/presentation/canonicalFormRenderModel';
 import ContractFormNativeCanvas from './contractForm/ContractFormNativeCanvas.vue';
 import {
   collectCanonicalFormActions,
@@ -1283,10 +1284,22 @@ const blockedCanonicalPrimary = computed(() => Boolean(
   canonicalProductFloorplan.value?.decisionMode
   && canonicalProductFloorplan.value.blockedActions.some((action) => action.tier === 'primary'),
 ));
+function nodeHasEnabledPrimaryAction(node: CanonicalFormNode): boolean {
+  return Boolean(node.action?.visible && node.action.enabled && node.action.tier === 'primary')
+    || node.children.some(nodeHasEnabledPrimaryAction);
+}
+const canonicalBodyPrimaryAvailable = computed(() => Boolean(
+  canonicalFormRenderState.value.model
+  && [
+    ...canonicalFormRenderState.value.model.zones.primary,
+    ...canonicalFormRenderState.value.model.zones.subordinate,
+  ].some(nodeHasEnabledPrimaryAction),
+));
 const showContinueProcessing = computed(() => (
   route.name === 'record'
   && Boolean(recordId.value)
   && rights.value.write
+  && !canonicalBodyPrimaryAvailable.value
   && (!canonicalProductFloorplan.value?.decisionMode || blockedCanonicalPrimary.value)
 ));
 const continueProcessingLabel = computed(() => blockedCanonicalPrimary.value ? '补充资料' : '继续办理');

@@ -3497,6 +3497,18 @@ def _action_presentation_priority(row: dict[str, Any]) -> int:
     return _positive_int(row.get("presentationPriority"), 100)
 
 
+def _action_primary_location_priority(row: dict[str, Any]) -> int:
+    """Prefer workflow/header authority over deep layout tools on equal authority."""
+    source_channel = _text(row.get("sourceChannel")).lower()
+    if source_channel == "native_form_header":
+        return 30
+    if source_channel == "contract_header":
+        return 20
+    if source_channel == "native_form_layout_button":
+        return 10
+    return 0
+
+
 def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
     action_contract = _dict(contract.get("actionContract"))
     rows = [deepcopy(row) for row in _list(action_contract.get("actionRuleList")) if isinstance(row, dict)]
@@ -3840,10 +3852,16 @@ def _enforce_single_effective_primary_action(contract: dict[str, Any]) -> None:
             effective.append(row)
     if len(effective) <= 1:
         return
-    # Presentation authority is already normalized into a numeric priority.
-    # Select the strongest declared authority while preserving source order
-    # for equal priorities; array order alone must not override product facts.
-    winner = max(effective, key=_action_presentation_priority)
+    # Product presentation authority remains dominant. On equal authority,
+    # a workflow/header action outranks a deep layout tool; source order is
+    # only the final stable tie-break and cannot promote a notebook utility.
+    winner = max(
+        effective,
+        key=lambda row: (
+            _action_presentation_priority(row),
+            _action_primary_location_priority(row),
+        ),
+    )
     conflicts = []
     for row in effective:
         if row is winner:

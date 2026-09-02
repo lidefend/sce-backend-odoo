@@ -98,6 +98,7 @@ function canonicalActionRecord(action: CanonicalFormAction): Record<string, unkn
     displayLabel: action.label,
     label: action.label,
     icon: action.icon,
+    tier: action.tier,
     level: 'body',
     payload: { backendIdentity: action.actionRef.backendIdentity },
   };

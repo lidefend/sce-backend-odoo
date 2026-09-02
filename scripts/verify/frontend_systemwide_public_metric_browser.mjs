@@ -94,7 +94,7 @@ try {
         .filter(visible).map((node) => String(node.getAttribute('data-group-title') || '').replace(/\s+/g, ' ').trim()).filter(Boolean);
       const components = [...patternNode?.querySelectorAll('[data-component-key]') || []].filter(visible);
       const unresolved = components.filter((node) => !['ready', 'readable_fallback'].includes(node.getAttribute('data-component-readiness') || ''));
-      const primary = [...document.querySelectorAll('[data-product-primary-action]')].filter(visible);
+      const primary = [...document.querySelectorAll('[data-product-primary-action], [data-action-tier="primary"]')].filter(visible);
       const enabledPrimary = primary.filter((node) => !(node instanceof HTMLButtonElement) || !node.disabled);
       const fakeReadonly = [...patternNode?.querySelectorAll('input:disabled, textarea:disabled, select:disabled') || []]
         .filter(visible);
@@ -111,6 +111,7 @@ try {
         selectedNavigationItem: selectedNav,
         primaryActions: primary.length,
         enabledPrimaryActions: enabledPrimary.length,
+        primaryActionLabels: primary.map((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim()),
         saveActions: [...document.querySelectorAll('[data-action-ref="form.save"], [data-action-method="save"], [data-action-method="write"]')].filter(visible).length,
         editTransitions: [...document.querySelectorAll('[data-form-mode-action="edit"]')].filter(visible).length,
         fieldNames,
@@ -156,7 +157,8 @@ try {
     check(metrics.presentationMode === metrics.contractPresentationMode && metrics.renderProfile === metrics.contractRenderProfile,
       `${spec.key}: header differs from Contract authority`, metrics);
     check(metrics.selectedNavigationItem === 1, `${spec.key}: selected navigation identity is not unique`, metrics);
-    check(metrics.primaryActions <= 1, `${spec.key}: multiple primary actions`, metrics);
+    check(metrics.primaryActions <= 1, `${spec.key}: multiple visible primary actions`, metrics);
+    check(metrics.enabledPrimaryActions <= 1, `${spec.key}: multiple enabled primary actions`, metrics);
     check(metrics.duplicateFields.length === 0, `${spec.key}: duplicate fields`, metrics);
     check(metrics.duplicateTitles.length === 0, `${spec.key}: duplicate titles`, metrics);
     check(metrics.unregisteredComponents === 0, `${spec.key}: unregistered component reached DOM`, metrics);

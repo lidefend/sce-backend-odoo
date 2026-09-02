@@ -94,6 +94,12 @@ class SystemwidePublicMetricReportTest(unittest.TestCase):
         self.assertIn('"expectedTitle": payment_action.name', target_source)
         self.assertIn('"expectedTitle": project_action.name', target_source)
 
+    def test_browser_counts_native_and_header_primary_actions_together(self):
+        source = Path("scripts/verify/frontend_systemwide_public_metric_browser.mjs").read_text(encoding="utf-8")
+        self.assertIn('[data-product-primary-action], [data-action-tier="primary"]', source)
+        self.assertIn("metrics.primaryActions <= 1", source)
+        self.assertIn("metrics.enabledPrimaryActions <= 1", source)
+
 
 if __name__ == "__main__":
     unittest.main()
