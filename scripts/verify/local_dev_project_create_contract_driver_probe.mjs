@@ -259,13 +259,10 @@ try {
     visibleFieldNames: await paymentSurface
       .locator('[data-field-name]')
       .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-field-name')).filter(Boolean)),
-    relationIdentities: await paymentSurface
-      .locator('[data-field-name][data-field-type="one2many"], [data-field-name][data-field-type="many2many"]')
-      .evaluateAll((nodes) => nodes.map((node) => ({
-        field: node.getAttribute('data-field-name') || '',
-        label: (node.querySelector('.field-label-row .label')?.textContent || '').trim(),
-        empty: (node.querySelector('[data-readonly-relation-empty]')?.textContent || '').trim(),
-      })).filter((item) => item.empty)),
+    emptyReadonlyRelations: await paymentSurface.locator('[data-readonly-relation-empty]').count(),
+    relationInteractionCount: await paymentSurface.locator(
+      '[data-floorplan-region="relation"] input[type="file"], [data-floorplan-region="relation"] button:visible',
+    ).count(),
     header: await captureHeaderPresentation(paymentSurface),
   };
   if (paymentDrivers !== 1 || paymentErrors.length !== 0) {
@@ -279,9 +276,8 @@ try {
     || new Set(paymentResult.visibleFieldNames).size !== paymentResult.visibleFieldNames.length) {
     throw new Error(`payment page repeated canonical facts: ${JSON.stringify(paymentResult.visibleFieldNames)}`);
   }
-  if (paymentResult.relationIdentities.length === 0
-    || paymentResult.relationIdentities.some((item) => !item.field || !item.label || !item.empty.includes('暂无可展示记录'))) {
-    throw new Error(`payment relation identity is incomplete: ${JSON.stringify(paymentResult.relationIdentities)}`);
+  if (paymentResult.emptyReadonlyRelations !== 0 || paymentResult.relationInteractionCount < 1) {
+    throw new Error(`payment relation information efficiency is incomplete: ${JSON.stringify(paymentResult)}`);
   }
   const activityTabLabels = page.locator('.activity-page-tab-label');
   const activityTabKeys = await activityTabLabels.evaluateAll((nodes) => nodes.map((node) => ({

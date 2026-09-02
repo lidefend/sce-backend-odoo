@@ -214,7 +214,7 @@
       />
     </ScDisclosure>
     <ScCard
-      v-if="relationNodes.length"
+      v-if="presentableRelationNodes.length"
       class="object-task-page__relation"
       aria-label="关系明细"
       data-floorplan-region="relation"
@@ -223,7 +223,7 @@
       appearance="relation"
     >
       <CanonicalFormNodeRenderer
-        v-for="node in relationNodes"
+        v-for="node in presentableRelationNodes"
         :key="node.nodeId"
         :node="node"
         :relation-adapter="relationAdapter"
@@ -278,6 +278,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { CanonicalAuditEvent, CanonicalFormNode } from '../../app/presentation/canonicalFormRenderModel';
 import type { FormSectionFieldActionPayload, FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
@@ -285,8 +286,9 @@ import CanonicalFormNodeRenderer from './CanonicalFormNodeRenderer.vue';
 import ProfessionalAuditTimeline from './ProfessionalAuditTimeline.vue';
 import ScCard from '../../components/design-system/ScCard.vue';
 import ScDisclosure from '../../components/design-system/ScDisclosure.vue';
+import { canonicalNodeHasPresentableContent } from './canonicalFormRenderer';
 
-defineProps<{
+const props = defineProps<{
   summaryNodes: CanonicalFormNode[];
   taskNodes: CanonicalFormNode[];
   coreInputNodes: CanonicalFormNode[];
@@ -307,6 +309,9 @@ defineProps<{
   decisionMode?: boolean;
 }>();
 const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange]; 'field-action': [payload: FormSectionFieldActionPayload] }>();
+const presentableRelationNodes = computed(() => props.relationNodes.filter((node) => (
+  canonicalNodeHasPresentableContent(node, props.relationAdapter)
+)));
 
 </script>
 

@@ -70,6 +70,7 @@ import {
   canonicalFieldToFormSection,
   canonicalNodeHasContent,
   canonicalSectionFields,
+  canonicalFieldHasPresentableValue,
   visibleCanonicalChildren,
 } from './canonicalFormRenderer';
 
@@ -86,9 +87,9 @@ const emit = defineEmits<{
 }>();
 
 const nodeKind = computed(() => String(props.node.kind || 'container').trim().toLowerCase());
-const fields = computed(() => canonicalSectionFields(props.node).map((field) => (
-  canonicalFieldToFormSection(field, props.relationAdapter)
-)));
+const fields = computed(() => canonicalSectionFields(props.node)
+  .filter((field) => canonicalFieldHasPresentableValue(field, props.relationAdapter))
+  .map((field) => canonicalFieldToFormSection(field, props.relationAdapter)));
 const readonlyFactLayout = computed(() => Boolean(
   props.preferReadonlyFacts
   && fields.value.length

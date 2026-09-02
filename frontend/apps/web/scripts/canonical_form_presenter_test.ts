@@ -14,6 +14,7 @@ import { presentContractV2Form } from '../src/app/presentation/contractFormPrese
 import { composeCanonicalFormFloorplan } from '../src/app/presentation/canonicalFormFloorplan';
 import {
   canonicalFieldToFormSection,
+  canonicalFieldHasPresentableValue,
   canonicalNodeHasContent,
   canonicalSectionFields,
   visibleCanonicalChildren,
@@ -2150,6 +2151,38 @@ assert.deepEqual(
   { key: renderedName.key, name: renderedName.name, value: renderedName.value, readonly: renderedName.readonly },
   { key: 'field.name', name: 'name', value: 'D-001', readonly: false },
   'renderer mapping must preserve canonical widget identity and state without native layout input',
+);
+const readonlyEmptyRelation = {
+  ...fields.find((field) => field.fieldCode === 'name')!,
+  fieldCode: 'ledger_line_ids',
+  fieldType: 'one2many',
+  readonly: true,
+};
+const emptyRelationProjection = {
+  visibleOne2manyRows: () => [],
+};
+assert.equal(
+  canonicalFieldHasPresentableValue(readonlyEmptyRelation, emptyRelationProjection),
+  false,
+  'empty readonly relations must not consume formal task-page space',
+);
+assert.equal(
+  canonicalFieldHasPresentableValue({ ...readonlyEmptyRelation, readonly: false }, emptyRelationProjection),
+  true,
+  'editable empty relations remain visible so users can add business detail',
+);
+assert.equal(
+  canonicalFieldHasPresentableValue({ ...readonlyEmptyRelation, fieldType: 'many2many' }, emptyRelationProjection),
+  true,
+  'many2many components remain visible because attachment and selector actions own their empty presentation',
+);
+assert.equal(
+  canonicalFieldHasPresentableValue(readonlyEmptyRelation, {
+    ...emptyRelationProjection,
+    visibleOne2manyRows: () => [{ key: 'ledger:1', values: { amount: 100 } }],
+  }),
+  true,
+  'readonly relations with business rows remain visible',
 );
 assert.equal(canonicalNodeHasContent(model.zones.subordinate.find((node) => node.kind === 'chatter')!), true);
 assert.deepEqual(

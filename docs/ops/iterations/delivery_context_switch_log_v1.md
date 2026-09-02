@@ -3,6 +3,41 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-09-02 — READONLY-EMPTY-RELATION-INFORMATION-EFFICIENCY-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `debe256a`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 Product Floorplan Composer /
+  canonical relationship visibility / `canonicalFormRenderer`,
+  `CanonicalFormNodeRenderer`, and `ObjectTaskPage`. This is a generic renderer
+  rule; no payment/project model, label, role, status, or business workflow is
+  inferred in the frontend.
+- Root cause and product result: formal task pages rendered every visible
+  one2many field even when backend authority made it readonly and the canonical
+  relation projection contained no rows. Empty readonly relationship groups now
+  leave the task page, while editable empty relations, readonly relations with
+  business rows, and all many2many component surfaces remain visible. On the
+  logged-in payment request page, two empty readonly groups were removed while
+  attachment upload, activity, audit, the authoritative blocker, and the single
+  effective primary path remained intact.
+- Acceptance evidence: canonical presenter coverage proves all four visibility
+  counterexamples. The governed payment list → editable record → readonly record
+  journey passes with nine Floorplan regions, zero empty readonly relations,
+  retained relation interactions, zero false enabled primary actions, zero 390px
+  overflow, trustworthy audit content, and an unchanged business fingerprint.
+  The governed project-create / project-workspace / payment-request journey also
+  passes with three independent cross-model activity pages, retained unsaved
+  draft state, dirty-close confirmation, clean inactive close, zero mutations,
+  zero execute requests, zero browser errors, and zero horizontal overflow on
+  all three mobile surfaces. The complete `verify.frontend.quick.gate` passes;
+  refreshed professional inventories report zero component, rendering, visual,
+  private-selector, literal, orphaned-appearance, or unknown-token gaps.
+- Verification-tool alignment: the existing browser probes were updated to
+  scope the visible retained activity instance, consume public list column
+  authority, distinguish editable `/f/` navigation from readonly `/r/`
+  acceptance, use the professional disclosure and audit markers, and reject the
+  obsolete expectation that an empty readonly relation must remain visible.
+
 ## 2026-09-02 — ACTIVITY-DRAFT-DIRTY-PUBLICATION-RACE-CLOSURE-01
 
 - Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
