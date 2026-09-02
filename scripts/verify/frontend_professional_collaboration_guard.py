@@ -13,6 +13,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     model = read_text("frontend/apps/web/src/pages/contractForm/professionalCollaborationModel.ts")
     attachment_runtime = read_text("frontend/apps/web/src/pages/contractForm/useNativeAttachmentRuntime.ts")
     chatter_runtime = read_text("frontend/apps/web/src/pages/contractForm/useNativeChatterRuntime.ts")
+    contract_page = read_text("frontend/apps/web/src/pages/ContractFormPage.vue")
     for marker in ('data-professional-collaboration-component="timeline"', "data-collaboration-entry-type", "update-activity", "open-attachment"):
         if marker not in timeline: failures.append(f"collaboration timeline missing {marker}")
     if "<ProfessionalCollaborationTimeline" not in panel or "visibleCollaborationTimeline" not in panel:
@@ -62,6 +63,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("attachment deletion authority must require the exact backend intent")
     if "!canDeleteCollaborationAttachment(entry)" not in attachment_runtime or "deleteChatterAttachment" not in attachment_runtime:
         failures.append("attachment delete handler must independently reject missing or denied authority")
+    if "confirmAndDeleteNativeAttachment" not in contract_page or "intentConfirmationRef.value?.confirm" not in contract_page or "deleteNativeAttachment(entry)" not in contract_page:
+        failures.append("attachment deletion must settle through the professional confirmation component")
     if attachment_runtime.count("!params.canUpload()") < 2:
         failures.append("attachment upload handlers must independently reject missing or denied authority")
     if ':enabled="attachmentUploadEnabled"' not in panel:
@@ -94,7 +97,7 @@ def main() -> int:
         print("[frontend_professional_collaboration_guard] FAIL")
         for failure in failures: print(f" - {failure}")
         return 1
-    print("[frontend_professional_collaboration_guard] PASS components=1 follower=backend_authoritative")
+    print("[frontend_professional_collaboration_guard] PASS components=1 follower=backend_authoritative attachment_delete=confirmed")
     return 0
 
 if __name__ == "__main__": raise SystemExit(main())

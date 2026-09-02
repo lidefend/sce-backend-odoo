@@ -72,8 +72,17 @@ async function verifyAttachmentDeleteJourney(surface, model) {
   const deleteButton = timelineEntry.getByRole('button', { name: '删除', exact: true });
   await deleteButton.waitFor({ state: 'visible', timeout: 15000 });
   await deleteButton.click();
+  const confirmation = page.locator('[data-professional-workflow-component="confirm-dialog"][data-state="open"]');
+  await confirmation.waitFor({ state: 'visible', timeout: 15000 });
+  if (!String(await confirmation.textContent() || '').includes(fileName)) throw new Error(`attachment delete confirmation omitted target identity for ${model}`);
+  await confirmation.getByRole('button', { name: '取消', exact: true }).click();
+  await confirmation.waitFor({ state: 'detached', timeout: 15000 });
+  if (await timelineEntry.count() !== 1) throw new Error(`attachment delete cancellation did not preserve ${model} entry`);
+  await deleteButton.click();
+  await confirmation.waitFor({ state: 'visible', timeout: 15000 });
+  await confirmation.getByRole('button', { name: '确认删除附件', exact: true }).click();
   await timelineEntry.waitFor({ state: 'detached', timeout: 30000 });
-  return { attachmentId: expected.attachment_id, fileName, deleted: true, remainingEntries: await timelineEntry.count() };
+  return { attachmentId: expected.attachment_id, fileName, cancelPreserved: true, confirmed: true, deleted: true, remainingEntries: await timelineEntry.count() };
 }
 page.on('console', (message) => {
   if (message.type() === 'error') browserErrors.push(`console:${message.text()}`);

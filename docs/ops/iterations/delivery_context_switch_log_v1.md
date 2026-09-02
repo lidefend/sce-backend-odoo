@@ -8063,3 +8063,20 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   typecheck, and the complete frontend quick gate. These results prove this
   generic attachment-delete workflow; they do not claim broader page
   completion.
+
+## 2026-09-02 — Collaboration attachment-delete safety settlement
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `5fed62b1`.
+- Product defect and repair: an authorized attachment delete executed on the
+  first click even though it is irreversible. Record pages now reuse the
+  existing professional intent-confirmation component, identify the exact
+  attachment in the warning, preserve it on cancel, and call the already
+  governed delete runtime only after explicit confirmation. Backend authority
+  and the normalized contract remain unchanged.
+- Real-page evidence: both `project.project` and `payment.request` journeys
+  opened the confirmation, verified the target filename, cancelled once with
+  the timeline entry preserved, then confirmed and observed one exact delete
+  intent. Temporary fixtures were removed with zero survivors; follower state,
+  activity-page retention, unsaved draft, dirty-close warning, browser-error
+  count, unrelated-mutation count, and 390px overflow checks remained clean.

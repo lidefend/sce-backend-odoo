@@ -955,6 +955,15 @@ const {
   },
 });
 const nativeChatterAutoLoadKey = ref('');
+async function confirmAndDeleteNativeAttachment(entry: ChatterTimelineEntry) {
+  const attachmentName = String(entry.attachment?.name || entry.title || '当前附件').trim() || '当前附件';
+  const confirmed = await intentConfirmationRef.value?.confirm({
+    actionLabel: '删除附件',
+    message: `附件“${attachmentName}”删除后无法恢复，是否继续？`,
+  });
+  if (confirmed !== true) return;
+  await deleteNativeAttachment(entry);
+}
 const model = computed(() => String(route.params.model || v2ContractStore.value?.snapshot.pageInfo.model || ''));
 const isManagedRelationCreateDialog = computed(() => Boolean(
   resolveRelationCreateDialogCancelMessage({
@@ -1600,7 +1609,7 @@ const {
   one2manyColumnDisplayValue, one2manyColumnInputType, one2manyColumns,
   one2manyCreateLabel, one2manyRowErrors, one2manyRowHints,
   one2manyRowLabel, one2manyRowStateLabel, one2manySummary, isOne2manyHydrating,
-  openNativeAttachment, deleteNativeAttachment, openNativeChatterAction, replyNativeChatter, openRelationCreateForm,
+  openNativeAttachment, deleteNativeAttachment: confirmAndDeleteNativeAttachment, openNativeChatterAction, replyNativeChatter, openRelationCreateForm,
   parseMaybeJsonRecord, pendingNativeAttachments, policyContext,
   queryMany2oneInline: (...args: Parameters<typeof queryMany2oneInline>) => queryMany2oneInline(...args), recordId, relationCreateMode,
   relationIds, relationInlineCreate, relationKeyword,

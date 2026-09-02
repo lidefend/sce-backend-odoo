@@ -59,6 +59,13 @@ class ProfessionalCollaborationGuardTests(unittest.TestCase):
                 return value.replace(" || !canDeleteCollaborationAttachment(entry)", "")
             return value
         self.assertTrue(any("delete handler" in item for item in validate(read_text)))
+    def test_attachment_delete_cannot_bypass_professional_confirmation(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ContractFormPage.vue"):
+                return value.replace("intentConfirmationRef.value?.confirm", "Promise.resolve")
+            return value
+        self.assertTrue(any("professional confirmation" in item for item in validate(read_text)))
     def test_attachment_upload_handler_cannot_bypass_authority(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
