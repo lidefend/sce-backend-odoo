@@ -119,19 +119,23 @@
                             </page>
                             <page string="项目与合同">
                                 <group>
-                                    <field name="project_id" options="{'no_create': True}" required="1"/>
+                                    <field name="project_id" options="{'no_create': True}" required="1"
+                                           readonly="state in ['approve', 'done', 'cancel']"/>
                                     <field name="operation_strategy" readonly="1"/>
                                     <field name="contract_source_kind" readonly="1"/>
                                     <field name="contract_id"
                                            domain="[('project_id','=',project_id),('company_id','=',company_id)]"
-                                           invisible="contract_source_kind == 'general_contract'"/>
+                                           invisible="contract_source_kind == 'general_contract'"
+                                           readonly="state in ['approve', 'done', 'cancel']"/>
                                     <field name="general_contract_id"
                                            domain="[('company_id','=',company_id),'|',('project_id','=',False),('project_id','=',project_id)]"
                                            options="{'no_create': True}"
-                                           invisible="contract_source_kind != 'general_contract'"/>
+                                           invisible="contract_source_kind != 'general_contract'"
+                                           readonly="state in ['approve', 'done', 'cancel']"/>
                                     <field name="source_contract_name" readonly="1"/>
                                     <field name="source_contract_no" readonly="1"/>
-                                    <field name="partner_id" options="{'no_create_edit': True}" required="1"/>
+                                    <field name="partner_id" options="{'no_create_edit': True}" required="1"
+                                           readonly="state in ['approve', 'done', 'cancel']"/>
                                     <field name="settlement_unit_id" options="{'no_create_edit': True}" invisible="1"/>
                                     <field name="company_id" readonly="1"/>
                                     <field name="currency_id" required="1" invisible="1"/>
@@ -139,26 +143,28 @@
                             </page>
                             <page string="结算依据">
                                 <group>
-                                    <field name="title"/>
-                                <field name="settlement_category_id" string="结算分类"/>
-                                <field name="settlement_stage_id" options="{'no_create_edit': False}"/>
+                                    <field name="title" readonly="state in ['approve', 'done', 'cancel']"/>
+                                <field name="settlement_category_id" string="结算分类"
+                                       readonly="state in ['approve', 'done', 'cancel']"/>
+                                <field name="settlement_stage_id" options="{'no_create_edit': False}"
+                                       readonly="state in ['approve', 'done', 'cancel']"/>
                                 <field name="settlement_stage" invisible="1"/>
-                                <field name="document_date"/>
-                                <field name="date_settlement"/>
+                                <field name="document_date" readonly="state in ['approve', 'done', 'cancel']"/>
+                                <field name="date_settlement" readonly="state in ['approve', 'done', 'cancel']"/>
                                 <field name="settlement_period_start" readonly="1"/>
                                 <field name="settlement_period_end" readonly="1"/>
-                                <field name="planned_settlement_date"/>
-                                <field name="declared_date"/>
-                                <field name="final_approved_date"/>
-                                <field name="approved_date"/>
+                                <field name="planned_settlement_date" readonly="state in ['approve', 'done', 'cancel']"/>
+                                <field name="declared_date" readonly="state in ['approve', 'done', 'cancel']"/>
+                                <field name="final_approved_date" readonly="state in ['approve', 'done', 'cancel']"/>
+                                <field name="approved_date" readonly="state in ['approve', 'done', 'cancel']"/>
                                 </group>
                             </page>
                             <page string="结算金额">
                                 <group>
-                            <field name="settlement_amount"/>
+                            <field name="settlement_amount" readonly="state in ['approve', 'done', 'cancel']"/>
                             <field name="amount_total" readonly="1"/>
-                            <field name="submitted_amount"/>
-                            <field name="approved_amount"/>
+                            <field name="submitted_amount" readonly="state in ['approve', 'done', 'cancel']"/>
+                            <field name="approved_amount" readonly="state in ['approve', 'done', 'cancel']"/>
                             <field name="deduction_amount" readonly="1"/>
                             <field name="adjustment_total" readonly="1"/>
                             <field name="amount_after_adjustment" readonly="1"/>
@@ -170,7 +176,9 @@
                                    class="text-danger"
                                    modifiers="{'invisible': [['amount_payable','&gt;=',0.0]]}"/>
                                 </group>
-                                <field name="line_ids" context="{'default_contract_id': contract_id, 'default_general_contract_id': general_contract_id}">
+                                <field name="line_ids"
+                                       readonly="state in ['approve', 'done', 'cancel']"
+                                       context="{'default_contract_id': contract_id, 'default_general_contract_id': general_contract_id}">
                                     <tree editable="bottom">
                                         <field name="contract_id"
                                                domain="[('project_id','=',parent.project_id),('company_id','=',parent.company_id)]"
@@ -206,8 +214,9 @@
                             </page>
                             <page string="办理说明">
                                 <group>
-                                    <field name="settlement_description"/>
+                                    <field name="settlement_description" readonly="state in ['approve', 'done', 'cancel']"/>
                                     <field name="note"/>
+                                    <field name="attachment_ids" widget="many2many_binary"/>
                                 </group>
                             </page>
                             <page string="执行与匹配" invisible="not id">
@@ -226,19 +235,19 @@
                                            nolabel="1"
                                            readonly="1"
                                            modifiers="{'invisible': [['compliance_state', '!=', 'ok']]}"/>
-                                    <field name="requested_fund_amount"/>
+                                    <field name="requested_fund_amount" readonly="state in ['approve', 'done', 'cancel']"/>
                                     <field name="amount_paid" readonly="1"/>
                                     <field name="unpaid_amount" readonly="1"/>
-                                    <field name="invoice_amount"/>
+                                    <field name="invoice_amount" readonly="state in ['approve', 'done', 'cancel']"/>
                                     <field name="adjustment_total" readonly="1"/>
                                     <field name="amount_after_adjustment" readonly="1"/>
                                 </group>
                             </page>
                             <page string="发票信息" invisible="not id">
                                 <group>
-                                    <field name="invoice_ref"/>
-                                    <field name="invoice_date"/>
-                                    <field name="invoice_amount"/>
+                                    <field name="invoice_ref" readonly="state in ['approve', 'done', 'cancel']"/>
+                                    <field name="invoice_date" readonly="state in ['approve', 'done', 'cancel']"/>
+                                    <field name="invoice_amount" readonly="state in ['approve', 'done', 'cancel']"/>
                                 </group>
                             </page>
                             <page string="付款申请" invisible="not id">
@@ -266,6 +275,7 @@
                             </page>
                             <page string="扣款调整" invisible="not id">
                                 <field name="adjustment_ids"
+                                       readonly="state in ['approve', 'done', 'cancel']"
                                        context="{'default_project_id': project_id, 'default_settlement_id': id, 'default_contract_id': contract_id, 'default_partner_id': partner_id, 'default_currency_id': currency_id}">
                                     <tree editable="bottom">
                                         <field name="date_adjustment"/>
@@ -282,6 +292,7 @@
                                 <group>
                                     <field name="purchase_order_ids"
                                            widget="many2many_tags"
+                                           readonly="state in ['approve', 'done', 'cancel']"
                                            options="{'no_create': True}"/>
                                 </group>
                                 <field name="purchase_order_ids" nolabel="1" readonly="1">

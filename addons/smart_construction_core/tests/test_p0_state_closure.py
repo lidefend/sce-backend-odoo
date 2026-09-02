@@ -187,12 +187,14 @@ class TestP0StateClosure(TransactionCase):
             "contract_id": contract.id,
             "settlement_type": "out",
             "line_ids": [(0, 0, {"name": "P0 Line", "qty": 1.0, "price_unit": amount})],
-            "state": state,
         }
         purchase_orders = purchase_orders or self.env["purchase.order"]
         if purchase_orders:
             vals["purchase_order_ids"] = [(6, 0, purchase_orders.ids)]
-        return self.env["sc.settlement.order"].create(vals)
+        settlement = self.env["sc.settlement.order"].create(vals)
+        if state != "draft":
+            settlement._write_lifecycle(state)
+        return settlement
 
     def _attach_dummy(self, record, name="test.pdf"):
         self.env["ir.attachment"].create(
@@ -538,8 +540,11 @@ class TestP0StateClosure(TransactionCase):
         settlement_unit = self._create_partner("P0 Settlement Unit")
         other_partner = self._create_partner("P0 Other Partner")
         contract = self._create_contract(project, contract_partner)
-        settlement = self._create_settlement_order(project, contract_partner, contract, amount=188.0, state="approve")
+        settlement = self._create_settlement_order(
+            project, contract_partner, contract, amount=188.0, state="draft"
+        )
         settlement.write({"settlement_unit_id": settlement_unit.id})
+        settlement._write_lifecycle("approve")
 
         pr = self.env["payment.request"].sudo().create(
             {

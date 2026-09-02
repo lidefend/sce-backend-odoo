@@ -1650,6 +1650,24 @@ class PaymentRequest(models.Model):
                 [project_ids],
             )
 
+    def _lock_settlement_submission_scope(self):
+        """Serialize payment submission with settlement cancellation."""
+        settlement_ids = sorted(set(
+            self.mapped("settlement_id").ids
+            + self.mapped("outflow_line_ids.settlement_id").ids
+            + self.mapped("outflow_line_ids.settlement_line_id.settlement_id").ids
+        ))
+        if not settlement_ids:
+            return self.env["sc.settlement.order"]
+        self.env.cr.execute(
+            "SELECT id FROM sc_settlement_order "
+            "WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
+            [settlement_ids],
+        )
+        settlements = self.env["sc.settlement.order"].browse(settlement_ids)
+        settlements.invalidate_recordset(["state"])
+        return settlements
+
     def _enforce_batch_funding_submit_gate(self, evaluation_cache=None):
         if self.env.context.get("payment_soft_gate") and not any(
             self._payment_force_block_enabled(code)
@@ -2438,6 +2456,9 @@ class PaymentRequest(models.Model):
         settlements = self.settlement_id
         if self.outflow_line_ids:
             settlements |= self.outflow_line_ids.mapped("settlement_id")
+            settlements |= self.outflow_line_ids.mapped(
+                "settlement_line_id.settlement_id"
+            )
         return settlements.exists()
 
     def _has_payment_basis(self):
@@ -2447,6 +2468,7 @@ class PaymentRequest(models.Model):
             or self.settlement_id
             or self.material_settlement_id
             or self.outflow_line_ids.filtered("settlement_id")
+            or self.outflow_line_ids.filtered("settlement_line_id")
         )
 
     def _has_legacy_relation_basis(self):
@@ -2705,6 +2727,7 @@ class PaymentRequest(models.Model):
         if not self._has_submit_access():
             raise ValidationError(_("你没有提交付款/收款申请的权限。"))
         self._lock_funding_submission_scope()
+        self._lock_settlement_submission_scope()
         advisory_result = {}
         funding_evaluation_cache = {}
         for rec in self:
@@ -2719,6 +2742,14 @@ class PaymentRequest(models.Model):
             )
             if not rec._has_payment_basis():
                 raise UserError("请先选择关联合同或结算单后再提交付款/收款申请。")
+            canceled_settlements = rec._linked_settlement_orders().filtered(
+                lambda settlement: settlement.state == "cancel"
+            )
+            if canceled_settlements:
+                raise UserError(
+                    _("已作废结算单不能作为付款申请依据：%s")
+                    % ", ".join(canceled_settlements.mapped("display_name"))
+                )
             if rec.contract_id and rec.contract_id.state == "cancel":
                 raise UserError("关联合同已取消，不能提交付款/收款申请。")
             # R10: Overpay is handled as a soft advisory via _collect_payment_advisories,

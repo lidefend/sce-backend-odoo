@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError, ValidationError
 
 
 class PaymentRequestLine(models.Model):
@@ -140,8 +140,48 @@ class PaymentRequestLine(models.Model):
         if locked:
             raise UserError(operation)
 
+    @api.model
+    def _settlement_lines_by_id(self, line_ids):
+        line_ids = sorted({int(value) for value in line_ids if value})
+        if not line_ids:
+            return {}
+        lines = self.env["sc.settlement.order.line"].search(
+            [("id", "in", line_ids)]
+        )
+        if set(lines.ids) != set(line_ids):
+            raise AccessError("结算明细不存在或当前用户无权访问。")
+        return {line.id: line for line in lines}
+
+    @api.model
+    def _normalize_canonical_settlement_links(self, vals_list):
+        """Make the header settlement the canonical projection of a line link."""
+        lines_by_id = self._settlement_lines_by_id(
+            vals.get("settlement_line_id") for vals in vals_list
+        )
+        for vals in vals_list:
+            line_id = vals.get("settlement_line_id")
+            if not line_id:
+                continue
+            line = lines_by_id[int(line_id)]
+            canonical_id = line.settlement_id.id
+            if "settlement_id" in vals and vals.get("settlement_id") != canonical_id:
+                raise ValidationError("付款申请明细的结算单与结算行不一致。")
+            vals["settlement_id"] = canonical_id
+
+    def init(self):
+        self.env.cr.execute(
+            """
+            UPDATE payment_request_line payment_line
+               SET settlement_id = settlement_line.settlement_id
+              FROM sc_settlement_order_line settlement_line
+             WHERE payment_line.settlement_line_id = settlement_line.id
+               AND payment_line.settlement_id IS NULL
+            """
+        )
+
     @api.model_create_multi
     def create(self, vals_list):
+        self._normalize_canonical_settlement_links(vals_list)
         default_request_id = self.env.context.get("default_request_id")
         request_ids = {
             vals.get("request_id") or default_request_id
@@ -174,6 +214,14 @@ class PaymentRequestLine(models.Model):
                 requests,
                 "付款申请进入审批或执行后，合同分摊依据不可修改；请撤回到允许状态后处理。",
             )
+            if vals.get("settlement_line_id"):
+                normalized = dict(vals)
+                self._normalize_canonical_settlement_links([normalized])
+                vals = normalized
+            elif "settlement_id" in vals:
+                for line in self.filtered("settlement_line_id"):
+                    if vals.get("settlement_id") != line.settlement_line_id.settlement_id.id:
+                        raise ValidationError("付款申请明细的结算单与结算行不一致。")
         return super().write(vals)
 
     def unlink(self):

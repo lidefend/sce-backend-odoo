@@ -34,6 +34,36 @@ class TestDemoShowcaseGate(TransactionCase):
         self.assertIn('Boq.search_count([("project_id", "=", project.id)]) == 0', showroom_tail)
         self.assertIn("_ensure_boq(env, project, code_prefix, uom_unit)", showroom_tail)
 
+    def test_contract_seed_uses_controlled_fact_lifecycles(self):
+        demo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+        seed_path = os.path.join(
+            demo_root, "seed", "steps", "step_40_contracts_demo.py"
+        )
+        with open(seed_path, "r", encoding="utf-8") as handle:
+            source = handle.read()
+
+        self.assertNotIn("UPDATE sc_settlement_order SET state", source)
+        self.assertNotIn("UPDATE payment_request SET state", source)
+        self.assertNotIn('"state": "active"', source)
+        self.assertIn("baseline.action_create_revision", source)
+        self.assertIn("baseline.action_activate()", source)
+        self.assertIn("settlement.action_submit()", source)
+        self.assertIn("payment.action_submit()", source)
+
+    def test_project_seed_does_not_forge_fact_sources_or_lifecycle(self):
+        demo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+        seed_path = os.path.join(
+            demo_root, "seed", "steps", "step_20_projects_demo.py"
+        )
+        with open(seed_path, "r", encoding="utf-8") as handle:
+            source = handle.read()
+
+        self.assertNotIn("UPDATE project_project SET lifecycle_state", source)
+        self.assertNotIn('"source_model": "purchase.order"', source)
+        self.assertNotIn('"source_model": "account.move"', source)
+        self.assertIn('vals["lifecycle_state"] = "draft"', source)
+        self.assertIn("project.action_set_lifecycle_state(state)", source)
+
     def test_no_demo_showcase_filters_in_core(self):
         demo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
         addons_root = os.path.abspath(os.path.join(demo_root, os.pardir))

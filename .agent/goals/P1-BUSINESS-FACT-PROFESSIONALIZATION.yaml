@@ -1,7 +1,7 @@
 goal:
   id: P1-BUSINESS-FACT-PROFESSIONALIZATION
   title: p1_business_fact_professionalization
-  status: completed
+  status: active
   objective: establish_authoritative_auditable_and_efficient_construction_business_facts
 
   baseline:
@@ -165,7 +165,7 @@ goal:
       - governed_upgrade_and_full_sc_gate_passed
       - three_exact_fingerprint_independent_reviews_approved
 
-  current_batch:
+  completed_batch_f:
     id: Batch-F
     title: canonical_finance_projection_lifecycle_and_currency_authority_v1
     status: completed
@@ -221,6 +221,50 @@ goal:
 
   next_batches:
     - id: Batch-G
+      title: settlement_terminal_fact_immutability_v1
+      status: review_pending
+      objective: prevent_approved_completed_or_cancelled_settlement_facts_from_being_rewritten_or_deleted
+      entry_head: 0fdc129d675efc27209028828d2e53dabea2d956
+      entry_fingerprint: be361b8616483072c0359e8d3d99a904a8742ad0d03dd01d1ce4737a03d77f20
+      scope:
+        - settlement_state_transition_authority
+        - terminal_header_and_line_immutability
+        - settlement_payment_cancel_locking_and_batch_check
+        - non_zero_role_and_concurrency_tests
+      exclude:
+        - frontend
+        - smart_core
+        - settlement_adjustment_reversal_journal
+        - contract_and_change_immutability
+        - budget_and_cost_plan_authority
+        - p4_runtime_or_replay_tooling
+      result:
+        - settlement_creation_starts_from_draft_and_state_changes_use_module_private_authority
+        - approved_done_and_cancelled_headers_and_lines_are_immutable_and_not_deletable
+        - notes_and_attachments_remain_available_as_non_economic_annotations
+        - all_lifecycle_actions_serialize_on_settlement_rows
+        - payment_submit_and_settlement_cancel_share_the_same_settlement_lock
+        - submitted_approved_and_completed_direct_or_legacy_line_payments_block_cancel
+        - canceled_settlements_cannot_back_new_payment_submission
+        - payment_integrity_checks_use_scoped_sudo_aggregation_not_caller_visibility
+        - duplicate_shadow_create_implementation_removed
+      verification:
+        workspace_guard: pass_17_of_17
+        python_compile_and_diff_check: pass
+        governed_incremental_upgrade: pass_through_17_0_0_156_with_authority_verification
+        targeted_settlement_fact_immutability: pass_4_methods_6_stats_zero_failed_zero_errors
+        targeted_impacted_state_and_finance: pass_86_methods_92_stats_zero_failed_zero_errors
+        full_sc_gate: pass_339_methods_435_stats_zero_failed_zero_errors
+        static_model_standard: pass_372_models_36_projections_zero_implementation_gaps
+        static_audit_unit: pass_15_tests
+        independent_exact_fingerprint_review: pending
+    - id: Batch-H
+      title: contract_change_and_settlement_adjustment_journal_v1
+      status: planned
+    - id: Batch-I
+      title: budget_and_target_cost_authority_v1
+      status: planned
+    - id: Batch-J
       title: native_fact_access_and_project_isolation
       status: planned
 

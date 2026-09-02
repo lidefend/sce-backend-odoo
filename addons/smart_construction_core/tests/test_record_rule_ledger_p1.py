@@ -170,8 +170,8 @@ class TestRecordRuleLedgerP1(TransactionCase):
         ]
         cls.project_other.message_unsubscribe(partner_ids=partners)
 
-        cls.settlement_same.sudo().write({"state": "approve"})
-        cls.settlement_other.sudo().write({"state": "approve"})
+        cls.settlement_same.sudo()._write_lifecycle("approve")
+        cls.settlement_other.sudo()._write_lifecycle("approve")
         cls.env.cr.execute(
             "UPDATE payment_request SET state=%s, validation_status=%s WHERE id in %s",
             ("approved", "validated", (cls.payment_req_same.id, cls.payment_req_other.id)),

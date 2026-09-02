@@ -131,8 +131,8 @@ class TestP0FinanceAggregateGate(TransactionCase):
                 "line_ids": [(0, 0, {"name": "P0 Agg Line Other", "amount": 80.0})],
             }
         )
-        cls.settlement_same.write({"state": "approve"})
-        cls.settlement_other.write({"state": "approve"})
+        cls.settlement_same._write_lifecycle("approve")
+        cls.settlement_other._write_lifecycle("approve")
 
         cls.payment_same = _ctx("payment.request").create(
             {

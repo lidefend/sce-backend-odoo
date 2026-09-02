@@ -78,6 +78,10 @@ def _ensure_project(env, code, vals, owned_xmlid=None):
         project.write(update_vals)
     else:
         vals = dict(vals)
+        # A demo project must traverse the same lifecycle as a real project.
+        # Downstream facts are created while it is writable, then run() applies
+        # the requested showcase state through action_set_lifecycle_state().
+        vals["lifecycle_state"] = "draft"
         vals["project_code"] = code
         project = Project.create(vals)
     return project
@@ -233,16 +237,12 @@ def _ensure_cost_progress(env, project, cost_material, cost_sub, uom_unit, work_
         return
 
     original_state = project.lifecycle_state
-    temp_state = None
     if original_state == "paused":
         project.action_set_lifecycle_state("in_progress")
-    elif original_state in ("closing", "warranty", "closed") and (not has_progress or not has_ledger):
-        temp_state = "in_progress"
-        env.cr.execute(
-            "UPDATE project_project SET lifecycle_state=%s WHERE id=%s",
-            (temp_state, project.id),
+    elif original_state in ("closing", "done", "warranty", "closed"):
+        raise UserError(
+            "已进入终态的演示项目缺少成本或进度事实；禁止回退状态补写，请通过受管重建恢复。"
         )
-        env.invalidate_all()
     ledger_vals = [
         {
             "project_id": project.id,
@@ -252,8 +252,6 @@ def _ensure_cost_progress(env, project, cost_material, cost_sub, uom_unit, work_
             "qty": 200,
             "uom_id": uom_unit.id if uom_unit else False,
             "amount": 120000.0,
-            "source_model": "purchase.order",
-            "source_id": 1,
             "note": "演示材料成本",
         },
         {
@@ -264,8 +262,6 @@ def _ensure_cost_progress(env, project, cost_material, cost_sub, uom_unit, work_
             "qty": 1,
             "uom_id": uom_unit.id if uom_unit else False,
             "amount": 80000.0,
-            "source_model": "account.move",
-            "source_id": 1,
             "note": "演示分包成本",
         },
     ]
@@ -273,12 +269,12 @@ def _ensure_cost_progress(env, project, cost_material, cost_sub, uom_unit, work_
         existing = CostLedger.search(
             [("project_id", "=", project.id), ("note", "=", vals["note"])], limit=1
         )
-        if existing:
+        if existing and not existing.is_generated:
             existing.write(vals)
-        else:
+        elif not existing:
             CostLedger.create(vals)
 
-    if original_state != "closing" or temp_state:
+    if original_state != "closing":
         progress_vals = {
             "project_id": project.id,
             "wbs_id": work_node.id,
@@ -298,12 +294,6 @@ def _ensure_cost_progress(env, project, cost_material, cost_sub, uom_unit, work_
 
     if original_state == "paused":
         project.action_set_lifecycle_state("paused")
-    elif temp_state:
-        env.cr.execute(
-            "UPDATE project_project SET lifecycle_state=%s WHERE id=%s",
-            (original_state, project.id),
-        )
-        env.invalidate_all()
 
 
 def _apply_lifecycle(project, target_state):
@@ -535,8 +525,6 @@ def run(env):
             "uom_id": uom_unit.id if uom_unit else False,
             "amount": 240000.0,
             "partner_id": supplier.id,
-            "source_model": "purchase.order",
-            "source_id": 1,
             "note": "钢筋采购入库",
         },
         {
@@ -548,8 +536,6 @@ def run(env):
             "uom_id": uom_unit.id if uom_unit else False,
             "amount": 420000.0,
             "partner_id": subcontract.id,
-            "source_model": "account.move",
-            "source_id": 1,
             "note": "桩基分包结算",
         },
     ]
@@ -562,9 +548,9 @@ def run(env):
             ],
             limit=1,
         )
-        if existing:
+        if existing and not existing.is_generated:
             existing.write(vals)
-        else:
+        elif not existing:
             CostLedger.create(vals)
 
     Progress = env["project.progress.entry"].sudo()

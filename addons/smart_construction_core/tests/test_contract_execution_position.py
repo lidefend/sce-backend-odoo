@@ -115,7 +115,7 @@ class TestContractExecutionPosition(TransactionCase):
                 "line_ids": [(0, 0, {"name": "line", "contract_id": contract.id, "qty": 1.0, "price_unit": contract_amount + 20.0})],
             }
         )
-        settlement.write({"state": "approve"})
+        settlement._write_lifecycle("approve")
         self.assertEqual(settlement.line_ids.contract_id, contract)
         self.env["sc.invoice.registration"].create(
             {
@@ -211,7 +211,7 @@ class TestContractExecutionPosition(TransactionCase):
                     ],
                 }
             )
-            settlement.write({"state": "approve"})
+            settlement._write_lifecycle("approve")
 
         negative_contract = self._contract("Negative Ratio Position", 100.0)
         self.env["sc.settlement.adjustment"].create(
@@ -256,7 +256,7 @@ class TestContractExecutionPosition(TransactionCase):
                 ],
             }
         )
-        settlement.write({"state": "approve"})
+        settlement._write_lifecycle("approve")
         self.env.flush_all()
         positions = self.env["sc.contract.execution.position"].search(
             [("contract_id", "in", [contract_a.id, contract_b.id])]

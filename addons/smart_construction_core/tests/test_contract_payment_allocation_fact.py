@@ -69,7 +69,7 @@ class TestContractPaymentAllocationFact(TransactionCase):
                 "line_ids": [(0, 0, {"name": name, "qty": 1.0, "price_unit": amount})],
             }
         )
-        settlement.write({"state": "approve"})
+        settlement._write_lifecycle("approve")
         return settlement
 
     def _request(self, name, amount, contract=None, settlement=None, line_specs=()):
@@ -568,7 +568,7 @@ class TestContractPaymentAllocationFact(TransactionCase):
                 "line_ids": [(0, 0, {"name": "Other", "qty": 1.0, "price_unit": 10.0})],
             }
         )
-        other_settlement.write({"state": "approve"})
+        other_settlement._write_lifecycle("approve")
         other_request = self.env["payment.request"].with_company(other_company).create(
             {
                 "name": "Allocation Other Request",

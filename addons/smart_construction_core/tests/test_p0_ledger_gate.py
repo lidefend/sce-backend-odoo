@@ -107,7 +107,7 @@ class TestP0LedgerGate(TransactionCase):
                 "line_ids": [(0, 0, {"name": "P0 Ledger Line", "amount": 100.0})],
             }
         )
-        cls.settlement_ok.write({"state": "approve"})
+        cls.settlement_ok._write_lifecycle("approve")
 
         cls.settlement_draft = _ctx("sc.settlement.order").create(
             {
@@ -157,7 +157,7 @@ class TestP0LedgerGate(TransactionCase):
                 "line_ids": [(0, 0, {"name": "P0 Ledger Line Other", "amount": 80.0})],
             }
         )
-        cls.other_settlement.write({"state": "approve"})
+        cls.other_settlement._write_lifecycle("approve")
         cls.other_payment = _ctx("payment.request").create(
             {
                 "project_id": cls.other_project.id,
@@ -395,7 +395,7 @@ class TestCorePaymentAmountSemantics(TransactionCase):
         )
 
     def _settlement(self, name, project, partner, contract, company, currency, amount=100.0):
-        return self._model("sc.settlement.order", company).create(
+        settlement = self._model("sc.settlement.order", company).create(
             {
                 "name": name,
                 "project_id": project.id,
@@ -404,10 +404,11 @@ class TestCorePaymentAmountSemantics(TransactionCase):
                 "company_id": company.id,
                 "currency_id": currency.id,
                 "settlement_type": "out",
-                "state": "approve",
                 "line_ids": [(0, 0, {"name": name, "qty": 1.0, "price_unit": amount})],
             }
         )
+        settlement._write_lifecycle("approve")
+        return settlement
 
     def _request(
         self, name, amount, state="draft", settlement=None, project=None, contract=None, currency=None
