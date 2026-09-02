@@ -33,10 +33,6 @@ require(page, '<ContractFormDriverHost v-if="!showCurrentFormFieldConfigScope"',
 require(page, "resolveRequestedContractRenderProfile({ routeName: route.name, recordId: recordId.value })", "explicit detail route semantics")
 require(page, ":mode=\"renderProfile\"", "form mode projection")
 require(page, ":dirty=\"hasChanges\"", "dirty-state projection")
-require(page, "canonicalProductFloorplan.value.blockedActions.some((action) => action.tier === 'primary')", "blocked primary remediation source")
-require(page, "blockedCanonicalPrimary.value ? '补充资料' : '继续办理'", "blocked primary remediation label")
-require(page, "!canonicalBodyPrimaryAvailable.value", "body primary excludes inferred continue action")
-require(page, "node.action?.visible && node.action.enabled && node.action.tier === 'primary'", "body primary authority")
 require(page, "node.type === 'header' && !showCurrentFormFieldConfigScope.value", "duplicate native header suppression")
 require(header, "aria-label=\"页面模式与保存状态\"", "mode and save-state semantics")
 require(header, "已修改 ${changedFieldCount} 项", "dirty feedback")
@@ -76,5 +72,7 @@ if "import.meta.env.DEV ||" in debug:
     raise SystemExit("[frontend_detail_form_productization_guard] FAIL development mode still exposes HUD")
 if '<FinancialRelationshipWorkspace v-if="financialWorkspace"' in page:
     raise SystemExit("[frontend_detail_form_productization_guard] FAIL edit route still renders readonly workspace first")
+if "showContinueProcessing" in page or "continueProcessingLabel" in page:
+    raise SystemExit("[frontend_detail_form_productization_guard] FAIL frontend still infers continue-processing authority")
 
 print("[frontend_detail_form_productization_guard] PASS")

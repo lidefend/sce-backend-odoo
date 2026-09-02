@@ -29,8 +29,6 @@
       :status-interactive="!canonicalProductRendererActive"
       :presentation-mode="canonicalProductFloorplan?.decisionMode ? 'task' : 'workspace'"
       :mode="renderProfile" :mode-label="currentRenderProfileLabel" :dirty="hasChanges" :changed-field-count="changedFieldCount"
-      :show-continue-processing="showContinueProcessing"
-      :continue-processing-label="continueProcessingLabel"
       :show-back="true"
       :back-label="formExitPresentation.label"
       :back-semantic-identity="formExitPresentation.semanticIdentity"
@@ -38,7 +36,7 @@
       :show-primary-form-action="!canonicalProductRendererActive && showPrimaryBusinessFormAction" :primary-form-action-disabled="primaryFormActionDisabled" :primary-form-action-hint="primaryFormActionHint" :submit-label="submitButtonLabel" :primary-action="primaryBusinessFormAction"
       :direct-actions="canonicalProductRendererActive ? [] : headerBusinessDirectActions" :overflow-actions="canonicalProductRendererActive ? [] : headerBusinessOverflowActions" :config-actions="canonicalProductRendererActive ? [] : headerConfigActionsVisible" :canonical-direct-actions="canonicalProductRendererActive ? canonicalHeaderActions.direct : []" :canonical-overflow-actions="canonicalProductRendererActive ? canonicalHeaderActions.overflow : []"
       :show-discard="showDiscardAction" :show-debug="showDebugActionsVisible" :contract-present="Boolean(contract)" :discard-label="formUiLabel('discard')" :reload-label="formUiLabel('reload')"
-      @back="returnToPreviousPage" @continue-processing="continueProcessing" @set-status="setStatusbarValue" @return-workbench="returnToBusinessConfigDesigner" @save-draft="saveRecord()"
+      @back="returnToPreviousPage" @set-status="setStatusbarValue" @return-workbench="returnToBusinessConfigDesigner" @save-draft="saveRecord()"
       @run-primary="runPrimaryFormAction" @run-action="runAction" @canonical-action="runCanonicalFormAction($event.actionRef)" @canonical-save="saveRecord()" @discard="discardChanges" @copy="copyContractJson" @export="exportContractJson" @reload="reload"
     />
     <ProductFormLoadingSkeleton v-if="initialFormLoading" :loading-label="`正在载入${pageDisplayTitle || '表单'}`" />
@@ -284,7 +282,6 @@ import NativeCollaborationPanel, {
 } from './contractForm/NativeCollaborationPanel.vue';
 import ContractFormDriverHost from './contractForm/ContractFormDriverHost.vue';
 import { composeCanonicalFormFloorplan } from '../app/presentation/canonicalFormFloorplan';
-import type { CanonicalFormNode } from '../app/presentation/canonicalFormRenderModel';
 import ContractFormNativeCanvas from './contractForm/ContractFormNativeCanvas.vue';
 import {
   collectCanonicalFormActions,
@@ -1280,37 +1277,6 @@ const primaryBusinessActionState = computed(() => resolvePrimaryBusinessActionSt
 }));
 const canonicalHeaderActions = computed(() => resolveCanonicalHeaderActionPresentation({ floorplan: canonicalProductFloorplan.value, actions: canonicalFormRenderState.value.model?.actionBar || [], renderProfile: renderProfile.value, rendererActive: canonicalProductRendererActive.value, dirty: hasChanges.value }));
 const showPrimaryBusinessFormAction = computed(() => primaryBusinessActionState.value.show);
-const blockedCanonicalPrimary = computed(() => Boolean(
-  canonicalProductFloorplan.value?.decisionMode
-  && canonicalProductFloorplan.value.blockedActions.some((action) => action.tier === 'primary'),
-));
-function nodeHasEnabledPrimaryAction(node: CanonicalFormNode): boolean {
-  return Boolean(node.action?.visible && node.action.enabled && node.action.tier === 'primary')
-    || node.children.some(nodeHasEnabledPrimaryAction);
-}
-const canonicalBodyPrimaryAvailable = computed(() => Boolean(
-  canonicalFormRenderState.value.model
-  && [
-    ...canonicalFormRenderState.value.model.zones.primary,
-    ...canonicalFormRenderState.value.model.zones.subordinate,
-  ].some(nodeHasEnabledPrimaryAction),
-));
-const showContinueProcessing = computed(() => (
-  route.name === 'record'
-  && Boolean(recordId.value)
-  && rights.value.write
-  && !canonicalBodyPrimaryAvailable.value
-  && (!canonicalProductFloorplan.value?.decisionMode || blockedCanonicalPrimary.value)
-));
-const continueProcessingLabel = computed(() => blockedCanonicalPrimary.value ? '补充资料' : '继续办理');
-function continueProcessing() {
-  if (!showContinueProcessing.value || !recordId.value) return;
-  void router.push(buildModelFormRouteTarget({
-    model: model.value,
-    id: String(recordId.value),
-    query: normalizeRouteQueryValues(route.query as Record<string, unknown>) as LocationQueryRaw,
-  }) as Parameters<typeof router.push>[0]);
-}
 const showDraftSaveAction = computed(() => {
   if (!showPrimaryBusinessFormAction.value || !canSave.value || primaryCreateFooterAction.value) return false;
   if (!recordId.value) return true;
