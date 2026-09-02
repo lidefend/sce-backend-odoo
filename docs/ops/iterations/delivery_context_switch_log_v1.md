@@ -3,6 +3,25 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-09-02 — ACTIVITY-TABS-OFFICIAL-API-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `857b4ae8`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 professional component
+  authority / activity-page navigation / TDesign Tabs through the existing
+  primitive bridge.
+- Product result: activity pages now use the official Tabs size/theme and
+  scrolling behavior without styling TDesign's private nav, item, active, text,
+  or content descendants. SC keeps only its own shell, business-title, and close
+  control presentation. This removes seven private-vendor selector dependencies
+  without introducing another tab implementation.
+- Acceptance evidence: the governed project/payment journey retained independent
+  pages, preserved and cancelled a dirty project draft, closed only the selected
+  clean inactive page, and kept desktop/390px headers free of horizontal
+  overflow, mutations, execute requests, and browser errors. The official design
+  inventory moved from 27 to 20 internal-selector gaps while retaining zero
+  visual-literal gaps.
+
 ## 2026-09-02 — ACTIVITY-TAB-DESIGN-TOKEN-AUTHORITY-CLOSURE-01
 
 - Branch / anchor: `feature/native-view-action-semantics-closure-v1` after

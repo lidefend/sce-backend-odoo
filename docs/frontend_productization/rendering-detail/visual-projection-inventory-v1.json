@@ -1410,7 +1410,7 @@
     },
     {
       "category": "collaboration",
-      "digest": "2b033bfba9d397974c6d73d88005f2c245a7f7ab6e05347671f23025825d6817",
+      "digest": "8fd13888842302b929b9cbdf9a35149d3878126ba5c56204e02ce7d80683ab2c",
       "nativeStyleSelectors": [],
       "path": "components/product-shell/ActivityPageTabs.vue",
       "referenceNativeStyleSelectors": [],
@@ -2596,7 +2596,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "a0f6683f7b73ac96cfca637a240a324d91d166563e84f60d299608f5d6e46055",
+  "currentInputDigest": "80a678ab4c1f4ca14f111be6eb0eec41bc95ed1d377a643a742635a2fb356e63",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

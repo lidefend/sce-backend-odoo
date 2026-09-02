@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "b367dba30e29be9a9db8782a72ab634fd0157dc9ffdfb0993e2de7475f29668a",
+  "inputDigest": "aac9a02d376528d3e60bfb55a3a7a11ba551d9059e8eec115d74e1561767591c",
   "internalVendorSelectorGaps": [
     {
       "file": "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.css",
@@ -80,48 +80,6 @@
       "file": "frontend/apps/web/src/styles/product-patterns.css",
       "line": 612,
       "selector": "/* TDesign Dialog 遮罩修复：确保父容器隐藏时遮罩也被隐藏 * 问题：t-dialog__ctx 设置 display:none 后，position:fixed 的遮罩仍然可见 */ .t-dialog__ctx[style*=\"display: none\"] .t-dialog__mask, .t-dialog__ctx[style*=\"display: none\"] .t-dialog__wrap",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
-      "line": 114,
-      "selector": ".activity-page-tabs :deep(.t-tabs__nav)",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
-      "line": 119,
-      "selector": ".activity-page-tabs :deep(.t-tabs__nav-wrap)",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
-      "line": 123,
-      "selector": ".activity-page-tabs :deep(.t-tabs__nav-item)",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
-      "line": 130,
-      "selector": ".activity-page-tabs :deep(.t-tabs__nav-item.t-is-active)",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
-      "line": 134,
-      "selector": ".activity-page-tabs :deep(.t-tabs__nav-item .t-tabs__nav-item-text)",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
-      "line": 156,
-      "selector": ".activity-page-tabs :deep(.t-tabs__content)",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
-      "line": 165,
-      "selector": ".activity-page-tabs :deep(.t-tabs__nav-item)",
       "status": "legacy_override_gap"
     },
     {
@@ -725,7 +683,7 @@
   "scope": "formal P0/P1 frontend TDesign driver and product adapter styling",
   "summary": {
     "formalStyleSourceCount": 199,
-    "internalVendorSelectorGapCount": 27,
+    "internalVendorSelectorGapCount": 20,
     "officialPublicTokenCount": 240,
     "orphanedProductAppearanceVariantCount": 0,
     "productAppearanceVariantCount": 36,
