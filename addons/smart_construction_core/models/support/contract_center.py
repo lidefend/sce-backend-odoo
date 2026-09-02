@@ -1091,6 +1091,26 @@ class ConstructionContract(models.Model):
         )
     def write(self, vals):
         vals = dict(vals or {})
+        economic_identity_fields = {"type", "project_id", "company_id", "currency_id", "partner_id"}
+
+        def assert_identity_mutable(record, candidate_vals):
+            identity_changes = economic_identity_fields.intersection(candidate_vals)
+            changed = set()
+            for field_name in identity_changes:
+                current = record[field_name]
+                current_value = (
+                    current.id if record._fields[field_name].type == "many2one" else current
+                )
+                if (candidate_vals.get(field_name) or False) != (current_value or False):
+                    changed.add(field_name)
+            if changed and record._economic_identity_is_frozen():
+                raise UserError(
+                    _("合同一经确认或形成结算、开票、收付款证据后，方向、项目、公司、币种和往来单位不可变更；请通过补充/更正合同处理。")
+                )
+
+        if "original_contract_id" not in vals:
+            for record in self:
+                assert_identity_mutable(record, vals)
         if vals.get("tax_id"):
             tax = self.env["account.tax"].browse(vals.get("tax_id")).exists()
             normalized = self._normalize_contract_tax_id(tax, self.env.company)
@@ -1100,6 +1120,7 @@ class ConstructionContract(models.Model):
             for record in self:
                 record_vals = dict(vals)
                 self._apply_original_contract_defaults_to_vals(record_vals)
+                assert_identity_mutable(record, record_vals)
                 super(ConstructionContract, record).write(record_vals)
             res = True
         else:
@@ -1114,6 +1135,20 @@ class ConstructionContract(models.Model):
             for record in self.filtered(lambda rec: rec.type == "in" and not rec.expense_contract_category_id and rec.expense_contract_category_auto_id):
                 record.expense_contract_category_id = record.expense_contract_category_auto_id.id
         return res
+
+    def _economic_identity_is_frozen(self):
+        self.ensure_one()
+        if self.state != "draft" or self.is_locked:
+            return True
+        reference_specs = (
+            ("payment.request", [("contract_id", "=", self.id), ("state", "not in", ("cancel", "rejected", "cancelled"))]),
+            ("sc.settlement.order", [("contract_id", "=", self.id), ("state", "not in", ("cancel", "cancelled"))]),
+            ("sc.invoice.registration", [("contract_id", "=", self.id)]),
+            ("sc.receipt.income", [("contract_id", "=", self.id)]),
+            ("payment.ledger.allocation", [("contract_id", "=", self.id)]),
+            ("sc.settlement.adjustment", [("contract_id", "=", self.id)]),
+        )
+        return any(self.env[model_name].sudo().search_count(domain, limit=1) for model_name, domain in reference_specs)
 
     # --- State transitions -------------------------------------------------
     def action_confirm(self):

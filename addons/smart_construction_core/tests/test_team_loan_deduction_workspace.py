@@ -125,8 +125,4 @@ class TestTeamLoanDeductionWorkspace(TransactionCase):
             [("source_model", "=", "sc.expense.claim"), ("source_res_id", "=", deduction.id)],
             limit=1,
         )
-        self.assertEqual(deduction_fact.fact_type, "deduction_bill")
-        self.assertEqual(deduction_fact.balance_policy, "noncash_deduction")
-        self.assertEqual(deduction_fact.deduction_amount, 100)
-        self.assertEqual(deduction_fact.cash_in_amount, 0)
-        self.assertEqual(deduction_fact.cash_out_amount, 0)
+        self.assertFalse(deduction_fact, "草稿扣款不得提前进入正式财务事实")

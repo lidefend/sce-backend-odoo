@@ -8,6 +8,7 @@ from odoo.tools.float_utils import float_compare
 from ..support.state_guard import raise_guard
 
 _logger = logging.getLogger(__name__)
+_EXPENSE_FACT_AUTHORITY_TOKEN = object()
 
 
 class ScExpenseClaim(models.Model):
@@ -134,10 +135,20 @@ class ScExpenseClaim(models.Model):
     company_id = fields.Many2one(
         "res.company",
         string="公司",
-        related="project_id.company_id",
-        store=True,
         readonly=True,
         index=True,
+    )
+    finance_identity_state = fields.Selection(
+        [
+            ("normalized", "标准事实"),
+            ("legacy_observed_identity", "历史冻结身份"),
+            ("legacy_unresolved_identity", "历史身份待确认"),
+        ],
+        required=True,
+        default="normalized",
+        readonly=True,
+        index=True,
+        string="财务身份状态",
     )
     operation_strategy = fields.Selection(
         related="project_id.operation_strategy",
@@ -225,6 +236,11 @@ class ScExpenseClaim(models.Model):
     active = fields.Boolean("有效", default=True, index=True)
 
     _sql_constraints = [
+        (
+            "finance_normalized_identity_present",
+            "CHECK(finance_identity_state != 'normalized' OR (project_id IS NOT NULL AND company_id IS NOT NULL AND currency_id IS NOT NULL))",
+            "标准费用与扣款事实必须固化项目、公司与币种身份。",
+        ),
         (
             "legacy_source_unique",
             "unique(legacy_source_model, legacy_record_id)",
@@ -557,10 +573,22 @@ class ScExpenseClaim(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         seq = self.env["ir.sequence"]
+        legacy_authority = self.env.context.get("sc_expense_fact_authority_token") is _EXPENSE_FACT_AUTHORITY_TOKEN
         for vals in vals_list:
+            if vals.get("source_origin") == "legacy" and not legacy_authority:
+                raise UserError(_("历史费用与扣款只能由受治理迁移载体创建。"))
+            if vals.get("state") in {"done", "legacy_confirmed"} and not legacy_authority:
+                raise UserError(_("新系统费用与扣款单据不能直接创建为已完成，必须执行正式完成动作。"))
             project_id = self._context_project_id()
             if project_id:
                 vals.setdefault("project_id", project_id)
+            project = self.env["project.project"].browse(vals.get("project_id")).exists()
+            if not project or not project.company_id:
+                raise UserError(_("费用与扣款单据必须关联已归属公司的有效项目。"))
+            if vals.get("company_id") and vals["company_id"] != project.company_id.id:
+                raise UserError(_("费用与扣款单据公司必须与项目公司一致。"))
+            vals["company_id"] = project.company_id.id
+            vals["finance_identity_state"] = vals.get("finance_identity_state") if legacy_authority else "normalized"
             partner_id = self._context_partner_id()
             if partner_id:
                 vals.setdefault("partner_id", partner_id)
@@ -605,10 +633,63 @@ class ScExpenseClaim(models.Model):
             vals.setdefault("business_category_id", self._resolve_business_category_id(vals))
         return super().create(vals_list)
 
+    @api.model
+    def _create_legacy_authoritative(self, vals):
+        values = dict(vals, source_origin="legacy")
+        project = self.env["project.project"].browse(values.get("project_id")).exists()
+        evidence_complete = bool(
+            project
+            and values.get("company_id") == project.company_id.id
+            and values.get("currency_id")
+        )
+        values["finance_identity_state"] = (
+            "legacy_observed_identity" if evidence_complete else "legacy_unresolved_identity"
+        )
+        if (
+            evidence_complete
+            and values.get("payment_request_id")
+            and values.get("state") in {"done", "legacy_confirmed"}
+        ):
+            candidate = self.new(values)
+            if candidate.payment_request_id._terminal_cash_source_identity_errors(candidate):
+                values["finance_identity_state"] = "legacy_unresolved_identity"
+            else:
+                candidate.payment_request_id._claim_terminal_cash_source(candidate)
+        claim = self.with_context(
+            sc_expense_fact_authority_token=_EXPENSE_FACT_AUTHORITY_TOKEN
+        ).create(values)
+        if claim.payment_request_id and claim.finance_identity_state == "legacy_observed_identity":
+            claim.payment_request_id._bind_terminal_cash_source(claim)
+        return claim
+
+    def unlink(self):
+        terminal = self.filtered(lambda rec: rec.state in {"done", "legacy_confirmed"})
+        claimed_ids = self.env["payment.request"].sudo().search(
+            [
+                ("terminal_cash_source_model", "=", self._name),
+                ("terminal_cash_source_res_id", "in", self.ids),
+            ]
+        ).mapped("terminal_cash_source_res_id")
+        if terminal or claimed_ids:
+            raise UserError(_("终态或已被申请认领的费用事实不可删除；更正必须形成独立冲销事实。"))
+        return super().unlink()
+
     def _history_surface_allowed_write_fields(self):
         return {"attachment_ids"}
 
     def write(self, vals):
+        authoritative = self.env.context.get("sc_expense_fact_authority_token") is _EXPENSE_FACT_AUTHORITY_TOKEN
+        if not authoritative and (vals.get("state") in {"done", "legacy_confirmed"} or "finance_identity_state" in vals):
+            raise UserError(_("费用与扣款终态及财务身份只能由正式业务动作或迁移写入。"))
+        terminal_business_fields = {
+            "project_id", "company_id", "currency_id", "partner_id", "business_category_id",
+            "claim_type", "date_claim", "amount", "approved_amount", "paid_amount", "active",
+            "payment_request_id", "deduction_line_ids",
+        }
+        if any(rec.state in {"done", "legacy_confirmed"} for rec in self) and not authoritative:
+            blocked_terminal = set(vals) & terminal_business_fields
+            if blocked_terminal:
+                raise UserError(_("已完成的费用与扣款事实不可改写经济身份、金额、关联或有效性。"))
         if any(rec.source_origin == "legacy" and rec.state == "legacy_confirmed" for rec in self):
             allowed = {
                 "payment_request_id",
@@ -636,6 +717,11 @@ class ScExpenseClaim(models.Model):
                     blocked.remove(field_name)
             if blocked:
                 raise UserError(_("历史迁移费用/保证金单据已确认，只允许补充支付锚点、往来单位、备注和历史录入审计事实。"))
+        if "project_id" in vals:
+            project = self.env["project.project"].browse(vals.get("project_id")).exists()
+            if not project or not project.company_id:
+                raise UserError(_("费用与扣款单据必须关联已归属公司的有效项目。"))
+            vals = dict(vals, company_id=project.company_id.id)
         result = super().write(vals)
         if not self.env.context.get("skip_deduction_amount_sync") and "deduction_line_ids" in vals:
             for rec in self:
@@ -657,6 +743,11 @@ class ScExpenseClaim(models.Model):
                         )
         return result
 
+    def _write_finance_authority(self, vals):
+        result = self.with_context(sc_expense_fact_authority_token=_EXPENSE_FACT_AUTHORITY_TOKEN).write(vals)
+        self.flush_recordset(list(vals))
+        return result
+
     @api.depends("amount", "approved_amount", "paid_amount")
     def _compute_unpaid_amount(self):
         for rec in self:
@@ -669,6 +760,16 @@ class ScExpenseClaim(models.Model):
             rec.deduction_line_amount_total = sum(rec.deduction_line_ids.mapped("amount"))
 
     def init(self):
+        self.env.cr.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS sc_expense_claim_one_canonical_terminal_per_request_idx
+                ON sc_expense_claim(payment_request_id)
+             WHERE payment_request_id IS NOT NULL
+               AND finance_identity_state IN ('normalized', 'legacy_observed_identity')
+               AND state IN ('done', 'legacy_confirmed')
+               AND financial_flow IN ('cash_in', 'cash_out')
+            """
+        )
         self.env.cr.execute(
             """
             UPDATE sc_expense_claim
@@ -900,7 +1001,7 @@ class ScExpenseClaim(models.Model):
             before = rec._snapshot_audit_payload()
             rec._check_business_ready()
             rec._sync_payment_request_done()
-            rec.write({"state": "done"})
+            rec._write_finance_authority({"state": "done"})
             rec._ensure_interfund_cash_ledger()
             rec._audit_transition(
                 "expense_claim_done",
@@ -924,6 +1025,8 @@ class ScExpenseClaim(models.Model):
         for rec in self:
             if rec.source_origin == "legacy":
                 continue
+            if rec.finance_identity_state != "normalized" or rec.company_id != rec.project_id.company_id:
+                raise UserError(_("费用与扣款单据财务身份已失配，请重建草稿后再办理。"))
             if not rec.project_id:
                 raise UserError(_("费用/保证金单据必须关联项目。"))
             if rec._is_interfund_repayment() and rec.payment_request_id:
@@ -1100,7 +1203,7 @@ class ScExpenseClaim(models.Model):
     def _sync_payment_request_done(self):
         for rec in self:
             request = rec.payment_request_id
-            if not request or request.state == "done":
+            if not request:
                 continue
             rec._check_payment_request_scope_or_raise()
             expected_type = rec._expected_payment_request_type()
@@ -1110,6 +1213,7 @@ class ScExpenseClaim(models.Model):
                 raise UserError(
                     _("费用/保证金资金方向与付款/收款申请类型不一致，不能自动完成申请。")
                 )
+            request._claim_terminal_cash_source(rec)
             rounding = request.currency_id.rounding if request.currency_id else 0.01
             amount = rec.approved_amount or rec.amount or 0.0
             if float_compare(amount, request.amount or 0.0, precision_rounding=rounding) == -1:
@@ -1121,7 +1225,7 @@ class ScExpenseClaim(models.Model):
                 request.action_set_approved()
                 request.invalidate_recordset()
             if request.state != "approved":
-                continue
+                raise UserError(_("付款/收款申请尚未达到可入账状态，不能完成现金来源单据。"))
             if request.type == "receive":
                 before = request._snapshot_audit_payload()
                 request.with_context(payment_soft_gate=True)._ensure_treasury_ledger(
@@ -1175,6 +1279,8 @@ class ScExpenseClaim(models.Model):
                 raise UserError(_("费用/保证金项目必须与付款/收款申请项目一致。"))
             if rec.partner_id and request.partner_id and rec.partner_id != request.partner_id:
                 raise UserError(_("费用/保证金往来单位必须与付款/收款申请往来单位一致。"))
+            if rec.currency_id != request.currency_id:
+                raise UserError(_("费用/保证金币种必须与付款/收款申请币种一致。"))
 
     def action_cancel(self):
         for rec in self:
@@ -1280,3 +1386,31 @@ class ScExpenseClaimDeductionLine(models.Model):
     _sql_constraints = [
         ("amount_positive", "CHECK(amount > 0)", "扣款单明细金额必须大于 0。"),
     ]
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        default_claim_id = self.env.context.get("default_claim_id")
+        claim_ids = [
+            vals.get("claim_id") or default_claim_id
+            for vals in vals_list
+            if vals.get("claim_id") or default_claim_id
+        ]
+        terminal_claims = self.env["sc.expense.claim"].browse(claim_ids).exists().filtered(
+            lambda claim: claim.state in {"done", "legacy_confirmed"}
+        )
+        if terminal_claims:
+            raise UserError(_("终态扣款事实的明细不可新增；更正必须形成独立冲销事实。"))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        target_claims = self.mapped("claim_id")
+        if vals.get("claim_id"):
+            target_claims |= self.env["sc.expense.claim"].browse(vals["claim_id"]).exists()
+        if target_claims.filtered(lambda claim: claim.state in {"done", "legacy_confirmed"}):
+            raise UserError(_("终态扣款事实的明细不可修改；更正必须形成独立冲销事实。"))
+        return super().write(vals)
+
+    def unlink(self):
+        if self.mapped("claim_id").filtered(lambda claim: claim.state in {"done", "legacy_confirmed"}):
+            raise UserError(_("终态扣款事实的明细不可删除；更正必须形成独立冲销事实。"))
+        return super().unlink()

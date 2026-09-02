@@ -73,9 +73,11 @@ class ScFinanceProjectCapitalPosition(models.Model):
 
     def _project_domain(self, field_name):
         self.ensure_one()
-        if self.project_id:
-            return [(field_name, "=", self.project_id.id)]
-        return [(field_name, "=", False)]
+        return [
+            (field_name, "=", self.project_id.id if self.project_id else False),
+            ("company_id", "=", self.company_id.id),
+            ("currency_id", "=", self.currency_id.id),
+        ]
 
     def _action_domain(self, action_result):
         raw_domain = action_result.get("domain") or []
@@ -167,25 +169,30 @@ class ScFinanceProjectCapitalPosition(models.Model):
             "name": "项目收付款来源明细",
             "res_model": "sc.finance.business.fact",
             "view_mode": "tree,pivot,form",
-            "domain": self._project_domain("project_id"),
+            "domain": self._project_domain("project_id") + [
+                ("company_id", "=", self.company_id.id),
+                ("currency_id", "=", self.currency_id.id),
+            ],
             "context": {"search_default_group_business_domain": 1},
         }
 
     def action_open_interfund_facts(self):
         self.ensure_one()
         if self.project_id:
-            domain = expression.OR(
+            domain = expression.AND([[('company_id', '=', self.company_id.id), ('currency_id', '=', self.currency_id.id)], expression.OR(
                 [
                     [("source_project_id", "=", self.project_id.id)],
                     [("target_project_id", "=", self.project_id.id)],
                     [("project_id", "=", self.project_id.id)],
                 ]
-            )
+            )])
         else:
             domain = [
                 ("source_project_id", "=", False),
                 ("target_project_id", "=", False),
                 ("project_id", "=", False),
+                ("company_id", "=", self.company_id.id),
+                ("currency_id", "=", self.currency_id.id),
             ]
         return {
             "type": "ir.actions.act_window",
@@ -240,8 +247,8 @@ class ScFinanceProjectCapitalPosition(models.Model):
                     SELECT
                         COALESCE(project_id, 0) AS project_key,
                         project_id,
-                        MIN(company_id) AS company_id,
-                        MIN(currency_id) AS currency_id,
+                        company_id,
+                        currency_id,
                         COUNT(*)::integer AS finance_group_count,
                         COALESCE(SUM(source_line_count), 0)::integer AS finance_source_line_count,
                         COALESCE(SUM(arrival_amount), 0.0) AS arrival_amount,
@@ -255,14 +262,14 @@ class ScFinanceProjectCapitalPosition(models.Model):
                         COALESCE(SUM(cash_in_amount), 0.0) AS finance_cash_in_amount,
                         COALESCE(SUM(cash_out_amount), 0.0) AS finance_cash_out_amount
                     FROM sc_finance_business_project_summary
-                    GROUP BY COALESCE(project_id, 0), project_id
+                    GROUP BY COALESCE(project_id, 0), project_id, company_id, currency_id
                 ),
                 interfund AS (
                     SELECT
                         COALESCE(project_id, 0) AS project_key,
                         project_id,
-                        MIN(company_id) AS company_id,
-                        MIN(currency_id) AS currency_id,
+                        company_id,
+                        currency_id,
                         COUNT(*)::integer AS interfund_group_count,
                         COALESCE(SUM(source_line_count), 0)::integer AS interfund_source_line_count,
                         COALESCE(SUM(inflow_amount), 0.0) AS interfund_inflow_amount,
@@ -276,7 +283,7 @@ class ScFinanceProjectCapitalPosition(models.Model):
                         COALESCE(SUM(contractor_borrow_out_amount), 0.0) AS contractor_borrow_out_amount,
                         COALESCE(SUM(contractor_repay_in_amount), 0.0) AS contractor_repay_in_amount
                     FROM sc_interfund_movement_project_summary
-                    GROUP BY COALESCE(project_id, 0), project_id
+                    GROUP BY COALESCE(project_id, 0), project_id, company_id, currency_id
                 ),
                 combined AS (
                     SELECT
@@ -309,10 +316,13 @@ class ScFinanceProjectCapitalPosition(models.Model):
                         COALESCE(i.contractor_borrow_out_amount, 0.0) AS contractor_borrow_out_amount,
                         COALESCE(i.contractor_repay_in_amount, 0.0) AS contractor_repay_in_amount
                     FROM finance f
-                    FULL OUTER JOIN interfund i ON i.project_key = f.project_key
+                    FULL OUTER JOIN interfund i
+                      ON i.project_key = f.project_key
+                     AND i.company_id = f.company_id
+                     AND i.currency_id = f.currency_id
                 )
                 SELECT
-                    ROW_NUMBER() OVER (ORDER BY c.project_key)::integer AS id,
+                    ROW_NUMBER() OVER (ORDER BY c.project_key, c.company_id, c.currency_id)::integer AS id,
                     CASE
                         WHEN c.project_id IS NULL THEN '未关联项目 / 项目资金总览'
                         ELSE COALESCE(p.name->>'zh_CN', p.name->>'en_US', '项目') || ' / 项目资金总览'

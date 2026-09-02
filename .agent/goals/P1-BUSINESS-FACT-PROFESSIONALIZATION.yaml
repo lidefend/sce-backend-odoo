@@ -1,7 +1,7 @@
 goal:
   id: P1-BUSINESS-FACT-PROFESSIONALIZATION
   title: p1_business_fact_professionalization
-  status: verification_pending
+  status: completed
   objective: establish_authoritative_auditable_and_efficient_construction_business_facts
 
   baseline:
@@ -154,25 +154,72 @@ goal:
       - v8_exact_fingerprint_fact_native_and_orm_reviews_approved_zero_s0_s1_s2_s3
       - p4_missing_business_fact_upgrade_replay_flow_still_blocks_pr_push
 
-  current_batch:
-    id: Batch-D
-    title: remaining_p1_fact_authority_inventory
+  completed_batch_e:
+    id: Batch-E
+    title: project_funding_baseline_and_actual_allocation_authority_v1
     status: completed
-    audit_head: aa182665401640d3bde058c61135bf49c389d9e5
+    commit: fe47096ed242863143ea6b61de5ab1adab92dfc9
     result:
-      - structural_registry_compliance_does_not_prove_fact_authority
-      - project_funding_baseline_and_actual_allocation_selected_for_next_model_upgrade
-      - canonical_finance_lifecycle_and_currency_aggregation_retained_as_independent_slice
-      - native_project_and_company_isolation_gaps_retained_as_independent_slice
-      - three_independent_read_only_audits_found_zero_s0
+      - funding_baselines_are_versioned_immutable_and_concurrency_safe
+      - actual_allocations_are_service_controlled_reversible_and_conserved
+      - governed_upgrade_and_full_sc_gate_passed
+      - three_exact_fingerprint_independent_reviews_approved
+
+  current_batch:
+    id: Batch-F
+    title: canonical_finance_projection_lifecycle_and_currency_authority_v1
+    status: completed
+    entry_head: fe47096ed242863143ea6b61de5ab1adab92dfc9
+    entry_fingerprint: 170501c0e163066d51fa69e1b8cfb6c42648c499f4561855e45185303486b5a7
+    model_freeze:
+      - terminal_lifecycle_only
+      - immutable_company_and_currency_identity
+      - posted_treasury_ledger_is_cash_authority
+      - unresolved_history_is_quarantined_without_guessing
+      - project_company_currency_are_aggregation_dimensions
+      - received_income_enters_arrival_gross
+      - treasury_generation_requires_module_private_object_authority
+      - repeated_treasury_writers_must_match_complete_economic_identity
+      - one_payment_request_can_back_only_one_terminal_cash_source
+      - terminal_cash_source_ownership_is_persisted_on_the_request_and_private_service_controlled
+      - concurrent_cross_model_claims_serialize_on_the_request_authority_row
+      - legacy_identity_requires_explicit_historical_evidence_and_is_never_inferred_from_current_relations
+      - projection_registry_is_proven_from_current_owning_class_semantics
+      - payment_ledger_and_contract_allocation_use_creation_time_identity_snapshots_not_stored_related_fields
+      - orm_writes_are_flushed_before_same_transaction_sql_fact_aggregation
+      - supplement_contract_origin_defaults_cannot_bypass_frozen_economic_identity
+      - terminal_deduction_lines_are_immutable_even_when_parent_is_supplied_by_default_context
+      - payment_snapshot_and_partial_index_migrations_are_difference_write_and_physical_replay_idempotent
+      - incomplete_legacy_payment_identity_is_preserved_and_explicitly_quarantined_not_synthesized_from_current_relations
+      - every_paid_and_funding_consumer_requires_canonical_parent_and_child_identity_with_exact_company_project_partner_currency_and_strategy_parity
+      - ambiguous_posted_payment_history_blocks_request_completion_and_all_future_payment_execution
+      - existing_ambiguous_payment_ledgers_are_rejected_before_execution_state_changes_or_ledger_reuse
+      - payment_execution_readiness_and_request_completion_are_recordset_batched_with_bounded_1_10_50_query_growth
+      - receive_request_completion_counts_only_exact_canonical_cash_evidence_and_rejects_ambiguous_posted_history
+      - receipt_state_cash_ledger_and_request_completion_are_one_atomic_savepoint_claim
+      - received_receipt_facts_are_terminally_immutable_except_note_and_attachment_annotations
+      - native_receipt_terminal_controls_match_finance_manager_and_state_authority
+      - receipt_completion_role_authority_is_proven_with_real_finance_read_finance_user_and_finance_manager_principals
+      - payment_execution_basis_relations_are_recordset_batched_without_per_request_relation_searches
+      - unresolved_null_company_history_is_ops_only_and_never_visible_through_ordinary_finance_record_rules
+      - native_finance_users_have_a_readonly_same_company_allocation_evidence_entry_and_unresolved_ledgers_expose_no_funding_mutation_action
+    verification:
+      workspace_guard: pass_17_of_17
+      governed_incremental_upgrade: pass_through_17_0_0_156_with_authority_verification
+      targeted_payment_amount_semantics: pass_5_methods_7_stats_zero_failed_zero_errors
+      targeted_finance_authority: pass_32_methods_34_stats_zero_failed_zero_errors_including_real_role_receipt_completion_authority_received_fact_immutability_native_terminal_controls_exact_receive_cash_evidence_atomic_receipt_rollback_real_concurrency_migration_physical_idempotency_existing_ambiguous_ledger_fail_closed_and_tightened_batch_query_budgets
+      targeted_contract_execution: pass_13_methods_15_stats_zero_failed_zero_errors_after_claim_upgrade
+      targeted_state_and_record_rules: pass_82_methods_90_stats_zero_failed_zero_errors
+      targeted_p0_ledger_gate: pass_16_methods_18_stats_zero_failed_zero_errors
+      targeted_rr_p1: pass_2_methods_6_stats_zero_failed_zero_errors
+      full_sc_gate: pass_339_methods_435_stats_zero_failed_zero_errors_after_17_0_0_156_model_upgrade
+      static_model_standard: pass_372_models_36_projections_zero_implementation_gaps
+      static_audit_unit: pass_15_tests
+      runtime_smoke: blocked_missing_governed_local_dev_wrapper_p4
+      native_web_write_journey: not_run_missing_registered_native_web_write_target_p4
+      exact_fingerprint_review: pass_three_independent_reviews_zero_s0_s1_s2_s3_digest_62d69ab617e6a6199064d820a50444527fe769f5c9740dbab949e0b4eeda27d9
 
   next_batches:
-    - id: Batch-E
-      title: project_funding_baseline_and_actual_allocation_authority_v1
-      status: planned
-    - id: Batch-F
-      title: canonical_finance_projection_lifecycle
-      status: planned
     - id: Batch-G
       title: native_fact_access_and_project_isolation
       status: planned
@@ -191,6 +238,7 @@ goal:
     owner_layer: P4
     gap: missing_scripts_migration_business_fact_upgrade_replay_flow_sh
     policy: do_not_build_an_in_topic_workaround
+    additional_gap: missing_local_dev_wrapper_for_verify_business_finance_document_tier_runtime_smoke
 
   rollback:
     - batch_scoped_commits

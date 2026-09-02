@@ -1,6 +1,96 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <data>
+        <record id="view_payment_ledger_allocation_evidence_search" model="ir.ui.view">
+            <field name="name">payment.ledger.allocation.evidence.search</field>
+            <field name="model">payment.ledger.allocation</field>
+            <field name="arch" type="xml">
+                <search string="付款合同分摊证据">
+                    <field name="ledger_id"/>
+                    <field name="payment_request_id"/>
+                    <field name="contract_id"/>
+                    <field name="project_id"/>
+                    <field name="company_id"/>
+                    <field name="currency_id"/>
+                    <field name="normalization_state"/>
+                    <filter name="allocated" string="已分摊" domain="[('allocation_state', '=', 'allocated')]"/>
+                    <filter name="group_company" string="按公司" context="{'group_by': 'company_id'}"/>
+                    <filter name="group_currency" string="按币种" context="{'group_by': 'currency_id'}"/>
+                    <filter name="group_project" string="按项目" context="{'group_by': 'project_id'}"/>
+                    <filter name="group_contract" string="按合同" context="{'group_by': 'contract_id'}"/>
+                </search>
+            </field>
+        </record>
+
+        <record id="view_payment_ledger_allocation_evidence_tree" model="ir.ui.view">
+            <field name="name">payment.ledger.allocation.evidence.tree</field>
+            <field name="model">payment.ledger.allocation</field>
+            <field name="arch" type="xml">
+                <tree string="付款合同分摊证据" create="false" edit="false" delete="false">
+                    <field name="company_id"/>
+                    <field name="currency_id"/>
+                    <field name="project_id"/>
+                    <field name="contract_id"/>
+                    <field name="ledger_id"/>
+                    <field name="payment_request_id"/>
+                    <field name="settlement_id" optional="show"/>
+                    <field name="settlement_line_id" optional="show"/>
+                    <field name="basis_amount"/>
+                    <field name="allocated_amount"/>
+                    <field name="allocation_state" widget="badge"/>
+                    <field name="normalization_state" widget="badge"/>
+                    <field name="reason_code"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_payment_ledger_allocation_evidence_form" model="ir.ui.view">
+            <field name="name">payment.ledger.allocation.evidence.form</field>
+            <field name="model">payment.ledger.allocation</field>
+            <field name="arch" type="xml">
+                <form string="付款合同分摊证据" create="false" edit="false" delete="false">
+                    <sheet>
+                        <group>
+                            <group string="权威身份">
+                                <field name="company_id"/>
+                                <field name="currency_id"/>
+                                <field name="project_id"/>
+                                <field name="contract_id"/>
+                                <field name="normalization_state" widget="badge"/>
+                            </group>
+                            <group string="付款来源">
+                                <field name="ledger_id"/>
+                                <field name="payment_request_id"/>
+                                <field name="payment_request_line_id"/>
+                                <field name="settlement_id"/>
+                                <field name="settlement_line_id"/>
+                            </group>
+                        </group>
+                        <group string="分摊金额">
+                            <field name="basis_amount"/>
+                            <field name="allocated_amount"/>
+                            <field name="allocation_state" widget="badge"/>
+                            <field name="reason_code"/>
+                            <field name="allocation_key"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_payment_ledger_allocation_evidence" model="ir.actions.act_window">
+            <field name="name">付款分摊审计</field>
+            <field name="res_model">payment.ledger.allocation</field>
+            <field name="view_mode">tree,form</field>
+            <field name="search_view_id" ref="view_payment_ledger_allocation_evidence_search"/>
+            <field name="context">{'create': False, 'edit': False, 'delete': False}</field>
+            <field name="groups_id" eval="[(6, 0, [
+                ref('smart_construction_core.group_sc_cap_finance_read'),
+                ref('smart_construction_core.group_sc_cap_finance_user'),
+                ref('smart_construction_core.group_sc_cap_finance_manager'),
+            ])]"/>
+        </record>
+
         <record id="view_payment_ledger_search" model="ir.ui.view">
             <field name="name">payment.ledger.search</field>
             <field name="model">payment.ledger</field>
@@ -13,8 +103,10 @@
                     <field name="partner_id"/>
                     <field name="ref"/>
                     <field name="state"/>
+                    <field name="normalization_state"/>
                     <filter string="有效台账" name="state_posted" domain="[('state', '=', 'posted')]"/>
                     <filter string="已冲销" name="state_reversed" domain="[('state', '=', 'reversed')]"/>
+                    <filter string="历史身份待确认" name="identity_unresolved" domain="[('normalization_state', '=', 'legacy_unresolved_identity')]"/>
                     <filter string="按项目" name="group_project" context="{'group_by': 'project_id'}"/>
                     <filter string="公司直营" name="operation_direct" domain="[('operation_strategy', '=', 'direct')]"/>
                     <filter string="联营项目" name="operation_joint" domain="[('operation_strategy', '=', 'joint')]"/>
@@ -50,6 +142,7 @@
                     <field name="partner_id"/>
                     <field name="amount"/>
                     <field name="state" widget="badge"/>
+                    <field name="normalization_state" widget="badge"/>
                     <field name="fund_plan_allocated_amount"/>
                     <field name="fund_plan_unallocated_amount"/>
                     <field name="currency_id" invisible="1"/>
@@ -67,12 +160,12 @@
                     <header>
                         <button name="action_open_funding_allocation_wizard" type="object"
                                 string="资金计划分配" class="oe_highlight"
-                                invisible="state != 'posted' or fund_plan_unallocated_amount &lt;= 0"
+                                invisible="state != 'posted' or normalization_state != 'normalized' or fund_plan_unallocated_amount &lt;= 0"
                                 groups="smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager"/>
                         <button name="action_open_funding_allocation_wizard" type="object"
                                 string="纠正资金分配"
                                 context="{'funding_allocation_mode': 'correct'}"
-                                invisible="state != 'posted' or fund_plan_allocated_amount &lt;= 0"
+                                invisible="state != 'posted' or normalization_state != 'normalized' or fund_plan_allocated_amount &lt;= 0"
                                 groups="smart_construction_core.group_sc_cap_finance_manager"/>
                     </header>
                     <sheet>
@@ -83,6 +176,7 @@
                                 <field name="project_id" readonly="1"/>
                                 <field name="operation_strategy" readonly="1"/>
                                 <field name="partner_id" readonly="1"/>
+                                <field name="normalization_state" widget="badge" readonly="1"/>
                             </group>
                             <group>
                                 <field name="amount"/>
@@ -127,6 +221,12 @@
                   parent="smart_construction_core.menu_sc_finance_center"
                   action="action_payment_ledger"
                   sequence="30"
+                  groups="smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager"/>
+        <menuitem id="menu_payment_ledger_allocation_evidence"
+                  name="付款分摊审计"
+                  parent="smart_construction_core.menu_sc_finance_center"
+                  action="action_payment_ledger_allocation_evidence"
+                  sequence="31"
                   groups="smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager"/>
     </data>
 </odoo>

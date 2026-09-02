@@ -96,28 +96,14 @@ class ScContractReconSummary(models.Model):
             if contract:
                 settlement_count_map[contract[0]] = settlement_count_map.get(contract[0], 0) + 1
 
-        receipt_count_map = {}
-        receipt_count_rows = self.env["sc.receipt.income"].sudo().read_group(
-            [
-                ("contract_id", "in", contract_ids),
-                ("state", "in", ["received", "legacy_confirmed"]),
-            ],
-            ["contract_id"],
-            ["contract_id"],
-        ) if contract_ids else []
-        for row in receipt_count_rows:
-            contract = row.get("contract_id")
-            if contract:
-                receipt_count_map[contract[0]] = row.get(
-                    "contract_id_count", row.get("__count", 0)
-                )
-
         payment_count_map = {}
         payment_count_rows = self.env["payment.ledger.allocation"].sudo().read_group(
             [
                 ("contract_id", "in", contract_ids),
                 ("allocation_state", "=", "allocated"),
+                ("normalization_state", "in", ["normalized", "legacy_observed_identity"]),
                 ("ledger_id.state", "=", "posted"),
+                ("ledger_id.normalization_state", "in", ["normalized", "legacy_observed_identity"]),
             ],
             ["contract_id", "ledger_id"],
             ["contract_id", "ledger_id"],
@@ -135,7 +121,7 @@ class ScContractReconSummary(models.Model):
             settlement_total = position.get("settled", 0.0)
             if contract.type == "out":
                 payment_total = position.get("received", 0.0)
-                payment_count = receipt_count_map.get(contract.id, 0)
+                payment_count = position.get("received_evidence_count", 0)
             else:
                 payment_total = position.get("paid", 0.0)
                 payment_count = payment_count_map.get(contract.id, 0)

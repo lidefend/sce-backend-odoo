@@ -3,6 +3,8 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools.float_utils import float_compare
 
+_SELF_FUNDING_AUTHORITY_TOKEN = object()
+
 
 class ScSelfFundingRegistration(models.Model):
     _name = "sc.self.funding.registration"
@@ -50,10 +52,20 @@ class ScSelfFundingRegistration(models.Model):
     company_id = fields.Many2one(
         "res.company",
         string="公司",
-        related="project_id.company_id",
-        store=True,
         readonly=True,
         index=True,
+    )
+    finance_identity_state = fields.Selection(
+        [
+            ("normalized", "标准事实"),
+            ("legacy_observed_identity", "历史冻结身份"),
+            ("legacy_unresolved_identity", "历史身份待确认"),
+        ],
+        required=True,
+        default="normalized",
+        readonly=True,
+        index=True,
+        string="财务身份状态",
     )
     operation_strategy = fields.Selection(
         related="project_id.operation_strategy",
@@ -96,6 +108,11 @@ class ScSelfFundingRegistration(models.Model):
     _sql_constraints = [
         ("amount_positive", "CHECK(amount > 0)", "自筹办理金额必须大于 0。"),
         (
+            "finance_normalized_identity_present",
+            "CHECK(finance_identity_state != 'normalized' OR (project_id IS NOT NULL AND company_id IS NOT NULL AND currency_id IS NOT NULL))",
+            "标准自筹事实必须固化项目、公司与币种身份。",
+        ),
+        (
             "legacy_self_funding_registration_unique",
             "unique(legacy_source_table, legacy_record_id, funding_type)",
             "同一历史自筹办理记录不能重复回放。",
@@ -125,20 +142,59 @@ class ScSelfFundingRegistration(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         seq = self.env["ir.sequence"]
+        legacy_authority = self.env.context.get("sc_self_funding_authority_token") is _SELF_FUNDING_AUTHORITY_TOKEN
         for vals in vals_list:
+            if vals.get("source_origin") == "legacy" and not legacy_authority:
+                raise UserError(_("历史自筹事实只能由受治理迁移载体创建。"))
+            if vals.get("state") == "done" and not legacy_authority:
+                raise UserError(_("新系统自筹办理不能直接创建为已完成，必须执行正式完成动作。"))
+            project = self.env["project.project"].browse(vals.get("project_id")).exists()
+            if not project or not project.company_id:
+                raise UserError(_("自筹办理必须关联已归属公司的有效项目。"))
+            if vals.get("company_id") and vals["company_id"] != project.company_id.id:
+                raise UserError(_("自筹办理公司必须与项目公司一致。"))
+            vals["company_id"] = project.company_id.id
+            vals["finance_identity_state"] = vals.get("finance_identity_state") if legacy_authority else "normalized"
             vals.setdefault("business_category_id", self._resolve_business_category_id(vals))
             if vals.get("name", "新建") == "新建":
                 vals["name"] = seq.next_by_code("sc.self.funding.registration") or _("Self Funding")
         return super().create(vals_list)
 
+    @api.model
+    def _create_legacy_authoritative(self, vals):
+        values = dict(vals, source_origin="legacy")
+        project = self.env["project.project"].browse(values.get("project_id")).exists()
+        evidence_complete = bool(
+            project
+            and values.get("company_id") == project.company_id.id
+            and values.get("currency_id")
+        )
+        values["finance_identity_state"] = (
+            "legacy_observed_identity" if evidence_complete else "legacy_unresolved_identity"
+        )
+        return self.with_context(sc_self_funding_authority_token=_SELF_FUNDING_AUTHORITY_TOKEN).create(values)
+
 
     def write(self, vals):
-        if any(rec.state == "done" for rec in self) and not self.env.context.get("allow_done_self_funding_write"):
-            allowed = {"note", "active", "attachment_ids", "source_created_by", "source_created_at", "write_uid", "write_date"}
+        authoritative = self.env.context.get("sc_self_funding_authority_token") is _SELF_FUNDING_AUTHORITY_TOKEN
+        if not authoritative and (vals.get("state") == "done" or "finance_identity_state" in vals):
+            raise UserError(_("自筹终态与财务身份只能由正式业务动作写入。"))
+        if any(rec.state == "done" for rec in self) and not authoritative:
+            allowed = {"note", "attachment_ids", "source_created_by", "source_created_at", "write_uid", "write_date"}
             blocked = set(vals) - allowed
             if blocked:
-                raise UserError(_("已完成的自筹办理只允许补充备注、附件或归档。"))
+                raise UserError(_("已完成的自筹办理只允许补充备注或附件。"))
+        if "project_id" in vals:
+            project = self.env["project.project"].browse(vals.get("project_id")).exists()
+            if not project or not project.company_id:
+                raise UserError(_("自筹办理必须关联已归属公司的有效项目。"))
+            vals = dict(vals, company_id=project.company_id.id)
         return super().write(vals)
+
+    def _write_finance_authority(self, vals):
+        result = self.with_context(sc_self_funding_authority_token=_SELF_FUNDING_AUTHORITY_TOKEN).write(vals)
+        self.flush_recordset(list(vals))
+        return result
 
     def action_confirm(self):
         policy = self.env["sc.approval.policy"]
@@ -165,7 +221,7 @@ class ScSelfFundingRegistration(models.Model):
                 raise UserError(_("自筹办理尚未完成统一审批流程。"))
             before = rec._snapshot_audit_payload()
             rec._check_done_ready()
-            rec.write({"state": "done"})
+            rec._write_finance_authority({"state": "done"})
             rec._ensure_self_funding_treasury_ledger()
             rec._audit_transition("self_funding_done", before, rec._snapshot_audit_payload(), "action_done")
 
@@ -187,6 +243,8 @@ class ScSelfFundingRegistration(models.Model):
             raise UserError(_("请先填写发生日期。"))
         if self.amount <= 0:
             raise UserError(_("自筹办理金额必须大于 0。"))
+        if self.finance_identity_state != "normalized" or self.company_id != self.project_id.company_id:
+            raise UserError(_("自筹办理财务身份已失配，请重建草稿或先完成历史身份认领。"))
         self._check_evidence_ready()
         if self.funding_type == "refund":
             self._check_refund_not_exceed_self_funding_balance()
@@ -236,9 +294,11 @@ class ScSelfFundingRegistration(models.Model):
             }
             existing = Ledger.search(domain, limit=1)
             if existing:
-                existing.write(values)
+                existing._assert_authoritative_match(
+                    dict(values, company_id=rec.company_id.id, normalization_state="normalized")
+                )
             else:
-                Ledger.with_context(allow_ledger_auto=True).create(values)
+                Ledger._create_authoritative(values)
 
     def _request_document_approval(self):
         self.ensure_one()

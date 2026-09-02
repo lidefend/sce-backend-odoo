@@ -32,7 +32,8 @@ class TestContractExecutionPosition(TransactionCase):
                 }
             )
 
-    def _contract(self, name, amount=0.0, contract_type="out"):
+    def _contract(self, name, amount=0.0, contract_type="out", currency=None):
+        currency = currency or self.currency
         contract = self.env["construction.contract"].create(
             {
                 "subject": name,
@@ -40,7 +41,7 @@ class TestContractExecutionPosition(TransactionCase):
                 "project_id": self.project.id,
                 "partner_id": self.partner.id,
                 "company_id": self.company.id,
-                "currency_id": self.currency.id,
+                "currency_id": currency.id,
                 "tax_id": self.tax.id,
             }
         )
@@ -70,6 +71,36 @@ class TestContractExecutionPosition(TransactionCase):
         request.invalidate_recordset()
         return request
 
+    def _posted_receipt_evidence(self, name, contract, amount):
+        request = self.env["payment.request"].create(
+            {
+                "name": name,
+                "type": "receive",
+                "project_id": contract.project_id.id,
+                "partner_id": contract.partner_id.id,
+                "currency_id": contract.currency_id.id,
+                "contract_id": contract.id,
+                "amount": amount,
+            }
+        )
+        receipt = self.env["sc.receipt.income"].create(
+            {
+                "name": name + " receipt",
+                "project_id": contract.project_id.id,
+                "partner_id": contract.partner_id.id,
+                "contract_id": contract.id,
+                "payment_request_id": request.id,
+                "currency_id": contract.currency_id.id,
+                "amount": amount,
+            }
+        )
+        request._claim_terminal_cash_source(receipt)
+        ledger = request._ensure_treasury_ledger(amount=amount)
+        receipt._write_finance_authority(
+            {"state": "received", "treasury_ledger_id": ledger.id}
+        )
+        return ledger
+
     def test_income_position_uses_authoritative_states_and_signed_balances(self):
         contract = self._contract("Income Position", 100.0)
         contract_amount = contract.amount_final
@@ -98,17 +129,7 @@ class TestContractExecutionPosition(TransactionCase):
                 "amount_total": contract_amount + 10.0,
             }
         )
-        self.env["sc.receipt.income"].create(
-            {
-                "name": "Position Receipt",
-                "project_id": self.project.id,
-                "partner_id": self.partner.id,
-                "contract_id": contract.id,
-                "currency_id": self.currency.id,
-                "state": "received",
-                "amount": contract_amount + 30.0,
-            }
-        )
+        self._posted_receipt_evidence("Position Receipt Evidence", contract, contract_amount + 30.0)
         self.env.flush_all()
         position = self.env["sc.contract.execution.position"].search([("contract_id", "=", contract.id)])
         self.assertEqual(position.contract_amount, contract_amount)
@@ -129,6 +150,11 @@ class TestContractExecutionPosition(TransactionCase):
         self.assertEqual(summary.settlement_total, contract_amount + 20.0)
         self.assertEqual(summary.payment_total, contract_amount + 30.0)
         self.assertEqual(summary.payment_ids_count, 1)
+        evidence_action = position.action_open_cash_evidence()
+        self.assertEqual(evidence_action["res_model"], "sc.treasury.ledger")
+        self.assertIn(("company_id", "=", self.company.id), evidence_action["domain"])
+        self.assertIn(("currency_id", "=", self.currency.id), evidence_action["domain"])
+        self.assertIn(("payment_request_id.contract_id", "=", contract.id), evidence_action["domain"])
 
     def test_zero_contract_amount_has_undefined_ratios(self):
         contract = self._contract("Zero Position")
@@ -137,6 +163,27 @@ class TestContractExecutionPosition(TransactionCase):
         self.assertFalse(position.settlement_rate)
         self.assertFalse(position.invoice_rate)
         self.assertFalse(position.cash_execution_rate)
+
+    def test_received_header_without_posted_treasury_evidence_is_not_cash(self):
+        contract = self._contract("Income Without Cash Evidence", 100.0)
+        receipt = self.env["sc.receipt.income"].create(
+            {
+                "name": "Receipt Header Only",
+                "project_id": self.project.id,
+                "partner_id": self.partner.id,
+                "contract_id": contract.id,
+                "currency_id": self.currency.id,
+                "amount": 40.0,
+            }
+        )
+        receipt._write_finance_authority({"state": "received"})
+        self.env.flush_all()
+
+        position = self.env["sc.contract.execution.position"].search([("contract_id", "=", contract.id)])
+        self.assertEqual(position.cash_executed_amount, 0.0)
+        summary = self.env["sc.contract.recon.summary"].create({"contract_id": contract.id})
+        self.assertEqual(summary.payment_total, 0.0)
+        self.assertEqual(summary.payment_ids_count, 0)
 
     def test_ratio_scale_preserves_half_full_overrun_and_negative_facts(self):
         expected_rates = (50.0, 100.0, 120.0)
@@ -301,6 +348,13 @@ class TestContractExecutionPosition(TransactionCase):
         summary = self.env["sc.contract.recon.summary"].create({"contract_id": contract.id})
         self.assertEqual(summary.payment_total, 35.0)
         self.assertEqual(summary.payment_ids_count, 1)
+        evidence_action = position.action_open_cash_evidence()
+        self.assertEqual(evidence_action["res_model"], "payment.ledger.allocation")
+        self.assertIn(("company_id", "=", self.company.id), evidence_action["domain"])
+        self.assertIn(("currency_id", "=", self.currency.id), evidence_action["domain"])
+        self.assertIn(("contract_id", "=", contract.id), evidence_action["domain"])
+        evidence = self.env["payment.ledger.allocation"].search(evidence_action["domain"])
+        self.assertEqual(sum(evidence.mapped("allocated_amount")), position.cash_executed_amount)
         ledger.sudo().with_context(_sc_payment_ledger_internal_reversal=True).write(
             {"state": "reversed"}
         )
@@ -510,4 +564,32 @@ class TestContractExecutionPosition(TransactionCase):
         self.assertFalse(context.get("create"))
         self.assertFalse(context.get("edit"))
         self.assertFalse(context.get("delete"))
+        self.assertTrue(context.get("search_default_group_company"))
+        self.assertTrue(context.get("search_default_group_currency"))
+        self.assertTrue(context.get("search_default_group_project"))
         self.assertEqual(ast.literal_eval(action.domain), [])
+        for view_xmlid in (
+            "smart_construction_core.view_sc_contract_execution_position_tree",
+            "smart_construction_core.view_sc_contract_execution_position_pivot",
+            "smart_construction_core.view_sc_contract_execution_position_form",
+        ):
+            self.assertIn('name="currency_id"', self.env.ref(view_xmlid).arch_db)
+
+    def test_native_grouping_separates_contract_currencies(self):
+        other_currency = self.env["res.currency"].search(
+            [("id", "!=", self.currency.id)], limit=1
+        )
+        if not other_currency.active:
+            other_currency.active = True
+        contracts = (
+            self._contract("Currency Position Domestic", 31.0)
+            | self._contract("Currency Position Foreign", 47.0, currency=other_currency)
+        )
+        self.env.flush_all()
+        rows = self.env["sc.contract.execution.position"].read_group(
+            [("contract_id", "in", contracts.ids)],
+            ["contract_amount:sum"],
+            ["currency_id"],
+            lazy=False,
+        )
+        self.assertEqual({row["currency_id"][0] for row in rows}, set(contracts.mapped("currency_id").ids))

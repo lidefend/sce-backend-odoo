@@ -175,12 +175,20 @@ class ProjectFundingBaseline(models.Model):
             ):
                 raise ValidationError(_("资金基线前后版本必须属于同一项目并保持严格递增。"))
 
-    @api.depends("total_amount", "line_ids.allocated_amount")
+    @api.depends(
+        "total_amount",
+        "line_ids.allocated_amount",
+        "line_ids.allocation_ids.actual_event_id.normalization_state",
+    )
     def _compute_allocation_amounts(self):
         totals = {}
         if self.ids:
             rows = self.env["project.funding.actual.event.allocation"].read_group(
-                [("baseline_id", "in", self.ids), ("normalization_state", "in", ["normalized", "legacy_unresolved_period"])],
+                [
+                    ("baseline_id", "in", self.ids),
+                    ("normalization_state", "in", ["normalized", "legacy_unresolved_period"]),
+                    ("actual_event_id.normalization_state", "in", ["normalized", "legacy_observed_identity"]),
+                ],
                 ["effective_amount:sum"], ["baseline_id"],
             )
             totals = {
@@ -552,12 +560,21 @@ class ProjectFundingBaselineLine(models.Model):
         ("baseline_line_key_unique", "UNIQUE(baseline_id, line_key)", "同一资金版本内明细标识不得重复。"),
     ]
 
-    @api.depends("planned_amount", "allocation_ids.effective_amount", "allocation_ids.normalization_state")
+    @api.depends(
+        "planned_amount",
+        "allocation_ids.effective_amount",
+        "allocation_ids.normalization_state",
+        "allocation_ids.actual_event_id.normalization_state",
+    )
     def _compute_allocation_amounts(self):
         totals = {}
         if self.ids:
             rows = self.env["project.funding.actual.event.allocation"].read_group(
-                [("plan_line_id", "in", self.ids), ("normalization_state", "in", ["normalized", "legacy_unresolved_period"])],
+                [
+                    ("plan_line_id", "in", self.ids),
+                    ("normalization_state", "in", ["normalized", "legacy_unresolved_period"]),
+                    ("actual_event_id.normalization_state", "in", ["normalized", "legacy_observed_identity"]),
+                ],
                 ["effective_amount:sum"], ["plan_line_id"],
             )
             totals = {
@@ -726,6 +743,8 @@ class ProjectFundingActualEventAllocation(models.Model):
             ).exists()
             if not line or not event:
                 raise ValidationError(_("资金分配必须关联有效的计划明细与实际付款事件。"))
+            if event.normalization_state != "normalized":
+                raise ValidationError(_("资金分配只能由身份完整的标准付款事实生成。"))
             baseline = line.baseline_id
             original = self.browse(int(vals.get("reverses_id") or 0)).exists()
             if original:

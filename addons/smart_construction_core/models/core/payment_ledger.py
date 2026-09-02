@@ -5,6 +5,8 @@ from odoo.tools.float_utils import float_compare
 
 from .funding_baseline import _FUNDING_ALLOCATION_TOKEN
 
+_PAYMENT_LEDGER_AUTHORITY_TOKEN = object()
+
 
 class PaymentLedger(models.Model):
     _name = "payment.ledger"
@@ -16,7 +18,15 @@ class PaymentLedger(models.Model):
         "action_open_funding_allocation_wizard",
     }
 
-    _sql_constraints = []
+    _sql_constraints = [
+        (
+            "canonical_identity_complete",
+            "CHECK(normalization_state = 'legacy_unresolved_identity' OR "
+            "(project_id IS NOT NULL AND company_id IS NOT NULL AND partner_id IS NOT NULL "
+            "AND currency_id IS NOT NULL AND operation_strategy IS NOT NULL))",
+            "标准或历史可确认付款台账必须具备完整的项目、公司、往来单位、币种和经营方式身份。",
+        ),
+    ]
 
     payment_request_id = fields.Many2one(
         "payment.request",
@@ -36,30 +46,47 @@ class PaymentLedger(models.Model):
     project_id = fields.Many2one(
         "project.project",
         string="项目",
-        related="payment_request_id.project_id",
-        store=True,
+        ondelete="restrict",
         readonly=True,
+        index=True,
+    )
+    company_id = fields.Many2one(
+        "res.company",
+        string="公司",
+        ondelete="restrict",
+        readonly=True,
+        index=True,
     )
     operation_strategy = fields.Selection(
-        related="project_id.operation_strategy",
+        [("direct", "公司直营"), ("joint", "联营项目")],
         string="经营方式",
-        store=True,
         readonly=True,
         index=True,
     )
     partner_id = fields.Many2one(
         "res.partner",
         string="往来单位",
-        related="payment_request_id.partner_id",
-        store=True,
+        ondelete="restrict",
         readonly=True,
+        index=True,
     )
     currency_id = fields.Many2one(
         "res.currency",
         string="币种",
-        related="payment_request_id.currency_id",
-        store=True,
+        ondelete="restrict",
         readonly=True,
+    )
+    normalization_state = fields.Selection(
+        [
+            ("normalized", "标准事实"),
+            ("legacy_observed_identity", "历史冻结身份"),
+            ("legacy_unresolved_identity", "历史身份待确认"),
+        ],
+        string="身份状态",
+        required=True,
+        default="normalized",
+        readonly=True,
+        index=True,
     )
     amount = fields.Monetary(
         string="付款金额",
@@ -347,16 +374,14 @@ class PaymentLedger(models.Model):
             [tuple(sorted(self.ids))],
         )
         self.invalidate_recordset(["contract_allocation_ids"])
-        Allocation = self.env["payment.ledger.allocation"].sudo().with_context(
-            _sc_payment_ledger_allocation_build=True
-        )
+        Allocation = self.env["payment.ledger.allocation"]
         values = []
         for ledger in self:
             if ledger.contract_allocation_ids:
                 continue
             values.extend(ledger._prepare_contract_allocation_values())
         if values:
-            Allocation.create(values)
+            Allocation._create_authoritative(values)
 
     def init(self):
         """Keep every installment while preventing duplicate ledgering per execution."""
@@ -375,6 +400,7 @@ class PaymentLedger(models.Model):
         "amount",
         "fund_plan_allocation_ids.effective_amount",
         "fund_plan_allocation_ids.normalization_state",
+        "normalization_state",
     )
     def _compute_fund_plan_allocation_amounts(self):
         totals = {}
@@ -383,6 +409,7 @@ class PaymentLedger(models.Model):
                 [
                     ("actual_event_id", "in", self.ids),
                     ("normalization_state", "in", ["normalized", "legacy_unresolved_period"]),
+                    ("actual_event_id.normalization_state", "in", ["normalized", "legacy_observed_identity"]),
                 ],
                 ["effective_amount:sum"],
                 ["actual_event_id"],
@@ -440,23 +467,15 @@ class PaymentLedger(models.Model):
                 raise ValidationError(_("付款金额必须大于 0。"))
 
     def _check_overpay(self, exclude_ids=None):
-        for rec in self:
-            req = rec.payment_request_id
-            if not req:
-                continue
+        requests = self.mapped("payment_request_id")
+        if not requests:
+            return
+        del exclude_ids
+        requests._assert_unambiguous_posted_payment_history()
+        paid_by_request = requests._canonical_payment_paid_amount_map()
+        for req in requests:
             rounding = req.currency_id.rounding if req.currency_id else 0.01
-            domain = [
-                ("payment_request_id", "=", req.id),
-                ("state", "=", "posted"),
-            ]
-            if exclude_ids:
-                domain.append(("id", "not in", exclude_ids))
-            data = self.env["payment.ledger"].read_group(
-                domain,
-                ["amount:sum"],
-                [],
-            )
-            paid_total = data[0].get("amount_sum", data[0].get("amount", 0.0)) if data else 0.0
+            paid_total = paid_by_request.get(req.id, 0.0)
             if float_compare(paid_total, req.amount or 0.0, precision_rounding=rounding) == 1:
                 raise UserError("付款累计金额超过申请金额，禁止登记。")
 
@@ -469,23 +488,72 @@ class PaymentLedger(models.Model):
             raise AccessError(_("付款台账只能由受控付款执行服务创建。"))
         if audited_history_import:
             self.env["sc.tenant.payload.adapter"].assert_import_operator()
-        if not audited_history_import and not self.env.context.get("_sc_payment_ledger_internal_create"):
+        if (
+            not audited_history_import
+            and self.env.context.get("sc_payment_ledger_authority_token")
+            is not _PAYMENT_LEDGER_AUTHORITY_TOKEN
+        ):
             raise UserError("请通过付款申请登记付款记录。")
-        request_ids = []
-        for vals in vals_list:
+        request_ids = [vals.get("payment_request_id") for vals in vals_list if vals.get("payment_request_id")]
+        requests = self.env["payment.request"].browse(request_ids).exists()
+        requests_by_id = {request.id: request for request in requests}
+        execution_ids = [vals.get("payment_execution_id") for vals in vals_list if vals.get("payment_execution_id")]
+        executions = self.env["sc.payment.execution"].browse(execution_ids).exists()
+        executions_by_id = {execution.id: execution for execution in executions}
+        frozen_vals_list = []
+        for incoming_vals in vals_list:
+            vals = dict(incoming_vals)
             if not audited_history_import and vals.get("state", "posted") != "posted":
                 raise UserError("付款台账只能先登记为有效台账，再通过受控冲销改变状态。")
             req_id = vals.get("payment_request_id")
-            if req_id:
-                request_ids.append(req_id)
-            request = self.env["payment.request"].browse(req_id)
-            if not audited_history_import:
+            request = requests_by_id.get(req_id, self.env["payment.request"])
+            if not request:
+                raise UserError("付款台账必须关联有效的付款申请。")
+            if audited_history_import:
+                identity_state = vals.get("normalization_state") or "legacy_unresolved_identity"
+                if identity_state not in {
+                    "legacy_observed_identity",
+                    "legacy_unresolved_identity",
+                }:
+                    raise UserError("历史付款台账必须显式分类为历史冻结身份或历史身份待确认。")
+                if identity_state == "legacy_observed_identity" and not all(
+                    vals.get(field_name)
+                    for field_name in (
+                        "project_id",
+                        "company_id",
+                        "partner_id",
+                        "currency_id",
+                        "operation_strategy",
+                    )
+                ):
+                    raise UserError("历史冻结身份付款台账必须提供完整且有证据的身份快照。")
+                vals["normalization_state"] = identity_state
+            else:
+                if (
+                    not request.project_id
+                    or not request.project_id.company_id
+                    or not request.partner_id
+                    or not request.currency_id
+                    or not request.project_id.operation_strategy
+                ):
+                    raise UserError("付款台账必须从身份完整的付款申请冻结项目、公司、往来单位、币种与经营方式。")
+                vals.update(
+                    {
+                        "project_id": request.project_id.id,
+                        "company_id": request.project_id.company_id.id,
+                        "partner_id": request.partner_id.id,
+                        "currency_id": request.currency_id.id,
+                        "operation_strategy": request.project_id.operation_strategy,
+                        "normalization_state": "normalized",
+                    }
+                )
                 self._check_request_state(request)
                 execution_id = vals.get("payment_execution_id")
                 if execution_id:
-                    execution = self.env["sc.payment.execution"].browse(execution_id).exists()
+                    execution = executions_by_id.get(execution_id, self.env["sc.payment.execution"])
                     if not execution or execution.payment_request_id != request:
                         raise UserError("付款台账的来源付款登记与付款申请不一致。")
+            frozen_vals_list.append(vals)
         if request_ids:
             if len(request_ids) != len(set(request_ids)):
                 raise UserError("同一付款申请不能生成多条付款台账。")
@@ -493,20 +561,34 @@ class PaymentLedger(models.Model):
                 "SELECT id FROM payment_request WHERE id IN %s FOR UPDATE",
                 [tuple(sorted(set(request_ids)))],
             )
-            for vals in vals_list:
-                domain = [
-                    ("payment_request_id", "=", vals.get("payment_request_id")),
+            if not audited_history_import:
+                requests._assert_unambiguous_posted_payment_history()
+            existing = self.search(
+                [
+                    ("payment_request_id", "in", request_ids),
                     ("state", "=", "posted"),
-                    ("payment_execution_id", "=", vals.get("payment_execution_id") or False),
                 ]
-                if self.search(domain, limit=1):
+            )
+            existing_keys = {
+                (ledger.payment_request_id.id, ledger.payment_execution_id.id or False)
+                for ledger in existing
+            }
+            for vals in frozen_vals_list:
+                key = (vals.get("payment_request_id"), vals.get("payment_execution_id") or False)
+                if key in existing_keys:
                     raise UserError("该付款登记已存在付款台账，禁止重复生成。")
-        records = super().create(vals_list)
+        records = super().create(frozen_vals_list)
         records._check_amount()
         if not audited_history_import:
             records._check_overpay()
-        records._ensure_contract_allocations()
+            records._ensure_contract_allocations()
         return records
+
+    @api.model
+    def _create_authoritative(self, vals_list):
+        return self.sudo().with_context(
+            sc_payment_ledger_authority_token=_PAYMENT_LEDGER_AUTHORITY_TOKEN
+        ).create(vals_list)
 
     def _lock_funding_authority(self, lines):
         """Lock every funding authority tier once, in the repository-wide order."""
@@ -552,6 +634,8 @@ class PaymentLedger(models.Model):
             raise AccessError(_("当前用户没有办理资金分配的权限。"))
         if self.state != "posted":
             raise UserError(_("只有有效付款台账可以进行资金计划分配。"))
+        if self.normalization_state != "normalized":
+            raise UserError(_("只有身份完整的标准付款台账可以进行资金计划分配。"))
         baseline = self.payment_request_id.funding_baseline_id
         if not baseline or baseline.normalization_state != "normalized":
             raise UserError(_("付款申请未绑定标准化资金基线版本。"))
@@ -599,6 +683,8 @@ class PaymentLedger(models.Model):
         baseline = request.funding_baseline_id
         if self.state != "posted":
             raise UserError(_("只有有效付款台账可以进行资金计划分配。"))
+        if self.normalization_state != "normalized":
+            raise UserError(_("只有身份完整的标准付款台账可以进行资金计划分配。"))
         if not baseline or baseline.normalization_state != "normalized":
             raise UserError(_("付款申请未绑定标准化资金基线版本。"))
         if any(line.baseline_id.id != baseline.id for line in plan_lines):

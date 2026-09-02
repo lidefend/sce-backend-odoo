@@ -8,6 +8,8 @@
                 <search string="资金台账">
                     <field name="name"/>
                     <field name="project_id"/>
+                    <field name="company_id"/>
+                    <field name="currency_id"/>
                     <field name="partner_id"/>
                     <field name="payment_request_id"/>
                     <field name="source_model"/>
@@ -19,6 +21,8 @@
                     <filter string="已入账" name="state_posted" domain="[('state', '=', 'posted')]"/>
                     <filter string="明细有关联结算单" name="has_linked_settlement" domain="[('linked_settlement_count', '&gt;', 0)]"/>
                     <filter string="按项目" name="group_project" context="{'group_by': 'project_id'}"/>
+                    <filter string="按公司" name="group_company" context="{'group_by': 'company_id'}"/>
+                    <filter string="按币种" name="group_currency" context="{'group_by': 'currency_id'}"/>
                     <filter string="按单位" name="group_partner" context="{'group_by': 'partner_id'}"/>
                     <filter string="按业务类型" name="group_source_kind" context="{'group_by': 'source_kind'}"/>
                     <filter string="按日期" name="group_date" context="{'group_by': 'date'}"/>
@@ -34,6 +38,8 @@
                     <field name="name"/>
                     <field name="date"/>
                     <field name="project_id"/>
+                    <field name="company_id"/>
+                    <field name="currency_id"/>
                     <field name="partner_id"/>
                     <field name="settlement_id"/>
                     <field name="linked_settlement_count" optional="show"/>
@@ -43,8 +49,8 @@
                     <field name="source_res_id" optional="show"/>
                     <field name="direction"/>
                     <field name="source_kind"/>
-                    <field name="amount" sum="金额合计"/>
-                    <field name="currency_id" invisible="1"/>
+                    <field name="amount"/>
+                    <field name="normalization_state"/>
                     <button name="action_open_payment_request" type="object" string="打开申请" class="btn-primary" invisible="not payment_request_id"/>
                     <button name="action_open_settlement" type="object" string="打开结算单" class="btn-secondary" invisible="not settlement_id and linked_settlement_count == 0"/>
                     <field name="state"/>
@@ -70,8 +76,11 @@
                             </group>
                             <group>
                                 <field name="project_id" readonly="1"/>
+                                <field name="company_id" readonly="1"/>
+                                <field name="currency_id" readonly="1"/>
                                 <field name="partner_id" readonly="1"/>
                                 <field name="direction" readonly="1"/>
+                                <field name="normalization_state" readonly="1"/>
                             </group>
                         </group>
                         <group string="关联单据">
@@ -84,7 +93,7 @@
                         </group>
                         <group string="金额">
                             <field name="amount" readonly="1"/>
-                            <field name="currency_id" readonly="1" invisible="1"/>
+                            <field name="currency_id" readonly="1"/>
                         </group>
                         <group string="来源">
                             <field name="source_kind" readonly="1"/>

@@ -100,6 +100,75 @@ class Snapshot:
         report = AUDIT.summarize_projection_registry([row], {"projections": [item]})
         self.assertEqual(1, report["projection_registry_implementation_gap_count"])
 
+    def test_unforgeable_authority_factory_proves_controlled_generated_ledger(self):
+        fields = [{"name": "source_model"}, {"name": "source_res_id"}]
+        source = '''
+class Ledger:
+    def create(self, vals):
+        if self.env.context.get("token") is not _LEDGER_AUTHORITY_TOKEN:
+            raise Exception()
+    def _create_authoritative(self, vals):
+        return self.with_context(token=_LEDGER_AUTHORITY_TOKEN).create(vals)
+    def write(self, vals):
+        raise Exception()
+    def unlink(self):
+        raise Exception()
+'''
+        modes = AUDIT.classify_projection_semantic_modes(
+            "sc.example.ledger", None, fields, "[]", source, True, False
+        )
+        self.assertEqual(["controlled_generated_ledger"], modes)
+
+    def test_plain_named_factory_does_not_prove_controlled_generated_ledger(self):
+        fields = [{"name": "source_model"}, {"name": "source_res_id"}]
+        source = '''
+class Ledger:
+    def create(self, vals):
+        return super().create(vals)
+    def _create_authoritative(self, vals):
+        return self.create(vals)
+'''
+        modes = AUDIT.classify_projection_semantic_modes(
+            "sc.example.ledger", None, fields, "[]", source, True, False
+        )
+        self.assertEqual([], modes)
+
+    def test_mismatched_authority_tokens_do_not_prove_controlled_generated_ledger(self):
+        fields = [{"name": "source_model"}, {"name": "source_res_id"}]
+        source = '''
+class Ledger:
+    def create(self, vals):
+        if self.env.context.get("token") is not _CREATE_AUTHORITY_TOKEN:
+            raise Exception()
+    def _create_authoritative(self, vals):
+        return self.with_context(token=_OTHER_AUTHORITY_TOKEN).create(vals)
+    def write(self, vals):
+        raise Exception()
+    def unlink(self):
+        raise Exception()
+'''
+        modes = AUDIT.classify_projection_semantic_modes(
+            "sc.example.ledger", None, fields, "[]", source, True, False
+        )
+        self.assertEqual([], modes)
+
+    def test_retired_context_marker_text_does_not_prove_controlled_generated_ledger(self):
+        fields = [{"name": "source_model"}, {"name": "source_res_id"}]
+        source = '''
+class Ledger:
+    # allow_ledger_auto is retired and must not classify this model.
+    def create(self, vals):
+        return super().create(vals)
+    def write(self, vals):
+        return super().write(vals)
+    def unlink(self):
+        return super().unlink()
+'''
+        modes = AUDIT.classify_projection_semantic_modes(
+            "sc.example.ledger", None, fields, "[]", source, True, False
+        )
+        self.assertEqual([], modes)
+
     def test_abstract_model_remains_in_inventory_without_projection_bucket(self):
         buckets = AUDIT.classify_model(
             "addons/smart_construction_core/models/optional_product_projection.py",

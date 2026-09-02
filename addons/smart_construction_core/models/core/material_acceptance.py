@@ -2645,12 +2645,18 @@ class ScMaterialSettlement(models.Model):
         "payment_request_ids.amount",
         "payment_request_ids.state",
         "payment_request_ids.ledger_line_ids.amount",
+        "payment_request_ids.ledger_line_ids.normalization_state",
+        "payment_request_ids.ledger_line_ids.state",
     )
     def _compute_payment_summary(self):
+        all_requests = self.mapped("payment_request_ids").filtered(
+            lambda request: request.state != "cancel"
+        )
+        paid_map = all_requests._canonical_payment_paid_amount_map()
         for record in self:
             requests = record.payment_request_ids.filtered(lambda req: req.state != "cancel")
             requested_amount = sum(requests.mapped("amount"))
-            paid_amount = sum(requests.mapped("ledger_line_ids.amount"))
+            paid_amount = sum(paid_map.get(request.id, 0.0) for request in requests)
             remaining = (record.amount_total or 0.0) - (paid_amount or 0.0)
             record.payment_request_count = len(requests)
             record.payment_requested_amount = requested_amount

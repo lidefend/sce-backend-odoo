@@ -181,8 +181,7 @@ class TestP0LedgerGate(TransactionCase):
         cls.other_ledger = cls.other_payment.sudo()._ensure_payment_ledger()
         cls.treasury_same = (
             _ctx("sc.treasury.ledger")
-            .with_context(allow_ledger_auto=True)
-            .create(
+            ._create_authoritative(
                 {
                     "project_id": cls.project.id,
                     "partner_id": cls.partner.id,
@@ -194,8 +193,7 @@ class TestP0LedgerGate(TransactionCase):
         )
         cls.treasury_other = (
             _ctx("sc.treasury.ledger")
-            .with_context(allow_ledger_auto=True)
-            .create(
+            ._create_authoritative(
                 {
                     "project_id": cls.other_project.id,
                     "partner_id": cls.other_partner.id,
@@ -495,6 +493,19 @@ class TestCorePaymentAmountSemantics(TransactionCase):
             opm.settlement_actual_paid_amount_map(self.env, [self.settlement.id])[self.settlement.id],
             80.0,
         )
+        self.env.cr.execute(
+            "UPDATE payment_ledger SET normalization_state='legacy_unresolved_identity' WHERE id=%s",
+            [ledger.id],
+        )
+        ledger.invalidate_recordset(["normalization_state"])
+        self.assertEqual(
+            opm.settlement_actual_paid_amount_map(self.env, [self.settlement.id]), {}
+        )
+        self.env.cr.execute(
+            "UPDATE payment_ledger SET normalization_state='normalized' WHERE id=%s",
+            [ledger.id],
+        )
+        ledger.invalidate_recordset(["normalization_state"])
         finance_manager = self.env["res.users"].with_context(no_reset_password=True).create(
             {
                 "name": "T1-B Finance Manager",
@@ -560,13 +571,38 @@ class TestCorePaymentAmountSemantics(TransactionCase):
         self.env.cr.execute("UPDATE payment_request SET state='approved' WHERE id=%s", (request.id,))
         request.invalidate_recordset(["state"])
         ledger = request._ensure_payment_ledger(amount=60.0)
+        allocation = ledger.contract_allocation_ids
+        self.assertEqual(len(allocation), 1)
+        self.assertEqual(allocation.allocation_state, "allocated")
+        self.assertEqual(allocation.contract_id, self.contract)
+        self.assertEqual(
+            (
+                allocation.project_id,
+                allocation.company_id,
+                allocation.currency_id,
+                ledger.project_id,
+                ledger.currency_id,
+            ),
+            (
+                self.contract.project_id,
+                self.contract.company_id,
+                self.contract.currency_id,
+                self.contract.project_id,
+                self.contract.currency_id,
+            ),
+        )
         # 14. The posted ledger allocation is the sole contract actual-paid authority.
         self.assertEqual(self._contract_paid(), 60.0)
         ledger.sudo().with_context(_sc_payment_ledger_internal_reversal=True).write(
             {"state": "reversed"}
         )
         # 15. Reversal preserves allocation evidence but removes it from net actual paid.
+        self.assertEqual(ledger.state, "reversed")
         self.assertTrue(ledger.contract_allocation_ids)
+        self.assertEqual(
+            opm.contract_actual_paid_amount_map(self.env, [self.contract.id]),
+            {},
+        )
         self.assertEqual(self._contract_paid(), 0.0)
 
     def test_project_company_and_currency_isolation(self):

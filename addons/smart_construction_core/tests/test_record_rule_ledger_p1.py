@@ -142,7 +142,7 @@ class TestRecordRuleLedgerP1(TransactionCase):
             }
         )
 
-        cls.treasury_same = _ctx("sc.treasury.ledger").with_context(allow_ledger_auto=True).create(
+        cls.treasury_same = _ctx("sc.treasury.ledger")._create_authoritative(
             {
                 "project_id": cls.project_same.id,
                 "partner_id": cls.partner.id,
@@ -152,7 +152,7 @@ class TestRecordRuleLedgerP1(TransactionCase):
                 "amount": 10.0,
             }
         )
-        cls.treasury_other = _ctx("sc.treasury.ledger").with_context(allow_ledger_auto=True).create(
+        cls.treasury_other = _ctx("sc.treasury.ledger")._create_authoritative(
             {
                 "project_id": cls.project_other.id,
                 "partner_id": cls.partner.id,

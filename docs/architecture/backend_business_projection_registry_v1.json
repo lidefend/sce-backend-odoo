@@ -51,16 +51,16 @@
     {
       "model": "payment.ledger",
       "implementation_mode": "controlled_generated_ledger",
-      "write_policy": "create is blocked unless allow_payment_ledger_create context is present",
+      "write_policy": "create requires the module-private object authority token; new rows freeze complete project, company, partner, currency and operation-strategy identity; historical rows preserve only evidenced dimensions and are explicitly observed or unresolved, with unresolved rows excluded from canonical actual-paid; only the controlled reversal transition may change state",
       "source_models": ["payment.request"],
-      "refresh_owner": "payment request payment action",
-      "idempotency_key": "payment_request_id",
-      "acceptance_probe": "payment request ledger tests"
+      "refresh_owner": "payment request and payment execution authoritative payment actions",
+      "idempotency_key": "payment_request_id plus optional payment_execution_id",
+      "acceptance_probe": "payment ledger authority, immutable identity, allocation, reversal and batch-query tests"
     },
     {
       "model": "payment.ledger.allocation",
       "implementation_mode": "controlled_generated_ledger",
-      "write_policy": "immutable rows created only in the controlled payment-ledger transaction; reversal preserves rows and changes only parent ledger state",
+      "write_policy": "immutable rows created only in the controlled payment-ledger transaction with frozen project/company/currency identity; historical partial rows preserve physical evidence, remain explicitly unresolved and cannot enter canonical actual-paid; reversal preserves rows and changes only parent ledger state",
       "source_models": ["payment.ledger", "payment.request.line", "construction.contract"],
       "refresh_owner": "payment ledger controlled allocation builder and governed historical upgrade backfill",
       "idempotency_key": "ledger_id, allocation_key",
@@ -168,11 +168,11 @@
     {
       "model": "sc.treasury.ledger",
       "implementation_mode": "controlled_generated_ledger",
-      "write_policy": "create is blocked unless allow_ledger_auto context is present",
-      "source_models": ["payment.request", "sc.receipt.income", "legacy payment/receipt replay"],
-      "refresh_owner": "payment/receipt actions and treasury ledger projection writer",
-      "idempotency_key": "payment_request_id or legacy source reference",
-      "acceptance_probe": "ledger ACL and formal projection refresh probes"
+      "write_policy": "create requires the module-private object authority token; repeated writers must match the complete economic identity; economic overwrite and unlink are denied",
+      "source_models": ["payment.request", "sc.receipt.income", "sc.self.funding.registration", "sc.expense.claim", "sc.tax.deduction.registration", "tender.guarantee", "sc.fund.account.operation", "legacy payment/receipt replay"],
+      "refresh_owner": "terminal finance actions and the treasury ledger authoritative writer",
+      "idempotency_key": "payment_request_id or source_model/source_res_id/project_id/direction/source_kind",
+      "acceptance_probe": "ledger authority, immutability, identity-match, ACL and canonical cash projection tests"
     },
     {
       "model": "sc.expense.contract.ledger",

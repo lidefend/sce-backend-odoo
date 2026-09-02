@@ -1604,13 +1604,14 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         tree = self.env.ref("smart_construction_core.view_sc_expense_claim_tree").arch_db
         form = self.env.ref("smart_construction_core.view_sc_expense_claim_form").arch_db
         search = self.env.ref("smart_construction_core.view_sc_expense_claim_search").arch_db
-        claim = self.env["sc.expense.claim"].create(
+        claim = self.env["sc.expense.claim"]._create_legacy_authoritative(
             {
-                "source_origin": "legacy",
                 "claim_type": "deposit_receive",
                 "expense_type": "自筹保证金",
                 "summary": "自筹保证金",
                 "project_id": self.project.id,
+                "company_id": self.project.company_id.id,
+                "currency_id": self.project.company_id.currency_id.id,
                 "amount": 1000,
                 "state": "legacy_confirmed",
             }

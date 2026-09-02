@@ -49,6 +49,7 @@ class PaymentSliceNativeAdapter:
         return [
             ("project_id", "=", int(project.id)),
             ("state", "=", "posted"),
+            ("normalization_state", "in", ["normalized", "legacy_observed_identity"]),
         ]
 
     def summary(self, project):

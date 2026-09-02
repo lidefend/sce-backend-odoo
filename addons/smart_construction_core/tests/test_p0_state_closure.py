@@ -908,8 +908,7 @@ class TestP0StateClosure(TransactionCase):
         )
         ledger = (
             self.env["sc.treasury.ledger"]
-            .with_context(allow_ledger_auto=True)
-            .create(
+            ._create_authoritative(
                 {
                     "project_id": project.id,
                     "partner_id": partner.id,
@@ -948,8 +947,7 @@ class TestP0StateClosure(TransactionCase):
         )
         ledger = (
             self.env["sc.treasury.ledger"]
-            .with_context(allow_ledger_auto=True)
-            .create(
+            ._create_authoritative(
                 {
                     "project_id": project.id,
                     "partner_id": partner.id,
@@ -989,8 +987,7 @@ class TestP0StateClosure(TransactionCase):
         )
         ledger = (
             self.env["sc.treasury.ledger"]
-            .with_context(allow_ledger_auto=True)
-            .create(
+            ._create_authoritative(
                 {
                     "project_id": project.id,
                     "partner_id": partner.id,

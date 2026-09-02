@@ -62,6 +62,7 @@ class TestP0FinanceAggregateGate(TransactionCase):
         cls.project_same = _ctx("project.project").create(
             {
                 "name": "P0 Finance Agg Project Same",
+                "company_id": company.id,
                 "privacy_visibility": "followers",
                 "user_id": cls.user_finance_user.id,
             }
@@ -75,6 +76,7 @@ class TestP0FinanceAggregateGate(TransactionCase):
         cls.project_other = _ctx("project.project").create(
             {
                 "name": "P0 Finance Agg Project Other",
+                "company_id": company.id,
                 "privacy_visibility": "followers",
                 "user_id": cls.user_no_access.id,
             }
@@ -162,8 +164,7 @@ class TestP0FinanceAggregateGate(TransactionCase):
 
         cls.treasury_same = (
             _ctx("sc.treasury.ledger")
-            .with_context(allow_ledger_auto=True)
-            .create(
+            ._create_authoritative(
                 {
                     "project_id": cls.project_same.id,
                     "partner_id": cls.partner.id,
@@ -175,8 +176,7 @@ class TestP0FinanceAggregateGate(TransactionCase):
         )
         cls.treasury_other = (
             _ctx("sc.treasury.ledger")
-            .with_context(allow_ledger_auto=True)
-            .create(
+            ._create_authoritative(
                 {
                     "project_id": cls.project_other.id,
                     "partner_id": cls.partner_other.id,

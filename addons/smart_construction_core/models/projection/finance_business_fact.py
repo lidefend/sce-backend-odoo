@@ -25,6 +25,7 @@ class ScFinanceBusinessFact(models.Model):
         "guarantee_return": "smart_construction_core.action_sc_expense_claim_deposit",
         "self_funding_income": "smart_construction_core.action_sc_self_funding_registration_income",
         "self_funding_refund": "smart_construction_core.action_sc_self_funding_registration_refund",
+        "arrival_gross": "smart_construction_core.action_sc_receipt_income_user",
     }
 
     display_name = fields.Char(string="业务摘要", readonly=True)
@@ -91,6 +92,17 @@ class ScFinanceBusinessFact(models.Model):
     partner_id = fields.Many2one("res.partner", string="往来单位/人员", readonly=True, index=True)
     partner_name = fields.Char(string="往来单位/人员名称", readonly=True, index=True)
     state = fields.Char(string="来源状态", readonly=True, index=True)
+    normalization_state = fields.Char(string="身份归一状态", readonly=True, index=True)
+    cash_evidence_state = fields.Selection(
+        [
+            ("posted_ledger", "已入账资金证据"),
+            ("missing_posted_ledger", "缺少已入账资金证据"),
+            ("not_applicable", "非现金事实"),
+        ],
+        string="现金证据状态",
+        readonly=True,
+        index=True,
+    )
     legacy_source_model = fields.Char(string="历史来源模型", readonly=True, index=True)
     legacy_source_table = fields.Char(string="历史来源表", readonly=True, index=True)
     legacy_record_id = fields.Char(string="历史记录ID", readonly=True, index=True)
@@ -121,11 +133,7 @@ class ScFinanceBusinessFact(models.Model):
 
     def _source_default_context(self, target_model):
         self.ensure_one()
-        if not self.source_model or not self.source_res_id or self.source_model not in self.env:
-            return {}
-        source = self.env[self.source_model].browse(self.source_res_id).exists()
-        if not source:
-            return {}
+        source = self._source_record()
         context = {}
 
         def put(context_key, field_name):
@@ -234,6 +242,8 @@ class ScFinanceBusinessFact(models.Model):
         source = self.env[self.source_model].browse(self.source_res_id).exists()
         if not source:
             raise UserError("来源业务单据不存在或已归档。")
+        source.check_access_rights("read")
+        source.check_access_rule("read")
         return source
 
     def action_open_source_record(self):
@@ -259,9 +269,17 @@ class ScFinanceBusinessFact(models.Model):
             return self.action_open_source_record()
         result = action.sudo().read()[0]
         domain = self._action_domain(result)
+        target_model_name = result.get("res_model")
+        if not target_model_name or target_model_name not in self.env:
+            return self.action_open_source_record()
+        target_model = self.env[target_model_name]
         if self.project_id:
             domain.append(("project_id", "=", self.project_id.id))
-        if self.partner_id and result.get("res_model") in {
+        if self.company_id and "company_id" in target_model._fields:
+            domain.append(("company_id", "=", self.company_id.id))
+        if self.currency_id and "currency_id" in target_model._fields:
+            domain.append(("currency_id", "=", self.currency_id.id))
+        if self.partner_id and target_model_name in {
             "sc.expense.claim",
             "sc.tax.deduction.registration",
             "sc.self.funding.registration",
@@ -284,10 +302,10 @@ class ScFinanceBusinessFact(models.Model):
                 to_regclass('sc_expense_claim'),
                 to_regclass('sc_tax_deduction_registration'),
                 to_regclass('sc_self_funding_registration'),
+                to_regclass('sc_receipt_income'),
+                to_regclass('sc_treasury_ledger'),
                 to_regclass('tender_guarantee'),
-                to_regclass('tender_bid'),
-                to_regclass('project_project'),
-                to_regclass('res_company')
+                to_regclass('tender_bid')
             """
         )
         if not all(self._cr.fetchone()):
@@ -297,20 +315,85 @@ class ScFinanceBusinessFact(models.Model):
         self._cr.execute(
             f"""
             CREATE OR REPLACE VIEW {self._table} AS (
-                WITH default_company AS (
-                    SELECT id AS company_id, currency_id
-                      FROM res_company
-                     ORDER BY id
-                     LIMIT 1
+                WITH cash_ledger AS (
+                    SELECT l.*
+                      FROM sc_treasury_ledger l
+                     WHERE l.state = 'posted'
+                       AND l.normalization_state IN ('normalized', 'legacy_observed_identity')
+                       AND l.project_id IS NOT NULL
+                       AND l.company_id IS NOT NULL
+                       AND l.currency_id IS NOT NULL
                 ),
-                project_company AS (
+                arrival AS (
                     SELECT
-                        p.id AS project_id,
-                        COALESCE(p.company_id, dc.company_id) AS company_id,
-                        COALESCE(c.currency_id, dc.currency_id) AS currency_id
-                    FROM project_project p
-                    CROSS JOIN default_company dc
-                    LEFT JOIN res_company c ON c.id = p.company_id
+                        100000000 + r.id AS id,
+                        COALESCE(r.name, r.document_no, '到款确认') AS display_name,
+                        'arrival_settlement' AS business_domain,
+                        'arrival_gross' AS fact_type,
+                        CASE WHEN l.id IS NOT NULL THEN 'canonical' ELSE 'policy_required' END AS balance_policy,
+                        CASE WHEN l.id IS NOT NULL
+                             THEN 'received income backed by an exact posted treasury ledger'
+                             ELSE 'received income retained for traceability but excluded from cash totals until posted-ledger evidence is complete'
+                        END AS classification_reason,
+                        'sc.receipt.income' AS source_model,
+                        r.id AS source_res_id,
+                        r.name AS source_record_name,
+                        COALESCE(r.document_no, r.name) AS source_document_no,
+                        '收款与收入登记' AS source_menu_hint,
+                        r.date_receipt AS document_date,
+                        r.company_id,
+                        r.currency_id,
+                        COALESCE(r.amount, 0.0) AS amount,
+                        COALESCE(l.amount, 0.0) AS balance_effect,
+                        COALESCE(l.amount, 0.0) AS cash_in_amount,
+                        0.0 AS cash_out_amount,
+                        COALESCE(r.deducted_invoice_amount, 0.0) + COALESCE(r.deducted_tax_amount, 0.0) AS deduction_amount,
+                        COALESCE(l.amount, 0.0) AS paid_amount,
+                        COALESCE(r.deducted_tax_amount, 0.0) AS tax_amount,
+                        r.project_id,
+                        r.partner_id,
+                        COALESCE(rp.name, r.legacy_partner_name) AS partner_name,
+                        r.state,
+                        r.finance_identity_state AS normalization_state,
+                        CASE WHEN l.id IS NOT NULL THEN 'posted_ledger' ELSE 'missing_posted_ledger' END AS cash_evidence_state,
+                        r.legacy_source_model,
+                        r.legacy_source_table,
+                        r.legacy_record_id,
+                        COALESCE(r.note, r.legacy_note) AS source_note
+                    FROM sc_receipt_income r
+                    LEFT JOIN res_partner rp ON rp.id = r.partner_id
+                    LEFT JOIN cash_ledger l
+                      ON l.id = r.treasury_ledger_id
+                     AND l.direction = 'in'
+                     AND l.project_id = r.project_id
+                     AND l.company_id = r.company_id
+                     AND l.currency_id = r.currency_id
+                     AND l.partner_id = r.partner_id
+                     AND (
+                            (l.source_model = 'sc.receipt.income' AND l.source_res_id = r.id)
+                         OR (
+                                r.payment_request_id IS NOT NULL
+                            AND l.payment_request_id = r.payment_request_id
+                            AND l.source_model = 'payment.request'
+                            AND l.source_res_id = r.payment_request_id
+                            AND EXISTS (
+                                SELECT 1
+                                  FROM payment_request request
+                                 WHERE request.id = r.payment_request_id
+                                   AND request.type = 'receive'
+                                   AND request.project_id = r.project_id
+                                   AND request.company_id = r.company_id
+                                   AND request.currency_id = r.currency_id
+                                   AND request.partner_id = r.partner_id
+                                   AND request.contract_id = r.contract_id
+                                   AND request.terminal_cash_source_model = 'sc.receipt.income'
+                                   AND request.terminal_cash_source_res_id = r.id
+                            )
+                         )
+                     )
+                    WHERE r.active IS TRUE
+                      AND r.state IN ('received', 'legacy_confirmed')
+                      AND r.finance_identity_state IN ('normalized', 'legacy_observed_identity')
                 ),
                 deduction_bill AS (
                     SELECT
@@ -339,6 +422,8 @@ class ScFinanceBusinessFact(models.Model):
                         c.partner_id,
                         COALESCE(rp.name, c.payee, c.applicant_name) AS partner_name,
                         c.state,
+                        c.finance_identity_state AS normalization_state,
+                        'not_applicable' AS cash_evidence_state,
                         c.legacy_source_model,
                         c.legacy_source_table,
                         c.legacy_record_id,
@@ -348,6 +433,8 @@ class ScFinanceBusinessFact(models.Model):
                     LEFT JOIN sc_business_category bc ON bc.id = c.business_category_id
                     WHERE c.active IS TRUE
                       AND bc.code = 'finance.deduction.bill'
+                      AND c.state IN ('done', 'legacy_confirmed')
+                      AND c.finance_identity_state IN ('normalized', 'legacy_observed_identity')
                 ),
                 deduction_paid AS (
                     SELECT
@@ -355,8 +442,9 @@ class ScFinanceBusinessFact(models.Model):
                         COALESCE(c.name, c.legacy_document_no, '扣款实缴') AS display_name,
                         'deduction_clearing' AS business_domain,
                         'deduction_paid' AS fact_type,
-                        'canonical' AS balance_policy,
-                        'canonical deduction_paid expense claim' AS classification_reason,
+                        CASE WHEN l.id IS NOT NULL THEN 'canonical' ELSE 'policy_required' END AS balance_policy,
+                        CASE WHEN l.id IS NOT NULL THEN 'deduction payment backed by posted treasury ledger'
+                             ELSE 'deduction payment lacks exact posted-ledger evidence' END AS classification_reason,
                         'sc.expense.claim' AS source_model,
                         c.id AS source_res_id,
                         c.name AS source_record_name,
@@ -366,24 +454,49 @@ class ScFinanceBusinessFact(models.Model):
                         c.company_id,
                         c.currency_id,
                         COALESCE(NULLIF(c.approved_amount, 0.0), c.amount, 0.0) AS amount,
-                        COALESCE(NULLIF(c.approved_amount, 0.0), c.amount, 0.0) AS balance_effect,
-                        COALESCE(NULLIF(c.approved_amount, 0.0), c.amount, 0.0) AS cash_in_amount,
+                        COALESCE(l.amount, 0.0) AS balance_effect,
+                        COALESCE(l.amount, 0.0) AS cash_in_amount,
                         0.0 AS cash_out_amount,
                         COALESCE(NULLIF(c.approved_amount, 0.0), c.amount, 0.0) AS deduction_amount,
-                        COALESCE(c.paid_amount, 0.0) AS paid_amount,
+                        COALESCE(l.amount, 0.0) AS paid_amount,
                         0.0 AS tax_amount,
                         c.project_id,
                         c.partner_id,
                         COALESCE(rp.name, c.payee, c.applicant_name) AS partner_name,
                         c.state,
+                        c.finance_identity_state AS normalization_state,
+                        CASE WHEN l.id IS NOT NULL THEN 'posted_ledger' ELSE 'missing_posted_ledger' END AS cash_evidence_state,
                         c.legacy_source_model,
                         c.legacy_source_table,
                         c.legacy_record_id,
                         COALESCE(c.note, c.summary) AS source_note
                     FROM sc_expense_claim c
                     LEFT JOIN res_partner rp ON rp.id = c.partner_id
+                    LEFT JOIN cash_ledger l
+                      ON l.payment_request_id = c.payment_request_id
+                     AND l.source_model = 'payment.request'
+                     AND l.source_res_id = c.payment_request_id
+                     AND l.direction = 'in'
+                     AND l.project_id = c.project_id
+                     AND l.company_id = c.company_id
+                     AND l.currency_id = c.currency_id
+                     AND l.partner_id = c.partner_id
+                     AND EXISTS (
+                         SELECT 1
+                           FROM payment_request request
+                          WHERE request.id = c.payment_request_id
+                            AND request.type = 'receive'
+                            AND request.project_id = c.project_id
+                            AND request.company_id = c.company_id
+                            AND request.currency_id = c.currency_id
+                            AND request.partner_id = c.partner_id
+                            AND request.terminal_cash_source_model = 'sc.expense.claim'
+                            AND request.terminal_cash_source_res_id = c.id
+                     )
                     WHERE c.active IS TRUE
-                      AND c.claim_type = 'deduction_paid'
+                      AND c.handling_kind = 'deduction_paid'
+                      AND c.state IN ('done', 'legacy_confirmed')
+                      AND c.finance_identity_state IN ('normalized', 'legacy_observed_identity')
                 ),
                 deduction_refund AS (
                     SELECT
@@ -391,8 +504,9 @@ class ScFinanceBusinessFact(models.Model):
                         COALESCE(c.name, c.legacy_document_no, '扣款退回') AS display_name,
                         'deduction_clearing' AS business_domain,
                         'deduction_refund' AS fact_type,
-                        'canonical' AS balance_policy,
-                        'canonical deduction_refund expense claim' AS classification_reason,
+                        CASE WHEN l.id IS NOT NULL THEN 'canonical' ELSE 'policy_required' END AS balance_policy,
+                        CASE WHEN l.id IS NOT NULL THEN 'deduction refund backed by posted treasury ledger'
+                             ELSE 'deduction refund lacks exact posted-ledger evidence' END AS classification_reason,
                         'sc.expense.claim' AS source_model,
                         c.id AS source_res_id,
                         c.name AS source_record_name,
@@ -402,24 +516,49 @@ class ScFinanceBusinessFact(models.Model):
                         c.company_id,
                         c.currency_id,
                         COALESCE(NULLIF(c.approved_amount, 0.0), c.amount, 0.0) AS amount,
-                        -COALESCE(NULLIF(c.approved_amount, 0.0), c.amount, 0.0) AS balance_effect,
+                        -COALESCE(l.amount, 0.0) AS balance_effect,
                         0.0 AS cash_in_amount,
-                        COALESCE(NULLIF(c.approved_amount, 0.0), c.amount, 0.0) AS cash_out_amount,
+                        COALESCE(l.amount, 0.0) AS cash_out_amount,
                         COALESCE(NULLIF(c.approved_amount, 0.0), c.amount, 0.0) AS deduction_amount,
-                        COALESCE(c.paid_amount, 0.0) AS paid_amount,
+                        COALESCE(l.amount, 0.0) AS paid_amount,
                         0.0 AS tax_amount,
                         c.project_id,
                         c.partner_id,
                         COALESCE(rp.name, c.payee, c.applicant_name) AS partner_name,
                         c.state,
+                        c.finance_identity_state AS normalization_state,
+                        CASE WHEN l.id IS NOT NULL THEN 'posted_ledger' ELSE 'missing_posted_ledger' END AS cash_evidence_state,
                         c.legacy_source_model,
                         c.legacy_source_table,
                         c.legacy_record_id,
                         COALESCE(c.note, c.summary) AS source_note
                     FROM sc_expense_claim c
                     LEFT JOIN res_partner rp ON rp.id = c.partner_id
+                    LEFT JOIN cash_ledger l
+                      ON l.payment_request_id = c.payment_request_id
+                     AND l.source_model = 'payment.request'
+                     AND l.source_res_id = c.payment_request_id
+                     AND l.direction = 'out'
+                     AND l.project_id = c.project_id
+                     AND l.company_id = c.company_id
+                     AND l.currency_id = c.currency_id
+                     AND l.partner_id = c.partner_id
+                     AND EXISTS (
+                         SELECT 1
+                           FROM payment_request request
+                          WHERE request.id = c.payment_request_id
+                            AND request.type = 'pay'
+                            AND request.project_id = c.project_id
+                            AND request.company_id = c.company_id
+                            AND request.currency_id = c.currency_id
+                            AND request.partner_id = c.partner_id
+                            AND request.terminal_cash_source_model = 'sc.expense.claim'
+                            AND request.terminal_cash_source_res_id = c.id
+                     )
                     WHERE c.active IS TRUE
-                      AND c.claim_type = 'deduction_refund'
+                      AND c.handling_kind = 'deduction_refund'
+                      AND c.state IN ('done', 'legacy_confirmed')
+                      AND c.finance_identity_state IN ('normalized', 'legacy_observed_identity')
                 ),
                 tax_deduction AS (
                     SELECT
@@ -448,6 +587,8 @@ class ScFinanceBusinessFact(models.Model):
                         t.partner_id,
                         COALESCE(rp.name, t.partner_name, t.deduction_unit_name) AS partner_name,
                         t.state,
+                        t.finance_identity_state AS normalization_state,
+                        'not_applicable' AS cash_evidence_state,
                         t.legacy_source_model,
                         t.legacy_source_table,
                         t.legacy_record_id,
@@ -455,6 +596,8 @@ class ScFinanceBusinessFact(models.Model):
                     FROM sc_tax_deduction_registration t
                     LEFT JOIN res_partner rp ON rp.id = t.partner_id
                     WHERE t.active IS TRUE
+                      AND t.state IN ('deducted', 'legacy_confirmed')
+                      AND t.finance_identity_state IN ('normalized', 'legacy_observed_identity')
                 ),
                 formal_self_funding AS (
                     SELECT
@@ -462,8 +605,9 @@ class ScFinanceBusinessFact(models.Model):
                         COALESCE(r.name, r.document_no, r.summary, '自筹办理') AS display_name,
                         'self_funding' AS business_domain,
                         CASE WHEN r.funding_type = 'refund' THEN 'self_funding_refund' ELSE 'self_funding_income' END AS fact_type,
-                        'canonical' AS balance_policy,
-                        'formal self funding handling; project is attribution and company-contractor balance constraint' AS classification_reason,
+                        CASE WHEN l.id IS NOT NULL THEN 'canonical' ELSE 'policy_required' END AS balance_policy,
+                        CASE WHEN l.id IS NOT NULL THEN 'self funding backed by exact posted treasury ledger'
+                             ELSE 'self funding lacks exact posted-ledger evidence' END AS classification_reason,
                         'sc.self.funding.registration' AS source_model,
                         r.id AS source_res_id,
                         r.name AS source_record_name,
@@ -473,9 +617,9 @@ class ScFinanceBusinessFact(models.Model):
                         r.company_id,
                         r.currency_id,
                         COALESCE(r.amount, 0.0) AS amount,
-                        CASE WHEN r.funding_type = 'refund' THEN -COALESCE(r.amount, 0.0) ELSE COALESCE(r.amount, 0.0) END AS balance_effect,
-                        CASE WHEN r.funding_type = 'income' THEN COALESCE(r.amount, 0.0) ELSE 0.0 END AS cash_in_amount,
-                        CASE WHEN r.funding_type = 'refund' THEN COALESCE(r.amount, 0.0) ELSE 0.0 END AS cash_out_amount,
+                        CASE WHEN r.funding_type = 'refund' THEN -COALESCE(l.amount, 0.0) ELSE COALESCE(l.amount, 0.0) END AS balance_effect,
+                        CASE WHEN r.funding_type = 'income' THEN COALESCE(l.amount, 0.0) ELSE 0.0 END AS cash_in_amount,
+                        CASE WHEN r.funding_type = 'refund' THEN COALESCE(l.amount, 0.0) ELSE 0.0 END AS cash_out_amount,
                         0.0 AS deduction_amount,
                         0.0 AS paid_amount,
                         0.0 AS tax_amount,
@@ -483,14 +627,25 @@ class ScFinanceBusinessFact(models.Model):
                         r.partner_id,
                         rp.name AS partner_name,
                         r.state,
+                        r.finance_identity_state AS normalization_state,
+                        CASE WHEN l.id IS NOT NULL THEN 'posted_ledger' ELSE 'missing_posted_ledger' END AS cash_evidence_state,
                         CASE WHEN r.source_origin = 'legacy' THEN 'online_old_legacy_source:self_funding' ELSE NULL::varchar END AS legacy_source_model,
                         r.legacy_source_table AS legacy_source_table,
                         r.legacy_record_id AS legacy_record_id,
                         COALESCE(r.note, r.summary) AS source_note
                     FROM sc_self_funding_registration r
                     LEFT JOIN res_partner rp ON rp.id = r.partner_id
+                    LEFT JOIN cash_ledger l
+                      ON l.source_model = 'sc.self.funding.registration'
+                     AND l.source_res_id = r.id
+                     AND l.source_kind = 'self_funding'
+                     AND l.direction = CASE WHEN r.funding_type = 'refund' THEN 'out' ELSE 'in' END
+                     AND l.project_id = r.project_id
+                     AND l.company_id = r.company_id
+                     AND l.currency_id = r.currency_id
                     WHERE r.active IS TRUE
                       AND r.state = 'done'
+                      AND r.finance_identity_state IN ('normalized', 'legacy_observed_identity')
                 ),
                 guarantee AS (
                     SELECT
@@ -498,38 +653,50 @@ class ScFinanceBusinessFact(models.Model):
                         COALESCE(b.name, b.tender_name, '保证金') AS display_name,
                         'guarantee_deposit' AS business_domain,
                         CASE WHEN g.type = 'return' THEN 'guarantee_return' ELSE 'guarantee_out' END AS fact_type,
-                        'canonical' AS balance_policy,
-                        'formal tender.guarantee preserves out/return balance; legacy source family remains available in source report facts' AS classification_reason,
+                        CASE WHEN l.id IS NOT NULL THEN 'canonical' ELSE 'policy_required' END AS balance_policy,
+                        CASE WHEN l.id IS NOT NULL THEN 'confirmed guarantee backed by exact posted treasury ledger'
+                             ELSE 'confirmed guarantee lacks exact posted-ledger evidence' END AS classification_reason,
                         'tender.guarantee' AS source_model,
                         g.id AS source_res_id,
                         b.name AS source_record_name,
                         b.name AS source_document_no,
                         CASE WHEN g.type = 'return' THEN '保证金退回' ELSE '保证金支出' END AS source_menu_hint,
                         g.date AS document_date,
-                        COALESCE(pc.company_id, dc.company_id) AS company_id,
-                        COALESCE(g.currency_id, pc.currency_id, dc.currency_id) AS currency_id,
+                        g.company_id,
+                        g.currency_id,
                         COALESCE(g.amount, 0.0) AS amount,
-                        CASE WHEN g.type = 'return' THEN -COALESCE(g.amount, 0.0) ELSE COALESCE(g.amount, 0.0) END AS balance_effect,
-                        CASE WHEN g.type = 'return' THEN COALESCE(g.amount, 0.0) ELSE 0.0 END AS cash_in_amount,
-                        CASE WHEN g.type = 'return' THEN 0.0 ELSE COALESCE(g.amount, 0.0) END AS cash_out_amount,
+                        CASE WHEN g.type = 'return' THEN -COALESCE(l.amount, 0.0) ELSE COALESCE(l.amount, 0.0) END AS balance_effect,
+                        CASE WHEN g.type = 'return' THEN COALESCE(l.amount, 0.0) ELSE 0.0 END AS cash_in_amount,
+                        CASE WHEN g.type = 'return' THEN 0.0 ELSE COALESCE(l.amount, 0.0) END AS cash_out_amount,
                         0.0 AS deduction_amount,
                         0.0 AS paid_amount,
                         0.0 AS tax_amount,
-                        b.project_id,
-                        b.owner_id AS partner_id,
+                        g.project_id,
+                        g.partner_id,
                         COALESCE(rp.name, b.legacy_owner_name) AS partner_name,
                         g.state,
+                        g.finance_identity_state AS normalization_state,
+                        CASE WHEN l.id IS NOT NULL THEN 'posted_ledger' ELSE 'missing_posted_ledger' END AS cash_evidence_state,
                         b.legacy_fact_model AS legacy_source_model,
                         'tender_guarantee' AS legacy_source_table,
                         NULLIF(b.legacy_fact_id::varchar, '') AS legacy_record_id,
                         COALESCE(g.remark, b.legacy_note) AS source_note
                     FROM tender_guarantee g
                     JOIN tender_bid b ON b.id = g.bid_id
-                    CROSS JOIN default_company dc
-                    LEFT JOIN project_company pc ON pc.project_id = b.project_id
-                    LEFT JOIN res_partner rp ON rp.id = b.owner_id
+                    LEFT JOIN res_partner rp ON rp.id = g.partner_id
+                    LEFT JOIN cash_ledger l
+                      ON l.id = g.treasury_ledger_id
+                     AND l.source_model = 'tender.guarantee'
+                     AND l.source_res_id = g.id
+                     AND l.direction = CASE WHEN g.type = 'return' THEN 'in' ELSE 'out' END
+                     AND l.project_id = g.project_id
+                     AND l.company_id = g.company_id
+                     AND l.currency_id = g.currency_id
+                    WHERE g.state = 'confirmed'
+                      AND g.finance_identity_state IN ('normalized', 'legacy_observed_identity')
                 )
-                SELECT * FROM deduction_bill
+                SELECT * FROM arrival
+                UNION ALL SELECT * FROM deduction_bill
                 UNION ALL SELECT * FROM deduction_paid
                 UNION ALL SELECT * FROM deduction_refund
                 UNION ALL SELECT * FROM tax_deduction

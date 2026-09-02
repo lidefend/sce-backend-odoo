@@ -13,6 +13,7 @@ from ..support.state_machine import ScStateMachine
 
 _logger = logging.getLogger(__name__)
 _FUNDING_BINDING_TOKEN = object()
+_TERMINAL_CASH_SOURCE_CLAIM_TOKEN = object()
 
 PAYMENT_REQUEST_DOCUMENT_STATE_LABELS = {
     "-1": "已作废",
@@ -130,6 +131,22 @@ class PaymentRequest(models.Model):
         default="pay",
         required=True,
         tracking=True,
+    )
+    terminal_cash_source_model = fields.Selection(
+        [
+            ("sc.receipt.income", "收款收入登记"),
+            ("sc.expense.claim", "费用/扣款登记"),
+        ],
+        string="终态现金来源模型",
+        readonly=True,
+        copy=False,
+        index=True,
+    )
+    terminal_cash_source_res_id = fields.Integer(
+        string="终态现金来源记录",
+        readonly=True,
+        copy=False,
+        index=True,
     )
     payment_flow_label = fields.Char(string="办理事项", compute="_compute_payment_flow_label")
     business_category_id = fields.Many2one(
@@ -1338,6 +1355,7 @@ class PaymentRequest(models.Model):
 
     def _assert_payment_execution_ready(self, *, require_authorized_actor=False):
         """Fail closed before a payment request can anchor an execution record."""
+        self._assert_unambiguous_posted_payment_history()
         for record in self:
             if record.type != "pay":
                 raise UserError(_("只有付款申请可以生成付款登记。"))
@@ -1486,7 +1504,17 @@ class PaymentRequest(models.Model):
                       FROM payment_ledger AS ledger
                       JOIN scoped_requests AS request
                         ON request.id = ledger.payment_request_id
+                      JOIN payment_request AS authority_request
+                        ON authority_request.id = ledger.payment_request_id
+                      JOIN project_project AS authority_project
+                        ON authority_project.id = authority_request.project_id
                      WHERE ledger.state = 'posted'
+                       AND ledger.normalization_state IN ('normalized', 'legacy_observed_identity')
+                       AND ledger.project_id = authority_request.project_id
+                       AND ledger.company_id = authority_project.company_id
+                       AND ledger.partner_id = authority_request.partner_id
+                       AND ledger.currency_id = authority_request.currency_id
+                       AND ledger.operation_strategy = authority_project.operation_strategy
                      GROUP BY ledger.payment_request_id
                 )
                 SELECT COALESCE(SUM(COALESCE(posted.amount, 0)), 0)
@@ -1680,6 +1708,13 @@ class PaymentRequest(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        claim_fields = {"terminal_cash_source_model", "terminal_cash_source_res_id"}
+        claim_authority = (
+            self.env.context.get("_sc_terminal_cash_source_claim_token")
+            is _TERMINAL_CASH_SOURCE_CLAIM_TOKEN
+        )
+        if not claim_authority and any(claim_fields.intersection(vals) for vals in vals_list):
+            raise AccessError(_("付款/收款申请的终态现金来源只能由事实权威服务绑定。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
             project_id = self._context_project_id()
@@ -1730,6 +1765,23 @@ class PaymentRequest(models.Model):
         return category.id if category else False
 
     def write(self, vals):
+        claim_fields = {"terminal_cash_source_model", "terminal_cash_source_res_id"}
+        claim_authority = (
+            self.env.context.get("_sc_terminal_cash_source_claim_token")
+            is _TERMINAL_CASH_SOURCE_CLAIM_TOKEN
+        )
+        if claim_fields.intersection(vals) and not claim_authority:
+            raise AccessError(_("付款/收款申请的终态现金来源只能由事实权威服务绑定。"))
+        if claim_authority:
+            for rec in self:
+                claimed_model = rec.terminal_cash_source_model
+                claimed_res_id = rec.terminal_cash_source_res_id or 0
+                target_model = vals.get("terminal_cash_source_model", claimed_model)
+                target_res_id = vals.get("terminal_cash_source_res_id", claimed_res_id) or 0
+                if claimed_model and target_model != claimed_model:
+                    raise AccessError(_("终态现金来源模型一经认领不可变更。"))
+                if claimed_res_id > 0 and target_res_id != claimed_res_id:
+                    raise AccessError(_("终态现金来源记录一经绑定不可变更。"))
         changed_business_facts = self._business_fact_fields.intersection(vals)
         if "funding_baseline_id" in vals and self.env.context.get(
             "_sc_funding_baseline_binding_token"
@@ -2058,24 +2110,206 @@ class PaymentRequest(models.Model):
         for rec in self:
             rec.move_type = rec.type
 
+    def _canonical_payment_paid_amount_map(self):
+        """Return posted payment amounts only for the request's exact identity."""
+        request_ids = list(dict.fromkeys(self.ids))
+        if not request_ids:
+            return {}
+        self.env["payment.ledger"].flush_model(
+            [
+                "payment_request_id", "project_id", "company_id", "partner_id",
+                "currency_id", "operation_strategy", "normalization_state", "state", "amount",
+            ]
+        )
+        self.flush_model(["project_id", "partner_id", "currency_id"])
+        self.env["project.project"].flush_model(["company_id", "operation_strategy"])
+        self.env.cr.execute(
+            """
+            SELECT request.id, SUM(ledger.amount)
+              FROM payment_request request
+              JOIN project_project project ON project.id = request.project_id
+              JOIN payment_ledger ledger ON ledger.payment_request_id = request.id
+             WHERE request.id IN %s
+               AND ledger.state = 'posted'
+               AND ledger.normalization_state IN ('normalized', 'legacy_observed_identity')
+               AND ledger.project_id = request.project_id
+               AND ledger.company_id = project.company_id
+               AND ledger.partner_id = request.partner_id
+               AND ledger.currency_id = request.currency_id
+               AND ledger.operation_strategy = project.operation_strategy
+             GROUP BY request.id
+            """,
+            [tuple(request_ids)],
+        )
+        return {request_id: amount or 0.0 for request_id, amount in self.env.cr.fetchall()}
+
+    def _ambiguous_posted_payment_request_ids(self):
+        """Identify posted history that cannot safely authorize more payment."""
+        request_ids = list(dict.fromkeys(self.ids))
+        if not request_ids:
+            return set()
+        self.env["payment.ledger"].flush_model(
+            [
+                "payment_request_id", "project_id", "company_id", "partner_id",
+                "currency_id", "operation_strategy", "normalization_state", "state",
+            ]
+        )
+        self.flush_model(["project_id", "partner_id", "currency_id"])
+        self.env["project.project"].flush_model(["company_id", "operation_strategy"])
+        self.env.cr.execute(
+            """
+            SELECT DISTINCT request.id
+              FROM payment_request request
+              LEFT JOIN project_project project ON project.id = request.project_id
+              JOIN payment_ledger ledger ON ledger.payment_request_id = request.id
+             WHERE request.id IN %s
+               AND ledger.state = 'posted'
+               AND (
+                    ledger.normalization_state NOT IN ('normalized', 'legacy_observed_identity')
+                 OR ledger.normalization_state IS NULL
+                 OR ledger.project_id IS DISTINCT FROM request.project_id
+                 OR ledger.company_id IS DISTINCT FROM project.company_id
+                 OR ledger.partner_id IS DISTINCT FROM request.partner_id
+                 OR ledger.currency_id IS DISTINCT FROM request.currency_id
+                 OR ledger.operation_strategy IS DISTINCT FROM project.operation_strategy
+               )
+            """,
+            [tuple(request_ids)],
+        )
+        return {request_id for (request_id,) in self.env.cr.fetchall()}
+
+    def _assert_unambiguous_posted_payment_history(self):
+        ambiguous = self._ambiguous_posted_payment_request_ids()
+        if ambiguous:
+            names = ", ".join(self.browse(sorted(ambiguous)).mapped("display_name"))
+            raise UserError(
+                _("付款申请存在身份待确认或身份冲突的历史台账，必须先审计处置，禁止继续付款或结清：%s")
+                % names
+            )
+        return True
+
+    def _receive_cash_authority_state_map(self):
+        """Return exact received cash and ambiguous posted history per request."""
+        request_ids = list(dict.fromkeys(self.ids))
+        if not request_ids:
+            return {}
+        self.env["sc.treasury.ledger"].flush_model(
+            [
+                "payment_request_id", "state", "direction", "normalization_state",
+                "source_model", "source_res_id", "project_id", "company_id",
+                "partner_id", "currency_id", "amount",
+            ]
+        )
+        self.flush_model(
+            [
+                "type", "project_id", "company_id", "partner_id", "currency_id",
+                "contract_id", "terminal_cash_source_model", "terminal_cash_source_res_id",
+            ]
+        )
+        self.env["sc.receipt.income"].flush_model(
+            [
+                "payment_request_id", "treasury_ledger_id", "state",
+                "finance_identity_state", "project_id", "company_id", "partner_id",
+                "currency_id", "contract_id",
+            ]
+        )
+        self.env["sc.expense.claim"].flush_model(
+            [
+                "payment_request_id", "state", "finance_identity_state", "financial_flow",
+                "project_id", "company_id", "partner_id", "currency_id",
+            ]
+        )
+        self.env.cr.execute(
+            """
+            WITH evaluated AS (
+                SELECT request.id AS request_id,
+                       ledger.amount,
+                       ledger.state = 'posted' AS is_posted,
+                       COALESCE(
+                           ledger.state = 'posted'
+                           AND ledger.direction = 'in'
+                           AND ledger.normalization_state IN (
+                               'normalized', 'legacy_observed_identity'
+                           )
+                           AND ledger.source_model = 'payment.request'
+                           AND ledger.source_res_id = request.id
+                           AND ledger.project_id = request.project_id
+                           AND ledger.company_id = request.company_id
+                           AND ledger.partner_id = request.partner_id
+                           AND ledger.currency_id = request.currency_id
+                           AND (
+                               (
+                                   request.terminal_cash_source_model = 'sc.receipt.income'
+                                   AND EXISTS (
+                                       SELECT 1
+                                         FROM sc_receipt_income receipt
+                                        WHERE receipt.id = request.terminal_cash_source_res_id
+                                          AND receipt.payment_request_id = request.id
+                                          AND receipt.treasury_ledger_id = ledger.id
+                                          AND receipt.state IN ('received', 'legacy_confirmed')
+                                          AND receipt.finance_identity_state IN (
+                                              'normalized', 'legacy_observed_identity'
+                                          )
+                                          AND receipt.project_id = request.project_id
+                                          AND receipt.company_id = request.company_id
+                                          AND receipt.partner_id = request.partner_id
+                                          AND receipt.currency_id = request.currency_id
+                                          AND receipt.contract_id IS NOT DISTINCT FROM request.contract_id
+                                   )
+                               )
+                               OR (
+                                   request.terminal_cash_source_model = 'sc.expense.claim'
+                                   AND EXISTS (
+                                       SELECT 1
+                                         FROM sc_expense_claim expense
+                                        WHERE expense.id = request.terminal_cash_source_res_id
+                                          AND expense.payment_request_id = request.id
+                                          AND expense.state IN ('done', 'legacy_confirmed')
+                                          AND expense.finance_identity_state IN (
+                                              'normalized', 'legacy_observed_identity'
+                                          )
+                                          AND expense.financial_flow = 'cash_in'
+                                          AND expense.project_id = request.project_id
+                                          AND expense.company_id = request.company_id
+                                          AND expense.partner_id = request.partner_id
+                                          AND expense.currency_id = request.currency_id
+                                   )
+                               )
+                           ),
+                           FALSE
+                       ) AS is_canonical
+                  FROM payment_request request
+                  JOIN sc_treasury_ledger ledger
+                    ON ledger.payment_request_id = request.id
+                 WHERE request.id IN %s
+                   AND request.type = 'receive'
+            )
+            SELECT request_id,
+                   COALESCE(SUM(amount) FILTER (WHERE is_canonical), 0),
+                   COALESCE(BOOL_OR(is_posted AND NOT is_canonical), FALSE)
+              FROM evaluated
+             GROUP BY request_id
+            """,
+            [tuple(request_ids)],
+        )
+        return {
+            request_id: {
+                "amount": amount or 0.0,
+                "has_ambiguous_posted_history": bool(has_ambiguous_posted_history),
+            }
+            for request_id, amount, has_ambiguous_posted_history in self.env.cr.fetchall()
+        }
+
     @api.depends(
         "ledger_line_ids.amount",
         "ledger_line_ids.currency_id",
         "ledger_line_ids.state",
+        "ledger_line_ids.normalization_state",
         "amount",
         "currency_id",
     )
     def _compute_payment_totals(self):
-        paid_map = {}
-        if self.ids:
-            data = self.env["payment.ledger"].read_group(
-                [("payment_request_id", "in", self.ids), ("state", "=", "posted")],
-                ["amount:sum"],
-                ["payment_request_id"],
-            )
-            for rec in data:
-                req_id = rec["payment_request_id"][0]
-                paid_map[req_id] = rec.get("amount_sum", rec.get("amount", 0.0)) or 0.0
+        paid_map = self._canonical_payment_paid_amount_map()
         for req in self:
             paid_total = paid_map.get(req.id, 0.0)
             req.paid_amount_total = paid_total
@@ -2085,16 +2319,30 @@ class PaymentRequest(models.Model):
             req.is_fully_paid = float_compare(unpaid, 0.0, precision_rounding=rounding) <= 0
 
     def _check_can_done(self):
+        pay_requests = self.filtered(lambda request: request.type == "pay")
+        pay_requests._assert_unambiguous_posted_payment_history()
+        pay_amounts = pay_requests._canonical_payment_paid_amount_map()
+        receive_requests = self - pay_requests
+        receive_cash_state = receive_requests._receive_cash_authority_state_map()
+        ambiguous_receive_requests = receive_requests.filtered(
+            lambda request: receive_cash_state.get(request.id, {}).get(
+                "has_ambiguous_posted_history"
+            )
+        )
+        if ambiguous_receive_requests:
+            raise UserError(
+                _("收款申请存在身份待确认或身份冲突的已入账资金事实，必须先审计处置，禁止结清：%s")
+                % ", ".join(ambiguous_receive_requests.mapped("display_name"))
+            )
         for rec in self:
             if rec.state != "approved":
                 raise ValidationError(_("仅已批准的付款申请可以完成。"))
             rounding = rec.currency_id.rounding if rec.currency_id else 0.01
-            ledger_model = "sc.treasury.ledger" if rec.type == "receive" else "payment.ledger"
-            domain = [("payment_request_id", "=", rec.id)]
-            if ledger_model == "payment.ledger":
-                domain.append(("state", "=", "posted"))
-            data = self.env[ledger_model].read_group(domain, ["amount:sum"], [])
-            paid_total = data[0].get("amount_sum", data[0].get("amount", 0.0)) if data else 0.0
+            paid_total = (
+                pay_amounts.get(rec.id, 0.0)
+                if rec.type == "pay"
+                else receive_cash_state.get(rec.id, {}).get("amount", 0.0)
+            )
             unpaid = (rec.amount or 0.0) - paid_total
             if float_compare(unpaid, 0.0, precision_rounding=rounding) == 1:
                 raise ValidationError(_("付款/收款未结清，无法完成。"))
@@ -2622,6 +2870,12 @@ class PaymentRequest(models.Model):
                         "付款申请必须通过专业付款登记完成实付；请生成付款登记，完成审批、付款账户确认和已付款登记。"
                     )
                 )
+            if rec.type == "receive":
+                raise UserError(
+                    _(
+                        "收款申请必须通过专业收款登记完成入账；请生成收款登记并由财务执行“登记收款”。"
+                    )
+                )
             approved_reviews = rec.review_ids.filtered(lambda review: review.status == "approved")
             open_reviews = rec.review_ids.filtered(
                 lambda review: review.status not in ("approved", "rejected")
@@ -2649,8 +2903,6 @@ class PaymentRequest(models.Model):
             )
         for rec in self:
             before = rec._snapshot_audit_payload()
-            if rec.type == "receive":
-                rec.with_context(payment_soft_gate=True)._ensure_treasury_ledger(note="auto:payment_request_done")
             rec.with_context(allow_transition=True, payment_soft_gate=True).write({"state": "done"})
             after = rec._snapshot_audit_payload()
             rec._audit_transition("payment_paid", before, after, action_name="action_done")
@@ -2663,10 +2915,12 @@ class PaymentRequest(models.Model):
             or self.env.user.has_group("smart_construction_core.group_sc_cap_finance_manager")
         ):
             raise AccessError(_("你没有通过付款执行生成付款台账的能力。"))
-        Ledger = self.env["payment.ledger"].sudo().with_context(
-            _sc_payment_ledger_internal_create=True,
+        Ledger = self.env["payment.ledger"].with_context(
             payment_soft_gate=bool(self.env.context.get("payment_soft_gate")),
         )
+        self.env.cr.execute("SELECT id FROM payment_request WHERE id = %s FOR UPDATE", [self.id])
+        self.invalidate_recordset()
+        self._assert_unambiguous_posted_payment_history()
         existing_domain = [("payment_request_id", "=", self.id), ("state", "=", "posted")]
         if execution:
             if execution.payment_request_id != self:
@@ -2687,16 +2941,152 @@ class PaymentRequest(models.Model):
             vals["ref"] = ref
         if note:
             vals["note"] = note
-        return Ledger.create(vals)
+        return Ledger._create_authoritative(vals)
+
+    def _claim_terminal_cash_source(self, source):
+        """Serialize and reserve one request for exactly one terminal cash source."""
+        self.ensure_one()
+        source.ensure_one()
+        self.env.cr.execute("SELECT id FROM payment_request WHERE id = %s FOR UPDATE", [self.id])
+        self.invalidate_recordset(
+            [
+                "state",
+                "company_id",
+                "currency_id",
+                "project_id",
+                "partner_id",
+                "terminal_cash_source_model",
+                "terminal_cash_source_res_id",
+            ]
+        )
+        identity_errors = self._terminal_cash_source_identity_errors(source)
+        if identity_errors:
+            raise UserError(_("现金来源不能认领付款/收款申请：%s") % "；".join(identity_errors))
+        source_res_id = source.id if isinstance(source.id, int) else 0
+        if self.terminal_cash_source_model:
+            same_bound_source = (
+                self.terminal_cash_source_model == source._name
+                and source_res_id > 0
+                and self.terminal_cash_source_res_id == source_res_id
+            )
+            if same_bound_source:
+                return True
+            raise UserError(_("同一付款/收款申请只能归属于一张终态现金来源单据。"))
+        terminal_sources = (
+            (
+                "sc.receipt.income",
+                [("state", "in", ("received", "legacy_confirmed"))],
+            ),
+            (
+                "sc.expense.claim",
+                [
+                    ("state", "in", ("done", "legacy_confirmed")),
+                    ("financial_flow", "in", ("cash_in", "cash_out")),
+                ],
+            ),
+        )
+        for model_name, terminal_domain in terminal_sources:
+            domain = [("payment_request_id", "=", self.id)] + terminal_domain
+            if source._name == model_name and isinstance(source.id, int):
+                domain.append(("id", "!=", source.id))
+            if self.env[model_name].sudo().search_count(domain):
+                raise UserError(_("同一付款/收款申请只能归属于一张终态现金来源单据。"))
+        if self.state == "done" and source.source_origin != "legacy":
+            raise UserError(_("付款/收款申请已由其他办理链完成，不能再次认领现金事实。"))
+        self.with_context(
+            _sc_terminal_cash_source_claim_token=_TERMINAL_CASH_SOURCE_CLAIM_TOKEN
+        ).write(
+            {
+                "terminal_cash_source_model": source._name,
+                "terminal_cash_source_res_id": source_res_id,
+            }
+        )
+        self.flush_recordset(
+            ["terminal_cash_source_model", "terminal_cash_source_res_id"]
+        )
+        return True
+
+    def _terminal_cash_source_identity_errors(self, source):
+        """Return exact semantic-identity gaps for a terminal cash-source claim.
+
+        This predicate is deliberately stricter than the source document's
+        general validity checks.  Claiming a request creates an immutable cash
+        ownership relation, so missing identity is quarantined instead of
+        inferred from whichever side happens to be populated.
+        """
+        self.ensure_one()
+        source.ensure_one()
+        errors = []
+        supported_models = {"sc.receipt.income", "sc.expense.claim"}
+        if source._name not in supported_models:
+            return [_('不支持的现金来源模型“%s”') % source._name]
+        if not source.project_id or source.project_id != self.project_id:
+            errors.append(_("项目不一致或缺失"))
+        if not source.company_id or source.company_id != self.company_id:
+            errors.append(_("公司不一致或缺失"))
+        if not source.currency_id or source.currency_id != self.currency_id:
+            errors.append(_("币种不一致或缺失"))
+        if not source.partner_id or not self.partner_id or source.partner_id != self.partner_id:
+            errors.append(_("往来单位不一致或缺失"))
+        if source._name == "sc.receipt.income":
+            if self.type != "receive":
+                errors.append(_("收款登记只能认领收款申请"))
+            if not source.contract_id or not self.contract_id or source.contract_id != self.contract_id:
+                errors.append(_("收款合同不一致或缺失"))
+        else:
+            expected_type = source._expected_payment_request_type()
+            if source.financial_flow not in {"cash_in", "cash_out"}:
+                errors.append(_("费用来源不是受支持的现金流入或流出事实"))
+            if expected_type not in {"receive", "pay"} or expected_type != self.type:
+                errors.append(_("费用资金方向与申请类型不一致"))
+        return errors
+
+    def _bind_terminal_cash_source(self, source):
+        """Replace an in-transaction reservation with its immutable source id."""
+        self.ensure_one()
+        source.ensure_one()
+        if not isinstance(source.id, int):
+            raise UserError(_("终态现金来源必须先持久化后才能完成绑定。"))
+        self.env.cr.execute("SELECT id FROM payment_request WHERE id = %s FOR UPDATE", [self.id])
+        self.invalidate_recordset(
+            ["terminal_cash_source_model", "terminal_cash_source_res_id"]
+        )
+        if self.terminal_cash_source_model != source._name:
+            raise UserError(_("终态现金来源模型与申请认领记录不一致。"))
+        if self.terminal_cash_source_res_id not in (0, source.id):
+            raise UserError(_("同一付款/收款申请只能绑定一张终态现金来源单据。"))
+        if self.terminal_cash_source_res_id == source.id:
+            return True
+        self.with_context(
+            _sc_terminal_cash_source_claim_token=_TERMINAL_CASH_SOURCE_CLAIM_TOKEN
+        ).write({"terminal_cash_source_res_id": source.id})
+        self.flush_recordset(["terminal_cash_source_res_id"])
+        return True
 
     def _ensure_treasury_ledger(self, amount=None, date=None, note=None):
         self.ensure_one()
         if self.type != "receive":
             raise UserError(_("只有收款申请可以生成收入资金台账。"))
-        Ledger = self.env["sc.treasury.ledger"].with_context(allow_ledger_auto=True)
+        Ledger = self.env["sc.treasury.ledger"]
         existing = Ledger.search([("payment_request_id", "=", self.id)], limit=1)
         if existing:
-            return existing
+            return existing._assert_authoritative_match(
+                {
+                    "date": date or existing.date or fields.Date.context_today(self),
+                    "project_id": self.project_id.id,
+                    "company_id": self.company_id.id,
+                    "partner_id": self.partner_id.id,
+                    "settlement_id": self.settlement_id.id or False,
+                    "payment_request_id": self.id,
+                    "direction": "in",
+                    "amount": amount if amount is not None else (self.amount or 0.0),
+                    "currency_id": self.currency_id.id,
+                    "normalization_state": "normalized",
+                    "state": "posted",
+                    "source_model": self._name,
+                    "source_res_id": self.id,
+                }
+            )
         partner = self.partner_id
         if not partner:
             raise UserError(_("收款申请未选择往来单位，不能生成资金台账。"))
@@ -2706,12 +3096,14 @@ class PaymentRequest(models.Model):
             "partner_id": partner.id,
             "settlement_id": self.settlement_id.id or False,
             "payment_request_id": self.id,
+            "source_model": self._name,
+            "source_res_id": self.id,
             "direction": "in",
             "amount": amount if amount is not None else (self.amount or 0.0),
             "currency_id": self.currency_id.id,
             "note": note,
         }
-        return Ledger.create(vals)
+        return Ledger._create_authoritative(vals)
 
     def action_cancel(self):
         has_finance_cancel_access = self.env.user.has_group("smart_construction_core.group_sc_cap_finance_manager")

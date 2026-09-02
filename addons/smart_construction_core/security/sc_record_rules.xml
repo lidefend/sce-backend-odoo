@@ -824,6 +824,17 @@
              - read/user: 仅限负责或关注的项目
              - manager: 仅限允许公司
         ========================================================== -->
+        <record id="rule_payment_ledger_company" model="ir.rule">
+            <field name="name">Payment Ledger - frozen allowed company</field>
+            <field name="model_id" ref="model_payment_ledger"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
         <record id="rule_sc_finance_read_payment_ledger" model="ir.rule">
             <field name="name">SC Finance Read - payment.ledger by project member</field>
             <field name="model_id" ref="model_payment_ledger"/>
@@ -849,7 +860,7 @@
         <record id="rule_sc_finance_manager_payment_ledger" model="ir.rule">
             <field name="name">SC Finance Manager - payment.ledger by request allowed company</field>
             <field name="model_id" ref="model_payment_ledger"/>
-            <field name="domain_force">['|', ('payment_request_id.company_id', '=', False), ('payment_request_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -860,7 +871,7 @@
         <record id="rule_payment_ledger_allocation_company" model="ir.rule">
             <field name="name">Payment Ledger Allocation - allowed company</field>
             <field name="model_id" ref="model_payment_ledger_allocation"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="False"/>
@@ -893,7 +904,7 @@
         <record id="rule_sc_finance_manager_payment_ledger_allocation" model="ir.rule">
             <field name="name">SC Finance Manager - payment ledger allocation allowed companies</field>
             <field name="model_id" ref="model_payment_ledger_allocation"/>
-            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="False"/>
             <field name="perm_create" eval="False"/>

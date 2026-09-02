@@ -434,11 +434,38 @@ def classify_projection_semantic_modes(
     ):
         return ["runtime_workbench_fact"]
 
-    controlled_ledger_markers = (
-        "_sc_payment_ledger_internal_create",
-        "_sc_payment_ledger_allocation_build",
-        "allow_ledger_auto",
-        "_ensure_period_unlocked",
+    guarded_tokens = set(re.findall(r"is not\s+(_[A-Z0-9_]+AUTHORITY_TOKEN)", class_source))
+    injected_tokens = set(
+        re.findall(
+            r"with_context\([^)]*=\s*(_[A-Z0-9_]+AUTHORITY_TOKEN)",
+            class_source,
+            flags=re.DOTALL,
+        )
+    )
+    has_unforgeable_authority_factory = (
+        "def _create_authoritative" in class_source
+        and bool(guarded_tokens & injected_tokens)
+        and "def write" in class_source
+        and "def unlink" in class_source
+    )
+    guarded_service_tokens = set(
+        re.findall(
+            r"context\.get\([^)]*\)\s+is\s+(?:self\.)?(_[A-Z0-9_]+SERVICE_TOKEN)",
+            class_source,
+        )
+    )
+    injected_service_tokens = set(
+        re.findall(
+            r"with_context\([\s\S]{0,240}?(?:self\.)?(_[A-Z0-9_]+SERVICE_TOKEN)",
+            class_source,
+        )
+    )
+    has_unforgeable_service_factory = (
+        bool(guarded_service_tokens & injected_service_tokens)
+        and class_source.count("_is_generated_service_call()") >= 3
+        and "def create" in class_source
+        and "def write" in class_source
+        and "def unlink" in class_source
     )
     ledger_source_identity = has_source_identity or {
         "source_model",
@@ -450,7 +477,10 @@ def classify_projection_semantic_modes(
         and "ledger" in model_name
         and ledger_source_identity
         and "def create" in class_source
-        and any(marker in class_source for marker in controlled_ledger_markers)
+        and (
+            has_unforgeable_authority_factory
+            or has_unforgeable_service_factory
+        )
     ):
         return ["controlled_generated_ledger"]
 

@@ -5,6 +5,8 @@ from odoo.tools.float_utils import float_compare
 
 from ..support.state_guard import raise_guard
 
+_TAX_FACT_AUTHORITY_TOKEN = object()
+
 
 class ScTaxDeductionRegistration(models.Model):
     _name = "sc.tax.deduction.registration"
@@ -59,10 +61,20 @@ class ScTaxDeductionRegistration(models.Model):
     company_id = fields.Many2one(
         "res.company",
         string="公司",
-        related="project_id.company_id",
-        store=True,
         readonly=True,
         index=True,
+    )
+    finance_identity_state = fields.Selection(
+        [
+            ("normalized", "标准事实"),
+            ("legacy_observed_identity", "历史冻结身份"),
+            ("legacy_unresolved_identity", "历史身份待确认"),
+        ],
+        required=True,
+        default="normalized",
+        readonly=True,
+        index=True,
+        string="财务身份状态",
     )
     operation_strategy = fields.Selection(
         related="project_id.operation_strategy",
@@ -177,6 +189,11 @@ class ScTaxDeductionRegistration(models.Model):
 
     _sql_constraints = [
         (
+            "finance_normalized_identity_present",
+            "CHECK(finance_identity_state != 'normalized' OR (project_id IS NOT NULL AND company_id IS NOT NULL AND currency_id IS NOT NULL))",
+            "标准抵扣事实必须固化项目、公司与币种身份。",
+        ),
+        (
             "legacy_source_unique",
             "unique(legacy_source_model, legacy_record_id)",
             "历史扣税登记来源记录必须唯一。",
@@ -238,15 +255,27 @@ class ScTaxDeductionRegistration(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         seq = self.env["ir.sequence"]
+        legacy_authority = self.env.context.get("sc_tax_fact_authority_token") is _TAX_FACT_AUTHORITY_TOKEN
         for vals in vals_list:
+            if vals.get("source_origin") == "legacy" and not legacy_authority:
+                raise UserError(_("历史抵扣事实只能由受治理迁移载体创建。"))
+            if vals.get("state") in {"deducted", "legacy_confirmed"} and not legacy_authority:
+                raise UserError(_("新系统抵扣登记不能直接创建为已抵扣，必须执行正式抵扣动作。"))
+            project_id = self._context_project_id()
+            if project_id:
+                vals.setdefault("project_id", project_id)
+            project = self.env["project.project"].browse(vals.get("project_id")).exists()
+            if not project or not project.company_id:
+                raise UserError(_("抵扣登记必须关联已归属公司的有效项目。"))
+            if vals.get("company_id") and vals["company_id"] != project.company_id.id:
+                raise UserError(_("抵扣登记公司必须与项目公司一致。"))
+            vals["company_id"] = project.company_id.id
+            vals["finance_identity_state"] = vals.get("finance_identity_state") if legacy_authority else "normalized"
             category_code = self.env.context.get("default_business_category_code") or self.env.context.get(
                 "current_business_category_code"
             )
             if category_code == "tax.deduction.project_special":
                 vals["deduction_scope"] = "project_special"
-            project_id = self._context_project_id()
-            if project_id:
-                vals.setdefault("project_id", project_id)
             if vals.get("project_id"):
                 self._require_visible_company_project(vals["project_id"])
             partner_id = self._context_partner_id()
@@ -289,6 +318,20 @@ class ScTaxDeductionRegistration(models.Model):
             if vals.get("name", "新建") == "新建":
                 vals["name"] = seq.next_by_code("sc.tax.deduction.registration") or _("Tax Deduction")
         return super().create(vals_list)
+
+    @api.model
+    def _create_legacy_authoritative(self, vals):
+        values = dict(vals, source_origin="legacy")
+        project = self.env["project.project"].browse(values.get("project_id")).exists()
+        evidence_complete = bool(
+            project
+            and values.get("company_id") == project.company_id.id
+            and values.get("currency_id")
+        )
+        values["finance_identity_state"] = (
+            "legacy_observed_identity" if evidence_complete else "legacy_unresolved_identity"
+        )
+        return self.with_context(sc_tax_fact_authority_token=_TAX_FACT_AUTHORITY_TOKEN).create(values)
 
     def _resolve_business_category_id(self, vals):
         code = self.env.context.get("default_business_category_code") or self.env.context.get(
@@ -422,8 +465,22 @@ class ScTaxDeductionRegistration(models.Model):
         return set()
 
     def write(self, vals):
+        authoritative = self.env.context.get("sc_tax_fact_authority_token") is _TAX_FACT_AUTHORITY_TOKEN
+        if not authoritative and (vals.get("state") in {"deducted", "legacy_confirmed"} or "finance_identity_state" in vals):
+            raise UserError(_("抵扣终态及财务身份只能由正式业务动作或迁移写入。"))
+        terminal_business_fields = {
+            "project_id", "company_id", "currency_id", "partner_id", "business_category_id",
+            "document_date", "deduction_confirm_date", "deduction_amount", "deduction_tax_amount",
+            "deduction_surcharge_amount", "withholding_amount", "is_transfer_out", "active",
+        }
+        if any(rec.state in {"deducted", "legacy_confirmed"} for rec in self) and not authoritative:
+            if set(vals) & terminal_business_fields:
+                raise UserError(_("已抵扣事实不可改写经济身份、金额、关联或有效性。"))
         if vals.get("project_id"):
-            self._require_visible_company_project(vals["project_id"])
+            project = self._require_visible_company_project(vals["project_id"])
+            if not project.company_id:
+                raise UserError(_("抵扣登记项目必须归属公司。"))
+            vals = dict(vals, company_id=project.company_id.id)
         if any(rec.source_origin == "legacy" and rec.state == "legacy_confirmed" for rec in self):
             allowed = {
                 "partner_id",
@@ -441,6 +498,11 @@ class ScTaxDeductionRegistration(models.Model):
             if set(vals) - allowed:
                 raise UserError(_("历史迁移抵扣登记已确认，只允许补充往来单位和备注。"))
         return super().write(vals)
+
+    def _write_finance_authority(self, vals):
+        result = self.with_context(sc_tax_fact_authority_token=_TAX_FACT_AUTHORITY_TOKEN).write(vals)
+        self.flush_recordset(list(vals))
+        return result
 
     def action_confirm(self):
         for rec in self:
@@ -472,7 +534,7 @@ class ScTaxDeductionRegistration(models.Model):
                 rec.write(vals)
             rec._check_deduct_ready()
             rec._check_company_contractor_deduction_responsibility_or_raise()
-            rec.write({"state": "deducted"})
+            rec._write_finance_authority({"state": "deducted"})
             rec._audit_transition(
                 "tax_deduction_deducted",
                 before,
@@ -489,6 +551,10 @@ class ScTaxDeductionRegistration(models.Model):
 
     def _check_deduct_ready(self):
         for rec in self:
+            if rec.source_origin != "legacy" and (
+                rec.finance_identity_state != "normalized" or rec.company_id != rec.project_id.company_id
+            ):
+                raise UserError(_("抵扣登记财务身份已失配，请重建草稿后再办理。"))
             if not rec.invoice_no:
                 raise UserError(_("请先填写发票号码后再确认抵扣。"))
             if not rec.deduction_confirm_date:

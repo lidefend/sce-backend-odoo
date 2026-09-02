@@ -600,9 +600,20 @@ class ScFundAccountOperation(models.Model):
                     "note": note,
                 }
                 if existing:
-                    existing.sudo().write(vals)
+                    existing.sudo()._assert_authoritative_match(
+                        dict(
+                            vals,
+                            project_id=project.id,
+                            company_id=project.company_id.id,
+                            direction=direction,
+                            normalization_state="normalized",
+                            source_kind="daily_line",
+                            source_model=rec._name,
+                            source_res_id=rec.id,
+                        )
+                    )
                     continue
-                Ledger.sudo().with_context(allow_ledger_auto=True).create(
+                Ledger.sudo()._create_authoritative(
                     dict(
                         vals,
                         project_id=project.id,

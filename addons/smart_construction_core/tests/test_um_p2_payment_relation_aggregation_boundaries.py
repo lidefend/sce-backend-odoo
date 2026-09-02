@@ -38,7 +38,7 @@ class TestUmP2PaymentRelationAggregationBoundaries(unittest.TestCase):
         return ast.get_source_segment(self.source, self.execution_methods[name])
 
     def test_basis_set_is_built_before_unique_contract_selection(self):
-        source = self._source("_payment_basis_contracts")
+        source = self._source("_payment_basis_contracts_map")
         self.assertIn('"payment.request.line"', source)
         self.assertIn('"settlement_id"', source)
         self.assertIn('"contract_id"', source)
@@ -48,8 +48,8 @@ class TestUmP2PaymentRelationAggregationBoundaries(unittest.TestCase):
         self.assertIn("多合同付款申请不得压缩到单值合同字段", source)
 
     def test_detail_set_is_authoritative_and_header_conflicts_fail(self):
-        source = self._source("_payment_basis_contracts")
-        self.assertIn("if lines:", source)
+        source = self._source("_payment_basis_contracts_map")
+        self.assertIn("if request_lines:", source)
         self.assertIn("request.material_settlement_id", source)
         self.assertIn("request.settlement_id.id not in line_settlement_ids", source)
         self.assertNotIn("sorted(", source)
@@ -57,7 +57,7 @@ class TestUmP2PaymentRelationAggregationBoundaries(unittest.TestCase):
         self.assertNotIn("limit=1", source)
 
     def test_explicit_request_contract_is_a_valid_standalone_basis(self):
-        source = self._source("_payment_basis_contracts")
+        source = self._source("_payment_basis_contracts_map")
         self.assertIn("if not contracts:", source)
         self.assertIn("contracts |= request_contract", source)
         self.assertIn("if request_contract != contracts:", source)
@@ -82,14 +82,29 @@ class TestUmP2PaymentRelationAggregationBoundaries(unittest.TestCase):
 
     def test_all_business_relation_reads_are_caller_scoped_searches(self):
         helper = self._source("_caller_visible_payment_relation")
+        batch_helper = self._source("_caller_visible_payment_relations")
         combined = (
-            self._source("_payment_basis_contracts")
+            self._source("_payment_basis_contracts_map")
+            + self._source("_payment_basis_contracts")
             + self._source("_normalize_payment_relation_values")
             + self._source("create")
         )
         self.assertIn("self.env[model_name].search(", helper)
         for forbidden in (".sudo(", ".browse(", ".exists(", "ilike", "name_search"):
-            self.assertNotIn(forbidden, helper + combined)
+            self.assertNotIn(forbidden, helper + batch_helper + combined)
+
+    def test_batch_basis_resolution_uses_one_search_per_relation_model(self):
+        source = self._source("_payment_basis_contracts_map")
+        self.assertIn('("request_id", "in", requests.ids)', source)
+        self.assertEqual(source.count('"payment.request.line"].search('), 1)
+        for model_name in (
+            "sc.settlement.order",
+            "sc.material.settlement",
+            "construction.contract",
+        ):
+            self.assertIn(f'"{model_name}"', source)
+        self.assertEqual(source.count("self._caller_visible_payment_relations("), 3)
+        self.assertNotIn("_caller_visible_payment_relation(", source)
 
     def test_request_and_line_mutations_revalidate_linked_executions(self):
         request_constraint = ast.get_source_segment(

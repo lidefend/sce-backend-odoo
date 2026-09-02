@@ -10,6 +10,10 @@ class ScContractExecutionPosition(models.Model):
     _description = "合同执行态势"
     _auto = False
     _order = "company_id, project_id, type, contract_id"
+    _sc_readonly_navigation_button_methods = {
+        "action_open_execution_source_contract",
+        "action_open_cash_evidence",
+    }
 
     contract_id = fields.Many2one("construction.contract", string="合同", readonly=True, index=True)
     subject = fields.Char(string="合同标题", readonly=True)
@@ -57,18 +61,53 @@ class ScContractExecutionPosition(models.Model):
                        AND state IN ('registered', 'legacy_confirmed')
                      GROUP BY contract_id, direction
                 ), receipt AS (
-                    SELECT contract_id, SUM(amount)::numeric AS amount
-                      FROM sc_receipt_income
-                     WHERE contract_id IS NOT NULL
-                       AND state IN ('received', 'legacy_confirmed')
-                     GROUP BY contract_id
+                    SELECT request.contract_id, SUM(ledger.amount)::numeric AS amount
+                      FROM sc_treasury_ledger ledger
+                      JOIN payment_request request ON request.id = ledger.payment_request_id
+                      JOIN construction_contract contract ON contract.id = request.contract_id
+                      JOIN sc_receipt_income receipt
+                        ON receipt.payment_request_id = request.id
+                       AND receipt.treasury_ledger_id = ledger.id
+                     WHERE request.contract_id IS NOT NULL
+                       AND ledger.state = 'posted'
+                       AND ledger.direction = 'in'
+                       AND ledger.normalization_state IN ('normalized', 'legacy_observed_identity')
+                       AND ledger.source_model = 'payment.request'
+                       AND ledger.source_res_id = request.id
+                       AND ledger.project_id = contract.project_id
+                       AND ledger.company_id = contract.company_id
+                       AND ledger.currency_id = contract.currency_id
+                       AND ledger.partner_id = contract.partner_id
+                       AND request.project_id = contract.project_id
+                       AND request.company_id = contract.company_id
+                       AND request.currency_id = contract.currency_id
+                       AND request.partner_id = contract.partner_id
+                       AND request.terminal_cash_source_model = 'sc.receipt.income'
+                       AND request.terminal_cash_source_res_id = receipt.id
+                       AND receipt.contract_id = contract.id
+                       AND receipt.state IN ('received', 'legacy_confirmed')
+                       AND receipt.finance_identity_state IN ('normalized', 'legacy_observed_identity')
+                       AND receipt.project_id = contract.project_id
+                       AND receipt.company_id = contract.company_id
+                       AND receipt.currency_id = contract.currency_id
+                       AND receipt.partner_id = contract.partner_id
+                     GROUP BY request.contract_id
                 ), payment AS (
                     SELECT a.contract_id, SUM(a.allocated_amount)::numeric AS amount
                       FROM payment_ledger_allocation a
                       JOIN payment_ledger l ON l.id = a.ledger_id
+                      JOIN construction_contract contract ON contract.id = a.contract_id
                      WHERE a.contract_id IS NOT NULL
                        AND a.allocation_state = 'allocated'
+                       AND a.normalization_state IN ('normalized', 'legacy_observed_identity')
                        AND l.state = 'posted'
+                       AND l.normalization_state IN ('normalized', 'legacy_observed_identity')
+                       AND a.project_id = contract.project_id
+                       AND a.company_id = contract.company_id
+                       AND a.currency_id = contract.currency_id
+                       AND l.project_id = contract.project_id
+                       AND l.company_id = contract.company_id
+                       AND l.currency_id = contract.currency_id
                      GROUP BY a.contract_id
                 ), position AS (
                     SELECT c.id,
@@ -109,6 +148,56 @@ class ScContractExecutionPosition(models.Model):
     def action_open_execution_source_contract(self):
         self.ensure_one()
         return self.contract_id.action_open_execution_source_contract()
+
+    def action_open_cash_evidence(self):
+        self.ensure_one()
+        identity = [
+            ("project_id", "=", self.project_id.id),
+            ("currency_id", "=", self.currency_id.id),
+        ]
+        if self.type == "out":
+            return {
+                "type": "ir.actions.act_window",
+                "name": _("合同收款资金证据"),
+                "res_model": "sc.treasury.ledger",
+                "view_mode": "tree,form",
+                "domain": identity
+                + [
+                    ("company_id", "=", self.company_id.id),
+                    ("payment_request_id.contract_id", "=", self.contract_id.id),
+                    ("payment_request_id.type", "=", "receive"),
+                    ("payment_request_id.partner_id", "=", self.partner_id.id),
+                    ("payment_request_id.terminal_cash_source_model", "=", "sc.receipt.income"),
+                    ("source_model", "=", "payment.request"),
+                    ("direction", "=", "in"),
+                    ("state", "=", "posted"),
+                    ("normalization_state", "in", ("normalized", "legacy_observed_identity")),
+                ],
+                "context": {"create": False, "edit": False, "delete": False},
+            }
+        allocation_tree = self.env.ref(
+            "smart_construction_core.view_payment_ledger_allocation_evidence_tree"
+        )
+        allocation_form = self.env.ref(
+            "smart_construction_core.view_payment_ledger_allocation_evidence_form"
+        )
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("合同付款分配证据"),
+            "res_model": "payment.ledger.allocation",
+            "view_mode": "tree,form",
+            "views": [(allocation_tree.id, "tree"), (allocation_form.id, "form")],
+            "domain": identity
+            + [
+                ("company_id", "=", self.company_id.id),
+                ("contract_id", "=", self.contract_id.id),
+                ("allocation_state", "=", "allocated"),
+                ("normalization_state", "in", ("normalized", "legacy_observed_identity")),
+                ("ledger_id.state", "=", "posted"),
+                ("ledger_id.normalization_state", "in", ("normalized", "legacy_observed_identity")),
+            ],
+            "context": {"create": False, "edit": False, "delete": False},
+        }
 
     @api.model_create_multi
     def create(self, vals_list):

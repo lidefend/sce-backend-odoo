@@ -229,59 +229,181 @@ def compute_settlement_reservable_excluding_request(payment_rec, settlement, cur
 
 
 def settlement_actual_paid_amount_map(env, settlement_ids: Iterable[int]) -> Dict[int, float]:
-    """Aggregate actual paid amounts using payment.ledger as the only fact."""
-    ids = list(settlement_ids)
+    """Aggregate immutable settlement allocations backed by canonical cash facts."""
+    ids = list(dict.fromkeys(settlement_ids))
     if not ids:
         return {}
-    ledgers = env["payment.ledger"].sudo().search(
+    env["payment.ledger.allocation"].flush_model(
         [
-            ("state", "=", "posted"),
-            "|",
-            ("payment_request_id.settlement_id", "in", ids),
-            ("payment_request_id.outflow_line_ids.settlement_id", "in", ids),
+            "settlement_id", "ledger_id", "allocated_amount", "allocation_state",
+            "project_id", "company_id", "currency_id", "normalization_state",
         ]
     )
-    result: Dict[int, float] = {}
-    for ledger in ledgers:
-        request = ledger.payment_request_id
-        if request.settlement_id and request.settlement_id.id in ids:
-            ensure_payment_settlement_currency_consistency(request, request.settlement_id)
-            sid = request.settlement_id.id
-            result[sid] = result.get(sid, 0.0) + (ledger.amount or 0.0)
-            continue
-        lines = request.outflow_line_ids.filtered(lambda line: line.settlement_id and line.settlement_id.id in ids)
-        allocation_total = sum(request.outflow_line_ids.mapped("current_pay_amount"))
-        if not allocation_total:
-            continue
-        for line in lines:
-            ensure_payment_settlement_currency_consistency(request, line.settlement_id)
-            sid = line.settlement_id.id
-            allocated = (ledger.amount or 0.0) * (line.current_pay_amount or 0.0) / allocation_total
-            result[sid] = result.get(sid, 0.0) + allocated
-    return result
+    env["payment.ledger"].flush_model(
+        ["state", "project_id", "company_id", "currency_id", "normalization_state"]
+    )
+    env["sc.settlement.order"].flush_model(
+        ["project_id", "company_id", "currency_id"]
+    )
+    env.cr.execute(
+        """
+        SELECT allocation.settlement_id, SUM(allocation.allocated_amount)
+          FROM payment_ledger_allocation allocation
+          JOIN payment_ledger ledger ON ledger.id = allocation.ledger_id
+          JOIN sc_settlement_order settlement ON settlement.id = allocation.settlement_id
+         WHERE allocation.settlement_id IN %s
+           AND allocation.allocation_state = 'allocated'
+           AND allocation.normalization_state IN ('normalized', 'legacy_observed_identity')
+           AND ledger.state = 'posted'
+           AND ledger.normalization_state IN ('normalized', 'legacy_observed_identity')
+           AND allocation.project_id = ledger.project_id
+           AND allocation.company_id = ledger.company_id
+           AND allocation.currency_id = ledger.currency_id
+           AND allocation.project_id = settlement.project_id
+           AND allocation.company_id = settlement.company_id
+           AND allocation.currency_id = settlement.currency_id
+         GROUP BY allocation.settlement_id
+        """,
+        [tuple(ids)],
+    )
+    return {settlement_id: amount or 0.0 for settlement_id, amount in env.cr.fetchall()}
 
 
 def contract_actual_paid_amount_map(env, contract_ids: Iterable[int]) -> Dict[int, float]:
-    """Aggregate posted actual-payment allocation facts by contract."""
-    ids = list(contract_ids)
+    """Aggregate posted actual-payment allocations on their frozen identity slice."""
+    ids = list(dict.fromkeys(contract_ids))
     if not ids:
         return {}
-    rows = env["payment.ledger.allocation"].sudo().read_group(
+    env["payment.ledger.allocation"].flush_model(
         [
-            ("contract_id", "in", ids),
-            ("allocation_state", "=", "allocated"),
-            ("ledger_id.state", "=", "posted"),
-        ],
-        ["allocated_amount:sum"],
-        ["contract_id"],
+            "ledger_id",
+            "contract_id",
+            "project_id",
+            "company_id",
+            "currency_id",
+            "allocated_amount",
+            "allocation_state",
+            "normalization_state",
+        ]
+    )
+    env["payment.ledger"].flush_model(
+        ["state", "normalization_state", "project_id", "company_id", "currency_id"]
+    )
+    env["construction.contract"].flush_model(
+        ["project_id", "company_id", "currency_id"]
+    )
+    env.cr.execute(
+        """
+        SELECT allocation.contract_id, SUM(allocation.allocated_amount)::numeric
+          FROM payment_ledger_allocation allocation
+          JOIN payment_ledger ledger ON ledger.id = allocation.ledger_id
+          JOIN construction_contract contract ON contract.id = allocation.contract_id
+         WHERE allocation.contract_id = ANY(%s)
+           AND allocation.allocation_state = 'allocated'
+           AND allocation.normalization_state IN ('normalized', 'legacy_observed_identity')
+           AND ledger.state = 'posted'
+           AND ledger.normalization_state IN ('normalized', 'legacy_observed_identity')
+           AND allocation.project_id = contract.project_id
+           AND allocation.company_id = contract.company_id
+           AND allocation.currency_id = contract.currency_id
+           AND ledger.project_id = contract.project_id
+           AND ledger.company_id = contract.company_id
+           AND ledger.currency_id = contract.currency_id
+         GROUP BY allocation.contract_id
+        """,
+        (ids,),
+    )
+    return {contract_id: amount or 0.0 for contract_id, amount in env.cr.fetchall()}
+
+
+def contract_actual_received_position_map(env, contract_ids: Iterable[int]) -> Dict[int, Dict[str, float]]:
+    """Aggregate income cash only from identity-matched posted treasury facts."""
+    ids = list(dict.fromkeys(contract_ids))
+    if not ids:
+        return {}
+    env["sc.treasury.ledger"].flush_model(
+        [
+            "payment_request_id",
+            "state",
+            "direction",
+            "normalization_state",
+            "source_model",
+            "source_res_id",
+            "project_id",
+            "company_id",
+            "currency_id",
+            "partner_id",
+            "amount",
+        ]
+    )
+    env["payment.request"].flush_model(
+        [
+            "contract_id",
+            "project_id",
+            "company_id",
+            "currency_id",
+            "partner_id",
+            "terminal_cash_source_model",
+            "terminal_cash_source_res_id",
+        ]
+    )
+    env["construction.contract"].flush_model(
+        ["project_id", "company_id", "currency_id", "partner_id"]
+    )
+    env["sc.receipt.income"].flush_model(
+        [
+            "payment_request_id",
+            "treasury_ledger_id",
+            "contract_id",
+            "state",
+            "finance_identity_state",
+            "project_id",
+            "company_id",
+            "currency_id",
+            "partner_id",
+        ]
+    )
+    env.cr.execute(
+        """
+        SELECT request.contract_id,
+               SUM(ledger.amount)::numeric AS amount,
+               COUNT(ledger.id)::integer AS evidence_count
+          FROM sc_treasury_ledger ledger
+          JOIN payment_request request ON request.id = ledger.payment_request_id
+          JOIN construction_contract contract ON contract.id = request.contract_id
+          JOIN sc_receipt_income receipt
+            ON receipt.payment_request_id = request.id
+           AND receipt.treasury_ledger_id = ledger.id
+         WHERE request.contract_id = ANY(%s)
+           AND ledger.state = 'posted'
+           AND ledger.direction = 'in'
+           AND ledger.normalization_state IN ('normalized', 'legacy_observed_identity')
+           AND ledger.source_model = 'payment.request'
+           AND ledger.source_res_id = request.id
+           AND ledger.project_id = contract.project_id
+           AND ledger.company_id = contract.company_id
+           AND ledger.currency_id = contract.currency_id
+           AND ledger.partner_id = contract.partner_id
+           AND request.project_id = contract.project_id
+           AND request.company_id = contract.company_id
+           AND request.currency_id = contract.currency_id
+           AND request.partner_id = contract.partner_id
+           AND request.terminal_cash_source_model = 'sc.receipt.income'
+           AND request.terminal_cash_source_res_id = receipt.id
+           AND receipt.contract_id = contract.id
+           AND receipt.state IN ('received', 'legacy_confirmed')
+           AND receipt.finance_identity_state IN ('normalized', 'legacy_observed_identity')
+           AND receipt.project_id = contract.project_id
+           AND receipt.company_id = contract.company_id
+           AND receipt.currency_id = contract.currency_id
+           AND receipt.partner_id = contract.partner_id
+         GROUP BY request.contract_id
+        """,
+        (ids,),
     )
     return {
-        row["contract_id"][0]: row.get(
-            "allocated_amount_sum", row.get("allocated_amount", 0.0)
-        )
-        or 0.0
-        for row in rows
-        if row.get("contract_id")
+        contract_id: {"amount": amount or 0.0, "evidence_count": evidence_count or 0}
+        for contract_id, amount, evidence_count in env.cr.fetchall()
     }
 
 
@@ -296,6 +418,7 @@ def contract_execution_position_map(env, contract_ids: Iterable[int]) -> Dict[in
             "invoiced_input": 0.0,
             "invoiced_output": 0.0,
             "received": 0.0,
+            "received_evidence_count": 0,
             "paid": 0.0,
         }
         for contract_id in ids
@@ -347,18 +470,9 @@ def contract_execution_position_map(env, contract_ids: Iterable[int]) -> Dict[in
                 "amount_total_sum", row.get("amount_total", 0.0)
             ) or 0.0
 
-    receipt_rows = env["sc.receipt.income"].sudo().read_group(
-        [
-            ("contract_id", "in", ids),
-            ("state", "in", ["received", "legacy_confirmed"]),
-        ],
-        ["amount:sum"],
-        ["contract_id"],
-    )
-    for row in receipt_rows:
-        contract = row.get("contract_id")
-        if contract:
-            result[contract[0]]["received"] += row.get("amount_sum", row.get("amount", 0.0)) or 0.0
+    for contract_id, received in contract_actual_received_position_map(env, ids).items():
+        result[contract_id]["received"] = received["amount"]
+        result[contract_id]["received_evidence_count"] = received["evidence_count"]
 
     for contract_id, amount in contract_actual_paid_amount_map(env, ids).items():
         result[contract_id]["paid"] = amount

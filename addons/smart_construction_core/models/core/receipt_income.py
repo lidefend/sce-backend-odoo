@@ -8,6 +8,7 @@ from odoo.tools.float_utils import float_compare
 from ..support.state_guard import raise_guard
 
 _logger = logging.getLogger(__name__)
+_RECEIPT_FACT_AUTHORITY_TOKEN = object()
 
 
 class ScReceiptIncome(models.Model):
@@ -60,10 +61,20 @@ class ScReceiptIncome(models.Model):
     company_id = fields.Many2one(
         "res.company",
         string="公司",
-        related="project_id.company_id",
-        store=True,
         readonly=True,
         index=True,
+    )
+    finance_identity_state = fields.Selection(
+        [
+            ("normalized", "标准事实"),
+            ("legacy_observed_identity", "历史冻结身份"),
+            ("legacy_unresolved_identity", "历史身份待确认"),
+        ],
+        required=True,
+        default="normalized",
+        readonly=True,
+        index=True,
+        string="财务身份状态",
     )
     legacy_company_name = fields.Char(string="承包单位", index=True, readonly=True)
     operation_strategy = fields.Selection(
@@ -134,6 +145,11 @@ class ScReceiptIncome(models.Model):
     active = fields.Boolean("有效", default=True, index=True)
 
     _sql_constraints = [
+        (
+            "finance_normalized_identity_present",
+            "CHECK(finance_identity_state != 'normalized' OR (project_id IS NOT NULL AND company_id IS NOT NULL AND currency_id IS NOT NULL))",
+            "标准收款事实必须固化项目、公司与币种身份。",
+        ),
         (
             "legacy_source_unique",
             "unique(legacy_source_model, legacy_record_id)",
@@ -271,17 +287,76 @@ class ScReceiptIncome(models.Model):
     def create(self, vals_list):
         seq = self.env["ir.sequence"]
         normalized_vals_list = []
+        legacy_authority = self.env.context.get("sc_receipt_fact_authority_token") is _RECEIPT_FACT_AUTHORITY_TOKEN
         for incoming_vals in vals_list:
             vals = dict(incoming_vals)
+            if vals.get("source_origin") == "legacy" and not legacy_authority:
+                raise UserError(_("历史收款只能由受治理迁移载体创建。"))
+            if vals.get("state") in {"received", "legacy_confirmed"} and not legacy_authority:
+                raise UserError(_("新系统收款登记不能直接创建为已收款，必须执行正式收款动作。"))
+            if vals.get("treasury_ledger_id") and not legacy_authority:
+                raise UserError(_("收款资金台账只能由正式收款动作绑定。"))
             project_id = self._context_project_id()
             if project_id:
                 vals.setdefault("project_id", project_id)
-            vals = self._normalize_receipt_relation_values(vals)
+            if not (
+                legacy_authority
+                and vals.get("finance_identity_state") == "legacy_unresolved_identity"
+            ):
+                vals = self._normalize_receipt_relation_values(vals)
+            project = self.env["project.project"].browse(vals.get("project_id")).exists()
+            if not project or not project.company_id:
+                raise UserError(_("收款登记必须关联已归属公司的有效项目。"))
+            if vals.get("company_id") and vals["company_id"] != project.company_id.id:
+                raise UserError(_("收款登记公司必须与项目公司一致。"))
+            vals["company_id"] = project.company_id.id
+            vals["finance_identity_state"] = vals.get("finance_identity_state") if legacy_authority else "normalized"
             vals.setdefault("business_category_id", self._resolve_business_category_id(vals))
             if vals.get("name", "新建") == "新建":
                 vals["name"] = seq.next_by_code("sc.receipt.income") or _("Receipt Income")
             normalized_vals_list.append(vals)
         return super().create(normalized_vals_list)
+
+    @api.model
+    def _create_legacy_authoritative(self, vals):
+        values = dict(vals, source_origin="legacy")
+        project = self.env["project.project"].browse(values.get("project_id")).exists()
+        evidence_complete = bool(
+            project
+            and values.get("company_id") == project.company_id.id
+            and values.get("currency_id")
+        )
+        values["finance_identity_state"] = (
+            "legacy_observed_identity" if evidence_complete else "legacy_unresolved_identity"
+        )
+        if (
+            evidence_complete
+            and values.get("payment_request_id")
+            and values.get("state") in {"received", "legacy_confirmed"}
+        ):
+            candidate = self.new(values)
+            if candidate.payment_request_id._terminal_cash_source_identity_errors(candidate):
+                values["finance_identity_state"] = "legacy_unresolved_identity"
+            else:
+                candidate.payment_request_id._claim_terminal_cash_source(candidate)
+        receipt = self.with_context(
+            sc_receipt_fact_authority_token=_RECEIPT_FACT_AUTHORITY_TOKEN
+        ).create(values)
+        if receipt.payment_request_id and receipt.finance_identity_state == "legacy_observed_identity":
+            receipt.payment_request_id._bind_terminal_cash_source(receipt)
+        return receipt
+
+    def unlink(self):
+        terminal = self.filtered(lambda rec: rec.state in {"received", "legacy_confirmed"})
+        claimed_ids = self.env["payment.request"].sudo().search(
+            [
+                ("terminal_cash_source_model", "=", self._name),
+                ("terminal_cash_source_res_id", "in", self.ids),
+            ]
+        ).mapped("terminal_cash_source_res_id")
+        if terminal or claimed_ids:
+            raise UserError(_("终态或已被申请认领的收款事实不可删除；更正必须形成独立冲销事实。"))
+        return super().unlink()
 
     @api.model
     def _resolve_business_category_code(self, vals):
@@ -344,7 +419,27 @@ class ScReceiptIncome(models.Model):
     def _history_surface_allowed_write_fields(self):
         return {"attachment_ids"}
 
+    def _received_surface_allowed_write_fields(self):
+        return {"note", "attachment_ids"}
+
     def write(self, vals):
+        authoritative = self.env.context.get("sc_receipt_fact_authority_token") is _RECEIPT_FACT_AUTHORITY_TOKEN
+        if "treasury_ledger_id" in vals and not authoritative:
+            raise UserError(_("收款资金台账只能由正式收款动作绑定。"))
+        if not authoritative and (vals.get("state") in {"received", "legacy_confirmed"} or "finance_identity_state" in vals):
+            raise UserError(_("收款终态及财务身份只能由正式业务动作或迁移写入。"))
+        if any(rec.state == "received" for rec in self) and not authoritative:
+            forbidden_fields = set(vals) - self._received_surface_allowed_write_fields()
+            if forbidden_fields:
+                raise UserError(_("已收款事实只允许补充备注和附件，其他终态事实不可改写。"))
+        terminal_business_fields = {
+            "project_id", "company_id", "currency_id", "partner_id", "contract_id",
+            "payment_request_id", "treasury_ledger_id", "date_receipt", "amount",
+            "deducted_invoice_amount", "deducted_tax_amount", "settlement_amount", "active",
+        }
+        if any(rec.state in {"received", "legacy_confirmed"} for rec in self) and not authoritative:
+            if set(vals) & terminal_business_fields:
+                raise UserError(_("已收款事实不可改写经济身份、金额、关联或有效性。"))
         if any(rec.source_origin == "legacy" and rec.state == "legacy_confirmed" for rec in self):
             allowed = {
                 "payment_request_id",
@@ -365,9 +460,17 @@ class ScReceiptIncome(models.Model):
             result = True
             for rec in self:
                 normalized_vals = rec._normalize_receipt_relation_values(vals, current=rec)
+                if "project_id" in normalized_vals:
+                    project = self.env["project.project"].browse(normalized_vals["project_id"]).exists()
+                    normalized_vals["company_id"] = project.company_id.id
                 result = super(ScReceiptIncome, rec).write(normalized_vals) and result
             return result
         return super().write(vals)
+
+    def _write_finance_authority(self, vals):
+        result = self.with_context(sc_receipt_fact_authority_token=_RECEIPT_FACT_AUTHORITY_TOKEN).write(vals)
+        self.flush_recordset(list(vals))
+        return result
 
     def action_confirm(self):
         policy = self.env["sc.approval.policy"]
@@ -416,8 +519,9 @@ class ScReceiptIncome(models.Model):
             if policy.is_approval_required(rec._name, company=rec.company_id) and rec.validation_status != "validated":
                 raise UserError(_("收款收入尚未完成统一审批流程。"))
             before = rec._snapshot_audit_payload()
-            rec._sync_payment_request_done()
-            rec.write({"state": "received"})
+            with self.env.cr.savepoint():
+                rec._write_finance_authority({"state": "received"})
+                rec._sync_payment_request_done()
             rec._audit_transition(
                 "receipt_income_received",
                 before,
@@ -456,6 +560,8 @@ class ScReceiptIncome(models.Model):
         for rec in self:
             if rec.source_origin == "legacy":
                 continue
+            if rec.finance_identity_state != "normalized" or rec.company_id != rec.project_id.company_id:
+                raise UserError(_("收款登记财务身份已失配，请重建草稿后再办理。"))
             if not rec.project_id:
                 raise_guard(
                     "RECEIPT_INCOME_MISSING_PROJECT",
@@ -516,6 +622,8 @@ class ScReceiptIncome(models.Model):
                 raise UserError(_("收款收入往来单位必须与收款申请往来单位一致。"))
             if rec.contract_id and request.contract_id and rec.contract_id != request.contract_id:
                 raise UserError(_("收款收入合同必须与收款申请合同一致。"))
+            if rec.currency_id != request.currency_id:
+                raise UserError(_("收款收入币种必须与收款申请币种一致。"))
             rounding = rec.currency_id.rounding if rec.currency_id else 0.01
             if float_compare(rec.amount or 0.0, request.amount or 0.0, precision_rounding=rounding) == 1:
                 raise UserError(_("收款金额不能超过收款申请金额。"))
@@ -576,6 +684,7 @@ class ScReceiptIncome(models.Model):
             if not request:
                 continue
             rec._check_payment_request_scope_or_raise()
+            request._claim_terminal_cash_source(rec)
             if request.type != "receive":
                 raise UserError(_("收款收入只能关联收款类型的付款/收款申请。"))
             rounding = request.currency_id.rounding if request.currency_id else 0.01
@@ -586,22 +695,17 @@ class ScReceiptIncome(models.Model):
             if request.state == "approve" and request.validation_status == "validated":
                 request.action_set_approved()
             if request.state != "approved":
-                continue
+                raise UserError(_("收款申请尚未达到可入账状态，不能确认收款事实。"))
             before = request._snapshot_audit_payload()
-            request.with_context(payment_soft_gate=True)._ensure_treasury_ledger(
+            ledger = request.with_context(payment_soft_gate=True)._ensure_treasury_ledger(
                 amount=request.amount or 0.0,
                 date=rec.date_receipt,
                 note=_("auto:receipt_income_received"),
             )
+            rec._write_finance_authority({"treasury_ledger_id": ledger.id})
             request.with_context(allow_transition=True, payment_soft_gate=True).write({"state": "done"})
             after = request._snapshot_audit_payload()
             request._audit_transition("payment_paid", before, after, action_name="receipt_income_received")
-            ledger = self.env["sc.treasury.ledger"].sudo().search(
-                [("payment_request_id", "=", request.id)],
-                limit=1,
-            )
-            if ledger:
-                rec.with_context(skip_validation_check=True).write({"treasury_ledger_id": ledger.id})
 
     def _snapshot_audit_payload(self):
         self.ensure_one()
@@ -643,6 +747,15 @@ class ScReceiptIncome(models.Model):
         )
 
     def init(self):
+        self.env.cr.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS sc_receipt_income_one_canonical_terminal_per_request_idx
+                ON sc_receipt_income(payment_request_id)
+             WHERE payment_request_id IS NOT NULL
+               AND finance_identity_state IN ('normalized', 'legacy_observed_identity')
+               AND state IN ('received', 'legacy_confirmed')
+            """
+        )
         self.env.cr.execute(
             """
             UPDATE sc_receipt_income receipt
