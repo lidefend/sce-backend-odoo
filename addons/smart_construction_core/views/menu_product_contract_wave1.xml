@@ -22,6 +22,12 @@
         </record>
 
         <!-- Direct L2 workspaces: the page toolbar owns create/handle actions. -->
+        <menuitem id="menu_sc_p1_contract_execution_position"
+                  name="合同执行态势"
+                  parent="smart_construction_core.menu_sc_contract_center"
+                  action="smart_construction_core.action_sc_contract_execution_position"
+                  sequence="5"
+                  groups="smart_construction_core.group_sc_cap_contract_read"/>
         <menuitem id="menu_sc_p1_income_contract"
                   name="收入合同"
                   parent="smart_construction_core.menu_sc_contract_center"

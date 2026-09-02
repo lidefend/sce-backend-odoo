@@ -2,7 +2,7 @@
 # pyright: reportUnusedExpression=false
 {
     'name': 'Smart Construction Core',
-    'version': '17.0.0.137',
+    'version': '17.0.0.138',
     'summary': 'Core module for construction enterprise management (Architecture 2.0)',
     'author': 'Leedefend',
     'depends': [
@@ -115,6 +115,7 @@
         'views/projection/operating_metrics_views.xml',
         'views/projection/project_dashboard_kanban.xml',
         'views/core/contract_views.xml',
+        'views/core/contract_execution_position_views.xml',
         'views/core/income_contract_ledger_views.xml',
         'views/core/expense_contract_ledger_views.xml',
         'views/core/contract_line_search.xml',

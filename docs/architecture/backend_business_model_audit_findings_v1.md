@@ -54,7 +54,7 @@ The rollout decision is intentionally conservative: do not add `sc.business` or 
 
 Yes, directionally.
 
-The model count is not the issue. The current backend has 371 detected model classes, not "only 10 models". The 10 count is only the strict formal legacy-to-runtime fact set.
+The model count is not the issue. The current backend has 372 detected model classes, not "only 10 models". The 10 count is only the strict formal legacy-to-runtime fact set.
 
 The shape is reasonable because:
 
@@ -112,12 +112,12 @@ Do not add core model fields for one customer's vocabulary, one source table acc
 
 Current enforced coverage:
 
-- model classes: 371
+- model classes: 372
 - model families: 19
 - unclassified models: 0
 - ownership specs: 18
 - formal fact models: 10
-- projection registry entries: 35
+- projection registry entries: 36
 - undeclared standard gaps: 0
 
 ## Next Refactor Sequence
@@ -136,7 +136,7 @@ Only after those boundaries hold should we extract mixins or merge duplicated im
 
 The overlap analysis adds one important refinement: projection/read models should not be treated as one implementation type. The current codebase uses SQL views, physical refresh tables, and controlled generated ledgers. `sc.treasury.ledger` belongs to the last group because creation is blocked unless the caller passes the controlled `allow_ledger_auto` context.
 
-The projection registry currently covers all 35 detected projection/read surfaces: 25 SQL views, 2 physical refresh tables, 4 controlled generated ledgers, 2 runtime workbench facts, 1 computed runtime summary, and 1 controlled writable snapshot.
+The projection registry currently covers all 36 detected projection/read surfaces: 26 SQL views, 2 physical refresh tables, 4 controlled generated ledgers, 2 runtime workbench facts, 1 computed runtime summary, and 1 controlled writable snapshot.
 
 ## Final Verdict
 

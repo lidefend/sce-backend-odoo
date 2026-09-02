@@ -68,41 +68,56 @@ goal:
     shared_database_mutation: serialized
 
   current_batch:
-    id: Batch-B
-    title: immutable_payment_ledger_contract_allocation
-    status: review_ready
-    objective: persist_authoritative_immutable_contract_allocation_for_each_actual_payment_ledger
+    id: Batch-B2
+    title: contract_execution_position_v1
+    status: independent_review_pending
+    objective: establish_one_authoritative_signed_and_query_efficient_contract_execution_position
     scope:
-      - payment_ledger_allocation_fact_model
-      - controlled_allocation_builder
-      - post_approval_payment_request_line_immutability
-      - contract_actual_paid_aggregation_authority
-      - allocation_acl_and_record_rules
+      - construction_contract_execution_position
+      - authoritative_settlement_invoice_receipt_and_payment_aggregation
+      - signed_balances_and_explicit_ratio_state
+      - native_odoo_readonly_tree_search_pivot_and_form_trace
+      - allowed_company_contract_containment
+      - fixed_query_budget
       - non_zero_targeted_odoo_tests
     exclude:
-      - contract_execution_position_views_actions_or_menus
-      - settlement_line_fact_freezing
+      - general_contract_and_historical_sql_ledger_family_rebuild
+      - cost_attribution_without_contract_anchor
+      - settlement_payment_invoice_or_change_workflow_rebuild
+      - historical_manual_anchor_guessing
       - cost_ledger_idempotency_or_batching
       - frontend_or_smart_core_contract_changes
       - startup_chain_or_runtime_profile_changes
       - new_database_port_volume_fixture_or_credentials
     semantic_freeze:
-      actual_payment_authority: payment_ledger
-      allocation_authority: immutable_payment_ledger_allocation_snapshot
-      reversal_policy: retain_allocation_rows_but_exclude_reversed_parent_from_net_actual
-      unresolved_policy: explicit_review_required_without_guessing_or_equal_split
-      line_basis_priority: payment_request_line_then_unique_direct_contract
-      compatibility: existing_payment_ledger_fields_and_intents_unchanged
+      contract_base: final_contract_amount_after_effective_changes
+      settlement_authority: approved_or_done_settlement_lines_plus_confirmed_adjustments
+      invoice_authority: registered_or_legacy_confirmed_invoice_signed_net
+      income_cash_authority: received_or_legacy_confirmed_receipt
+      expense_cash_authority: posted_payment_ledger_allocation
+      balance_policy: signed_without_zero_clamp
+      ratio_policy: explicit_undefined_for_zero_contract_amount
+      compatibility: existing_public_intents_and_frontend_contracts_unchanged
     entry_fingerprint:
-      git_head: 3d6d3382c18b288fc0142afc71c862d5ea2a6b4a
-      digest: 55bb7f7918f6705564866dec9b1edcbb5b89a38099d57efead548de7b2a00065
-      scope_manifest_sha256: 7ff095b6be6c5b35c0522b4525748365daf6b5813eadeef83e1e3b750227306a
-      entry_count: 7132
+      git_head: d9ee00c8ebfa0584ade6a84b5d75836d0f212a31
+      digest: 570922576a0359b7a57eab3afc8a081a00babbb2dd2e96dedde55d7a6ccc98ef
+      entry_count: 7135
+    result:
+      - authoritative_readonly_contract_execution_position_added
+      - legacy_contract_recon_summary_converged_to_same_fact_authority
+      - signed_balances_and_zero_base_ratio_state_proven
+      - allowed_company_and_capability_read_boundaries_proven
+      - one_ten_fifty_contract_query_budget_proven
+      - governed_incremental_upgrade_passed
+      - focused_odoo_tests_11_of_11_passed
+      - payment_allocation_regression_14_of_14_passed
+      - sc_gate_266_of_266_passed
+      - contract_execution_component_profile_5_of_5_passed
+      - ratio_scale_50_100_120_negative_and_zero_proven
+      - canonical_income_expense_and_projection_company_isolation_proven
+      - finance_only_projection_half_open_access_removed
 
   next_batches:
-    - id: Batch-B2
-      title: contract_execution_position_v1
-      status: planned
     - id: Batch-C
       title: cost_fact_idempotency_and_batch_write
       status: planned

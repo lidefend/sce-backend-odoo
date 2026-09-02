@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models
 
+from ..support import operating_metrics as opm
+
 
 class ScContractReconSummary(models.Model):
     _name = "sc.contract.recon.summary"
@@ -34,9 +36,9 @@ class ScContractReconSummary(models.Model):
         readonly=True,
     )
     contract_amount_total = fields.Monetary(
-        string="合同金额",
+        string="最终合同价",
         currency_field="currency_id",
-        related="contract_id.amount_total",
+        related="contract_id.amount_final",
         store=False,
         readonly=True,
     )
@@ -52,13 +54,13 @@ class ScContractReconSummary(models.Model):
         store=False,
     )
     payment_total = fields.Monetary(
-        string="付款金额",
+        string="现金执行金额",
         currency_field="currency_id",
         compute="_compute_totals",
         store=False,
     )
     payment_ids_count = fields.Integer(
-        string="付款单数",
+        string="现金执行单数",
         compute="_compute_totals",
         store=False,
     )
@@ -69,69 +71,76 @@ class ScContractReconSummary(models.Model):
         store=False,
     )
     as_of_date = fields.Date(
-        string="截至日期",
+        string="兼容日期（不参与当前态计算）",
         default=fields.Date.context_today,
+        readonly=True,
+        help="兼容既有记录保留；本模型仅表达当前合同执行态势，不提供历史时点重算。",
     )
 
     @api.depends("contract_id")
     def _compute_totals(self):
-        SettlementLine = self.env["sc.settlement.order.line"]
-        Settlement = self.env["sc.settlement.order"]
-        Payment = self.env["payment.request"]
-        line_table = SettlementLine._table
-        settle_table = Settlement._table
-        pay_table = Payment._table
+        contract_ids = self.mapped("contract_id").ids
+        position_map = opm.contract_execution_position_map(self.env, contract_ids)
+        settlement_count_map = {}
+        settlement_count_rows = self.env["sc.settlement.order.line"].sudo().read_group(
+            [
+                ("contract_id", "in", contract_ids),
+                ("settlement_id.state", "in", ["approve", "done"]),
+            ],
+            ["contract_id", "settlement_id"],
+            ["contract_id", "settlement_id"],
+            lazy=False,
+        ) if contract_ids else []
+        for row in settlement_count_rows:
+            contract = row.get("contract_id")
+            if contract:
+                settlement_count_map[contract[0]] = settlement_count_map.get(contract[0], 0) + 1
+
+        receipt_count_map = {}
+        receipt_count_rows = self.env["sc.receipt.income"].sudo().read_group(
+            [
+                ("contract_id", "in", contract_ids),
+                ("state", "in", ["received", "legacy_confirmed"]),
+            ],
+            ["contract_id"],
+            ["contract_id"],
+        ) if contract_ids else []
+        for row in receipt_count_rows:
+            contract = row.get("contract_id")
+            if contract:
+                receipt_count_map[contract[0]] = row.get(
+                    "contract_id_count", row.get("__count", 0)
+                )
+
+        payment_count_map = {}
+        payment_count_rows = self.env["payment.ledger.allocation"].sudo().read_group(
+            [
+                ("contract_id", "in", contract_ids),
+                ("allocation_state", "=", "allocated"),
+                ("ledger_id.state", "=", "posted"),
+            ],
+            ["contract_id", "ledger_id"],
+            ["contract_id", "ledger_id"],
+            lazy=False,
+        ) if contract_ids else []
+        for row in payment_count_rows:
+            contract = row.get("contract_id")
+            if contract:
+                payment_count_map[contract[0]] = payment_count_map.get(contract[0], 0) + 1
+
+        self.mapped("contract_id.type")
         for rec in self:
-            settlement_total = 0.0
-            settlement_count = 0
-            payment_total = 0.0
-            payment_count = 0
-            if rec.contract_id:
-                self.env.cr.execute(
-                    f"""
-                    SELECT COALESCE(SUM(COALESCE(l.qty, 0) * COALESCE(l.price_unit, 0)), 0)
-                      FROM {line_table} l
-                      JOIN {settle_table} s ON s.id = l.settlement_id
-                     WHERE l.contract_id = %s
-                       AND s.state IN ('approve', 'done')
-                    """,
-                    (rec.contract_id.id,),
-                )
-                settlement_total = self.env.cr.fetchone()[0] or 0.0
-                self.env.cr.execute(
-                    f"""
-                    SELECT COUNT(*)
-                      FROM {settle_table} s
-                     WHERE s.contract_id = %s
-                       AND s.state IN ('approve', 'done')
-                    """,
-                    (rec.contract_id.id,),
-                )
-                settlement_count = self.env.cr.fetchone()[0] or 0
-
-                self.env.cr.execute(
-                    f"""
-                    SELECT COALESCE(SUM(COALESCE(amount, 0)), 0)
-                      FROM {pay_table}
-                     WHERE contract_id = %s
-                       AND state IN ('approved', 'done')
-                    """,
-                    (rec.contract_id.id,),
-                )
-                payment_total = self.env.cr.fetchone()[0] or 0.0
-                self.env.cr.execute(
-                    f"""
-                    SELECT COUNT(*)
-                      FROM {pay_table}
-                     WHERE contract_id = %s
-                       AND state IN ('approved', 'done')
-                    """,
-                    (rec.contract_id.id,),
-                )
-                payment_count = self.env.cr.fetchone()[0] or 0
-
+            contract = rec.contract_id
+            position = position_map.get(contract.id, {})
+            settlement_total = position.get("settled", 0.0)
+            if contract.type == "out":
+                payment_total = position.get("received", 0.0)
+                payment_count = receipt_count_map.get(contract.id, 0)
+            else:
+                payment_total = position.get("paid", 0.0)
+                payment_count = payment_count_map.get(contract.id, 0)
             rec.settlement_total = settlement_total
-            rec.settlement_ids_count = settlement_count
+            rec.settlement_ids_count = settlement_count_map.get(contract.id, 0)
             rec.payment_total = payment_total
             rec.payment_ids_count = payment_count
             rec.delta = settlement_total - payment_total

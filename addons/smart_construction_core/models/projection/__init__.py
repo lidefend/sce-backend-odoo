@@ -12,6 +12,7 @@ from . import expense_reimbursement_summary
 from . import salary_summary
 from . import material_stock_summary
 from . import comprehensive_cost_summary
+from . import contract_execution_position
 from . import interfund_movement_fact
 from . import finance_business_fact
 from . import finance_business_project_summary

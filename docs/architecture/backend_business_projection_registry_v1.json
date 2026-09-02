@@ -24,11 +24,20 @@
     {
       "model": "sc.contract.recon.summary",
       "implementation_mode": "computed_runtime_summary",
-      "write_policy": "computed fields read from contract, settlement, and payment facts",
-      "source_models": ["construction.contract", "sc.settlement.order", "payment.request"],
+      "write_policy": "computed compatibility summary consumes the authoritative current contract execution position; it does not own facts",
+      "source_models": ["construction.contract", "sc.settlement.order.line", "sc.settlement.adjustment", "sc.receipt.income", "payment.ledger.allocation", "payment.ledger"],
       "refresh_owner": "Odoo computed fields",
       "idempotency_key": "contract_id",
-      "acceptance_probe": "model family coverage"
+      "acceptance_probe": "p1_contract_execution_position focused Odoo tests"
+    },
+    {
+      "model": "sc.contract.execution.position",
+      "implementation_mode": "sql_view",
+      "write_policy": "read-only current-position projection; source facts remain immutable or workflow-owned",
+      "source_models": ["construction.contract", "sc.settlement.order.line", "sc.settlement.adjustment", "sc.invoice.registration", "sc.receipt.income", "payment.ledger.allocation", "payment.ledger"],
+      "refresh_owner": "model init SQL view",
+      "idempotency_key": "contract_id",
+      "acceptance_probe": "p1_contract_execution_position focused Odoo tests"
     },
     {
       "model": "project.cost.ledger",

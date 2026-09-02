@@ -38,14 +38,14 @@ The current static inventory reports:
 
 | category | count | meaning |
 | --- | ---: | --- |
-| total model classes | 371 | all Python model classes under smart construction core, including abstract architecture models |
+| total model classes | 372 | all Python model classes under smart construction core, including abstract architecture models |
 | abstract models | 9 | non-instantiable mixins and projection/governance helpers retained in architecture inventory |
 | native model extensions | 131 | models that extend existing Odoo/OCA models through `_inherit` without a new `_name` |
-| custom models | 111 | new instantiable models defined by this module without mixin inheritance |
+| custom models | 112 | new instantiable models defined by this module without mixin inheritance |
 | custom models with mixin/inherit | 120 | new instantiable models that reuse mail, approval, delete guard, business fact, or compatibility mixins |
 | legacy fact models | 0 | no current `sc.legacy.*` carrier class is shipped; retired tooling is recorded separately |
 | formal fact models | 10 | runtime models with `source_origin`, `legacy_source_model`, and `legacy_record_id` |
-| projection/read models | 35 | SQL/physical projections, controlled ledgers, runtime facts, computed summaries, and controlled snapshots |
+| projection/read models | 36 | SQL/physical projections, controlled ledgers, runtime facts, computed summaries, and controlled snapshots |
 | traceable models | 86 | models with legacy or source trace fields |
 | stateful models | 92 | models with a `state` field |
 | registered formal models | 10 | formal runtime facts declared in the standard registry |
@@ -58,7 +58,7 @@ The current static inventory reports:
 | industry model families | 13 | reusable construction-industry business families |
 | customer model families | 1 | legacy replay/evidence only; not core runtime ownership |
 | ownership specs | 18 | explicit boundary specs for the highest-risk overlapping families |
-| projection registry entries | 35 | every detected projection/read surface split by source-verified implementation mode |
+| projection registry entries | 36 | every detected projection/read surface split by source-verified implementation mode |
 | management hierarchy rows | 19 | every model family declares who manages what and project carrier role |
 | universal abstraction concepts | 8 | platform kernel concepts registered for cross-industry use |
 | carrier bindings | 1 | construction binds carrier type `project` to `project.project` |
@@ -73,12 +73,12 @@ The earlier `formal_fact_model_count=10` is not the total backend model count. I
 The broader backend model design surface is:
 
 - 131 native model extensions reuse Odoo/OCA as the system-of-record where it already has strong semantics.
-- 231 instantiable custom model classes comprise 111 direct custom models and 120 custom models with mixin/inherit.
+- 232 instantiable custom model classes comprise 112 direct custom models and 120 custom models with mixin/inherit.
 - 9 abstract model classes preserve architecture mixins and helpers without entering persistence gates.
-- 35 projection/read models include SQL/physical projections, controlled ledgers, runtime facts, computed summaries, and a controlled BOQ snapshot.
+- 36 projection/read models include SQL/physical projections, controlled ledgers, runtime facts, computed summaries, and a controlled BOQ snapshot.
 - 10 explicit retirement groups preserve the provenance of 36 removed migration/probe paths without treating them as current runtime tooling.
 
-So the audit answer is not "we only have 10 models." The correct answer is: we have 371 backend model classes, and 10 of them currently qualify as formal runtime fact carriers under the strict provenance standard.
+So the audit answer is not "we only have 10 models." The correct answer is: we have 372 backend model classes, and 10 of them currently qualify as formal runtime fact carriers under the strict provenance standard.
 
 ## What Problem Are We Solving?
 

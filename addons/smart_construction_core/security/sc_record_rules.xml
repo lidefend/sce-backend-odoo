@@ -227,6 +227,31 @@
              - initiator: 仅限自建或负责/关注项目
              - contract/finance roles: 保持专业域合同读取范围
         ========================================================== -->
+        <record id="rule_sc_construction_contract_allowed_company_global" model="ir.rule">
+            <field name="name">SC Contract - allowed companies</field>
+            <field name="model_id" ref="model_construction_contract"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+        <record id="rule_sc_construction_contract_income_allowed_company_global" model="ir.rule">
+            <field name="name">SC Income Contract - allowed companies</field>
+            <field name="model_id" ref="model_construction_contract_income"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+        <record id="rule_sc_construction_contract_expense_allowed_company_global" model="ir.rule">
+            <field name="name">SC Expense Contract - allowed companies</field>
+            <field name="model_id" ref="model_construction_contract_expense"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+        <record id="rule_sc_contract_execution_position_allowed_company_global" model="ir.rule">
+            <field name="name">SC Contract Execution Position - allowed companies</field>
+            <field name="model_id" ref="model_sc_contract_execution_position"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
         <record id="rule_sc_business_initiator_construction_contract" model="ir.rule">
             <field name="name">SC Business Initiator - construction.contract own or project member</field>
             <field name="model_id" ref="model_construction_contract"/>

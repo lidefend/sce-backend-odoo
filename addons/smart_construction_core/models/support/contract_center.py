@@ -261,6 +261,24 @@ class ConstructionContract(models.Model):
         compute="_compute_execution_amounts",
         compute_sudo=True,
     )
+    settlement_balance = fields.Monetary(
+        string="未结算金额", currency_field="currency_id", compute="_compute_execution_amounts", compute_sudo=True
+    )
+    cash_executed_amount = fields.Monetary(
+        string="现金执行金额", currency_field="currency_id", compute="_compute_execution_amounts", compute_sudo=True
+    )
+    cash_balance = fields.Monetary(
+        string="现金未执行金额", currency_field="currency_id", compute="_compute_execution_amounts", compute_sudo=True
+    )
+    settlement_rate = fields.Float(string="结算比例(%)", compute="_compute_execution_amounts", compute_sudo=True)
+    invoice_rate = fields.Float(string="开票比例(%)", compute="_compute_execution_amounts", compute_sudo=True)
+    cash_execution_rate = fields.Float(string="现金执行比例(%)", compute="_compute_execution_amounts", compute_sudo=True)
+    execution_ratio_state = fields.Selection(
+        [("defined", "比例有效"), ("undefined_zero_contract", "零合同额比例未定义")],
+        string="执行比例状态",
+        compute="_compute_execution_amounts",
+        compute_sudo=True,
+    )
 
     # --- Dates & relations -------------------------------------------------
     date_contract = fields.Date(string="合同订立日期")
@@ -698,15 +716,21 @@ class ConstructionContract(models.Model):
         Settle = self.env["sc.settlement.order"]
         cancel_states_pay = {"cancel", "rejected", "cancelled"}
         cancel_states_settle = {"cancel", "cancelled"}
+        pay_domain = [("contract_id", "in", self.ids)]
+        if "state" in Pay._fields:
+            pay_domain.append(("state", "not in", list(cancel_states_pay)))
+        settle_domain = [("contract_id", "in", self.ids)]
+        if "state" in Settle._fields:
+            settle_domain.append(("state", "not in", list(cancel_states_settle)))
+        pay_rows = Pay.read_group(pay_domain, ["contract_id"], ["contract_id"])
+        settle_rows = Settle.read_group(settle_domain, ["contract_id"], ["contract_id"])
+        pay_counts = {row["contract_id"][0]: row.get("__count", 0) for row in pay_rows if row.get("contract_id")}
+        settle_counts = {
+            row["contract_id"][0]: row.get("__count", 0) for row in settle_rows if row.get("contract_id")
+        }
         for contract in self:
-            pay_domain = [("contract_id", "=", contract.id)]
-            if "state" in Pay._fields:
-                pay_domain.append(("state", "not in", list(cancel_states_pay)))
-            settle_domain = [("contract_id", "=", contract.id)]
-            if "state" in Settle._fields:
-                settle_domain.append(("state", "not in", list(cancel_states_settle)))
-            pay_cnt = Pay.search_count(pay_domain)
-            settle_cnt = Settle.search_count(settle_domain)
+            pay_cnt = pay_counts.get(contract.id, 0)
+            settle_cnt = settle_counts.get(contract.id, 0)
             contract.payment_request_count = pay_cnt
             contract.settlement_count = settle_cnt
             contract.is_locked = bool(pay_cnt or settle_cnt)
@@ -720,34 +744,48 @@ class ConstructionContract(models.Model):
 
     @api.depends("amount_final")
     def _compute_execution_amounts(self):
-        settlement_map = self._sum_amount_by_contract(
-            "sc.settlement.order",
-            "amount_total",
-            excluded_states=("cancel", "cancelled"),
-        )
-        invoice_map = self._sum_amount_by_contract(
-            "sc.invoice.registration",
-            "amount_total",
-            included_states=("registered", "legacy_confirmed"),
-        )
-        receipt_map = self._sum_amount_by_contract(
-            "sc.receipt.income",
-            "amount",
-            included_states=("received", "legacy_confirmed"),
-        )
-        payment_map = opm.contract_actual_paid_amount_map(self.env, self.ids)
+        position_map = opm.contract_execution_position_map(self.env, self.ids)
         for contract in self:
             total = contract.amount_final or 0.0
-            invoice_amount = invoice_map.get(contract.id, 0.0)
-            received_amount = receipt_map.get(contract.id, 0.0)
-            paid_amount = payment_map.get(contract.id, 0.0)
-            contract.settlement_amount = settlement_map.get(contract.id, 0.0)
+            position = position_map.get(contract.id, {})
+            settlement_amount = position.get("settled", 0.0)
+            invoice_amount = position.get("invoiced_output" if contract.type == "out" else "invoiced_input", 0.0)
+            received_amount = position.get("received", 0.0) if contract.type == "out" else 0.0
+            paid_amount = position.get("paid", 0.0) if contract.type == "in" else 0.0
+            cash_executed = received_amount if contract.type == "out" else paid_amount
+            contract.settlement_amount = settlement_amount
             contract.invoice_amount = invoice_amount
-            contract.uninvoiced_amount = max(total - invoice_amount, 0.0)
+            contract.uninvoiced_amount = total - invoice_amount
             contract.received_amount = received_amount
-            contract.unreceived_amount = max(total - received_amount, 0.0)
+            contract.unreceived_amount = total - received_amount
             contract.paid_amount = paid_amount
-            contract.unpaid_amount = max(total - paid_amount, 0.0)
+            contract.unpaid_amount = total - paid_amount
+            contract.settlement_balance = total - settlement_amount
+            contract.cash_executed_amount = cash_executed
+            contract.cash_balance = total - cash_executed
+            if total:
+                contract.execution_ratio_state = "defined"
+                contract.settlement_rate = settlement_amount / total * 100.0
+                contract.invoice_rate = invoice_amount / total * 100.0
+                contract.cash_execution_rate = cash_executed / total * 100.0
+            else:
+                contract.execution_ratio_state = "undefined_zero_contract"
+                contract.settlement_rate = False
+                contract.invoice_rate = False
+                contract.cash_execution_rate = False
+
+    def action_open_execution_source_contract(self):
+        self.ensure_one()
+        action_xmlid = (
+            "smart_construction_core.action_construction_contract_income"
+            if self.type == "out"
+            else "smart_construction_core.action_construction_contract_expense"
+        )
+        action = self.env.ref(action_xmlid).sudo().read()[0]
+        wrapper_model = self.env[action["res_model"]]
+        wrapper = wrapper_model.search([("contract_id", "=", self.id)], limit=1)
+        action.update({"res_id": wrapper.id, "views": [(False, "form")], "view_mode": "form"})
+        return action
 
     def _sum_amount_by_contract(self, model_name, amount_field, excluded_states=(), included_states=()):
         contract_ids = self.ids

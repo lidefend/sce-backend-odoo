@@ -285,6 +285,86 @@ def contract_actual_paid_amount_map(env, contract_ids: Iterable[int]) -> Dict[in
     }
 
 
+def contract_execution_position_map(env, contract_ids: Iterable[int]) -> Dict[int, Dict[str, float]]:
+    """Return one authoritative execution position for a contract batch."""
+    ids = list(dict.fromkeys(contract_ids))
+    if not ids:
+        return {}
+    result = {
+        contract_id: {
+            "settled": 0.0,
+            "invoiced_input": 0.0,
+            "invoiced_output": 0.0,
+            "received": 0.0,
+            "paid": 0.0,
+        }
+        for contract_id in ids
+    }
+
+    settlement_rows = env["sc.settlement.order.line"].sudo().read_group(
+        [
+            ("contract_id", "in", ids),
+            ("settlement_id.state", "in", ["approve", "done"]),
+        ],
+        ["amount:sum"],
+        ["contract_id"],
+    )
+    for row in settlement_rows:
+        contract = row.get("contract_id")
+        if contract:
+            result[contract[0]]["settled"] += row.get("amount_sum", row.get("amount", 0.0)) or 0.0
+
+    adjustment_rows = env["sc.settlement.adjustment"].sudo().read_group(
+        [
+            ("contract_id", "in", ids),
+            ("state", "in", ["confirmed", "legacy_confirmed"]),
+            ("active", "=", True),
+        ],
+        ["signed_amount:sum"],
+        ["contract_id"],
+    )
+    for row in adjustment_rows:
+        contract = row.get("contract_id")
+        if contract:
+            result[contract[0]]["settled"] += row.get(
+                "signed_amount_sum", row.get("signed_amount", 0.0)
+            ) or 0.0
+
+    invoice_rows = env["sc.invoice.registration"].sudo().read_group(
+        [
+            ("contract_id", "in", ids),
+            ("state", "in", ["registered", "legacy_confirmed"]),
+        ],
+        ["amount_total:sum"],
+        ["contract_id", "direction"],
+        lazy=False,
+    )
+    for row in invoice_rows:
+        contract = row.get("contract_id")
+        direction = row.get("direction")
+        if contract and direction in ("input", "output"):
+            result[contract[0]][f"invoiced_{direction}"] += row.get(
+                "amount_total_sum", row.get("amount_total", 0.0)
+            ) or 0.0
+
+    receipt_rows = env["sc.receipt.income"].sudo().read_group(
+        [
+            ("contract_id", "in", ids),
+            ("state", "in", ["received", "legacy_confirmed"]),
+        ],
+        ["amount:sum"],
+        ["contract_id"],
+    )
+    for row in receipt_rows:
+        contract = row.get("contract_id")
+        if contract:
+            result[contract[0]]["received"] += row.get("amount_sum", row.get("amount", 0.0)) or 0.0
+
+    for contract_id, amount in contract_actual_paid_amount_map(env, ids).items():
+        result[contract_id]["paid"] = amount
+    return result
+
+
 def settlement_paid_payable_map(env, settlement_ids: Iterable[int], amount_total_map: Optional[Dict[int, float]] = None, paid_states: Optional[Sequence[str]] = None) -> Dict[int, Dict[str, float]]:
     """Compatibility response: ``paid`` is reserved payment-request amount."""
     ids = list(settlement_ids)
