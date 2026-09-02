@@ -15,6 +15,7 @@
     data-primitive-driver="tdesign"
     :model-value="modelValue"
     :type="tdesignType"
+    :align="align"
     :size="normalizePrimitiveSize(size)"
     :status="status"
     :disabled="disabled || loading"
@@ -103,7 +104,8 @@ const props = withDefaults(defineProps<{
   minLength?: number;
   maxLength?: number;
   clearable?: boolean;
-  appearance?: 'default' | 'navigation-search' | 'form-field' | 'record-title' | 'relation-tag-entry' | 'collection-search';
+  align?: 'left' | 'center' | 'right';
+  appearance?: 'default' | 'navigation-search' | 'form-field' | 'record-title' | 'relation-tag-entry' | 'collection-search' | 'numeric-entry';
 }>(), {
   modelValue: '',
   size: 'medium',
@@ -118,6 +120,7 @@ const props = withDefaults(defineProps<{
   minLength: undefined,
   maxLength: undefined,
   clearable: false,
+  align: undefined,
   appearance: 'default',
 });
 

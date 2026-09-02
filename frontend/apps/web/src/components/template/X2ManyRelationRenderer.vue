@@ -137,7 +137,8 @@
             />
             <ScInput
               v-else
-              :class="o2mInputClass(column)"
+              :appearance="isO2mAmountColumn(column) ? 'numeric-entry' : 'default'"
+              :align="isO2mAmountColumn(column) ? 'right' : 'left'"
               :type="adapter.one2manyColumnInputType(column)"
               :disabled="column.readonly || adapter.busy"
               :model-value="adapter.one2manyColumnDisplayValue(column, row._row.values[column.name])"
@@ -247,9 +248,6 @@ function isO2mAmountColumn(column: RelationFieldColumn) {
 }
 
 
-function o2mInputClass(column: RelationFieldColumn) {
-  return { 'o2m-input-amount': isO2mAmountColumn(column) };
-}
 // ===== TDesign Table 列定义与行数据 =====
 const o2mTableColumns = computed(() => {
   const fieldColumns = props.adapter.one2manyColumns(props.field.name).map((column) => ({
@@ -854,11 +852,6 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
 .o2m-th-amount,
 .o2m-td-amount {
   text-align: right;
-}
-
-.o2m-input-amount input {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
 }
 
 .o2m-state-badge {

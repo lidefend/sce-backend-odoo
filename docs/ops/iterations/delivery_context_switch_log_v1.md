@@ -3,6 +3,23 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-09-02 — X2MANY-NUMERIC-INPUT-PUBLIC-ALIGNMENT-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `e6798d00`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 semantic relation components /
+  monetary inline editing / `ScInput` and `X2ManyRelationRenderer`.
+- Product result: monetary detail inputs use the official TDesign Input `align`
+  property exposed by `ScInput`, plus a semantic `numeric-entry` appearance for
+  tabular numerals. The relation renderer no longer reaches through the adapter
+  to style a native input descendant; canonical monetary type remains the only
+  generic presentation signal.
+- Acceptance evidence: x2many command/inline-edit and professional relation
+  guards pass, with no change to backend authority, command semantics, or row
+  mutation behavior. The visual-projection inventory removes the P0 relation
+  native-selector candidate; live editable-row evidence is not overstated where
+  the current payment fixture exposes only an empty readonly relation.
+
 ## 2026-09-02 — OFFICIAL-CONTROL-BOUNDARY-ZERO-GAP-CLOSURE-01
 
 - Branch / anchor: `feature/native-view-action-semantics-closure-v1` after

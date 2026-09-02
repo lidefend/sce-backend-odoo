@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "b43f78f9f5e129d3d3127c98b800008fc7c05763ccf1c1b30b6619dd77ae08d0",
+  "inputDigest": "77de552de8f3827a55a5f9bc39f3bb2c9c75a783dca0471befd0eb35fb6ba04e",
   "internalVendorSelectorGaps": [],
   "productAppearanceVariants": [
     {
@@ -315,6 +315,17 @@
       "status": "registered_product_variance"
     },
     {
+      "appearance": "numeric-entry",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScInput.vue",
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue"
+      ],
+      "selectors": [
+        ".sc-input[data-appearance='numeric-entry']"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
       "appearance": "outline-action",
       "consumers": [
         "frontend/apps/web/src/components/DevContextPanel.vue",
@@ -598,7 +609,7 @@
     "internalVendorSelectorGapCount": 0,
     "officialPublicTokenCount": 240,
     "orphanedProductAppearanceVariantCount": 0,
-    "productAppearanceVariantCount": 38,
+    "productAppearanceVariantCount": 39,
     "projectPublicTokenOverrideCount": 38,
     "unknownProjectTokenOverrideCount": 0,
     "visualLiteralGapCount": 0

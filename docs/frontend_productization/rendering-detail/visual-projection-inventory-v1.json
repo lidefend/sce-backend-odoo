@@ -675,7 +675,7 @@
     },
     {
       "category": "other",
-      "digest": "084a081ef526a57b4fd58cec1c0a37fe9d1cbd189be3caa417a6f2b3b85b5d3c",
+      "digest": "d156cc81dda6b700dd893e0fcd1f62ad2ab31a28278b50f7eb86434c62750c1a",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScInput.vue",
       "referenceNativeStyleSelectors": [],
@@ -1741,10 +1741,8 @@
     },
     {
       "category": "relations-x2many",
-      "digest": "a37c136ba672ff9b7cbe971522ab83a8f057967d6719f886d3306a43c0d7052b",
-      "nativeStyleSelectors": [
-        ".o2m-input-amount input"
-      ],
+      "digest": "96b20a262e4f608e3f27884110aea895c3e970d71942416e2d8b5b88dbdc3610",
+      "nativeStyleSelectors": [],
       "path": "components/template/X2ManyRelationRenderer.vue",
       "referenceNativeStyleSelectors": [
         "select.input"
@@ -2596,7 +2594,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "49d65f6b3f5bd933d886798a91e475579e7a93d8e6f2b0c45cae33db31a0038c",
+  "currentInputDigest": "4e2ccc8c137e986e089a135adb9c31e1762f07f8820ca89dcfc4f8930fe65840",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
@@ -2793,24 +2791,6 @@
   "referenceInputDigest": "9065801740ce27219e7d0bb92998350fdd3b16e2948288c186d8798a353c74aa",
   "scAdapterWithNativeSelectorCandidates": [
     {
-      "category": "relations-x2many",
-      "digest": "a37c136ba672ff9b7cbe971522ab83a8f057967d6719f886d3306a43c0d7052b",
-      "nativeStyleSelectors": [
-        ".o2m-input-amount input"
-      ],
-      "path": "components/template/X2ManyRelationRenderer.vue",
-      "scComponents": [
-        "ScButton",
-        "ScCheckbox",
-        "ScFileField",
-        "ScIcon",
-        "ScInlineState",
-        "ScInput",
-        "ScSelect",
-        "ScTable"
-      ]
-    },
-    {
       "category": "form-fields",
       "digest": "56f754d4ac584fb8588470d184ff651e401efd627770a0b493c080784eaaba12",
       "nativeStyleSelectors": [
@@ -2864,7 +2844,7 @@
     "invalidFormalVisualEvidenceBindingCount": 0,
     "projectedAdapterCount": 18,
     "referenceSourceCount": 132,
-    "scAdapterWithNativeSelectorCandidateCount": 4,
+    "scAdapterWithNativeSelectorCandidateCount": 3,
     "unassessedAdapterCount": 0
   }
 }

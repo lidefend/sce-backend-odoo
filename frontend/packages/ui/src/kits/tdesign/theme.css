@@ -426,6 +426,7 @@
 }
 .sc-textarea[data-appearance='form-field'] { width: 100%; border-color: var(--sc-app-border); border-radius: var(--sc-component-input-radius); background: var(--sc-app-input-bg); color: var(--sc-app-text-primary); }
 .sc-input[data-appearance='collection-search'] { height: var(--sc-component-input-form-height); min-height: var(--sc-component-input-form-height); box-sizing: border-box; }
+.sc-input[data-appearance='numeric-entry'] { font-variant-numeric: tabular-nums; }
 .sc-input[data-appearance='record-title'] {
   flex: 1 1 auto;
   min-width: 0;
