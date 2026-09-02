@@ -7626,3 +7626,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   first-monetary-column-only counterexample, strict Vue typecheck, development
   build, refreshed repository-owned productization inventories with zero gaps,
   and the complete `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — One2many unlink authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `5ee2a218`.
+- Product defect and repair: the backend already supplies authoritative
+  `policies.can_unlink`, but the shared detail renderer exposed row removal
+  whenever the field was editable and called the removal runtime directly.
+  Unlink authority now flows through the canonical relationship field model
+  and adapter; both the button and handler fail closed unless the backend
+  explicitly grants unlink. Restore remains available to cancel an already
+  staged deletion. No role, model, label, or status inference was added.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey retained three independent activity pages, unsaved draft and
+  dirty-close behavior, two readable project tender rows, one editable payment
+  attachment upload entry, zero browser errors, zero mutations, zero execute
+  requests, and no 390px horizontal overflow.
+- Verification: 10 professional detail collection tests and 14 relational
+  command primitive tests cover missing authority, default-deny, handler guard,
+  and governed-button counterexamples. Strict Vue typecheck, development
+  build, refreshed productization inventories with zero gaps, and the complete
+  `make verify.frontend.quick.gate` passed.

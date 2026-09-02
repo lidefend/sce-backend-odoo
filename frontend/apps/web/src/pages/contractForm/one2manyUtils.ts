@@ -249,6 +249,10 @@ export function one2manyCanCreateFromPolicies(policies: Record<string, unknown>)
   return policies.can_create !== false;
 }
 
+export function one2manyCanUnlinkFromPolicies(policies: Record<string, unknown>) {
+  return policies.can_unlink === true;
+}
+
 export function one2manyCreateLabelFromPolicies(
   policies: Record<string, unknown>,
   fallbackLabel: string,

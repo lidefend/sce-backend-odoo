@@ -10,6 +10,9 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     model = read_text("frontend/apps/web/src/components/professional-fields/professionalDetailCollectionModel.ts")
     section = read_text("frontend/apps/web/src/components/template/FormSection.vue")
     renderer = read_text("frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue")
+    relation_types = read_text("frontend/apps/web/src/components/template/relationField.types.ts")
+    relation_utils = read_text("frontend/apps/web/src/pages/contractForm/one2manyUtils.ts")
+    action_presentation = read_text("frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts")
     registry = read_text("frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts")
     assembler = read_text("addons/smart_core/core/unified_page_contract_v2_assembler.py")
     project_layout = read_text("addons/smart_construction_core/core_extension_project_layout.py")
@@ -52,6 +55,14 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection does not aggregate every authoritative monetary column")
     if ".find(isO2mAmountColumn)" in renderer:
         failures.append("detail collection silently narrows aggregation to the first monetary column")
+    if "one2manyCanUnlink: (name: string) => boolean;" not in relation_types:
+        failures.append("detail collection adapter omits backend unlink authority")
+    if "return policies.can_unlink === true;" not in relation_utils:
+        failures.append("detail collection unlink authority does not fail closed")
+    if 'v-if="adapter.one2manyCanUnlink(field.name)"' not in renderer:
+        failures.append("detail collection exposes row removal without unlink authority")
+    if "if (!one2manyCanUnlink(fieldName)) return;" not in action_presentation:
+        failures.append("detail collection row removal handler does not fail closed")
     if "<ScInput" not in renderer or "<ScSelect" not in renderer:
         failures.append("editable detail rows bypass the governed input/select primitives")
     if "--sc-component-relation-dropdown-z-index" not in renderer or "--sc-component-relation-dropdown-shadow" not in renderer:

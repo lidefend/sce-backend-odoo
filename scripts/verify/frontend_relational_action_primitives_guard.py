@@ -13,7 +13,7 @@ def validate(x2many: str | None = None, view_relation: str | None = None) -> lis
     x2many_actions = (
         '<slot name="collection-actions" />',
         '<ScButton\n          v-if="adapter.one2manyCanCreate(field.name)"',
-        '<ScButton\n              class="o2m-row-remove"',
+        '<ScButton\n              v-if="adapter.one2manyCanUnlink(field.name)"\n              class="o2m-row-remove"',
         'v-for="row in adapter.removedOne2manyRows(field.name)"',
         '>上一页</ScButton>',
         '>下一页</ScButton>',

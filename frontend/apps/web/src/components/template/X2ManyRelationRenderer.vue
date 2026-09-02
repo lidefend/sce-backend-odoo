@@ -168,6 +168,7 @@
           </template>
           <template #_action="{ row }">
             <ScButton
+              v-if="adapter.one2manyCanUnlink(field.name)"
               class="o2m-row-remove"
               type="button"
               variant="danger"

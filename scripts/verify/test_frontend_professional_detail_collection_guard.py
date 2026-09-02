@@ -71,6 +71,36 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
         failures = validate(read_text)
         self.assertTrue(any("first monetary column" in item for item in failures))
 
+    def test_missing_unlink_authority_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace('v-if="adapter.one2manyCanUnlink(field.name)"', '')
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("without unlink authority" in item for item in failures))
+
+    def test_unlink_policy_default_allow_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("one2manyUtils.ts"):
+                return value.replace("return policies.can_unlink === true;", "return policies.can_unlink !== false;")
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("does not fail closed" in item for item in failures))
+
+    def test_unguarded_remove_handler_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordActionPresentation.ts"):
+                return value.replace("if (!one2manyCanUnlink(fieldName)) return;", "")
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("handler does not fail closed" in item for item in failures))
+
 
 if __name__ == "__main__":
     unittest.main()
