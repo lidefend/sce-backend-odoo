@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Guard the full-width business form canvas and contract-driven responsive grid."""
 
-import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -31,22 +30,17 @@ if "max-width: none" not in form_css or ".contract-form-canvas-shell" not in for
     fail("form canvas does not explicitly own full available width")
 for required in (
     "container-type: inline-size",
-    "@container (min-width: 680px)",
-    "@container (min-width: 1240px)",
+    "@container (max-width: 479px)",
+    "@container (min-width: 480px) and (max-width: 959px)",
     "template-form-section-grid--columns-${columns}",
-    "field--compact",
-    "field--normal",
-    "field--wide",
-    "field--full",
-    ".template-form-section-grid--columns-1 > .field--wide",
-    ".template-form-section-grid--columns-2 > .field--wide",
-    ".template-form-section-grid--columns-3 > .field--wide",
+    ".field--compact {\n  grid-column: span 8;",
+    ".field--normal,\n.field--half {\n  grid-column: span 12;",
+    ".field--wide {\n  grid-column: span 16;",
+    ".field--full {\n  grid-column: span 24;",
+    ".field--wide,\n  .field--full {\n    grid-column: 1 / -1;",
 ):
     if required not in section:
         fail(f"responsive field grid contract missing: {required}")
-wide_container_rule = re.search(r"@container \(min-width: 680px\) \{(?P<body>.*?)\n\}", section, re.DOTALL)
-if not wide_container_rule or re.search(r"^\s*\.field--wide\s*\{", wide_container_rule.group("body"), re.MULTILINE):
-    fail("wide container rule is not scoped to declared two/three-column grids")
 for forbidden in ("fieldName", "description", "remark", "address", "location"):
     if forbidden in mapper:
         fail(f"field span guesses from business name/label: {forbidden}")
