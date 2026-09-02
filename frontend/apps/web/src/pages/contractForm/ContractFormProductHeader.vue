@@ -80,7 +80,7 @@
         <ScButton v-for="action in presentedDirectActions" :key="`hdr-${action.key}`" v-bind="actionEvidenceAttributes(action)" :data-product-primary-action="action.presentationTier === 'primary' || undefined" :variant="buttonVariant(action)" size="small" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</ScButton>
         <ScButton v-for="action in canonicalPresentedDirectActions" :key="`canonical-hdr-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" :data-product-primary-action="action.tier === 'primary' || undefined" :variant="canonicalButtonVariant(action)" size="small" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</ScButton>
       </span>
-      <ScDropdown v-if="headerOverflowItems.length" class="form-header-more-actions" :items="headerOverflowItems" @select="selectHeaderOverflow">
+      <ScDropdown v-if="headerOverflowItems.length && !isNarrowViewport" class="form-header-more-actions" :items="headerOverflowItems" @select="selectHeaderOverflow">
         <template #trigger><ScButton variant="ghost" size="small">更多操作</ScButton></template>
       </ScDropdown>
       <span v-if="configActions.length" class="form-header-action-separator" aria-hidden="true" />
