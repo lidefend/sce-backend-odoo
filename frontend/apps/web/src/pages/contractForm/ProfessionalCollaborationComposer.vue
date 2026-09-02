@@ -7,7 +7,7 @@
     :data-composer-mode="activity ? 'activity' : 'comment'"
   >
     <template v-if="activity">
-      <label class="native-chatter-field">
+      <label v-if="userSearchEnabled" class="native-chatter-field">
         <span>{{ activityAssigneeLabel }}</span>
         <ScSelect
           :model-value="activityAssigneeId || ''"
@@ -38,7 +38,7 @@
           <span class="native-chatter-reply-body">{{ replyTarget.body }}</span>
         </div>
       </div>
-      <label class="native-chatter-field">
+      <label v-if="userSearchEnabled" class="native-chatter-field">
         <span>提醒对象</span>
         <ScInput type="search" :model-value="collaborationUserQuery" :disabled="posting || usersLoading" :loading="usersLoading" placeholder="搜索姓名或账号" @update:model-value="emitCollaborationUserQuery" />
       </label>
@@ -72,6 +72,7 @@ defineProps<{
   activity: boolean;
   posting: boolean;
   usersLoading: boolean;
+  userSearchEnabled: boolean;
   draft: string;
   replyTarget: { id: number; author: string; body: string; intent: 'chatter.post' } | null;
   placeholder: string;

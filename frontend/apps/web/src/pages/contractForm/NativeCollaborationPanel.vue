@@ -6,6 +6,7 @@
     :data-attachment-readiness="capabilityReadiness.attachment"
     :data-activity-readiness="capabilityReadiness.activity"
     :data-follower-readiness="capabilityReadiness.follower"
+    :data-user-search-readiness="userSearchEnabled ? 'ready' : 'fail_closed'"
   >
     <h3>{{ title }}</h3>
     <ScInlineState v-if="unavailableMessage" class="native-chatter-empty" state="empty" :label="unavailableMessage" />
@@ -26,6 +27,7 @@
       :activity="activeIsActivity"
       :posting="posting"
       :users-loading="usersLoading"
+      :user-search-enabled="userSearchEnabled"
       :draft="chatterDraft"
       :reply-target="replyTarget"
       :placeholder="activePlaceholder"
@@ -131,6 +133,7 @@ export type NativeCollaborationPanelProps = {
   busy: boolean;
   posting: boolean;
   usersLoading: boolean;
+  userSearchEnabled: boolean;
   activeMode: string;
   activeIsActivity: boolean;
   activePlaceholder: string;

@@ -107,6 +107,13 @@ if not getattr(record_result, "ok", False):
 record_integrity = _layout_occurrence_integrity(record_data)
 if any(record_integrity[key] for key in ("missing_widgets", "missing_statuses", "missing_descriptors")):
     raise AssertionError("project readonly Contract V2 occurrence integrity failed: %s" % record_integrity)
+record_collaboration_contract = (
+    (record_data.get("runtimeContract") or {}).get("collaboration")
+    if isinstance(record_data.get("runtimeContract"), dict)
+    else record_data.get("collaboration")
+) or {}
+if record_collaboration_contract.get("user_search_intent") != "collaboration.users.search":
+    raise AssertionError("project collaboration user search intent was not exact: %s" % record_collaboration_contract)
 
 record_rules = [
     row
@@ -411,12 +418,22 @@ for target_record in (project_record, payment_record):
         target_record._name.replace(".", "-"),
         uuid.uuid4().hex[:10],
     )
-    message = target_record.message_post(
-        body=fixture_body,
-        subject="消息删除旅程",
-        message_type="comment",
-        subtype_xmlid="mail.mt_comment",
-    )
+    message = user_env["mail.message"].with_context(
+        mail_create_nosubscribe=True,
+        mail_notify_noemail=True,
+        mail_notify_force_send=False,
+        mail_post_autofollow=False,
+        tracking_disable=True,
+    ).create({
+        "model": target_record._name,
+        "res_id": int(target_record.id),
+        "body": "<p>%s</p>" % fixture_body,
+        "subject": "消息删除旅程",
+        "message_type": "comment",
+        "subtype_id": int(env.ref("mail.mt_comment").id),
+        "author_id": int(user.partner_id.id),
+        "email_from": "%s@example.invalid" % (user.login or "demo-user"),
+    })
     timeline = _handler_data(ChatterTimelineHandler, {
         "model": target_record._name,
         "res_id": int(target_record.id),
@@ -512,11 +529,7 @@ print("LOCAL_DEV_PROJECT_CREATE_ACTION_SCOPE_JSON=" + json.dumps({
     "workspace_menu_id": int(workspace_menu.id),
     "create_occurrence_integrity": create_integrity,
     "readonly_occurrence_integrity": record_integrity,
-    "record_collaboration_contract": (
-        (record_data.get("runtimeContract") or {}).get("collaboration")
-        if isinstance(record_data.get("runtimeContract"), dict)
-        else record_data.get("collaboration")
-    ),
+    "record_collaboration_contract": record_collaboration_contract,
     "share_action_execute": {
         "actionId": share_rule.get("actionId"),
         "backendIdentity": share_rule.get("backendIdentity"),

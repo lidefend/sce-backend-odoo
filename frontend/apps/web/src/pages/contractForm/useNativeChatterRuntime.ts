@@ -34,6 +34,7 @@ export function useNativeChatterRuntime(params: {
   recordId: () => number;
   activeChatterAction: () => NativeChatterAction | null;
   followerContract: () => NativeFollowerContract | null;
+  userSearchIntent: () => 'collaboration.users.search' | null;
 }) {
   const activeMode = ref('');
   const activeLabel = ref('');
@@ -194,9 +195,15 @@ export function useNativeChatterRuntime(params: {
   }
 
   async function loadUsers(query = userQuery.value) {
+    const intent = params.userSearchIntent();
+    if (intent !== 'collaboration.users.search') {
+      userOptions.value = [];
+      usersLoading.value = false;
+      return;
+    }
     usersLoading.value = true;
     try {
-      const response = await searchCollaborationUsers({ query, limit: 20 });
+      const response = await searchCollaborationUsers({ intent, query, limit: 20 });
       const items = Array.isArray(response.items) ? response.items : [];
       const merged = new Map<number, CollaborationUserOption>();
       userOptions.value.forEach((item) => {

@@ -75,7 +75,7 @@ REASON_STANDARD_SUBMIT_ACTION = "STANDARD_SUBMIT_ACTION"
 REASON_SCENE_CONTRACT_READY = "SCENE_CONTRACT_READY"
 REASON_ACTION_GROUP_ACCESS_DENIED = _authority.REASON_ACTION_GROUP_ACCESS_DENIED
 REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INVALID
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-governance-2026-09-01"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-governance-2026-09-02-user-search"
 
 
 def form_structure_presentation_mode(authority: Any) -> str:
@@ -3487,6 +3487,7 @@ class UiContractV2Handler(BaseIntentHandler):
             return
 
         if chatter_enabled:
+            collaboration["user_search_intent"] = "collaboration.users.search"
             chatter = {
                 **chatter,
                 "enabled": True,

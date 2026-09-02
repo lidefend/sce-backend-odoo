@@ -573,6 +573,7 @@ class LoadContractHandler(BaseIntentHandler):
 
         if "message_follower_ids" in model_fields:
             collaboration = _as_dict(data.get("collaboration"))
+            collaboration["user_search_intent"] = "collaboration.users.search"
             collaboration["followers"] = {
                 "enabled": True,
                 "label": "关注者",

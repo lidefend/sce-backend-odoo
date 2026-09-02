@@ -740,6 +740,9 @@ class _TreeFormParserMixin:
             "subviews": subviews,
             "chatter": chatter,
             "attachments": attachments,
+            "collaboration": {
+                "user_search_intent": "collaboration.users.search",
+            } if chatter.get("enabled") else {},
             "search": search,
         }
         _logger.debug("FORM_PARSER_DEBUG: final result keys=%s", list(result.keys()))

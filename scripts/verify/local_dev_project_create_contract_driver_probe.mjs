@@ -20,6 +20,7 @@ const followerUpdates = [];
 const attachmentMutations = [];
 const messageMutations = [];
 const activityMutations = [];
+const userSearchRequests = [];
 const intentFailures = [];
 async function captureHeaderPresentation(surface) {
   const header = surface.locator('.contract-form-command-bar');
@@ -186,6 +187,14 @@ async function verifyCreateActionJourney(surface, model) {
     await action.click();
     const composer = surface.locator('[data-professional-collaboration-component="composer"]');
     await composer.waitFor({ state: 'visible', timeout: 15000 });
+    let mentionSelected = false;
+    if (mode === 'message') {
+      const mentionChoice = composer.locator('.native-collab-options button:visible').first();
+      await mentionChoice.waitFor({ state: 'visible', timeout: 30000 });
+      await mentionChoice.click();
+      await composer.locator('.native-collab-selected button:visible').first().waitFor({ state: 'visible', timeout: 15000 });
+      mentionSelected = true;
+    }
     await composer.locator('textarea').fill(body);
     await composer.locator('.native-chatter-compose-actions button').first().click();
     const entry = surface.locator('.native-chatter-entry:visible').filter({ hasText: body });
@@ -195,7 +204,7 @@ async function verifyCreateActionJourney(surface, model) {
     await confirmation.waitFor({ state: 'visible', timeout: 15000 });
     await confirmation.getByRole('button', { name: '确认删除消息', exact: true }).click();
     await entry.waitFor({ state: 'detached', timeout: 30000 });
-    results[mode] = { body, posted: true, deleted: true };
+    results[mode] = { body, mentionSelected, posted: true, deleted: true };
   }
   const summary = `codex-create-action-journey-activity-${token}`;
   const activityAction = surface.locator('.chips').getByTitle('activity', { exact: true });
@@ -204,6 +213,12 @@ async function verifyCreateActionJourney(surface, model) {
   await activityAction.click();
   const activityComposer = surface.locator('[data-professional-collaboration-component="composer"]');
   await activityComposer.waitFor({ state: 'visible', timeout: 15000 });
+  const assigneeSelect = activityComposer.locator('[data-semantic-component="ScSelect"]');
+  await assigneeSelect.waitFor({ state: 'visible', timeout: 30000 });
+  await assigneeSelect.click();
+  const assigneeOption = page.locator('.t-select-option:visible').first();
+  await assigneeOption.waitFor({ state: 'visible', timeout: 15000 });
+  await assigneeOption.click();
   await activityComposer.locator('label').filter({ hasText: '摘要' }).locator('input').fill(summary);
   await activityComposer.locator('.native-chatter-compose-actions button').first().click();
   const activityEntry = surface.locator('.native-chatter-entry:visible').filter({ hasText: summary });
@@ -213,7 +228,7 @@ async function verifyCreateActionJourney(surface, model) {
   await confirmation.waitFor({ state: 'visible', timeout: 15000 });
   await confirmation.getByRole('button', { name: '确认取消计划', exact: true }).click();
   await activityEntry.waitFor({ state: 'detached', timeout: 30000 });
-  results.activity = { summary, scheduled: true, cancelled: true };
+  results.activity = { summary, assigneeSelected: true, scheduled: true, cancelled: true };
   return results;
 }
 async function verifyActivityCancelJourney(surface, model) {
@@ -280,6 +295,7 @@ page.on('request', (request) => {
     messageId: payload?.params?.message_id,
     parentId: payload?.params?.parent_id,
     body: payload?.params?.body,
+    mentionUserIds: payload?.params?.mention_user_ids,
   });
   if (intent === 'chatter.activity.update' || intent === 'chatter.activity.schedule') activityMutations.push({
     intent,
@@ -288,6 +304,11 @@ page.on('request', (request) => {
     activityId: payload?.params?.activity_id,
     action: payload?.params?.action,
     summary: payload?.params?.summary,
+    userId: payload?.params?.user_id,
+  });
+  if (intent === 'collaboration.users.search') userSearchRequests.push({
+    query: payload?.params?.query,
+    limit: payload?.params?.limit,
   });
   if (['create', 'write', 'unlink'].includes(op)) mutations.push({ intent, op });
 });
@@ -731,6 +752,7 @@ try {
     attachmentMutations,
     messageMutations,
     activityMutations,
+    userSearchRequests,
     activityCancelJourneys: [workspaceActivityCancelJourney, paymentActivityCancelJourney],
     intentFailures,
     browserErrors,
@@ -751,9 +773,23 @@ try {
     || replyMutations.filter((row) => !Number(row.parentId)).length !== 4) {
     throw new Error(`message reply journey did not preserve dual-model parent authority: ${JSON.stringify(messageMutations)}`);
   }
+  const mentionedCreateMessages = replyMutations.filter((row) => (
+    String(row.body || '').includes('codex-create-action-journey-message-')
+    && Array.isArray(row.mentionUserIds)
+    && row.mentionUserIds.some((id) => Number(id) > 0)
+  ));
+  if (mentionedCreateMessages.length !== 2) {
+    throw new Error(`message mention journey did not preserve dual-model user identity: ${JSON.stringify(messageMutations)}`);
+  }
   if (activityMutations.filter((row) => row.intent === 'chatter.activity.schedule').length !== 2
     || activityMutations.filter((row) => row.intent === 'chatter.activity.update' && row.action === 'cancel').length !== 4) {
     throw new Error(`activity cancel journey did not preserve dual-model mutation symmetry: ${JSON.stringify(activityMutations)}`);
+  }
+  if (activityMutations.filter((row) => row.intent === 'chatter.activity.schedule' && Number(row.userId) > 0).length !== 2) {
+    throw new Error(`activity assignee journey did not preserve dual-model user identity: ${JSON.stringify(activityMutations)}`);
+  }
+  if (userSearchRequests.length < 2 || userSearchRequests.some((row) => Number(row.limit) !== 20)) {
+    throw new Error(`collaboration user search did not use the governed dual-model boundary: ${JSON.stringify(userSearchRequests)}`);
   }
   if (browserErrors.length) throw new Error(`browser errors observed: ${JSON.stringify(browserErrors)}`);
 } catch (error) {

@@ -352,6 +352,7 @@ import {
   createContractV2Store,
   decodeContractV2Snapshot,
   resolveContractV2ContainerTree,
+  resolveContractV2Collaboration,
   resolveContractV2EffectiveFormCapabilities,
   resolveContractV2GlobalStatus,
   resolveContractV2MainData,
@@ -596,6 +597,7 @@ import {
   nativeCollaborationUnavailableMessage as nativeCollaborationUnavailableMessageFromState,
   resolveNativeAttachmentContract,
   resolveNativeChatterContract,
+  resolveNativeCollaborationUserSearchIntent,
   resolveRuntimeCollaborationContract,
 } from './contractForm/collaborationContract';
 import {
@@ -927,6 +929,9 @@ const {
   recordId: () => recordId.value,
   activeChatterAction: () => activeChatterAction.value,
   followerContract: () => nativeFollowerContract.value,
+  userSearchIntent: () => resolveNativeCollaborationUserSearchIntent(
+    resolveContractV2Collaboration(v2ContractStore.value),
+  ),
 });
 const attachmentViewerRef = ref<NativeAttachmentViewerLike | null>(null);
 const chatterTimelineLoading = chatterLoading;

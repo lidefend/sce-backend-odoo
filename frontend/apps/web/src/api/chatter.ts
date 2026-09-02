@@ -174,11 +174,12 @@ export async function fetchChatterTimeline(params: {
 }
 
 export async function searchCollaborationUsers(params: {
+  intent: 'collaboration.users.search';
   query?: string;
   limit?: number;
 }) {
   return intentRequest<{ items: CollaborationUserOption[] }>({
-    intent: 'collaboration.users.search',
+    intent: params.intent,
     params: {
       query: params.query || '',
       limit: params.limit ?? 20,

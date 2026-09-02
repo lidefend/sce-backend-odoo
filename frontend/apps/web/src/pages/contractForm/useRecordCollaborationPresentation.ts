@@ -19,6 +19,7 @@ import {
   nativeCollaborationUnavailableMessage as nativeCollaborationUnavailableMessageFromState,
   resolveNativeAttachmentContract,
   resolveNativeFollowerContract,
+  resolveNativeCollaborationUserSearchIntent,
   resolveNativeChatterContract,
 } from './collaborationContract';
 
@@ -87,6 +88,7 @@ export function useRecordCollaborationPresentation(context: {
     runtimeCollaborationContract.value,
   ));
   const nativeFollowerContract = computed(() => resolveNativeFollowerContract(runtimeCollaborationContract.value));
+  const nativeUserSearchIntent = computed(() => resolveNativeCollaborationUserSearchIntent(runtimeCollaborationContract.value));
   const nativeChatterActions = computed<NativeChatterAction[]>(() => nativeChatterActionsFromContract(nativeChatterContract.value, {
     recordId: context.recordId.value,
     model: context.model.value,
@@ -158,6 +160,7 @@ export function useRecordCollaborationPresentation(context: {
     timelineHasMore: context.chatterTimelineHasMore.value,
     timelineLoading: context.chatterTimelineLoading.value, title: nativeCollaborationTitle.value,
     unavailableMessage: nativeCollaborationUnavailableMessage.value, usersLoading: context.collaborationUsersLoading.value,
+    userSearchEnabled: nativeUserSearchIntent.value === 'collaboration.users.search',
   }));
   const nativeCollaborationPanelListeners: NativeCollaborationPanelListeners = {
     'attachment-selected': context.onNativeAttachmentSelected, 'close-composer': context.closeNativeChatterComposer,

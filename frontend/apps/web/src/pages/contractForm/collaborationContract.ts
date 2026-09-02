@@ -60,6 +60,13 @@ export function resolveNativeFollowerContract(runtimeCollaborationContract: unkn
   };
 }
 
+export function resolveNativeCollaborationUserSearchIntent(
+  runtimeCollaborationContract: unknown,
+): 'collaboration.users.search' | null {
+  const intent = String(dictOrEmpty(runtimeCollaborationContract).user_search_intent || '').trim();
+  return intent === 'collaboration.users.search' ? intent : null;
+}
+
 export function nativeChatterActionsFromContract(
   chatter: Record<string, unknown>,
   context: { recordId: number; model: string },

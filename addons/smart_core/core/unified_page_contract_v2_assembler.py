@@ -1328,6 +1328,9 @@ def _inject_collaboration_runtime_contract(contract: dict[str, Any], collaborati
         runtime = {}
         contract["runtimeContract"] = runtime
     normalized: dict[str, Any] = {}
+    user_search_intent = str(collaboration.get("user_search_intent") or "").strip()
+    if user_search_intent == "collaboration.users.search":
+        normalized["user_search_intent"] = user_search_intent
     for key in ("chatter", "attachments", "followers", "timeline", "sourceAuthority"):
         value = collaboration.get(key)
         if isinstance(value, dict):

@@ -19,6 +19,12 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         read_text("addons/smart_core/handlers/load_contract.py"),
         read_text("addons/smart_core/handlers/ui_contract_v2_adapters.py"),
     ]
+    backend_user_search_sources = [
+        read_text("addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py"),
+        read_text("addons/smart_core/core/unified_page_contract_v2_assembler.py"),
+        read_text("addons/smart_core/handlers/load_contract.py"),
+        read_text("addons/smart_core/handlers/ui_contract_v2.py"),
+    ]
     contract_page = read_text("frontend/apps/web/src/pages/ContractFormPage.vue")
     driver_host = read_text("frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue")
     for marker in ('data-professional-collaboration-component="timeline"', "data-collaboration-entry-type", "update-activity", "open-attachment"):
@@ -104,6 +110,23 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("collaboration create authority must require the exact backend execute intent")
     if "payload.execute_intent === expectedExecuteIntent" not in collaboration_contract:
         failures.append("collaboration create presentation must fail closed without the exact backend execute intent")
+    if "intent === 'collaboration.users.search' ? intent : null" not in collaboration_contract:
+        failures.append("collaboration user search presentation must require the exact backend intent")
+    if "params.userSearchIntent()" not in chatter_runtime or "intent !== 'collaboration.users.search'" not in chatter_runtime:
+        failures.append("collaboration user search handler must independently fail closed without exact authority")
+    if "searchCollaborationUsers({ intent, query, limit: 20 })" not in chatter_runtime:
+        failures.append("collaboration user search must carry backend authority into the API boundary")
+    if ':data-user-search-readiness="userSearchEnabled ? \'ready\' : \'fail_closed\'"' not in panel or ':user-search-enabled="userSearchEnabled"' not in panel:
+        failures.append("collaboration user search presentation must expose fail-closed readiness")
+    if 'v-if="userSearchEnabled"' not in composer:
+        failures.append("collaboration user selectors must stay hidden without backend authority")
+    assignee_control = '<label v-if="userSearchEnabled" class="native-chatter-field">\n        <span>{{ activityAssigneeLabel }}</span>'
+    summary_control = '<label class="native-chatter-field">\n        <span>{{ activitySummaryLabel }}</span>'
+    if assignee_control not in composer or summary_control not in composer:
+        failures.append("user search authority must hide only the activity assignee selector, never the activity summary")
+    for source in backend_user_search_sources:
+        if "collaboration.users.search" not in source or "user_search_intent" not in source:
+            failures.append("backend collaboration projections must supply exact user search authority")
     for source in backend_chatter_sources:
         if source.count("'execute_intent': 'chatter.post'") + source.count('"execute_intent": "chatter.post"') < 2:
             failures.append("backend collaboration projections must supply exact chatter.post authority for message and note")
@@ -133,7 +156,7 @@ def main() -> int:
         print("[frontend_professional_collaboration_guard] FAIL")
         for failure in failures: print(f" - {failure}")
         return 1
-    print("[frontend_professional_collaboration_guard] PASS components=1 follower=backend_authoritative attachment_download=exact_intent attachment_delete=confirmed message_delete=confirmed activity_update=exact_intent activity_cancel=confirmed")
+    print("[frontend_professional_collaboration_guard] PASS components=1 follower=backend_authoritative user_search=exact_intent attachment_download=exact_intent attachment_delete=confirmed message_delete=confirmed activity_update=exact_intent activity_cancel=confirmed")
     return 0
 
 if __name__ == "__main__": raise SystemExit(main())

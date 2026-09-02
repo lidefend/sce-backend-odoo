@@ -136,6 +136,37 @@ class ProfessionalCollaborationGuardTests(unittest.TestCase):
                 return value.replace("if (!exactReplyAuthorized && !canExecuteCollaborationCreateAction(action, activeMode.value)) return;", "")
             return value
         self.assertTrue(any("create handlers" in item for item in validate(read_text)))
+    def test_collaboration_user_search_cannot_accept_unrelated_intent(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("collaborationContract.ts"):
+                return value.replace("intent === 'collaboration.users.search' ? intent : null", "intent ? intent : null")
+            return value
+        self.assertTrue(any("user search presentation" in item for item in validate(read_text)))
+    def test_collaboration_user_search_handler_cannot_fail_open(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useNativeChatterRuntime.ts"):
+                return value.replace("intent !== 'collaboration.users.search'", "!intent")
+            return value
+        self.assertTrue(any("user search handler" in item for item in validate(read_text)))
+    def test_collaboration_user_search_projection_is_required(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("load_contract.py"):
+                return value.replace('collaboration["user_search_intent"] = "collaboration.users.search"', "")
+            return value
+        self.assertTrue(any("user search authority" in item for item in validate(read_text)))
+    def test_missing_user_search_authority_cannot_hide_activity_summary(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalCollaborationComposer.vue"):
+                return value.replace(
+                    '<label class="native-chatter-field">\n        <span>{{ activitySummaryLabel }}</span>',
+                    '<label v-if="userSearchEnabled" class="native-chatter-field">\n        <span>{{ activitySummaryLabel }}</span>',
+                )
+            return value
+        self.assertTrue(any("never the activity summary" in item for item in validate(read_text)))
     def test_activity_action_cannot_fall_back_to_another_contract_row(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
