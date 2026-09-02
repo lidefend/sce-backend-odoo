@@ -15,8 +15,21 @@ set +a
 [[ "${ODOO_DBFILTER:-}" == "^sc_dev_demo$" ]] || { echo "expected local.dev dbfilter" >&2; exit 2; }
 
 cleanup_collaboration_fixtures() {
-  DB_NAME="${DB_NAME}" bash "${ROOT_DIR}/scripts/ops/odoo_shell_exec.sh" \
-    < "${ROOT_DIR}/scripts/verify/local_dev_collaboration_fixture_cleanup.py" >/dev/null || true
+  local journey_status=$?
+  local cleanup_status=0
+  local cleanup_output=""
+  trap - EXIT
+  set +e
+  cleanup_output="$(DB_NAME="${DB_NAME}" bash "${ROOT_DIR}/scripts/ops/odoo_shell_exec.sh" \
+    < "${ROOT_DIR}/scripts/verify/local_dev_collaboration_fixture_cleanup.py")"
+  cleanup_status=$?
+  set -e
+  printf '%s\n' "${cleanup_output}"
+  if [[ "${cleanup_status}" -ne 0 ]]; then
+    echo "collaboration fixture cleanup failed" >&2
+    exit "${cleanup_status}"
+  fi
+  exit "${journey_status}"
 }
 trap cleanup_collaboration_fixtures EXIT
 
