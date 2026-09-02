@@ -94,12 +94,14 @@
       :entries="visibleTimeline"
       :activity-updating-ids="activityUpdatingIds"
       :attachment-deleting-ids="attachmentDeletingIds"
+      :message-deleting-ids="messageDeletingIds"
       :attachment-view-label="attachmentViewLabel"
       :timeline-has-more="timelineHasMore"
       :timeline-loading="timelineLoading"
       @update-activity="forwardActivityUpdate"
       @open-attachment="$emit('open-attachment', $event)"
       @delete-attachment="$emit('delete-attachment', $event)"
+      @delete-message="$emit('delete-message', $event)"
       @reply="$emit('reply', $event)"
       @load-more="$emit('load-more-timeline')"
     />
@@ -155,6 +157,7 @@ export type NativeCollaborationPanelProps = {
   hasAttachments: boolean;
   attachmentUploading: boolean;
   attachmentDeletingIds: number[];
+  messageDeletingIds: number[];
   attachmentUploadEnabled: boolean;
   attachmentUploadLabel: string;
   attachmentUploadingLabel: string;
@@ -195,6 +198,7 @@ export type NativeCollaborationPanelListeners = {
   'update-activity': (entry: ChatterTimelineEntry, action: 'done' | 'cancel') => void;
   'open-attachment': (attachment: NonNullable<ChatterTimelineEntry['attachment']>) => void;
   'delete-attachment': (entry: ChatterTimelineEntry) => void;
+  'delete-message': (entry: ChatterTimelineEntry) => void;
   'load-more-timeline': () => void;
   reply: (entry: ChatterTimelineEntry) => void;
   'update-follower': (action: 'follow' | 'unfollow') => void;
@@ -229,6 +233,7 @@ const emit = defineEmits<{
   'update-activity': [entry: ChatterTimelineEntry, action: 'done' | 'cancel'];
   'open-attachment': [attachment: NonNullable<ChatterTimelineEntry['attachment']>];
   'delete-attachment': [entry: ChatterTimelineEntry];
+  'delete-message': [entry: ChatterTimelineEntry];
   'load-more-timeline': [];
   reply: [entry: ChatterTimelineEntry];
   'update-follower': [action: 'follow' | 'unfollow'];

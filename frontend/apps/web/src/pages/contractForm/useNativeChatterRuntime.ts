@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue';
 import {
   fetchChatterTimeline,
+  deleteChatterMessage,
   fetchCollaborationFollowers,
   postChatterMessage,
   scheduleChatterActivity,
@@ -11,7 +12,7 @@ import {
   type CollaborationUserOption,
   type CollaborationFollower,
 } from '../../api/chatter';
-import { canExecuteCollaborationCreateAction, canUpdateCollaborationActivity } from './professionalCollaborationModel';
+import { canDeleteCollaborationMessage, canExecuteCollaborationCreateAction, canUpdateCollaborationActivity } from './professionalCollaborationModel';
 import type { NativeFollowerContract } from './collaborationContract';
 import type { NativeChatterAction } from './types';
 
@@ -53,6 +54,7 @@ export function useNativeChatterRuntime(params: {
   const timelineHasMore = ref(false);
   const timelineNextOffset = ref(0);
   const activityUpdatingIds = ref<number[]>([]);
+  const messageDeletingIds = ref<number[]>([]);
   const replyTarget = ref<{ id: number; author: string; body: string } | null>(null);
   const followers = ref<CollaborationFollower[]>([]);
   const followerCount = ref(0);
@@ -357,6 +359,24 @@ export function useNativeChatterRuntime(params: {
     }
   }
 
+  async function deleteMessage(entry: ChatterTimelineEntry) {
+    const messageId = Number(entry.message?.id || entry.id || 0);
+    const recordId = params.recordId();
+    const model = params.model();
+    if (!messageId || !recordId || !model || messageDeletingIds.value.includes(messageId)
+      || !canDeleteCollaborationMessage(entry)) return;
+    messageDeletingIds.value = [...messageDeletingIds.value, messageId];
+    error.value = '';
+    try {
+      await deleteChatterMessage({ model, res_id: recordId, message_id: messageId });
+      await loadTimeline(recordId, model);
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '删除消息失败';
+    } finally {
+      messageDeletingIds.value = messageDeletingIds.value.filter((id) => id !== messageId);
+    }
+  }
+
   return {
     activeMode,
     activeLabel,
@@ -377,6 +397,7 @@ export function useNativeChatterRuntime(params: {
     timeline,
     timelineHasMore,
     activityUpdatingIds,
+    messageDeletingIds,
     replyTarget,
     followers,
     followerCount,
@@ -398,5 +419,6 @@ export function useNativeChatterRuntime(params: {
     openReply,
     send,
     updateActivity,
+    deleteMessage,
   };
 }

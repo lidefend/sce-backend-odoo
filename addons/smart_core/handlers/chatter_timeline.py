@@ -202,6 +202,13 @@ class ChatterTimelineHandler(BaseIntentHandler):
             subtype_xmlid = _message_subtype_xmlid(row)
             type_label = "备注" if subtype_xmlid == "mail.mt_note" else "评论"
             is_owner = bool(row.author_id and row.author_id.id == self.env.user.partner_id.id)
+            can_delete = bool(can_reply and (is_admin or is_owner))
+            if can_delete:
+                try:
+                    Message.check_access_rights("unlink")
+                    row.check_access_rule("unlink")
+                except AccessError:
+                    can_delete = False
             items.append(
                 {
                     "key": f"m-{row.id}",
@@ -217,8 +224,9 @@ class ChatterTimelineHandler(BaseIntentHandler):
                         "id": row.id,
                         "author_name": _message_author_display(row),
                         "can_reply": bool(can_reply),
-                        "can_edit": is_admin or is_owner,
-                        "can_delete": is_admin or is_owner,
+                        "can_edit": False,
+                        "can_delete": can_delete,
+                        "delete_intent": "chatter.message.delete" if can_delete else "",
                     },
                 }
             )

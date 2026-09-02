@@ -49,6 +49,13 @@ export function canReplyCollaborationMessage(entry: ChatterTimelineEntry): boole
   return entry.type === 'message' && entry.message?.can_reply === true && Number(entry.message.id || entry.id || 0) > 0;
 }
 
+export function canDeleteCollaborationMessage(entry: ChatterTimelineEntry): boolean {
+  return entry.type === 'message'
+    && entry.message?.can_delete === true
+    && entry.message.delete_intent === 'chatter.message.delete'
+    && Number(entry.message.id || entry.id || 0) > 0;
+}
+
 export function canExecuteCollaborationCreateAction(
   action: NativeChatterAction | null | undefined,
   mode: string,

@@ -900,6 +900,7 @@ const {
   timeline: chatterTimeline,
   timelineHasMore: chatterTimelineHasMore,
   activityUpdatingIds,
+  messageDeletingIds,
   replyTarget,
   clearForRecordLoad: clearNativeChatterForRecordLoad,
   closeComposer: closeNativeChatterComposer,
@@ -912,6 +913,7 @@ const {
   openReply: replyNativeChatter,
   send: sendNativeChatter,
   updateActivity: updateNativeActivity,
+  deleteMessage: deleteNativeMessage,
   followers,
   followerCount,
   isFollowing,
@@ -964,6 +966,17 @@ async function confirmAndDeleteNativeAttachment(entry: ChatterTimelineEntry) {
   });
   if (confirmed !== true) return;
   await deleteNativeAttachment(entry);
+}
+async function confirmAndDeleteNativeMessage(entry: ChatterTimelineEntry) {
+  const author = String(entry.message?.author_name || entry.typeLabel || '当前用户').trim() || '当前用户';
+  const body = String(entry.body || entry.title || '').trim();
+  const summary = body.length > 36 ? `${body.slice(0, 36)}…` : body;
+  const confirmed = await intentConfirmationRef.value?.confirm({
+    actionLabel: '删除消息',
+    message: `${author}发布的消息“${summary || '无正文'}”删除后无法恢复，是否继续？`,
+  });
+  if (confirmed !== true) return;
+  await deleteNativeMessage(entry);
 }
 const model = computed(() => String(route.params.model || v2ContractStore.value?.snapshot.pageInfo.model || ''));
 const isManagedRelationCreateDialog = computed(() => Boolean(
@@ -1584,6 +1597,7 @@ const {
   activityNote, activitySummary, activityUpdatingIds,
   addOne2manyRow, advancedExpanded, applyPageStatusEvent,
   applyWorkflowAvailability, attachmentError, attachmentUploading, attachmentDeletingIds,
+  messageDeletingIds,
   buildContractFormActions, busy, busyKind,
   canOpenRelationRecordForm, changedFieldGroupDraft, chatterDraft, replyTarget,
   chatterError, chatterPosting, chatterTimeline, chatterTimelineHasMore, chatterTimelineLoading,
@@ -1610,7 +1624,7 @@ const {
   one2manyColumnDisplayValue, one2manyColumnInputType, one2manyColumns,
   one2manyCreateLabel, one2manyRowErrors, one2manyRowHints,
   one2manyRowLabel, one2manyRowStateLabel, one2manySummary, isOne2manyHydrating,
-  openNativeAttachment, deleteNativeAttachment: confirmAndDeleteNativeAttachment, openNativeChatterAction, replyNativeChatter, openRelationCreateForm,
+  openNativeAttachment, deleteNativeAttachment: confirmAndDeleteNativeAttachment, deleteNativeMessage: confirmAndDeleteNativeMessage, openNativeChatterAction, replyNativeChatter, openRelationCreateForm,
   parseMaybeJsonRecord, pendingNativeAttachments, policyContext,
   queryMany2oneInline: (...args: Parameters<typeof queryMany2oneInline>) => queryMany2oneInline(...args), recordId, relationCreateMode,
   relationIds, relationInlineCreate, relationKeyword,

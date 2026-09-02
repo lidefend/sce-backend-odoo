@@ -26,6 +26,8 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
   const updateNativeFollower = dependencies.updateNativeFollower;
   const attachmentDeletingIds = dependencies.attachmentDeletingIds;
   const deleteNativeAttachment = dependencies.deleteNativeAttachment;
+  const messageDeletingIds = dependencies.messageDeletingIds;
+  const deleteNativeMessage = dependencies.deleteNativeMessage;
   const isFieldWritable = dependencies.isFieldWritable;
   const setTechnicalCompanionTextField = dependencies.setTechnicalCompanionTextField;
   const formFields = computed(() => resolveContractV2FormFieldMap(v2ContractStore.value));
@@ -87,8 +89,8 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     selectedMentionUsers, activityAssigneeId, chatterPosting, chatterError, chatterTimeline,
     chatterTimelineHasMore, chatterTimelineLoading, activityUpdatingIds,
     followers, followerCount, isFollowing, canFollow, canUnfollow, followersLoading, followerError,
-    attachmentError, attachmentUploading, attachmentDeletingIds, pendingNativeAttachments, onNativeAttachmentSelected,
-    closeNativeChatterComposer, loadCollaborationUsers, openNativeChatterAction, openNativeAttachment, deleteNativeAttachment,
+    attachmentError, attachmentUploading, attachmentDeletingIds, messageDeletingIds, pendingNativeAttachments, onNativeAttachmentSelected,
+    closeNativeChatterComposer, loadCollaborationUsers, openNativeChatterAction, openNativeAttachment, deleteNativeAttachment, deleteNativeMessage,
     removeMentionUser, removePendingNativeAttachment, selectMentionUser, sendNativeChatter, replyNativeChatter, updateNativeActivity,
     loadMoreNativeChatterTimeline, updateNativeFollower,
   });

@@ -18,6 +18,7 @@ const contractPresentations = [];
 const browserErrors = [];
 const followerUpdates = [];
 const attachmentMutations = [];
+const messageMutations = [];
 const intentFailures = [];
 async function captureHeaderPresentation(surface) {
   const header = surface.locator('.contract-form-command-bar');
@@ -92,6 +93,36 @@ async function verifyAttachmentDeleteJourney(surface, model) {
   await timelineEntry.waitFor({ state: 'detached', timeout: 30000 });
   return { attachmentId: expected.attachment_id, fileName, downloaded: true, cancelPreserved: true, confirmed: true, deleted: true, remainingEntries: await timelineEntry.count() };
 }
+async function verifyMessageDeleteJourney(surface, model) {
+  const expected = (target.message_delete_journeys || []).find((row) => row.model === model);
+  if (!expected?.body || !expected?.message_id) throw new Error(`missing message delete fixture authority for ${model}`);
+  const body = String(expected.body);
+  const timelineEntry = surface.locator('.native-chatter-entry:visible').filter({ hasText: body });
+  const timeline = surface.locator('[data-professional-collaboration-component="timeline"]');
+  for (let pageIndex = 0; pageIndex < 3 && await timelineEntry.count() === 0; pageIndex += 1) {
+    const loadMore = timeline.getByRole('button', { name: '加载更多', exact: true });
+    if (await loadMore.count() === 0) break;
+    await loadMore.click();
+    await page.waitForTimeout(750);
+  }
+  await timelineEntry.waitFor({ state: 'visible', timeout: 30000 });
+  const deleteButton = timelineEntry.getByRole('button', { name: '删除', exact: true });
+  await deleteButton.waitFor({ state: 'visible', timeout: 15000 });
+  await deleteButton.click();
+  const confirmation = page.locator('[data-professional-workflow-component="confirm-dialog"][data-state="open"]');
+  await confirmation.waitFor({ state: 'visible', timeout: 15000 });
+  if (!String(await confirmation.textContent() || '').includes(body.slice(0, 36))) {
+    throw new Error(`message delete confirmation omitted target identity for ${model}`);
+  }
+  await confirmation.getByRole('button', { name: '取消', exact: true }).click();
+  await confirmation.waitFor({ state: 'detached', timeout: 15000 });
+  if (await timelineEntry.count() !== 1) throw new Error(`message delete cancellation did not preserve ${model} entry`);
+  await deleteButton.click();
+  await confirmation.waitFor({ state: 'visible', timeout: 15000 });
+  await confirmation.getByRole('button', { name: '确认删除消息', exact: true }).click();
+  await timelineEntry.waitFor({ state: 'detached', timeout: 30000 });
+  return { messageId: expected.message_id, body, cancelPreserved: true, confirmed: true, deleted: true };
+}
 page.on('console', (message) => {
   if (message.type() === 'error') browserErrors.push(`console:${message.text()}`);
 });
@@ -118,6 +149,12 @@ page.on('request', (request) => {
     recordId: payload?.params?.res_id,
     attachmentId: payload?.params?.attachment_id,
     name: payload?.params?.name,
+  });
+  if (intent === 'chatter.message.delete') messageMutations.push({
+    intent,
+    model: payload?.params?.model,
+    recordId: payload?.params?.res_id,
+    messageId: payload?.params?.message_id,
   });
   if (['create', 'write', 'unlink'].includes(op)) mutations.push({ intent, op });
 });
@@ -275,6 +312,7 @@ try {
     .waitFor({ state: 'visible', timeout: 45000 });
   const workspaceFollowerJourney = await verifyFollowerMutation(workspaceSurface, 'project.project');
   const workspaceAttachmentDeleteJourney = await verifyAttachmentDeleteJourney(workspaceSurface, 'project.project');
+  const workspaceMessageDeleteJourney = await verifyMessageDeleteJourney(workspaceSurface, 'project.project');
   const workspaceResult = {
     url: page.url(),
     drivers: await workspaceSurface.locator('[data-contract-form-driver]').count(),
@@ -355,6 +393,7 @@ try {
     .waitFor({ state: 'visible', timeout: 45000 });
   const paymentFollowerJourney = await verifyFollowerMutation(paymentSurface, 'payment.request');
   const paymentAttachmentDeleteJourney = await verifyAttachmentDeleteJourney(paymentSurface, 'payment.request');
+  const paymentMessageDeleteJourney = await verifyMessageDeleteJourney(paymentSurface, 'payment.request');
   const paymentDrivers = await paymentSurface.locator('[data-contract-form-driver]').count();
   const paymentErrors = await paymentSurface.locator('[data-contract-form-driver-error]').allTextContents();
   const paymentResult = {
@@ -541,6 +580,7 @@ try {
     executeRequests,
     followerUpdates,
     attachmentMutations,
+    messageMutations,
     intentFailures,
     browserErrors,
   }));
@@ -550,6 +590,9 @@ try {
     || attachmentMutations.filter((row) => row.intent === 'file.download').length !== 2
     || attachmentMutations.filter((row) => row.intent === 'chatter.attachment.delete').length !== 2) {
     throw new Error(`attachment delete journey did not preserve dual-model mutation symmetry: ${JSON.stringify(attachmentMutations)}`);
+  }
+  if (messageMutations.filter((row) => row.intent === 'chatter.message.delete').length !== 2) {
+    throw new Error(`message delete journey did not preserve dual-model mutation symmetry: ${JSON.stringify(messageMutations)}`);
   }
   if (browserErrors.length) throw new Error(`browser errors observed: ${JSON.stringify(browserErrors)}`);
 } catch (error) {

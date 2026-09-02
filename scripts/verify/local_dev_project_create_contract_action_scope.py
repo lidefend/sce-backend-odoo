@@ -405,6 +405,45 @@ for target_record in (project_record, payment_record):
         "download_intent": "file.download",
     })
 
+message_delete_journeys = []
+for target_record in (project_record, payment_record):
+    fixture_body = "codex-message-delete-journey-%s-%s" % (
+        target_record._name.replace(".", "-"),
+        uuid.uuid4().hex[:10],
+    )
+    message = target_record.message_post(
+        body=fixture_body,
+        subject="消息删除旅程",
+        message_type="comment",
+        subtype_xmlid="mail.mt_comment",
+    )
+    timeline = _handler_data(ChatterTimelineHandler, {
+        "model": target_record._name,
+        "res_id": int(target_record.id),
+        "limit": 80,
+        "include_audit": False,
+    })
+    row = next((
+        item for item in timeline.get("items", [])
+        if isinstance(item, dict)
+        and item.get("type") == "message"
+        and int((item.get("message") or {}).get("id") or 0) == int(message.id)
+    ), None)
+    if not row or (row.get("message") or {}).get("can_delete") is not True:
+        raise AssertionError("message delete authority was not projected: %s" % {
+            "model": target_record._name, "message_id": message.id, "row": row,
+        })
+    if (row.get("message") or {}).get("delete_intent") != "chatter.message.delete":
+        raise AssertionError("message delete intent was not exact: %s" % row)
+    message_delete_journeys.append({
+        "model": target_record._name,
+        "record_id": int(target_record.id),
+        "message_id": int(message.id),
+        "body": fixture_body,
+        "can_delete": True,
+        "delete_intent": "chatter.message.delete",
+    })
+
 # The browser runs in a separate Odoo transaction. Persist only these uniquely
 # prefixed fixtures; the shell wrapper's EXIT trap removes any survivor.
 env.cr.commit()
@@ -452,4 +491,5 @@ print("LOCAL_DEV_PROJECT_CREATE_ACTION_SCOPE_JSON=" + json.dumps({
     "intake_semantic_roles": actual_roles,
     "follower_journeys": follower_journeys,
     "attachment_delete_journeys": attachment_delete_journeys,
+    "message_delete_journeys": message_delete_journeys,
 }, ensure_ascii=False, sort_keys=True))

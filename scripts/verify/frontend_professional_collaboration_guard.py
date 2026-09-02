@@ -77,6 +77,14 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("message reply handler must enforce authority and preserve the parent relation")
     if "@reply=\"$emit('reply', $event)\"" not in panel:
         failures.append("professional collaboration panel must settle the reply action")
+    if "canDeleteCollaborationMessage(entry)" not in timeline or "delete-message" not in timeline:
+        failures.append("message deletion presentation must consume explicit backend authority")
+    if "entry.message?.can_delete === true" not in model or "entry.message.delete_intent === 'chatter.message.delete'" not in model:
+        failures.append("message deletion authority must require the exact backend intent")
+    if "!canDeleteCollaborationMessage(entry)" not in chatter_runtime or "deleteChatterMessage" not in chatter_runtime:
+        failures.append("message delete handler must independently reject missing or denied authority")
+    if "confirmAndDeleteNativeMessage" not in contract_page or "deleteNativeMessage(entry)" not in contract_page:
+        failures.append("message deletion must settle through the professional confirmation component")
     if "canExecuteCollaborationCreateAction(action, 'activity')" not in chatter_runtime or "canExecuteCollaborationCreateAction(action, activeMode.value)" not in chatter_runtime:
         failures.append("collaboration create handlers must independently enforce the active contract action")
     if "nativeChatterActions.value.find((item) => item.mode === 'activity')" in read_text("frontend/apps/web/src/pages/contractForm/useRecordCollaborationPresentation.ts"):
@@ -97,7 +105,7 @@ def main() -> int:
         print("[frontend_professional_collaboration_guard] FAIL")
         for failure in failures: print(f" - {failure}")
         return 1
-    print("[frontend_professional_collaboration_guard] PASS components=1 follower=backend_authoritative attachment_download=exact_intent attachment_delete=confirmed")
+    print("[frontend_professional_collaboration_guard] PASS components=1 follower=backend_authoritative attachment_download=exact_intent attachment_delete=confirmed message_delete=confirmed")
     return 0
 
 if __name__ == "__main__": raise SystemExit(main())

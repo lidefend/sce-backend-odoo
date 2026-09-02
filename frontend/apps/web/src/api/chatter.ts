@@ -45,6 +45,7 @@ export interface ChatterTimelineEntry {
     can_reply?: boolean;
     can_edit?: boolean;
     can_delete?: boolean;
+    delete_intent?: string;
   };
 }
 
@@ -211,6 +212,17 @@ export async function deleteChatterAttachment(params: {
 }) {
   return intentRequest<{ result: { attachment_id: number; deleted: boolean } }>({
     intent: 'chatter.attachment.delete',
+    params,
+  });
+}
+
+export async function deleteChatterMessage(params: {
+  model: string;
+  res_id: number;
+  message_id: number;
+}) {
+  return intentRequest<{ result: { message_id: number; deleted: boolean } }>({
+    intent: 'chatter.message.delete',
     params,
   });
 }
