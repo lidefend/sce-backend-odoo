@@ -168,6 +168,18 @@ class ProfessionalRelationFieldGuardTests(unittest.TestCase):
 
         self.assertTrue(any("canonical write authority" in item for item in validate(read_text)))
 
+    def test_many2many_create_without_field_write_authority_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordActionPresentation.ts"):
+                return value.replace(
+                    "quickCreateRelationMany: async (fieldName: string) => {\n      if (!isFieldWritable(fieldName)) return;",
+                    "quickCreateRelationMany: async (fieldName: string) => {",
+                )
+            return value
+
+        self.assertTrue(any("create handler" in item for item in validate(read_text)))
+
 
 if __name__ == "__main__":
     unittest.main()

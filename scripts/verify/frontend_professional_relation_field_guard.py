@@ -97,6 +97,10 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("relation search selection does not fail closed on canonical write authority")
     if "canonicalFieldWritable: (...args: [string]) => canonicalFieldWritable(...args)" not in page:
         failures.append("relation runtime does not receive canonical field write authority")
+    if "quickCreateRelationMany: async (fieldName: string) => {\n      if (!isFieldWritable(fieldName)) return;" not in action_presentation:
+        failures.append("professional many2many create handler does not require field write authority")
+    if "isFieldWritable: (...args: Parameters<typeof isFieldWritable>) => isFieldWritable(...args)" not in page:
+        failures.append("professional relation adapter does not receive resolved field write authority")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
         if forbidden in component or forbidden in many2one or forbidden in model:
             failures.append(f"relation family contains forbidden product special case {forbidden}")

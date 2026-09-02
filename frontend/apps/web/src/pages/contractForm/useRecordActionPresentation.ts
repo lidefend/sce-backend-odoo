@@ -16,6 +16,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
   const chatterTimelineHasMore = dependencies.chatterTimelineHasMore;
   const chatterTimelineLoading = dependencies.chatterTimelineLoading;
   const loadMoreNativeChatterTimeline = dependencies.loadMoreNativeChatterTimeline;
+  const isFieldWritable = dependencies.isFieldWritable;
   const setTechnicalCompanionTextField = dependencies.setTechnicalCompanionTextField;
   const formFields = computed(() => resolveContractV2FormFieldMap(v2ContractStore.value));
 
@@ -298,6 +299,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     },
     // 级联维护：many2many 按当前关键词快速创建字典记录并勾选关联。
     quickCreateRelationMany: async (fieldName: string) => {
+      if (!isFieldWritable(fieldName)) return;
       const descriptor = formFields.value[fieldName];
       if (!descriptor) return;
       const keyword = relationKeyword(fieldName).trim();

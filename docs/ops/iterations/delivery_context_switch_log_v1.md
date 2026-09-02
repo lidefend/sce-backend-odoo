@@ -7845,3 +7845,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   counterexample tests through the full gate, strict Vue typecheck, development
   build, refreshed zero-gap inventories, and the complete `make
   verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Many2many create-side-effect closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `ddba5659`.
+- Product defect and repair: the professional many2many no-match handler
+  verified backend relation-create permission but did not repeat the parent
+  field's resolved write decision before creating the related record. A direct
+  call on a readonly field could therefore create an orphan record even though
+  the later ID writeback was rejected. The handler now requires field
+  writability before any create request, in addition to the existing explicit
+  backend `can_create`, relation model, and inline-create contract checks.
+- Real-page evidence: the rebuilt project-create/project-workspace/payment
+  journey passed with three independent pages, retained unsaved draft and
+  dirty-close warning, two readable tender rows, editable payment attachment
+  state, zero browser errors, zero mutations, zero execute requests, and no
+  desktop or 390px overflow.
+- Verification: 19 professional relation counterexample tests, strict Vue
+  typecheck, development build, refreshed zero-gap productization inventories,
+  and the complete `make verify.frontend.quick.gate` passed.

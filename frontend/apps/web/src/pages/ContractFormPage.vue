@@ -1572,7 +1572,7 @@ const {
   fieldOrderDraft, fieldOrderPreviewActive, fieldVisibilityDraft,
   filteredRelationOptions, focusProductFormValidationError, formConflict,
   formData, formLayoutColumnsDraft, inputFieldValue,
-  intentConfirmationRef, isContractFieldOrderEditable, isMissingRequiredValue,
+  intentConfirmationRef, isContractFieldOrderEditable, isFieldWritable: (...args: Parameters<typeof isFieldWritable>) => isFieldWritable(...args), isMissingRequiredValue,
   isIntakeCreateMode, isQuickIntakeMode,
   layoutContainsType, loadCollaborationUsers, loadMoreNativeChatterTimeline, lowCodeFormLayoutBase,
   many2oneValue, markFieldChanged, model,
