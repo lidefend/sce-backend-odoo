@@ -3,6 +3,28 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-09-02 — ACTIVITY-DRAFT-DIRTY-PUBLICATION-RACE-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `64407536`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 activity-page lifecycle /
+  unsaved form retention / `ContractFormPage` and session activity state.
+- Root cause and product result: form dirty state was published by Vue's default
+  asynchronous watcher while activity-tab activation synchronously inspected the
+  retained page. A fast tab switch could therefore observe a stale clean page and
+  miss the governed navigation authorization. Dirty publication now flushes
+  synchronously before tab navigation; the existing multi-page identity, close
+  confirmation, backend route authority, and form retention model are unchanged.
+- Acceptance evidence: the activity state guard now rejects non-synchronous
+  publication. Three valid consecutive project-create → payment-request →
+  project-create journeys retained `活动页签未保存草稿保留验证`, preserved independent
+  pages and dirty-close cancellation, and reported zero mutations, execute
+  requests, or browser errors. One intervening `ERR_NETWORK_CHANGED` sample was
+  rejected as environment failure rather than counted as product evidence. The
+  complete `verify.frontend.quick.gate` and refreshed deterministic professional
+  inventories pass with zero component, private-selector, visual-literal, or
+  orphaned-appearance gaps.
+
 ## 2026-09-02 — CANONICAL-TASK-DENSITY-PUBLIC-CONTRACT-CLOSURE-01
 
 - Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
