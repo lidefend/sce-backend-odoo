@@ -73,6 +73,7 @@ defineEmits<{ 'open-record': [record: Record<string, unknown>] }>();
 .activity-page__count { color: var(--sc-app-text-secondary); font-size: 13px; }
 .activity-page__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .activity-card { display: grid; height: auto; min-height: 132px; gap: 10px; padding: 16px; text-align: left; white-space: normal; }
+.activity-page__grid :deep(.activity-card.t-button) { height: auto !important; min-height: 132px; align-items: stretch; justify-content: flex-start; }
 .activity-card :deep(.sc-btn__content) { display: grid; width: 100%; gap: 10px; align-items: stretch; }
 .activity-card :deep(.t-button__text) { display: block; width: 100%; }
 .activity-card:hover { transform: translateY(-1px); }
