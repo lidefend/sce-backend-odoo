@@ -161,13 +161,18 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
     }
   }
 
-  async function hydrateVisibleOne2manyRows() {
+  function prepareVisibleOne2manyHydration() {
     const fields = formFields();
     const names = Object.entries(fields)
       .filter(([, descriptor]) => fieldType(descriptor) === 'one2many')
       .map(([name]) => name)
       .filter((name) => isWritableFieldVisible(name) || one2manyFieldRows(name).length > 0);
     names.forEach((name) => { one2manyHydrating[name] = true; });
+    return names;
+  }
+
+  async function hydrateVisibleOne2manyRows() {
+    const names = prepareVisibleOne2manyHydration();
     await Promise.all(names.map(async (name) => {
       try {
         await hydrateOne2manyRows(name);
@@ -182,5 +187,5 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   }
 
 
-  return { relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions, one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor, nativeFieldSubview, one2manyColumns, one2manyPolicies, one2manyCanCreate, one2manyCreateLabel, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows, hydrateVisibleOne2manyRows, isOne2manyHydrating, one2manyRowErrors };
+  return { relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions, one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor, nativeFieldSubview, one2manyColumns, one2manyPolicies, one2manyCanCreate, one2manyCreateLabel, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows, prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows, isOne2manyHydrating, one2manyRowErrors };
 }

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {
   collectOne2manyDraftValidationFromRows,
   initOne2manyRowsFromRelationSource,
+  isOne2manyEmptyValue,
   mergeOne2manyHydratedRecords,
   one2manyColumnDisplayValue,
   one2manyColumnsFromSubview,
@@ -137,6 +138,13 @@ assert.deepEqual(schemaSelectionColumns[0], {
   selection: [['submitted', '已提交'], ['won', '中标']],
 });
 assert.equal(one2manyColumnDisplayValue(schemaSelectionColumns[0], 'submitted'), '已提交');
+assert.equal(one2manyColumnDisplayValue({ name: 'amount', label: '金额', ttype: 'monetary', required: false }, 3260000), '3,260,000');
+assert.equal(one2manyColumnDisplayValue({ name: 'quantity', label: '数量', ttype: 'float', required: false }, 1280.5), '1,280.5');
+assert.equal(one2manyColumnDisplayValue({ name: 'active', label: '启用', ttype: 'boolean', required: false }, true), '是');
+assert.equal(one2manyColumnDisplayValue({ name: 'active', label: '启用', ttype: 'boolean', required: false }, false), '否');
+const readableDatetime = one2manyColumnDisplayValue({ name: 'opened_at', label: '开启时间', ttype: 'datetime', required: false }, '2025-06-10T09:00:00');
+assert.ok(readableDatetime.includes('2025') && readableDatetime.includes('09:00') && !readableDatetime.includes('T'));
+assert.equal(isOne2manyEmptyValue({ name: 'active', label: '启用', ttype: 'boolean', required: false }, false), false, 'false is a readable business fact');
 const dynamicColumn = {
   name: 'note', label: '说明', ttype: 'char', required: false,
   modifiers: {

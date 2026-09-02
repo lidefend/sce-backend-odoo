@@ -52,6 +52,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
             failures.append(f"readonly one2many loading semantics are incomplete: {marker}")
     for marker in (
         'const one2manyHydrating = reactive<Record<string, boolean>>({})',
+        'function prepareVisibleOne2manyHydration()',
         'one2manyHydrating[name] = true',
         'one2manyHydrating[name] = false',
         'finally',

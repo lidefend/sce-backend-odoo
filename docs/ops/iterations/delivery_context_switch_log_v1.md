@@ -7508,3 +7508,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   loading-authority and failure-reset counterexamples. Strict typecheck,
   development build, refreshed repository-owned rendering inventories, and
   the complete `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Readonly relation business-value formatting closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `de75e23a`.
+- Product repair: canonical one2many facts now format numeric values with
+  grouping, render datetimes as human-readable local text, and preserve
+  boolean false as the business value `否`. The relation hydration state is
+  prepared before the page publishes its ready status, preventing an empty
+  state from flashing before loading begins. No model or label special case
+  was introduced.
+- Real-page evidence: the project workspace rendered two tender rows with
+  `3,260,000`, `1,280,000`, `2025/06/10 09:00`, and
+  `2026/04/20 10:00`; no raw machine-formatted fact, raw relation ID, or empty
+  relation state remained. The project-create, project-workspace, and payment
+  activity pages retained independent state, mobile width stayed within 390px,
+  and browser errors, mutations, and execute requests were all zero.
+- Verification: collection semantics, 9 professional relation guard tests,
+  strict typecheck, development build, refreshed rendering inventories, and
+  the complete `make verify.frontend.quick.gate` passed.

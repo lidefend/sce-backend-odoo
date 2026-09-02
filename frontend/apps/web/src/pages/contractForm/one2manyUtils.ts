@@ -545,7 +545,7 @@ export function one2manyColumnInputType(column: One2ManyColumn): 'text' | 'numbe
 
 export function one2manyColumnDisplayValue(column: One2ManyColumn, value: unknown) {
   const ttype = String(column.ttype || '').trim().toLowerCase();
-  if (value === false || value === null || value === undefined) return '';
+  if (value === null || value === undefined || (value === false && ttype !== 'boolean')) return '';
   if (ttype === 'many2one') {
     if (Array.isArray(value)) return value.length > 1 ? String(value[1] ?? '').trim() : '';
     if (typeof value === 'object') {
@@ -569,7 +569,24 @@ export function one2manyColumnDisplayValue(column: One2ManyColumn, value: unknow
     }).filter(Boolean).join('、');
   }
   if (ttype === 'date') return toDateInputValue(value);
-  if (ttype === 'datetime') return toDatetimeInputValue(value);
+  if (ttype === 'datetime') {
+    const normalized = toDatetimeInputValue(value);
+    if (!normalized) return '';
+    const parsed = new Date(normalized);
+    if (Number.isNaN(parsed.getTime())) return normalized;
+    return new Intl.DateTimeFormat('zh-CN', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    }).format(parsed);
+  }
+  if (ttype === 'integer' || ttype === 'float' || ttype === 'monetary') {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return '';
+    return new Intl.NumberFormat('zh-CN', {
+      maximumFractionDigits: ttype === 'integer' ? 0 : 6,
+    }).format(ttype === 'integer' ? Math.trunc(numeric) : numeric);
+  }
+  if (ttype === 'boolean') return value ? '是' : '否';
   if (ttype === 'selection') {
     const option = (column.selection || []).find(([key]) => String(key) === String(value));
     if (option) return String(option[1]);
@@ -579,7 +596,7 @@ export function one2manyColumnDisplayValue(column: One2ManyColumn, value: unknow
 
 export function isOne2manyEmptyValue(column: One2ManyColumn, value: unknown) {
   const ttype = String(column.ttype || '').trim().toLowerCase();
-  if (ttype === 'boolean') return value === false || value === null || value === undefined;
+  if (ttype === 'boolean') return value === null || value === undefined;
   if (ttype === 'integer' || ttype === 'float' || ttype === 'monetary') {
     return value === false || value === null || value === undefined || Number.isNaN(Number(value));
   }

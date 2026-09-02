@@ -190,8 +190,10 @@ try {
     document.querySelectorAll('[data-contract-form-driver]').length
     + document.querySelectorAll('[data-contract-form-driver-error]').length === 1
   ), undefined, { timeout: 45000 });
+  await workspaceSurface.locator('[data-readonly-relation]').first().waitFor({ state: 'visible', timeout: 45000 });
   await page.waitForFunction(() => (
     document.querySelectorAll('[data-readonly-relation-loading]').length === 0
+    && document.querySelectorAll('.o2m-readonly-row, .relation-readonly-empty').length > 0
   ), undefined, { timeout: 45000 });
   const workspaceResult = {
     url: page.url(),
@@ -226,8 +228,11 @@ try {
     || workspaceResult.header.primaryActions > 1 || workspaceResult.header.rawButtonsOutsideWorkflow !== 0) {
     throw new Error(`project workspace header primitive boundary failed: ${JSON.stringify(workspaceResult.header)}`);
   }
-  if (workspaceResult.readonlyRelationFacts.some((value) => /^\s*\d+\s*,/.test(value) || /^#\d+$/.test(value))) {
+  if (workspaceResult.readonlyRelationFacts.some((value) => /^\s*\d+\s*,\s+\D/.test(value) || /^#\d+$/.test(value))) {
     throw new Error(`project workspace leaked raw relation ids: ${JSON.stringify(workspaceResult.readonlyRelationFacts)}`);
+  }
+  if (workspaceResult.readonlyRelationFacts.some((value) => /^\d{4,}(?:\.\d+)?$/.test(value) || /^\d{4}-\d{2}-\d{2}T/.test(value))) {
+    throw new Error(`project workspace leaked machine-formatted relation facts: ${JSON.stringify(workspaceResult.readonlyRelationFacts)}`);
   }
   if (workspaceResult.readonlyRelationRows.some((values) => values.every((value) => !value || value === '—'))) {
     throw new Error(`project workspace rendered empty readonly relation rows: ${JSON.stringify(workspaceResult.readonlyRelationRows)}`);
