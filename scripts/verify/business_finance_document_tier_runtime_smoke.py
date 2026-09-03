@@ -364,7 +364,7 @@ def _create_record(model_name, submitter, code):
     elif model_name == "sc.financing.loan":
         vals.update({"partner_id": partner.id, "amount": 120.0, "purpose": "审批运行融资借款"})
     elif model_name == "sc.treasury.reconciliation":
-        ledger = env["sc.treasury.ledger"].sudo().with_context(allow_ledger_auto=True).create(
+        ledger = env["sc.treasury.ledger"].sudo()._create_authoritative(
             {
                 "date": fields.Date.context_today(submitter),
                 "project_id": project.id,

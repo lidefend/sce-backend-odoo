@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import logging
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools.float_utils import float_compare
@@ -7,11 +9,27 @@ from psycopg2.errors import UniqueViolation
 from ..support.state_guard import raise_guard
 
 
+_logger = logging.getLogger(__name__)
+_PAYMENT_EXECUTION_BATCH_READY_TOKEN = object()
+
+
 class ScPaymentExecution(models.Model):
     _name = "sc.payment.execution"
     _description = "付款执行"
     _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation", "sc.company.contractor.responsibility.context.mixin"]
     _order = "date_payment desc, id desc"
+
+    def _message_post_non_blocking(self, body):
+        for record in self:
+            try:
+                with record.env.cr.savepoint():
+                    record.message_post(body=body)
+            except Exception as exc:
+                _logger.warning(
+                    "Skip sc.payment.execution chatter message for id=%s: %s",
+                    record.id,
+                    exc,
+                )
 
     name = fields.Char(string="单据号", required=True, default="新建", copy=False)
     source_origin = fields.Selection(
@@ -403,88 +421,120 @@ class ScPaymentExecution(models.Model):
         return record
 
     @api.model
-    def _payment_basis_contracts(self, request):
-        contracts = self.env["construction.contract"]
+    def _caller_visible_payment_relations(self, model_name, record_ids, domain=None):
+        """Resolve a relation set once while preserving caller record rules."""
+        record_ids = {record_id for record_id in record_ids if record_id}
+        if not record_ids:
+            return {}
+        relation_domain = [("id", "in", sorted(record_ids))]
+        if domain:
+            relation_domain.extend(domain)
+        records = self.env[model_name].search(relation_domain)
+        if set(records.ids) != record_ids:
+            raise ValidationError(_("付款归集关系不存在或当前用户无权访问。"))
+        return {record.id: record for record in records}
+
+    @api.model
+    def _payment_basis_contracts_map(self, requests):
+        """Return authoritative contract bases with constant relation queries."""
+        result = {request.id: self.env["construction.contract"] for request in requests}
+        if not requests:
+            return result
         lines = self.env["payment.request.line"].search(
             [
-                ("request_id", "=", request.id),
+                ("request_id", "in", requests.ids),
                 ("active", "=", True),
                 "|",
                 ("settlement_id", "!=", False),
                 ("contract_id", "!=", False),
             ]
         )
-        line_settlement_ids = set(lines.mapped("settlement_id").ids)
+        lines_by_request = {request.id: self.env["payment.request.line"] for request in requests}
+        for line in lines:
+            lines_by_request[line.request_id.id] |= line
+        settlements_by_id = self._caller_visible_payment_relations(
+            "sc.settlement.order",
+            set(lines.mapped("settlement_id").ids) | set(requests.mapped("settlement_id").ids),
+        )
+        material_settlements_by_id = self._caller_visible_payment_relations(
+            "sc.material.settlement",
+            requests.mapped("material_settlement_id").ids,
+        )
+        contract_ids = (
+            set(lines.mapped("contract_id").ids)
+            | set(requests.mapped("contract_id").ids)
+            | {
+                settlement.contract_id.id
+                for settlement in settlements_by_id.values()
+                if settlement.contract_id
+            }
+        )
+        contracts_by_id = self._caller_visible_payment_relations(
+            "construction.contract", contract_ids
+        )
 
-        if lines:
-            if request.material_settlement_id:
-                raise ValidationError(_("付款申请的材料结算头部依据与结算明细依据冲突。"))
-            if request.settlement_id and request.settlement_id.id not in line_settlement_ids:
-                raise ValidationError(_("付款申请头部结算不属于其权威结算明细集合。"))
-            for line in lines:
-                line_contract = self.env["construction.contract"]
-                if line.settlement_id:
-                    settlement = self._caller_visible_payment_relation(
-                        "sc.settlement.order",
-                        line.settlement_id.id,
-                    )
+        for request in requests:
+            contracts = self.env["construction.contract"]
+            request_lines = lines_by_request[request.id]
+            line_settlement_ids = set(request_lines.mapped("settlement_id").ids)
+            if request_lines:
+                if request.material_settlement_id:
+                    raise ValidationError(_("付款申请的材料结算头部依据与结算明细依据冲突。"))
+                if request.settlement_id and request.settlement_id.id not in line_settlement_ids:
+                    raise ValidationError(_("付款申请头部结算不属于其权威结算明细集合。"))
+                for line in request_lines:
+                    line_contract = self.env["construction.contract"]
+                    if line.settlement_id:
+                        settlement = settlements_by_id[line.settlement_id.id]
+                        if settlement.project_id != request.project_id:
+                            raise ValidationError(_("付款申请结算明细项目与申请项目不一致。"))
+                        if settlement.contract_id:
+                            line_contract = contracts_by_id[settlement.contract_id.id]
+                    if line.contract_id:
+                        explicit_line_contract = contracts_by_id[line.contract_id.id]
+                        if line_contract and explicit_line_contract != line_contract:
+                            raise ValidationError(_("付款申请明细合同与其结算合同不一致。"))
+                        line_contract = explicit_line_contract
+                    if line_contract:
+                        if line_contract.project_id != request.project_id:
+                            raise ValidationError(_("付款申请明细合同项目与申请项目不一致。"))
+                        contracts |= line_contract
+            else:
+                if request.settlement_id and request.material_settlement_id:
+                    raise ValidationError(_("付款申请不能同时使用标准结算与材料结算作为头部依据。"))
+                if request.settlement_id:
+                    settlement = settlements_by_id[request.settlement_id.id]
                     if settlement.project_id != request.project_id:
-                        raise ValidationError(_("付款申请结算明细项目与申请项目不一致。"))
+                        raise ValidationError(_("付款申请结算项目与申请项目不一致。"))
                     if settlement.contract_id:
-                        line_contract = self._caller_visible_payment_relation(
-                            "construction.contract",
-                            settlement.contract_id.id,
-                        )
-                if line.contract_id:
-                    explicit_line_contract = self._caller_visible_payment_relation(
-                        "construction.contract",
-                        line.contract_id.id,
-                    )
-                    if line_contract and explicit_line_contract != line_contract:
-                        raise ValidationError(_("付款申请明细合同与其结算合同不一致。"))
-                    line_contract = explicit_line_contract
-                if line_contract:
-                    if line_contract.project_id != request.project_id:
-                        raise ValidationError(_("付款申请明细合同项目与申请项目不一致。"))
-                    contracts |= line_contract
-        else:
-            if request.settlement_id and request.material_settlement_id:
-                raise ValidationError(_("付款申请不能同时使用标准结算与材料结算作为头部依据。"))
-            if request.settlement_id:
-                settlement = self._caller_visible_payment_relation(
-                    "sc.settlement.order",
-                    request.settlement_id.id,
-                )
-                if settlement.project_id != request.project_id:
-                    raise ValidationError(_("付款申请结算项目与申请项目不一致。"))
-                if settlement.contract_id:
-                    contracts |= self._caller_visible_payment_relation(
-                        "construction.contract",
-                        settlement.contract_id.id,
-                    )
-            elif request.material_settlement_id:
-                material_settlement = self._caller_visible_payment_relation(
-                    "sc.material.settlement",
-                    request.material_settlement_id.id,
-                )
-                if material_settlement.project_id != request.project_id:
-                    raise ValidationError(_("付款申请材料结算项目与申请项目不一致。"))
-        if request.contract_id:
-            request_contract = self._caller_visible_payment_relation(
-                "construction.contract",
-                request.contract_id.id,
-            )
-            if len(contracts) > 1:
-                raise ValidationError(_("多合同付款申请不得压缩到单值合同字段。"))
-            if not contracts:
-                # 合同本身是预付款、保证金等未结算付款的有效业务依据。
-                contracts |= request_contract
-            if request_contract != contracts:
-                raise ValidationError(_("付款申请合同与其有效来源合同不一致。"))
-        return contracts
+                        contracts |= contracts_by_id[settlement.contract_id.id]
+                elif request.material_settlement_id:
+                    material_settlement = material_settlements_by_id[
+                        request.material_settlement_id.id
+                    ]
+                    if material_settlement.project_id != request.project_id:
+                        raise ValidationError(_("付款申请材料结算项目与申请项目不一致。"))
+            if request.contract_id:
+                request_contract = contracts_by_id[request.contract_id.id]
+                if len(contracts) > 1:
+                    raise ValidationError(_("多合同付款申请不得压缩到单值合同字段。"))
+                if not contracts:
+                    # 合同本身是预付款、保证金等未结算付款的有效业务依据。
+                    contracts |= request_contract
+                if request_contract != contracts:
+                    raise ValidationError(_("付款申请合同与其有效来源合同不一致。"))
+            result[request.id] = contracts
+        return result
 
     @api.model
-    def _normalize_payment_relation_values(self, vals, current=None):
+    def _payment_basis_contracts(self, request):
+        request.ensure_one()
+        return self._payment_basis_contracts_map(request)[request.id]
+
+    @api.model
+    def _normalize_payment_relation_values(
+        self, vals, current=None, request=None, check_ready=True, basis_contracts=None
+    ):
         values = dict(vals)
 
         def relation_id(field_name):
@@ -499,9 +549,16 @@ class ScPaymentExecution(models.Model):
         if not request_id:
             return values
 
-        request = self._caller_visible_payment_relation("payment.request", request_id)
-        request._assert_payment_execution_ready(require_authorized_actor=current is None)
-        contracts = self._payment_basis_contracts(request)
+        request = request or self._caller_visible_payment_relation("payment.request", request_id)
+        if request.id != request_id:
+            raise ValidationError(_("付款归集关系不存在或当前用户无权访问。"))
+        if check_ready:
+            request._assert_payment_execution_ready(require_authorized_actor=current is None)
+        contracts = (
+            basis_contracts
+            if basis_contracts is not None
+            else self._payment_basis_contracts(request)
+        )
         if project_id and project_id != request.project_id.id:
             raise ValidationError(_("付款执行项目必须与付款申请项目一致。"))
         if len(contracts) == 1:
@@ -528,12 +585,11 @@ class ScPaymentExecution(models.Model):
         """Reject known duplicates; the partial unique index closes races."""
         request_ids = [int(request_id) for request_id in request_ids if request_id]
         if not request_ids:
-            return
+            return self.env["payment.request"]
         if len(request_ids) != len(set(request_ids)):
             raise ValidationError(_("同一付款申请不能在一次操作中生成多条付款登记。"))
-        visible_request_ids = set(
-            self.env["payment.request"].search([("id", "in", request_ids)]).ids
-        )
+        visible_requests = self.env["payment.request"].search([("id", "in", request_ids)])
+        visible_request_ids = set(visible_requests.ids)
         if visible_request_ids != set(request_ids):
             raise ValidationError(_("付款申请不存在或已被删除。"))
         existing = self.sudo().search(
@@ -548,23 +604,37 @@ class ScPaymentExecution(models.Model):
                 _("该付款申请已存在办理中的付款登记：%(execution)s")
                 % {"execution": existing.display_name}
             )
+        return visible_requests
 
     @api.model_create_multi
     def create(self, vals_list):
         seq = self.env["ir.sequence"]
         normalized_vals_list = []
-        self._assert_unique_request_anchors(
+        requests = self._assert_unique_request_anchors(
             [vals.get("payment_request_id") for vals in vals_list]
         )
+        requests._assert_payment_execution_ready(require_authorized_actor=True)
+        request_by_id = {request.id: request for request in requests}
+        basis_contracts_by_request = self._payment_basis_contracts_map(requests)
+        category_by_code = {}
         for incoming_vals in vals_list:
             vals = dict(incoming_vals)
             project_id = self._context_project_id()
             if project_id:
                 vals.setdefault("project_id", project_id)
-            vals = self._normalize_payment_relation_values(vals)
+            request = request_by_id.get(vals.get("payment_request_id"))
+            vals = self._normalize_payment_relation_values(
+                vals,
+                request=request,
+                check_ready=not bool(request),
+                basis_contracts=basis_contracts_by_request.get(request.id) if request else None,
+            )
             if vals.get("payment_request_id"):
-                request = self._caller_visible_payment_relation("payment.request", vals["payment_request_id"])
-                request._assert_payment_execution_ready(require_authorized_actor=True)
+                if not request or request.id != vals["payment_request_id"]:
+                    request = self._caller_visible_payment_relation(
+                        "payment.request", vals["payment_request_id"]
+                    )
+                    request._assert_payment_execution_ready(require_authorized_actor=True)
                 request_values = self._payment_request_values(request)
                 for field_name in (
                     "receipt_account_name",
@@ -578,13 +648,22 @@ class ScPaymentExecution(models.Model):
                     vals[field_name] = request_values.get(field_name) or ""
                 for field_name, value in request_values.items():
                     vals.setdefault(field_name, value)
-            vals.setdefault("business_category_id", self._resolve_business_category_id(vals))
+            if not vals.get("business_category_id"):
+                category_code = self._resolve_business_category_code(vals)
+                if category_code not in category_by_code:
+                    category_by_code[category_code] = self._resolve_business_category_id(vals)
+                vals["business_category_id"] = category_by_code[category_code]
             if vals.get("name", "新建") == "新建":
                 vals["name"] = seq.next_by_code("sc.payment.execution") or _("Payment Execution")
             normalized_vals_list.append(vals)
         try:
             with self.env.cr.savepoint(flush=False):
-                records = super().create(normalized_vals_list)
+                records = super(
+                    ScPaymentExecution,
+                    self.with_context(
+                        _sc_payment_execution_batch_ready_token=_PAYMENT_EXECUTION_BATCH_READY_TOKEN
+                    ),
+                ).create(normalized_vals_list)
                 records.flush_recordset(["payment_request_id", "state"])
                 return records
         except UniqueViolation as error:
@@ -762,6 +841,14 @@ class ScPaymentExecution(models.Model):
     def action_paid(self):
         self._assert_finance_confirm_access()
         policy = self.env["sc.approval.policy"]
+        requests = self.mapped("payment_request_id")
+        if requests:
+            self.env.cr.execute(
+                "SELECT id FROM payment_request WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
+                [requests.ids],
+            )
+            requests.invalidate_recordset()
+            requests._assert_unambiguous_posted_payment_history()
         for rec in self:
             if rec.state != "confirmed":
                 raise_guard(
@@ -777,7 +864,7 @@ class ScPaymentExecution(models.Model):
                 raise UserError(_("付款执行尚未完成统一审批流程。"))
             rec.state = "paid"
             rec._sync_payment_request_done()
-            rec.message_post(body=_("付款登记已完成，付款申请、付款台账与审计状态已同步。"))
+            rec._message_post_non_blocking(_("付款登记已完成，付款申请、付款台账与审计状态已同步。"))
 
     def _has_finance_confirm_access(self):
         return self.env.user.has_group("smart_construction_core.group_sc_cap_finance_manager")
@@ -881,6 +968,7 @@ class ScPaymentExecution(models.Model):
                     ("payment_request_id", "=", request.id),
                     ("payment_execution_id", "=", rec.id),
                     ("state", "=", "posted"),
+                    ("normalization_state", "=", "normalized"),
                 ],
                 limit=1,
             )
@@ -890,6 +978,7 @@ class ScPaymentExecution(models.Model):
                         ("payment_request_id", "=", request.id),
                         ("payment_execution_id", "=", False),
                         ("state", "=", "posted"),
+                        ("normalization_state", "=", "normalized"),
                     ],
                     limit=1,
                 )
@@ -912,7 +1001,7 @@ class ScPaymentExecution(models.Model):
             )
             after = request._snapshot_audit_payload()
             request._audit_transition("payment_reversed", before, after, action_name="payment_execution_cancel")
-            rec.message_post(body=_("已撤销付款登记，并将付款申请退回已批准状态。"))
+            rec._message_post_non_blocking(_("已撤销付款登记，并将付款申请退回已批准状态。"))
 
     def _check_business_anchor_or_raise(self):
         for rec in self:
@@ -1043,8 +1132,24 @@ class ScPaymentExecution(models.Model):
     @api.constrains("payment_request_id", "project_id", "partner_id", "contract_id")
     def _check_payment_request_scope_consistency(self):
         """Reject forged execution anchors at ORM create/write, not only at actions."""
-        for rec in self:
-            rec._normalize_payment_relation_values({}, current=rec)
+        linked = self.filtered("payment_request_id")
+        prechecked = (
+            self.env.context.get("_sc_payment_execution_batch_ready_token")
+            is _PAYMENT_EXECUTION_BATCH_READY_TOKEN
+        )
+        if linked and not prechecked:
+            linked.mapped("payment_request_id")._assert_payment_execution_ready()
+        basis_contracts_by_request = self._payment_basis_contracts_map(
+            linked.mapped("payment_request_id")
+        )
+        for rec in linked:
+            rec._normalize_payment_relation_values(
+                {},
+                current=rec,
+                request=rec.payment_request_id,
+                check_ready=False,
+                basis_contracts=basis_contracts_by_request[rec.payment_request_id.id],
+            )
         self._check_payment_request_scope_or_raise()
 
     def _company_contractor_payment_responsibility_failures(self, summary, paid_amount):

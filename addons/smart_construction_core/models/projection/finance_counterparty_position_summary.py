@@ -100,52 +100,60 @@ class ScFinanceCounterpartyPositionSummary(models.Model):
             "name": "项目与对象资金往来",
             "res_model": "sc.finance.project.counterparty.position",
             "view_mode": "tree,pivot,form",
-            "domain": self._counterparty_identity_domain(),
+            "domain": self._counterparty_identity_domain() + [
+                ("company_id", "=", self.company_id.id),
+                ("currency_id", "=", self.currency_id.id),
+            ],
             "context": {"search_default_group_project": 1},
         }
 
     def _finance_fact_counterparty_domain(self):
         self.ensure_one()
+        identity_domain = [("company_id", "=", self.company_id.id), ("currency_id", "=", self.currency_id.id)]
         if self.counterparty_type == "partner":
             if self.partner_id:
-                return [("partner_id", "=", self.partner_id.id)]
-            return [("partner_id", "=", False), ("partner_name", "=", self.counterparty_name or False)]
+                return identity_domain + [("partner_id", "=", self.partner_id.id)]
+            return identity_domain + [("partner_id", "=", False), ("partner_name", "=", self.counterparty_name or False)]
         if self.counterparty_type == "unknown":
-            return [("partner_id", "=", False), ("partner_name", "=", False)]
+            return identity_domain + [("partner_id", "=", False), ("partner_name", "=", False)]
         return [("id", "=", 0)]
 
     def _interfund_fact_counterparty_domain(self):
         self.ensure_one()
+        identity_domain = [
+            ("company_id", "=", self.company_id.id),
+            ("currency_id", "=", self.currency_id.id),
+        ]
         if self.counterparty_type == "project":
             counterparty_project_id = self.counterparty_project_id.id if self.counterparty_project_id else False
             if not counterparty_project_id:
                 return [("id", "=", 0)]
-            return expression.OR(
+            return expression.AND([identity_domain, expression.OR(
                 [
                     [("source_project_id", "=", counterparty_project_id)],
                     [("target_project_id", "=", counterparty_project_id)],
                 ]
-            )
+            )])
         if self.counterparty_type == "company":
-            return [
+            return identity_domain + [
                 ("movement_type", "in", ("company_to_project_borrow", "company_to_project_transfer", "project_to_company_repay", "project_to_company_transfer")),
                 ("partner_id", "=", False),
                 ("partner_name", "in", (False, "")),
             ]
         if self.counterparty_type == "partner":
             if not self.partner_id and self.counterparty_name == "未识别承包人":
-                return [
+                return identity_domain + [
                     ("movement_type", "in", ("contractor_to_project_repay", "project_to_contractor_borrow")),
                     ("partner_id", "=", False),
                     ("partner_name", "in", (False, "")),
                 ]
             if self.partner_id:
-                return [("partner_id", "=", self.partner_id.id)]
-            return [("partner_id", "=", False), ("partner_name", "=", self.counterparty_name or False)]
+                return identity_domain + [("partner_id", "=", self.partner_id.id)]
+            return identity_domain + [("partner_id", "=", False), ("partner_name", "=", self.counterparty_name or False)]
         if self.counterparty_type == "internal":
-            return [("movement_type", "in", ("same_project_account_transfer", "unclassified_account_transfer"))]
+            return identity_domain + [("movement_type", "in", ("same_project_account_transfer", "unclassified_account_transfer"))]
         if self.counterparty_type == "unknown":
-            return [("partner_id", "=", False), ("partner_name", "=", False)]
+            return identity_domain + [("partner_id", "=", False), ("partner_name", "=", False)]
         return [("id", "=", 0)]
 
     def action_open_finance_facts(self):
@@ -185,8 +193,8 @@ class ScFinanceCounterpartyPositionSummary(models.Model):
                         counterparty_project_id,
                         partner_id,
                         counterparty_name,
-                        MIN(company_id) AS company_id,
-                        MIN(currency_id) AS currency_id,
+                        company_id,
+                        currency_id,
                         COUNT(DISTINCT COALESCE(project_id, 0))::integer AS project_count,
                         COALESCE(SUM(finance_source_line_count), 0)::integer AS finance_source_line_count,
                         COALESCE(SUM(interfund_source_line_count), 0)::integer AS interfund_source_line_count,
@@ -202,11 +210,11 @@ class ScFinanceCounterpartyPositionSummary(models.Model):
                         COALESCE(SUM(combined_balance_effect), 0.0) AS combined_balance_effect,
                         COALESCE(SUM(combined_cash_net_amount), 0.0) AS combined_cash_net_amount
                     FROM sc_finance_project_counterparty_position
-                    GROUP BY counterparty_type, counterparty_project_id, partner_id, counterparty_name
+                    GROUP BY company_id, currency_id, counterparty_type, counterparty_project_id, partner_id, counterparty_name
                 )
                 SELECT
                     ROW_NUMBER() OVER (
-                        ORDER BY counterparty_type, COALESCE(counterparty_project_id, 0), COALESCE(partner_id, 0), counterparty_name
+                        ORDER BY company_id, currency_id, counterparty_type, COALESCE(counterparty_project_id, 0), COALESCE(partner_id, 0), counterparty_name
                     )::integer AS id,
                     counterparty_name AS display_name,
                     company_id,

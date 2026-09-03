@@ -26,6 +26,7 @@ class ScFinanceBusinessProjectSummary(models.Model):
     business_domain = fields.Selection(
         [
             ("arrival_settlement", "到款确认"),
+            ("deduction_registration", "扣款登记"),
             ("deduction_clearing", "扣款实缴/退回"),
             ("tax_deduction", "抵扣登记"),
             ("self_funding", "自筹收入/退回"),
@@ -41,6 +42,7 @@ class ScFinanceBusinessProjectSummary(models.Model):
     source_line_count = fields.Integer(string="来源明细数", readonly=True)
     canonical_line_count = fields.Integer(string="正式余额明细数", readonly=True)
     visible_reference_line_count = fields.Integer(string="可见参考明细数", readonly=True)
+    evidence_pending_line_count = fields.Integer(string="待现金证据明细数", readonly=True)
     amount = fields.Monetary(string="业务金额", currency_field="currency_id", readonly=True)
     balance_effect = fields.Monetary(string="余额影响", currency_field="currency_id", readonly=True)
     cash_in_amount = fields.Monetary(string="现金流入", currency_field="currency_id", readonly=True)
@@ -80,9 +82,9 @@ class ScFinanceBusinessProjectSummary(models.Model):
 
     def _project_domain(self):
         self.ensure_one()
-        if self.project_id:
-            return [("project_id", "=", self.project_id.id)]
-        return [("project_id", "=", False)]
+        domain = [("project_id", "=", self.project_id.id if self.project_id else False)]
+        domain.extend([("company_id", "=", self.company_id.id), ("currency_id", "=", self.currency_id.id)])
+        return domain
 
     def _action_domain(self, action_result):
         raw_domain = action_result.get("domain") or []
@@ -157,6 +159,11 @@ class ScFinanceBusinessProjectSummary(models.Model):
         domain = self._action_domain(result)
         if self.project_id and result.get("res_model") in {"sc.expense.claim", "sc.tax.deduction.registration"}:
             domain.append(("project_id", "=", self.project_id.id))
+        target_fields = self.env[result.get("res_model")]._fields
+        if self.company_id and "company_id" in target_fields:
+            domain.append(("company_id", "=", self.company_id.id))
+        if self.currency_id and "currency_id" in target_fields:
+            domain.append(("currency_id", "=", self.currency_id.id))
         result.update(
             {
                 "name": "%s / %s" % (self.project_id.display_name if self.project_id else "项目", action_name),
@@ -181,11 +188,12 @@ class ScFinanceBusinessProjectSummary(models.Model):
                         COALESCE(f.project_id, 0) AS project_key,
                         f.project_id,
                         f.business_domain,
-                        MIN(f.company_id) AS company_id,
-                        MIN(f.currency_id) AS currency_id,
+                        f.company_id,
+                        f.currency_id,
                         COUNT(*)::integer AS source_line_count,
                         COUNT(*) FILTER (WHERE f.balance_policy = 'canonical')::integer AS canonical_line_count,
                         COUNT(*) FILTER (WHERE f.balance_policy = 'visible_reference')::integer AS visible_reference_line_count,
+                        COUNT(*) FILTER (WHERE f.balance_policy = 'policy_required')::integer AS evidence_pending_line_count,
                         COALESCE(SUM(f.amount), 0.0) AS amount,
                         COALESCE(SUM(f.balance_effect), 0.0) AS balance_effect,
                         COALESCE(SUM(f.cash_in_amount), 0.0) AS cash_in_amount,
@@ -193,26 +201,26 @@ class ScFinanceBusinessProjectSummary(models.Model):
                         COALESCE(SUM(f.deduction_amount), 0.0) AS deduction_amount,
                         COALESCE(SUM(f.paid_amount), 0.0) AS paid_amount,
                         COALESCE(SUM(f.tax_amount), 0.0) AS tax_amount,
-                        COALESCE(SUM(CASE WHEN f.fact_type = 'arrival_gross' THEN f.amount ELSE 0 END), 0.0) AS arrival_amount,
-                        COALESCE(SUM(CASE WHEN f.fact_type = 'arrival_gross' THEN f.deduction_amount ELSE 0 END), 0.0) AS arrival_deduction_amount,
-                        COALESCE(SUM(CASE WHEN f.fact_type = 'arrival_gross' THEN f.paid_amount ELSE 0 END), 0.0) AS arrival_paid_amount,
-                        COALESCE(SUM(CASE WHEN f.fact_type = 'deduction_paid' THEN f.amount ELSE 0 END), 0.0) AS deduction_paid_amount,
-                        COALESCE(SUM(CASE WHEN f.fact_type = 'deduction_refund' THEN f.amount ELSE 0 END), 0.0) AS deduction_refund_amount,
+                        COALESCE(SUM(CASE WHEN f.fact_type = 'arrival_gross' AND f.balance_policy = 'canonical' THEN f.amount ELSE 0 END), 0.0) AS arrival_amount,
+                        COALESCE(SUM(CASE WHEN f.fact_type = 'arrival_gross' AND f.balance_policy = 'canonical' THEN f.deduction_amount ELSE 0 END), 0.0) AS arrival_deduction_amount,
+                        COALESCE(SUM(CASE WHEN f.fact_type = 'arrival_gross' AND f.balance_policy = 'canonical' THEN f.paid_amount ELSE 0 END), 0.0) AS arrival_paid_amount,
+                        COALESCE(SUM(CASE WHEN f.fact_type = 'deduction_paid' AND f.balance_policy = 'canonical' THEN f.amount ELSE 0 END), 0.0) AS deduction_paid_amount,
+                        COALESCE(SUM(CASE WHEN f.fact_type = 'deduction_refund' AND f.balance_policy = 'canonical' THEN f.amount ELSE 0 END), 0.0) AS deduction_refund_amount,
                         COALESCE(SUM(CASE WHEN f.fact_type IN ('deduction_paid', 'deduction_refund') THEN f.balance_effect ELSE 0 END), 0.0) AS deduction_net_amount,
                         COALESCE(SUM(CASE WHEN f.fact_type = 'tax_deducted' THEN f.amount ELSE 0 END), 0.0) AS tax_deduction_amount,
                         COALESCE(SUM(CASE WHEN f.fact_type = 'tax_deducted' THEN f.tax_amount ELSE 0 END), 0.0) AS tax_deduction_tax_amount,
-                        COALESCE(SUM(CASE WHEN f.fact_type = 'self_funding_income' THEN f.amount ELSE 0 END), 0.0) AS self_funding_income_amount,
-                        COALESCE(SUM(CASE WHEN f.fact_type = 'self_funding_refund' THEN f.amount ELSE 0 END), 0.0) AS self_funding_refund_amount,
+                        COALESCE(SUM(CASE WHEN f.fact_type = 'self_funding_income' AND f.balance_policy = 'canonical' THEN f.amount ELSE 0 END), 0.0) AS self_funding_income_amount,
+                        COALESCE(SUM(CASE WHEN f.fact_type = 'self_funding_refund' AND f.balance_policy = 'canonical' THEN f.amount ELSE 0 END), 0.0) AS self_funding_refund_amount,
                         COALESCE(SUM(CASE WHEN f.business_domain = 'self_funding' AND f.balance_policy = 'canonical' THEN f.balance_effect ELSE 0 END), 0.0) AS self_funding_balance,
                         COALESCE(SUM(CASE WHEN f.fact_type = 'self_funding_visible_reference' THEN f.amount ELSE 0 END), 0.0) AS self_funding_visible_reference_amount,
-                        COALESCE(SUM(CASE WHEN f.fact_type = 'guarantee_out' THEN f.amount ELSE 0 END), 0.0) AS guarantee_out_amount,
-                        COALESCE(SUM(CASE WHEN f.fact_type = 'guarantee_return' THEN f.amount ELSE 0 END), 0.0) AS guarantee_return_amount,
-                        COALESCE(SUM(CASE WHEN f.business_domain = 'guarantee_deposit' THEN f.balance_effect ELSE 0 END), 0.0) AS guarantee_outstanding_amount
+                        COALESCE(SUM(CASE WHEN f.fact_type = 'guarantee_out' AND f.balance_policy = 'canonical' THEN f.amount ELSE 0 END), 0.0) AS guarantee_out_amount,
+                        COALESCE(SUM(CASE WHEN f.fact_type = 'guarantee_return' AND f.balance_policy = 'canonical' THEN f.amount ELSE 0 END), 0.0) AS guarantee_return_amount,
+                        COALESCE(SUM(CASE WHEN f.business_domain = 'guarantee_deposit' AND f.balance_policy = 'canonical' THEN f.balance_effect ELSE 0 END), 0.0) AS guarantee_outstanding_amount
                     FROM sc_finance_business_fact f
-                    GROUP BY COALESCE(f.project_id, 0), f.project_id, f.business_domain
+                    GROUP BY COALESCE(f.project_id, 0), f.project_id, f.company_id, f.currency_id, f.business_domain
                 )
                 SELECT
-                    ROW_NUMBER() OVER (ORDER BY g.project_key, g.business_domain)::integer AS id,
+                    ROW_NUMBER() OVER (ORDER BY g.project_key, g.company_id, g.currency_id, g.business_domain)::integer AS id,
                     CASE
                         WHEN g.project_id IS NULL THEN '未关联项目 / ' || g.business_domain
                         ELSE COALESCE(p.name->>'zh_CN', p.name->>'en_US', '项目') || ' / ' || g.business_domain
@@ -224,6 +232,7 @@ class ScFinanceBusinessProjectSummary(models.Model):
                     g.source_line_count,
                     g.canonical_line_count,
                     g.visible_reference_line_count,
+                    g.evidence_pending_line_count,
                     g.amount,
                     g.balance_effect,
                     g.cash_in_amount,

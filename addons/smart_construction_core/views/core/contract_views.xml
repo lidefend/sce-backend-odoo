@@ -121,7 +121,8 @@
                             <field name="subject" />
                             <field name="type" required="1" />
                             <field name="business_category_id" options="{'no_create': True}" />
-                            <field name="original_contract_id" />
+                            <field name="is_locked" invisible="1" />
+                            <field name="original_contract_id" modifiers="{&quot;readonly&quot;:[&quot;|&quot;,[&quot;state&quot;,&quot;!=&quot;,&quot;draft&quot;],[&quot;is_locked&quot;,&quot;=&quot;,true]]}" />
                             <field name="project_id" required="1" />
                             <field name="operation_strategy" readonly="1" />
                             <field name="partner_id" required="1" />
@@ -357,7 +358,8 @@
                                 <field name="subject" />
                                 <field name="type" readonly="1" invisible="1" />
                                 <field name="business_category_id" options="{'no_create': True}" />
-                                <field name="original_contract_id" />
+                                <field name="is_locked" invisible="1" />
+                                <field name="original_contract_id" modifiers="{&quot;readonly&quot;:[&quot;|&quot;,[&quot;state&quot;,&quot;!=&quot;,&quot;draft&quot;],[&quot;is_locked&quot;,&quot;=&quot;,true]]}" />
                                 <field name="document_status" />
                                 <field name="state" readonly="1" />
                                 <field name="company_id" readonly="1" />

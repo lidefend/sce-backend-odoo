@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError, ValidationError
 
 
 class PaymentRequestLine(models.Model):
@@ -112,11 +112,123 @@ class PaymentRequestLine(models.Model):
             "target": "current",
         }
 
-    def unlink(self):
-        locked = self.filtered(
-            lambda rec: rec.request_id and rec.request_id.state not in ("draft", "rejected", "cancel")
+    @api.model
+    def _lock_allocation_basis_requests(self, request_ids):
+        """Serialize basis changes with request workflow transitions."""
+        request_ids = sorted({int(request_id) for request_id in request_ids if request_id})
+        if not request_ids:
+            return self.env["payment.request"]
+        self.env.cr.execute(
+            """
+            SELECT id
+              FROM payment_request
+             WHERE id IN %s
+          ORDER BY id
+               FOR UPDATE
+            """,
+            (tuple(request_ids),),
+        )
+        requests = self.env["payment.request"].browse(request_ids).exists()
+        requests.invalidate_recordset(["state"])
+        return requests
+
+    @api.model
+    def _assert_allocation_basis_requests_mutable(self, requests, operation):
+        locked = requests.filtered(
+            lambda request: request.state not in ("draft", "rejected", "cancel")
         )
         if locked:
-            raise UserError("仅草稿、已驳回或已取消付款申请的明细允许删除。")
+            raise UserError(operation)
+
+    @api.model
+    def _settlement_lines_by_id(self, line_ids):
+        line_ids = sorted({int(value) for value in line_ids if value})
+        if not line_ids:
+            return {}
+        lines = self.env["sc.settlement.order.line"].search(
+            [("id", "in", line_ids)]
+        )
+        if set(lines.ids) != set(line_ids):
+            raise AccessError("结算明细不存在或当前用户无权访问。")
+        return {line.id: line for line in lines}
+
+    @api.model
+    def _normalize_canonical_settlement_links(self, vals_list):
+        """Make the header settlement the canonical projection of a line link."""
+        lines_by_id = self._settlement_lines_by_id(
+            vals.get("settlement_line_id") for vals in vals_list
+        )
+        for vals in vals_list:
+            line_id = vals.get("settlement_line_id")
+            if not line_id:
+                continue
+            line = lines_by_id[int(line_id)]
+            canonical_id = line.settlement_id.id
+            if "settlement_id" in vals and vals.get("settlement_id") != canonical_id:
+                raise ValidationError("付款申请明细的结算单与结算行不一致。")
+            vals["settlement_id"] = canonical_id
+
+    def init(self):
+        self.env.cr.execute(
+            """
+            UPDATE payment_request_line payment_line
+               SET settlement_id = settlement_line.settlement_id
+              FROM sc_settlement_order_line settlement_line
+             WHERE payment_line.settlement_line_id = settlement_line.id
+               AND payment_line.settlement_id IS NULL
+            """
+        )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        self._normalize_canonical_settlement_links(vals_list)
+        default_request_id = self.env.context.get("default_request_id")
+        request_ids = {
+            vals.get("request_id") or default_request_id
+            for vals in vals_list
+            if vals.get("request_id") or default_request_id
+        }
+        requests = self._lock_allocation_basis_requests(request_ids)
+        self._assert_allocation_basis_requests_mutable(
+            requests,
+            "付款申请进入审批或执行后，不允许新增合同分摊依据明细；请撤回到允许状态后处理。",
+        )
+        return super().create(vals_list)
+
+    def write(self, vals):
+        allocation_basis_fields = {
+            "request_id",
+            "active",
+            "contract_id",
+            "settlement_id",
+            "settlement_line_id",
+            "amount",
+            "current_pay_amount",
+        }
+        if allocation_basis_fields & set(vals):
+            request_ids = set(self.mapped("request_id").ids)
+            if "request_id" in vals and vals.get("request_id"):
+                request_ids.add(vals["request_id"])
+            requests = self._lock_allocation_basis_requests(request_ids)
+            self._assert_allocation_basis_requests_mutable(
+                requests,
+                "付款申请进入审批或执行后，合同分摊依据不可修改；请撤回到允许状态后处理。",
+            )
+            if vals.get("settlement_line_id"):
+                normalized = dict(vals)
+                self._normalize_canonical_settlement_links([normalized])
+                vals = normalized
+            elif "settlement_id" in vals:
+                for line in self.filtered("settlement_line_id"):
+                    if vals.get("settlement_id") != line.settlement_line_id.settlement_id.id:
+                        raise ValidationError("付款申请明细的结算单与结算行不一致。")
+        return super().write(vals)
+
+    def unlink(self):
+        requests = self._lock_allocation_basis_requests(self.mapped("request_id").ids)
+        self._assert_allocation_basis_requests_mutable(
+            requests,
+            "仅草稿、已驳回或已取消付款申请的明细允许删除。",
+        )
         self._sc_raise_delete_blockers(action_label="删除付款申请明细")
         return super().unlink()

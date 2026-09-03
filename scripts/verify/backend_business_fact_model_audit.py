@@ -12,12 +12,16 @@ import argparse
 import ast
 import json
 import re
+import subprocess
+import sys
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+from scripts.contract.complete_worktree_fingerprint import build_fingerprint, validate_fingerprint  # noqa: E402
 MODEL_ROOT = ROOT / "addons" / "smart_construction_core" / "models"
 SMART_CORE_MODEL_ROOT = ROOT / "addons" / "smart_core" / "models"
 
@@ -96,7 +100,9 @@ ALLOWED_PROJECTION_MODES = {
     "controlled_generated_ledger",
     "computed_runtime_summary",
     "runtime_workbench_fact",
+    "controlled_writable_snapshot",
 }
+EXTERNAL_NATIVE_MODEL_REFERENCES = {"hr.employee", "ir.attachment", "ir.config_parameter"}
 ALLOWED_MANAGEMENT_SUBJECTS = {"platform", "company", "business", "project", "source_system"}
 ALLOWED_MANAGED_OBJECTS = {
     "company",
@@ -180,9 +186,11 @@ def extract_models() -> list[dict[str, Any]]:
         for node in tree.body:
             if not isinstance(node, ast.ClassDef):
                 continue
+            abstract = any(isinstance(base, ast.Attribute) and base.attr == "AbstractModel" for base in node.bases)
             model_name = None
             inherit = None
             description = None
+            auto = True
             constraints: list[Any] = []
             fields: list[dict[str, Any]] = []
             for stmt in node.body:
@@ -195,6 +203,8 @@ def extract_models() -> list[dict[str, Any]]:
                     inherit = literal(stmt.value)
                 if "_description" in target_names:
                     description = literal(stmt.value)
+                if "_auto" in target_names:
+                    auto = literal(stmt.value) is not False
                 if "_sql_constraints" in target_names:
                     constraints = literal(stmt.value) or []
                 for target in stmt.targets:
@@ -218,18 +228,20 @@ def extract_models() -> list[dict[str, Any]]:
                             "readonly": bool(kwargs.get("readonly")),
                             "related": kwargs.get("related") or "",
                             "store": bool(kwargs.get("store")),
+                            "compute": kwargs.get("compute") or "",
                         }
                     )
             if not model_name and not inherit:
                 continue
-            implementation_kind = classify_implementation_kind(model_name, inherit)
+            implementation_kind = classify_implementation_kind(model_name, inherit, abstract)
             field_names = {field["name"] for field in fields}
             field_types = {field["name"]: field["type"] for field in fields}
             path_text = str(path.relative_to(ROOT))
-            buckets = classify_model(path_text, model_name, inherit, description, field_names, field_types)
+            buckets = classify_model(path_text, model_name, inherit, description, field_names, field_types, auto, abstract)
             model_family = classify_model_family(path_text, model_name, inherit, buckets)
             carrier_fit = classify_universal_carrier_fit(path_text, model_name, inherit, fields, buckets, model_family)
             constraint_text = json.dumps(constraints, ensure_ascii=False)
+            class_source = ast.get_source_segment(source, node) or ""
             rows.append(
                 {
                     "path": path_text,
@@ -237,6 +249,12 @@ def extract_models() -> list[dict[str, Any]]:
                     "model": model_name,
                     "inherit": inherit,
                     "description": description,
+                    "auto": auto,
+                    "abstract": abstract,
+                    "projection_storage_kind": classify_projection_storage_kind(source, auto, abstract),
+                    "projection_semantic_modes": classify_projection_semantic_modes(
+                        model_name, inherit, fields, constraint_text, class_source, auto, abstract
+                    ),
                     "implementation_kind": implementation_kind,
                     "field_count": len(fields),
                     "fields": fields,
@@ -311,7 +329,9 @@ def extract_named_model(path: Path, target_model: str) -> dict[str, Any] | None:
     return None
 
 
-def classify_implementation_kind(model_name: str | None, inherit: Any) -> str:
+def classify_implementation_kind(model_name: str | None, inherit: Any, abstract: bool = False) -> str:
+    if abstract:
+        return "abstract_model"
     if model_name and inherit:
         return "custom_model_with_mixin_or_inherit"
     if model_name:
@@ -326,6 +346,8 @@ def classify_model(
     description: str | None,
     field_names: set[str],
     field_types: dict[str, str],
+    auto: bool = True,
+    abstract: bool = False,
 ) -> list[str]:
     text = " ".join([path, model_name or "", str(inherit or ""), description or ""])
     buckets: set[str] = set()
@@ -333,7 +355,9 @@ def classify_model(
         buckets.add("core")
     if "/support/" in path:
         buckets.add("support")
-    if "/projection/" in path or re.search(r"(summary|ledger|cockpit|workbench)", model_name or ""):
+    if abstract:
+        buckets.add("abstract_model")
+    if not abstract and ("/projection/" in path or re.search(r"(summary|ledger|cockpit|workbench)", model_name or "")):
         buckets.add("projection")
     if model_name and model_name.startswith("sc.legacy"):
         buckets.add("legacy_fact")
@@ -343,11 +367,129 @@ def classify_model(
         buckets.add("stateful")
     if any(field_types.get(name) in {"Monetary", "Float", "Integer"} and AMOUNT_FIELD_RE.search(name) for name in field_names):
         buckets.add("quantitative")
-    if "source_origin" in field_names and "legacy_source_model" in field_names and "legacy_record_id" in field_names:
+    if (
+        not abstract
+        and auto
+        and "source_origin" in field_names
+        and "legacy_source_model" in field_names
+        and "legacy_record_id" in field_names
+    ):
         buckets.add("formal_fact")
     if "sc.business.fact.mixin" in text:
         buckets.add("business_fact_mixin")
     return sorted(buckets)
+
+
+def classify_projection_storage_kind(source: str, auto: bool, abstract: bool) -> str:
+    if abstract:
+        return "abstract_model"
+    if auto:
+        return "orm_table"
+    if "_create_empty_projection_view" in source:
+        return "typed_empty_sql_view"
+    if "ensure_ar_ap_project_summary_provider" in source:
+        return "external_physical_provider"
+    if re.search(r"CREATE\s+(?:OR\s+REPLACE\s+)?VIEW", source, re.IGNORECASE):
+        return "sql_view"
+    if re.search(r"CREATE\s+TABLE", source, re.IGNORECASE):
+        return "physical_table"
+    return "custom_non_auto"
+
+
+def classify_projection_semantic_modes(
+    model_name: str | None,
+    inherit: Any,
+    fields: list[dict[str, Any]],
+    constraint_text: str,
+    class_source: str,
+    auto: bool,
+    abstract: bool,
+) -> list[str]:
+    """Derive projection behavior from the owning class, not registry prose."""
+    if abstract:
+        return []
+    storage_kind = classify_projection_storage_kind(class_source, auto, abstract)
+    if storage_kind in {"sql_view", "typed_empty_sql_view"}:
+        return ["sql_view"]
+    if storage_kind in {"physical_table", "external_physical_provider"}:
+        return ["physical_refresh_table"]
+
+    field_names = {field["name"] for field in fields}
+    inherit_text = json.dumps(inherit, ensure_ascii=False)
+    has_source_identity = {"source_model", "source_res_id"}.issubset(field_names)
+    if (
+        "version_id" in field_names
+        and "def _assert_draft" in class_source
+        and "version_id.state != \"draft\"" in class_source
+        and "def write" in class_source
+        and "def unlink" in class_source
+        and class_source.count("self._assert_draft()") >= 2
+    ):
+        return ["controlled_writable_snapshot"]
+
+    if (
+        "sc.business.fact.mixin" in inherit_text
+        and has_source_identity
+        and "unique(" in constraint_text.lower()
+    ):
+        return ["runtime_workbench_fact"]
+
+    guarded_tokens = set(re.findall(r"is not\s+(_[A-Z0-9_]+AUTHORITY_TOKEN)", class_source))
+    injected_tokens = set(
+        re.findall(
+            r"with_context\([^)]*=\s*(_[A-Z0-9_]+AUTHORITY_TOKEN)",
+            class_source,
+            flags=re.DOTALL,
+        )
+    )
+    has_unforgeable_authority_factory = (
+        "def _create_authoritative" in class_source
+        and bool(guarded_tokens & injected_tokens)
+        and "def write" in class_source
+        and "def unlink" in class_source
+    )
+    guarded_service_tokens = set(
+        re.findall(
+            r"context\.get\([^)]*\)\s+is\s+(?:self\.)?(_[A-Z0-9_]+SERVICE_TOKEN)",
+            class_source,
+        )
+    )
+    injected_service_tokens = set(
+        re.findall(
+            r"with_context\([\s\S]{0,240}?(?:self\.)?(_[A-Z0-9_]+SERVICE_TOKEN)",
+            class_source,
+        )
+    )
+    has_unforgeable_service_factory = (
+        bool(guarded_service_tokens & injected_service_tokens)
+        and class_source.count("_is_generated_service_call()") >= 3
+        and "def create" in class_source
+        and "def write" in class_source
+        and "def unlink" in class_source
+    )
+    ledger_source_identity = has_source_identity or {
+        "source_model",
+        "source_id",
+        "source_line_id",
+    }.issubset(field_names) or "payment_request_id" in field_names
+    if (
+        model_name
+        and "ledger" in model_name
+        and ledger_source_identity
+        and "def create" in class_source
+        and (
+            has_unforgeable_authority_factory
+            or has_unforgeable_service_factory
+        )
+    ):
+        return ["controlled_generated_ledger"]
+
+    computed_nonstored = [
+        field for field in fields if field.get("compute") and not field.get("store")
+    ]
+    if computed_nonstored and "@api.depends" in class_source and "def _compute" in class_source:
+        return ["computed_runtime_summary"]
+    return []
 
 
 def model_ref(model_name: str | None, inherit: Any) -> str:
@@ -508,6 +650,26 @@ def load_registry(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def build_candidate_fingerprint() -> dict[str, Any]:
+    try:
+        baseline = subprocess.run(
+            ["git", "merge-base", "HEAD", "origin/main"],
+            cwd=ROOT,
+            check=True,
+            stdout=subprocess.PIPE,
+            text=True,
+        ).stdout.strip()
+    except subprocess.CalledProcessError:
+        baseline = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=ROOT,
+            check=True,
+            stdout=subprocess.PIPE,
+            text=True,
+        ).stdout.strip()
+    return build_fingerprint(baseline)
+
+
 def load_family_registry(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {"families": [], "missing_registry": True}
@@ -593,6 +755,35 @@ def registry_maps(registry: dict[str, Any]) -> tuple[dict[str, dict[str, Any]], 
         for item in registry.get("models", [])
     }
     return model_map, exception_map
+
+
+def summarize_retired_projection_tooling(registry: dict[str, Any]) -> dict[str, Any]:
+    registered_models = {item.get("model") for item in registry.get("models", []) if item.get("model")}
+    retirements = registry.get("retired_projection_tooling", [])
+    retirement_map = {item.get("model"): item for item in retirements if item.get("model")}
+    gaps = []
+    for item in registry.get("models", []):
+        model = item.get("model")
+        if not item.get("projection_scripts") and model not in retirement_map:
+            gaps.append({"model": model, "reason": "empty_projection_scripts_require_explicit_retirement"})
+    for item in retirements:
+        model = item.get("model")
+        paths = item.get("paths")
+        if model not in registered_models:
+            gaps.append({"model": model, "reason": "retirement_model_is_not_registered"})
+        if not isinstance(paths, list) or not paths:
+            gaps.append({"model": model, "reason": "retirement_paths_are_required"})
+            continue
+        if not str(item.get("decision") or "").strip() or not str(item.get("reason") or "").strip():
+            gaps.append({"model": model, "reason": "retirement_decision_and_reason_are_required"})
+        for raw_path in paths:
+            if (ROOT / raw_path).exists():
+                gaps.append({"model": model, "path": raw_path, "reason": "retired_path_still_exists"})
+    return {
+        "retired_projection_tooling_count": len(retirements),
+        "retired_projection_path_count": sum(len(item.get("paths", [])) for item in retirements),
+        "retired_projection_tooling_gaps": gaps,
+    }
 
 
 def summarize(rows: list[dict[str, Any]], registry: dict[str, Any]) -> dict[str, Any]:
@@ -739,7 +930,7 @@ def summarize_family_registry(rows: list[dict[str, Any]], family_registry: dict[
             detected_native_inherits.add(inherit)
         elif isinstance(inherit, list):
             detected_native_inherits.update(item for item in inherit if isinstance(item, str))
-    detected_reference_names = detected_models | detected_native_inherits
+    detected_reference_names = detected_models | detected_native_inherits | EXTERNAL_NATIVE_MODEL_REFERENCES
 
     required_fields = [
         "family",
@@ -823,7 +1014,7 @@ def summarize_ownership_specs(rows: list[dict[str, Any]], ownership_specs: dict[
             detected_native_inherits.add(inherit)
         elif isinstance(inherit, list):
             detected_native_inherits.update(item for item in inherit if isinstance(item, str))
-    detected_reference_names = detected_models | detected_native_inherits
+    detected_reference_names = detected_models | detected_native_inherits | EXTERNAL_NATIVE_MODEL_REFERENCES
 
     required_fields = [
         "spec",
@@ -843,7 +1034,7 @@ def summarize_ownership_specs(rows: list[dict[str, Any]], ownership_specs: dict[
         for field in required_fields:
             value = spec.get(field)
             if isinstance(value, list):
-                if not value:
+                if not value and field != "projection_models":
                     shape_gaps.append({"spec": spec_key, "field": field, "reason": "missing_required_list"})
             elif not str(value or "").strip():
                 shape_gaps.append({"spec": spec_key, "field": field, "reason": "missing_required_field"})
@@ -873,6 +1064,7 @@ def summarize_ownership_specs(rows: list[dict[str, Any]], ownership_specs: dict[
 
 def summarize_projection_registry(rows: list[dict[str, Any]], projection_registry: dict[str, Any]) -> dict[str, Any]:
     projections = projection_registry.get("projections", [])
+    row_map = {row["model"]: row for row in rows if row.get("model")}
     detected_models = {row["model"] for row in rows if row.get("model")}
     detected_projection_models = {row["model"] for row in rows if row.get("model") and "projection" in row["buckets"]}
     registry_map = {item.get("model"): item for item in projections if item.get("model")}
@@ -887,13 +1079,17 @@ def summarize_projection_registry(rows: list[dict[str, Any]], projection_registr
     ]
     shape_gaps = []
     reference_gaps = []
+    implementation_gaps = []
     mode_counts: Counter[str] = Counter()
     for item in projections:
         model = item.get("model")
         for field in required_fields:
             value = item.get(field)
             if isinstance(value, list):
-                if not value:
+                if not value and not (
+                    field == "source_models"
+                    and row_map.get(model, {}).get("projection_storage_kind") == "typed_empty_sql_view"
+                ):
                     shape_gaps.append({"model": model, "field": field, "reason": "missing_required_list"})
             elif not str(value or "").strip():
                 shape_gaps.append({"model": model, "field": field, "reason": "missing_required_field"})
@@ -911,6 +1107,47 @@ def summarize_projection_registry(rows: list[dict[str, Any]], projection_registr
             )
         if model and model not in detected_models:
             reference_gaps.append({"model": model, "field": "model", "reason": "model_not_detected"})
+            continue
+        row = row_map.get(model, {})
+        storage_kind = row.get("projection_storage_kind")
+        expected_storage = {
+            "sql_view": {"sql_view", "typed_empty_sql_view"},
+            "physical_refresh_table": {"physical_table", "external_physical_provider"},
+            "controlled_generated_ledger": {"orm_table"},
+            "computed_runtime_summary": {"orm_table"},
+            "runtime_workbench_fact": {"orm_table"},
+            "controlled_writable_snapshot": {"orm_table"},
+        }.get(mode, set())
+        if expected_storage and storage_kind not in expected_storage:
+            implementation_gaps.append(
+                {
+                    "model": model,
+                    "field": "implementation_mode",
+                    "registered_mode": mode,
+                    "source_storage_kind": storage_kind,
+                    "expected_storage_kinds": sorted(expected_storage),
+                }
+            )
+        source_semantic_modes = set(row.get("projection_semantic_modes") or [])
+        if mode in ALLOWED_PROJECTION_MODES and mode not in source_semantic_modes:
+            implementation_gaps.append(
+                {
+                    "model": model,
+                    "field": "implementation_mode",
+                    "registered_mode": mode,
+                    "source_semantic_modes": sorted(source_semantic_modes),
+                    "reason": "registered_mode_not_proven_by_owning_class",
+                }
+            )
+        write_policy = str(item.get("write_policy") or "").lower()
+        if storage_kind == "typed_empty_sql_view" and "typed-empty" not in write_policy:
+            implementation_gaps.append(
+                {"model": model, "field": "write_policy", "reason": "typed_empty_source_requires_explicit_policy"}
+            )
+        if storage_kind == "typed_empty_sql_view" and item.get("source_models"):
+            implementation_gaps.append(
+                {"model": model, "field": "source_models", "reason": "typed_empty_view_must_not_claim_live_sources"}
+            )
     return {
         "projection_registry_count": len(projections),
         "projection_mode_counts": dict(sorted(mode_counts.items())),
@@ -920,6 +1157,8 @@ def summarize_projection_registry(rows: list[dict[str, Any]], projection_registr
         "projection_registry_shape_gaps": shape_gaps,
         "projection_registry_reference_gap_count": len(reference_gaps),
         "projection_registry_reference_gaps": reference_gaps,
+        "projection_registry_implementation_gap_count": len(implementation_gaps),
+        "projection_registry_implementation_gaps": implementation_gaps,
     }
 
 
@@ -1361,9 +1600,22 @@ def summarize_optional_scope_metadata(
 def write_markdown(report: dict[str, Any], path: Path) -> None:
     summary = report["summary"]
     rows = report["models"]
+    fingerprint = report["candidate_fingerprint"]
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = [
         "# Backend Business Fact Model Static Audit",
+        "",
+        "## Exact Candidate Fingerprint",
+        "",
+        f"- algorithm: `{fingerprint['algorithm']}`",
+        f"- branch: `{fingerprint['branch']}`",
+        f"- git_head: `{fingerprint['git_head']}`",
+        f"- baseline_sha: `{fingerprint['baseline_sha']}`",
+        f"- complete_digest: `{fingerprint['digest']}`",
+        f"- scope_manifest_sha256: `{fingerprint['scope_manifest_sha256']}`",
+        f"- entry_count: {len(fingerprint['entries'])}",
+        f"- excluded_paths: `{json.dumps(fingerprint['excluded_paths'], ensure_ascii=False, sort_keys=True)}`",
+        "- complete entry manifest: companion JSON report `candidate_fingerprint.entries`",
         "",
         "## Summary",
         "",
@@ -1756,8 +2008,11 @@ def main() -> int:
     optional_scope_metadata = load_optional_scope_metadata(ROOT / args.optional_scope_metadata)
     platform_core_kernel_gap = load_platform_core_kernel_gap(ROOT / args.platform_core_kernel_gap)
     platform_core_summary = summarize_platform_core_kernel_gap(platform_core_kernel_gap)
+    candidate_fingerprint = build_candidate_fingerprint()
     report = {
+        "candidate_fingerprint": candidate_fingerprint,
         "summary": summarize(rows, registry),
+        "retirement_summary": summarize_retired_projection_tooling(registry),
         "family_summary": summarize_family_registry(rows, family_registry),
         "ownership_summary": summarize_ownership_specs(rows, ownership_specs),
         "projection_summary": summarize_projection_registry(rows, projection_registry),
@@ -1852,6 +2107,7 @@ def main() -> int:
         optional_scope_metadata_path = ROOT / args.optional_scope_metadata
         platform_core_kernel_gap_path = ROOT / args.platform_core_kernel_gap
         blockers = {
+            "candidate_fingerprint_gaps": validate_fingerprint(candidate_fingerprint),
             "unregistered_formal_models": summary["unregistered_formal_models"],
             "unclassified_models": summary["unclassified_models"],
             "universal_carrier_fit_unclassified": summary["universal_carrier_fit_unclassified"],
@@ -1859,6 +2115,7 @@ def main() -> int:
             "undeclared_standard_gaps": summary["undeclared_standard_gaps"],
             "registry_path_gaps": summary["registry_path_gaps"],
             "registry_shape_gaps": summary["registry_shape_gaps"],
+            "retired_projection_tooling_gaps": report["retirement_summary"]["retired_projection_tooling_gaps"],
             "problem_map_gaps": []
             if problem_map_path.exists() and "## Boundary Conclusions" in problem_map_text
             else [{"path": str(problem_map_path.relative_to(ROOT)), "reason": "missing_problem_map_or_boundary_conclusions"}],
@@ -1904,8 +2161,13 @@ def main() -> int:
             and "## Core Answer" in audit_findings_text
             and "## Final Verdict" in audit_findings_text
             and "company manages business" in audit_findings_text
-            and "unclassified models: 0" in audit_findings_text
-            else [{"path": str(audit_findings_path.relative_to(ROOT)), "reason": "missing_audit_findings_core_answer_or_final_verdict"}],
+            and f"model classes: {summary['model_count']}" in audit_findings_text
+            and f"model families: {report['family_summary']['family_registry_count']}" in audit_findings_text
+            and f"unclassified models: {summary['unclassified_model_count']}" in audit_findings_text
+            and f"ownership specs: {report['ownership_summary']['ownership_spec_count']}" in audit_findings_text
+            and f"formal fact models: {summary['formal_fact_model_count']}" in audit_findings_text
+            and f"projection registry entries: {report['projection_summary']['projection_registry_count']}" in audit_findings_text
+            else [{"path": str(audit_findings_path.relative_to(ROOT)), "reason": "audit_findings_missing_or_count_drift"}],
             "overlap_analysis_gaps": []
             if overlap_analysis_path.exists()
             and "## Contract Ownership" in overlap_analysis_text
@@ -1921,6 +2183,7 @@ def main() -> int:
             and not report["projection_summary"]["registered_projection_models_not_detected"]
             and not report["projection_summary"]["projection_registry_shape_gaps"]
             and not report["projection_summary"]["projection_registry_reference_gaps"]
+            and not report["projection_summary"]["projection_registry_implementation_gaps"]
             else [
                 {
                     "path": str(projection_registry_path.relative_to(ROOT)),
@@ -1930,6 +2193,7 @@ def main() -> int:
                     ],
                     "shape_gaps": report["projection_summary"]["projection_registry_shape_gaps"],
                     "reference_gaps": report["projection_summary"]["projection_registry_reference_gaps"],
+                    "implementation_gaps": report["projection_summary"]["projection_registry_implementation_gaps"],
                 }
             ],
             "management_hierarchy_gaps": []

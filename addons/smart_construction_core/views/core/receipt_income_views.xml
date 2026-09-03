@@ -86,9 +86,10 @@
                         <button name="reject_tier" string="审批驳回" type="object"
                                 invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
                         <button name="action_received" string="已收款" type="object" class="btn-primary"
+                                groups="smart_construction_core.group_sc_cap_finance_manager"
                                 invisible="state not in ('draft', 'confirmed')"/>
                         <button name="action_cancel" string="取消" type="object"
-                                invisible="state in ('cancel', 'legacy_confirmed')"/>
+                                invisible="state in ('received', 'cancel', 'legacy_confirmed')"/>
                         <field name="validation_status" invisible="1"/>
                         <field name="can_review" invisible="1"/>
                         <field name="state" widget="statusbar"
@@ -100,37 +101,37 @@
                                 <field name="name" readonly="1"/>
                                 <field name="receipt_flow_label" readonly="1"/>
                                 <field name="source_origin" invisible="1"/>
-                                <field name="source_kind" readonly="state == 'legacy_confirmed'"/>
-                                <field name="business_category_id" readonly="state == 'legacy_confirmed'"/>
-                                <field name="date_receipt" readonly="state == 'legacy_confirmed'"/>
-                                <field name="document_no" readonly="state == 'legacy_confirmed'"/>
+                                <field name="source_kind" readonly="state in ('received', 'legacy_confirmed')"/>
+                                <field name="business_category_id" readonly="state in ('received', 'legacy_confirmed')"/>
+                                <field name="date_receipt" readonly="state in ('received', 'legacy_confirmed')"/>
+                                <field name="document_no" readonly="state in ('received', 'legacy_confirmed')"/>
                             </group>
                             <group string="项目与往来单位">
-                                <field name="project_id" readonly="state == 'legacy_confirmed'"/>
+                                <field name="project_id" readonly="state in ('received', 'legacy_confirmed')"/>
                                 <field name="operation_strategy" readonly="1"/>
-                                <field name="partner_id"/>
-                                <field name="contract_id"/>
-                                <field name="payment_request_id"/>
+                                <field name="partner_id" readonly="state in ('received', 'legacy_confirmed')"/>
+                                <field name="contract_id" readonly="state in ('received', 'legacy_confirmed')"/>
+                                <field name="payment_request_id" readonly="state in ('received', 'legacy_confirmed')"/>
                             </group>
                         </group>
                         <group string="收款信息">
-                            <field name="receipt_type" readonly="state == 'legacy_confirmed'"/>
-                            <field name="income_category" readonly="state == 'legacy_confirmed'"/>
-                            <field name="payment_method" readonly="state == 'legacy_confirmed'"/>
-                            <field name="receiving_account" readonly="state == 'legacy_confirmed'"/>
-                            <field name="bill_no" readonly="state == 'legacy_confirmed'"/>
-                            <field name="invoice_ref" readonly="state == 'legacy_confirmed'"/>
+                            <field name="receipt_type" readonly="state in ('received', 'legacy_confirmed')"/>
+                            <field name="income_category" readonly="state in ('received', 'legacy_confirmed')"/>
+                            <field name="payment_method" readonly="state in ('received', 'legacy_confirmed')"/>
+                            <field name="receiving_account" readonly="state in ('received', 'legacy_confirmed')"/>
+                            <field name="bill_no" readonly="state in ('received', 'legacy_confirmed')"/>
+                            <field name="invoice_ref" readonly="state in ('received', 'legacy_confirmed')"/>
                         </group>
                         <group string="收款账户">
-                            <field name="receiving_account_name" readonly="state == 'legacy_confirmed'"/>
-                            <field name="receiving_account_no" readonly="state == 'legacy_confirmed'"/>
-                            <field name="receiving_bank_name" readonly="state == 'legacy_confirmed'"/>
+                            <field name="receiving_account_name" readonly="state in ('received', 'legacy_confirmed')"/>
+                            <field name="receiving_account_no" readonly="state in ('received', 'legacy_confirmed')"/>
+                            <field name="receiving_bank_name" readonly="state in ('received', 'legacy_confirmed')"/>
                         </group>
                         <group string="收款金额/抵扣与结算">
-                            <field name="amount" readonly="state == 'legacy_confirmed'"/>
-                            <field name="deducted_invoice_amount" readonly="state == 'legacy_confirmed'"/>
-                            <field name="deducted_tax_amount" readonly="state == 'legacy_confirmed'"/>
-                            <field name="settlement_amount" readonly="state == 'legacy_confirmed'"/>
+                            <field name="amount" readonly="state in ('received', 'legacy_confirmed')"/>
+                            <field name="deducted_invoice_amount" readonly="state in ('received', 'legacy_confirmed')"/>
+                            <field name="deducted_tax_amount" readonly="state in ('received', 'legacy_confirmed')"/>
+                            <field name="settlement_amount" readonly="state in ('received', 'legacy_confirmed')"/>
                             <field name="currency_id" invisible="1"/>
                         </group>
                         <group string="办理说明">
@@ -158,7 +159,7 @@
                                     <field name="treasury_ledger_id" readonly="1"/>
                                     <field name="creator_name" readonly="1"/>
                                     <field name="created_time" readonly="1"/>
-                                    <field name="active"/>
+                                    <field name="active" readonly="state in ('received', 'legacy_confirmed')"/>
                                 </group>
                             </page>
                         </notebook>

@@ -1,6 +1,6 @@
 {
   "schema": "backend_business_model_family_registry_v1",
-  "status": "draft architecture audit",
+  "status": "active exact-head audit authority",
   "hierarchy": "company -> business -> income/expense -> project as typical construction carrier",
   "families": [
     {
@@ -22,7 +22,7 @@
       "solution_layer": "platform",
       "source_of_truth": "res.partner",
       "native_dependency": "res.partner, res.partner.bank",
-      "representative_models": ["res.partner", "sc.legacy.partner.map"],
+      "representative_models": ["res.partner"],
       "target_problem": "Keep customer, supplier, subcontractor, and other counterparty identity reusable across income and expense business.",
       "boundary_rule": "Custom fields may preserve construction semantics and legacy anchors, but counterparty identity remains native.",
       "status": "clear"
@@ -34,7 +34,7 @@
       "solution_layer": "industry",
       "source_of_truth": "project.project",
       "native_dependency": "project.project, project.task",
-      "representative_models": ["project.project", "project.wbs", "construction.work.breakdown"],
+      "representative_models": ["project.project", "construction.wbs.plan", "construction.work.breakdown"],
       "target_problem": "Represent the typical construction business carrier where income, expense, progress, cost, quality, safety, and treasury facts meet.",
       "boundary_rule": "Project is the dominant execution anchor, but company-level, pre-project, and platform facts must not be forced into project scope.",
       "status": "clear"
@@ -46,7 +46,7 @@
       "solution_layer": "industry",
       "source_of_truth": "product.template for identity and sc.material.catalog for construction catalog surface",
       "native_dependency": "product.template, product.category, stock, purchase",
-      "representative_models": ["product.template", "sc.material.catalog", "sc.legacy.material.category", "sc.legacy.material.detail"],
+      "representative_models": ["product.template", "sc.material.catalog"],
       "target_problem": "Manage materials as construction-visible resources while retaining native product identity and procurement/stock integration.",
       "boundary_rule": "Product identity stays native; material catalog is an industry surface and replay bridge, not a second product master.",
       "status": "mostly clear"
@@ -80,12 +80,12 @@
       "business_object": "expense",
       "responsibility_type": "industry source-of-truth",
       "solution_layer": "industry",
-      "source_of_truth": "payment.request for intent/approval and sc.payment.execution for paid fact",
+      "source_of_truth": "payment.request for intent/approval, sc.payment.execution for controlled workflow evidence, payment.ledger for actual cash, and payment.ledger.allocation for immutable contract attribution",
       "native_dependency": "project.project, res.partner, account, approval",
-      "representative_models": ["payment.request", "payment.request.line", "sc.payment.execution"],
+      "representative_models": ["payment.request", "payment.request.line", "sc.payment.execution", "payment.ledger", "payment.ledger.allocation"],
       "owned_models": ["sc.team.loan.deduction.workspace"],
       "target_problem": "Separate expense payment intent, approval, and actual cash movement.",
-      "boundary_rule": "Request owns workflow intent; execution owns the business fact that payment happened.",
+      "boundary_rule": "Request owns workflow intent, execution proves controlled processing, ledger owns actual cash, and immutable allocation owns contract attribution.",
       "status": "clear enough"
     },
     {
@@ -96,6 +96,7 @@
       "source_of_truth": "sc.receipt.income, sc.invoice.registration, sc.tax.deduction.registration",
       "native_dependency": "project.project, res.partner, account, company currency",
       "representative_models": ["sc.receipt.income", "sc.invoice.registration", "sc.tax.deduction.registration", "sc.receipt.invoice.line"],
+      "owned_models": ["sc.output.invoice.adjustment", "sc.tax.certificate.registration", "sc.tax.filing"],
       "target_problem": "Record income-side receipt, invoice, and tax evidence as auditable construction facts.",
       "boundary_rule": "Income realization facts may link to native accounting, but the construction evidence document remains the industry source.",
       "status": "clear"
@@ -108,6 +109,7 @@
       "source_of_truth": "sc.fund.account for account master, sc.treasury.reconciliation for reconciliation document, sc.treasury.ledger as derived ledger",
       "native_dependency": "account, res.company, project.project",
       "representative_models": ["sc.fund.account", "sc.treasury.reconciliation", "sc.treasury.ledger", "sc.fund.account.operation"],
+      "owned_models": ["sc.self.funding.registration"],
       "target_problem": "Manage cash accounts and reconcile income/expense movement around company and project business.",
       "boundary_rule": "Account master, reconciliation document, and derived ledger must remain separate responsibilities.",
       "status": "needs ownership split"
@@ -118,6 +120,7 @@
       "responsibility_type": "industry source-of-truth",
       "solution_layer": "industry",
       "source_of_truth": "construction BOQ, project budget, settlement, and cost-period documents",
+      "owned_models": ["project.boq.summary.component"],
       "native_dependency": "project.project, account analytic concepts",
       "representative_models": ["project.boq.line", "project.budget", "project.cost.period", "project.cost.compare"],
       "target_problem": "Represent planned and actual cost structure for project-managed construction business.",
@@ -192,7 +195,8 @@
       "solution_layer": "customer",
       "source_of_truth": "source-fidelity old-system facts and mapping tables",
       "native_dependency": "target anchors only",
-      "representative_models": ["sc.legacy.account.transaction.line", "sc.legacy.purchase.contract.fact", "sc.legacy.receipt.income.fact", "sc.legacy.user.profile", "sc.history.todo"],
+      "representative_models": ["sc.historical.payment.fact"],
+      "owned_models": ["sc.historical.payment.fact"],
       "target_problem": "Preserve historical evidence and migration traceability without defining future industry model shape.",
       "boundary_rule": "Legacy carriers are replay/import surfaces only; customer data repair must not set the system hierarchy.",
       "status": "clear conceptually"
@@ -229,6 +233,7 @@
       "source_of_truth": "native model extensions and compatibility mixins",
       "native_dependency": "project, account, purchase, stock, product, task, tier validation",
       "representative_models": ["account.move", "account.move.line", "purchase.order", "stock.picking", "construction.contract.professional.mixin"],
+      "owned_models": ["sc.optional.product.projection"],
       "target_problem": "Keep native/OCA behavior compatible with construction business facts without replacing native ownership.",
       "boundary_rule": "Extensions may add anchors and hooks; they must not duplicate native transaction ownership.",
       "status": "clear"

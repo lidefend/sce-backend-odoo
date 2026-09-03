@@ -273,23 +273,23 @@
                     <group>
                         <group>
                             <field name="name"/>
-                            <field name="project_id"/>
-                            <field name="request_id"/>
-                            <field name="usage_date"/>
-                            <field name="equipment_name"/>
-                            <field name="equipment_code"/>
-                            <field name="specification"/>
-                            <field name="uom_text"/>
+                            <field name="project_id" readonly="state != 'draft'"/>
+                            <field name="request_id" readonly="state != 'draft'"/>
+                            <field name="usage_date" readonly="state != 'draft'"/>
+                            <field name="equipment_name" readonly="state != 'draft'"/>
+                            <field name="equipment_code" readonly="state != 'draft'"/>
+                            <field name="specification" readonly="state != 'draft'"/>
+                            <field name="uom_text" readonly="state != 'draft'"/>
                         </group>
                         <group>
-                            <field name="usage_location"/>
-                            <field name="operator_name"/>
-                            <field name="usage_qty"/>
-                            <field name="usage_hours"/>
-                            <field name="currency_id" groups="base.group_multi_currency"/>
-                            <field name="price_unit"/>
+                            <field name="usage_location" readonly="state != 'draft'"/>
+                            <field name="operator_name" readonly="state != 'draft'"/>
+                            <field name="usage_qty" readonly="state != 'draft'"/>
+                            <field name="usage_hours" readonly="state != 'draft'"/>
+                            <field name="currency_id" readonly="state != 'draft'" groups="base.group_multi_currency"/>
+                            <field name="price_unit" readonly="state != 'draft'"/>
                             <field name="amount" readonly="1"/>
-                            <field name="supplier_id"/>
+                            <field name="supplier_id" readonly="state != 'draft'"/>
                             <field name="recorder_id"/>
                         </group>
                     </group>

@@ -10,6 +10,9 @@ from . import test_budget
 from . import test_boq_version_contract
 from . import test_contract_center
 from . import test_cost_compare
+from . import test_cost_fact_model_v2
+from . import test_cost_fact_concurrency_v2
+from . import test_p1_funding_authority
 from . import test_profit_compare
 from . import test_stock_cost
 from . import test_p0_state_closure
@@ -30,6 +33,8 @@ from . import test_record_rule_behavior_gate
 from . import test_record_rule_contract_p1
 from . import test_record_rule_ledger_p1
 from . import test_p0_ledger_gate
+from . import test_contract_payment_allocation_fact
+from . import test_contract_execution_position
 from . import test_p0_finance_rr_gate
 from . import test_p0_finance_ui_gate
 from . import test_p0_finance_aggregate_gate
@@ -94,3 +99,5 @@ from . import test_product_message_notification
 from . import test_tax_filing
 from . import test_product_reports
 from . import test_payment_settlement_component_profile
+from . import test_p1_finance_projection_authority
+from . import test_settlement_fact_immutability_v1

@@ -86,7 +86,10 @@ class ProjectProfitCompare(models.Model):
         action.update(
             {
                 "name": "实际成本来源 / %s" % (self.project_id.display_name or "项目"),
-                "domain": self._dimension_domain(include_period=True),
+                "domain": self._dimension_domain(include_period=True) + [
+                    ("recognition_state", "=", "active"),
+                    ("reporting_treatment", "in", ["financial_actual", "manual_actual"]),
+                ],
                 "context": self._action_context(),
                 "target": "current",
             }
@@ -155,6 +158,8 @@ class ProjectProfitCompare(models.Model):
                         currency_id,
                         SUM(amount) AS cost_actual_amount
                     FROM project_cost_ledger
+                    WHERE recognition_state = 'active'
+                      AND reporting_treatment IN ('financial_actual', 'manual_actual')
                     GROUP BY project_id, COALESCE(wbs_id, -1), COALESCE(to_char(date, 'YYYY-MM'), 'TOTAL'), currency_id
                 ),
                 cost_budget AS (

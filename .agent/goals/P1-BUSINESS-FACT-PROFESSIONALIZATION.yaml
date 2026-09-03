@@ -1,0 +1,290 @@
+goal:
+  id: P1-BUSINESS-FACT-PROFESSIONALIZATION
+  title: p1_business_fact_professionalization
+  status: active
+  objective: establish_authoritative_auditable_and_efficient_construction_business_facts
+
+  baseline:
+    branch: refactor/p1-business-facts-professionalization-v1
+    full_sha: 394b2ffe20c48255d2c8c0788fbfc36456c7d007
+    source: origin/main
+    worktree: /home/lidefend/workspace/sce-backend-odoo-p1-business-facts-v1
+    initial_status_sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+    tracked_index_sha256: 4f4f6af129cc8b166e340efd76b23b9b6bcad4327046f89827ef1e8c73d5b285
+
+  product_boundary:
+    formal_product_layer: P1
+    layer_target:
+      - smart_construction_core_business_models
+      - smart_construction_core_native_views
+      - smart_construction_core_security
+      - smart_construction_core_orm_performance
+    standard_vs_user_specific: construction_industry_standard
+    why_here: construction_contract_settlement_payment_cost_and_finance_semantics_are_industry_product_facts
+    why_not_elsewhere:
+      - no_industry_semantics_in_smart_core
+      - no_business_fact_inference_in_frontend
+      - no_customer_specific_baseline_in_public_industry_module
+      - no_ops_script_as_long_term_business_authority
+    blast_radius:
+      - project_contract_settlement_payment_and_cost_models
+      - native_odoo_menus_actions_views_and_role_visibility
+      - p1_fact_registries_tests_and_generated_reports
+
+  product_result:
+    statement: construction_business_facts_are_single_source_traceable_permission_correct_and_query_efficient
+    independently_acceptable: true
+    native_acceptance_authority: odoo_web
+    custom_frontend_dependency: none
+
+  scope:
+    include:
+      - exact_head_fact_model_registry
+      - contract_execution_position
+      - settlement_and_payment_fact_authority
+      - cross_company_and_project_visibility
+      - native_odoo_business_journeys
+      - deterministic_query_budgets
+      - cost_fact_idempotency_and_batching
+    exclude:
+      - frontend
+      - smart_core_public_contracts
+      - login_system_init_ui_contract_semantics
+      - customer_specific_data_or_preferences
+      - new_runtime_database_port_volume_fixture_or_credentials
+      - manually_assembled_browser_or_database_commands
+
+  governed_infrastructure:
+    runtime_profile: local.dev
+    compose_project: sc-local-dev
+    database_role: development_demo_backed_feature_database
+    database: sc_dev_demo
+    tenant: platform_internal_demo_tenant
+    database_filter: ^sc_dev_demo$
+    filestore_identity: sc_local_dev_*
+    backend_port: 8070
+    frontend_port: 18081
+    environment_reuse_only: true
+    shared_database_mutation: serialized
+
+  completed_batch_c:
+    id: Batch-C
+    title: authoritative_cost_fact_model_v2
+    status: completed
+    objective: establish_stage_explicit_currency_normalized_immutable_and_idempotent_project_cost_facts
+    scope:
+      - project_cost_ledger_model_upgrade
+      - explicit_recognition_stage_and_reporting_treatment
+      - project_company_currency_normalization_with_source_amount_trace
+      - generated_fact_immutability_and_source_identity_uniqueness
+      - centralized_batch_upsert_and_period_resolution
+      - six_cost_fact_writer_migrations
+      - cost_actual_projection_authority
+      - native_odoo_cost_fact_trace
+      - non_zero_targeted_odoo_tests
+    exclude:
+      - contract_execution_position_changes
+      - frontend_or_public_contract_changes
+      - customer_specific_cost_policy
+      - historical_source_relationship_guessing
+      - new_fx_revaluation_or_general_ledger_engine
+      - frontend_or_smart_core_contract_changes
+      - startup_chain_or_runtime_profile_changes
+      - new_database_port_volume_fixture_or_credentials
+    semantic_freeze:
+      fact_identity: source_model_source_id_source_line_id
+      generated_fact_policy: source_identity_complete_immutable_and_service_controlled
+      manual_fact_policy: source_identity_empty_and_role_maintained
+      recognition_policy: economic_stage_is_explicit_and_not_inferred_by_frontend
+      actual_cost_policy: only_reporting_treatment_actual_enters_existing_actual_cost_projections
+      currency_policy: amount_is_project_company_currency_and_source_amount_preserves_original_currency
+      compatibility: existing_public_intents_and_frontend_contracts_unchanged
+    entry_fingerprint:
+      git_head: de473e258d6c52dbb0172898aab30ac03b107a95
+      digest: 11f1d92a125bf506cfbb8ed7e2092f90f92bba6d1d4356424db07db349090194
+      entry_count: 7139
+    result:
+      - batch_b2_completed_at_de473e258d6c52dbb0172898aab30ac03b107a95
+      - batch_b2_independent_reviews_approved_with_zero_s0_s1_s2
+      - batch_c_model_semantics_frozen_before_implementation
+      - recognition_stage_reporting_treatment_and_source_currency_are_explicit
+      - generated_facts_are_service_only_immutable_idempotent_and_withdrawable
+      - six_source_writers_use_one_batch_fact_service
+      - purchase_cancel_and_account_draft_withdraw_without_deleting_evidence
+      - supplier_return_reverses_original_receipt_valuation_in_original_currency
+      - generated_fact_service_authority_is_not_rpc_context_forgeable
+      - withdrawal_and_replay_share_header_locks_and_detect_stale_snapshots
+      - purchase_account_and_stock_sources_enforce_project_company_compatibility
+      - accounting_facts_preserve_foreign_source_amount_and_currency
+      - company_cost_source_authorities_are_independent
+      - project_material_returns_reverse_operational_consumption
+      - native_analysis_excludes_withdrawn_rows_and_opens_acl_checked_sources
+      - cost_code_identity_is_unique_and_standard_code_creation_is_serialized
+      - actual_cost_projections_exclude_commitment_receipt_settlement_and_operational_memo_facts
+      - document_company_owns_purchase_account_and_stock_source_authority
+      - posted_account_balance_is_the_company_currency_fact_authority
+      - legacy_global_cost_source_parameters_migrate_once_to_each_company
+      - project_material_returns_bind_lock_and_conserve_the_original_issue
+      - supplier_returns_require_and_lock_the_original_receipt_fact
+      - generated_fact_insert_correction_withdraw_and_reactivate_query_growth_is_bounded
+      - source_header_project_period_and_fact_row_lock_order_is_globally_consistent
+      - governed_upgrade_17_0_0_142_and_289_method_sc_gate_passed
+      - first_independent_review_requested_changes_and_all_s1_findings_were_repaired
+      - second_independent_review_requested_changes_and_all_s1_s2_findings_were_repaired
+      - third_independent_review_requested_changes_and_all_findings_were_repaired
+      - terminal_cost_sources_are_immutable_at_header_and_line_level
+      - project_return_quantity_is_origin_authoritative_grouped_and_concurrency_safe
+      - period_lock_and_fact_mutation_are_serialized_in_one_global_order
+      - historical_resolvable_facts_are_normalized_and_unresolved_evidence_is_quarantined_without_guessing
+      - generated_fact_withdrawal_query_growth_is_bounded
+      - fourth_independent_review_requested_changes_and_all_findings_were_repaired
+      - normalization_state_is_explicit_and_service_controlled
+      - historical_foreign_currency_evidence_is_preserved_and_quarantined_without_silent_relabeling
+      - migration_is_post_schema_idempotent_and_difference_write_only
+      - cost_source_state_transitions_require_unforgeable_internal_action_authority
+      - stock_origin_fact_lock_follows_header_project_period_order
+      - native_return_supports_historical_issue_lines_without_material_catalog
+      - fifth_independent_review_requested_changes_and_all_s1_s2_findings_were_repaired
+      - normalized_new_facts_require_project_company_currency_while_unresolved_history_remains_nullable
+      - unresolved_owner_history_is_company_isolated_without_currency_or_owner_guessing
+      - cost_read_has_a_native_menu_action_tree_form_and_follower_record_rule_journey
+      - migration_replay_preserves_physical_tuple_identity_and_never_relabels_reporting_currency_as_unknown_source_currency
+      - sixth_independent_review_found_and_repaired_final_manifest_menu_parent_override
+      - native_follower_journey_asserts_active_visible_parent_chain_and_odoo_load_menus
+      - v8_exact_fingerprint_fact_native_and_orm_reviews_approved_zero_s0_s1_s2_s3
+      - p4_missing_business_fact_upgrade_replay_flow_still_blocks_pr_push
+
+  completed_batch_e:
+    id: Batch-E
+    title: project_funding_baseline_and_actual_allocation_authority_v1
+    status: completed
+    commit: fe47096ed242863143ea6b61de5ab1adab92dfc9
+    result:
+      - funding_baselines_are_versioned_immutable_and_concurrency_safe
+      - actual_allocations_are_service_controlled_reversible_and_conserved
+      - governed_upgrade_and_full_sc_gate_passed
+      - three_exact_fingerprint_independent_reviews_approved
+
+  completed_batch_f:
+    id: Batch-F
+    title: canonical_finance_projection_lifecycle_and_currency_authority_v1
+    status: completed
+    entry_head: fe47096ed242863143ea6b61de5ab1adab92dfc9
+    entry_fingerprint: 170501c0e163066d51fa69e1b8cfb6c42648c499f4561855e45185303486b5a7
+    model_freeze:
+      - terminal_lifecycle_only
+      - immutable_company_and_currency_identity
+      - posted_treasury_ledger_is_cash_authority
+      - unresolved_history_is_quarantined_without_guessing
+      - project_company_currency_are_aggregation_dimensions
+      - received_income_enters_arrival_gross
+      - treasury_generation_requires_module_private_object_authority
+      - repeated_treasury_writers_must_match_complete_economic_identity
+      - one_payment_request_can_back_only_one_terminal_cash_source
+      - terminal_cash_source_ownership_is_persisted_on_the_request_and_private_service_controlled
+      - concurrent_cross_model_claims_serialize_on_the_request_authority_row
+      - legacy_identity_requires_explicit_historical_evidence_and_is_never_inferred_from_current_relations
+      - projection_registry_is_proven_from_current_owning_class_semantics
+      - payment_ledger_and_contract_allocation_use_creation_time_identity_snapshots_not_stored_related_fields
+      - orm_writes_are_flushed_before_same_transaction_sql_fact_aggregation
+      - supplement_contract_origin_defaults_cannot_bypass_frozen_economic_identity
+      - terminal_deduction_lines_are_immutable_even_when_parent_is_supplied_by_default_context
+      - payment_snapshot_and_partial_index_migrations_are_difference_write_and_physical_replay_idempotent
+      - incomplete_legacy_payment_identity_is_preserved_and_explicitly_quarantined_not_synthesized_from_current_relations
+      - every_paid_and_funding_consumer_requires_canonical_parent_and_child_identity_with_exact_company_project_partner_currency_and_strategy_parity
+      - ambiguous_posted_payment_history_blocks_request_completion_and_all_future_payment_execution
+      - existing_ambiguous_payment_ledgers_are_rejected_before_execution_state_changes_or_ledger_reuse
+      - payment_execution_readiness_and_request_completion_are_recordset_batched_with_bounded_1_10_50_query_growth
+      - receive_request_completion_counts_only_exact_canonical_cash_evidence_and_rejects_ambiguous_posted_history
+      - receipt_state_cash_ledger_and_request_completion_are_one_atomic_savepoint_claim
+      - received_receipt_facts_are_terminally_immutable_except_note_and_attachment_annotations
+      - native_receipt_terminal_controls_match_finance_manager_and_state_authority
+      - receipt_completion_role_authority_is_proven_with_real_finance_read_finance_user_and_finance_manager_principals
+      - payment_execution_basis_relations_are_recordset_batched_without_per_request_relation_searches
+      - unresolved_null_company_history_is_ops_only_and_never_visible_through_ordinary_finance_record_rules
+      - native_finance_users_have_a_readonly_same_company_allocation_evidence_entry_and_unresolved_ledgers_expose_no_funding_mutation_action
+    verification:
+      workspace_guard: pass_17_of_17
+      governed_incremental_upgrade: pass_through_17_0_0_156_with_authority_verification
+      targeted_payment_amount_semantics: pass_5_methods_7_stats_zero_failed_zero_errors
+      targeted_finance_authority: pass_32_methods_34_stats_zero_failed_zero_errors_including_real_role_receipt_completion_authority_received_fact_immutability_native_terminal_controls_exact_receive_cash_evidence_atomic_receipt_rollback_real_concurrency_migration_physical_idempotency_existing_ambiguous_ledger_fail_closed_and_tightened_batch_query_budgets
+      targeted_contract_execution: pass_13_methods_15_stats_zero_failed_zero_errors_after_claim_upgrade
+      targeted_state_and_record_rules: pass_82_methods_90_stats_zero_failed_zero_errors
+      targeted_p0_ledger_gate: pass_16_methods_18_stats_zero_failed_zero_errors
+      targeted_rr_p1: pass_2_methods_6_stats_zero_failed_zero_errors
+      full_sc_gate: pass_339_methods_435_stats_zero_failed_zero_errors_after_17_0_0_156_model_upgrade
+      static_model_standard: pass_372_models_36_projections_zero_implementation_gaps
+      static_audit_unit: pass_15_tests
+      runtime_smoke: blocked_missing_governed_local_dev_wrapper_p4
+      native_web_write_journey: not_run_missing_registered_native_web_write_target_p4
+      exact_fingerprint_review: pass_three_independent_reviews_zero_s0_s1_s2_s3_digest_62d69ab617e6a6199064d820a50444527fe769f5c9740dbab949e0b4eeda27d9
+
+  next_batches:
+    - id: Batch-G
+      title: settlement_terminal_fact_immutability_v1
+      status: review_pending
+      objective: prevent_approved_completed_or_cancelled_settlement_facts_from_being_rewritten_or_deleted
+      entry_head: 0fdc129d675efc27209028828d2e53dabea2d956
+      entry_fingerprint: be361b8616483072c0359e8d3d99a904a8742ad0d03dd01d1ce4737a03d77f20
+      scope:
+        - settlement_state_transition_authority
+        - terminal_header_and_line_immutability
+        - settlement_payment_cancel_locking_and_batch_check
+        - non_zero_role_and_concurrency_tests
+      exclude:
+        - frontend
+        - smart_core
+        - settlement_adjustment_reversal_journal
+        - contract_and_change_immutability
+        - budget_and_cost_plan_authority
+        - p4_runtime_or_replay_tooling
+      result:
+        - settlement_creation_starts_from_draft_and_state_changes_use_module_private_authority
+        - approved_done_and_cancelled_headers_and_lines_are_immutable_and_not_deletable
+        - notes_and_attachments_remain_available_as_non_economic_annotations
+        - all_lifecycle_actions_serialize_on_settlement_rows
+        - payment_submit_and_settlement_cancel_share_the_same_settlement_lock
+        - submitted_approved_and_completed_direct_or_legacy_line_payments_block_cancel
+        - canceled_settlements_cannot_back_new_payment_submission
+        - payment_integrity_checks_use_scoped_sudo_aggregation_not_caller_visibility
+        - duplicate_shadow_create_implementation_removed
+      verification:
+        workspace_guard: pass_17_of_17
+        python_compile_and_diff_check: pass
+        governed_incremental_upgrade: pass_through_17_0_0_156_with_authority_verification
+        targeted_settlement_fact_immutability: pass_4_methods_6_stats_zero_failed_zero_errors
+        targeted_impacted_state_and_finance: pass_86_methods_92_stats_zero_failed_zero_errors
+        full_sc_gate: pass_339_methods_435_stats_zero_failed_zero_errors
+        static_model_standard: pass_372_models_36_projections_zero_implementation_gaps
+        static_audit_unit: pass_15_tests
+        independent_exact_fingerprint_review: pending
+    - id: Batch-H
+      title: contract_change_and_settlement_adjustment_journal_v1
+      status: planned
+    - id: Batch-I
+      title: budget_and_target_cost_authority_v1
+      status: planned
+    - id: Batch-J
+      title: native_fact_access_and_project_isolation
+      status: planned
+
+  acceptance:
+    - exact_head_static_fact_model_standard_passes
+    - zero_unregistered_formal_fact_models
+    - zero_unregistered_projection_models
+    - zero_unclassified_p1_models
+    - all_registry_paths_exist_or_have_explicit_current_policy
+    - every_product_batch_has_non_zero_targeted_orm_tests
+    - native_odoo_journey_is_the_business_acceptance_authority
+    - custom_frontend_startup_and_contract_semantics_remain_unchanged
+
+  known_external_gate:
+    owner_layer: P4
+    gap: missing_scripts_migration_business_fact_upgrade_replay_flow_sh
+    policy: do_not_build_an_in_topic_workaround
+    additional_gap: missing_local_dev_wrapper_for_verify_business_finance_document_tier_runtime_smoke
+
+  rollback:
+    - batch_scoped_commits
+    - registry_changes_land_before_business_model_refactors
+    - module_runtime_changes_require_governed_incremental_upgrade

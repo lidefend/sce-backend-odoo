@@ -9,6 +9,8 @@
                     <field name="source_record_name"/>
                     <field name="source_document_no"/>
                     <field name="project_id"/>
+                    <field name="company_id"/>
+                    <field name="currency_id"/>
                     <field name="partner_name"/>
                     <filter string="到款确认" name="arrival_settlement" domain="[('business_domain', '=', 'arrival_settlement')]"/>
                     <filter string="扣款清分" name="deduction_clearing" domain="[('business_domain', '=', 'deduction_clearing')]"/>
@@ -17,10 +19,13 @@
                     <filter string="保证金" name="guarantee_deposit" domain="[('business_domain', '=', 'guarantee_deposit')]"/>
                     <filter string="正式余额" name="canonical" domain="[('balance_policy', '=', 'canonical')]"/>
                     <filter string="可见参考" name="visible_reference" domain="[('balance_policy', '=', 'visible_reference')]"/>
+                    <filter string="待现金证据" name="evidence_pending" domain="[('cash_evidence_state', '=', 'missing_posted_ledger')]"/>
                     <filter string="按业务域" name="group_business_domain" context="{'group_by': 'business_domain'}"/>
                     <filter string="按事实类型" name="group_fact_type" context="{'group_by': 'fact_type'}"/>
                     <filter string="按余额策略" name="group_balance_policy" context="{'group_by': 'balance_policy'}"/>
                     <filter string="按项目" name="group_project" context="{'group_by': 'project_id'}"/>
+                    <filter string="按公司" name="group_company" context="{'group_by': 'company_id'}"/>
+                    <filter string="按币种" name="group_currency" context="{'group_by': 'currency_id'}"/>
                 </search>
             </field>
         </record>
@@ -34,15 +39,18 @@
                     <field name="business_domain"/>
                     <field name="fact_type"/>
                     <field name="balance_policy"/>
+                    <field name="cash_evidence_state"/>
                     <field name="project_id"/>
+                    <field name="company_id"/>
+                    <field name="currency_id"/>
                     <field name="partner_name"/>
-                    <field name="amount" sum="事实金额合计"/>
-                    <field name="balance_effect" sum="余额影响合计"/>
-                    <field name="cash_in_amount" sum="流入合计"/>
-                    <field name="cash_out_amount" sum="流出合计"/>
-                    <field name="deduction_amount" sum="扣款合计"/>
-                    <field name="paid_amount" sum="拨付合计"/>
-                    <field name="tax_amount" sum="税额合计"/>
+                    <field name="amount"/>
+                    <field name="balance_effect"/>
+                    <field name="cash_in_amount"/>
+                    <field name="cash_out_amount"/>
+                    <field name="deduction_amount"/>
+                    <field name="paid_amount"/>
+                    <field name="tax_amount"/>
                     <field name="source_model"/>
                     <field name="source_record_name"/>
                     <field name="state"/>
@@ -66,6 +74,8 @@
                                 <field name="business_domain"/>
                                 <field name="fact_type"/>
                                 <field name="balance_policy"/>
+                                <field name="normalization_state"/>
+                                <field name="cash_evidence_state"/>
                                 <field name="classification_reason"/>
                             </group>
                             <group string="金额">
@@ -85,6 +95,7 @@
                                 <field name="partner_id"/>
                                 <field name="partner_name"/>
                                 <field name="company_id"/>
+                                <field name="currency_id"/>
                                 <field name="state"/>
                             </group>
                             <group string="来源追溯">
@@ -108,6 +119,9 @@
             <field name="model">sc.finance.business.fact</field>
             <field name="arch" type="xml">
                 <pivot string="项目收付款来源明细">
+                    <field name="company_id" type="row"/>
+                    <field name="currency_id" type="row"/>
+                    <field name="project_id" type="row"/>
                     <field name="business_domain" type="row"/>
                     <field name="fact_type" type="row"/>
                     <field name="balance_policy" type="col"/>
@@ -122,7 +136,7 @@
             <field name="res_model">sc.finance.business.fact</field>
             <field name="view_mode">tree,form,pivot</field>
             <field name="search_view_id" ref="view_sc_finance_business_fact_search"/>
-            <field name="context">{'create': False, 'search_default_group_business_domain': 1}</field>
+            <field name="context">{'create': False, 'search_default_group_company': 1, 'search_default_group_currency': 1, 'search_default_group_project': 1, 'search_default_group_business_domain': 1}</field>
             <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_read')),
                                            (4, ref('smart_construction_core.group_sc_cap_finance_user')),
                                            (4, ref('smart_construction_core.group_sc_cap_finance_manager'))]"/>

@@ -212,7 +212,10 @@ class ScFinanceProjectCounterpartyPosition(models.Model):
 
     def _finance_fact_counterparty_domain(self):
         self.ensure_one()
-        domain = list(self._project_domain())
+        domain = list(self._project_domain()) + [
+            ("company_id", "=", self.company_id.id),
+            ("currency_id", "=", self.currency_id.id),
+        ]
         if self.counterparty_type == "partner":
             if self.partner_id:
                 domain.append(("partner_id", "=", self.partner_id.id))
@@ -225,6 +228,18 @@ class ScFinanceProjectCounterpartyPosition(models.Model):
         return domain
 
     def _interfund_fact_counterparty_domain(self):
+        self.ensure_one()
+        return expression.AND(
+            [
+                [
+                    ("company_id", "=", self.company_id.id),
+                    ("currency_id", "=", self.currency_id.id),
+                ],
+                self._interfund_fact_counterparty_identity_domain(),
+            ]
+        )
+
+    def _interfund_fact_counterparty_identity_domain(self):
         self.ensure_one()
         project_id = self.project_id.id if self.project_id else False
         if not project_id:
@@ -506,8 +521,8 @@ class ScFinanceProjectCounterpartyPosition(models.Model):
                         counterparty_project_id,
                         partner_id,
                         counterparty_name,
-                        MIN(company_id) AS company_id,
-                        MIN(currency_id) AS currency_id,
+                        company_id,
+                        currency_id,
                         COALESCE(SUM(finance_source_line_count), 0)::integer AS finance_source_line_count,
                         COALESCE(SUM(interfund_source_line_count), 0)::integer AS interfund_source_line_count,
                         COALESCE(SUM(finance_balance_effect), 0.0) AS finance_balance_effect,
@@ -518,11 +533,11 @@ class ScFinanceProjectCounterpartyPosition(models.Model):
                         COALESCE(SUM(interfund_net_amount), 0.0) AS interfund_net_amount,
                         COALESCE(SUM(internal_transfer_amount), 0.0) AS internal_transfer_amount
                     FROM perspective
-                    GROUP BY project_id, counterparty_type, counterparty_project_id, partner_id, counterparty_name
+                    GROUP BY project_id, company_id, currency_id, counterparty_type, counterparty_project_id, partner_id, counterparty_name
                 )
                 SELECT
                     ROW_NUMBER() OVER (
-                        ORDER BY g.project_id, g.counterparty_type, COALESCE(g.counterparty_project_id, 0), COALESCE(g.partner_id, 0), g.counterparty_name
+                        ORDER BY g.project_id, g.company_id, g.currency_id, g.counterparty_type, COALESCE(g.counterparty_project_id, 0), COALESCE(g.partner_id, 0), g.counterparty_name
                     )::integer AS id,
                     COALESCE(p.name->>'zh_CN', p.name->>'en_US', '未关联项目') || ' / ' || g.counterparty_name AS display_name,
                     g.project_id,

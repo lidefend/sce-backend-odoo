@@ -142,7 +142,7 @@ class TestRecordRuleLedgerP1(TransactionCase):
             }
         )
 
-        cls.treasury_same = _ctx("sc.treasury.ledger").with_context(allow_ledger_auto=True).create(
+        cls.treasury_same = _ctx("sc.treasury.ledger")._create_authoritative(
             {
                 "project_id": cls.project_same.id,
                 "partner_id": cls.partner.id,
@@ -152,7 +152,7 @@ class TestRecordRuleLedgerP1(TransactionCase):
                 "amount": 10.0,
             }
         )
-        cls.treasury_other = _ctx("sc.treasury.ledger").with_context(allow_ledger_auto=True).create(
+        cls.treasury_other = _ctx("sc.treasury.ledger")._create_authoritative(
             {
                 "project_id": cls.project_other.id,
                 "partner_id": cls.partner.id,
@@ -170,8 +170,8 @@ class TestRecordRuleLedgerP1(TransactionCase):
         ]
         cls.project_other.message_unsubscribe(partner_ids=partners)
 
-        cls.settlement_same.sudo().write({"state": "approve"})
-        cls.settlement_other.sudo().write({"state": "approve"})
+        cls.settlement_same.sudo()._write_lifecycle("approve")
+        cls.settlement_other.sudo()._write_lifecycle("approve")
         cls.env.cr.execute(
             "UPDATE payment_request SET state=%s, validation_status=%s WHERE id in %s",
             ("approved", "validated", (cls.payment_req_same.id, cls.payment_req_other.id)),

@@ -35,6 +35,7 @@
                     <field name="amount_uppercase" optional="hide"/>
                     <field name="state"/>
                     <field name="date_request"/>
+                    <field name="funding_baseline_id" optional="show"/>
                     <field name="creator_name"/>
                     <field name="created_time"/>
                 </tree>
@@ -136,6 +137,7 @@
                             </group>
                             <group string="本次付款事实">
                                 <field name="date_request" required="1" readonly="state not in ['draft', 'rejected']"/>
+                                <field name="funding_baseline_id" readonly="1" invisible="type != 'pay'"/>
                                 <field name="amount" readonly="state not in ['draft', 'rejected']"/>
                                 <field name="amount_uppercase" readonly="1"/>
                                 <field name="accepted_amount_uppercase" readonly="state not in ['draft', 'rejected']"/>

@@ -227,6 +227,31 @@
              - initiator: 仅限自建或负责/关注项目
              - contract/finance roles: 保持专业域合同读取范围
         ========================================================== -->
+        <record id="rule_sc_construction_contract_allowed_company_global" model="ir.rule">
+            <field name="name">SC Contract - allowed companies</field>
+            <field name="model_id" ref="model_construction_contract"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+        <record id="rule_sc_construction_contract_income_allowed_company_global" model="ir.rule">
+            <field name="name">SC Income Contract - allowed companies</field>
+            <field name="model_id" ref="model_construction_contract_income"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+        <record id="rule_sc_construction_contract_expense_allowed_company_global" model="ir.rule">
+            <field name="name">SC Expense Contract - allowed companies</field>
+            <field name="model_id" ref="model_construction_contract_expense"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+        <record id="rule_sc_contract_execution_position_allowed_company_global" model="ir.rule">
+            <field name="name">SC Contract Execution Position - allowed companies</field>
+            <field name="model_id" ref="model_sc_contract_execution_position"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
         <record id="rule_sc_business_initiator_construction_contract" model="ir.rule">
             <field name="name">SC Business Initiator - construction.contract own or project member</field>
             <field name="model_id" ref="model_construction_contract"/>
@@ -799,6 +824,17 @@
              - read/user: 仅限负责或关注的项目
              - manager: 仅限允许公司
         ========================================================== -->
+        <record id="rule_payment_ledger_company" model="ir.rule">
+            <field name="name">Payment Ledger - frozen allowed company</field>
+            <field name="model_id" ref="model_payment_ledger"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
         <record id="rule_sc_finance_read_payment_ledger" model="ir.rule">
             <field name="name">SC Finance Read - payment.ledger by project member</field>
             <field name="model_id" ref="model_payment_ledger"/>
@@ -824,11 +860,55 @@
         <record id="rule_sc_finance_manager_payment_ledger" model="ir.rule">
             <field name="name">SC Finance Manager - payment.ledger by request allowed company</field>
             <field name="model_id" ref="model_payment_ledger"/>
-            <field name="domain_force">['|', ('payment_request_id.company_id', '=', False), ('payment_request_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
             <field name="perm_unlink" eval="True"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_manager'))]"/>
+        </record>
+
+        <record id="rule_payment_ledger_allocation_company" model="ir.rule">
+            <field name="name">Payment Ledger Allocation - allowed company</field>
+            <field name="model_id" ref="model_payment_ledger_allocation"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="rule_sc_finance_read_payment_ledger_allocation" model="ir.rule">
+            <field name="name">SC Finance Read - payment ledger allocation by project member</field>
+            <field name="model_id" ref="model_payment_ledger_allocation"/>
+            <field name="domain_force">['|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_read'))]"/>
+        </record>
+
+        <record id="rule_sc_finance_user_payment_ledger_allocation" model="ir.rule">
+            <field name="name">SC Finance User - payment ledger allocation by project member</field>
+            <field name="model_id" ref="model_payment_ledger_allocation"/>
+            <field name="domain_force">['|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_user'))]"/>
+        </record>
+
+        <record id="rule_sc_finance_manager_payment_ledger_allocation" model="ir.rule">
+            <field name="name">SC Finance Manager - payment ledger allocation allowed companies</field>
+            <field name="model_id" ref="model_payment_ledger_allocation"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_manager'))]"/>
         </record>
 
@@ -841,7 +921,7 @@
         <record id="rule_project_funding_baseline_company" model="ir.rule">
             <field name="name">Project Funding Baseline - allowed company</field>
             <field name="model_id" ref="model_project_funding_baseline"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['&amp;', ('normalization_state', '!=', 'legacy_unresolved_identity'), ('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -873,7 +953,7 @@
         <record id="rule_project_funding_baseline_line_company" model="ir.rule">
             <field name="name">Project Funding Baseline Line - allowed company</field>
             <field name="model_id" ref="model_project_funding_baseline_line"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['&amp;', ('baseline_id.normalization_state', '!=', 'legacy_unresolved_identity'), ('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -905,7 +985,7 @@
         <record id="rule_project_funding_actual_event_allocation_company" model="ir.rule">
             <field name="name">Fund Plan Actual Event Allocation - allowed company</field>
             <field name="model_id" ref="model_project_funding_actual_event_allocation"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['&amp;', ('normalization_state', '!=', 'legacy_unresolved_relation'), ('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -2608,7 +2688,7 @@
         <record id="rule_sc_project_cost_ledger_company" model="ir.rule">
             <field name="name">SC Project Cost Ledger - allowed company</field>
             <field name="model_id" ref="model_project_cost_ledger"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -2619,7 +2699,7 @@
         <record id="rule_sc_cost_read_project_cost_ledger" model="ir.rule">
             <field name="name">SC Cost Read - project cost ledger by project member</field>
             <field name="model_id" ref="model_project_cost_ledger"/>
-            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="False"/>
             <field name="perm_create" eval="False"/>
@@ -2630,7 +2710,7 @@
         <record id="rule_sc_cost_user_project_cost_ledger" model="ir.rule">
             <field name="name">SC Cost User - project cost ledger by project member</field>
             <field name="model_id" ref="model_project_cost_ledger"/>
-            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -2641,7 +2721,7 @@
         <record id="rule_sc_cost_manager_project_cost_ledger" model="ir.rule">
             <field name="name">SC Cost Manager - project cost ledger by project member</field>
             <field name="model_id" ref="model_project_cost_ledger"/>
-            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>

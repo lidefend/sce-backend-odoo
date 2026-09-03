@@ -10,10 +10,12 @@ class PurchaseOrder(models.Model):
     _state_from = ["draft", "sent"]
     _state_to = ["purchase"]
     _cancel_state = "cancel"
+    _check_company_auto = True
 
     project_id = fields.Many2one(
         "project.project",
         string="关联项目",
+        check_company=True,
         help="该采购订单关联的施工项目，默认同步到订单行。",
     )
     plan_id = fields.Many2one(
@@ -63,8 +65,7 @@ class PurchaseOrder(models.Model):
                 },
             }
         res = super(PurchaseOrder, to_confirm).button_confirm()
-        if self._is_cost_enabled("smart_construction_core.sc_cost_from_purchase"):
-            to_confirm._create_cost_ledger_entries()
+        to_confirm._create_enabled_cost_ledger_entries()
         return res
 
     def _requires_purchase_approval(self):
@@ -119,29 +120,38 @@ class PurchaseOrder(models.Model):
                 {"reject_reason": reason or order._get_tier_reject_reason()}
             )
 
-    def _is_cost_enabled(self, param_key):
-        icp = self.env["ir.config_parameter"].sudo().with_company(self.env.company)
-        val = icp.get_param(param_key, default="False")
-        return str(val).lower() in ("1", "true", "yes")
+    def _is_cost_enabled(self, param_key, company=None):
+        return self.env["project.cost.ledger"]._automatic_source_enabled(
+            param_key, company=company
+        )
 
     def _create_cost_ledger_entries(self):
         ledger_obj = self.env["project.cost.ledger"]
+        values = []
         for order in self:
             for line in order.order_line:
                 vals = line._prepare_cost_ledger_vals()
-                if not vals:
-                    continue
-                existing = ledger_obj.search(
-                    [
-                        ("source_model", "=", "purchase.order.line"),
-                        ("source_line_id", "=", line.id),
-                    ],
-                    limit=1,
-                )
-                if existing:
-                    existing.write(vals)
-                else:
-                    ledger_obj.create(vals)
+                if vals:
+                    values.append(vals)
+        return ledger_obj._upsert_generated_cost_rows(values)
+
+    def _create_enabled_cost_ledger_entries(self):
+        result = self.env["project.cost.ledger"].browse()
+        for company in self.mapped("company_id"):
+            company_orders = self.filtered(lambda order: order.company_id == company)
+            if company_orders._is_cost_enabled(
+                "smart_construction_core.sc_cost_from_purchase", company=company
+            ):
+                result |= company_orders._create_cost_ledger_entries()
+        return result
+
+    def button_cancel(self):
+        """Withdraw commitments while preserving their immutable source evidence."""
+        result = super().button_cancel()
+        self.env["project.cost.ledger"]._withdraw_generated_cost_rows(
+            "purchase.order.line", self.ids
+        )
+        return result
 
     def write(self, vals):
         scopes = self.order_line.mapped("material_settlement_purchase_scope_ids")
@@ -159,11 +169,13 @@ class PurchaseOrder(models.Model):
 
 class PurchaseOrderLine(models.Model):
     _inherit = "purchase.order.line"
+    _check_company_auto = True
 
     project_id = fields.Many2one(
         "project.project",
         string="项目",
         default=lambda self: self.order_id.project_id,
+        check_company=True,
         help="可单独指定采购行对应的项目，默认继承订单。",
     )
     plan_id = fields.Many2one(
@@ -245,7 +257,8 @@ class PurchaseOrderLine(models.Model):
             "date": self.order_id.date_approve or fields.Date.context_today(self),
             "qty": self.product_qty,
             "uom_id": self.product_uom.id,
-            "amount": amount,
+            "source_amount": amount,
+            "source_currency_id": self.order_id.currency_id.id,
             "partner_id": self.order_id.partner_id.id,
             "source_model": "purchase.order.line",
             "source_id": self.order_id.id,

@@ -302,8 +302,12 @@
         <field name="model">project.cost.ledger</field>
         <field name="arch" type="xml">
             <tree string="成本归集台账">
+                <field name="recognition_state"/>
                 <field name="date"/>
                 <field name="cost_flow_label"/>
+                <field name="recognition_stage"/>
+                <field name="reporting_treatment"/>
+                <field name="normalization_state" optional="hide"/>
                 <field name="project_id"/>
                 <field name="cost_code_id"/>
                 <field name="amount" sum="成本金额合计"/>
@@ -312,6 +316,9 @@
                 <field name="partner_id"/>
                 <field name="source_model" optional="hide"/>
                 <field name="source_id" optional="hide"/>
+                <field name="source_line_id" optional="hide"/>
+                <field name="source_amount" optional="hide"/>
+                <field name="source_currency_id" optional="hide"/>
                 <field name="note"/>
             </tree>
         </field>
@@ -321,26 +328,38 @@
         <field name="name">project.cost.ledger.form</field>
         <field name="model">project.cost.ledger</field>
         <field name="arch" type="xml">
-            <form string="成本归集台账">
+            <form string="成本归集台账" delete="false">
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_source" type="object" class="oe_stat_button" icon="fa-external-link" invisible="not is_generated">
+                            <div class="o_stat_info"><span class="o_stat_text">打开来源</span></div>
+                        </button>
+                    </div>
                     <group>
                         <group string="成本归集">
+                            <field name="is_generated" invisible="1"/>
+                            <field name="recognition_state" readonly="1"/>
+                            <field name="recognition_stage" readonly="1"/>
+                            <field name="reporting_treatment" readonly="1"/>
+                            <field name="normalization_state" readonly="1"/>
                             <field name="cost_flow_label" readonly="1"/>
-                            <field name="project_id"/>
-                            <field name="date"/>
+                            <field name="project_id" readonly="is_generated"/>
+                            <field name="date" readonly="is_generated"/>
                             <field name="period" readonly="1"/>
-                            <field name="period_id"/>
+                            <field name="period_id" readonly="1"/>
                         </group>
                         <group string="项目与成本科目">
-                            <field name="wbs_id"/>
-                            <field name="cost_code_id"/>
-                            <field name="partner_id"/>
+                            <field name="wbs_id" readonly="is_generated"/>
+                            <field name="cost_code_id" readonly="is_generated"/>
+                            <field name="partner_id" readonly="is_generated"/>
                         </group>
                         <group string="发生金额">
-                            <field name="qty"/>
-                            <field name="uom_id"/>
-                            <field name="amount"/>
-                            <field name="currency_id" invisible="1"/>
+                            <field name="qty" readonly="is_generated"/>
+                            <field name="uom_id" readonly="is_generated"/>
+                            <field name="source_amount" readonly="1"/>
+                            <field name="source_currency_id" readonly="1"/>
+                            <field name="amount" readonly="is_generated"/>
+                            <field name="currency_id" readonly="1"/>
                         </group>
                         <group string="来源追溯">
                             <field name="source_model"/>
@@ -349,7 +368,7 @@
                         </group>
                     </group>
                     <group string="办理说明">
-                        <field name="note" nolabel="1"/>
+                        <field name="note" nolabel="1" readonly="is_generated"/>
                     </group>
                 </sheet>
             </form>
@@ -366,12 +385,25 @@
                 <field name="wbs_id"/>
                 <field name="partner_id"/>
                 <field name="cost_flow_label"/>
+                <field name="recognition_stage"/>
+                <field name="reporting_treatment"/>
+                <field name="normalization_state"/>
+                <field name="recognition_state"/>
+                <filter string="有效事实" name="filter_active" domain="[('recognition_state', '=', 'active')]"/>
+                <filter string="财务实际" name="filter_financial_actual" domain="[('recognition_state', '=', 'active'), ('reporting_treatment', 'in', ['financial_actual', 'manual_actual'])]"/>
+                <filter string="运营实际" name="filter_operational_actual" domain="[('recognition_state', '=', 'active'), ('reporting_treatment', '=', 'operational_actual')]"/>
+                <filter string="阶段备忘" name="filter_memorandum" domain="[('recognition_state', '=', 'active'), ('reporting_treatment', '=', 'memorandum')]"/>
+                <filter string="已撤回" name="filter_withdrawn" domain="[('recognition_state', '=', 'withdrawn')]"/>
                 <filter string="本月" name="filter_current_month" domain="[('period', '=', context_today().strftime('%Y-%m'))]"/>
                 <group expand="1" string="分组">
                     <filter string="按项目" name="group_project" context="{'group_by': 'project_id'}"/>
                     <filter string="按科目" name="group_cost" context="{'group_by': 'cost_code_id'}"/>
                     <filter string="按工程结构" name="group_wbs" context="{'group_by': 'wbs_id'}"/>
                     <filter string="按成本来源" name="group_cost_flow" context="{'group_by': 'cost_flow_label'}"/>
+                    <filter string="按确认阶段" name="group_recognition_stage" context="{'group_by': 'recognition_stage'}"/>
+                    <filter string="按报表口径" name="group_reporting_treatment" context="{'group_by': 'reporting_treatment'}"/>
+                    <filter string="按标准化状态" name="group_normalization_state" context="{'group_by': 'normalization_state'}"/>
+                    <filter string="按事实状态" name="group_recognition_state" context="{'group_by': 'recognition_state'}"/>
                     <filter string="按往来单位" name="group_partner" context="{'group_by': 'partner_id'}"/>
                 </group>
             </search>
@@ -382,6 +414,8 @@
         <field name="name">成本归集台账</field>
         <field name="res_model">project.cost.ledger</field>
         <field name="view_mode">tree,form,pivot,graph</field>
+        <field name="domain">[]</field>
+        <field name="context">{'search_default_filter_active': 1}</field>
         <field name="search_view_id" ref="view_project_cost_ledger_search"/>
         <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_read'))]"/>
     </record>
@@ -391,6 +425,7 @@
         <field name="res_model">project.cost.ledger</field>
         <field name="view_mode">tree,form,pivot,graph</field>
         <field name="domain">['|', ('project_id.user_id', '=', uid), ('project_id.manager_id', '=', uid)]</field>
+        <field name="context">{'search_default_filter_active': 1}</field>
         <field name="search_view_id" ref="view_project_cost_ledger_search"/>
         <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_read'))]"/>
     </record>
@@ -402,6 +437,8 @@
             <pivot string="成本台账分析">
                 <field name="amount" type="measure"/>
                 <field name="project_id" type="row"/>
+                <field name="recognition_stage" type="col"/>
+                <field name="reporting_treatment" type="col"/>
                 <field name="cost_code_id" type="col"/>
                 <field name="wbs_id" type="row"/>
                 <field name="partner_id" type="col"/>
@@ -416,7 +453,7 @@
             <graph string="成本趋势" stacked="True">
                 <field name="amount" type="measure"/>
                 <field name="project_id" type="row"/>
-                <field name="cost_code_id" type="col"/>
+                <field name="recognition_stage" type="col"/>
             </graph>
         </field>
     </record>

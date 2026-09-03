@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import fields
+from odoo.exceptions import UserError
+from odoo.tools.float_utils import float_compare
 
 from ..registry import SeedStep, register
 
@@ -36,6 +38,12 @@ DEMO_WARN_PROJECT_CODES = {
     "DEMO-PJ-INIT",
     "DEMO-PJ-TENDER",
 }
+DEMO_FUNDING_AMOUNT = 2000000.0
+
+
+def _annual_control_period(env):
+    today = fields.Date.context_today(env.user)
+    return today.replace(month=1, day=1), today.replace(month=12, day=31)
 
 
 def _ensure_funding_baseline(env, project):
@@ -45,22 +53,72 @@ def _ensure_funding_baseline(env, project):
         [("project_id", "=", project.id), ("state", "=", "active")], limit=1
     )
     if baseline:
-        baseline.write({"total_amount": 2000000.0})
-        return baseline
-    return Funding.create(
+        rounding = baseline.currency_id.rounding or 0.01
+        if not float_compare(
+            baseline.total_amount, DEMO_FUNDING_AMOUNT, precision_rounding=rounding
+        ):
+            return baseline
+        period_start, period_end = _annual_control_period(env)
+        revision = baseline.action_create_revision(
+            "演示事实基线修订",
+            period_start=period_start,
+            period_end=period_end,
+        )
+        if revision.state != "draft":
+            raise UserError("演示资金基线修订必须保持草稿后再生效。")
+        revision.write(
+            {
+                "total_amount": DEMO_FUNDING_AMOUNT,
+                "line_ids": [
+                    (5, 0, 0),
+                    (
+                        0,
+                        0,
+                        {
+                            "sequence": 10,
+                            "name": "演示年度资金计划",
+                            "planned_amount": DEMO_FUNDING_AMOUNT,
+                        },
+                    ),
+                ],
+            }
+        )
+        revision.action_activate()
+        return revision
+    period_start, period_end = _annual_control_period(env)
+    baseline = Funding.create(
         {
             "project_id": project.id,
-            "total_amount": 2000000.0,
-            "state": "active",
+            "total_amount": DEMO_FUNDING_AMOUNT,
+            "period_start": period_start,
+            "period_end": period_end,
+            "line_ids": [
+                (
+                    0,
+                    0,
+                    {
+                        "sequence": 10,
+                        "name": "演示年度资金计划",
+                        "planned_amount": DEMO_FUNDING_AMOUNT,
+                    },
+                )
+            ],
         }
     )
+    baseline.action_activate()
+    return baseline
 
 
 def _ensure_settlement(env, project, contract):
     Settlement = env["sc.settlement.order"].sudo()
     Line = env["sc.settlement.order.line"].sudo()
     settlement = Settlement.search(
-        [("project_id", "=", project.id), ("contract_id", "=", contract.id)], limit=1
+        [
+            ("project_id", "=", project.id),
+            ("contract_id", "=", contract.id),
+            ("state", "!=", "cancel"),
+        ],
+        limit=1,
     )
     vals = {
         "name": f"SET-{project.project_code}-01",
@@ -73,13 +131,6 @@ def _ensure_settlement(env, project, contract):
     if settlement:
         if settlement.state == "draft":
             settlement.write(vals)
-        else:
-            mutable_vals = {
-                key: value
-                for key, value in vals.items()
-                if key not in {"project_id", "contract_id"}
-            }
-            settlement.write(mutable_vals)
     else:
         settlement = Settlement.create(vals)
 
@@ -87,20 +138,35 @@ def _ensure_settlement(env, project, contract):
         {"settlement_id": settlement.id, "name": "结算项A", "qty": 1, "price_unit": 260000.0},
         {"settlement_id": settlement.id, "name": "结算项B", "qty": 1, "price_unit": 140000.0},
     ]
-    for vals in line_vals:
-        existing = Line.search(
-            [("settlement_id", "=", settlement.id), ("name", "=", vals["name"])], limit=1
-        )
-        if existing:
-            existing.write(vals)
-        else:
-            Line.create(vals)
+    if settlement.state == "draft":
+        for vals in line_vals:
+            existing = Line.search(
+                [("settlement_id", "=", settlement.id), ("name", "=", vals["name"])],
+                limit=1,
+            )
+            if existing:
+                existing.write(vals)
+            else:
+                Line.create(vals)
+    elif not settlement.line_ids:
+        raise UserError("已进入流程的演示结算单缺少不可变结算明细。")
+    return settlement
 
-    env.cr.execute(
-        "UPDATE sc_settlement_order SET state=%s WHERE id=%s",
-        ("approve", settlement.id),
-    )
-    env.invalidate_all()
+
+def _approve_settlement(env, settlement):
+    if settlement.state == "draft":
+        settlement.action_submit()
+    if settlement.state == "submit":
+        reviewer = env.ref("smart_construction_demo.user_sc_settlement_manager_cap")
+        for _index in range(max(1, len(settlement.review_ids))):
+            settlement.with_user(reviewer).validate_tier()
+            settlement.invalidate_recordset()
+            if settlement.validation_status == "validated":
+                break
+        if settlement.validation_status == "validated" and settlement.state == "submit":
+            settlement.action_on_tier_approved()
+    if settlement.state not in ("approve", "done"):
+        raise UserError("演示结算单未能通过正式审批状态机。")
     return settlement
 
 
@@ -141,16 +207,7 @@ def _ensure_purchase_order(env, settlement, split_first_line=False):
             }
         )
 
-    original_state = po.state
-    if original_state != "draft":
-        env.cr.execute(
-            "UPDATE purchase_order SET state=%s WHERE id=%s",
-            ("draft", po.id),
-        )
-        env.invalidate_all()
-
     total = settlement.amount_total or sum(settlement.line_ids.mapped("amount")) or 0.0
-    line = PurchaseLine.search([("order_id", "=", po.id)], limit=1)
     desired_lines = []
     settlement_lines = settlement.line_ids
     if not settlement_lines:
@@ -187,6 +244,31 @@ def _ensure_purchase_order(env, settlement, split_first_line=False):
                         "split": False,
                     }
                 )
+    desired_by_name = {spec["name"]: spec for spec in desired_lines}
+    current_lines = PurchaseLine.search([("order_id", "=", po.id)])
+    current_amounts = {
+        line.name: (line.product_qty or 0.0) * (line.price_unit or 0.0)
+        for line in current_lines
+    }
+    rounding = settlement.currency_id.rounding or 0.01
+    lines_match = set(current_amounts) == set(desired_by_name) and all(
+        not float_compare(
+            current_amounts[name], desired_by_name[name]["amount"], precision_rounding=rounding
+        )
+        for name in desired_by_name
+    )
+    if settlement.state != "draft":
+        if po not in settlement.purchase_order_ids or po.state not in ("purchase", "done"):
+            raise UserError("已审批演示结算单缺少不可变采购依据。")
+        if not lines_match:
+            raise UserError("已审批演示结算单的采购依据金额与结算事实不一致。")
+        return po
+    if po.state != "draft":
+        if not lines_match:
+            raise UserError("已确认采购单与待提交演示结算事实不一致，禁止回退改写。")
+        settlement.write({"purchase_order_ids": [(4, po.id)]})
+        return po
+
     for spec in desired_lines:
         line_vals = {
             "order_id": po.id,
@@ -210,17 +292,27 @@ def _ensure_purchase_order(env, settlement, split_first_line=False):
     if stale_lines:
         stale_lines.unlink()
 
-    env.cr.execute(
-        "UPDATE purchase_order SET state=%s WHERE id=%s",
-        ("purchase", po.id),
-    )
-    env.invalidate_all()
-    settlement.purchase_order_ids = [(4, po.id)]
+    po.button_confirm()
+    settlement.write({"purchase_order_ids": [(4, po.id)]})
+    return po
 
 
 def _ensure_invoice_info(env, settlement, ratio):
     total = settlement.amount_total or sum(settlement.line_ids.mapped("amount")) or 0.0
     invoice_amount = round(total * ratio, 2)
+    if settlement.state != "draft":
+        rounding = settlement.currency_id.rounding or 0.01
+        if (
+            not settlement.invoice_ref
+            or not settlement.invoice_date
+            or float_compare(
+                settlement.invoice_amount or 0.0,
+                invoice_amount,
+                precision_rounding=rounding,
+            )
+        ):
+            raise UserError("已审批演示结算单的发票快照与标准样本不一致。")
+        return
     settlement.write(
         {
             "invoice_ref": settlement.invoice_ref or f"INV-{settlement.name}",
@@ -230,6 +322,27 @@ def _ensure_invoice_info(env, settlement, ratio):
     )
 
 
+def _approve_payment(env, payment):
+    if payment.state in ("approved", "done"):
+        return payment
+    if payment.state in ("draft", "rejected"):
+        payment.action_submit()
+    if payment.state == "submit":
+        reviewer = env.ref("smart_construction_demo.user_sc_finance_mgr_test")
+        for _index in range(max(1, len(payment.review_ids))):
+            payment.with_user(reviewer).validate_tier()
+            payment.invalidate_recordset()
+            if payment.validation_status == "validated":
+                break
+        if payment.validation_status == "validated" and payment.state == "submit":
+            payment.action_on_tier_approved()
+    if payment.state == "approve" and payment.validation_status == "validated":
+        payment.action_set_approved()
+    if payment.state != "approved":
+        raise UserError("演示付款申请未能通过正式审批状态机。")
+    return payment
+
+
 def _ensure_payments(env, project, pay_contract, receive_contract, settlement):
     Payment = env["payment.request"].sudo()
     pay = Payment.search(
@@ -237,46 +350,45 @@ def _ensure_payments(env, project, pay_contract, receive_contract, settlement):
             ("project_id", "=", project.id),
             ("type", "=", "pay"),
             ("contract_id", "=", pay_contract.id),
+            ("state", "!=", "cancel"),
         ],
         limit=1,
     )
+    pay_vals = {
+        "type": "pay",
+        "project_id": project.id,
+        "partner_id": pay_contract.partner_id.id,
+        "contract_id": pay_contract.id,
+        "settlement_id": settlement.id,
+        "amount": 160000.0,
+    }
     if not pay:
-        pay = Payment.create(
-            {
-                "type": "pay",
-                "project_id": project.id,
-                "partner_id": pay_contract.partner_id.id,
-                "contract_id": pay_contract.id,
-                "settlement_id": settlement.id,
-                "amount": 160000.0,
-                "state": "draft",
-            }
-        )
+        pay = Payment.create(pay_vals)
+    elif pay.state in ("draft", "rejected"):
+        pay.write(pay_vals)
     receive = Payment.search(
         [
             ("project_id", "=", project.id),
             ("type", "=", "receive"),
             ("contract_id", "=", receive_contract.id),
+            ("state", "!=", "cancel"),
         ],
         limit=1,
     )
+    receive_vals = {
+        "type": "receive",
+        "project_id": project.id,
+        "partner_id": receive_contract.partner_id.id,
+        "contract_id": receive_contract.id,
+        "amount": 120000.0,
+    }
     if not receive:
-        receive = Payment.create(
-            {
-                "type": "receive",
-                "project_id": project.id,
-                "partner_id": receive_contract.partner_id.id,
-                "contract_id": receive_contract.id,
-                "amount": 120000.0,
-                "state": "draft",
-            }
-        )
+        receive = Payment.create(receive_vals)
+    elif receive.state in ("draft", "rejected"):
+        receive.write(receive_vals)
 
-    env.cr.execute(
-        "UPDATE payment_request SET state=%s, validation_status=%s WHERE id in %s",
-        ("done", "validated", tuple([pay.id, receive.id])),
-    )
-    env.invalidate_all()
+    _approve_payment(env, pay)
+    _approve_payment(env, receive)
 
 
 def _cleanup_paused_showroom_settlement(env, project):
@@ -298,15 +410,13 @@ def _cleanup_paused_showroom_settlement(env, project):
             ("settlement_id", "in", settlements.ids),
         ]
     )
-    if payments:
-        env.cr.execute(
-            "UPDATE payment_request SET state=%s WHERE id in %s",
-            ("draft", tuple(payments.ids)),
-        )
-        env.invalidate_all()
-        payments.unlink()
-    settlements.mapped("line_ids").unlink()
-    settlements.unlink()
+    removable_payments = payments.filtered(lambda record: record.state in ("draft", "cancel"))
+    if removable_payments:
+        removable_payments.unlink()
+    removable_settlements = settlements.filtered(lambda record: record.state == "draft")
+    if removable_settlements:
+        removable_settlements.mapped("line_ids").unlink()
+        removable_settlements.unlink()
 
 
 def _get_project(env, code):
@@ -518,6 +628,7 @@ def run(env):
         else:
             ratio = DEMO_INVOICE_RATIO_BY_STATE.get(project.lifecycle_state, 1.0)
         _ensure_invoice_info(env, settlement, ratio)
+        _approve_settlement(env, settlement)
         _ensure_payments(env, project, in_contract, out_contract, settlement)
 
 

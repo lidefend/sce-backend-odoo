@@ -62,7 +62,11 @@ class ScCompanyContractorResponsibilitySummary(models.Model):
 
     def _facts_domain(self):
         self.ensure_one()
-        domain = [("project_id", "=", self.project_id.id or False)]
+        domain = [
+            ("project_id", "=", self.project_id.id or False),
+            ("company_id", "=", self.company_id.id),
+            ("currency_id", "=", self.currency_id.id),
+        ]
         if self.partner_id:
             domain.append(("partner_id", "=", self.partner_id.id))
         else:
@@ -94,8 +98,8 @@ class ScCompanyContractorResponsibilitySummary(models.Model):
                         project_id,
                         partner_id,
                         partner_name,
-                        MIN(company_id) AS company_id,
-                        MIN(currency_id) AS currency_id,
+                        company_id,
+                        currency_id,
                         COUNT(*)::integer AS source_line_count,
                         COUNT(*) FILTER (WHERE responsibility_type = 'arrival_confirmation')::integer AS arrival_line_count,
                         COUNT(*) FILTER (WHERE responsibility_type = 'self_funding_income')::integer AS self_funding_income_line_count,
@@ -112,11 +116,11 @@ class ScCompanyContractorResponsibilitySummary(models.Model):
                         COALESCE(SUM(project_fund_status_effect), 0.0) AS project_fund_status_effect,
                         COALESCE(SUM(contractor_responsibility_effect), 0.0) AS contractor_responsibility_effect
                     FROM sc_company_contractor_responsibility_fact
-                    GROUP BY project_id, partner_id, partner_name
+                    GROUP BY project_id, company_id, currency_id, partner_id, partner_name
                 )
                 SELECT
                     ROW_NUMBER() OVER (
-                        ORDER BY g.project_id, COALESCE(g.partner_id, 0), COALESCE(g.partner_name, '')
+                        ORDER BY g.project_id, g.company_id, g.currency_id, COALESCE(g.partner_id, 0), COALESCE(g.partner_name, '')
                     )::integer AS id,
                     COALESCE(p.name->>'zh_CN', p.name->>'en_US', '未关联项目') || ' / ' || COALESCE(NULLIF(g.partner_name, ''), '未识别承包人') AS display_name,
                     g.company_id,

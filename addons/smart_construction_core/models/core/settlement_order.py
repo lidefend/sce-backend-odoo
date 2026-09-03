@@ -23,6 +23,18 @@ class ScSettlementOrder(models.Model):
         "contract_id.subject",
     ]
 
+    _LIFECYCLE_CONTEXT_KEY = "sc_settlement_lifecycle_service"
+    _LIFECYCLE_SERVICE_TOKEN = object()
+    _LIFECYCLE_TRANSITIONS = {
+        "draft": frozenset({"submit", "approve", "cancel"}),
+        "submit": frozenset({"draft", "approve", "cancel"}),
+        "approve": frozenset({"done", "cancel"}),
+        "done": frozenset(),
+        "cancel": frozenset(),
+    }
+    _IMMUTABLE_FACT_STATES = frozenset({"approve", "done", "cancel"})
+    _TERMINAL_ANNOTATION_FIELDS = frozenset({"note", "attachment_ids"})
+
     name = fields.Char(string="结算单号", required=True, default="新建", copy=False)
     project_id = fields.Many2one(
         "project.project",
@@ -559,22 +571,9 @@ class ScSettlementOrder(models.Model):
                 % ", ".join(bad_state.mapped("name")[:10])
             )
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        for vals in vals_list:
-            project_id = self.env.context.get("default_project_id") or self.env.context.get("current_project_id")
-            try:
-                project_id = int(project_id) if project_id else False
-            except (TypeError, ValueError):
-                project_id = False
-            if project_id:
-                vals.setdefault("project_id", project_id)
-            if vals.get("name", "新建") in (False, "新建"):
-                seq = self.env["ir.sequence"].next_by_code("sc.settlement.order")
-                vals["name"] = seq or _("Settlement")
-        return super().create(vals_list)
-
     def action_submit(self):
+        self._assert_lifecycle_role("submit")
+        self._lock_lifecycle_rows()
         for rec in self:
             if rec.state != "draft":
                 raise_guard(
@@ -590,19 +589,21 @@ class ScSettlementOrder(models.Model):
         self.env["sc.data.validator"].validate_or_raise(
             scope={"res_model": self._name, "res_ids": self.ids}
         )
-        policy = self.env["sc.approval.policy"]
+        policy = self.env["sc.approval.policy"].sudo()
         for rec in self:
             if policy.is_approval_required(rec._name, company=rec.company_id):
-                rec.write({"state": "submit", "reject_reason": False})
+                rec._write_lifecycle("submit")
                 company = rec.company_id or self.env.company
                 rec.with_company(company).with_context(
                     allowed_company_ids=[company.id],
                 ).request_validation()
             else:
-                rec.write({"state": "approve", "reject_reason": False})
+                rec._write_lifecycle("approve")
 
     def action_approve(self):
-        policy_model = self.env["sc.approval.policy"]
+        self._assert_lifecycle_role("approve")
+        self._lock_lifecycle_rows()
+        policy_model = self.env["sc.approval.policy"].sudo()
         for rec in self:
             if rec.state not in ("draft", "submit"):
                 raise_guard(
@@ -630,7 +631,7 @@ class ScSettlementOrder(models.Model):
         self.env["sc.data.validator"].validate_or_raise(
             scope={"res_model": self._name, "res_ids": self.ids}
         )
-        self.write({"state": "approve"})
+        self._write_lifecycle("approve")
 
     def _check_state_from_condition(self):
         self.ensure_one()
@@ -646,6 +647,8 @@ class ScSettlementOrder(models.Model):
         return _("OCA审批驳回（未填写原因）")
 
     def action_on_tier_approved(self):
+        self._assert_lifecycle_role("approve")
+        self._lock_lifecycle_rows()
         for rec in self:
             if rec.state not in ("submit", "approve"):
                 raise_guard(
@@ -658,7 +661,7 @@ class ScSettlementOrder(models.Model):
             rec._check_line_contracts_or_raise()
             rec._check_contract_consistency_or_raise(strict=True)
             rec._check_purchase_orders_or_raise(strict=True)
-            if rec.validation_status != "validated" and not rec.env.context.get("tier_validation_callback"):
+            if rec.validation_status != "validated":
                 raise_guard(
                     "SETTLEMENT_TIER_INCOMPLETE",
                     f"结算单[{rec.display_name}]",
@@ -666,9 +669,11 @@ class ScSettlementOrder(models.Model):
                     reasons=[_("统一审批流程尚未完成")],
                 )
             if rec.state == "submit":
-                rec.write({"state": "approve", "reject_reason": False})
+                rec._write_lifecycle("approve")
 
     def action_on_tier_rejected(self, reason=None):
+        self._assert_lifecycle_role("approve")
+        self._lock_lifecycle_rows()
         for rec in self:
             if rec.state != "submit":
                 raise_guard(
@@ -677,14 +682,23 @@ class ScSettlementOrder(models.Model):
                     _("驳回结算单"),
                     reasons=[_("只有已提交状态的结算单可以执行审批驳回回调")],
                 )
-            rec.write(
-                {
-                    "state": "draft",
-                    "reject_reason": reason or rec._get_tier_reject_reason(),
-                }
+            rejected_reviews = rec.review_ids.filtered(
+                lambda review: review.status == "rejected"
+            )
+            if not rejected_reviews:
+                raise_guard(
+                    "SETTLEMENT_TIER_REJECTION_MISSING",
+                    f"结算单[{rec.display_name}]",
+                    _("驳回结算单"),
+                    reasons=[_("未找到已驳回的审批事实")],
+                )
+            rec._write_lifecycle(
+                "draft", reject_reason=reason or rec._get_tier_reject_reason()
             )
 
     def action_done(self):
+        self._assert_lifecycle_role("done")
+        self._lock_lifecycle_rows()
         for rec in self:
             if rec.state != "approve":
                 raise_guard(
@@ -694,9 +708,11 @@ class ScSettlementOrder(models.Model):
                     reasons=[_("只有已批准状态的结算单可以完成")],
                 )
             rec._check_business_anchor_or_raise()
-            rec.write({"state": "done"})
+        self._write_lifecycle("done")
 
     def action_cancel(self):
+        self._assert_lifecycle_role("cancel")
+        self._lock_lifecycle_rows()
         for rec in self:
             if rec.state not in ("draft", "submit", "approve"):
                 raise_guard(
@@ -705,8 +721,8 @@ class ScSettlementOrder(models.Model):
                     _("作废结算单"),
                     reasons=[_("只有草稿、已提交或已批准状态的结算单可以作废")],
                 )
-            rec._check_payments_before_cancel()
-            rec.write({"state": "cancel"})
+        self._check_payments_before_cancel()
+        self._write_lifecycle("cancel")
 
     def _check_business_anchor_or_raise(self):
         for rec in self:
@@ -755,27 +771,91 @@ class ScSettlementOrder(models.Model):
                     )
 
     def _check_payments_before_cancel(self):
-        Payment = self.env["payment.request"]
-        for rec in self:
-            count = Payment.search_count(
+        active_states = ["submit", "approve", "approved", "done"]
+        linked_settlement_ids = {
+            row["settlement_id"][0]
+            for row in self.env["payment.request"].sudo().read_group(
                 [
-                    ("settlement_id", "=", rec.id),
-                    ("state", "in", ["approve", "approved", "done"]),
-                ]
+                    ("settlement_id", "in", self.ids),
+                    ("state", "in", active_states),
+                ],
+                ["settlement_id"],
+                ["settlement_id"],
             )
-            if count:
+            if row.get("settlement_id")
+        }
+        linked_settlement_ids.update(
+            row["settlement_id"][0]
+            for row in self.env["payment.request.line"].sudo().read_group(
+                [
+                    ("settlement_id", "in", self.ids),
+                    ("request_id.state", "in", active_states),
+                    ("active", "=", True),
+                ],
+                ["settlement_id"],
+                ["settlement_id"],
+            )
+            if row.get("settlement_id")
+        )
+        for rec in self:
+            if rec.id in linked_settlement_ids:
                 raise_guard(
                     "P0_SETTLEMENT_CANCEL_BLOCKED",
                     f"结算单[{rec.display_name}]",
                     _("作废结算单"),
-                    reasons=[_("已关联付款申请：%s 条") % count],
+                    reasons=[_("存在已提交、已批准或已完成的关联付款申请")],
                     hints=[_("请先取消/完成关联付款申请后再作废结算单")],
                 )
 
-    def write(self, vals):
-        if vals.get("state") == "cancel":
-            self._check_payments_before_cancel()
-        return super().write(vals)
+    def _is_lifecycle_service_call(self):
+        return self.env.context.get(self._LIFECYCLE_CONTEXT_KEY) is self._LIFECYCLE_SERVICE_TOKEN
+
+    def _assert_lifecycle_role(self, operation):
+        if self.env.su:
+            return
+        if operation == "submit":
+            allowed = (
+                self.env.user.has_group(
+                    "smart_construction_core.group_sc_cap_business_initiator"
+                )
+                or self.env.user.has_group(
+                    "smart_construction_core.group_sc_cap_settlement_user"
+                )
+            )
+        else:
+            allowed = self.env.user.has_group(
+                "smart_construction_core.group_sc_cap_settlement_manager"
+            )
+        if not allowed:
+            raise AccessError(_("当前用户无权执行该结算生命周期动作。"))
+
+    def _write_lifecycle(self, target_state, reject_reason=None):
+        if not isinstance(target_state, str) or target_state not in self._LIFECYCLE_TRANSITIONS:
+            raise AccessError(_("非法结算生命周期目标状态。"))
+        invalid = self.filtered(
+            lambda rec: target_state
+            not in self._LIFECYCLE_TRANSITIONS.get(rec.state, frozenset())
+        )
+        if invalid:
+            raise AccessError(_("结算生命周期状态迁移不合法。"))
+        vals = {"state": target_state}
+        if target_state in ("submit", "approve"):
+            vals["reject_reason"] = False
+        elif target_state == "draft":
+            vals["reject_reason"] = reject_reason or False
+        return self.with_context(
+            **{self._LIFECYCLE_CONTEXT_KEY: self._LIFECYCLE_SERVICE_TOKEN}
+        ).write(vals)
+
+    def _lock_lifecycle_rows(self):
+        ids = sorted(set(self.ids))
+        if ids:
+            self._cr.execute(
+                "SELECT id FROM sc_settlement_order WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
+                [ids],
+            )
+            self.invalidate_recordset(["state"])
+        return self
 
     # ------------------------------------------------------------------
     # 合同联动：选合同后自动带出项目/公司/币种/往来单位/收支类型
@@ -1051,6 +1131,9 @@ class ScSettlementOrder(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
+            requested_state = vals.get("state") or "draft"
+            if requested_state != "draft" and not self._is_lifecycle_service_call():
+                raise AccessError(_("结算单必须从草稿创建，并通过受控业务动作推进状态。"))
             project_id = self._context_project_id()
             if project_id:
                 vals.setdefault("project_id", project_id)
@@ -1098,6 +1181,21 @@ class ScSettlementOrder(models.Model):
         return
 
     def write(self, vals):
+        service_call = self._is_lifecycle_service_call()
+        lifecycle_fields = {"state", "reject_reason"}
+        if service_call and set(vals) - lifecycle_fields:
+            raise AccessError(_("结算生命周期服务只能写入状态和驳回原因。"))
+        if "state" in vals and not service_call:
+            raise AccessError(_("结算单状态只能通过受控业务动作变更。"))
+        immutable = self.filtered(lambda rec: rec.state in self._IMMUTABLE_FACT_STATES)
+        allowed_terminal_fields = set(self._TERMINAL_ANNOTATION_FIELDS)
+        if service_call:
+            allowed_terminal_fields.update(lifecycle_fields)
+        disallowed = set(vals) - allowed_terminal_fields
+        if immutable and disallowed:
+            raise AccessError(
+                _("已批准、已完成或已作废的结算事实不可改写；请通过调整或冲销业务处理。")
+            )
         explicit_header_contract = "contract_id" in vals and bool(vals["contract_id"])
         self._normalize_settlement_stage_defaults(vals)
         self._normalize_feedback_defaults(vals)
@@ -1116,6 +1214,11 @@ class ScSettlementOrder(models.Model):
         if {"contract_id", "partner_id", "date_settlement", "document_date", "final_approved_date", "approved_date"} & set(vals):
             self._apply_contract_defaults_if_needed()
         return res
+
+    def unlink(self):
+        if self.filtered(lambda rec: rec.state != "draft"):
+            raise AccessError(_("只有草稿结算单可以删除；已进入流程的事实必须保留审计轨迹。"))
+        return super().unlink()
 
     @api.model
     def _normalize_feedback_defaults(self, vals):
@@ -1325,6 +1428,55 @@ class ScSettlementOrderLine(models.Model):
                 reasons=["contract project mismatch"],
             )
 
+    @api.model
+    def _lock_parent_settlements(self, settlement_ids):
+        settlement_ids = sorted({int(value) for value in settlement_ids if value})
+        if not settlement_ids:
+            return self.env["sc.settlement.order"]
+        visible = self.env["sc.settlement.order"].search(
+            [("id", "in", settlement_ids)]
+        )
+        if set(visible.ids) != set(settlement_ids):
+            raise AccessError(_("结算归集关系不存在或当前用户无权访问。"))
+        self.env.cr.execute(
+            "SELECT id FROM sc_settlement_order "
+            "WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
+            [settlement_ids],
+        )
+        settlements = self.env["sc.settlement.order"].browse(settlement_ids)
+        settlements.invalidate_recordset(["state", "project_id", "contract_id"])
+        return settlements
+
+    @api.model
+    def _visible_contracts_by_id(self, contract_ids):
+        contract_ids = sorted({int(value) for value in contract_ids if value})
+        if not contract_ids:
+            return {}
+        contracts = self.env["construction.contract"].search(
+            [
+                ("id", "in", contract_ids),
+                ("company_id", "in", self.env.companies.ids),
+            ]
+        )
+        if set(contracts.ids) != set(contract_ids):
+            raise AccessError(_("结算归集关系不存在或当前用户无权访问。"))
+        return {contract.id: contract for contract in contracts}
+
+    @api.model
+    def _assert_contract_project_match(self, contract, settlement):
+        if (
+            contract
+            and settlement
+            and contract.project_id
+            and contract.project_id != settlement.project_id
+        ):
+            raise_guard(
+                "SETTLEMENT_CONTRACT_MISMATCH",
+                "Settlement Line",
+                "Bind Contract",
+                reasons=["contract project mismatch"],
+            )
+
     def _audit_contract(self, event_code, before_id, after_id, reason=None, require_reason=False):
         Audit = self.env["sc.audit.log"]
         for rec in self:
@@ -1343,15 +1495,17 @@ class ScSettlementOrderLine(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        settlement_ids = sorted({
+            int(vals["settlement_id"])
+            for vals in vals_list
+            if vals.get("settlement_id")
+        })
+        settlements = self._lock_parent_settlements(settlement_ids)
+        by_id = {settlement.id: settlement for settlement in settlements}
         for vals in vals_list:
-            settlement = self.env["sc.settlement.order"]
-            if vals.get("settlement_id"):
-                settlement = self.env["sc.settlement.order"].search(
-                    [("id", "=", vals["settlement_id"])],
-                    limit=1,
-                )
-                if not settlement:
-                    raise AccessError(_("结算归集关系不存在或当前用户无权访问。"))
+            settlement = by_id.get(int(vals.get("settlement_id") or 0), self.env["sc.settlement.order"])
+            if settlement and settlement.state in settlement._IMMUTABLE_FACT_STATES:
+                raise AccessError(_("已批准、已完成或已作废的结算事实不能新增明细。"))
             # Preserve the repository's existing reliable default only while the
             # header carries one contract. The complete detail set remains the
             # authority and will clear the projection as soon as it becomes plural.
@@ -1359,14 +1513,27 @@ class ScSettlementOrderLine(models.Model):
                 vals["contract_id"] = settlement.contract_id.id
             if not self.env.context.get("legacy_migration_allow_missing_contract"):
                 self._ensure_contract_required(vals.get("contract_id"))
-            if settlement:
-                self._ensure_contract_match(vals.get("contract_id"), settlement.project_id.id)
+        contracts_by_id = self._visible_contracts_by_id(
+            vals.get("contract_id") for vals in vals_list
+        )
+        for vals in vals_list:
+            settlement = by_id.get(int(vals.get("settlement_id") or 0))
+            contract = contracts_by_id.get(int(vals.get("contract_id") or 0))
+            self._assert_contract_project_match(contract, settlement)
         records = super().create(vals_list)
         if not self.env.context.get("skip_settlement_contract_projection"):
             records.mapped("settlement_id")._synchronize_detail_contract_projection()
         return records
 
     def write(self, vals):
+        parent_ids = set(self.mapped("settlement_id").ids)
+        if vals.get("settlement_id"):
+            parent_ids.add(vals["settlement_id"])
+        settlements = self._lock_parent_settlements(parent_ids)
+        by_id = {settlement.id: settlement for settlement in settlements}
+        self.invalidate_recordset(["settlement_id", "contract_id"])
+        if self.filtered(lambda rec: rec.settlement_id.state in rec.settlement_id._IMMUTABLE_FACT_STATES):
+            raise AccessError(_("已批准、已完成或已作废的结算明细不可改写。"))
         original_settlements = self.mapped("settlement_id")
         if "contract_id" in vals and not self.env.context.get("allow_contract_change"):
             raise_guard(
@@ -1378,6 +1545,18 @@ class ScSettlementOrderLine(models.Model):
         if "contract_id" in vals:
             if not vals.get("contract_id") and not self.env.context.get("allow_contract_change"):
                 self._ensure_contract_required(False)
+        target_contract_ids = {
+            int(vals.get("contract_id") or rec.contract_id.id)
+            for rec in self
+            if vals.get("contract_id") or rec.contract_id
+        }
+        contracts_by_id = self._visible_contracts_by_id(target_contract_ids)
+        for rec in self:
+            settlement_id = int(vals.get("settlement_id") or rec.settlement_id.id)
+            contract_id = int(vals.get("contract_id") or rec.contract_id.id or 0)
+            self._assert_contract_project_match(
+                contracts_by_id.get(contract_id), by_id.get(settlement_id)
+            )
         res = super().write(vals)
         if "contract_id" in vals:
             for rec in self:
@@ -1391,7 +1570,10 @@ class ScSettlementOrderLine(models.Model):
         return res
 
     def unlink(self):
-        settlements = self.mapped("settlement_id")
+        settlements = self._lock_parent_settlements(self.mapped("settlement_id").ids)
+        self.invalidate_recordset(["settlement_id"])
+        if self.filtered(lambda rec: rec.settlement_id.state in rec.settlement_id._IMMUTABLE_FACT_STATES):
+            raise AccessError(_("已批准、已完成或已作废的结算明细不可删除。"))
         result = super().unlink()
         if not self.env.context.get("skip_settlement_contract_projection"):
             settlements._synchronize_detail_contract_projection()

@@ -34,6 +34,12 @@ class ProjectCostCompare(models.Model):
         self.ensure_one()
         action = self.env.ref("smart_construction_core.action_project_cost_ledger").read()[0]
         domain = [("project_id", "=", self.project_id.id)]
+        domain.extend(
+            [
+                ("recognition_state", "=", "active"),
+                ("reporting_treatment", "in", ["financial_actual", "manual_actual"]),
+            ]
+        )
         if self.cost_code_id:
             domain.append(("cost_code_id", "=", self.cost_code_id.id))
         if self.wbs_id:
@@ -80,6 +86,8 @@ class ProjectCostCompare(models.Model):
                         COALESCE(to_char(l.date, 'YYYY-MM'), 'TOTAL') AS period,
                         SUM(l.amount) AS actual_amount
                     FROM project_cost_ledger l
+                    WHERE l.recognition_state = 'active'
+                      AND l.reporting_treatment IN ('financial_actual', 'manual_actual')
                     GROUP BY l.project_id, l.cost_code_id, l.wbs_id, l.currency_id, to_char(l.date, 'YYYY-MM')
                 ) a
                 FULL OUTER JOIN (

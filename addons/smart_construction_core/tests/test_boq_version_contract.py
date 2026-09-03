@@ -140,7 +140,7 @@ class TestBoqVersionContract(TransactionCase):
         )
         Allocation = self.env["project.boq.allocation"]
         for line in first | second:
-            Allocation.create(
+            Allocation._create_authoritative(
                 {
                     "boq_line_id": line.id,
                     "execution_scope_id": located_scope.id,

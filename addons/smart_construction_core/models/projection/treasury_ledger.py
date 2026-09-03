@@ -2,6 +2,8 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
+_TREASURY_AUTHORITY_TOKEN = object()
+
 
 class TreasuryLedger(models.Model):
     _name = "sc.treasury.ledger"
@@ -15,6 +17,7 @@ class TreasuryLedger(models.Model):
     name = fields.Char(string="流水号", required=True, default="新建", copy=False)
     date = fields.Date(string="发生日期", default=fields.Date.context_today, required=True)
     project_id = fields.Many2one("project.project", string="项目", index=True, required=True)
+    company_id = fields.Many2one("res.company", string="公司", index=True, readonly=True)
     partner_id = fields.Many2one("res.partner", string="往来单位", index=True)
     settlement_id = fields.Many2one("sc.settlement.order", string="结算单", index=True)
     payment_request_id = fields.Many2one("payment.request", string="付款/收款申请", index=True)
@@ -45,6 +48,18 @@ class TreasuryLedger(models.Model):
         required=True,
         default=lambda self: self.env.company.currency_id.id,
     )
+    normalization_state = fields.Selection(
+        [
+            ("normalized", "标准事实"),
+            ("legacy_observed_identity", "历史冻结身份"),
+            ("legacy_unresolved_identity", "历史身份待确认"),
+        ],
+        string="身份归一状态",
+        required=True,
+        default="normalized",
+        readonly=True,
+        index=True,
+    )
     state = fields.Selection(
         [("posted", "已入账"), ("void", "作废")],
         string="状态",
@@ -71,6 +86,11 @@ class TreasuryLedger(models.Model):
 
     _sql_constraints = [
         ("payment_request_unique", "unique(payment_request_id)", "同一付款/收款申请只能生成一条资金流水。"),
+        (
+            "normalized_identity_present",
+            "CHECK(normalization_state != 'normalized' OR (project_id IS NOT NULL AND company_id IS NOT NULL AND currency_id IS NOT NULL))",
+            "标准资金台账必须固化项目、公司与币种身份。",
+        ),
     ]
 
     def init(self):
@@ -85,14 +105,65 @@ class TreasuryLedger(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        # 限制只能通过业务动作创建
-        if not self.env.context.get("allow_ledger_auto"):
+        if self.env.context.get("sc_treasury_authority_token") is not _TREASURY_AUTHORITY_TOKEN:
             raise UserError(_("资金台账不能手工创建。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
+            project = self.env["project.project"].browse(vals.get("project_id")).exists()
+            if not project:
+                raise ValidationError(_("资金台账必须关联有效项目。"))
+            company = project.company_id
+            if not company:
+                raise ValidationError(_("资金台账项目必须归属公司。"))
+            if vals.get("company_id") and vals["company_id"] != company.id:
+                raise ValidationError(_("资金台账公司必须与项目公司一致。"))
+            vals["company_id"] = company.id
+            vals.setdefault("normalization_state", "normalized")
             if vals.get("name") in (False, "新建"):
                 vals["name"] = seq.next_by_code("sc.treasury.ledger") or _("Ledger")
         return super().create(vals_list)
+
+    @api.model
+    def _create_authoritative(self, vals):
+        created = self.with_context(sc_treasury_authority_token=_TREASURY_AUTHORITY_TOKEN).create(vals)
+        return self.browse(created.ids)
+
+    def _assert_authoritative_match(self, expected):
+        """Return an existing fact only when a repeated writer is exactly idempotent."""
+        self.ensure_one()
+        mismatches = []
+        for field_name, expected_value in expected.items():
+            if field_name == "note":
+                continue
+            field = self._fields[field_name]
+            current_value = self[field_name]
+            if field.type == "many2one":
+                current_value = current_value.id or False
+                expected_value = getattr(expected_value, "id", expected_value) or False
+            elif field.type == "date":
+                current_value = fields.Date.to_date(current_value)
+                expected_value = fields.Date.to_date(expected_value)
+            elif field_name == "amount":
+                if self.currency_id.compare_amounts(current_value, expected_value) == 0:
+                    continue
+            if current_value != expected_value:
+                mismatches.append(field_name)
+        if mismatches:
+            raise ValidationError(
+                _("既有资金事实与本次业务动作不一致（%s）；禁止覆盖，必须冲销后重新办理。")
+                % ", ".join(sorted(mismatches))
+            )
+        return self
+
+    def write(self, vals):
+        if self.env.context.get("sc_treasury_authority_token") is not _TREASURY_AUTHORITY_TOKEN:
+            blocked = set(vals) - {"note", "write_uid", "write_date"}
+            if blocked:
+                raise UserError(_("已入账资金台账不可改写；冲销必须形成独立的可追溯事实。"))
+        return super().write(vals)
+
+    def unlink(self):
+        raise UserError(_("资金台账不可删除；错误事实必须通过冲销保留完整证据链。"))
 
     @api.model
     def _ensure_interfund_ledger(
@@ -118,18 +189,23 @@ class TreasuryLedger(models.Model):
         ]
         existing = self.sudo().search(domain, limit=1)
         if existing:
-            existing.sudo().write(
+            return existing.sudo()._assert_authoritative_match(
                 {
                     "date": date or existing.date or fields.Date.context_today(self),
+                    "project_id": project.id,
+                    "company_id": project.company_id.id,
                     "partner_id": partner.id if partner else False,
+                    "direction": direction,
                     "amount": amount,
                     "currency_id": currency.id if currency else project.company_id.currency_id.id,
+                    "normalization_state": "normalized",
                     "state": "posted",
-                    "note": note,
+                    "source_kind": "interfund",
+                    "source_model": source_record._name,
+                    "source_res_id": source_record.id,
                 }
             )
-            return existing
-        return self.sudo().with_context(allow_ledger_auto=True).create(
+        return self.sudo()._create_authoritative(
             {
                 "date": date or fields.Date.context_today(self),
                 "project_id": project.id,

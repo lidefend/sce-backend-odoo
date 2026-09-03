@@ -212,9 +212,9 @@ class TestWorkflowContractBackend(TransactionCase):
             {
                 "project_id": self.project.id,
                 "partner_id": self.partner.id,
-                "state": "submit",
             }
         )
+        settlement._write_lifecycle("submit")
 
         contract = self.service.describe_record(settlement)
 

@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 import json
 
-from odoo import api, fields, models
-from odoo.exceptions import UserError
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError, ValidationError
+
+_TENDER_GUARANTEE_AUTHORITY_TOKEN = object()
 
 
 class TenderBid(models.Model):
@@ -608,7 +610,7 @@ class TenderGuarantee(models.Model):
     _description = "投标保证金"
     _inherit = ["mail.thread", "mail.activity.mixin"]
 
-    bid_id = fields.Many2one("tender.bid", string="投标", required=True, ondelete="cascade", tracking=True)
+    bid_id = fields.Many2one("tender.bid", string="投标", required=True, ondelete="restrict", tracking=True)
     legacy_fact_id = fields.Integer(related="bid_id.legacy_fact_id", string="历史投标事实ID", readonly=True)
     legacy_visible_document_state = fields.Char("历史可见状态", readonly=True)
     legacy_visible_document_no = fields.Char("历史可见单据编号", readonly=True)
@@ -616,7 +618,9 @@ class TenderGuarantee(models.Model):
     legacy_visible_creator_name = fields.Char("历史可见录入人", readonly=True)
     legacy_visible_created_time = fields.Datetime("历史可见录入时间", readonly=True)
     legacy_visible_attachment = fields.Char("历史可见附件", readonly=True)
-    project_id = fields.Many2one(related="bid_id.project_id", store=True, readonly=True)
+    project_id = fields.Many2one("project.project", string="项目", required=True, readonly=True, index=True)
+    company_id = fields.Many2one("res.company", string="公司", readonly=True, index=True)
+    partner_id = fields.Many2one("res.partner", string="往来单位", readonly=True, index=True)
     type = fields.Selection([("out", "支出"), ("return", "退回")], string="类型", required=True, default="out")
     date = fields.Date("单据日期", default=fields.Date.context_today)
     amount = fields.Monetary("金额", currency_field="currency_id", tracking=True)
@@ -641,9 +645,29 @@ class TenderGuarantee(models.Model):
         "attachment_id",
         string="附件",
     )
-    currency_id = fields.Many2one(
-        "res.currency", related="bid_id.currency_id", store=True, readonly=True
+    currency_id = fields.Many2one("res.currency", string="币种", required=True, readonly=True)
+    treasury_ledger_id = fields.Many2one(
+        "sc.treasury.ledger", string="资金台账", readonly=True, index=True, ondelete="restrict"
     )
+    finance_identity_state = fields.Selection(
+        [
+            ("normalized", "标准事实"),
+            ("legacy_observed_identity", "历史冻结身份"),
+            ("legacy_unresolved_identity", "历史身份待确认"),
+        ],
+        required=True,
+        default="normalized",
+        readonly=True,
+        index=True,
+        string="财务身份状态",
+    )
+    _sql_constraints = [
+        (
+            "finance_normalized_identity_present",
+            "CHECK(finance_identity_state != 'normalized' OR (project_id IS NOT NULL AND company_id IS NOT NULL AND currency_id IS NOT NULL))",
+            "标准保证金事实必须固化项目、公司与币种身份。",
+        ),
+    ]
     deposit_status_display = fields.Char("状态", compute="_compute_deposit_return_visible_fields", store=True, readonly=True)
     deposit_push_result = fields.Char("推送结果", compute="_compute_deposit_return_visible_fields", store=True, readonly=True)
     deposit_kingdee_document_no = fields.Char("金蝶单据编号", compute="_compute_deposit_return_visible_fields", store=True, readonly=True)
@@ -846,14 +870,93 @@ class TenderGuarantee(models.Model):
                     res["bid_id"] = bid.id
         return res
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get("state") == "confirmed":
+                raise UserError(_("投标保证金不能直接创建为已确认，必须执行正式确认动作。"))
+            bid = self.env["tender.bid"].browse(vals.get("bid_id")).exists()
+            if not bid or not bid.project_id or not bid.project_id.company_id or not bid.currency_id:
+                raise ValidationError(_("投标保证金必须关联公司与币种身份完整的有效投标。"))
+            vals["project_id"] = bid.project_id.id
+            vals["company_id"] = bid.project_id.company_id.id
+            vals["partner_id"] = bid.owner_id.id or False
+            vals["currency_id"] = bid.currency_id.id
+            vals["finance_identity_state"] = "normalized"
+        return super().create(vals_list)
+
+    def write(self, vals):
+        authoritative = self.env.context.get("sc_tender_guarantee_authority_token") is _TENDER_GUARANTEE_AUTHORITY_TOKEN
+        if not authoritative and (vals.get("state") == "confirmed" or "finance_identity_state" in vals):
+            raise UserError(_("保证金确认终态与财务身份只能由正式业务动作写入。"))
+        if any(record.state == "confirmed" for record in self) and not authoritative:
+            allowed = {"remark", "attachment_ids", "write_uid", "write_date"}
+            if set(vals) - allowed:
+                raise UserError(_("已确认保证金事实只允许补充备注或附件。"))
+        if "bid_id" in vals:
+            bid = self.env["tender.bid"].browse(vals.get("bid_id")).exists()
+            if not bid or not bid.project_id or not bid.project_id.company_id or not bid.currency_id:
+                raise ValidationError(_("投标保证金必须关联公司与币种身份完整的有效投标。"))
+            vals = dict(
+                vals,
+                project_id=bid.project_id.id,
+                company_id=bid.project_id.company_id.id,
+                partner_id=bid.owner_id.id or False,
+                currency_id=bid.currency_id.id,
+            )
+        return super().write(vals)
+
+    def _write_finance_authority(self, vals):
+        result = self.with_context(sc_tender_guarantee_authority_token=_TENDER_GUARANTEE_AUTHORITY_TOKEN).write(vals)
+        self.flush_recordset(list(vals))
+        return result
+
+    def _ensure_treasury_ledger(self):
+        self.ensure_one()
+        direction = "in" if self.type == "return" else "out"
+        ledger = self.env["sc.treasury.ledger"].sudo()._create_authoritative(
+            {
+                "date": self.date or fields.Date.context_today(self),
+                "project_id": self.project_id.id,
+                "partner_id": self.partner_id.id or False,
+                "direction": direction,
+                "amount": self.amount,
+                "currency_id": self.currency_id.id,
+                "source_kind": "runtime",
+                "source_model": self._name,
+                "source_res_id": self.id,
+                "state": "posted",
+                "note": self.remark or _("auto:tender_guarantee_confirmed"),
+            }
+        )
+        self._write_finance_authority({"treasury_ledger_id": ledger.id})
+        return ledger
+
     def action_confirm(self):
-        self.write({"state": "confirmed"})
+        for record in self:
+            if record.state != "draft":
+                raise UserError(_("只有草稿保证金可以确认。"))
+            if not record.date or not record.amount or record.amount <= 0:
+                raise ValidationError(_("确认保证金前必须填写有效日期和正金额。"))
+            if (
+                record.finance_identity_state != "normalized"
+                or record.company_id != record.project_id.company_id
+                or record.project_id != record.bid_id.project_id
+                or record.currency_id != record.bid_id.currency_id
+            ):
+                raise ValidationError(_("保证金财务身份已与投标或项目失配，请重建草稿后再确认。"))
+            record._write_finance_authority({"state": "confirmed"})
+            record._ensure_treasury_ledger()
         return True
 
     def action_cancel(self):
+        if any(record.state != "draft" for record in self):
+            raise UserError(_("只有草稿保证金可以取消。"))
         self.write({"state": "cancel"})
         return True
 
     def action_reset_draft(self):
+        if any(record.state == "confirmed" for record in self):
+            raise UserError(_("已确认保证金不可重置；错误事实必须走冲销流程。"))
         self.write({"state": "draft"})
         return True

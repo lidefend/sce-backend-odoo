@@ -3,6 +3,10 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
 
+_COST_SOURCE_STATE_CONTEXT_KEY = "sc_cost_source_state_transition"
+_COST_SOURCE_STATE_TOKEN = object()
+
+
 class ScEquipmentPlan(models.Model):
     _name = "sc.equipment.plan"
     _description = "设备计划"
@@ -287,6 +291,11 @@ class ScEquipmentUsage(models.Model):
     _description = "机械台班登记"
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "usage_date desc, id desc"
+    _FACT_IMMUTABLE_FIELDS = {
+        "project_id", "usage_date", "equipment_name", "equipment_code",
+        "specification", "uom_text", "usage_location", "operator_name",
+        "usage_qty", "usage_hours", "supplier_id", "currency_id", "price_unit",
+    }
 
     name = fields.Char(string="登记单号", required=True, default="新建", tracking=True)
     project_id = fields.Many2one("project.project", string="项目", required=True, index=True, tracking=True)
@@ -345,11 +354,37 @@ class ScEquipmentUsage(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if (
+            self.env.context.get(_COST_SOURCE_STATE_CONTEXT_KEY) is not _COST_SOURCE_STATE_TOKEN
+            and any(vals.get("state", "draft") != "draft" for vals in vals_list)
+        ):
+            raise UserError(_("机械台班状态只能通过受控业务动作推进。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
             if vals.get("name", "新建") == "新建":
                 vals["name"] = seq.next_by_code("sc.equipment.usage") or _("机械台班登记")
         return super().create(vals_list)
+
+    def write(self, vals):
+        if (
+            "state" in vals
+            and self.env.context.get(_COST_SOURCE_STATE_CONTEXT_KEY) is not _COST_SOURCE_STATE_TOKEN
+        ):
+            raise UserError(_("机械台班状态只能通过受控业务动作推进。"))
+        if self._FACT_IMMUTABLE_FIELDS & set(vals):
+            if self.filtered(lambda record: record.state in ("submitted", "confirmed")):
+                raise UserError(_("已提交或已确认的机械台班事实不可修改；请通过受控状态流程处理。"))
+        return super().write(vals)
+
+    def _write_cost_source_state(self, vals):
+        return self.with_context(
+            **{_COST_SOURCE_STATE_CONTEXT_KEY: _COST_SOURCE_STATE_TOKEN}
+        ).write(vals)
+
+    def unlink(self):
+        if self.filtered(lambda record: record.state in ("submitted", "confirmed")):
+            raise UserError(_("已提交或已确认的机械台班事实不可删除。"))
+        return super().unlink()
 
     def action_submit(self):
         self._check_project_operator()
@@ -358,7 +393,7 @@ class ScEquipmentUsage(models.Model):
                 raise UserError(_("只有草稿状态的设备使用登记可以提交。"))
             record._check_business_anchor()
         self._check_values()
-        self.write({"state": "submitted"})
+        self._write_cost_source_state({"state": "submitted"})
         return True
 
     def action_confirm(self):
@@ -368,7 +403,7 @@ class ScEquipmentUsage(models.Model):
                 raise UserError(_("只有已提交状态的设备使用登记可以确认。"))
             record._check_business_anchor()
         self._check_values()
-        self.write({"state": "confirmed"})
+        self._write_cost_source_state({"state": "confirmed"})
         self._sync_project_cost_ledger()
         return True
 
@@ -380,7 +415,7 @@ class ScEquipmentUsage(models.Model):
                 record._check_project_manager()
             else:
                 record._check_project_operator()
-        self.write({"state": "cancel"})
+        self._write_cost_source_state({"state": "cancel"})
         return True
 
     def action_reset_draft(self):
@@ -388,7 +423,7 @@ class ScEquipmentUsage(models.Model):
         for record in self:
             if record.state != "cancel":
                 raise UserError(_("只有已取消状态的设备使用登记可以重置为草稿。"))
-        self.write({"state": "draft"})
+        self._write_cost_source_state({"state": "draft"})
         return True
 
     def _check_project_operator(self):
@@ -424,48 +459,32 @@ class ScEquipmentUsage(models.Model):
             )
 
     def _equipment_cost_code(self):
-        CostCode = self.env["project.cost.code"].sudo()
-        cost_code = CostCode.search([("code", "=", "MACH"), ("type", "=", "machine")], limit=1)
-        if not cost_code:
-            cost_code = CostCode.create(
-                {
-                    "code": "MACH",
-                    "name": "机械成本",
-                    "type": "machine",
-                    "note": "机械台班确认时自动归集的成本科目。",
-                }
-            )
-        return cost_code
+        return self.env["project.cost.code"]._get_or_create_standard_code(
+            "MACH",
+            "机械成本",
+            "machine",
+            "机械台班确认时自动归集的成本科目。",
+        )
 
     def _sync_project_cost_ledger(self):
         Ledger = self.env["project.cost.ledger"].sudo()
         cost_code = self._equipment_cost_code()
+        values = []
         for record in self:
-            values = {
+            values.append({
                 "project_id": record.project_id.id,
                 "cost_code_id": cost_code.id,
                 "date": record.usage_date or fields.Date.context_today(record),
                 "qty": (record.usage_qty or 0.0) * (record.usage_hours or 0.0),
-                "amount": record.amount,
-                "currency_id": record.currency_id.id,
+                "source_amount": record.amount,
+                "source_currency_id": record.currency_id.id,
                 "partner_id": record.supplier_id.id,
                 "source_model": record._name,
                 "source_id": record.id,
                 "source_line_id": 0,
                 "note": "%s - %s" % (record.name, record.equipment_name),
-            }
-            ledger = Ledger.search(
-                [
-                    ("source_model", "=", record._name),
-                    ("source_id", "=", record.id),
-                    ("source_line_id", "=", 0),
-                ],
-                limit=1,
-            )
-            if ledger:
-                ledger.write(values)
-            else:
-                Ledger.create(values)
+            })
+        return Ledger._upsert_generated_cost_rows(values)
 
     def _check_business_anchor(self):
         for record in self:

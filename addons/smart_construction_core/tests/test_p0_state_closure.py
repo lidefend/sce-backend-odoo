@@ -19,6 +19,7 @@ class TestP0StateClosure(TransactionCase):
         project = self.env["project.project"].create(
             {
                 "name": name,
+                "company_id": self.company.id,
                 "owner_id": owner.id,
                 "manager_id": self.env.user.id,
                 "location": "Test Location",
@@ -170,9 +171,12 @@ class TestP0StateClosure(TransactionCase):
 
     def _enable_funding(self, project, cap=1000.0):
         project.write({"funding_enabled": True})
-        self.env["project.funding.baseline"].create(
-            {"project_id": project.id, "total_amount": cap, "state": "active"}
-        )
+        baseline = self.env["project.funding.baseline"].create({
+            "project_id": project.id, "total_amount": cap,
+            "period_start": "2020-01-01", "period_end": "2099-12-31",
+            "line_ids": [(0, 0, {"name": "综合资金计划", "planned_amount": cap})],
+        })
+        baseline.action_activate()
 
     def _create_settlement_order(
         self, project, partner, contract, amount=100.0, state="approve", purchase_orders=None
@@ -183,12 +187,14 @@ class TestP0StateClosure(TransactionCase):
             "contract_id": contract.id,
             "settlement_type": "out",
             "line_ids": [(0, 0, {"name": "P0 Line", "qty": 1.0, "price_unit": amount})],
-            "state": state,
         }
         purchase_orders = purchase_orders or self.env["purchase.order"]
         if purchase_orders:
             vals["purchase_order_ids"] = [(6, 0, purchase_orders.ids)]
-        return self.env["sc.settlement.order"].create(vals)
+        settlement = self.env["sc.settlement.order"].create(vals)
+        if state != "draft":
+            settlement._write_lifecycle(state)
+        return settlement
 
     def _attach_dummy(self, record, name="test.pdf"):
         self.env["ir.attachment"].create(
@@ -534,8 +540,11 @@ class TestP0StateClosure(TransactionCase):
         settlement_unit = self._create_partner("P0 Settlement Unit")
         other_partner = self._create_partner("P0 Other Partner")
         contract = self._create_contract(project, contract_partner)
-        settlement = self._create_settlement_order(project, contract_partner, contract, amount=188.0, state="approve")
+        settlement = self._create_settlement_order(
+            project, contract_partner, contract, amount=188.0, state="draft"
+        )
         settlement.write({"settlement_unit_id": settlement_unit.id})
+        settlement._write_lifecycle("approve")
 
         pr = self.env["payment.request"].sudo().create(
             {
@@ -904,8 +913,7 @@ class TestP0StateClosure(TransactionCase):
         )
         ledger = (
             self.env["sc.treasury.ledger"]
-            .with_context(allow_ledger_auto=True)
-            .create(
+            ._create_authoritative(
                 {
                     "project_id": project.id,
                     "partner_id": partner.id,
@@ -944,8 +952,7 @@ class TestP0StateClosure(TransactionCase):
         )
         ledger = (
             self.env["sc.treasury.ledger"]
-            .with_context(allow_ledger_auto=True)
-            .create(
+            ._create_authoritative(
                 {
                     "project_id": project.id,
                     "partner_id": partner.id,
@@ -985,8 +992,7 @@ class TestP0StateClosure(TransactionCase):
         )
         ledger = (
             self.env["sc.treasury.ledger"]
-            .with_context(allow_ledger_auto=True)
-            .create(
+            ._create_authoritative(
                 {
                     "project_id": project.id,
                     "partner_id": partner.id,
