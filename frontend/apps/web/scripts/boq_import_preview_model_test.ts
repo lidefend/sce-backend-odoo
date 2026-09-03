@@ -7,6 +7,7 @@ import {
   BOQ_IMPORT_PREVIEW_VIEW_READONLY,
   formatBoqPreviewAmount,
   projectBoqImportPreview,
+  resolveBoqBlockProjectId,
   type BoqImportPreviewIntentData,
 } from '../src/app/presentation/boqImportPreview';
 
@@ -226,5 +227,28 @@ assert.equal(stringyStats.get('row_count')?.value, '42');
 assert.equal(stringyStats.get('item_count')?.value, '40');
 // 非法日期原样透传，不产生 null 崩溃
 assert.equal(stringyCounts.batch?.importedAtLabel, 'not-a-date');
+
+// ── resolveBoqBlockProjectId：驾驶舱块项目上下文解析（G3.3）──
+// dataset 投影（builder data.project_id）优先
+assert.equal(resolveBoqBlockProjectId({ data: { project_id: 7 } }, null), 7);
+// dataset 顶层 project_id 兜底
+assert.equal(resolveBoqBlockProjectId({ project_id: 9 }, {}), 9);
+// dataset 缺失时回落路由 query
+assert.equal(resolveBoqBlockProjectId(null, { project_id: '12' }), 12);
+assert.equal(resolveBoqBlockProjectId({}, { project_id: 15 }), 15);
+// 两者均缺失 → 0（无项目上下文空态）
+assert.equal(resolveBoqBlockProjectId(null, {}), 0);
+assert.equal(resolveBoqBlockProjectId(undefined, undefined), 0);
+// dataset 优先级高于路由
+assert.equal(resolveBoqBlockProjectId({ data: { project_id: 3 } }, { project_id: 99 }), 3);
+// 非法值防御：0/负数/NaN/对象
+assert.equal(resolveBoqBlockProjectId({ data: { project_id: 0 } }, { project_id: 0 }), 0);
+assert.equal(resolveBoqBlockProjectId({ data: { project_id: -5 } }, { project_id: -1 }), 0);
+assert.equal(resolveBoqBlockProjectId({ data: { project_id: 'abc' } }, { project_id: {} }), 0);
+// 浮点截断
+assert.equal(resolveBoqBlockProjectId({ data: { project_id: 3.7 } }, null), 3);
+// dataset 非对象防御
+assert.equal(resolveBoqBlockProjectId('nope', { project_id: 4 }), 4);
+assert.equal(resolveBoqBlockProjectId([], { project_id: 4 }), 4);
 
 console.info('[boq-import-preview-model-test] all assertions passed');

@@ -131,5 +131,47 @@ class BoqImportPreviewGuardTest(unittest.TestCase):
             )
 
 
+    def test_wrapper_write_operation_fails(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "BlockBoqImportPreview.vue":
+                return value.replace(
+                    "data-readonly=\"true\"",
+                    "data-readonly=\"true\" @click=\"reimport()\"",
+                    1,
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertTrue(
+                any(
+                    "BlockBoqImportPreview is readonly wrapper: found @click" in item
+                    for item in validate()
+                )
+            )
+
+    def test_registry_missing_block_type_fails(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "pageBlockRegistry.ts":
+                return value.replace(
+                    "  boq_import_preview: BlockBoqImportPreview,\n",
+                    "",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertTrue(
+                any(
+                    "pageBlockRegistry must register boq_import_preview block type" in item
+                    for item in validate()
+                )
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
