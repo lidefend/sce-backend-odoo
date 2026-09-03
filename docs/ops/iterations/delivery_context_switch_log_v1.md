@@ -8531,3 +8531,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   merging side (Codex `make pr.merge`) does not run `ci.local.quick`, so guard
   drift accumulates invisibly on main. Recommend wiring ci.local.quick (or at
   least the split-guard subset) into the PR merge flow.
+
+## 2026-09-03 — Merge flow hardening: ci.local.quick is now a hard pre-merge gate
+
+- Branch / baseline: `fix/merge-local-quick-gate-v1` / main af72d666 (PR #401).
+- Root cause addressed: `make pr.merge` only verified remote workflow gates.
+  The local quick suite (split guards, line budgets, evidence locks,
+  structure fingerprints) never ran before merge, so guard drift accumulated
+  silently on main across PRs #277/#381/#385/#392 and only surfaced during the
+  PR #401 restoration work.
+- Change: new `pr.merge.local_quick_gate` prerequisite target in
+  `make/codex.mk`. Before any merge is dispatched it requires:
+  1. `EXPECTED_HEAD` to be a full 40-char SHA (exit 7);
+  2. local HEAD to equal `EXPECTED_HEAD` (exit 11) — the quick suite must run
+     on the exact PR head;
+  3. a clean working tree, tracked or untracked (exit 12) — stray files would
+     falsify digest-based guards;
+  4. `make ci.local.quick` to pass on that tree (exit propagates).
+- Denial paths verified (exit 7 / 11 / 12); the full pass path ran
+  `ci.local.quick` to completion on this branch.
+- Cost: merges now take ~8 extra minutes locally. That is the price of not
+  shipping guard drift to main; a faster subset can be carved out later if it
+  becomes a bottleneck.
