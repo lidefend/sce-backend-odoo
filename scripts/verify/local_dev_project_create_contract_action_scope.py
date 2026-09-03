@@ -1,9 +1,16 @@
 """Read-only probe for governed action scopes on the local.dev project create form."""
 
+import base64
 import json
+import uuid
 
 from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
 from odoo.addons.smart_core.handlers.execute_button import ExecuteButtonHandler
+from odoo.addons.smart_core.handlers.chatter_followers import (
+    ChatterFollowersListHandler,
+    ChatterFollowersUpdateHandler,
+)
+from odoo.addons.smart_core.handlers.chatter_timeline import ChatterTimelineHandler
 
 
 def _layout_occurrence_integrity(contract):
@@ -100,6 +107,13 @@ if not getattr(record_result, "ok", False):
 record_integrity = _layout_occurrence_integrity(record_data)
 if any(record_integrity[key] for key in ("missing_widgets", "missing_statuses", "missing_descriptors")):
     raise AssertionError("project readonly Contract V2 occurrence integrity failed: %s" % record_integrity)
+record_collaboration_contract = (
+    (record_data.get("runtimeContract") or {}).get("collaboration")
+    if isinstance(record_data.get("runtimeContract"), dict)
+    else record_data.get("collaboration")
+) or {}
+if record_collaboration_contract.get("user_search_intent") != "collaboration.users.search":
+    raise AssertionError("project collaboration user search intent was not exact: %s" % record_collaboration_contract)
 
 record_rules = [
     row
@@ -304,6 +318,205 @@ for rule in rules:
     ):
         rows.append(row)
 
+
+def _handler_data(handler_class, params):
+    result = handler_class(user_env, payload={"params": params}).run(payload={"params": params})
+    if isinstance(result, tuple):
+        data = result[0] if result and isinstance(result[0], dict) else {}
+    else:
+        data = result.data if hasattr(result, "data") and isinstance(result.data, dict) else result
+    if not isinstance(data, dict) or data.get("ok") is False:
+        raise AssertionError("collaboration handler failed: %r" % (result,))
+    return data
+
+
+follower_journeys = []
+for target_record in (project_record, payment_record):
+    target_params = {"model": target_record._name, "res_id": int(target_record.id)}
+    before = _handler_data(ChatterFollowersListHandler, target_params)
+    mutation = "unfollow" if before.get("is_following") else "follow"
+    expected_after = mutation == "follow"
+    try:
+        changed = _handler_data(ChatterFollowersUpdateHandler, {**target_params, "action": mutation})
+        after = _handler_data(ChatterFollowersListHandler, target_params)
+        if after.get("is_following") is not expected_after:
+            raise AssertionError("follower state did not change: %s" % {
+                "model": target_record._name, "before": before, "after": after,
+            })
+    finally:
+        restore = "follow" if before.get("is_following") else "unfollow"
+        _handler_data(ChatterFollowersUpdateHandler, {**target_params, "action": restore})
+    restored = _handler_data(ChatterFollowersListHandler, target_params)
+    if restored.get("is_following") is not bool(before.get("is_following")):
+        raise AssertionError("follower fixture was not restored: %s" % {
+            "model": target_record._name, "before": before, "restored": restored,
+        })
+    follower_journeys.append({
+        "model": target_record._name,
+        "record_id": int(target_record.id),
+        "mutation": mutation,
+        "before": {
+            "count": before.get("count"), "is_following": before.get("is_following"),
+            "can_follow": before.get("can_follow"), "can_unfollow": before.get("can_unfollow"),
+        },
+        "after": {
+            "count": after.get("count"), "is_following": after.get("is_following"),
+        },
+        "restored": {
+            "count": restored.get("count"), "is_following": restored.get("is_following"),
+        },
+        "write_result": changed.get("result"),
+    })
+
+attachment_delete_journeys = []
+for target_record in (project_record, payment_record):
+    fixture_name = "codex-delete-journey-%s-%s.txt" % (
+        target_record._name.replace(".", "-"),
+        uuid.uuid4().hex[:10],
+    )
+    attachment = user_env["ir.attachment"].create({
+        "name": fixture_name,
+        "type": "binary",
+        "mimetype": "text/plain",
+        "datas": base64.b64encode(("temporary %s attachment" % target_record._name).encode("utf-8")),
+        "res_model": target_record._name,
+        "res_id": int(target_record.id),
+    })
+    timeline = _handler_data(ChatterTimelineHandler, {
+        "model": target_record._name,
+        "res_id": int(target_record.id),
+        "limit": 80,
+        "include_audit": False,
+    })
+    row = next((
+        item for item in timeline.get("items", [])
+        if isinstance(item, dict)
+        and item.get("type") == "attachment"
+        and int((item.get("attachment") or {}).get("id") or 0) == int(attachment.id)
+    ), None)
+    if not row or (row.get("attachment") or {}).get("can_delete") is not True:
+        raise AssertionError("attachment delete authority was not projected: %s" % {
+            "model": target_record._name, "attachment_id": attachment.id, "row": row,
+        })
+    if (row.get("attachment") or {}).get("delete_intent") != "chatter.attachment.delete":
+        raise AssertionError("attachment delete intent was not exact: %s" % row)
+    if (row.get("attachment") or {}).get("download_intent") != "file.download":
+        raise AssertionError("attachment download intent was not exact: %s" % row)
+    attachment_delete_journeys.append({
+        "model": target_record._name,
+        "record_id": int(target_record.id),
+        "attachment_id": int(attachment.id),
+        "name": fixture_name,
+        "can_delete": True,
+        "delete_intent": "chatter.attachment.delete",
+        "download_intent": "file.download",
+    })
+
+message_delete_journeys = []
+for target_record in (project_record, payment_record):
+    fixture_body = "codex-message-delete-journey-%s-%s" % (
+        target_record._name.replace(".", "-"),
+        uuid.uuid4().hex[:10],
+    )
+    message = user_env["mail.message"].with_context(
+        mail_create_nosubscribe=True,
+        mail_notify_noemail=True,
+        mail_notify_force_send=False,
+        mail_post_autofollow=False,
+        tracking_disable=True,
+    ).create({
+        "model": target_record._name,
+        "res_id": int(target_record.id),
+        "body": "<p>%s</p>" % fixture_body,
+        "subject": "消息删除旅程",
+        "message_type": "comment",
+        "subtype_id": int(env.ref("mail.mt_comment").id),
+        "author_id": int(user.partner_id.id),
+        "email_from": "%s@example.invalid" % (user.login or "demo-user"),
+    })
+    timeline = _handler_data(ChatterTimelineHandler, {
+        "model": target_record._name,
+        "res_id": int(target_record.id),
+        "limit": 80,
+        "include_audit": False,
+    })
+    row = next((
+        item for item in timeline.get("items", [])
+        if isinstance(item, dict)
+        and item.get("type") == "message"
+        and int((item.get("message") or {}).get("id") or 0) == int(message.id)
+    ), None)
+    if not row or (row.get("message") or {}).get("can_delete") is not True:
+        raise AssertionError("message delete authority was not projected: %s" % {
+            "model": target_record._name, "message_id": message.id, "row": row,
+        })
+    if (row.get("message") or {}).get("delete_intent") != "chatter.message.delete":
+        raise AssertionError("message delete intent was not exact: %s" % row)
+    if (row.get("message") or {}).get("can_reply") is not True:
+        raise AssertionError("message reply authority was not projected: %s" % row)
+    if (row.get("message") or {}).get("reply_intent") != "chatter.post":
+        raise AssertionError("message reply intent was not exact: %s" % row)
+    message_delete_journeys.append({
+        "model": target_record._name,
+        "record_id": int(target_record.id),
+        "message_id": int(message.id),
+        "body": fixture_body,
+        "can_delete": True,
+        "delete_intent": "chatter.message.delete",
+        "can_reply": True,
+        "reply_intent": "chatter.post",
+        "reply_body": "%s-reply" % fixture_body,
+    })
+
+activity_cancel_journeys = []
+activity_type = env.ref("mail.mail_activity_data_todo")
+for target_record in (project_record, payment_record):
+    fixture_summary = "codex-activity-cancel-journey-%s-%s" % (
+        target_record._name.replace(".", "-"),
+        uuid.uuid4().hex[:10],
+    )
+    activity = user_env["mail.activity"].create({
+        "activity_type_id": int(activity_type.id),
+        "summary": fixture_summary,
+        "note": "temporary governed activity cancellation fixture",
+        "date_deadline": "2026-12-31",
+        "res_model_id": int(env["ir.model"]._get_id(target_record._name)),
+        "res_id": int(target_record.id),
+        "user_id": int(user.id),
+    })
+    timeline = _handler_data(ChatterTimelineHandler, {
+        "model": target_record._name,
+        "res_id": int(target_record.id),
+        "limit": 80,
+        "include_audit": False,
+    })
+    row = next((
+        item for item in timeline.get("items", [])
+        if isinstance(item, dict)
+        and item.get("type") == "activity"
+        and int((item.get("activity") or {}).get("id") or 0) == int(activity.id)
+    ), None)
+    if not row or (row.get("activity") or {}).get("can_cancel") is not True:
+        raise AssertionError("activity cancel authority was not projected: %s" % {
+            "model": target_record._name, "activity_id": activity.id, "row": row,
+        })
+    if (row.get("activity") or {}).get("update_intent") != "chatter.activity.update":
+        raise AssertionError("activity update intent was not exact: %s" % row)
+    if "can_edit" in (row.get("activity") or {}) or "can_delete" in (row.get("activity") or {}):
+        raise AssertionError("activity projection retained ghost capabilities: %s" % row)
+    activity_cancel_journeys.append({
+        "model": target_record._name,
+        "record_id": int(target_record.id),
+        "activity_id": int(activity.id),
+        "summary": fixture_summary,
+        "can_cancel": True,
+        "update_intent": "chatter.activity.update",
+    })
+
+# The browser runs in a separate Odoo transaction. Persist only these uniquely
+# prefixed fixtures; the shell wrapper's EXIT trap removes any survivor.
+env.cr.commit()
+
 print("LOCAL_DEV_PROJECT_CREATE_ACTION_SCOPE_JSON=" + json.dumps({
     "database": env.cr.dbname,
     "login": user.login,
@@ -316,6 +529,7 @@ print("LOCAL_DEV_PROJECT_CREATE_ACTION_SCOPE_JSON=" + json.dumps({
     "workspace_menu_id": int(workspace_menu.id),
     "create_occurrence_integrity": create_integrity,
     "readonly_occurrence_integrity": record_integrity,
+    "record_collaboration_contract": record_collaboration_contract,
     "share_action_execute": {
         "actionId": share_rule.get("actionId"),
         "backendIdentity": share_rule.get("backendIdentity"),
@@ -340,4 +554,8 @@ print("LOCAL_DEV_PROJECT_CREATE_ACTION_SCOPE_JSON=" + json.dumps({
         "presentation": save_action.get("presentation"),
     },
     "intake_semantic_roles": actual_roles,
+    "follower_journeys": follower_journeys,
+    "attachment_delete_journeys": attachment_delete_journeys,
+    "message_delete_journeys": message_delete_journeys,
+    "activity_cancel_journeys": activity_cancel_journeys,
 }, ensure_ascii=False, sort_keys=True))

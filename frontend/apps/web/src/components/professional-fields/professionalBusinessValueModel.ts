@@ -2,12 +2,9 @@ import type { FormSectionFieldSchema } from '../template/formSection.types';
 
 export const PROFESSIONAL_BUSINESS_VALUE_KEYS = Object.freeze([
   'sc.value.money',
-  'sc.value.currency',
   'sc.value.percentage',
   'sc.display.status',
   'sc.value.duration',
-  'sc.value.user',
-  'sc.value.company',
 ] as const);
 
 export type ProfessionalBusinessValueKey = typeof PROFESSIONAL_BUSINESS_VALUE_KEYS[number];
@@ -20,12 +17,9 @@ export type ProfessionalBusinessValueChoiceOption = {
 
 const KEY_FIELD_TYPES: Readonly<Record<ProfessionalBusinessValueKey, readonly string[]>> = Object.freeze({
   'sc.value.money': Object.freeze(['monetary']),
-  'sc.value.currency': Object.freeze(['many2one']),
   'sc.value.percentage': Object.freeze(['float', 'integer']),
   'sc.display.status': Object.freeze(['selection', 'char']),
   'sc.value.duration': Object.freeze(['float', 'integer']),
-  'sc.value.user': Object.freeze(['many2one']),
-  'sc.value.company': Object.freeze(['many2one']),
 });
 
 export function isProfessionalBusinessValueField(field: FormSectionFieldSchema): boolean {

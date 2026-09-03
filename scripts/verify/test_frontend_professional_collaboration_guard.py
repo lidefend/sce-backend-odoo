@@ -8,13 +8,177 @@ class ProfessionalCollaborationGuardTests(unittest.TestCase):
     def test_missing_timeline_identity_fails(self):
         def read_text(path): return (ROOT / path).read_text(encoding="utf-8").replace('data-professional-collaboration-component="timeline"', 'data-marker-removed')
         self.assertTrue(any("timeline missing" in item for item in validate(read_text)))
-    def test_follower_cannot_be_claimed_ready(self):
-        def read_text(path): return (ROOT / path).read_text(encoding="utf-8").replace("follower: 'fail_closed'", "follower: 'ready'")
-        self.assertTrue(any("follower runtime" in item for item in validate(read_text)))
+    def test_follower_readiness_cannot_fail_open(self):
+        def read_text(path): return (ROOT / path).read_text(encoding="utf-8").replace("follower: input.hasFollowerAuthority ? 'ready' : 'fail_closed'", "follower: 'ready'")
+        self.assertTrue(any("follower readiness" in item for item in validate(read_text)))
+    def test_follower_update_cannot_bypass_record_authority(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useNativeChatterRuntime.ts"):
+                return value.replace(" && canFollow.value === true", "", 1)
+            return value
+        self.assertTrue(any("follower update handler" in item for item in validate(read_text)))
+    def test_follower_projection_cannot_bypass_contract_authority(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useNativeChatterRuntime.ts"):
+                return value.replace("contract.actions.follow.enabled === true && ", "", 1)
+            return value
+        self.assertTrue(any("follower presentation" in item for item in validate(read_text)))
     def test_raw_composer_textarea_fails(self):
         def read_text(path): return (ROOT / path).read_text(encoding="utf-8").replace("<ScTextarea", "<textarea")
         self.assertTrue(any("raw textarea" in item for item in validate(read_text)))
     def test_raw_attachment_input_fails(self):
         def read_text(path): return (ROOT / path).read_text(encoding="utf-8").replace("<ScFileField", '<input type="file"')
         self.assertTrue(any("file primitive" in item for item in validate(read_text)))
+    def test_attachment_download_fail_open_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalCollaborationTimeline.vue"):
+                return value.replace("canDownloadCollaborationAttachment(entry)", "entry.attachment?.can_download !== false")
+            return value
+        self.assertTrue(any("fail-open authority" in item for item in validate(read_text)))
+    def test_attachment_open_handler_cannot_bypass_authority(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useNativeAttachmentRuntime.ts"):
+                return value.replace(" || att.can_download !== true", "")
+            return value
+        self.assertTrue(any("independently reject" in item for item in validate(read_text)))
+    def test_attachment_download_cannot_accept_an_unrelated_intent(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("professionalCollaborationModel.ts"):
+                return value.replace("entry.attachment.download_intent === 'file.download'", "Boolean(entry.attachment.download_intent)")
+            return value
+        self.assertTrue(any("exact backend intent" in item for item in validate(read_text)))
+    def test_attachment_delete_cannot_use_a_non_authoritative_intent(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("professionalCollaborationModel.ts"):
+                return value.replace("entry.attachment.delete_intent === 'chatter.attachment.delete'", "Boolean(entry.attachment.delete_intent)")
+            return value
+        self.assertTrue(any("exact backend intent" in item for item in validate(read_text)))
+    def test_attachment_delete_handler_cannot_bypass_authority(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useNativeAttachmentRuntime.ts"):
+                return value.replace(" || !canDeleteCollaborationAttachment(entry)", "")
+            return value
+        self.assertTrue(any("delete handler" in item for item in validate(read_text)))
+    def test_attachment_delete_cannot_bypass_professional_confirmation(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ContractFormPage.vue"):
+                return value.replace("intentConfirmationRef.value?.confirm", "Promise.resolve")
+            return value
+        self.assertTrue(any("professional confirmation" in item for item in validate(read_text)))
+    def test_attachment_upload_handler_cannot_bypass_authority(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useNativeAttachmentRuntime.ts"):
+                return value.replace(" || !params.canUpload()", "", 1)
+            return value
+        self.assertTrue(any("upload handlers" in item for item in validate(read_text)))
+    def test_attachment_upload_cannot_accept_an_unrelated_intent(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("collaborationContract.ts"):
+                return value.replace("(upload as Record<string, unknown>).intent === 'file.upload'", "Boolean((upload as Record<string, unknown>).intent)")
+            return value
+        self.assertTrue(any("upload authority" in item for item in validate(read_text)))
+    def test_attachment_upload_control_cannot_use_aggregate_authority(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("NativeCollaborationPanel.vue"):
+                return value.replace(':enabled="attachmentUploadEnabled"', ':enabled="hasAttachments"')
+            return value
+        self.assertTrue(any("upload presentation" in item for item in validate(read_text)))
+    def test_activity_update_handler_cannot_bypass_authority(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useNativeChatterRuntime.ts"):
+                return value.replace(" || !canUpdateCollaborationActivity(entry, action)", "")
+            return value
+        self.assertTrue(any("activity update handler" in item for item in validate(read_text)))
+    def test_message_reply_cannot_fail_open(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalCollaborationTimeline.vue"):
+                return value.replace("canReplyCollaborationMessage(entry)", "true")
+            return value
+        self.assertTrue(any("reply presentation" in item for item in validate(read_text)))
+    def test_message_reply_handler_must_preserve_parent(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useNativeChatterRuntime.ts"):
+                return value.replace("parent_id: replyTarget.value?.id,", "")
+            return value
+        self.assertTrue(any("preserve the parent" in item for item in validate(read_text)))
+    def test_task_floorplan_cannot_force_collaboration_readonly(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ContractFormDriverHost.vue"):
+                return value.replace(':readonly="renderModel.identity.mode === \'readonly\'"', "readonly")
+            return value
+        self.assertTrue(any("canonical render mode" in item for item in validate(read_text)))
+    def test_activity_update_missing_authority_cannot_fail_open(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("professionalCollaborationModel.ts"):
+                return value.replace("entry.activity?.can_complete === true", "entry.activity?.can_complete !== false")
+            return value
+        self.assertTrue(any("both actions" in item for item in validate(read_text)))
+    def test_collaboration_create_handler_cannot_bypass_authority(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useNativeChatterRuntime.ts"):
+                return value.replace("if (!exactReplyAuthorized && !canExecuteCollaborationCreateAction(action, activeMode.value)) return;", "")
+            return value
+        self.assertTrue(any("create handlers" in item for item in validate(read_text)))
+    def test_collaboration_user_search_cannot_accept_unrelated_intent(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("collaborationContract.ts"):
+                return value.replace("intent === 'collaboration.users.search' ? intent : null", "intent ? intent : null")
+            return value
+        self.assertTrue(any("user search presentation" in item for item in validate(read_text)))
+    def test_collaboration_user_search_handler_cannot_fail_open(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useNativeChatterRuntime.ts"):
+                return value.replace("intent !== 'collaboration.users.search'", "!intent")
+            return value
+        self.assertTrue(any("user search handler" in item for item in validate(read_text)))
+    def test_collaboration_user_search_projection_is_required(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("load_contract.py"):
+                return value.replace('collaboration["user_search_intent"] = "collaboration.users.search"', "")
+            return value
+        self.assertTrue(any("user search authority" in item for item in validate(read_text)))
+    def test_missing_user_search_authority_cannot_hide_activity_summary(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalCollaborationComposer.vue"):
+                return value.replace(
+                    '<label class="native-chatter-field">\n        <span>{{ activitySummaryLabel }}</span>',
+                    '<label v-if="userSearchEnabled" class="native-chatter-field">\n        <span>{{ activitySummaryLabel }}</span>',
+                )
+            return value
+        self.assertTrue(any("never the activity summary" in item for item in validate(read_text)))
+    def test_activity_action_cannot_fall_back_to_another_contract_row(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordCollaborationPresentation.ts"):
+                return value.replace(")) || null);", ")) || nativeChatterActions.value.find((item) => item.mode === 'activity') || null);", 1)
+            return value
+        self.assertTrue(any("must not fall back" in item for item in validate(read_text)))
+    def test_activity_status_cannot_be_inferred_from_client_clock(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("professionalCollaborationModel.ts"):
+                return value.replace("const deadline =", "const now = new Date();\n  const deadline =")
+            return value
+        self.assertTrue(any("client clock" in item for item in validate(read_text)))
 if __name__ == "__main__": unittest.main()

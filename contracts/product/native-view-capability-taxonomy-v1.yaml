@@ -43,7 +43,7 @@ attribute_rules:
   - {id: modifier_expression, attributes: [modifiers], tags: '*', capability_key: modifier.expression}
   - {id: modifier_decoration, attribute_prefixes: [decoration-], tags: '*', capability_key: modifier.decoration}
   - {id: field_identity, attributes: [name], tags: field, capability_key: field.identity}
-  - {id: field_contract, attributes: [widget, options, domain, context, placeholder, help, nolabel, colspan, filename, force_save, on_change, optional, sum, operator, filter_domain, interval, mode, date, statusbar_visible, statusbar_colors], tags: field, capability_key_template: 'field.{attribute}'}
+  - {id: field_contract, attributes: [widget, options, domain, context, relation, placeholder, help, nolabel, colspan, filename, force_save, on_change, optional, sum, operator, filter_domain, interval, mode, date, statusbar_visible, statusbar_colors], tags: field, capability_key_template: 'field.{attribute}'}
   - {id: field_label, attributes: [string, status_label, tooltip], tags: field, capability_key: field.label}
   - {id: field_type, attributes: [type], tags: field, capability_key: field.type}
   - {id: action_identity, attributes: [name], tags: action, capability_key: action.identity}

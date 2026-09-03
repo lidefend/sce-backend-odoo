@@ -13,7 +13,8 @@ def validate(x2many: str | None = None, view_relation: str | None = None) -> lis
     x2many_actions = (
         '<slot name="collection-actions" />',
         '<ScButton\n          v-if="adapter.one2manyCanCreate(field.name)"',
-        '<ScButton\n              class="o2m-row-remove"',
+        '<ScButton\n              v-if="adapter.one2manyCanOpenRow(field.name, row._row)"',
+        '<ScButton\n              v-if="adapter.one2manyCanUnlink(field.name)"\n              class="o2m-row-remove"',
         'v-for="row in adapter.removedOne2manyRows(field.name)"',
         '>上一页</ScButton>',
         '>下一页</ScButton>',
@@ -66,8 +67,18 @@ def validate(x2many: str | None = None, view_relation: str | None = None) -> lis
             failures.append(f"X2Many lost stateful governed relation control {marker}")
     if '<button' in x2m or '<input' in x2m or '<select' in x2m:
         failures.append("X2Many retains a raw interactive control outside the primitive adapter")
-    if x2m.count("<ScButton") != 7:
-        failures.append(f"X2Many expected 7 governed commands, found {x2m.count('<ScButton')}")
+    readonly_attachment_markers = (
+        ':data-control-state="field.readonly ? \'readonly\' : \'editable\'"',
+        'v-if="!field.readonly"\n            variant="ghost"',
+        'v-else-if="field.readonly"\n        class="attachment-empty"',
+        'v-if="!field.readonly"\n        :key="uploadTick"',
+        'if (field.readonly) return;',
+    )
+    for marker in readonly_attachment_markers:
+        if marker not in x2m:
+            failures.append(f"readonly attachment authority is incomplete: {marker}")
+    if x2m.count("<ScButton") != 8:
+        failures.append(f"X2Many expected 8 governed commands, found {x2m.count('<ScButton')}")
     if view.count("<ScButton") != 6:
         failures.append(f"View relational expected 6 governed commands, found {view.count('<ScButton')}")
     return failures
@@ -80,4 +91,4 @@ if __name__ == "__main__":
         for error in errors:
             print(f"- {error}")
         raise SystemExit(1)
-    print("[frontend_relational_action_primitives_guard] PASS x2many=7 delegated_slots=1 view_relation=6 raw_controls=0")
+    print("[frontend_relational_action_primitives_guard] PASS x2many=8 delegated_slots=1 view_relation=6 raw_controls=0 readonly_attachments=fail_closed")

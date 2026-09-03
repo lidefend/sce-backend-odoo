@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FieldDescriptor } from '@sc/schema';
+import { reactive } from 'vue';
 import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
 import type { NativeLayoutLikeNode } from './nativeLayoutUtils';
@@ -8,8 +9,13 @@ import type { One2ManyColumn, One2ManyInlineRow, RelationOption } from './types'
 type FieldDependencies = Record<string, any>;
 
 export function useRecordRelationshipFields(dependencies: FieldDependencies) {
-  const { ApiError, contractFieldLabel, deniedRelationModels, ensureOne2manyRows, fieldType, findNativeFieldNodeInTree, formData, isWritableFieldVisible, mergeHydratedOne2manyRecords, mergeRelationOptions, nativeFieldSubviewFromTree, nativeFormLayoutNodes, nativeNodeFieldDescriptorFromNode, normalizeRelationIds, one2manyCanCreateFromPolicies, one2manyColumnsFromSubview, one2manyCreateLabelFromPolicies, one2manyDraftSummary, one2manyFieldRows, one2manyPrimaryColumnFromColumns, one2manyRowLabelFromPrimary, one2manySubviewPolicies, one2manyValidation, readContractFormRecord, relationEntry, relationFieldDescriptors, relationModel, relationOptions, relationOptionsForFieldFromRuntime, relationOptionsFromRecords, relationReadFields, selectOne2manySubview, selectedRelationOptionsFromRuntime, v2ContractStore } = dependencies;
+  const { ApiError, contractFieldLabel, deniedRelationModels, ensureOne2manyRows, fieldType, findNativeFieldNodeInTree, formData, isWritableFieldVisible, mergeHydratedOne2manyRecords, mergeRelationOptions, nativeFieldSubviewFromTree, nativeFormLayoutNodes, nativeNodeFieldDescriptorFromNode, normalizeRelationIds, one2manyCanCreateFromPolicies, one2manyCanInlineEditFromPolicies, one2manyCanUnlinkFromPolicies, one2manyColumnsFromSubview, one2manyCreateLabelFromPolicies, one2manyDraftSummary, one2manyFieldRows, one2manyPrimaryColumnFromColumns, one2manyRowLabelFromPrimary, one2manySubviewPolicies, one2manyValidation, readContractFormRecord, relationEntry, relationFieldDescriptors, relationModel, relationOptions, relationOptionsForFieldFromRuntime, relationOptionsFromRecords, relationReadFields, selectOne2manySubview, selectedRelationOptionsFromRuntime, v2ContractStore } = dependencies;
   const formFields = () => resolveContractV2FormFieldMap(v2ContractStore.value) as Record<string, FieldDescriptor>;
+  const one2manyHydrating = reactive<Record<string, boolean>>({});
+
+  function isOne2manyHydrating(name: string) {
+    return one2manyHydrating[String(name || '').trim()] === true;
+  }
   function relationIds(name: string): number[] {
     return normalizeRelationIds(formData[name]);
   }
@@ -34,6 +40,8 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
       const type = fieldType(descriptor);
       if (!['many2one', 'many2many'].includes(type)) return;
       const relation = relationModel(name);
+      const entry = relationEntry(descriptor);
+      if (entry?.canRead !== true) return;
       if (!relation || deniedRelationModels.has(relation)) return;
       const ids = relationIds(name);
       if (!ids.length) return;
@@ -108,6 +116,19 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
     return one2manyCanCreateFromPolicies(one2manyPolicies(name));
   }
 
+  function one2manyCanUnlink(name: string) {
+    return one2manyCanUnlinkFromPolicies(one2manyPolicies(name));
+  }
+
+  function one2manyCanInlineEdit(name: string) {
+    return one2manyCanInlineEditFromPolicies(one2manyPolicies(name));
+  }
+
+  function one2manyRowRecordId(row: One2ManyInlineRow) {
+    const id = Number(row.id || 0);
+    return !row.isNew && Number.isFinite(id) && id > 0 ? Math.trunc(id) : 0;
+  }
+
   function one2manyCreateLabel(name: string, fieldLabel = '') {
     const label = String(fieldLabel || contractFieldLabel(name) || formFields()[name]?.string || '').trim();
     return one2manyCreateLabelFromPolicies(one2manyPolicies(name), label);
@@ -155,13 +176,25 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
     }
   }
 
-  async function hydrateVisibleOne2manyRows() {
+  function prepareVisibleOne2manyHydration() {
     const fields = formFields();
     const names = Object.entries(fields)
       .filter(([, descriptor]) => fieldType(descriptor) === 'one2many')
       .map(([name]) => name)
       .filter((name) => isWritableFieldVisible(name) || one2manyFieldRows(name).length > 0);
-    await Promise.all(names.map((name) => hydrateOne2manyRows(name)));
+    names.forEach((name) => { one2manyHydrating[name] = true; });
+    return names;
+  }
+
+  async function hydrateVisibleOne2manyRows() {
+    const names = prepareVisibleOne2manyHydration();
+    await Promise.all(names.map(async (name) => {
+      try {
+        await hydrateOne2manyRows(name);
+      } finally {
+        one2manyHydrating[name] = false;
+      }
+    }));
   }
 
   function one2manyRowErrors(fieldName: string, rowKey: string) {
@@ -169,5 +202,5 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   }
 
 
-  return { relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions, one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor, nativeFieldSubview, one2manyColumns, one2manyPolicies, one2manyCanCreate, one2manyCreateLabel, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows, hydrateVisibleOne2manyRows, one2manyRowErrors };
+  return { relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions, one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor, nativeFieldSubview, one2manyColumns, one2manyPolicies, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink, one2manyRowRecordId, one2manyCreateLabel, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows, prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows, isOne2manyHydrating, one2manyRowErrors };
 }

@@ -110,6 +110,8 @@
   --sc-component-button-account-height: 32px;
   --sc-component-button-account-line-height: 20px;
   --sc-component-button-account-padding-x: 10px;
+  --sc-component-button-activity-tab-close-focus-offset: 1px;
+  --sc-component-button-activity-tab-close-size: 22px;
   --sc-component-button-dashboard-grid-gap: 10px;
   --sc-component-button-dashboard-grid-icon: 32px;
   --sc-component-button-dashboard-grid-tail: 18px;
@@ -222,9 +224,11 @@
   --sc-component-table-focus-ring-width: 2px;
   --sc-component-table-header-height: 40;
   --sc-component-table-header-z-index: 1;
+  --sc-component-table-long-text-max-width: 180px;
   --sc-component-table-radius: 8px;
   --sc-component-table-row-height: 44;
   --sc-component-table-row-height-compact: 36;
+  --sc-component-table-row-line-height: 22px;
   --sc-component-table-sticky-shadow-blur: 10px;
   --sc-component-table-sticky-shadow-spread: -10px;
   --sc-component-table-sticky-shadow-x: 8px;

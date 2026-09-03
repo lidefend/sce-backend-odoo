@@ -184,7 +184,7 @@ def standard_chatter_actions(*, message_capable: bool, activity_capable: bool) -
                 "level": "chatter",
                 "selection": "none",
                 "intent": "message",
-                "payload": {"mode": "message"},
+                "payload": {"mode": "message", "execute_intent": "chatter.post"},
             },
             {
                 "key": "chatter_log_note",
@@ -193,7 +193,7 @@ def standard_chatter_actions(*, message_capable: bool, activity_capable: bool) -
                 "level": "chatter",
                 "selection": "none",
                 "intent": "note",
-                "payload": {"mode": "note"},
+                "payload": {"mode": "note", "execute_intent": "chatter.post"},
             },
         ])
     if activity_capable:

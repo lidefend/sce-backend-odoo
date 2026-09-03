@@ -2658,12 +2658,15 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             },
             field_type=lambda name: "char",
             unique=lambda items: list(dict.fromkeys(str(item or "").strip() for item in items if str(item or "").strip())),
+            field_label=lambda name: name,
             governance={"form_structure_authority": "native_authority"},
+            navigation_title="项目信息编辑",
         )
 
         self.assertEqual(structure["mode"], "native_structured_form")
         self.assertEqual(structure["presentationMode"], "workspace")
         self.assertEqual(structure["layoutPolicy"], "native_authority")
+        self.assertEqual(structure["navigation"]["title"], "项目信息编辑")
 
         default_structure = handler._build_form_structure_contract(
             model="project.project",
@@ -2678,6 +2681,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             },
             field_type=lambda name: "char",
             unique=lambda items: list(dict.fromkeys(str(item or "").strip() for item in items if str(item or "").strip())),
+            field_label=lambda name: name,
             governance=None,
         )
         self.assertEqual(default_structure["mode"], "native_structured_form")
@@ -3030,6 +3034,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         source = {
             "model": "demo.business",
             "view_type": "form",
+            "title": "示例业务办理页",
             "fields": {"name": {"type": "char", "string": "名称"}},
             "governance": {"view_orchestration": {"applied": True}},
         }
@@ -3043,6 +3048,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             for field in group.get("fieldRefs", [])
         ]
         self.assertEqual(refs, ["name"])
+        self.assertEqual(source["form_structure_contract"]["navigation"]["title"], "示例业务办理页")
 
     def test_form_structure_contract_omits_undeclared_governance_form_columns(self):
         handler = self.module.UiContractV2Handler(env=object())

@@ -30,7 +30,7 @@ for (const presentationMode of modes) {
 }
 assert.equal(matrix, 18);
 assert.equal(isProfessionalRelationField({ componentKey: 'sc.relation.many2one', type: 'many2many' } as never), false);
-assert.equal(isProfessionalRelationField({ componentKey: 'sc.select.remote', type: 'many2one' } as never), false);
+assert.equal(isProfessionalRelationField({ componentKey: 'sc.select.remote', type: 'many2one' } as never), true);
 assert.throws(() => relationFieldAuthority({ componentKey: 'sc.relation.many2many', type: 'char' } as never), /PROFESSIONAL_RELATION_FIELD_UNSUPPORTED/);
 
 console.log(`[professional_relation_field_model_test] PASS matrix=${matrix} counterexamples=3`);

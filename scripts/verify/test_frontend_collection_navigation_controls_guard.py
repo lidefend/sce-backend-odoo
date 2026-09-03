@@ -23,6 +23,10 @@ class CollectionNavigationControlsGuardTest(unittest.TestCase):
         altered = self.list_page + '\n<section v-else-if="showPagination" class="pagination-footer">legacy</section>\n'
         self.assertIn("list page retains parallel paged pagination DOM", validate(self.component, altered))
 
+    def test_duplicate_pagination_total_authority_fails(self):
+        altered = self.component.replace(':total-content="false"', '')
+        self.assertTrue(any("total-content" in item for item in validate(altered, self.list_page)))
+
     def test_parallel_grouping_toolbar_fails(self):
         altered = self.list_page + '\n<header class="grouped-toolbar">legacy</header>\n'
         self.assertIn("list page retains parallel grouping toolbar DOM", validate(self.component, altered, self.grouping))

@@ -57,6 +57,10 @@ class FrontendStatePresentationGuardTest(unittest.TestCase):
         sources = self.altered("tabs", '</TDesignTabs>', '<button class="activity-tab-close">x</button></TDesignTabs>')
         self.assertTrue(any("non-tab close button" in error for error in validate(sources)))
 
+    def test_activity_draft_dirty_state_must_publish_synchronously(self):
+        sources = self.altered("contract_form", "flush: 'sync'", "flush: 'post'")
+        self.assertTrue(any("published synchronously" in error for error in validate(sources)))
+
 
 if __name__ == "__main__":
     unittest.main()

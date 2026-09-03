@@ -117,6 +117,10 @@ BATCH_BINDINGS = {
         "frontend/apps/web/src/components/product-record/ProductFormLoadingSkeleton.vue": {"section": {"attrs": {"data-semantic-component": "ProductFormLoadingSkeleton", "data-state": "loading"}}},
         "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue": {"div": {"attrs": {"data-semantic-component": "ProfessionalBaseFieldControl", ":data-state": "model.controlState"}}},
         "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue": {"div": {"attrs": {"data-semantic-component": "ProfessionalBusinessValueControl"}}},
+        "frontend/apps/web/src/components/professional-fields/PaymentSettlementDetailCollectionControl.vue": {"div": {"attrs": {"data-semantic-component": "PaymentSettlementDetailCollectionControl"}}},
+        "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue": {"scdialog": {"attrs": {"data-semantic-component": "PaymentSettlementIntroduceDialog"}}, "scinlinestate": {"states": {"loading", "empty", "error", "info"}, "minimum": 4}},
+        "frontend/apps/web/src/components/professional-fields/ProfessionalMany2oneFieldControl.vue": {"professionalrelationfieldcontrol": {"attrs": {"data-semantic-component": "ProfessionalMany2oneFieldControl"}}},
+        "frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue": {"div": {"attrs": {"data-semantic-component": "ProfessionalManyToManySelect"}}},
         "frontend/apps/web/src/components/template/FormSection.vue": {"sccard": {"attrs": {"data-semantic-component": "FormSection"}}},
         "frontend/apps/web/src/components/template/NativeActionOverflowMenu.vue": {"div": {"attrs": {"data-semantic-component": "NativeActionOverflowMenu"}}},
         "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue": {"div": {"attrs": {"data-semantic-component": "NativeFormTreeRenderer"}}},
@@ -133,6 +137,7 @@ BATCH_BINDINGS = {
         "frontend/apps/web/src/pages/contractForm/ContractModeSupportPanel.vue": {"scbutton": {"import": "ScButton", "minimum": 2}},
         "frontend/apps/web/src/pages/contractForm/ContractPromptActionForm.vue": {"form": {"attrs": {"data-semantic-component": "ContractPromptActionForm"}}},
         "frontend/apps/web/src/pages/contractForm/ProfessionalAttachmentManager.vue": {"section": {"attrs": {"data-semantic-component": "ProfessionalAttachmentManager"}}},
+        "frontend/apps/web/src/pages/contractForm/ProfessionalFollowerManager.vue": {"section": {"attrs": {"data-semantic-component": "ProfessionalFollowerManager", ":data-state": "loading ? 'loading' : error ? 'error' : 'ready'"}}},
         "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationComposer.vue": {"section": {"attrs": {"data-semantic-component": "ProfessionalCollaborationComposer"}}},
     },
     "p0-shared-utility-scene-completion-v1": {

@@ -19,6 +19,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
   const {
     ApiError,
     actionId,
+    canonicalFieldWritable,
     clearedDynamicRelationFields,
     closeRelationSearchDialog,
     confirmRelationSearchSelectionFromRuntime,
@@ -40,6 +41,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     formUiLabelsFromFormView,
     invalidatedRelationKeywords,
     isWritableFieldVisible,
+    layoutNodes,
     listContractFormRecords,
     loadModelContractV2,
     markFieldChanged,
@@ -55,6 +57,8 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     normalizeRouteQueryValues,
     onchangeModifiersPatch,
     one2manyCanCreateFromPolicies,
+    one2manyCanInlineEditFromPolicies,
+    one2manyCanUnlinkFromPolicies,
     one2manyColumnsFromSubview,
     one2manyCreateLabelFromPolicies,
     one2manyDraftSummary,
@@ -120,12 +124,17 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     one2manyColumns,
     one2manyPolicies,
     one2manyCanCreate,
+    one2manyCanInlineEdit,
+    one2manyCanUnlink,
+    one2manyRowRecordId,
     one2manyCreateLabel,
     one2manyPrimaryColumn,
     one2manyRowLabel,
     one2manySummary,
     hydrateOne2manyRows,
+    prepareVisibleOne2manyHydration,
     hydrateVisibleOne2manyRows,
+    isOne2manyHydrating,
     one2manyRowErrors,
   } = useRecordRelationshipFields({
     ApiError,
@@ -143,6 +152,8 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     nativeNodeFieldDescriptorFromNode,
     normalizeRelationIds,
     one2manyCanCreateFromPolicies,
+    one2manyCanInlineEditFromPolicies,
+    one2manyCanUnlinkFromPolicies,
     one2manyColumnsFromSubview,
     one2manyCreateLabelFromPolicies,
     one2manyDraftSummary,
@@ -291,7 +302,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
       fieldName: name,
       keyword,
       relation,
-      canRead: entry?.canRead !== false,
+      canRead: entry?.canRead === true,
       hasDynamicFallback: Boolean(
         dynamicDomainDependencyFields(descriptor).length || runtimeRelationDomain(name).length,
       ),
@@ -326,7 +337,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     const domain = mergedRelationDomain(name, descriptor);
     return fetchRelationOptionsFromRuntime({
       relation,
-      canRead: entry?.canRead !== false,
+      canRead: entry?.canRead === true,
       keyword,
       limit,
       fetchOptions: async (search, limitValue) => {
@@ -347,6 +358,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
 
   async function loadRelationSearchColumns(fieldName: string): Promise<RelationSearchColumn[]> {
     const descriptor = effectiveFieldDescriptor(fieldName);
+    if (relationEntry(descriptor)?.canRead !== true) return [];
     const contractColumns = relationSearchColumnsFromContract(
       relationSearchDialogContract(descriptor),
     );
@@ -379,7 +391,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     const relation = relationModel(name);
     if (!relation) return [];
     const entry = relationEntry(descriptor);
-    if (entry && entry.canRead === false) return [];
+    if (entry?.canRead !== true) return [];
     const domain = mergedRelationDomain(name, descriptor);
     const dialog = relationSearchDialogContract(descriptor);
     const columns = relationSearchDialog.columns.length
@@ -412,6 +424,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     if (!relation) return;
     const labels = relationUiLabels(descriptor);
     const resolvedDescriptor = effectiveFieldDescriptor(fieldName);
+    if (relationEntry(resolvedDescriptor)?.canRead !== true) return;
     await openRelationSearchFromRuntime({
       fieldName,
       descriptor,
@@ -441,6 +454,9 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
   }
 
   function setMany2oneOption(fieldName: string, option: RelationOption) {
+    const canonicalWritable = canonicalFieldWritable(fieldName);
+    const layoutField = layoutNodes.value.find((node: any) => node.kind === 'field' && node.name === fieldName);
+    if (canonicalWritable === false || (canonicalWritable !== true && (!layoutField || layoutField.readonly))) return;
     const previousValue = formData[fieldName];
     const previousKeyword = relationKeywords[fieldName] || '';
     formData[fieldName] = option.id;
@@ -510,7 +526,9 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     ensureRelationFieldDescriptors,
     openRelationCreateForm,
     currentRelationRecordId,
+    canOpenRelationRecord,
     canOpenRelationRecordForm,
+    openRelationRecord,
     openRelationRecordForm,
     quickCreateRelation,
   } = useRecordRelationshipNavigation({
@@ -555,12 +573,17 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     one2manyColumns,
     one2manyPolicies,
     one2manyCanCreate,
+    one2manyCanInlineEdit,
+    one2manyCanUnlink,
+    one2manyRowRecordId,
     one2manyCreateLabel,
     one2manyPrimaryColumn,
     one2manyRowLabel,
     one2manySummary,
     hydrateOne2manyRows,
+    prepareVisibleOne2manyHydration,
     hydrateVisibleOne2manyRows,
+    isOne2manyHydrating,
     one2manyRowErrors,
     setRelationKeyword,
     filteredRelationOptions,
@@ -588,7 +611,9 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     ensureRelationFieldDescriptors,
     openRelationCreateForm,
     currentRelationRecordId,
+    canOpenRelationRecord,
     canOpenRelationRecordForm,
+    openRelationRecord,
     openRelationRecordForm,
     quickCreateRelation,
   };

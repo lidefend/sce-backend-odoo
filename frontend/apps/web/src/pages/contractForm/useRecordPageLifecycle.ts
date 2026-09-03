@@ -42,7 +42,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     formDataFieldNames,
     formRouteIdentity,
     hydrateSelectedRelationOptions,
-    hydrateVisibleOne2manyRows,
+    prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows,
     initOne2manyRows,
     isComponentActive,
     layoutNodes,
@@ -446,6 +446,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
         if (reloadToken !== activeReloadToken) return;
         await loadRecord();
         if (reloadToken !== activeReloadToken) return;
+        prepareVisibleOne2manyHydration();
         applyPageStatusEvent({ kind: 'status', transaction: 'formReload', status: 'ok' });
         retainedRouteIdentity.value = formRouteIdentity();
         void preloadFormAuxiliaryData(reloadToken);

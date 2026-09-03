@@ -19,6 +19,18 @@ class ProductPagePatternGuardTest(unittest.TestCase):
         with patch("pathlib.Path.read_text", altered):
             self.assertTrue(any("task-form" in item for item in validate()))
 
+    def test_task_floorplan_cannot_expand_supplementary_regions_by_default(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "ObjectTaskPage.vue":
+                return value.replace('title="补充信息"', 'data-title-removed', 1)
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertTrue(any("professional disclosure" in item for item in validate()))
+
 
 if __name__ == "__main__":
     unittest.main()

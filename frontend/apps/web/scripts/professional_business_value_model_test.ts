@@ -11,12 +11,9 @@ import {
 
 const fieldTypes = new Map([
   ['sc.value.money', 'monetary'],
-  ['sc.value.currency', 'many2one'],
   ['sc.value.percentage', 'float'],
   ['sc.display.status', 'selection'],
   ['sc.value.duration', 'float'],
-  ['sc.value.user', 'many2one'],
-  ['sc.value.company', 'many2one'],
 ]);
 const modes = ['task', 'workspace'] as const;
 const profiles = ['create', 'edit', 'readonly'] as const;
@@ -31,10 +28,10 @@ for (const presentationMode of modes) {
     }
   }
 }
-assert.equal(matrix, 42);
+assert.equal(matrix, 24);
 assert.equal(isProfessionalBusinessValueField({ componentKey: 'sc.value.money', type: 'char' } as never), false);
 assert.equal(isProfessionalBusinessValueField({ componentKey: 'sc.input.number', type: 'monetary' } as never), false);
-assert.throws(() => businessValueKind({ componentKey: 'sc.value.user', type: 'char' } as never), /PROFESSIONAL_BUSINESS_VALUE_UNSUPPORTED/);
+assert.throws(() => businessValueKind({ componentKey: 'sc.value.money', type: 'char' } as never), /PROFESSIONAL_BUSINESS_VALUE_UNSUPPORTED/);
 assert.equal(formatPercentage(12.5), '12.5%');
 assert.equal(formatDuration(1.5), '1 小时 30 分钟');
 assert.equal(statusSemantic('approved'), 'success');

@@ -594,6 +594,72 @@
         />
       </template>
     </ActivityPage>
+    <AnalysisPage
+      v-else-if="viewMode === 'pivot' || viewMode === 'graph'"
+      :title="vm.page.title"
+      :model="analysisSurfaceModel"
+      :labels="{
+        pivotEyebrow: t('analysis_pivot_eyebrow', '原生透视分析'),
+        graphEyebrow: t('analysis_graph_eyebrow', '原生图表分析'),
+        groupSuffix: t('analysis_group_suffix', '个分组'),
+        unavailable: t('analysis_unavailable', '分析视图契约不可用'),
+        emptyTitle: t('analysis_empty_title', '暂无分析数据'),
+        emptyHint: t('analysis_empty_hint', '当前筛选范围内没有可汇总的数据。'),
+      }"
+    >
+      <template v-if="showTopActionToolbar" #toolbar>
+        <ActionSurfaceToolbar
+          :loading="isUiBusy"
+          :total-count="listTotalCount"
+          :show-view-switch="showViewSwitch"
+          :view-label="toolbarUiLabel('view_switch', '视图')"
+          :view-modes="vm.page.availableViewModes"
+          :current-view-mode="vm.page.viewMode"
+          :view-mode-labels="toolbarViewModeLabels"
+          :search-value="toolbarSearchDraft"
+          :search-placeholder="toolbarUiLabel('search_placeholder', '搜索关键字')"
+          :clear-label="t('chip_action_clear', '清除')"
+          :show-filter="false"
+          :filter-label="toolbarUiLabel('filters', '筛选')"
+          :filter-primary="[]"
+          :filter-overflow="[]"
+          :show-saved-filter="false"
+          :saved-filter-label="toolbarUiLabel('saved_filters', '收藏夹')"
+          :saved-filter-primary="[]"
+          :saved-filter-overflow="[]"
+          :sort-label="toolbarUiLabel('sort', '排序')"
+          :sort-options="[]"
+          :show-group="false"
+          :group-label="toolbarUiLabel('group_by', '分组方式')"
+          :group-primary="[]"
+          :group-overflow="[]"
+          :custom-filter-enabled="false"
+          :custom-filter-fields="[]"
+          :active-filter-key="''"
+          :active-saved-filter-key="''"
+          :sort-value="''"
+          :custom-filter-label="toolbarUiLabel('custom_filter', '自定义筛选')"
+          :custom-group-label="toolbarUiLabel('custom_group', '自定义分组')"
+          :favorite-save-label="toolbarUiLabel('favorite_save', '收藏')"
+          :active-custom-filter-label="''"
+          :active-group-label="''"
+          :active-group-key="''"
+          :can-create-record="false"
+          :create-label="toolbarUiLabel('create', '新建')"
+          :custom-group-enabled="false"
+          :custom-group-fields="[]"
+          :favorite-save-enabled="false"
+          :active-condition-count="0"
+          :ui-labels="toolbarUiLabels"
+          @switch-view="switchViewMode"
+          @search-composition-start="onToolbarSearchCompositionStart"
+          @search-composition-end="onToolbarSearchCompositionEnd"
+          @search-input="onToolbarSearchInput"
+          @search-submit="submitToolbarSearch"
+          @clear-search="clearToolbarSearch"
+        />
+      </template>
+    </AnalysisPage>
     <section v-else-if="isSectionVisible('advanced_view', { defaultEnabled: pageSectionEnabled('advanced_view', true), tag: 'section' })" class="advanced-view" :style="getSectionStyle('advanced_view')">
       <header class="advanced-view-head">
         <h3>{{ vm.content.advanced?.title }}</h3>
@@ -694,6 +760,8 @@ import ListPage from '../pages/ListPage.vue';
 import KanbanPage from '../pages/KanbanPage.vue';
 import ActivityPage from '../pages/ActivityPage.vue';
 import { resolveActivitySurfaceModel } from '../app/contracts/actionViewActivityContract';
+import AnalysisPage from '../pages/AnalysisPage.vue';
+import { resolveAnalysisSurfaceModel } from '../app/contracts/actionViewAnalysisContract';
 import StatusPanel from '../components/StatusPanel.vue';
 import DevContextPanel from '../components/DevContextPanel.vue';
 import GroupSummaryBar from '../components/GroupSummaryBar.vue';
@@ -1043,6 +1111,11 @@ const traceId = ref('');
 const lastTraceId = ref('');
 const records = ref<Array<Record<string, unknown>>>([]);
 const activitySurfaceModel = computed(() => resolveActivitySurfaceModel(actionContract.value, records.value));
+const analysisSurfaceModel = computed(() => resolveAnalysisSurfaceModel(
+  actionContract.value,
+  viewMode.value === 'graph' ? 'graph' : 'pivot',
+  records.value,
+));
 const listTotalCount = ref<number | null>(null);
 const listOffset = ref(Math.max(0, Math.trunc(Number(route.query.list_offset || 0))));
 const listLimitOverride = ref(0);

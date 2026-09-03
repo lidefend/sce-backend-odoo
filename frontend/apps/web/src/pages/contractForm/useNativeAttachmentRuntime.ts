@@ -1,5 +1,7 @@
 import { ref, type Ref } from 'vue';
+import { deleteChatterAttachment, type ChatterTimelineEntry } from '../../api/chatter';
 import { fileToBase64, uploadFile } from '../../api/files';
+import { canDeleteCollaborationAttachment } from './professionalCollaborationModel';
 
 export type PendingNativeAttachment = {
   key: string;
@@ -16,12 +18,14 @@ export function useNativeAttachmentRuntime(params: {
   model: () => string;
   recordId: () => number;
   maxBytes: () => number;
+  canUpload: () => boolean;
   resolveLabel: (key: string, fallback: string) => string;
   reloadTimeline: (resId?: number, model?: string) => Promise<void>;
   viewerRef: Ref<NativeAttachmentViewerLike | null>;
   onPendingUploadFailed: (message: string) => void;
 }) {
   const uploading = ref(false);
+  const deletingIds = ref<number[]>([]);
   const error = ref('');
   const pendingAttachments = ref<PendingNativeAttachment[]>([]);
 
@@ -34,7 +38,7 @@ export function useNativeAttachmentRuntime(params: {
   }
 
   async function onAttachmentSelected(file: File | null) {
-    if (!file || !params.model() || uploading.value) return;
+    if (!file || !params.model() || uploading.value || !params.canUpload()) return;
     error.value = '';
     if (file.size > params.maxBytes()) {
       error.value = params.resolveLabel('size_exceeded', '文件过大');
@@ -78,6 +82,7 @@ export function useNativeAttachmentRuntime(params: {
   async function uploadPendingAttachments(resId: number): Promise<boolean> {
     const modelName = params.model();
     if (!pendingAttachments.value.length || !modelName) return true;
+    if (!params.canUpload()) return false;
     error.value = '';
     uploading.value = true;
     try {
@@ -103,8 +108,8 @@ export function useNativeAttachmentRuntime(params: {
     }
   }
 
-  async function openAttachment(att: { id?: number; name?: string; mimetype?: string }) {
-    if (!att?.id) return;
+  async function openAttachment(att: { id?: number; name?: string; mimetype?: string; can_download?: boolean; download_intent?: string }) {
+    if (!att?.id || att.can_download !== true || att.download_intent !== 'file.download') return;
     error.value = '';
     try {
       await params.viewerRef.value?.open({ id: Number(att.id) }, att.name);
@@ -113,8 +118,26 @@ export function useNativeAttachmentRuntime(params: {
     }
   }
 
+  async function deleteAttachment(entry: ChatterTimelineEntry) {
+    const attachmentId = Number(entry.attachment?.id || entry.id || 0);
+    const modelName = params.model();
+    const recordId = params.recordId();
+    if (!modelName || !recordId || !attachmentId || !canDeleteCollaborationAttachment(entry) || deletingIds.value.includes(attachmentId)) return;
+    error.value = '';
+    deletingIds.value = [...deletingIds.value, attachmentId];
+    try {
+      await deleteChatterAttachment({ model: modelName, res_id: recordId, attachment_id: attachmentId });
+      await params.reloadTimeline(recordId, modelName);
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : params.resolveLabel('delete_failed', '附件删除失败');
+    } finally {
+      deletingIds.value = deletingIds.value.filter((id) => id !== attachmentId);
+    }
+  }
+
   return {
     uploading,
+    deletingIds,
     error,
     pendingAttachments,
     clearError,
@@ -123,5 +146,6 @@ export function useNativeAttachmentRuntime(params: {
     removePendingAttachment,
     uploadPendingAttachments,
     openAttachment,
+    deleteAttachment,
   };
 }

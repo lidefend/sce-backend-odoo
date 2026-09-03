@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
 import { routeAuthorityEntries } from '../../app/routeAuthority';
 import type { FormSectionFieldChange } from '../../components/template/formSection.types';
-import type { RelationFieldAdapter } from '../../components/template/relationField.types';
+import type { RelationFieldAdapter, RelationFieldColumn, RelationFieldRow } from '../../components/template/relationField.types';
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
 import type { ContractAction } from './types';
 import { resolveAuthorizedWindowActionTarget, resolveContractActionForNativeOccurrence } from './contractActionPresentation';
@@ -12,10 +12,24 @@ type PresentationDependencies = Record<string, any>;
 
 /** Owns authoritative action presentation and field interaction adapters. */
 export function useRecordActionPresentation(dependencies: PresentationDependencies) {
-  const { ErrorCodes, actionId, activeChatterLabel, activeChatterMode, activityAssigneeId, activityDeadline, activityNote, activitySummary, activityUpdatingIds, addOne2manyRow, advancedExpanded, applyPageStatusEvent, attachmentError, attachmentUploading, buildContractFormActions, busy, busyKind, canOpenRelationRecordForm, changedFieldGroupDraft, chatterDraft, chatterError, chatterPosting, chatterTimeline, closeNativeChatterComposer, collaborationUserChoices, collaborationUserOptions, collaborationUserQuery, collaborationUsersLoading, collectContractV2ButtonStatusById, collectSceneValidationPrecheckErrorsFromRules, commitMany2oneInline, confirmActionSafety, contract, dispatchTemplateFieldChange, effectiveFieldSize, effectiveGroupVisible, ensureSavedBeforeRecordAction, executeButton, fieldGroupBase, fieldGroupDraft, fieldInputType, fieldMoveTargetDraft, fieldOrderDraft, fieldOrderPreviewActive, fieldVisibilityDraft, filteredRelationOptions, focusProductFormValidationError, formConflict, formData, formLayoutColumnsDraft, inputFieldValue, intentConfirmationRef, isContractFieldOrderEditable, isMissingRequiredValue, isIntakeCreateMode, isQuickIntakeMode, layoutContainsType, loadCollaborationUsers, lowCodeFormLayoutBase, many2oneValue, markFieldChanged, model, nativeFormDesignFieldKeys, nativeFormDesignFieldLabels, nativeLayoutVisibilityRevision, navigateActionResponseResult, normalizeWorkflowEvidenceGateRows, onNativeAttachmentSelected, onchangeModifiersPatch, one2manyCanCreate, one2manyColumnDisplayValue, one2manyColumnInputType, one2manyColumns, one2manyCreateLabel, one2manyRowErrors, one2manyRowHints, one2manyRowLabel, one2manyRowStateLabel, one2manySummary, openNativeAttachment, openNativeChatterAction, openRelationCreateForm, pendingNativeAttachments, policyContext, queryMany2oneInline, recordId, relationCreateMode, relationIds, relationInlineCreate, relationKeyword, relationOptionsForField, relationUiLabel, reload, rememberFormConfigFieldLabel, removeMentionUser, removeOne2manyRow, removePendingNativeAttachment, removedOne2manyRows, renderProfile, resolveContractFormFieldLabels, resolveContractV2ActionRules, resolveContractV2RuntimeContract, resolveInputPlaceholder, resolvePrimaryCreateFooterAction, resolveSelectPlaceholder, resolveWorkflowContractFromStore, restoreOne2manyRow, rights, route, runAction, runtimeRoleCode, selectMentionUser, selectedMentionUsers, selectedRelationOptions, sendNativeChatter, session, setBooleanField, setMany2oneField, setOne2manyRowField, createContractFormRecord, setRelationIds, setRelationKeyword, setRelationMultiField, setSelectionField, setTextField, showHud, showOne2manyErrors, toDateInputValue, toDatetimeInputValue, updateNativeActivity, useRecordCollaborationPresentation, useRecordContractSemantics, useRecordFormFieldSchemas, useRecordFormLayout, v2ContractStore, validationErrors, visibleOne2manyRows } = dependencies;
+  const { ErrorCodes, actionId, activeChatterLabel, activeChatterMode, activityAssigneeId, activityDeadline, activityNote, activitySummary, activityUpdatingIds, addOne2manyRow, advancedExpanded, applyPageStatusEvent, attachmentError, attachmentUploading, buildContractFormActions, busy, busyKind, canOpenRelationRecordForm, changedFieldGroupDraft, chatterDraft, chatterError, chatterPosting, chatterTimeline, closeNativeChatterComposer, collaborationUserChoices, collaborationUserOptions, collaborationUserQuery, collaborationUsersLoading, collectContractV2ButtonStatusById, collectSceneValidationPrecheckErrorsFromRules, commitMany2oneInline, confirmActionSafety, contract, dispatchTemplateFieldChange, effectiveFieldSize, effectiveGroupVisible, ensureSavedBeforeRecordAction, executeButton, fieldGroupBase, fieldGroupDraft, fieldInputType, fieldMoveTargetDraft, fieldOrderDraft, fieldOrderPreviewActive, fieldVisibilityDraft, filteredRelationOptions, focusProductFormValidationError, formConflict, formData, formLayoutColumnsDraft, inputFieldValue, intentConfirmationRef, isContractFieldOrderEditable, isMissingRequiredValue, isIntakeCreateMode, isQuickIntakeMode, isOne2manyHydrating, layoutContainsType, loadCollaborationUsers, lowCodeFormLayoutBase, many2oneValue, markFieldChanged, model, nativeFormDesignFieldKeys, nativeFormDesignFieldLabels, nativeLayoutVisibilityRevision, navigateActionResponseResult, normalizeWorkflowEvidenceGateRows, onNativeAttachmentSelected, onchangeModifiersPatch, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink, one2manyColumnDisplayValue, one2manyColumnInputType, one2manyColumns, one2manyCreateLabel, one2manyRowErrors, one2manyRowHints, one2manyRowLabel, one2manyRowStateLabel, one2manySummary, openNativeAttachment, openNativeChatterAction, openRelationCreateForm, pendingNativeAttachments, policyContext, queryMany2oneInline, recordId, relationCreateMode, relationIds, relationInlineCreate, relationKeyword, relationOptionsForField, relationUiLabel, reload, rememberFormConfigFieldLabel, removeMentionUser, removeOne2manyRow, removePendingNativeAttachment, removedOne2manyRows, renderProfile, replyNativeChatter, replyTarget, resolveContractFormFieldLabels, resolveContractV2ActionRules, resolveContractV2RuntimeContract, resolveInputPlaceholder, resolvePrimaryCreateFooterAction, resolveSelectPlaceholder, resolveWorkflowContractFromStore, restoreOne2manyRow, rights, route, runAction, runtimeRoleCode, selectMentionUser, selectedMentionUsers, selectedRelationOptions, sendNativeChatter, session, setBooleanField, setMany2oneField, setOne2manyRowField, createContractFormRecord, setRelationIds, setRelationKeyword, setRelationMultiField, setSelectionField, setTextField, showHud, showOne2manyErrors, toDateInputValue, toDatetimeInputValue, updateNativeActivity, useRecordCollaborationPresentation, useRecordContractSemantics, useRecordFormFieldSchemas, useRecordFormLayout, v2ContractStore, validationErrors, visibleOne2manyRows } = dependencies;
   const chatterTimelineHasMore = dependencies.chatterTimelineHasMore;
   const chatterTimelineLoading = dependencies.chatterTimelineLoading;
   const loadMoreNativeChatterTimeline = dependencies.loadMoreNativeChatterTimeline;
+  const followers = dependencies.followers;
+  const followerCount = dependencies.followerCount;
+  const isFollowing = dependencies.isFollowing;
+  const canFollow = dependencies.canFollow;
+  const canUnfollow = dependencies.canUnfollow;
+  const followersLoading = dependencies.followersLoading;
+  const followerError = dependencies.followerError;
+  const updateNativeFollower = dependencies.updateNativeFollower;
+  const attachmentDeletingIds = dependencies.attachmentDeletingIds;
+  const deleteNativeAttachment = dependencies.deleteNativeAttachment;
+  const messageDeletingIds = dependencies.messageDeletingIds;
+  const deleteNativeMessage = dependencies.deleteNativeMessage;
+  const isFieldWritable = dependencies.isFieldWritable;
+  const setTechnicalCompanionTextField = dependencies.setTechnicalCompanionTextField;
   const formFields = computed(() => resolveContractV2FormFieldMap(v2ContractStore.value));
 
   // Workflow evidence is display-only. Executable availability is already
@@ -57,8 +71,12 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     return contractFieldLabels.value[String(name || '').trim()] || '';
   }
   const {
+    activeChatterAction,
+    messageAction,
     activeActivityAction,
     nativeAttachmentMaxBytes,
+    nativeAttachmentUploadEnabled,
+    nativeFollowerContract,
     nativeChatterActions,
     nativeAttachments,
     nativeCollaborationPanelProps,
@@ -66,14 +84,15 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     resolveNativeAttachmentLabel,
   } = useRecordCollaborationPresentation({
     v2ContractStore, recordId, model, renderProfile, busy,
-    activeChatterMode, activeChatterLabel, chatterDraft, activitySummary, activityDeadline, activityNote,
+    activeChatterMode, activeChatterLabel, chatterDraft, replyTarget, activitySummary, activityDeadline, activityNote,
     collaborationUserQuery, collaborationUserOptions, collaborationUserChoices, collaborationUsersLoading,
     selectedMentionUsers, activityAssigneeId, chatterPosting, chatterError, chatterTimeline,
     chatterTimelineHasMore, chatterTimelineLoading, activityUpdatingIds,
-    attachmentError, attachmentUploading, pendingNativeAttachments, onNativeAttachmentSelected,
-    closeNativeChatterComposer, loadCollaborationUsers, openNativeChatterAction, openNativeAttachment,
-    removeMentionUser, removePendingNativeAttachment, selectMentionUser, sendNativeChatter, updateNativeActivity,
-    loadMoreNativeChatterTimeline,
+    followers, followerCount, isFollowing, canFollow, canUnfollow, followersLoading, followerError,
+    attachmentError, attachmentUploading, attachmentDeletingIds, messageDeletingIds, pendingNativeAttachments, onNativeAttachmentSelected,
+    closeNativeChatterComposer, loadCollaborationUsers, openNativeChatterAction, openNativeAttachment, deleteNativeAttachment, deleteNativeMessage,
+    removeMentionUser, removePendingNativeAttachment, selectMentionUser, sendNativeChatter, replyNativeChatter, updateNativeActivity,
+    loadMoreNativeChatterTimeline, updateNativeFollower,
   });
 
   const hasNativeChatterNode = computed(() => nativeLayoutContainsType(nativeFormLayoutNodes.value, 'chatter'));
@@ -245,7 +264,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     });
     const filenameField = String(payload.descriptor?.filename || '').trim();
     if (String(payload.type || '').trim().toLowerCase() === 'binary' && filenameField && payload.fileName) {
-      setTextField(filenameField, payload.fileName);
+      setTechnicalCompanionTextField(filenameField, payload.fileName);
     }
   }
 
@@ -297,30 +316,26 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     },
     // 级联维护：many2many 按当前关键词快速创建字典记录并勾选关联。
     quickCreateRelationMany: async (fieldName: string) => {
+      if (!isFieldWritable(fieldName)) return;
       const descriptor = formFields.value[fieldName];
       if (!descriptor) return;
       const keyword = relationKeyword(fieldName).trim();
       if (!keyword) return;
-      // 优先从契约字段描述符获取关联模型；缺失时通过常见字段映射回退
-      let relation = String((descriptor as Record<string, unknown> | undefined)?.relation || '').trim();
-      if (!relation) {
-        const fallbackMap: Record<string, string> = {
-          category_id: 'res.partner.category',
-          category_ids: 'res.partner.category',
-          tag_ids: 'res.partner.category',
-        };
-        relation = fallbackMap[fieldName] || '';
-      }
-      if (!relation) return;
+      const entry = dependencies.relationEntry(descriptor);
+      const inline = relationInlineCreate(descriptor);
+      const relation = String((descriptor as Record<string, unknown> | undefined)?.relation || '').trim();
+      if (entry?.canCreate !== true || !inline.enabled || !inline.createOnNoMatch || !relation) return;
       try {
         const existing = relationOptionsForField(fieldName);
         if (existing.some((item) => String(item.label).trim().toLowerCase() === keyword.toLowerCase())) {
           setRelationKeyword(fieldName, '');
           return;
         }
-        const inline = relationInlineCreate(descriptor) || {};
         const nameField = inline.nameField || 'name';
-        const created = await createContractFormRecord({ model: relation, vals: { [nameField]: keyword } });
+        const created = await createContractFormRecord({
+          model: relation,
+          vals: { ...(entry.defaultVals || {}), [nameField]: keyword },
+        });
         const id = Number(created?.id || 0);
         if (Number.isFinite(id) && id > 0) {
           const current = relationIds(fieldName) || [];
@@ -335,14 +350,47 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
       }
     },
     one2manyCanCreate,
+    one2manyCanInlineEdit,
+    one2manyCanUnlink,
+    one2manyCanOpenRow: (fieldName: string, row: RelationFieldRow) => {
+      const recordId = dependencies.one2manyRowRecordId(row);
+      return recordId > 0 && dependencies.canOpenRelationRecord(
+        fieldName,
+        recordId,
+        dependencies.effectiveFieldDescriptor(fieldName),
+      );
+    },
+    openOne2manyRow: (fieldName: string, row: RelationFieldRow) => {
+      const recordId = dependencies.one2manyRowRecordId(row);
+      if (recordId <= 0 || !dependencies.canOpenRelationRecord(
+        fieldName,
+        recordId,
+        dependencies.effectiveFieldDescriptor(fieldName),
+      )) return;
+      void dependencies.openRelationRecord(
+        fieldName,
+        recordId,
+        dependencies.effectiveFieldDescriptor(fieldName),
+      );
+    },
     one2manyCreateLabel,
-    addOne2manyRow,
+    addOne2manyRow: (fieldName: string) => {
+      if (!one2manyCanCreate(fieldName)) return;
+      addOne2manyRow(fieldName);
+    },
     one2manySummary,
+    isOne2manyHydrating,
     visibleOne2manyRows,
     one2manyRowStateLabel,
     one2manyColumns,
-    setOne2manyRowField,
-    removeOne2manyRow,
+    setOne2manyRowField: (fieldName: string, rowKey: string, column: RelationFieldColumn, value: unknown) => {
+      if (!one2manyCanInlineEdit(fieldName)) return;
+      setOne2manyRowField(fieldName, rowKey, column, value);
+    },
+    removeOne2manyRow: (fieldName: string, rowKey: string) => {
+      if (!one2manyCanUnlink(fieldName)) return;
+      removeOne2manyRow(fieldName, rowKey);
+    },
     one2manyRowErrors,
     one2manyRowHints,
     removedOne2manyRows,
@@ -365,8 +413,12 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     bodyActions,
     contractFieldLabels,
     contractFieldLabel,
+    activeChatterAction,
+    messageAction,
     activeActivityAction,
     nativeAttachmentMaxBytes,
+    nativeAttachmentUploadEnabled,
+    nativeFollowerContract,
     nativeChatterActions,
     nativeAttachments,
     nativeCollaborationPanelProps,

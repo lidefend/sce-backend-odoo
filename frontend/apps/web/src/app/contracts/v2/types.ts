@@ -324,6 +324,22 @@ export interface ContractV2ActivityProfile {
   sourceAuthority: ContractV2ActivitySourceAuthority;
 }
 
+export interface ContractV2AnalysisSourceAuthority {
+  kind: 'native_pivot_view_projection' | 'native_graph_view_projection';
+  authorities: ['ir.ui.view', 'ir.model.fields', 'ir.actions.act_window'];
+  projection_only: true;
+  no_business_fact_authority: true;
+  runtime_carrier: 'ui.contract.v2.layoutContract.pivotProfile' | 'ui.contract.v2.layoutContract.graphProfile';
+}
+
+export interface ContractV2AnalysisProfile {
+  measures: ContractV2Dictionary[];
+  dimensions: ContractV2Dictionary[];
+  defaults?: ContractV2Dictionary;
+  typeDefault?: string;
+  sourceAuthority: ContractV2AnalysisSourceAuthority;
+}
+
 export interface ContractV2LayoutContract {
   pageId: string;
   layoutType: ContractV2LayoutType;
@@ -333,6 +349,8 @@ export interface ContractV2LayoutContract {
   componentRegistry: Record<string, ContractV2ComponentRegistryEntry>;
   listProfile?: ContractV2Dictionary;
   activityProfile?: ContractV2ActivityProfile;
+  pivotProfile?: ContractV2AnalysisProfile;
+  graphProfile?: ContractV2AnalysisProfile;
 }
 
 export interface ContractV2ActionRule {

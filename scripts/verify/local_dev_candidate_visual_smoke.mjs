@@ -433,6 +433,46 @@ try {
         const navigationSearch = document.querySelector('.product-side-navigation__search [data-semantic-component="ScInput"]');
         const navigationSearchPrefix = navigationSearch?.querySelector('.t-input__prefix-icon');
         const navigationSearchInput = navigationSearch?.querySelector('input');
+        const analysisRoot = document.querySelector('[data-analysis-view]');
+        const analysisView = analysisRoot?.getAttribute('data-analysis-view') || '';
+        const analysisState = analysisRoot?.getAttribute('data-analysis-state') || '';
+        const analysisReason = analysisRoot?.getAttribute('data-analysis-reason') || '';
+        const analysisPivotRows = analysisRoot?.querySelectorAll('.t-table__body tr, tbody tr').length || 0;
+        const analysisGraphRows = analysisRoot?.querySelectorAll('.analysis-bar-row').length || 0;
+        const activityRoot = document.querySelector('[data-activity-surface="native-readonly"]');
+        const activityCards = activityRoot ? [...activityRoot.querySelectorAll('[data-activity-card="record"]')] : [];
+        const activityCardEvidence = activityCards.map((node) => {
+          const rect = node.getBoundingClientRect();
+          const descendants = [...node.querySelectorAll('*')].map((child) => {
+            const childRect = child.getBoundingClientRect();
+            return {
+              tag: child.tagName,
+              className: typeof child.className === 'string' ? child.className : '',
+              rect: [Math.round(childRect.left), Math.round(childRect.top), Math.round(childRect.right), Math.round(childRect.bottom)],
+              overflowRight: Math.round(Math.max(0, childRect.right - rect.right)),
+            };
+          });
+          const widestDescendant = descendants.sort((left, right) => right.overflowRight - left.overflowRight)[0] || null;
+          const computed = getComputedStyle(node);
+          return {
+            ordinal: node.getAttribute('data-record-ordinal') || '',
+            rect: [Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom)],
+            clientSize: [node.clientWidth, node.clientHeight],
+            scrollSize: [node.scrollWidth, node.scrollHeight],
+            horizontalClipped: node.scrollWidth > node.clientWidth + 1,
+            verticalClipped: node.scrollHeight > node.clientHeight + 1,
+            computed: { padding: computed.padding, boxSizing: computed.boxSizing, overflowX: computed.overflowX },
+            widestDescendant,
+            visibleText: String(node.textContent || '').replace(/\s+/g, ' ').trim(),
+          };
+        });
+        const relationTagCells = [...document.querySelectorAll('[data-semantic-cell-kind="relation-tags"]')]
+          .filter((node) => node instanceof HTMLElement && node.offsetParent !== null);
+        const relationTagLabels = relationTagCells.flatMap((node) =>
+          [...node.querySelectorAll('.relation-tag, .collection-mobile-record-row__relation-tag')]
+            .map((label) => String(label.textContent || '').trim())
+            .filter(Boolean),
+        );
         return {
           h1: document.querySelectorAll('h1').length,
           pageHeaders: document.querySelectorAll('.template-page-header, [data-product-page-header]').length,
@@ -466,6 +506,34 @@ try {
             pass: publishedApps.length > 0
               && publishedApps.every((entry) => entry.label && entry.contentDisplay === 'grid' && entry.contentColumns !== 'none' && entry.labelWidth >= 32 && entry.ordered)
               && Boolean(navigationSearch && navigationSearchPrefix && navigationSearchInput),
+          },
+          analysisEvidence: analysisRoot ? {
+            view: analysisView,
+            state: analysisState,
+            reason: analysisReason,
+            pivotRowCount: analysisPivotRows,
+            graphRowCount: analysisGraphRows,
+            pass: analysisState === 'ready'
+              && !analysisReason
+              && (analysisView === 'pivot' ? analysisPivotRows > 0 : analysisView === 'graph' && analysisGraphRows > 0),
+          } : null,
+          activityEvidence: activityRoot ? {
+            state: activityRoot.getAttribute('data-state') || '',
+            cardCount: activityCards.length,
+            cards: activityCardEvidence,
+            visibleRawIdentityCount: activityCardEvidence.filter((entry) => /记录\s*#\d+/.test(entry.visibleText)).length,
+            pass: activityRoot.getAttribute('data-state') === 'ready'
+              && activityCards.length > 0
+              && activityCardEvidence.every((entry) => entry.ordinal && !entry.horizontalClipped && !entry.verticalClipped)
+              && activityCardEvidence.every((entry) => !/记录\s*#\d+/.test(entry.visibleText)),
+          } : null,
+          relationTagEvidence: {
+            cellCount: relationTagCells.length,
+            labels: relationTagLabels,
+            numericOnlyLabelCount: relationTagLabels.filter((label) => /^\d+$/.test(label)).length,
+            pass: relationTagCells.length > 0
+              && relationTagLabels.length > 0
+              && relationTagLabels.every((label) => !/^\d+$/.test(label)),
           },
           visibleActions: [...document.querySelectorAll('main button, [data-workspace-primary-content] button')]
             .filter((element) => element instanceof HTMLElement && element.offsetParent !== null)
@@ -1208,6 +1276,16 @@ for (const item of report.routes) {
   }
   if (item.path && item.expectedNativeNotebookPageCount !== null && item.nativeNotebookPageCount !== item.expectedNativeNotebookPageCount) {
     failures.push({ name: item.name, expectedNativeNotebookPageCount: item.expectedNativeNotebookPageCount, actualNativeNotebookPageCount: item.nativeNotebookPageCount });
+  }
+  const expectedAnalysisView = routes.find((target) => target.name === item.name)?.expectedAnalysisView;
+  if (item.path && expectedAnalysisView && (!item.analysisEvidence?.pass || item.analysisEvidence.view !== expectedAnalysisView)) {
+    failures.push({ name: item.name, expectedAnalysisView, analysisEvidence: item.analysisEvidence || null });
+  }
+  if (item.path && routes.find((target) => target.name === item.name)?.expectedActivityReady === true && !item.activityEvidence?.pass) {
+    failures.push({ name: item.name, expectedActivityReady: true, activityEvidence: item.activityEvidence || null });
+  }
+  if (item.path && routes.find((target) => target.name === item.name)?.expectedRelationTagsReady === true && !item.relationTagEvidence?.pass) {
+    failures.push({ name: item.name, expectedRelationTagsReady: true, relationTagEvidence: item.relationTagEvidence || null });
   }
   if (item.sidebarScrollEvidence && !item.sidebarScrollEvidence.pass) failures.push({ name: item.name, sidebarScrollEvidence: item.sidebarScrollEvidence });
   if (item.taskDensityEvidence && (!item.taskDensityEvidence.present || !item.taskDensityEvidence.summary?.pass)) failures.push({ name: item.name, taskDensityEvidence: item.taskDensityEvidence });

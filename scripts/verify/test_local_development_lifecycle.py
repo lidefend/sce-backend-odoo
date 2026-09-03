@@ -14,6 +14,21 @@ SAMPLE_PREPARE = ROOT / "scripts/dev/local_sample_env_prepare.sh"
 
 
 class LocalDevelopmentLifecycleTest(unittest.TestCase):
+    def test_collaboration_journey_cleanup_commits_and_fails_closed(self):
+        cleanup = (
+            ROOT / "scripts/verify/local_dev_collaboration_fixture_cleanup.py"
+        ).read_text(encoding="utf-8")
+        scope = (
+            ROOT / "scripts/verify/local_dev_project_create_contract_action_scope.sh"
+        ).read_text(encoding="utf-8")
+        self.assertIn("env.cr.commit()", cleanup)
+        self.assertIn("LOCAL_DEV_COLLABORATION_FIXTURE_CLEANUP_INCOMPLETE", cleanup)
+        self.assertIn('"remaining": remaining', cleanup)
+        self.assertNotIn(">/dev/null || true", scope)
+        self.assertIn('trap - EXIT', scope)
+        self.assertIn('exit "${cleanup_status}"', scope)
+        self.assertIn('exit "${journey_status}"', scope)
+
     def test_safe_runner_includes_registered_demo_addons_mount(self):
         runner = (ROOT / "scripts" / "test" / "test_safe.sh").read_text(encoding="utf-8")
         self.assertIn(

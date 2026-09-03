@@ -1,5 +1,8 @@
 <template>
-  <ProfessionalRelationFieldControl :field="field">
+  <ProfessionalRelationFieldControl
+    :field="field"
+    data-semantic-component="ProfessionalMany2oneFieldControl"
+  >
     <div :class="['many2one-widget-shell', { 'many2one-widget-shell--avatar': isAvatarMany2oneWidget }]">
       <span v-if="isAvatarMany2oneWidget" class="many2one-avatar" aria-hidden="true">
         {{ avatarText(many2oneTextValue) }}

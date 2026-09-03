@@ -1,13 +1,19 @@
 import { computed, ref } from 'vue';
 import {
   fetchChatterTimeline,
+  deleteChatterMessage,
+  fetchCollaborationFollowers,
   postChatterMessage,
   scheduleChatterActivity,
   searchCollaborationUsers,
   updateChatterActivity,
+  updateCollaborationFollower,
   type ChatterTimelineEntry,
   type CollaborationUserOption,
+  type CollaborationFollower,
 } from '../../api/chatter';
+import { canDeleteCollaborationMessage, canExecuteCollaborationCreateAction, canUpdateCollaborationActivity } from './professionalCollaborationModel';
+import type { NativeFollowerContract } from './collaborationContract';
 import type { NativeChatterAction } from './types';
 
 function nextBusinessDateInputValue() {
@@ -26,7 +32,9 @@ function activityEntryId(entry: ChatterTimelineEntry) {
 export function useNativeChatterRuntime(params: {
   model: () => string;
   recordId: () => number;
-  activeActivityAction: () => NativeChatterAction | null;
+  activeChatterAction: () => NativeChatterAction | null;
+  followerContract: () => NativeFollowerContract | null;
+  userSearchIntent: () => 'collaboration.users.search' | null;
 }) {
   const activeMode = ref('');
   const activeLabel = ref('');
@@ -46,6 +54,15 @@ export function useNativeChatterRuntime(params: {
   const timelineHasMore = ref(false);
   const timelineNextOffset = ref(0);
   const activityUpdatingIds = ref<number[]>([]);
+  const messageDeletingIds = ref<number[]>([]);
+  const replyTarget = ref<{ id: number; author: string; body: string; intent: 'chatter.post' } | null>(null);
+  const followers = ref<CollaborationFollower[]>([]);
+  const followerCount = ref(0);
+  const isFollowing = ref(false);
+  const canFollow = ref(false);
+  const canUnfollow = ref(false);
+  const followersLoading = ref(false);
+  const followerError = ref('');
   let timelineRequestToken = 0;
 
   const selectedMentionUsers = computed(() => {
@@ -64,6 +81,13 @@ export function useNativeChatterRuntime(params: {
     timeline.value = [];
     timelineHasMore.value = false;
     timelineNextOffset.value = 0;
+    followers.value = [];
+    followerCount.value = 0;
+    isFollowing.value = false;
+    canFollow.value = false;
+    canUnfollow.value = false;
+    followersLoading.value = false;
+    followerError.value = '';
   }
 
   function closeComposer() {
@@ -76,6 +100,7 @@ export function useNativeChatterRuntime(params: {
     selectedMentionUserIds.value = [];
     activityAssigneeId.value = 0;
     userQuery.value = '';
+    replyTarget.value = null;
   }
 
   async function loadTimeline(targetResId = params.recordId(), targetModel = params.model(), append = false) {
@@ -105,11 +130,62 @@ export function useNativeChatterRuntime(params: {
       }
       timelineHasMore.value = Boolean(response.paging?.has_more);
       timelineNextOffset.value = Number(response.paging?.next_offset || 0);
+      if (!append) await loadFollowers(targetResId, targetModel);
     } catch (err) {
       if (!isCurrentRequest()) return;
       error.value = err instanceof Error ? err.message : '协作记录加载失败';
     } finally {
       if (requestToken === timelineRequestToken) loading.value = false;
+    }
+  }
+
+  async function loadFollowers(targetResId = params.recordId(), targetModel = params.model()) {
+    const contract = params.followerContract();
+    if (!contract || !targetResId || !targetModel) {
+      followers.value = [];
+      followerCount.value = 0;
+      isFollowing.value = false;
+      canFollow.value = false;
+      canUnfollow.value = false;
+      followerError.value = '';
+      return;
+    }
+    followersLoading.value = true;
+    followerError.value = '';
+    try {
+      const response = await fetchCollaborationFollowers({ model: targetModel, res_id: targetResId });
+      if (Number(params.recordId() || 0) !== Number(targetResId) || String(params.model() || '') !== String(targetModel)) return;
+      followers.value = Array.isArray(response.items) ? response.items : [];
+      followerCount.value = Number(response.count || followers.value.length || 0);
+      isFollowing.value = response.is_following === true;
+      canFollow.value = contract.actions.follow.enabled === true && response.can_follow === true;
+      canUnfollow.value = contract.actions.unfollow.enabled === true && response.can_unfollow === true;
+    } catch (err) {
+      followerError.value = err instanceof Error ? err.message : '关注者加载失败';
+      canFollow.value = false;
+      canUnfollow.value = false;
+    } finally {
+      followersLoading.value = false;
+    }
+  }
+
+  async function updateFollower(action: 'follow' | 'unfollow') {
+    const contract = params.followerContract();
+    const allowed = action === 'follow'
+      ? contract?.actions.follow.enabled === true && canFollow.value === true
+      : contract?.actions.unfollow.enabled === true && canUnfollow.value === true;
+    const recordId = params.recordId();
+    const model = params.model();
+    if (!allowed || !recordId || !model || followersLoading.value) return;
+    followersLoading.value = true;
+    followerError.value = '';
+    try {
+      await updateCollaborationFollower({ model, res_id: recordId, action });
+      await loadFollowers(recordId, model);
+    } catch (err) {
+      followerError.value = err instanceof Error ? err.message : '关注状态更新失败';
+    } finally {
+      followersLoading.value = false;
     }
   }
 
@@ -119,9 +195,15 @@ export function useNativeChatterRuntime(params: {
   }
 
   async function loadUsers(query = userQuery.value) {
+    const intent = params.userSearchIntent();
+    if (intent !== 'collaboration.users.search') {
+      userOptions.value = [];
+      usersLoading.value = false;
+      return;
+    }
     usersLoading.value = true;
     try {
-      const response = await searchCollaborationUsers({ query, limit: 20 });
+      const response = await searchCollaborationUsers({ intent, query, limit: 20 });
       const items = Array.isArray(response.items) ? response.items : [];
       const merged = new Map<number, CollaborationUserOption>();
       userOptions.value.forEach((item) => {
@@ -152,10 +234,9 @@ export function useNativeChatterRuntime(params: {
   }
 
   async function openAction(action: NativeChatterAction) {
-    if (!action.enabled) return;
     error.value = '';
     const mode = action.mode || action.intent;
-    if (mode === 'message' || mode === 'note' || mode === 'activity') {
+    if (canExecuteCollaborationCreateAction(action, mode)) {
       activeMode.value = mode;
       activeLabel.value = action.label;
       if (mode === 'activity' && !activityDeadline.value) activityDeadline.value = nextBusinessDateInputValue();
@@ -168,7 +249,25 @@ export function useNativeChatterRuntime(params: {
     error.value = `${action.label} 缺少可执行配置`;
   }
 
+  async function openReply(entry: ChatterTimelineEntry) {
+    const messageId = Number(entry.message?.id || entry.id || 0);
+    if (entry.type !== 'message' || entry.message?.can_reply !== true
+      || entry.message.reply_intent !== 'chatter.post' || !messageId) return;
+    activeMode.value = 'message';
+    activeLabel.value = '回复消息';
+    replyTarget.value = {
+      id: messageId,
+      author: String(entry.message?.author_name || entry.typeLabel || '消息').trim(),
+      body: String(entry.body || entry.title || '').trim(),
+      intent: 'chatter.post',
+    };
+    error.value = '';
+    if (!userOptions.value.length && !usersLoading.value) await loadUsers('');
+  }
+
   async function scheduleActivity() {
+    const action = params.activeChatterAction();
+    if (!canExecuteCollaborationCreateAction(action, 'activity')) return;
     const summary = activitySummary.value.trim();
     if (!summary) {
       error.value = '请填写计划事项';
@@ -177,7 +276,6 @@ export function useNativeChatterRuntime(params: {
     const recordId = params.recordId();
     const model = params.model();
     if (!recordId || !model || posting.value) return;
-    const action = params.activeActivityAction();
     posting.value = true;
     error.value = '';
     try {
@@ -208,6 +306,9 @@ export function useNativeChatterRuntime(params: {
       await scheduleActivity();
       return;
     }
+    const action = params.activeChatterAction();
+    const exactReplyAuthorized = replyTarget.value?.intent === 'chatter.post' && replyTarget.value.id > 0;
+    if (!exactReplyAuthorized && !canExecuteCollaborationCreateAction(action, activeMode.value)) return;
     const body = draft.value.trim();
     const recordId = params.recordId();
     const model = params.model();
@@ -222,9 +323,11 @@ export function useNativeChatterRuntime(params: {
         subject: activeLabel.value,
         mode: activeMode.value === 'note' ? 'note' : 'message',
         mention_user_ids: selectedMentionUserIds.value,
+        parent_id: replyTarget.value?.id,
       });
       draft.value = '';
       selectedMentionUserIds.value = [];
+      replyTarget.value = null;
       error.value = '';
       await loadTimeline();
     } catch (err) {
@@ -243,7 +346,7 @@ export function useNativeChatterRuntime(params: {
     const activityId = activityEntryId(entry);
     const recordId = params.recordId();
     const model = params.model();
-    if (!activityId || !recordId || !model || isActivityUpdating(entry)) return;
+    if (!activityId || !recordId || !model || isActivityUpdating(entry) || !canUpdateCollaborationActivity(entry, action)) return;
     activityUpdatingIds.value = [...activityUpdatingIds.value, activityId];
     error.value = '';
     try {
@@ -252,13 +355,31 @@ export function useNativeChatterRuntime(params: {
         res_id: recordId,
         activity_id: activityId,
         action,
-        note: action === 'done' ? '计划已完成。' : '计划已取消。',
+        note: action === 'done' ? '计划已完成。' : undefined,
       });
       await loadTimeline();
     } catch (err) {
       error.value = err instanceof Error ? err.message : action === 'done' ? '完成计划失败' : '取消计划失败';
     } finally {
       activityUpdatingIds.value = activityUpdatingIds.value.filter((id) => id !== activityId);
+    }
+  }
+
+  async function deleteMessage(entry: ChatterTimelineEntry) {
+    const messageId = Number(entry.message?.id || entry.id || 0);
+    const recordId = params.recordId();
+    const model = params.model();
+    if (!messageId || !recordId || !model || messageDeletingIds.value.includes(messageId)
+      || !canDeleteCollaborationMessage(entry)) return;
+    messageDeletingIds.value = [...messageDeletingIds.value, messageId];
+    error.value = '';
+    try {
+      await deleteChatterMessage({ model, res_id: recordId, message_id: messageId });
+      await loadTimeline(recordId, model);
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '删除消息失败';
+    } finally {
+      messageDeletingIds.value = messageDeletingIds.value.filter((id) => id !== messageId);
     }
   }
 
@@ -282,15 +403,28 @@ export function useNativeChatterRuntime(params: {
     timeline,
     timelineHasMore,
     activityUpdatingIds,
+    messageDeletingIds,
+    replyTarget,
+    followers,
+    followerCount,
+    isFollowing,
+    canFollow,
+    canUnfollow,
+    followersLoading,
+    followerError,
     clearForRecordLoad,
     closeComposer,
     loadTimeline,
     loadMoreTimeline,
+    loadFollowers,
+    updateFollower,
     loadUsers,
     selectMentionUser,
     removeMentionUser,
     openAction,
+    openReply,
     send,
     updateActivity,
+    deleteMessage,
   };
 }

@@ -22,15 +22,13 @@
   >
     <h1 v-if="initialFormLoading" class="sc-visually-hidden">{{ pageDisplayTitle }}</h1>
     <ContractFormProductHeader
-      v-if="!initialFormLoading"
+      v-if="!initialFormLoading && !recordMissing && !renderErrorMessage && status !== 'error'"
       :title="pageDisplayTitle" :subtitle="pageDisplaySubtitle" :hide-title="suppressPageHeaderTitle" :show-hud="showHud"
       :model="model" :record-id-display="recordIdDisplay" :action-id="actionId" :contract-meta-line="contractMetaLine"
       :intake-mode="isIntakeCreateMode" :intake-required-summary="intakeRequiredSummary" :intake-missing-summary="intakeMissingSummary" :statusbar="nativeStatusbar"
       :status-interactive="!canonicalProductRendererActive"
       :presentation-mode="canonicalProductFloorplan?.decisionMode ? 'task' : 'workspace'"
       :mode="renderProfile" :mode-label="currentRenderProfileLabel" :dirty="hasChanges" :changed-field-count="changedFieldCount"
-      :show-continue-processing="showContinueProcessing"
-      :continue-processing-label="continueProcessingLabel"
       :show-back="true"
       :back-label="formExitPresentation.label"
       :back-semantic-identity="formExitPresentation.semanticIdentity"
@@ -38,7 +36,7 @@
       :show-primary-form-action="!canonicalProductRendererActive && showPrimaryBusinessFormAction" :primary-form-action-disabled="primaryFormActionDisabled" :primary-form-action-hint="primaryFormActionHint" :submit-label="submitButtonLabel" :primary-action="primaryBusinessFormAction"
       :direct-actions="canonicalProductRendererActive ? [] : headerBusinessDirectActions" :overflow-actions="canonicalProductRendererActive ? [] : headerBusinessOverflowActions" :config-actions="canonicalProductRendererActive ? [] : headerConfigActionsVisible" :canonical-direct-actions="canonicalProductRendererActive ? canonicalHeaderActions.direct : []" :canonical-overflow-actions="canonicalProductRendererActive ? canonicalHeaderActions.overflow : []"
       :show-discard="showDiscardAction" :show-debug="showDebugActionsVisible" :contract-present="Boolean(contract)" :discard-label="formUiLabel('discard')" :reload-label="formUiLabel('reload')"
-      @back="returnToPreviousPage" @continue-processing="continueProcessing" @set-status="setStatusbarValue" @return-workbench="returnToBusinessConfigDesigner" @save-draft="saveRecord()"
+      @back="returnToPreviousPage" @set-status="setStatusbarValue" @return-workbench="returnToBusinessConfigDesigner" @save-draft="saveRecord()"
       @run-primary="runPrimaryFormAction" @run-action="runAction" @canonical-action="runCanonicalFormAction($event.actionRef)" @canonical-save="saveRecord()" @discard="discardChanges" @copy="copyContractJson" @export="exportContractJson" @reload="reload"
     />
     <ProductFormLoadingSkeleton v-if="initialFormLoading" :loading-label="`正在载入${pageDisplayTitle || '表单'}`" />
@@ -316,6 +314,7 @@ import { isHudEnabled, isSceneBlocksDebugEnabled } from '../config/debug';
 import { config } from '../config';
 import { intentRequest } from '../api/intents';
 import { ApiError } from '../api/client';
+import type { ChatterTimelineEntry } from '../api/chatter';
 import { executeButton } from '../api/executeButton';
 import { triggerOnchange } from '../api/onchange';
 import type { OnchangeLinePatch } from '../api/onchange';
@@ -351,6 +350,7 @@ import {
   createContractV2Store,
   decodeContractV2Snapshot,
   resolveContractV2ContainerTree,
+  resolveContractV2Collaboration,
   resolveContractV2EffectiveFormCapabilities,
   resolveContractV2GlobalStatus,
   resolveContractV2MainData,
@@ -504,6 +504,8 @@ import {
   formRuntimeReasonLabel,
   formRuntimeRowStateLabel,
   one2manyCanCreateFromPolicies,
+  one2manyCanInlineEditFromPolicies,
+  one2manyCanUnlinkFromPolicies,
   one2manyColumnDisplayValue,
   one2manyColumnInputType,
   one2manyCreateLabelFromPolicies,
@@ -593,6 +595,7 @@ import {
   nativeCollaborationUnavailableMessage as nativeCollaborationUnavailableMessageFromState,
   resolveNativeAttachmentContract,
   resolveNativeChatterContract,
+  resolveNativeCollaborationUserSearchIntent,
   resolveRuntimeCollaborationContract,
 } from './contractForm/collaborationContract';
 import {
@@ -678,6 +681,7 @@ import { useFormNavigationActionsRuntime } from './contractForm/useFormNavigatio
 import { useContractV2ShadowDiagnostics } from './contractForm/useContractV2ShadowDiagnostics';
 import { useContractFormPageState } from './contractForm/useContractFormPageState';
 import { buildFormRequestContext } from './contractForm/formRequestContext';
+import { normalizeFormRouteOwnerIdentity } from './contractForm/formRouteInstanceIdentity';
 import { collectActionParams as collectActionParamsFromPlan } from './contractForm/actionExecutionPlan';
 import {
   createRouteDefaultsFingerprint,
@@ -751,6 +755,19 @@ function formRouteIdentity() {
     String(recordId.value ? '' : (query.allowed_business_category_codes || '')),
     String(recordId.value ? '' : createRouteDefaultsFingerprint(query)),
   ].join('|');
+}
+function formRouteOwnerIdentity() {
+  const query = route.query as Record<string, unknown>;
+  return normalizeFormRouteOwnerIdentity({
+    routeName: route.name,
+    model: route.params.model,
+    recordId: route.params.id,
+    activityPageId: query.activity_page_id,
+    actionId: query.action_id,
+    menuId: query.menu_id,
+    viewId: query.view_id || query.viewId,
+    sceneKey: route.params.sceneKey || route.meta?.sceneKey || query.scene_key || query.scene,
+  });
 }
 const {
   v2ShadowStoreReady, v2ShadowWidgetCount, v2ShadowActionCount, v2ShadowButtonStatusCount,
@@ -883,6 +900,8 @@ const {
   timeline: chatterTimeline,
   timelineHasMore: chatterTimelineHasMore,
   activityUpdatingIds,
+  messageDeletingIds,
+  replyTarget,
   clearForRecordLoad: clearNativeChatterForRecordLoad,
   closeComposer: closeNativeChatterComposer,
   loadTimeline: loadNativeChatterTimeline,
@@ -891,17 +910,32 @@ const {
   selectMentionUser,
   removeMentionUser,
   openAction: openNativeChatterAction,
+  openReply: replyNativeChatter,
   send: sendNativeChatter,
   updateActivity: updateNativeActivity,
+  deleteMessage: deleteNativeMessage,
+  followers,
+  followerCount,
+  isFollowing,
+  canFollow,
+  canUnfollow,
+  followersLoading,
+  followerError,
+  updateFollower: updateNativeFollower,
 } = useNativeChatterRuntime({
   model: () => model.value,
   recordId: () => recordId.value,
-  activeActivityAction: () => activeActivityAction.value,
+  activeChatterAction: () => activeChatterAction.value,
+  followerContract: () => nativeFollowerContract.value,
+  userSearchIntent: () => resolveNativeCollaborationUserSearchIntent(
+    resolveContractV2Collaboration(v2ContractStore.value),
+  ),
 });
 const attachmentViewerRef = ref<NativeAttachmentViewerLike | null>(null);
 const chatterTimelineLoading = chatterLoading;
 const {
   uploading: attachmentUploading,
+  deletingIds: attachmentDeletingIds,
   error: attachmentError,
   pendingAttachments: pendingNativeAttachments,
   clearError: clearNativeAttachmentError,
@@ -910,10 +944,12 @@ const {
   removePendingAttachment: removePendingNativeAttachment,
   uploadPendingAttachments: uploadPendingNativeAttachments,
   openAttachment: openNativeAttachment,
+  deleteAttachment: deleteNativeAttachment,
 } = useNativeAttachmentRuntime({
   model: () => model.value,
   recordId: () => recordId.value,
   maxBytes: () => nativeAttachmentMaxBytes.value,
+  canUpload: () => nativeAttachmentUploadEnabled.value,
   resolveLabel: (key, fallback) => resolveNativeAttachmentLabel(key, fallback),
   reloadTimeline: loadNativeChatterTimeline,
   viewerRef: attachmentViewerRef,
@@ -924,6 +960,41 @@ const {
   },
 });
 const nativeChatterAutoLoadKey = ref('');
+async function confirmAndDeleteNativeAttachment(entry: ChatterTimelineEntry) {
+  const attachmentName = String(entry.attachment?.name || entry.title || '当前附件').trim() || '当前附件';
+  const confirmed = await intentConfirmationRef.value?.confirm({
+    actionLabel: '删除附件',
+    message: `附件“${attachmentName}”删除后无法恢复，是否继续？`,
+  });
+  if (confirmed !== true) return;
+  await deleteNativeAttachment(entry);
+}
+async function confirmAndDeleteNativeMessage(entry: ChatterTimelineEntry) {
+  const author = String(entry.message?.author_name || entry.typeLabel || '当前用户').trim() || '当前用户';
+  const body = String(entry.body || entry.title || '').trim();
+  const summary = body.length > 36 ? `${body.slice(0, 36)}…` : body;
+  const confirmed = await intentConfirmationRef.value?.confirm({
+    actionLabel: '删除消息',
+    message: `${author}发布的消息“${summary || '无正文'}”删除后无法恢复，是否继续？`,
+  });
+  if (confirmed !== true) return;
+  await deleteNativeMessage(entry);
+}
+async function confirmAndUpdateNativeActivity(entry: ChatterTimelineEntry, action: 'done' | 'cancel') {
+  if (action === 'done') {
+    await updateNativeActivity(entry, action);
+    return;
+  }
+  const activityTitle = String(entry.title || entry.body || '当前计划').trim() || '当前计划';
+  const assignee = String(entry.activity?.assignee_name || '').trim();
+  const target = assignee ? `计划“${activityTitle}”（负责人：${assignee}）` : `计划“${activityTitle}”`;
+  const confirmed = await intentConfirmationRef.value?.confirm({
+    actionLabel: '取消计划',
+    message: `${target}取消后将从待办中移除，是否继续？`,
+  });
+  if (confirmed !== true) return;
+  await updateNativeActivity(entry, action);
+}
 const model = computed(() => String(route.params.model || v2ContractStore.value?.snapshot.pageInfo.model || ''));
 const isManagedRelationCreateDialog = computed(() => Boolean(
   resolveRelationCreateDialogCancelMessage({
@@ -1206,25 +1277,6 @@ const primaryBusinessActionState = computed(() => resolvePrimaryBusinessActionSt
 }));
 const canonicalHeaderActions = computed(() => resolveCanonicalHeaderActionPresentation({ floorplan: canonicalProductFloorplan.value, actions: canonicalFormRenderState.value.model?.actionBar || [], renderProfile: renderProfile.value, rendererActive: canonicalProductRendererActive.value, dirty: hasChanges.value }));
 const showPrimaryBusinessFormAction = computed(() => primaryBusinessActionState.value.show);
-const blockedCanonicalPrimary = computed(() => Boolean(
-  canonicalProductFloorplan.value?.decisionMode
-  && canonicalProductFloorplan.value.blockedActions.some((action) => action.tier === 'primary'),
-));
-const showContinueProcessing = computed(() => (
-  route.name === 'record'
-  && Boolean(recordId.value)
-  && rights.value.write
-  && (!canonicalProductFloorplan.value?.decisionMode || blockedCanonicalPrimary.value)
-));
-const continueProcessingLabel = computed(() => blockedCanonicalPrimary.value ? '补充资料' : '继续办理');
-function continueProcessing() {
-  if (!showContinueProcessing.value || !recordId.value) return;
-  void router.push(buildModelFormRouteTarget({
-    model: model.value,
-    id: String(recordId.value),
-    query: normalizeRouteQueryValues(route.query as Record<string, unknown>) as LocationQueryRaw,
-  }) as Parameters<typeof router.push>[0]);
-}
 const showDraftSaveAction = computed(() => {
   if (!showPrimaryBusinessFormAction.value || !canSave.value || primaryCreateFooterAction.value) return false;
   if (!recordId.value) return true;
@@ -1471,14 +1523,14 @@ const showSearchFilters = computed(() => {
 const {
   relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions,
   one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor,
-  nativeFieldSubview, one2manyColumns, one2manyPolicies, one2manyCanCreate,
+  nativeFieldSubview, one2manyColumns, one2manyPolicies, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink, one2manyRowRecordId,
   one2manyCreateLabel, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows,
-  hydrateVisibleOne2manyRows, one2manyRowErrors, setRelationKeyword, filteredRelationOptions, relationModel,
+  prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows, isOne2manyHydrating, one2manyRowErrors, setRelationKeyword, filteredRelationOptions, relationModel,
   formUiLabels, formUiLabel, dynamicDomainFromDescriptor, resolveDynamicDomainDependencyValue, clearDynamicRelationDependents,
   relationDomain, runtimeRelationDomain, mergedRelationDomain, queryRelationOptions, fetchRelationOptions,
   loadRelationSearchColumns, fetchRelationSearchRows, onRelationDialogDocumentKeydown, openRelationSearchDialog, runRelationSearch,
   confirmRelationSearchSelection, selectRelationSearchOption, setMany2oneOption, switchFormByRelationOption, createRelationFromSearchDialog,
-  ensureRelationFieldDescriptors, openRelationCreateForm, currentRelationRecordId, canOpenRelationRecordForm, openRelationRecordForm,
+  ensureRelationFieldDescriptors, openRelationCreateForm, currentRelationRecordId, canOpenRelationRecord, canOpenRelationRecordForm, openRelationRecord, openRelationRecordForm,
   quickCreateRelation,
 } = useRecordRelationships({
   ApiError, actionId, clearedDynamicRelationFields,
@@ -1489,13 +1541,14 @@ const {
   fieldType, filteredRelationOptionsFromRuntime, findNativeFieldNodeInTree,
   formData, formUiLabelFromLabels, formUiLabelsFromFormView,
   invalidatedRelationKeywords,
+  canonicalFieldWritable: (...args: [string]) => canonicalFieldWritable(...args),
   isWritableFieldVisible: (...args: [string]) => isWritableFieldVisible(...args), layoutNodes: computed(() => layoutNodes.value),
   listContractFormRecords, loadModelContractV2, markFieldChanged,
   menuId, mergeHydratedOne2manyRecords, mergeRelationDomains,
   mergeRelationOptions, model, nativeFieldSubviewFromTree,
   nativeFormLayoutNodes: computed(() => nativeFormLayoutNodes.value), nativeNodeFieldDescriptorFromNode, normalizeFieldValue: (...args: [string, unknown]) => normalizeFieldValue(...args),
   normalizeRelationIds, normalizeRouteQueryValues,
-  onchangeModifiersPatch, one2manyCanCreateFromPolicies, one2manyColumnsFromSubview,
+  onchangeModifiersPatch, one2manyCanCreateFromPolicies, one2manyCanInlineEditFromPolicies, one2manyCanUnlinkFromPolicies, one2manyColumnsFromSubview,
   one2manyCreateLabelFromPolicies, one2manyDraftSummary, one2manyFieldRows,
   one2manyPrimaryColumnFromColumns, one2manyRowLabelFromPrimary, one2manySubviewPolicies,
   one2manyValidation, openRelationSearchFromRuntime, pickContractNavQuery,
@@ -1522,7 +1575,7 @@ function completeRelationCreateDialog(result: RelationCreatedDialogResult) {
 }
 const {
   workflowEvidenceGateRows, contractActions, headerActions, bodyActions, contractFieldLabels,
-  contractFieldLabel, activeActivityAction, nativeAttachmentMaxBytes, nativeChatterActions, nativeAttachments,
+  contractFieldLabel, activeChatterAction, messageAction, activeActivityAction, nativeAttachmentMaxBytes, nativeAttachmentUploadEnabled, nativeChatterActions, nativeAttachments, nativeFollowerContract,
   nativeCollaborationPanelProps, nativeCollaborationPanelListeners, resolveNativeAttachmentLabel, hasNativeChatterNode, nativeLayoutContainsType,
   contractActionFromNativeRow, resolveNativeActionState, isUnifiedSubmitMethod, isUnifiedSubmitAction,
   primarySubmitAction, primaryCreateFooterAction, runNativeLayoutAction, advancedFieldNames, contractVisibleFields,
@@ -1541,10 +1594,12 @@ const {
   activeChatterMode, activityAssigneeId, activityDeadline,
   activityNote, activitySummary, activityUpdatingIds,
   addOne2manyRow, advancedExpanded, applyPageStatusEvent,
-  applyWorkflowAvailability, attachmentError, attachmentUploading,
+  applyWorkflowAvailability, attachmentError, attachmentUploading, attachmentDeletingIds,
+  messageDeletingIds,
   buildContractFormActions, busy, busyKind,
-  canOpenRelationRecordForm, changedFieldGroupDraft, chatterDraft,
+  canOpenRelationRecordForm, changedFieldGroupDraft, chatterDraft, replyTarget,
   chatterError, chatterPosting, chatterTimeline, chatterTimelineHasMore, chatterTimelineLoading,
+  followers, followerCount, isFollowing, canFollow, canUnfollow, followersLoading, followerError, updateNativeFollower,
   closeNativeChatterComposer, collaborationUserChoices, collaborationUserOptions,
   collaborationUserQuery, collaborationUsersLoading, collectContractV2ButtonStatusById,
   collectSceneValidationPrecheckErrorsFromRules, commitMany2oneInline: (...args: Parameters<typeof commitMany2oneInline>) => commitMany2oneInline(...args),
@@ -1555,21 +1610,23 @@ const {
   fieldOrderDraft, fieldOrderPreviewActive, fieldVisibilityDraft,
   filteredRelationOptions, focusProductFormValidationError, formConflict,
   formData, formLayoutColumnsDraft, inputFieldValue,
-  intentConfirmationRef, isContractFieldOrderEditable, isMissingRequiredValue,
+  intentConfirmationRef, isContractFieldOrderEditable, isFieldWritable: (...args: Parameters<typeof isFieldWritable>) => isFieldWritable(...args), isMissingRequiredValue,
   isIntakeCreateMode, isQuickIntakeMode,
   layoutContainsType, loadCollaborationUsers, loadMoreNativeChatterTimeline, lowCodeFormLayoutBase,
   many2oneValue, markFieldChanged, model,
   nativeFormDesignFieldKeys, nativeFormDesignFieldLabels, nativeLayoutVisibilityRevision,
   navigateActionResponseResult, normalizeActionKind, normalizeActionSafety,
   normalizeRequiredParams, normalizeWorkflowActionRows, normalizeWorkflowEvidenceGateRows,
-  onNativeAttachmentSelected, onchangeModifiersPatch, one2manyCanCreate,
+  onNativeAttachmentSelected, onchangeModifiersPatch, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink,
+  one2manyRowRecordId, canOpenRelationRecord, openRelationRecord, effectiveFieldDescriptor,
   one2manyColumnDisplayValue, one2manyColumnInputType, one2manyColumns,
   one2manyCreateLabel, one2manyRowErrors, one2manyRowHints,
-  one2manyRowLabel, one2manyRowStateLabel, one2manySummary,
-  openNativeAttachment, openNativeChatterAction, openRelationCreateForm,
+  one2manyRowLabel, one2manyRowStateLabel, one2manySummary, isOne2manyHydrating,
+  openNativeAttachment, deleteNativeAttachment: confirmAndDeleteNativeAttachment, deleteNativeMessage: confirmAndDeleteNativeMessage, openNativeChatterAction, replyNativeChatter, openRelationCreateForm,
   parseMaybeJsonRecord, pendingNativeAttachments, policyContext,
   queryMany2oneInline: (...args: Parameters<typeof queryMany2oneInline>) => queryMany2oneInline(...args), recordId, relationCreateMode,
   relationIds, relationInlineCreate, relationKeyword,
+  relationEntry,
   relationOptionsForField, relationUiLabel, reload: (...args: Parameters<typeof reload>) => reload(...args),
   rememberFormConfigFieldLabel, removeMentionUser, removeOne2manyRow,
   removePendingNativeAttachment, removedOne2manyRows, renderProfile,
@@ -1581,10 +1638,10 @@ const {
   selectedMentionUsers, selectedRelationOptions, sendNativeChatter,
   session, setBooleanField: (...args: Parameters<typeof setBooleanField>) => setBooleanField(...args), setMany2oneField: (...args: Parameters<typeof setMany2oneField>) => setMany2oneField(...args),
   setOne2manyRowField, createContractFormRecord, setRelationIds: (...args: Parameters<typeof setRelationIds>) => setRelationIds(...args), setRelationKeyword,
-  setRelationMultiField: (...args: Parameters<typeof setRelationMultiField>) => setRelationMultiField(...args), setSelectionField: (...args: Parameters<typeof setSelectionField>) => setSelectionField(...args), setTextField: (...args: Parameters<typeof setTextField>) => setTextField(...args),
+  setRelationMultiField: (...args: Parameters<typeof setRelationMultiField>) => setRelationMultiField(...args), setSelectionField: (...args: Parameters<typeof setSelectionField>) => setSelectionField(...args), setTechnicalCompanionTextField: (...args: Parameters<typeof setTechnicalCompanionTextField>) => setTechnicalCompanionTextField(...args), setTextField: (...args: Parameters<typeof setTextField>) => setTextField(...args),
   shouldShowWorkflowAction, showHud, showOne2manyErrors,
   toDateInputValue, toDatetimeInputValue, toPositiveInt,
-  updateNativeActivity, useRecordCollaborationPresentation, useRecordContractSemantics,
+  updateNativeActivity: confirmAndUpdateNativeActivity, useRecordCollaborationPresentation, useRecordContractSemantics,
   useRecordFormFieldSchemas, useRecordFormLayout, v2ContractStore,
   validationErrors, visibleOne2manyRows,
 });
@@ -1670,7 +1727,7 @@ const {
   addRelationId, collectWritableValues, commitMany2oneInline, comparableFieldValue, isFieldWritable,
   normalizeFieldValue, queryMany2oneInline, quickCreateMany2manyTag, resolvePendingInlineRelationCreates,
   resolvePendingMany2manyTagCreates, setBooleanField, setMany2oneField, setRelationIds,
-  setRelationMultiField, setSelectionField, setTextField,
+  setRelationMultiField, setSelectionField, setTechnicalCompanionTextField, setTextField,
 } = recordFormStateRuntime;
 const {
   resolveNavigationUrl, viewOrchestrationHudSummary, hudEntries, loadContract,
@@ -1687,7 +1744,7 @@ const {
   contractReadiness, coreFieldNames, createContractV2Store,
   decodeContractV2Snapshot, dirtyFieldSet, fieldType,
   formData, formDataFieldNames,
-  formRouteIdentity, hydrateSelectedRelationOptions, hydrateVisibleOne2manyRows,
+  formRouteIdentity, hydrateSelectedRelationOptions, prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows,
   initOne2manyRows, isComponentActive, layoutNodes,
   loadActionContractV2, loadError, loadModelContractV2,
   loadNativeChatterTimeline, menuId,
@@ -1736,7 +1793,7 @@ const {
   fieldOrderDraft, fieldVisibilityBase, fieldVisibilityDirtyKeys,
   fieldVisibilityDraft, focusFirstValidationError, formConfigAuditResult,
   formConflict, formCreateContextFromState, formData, formFields: canonicalFormFields,
-  formDesignFieldLabel, formDesignerGroupNavigatorItems, formRouteIdentity,
+  formDesignFieldLabel, formDesignerGroupNavigatorItems, formRouteIdentity, formRouteOwnerIdentity,
   formSettingsActiveTab, formUiLabel, handleRecordContextChanged,
   hasChanges, hasCurrentFormFieldDraftChanges, instanceRouteIdentity,
   intentConfirmationRef, isBusinessConfigMode, isBusinessConfigRuntimeModel,
@@ -1767,7 +1824,7 @@ const unsavedFormGuard = useUnsavedFormGuard({ dirty: () => hasChanges.value, bu
   consumeAuthorizedNavigation: () => session.consumeActivityPageNavigationAuthorization(),
   confirmLeave: async () => intentConfirmationRef.value?.confirm({
     actionLabel: '离开页面', message: '当前修改尚未保存。离开后这些修改将丢失，是否继续？' }) ?? false });
-watch(() => [hasChanges.value, isComponentActive.value] as const, ([dirty, active]) => { if (active && isFormPageRouteOwner(route.name)) session.updateActiveActivityDirty(dirty); }, { immediate: true });
+watch(() => [hasChanges.value, isComponentActive.value] as const, ([dirty, active]) => { if (active && isFormPageRouteOwner(route.name)) session.updateActiveActivityDirty(dirty); }, { immediate: true, flush: 'sync' });
 async function returnToPreviousPage() {
   await unsavedFormGuard.navigateAfterConfirm(async () => {
     await executeRecordFormReturn({

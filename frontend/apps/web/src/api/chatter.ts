@@ -23,22 +23,28 @@ export interface ChatterTimelineEntry {
     assignee_name?: string;
     deadline?: string;
     activity_type?: string;
+    status?: 'pending' | 'overdue';
+    status_label?: string;
     can_complete?: boolean;
     can_cancel?: boolean;
-    can_edit?: boolean;
-    can_delete?: boolean;
+    update_intent?: string;
   };
   attachment?: {
     id?: number;
     name?: string;
     mimetype?: string;
     can_download?: boolean;
+    download_intent?: string;
     can_delete?: boolean;
+    delete_intent?: string;
   };
   message?: {
     id?: number;
-    can_edit?: boolean;
+    author_name?: string;
+    can_reply?: boolean;
+    reply_intent?: string;
     can_delete?: boolean;
+    delete_intent?: string;
   };
 }
 
@@ -66,6 +72,21 @@ export interface CollaborationUserOption {
   email?: string;
   partner_id?: number;
   partner_name?: string;
+}
+
+export interface CollaborationFollower {
+  partner_id: number;
+  name: string;
+  email?: string;
+  is_current_user?: boolean;
+}
+
+export interface CollaborationFollowerState {
+  items: CollaborationFollower[];
+  count: number;
+  is_following: boolean;
+  can_follow: boolean;
+  can_unfollow: boolean;
 }
 
 export async function postChatterMessage(params: {
@@ -153,14 +174,55 @@ export async function fetchChatterTimeline(params: {
 }
 
 export async function searchCollaborationUsers(params: {
+  intent: 'collaboration.users.search';
   query?: string;
   limit?: number;
 }) {
   return intentRequest<{ items: CollaborationUserOption[] }>({
-    intent: 'collaboration.users.search',
+    intent: params.intent,
     params: {
       query: params.query || '',
       limit: params.limit ?? 20,
     },
+  });
+}
+
+export async function fetchCollaborationFollowers(params: { model: string; res_id: number }) {
+  return intentRequest<CollaborationFollowerState>({
+    intent: 'chatter.followers.list',
+    params,
+  });
+}
+
+export async function updateCollaborationFollower(params: {
+  model: string;
+  res_id: number;
+  action: 'follow' | 'unfollow';
+}) {
+  return intentRequest<{ result: { action: string; partner_id: number; is_following: boolean } }>({
+    intent: 'chatter.followers.update',
+    params,
+  });
+}
+
+export async function deleteChatterAttachment(params: {
+  model: string;
+  res_id: number;
+  attachment_id: number;
+}) {
+  return intentRequest<{ result: { attachment_id: number; deleted: boolean } }>({
+    intent: 'chatter.attachment.delete',
+    params,
+  });
+}
+
+export async function deleteChatterMessage(params: {
+  model: string;
+  res_id: number;
+  message_id: number;
+}) {
+  return intentRequest<{ result: { message_id: number; deleted: boolean } }>({
+    intent: 'chatter.message.delete',
+    params,
   });
 }

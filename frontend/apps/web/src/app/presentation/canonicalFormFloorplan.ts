@@ -287,10 +287,19 @@ function fieldHasBusinessRelationCapability(field: CanonicalFormNode['fields'][n
 
 function projectRelationNode(node: CanonicalFormNode): CanonicalFormNode {
   const directRelation = node.semanticRole === 'relation' || node.kind.trim().toLowerCase() === 'relation';
-  if (directRelation) return node;
+  const revealRelationIdentity = (field: CanonicalFormNode['fields'][number]) => (
+    fieldHasBusinessRelationCapability(field) ? { ...field, hideLabel: false } : field
+  );
+  if (directRelation) {
+    return {
+      ...node,
+      fields: node.fields.map(revealRelationIdentity),
+      children: node.children.map(projectRelationNode).filter(nodeHasContent),
+    };
+  }
   return {
     ...node,
-    fields: node.fields.filter(fieldHasBusinessRelationCapability),
+    fields: node.fields.filter(fieldHasBusinessRelationCapability).map(revealRelationIdentity),
     children: node.children.map(projectRelationNode).filter(nodeHasContent),
   };
 }
@@ -454,7 +463,7 @@ export function composeCanonicalFormFloorplan(
   const subordinateRelationNodes = semanticProductMode ? relationRoleNodes(subordinateNodes.filter(nodeHasRelationCapability)) : [];
   const relationNodes = [...primaryRelationNodes, ...subordinateRelationNodes];
   const allContextNodes = semanticProductMode
-    ? (writeMode ? [] : contextRoleNodes(primaryNodes))
+    ? (writeMode ? [] : deduplicateProductFields(contextRoleNodes(primaryNodes)))
     : primaryNodes.filter((node) => !taskNodes.includes(node));
   const readonlyContextNodes = semanticProductMode && writeMode
     ? fieldNodes(primaryNodes, (field) => (

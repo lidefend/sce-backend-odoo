@@ -740,6 +740,9 @@ class _TreeFormParserMixin:
             "subviews": subviews,
             "chatter": chatter,
             "attachments": attachments,
+            "collaboration": {
+                "user_search_intent": "collaboration.users.search",
+            } if chatter.get("enabled") else {},
             "search": search,
         }
         _logger.debug("FORM_PARSER_DEBUG: final result keys=%s", list(result.keys()))
@@ -1298,7 +1301,7 @@ class _TreeFormParserMixin:
                     'level': 'chatter',
                     'selection': 'none',
                     'intent': 'message',
-                    'payload': {'mode': 'message'},
+                    'payload': {'mode': 'message', 'execute_intent': 'chatter.post'},
                 },
                 {
                     'key': 'chatter_log_note',
@@ -1307,7 +1310,7 @@ class _TreeFormParserMixin:
                     'level': 'chatter',
                     'selection': 'none',
                     'intent': 'note',
-                    'payload': {'mode': 'note'},
+                    'payload': {'mode': 'note', 'execute_intent': 'chatter.post'},
                 },
                 {
                     'key': 'chatter_schedule_activity',

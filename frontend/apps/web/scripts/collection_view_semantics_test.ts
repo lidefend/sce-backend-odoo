@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import {
   collectOne2manyDraftValidationFromRows,
+  initOne2manyRowsFromRelationSource,
+  isOne2manyEmptyValue,
+  mergeOne2manyHydratedRecords,
   one2manyColumnDisplayValue,
   one2manyColumnsFromSubview,
   one2manyRowActionsFromSubview,
@@ -105,6 +108,25 @@ const selectionColumn = {
 };
 assert.equal(one2manyColumnDisplayValue(selectionColumn, 'won'), '已中标');
 assert.equal(one2manyColumnDisplayValue(selectionColumn, 'unknown'), 'unknown');
+const many2oneColumn = { name: 'partner_id', label: '往来单位', ttype: 'many2one', required: false };
+assert.equal(one2manyColumnDisplayValue(many2oneColumn, [10, '德阳市某产业发展有限公司']), '德阳市某产业发展有限公司');
+assert.equal(one2manyColumnDisplayValue(many2oneColumn, { id: 10, display_name: '德阳市某产业发展有限公司' }), '德阳市某产业发展有限公司');
+assert.equal(one2manyColumnDisplayValue(many2oneColumn, 10), '', 'bare many2one ids must fail closed instead of leaking into product text');
+const many2manyColumn = { name: 'tag_ids', label: '标签', ttype: 'many2many', required: false };
+assert.equal(one2manyColumnDisplayValue(many2manyColumn, [[2, '重点'], { id: 3, name: '在建' }]), '重点、在建');
+assert.equal(one2manyColumnDisplayValue(many2manyColumn, [2, 3]), '', 'bare many2many ids must fail closed instead of leaking into product text');
+const unresolvedRows = initOne2manyRowsFromRelationSource({ source: [2], relationOptions: [], primary: 'display_name' });
+assert.equal(unresolvedRows[0]?.values.display_name, '', 'unresolved one2many records must not synthesize #id labels');
+const syntheticOptionRows = initOne2manyRowsFromRelationSource({
+  source: [2], relationOptions: [{ id: 2, label: '#2' }], primary: 'display_name',
+});
+assert.equal(syntheticOptionRows[0]?.values.display_name, '', 'synthetic relation option labels must fail closed');
+mergeOne2manyHydratedRecords({
+  rows: unresolvedRows,
+  columns: [{ name: 'display_name', label: '名称', ttype: 'char', required: false }],
+  records: [{ id: 2, display_name: false }],
+});
+assert.equal(unresolvedRows[0]?.values.display_name, false, 'hydration must preserve the authoritative empty value without restoring #id text');
 const schemaSelectionColumns = one2manyColumnsFromSubview({ tree: {
   columns: ['state'],
   columns_schema: [{ name: 'state', label: '状态', type: 'selection', selection: [
@@ -116,6 +138,13 @@ assert.deepEqual(schemaSelectionColumns[0], {
   selection: [['submitted', '已提交'], ['won', '中标']],
 });
 assert.equal(one2manyColumnDisplayValue(schemaSelectionColumns[0], 'submitted'), '已提交');
+assert.equal(one2manyColumnDisplayValue({ name: 'amount', label: '金额', ttype: 'monetary', required: false }, 3260000), '3,260,000');
+assert.equal(one2manyColumnDisplayValue({ name: 'quantity', label: '数量', ttype: 'float', required: false }, 1280.5), '1,280.5');
+assert.equal(one2manyColumnDisplayValue({ name: 'active', label: '启用', ttype: 'boolean', required: false }, true), '是');
+assert.equal(one2manyColumnDisplayValue({ name: 'active', label: '启用', ttype: 'boolean', required: false }, false), '否');
+const readableDatetime = one2manyColumnDisplayValue({ name: 'opened_at', label: '开启时间', ttype: 'datetime', required: false }, '2025-06-10T09:00:00');
+assert.ok(readableDatetime.includes('2025') && readableDatetime.includes('09:00') && !readableDatetime.includes('T'));
+assert.equal(isOne2manyEmptyValue({ name: 'active', label: '启用', ttype: 'boolean', required: false }, false), false, 'false is a readable business fact');
 const dynamicColumn = {
   name: 'note', label: '说明', ttype: 'char', required: false,
   modifiers: {

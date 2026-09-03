@@ -60,6 +60,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     formDesignFieldLabel,
     formDesignerGroupNavigatorItems,
     formRouteIdentity,
+    formRouteOwnerIdentity,
     formSettingsActiveTab,
     formUiLabel,
     handleRecordContextChanged,
@@ -558,6 +559,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
 
   useFormPageLifecycleRuntime({
     formRouteIdentity: () => formRouteIdentity(),
+    formRouteOwnerIdentity: () => formRouteOwnerIdentity(),
     handleRecordContextChanged,
     instanceRouteIdentity,
     isComponentActive,

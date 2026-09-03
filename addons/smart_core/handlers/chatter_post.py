@@ -73,6 +73,8 @@ class ChatterPostHandler(BaseIntentHandler):
 
         if not model or _is_empty_param(res_id) or not body:
             return self._failure(REASON_MISSING_PARAMS, "缺少参数 model/res_id/body", 400, trace_id)
+        if mode not in {"message", "note"}:
+            return self._failure(REASON_USER_ERROR, "mode 无效", 400, trace_id)
         if model not in self.env:
             return self._failure(REASON_NOT_FOUND, "模型不存在", 404, trace_id)
         res_id, res_id_error = parse_positive_int(res_id)

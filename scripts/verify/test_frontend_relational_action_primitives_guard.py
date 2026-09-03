@@ -16,6 +16,10 @@ class RelationalActionPrimitivesGuardTest(unittest.TestCase):
         altered = self.x2many.replace('<ScButton\n          v-if="adapter.one2manyCanCreate(field.name)"', '<button\n          v-if="adapter.one2manyCanCreate(field.name)"')
         self.assertIn("relational surface retains a generic legacy command", validate(altered, self.view_relation))
 
+    def test_one2many_remove_requires_unlink_authority(self):
+        altered = self.x2many.replace('              v-if="adapter.one2manyCanUnlink(field.name)"\n', '', 1)
+        self.assertTrue(any("o2m-row-remove" in error for error in validate(altered, self.view_relation)))
+
     def test_destructive_commands_keep_danger_variant(self):
         altered = self.view_relation.replace('class="relational-delete" type="button" variant="danger"', 'class="relational-delete" type="button" variant="ghost"')
         self.assertTrue(any("relational-delete" in error for error in validate(self.x2many, altered)))
@@ -49,6 +53,18 @@ class RelationalActionPrimitivesGuardTest(unittest.TestCase):
             "shared X2Many surface retains a business-specific collection action",
             validate(altered, self.view_relation),
         )
+
+    def test_readonly_attachment_cannot_restore_upload_control(self):
+        altered = self.x2many.replace('v-if="!field.readonly"\n        :key="uploadTick"', ':key="uploadTick"', 1)
+        self.assertTrue(any("readonly attachment authority" in error for error in validate(altered, self.view_relation)))
+
+    def test_readonly_attachment_cannot_restore_remove_control(self):
+        altered = self.x2many.replace('v-if="!field.readonly"\n            variant="ghost"', 'variant="ghost"', 1)
+        self.assertTrue(any("readonly attachment authority" in error for error in validate(altered, self.view_relation)))
+
+    def test_readonly_attachment_upload_handler_fails_closed(self):
+        altered = self.x2many.replace('if (field.readonly) return;', '', 1)
+        self.assertTrue(any("readonly attachment authority" in error for error in validate(altered, self.view_relation)))
 
     def test_parallel_command_is_rejected(self):
         altered = self.view_relation.replace('</template>', '<ScButton>parallel</ScButton>\n</template>', 1)

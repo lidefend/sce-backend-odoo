@@ -50,12 +50,18 @@ const fieldClasses = computed(() => {
 .activity-template-container { display: grid; gap: 10px; min-width: 0; }
 .activity-template-text { color: var(--sc-app-text-secondary); font-size: 12px; }
 .activity-template-tail { color: var(--sc-app-text-secondary); font-size: 12px; }
-.activity-template-container.d-flex { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.activity-template-field { display: inline-flex; gap: 6px; align-items: baseline; min-width: 0; }
+.activity-template-container.d-flex { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.activity-template-container.d-flex > * { min-width: 0; max-width: 100%; }
+.activity-template-field { display: inline-flex; flex: 1 1 220px; gap: 6px; align-items: baseline; min-width: 0; }
 .activity-template-field__label { color: var(--sc-app-text-secondary); font-size: 11px; }
 .activity-template-field__value { overflow-wrap: anywhere; font-weight: 650; }
 .activity-template-field--badge .activity-template-field__value { padding: 3px 8px; border-radius: 999px; background: var(--sc-app-muted-bg); font-size: 12px; }
 .activity-template-field--info .activity-template-field__value { background: var(--sc-app-info-bg); color: var(--sc-app-info-text); }
 .activity-template-field--success .activity-template-field__value { background: var(--sc-app-success-bg); color: var(--sc-app-success-text); }
 .activity-template-field--monetary .activity-template-field__value { font-variant-numeric: tabular-nums; }
+@media (max-width: 680px) {
+  .activity-template-container.d-flex { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  .activity-template-field { display: grid; grid-template-columns: minmax(68px, .55fr) minmax(0, 1.45fr); width: 100%; }
+  .activity-template-field__value { min-width: 0; }
+}
 </style>

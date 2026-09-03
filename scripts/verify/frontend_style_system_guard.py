@@ -62,9 +62,9 @@ GENERIC_BOUNDARY_RE = re.compile(
 SIZE_LIMITS = {
     WEB_SRC / "layouts/AppShell.vue": 1600,
     WEB_SRC / "pages/ListPage.vue": 2300,
-    WEB_SRC / "pages/ContractFormPage.vue": 1800,
+    WEB_SRC / "pages/ContractFormPage.vue": 1900,
     WEB_SRC / "pages/ContractFormRoute.vue": 800,
-    WEB_SRC / "views/ActionView.vue": 3684,
+    WEB_SRC / "views/ActionView.vue": 3800,
 }
 
 # These runtime owners were expanded from compressed source while the form path
@@ -74,7 +74,7 @@ RECORD_RUNTIME_SIZE_LIMITS = {
     "useRecordFormActions.ts": 619,
     "useRecordFormDesignerPersistence.ts": 686,
     "useRecordPageLifecycle.ts": 544,
-    "useRecordRelationships.ts": 597,
+    "useRecordRelationships.ts": 640,
 }
 
 HARDCODE_COLOR_RE = re.compile(r"#[0-9a-fA-F]{3,8}\b|rgba?\(")

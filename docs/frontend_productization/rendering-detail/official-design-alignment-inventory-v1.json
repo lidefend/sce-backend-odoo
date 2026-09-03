@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "ee2d3b438c2674fbe9fef23b8b0cf99cd776e8d9f790afe535c738d09a32d5d3",
+  "inputDigest": "9b259b564c23b028b8092c3950582adee4bdfb9a199311d18f9ac3ba0ba6b7f9",
   "internalVendorSelectorGaps": [],
   "productAppearanceVariants": [
     {
@@ -55,11 +55,26 @@
       "status": "registered_product_variance"
     },
     {
+      "appearance": "activity-tab-close",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScIconButton.vue",
+        "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue"
+      ],
+      "selectors": [
+        ".sc-icon-button[data-appearance='activity-tab-close']",
+        ".sc-icon-button[data-appearance='activity-tab-close']:focus-visible",
+        ".sc-icon-button[data-appearance='activity-tab-close']:hover:not(:disabled)"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
       "appearance": "auth-link",
       "consumers": [
         "frontend/apps/web/src/components/design-system/ScButton.vue",
         "frontend/apps/web/src/components/product-list/CollectionRowCell.vue",
-        "frontend/apps/web/src/views/LoginView.vue"
+        "frontend/apps/web/src/views/AccountActivationView.vue",
+        "frontend/apps/web/src/views/LoginView.vue",
+        "frontend/apps/web/src/views/PasswordRecoveryView.vue"
       ],
       "selectors": [
         ".sc-btn[data-appearance='auth-link']"
@@ -95,9 +110,27 @@
       "selectors": [
         "[data-semantic-component='ScTable'][data-appearance='collection'] .cell-select, [data-semantic-component='ScTable'][data-appearance='collection'] .cell-row-number, [data-semantic-component='ScTable'][data-appearance='collection'] tbody .column-layout-identity",
         "[data-semantic-component='ScTable'][data-appearance='collection'] .column-layout-identity",
+        "[data-semantic-component='ScTable'][data-appearance='collection'] tbody td",
+        "[data-semantic-component='ScTable'][data-appearance='collection'] tbody tr",
         "[data-semantic-component='ScTable'][data-appearance='collection'] tbody tr.row-tone-danger td",
+        "[data-semantic-component='ScTable'][data-appearance='collection'] td.column-layout-date",
+        "[data-semantic-component='ScTable'][data-appearance='collection'] td.column-long-text",
+        "[data-semantic-component='ScTable'][data-appearance='collection'] td.column-long-text > *, [data-semantic-component='ScTable'][data-appearance='collection'] td.column-long-text :is(.collection-row-cell,.cell-primary)",
+        "[data-semantic-component='ScTable'][data-appearance='collection'] td:is(.column-numeric,.column-layout-money)",
         "[data-semantic-component='ScTable'][data-appearance='collection'] tfoot tr:nth-child(2) :is(.cell-select,.cell-row-number)",
-        "[data-semantic-component='ScTable'][data-appearance='collection'] thead .column-layout-identity, [data-semantic-component='ScTable'][data-appearance='collection'] tfoot .cell-select, [data-semantic-component='ScTable'][data-appearance='collection'] tfoot .cell-row-number"
+        "[data-semantic-component='ScTable'][data-appearance='collection'] thead .column-layout-identity, [data-semantic-component='ScTable'][data-appearance='collection'] tfoot .cell-select, [data-semantic-component='ScTable'][data-appearance='collection'] tfoot .cell-row-number",
+        "[data-semantic-component='ScTable'][data-appearance='collection'] thead th"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "collection-search",
+      "consumers": [
+        "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
+        "frontend/apps/web/src/components/design-system/ScInput.vue"
+      ],
+      "selectors": [
+        ".sc-input[data-appearance='collection-search']"
       ],
       "status": "registered_product_variance"
     },
@@ -212,6 +245,7 @@
         "frontend/apps/web/src/components/design-system/ScSelect.vue",
         "frontend/apps/web/src/components/design-system/ScTextarea.vue",
         "frontend/apps/web/src/components/product-list/CollectionGroupingToolbar.vue",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalMany2oneFieldControl.vue",
         "frontend/apps/web/src/components/template/FormSection.vue",
         "frontend/apps/web/src/components/view/ViewFieldRenderer.vue",
         "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationComposer.vue"
@@ -251,8 +285,7 @@
         "frontend/apps/web/src/components/GlobalMessagePanel.vue",
         "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
         "frontend/apps/web/src/components/design-system/ScButton.vue",
-        "frontend/apps/web/src/components/template/FormSection.vue",
-        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalMany2oneFieldControl.vue",
         "frontend/apps/web/src/layouts/AppShell.vue",
         "frontend/apps/web/src/views/ActionView.vue"
       ],
@@ -278,6 +311,17 @@
         ".sc-input[data-appearance='navigation-search']",
         ".sc-input[data-appearance='navigation-search']:focus-within",
         ".sc-input[data-appearance='navigation-search']:hover"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "numeric-entry",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScInput.vue",
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue"
+      ],
+      "selectors": [
+        ".sc-input[data-appearance='numeric-entry']"
       ],
       "status": "registered_product_variance"
     },
@@ -331,10 +375,24 @@
       "status": "registered_product_variance"
     },
     {
+      "appearance": "relation-detail",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScTable.vue",
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue"
+      ],
+      "selectors": [
+        "[data-semantic-component='ScTable'][data-appearance='relation-detail']",
+        "[data-semantic-component='ScTable'][data-appearance='relation-detail'] tbody tr:hover td",
+        "[data-semantic-component='ScTable'][data-appearance='relation-detail'] td",
+        "[data-semantic-component='ScTable'][data-appearance='relation-detail'] tfoot td",
+        "[data-semantic-component='ScTable'][data-appearance='relation-detail'] th"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
       "appearance": "relation-tag",
       "consumers": [
-        "frontend/apps/web/src/components/design-system/ScButton.vue",
-        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue"
+        "frontend/apps/web/src/components/design-system/ScButton.vue"
       ],
       "selectors": [
         ".sc-btn[data-appearance='relation-tag']",
@@ -345,8 +403,7 @@
     {
       "appearance": "relation-tag-entry",
       "consumers": [
-        "frontend/apps/web/src/components/design-system/ScInput.vue",
-        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue"
+        "frontend/apps/web/src/components/design-system/ScInput.vue"
       ],
       "selectors": [
         ".sc-input[data-appearance='relation-tag-entry']"
@@ -387,7 +444,6 @@
       "consumers": [
         "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
         "frontend/apps/web/src/components/design-system/ScButton.vue",
-        "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
         "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue"
       ],
       "selectors": [
@@ -549,11 +605,11 @@
   "schemaVersion": "frontend.official-design-alignment.inventory.v1",
   "scope": "formal P0/P1 frontend TDesign driver and product adapter styling",
   "summary": {
-    "formalStyleSourceCount": 196,
+    "formalStyleSourceCount": 201,
     "internalVendorSelectorGapCount": 0,
     "officialPublicTokenCount": 240,
     "orphanedProductAppearanceVariantCount": 0,
-    "productAppearanceVariantCount": 35,
+    "productAppearanceVariantCount": 39,
     "projectPublicTokenOverrideCount": 38,
     "unknownProjectTokenOverrideCount": 0,
     "visualLiteralGapCount": 0

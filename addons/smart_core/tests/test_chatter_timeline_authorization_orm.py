@@ -247,6 +247,9 @@ class TestChatterTimelineAuthorizationOrm(TransactionCase):
         )
         self.assertTrue(all((audit_item.get("audit") or {}).values()))
         self.assertNotIn("TIMELINE_AUTHORIZED_AUDIT", audit_item.get("title", ""))
+        activity_item = next(item for item in data["items"] if item.get("type") == "activity")
+        self.assertEqual((activity_item.get("activity") or {}).get("status"), "pending")
+        self.assertEqual((activity_item.get("activity") or {}).get("status_label"), "待处理")
 
         admin_data, _admin_meta = self._timeline(
             self.env(

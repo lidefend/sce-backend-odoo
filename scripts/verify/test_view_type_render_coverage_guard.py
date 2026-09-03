@@ -21,12 +21,20 @@ class ViewTypeRenderCoverageGuardTests(unittest.TestCase):
 
     def test_wrong_registry_state_and_dead_marker_cannot_pass(self) -> None:
         evidence = deepcopy(self.evidence)
-        evidence["registrations"]["graph"]["status"] = "ready"
-        evidence["registrations"]["graph"]["activeRendererKey"] = "core.graph"
+        evidence["registrations"]["graph"]["status"] = "fallback"
+        evidence["registrations"]["graph"]["activeRendererKey"] = "core.readable_records"
         evidence["deadCode"] = "graph fallback core.readable_records"
         errors = guard.validate_runtime_evidence(evidence)
         self.assertTrue(any("graph registration status" in error for error in errors))
         self.assertTrue(any("graph registration activeRendererKey" in error for error in errors))
+
+    def test_analysis_profile_and_resolver_chain_are_required(self) -> None:
+        evidence = deepcopy(self.evidence)
+        evidence["analysisProfiles"]["pivot"]["profile"]["sourceAuthority"]["runtime_carrier"] = ""
+        evidence["analysisProfiles"]["graph"]["model"]["rows"] = []
+        errors = guard.validate_runtime_evidence(evidence)
+        self.assertIn("pivot normalized profile carrier is missing", errors)
+        self.assertIn("graph dedicated resolver did not consume dimensions and records", errors)
 
     def test_missing_readable_projection_fails(self) -> None:
         evidence = deepcopy(self.evidence)
@@ -65,6 +73,7 @@ class ViewTypeRenderCoverageGuardTests(unittest.TestCase):
     <article v-for="row in vm.content.advanced?.rows || []"></article>
   </section>
   <ActivityPage v-if="false" v-else-if="viewMode === 'activity'" :model="activitySurfaceModel" />
+  <AnalysisPage v-if="false" v-else-if="viewMode === 'pivot' || viewMode === 'graph'" :model="analysisSurfaceModel" />
 </template>
 <script setup>
 const fake = `import ActivityPage from '../pages/ActivityPage.vue';`;
@@ -73,8 +82,10 @@ const fake = `import ActivityPage from '../pages/ActivityPage.vue';`;
 """
         errors = guard.validate_action_view_structure(fake_source, activity_page_exists=True)
         self.assertIn("ActionView has no reachable ActivityPage bound to activitySurfaceModel", errors)
+        self.assertIn("ActionView has no reachable AnalysisPage bound to analysisSurfaceModel", errors)
         self.assertIn("ActionView has no reachable readable advanced-record fallback surface", errors)
         self.assertIn("ActionView does not statically import ActivityPage", errors)
+        self.assertIn("ActionView does not statically import AnalysisPage", errors)
 
     def test_marker_only_payload_fails_closed(self) -> None:
         marker_only = {

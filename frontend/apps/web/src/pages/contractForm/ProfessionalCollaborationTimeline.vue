@@ -20,12 +20,21 @@
               </span>
             </div>
             <ScButton
-              v-if="entry.attachment?.can_download !== false"
+              v-if="canDownloadCollaborationAttachment(entry)"
               variant="ghost"
               size="small"
               class="native-attachment-download"
               @click="emit('open-attachment', entry.attachment!)"
             >{{ attachmentViewLabel }}</ScButton>
+            <ScButton
+              v-if="canDeleteCollaborationAttachment(entry)"
+              variant="ghost"
+              size="small"
+              class="native-attachment-delete"
+              :loading="isDeletingAttachment(entry)"
+              :disabled="isDeletingAttachment(entry)"
+              @click="emit('delete-attachment', entry)"
+            >删除</ScButton>
           </div>
           <span v-if="entry.at" class="native-chatter-meta">{{ formatCollaborationTimelineMeta(entry.at) }}</span>
         </template>
@@ -37,7 +46,16 @@
               <div class="native-chatter-message-header">
                 <span class="native-chatter-message-author">{{ messageInfo(entry).author }}</span>
                 <span v-if="messageInfo(entry).atLabel" class="native-chatter-message-time">{{ messageInfo(entry).atLabel }}</span>
-                <ScButton variant="ghost" size="small" class="native-chatter-message-reply" @click="emit('reply', entry)">回复</ScButton>
+                <ScButton v-if="canReplyCollaborationMessage(entry)" variant="ghost" size="small" class="native-chatter-message-reply" @click="emit('reply', entry)">回复</ScButton>
+                <ScButton
+                  v-if="canDeleteCollaborationMessage(entry)"
+                  variant="ghost"
+                  size="small"
+                  class="native-chatter-message-delete"
+                  :loading="isDeletingMessage(entry)"
+                  :disabled="isDeletingMessage(entry)"
+                  @click="emit('delete-message', entry)"
+                >删除</ScButton>
               </div>
               <span class="native-chatter-message-body">{{ messageInfo(entry).body }}</span>
             </div>
@@ -92,18 +110,22 @@ import type { ChatterTimelineEntry } from '../../api/chatter';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScInlineState from '../../components/design-system/ScInlineState.vue';
 import ScList, { type ScListItem } from '../../components/design-system/ScList.vue';
-import { formatCollaborationTimelineMeta, parseAttachmentEntry, parseMessageEntry, parseActivityEntry, type ParsedAttachmentInfo, type ParsedMessageInfo, type ParsedActivityInfo } from './professionalCollaborationModel';
+import { canDeleteCollaborationAttachment, canDeleteCollaborationMessage, canDownloadCollaborationAttachment, canReplyCollaborationMessage, formatCollaborationTimelineMeta, parseAttachmentEntry, parseMessageEntry, parseActivityEntry, type ParsedAttachmentInfo, type ParsedMessageInfo, type ParsedActivityInfo } from './professionalCollaborationModel';
 
-const props = defineProps<{ entries: ChatterTimelineEntry[]; activityUpdatingIds: number[]; attachmentViewLabel: string; timelineHasMore: boolean; timelineLoading: boolean }>();
+const props = defineProps<{ entries: ChatterTimelineEntry[]; activityUpdatingIds: number[]; attachmentDeletingIds: number[]; messageDeletingIds: number[]; attachmentViewLabel: string; timelineHasMore: boolean; timelineLoading: boolean }>();
 const emit = defineEmits<{
   'update-activity': [entry: ChatterTimelineEntry, action: 'done' | 'cancel'];
   'open-attachment': [attachment: NonNullable<ChatterTimelineEntry['attachment']>];
+  'delete-attachment': [entry: ChatterTimelineEntry];
+  'delete-message': [entry: ChatterTimelineEntry];
   'load-more': [];
   'reply': [entry: ChatterTimelineEntry];
 }>();
 
 function entryId(entry: ChatterTimelineEntry) { return Number(entry.activity?.id || entry.id || 0); }
 function isUpdating(entry: ChatterTimelineEntry) { const id = entryId(entry); return Boolean(id && props.activityUpdatingIds.includes(id)); }
+function isDeletingAttachment(entry: ChatterTimelineEntry) { const id = Number(entry.attachment?.id || entry.id || 0); return Boolean(id && props.attachmentDeletingIds.includes(id)); }
+function isDeletingMessage(entry: ChatterTimelineEntry) { const id = Number(entry.message?.id || entry.id || 0); return Boolean(id && props.messageDeletingIds.includes(id)); }
 function entryFrom(item: ScListItem): ChatterTimelineEntry | null { return item as unknown as ChatterTimelineEntry; }
 function attachmentInfo(entry: ChatterTimelineEntry): ParsedAttachmentInfo { return parseAttachmentEntry(entry); }
 function messageInfo(entry: ChatterTimelineEntry): ParsedMessageInfo { return parseMessageEntry(entry); }

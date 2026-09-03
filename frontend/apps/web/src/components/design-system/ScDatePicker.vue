@@ -1,2 +1,3 @@
-<template><TDesignDatePicker v-bind="{ ...$attrs, ...semanticPrimitiveIdentity('ScDatePicker') }" :value="modelValue" :disabled="disabled" :readonly="readonly" :enable-time-picker="withTime" @change="emit('update:modelValue', String($event ?? ''))" /></template>
+<template><TDesignDatePicker class="sc-date-picker" v-bind="{ ...$attrs, ...semanticPrimitiveIdentity('ScDatePicker') }" :value="modelValue" :disabled="disabled" :readonly="readonly" :enable-time-picker="withTime" @change="emit('update:modelValue', String($event ?? ''))" /></template>
 <script setup lang="ts">import { TDesignDatePicker } from './tdesignPrimitiveBridge'; import { semanticPrimitiveIdentity } from './primitiveAdapter'; defineOptions({ inheritAttrs:false }); defineProps<{modelValue?:string; disabled?:boolean; readonly?:boolean; withTime?:boolean}>(); const emit=defineEmits<{ 'update:modelValue':[value:string] }>();</script>
+<style scoped>.sc-date-picker { width: 100%; }</style>

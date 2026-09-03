@@ -16,195 +16,6 @@
       "reason": "synthetic_demo_placeholder_replaced_before_merge"
     },
     {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p0_ledger_gate.py",
-      "blob_id": "a4898e6dc69fc1fbd34bb299abb1811fc8c24ca4",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_ledger_fixture"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p0_ledger_gate.py",
-      "blob_id": "f2156e8e1bfd60f4f58bd2ea0684a0a22a0fdb7a",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_ledger_fixture_history"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p0_ledger_gate.py",
-      "blob_id": "487ac377c8a9a689fef795881d9a228c8cc91ee2",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_contract_allocation_fixture"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "0911deb0f3a60a55a2047fb3483ab776f140f5cf",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_payment_fixture_history"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "196a8d4c917de20fbe351f4419327ad9b9a05e05",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_fixture"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "20e0342eb6382508164de58e2f8be61c6cece7bf",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_fixture"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "21d44e4648a03b8317b263e799904239376a07bf",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_fixture"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "53a3bfa858c4efa19c929a096f4e3cde7bc52352",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_payment_fixture_history"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "53a3bfa858c4efa19c929a096f4e3cde7bc52352",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_payment_fixture_history"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "77c3af8cd698e9eee331e6f922d25d8796786803",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_fixture"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "7ce037b5ac5b868bc6db09ad1238b491a4558711",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_payment_fixture_history"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "7ce037b5ac5b868bc6db09ad1238b491a4558711",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_payment_fixture_history"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "81a4e67fb4ed86e3e375b5c0e94662cf74b2c0ec",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_payment_fixture_candidate"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "8f565cf33f8994502449756ed8bd6650a8d75a7f",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_payment_fixture_history"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "8f565cf33f8994502449756ed8bd6650a8d75a7f",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_payment_fixture_history"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "913a5d2237821fd9585b9d1f3883e5c7c666a0b8",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_fixture"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "c35c72e20fb7aca13d78a0a810f16b78d5b74e7b",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_payment_fixture"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "ea1608f86e8aa8d77e49e533f49f6d665447b234",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_fixture"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "fd193e308a3cda898771d7f3fa7890877d2eb854",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_payment_fixture_history"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "fd193e308a3cda898771d7f3fa7890877d2eb854",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_payment_fixture_history"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py",
-      "blob_id": "bc2eaf30e04aac1880176f78d7183a1e3bf844d3",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_permission_fixture"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "6360dcb6f8414c588b1cb9eb9ca2e4602494e9c0",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_fixture"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "1a28e3faa37d77c9a2ac52c15c80b06c9579f5c3",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_payment_fixture"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "bb28eafb852a92e39574f4afe4f75bd1ce7900e4",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_payment_fixture"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "cfc380bd624293e7297734ceebabda8f5dfaf3e0",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_payment_fixture"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "afe00a5bdb8bdb7ecc168e6c83410b699ac2b31d",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_synthetic_payment_fixture"
-    },
-    {
-      "rule_id": "PD003",
-      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
-      "blob_id": "3f9215cb603c34956599ffbe187477613ac4ce2a",
-      "classification": "BANK_ACCOUNT_PATTERN",
-      "reason": "verified_fixed_synthetic_payment_fixture_history"
-    },
-    {
       "rule_id": "PD002",
       "path": "frontend/tdesign-admin/mock/index.ts",
       "blob_id": "916c23f297d21e4db69f1c7abbd8551bc85304f9",
@@ -235,7 +46,7 @@
     {
       "rule_id": "PD003",
       "path": "addons/smart_construction_core/tests/test_p0_ledger_gate.py",
-      "blob_id": "de36c41c785ed2300309cbab6da052433f5dfa10",
+      "blob_id": "487ac377c8a9a689fef795881d9a228c8cc91ee2",
       "classification": "BANK_ACCOUNT_PATTERN",
       "reason": "verified_synthetic_ledger_fixture"
     },
@@ -245,6 +56,167 @@
       "blob_id": "9f67b170a9904f1452b9e516069f8a3823669cb0",
       "classification": "BANK_ACCOUNT_PATTERN",
       "reason": "verified_synthetic_ledger_fixture"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p0_ledger_gate.py",
+      "blob_id": "a4898e6dc69fc1fbd34bb299abb1811fc8c24ca4",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_ledger_fixture"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p0_ledger_gate.py",
+      "blob_id": "de36c41c785ed2300309cbab6da052433f5dfa10",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_ledger_fixture"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p0_ledger_gate.py",
+      "blob_id": "f2156e8e1bfd60f4f58bd2ea0684a0a22a0fdb7a",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_ledger_fixture_history"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+      "blob_id": "0911deb0f3a60a55a2047fb3483ab776f140f5cf",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_payment_fixture_history"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+      "blob_id": "196a8d4c917de20fbe351f4419327ad9b9a05e05",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_fixture"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+      "blob_id": "1a28e3faa37d77c9a2ac52c15c80b06c9579f5c3",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_payment_fixture"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+      "blob_id": "20e0342eb6382508164de58e2f8be61c6cece7bf",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_fixture"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+      "blob_id": "21d44e4648a03b8317b263e799904239376a07bf",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_fixture"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+      "blob_id": "3f9215cb603c34956599ffbe187477613ac4ce2a",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_fixed_synthetic_payment_fixture_history"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+      "blob_id": "53a3bfa858c4efa19c929a096f4e3cde7bc52352",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_payment_fixture_history"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+      "blob_id": "6360dcb6f8414c588b1cb9eb9ca2e4602494e9c0",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_fixture"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+      "blob_id": "77c3af8cd698e9eee331e6f922d25d8796786803",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_fixture"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+      "blob_id": "7ce037b5ac5b868bc6db09ad1238b491a4558711",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_payment_fixture_history"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+      "blob_id": "81a4e67fb4ed86e3e375b5c0e94662cf74b2c0ec",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_payment_fixture_candidate"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+      "blob_id": "8f565cf33f8994502449756ed8bd6650a8d75a7f",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_payment_fixture_history"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+      "blob_id": "913a5d2237821fd9585b9d1f3883e5c7c666a0b8",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_fixture"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+      "blob_id": "afe00a5bdb8bdb7ecc168e6c83410b699ac2b31d",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_payment_fixture"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+      "blob_id": "bb28eafb852a92e39574f4afe4f75bd1ce7900e4",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_payment_fixture"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+      "blob_id": "c35c72e20fb7aca13d78a0a810f16b78d5b74e7b",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_payment_fixture"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+      "blob_id": "cfc380bd624293e7297734ceebabda8f5dfaf3e0",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_payment_fixture"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+      "blob_id": "ea1608f86e8aa8d77e49e533f49f6d665447b234",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_fixture"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+      "blob_id": "fd193e308a3cda898771d7f3fa7890877d2eb854",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_payment_fixture_history"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py",
+      "blob_id": "bc2eaf30e04aac1880176f78d7183a1e3bf844d3",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_permission_fixture"
     }
   ]
 }

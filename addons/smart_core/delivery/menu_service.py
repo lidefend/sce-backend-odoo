@@ -516,6 +516,16 @@ class MenuService:
             for row in authority.get(bucket) or []
             if isinstance(row, dict)
         }
+        allowed_containers = {}
+        for row in authority.get("menu_containers") or []:
+            if not isinstance(row, dict):
+                continue
+            try:
+                container_menu_id = int(row.get("menu_id") or 0)
+            except (TypeError, ValueError):
+                container_menu_id = 0
+            if container_menu_id > 0 and str(row.get("route") or "").strip():
+                allowed_containers[container_menu_id] = row
 
         def as_directory_container(node: dict, children: list[dict]) -> dict:
             """Preserve an authorized subtree without exposing its denied parent target."""
@@ -576,11 +586,15 @@ class MenuService:
                 return as_directory_container(node, children) if children else None
             candidate = dict(node)
             candidate["children"] = children
-            has_route = bool(
-                str(node.get("route") or meta.get("route") or entry_target.get("route") or "").strip()
-            )
-            if not has_route and not children and action_id <= 0:
-                return None
+            if not children and action_id <= 0:
+                container = allowed_containers.get(menu_id)
+                node_route = str(
+                    node.get("route") or meta.get("route") or entry_target.get("route") or ""
+                ).strip()
+                authority_route = str((container or {}).get("route") or "").strip()
+                if not container or node_route != authority_route:
+                    return None
+                candidate["route"] = authority_route
             return candidate
 
         return [kept for node in nav or [] if (kept := walk(node))]
@@ -590,6 +604,7 @@ class MenuService:
         """Attach the server-owned presentation identity to the final authorized tree."""
         authority = route_authority if isinstance(route_authority, dict) else {}
         authority_by_pair = {}
+        container_authority_by_menu = {}
         seen_keys = set()
         seen_menu_ids = set()
         for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions"):
@@ -602,6 +617,15 @@ class MenuService:
                     pair = (0, 0)
                 if pair[0] > 0 and pair[1] > 0:
                     authority_by_pair[pair] = entry
+        for entry in authority.get("menu_containers") or []:
+            if not isinstance(entry, dict):
+                continue
+            try:
+                menu_id = int(entry.get("menu_id") or 0)
+            except (TypeError, ValueError):
+                menu_id = 0
+            if menu_id > 0 and str(entry.get("route") or "").strip():
+                container_authority_by_menu[menu_id] = entry
 
         def text(value) -> str:
             return str(value or "").strip()
@@ -633,6 +657,7 @@ class MenuService:
             if menu_id > 0:
                 seen_menu_ids.add(menu_id)
             entry = authority_by_pair.get((menu_id, action_id)) if action_id > 0 else None
+            container_entry = container_authority_by_menu.get(menu_id) if action_id <= 0 else None
             if action_id > 0 and not entry:
                 raise ValueError(
                     "canonical navigation action lacks exact authority: %s/%s" % (menu_id, action_id)
@@ -654,10 +679,16 @@ class MenuService:
             ]
             if explicitly_disabled and not disabled_reason:
                 raise ValueError("disabled canonical navigation node requires a server reason")
-            if action_id <= 0 and not children:
+            if action_id <= 0 and not children and not container_entry:
                 raise ValueError("canonical navigation node has neither target nor children")
 
-            state = "disabled" if explicitly_disabled else "enabled" if action_id > 0 else "container"
+            state = (
+                "disabled"
+                if explicitly_disabled
+                else "enabled"
+                if action_id > 0 or container_entry
+                else "container"
+            )
             authority_projection = (
                 {
                     "state": "allowed",
@@ -669,6 +700,16 @@ class MenuService:
                     )),
                 }
                 if entry
+                else {
+                    "state": "allowed",
+                    "source": text(container_entry.get("source")),
+                    "key": ":".join((
+                        text(container_entry.get("route_kind")),
+                        text(container_entry.get("menu_xmlid") or container_entry.get("menu_id")),
+                        "container",
+                    )),
+                }
+                if container_entry
                 else {
                     "state": "container",
                     "source": "system.init.navigation.nav",
@@ -685,7 +726,7 @@ class MenuService:
                 "parent_chain": list(parents),
                 "label": label,
                 "icon": text(node.get("icon") or meta.get("icon")) or None,
-                "route": text(entry.get("route")) if entry else None,
+                "route": text((entry or container_entry or {}).get("route")) or None,
                 "authority": authority_projection,
                 "state": state,
                 "disabled_reason": disabled_reason or None,

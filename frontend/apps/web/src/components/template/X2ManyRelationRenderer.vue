@@ -1,6 +1,11 @@
 <template>
   <div v-if="field.type === 'many2many'" class="relation-editor">
-    <div v-if="isAttachmentField(field)" class="relation-attachment-editor" data-semantic-component="RelationAttachmentEditor">
+    <div
+      v-if="isAttachmentField(field)"
+      class="relation-attachment-editor"
+      data-semantic-component="RelationAttachmentEditor"
+      :data-control-state="field.readonly ? 'readonly' : 'editable'"
+    >
       <div v-if="adapter.selectedRelationOptions(field.name).length" class="attachment-list">
         <div
           v-for="att in adapter.selectedRelationOptions(field.name)"
@@ -11,6 +16,7 @@
           <span class="attachment-name" :title="attachmentDisplayName(att)">{{ attachmentDisplayName(att) }}</span>
           <ScButton variant="ghost" size="small" @click="downloadAttachment(att)">下载</ScButton>
           <ScButton
+            v-if="!field.readonly"
             variant="ghost"
             size="small"
             :disabled="adapter.busy"
@@ -19,7 +25,14 @@
           >移除</ScButton>
         </div>
       </div>
+      <ScInlineState
+        v-else-if="field.readonly"
+        class="attachment-empty"
+        state="empty"
+        label="暂无附件"
+      />
       <ScFileField
+        v-if="!field.readonly"
         :key="uploadTick"
         class="attachment-upload"
         :disabled="adapter.busy"
@@ -43,7 +56,7 @@
   </div>
   <div v-else-if="field.type === 'one2many'" class="relation-editor">
     <div v-if="field.readonly" class="o2m-readonly" data-readonly-relation>
-      <div v-if="adapter.visibleOne2manyRows(field.name).length" class="o2m-readonly-list">
+      <div v-if="one2manyRows.length" class="o2m-readonly-list">
         <article
           v-for="row in paginatedOne2manyRows"
           :key="row.key"
@@ -64,7 +77,14 @@
           </dl>
         </article>
       </div>
-      <ScInlineState v-else class="relation-readonly-empty" state="empty" label="暂无记录" data-readonly-relation-empty />
+      <ScInlineState
+        v-else-if="adapter.isOne2manyHydrating(field.name)"
+        class="relation-readonly-loading"
+        state="loading"
+        label="正在加载关系记录"
+        data-readonly-relation-loading
+      />
+      <ScInlineState v-else class="relation-readonly-empty" state="empty" label="暂无可展示记录" data-readonly-relation-empty />
     </div>
         <template v-else>
     <div class="o2m-card">
@@ -99,6 +119,7 @@
           :hover="true"
           :stripe="false"
           :foot-data="o2mTableFootData"
+          appearance="relation-detail"
           label="明细列表"
         >
           <template #_state="{ row }">
@@ -121,14 +142,14 @@
             <ScCheckbox
               v-if="column.ttype === 'boolean'"
               class="input-checkbox"
-              :disabled="column.readonly || adapter.busy"
+              :disabled="column.readonly || !adapter.one2manyCanInlineEdit(field.name) || adapter.busy"
               :checked="Boolean(row._row.values[column.name])"
               :label="column.label"
               @change="adapter.setOne2manyRowField(field.name, row._key, column, $event)"
             />
             <ScSelect
               v-else-if="column.ttype === 'selection'"
-              :disabled="column.readonly || adapter.busy"
+              :disabled="column.readonly || !adapter.one2manyCanInlineEdit(field.name) || adapter.busy"
               :model-value="String(row._row.values[column.name] ?? '')"
               :placeholder="adapter.selectPlaceholder(column.label)"
               :options="(column.selection || []).map((option) => ({ value: String(option[0]), label: String(option[1]) }))"
@@ -136,9 +157,10 @@
             />
             <ScInput
               v-else
-              :class="o2mInputClass(column)"
+              :appearance="isO2mAmountColumn(column) ? 'numeric-entry' : 'default'"
+              :align="isO2mAmountColumn(column) ? 'right' : 'left'"
               :type="adapter.one2manyColumnInputType(column)"
-              :disabled="column.readonly || adapter.busy"
+              :disabled="column.readonly || !adapter.one2manyCanInlineEdit(field.name) || adapter.busy"
               :model-value="adapter.one2manyColumnDisplayValue(column, row._row.values[column.name])"
               :placeholder="column.label"
               @update:model-value="adapter.setOne2manyRowField(field.name, row._key, column, $event)"
@@ -146,6 +168,17 @@
           </template>
           <template #_action="{ row }">
             <ScButton
+              v-if="adapter.one2manyCanOpenRow(field.name, row._row)"
+              class="o2m-row-open"
+              type="button"
+              variant="ghost"
+              size="small"
+              :aria-label="`打开${adapter.one2manyRowLabel(field.name, row._row)}`"
+              :disabled="adapter.busy"
+              @click="adapter.openOne2manyRow(field.name, row._row)"
+            >打开</ScButton>
+            <ScButton
+              v-if="adapter.one2manyCanUnlink(field.name)"
               class="o2m-row-remove"
               type="button"
               variant="danger"
@@ -158,14 +191,20 @@
         </ScTable>
       </div>
 
-      <div v-else-if="adapter.one2manyColumns(field.name).length" class="o2m-empty" data-o2m-empty>
-        <ScIcon name="file-text" :size="24" />
-        <p class="o2m-empty-title">暂无明细</p>
-        <p class="o2m-empty-hint">点击「{{ adapter.one2manyCreateLabel(field.name, field.label) }}」新增明细</p>
-      </div>
+      <ScInlineState
+        v-else-if="adapter.one2manyColumns(field.name).length"
+        class="o2m-empty"
+        state="empty"
+        :label="`暂无明细，点击「${adapter.one2manyCreateLabel(field.name, field.label)}」新增`"
+        data-o2m-empty
+      />
 
       <div v-if="adapter.removedOne2manyRows(field.name).length" class="o2m-removed">
-        <p class="meta">已移除 {{ adapter.removedOne2manyRows(field.name).length }} 行</p>
+        <ScInlineState
+          class="meta"
+          state="info"
+          :label="`已移除 ${adapter.removedOne2manyRows(field.name).length} 行，提交前可撤销`"
+        />
         <div class="chips">
           <ScButton
             v-for="row in adapter.removedOne2manyRows(field.name)"
@@ -216,7 +255,15 @@ import type { RelationFieldColumn, RelationFieldRow, X2ManyRelationRendererProps
 const props = defineProps<X2ManyRelationRendererProps>();
 const one2manyPage = ref(1);
 const one2manyPageSize = 20;
-const one2manyRows = computed(() => props.field.type === 'one2many' ? props.adapter.visibleOne2manyRows(props.field.name) : []);
+const one2manyRows = computed(() => {
+  if (props.field.type !== 'one2many') return [];
+  const rows = props.adapter.visibleOne2manyRows(props.field.name);
+  if (!props.field.readonly) return rows;
+  const columns = props.adapter.one2manyColumns(props.field.name);
+  return rows.filter((row) => columns.some((column) => (
+    Boolean(props.adapter.one2manyColumnDisplayValue(column, row.values[column.name]))
+  )));
+});
 const one2manyPageCount = computed(() => Math.max(1, Math.ceil(one2manyRows.value.length / one2manyPageSize)));
 const paginatedOne2manyRows = computed(() => {
   const start = (one2manyPage.value - 1) * one2manyPageSize;
@@ -232,9 +279,6 @@ function isO2mAmountColumn(column: RelationFieldColumn) {
 }
 
 
-function o2mInputClass(column: RelationFieldColumn) {
-  return { 'o2m-input-amount': isO2mAmountColumn(column) };
-}
 // ===== TDesign Table 列定义与行数据 =====
 const o2mTableColumns = computed(() => {
   const fieldColumns = props.adapter.one2manyColumns(props.field.name).map((column) => ({
@@ -268,31 +312,30 @@ const o2mTableData = computed(() => paginatedOne2manyRows.value.map((row) => {
 }));
 
 const o2mTableFootData = computed(() => {
-  if (!o2mAmountTotal.value) return [];
-  const footRow: Record<string, unknown> = { id: '__total__' };
-  const amountCol = aggregateAmountColumn.value;
-  if (amountCol) {
-    footRow[amountCol.name] = o2mAmountTotalText.value;
-  }
+  const footRow: Record<string, unknown> = {
+    id: '__total__',
+    _stateLabel: `全部 ${one2manyRows.value.length} 条合计`,
+    _messages: [],
+  };
+  const amountColumns = aggregateAmountColumns.value;
+  if (!amountColumns.length || !one2manyRows.value.length) return [];
+  amountColumns.forEach((column) => {
+    footRow[column.name] = props.adapter.one2manyColumnDisplayValue(column, o2mAmountTotal(column));
+  });
   return [footRow];
 });
 
-const o2mAmountTotal = computed(() => {
-  const amountCol = aggregateAmountColumn.value;
-  if (!amountCol) return 0;
-  return paginatedOne2manyRows.value.reduce((sum, row) => {
-    const value = Number(row.values[amountCol.name]);
+function o2mAmountTotal(column: RelationFieldColumn) {
+  // The footer is the collection total, so pagination must not narrow the
+  // authoritative business amount to the currently visible window.
+  return one2manyRows.value.reduce((sum, row) => {
+    const value = Number(row.values[column.name]);
     return sum + (Number.isFinite(value) ? value : 0);
   }, 0);
-});
+}
 
-const o2mAmountTotalText = computed(() => {
-  const amountCol = aggregateAmountColumn.value;
-  return amountCol ? props.adapter.one2manyColumnDisplayValue(amountCol, o2mAmountTotal.value) : '';
-});
-
-const aggregateAmountColumn = computed(() => (
-  props.adapter.one2manyColumns(props.field.name).find(isO2mAmountColumn)
+const aggregateAmountColumns = computed(() => (
+  props.adapter.one2manyColumns(props.field.name).filter(isO2mAmountColumn)
 ));
 
 function o2mRowHasMessages(row: RelationFieldRow) {
@@ -349,6 +392,7 @@ function isAttachmentField(field: FormSectionFieldSchema) {
 
 async function handleAttachmentUpload(field: FormSectionFieldSchema, files: File[]) {
   attachmentError.value = '';
+  if (field.readonly) return;
   if (!files || files.length === 0) return;
   const model = props.adapter.currentModel;
   const resId = props.adapter.currentRecordId;
@@ -841,11 +885,6 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
   text-align: right;
 }
 
-.o2m-input-amount input {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
 .o2m-state-badge {
   display: inline-block;
   padding: 2px 8px;
@@ -861,34 +900,6 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
   flex-direction: column;
   gap: 4px;
   align-items: flex-start;
-}
-
-.o2m-table-scroll :deep(.t-table) {
-  font-size: 13px;
-}
-
-.o2m-table-scroll :deep(.t-table__th) {
-  padding: 8px 10px;
-  background: var(--sc-app-muted-bg);
-  color: var(--sc-app-text-secondary);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.o2m-table-scroll :deep(.t-table__td) {
-  padding: 6px 10px;
-  vertical-align: middle;
-}
-
-.o2m-table-scroll :deep(.t-table__tr--hover .t-table__td) {
-  background: var(--sc-app-hover-bg);
-}
-
-.o2m-table-scroll :deep(.t-table__foot .t-table__td) {
-  padding: 8px 10px;
-  background: var(--sc-app-muted-bg);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
 }
 
 .o2m-tr-msgs td {

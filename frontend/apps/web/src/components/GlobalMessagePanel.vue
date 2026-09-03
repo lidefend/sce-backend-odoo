@@ -257,7 +257,11 @@ async function selectConversation(conversation: GlobalMessageConversation) {
 async function loadUsers() {
   if (!canUseMessages.value) return;
   try {
-    const result = await searchCollaborationUsers({ query: userQuery.value, limit: 12 });
+    const result = await searchCollaborationUsers({
+      intent: 'collaboration.users.search',
+      query: userQuery.value,
+      limit: 12,
+    });
     userOptions.value = result.items || [];
   } catch {
     userOptions.value = [];

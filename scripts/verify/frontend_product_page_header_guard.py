@@ -48,6 +48,10 @@ def validate() -> list[str]:
     for marker in ('form-header-mobile-actions', 'mobileActionAuthority', 'mobilePresentedDirectActions', 'aria-label="更多页面操作"', ':data-mobile-action-count', ':data-mobile-action-keys'):
         if marker not in contract:
             failures.append(f"contract header mobile action settlement misses {marker}")
+    if 'v-if="headerOverflowItems.length && !isNarrowViewport"' not in contract:
+        failures.append("contract header desktop overflow must be structurally excluded on narrow viewports")
+    if 'v-if="headerOverflowItems.length" class="form-header-more-actions"' in contract:
+        failures.append("contract header must not rely on CSS to hide a parallel desktop overflow control")
     if 'role="menu"' in contract or 'role="menuitem"' in contract:
         failures.append("contract header disclosure must preserve native button semantics")
     action_view = source("frontend/apps/web/src/views/ActionView.vue")

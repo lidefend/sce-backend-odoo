@@ -30,6 +30,7 @@ def validate(
         'aria-live="polite"',
         '<ScButton',
         '<ScPagination',
+        ':total-content="false"',
         '@update:current=',
         '@update:page-size=',
         "mode === 'grouped'",

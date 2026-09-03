@@ -3,6 +3,318 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-09-02 — READONLY-EMPTY-RELATION-INFORMATION-EFFICIENCY-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `debe256a`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 Product Floorplan Composer /
+  canonical relationship visibility / `canonicalFormRenderer`,
+  `CanonicalFormNodeRenderer`, and `ObjectTaskPage`. This is a generic renderer
+  rule; no payment/project model, label, role, status, or business workflow is
+  inferred in the frontend.
+- Root cause and product result: formal task pages rendered every visible
+  one2many field even when backend authority made it readonly and the canonical
+  relation projection contained no rows. Empty readonly relationship groups now
+  leave the task page, while editable empty relations, readonly relations with
+  business rows, and all many2many component surfaces remain visible. On the
+  logged-in payment request page, two empty readonly groups were removed while
+  attachment upload, activity, audit, the authoritative blocker, and the single
+  effective primary path remained intact.
+- Acceptance evidence: canonical presenter coverage proves all four visibility
+  counterexamples. The governed payment list → editable record → readonly record
+  journey passes with nine Floorplan regions, zero empty readonly relations,
+  retained relation interactions, zero false enabled primary actions, zero 390px
+  overflow, trustworthy audit content, and an unchanged business fingerprint.
+  The governed project-create / project-workspace / payment-request journey also
+  passes with three independent cross-model activity pages, retained unsaved
+  draft state, dirty-close confirmation, clean inactive close, zero mutations,
+  zero execute requests, zero browser errors, and zero horizontal overflow on
+  all three mobile surfaces. The complete `verify.frontend.quick.gate` passes;
+  refreshed professional inventories report zero component, rendering, visual,
+  private-selector, literal, orphaned-appearance, or unknown-token gaps.
+- Verification-tool alignment: the existing browser probes were updated to
+  scope the visible retained activity instance, consume public list column
+  authority, distinguish editable `/f/` navigation from readonly `/r/`
+  acceptance, use the professional disclosure and audit markers, and reject the
+  obsolete expectation that an empty readonly relation must remain visible.
+
+## 2026-09-02 — ACTIVITY-DRAFT-DIRTY-PUBLICATION-RACE-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `64407536`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 activity-page lifecycle /
+  unsaved form retention / `ContractFormPage` and session activity state.
+- Root cause and product result: form dirty state was published by Vue's default
+  asynchronous watcher while activity-tab activation synchronously inspected the
+  retained page. A fast tab switch could therefore observe a stale clean page and
+  miss the governed navigation authorization. Dirty publication now flushes
+  synchronously before tab navigation; the existing multi-page identity, close
+  confirmation, backend route authority, and form retention model are unchanged.
+- Acceptance evidence: the activity state guard now rejects non-synchronous
+  publication. Three valid consecutive project-create → payment-request →
+  project-create journeys retained `活动页签未保存草稿保留验证`, preserved independent
+  pages and dirty-close cancellation, and reported zero mutations, execute
+  requests, or browser errors. One intervening `ERR_NETWORK_CHANGED` sample was
+  rejected as environment failure rather than counted as product evidence. The
+  complete `verify.frontend.quick.gate` and refreshed deterministic professional
+  inventories pass with zero component, private-selector, visual-literal, or
+  orphaned-appearance gaps.
+
+## 2026-09-02 — CANONICAL-TASK-DENSITY-PUBLIC-CONTRACT-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `3bdfc4e6`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 Product Floorplan Composer /
+  current-task density / `CanonicalFormNodeRenderer` and `ObjectTaskPage`.
+- Product result: the current-task floorplan requests the renderer's public
+  `compact-task` density instead of reaching through component scope to restyle
+  canonical headings and readonly facts. Density propagates recursively while
+  summary, business context, risk, relation, and audit semantics remain intact.
+- Acceptance evidence: canonical presenter, page-pattern parity, rendering
+  inventory, and governed project/payment page checks pass. The visual inventory
+  removes the last formal-business-page native-selector candidate; remaining
+  candidates belong to P3 Scene administration surfaces and are kept separate
+  from this product-page batch.
+
+## 2026-09-02 — X2MANY-NUMERIC-INPUT-PUBLIC-ALIGNMENT-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `e6798d00`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 semantic relation components /
+  monetary inline editing / `ScInput` and `X2ManyRelationRenderer`.
+- Product result: monetary detail inputs use the official TDesign Input `align`
+  property exposed by `ScInput`, plus a semantic `numeric-entry` appearance for
+  tabular numerals. The relation renderer no longer reaches through the adapter
+  to style a native input descendant; canonical monetary type remains the only
+  generic presentation signal.
+- Acceptance evidence: x2many command/inline-edit and professional relation
+  guards pass, with no change to backend authority, command semantics, or row
+  mutation behavior. The visual-projection inventory removes the P0 relation
+  native-selector candidate; live editable-row evidence is not overstated where
+  the current payment fixture exposes only an empty readonly relation.
+
+## 2026-09-02 — OFFICIAL-CONTROL-BOUNDARY-ZERO-GAP-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `dd99f25c`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 professional component
+  authority / collection tables and form/query controls / `ScTable`, `ScInput`,
+  the existing form-field appearances, and shared design tokens.
+- Product result: collection density, long-text truncation, numeric/money
+  alignment, and date presentation now belong to `ScTable collection` rather
+  than page-level TDesign selectors. Form controls retain their product height
+  through semantic `form-field` roots, while the query bar declares the public
+  `ScInput collection-search` appearance. No frontend model/label/state
+  inference or parallel component system was introduced.
+- Acceptance evidence: design-token build/verify/tests and collection,
+  professional-field, rendering-detail guards pass. The inventory now reports
+  zero internal-vendor selector gaps, zero visual-literal gaps, zero orphaned
+  appearances, and zero unknown token overrides. The governed project/payment
+  journey is the current real-page evidence for form controls and 390px layout;
+  editable collection-row appearance remains guard-backed in this batch and is
+  not overstated as a new live-list browser acceptance.
+
+## 2026-09-02 — DIALOG-OFFICIAL-CLOSE-LIFECYCLE-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `456fed5e`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 primitive component authority /
+  modal lifecycle / `ScDialog` and its isolated browser harness.
+- Root cause and product result: closed dialogs depended on a page-level CSS
+  patch that inspected TDesign's private wrapper classes and inline display
+  state. `ScDialog` now uses the official `destroyOnClose` capability, so masks
+  and panels leave the DOM under component lifecycle authority. The private
+  wrapper workaround is removed without weakening focus, scroll-lock, escape,
+  backdrop, or non-dismissible behavior.
+- Acceptance evidence: overlay lifecycle unit and isolated browser checks pass,
+  including zero initial residue, nested focus/restore, nested body locking,
+  locked-dialog persistence, empty-dialog focus containment, and zero browser
+  errors. The harness disables HMR and sequences dialog teardown before opening
+  the next overlay so a running development server cannot contaminate the gate.
+  The official design inventory moved from 10 to 9 internal-selector gaps and
+  retains zero visual-literal gaps.
+
+## 2026-09-02 — X2MANY-TABLE-PROFESSIONAL-APPEARANCE-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `500f4237`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 semantic business components /
+  relation-detail tables / `ScTable` and `X2ManyRelationRenderer`.
+- Product result: editable relation details retain their compact header, body,
+  hover, and summary-row presentation through the public `relation-detail`
+  appearance of `ScTable`. Five private TDesign table selectors were removed;
+  relation commands, inline-edit behavior, backend field authority, and totals
+  semantics are unchanged.
+- Acceptance evidence: the x2many inline-edit and rendering-detail guards pass.
+  The governed project/payment journey revalidated three independent activity
+  pages, unsaved-draft preservation, dirty-close cancellation, desktop/390px
+  headers, zero mutations, zero execute requests, and zero browser errors. Its
+  current payment fixture exposes an empty readonly relation, so it is not
+  claimed as editable-row browser evidence. The official design inventory moved
+  from 15 to 10 internal-selector gaps and retains zero visual-literal gaps.
+
+## 2026-09-02 — PAGINATION-TOTAL-PUBLIC-AUTHORITY-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `0a86c32b`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 collection component
+  authority / paged list footer / `ScPagination` and
+  `CollectionPaginationFooter`.
+- Product result: the custom business record-count text remains the single
+  visible count, while TDesign's built-in total is disabled through its public
+  `totalContent` property. The previous private `.t-pagination__total` styling
+  dependency is removed; pagination behavior and page-size authority are
+  unchanged.
+- Acceptance evidence: the collection-navigation guard now requires the public
+  total-suppression contract and rejects its removal. Eleven guard tests pass;
+  the official design inventory moved from 16 to 15 internal-selector gaps and
+  retains zero visual-literal gaps.
+
+## 2026-09-02 — PROFESSIONAL-FIELD-OFFICIAL-CONTROL-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `4084155b`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 semantic business components /
+  date/datetime and many2many field controls / the existing TDesign primitive
+  bridge and professional field components.
+- Product result: `ScDatePicker` now owns full-width layout on its public root,
+  while the professional many2many select inherits the official medium Select,
+  placeholder, and Tag presentation. Four private TDesign descendant overrides
+  were removed; relation behavior, backend option authority, and inline-create
+  rules were unchanged.
+- Acceptance evidence: detail-form and rendering-detail guards passed; the
+  official design inventory moved from 20 to 16 internal-selector gaps with
+  zero visual-literal gaps. The governed project/payment journey revalidated
+  the project date control, cross-model activity lifecycle, desktop/390px
+  headers, zero mutations, zero execute requests, and zero browser errors.
+
+## 2026-09-02 — ACTIVITY-TABS-OFFICIAL-API-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `857b4ae8`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 professional component
+  authority / activity-page navigation / TDesign Tabs through the existing
+  primitive bridge.
+- Product result: activity pages now use the official Tabs size/theme and
+  scrolling behavior without styling TDesign's private nav, item, active, text,
+  or content descendants. SC keeps only its own shell, business-title, and close
+  control presentation. This removes seven private-vendor selector dependencies
+  without introducing another tab implementation.
+- Acceptance evidence: the governed project/payment journey retained independent
+  pages, preserved and cancelled a dirty project draft, closed only the selected
+  clean inactive page, and kept desktop/390px headers free of horizontal
+  overflow, mutations, execute requests, and browser errors. The official design
+  inventory moved from 27 to 20 internal-selector gaps while retaining zero
+  visual-literal gaps.
+
+## 2026-09-02 — ACTIVITY-TAB-DESIGN-TOKEN-AUTHORITY-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `f8b6f38d`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 professional component
+  authority / TDesign activity-page close control / `frontend/packages/ui` and
+  the existing cross-platform design-token package.
+- Product result: the activity-tab close control keeps its verified interaction
+  size and keyboard focus presentation, but those values now come from the
+  existing component-token authority rather than local CSS literals. No new
+  component system, page-specific styling path, vendor switch, or business
+  inference was introduced.
+- Acceptance evidence: design-token generation, verification, and tests passed;
+  the official design-alignment inventory regenerated with
+  `visualLiteralGapCount=0` and no unknown token override or orphaned product
+  appearance.
+
+## 2026-09-02 — ACTIVITY-DRAFT-INSTANCE-OWNERSHIP-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `f171ba70`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / retained
+  activity-page form lifecycle / `frontend/apps/web`, the state-dashboard unit
+  aggregate, and the governed project/payment browser journey.
+- Root cause and product result: cached form instances observed the global route
+  before Vue completed deactivation, followed the next model route, and reloaded
+  their own form state. Each form instance now binds to a stable generic owner
+  identity, including independent create-page IDs, so another activity cannot
+  clear its unsaved business draft.
+- Real-page evidence: a logged-in five-page session retained an unsaved project
+  name through project-create -> payment request `167` -> project-create. The
+  dirty-page close warning appeared before discard, and cancelling it retained
+  all five pages plus the exact unsaved value. The independent governed probe
+  repeated the journey across project and payment models, retained all three
+  pages and the exact unsaved value, cancelled the dirty close without losing
+  state, then closed only an inactive clean project page without polluting the
+  active draft. It observed zero mutations, execute requests, browser errors,
+  or 390px header overflow.
+- Standard vs User-Specific: ownership is derived only from canonical route
+  identity and the existing activity instance ID; no model label, role, status,
+  customer, or business-state inference is introduced.
+- Boundary: no backend or database change, autosave, new contract, page-specific
+  exception, push, PR, or merge.
+
+## 2026-09-02 — RESPONSIVE-ACTIVITY-TAB-ACTIVATION-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `feb8bbc1`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / responsive
+  Product App Shell and professional activity-page tabs / `frontend/apps/web`
+  plus the governed project/payment browser journey.
+- Root cause and product result: below 961px the shell header was allowed to
+  flex-shrink while its second toolbar row overflowed, physically covering the
+  activity tabs. The header now retains its intrinsic height, so TDesign owns
+  tab activation again and independent pages remain simultaneously available.
+- Real-page evidence: a logged-in browser switched payment request `167` to
+  customer and project pages and back while retaining five pages. The governed
+  probe independently switched project `2` and payment request `167`, retained
+  all three seeded pages, and kept desktop plus 390px page headers within the
+  one-primary-action and zero-horizontal-overflow boundaries.
+- Standard vs User-Specific: the repair is a generic responsive shell invariant;
+  it adds no model, label, role, state, route, or customer-specific inference.
+- Boundary: no backend fact change, database mutation, environment rebuild, new
+  contract, hand-built tab event path, push, PR, or merge.
+
+## 2026-09-02 — READONLY-RELATION-EMPTY-ROW-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `a6b2520c`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / semantic
+  relation component readonly presentation / `frontend/apps/web` and the
+  governed project/payment browser journey.
+- Product result: unresolved one2many carriers no longer synthesize `#ID` as a
+  business label, and readonly collections omit rows that contain no
+  presentable business fact. The empty state says “暂无可展示记录” instead of
+  incorrectly claiming that no related records exist.
+- Standard vs User-Specific: the rule applies to the generic relation renderer
+  and relation-value normalizer only. It does not branch on project models,
+  Chinese labels, roles, statuses, customers, or component suppliers.
+- Real-page evidence: project workspace record `2` changed from two seven-field
+  rows headed `#2` / `#1` with all remaining facts empty to zero raw-ID facts and
+  zero empty readonly rows. The same governed journey keeps project create and
+  payment task pages healthy at desktop and 390px with zero mutations, execute
+  requests, overflow, or browser errors.
+- Boundary: no backend fact change, database write, environment rebuild, new
+  contract, page-specific exception, push, PR, or merge.
+
+## 2026-09-02 — READONLY-BUSINESS-FACT-TRUST-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1`; this batch
+  remains local until its final verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / Canonical
+  Render Model and Product Floorplan readonly fact presentation /
+  `frontend/apps/web` and the governed local-dev browser probe.
+- Standard vs User-Specific: generic relation-value presentation and canonical
+  field-identity de-duplication only; no model name, Chinese label, role, status,
+  customer preference, backend fact, or new contract is inferred.
+- Product result: readonly one2many relation facts present authoritative business
+  names instead of raw `[id, label]` tuples, and readonly task pages keep one
+  strongest visible occurrence of each repeated business-context fact.
+- Real-page evidence: the project workspace no longer renders the raw `10,` ID
+  prefix for its owner relation, while payment request `167` renders each visible
+  canonical field identity once. The governed project-create/project-workspace/
+  payment journey also checks desktop and 390px layouts, at most one primary
+  action, zero horizontal overflow, zero mutations and zero browser errors.
+- Boundary: no page-specific frontend branch, parallel scene contract, component
+  supplier switch, business write, environment rebuild, push, PR, or merge.
+
 ## 2026-08-31 — AUTH-SURFACE-GUARD-CONSUMPTION-CLOSURE-01
 
 - Branch / anchor: `audit/professional-component-residual-closure-v1` at
@@ -7268,3 +7580,839 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   passed with zero undeclared gaps; personal-data and secret scans passed with zero
   confirmed matches. The known P4 missing replay-script defect remains external,
   so browser/release evidence and `make pr.push` remain prohibited.
+## 2026-09-02 — Invalid contract-record trust boundary closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `68742999`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / generic
+  contract-form failure presentation / `frontend/apps/web`.
+- Product defect and repair: a missing record could finish contract loading
+  without a row, while the live form command header still rendered against
+  incomplete workflow state. Vue captured that secondary render exception and
+  replaced the governed missing-record state with the raw
+  `Cannot read properties of undefined (reading 'current')` message. The form
+  command header is now withheld for missing, render-error, and load-error
+  states so the existing fail-closed `记录不存在` surface remains authoritative.
+- Why here / why not elsewhere: this is generic form lifecycle presentation;
+  no payment/project branch, backend permission change, status inference, or
+  alternate contract was added.
+- Acceptance evidence: `make local.dev.frontend` completed, and the logged-in
+  browser reproduced record `payment.request/157` before the repair and then
+  verified the governed `记录不存在` / `返回安全页面` surface with no JavaScript
+  exception text after rebuild. `git diff --check`, the professional workflow
+  unit target, and canonical form presenter target passed. The broader detail
+  productization guard remains blocked by its pre-existing expectation of the
+  old statusbar readonly expression; that baseline drift is not represented as
+  a pass or changed in this batch.
+
+## 2026-09-02 — Decision-first form and professional state closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `0d3ca081`.
+- Formal Product Layer / Layer Target / Module: P0 product Floorplan and
+  professional component ownership / canonical contract form and relation
+  surfaces / `frontend/apps/web`.
+- Product change: supplementary input and overflow business context now use
+  the existing TDesign-backed `ScDisclosure`, leaving current task, blockers,
+  and required input ahead of secondary facts. One-to-many empty and removed
+  states now use `ScInlineState`; payment settlement search, error, empty, and
+  completed states use the same professional state authority. The payment
+  settlement detail/introduce controls and the professional many2one/many2many
+  controls are registered in the existing P0 form/relation workflow ownership
+  map. No model-name, Chinese-label, role, or status inference was added.
+- Supporting guard alignment: stale checks now recognize the current
+  professional many2many control, `ScSteps` readonly authority, TDesign 24-grid
+  container breakpoints, shell topbar token, and `ScTable` row adapter keys.
+  Generated rendering inventories were refreshed from their repository-owned
+  generators; they report 156 formal surfaces and zero gaps.
+- Acceptance evidence: `git diff --check`, product page pattern, primitive
+  adapter, canonical presenter, detail productization, form-canvas, workspace
+  alignment, x2many inline-edit, rendering-detail state, component-driver, and
+  the full `make verify.frontend.quick.gate` passed. The strict Vue typecheck
+  and development static build are included in that gate. Logged-in browser
+  acceptance for payment and project remains pending because the governed demo
+  synchronization expired the existing session; no browser result is claimed
+  until a user login is available.
+
+## 2026-09-02 — Canonical action execution identity closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `5bbe56dc`.
+- Formal Product Layer / Layer Target / Module: P0 canonical action execution /
+  Contract V2 normalized status and form-action projection /
+  `frontend/apps/web`.
+- Product defect and repair: a real finance-manager payment request supplied
+  one authorised native action with an exact backend identity and native
+  occurrence, but the normalized status projection discarded the backend
+  identity and the runtime action projection discarded the native occurrence.
+  The unified executor therefore failed closed with
+  `CANONICAL_FORM_ACTION_EXECUTION_ADAPTER_MISSING`. Both authority fields now
+  survive the existing Contract V2 projection chain; no action inference,
+  model special case, alternate contract, or permission expansion was added.
+- Acceptance evidence: the 142-case canonical presenter suite and development
+  frontend build passed. In the logged-in browser, real
+  `payment.request/167` rendered without the adapter error, exposed exactly one
+  enabled primary action (`提交审批`), placed current task and blockers before
+  required input, kept supplemental information collapsed, and retained
+  relation and audit regions. Real project creation then rendered with exactly
+  one enabled primary action (`创建项目`); its project-manager relation displayed
+  `Demo-全能力` rather than raw value `50`. The activity-page component retained
+  both the payment request and project-initiation pages simultaneously.
+## 2026-09-02 — FLOORPLAN-RELATION-IDENTITY-CLOSURE-01
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `9f4466d111bad82f77c13e2b51892bf6ded3ddc2`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  Product Floorplan relation identity projection / `frontend/apps/web` and the
+  existing local.dev read-only browser probe.
+- Product defect and repair: native notebook pages may legitimately declare
+  `nolabel` because their page title owns the relation identity. The Product
+  Floorplan moves those relation fields into one consolidated relation region
+  and intentionally suppresses the native notebook/page headings, leaving
+  multiple empty collections as indistinguishable `暂无可展示记录` controls. The
+  generic relation projection now restores each backend-supplied field label
+  after extraction; it does not infer labels from model names, field codes, or
+  Chinese text.
+- Why here / why not elsewhere: this is generic Floorplan composition after a
+  structural title has been removed. Changing Odoo views would damage native
+  rendering, while a payment-only component fix would preserve the same defect
+  for every other relation page.
+- Blast radius and evidence: only business one2many/many2many fields projected
+  into the existing relation region receive visible labels. The canonical
+  presenter retains original `nolabel` identity before Floorplan composition.
+  The 142-case presenter suite passed. Logged-in browser acceptance proved
+  `付款申请明细 / 付款记录` on payment request 167, preserved the customer
+  `联系人 / 银行` relation controls, kept one primary action on both pages, and
+  showed zero horizontal overflow at 390px. No mutation or execute request was
+  performed.
+
+## 2026-09-02 — Readonly relation hydration state closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `80a62588`.
+- Formal Product Layer / Layer Target / Module: P0 professional relation
+  presentation / canonical contract-form one2many hydration /
+  `frontend/apps/web`.
+- Product defect and repair: the record surface became visible before readable
+  one2many child records completed hydration, so a populated project tender
+  relation could briefly claim `暂无可展示记录`. Hydration state is now owned per
+  relation field and projected through the existing relation adapter; the
+  TDesign-backed inline state renders loading until that field settles, then
+  renders rows or a truthful empty state. No model, label, role, or status
+  special case and no parallel contract were added.
+- Browser evidence: the governed project-create/project-workspace/payment
+  journey resolved two populated tender rows with zero readonly empty labels,
+  kept three independent activity pages, retained the unsaved project draft,
+  preserved dirty-close confirmation, reported zero browser errors and zero
+  mutations, and showed no 390px horizontal overflow. The payment golden-page
+  readonly journey passed with 9 regions, zero false blocked primary actions,
+  zero mobile overflow, and an unchanged business fingerprint.
+- Verification: the professional relation guard executes 9 tests including
+  loading-authority and failure-reset counterexamples. Strict typecheck,
+  development build, refreshed repository-owned rendering inventories, and
+  the complete `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Readonly attachment command closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `974ebf9e`.
+- Product defect and repair: the shared attachment relation editor exposed
+  upload and remove commands without consuming the backend-supplied readonly
+  field state. Readonly attachment fields now expose only existing attachment
+  identity and download, show a governed empty state when appropriate, and
+  fail closed inside the upload handler. Editable fields retain the existing
+  upload workflow. No role, model, status, or label inference was added.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey passed with three independent activity pages, retained unsaved
+  project draft and close confirmation, zero browser errors, zero mutations,
+  zero execute requests, and zero 390px overflow. The payment attachment
+  editor reported `editable` with exactly one file input; the shared guard
+  covers readonly upload, remove, and handler counterexamples.
+- Verification: 13 relational-action primitive tests, strict Vue typecheck,
+  development build, refreshed repository-owned rendering inventories, and
+  the complete `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Readonly relation business-value formatting closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `de75e23a`.
+- Product repair: canonical one2many facts now format numeric values with
+  grouping, render datetimes as human-readable local text, and preserve
+  boolean false as the business value `否`. The relation hydration state is
+  prepared before the page publishes its ready status, preventing an empty
+  state from flashing before loading begins. No model or label special case
+  was introduced.
+- Real-page evidence: the project workspace rendered two tender rows with
+  `3,260,000`, `1,280,000`, `2025/06/10 09:00`, and
+  `2026/04/20 10:00`; no raw machine-formatted fact, raw relation ID, or empty
+  relation state remained. The project-create, project-workspace, and payment
+  activity pages retained independent state, mobile width stayed within 390px,
+  and browser errors, mutations, and execute requests were all zero.
+- Verification: collection semantics, 9 professional relation guard tests,
+  strict typecheck, development build, refreshed rendering inventories, and
+  the complete `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Paginated detail amount authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `ea028038`.
+- Product defect and repair: the shared one2many detail table presented its
+  amount footer as a collection total while calculating only the current
+  20-row page. The professional detail collection now aggregates every
+  visible row, so pagination cannot silently understate the authoritative
+  business amount. No model, label, role, status, or contract special case was
+  added.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey passed with three independent activity pages, two readable project
+  tender rows, retained unsaved project draft and dirty-close confirmation,
+  one editable payment attachment upload entry, zero browser errors, zero
+  mutations, zero execute requests, and no horizontal overflow at 390px.
+- Verification: 4 professional detail collection guard tests including a
+  page-scoped-total counterexample, strict Vue typecheck, development build,
+  refreshed repository-owned productization inventories with zero gaps, and
+  the complete `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Zero-value detail total visibility closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `a858cba9`.
+- Product defect and repair: the shared detail collection suppressed its
+  amount footer when the authoritative aggregate was exactly zero. The footer
+  now remains present whenever an amount column and visible detail rows exist,
+  preserving the business distinction between an explicit zero total and no
+  aggregate. The change remains generic and introduces no business special
+  case or new contract.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey again retained three independent activity pages, unsaved draft and
+  dirty-close behavior, two readable project tender rows, one editable payment
+  attachment upload entry, zero browser errors, zero mutations, zero execute
+  requests, and no 390px horizontal overflow.
+- Verification: 5 professional detail collection guard tests including a
+  hidden-zero counterexample, strict Vue typecheck, development build,
+  refreshed repository-owned productization inventories with zero gaps, and
+  the complete `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Detail total scope presentation closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `a68b53a1`.
+- Product defect and repair: the shared detail table rendered a bare footer
+  amount without identifying whether it represented the current page or the
+  full business collection. The existing state column now labels the footer
+  `全部 N 条合计`, making the all-visible-row aggregate scope explicit without
+  adding a parallel component or product-specific inference.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey retained three independent activity pages, draft round-trip and
+  dirty-close confirmation, readable project relation facts, one editable
+  payment attachment upload entry, zero browser errors, zero mutations, zero
+  execute requests, and no 390px horizontal overflow.
+- Verification: 6 professional detail collection guard tests including a
+  missing-scope-label counterexample, strict Vue typecheck, development build,
+  refreshed repository-owned productization inventories with zero gaps, and
+  the complete `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Multi-monetary detail aggregation closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `fd2e8c3f`.
+- Product defect and repair: the shared detail table previously aggregated
+  only the first monetary column and silently omitted every subsequent amount
+  field. It now derives all monetary columns from the authoritative relation
+  descriptor and renders a full-collection total for each one. No model,
+  label, role, status, or frontend business special case was introduced.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey retained three independent activity pages, unsaved draft and
+  dirty-close behavior, readable project relation facts, one editable payment
+  attachment upload entry, zero browser errors, zero mutations, zero execute
+  requests, and no 390px horizontal overflow.
+- Verification: 7 professional detail collection guard tests including a
+  first-monetary-column-only counterexample, strict Vue typecheck, development
+  build, refreshed repository-owned productization inventories with zero gaps,
+  and the complete `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — One2many unlink authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `5ee2a218`.
+- Product defect and repair: the backend already supplies authoritative
+  `policies.can_unlink`, but the shared detail renderer exposed row removal
+  whenever the field was editable and called the removal runtime directly.
+  Unlink authority now flows through the canonical relationship field model
+  and adapter; both the button and handler fail closed unless the backend
+  explicitly grants unlink. Restore remains available to cancel an already
+  staged deletion. No role, model, label, or status inference was added.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey retained three independent activity pages, unsaved draft and
+  dirty-close behavior, two readable project tender rows, one editable payment
+  attachment upload entry, zero browser errors, zero mutations, zero execute
+  requests, and no 390px horizontal overflow.
+- Verification: 10 professional detail collection tests and 14 relational
+  command primitive tests cover missing authority, default-deny, handler guard,
+  and governed-button counterexamples. Strict Vue typecheck, development
+  build, refreshed productization inventories with zero gaps, and the complete
+  `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — One2many inline-edit authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `21f5ff4e`.
+- Product defect and repair: row inputs previously consumed only column
+  readonly state and ignored the backend subview `policies.inline_edit`
+  capability. The capability now flows through the canonical relationship
+  field model and professional detail adapter. Boolean, selection, and scalar
+  inputs are disabled unless inline editing is explicitly granted, and the
+  update handler independently fails closed. No frontend role, model, label,
+  or workflow inference was added.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey passed after rebuilding the frontend, retaining three independent
+  activity pages, unsaved draft and dirty-close behavior, two readable project
+  tender rows, one editable payment attachment entry, zero browser errors,
+  zero mutations, zero execute requests, and no 390px horizontal overflow.
+- Verification: 13 professional detail collection counterexample tests, the
+  x2many inline-edit wiring guard, strict Vue typecheck, development build,
+  refreshed productization inventories with zero gaps, and the complete
+  `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — One2many create authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `32fc4de1`.
+- Product defect and repair: the shared detail adapter treated an absent
+  `policies.can_create` value as permission to add a row, and the creation
+  handler called the draft runtime without an independent authority check.
+  Create now requires an explicit backend grant; both the governed button and
+  handler fail closed. The implementation consumes the existing subview policy
+  and adds no parallel contract or frontend business inference.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey passed after rebuilding, preserving three independent activity
+  pages, unsaved draft and dirty-close behavior, readable project relation
+  facts, one editable payment attachment entry, zero browser errors, zero
+  mutations, zero execute requests, and no 390px horizontal overflow.
+- Verification: 15 professional detail collection counterexample tests,
+  strict Vue typecheck, development build, refreshed productization
+  inventories with zero gaps, and the complete `make
+  verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Relation read/open authority default-deny closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `7fc5e6b8`.
+- Product defect and repair: the backend already injects explicit
+  `relation_entry.can_read` and `relation_entry.can_open` values for every
+  relational field, but the shared frontend decoder, candidate queries,
+  selected-value hydration, one2many hydration, and record navigation treated
+  missing authority as allowed. All consumers now require an explicit `true`
+  grant, and record-open handlers independently fail closed. No model, role,
+  label, state, or navigation-target inference was added.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey passed after rebuilding, preserving three independent activity
+  pages, unsaved draft and dirty-close behavior, two readable project tender
+  rows, one editable payment attachment entry, zero browser errors, zero
+  mutations, zero execute requests, and no 390px horizontal overflow.
+- Verification: the relation authority guard now rejects the previous
+  fail-open expressions; 30 relation guard tests, strict Vue typecheck,
+  development build, refreshed productization inventories with zero gaps, and
+  the complete `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Governed one2many record-open closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `b0f2abeb`.
+- Product defect and repair: persisted rows in the professional detail table
+  had no route to their complete child record even when the existing backend
+  relation entry explicitly authorized reading and opening. The shared
+  relation navigation runtime now accepts an explicit record id, while the
+  professional adapter exposes a governed `ScButton` only for saved rows with
+  `can_read=true` and `can_open=true`. The click handler repeats the same
+  authority check; unsaved draft rows and missing grants remain closed. Model,
+  action, menu, write intent, and return navigation all continue to come from
+  the existing relation-entry contract.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey passed after rebuilding, preserving three independent activity
+  pages, unsaved draft and dirty-close behavior, two readable project tender
+  rows, one editable payment attachment entry, zero browser errors, zero
+  mutations, zero execute requests, and no 390px horizontal overflow.
+- Verification: 31 professional detail/relational primitive tests including
+  missing-authority and unguarded-handler counterexamples, relation authority
+  guard, strict Vue typecheck, development build, refreshed productization
+  inventories with zero gaps, and the complete `make
+  verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Many2many inline-create authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `c50860c9`.
+- Product defect and repair: when a relation-entry contract was absent, the
+  frontend still enabled inline creation for every many2many field, and the
+  quick-create handler relied only on that derived flag. The compatibility
+  default was removed. Inline create now requires both explicit backend
+  `can_create=true` and an enabled inline-create contract, while the write
+  handler independently verifies `can_create` before any create request. No
+  model-specific exception or client-side ACL inference was introduced.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey passed after rebuilding, preserving three independent activity
+  pages, unsaved draft and dirty-close behavior, readable relation facts, one
+  editable payment attachment entry, zero browser errors, zero mutations,
+  zero execute requests, and no 390px horizontal overflow.
+- Verification: 11 professional relation counterexample tests, relation-entry
+  guard, strict Vue typecheck, development build, refreshed productization
+  inventories with zero gaps, and the complete `make
+  verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Relation quick-create write-bypass closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `23639c5a`.
+- Product defect and repair: the many2one quick-create helper and the
+  professional many2many adapter could be called directly without repeating
+  the backend create grant. The many2many path additionally guessed a target
+  model from frontend field names. Both handlers now require explicit
+  `relation_entry.can_create=true`, enabled inline-create semantics, and the
+  authoritative relation model from the field descriptor before issuing any
+  create request. The hardcoded field/model mapping was removed, and backend
+  default values are preserved in both write paths.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey passed after rebuilding, retaining three independent activity pages,
+  unsaved draft and dirty-close behavior, two readable project tender rows,
+  one editable payment attachment entry, zero browser errors, zero mutations,
+  zero execute requests, and no 390px horizontal overflow.
+- Verification: 14 professional relation counterexample tests including
+  missing grants, unguarded handlers, and frontend model-inference rejection;
+  strict Vue typecheck, development build, refreshed productization inventories
+  with zero gaps, and the complete `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Relation search read-authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `51b6ff6d`.
+- Product defect and repair: the relation search dialog could open, load the
+  related model contract, and query rows when the field relation-entry contract
+  was absent. The row query also retained the old `entry && denied` fail-open
+  condition. Dialog opening, column-contract hydration, and row loading now all
+  require explicit `relation_entry.can_read=true`; otherwise no dialog or
+  related-model I/O is started. The change consumes the existing backend
+  authority and adds no frontend model or role inference.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey passed after rebuilding, preserving three independent activity
+  pages, unsaved draft and dirty-close behavior, two readable project tender
+  rows, one editable payment attachment entry, zero browser errors, zero
+  mutations, zero execute requests, and no 390px horizontal overflow.
+- Verification: relation-read closure guard, 16 professional relation
+  counterexample tests including missing dialog authority and fail-open row
+  loading, strict Vue typecheck, development build, refreshed productization
+  inventories with zero gaps, and the complete `make
+  verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Relation selection write-authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `4824ca6e`.
+- Product defect and repair: professional relation components disabled readonly
+  fields visually, but direct many2one selection/commit and many2many ID-write
+  handlers did not repeat the field write decision. Those handlers now require
+  the Canonical field to be writable, with the already-resolved native layout
+  state used only while the Canonical render model is still loading. An
+  explicit Canonical denial always wins. No model, label, role, or status
+  inference was added.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey passed after rebuilding. It preserved three independent activity
+  pages, the unsaved project draft and dirty-close warning, two readable tender
+  rows, one editable payment attachment entry, zero browser errors, zero
+  mutations, zero execute requests, and no desktop or 390px overflow. An
+  initial strict-loading implementation was rejected by this journey because
+  it lost the unsaved draft; the accepted implementation passed the complete
+  roundtrip.
+- Verification: 18 professional relation counterexample tests, strict Vue
+  typecheck, development build, refreshed productization inventories with zero
+  gaps, and the complete `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Base field handler write-authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `2703aace`.
+- Product defect and repair: professional base controls projected readonly and
+  disabled state, but boolean, selection, text, and many2one query handlers
+  could still be invoked directly. Each public field handler now repeats the
+  resolved field-writable decision before changing form state or starting a
+  relation query. Binary filename companion updates use a separate narrow
+  technical-field path, preserving Odoo's invisible companion-field behavior
+  without reopening the public text handler.
+- Real-page evidence: the rebuilt project-create/project-workspace/payment
+  journey passed with three independent activity pages, retained unsaved draft,
+  dirty-close protection, readable project relation rows, editable payment
+  attachment state, zero browser errors, zero mutations, zero execute requests,
+  and no desktop or 390px overflow. The journey first rejected a direct
+  dependency injection that caused a Vue setup initialization error; the final
+  delayed adapter passed the complete route and draft roundtrip.
+- Verification: five professional base-field counterexample tests, 18 relation
+  counterexample tests through the full gate, strict Vue typecheck, development
+  build, refreshed zero-gap inventories, and the complete `make
+  verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Many2many create-side-effect closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `ddba5659`.
+- Product defect and repair: the professional many2many no-match handler
+  verified backend relation-create permission but did not repeat the parent
+  field's resolved write decision before creating the related record. A direct
+  call on a readonly field could therefore create an orphan record even though
+  the later ID writeback was rejected. The handler now requires field
+  writability before any create request, in addition to the existing explicit
+  backend `can_create`, relation model, and inline-create contract checks.
+- Real-page evidence: the rebuilt project-create/project-workspace/payment
+  journey passed with three independent pages, retained unsaved draft and
+  dirty-close warning, two readable tender rows, editable payment attachment
+  state, zero browser errors, zero mutations, zero execute requests, and no
+  desktop or 390px overflow.
+- Verification: 19 professional relation counterexample tests, strict Vue
+  typecheck, development build, refreshed zero-gap productization inventories,
+  and the complete `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Collaboration attachment download-authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `494fb9a9`.
+- Product defect and repair: the professional collaboration timeline treated a
+  missing attachment `can_download` flag as allowed, exposing a download action
+  without explicit backend authority. Attachment presentation now uses a
+  shared semantic resolver and appears only when `can_download=true`; the
+  attachment runtime independently repeats the same decision before opening
+  the viewer. Missing and denied authority therefore fail closed at both the
+  component and handler boundaries. The backend already supplies explicit
+  authority after access-controlled attachment search, so authorized behavior
+  is preserved without frontend model, role, label, or status inference.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey passed with three independent activity pages, retained unsaved draft
+  and dirty-close warning, two readable project tender rows, one editable
+  payment attachment entry, zero browser errors, zero mutations, zero execute
+  requests, and no desktop or 390px horizontal overflow. Two preceding journey
+  attempts exposed activity-page timing instability and were not counted as
+  acceptance; the fixed Node 24 rerun completed the full roundtrip.
+- Verification: eight collaboration model cases, seven structural and
+  counterexample tests, strict Vue typecheck, development build, refreshed
+  zero-gap productization inventories, and the complete `make
+  verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Collaboration activity action-authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `a33087fc`.
+- Product defect and repair: collaboration activity cards hid their complete
+  and cancel actions when the backend denied them, but the shared activity
+  update handler did not repeat those authority decisions before issuing the
+  mutation. A shared semantic resolver now requires explicit
+  `can_complete=true` or `can_cancel=true`, and the mutation handler applies it
+  independently of the button projection. Missing and denied authority fail
+  closed without frontend model, role, label, or status inference.
+- Real-page evidence: the rebuilt project-create/project-workspace/payment
+  journey passed on its first fixed-Node-24 run. It retained three independent
+  activity pages, the unsaved project draft and dirty-close warning, two
+  readable tender rows, one editable payment attachment entry, zero browser
+  errors, zero mutations, zero execute requests, and no desktop or 390px
+  horizontal overflow.
+- Verification: twelve collaboration model cases, nine structural and
+  counterexample tests, strict Vue typecheck, development build, refreshed
+  zero-gap productization inventories, and the complete `make
+  verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Collaboration activity status-authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `b8c7baf3`.
+- Product defect and repair: the collaboration activity card inferred pending
+  versus overdue state from the browser clock even though activity state is a
+  backend business projection. The generic chatter timeline now supplies
+  explicit `status` and `status_label`; the frontend consumes only the declared
+  values and falls back to `unknown` / `状态未知` when the status contract is
+  absent. No model, role, label, or client-clock business inference remains in
+  the component.
+- Real-page evidence: the rebuilt project-create/project-workspace/payment
+  journey passed with three independent activity pages, retained unsaved draft
+  and dirty-close warning, two readable project tender rows, one editable
+  payment attachment entry, zero browser errors, zero mutations, zero execute
+  requests, and no desktop or 390px horizontal overflow.
+- Verification: backend status projection boundary cases, fourteen frontend
+  collaboration model cases, ten structural/counterexample tests, strict Vue
+  typecheck, development build, refreshed zero-gap inventories, and the
+  complete `make verify.frontend.quick.gate` passed. The isolated real-Odoo
+  authorization run reported 5 tests with 0 failures/errors and confirmed the
+  status carrier; its wrapper exited 86 only after the tests because the volume
+  baseline hash changed during cleanup, while also reporting both the temporary
+  database and temporary resources removed. This cleanup-harness result is not
+  recorded as a green gate.
+
+## 2026-09-02 — Collaboration create-action authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `c4652444`.
+- Product defect and repair: collaboration entry buttons reflected the current
+  contract, but the shared message/note/activity handlers did not independently
+  revalidate the active contract action before issuing a mutation. Activity
+  scheduling could additionally fall back to another activity row when the
+  selected row no longer matched. A shared semantic resolver now requires an
+  enabled, exact-mode active action; both create handlers repeat that decision,
+  and the presentation resolver no longer falls back to an unrelated action.
+  The backend message endpoint also rejects unknown modes instead of silently
+  treating them as comments. Missing, stale, disabled, and mismatched authority
+  therefore fail closed without model, role, label, or status inference.
+- Real-page evidence: the rebuilt project-create/project-workspace/payment
+  journey passed with three independent activity pages, retained unsaved draft
+  and dirty-close warning, two readable project tender rows, one editable
+  payment attachment entry, zero browser errors, zero mutations, zero execute
+  requests, and no desktop or 390px horizontal overflow.
+- Verification: nineteen collaboration model cases, twelve structural and
+  counterexample tests, three backend chatter-post boundary tests, strict Vue
+  typecheck, production and development builds, refreshed zero-gap
+  productization inventories, and the complete `make
+  verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Collaboration attachment upload-authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `49176be5`.
+- Product defect and repair: the backend collaboration contract already
+  distinguishes aggregate attachment availability from explicit upload and
+  download authority, but the professional attachment manager exposed upload
+  whenever the aggregate attachment contract was enabled. Direct selection and
+  deferred post-create upload handlers also omitted the upload decision. The
+  component now consumes only `attachments.upload.enabled=true`, and both
+  immediate and deferred handlers independently repeat that exact authority.
+  Download-only, missing, and denied upload contracts therefore fail closed;
+  they cannot display an uploader or queue a file for a later side effect.
+- Real-page evidence: the rebuilt project-create/project-workspace/payment
+  journey passed with three independent activity pages, retained unsaved draft
+  and dirty-close warning, two readable project tender rows, one explicitly
+  authorized editable payment attachment uploader, zero browser errors, zero
+  mutations, zero execute requests, and no desktop or 390px horizontal
+  overflow.
+- Verification: twenty-two collaboration model cases, fourteen structural and
+  counterexample tests, strict Vue typecheck, development build, refreshed
+  zero-gap productization inventories, and the complete `make
+  verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Collaboration message reply closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `9b709607`.
+- Product defect and repair: every message card displayed a reply action, but
+  the professional panel did not settle the emitted event, so clicking it had
+  no effect. The backend timeline now projects `can_reply` from the target
+  record's write ACL and record rule plus the authoritative message ID and
+  author. The timeline displays reply only for an explicit grant; the runtime
+  independently repeats that grant, binds the current message action, shows the
+  reply target, and sends the actual `parent_id` already supported by the
+  backend post handler. Missing, denied, stale, and non-message targets fail
+  closed without frontend model or role inference.
+- Real-page evidence: the rebuilt project-create/project-workspace/payment
+  journey passed with three independent activity pages, retained unsaved draft
+  and dirty-close warning, two readable project tender rows, one authorized
+  editable payment attachment uploader, zero browser errors, zero mutations,
+  zero execute requests, and no desktop or 390px horizontal overflow.
+- Verification: twenty-five collaboration model cases, sixteen structural and
+  counterexample tests, eleven backend timeline boundary tests, strict Vue
+  typecheck, development build, refreshed zero-gap productization inventories,
+  and the complete `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Collaboration follower authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `c416bb32`.
+- Product defect and repair: the professional collaboration panel had no
+  follower workflow, and the normalized-contract assembler silently discarded
+  an already generated `followers` carrier. The backend now owns follower list,
+  current-user follow/unfollow authority, ACL, record-rule, and business-scope
+  checks; the normalized contract preserves that carrier; and a dedicated
+  professional follower manager renders only the exact backend decisions.
+  Missing, disabled, stale, unauthorized, and cross-record requests fail closed
+  without frontend model, role, label, or status inference.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey exercised authentic follower mutations on both `project.project` and
+  `payment.request`: each record changed from not-following to following and
+  returned to its original not-following state. The same journey retained three
+  independent activity pages, the unsaved project draft and dirty-close warning,
+  zero unrelated mutations or execute requests, zero browser errors, and no
+  desktop or 390px horizontal overflow.
+- Verification: five backend follower boundary tests, twenty-five collaboration
+  model cases, eighteen structural and counterexample tests, strict Vue
+  typecheck, development build, refreshed zero-gap productization inventories,
+  and the complete `make verify.frontend.quick.gate` passed. These results prove
+  this generic follower workflow; they do not claim broader page completion.
+
+## 2026-09-02 — Collaboration attachment-delete authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `b52493eb`.
+- Product defect and repair: collaboration attachments could be downloaded but
+  had no governed deletion path. The backend timeline now projects deletion
+  only for a direct attachment when the current user is its uploader (or an
+  administrator) and unlink ACL plus record rules allow it. The dedicated
+  `chatter.attachment.delete` handler independently repeats record access,
+  business scope, direct ownership, attachment unlink, and uploader checks.
+  The professional timeline and runtime consume only the exact `can_delete`
+  and `delete_intent` decision; missing, related-only, foreign-owner, stale,
+  cross-record, and unauthorized requests fail closed.
+- Real-page evidence: the governed journey created uniquely prefixed temporary
+  direct attachments under the authentic demo user, then deleted one through
+  the professional timeline on both `project.project` and `payment.request`.
+  Both entries disappeared, exactly two delete intents were observed, and the
+  EXIT cleanup removed any survivor. The same journey restored both follower
+  states, retained three independent activity pages and the unsaved draft,
+  preserved the dirty-close warning, reported zero unrelated mutations,
+  execute requests, or browser errors, and had no desktop or 390px horizontal
+  overflow.
+- Verification: four backend delete-boundary tests, twenty-eight collaboration
+  model cases, twenty structural and counterexample tests, strict Vue
+  typecheck, and the complete frontend quick gate. These results prove this
+  generic attachment-delete workflow; they do not claim broader page
+  completion.
+
+## 2026-09-02 — Collaboration attachment-delete safety settlement
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `5fed62b1`.
+- Product defect and repair: an authorized attachment delete executed on the
+  first click even though it is irreversible. Record pages now reuse the
+  existing professional intent-confirmation component, identify the exact
+  attachment in the warning, preserve it on cancel, and call the already
+  governed delete runtime only after explicit confirmation. Backend authority
+  and the normalized contract remain unchanged.
+- Real-page evidence: both `project.project` and `payment.request` journeys
+  opened the confirmation, verified the target filename, cancelled once with
+  the timeline entry preserved, then confirmed and observed one exact delete
+  intent. Temporary fixtures were removed with zero survivors; follower state,
+  activity-page retention, unsaved draft, dirty-close warning, browser-error
+  count, unrelated-mutation count, and 390px overflow checks remained clean.
+
+## 2026-09-02 — Collaboration attachment-download intent closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `fb9421db`.
+- Product defect and repair: the professional timeline treated a boolean
+  download capability as sufficient authority and then called a locally known
+  intent name. The backend timeline now projects the exact `file.download`
+  intent with every authorized attachment, while the collaboration model and
+  attachment runtime both independently require that exact carrier. Missing or
+  mismatched download intents fail closed without model, role, label, or status
+  inference.
+- Real-page evidence: the governed project-workspace and payment-request
+  journeys each opened the temporary attachment through the professional viewer
+  using one exact `file.download` request, then cancelled deletion with the
+  attachment preserved and confirmed deletion with the entry removed. The
+  combined journey observed exactly two downloads and two governed deletes,
+  restored follower state, retained the three independent activity pages and
+  unsaved project draft, and reported zero intent failures, browser errors,
+  unrelated mutations, execute requests, or desktop/390px overflow.
+- Runtime note: the first acceptance attempt exposed an already-stale payment
+  form view containing removed `funding_baseline_id` metadata. A normal
+  `smart_construction_core` module upgrade followed by the standard local-dev
+  restart refreshed the database view and resident registry; no database reset
+  or rebuild was performed. The identical journey then passed.
+
+## 2026-09-02 — Collaboration attachment-download subject settlement
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `330f12e3`.
+- Product defect and repair: the collaboration timeline marked every readable
+  attachment downloadable even when `file.download` would authorize a different
+  business subject or reject the subject model. Download allowed-model and
+  authorization-subject resolution are now shared backend authority. Timeline
+  rows project the exact download intent only when that resolved subject is the
+  current business record; relation-only, cross-record, invalid-override, and
+  disallowed-model attachments fail closed before reaching the UI.
+- Real-page evidence: after the normal module upgrade refreshed pre-existing
+  stale payment view metadata, the governed project/payment journey again
+  opened each authorized fixture through one exact download request, then
+  completed the cancel-and-confirm delete sequence. Both follower states were
+  restored, three activity pages and the unsaved draft were retained, and the
+  run reported zero intent failures, browser errors, unrelated mutations,
+  execute requests, or desktop/390px overflow.
+
+## 2026-09-02 — Collaboration activity authority and cancellation closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `6287f40c`.
+- Product defect and repair: activity rows still exposed unused edit/delete
+  booleans and the frontend treated local action knowledge as sufficient
+  authority. The backend now projects the exact
+  `chatter.activity.update` intent, while the professional collaboration model
+  requires that intent, a positive activity identity, and the action-specific
+  backend capability. Cancelling a plan now uses the shared professional
+  confirmation dialog; cancelling the dialog preserves the activity and only
+  an explicit confirmation invokes the mutation.
+- Runtime correction: cancellation no longer posts a synthetic note. That note
+  accidentally coupled activity cancellation to outbound-email sender
+  configuration and caused an otherwise authorized cancellation to fail. The
+  activity update remains the sole cancellation mutation.
+- Real-page evidence: governed `project.project` and `payment.request` journeys
+  each cancelled the dialog once with the fixture preserved, then confirmed
+  one exact cancellation and observed the activity removed. The run retained
+  three independent activity pages and the unsaved project draft, restored
+  follower state, and reported zero intent failures, browser errors, unrelated
+  mutations, execute requests, or desktop/390px overflow. The complete
+  `verify.frontend.quick.gate` also passed after refreshing its generated
+  productization inventories.
+
+## 2026-09-02 — Collaboration message-reply authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `9e5b3d91`.
+- Product defect and repair: timeline messages exposed only a reply boolean and
+  retained an unused edit flag, while the frontend relied on a locally known
+  reply intent and also coupled a row-level reply to the page-level new-comment
+  action. Message rows now project the exact `chatter.post` intent and no edit
+  flag. The professional model, reply opener, and sender require that exact
+  intent plus a positive parent identity; ordinary new comments continue to
+  require their page-level action contract.
+- Floorplan correction: Task Floorplans forced the collaboration panel to
+  readonly even in edit mode. This produced visible reply actions that could
+  never open a composer on the payment page. The professional driver now derives
+  collaboration readonly state from the canonical render mode, with no
+  model-specific exception.
+- Real-page evidence: governed `project.project` and `payment.request` journeys
+  each posted one child reply with an exact parent message id, then cancelled
+  deletion with the parent preserved and confirmed deletion successfully. The
+  same run retained three independent activity pages and the unsaved project
+  draft, restored follower state, completed attachment and activity journeys,
+  and reported zero intent failures, browser errors, unrelated mutations,
+  execute requests, or desktop/390px overflow.
+
+## 2026-09-02 — Collaboration attachment-upload authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `8b1af6b3`.
+- Product defect and repair: the professional attachment manager treated an
+  enabled upload descriptor as sufficient authority even when its executable
+  intent was absent or changed. Upload readiness now fails closed unless the
+  backend descriptor carries the exact `file.upload` intent; model tests and
+  the static guard include missing- and wrong-intent counterexamples.
+- Real-page evidence: governed `project.project` and `payment.request` journeys
+  each uploaded one unique text attachment through the professional component,
+  observed it in the canonical timeline, and confirmed one exact governed
+  deletion. The combined run observed exactly two uploads, two downloads, and
+  four deletes while retaining the existing message-reply, activity-cancel,
+  three-page activity-tab, unsaved-draft, follower restoration, and desktop /
+  390px checks. It reported zero intent failures, browser errors, unrelated
+  record mutations, or execute requests.
+
+## 2026-09-02 — Collaboration create-action intent closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `6782b88c`.
+- Product defect and repair: new-message and note descriptors had no executable
+  intent, while the frontend could open all three collaboration composers from
+  a locally recognized mode. The three backend projection paths now carry
+  exact `chatter.post` or `chatter.activity.schedule` authority. Presentation,
+  composer opening, and mutation handlers independently fail closed unless the
+  mode and exact backend execute intent agree.
+- Real-page evidence: governed `project.project` and `payment.request` journeys
+  each created and removed one ordinary message, one note, and one scheduled
+  activity through the professional component. The same run retained exact
+  parent authority for two replies, completed the existing attachment,
+  follower, activity-page, unsaved-draft, and desktop / 390px checks, and
+  reported zero intent failures, browser errors, unrelated record mutations,
+  or generic execute requests.
+- Runtime note: the first payment-page attempt exposed the already-known stale
+  `funding_baseline_id` view descriptor. A scoped `smart_construction_core`
+  module upgrade and normal local-dev restart refreshed the view without a demo
+  reset or rebuild; the identical dual-model journey then passed.

@@ -170,6 +170,7 @@ def validate_normalized_map(
             "form_modifier": ("recursive_native_occurrence", "exactly_one"),
             "form_behavior": ("surface_identity", "exactly_one"),
             "form_action": ("native_action_identity", "exactly_one"),
+            "form_field_descriptor": ("native_field_descriptor_identity", "exactly_one"),
         }
         if mapping.get("mapping_status") == "proven" and (
             proven_shapes.get(mapping_id) != (mapping.get("matcher"), mapping.get("cardinality_policy"))

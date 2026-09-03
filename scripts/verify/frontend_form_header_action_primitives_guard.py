@@ -24,7 +24,6 @@ def validate(read_text: Callable[[str], str] = _read) -> list[str]:
         errors.append("header overflow actions must consume the shared ScDropdown primitive")
     for event in (
         "@click=\"$emit('back')\"",
-        "@click=\"$emit('continue-processing')\"",
         "@click=\"$emit('run-primary')\"",
         "@click=\"$emit('run-action', action)\"",
         "@click=\"$emit('canonical-action', action)\"",
@@ -48,6 +47,8 @@ def validate(read_text: Callable[[str], str] = _read) -> list[str]:
         errors.append("form header must preserve canonical primary variants")
     if "buttonClass(" in source or "canonicalButtonClass(" in source:
         errors.append("form header must not retain private button class adapters")
+    if "showContinueProcessing" in source or "continue-processing" in source:
+        errors.append("form header must not infer a primary continue action without backend action authority")
     return errors
 
 
