@@ -1,0 +1,51 @@
+{
+  "schema": "frontend_acceptance_evidence_contract.v1",
+  "baseline": {
+    "baseline_sha": "b0cfa8ec41ab6b349b1d1d545fd03f59cc4c2a15",
+    "baseline_sha_source": "G1 branch cut point (main HEAD when the G1 acceptance baseline was frozen); traceable to origin/main via git merge-base --is-ancestor",
+    "capability_inventory_path": "docs/planning/custom-frontend-integration/G1_CAPABILITY_INVENTORY.md"
+  },
+  "environment_assets": {
+    "profiles_present": [
+      "daily",
+      "local",
+      "production",
+      "test"
+    ],
+    "assets": [
+      {
+        "path": "config/frontend/acceptance_environments_v1.json",
+        "sha256": "fbc07a7a560ace1b4d76479a1adfa6a102b0f0cab141b9174741a46b1b4022e0"
+      },
+      {
+        "path": "config/frontend/acceptance_tool_matrix_v1.json",
+        "sha256": "a9e831e174f607aee68d9cadfbaad915ec2c0fddbad3f0492f51966939e36f7a"
+      },
+      {
+        "path": "config/frontend/acceptance_evidence_contract_v1.schema.json",
+        "sha256": "b5cc8e59e330d83cf05fa6aac4f1233039965ab4c50a7f3473229882d2258a42"
+      }
+    ]
+  },
+  "toolchain": {
+    "python": "3.12.3",
+    "git": "2.43.0"
+  },
+  "collected_at": "2026-09-03T10:34:01Z",
+  "browser_evidence_contract": {
+    "required_fields": [
+      "browser_full_version",
+      "browser_url",
+      "capture_mode",
+      "collected_at_and_tool_version",
+      "dataset_id",
+      "environment_id",
+      "normalized_route",
+      "product_service_static_shas",
+      "role",
+      "screenshot_digest",
+      "viewport"
+    ],
+    "cross_env_reuse_forbidden": true
+  }
+}
