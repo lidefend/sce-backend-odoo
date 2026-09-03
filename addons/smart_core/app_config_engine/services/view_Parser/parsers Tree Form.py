@@ -1039,8 +1039,8 @@ class _TreeFormParserMixin:
                 'children': [],
             }
 
-        # 容器节点：sheet/group/notebook/page/div/header/footer/separator
-        if tag in ('sheet', 'group', 'notebook', 'page', 'div', 'header', 'footer', 'separator'):
+        # 容器节点：sheet/group/notebook/page/div/header/footer/separator + h1/h2/h3（oe_title 标题区字段必须进入布局，否则必填标题字段丢失）
+        if tag in ('sheet', 'group', 'notebook', 'page', 'div', 'header', 'footer', 'separator', 'h1', 'h2', 'h3'):
             node = {
                 'type': self._layout_type(tag),
                 'attributes': _attrs(el)

@@ -994,7 +994,9 @@ function decodeAnalysisSourceAuthority(
   ], path, issues);
   const authorities = raw.authorities;
   const expectedAuthorities = ['ir.ui.view', 'ir.model.fields', 'ir.actions.act_window'] as const;
-  const expectedKind = `native_${viewType}_view_projection`;
+  const expectedKind = viewType === 'pivot'
+    ? 'native_pivot_view_projection'
+    : 'native_graph_view_projection';
   const expectedCarrier = `ui.contract.v2.layoutContract.${viewType}Profile`;
   const validAuthorities = Array.isArray(authorities)
     && authorities.length === expectedAuthorities.length

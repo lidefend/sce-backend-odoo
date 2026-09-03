@@ -92,11 +92,26 @@ export function useRecordFormFieldSchemas(context: {
     favoriteActive:(name)=>Boolean(context.formData[name]),
     favoriteReadonly:(field)=>Boolean(field.readonly),
   });
-  const layoutNodes=computed<LayoutNode[]>(()=>buildLegacyLayoutNodes({fields:formFields.value,order:[],containerStatus:collectContractV2FieldContainerStatusByCode(context.v2ContractStore.value),visibleFields:context.contractVisibleFields.value,fallbackFieldNames:[...context.coreFieldNames.value,...context.advancedFieldNames.value],isCreate:!context.recordId.value,readonly:context.recordId.value?!context.rights.value.write:!context.rights.value.create,resolveFieldLabel:context.contractFieldLabel,evaluatePolicy:(_name,descriptor)=>({visible:true,required:Boolean(descriptor?.required),readonly:Boolean(descriptor?.readonly)}),runtimeState:(name)=>context.runtimeFieldStates.value[name]||{invisible:false,readonly:false,required:false}}));
+  const layoutNodes=computed<LayoutNode[]>(()=>{
+    // Track every formData value so native field schemas rebuild when a value
+    // changes (e.g. a many2one selection must reflect its label in the input;
+    // otherwise the rendered control keeps the stale pre-change value).
+    void Object.keys(context.formData).map((key)=>context.formData[key]);
+    return buildLegacyLayoutNodes({fields:formFields.value,order:[],containerStatus:collectContractV2FieldContainerStatusByCode(context.v2ContractStore.value),visibleFields:context.contractVisibleFields.value,fallbackFieldNames:[...context.coreFieldNames.value,...context.advancedFieldNames.value],isCreate:!context.recordId.value,readonly:context.recordId.value?!context.rights.value.write:!context.rights.value.create,resolveFieldLabel:context.contractFieldLabel,evaluatePolicy:(_name,descriptor)=>({visible:true,required:Boolean(descriptor?.required),readonly:Boolean(descriptor?.readonly)}),runtimeState:(name)=>context.runtimeFieldStates.value[name]||{invisible:false,readonly:false,required:false}});
+  });
   buildSectionFieldSchemas=createFormSectionFieldSchemaBuilder({
     resolveFieldType:(descriptor)=>fieldType(descriptor)||'char',resolveRequired:(field)=>Boolean((field as LayoutNode).required),
     resolveSpanClass:(field)=>(field as LayoutNode).spanClass||resolveFieldSpanClass({fieldType:fieldType(field.descriptor)}),
-    resolveRawValue:(name)=>context.formData[name],resolveMany2oneValue:context.many2oneValue,
+    resolveRawValue:(name)=>context.formData[name],resolveMany2oneValue:(name)=>{
+      // Resolve the many2one input value directly from the reactive formData
+      // instead of the relation-hooks closure, which can capture a stale
+      // formData reference and keep the rendered control's value frozen.
+      const raw=context.formData[name];
+      if (raw==null||raw===false) return '';
+      if (Array.isArray(raw)) return raw.length?String(raw[0]):'';
+      if (typeof raw==='object') return String((raw as {id?:unknown}).id??'');
+      return String(raw);
+    },
     normalizeDateInputValue:context.toDateInputValue,normalizeDatetimeInputValue:context.toDatetimeInputValue,
     resolveTextInputValue:context.inputFieldValue,resolveInputPlaceholder,
     resolveHelpText:(field)=>String((field.descriptor as Record<string,unknown>|undefined)?.help||'').trim(),
