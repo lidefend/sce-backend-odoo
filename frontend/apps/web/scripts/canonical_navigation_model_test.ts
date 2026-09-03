@@ -137,4 +137,55 @@ assert.throws(
   (error) => error instanceof CanonicalNavigationError && error.code === 'CANONICAL_NAVIGATION_IDENTITY_DUPLICATED',
 );
 
-console.log('[canonical_navigation_model_test] PASS cases=9');
+// Server-promoted menu containers (route_authority.menu_containers) are
+// enabled, route-bearing nodes without their own action (PR #399 semantics).
+const promotedAuthority: RouteAuthorityContract = {
+  ...structuredClone(authority),
+  menu_containers: [{
+    action_xmlid: '', route_kind: 'PRIMARY_NAV', menu_id: 2,
+    menu_xmlid: 'test.menu_group', action_id: 0, name: 'Group', model: '',
+    view_modes: [], domain: '', context: '', route: '/m/2',
+    allowed_operation: 'navigate', required_capability: 'menu_container_visible',
+    context_requirements: {}, source: 'role_surface.menu_xmlids',
+  }],
+};
+const promotedNav = structuredClone(nav);
+const promotedGroup = promotedNav[0].children?.[0];
+if (!promotedGroup?.canonical_navigation) throw new Error('test promoted carrier missing');
+promotedGroup.canonical_navigation.state = 'enabled';
+promotedGroup.canonical_navigation.route = '/m/2';
+promotedGroup.canonical_navigation.authority = {
+  state: 'allowed', source: 'role_surface.menu_xmlids', key: 'PRIMARY_NAV:test.menu_group:container',
+};
+const promotedModel = createCanonicalNavigationModel(promotedNav, promotedAuthority);
+const promotedNode = canonicalNavigationNodeByMenuId(promotedModel.nodes, 2);
+assert.ok(promotedNode);
+assert.equal(promotedNode.state, 'enabled');
+assert.equal(promotedNode.route, '/m/2');
+assert.equal(promotedNode.authority.state, 'allowed');
+assert.equal(promotedNode.authority.key, 'PRIMARY_NAV:test.menu_group:container');
+assert.equal(promotedNode.actionId, null);
+
+// A childless directory menu stays valid once it carries a container route.
+const childlessPromoted = structuredClone(promotedNav);
+const childlessGroup = childlessPromoted[0].children?.[0];
+if (!childlessGroup) throw new Error('test childless group missing');
+childlessGroup.children = [];
+const childlessModel = createCanonicalNavigationModel(childlessPromoted, promotedAuthority);
+assert.equal(canonicalNavigationNodeByMenuId(childlessModel.nodes, 2)?.children.length, 0);
+
+// The guard must still reject a stale carrier that ignores the promotion.
+const stalePromoted = structuredClone(promotedNav);
+const staleGroup = stalePromoted[0].children?.[0];
+if (!staleGroup?.canonical_navigation) throw new Error('test stale carrier missing');
+staleGroup.canonical_navigation.state = 'container';
+staleGroup.canonical_navigation.route = null;
+staleGroup.canonical_navigation.authority = {
+  state: 'container', source: 'system.init.navigation.nav', key: 'container:2',
+};
+assert.throws(
+  () => createCanonicalNavigationModel(stalePromoted, promotedAuthority),
+  (error) => error instanceof CanonicalNavigationError && error.code === 'CANONICAL_NAVIGATION_STATE_MISMATCH',
+);
+
+console.log('[canonical_navigation_model_test] PASS cases=12');
