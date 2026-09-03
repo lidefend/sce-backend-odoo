@@ -14,6 +14,26 @@ ROOT = Path(__file__).resolve().parents[2]
 FULL_SHA = "a" * 40
 OTHER_SHA = "b" * 40
 
+# Variables exported by make/codex.mk (`export PR PR_MERGE_METHOD ... EXPECTED_HEAD`).
+# When this test suite itself runs inside `make ci.local.quick` under a real
+# `make pr.merge EXPECTED_HEAD=<sha>` invocation, these leak into os.environ and
+# break the "missing EXPECTED_HEAD" scenarios. Strip them so the harness is
+# hermetic: each test controls these variables explicitly via command line.
+HARNESS_CONTROLLED_VARS = (
+    "EXPECTED_HEAD",
+    "PR",
+    "PR_MERGE_METHOD",
+    "PR_MERGE_SUBJECT",
+    "PR_MERGE_BODY",
+)
+
+
+def harness_environment() -> dict:
+    environment = dict(os.environ)
+    for name in HARNESS_CONTROLLED_VARS:
+        environment.pop(name, None)
+    return environment
+
 
 class BranchGovernanceConsistencyGuardTests(unittest.TestCase):
     def fixture(self, root: Path, *, make_regex: str = guard.CANONICAL_REGEX) -> None:
@@ -119,7 +139,7 @@ class ControlledMergeExpectedHeadTests(unittest.TestCase):
             )
             git.chmod(0o755)
             gh.chmod(0o755)
-            environment = dict(os.environ)
+            environment = harness_environment()
             environment.update(
                 {
                     "PR_MERGE_LOCAL_QUICK_GATE_SKIP": "1",
@@ -242,7 +262,7 @@ class ControlledReadyExpectedHeadTests(unittest.TestCase):
             )
             git.chmod(0o755)
             gh.chmod(0o755)
-            environment = dict(os.environ)
+            environment = harness_environment()
             environment.update(
                 {
                     "PR_MERGE_LOCAL_QUICK_GATE_SKIP": "1",
@@ -337,7 +357,7 @@ class MergePrepGateTests(unittest.TestCase):
                 encoding="utf-8",
             )
             gh.chmod(0o755)
-            environment = dict(os.environ)
+            environment = harness_environment()
             environment.update(
                 {
                     "PR_MERGE_LOCAL_QUICK_GATE_SKIP": "1",
