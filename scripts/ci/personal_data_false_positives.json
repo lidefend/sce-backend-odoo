@@ -231,6 +231,20 @@
       "blob_id": "9b8b2be6ddb690a18998ce2bfada247defd215e2",
       "classification": "MOBILE_PHONE_PATTERN",
       "reason": "verified_synthetic_tdesign_admin_fixture_history"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p0_ledger_gate.py",
+      "blob_id": "de36c41c785ed2300309cbab6da052433f5dfa10",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_ledger_fixture"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p0_ledger_gate.py",
+      "blob_id": "9f67b170a9904f1452b9e516069f8a3823669cb0",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_ledger_fixture"
     }
   ]
 }
