@@ -379,6 +379,9 @@ pr.merge.local_quick_gate:
 	  echo "[DENY] pr.merge.local_quick_gate: working tree must be clean (ci.local.quick must run on the exact PR head)"; \
 	  git status --porcelain; exit 12; \
 	fi; \
+	if [ "$${PR_MERGE_LOCAL_QUICK_GATE_SKIP:-0}" = "1" ]; then \
+	  echo "[pr.merge.local_quick_gate] SKIP: PR_MERGE_LOCAL_QUICK_GATE_SKIP=1 (unit-test harness; quick suite not run)"; exit 0; \
+	fi; \
 	echo "[pr.merge.local_quick_gate] running make ci.local.quick on $$EXPECTED (this takes several minutes)"; \
 	$(MAKE) --no-print-directory ci.local.quick; \
 	echo "[pr.merge.local_quick_gate] PASS"; \

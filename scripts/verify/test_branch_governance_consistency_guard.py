@@ -87,8 +87,12 @@ class ControlledMergeExpectedHeadTests(unittest.TestCase):
             git.write_text(
                 "#!/usr/bin/env bash\n"
                 "set -euo pipefail\n"
-                "if [[ \"$1 $2 $3\" == \"rev-parse --abbrev-ref HEAD\" ]]; then\n"
+                "if [[ \"$1 $2 ${3:-}\" == \"rev-parse --abbrev-ref HEAD\" ]]; then\n"
                 "  printf '%s\\n' 'fix/controlled-merge-expected-head-guard'\n"
+                "elif [[ \"$1 $2\" == \"rev-parse HEAD\" ]]; then\n"
+                "  printf '%s\\n' 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'\n"
+                "elif [[ \"$1 $2\" == \"status --porcelain\" ]]; then\n"
+                "  exit 0\n"
                 "else\n"
                 "  echo \"unexpected git invocation: $*\" >&2\n"
                 "  exit 90\n"
@@ -118,7 +122,7 @@ class ControlledMergeExpectedHeadTests(unittest.TestCase):
             environment = dict(os.environ)
             environment.update(
                 {
-                    "ENV": "test",
+                    "PR_MERGE_LOCAL_QUICK_GATE_SKIP": "1",
                     "PATH": f"{bin_dir}:{environment['PATH']}",
                     "FAKE_ACTUAL_HEAD": actual_head,
                     "FAKE_MERGE_LOG": str(merge_log),
@@ -241,7 +245,7 @@ class ControlledReadyExpectedHeadTests(unittest.TestCase):
             environment = dict(os.environ)
             environment.update(
                 {
-                    "ENV": "test",
+                    "PR_MERGE_LOCAL_QUICK_GATE_SKIP": "1",
                     "PATH": f"{bin_dir}:{environment['PATH']}",
                     "FAKE_ACTUAL_HEAD": actual_head,
                     "FAKE_IS_DRAFT": is_draft,
@@ -336,7 +340,7 @@ class MergePrepGateTests(unittest.TestCase):
             environment = dict(os.environ)
             environment.update(
                 {
-                    "ENV": "test",
+                    "PR_MERGE_LOCAL_QUICK_GATE_SKIP": "1",
                     "PATH": f"{bin_dir}:{environment['PATH']}",
                     "FAKE_ACTUAL_HEAD": FULL_SHA,
                     "FAKE_GATE_STATE": gate_state,
