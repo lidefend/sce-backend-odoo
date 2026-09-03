@@ -1,5 +1,6 @@
 <template>
   <ScCard
+    v-if="displayFields.length || fieldSelectionMode || fieldConfigEditable || slots.action || hint"
     :class="['template-form-section', toneClass, { 'template-form-section--readonly': allFieldsReadonly }]"
     data-component="FormSection"
     data-semantic-component="FormSection"
@@ -10,9 +11,9 @@
     <template v-if="showHead && $slots.action" #actions><slot name="action" /></template>
     <p v-if="hint" class="template-form-section-hint">{{ hint }}</p>
     <div :class="['template-form-section-grid', `template-form-section-grid--columns-${columns}`]">
-      <template v-if="fields.length">
+      <template v-if="displayFields.length">
         <div
-          v-for="(field, index) in fields"
+          v-for="(field, index) in displayFields"
           :key="field.key"
           :class="fieldClass(field, index)"
           :data-field-name="field.name"
@@ -45,7 +46,7 @@
           @mouseup="emitFieldOrderPointerDrop(field, $event)"
         >
           <div class="field-label-row">
-            <label v-if="!fieldConfigEditable && !field.hideLabel" class="label" :for="fieldControlId(field)">
+            <label v-if="!fieldConfigEditable && !field.hideLabel && !detailCollectionOwnsVisibleTitle(field)" class="label" :for="fieldControlId(field)">
               {{ field.label }}
               <span v-if="field.required && !field.readonly" class="field-state field-state--required"><span aria-hidden="true">*</span><span class="sr-only">必填</span></span>
               <span v-else-if="field.readonly && !allFieldsReadonly" class="field-state">只读</span>
@@ -443,6 +444,11 @@ function usesPaymentSettlementDetailCollection(field: FormSectionFieldSchema) {
   return isPaymentSettlementDetailCollectionField(field);
 }
 
+function detailCollectionOwnsVisibleTitle(field: FormSectionFieldSchema) {
+  if (field.readonly || !props.relationAdapter) return false;
+  return usesProfessionalOne2many(field) || usesPaymentSettlementDetailCollection(field);
+}
+
 function usesSceneFieldControl(field: FormSectionFieldSchema) {
   if (isProfessionalRelationField(field) || isProfessionalDetailCollectionField(field) || isPaymentSettlementDetailCollectionField(field)) return false;
   return usesContractFormDriverField(field, sceneUiKit?.kit.value || 'sc-native');
@@ -613,6 +619,12 @@ function readonlyText(field: FormSectionFieldSchema) {
 }
 
 const taskActionResolver = inject(ScTaskActionResolverKey, null);
+
+const displayFields = computed(() => props.fields.filter((field) => {
+  if (!props.preferReadonlyFacts || props.fieldSelectionMode || props.fieldConfigEditable) return true;
+  if (!field.readonly || field.type === 'one2many' || !fieldHasEmptyValue(field)) return true;
+  return Boolean(taskActionFor(field));
+}));
 
 /**
  * Resolve a readonly fact into a clickable business action, when the page

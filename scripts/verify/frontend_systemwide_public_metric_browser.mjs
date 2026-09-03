@@ -94,14 +94,21 @@ try {
         .filter(visible).map((node) => String(node.getAttribute('data-group-title') || '').replace(/\s+/g, ' ').trim()).filter(Boolean);
       const components = [...patternNode?.querySelectorAll('[data-component-key]') || []].filter(visible);
       const unresolved = components.filter((node) => !['ready', 'readable_fallback'].includes(node.getAttribute('data-component-readiness') || ''));
-      const primary = [...document.querySelectorAll('[data-product-primary-action]')].filter(visible);
+      const primary = [...document.querySelectorAll('[data-product-primary-action], [data-action-tier="primary"]')].filter(visible);
       const enabledPrimary = primary.filter((node) => !(node instanceof HTMLButtonElement) || !node.disabled);
       const fakeReadonly = [...patternNode?.querySelectorAll('input:disabled, textarea:disabled, select:disabled') || []]
         .filter(visible);
+      const emptyReadonlyScalarFacts = [...patternNode?.querySelectorAll(
+        '.field--empty[data-field-state="readonly"]:not([data-field-type="one2many"])',
+      ) || []].filter(visible);
+      const emptyFormSections = [...patternNode?.querySelectorAll('[data-component="FormSection"]') || []]
+        .filter((node) => visible(node) && !String(node.textContent || '').trim());
       const selectedNav = document.querySelectorAll(`#primary-sidebar [data-navigation-menu-id="${menuId}"][aria-current="page"]`).length;
+      const visibleHeadings = [...document.querySelectorAll('h1')].filter(visible);
       return {
         url: location.href,
-        h1: document.querySelectorAll('h1').length,
+        h1: visibleHeadings.length,
+        h1Text: visibleHeadings.map((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim()),
         pageHeader: document.querySelectorAll('[data-product-page-header]').length,
         pattern: patternNode?.getAttribute('data-product-page-pattern') || '',
         presentationMode: header?.getAttribute('data-presentation-mode') || '',
@@ -109,6 +116,7 @@ try {
         selectedNavigationItem: selectedNav,
         primaryActions: primary.length,
         enabledPrimaryActions: enabledPrimary.length,
+        primaryActionLabels: primary.map((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim()),
         saveActions: [...document.querySelectorAll('[data-action-ref="form.save"], [data-action-method="save"], [data-action-method="write"]')].filter(visible).length,
         editTransitions: [...document.querySelectorAll('[data-form-mode-action="edit"]')].filter(visible).length,
         fieldNames,
@@ -116,6 +124,8 @@ try {
         titles,
         duplicateTitles: [...new Set(titles.filter((value, index) => titles.indexOf(value) !== index))],
         disabledFakeReadonlyControls: fakeReadonly.length,
+        emptyReadonlyScalarFacts: emptyReadonlyScalarFacts.length,
+        emptyFormSections: emptyFormSections.length,
         disabledFakeReadonlyControlDetails: fakeReadonly.map((node) => ({
           tag: node.tagName.toLowerCase(), type: node.getAttribute('type') || '',
           value: String(node.value || ''), field: node.closest('[data-field-name]')?.getAttribute('data-field-name') || '',
@@ -142,6 +152,10 @@ try {
     metrics.contractMenuId = candidateContracts.map((row) => findKey(row.request, 'menu_id')).find(Boolean);
 
     check(metrics.h1 === 1 && metrics.pageHeader === 1, `${spec.key}: page identity is not unique`, metrics);
+    check(typeof spec.expectedTitle === 'string' && spec.expectedTitle.trim(),
+      `${spec.key}: authoritative action title is absent`, spec);
+    check(metrics.h1Text[0] === spec.expectedTitle.trim(),
+      `${spec.key}: page title differs from action authority`, metrics);
     check(['collection', 'task', 'workspace'].includes(metrics.contractPresentationMode),
       `${spec.key}: Contract presentation mode is invalid`, metrics);
     check(['readonly', 'edit', 'create'].includes(metrics.contractRenderProfile),
@@ -150,7 +164,8 @@ try {
     check(metrics.presentationMode === metrics.contractPresentationMode && metrics.renderProfile === metrics.contractRenderProfile,
       `${spec.key}: header differs from Contract authority`, metrics);
     check(metrics.selectedNavigationItem === 1, `${spec.key}: selected navigation identity is not unique`, metrics);
-    check(metrics.primaryActions <= 1, `${spec.key}: multiple primary actions`, metrics);
+    check(metrics.primaryActions <= 1, `${spec.key}: multiple visible primary actions`, metrics);
+    check(metrics.enabledPrimaryActions <= 1, `${spec.key}: multiple enabled primary actions`, metrics);
     check(metrics.duplicateFields.length === 0, `${spec.key}: duplicate fields`, metrics);
     check(metrics.duplicateTitles.length === 0, `${spec.key}: duplicate titles`, metrics);
     check(metrics.unregisteredComponents === 0, `${spec.key}: unregistered component reached DOM`, metrics);
@@ -172,6 +187,10 @@ try {
       check(metrics.saveActions === 0, `${spec.key}: readonly surface exposes save`, metrics);
       check(metrics.disabledFakeReadonlyControls === 0,
         `${spec.key}: readonly facts use disabled fake controls`, metrics);
+      check(metrics.emptyReadonlyScalarFacts === 0,
+        `${spec.key}: readonly surface exposes empty scalar facts`, metrics);
+      check(metrics.emptyFormSections === 0,
+        `${spec.key}: readonly surface exposes empty form sections`, metrics);
     }
     if (spec.route.startsWith('/r/')) {
       check(new URL(metrics.url).pathname.startsWith('/r/'), `${spec.key}: explicit readonly route was promoted`, metrics);

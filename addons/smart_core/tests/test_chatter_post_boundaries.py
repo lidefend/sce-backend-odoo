@@ -93,6 +93,19 @@ class TestChatterPostBoundaries(unittest.TestCase):
         self.assertEqual(result["error"]["reason_code"], "USER_ERROR")
         self.assertEqual(result["error"]["message"], "res_id 无效")
 
+    def test_unknown_mode_fails_closed_before_record_access(self):
+        handler = self.module.ChatterPostHandler(
+            env={"x.model": object()},
+            params={"model": "x.model", "res_id": 1, "body": "Hello", "mode": "broadcast"},
+        )
+
+        result = handler.handle()
+
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["code"], 400)
+        self.assertEqual(result["error"]["reason_code"], "USER_ERROR")
+        self.assertEqual(result["error"]["message"], "mode 无效")
+
 
 if __name__ == "__main__":
     unittest.main()

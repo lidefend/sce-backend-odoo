@@ -6,6 +6,7 @@ FILES = {
     "activity": ROOT / "frontend/apps/web/src/pages/ActivityPage.vue",
     "status": ROOT / "frontend/apps/web/src/components/StatusPanel.vue",
     "tabs": ROOT / "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
+    "contract_form": ROOT / "frontend/apps/web/src/pages/ContractFormPage.vue",
     "theme": ROOT / "frontend/packages/ui/src/kits/tdesign/theme.css",
 }
 
@@ -42,6 +43,13 @@ def validate(sources: dict[str, str] | None = None) -> list[str]:
             failures.append(f"activity tabs governed TDesign component contract missing: {marker}")
     if '<button class="activity-tab-close"' in tabs:
         failures.append("activity tablist contains a non-tab close button")
+    contract_form = values["contract_form"]
+    dirty_publication = (
+        "session.updateActiveActivityDirty(dirty); }, "
+        "{ immediate: true, flush: 'sync' });"
+    )
+    if dirty_publication not in contract_form:
+        failures.append("activity draft dirty state is not published synchronously before tab navigation")
     return failures
 
 

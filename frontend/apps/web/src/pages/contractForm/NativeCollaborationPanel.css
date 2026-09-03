@@ -807,3 +807,34 @@
 .native-chatter-message-item:hover .native-chatter-message-reply {
   opacity: 1;
 }
+
+.native-follower-manager {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: 8px;
+  background: var(--sc-app-surface-subtle);
+}
+
+.native-follower-header,
+.native-follower-list {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.native-follower-header {
+  justify-content: space-between;
+}
+
+.native-follower-title,
+.native-follower-name {
+  font-weight: 600;
+  color: var(--sc-app-text-primary);
+}
+
+.native-follower-current {
+  color: var(--sc-app-primary);
+  font-size: 12px;
+}

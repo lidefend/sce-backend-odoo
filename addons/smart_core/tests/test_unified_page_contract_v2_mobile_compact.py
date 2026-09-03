@@ -1866,6 +1866,49 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             "button:object:action_view_result",
         )
 
+    def test_single_primary_prefers_header_workflow_over_layout_tool_on_equal_authority(self):
+        contract = {
+            "actionContract": {
+                "actionRuleList": [
+                    {
+                        "actionId": "action.import_lines",
+                        "backendIdentity": "button:object:action_import_lines",
+                        "sourceChannel": "native_form_layout_button",
+                        "allowed": True,
+                        "enabled": True,
+                        "disabled": False,
+                        "presentationPriority": 100,
+                        "presentation": {"tier": "primary"},
+                    },
+                    {
+                        "actionId": "action.submit",
+                        "backendIdentity": "button:object:action_submit",
+                        "sourceChannel": "native_form_header",
+                        "allowed": True,
+                        "enabled": True,
+                        "disabled": False,
+                        "presentationPriority": 100,
+                        "presentation": {"tier": "primary"},
+                    },
+                ]
+            },
+            "statusContract": {"buttonStatus": []},
+            "dataContract": {"mainData": {}},
+        }
+
+        assembler._enforce_single_effective_primary_action(contract)
+
+        self.assertEqual(
+            contract["actionContract"]["primaryResolution"]["winner"],
+            "button:object:action_submit",
+        )
+        tiers = {
+            row["backendIdentity"]: row["presentation"]["tier"]
+            for row in contract["actionContract"]["actionRuleList"]
+        }
+        self.assertEqual(tiers["button:object:action_submit"], "primary")
+        self.assertEqual(tiers["button:object:action_import_lines"], "secondary")
+
     def test_final_modifier_hydration_recomputes_status_and_primary_from_complete_record(self):
         contract = {
             "actionContract": {
@@ -3614,6 +3657,44 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         }}}
         with self.assertRaisesRegex(ValueError, "action occurrence parity mismatch"):
             assembler.assemble_unified_page_contract_v2(omitted_action, source_type="ui.contract")
+
+    def test_analysis_projection_requires_authoritative_named_semantics(self):
+        for view_type, native_analysis in (
+            ("pivot", {
+                "measures": [{"name": "amount", "label": "Amount"}],
+                "dimensions": [{"name": "date", "label": "Date", "axis": "col"}],
+                "defaults": {"expanded": False},
+            }),
+            ("graph", {
+                "measures": [{"name": "amount", "label": "Amount"}],
+                "dimensions": [{"name": "project_id", "label": "Project"}],
+                "type_default": "line",
+            }),
+        ):
+            with self.subTest(view_type=view_type):
+                source = {
+                    "model": "x.analysis",
+                    "view_type": view_type,
+                    "fields": {"amount": {"type": "float"}, "date": {"type": "date"}},
+                    "views": {view_type: {view_type: native_analysis}},
+                }
+                full = assembler.assemble_unified_page_contract_v2(source, source_type="ui.contract")
+                profile = full["layoutContract"][f"{view_type}Profile"]
+                self.assertEqual(profile["measures"], native_analysis["measures"])
+                self.assertEqual(profile["dimensions"], native_analysis["dimensions"])
+                self.assertEqual(
+                    profile["sourceAuthority"]["runtime_carrier"],
+                    f"ui.contract.v2.layoutContract.{view_type}Profile",
+                )
+                if view_type == "pivot":
+                    self.assertEqual(profile["defaults"], native_analysis["defaults"])
+                else:
+                    self.assertEqual(profile["typeDefault"], "line")
+
+                broken = deepcopy(source)
+                broken["views"][view_type][view_type]["dimensions"] = []
+                with self.assertRaisesRegex(ValueError, "dimensions are required"):
+                    assembler.assemble_unified_page_contract_v2(broken, source_type="ui.contract")
 
     def test_native_form_projection_requires_explicit_authority_and_resolved_layout(self):
         source = {

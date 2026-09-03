@@ -5,8 +5,8 @@ goal:
   objective: close_native_view_capability_loss_across_contract_and_renderer_layers
 
   baseline:
-    branch: codex/fix-project-layout-container-normalize
-    full_sha: 35f31407ab34ffff1d43de264e51de5f858a2596
+    branch: feature/native-view-action-semantics-closure-v1
+    full_sha: 01a29b14cba8629dd4680812a13db48ffbbfc25f
     source: origin/main
     worktree: /home/lidefend/workspace/sce-backend-odoo
 
@@ -72,22 +72,44 @@ goal:
       title: modifiers_actions_permissions_closure
       status: planned
       current_increment:
-        id: Q2-4b
-        title: professional_field_driver_occurrence_event_closure
+        id: Q2-4c
+        title: canonical_form_action_occurrence_identity_closure
         status: verified
         result:
-          - canonical_widget_id_is_preserved_as_field_change_occurrence_key
-          - professional_driver_change_query_commit_and_binary_events_preserve_occurrence
-          - record_value_mutation_remains_field_name_driven
+          - canonical_action_execution_matches_backend_identity_and_authoritative_native_occurrence
+          - action_presentation_and_execution_share_one_occurrence_key_implementation
+          - legacy_action_references_without_occurrence_remain_ambiguity_fail_closed
           - no_model_label_or_business_semantic_inference_added
         terminal_counts:
-          ready: 381
-          fallback: 1340
-          unsupported: 24810
+          ready: 1567
+          fallback: 797
+          unsupported: 30287
           silent_loss: 0
     - id: Q3
       title: form_tree_search_kanban_semantic_closure
       status: planned
+      current_increment:
+        id: Q3-4
+        title: static_field_options_contract_consumption_closure
+        status: verified
+        result:
+          - static_native_field_options_are_safely_parsed_without_expression_evaluation
+          - normalized_widget_options_and_final_component_widget_options_must_be_structurally_equivalent
+          - contract_v2_field_descriptor_store_preserves_widget_options_for_canonical_field_rendering
+          - dynamic_or_unattributed_options_remain_fail_closed_as_unsupported
+          - local_clean_capability_ledger_gate_passes_with_zero_silent_loss
+        terminal_counts:
+          ready: 6492
+          fallback: 797
+          unsupported: 25362
+          silent_loss: 0
+        promoted_form_field_descriptors:
+          field_identity_ready: 2136
+          field_label_ready: 108
+          field_options_ready: 44
+          field_relation_ready: 489
+          field_type_ready: 2136
+          field_widget_ready: 12
     - id: Q4
       title: pivot_graph_activity_renderer_closure
       status: planned

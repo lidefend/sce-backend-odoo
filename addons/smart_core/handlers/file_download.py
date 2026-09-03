@@ -54,6 +54,32 @@ DEFAULT_LEGACY_FILE_ROOTS = (
 LEGACY_ONLINE_ATTACHMENT_FALLBACK_ENV = "SC_LEGACY_ONLINE_ATTACHMENT_FALLBACK"
 
 
+def allowed_file_download_models(env):
+    values = set(FileDownloadHandler.ALLOWED_MODELS)
+    payload = call_extension_hook_first(env, "smart_core_file_download_allowed_models", env)
+    if isinstance(payload, (list, tuple, set)):
+        values.update(str(item).strip() for item in payload if str(item).strip())
+    return values
+
+
+def resolve_file_download_auth_subject(env, attachment):
+    model = str(getattr(attachment, "res_model", "") or "").strip()
+    res_id = int(getattr(attachment, "res_id", 0) or 0)
+    override = call_extension_hook_first(
+        env,
+        "smart_core_file_download_auth_subject",
+        env,
+        attachment,
+        {"model": model, "res_id": res_id},
+    )
+    if isinstance(override, dict):
+        override_model = str(override.get("model") or "").strip()
+        override_res_id, override_error = parse_positive_int(override.get("res_id"))
+        if override_model and not override_error:
+            return override_model, override_res_id
+    return model, res_id
+
+
 @dataclass(frozen=True)
 class _LegacyAttachmentRefs:
     primary: list[str]
@@ -90,13 +116,7 @@ class FileDownloadHandler(BaseIntentHandler):
         }
 
     def _allowed_models(self):
-        base_values = set(self.ALLOWED_MODELS)
-        payload = call_extension_hook_first(self.env, "smart_core_file_download_allowed_models", self.env)
-        if isinstance(payload, (list, tuple, set)):
-            values = {str(item).strip() for item in payload if str(item).strip()}
-            if values:
-                return base_values | values
-        return base_values
+        return allowed_file_download_models(self.env)
 
     def _err(self, code: int, message: str):
         return {"ok": False, "error": {"code": code, "message": message}, "code": code}
@@ -195,21 +215,7 @@ class FileDownloadHandler(BaseIntentHandler):
             attachment = attachment or self.env["ir.attachment"].sudo().browse(attachment_id).exists()
             if not attachment:
                 return self._err(404, "附件不存在")
-            auth_model = attachment.res_model
-            auth_res_id = attachment.res_id
-            auth_override = call_extension_hook_first(
-                self.env,
-                "smart_core_file_download_auth_subject",
-                self.env,
-                attachment,
-                {"model": auth_model, "res_id": auth_res_id},
-            )
-            if isinstance(auth_override, dict):
-                override_model = str(auth_override.get("model") or "").strip()
-                override_res_id = auth_override.get("res_id")
-                if override_model and override_res_id:
-                    auth_model = override_model
-                    auth_res_id = override_res_id
+            auth_model, auth_res_id = resolve_file_download_auth_subject(self.env, attachment)
             if auth_model not in self._allowed_models():
                 return self._err(403, "附件不可访问")
             if auth_model not in self.env:

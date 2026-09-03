@@ -12,6 +12,14 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     section = read_text("frontend/apps/web/src/components/template/FormSection.vue")
     registry = read_text("frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts")
     assembler = read_text("addons/smart_core/core/unified_page_contract_v2_assembler.py")
+    x2many = read_text("frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue")
+    relationship_fields = read_text("frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts")
+    relation_descriptor = read_text("frontend/apps/web/src/pages/contractForm/relationDescriptor.ts")
+    form_state = read_text("frontend/apps/web/src/pages/contractForm/useRecordFormState.ts")
+    action_presentation = read_text("frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts")
+    relationship_navigation = read_text("frontend/apps/web/src/pages/contractForm/useRecordRelationshipNavigation.ts")
+    relationships = read_text("frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts")
+    page = read_text("frontend/apps/web/src/pages/ContractFormPage.vue")
     for key in ("sc.relation.many2one", "sc.relation.many2many", "sc.select.tags"):
         if key not in model or key not in registry or key not in assembler:
             failures.append(f"relation authority is incomplete for {key}")
@@ -41,6 +49,58 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("many2one lifecycle commands override shared ScButton presentation")
     if '<ScButton\n                type="button"' not in many2one:
         failures.append("many2one stateful listbox options must consume the shared ScButton primitive")
+    for marker in (
+        'adapter.isOne2manyHydrating(field.name)',
+        'data-readonly-relation-loading',
+        'state="loading"',
+    ):
+        if marker not in x2many:
+            failures.append(f"readonly one2many loading semantics are incomplete: {marker}")
+    for marker in (
+        'const one2manyHydrating = reactive<Record<string, boolean>>({})',
+        'function prepareVisibleOne2manyHydration()',
+        'one2manyHydrating[name] = true',
+        'one2manyHydrating[name] = false',
+        'finally',
+    ):
+        if marker not in relationship_fields:
+            failures.append(f"one2many hydration lifecycle is incomplete: {marker}")
+    if "entry?.canCreate === true && entry.inlineCreate?.enabled" not in relation_descriptor:
+        failures.append("relation inline-create authority does not fail closed")
+    if "if (ttype === 'many2many')" in relation_descriptor:
+        failures.append("many2many inline-create retains a frontend default-allow fallback")
+    if "entry?.canCreate!==true||!relation" not in form_state:
+        failures.append("many2many quick-create handler does not independently fail closed")
+    if "fallbackMap: Record<string, string>" in action_presentation or "res.partner.category" in action_presentation:
+        failures.append("many2many quick-create retains frontend field/model inference")
+    if "entry?.canCreate !== true || !inline.enabled || !inline.createOnNoMatch || !relation" not in action_presentation:
+        failures.append("professional many2many quick-create handler does not fail closed")
+    if "entry?.canCreate !== true || !inline.enabled || !inline.createOnNoMatch" not in relationship_navigation:
+        failures.append("many2one quick-create handler does not fail closed")
+    for marker in (
+        "if (relationEntry(descriptor)?.canRead !== true) return [];",
+        "if (entry?.canRead !== true) return [];",
+        "if (relationEntry(resolvedDescriptor)?.canRead !== true) return;",
+    ):
+        if marker not in relationships:
+            failures.append(f"relation search read authority is incomplete: {marker}")
+    if "if (entry && entry.canRead === false)" in relationships:
+        failures.append("relation search rows retain fail-open read authority")
+    for marker in (
+        "if(!isFieldWritable(name))return;const normalized=",
+        "if(!isFieldWritable(name))return;const keyword=",
+        "const setRelationIds=(name:string,ids:number[])=>{if(!isFieldWritable(name))return;",
+    ):
+        if marker not in form_state:
+            failures.append(f"relation selection write authority is incomplete: {marker}")
+    if "canonicalWritable === false || (canonicalWritable !== true && (!layoutField || layoutField.readonly))" not in relationships:
+        failures.append("relation search selection does not fail closed on canonical write authority")
+    if "canonicalFieldWritable: (...args: [string]) => canonicalFieldWritable(...args)" not in page:
+        failures.append("relation runtime does not receive canonical field write authority")
+    if "quickCreateRelationMany: async (fieldName: string) => {\n      if (!isFieldWritable(fieldName)) return;" not in action_presentation:
+        failures.append("professional many2many create handler does not require field write authority")
+    if "isFieldWritable: (...args: Parameters<typeof isFieldWritable>) => isFieldWritable(...args)" not in page:
+        failures.append("professional relation adapter does not receive resolved field write authority")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
         if forbidden in component or forbidden in many2one or forbidden in model:
             failures.append(f"relation family contains forbidden product special case {forbidden}")
@@ -54,7 +114,7 @@ def main() -> int:
         for failure in failures:
             print(f" - {failure}")
         return 1
-    print("[frontend_professional_relation_field_guard] PASS relation_types=2")
+    print("[frontend_professional_relation_field_guard] PASS relation_types=2 readonly_hydration=field_scoped")
     return 0
 
 

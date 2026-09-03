@@ -5,6 +5,7 @@ import type {
   CanonicalFormRenderModel,
 } from '../../app/presentation/canonicalFormRenderModel';
 import type { ContractAction } from './types';
+import { nativeActionOccurrenceKey } from './nativeActionIdentity';
 
 export type CanonicalFormActionExecution =
   | { kind: 'save' }
@@ -24,8 +25,11 @@ export function resolveCanonicalFormActionExecution(
   if (!actionId || !backendIdentity) return { kind: 'error', reasonCode: 'CANONICAL_FORM_ACTION_REFERENCE_MISSING' };
   if (actionId === 'form.save') return { kind: 'save' };
 
+  const occurrenceKey = nativeActionOccurrenceKey(actionRef.nativeIdentity);
+
   const candidates = contractActions.filter((candidate) => (
     String(candidate.backendIdentity || '').trim() === backendIdentity
+    && (!occurrenceKey || nativeActionOccurrenceKey(candidate.nativeIdentity) === occurrenceKey)
   ));
   if (!candidates.length) return { kind: 'error', reasonCode: 'CANONICAL_FORM_ACTION_EXECUTION_ADAPTER_MISSING' };
   if (candidates.length > 1) return { kind: 'error', reasonCode: 'CANONICAL_FORM_ACTION_REFERENCE_AMBIGUOUS' };

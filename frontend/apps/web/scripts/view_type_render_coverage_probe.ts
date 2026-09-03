@@ -1,11 +1,13 @@
 import { ACTION_SURFACE_RENDERER_REGISTRY, resolveActionSurfaceRenderer } from '../src/app/renderers/actionSurfaceRendererRegistry';
 import { resolveActionCollectionPresentation } from '../src/app/contracts/actionViewSurfaceContract';
 import { resolveActivitySurfaceModel } from '../src/app/contracts/actionViewActivityContract';
+import { resolveAnalysisSurfaceModel } from '../src/app/contracts/actionViewAnalysisContract';
 import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 import { createContractV2Store } from '../src/app/contracts/v2/store';
 import { useActionPageModel } from '../src/app/assemblers/action/useActionPageModel';
 
-const fallbackModes = ['pivot', 'graph', 'calendar', 'gantt', 'dashboard'] as const;
+const analysisModes = ['pivot', 'graph'] as const;
+const fallbackModes = ['calendar', 'gantt', 'dashboard'] as const;
 
 function advancedPageEvidence(viewMode: string) {
   const { vm } = useActionPageModel({
@@ -107,12 +109,48 @@ const { activityProfile: omittedProfile, ...layoutWithoutProfile } = activityPay
 void omittedProfile;
 const missingStore = createContractV2Store(decodeContractV2Snapshot({ ...activityPayload, layoutContract: layoutWithoutProfile }));
 const missingActivityModel = resolveActivitySurfaceModel(missingStore, []);
+const analysisAuthority = (viewType: 'pivot' | 'graph') => ({
+  kind: `native_${viewType}_view_projection`,
+  authorities: ['ir.ui.view', 'ir.model.fields', 'ir.actions.act_window'],
+  projection_only: true, no_business_fact_authority: true,
+  runtime_carrier: `ui.contract.v2.layoutContract.${viewType}Profile`,
+});
+const pivotProfile = {
+  measures: [{ name: 'amount', label: 'Amount' }],
+  dimensions: [{ name: 'date', label: 'Date', axis: 'col' }],
+  defaults: {}, sourceAuthority: analysisAuthority('pivot'),
+};
+const graphProfile = {
+  measures: [{ name: 'amount', label: 'Amount' }],
+  dimensions: [{ name: 'project_id', label: 'Project' }],
+  typeDefault: 'bar', sourceAuthority: analysisAuthority('graph'),
+};
+const decodedPivot = decodeContractV2Snapshot({
+  ...activityPayload,
+  pageInfo: { ...activityPayload.pageInfo, viewType: 'pivot', layoutType: 'pivot' },
+  layoutContract: {
+    ...layoutWithoutProfile, layoutType: 'pivot', pivotProfile,
+  },
+});
+const decodedGraph = decodeContractV2Snapshot({
+  ...activityPayload,
+  pageInfo: { ...activityPayload.pageInfo, viewType: 'graph', layoutType: 'graph' },
+  layoutContract: {
+    ...layoutWithoutProfile, layoutType: 'graph', graphProfile,
+  },
+});
+const pivotModel = resolveAnalysisSurfaceModel(createContractV2Store(decodedPivot), 'pivot', [
+  { id: 1, date: '2026-09', amount: 12 }, { id: 2, date: '2026-09', amount: 8 },
+]);
+const graphModel = resolveAnalysisSurfaceModel(createContractV2Store(decodedGraph), 'graph', [
+  { id: 1, project_id: [7, 'Project A'], amount: 20 },
+]);
 
 const evidence = {
   scope: 'view_type_render_coverage',
   deliveryClaims: { actionRouteProven: false, browserDeliveryProven: false },
   registrations: Object.fromEntries(
-    [...fallbackModes, 'activity'].map((mode) => [mode, ACTION_SURFACE_RENDERER_REGISTRY[mode]]),
+    [...analysisModes, ...fallbackModes, 'activity'].map((mode) => [mode, ACTION_SURFACE_RENDERER_REGISTRY[mode]]),
   ),
   fallback: Object.fromEntries(fallbackModes.map((mode) => {
     const presentation = resolveActionCollectionPresentation(null, mode);
@@ -130,6 +168,10 @@ const evidence = {
       recordCount: activityModel.records.length,
     },
     missingReasonCode: missingActivityModel.reasonCode,
+  },
+  analysisProfiles: {
+    pivot: { profile: decodedPivot.layoutContract.pivotProfile, model: pivotModel },
+    graph: { profile: decodedGraph.layoutContract.graphProfile, model: graphModel },
   },
 };
 

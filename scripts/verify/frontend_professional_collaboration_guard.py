@@ -9,7 +9,24 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     timeline = read_text("frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue")
     composer = read_text("frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationComposer.vue")
     attachments = read_text("frontend/apps/web/src/pages/contractForm/ProfessionalAttachmentManager.vue")
+    followers = read_text("frontend/apps/web/src/pages/contractForm/ProfessionalFollowerManager.vue")
     model = read_text("frontend/apps/web/src/pages/contractForm/professionalCollaborationModel.ts")
+    attachment_runtime = read_text("frontend/apps/web/src/pages/contractForm/useNativeAttachmentRuntime.ts")
+    chatter_runtime = read_text("frontend/apps/web/src/pages/contractForm/useNativeChatterRuntime.ts")
+    collaboration_contract = read_text("frontend/apps/web/src/pages/contractForm/collaborationContract.ts")
+    backend_chatter_sources = [
+        read_text("addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py"),
+        read_text("addons/smart_core/handlers/load_contract.py"),
+        read_text("addons/smart_core/handlers/ui_contract_v2_adapters.py"),
+    ]
+    backend_user_search_sources = [
+        read_text("addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py"),
+        read_text("addons/smart_core/core/unified_page_contract_v2_assembler.py"),
+        read_text("addons/smart_core/handlers/load_contract.py"),
+        read_text("addons/smart_core/handlers/ui_contract_v2.py"),
+    ]
+    contract_page = read_text("frontend/apps/web/src/pages/ContractFormPage.vue")
+    driver_host = read_text("frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue")
     for marker in ('data-professional-collaboration-component="timeline"', "data-collaboration-entry-type", "update-activity", "open-attachment"):
         if marker not in timeline: failures.append(f"collaboration timeline missing {marker}")
     if "<ProfessionalCollaborationTimeline" not in panel or "visibleCollaborationTimeline" not in panel:
@@ -33,8 +50,102 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("collaboration timeline does not expose governed loading actions")
     for marker in ('data-professional-collaboration-component="panel"', ":data-follower-readiness"):
         if marker not in panel: failures.append(f"collaboration panel missing {marker}")
-    if "follower: 'fail_closed'" not in model:
-        failures.append("undeclared follower runtime must fail closed")
+    if "<ProfessionalFollowerManager" not in panel or 'data-professional-collaboration-component="followers"' not in followers:
+        failures.append("native collaboration panel bypasses shared follower manager")
+    if "<ScButton" not in followers or "<ScList" not in followers or "<ScInlineState" not in followers:
+        failures.append("follower settlement bypasses governed primitives")
+    if "follower: input.hasFollowerAuthority ? 'ready' : 'fail_closed'" not in model:
+        failures.append("follower readiness must consume explicit authority and fail closed")
+    if "contract.actions.follow.enabled === true && response.can_follow === true" not in chatter_runtime or "contract.actions.unfollow.enabled === true && response.can_unfollow === true" not in chatter_runtime:
+        failures.append("follower presentation must intersect contract and record authority")
+    if "contract?.actions.follow.enabled === true && canFollow.value === true" not in chatter_runtime or "contract?.actions.unfollow.enabled === true && canUnfollow.value === true" not in chatter_runtime:
+        failures.append("follower update handler must independently enforce contract and record authority")
+    if "@update=\"$emit('update-follower', $event)\"" not in panel:
+        failures.append("professional collaboration panel must settle follower updates")
+    if "canDownloadCollaborationAttachment(entry)" not in timeline:
+        failures.append("collaboration attachment download bypasses the shared authority resolver")
+    if "entry.attachment?.can_download !== false" in timeline:
+        failures.append("collaboration attachment download retains fail-open authority")
+    if "entry.attachment?.can_download === true" not in model or "entry.attachment.download_intent === 'file.download'" not in model:
+        failures.append("collaboration attachment download authority does not require the exact backend intent")
+    if "att.can_download !== true" not in attachment_runtime or "att.download_intent !== 'file.download'" not in attachment_runtime:
+        failures.append("attachment open handler must independently reject missing or denied authority")
+    if "canDeleteCollaborationAttachment(entry)" not in timeline or "delete-attachment" not in timeline:
+        failures.append("attachment deletion presentation must consume explicit backend authority")
+    if "entry.attachment?.can_delete === true" not in model or "entry.attachment.delete_intent === 'chatter.attachment.delete'" not in model:
+        failures.append("attachment deletion authority must require the exact backend intent")
+    if "!canDeleteCollaborationAttachment(entry)" not in attachment_runtime or "deleteChatterAttachment" not in attachment_runtime:
+        failures.append("attachment delete handler must independently reject missing or denied authority")
+    if "confirmAndDeleteNativeAttachment" not in contract_page or "intentConfirmationRef.value?.confirm" not in contract_page or "deleteNativeAttachment(entry)" not in contract_page:
+        failures.append("attachment deletion must settle through the professional confirmation component")
+    if attachment_runtime.count("!params.canUpload()") < 2:
+        failures.append("attachment upload handlers must independently reject missing or denied authority")
+    if "(upload as Record<string, unknown>).intent === 'file.upload'" not in read_text("frontend/apps/web/src/pages/contractForm/collaborationContract.ts"):
+        failures.append("attachment upload authority must require the exact backend intent")
+    if ':enabled="attachmentUploadEnabled"' not in panel:
+        failures.append("attachment upload presentation must consume explicit upload authority")
+    if "canUpdateCollaborationActivity(entry, action)" not in chatter_runtime:
+        failures.append("activity update handler must independently enforce explicit backend authority")
+    if "canReplyCollaborationMessage(entry)" not in timeline:
+        failures.append("message reply presentation must consume explicit backend authority")
+    if ':readonly="renderModel.identity.mode === \'readonly\'"' not in driver_host:
+        failures.append("task Floorplan collaboration must follow the canonical render mode instead of forcing readonly")
+    if "entry.message?.can_reply !== true" not in chatter_runtime or "entry.message.reply_intent !== 'chatter.post'" not in chatter_runtime or "parent_id: replyTarget.value?.id" not in chatter_runtime or "exactReplyAuthorized" not in chatter_runtime:
+        failures.append("message reply handler must enforce exact backend authority and preserve the parent relation")
+    if "entry.message?.can_reply === true" not in model or "entry.message.reply_intent === 'chatter.post'" not in model:
+        failures.append("message reply authority must require the exact backend intent")
+    if "@reply=\"$emit('reply', $event)\"" not in panel:
+        failures.append("professional collaboration panel must settle the reply action")
+    if "canDeleteCollaborationMessage(entry)" not in timeline or "delete-message" not in timeline:
+        failures.append("message deletion presentation must consume explicit backend authority")
+    if "entry.message?.can_delete === true" not in model or "entry.message.delete_intent === 'chatter.message.delete'" not in model:
+        failures.append("message deletion authority must require the exact backend intent")
+    if "!canDeleteCollaborationMessage(entry)" not in chatter_runtime or "deleteChatterMessage" not in chatter_runtime:
+        failures.append("message delete handler must independently reject missing or denied authority")
+    if "confirmAndDeleteNativeMessage" not in contract_page or "deleteNativeMessage(entry)" not in contract_page:
+        failures.append("message deletion must settle through the professional confirmation component")
+    if "canExecuteCollaborationCreateAction(action, 'activity')" not in chatter_runtime or "if (!exactReplyAuthorized && !canExecuteCollaborationCreateAction(action, activeMode.value)) return;" not in chatter_runtime or "canExecuteCollaborationCreateAction(action, mode)" not in chatter_runtime:
+        failures.append("collaboration create handlers must independently enforce the active contract action when opening and executing")
+    if "action.payload?.execute_intent === expectedIntent" not in model or "'chatter.activity.schedule'" not in model or "'chatter.post'" not in model:
+        failures.append("collaboration create authority must require the exact backend execute intent")
+    if "payload.execute_intent === expectedExecuteIntent" not in collaboration_contract:
+        failures.append("collaboration create presentation must fail closed without the exact backend execute intent")
+    if "intent === 'collaboration.users.search' ? intent : null" not in collaboration_contract:
+        failures.append("collaboration user search presentation must require the exact backend intent")
+    if "params.userSearchIntent()" not in chatter_runtime or "intent !== 'collaboration.users.search'" not in chatter_runtime:
+        failures.append("collaboration user search handler must independently fail closed without exact authority")
+    if "searchCollaborationUsers({ intent, query, limit: 20 })" not in chatter_runtime:
+        failures.append("collaboration user search must carry backend authority into the API boundary")
+    if ':data-user-search-readiness="userSearchEnabled ? \'ready\' : \'fail_closed\'"' not in panel or ':user-search-enabled="userSearchEnabled"' not in panel:
+        failures.append("collaboration user search presentation must expose fail-closed readiness")
+    if 'v-if="userSearchEnabled"' not in composer:
+        failures.append("collaboration user selectors must stay hidden without backend authority")
+    assignee_control = '<label v-if="userSearchEnabled" class="native-chatter-field">\n        <span>{{ activityAssigneeLabel }}</span>'
+    summary_control = '<label class="native-chatter-field">\n        <span>{{ activitySummaryLabel }}</span>'
+    if assignee_control not in composer or summary_control not in composer:
+        failures.append("user search authority must hide only the activity assignee selector, never the activity summary")
+    for source in backend_user_search_sources:
+        if "collaboration.users.search" not in source or "user_search_intent" not in source:
+            failures.append("backend collaboration projections must supply exact user search authority")
+    for source in backend_chatter_sources:
+        if source.count("'execute_intent': 'chatter.post'") + source.count('"execute_intent": "chatter.post"') < 2:
+            failures.append("backend collaboration projections must supply exact chatter.post authority for message and note")
+        if "chatter.activity.schedule" not in source:
+            failures.append("backend collaboration projections must supply exact activity schedule authority")
+    if "nativeChatterActions.value.find((item) => item.mode === 'activity')" in read_text("frontend/apps/web/src/pages/contractForm/useRecordCollaborationPresentation.ts"):
+        failures.append("activity composer authority must not fall back to an unrelated contract action")
+    if "entry.activity?.can_complete === true" not in model or "entry.activity?.can_cancel === true" not in model:
+        failures.append("activity update authority resolver must fail closed for both actions")
+    if "entry.activity?.update_intent !== 'chatter.activity.update'" not in model or "Number(entry.activity.id || entry.id || 0) <= 0" not in model:
+        failures.append("activity update authority must require the exact backend intent and activity identity")
+    if "confirmAndUpdateNativeActivity" not in contract_page or "actionLabel: '取消计划'" not in contract_page or "updateNativeActivity(entry, action)" not in contract_page:
+        failures.append("activity cancellation must settle through the professional confirmation component")
+    if "note: action === 'done' ? '计划已完成。' : undefined" not in chatter_runtime:
+        failures.append("activity cancellation must not require a mail-post side effect")
+    if "activity.status === 'pending' || activity.status === 'overdue'" not in model or "'unknown'" not in model:
+        failures.append("activity presentation must consume explicit backend status and fail closed when absent")
+    if "deadline < now" in model or "new Date()" in model:
+        failures.append("activity presentation must not infer business status from the client clock")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
         if forbidden in model or forbidden in timeline: failures.append(f"collaboration components contain forbidden product special case {forbidden}")
     return failures
@@ -45,7 +156,7 @@ def main() -> int:
         print("[frontend_professional_collaboration_guard] FAIL")
         for failure in failures: print(f" - {failure}")
         return 1
-    print("[frontend_professional_collaboration_guard] PASS components=1 follower=fail_closed")
+    print("[frontend_professional_collaboration_guard] PASS components=1 follower=backend_authoritative user_search=exact_intent attachment_download=exact_intent attachment_delete=confirmed message_delete=confirmed activity_update=exact_intent activity_cancel=confirmed")
     return 0
 
 if __name__ == "__main__": raise SystemExit(main())

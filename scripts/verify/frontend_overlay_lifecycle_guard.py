@@ -19,7 +19,10 @@ def validate(sources: dict[str, str] | None = None) -> list[str]:
     drivers = {"dialog": "TDesignDialog", "drawer": "TDesignDrawer"}
     for key in ("dialog", "drawer"):
         source = values[key]
-        for marker in (f"<{drivers[key]}", ':close-on-esc-keydown="false"', ':close-on-overlay-click="dismissible && closeOnBackdrop"', ':prevent-scroll-through="false"', 'useModalLifecycle', 'aria-modal="true"', ":data-state=\"open ? 'open' : 'closed'\"", ':data-dismissible="dismissible"', "inheritAttrs: false", "@close=\"emit('close')\""):
+        markers = [f"<{drivers[key]}", ':close-on-esc-keydown="false"', ':close-on-overlay-click="dismissible && closeOnBackdrop"', ':prevent-scroll-through="false"', 'useModalLifecycle', 'aria-modal="true"', ":data-state=\"open ? 'open' : 'closed'\"", ':data-dismissible="dismissible"', "inheritAttrs: false", "@close=\"emit('close')\""]
+        if key == "dialog":
+            markers.append(':destroy-on-close="true"')
+        for marker in markers:
             if marker not in source:
                 failures.append(f"{key} lost canonical overlay lifecycle marker: {marker}")
     lifecycle = values["lifecycle"]

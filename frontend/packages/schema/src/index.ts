@@ -374,7 +374,9 @@ export type ProjectContextContract = RecordContextContract;
 export type ProjectContextOption = RecordContextOption;
 
 export interface ApiDataListResult {
-  records: Array<Record<string, unknown>>;
+  records: Array<Record<string, unknown> & {
+    __display_values?: Record<string, Array<{ id: number; label: string }>>;
+  }>;
   next_offset?: number;
   total?: number;
   group_summary?: Array<{

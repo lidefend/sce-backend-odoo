@@ -89,6 +89,7 @@
         <ScInputGroup class="collection-search-control">
           <ScInput
             type="search"
+            appearance="collection-search"
             :model-value="searchValue"
             :disabled="loading"
             :loading="loading"

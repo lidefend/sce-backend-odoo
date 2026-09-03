@@ -1,6 +1,8 @@
 import type {
   ContractV2ActionContract,
   ContractV2ActionRule,
+  ContractV2AnalysisProfile,
+  ContractV2AnalysisSourceAuthority,
   ContractV2ActivityNode,
   ContractV2ActivityNodeOccurrence,
   ContractV2ActivityProfile,
@@ -977,6 +979,78 @@ function decodeActivityProfile(raw: unknown, issues: DecodeIssue[]): ContractV2A
   };
 }
 
+function decodeAnalysisSourceAuthority(
+  raw: unknown,
+  viewType: 'pivot' | 'graph',
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2AnalysisSourceAuthority | undefined {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return undefined;
+  }
+  rejectUnknownKeys(raw, [
+    'kind', 'authorities', 'projection_only', 'no_business_fact_authority', 'runtime_carrier',
+  ], path, issues);
+  const authorities = raw.authorities;
+  const expectedAuthorities = ['ir.ui.view', 'ir.model.fields', 'ir.actions.act_window'] as const;
+  const expectedKind = `native_${viewType}_view_projection`;
+  const expectedCarrier = `ui.contract.v2.layoutContract.${viewType}Profile`;
+  const validAuthorities = Array.isArray(authorities)
+    && authorities.length === expectedAuthorities.length
+    && authorities.every((value, index) => value === expectedAuthorities[index]);
+  if (!validAuthorities) issues.push({ path: `${path}.authorities`, message: 'must exactly match the governed native authorities' });
+  if (raw.kind !== expectedKind) issues.push({ path: `${path}.kind`, message: `must be ${expectedKind}` });
+  if (raw.runtime_carrier !== expectedCarrier) issues.push({ path: `${path}.runtime_carrier`, message: `must identify the ${viewType} profile runtime carrier` });
+  if (raw.projection_only !== true || raw.no_business_fact_authority !== true) {
+    issues.push({ path, message: 'must remain projection-only without business fact authority' });
+  }
+  if (!validAuthorities || raw.kind !== expectedKind || raw.runtime_carrier !== expectedCarrier
+      || raw.projection_only !== true || raw.no_business_fact_authority !== true) return undefined;
+  return {
+    kind: raw.kind,
+    authorities: [authorities[0], authorities[1], authorities[2]],
+    projection_only: true,
+    no_business_fact_authority: true,
+    runtime_carrier: raw.runtime_carrier,
+  } as ContractV2AnalysisSourceAuthority;
+}
+
+function decodeAnalysisProfile(
+  raw: unknown,
+  viewType: 'pivot' | 'graph',
+  issues: DecodeIssue[],
+): ContractV2AnalysisProfile | undefined {
+  const path = `layoutContract.${viewType}Profile`;
+  if (raw === undefined) return undefined;
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return undefined;
+  }
+  const viewSpecificKey = viewType === 'pivot' ? 'defaults' : 'typeDefault';
+  rejectUnknownKeys(raw, ['measures', 'dimensions', viewSpecificKey, 'sourceAuthority'], path, issues);
+  const decodeRows = (key: 'measures' | 'dimensions') => requiredArray(raw, key, path, issues)
+    .map((item, index) => {
+      if (isRecord(item) && asString(item.name)) return item;
+      issues.push({ path: `${path}.${key}[${index}]`, message: 'must be an object with a non-empty name' });
+      return null;
+    })
+    .filter((item): item is ContractV2Dictionary => Boolean(item));
+  const measures = decodeRows('measures');
+  const dimensions = decodeRows('dimensions');
+  if (!dimensions.length) issues.push({ path: `${path}.dimensions`, message: 'must not be empty' });
+  const sourceAuthority = decodeAnalysisSourceAuthority(raw.sourceAuthority, viewType, `${path}.sourceAuthority`, issues);
+  if (!sourceAuthority) return undefined;
+  return {
+    measures,
+    dimensions,
+    ...(viewType === 'pivot'
+      ? { defaults: requiredRecord(raw, 'defaults', path, issues) }
+      : { typeDefault: requiredString(raw, 'typeDefault', path, issues) }),
+    sourceAuthority,
+  };
+}
+
 function decodeComponentRegistry(
   raw: unknown,
   issues: DecodeIssue[],
@@ -1010,6 +1084,7 @@ function decodeComponentRegistry(
 function decodeLayoutContract(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2LayoutContract {
   rejectUnknownKeys(source, [
     'pageId', 'layoutType', 'adaptMode', 'containerTree', 'layoutHints', 'componentRegistry', 'listProfile', 'activityProfile',
+    'pivotProfile', 'graphProfile',
   ], 'layoutContract', issues);
   const containerTreeRaw = Array.isArray(source.containerTree) ? source.containerTree : [];
   if (!Array.isArray(source.containerTree)) {
@@ -1031,6 +1106,12 @@ function decodeLayoutContract(source: ContractV2Dictionary, issues: DecodeIssue[
       : {}),
     ...(source.activityProfile !== undefined
       ? { activityProfile: decodeActivityProfile(source.activityProfile, issues) }
+      : {}),
+    ...(source.pivotProfile !== undefined
+      ? { pivotProfile: decodeAnalysisProfile(source.pivotProfile, 'pivot', issues) }
+      : {}),
+    ...(source.graphProfile !== undefined
+      ? { graphProfile: decodeAnalysisProfile(source.graphProfile, 'graph', issues) }
       : {}),
   };
 }

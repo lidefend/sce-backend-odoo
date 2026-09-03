@@ -98,12 +98,12 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
     def test_business_value_component_keys_follow_field_metadata(self):
         cases = (
             ({"type": "monetary"}, "number", "sc.value.money"),
-            ({"type": "many2one", "relation": "res.currency"}, "select", "sc.value.currency"),
+            ({"type": "many2one", "relation": "res.currency"}, "select", "sc.relation.many2one"),
             ({"type": "float"}, "percentage", "sc.value.percentage"),
             ({"type": "selection"}, "statusbar", "sc.display.status"),
             ({"type": "float"}, "float_time", "sc.value.duration"),
-            ({"type": "many2one", "relation": "res.users"}, "select", "sc.value.user"),
-            ({"type": "many2one", "relation": "res.company"}, "select", "sc.value.company"),
+            ({"type": "many2one", "relation": "res.users"}, "select", "sc.relation.many2one"),
+            ({"type": "many2one", "relation": "res.company"}, "select", "sc.relation.many2one"),
             ({"type": "many2one", "relation": "x.related"}, "select", "sc.relation.many2one"),
             ({"type": "many2many", "relation": "x.related"}, "table", "sc.relation.many2many"),
             ({"type": "many2many", "relation": "res.users"}, "table", "sc.relation.many2many"),

@@ -80,6 +80,28 @@ def _load_handler():
 
 
 class TestFileDownloadLocatorPolicy(unittest.TestCase):
+    def test_download_auth_subject_uses_only_valid_positive_override(self):
+        module = _load_handler()
+        attachment = types.SimpleNamespace(res_model="ir.attachment", res_id=9)
+        old_hook = module.call_extension_hook_first
+        try:
+            module.call_extension_hook_first = lambda *args, **kwargs: {
+                "model": "payment.request", "res_id": "17",
+            }
+            self.assertEqual(
+                module.resolve_file_download_auth_subject(_Env(), attachment),
+                ("payment.request", 17),
+            )
+            module.call_extension_hook_first = lambda *args, **kwargs: {
+                "model": "payment.request", "res_id": 0,
+            }
+            self.assertEqual(
+                module.resolve_file_download_auth_subject(_Env(), attachment),
+                ("ir.attachment", 9),
+            )
+        finally:
+            module.call_extension_hook_first = old_hook
+
     def test_extension_allowed_models_are_union_with_base_policy(self):
         module = _load_handler()
         old_hook = module.call_extension_hook_first

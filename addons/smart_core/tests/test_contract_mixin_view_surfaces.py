@@ -86,6 +86,35 @@ class ContractMixinViewSurfaceTests(unittest.TestCase):
                 self.assertIn(surface_key, result)
                 self.assertNotIn("unsafe_nested", result)
 
+    def test_governed_sanitize_preserves_advanced_view_semantics(self):
+        surfaces = {
+            "pivot": {
+                "measures": [{"name": "amount", "string": "Amount"}],
+                "dimensions": [{"name": "date", "type": "col", "interval": "month"}],
+            },
+            "graph": {
+                "type_default": "bar",
+                "measures": [{"name": "unit_amount", "string": "Quantity"}],
+                "dimensions": [{"name": "account_id", "type": "row"}],
+            },
+            "calendar": {"date_start": "date_start", "date_stop": "date_stop"},
+            "gantt": {"date_start": "date_start", "date_stop": "date_stop", "progress": "progress"},
+            "dashboard": {"cards": [{"name": "revenue", "measure": "amount"}]},
+        }
+
+        for view_type, surface in surfaces.items():
+            with self.subTest(view_type=view_type):
+                result = self.mixin.sanitize_governed_contract(
+                    view_type,
+                    {
+                        view_type: surface,
+                        "unsafe_nested": {"should": "drop"},
+                    },
+                )
+
+                self.assertEqual(result[view_type], surface)
+                self.assertNotIn("unsafe_nested", result)
+
     def test_governed_sanitize_preserves_native_kanban_semantics(self):
         result = self.mixin.sanitize_governed_contract(
             "kanban",

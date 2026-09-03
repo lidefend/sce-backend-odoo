@@ -7,7 +7,7 @@
         <span aria-live="polite">{{ pageText }}</span>
         <ScButton class="pagination-btn" appearance="outline-action" size="small" :disabled="loading || !canNext" @click="$emit('next')">{{ labels.groupNext }}</ScButton>
       </template>
-      <ScPagination v-else-if="mode === 'paged'" :current="currentPage" :page-size="listLimit" :total="totalRecords" :disabled="loading" :page-size-options="showPageSize ? pageLimitOptions : []" :show-total="false" @update:current="$emit('page-select', $event)" @update:page-size="$emit('page-limit-select', String($event))" />
+      <ScPagination v-else-if="mode === 'paged'" :current="currentPage" :page-size="listLimit" :total="totalRecords" :total-content="false" :disabled="loading" :page-size-options="showPageSize ? pageLimitOptions : []" @update:current="$emit('page-select', $event)" @update:page-size="$emit('page-limit-select', String($event))" />
     </div>
   </nav>
 </template>

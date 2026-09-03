@@ -192,6 +192,31 @@ export function canonicalSectionFields(node: CanonicalFormNode): CanonicalFormFi
   return visibleCanonicalFields(node);
 }
 
+export type CanonicalRelationVisibilityProjection = Pick<
+  RelationFieldAdapter,
+  'visibleOne2manyRows'
+>;
+
+export function canonicalFieldHasPresentableValue(
+  field: CanonicalFormField,
+  relationProjection?: CanonicalRelationVisibilityProjection,
+): boolean {
+  const type = text(field.fieldType).toLowerCase();
+  if (!field.readonly || !relationProjection || type !== 'one2many') return true;
+  return relationProjection.visibleOne2manyRows(field.fieldCode).length > 0;
+}
+
+export function canonicalNodeHasPresentableContent(
+  node: CanonicalFormNode,
+  relationProjection?: CanonicalRelationVisibilityProjection,
+): boolean {
+  if (!node.visible) return false;
+  if (visibleCanonicalFields(node).some((field) => canonicalFieldHasPresentableValue(field, relationProjection))) return true;
+  if (node.text.trim() || node.action || node.nativeWidget) return true;
+  if (['chatter', 'activity', 'attachment'].includes(node.kind.toLowerCase())) return true;
+  return node.children.some((child) => canonicalNodeHasPresentableContent(child, relationProjection));
+}
+
 export function visibleCanonicalChildren(node: CanonicalFormNode): CanonicalFormNode[] {
   return node.children.filter((child) => (
     child.visible

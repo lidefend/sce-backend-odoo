@@ -59,6 +59,22 @@ class NativeViewNormalizedCapabilityMapTests(unittest.TestCase):
             "attributes": {static_atom["attribute"]: static_atom["canonical_value"]},
             "modifiers": {static_atom["attribute"]: True},
         }]
+        descriptor_atom = next(
+            atom for atom in classify_structure(cls.structure, cls.taxonomy)["atoms"]
+            if atom["view_type"] == "form" and atom["capability_key"] in {"field.relation", "field.type"}
+        )
+        descriptor_entry = next(item for item in entries if item["contract_ref"] == descriptor_atom["contract_ref"])
+        descriptor_carrier = next(
+            item for item in descriptor_entry["normalized_carriers"]
+            if item["source_selector"] == "/data/views/form"
+        )
+        descriptor_carrier["value"].setdefault("layout", []).append({
+            "native_locator": descriptor_atom["native_locator"],
+            "occurrence_index": descriptor_atom["occurrence_index"],
+            "fieldInfo": {
+                descriptor_atom["capability_key"].removeprefix("field."): descriptor_atom["canonical_value"],
+            },
+        })
         behavior_atom = next(
             atom for atom in classify_structure(cls.structure, cls.taxonomy)["atoms"]
             if atom["view_type"] == "form" and atom["capability_key"] == "form.create"
@@ -95,10 +111,10 @@ class NativeViewNormalizedCapabilityMapTests(unittest.TestCase):
     def test_tracked_structure_has_complete_unique_mapping(self) -> None:
         errors, summary = self.errors()
         self.assertEqual(errors, [])
-        self.assertEqual(summary["classified_atom_count"], 26531)
+        self.assertEqual(summary["classified_atom_count"], 32651)
         self.assertEqual(summary["unmapped_atom_count"], 0)
         self.assertEqual(summary["ambiguous_atom_count"], 0)
-        self.assertEqual(summary["proven_mapping_count"], 3)
+        self.assertEqual(summary["proven_mapping_count"], 4)
 
     def test_missing_mapping_fails_closed(self) -> None:
         value = deepcopy(self.normalized_map)

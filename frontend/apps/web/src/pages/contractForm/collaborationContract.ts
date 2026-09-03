@@ -28,6 +28,45 @@ export function resolveNativeAttachmentContract(formView: unknown, runtimeCollab
   return dictOrEmpty(dictOrEmpty(runtimeCollaborationContract).attachments);
 }
 
+export type NativeFollowerContract = {
+  enabled: true;
+  label: string;
+  listIntent: string;
+  updateIntent: string;
+  actions: {
+    follow: { label: string; enabled: boolean };
+    unfollow: { label: string; enabled: boolean };
+  };
+};
+
+export function resolveNativeFollowerContract(runtimeCollaborationContract: unknown): NativeFollowerContract | null {
+  const raw = dictOrEmpty(dictOrEmpty(runtimeCollaborationContract).followers);
+  if (raw.enabled !== true) return null;
+  const actions = dictOrEmpty(raw.actions);
+  const follow = dictOrEmpty(actions.follow);
+  const unfollow = dictOrEmpty(actions.unfollow);
+  const listIntent = String(raw.list_intent || '').trim();
+  const updateIntent = String(raw.update_intent || '').trim();
+  if (listIntent !== 'chatter.followers.list' || updateIntent !== 'chatter.followers.update') return null;
+  return {
+    enabled: true,
+    label: String(raw.label || '关注者').trim() || '关注者',
+    listIntent,
+    updateIntent,
+    actions: {
+      follow: { label: String(follow.label || '关注').trim() || '关注', enabled: follow.enabled === true },
+      unfollow: { label: String(unfollow.label || '取消关注').trim() || '取消关注', enabled: unfollow.enabled === true },
+    },
+  };
+}
+
+export function resolveNativeCollaborationUserSearchIntent(
+  runtimeCollaborationContract: unknown,
+): 'collaboration.users.search' | null {
+  const intent = String(dictOrEmpty(runtimeCollaborationContract).user_search_intent || '').trim();
+  return intent === 'collaboration.users.search' ? intent : null;
+}
+
 export function nativeChatterActionsFromContract(
   chatter: Record<string, unknown>,
   context: { recordId: number; model: string },
@@ -42,13 +81,21 @@ export function nativeChatterActionsFromContract(
         ? row.payload as Record<string, unknown>
         : {};
       const mode = String(payload.mode || intent || key).trim().toLowerCase();
+      const expectedExecuteIntent = mode === 'activity'
+        ? 'chatter.activity.schedule'
+        : mode === 'message' || mode === 'note'
+          ? 'chatter.post'
+          : '';
       return {
         key,
         label: nativeChatterActionLabel(mode, row),
         intent,
         mode,
         payload,
-        enabled: Boolean(context.recordId) && Boolean(context.model),
+        enabled: Boolean(context.recordId)
+          && Boolean(context.model)
+          && Boolean(expectedExecuteIntent)
+          && payload.execute_intent === expectedExecuteIntent,
         hint: intent,
       };
     })
@@ -74,6 +121,17 @@ export function nativeAttachmentMaxBytes(raw: Record<string, unknown> | null | u
     ? Number((upload as Record<string, unknown>).max_bytes || 0)
     : 0;
   return Number.isFinite(value) && value > 0 ? value : 5 * 1024 * 1024;
+}
+
+export function nativeAttachmentUploadEnabled(raw: Record<string, unknown> | null | undefined) {
+  const upload = raw?.upload;
+  return Boolean(
+    upload
+    && typeof upload === 'object'
+    && !Array.isArray(upload)
+    && (upload as Record<string, unknown>).enabled === true
+    && (upload as Record<string, unknown>).intent === 'file.upload',
+  );
 }
 
 export function nativeActivityFieldLabel(

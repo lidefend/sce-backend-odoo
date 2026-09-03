@@ -14,6 +14,13 @@
       "blob_id": "c1d0260d953d933d0fbc42667eef817724e23d9e",
       "classification": "OVERSIZED_BLOB",
       "reason": "governed generated product-view structure evidence from the registered exporter (p0-user-friction-reduction-v1 refresh)"
+    },
+    {
+      "rule_id": "RH007",
+      "path": "contracts/generated/product_view_structure_contract.json",
+      "blob_id": "f7fb7749b6696e8950150768a5f389bef9cb3ff3",
+      "classification": "OVERSIZED_BLOB",
+      "reason": "governed generated product-view structure evidence from the registered exporter (native view closure refresh)"
     }
   ]
 }

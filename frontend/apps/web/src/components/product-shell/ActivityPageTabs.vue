@@ -5,6 +5,8 @@
     class="activity-page-tabs"
     :value="activeKey"
     placement="top"
+    size="medium"
+    theme="normal"
     :addable="false"
     @change="handleChange"
     @remove="handleRemove"
@@ -113,33 +115,6 @@ async function handleKeydown(event: KeyboardEvent) {
   background: var(--sc-app-panel);
 }
 
-.activity-page-tabs :deep(.t-tabs__nav) {
-  max-width: 100%;
-  min-height: 36px;
-}
-
-.activity-page-tabs :deep(.t-tabs__nav-wrap) {
-  min-width: 0;
-}
-
-.activity-page-tabs :deep(.t-tabs__nav-item) {
-  height: 36px;
-  padding: 0 12px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.activity-page-tabs :deep(.t-tabs__nav-item.t-is-active) {
-  font-weight: 600;
-}
-
-.activity-page-tabs :deep(.t-tabs__nav-item .t-tabs__nav-item-text) {
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .activity-page-tab-label {
   display: inline-flex;
   min-width: 0;
@@ -155,16 +130,9 @@ async function handleKeydown(event: KeyboardEvent) {
   white-space: nowrap;
 }
 
-.activity-page-tabs :deep(.t-tabs__content) {
-  display: none;
-}
-
 @media (max-width: 760px) {
   .activity-page-tabs {
     padding-inline: 8px;
-  }
-  .activity-page-tabs :deep(.t-tabs__nav-item) {
-    padding: 0 8px;
   }
   .activity-page-tab-label {
     max-width: 132px;

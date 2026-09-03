@@ -29,8 +29,8 @@ export function relationEntry(descriptor?: FieldDescriptor) {
     model: String(row.model || '').trim(),
     actionId,
     menuId,
-    canRead: row.can_read !== false,
-    canOpen: row.can_open !== false,
+    canRead: row.can_read === true,
+    canOpen: row.can_open === true,
     entryIntent: normalizeRecordOpenIntent(row.entry_intent) || 'open',
     modelWriteAuthority: normalizeModelWriteAuthority(row.model_write_authority),
     canCreate: Boolean(row.can_create),
@@ -241,23 +241,12 @@ export function relationCreateMode(descriptor?: FieldDescriptor): 'page' | 'dial
 
 export function relationInlineCreate(descriptor?: FieldDescriptor) {
   const entry = relationEntry(descriptor);
-  if (entry?.inlineCreate?.enabled) {
+  if (entry?.canCreate === true && entry.inlineCreate?.enabled) {
     return {
       enabled: true,
       createOnNoMatch: entry.inlineCreate.createOnNoMatch,
       nameField: entry.inlineCreate.nameField,
       match: entry.inlineCreate.match,
-    };
-  }
-  // 契约未提供 relation_entry 时，为 many2many 字段默认启用内联创建
-  // （后端 _build_relation_inline_create_contract 已生成配置，但契约 attrs 未包含 relation_entry）
-  const ttype = fieldType(descriptor);
-  if (ttype === 'many2many') {
-    return {
-      enabled: true,
-      createOnNoMatch: true,
-      nameField: 'name',
-      match: 'single_contains_or_exact',
     };
   }
   return {

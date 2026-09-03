@@ -6,6 +6,7 @@
     :data-row-count="authority.rowCount"
     :data-column-count="authority.columnCount"
     :data-can-create="authority.canCreate"
+    :data-can-inline-edit="authority.canInlineEdit"
     :data-removed-row-count="authority.removedRowCount"
     :data-validation-visible="authority.validationVisible"
     :data-summary-present="Boolean(authority.summary)"

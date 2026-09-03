@@ -34,6 +34,16 @@ def validate() -> list[str]:
     for marker in ('<TaskFormPattern v-if="renderModel.identity.presentationMode === \'task\'"', '<WorkspaceFormPattern v-else', ':render-profile="renderModel.identity.mode"'):
         if marker not in driver:
             failures.append(f"form driver bypasses formal pattern: {marker}")
+    task_page = source("frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue")
+    for marker in (
+        "<ScDisclosure",
+        'data-floorplan-region="supplementary-input"',
+        'data-floorplan-region="overflow-context"',
+        'title="补充信息"',
+        'title="更多业务信息"',
+    ):
+        if marker not in task_page:
+            failures.append(f"task floorplan bypasses professional disclosure: {marker}")
     action_view = source("frontend/apps/web/src/views/ActionView.vue")
     if '<component :is="viewMode === \'dashboard\' ? DashboardPattern : CollectionPattern">' not in action_view:
         failures.append("ActionView does not select dashboard/collection pattern from formal view mode")

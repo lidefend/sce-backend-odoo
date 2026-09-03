@@ -128,6 +128,13 @@ class FrontendNavigationShellGuardTest(unittest.TestCase):
         )
         self.assertTrue(any("vendor internals" in error for error in validate(root)))
 
+    def test_responsive_topbar_must_not_cover_activity_page_tabs(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        path = root / "frontend/apps/web/src/layouts/AppShell.css"
+        path.write_text(path.read_text().replace("  flex-shrink: 0;\n", "", 1), encoding="utf-8")
+        self.assertIn("responsive topbar must not shrink over the activity page tabs", validate(root))
+
     def test_navigation_search_must_use_the_input_prefix_adapter(self):
         temporary, root = self.fixture()
         self.addCleanup(temporary.cleanup)

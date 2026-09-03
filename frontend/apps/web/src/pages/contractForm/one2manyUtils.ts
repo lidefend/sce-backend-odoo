@@ -246,7 +246,15 @@ export function one2manyRowActionsFromSubview(subview: unknown) {
 }
 
 export function one2manyCanCreateFromPolicies(policies: Record<string, unknown>) {
-  return policies.can_create !== false;
+  return policies.can_create === true;
+}
+
+export function one2manyCanUnlinkFromPolicies(policies: Record<string, unknown>) {
+  return policies.can_unlink === true;
+}
+
+export function one2manyCanInlineEditFromPolicies(policies: Record<string, unknown>) {
+  return policies.inline_edit === true;
 }
 
 export function one2manyCreateLabelFromPolicies(
@@ -266,10 +274,14 @@ export function one2manyPrimaryColumnFromColumns(columns: One2ManyColumn[]) {
   return columns.length ? columns[0].name : 'name';
 }
 
+function authoritativeOne2manyRelationLabel(value: unknown) {
+  const label = String(value ?? '').trim();
+  return /^#\d+$/.test(label) ? '' : label;
+}
+
 export function one2manyRowLabelFromPrimary(primary: string, row: One2ManyInlineRow) {
   const value = String(row.values?.[primary] ?? row.values?.name ?? '').trim();
   if (value) return value;
-  if (row.id) return `#${row.id}`;
   return '未命名';
 }
 
@@ -414,7 +426,7 @@ export function mergeOne2manyHydratedRecords(params: {
     }, {
       id: record.id,
       display_name: record.display_name,
-      name: record.name ?? record.display_name ?? row.values?.name ?? `#${row.id}`,
+      name: authoritativeOne2manyRelationLabel(record.name ?? record.display_name ?? row.values?.name),
     });
   });
 }
@@ -425,7 +437,10 @@ export function initOne2manyRowsFromRelationSource(params: {
   primary: string;
 }): One2ManyInlineRow[] {
   const ids = normalizeRelationIds(params.source);
-  const optionMap = new Map(params.relationOptions.map((item) => [item.id, item.label]));
+  const optionMap = new Map(params.relationOptions.map((item) => [
+    item.id,
+    authoritativeOne2manyRelationLabel(item.label),
+  ]));
   return ids.map((id) => ({
     key: `o2m_id_${id}`,
     id,
@@ -434,8 +449,8 @@ export function initOne2manyRowsFromRelationSource(params: {
     dirty: false,
     dirtyFields: [],
     values: {
-      [params.primary]: optionMap.get(id) || `#${id}`,
-      name: optionMap.get(id) || `#${id}`,
+      [params.primary]: optionMap.get(id) || '',
+      name: optionMap.get(id) || '',
     },
   }));
 }
@@ -538,9 +553,48 @@ export function one2manyColumnInputType(column: One2ManyColumn): 'text' | 'numbe
 
 export function one2manyColumnDisplayValue(column: One2ManyColumn, value: unknown) {
   const ttype = String(column.ttype || '').trim().toLowerCase();
-  if (value === false || value === null || value === undefined) return '';
+  if (value === null || value === undefined || (value === false && ttype !== 'boolean')) return '';
+  if (ttype === 'many2one') {
+    if (Array.isArray(value)) return value.length > 1 ? String(value[1] ?? '').trim() : '';
+    if (typeof value === 'object') {
+      const row = value as Record<string, unknown>;
+      return String(row.displayName || row.display_name || row.name || row.label || '').trim();
+    }
+    // A bare relation id is not a product-facing value. The relation read
+    // carrier must provide its authoritative display name before we render it.
+    return '';
+  }
+  if (ttype === 'many2many') {
+    if (!Array.isArray(value)) return '';
+    return value.flatMap((item) => {
+      if (Array.isArray(item)) return item.length > 1 ? [String(item[1] ?? '').trim()] : [];
+      if (item && typeof item === 'object') {
+        const row = item as Record<string, unknown>;
+        const label = String(row.displayName || row.display_name || row.name || row.label || '').trim();
+        return label ? [label] : [];
+      }
+      return [];
+    }).filter(Boolean).join('、');
+  }
   if (ttype === 'date') return toDateInputValue(value);
-  if (ttype === 'datetime') return toDatetimeInputValue(value);
+  if (ttype === 'datetime') {
+    const normalized = toDatetimeInputValue(value);
+    if (!normalized) return '';
+    const parsed = new Date(normalized);
+    if (Number.isNaN(parsed.getTime())) return normalized;
+    return new Intl.DateTimeFormat('zh-CN', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    }).format(parsed);
+  }
+  if (ttype === 'integer' || ttype === 'float' || ttype === 'monetary') {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return '';
+    return new Intl.NumberFormat('zh-CN', {
+      maximumFractionDigits: ttype === 'integer' ? 0 : 6,
+    }).format(ttype === 'integer' ? Math.trunc(numeric) : numeric);
+  }
+  if (ttype === 'boolean') return value ? '是' : '否';
   if (ttype === 'selection') {
     const option = (column.selection || []).find(([key]) => String(key) === String(value));
     if (option) return String(option[1]);
@@ -550,7 +604,7 @@ export function one2manyColumnDisplayValue(column: One2ManyColumn, value: unknow
 
 export function isOne2manyEmptyValue(column: One2ManyColumn, value: unknown) {
   const ttype = String(column.ttype || '').trim().toLowerCase();
-  if (ttype === 'boolean') return value === false || value === null || value === undefined;
+  if (ttype === 'boolean') return value === null || value === undefined;
   if (ttype === 'integer' || ttype === 'float' || ttype === 'monetary') {
     return value === false || value === null || value === undefined || Number.isNaN(Number(value));
   }

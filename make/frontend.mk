@@ -264,6 +264,8 @@ verify.frontend.collaboration_primitives.browser: guard.prod.forbid
 verify.frontend.state_dashboard.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/activity_page_tab_keyboard_test.ts --bundle --platform=node --format=esm --outfile=/tmp/activity-page-tab-keyboard-test.mjs >/dev/null
 	@node /tmp/activity-page-tab-keyboard-test.mjs
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/form_route_instance_identity_test.ts --bundle --platform=node --format=esm --outfile=/tmp/form-route-instance-identity-test.mjs >/dev/null
+	@node /tmp/form-route-instance-identity-test.mjs
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/activity_page_retention_test.ts --bundle --platform=node --format=esm --outfile=/tmp/activity-page-retention-test.mjs >/dev/null
 	@node /tmp/activity-page-retention-test.mjs
 	@python3 -m unittest scripts/verify/test_frontend_state_presentation_guard.py scripts/verify/test_frontend_dashboard_state_guard.py

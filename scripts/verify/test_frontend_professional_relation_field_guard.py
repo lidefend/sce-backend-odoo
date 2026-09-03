@@ -50,6 +50,136 @@ class ProfessionalRelationFieldGuardTests(unittest.TestCase):
             return value.replace('<ScInput\n              v-else-if="fieldConfigEditable"', '<input\n              v-else-if="fieldConfigEditable"', 1)
         self.assertTrue(any("label editor" in item for item in validate(read_text)))
 
+    def test_readonly_one2many_cannot_show_empty_before_hydration_finishes(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace("adapter.isOne2manyHydrating(field.name)", "adapter.busy", 1)
+            return value
+        self.assertTrue(any("readonly one2many loading semantics" in item for item in validate(read_text)))
+
+    def test_one2many_hydration_state_must_reset_on_failure(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordRelationshipFields.ts"):
+                return value.replace("finally {", "if (false) {", 1)
+            return value
+        self.assertTrue(any("hydration lifecycle" in item for item in validate(read_text)))
+
+    def test_many2many_inline_create_default_allow_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("relationDescriptor.ts"):
+                return value.replace(
+                    "entry?.canCreate === true && entry.inlineCreate?.enabled",
+                    "entry?.canCreate !== false && entry.inlineCreate?.enabled",
+                )
+            return value
+
+        self.assertTrue(any("does not fail closed" in item for item in validate(read_text)))
+
+    def test_unguarded_many2many_quick_create_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordFormState.ts"):
+                return value.replace("entry?.canCreate!==true||!relation", "!relation")
+            return value
+
+        self.assertTrue(any("handler does not independently" in item for item in validate(read_text)))
+
+    def test_frontend_relation_model_inference_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordActionPresentation.ts"):
+                return value + "\nconst fallbackMap: Record<string, string> = { tag_ids: 'res.partner.category' };\n"
+            return value
+
+        self.assertTrue(any("field/model inference" in item for item in validate(read_text)))
+
+    def test_unguarded_professional_many2many_create_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordActionPresentation.ts"):
+                return value.replace(
+                    "entry?.canCreate !== true || !inline.enabled || !inline.createOnNoMatch || !relation",
+                    "!relation",
+                )
+            return value
+
+        self.assertTrue(any("professional many2many" in item for item in validate(read_text)))
+
+    def test_unguarded_many2one_quick_create_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordRelationshipNavigation.ts"):
+                return value.replace(
+                    "entry?.canCreate !== true || !inline.enabled || !inline.createOnNoMatch",
+                    "false",
+                )
+            return value
+
+        self.assertTrue(any("many2one quick-create" in item for item in validate(read_text)))
+
+    def test_relation_search_dialog_without_read_authority_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordRelationships.ts"):
+                return value.replace(
+                    "if (relationEntry(resolvedDescriptor)?.canRead !== true) return;",
+                    "",
+                )
+            return value
+
+        self.assertTrue(any("search read authority" in item for item in validate(read_text)))
+
+    def test_relation_search_rows_fail_open_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordRelationships.ts"):
+                return value.replace(
+                    "if (entry?.canRead !== true) return [];",
+                    "if (entry && entry.canRead === false) return [];",
+                )
+            return value
+
+        self.assertTrue(any("fail-open read authority" in item for item in validate(read_text)))
+
+    def test_relation_ids_without_field_write_authority_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordFormState.ts"):
+                return value.replace(
+                    "const setRelationIds=(name:string,ids:number[])=>{if(!isFieldWritable(name))return;",
+                    "const setRelationIds=(name:string,ids:number[])=>{",
+                )
+            return value
+
+        self.assertTrue(any("selection write authority" in item for item in validate(read_text)))
+
+    def test_relation_search_selection_without_canonical_write_authority_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordRelationships.ts"):
+                return value.replace(
+                    "canonicalWritable === false || (canonicalWritable !== true && (!layoutField || layoutField.readonly))",
+                    "false",
+                )
+            return value
+
+        self.assertTrue(any("canonical write authority" in item for item in validate(read_text)))
+
+    def test_many2many_create_without_field_write_authority_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordActionPresentation.ts"):
+                return value.replace(
+                    "quickCreateRelationMany: async (fieldName: string) => {\n      if (!isFieldWritable(fieldName)) return;",
+                    "quickCreateRelationMany: async (fieldName: string) => {",
+                )
+            return value
+
+        self.assertTrue(any("create handler" in item for item in validate(read_text)))
+
 
 if __name__ == "__main__":
     unittest.main()

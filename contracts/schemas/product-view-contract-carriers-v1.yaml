@@ -203,7 +203,7 @@ $defs:
                 reason_code: {const: ''}
                 request: {required: [menu_id, action_id, model, view_type, view_id, source_type, client_type, delivery_profile, force_refresh]}
                 response: {required: [ok, intent, contract_version, client_type, delivery_profile, model, view_type]}
-                carriers: {minItems: 2, maxItems: 2}
+                carriers: {minItems: 3, maxItems: 3}
         else:
           properties:
             final_contract_capture:
@@ -239,7 +239,7 @@ $defs:
     allOf:
       - {$ref: '#/$defs/carrier_base'}
       - properties:
-          source_selector: {enum: [/data/actionContract/actionRuleList, /data/statusContract/buttonStatus]}
+          source_selector: {enum: [/data/layoutContract/containerTree, /data/actionContract/actionRuleList, /data/statusContract/buttonStatus]}
           source_authority: {const: ui_contract_v2_final_response}
           value: {type: array, items: {type: object}}
   final_contract_capture:

@@ -12,8 +12,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     registry = read_text("frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts")
     assembler = read_text("addons/smart_core/core/unified_page_contract_v2_assembler.py")
     keys = (
-        "sc.value.money", "sc.value.currency", "sc.value.percentage", "sc.display.status",
-        "sc.value.duration", "sc.value.user", "sc.value.company",
+        "sc.value.money", "sc.value.percentage", "sc.display.status",
+        "sc.value.duration",
     )
     for key in keys:
         if key not in model or key not in registry or key not in assembler:

@@ -3,6 +3,7 @@ import importlib.util
 import sys
 import types
 import unittest
+from datetime import date, timedelta
 from pathlib import Path
 
 
@@ -40,7 +41,11 @@ class _EmptySearchModel:
 
 
 class _Env(dict):
-    pass
+    user = types.SimpleNamespace(
+        _is_admin=lambda: False,
+        partner_id=types.SimpleNamespace(id=1),
+        id=1,
+    )
 
 
 def _load_handler():
@@ -105,6 +110,50 @@ def _load_handler():
 class TestChatterTimelineBoundaries(unittest.TestCase):
     def setUp(self):
         self.module = _load_handler()
+
+    def test_activity_status_projection_is_backend_authoritative(self):
+        today = date(2026, 9, 2)
+        self.assertEqual(
+            self.module._activity_status_projection(today - timedelta(days=1), today),
+            {"code": "overdue", "label": "已逾期"},
+        )
+        self.assertEqual(
+            self.module._activity_status_projection(today, today),
+            {"code": "pending", "label": "待处理"},
+        )
+
+    def test_activity_projection_exposes_only_exact_update_authority(self):
+        source = (Path(__file__).resolve().parents[1] / "handlers" / "chatter_timeline.py").read_text(encoding="utf-8")
+        activity_projection = source.split('"type": "activity"', 1)[1].split("return items", 1)[0]
+
+        self.assertIn('"update_intent": "chatter.activity.update"', activity_projection)
+        self.assertIn('"can_complete": is_assignee or is_admin', activity_projection)
+        self.assertIn('"can_cancel": is_assignee or is_admin or is_owner', activity_projection)
+        self.assertNotIn('"can_edit"', activity_projection)
+        self.assertNotIn('"can_delete"', activity_projection)
+
+    def test_message_projection_exposes_only_exact_reply_authority(self):
+        source = (Path(__file__).resolve().parents[1] / "handlers" / "chatter_timeline.py").read_text(encoding="utf-8")
+        message_projection = source.split('"type": "message"', 1)[1].split("return items", 1)[0]
+
+        self.assertIn('"reply_intent": "chatter.post" if can_reply else ""', message_projection)
+        self.assertIn('"can_reply": bool(can_reply)', message_projection)
+        self.assertNotIn('"can_edit"', message_projection)
+
+    def test_attachment_download_projection_requires_exact_authorized_subject(self):
+        project = self.module._attachment_download_projection(
+            "project.project", 7, "project.project", 7, {"project.project"},
+        )
+        wrong_record = self.module._attachment_download_projection(
+            "project.project", 7, "project.project", 8, {"project.project"},
+        )
+        disallowed = self.module._attachment_download_projection(
+            "project.project", 7, "project.project", 7, set(),
+        )
+
+        self.assertEqual(project, {"can_download": True, "download_intent": "file.download"})
+        self.assertEqual(wrong_record, {"can_download": False, "download_intent": ""})
+        self.assertEqual(disallowed, {"can_download": False, "download_intent": ""})
 
     def test_missing_target_returns_structured_error(self):
         handler = self.module.ChatterTimelineHandler(env={}, params={}, context={"trace_id": "trace"})
@@ -189,7 +238,7 @@ class TestChatterTimelineBoundaries(unittest.TestCase):
             env=_Env({"x.model": _Model()}),
             params={"model": "x.model", "res_id": 7, "limit": 2, "offset": 2, "include_audit": False},
         )
-        handler._load_messages = lambda model, res_id, limit: [
+        handler._load_messages = lambda model, res_id, limit, can_reply=False: [
             {"key": "m-1", "type": "message", "at": "2026-08-11T12:00:00"},
             {"key": "m-2", "type": "message", "at": "2026-08-11T10:00:00"},
         ]
@@ -205,6 +254,20 @@ class TestChatterTimelineBoundaries(unittest.TestCase):
         self.assertEqual([item["key"] for item in data["items"]], ["m-2", "a-2"])
         self.assertEqual(data["paging"], {"offset": 2, "limit": 2, "next_offset": 4, "has_more": True})
         self.assertEqual(data["counts"]["total"], 2)
+
+    def test_message_loader_receives_explicit_write_authority(self):
+        handler = self.module.ChatterTimelineHandler(
+            env=_Env({"x.model": _Model()}),
+            params={"model": "x.model", "res_id": 7, "include_audit": False},
+        )
+        observed = []
+        handler._load_messages = lambda model, res_id, limit, can_reply=False: observed.append(can_reply) or []
+        handler._load_attachments = lambda model, res_id, limit: []
+        handler._load_activities = lambda model, res_id, limit: []
+
+        handler.handle()
+
+        self.assertEqual(observed, [True])
 
     def test_technical_audit_identifiers_are_not_product_labels(self):
         self.assertEqual(

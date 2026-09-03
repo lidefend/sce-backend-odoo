@@ -32,6 +32,26 @@ function findKey(value, key) {
   return undefined;
 }
 
+async function waitForContract(viewTypes, timeoutMs = 30000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const contract = (intentBodies.get('ui.contract.v2') || []).find((body) => viewTypes.includes(findKey(body, 'viewType')));
+    if (contract) return contract;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  return undefined;
+}
+
+async function waitForListExchange(timeoutMs = 30000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const exchange = dataListExchanges.at(-1);
+    if (exchange) return exchange;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  return undefined;
+}
+
 function collectSemanticRoles(value, rows = []) {
   if (Array.isArray(value)) {
     value.forEach((item) => collectSemanticRoles(item, rows));
@@ -135,21 +155,34 @@ try {
   await page.screenshot({ path: path.join(outputDir, 'workspace-home-desktop.png'), fullPage: true });
 
   await page.goto(`${frontendUrl}/a/${actionId}?menu_id=${menuId}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  await page.locator('[data-product-page-mode="list"]').first().waitFor({ timeout: 45000 });
-  const targetRow = page.locator('tbody tr').filter({ hasText: String(target.record.name || '') }).first();
+  const listSurface = page.locator('[data-product-page-mode="list"]:visible').first();
+  await listSurface.waitFor({ timeout: 45000 });
+  const targetRow = listSurface.locator('tbody tr').filter({ hasText: String(target.record.name || '') }).first();
   await targetRow.waitFor({ timeout: 45000 });
-  const listSurface = page.locator('[data-product-page-mode="list"] [data-list-status]').first();
+  const listContract = await waitForContract(['tree', 'list']);
+  const listExchange = await waitForListExchange();
+  check(listContract, 'list ui.contract.v2 response was not observed');
+  check(listExchange, 'list api.data exchange was not observed');
+  const listDataSurface = listSurface.locator('[data-list-status]:visible').first();
+  const visibleColumns = String(await listDataSurface.getAttribute('data-visible-columns') || '')
+    .split(',').map((value) => value.trim()).filter(Boolean);
+  const amountVisibleIndex = visibleColumns.indexOf('request_amount_display');
+  check(amountVisibleIndex >= 0, 'runtime column decision omitted request amount display', visibleColumns);
   const listText = normalize(await listSurface.innerText());
   const listActions = await listSurface.locator('button:visible, a:visible')
     .allTextContents();
-  const amountCellIndex = await listSurface.locator('th[data-column="request_amount_display"]').first().evaluate((node) => node.cellIndex);
+  const headerCount = await listDataSurface.locator('th').count();
+  const leadingColumnCount = headerCount - visibleColumns.length;
+  check(leadingColumnCount >= 0, 'runtime table columns do not match visible column decision', { headerCount, visibleColumns });
+  const amountCellIndex = leadingColumnCount + amountVisibleIndex;
+  const amountHeaderText = normalize(await listDataSurface.locator('th').nth(amountCellIndex).innerText());
   const amountCellText = normalize(await targetRow.locator('td').nth(amountCellIndex).innerText());
   const amountCellValue = Number(amountCellText.replace(/[^\d.-]/g, ''));
   const emptyAggregateFooterRows = await listSurface.locator('tfoot tr').filter({ hasText: /--/ }).count();
   report.list = {
     text: listText,
     actions: listActions.map(normalize).filter(Boolean),
-    targetRow: { amountCellText, amountCellValue },
+    targetRow: { amountCellText, amountCellValue, amountHeaderText },
     emptyAggregateFooterRows,
     dataListExchanges,
   };
@@ -185,16 +218,16 @@ try {
   const searchInput = listSurface.locator('input[type="search"]:visible').first();
   await searchInput.fill('__floorplan_no_matching_payment_request__');
   await listSurface.getByRole('button', { name: /^搜索$/ }).click();
-  await page.locator('[data-product-page-mode="list"] [data-list-status="empty"]').waitFor({ timeout: 45000 });
-  const emptySurface = page.locator('[data-product-page-mode="list"] [data-list-status="empty"]').first();
-  const emptyText = normalize(await emptySurface.innerText());
-  const emptyCreateCount = await emptySurface.getByRole('button', { name: /^新建$/ }).count();
+  const emptyState = listSurface.locator('[data-semantic-component="ScEmptyState"]:visible').first();
+  await emptyState.waitFor({ timeout: 45000 });
+  const emptyText = normalize(await listSurface.innerText());
+  const emptyCreateCount = await listSurface.getByRole('button', { name: /^新建$/ }).count();
   report.emptyState = { text: emptyText, createActionCount: emptyCreateCount };
   check(emptyCreateCount === 1, 'authorized empty payment list must expose exactly one create action', report.emptyState);
   await page.screenshot({ path: path.join(outputDir, 'payment-request-list-empty-desktop.png'), fullPage: true });
 
-  await emptySurface.getByRole('button', { name: /^新建$/ }).click();
-  const createSurface = page.locator('[data-product-page-mode="form"]').first();
+  await listSurface.getByRole('button', { name: /^新建$/ }).click();
+  const createSurface = page.locator('[data-product-page-mode="form"]:visible').first();
   await createSurface.waitFor({ timeout: 45000 });
   await createSurface.locator('[data-contract-form-driver]').waitFor({ timeout: 45000 });
   const createEditableFields = await createSurface.locator(
@@ -226,21 +259,26 @@ try {
   await page.screenshot({ path: path.join(outputDir, 'payment-request-create-desktop.png'), fullPage: true });
 
   await page.goto(listUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  await page.locator('[data-product-page-mode="list"]').first().waitFor({ timeout: 45000 });
+  await page.locator('[data-product-page-mode="list"]:visible').first().waitFor({ timeout: 45000 });
   await targetRow.waitFor({ timeout: 45000 });
   await targetRow.click();
-  await page.waitForURL((url) => (
-    url.pathname === `/r/${model}/${recordId}`
-    && url.searchParams.get('action_id') === String(actionId)
-    && url.searchParams.get('menu_id') === String(menuId)
-  ), { timeout: 45000 });
+  await page.waitForFunction(({ expectedPaths, expectedActionId, expectedMenuId }) => (
+    expectedPaths.includes(window.location.pathname)
+    && new URLSearchParams(window.location.search).get('action_id') === expectedActionId
+    && new URLSearchParams(window.location.search).get('menu_id') === expectedMenuId
+  ), {
+    expectedPaths: [`/r/${model}/${recordId}`, `/f/${model}/${recordId}`],
+    expectedActionId: String(actionId),
+    expectedMenuId: String(menuId),
+  }, { timeout: 45000 });
+  report.list.rowNavigation = { url: page.url(), path: new URL(page.url()).pathname };
+  await page.goto(`${frontendUrl}/r/${model}/${recordId}?action_id=${actionId}&menu_id=${menuId}`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 45000,
+  });
   await page.locator('[data-object-task-page]').waitFor({ timeout: 45000 });
-  await page.waitForFunction(() => (
-    document.querySelectorAll('[data-object-task-page] [data-floorplan-region="audit"] [data-audit-event]').length > 0
-  ), undefined, { timeout: 45000 });
 
   const systemInit = (intentBodies.get('system.init') || []).at(-1);
-  const listContract = (intentBodies.get('ui.contract.v2') || []).find((body) => ['tree', 'list'].includes(findKey(body, 'viewType')));
   const formContract = (intentBodies.get('ui.contract.v2') || [])
     .filter((body) => findKey(body, 'viewType') === 'form')
     .at(-1);
@@ -248,14 +286,10 @@ try {
   check(findKey(systemInit, 'role_surface'), 'system.init omitted role_surface');
   check(findKey(systemInit, 'default_route'), 'system.init omitted default_route');
   check(formContract, 'form ui.contract.v2 response was not observed');
-  check(listContract, 'list ui.contract.v2 response was not observed');
-  const columnsSchema = findKey(listContract, 'columns_schema');
   report.list.contract = {
     traceId: findKey(listContract, 'trace_id'),
-    amountColumn: Array.isArray(columnsSchema)
-      ? columnsSchema.find((row) => row?.name === 'request_amount_display')
-      : null,
-    rows: findKey(listContract, 'rows'),
+    amountColumn: { name: 'request_amount_display', visibleIndex: amountVisibleIndex, headerText: amountHeaderText },
+    rows: findKey(listExchange.response, 'records'),
   };
 
   const host = page.locator('.sc-form-driver-host');
@@ -300,6 +334,9 @@ try {
     return !String(node.value || '').trim();
   }).length);
   const emptyReadonlyRelations = await page.locator('[data-readonly-relation-empty]').count();
+  const relationUploadActions = await page.locator(
+    '[data-floorplan-region="relation"] input[type="file"], [data-floorplan-region="relation"] button:visible',
+  ).count();
   const semanticTitles = (await page.locator('[data-object-task-page] h1:visible, [data-object-task-page] h2:visible, [data-object-task-page] h3:visible')
     .allTextContents()).map(normalize).filter(Boolean);
   const duplicateSemanticTitles = semanticTitles.filter((title, index) => semanticTitles.indexOf(title) !== index);
@@ -322,6 +359,7 @@ try {
     readonlyActivityWriteActions,
     emptyReadonlyControls,
     emptyReadonlyRelations,
+    relationUploadActions,
     semanticTitles,
     duplicateSemanticTitles,
     effectivePrimaryActions: enabledPrimary + continueProcessing,
@@ -344,6 +382,10 @@ try {
     'readonly activity surface exposes write actions', readonlyActivityWriteActions);
   check(emptyReadonlyControls === 0,
     'readonly product surface exposes empty disabled controls', emptyReadonlyControls);
+  check(emptyReadonlyRelations === 0,
+    'readonly product surface retains empty one2many relationship groups', emptyReadonlyRelations);
+  check(relationUploadActions > 0,
+    'readonly relationship cleanup removed the attachment interaction surface', relationUploadActions);
   check(duplicateSemanticTitles.length === 0,
     'readonly product surface repeats semantic section titles', duplicateSemanticTitles);
   check(enabledPrimary + continueProcessing === 1, 'more than one product primary action is visible', { enabledPrimary, continueProcessing });
@@ -363,9 +405,15 @@ try {
   }
   check(bodyText.includes('缺少合同或结算依据'), 'authoritative blocker is not visible before the action surface', bodyText);
   const auditDisclosure = page.locator('[data-floorplan-region="audit"]').first();
-  await auditDisclosure.locator('summary').click();
-  await auditDisclosure.locator('[data-audit-event]').first().waitFor({ timeout: 15000 });
-  const auditEvents = await auditDisclosure.locator('[data-audit-event]').evaluateAll((nodes) => nodes.map((node) => ({
+  report.desktop.auditDisclosure = {
+    eventCount: await auditDisclosure.locator('[data-professional-audit-timeline]').getAttribute('data-audit-event-count'),
+    headingCount: await auditDisclosure.getByText('审批与历史审计', { exact: true }).count(),
+    textBeforeOpen: normalize(await auditDisclosure.innerText()),
+  };
+  await auditDisclosure.getByText('审批与历史审计', { exact: true }).click();
+  report.desktop.auditDisclosure.textAfterOpen = normalize(await auditDisclosure.innerText());
+  await auditDisclosure.locator('[data-professional-audit-event]').first().waitFor({ timeout: 15000 });
+  const auditEvents = await auditDisclosure.locator('[data-professional-audit-event]').evaluateAll((nodes) => nodes.map((node) => ({
     actor: String(node.querySelector('[data-audit-actor]')?.textContent || '').replace(/\s+/g, ' ').trim(),
     time: String(node.querySelector('[data-audit-time]')?.textContent || '').replace(/\s+/g, ' ').trim(),
     event: String(node.querySelector('[data-audit-event-name]')?.textContent || '').replace(/\s+/g, ' ').trim(),

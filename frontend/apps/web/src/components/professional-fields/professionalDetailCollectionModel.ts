@@ -20,6 +20,7 @@ export function detailCollectionAuthority(field: FormSectionFieldSchema, adapter
     rowCount: rows.length,
     columnCount: columns.length,
     canCreate: adapter.one2manyCanCreate(field.name),
+    canInlineEdit: adapter.one2manyCanInlineEdit(field.name),
     removedRowCount: adapter.removedOne2manyRows(field.name).length,
     validationVisible: adapter.showOne2manyErrors,
     summary: adapter.one2manySummary(field.name),

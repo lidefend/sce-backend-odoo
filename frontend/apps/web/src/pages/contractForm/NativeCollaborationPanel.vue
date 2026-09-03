@@ -6,6 +6,7 @@
     :data-attachment-readiness="capabilityReadiness.attachment"
     :data-activity-readiness="capabilityReadiness.activity"
     :data-follower-readiness="capabilityReadiness.follower"
+    :data-user-search-readiness="userSearchEnabled ? 'ready' : 'fail_closed'"
   >
     <h3>{{ title }}</h3>
     <ScInlineState v-if="unavailableMessage" class="native-chatter-empty" state="empty" :label="unavailableMessage" />
@@ -26,7 +27,9 @@
       :activity="activeIsActivity"
       :posting="posting"
       :users-loading="usersLoading"
+      :user-search-enabled="userSearchEnabled"
       :draft="chatterDraft"
+      :reply-target="replyTarget"
       :placeholder="activePlaceholder"
       :submit-label="activeSubmitLabel"
       :posting-label="activePostingLabel"
@@ -58,9 +61,22 @@
       @cancel="$emit('close-composer')"
     />
     <ScInlineState v-if="chatterError" class="validation-error native-chatter-message" state="error" :label="chatterError" />
+    <ProfessionalFollowerManager
+      :enabled="followerEnabled"
+      :label="followerLabel"
+      :items="followers"
+      :count="followerCount"
+      :loading="followersLoading"
+      :error="followerError"
+      :can-follow="canFollow"
+      :can-unfollow="canUnfollow"
+      :follow-label="followLabel"
+      :unfollow-label="unfollowLabel"
+      @update="$emit('update-follower', $event)"
+    />
     <ProfessionalAttachmentManager
       :editable="!readonly"
-      :enabled="hasAttachments"
+      :enabled="attachmentUploadEnabled"
       :uploading="attachmentUploading"
       :upload-label="attachmentUploadLabel"
       :uploading-label="attachmentUploadingLabel"
@@ -79,11 +95,16 @@
       v-if="!unavailableMessage"
       :entries="visibleTimeline"
       :activity-updating-ids="activityUpdatingIds"
+      :attachment-deleting-ids="attachmentDeletingIds"
+      :message-deleting-ids="messageDeletingIds"
       :attachment-view-label="attachmentViewLabel"
       :timeline-has-more="timelineHasMore"
       :timeline-loading="timelineLoading"
       @update-activity="forwardActivityUpdate"
       @open-attachment="$emit('open-attachment', $event)"
+      @delete-attachment="$emit('delete-attachment', $event)"
+      @delete-message="$emit('delete-message', $event)"
+      @reply="$emit('reply', $event)"
       @load-more="$emit('load-more-timeline')"
     />
   </section>
@@ -91,7 +112,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { ChatterTimelineEntry, CollaborationUserOption } from '../../api/chatter';
+import type { ChatterTimelineEntry, CollaborationFollower, CollaborationUserOption } from '../../api/chatter';
 import type { NativeChatterAction } from './types';
 import ProfessionalAuditTimeline from './ProfessionalAuditTimeline.vue';
 import { resolveProfessionalAuditEvents } from './professionalAuditModel';
@@ -99,6 +120,7 @@ import ProfessionalCollaborationTimeline from './ProfessionalCollaborationTimeli
 import ProfessionalCollaborationComposer from './ProfessionalCollaborationComposer.vue';
 import { collaborationCapabilityReadiness, visibleCollaborationTimeline } from './professionalCollaborationModel';
 import ProfessionalAttachmentManager, { type PendingProfessionalAttachment } from './ProfessionalAttachmentManager.vue';
+import ProfessionalFollowerManager from './ProfessionalFollowerManager.vue';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScInlineState from '../../components/design-system/ScInlineState.vue';
 
@@ -111,12 +133,14 @@ export type NativeCollaborationPanelProps = {
   busy: boolean;
   posting: boolean;
   usersLoading: boolean;
+  userSearchEnabled: boolean;
   activeMode: string;
   activeIsActivity: boolean;
   activePlaceholder: string;
   activeSubmitLabel: string;
   activePostingLabel: string;
   chatterDraft: string;
+  replyTarget: { id: number; author: string; body: string; intent: 'chatter.post' } | null;
   collaborationUserQuery: string;
   selectedMentionUsers: CollaborationUserOption[];
   collaborationUserChoices: CollaborationUserOption[];
@@ -135,11 +159,24 @@ export type NativeCollaborationPanelProps = {
   chatterError: string;
   hasAttachments: boolean;
   attachmentUploading: boolean;
+  attachmentDeletingIds: number[];
+  messageDeletingIds: number[];
+  attachmentUploadEnabled: boolean;
   attachmentUploadLabel: string;
   attachmentUploadingLabel: string;
   attachmentViewLabel: string;
   attachmentError: string;
   pendingAttachments: PendingProfessionalAttachment[];
+  followerEnabled: boolean;
+  followerLabel: string;
+  followers: CollaborationFollower[];
+  followerCount: number;
+  followersLoading: boolean;
+  followerError: string;
+  canFollow: boolean;
+  canUnfollow: boolean;
+  followLabel: string;
+  unfollowLabel: string;
   timeline: ChatterTimelineEntry[];
   timelineHasMore: boolean;
   timelineLoading: boolean;
@@ -163,7 +200,11 @@ export type NativeCollaborationPanelListeners = {
   'remove-pending-attachment': (key: string) => void;
   'update-activity': (entry: ChatterTimelineEntry, action: 'done' | 'cancel') => void;
   'open-attachment': (attachment: NonNullable<ChatterTimelineEntry['attachment']>) => void;
+  'delete-attachment': (entry: ChatterTimelineEntry) => void;
+  'delete-message': (entry: ChatterTimelineEntry) => void;
   'load-more-timeline': () => void;
+  reply: (entry: ChatterTimelineEntry) => void;
+  'update-follower': (action: 'follow' | 'unfollow') => void;
 };
 
 const props = defineProps<NativeCollaborationPanelProps>();
@@ -173,6 +214,7 @@ const capabilityReadiness = computed(() => collaborationCapabilityReadiness({
   hasCommentAction: props.actions.some((action) => action.mode !== 'activity' && action.enabled),
   hasAttachmentAuthority: props.hasAttachments,
   hasActivityAction: props.actions.some((action) => action.mode === 'activity' && action.enabled),
+  hasFollowerAuthority: props.followerEnabled,
 }));
 
 
@@ -193,7 +235,11 @@ const emit = defineEmits<{
   'remove-pending-attachment': [key: string];
   'update-activity': [entry: ChatterTimelineEntry, action: 'done' | 'cancel'];
   'open-attachment': [attachment: NonNullable<ChatterTimelineEntry['attachment']>];
+  'delete-attachment': [entry: ChatterTimelineEntry];
+  'delete-message': [entry: ChatterTimelineEntry];
   'load-more-timeline': [];
+  reply: [entry: ChatterTimelineEntry];
+  'update-follower': [action: 'follow' | 'unfollow'];
 }>();
 
 function forwardActivityUpdate(entry: ChatterTimelineEntry, action: 'done' | 'cancel') {

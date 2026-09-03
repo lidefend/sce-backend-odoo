@@ -1,5 +1,5 @@
 <template>
-  <TDesignDialog :visible="open" :header="false" :footer="false" :close-btn="false"
+  <TDesignDialog :visible="open" :header="false" :footer="false" :close-btn="false" :destroy-on-close="true"
     :close-on-esc-keydown="false" :close-on-overlay-click="dismissible && closeOnBackdrop" :prevent-scroll-through="false"
     :confirm-loading="busy" :dialog-style="{ width: size === 'wide' ? 'var(--sc-component-dialog-wide-width)' : 'var(--sc-component-dialog-width)' }"
     :dialog-class-name="['sc-dialog', panelClass].filter(Boolean).join(' ')" :z-index="dialogZIndex" @close="emit('close')">

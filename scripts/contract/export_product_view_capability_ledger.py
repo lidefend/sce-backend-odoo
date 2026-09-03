@@ -10,7 +10,8 @@ from pathlib import Path
 from typing import Any
 
 from scripts.contract.product_view_capability_ledger_common import (
-    READY_FINAL_ACTION_CAPABILITIES, READY_FORM_BEHAVIORS, STATIC_FORM_MODIFIERS, classify_structure, load_yaml,
+    READY_FINAL_ACTION_CAPABILITIES, READY_FINAL_FIELD_DESCRIPTOR_CAPABILITIES, READY_FORM_BEHAVIORS,
+    STATIC_FORM_MODIFIERS, classify_structure, load_yaml, match_final_field_descriptor,
     match_final_object_action, match_normalized_atom, static_boolean_value,
 )
 from scripts.contract.product_view_contract_carriers_common import atomic_write_json, with_manifest
@@ -25,6 +26,12 @@ INTERACTION_EVIDENCE_SYMBOL = "validateCanonicalFormActionExecutors"
 
 def _interaction_evidence_symbol(capability_key: str) -> str:
     return (
+        "resolveContractV2FieldDescriptorMap"
+        if capability_key == "field.options"
+        else
+        "presentContractV2Form"
+        if capability_key in READY_FINAL_FIELD_DESCRIPTOR_CAPABILITIES
+        else
         "contractActionConfirmationPrompt"
         if capability_key == "action.confirm"
         else "canonicalFormActionIconClass"
@@ -105,7 +112,12 @@ def build_ledger(
                 if len(exact_matches) > 1:
                     raise ValueError(f"{atom['atom_id']}: normalized occurrence match is ambiguous")
                 exact = exact_matches[0] if exact_matches else None
-                final_matches = match_final_object_action(atom, carrier_entry) if exact else []
+                final_matches = (
+                    match_final_field_descriptor(atom, carrier_entry)
+                    if exact and atom["capability_key"] in READY_FINAL_FIELD_DESCRIPTOR_CAPABILITIES
+                    else match_final_object_action(atom, carrier_entry)
+                    if exact else []
+                )
                 if len(final_matches) > 1:
                     raise ValueError(f"{atom['atom_id']}: final action match is ambiguous")
                 final_match = final_matches[0] if len(final_matches) == 1 else None
@@ -131,12 +143,19 @@ def build_ledger(
                 elif (
                     origin_status == "proven"
                     and exact is not None
-                    and atom["capability_key"] in READY_FINAL_ACTION_CAPABILITIES
-                    and (atom["capability_key"] != "action.type" or atom["canonical_value"] == "object")
+                    and atom["capability_key"] in (
+                        READY_FINAL_ACTION_CAPABILITIES | READY_FINAL_FIELD_DESCRIPTOR_CAPABILITIES
+                    )
+                    and (
+                        atom["capability_key"] != "action.type"
+                        or atom["canonical_value"] == "object"
+                    )
                     and final_match is not None
                     and frontend_ready
                 ):
                     terminal_status, reason_code = "ready", ""
+                elif atom["capability_key"] in READY_FINAL_FIELD_DESCRIPTOR_CAPABILITIES:
+                    terminal_status, reason_code = "unsupported", "CAPABILITY_SEMANTIC_CARRIER_MISSING"
                 elif atom["capability_key"] == "form.delete":
                     terminal_status, reason_code = "fallback", "CAPABILITY_INTERACTION_EVIDENCE_MISSING"
                 elif atom["capability_key"].startswith("action."):

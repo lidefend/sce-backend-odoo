@@ -64,6 +64,25 @@
   min-width: 0;
 }
 
+.collection-mobile-record-row__relation-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--sc-space-1, 4px);
+  min-width: 0;
+}
+
+.collection-mobile-record-row__relation-tag {
+  max-width: 100%;
+  padding: 2px 8px;
+  overflow: hidden;
+  color: var(--sc-color-text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--sc-color-bg-secondary);
+  border-radius: var(--sc-radius-small, 4px);
+}
+
 .collection-mobile-record-row__fact small {
   color: var(--sc-app-text-secondary);
   font-size: 11px;

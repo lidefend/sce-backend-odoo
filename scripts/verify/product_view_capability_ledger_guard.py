@@ -13,7 +13,8 @@ import jsonschema
 
 from scripts.contract.complete_worktree_fingerprint import build_fingerprint, validate_fingerprint
 from scripts.contract.product_view_capability_ledger_common import (
-    READY_FINAL_ACTION_CAPABILITIES, READY_FORM_BEHAVIORS, STATIC_FORM_MODIFIERS, classify_structure, load_yaml,
+    READY_FINAL_ACTION_CAPABILITIES, READY_FINAL_FIELD_DESCRIPTOR_CAPABILITIES, READY_FORM_BEHAVIORS,
+    STATIC_FORM_MODIFIERS, classify_structure, load_yaml, match_final_field_descriptor,
     match_final_object_action, match_normalized_atom, static_boolean_value,
 )
 from scripts.contract.product_view_structure_common import file_sha256, sha256_json
@@ -27,12 +28,19 @@ NORMALIZED_REASON = "CAPABILITY_NORMALIZED_MAPPING_UNPROVEN"
 NATIVE_ORIGIN_REASON = "CAPABILITY_NATIVE_OCCURRENCE_ORIGIN_UNPROVEN"
 NORMALIZED_MISSING_REASON = "CAPABILITY_NORMALIZED_CARRIER_MISSING"
 DYNAMIC_REASON = "CAPABILITY_DYNAMIC_VERDICT_NOT_EVALUATED"
+SEMANTIC_MISSING_REASON = "CAPABILITY_SEMANTIC_CARRIER_MISSING"
 INTERACTION_EVIDENCE_PATH = Path("frontend/apps/web/scripts/canonical_form_presenter_test.ts")
 INTERACTION_EVIDENCE_SYMBOL = "validateCanonicalFormActionExecutors"
 
 
 def _interaction_evidence_symbol(capability_key: str) -> str:
     return (
+        "resolveContractV2FieldDescriptorMap"
+        if capability_key == "field.options"
+        else
+        "presentContractV2Form"
+        if capability_key in READY_FINAL_FIELD_DESCRIPTOR_CAPABILITIES
+        else
         "contractActionConfirmationPrompt"
         if capability_key == "action.confirm"
         else "canonicalFormActionIconClass"
@@ -251,7 +259,12 @@ def validate_ledger(
             if len(exact_matches) > 1:
                 errors.append(f"normalized occurrence is ambiguous: {atom_id}")
             exact = exact_matches[0] if len(exact_matches) == 1 else None
-            final_matches = match_final_object_action(expected, carrier_entry) if exact else []
+            final_matches = (
+                match_final_field_descriptor(expected, carrier_entry)
+                if exact and expected["capability_key"] in READY_FINAL_FIELD_DESCRIPTOR_CAPABILITIES
+                else match_final_object_action(expected, carrier_entry)
+                if exact else []
+            )
             if len(final_matches) > 1:
                 errors.append(f"final action occurrence is ambiguous: {atom_id}")
             final_match = final_matches[0] if len(final_matches) == 1 else None
@@ -305,12 +318,16 @@ def validate_ledger(
             elif (
                 origin_status == "proven"
                 and exact is not None
-                and expected["capability_key"] in READY_FINAL_ACTION_CAPABILITIES
+                and expected["capability_key"] in (
+                    READY_FINAL_ACTION_CAPABILITIES | READY_FINAL_FIELD_DESCRIPTOR_CAPABILITIES
+                )
                 and (expected["capability_key"] != "action.type" or expected["canonical_value"] == "object")
                 and final_match is not None
                 and frontend_ready
             ):
                 status, reason_code = "ready", ""
+            elif expected["capability_key"] in READY_FINAL_FIELD_DESCRIPTOR_CAPABILITIES:
+                status, reason_code = "unsupported", SEMANTIC_MISSING_REASON
             elif expected["capability_key"] == "form.delete":
                 status, reason_code = "fallback", "CAPABILITY_INTERACTION_EVIDENCE_MISSING"
             elif expected["capability_key"].startswith("action."):

@@ -26,18 +26,34 @@ class NativeViewCapabilityTaxonomyTests(unittest.TestCase):
         self.assertGreater(report["summary"]["classified_atom_count"], 8532)
 
     def test_unknown_tag_fails_closed(self):
-        candidate = NativeCandidate("node", "form", "future_tag", "", "resolved:x/future_tag", 1, "x", (), {"tag": "future_tag"})
+        candidate = NativeCandidate(
+            kind="node", view_type="form", tag="future_tag", attribute="",
+            locator="resolved:x/future_tag", native_locator="resolved:x/future_tag",
+            occurrence_index=1, resolved_view_ref="x", ancestors=(), canonical_value={"tag": "future_tag"},
+        )
         self.assertEqual(classify_candidate(candidate, self.taxonomy), [])
 
     def test_ambiguous_rule_is_observable(self):
         taxonomy = deepcopy(self.taxonomy)
         taxonomy["node_rules"].append({"id": "duplicate_field", "tags_exact": ["field"], "view_types": ["form"], "capability_key": "field.occurrence"})
-        candidate = NativeCandidate("node", "form", "field", "", "resolved:x/form/field[name=x]", 1, "x", (), {"tag": "field"})
+        candidate = NativeCandidate(
+            kind="node", view_type="form", tag="field", attribute="",
+            locator="resolved:x/form/field[name=x]", native_locator="resolved:x/form/field[name=x]",
+            occurrence_index=1, resolved_view_ref="x", ancestors=(), canonical_value={"tag": "field"},
+        )
         self.assertEqual(len(classify_candidate(candidate, taxonomy)), 2)
 
     def test_atom_identity_ignores_translated_value(self):
-        left = NativeCandidate("attribute", "form", "field", "string", "resolved:x/form/field[name=x]/@string", 1, "x", (), "Name")
-        right = NativeCandidate("attribute", "form", "field", "string", "resolved:x/form/field[name=x]/@string", 1, "x", (), "名称")
+        left = NativeCandidate(
+            kind="attribute", view_type="form", tag="field", attribute="string",
+            locator="resolved:x/form/field[name=x]/@string", native_locator="resolved:x/form/field[name=x]/@string",
+            occurrence_index=1, resolved_view_ref="x", ancestors=(), canonical_value="Name",
+        )
+        right = NativeCandidate(
+            kind="attribute", view_type="form", tag="field", attribute="string",
+            locator="resolved:x/form/field[name=x]/@string", native_locator="resolved:x/form/field[name=x]/@string",
+            occurrence_index=1, resolved_view_ref="x", ancestors=(), canonical_value="名称",
+        )
         self.assertEqual(atom_identity("x.menu::form", "field.label", left), atom_identity("x.menu::form", "field.label", right))
 
     def test_classification_is_deterministic(self):

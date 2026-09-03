@@ -9,17 +9,9 @@ import {
   resolveV2ButtonStatus,
 } from './actionContract';
 import type { ContractAction } from './types';
+import { nativeActionOccurrenceKey } from './nativeActionIdentity';
 
 export type AuthorizedWindowActionTarget = { actionId: number; menuId: number };
-
-function nativeOccurrenceKey(value: unknown): string {
-  const identity = parseMaybeJsonRecord(value);
-  const type = String(identity.type || '').trim().toLowerCase();
-  const name = String(identity.name || '').trim();
-  const locator = String(identity.native_locator || identity.nativeLocator || '').trim();
-  const occurrence = toPositiveInt(identity.occurrence_index || identity.occurrenceIndex) || 0;
-  return type && name && locator && occurrence > 0 ? `${type}|${name}|${locator}|${occurrence}` : '';
-}
 
 export function resolveContractActionForNativeOccurrence(
   actions: ContractAction[],
@@ -33,16 +25,16 @@ export function resolveContractActionForNativeOccurrence(
   const authorityActionId = String(
     nativeAction.actionId || nativeAction.action_id || row.actionId || row.action_id || '',
   ).trim();
-  const occurrenceKey = nativeOccurrenceKey(
+  const occurrenceKey = nativeActionOccurrenceKey(
     nativeAction.nativeIdentity || nativeAction.native_identity
     || row.nativeIdentity || row.native_identity,
   );
   if (!backendIdentity && !authorityActionId && !occurrenceKey) return null;
-  const candidates = actions.filter((candidate) => {
-    if (backendIdentity) return candidate.backendIdentity === backendIdentity;
-    if (authorityActionId) return candidate.authorityActionId === authorityActionId;
-    return nativeOccurrenceKey(candidate.nativeIdentity) === occurrenceKey;
-  });
+  const candidates = actions.filter((candidate) => (
+    (!backendIdentity || candidate.backendIdentity === backendIdentity)
+    && (!authorityActionId || candidate.authorityActionId === authorityActionId)
+    && (!occurrenceKey || nativeActionOccurrenceKey(candidate.nativeIdentity) === occurrenceKey)
+  ));
   return candidates.length === 1 ? candidates[0] : null;
 }
 
@@ -247,6 +239,7 @@ export function buildContractFormActions(params: {
       key,
       authorityActionId,
       backendIdentity,
+      nativeIdentity: parseMaybeJsonRecord(row.nativeIdentity || row.native_identity),
       label: normalizeActionLabel(row.label, key),
       kind: effectiveKind,
       level,

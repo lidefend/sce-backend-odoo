@@ -706,8 +706,88 @@ class ApiDataHandler(BaseIntentHandler):
                 "currency_field": str(raw.get("currency_field") or "").strip(),
                 "precision": raw.get("precision"),
                 "aggregate": aggregate,
+                "presentation": (
+                    "relation_tags"
+                    if source_type in {"many2many", "one2many"}
+                    and str(raw.get("widget") or "").strip().lower() == "many2many_tags"
+                    else "default"
+                ),
             }
         return normalized
+
+    def _attach_relation_display_values(self, env_model, rows, field_semantics):
+        """Attach ACL-respecting display labels for requested x2many values.
+
+        ORM list reads intentionally preserve relational ids for mutations. The
+        product renderer must not turn those ids into user-facing text, so the
+        read contract carries a separate backend-owned display projection.
+        """
+        records = rows if isinstance(rows, list) else []
+        if not records:
+            return records
+        relation_fields = []
+        for display_field, semantic in (field_semantics or {}).items():
+            if str(semantic.get("presentation") or "").strip() != "relation_tags":
+                continue
+            field_name = str(semantic.get("value_field") or display_field or "").strip()
+            field = env_model._fields.get(field_name)
+            field_type = str(getattr(field, "type", "") or "").strip().lower()
+            comodel_name = str(getattr(field, "comodel_name", "") or "").strip()
+            if field_type in {"many2many", "one2many"} and comodel_name:
+                relation_fields.append((field_name, comodel_name))
+
+        for field_name, comodel_name in relation_fields:
+            ids = []
+            for row in records:
+                values = row.get(field_name) if isinstance(row, dict) else []
+                if not isinstance(values, list):
+                    continue
+                for value in values:
+                    if isinstance(value, int) and not isinstance(value, bool) and value > 0 and value not in ids:
+                        ids.append(value)
+            if not ids:
+                continue
+            labels = {}
+            try:
+                related_model = env_model.env[comodel_name]
+                if "display_name" not in self._filter_readable_fields(related_model, ["display_name"]):
+                    continue
+                related_rows = related_model.browse(ids).exists().read(["display_name"])
+                labels = {
+                    int(item.get("id")): str(item.get("display_name") or "").strip()
+                    for item in related_rows or []
+                    if isinstance(item, dict) and item.get("id") and str(item.get("display_name") or "").strip()
+                }
+            except AccessError:
+                _logger.warning(
+                    "relation display projection denied model=%s field=%s comodel=%s",
+                    env_model._name,
+                    field_name,
+                    comodel_name,
+                )
+                continue
+            except Exception:
+                _logger.exception(
+                    "relation display projection failed model=%s field=%s comodel=%s",
+                    env_model._name,
+                    field_name,
+                    comodel_name,
+                )
+                continue
+            for row in records:
+                if not isinstance(row, dict):
+                    continue
+                values = row.get(field_name)
+                if not isinstance(values, list):
+                    continue
+                display_values = [
+                    {"id": value, "label": labels[value]}
+                    for value in values
+                    if isinstance(value, int) and value in labels
+                ]
+                if display_values:
+                    row.setdefault("__display_values", {})[field_name] = display_values
+        return records
 
     def _translate_semantic_order(self, order: str, semantics: Dict[str, Dict[str, Any]]) -> str:
         translated = []
@@ -912,6 +992,7 @@ class ApiDataHandler(BaseIntentHandler):
             except Exception:
                 _logger.exception("group sample query failed model=%s group=%s", env_model._name, item.get("label"))
                 sample_rows = []
+            self._attach_relation_display_values(env_model, sample_rows, field_semantics)
             sample_count = len(sample_rows)
             group_aggregates = (
                 self._build_numeric_aggregates(env_model, group_domain, row_fields)
@@ -1887,6 +1968,8 @@ class ApiDataHandler(BaseIntentHandler):
             )
             if order_error:
                 return order_error
+
+        self._attach_relation_display_values(env_model, rows, field_semantics)
 
         need_total = self._get_bool(p, "need_total", False)
         total = env_model.search_count(domain or []) if need_total else None

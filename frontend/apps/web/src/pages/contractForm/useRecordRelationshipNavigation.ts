@@ -122,18 +122,22 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
     return Number.isFinite(id) && id > 0 ? Math.trunc(id) : 0;
   }
 
-  function canOpenRelationRecordForm(fieldName: string, descriptor?: FieldDescriptor) {
+  function canOpenRelationRecord(fieldName: string, recordId: number, descriptor?: FieldDescriptor) {
     const relation = relationModel(fieldName);
     const entry = relationEntry(descriptor);
-    return Boolean(relation && currentRelationRecordId(fieldName) > 0 && entry?.canRead !== false && entry?.canOpen !== false);
+    return Boolean(relation && Number.isFinite(recordId) && recordId > 0
+      && entry?.canRead === true && entry?.canOpen === true);
   }
 
-  async function openRelationRecordForm(fieldName: string, descriptor?: FieldDescriptor) {
+  function canOpenRelationRecordForm(fieldName: string, descriptor?: FieldDescriptor) {
+    return canOpenRelationRecord(fieldName, currentRelationRecordId(fieldName), descriptor);
+  }
+
+  async function openRelationRecord(fieldName: string, recordId: number, descriptor?: FieldDescriptor) {
     const relation = relationModel(fieldName);
-    const recordId = currentRelationRecordId(fieldName);
     const entry = relationEntry(descriptor);
-    if (!relation || recordId <= 0) return;
-    if (entry?.canRead === false) {
+    if (!relation || !Number.isFinite(recordId) || recordId <= 0) return;
+    if (entry?.canRead !== true || entry?.canOpen !== true) {
       validationErrors.value = [relationUiLabel(descriptor, 'missing_read_entry')];
       return;
     }
@@ -168,6 +172,10 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
     }
   }
 
+  async function openRelationRecordForm(fieldName: string, descriptor?: FieldDescriptor) {
+    await openRelationRecord(fieldName, currentRelationRecordId(fieldName), descriptor);
+  }
+
   async function quickCreateRelation(
     fieldName: string,
     descriptor: FieldDescriptor | undefined,
@@ -177,6 +185,8 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
     const relation = String((descriptor as Record<string, unknown> | undefined)?.relation || '').trim();
     if (!relation) return;
     const entry = relationEntry(descriptor);
+    const inline = relationInlineCreate(descriptor);
+    if (entry?.canCreate !== true || !inline.enabled || !inline.createOnNoMatch) return;
     try {
       const existing = await fetchRelationOptions(fieldName, label, 20);
       const exact = existing.find((item) => item.label.trim().toLowerCase() === label.trim().toLowerCase());
@@ -184,7 +194,6 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
         setMany2oneOption(fieldName, exact);
         return;
       }
-      const inline = relationInlineCreate(descriptor);
       const nameField = inline.nameField || 'name';
       const vals: Record<string, unknown> = { ...(entry?.defaultVals || {}), [nameField]: label };
       const created = await createContractFormRecord({ model: relation, vals });
@@ -200,5 +209,5 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
     }
   }
 
-  return { ensureRelationFieldDescriptors, openRelationCreateForm, currentRelationRecordId, canOpenRelationRecordForm, openRelationRecordForm, quickCreateRelation };
+  return { ensureRelationFieldDescriptors, openRelationCreateForm, currentRelationRecordId, canOpenRelationRecord, canOpenRelationRecordForm, openRelationRecord, openRelationRecordForm, quickCreateRelation };
 }

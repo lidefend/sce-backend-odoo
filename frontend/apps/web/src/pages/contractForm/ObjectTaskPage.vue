@@ -47,6 +47,7 @@
           :node="node"
           :relation-adapter="relationAdapter"
           prefer-readonly-facts
+          density="compact-task"
           @field-change="emit('field-change', $event)"
           @field-action="emit('field-action', $event)"
         />
@@ -57,6 +58,7 @@
             :node="node"
             :relation-adapter="relationAdapter"
             prefer-readonly-facts
+            density="compact-task"
             @field-change="emit('field-change', $event)"
           @field-action="emit('field-action', $event)"
           />
@@ -127,10 +129,11 @@
           @field-action="emit('field-action', $event)"
       />
     </ScCard>
-    <section
+    <ScDisclosure
       v-if="supplementaryInputNodes.length"
       class="object-task-page__supplementary-input"
       data-floorplan-region="supplementary-input"
+      title="补充信息"
     >
       <CanonicalFormNodeRenderer
         v-for="node in supplementaryInputNodes"
@@ -141,7 +144,7 @@
         @field-change="emit('field-change', $event)"
           @field-action="emit('field-action', $event)"
       />
-    </section>
+    </ScDisclosure>
     <slot v-if="!decisionMode" name="blocking" />
     <section
       v-if="!decisionMode && riskNodes.length"
@@ -194,10 +197,11 @@
         />
       </ScCard>
     </div>
-    <section
+    <ScDisclosure
       v-if="overflowContextNodes.length"
       class="object-task-page__overflow-context"
       data-floorplan-region="overflow-context"
+      title="更多业务信息"
     >
       <CanonicalFormNodeRenderer
         v-for="node in overflowContextNodes"
@@ -208,9 +212,9 @@
         @field-change="emit('field-change', $event)"
           @field-action="emit('field-action', $event)"
       />
-    </section>
+    </ScDisclosure>
     <ScCard
-      v-if="relationNodes.length"
+      v-if="presentableRelationNodes.length"
       class="object-task-page__relation"
       aria-label="关系明细"
       data-floorplan-region="relation"
@@ -219,7 +223,7 @@
       appearance="relation"
     >
       <CanonicalFormNodeRenderer
-        v-for="node in relationNodes"
+        v-for="node in presentableRelationNodes"
         :key="node.nodeId"
         :node="node"
         :relation-adapter="relationAdapter"
@@ -274,14 +278,17 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { CanonicalAuditEvent, CanonicalFormNode } from '../../app/presentation/canonicalFormRenderModel';
 import type { FormSectionFieldActionPayload, FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import CanonicalFormNodeRenderer from './CanonicalFormNodeRenderer.vue';
 import ProfessionalAuditTimeline from './ProfessionalAuditTimeline.vue';
 import ScCard from '../../components/design-system/ScCard.vue';
+import ScDisclosure from '../../components/design-system/ScDisclosure.vue';
+import { canonicalNodeHasPresentableContent } from './canonicalFormRenderer';
 
-defineProps<{
+const props = defineProps<{
   summaryNodes: CanonicalFormNode[];
   taskNodes: CanonicalFormNode[];
   coreInputNodes: CanonicalFormNode[];
@@ -302,6 +309,9 @@ defineProps<{
   decisionMode?: boolean;
 }>();
 const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange]; 'field-action': [payload: FormSectionFieldActionPayload] }>();
+const presentableRelationNodes = computed(() => props.relationNodes.filter((node) => (
+  canonicalNodeHasPresentableContent(node, props.relationAdapter)
+)));
 
 </script>
 
@@ -379,19 +389,6 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange]; 'f
   gap: 6px;
 }
 .object-task-page__current-task-copy :deep(.canonical-form-node + .canonical-form-node) { margin-top: 8px; }
-/* Current-task card density: keep the handling guide compact so the
- * user's input fields surface sooner. Tighter section titles, field
- * spacing and fact padding cut the read-only guidance block's footprint
- * without removing any content. */
-.object-task-page__current-task :deep(.canonical-form-node-title) {
-  margin: 0 0 2px;
-  font-size: 13px;
-  line-height: 18px;
-}
-.object-task-page__current-task-facts :deep(.canonical-form-node--field.readonly-fact),
-.object-task-page__current-task-facts :deep(.canonical-form-node--readonly-fact) {
-  padding: 4px 0;
-}
 .object-task-page__current-task-facts {
   color: var(--sc-app-text-secondary);
 }
@@ -419,7 +416,6 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange]; 'f
   border-radius: var(--sc-product-radius-panel);
   background: var(--sc-app-panel);
 }
-.object-task-page__supplementary-input > summary { cursor: pointer; font-weight: 600; }
 .object-task-page__audit {
   padding: 12px 16px;
   border: 1px solid var(--sc-app-border);
@@ -432,7 +428,6 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange]; 'f
   border-radius: var(--sc-product-radius-panel);
   background: var(--sc-app-panel);
 }
-.object-task-page__overflow-context > summary { cursor: pointer; font-weight: 600; }
 .object-task-page__audit > summary { cursor: pointer; font-weight: 600; }
 .object-task-page__audit:not([open]) [data-audit-content] { display: none; }
 .object-task-page__audit-events {

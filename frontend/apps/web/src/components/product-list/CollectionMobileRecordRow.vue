@@ -44,7 +44,14 @@
         :data-fact-key="fact.key"
       >
         <small>{{ fact.label }}</small>
-        <b>{{ fact.value }}</b>
+        <span
+          v-if="fact.relationItems?.length"
+          class="collection-mobile-record-row__relation-tags"
+          data-semantic-cell-kind="relation-tags"
+        >
+          <b v-for="item in fact.relationItems" :key="item.id" class="collection-mobile-record-row__relation-tag">{{ item.label }}</b>
+        </span>
+        <b v-else>{{ fact.value }}</b>
       </span>
       <template #actions>
         <span class="collection-mobile-record-row__open">
@@ -67,6 +74,7 @@ export type CollectionMobileRecordFact = {
   key: string;
   label: string;
   value: string;
+  relationItems?: Array<{ id: number; label: string }>;
 };
 
 const props = withDefaults(defineProps<{

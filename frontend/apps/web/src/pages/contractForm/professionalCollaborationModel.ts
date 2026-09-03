@@ -1,4 +1,5 @@
 import type { ChatterTimelineEntry } from '../../api/chatter';
+import type { NativeChatterAction } from './types';
 
 export type ProfessionalCollaborationCapability = 'comment' | 'attachment' | 'activity' | 'follower';
 export type ProfessionalCollaborationReadiness = 'ready' | 'fail_closed';
@@ -7,17 +8,74 @@ export function collaborationCapabilityReadiness(input: {
   hasCommentAction: boolean;
   hasAttachmentAuthority: boolean;
   hasActivityAction: boolean;
+  hasFollowerAuthority: boolean;
 }): Readonly<Record<ProfessionalCollaborationCapability, ProfessionalCollaborationReadiness>> {
   return Object.freeze({
     comment: input.hasCommentAction ? 'ready' : 'fail_closed',
     attachment: input.hasAttachmentAuthority ? 'ready' : 'fail_closed',
     activity: input.hasActivityAction ? 'ready' : 'fail_closed',
-    follower: 'fail_closed',
+    follower: input.hasFollowerAuthority ? 'ready' : 'fail_closed',
   });
 }
 
 export function visibleCollaborationTimeline(entries: readonly ChatterTimelineEntry[]): ChatterTimelineEntry[] {
   return entries.filter((entry) => entry.type !== 'audit');
+}
+
+export function canDownloadCollaborationAttachment(entry: ChatterTimelineEntry): boolean {
+  return entry.type === 'attachment'
+    && entry.attachment?.can_download === true
+    && entry.attachment.download_intent === 'file.download';
+}
+
+export function canDeleteCollaborationAttachment(entry: ChatterTimelineEntry): boolean {
+  return entry.type === 'attachment'
+    && entry.attachment?.can_delete === true
+    && entry.attachment.delete_intent === 'chatter.attachment.delete'
+    && Number(entry.attachment.id || entry.id || 0) > 0;
+}
+
+export function canUpdateCollaborationActivity(
+  entry: ChatterTimelineEntry,
+  action: 'done' | 'cancel',
+): boolean {
+  if (entry.type !== 'activity'
+    || entry.activity?.update_intent !== 'chatter.activity.update'
+    || Number(entry.activity.id || entry.id || 0) <= 0) return false;
+  return action === 'done'
+    ? entry.activity?.can_complete === true
+    : entry.activity?.can_cancel === true;
+}
+
+export function canReplyCollaborationMessage(entry: ChatterTimelineEntry): boolean {
+  return entry.type === 'message'
+    && entry.message?.can_reply === true
+    && entry.message.reply_intent === 'chatter.post'
+    && Number(entry.message.id || entry.id || 0) > 0;
+}
+
+export function canDeleteCollaborationMessage(entry: ChatterTimelineEntry): boolean {
+  return entry.type === 'message'
+    && entry.message?.can_delete === true
+    && entry.message.delete_intent === 'chatter.message.delete'
+    && Number(entry.message.id || entry.id || 0) > 0;
+}
+
+export function canExecuteCollaborationCreateAction(
+  action: NativeChatterAction | null | undefined,
+  mode: string,
+): boolean {
+  const expectedIntent = mode === 'activity'
+    ? 'chatter.activity.schedule'
+    : mode === 'message' || mode === 'note'
+      ? 'chatter.post'
+      : '';
+  return Boolean(
+    action?.enabled === true
+    && expectedIntent
+    && action.mode === mode
+    && action.payload?.execute_intent === expectedIntent
+  );
 }
 
 export function formatCollaborationTimelineMeta(value: string): string {
@@ -183,24 +241,18 @@ export interface ParsedActivityInfo {
   at?: string;
   atLabel?: string;
   icon: string;
-  status: 'pending' | 'done' | 'canceled' | 'overdue';
+  status: 'pending' | 'overdue' | 'unknown';
   statusLabel: string;
 }
 
 export function parseActivityEntry(entry: ChatterTimelineEntry): ParsedActivityInfo {
   const activity = entry.activity || {};
   const title = entry.title || entry.body || '待办活动';
-  const now = new Date();
   const deadline = activity.deadline ? new Date(activity.deadline) : undefined;
-
-  let status: ParsedActivityInfo['status'] = 'pending';
-  let statusLabel = '待处理';
-
-  // 简单状态判断（实际状态应从后端获取）
-  if (deadline && deadline < now) {
-    status = 'overdue';
-    statusLabel = '已逾期';
-  }
+  const status: ParsedActivityInfo['status'] = activity.status === 'pending' || activity.status === 'overdue'
+    ? activity.status
+    : 'unknown';
+  const statusLabel = activity.status_label || '状态未知';
 
   return {
     title,

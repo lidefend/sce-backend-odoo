@@ -174,6 +174,107 @@ class TestApiDataListParamBoundaries(unittest.TestCase):
         self.assertEqual(semantics["visible_name"]["aggregate"], "none")
         self.assertEqual(semantics["visible_name"]["aggregation_field"], "")
 
+    def test_x2many_list_values_receive_backend_owned_display_projection(self):
+        field = lambda field_type, comodel_name="": types.SimpleNamespace(
+            type=field_type,
+            comodel_name=comodel_name,
+        )
+
+        class _RelatedRecords:
+            def __init__(self, ids):
+                self.ids = ids
+
+            def exists(self):
+                return self
+
+            def read(self, fields):
+                self.requested_fields = fields
+                labels = {11: "项目经理", 12: "财务复核"}
+                return [{"id": item, "display_name": labels[item]} for item in self.ids if item in labels]
+
+        class _RelatedModel:
+            _fields = {"display_name": field("char")}
+
+            def browse(self, ids):
+                return _RelatedRecords(ids)
+
+        class _Model:
+            _name = "x.user"
+            _fields = {
+                "role_ids": field("many2many", "x.role"),
+                "name": field("char"),
+            }
+
+        model = _Model()
+        model.env = {"x.role": _RelatedModel()}
+        self.handler._filter_readable_fields = lambda _model, names: list(names)
+        rows = [
+            {"id": 1, "name": "A", "role_ids": [12, 11]},
+            {"id": 2, "name": "B", "role_ids": []},
+        ]
+
+        result = self.handler._attach_relation_display_values(
+            model,
+            rows,
+            {"role_ids": {"value_field": "role_ids", "presentation": "relation_tags"}},
+        )
+
+        self.assertEqual(
+            result[0]["__display_values"]["role_ids"],
+            [
+                {"id": 12, "label": "财务复核"},
+                {"id": 11, "label": "项目经理"},
+            ],
+        )
+        self.assertNotIn("__display_values", result[1])
+
+    def test_x2many_display_projection_requires_relation_tag_semantics(self):
+        field = lambda field_type, comodel_name="": types.SimpleNamespace(
+            type=field_type,
+            comodel_name=comodel_name,
+        )
+        model = types.SimpleNamespace(
+            _fields={
+                "role_ids": field("many2many", "x.role"),
+                "attachment_ids": field("many2many", "ir.attachment"),
+            },
+        )
+        self.handler._filter_readable_fields = lambda _model, names: list(names)
+
+        semantics = self.handler._normalize_list_field_semantics(
+            model,
+            [
+                {"display_field": "role_ids", "value_field": "role_ids", "widget": "many2many_tags"},
+                {"display_field": "attachment_ids", "value_field": "attachment_ids", "widget": "many2many_binary"},
+            ],
+            ["role_ids", "attachment_ids"],
+        )
+
+        self.assertEqual(semantics["role_ids"]["presentation"], "relation_tags")
+        self.assertEqual(semantics["attachment_ids"]["presentation"], "default")
+
+    def test_x2many_display_projection_fails_closed_without_related_read_access(self):
+        field = lambda field_type, comodel_name="": types.SimpleNamespace(
+            type=field_type,
+            comodel_name=comodel_name,
+        )
+
+        model = types.SimpleNamespace(
+            _name="x.user",
+            _fields={"role_ids": field("many2many", "x.role")},
+            env={"x.role": types.SimpleNamespace(_fields={"display_name": field("char")})},
+        )
+        self.handler._filter_readable_fields = lambda _model, _names: []
+        rows = [{"id": 1, "role_ids": [11]}]
+
+        result = self.handler._attach_relation_display_values(
+            model,
+            rows,
+            {"role_ids": {"value_field": "role_ids", "presentation": "relation_tags"}},
+        )
+
+        self.assertNotIn("__display_values", result[0])
+
     def test_semantic_aggregates_return_authoritative_page_and_filtered_sums(self):
         class _Model:
             _fields = {"currency_id": object()}

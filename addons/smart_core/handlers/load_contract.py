@@ -505,14 +505,14 @@ class LoadContractHandler(BaseIntentHandler):
         elif not isinstance(form.get("ribbon"), dict):
             form["ribbon"] = {"enabled": bool(form.get("ribbon"))}
 
+        model_fields = {}
+        try:
+            model_fields = getattr(self.env[model_name], "_fields", {}) or {}
+        except Exception:
+            model_fields = {}
         chatter = _as_dict(form.get("chatter"))
         chatter_enabled = bool(chatter.get("enabled"))
         if not chatter_enabled:
-            model_fields = {}
-            try:
-                model_fields = getattr(self.env[model_name], "_fields", {}) or {}
-            except Exception:
-                model_fields = {}
             chatter_fields = [
                 field_name
                 for field_name in ("message_follower_ids", "activity_ids", "message_ids", "website_message_ids")
@@ -528,6 +528,7 @@ class LoadContractHandler(BaseIntentHandler):
                         "message": "message_ids" in model_fields,
                         "note": "message_ids" in model_fields,
                         "activity": "activity_ids" in model_fields,
+                        "follower": "message_follower_ids" in model_fields,
                     },
                     "actions": chatter.get("actions") if isinstance(chatter.get("actions"), list) else [
                         {
@@ -537,7 +538,7 @@ class LoadContractHandler(BaseIntentHandler):
                             "level": "chatter",
                             "selection": "none",
                             "intent": "message",
-                            "payload": {"mode": "message"},
+                            "payload": {"mode": "message", "execute_intent": "chatter.post"},
                         },
                         {
                             "key": "chatter_log_note",
@@ -546,7 +547,7 @@ class LoadContractHandler(BaseIntentHandler):
                             "level": "chatter",
                             "selection": "none",
                             "intent": "note",
-                            "payload": {"mode": "note"},
+                            "payload": {"mode": "note", "execute_intent": "chatter.post"},
                         },
                         {
                             "key": "chatter_schedule_activity",
@@ -569,6 +570,21 @@ class LoadContractHandler(BaseIntentHandler):
                     ],
                 }
                 form["chatter"] = chatter
+
+        if "message_follower_ids" in model_fields:
+            collaboration = _as_dict(data.get("collaboration"))
+            collaboration["user_search_intent"] = "collaboration.users.search"
+            collaboration["followers"] = {
+                "enabled": True,
+                "label": "关注者",
+                "list_intent": "chatter.followers.list",
+                "update_intent": "chatter.followers.update",
+                "actions": {
+                    "follow": {"label": "关注", "enabled": True},
+                    "unfollow": {"label": "取消关注", "enabled": True},
+                },
+            }
+            data["collaboration"] = collaboration
 
         attachments = _as_dict(form.get("attachments"))
         if bool(_as_dict(form.get("chatter")).get("enabled")) and not attachments.get("enabled"):

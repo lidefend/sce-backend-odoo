@@ -19,8 +19,10 @@ PROBE = ROOT / "frontend/apps/web/scripts/view_type_render_coverage_probe.ts"
 ESBUILD = ROOT / "frontend/apps/web/node_modules/.bin/esbuild"
 ACTION_VIEW = ROOT / "frontend/apps/web/src/views/ActionView.vue"
 ACTIVITY_PAGE = ROOT / "frontend/apps/web/src/pages/ActivityPage.vue"
+ANALYSIS_PAGE = ROOT / "frontend/apps/web/src/pages/AnalysisPage.vue"
 SCHEMA = ROOT / "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json"
-FALLBACK_MODES = ("pivot", "graph", "calendar", "gantt", "dashboard")
+ANALYSIS_MODES = ("pivot", "graph")
+FALLBACK_MODES = ("calendar", "gantt", "dashboard")
 ACTIVITY_CARRIER = "ui.contract.v2.layoutContract.activityProfile"
 
 
@@ -60,6 +62,30 @@ def validate_runtime_evidence(evidence: dict[str, Any]) -> list[str]:
 
     registrations = _dict(evidence.get("registrations"))
     fallback = _dict(evidence.get("fallback"))
+    analysis_profiles = _dict(evidence.get("analysisProfiles"))
+    for mode in ANALYSIS_MODES:
+        registration = _dict(registrations.get(mode))
+        expected_registration = {
+            "semantic": mode,
+            "requestedRendererKey": f"core.{mode}",
+            "activeRendererKey": f"core.{mode}",
+            "status": "ready",
+            "outlet": "standard",
+            "reasonCode": "",
+        }
+        for key, expected in expected_registration.items():
+            if registration.get(key) != expected:
+                errors.append(f"{mode} registration {key} must be {expected!r}")
+        profile_evidence = _dict(analysis_profiles.get(mode))
+        profile = _dict(profile_evidence.get("profile"))
+        model = _dict(profile_evidence.get("model"))
+        authority = _dict(profile.get("sourceAuthority"))
+        if authority.get("runtime_carrier") != f"ui.contract.v2.layoutContract.{mode}Profile":
+            errors.append(f"{mode} normalized profile carrier is missing")
+        if model.get("ok") is not True or model.get("reasonCode") != "":
+            errors.append(f"{mode} dedicated resolver did not accept the governed carrier")
+        if not _list(model.get("dimensions")) or not _list(model.get("rows")):
+            errors.append(f"{mode} dedicated resolver did not consume dimensions and records")
     for mode in FALLBACK_MODES:
         registration = _dict(registrations.get(mode))
         expected_registration = {
@@ -191,6 +217,7 @@ class _ActionViewTemplateParser(HTMLParser):
         self.seen_root_template = False
         self.stack: list[dict[str, bool]] = []
         self.activity_surface = False
+        self.analysis_surface = False
         self.advanced_surface = False
         self.advanced_rows = False
 
@@ -220,6 +247,9 @@ class _ActionViewTemplateParser(HTMLParser):
         if tag == "activitypage" and not unreachable:
             expression = re.sub(r"\s+", "", attributes.get("v-else-if", ""))
             self.activity_surface = expression == "viewMode==='activity'" and attributes.get(":model") == "activitySurfaceModel"
+        if tag == "analysispage" and not unreachable:
+            expression = re.sub(r"\s+", "", attributes.get("v-else-if", ""))
+            self.analysis_surface = expression == "viewMode==='pivot'||viewMode==='graph'" and attributes.get(":model") == "analysisSurfaceModel"
         if advanced and not ancestor_advanced and not unreachable:
             self.advanced_surface = True
         if tag == "article" and ancestor_advanced and not unreachable:
@@ -237,20 +267,26 @@ class _ActionViewTemplateParser(HTMLParser):
             self.template_depth -= 1
 
 
-def validate_action_view_structure(source: str, *, activity_page_exists: bool) -> list[str]:
+def validate_action_view_structure(source: str, *, activity_page_exists: bool, analysis_page_exists: bool = True) -> list[str]:
     errors: list[str] = []
     parser = _ActionViewTemplateParser()
     parser.feed(source)
     if not parser.activity_surface:
         errors.append("ActionView has no reachable ActivityPage bound to activitySurfaceModel")
+    if not parser.analysis_surface:
+        errors.append("ActionView has no reachable AnalysisPage bound to analysisSurfaceModel")
     if not parser.advanced_surface or not parser.advanced_rows:
         errors.append("ActionView has no reachable readable advanced-record fallback surface")
     script_match = re.search(r"<script\b[^>]*>(.*?)</script>", source, flags=re.DOTALL | re.IGNORECASE)
     script = _strip_js_comments_and_strings(script_match.group(1) if script_match else "")
     if not re.search(r"^\s*import\s+ActivityPage\s+from\s+__STRING__\s*;?\s*$", script, flags=re.MULTILINE):
         errors.append("ActionView does not statically import ActivityPage")
+    if not re.search(r"^\s*import\s+AnalysisPage\s+from\s+__STRING__\s*;?\s*$", script, flags=re.MULTILINE):
+        errors.append("ActionView does not statically import AnalysisPage")
     if not activity_page_exists:
         errors.append("ActivityPage renderer file is missing")
+    if not analysis_page_exists:
+        errors.append("AnalysisPage renderer file is missing")
     return errors
 
 
@@ -263,6 +299,7 @@ def validate_current_architecture(root: Path = ROOT) -> list[str]:
     errors.extend(validate_action_view_structure(
         action_view,
         activity_page_exists=(root / ACTIVITY_PAGE.relative_to(ROOT)).is_file(),
+        analysis_page_exists=(root / ANALYSIS_PAGE.relative_to(ROOT)).is_file(),
     ))
     return errors
 
@@ -278,7 +315,8 @@ def main() -> int:
             print(f"- {error}")
         return 1
     print("[OK] view_type_render_coverage_guard")
-    print("- fallback: pivot, graph, calendar, gantt, dashboard -> core.readable_records")
+    print("- analysis: pivot, graph -> governed profile resolver -> AnalysisPage")
+    print("- fallback: calendar, gantt, dashboard -> core.readable_records")
     print("- activity: decoder -> normalized store -> core.activity resolver -> ActivityPage")
     print("- delivery_claims: action_route=false browser_delivery=false")
     return 0

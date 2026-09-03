@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import contractV2Schema from '../../../../docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json';
 import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 import {
-  createContractV2Store, resolveContractV2EffectiveFormCapabilities, resolveContractV2FieldDescriptorMap,
+  collectContractV2ButtonStatusById, createContractV2Store,
+  resolveContractV2EffectiveFormCapabilities, resolveContractV2FieldDescriptorMap,
 } from '../src/app/contracts/v2/store';
 import type { ContractV2FormStructureRoleName, ContractV2Snapshot } from '../src/app/contracts/v2/types';
 import {
@@ -13,6 +14,7 @@ import { presentContractV2Form } from '../src/app/presentation/contractFormPrese
 import { composeCanonicalFormFloorplan } from '../src/app/presentation/canonicalFormFloorplan';
 import {
   canonicalFieldToFormSection,
+  canonicalFieldHasPresentableValue,
   canonicalNodeHasContent,
   canonicalSectionFields,
   visibleCanonicalChildren,
@@ -483,6 +485,7 @@ function snapshot(): ContractV2Snapshot {
         sourceAuthority: { projection_only: true, no_business_fact_authority: true },
         children: [{
           containerId: 'field.line_ids', containerType: 'field', type: 'field', name: 'line_ids', title: '', span: 24,
+          nolabel: true,
           children: [], widgetList: [{
             widgetId: 'field.line_ids', widgetType: 'table', fieldCode: 'line_ids', label: 'Lines', span: 24,
             componentKey: 'sc.relation.table', capabilities: [], componentConfig: { fieldType: 'one2many' },
@@ -1122,6 +1125,16 @@ assert.deepEqual(
   [['draft', 'Draft'], ['done', 'Done']],
   'native fieldDescriptor selection must remain available to statusbar rendering',
 );
+const descriptorWidgetOptionsSnapshot = snapshot();
+descriptorWidgetOptionsSnapshot.layoutContract.containerTree[0].children[0].widgetList[0].componentConfig.widgetOptions = {
+  no_create: true,
+  no_quick_create: true,
+};
+assert.deepEqual(
+  resolveContractV2FieldDescriptorMap(createContractV2Store(descriptorWidgetOptionsSnapshot)).name?.widgetOptions,
+  { no_create: true, no_quick_create: true },
+  'canonical widget options must remain structured and available to field rendering',
+);
 const model = presentContractV2Form(store, 'edit');
 assert.deepEqual(model.responsive, {
   adaptMode: 'pc',
@@ -1179,6 +1192,7 @@ assert.equal(fields.find((field) => field.fieldCode === 'name')?.componentResolu
 assert.equal(fields.find((field) => field.fieldCode === 'name')?.presentationMode, 'workspace');
 assert.equal(fields.find((field) => field.fieldCode === 'name')?.renderProfile, 'edit');
 assert.equal(fields.find((field) => field.fieldCode === 'line_ids')?.componentResolution.renderer, 'ProfessionalDetailCollectionControl');
+assert.equal(fields.find((field) => field.fieldCode === 'line_ids')?.hideLabel, true);
 assert.equal(fields.find((field) => field.fieldCode === 'state')?.hideLabel, false);
 assert.equal(canonicalFieldToFormSection(fields.find((field) => field.fieldCode === 'name')!).hideLabel, true);
 assert.equal(fields.find((field) => field.fieldCode === 'state')?.visible, false);
@@ -1636,6 +1650,11 @@ assert.deepEqual(
   ['context_26', 'line_ids'],
   'relation-capable canonical facts must form an independent relation region',
 );
+assert.equal(
+  collectFields(semanticContextFloorplan.relationNodes).find((field) => field.fieldCode === 'line_ids')?.hideLabel,
+  false,
+  'the floorplan relation region must restore the authoritative field label after removing its native notebook title',
+);
 assert.deepEqual(
   collectFields(semanticContextFloorplan.auditNodes).map((field) => field.fieldCode),
   ['approval_fact', 'decision_note', 'source_reference', 'source_timestamp'],
@@ -2074,6 +2093,22 @@ assert.deepEqual(
   ],
   'canonical form must preserve same-field occurrences and their independent status',
 );
+const readonlyTaskDuplicateOccurrences = structuredClone(duplicateOccurrences);
+readonlyTaskDuplicateOccurrences.formStructureContract = governedFormStructure('context');
+const readonlyTaskDuplicateFloorplan = composeCanonicalFormFloorplan(presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(readonlyTaskDuplicateOccurrences)),
+  'readonly',
+));
+assert.deepEqual(
+  collectFields([
+    ...readonlyTaskDuplicateFloorplan.summaryNodes,
+    ...readonlyTaskDuplicateFloorplan.taskNodes,
+    ...readonlyTaskDuplicateFloorplan.contextNodes,
+    ...readonlyTaskDuplicateFloorplan.overflowContextNodes,
+  ]).filter((field) => field.fieldCode === 'name').map((field) => field.widgetId),
+  ['field.name.occ.second'],
+  'readonly task Floorplans must show one strongest occurrence for a repeated business fact',
+);
 const equivalentCreateOccurrences = structuredClone(duplicateOccurrences);
 equivalentCreateOccurrences.statusContract.widgetStatus = [
   { widgetId: 'field.name.occ.first', visible: true, readonly: false, required: true, disabled: false, auth: 'edit' },
@@ -2116,6 +2151,38 @@ assert.deepEqual(
   { key: renderedName.key, name: renderedName.name, value: renderedName.value, readonly: renderedName.readonly },
   { key: 'field.name', name: 'name', value: 'D-001', readonly: false },
   'renderer mapping must preserve canonical widget identity and state without native layout input',
+);
+const readonlyEmptyRelation = {
+  ...fields.find((field) => field.fieldCode === 'name')!,
+  fieldCode: 'ledger_line_ids',
+  fieldType: 'one2many',
+  readonly: true,
+};
+const emptyRelationProjection = {
+  visibleOne2manyRows: () => [],
+};
+assert.equal(
+  canonicalFieldHasPresentableValue(readonlyEmptyRelation, emptyRelationProjection),
+  false,
+  'empty readonly relations must not consume formal task-page space',
+);
+assert.equal(
+  canonicalFieldHasPresentableValue({ ...readonlyEmptyRelation, readonly: false }, emptyRelationProjection),
+  true,
+  'editable empty relations remain visible so users can add business detail',
+);
+assert.equal(
+  canonicalFieldHasPresentableValue({ ...readonlyEmptyRelation, fieldType: 'many2many' }, emptyRelationProjection),
+  true,
+  'many2many components remain visible because attachment and selector actions own their empty presentation',
+);
+assert.equal(
+  canonicalFieldHasPresentableValue(readonlyEmptyRelation, {
+    ...emptyRelationProjection,
+    visibleOne2manyRows: () => [{ key: 'ledger:1', values: { amount: 100 } }],
+  }),
+  true,
+  'readonly relations with business rows remain visible',
 );
 assert.equal(canonicalNodeHasContent(model.zones.subordinate.find((node) => node.kind === 'chatter')!), true);
 assert.deepEqual(
@@ -2290,6 +2357,11 @@ resolvedDuplicateSubmit.statusContract.buttonStatus = [
   },
 ];
 const decodedResolvedDuplicateSubmit = decodeContractV2Snapshot(resolvedDuplicateSubmit);
+assert.equal(
+  collectContractV2ButtonStatusById(createContractV2Store(decodedResolvedDuplicateSubmit))['btn.native_submit']?.backendIdentity,
+  'native_button:object:action_submit:/form[1]/header[1]/button[1]:1',
+  'button status projection must preserve the backend identity used by the unified action executor',
+);
 assert.deepEqual(
   decodedResolvedDuplicateSubmit.actionContract.primaryResolution,
   resolvedDuplicateSubmit.actionContract.primaryResolution,
@@ -2385,6 +2457,7 @@ const mergedWinner = {
   actionId: 'action.product_submit',
   actionKey: 'product_action_submit',
   button: { name: 'action_submit', type: 'object' },
+  nativeIdentity: occurrenceIdentity,
 };
 const mergedWinnerStatus = {
   btnId: 'native_action_submit', visible: true, disabled: false,
@@ -2399,6 +2472,11 @@ assert.deepEqual(
   runtimeActions.map((action) => action.authorityActionId),
   ['action.product_submit'],
   'runtime action projection must join merged winners to status by backend identity',
+);
+assert.deepEqual(
+  runtimeActions[0]?.nativeIdentity,
+  occurrenceIdentity,
+  'runtime action projection must retain the authoritative native occurrence for exact executor matching',
 );
 assert.deepEqual(
   buildContractFormActions({
@@ -2470,6 +2548,35 @@ assert.deepEqual(
   { kind: 'error', reasonCode: 'CANONICAL_FORM_ACTION_REFERENCE_AMBIGUOUS' },
   'a duplicated normalized backend identity must fail closed',
 );
+const secondOccurrenceIdentity = {
+  ...occurrenceIdentity,
+  native_locator: '/form/header/button[2]',
+  occurrence_index: 2,
+};
+assert.deepEqual(
+  resolveCanonicalFormActionExecution(
+    { ...normalizedAction, nativeIdentity: occurrenceIdentity },
+    [
+      occurrenceAction,
+      { ...occurrenceAction, nativeIdentity: secondOccurrenceIdentity },
+    ],
+  ),
+  { kind: 'contract-action', action: occurrenceAction },
+  'an authoritative native occurrence must disambiguate buttons sharing one backend identity',
+);
+assert.equal(
+  resolveContractActionForNativeOccurrence(
+    [occurrenceAction, { ...occurrenceAction, nativeIdentity: secondOccurrenceIdentity }],
+    {
+      action: {
+        backendIdentity: 'button:object:action_submit',
+        nativeIdentity: occurrenceIdentity,
+      },
+    },
+  ),
+  occurrenceAction,
+  'native presentation and canonical execution must share the same occurrence-aware identity match',
+);
 assert.equal(
   validateCanonicalFormActionExecutors([
     { visible: true, enabled: true, actionRef: { ...normalizedAction, actionId: 'form.save', backendIdentity: 'contract_action:form.save' } },
@@ -2503,4 +2610,4 @@ assert.deepEqual(
   'an executable body-node action without an adapter must fail closed',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=140');
+console.log('[canonical_form_presenter_test] PASS cases=142');

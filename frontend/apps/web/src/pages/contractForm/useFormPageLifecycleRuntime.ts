@@ -7,6 +7,7 @@ import {
   watch,
   type Ref,
 } from 'vue';
+import { formRouteInstanceOwnsRoute } from './formRouteInstanceIdentity';
 
 export function isFormPageRouteOwner(routeName: unknown): boolean {
   return ['record', 'model-form', 'scene'].includes(String(routeName || ''));
@@ -14,6 +15,7 @@ export function isFormPageRouteOwner(routeName: unknown): boolean {
 
 export function useFormPageLifecycleRuntime(params: {
   formRouteIdentity: () => string;
+  formRouteOwnerIdentity: () => string;
   handleRecordContextChanged: (event: Event) => void;
   instanceRouteIdentity: Ref<string>;
   isComponentActive: Ref<boolean>;
@@ -32,10 +34,9 @@ export function useFormPageLifecycleRuntime(params: {
     () => params.formRouteIdentity(),
     (identity) => {
       if (!params.isComponentActive.value || !params.routeIsOwned()) return;
-      if (!params.instanceRouteIdentity.value && identity) params.instanceRouteIdentity.value = identity;
-      if (params.instanceRouteIdentity.value && identity !== params.instanceRouteIdentity.value) {
-        params.instanceRouteIdentity.value = identity;
-      }
+      const ownerIdentity = params.formRouteOwnerIdentity();
+      if (!formRouteInstanceOwnsRoute(params.instanceRouteIdentity.value, ownerIdentity)) return;
+      if (!params.instanceRouteIdentity.value) params.instanceRouteIdentity.value = ownerIdentity;
       if (identity && identity === params.retainedRouteIdentity.value && params.status.value === 'ok') return;
       void params.reload();
     },
@@ -58,6 +59,9 @@ export function useFormPageLifecycleRuntime(params: {
   onActivated(() => {
     params.isComponentActive.value = true;
     if (!params.routeIsOwned()) return;
+    const ownerIdentity = params.formRouteOwnerIdentity();
+    if (!formRouteInstanceOwnsRoute(params.instanceRouteIdentity.value, ownerIdentity)) return;
+    if (!params.instanceRouteIdentity.value) params.instanceRouteIdentity.value = ownerIdentity;
     const identity = params.formRouteIdentity();
     if (identity && identity !== params.retainedRouteIdentity.value) {
       void params.reload();

@@ -2,7 +2,7 @@
 import { computed, type ComputedRef, type Ref } from 'vue';
 import { resolveContractV2Collaboration, type ContractV2NormalizedStore } from '../../app/contracts/v2';
 import type { NativeChatterAction } from './types';
-import type { ChatterTimelineEntry, CollaborationUserOption } from '../../api/chatter';
+import type { ChatterTimelineEntry, CollaborationFollower, CollaborationUserOption } from '../../api/chatter';
 import type { PendingNativeAttachment } from './useNativeAttachmentRuntime';
 import type { NativeCollaborationPanelListeners, NativeCollaborationPanelProps } from './NativeCollaborationPanel.vue';
 import {
@@ -14,9 +14,12 @@ import {
   nativeAttachmentLabel,
   nativeAttachmentLabelsFromContract,
   nativeAttachmentMaxBytes as nativeAttachmentMaxBytesFromContract,
+  nativeAttachmentUploadEnabled as nativeAttachmentUploadEnabledFromContract,
   nativeChatterActionsFromContract,
   nativeCollaborationUnavailableMessage as nativeCollaborationUnavailableMessageFromState,
   resolveNativeAttachmentContract,
+  resolveNativeFollowerContract,
+  resolveNativeCollaborationUserSearchIntent,
   resolveNativeChatterContract,
 } from './collaborationContract';
 
@@ -31,6 +34,7 @@ export function useRecordCollaborationPresentation(context: {
   activeChatterMode: MutableRef<string>;
   activeChatterLabel: MutableRef<string>;
   chatterDraft: MutableRef<string>;
+  replyTarget: MutableRef<{ id: number; author: string; body: string; intent: 'chatter.post' } | null>;
   activitySummary: MutableRef<string>;
   activityDeadline: MutableRef<string>;
   activityNote: MutableRef<string>;
@@ -46,20 +50,33 @@ export function useRecordCollaborationPresentation(context: {
   chatterTimelineHasMore: MutableRef<boolean>;
   chatterTimelineLoading: MutableRef<boolean>;
   activityUpdatingIds: MutableRef<number[]>;
+  messageDeletingIds: MutableRef<number[]>;
+  followers: MutableRef<CollaborationFollower[]>;
+  followerCount: MutableRef<number>;
+  isFollowing: MutableRef<boolean>;
+  canFollow: MutableRef<boolean>;
+  canUnfollow: MutableRef<boolean>;
+  followersLoading: MutableRef<boolean>;
+  followerError: MutableRef<string>;
   attachmentError: MutableRef<string>;
   attachmentUploading: MutableRef<boolean>;
+  attachmentDeletingIds: MutableRef<number[]>;
   pendingNativeAttachments: MutableRef<PendingNativeAttachment[]>;
   onNativeAttachmentSelected: (...args: any[]) => unknown;
   closeNativeChatterComposer: (...args: any[]) => unknown;
   loadCollaborationUsers: (...args: any[]) => unknown;
   openNativeChatterAction: (...args: any[]) => unknown;
   openNativeAttachment: (...args: any[]) => unknown;
+  deleteNativeAttachment: (...args: any[]) => unknown;
+  deleteNativeMessage: (...args: any[]) => unknown;
   removeMentionUser: (...args: any[]) => unknown;
   removePendingNativeAttachment: (...args: any[]) => unknown;
   selectMentionUser: (...args: any[]) => unknown;
   sendNativeChatter: (...args: any[]) => unknown;
+  replyNativeChatter: (...args: any[]) => unknown;
   updateNativeActivity: (...args: any[]) => unknown;
   loadMoreNativeChatterTimeline: (...args: any[]) => unknown;
+  updateNativeFollower: (...args: any[]) => unknown;
 }) {
   const runtimeCollaborationContract = computed(() => resolveContractV2Collaboration(context.v2ContractStore.value));
   const nativeChatterContract = computed(() => resolveNativeChatterContract(
@@ -70,6 +87,8 @@ export function useRecordCollaborationPresentation(context: {
     undefined,
     runtimeCollaborationContract.value,
   ));
+  const nativeFollowerContract = computed(() => resolveNativeFollowerContract(runtimeCollaborationContract.value));
+  const nativeUserSearchIntent = computed(() => resolveNativeCollaborationUserSearchIntent(runtimeCollaborationContract.value));
   const nativeChatterActions = computed<NativeChatterAction[]>(() => nativeChatterActionsFromContract(nativeChatterContract.value, {
     recordId: context.recordId.value,
     model: context.model.value,
@@ -87,11 +106,14 @@ export function useRecordCollaborationPresentation(context: {
   const activeChatterPostingLabel = computed(() => activeChatterPostingLabelFromMode(context.activeChatterMode.value));
   const activeChatterPlaceholder = computed(() => activeChatterPlaceholderFromMode(context.activeChatterMode.value));
   const activeChatterIsActivity = computed(() => context.activeChatterMode.value === 'activity');
-  const activeActivityAction = computed(() => (
-    nativeChatterActions.value.find((item) => item.mode === 'activity' && item.label === context.activeChatterLabel.value)
-    || nativeChatterActions.value.find((item) => item.mode === 'activity')
-    || null
-  ));
+  const activeChatterAction = computed(() => nativeChatterActions.value.find((item) => (
+    item.mode === context.activeChatterMode.value
+    && item.label === context.activeChatterLabel.value
+  )) || null);
+  const activeActivityAction = computed(() => activeChatterAction.value?.mode === 'activity'
+    ? activeChatterAction.value
+    : null);
+  const messageAction = computed(() => nativeChatterActions.value.find((item) => item.mode === 'message' && item.enabled) || null);
   const activityFieldLabel = (name: string, fallback: string) => nativeActivityFieldLabel(activeActivityAction.value, name, fallback);
   const activitySummaryLabel = computed(() => activityFieldLabel('summary', '摘要'));
   const activityDeadlineLabel = computed(() => activityFieldLabel('date_deadline', '截止日期'));
@@ -108,6 +130,7 @@ export function useRecordCollaborationPresentation(context: {
   const nativeAttachmentUploadingLabel = computed(() => resolveNativeAttachmentLabel('uploading', '上传中...'));
   const nativeAttachmentViewLabel = computed(() => resolveNativeAttachmentLabel('view', '查看'));
   const nativeAttachmentMaxBytes = computed(() => nativeAttachmentMaxBytesFromContract(nativeAttachments.value));
+  const nativeAttachmentUploadEnabled = computed(() => nativeAttachmentUploadEnabledFromContract(nativeAttachments.value));
   const nativeCollaborationPanelProps = computed<NativeCollaborationPanelProps>(() => ({
     actions: nativeChatterActions.value, activityAssigneeId: context.activityAssigneeId.value,
     activityAssigneeLabel: activityAssigneeLabel.value, activityAssigneeOptions: activityAssigneeOptions.value,
@@ -120,8 +143,16 @@ export function useRecordCollaborationPresentation(context: {
     activeSubmitLabel: activeChatterSubmitLabel.value, activityUpdatingIds: context.activityUpdatingIds.value,
     attachmentError: context.attachmentError.value, attachmentUploadLabel: nativeAttachmentUploadLabel.value,
     attachmentUploading: context.attachmentUploading.value, attachmentUploadingLabel: nativeAttachmentUploadingLabel.value,
+    attachmentDeletingIds: context.attachmentDeletingIds.value,
+    messageDeletingIds: context.messageDeletingIds.value,
+    attachmentUploadEnabled: nativeAttachmentUploadEnabled.value,
     attachmentViewLabel: nativeAttachmentViewLabel.value, busy: context.busy.value, chatterDraft: context.chatterDraft.value,
-    chatterError: context.chatterError.value, collaborationUserChoices: context.collaborationUserChoices.value,
+    followerEnabled: Boolean(nativeFollowerContract.value), followerLabel: nativeFollowerContract.value?.label || '关注者',
+    followers: context.followers.value, followerCount: context.followerCount.value, isFollowing: context.isFollowing.value,
+    canFollow: context.canFollow.value, canUnfollow: context.canUnfollow.value, followersLoading: context.followersLoading.value,
+    followerError: context.followerError.value, followLabel: nativeFollowerContract.value?.actions.follow.label || '关注',
+    unfollowLabel: nativeFollowerContract.value?.actions.unfollow.label || '取消关注',
+    chatterError: context.chatterError.value, replyTarget: context.replyTarget.value, collaborationUserChoices: context.collaborationUserChoices.value,
     collaborationUserQuery: context.collaborationUserQuery.value, hasAttachments: Boolean(nativeAttachments.value),
     pendingAttachments: context.pendingNativeAttachments.value, posting: context.chatterPosting.value,
     selectedMentionUsers: context.selectedMentionUsers.value, submitDisabled: isNativeChatterSubmitDisabled.value,
@@ -129,15 +160,20 @@ export function useRecordCollaborationPresentation(context: {
     timelineHasMore: context.chatterTimelineHasMore.value,
     timelineLoading: context.chatterTimelineLoading.value, title: nativeCollaborationTitle.value,
     unavailableMessage: nativeCollaborationUnavailableMessage.value, usersLoading: context.collaborationUsersLoading.value,
+    userSearchEnabled: nativeUserSearchIntent.value === 'collaboration.users.search',
   }));
   const nativeCollaborationPanelListeners: NativeCollaborationPanelListeners = {
     'attachment-selected': context.onNativeAttachmentSelected, 'close-composer': context.closeNativeChatterComposer,
     'load-users': context.loadCollaborationUsers, 'open-action': context.openNativeChatterAction,
     'load-more-timeline': context.loadMoreNativeChatterTimeline,
-    'open-attachment': context.openNativeAttachment, 'remove-mention-user': context.removeMentionUser,
+    'open-attachment': context.openNativeAttachment, 'delete-attachment': context.deleteNativeAttachment,
+    'delete-message': context.deleteNativeMessage,
+    'remove-mention-user': context.removeMentionUser,
     'remove-pending-attachment': context.removePendingNativeAttachment,
     'select-activity-assignee': (id) => { context.activityAssigneeId.value = id; },
     'select-mention-user': context.selectMentionUser, 'send-chatter': context.sendNativeChatter,
+    reply: context.replyNativeChatter,
+    'update-follower': context.updateNativeFollower,
     'update-activity': context.updateNativeActivity, 'update:activityDeadline': (value) => { context.activityDeadline.value = value; },
     'update:activityNote': (value) => { context.activityNote.value = value; },
     'update:activitySummary': (value) => { context.activitySummary.value = value; },
@@ -145,8 +181,12 @@ export function useRecordCollaborationPresentation(context: {
     'update:collaborationUserQuery': (value) => { context.collaborationUserQuery.value = value; },
   };
   return {
+    activeChatterAction,
+    messageAction,
     activeActivityAction,
     nativeAttachmentMaxBytes,
+    nativeAttachmentUploadEnabled,
+    nativeFollowerContract,
     nativeChatterActions,
     nativeAttachments,
     nativeCollaborationPanelProps,
