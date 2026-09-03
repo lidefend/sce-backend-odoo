@@ -98,6 +98,9 @@ jobs:
           admin_password="$(openssl rand -hex 16)"
           jwt_secret="$(openssl rand -hex 24)"
           bootstrap_secret="$(openssl rand -hex 16)"
+          for secret_value in "${db_password}" "${admin_password}" "${jwt_secret}" "${bootstrap_secret}"; do
+            echo "::add-mask::${secret_value}"
+          done
           {
             printf 'DB_USER=odoo\n'
             printf 'DB_PASSWORD=%s\n' "${db_password}"
@@ -195,8 +198,10 @@ jobs:
                   -e "s/^DB_NAME=.*/DB_NAME=${module_db}/" \
                   -e "s|^ODOO_DBFILTER=.*|ODOO_DBFILTER=^${module_db}$|" \
                   "${ENV_FILE}" > "${demo_env}"
+              demo_password="$(openssl rand -hex 12)"
+              echo "::add-mask::${demo_password}"
               printf 'SC_ALLOW_DEMO_DATA=1\nSC_DEMO_USER_PASSWORD=%s\n' \
-                "$(openssl rand -hex 12)" >> "${demo_env}"
+                "${demo_password}" >> "${demo_env}"
               if ! ENV_FILE="${demo_env}" make test MODULE="${module}" DB_NAME="${module_db}"; then
                 echo "::error::backend suite failed for module ${module}"
                 failed=1

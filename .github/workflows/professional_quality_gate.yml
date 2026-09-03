@@ -155,7 +155,7 @@ jobs:
       (github.event_name == 'schedule' &&
       github.ref == 'refs/heads/main'))
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     env:
       CI_REMOTE_URL: https://github.com/lidefend/sce-backend-odoo.git
       HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -197,6 +197,10 @@ jobs:
           test "$(git rev-parse HEAD)" = "${HEAD_SHA}"
           git cat-file -e "${BASE_SHA}^{commit}"
 
+      - name: Prepare host-owned artifact root before container checks
+        if: env.PROFESSIONAL_MODE == 'full'
+        run: python3 scripts/verify/ci_artifact_host_write_guard.py
+
       - name: Prove candidate chatter authorization with real ORM
         if: >-
           env.CANDIDATE_REQUESTED == 'true' &&
@@ -212,7 +216,7 @@ jobs:
           restore-keys: |
             pip-${{ runner.os }}-python-
 
-      - name: Run full professional quality gate (parallel shards)
+      - name: Run full professional quality gate (serialized artifact writers)
         if: env.PROFESSIONAL_MODE == 'full'
         run: |
           set -euo pipefail
@@ -223,28 +227,19 @@ jobs:
             echo "Change detected: docs/config only - skipping test shard"
             RUN_TESTS=0
           fi
-          # Run shards in parallel
-          make ci.professional.backend.shard-verify &
-          pid_verify=$!
-          make ci.professional.backend.shard-reports &
-          pid_reports=$!
+          # Host-side verification and report generators share ./artifacts with
+          # container-backed tests. Keep every writer serialized and run the
+          # container-capable test shard last so it cannot race a host writer.
+          # Re-prove host access immediately after the optional ORM container;
+          # this fails at the ownership boundary instead of inside a report.
+          python3 scripts/verify/ci_artifact_host_write_guard.py
+          make ci.professional.backend.shard-verify
+          python3 scripts/verify/ci_artifact_host_write_guard.py
+          make ci.professional.backend.shard-reports
+          python3 scripts/verify/ci_artifact_host_write_guard.py
           if [ "${RUN_TESTS}" = "1" ]; then
-            make ci.professional.backend.shard-tests &
-            pid_tests=$!
+            make ci.professional.backend.shard-tests
           fi
-          # Wait for all shards and capture exit codes
-          status_verify=0
-          status_reports=0
-          status_tests=0
-          wait "${pid_verify}" || status_verify=$?
-          wait "${pid_reports}" || status_reports=$?
-          if [ "${RUN_TESTS}" = "1" ]; then
-            wait "${pid_tests}" || status_tests=$?
-          fi
-          # Fail if any shard failed
-          test "${status_verify}" -eq 0
-          test "${status_reports}" -eq 0
-          test "${status_tests}" -eq 0
           if [ "${RUN_TESTS}" = "1" ]; then
             echo "[OK] All professional backend shards passed (verify + reports + tests)"
           else
