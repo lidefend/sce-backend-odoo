@@ -1,0 +1,81 @@
+id: boq
+version: 1
+
+entity: ProjectBoqImportBatch
+
+title: 工程量清单导入批次（只读投影）
+
+identity:
+  field: id
+  type: integer
+
+fields:
+  name:
+    type: string
+    readonly: true
+    note: 批次名称，默认「清单导入」。
+  project:
+    type: ProjectRef
+    required: true
+  version_id:
+    type: integer
+    required: true
+    readonly: true
+    note: 目标清单版本（project.boq.version）。
+  state:
+    type: string
+    enum:
+      - preflight
+      - imported
+      - published
+      - failed
+    readonly: true
+  filename:
+    type: string
+    required: true
+    readonly: true
+  file_digest:
+    type: string
+    required: true
+    readonly: true
+    note: 预检冻结的文件 sha256；确认导入前强制复核，不一致即拒绝（G2 审计 A-2）。
+  parser_schema:
+    type: string
+    readonly: true
+    note: 解析契约标识，当前为 sc.boq.import.v1。
+  row_count:
+    type: integer
+    readonly: true
+  item_count:
+    type: integer
+    readonly: true
+  skipped_count:
+    type: integer
+    readonly: true
+  warning_count:
+    type: integer
+    readonly: true
+  preview_payload:
+    type: json
+    readonly: true
+    note: 结构化预检快照 sc.boq.import.preview.v1；前端只读消费，不得反解或回写。
+  imported_at:
+    type: datetime
+    readonly: true
+  imported_by:
+    type: integer
+    readonly: true
+
+read_only: true
+
+safe_degradation:
+  missing_batch: ok=false + 结构化错误 BATCH_NOT_FOUND，不向前端抛异常。
+  access_denied: 与「批次不存在」同语义（search 判定，避免批次枚举侧信道）。
+  missing_payload: preview_payload 非对象时以空快照降级，字段缺失不阻断渲染。
+  consumer_contract: 前端消费方在上述任一降级下必须保持可渲染空态，不得白屏。
+
+notes: >-
+  G3.1 只读数据引用契约：本域仅描述 project.boq.import.batch 的只读投影，
+  供统一页面 envelope 以 boq payload/ref 引用。写路径（上传、预检、确认导入、
+  发布）继续由 Odoo 侧 project.boq.import.wizard 独占，不经本契约表达；
+  行内编辑与危险导入模式按总控计划另行 ADR。

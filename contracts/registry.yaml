@@ -47,6 +47,10 @@ contracts:
     kind: domain
     domain: project_lifecycle
     version: 1
+  - path: domain/boq.yaml
+    kind: domain
+    domain: boq
+    version: 1
   - path: schemas/common.yaml
     kind: schema
     version: 1

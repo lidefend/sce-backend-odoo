@@ -2,6 +2,86 @@
   "domains": [
     {
       "contract_fields": [
+        "file_digest",
+        "filename",
+        "imported_at",
+        "imported_by",
+        "item_count",
+        "name",
+        "parser_schema",
+        "preview_payload",
+        "project",
+        "row_count",
+        "skipped_count",
+        "state",
+        "version_id",
+        "warning_count"
+      ],
+      "contract_states": [],
+      "contract_transitions": [],
+      "entity": "ProjectBoqImportBatch",
+      "id": "boq",
+      "model": "ProjectBoqImportBatch",
+      "model_fields": {
+        "file_digest": {
+          "required": true,
+          "type": "Char"
+        },
+        "filename": {
+          "required": true,
+          "type": "Char"
+        },
+        "imported_at": {
+          "readonly": true,
+          "type": "Datetime"
+        },
+        "imported_by": {
+          "readonly": true,
+          "type": "Many2one"
+        },
+        "item_count": {
+          "type": "Integer"
+        },
+        "name": {
+          "required": true,
+          "type": "Char"
+        },
+        "parser_schema": {
+          "required": true,
+          "type": "Char"
+        },
+        "preview_payload": {
+          "readonly": true,
+          "type": "Json"
+        },
+        "project": {
+          "_status": "missing"
+        },
+        "row_count": {
+          "type": "Integer"
+        },
+        "skipped_count": {
+          "type": "Integer"
+        },
+        "state": {
+          "required": true,
+          "type": "Selection"
+        },
+        "version_id": {
+          "required": true,
+          "type": "Many2one"
+        },
+        "warning_count": {
+          "type": "Integer"
+        }
+      },
+      "model_file": "addons/smart_construction_core/models/core/boq.py",
+      "module": "",
+      "odoo_model": "ProjectBoqImportBatch",
+      "version": 1
+    },
+    {
+      "contract_fields": [
         "currency",
         "payment_request",
         "payment_state",
