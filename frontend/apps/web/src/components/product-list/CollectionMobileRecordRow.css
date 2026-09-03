@@ -76,10 +76,10 @@
   max-width: 100%;
   padding: 2px 8px;
   overflow: hidden;
-  color: var(--sc-color-text-secondary, #4b5563);
+  color: var(--sc-color-text-secondary);
   text-overflow: ellipsis;
   white-space: nowrap;
-  background: var(--sc-color-bg-secondary, #f3f4f6);
+  background: var(--sc-color-bg-secondary);
   border-radius: var(--sc-radius-small, 4px);
 }
 

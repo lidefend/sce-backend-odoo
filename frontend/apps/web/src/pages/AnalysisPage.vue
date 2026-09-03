@@ -75,7 +75,7 @@ const graphRows = computed(() => {
 .analysis-bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .analysis-bar-value { text-align: right; font-variant-numeric: tabular-nums; }
 .analysis-bar-track { height: 12px; overflow: hidden; border-radius: 999px; background: var(--sc-bg-secondary); }
-.analysis-bar-fill { display: block; height: 100%; border-radius: inherit; background: var(--td-brand-color); }
+.analysis-bar-fill { display: block; height: 100%; border-radius: inherit; background: var(--sc-semantic-surface-interactive); }
 @media (max-width: 640px) {
   .analysis-bar-row { grid-template-columns: 1fr auto; }
   .analysis-bar-track { grid-column: 1 / -1; grid-row: 2; }

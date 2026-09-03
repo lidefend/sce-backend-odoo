@@ -150,7 +150,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
     const relation = one2manyRelationModel(name);
     if (!relation) return;
     const entry = relationEntry(formFields()[name]);
-    if (entry?.canRead !== true) {
+    if (entry?.canRead === false) {
       deniedRelationModels.add(relation);
       return;
     }
