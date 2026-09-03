@@ -86,6 +86,15 @@ class TestProjectBoqPreviewBuilder(unittest.TestCase):
         self.assertEqual(envelope["data"]["fetch_params"], {"project_id": 7})
         self.assertTrue(envelope["data"]["readonly"])
 
+    def test_projection_carries_display_copy(self):
+        """行业文案由 P1 块契约提供（共享层包装组件只保留通用 fallback）。"""
+        builder, _ = self._builder(batch_count=1)
+        envelope = builder.build(project=_FakeProject(5), context=None)
+        data = envelope["data"]
+        self.assertIn("预检快照", data["loading_message"])
+        self.assertIn("导入批次", data["empty_message"])
+        self.assertIn("项目上下文", data["empty_message_no_context"])
+
     def test_empty_state_still_carries_project_reference(self):
         builder, _ = self._builder(batch_count=0)
         envelope = builder.build(project=_FakeProject(9), context=None)

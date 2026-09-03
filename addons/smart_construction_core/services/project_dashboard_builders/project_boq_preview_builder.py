@@ -11,7 +11,8 @@ class ProjectBoqPreviewBuilder(BaseProjectBlockBuilder):
     """清单导入预检快照块（G3.3 组件挂接）。
 
     只读投影块：本块不携带业务事实，仅声明受权数据引用
-    （fetch intent + project_id）。快照事实源仍由
+    （fetch intent + project_id）与展示文案（行业语义归 P1 后端，
+    共享层包装组件只保留通用 fallback）。快照事实源仍由
     ``project.boq.import.preview.fetch`` intent 权威输出，
     与 contracts/domain/boq.yaml v1 的 safe_degradation 语义一致。
     """
@@ -55,5 +56,8 @@ class ProjectBoqPreviewBuilder(BaseProjectBlockBuilder):
             "batch_count": int(batch_count or 0),
             "fetch_intent": BOQ_PREVIEW_FETCH_INTENT,
             "fetch_params": {"project_id": int(project_id or 0)},
+            "loading_message": "正在加载清单导入预检快照...",
+            "empty_message": "该项目还没有清单导入批次记录。",
+            "empty_message_no_context": "当前未指定项目上下文，无法展示清单导入预检快照。",
             "readonly": True,
         }
