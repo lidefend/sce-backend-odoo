@@ -12,7 +12,7 @@ INTENT_HANDLERS = ROOT / "addons/smart_construction_core/core_extension_intent_h
 CI = ROOT / "make/ci.mk"
 
 MAX_CORE_EXTENSION_LINES = 2243
-MAX_INTENT_HANDLER_LINES = 210
+MAX_INTENT_HANDLER_LINES = 230  # PR #381 settlement-introduce registrations (+8); registry module
 
 HANDLER_MODULES = {
     "odoo.addons.smart_construction_core.handlers.system_ping_construction": ["SystemPingConstructionHandler"],
@@ -28,12 +28,19 @@ HANDLER_MODULES = {
     ],
     "odoo.addons.smart_construction_core.handlers.payment_request_approval": [
         "PaymentRequestApproveHandler",
+        "PaymentRequestCancelByContractHandler",
+        "PaymentRequestCreateExecutionHandler",
         "PaymentRequestDoneHandler",
         "PaymentRequestRejectHandler",
         "PaymentRequestSubmitHandler",
     ],
     "odoo.addons.smart_construction_core.handlers.payment_request_available_actions": ["PaymentRequestAvailableActionsHandler"],
     "odoo.addons.smart_construction_core.handlers.payment_request_execute": ["PaymentRequestExecuteHandler"],
+    "odoo.addons.smart_construction_core.handlers.payment_request_settlement_introduce": [
+        "PaymentRequestAddSettlementLinesHandler",
+        "PaymentRequestSettlementPreviewHandler",
+        "PaymentRequestSettlementSearchHandler",
+    ],
     "odoo.addons.smart_construction_core.handlers.project_dashboard": ["ProjectDashboardHandler"],
     "odoo.addons.smart_construction_core.handlers.risk_action_execute": ["RiskActionExecuteHandler"],
     "odoo.addons.smart_construction_core.handlers.project_initiation_enter": ["ProjectInitiationEnterHandler"],

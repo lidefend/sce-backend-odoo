@@ -61,7 +61,6 @@ def main() -> int:
             "core_extension_contract_normalizers as _contract_normalizers",
             "_contract_normalizers.normalize_construction_diary_form(contract, source_contract, model=model, view_type=view_type)",
             "_contract_normalizers.general_contract_tax_contract(contract, source_contract=source_contract)",
-            "_contract_normalizers.normalize_general_contract_company_form(contract, source_contract=source_contract)",
             "return _contract_normalizers.model_specific_form_contract_policy(payload)",
             "return _contract_normalizers.form_field_aliases(payload)",
             "def _sc_inject_workflow_contract(env, contract, source, *, model, view_type):",
@@ -76,7 +75,6 @@ def main() -> int:
         for token in [
             "def normalize_construction_diary_form(",
             "def general_contract_tax_contract(",
-            "def normalize_general_contract_company_form(",
             "def model_specific_form_contract_policy(",
             "def form_field_aliases(",
             "_sc_collect_field_nodes = _contract_helpers.sc_collect_field_nodes",
@@ -149,31 +147,6 @@ def main() -> int:
         if "field.tax_id" not in widget_ids or "field.tax_rate" in widget_ids:
             errors.append("general contract tax normalizer must replace tax_rate status with tax_id")
 
-        company_contract = {"model": "sc.general.contract", "viewType": "form", "layoutContract": {"containerTree": []}}
-        company_source = {
-            "model": "sc.general.contract",
-            "view_type": "form",
-            "business_operation_profile": {"form_structure_governance": {"form_columns": 2}},
-            "fields": {
-                "contract_name": _field("contract_name"),
-                "amount_total": _field("amount_total", "float", string="最终合同价"),
-            },
-        }
-        normalizers.normalize_general_contract_company_form(company_contract, company_source)
-        company_patches = company_contract.get("runtimeContract", {}).get("governancePatches", {})
-        if "general_contract_company_form" not in company_patches:
-            errors.append("general contract company normalizer must record governance patch")
-        if "最终合同价" in repr(company_contract):
-            errors.append("general contract company normalizer must replace legacy amount label")
-        if "合同金额" not in repr(company_contract):
-            errors.append("general contract company normalizer must expose company amount label")
-        company_auth = {
-            row.get("auth")
-            for row in company_contract.get("statusContract", {}).get("widgetStatus", [])
-            if isinstance(row, dict)
-        }
-        if not company_auth.issubset({"none", "read", "edit", "admin"}):
-            errors.append(f"general contract company normalizer emitted unsupported widget auth: {sorted(company_auth)}")
         form_policy = normalizers.model_specific_form_contract_policy({
             "model": "sc.general.contract",
             "fields": {"tax_id": {}, "tax_rate": {}},

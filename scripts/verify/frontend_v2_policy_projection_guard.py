@@ -190,6 +190,8 @@ ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
     "business_form",
     "harmony_h5",
     "native_activity_view_projection",
+    "native_graph_view_projection",
+    "native_pivot_view_projection",
     "web_pc",
     "wx_mini",
     # Explicit dataMeta forbidden-key rejection.

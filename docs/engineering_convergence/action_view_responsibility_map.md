@@ -158,6 +158,18 @@ The next candidate after this stage remains pure route-query/state builder
 extraction only. That extraction must not import Vue Router, call API helpers,
 read session state directly, or emit notifications.
 
+## Stage 7 Re-baseline (2026-09-03)
+
+Stage 6 baseline was superseded by merged product work (payment request
+product journey, project intake floorplan, authoritative form titles,
+collaboration user search):
+
+- `ActionView.vue` is locked at `<=3756` lines; the file is tracked as P1
+  extraction debt in `split_plan_queue.md` and must not grow further;
+- the next extraction candidate remains pure route-query/state builders
+  only, with no router, API, session, lifecycle, window, or notification
+  side effects moved.
+
 ## Verification Gaps
 
 Before moving transaction-heavy methods, add or confirm behavior coverage for:
