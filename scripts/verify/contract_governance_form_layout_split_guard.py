@@ -46,7 +46,7 @@ def main() -> int:
             "return _form_layout.collect_layout_field_names(nodes)",
             "return _form_layout.find_layout_sheet_node(nodes)",
             "_form_layout.backfill_form_layout_from_visible_fields(",
-            "return _form_layout.make_labeled_field_node(name, fields_map, preferred_labels)",
+            "node = _form_layout.make_labeled_field_node(name, fields_map, preferred_labels)",
         ]:
             if token not in governance_text:
                 errors.append(f"contract_governance.py missing form layout split token: {token}")

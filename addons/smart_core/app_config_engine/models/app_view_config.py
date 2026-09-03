@@ -1122,6 +1122,12 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                     tag = getattr(child, 'tag', None)
                     if tag == 'field' and child.get('name'):
                         children.append(field_node(child))
+                    elif tag in ('h1', 'h2', 'h3', 'div', 'span'):
+                        # oe_title/标题区等 HTML 容器必须递归保留字段，否则必填标题字段丢失
+                        children.append({
+                            'type': tag,
+                            'children': native_children(child),
+                        })
                     elif tag == 'group':
                         children.append(group_node(child))
                     elif tag == 'notebook':

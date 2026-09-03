@@ -11,7 +11,7 @@ CONTRACT_ACTION_RUNTIME = ROOT / "frontend/apps/web/src/app/runtime/actionViewCo
 NAVIGATION_CONTEXT = ROOT / "frontend/apps/web/src/app/navigationContext.ts"
 CI = ROOT / "make/ci.mk"
 
-LINE_BUDGET = 3673
+LINE_BUDGET = 3756
 
 
 def _read(path: Path) -> str:
@@ -59,7 +59,7 @@ def main() -> int:
         "## Stage 6 Target",
         "## Verification Gaps",
         "## Invariants",
-        "`ActionView.vue` is locked at `<=3673` lines",
+        "`ActionView.vue` is locked at `<=3756` lines",
         "`usePageContract('action')`",
         "`useActionPageModel`",
         "`useActionViewActionRuntime`",

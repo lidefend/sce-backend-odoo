@@ -61,7 +61,7 @@ The route component remains the orchestration shell and still owns runtime state
 
 | File | Before | After |
 | --- | ---: | ---: |
-| `frontend/apps/web/src/pages/ContractFormPage.vue` | 13762 | 1780 |
+| `frontend/apps/web/src/pages/ContractFormPage.vue` | 13762 | 1857 |
 
 ## Boundary Decision
 
@@ -70,7 +70,7 @@ The route component remains the orchestration shell and still owns runtime state
 - No frontend fallback menu, permission, action, or form policy was introduced.
 - No data migration, backend endpoint change, or visual redesign is included in this slice.
 - Existing `groups_xmlids` usage in `ContractFormPage.vue` is locked at 1 occurrence by `scripts/verify/web_contract_v2_frontend_architecture_guard.py`; the next cleanup must remove the final entitlement read fully behind backend contracts.
-- `ContractFormPage.vue` is line-count locked at 1780 lines. Future work must continue extracting or modifying existing owned modules instead of adding new responsibilities to the route component.
+- `ContractFormPage.vue` is line-count locked at 1857 lines. Future work must continue extracting or modifying existing owned modules instead of adding new responsibilities to the route component.
 
 ## Verification
 
@@ -101,3 +101,12 @@ Rollback is code-only:
 1. Revert this slice commit.
 2. Restore the prior inline type/helper definitions in `ContractFormPage.vue`.
 3. No database, attachment, menu, or contract migration is required.
+
+## Re-baseline 2026-09-03
+
+- Line-count lock re-baselined 1780 -> 1857 after governed component
+  adapter takeover (ea0170d2) and follow-up contract fixes landed on the
+  native-view semantic closure branch; growth is orchestration-level
+  adapter wiring, not new page responsibilities. The complexity baseline
+  lock (5947-line hard ceiling) still applies; future work must keep
+  extracting rather than growing the route shell.

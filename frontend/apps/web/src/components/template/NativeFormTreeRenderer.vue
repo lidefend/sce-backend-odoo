@@ -509,7 +509,7 @@ function isNodeRenderable(node: NativeFormLayoutNode): boolean {
   // bare separator line — a visual artifact from backend contracts that define
   // structural groups without fields. Skip such nodes in normal view. In
   // field-config edit mode, keep empty groups as drop targets.
-  if (type === 'group' || type === 'page' || type === 'container') {
+  if (type === 'group' || type === 'page' || type === 'container' || type === 'h1' || type === 'h2' || type === 'h3' || type === 'div' || type === 'span') {
     if (props.fieldConfigEditable) return true;
     if (containerTitle(node) || nodeText(node)) return true;
     return hasRenderableDescendant(node, new Set<object>());
@@ -525,7 +525,7 @@ function hasRenderableDescendant(node: NativeFormLayoutNode, seen: Set<object>):
     if (!props.isNodeVisible(child)) continue;
     const childType = nodeType(child);
     if (['field', 'button', 'widget'].includes(childType)) return true;
-    if (['group', 'page', 'container', 'notebook', 'sheet', 'header', 'footer'].includes(childType)) {
+    if (['group', 'page', 'container', 'notebook', 'sheet', 'header', 'footer', 'h1', 'h2', 'h3', 'div', 'span'].includes(childType)) {
       if (hasRenderableDescendant(child, seen)) return true;
     }
   }

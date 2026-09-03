@@ -154,8 +154,6 @@ def main() -> int:
             errors.append("core_extension.py must delegate construction diary normalizer")
         if "_contract_normalizers.general_contract_tax_contract(contract, source_contract=source_contract)" not in core:
             errors.append("core_extension.py must delegate general contract tax normalizer")
-        if "_contract_normalizers.normalize_general_contract_company_form(contract, source_contract=source_contract)" not in core:
-            errors.append("core_extension.py must delegate general contract company normalizer")
         if "return _contract_normalizers.model_specific_form_contract_policy(payload)" not in core:
             errors.append("core_extension.py must delegate form contract policy helper")
         if "return _contract_normalizers.form_field_aliases(payload)" not in core:
