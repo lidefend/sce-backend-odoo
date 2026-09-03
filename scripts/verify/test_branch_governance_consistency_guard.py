@@ -25,6 +25,14 @@ HARNESS_CONTROLLED_VARS = (
     "PR_MERGE_METHOD",
     "PR_MERGE_SUBJECT",
     "PR_MERGE_BODY",
+    # make propagates command-line variables to every descendant make through
+    # MAKEFLAGS, so a real `make pr.merge EXPECTED_HEAD=<sha>` running the quick
+    # suite leaks that value into this test even after the env strip above.
+    # Drop the inherited make context entirely: the harness invokes make as a
+    # top-level process and must not depend on the caller's flags or overrides.
+    "MAKEFLAGS",
+    "MAKELEVEL",
+    "MFLAGS",
 )
 
 
