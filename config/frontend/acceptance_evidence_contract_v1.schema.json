@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sc://config/frontend/acceptance_evidence_contract_v1.schema.json",
+  "title": "SCE 自定义前端验收证据契约 v1",
+  "description": "自定义前端能力专题（docs/planning/custom-frontend-integration/）G1 起强制执行的浏览器运行证据结构。字段集合来自总体集成计划 README 第 12 节：每条浏览器证据至少包含环境 ID、数据库或数据集 ID、角色、规范化路由、浏览器 URL、视口与 capture mode、浏览器完整版本、截图摘要、产品/服务/静态产物 SHA、采集时间和工具版本；跨环境不得复用截图或运行报告。",
+  "type": "object",
+  "required": [
+    "schema",
+    "baseline",
+    "environment_assets",
+    "toolchain",
+    "collected_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "frontend_acceptance_evidence_contract.v1",
+      "description": "证据包 schema 标识，固定值"
+    },
+    "baseline": {
+      "type": "object",
+      "description": "证据绑定的产品基线",
+      "required": ["baseline_sha", "baseline_sha_source", "capability_inventory_path"],
+      "additionalProperties": false,
+      "properties": {
+        "baseline_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$",
+          "description": "基线完整 40 位 commit SHA，必须可追溯到 origin/main 历史"
+        },
+        "baseline_sha_source": {
+          "type": "string",
+          "description": "SHA 出处说明（如 G0_BASELINE_FREEZE.md 或 G1 分支切点）"
+        },
+        "capability_inventory_path": {
+          "type": "string",
+          "description": "能力现状/差距清单路径（G1 交付物）"
+        }
+      }
+    },
+    "environment_assets": {
+      "type": "object",
+      "description": "受版本控制的验收环境资产及其内容指纹（可复现性锚点）",
+      "required": ["profiles_present", "assets"],
+      "additionalProperties": false,
+      "properties": {
+        "profiles_present": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": { "type": "string" },
+          "description": "四环境 profile 必须齐全：local、test、daily、production"
+        },
+        "assets": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["path", "sha256"],
+            "additionalProperties": false,
+            "properties": {
+              "path": { "type": "string", "description": "仓库相对路径" },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$",
+                "description": "文件内容 sha256，守卫重算必须一致"
+              }
+            }
+          }
+        }
+      }
+    },
+    "toolchain": {
+      "type": "object",
+      "description": "采集证据所用工具链版本",
+      "required": ["python", "git"],
+      "additionalProperties": false,
+      "properties": {
+        "python": { "type": "string" },
+        "git": { "type": "string" }
+      }
+    },
+    "collected_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "证据采集时间（ISO 8601，UTC）"
+    },
+    "browser_evidence_contract": {
+      "type": "object",
+      "description": "G2+ 每条浏览器证据必须满足的字段契约（此处冻结字段名集合，供后续 renderer/job 证据生成器对照）",
+      "required": ["required_fields", "cross_env_reuse_forbidden"],
+      "additionalProperties": false,
+      "properties": {
+        "required_fields": {
+          "type": "array",
+          "minItems": 11,
+          "items": { "type": "string" },
+          "description": "环境 ID、数据集 ID、角色、规范化路由、浏览器 URL、视口、capture mode、浏览器完整版本、截图摘要、三方 SHA、采集时间与工具版本"
+        },
+        "cross_env_reuse_forbidden": { "const": true }
+      }
+    }
+  }
+}

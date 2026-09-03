@@ -179,3 +179,9 @@ guard.registry.seed: guard.prod.forbid
 guard.retire: guard.prod.forbid
 	@test -n "$(SCRIPT)" || { echo "usage: make guard.retire SCRIPT=<filename> REASON='...'"; exit 2; }
 	@python3 scripts/verify/guard_registry_audit.py --retire "$(SCRIPT)" --reason "$(REASON)"
+
+# ------- G1 acceptance baseline (custom-frontend-integration) -------
+.PHONY: verify.g1.acceptance.baseline
+verify.g1.acceptance.baseline: guard.prod.forbid
+	@python3 scripts/verify/g1_acceptance_baseline_guard.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_g1_acceptance_baseline_guard.py
