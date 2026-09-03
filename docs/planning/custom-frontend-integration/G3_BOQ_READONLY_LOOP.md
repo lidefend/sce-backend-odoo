@@ -57,3 +57,89 @@
   导入入口沿用既有向导（digest 绑定 + `[SC_GUARD:*]` 错误透传）。
 - G3.3：真实角色（cost_manager/cost_user）、1k/10k 行数据、五视口验收，
   证据按 G1 `acceptance_evidence_contract_v1.schema.json` 归档。
+
+---
+
+# G3.2：前端只读投影 —— 阶段进展
+
+> 状态：G3.2 已交付（本 PR）；基线 main `cf7f60fb`（PR #406，G3.1 后端侧）。
+> 原则：按契约准入迁移原型（`boq-frontend/src/` 共 9 文件 2092 行）中的
+> 预览投影，**非整目录复制**；导入入口沿用既有向导，不在前端另起写路径。
+
+## G3.2 交付物
+
+### 1. API 封装（`frontend/apps/web/src/api/boqImportPreview.ts`）
+
+- 走统一 intent 入口 `intentRequest`（对齐 `myWork.ts` 模式），intent 为
+  `project.boq.import.preview.fetch`（G3.1 已合入 main）。
+- 类型对齐后端 `_serialize_batch` 全字段 + `sc.boq.import.preview.v1`
+  快照结构（row/item/summary/heading/skipped/warning/amount/
+  source_diagnostics/analysis 等）。
+- **降级不抛异常**：业务层降级（MISSING_PARAMS / BATCH_NOT_FOUND）
+  为结构化 `ok=false`，经 envelope data 透传给 presentation Model 投影；
+  传输层异常照常抛出。封装内**禁用通用 data op**（list/read/create/
+  write/unlink），守卫强制。
+- 入参对齐 handler：`batchId`（指定批次）或 `projectId`（取最新批次）。
+
+### 2. presentation Model（`frontend/apps/web/src/app/presentation/boqImportPreview.ts`）
+
+- 纯函数投影 `projectBoqImportPreview(raw) → BoqImportPreviewViewModel`，
+  零网络/会话依赖（守卫强制），可被 esbuild 单测直接覆盖。
+- **四态视图状态机**（对齐契约 safe_degradation 节）：
+  - `ready`：快照齐备，投影统计卡（总行数/明细项/跳过/警告/金额/
+    综合单价分析）与解析诊断行；
+  - `missing_payload`：ok=true 但空快照 → 空态渲染（不白屏）；
+  - `error`：ok=false → 结构化错误透传（errorCode/message/
+    suggestedAction）；
+  - `degraded_shape`：ok=true 但 batch 序列化形状异常 → 防御性降级。
+- 数值容错：字符串计数归一、非法日期原样透传、金额千分位
+  （`formatBoqPreviewAmount`，null/NaN → `—`）。
+- 跳过/警告 > 0 的统计卡标记 warning emphasis。
+- `BOQ_IMPORT_PREVIEW_VIEW_READONLY = true`：Model 不产生任何写 intent。
+
+### 3. 只读面板组件（`frontend/apps/web/src/components/boq/BoqImportPreviewPanel.vue`）
+
+- 消费 ViewModel，按状态三段渲染：错误态卡 / 空态卡 / 就绪态
+  （标题 + 批次元信息 + 统计卡网格 + 解析诊断列表）。
+- 证据属性：`data-boq-import-preview` / `:data-view-state` /
+  `data-readonly="true"` / `data-preview-error` / `data-preview-empty` /
+  `data-preview-stats` 等。
+- **只读边界（守卫强制）**：组件内禁止 `@click`、`api.data`、
+  `call_method`、`action_import` 等任何写操作入口。
+- 从原型 `ScBoqImportWizard.vue`（490 行）中仅准入预览统计展示语义；
+  树视图/行内编辑/导入操作不迁移（属 G3.3+ 范畴）。
+
+### 4. 单测与守卫
+
+- **esbuild 单测**（`frontend/apps/web/scripts/boq_import_preview_model_test.ts`）：
+  node:assert 全断言，覆盖四态投影、BATCH_NOT_FOUND/MISSING_PARAMS
+  错误透传、空快照空态、形状异常防御、null/畸形 raw 防御、金额格式化、
+  字符串计数容错、诊断空行过滤、统计 emphasis —— 全绿。
+- **静态守卫**（`scripts/verify/frontend_boq_import_preview_guard.py` +
+  unittest 7 例 `test_frontend_boq_import_preview_guard.py`）：
+  - API 必须走专用 intent，禁止通用 data op 旁路；
+  - Model 必须含四态常量 + 只读标记，必须保持纯函数（禁 fetch/
+    intentRequest/useSessionStore）；
+  - 组件必须结构化渲染错误态/空态/防御态，禁止写操作；
+  - 单测必须覆盖四态与金额格式化；
+  - frontend.mk 必须注册单测目标。
+- **Makefile 注册**（`make/frontend.mk`）：新增
+  `verify.frontend.boq_import_preview.unit`（esbuild bundle → node →
+  unittest → guard），并接入 `verify.frontend.quick.gate` /
+  `verify.frontend.pr.unit` / `verify.frontend.release.unit` 聚合链。
+
+## 与总控计划的对齐
+
+| 计划条目 | 本 PR 落点 |
+| --- | --- |
+| G3.2 前端只读投影组件（契约准入迁移，非整目录复制） | API/Model/组件三件套，仅迁移预览投影语义 |
+| 消费 project.boq.import.preview.fetch | API 封装直连 intent，无旁路 |
+| 导入入口沿用既有向导（digest 绑定 + [SC_GUARD:*]） | 组件与 Model 零写路径，守卫强制只读 |
+| 消费方不得白屏 | 四态状态机 + 结构化错误/空态渲染 + 单测覆盖 |
+
+## 后续（G3.3）
+
+- 真实角色（cost_manager/cost_user）、1k/10k 行数据、五视口验收，
+  证据按 G1 `acceptance_evidence_contract_v1.schema.json` 归档。
+- 组件挂接真实路由/页面（当前为可复用只读面板，等待 G3.3 验收场景
+  落位后接线）。
