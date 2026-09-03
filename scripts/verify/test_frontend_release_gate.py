@@ -69,6 +69,22 @@ class FrontendReleaseGateFailClosedTests(unittest.TestCase):
     def test_valid_current_run_passes(self):
         self.assertEqual(self.run_fixture(report())["result"], "PASS")
 
+    def test_valid_scheduled_run_passes(self):
+        payload = report()
+        payload["workflow"]["event"] = "schedule"
+        result = self.run_fixture(payload, expected_event="schedule")
+        self.assertEqual(result["result"], "PASS")
+        self.assertEqual(result["event"], "schedule")
+
+    def test_unsupported_event_fails_even_when_report_matches(self):
+        payload = report()
+        payload["workflow"]["event"] = "repository_dispatch"
+        self.assert_reason(
+            "WORKFLOW_EVENT_MISMATCH",
+            payload,
+            expected_event="repository_dispatch",
+        )
+
     def test_upstream_failure_skipped_cancelled_not_run_and_nonzero_fail(self):
         for outcome in ("failure", "skipped", "cancelled", "not_run"):
             with self.subTest(outcome=outcome):
