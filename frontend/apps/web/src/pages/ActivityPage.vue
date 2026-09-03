@@ -24,6 +24,7 @@
         :data-record-id="record.id || undefined"
         :data-record-ordinal="recordIndex + 1"
         data-activity-card="record"
+        appearance="surface-tile"
         :aria-label="`${labels.record} ${recordIndex + 1}`"
         class="activity-card"
       >
@@ -88,6 +89,7 @@ defineEmits<{ 'open-record': [record: Record<string, unknown>] }>();
 .activity-card__value { overflow-wrap: anywhere; font-weight: 600; }
 .activity-page__state { display: grid; gap: 4px; min-height: 130px; place-content: center; text-align: center; color: var(--sc-app-text-secondary); }
 .activity-page__state--error { color: var(--sc-app-danger-text); }
+@media (prefers-reduced-motion: reduce) { .activity-card { transition: none; } }
 @media (max-width: 960px) { .activity-page__grid { grid-template-columns: 1fr; } }
 @media (max-width: 680px) { .activity-page { padding: 16px; } .activity-page__head { align-items: center; } }
 </style>

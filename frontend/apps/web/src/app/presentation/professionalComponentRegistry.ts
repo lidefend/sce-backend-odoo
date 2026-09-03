@@ -72,12 +72,9 @@ const REGISTRATIONS = [
   registration('sc.auth.one_time_secret', 'one_time_secret', ['char', 'text'], 'fail_closed'),
   registration('sc.auth.support_action', 'support_action', ['action']),
   registration('sc.value.money', 'money', ['monetary'], 'ready', 'ProfessionalBusinessValueControl'),
-  registration('sc.value.currency', 'currency', ['many2one'], 'ready', 'ProfessionalBusinessValueControl'),
   registration('sc.value.percentage', 'percentage', ['float', 'integer'], 'ready', 'ProfessionalBusinessValueControl'),
   registration('sc.display.status', 'status', ['selection', 'char'], 'ready', 'ProfessionalBusinessValueControl'),
   registration('sc.value.duration', 'duration', ['float', 'integer'], 'ready', 'ProfessionalBusinessValueControl'),
-  registration('sc.value.user', 'user', ['many2one'], 'ready', 'ProfessionalBusinessValueControl'),
-  registration('sc.value.company', 'company', ['many2one'], 'ready', 'ProfessionalBusinessValueControl'),
   registration('sc.display.text', 'readable_value', ['*']),
 ] as const;
 

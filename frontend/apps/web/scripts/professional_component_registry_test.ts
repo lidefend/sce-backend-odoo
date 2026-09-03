@@ -40,9 +40,8 @@ assert.equal(resolveProfessionalComponent({
   componentKey: 'sc.payment.settlement_detail_collection', fieldType: 'one2many', presentationMode: 'task', renderProfile: 'edit',
 }).renderer, 'PaymentSettlementDetailCollectionControl');
 for (const [componentKey, fieldType] of [
-  ['sc.value.money', 'monetary'], ['sc.value.currency', 'many2one'], ['sc.value.percentage', 'float'],
-  ['sc.display.status', 'selection'], ['sc.value.duration', 'float'], ['sc.value.user', 'many2one'],
-  ['sc.value.company', 'many2one'],
+  ['sc.value.money', 'monetary'], ['sc.value.percentage', 'float'],
+  ['sc.display.status', 'selection'], ['sc.value.duration', 'float'],
 ] as const) {
   assert.equal(resolveProfessionalComponent({
     componentKey, fieldType, presentationMode: 'workspace', renderProfile: 'readonly',
@@ -107,5 +106,5 @@ for (const componentKey of [
   );
 }
 
-assert.equal(professionalComponentRegistrations.length, 29);
+assert.equal(professionalComponentRegistrations.length, 26);
 console.log('[professional_component_registry_test] PASS cases=31');

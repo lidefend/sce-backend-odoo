@@ -69,7 +69,7 @@ const props = defineProps<{
 defineEmits<{ 'update:value': [value: string | number | boolean | null] }>();
 
 const kind = computed(() => businessValueKind(props.field));
-const isChoice = computed(() => ['sc.value.currency', 'sc.display.status', 'sc.value.user', 'sc.value.company'].includes(kind.value));
+const isChoice = computed(() => ['sc.display.status'].includes(kind.value));
 const numeric = computed(() => ['sc.value.money', 'sc.value.percentage', 'sc.value.duration'].includes(kind.value));
 const inputModelValue = computed(() => typeof props.field.inputValue === 'boolean' ? String(props.field.inputValue) : props.field.inputValue ?? '');
 const choiceOptions = computed(() => props.field.relationOptions?.length ? props.field.relationOptions : props.field.selectionOptions || []);
