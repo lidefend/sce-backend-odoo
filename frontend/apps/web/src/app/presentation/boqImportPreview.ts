@@ -80,6 +80,36 @@ function toText(value: unknown): string {
   return typeof value === 'string' ? value : '';
 }
 
+/** 正整数解析（>0 才视为有效 id） */
+function toPositiveInt(value: unknown): number {
+  const parsed = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 0;
+  return Math.trunc(parsed);
+}
+
+/**
+ * 解析驾驶舱 BOQ 预览块的项目上下文（G3.3 组件挂接）。
+ *
+ * 优先级：
+ * 1. 块契约 dataset（ProjectBoqPreviewBuilder 投影的 data.project_id）；
+ * 2. 路由 query（route_context.query_key = project_id）。
+ * 均缺失时返回 0，由消费方渲染「无项目上下文」空态。
+ */
+export function resolveBoqBlockProjectId(
+  dataset: unknown,
+  routeQuery: Record<string, unknown> | null | undefined,
+): number {
+  const source = (dataset && typeof dataset === 'object' ? dataset : {}) as Record<string, unknown>;
+  const data = (source.data && typeof source.data === 'object' ? source.data : {}) as Record<string, unknown>;
+  const fromDataset = toPositiveInt(data.project_id) || toPositiveInt(source.project_id);
+  if (fromDataset > 0) return fromDataset;
+  if (routeQuery && typeof routeQuery === 'object') {
+    const fromRoute = toPositiveInt((routeQuery as Record<string, unknown>).project_id);
+    if (fromRoute > 0) return fromRoute;
+  }
+  return 0;
+}
+
 /** 金额千分位格式化（无货币断言，展示层仅做分组） */
 export function formatBoqPreviewAmount(value: number | null | undefined): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '—';

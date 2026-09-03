@@ -143,3 +143,49 @@
   证据按 G1 `acceptance_evidence_contract_v1.schema.json` 归档。
 - 组件挂接真实路由/页面（当前为可复用只读面板，等待 G3.3 验收场景
   落位后接线）。
+
+
+---
+
+## G3.3-A 组件挂接（进行中，2026-09-04）
+
+### 目标
+
+把 G3.2 的只读面板从「可复用组件」升级为「项目驾驶舱契约内的正式 block」，
+按既有 dashboard block builder 模式挂接（不新建平行渲染通道）。
+
+### 交付物
+
+- **后端块投影**（`project_dashboard_builders/project_boq_preview_builder.py`）：
+  `ProjectBoqPreviewBuilder`，block_key=`block.project.boq_preview`、
+  block_type=`boq_import_preview`。块本身不携带业务事实，只声明受权数据引用
+  （`fetch_intent=project.boq.import.preview.fetch` + `fetch_params.project_id`）
+  与批次存在性状态（ready/empty），事实源仍由 G3.1 intent 权威输出。
+- **注册链**：BUILDERS + `RUNTIME_BLOCK_MAP["boq_preview"]` + service zones
+  `boq` + scene content `zone_blocks` 增补（secondary 区，成本控制之后）。
+- **前端块包装**（`components/page/blocks/BlockBoqImportPreview.vue`）：
+  接收 block/dataset 契约 props，经 `resolveBoqBlockProjectId` 解析项目上下文
+  （dataset 投影优先，路由 query `project_id` 兜底），调用专用 intent 拉取快照，
+  投影后复用 `BoqImportPreviewPanel` 渲染；只读（守卫强制无写入口）。
+- **block 注册**：`pageBlockRegistry.ts` 登记 `boq_import_preview` 类型。
+- **Model 扩展**：`resolveBoqBlockProjectId` 纯函数（可单测的上下文解析）。
+
+### 测试与守卫
+
+- 后端桩单测 `test_project_boq_preview_builder.py`：7 例全绿
+  （块身份/无项目空态/有批次 ready/无批次空态仍带项目引用/可见性/
+  forbidden 降级/域限定到 project_id）。
+- 前端 Model 单测：+13 例 `resolveBoqBlockProjectId` 断言
+  （优先级/兜底/非法值防御/浮点截断/非对象 dataset 防御）。
+- 守卫 `frontend_boq_import_preview_guard.py` 扩展：wrapper 必须复用
+  panel + 专用 intent + 上下文解析，且无写操作；registry 必须登记
+  `boq_import_preview`；unittest 9 例（新增 wrapper 写操作反例、
+  registry 缺登记反例）。
+- `component-driver-takeover-inventory` 已刷新收录 BlockBoqImportPreview。
+
+### 边界说明
+
+- 块 envelope 的 `state=empty`（无批次）由前端包装渲染为空态文案，
+  不触发 intent 之外的任何数据通道。
+- 五视口/真实角色验收（G3.3-B）仍待环境，证据按 G1
+  `acceptance_evidence_contract_v1.schema.json` 归档。

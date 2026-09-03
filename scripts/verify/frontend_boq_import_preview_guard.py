@@ -18,6 +18,8 @@ ROOT = Path(__file__).resolve().parents[2]
 API_PATH = "frontend/apps/web/src/api/boqImportPreview.ts"
 MODEL_PATH = "frontend/apps/web/src/app/presentation/boqImportPreview.ts"
 COMPONENT_PATH = "frontend/apps/web/src/components/boq/BoqImportPreviewPanel.vue"
+WRAPPER_PATH = "frontend/apps/web/src/components/page/blocks/BlockBoqImportPreview.vue"
+REGISTRY_PATH = "frontend/apps/web/src/app/pageBlockRegistry.ts"
 TEST_PATH = "frontend/apps/web/scripts/boq_import_preview_model_test.ts"
 
 
@@ -90,6 +92,32 @@ def validate() -> list[str]:
         if forbidden in component:
             failures.append(f"BoqImportPreviewPanel is readonly projection: found {forbidden}")
 
+    # ── 驾驶舱块包装（G3.3 组件挂接）────────────────────────
+    wrapper = source(WRAPPER_PATH)
+    for marker in (
+        "BoqImportPreviewPanel",
+        "fetchBoqImportPreview",
+        "projectBoqImportPreview",
+        "resolveBoqBlockProjectId",
+        'data-readonly="true"',
+    ):
+        if marker not in wrapper:
+            failures.append(f"BlockBoqImportPreview missing {marker}")
+    for forbidden in ("@click", "api.data", "call_method", "action_import", "op: 'create'", "op: 'write'"):
+        if forbidden in wrapper:
+            failures.append(f"BlockBoqImportPreview is readonly wrapper: found {forbidden}")
+
+    # ── block 注册表：boq_import_preview 类型登记 ────────────
+    registry = source(REGISTRY_PATH)
+    if "BlockBoqImportPreview" not in registry:
+        failures.append("pageBlockRegistry must import BlockBoqImportPreview")
+    if "boq_import_preview: BlockBoqImportPreview" not in registry:
+        failures.append("pageBlockRegistry must register boq_import_preview block type")
+
+    # ── Model：项目上下文解析纯函数 ─────────────────────────
+    if "resolveBoqBlockProjectId" not in model:
+        failures.append("boq import preview model missing resolveBoqBlockProjectId")
+
     # ── 单测：四态覆盖 ──────────────────────────────────────
     for marker in (
         "BOQ_IMPORT_PREVIEW_STATE_READY",
@@ -100,6 +128,7 @@ def validate() -> list[str]:
         "MISSING_PARAMS",
         "projectBoqImportPreview",
         "formatBoqPreviewAmount",
+        "resolveBoqBlockProjectId",
     ):
         if marker not in test:
             failures.append(f"boq import preview model test missing {marker}")

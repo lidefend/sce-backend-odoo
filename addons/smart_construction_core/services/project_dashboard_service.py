@@ -67,6 +67,7 @@ class ProjectDashboardService:
         "risks": "block.project.risk",
         "risk": "block.project.risk",
         "next_actions": "block.project.next_actions",
+        "boq_preview": "block.project.boq_preview",
     }
 
     def __init__(self, env):
@@ -188,6 +189,9 @@ class ProjectDashboardService:
             },
             "risk": {
                 "block": self.build_block("risks", project=project, context=request_context),
+            },
+            "boq": {
+                "block": self.build_block("boq_preview", project=project, context=request_context),
             },
         }
 
