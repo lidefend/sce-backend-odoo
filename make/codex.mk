@@ -250,7 +250,7 @@ codex.run: guard.prod.forbid
 	esac
 
 # ------------------ PR (Codex-safe) ------------------
-.PHONY: pr.create pr.status pr.push pr.update pr.ready pr.merge
+.PHONY: pr.create pr.status pr.push pr.update pr.ready pr.merge pr.merge.local_quick_gate
 
 PR_BASE ?= main
 PR_TITLE ?=
@@ -357,7 +357,37 @@ pr.ready: guard.prod.forbid
 pr.push: guard.prod.forbid
 	@GITHUB_AUTH_REMOTE="$(or $(GITHUB_AUTH_REMOTE),origin)" bash scripts/ops/git_safe_push.sh
 
-pr.merge: guard.prod.forbid
+# Local quick gate before pr.merge.
+#
+# The remote PR gates do not run the local quick suite, so guard drift
+# (stale split-guard tokens, line budgets, evidence locks) used to
+# accumulate silently on main. This gate runs ci.local.quick on the exact
+# PR head before the merge is dispatched: the local checkout must be clean
+# and equal to EXPECTED_HEAD, otherwise the merge is refused.
+pr.merge.local_quick_gate:
+	@bash -c '\
+	set -euo pipefail; \
+	EXPECTED="$${EXPECTED_HEAD:-}"; \
+	if ! [[ "$$EXPECTED" =~ ^[0-9a-f]{40}$$ ]]; then \
+	  echo "[DENY] pr.merge.local_quick_gate: EXPECTED_HEAD must be a full 40-character lowercase commit SHA"; exit 7; \
+	fi; \
+	LOCAL_HEAD="$$(git rev-parse HEAD)"; \
+	if [ "$$LOCAL_HEAD" != "$$EXPECTED" ]; then \
+	  echo "[DENY] pr.merge.local_quick_gate: local HEAD $$LOCAL_HEAD does not match EXPECTED_HEAD $$EXPECTED; checkout the PR head first"; exit 11; \
+	fi; \
+	if [ -n "$$(git status --porcelain)" ]; then \
+	  echo "[DENY] pr.merge.local_quick_gate: working tree must be clean (ci.local.quick must run on the exact PR head)"; \
+	  git status --porcelain; exit 12; \
+	fi; \
+	if [ "$${PR_MERGE_LOCAL_QUICK_GATE_SKIP:-0}" = "1" ]; then \
+	  echo "[pr.merge.local_quick_gate] SKIP: PR_MERGE_LOCAL_QUICK_GATE_SKIP=1 (unit-test harness; quick suite not run)"; exit 0; \
+	fi; \
+	echo "[pr.merge.local_quick_gate] running make ci.local.quick on $$EXPECTED (this takes several minutes)"; \
+	$(MAKE) --no-print-directory ci.local.quick; \
+	echo "[pr.merge.local_quick_gate] PASS"; \
+	'
+
+pr.merge: guard.prod.forbid pr.merge.local_quick_gate
 	@bash -c '\
 	set -euo pipefail; \
 	BR="$$(git rev-parse --abbrev-ref HEAD)"; \

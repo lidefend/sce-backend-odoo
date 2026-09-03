@@ -14,6 +14,34 @@ ROOT = Path(__file__).resolve().parents[2]
 FULL_SHA = "a" * 40
 OTHER_SHA = "b" * 40
 
+# Variables exported by make/codex.mk (`export PR PR_MERGE_METHOD ... EXPECTED_HEAD`).
+# When this test suite itself runs inside `make ci.local.quick` under a real
+# `make pr.merge EXPECTED_HEAD=<sha>` invocation, these leak into os.environ and
+# break the "missing EXPECTED_HEAD" scenarios. Strip them so the harness is
+# hermetic: each test controls these variables explicitly via command line.
+HARNESS_CONTROLLED_VARS = (
+    "EXPECTED_HEAD",
+    "PR",
+    "PR_MERGE_METHOD",
+    "PR_MERGE_SUBJECT",
+    "PR_MERGE_BODY",
+    # make propagates command-line variables to every descendant make through
+    # MAKEFLAGS, so a real `make pr.merge EXPECTED_HEAD=<sha>` running the quick
+    # suite leaks that value into this test even after the env strip above.
+    # Drop the inherited make context entirely: the harness invokes make as a
+    # top-level process and must not depend on the caller's flags or overrides.
+    "MAKEFLAGS",
+    "MAKELEVEL",
+    "MFLAGS",
+)
+
+
+def harness_environment() -> dict:
+    environment = dict(os.environ)
+    for name in HARNESS_CONTROLLED_VARS:
+        environment.pop(name, None)
+    return environment
+
 
 class BranchGovernanceConsistencyGuardTests(unittest.TestCase):
     def fixture(self, root: Path, *, make_regex: str = guard.CANONICAL_REGEX) -> None:
@@ -87,8 +115,12 @@ class ControlledMergeExpectedHeadTests(unittest.TestCase):
             git.write_text(
                 "#!/usr/bin/env bash\n"
                 "set -euo pipefail\n"
-                "if [[ \"$1 $2 $3\" == \"rev-parse --abbrev-ref HEAD\" ]]; then\n"
+                "if [[ \"$1 $2 ${3:-}\" == \"rev-parse --abbrev-ref HEAD\" ]]; then\n"
                 "  printf '%s\\n' 'fix/controlled-merge-expected-head-guard'\n"
+                "elif [[ \"$1 $2\" == \"rev-parse HEAD\" ]]; then\n"
+                "  printf '%s\\n' 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'\n"
+                "elif [[ \"$1 $2\" == \"status --porcelain\" ]]; then\n"
+                "  exit 0\n"
                 "else\n"
                 "  echo \"unexpected git invocation: $*\" >&2\n"
                 "  exit 90\n"
@@ -115,10 +147,10 @@ class ControlledMergeExpectedHeadTests(unittest.TestCase):
             )
             git.chmod(0o755)
             gh.chmod(0o755)
-            environment = dict(os.environ)
+            environment = harness_environment()
             environment.update(
                 {
-                    "ENV": "test",
+                    "PR_MERGE_LOCAL_QUICK_GATE_SKIP": "1",
                     "PATH": f"{bin_dir}:{environment['PATH']}",
                     "FAKE_ACTUAL_HEAD": actual_head,
                     "FAKE_MERGE_LOG": str(merge_log),
@@ -238,10 +270,10 @@ class ControlledReadyExpectedHeadTests(unittest.TestCase):
             )
             git.chmod(0o755)
             gh.chmod(0o755)
-            environment = dict(os.environ)
+            environment = harness_environment()
             environment.update(
                 {
-                    "ENV": "test",
+                    "PR_MERGE_LOCAL_QUICK_GATE_SKIP": "1",
                     "PATH": f"{bin_dir}:{environment['PATH']}",
                     "FAKE_ACTUAL_HEAD": actual_head,
                     "FAKE_IS_DRAFT": is_draft,
@@ -333,10 +365,10 @@ class MergePrepGateTests(unittest.TestCase):
                 encoding="utf-8",
             )
             gh.chmod(0o755)
-            environment = dict(os.environ)
+            environment = harness_environment()
             environment.update(
                 {
-                    "ENV": "test",
+                    "PR_MERGE_LOCAL_QUICK_GATE_SKIP": "1",
                     "PATH": f"{bin_dir}:{environment['PATH']}",
                     "FAKE_ACTUAL_HEAD": FULL_SHA,
                     "FAKE_GATE_STATE": gate_state,
