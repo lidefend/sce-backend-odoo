@@ -66,6 +66,7 @@ HANDLER_MODULES = {
     "odoo.addons.smart_construction_core.handlers.settlement_slice_block_fetch": ["SettlementSliceBlockFetchHandler"],
     "odoo.addons.smart_construction_core.handlers.workspace_home_enter": ["WorkspaceHomeEnterHandler"],
     "odoo.addons.smart_construction_core.handlers.dashboard_company_enter": ["DashboardCompanyEnterHandler"],
+    "odoo.addons.smart_construction_core.handlers.boq_import_preview_fetch": ["BoqImportPreviewFetchHandler"],
 }
 
 

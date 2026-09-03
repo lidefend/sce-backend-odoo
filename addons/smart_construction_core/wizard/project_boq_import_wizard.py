@@ -11,6 +11,7 @@ from odoo.exceptions import UserError
 from odoo.tools import misc
 
 from ..models.support.state_guard import raise_guard
+from .boq_uom_policy import UOM_AUTO_CREATE_WHITELIST
 
 try:
     import openpyxl
@@ -143,8 +144,9 @@ class ProjectBoqImportWizard(models.TransientModel):
         self.ensure_one()
         if not self.file:
             raise UserError("请先上传导入文件。")
+        degraded_uoms = set()
         rows, pending_uoms, skipped, detail_payload = self.with_context(
-            boq_import_preflight=True
+            boq_import_preflight=True, boq_import_uom_degraded=degraded_uoms
         )._parse_file(include_details=True)
         if not rows:
             raise UserError(
@@ -165,7 +167,12 @@ class ProjectBoqImportWizard(models.TransientModel):
         if missing_uom:
             warnings.append(f"{missing_uom} 条清单项的单位将在确认导入时创建或使用通用单位")
         if pending_uoms:
-            warnings.append("待创建计量单位：" + "、".join(sorted(pending_uoms)))
+            warnings.append("确认导入时将自动创建计量单位：" + "、".join(sorted(pending_uoms)))
+        if degraded_uoms:
+            warnings.append(
+                "非白名单单位（导入时降级为「项」，不创建全局单位）："
+                + "、".join(sorted(degraded_uoms))
+            )
         if self.parser_warning_log:
             warnings.append(
                 "源 XLS 容器存在兼容性提示，数据已稳定解析；建议归档前另存为标准 XLSX。"
@@ -257,7 +264,10 @@ class ProjectBoqImportWizard(models.TransientModel):
                 hints=["请先完成/撤销结算或付款流程后再导入新版本"],
             )
 
-        rows, created_uoms, skipped, detail_payload = self._parse_file(include_details=True)
+        degraded_uoms = set()
+        rows, created_uoms, skipped, detail_payload = self.with_context(
+            boq_import_uom_degraded=degraded_uoms
+        )._parse_file(include_details=True)
         if not rows:
             raise UserError(
                 "未找到可导入的清单数据：\n"
@@ -356,6 +366,11 @@ class ProjectBoqImportWizard(models.TransientModel):
             log_lines.append(f"跳过 {skipped} 行（空行/小计行/无数值行）。")
         if created_uoms:
             log_lines.append("自动创建计量单位：\n- " + "\n- ".join(sorted(created_uoms)))
+        if degraded_uoms:
+            log_lines.append(
+                "非白名单单位已降级为「项」（未创建全局单位）：\n- "
+                + "\n- ".join(sorted(degraded_uoms))
+            )
         log_lines.append("版本已校验；发布后可在 WBS 计划中按管理目标分配清单来源。")
         self.log = "\n".join(log_lines)
         batch.write(
@@ -1438,7 +1453,13 @@ class ProjectBoqImportWizard(models.TransientModel):
                     if not uom and uom_name != search_key:
                         uom = Uom.search([("name", "=", uom_name)], limit=1)
 
-                    if not uom:
+                    if not uom and search_key not in UOM_AUTO_CREATE_WHITELIST:
+                        # R-G2-01：白名单外单位不创建全局主数据（uom.uom），
+                        # 降级为业务兜底单位「项」，并记入降级清单
+                        # （预检警告 + 批次日志显式列示，不静默）。
+                        self._record_degraded_uom(search_key or uom_name)
+                        uom_cache[search_key] = False
+                    elif not uom:
                         category = _default_uom_category()
                         if not category:
                             raise UserError(
@@ -1792,6 +1813,19 @@ class ProjectBoqImportWizard(models.TransientModel):
                 "active": True,
             }
         )
+
+    def _record_degraded_uom(self, name):
+        """把白名单外的单位名记入本次解析的降级清单（经 context 收集器传递）。"""
+        collector = (self.env.context or {}).get("boq_import_uom_degraded")
+        if collector is None:
+            return
+        text = str(name or "").strip()
+        if not text:
+            return
+        try:
+            collector.add(text)
+        except Exception:
+            pass
 
     def _normalize_uom_name(self, name):
         """基本规范化：去空格、全角转半角、小写。"""
