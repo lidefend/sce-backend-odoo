@@ -7,8 +7,9 @@
  *
  * 安全降级约定：
  * - 业务层降级（MISSING_PARAMS / BATCH_NOT_FOUND）以后端结构化
- *   ok=false 返回，经 envelope data 透传；本封装不将其转为异常，
- *   由 presentation Model 投影为错误态，消费方不得白屏。
+ *   ok=false 返回；parseIntentEnvelope 判 ok=false 抛 ApiError，
+ *   由调用方 catch 后以 {ok:false, error} 重建并交给 presentation
+ *   Model 投影为错误态，消费方不得白屏。
  * - preview_payload 非对象时后端已降级为空快照，前端渲染空态。
  */
 import { intentRequest } from './intents';
@@ -59,14 +60,25 @@ export type BoqImportPreviewError = {
   suggested_action: string;
 };
 
-/** intent 结构化返回（后端 handle() dict，经 envelope data 透传） */
-export type BoqImportPreviewIntentData = {
-  ok: boolean;
-  data?: {
-    batch?: BoqImportPreviewBatch;
-    preview_schema?: string;
-    safe_degradation?: Record<string, unknown>;
-  };
+/**
+ * intentRequest 解包后直传 presentation 的数据形状（生产链路实际到达形状：
+ * 信封 {ok,data,meta} 已被 parseIntentEnvelope 剥掉，handler 的 data 即本形状）。
+ */
+export type BoqImportPreviewData = {
+  batch?: BoqImportPreviewBatch;
+  preview_schema?: string;
+  safe_degradation?: Record<string, unknown>;
+};
+
+/**
+ * intent 结构化返回的兼容联合形状：
+ * - 直传形状：{ batch, preview_schema }（intentRequest 正常路径）
+ * - 信封形状：{ ok: false, error }（调用方 catch 分支/历史单测构造；
+ *   业务降级经 parseIntentEnvelope ok=false 转异常后由调用方重建）
+ */
+export type BoqImportPreviewIntentData = BoqImportPreviewData & {
+  ok?: boolean;
+  data?: BoqImportPreviewData;
   error?: BoqImportPreviewError;
 };
 

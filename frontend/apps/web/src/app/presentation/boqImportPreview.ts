@@ -17,6 +17,7 @@
  */
 import type {
   BoqImportPreviewBatch,
+  BoqImportPreviewData,
   BoqImportPreviewIntentData,
   BoqImportPreviewPayload,
 } from '../../api/boqImportPreview';
@@ -249,21 +250,33 @@ function errorViewModel(
 /**
  * 将 intent 结构化返回投影为只读视图模型。
  * 纯函数：无网络/会话依赖，可被 esbuild 单测直接覆盖。
+ *
+ * 输入形状兼容（信封解包错位防御）：
+ * - 直传形状 { batch, preview_schema }：API 信封解析层已剥掉
+ *   {ok,data,meta} 外层，生产链路正常路径实际到达本函数的形状；
+ * - 信封形状 { ok, data: { batch }, error }：调用方 catch 分支
+ *   （拉取异常重建）与历史单测构造的形状。
  */
 export function projectBoqImportPreview(
   raw: BoqImportPreviewIntentData | null | undefined,
 ): BoqImportPreviewViewModel {
-  if (!raw || typeof raw !== 'object' || !raw.ok) {
+  if (!raw || typeof raw !== 'object' || raw.ok === false) {
     return errorViewModel(raw, '未能获取清单导入批次预检快照。');
   }
 
-  const batch = normalizeBatch(raw.data?.batch);
+  const record = raw as BoqImportPreviewIntentData;
+  const hasDirectPayload = record.batch !== undefined || record.preview_schema !== undefined;
+  const source: BoqImportPreviewData = hasDirectPayload
+    ? record
+    : (record.data && typeof record.data === 'object' ? record.data : {});
+
+  const batch = normalizeBatch(source.batch);
   if (!batch) {
-    // ok=true 但 batch 形状异常：防御性降级，不白屏。
+    // payload 形状异常：防御性降级，不白屏。
     return {
       viewState: BOQ_IMPORT_PREVIEW_STATE_DEGRADED_SHAPE,
       readonly: BOQ_IMPORT_PREVIEW_VIEW_READONLY,
-      previewSchema: toText(raw.data?.preview_schema) || 'sc.boq.import.preview.v1',
+      previewSchema: toText(source.preview_schema) || 'sc.boq.import.preview.v1',
       batch: null,
       stats: [],
       diagnostics: [],
@@ -280,7 +293,7 @@ export function projectBoqImportPreview(
     return {
       viewState: BOQ_IMPORT_PREVIEW_STATE_MISSING_PAYLOAD,
       readonly: BOQ_IMPORT_PREVIEW_VIEW_READONLY,
-      previewSchema: toText(raw.data?.preview_schema) || 'sc.boq.import.preview.v1',
+      previewSchema: toText(source.preview_schema) || 'sc.boq.import.preview.v1',
       batch: {
         id: batch.id,
         name: batch.name,
@@ -301,7 +314,7 @@ export function projectBoqImportPreview(
   return {
     viewState: BOQ_IMPORT_PREVIEW_STATE_READY,
     readonly: BOQ_IMPORT_PREVIEW_VIEW_READONLY,
-    previewSchema: toText(raw.data?.preview_schema) || 'sc.boq.import.preview.v1',
+    previewSchema: toText(source.preview_schema) || 'sc.boq.import.preview.v1',
     batch: {
       id: batch.id,
       name: batch.name,
