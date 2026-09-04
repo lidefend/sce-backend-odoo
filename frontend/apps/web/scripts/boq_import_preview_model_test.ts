@@ -79,6 +79,31 @@ assert.equal(statsByKey.get('analysis_count')?.emphasis, 'default');
 // 诊断行过滤空串与空白
 assert.deepEqual(ready.diagnostics, ['第 12 行单位缺失', '第 55 行金额非数字']);
 
+// ── 直传形状（intentRequest 已解包信封，batch 挂顶层）───────
+const directReady = projectBoqImportPreview(READY_RAW.data);
+assert.equal(directReady.viewState, BOQ_IMPORT_PREVIEW_STATE_READY);
+assert.equal(directReady.batch?.id, 12);
+assert.equal(directReady.previewSchema, 'sc.boq.import.preview.v1');
+assert.equal(directReady.errorCode, null);
+assert.equal(directReady.stateMessage, '');
+
+// 直传形状 batch 缺失 → 防御性降级（不白屏）
+const directDegraded = projectBoqImportPreview({ preview_schema: 'sc.boq.import.preview.v1' });
+assert.equal(directDegraded.viewState, BOQ_IMPORT_PREVIEW_STATE_DEGRADED_SHAPE);
+assert.equal(directDegraded.previewSchema, 'sc.boq.import.preview.v1');
+
+// 调用方 catch 重建形状（fetch 异常路径，ok=false + error）
+const fetchFailed = projectBoqImportPreview({
+  ok: false,
+  error: {
+    code: 'BOQ_PREVIEW_FETCH_FAILED',
+    message: '网络异常',
+    suggested_action: 'retry',
+  },
+});
+assert.equal(fetchFailed.viewState, BOQ_IMPORT_PREVIEW_STATE_ERROR);
+assert.equal(fetchFailed.errorCode, 'BOQ_PREVIEW_FETCH_FAILED');
+
 // ── 错误态：BATCH_NOT_FOUND（防枚举语义） ───────────────────
 const notFound = projectBoqImportPreview({
   ok: false,
