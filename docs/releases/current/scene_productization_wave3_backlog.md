@@ -27,9 +27,9 @@
    - J04-J13 全部 PASS（`docs/frontend_productization/frontend_core_record_form_productization_v1.md:50`）
    - **新发现**：下一抽离目标应转向 **`frontend/apps/web/src/pages/ListPage.vue` (2073 行)**，详见 Round7
 
-3. **Portal 域扩展** ✅ Round9 部分达成（portal.shortcuts 收录, PR #420）
-   - 当前 portal 域含 `portal.dashboard / portal.lifecycle / portal.capability_matrix / portal.shortcuts` 4 个 R3 场景（shortcuts 为 Round9 新增）
-   - 候选：`portal.notifications`（消息中心）、`portal.shortcuts`（快捷入口）✅ Round9 已收、`portal.audit_log`（操作审计）
+3. **Portal 域扩展** ✅ Round9 + Round10 达成（portal.shortcuts / portal.notifications 收录, PR #420 / PR #421）
+   - 当前 portal 域含 `portal.dashboard / portal.lifecycle / portal.capability_matrix / portal.shortcuts / portal.notifications` 5 个 R3 场景（shortcuts 为 Round9 新增、notifications 为 Round10 新增）
+   - 候选：`portal.notifications`（消息中心）✅ Round10 已收、`portal.shortcuts`（快捷入口）✅ Round9 已收、`portal.audit_log`（操作审计，真实入口证据弱——sc.audit.log 有数据沉淀但无独立 menu/页面，暂缓收录）
    - 进入条件：完成 Round1 + Round2 后启动（已满足，Round9 执行）
 
 4. **合同 / 财务纵深**
@@ -119,9 +119,15 @@
   - **指标（完美状态）**：success 16→20, fallback 4→0, success_rate 80%→**100%**, fallback_rate 20%→**0%**
   - 6 files / +197 / -26
 - ✅ **Round9 闭合**（2026-09-04, PR #420, Portal 域扩展）：见 item 3
-- ⏸️ **Round10+ 候选**：portal.notifications / portal.audit_log（Portal 域剩余候选）
-- ⏸️ **Round4 候选**（合同-财务纵深）：`contract_to_finance_handshake` 跨域 action_spec（进入条件=Portal 扩展开 1 个后 ✅ 已满足）
-- ⏸️ **Round7b 候选**（ListPage.vue 抽离 2073 行）：待 Round10+ 启动后评估
+- ✅ **Round10 闭合**（2026-09-04, PR #421, 消息中心收录）：`portal.notifications`（消息中心）收录，Portal 域 R3 场景 4 → 5
+  - 真实锚点证据链：菜单 `smart_construction_core.menu_sc_product_message_notification_v1` 已存在 + 站内消息系统（`global.message.inbox` / `mail.message`+`mail.notification` / 我的工作 @ 提到）+ 全局 GlobalMessagePanel.vue → **非假 R3**
+  - `portal.audit_log` 探测结论：`sc.audit.log` 有数据沉淀但无独立 menu/页面/路由 → **证据=weak，延迟收录**（不收录无真实业务支撑的假 R3）
+  - payload 设计：`view_unread` primary action 走 `intent=api.data`（读未读消息=数据消费，non_ui_contract 合法路径，N/A 不导航）+ 4 个 `notification_link` 显式 `target_scene`（my_work.workspace / risk.center / contract.center / finance.center）
+  - 验证：3 新 hermetic 单测（20 全绿：1 正向 non_ui_contract + 4 links 全显式 target + 1 负面无 target→self_target_fallback）；R3 strict guard 22 R3 / **22 SUCCESS / 0 fallback**；freeze + test_boundary PASS；8 generated reports 全刷 CURRENT
+  - 影响：layout.xml +117 行（1555）；scenes 21 → 22 R3
+- ⏸️ **Round4 候选**（合同-财务纵深）：`contract_to_finance_handshake` 跨域 action_spec（**进入条件已满**：Portal 域扩展 ≥1 ✅）→ 下一轮自然衔接
+- ⏸️ **portal.audit_log**：证据=weak，需真实 menu/页面/路由锚点后才有收录资质（候补）
+- ⏸️ **Round7b 候选**（ListPage.vue 抽离 2073 行）：待 portal 纵深完成后再评估
 
 ## 继承 Wave2 的产物（wave3 起点状态）
 

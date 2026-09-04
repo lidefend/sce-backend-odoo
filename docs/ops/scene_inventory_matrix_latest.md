@@ -1,7 +1,7 @@
 # Scene Inventory Matrix（Latest）
 
 更新时间：2026-09-04  
-适用阶段：Wave 3 Round9（Portal 域扩展：portal.shortcuts 快捷入口收录）
+适用阶段：Wave 3 Round10（Portal 域扩展：portal.notifications 消息中心收录）
 
 ## 分级标准
 
@@ -34,6 +34,7 @@
 | portal.dashboard | 工作台 | portal | `/` | workspace | R3 | smart_construction_scene | 维护角色策略与动作链路稳定性 |
 | portal.lifecycle | 生命周期驾驶舱 | portal | `/s/projects.dashboard` | workspace | R3 | smart_construction_scene | 维护角色策略与动作链路稳定性 |
 | portal.shortcuts | 快捷入口 | portal | `/s/portal.shortcuts` | workspace | R3 | smart_construction_scene | 维护角色入口编排与跨域动作链路稳定性 |
+| portal.notifications | 消息中心 | portal | `/s/portal.notifications` | workspace | R3 | smart_construction_scene | 维护消息聚合角色策略与通知链路稳定性 |
 | projects.dashboard | 项目驾驶舱 | project | `/pm/dashboard` | project_management | R3 | smart_construction_scene | 维护角色策略与动作链路稳定性 |
 | project.dashboard | 项目驾驶舱（产品场景） | project | `/s/project.dashboard` | project_management | R2 | smart_construction_scene | 补齐角色策略与数据源后评估升级 R3 |
 | project.initiation | 项目立项（产品场景） | project | `/s/project.initiation` | project_management | R2 | smart_construction_scene | 补齐动作编排与角色策略后评估升级 R3 |
