@@ -562,6 +562,123 @@
             <field name="active_version_id" ref="sc_scene_version_portal_shortcuts_v1"/>
         </record>
 
+        <!-- Portal notifications scene (message center inbox) -->
+        <record id="sc_scene_version_portal_notifications_v1" model="sc.scene.version">
+            <field name="scene_id" ref="sc_scene_portal_notifications"/>
+            <field name="version">v1</field>
+            <field name="source">system</field>
+            <field name="payload_json" eval="{
+                'code': 'portal.notifications',
+                'name': '消息中心',
+                'version': 'v1',
+                'portal_only': False,
+                'spa_ready': True,
+                'page': {
+                    'key': 'portal.notifications.inbox',
+                    'title': '消息中心',
+                    'page_type': 'workspace',
+                    'page_mode': 'workspace'
+                },
+                'layout': {'kind': 'workspace', 'sidebar': 'fixed', 'header': 'full'},
+                'zone_blocks': [
+                    {
+                        'key': 'unread_conversations',
+                        'title': '未读消息',
+                        'zone_type': 'primary',
+                        'display_mode': 'list',
+                        'block_key': 'block.portal.notifications.unread_conversations'
+                    },
+                    {
+                        'key': 'mentions',
+                        'title': '@我的',
+                        'zone_type': 'supporting',
+                        'display_mode': 'list',
+                        'block_key': 'block.portal.notifications.mentions'
+                    },
+                    {
+                        'key': 'notices',
+                        'title': '系统通知',
+                        'zone_type': 'supporting',
+                        'display_mode': 'stack',
+                        'block_key': 'block.portal.notifications.notices'
+                    }
+                ],
+                'related_scenes': ['my_work.workspace', 'risk.center', 'contract.center', 'finance.center'],
+                'action_specs': {
+                    'view_unread': {
+                        'label': '查看未读消息',
+                        'intent': 'api.data',
+                        'action_kind': 'message_read'
+                    },
+                    'open_my_work': {
+                        'label': '去我的工作',
+                        'intent': 'ui.contract',
+                        'target_scene': 'my_work.workspace',
+                        'entry_kind': 'notification_link'
+                    },
+                    'open_risk_center': {
+                        'label': '处理风险提醒',
+                        'intent': 'ui.contract',
+                        'target_scene': 'risk.center',
+                        'entry_kind': 'notification_link'
+                    },
+                    'open_contract_center': {
+                        'label': '查看合同动态',
+                        'intent': 'ui.contract',
+                        'target_scene': 'contract.center',
+                        'entry_kind': 'notification_link'
+                    },
+                    'open_finance_center': {
+                        'label': '查看财务审批',
+                        'intent': 'ui.contract',
+                        'target_scene': 'finance.center',
+                        'entry_kind': 'notification_link'
+                    }
+                },
+                'role_variants': {
+                    'pm': {
+                        'default_actions': ['view_unread', 'open_my_work', 'open_contract_center', 'open_finance_center'],
+                        'focus_zones': ['unread_conversations', 'mentions']
+                    },
+                    'executive': {
+                        'default_actions': ['view_unread', 'open_risk_center', 'open_finance_center'],
+                        'focus_zones': ['unread_conversations', 'notices']
+                    },
+                    'finance': {
+                        'default_actions': ['view_unread', 'open_finance_center', 'open_contract_center'],
+                        'focus_zones': ['unread_conversations']
+                    }
+                },
+                'data_sources': {
+                    'unread_conversations': {
+                        'source_type': 'computed',
+                        'provider': 'global.message.conversations'
+                    },
+                    'mentions': {
+                        'source_type': 'computed',
+                        'provider': 'my_work.summary.mentions'
+                    },
+                    'notices': {
+                        'source_type': 'computed',
+                        'provider': 'portal.notifications.notices'
+                    }
+                },
+                'product_policy': {
+                    'role_based': True,
+                    'primary_action': 'view_unread',
+                    'stage': 'wave3'
+                },
+                'target': {
+                    'route': '/s/portal.notifications',
+                    'menu_xmlid': 'smart_construction_core.menu_sc_product_message_notification_v1'
+                }
+            }"/>
+        </record>
+
+        <record id="sc_scene_portal_notifications" model="sc.scene">
+            <field name="active_version_id" ref="sc_scene_version_portal_notifications_v1"/>
+        </record>
+
         <!-- My work scene -->
         <record id="sc_scene_version_my_work_workspace_v2" model="sc.scene.version">
             <field name="scene_id" ref="sc_scene_my_work_workspace"/>

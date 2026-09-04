@@ -14,6 +14,11 @@ These tests guard against regression of:
 - Wave3 Round9 — Portal Domain Expansion (added `portal.shortcuts` launcher
   with 6 cross-domain shortcut entries, each carrying an explicit
   `target_scene` so launcher navigation never relies on fuzzy matching).
+- Wave3 Round10 — Portal Message Center (added `portal.notifications` inbox
+  whose primary action `view_unread` is an `api.data` read of unread
+  conversations — a non-navigation data action resolved via the
+  non_ui_contract short-circuit — while every notification_link action
+  carries an explicit `target_scene` into a real owning scene).
 """
 
 from __future__ import annotations
@@ -529,6 +534,133 @@ class PrimaryActionEdgeCaseTests(unittest.TestCase):
         # (portals have no domain-specific primary navigation of their own).
         self.assertEqual(resolution, "self_target_fallback")
         self.assertEqual(route, "/s/portal.shortcuts")
+        self.assertEqual(err, "")
+
+    # ----- Wave3 Round10: Portal message center (portal.notifications) -----
+
+    def test_round10_portal_notifications_primary_read_is_non_ui_contract(self) -> None:
+        """portal.notifications.view_unread (intent=api.data) short-circuits to
+        non_ui_contract — reading unread conversations is a data action, not a
+        UI navigation, so it must never be forced through route resolution.
+        """
+        inv = _inventory([
+            ("portal.notifications", "/s/portal.notifications"),
+        ])
+        payload = _base_payload(
+            scene_key="portal.notifications",
+            primary_action="view_unread",
+            action_specs={
+                "view_unread": {
+                    "label": "查看未读消息",
+                    "intent": "api.data",
+                    "action_kind": "message_read",
+                },
+            },
+            related_scenes=["my_work.workspace"],
+            target_route="/s/portal.notifications",
+        )
+        route, err, resolution = _resolve_primary_action_route(
+            "portal.notifications", payload, inv
+        )
+        self.assertEqual(resolution, "non_ui_contract")
+        self.assertEqual(route, "N/A")
+        self.assertEqual(err, "")
+
+    def test_round10_portal_notifications_all_links_have_explicit_target(self) -> None:
+        """Product invariant: every notification_link action in the message
+        center carries an explicit target_scene pointing into an openable
+        route — clicking a notification routes the user to its owning domain
+        scene without relying on fuzzy matching or self-fallback.
+        """
+        inv = _inventory([
+            ("my_work.workspace", "/s/my_work.workspace"),
+            ("risk.center", "/s/risk.center"),
+            ("contract.center", "/s/contract.center"),
+            ("finance.center", "/s/finance.center"),
+        ])
+        action_specs = {
+            "view_unread": {
+                "label": "查看未读消息",
+                "intent": "api.data",
+                "action_kind": "message_read",
+            },
+            "open_my_work": {
+                "label": "去我的工作",
+                "intent": "ui.contract",
+                "target_scene": "my_work.workspace",
+                "entry_kind": "notification_link",
+            },
+            "open_risk_center": {
+                "label": "处理风险提醒",
+                "intent": "ui.contract",
+                "target_scene": "risk.center",
+                "entry_kind": "notification_link",
+            },
+            "open_contract_center": {
+                "label": "查看合同动态",
+                "intent": "ui.contract",
+                "target_scene": "contract.center",
+                "entry_kind": "notification_link",
+            },
+            "open_finance_center": {
+                "label": "查看财务审批",
+                "intent": "ui.contract",
+                "target_scene": "finance.center",
+                "entry_kind": "notification_link",
+            },
+        }
+        # Product invariant: 4 of the 5 specs are notification links that must
+        # each resolve exactly via explicit target_scene; view_unread is the
+        # sole api.data read action.
+        links = [spec for spec in action_specs.values() if spec.get("entry_kind") == "notification_link"]
+        self.assertEqual(len(links), 4)
+        for spec in links:
+            self.assertEqual(spec["intent"], "ui.contract")
+            target_scene = spec.get("target_scene")
+            self.assertTrue(target_scene, f"notification_link missing target_scene")
+            self.assertIn(target_scene, inv)
+            route = _resolve_inventory_route(target_scene, inv)
+            self.assertTrue(
+                _is_route_openable(route),
+                f"notification_link target_scene={target_scene} not openable",
+            )
+
+    def test_round10_notification_link_without_target_falls_back(self) -> None:
+        """Negative proof: if a notification_link loses its target_scene, the
+        message center has no intrinsic primary navigation of its own — the
+        action degrades to self_target_fallback of the inbox.
+
+        related_scenes deliberately excludes the owning-domain scenes (they are
+        reachable only via the per-link target_scene), proving the notification
+        links are the exact-resolution lever.
+        """
+        inv = _inventory([
+            ("portal.notifications", "/s/portal.notifications"),
+            ("my_work.workspace", "/s/my_work.workspace"),
+            ("risk.center", "/s/risk.center"),
+        ])
+        payload = _base_payload(
+            scene_key="portal.notifications",
+            primary_action="open_risk_center",
+            action_specs={
+                "open_risk_center": {
+                    "label": "处理风险提醒",
+                    "intent": "ui.contract",
+                    # target_scene intentionally removed (regression scenario)
+                },
+            },
+            related_scenes=["cost.analysis", "my_work.workspace"],
+            target_route="/s/portal.notifications",
+        )
+        route, err, resolution = _resolve_primary_action_route(
+            "portal.notifications", payload, inv
+        )
+        # risk.center present in inventory but NOT in related_scenes (and no
+        # related scene shares the `.center` fuzzy tail-token), so the
+        # action-name guess cannot match via related_scene_match/fuzzy; the
+        # inbox falls back to its own route.
+        self.assertEqual(resolution, "self_target_fallback")
+        self.assertEqual(route, "/s/portal.notifications")
         self.assertEqual(err, "")
 
 

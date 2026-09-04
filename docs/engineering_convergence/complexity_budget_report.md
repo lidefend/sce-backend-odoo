@@ -66,10 +66,10 @@ Generated from repository source files. This report is informational during the 
 | Lines | Category | File |
 | ---: | --- | --- |
 | 1738 | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
+| 1555 | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1488 | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1484 | Python source | `scripts/release/release_publication.py` |
 | 1438 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
-| 1438 | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1432 | Python source | `scripts/product/build_capability_productization_v1.py` |
 | 1421 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1416 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
@@ -195,13 +195,13 @@ Generated from repository source files. This report is informational during the 
 | 1627 | split_plan_required | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1588 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
+| 1555 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1553 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1542 | split_plan_required | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 1515 | split_plan_required | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1488 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1484 | warning | Python source | `scripts/release/release_publication.py` |
 | 1438 | warning | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
-| 1438 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1432 | warning | Python source | `scripts/product/build_capability_productization_v1.py` |
 | 1421 | warning | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1416 | warning | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
