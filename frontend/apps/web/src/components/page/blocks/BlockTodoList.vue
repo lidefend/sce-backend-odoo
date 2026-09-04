@@ -62,12 +62,21 @@ const maxItems = computed(() => {
   const payload = (props.block.payload && typeof props.block.payload === 'object')
     ? props.block.payload as Record<string, unknown>
     : {};
-  const value = Number(payload.max_items || 0);
+  const datasetSource = (props.dataset && typeof props.dataset === 'object' && !Array.isArray(props.dataset))
+    ? props.dataset as Record<string, unknown>
+    : {};
+  const value = Number(payload.max_items || datasetSource.max_items || 0);
   return Number.isFinite(value) && value > 0 ? Math.trunc(value) : 0;
 });
 const items = computed(() => {
-  if (!Array.isArray(props.dataset)) return [];
-  const normalized = props.dataset.map((item, index) => {
+  // 双形态 dataset：数组（旧契约）或 dict.items（runtime builder 投影，
+  // 见 project_next_actions_builder._projection_data），与 progress 块同构。
+  const rows = Array.isArray(props.dataset)
+    ? props.dataset
+    : (props.dataset && typeof props.dataset === 'object' && Array.isArray((props.dataset as { items?: unknown }).items))
+      ? (props.dataset as { items: unknown[] }).items
+      : [];
+  const normalized = rows.map((item, index) => {
     const row = item && typeof item === 'object' ? item as Record<string, unknown> : {};
     return {
       id: String(row.id || `todo-${index + 1}`),

@@ -73,6 +73,21 @@ const metrics = computed<MetricItem[]>(() => {
       };
     });
   }
+  // 单指标卡形态：块自身携带 value/title/subtitle（如场景 summary_rows 合成的
+  // metric_card），无 dataset 投影时直接渲染块上的单条指标，避免落到空态。
+  const blockValue = (props.block as PageOrchestrationBlock & { value?: unknown }).value;
+  const hasBlockValue = blockValue !== undefined && blockValue !== null && String(blockValue).trim() !== '';
+  if ((!props.dataset || typeof props.dataset !== 'object' || Object.keys(props.dataset).length === 0) && hasBlockValue) {
+    return [{
+      key: String((props.block as { key?: string }).key || 'metric'),
+      label: String(props.block.title || ''),
+      value: String(blockValue ?? '--'),
+      delta: '',
+      hint: String(props.block.subtitle || ''),
+      tone: normalizeMetricTone(props.block.tone),
+      actionKey: '',
+    }];
+  }
   if (!props.dataset || typeof props.dataset !== 'object') return [];
   const row = props.dataset as Record<string, unknown>;
   return Object.entries(row)
