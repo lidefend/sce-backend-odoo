@@ -205,16 +205,6 @@
       "adapterKeys": [],
       "adapterSources": [],
       "bridgeExports": [],
-      "officialComponent": "carousel",
-      "productionConsumerCount": 0,
-      "requiredForCurrentProduct": false,
-      "requirementDecision": "not required by current formal product semantics",
-      "status": "not_required"
-    },
-    {
-      "adapterKeys": [],
-      "adapterSources": [],
-      "bridgeExports": [],
       "officialComponent": "cascader",
       "productionConsumerCount": 0,
       "requiredForCurrentProduct": false,
@@ -324,16 +314,6 @@
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
-    },
-    {
-      "adapterKeys": [],
-      "adapterSources": [],
-      "bridgeExports": [],
-      "officialComponent": "datetime-picker",
-      "productionConsumerCount": 0,
-      "requiredForCurrentProduct": false,
-      "requirementDecision": "not required by current formal product semantics",
-      "status": "not_required"
     },
     {
       "adapterKeys": [
@@ -1022,16 +1002,6 @@
       "adapterKeys": [],
       "adapterSources": [],
       "bridgeExports": [],
-      "officialComponent": "sticky",
-      "productionConsumerCount": 0,
-      "requiredForCurrentProduct": false,
-      "requirementDecision": "not required by current formal product semantics",
-      "status": "not_required"
-    },
-    {
-      "adapterKeys": [],
-      "adapterSources": [],
-      "bridgeExports": [],
       "officialComponent": "sticky-tool",
       "productionConsumerCount": 0,
       "requiredForCurrentProduct": false,
@@ -1336,8 +1306,8 @@
     "bridge_only": 0,
     "directLibraryImportBypasses": 0,
     "missing": 0,
-    "not_required": 39,
-    "officialComponents": 74,
+    "not_required": 36,
+    "officialComponents": 71,
     "requiredDrivers": 35,
     "unassessedRawBehaviorSurfaces": 0
   }
