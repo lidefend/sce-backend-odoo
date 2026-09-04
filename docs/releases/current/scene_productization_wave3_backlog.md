@@ -27,10 +27,10 @@
    - J04-J13 全部 PASS（`docs/frontend_productization/frontend_core_record_form_productization_v1.md:50`）
    - **新发现**：下一抽离目标应转向 **`frontend/apps/web/src/pages/ListPage.vue` (2073 行)**，详见 Round7
 
-3. **Portal 域扩展（可选）**
-   - 当前 portal 域仅含 `portal.dashboard / portal.lifecycle / portal.capability_matrix` 3 个 R3 场景
-   - 候选：`portal.notifications`（消息中心）、`portal.shortcuts`（快捷入口）、`portal.audit_log`（操作审计）
-   - 进入条件：完成 Round1 + Round2 后启动
+3. **Portal 域扩展** ✅ Round9 部分达成（portal.shortcuts 收录, PR #420）
+   - 当前 portal 域含 `portal.dashboard / portal.lifecycle / portal.capability_matrix / portal.shortcuts` 4 个 R3 场景（shortcuts 为 Round9 新增）
+   - 候选：`portal.notifications`（消息中心）、`portal.shortcuts`（快捷入口）✅ Round9 已收、`portal.audit_log`（操作审计）
+   - 进入条件：完成 Round1 + Round2 后启动（已满足，Round9 执行）
 
 4. **合同 / 财务纵深**
    - 合同域 2 场景 R3、财务域 4 场景 R3，但缺少跨域动作链路（合同变更触发财务结算提醒）
@@ -109,15 +109,19 @@
     - `finance.center` (self_target_fallback) — 同上
     - `projects.ledger` (related_scene_fuzzy) — `related_scenes` 模糊命中 `/pm/dashboard`
     - `projects.list` (related_scene_fuzzy) — 模糊命中 `/s/projects.intake`
-- ⏸️ **Round8 候选**（剩余 4 FALLBACK 治理）：
-  - 决策点 1：`cost.analysis` / `finance.center` 的 self_target_fallback 是否需要消解？
-    - 选项 A：保留 self fallback（"刷新当前页"是合法场景）
-    - 选项 B：加 `target_scene` 字段把跳转目标改到子场景（如 `cost.cost_compare` / `finance.payment_requests`）
-  - 决策点 2：`projects.ledger` / `projects.list` 的 fuzzy match 能否改成精确 `related_scene_match`？
-    - 需要扩展 `action_specs.primary_action_spec.related_scenes` 字段提供精确目标
-  - 进入条件：用户决策 Round8 优先级
-- ⏸️ Round3+ (Portal / 合同-财务) 按优先级展开
-- ⏸️ Round9+ (ListPage.vue 抽离) 待 Round3+ 启动后评估
+- ✅ **Round8 闭合**（2026-09-04, PR #419 已合流 main `4939db37`）：
+  - 4 个剩余 FALLBACK 场景 surgical 修复（全部加 `target_scene`，fallback 20% → 0%）：
+    - `cost.analysis.open_cost_ledger` → `target_scene: cost.project_cost_ledger`
+    - `finance.center.open_payment_requests` → `target_scene: finance.payment_requests`
+    - `projects.ledger.open_management` → `target_scene: project.management`
+    - `projects.list.open_intake` → `target_scene: projects.intake`
+  - 5 新 hermetic 单测（4 正向 + 1 负向证明 target_scene 是关键 lever）
+  - **指标（完美状态）**：success 16→20, fallback 4→0, success_rate 80%→**100%**, fallback_rate 20%→**0%**
+  - 6 files / +197 / -26
+- ✅ **Round9 闭合**（2026-09-04, PR #420, Portal 域扩展）：见 item 3
+- ⏸️ **Round10+ 候选**：portal.notifications / portal.audit_log（Portal 域剩余候选）
+- ⏸️ **Round4 候选**（合同-财务纵深）：`contract_to_finance_handshake` 跨域 action_spec（进入条件=Portal 扩展开 1 个后 ✅ 已满足）
+- ⏸️ **Round7b 候选**（ListPage.vue 抽离 2073 行）：待 Round10+ 启动后评估
 
 ## 继承 Wave2 的产物（wave3 起点状态）
 
