@@ -133,16 +133,6 @@ type RuntimeFetchHint = {
 
 const runtimeBlocks = ref<Record<string, Record<string, unknown>>>({});
 
-function positiveRouteString(...keys: string[]): string {
-  for (const key of keys) {
-    const raw = route.query[key];
-    const value = Array.isArray(raw) ? raw[0] : raw;
-    const text = String(value ?? '').trim();
-    if (text) return text;
-  }
-  return '';
-}
-
 function asHint(value: unknown): RuntimeFetchHint | null {
   if (!value || typeof value !== 'object') return null;
   return value as RuntimeFetchHint;
