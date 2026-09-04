@@ -4,13 +4,13 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1346`
+- Total assets: `1349`
 - Review queue: `4`
 - Unknown runtime: `3`
-- Long-running assets: `174`
+- Long-running assets: `175`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `947`
+- PR dedupe candidates: `949`
 
 ## By Layer
 
@@ -20,8 +20,8 @@ Generated from `test_inventory.csv`.
 | contract | 360 |
 | unit | 237 |
 | odoo_integration | 102 |
-| e2e | 45 |
-| security | 30 |
+| e2e | 46 |
+| security | 32 |
 | frontend_acceptance | 24 |
 | gate | 2 |
 | data_migration | 2 |
@@ -30,9 +30,9 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1166 |
+| pr_candidate | 1168 |
 | integration_candidate | 128 |
-| release_candidate | 43 |
+| release_candidate | 44 |
 | manual_review | 4 |
 | release_required | 2 |
 | local_iteration | 1 |
@@ -43,10 +43,10 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 947 |
+| deduplicate_before_required | 949 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 127 |
-| keep_release_only | 43 |
+| keep_release_only | 44 |
 | canonical_entry | 5 |
 | review_or_archive | 4 |
 
@@ -142,9 +142,9 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1168 |
+| <5m | 1170 |
 | 10-30m | 129 |
-| 30-60m | 45 |
+| 30-60m | 46 |
 | unknown | 3 |
 | 10-15m | 1 |
 
@@ -156,8 +156,8 @@ Generated from `test_inventory.csv`.
 | platform owner | 360 |
 | test owner | 238 |
 | backend owner | 102 |
-| qa owner | 45 |
-| security owner | 30 |
+| qa owner | 46 |
+| security owner | 32 |
 | frontend owner | 25 |
 | data owner | 2 |
 
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1205 |
+| scripts/verify | 1208 |
 | scripts/ops | 68 |
 | frontend/apps/web/scripts | 29 |
 | scripts/ci | 19 |
@@ -264,19 +264,19 @@ Generated from `test_inventory.csv`.
 | T-ASSET-166 | governance | `scripts/verify/baseline_freeze_guard.py` | architecture owner |
 | T-ASSET-167 | governance | `scripts/verify/baseline_iteration_execution_policy_guard.py` | architecture owner |
 | T-ASSET-168 | governance | `scripts/verify/baseline_policy_integrity_guard.py` | architecture owner |
-| T-ASSET-173 | governance | `scripts/verify/branch_governance_consistency_guard.py` | architecture owner |
-| T-ASSET-174 | unit | `scripts/verify/build_norm_engine_acceptance_fixture.py` | test owner |
-| T-ASSET-175 | governance | `scripts/verify/business_action_coverage_audit.py` | architecture owner |
-| T-ASSET-178 | governance | `scripts/verify/business_category_dictionary_audit.py` | architecture owner |
-| T-ASSET-180 | contract | `scripts/verify/business_config_contract_snapshot.py` | platform owner |
-| T-ASSET-181 | unit | `scripts/verify/business_config_form_layout_acceptance.js` | test owner |
-| T-ASSET-182 | governance | `scripts/verify/business_config_guard_inventory.py` | architecture owner |
-| T-ASSET-184 | governance | `scripts/verify/business_config_user_language_guard.py` | architecture owner |
-| T-ASSET-185 | governance | `scripts/verify/business_core_journey_guard.py` | architecture owner |
-| T-ASSET-187 | unit | `scripts/verify/business_document_state_policy_switch_smoke.py` | test owner |
-| T-ASSET-188 | governance | `scripts/verify/business_entry_ownership_guard.py` | architecture owner |
-| T-ASSET-189 | governance | `scripts/verify/business_fact_backfill_audit.py` | architecture owner |
-| ... | ... | 867 more | ... |
+| T-ASSET-171 | security | `scripts/verify/boq_dual_role_five_viewport_evidence_guard.py` | security owner |
+| T-ASSET-175 | governance | `scripts/verify/branch_governance_consistency_guard.py` | architecture owner |
+| T-ASSET-176 | unit | `scripts/verify/build_norm_engine_acceptance_fixture.py` | test owner |
+| T-ASSET-177 | governance | `scripts/verify/business_action_coverage_audit.py` | architecture owner |
+| T-ASSET-180 | governance | `scripts/verify/business_category_dictionary_audit.py` | architecture owner |
+| T-ASSET-182 | contract | `scripts/verify/business_config_contract_snapshot.py` | platform owner |
+| T-ASSET-183 | unit | `scripts/verify/business_config_form_layout_acceptance.js` | test owner |
+| T-ASSET-184 | governance | `scripts/verify/business_config_guard_inventory.py` | architecture owner |
+| T-ASSET-186 | governance | `scripts/verify/business_config_user_language_guard.py` | architecture owner |
+| T-ASSET-187 | governance | `scripts/verify/business_core_journey_guard.py` | architecture owner |
+| T-ASSET-189 | unit | `scripts/verify/business_document_state_policy_switch_smoke.py` | test owner |
+| T-ASSET-190 | governance | `scripts/verify/business_entry_ownership_guard.py` | architecture owner |
+| ... | ... | 869 more | ... |
 
 ## Dedupe Hotspots
 

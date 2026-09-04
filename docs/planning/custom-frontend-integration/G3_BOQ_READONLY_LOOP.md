@@ -189,3 +189,123 @@
   不触发 intent 之外的任何数据通道。
 - 五视口/真实角色验收（G3.3-B）仍待环境，证据按 G1
   `acceptance_evidence_contract_v1.schema.json` 归档。
+
+---
+
+## G3.3-B 真实角色/数据/视口验收（harness 已就绪，待环境执行）
+
+### 目标
+
+按规划 README §12 浏览器证据契约 v1，对项目驾驶舱的 BOQ 只读投影
+做**真实角色 × 真实数据 × 真实视口**三重矩阵验收，证明 G3.3-A
+`BlockBoqImportPreview` 在桌面、平板、移动三档视口下都能稳定渲染，
+且两个成本角色看到的页面与受权数据一致；任何视口出现横向溢出、
+契约响应缺 BOQ preview block、console/page error 即视为 G3.3-B 不通过。
+
+### 矩阵规格
+
+| 维度 | 取值 | 来源 |
+| --- | --- | --- |
+| 角色 | `cost_manager`（`sc_fx_cost_manager`）/ `cost_user`（`sc_fx_cost_user`） | G3.1 既有 demo fixture；与既有成本管理场景登录态一致 |
+| 视口 | `1440×900`（桌面大）/ `1280×800`（桌面中）/ `1024×768`（桌面小）/ `768×1024`（平板竖）/ `390×844`（手机） | README §12 + G1 既有 collection-view 视口列表 |
+| 数据集 | `boq_1k`（小型项目，约 1k 行 BOQ 行）/ `boq_10k`（大型项目，约 10k 行） | 既有 `project.boq.import.wizard` 落地的批次 |
+| 笛卡尔积 | 2 × 5 × 2 = 20 cell | 全部必须各自独立截图、独立契约探针 |
+| 路由 | `/s/project.management?project_id=<dataset_project_id>` | G3.3-A 挂接的场景 |
+
+### 交付物
+
+- **harness** `scripts/verify/boq_dual_role_five_viewport_browser_acceptance.mjs`：
+  - 20 cell 顺序执行；每 cell 新建 `browser.newContext` 隔离 cookie/localStorage；
+  - 每 cell 登录对应角色 → 跳到 `project.management` → 等待
+    `[data-block-key="block.project.boq_preview"]` 出现 → 截图；
+  - 监听 `pageerror` / `console.error`（剔除 favicon、ResizeObserver 噪音）
+    / 4xx-5xx 响应 / `ui.contract.v2` POST；
+  - 校验 `ui.contract.v2` 响应中含 `boq_import_preview` block；
+  - 校验无横向溢出（`documentElement.scrollWidth ≤ viewport.width + 2`）。
+- **证据守卫**
+  `scripts/verify/boq_dual_role_five_viewport_evidence_guard.py`：
+  - 校验 `artifacts/boq-dual-role-five-viewport/evidence.json` 满足
+    `config/frontend/acceptance_evidence_contract_v1.schema.json`；
+  - 11 个必填浏览器证据字段每 cell 都齐；
+  - `cross_env_reuse_forbidden`：20 cell 的 `screenshot_digest` 必须两两不同；
+  - 20 cell 必须覆盖 2 × 5 × 2 笛卡尔积；
+  - `environment_assets` 含 3 个受控环境资产 + harness 本体的 sha256；
+  - `baseline_sha` 可追溯到 `origin/main` 历史。
+- **守卫单测**
+  `scripts/verify/test_boq_dual_role_five_viewport_evidence_guard.py`：
+  27 例全绿（结构/矩阵规格/cell 校验/可复现性/集成）。
+- **Make 目标** `make verify.boq.dual_role.five_viewport.evidence`：
+  跑守卫 + 单测；不依赖 dev 环境（无 `evidence.json` 时友好提示）。
+- **测试资产登记** `docs/engineering_convergence/test_inventory.csv`：
+  自动 `T-ASSET-170`（harness，e2e/release_candidate/keep_release_only）、
+  `T-ASSET-171`（evidence guard）、
+  `T-ASSET-1055`（单测）。
+
+### 证据包结构
+
+```jsonc
+{
+  "schema": "frontend_acceptance_evidence_contract.v1",
+  "baseline": { "baseline_sha": "<40-char>", "baseline_sha_source": "...", "capability_inventory_path": "..." },
+  "environment_assets": {
+    "profiles_present": ["daily", "local", "production", "test"],
+    "assets": [ { "path": "...", "sha256": "..." }, ... 4 项 ]
+  },
+  "toolchain": { "node": "v22.x", "playwright": "playwright-runtime.mjs" },
+  "collected_at": "2026-XX-XXTHH:MM:SSZ",
+  "browser_evidence_contract": {
+    "required_fields": [11 项],
+    "cross_env_reuse_forbidden": true
+  },
+  "matrix_spec": { "roles": [...], "viewports": [...], "datasets": [...], "cell_count": 20 },
+  "cells": [
+    {
+      "environment_id": "local",
+      "dataset_id": "boq_1k",
+      "role": "cost_manager",
+      "normalized_route": "/s/project.management?project_id=...,
+      "browser_url": "http://...",
+      "viewport": "1440x900",
+      "capture_mode": "readonly",
+      "browser_full_version": "Chromium 138.x",
+      "screenshot_digest": "<64-char>",
+      "product_service_static_shas": { "frontend_sha": "...", "backend_sha": "...", "contract_schema_sha": "..." },
+      "collected_at_and_tool_version": "2026-...|boq-dual-role-five-viewport-browser-acceptance.mjs@0.1.0"
+    },
+    ... 19 more
+  ]
+}
+```
+
+### 环境前置（执行 harness 时）
+
+- dev nginx + Odoo（`http://127.0.0.1:18083`）；
+- `sc_clean` 数据库存在；
+- `sc_fx_cost_manager` / `sc_fx_cost_user` 两个 fixture 用户已初始化；
+- 1k 行与 10k 行 BOQ 导入批次已通过 G3.1
+  `project.boq.import.wizard` 落地，`BOQ_1K_PROJECT_ID` /
+  `BOQ_10K_PROJECT_ID` 环境变量已 export；
+- `playwright` chromium 已下载（既有 `playwright_runtime.mjs` 复用）。
+
+### 执行入口（待环境）
+
+```bash
+export E2E_PASSWORD='<fixture password>'
+export BOQ_1K_PROJECT_ID=<id>
+export BOQ_10K_PROJECT_ID=<id>
+export FRONTEND_URL=http://127.0.0.1:18083
+export FRONTEND_SHA=<40-char>  # 可选，写入 product_service_static_shas
+export BACKEND_SHA=<40-char>
+export CONTRACT_SCHEMA_SHA=<40-char>
+node scripts/verify/boq_dual_role_five_viewport_browser_acceptance.mjs
+# 验收：
+make verify.boq.dual_role.five_viewport.evidence
+```
+
+### 边界说明
+
+- 20 cell 互不复用截图（`screenshot_digest` 两两不同）；
+- harness 不会触发任何写意图；`capture_mode=readonly` 是 schema 强约束；
+- 任何 cell 出现 `pageerror` / `http 4xx-5xx` / `console.error` / 缺
+  `boq_import_preview` 契约 block / 横向溢出 → 整包标 FAIL，CI 拒绝。
+
