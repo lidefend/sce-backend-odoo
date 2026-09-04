@@ -19,6 +19,13 @@ These tests guard against regression of:
   conversations — a non-navigation data action resolved via the
   non_ui_contract short-circuit — while every notification_link action
   carries an explicit `target_scene` into a real owning scene).
+- Wave3 Round11 — Contract↔Finance Cross-Domain Handshake (upgraded the
+  `contracts.workspace` and `finance.settlement_orders` primaries from
+  related_scene_match to explicit action_scene_ref, and made the finance
+  role's cross-domain default `open_settlement_orders` — the contract→finance
+  settlement handshake backed by sc.contract.event.settlement_included →
+  sc.settlement.order.contract_id — carry an explicit `target_scene` into
+  finance.settlement_orders).
 """
 
 from __future__ import annotations
@@ -661,6 +668,174 @@ class PrimaryActionEdgeCaseTests(unittest.TestCase):
         # inbox falls back to its own route.
         self.assertEqual(resolution, "self_target_fallback")
         self.assertEqual(route, "/s/portal.notifications")
+        self.assertEqual(err, "")
+
+    # ----- Wave3 Round11: Contract↔Finance cross-domain handshake -----
+
+    def test_round11_contracts_workspace_primary_explicit_contract_center(self) -> None:
+        """contracts.workspace.open_contract_center carries an explicit
+        target_scene=contract.center, upgrading the primary resolution from
+        related_scene_match (name-guessing against related_scenes) to
+        action_scene_ref (exact inventory lookup).
+        """
+        inv = _inventory([
+            ("contract.center", "/s/contract.center"),
+            ("contracts.workspace", "/s/contracts.workspace"),
+        ])
+        payload = _base_payload(
+            scene_key="contracts.workspace",
+            primary_action="open_contract_center",
+            action_specs={
+                "open_contract_center": {
+                    "label": "进入合同中心",
+                    "intent": "ui.contract",
+                    "target_scene": "contract.center",
+                },
+            },
+            related_scenes=["contract.center", "finance.settlement_orders"],
+            target_route="/s/contracts.workspace",
+        )
+        route, err, resolution = _resolve_primary_action_route(
+            "contracts.workspace", payload, inv
+        )
+        self.assertEqual(resolution, "action_scene_ref")
+        self.assertEqual(route, "/s/contract.center")
+        self.assertEqual(err, "")
+
+    def test_round11_settlement_orders_primary_explicit_finance_center(self) -> None:
+        """finance.settlement_orders.open_finance_center carries an explicit
+        target_scene=finance.center → action_scene_ref instead of matching the
+        owning scene through the related_scenes list.
+        """
+        inv = _inventory([
+            ("finance.center", "/s/finance.center"),
+            ("finance.workspace", "/s/finance.workspace"),
+            ("finance.settlement_orders", "/s/finance.settlement_orders"),
+        ])
+        payload = _base_payload(
+            scene_key="finance.settlement_orders",
+            primary_action="open_finance_center",
+            action_specs={
+                "open_finance_center": {
+                    "label": "返回财务中心",
+                    "intent": "ui.contract",
+                    "target_scene": "finance.center",
+                },
+                "open_treasury_ledger": {
+                    "label": "查看资金台账",
+                    "intent": "ui.contract",
+                    "target_scene": "finance.workspace",
+                },
+            },
+            related_scenes=["finance.center", "finance.workspace"],
+            target_route="/s/finance.settlement_orders",
+        )
+        route, err, resolution = _resolve_primary_action_route(
+            "finance.settlement_orders", payload, inv
+        )
+        self.assertEqual(resolution, "action_scene_ref")
+        self.assertEqual(route, "/s/finance.center")
+        self.assertEqual(err, "")
+
+    def test_round11_contract_finance_handshake_actions_all_explicit(self) -> None:
+        """Product invariant: every ui.contract action on the two handshake
+        scenes (contracts.workspace / finance.settlement_orders) carries an
+        explicit target_scene pointing into an openable owning route.
+
+        The finance role's cross-domain default `open_settlement_orders` — the
+        contract→finance handshake routing 合同履约事件 (sc.contract.event with
+        settlement_included=True) into the settlement orders list
+        (sc.settlement.order.contract_id) — must resolve exactly, never via
+        fuzzy matching or self-fallback.
+        """
+        inv = _inventory([
+            ("contract.center", "/s/contract.center"),
+            ("contracts.workspace", "/s/contracts.workspace"),
+            ("finance.center", "/s/finance.center"),
+            ("finance.workspace", "/s/finance.workspace"),
+            ("finance.settlement_orders", "/s/finance.settlement_orders"),
+        ])
+        scene_actions = {
+            "contracts.workspace": {
+                "open_contract_center": {
+                    "label": "进入合同中心",
+                    "intent": "ui.contract",
+                    "target_scene": "contract.center",
+                },
+                "open_settlement_orders": {
+                    "label": "查看结算单",
+                    "intent": "ui.contract",
+                    "target_scene": "finance.settlement_orders",
+                },
+            },
+            "finance.settlement_orders": {
+                "open_finance_center": {
+                    "label": "返回财务中心",
+                    "intent": "ui.contract",
+                    "target_scene": "finance.center",
+                },
+                "open_treasury_ledger": {
+                    "label": "查看资金台账",
+                    "intent": "ui.contract",
+                    "target_scene": "finance.workspace",
+                },
+            },
+        }
+        for scene_key, action_specs in scene_actions.items():
+            for action_key, spec in action_specs.items():
+                self.assertEqual(
+                    spec["intent"], "ui.contract", f"{scene_key}.{action_key} intent"
+                )
+                target_scene = spec.get("target_scene")
+                self.assertTrue(
+                    target_scene, f"{scene_key}.{action_key} missing target_scene"
+                )
+                self.assertIn(
+                    target_scene, inv, f"{scene_key}.{action_key} target not in inventory"
+                )
+                self.assertTrue(
+                    _is_route_openable(_resolve_inventory_route(target_scene, inv)),
+                    f"{scene_key}.{action_key} target_scene={target_scene} not openable",
+                )
+        # The handshake pairing itself: the finance role's contract-workspace
+        # default must point at the settlement orders owning scene.
+        self.assertEqual(
+            scene_actions["contracts.workspace"]["open_settlement_orders"]["target_scene"],
+            "finance.settlement_orders",
+        )
+
+    def test_round11_handshake_link_without_target_falls_back(self) -> None:
+        """Negative proof: the contract→finance handshake is not intrinsic to
+        contracts.workspace — if open_settlement_orders loses its target_scene
+        and the owning scene is not reachable through related_scenes, the
+        action degrades to self_target_fallback.  Explicit target_scene is the
+        lever that makes the cross-domain handshake resolve exactly.
+
+        related_scenes deliberately excludes finance.settlement_orders (the
+        owning scene is reachable only via the per-action target_scene).
+        """
+        inv = _inventory([
+            ("contracts.workspace", "/s/contracts.workspace"),
+            ("finance.settlement_orders", "/s/finance.settlement_orders"),
+        ])
+        payload = _base_payload(
+            scene_key="contracts.workspace",
+            primary_action="open_settlement_orders",
+            action_specs={
+                "open_settlement_orders": {
+                    "label": "查看结算单",
+                    "intent": "ui.contract",
+                    # target_scene intentionally removed (regression scenario)
+                },
+            },
+            related_scenes=["cost.analysis", "contract.center"],
+            target_route="/s/contracts.workspace",
+        )
+        route, err, resolution = _resolve_primary_action_route(
+            "contracts.workspace", payload, inv
+        )
+        self.assertEqual(resolution, "self_target_fallback")
+        self.assertEqual(route, "/s/contracts.workspace")
         self.assertEqual(err, "")
 
 
