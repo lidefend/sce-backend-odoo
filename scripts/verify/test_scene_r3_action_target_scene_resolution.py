@@ -4,9 +4,13 @@
 `target_scene` field on action_specs and the `intent != "ui.contract"`
 short-circuit (form-submit semantics).
 
-These tests guard against regression of Wave3 Round7 — Action Chain Upgrade
-Pilot which added `target_scene` to 4 scene payloads and switched
-`projects.intake.submit.intent` from "ui.contract" to "api.data".
+These tests guard against regression of:
+- Wave3 Round7 — Action Chain Upgrade Pilot (added `target_scene` to 4 scene
+  payloads and switched `projects.intake.submit.intent` from "ui.contract"
+  to "api.data").
+- Wave3 Round8 — Final FALLBACK Eradication (added `target_scene` to 4 more
+  scene payloads: cost.analysis / finance.center / projects.ledger /
+  projects.list, bringing the action_chain_fallback_rate from 20% to 0%).
 """
 
 from __future__ import annotations
@@ -253,6 +257,141 @@ class PrimaryActionEdgeCaseTests(unittest.TestCase):
         )
         self.assertEqual(resolution, "unresolved")
         self.assertIn("action_specs missing primary_action", err)
+
+    # ----- Wave3 Round8: Final FALLBACK eradication -----
+
+    def test_round8_cost_analysis_target_scene_resolves(self) -> None:
+        """cost.analysis.open_cost_ledger → target_scene cost.project_cost_ledger."""
+        inv = _inventory([
+            ("cost.analysis", "/s/cost.analysis"),
+            ("cost.project_cost_ledger", "/s/cost.cost_compare"),
+        ])
+        payload = _base_payload(
+            scene_key="cost.analysis",
+            primary_action="open_cost_ledger",
+            action_specs={
+                "open_cost_ledger": {
+                    "label": "查看成本台账",
+                    "intent": "ui.contract",
+                    "target_scene": "cost.project_cost_ledger",
+                },
+            },
+            related_scenes=["cost.project_cost_ledger", "cost.profit_compare"],
+            target_route="/s/cost.analysis",
+        )
+        route, err, resolution = _resolve_primary_action_route(
+            "cost.analysis", payload, inv
+        )
+        self.assertEqual(resolution, "action_scene_ref")
+        self.assertEqual(route, "/s/cost.cost_compare")
+        self.assertEqual(err, "")
+
+    def test_round8_finance_center_target_scene_resolves(self) -> None:
+        """finance.center.open_payment_requests → target_scene finance.payment_requests."""
+        inv = _inventory([
+            ("finance.center", "/s/finance.center"),
+            ("finance.payment_requests", "/s/finance.payment_requests"),
+        ])
+        payload = _base_payload(
+            scene_key="finance.center",
+            primary_action="open_payment_requests",
+            action_specs={
+                "open_payment_requests": {
+                    "label": "查看付款收款申请",
+                    "intent": "ui.contract",
+                    "target_scene": "finance.payment_requests",
+                },
+            },
+            related_scenes=["finance.payment_requests", "finance.settlement_orders"],
+            target_route="/s/finance.center",
+        )
+        route, err, resolution = _resolve_primary_action_route(
+            "finance.center", payload, inv
+        )
+        self.assertEqual(resolution, "action_scene_ref")
+        self.assertEqual(route, "/s/finance.payment_requests")
+        self.assertEqual(err, "")
+
+    def test_round8_projects_ledger_target_scene_resolves(self) -> None:
+        """projects.ledger.open_management → target_scene project.management."""
+        inv = _inventory([
+            ("projects.ledger", "/s/projects.ledger"),
+            ("project.management", "/pm/dashboard"),
+        ])
+        payload = _base_payload(
+            scene_key="projects.ledger",
+            primary_action="open_management",
+            action_specs={
+                "open_management": {
+                    "label": "查看项目驾驶舱",
+                    "intent": "ui.contract",
+                    "target_scene": "project.management",
+                },
+            },
+            related_scenes=["projects.intake", "projects.list", "project.management"],
+            target_route="/s/projects.ledger",
+        )
+        route, err, resolution = _resolve_primary_action_route(
+            "projects.ledger", payload, inv
+        )
+        self.assertEqual(resolution, "action_scene_ref")
+        self.assertEqual(route, "/pm/dashboard")
+        self.assertEqual(err, "")
+
+    def test_round8_projects_list_target_scene_resolves(self) -> None:
+        """projects.list.open_intake → target_scene projects.intake."""
+        inv = _inventory([
+            ("projects.list", "/s/projects.list"),
+            ("projects.intake", "/s/projects.intake"),
+        ])
+        payload = _base_payload(
+            scene_key="projects.list",
+            primary_action="open_intake",
+            action_specs={
+                "open_intake": {
+                    "label": "新建立项",
+                    "intent": "ui.contract",
+                    "target_scene": "projects.intake",
+                },
+            },
+            related_scenes=["projects.intake", "project.management", "projects.ledger"],
+            target_route="/s/projects.list",
+        )
+        route, err, resolution = _resolve_primary_action_route(
+            "projects.list", payload, inv
+        )
+        self.assertEqual(resolution, "action_scene_ref")
+        self.assertEqual(route, "/s/projects.intake")
+        self.assertEqual(err, "")
+
+    def test_round8_without_target_scene_still_falls_back(self) -> None:
+        """Negative case: without target_scene and no fuzzy match, falls back to self.
+
+        Demonstrates that Round8's `target_scene` field is the actual lever —
+        removing it would re-introduce the self_target_fallback path.
+        """
+        inv = _inventory([
+            ("cost.analysis", "/s/cost.analysis"),
+        ])
+        payload = _base_payload(
+            scene_key="cost.analysis",
+            primary_action="open_cost_ledger",
+            action_specs={
+                "open_cost_ledger": {
+                    "label": "查看成本台账",
+                    "intent": "ui.contract",
+                    # NO target_scene — Round8 lever removed
+                },
+            },
+            related_scenes=["cost.project_cost_ledger", "cost.profit_compare"],
+            target_route="/s/cost.analysis",
+        )
+        route, err, resolution = _resolve_primary_action_route(
+            "cost.analysis", payload, inv
+        )
+        self.assertEqual(resolution, "self_target_fallback")
+        self.assertEqual(route, "/s/cost.analysis")
+        self.assertEqual(err, "")
 
 
 if __name__ == "__main__":

@@ -760,7 +760,8 @@
                 'action_specs': {
                     'open_cost_ledger': {
                         'label': '查看成本台账',
-                        'intent': 'ui.contract'
+                        'intent': 'ui.contract',
+                        'target_scene': 'cost.project_cost_ledger'
                     },
                     'open_profit_compare': {
                         'label': '查看盈亏对比',
