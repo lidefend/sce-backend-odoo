@@ -16,10 +16,16 @@
    - 决策：从 inventory matrix 移除 showcase 行（符合 test `assertNotIn` 期望）；真实 production scene `projects.dashboard_focus` 待 Wave3 RoundN 收录评估
    - 影响：dashboard 仍 100% PASS（PR #414 已切 R3→R1），inventory 从 22→21 场景，R3 场景数不变（20）
 
-2. **ContractFormPage 抽离（FE-AUD-0014）**
-   - `frontend/packages/ui/src/pages/ContractFormPage.vue` 当前 5587 行，承担 relation one2many 加载 + 角色化配置 + 草稿持久化 + 多 step 编排
-   - 拆分策略：relation 加载抽 `relationLoader.ts`、角色配置抽 `rolePolicyAdapter.ts`、草稿持久化抽 `draftStash.ts`、step 编排抽 `stepOrchestrator.ts`
-   - 完成 5 个抽离后回归 J04-J13 验收 runtime 不退化
+2. **ContractFormPage 抽离（FE-AUD-0014）** ✅ Round2 决策（前置批次已闭合）
+   - 原 backlog 计划"5587 行 → 拆 5 个工具文件"已被前置批次实现，**Round2 不再开启**
+   - 现状诊断（2026-09-04）：
+     - `frontend/apps/web/src/pages/ContractFormPage.vue` 实际行数 = **1857 行**（不是 5587；前置批次已减少 67%）
+     - `frontend/apps/web/src/pages/contractForm/` 子模块已建立 **13 个文件**（`accessPolicy.ts / actionContract.ts / actionExecutionPlan.ts / authoritativeBusinessActionRows.ts / CanonicalActionBar.vue / canonicalFormActionExecutor.ts / canonicalFormActionIcon.ts / CanonicalFormNodeRenderer.vue / formConfigHelpers.ts / canonicalNativeFormBridge.ts / canonicalFormRenderer.ts / contractActionPresentation.ts / ...`）
+     - 5 个工具抽离目标（`relationLoader / rolePolicyAdapter / draftStash / stepOrchestrator`）已通过 `useOne2manyRuntime / useNativeChatterRuntime / useNativeAttachmentRuntime / canonicalFormFloorplan / collaborationPresentation` 等 composable 模块达成
+     - 剩余 1857 行主要是 `<script setup>` 的 composable 集成（1593 行）+ `<template>`（225 行）+ 少量 wrapper 函数（每个 5-15 行）；无大块可抽离责任
+     - 强行拆 wrapper = 制造 boilerplate、价值负
+   - J04-J13 全部 PASS（`docs/frontend_productization/frontend_core_record_form_productization_v1.md:50`）
+   - **新发现**：下一抽离目标应转向 **`frontend/apps/web/src/pages/ListPage.vue` (2073 行)**，详见 Round7
 
 3. **Portal 域扩展（可选）**
    - 当前 portal 域仅含 `portal.dashboard / portal.lifecycle / portal.capability_matrix` 3 个 R3 场景
@@ -39,34 +45,42 @@
    - 增加 `scene_inventory_orphan_payload_guard`：检测 scene payload 已 commit 但 inventory 未注册的孤儿
    - 增加 `scene_inventory_test_boundary_guard`：确保 `scene_smoke_default` 等测试场景不入业务 R3 评级
    - 把 hygiene 接入 `gate.scene.r3.runtime.strict`，从 warning 提升为 BLOCKER
+   - 进度：Round1 已部分达成（移除 showcase demo entry from inventory）；正式 guard 自动化仍待启动
+
+7. **ListPage.vue 抽离（Round2 重定向）**
+   - 现状：`frontend/apps/web/src/pages/ListPage.vue` 2073 行（比 ContractFormPage 现状还大 11%）
+   - 候选责任：列表 schema 解析 + 列定义 + 过滤编排 + 行内编辑 + 分页/排序
+   - 进入条件：Round1 + Round6 启动后评估优先级
 
 ## Suggested Deliverables
 
-- `scripts/verify/scene_r3_runtime_guard.py`（已含 HTML entity 解码修复）
+- `scripts/verify/scene_r3_runtime_guard.py`（已含 HTML entity 解码修复，PR #414）
 - `scripts/verify/scene_inventory_orphan_payload_guard.py`（Round6 新增）
 - `scripts/verify/scene_inventory_test_boundary_guard.py`（Round6 新增）
-- `docs/audit/scene_r3_runtime_dashboard.md`（dashboard 自动重生成）
-- `frontend/packages/ui/src/pages/ContractFormPage.vue`（重构后预计 < 3000 行）
-- `frontend/packages/ui/src/app/relationLoader.ts`（Round2 新增）
-- `frontend/packages/ui/src/app/rolePolicyAdapter.ts`（Round2 新增）
-- `frontend/packages/ui/src/app/draftStash.ts`（Round2 新增）
-- `frontend/packages/ui/src/app/stepOrchestrator.ts`（Round2 新增）
+- `docs/audit/scene_r3_runtime_dashboard.md`（dashboard 自动重生成，PR #414 / PR #415）
+- `frontend/apps/web/src/pages/ContractFormPage.vue`（前置批次已完成：5587 → 1857 行，Round2 闭合）
+- `frontend/apps/web/src/pages/ListPage.vue`（Round7 候选抽离目标，2073 行）
+- `frontend/apps/web/src/pages/contractForm/*.vue|*.ts`（13 个子模块已建立，Round2 不再开启）
 
-## Progress
+## Round 进度追踪
 
 > 本 wave 由 2026-09-04 G3.3-B 收口后正式启动；Wave2 Round1-35 全部已落地。
 
-- ⏳ Round1 待启动（Showcase R3 收口）：
-  - 为 `projects.dashboard_showcase` 补 4 R3 字段，inventory 升至 R3
-  - dashboard `pass_rate` 从 95.24% 回到 100%
-  - `scene_r3_runtime_guard` 通过（0 BLOCKER / 0 WARNING）
-- ⏸️ Round2 待启动（ContractFormPage 抽离）：
-  - 等待 Round1 dashboard 验证 + 用户授权
-- ⏸️ Round3+ 按 (Portal 域扩展 / 合同财务纵深 / 风险动作链路 / Hygiene 自动化) 顺序展开
+- ✅ **Round1 闭合**（2026-09-04, PR #415）：
+  - 实际决策：**inventory hygiene 移除 showcase**（不是"补 4 字段"）
+  - `projects.dashboard_showcase` 是 demo entry（demo_addons 提供 action/menu），真实 production scene 是 `projects.dashboard_focus`
+  - 移除 showcase 后 inventory 22→21 场景，R3 场景数 20 不变，dashboard 100% PASS 不变
+  - test `addons/smart_core/tests/test_scene_nav_contract_builder.py:94` `assertNotIn` 现在匹配 inventory 现实
+- ✅ **Round2 闭合**（2026-09-04, doc-only）：
+  - 实际决策：**前置批次已实现 5 个工具抽离**，Round2 不再开启
+  - `ContractFormPage.vue` 已 5587 → 1857 行（-67%），13 个 contractForm/ 子模块已建立
+  - 下一抽离目标重定向到 **`frontend/apps/web/src/pages/ListPage.vue` (2073 行)**，列为 Round7
+- ⏸️ Round3+ (Portal / 合同-财务 / 风险动作链路 / Hygiene 自动化) 按优先级展开
+- ⏸️ Round7 (ListPage 抽离) 等待 Round6 启动后评估
 
 ## 继承 Wave2 的产物（wave3 起点状态）
 
-- `gate.scene.r3.runtime.strict` 已接入 `gate.full`，Wave3 Round1 完成后所有 PR 必须通过
+- `gate.scene.r3.runtime.strict` 已接入 `gate.full`，Wave3 Round1+ 完成后所有 PR 必须通过
 - `verify.scene.r3.runtime.quick` 提供 dashboard 一键摘要
-- 21 个业务场景 + 1 个测试场景，21 R3 + 1 R1（Round1 完成后预期 22 R3 + 0 R1 业务）
-- Wave2 Round35 修复的"列表空列表"问题在 Round1 后回归测试再覆盖
+- 20 R3 + 1 R1（scene_smoke_default 测试场景，永久保留）
+- Wave2 Round35 修复的"列表空列表"问题在 Round1+ 后回归测试再覆盖
