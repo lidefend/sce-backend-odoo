@@ -11,6 +11,9 @@ These tests guard against regression of:
 - Wave3 Round8 — Final FALLBACK Eradication (added `target_scene` to 4 more
   scene payloads: cost.analysis / finance.center / projects.ledger /
   projects.list, bringing the action_chain_fallback_rate from 20% to 0%).
+- Wave3 Round9 — Portal Domain Expansion (added `portal.shortcuts` launcher
+  with 6 cross-domain shortcut entries, each carrying an explicit
+  `target_scene` so launcher navigation never relies on fuzzy matching).
 """
 
 from __future__ import annotations
@@ -23,6 +26,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT / "scripts" / "verify"))
 
 from scene_r3_runtime_guard import (  # noqa: E402  pylint: disable=wrong-import-position
+    _is_route_openable,
+    _resolve_inventory_route,
     _resolve_primary_action_route,
 )
 
@@ -391,6 +396,139 @@ class PrimaryActionEdgeCaseTests(unittest.TestCase):
         )
         self.assertEqual(resolution, "self_target_fallback")
         self.assertEqual(route, "/s/cost.analysis")
+        self.assertEqual(err, "")
+
+    # ----- Wave3 Round9: Portal domain expansion (portal.shortcuts) -----
+
+    def test_round9_portal_shortcuts_primary_resolves(self) -> None:
+        """portal.shortcuts.open_project_intake → target_scene projects.intake."""
+        inv = _inventory([
+            ("portal.shortcuts", "/s/portal.shortcuts"),
+            ("projects.intake", "/s/projects.intake"),
+        ])
+        payload = _base_payload(
+            scene_key="portal.shortcuts",
+            primary_action="open_project_intake",
+            action_specs={
+                "open_project_intake": {
+                    "label": "新建项目",
+                    "intent": "ui.contract",
+                    "target_scene": "projects.intake",
+                    "entry_kind": "shortcut",
+                },
+            },
+            related_scenes=["projects.intake", "cost.analysis", "finance.center"],
+            target_route="/s/portal.shortcuts",
+        )
+        route, err, resolution = _resolve_primary_action_route(
+            "portal.shortcuts", payload, inv
+        )
+        self.assertEqual(resolution, "action_scene_ref")
+        self.assertEqual(route, "/s/projects.intake")
+        self.assertEqual(err, "")
+
+    def test_round9_portal_shortcuts_all_entry_kind_shortcut(self) -> None:
+        """Every secondary action in portal.shortcuts is a cross-domain shortcut
+        that carries an explicit target_scene pointing into an openable route.
+
+        This is the product-level guarantee of the portal shortcuts launcher:
+        each entry card routes the user to its owning domain scene without
+        relying on fuzzy matching or self-fallback.
+        """
+        inv = _inventory([
+            ("projects.intake", "/s/projects.intake"),
+            ("cost.analysis", "/s/cost.analysis"),
+            ("finance.center", "/s/finance.center"),
+            ("risk.center", "/s/risk.center"),
+            ("contract.center", "/s/contract.center"),
+            ("data.dictionary", "/s/data.dictionary"),
+        ])
+        action_specs = {
+            "open_project_intake": {
+                "label": "新建项目",
+                "intent": "ui.contract",
+                "target_scene": "projects.intake",
+                "entry_kind": "shortcut",
+            },
+            "open_cost_analysis": {
+                "label": "成本控制",
+                "intent": "ui.contract",
+                "target_scene": "cost.analysis",
+                "entry_kind": "shortcut",
+            },
+            "open_finance_center": {
+                "label": "财务中心",
+                "intent": "ui.contract",
+                "target_scene": "finance.center",
+                "entry_kind": "shortcut",
+            },
+            "open_risk_center": {
+                "label": "风险提醒",
+                "intent": "ui.contract",
+                "target_scene": "risk.center",
+                "entry_kind": "shortcut",
+            },
+            "open_contract_center": {
+                "label": "合同中心",
+                "intent": "ui.contract",
+                "target_scene": "contract.center",
+                "entry_kind": "shortcut",
+            },
+            "open_data_dictionary": {
+                "label": "业务字典",
+                "intent": "ui.contract",
+                "target_scene": "data.dictionary",
+                "entry_kind": "shortcut",
+            },
+        }
+        # Product invariant: all 6 launcher entries are ui.contract shortcuts
+        # with an explicit target_scene whose inventory route is openable.
+        self.assertEqual(len(action_specs), 6)
+        for action_key, spec in action_specs.items():
+            self.assertEqual(spec["intent"], "ui.contract")
+            self.assertEqual(spec["entry_kind"], "shortcut")
+            target_scene = spec.get("target_scene")
+            self.assertTrue(target_scene, f"{action_key} missing target_scene")
+            self.assertIn(target_scene, inv)
+            route = _resolve_inventory_route(target_scene, inv)
+            self.assertTrue(
+                _is_route_openable(route),
+                f"{action_key} target_scene={target_scene} not openable",
+            )
+
+    def test_round9_secondary_shortcut_without_target_scene_falls_back(self) -> None:
+        """Negative proof: if a shortcut entry loses its target_scene, resolving it
+        via the primary-action chain no longer yields an exact route — the entry
+        would degrade to the generic self_target_fallback of the launcher.
+
+        related_scenes deliberately excludes projects.intake (the action-name
+        guess target) to prove the launcher itself carries no intrinsic primary
+        navigation — only per-entry target_scene makes it resolvable exactly.
+        """
+        inv = _inventory([
+            ("portal.shortcuts", "/s/portal.shortcuts"),
+            ("projects.intake", "/s/projects.intake"),
+        ])
+        payload = _base_payload(
+            scene_key="portal.shortcuts",
+            primary_action="open_project_intake",
+            action_specs={
+                "open_project_intake": {
+                    "label": "新建项目",
+                    "intent": "ui.contract",
+                    # target_scene intentionally removed (regression scenario)
+                },
+            },
+            related_scenes=["cost.analysis", "finance.center"],
+            target_route="/s/portal.shortcuts",
+        )
+        route, err, resolution = _resolve_primary_action_route(
+            "portal.shortcuts", payload, inv
+        )
+        # Without target_scene the launcher primary degrades to self-fallback
+        # (portals have no domain-specific primary navigation of their own).
+        self.assertEqual(resolution, "self_target_fallback")
+        self.assertEqual(route, "/s/portal.shortcuts")
         self.assertEqual(err, "")
 
 

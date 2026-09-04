@@ -443,6 +443,125 @@
             <field name="active_version_id" ref="sc_scene_version_portal_dashboard_v2"/>
         </record>
 
+        <!-- Portal shortcuts scene -->
+        <record id="sc_scene_version_portal_shortcuts_v1" model="sc.scene.version">
+            <field name="scene_id" ref="sc_scene_portal_shortcuts"/>
+            <field name="version">v1</field>
+            <field name="source">system</field>
+            <field name="payload_json" eval="{
+                'code': 'portal.shortcuts',
+                'name': '快捷入口',
+                'version': 'v1',
+                'portal_only': False,
+                'spa_ready': True,
+                'page': {
+                    'key': 'portal.shortcuts.launcher',
+                    'title': '快捷入口',
+                    'page_type': 'launcher',
+                    'page_mode': 'workspace'
+                },
+                'layout': {'kind': 'workspace', 'sidebar': 'fixed', 'header': 'full'},
+                'zone_blocks': [
+                    {
+                        'key': 'frequent_entries',
+                        'title': '高频入口',
+                        'zone_type': 'hero',
+                        'display_mode': 'grid',
+                        'block_key': 'block.portal.shortcuts.frequent_entries'
+                    },
+                    {
+                        'key': 'domain_entries',
+                        'title': '业务域入口',
+                        'zone_type': 'primary',
+                        'display_mode': 'grid',
+                        'block_key': 'block.portal.shortcuts.domain_entries'
+                    },
+                    {
+                        'key': 'recent_scenes',
+                        'title': '最近访问',
+                        'zone_type': 'supporting',
+                        'display_mode': 'list',
+                        'block_key': 'block.portal.shortcuts.recent_scenes'
+                    }
+                ],
+                'related_scenes': ['projects.intake', 'cost.analysis', 'finance.center', 'risk.center', 'contract.center', 'data.dictionary'],
+                'action_specs': {
+                    'open_project_intake': {
+                        'label': '新建项目',
+                        'intent': 'ui.contract',
+                        'target_scene': 'projects.intake',
+                        'entry_kind': 'shortcut'
+                    },
+                    'open_cost_analysis': {
+                        'label': '成本控制',
+                        'intent': 'ui.contract',
+                        'target_scene': 'cost.analysis',
+                        'entry_kind': 'shortcut'
+                    },
+                    'open_finance_center': {
+                        'label': '财务中心',
+                        'intent': 'ui.contract',
+                        'target_scene': 'finance.center',
+                        'entry_kind': 'shortcut'
+                    },
+                    'open_risk_center': {
+                        'label': '风险提醒',
+                        'intent': 'ui.contract',
+                        'target_scene': 'risk.center',
+                        'entry_kind': 'shortcut'
+                    },
+                    'open_contract_center': {
+                        'label': '合同中心',
+                        'intent': 'ui.contract',
+                        'target_scene': 'contract.center',
+                        'entry_kind': 'shortcut'
+                    },
+                    'open_data_dictionary': {
+                        'label': '业务字典',
+                        'intent': 'ui.contract',
+                        'target_scene': 'data.dictionary',
+                        'entry_kind': 'shortcut'
+                    }
+                },
+                'role_variants': {
+                    'pm': {
+                        'default_actions': ['open_project_intake', 'open_cost_analysis', 'open_finance_center', 'open_risk_center', 'open_contract_center', 'open_data_dictionary'],
+                        'focus_zones': ['frequent_entries', 'domain_entries']
+                    },
+                    'executive': {
+                        'default_actions': ['open_cost_analysis', 'open_finance_center', 'open_risk_center'],
+                        'focus_zones': ['domain_entries', 'frequent_entries']
+                    },
+                    'cost_manager': {
+                        'default_actions': ['open_cost_analysis', 'open_finance_center', 'open_contract_center'],
+                        'focus_zones': ['domain_entries']
+                    }
+                },
+                'data_sources': {
+                    'shortcut_entries': {
+                        'source_type': 'computed',
+                        'provider': 'portal.shortcuts.entries'
+                    },
+                    'recent_scenes': {
+                        'source_type': 'computed',
+                        'provider': 'portal.shortcuts.recent'
+                    }
+                },
+                'product_policy': {
+                    'role_based': True,
+                    'primary_action': 'open_project_intake',
+                    'stage': 'wave3'
+                },
+                'target': {
+                    'route': '/s/portal.shortcuts'
+                }
+            }"/>
+        </record>
+
+        <record id="sc_scene_portal_shortcuts" model="sc.scene">
+            <field name="active_version_id" ref="sc_scene_version_portal_shortcuts_v1"/>
+        </record>
+
         <!-- My work scene -->
         <record id="sc_scene_version_my_work_workspace_v2" model="sc.scene.version">
             <field name="scene_id" ref="sc_scene_my_work_workspace"/>

@@ -1,13 +1,13 @@
 # Scene R3 Runtime Dashboard
 
-更新时间：2026-09-04 14:41:57
+更新时间：2026-09-04 15:19:16
 
 ## Summary
 
-- `r3_scene_count`: 20
-- `pass_count`: 20
+- `r3_scene_count`: 21
+- `pass_count`: 21
 - `fail_count`: 0
-- `action_chain_success_count`: 20
+- `action_chain_success_count`: 21
 - `action_chain_fallback_count`: 0
 - `action_chain_fail_count`: 0
 - `pass_rate`: 100.00%
@@ -45,6 +45,7 @@
 | portal.capability_matrix | ✅ | ✅ | ✅ | ✅ | ✅ | SUCCESS | related_scene_match | /pm/dashboard | ✅ | PASS |
 | portal.dashboard | ✅ | ✅ | ✅ | ✅ | ✅ | SUCCESS | related_scene_match | /pm/dashboard | ✅ | PASS |
 | portal.lifecycle | ✅ | ✅ | ✅ | ✅ | ✅ | SUCCESS | related_scene_match | /pm/dashboard | ✅ | PASS |
+| portal.shortcuts | ✅ | ✅ | ✅ | ✅ | ✅ | SUCCESS | action_scene_ref | /s/projects.intake | ✅ | PASS |
 | project.management | ✅ | ✅ | ✅ | ✅ | ✅ | SUCCESS | related_scene_match | /s/projects.ledger | ✅ | PASS |
 | projects.dashboard | ✅ | ✅ | ✅ | ✅ | ✅ | SUCCESS | related_scene_match | /pm/dashboard | ✅ | PASS |
 | projects.intake | ✅ | ✅ | ✅ | ✅ | ✅ | SUCCESS | non_ui_contract | N/A | ✅ | PASS |
