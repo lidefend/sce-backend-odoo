@@ -284,7 +284,12 @@ def fingerprint_domain_contract(
     # Find model file
     model_path, odoo_model_name = find_model_file(module, model_name_from_contract, entity)
     if model_path:
-        fp["model_file"] = str(model_path.relative_to(ROOT))
+        # Normalise to POSIX-style relative path so the fingerprint is
+        # identical on Windows (drvfs returns '\\') and Linux/macOS
+        # (CI ubuntu-latest returns '/'). Without this, local reruns
+        # fail on cross-platform checkouts even when the underlying
+        # model code is unchanged.
+        fp["model_file"] = model_path.relative_to(ROOT).as_posix()
         fp["odoo_model"] = odoo_model_name
         fp["model_fields"] = extract_field_info(model_path, field_names)
     else:
@@ -396,7 +401,7 @@ def generate_fingerprint() -> Dict[str, Any]:
         "schemas": schemas,
         "extensions": extensions,
         "product_contracts": product_contracts,
-        "state_machine_file": str(STATE_MACHINE_PATH.relative_to(ROOT)),
+        "state_machine_file": STATE_MACHINE_PATH.relative_to(ROOT).as_posix(),
     }
 
 

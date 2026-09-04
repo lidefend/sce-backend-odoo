@@ -296,7 +296,7 @@ def scene_entry_orchestrator_specs():
             "suggested_action_key": "load_dashboard_progress",
             "suggested_action_reason_code": "PROJECT_DASHBOARD_READY",
             "block_fetch_intent": "project.dashboard.block.fetch",
-            "block_alias_map": {"risk": "risks"},
+            "block_alias_map": {"risk": "risks", "boq": "boq_preview"},
             "first_action_block_keys": ["progress"],
             "entry_summary_keys": (
                 "project_code",
@@ -315,6 +315,7 @@ def scene_entry_orchestrator_specs():
                 ("progress", "项目进度", "deferred"),
                 ("risks", "风险提醒", "deferred"),
                 ("next_actions", "下一步动作", "deferred"),
+                ("boq", "清单导入预览", "deferred"),
             ),
         },
         "ProjectExecutionSceneOrchestrator": {

@@ -62,7 +62,10 @@ def digest(paths: list[Path], extra: str = "") -> str:
     if extra:
         output.update(extra.encode())
         output.update(b"\0")
-    for path in sorted(set(paths)):
+    # Sort by as_posix string for cross-platform consistency:
+    # pathlib.Path.__lt__ is case-insensitive on Windows and case-sensitive on Linux,
+    # which would otherwise produce different digest streams.
+    for path in sorted(set(paths), key=lambda p: p.as_posix()):
         output.update(relative(path).encode())
         output.update(b"\0")
         # Normalize line endings for cross-platform digest consistency

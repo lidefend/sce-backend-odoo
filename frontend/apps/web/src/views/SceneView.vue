@@ -209,6 +209,7 @@ const currentSceneKey = computed(() => String(route.params.sceneKey || route.met
 const sceneContractEntryIntentMap: Record<string, string> = {
   'workspace.home': 'workspace.home.enter',
   'dashboard.company': 'dashboard.company.enter',
+  'project.management': 'project.dashboard.enter',
 };
 const sceneContractEntryIntent = computed(() => {
   const routeIntent = String(route.query.entry_intent || route.query.scene_intent || '').trim();
@@ -916,7 +917,11 @@ function fallbackSceneFromEntryIntent(sceneKey: string): Scene | null {
   if (!sceneContractEntryIntentMap[key]) return null;
   return {
     key,
-    label: key === 'dashboard.company' ? '公司驾驶舱' : '角色首页',
+    label: key === 'dashboard.company'
+      ? '公司驾驶舱'
+      : key === 'project.management'
+        ? '项目驾驶舱'
+        : '角色首页',
     route: `/s/${key}`,
     target: {
       route: `/s/${key}`,
@@ -1004,7 +1009,7 @@ async function resolveScene() {
       await hydrateSceneReadyForCurrentScene(sceneKey);
       scene.value = getSceneByKey(sceneKey) || resolvedScene;
     }
-    if (sceneContractEntryIntentMap[sceneKey]) {
+    if (sceneContractEntryIntent.value) {
       status.value = 'idle';
       return;
     }

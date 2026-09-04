@@ -72,9 +72,24 @@ function authorityIndex(contract: RouteAuthorityContract): Map<string, RouteAuth
   return result;
 }
 
+function containerAuthorityKey(entry: RouteAuthorityEntry): string {
+  return [entry.route_kind, entry.menu_xmlid || entry.menu_id, 'container'].join(':');
+}
+
+function containerIndex(contract: RouteAuthorityContract): Map<number, RouteAuthorityEntry> {
+  const result = new Map<number, RouteAuthorityEntry>();
+  for (const entry of contract.menu_containers) {
+    if (entry.menu_id > 0 && entry.action_id <= 0 && text(entry.route)) {
+      result.set(entry.menu_id, entry);
+    }
+  }
+  return result;
+}
+
 function buildNodes(
   source: NavNode[],
   authorityByPair: Map<string, RouteAuthorityEntry>,
+  containerByMenu: Map<number, RouteAuthorityEntry>,
   parentChain: CanonicalNavigationParent[],
 ): CanonicalNavigationNode[] {
   return source.map((node, index) => {
@@ -103,6 +118,10 @@ function buildNodes(
         `navigation action lacks exact menu/action authority (${menuId}/${actionId})`,
       );
     }
+    // Server-owned contract (smart_core delivery): an actionless directory
+    // menu promoted into route_authority.menu_containers carries its own
+    // navigable route and is presented as an enabled node.
+    const container = actionId ? undefined : containerByMenu.get(menuId);
 
     const carrierParents = carrier.parent_chain.map((parent) => ({
       key: text(parent.key),
@@ -131,7 +150,7 @@ function buildNodes(
     }
 
     const nextParent: CanonicalNavigationParent = { key, menuId: menuId || null, label };
-    const children = buildNodes(node.children || [], authorityByPair, [...parentChain, nextParent]);
+    const children = buildNodes(node.children || [], authorityByPair, containerByMenu, [...parentChain, nextParent]);
     const disabledReason = text(carrier.disabled_reason);
     if (carrier.state === 'disabled' && !disabledReason) {
       throw new CanonicalNavigationError(
@@ -139,14 +158,14 @@ function buildNodes(
         `disabled navigation node requires a backend reason (${menuId})`,
       );
     }
-    if (!actionId && !children.length) {
+    if (!actionId && !children.length && !container) {
       throw new CanonicalNavigationError(
         'CANONICAL_NAVIGATION_EMPTY_NODE',
         `navigation node has neither an authorized target nor children (${menuId})`,
       );
     }
 
-    const expectedState = actionId ? 'enabled' : 'container';
+    const expectedState = (actionId || container) ? 'enabled' : 'container';
     if (carrier.state !== 'disabled' && carrier.state !== expectedState) {
       throw new CanonicalNavigationError(
         'CANONICAL_NAVIGATION_STATE_MISMATCH',
@@ -155,14 +174,20 @@ function buildNodes(
     }
     const expectedAuthority: CanonicalNavigationAuthority = authority
       ? { state: 'allowed', source: authority.source, key: authorityKey(authority) }
-      : { state: 'container', source: 'system.init.navigation.nav', key: `container:${menuId || key}` };
+      : container
+        ? { state: 'allowed', source: container.source, key: containerAuthorityKey(container) }
+        : { state: 'container', source: 'system.init.navigation.nav', key: `container:${menuId || key}` };
     if (JSON.stringify(carrier.authority) !== JSON.stringify(expectedAuthority)) {
       throw new CanonicalNavigationError(
         'CANONICAL_NAVIGATION_AUTHORITY_MISMATCH',
         `canonical navigation carrier authority conflicts with route authority (${key})`,
       );
     }
-    const expectedRoute = authority ? text(authority.route) || null : null;
+    const expectedRoute = authority
+      ? text(authority.route) || null
+      : container
+        ? text(container.route) || null
+        : null;
     if ((text(carrier.route) || null) !== expectedRoute) {
       throw new CanonicalNavigationError(
         'CANONICAL_NAVIGATION_ROUTE_MISMATCH',
@@ -197,7 +222,7 @@ export function createCanonicalNavigationModel(
       'navigation requires an authenticated route-authority principal',
     );
   }
-  const nodes = buildNodes(nav, authorityIndex(routeAuthority), []);
+  const nodes = buildNodes(nav, authorityIndex(routeAuthority), containerIndex(routeAuthority), []);
   const keys = new Set<string>();
   const menuIds = new Set<number>();
   const visit = (items: CanonicalNavigationNode[]) => {
