@@ -206,7 +206,7 @@
 
 | 维度 | 取值 | 来源 |
 | --- | --- | --- |
-| 角色 | `cost_manager`（`sc_fx_cost_manager`）/ `cost_user`（`sc_fx_cost_user`） | G3.1 既有 demo fixture；与既有成本管理场景登录态一致 |
+| 角色 | `cost_manager`（`sc_cost_mgr`）/ `cost_user`（`sc_cost_user_cap`） | G3.1 既有 demo fixture；与既有成本管理场景登录态一致 |
 | 视口 | `1440×900`（桌面大）/ `1280×800`（桌面中）/ `1024×768`（桌面小）/ `768×1024`（平板竖）/ `390×844`（手机） | README §12 + G1 既有 collection-view 视口列表 |
 | 数据集 | `boq_1k`（小型项目，约 1k 行 BOQ 行）/ `boq_10k`（大型项目，约 10k 行） | 既有 `project.boq.import.wizard` 落地的批次 |
 | 笛卡尔积 | 2 × 5 × 2 = 20 cell | 全部必须各自独立截图、独立契约探针 |
@@ -219,21 +219,33 @@
   - 每 cell 登录对应角色 → 跳到 `project.management` → 等待
     `[data-block-key="block.project.boq_preview"]` 出现 → 截图；
   - 监听 `pageerror` / `console.error`（剔除 favicon、ResizeObserver 噪音）
-    / 4xx-5xx 响应 / `ui.contract.v2` POST；
-  - 校验 `ui.contract.v2` 响应中含 `boq_import_preview` block；
-  - 校验无横向溢出（`documentElement.scrollWidth ≤ viewport.width + 2`）。
+    / 4xx-5xx 响应 / `project.dashboard.enter` POST；
+  - 校验 `project.dashboard.enter` 契约响应中含 BOQ preview 块
+    （`data.blocks` stub `boq` 或 `runtime_fetch_hints.blocks.boq`；
+    BOQ preview 属 runtime surface，不在场景静态契约 / ui.contract.v2
+    scene_contract 源内——capture 首跑实证修正，harness v0.2.0）；
+  - 校验无横向溢出（`documentElement.scrollWidth ≤ viewport.width + 2`）；
+  - 每 cell 登录后采集 `role_session_digest`（sessionStorage
+    `sc_auth_token:<db>` 的 sha256，只落摘要不落原始 token；每次登录
+    生成独立会话 token，故 20 cell 两两不同）——只读场景两成本角色对
+    同 dataset × 视口渲染字节级一致（验收目标本身），独立采集由此字段
+    证明（capture 二跑实证修正，harness v0.3.0）。
 - **证据守卫**
   `scripts/verify/boq_dual_role_five_viewport_evidence_guard.py`：
   - 校验 `artifacts/boq-dual-role-five-viewport/evidence.json` 满足
     `config/frontend/acceptance_evidence_contract_v1.schema.json`；
   - 11 个必填浏览器证据字段每 cell 都齐；
-  - `cross_env_reuse_forbidden`：20 cell 的 `screenshot_digest` 必须两两不同；
+  - `cross_env_reuse_forbidden`（README §12 原文为「跨环境不得复用截图」）：
+    `screenshot_digest` 不得出现在两个不同的 dataset × 视口组合；
+    同组合内两角色允许一致（只读角色不变渲染是验收目标本身），
+    但每 cell 必须携带 `role_session_digest` 且 20 个两两不同
+    （独立会话证明，harness ≥ v0.3.0）；
   - 20 cell 必须覆盖 2 × 5 × 2 笛卡尔积；
   - `environment_assets` 含 3 个受控环境资产 + harness 本体的 sha256；
   - `baseline_sha` 可追溯到 `origin/main` 历史。
 - **守卫单测**
   `scripts/verify/test_boq_dual_role_five_viewport_evidence_guard.py`：
-  27 例全绿（结构/矩阵规格/cell 校验/可复现性/集成）。
+  31 例全绿（结构/矩阵规格/cell 校验/复用语义/可复现性/集成）。
 - **Make 目标** `make verify.boq.dual_role.five_viewport.evidence`：
   跑守卫 + 单测；不依赖 dev 环境（无 `evidence.json` 时友好提示）。
 - **测试资产登记** `docs/engineering_convergence/test_inventory.csv`：
@@ -269,8 +281,9 @@
       "capture_mode": "readonly",
       "browser_full_version": "Chromium 138.x",
       "screenshot_digest": "<64-char>",
+      "role_session_digest": "<64-char，登录会话 token 的 sha256，20 cell 两两不同>",
       "product_service_static_shas": { "frontend_sha": "...", "backend_sha": "...", "contract_schema_sha": "..." },
-      "collected_at_and_tool_version": "2026-...|boq-dual-role-five-viewport-browser-acceptance.mjs@0.1.0"
+      "collected_at_and_tool_version": "2026-...|boq-dual-role-five-viewport-browser-acceptance.mjs@0.3.0"
     },
     ... 19 more
   ]
@@ -279,9 +292,10 @@
 
 ### 环境前置（执行 harness 时）
 
-- dev nginx + Odoo（`http://127.0.0.1:18083`）；
-- `sc_clean` 数据库存在；
-- `sc_fx_cost_manager` / `sc_fx_cost_user` 两个 fixture 用户已初始化；
+- dev nginx + Odoo（sc-local-dev 栈，`http://127.0.0.1:18081`；18083 是
+  clean 栈，勿混用——capture 实跑实证）；
+- `sc_dev_demo` 数据库存在（G3.1 fixture 用户与 BOQ 项目所在库）；
+- `sc_cost_mgr` / `sc_cost_user_cap` 两个 fixture 用户已初始化（demo_addons sc_demo_users.xml；sc_fx_* 登录名不存在，首跑实证修正）；
 - 1k 行与 10k 行 BOQ 导入批次已通过 G3.1
   `project.boq.import.wizard` 落地，`BOQ_1K_PROJECT_ID` /
   `BOQ_10K_PROJECT_ID` 环境变量已 export；
@@ -293,7 +307,7 @@
 export E2E_PASSWORD='<fixture password>'
 export BOQ_1K_PROJECT_ID=<id>
 export BOQ_10K_PROJECT_ID=<id>
-export FRONTEND_URL=http://127.0.0.1:18083
+export FRONTEND_URL=http://127.0.0.1:18081
 export FRONTEND_SHA=<40-char>  # 可选，写入 product_service_static_shas
 export BACKEND_SHA=<40-char>
 export CONTRACT_SCHEMA_SHA=<40-char>
@@ -304,8 +318,21 @@ make verify.boq.dual_role.five_viewport.evidence
 
 ### 边界说明
 
-- 20 cell 互不复用截图（`screenshot_digest` 两两不同）；
+- 截图复用边界：`screenshot_digest` 不得跨 dataset × 视口组合复用；
+  同组合内两角色一致是只读角色不变渲染的预期结果，此时独立采集由
+  20 个两两不同的 `role_session_digest`（独立登录会话）证明；
 - harness 不会触发任何写意图；`capture_mode=readonly` 是 schema 强约束；
 - 任何 cell 出现 `pageerror` / `http 4xx-5xx` / `console.error` / 缺
   `boq_import_preview` 契约 block / 横向溢出 → 整包标 FAIL，CI 拒绝。
+
+### capture 实跑发现（2026-09-04，随 v0.3.0 一并记录）
+
+- 顶栏「当前岗位」roleLabel 对两成本角色均解析为「项目成员」（role_surface
+  未按 cap 成本组区分）——这是两角色截图字节级一致的直接原因，也是
+  `role_session_digest` 独立会话证明被引入的背景；
+- 驾驶舱存在 7 处 zone 级「当前内容暂不可用」兜底（`BlockRenderer` 对
+  未注册 block_type 的 `ScErrorState` fallback；progress / risk /
+  boq_preview 三个已注册块均正常渲染）——属场景 zone 组件覆盖缺口，
+  不在 G3.3-B 验收口径内（无 page/http/console error），作为后续
+  仪表盘产品化 backlog 跟进。
 

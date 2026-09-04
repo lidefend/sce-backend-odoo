@@ -21,9 +21,14 @@ Checks (default mode):
      `cells` array has exactly cell_count = 20 entries.
   7. Each cell carries all 11 mandatory fields, with non-empty values
      and the correct types (e.g. screenshot_digest = 64-char hex).
-  8. Cross-environment reuse forbidden: no two cells share the same
-     screenshot_digest (different role/dataset/viewport must produce
-     distinct captures).
+  8. Cross-environment reuse forbidden (README §12: 跨环境不得复用截图):
+     no screenshot_digest may appear in two different dataset × viewport
+     combinations. Within one combination the two cost roles MAY share the
+     same digest — a role-invariant readonly render is the acceptance goal
+     itself (both cost roles must see the same authorized view). In that
+     case independent capture is proven instead by role_session_digest
+     (sha256 of the per-login session token, harness v0.3.0): every cell
+     must carry one and all 20 must be pairwise distinct.
   9. Cell combinations cover the 2 × 5 × 2 cartesian product exactly
      (20 unique role/dataset/viewport triples).
 
@@ -72,6 +77,11 @@ MANDATORY_BROWSER_EVIDENCE_FIELDS = {
     "product_service_static_shas",
     "collected_at_and_tool_version",
 }
+
+# G3.3-B v0.3.0 扩展字段（README §12 的 11 个必填字段之外）：每 cell 登录
+# 会话 token 的 sha256 摘要，用于在只读角色不变渲染（两角色截图字节级
+# 一致）下证明 20 个 cell 各自独立采集（每次登录生成独立会话）。
+MANDATORY_SESSION_DIGEST_FIELD = "role_session_digest"
 
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 SHA1_RE = re.compile(r"^[0-9a-f]{40}$")
@@ -270,6 +280,13 @@ def _validate_cell(cell: dict, index: int, errors: list[str]) -> str:
     screenshot_digest = cell.get("screenshot_digest")
     if not isinstance(screenshot_digest, str) or not SHA256_RE.match(screenshot_digest):
         _add(errors, f"cell[{index}].screenshot_digest must be a 64-char hex SHA256")
+    session_digest = cell.get(MANDATORY_SESSION_DIGEST_FIELD)
+    if not isinstance(session_digest, str) or not SHA256_RE.match(session_digest):
+        _add(
+            errors,
+            f"cell[{index}].{MANDATORY_SESSION_DIGEST_FIELD} must be a 64-char hex SHA256 "
+            "(re-capture with harness >= 0.3.0)",
+        )
     pss = cell.get("product_service_static_shas")
     if not isinstance(pss, dict) or not pss:
         _add(errors, f"cell[{index}].product_service_static_shas must be a non-empty object")
@@ -296,7 +313,10 @@ def _validate_cells(evidence: dict, errors: list[str]) -> None:
         )
 
     combo_keys: set[str] = set()
-    digest_counts: dict[str, int] = {}
+    # screenshot_digest → 出现过的 dataset×viewport 组合集合
+    digest_combos: dict[str, set[tuple[str, str]]] = {}
+    # role_session_digest → 出现次数（每 cell 须唯一）
+    session_digest_counts: dict[str, int] = {}
     for index, cell in enumerate(cells):
         key = _validate_cell(cell, index, errors)
         if key:
@@ -305,15 +325,32 @@ def _validate_cells(evidence: dict, errors: list[str]) -> None:
             combo_keys.add(key)
         digest = cell.get("screenshot_digest")
         if isinstance(digest, str) and SHA256_RE.match(digest):
-            digest_counts[digest] = digest_counts.get(digest, 0) + 1
+            combo = (str(cell.get("dataset_id")), str(cell.get("viewport")))
+            digest_combos.setdefault(digest, set()).add(combo)
+        session_digest = cell.get(MANDATORY_SESSION_DIGEST_FIELD)
+        if isinstance(session_digest, str) and SHA256_RE.match(session_digest):
+            session_digest_counts[session_digest] = session_digest_counts.get(session_digest, 0) + 1
 
-    # cross_env_reuse_forbidden: no two cells may share a screenshot_digest
-    duplicates = {d: n for d, n in digest_counts.items() if n > 1}
-    if duplicates:
+    # cross_env_reuse_forbidden（README §12：跨环境不得复用截图）：
+    # 同一 screenshot_digest 不允许出现在两个不同的 dataset×viewport 组合。
+    # 同组合内两角色允许一致 —— 只读角色不变渲染是 G3.3-B 的验收目标本身，
+    # 此时独立采集由 role_session_digest 的两两不同来证明。
+    cross_reuse = {d: cs for d, cs in digest_combos.items() if len(cs) > 1}
+    if cross_reuse:
         _add(
             errors,
-            "cross_env_reuse_forbidden violated: duplicate screenshot_digest(s) "
-            + ", ".join(f"{d[:12]}...×{n}" for d, n in duplicates.items()),
+            "cross_env_reuse_forbidden violated: screenshot_digest reused across "
+            "dataset×viewport combinations: "
+            + ", ".join(f"{d[:12]}...×{len(cs)}combos" for d, cs in cross_reuse.items()),
+        )
+
+    session_dups = {d: n for d, n in session_digest_counts.items() if n > 1}
+    if session_dups:
+        _add(
+            errors,
+            "role_session_digest must be unique per cell (independent authenticated "
+            "session per capture): duplicates "
+            + ", ".join(f"{d[:12]}...×{n}" for d, n in session_dups.items()),
         )
 
     expected_combos = {
@@ -442,8 +479,10 @@ def main() -> int:
         f"all 11 mandatory browser evidence fields present"
     )
     print(
-        f"- cross_env_reuse_forbidden honored: 20 unique screenshot_digests "
-        f"for {EXPECTED_CELL_COUNT} cells"
+        "- cross_env_reuse_forbidden honored: screenshot_digest unique across "
+        "dataset×viewport combinations; cross-role digest equality within one "
+        "combination is the expected readonly role-invariant render, backed by "
+        "pairwise-distinct role_session_digest (independent sessions)"
     )
     print(
         f"- baseline evidence reproducible at baseline_sha "
