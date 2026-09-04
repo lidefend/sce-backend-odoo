@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import html
 from datetime import datetime
 import re
 import sys
@@ -218,6 +219,7 @@ def _parse_payload_dict(text: str) -> dict | None:
     if start < 0 or end <= start:
         return None
     raw = text[start : end + 1]
+    raw = html.unescape(raw)
     try:
         value = ast.literal_eval(raw)
         return value if isinstance(value, dict) else None

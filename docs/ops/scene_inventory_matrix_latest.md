@@ -34,7 +34,7 @@
 | portal.dashboard | 工作台 | portal | `/` | workspace | R3 | smart_construction_scene | 维护角色策略与动作链路稳定性 |
 | portal.lifecycle | 生命周期驾驶舱 | portal | `/s/projects.dashboard` | workspace | R3 | smart_construction_scene | 维护角色策略与动作链路稳定性 |
 | projects.dashboard | 项目驾驶舱 | project | `/pm/dashboard` | project_management | R3 | smart_construction_scene | 维护角色策略与动作链路稳定性 |
-| projects.dashboard_showcase | 项目驾驶舱（演示） | project | `/s/projects.dashboard_showcase` | project_management | R3 | smart_construction_scene | 维护演示驾驶舱角色策略与动作链路稳定性 |
+| projects.dashboard_showcase | 项目驾驶舱（演示） | project | `/s/projects.dashboard_showcase` | project_management | R1 | smart_construction_scene | Wave3 待补 action_specs/role_variants/data_sources/product_policy 后再升 R3 |
 | scene_smoke_default | Scene Smoke Default | scene_smoke_default | `/workbench?scene=scene_smoke_default` | others | R1 | smart_construction_scene | 保持测试场景最小可用并隔离生产入口 |
 
 ## 使用规则（冻结）
