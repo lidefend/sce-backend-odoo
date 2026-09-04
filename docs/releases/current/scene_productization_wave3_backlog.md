@@ -75,8 +75,20 @@
   - 实际决策：**前置批次已实现 5 个工具抽离**，Round2 不再开启
   - `ContractFormPage.vue` 已 5587 → 1857 行（-67%），13 个 contractForm/ 子模块已建立
   - 下一抽离目标重定向到 **`frontend/apps/web/src/pages/ListPage.vue` (2073 行)**，列为 Round7
-- ⏸️ Round3+ (Portal / 合同-财务 / 风险动作链路 / Hygiene 自动化) 按优先级展开
-- ⏸️ Round7 (ListPage 抽离) 等待 Round6 启动后评估
+- ✅ **Round6 闭合**（2026-09-04, PR #417 待合流）：
+  - 实际决策：**复用 `scene_inventory_freeze_guard.py`（已存在但未接入 gate）+ 新建 `scene_inventory_test_boundary_guard.py`**，避免重复造轮子
+  - 关键发现（盘点时）：`scene_inventory_freeze_guard.py` 自带 orphan/maturity 检查但**未接入 gate.full 链路**，先跑直接 FAIL 暴露 3 个真 orphan：
+    - `project.dashboard`（产品场景单数版）
+    - `project.initiation`（产品场景单数版）
+    - `projects.dashboard_focus`（v2 模板）
+  - 消化方式：inventory matrix 加 3 行 R2 标注（避开 dashboard 评估 + 满足 freeze_guard R2_PLUS 检查），next_action 写"待评估升级 R3"
+  - freeze_guard 扩展：默认 scene_files 从 3 → 4 个 XML（加 `sc_scene_tiles.xml`），新增 `--excluded-codes` 排除 tile/test profile（`'default' / 'scene_smoke_default'`）
+  - test_boundary guard 新建：检查 `scene_smoke_default` 等测试场景必须 R0/R1 + owner_module 在测试层白名单 + nav_group 必须在 `others/test/smoke` bucket
+  - 串联：新增 `verify.scene.inventory.hygiene.guard` + `gate.scene.inventory.hygiene.strict` 接入 `gate.full`（`make/runtime_ops.mk:2256`，紧跟 `gate.scene.r3.runtime.strict` 之后）
+  - 测试：26 个 hermetic 单测（13 freeze + 13 test_boundary）全绿
+  - 影响：inventory 21 → 24 场景，productized 23（含 3 R2），R3 dashboard 仍 20/20 100% PASS
+- ⏸️ Round3+ (Portal / 合同-财务 / 风险动作链路) 按优先级展开
+- ⏸️ Round7 (ListPage 抽离) 待 Round3+ 启动后评估
 
 ## 继承 Wave2 的产物（wave3 起点状态）
 

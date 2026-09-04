@@ -500,6 +500,20 @@ verify.scene.coverage.dashboard: guard.prod.forbid
 verify.scene.inventory.freeze.guard: guard.prod.forbid
 	@python3 scripts/verify/scene_inventory_freeze_guard.py
 
+.PHONY: verify.scene.inventory.test_boundary.guard
+verify.scene.inventory.test_boundary.guard: guard.prod.forbid
+	@python3 scripts/verify/scene_inventory_test_boundary_guard.py
+
+.PHONY: verify.scene.inventory.hygiene.guard
+verify.scene.inventory.hygiene.guard: \
+		verify.scene.inventory.freeze.guard \
+		verify.scene.inventory.test_boundary.guard
+	@echo "[verify.scene.inventory.hygiene.guard] PASS"
+
+.PHONY: gate.scene.inventory.hygiene.strict
+gate.scene.inventory.hygiene.strict: verify.scene.inventory.hygiene.guard
+	@echo "[gate.scene.inventory.hygiene.strict] PASS"
+
 .PHONY: verify.scene.role.policy.consistency.guard
 verify.scene.role.policy.consistency.guard: guard.prod.forbid
 	@python3 scripts/verify/scene_role_policy_consistency_guard.py

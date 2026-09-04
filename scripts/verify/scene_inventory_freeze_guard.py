@@ -139,13 +139,21 @@ def main() -> int:
             "addons/smart_construction_scene/data/sc_scene_layout.xml",
             "addons/smart_construction_scene/data/sc_scene_list_profile.xml",
             "addons/smart_construction_scene/data/project_management_scene.xml",
+            "addons/smart_construction_scene/data/sc_scene_tiles.xml",
         ],
+    )
+    parser.add_argument(
+        "--excluded-codes",
+        nargs="*",
+        default=["default", "scene_smoke_default"],
+        help="payload codes that are tile/test profiles and must never be treated as productized scenes",
     )
     args = parser.parse_args()
 
     root = Path(__file__).resolve().parents[2]
     inventory = _load_inventory(root / args.inventory)
     exemptions = _load_exemptions(root / args.exemptions)
+    excluded_codes = {str(x).strip() for x in args.excluded_codes if str(x).strip()}
 
     productized_codes: set[str] = set()
     for rel in args.scene_files:
@@ -155,6 +163,8 @@ def main() -> int:
         for payload in _extract_payload_blocks(path):
             code = _extract_scene_code(payload)
             if not code or _is_test_payload(payload):
+                continue
+            if code in excluded_codes:
                 continue
             if _is_productized(payload):
                 productized_codes.add(code)

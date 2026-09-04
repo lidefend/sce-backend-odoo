@@ -1,7 +1,7 @@
 # Scene Inventory Matrix（Latest）
 
 更新时间：2026-09-04  
-适用阶段：Wave 3（Showcase 移除 + Inventory Hygiene 起步）
+适用阶段：Wave 3 Round6（Inventory Hygiene 自动化：消化 3 orphan + 接入 freeze guard）
 
 ## 分级标准
 
@@ -34,6 +34,9 @@
 | portal.dashboard | 工作台 | portal | `/` | workspace | R3 | smart_construction_scene | 维护角色策略与动作链路稳定性 |
 | portal.lifecycle | 生命周期驾驶舱 | portal | `/s/projects.dashboard` | workspace | R3 | smart_construction_scene | 维护角色策略与动作链路稳定性 |
 | projects.dashboard | 项目驾驶舱 | project | `/pm/dashboard` | project_management | R3 | smart_construction_scene | 维护角色策略与动作链路稳定性 |
+| project.dashboard | 项目驾驶舱（产品场景） | project | `/s/project.dashboard` | project_management | R2 | smart_construction_scene | 补齐角色策略与数据源后评估升级 R3 |
+| project.initiation | 项目立项（产品场景） | project | `/s/project.initiation` | project_management | R2 | smart_construction_scene | 补齐动作编排与角色策略后评估升级 R3 |
+| projects.dashboard_focus | 项目驾驶舱聚焦 | project | `/s/projects.dashboard_focus` | project_management | R2 | smart_construction_scene | 模板场景待 v2 评估转 R3 |
 | scene_smoke_default | Scene Smoke Default | scene_smoke_default | `/workbench?scene=scene_smoke_default` | others | R1 | smart_construction_scene | 保持测试场景最小可用并隔离生产入口 |
 
 ## 使用规则（冻结）
