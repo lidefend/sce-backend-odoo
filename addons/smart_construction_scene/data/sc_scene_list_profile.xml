@@ -85,7 +85,8 @@
                 'action_specs': {
                     'open_intake': {
                         'label': '新建立项',
-                        'intent': 'ui.contract'
+                        'intent': 'ui.contract',
+                        'target_scene': 'projects.intake'
                     },
                     'open_dashboard': {
                         'label': '进入项目驾驶舱',
@@ -202,7 +203,8 @@
                 'action_specs': {
                     'open_management': {
                         'label': '查看项目驾驶舱',
-                        'intent': 'ui.contract'
+                        'intent': 'ui.contract',
+                        'target_scene': 'project.management'
                     },
                     'open_project_list': {
                         'label': '返回项目列表',
@@ -482,7 +484,7 @@
                     'action_xmlid': 'smart_construction_core.action_sc_tier_review_my_payment_request'
                 },
                 'action_specs': {
-                    'open_payment_requests': {'label': '查看付款收款申请', 'intent': 'ui.contract'},
+                    'open_payment_requests': {'label': '查看付款收款申请', 'intent': 'ui.contract', 'target_scene': 'finance.payment_requests'},
                     'open_settlement_orders': {'label': '查看结算单', 'intent': 'ui.contract'}
                 },
                 'role_variants': {

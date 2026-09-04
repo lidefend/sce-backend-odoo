@@ -37,9 +37,11 @@
    - 候选：`contract_to_finance_handshake` 跨域 action_spec
    - 进入条件：Portal 域扩展开 1 个后启动
 
-5. **风险动作链路升级**
-   - `risk.center` 已是 R3，但 `risk_event` -> `project_action` 的链路主要靠 `related_scene_match` fallback（45%）
-   - 目标：补 `risk_event_to_action_mapping`，将 fallback 比例降到 < 20%
+5. **风险动作链路升级** ✅ Round7 闭合（PR #418, main `5901bc58`）
+   - 原 backlog 计划"补 `risk_event_to_action_mapping`"已被 surgical payload 修复达成
+   - 实际手法：5 个 scene 的 `action_specs.primary_action_spec` 数据补全（4 加 `target_scene` + 1 改 `intent`）
+   - 效果：fallback 45% → 20%（< 20% 目标达成），success 55% → 80%
+   - 剩余 4 FALLBACK 留 Round8 决策（self_target_fallback 2 个 + related_scene_fuzzy 2 个）
 
 6. **Inventory Hygiene 自动化**
    - 增加 `scene_inventory_orphan_payload_guard`：检测 scene payload 已 commit 但 inventory 未注册的孤儿
@@ -47,10 +49,10 @@
    - 把 hygiene 接入 `gate.scene.r3.runtime.strict`，从 warning 提升为 BLOCKER
    - 进度：Round1 已部分达成（移除 showcase demo entry from inventory）；正式 guard 自动化仍待启动
 
-7. **ListPage.vue 抽离（Round2 重定向）**
+7. **ListPage.vue 抽离（Round9+ 候选）**
    - 现状：`frontend/apps/web/src/pages/ListPage.vue` 2073 行（比 ContractFormPage 现状还大 11%）
    - 候选责任：列表 schema 解析 + 列定义 + 过滤编排 + 行内编辑 + 分页/排序
-   - 进入条件：Round1 + Round6 启动后评估优先级
+   - 进入条件：Round8 + Round3+ 完成后评估优先级
 
 ## Suggested Deliverables
 
@@ -75,7 +77,7 @@
   - 实际决策：**前置批次已实现 5 个工具抽离**，Round2 不再开启
   - `ContractFormPage.vue` 已 5587 → 1857 行（-67%），13 个 contractForm/ 子模块已建立
   - 下一抽离目标重定向到 **`frontend/apps/web/src/pages/ListPage.vue` (2073 行)**，列为 Round7
-- ✅ **Round6 闭合**（2026-09-04, PR #417 待合流）：
+- ✅ **Round6 闭合**（2026-09-04, PR #417 已合流 main `62f01151`）：
   - 实际决策：**复用 `scene_inventory_freeze_guard.py`（已存在但未接入 gate）+ 新建 `scene_inventory_test_boundary_guard.py`**，避免重复造轮子
   - 关键发现（盘点时）：`scene_inventory_freeze_guard.py` 自带 orphan/maturity 检查但**未接入 gate.full 链路**，先跑直接 FAIL 暴露 3 个真 orphan：
     - `project.dashboard`（产品场景单数版）
@@ -87,8 +89,35 @@
   - 串联：新增 `verify.scene.inventory.hygiene.guard` + `gate.scene.inventory.hygiene.strict` 接入 `gate.full`（`make/runtime_ops.mk:2256`，紧跟 `gate.scene.r3.runtime.strict` 之后）
   - 测试：26 个 hermetic 单测（13 freeze + 13 test_boundary）全绿
   - 影响：inventory 21 → 24 场景，productized 23（含 3 R2），R3 dashboard 仍 20/20 100% PASS
-- ⏸️ Round3+ (Portal / 合同-财务 / 风险动作链路) 按优先级展开
-- ⏸️ Round7 (ListPage 抽离) 待 Round3+ 启动后评估
+- ✅ **Round7 闭合**（2026-09-04, PR #418 已合流 main `5901bc58`）：
+  - 实际决策：**5 个 scene payload 修复 + 9 个 hermetic 单测，零行为变更逻辑、纯数据补全**
+  - 修复点（4 加 `target_scene` + 1 改 `intent`）：
+    1. `my_work.workspace.open_task_center` 加 `target_scene: projects.list`（task.center 不存在，跳到 projects.list）
+    2. `contract.center.open_income` 加 `target_scene: contracts.workspace`
+    3. `cost.project_cost_ledger.open_cost_compare` 加 `target_scene: cost.cost_compare`
+    4. `finance.workspace.open_payment_requests` 加 `target_scene: finance.payment_requests`
+    5. `projects.intake.submit.intent` 从 `ui.contract` 改 `api.data`（表单提交，不算 UI 跳转 fallback）
+  - 测试：新增 `scripts/verify/test_scene_r3_action_target_scene_resolution.py`（259 行，9 hermetic 单测覆盖 target_scene 解析 + intent 短路 + precedence）
+  - Generated reports：test_inventory 1351→1353（+9 entries + 1 file）、test_inventory_summary / complexity_budget_report / contract_structure_fingerprint 自动 refresh，8/8 guard PASS
+  - **指标改善**：
+    - `action_chain_success_count`: 11 → 16 (+5)
+    - `action_chain_fallback_count`: 9 → 4 (-5)
+    - `action_chain_success_rate`: 55% → **80%**
+    - `action_chain_fallback_rate`: 45% → **20%**（达 backlog 目标 <20%）
+  - 4 剩余 FALLBACK 留 Round8：
+    - `cost.analysis` (self_target_fallback) — primary_action 指向自己，需决策是否补 `target_scene` 到非 self scene
+    - `finance.center` (self_target_fallback) — 同上
+    - `projects.ledger` (related_scene_fuzzy) — `related_scenes` 模糊命中 `/pm/dashboard`
+    - `projects.list` (related_scene_fuzzy) — 模糊命中 `/s/projects.intake`
+- ⏸️ **Round8 候选**（剩余 4 FALLBACK 治理）：
+  - 决策点 1：`cost.analysis` / `finance.center` 的 self_target_fallback 是否需要消解？
+    - 选项 A：保留 self fallback（"刷新当前页"是合法场景）
+    - 选项 B：加 `target_scene` 字段把跳转目标改到子场景（如 `cost.cost_compare` / `finance.payment_requests`）
+  - 决策点 2：`projects.ledger` / `projects.list` 的 fuzzy match 能否改成精确 `related_scene_match`？
+    - 需要扩展 `action_specs.primary_action_spec.related_scenes` 字段提供精确目标
+  - 进入条件：用户决策 Round8 优先级
+- ⏸️ Round3+ (Portal / 合同-财务) 按优先级展开
+- ⏸️ Round9+ (ListPage.vue 抽离) 待 Round3+ 启动后评估
 
 ## 继承 Wave2 的产物（wave3 起点状态）
 
