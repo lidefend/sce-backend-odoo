@@ -560,8 +560,8 @@
                     'fields': ['name', 'title', 'project_id', 'partner_id', 'settlement_category_display']
                 },
                 'action_specs': {
-                    'open_finance_center': {'label': '返回财务中心', 'intent': 'ui.contract'},
-                    'open_treasury_ledger': {'label': '查看资金台账', 'intent': 'ui.contract'}
+                    'open_finance_center': {'label': '返回财务中心', 'intent': 'ui.contract', 'target_scene': 'finance.center'},
+                    'open_treasury_ledger': {'label': '查看资金台账', 'intent': 'ui.contract', 'target_scene': 'finance.workspace'}
                 },
                 'role_variants': {
                     'finance': {

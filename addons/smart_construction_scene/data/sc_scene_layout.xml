@@ -913,11 +913,13 @@
                 'action_specs': {
                     'open_contract_center': {
                         'label': '进入合同中心',
-                        'intent': 'ui.contract'
+                        'intent': 'ui.contract',
+                        'target_scene': 'contract.center'
                     },
                     'open_settlement_orders': {
                         'label': '查看结算单',
-                        'intent': 'ui.contract'
+                        'intent': 'ui.contract',
+                        'target_scene': 'finance.settlement_orders'
                     }
                 },
                 'role_variants': {

@@ -32,10 +32,10 @@
    - 候选：`portal.notifications`（消息中心）✅ Round10 已收、`portal.shortcuts`（快捷入口）✅ Round9 已收、`portal.audit_log`（操作审计，真实入口证据弱——sc.audit.log 有数据沉淀但无独立 menu/页面，暂缓收录）
    - 进入条件：完成 Round1 + Round2 后启动（已满足，Round9 执行）
 
-4. **合同 / 财务纵深**
-   - 合同域 2 场景 R3、财务域 4 场景 R3，但缺少跨域动作链路（合同变更触发财务结算提醒）
-   - 候选：`contract_to_finance_handshake` 跨域 action_spec
-   - 进入条件：Portal 域扩展开 1 个后启动
+4. **合同 / 财务纵深** ✅ Round11 闭合（PR #422, contract_to_finance_handshake 跨域 action_spec）
+   - 合同域 2 场景 R3、财务域 4 场景 R3，原缺少跨域动作链路（合同变更触发财务结算提醒）
+   - 候选：`contract_to_finance_handshake` 跨域 action_spec（Round11 已收，见 Round 进度追踪）
+   - 进入条件：Portal 域扩展开 1 个后启动（Round10 后已满足，Round11 执行）
 
 5. **风险动作链路升级** ✅ Round7 闭合（PR #418, main `5901bc58`）
    - 原 backlog 计划"补 `risk_event_to_action_mapping`"已被 surgical payload 修复达成
@@ -125,7 +125,11 @@
   - payload 设计：`view_unread` primary action 走 `intent=api.data`（读未读消息=数据消费，non_ui_contract 合法路径，N/A 不导航）+ 4 个 `notification_link` 显式 `target_scene`（my_work.workspace / risk.center / contract.center / finance.center）
   - 验证：3 新 hermetic 单测（20 全绿：1 正向 non_ui_contract + 4 links 全显式 target + 1 负面无 target→self_target_fallback）；R3 strict guard 22 R3 / **22 SUCCESS / 0 fallback**；freeze + test_boundary PASS；8 generated reports 全刷 CURRENT
   - 影响：layout.xml +117 行（1555）；scenes 21 → 22 R3
-- ⏸️ **Round4 候选**（合同-财务纵深）：`contract_to_finance_handshake` 跨域 action_spec（**进入条件已满**：Portal 域扩展 ≥1 ✅）→ 下一轮自然衔接
+- ✅ **Round11 闭合**（2026-09-04, PR #422, 合同-财务跨域 handshake）：`contract_to_finance_handshake` 跨域 action_spec（item 4）
+  - 真实业务锚点：合同变更侧 `sc.contract.event`（合同履约事件：design_change/签证/索赔等，**`settlement_included` 纳入结算开关** + 金额影响/超限控制，独立菜单 `menu_sc_contract_event`）+ 收口侧 `sc.settlement.order`（`contract_id` 强关联）——handshake = 履约事件纳入结算 → 结算单
+  - payload 手术（纯 `target_scene`，Round7 手法，不引新 entry_kind 词汇）：`contracts.workspace.open_contract_center`→`contract.center`（primary 升级）；`contracts.workspace.open_settlement_orders`（finance 角色跨域默认）→`finance.settlement_orders`（**contract→finance handshake 显式化**）；`finance.settlement_orders.open_finance_center`→`finance.center`（primary 升级）；`open_treasury_ledger`→`finance.workspace`
+  - 验证：4 新 hermetic 单测（24 全绿：2 primary 升级正向 + 1 全动作显式不变式 + 1 负面无 target→self_target_fallback）；R3 strict guard 22 R3 / **22 SUCCESS / 0 fallback**，dashboard 中 `contracts.workspace` + `finance.settlement_orders` 两行 **related_scene_match → action_scene_ref**（resolution 升级）；freeze + test_boundary PASS；8 generated reports 全刷 CURRENT
+  - 影响：layout.xml +6 / list_profile.xml +4；5 files / +188 / −10
 - ⏸️ **portal.audit_log**：证据=weak，需真实 menu/页面/路由锚点后才有收录资质（候补）
 - ⏸️ **Round7b 候选**（ListPage.vue 抽离 2073 行）：待 portal 纵深完成后再评估
 

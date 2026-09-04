@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `4254`
 - Files requiring split plan: `48`
-- Files above warning threshold: `83`
+- Files above warning threshold: `84`
 
 ## Split Plan Required
 
@@ -66,7 +66,7 @@ Generated from repository source files. This report is informational during the 
 | Lines | Category | File |
 | ---: | --- | --- |
 | 1738 | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
-| 1555 | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
+| 1557 | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1488 | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1484 | Python source | `scripts/release/release_publication.py` |
 | 1438 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
@@ -132,6 +132,7 @@ Generated from repository source files. This report is informational during the 
 | 852 | Python source | `scripts/ops/registry_audit/registry_export.py` |
 | 845 | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
 | 843 | Python source | `scripts/verify/contract_evidence_guard.py` |
+| 843 | Python source | `scripts/verify/test_scene_r3_action_target_scene_resolution.py` |
 | 841 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
 | 833 | JavaScript source | `scripts/verify/frontend_geometry_scroll_audit.mjs` |
 | 832 | Python source | `scripts/ops/production_acceptance_clone_runtime.py` |
@@ -195,7 +196,7 @@ Generated from repository source files. This report is informational during the 
 | 1627 | split_plan_required | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1588 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
-| 1555 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
+| 1557 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1553 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1542 | split_plan_required | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 1515 | split_plan_required | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
