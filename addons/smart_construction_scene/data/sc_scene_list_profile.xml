@@ -424,7 +424,7 @@
                     'row_secondary': 'project_id'
                 },
                 'action_specs': {
-                    'open_cost_compare': {'label': '进入成本中心', 'intent': 'ui.contract'},
+                    'open_cost_compare': {'label': '进入成本中心', 'intent': 'ui.contract', 'target_scene': 'cost.cost_compare'},
                     'open_profit_compare': {'label': '查看盈亏对比', 'intent': 'ui.contract'}
                 },
                 'role_variants': {
