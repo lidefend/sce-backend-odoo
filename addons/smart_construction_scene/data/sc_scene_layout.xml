@@ -79,7 +79,7 @@
                 'action_specs': {
                     'submit': {
                         'label': '提交立项',
-                        'intent': 'ui.contract'
+                        'intent': 'api.data'
                     },
                     'save_draft': {
                         'label': '保存草稿',
@@ -492,7 +492,8 @@
                     },
                     'open_task_center': {
                         'label': '进入任务中心',
-                        'intent': 'ui.contract'
+                        'intent': 'ui.contract',
+                        'target_scene': 'projects.list'
                     }
                 },
                 'role_variants': {
@@ -591,7 +592,8 @@
                 'action_specs': {
                     'open_income': {
                         'label': '查看收入合同',
-                        'intent': 'ui.contract'
+                        'intent': 'ui.contract',
+                        'target_scene': 'contracts.workspace'
                     },
                     'open_expense': {
                         'label': '查看支出合同',
@@ -841,7 +843,8 @@
                 'action_specs': {
                     'open_payment_requests': {
                         'label': '进入付款收款申请',
-                        'intent': 'ui.contract'
+                        'intent': 'ui.contract',
+                        'target_scene': 'finance.payment_requests'
                     },
                     'open_settlement_orders': {
                         'label': '进入结算单',
