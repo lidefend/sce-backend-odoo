@@ -117,7 +117,15 @@ function resolveActivityRoute(to: RouteLocationNormalized, actionId: number, men
     return `${prefix}/${encodeURIComponent(model)}/${encodeURIComponent(recordId)}${query}`;
   }
   if (to.name === 'scene' || String(to.name || '').startsWith('scene-')) {
-    const query = buildActivityQuery(to, ['menu_id', 'action_id', 'scene_key', 'scene']);
+    const query = buildActivityQuery(to, [
+      'menu_id',
+      'action_id',
+      'scene_key',
+      'scene',
+      'entry_intent',
+      'project_id',
+      'scene_intent',
+    ]);
     return `${to.path}${query}`;
   }
   if (to.name === 'my-work') return '/my-work';

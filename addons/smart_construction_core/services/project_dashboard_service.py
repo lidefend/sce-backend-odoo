@@ -67,6 +67,7 @@ class ProjectDashboardService:
         "risks": "block.project.risk",
         "risk": "block.project.risk",
         "next_actions": "block.project.next_actions",
+        "boq": "block.project.boq_preview",
         "boq_preview": "block.project.boq_preview",
     }
 
