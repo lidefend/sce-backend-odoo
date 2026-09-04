@@ -8,6 +8,7 @@ from .project_cost_builder import ProjectCostBuilder
 from .project_finance_builder import ProjectFinanceBuilder
 from .project_risk_builder import ProjectRiskBuilder
 from .project_boq_preview_builder import ProjectBoqPreviewBuilder
+from .project_next_actions_builder import ProjectNextActionsBuilder
 
 
 BUILDERS = (
@@ -19,4 +20,5 @@ BUILDERS = (
     ProjectFinanceBuilder,
     ProjectRiskBuilder,
     ProjectBoqPreviewBuilder,
+    ProjectNextActionsBuilder,
 )

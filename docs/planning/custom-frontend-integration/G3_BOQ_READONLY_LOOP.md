@@ -336,3 +336,23 @@ make verify.boq.dual_role.five_viewport.evidence
   不在 G3.3-B 验收口径内（无 page/http/console error），作为后续
   仪表盘产品化 backlog 跟进。
 
+#### 后续处置（2026-09-05）
+
+- **7 处 zone fallback 已闭合**（6+1 根因）：
+  - 6 处 = 驾驶舱 summary_rows 合成的 `metric_card` 块未注册——
+    `pageBlockRegistry` 补 `metric_card: BlockMetricRow` 映射，
+    `BlockMetricRow` 增加单指标卡形态（块自带 value、无 dataset 投影时
+    直接渲染单条指标）；
+  - 1 处 = entry_block `next_actions` 的 `RUNTIME_BLOCK_MAP` 映射到
+    `block.project.next_actions` 但 BUILDERS 元组缺 builder——新增
+    `ProjectNextActionsBuilder`（block_type=`todo_list`，决策引擎
+    actions 投影 + 空态兜底项），数据形状 `{"items": [...],
+    "max_items": N}`，`BlockTodoList` 增加 dict.items 双形态 dataset
+    兼容（与 progress 块同构）；
+  - 配套：`SceneContractBlockGridView` 增 `runtimeDatasets` 投影
+    （runtime payload.data 并入 datasets）+ 运行时块 `data_source`
+    兜底为 entry key；桩加载单测 8 例
+    （`test_project_next_actions_builder.py`）。
+- **roleLabel 按成本组区分**：仍开放（identity_resolver.py role_surface
+  层），独立跟进。
+

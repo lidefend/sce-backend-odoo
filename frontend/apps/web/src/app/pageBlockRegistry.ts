@@ -12,6 +12,7 @@ import BlockBoqImportPreview from '../components/page/blocks/BlockBoqImportPrevi
 const BLOCK_REGISTRY: Record<string, object> = {
   metric: BlockMetricRow,
   metric_row: BlockMetricRow,
+  metric_card: BlockMetricRow,
   progress_summary: BlockProgressSummary,
   record_summary: BlockRecordSummary,
   record_table: BlockRecordTable,

@@ -233,7 +233,13 @@ const pageContract = computed<PageOrchestrationContract>(() => {
     const key = asText((stub as Record<string, unknown>).key);
     if (!key) continue;
     const payload = runtimeBlocks.value[key];
-    blocks.push(mergeRuntimeBlock(stub as SceneBlock, payload));
+    const merged = mergeRuntimeBlock(stub as SceneBlock, payload);
+    // 运行时块（progress/risk/boq/next_actions）的 data 需经 ZoneRenderer 的
+    // data_source 透传到组件 dataset 投影；无显式 data_source 时以 entry key 兜底。
+    if (payload && !asText(merged.data_source)) {
+      (merged as SceneBlock).data_source = key;
+    }
+    blocks.push(merged);
   }
   return {
     contract_version: '2.0.0',
@@ -258,7 +264,21 @@ const pageContract = computed<PageOrchestrationContract>(() => {
   };
 });
 
-const datasets = computed<Record<string, unknown>>(() => rawContract.value?.datasets || {});
+// 运行时块投影：key -> payload.data。ZoneRenderer 依据 blocked.data_source
+// 从 datasets 取投影，让 progress/risk/boq/next_actions 呈现真实数据而非空态。
+const runtimeDatasets = computed<Record<string, unknown>>(() => {
+  const out: Record<string, unknown> = {};
+  for (const [key, payload] of Object.entries(runtimeBlocks.value)) {
+    const data = payload && typeof payload === 'object' ? (payload as { data?: unknown }).data : undefined;
+    if (data && typeof data === 'object') out[key] = data;
+  }
+  return out;
+});
+
+const datasets = computed<Record<string, unknown>>(() => ({
+  ...(rawContract.value?.datasets || {}),
+  ...runtimeDatasets.value,
+}));
 
 function findActionNodeByXmlid(nodes: NavNode[], xmlid: string): NavNode | null {
   const wanted = asText(xmlid);
