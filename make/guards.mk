@@ -185,3 +185,16 @@ guard.retire: guard.prod.forbid
 verify.g1.acceptance.baseline: guard.prod.forbid
 	@python3 scripts/verify/g1_acceptance_baseline_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_g1_acceptance_baseline_guard.py
+
+# ------- G3.3-B dual-role five-viewport BOQ acceptance evidence -------
+# Verifies that the v1-schema evidence package emitted by
+# scripts/verify/boq_dual_role_five_viewport_browser_acceptance.mjs is structurally
+# sound, reproducible, and covers the 2 × 5 × 2 = 20 cell matrix with
+# cross_env_reuse_forbidden honored. The browser capture itself is performed
+# by the harness (requires dev nginx + Odoo + 1k/10k fixtures) — the guard
+# is a no-op until `artifacts/boq-dual-role-five-viewport/evidence.json`
+# exists from a real capture run.
+.PHONY: verify.boq.dual_role.five_viewport.evidence
+verify.boq.dual_role.five_viewport.evidence: guard.prod.forbid
+	@python3 scripts/verify/boq_dual_role_five_viewport_evidence_guard.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_boq_dual_role_five_viewport_evidence_guard.py
