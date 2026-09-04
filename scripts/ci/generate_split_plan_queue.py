@@ -32,6 +32,10 @@ def direction_for(path: str) -> str:
         )
     if path == "Makefile":
         return "Move implementation bodies into `scripts/ci`, `scripts/verify`, or included `make/*.mk` fragments while keeping stable public targets."
+    if path == "frontend/apps/web/src/pages/ContractFormPage.vue":
+        return "Assessed Wave3 Round2 (no further split value; 5587→1857 integration shell). Keep under P2 growth guard."
+    if path == "frontend/apps/web/src/pages/ListPage.vue":
+        return "Assessed Wave3 Round12 (no further split value; component/helper extraction done, max logic block 51 lines). Keep under P2 growth guard."
     if path.endswith(".vue"):
         return "Extract composables, child panels, data adapters, and action handlers; keep the route component as orchestration shell."
     if "tests/" in path:
@@ -49,8 +53,17 @@ def direction_for(path: str) -> str:
     return "Define owner-specific decomposition plan before adding unrelated behavior."
 
 
+# Retired P0 nominations (Wave3 Round12, 2026-09-04): ContractFormPage.vue
+# was split 5587→1857 and assessed as having no further decomposition value
+# (Wave3 Round2 decision); Makefile and BusinessConfigSurfaceView.vue have
+# since fallen below split thresholds and no longer appear in the split
+# table. The P0 tier stays reserved for explicit owner nomination should a
+# file ever re-enter the split table.
+P0_OVERRIDES: frozenset[str] = frozenset()
+
+
 def priority_for(path: str, lines: int) -> str:
-    if path in {"Makefile", "frontend/apps/web/src/pages/ContractFormPage.vue", "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue"}:
+    if path in P0_OVERRIDES:
         return "P0"
     if lines >= 3000 or path.startswith("addons/smart_core/"):
         return "P1"
