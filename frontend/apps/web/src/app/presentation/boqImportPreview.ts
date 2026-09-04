@@ -252,10 +252,10 @@ function errorViewModel(
  * 纯函数：无网络/会话依赖，可被 esbuild 单测直接覆盖。
  *
  * 输入形状兼容（信封解包错位防御）：
- * - 直传形状 { batch, preview_schema }：intentRequest/parseIntentEnvelope
- *   已剥掉 {ok,data,meta} 信封，生产链路正常路径实际到达本函数的形状；
+ * - 直传形状 { batch, preview_schema }：API 信封解析层已剥掉
+ *   {ok,data,meta} 外层，生产链路正常路径实际到达本函数的形状；
  * - 信封形状 { ok, data: { batch }, error }：调用方 catch 分支
- *   （fetchBoqImportPreview 异常重建）与历史单测构造的形状。
+ *   （拉取异常重建）与历史单测构造的形状。
  */
 export function projectBoqImportPreview(
   raw: BoqImportPreviewIntentData | null | undefined,
