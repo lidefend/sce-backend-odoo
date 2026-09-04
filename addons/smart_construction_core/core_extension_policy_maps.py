@@ -412,6 +412,78 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_historical_payment_fact",
         ],
     },
+    # 成本组角色（group_sc_cap_cost_user / group_sc_cap_cost_manager /
+    # group_sc_role_cost_user）：此前成本用户经 project_member 的
+    # group_sc_cap_project_read 基础读权限兜底解析，顶栏「当前岗位」
+    # 误显「项目成员」。本角色仅做标签区分（roleLabel 按成本组区分，
+    # G3.3-B capture 发现的遗留项），导航暴露策略与 project_member
+    # 完全一致（见 test_role_surface_cost_label.py 的 nav 不变性断言），
+    # 不引入任何菜单/动作/模型暴露变化。
+    "cost": {
+        "label": "成本管理",
+        "landing_scene_candidates": ["workspace.home", "projects.list", "projects.ledger"],
+        "menu_xmlids": [
+            "smart_construction_core.menu_sc_project_center",
+            "smart_construction_core.menu_sc_contract_center",
+            "smart_construction_core.menu_sc_construction_center",
+        ],
+        "primary_menu_xmlids": [
+            "smart_construction_core.menu_sc_project_project",
+            "smart_construction_core.menu_sc_general_contract",
+            "smart_construction_core.menu_sc_p1_daily_contract",
+            "smart_construction_core.menu_sc_plan",
+            "smart_construction_core.menu_sc_plan_report",
+            "smart_construction_core.menu_sc_construction_diary",
+            "smart_construction_core.menu_sc_certificate_registration",
+            "smart_construction_core.menu_sc_company_document_archive",
+            "smart_construction_core.menu_sc_document_borrow",
+        ],
+        "role_home_menu_xmlids": [],
+        "contextual_menu_xmlids": [
+            "smart_construction_core.menu_sc_site_documents",
+            "smart_construction_core.menu_sc_project_wbs",
+            "smart_construction_core.menu_sc_project_kanban",
+            "smart_construction_core.menu_sc_contract_expense",
+            "smart_construction_core.menu_sc_contract_income",
+            "smart_construction_core.menu_sc_quality_issue",
+            "smart_construction_core.menu_sc_quality_rectification",
+            "smart_construction_core.menu_sc_quality_recheck",
+            "smart_construction_core.menu_sc_safety_issue",
+            "smart_construction_core.menu_sc_safety_rectification",
+            "smart_construction_core.menu_sc_safety_recheck",
+        ],
+        "denied_menu_xmlids": [],
+        "menu_blocklist_xmlids": [
+            "smart_construction_core.menu_sc_finance_center",
+            "smart_construction_core.menu_sc_settlement_center",
+            "smart_construction_core.menu_payment_request",
+            "smart_construction_core.menu_sc_tax_center",
+            "smart_construction_core.menu_sc_hr_center",
+            "smart_construction_core.menu_sc_tender_registration",
+        ],
+        "action_blocklist_xmlids": [
+            "smart_construction_core.action_sc_tender_registration",
+        ],
+        "model_blocklist": [
+            "payment.request",
+            "sc.payment.execution",
+            "sc.settlement.order",
+        ],
+        "model_prefix_blocklist": [
+            "account.",
+            "hr.",
+            "payment.",
+            "sc.finance.",
+            "sc.payment.",
+            "sc.settlement.",
+            "sc.tax.",
+        ],
+        "group_key_blocklist": [
+            "construction.财务中心",
+            "construction.税务中心",
+            "construction.人事行政",
+        ],
+    },
 }
 
 ROLE_GROUPS_EXPLICIT = {
@@ -441,6 +513,15 @@ ROLE_GROUPS_EXPLICIT = {
         "smart_construction_core.group_sc_role_finance_manager",
         "smart_construction_core.group_sc_role_finance_user",
     },
+    # 成本组：cap 成本组 + 角色组（group_sc_role_cost_user 经 implied_ids
+    # 展开为 project_read + cap_cost_user，Odoo 会物化 implied 组到用户
+    # groups_id，两种持组路径在此均命中）。置于 ROLE_PRECEDENCE 末位，
+    # 不抢占 pm/finance 等既有角色。
+    "cost": {
+        "smart_construction_core.group_sc_cap_cost_user",
+        "smart_construction_core.group_sc_cap_cost_manager",
+        "smart_construction_core.group_sc_role_cost_user",
+    },
 }
 
 ROLE_GROUPS_CAPABILITY_FALLBACK = {
@@ -454,7 +535,7 @@ ROLE_GROUPS_CAPABILITY_FALLBACK = {
     },
 }
 
-ROLE_PRECEDENCE = ("system_admin", "business_full", "business_config_admin", "executive", "owner", "pm", "finance")
+ROLE_PRECEDENCE = ("system_admin", "business_full", "business_config_admin", "executive", "owner", "pm", "finance", "cost")
 
 NAV_MENU_SCENE_MAP = {
     "smart_construction_core.menu_sc_project_initiation": "projects.intake",

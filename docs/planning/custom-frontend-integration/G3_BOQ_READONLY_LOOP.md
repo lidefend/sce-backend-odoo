@@ -353,6 +353,14 @@ make verify.boq.dual_role.five_viewport.evidence
     （runtime payload.data 并入 datasets）+ 运行时块 `data_source`
     兜底为 entry key；桩加载单测 8 例
     （`test_project_next_actions_builder.py`）。
-- **roleLabel 按成本组区分**：仍开放（identity_resolver.py role_surface
-  层），独立跟进。
+- **roleLabel 按成本组区分**：已闭合（2026-09-05）。根因 =
+  `ROLE_GROUPS_EXPLICIT` 无成本组条目，成本用户经 project_member 的
+  `group_sc_cap_project_read` 基础读权限兜底解析。修正 =
+  `core_extension_policy_maps.py` 新增 `cost` 角色：显式组映射
+  （`group_sc_cap_cost_user` / `group_sc_cap_cost_manager` /
+  `group_sc_role_cost_user`）、`ROLE_PRECEDENCE` 末位追加、
+  `ROLE_SURFACE_OVERRIDES` 增 `cost` 条目（label=「成本管理」，导航
+  暴露策略与 project_member 逐字段一致——仅区分标签，不改变任何菜单/
+  动作/模型暴露）。桩加载单测 8 例
+  （`test_role_surface_cost_label.py`，含 nav 不变性与 pm 不被抢占断言）。
 
