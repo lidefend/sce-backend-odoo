@@ -3,6 +3,8 @@
     v-if="blockComponent"
     class="block-renderer"
     :class="blockClasses"
+    :data-block-key="resolvedBlockKey"
+    :data-block-type="resolvedBlockType"
   >
     <component
       :is="blockComponent"
@@ -44,6 +46,21 @@ const blockClasses = computed(() => {
   const key = String(props.block.key || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '-');
   return [`block-type-${type}`, `block-key-${key}`];
 });
+
+/**
+ * 语义定位属性（G3.3-B 双角色五视口验收 DOM 契约）：
+ * - data-block-key 优先运行时 block_key（后端 block.project.* 全名），
+ *   回落契约 stub key；
+ * - data-block-type 与注册表 block_type 一致。
+ * 验收 harness 以 [data-block-key]/[data-block-type] 等待块挂载完成。
+ */
+const resolvedBlockKey = computed(() => {
+  const block = props.block as PageOrchestrationBlock & { block_key?: unknown };
+  const runtimeKey = typeof block.block_key === 'string' ? block.block_key.trim() : '';
+  const stubKey = typeof props.block.key === 'string' ? props.block.key.trim() : '';
+  return runtimeKey || stubKey;
+});
+const resolvedBlockType = computed(() => String(props.block.block_type || '').trim());
 
 function onAction(payload: PageBlockActionEvent) {
   emit('action', payload);
