@@ -13,7 +13,7 @@
 1. **Showcase R3 收口（已切换为 inventory hygiene）** ✅ Round1 决策
    - 原计划"为 `projects.dashboard_showcase` 补 4 字段后升 R3"被推翻
    - 根因诊断（2026-09-04）：XML payload `'code': 'projects.dashboard_focus'` 与 inventory key `projects.dashboard_showcase` 不一致；XML 4 字段齐全但归属真实 scene 是 `projects.dashboard_focus`，demo entry `projects.dashboard_showcase` 由 `demo_addons/smart_construction_demo` 提供 action/menu
-   - 决策：从 inventory matrix 移除 showcase 行（符合 test `assertNotIn` 期望）；真实 production scene `projects.dashboard_focus` 待 Wave3 RoundN 收录评估
+   - 决策：从 inventory matrix 移除 showcase 行（符合 test `assertNotIn` 期望）；真实 production scene `projects.dashboard_focus` 待 Wave3 RoundN 收录评估（**Round13 定案：维持 R2 模板定位，不升 R3**，见 Round 进度追踪）
    - 影响：dashboard 仍 100% PASS（PR #414 已切 R3→R1），inventory 从 22→21 场景，R3 场景数不变（20）
 
 2. **ContractFormPage 抽离（FE-AUD-0014）** ✅ Round2 决策（前置批次已闭合）
@@ -29,7 +29,8 @@
 
 3. **Portal 域扩展** ✅ Round9 + Round10 达成（portal.shortcuts / portal.notifications 收录, PR #420 / PR #421）
    - 当前 portal 域含 `portal.dashboard / portal.lifecycle / portal.capability_matrix / portal.shortcuts / portal.notifications` 5 个 R3 场景（shortcuts 为 Round9 新增、notifications 为 Round10 新增）
-   - 候选：`portal.notifications`（消息中心）✅ Round10 已收、`portal.shortcuts`（快捷入口）✅ Round9 已收、`portal.audit_log`（操作审计，真实入口证据弱——sc.audit.log 有数据沉淀但无独立 menu/页面，暂缓收录）
+   - 候选：`portal.notifications`（消息中心）✅ Round10 已收、`portal.shortcuts`（快捷入口）✅ Round9 已收、`portal.audit_log`（操作审计）— **Round13 正式关闭候补**（见下）
+   - `portal.audit_log` 关闭论证（2026-09-04 Round13）：三个 audit 模型（`sc.audit.log` / `sc.scene.audit.log` / `sc.capability.audit.log`）数据沉淀均为**系统/超管级安全审计**——`ir.model.access` 仅授 `base.group_system` / `smart_construction_core.group_sc_super_admin` / `smart_core.group_smart_core_admin`；前端所有 audit 引用（MenuConfigView / ContractFormPage）均为**低代码配置审计工具**（菜单/表单运行时可见性诊断），无任何面向业务用户的审计日志 menu/页面/路由 → **与 portal（业务门户）域语义错配，收录即假 R3**。重开条件：出现导航归属 portal 域的业务用户审计 UI（menu 挂 portal 根或业务页面路由）时按真实锚点重新评估
    - 进入条件：完成 Round1 + Round2 后启动（已满足，Round9 执行）
 
 4. **合同 / 财务纵深** ✅ Round11 闭合（PR #422, contract_to_finance_handshake 跨域 action_spec）
@@ -134,8 +135,17 @@
   - payload 手术（纯 `target_scene`，Round7 手法，不引新 entry_kind 词汇）：`contracts.workspace.open_contract_center`→`contract.center`（primary 升级）；`contracts.workspace.open_settlement_orders`（finance 角色跨域默认）→`finance.settlement_orders`（**contract→finance handshake 显式化**）；`finance.settlement_orders.open_finance_center`→`finance.center`（primary 升级）；`open_treasury_ledger`→`finance.workspace`
   - 验证：4 新 hermetic 单测（24 全绿：2 primary 升级正向 + 1 全动作显式不变式 + 1 负面无 target→self_target_fallback）；R3 strict guard 22 R3 / **22 SUCCESS / 0 fallback**，dashboard 中 `contracts.workspace` + `finance.settlement_orders` 两行 **related_scene_match → action_scene_ref**（resolution 升级）；freeze + test_boundary PASS；8 generated reports 全刷 CURRENT
   - 影响：layout.xml +6 / list_profile.xml +4；5 files / +188 / −10
-- ⏸️ **portal.audit_log**：证据=weak，需真实 menu/页面/路由锚点后才有收录资质（候补）
+- ❌ **portal.audit_log 候补正式关闭**（2026-09-04 Round13）：语义错配论证见 item 3；收录即假 R3
 - ✅ **Round12 闭合**（2026-09-04, 评估+治理轮, PR #423）：ListPage.vue 抽离候选评估 → **不开启拆分**（item 7：结构证据=前置抽离已完成/最大逻辑块 51 行/接口宽≠复杂/无测试护栏，与 Round2 ContractFormPage 同型结论）；顺带退役 split_plan_queue 过时 P0 硬编码（ContractFormPage Round2 后仍强制 P0=空转；BusinessConfigSurfaceView/Makefile 已低于 split 阈值=死条目）→ P0_OVERRIDES 空集合保留 reserved 语义，ContractFormPage 落 P2 防增长
+- ✅ **Round13 闭合**（2026-09-04, R2 悬案批量定案 + 候补关闭收口轮, PR #424）：Wave3 场景线确定性收口
+  - **3 个 R2 悬案 next_action 定案 = 全部维持 R2 不升 R3**（消除"待评估转 R3"误导性悬案，同 Round12 P0 教训——inventory 硬编码须随证据定案演进）：
+    - `projects.dashboard_focus`：registry `tags=["template"]`、无独立 frontend 路由/menu，真实业务入口由已 R3 的 `projects.dashboard`（/pm/dashboard）+ `project.management` 承载（共享 `menu_sc_project_dashboard` / `action_project_dashboard`）→ 模板定位
+    - `project.dashboard`：v1 产品原型 payload 缺 `role_variants`（有 action_specs/data_sources/product_policy），真实入口由 `projects.dashboard`(R3) 承载
+    - `project.initiation`：v1 产品原型（纯 form 层，缺 role_variants/data_sources/product_policy），真实入口由 `projects.intake`(R3) 承载
+  - 依据：R3 = Productized（角色差异/动作编排/数据策略），三个 R2 均为"真实 R3 复数版的产品原型/模板层"，业务可达性已全覆盖——升 R3 属重复收录
+  - **audit_log 候补关闭**：系统/超管级安全审计（access 仅 base.group_system + super_admin）vs portal 业务域语义错配，前端 audit 引用全是低代码配置审计工具（MenuConfigView/ContractFormPage），无业务用户审计 UI → 收录即假 R3
+  - 验证：scene_maturity_guard（inventory 结构）PASS；freeze + test_boundary PASS；R3 strict guard 22/22 SUCCESS/0 fallback 不变（R3 集合零变更）；8 generated reports CURRENT（inventory matrix 非生成物，手维护源）
+  - 影响：Wave3 场景线完全确定化——22 R3 / 3 R2 定案 / 0 开放候补；变更 = inventory matrix 3 行 next_action + 头部阶段 + backlog 记录
 
 ## 继承 Wave2 的产物（wave3 起点状态）
 
