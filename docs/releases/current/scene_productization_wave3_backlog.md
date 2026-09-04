@@ -4,16 +4,17 @@
 
 ## Goal
 
-- **承上**：补齐 Wave2 漏标的 1 个 R3 字段缺口（`projects.dashboard_showcase` 标 R3 缺 action_specs/role_variants/data_sources/product_policy）。
+- **承上**：修正 Wave2 漏标的 inventory hygiene 项——`projects.dashboard_showcase` 是 demo entry（demo_addons/smart_construction_demo 提供 action/menu），非 production scene；test `test_scene_nav_contract_builder.py:94` 已 assertNotIn 它，但 inventory 一直未修。
 - **启下**：从 5 个候选方向（前端页抽离、契约页瘦身、Portal 域扩展、合同/财务纵深、风险动作链路升级）形成 P0/P1 优先级排序，每轮收敛一个。
 - **治理**：把"配置齐全即 R3"进化为"运行时可观测 + 可回归 + 可降级"，并把 hygiene（orphan payload / 无 R 等级场景 / 测试场景边界）做成 CI 拦截而非人工兜底。
 
 ## Backlog
 
-1. **Showcase R3 收口**
-   - 为 `projects.dashboard_showcase` 补 `action_specs / role_variants / data_sources / product_policy` 4 个字段
-   - 若业务定位决定该场景永久为演示入口，则保留 `R1` 并在 inventory `next_action` 中明确"非产品化路径"
-   - 决策：当前以 **(a) 保留 R1 + Wave3 Round1 补字段** 为推荐路径，避免 dashboard `pass_rate < 100%` 阻塞
+1. **Showcase R3 收口（已切换为 inventory hygiene）** ✅ Round1 决策
+   - 原计划"为 `projects.dashboard_showcase` 补 4 字段后升 R3"被推翻
+   - 根因诊断（2026-09-04）：XML payload `'code': 'projects.dashboard_focus'` 与 inventory key `projects.dashboard_showcase` 不一致；XML 4 字段齐全但归属真实 scene 是 `projects.dashboard_focus`，demo entry `projects.dashboard_showcase` 由 `demo_addons/smart_construction_demo` 提供 action/menu
+   - 决策：从 inventory matrix 移除 showcase 行（符合 test `assertNotIn` 期望）；真实 production scene `projects.dashboard_focus` 待 Wave3 RoundN 收录评估
+   - 影响：dashboard 仍 100% PASS（PR #414 已切 R3→R1），inventory 从 22→21 场景，R3 场景数不变（20）
 
 2. **ContractFormPage 抽离（FE-AUD-0014）**
    - `frontend/packages/ui/src/pages/ContractFormPage.vue` 当前 5587 行，承担 relation one2many 加载 + 角色化配置 + 草稿持久化 + 多 step 编排

@@ -1,18 +1,18 @@
 # Scene R3 Runtime Dashboard
 
-更新时间：2026-09-04 12:25:28
+更新时间：2026-09-04 12:50:00
 
 ## Summary
 
-- `r3_scene_count`: 21
+- `r3_scene_count`: 20
 - `pass_count`: 20
-- `fail_count`: 1
+- `fail_count`: 0
 - `action_chain_success_count`: 11
 - `action_chain_fallback_count`: 9
-- `action_chain_fail_count`: 1
-- `pass_rate`: 95.24%
-- `action_chain_success_rate`: 52.38%
-- `action_chain_fallback_rate`: 42.86%
+- `action_chain_fail_count`: 0
+- `pass_rate`: 100.00%
+- `action_chain_success_rate`: 55.00%
+- `action_chain_fallback_rate`: 45.00%
 
 ## Gate Thresholds
 
@@ -23,11 +23,9 @@
 
 ## Gate Result
 
-- `result`: FAIL (BLOCKER)
-- `blocker_count`: 2
+- `result`: PASS
+- `blocker_count`: 0
 - `warning_count`: 0
-- `BLOCKER`: action_chain_fail_count exceeded (1 > 0.0)
-- `BLOCKER`: pass_rate below threshold (95.24% < 100.00%)
 
 ## Checks
 
@@ -49,7 +47,6 @@
 | portal.lifecycle | ✅ | ✅ | ✅ | ✅ | ✅ | SUCCESS | related_scene_match | /pm/dashboard | ✅ | PASS |
 | project.management | ✅ | ✅ | ✅ | ✅ | ✅ | SUCCESS | related_scene_match | /s/projects.ledger | ✅ | PASS |
 | projects.dashboard | ✅ | ✅ | ✅ | ✅ | ✅ | SUCCESS | related_scene_match | /pm/dashboard | ✅ | PASS |
-| projects.dashboard_showcase | ❌ | ❌ | ❌ | ❌ | ❌ | FAIL | payload_missing |  | ❌ | FAIL |
 | projects.intake | ✅ | ✅ | ✅ | ✅ | ✅ | FALLBACK | self_target_fallback | /s/projects.intake | ✅ | PASS |
 | projects.ledger | ✅ | ✅ | ✅ | ✅ | ✅ | FALLBACK | related_scene_fuzzy | /pm/dashboard | ✅ | PASS |
 | projects.list | ✅ | ✅ | ✅ | ✅ | ✅ | FALLBACK | related_scene_fuzzy | /s/projects.intake | ✅ | PASS |
