@@ -49,10 +49,14 @@
    - 把 hygiene 接入 `gate.scene.r3.runtime.strict`，从 warning 提升为 BLOCKER
    - 进度：Round1 已部分达成（移除 showcase demo entry from inventory）；正式 guard 自动化仍待启动
 
-7. **ListPage.vue 抽离（Round9+ 候选）**
-   - 现状：`frontend/apps/web/src/pages/ListPage.vue` 2073 行（比 ContractFormPage 现状还大 11%）
-   - 候选责任：列表 schema 解析 + 列定义 + 过滤编排 + 行内编辑 + 分页/排序
-   - 进入条件：Round8 + Round3+ 完成后评估优先级
+7. **ListPage.vue 抽离（Round12 评估闭合，2026-09-04）** ✅
+   - 结构诊断（Round12 探查）：`frontend/apps/web/src/pages/ListPage.vue` 2073 行 = `<template>` 283 行 + `<script setup>` 1786 行（style 已外置 ListPage.css / listPage/ListPageMobile.css）
+   - 前置抽离已完成：`listPage/*.ts` 纯函数模块 4 个（listCellPresentation / listColumnVisibility / listColumnWidth / listGroupPagination）+ `components/product-list/*` 组件库（CollectionBatchActionBar / CollectionPaginationFooter / CollectionGroupingToolbar / CollectionGroupPageControls / CollectionRowCell 等 12+ 个）+ AttachmentViewer / StatusPanel 等旁路组件
+   - script 内**最大逻辑块仅 51 行**（`collectionTableColumns`），其余全部是 3-15 行碎片化 computed/helper（cell 呈现/分组/分页门面，转发 props 回调）；`defineProps` 类型声明 109 行 = **接口宽 ≠ 内部复杂**（受控组件，真实状态在父层）
+   - 无组件级测试（.spec/.test 无 ListPage 引用）→ 物理拆分无回归护栏
+   - **决策：不开启物理拆分**（与 Round2 ContractFormPage 同型结论——组件化+纯函数抽离已完成、无内聚大块、强行拆 wrapper=制造 import 碎片+价值负）
+   - 防膨胀护栏保留：split_plan_queue P2（"may be handled opportunistically, but should not grow without reason"）+ complexity budget 持续监控
+   - 再评估触发条件：ListPage 行数继续增长（>2300）或新增独立业务形态（如分组列表独立成页）时重新评估按形态拆分
 
 ## Suggested Deliverables
 
@@ -131,7 +135,7 @@
   - 验证：4 新 hermetic 单测（24 全绿：2 primary 升级正向 + 1 全动作显式不变式 + 1 负面无 target→self_target_fallback）；R3 strict guard 22 R3 / **22 SUCCESS / 0 fallback**，dashboard 中 `contracts.workspace` + `finance.settlement_orders` 两行 **related_scene_match → action_scene_ref**（resolution 升级）；freeze + test_boundary PASS；8 generated reports 全刷 CURRENT
   - 影响：layout.xml +6 / list_profile.xml +4；5 files / +188 / −10
 - ⏸️ **portal.audit_log**：证据=weak，需真实 menu/页面/路由锚点后才有收录资质（候补）
-- ⏸️ **Round7b 候选**（ListPage.vue 抽离 2073 行）：待 portal 纵深完成后再评估
+- ✅ **Round12 闭合**（2026-09-04, 评估+治理轮, PR #423）：ListPage.vue 抽离候选评估 → **不开启拆分**（item 7：结构证据=前置抽离已完成/最大逻辑块 51 行/接口宽≠复杂/无测试护栏，与 Round2 ContractFormPage 同型结论）；顺带退役 split_plan_queue 过时 P0 硬编码（ContractFormPage Round2 后仍强制 P0=空转；BusinessConfigSurfaceView/Makefile 已低于 split 阈值=死条目）→ P0_OVERRIDES 空集合保留 reserved 语义，ContractFormPage 落 P2 防增长
 
 ## 继承 Wave2 的产物（wave3 起点状态）
 
