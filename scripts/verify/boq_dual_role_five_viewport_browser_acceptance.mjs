@@ -11,6 +11,12 @@
  *   - schema / baseline / environment_assets / toolchain / collected_at
  *   - browser_evidence_contract.{required_fields, cross_env_reuse_forbidden=true}
  *
+ * v0.3.0：每 cell 额外采集 role_session_digest（登录后 sessionStorage
+ * sc_auth_token 的 sha256——只落摘要、绝不落原始 token）。只读场景两成本
+ * 角色对同 dataset × 视口渲染字节级一致是 G3.3-B 的验收目标本身，因此
+ * screenshot_digest 允许跨角色相同；独立采集由 role_session_digest 证明
+ * （每次登录产生独立会话 token，20 cell 两两不同）。
+ *
  * 产物目录结构：
  *   artifacts/boq-dual-role-five-viewport/
  *     evidence.json                — v1 证据包
@@ -24,7 +30,7 @@
  * 环境前置：
  *   - dev nginx + Odoo 已就绪；1k/10k BOQ 导入批次的 project_id 必须已
  *     在 G3.1 既有 import wizard 中落地；
- *   - 角色 login/sc_fx_cost_manager 与 sc_fx_cost_user 必须存在并具备
+ *   - 角色 sc_cost_mgr 与 sc_cost_user_cap 必须存在并具备
  *     project.management 场景的只读权限。
  */
 
@@ -38,8 +44,10 @@ import { launchChromium } from './playwright_runtime.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 
-const BASE_URL = String(process.env.FRONTEND_URL || 'http://127.0.0.1:18083').replace(/\/$/, '');
-const DB_NAME = process.env.DB_NAME || 'sc_clean';
+// sc-local-dev 栈实际映射：dev nginx = 127.0.0.1:18081（18083 是 clean 栈），
+// demo 数据库 = sc_dev_demo（G3.1 fixture 用户与 12210/12211 项目所在库）。
+const BASE_URL = String(process.env.FRONTEND_URL || 'http://127.0.0.1:18081').replace(/\/$/, '');
+const DB_NAME = process.env.DB_NAME || 'sc_dev_demo';
 const PASSWORD = process.env.E2E_PASSWORD || '';
 const OUT_DIR = process.env.ARTIFACTS_DIR
   || path.join(REPO_ROOT, 'artifacts', 'boq-dual-role-five-viewport');
@@ -51,12 +59,14 @@ const PRODUCT_SERVICE_STATIC_SHAS = {
   contract_schema_sha: String(process.env.CONTRACT_SCHEMA_SHA || ''),
 };
 const TOOL_VERSION = `boq-dual-role-five-viewport-browser-acceptance.mjs@${String(
-  process.env.HARNESS_VERSION || '0.1.0'
+  process.env.HARNESS_VERSION || '0.3.0'
 )}`;
 
+// demo fixture 实际登录名（demo_addons sc_demo_users.xml：user_sc_cost_manager_cap
+// → sc_cost_mgr，user_sc_cost_user_cap → sc_cost_user_cap；sc_fx_* 不存在）。
 const ROLES = [
-  { id: 'cost_manager', login: process.env.BOQ_COST_MANAGER_LOGIN || 'sc_fx_cost_manager' },
-  { id: 'cost_user', login: process.env.BOQ_COST_USER_LOGIN || 'sc_fx_cost_user' },
+  { id: 'cost_manager', login: process.env.BOQ_COST_MANAGER_LOGIN || 'sc_cost_mgr' },
+  { id: 'cost_user', login: process.env.BOQ_COST_USER_LOGIN || 'sc_cost_user_cap' },
 ];
 const VIEWPORTS = [
   { id: '1440x900', width: 1440, height: 900, bucket: 'desktop_l' },
@@ -128,15 +138,30 @@ function capturePageState(page) {
     if (!req.url().includes('/api/v1/intent')) return;
     let payload = null;
     try { payload = req.postDataJSON(); } catch { payload = null; }
-    if (!payload || payload.intent !== 'ui.contract.v2') return;
+    if (!payload || payload.intent !== 'project.dashboard.enter') return;
     let body = null;
     try { body = await response.json(); } catch { body = null; }
+    // BOQ preview 是 runtime surface 块：场景静态契约（system.init /
+    // ui.contract.v2 scene_contract 源）不含它；真实渲染链路的契约载体是
+    // project.dashboard.enter 的 data.blocks（stub 块）+ runtime_fetch_hints
+    // （指向 project.dashboard.block.fetch 的 boq 块运行时拉取）。
+    const data = body && typeof body.data === 'object' && body.data ? body.data : null;
+    const blocks = data && Array.isArray(data.blocks) ? data.blocks : [];
+    const fetchHints = data && data.runtime_fetch_hints
+      && typeof data.runtime_fetch_hints === 'object'
+      && data.runtime_fetch_hints.blocks
+      && typeof data.runtime_fetch_hints.blocks === 'object'
+      ? data.runtime_fetch_hints.blocks
+      : null;
     state.contractProbes.push({
       params: payload.params || {},
       status: response.status(),
-      body_has_blocks: !!(body && body.blocks && Array.isArray(body.blocks)),
-      body_has_boq_preview: !!(body && body.blocks
-        && body.blocks.some((b) => b && (b.block_key === 'block.project.boq_preview' || b.block_type === 'boq_import_preview'))),
+      body_has_blocks: blocks.length > 0,
+      body_has_boq_preview: blocks.some((b) => b && (
+        b.key === 'boq'
+        || b.block_key === 'block.project.boq_preview'
+        || b.block_type === 'boq_import_preview'
+      )) || Boolean(fetchHints && fetchHints.boq),
     });
   });
   return state;
@@ -163,6 +188,24 @@ async function login(page, loginName) {
     throw new Error(`LOGIN_FAILED:${loginName}:${body}; ${error.message}`);
   }
   await page.locator('.layout-shell').waitFor({ timeout: 45_000 });
+}
+
+/**
+ * 提取当前登录会话的 role_session_digest：登录后前端把 intent API 的
+ * Bearer token 存在 sessionStorage（sc_auth_token:<db>）。这里只取其
+ * sha256 摘要（证据包绝不落原始 token）。每次登录生成独立会话 token，
+ * 因此 20 个 cell 的 role_session_digest 两两不同 —— 这是「每 cell 独立
+ * 采集」的硬证据（只读场景下两角色截图字节级一致时仍可区分独立会话）。
+ */
+async function captureRoleSessionDigest(page) {
+  const token = await page.evaluate((db) => {
+    const direct = sessionStorage.getItem(`sc_auth_token:${db}`);
+    if (direct) return direct;
+    const keys = Object.keys(sessionStorage).filter((k) => k.startsWith('sc_auth_token'));
+    return keys.length ? sessionStorage.getItem(keys[0]) : null;
+  }, DB_NAME);
+  check(typeof token === 'string' && token.length > 0, 'ROLE_SESSION_TOKEN_MISSING');
+  return crypto.createHash('sha256').update(token).digest('hex');
 }
 
 async function openProjectManagement(page, projectId) {
@@ -206,6 +249,7 @@ async function captureCell({ browser, role, dataset, viewport, cellOutDir }) {
 
   const browserUrlBeforeNav = `${BASE_URL}${NORMALIZED_ROUTE_TEMPLATE(dataset.projectId)}`;
   await login(page, role.login);
+  const roleSessionDigest = await captureRoleSessionDigest(page);
   await openProjectManagement(page, dataset.projectId);
   // 再稳定 1.5s 等待 BOQ preview 内部拉取完成
   await page.waitForTimeout(1500);
@@ -225,6 +269,7 @@ async function captureCell({ browser, role, dataset, viewport, cellOutDir }) {
     contractProbes: state.contractProbes.slice(),
     geometry,
     browserUrl,
+    roleSessionDigest,
   };
   ensureDir(cellOutDir);
   fs.writeFileSync(path.join(cellOutDir, 'probe.json'), `${JSON.stringify(probe, null, 2)}\n`);
@@ -239,7 +284,7 @@ async function captureCell({ browser, role, dataset, viewport, cellOutDir }) {
     throw new Error(`CONSOLE_ERRORS:${JSON.stringify(state.consoleErrors)}`);
   }
   if (state.contractProbes.length === 0) {
-    throw new Error('CONTRACT_PROBE_MISSING:no ui.contract.v2 POST observed');
+    throw new Error('CONTRACT_PROBE_MISSING:no project.dashboard.enter POST observed');
   }
   if (!state.contractProbes.some((p) => p.body_has_boq_preview)) {
     throw new Error('BOQ_PREVIEW_BLOCK_NOT_IN_CONTRACT_RESPONSE');
@@ -257,6 +302,7 @@ async function captureCell({ browser, role, dataset, viewport, cellOutDir }) {
     capture_mode: CAPTURE_MODE,
     browser_full_version: browserVersion,
     screenshot_digest: screenshotDigest,
+    role_session_digest: roleSessionDigest,
     product_service_static_shas: { ...PRODUCT_SERVICE_STATIC_SHAS },
     collected_at_and_tool_version: `${collectedAt}|${TOOL_VERSION}`,
   };

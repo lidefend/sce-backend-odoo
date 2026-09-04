@@ -50,28 +50,30 @@ def _valid_top_level() -> dict:
     }
 
 
-def _valid_cell(role: str, dataset: str, viewport: str, digest: str | None = None) -> dict:
+def _valid_cell(role: str, dataset: str, viewport: str, digest: str | None = None,
+                session_digest: str | None = None) -> dict:
     return {
         "environment_id": "local",
         "dataset_id": dataset,
         "role": role,
         "normalized_route": f"/s/project.management?project_id={42 if dataset == 'boq_1k' else 99}",
-        "browser_url": f"http://127.0.0.1:18083/s/project.management?project_id={42 if dataset == 'boq_1k' else 99}",
+        "browser_url": f"http://127.0.0.1:18081/s/project.management?project_id={42 if dataset == 'boq_1k' else 99}",
         "viewport": viewport,
         "capture_mode": "readonly",
         "browser_full_version": "Chromium 138.0.7204.100",
         "screenshot_digest": digest or f"{role}_{dataset}_{viewport}_digest".ljust(64, "a")[:64],
+        "role_session_digest": session_digest or f"{role}_{dataset}_{viewport}_session".ljust(64, "b")[:64],
         "product_service_static_shas": {
             "frontend_sha": "f" * 40,
             "backend_sha": "b" * 40,
             "contract_schema_sha": "c" * 40,
         },
-        "collected_at_and_tool_version": "2026-09-04T10:32:14Z|boq-dual-role-five-viewport-acceptance.mjs@0.1.0",
+        "collected_at_and_tool_version": "2026-09-04T10:32:14Z|boq-dual-role-five-viewport-acceptance.mjs@0.3.0",
     }
 
 
 def _valid_full_evidence() -> dict:
-    """Build a 20-cell evidence package with unique screenshot digests per cell."""
+    """Build a 20-cell evidence package with hex digests unique per cell."""
     evidence = _valid_top_level()
     cells = []
     counter = 0
@@ -80,7 +82,8 @@ def _valid_full_evidence() -> dict:
             for viewport in sorted(guard.EXPECTED_VIEWPORTS):
                 counter += 1
                 digest = ("d" * 60 + f"{counter:04d}")[:64]
-                cells.append(_valid_cell(role, dataset, viewport, digest))
+                session = ("e" * 60 + f"{counter:04d}")[:64]
+                cells.append(_valid_cell(role, dataset, viewport, digest, session))
     evidence["cells"] = cells
     return evidence
 
@@ -186,11 +189,57 @@ class CellValidationTests(unittest.TestCase):
 
     def test_duplicate_screenshot_digest_is_rejected(self) -> None:
         evidence = _valid_full_evidence()
-        # overwrite the last two cells' digests to collide
+        # collide the last two cells' digests (different viewports => different
+        # dataset×viewport combinations => cross-env reuse)
         evidence["cells"][-1]["screenshot_digest"] = evidence["cells"][-2]["screenshot_digest"]
         errors: list[str] = []
         guard._validate_cells(evidence, errors)
         self.assertTrue(any("cross_env_reuse_forbidden" in e for e in errors))
+
+    def test_cross_role_same_combo_digest_is_allowed(self) -> None:
+        """Role-invariant readonly render: within one dataset×viewport combo the
+        two roles may share the screenshot digest, provided every cell keeps a
+        pairwise-distinct role_session_digest."""
+        evidence = _valid_full_evidence()
+        by_combo: dict[tuple[str, str], dict[str, dict]] = {}
+        for cell in evidence["cells"]:
+            by_combo.setdefault((cell["dataset_id"], cell["viewport"]), {})[cell["role"]] = cell
+        for combo, roles in by_combo.items():
+            manager = roles.get("cost_manager")
+            user = roles.get("cost_user")
+            if manager and user:
+                user["screenshot_digest"] = manager["screenshot_digest"]
+        errors: list[str] = []
+        guard._validate_cells(evidence, errors)
+        self.assertFalse(any("cross_env_reuse_forbidden" in e for e in errors), msg=errors)
+
+    def test_same_combo_same_session_digest_is_rejected(self) -> None:
+        """Sharing the session digest between the two roles of one combination
+        means the capture was NOT independent — must be rejected."""
+        evidence = _valid_full_evidence()
+        by_combo: dict[tuple[str, str], dict[str, dict]] = {}
+        for cell in evidence["cells"]:
+            by_combo.setdefault((cell["dataset_id"], cell["viewport"]), {})[cell["role"]] = cell
+        combo, roles = next(iter(by_combo.items()))
+        roles["cost_user"]["role_session_digest"] = roles["cost_manager"]["role_session_digest"]
+        errors: list[str] = []
+        guard._validate_cells(evidence, errors)
+        self.assertTrue(any("role_session_digest" in e for e in errors), msg=errors)
+
+    def test_duplicate_role_session_digest_is_rejected(self) -> None:
+        evidence = _valid_full_evidence()
+        # two different combos sharing one session digest
+        evidence["cells"][-1]["role_session_digest"] = evidence["cells"][0]["role_session_digest"]
+        errors: list[str] = []
+        guard._validate_cells(evidence, errors)
+        self.assertTrue(any("role_session_digest" in e for e in errors), msg=errors)
+
+    def test_missing_role_session_digest_is_rejected(self) -> None:
+        evidence = _valid_full_evidence()
+        evidence["cells"][0].pop("role_session_digest")
+        errors: list[str] = []
+        guard._validate_cells(evidence, errors)
+        self.assertTrue(any("role_session_digest" in e for e in errors), msg=errors)
 
     def test_missing_cell_combination_is_rejected(self) -> None:
         evidence = _valid_full_evidence()
