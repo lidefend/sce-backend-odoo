@@ -1,6 +1,6 @@
 # ADR-002：前端图表渲染引擎（ECharts）
 
-- 状态：Accepted（2026-09-05 批准；批准范围=仅本 ADR，ADR-004/005/006 维持 Proposed 待批。批准即接受全部 6 项内置条件，`visualization.chart` capability 可进入 G6 只读实现；写入路径仍按总控 G7 门禁另行决策）
+- 状态：Accepted（2026-09-05 批准；批准范围=仅本 ADR，ADR-004/005/006 维持 Proposed 待批。批准即接受全部 6 项内置条件，`visualization.chart` capability 可进入 G6 只读实现；写入路径仍按总控 G7 门禁另行决策。同日**条件 2 修订一次**，见下方「修订记录」）
 - 范围：custom-frontend-integration G5 / Chart 专题
 - 决策项：是否引入 ECharts、固定版本、bundle 预算与引入方式
 
@@ -23,7 +23,7 @@
 **批准引入 `echarts@6.1.0`（精确锁定 minor，patch 升级须过门禁），条件如下：**
 
 1. **只允许 tree-shakeable 引入**：`echarts/core` + 按需 Chart/Component + 单一 `CanvasRenderer`；禁止 `import * as echarts from 'echarts'` 全量引入（守卫拦截）。
-2. **bundle 预算**：图表子集 gzip ≤120KB；超出即回审。测量以冻结基线 + 候选版本实测为准，不得引用原型估算值作为验收。
+2. **bundle 预算**（2026-09-05 修订，见下方「修订记录」）：**首屏预算**——主 chunk（及任何首屏加载 chunk）不得包含 echarts 代码，体积维持基线不变；**懒加载图表子集预算**——gzip ≤400KB。测量以真实 vite/rollup 生产构建实测为准，不得引用原型估算值作为验收。
 3. **不进首屏**：图表 renderer 经路由级/块级 dynamic import 懒加载；主 chunk 体积预算不变。
 4. **契约先行**：仅消费 `visualization.chart` capability（后端登记 metric/dimension/dataset ref）；前端不得自行聚合财务/项目事实（总控 §3 表格禁令）。
 5. **涨红跌绿**：涨/收入/正数→红、跌/支出/负数→绿的中国市场约定在 adapter 层固化为主题 token，不由业务组件散落配置。
@@ -41,6 +41,34 @@
 
 - `visualization.chart` capability 未注册/校验失败 → 块级降级为通用空态（复用 G3.2 四态状态机模式），不白屏。
 - 移除 echarts 依赖不影响任何既有能力（图表是纯增量 capability）。
+
+## 修订记录
+
+### 2026-09-05：条件 2 预算口径修订（首次实测后回审，用户批准）
+
+- **触发**：G6.1 Task #99 真实 vite/rollup 生产构建实测（app 主入口 +
+  探针入口双构建 chunk 集合差分，gzip level 9）：
+  - echarts 按需子集（bar/line/pie + Grid/Tooltip/Legend + CanvasRenderer）
+    = **364.6KB gzip / 1081.5KB raw**，超原预算（≤120KB）3 倍；
+  - 主 chunk 体积不变（gzip 192.9→192.6KB，差分内无 echarts 代码），
+    懒加载条件（条件 3）PASS。
+- **根因**：echarts 6.1.0 package.json `sideEffects: ['lib/chart/*.js',
+  'lib/component/*.js', ...]` 声明使桶文件 `export *` 的副作用模块不可
+  被 bundler 摇除；命名导入 / 解构导入 / 深路径副作用引入三种姿势实测
+  体积一致；Axis/graphic/keyframe 动画等共享模块构成固有体积，裁剪至
+  bar-only+grid+canvas 仍 138.9KB gzip（esbuild 口径）。原输入阶段的
+  ~95KB 原型估算未计入上述约束，失真。
+- **修订**（方案 A）：预算拆分为「首屏预算不变 + 懒加载图表子集
+  ≤400KB gzip」两口径；实测 364.6KB 满足修订后预算。
+- **依据**：超标体积全部位于懒加载 chunk——用户未打开图表块则永不下载；
+  内容寻址文件名强缓存后仅首次产生流量；其余 5 项条件（tree-shakeable
+  引入纪律 / 懒加载 / 契约先行 / 涨红跌绿 token 化 / design-tokens 注入）
+  全部满足且已由守卫与单测钉死。
+- **否决的替代**：裁剪子集（去 Tooltip/Legend）实测仍超预算且损失交互，
+  不采用；重开引擎选型（Chart.js ~68KB gzip）推翻已批准选型与已完成的
+  G6.1 适配层，成本不成比例，不采用。
+- 实测数据与测量方法详见
+  `docs/planning/custom-frontend-integration/G6_CHART_EXECUTION.md` §5。
 
 ## 后果
 

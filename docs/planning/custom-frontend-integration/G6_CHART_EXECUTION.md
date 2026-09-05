@@ -62,19 +62,52 @@
   frontend_chart_engine_guard 钉死引入纪律）
 - 类型检查：`verify.frontend.typecheck.strict`（vue-tsc）全绿
 
-## 5. 体积预算实测（G6.1 Task #99 填写）
+## 5. 体积预算实测（G6.1 Task #99，2026-09-05 实测，按修订后口径 PASS）
 
-| 测量项 | 预算 | 实测（冻结基线 + 候选版本构建） | 状态 |
+测量方法：真实 vite/rollup 生产构建（`--mode production`，与发布产物同一
+工具链），app 主入口 + 探针入口（与 `ChartDatasetPanel.loadEngine()` 完全
+同款的动态按需 import：core + Bar/Line/Pie + Grid/Tooltip/Legend +
+CanvasRenderer）双入口构建；对纯 app 构建做 chunk 集合差分，差分 chunk
+即 echarts 子集懒加载 chunk。gzip 按 level 9 计（比 vite 报告口径更保守）。
+
+| 测量项 | 预算（ADR-002 条件 2，2026-09-05 修订口径） | 实测 | 状态 |
 | --- | --- | --- | --- |
-| 图表子集 gzip | ≤120KB | 待测（renderer 懒加载实现后） | 待办 |
-| 主 chunk 体积 | 不变 | 待测 | 待办 |
+| 首屏：主 chunk 不含 echarts | 主 chunk 体积维持基线不变 | 主 index chunk gzip 192.9KB→192.6KB，差分内无 echarts 代码；echarts 仅存在于动态 import 产生的 10 个独立懒加载 chunk | **PASS**（条件 3 懒加载成立） |
+| 懒加载图表子集 gzip | ≤400KB（修订前 ≤120KB，实测回审后修订，见 ADR-002 修订记录） | **364.6KB**（raw 1081.5KB；chunk 构成：charts 84.1 / Axis 83.4 / components 81.4 / graphic 49.8 / keyframeAnim 48.6 / renderers 12.9 / core 2.2 / 其余 ~2） | **PASS**（原口径 FAIL，超 3 倍，触发回审） |
 
-> 原型估算 ~95KB gzip 仅作 ADR 输入，不作为验收依据（ADR-002 条件 2）。
+### 根因分析（原口径 FAIL 的原因）
+
+1. **echarts 6.1.0 package.json 声明 `sideEffects: ['lib/chart/*.js', 'lib/component/*.js', ...]`**：
+   `echarts/charts`、`echarts/components` 桶文件 `export *` 自这些副作用模块，
+   bundler（rollup/esbuild 均验证）不能因「导出未使用」删除它们；
+2. 已实测排除引入姿势因素：命名导入 / 解构导入 / 深路径副作用引入
+   （`import 'echarts/lib/chart/bar.js'`）三种写法产物体积相同
+   （esbuild 合并口径均 548.3KB raw / ~186.6KB gzip）；
+3. 大头是共享内部模块（Axis 坐标轴 / graphic 图形 / keyframe 动画），
+   即便裁剪图表种类（bar-only）与组件（去 Tooltip/Legend）实测仍
+   138.9KB gzip（esbuild 口径，超原预算），**120KB 预算在 echarts 6.1.0
+   按需子集上不可达**；
+4. ADR 输入阶段的原型估算 ~95KB gzip 严重失真（未计入 Axis/graphic/
+   动画等共享模块与 sideEffects 约束）。
+
+### 影响面与缓解事实
+
+- 全部体积**位于懒加载 chunk**：用户未打开图表块则永不下载（条件 3
+  首屏不受影响已实证）；内容寻址文件名强缓存后仅首次产生流量。
+
+### 决策记录（2026-09-05，用户批准方案 A）
+
+原口径 FAIL 触发 ADR-002 条件 2 回审，三方案（A 修订预算口径 /
+B 裁剪子集 / C 重开引擎选型）呈报后用户批准**方案 A**：预算拆分为
+「首屏预算不变 + 懒加载图表子集 ≤400KB gzip」两口径，实测 364.6KB
+满足。修订全文与依据见 `docs/adr/ADR-002-frontend-chart-engine-echarts.md`
+修订记录节。
 
 ## 6. 待办
 
 - [x] Task #97 收口：守卫与依赖记录入库（本文件）
 - [x] Task #98：图表 adapter（涨红跌绿 token 化）+ 四态只读组件
-- [ ] Task #99：懒加载接线 + gzip 预算实测（填 §5）
+- [x] Task #99：懒加载接线（组件内动态 import）+ gzip 预算实测
+  （原口径 FAIL → ADR-002 条件 2 修订（方案 A）→ 修订口径 PASS）
 - [ ] Task #100：驾驶舱图表块挂接 + 首个真实 chart 登记 + 降级路径 E2E 验证
 - [ ] Task #101：门禁 + PR + squash 合流收口
