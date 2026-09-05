@@ -42,6 +42,13 @@ def build_project_dashboard_scene_content() -> Dict[str, Any]:
             "block_key": "block.project.cost",
         },
         {
+            "key": "chart",
+            "title": "成本结构图表",
+            "zone_type": "secondary",
+            "display_mode": "stack",
+            "block_key": "block.project.chart",
+        },
+        {
             "key": "boq",
             "title": "清单导入预览",
             "zone_type": "secondary",
