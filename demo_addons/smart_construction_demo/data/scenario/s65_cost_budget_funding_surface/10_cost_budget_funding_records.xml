@@ -113,10 +113,34 @@
       <field name="note">S65 三层梁板钢筋本期进度计量草稿。</field>
     </record>
 
+    <!-- 资金基线走受控生命周期：XML 只建草稿（含控制期与明细），
+         由 scenario_loader 的 _ensure_funding_baseline 调 action_activate() 生效。 -->
     <record id="sc_demo_funding_baseline_065" model="project.funding.baseline">
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_065_cost_funding"/>
       <field name="total_amount">5000000.0</field>
-      <field name="state">active</field>
+      <field name="period_start">2025-01-01</field>
+      <field name="period_end">2026-12-31</field>
+    </record>
+
+    <record id="sc_demo_funding_baseline_065_line_labor" model="project.funding.baseline.line">
+      <field name="baseline_id" ref="smart_construction_demo.sc_demo_funding_baseline_065"/>
+      <field name="sequence">10</field>
+      <field name="name">人工费</field>
+      <field name="planned_amount">3000000.0</field>
+    </record>
+
+    <record id="sc_demo_funding_baseline_065_line_material" model="project.funding.baseline.line">
+      <field name="baseline_id" ref="smart_construction_demo.sc_demo_funding_baseline_065"/>
+      <field name="sequence">20</field>
+      <field name="name">材料费</field>
+      <field name="planned_amount">1250000.0</field>
+    </record>
+
+    <record id="sc_demo_funding_baseline_065_line_machine" model="project.funding.baseline.line">
+      <field name="baseline_id" ref="smart_construction_demo.sc_demo_funding_baseline_065"/>
+      <field name="sequence">30</field>
+      <field name="name">机械费</field>
+      <field name="planned_amount">750000.0</field>
     </record>
 
   </data>

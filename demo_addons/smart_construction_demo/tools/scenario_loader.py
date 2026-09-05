@@ -357,8 +357,11 @@ def load_scenario(
             kind="data",
         )
 
+    if scenario == "s65_cost_budget_funding_surface":
+        _ensure_funding_baseline(env, "sc_demo_funding_baseline_065")
     if scenario == "s69_payment_ledger_surface":
         _ensure_s69_payment_ledger(env)
+        _ensure_funding_baseline(env, "sc_demo_funding_baseline_069_payment")
     if scenario == "s78_project_document_wbs_surface":
         _ensure_s78_project_document_wbs(env)
     if scenario == "s85_admin_finance_surface":
@@ -390,6 +393,23 @@ def load_base_seed(env, mode: str = "update") -> None:
             kind="data",
         )
     env.cr.commit()
+
+
+def _ensure_funding_baseline(env, xmlid: str) -> None:
+    """Advance a demo funding baseline through the controlled lifecycle.
+
+    Scenario XML only creates draft baselines (the model guards create()
+    against non-draft states); activation must go through action_activate().
+    Idempotent: skips baselines that are already active or beyond.
+    """
+    baseline = env.ref(
+        f"smart_construction_demo.{xmlid}", raise_if_not_found=False
+    )
+    if not baseline:
+        return
+    baseline = baseline.sudo()
+    if baseline.state == "draft":
+        baseline.action_activate()
 
 
 def _ensure_s69_payment_ledger(env) -> None:
