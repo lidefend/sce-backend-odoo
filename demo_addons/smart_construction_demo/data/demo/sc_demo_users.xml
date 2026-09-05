@@ -142,9 +142,13 @@
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
             <field name="company_ids" eval="[(6, 0, [ref('base.main_company')])]"/>
+            <!-- group_sc_role_project_user：采购订单多级审批链第一级（项目部/工程部经办确认）
+                 的评审组是角色组；无角色持有者时该级永远无人可批（fresh install P0，
+                 与结算经办组的修复同型）。 -->
             <field name="groups_id" eval="[(6, 0, [
                 ref('base.group_user'),
-                ref('smart_construction_core.group_sc_cap_project_user')
+                ref('smart_construction_core.group_sc_cap_project_user'),
+                ref('smart_construction_core.group_sc_role_project_user')
             ])]"/>
         </record>
 
@@ -356,9 +360,12 @@
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
             <field name="company_ids" eval="[(6, 0, [ref('base.main_company')])]"/>
+            <!-- group_sc_role_settlement_user：结算单多级审批链第一级（结算经办确认）
+                 的评审组是角色组；无角色持有者时该级永远无人可批（fresh install P0）。 -->
             <field name="groups_id" eval="[(6, 0, [
                 ref('base.group_user'),
-                ref('smart_construction_core.group_sc_cap_settlement_user')
+                ref('smart_construction_core.group_sc_cap_settlement_user'),
+                ref('smart_construction_core.group_sc_role_settlement_user')
             ])]"/>
         </record>
 

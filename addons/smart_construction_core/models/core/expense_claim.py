@@ -964,6 +964,13 @@ class ScExpenseClaim(models.Model):
             if rec.state != "submit":
                 raise UserError(_("只有已提交的费用/保证金单据可以完成统一审批回调。"))
             if rec.validation_status != "validated":
+                if self.env.context.get("server_action_tier"):
+                    # OCA base_tier_validation_server_action fires this
+                    # callback after every approved level of a multi-level
+                    # linear chain; a mid-chain invocation must not raise.
+                    # The completed chain re-fires the callback and
+                    # finishes the transition.
+                    continue
                 raise UserError(_("费用/保证金单据尚未完成统一审批流程。"))
             before = rec._snapshot_audit_payload()
             rec._check_business_ready()

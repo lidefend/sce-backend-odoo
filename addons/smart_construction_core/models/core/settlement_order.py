@@ -657,17 +657,25 @@ class ScSettlementOrder(models.Model):
                     _("审批通过结算单"),
                     reasons=[_("只有已提交或已批准状态的结算单可以执行审批通过回调")],
                 )
-            rec._check_business_anchor_or_raise()
-            rec._check_line_contracts_or_raise()
-            rec._check_contract_consistency_or_raise(strict=True)
-            rec._check_purchase_orders_or_raise(strict=True)
             if rec.validation_status != "validated":
+                if self.env.context.get("server_action_tier"):
+                    # OCA base_tier_validation_server_action fires this
+                    # callback after every approved level of a multi-level
+                    # linear chain. An incomplete chain must not advance the
+                    # settlement; the completed chain re-fires the callback
+                    # and finishes the transition, so mid-chain invocations
+                    # are a no-op. Direct invocations keep the guard below.
+                    continue
                 raise_guard(
                     "SETTLEMENT_TIER_INCOMPLETE",
                     f"结算单[{rec.display_name}]",
                     _("审批结算单"),
                     reasons=[_("统一审批流程尚未完成")],
                 )
+            rec._check_business_anchor_or_raise()
+            rec._check_line_contracts_or_raise()
+            rec._check_contract_consistency_or_raise(strict=True)
+            rec._check_purchase_orders_or_raise(strict=True)
             if rec.state == "submit":
                 rec._write_lifecycle("approve")
 

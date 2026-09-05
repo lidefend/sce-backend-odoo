@@ -1925,6 +1925,13 @@ class ScMaterialOutbound(models.Model):
             if record.outbound_type != "loss":
                 continue
             if record.validation_status != "validated":
+                if self.env.context.get("server_action_tier"):
+                    # OCA base_tier_validation_server_action fires this
+                    # callback after every approved level of a multi-level
+                    # linear chain; a mid-chain invocation must not raise.
+                    # The completed chain re-fires the callback and
+                    # finishes the transition.
+                    continue
                 raise ValidationError(_("材料损耗尚未完成统一审批流程。"))
             record._complete_issue()
 

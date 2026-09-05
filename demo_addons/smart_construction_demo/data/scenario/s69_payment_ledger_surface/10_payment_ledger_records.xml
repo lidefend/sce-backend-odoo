@@ -36,6 +36,20 @@
       <field name="planned_amount">400000.0</field>
     </record>
 
+  </data>
+
+  <!-- 付款申请的 funding gate 要求装载时已有唯一生效基线。
+       Odoo convert 的 _tag_function 在 noupdate 数据块内且 mode != 'init' 时会静默跳过，
+       因此激活标签必须放在独立的 noupdate="0" 块中（先例：s00/s80/s89）。
+       文档序保持在基线明细之后、payment.request 之前，经受控动作激活（跳过非草稿，幂等）。 -->
+  <data noupdate="0">
+    <function model="project.funding.baseline" name="sc_demo_activate">
+      <value model="project.funding.baseline" eval="obj([ref('smart_construction_demo.sc_demo_funding_baseline_069_payment')]).filtered(lambda b: b.state == 'draft').ids"/>
+    </function>
+  </data>
+
+  <data noupdate="1">
+
     <record id="sc_demo_contract_in_069_payment" model="construction.contract">
       <field name="subject">S69 支付台账支出合同</field>
       <field name="type">in</field>
@@ -54,6 +68,8 @@
       <field name="note">S69 支付台账合同明细</field>
     </record>
 
+    <!-- 结算单走受控生命周期：XML 只建草稿（含审批批注字段），明细随后装载，
+         由 scenario_loader 的 _ensure_s69_settlement_lifecycle 经 _write_lifecycle("approve") 生效。 -->
     <record id="sc_demo_settlement_069_payment" model="sc.settlement.order">
       <field name="name">S69-PAY-SET-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_069_payment_ledger"/>
@@ -65,7 +81,6 @@
       <field name="approved_amount">240000.0</field>
       <field name="date_settlement">2025-08-22</field>
       <field name="approved_date">2025-08-22</field>
-      <field name="state">approve</field>
     </record>
 
     <record id="sc_demo_settlement_line_069_payment" model="sc.settlement.order.line">

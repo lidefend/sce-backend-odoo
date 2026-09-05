@@ -439,12 +439,17 @@ def load_scenario(
     if scenario == "s65_cost_budget_funding_surface":
         _ensure_funding_baseline(env, "sc_demo_funding_baseline_065")
     if scenario == "s69_payment_ledger_surface":
+        _ensure_s69_settlement_lifecycle(env)
         _ensure_s69_payment_ledger(env)
         _ensure_funding_baseline(env, "sc_demo_funding_baseline_069_payment")
     if scenario == "s78_project_document_wbs_surface":
         _ensure_s78_project_document_wbs(env)
+    if scenario == "s80_execution_management_surface":
+        _ensure_s80_material_lifecycle(env)
     if scenario == "s85_admin_finance_surface":
         _ensure_s85_payroll_lifecycle(env)
+    if scenario == "s86_tender_rental_finance_surface":
+        _ensure_s86_tender_guarantee_lifecycle(env)
 
     if apply_passwords:
         apply_demo_user_passwords(env)
@@ -490,6 +495,65 @@ def _ensure_funding_baseline(env, xmlid: str) -> None:
     baseline = baseline.sudo()
     if baseline.state == "draft":
         baseline.action_activate()
+
+
+def _ensure_s69_settlement_lifecycle(env) -> None:
+    """Advance the S69 settlement through the controlled lifecycle.
+
+    The settlement XML creates a draft header (its detail line must load
+    while the parent is mutable); approval then goes through the lifecycle
+    service write so the approved fact stays governed.
+    Idempotent: skips settlements already approved or beyond.
+    """
+    settlement = env.ref(
+        "smart_construction_demo.sc_demo_settlement_069_payment",
+        raise_if_not_found=False,
+    )
+    if not settlement:
+        return
+    settlement = settlement.sudo()
+    if settlement.state == "draft":
+        settlement._write_lifecycle("approve")
+
+
+def _ensure_s86_tender_guarantee_lifecycle(env) -> None:
+    """Advance S86 tender guarantees through the controlled confirm action.
+
+    tender.guarantee create() is an absolute guard (no direct ``confirmed``
+    terminal state), so the XML loads drafts and the confirm runs through
+    action_confirm(), which also seeds the treasury ledger entries.
+    Idempotent: skips records already confirmed.
+    """
+    for xmlid in (
+        "smart_construction_demo.sc_demo_tender_guarantee_086_out",
+        "smart_construction_demo.sc_demo_tender_guarantee_086_return",
+    ):
+        guarantee = env.ref(xmlid, raise_if_not_found=False)
+        if guarantee and guarantee.state == "draft":
+            guarantee.sudo().action_confirm()
+
+
+def _ensure_s80_material_lifecycle(env) -> None:
+    """Advance S80 material outbound/settlement through controlled lifecycle.
+
+    Both parents' detail-line create() guards are absolute (no carrier token
+    bypass): lines may only load while the parent is mutable, so the XML
+    creates drafts and the terminal states are reached through the governed
+    cost-source state writes afterwards.
+    Idempotent: skips records already at or beyond the target state.
+    """
+    outbound = env.ref(
+        "smart_construction_demo.sc_demo_material_outbound_080_steel",
+        raise_if_not_found=False,
+    )
+    if outbound and outbound.state == "draft":
+        outbound.sudo()._write_cost_source_state({"state": "issued"})
+    settlement = env.ref(
+        "smart_construction_demo.sc_demo_material_settlement_080_steel",
+        raise_if_not_found=False,
+    )
+    if settlement and settlement.state == "draft":
+        settlement.sudo()._write_cost_source_state({"state": "confirmed"})
 
 
 def _ensure_s69_payment_ledger(env) -> None:

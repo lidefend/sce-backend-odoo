@@ -119,6 +119,8 @@
       <field name="note">入库至主仓库存</field>
     </record>
 
+    <!-- 出库单走受控生命周期：XML 只建草稿，明细随后装载，
+         由 scenario_loader 的 _ensure_s80_material_lifecycle 经 _write_cost_source_state 推进为 issued。 -->
     <record id="sc_demo_material_outbound_080_steel" model="sc.material.outbound">
       <field name="name">S80-MOUT-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
@@ -126,7 +128,6 @@
       <field name="source_location_id" ref="stock.stock_location_stock"/>
       <field name="receiver_id" ref="smart_construction_demo.sc_demo_partner_vendor_concrete"/>
       <field name="outbound_date">2025-04-10</field>
-      <field name="state">issued</field>
       <field name="purpose">A 区二层梁板钢筋绑扎领用</field>
       <field name="note">S80 材料出库登记样例</field>
     </record>
@@ -140,13 +141,13 @@
       <field name="note">首批领料</field>
     </record>
 
+    <!-- 材料结算同样走受控生命周期：草稿装载明细后由 loader 推进为 confirmed。 -->
     <record id="sc_demo_material_settlement_080_steel" model="sc.material.settlement">
       <field name="name">S80-MSET-001</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="supplier_id" ref="smart_construction_demo.sc_demo_partner_vendor_steel"/>
       <field name="settlement_date">2025-04-15</field>
       <field name="currency_id" ref="base.CNY"/>
-      <field name="state">confirmed</field>
       <field name="note">S80 材料结算样例</field>
     </record>
 

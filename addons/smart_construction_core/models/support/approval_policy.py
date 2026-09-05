@@ -347,8 +347,8 @@ class ScApprovalPolicy(models.Model):
         """审批运行时以 base_tier_validation 为准，本模型只做业务配置入口和同步器。"""
         return self._runtime_authority
 
-    def _tier_server_actions(self):
-        self.ensure_one()
+    @api.model
+    def _tier_server_action_xmlids(self, target_model):
         mapping = {
             "project.material.plan": (
                 "smart_construction_core.server_action_material_plan_tier_approved",
@@ -411,10 +411,50 @@ class ScApprovalPolicy(models.Model):
                 "smart_construction_core.server_action_settlement_adjustment_on_rejected",
             ),
         }
-        approve_xmlid, reject_xmlid = mapping.get(self.target_model, (None, None))
+        return mapping.get(target_model, (None, None))
+
+    def _tier_server_actions(self):
+        self.ensure_one()
+        approve_xmlid, reject_xmlid = self._tier_server_action_xmlids(self.target_model)
         approve_action = self.env.ref(approve_xmlid, raise_if_not_found=False) if approve_xmlid else False
         reject_action = self.env.ref(reject_xmlid, raise_if_not_found=False) if reject_xmlid else False
         return approve_action, reject_action
+
+    @api.model
+    def _sync_tier_server_action_groups(self, target_models):
+        """Keep tier callback actions triggerable by every reviewer level.
+
+        ``ir.actions.server.run()`` evaluates ``groups_id`` against the
+        *calling* user even when the OCA server-action tier bridge wraps the
+        action execution in sudo. A multi-level linear chain fires the
+        callback after every approved level, so binding the action to the
+        final manager group alone makes mid-level reviewers crash with an
+        AccessError. The union of all reviewer groups of the model's
+        approval chain is exactly the set of users who may legitimately
+        fire the callback, and it keeps the "every server action stays
+        group-bound" security gate satisfied.
+        """
+        Step = self.env["sc.approval.step"].sudo()
+        for target_model in sorted(set(target_models)):
+            approve_xmlid, reject_xmlid = self._tier_server_action_xmlids(target_model)
+            if not approve_xmlid:
+                continue
+            group_ids = set(
+                Step.search(
+                    [
+                        ("policy_id.target_model", "=", target_model),
+                        ("approve_group_id", "!=", False),
+                    ]
+                ).mapped("approve_group_id").ids
+            )
+            if not group_ids:
+                continue
+            for xmlid in (approve_xmlid, reject_xmlid):
+                if not xmlid:
+                    continue
+                action = self.env.ref(xmlid, raise_if_not_found=False)
+                if action:
+                    action.sudo().write({"groups_id": [(6, 0, sorted(group_ids))]})
 
     def _tier_definition_domain(self, step):
         domain = []
@@ -481,6 +521,7 @@ class ScApprovalPolicy(models.Model):
                     tier_def = TierDefinition.create(vals)
                     step.sudo().with_context(skip_tier_sync=True).write({"tier_definition_id": tier_def.id})
                 synced |= tier_def
+        self._sync_tier_server_action_groups(self.sudo().mapped("target_model"))
         return synced
 
     @api.model

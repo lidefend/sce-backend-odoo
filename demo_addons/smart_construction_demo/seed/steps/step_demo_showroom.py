@@ -3,6 +3,7 @@ from odoo import fields
 from odoo.exceptions import UserError
 
 from ..registry import SeedStep, register
+from ..tier_flow import approve_tier_chain
 
 
 SHOWROOM_PROJECTS = [
@@ -24,13 +25,11 @@ def _complete_settlement(settlement):
     if settlement.state == "draft":
         settlement.action_submit()
     if settlement.state == "submit":
-        reviewer = settlement.env.ref("smart_construction_demo.user_sc_settlement_manager_cap")
-        for _index in range(max(1, len(settlement.review_ids))):
-            settlement.with_user(reviewer).validate_tier()
-            settlement.invalidate_recordset()
-            if settlement.validation_status == "validated":
-                break
-        if settlement.validation_status == "validated" and settlement.state == "submit":
+        # Multi-level linear approval chains fire the tier server action
+        # after every level (action_on_tier_approved no-ops mid-chain), and
+        # each level's review is scoped to its own reviewer group, so the
+        # actor must be picked per pending review instead of a fixed one.
+        if approve_tier_chain(settlement) and settlement.state == "submit":
             settlement.action_on_tier_approved()
     if settlement.state == "approve":
         settlement.action_done()
@@ -272,12 +271,21 @@ def _ensure_contract_chain(env, project, idx):
 def run(env):
     Project = env["project.project"].sudo()
     demo_pm = _get_demo_user(env, "demo_pm")
+    # project.company_id is a stored compute derived from the analytic
+    # account or the partner's company; a name-only create leaves it empty,
+    # which later breaks company-scoped facts (e.g. funding baselines that
+    # require an explicit company/currency owner).
+    seed_company_id = env.company.id
     for idx, spec in enumerate(SHOWROOM_PROJECTS, start=1):
         project = Project.search([("name", "=", spec["name"])], limit=1)
         created = False
         if not project:
-            project = Project.create({"name": spec["name"]})
+            project = Project.create(
+                {"name": spec["name"], "company_id": seed_company_id}
+            )
             created = True
+        elif not project.company_id:
+            project.write({"company_id": seed_company_id})
         _ensure_boq(env, project, idx)
         _ensure_tasks(env, project, demo_pm, TASKS_PER_PROJECT)
         _ensure_project_prereqs(env, project)

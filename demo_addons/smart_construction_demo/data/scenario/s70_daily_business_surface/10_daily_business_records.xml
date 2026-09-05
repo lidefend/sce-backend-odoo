@@ -32,6 +32,9 @@
       <field name="name">S70-EXP-001</field>
       <field name="claim_type">expense</field>
       <field name="state">draft</field>
+      <!-- 载体上下文携带 expense 事实权威 token 时，create() 不再回填默认
+           finance_identity_state（None 会触发 NOT NULL），须由载体显式提供。 -->
+      <field name="finance_identity_state">normalized</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_vendor_concrete"/>
       <field name="applicant_name">测试-项目经理A</field>
@@ -50,6 +53,7 @@
       <field name="name">S70-RI-001</field>
       <field name="source_kind">receipt_income</field>
       <field name="state">confirmed</field>
+      <field name="finance_identity_state">normalized</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_owner_001"/>
       <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_out_010"/>
@@ -133,6 +137,7 @@
     <record id="sc_demo_tax_deduction_070_input" model="sc.tax.deduction.registration">
       <field name="name">S70-TAX-001</field>
       <field name="state">deducted</field>
+      <field name="finance_identity_state">normalized</field>
       <field name="document_no">S70-TAX-DOC-001</field>
       <field name="document_date">2025-03-16</field>
       <field name="deduction_confirm_date">2025-03-20</field>
