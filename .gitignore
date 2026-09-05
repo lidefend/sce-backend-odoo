@@ -80,6 +80,7 @@ node_modules/
 frontend/apps/web/.vite/
 frontend/apps/web/dist/
 frontend/apps/web/dist-dev/
+frontend/apps/web/dist-demo/
 frontend/apps/web/dist-clean/
 frontend/apps/web/dist-release/
 frontend/apps/web/dist-release-rehearsal/
