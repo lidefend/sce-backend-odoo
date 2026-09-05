@@ -87,6 +87,7 @@ def main() -> int:
             "owner",
             "pm",
             "finance",
+            "cost",
         ):
             errors.append("policy maps must preserve role precedence")
         if not policy_maps.ROLE_SURFACE_OVERRIDES.get("business_config_admin", {}).get("discover_installed_capabilities"):
