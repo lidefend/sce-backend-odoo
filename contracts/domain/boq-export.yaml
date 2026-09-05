@@ -1,0 +1,78 @@
+id: boq-export
+version: 1
+
+entity: ProjectBoqExportResult
+
+title: 工程量清单导出投影（document.excel capability 首切片，ADR-004）
+
+identity:
+  field: export_key
+  type: string
+  note: 形如 project:<project_id>:version:<version_id>:digest:<sha256 前 12 位>；同参重复请求产生新投影（幂等在 G7 首切片落地）。
+
+fields:
+  schema:
+    type: string
+    readonly: true
+    note: 固定 sc.boq.export.v1；前端按此版本消费。
+  version:
+    type: integer
+    readonly: true
+    note: 导出的清单版本（project.boq.version）。
+  row_count:
+    type: integer
+    readonly: true
+    note: 实际导出明细行数。
+  columns:
+    type: list
+    readonly: true
+    note: 实际导出列 key 清单（后端权威决定）。
+  cropped_columns:
+    type: list
+    readonly: true
+    note: 因权限被裁剪的列 key 清单；空列表表示全列。
+  crop_reason:
+    type: string
+    readonly: true
+    note: 裁剪原因（金额列需成控组）；未裁剪时为空字符串。
+  file_digest:
+    type: string
+    readonly: true
+    note: 生成文件 sha256；供审计与对账（不改业务事实）。
+  attachment:
+    type: ref
+    readonly: true
+    note: ir.attachment 引用（id/filename/mimetype/size/download_url）；文件体不经 intent JSON 传输。
+  job_id:
+    type: integer
+    readonly: true
+    note: sc.ops.job 观测记录 id；状态可经 /api/ops/job/status 查询。
+  readonly:
+    type: boolean
+    readonly: true
+    note: 恒为 true；导出不改写任何业务事实。
+
+read_only: true
+
+column_policy:
+  base_columns: 层级编码/清单编码/清单名称/分部工程/单项工程/单位工程/专业/单位/工程量/工程类别。
+  amount_columns: 单价/来源合价/合价；仅成控组（group_sc_cap_cost_manager / group_sc_cap_cost_user）可导出。
+  rationale: >-
+    Odoo ir.model.access 为模型级判定，本契约在导出服务内显式实现列级裁剪
+    （ADR-004 决策 1「按字段权限裁剪列」）；裁剪结果必须在 cropped_columns
+    中明示，不得静默。
+  frontend_forbidden: 前端不得自行拼接列、不得绕过 attachment 引用直接解析数据。
+
+safe_degradation:
+  missing_params: ok=false + MISSING_PARAMS（缺 project_id）。
+  version_not_found: ok=false + VERSION_NOT_FOUND；版本不可访问与不存在同语义（search 判定，避免枚举侧信道）。
+  export_empty: ok=false + EXPORT_EMPTY（版本下无明细行），前端渲染可解释空态。
+  export_too_large: ok=false + EXPORT_TOO_LARGE（行数超 EXPORT_ROW_LIMIT）；异步 job 路径按 G7 首切片立项，本期不实施。
+  export_error: 生成异常 → ok=false + EXPORT_ERROR，不向前端抛异常。
+  consumer_contract: 前端消费方在上述任一降级下必须保持可渲染空态，不得白屏。
+
+notes: >-
+  G6.3 只读导出契约（ADR-004 Accepted，2026-09-06）：导出引擎 xlsxwriter、
+  生成在后端、文件经 ir.attachment 引用下发；写路径（replace/update 危险导入
+  模式）不在本契约表达，按 G7 首切片另行立项。导入侧既有只读闭环见
+  boq.yaml（G3.1 preview 投影）。

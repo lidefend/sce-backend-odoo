@@ -82,6 +82,61 @@
     },
     {
       "contract_fields": [
+        "attachment",
+        "columns",
+        "crop_reason",
+        "cropped_columns",
+        "file_digest",
+        "job_id",
+        "readonly",
+        "row_count",
+        "schema",
+        "version"
+      ],
+      "contract_states": [],
+      "contract_transitions": [],
+      "entity": "ProjectBoqExportResult",
+      "id": "boq-export",
+      "model": "ProjectBoqExportResult",
+      "model_fields": {
+        "attachment": {
+          "_status": "model_file_not_found"
+        },
+        "columns": {
+          "_status": "model_file_not_found"
+        },
+        "crop_reason": {
+          "_status": "model_file_not_found"
+        },
+        "cropped_columns": {
+          "_status": "model_file_not_found"
+        },
+        "file_digest": {
+          "_status": "model_file_not_found"
+        },
+        "job_id": {
+          "_status": "model_file_not_found"
+        },
+        "readonly": {
+          "_status": "model_file_not_found"
+        },
+        "row_count": {
+          "_status": "model_file_not_found"
+        },
+        "schema": {
+          "_status": "model_file_not_found"
+        },
+        "version": {
+          "_status": "model_file_not_found"
+        }
+      },
+      "model_file": null,
+      "module": "",
+      "odoo_model": null,
+      "version": 1
+    },
+    {
+      "contract_fields": [
         "chart_key",
         "chart_type",
         "readonly",

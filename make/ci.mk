@@ -779,7 +779,12 @@ verify.visualization.chart.capability: guard.prod.forbid
 	@python3 addons/smart_construction_core/tests/test_visualization_chart_capability.py
 	@python3 addons/smart_construction_core/tests/test_project_chart_builder.py
 
-ci.local.quick: guard.prod.forbid verify.contract.page_v1_zero_residue.guard security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.formal_product_field_purity verify.tenant_extension_storage ci.generated_reports.guard architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2 verify.menu_config_tree_editor.behavior verify.g1.acceptance.baseline verify.visualization.chart.capability verify.frontend.chart_engine.guard verify.frontend.chart_dataset.unit
+.PHONY: verify.boq.export.capability
+verify.boq.export.capability: guard.prod.forbid
+	@python3 -m py_compile addons/smart_construction_core/services/boq_export_service.py addons/smart_construction_core/handlers/boq_export_request.py addons/smart_construction_core/tests/test_boq_export_request_handler.py
+	@python3 addons/smart_construction_core/tests/test_boq_export_request_handler.py
+
+ci.local.quick: guard.prod.forbid verify.contract.page_v1_zero_residue.guard security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.formal_product_field_purity verify.tenant_extension_storage ci.generated_reports.guard architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2 verify.menu_config_tree_editor.behavior verify.g1.acceptance.baseline verify.visualization.chart.capability verify.boq.export.capability verify.frontend.chart_engine.guard verify.frontend.chart_dataset.unit
 	@python3 scripts/ci/verify_contract_form_split_evidence.py
 	@python3 scripts/verify/contract_form_runtime_state_protocol_guard.py
 	@scripts/verify/contract_form_runtime_state_behavior_guard.sh
