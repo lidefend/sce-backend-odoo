@@ -36,7 +36,33 @@
 - 单测：`addons/smart_construction_core/tests/test_visualization_chart_capability.py`
   16 例桩加载（经 `verify.visualization.chart.capability` 挂入 ci.local.quick）
 
-## 4. 体积预算实测（G6.1 Task #99 填写）
+## 4. 前端 adapter 与只读组件（G6.1 Task #98，已完成）
+
+- design-tokens：`tokens/semantic.{light,dark}.json` 新增 chart 节（涨红跌绿：
+  up=红 / down=绿，up_strong/down_strong，neutral/warning，series_1~6），
+  经 `build_tokens.py` 输出 CSS 变量 `--sc-semantic-chart-*`（双主题）
+- API 封装：`frontend/apps/web/src/api/chartFetch.ts`
+  （`fetchChartDataset({chartKey, projectId})` 消费 `project.dashboard.chart.fetch`，
+  类型对齐 chart.yaml v1 series 形状：name + metric + dimensions + points）
+- presentation Model：`frontend/apps/web/src/app/presentation/chartDataset.ts`
+  （四态状态机 ready / empty / error / degraded_shape；纯函数无运行时依赖，
+  CHART_NOT_REGISTERED 等结构化错误透传不白屏）
+- 渲染 adapter：`frontend/apps/web/src/components/chart/chartAdapter.ts`
+  （纯数据 option 构建，无 echarts/DOM 依赖；单系列 bar 逐柱环比涨红跌绿着色，
+  line/pie 按 series_1~6 色序；palette 经注入读取函数解析 CSS 变量，
+  缺失时走与 semantic.light 一致的 fallback，等价 `var(--x, fallback)` 语义）
+- 只读组件：`frontend/apps/web/src/components/chart/ChartDatasetPanel.vue`
+  （echarts 动态按需 import：core + charts/components/renderers 子路径，
+  use BarChart/LineChart/PieChart + Grid/Tooltip/Legend + CanvasRenderer，
+  不进首屏 bundle；ResizeObserver 自适应；引擎加载失败结构化降级不白屏）
+- 单测：`frontend/apps/web/scripts/chart_dataset_model_test.ts`
+  （Model 四态 + palette 解析 + option 构建含涨红跌绿着色断言；
+  经 `verify.frontend.chart_dataset.unit` 挂入 ci.local.quick /
+  verify.frontend.pr.unit / verify.frontend.release.unit，并复跑
+  frontend_chart_engine_guard 钉死引入纪律）
+- 类型检查：`verify.frontend.typecheck.strict`（vue-tsc）全绿
+
+## 5. 体积预算实测（G6.1 Task #99 填写）
 
 | 测量项 | 预算 | 实测（冻结基线 + 候选版本构建） | 状态 |
 | --- | --- | --- | --- |
@@ -45,10 +71,10 @@
 
 > 原型估算 ~95KB gzip 仅作 ADR 输入，不作为验收依据（ADR-002 条件 2）。
 
-## 5. 待办
+## 6. 待办
 
-- [ ] Task #97 收口：守卫与依赖记录入库（本文件）
-- [ ] Task #98：图表 adapter（涨红跌绿 token 化）+ 四态只读组件
-- [ ] Task #99：懒加载接线 + gzip 预算实测（填 §4）
+- [x] Task #97 收口：守卫与依赖记录入库（本文件）
+- [x] Task #98：图表 adapter（涨红跌绿 token 化）+ 四态只读组件
+- [ ] Task #99：懒加载接线 + gzip 预算实测（填 §5）
 - [ ] Task #100：驾驶舱图表块挂接 + 首个真实 chart 登记 + 降级路径 E2E 验证
 - [ ] Task #101：门禁 + PR + squash 合流收口

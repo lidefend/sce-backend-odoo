@@ -59,5 +59,19 @@
     "info_bg": "rgba(37, 99, 235, 0.18)",
     "info_border": "{color.blue_500}",
     "info_text": "{color.blue_200}"
+  },
+  "chart": {
+    "up": "{color.red_500}",
+    "up_strong": "#fca5a5",
+    "down": "{color.green_500}",
+    "down_strong": "#86efac",
+    "neutral": "{color.cyan_500}",
+    "warning": "{color.amber_500}",
+    "series_1": "{color.cyan_500}",
+    "series_2": "{color.teal_500}",
+    "series_3": "{color.sky_500}",
+    "series_4": "{color.blue_500}",
+    "series_5": "{color.indigo_700}",
+    "series_6": "{color.slate_400}"
   }
 }
