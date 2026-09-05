@@ -8,6 +8,7 @@ import BlockProgressSummary from '../components/page/blocks/BlockProgressSummary
 import BlockActivityFeed from '../components/page/blocks/BlockActivityFeed.vue';
 import BlockAccordionGroup from '../components/page/blocks/BlockAccordionGroup.vue';
 import BlockBoqImportPreview from '../components/page/blocks/BlockBoqImportPreview.vue';
+import BlockChartDataset from '../components/page/blocks/BlockChartDataset.vue';
 
 const BLOCK_REGISTRY: Record<string, object> = {
   metric: BlockMetricRow,
@@ -25,6 +26,8 @@ const BLOCK_REGISTRY: Record<string, object> = {
   entry_grid: BlockEntryGrid,
   accordion_group: BlockAccordionGroup,
   boq_import_preview: BlockBoqImportPreview,
+  chart_dataset: BlockChartDataset,
+  chart: BlockChartDataset,
 };
 
 export function resolveBlockComponent(blockType: string): object | null {

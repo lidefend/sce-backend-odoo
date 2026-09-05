@@ -67,6 +67,7 @@ HANDLER_MODULES = {
     "odoo.addons.smart_construction_core.handlers.workspace_home_enter": ["WorkspaceHomeEnterHandler"],
     "odoo.addons.smart_construction_core.handlers.dashboard_company_enter": ["DashboardCompanyEnterHandler"],
     "odoo.addons.smart_construction_core.handlers.boq_import_preview_fetch": ["BoqImportPreviewFetchHandler"],
+    "odoo.addons.smart_construction_core.handlers.visualization_chart_fetch": ["VisualizationChartFetchHandler"],
 }
 
 
@@ -168,6 +169,7 @@ def main() -> int:
             "project.entry.context.options",
             "cost.tracking.record.create",
             "workspace.home.enter",
+            "project.dashboard.chart.fetch",
         ]:
             if intent not in by_intent:
                 errors.append(f"intent handler mapping missing intent: {intent}")

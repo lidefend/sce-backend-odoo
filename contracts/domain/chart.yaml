@@ -1,0 +1,76 @@
+id: chart
+version: 1
+
+entity: VisualizationChartDataset
+
+title: 可视化图表只读投影（visualization.chart capability）
+
+identity:
+  field: chart_key
+  type: string
+  note: 后端登记的唯一键（三段键，如 project.cost.structure）；未登记键一律降级。
+
+fields:
+  schema:
+    type: string
+    readonly: true
+    note: 固定 sc.visualization.chart.v1；前端按此版本消费。
+  chart_key:
+    type: string
+    readonly: true
+  chart_type:
+    type: string
+    enum:
+      - bar
+      - line
+      - pie
+    readonly: true
+  title:
+    type: string
+    readonly: true
+    note: 展示标题由后端登记（行业语义归后端，前端不自行造句）。
+  unit:
+    type: string
+    readonly: true
+    note: 展示单位（如 CNY、%）；缺省为空字符串。
+  series:
+    type: list
+    readonly: true
+    note: >-
+      后端完全物化的系列投影；每个 series 携带 name、metric（key/label）、
+      dimensions（key/label）与 points（dimension_value + value）。
+      前端不得聚合、不得补点、不得改写数值。
+  readonly:
+    type: boolean
+    readonly: true
+    note: 恒为 true；本域为纯只读投影。
+
+read_only: true
+
+registration_discipline:
+  backend_only: 仅后端 visualization_chart_registry 可登记 chart；前端无注册路径。
+  required_fields: key/label/chart_type/metric/dimensions/source_authority/dataset_builder 缺一不可。
+  key_format: 形如 ^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$ 的 domain.entity.name 三段键（与仓库 capability 命名一致，如 project.cost.structure）。
+  source_authority: >-
+    每个定义必须声明 authorities（事实模型/服务）、projection_only=True 与
+    no_business_fact_authority=True；违反即拒绝登记（fail fast）。
+  frontend_forbidden: >-
+    前端不得自由聚合财务/项目事实、不得向渲染层传任意 option
+    （custom-frontend-integration 总控 §3 表格禁令 / ADR-002 条件 4）。
+
+safe_degradation:
+  chart_not_registered: ok=false + 结构化错误 CHART_NOT_REGISTERED，不抛异常；前端渲染通用空态，不白屏。
+  missing_params: ok=false + MISSING_PARAMS（缺 chart_key 或 project_id）。
+  dataset_error: 构建回调异常 → ok=false + CHART_DATASET_ERROR，同样空态降级。
+  access_denied: 项目不可访问与不存在同语义（search 判定，避免枚举侧信道）。
+  consumer_contract: >-
+    前端消费方在上述任一降级下必须保持可渲染空态（复用 G3.2 四态状态机），
+    不得白屏；颜色与涨红跌绿语义由前端 adapter 经 @sc/design-tokens token
+    决定（ADR-002 条件 5/6），不在本契约表达。
+
+notes: >-
+  G6.1 只读数据引用契约：本域仅描述 visualization.chart capability 的只读
+  投影（sc.visualization.chart.v1），供驾驶舱图表块以 chart payload/ref 引用。
+  事实聚合全部在后端 dataset_builder 内完成并经 ir.model.access + 记录规则
+  判定可见性；写路径（图表配置、保存视图）不在 G6 范围，按总控 G7 门禁另行
+  决策。渲染引擎选型与引入纪律见 ADR-002（Accepted，2026-09-05）。

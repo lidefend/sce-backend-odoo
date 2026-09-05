@@ -59,5 +59,19 @@
     "info_bg": "{color.cyan_50}",
     "info_border": "{color.cyan_700}",
     "info_text": "{color.slate_800}"
+  },
+  "chart": {
+    "up": "{color.red_500}",
+    "up_strong": "{color.red_700}",
+    "down": "{color.green_500}",
+    "down_strong": "{color.green_700}",
+    "neutral": "{color.blue_500}",
+    "warning": "{color.amber_500}",
+    "series_1": "{color.blue_500}",
+    "series_2": "{color.teal_500}",
+    "series_3": "{color.indigo_700}",
+    "series_4": "{color.cyan_500}",
+    "series_5": "{color.sky_500}",
+    "series_6": "{color.slate_500}"
   }
 }

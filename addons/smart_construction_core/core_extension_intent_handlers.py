@@ -157,6 +157,9 @@ def get_intent_handler_contributions():
         from odoo.addons.smart_construction_core.handlers.boq_import_preview_fetch import (
             BoqImportPreviewFetchHandler,
         )
+        from odoo.addons.smart_construction_core.handlers.visualization_chart_fetch import (
+            VisualizationChartFetchHandler,
+        )
         from odoo.addons.smart_construction_core.handlers.dashboard_company_enter import (
             DashboardCompanyEnterHandler,
         )
@@ -212,6 +215,7 @@ def get_intent_handler_contributions():
         ("workspace.home.enter", WorkspaceHomeEnterHandler),
         ("dashboard.company.enter", DashboardCompanyEnterHandler),
         ("project.boq.import.preview.fetch", BoqImportPreviewFetchHandler),
+        ("project.dashboard.chart.fetch", VisualizationChartFetchHandler),
     ]
     return [
         {
