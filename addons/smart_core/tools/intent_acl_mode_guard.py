@@ -32,7 +32,7 @@ def _handler_dirs():
 ALLOWED_ACL_MODES = {"record_rule", "explicit_check"}
 WRITE_INTENT_TOKENS = {
     "approve", "batch", "cancel", "complete", "create", "delete", "done",
-    "execute", "freeze", "import", "pin", "promote", "publish", "reject",
+    "execute", "freeze", "import", "patch", "pin", "promote", "publish", "reject",
     "rollback", "save", "schedule", "set", "submit", "sync", "track",
     "unlink", "update", "upload", "write",
 }

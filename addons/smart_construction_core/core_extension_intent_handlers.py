@@ -164,6 +164,9 @@ def get_intent_handler_contributions():
             BoqDangerousImportPreviewHandler,
             BoqDangerousImportExecuteHandler,
         )
+        from odoo.addons.smart_construction_core.handlers.boq_line_patch import (
+            BoqLinePatchHandler,
+        )
         from odoo.addons.smart_construction_core.handlers.visualization_chart_fetch import (
             VisualizationChartFetchHandler,
         )
@@ -225,6 +228,7 @@ def get_intent_handler_contributions():
         ("project.boq.export.request", BoqExportRequestHandler),
         ("project.boq.import.dangerous.preview", BoqDangerousImportPreviewHandler),
         ("project.boq.import.dangerous.execute", BoqDangerousImportExecuteHandler),
+        ("project.boq.line.patch", BoqLinePatchHandler),
         ("project.dashboard.chart.fetch", VisualizationChartFetchHandler),
     ]
     return [

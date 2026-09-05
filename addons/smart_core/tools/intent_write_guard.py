@@ -31,7 +31,7 @@ def _handler_dirs():
     return [path for path in sorted(addons_root.glob("*/handlers")) if path.is_dir()]
 WRITE_INTENT_TOKENS = {
     "approve", "batch", "cancel", "complete", "create", "delete", "done",
-    "execute", "freeze", "import", "pin", "promote", "publish", "reject",
+    "execute", "freeze", "import", "patch", "pin", "promote", "publish", "reject",
     "rollback", "save", "schedule", "set", "submit", "sync", "track",
     "unlink", "update", "upload", "write",
 }
