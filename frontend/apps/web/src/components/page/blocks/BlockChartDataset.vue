@@ -6,7 +6,7 @@
     data-readonly="true"
   >
     <header class="block-header">
-      <h4>{{ block.title || '成本结构图表' }}</h4>
+      <h4>{{ block.title || '数据图表' }}</h4>
     </header>
 
     <p v-if="phase === 'loading'" class="block-chart-dataset__hint" data-loading>
@@ -23,13 +23,14 @@
 
 <script setup lang="ts">
 /**
- * 驾驶舱成本结构图表块包装（G6.1 Task #100，BlockBoqImportPreview 同款纪律）。
+ * 驾驶舱只读图表块包装（page orchestration block，G6.1 Task #100，
+ * 与数据快照块包装同款纪律）。
  *
  * 职责（共享层，无行业语义）：
- * - 从块契约 dataset（后端块投影）或路由 query 解析项目上下文 id
- *   与 chart_key（后端登记的三段键，本块不自行造键）；
- * - 通过块契约声明的 fetch intent（project.dashboard.chart.fetch）拉取
- *   只读数据投影，经 presentation Model 投影为四态视图模型；
+ * - 从块契约 dataset（后端块投影）或路由 query 解析数据上下文 id
+ *   与 chart_key（后端登记的三段键，本块不自行造键、不内置默认键）；
+ * - 通过块契约声明的 fetch intent 拉取只读数据投影，
+ *   经 presentation Model 投影为四态视图模型；
  * - 渲染复用只读图表面板（echarts 懒加载，涨红跌绿经 token）。
  * 行业标题与空态文案由后端块契约（dataset copy 字段）提供，
  * 本组件只保留通用 fallback；任何降级（未登记/无数据/构建失败）
@@ -50,7 +51,6 @@ import {
 
 const GENERIC_LOADING = '正在加载数据...';
 const GENERIC_EMPTY = '暂无可展示的数据。';
-const DEFAULT_CHART_KEY = 'project.cost.structure';
 
 const props = defineProps<{
   block: PageOrchestrationBlock;
@@ -91,13 +91,12 @@ const projectId = computed<number>(() => {
   return fromQuery;
 });
 
-/** chart_key 唯一来源：后端块契约（登记键），路由 query 仅兜底 */
+/** chart_key 唯一来源：后端块契约（登记键），路由 query 仅兜底；无键即空态 */
 const chartKey = computed<string>(() => {
   const fromData = String(blockData.value.chart_key
     || blockData.value.fetch_params?.chart_key || '').trim();
   if (fromData) return fromData;
-  const fromQuery = String(route.query.chart_key || '').trim();
-  return fromQuery || DEFAULT_CHART_KEY;
+  return String(route.query.chart_key || '').trim();
 });
 
 type BlockCopy = { loading: string; empty: string };
