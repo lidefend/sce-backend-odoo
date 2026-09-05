@@ -1198,6 +1198,12 @@ class ScPaymentExecution(models.Model):
 
     def action_on_tier_approved(self):
         for rec in self:
+            if self.env.context.get("server_action_tier") and rec.validation_status != "validated":
+                # OCA base_tier_validation_server_action fires this callback
+                # after every approved level of a multi-level linear chain;
+                # a mid-chain invocation must not advance the record. The
+                # completed chain re-fires the callback and finishes it.
+                continue
             if rec.state == "draft":
                 rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
 

@@ -3,19 +3,14 @@ from odoo import fields
 from odoo.exceptions import UserError
 
 from ..registry import SeedStep, register
+from ..tier_flow import approve_tier_chain
 
 
 def _complete_settlement(settlement):
     if settlement.state == "draft":
         settlement.action_submit()
     if settlement.state == "submit":
-        reviewer = settlement.env.ref("smart_construction_demo.user_sc_settlement_manager_cap")
-        for _index in range(max(1, len(settlement.review_ids))):
-            settlement.with_user(reviewer).validate_tier()
-            settlement.invalidate_recordset()
-            if settlement.validation_status == "validated":
-                break
-        if settlement.validation_status == "validated" and settlement.state == "submit":
+        if approve_tier_chain(settlement) and settlement.state == "submit":
             settlement.action_on_tier_approved()
     if settlement.state == "approve":
         settlement.action_done()

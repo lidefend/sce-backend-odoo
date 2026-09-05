@@ -5,6 +5,11 @@ from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tools.float_utils import float_compare
 
+from .equipment_management import (
+    _COST_SOURCE_STATE_CONTEXT_KEY,
+    _COST_SOURCE_STATE_TOKEN,
+)
+
 
 SYSTEM_DEFAULT_PROJECT_NAME = "系统默认项目"
 LEGACY_SYSTEM_DEFAULT_PROJECT_NAME = "系统默认项目（待完善）"
@@ -14,8 +19,6 @@ LEGACY_SYSTEM_DEFAULT_SUPPLIER_NAME = "系统默认供应商（待完善）"
 LEGACY_TECHNICAL_DEFAULT_SUPPLIER_NAME = "系统默认供应商（技术兜底）"
 SYSTEM_DEFAULT_MATERIAL_NAME = "系统默认材料"
 SYSTEM_DEFAULT_WAREHOUSE_NAME = "系统默认仓库"
-_COST_SOURCE_STATE_CONTEXT_KEY = "sc_cost_source_state_transition"
-_COST_SOURCE_STATE_TOKEN = object()
 
 
 class ScMaterialSystemDefaultMixin(models.AbstractModel):
@@ -1922,6 +1925,13 @@ class ScMaterialOutbound(models.Model):
             if record.outbound_type != "loss":
                 continue
             if record.validation_status != "validated":
+                if self.env.context.get("server_action_tier"):
+                    # OCA base_tier_validation_server_action fires this
+                    # callback after every approved level of a multi-level
+                    # linear chain; a mid-chain invocation must not raise.
+                    # The completed chain re-fires the callback and
+                    # finishes the transition.
+                    continue
                 raise ValidationError(_("材料损耗尚未完成统一审批流程。"))
             record._complete_issue()
 

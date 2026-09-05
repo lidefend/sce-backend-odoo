@@ -3178,6 +3178,12 @@ class PaymentRequest(models.Model):
         for rec in self:
             if rec.state != "submit":
                 continue
+            if self.env.context.get("server_action_tier") and rec.validation_status != "validated":
+                # OCA base_tier_validation_server_action fires this callback
+                # after every approved level of a multi-level linear chain;
+                # a mid-chain invocation must not advance the record. The
+                # completed chain re-fires the callback and finishes it.
+                continue
             # R10: overpay handled as advisory via _handle_payment_advisories
             rec._check_material_settlement_remaining_amount()
             advisories = rec._collect_payment_advisories("approve")

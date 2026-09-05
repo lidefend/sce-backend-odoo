@@ -453,6 +453,13 @@ class ScGeneralContract(models.Model):
             if rec.state != "draft":
                 continue
             if rec.validation_status != "validated":
+                if self.env.context.get("server_action_tier"):
+                    # OCA base_tier_validation_server_action fires this
+                    # callback after every approved level of a multi-level
+                    # linear chain; a mid-chain invocation must not raise.
+                    # The completed chain re-fires the callback and
+                    # finishes the transition.
+                    continue
                 raise UserError(_("一般合同（公司）尚未完成统一审批流程。"))
             rec.with_context(skip_validation_check=True).write({"reject_reason": False})
         return self.action_confirm()

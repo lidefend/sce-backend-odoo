@@ -613,7 +613,16 @@
         <record id="server_action_self_funding_registration_on_rejected" model="ir.actions.server">
             <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_finance_manager')])]" />
         </record>
-    
+
+        <!-- Tier callback actions must stay triggerable by every reviewer
+             level of their approval chain: mid-level reviewers approve
+             through the same server action, and ir.actions.server.run()
+             checks groups_id against the calling user even when OCA wraps
+             the execution in sudo. The sync below rewrites groups_id to the
+             union of each chain's reviewer groups, overriding the
+             bootstrap manager-group defaults above (fresh install and
+             every later policy change re-derive the union). -->
+        <function model="sc.approval.policy" name="sync_all_tier_definitions"/>
 
     </data>
 </odoo>

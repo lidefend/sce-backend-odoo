@@ -4,6 +4,7 @@ from odoo.exceptions import UserError
 from odoo.tools.float_utils import float_compare
 
 from ..registry import SeedStep, register
+from ..tier_flow import approve_tier_chain
 
 
 PROJECT_EXEC_CODE = "DEMO-PJ-EXEC"
@@ -49,6 +50,13 @@ def _annual_control_period(env):
 def _ensure_funding_baseline(env, project):
     Funding = env["project.funding.baseline"].sudo()
     project.sudo().write({"funding_enabled": True})
+    if not project.company_id:
+        # Defensive: projects created with a name-only payload (showroom
+        # style) carry no company because project.company_id is a stored
+        # compute without a default; the standard funding baseline requires
+        # an explicit company/currency owner.
+        company = env.company or env["res.company"].sudo().search([], limit=1)
+        project.sudo().write({"company_id": company.id})
     baseline = Funding.search(
         [("project_id", "=", project.id), ("state", "=", "active")], limit=1
     )
@@ -157,13 +165,7 @@ def _approve_settlement(env, settlement):
     if settlement.state == "draft":
         settlement.action_submit()
     if settlement.state == "submit":
-        reviewer = env.ref("smart_construction_demo.user_sc_settlement_manager_cap")
-        for _index in range(max(1, len(settlement.review_ids))):
-            settlement.with_user(reviewer).validate_tier()
-            settlement.invalidate_recordset()
-            if settlement.validation_status == "validated":
-                break
-        if settlement.validation_status == "validated" and settlement.state == "submit":
+        if approve_tier_chain(settlement) and settlement.state == "submit":
             settlement.action_on_tier_approved()
     if settlement.state not in ("approve", "done"):
         raise UserError("演示结算单未能通过正式审批状态机。")
@@ -293,6 +295,21 @@ def _ensure_purchase_order(env, settlement, split_first_line=False):
         stale_lines.unlink()
 
     po.button_confirm()
+    po.invalidate_recordset()
+    if po.state in ("draft", "sent"):
+        # An active approval policy routes the purchase confirmation through
+        # the unified tier validation chain (button_confirm only submits the
+        # reviews; the one2many cache is stale until invalidated). Complete
+        # the chain with per-review actors so the settlement approval finds
+        # a confirmed purchase order.
+        approve_tier_chain(
+            po,
+            fallback_xmlid="smart_construction_demo.user_sc_purchase_manager_cap",
+        )
+    if po.state in ("draft", "sent") and po.validation_status == "validated":
+        # Defensive: the final tier level normally fires the server action
+        # callback that confirms the order; finish it directly if not.
+        po.button_confirm()
     settlement.write({"purchase_order_ids": [(4, po.id)]})
     return po
 
@@ -328,13 +345,10 @@ def _approve_payment(env, payment):
     if payment.state in ("draft", "rejected"):
         payment.action_submit()
     if payment.state == "submit":
-        reviewer = env.ref("smart_construction_demo.user_sc_finance_mgr_test")
-        for _index in range(max(1, len(payment.review_ids))):
-            payment.with_user(reviewer).validate_tier()
-            payment.invalidate_recordset()
-            if payment.validation_status == "validated":
-                break
-        if payment.validation_status == "validated" and payment.state == "submit":
+        if approve_tier_chain(
+            payment,
+            fallback_xmlid="smart_construction_demo.user_sc_finance_mgr_test",
+        ) and payment.state == "submit":
             payment.action_on_tier_approved()
     if payment.state == "approve" and payment.validation_status == "validated":
         payment.action_set_approved()
