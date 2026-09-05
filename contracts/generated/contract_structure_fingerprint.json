@@ -682,6 +682,49 @@
         }
       },
       "version": 1
+    },
+    {
+      "contract_fields": [
+        "idempotency_deduplicated",
+        "idempotency_fingerprint",
+        "idempotency_key",
+        "idempotent_replay",
+        "mode",
+        "replay_from_record_id",
+        "replay_window_expired"
+      ],
+      "contract_states": [],
+      "contract_transitions": [],
+      "entity": "WriteActionIdempotencyDecision",
+      "id": "write-idempotency",
+      "model": "WriteActionIdempotencyDecision",
+      "model_fields": {
+        "idempotency_deduplicated": {
+          "_status": "model_file_not_found"
+        },
+        "idempotency_fingerprint": {
+          "_status": "model_file_not_found"
+        },
+        "idempotency_key": {
+          "_status": "model_file_not_found"
+        },
+        "idempotent_replay": {
+          "_status": "model_file_not_found"
+        },
+        "mode": {
+          "_status": "model_file_not_found"
+        },
+        "replay_from_record_id": {
+          "_status": "model_file_not_found"
+        },
+        "replay_window_expired": {
+          "_status": "model_file_not_found"
+        }
+      },
+      "model_file": null,
+      "module": "",
+      "odoo_model": null,
+      "version": 1
     }
   ],
   "extensions": [

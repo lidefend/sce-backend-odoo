@@ -21,6 +21,7 @@ REASON_ACCESS_RESTRICTED = "ACCESS_RESTRICTED"
 REASON_CONFLICT = "CONFLICT"
 REASON_WRITE_FAILED = "WRITE_FAILED"
 REASON_IDEMPOTENCY_CONFLICT = "IDEMPOTENCY_CONFLICT"
+REASON_IDEMPOTENCY_IN_FLIGHT = "IDEMPOTENCY_IN_FLIGHT"
 REASON_REPLAY_WINDOW_EXPIRED = "REPLAY_WINDOW_EXPIRED"
 REASON_PROJECT_SCOPE_DENIED = "PROJECT_SCOPE_DENIED"
 REASON_RECORD_VERSION_CONFLICT = "RECORD_VERSION_CONFLICT"
@@ -134,6 +135,11 @@ def failure_meta_for_reason(reason_code: str):
             "retryable": False,
             "error_category": "conflict",
             "suggested_action": "use_new_request_id",
+        },
+        REASON_IDEMPOTENCY_IN_FLIGHT: {
+            "retryable": True,
+            "error_category": "conflict",
+            "suggested_action": "retry_same_key_later",
         },
         REASON_REPLAY_WINDOW_EXPIRED: {
             "retryable": True,

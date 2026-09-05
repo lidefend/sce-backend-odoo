@@ -104,3 +104,35 @@ G6 已收口两个批次（PR #436 / #437）：图表能力全链（契约→注
 - **下一步**：G6.3 PR 合流后，G7 首切片（Excel replace/update 危险导入模式）
   正式立项；幂等基建 PR 先行合入。
 
+## 9. G7-INFRA 执行记录（统一写动作幂等基建，G7 首切片前置）
+
+- **审计结论（G7-INFRA-A）**：api_data_write 三 handler 走 `utils/idempotency.py`
+  的审计投影查重（search 有并发竞态）；my.work.complete_batch 是唯一业务写
+  intent 先例；依赖方向 smart_construction_core → smart_core，基座须落 smart_core。
+- **实现（G7-INFRA-B）**：
+  - 模型 `sc.idempotency.record`（smart_core v17.0.1.1.12）：(company, actor,
+    idempotency_key) 部分唯一索引做 DB 层并发仲裁；status
+    inflight/done/failed；result_json 存可重放响应；审计轨迹权威仍是
+    sc.audit.log，去重权威切到本模型；
+  - utils：`claim_write_idempotency`（mode: claimed/takeover/replay/conflict/
+    in_flight/new）+ `complete_write_idempotency`（savepoint 包裹 write，
+    result 经 `_json_safe_result` 净化）；
+  - my.work.complete_batch 试点接入：SOURCE_AUTHORITY.idempotency_authority
+    更新为 "sc.idempotency.record + sc.audit.log"；同键同指纹重放、同键异指纹
+    409、跨主体（actor+company）隔离；
+  - 契约 `contracts/domain/write-idempotency.yaml` v1（registry 登记，结构指纹
+    domains 11→12）；reason code 新增 REASON_IDEMPOTENCY_IN_FLIGHT；
+  - 桩测试 18 例（含两个线上踩坑回归钉子）+ 既有 3 例边界测试。
+- **E2E（G7-INFRA-C，dev 栈，探针 tmp/g71_idempotency_e2e.sh）**：六路径全绿
+  ——首次执行落档 / 同键同参重放（replay_from_record_id>0）/ 同键异参 409
+  IDEMPOTENCY_CONFLICT / 跨主体隔离 / 持久层双确认（result_json 落库、
+  actor/company 盖章）/ 冲突不覆写原记录。
+- **线上排障沉淀（两个深坑，均已加回归钉子）**：
+  1. Odoo `env.get()` 对已注册模型返回**空记录集**，空记录集 `bool()` 为 False
+     ——模型存在性判定必须用 `is None`（既有 audit 通道守卫同病，一并修复）；
+  2. 该 Odoo 构建 `fields.Datetime.now()` 返回 **datetime 对象**（非字符串），
+     含 datetime 的 payload 写 `fields.Json` 抛 TypeError；且 Odoo write 逐字段
+     进缓存延迟 flush，异常前已进缓存的字段仍随事务提交落库，留下
+     「done 无 result」残行致后续同键误判冲突——complete 侧 JSON 净化 +
+     savepoint 原子包裹双修复。
+

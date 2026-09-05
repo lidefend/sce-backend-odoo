@@ -23,13 +23,24 @@ from odoo.addons.smart_core.utils.idempotency import (
     apply_idempotency_identity,
     build_idempotency_fingerprint,
     build_idempotency_conflict_response,
+    build_idempotency_in_flight_response,
+    claim_write_idempotency,
+    complete_write_idempotency,
     enrich_replay_contract,
     ids_summary,
     normalize_request_id,
-    resolve_idempotency_decision,
+    record_entry_as_replay_evidence,
     replay_window_seconds,
 )
 from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
+
+
+def _unwrap_params(payload, fallback):
+    """intent 信封解包：router 传给 handle 的是 {intent, params, context, meta} 信封。"""
+    params = payload or fallback or {}
+    if isinstance(params, dict) and isinstance(params.get("params"), dict):
+        params = params.get("params") or {}
+    return params
 
 
 class MyWorkCompleteHandler(BaseIntentHandler):
@@ -55,7 +66,7 @@ class MyWorkCompleteHandler(BaseIntentHandler):
     }
 
     def handle(self, payload=None, ctx=None):
-        params = payload or self.params or {}
+        params = _unwrap_params(payload, self.params)
         source = str(params.get("source") or "").strip()
         item_id = params.get("id")
         note = str(params.get("note") or "").strip()
@@ -115,6 +126,7 @@ class MyWorkCompleteBatchHandler(BaseIntentHandler):
         "authorities": [
             "mail.activity",
             "mail.message",
+            "sc.idempotency.record",
             "sc.audit.log",
             "ir.model.access",
             "ir.rule",
@@ -122,7 +134,7 @@ class MyWorkCompleteBatchHandler(BaseIntentHandler):
         ],
         "projection_only": False,
         "runtime_authority": "mail.activity.action_feedback",
-        "idempotency_authority": "sc.audit.log",
+        "idempotency_authority": "sc.idempotency.record + sc.audit.log",
         "write_authority": "mail.activity",
     }
 
@@ -152,6 +164,16 @@ class MyWorkCompleteBatchHandler(BaseIntentHandler):
             idempotency_key=idempotency_key,
             trace_id=trace_id,
             include_replay_evidence=True,
+        )
+        payload.setdefault("meta", {})["source_authority"] = self.SOURCE_AUTHORITY
+        return payload
+
+    def _idempotency_in_flight_response(self, *, request_id, idempotency_key, trace_id):
+        payload = build_idempotency_in_flight_response(
+            intent_type=self.INTENT_TYPE,
+            request_id=request_id,
+            idempotency_key=idempotency_key,
+            trace_id=trace_id,
         )
         payload.setdefault("meta", {})["source_authority"] = self.SOURCE_AUTHORITY
         return payload
@@ -222,7 +244,7 @@ class MyWorkCompleteBatchHandler(BaseIntentHandler):
             return
 
     def handle(self, payload=None, ctx=None):
-        params = payload or self.params or {}
+        params = _unwrap_params(payload, self.params)
         source = str(params.get("source") or "").strip()
         ids = params.get("ids") if isinstance(params.get("ids"), list) else []
         retry_ids = params.get("retry_ids") if isinstance(params.get("retry_ids"), list) else []
@@ -238,24 +260,31 @@ class MyWorkCompleteBatchHandler(BaseIntentHandler):
         trace_id = f"mw_batch_{uuid4().hex[:12]}"
         if not execute_ids:
             raise UserError("缺少待办 ID 列表")
-        decision = resolve_idempotency_decision(
+        claim = claim_write_idempotency(
             self.env,
             event_code="MY_WORK_COMPLETE_BATCH",
             idempotency_key=idempotency_key,
             fingerprint=idempotency_fingerprint,
+            trace_id=trace_id,
             window_seconds=self._idempotency_window_seconds(),
-            replay_payload_key="replay_result",
-            limit=20,
+            model="mail.activity",
         )
-        if decision.get("conflict"):
+        if claim.get("mode") == "conflict":
             return self._idempotency_conflict_response(
                 request_id=request_id,
                 idempotency_key=idempotency_key,
                 trace_id=trace_id,
             )
-        replay = decision.get("replay_payload") or {}
-        replay_entry = decision.get("replay_entry") or {}
+        if claim.get("mode") == "in_flight":
+            return self._idempotency_in_flight_response(
+                request_id=request_id,
+                idempotency_key=idempotency_key,
+                trace_id=trace_id,
+            )
+        replay = claim.get("replay_payload") or {}
+        replay_entry = claim.get("replay_entry") or {}
         if replay:
+            replay_window_expired = bool(claim.get("replay_window_expired"))
             replay_data = dict(replay or {})
             replay_data = apply_idempotency_identity(
                 replay_data,
@@ -267,14 +296,14 @@ class MyWorkCompleteBatchHandler(BaseIntentHandler):
             replay_data = enrich_replay_contract(
                 replay_data,
                 idempotent_replay=True,
-                replay_window_expired=False,
-                replay_reason_code="",
-                replay_entry=replay_entry,
+                replay_window_expired=replay_window_expired,
+                replay_reason_code=REASON_REPLAY_WINDOW_EXPIRED if replay_window_expired else "",
+                replay_entry=record_entry_as_replay_evidence(replay_entry) or replay_entry,
                 include_replay_evidence=True,
             )
             return {"ok": True, "data": replay_data, "meta": {"intent": self.INTENT_TYPE, "source_authority": self.SOURCE_AUTHORITY}}
 
-        replay_window_expired = bool(decision.get("replay_window_expired"))
+        replay_window_expired = bool(claim.get("replay_window_expired"))
         completed = []
         failed = []
         reason_counter = defaultdict(int)
@@ -328,7 +357,7 @@ class MyWorkCompleteBatchHandler(BaseIntentHandler):
                 "failed_reason_summary": _reason_summary(reason_counter),
                 "failed_retryable_summary": _retryable_summary(failed),
                 "todo_remaining": int(todo_remaining or 0),
-                "done_at": fields.Datetime.now(),
+                "done_at": fields.Datetime.to_string(fields.Datetime.now()),
             },
             request_id=request_id,
             idempotency_key=idempotency_key,
@@ -348,6 +377,15 @@ class MyWorkCompleteBatchHandler(BaseIntentHandler):
                 - fields.Datetime.from_string(started)
             ).total_seconds()
             * 1000
+        )
+        complete_write_idempotency(
+            self.env,
+            event_code="MY_WORK_COMPLETE_BATCH",
+            idempotency_key=idempotency_key,
+            fingerprint=idempotency_fingerprint,
+            result=data,
+            trace_id=trace_id,
+            model="mail.activity",
         )
         self._write_batch_audit(
             trace_id=trace_id,

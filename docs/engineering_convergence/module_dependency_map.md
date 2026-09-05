@@ -22,7 +22,7 @@ Generated from addon manifests.
 | `smart_construction_portal` | 17.0.1.1 | yes | no | smart_construction_core | web | smart_construction_bundle |
 | `smart_construction_scene` | 17.0.0.3 | yes | no | smart_construction_core, smart_scene | - | smart_construction_bundle |
 | `smart_construction_seed` | 17.0.0.2.2 | yes | no | smart_construction_bootstrap, smart_construction_core | account | - |
-| `smart_core` | 17.0.1.1.11 | yes | no | - | base, web | smart_construction_bundle, smart_construction_core, smart_license_core, smart_owner_bundle, smart_owner_core, smart_scene |
+| `smart_core` | 17.0.1.1.12 | yes | no | - | base, web | smart_construction_bundle, smart_construction_core, smart_license_core, smart_owner_bundle, smart_owner_core, smart_scene |
 | `smart_license_core` | 0.1.0 | yes | no | smart_core | - | smart_construction_bundle |
 | `smart_owner_bundle` | 0.1.0 | yes | no | smart_core, smart_owner_core | - | - |
 | `smart_owner_core` | 0.1.0 | yes | no | smart_core | - | smart_owner_bundle |

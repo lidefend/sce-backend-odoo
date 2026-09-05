@@ -161,7 +161,10 @@ class TestConstructionOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertEqual(RiskActionExecuteHandler.SOURCE_AUTHORITY.get("write_authority"), "project.risk.action.create/write")
         self.assertIn("project.risk.action", RiskActionExecuteHandler.SOURCE_AUTHORITY.get("authorities") or [])
         self.assertEqual(MyWorkCompleteHandler.SOURCE_AUTHORITY.get("runtime_authority"), "mail.activity.action_feedback")
-        self.assertEqual(MyWorkCompleteBatchHandler.SOURCE_AUTHORITY.get("idempotency_authority"), "sc.audit.log")
+        self.assertEqual(
+            MyWorkCompleteBatchHandler.SOURCE_AUTHORITY.get("idempotency_authority"),
+            "sc.idempotency.record + sc.audit.log",
+        )
 
     def test_workspace_home_is_native_capability_projection(self):
         source = WorkspaceContractBuilder.source_authority_contract()
