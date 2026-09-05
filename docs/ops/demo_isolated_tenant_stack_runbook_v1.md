@@ -58,10 +58,10 @@ ENV=demo ENV_FILE=.env.demo make demo.tenant.reset
 
 # 演示租户健康校验（模块状态 + demo_xmlids + odoo ready 探测）
 ENV=demo ENV_FILE=.env.demo make demo.tenant.verify
-# 期望输出：[demo.tenant] PASS db=sc_demo demo_xmlids=406 customer_modules=0 pending=0
+# 期望输出：[demo.tenant] PASS db=sc_demo demo_xmlids=407 customer_modules=0 pending=0
 ```
 
-已验证参考值：`demo_xmlids=406`，customer 模块 0，pending 模块 0。
+已验证参考值：`demo_xmlids=407`，customer 模块 0，pending 模块 0。
 
 ## 5. 演示体验 E2E 验证（迁移验收口径）
 
@@ -77,8 +77,16 @@ ENV=demo ENV_FILE=.env.demo make demo.tenant.verify
      `empty_message` 文案），不是降级
 4. `project.dashboard.enter` intent 被接受（status 200）
 
-已知数据条件：demo 种子无清单导入批次（`project_boq_import_batch` 0 行），boq 预览块
-渲染为空态；需要演示导入预览时经清单导入向导产生批次即可。
+已知数据条件（已闭合）：demo 种子现含一条清单导入批次
+（`sc_demo_boq_import_batch_001`，`s00_min_path/10_project_boq.xml`），
+boq 预览块对 pm1 / cost1 均渲染 `ready`（`batch_count=1`，
+preview 金额 762000）。可见性由两处接线支撑：批次种子经 `eval` dict
+字面量携带 `preview_payload`（防 JSON 双重编码降级）；demo PM 的项目
+经理指派与 cost1 的 follower 订阅由 `scenario_loader` 的
+`_ensure_s00_boq_visibility` 钩子在 seed 阶段完成（XML 内不可指派
+`user_id`——`20_projects.xml` 在 manifest data 顺序中先于
+`sc_demo_users.xml` 加载，ref 会炸安装）。已按连续两轮
+`demo.tenant.reset` + 双角色探针验收（demo_xmlids=407）。
 
 ## 6. 与 dev 栈的关系
 
