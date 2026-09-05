@@ -1,6 +1,6 @@
 # ADR-002：前端图表渲染引擎（ECharts）
 
-- 状态：Proposed（待批准；批准前 `visualization.chart` capability 不得进入生产实现）
+- 状态：Accepted（2026-09-05 批准；批准范围=仅本 ADR，ADR-004/005/006 维持 Proposed 待批。批准即接受全部 6 项内置条件，`visualization.chart` capability 可进入 G6 只读实现；写入路径仍按总控 G7 门禁另行决策）
 - 范围：custom-frontend-integration G5 / Chart 专题
 - 决策项：是否引入 ECharts、固定版本、bundle 预算与引入方式
 
@@ -18,7 +18,7 @@
 | 运行时依赖 | 仅 tslib + zrender | Snyk 依赖树 |
 | 体积 | 全量 ~360KB gzip；tree-shakeable core + 按需引入后原型估算 ~95KB gzip | 第三方 2026-06 实测 + 专题原型估算 |
 
-## 决策（建议）
+## 决策（已批准，2026-09-05）
 
 **批准引入 `echarts@6.1.0`（精确锁定 minor，patch 升级须过门禁），条件如下：**
 
