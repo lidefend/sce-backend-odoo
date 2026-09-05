@@ -11,10 +11,35 @@
             <field name="note">产品 Demo 租户的清单与成本计划演示基线。</field>
         </record>
 
+        <!-- Demo 导入批次：预检快照事实源（boq_preview 块与
+             project.boq.import.preview.fetch intent 的判定/展示依据）。
+             形状对齐正式导入向导（sc.boq.import.preview.v1）；state=imported
+             与草稿版本一致——批次推进到 published 属于版本发布动作。 -->
+        <record id="sc_demo_boq_import_batch_001" model="project.boq.import.batch">
+            <field name="name">示范项目合同清单导入（演示基线）</field>
+            <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
+            <field name="version_id" ref="smart_construction_demo.sc_demo_boq_version_contract_v1"/>
+            <field name="state">imported</field>
+            <field name="filename">示范项目合同清单V1.xlsx</field>
+            <field name="file_digest">130dd1338372f1bb0ddb180d8284962eb05e4b43ce6dc78b01b5c30c095b31be</field>
+            <field name="parser_schema">sc.boq.import.v1</field>
+            <field name="row_count">2</field>
+            <field name="item_count">2</field>
+            <field name="skipped_count">0</field>
+            <field name="warning_count">0</field>
+            <!-- eval 传 dict 字面量：字段文本路径会把 JSON 存成字符串标量
+                 （jsonb_typeof='string'），handler 的 isinstance(dict) 判定
+                 会降级为空快照。 -->
+            <field name="preview_payload" eval="{'schema': 'sc.boq.import.preview.v1', 'row_count': 2, 'item_count': 2, 'summary_count': 0, 'heading_count': 0, 'calculation_detail_count': 0, 'skipped_count': 0, 'warning_count': 0, 'amount': 762000, 'source_diagnostics': [], 'analysis_count': 0, 'norm_line_count': 0, 'resource_line_count': 0, 'summary_component_count': 0}"/>
+            <field name="imported_at">2026-01-06 09:30:00</field>
+            <field name="imported_by" ref="user_sc_cost_01"/>
+        </record>
+
         <!-- 工程量清单 1：场地平整（土石方） -->
         <record id="sc_demo_boq_earthwork" model="project.boq.line">
             <field name="version_id" ref="smart_construction_demo.sc_demo_boq_version_contract_v1"/>
             <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
+            <field name="import_batch_id" ref="smart_construction_demo.sc_demo_boq_import_batch_001"/>
             <field name="sequence">10</field>
             <field name="code">010101</field>
             <field name="name">场地平整</field>
@@ -30,6 +55,7 @@
         <record id="sc_demo_boq_concrete" model="project.boq.line">
             <field name="version_id" ref="smart_construction_demo.sc_demo_boq_version_contract_v1"/>
             <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
+            <field name="import_batch_id" ref="smart_construction_demo.sc_demo_boq_import_batch_001"/>
             <field name="sequence">20</field>
             <field name="code">020202</field>
             <field name="name">现浇混凝土框架结构</field>

@@ -11,6 +11,10 @@
         <field name="project_category_id" ref="smart_construction_demo.sc_demo_dict_project_category_industry"/>
         <field name="start_date">2025-01-01</field>
         <field name="end_date">2026-12-31</field>
+        <!-- 注意：不可在此指派 user_id——本文件在 manifest data 顺序中先于
+             sc_demo_users.xml 加载，ref 解析会失败（Error 255）。demo PM
+             的项目经理指派由 scenario_loader 的 _ensure_s00_boq_visibility
+             钩子在 seed 阶段完成（此时 demo 用户已存在）。 -->
         <field name="active">True</field>
         <field name="description">
             【Demo 说明】

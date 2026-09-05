@@ -436,6 +436,8 @@ def load_scenario(
             kind="data",
         )
 
+    if scenario == "s00_min_path":
+        _ensure_s00_boq_visibility(env)
     if scenario == "s65_cost_budget_funding_surface":
         _ensure_funding_baseline(env, "sc_demo_funding_baseline_065")
     if scenario == "s69_payment_ledger_surface":
@@ -478,6 +480,40 @@ def load_base_seed(env, mode: str = "update") -> None:
             kind="data",
         )
     env.cr.commit()
+
+
+def _ensure_s00_boq_visibility(env) -> None:
+    """Make the S00 BOQ import batch visible to demo PM and cost users.
+
+    The ``project.boq.import.batch`` "project member scope" record rule
+    grants read access only to the project manager (``project_id.user_id``)
+    or message followers. Both wirings live here rather than in the seed
+    XML: ``data/base/20_projects.xml`` loads before ``sc_demo_users.xml``
+    in the manifest data order (a ``user_id`` ref would fail install with
+    Error 255), and ``<function>`` tags inside noupdate data blocks are
+    silently skipped on update. The loader runs at seed time when the
+    demo users already exist.
+    Idempotent: skips an already-assigned manager and partners already
+    following the project.
+    """
+    project = env.ref(
+        "smart_construction_demo.sc_demo_project_001", raise_if_not_found=False
+    )
+    if not project:
+        return
+    project = project.sudo()
+    pm_user = env.ref(
+        "smart_construction_demo.user_sc_pm_01", raise_if_not_found=False
+    )
+    if pm_user and project.user_id != pm_user:
+        project.write({"user_id": pm_user.id})
+    cost_user = env.ref(
+        "smart_construction_demo.user_sc_cost_01", raise_if_not_found=False
+    )
+    if cost_user:
+        partner = cost_user.partner_id
+        if partner and partner not in project.message_partner_ids:
+            project.message_subscribe(partner_ids=[partner.id])
 
 
 def _ensure_funding_baseline(env, xmlid: str) -> None:
