@@ -17,3 +17,4 @@ from . import scene_block_schema
 from . import workspace_contract_builder
 from . import dashboard_contract_builder
 from . import locked_menu_policy_contract
+from . import visualization_chart_registry

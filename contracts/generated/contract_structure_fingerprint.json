@@ -82,6 +82,49 @@
     },
     {
       "contract_fields": [
+        "chart_key",
+        "chart_type",
+        "readonly",
+        "schema",
+        "series",
+        "title",
+        "unit"
+      ],
+      "contract_states": [],
+      "contract_transitions": [],
+      "entity": "VisualizationChartDataset",
+      "id": "chart",
+      "model": "VisualizationChartDataset",
+      "model_fields": {
+        "chart_key": {
+          "_status": "model_file_not_found"
+        },
+        "chart_type": {
+          "_status": "model_file_not_found"
+        },
+        "readonly": {
+          "_status": "model_file_not_found"
+        },
+        "schema": {
+          "_status": "model_file_not_found"
+        },
+        "series": {
+          "_status": "model_file_not_found"
+        },
+        "title": {
+          "_status": "model_file_not_found"
+        },
+        "unit": {
+          "_status": "model_file_not_found"
+        }
+      },
+      "model_file": null,
+      "module": "",
+      "odoo_model": null,
+      "version": 1
+    },
+    {
+      "contract_fields": [
         "currency",
         "payment_request",
         "payment_state",

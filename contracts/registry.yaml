@@ -51,6 +51,10 @@ contracts:
     kind: domain
     domain: boq
     version: 1
+  - path: domain/chart.yaml
+    kind: domain
+    domain: chart
+    version: 1
   - path: schemas/common.yaml
     kind: schema
     version: 1
