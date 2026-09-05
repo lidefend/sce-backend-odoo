@@ -176,6 +176,41 @@
     },
     {
       "contract_fields": [
+        "expected_quantity",
+        "idempotency_key",
+        "line_id",
+        "new_quantity",
+        "quantity_after / amount_after / qty_remain / version_total_amount"
+      ],
+      "contract_states": [],
+      "contract_transitions": [],
+      "entity": "BoqLinePatchDecision",
+      "id": "boq-line-patch",
+      "model": "BoqLinePatchDecision",
+      "model_fields": {
+        "expected_quantity": {
+          "_status": "model_file_not_found"
+        },
+        "idempotency_key": {
+          "_status": "model_file_not_found"
+        },
+        "line_id": {
+          "_status": "model_file_not_found"
+        },
+        "new_quantity": {
+          "_status": "model_file_not_found"
+        },
+        "quantity_after / amount_after / qty_remain / version_total_amount": {
+          "_status": "model_file_not_found"
+        }
+      },
+      "model_file": null,
+      "module": "",
+      "odoo_model": null,
+      "version": 1
+    },
+    {
+      "contract_fields": [
         "chart_key",
         "chart_type",
         "readonly",

@@ -67,6 +67,10 @@ contracts:
     kind: domain
     domain: boq_dangerous_import
     version: 1
+  - path: domain/boq-line-patch.yaml
+    kind: domain
+    domain: boq_line_patch
+    version: 1
   - path: schemas/common.yaml
     kind: schema
     version: 1

@@ -1,0 +1,77 @@
+id: boq-line-patch
+version: 1
+
+entity: BoqLinePatchDecision
+
+title: BOQ 行内联编辑契约（工程量 patch，G7.2 切片 3，G7_LAUNCH_SCOPING §11）
+
+identity:
+  field: expected_quantity
+  type: float
+  note: >-
+    客户端视角的行当前工程量（基线）；服务端与 DB 当前值 round(6) 比对，
+    不一致即 BASELINE_MISMATCH（409 语义）——并发漂移防护，比 ETag 轻，
+    与 confirm_token 摘要比对同思路。
+
+intents:
+  project.boq.line.patch:
+    access: smart_construction_core.group_sc_cap_cost_user / group_sc_cap_cost_manager
+    semantic: 常规单行写（expected 基线 + 幂等 + 审计 + 服务端权威重算）
+
+fields:
+  line_id:
+    type: integer
+    note: 目标清单行 id；search 语义加载（无权限与不存在同响应 LINE_NOT_FOUND）。
+  expected_quantity:
+    type: float
+    note: 基线工程量（客户端视角当前值）；缺失/非法按 MISSING_PARAMS 结构化拒绝。
+  new_quantity:
+    type: float
+    note: 新工程量；负数拒绝（INVALID_QUANTITY）；低于 qty_done 拒绝（QTY_BELOW_DONE）。
+  quantity_after / amount_after / qty_remain / version_total_amount:
+    type: float
+    readonly: true
+    note: 执行后投影（DB/ORM 重读为权威）；金额链由服务端 compute 权威重算（amount/amount_leaf/qty_remain/version.total_amount），前端不形成金额事实。
+  idempotency_key:
+    type: string
+    note: 写 intent 必填（缺省回退 request_id）；去重权威 sc.idempotency.record（write-idempotency.yaml v1 定式）。
+
+decision_semantics:
+  scope: >-
+    仅 quantity 单字段（G7.2-A 审计 + 用户批准：price/imported_amount 维持
+    导入通道，写入面最小）；单阶段协议（区别于危险导入两阶段确认——单行
+    常规写，expected 基线已承担并发防护，无需 preview 干跑）。
+  permission: >-
+    复用既有组 cost_user / cost_manager（boq.line ACL 已读写改无删/全权；
+    单行常规写与 replace/update 批量重写不同风险级，不新造组）。
+  no_kill_switch: >-
+    回退面 = 版本状态闸（published/superseded 即锁，ORM write 守卫兜底）
+    + ACL + intent 不注册即不可达；写入范围仅 quantity，无批量重写危险面。
+  idempotency_ordering: >-
+    claim 前置于基线比对（G7.1 层序定式）：指纹绑定客户端提供的
+    expected/new + line_id，响应丢失后的原样重试命中 replay 分支直接返回
+    首次结果；基线比对仅对首次执行生效——首次执行后基线必然漂移，这正是
+    并发防护语义，与重放通道互不冲突。
+  evidence: >-
+    sc.audit.log before/after（event_code=BOQ_LINE_PATCH：前后工程量、重算
+    合价、qty_done、幂等键、trace）；无批次落档（非导入路径）。
+
+safe_degradation:
+  missing_params: line_id/expected_quantity/new_quantity 缺失或非法 → ok=false + MISSING_PARAMS（fix_input）。
+  invalid_quantity: 新工程量为负 → ok=false + INVALID_QUANTITY（fix_input）。
+  line_not_found: 行不存在或不可访问 → ok=false + LINE_NOT_FOUND（check_params）。
+  version_not_mutable: 目标版本非 draft/validated → ok=false + VERSION_NOT_MUTABLE（create_new_version）。
+  boq_frozen: 项目进入结算/支付关键节点 → ok=false + BOQ_FROZEN（check_project_state）。
+  baseline_mismatch: expected 与 DB 当前值不一致（行被并发修改）→ ok=false + BASELINE_MISMATCH（reload_and_retry）+ 幂等行落 failed。
+  qty_below_done: 新工程量低于累计完成量 → ok=false + QTY_BELOW_DONE（fix_input）+ 幂等行落 failed。
+  patch_error: 执行异常 → savepoint 整体回滚 + 幂等行落 failed（允许接管重试）→ ok=false + PATCH_ERROR（retry）。
+  idempotency_conflict / in_flight: 同 write-idempotency.yaml v1（409 语义）。
+
+notes: >-
+  G7 切片 3（G7_LAUNCH_SCOPING §4/§11 批准路径：后端先行，前端可编辑
+  cell 下一批次接入）。金额重算链完全服务端权威（boq.py compute store
+  recursive，无 onchange）——qty patch 后 amount/amount_leaf/qty_remain/
+  version.total_amount 自动重算，§6.4「前端不在本地形成金额事实」天然
+  满足。回退验收：published 版本上 patch 结构化拒绝 + ORM 守卫兜底；
+  既有导入/导出/危险导入能力不受影响。前端接入批次沿用本契约
+  （writeRecordV6 的 request_id/idempotency_key 调用形态）。

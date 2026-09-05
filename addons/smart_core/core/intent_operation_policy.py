@@ -14,6 +14,7 @@ WRITE_INTENT_TOKENS = {
     "execute",
     "freeze",
     "import",
+    "patch",
     "pin",
     "promote",
     "publish",

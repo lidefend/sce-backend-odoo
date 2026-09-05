@@ -182,3 +182,121 @@ G6 已收口两个批次（PR #436 / #437）：图表能力全链（契约→注
   而 demo 种子按 CNY 语境写约束）——core 模块事务已按模块分段提交
   （17.0.0.158 + 权限组落库），直接重启 odoo 继续验证即可。
 
+## 11. G7.2-A 立项审计（BOQ 内联编辑，§4 切片 3）
+
+> 审计日期：2026-09-06（G7.1 合流后 main=b95bbc0f）。切片 2（Editor 富文本）
+> 依赖 ADR-006 批准（仍 Proposed，冻结），切片 3 为排序中下一无阻塞项。
+
+### 11.1 可复用面（落地距离近的核心依据）
+
+- **金额重算链完全服务端权威**（models/core/boq.py）：`amount`（compute
+  store recursive，boq.py:489-503，imported_amount 优先、父节点聚合子项）+
+  `amount_leaf`（:505-520）+ version `total_amount`（:73-78，聚合自行触发）
+  ——qty patch 后整链自动重算，**模型无任何 onchange**，前端不形成金额事实
+  的 §6.4 约束天然满足。
+- **写 handler 定式可直接套用**（boq_dangerous_import.py）：REQUIRED_GROUPS
+  组闸 → kill switch → 参数 → 版本状态闸（仅 draft/validated 可写，:245）→
+  `is_boq_frozen()` 拒绝 → claim/complete 幂等（G7-INFRA 基建）→ savepoint
+  原子执行 → sc.audit.log before/after。
+- **ORM 层兜底已存在**：line.write 守卫（boq.py:583-598，quantity 在
+  snapshot_fields，published/superseded 禁改）+ line.unlink 守卫
+  （:634-650，冻结抛 P0_BOQ_FROZEN）+ version.write 守卫（:137-147）。
+- **前端调用形态**：writeRecordV6（api/data.ts:313，带 request_id/
+  idempotency_key/if_match 乐观锁参数）可作提交通道参考。
+- **ACL 现成**：project.boq.line / version 上 cost_manager 全权、
+  **cost_user 读写改无删**（ir.model.access.csv:121-126）——常规单行编辑
+  与 replace/update 批量重写不同风险级，无需专用新组（待决策确认）。
+
+### 11.2 缺口（需新建）
+
+1. **专用写 intent**：通用 api.data.write 白名单不含 project.boq.line 且
+   组不对口（core_extension_policy_maps.py:815-823）→ 需新建
+   `project.boq.line.patch` 类 intent；
+2. **前端 BOQ 明细表格不存在**：现有 BOQ 前端仅导入预检只读卡片
+   （BoqImportPreviewPanel.vue，data-readonly="true"）；ScTable.vue 为
+   TDesign 语义封装，**无可编辑 cell**——前端是本切片最大增量；
+3. **行级并发基线缺失**：无行写版本号/digest 字段，需借「请求携带
+   expected 基线值 + version 状态闸 + claim 幂等」组合，或引入 ETag；
+4. **交互规则未定**：qty 编辑是否仅限 draft/validated 版本（dangerous
+   import 有此闸，常规向导路径只查 frozen——口径需统一）。
+
+### 11.3 呈报决策点
+
+1. **批次切分**：后端先行（intent+幂等+审计+E2E 探针验证全链，前端编辑
+   cell 下一批次）vs 前后端同期一个 PR；
+2. **可编辑字段范围**：首期仅 quantity vs 含 price/uom/name；
+3. **并发基线**：expected 基线值比对（轻量）vs if_match ETag（重）vs
+   仅版本状态闸（最轻，10k 行并发验收口径待定）；
+4. **权限组**：复用 cost_user/cost_manager（推荐，单行常规写）vs 新建
+   专用组。
+
+## 12. G7.2 执行记录（BOQ 行内联编辑后端先行，2026-09-06）
+
+> 决策结果：四项呈报全部按推荐批准——后端先行 / 首期仅 quantity /
+> expected 基线值 / 复用 cost_user。切片 2（Editor）仍冻结待 ADR-006。
+
+### 12.1 实现四件套（G7.2-B 落盘）
+
+- `handlers/boq_line_patch.py`：intent `project.boq.line.patch`（单阶段
+  协议，区别于危险导入两阶段确认——单行单字段常规写，expected 基线已
+  承担并发防护，无需 preview 干跑）；流程 = 参数校验（claim 前不占幂等
+  行）→ 行加载（LINE_NOT_FOUND）→ 版本状态闸（VERSION_NOT_MUTABLE，
+  仅 draft/validated）→ 冻结拒绝（BOQ_FROZEN）→ claim 幂等（复用
+  G7-INFRA 基建 + G7.1 层序修正定式：claim 前置，指纹绑定 line_id +
+  expected/new quantity + idem_key，原样重试命中 replay）→ 基线比对
+  （BASELINE_MISMATCH 释放 failed，round(6) 容差）→ QTY_BELOW_DONE
+  预检 → savepoint 内 `line.write({"quantity": ...})` → after 投影
+  （DB/ORM 重读权威）→ complete → 审计 before/after。无 kill switch
+  （回退面 = 版本状态闸 + ORM write 守卫 + ACL + intent 不注册即不可达，
+  写入范围仅 quantity 单字段）。REQUIRED_GROUPS=[cost_user, cost_manager]
+  OR 语义；ACL_MODE=record_rule。
+- `services/boq_line_patch_service.py`：纯函数层（normalize_quantity /
+  quantity_baseline_matches round(6) / qty_below_done / build_audit_payload）；
+- 契约 `contracts/domain/boq-line-patch.yaml` v1（registry 登记，domains
+  12→13，含 idempotency_ordering 决策语义段）；
+- 桩测试 17 例全绿（复用 G7.1 桩基建：_FakeDatetime 自引用 + _PatchedClaim
+  注入 + _FakeLine._recompute 模拟服务端 compute 链）；make 目标
+  `verify.boq.line.patch.capability` 挂入 ci.local.quick 依赖链。
+- 三处同步齐备：core_extension_intent_handlers.py（导入+mapping）+
+  split guard（MAX_INTENT_HANDLER_LINES 245、HANDLER_MODULES 桩、
+  intent 清单）+ make/ci.mk。
+
+### 12.2 E2E（dev 栈，探针 tmp/g72_boq_line_patch_e2e.sh，23/23 全绿）
+
+P0 viewer 无组 PERMISSION_DENIED（中间件层）→ P1 参数/查找/状态闸
+（LINE_NOT_FOUND / VERSION_NOT_MUTABLE / MISSING_PARAMS×2 /
+INVALID_QUANTITY）→ P2 基线漂移拒绝且无业务写 → P3 QTY_BELOW_DONE →
+P4 imported_amount 权威语义（qty 变 amount 跟来源合价）→ P4b psql 清
+imported_amount 后完整服务端重算（qty 8→9，amount 27，version total 42，
+DB 直读断言）→ P5 字面重试命中 replay 不重写 → P6 同键异指纹
+IDEMPOTENCY_CONFLICT 且无写 → P7 审计事件 → P8 基线恢复（含
+imported_amount 条件恢复）。
+
+### 12.3 踩坑沉淀（四则）
+
+1. **WRITE_INTENT_TOKENS 共三处须同步**：中间件按 token 集判 is_write()
+   → 决定是否预检组——"patch" 不在集内时无组用户直穿 ORM ACL（返回
+   PATCH_ERROR 而非 PERMISSION_DENIED）。三处 = `core/intent_operation_
+   policy.py`（运行时）+ `tools/intent_write_guard.py`（REQUIRED_GROUPS
+   静态守卫）+ `tools/intent_acl_mode_guard.py`（ACL_MODE 静态守卫），
+   首轮漏了第三处；
+2. **REQUIRED_GROUPS 须写字面量列表**：`= list(WRITE_GROUPS)` 是 AST
+   Call 节点，静态守卫 _literal 解析为 None → 判「无 REQUIRED_GROUPS」
+   违规；
+3. **psql numeric 定宽格式 vs python 字符串比较**：psql 返回 `27.00`、
+   python `round()` 输出 `27.0`，字符串不等——DB 断言须数值容差比较
+   （awk num_eq）；
+4. **imported_amount 来源合价是模型权威口径（非 bug）**：amount compute
+   「有 imported_amount 优先取之，否则 qty×price」——qty patch 后 amount
+   不变是正确行为，探针须拆「权威语义验证」与「清后重算验证」两段。
+
+### 12.4 门禁
+
+- 回归：intent_acl_mode_guard（130 handlers / 48 write / 0 违规）+
+  intent_write_guard（0 违规）+ test_write_idempotency_claim（18 例）+
+  桩测试 17 例 + split guard PASS；
+- `make ci.local.quick` 全绿（EXIT=0，仅存量 eslint warning）；
+- refresh.generated_reports 已刷（contract_structure_fingerprint.json +
+  complexity_budget_report.md）。
+
+

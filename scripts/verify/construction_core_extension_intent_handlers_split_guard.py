@@ -12,7 +12,7 @@ INTENT_HANDLERS = ROOT / "addons/smart_construction_core/core_extension_intent_h
 CI = ROOT / "make/ci.mk"
 
 MAX_CORE_EXTENSION_LINES = 2243
-MAX_INTENT_HANDLER_LINES = 240  # G7.1 boq dangerous import registration (+6); registry module
+MAX_INTENT_HANDLER_LINES = 245  # G7.2 boq line patch registration (+4); registry module
 
 HANDLER_MODULES = {
     "odoo.addons.smart_construction_core.handlers.system_ping_construction": ["SystemPingConstructionHandler"],
@@ -72,6 +72,7 @@ HANDLER_MODULES = {
         "BoqDangerousImportPreviewHandler",
         "BoqDangerousImportExecuteHandler",
     ],
+    "odoo.addons.smart_construction_core.handlers.boq_line_patch": ["BoqLinePatchHandler"],
     "odoo.addons.smart_construction_core.handlers.visualization_chart_fetch": ["VisualizationChartFetchHandler"],
 }
 
@@ -178,6 +179,7 @@ def main() -> int:
             "project.boq.export.request",
             "project.boq.import.dangerous.preview",
             "project.boq.import.dangerous.execute",
+            "project.boq.line.patch",
         ]:
             if intent not in by_intent:
                 errors.append(f"intent handler mapping missing intent: {intent}")
