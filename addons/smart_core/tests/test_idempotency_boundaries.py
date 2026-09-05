@@ -29,6 +29,7 @@ def _load_idempotency():
     _install_module(
         "odoo.addons.smart_core.utils.reason_codes",
         REASON_IDEMPOTENCY_CONFLICT="IDEMPOTENCY_CONFLICT",
+        REASON_IDEMPOTENCY_IN_FLIGHT="IDEMPOTENCY_IN_FLIGHT",
         failure_meta_for_reason=lambda reason: {"reason_code": reason},
     )
 

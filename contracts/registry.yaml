@@ -59,6 +59,10 @@ contracts:
     kind: domain
     domain: boq_export
     version: 1
+  - path: domain/write-idempotency.yaml
+    kind: domain
+    domain: write_idempotency
+    version: 1
   - path: schemas/common.yaml
     kind: schema
     version: 1

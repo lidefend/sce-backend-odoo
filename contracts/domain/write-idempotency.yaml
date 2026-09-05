@@ -1,0 +1,80 @@
+id: write-idempotency
+version: 1
+
+entity: WriteActionIdempotencyDecision
+
+title: 统一写动作幂等契约（G7 幂等基建，sc.idempotency.record 去重权威）
+
+identity:
+  field: idempotency_key
+  type: string
+  note: >-
+    客户端为每个逻辑写操作生成的唯一键（uuid 或稳定请求 id）；
+    (company_id, actor_uid, idempotency_key) 在数据库层由部分唯一索引仲裁，
+    同键并发插入仅一个成功。
+
+fields:
+  idempotency_key:
+    type: string
+    readonly: true
+    note: 请求携带的幂等键；写 intent 必填（缺省回退 request_id）。
+  idempotency_fingerprint:
+    type: string
+    readonly: true
+    note: 请求业务参数指纹（sha1，key 序稳定 + id 列表归一）；同键异指纹即冲突。
+  mode:
+    type: string
+    readonly: true
+    note: >-
+      claim 裁决结果：claimed（获得执行权，新建）/ takeover（接管 failed 行）/
+      replay（重放既有结果）/ conflict（同键异指纹）/ in_flight（并发赢家未出结果）/
+      new（审计投影回退路径放行）。
+  idempotent_replay:
+    type: boolean
+    readonly: true
+    note: 本次响应是否为重放（true 时不重复执行业务写）。
+  replay_window_expired:
+    type: boolean
+    readonly: true
+    note: >-
+      信息性标记（记录权威路径下 replay 不受窗口限制——键即逻辑操作，永久可重放；
+      窗口仅保留信封可观测语义）。审计投影回退路径仍按窗口截断。
+  replay_from_record_id:
+    type: integer
+    readonly: true
+    note: 重放证据来源 sc.idempotency.record 行 id；审计路径对应 replay_from_audit_id。
+  idempotency_deduplicated:
+    type: boolean
+    readonly: true
+    note: 本次执行被去重仲裁吸收（含并发输者回读重放）。
+
+decision_semantics:
+  authority_split: >-
+    去重权威 = sc.idempotency.record（部分唯一索引 company_id/actor_uid/
+    idempotency_key，DB 层并发仲裁）；审计轨迹权威 = sc.audit.log（谁/何动作/
+    何对象/变更摘要，职责不重叠，不新造审计模型）。
+  claim_before_execute: >-
+    执行前 claim（插入 inflight 行或接管 failed 行）；并发同键输者触发唯一
+    冲突 → savepoint 回滚 → 回读赢家 → replay / conflict / in_flight。
+  complete_after_execute: >-
+    执行后 complete（写 status=done + result_json）；结果含失败明细也记 done
+    （同输入重放同失败结果是正确幂等语义）。
+  rollback_invariant: >-
+    claim 与业务写同事务：请求整体回滚时 claim 一并消失，不产生悬挂 inflight。
+  failed_takeover: status=failed 且指纹一致 → 允许接管重执行。
+  fallback: >-
+    sc.idempotency.record 缺席时回退既有审计投影路径（resolve_idempotency_decision
+    窗口语义不变），行为与升级前完全一致。
+
+safe_degradation:
+  idempotency_conflict: 同键异指纹 → ok=false + 409 IDEMPOTENCY_CONFLICT（retryable=false，换新键）。
+  idempotency_in_flight: 并发赢家未落结果 → ok=false + 409 IDEMPOTENCY_IN_FLIGHT（retryable=true，同键稍后重试）。
+  record_unavailable: 去重模型不可用 → 审计投影回退；两条路径都不可用 → 放行执行并审计（可用性优先于去重）。
+
+pilot_consumer: my.work.complete_batch（业务写 intent 首个迁移方；api.data.batch / api.data.create / api.data.unlink 后续批次迁移）。
+
+notes: >-
+  G7 首切片（Excel replace/update 危险导入模式）的前置基建（G7_LAUNCH_SCOPING
+  §5 P0 缺口收口）：写 intent 携带幂等键 + 服务端去重窗口的统一模式。与 BOQ
+  导入向导 digest 冻结/复核（TOCTOU 防护）互补：digest 防「预检与执行间载荷被
+  换」，幂等键防「同逻辑操作重复执行」，G7 导入切片两者叠加使用。

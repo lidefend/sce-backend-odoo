@@ -14,3 +14,4 @@ from . import tenant_payload_import_batch
 from . import user_activation
 from . import effective_document_change
 from . import auth_credential_policy
+from . import idempotency_record
