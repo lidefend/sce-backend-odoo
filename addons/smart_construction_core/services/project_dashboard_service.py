@@ -60,6 +60,7 @@ class ProjectDashboardService:
         ("contract", "合同执行", "secondary", "stack", "block.project.contract"),
         ("cost", "成本控制", "secondary", "stack", "block.project.cost"),
         ("chart", "成本结构图表", "secondary", "stack", "block.project.chart"),
+        ("chart_payment", "付款执行图表", "secondary", "stack", "block.project.chart.payment"),
         ("finance", "资金情况", "secondary", "stack", "block.project.finance"),
         ("risk", "风险提醒", "supporting", "stack", "block.project.risk"),
     )
@@ -72,6 +73,8 @@ class ProjectDashboardService:
         "boq_preview": "block.project.boq_preview",
         "chart": "block.project.chart",
         "cost_structure": "block.project.chart",
+        "chart_payment": "block.project.chart.payment",
+        "payment_execution": "block.project.chart.payment",
     }
 
     def __init__(self, env):
@@ -199,6 +202,9 @@ class ProjectDashboardService:
             },
             "chart": {
                 "block": self.build_block("chart", project=project, context=request_context),
+            },
+            "chart_payment": {
+                "block": self.build_block("chart_payment", project=project, context=request_context),
             },
         }
 

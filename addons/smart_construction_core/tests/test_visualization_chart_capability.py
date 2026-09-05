@@ -336,7 +336,14 @@ class VisualizationChartDefinitionsTests(unittest.TestCase):
         self.registry.reset_charts()
 
     def test_cost_structure_chart_registered_at_import(self):
-        self.assertEqual(self.registry.list_chart_keys(), ["project.cost.structure"])
+        self.assertEqual(
+            self.registry.list_chart_keys(),
+            [
+                "project.contract.distribution",
+                "project.cost.structure",
+                "project.payment.execution",
+            ],
+        )
         chart = self.registry.get_chart("project.cost.structure")
         self.assertEqual(chart["chart_type"], "bar")
         self.assertEqual(chart["label"], "成本结构（预算 vs 实际）")
@@ -460,6 +467,245 @@ class VisualizationChartDefinitionsTests(unittest.TestCase):
         data = result["data"]
         self.assertEqual(data["chart_key"], "project.cost.structure")
         self.assertEqual(data["chart_type"], "bar")
+        self.assertEqual(len(data["series"]), 2)
+        self.assertTrue(data["readonly"])
+
+
+# ---------------------------------------------------------------------------
+# G6.2 扩展批次：付款执行趋势（line）+ 合同方向分布（pie）
+# ---------------------------------------------------------------------------
+
+
+class _FakeSearchReadModel:
+    """search_read 桩：返回预置行，记录 domain（付款执行月度聚合用）。"""
+
+    def __init__(self, rows, date_field, sum_field):
+        self._rows = list(rows)
+        self._fields = {date_field: True, sum_field: True}
+        self.calls = []
+
+    def search_read(self, domain, fields, limit=None, order=None):
+        self.calls.append({"domain": list(domain or []), "fields": list(fields or [])})
+        return list(self._rows)
+
+
+class _FakeSelectionField:
+    def __init__(self, selection):
+        self.selection = list(selection)
+
+
+class _FakeDirectionGroupModel:
+    """read_group 桩：按 contract_direction 分组行 + 选择项展示名映射。"""
+
+    def __init__(self, rows, sum_field, selection):
+        self._rows = list(rows)
+        self._fields = {
+            "contract_direction": _FakeSelectionField(selection),
+            sum_field: True,
+        }
+        self.domains = []
+
+    def read_group(self, domain, fields, groupby, lazy=True):
+        self.domains.append({"domain": list(domain or []), "fields": list(fields or [])})
+        return list(self._rows)
+
+
+class VisualizationChartG62DefinitionsTests(unittest.TestCase):
+    def setUp(self):
+        self.registry = _load_registry_module()
+        self.registry.reset_charts()
+        self.definitions = _load_definitions_module(self.registry)
+
+    def tearDown(self):
+        self.registry.reset_charts()
+
+    # ---- 登记 ----
+    def test_payment_execution_chart_registered_as_line(self):
+        chart = self.registry.get_chart("project.payment.execution")
+        self.assertIsNotNone(chart)
+        self.assertEqual(chart["chart_type"], "line")
+        self.assertEqual(chart["dimensions"][0]["key"], "month")
+        self.assertIn("payment.request", chart["source_authority"]["authorities"])
+        self.assertIn("payment.ledger", chart["source_authority"]["authorities"])
+        self.assertTrue(chart["source_authority"]["projection_only"])
+
+    def test_contract_distribution_chart_registered_as_pie(self):
+        chart = self.registry.get_chart("project.contract.distribution")
+        self.assertIsNotNone(chart)
+        self.assertEqual(chart["chart_type"], "pie")
+        self.assertEqual(chart["dimensions"][0]["key"], "contract_direction")
+        self.assertIn(
+            "sc.general.contract", chart["source_authority"]["authorities"]
+        )
+        self.assertTrue(chart["source_authority"]["no_business_fact_authority"])
+
+    # ---- 付款执行 builder ----
+    def test_payment_execution_builder_buckets_months_iso_sorted(self):
+        request_model = _FakeSearchReadModel(
+            [
+                {"date_request": "2026-07-05", "amount": 100.0},
+                {"date_request": "2026-08-01", "amount": 200.0},
+                {"date_request": "2026-07-20", "amount": 50.0},
+            ],
+            "date_request",
+            "amount",
+        )
+        ledger_model = _FakeSearchReadModel(
+            [{"paid_at": "2026-08-15 10:00:00", "amount": 120.0}],
+            "paid_at",
+            "amount",
+        )
+        env = _FakeEnvStrict(
+            {
+                "payment.request": request_model,
+                "payment.ledger": ledger_model,
+            }
+        )
+        series = self.definitions.payment_execution_dataset_builder(env, 9)
+        self.assertEqual(len(series), 2)
+        requested, paid = series
+        self.assertEqual(requested["name"], "申请金额")
+        self.assertEqual(paid["name"], "已付金额")
+        # ISO 月标签升序（字典序 = 时间序）；缺失月不造点（已付无 2026-07 点）。
+        self.assertEqual(
+            [p["dimension_value"] for p in requested["points"]],
+            ["2026-07", "2026-08"],
+        )
+        self.assertEqual(
+            [p["dimension_value"] for p in paid["points"]],
+            ["2026-08"],
+        )
+        self.assertEqual(
+            {p["dimension_value"]: p["value"] for p in requested["points"]},
+            {"2026-07": 150.0, "2026-08": 200.0},
+        )
+        self.assertEqual(paid["points"][0]["value"], 120.0)
+        for entry in series:
+            self.assertEqual(entry["dimensions"]["key"], "month")
+
+    def test_payment_execution_builder_domains_apply_state_filters(self):
+        request_model = _FakeSearchReadModel([], "date_request", "amount")
+        ledger_model = _FakeSearchReadModel([], "paid_at", "amount")
+        env = _FakeEnvStrict(
+            {
+                "payment.request": request_model,
+                "payment.ledger": ledger_model,
+            }
+        )
+        self.definitions.payment_execution_dataset_builder(env, 33)
+        self.assertIn(("state", "!=", "cancel"), request_model.calls[0]["domain"])
+        self.assertIn(("project_id", "=", 33), request_model.calls[0]["domain"])
+        self.assertIn(("state", "=", "posted"), ledger_model.calls[0]["domain"])
+        self.assertIn(("project_id", "=", 33), ledger_model.calls[0]["domain"])
+
+    def test_payment_execution_builder_degrades_to_empty(self):
+        # 模型缺失 / 查询异常 / 全空 → 空 series（空态降级，不抛异常）。
+        self.assertEqual(
+            self.definitions.payment_execution_dataset_builder(_FakeEnvStrict({}), 1),
+            [],
+        )
+
+        class _BoomModel:
+            _fields = {"date_request": True, "amount": True}
+
+            def search_read(self, domain, fields, limit=None, order=None):
+                raise RuntimeError("search_read exploded")
+
+        env = _FakeEnvStrict({"payment.request": _BoomModel()})
+        self.assertEqual(
+            self.definitions.payment_execution_dataset_builder(env, 1),
+            [],
+        )
+
+    # ---- 合同方向分布 builder ----
+    def test_contract_distribution_builder_groups_by_direction_labels(self):
+        selection = [
+            ("income", "收入合同"),
+            ("expense", "支出合同"),
+            ("neutral", "一般合同"),
+            ("unknown", "未判定"),
+        ]
+        contract_model = _FakeDirectionGroupModel(
+            [
+                {"contract_direction": "income", "amount_total": 300.0},
+                {"contract_direction": "expense", "amount_total": 200.0},
+                {"contract_direction": False, "amount_total": 50.0},
+            ],
+            "amount_total",
+            selection,
+        )
+        env = _FakeEnvStrict({"sc.general.contract": contract_model})
+        series = self.definitions.contract_distribution_dataset_builder(env, 5)
+        self.assertEqual(len(series), 1)
+        entry = series[0]
+        self.assertEqual(entry["name"], "合同金额")
+        self.assertEqual(entry["dimensions"]["key"], "contract_direction")
+        # 点位用选择项展示名；方向缺失（False）不造点。
+        self.assertEqual(
+            entry["points"],
+            [
+                {"dimension_value": "支出合同", "value": 200.0},
+                {"dimension_value": "收入合同", "value": 300.0},
+            ],
+        )
+
+    def test_contract_distribution_builder_domain_excludes_cancel(self):
+        contract_model = _FakeDirectionGroupModel(
+            [], "amount_total", [("income", "收入合同")]
+        )
+        env = _FakeEnvStrict({"sc.general.contract": contract_model})
+        self.definitions.contract_distribution_dataset_builder(env, 8)
+        self.assertIn(("state", "!=", "cancel"), contract_model.domains[0]["domain"])
+        self.assertIn(("project_id", "=", 8), contract_model.domains[0]["domain"])
+
+    def test_contract_distribution_builder_degrades_to_empty(self):
+        self.assertEqual(
+            self.definitions.contract_distribution_dataset_builder(
+                _FakeEnvStrict({}), 1
+            ),
+            [],
+        )
+
+        class _BoomDirectionModel:
+            _fields = {
+                "contract_direction": _FakeSelectionField([("income", "收入合同")]),
+                "amount_total": True,
+            }
+
+            def read_group(self, domain, fields, groupby, lazy=True):
+                raise RuntimeError("read_group exploded")
+
+        env = _FakeEnvStrict({"sc.general.contract": _BoomDirectionModel()})
+        self.assertEqual(
+            self.definitions.contract_distribution_dataset_builder(env, 1),
+            [],
+        )
+
+    # ---- handler 端到端（新 chart 走同一降级/投影链） ----
+    def test_payment_execution_chart_via_handler(self):
+        request_model = _FakeSearchReadModel(
+            [{"date_request": "2026-07-05", "amount": 100.0}],
+            "date_request",
+            "amount",
+        )
+        ledger_model = _FakeSearchReadModel(
+            [{"paid_at": "2026-07-15 10:00:00", "amount": 60.0}],
+            "paid_at",
+            "amount",
+        )
+        handler_mod = _load_handler_module(self.registry)
+        merged_env = _FakeEnvStrict({"project.project": _FakeProjectModel([3])})
+        merged_env["payment.request"] = request_model
+        merged_env["payment.ledger"] = ledger_model
+        result = handler_mod.VisualizationChartFetchHandler(
+            env=merged_env,
+            params={"chart_key": "project.payment.execution", "project_id": 3},
+            payload={},
+        ).handle()
+        self.assertTrue(result["ok"])
+        data = result["data"]
+        self.assertEqual(data["chart_key"], "project.payment.execution")
+        self.assertEqual(data["chart_type"], "line")
         self.assertEqual(len(data["series"]), 2)
         self.assertTrue(data["readonly"])
 

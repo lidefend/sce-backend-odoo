@@ -1,6 +1,6 @@
-# G6 图表引擎执行记录（G6.1 只读实现）
+# G6 图表引擎执行记录（G6.1 只读实现 + G6.2 图表扩展）
 
-> 状态：进行中（分支 `feature/custom-frontend-integration-g6-chart-v1`）
+> 状态：G6.1 已合流（PR #436，main=7701070f）；G6.2 进行中（分支 `feature/custom-frontend-integration-g6-chart-v2`）
 > 决策依据：[ADR-002](../../../adr/ADR-002-frontend-chart-engine-echarts.md)（Accepted，2026-09-05）
 > 本文件是图表专题的**依赖/体积/安全评审记录**（ADR-002「后果」节要求的持续更新载体）。
 
@@ -103,11 +103,69 @@ B 裁剪子集 / C 重开引擎选型）呈报后用户批准**方案 A**：预�
 满足。修订全文与依据见 `docs/adr/ADR-002-frontend-chart-engine-echarts.md`
 修订记录节。
 
-## 6. 待办
+## 6. G6.2 图表扩展（2026-09-05，双新 chart 批次）
+
+复用 G6.1 已收口的图表全链（注册表 / chart.yaml v1 / intent 降级链 /
+chart_dataset 通用组件），零新增架构、零前端改动（`normalizeChartType`
+已白名单 bar/line/pie）。数据源映射来自 `topics/echarts.md` §2 候选表。
+
+### 登记 chart（visualization_chart_definitions.py）
+
+| chart key | 类型 | 数据源 | series | 聚合口径 |
+| --- | --- | --- | --- | --- |
+| `project.payment.execution` | line | payment.request + payment.ledger | 申请金额 / 已付金额 | 月桶 ISO `YYYY-MM`（search_read + Python 归桶，**刻意不用 read_group `:month`**：本地化月标签无法字典序排序）；申请侧排除 cancel 按 `date_request`，已付侧仅 posted 按 `paid_at`，缺失侧不造点 |
+| `project.contract.distribution` | pie | sc.general.contract | 合同金额 | read_group 按 `contract_direction` 分组求 `amount_total`，排除 cancel；方向缺失（False）不造点；selection 展示名解析（支持 callable selection） |
+
+命名纪律：CHART_KEY_REGEX 钉死**三段键**（`domain.entity.name`），四段键
+`project.contract.direction.distribution` 曾被注册表 fail-fast 拒绝，已
+改为 `project.contract.distribution`。
+
+### 块挂接（四处接线，G6.1 先例镜像）
+
+- 新 builder：`project_dashboard_builders/project_payment_chart_builder.py`
+  （`block.project.chart.payment`，复用 `ProjectChartBuilder._chart_registered`，
+  forbidden/empty/ready 四态信封）
+- `builders/__init__.py` BUILDERS 元组 → `project_dashboard_service.py`
+  ZONE_BLOCKS/RUNTIME_BLOCK_MAP/zones dict →
+  `project_dashboard_scene_content.py` zone_blocks（chart 块后、finance 前，
+  secondary/stack）
+
+### ACL 降级语义（E2E 实证）
+
+`_safe_*` 辅助函数在模型访问被 ir.model.access 拒绝时返回空映射 →
+空 series → 空态渲染（不抛异常不白屏）。E2E 三视角（探针
+`tmp/g62_chart_batch_e2e.sh`，`USER_LOGIN` 可切角色）：
+
+| 视角 | chart_payment 块 | payment.execution | contract.distribution |
+| --- | --- | --- | --- |
+| 成控 sc_cost_mgr | 合法空态 | 合法空态（ACL 无权） | 合法空态（ACL 无权） |
+| 财务 sc_finance_mgr | ready | ready：申请金额 4 点（2025-02:5,000,000 / 2025-03:10,060,000 / 2025-04:1,200,000 / 2025-08:360,000），已付 0 点（缺失侧不造点） | 空态（合同模型无权） |
+| 合同 sc_contract_mgr | ready | 空态（付款模型无权） | ready：支出合同 600,000 / 收入合同 680,000 |
+
+降级路径：未登记 key → `CHART_NOT_REGISTERED` 结构化返回（前端渲染
+通用空态不白屏）。
+
+### 测试与门禁
+
+- `test_visualization_chart_capability.py`：16 → **33 例**（登记 / 月桶
+  ISO 排序 / 缺失月不造点 / 状态过滤 domain 断言 / 空态降级 / handler
+  端到端 line 投影）
+- `test_project_chart_builder.py`：8 → **14 例**（payment 块身份 / empty /
+  ready / fetch_params / 文案 / 可见性）
+- `make/ci.mk` verify.visualization.chart.capability py_compile 清单追加
+  新 builder 文件
+- `make ci.local.quick` 全绿（2026-09-05 实测 7m51s，typecheck strict
+  PASS，ESLint 0 error）
+- 前端零改动：chart_engine_guard / chart_dataset.unit 双 PASS 不变
+
+## 7. 待办
 
 - [x] Task #97 收口：守卫与依赖记录入库（本文件）
 - [x] Task #98：图表 adapter（涨红跌绿 token 化）+ 四态只读组件
 - [x] Task #99：懒加载接线（组件内动态 import）+ gzip 预算实测
   （原口径 FAIL → ADR-002 条件 2 修订（方案 A）→ 修订口径 PASS）
-- [ ] Task #100：驾驶舱图表块挂接 + 首个真实 chart 登记 + 降级路径 E2E 验证
-- [ ] Task #101：门禁 + PR + squash 合流收口
+- [x] Task #100：驾驶舱图表块挂接 + 首个真实 chart 登记 + 降级路径 E2E 验证
+  （PR #436 squash 合流，main=7701070f；E2E 五路径全绿）
+- [x] Task #101：门禁 + PR + squash 合流收口
+- [x] G6.2-A~D：数据源审计 + 后端实现 + 前端零改动确认 + 三视角 E2E
+- [x] G6.2-E：PR + squash 合流收口（本 PR 自身即收口载体；门禁已全绿）
