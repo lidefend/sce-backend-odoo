@@ -1,6 +1,7 @@
 # ADR-004：Excel 导入导出引擎与安全边界
 
-- 状态：Proposed（待批准；批准前通用 Excel 平台能力不实施）
+- 状态：**Accepted**（2026-09-06 用户批准；决策 1–6 全部生效）
+- 批准记录：G7 立项准备呈报（`docs/planning/custom-frontend-integration/G7_LAUNCH_SCOPING.md` §7）三项决策之一——先批准 ADR-004 单线路径；同批次确认 G7 首切片 = 决策 4 范畴的 replace/update 危险导入模式（在 G6.3 只读/job 批次合入后立项）
 - 范围：custom-frontend-integration G5 / Excel 专题
 - 决策项：导入/导出引擎、异步 job、解析安全边界、病毒扫描边界
 
@@ -18,7 +19,7 @@
 
 Odoo 运行时本身已依赖 xlsxwriter（标准报表导出路径），供应链零新增。
 
-## 决策（建议）
+## 决策（生效，2026-09-06 批准）
 
 1. **导出引擎 = xlsxwriter**（BSD-2，纯 Python，与 Odoo 既有导出同源）。导出一律后端生成，按字段权限裁剪列；浏览器不接触全量数据。
 2. **导入引擎 = openpyxl + defusedxml**：解析必须经 defusedxml 包装（防 XML 炸弹/外部实体），这是采纳 openpyxl 的硬前置条件；文件大小、行数、单元格长度在解析前强制限额（沿用 BOQ 导入向导既有 digest 绑定与限额模式）。

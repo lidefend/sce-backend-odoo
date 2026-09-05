@@ -12,7 +12,7 @@ INTENT_HANDLERS = ROOT / "addons/smart_construction_core/core_extension_intent_h
 CI = ROOT / "make/ci.mk"
 
 MAX_CORE_EXTENSION_LINES = 2243
-MAX_INTENT_HANDLER_LINES = 230  # PR #381 settlement-introduce registrations (+8); registry module
+MAX_INTENT_HANDLER_LINES = 234  # G6.3 boq export registration (+4); registry module
 
 HANDLER_MODULES = {
     "odoo.addons.smart_construction_core.handlers.system_ping_construction": ["SystemPingConstructionHandler"],
@@ -67,6 +67,7 @@ HANDLER_MODULES = {
     "odoo.addons.smart_construction_core.handlers.workspace_home_enter": ["WorkspaceHomeEnterHandler"],
     "odoo.addons.smart_construction_core.handlers.dashboard_company_enter": ["DashboardCompanyEnterHandler"],
     "odoo.addons.smart_construction_core.handlers.boq_import_preview_fetch": ["BoqImportPreviewFetchHandler"],
+    "odoo.addons.smart_construction_core.handlers.boq_export_request": ["BoqExportRequestHandler"],
     "odoo.addons.smart_construction_core.handlers.visualization_chart_fetch": ["VisualizationChartFetchHandler"],
 }
 
@@ -170,6 +171,7 @@ def main() -> int:
             "cost.tracking.record.create",
             "workspace.home.enter",
             "project.dashboard.chart.fetch",
+            "project.boq.export.request",
         ]:
             if intent not in by_intent:
                 errors.append(f"intent handler mapping missing intent: {intent}")
