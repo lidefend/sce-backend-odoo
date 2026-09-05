@@ -1333,6 +1333,13 @@ demo.tenant.reset: guard.codex.fast.noheavy guard.prod.forbid check-compose-proj
 demo.tenant.verify: guard.prod.forbid check-compose-project check-compose-env
 	@$(RUN_ENV) SC_ENVIRONMENT=demo SC_ALLOW_DEMO_DATA=1 bash scripts/demo/tenant_lifecycle.sh verify
 
+# demo 隔离栈前端产物：独立 dist-demo（烧录 VITE_ODOO_DB=sc_demo），与 dev 栈
+# dist-dev 解耦——dev 重建不影响演示栈。构建后需重建 nginx 容器挂载新产物：
+#   docker compose --env-file .env.demo up -d --no-deps nginx
+.PHONY: demo.frontend.build
+demo.frontend.build: guard.prod.forbid check-compose-project check-compose-env
+	@ENV=demo DB_NAME=sc_demo FRONTEND_DIST_DIR=frontend/apps/web/dist-demo bash scripts/dev/frontend_static_build.sh
+
 # 兼容旧快捷命令：固定 sc_demo
 .PHONY: db.demo.reset
 db.demo.reset: DAILY_CANDIDATE_TARGET_DB := sc_demo
