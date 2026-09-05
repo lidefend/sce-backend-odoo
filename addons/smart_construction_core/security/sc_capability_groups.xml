@@ -390,6 +390,21 @@
         </record>
 
         <!-- =========================
+             BOQ 危险导入（replace/update）专用组
+             - G7.1 首切片（ADR-004 决策 4）：独立专用组，不并入任何既有业务组
+             - 仅运维汇总组（super_admin）继承；业务角色须显式授权
+             - 配套 kill switch：ir.config_parameter
+               sc.boq.dangerous_import.enabled（默认关闭，fail-closed）
+        ========================== -->
+        <record id="group_sc_cap_boq_dangerous_import" model="res.groups">
+            <field name="name">SC 能力 - 清单危险导入（replace/update）</field>
+            <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
+            <field name="implied_ids" eval="[(6, 0, [
+                ref('smart_construction_core.group_sc_internal_user')
+            ])]"/>
+        </record>
+
+        <!-- =========================
              超级管理员（仅测试/运维使用）
              - 汇总所有域的 manager 能力 + 配置/数据读
              - implied internal_user 以继承 base.group_user
@@ -410,6 +425,8 @@
                 ref('smart_construction_core.group_sc_cap_finance_manager'),
                 ref('smart_construction_core.group_sc_cap_accounting_manager'),
                 ref('smart_construction_core.group_sc_cap_settlement_manager'),
+
+                ref('smart_construction_core.group_sc_cap_boq_dangerous_import'),
 
                 ref('smart_construction_core.group_sc_cap_data_read'),
                 ref('smart_construction_core.group_sc_cap_config_admin'),

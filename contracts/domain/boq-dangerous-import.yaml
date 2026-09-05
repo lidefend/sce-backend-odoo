@@ -1,0 +1,74 @@
+id: boq-dangerous-import
+version: 1
+
+entity: BoqDangerousImportDecision
+
+title: BOQ 危险导入契约（replace/update，G7.1 首切片，ADR-004 决策 4）
+
+identity:
+  field: confirm_token
+  type: string
+  note: >-
+    preview 干跑产出的确认令牌（sha256 绑定 version/mode/boq_category/
+    file_digest/影响摘要/操作主体）；execute 逐位比对，任何漂移即拒绝。
+
+intents:
+  project.boq.import.dangerous.preview:
+    access: smart_construction_core.group_sc_cap_boq_dangerous_import
+    semantic: 只读干跑（解析 + 影响摘要 + confirm_token，无业务写）
+  project.boq.import.dangerous.execute:
+    access: smart_construction_core.group_sc_cap_boq_dangerous_import
+    semantic: 危险写（savepoint 原子执行 + 幂等 + 审计）
+
+fields:
+  mode:
+    type: string
+    note: replace（整版重写：删全部明细后按文件重建）/ update（按清单编码匹配：唯一编码更新、新编码新增、歧义编码 fail-closed 拒绝）。
+  summary:
+    type: object
+    readonly: true
+    note: 影响摘要（行数增删改/金额前后差）；update 模式含 lines_to_update/lines_to_create/lines_to_keep。
+  confirm_token:
+    type: string
+    readonly: true
+    note: 确认令牌；execute 必填，缺失或 mismatch 均结构化拒绝。
+  file_digest:
+    type: string
+    readonly: true
+    note: 导入文件 sha256（TOCTOU 绑定，与令牌一体校验）。
+  lines_deleted / lines_updated / lines_created:
+    type: integer
+    readonly: true
+    note: 执行结果计数；after 摘要以 DB 重读为权威（不信执行侧计数）。
+  idempotency_key:
+    type: string
+    note: 写 intent 必填（缺省回退 request_id）；去重权威 sc.idempotency.record（write-idempotency.yaml v1 定式）。
+
+decision_semantics:
+  four_piece_suite: >-
+    专用权限组（group_sc_cap_boq_dangerous_import，独立不并入业务组，
+    仅 super_admin 运维汇总继承）+ kill switch（ir.config_parameter
+    sc.boq.dangerous_import.enabled，默认关闭 fail-closed）+ 确认摘要
+    （preview 干跑 → confirm_token → execute 逐位比对）+ 幂等与审计
+    （claim/complete + sc.audit.log before/after，event_code=
+    BOQ_IMPORT_DANGEROUS）。
+  mutable_scope: 仅 draft/validated 版本可写；published/superseded/cancelled 拒绝（ORM write/unlink 守卫兜底）；冻结项目拒绝。
+  digest_plus_idempotency: digest 冻结防「预检与执行间载荷被换」，幂等键防「同逻辑操作重复执行」，两者叠加（write-idempotency.yaml notes 同源）。
+  evidence: project.boq.import.batch 落档（state=imported，preview_payload 带 dangerous 标记与前后摘要）。
+
+safe_degradation:
+  capability_disabled: kill switch 关闭（含参数缺失）→ ok=false + CAPABILITY_DISABLED（enable_feature_flag）。
+  version_not_mutable: 目标版本非 draft/validated → ok=false + VERSION_NOT_MUTABLE（create_new_version）。
+  confirm_token_mismatch: 令牌缺失/不匹配（文件被换、版本行并发变更、主体被换）→ ok=false + CONFIRM_TOKEN_MISMATCH（run_preview_first）。
+  ambiguous_codes: update 模式编码歧义（版本内重复且出现在文件中）→ ok=false + AMBIGUOUS_CODES（use_replace_mode）。
+  parse_empty / parse_error: 解析无有效行/异常 → ok=false 结构化返回。
+  boq_frozen: 项目进入结算/支付关键节点 → ok=false + BOQ_FROZEN。
+  import_error: 执行异常 → savepoint 整体回滚 + 幂等行落 failed（允许接管重试）→ ok=false + IMPORT_ERROR（retry）。
+  idempotency_conflict / in_flight: 同 write-idempotency.yaml v1（409 语义）。
+
+notes: >-
+  G7 首个真实高风险写入切片（G7_LAUNCH_SCOPING §4/§7 批准路径）。危险面 =
+  批量改写既有清单数据，故四件套缺一不可；既有导入向导（新建草稿版本、
+  不覆盖已发布清单）保持不变，本契约只服务显式选择 replace/update 的
+  危险路径。回退验收：kill switch 置 false 后两 intent 结构化降级，
+  既有导入/导出/预览能力不受影响。
