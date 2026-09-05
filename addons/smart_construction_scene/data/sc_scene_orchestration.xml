@@ -241,6 +241,31 @@
             <field name="version">v2</field>
         </record>
 
+        <!-- Portal shortcuts scene (base record for fresh installs;
+             sc_scene_layout.xml attaches version v1 payload and
+             active_version_id afterwards). Without this record the layout
+             version record forward-references an undefined xmlid and a
+             fresh-database install of smart_construction_scene fails. -->
+        <record id="sc_scene_portal_shortcuts" model="sc.scene">
+            <field name="sequence">64</field>
+            <field name="name">快捷入口</field>
+            <field name="code">portal.shortcuts</field>
+            <field name="layout">grid</field>
+            <field name="state">published</field>
+            <field name="version">v1</field>
+        </record>
+
+        <!-- Portal notifications scene (base record for fresh installs;
+             same forward-reference rationale as portal.shortcuts above). -->
+        <record id="sc_scene_portal_notifications" model="sc.scene">
+            <field name="sequence">65</field>
+            <field name="name">消息中心</field>
+            <field name="code">portal.notifications</field>
+            <field name="layout">grid</field>
+            <field name="state">published</field>
+            <field name="version">v1</field>
+        </record>
+
         <!-- My work scene -->
         <record id="sc_scene_my_work_workspace" model="sc.scene">
             <field name="sequence">63</field>
