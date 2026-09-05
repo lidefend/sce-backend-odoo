@@ -136,3 +136,49 @@ G6 已收口两个批次（PR #436 / #437）：图表能力全链（契约→注
      「done 无 result」残行致后续同键误判冲突——complete 侧 JSON 净化 +
      savepoint 原子包裹双修复。
 
+## 10. G7.1 执行记录（Excel replace/update 危险导入首切片）
+
+- **实现四件套（G7.1-B 落盘）**：
+  - `handlers/boq_dangerous_import.py`：双 intent（`boq.batch.dangerous.import`
+    preview/execute 同入口，mode 区分）；flag gate（kill switch
+    `sc.boq.dangerous_import.enabled`，默认关）+ 令牌确认（preview 返回
+    confirm_token，execute 重算比对防 TOCTOU）；
+  - `services/boq_dangerous_import_service.py`：replace（整批 unlink 重写）与
+    update（code 匹配增量改）两种危险模式；缺失侧不造点纪律沿用 G6.1；
+  - 契约 `contracts/domain/boq-dangerous-import.yaml` v1（registry 登记，
+    结构指纹 +39 行）；数据文件 `data/boq_dangerous_import_params.xml`
+    （noupdate kill switch 种子）；
+  - 桩测试 29 例全绿；`make verify.boq.dangerous.import.capability` 挂入
+    ci.local.quick 依赖链（py_compile 四文件 + 桩测试直跑）。
+- **E2E（G7.1-C，dev 栈，探针 tmp/g71_boq_dangerous_import_e2e.sh）**：三轮
+  迭代 22/22 全绿——P0 开关缺失+无组双拒；P1 开开关后无组仍拒；P2 授权后
+  preview 干跑（readonly/无业务写）→ 令牌漂移拒 → replace 执行（批次落库
+  +行数断言）→ 幂等重放（同键同指纹直接返回首次结果，不重复写）→ update
+  匹配（qty 3→5）→ 审计/批次证据≥2；P3 开关回退双 intent CAPABILITY_DISABLED
+  且数据不变；P4 清理（撤销组+删参数行）。
+- **设计缺陷发现与修复（本切片最重要产出）**：原实现「令牌重算 → claim」
+  导致响应丢失后的字面重试必然 CONFIRM_TOKEN_MISMATCH（首次执行后 DB 已变，
+  重算令牌漂移），幂等重放通道形同虚设。修正为「claim 前置 → 解析 → 令牌
+  重算 → 执行」：指纹绑定**客户端提供的 confirm_token + file_digest**（免解析
+  即可计算），原样重试命中 replay 分支直接返回首次结果；令牌重算仅对首次
+  执行生效——漂移即 TOCTOU 防护语义，与重放通道互不冲突。claim 后降级路径
+  （parse error/empty/ambiguous/token mismatch）统一 `_release_failed` 释放
+  幂等行为 failed（允许接管重试）。
+- **踩坑沉淀（四则）**：
+  1. 向导 `_parse_file` 的 CSV 分支仅 `include_details=True` 返回 4 元组
+     （rows/uoms/skipped/detail），`False` 返回 3 元组——handler 必须与向导
+     action_preflight/action_import 同口径，否则 `PARSING 解包崩溃`；
+  2. intent 中间件在 `run()` 里对 is_write() 为真的 intent（preview 也被判写）
+     先执行 `enforce_required_groups` 再进 handler flag gate——无组用户在开关
+     关闭时看到的是 PERMISSION_DENIED 而非 CAPABILITY_DISABLED，E2E 断言须
+     接受二元组；
+  3. `has_group`（ormcache 按 worker 进程）与 `ir.config_parameter.get_param`
+     同样被缓存——psql 直插授权/开关后必须 `docker restart` odoo 才对 HTTP
+     worker 生效；
+  4. noupdate=1 数据文件里的 `<function set_param>` 在模块升级模式被跳过
+     （G7-INFRA 已知坑复现），kill switch 须探针自行 psql 插入。
+- **遗留（预存环境漂移，非本切片引入）**：dev 栈模块级联升级时
+  smart_construction_demo 的 cost_demo.xml 本位币断言失败（dev 公司本位币 USD
+  而 demo 种子按 CNY 语境写约束）——core 模块事务已按模块分段提交
+  （17.0.0.158 + 权限组落库），直接重启 odoo 继续验证即可。
+

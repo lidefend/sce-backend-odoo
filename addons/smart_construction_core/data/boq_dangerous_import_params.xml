@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!--
+        BOQ 危险导入（replace/update）kill switch（G7.1，ADR-004 决策 4 / 主计划 §14）。
+
+        - 默认 false（fail-closed）：代码侧 flag_enabled 仅认显式真值，
+          参数缺失时同样视为关闭，不因本记录缺席而放开。
+        - noupdate=1：模块升级不重放 set_param（update 模式被跳过），
+          运维显式开启后的值不会被升级覆盖。
+        - 回退验收：置为 false 后两个危险导入 intent 均结构化
+          CAPABILITY_DISABLED，业务数据不受影响。
+    -->
+    <data noupdate="1">
+        <function model="ir.config_parameter" name="set_param">
+            <value>sc.boq.dangerous_import.enabled</value>
+            <value>false</value>
+        </function>
+    </data>
+</odoo>

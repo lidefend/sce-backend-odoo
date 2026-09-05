@@ -4,9 +4,9 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4278`
+- Scanned files: `4282`
 - Files requiring split plan: `48`
-- Files above warning threshold: `85`
+- Files above warning threshold: `86`
 
 ## Split Plan Required
 
@@ -112,6 +112,7 @@ Generated from repository source files. This report is informational during the 
 | 1011 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
 | 990 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
+| 989 | Python source | `addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py` |
 | 962 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 955 | Python source | `scripts/release/test_release_publication.py` |
 | 952 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |

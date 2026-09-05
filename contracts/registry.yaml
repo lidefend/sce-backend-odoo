@@ -63,6 +63,10 @@ contracts:
     kind: domain
     domain: write_idempotency
     version: 1
+  - path: domain/boq-dangerous-import.yaml
+    kind: domain
+    domain: boq_dangerous_import
+    version: 1
   - path: schemas/common.yaml
     kind: schema
     version: 1

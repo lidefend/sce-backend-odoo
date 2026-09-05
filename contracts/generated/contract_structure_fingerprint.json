@@ -82,6 +82,45 @@
     },
     {
       "contract_fields": [
+        "confirm_token",
+        "file_digest",
+        "idempotency_key",
+        "lines_deleted / lines_updated / lines_created",
+        "mode",
+        "summary"
+      ],
+      "contract_states": [],
+      "contract_transitions": [],
+      "entity": "BoqDangerousImportDecision",
+      "id": "boq-dangerous-import",
+      "model": "BoqDangerousImportDecision",
+      "model_fields": {
+        "confirm_token": {
+          "_status": "model_file_not_found"
+        },
+        "file_digest": {
+          "_status": "model_file_not_found"
+        },
+        "idempotency_key": {
+          "_status": "model_file_not_found"
+        },
+        "lines_deleted / lines_updated / lines_created": {
+          "_status": "model_file_not_found"
+        },
+        "mode": {
+          "_status": "model_file_not_found"
+        },
+        "summary": {
+          "_status": "model_file_not_found"
+        }
+      },
+      "model_file": null,
+      "module": "",
+      "odoo_model": null,
+      "version": 1
+    },
+    {
+      "contract_fields": [
         "attachment",
         "columns",
         "crop_reason",
