@@ -2,7 +2,7 @@
 
 > 架构校正：通用图表适配器属于 P0，资金指标与分析口径属于 P1。本文为候选设计，实施以根目录 [`README.md`](../../README.md) 为准。
 
-> 执行状态：`ADR-PENDING`。ECharts 尚未获准成为项目依赖；下文库导入、体积估算、五个业务图表及 API 名称均为候选，禁止直接实施。图表契约只允许后端登记的 metric、dimension 和 dataset ref，不接受前端自由聚合公式或任意 option。
+> 执行状态：`ADR-002` 已批准（2026-09-05 Accepted），`echarts@6.1.0` 已精确锁版引入 web 生产依赖，引入纪律由 `verify.frontend.chart_engine.guard` 守卫（见 [G6 执行记录](../G6_CHART_EXECUTION.md)）。本文下方的库导入示意、体积估算、五个业务图表及 API 名称仍为候选输入，正式实现以 ADR-002 条件与 G6 执行记录为准。图表契约只允许后端登记的 metric、dimension 和 dataset ref，不接受前端自由聚合公式或任意 option。
 
 ## 技术方案
 

@@ -55,6 +55,10 @@ prod.frontend.build: guard.prod.danger check-compose-project check-compose-env
 verify.frontend.typecheck.strict: guard.prod.forbid
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web typecheck:strict
 
+verify.frontend.chart_engine.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/frontend_chart_engine_guard.py
+	@python3 scripts/verify/frontend_chart_engine_guard.py
+
 
 verify.frontend.scene_component_bridge.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/scene_component_driver_bridge_test.ts --bundle --platform=node --format=esm --outfile=/tmp/scene-component-driver-bridge-test.mjs >/dev/null
