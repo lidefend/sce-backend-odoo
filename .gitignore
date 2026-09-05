@@ -126,3 +126,16 @@ docs/audit/*.csv
 # local image artifacts
 *.tar.gz
 *.tar.gz.sha256
+
+# -----------------------------------------
+# Dev stack runtime residue at repo root
+# -----------------------------------------
+# Historical deploys copied full frontend bundles (index.html,
+# runtime-config.js, assets/) into the repository root. The dev stack nginx
+# mounts ${FRONTEND_DIST_DIR} (frontend/apps/web/dist-dev) as its HTML root,
+# so these root-level copies are never referenced by any compose file and are
+# pure noise on git status. Ignore them to prevent regression.
+/index.html
+/runtime-config.js
+/assets/
+frontend/apps/web/dist-dev.bak-*/
