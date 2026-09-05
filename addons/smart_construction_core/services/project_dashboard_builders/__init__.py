@@ -10,6 +10,7 @@ from .project_risk_builder import ProjectRiskBuilder
 from .project_boq_preview_builder import ProjectBoqPreviewBuilder
 from .project_next_actions_builder import ProjectNextActionsBuilder
 from .project_chart_builder import ProjectChartBuilder
+from .project_payment_chart_builder import ProjectPaymentChartBuilder
 
 
 BUILDERS = (
@@ -23,4 +24,5 @@ BUILDERS = (
     ProjectBoqPreviewBuilder,
     ProjectNextActionsBuilder,
     ProjectChartBuilder,
+    ProjectPaymentChartBuilder,
 )

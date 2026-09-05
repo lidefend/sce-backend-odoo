@@ -775,7 +775,7 @@ ci.tenant.pro03.demo.dispatch: guard.prod.forbid
 
 .PHONY: verify.visualization.chart.capability
 verify.visualization.chart.capability: guard.prod.forbid
-	@python3 -m py_compile addons/smart_construction_core/services/visualization_chart_registry.py addons/smart_construction_core/services/visualization_chart_definitions.py addons/smart_construction_core/services/project_dashboard_builders/project_chart_builder.py addons/smart_construction_core/handlers/visualization_chart_fetch.py addons/smart_construction_core/tests/test_visualization_chart_capability.py addons/smart_construction_core/tests/test_project_chart_builder.py
+	@python3 -m py_compile addons/smart_construction_core/services/visualization_chart_registry.py addons/smart_construction_core/services/visualization_chart_definitions.py addons/smart_construction_core/services/project_dashboard_builders/project_chart_builder.py addons/smart_construction_core/services/project_dashboard_builders/project_payment_chart_builder.py addons/smart_construction_core/handlers/visualization_chart_fetch.py addons/smart_construction_core/tests/test_visualization_chart_capability.py addons/smart_construction_core/tests/test_project_chart_builder.py
 	@python3 addons/smart_construction_core/tests/test_visualization_chart_capability.py
 	@python3 addons/smart_construction_core/tests/test_project_chart_builder.py
 

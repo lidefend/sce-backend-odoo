@@ -33,6 +33,9 @@ def _load(dotted_name, relpath):
 
 base_mod = _load(f"{PKG}.base", "base.py")
 builder_mod = _load(f"{PKG}.project_chart_builder", "project_chart_builder.py")
+payment_builder_mod = _load(
+    f"{PKG}.project_payment_chart_builder", "project_payment_chart_builder.py"
+)
 
 
 def _install_module(name, **attrs):
@@ -200,6 +203,90 @@ class TestProjectChartBuilder(unittest.TestCase):
         envelope = builder.build(project=_FakeProject(1), context=None)
         self.assertEqual(envelope["state"], "forbidden")
         self.assertEqual(envelope["visibility"]["reason_code"], "PERMISSION_DENIED")
+
+
+def _valid_payment_chart_defn():
+    return {
+        "key": "project.payment.execution",
+        "label": "付款执行趋势（申请 vs 已付）",
+        "chart_type": "line",
+        "metric": {"key": "amount", "label": "金额"},
+        "dimensions": [{"key": "month", "label": "月份"}],
+        "source_authority": {
+            "kind": "project_payment_readonly_projection",
+            "authorities": ["payment.request", "payment.ledger"],
+            "projection_only": True,
+            "no_business_fact_authority": True,
+        },
+        "dataset_builder": lambda env, project_id: [],
+    }
+
+
+class TestProjectPaymentChartBuilder(unittest.TestCase):
+    """G6.2 付款执行图表块（与 block.project.chart 同款纪律）。"""
+
+    def _builder(self):
+        env = _FakeEnv()
+        return payment_builder_mod.ProjectPaymentChartBuilder(env), env
+
+    def test_block_identity(self):
+        builder, _ = self._builder()
+        self.assertEqual(builder.block_key, "block.project.chart.payment")
+        self.assertEqual(builder.block_type, "chart_dataset")
+
+    def test_empty_when_no_project(self):
+        builder, _ = self._builder()
+        envelope = builder.build(project=None, context=None)
+        self.assertEqual(envelope["state"], "empty")
+        self.assertEqual(envelope["data"]["project_id"], 0)
+        self.assertFalse(envelope["data"]["chart_registered"])
+
+    def test_empty_when_payment_chart_not_registered(self):
+        # 只有 cost.structure 登记、payment.execution 未登记 → 块级 empty。
+        registry = _load_registry_module()
+        registry.reset_charts()
+        registry.register_chart(_valid_chart_defn())
+        try:
+            with _RegistryStubSession(registry):
+                builder, _ = self._builder()
+                envelope = builder.build(project=_FakeProject(7), context=None)
+        finally:
+            registry.reset_charts()
+        self.assertEqual(envelope["state"], "empty")
+        self.assertFalse(envelope["data"]["chart_registered"])
+
+    def test_ready_when_payment_chart_registered(self):
+        registry = _load_registry_module()
+        registry.reset_charts()
+        registry.register_chart(_valid_payment_chart_defn())
+        try:
+            with _RegistryStubSession(registry):
+                builder, _ = self._builder()
+                envelope = builder.build(project=_FakeProject(9), context=None)
+        finally:
+            registry.reset_charts()
+        self.assertEqual(envelope["state"], "ready")
+        data = envelope["data"]
+        self.assertTrue(data["chart_registered"])
+        self.assertEqual(data["chart_key"], "project.payment.execution")
+        self.assertEqual(
+            data["fetch_params"],
+            {"chart_key": "project.payment.execution", "project_id": 9},
+        )
+        self.assertTrue(data["readonly"])
+
+    def test_projection_carries_display_copy(self):
+        builder, _ = self._builder()
+        envelope = builder.build(project=_FakeProject(5), context=None)
+        data = envelope["data"]
+        self.assertIn("付款执行", data["loading_message"])
+        self.assertIn("付款执行", data["empty_message"])
+        self.assertIn("项目上下文", data["empty_message_no_context"])
+
+    def test_visibility_allowed_for_internal_user(self):
+        builder, _ = self._builder()
+        envelope = builder.build(project=_FakeProject(1), context=None)
+        self.assertEqual(envelope["visibility"]["allowed"], True)
 
 
 if __name__ == "__main__":
