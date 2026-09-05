@@ -10,6 +10,84 @@ from odoo.tools.misc import file_path
 from ..hooks import apply_demo_user_passwords, guard_demo_scope
 
 
+def _demo_carrier_context(env) -> dict:
+    """Governed-migration-carrier context for scenario XML loads.
+
+    The demo release seed provisions terminal-state facts (approved
+    settlements, confirmed payments, issued material documents, ...).
+    Product hardening reserves those state transitions for service flows
+    behind authority sentinels ("受治理迁移载体" boundaries). The release
+    seed — git-versioned, PR-reviewed, loaded through audited scripts — is
+    such a governed carrier, so scenario XML loads run with the owning
+    modules' own tokens. Sentinels are imported from their defining
+    modules (never re-declared here) so refactors stay in lockstep; the
+    same cross-module sentinel import pattern already exists in
+    smart_construction_core (payment_ledger imports funding_baseline's
+    allocation token).
+    """
+    from odoo.addons.smart_construction_core.models.core import (
+        equipment_management,
+        expense_claim,
+        funding_baseline,
+        payment_execution,
+        payment_ledger,
+        payment_ledger_allocation,
+        payment_request,
+        receipt_income,
+        self_funding_registration,
+        tax_deduction_registration,
+    )
+    from odoo.addons.smart_construction_core.models.projection import treasury_ledger
+    from odoo.addons.smart_construction_core.models.support import tender
+
+    settlement_model = env["sc.settlement.order"]
+    cost_ledger_model = env["project.cost.ledger"]
+    return {
+        "sc_expense_fact_authority_token": (
+            expense_claim._EXPENSE_FACT_AUTHORITY_TOKEN
+        ),
+        "_sc_funding_baseline_token": funding_baseline._FUNDING_BASELINE_TOKEN,
+        "_sc_funding_allocation_token": funding_baseline._FUNDING_ALLOCATION_TOKEN,
+        equipment_management._COST_SOURCE_STATE_CONTEXT_KEY: (
+            equipment_management._COST_SOURCE_STATE_TOKEN
+        ),
+        "_sc_payment_execution_batch_ready_token": (
+            payment_execution._PAYMENT_EXECUTION_BATCH_READY_TOKEN
+        ),
+        "sc_payment_ledger_authority_token": (
+            payment_ledger._PAYMENT_LEDGER_AUTHORITY_TOKEN
+        ),
+        "sc_payment_ledger_allocation_authority_token": (
+            payment_ledger_allocation._PAYMENT_LEDGER_ALLOCATION_AUTHORITY_TOKEN
+        ),
+        "_sc_funding_baseline_binding_token": (
+            payment_request._FUNDING_BINDING_TOKEN
+        ),
+        "_sc_terminal_cash_source_claim_token": (
+            payment_request._TERMINAL_CASH_SOURCE_CLAIM_TOKEN
+        ),
+        "sc_receipt_fact_authority_token": (
+            receipt_income._RECEIPT_FACT_AUTHORITY_TOKEN
+        ),
+        "sc_self_funding_authority_token": (
+            self_funding_registration._SELF_FUNDING_AUTHORITY_TOKEN
+        ),
+        settlement_model._LIFECYCLE_CONTEXT_KEY: (
+            settlement_model._LIFECYCLE_SERVICE_TOKEN
+        ),
+        "sc_tax_fact_authority_token": (
+            tax_deduction_registration._TAX_FACT_AUTHORITY_TOKEN
+        ),
+        "sc_treasury_authority_token": treasury_ledger._TREASURY_AUTHORITY_TOKEN,
+        "sc_tender_guarantee_authority_token": (
+            tender._TENDER_GUARANTEE_AUTHORITY_TOKEN
+        ),
+        cost_ledger_model._GENERATED_CONTEXT_KEY: (
+            cost_ledger_model._GENERATED_SERVICE_TOKEN
+        ),
+    }
+
+
 BASE_SEED_FILES: List[str] = [
     "data/base/00_dictionary.xml",
     "data/base/dictionary_demo.xml",
@@ -341,6 +419,7 @@ def load_scenario(
 
     # idref is used by Odoo converter to resolve xmlids in-file
     idref = {}
+    carrier_env = env["base"].with_context(**_demo_carrier_context(env)).env
 
     for relpath in files:
         abspath = file_path(f"{module}/{relpath}")
@@ -348,7 +427,7 @@ def load_scenario(
         # convert_file will parse XML and create/update records.
         # mode='update' makes this idempotent-friendly for repeated loads.
         convert.convert_file(
-            env,
+            carrier_env,
             module,
             abspath,
             idref,
@@ -381,10 +460,11 @@ def load_base_seed(env, mode: str = "update") -> None:
     guard_demo_scope(env)
     module = "smart_construction_demo"
     idref = {}
+    carrier_env = env["base"].with_context(**_demo_carrier_context(env)).env
     for relpath in BASE_SEED_FILES:
         abspath = file_path(f"{module}/{relpath}")
         convert.convert_file(
-            env,
+            carrier_env,
             module,
             abspath,
             idref,
