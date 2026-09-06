@@ -465,5 +465,16 @@
             ]"/>
         </record>
 
+        <!-- =========================
+             受限富文本编辑（G7.4 / ADR-006 决策 7）
+             - 专用组：不并入任何既有业务组（高风险写入门控）
+             - 配合 kill switch sc.rich_text_editor.enabled（默认关）
+             - 仅 project.overview.rich_text.patch intent 消费
+        ========================== -->
+        <record id="group_sc_cap_rich_text_editor" model="res.groups">
+            <field name="name">SC 能力 - 受限富文本编辑</field>
+            <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
+        </record>
+
     </data>
 </odoo>

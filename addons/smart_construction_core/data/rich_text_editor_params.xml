@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!--
+        受限富文本编辑（G7.4 / ADR-006 决策 7）kill switch。
+
+        - 默认 false（fail-closed）：代码侧 flag_enabled 仅认显式真值，
+          参数缺失时同样视为关闭，不因本记录缺席而放开。
+        - noupdate=1：模块升级不重放 set_param（update 模式被跳过），
+          运维显式开启后的值不会被升级覆盖。
+        - 回退验收：置为 false 后 project.overview.rich_text.patch intent
+          结构化 CAPABILITY_DISABLED；nh3 净化器缺失时同样 fail-closed。
+        - 与专用组 group_sc_cap_rich_text_editor 正交：无组+开关关 →
+          intent 中间件先组检查（PERMISSION_DENIED）；有组+开关关 →
+          CAPABILITY_DISABLED。
+    -->
+    <data noupdate="1">
+        <function model="ir.config_parameter" name="set_param">
+            <value>sc.rich_text_editor.enabled</value>
+            <value>false</value>
+        </function>
+    </data>
+</odoo>

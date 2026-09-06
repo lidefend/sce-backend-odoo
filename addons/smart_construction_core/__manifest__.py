@@ -2,7 +2,7 @@
 # pyright: reportUnusedExpression=false
 {
     'name': 'Smart Construction Core',
-    'version': '17.0.0.158',
+    'version': '17.0.0.159',
     'summary': 'Core module for construction enterprise management (Architecture 2.0)',
     'author': 'Leedefend',
     'depends': [
@@ -31,6 +31,7 @@
         'data/cron_signup_throttle_gc.xml',
         'data/sc_extension_params.xml',
         'data/boq_dangerous_import_params.xml',
+        'data/rich_text_editor_params.xml',
         'data/menu_config_runtime_params.xml',
         'data/supplier_type_data.xml',
         'data/project_dictionary_data.xml',
