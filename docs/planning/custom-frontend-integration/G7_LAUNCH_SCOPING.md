@@ -396,4 +396,58 @@ patch 仅允许 draft/validated 版本——正常 domain 下前端编辑入口�
   HierarchicalWorksheet.vue digest 变更）；
 - `make ci.local.quick` 全绿。
 
+## 14. G7.3 执行记录（工作表数据域 tab：修复 §13.4 结构性矛盾，2026-09-06）
+
+### 14.1 实现四件套
+
+- **后端 assembler 透传**（page_assembler.py
+  `_inject_native_hierarchical_worksheet`）：sheet config 新增
+  `domain_tabs`，从 context `hierarchical_worksheet.sheet_domain_tabs` 透传
+  （条目校验：key 非空去重、domain 必须 list、label 缺省回退 key；
+  非法条目剔除）；
+- **XML 契约种子**（boq_views.xml action 534）：`sheet_domain_tabs` 两 tab——
+  `published`（已发布版本，domain 同原 sheet_domain，**默认**）与
+  `editing`（编制中版本，`version_id.state in ['draft','validated']`，
+  承载 G7.2 编辑入口）；
+- **前端纯函数**（新模块 `hierarchicalWorksheetDomainTabs.ts`，零运行时
+  import 保持 node 单测可 esbuild 直跑）：`resolveWorksheetDomainTabs`
+  （规范化容错）+ `applyWorksheetDomainTab`（按 key 合成 domain，不变异
+  原 config；无效 key 回退默认 domain——旧契约兼容）；dataSource
+  re-export；
+- **组件集成**（HierarchicalWorksheet.vue）：grid toolbar 渲染
+  `role=tablist` 状态 tab（`section-tab` 外观复用详情 tab 样式）；
+  `reloadWorksheet` 统一走 `applyWorksheetDomainTab`（含 G7.2 patch 成功
+  后整表 reload——tab 语境自动继承）；`selectDomainTab` 换域权威重载并
+  复位编辑会话/选中态（防悬空行）；loading 期禁点防抖。
+
+### 14.2 浏览器 E2E 冒烟（dev 栈，pm1 会话，fetch 插桩验证信封）
+
+1. 默认「已发布版本」tab：selected 且共 0 条（德阳版本为 draft，
+   published 视图为空——修复前「编辑入口不可达」的根源语义正确呈现）；
+2. 切「编制中版本」：selected 且共 3 条（draft 行），tab 往返切换正常；
+3. **editing tab 下编辑链路闭环**：双击 qty cell（20.00）→ 改 21 → Enter →
+   响应信封 `version_state: "draft"`、`quantity_before=20.0 → after=21.0`、
+   `reason_code=DONE`、幂等键与审计 meta 齐全 → 整表 reload 后 cell
+   21.00。**§13.4 结构性矛盾就此闭合**：G7.2 编辑入口在正常 domain 下
+   自然触达。
+
+### 14.3 踩坑沉淀（两则）
+
+- **单测 bundle 依赖链**：纯函数放 dataSource 模块会被 esbuild 拖入
+  api/client 链（`import.meta.env` 在 node 报错）——纯函数独立模块
+  （type-only import）是该项目 node 单测的前置纪律；
+- **assembler 桩测试跑法**：`test_page_assembler_view_orchestration_versions.py`
+  自带 odoo mock 须**以文件方式直跑**（`python3 <file>`）；经包路径
+  `python3 -m unittest addons.smart_core.tests...` 会触发 tests/__init__.py
+  链式 import 真 odoo 而失败。
+
+### 14.4 门禁
+
+- assembler 桩测 17 例 + 前端 domain tab 单测（含容错/兼容断言）+
+  既有 worksheet 交互单测回归 + typecheck:strict 全绿（tmp/g73_verify.sh）；
+- 上栈：`-u smart_construction_core`（XML context 上 DB）+ 容器重启
+  （assembler 新代码）+ dist-dev 重建（33.8s）；
+- refresh.generated_reports + takeover inventory 重刷 +
+  `make ci.local.quick` 全绿。
+
 

@@ -1295,6 +1295,15 @@ class PageAssembler:
                         if isinstance(fields, (list, tuple))
                     } if isinstance(raw.get("blank_fields_by_kind"), dict) else {},
                     "domain": raw.get("sheet_domain") if isinstance(raw.get("sheet_domain"), list) else [],
+                    "domain_tabs": [
+                        {
+                            "key": str(tab.get("key") or "").strip(),
+                            "label": str(tab.get("label") or tab.get("key") or "").strip(),
+                            "domain": tab.get("domain") if isinstance(tab.get("domain"), list) else [],
+                        }
+                        for tab in (raw.get("sheet_domain_tabs") or [])
+                        if isinstance(tab, dict) and str(tab.get("key") or "").strip()
+                    ],
                     "order": str(raw.get("sheet_order") or tree.get("order") or tree.get("default_order") or "id asc").strip(),
                 },
                 "detail": {"tabs": tabs},

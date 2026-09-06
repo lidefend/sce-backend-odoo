@@ -401,6 +401,10 @@
                 },
                 'navigation_depth': 4,
                 'sheet_domain': [('source_row_type', 'in', ['item', 'heading', 'subtotal', 'total']), ('version_id.state', '=', 'published')],
+                'sheet_domain_tabs': [
+                    {'key': 'published', 'label': '已发布版本', 'domain': [('source_row_type', 'in', ['item', 'heading', 'subtotal', 'total']), ('version_id.state', '=', 'published')]},
+                    {'key': 'editing', 'label': '编制中版本', 'domain': [('source_row_type', 'in', ['item', 'heading', 'subtotal', 'total']), ('version_id.state', 'in', ['draft', 'validated'])]},
+                ],
                 'sheet_order': 'sheet_index, sequence, id',
                 'tabs': [
                     {'key': 'features', 'label': '项目特征', 'fields': ['source_code', 'name', 'spec', 'remark']},

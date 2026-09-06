@@ -36,7 +36,23 @@
       <main class="worksheet-main" :style="mainStyle">
         <section class="worksheet-grid-pane">
           <div class="worksheet-grid-toolbar">
-            <div><strong>{{ currentScopeTitle }}</strong><span>{{ labels.total_prefix }} {{ visibleLeafCount }} {{ labels.total_suffix }}</span></div>
+            <div class="worksheet-grid-title">
+              <strong>{{ currentScopeTitle }}</strong><span>{{ labels.total_prefix }} {{ visibleLeafCount }} {{ labels.total_suffix }}</span>
+              <div v-if="domainTabs.length" class="worksheet-domain-tabs" role="tablist" :aria-label="labels.domain_tabs || '数据域切换'">
+                <ScButton
+                  v-for="tab in domainTabs"
+                  :key="tab.key"
+                  variant="ghost"
+                  size="small"
+                  appearance="section-tab"
+                  role="tab"
+                  :aria-selected="activeDomainTab === tab.key"
+                  :class="{ active: activeDomainTab === tab.key }"
+                  :disabled="loading"
+                  @click="selectDomainTab(tab.key)"
+                >{{ tab.label }}</ScButton>
+              </div>
+            </div>
             <div v-if="!sourceOrderMode" class="worksheet-grid-actions">
               <ScButton @click="expandAll">{{ labels.expand_all }}</ScButton>
               <ScButton @click="collapseAll">{{ labels.collapse_all }}</ScButton>
@@ -92,9 +108,11 @@
 import { computed, h, onBeforeUnmount, onMounted, ref } from 'vue';
 import { formatDisplayValue } from '../../utils/display';
 import {
+  applyWorksheetDomainTab,
   collectNodeIds,
   loadHierarchicalWorksheet,
   relationId,
+  resolveWorksheetDomainTabs,
   type WorksheetDict,
   type WorksheetHierarchyConfig,
   type WorksheetNode,
@@ -138,6 +156,9 @@ function openRecordFromKeyboard(event: KeyboardEvent, record: WorksheetDict | nu
 const hierarchyConfig = computed(() => props.config.hierarchy as unknown as WorksheetHierarchyConfig);
 const sheetConfig = computed(() => props.config.sheet as unknown as WorksheetSheetConfig);
 const labels = computed(() => props.config.labels as Record<string, string>);
+/** 数据域 tab（G7.3）：后端未下发 domain_tabs 时为空数组，工作表行为与旧契约一致 */
+const domainTabs = computed(() => resolveWorksheetDomainTabs(sheetConfig.value));
+const activeDomainTab = ref('');
 const columns = computed<Column[]>(() => Array.isArray((props.config.sheet as Dict)?.columns) ? (props.config.sheet as Dict).columns as Column[] : []);
 const detailTabs = computed<DetailTab[]>(() => Array.isArray((props.config.detail as Dict)?.tabs) ? (props.config.detail as Dict).tabs as DetailTab[] : []);
 const actions = computed<SurfaceAction[]>(() => (Array.isArray(props.config.actions) ? props.config.actions : []).map((raw) => raw as SurfaceAction));
@@ -394,7 +415,10 @@ function findRecordById(recordId: number): WorksheetDict | null {
 
 /** 整表权威 reload（成功提交后与基线漂移后；金额链全由服务端重算，本地不形成事实） */
 async function reloadWorksheet(): Promise<void> {
-  const result = await loadHierarchicalWorksheet(hierarchyConfig.value, sheetConfig.value);
+  const result = await loadHierarchicalWorksheet(
+    hierarchyConfig.value,
+    applyWorksheetDomainTab(sheetConfig.value, activeDomainTab.value),
+  );
   roots.value = result.roots;
   nodesById.value = result.nodesById;
   recordsByNode.value = result.recordsByNode;
@@ -402,6 +426,23 @@ async function reloadWorksheet(): Promise<void> {
   recordCount.value = result.recordCount;
   if (selectedNode.value) selectedNode.value = nodesById.value.get(selectedNode.value.id) || selectedNode.value;
   if (selectedRecord.value) selectedRecord.value = findRecordById(Number(selectedRecord.value.id || 0)) || selectedRecord.value;
+}
+
+/** 数据域 tab 切换（G7.3）：换 domain 权威重载，编辑会话/选中态复位避免悬空行 */
+async function selectDomainTab(tabKey: string): Promise<void> {
+  if (tabKey === activeDomainTab.value || loading.value) return;
+  if (patchSession.value) cancelPatchEdit();
+  activeDomainTab.value = tabKey;
+  selectedNode.value = null;
+  selectedRecord.value = null;
+  loading.value = true;
+  try {
+    await reloadWorksheet();
+    expandAll();
+    const firstRecord = visibleRows.value.find((entry) => entry.record);
+    if (firstRecord) selectEntry(firstRecord);
+  } catch (error) { errorMessage.value = error instanceof Error ? error.message : String(error); }
+  finally { loading.value = false; }
 }
 
 function worksheetRowAttributes({ row }: { row: VisibleEntry }) {
@@ -522,6 +563,7 @@ onMounted(async () => {
   }
   loading.value = true;
   try {
+    activeDomainTab.value = domainTabs.value[0]?.key || '';
     await reloadWorksheet();
     expandAll();
     const navigationKeys = new Set<string>();
@@ -555,6 +597,8 @@ onBeforeUnmount(() => {
 .worksheet-grid-pane { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; }
 .worksheet-grid-toolbar { display: flex; align-items: center; justify-content: space-between; min-height: 48px; padding: 0 var(--sc-space-sm); border-bottom: 1px solid var(--sc-app-border); }
 .worksheet-grid-toolbar span { margin-left: var(--sc-space-sm); color: var(--sc-app-text-secondary); }
+.worksheet-grid-title { display: flex; align-items: center; min-width: 0; flex-wrap: wrap; gap: var(--sc-space-xs); }
+.worksheet-domain-tabs { display: inline-flex; align-items: center; gap: 2px; margin-left: var(--sc-space-sm); }
 .worksheet-grid-actions { display: flex; gap: var(--sc-space-xs); }
 .worksheet-state { display: grid; place-items: center; color: var(--sc-app-text-secondary); }
 .worksheet-table-scroll { min-height: 0; overflow: auto; }
