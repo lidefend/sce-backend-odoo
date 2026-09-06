@@ -615,6 +615,13 @@ claim/complete 幂等定式 + **摘要基线**（sha256 hex[:16]，正文可达 
   takeover_inventory.py 后看 rawBehaviorSurfaces 是否为空（该守卫不在
   ci.local.quick，只在远端 frontend_release_gate——首版被拦正因本地
   门禁盲区）；
+- **Sc 根类不得拥有视觉铬（frontend_primitive_adapter_guard）**：放在
+  ScButton/ScInput/ScDialog 等原语根元素上的自定义 class，其 scoped CSS
+  不得含 border/background/border-radius/box-shadow/outline/color
+  （含 border-color/color 变体）——悬停/禁用视觉由原语变体自带；本地
+  门禁盲区同上（verify.frontend.quick.gate 不在 ci.local.quick，且本地
+  node 版本不支持 --experimental-strip-types 跑不了整个 quick.gate，
+  须单独跑 python3 scripts/verify/frontend_primitive_adapter_guard.py）；
 - **agent-browser Windows 直调**：bash 传 POSIX 路径会被 node 当相对
   当前盘符解析（MODULE_NOT_FOUND）——须 node.exe + Windows 风格路径调
   bin/agent-browser.js；交互 ref 页面重载后全部失效须重新 snapshot -i；

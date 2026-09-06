@@ -238,15 +238,8 @@ function execCommand(item: ToolbarItem) {
   line-height: 1;
 }
 
-.restricted-html-editor__tool:hover:not(:disabled) {
-  border-color: var(--sc-primary, #0052d9);
-  color: var(--sc-primary, #0052d9);
-}
-
-.restricted-html-editor__tool:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+/* 悬停/禁用视觉由 ScButton ghost 变体自带（根类不拥有视觉铬，
+   frontend_primitive_adapter_guard 纪律） */
 
 .restricted-html-editor__tool .is-bold {
   font-weight: 700;
