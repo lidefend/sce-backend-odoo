@@ -158,7 +158,7 @@
         "TDesignButton"
       ],
       "officialComponent": "button",
-      "productionConsumerCount": 385,
+      "productionConsumerCount": 390,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -363,7 +363,7 @@
         "TDesignDialog"
       ],
       "officialComponent": "dialog",
-      "productionConsumerCount": 75,
+      "productionConsumerCount": 76,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -549,7 +549,7 @@
         "TDesignInputNumber"
       ],
       "officialComponent": "input",
-      "productionConsumerCount": 57,
+      "productionConsumerCount": 58,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1279,7 +1279,7 @@
         "TDesignUpload"
       ],
       "officialComponent": "upload",
-      "productionConsumerCount": 372,
+      "productionConsumerCount": 377,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1296,24 +1296,8 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "577cce5b6c18776865c8342d551918bf756ff708444deca214dc19cc708fa7ff",
-  "rawBehaviorSurfaces": [
-    {
-      "assessment": "unassessed",
-      "rawBehaviorTags": [
-        "button",
-        "window.prompt"
-      ],
-      "source": "frontend/apps/web/src/components/editor/RestrictedHtmlEditor.vue"
-    },
-    {
-      "assessment": "unassessed",
-      "rawBehaviorTags": [
-        "button"
-      ],
-      "source": "frontend/apps/web/src/components/page/blocks/BlockRichTextOverview.vue"
-    }
-  ],
+  "inputDigest": "50410c05781e1f4f5fbe6b83995c770e12b292c1d832205b4d210a2b92d1a389",
+  "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",
   "summary": {
@@ -1325,6 +1309,6 @@
     "not_required": 36,
     "officialComponents": 71,
     "requiredDrivers": 35,
-    "unassessedRawBehaviorSurfaces": 2
+    "unassessedRawBehaviorSurfaces": 0
   }
 }

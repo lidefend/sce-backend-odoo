@@ -40,9 +40,15 @@
       role="status"
     >
       {{ savedMessage }}
-      <button type="button" class="block-rich-text-overview__link" data-action="dismiss-saved" @click="dismissSaved">
+      <ScButton
+        size="small"
+        variant="ghost"
+        class="block-rich-text-overview__link"
+        data-action="dismiss-saved"
+        @click="dismissSaved"
+      >
         {{ copy.dismiss }}
-      </button>
+      </ScButton>
     </p>
 
     <!-- 编辑态：受限输入 + 会话状态机（保存中/错误/冲突） -->
@@ -54,15 +60,16 @@
       />
       <p v-if="session.state === 'error' || session.state === 'conflict'" class="block-rich-text-overview__notice" data-state="error" role="alert">
         {{ session.errorMessage }}
-        <button
+        <ScButton
           v-if="session.state === 'conflict'"
-          type="button"
+          size="small"
+          variant="ghost"
           class="block-rich-text-overview__link"
           data-action="reload-baseline"
           @click="reloadBaseline"
         >
           {{ copy.reload }}
-        </button>
+        </ScButton>
       </p>
       <div class="block-rich-text-overview__actions">
         <ScButton
@@ -324,13 +331,7 @@ function extractReasonCode(err: unknown): string {
 
 .block-rich-text-overview__link {
   margin-left: 6px;
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--sc-primary, #0052d9);
   font-size: 13px;
-  cursor: pointer;
-  text-decoration: underline;
 }
 
 .block-rich-text-overview__editor {

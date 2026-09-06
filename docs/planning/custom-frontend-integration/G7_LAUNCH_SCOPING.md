@@ -600,6 +600,21 @@ claim/complete 幂等定式 + **摘要基线**（sha256 hex[:16]，正文可达 
   独立文件树（含 .git），非 ext4 联接——文件编辑必须走权威 UNC
   `\\wsl.localhost\Ubuntu-24.04\...`，否则改动落旧树、WSL 侧不可见
   （本切片曾因此出现「Edit 成功但 grep 不到」的假象）；
+- **P0/P1 原生交互元素禁令（frontend_release_gate 实测拦截）**：
+  component-driver takeover inventory 守卫
+  （test_completion_rule_cannot_hide_unassessed_raw_behavior）要求
+  rawBehaviorSurfaces 恒空——P0/P1 生产源码不得出现原生
+  `<button>/<input>/<select>/<textarea>/<table>/<dialog>/<details>`
+  与 window.confirm/alert/prompt（首版 RestrictedHtmlEditor 工具栏用
+  原生 button + window.prompt 取链接、BlockRichTextOverview 用原生
+  button 内联动作，被 CI 拦下）；修法=工具栏/内联动作换 ScButton
+  （size=small variant=ghost），链接输入换 ScDialog+ScInput 对话框
+  （选区跨对话框保留：开框前 cloneRange 存 Range，确认时 focus+
+  removeAllRanges+addRange 恢复后再 execCommand createLink）；
+  本地复现：python3 scripts/audit/generate_frontend_component_driver_
+  takeover_inventory.py 后看 rawBehaviorSurfaces 是否为空（该守卫不在
+  ci.local.quick，只在远端 frontend_release_gate——首版被拦正因本地
+  门禁盲区）；
 - **agent-browser Windows 直调**：bash 传 POSIX 路径会被 node 当相对
   当前盘符解析（MODULE_NOT_FOUND）——须 node.exe + Windows 风格路径调
   bin/agent-browser.js；交互 ref 页面重载后全部失效须重新 snapshot -i；

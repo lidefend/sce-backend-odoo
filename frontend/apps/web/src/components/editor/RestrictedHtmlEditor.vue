@@ -5,11 +5,12 @@
     :data-state="disabled ? 'disabled' : 'active'"
   >
     <div class="restricted-html-editor__toolbar" role="toolbar" :aria-label="copy.toolbarLabel">
-      <button
+      <ScButton
         v-for="item in toolbarItems"
         :key="item.command"
-        type="button"
         class="restricted-html-editor__tool"
+        size="small"
+        variant="ghost"
         :disabled="disabled"
         :title="item.title"
         :aria-label="item.title"
@@ -17,7 +18,7 @@
         @click="execCommand(item)"
       >
         <span :class="item.iconClass">{{ item.label }}</span>
-      </button>
+      </ScButton>
       <span
         class="restricted-html-editor__counter"
         :class="{ 'restricted-html-editor__counter--over': overLimit }"
@@ -38,6 +39,29 @@
     <div v-if="overLimit" class="restricted-html-editor__hint" data-state="over-limit" role="alert">
       {{ copy.overLimit }}
     </div>
+
+    <!-- 链接插入：语义对话框（不走 window.prompt 原生 API） -->
+    <ScDialog
+      :open="linkDialogOpen"
+      :title="copy.linkDialogTitle"
+      :description="copy.linkDialogHint"
+      panel-class="restricted-html-editor__link-dialog"
+      @close="cancelLink"
+    >
+      <ScInput
+        v-model="linkUrl"
+        type="url"
+        :placeholder="copy.linkPlaceholder"
+        :status="linkUrlInvalid ? 'error' : 'default'"
+        @keydown.enter.prevent="confirmLink"
+      />
+      <template #actions>
+        <ScButton size="small" variant="ghost" @click="cancelLink">{{ copy.linkCancel }}</ScButton>
+        <ScButton size="small" variant="primary" :disabled="!linkUrl.trim()" @click="confirmLink">
+          {{ copy.linkConfirm }}
+        </ScButton>
+      </template>
+    </ScDialog>
   </div>
 </template>
 
@@ -54,6 +78,9 @@
  *   （sanitized_input_changed 提示由消费方依据响应渲染）。
  */
 import { computed, onMounted, ref, watch } from 'vue';
+import ScButton from '../design-system/ScButton.vue';
+import ScDialog from '../design-system/ScDialog.vue';
+import ScInput from '../design-system/ScInput.vue';
 
 const props = defineProps<{
   modelValue: string;
@@ -73,6 +100,11 @@ const copy = {
   toolbarLabel: '格式工具栏',
   placeholder: '输入内容…（支持加粗、斜体、标题、列表与链接）',
   overLimit: '内容超出长度上限，请精简后再保存。',
+  linkDialogTitle: '插入链接',
+  linkDialogHint: '仅支持 http、https 与 mailto 协议地址。',
+  linkPlaceholder: 'https://',
+  linkCancel: '取消',
+  linkConfirm: '插入链接',
 };
 
 type ToolbarItem = {
@@ -126,16 +158,55 @@ function onInput() {
   emit('update:modelValue', lastEmitted);
 }
 
+/** 链接插入会话：保存选区（对话框聚焦后仍可恢复），确认后执行 createLink */
+const linkDialogOpen = ref(false);
+const linkUrl = ref('');
+let savedRange: Range | null = null;
+
+const LINK_URL_RE = /^(https?:|mailto:)/i;
+const linkUrlInvalid = computed(
+  () => linkUrl.value.trim() !== '' && !LINK_URL_RE.test(linkUrl.value.trim()),
+);
+
+function openLinkDialog() {
+  const selection = window.getSelection();
+  savedRange = selection && selection.rangeCount > 0 ? selection.getRangeAt(0).cloneRange() : null;
+  linkUrl.value = '';
+  linkDialogOpen.value = true;
+}
+
+function cancelLink() {
+  linkDialogOpen.value = false;
+  savedRange = null;
+}
+
+function confirmLink() {
+  const url = linkUrl.value.trim();
+  if (!LINK_URL_RE.test(url)) return;
+  const el = editorRef.value;
+  linkDialogOpen.value = false;
+  if (!el) return;
+  el.focus();
+  const selection = window.getSelection();
+  if (savedRange && selection) {
+    selection.removeAllRanges();
+    selection.addRange(savedRange);
+  }
+  document.execCommand('createLink', false, url);
+  savedRange = null;
+  onInput();
+}
+
 function execCommand(item: ToolbarItem) {
   if (props.disabled) return;
   const el = editorRef.value;
   if (!el) return;
   el.focus();
   if (item.command === 'createLink') {
-    const url = window.prompt('链接地址（http/https/mailto）', 'https://');
-    if (!url || !/^(https?:|mailto:)/i.test(url.trim())) return;
-    document.execCommand('createLink', false, url.trim());
-  } else if (item.command === 'formatBlock') {
+    openLinkDialog();
+    return;
+  }
+  if (item.command === 'formatBlock') {
     document.execCommand('formatBlock', false, item.value);
   } else {
     document.execCommand(item.command, false);
@@ -163,13 +234,8 @@ function execCommand(item: ToolbarItem) {
   min-width: 28px;
   height: 26px;
   padding: 0 6px;
-  border: 1px solid var(--sc-border, #dcdcdc);
-  border-radius: 4px;
-  background: var(--sc-surface, #fff);
-  color: var(--sc-text, #333);
   font-size: 12px;
   line-height: 1;
-  cursor: pointer;
 }
 
 .restricted-html-editor__tool:hover:not(:disabled) {
