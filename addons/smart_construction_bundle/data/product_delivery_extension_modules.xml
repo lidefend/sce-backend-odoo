@@ -2,6 +2,6 @@
 <odoo>
     <function model="ir.config_parameter" name="set_param">
         <value>sc.core.extension_modules</value>
-        <value>smart_construction_core,smart_construction_portal,smart_construction_bundle,smart_license_core</value>
+        <value>smart_construction_core,smart_construction_scene,smart_construction_portal,smart_construction_bundle,smart_license_core</value>
     </function>
 </odoo>
