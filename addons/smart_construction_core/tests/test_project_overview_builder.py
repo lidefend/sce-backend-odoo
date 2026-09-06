@@ -182,6 +182,35 @@ class TestProjectOverviewEntrySpec(unittest.TestCase):
         self.assertEqual(spec["block_fetch_intent"], "project.dashboard.block.fetch")
         self.assertNotIn("overview", spec.get("block_alias_map") or {})
 
+    def test_dashboard_entry_spec_includes_chart_blocks(self):
+        """G6 图表块 enter 契约接线钉子（PR #446 浏览器走查缺口回归）。
+
+        G6.1/G6.2 四处接线（builder/BUILDERS/ZONE_BLOCKS/RUNTIME_BLOCK_MAP/
+        scene_content zone_blocks）未覆盖 hook facts entry_blocks 时，
+        enter 契约不下发图表块 stub，前端 hydrateDeferredBlocks 无从拉取，
+        dashboard 图表整体不可见——须钉住短名与标题防回退。
+        """
+        facts = _load(
+            ROOT_PKG + ".core_extension_hook_facts",
+            Path(__file__).resolve().parents[1] / "core_extension_hook_facts.py",
+        )
+        spec = facts.scene_entry_orchestrator_specs()["ProjectDashboardSceneOrchestrator"]
+        entry_keys = [key for key, _title, _state in spec["entry_blocks"]]
+        self.assertIn("chart", entry_keys)
+        self.assertIn("chart_payment", entry_keys)
+        block_titles = {key: title for key, title, _state in spec["entry_blocks"]}
+        self.assertEqual(block_titles.get("chart"), "成本结构图表")
+        self.assertEqual(block_titles.get("chart_payment"), "付款执行图表")
+        # 短名直连 RUNTIME_BLOCK_MAP（chart/chart_payment 均已注册），
+        # 不得进入 block_alias_map（alias 仅用于历史不一致命名收口）。
+        alias_map = spec.get("block_alias_map") or {}
+        self.assertNotIn("chart", alias_map)
+        self.assertNotIn("chart_payment", alias_map)
+        # 块状态必须 deferred（enter 契约 stub 语义，前端据此触发运行时拉取）
+        block_states = {key: state for key, _title, state in spec["entry_blocks"]}
+        self.assertEqual(block_states.get("chart"), "deferred")
+        self.assertEqual(block_states.get("chart_payment"), "deferred")
+
 
 if __name__ == "__main__":
     unittest.main()

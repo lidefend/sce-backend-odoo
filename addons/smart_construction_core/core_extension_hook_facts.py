@@ -317,6 +317,8 @@ def scene_entry_orchestrator_specs():
                 ("risks", "风险提醒", "deferred"),
                 ("next_actions", "下一步动作", "deferred"),
                 ("boq", "清单导入预览", "deferred"),
+                ("chart", "成本结构图表", "deferred"),
+                ("chart_payment", "付款执行图表", "deferred"),
             ),
         },
         "ProjectExecutionSceneOrchestrator": {
