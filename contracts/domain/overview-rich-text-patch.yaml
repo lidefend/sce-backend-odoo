@@ -1,0 +1,90 @@
+id: overview-rich-text-patch
+version: 1
+
+entity: OverviewRichTextPatchDecision
+
+title: 项目概况受限富文本契约（G7.4 首切片，ADR-006 批准路径）
+
+identity:
+  field: expected_overview_digest
+  type: string
+  note: >-
+    客户端视角的当前内容摘要（sha256 hex 前 16 位）；服务端与 DB 当前
+    overview_html 摘要严格比对，不一致即 BASELINE_MISMATCH（409 语义）——
+    与 G7.2 expected_quantity 基线同思路，摘要形态（正文可达 20k 字符，
+    基线不传全文）。
+
+intents:
+  project.overview.rich_text.patch:
+    access: smart_construction_core.group_sc_cap_rich_text_editor（专用组）
+    semantic: 常规单记录单字段写（kill switch 门控 + nh3 sanitize-on-save +
+      摘要基线 + 幂等 + 审计）
+
+fields:
+  project_id:
+    type: integer
+    note: 目标项目 id；search 语义加载（无权限与不存在同响应 PROJECT_NOT_FOUND）。
+  expected_overview_digest:
+    type: string
+    note: 基线内容摘要；缺失按 MISSING_PARAMS 结构化拒绝。
+  new_overview_html:
+    type: string
+    note: >-
+      新内容（原始输入）；长度上限 20000 字符（净化前判定，超限
+      CONTENT_TOO_LONG）；服务端 nh3 白名单净化后落库（sanitize-on-save，
+      读取直渲染）。空串合法（清空概况）。
+  content_after / content_digest_after / length_after:
+    type: string / string / integer
+    readonly: true
+    note: 执行后投影（DB 重读为权威）；content_after 为净化后全文（响应链路）。
+  sanitized_input_changed:
+    type: boolean
+    readonly: true
+    note: 净化是否改变了原始输入（前端提示「已按白名单净化」依据）。
+  idempotency_key:
+    type: string
+    note: 写 intent 必填（缺省回退 request_id）；去重权威 sc.idempotency.record（write-idempotency.yaml v1 定式）。
+
+decision_semantics:
+  scope: >-
+    仅 project.project.overview_html 单字段（新字段，不污染既有
+    project_overview 纯文本语义；Text 而非 Html——ORM Html 自带
+    sanitize 会形成第二净化权威，违背 ADR-006「nh3 唯一权威」）。
+    canonical 子集 = 段落/标题/列表/粗斜体/链接/受控表格（ADR-006
+    决策 1）；附件引用属后续切片（决策 5）。
+  permission: >-
+    专用组 group_sc_cap_rich_text_editor（ADR-006 决策 7：高风险写入
+    不并入既有业务组）+ kill switch sc.rich_text_editor.enabled 默认关
+    （G7.1 模式，noupdate 数据文件，运维显式开启）。
+  sanitization: >-
+    nh3==0.3.7 白名单净化（bleach 已停维护，ADR-006 事实核查）：
+    tags = canonical 子集；a[href] url_schemes={http,https,mailto}；
+    link_rel=noopener noreferrer；img/iframe/media 标签不在白名单即剥除。
+    sanitize-on-save：保存时净化一次入库，读取直渲染。
+    nh3 不可用 → CAPABILITY_DISABLED（fail-closed，绝不落库未净化内容）。
+  idempotency_ordering: >-
+    claim 前置于基线比对（G7.1 层序定式）：指纹绑定客户端摘要基线 +
+    新内容摘要 + project_id，响应丢失后的原样重试命中 replay 分支直接
+    返回首次结果；基线比对仅对首次执行生效（与 G7.2 同源）。
+  evidence: >-
+    sc.audit.log before/after（event_code=PROJECT_OVERVIEW_RICH_TEXT_PATCH：
+    前后摘要/长度/是否变更、幂等键、trace）；审计不落正文全文。
+
+safe_degradation:
+  capability_disabled: kill switch 关闭或 nh3 不可用 → ok=false + CAPABILITY_DISABLED（enable_feature_flag / contact_admin）。
+  missing_params: project_id/expected_overview_digest/new_overview_html 缺失 → ok=false + MISSING_PARAMS（fix_input）。
+  content_too_long: 原始输入超 20000 字符 → ok=false + CONTENT_TOO_LONG（fix_input）。
+  project_not_found: 项目不存在或不可访问 → ok=false + PROJECT_NOT_FOUND（check_params）。
+  baseline_mismatch: expected 摘要与 DB 当前不一致（并发修改）→ ok=false + BASELINE_MISMATCH（reload_and_retry）+ 幂等行落 failed。
+  patch_error: 执行异常 → savepoint 整体回滚 + 幂等行落 failed（允许接管重试）→ ok=false + PATCH_ERROR（retry）。
+  idempotency_conflict / in_flight: 同 write-idempotency.yaml v1（409 语义）。
+
+notes: >-
+  G7 切片 2（Editor）首批次：后端写入通道（ADR-006 批准 2026-09-06）。
+  前端编辑器组件（受限富文本输入 + dirty/saving/conflict 状态机 +
+  sanitized_input_changed 提示）属后续切片，沿用本契约
+  （writeRecordV6 的 request_id/idempotency_key 调用形态）。
+  回退验收：kill switch 关闭时 intent 结构化 CAPABILITY_DISABLED；
+  既有 project_overview 纯文本路径与所有已收口能力不受影响。
+  净化行为已在 dev 容器实测（script/onclick/script 剥除、javascript:
+  scheme 剥除、http/https/mailto 保留、img/iframe 剥除、style 剥除）。

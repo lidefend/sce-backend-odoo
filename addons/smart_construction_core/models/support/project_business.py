@@ -15,6 +15,15 @@ class ProjectProjectBusiness(models.Model):
     project_profile = fields.Text(string="项目简介")
     project_area = fields.Char(string="项目面积")
     project_overview = fields.Text(string="项目概况")
+    # G7.4 / ADR-006：restricted_html canonical 内容（nh3 sanitize-on-save
+    # 后的净化文本），仅经 project.overview.rich_text.patch intent 写入；
+    # 用 Text 而非 Html——ORM Html 字段自带 sanitize 会形成第二净化权威，
+    # 与 ADR-006「nh3 为唯一服务端权威」冲突。
+    overview_html = fields.Text(
+        string="项目概况（受限富文本）",
+        help="restricted_html canonical 内容（ADR-006）：服务端 nh3 白名单净化后落库，"
+        "读取直渲染；写入仅走 project.overview.rich_text.patch intent（kill switch 门控）。",
+    )
 
     @api.depends("partner_id", "partner_id.display_name")
     def _compute_sc_partner_display_name(self):

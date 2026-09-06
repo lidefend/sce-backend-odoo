@@ -450,4 +450,82 @@ patch 仅允许 draft/validated 版本——正常 domain 下前端编辑入口�
 - refresh.generated_reports + takeover inventory 重刷 +
   `make ci.local.quick` 全绿。
 
+## 15. G7.4-A 执行记录（项目概况受限富文本编辑后端先行，ADR-006 首切片，2026-09-06）
 
+### 15.1 前置：ADR-006 批准（Editor canonical format 解冻）
+
+ADR-006（docs/adr/ADR-006-editor-format-and-sanitization.md）翻 **Accepted**
+（用户批准决策 1–7 全部生效）：canonical format = restricted_html
+（p/h1-h3/ul/ol/li/strong/em/b/i/table 子集/a/br + 受控属性）；
+净化 = **nh3==0.3.7 服务端白名单**（bleach 2026-06 停维护）、
+sanitize-on-save 一次入库、max_length=20000 契约下发；并发 = G7-INFRA
+claim/complete 幂等定式 + **摘要基线**（sha256 hex[:16]，正文可达 20k
+字符不传全文，替代 G7.2 的数值基线）；治理 = G7.1 kill switch 模式。
+依赖注入 = requirements-odoo.txt 钉版
+（`nh3-0.3.7-cp38-abi3-manylinux_2_17_x86_64.whl` dev 容器 Py3.10 实测可装）。
+
+### 15.2 实现五件套 + 三处同步
+
+- **service 纯函数**（overview_rich_text_patch_service.py）：白名单常量、
+  `sanitize_overview_html`（延迟 `import nh3`，缺依赖抛 RuntimeError →
+  fail-closed）、`overview_digest`/`baseline_matches`/`content_over_limit`/
+  `flag_enabled`（仅认 1/true/yes/on）、`build_audit_payload`（摘要+长度，
+  不落全文）；
+- **handler**（overview_rich_text_patch.py，intent
+  `project.overview.rich_text.patch`）：kill switch gate → 参数/长度校验
+  （claim 前）→ sanitize（claim 前）→ 项目加载 → claim 幂等 → 摘要基线
+  比对（漂移→`_release_failed`）→ savepoint write → after 投影
+  （content_after/digest/length/sanitized_input_changed）→ complete → audit；
+- **字段**：`project.project.overview_html = fields.Text`——**刻意不用
+  fields.Html**（ORM Html 自带 sanitize 会形成第二净化权威，违背 ADR-006
+  「nh3 唯一服务端权威」）；
+- **组/开关**：`group_sc_cap_rich_text_editor` 专用组 +
+  `rich_text_editor_params.xml`（noupdate ir.config_parameter
+  `sc.rich_text_editor.enabled=false`，G7.1 同款 fail-closed）；
+- **契约**：overview-rich-text-patch.yaml v1（identity=
+  expected_overview_digest，八条错误码映射）；
+- **三处同步**：handlers/*.py + core_extension_intent_handlers.py
+  （导入+mapping）+ split guard（HANDLER_MODULES+行数预算 249+pinned
+  intent）；WRITE_INTENT_TOKENS 三处（运行时+两个静态守卫）天然覆盖
+  "patch" 令牌（G7.2 已加）。
+
+### 15.3 测试与 E2E
+
+- 桩测 21/21（sys.modules 假 odoo/smart_core 链 + `_PatchedClaim` 幂等
+  分支 + 假 nh3 可注入内容变换验证 sanitized_input_changed）；
+  intent_write_guard（131 handlers）+ intent_acl_mode_guard + split guard
+  全 PASS；挂 ci.local.quick（verify.overview.rich.text.patch.capability）；
+- **E2E 15/15 全绿**（tmp/g74_overview_rich_text_e2e.sh，pm1 编辑主体）：
+  无组+flag 关→PERMISSION_DENIED（中间件组检查先于 handler kill switch，
+  G7.1 纪律）/ 授组+flag 关→CAPABILITY_DISABLED / 缺参/超长/项目不存在 /
+  成功（script 与 javascript: 剥除、mailto 保留、sanitized_input_changed）/
+  replay / 同键异指纹 409（error.code=INTERNAL_ERROR +
+  reason_code=IDEMPOTENCY_CONFLICT，G7.2 信封复验）/ BASELINE_MISMATCH +
+  基线刷新重试闭环 / 审计 / flag 再关 / 数据还原。
+
+### 15.4 踩坑沉淀（四则）
+
+- **E2E 编辑主体的 ORM ACL**：富文本编辑组不含 project.project 写权限
+  （allowed: 业务配置管理员/项目中心审批/项目中心经办/Project
+  Administrator）——ORM ACL 守卫按设计拦截（PATCH_ERROR 整体回滚）；
+  探针选 pm1（自带项目中心经办/审批）+ 授专用组，admin 仅作 XML-RPC
+  管理操作（XML-RPC admin 密码=.env.dev 的 ADMIN_PASSWD，demo 用户密码
+  =SC_DEMO_USER_PASSWORD，两者不同）；
+- **授组使旧 token 失效**：Odoo 对 res.users 的 write（改 groups_id）
+  会使用户会话缓存失效——E2E 授组后必须重新 login，否则全线
+  AUTH_REQUIRED；
+- **XML-RPC execute_kw 参数形状**：args 是位置参数列表——set_param 须
+  `["key", "value"]` 两个位置参数（`[[key, value]]` 会把 [key,value] 当
+  单个参数传，报 missing 'value'）；res.users.write 同理 `[[uid], {vals}]`；
+  dev nginx（18081）不暴露 /xmlrpc/2，XML-RPC 走 odoo 直连 8070；
+- **探针自身幂等**：E2E 幂等键固定字面量会在 1h 窗口内与上轮运行残留
+  的 sc.idempotency.record 冲突（replay 不落库→基线错位连锁 FAIL）——
+  键必须带 `RUN=$(date +%s)` 后缀（G7.2 探针既有纪律的再现）。
+
+### 15.5 门禁
+
+- 上栈：requirements nh3 装入 dev 容器 + `-u smart_construction_core`
+  （overview_html 列/组/kill switch 参数上 DB；noupdate 数据文件在 -u
+  升级时不重放——参数缺席=fail-closed 语义正确，与 G7.1 一致）；
+- refresh.generated_reports（complexity report scanned 4288→4292，新文件
+  均在预算内）+ `make ci.local.quick` 全绿。
