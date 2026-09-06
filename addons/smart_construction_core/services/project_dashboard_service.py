@@ -55,6 +55,7 @@ class ProjectDashboardService:
     )
     ZONE_BLOCKS = (
         ("header", "项目头部信息", "hero", "stack", "block.project.header"),
+        ("overview", "项目概况", "secondary", "stack", "block.project.overview"),
         ("metrics", "关键指标", "primary", "grid", "block.project.metrics"),
         ("progress", "项目进度", "primary", "stack", "block.project.progress"),
         ("contract", "合同执行", "secondary", "stack", "block.project.contract"),
@@ -65,6 +66,8 @@ class ProjectDashboardService:
         ("risk", "风险提醒", "supporting", "stack", "block.project.risk"),
     )
     RUNTIME_BLOCK_MAP = {
+        "overview": "block.project.overview",
+        "block.project.overview": "block.project.overview",
         "progress": "block.project.progress",
         "risks": "block.project.risk",
         "risk": "block.project.risk",

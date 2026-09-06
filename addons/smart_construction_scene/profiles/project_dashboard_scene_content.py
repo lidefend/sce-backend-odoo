@@ -56,6 +56,13 @@ def build_project_dashboard_scene_content() -> Dict[str, Any]:
             "block_key": "block.project.chart.payment",
         },
         {
+            "key": "overview",
+            "title": "项目概况",
+            "zone_type": "secondary",
+            "display_mode": "stack",
+            "block_key": "block.project.overview",
+        },
+        {
             "key": "boq",
             "title": "清单导入预览",
             "zone_type": "secondary",
