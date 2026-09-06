@@ -42,6 +42,10 @@
               <ScButton @click="collapseAll">{{ labels.collapse_all }}</ScButton>
             </div>
           </div>
+          <div v-if="patchNotice" class="worksheet-patch-notice" :class="`patch-${patchNotice.kind}`" role="status" aria-live="polite">
+            <span>{{ patchNotice.text }}</span>
+            <ScButton variant="ghost" size="small" @click="patchNotice = null">{{ labels.dismiss || '关闭' }}</ScButton>
+          </div>
           <div v-if="loading" class="worksheet-state">{{ labels.loading }}</div>
           <div v-else-if="!visibleRows.length" class="worksheet-state">{{ labels.empty }}</div>
           <div v-else class="worksheet-table-scroll">
@@ -97,7 +101,22 @@ import {
   type WorksheetSheetConfig,
 } from '../../app/action_runtime/hierarchicalWorksheetDataSource';
 import { shouldOpenWorksheetRecordFromKeyboard } from '../../app/action_runtime/hierarchicalWorksheetInteraction';
+import { ApiError } from '../../api/client';
+import { buildBoqLinePatchIdempotencyKey, patchBoqLineQuantity } from '../../api/boqLinePatch';
+import {
+  beginBoqLinePatchSession,
+  BOQ_LINE_PATCH_SESSION_EDITING,
+  describeBoqLinePatchSuccess,
+  isBoqLinePatchEditableRow,
+  markBoqLinePatchError,
+  markBoqLinePatchSaving,
+  resolveBoqLinePatchEditableFields,
+  updateBoqLinePatchDraft,
+  validateDraftQuantity,
+  type BoqLinePatchSession,
+} from '../../app/presentation/boqLinePatch';
 import ScButton from '../design-system/ScButton.vue';
+import ScInput from '../design-system/ScInput.vue';
 import ScTable from '../design-system/ScTable.vue';
 import ProductListHeader from '../product-list/ProductListHeader.vue';
 import HierarchyTreeNode from './HierarchyTreeNode.vue';
@@ -140,6 +159,12 @@ const navigationExpandedKeys = ref(new Set<string>());
 const activeTab = ref('');
 const navigationWidth = ref(260);
 const detailHeight = ref(210);
+/** G7.2 内联编辑：编辑会话（行级单例）+ 结果通知 + 窄屏禁用 */
+const patchSession = ref<BoqLinePatchSession | null>(null);
+const patchNotice = ref<{ kind: 'success' | 'error'; text: string } | null>(null);
+const compactViewport = ref(false);
+let viewportMedia: MediaQueryList | null = null;
+const editableFields = computed(() => resolveBoqLinePatchEditableFields(sheetConfig.value.editable_fields));
 let resizeMode: '' | 'navigation' | 'detail' = '';
 let resizeStart = 0;
 let resizeStartSize = 0;
@@ -226,6 +251,7 @@ const worksheetTableColumns = computed(() => columns.value.map((column) => ({
 })));
 
 function worksheetCell(entry: VisibleEntry, column: Column) {
+  if (isEditablePatchCell(entry, column)) return renderPatchCell(entry, column);
   if (column.field !== treeColumn.value) return displayCell(entry, column);
   const toggle = !sourceOrderMode.value && entry.node.children.length
     ? h('button', {
@@ -249,6 +275,135 @@ function worksheetRowClassName({ row }: { row: VisibleEntry }) {
     selected: selectedRecord.value?.id === row.record?.id,
   };
 }
+
+/** G7.2 内联编辑：可编辑 cell 判定（字段写入面 + 叶子记录行 + 非窄屏） */
+function isEditablePatchCell(entry: VisibleEntry, column: Column): boolean {
+  if (compactViewport.value) return false;
+  if (!editableFields.value.has(column.field)) return false;
+  return isBoqLinePatchEditableRow({
+    hasRecord: Boolean(entry.record),
+    rowKind: entry.rowKind,
+    itemValues: itemValues.value,
+  });
+}
+
+function renderPatchCell(entry: VisibleEntry, column: Column) {
+  const record = entry.record;
+  const lineId = Number(record?.id || 0);
+  const session = patchSession.value;
+  if (!session || session.lineId !== lineId) {
+    return h('span', {
+      class: 'patch-cell',
+      title: '双击编辑工程量',
+      onDblclick: (event: MouseEvent) => { event.stopPropagation(); beginPatchEdit(lineId, record as WorksheetDict); },
+    }, displayCell(entry, column));
+  }
+  return h('div', {
+    class: 'patch-cell-editing',
+    onKeydown: (event: KeyboardEvent) => {
+      if (event.key === 'Enter') { event.preventDefault(); void commitPatchEdit(); }
+      else if (event.key === 'Escape') { event.preventDefault(); cancelPatchEdit(); }
+    },
+  }, [
+    h(ScInput, {
+      modelValue: session.draft,
+      type: 'number',
+      size: 'small',
+      appearance: 'numeric-entry',
+      status: session.state === 'error' ? 'error' : 'default',
+      min: 0,
+      step: 'any',
+      align: 'right',
+      'aria-label': '工程量（Enter 提交 / Esc 取消）',
+      'aria-invalid': session.state === 'error' || undefined,
+      disabled: session.state !== BOQ_LINE_PATCH_SESSION_EDITING,
+      'onUpdate:modelValue': (value: string) => { patchSession.value = updateBoqLinePatchDraft(session, value); },
+      onBlur: () => { void commitPatchEdit(); },
+      onVnodeMounted: (vnode: { el?: HTMLElement }) => {
+        const input = vnode.el?.querySelector('input');
+        if (input) { input.focus(); input.select(); }
+      },
+    }),
+    session.errorMessage ? h('div', { class: 'patch-cell-error', role: 'alert' }, session.errorMessage) : null,
+  ]);
+}
+
+function beginPatchEdit(lineId: number, record: WorksheetDict) {
+  if (!lineId) return;
+  const expected = Number(record.quantity ?? 0);
+  patchNotice.value = null;
+  patchSession.value = beginBoqLinePatchSession({
+    lineId,
+    expectedQuantity: Number.isFinite(expected) ? expected : 0,
+  });
+}
+
+function cancelPatchEdit() {
+  patchSession.value = null;
+}
+
+async function commitPatchEdit() {
+  const session = patchSession.value;
+  if (!session || session.state !== BOQ_LINE_PATCH_SESSION_EDITING) return;
+  const validation = validateDraftQuantity(session.draft, session.expectedQuantity);
+  if (!validation.ok) {
+    if (validation.code === 'NO_CHANGE') { patchSession.value = null; return; }
+    patchSession.value = markBoqLinePatchError(session, 'INVALID_QUANTITY');
+    return;
+  }
+  const idempotencyKey = buildBoqLinePatchIdempotencyKey(session.lineId);
+  patchSession.value = markBoqLinePatchSaving(session, idempotencyKey);
+  try {
+    const result = await patchBoqLineQuantity({
+      lineId: session.lineId,
+      expectedQuantity: session.expectedQuantity,
+      newQuantity: validation.newQuantity,
+      idempotencyKey,
+    });
+    patchSession.value = null;
+    patchNotice.value = { kind: 'success', text: describeBoqLinePatchSuccess(result) };
+    await reloadWorksheet();
+    window.setTimeout(() => { if (patchNotice.value?.kind === 'success') patchNotice.value = null; }, 4000);
+  } catch (error) {
+    const reasonCode = error instanceof ApiError ? (error.reasonCode || 'NETWORK_ERROR') : 'NETWORK_ERROR';
+    const failed = markBoqLinePatchError(session, reasonCode);
+    patchSession.value = failed;
+    patchNotice.value = { kind: 'error', text: failed.errorMessage || '工程量更新失败，请重试。' };
+    if (reasonCode === 'BASELINE_MISMATCH') await refreshPatchBaseline(session.lineId);
+  }
+}
+
+/** BASELINE_MISMATCH：静默刷新整表并同步会话基线（草稿保留，供基于最新值重试） */
+async function refreshPatchBaseline(lineId: number) {
+  await reloadWorksheet();
+  const fresh = findRecordById(lineId);
+  if (fresh && patchSession.value) {
+    const next = Number(fresh.quantity ?? patchSession.value.expectedQuantity);
+    if (Number.isFinite(next)) patchSession.value = { ...patchSession.value, expectedQuantity: next };
+  }
+}
+
+function findRecordById(recordId: number): WorksheetDict | null {
+  const fromSource = sourceRows.value.find((record) => Number(record.id || 0) === recordId);
+  if (fromSource) return fromSource;
+  for (const record of recordsByNode.value.values()) {
+    if (Number(record.id || 0) === recordId) return record;
+  }
+  return null;
+}
+
+/** 整表权威 reload（成功提交后与基线漂移后；金额链全由服务端重算，本地不形成事实） */
+async function reloadWorksheet(): Promise<void> {
+  const result = await loadHierarchicalWorksheet(hierarchyConfig.value, sheetConfig.value);
+  roots.value = result.roots;
+  nodesById.value = result.nodesById;
+  recordsByNode.value = result.recordsByNode;
+  sourceRows.value = result.sourceRows;
+  recordCount.value = result.recordCount;
+  if (selectedNode.value) selectedNode.value = nodesById.value.get(selectedNode.value.id) || selectedNode.value;
+  if (selectedRecord.value) selectedRecord.value = findRecordById(Number(selectedRecord.value.id || 0)) || selectedRecord.value;
+}
+
 function worksheetRowAttributes({ row }: { row: VisibleEntry }) {
   return {
     tabindex: 0,
@@ -356,11 +511,18 @@ function resizeMove(event: PointerEvent) {
 }
 function stopResize() { if (resizeMode) persistLayout(); resizeMode = ''; window.removeEventListener('pointermove', resizeMove); window.removeEventListener('pointerup', stopResize); }
 
+function onViewportChange(event: MediaQueryListEvent) { compactViewport.value = event.matches; }
+
 onMounted(async () => {
-  restoreLayout(); loading.value = true;
+  restoreLayout();
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    viewportMedia = window.matchMedia('(max-width: 960px)');
+    compactViewport.value = viewportMedia.matches;
+    viewportMedia.addEventListener('change', onViewportChange);
+  }
+  loading.value = true;
   try {
-    const result = await loadHierarchicalWorksheet(hierarchyConfig.value, sheetConfig.value);
-    roots.value = result.roots; nodesById.value = result.nodesById; recordsByNode.value = result.recordsByNode; sourceRows.value = result.sourceRows; recordCount.value = result.recordCount;
+    await reloadWorksheet();
     expandAll();
     const navigationKeys = new Set<string>();
     navigationRoots.value.forEach((root) => navigationKeys.add(root.key));
@@ -371,7 +533,11 @@ onMounted(async () => {
   } catch (error) { errorMessage.value = error instanceof Error ? error.message : String(error); }
   finally { loading.value = false; }
 });
-onBeforeUnmount(() => stopResize());
+onBeforeUnmount(() => {
+  stopResize();
+  viewportMedia?.removeEventListener('change', onViewportChange);
+  viewportMedia = null;
+});
 </script>
 
 <style scoped>
@@ -394,6 +560,14 @@ onBeforeUnmount(() => stopResize());
 .worksheet-table-scroll { min-height: 0; overflow: auto; }
 :deep(.align-right) { text-align: right; font-variant-numeric: tabular-nums; }
 :deep(.variance-nonzero) { color: var(--sc-app-warning-text); font-weight: 600; }
+:deep(.patch-cell) { cursor: text; border-bottom: 1px dashed transparent; }
+:deep(.patch-cell:hover) { border-bottom-color: var(--sc-app-accent); }
+:deep(.patch-cell-editing) { display: flex; flex-direction: column; gap: 2px; min-width: 104px; }
+:deep(.patch-cell-error) { color: var(--sc-app-danger-text); font-size: 12px; line-height: 1.3; max-width: 180px; }
+.worksheet-patch-notice { display: flex; align-items: center; gap: var(--sc-space-xs); padding: var(--sc-space-xs) var(--sc-space-sm); border-bottom: 1px solid var(--sc-app-border); }
+.worksheet-patch-notice span { flex: 1; min-width: 0; }
+.worksheet-patch-notice.patch-success { color: var(--sc-app-success-text); }
+.worksheet-patch-notice.patch-error { color: var(--sc-app-danger-text); }
 :deep(.tree-cell) { display: flex; align-items: center; gap: var(--sc-space-2xs); min-width: 220px; }
 :deep(.row-toggle) { width: 20px; padding: 0; border: 0; background: transparent; color: var(--sc-app-text-secondary); cursor: pointer; }
 :deep(.row-toggle-spacer) { display: inline-block; width: 20px; }
