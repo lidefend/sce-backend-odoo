@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from .project_header_builder import ProjectHeaderBuilder
+from .project_overview_builder import ProjectOverviewBuilder
 from .project_metrics_builder import ProjectMetricsBuilder
 from .project_progress_builder import ProjectProgressBuilder
 from .project_contract_builder import ProjectContractBuilder
@@ -15,6 +16,7 @@ from .project_payment_chart_builder import ProjectPaymentChartBuilder
 
 BUILDERS = (
     ProjectHeaderBuilder,
+    ProjectOverviewBuilder,
     ProjectMetricsBuilder,
     ProjectProgressBuilder,
     ProjectContractBuilder,

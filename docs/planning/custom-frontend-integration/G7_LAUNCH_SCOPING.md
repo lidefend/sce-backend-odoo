@@ -529,3 +529,85 @@ claim/complete 幂等定式 + **摘要基线**（sha256 hex[:16]，正文可达 
   升级时不重放——参数缺席=fail-closed 语义正确，与 G7.1 一致）；
 - refresh.generated_reports（complexity report scanned 4288→4292，新文件
   均在预算内）+ `make ci.local.quick` 全绿。
+
+## 16. G7.4-B 执行记录（项目概况受限富文本编辑器前端，ADR-006 前端切片，2026-09-06）
+
+### 16.1 前端组件五件套 + 注册接线
+
+- **RestrictedHtmlEditor.vue**（`src/components/editor/`）：受限工具栏
+  （加粗/斜体/一级~三级标题/正文段落/无序/有序列表/插入链接）+
+  contenteditable 编辑区 + 实时字符计数（读 props.modelValue，
+  max_length 契约下发）；指令走受控 execCommand 白名单，
+  **不引入第三方 editor 依赖**（ADR-006 canonical=restricted_html 的
+  受限投影，ADR-002 同款「不加重运行时」纪律）；
+- **BlockRichTextOverview.vue**（`src/components/page/blocks/`）：查看态
+  （v-html 渲染服务端已净化内容 + can_edit 双闸投影「编辑」入口）/
+  编辑态（编辑器 + 保存/取消 + 保存中/错误态）会话状态机；保存走
+  `project.overview.rich_text.patch` intent（expected 基线透传服务端比对）；
+- **presentation 纯函数层**（`src/app/presentation/overviewRichTextPatch.ts`）：
+  块数据规范化（envelope/裸 data/缺字段回退）、session 状态机、draft
+  长度预校验、契约错误码→人话文案——只 import type，桩测可
+  esbuild+node 直跑；
+- **api 层**（`src/api/overviewRichTextPatch.ts`）+ **客户端预净化**
+  （`src/utils/sanitizeRestrictedHtml.ts`：超长/白名单外标签客户端先行
+  拦截；服务端 nh3 仍是唯一净化权威）；
+- **注册**：pageBlockRegistry 挂 `block_type=rich_text_overview`。
+
+### 16.2 后端读投影块接线（block.fetch + enter 契约）
+
+- **project_overview_builder.py**（services/project_dashboard_builders/）：
+  overview 块运行时 builder——一次性携带 content/overview_digest/
+  max_length/can_edit（编辑面板免二次 fetch）；can_edit = kill switch
+  flag + `group_sc_cap_rich_text_editor` 双闸（fail-closed，仅控制前端
+  入口显隐，写路径权威校验仍在 handler，纵深防御）；state=empty 是
+  合法空态（overview_html 空）；
+- project_dashboard_service 注册 builder + scene profile 挂块
+  （`block.project.overview`）；
+- **hook facts entry_blocks**（core_extension_hook_facts.py）：
+  ProjectDashboardSceneOrchestrator 的 entry_blocks **首位**插入
+  `("overview", "项目概况", "deferred")` → BaseSceneEntryOrchestrator
+  .build_entry 生成 enter 契约 blocks stub + runtime_fetch_hints →
+  scene_contract_standard_v1.page.blocks。**stub 用短名 `overview`**，
+  完整块 key 仅出现在 block.fetch 运行时 payload（探针须按短名断言）。
+
+### 16.3 测试与验证
+
+- 桩测：test_project_overview_builder.py **8/8**（含 enter 契约接线钉子：
+  entry_blocks 含 overview、标题「项目概况」、block_fetch_intent、
+  alias_map 不含 overview）；overview_rich_text_model_test.ts 全过
+  （挂 ci.local.quick：verify.frontend.overview_rich_text.unit）；
+- E2E：g74b_overview_block_e2e.sh **8/8**（deferred→fetch→投影→can_edit
+  双闸→错误码全链路）；g74b_scene_enter_check.sh PASS（三处契约位置
+  均含 overview：data.blocks / runtime_fetch_hints.blocks /
+  scene_contract page.blocks）；
+- typecheck:strict 通过；eslint 0 errors（1 个 vue/no-v-html 警告，与
+  仓库既有 v-html 组件一致——内容由服务端 nh3 净化 + 客户端预净化）；
+- **浏览器冒烟**（agent-browser，pm1 授组开闸）：驾驶舱「项目概况」块
+  渲染 → 编辑态工具栏/计数正常 → 输入后保存解锁 → 保存成功提示
+  「内容已保存（服务端净化后落库）。」→ 内容回读渲染闭环 → 数据还原
+  （overview_html 置空）+ flag 关 + 撤组关门。
+
+### 16.4 踩坑沉淀（四则）
+
+- **canSubmit dirty 判定陷阱**：组件 `draft` ref（v-model 逐键实时更新）
+  与 `session.draft`（beginEdit 快照）分离——dirty 判定必须比较实时
+  draft 与 baselineContent；比较 session 快照恒等 → 保存按钮永不解锁
+  （浏览器冒烟抓出的真实集成 bug，桩测覆盖不到 v-model 实时性）；
+- **enter 契约探针按短名断言**：entry stub 与 runtime_fetch_hints 用短名，
+  完整 block key 只在 block.fetch payload——搜完整 key 恒 0 会误判
+  「未接线」；确认接线须解包实际响应三处位置；
+- **宿主 D:\user\wsl.localhost 是过期镜像副本**：D 盘 9 月 5 日的完整
+  独立文件树（含 .git），非 ext4 联接——文件编辑必须走权威 UNC
+  `\\wsl.localhost\Ubuntu-24.04\...`，否则改动落旧树、WSL 侧不可见
+  （本切片曾因此出现「Edit 成功但 grep 不到」的假象）；
+- **agent-browser Windows 直调**：bash 传 POSIX 路径会被 node 当相对
+  当前盘符解析（MODULE_NOT_FOUND）——须 node.exe + Windows 风格路径调
+  bin/agent-browser.js；交互 ref 页面重载后全部失效须重新 snapshot -i；
+  离屏元素先 scrollintoview 再 click。
+
+### 16.5 门禁
+
+- refresh.generated_reports（complexity scanned 4292→4299，新文件均在
+  预算内）+ generate_frontend_component_driver_takeover_inventory.py
+  单独重跑（新增前端组件入册，CI frontend_release_gate 查它）+
+  `make ci.local.quick` 全绿。

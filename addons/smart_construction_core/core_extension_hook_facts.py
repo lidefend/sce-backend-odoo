@@ -312,6 +312,7 @@ def scene_entry_orchestrator_specs():
                 "status",
             ),
             "entry_blocks": (
+                ("overview", "项目概况", "deferred"),
                 ("progress", "项目进度", "deferred"),
                 ("risks", "风险提醒", "deferred"),
                 ("next_actions", "下一步动作", "deferred"),

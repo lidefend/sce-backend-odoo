@@ -9,6 +9,7 @@ import BlockActivityFeed from '../components/page/blocks/BlockActivityFeed.vue';
 import BlockAccordionGroup from '../components/page/blocks/BlockAccordionGroup.vue';
 import BlockBoqImportPreview from '../components/page/blocks/BlockBoqImportPreview.vue';
 import BlockChartDataset from '../components/page/blocks/BlockChartDataset.vue';
+import BlockRichTextOverview from '../components/page/blocks/BlockRichTextOverview.vue';
 
 const BLOCK_REGISTRY: Record<string, object> = {
   metric: BlockMetricRow,
@@ -28,6 +29,7 @@ const BLOCK_REGISTRY: Record<string, object> = {
   boq_import_preview: BlockBoqImportPreview,
   chart_dataset: BlockChartDataset,
   chart: BlockChartDataset,
+  rich_text_overview: BlockRichTextOverview,
 };
 
 export function resolveBlockComponent(blockType: string): object | null {

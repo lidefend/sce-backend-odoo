@@ -158,7 +158,7 @@
         "TDesignButton"
       ],
       "officialComponent": "button",
-      "productionConsumerCount": 382,
+      "productionConsumerCount": 385,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1279,7 +1279,7 @@
         "TDesignUpload"
       ],
       "officialComponent": "upload",
-      "productionConsumerCount": 369,
+      "productionConsumerCount": 372,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1296,8 +1296,24 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "9e7e63fec7bb9b22ea0845dc066314933d07c63fb93b0fb2b00f0e460eda4ad9",
-  "rawBehaviorSurfaces": [],
+  "inputDigest": "577cce5b6c18776865c8342d551918bf756ff708444deca214dc19cc708fa7ff",
+  "rawBehaviorSurfaces": [
+    {
+      "assessment": "unassessed",
+      "rawBehaviorTags": [
+        "button",
+        "window.prompt"
+      ],
+      "source": "frontend/apps/web/src/components/editor/RestrictedHtmlEditor.vue"
+    },
+    {
+      "assessment": "unassessed",
+      "rawBehaviorTags": [
+        "button"
+      ],
+      "source": "frontend/apps/web/src/components/page/blocks/BlockRichTextOverview.vue"
+    }
+  ],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",
   "summary": {
@@ -1309,6 +1325,6 @@
     "not_required": 36,
     "officialComponents": 71,
     "requiredDrivers": 35,
-    "unassessedRawBehaviorSurfaces": 0
+    "unassessedRawBehaviorSurfaces": 2
   }
 }

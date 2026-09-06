@@ -123,6 +123,11 @@ verify.frontend.boq_line_patch.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/boq_line_patch_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/boq-line-patch-model-test.mjs >/dev/null
 	@node /tmp/boq-line-patch-model-test.mjs
 
+.PHONY: verify.frontend.overview_rich_text.unit
+verify.frontend.overview_rich_text.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/overview_rich_text_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/overview-rich-text-model-test.mjs >/dev/null
+	@node /tmp/overview-rich-text-model-test.mjs
+
 .PHONY: verify.frontend.product_page_header.unit verify.frontend.collection_action_toolbar.unit verify.frontend.collection_aggregate_footer.unit verify.frontend.collection_group_header.unit verify.frontend.collection_summary_strip.unit verify.frontend.collection_mobile_record_row.unit verify.frontend.collection_kanban_record_card.unit verify.frontend.collection_navigation_controls.unit verify.frontend.collection_row_cell.unit verify.frontend.collection_selection_control.unit
 verify.frontend.product_page_header.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_page_header_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/product-page-header-model-test.mjs >/dev/null
