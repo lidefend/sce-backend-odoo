@@ -360,6 +360,8 @@ verify.frontend.native_form_action_presentation.browser: guard.prod.forbid
 verify.frontend.hierarchical_worksheet.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/hierarchical_worksheet_interaction_test.ts --bundle --platform=node --format=esm --outfile=/tmp/hierarchical-worksheet-interaction-test.mjs >/dev/null
 	@node /tmp/hierarchical-worksheet-interaction-test.mjs
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/hierarchical_worksheet_domain_tab_test.ts --bundle --platform=node --format=esm --outfile=/tmp/hierarchical-worksheet-domain-tab-test.mjs >/dev/null
+	@node /tmp/hierarchical-worksheet-domain-tab-test.mjs
 
 verify.frontend.page_pattern_reference_parity.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_frontend_page_pattern_reference_parity_guard

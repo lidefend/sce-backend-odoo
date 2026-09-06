@@ -1,4 +1,8 @@
 import { listRecords } from '../../api/data';
+import type { WorksheetDomainTab } from './hierarchicalWorksheetDomainTabs';
+
+export { resolveWorksheetDomainTabs, applyWorksheetDomainTab } from './hierarchicalWorksheetDomainTabs';
+export type { WorksheetDomainTab } from './hierarchicalWorksheetDomainTabs';
 
 export type WorksheetDict = Record<string, unknown>;
 export type WorksheetHierarchyConfig = {
@@ -33,6 +37,8 @@ export type WorksheetSheetConfig = {
   /** 可编辑字段（G7.2 内联编辑；后端 config 未注入时前端回退默认写入面） */
   editable_fields?: string[];
   domain: unknown[];
+  /** 数据域 tab（G7.3；后端 config 未注入时前端无 tab，行为与旧契约一致） */
+  domain_tabs?: WorksheetDomainTab[];
   order: string;
 };
 export type WorksheetNode = {

@@ -679,6 +679,11 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
                 "variance_tolerance": 0.005,
                 "sheet_order": "source_index, sequence, id",
                 "tabs": [{"key": "detail", "label": "Detail", "fields": ["description"]}],
+                "sheet_domain_tabs": [
+                    {"key": "published", "label": "Published", "domain": [("state", "=", "published")]},
+                    {"key": "editing", "domain": "not-a-list"},
+                    {"label": "missing key", "domain": [("state", "=", "draft")]},
+                ],
             },
         }
 
@@ -697,6 +702,15 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
         self.assertEqual(presentation["config"]["sheet"]["variance_field"], "amount")
         self.assertEqual(presentation["config"]["sheet"]["variance_tolerance"], 0.005)
         self.assertEqual(presentation["config"]["detail"]["tabs"][0]["fields"][0]["field"], "description")
+        # sheet_domain_tabs（G7.3）：非法条目（key 缺失 / domain 非列表）剔除，label 缺省回退 key
+        domain_tabs = presentation["config"]["sheet"]["domain_tabs"]
+        self.assertEqual(len(domain_tabs), 2)
+        self.assertEqual(domain_tabs[0]["key"], "published")
+        self.assertEqual(domain_tabs[0]["label"], "Published")
+        self.assertEqual(domain_tabs[0]["domain"], [("state", "=", "published")])
+        self.assertEqual(domain_tabs[1]["key"], "editing")
+        self.assertEqual(domain_tabs[1]["label"], "editing")
+        self.assertEqual(domain_tabs[1]["domain"], [])
 
     def test_source_order_worksheet_can_build_navigation_from_sheet_groups(self):
         class MenuModel:
