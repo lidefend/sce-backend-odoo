@@ -68,7 +68,8 @@
                 ref('smart_construction_core.group_sc_cap_contract_read'),
                 ref('smart_construction_core.group_sc_cap_cost_read'),
                 ref('smart_construction_core.group_sc_cap_material_manager'),
-                ref('smart_construction_core.group_sc_cap_settlement_read')
+                ref('smart_construction_core.group_sc_cap_settlement_read'),
+                ref('smart_construction_core.group_sc_cap_data_read')
             ])]"/>
         </record>
 
@@ -139,7 +140,10 @@
             <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
             <field name="implied_ids" eval="[(6, 0, [
                 ref('smart_construction_core.group_sc_cap_project_read'),
-                ref('smart_construction_core.group_sc_cap_finance_manager')
+                ref('smart_construction_core.group_sc_cap_finance_manager'),
+                ref('smart_construction_core.group_sc_cap_cost_read'),
+                ref('smart_construction_core.group_sc_cap_material_read'),
+                ref('smart_construction_core.group_sc_cap_data_read')
             ])]"/>
         </record>
 
