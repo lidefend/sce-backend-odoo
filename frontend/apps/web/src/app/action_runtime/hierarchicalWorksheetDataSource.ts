@@ -30,6 +30,8 @@ export type WorksheetSheetConfig = {
   variance_field: string;
   variance_tolerance: number;
   blank_fields_by_kind: Record<string, string[]>;
+  /** 可编辑字段（G7.2 内联编辑；后端 config 未注入时前端回退默认写入面） */
+  editable_fields?: string[];
   domain: unknown[];
   order: string;
 };

@@ -299,4 +299,101 @@ imported_amount 条件恢复）。
 - refresh.generated_reports 已刷（contract_structure_fingerprint.json +
   complexity_budget_report.md）。
 
+## 13. G7.2-FE 执行记录（BOQ 明细表格 quantity 可编辑列，2026-09-06）
+
+> 后端先行（§12）落地后的前端切片：HierarchicalWorksheet 工作表
+> quantity 列可编辑（双击进入 → 改值 → Enter 提交 / Esc 取消），
+> 服务端权威重算 + expected 基线并发防护全链路打通。
+
+### 13.1 实现四件套
+
+- `frontend/apps/web/src/api/boqLinePatch.ts`（75 行）：intent 调用层，
+  `patchBoqLineQuantity` 发 `project.boq.line.patch`（params 携
+  line_id / expected_quantity / new_quantity / idempotency_key），
+  ApiError 归一 reasonCode（BASELINE_MISMATCH 等）；
+- `frontend/apps/web/src/app/presentation/boqLinePatch.ts`（205 行）：
+  presentation 纯函数层——编辑会话状态机
+  （begin/edit/saving/error，`BoqLinePatchSession`）+
+  `parseDraftQuantity` / `validateDraftQuantity`（NO_CHANGE /
+  INVALID_QUANTITY）+ `isBoqLinePatchEditableRow`（仅 item 行）+
+  `isBoqLinePatchAllowedViewport`（<960px 紧凑视口禁用编辑）+
+  `buildBoqLinePatchIdempotencyKey`（`boq-line-patch:<line_id>:<ts>:<rand>`）
+  + 成功/错误文案（`describeBoqLinePatchSuccess` /
+  `describeBoqLinePatchError`）；
+- `HierarchicalWorksheet.vue` renderPatchCell：编辑 cell（ScInput 数字态
+  + error alert + aria 标注）；commit 成功 → 整表权威 reload + success
+  notice（4s 自动消失）；BASELINE_MISMATCH → cell 内 alert + 页面级
+  status notice 双层提示 + `refreshPatchBaseline`（静默整表 reload +
+  会话基线同步为服务端最新值，草稿保留供基于最新值重试）；blur 即提交；
+- `hierarchicalWorksheetDataSource.ts`：`editable_fields?: string[]`
+  配置声明（后端 config 未注入时前端回退默认 quantity 写入面）；
+- 单测 `frontend/apps/web/scripts/boq_line_patch_model_test.ts`（138 行 /
+  37 断言，esbuild 打包 node 跑）挂 `verify.frontend.boq_line_patch.unit`
+  → 入 ci.local.quick 依赖链（make/frontend.mk + make/ci.mk）。
+
+### 13.2 浏览器 E2E 冒烟（dev 栈，pm1 会话，fetch 插桩验证信封）
+
+- **Happy path**：双击 qty cell（5.00）→ ScInput 自动 focus → 改 9 →
+  Enter → 请求 `{"line_id":16429,"expected_quantity":5,"new_quantity":9,
+  "idempotency_key":"boq-line-patch:16429:..."}` → 响应 ok=true
+  （quantity 5→9、version_total_amount 重算、idempotent_replay=false、
+  审计 meta 齐全）→ 整表 reload → cell 9.00、编辑态关闭；二次编辑
+  9→12 成功，notice「已更新：工程量 12 / 合价 15（服务端权威重算）」；
+- **PERMISSION_DENIED**：无组用户提交 → cell 内 error alert
+  「当前角色无工程量编辑权限」（编辑态保留）；
+- **BASELINE_MISMATCH**（服务端经 XML-RPC 并发改 quantity=33 后提交
+  expected=12）→ HTTP 500 信封 `error.code=BASELINE_MISMATCH`、message
+  「工程量基线不一致：该行已被并发修改（expected=12.0，实际=33.0），
+  请刷新后重试」、`suggested_action=reload_and_retry` → UI 双层提示
+  （cell alert + 页面 status notice「该行已被并发修改，请基于最新
+  工程量重新提交。」）→ 整表静默 reload（cell 33.00）→ 会话基线同步
+  为 33 → 重新进入编辑基线=33 → 重试提交 20 成功
+  （quantity_before=33.0 → quantity_after=20.0，reason_code=DONE）。
+
+### 13.3 踩坑沉淀（四则）
+
+1. **TDesign Input 无 keydown 事件声明**：ScInput 桥接的
+   `onTDesignKeydown` 读 `context.e` 拿不到真实键盘事件（兜底
+   `new KeyboardEvent('keydown')` 无 key）→ Enter/Esc 永不触发。修复：
+   keydown 监听移到 `.patch-cell-editing` 外层 div（原生 DOM 冒泡），
+   ScInput 仅承担输入职责；
+2. **dotted domain 记录规则联动**：工作表 sheet_domain 含
+   `version_id.state`（点路径）时 Odoo 应用关联模型
+   `project.boq.version` 的记录规则——pm1 非 project manager 亦非
+   follower → 查询恒 0 行（非点路径 domain 不受影响）。dev 栈补
+   mail_followers 解决；产品层是既有 gap.role_journey_longtail_coverage
+   范畴（cost 角色菜单旅程不含清单明细菜单，sc_cost_mgr 须 pm1 代跑）；
+3. **agent-browser × TDesign**：坐标 click 不触发 t-menu__item 导航，
+   须 eval 派发 bubbles MouseEvent 到 `li[data-navigation-key]`；TDesign
+   select 类组件 fill 不可用，文本输入走 ref；agent-browser 须 Windows
+   侧运行（WSL 侧连不上守护进程）；
+4. **wsl.exe 命令行引号吞噬**：含引号 / `$()` / heredoc 的 bash -c
+   内联命令会被 wsl.exe 破坏——复杂逻辑一律 Write 脚本到 WSL 侧 tmp/
+   再 `wsl.exe -- bash <脚本>`（本轮多次复发，写 g72fe_* 脚本族规避）。
+
+### 13.4 结构性矛盾（Open gap，非阻断）
+
+action 534（清单明细工作表）sheet_domain 仅查 `published` 版本行，而
+patch 仅允许 draft/validated 版本——正常 domain 下前端编辑入口打不到
+任何可 patch 行（两者不交集）。本轮冒烟靠 DB 临时放宽 sheet_domain
+（收口前已恢复 published-only）。**待后续切片决策**：工作表 domain
+演进（如按版本状态 tab 切换 draft/validated 工作面）或视图层显式版本
+选择器；在此之前 G7.2-FE 编辑入口在演示流程中不可自然触达。
+
+### 13.5 dev 栈数据遗留（有意保留）
+
+- pm1（partner 16）补德阳项目 mail_followers（id=4012）——记录规则
+  project member scope 依赖 follower；
+- pm1（uid 6）加入 cost_user 组（res_groups_users_rel gid=101）——
+  pm1 顶栏岗位本即「项目经理 / 成本管理」双岗，兼成本写权限合理；
+- line 16429 quantity 终值 20（冒烟数据，dev 栈无害）。
+
+### 13.6 门禁
+
+- `verify.frontend.boq_line_patch.unit`（37 断言）+ typecheck:strict +
+  dist-dev 重建（36.9s）全绿（tmp/g72fe_fix_verify.sh）；
+- refresh.generated_reports + takeover inventory 重刷（含
+  HierarchicalWorksheet.vue digest 变更）；
+- `make ci.local.quick` 全绿。
+
 
