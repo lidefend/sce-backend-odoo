@@ -2,7 +2,7 @@
 {
     "name": "Smart Construction Bundle",
     "summary": "Product delivery bundle for construction domain",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "category": "Smart Construction",
     "license": "LGPL-3",
     "depends": [
