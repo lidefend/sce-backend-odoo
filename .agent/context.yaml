@@ -74,10 +74,11 @@ delivery_auth:
   credential_policy: use_workspace_managed_gh_config; never record tokens
 
 acceptance_identity:
-  login: sc_business_admin
+  login: fixture_role_config_admin
   role: business_config_admin
-  carrier: smart_construction_core.user_sc_business_config_admin
+  carrier: smart_construction_acceptance_fixture.fe_user_config_admin
   platform_admin_separate: true
+  fixture_only: true
 
 data_policy:
   persistent_dev:

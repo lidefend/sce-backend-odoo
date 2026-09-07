@@ -4,6 +4,7 @@
 
 - 目标：在既有 `audit/full-repository-baseline-20260907` 候选上完成恢复升级、演示数据、进度场景权限与受管交付门禁收口。
 - 完成：
+  - 开发验证业务管理员退出正式产品安装面：删除 `smart_construction_core` 中固定登录名/密码的用户数据，改由隔离的 `smart_construction_acceptance_fixture` 在受管入口中按环境凭据创建。
   - `smart_construction_core` 升级到 `17.0.0.162`；历史迁移在旧租户表/列或新父模型元数据尚未建立时保持可重放，并由后续 registry 同步继续收口。
   - 演示项目显式绑定公司；S67 场景包使用业务管理员角色语义，避免依赖平台管理员身份。
   - `project.progress.entry` 向成本只读、成本用户和成本经理提供分层 ACL、动作、菜单及项目成员/公司记录规则；只读角色无写、创建、删除权限。
@@ -24,7 +25,8 @@
 
 ## 3. 风险
 
-- P0：无已知未缓解 P0 风险；平台内核、公开 intent 与前端契约消费未改动。
+- P0：本 PR 早期批次包含 `smart_core` 平台管理员身份载体与通用源码根缓存指纹修复；未改变公开 intent、contract schema 或前端消费语义，相关边界与契约门禁已通过。
+- P1：正式模块不得携带开发验证登录凭据；新增 product-payload guard 阻止产品 addon XML 再次创建带 login/password 的 `res.users`，专用 acceptance fixture 除外。
 - P1：进度记录新增读取面可能暴露跨项目数据；通过全局公司规则和项目经理/关注者成员域限制，并以只读 ACL 测试锁定。
 - P1：历史数据库结构差异可能继续暴露更早版本缺口；本轮迁移仅补齐已实际触发的缺失表/列/父模型元数据，仍须由 clean-install 与租户演练分别验证。
 - P2：本地 `curl` 路径依赖 Linux 系统位置；允许通过 `CURL_BIN` 显式覆盖，默认环境已验证。
@@ -32,6 +34,8 @@
 ## 4. 验证
 
 - `make ci.local.quick`：PASS；测试清单 1355 项，前端 lint 0 error / 31 个既有 warning，严格类型检查与构建 PASS。
+- 删除开发账号后的 `make ci.local.quick`：PASS；secret/personal-data、product payload boundary、产品 fresh-install、生成报告、Contract V2、前端 lint/type/build 全部通过。
+- `python3 scripts/verify/test_tenant_product_payload_boundary_guard.py`：PASS，10 tests；产品 addon 登录凭据与 acceptance fixture 固定密码均 fail-closed。
 - `make local.dev.test MODULE=smart_construction_core TEST_TAGS=project_progress_read_boundary`：PASS，3 tests / 0 failures / 0 errors。
 - `make local.dev.upgrade MODULE=smart_construction_core`（`CODEX_NEED_UPGRADE=1`）：PASS。
 - `make local.dev.sync_demo`：PASS；demo authority checks PASS。
@@ -39,6 +43,8 @@
 - `make verify.scene.base_contract_source_mix.company_matrix.guard`：PASS；company 1 与 company 3 均为 66 场景、asset ratio 0.9091、runtime-minimal ratio 0.0909。
 - `make verify.product.delivery.action_closure.smoke`：PASS；付款申请、项目台账、预算管理 3/3。
 - `make verify.restricted`：PASS；frontend、scene readiness、action closure、module capability、backend contract closure、governance truth 全部 PASS。
+- 删除开发账号后的 `make verify.restricted`：PASS；fixture 角色矩阵、双公司矩阵、动作闭环与后端契约均未依赖产品内固定账号。
+- 删除开发账号后的 `CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core make local.dev.upgrade MODULE=smart_construction_core`：PASS；模块加载清单不再包含 `sc_cap_config_admin_user.xml`，升级后 authority 校验 PASS。
 - `make local.dev.health`：PASS；`project=sc-local-dev`、`db=sc_dev_demo`、`dbfilter=^sc_dev_demo$`。
 - 过程中发现并修复的失败：PM runtime-minimal 7/66、主公司管理员资产覆盖 17/66、动作闭环复用 PM 快照导致 `workflow_states<1`。最终重跑均已转绿。
 

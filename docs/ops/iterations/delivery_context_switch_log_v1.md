@@ -8643,8 +8643,31 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - GitHub CLI auth source: workspace-managed `GH_CONFIG_DIR=/home/lidefend/.config/gh-new-account`;
   tokens are not recorded. `make pr.push` and the exact-SHA scheduled workflow
   dispatch were performed through this source.
-- Acceptance carrier: `sc_business_admin` / `SC Business Configuration Administrator`,
-  backed by `smart_construction_core.user_sc_business_config_admin` and the
-  `group_sc_cap_business_config_admin` capability. Its password is a local/UAT
-  credential, not a platform-admin credential; the frontend must use the
-  explicit password credential envelope supported by the upgraded auth service.
+- Acceptance carrier correction: the temporary `sc_business_admin` record and
+  its fixed development password were removed from `smart_construction_core`.
+  Product modules must not create development login credentials. Governed
+  acceptance uses `fixture_role_config_admin`, owned by
+  `smart_construction_acceptance_fixture.fe_user_config_admin`; its password is
+  supplied only through `SC_ACCEPTANCE_FIXTURE_PASSWORD` in the isolated fixture
+  entrypoint. The platform administrator remains a separate authority.
+
+## 2026-09-07 — 开发验证身份退出正式产品面
+
+- Formal Product Layer / target: P4 acceptance fixture governance；the P1
+  `smart_construction_core` install surface only removes the misplaced carrier.
+- Removed `data/sc_cap_config_admin_user.xml` from the product manifest and
+  deleted the fixed-login record. No public contract, route, frontend, database
+  architecture, or production profile changed.
+- Acceptance identity is now exclusively
+  `smart_construction_acceptance_fixture.fe_user_config_admin`, created by the
+  registered `make acceptance.frontend.fixture` flow with an environment-supplied
+  password.
+- Added a product-payload regression rule and unit tests that reject login or
+  password seeding through product-addon XML while permitting the dedicated
+  acceptance-fixture carrier.
+- Verification: payload-boundary tests 10/10 PASS；`make ci.local.quick` PASS；
+  `make verify.restricted` PASS；governed `local.dev.upgrade` PASS with the
+  removed XML absent from the module loading list. The first sandboxed Quick
+  attempt reached Contract V2 then failed only because the registered off-repo
+  artifact path was read-only inside the sandbox；the same exact candidate gate
+  passed when executed with authorized artifact access.
