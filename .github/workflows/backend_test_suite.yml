@@ -213,8 +213,10 @@ jobs:
             module_test_tags="${TEST_TAGS_INPUT}"
             if [ -z "${module_test_tags}" ] && [ "${module}" = "smart_construction_bundle" ]; then
               # The bundle identity test is intentionally post-install because
-              # it validates the fully assembled delivery package.
-              module_test_tags="post_install"
+              # it validates the fully assembled delivery package. Keep the
+              # tag module-qualified: a bare post_install tag would also run
+              # every post-install test inherited from bundle dependencies.
+              module_test_tags="/smart_construction_bundle:post_install"
             fi
             if [ "${module}" = "smart_construction_demo" ]; then
               # The demo payload's pre_init_hook refuses non-demo databases
