@@ -8611,3 +8611,18 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   场景超过该门禁的 22 项阈值。
 - 结论：该门禁必须路由到 acceptance/disposable fixture profile；禁止向持久 dev
   库回灌 demo 场景数据。
+
+## 2026-09-07 — 定时 backend_test_suite 测试入口收口
+
+- Layer Target: P4 CI workflow / `.github/workflows/backend_test_suite.yml`。
+- Root cause: module discovery treated every `tests/` directory as an Odoo test
+  suite. `smart_construction_scene` therefore collected zero Odoo tests, while
+  `smart_construction_bundle` only exposed a post-install test and also collected
+  zero tests under the default tag set.
+- Change: classify Odoo-backed modules by `odoo.tests` imports, run other modules
+  through `unittest discover`, and assign `post_install` as bundle's governed
+  default tag. Zero collected tests remain fail-closed. The scene registry now
+  carries the documented compatibility key `projects.dashboard_showcase`.
+- Evidence: 67 scene Python unit tests pass; `make verify.backend.architecture.static`
+  passes; workflow and fixture YAML parse successfully; `git diff --check` passes.
+- Exclusion: no persistent database/demo fixture change and no remote dispatch/push.

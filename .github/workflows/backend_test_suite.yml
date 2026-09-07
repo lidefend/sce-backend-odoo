@@ -2,8 +2,10 @@ name: backend_test_suite
 
 # R9 (productization audit): automated entry for the backend Odoo test
 # suite, which needs a live database. Runs nightly on the default branch
-# and on demand; each module with a tests/ directory is installed and
-# tested in an isolated per-run database.
+# and on demand; each module with a tests/ directory is tested in an
+# isolated per-run database. Odoo tests and repository-level Python unit
+# tests use their respective governed runners; a zero-test Odoo invocation
+# is never accepted as a passing result.
 
 on:
   schedule:
@@ -15,7 +17,7 @@ on:
         required: false
         default: ""
       modules:
-        description: "Comma-separated module override (default: all modules with tests/)"
+        description: "Comma-separated module override (default: all runnable module tests)"
         required: false
         default: ""
       test_tags:
@@ -78,17 +80,38 @@ jobs:
         run: |
           set -euo pipefail
           override="${{ github.event.inputs.modules }}"
+          MODULES=""
+          PYTHON_MODULES=""
           if [ -n "${override}" ]; then
-            MODULES="${override//,/ }"
+            candidates="${override//,/ }"
           else
-            MODULES="$(find addons demo_addons -maxdepth 2 -type d -name tests -printf '%h\n' \
+            candidates="$(find addons demo_addons -maxdepth 2 -type d -name tests -printf '%h\n' \
               | while read -r dir; do
                   [ -f "${dir}/__manifest__.py" ] && basename "${dir}"
                 done | sort -u | tr '\n' ' ')"
           fi
-          test -n "${MODULES}" || { echo "no modules with tests/ found"; exit 1; }
+          for module in ${candidates}; do
+            test_dir=""
+            for root in addons demo_addons; do
+              if [ -d "${root}/${module}/tests" ]; then
+                test_dir="${root}/${module}/tests"
+                break
+              fi
+            done
+            test -n "${test_dir}" || { echo "module ${module} has no tests/ directory" >&2; exit 1; }
+            if grep -RqsE '(^|[[:space:]])(from|import)[[:space:]]+odoo\.tests' "${test_dir}"; then
+              MODULES="${MODULES} ${module}"
+            else
+              PYTHON_MODULES="${PYTHON_MODULES} ${module}"
+            fi
+          done
+          test -n "${MODULES}${PYTHON_MODULES}" || { echo "no runnable module tests found"; exit 1; }
+          MODULES="${MODULES# }"
+          PYTHON_MODULES="${PYTHON_MODULES# }"
           echo "MODULES=${MODULES}" >> "${GITHUB_ENV}"
-          printf 'backend suite modules:\n%s\n' "${MODULES}"
+          echo "PYTHON_MODULES=${PYTHON_MODULES}" >> "${GITHUB_ENV}"
+          printf 'backend Odoo modules:\n%s\n' "${MODULES:-<none>}"
+          printf 'backend Python unit modules:\n%s\n' "${PYTHON_MODULES:-<none>}"
 
       - name: Configure compose environment
         run: |
@@ -187,6 +210,12 @@ jobs:
             # Each module gets a fresh isolated database: modules must not
             # observe state left behind by earlier modules in the same run.
             module_db="${DB_NAME}_${module}"
+            module_test_tags="${TEST_TAGS_INPUT}"
+            if [ -z "${module_test_tags}" ] && [ "${module}" = "smart_construction_bundle" ]; then
+              # The bundle identity test is intentionally post-install because
+              # it validates the fully assembled delivery package.
+              module_test_tags="post_install"
+            fi
             if [ "${module}" = "smart_construction_demo" ]; then
               # The demo payload's pre_init_hook refuses non-demo databases
               # by design (guard_demo_scope): authorized db name +
@@ -206,8 +235,8 @@ jobs:
                 echo "::error::backend suite failed for module ${module}"
                 failed=1
               fi
-            elif [ -n "${TEST_TAGS_INPUT}" ]; then
-              if ! make test MODULE="${module}" TEST_TAGS="${TEST_TAGS_INPUT}" DB_NAME="${module_db}"; then
+            elif [ -n "${module_test_tags}" ]; then
+              if ! make test MODULE="${module}" TEST_TAGS="${module_test_tags}" DB_NAME="${module_db}"; then
                 echo "::error::backend suite failed for module ${module}"
                 failed=1
               fi
@@ -216,6 +245,25 @@ jobs:
                 echo "::error::backend suite failed for module ${module}"
                 failed=1
               fi
+            fi
+          done
+          for module in ${PYTHON_MODULES}; do
+            echo "===== backend Python unit suite: ${module} ====="
+            test_dir=""
+            for root in addons demo_addons; do
+              if [ -d "${root}/${module}/tests" ]; then
+                test_dir="${root}/${module}/tests"
+                break
+              fi
+            done
+            test -n "${test_dir}" || { echo "::error::missing Python test directory for ${module}"; failed=1; continue; }
+            python_log="${RUNNER_TEMP}/backend-suite-python-${module}-${GITHUB_RUN_ID}.log"
+            if ! python3 -m unittest discover -s "${test_dir}" -p 'test*.py' 2>&1 | tee "${python_log}"; then
+              echo "::error::backend Python unit suite failed for module ${module}"
+              failed=1
+            elif ! grep -Eq 'Ran [1-9][0-9]* test[s]?[[:space:]]' "${python_log}"; then
+              echo "::error::backend Python unit suite collected zero tests for module ${module}"
+              failed=1
             fi
           done
           test "${failed}" -eq 0

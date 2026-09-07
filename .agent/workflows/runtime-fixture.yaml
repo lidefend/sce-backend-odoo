@@ -36,9 +36,18 @@ workflow:
     local_dev_authority: make local.dev.verify_realistic
     local_dev_static_architecture: make verify.backend.architecture.static
 
+  scheduled_backend_suite:
+    workflow: .github/workflows/backend_test_suite.yml
+    odoo_module_tests: modules_with_odoo_tests_only
+    python_unit_tests: modules_without_odoo_test_classes_via_unittest_discover
+    post_install_defaults:
+      - smart_construction_bundle
+    zero_test_policy: fail_closed
+
   stop_conditions:
     - persistent_dev_selected_for_scene_runtime_guard
     - missing_explicit_fixture_guard
     - unresolved_database_or_credential_identity
     - fixture_data_written_to_sc_dev_demo
     - zero_runtime_tests_collected
+    - zero_backend_suite_tests_collected

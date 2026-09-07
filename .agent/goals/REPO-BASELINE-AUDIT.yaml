@@ -52,3 +52,4 @@ goal:
     - reconcile_rendering_detail_gap_7_machine_report_with_zero_gap_landing_docs
     - close_four_orphan_guard_registry_entries_with_explicit_owners
     - rerun_frontend_quick_and_backend_architecture_gates_before_runtime_acceptance
+    - close_scheduled_backend_suite_zero_test_module_routing_and_rerun_exact_head
