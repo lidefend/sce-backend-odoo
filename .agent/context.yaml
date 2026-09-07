@@ -55,6 +55,8 @@ governed_runtime_profiles:
     purpose: persistent_realistic_feature_iteration_no_automatic_odoo_demo
     odoo_demo: false
     synthetic_fixture: explicit_only
+    rebuild_entrypoint: local.dev.rebuild_realistic
+    authority_verify_entrypoint: local.dev.verify_realistic
   local_sample:
     make_prefix: local.sample
     compose_project: sc-local-sample

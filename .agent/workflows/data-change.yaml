@@ -37,3 +37,7 @@ workflow:
     - bind_fixture_to_disposable_database_and_creation_batch
     - destroy_disposable_fixture_after_iteration
     - prohibit_fixture_data_in_sc_dev_demo
+
+  entrypoints:
+    persistent_dev_rebuild: make local.dev.rebuild_realistic
+    persistent_dev_authority_verify: make local.dev.verify_realistic
