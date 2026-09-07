@@ -8626,3 +8626,20 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Evidence: 67 scene Python unit tests pass; `make verify.backend.architecture.static`
   passes; workflow and fixture YAML parse successfully; `git diff --check` passes.
 - Exclusion: no persistent database/demo fixture change and no remote dispatch/push.
+
+## 2026-09-07 — 本地验收身份与 GitHub 认证入口收口
+
+- Local runtime: `sc-local-dev` / `sc_dev_demo`; `admin/admin` 登录成功。
+- Identity evidence: `app.init` reports `user.is_platform_admin=true` and
+  `role_surface.role_code=system_admin` after the explicit platform-admin carrier
+  is assigned. The system-admin surface intentionally exposes only system/config
+  navigation; it is not the construction business role package.
+- Boundary: business product menus require an explicit SC business role (or a
+  dedicated acceptance account). Do not silently grant business superuser
+  semantics to the built-in platform administrator.
+- Durable fix: `smart_core` now seeds `base.user_admin` with
+  `smart_core.group_smart_core_admin` through its post-init hook, so a governed
+  rebuild preserves platform-admin identity.
+- GitHub CLI auth source: workspace-managed `GH_CONFIG_DIR=/home/lidefend/.config/gh-new-account`;
+  tokens are not recorded. `make pr.push` and the exact-SHA scheduled workflow
+  dispatch were performed through this source.

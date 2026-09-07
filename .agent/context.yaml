@@ -69,6 +69,10 @@ governed_runtime_profiles:
     purpose: disposable_clean_installation
   manual_environment_assembly_forbidden: true
 
+delivery_auth:
+  github_cli_config_dir: /home/lidefend/.config/gh-new-account
+  credential_policy: use_workspace_managed_gh_config; never record tokens
+
 data_policy:
   persistent_dev:
     database: sc_dev_demo
