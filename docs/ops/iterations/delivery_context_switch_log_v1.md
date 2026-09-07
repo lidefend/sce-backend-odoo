@@ -8573,3 +8573,18 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `.agent/runs/REPO-BASELINE-AUDIT/20260907.yaml`。
 - Next order: boundary ownership decision → rendering report reconciliation → orphan
   registry closure → rerun static gates → runtime/contract/browser acceptance。
+
+## 2026-09-07 — smart_core 边界修复批次
+
+- Branch / baseline: `audit/full-repository-baseline-20260907` /
+  `5a18788534981a2025bc24acecb9bfb1740b0f7c`。
+- Layer Target: P0 platform boundary guard / `addons/smart_core/utils/load_contract_response_cache.py`。
+- Reason: remove the hard-coded industry module path from the generic contract cache
+  code fingerprint roots; preserve cache invalidation through the configured managed
+  source root without introducing industry semantics into `smart_core`。
+- Commit: `51d6621f` (`fix(smart-core): remove industry module from cache fingerprint roots`)。
+- Verification: `smart_core_boundary_guard`、`backend_boundary_guard`、boundary import
+  guard and all preceding backend architecture checks passed on the exact HEAD。
+- Remaining blocker: the full backend chain stops at the pre-existing
+  `scene_legacy_deprecation_smoke` login response missing a token；no database or
+  product runtime mutation was performed。
