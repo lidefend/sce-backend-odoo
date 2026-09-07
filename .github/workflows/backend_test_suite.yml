@@ -2,7 +2,7 @@ name: backend_test_suite
 
 # R9 (productization audit): automated entry for the backend Odoo test
 # suite, which needs a live database. Runs nightly on the default branch
-# and on demand; each module with a tests/ directory is installed and
+# and on demand; each module with test_*.py files is installed and
 # tested in an isolated per-run database.
 
 on:
@@ -15,11 +15,11 @@ on:
         required: false
         default: ""
       modules:
-        description: "Comma-separated module override (default: all modules with tests/)"
+        description: "Comma-separated module override (default: all modules with test files)"
         required: false
         default: ""
       test_tags:
-        description: "Odoo --test-tags override (default: module default tags)"
+        description: "Odoo --test-tags override (default: clean-safe module selectors)"
         required: false
         default: ""
 
@@ -81,8 +81,11 @@ jobs:
           if [ -n "${override}" ]; then
             MODULES="${override//,/ }"
           else
-            MODULES="$(find addons demo_addons -maxdepth 2 -type d -name tests -printf '%h\n' \
-              | while read -r dir; do
+            MODULES="$(find addons demo_addons -mindepth 3 -maxdepth 3 \
+              -type f -path '*/tests/test_*.py' -printf '%h\n' \
+              | sort -u \
+              | while read -r tests_dir; do
+                  dir="${tests_dir%/tests}"
                   [ -f "${dir}/__manifest__.py" ] && basename "${dir}"
                 done | sort -u | tr '\n' ' ')"
           fi
@@ -181,12 +184,113 @@ jobs:
       - name: Run backend test suite per module
         run: |
           set -uo pipefail
+          NON_ZERO_RESULT_RE='0 failed, 0 error\(s\) of [1-9][0-9]* tests'
+
+          default_test_tags() {
+            local module="$1"
+            local tag
+            case "${module}" in
+              sc_norm_engine) tag="sc_regression" ;;
+              smart_construction_acceptance_fixture) tag="acceptance_fixture_gate" ;;
+              smart_construction_bootstrap) tag="locale_baseline" ;;
+              smart_construction_core) tag="sc_install" ;;
+              smart_construction_demo) tag="demo_gate" ;;
+              smart_construction_portal) tag="contract_dashboard" ;;
+              smart_construction_seed) tag="sc_smoke" ;;
+              smart_core) tag="sc_smoke" ;;
+              smart_license_core) tag="tier_gate" ;;
+              smart_owner_bundle) tag="registry_consistency" ;;
+              smart_owner_core) tag="extension_contract" ;;
+              smart_scene) tag="scene_resolver" ;;
+              *)
+                module_test_tags="/${module}"
+                printf '%s\n' "${module_test_tags}"
+                return 0
+                ;;
+            esac
+            printf '%s/%s\n' "${tag}" "${module}"
+          }
+
+          scope_test_tags() {
+            local module="$1"
+            local raw="$2"
+            local scoped=""
+            local selector
+            local selected_module
+            local requested=()
+
+            if [ -z "${raw}" ]; then
+              default_test_tags "${module}"
+              return
+            fi
+
+            raw="${raw// /}"
+            IFS=',' read -r -a requested <<< "${raw}"
+            for selector in "${requested[@]}"; do
+              [ -n "${selector}" ] || continue
+              if [[ "${selector}" == /* ]]; then
+                if [[ "${selector}" != "/${module}" &&
+                      "${selector}" != "/${module}:"* &&
+                      "${selector}" != "/${module}."* ]]; then
+                  echo "::error::test selector ${selector} escapes target module ${module}" >&2
+                  return 2
+                fi
+              elif [[ "${selector}" == */* ]]; then
+                selected_module="${selector#*/}"
+                selected_module="${selected_module%%[:.]*}"
+                if [[ "${selected_module}" != "${module}" ]]; then
+                  echo "::error::test selector ${selector} escapes target module ${module}" >&2
+                  return 2
+                fi
+              elif [[ "${selector}" == :* || "${selector}" == .* ]]; then
+                selector="/${module}${selector}"
+              else
+                if [[ "${selector}" == -* ]]; then
+                  selector="-${selector#-}/${module}"
+                else
+                  selector="${selector}/${module}"
+                fi
+              fi
+              scoped="${scoped:+${scoped},}${selector}"
+            done
+            [ -n "${scoped}" ] || {
+              echo "::error::no valid test selector for module ${module}" >&2
+              return 2
+            }
+            printf '%s\n' "${scoped}"
+          }
+
+          run_module_test() {
+            local module="$1"
+            local module_db="$2"
+            local module_env_file="$3"
+            local module_test_tags="$4"
+            local module_log="${RUNNER_TEMP}/backend-suite-${GITHUB_RUN_ID}-${module}.log"
+
+            if ! ENV_FILE="${module_env_file}" make test \
+              MODULE="${module}" \
+              TEST_TAGS="${module_test_tags}" \
+              DB_NAME="${module_db}" 2>&1 | tee "${module_log}"; then
+              echo "::error::backend suite failed for module ${module}"
+              return 1
+            fi
+            if ! grep -Eq "${NON_ZERO_RESULT_RE}" "${module_log}"; then
+              echo "::error::backend suite produced no non-zero passing test summary for module ${module}"
+              return 1
+            fi
+          }
+
           failed=0
           for module in ${MODULES}; do
             echo "===== backend suite: ${module} ====="
             # Each module gets a fresh isolated database: modules must not
             # observe state left behind by earlier modules in the same run.
             module_db="${DB_NAME}_${module}"
+            if ! module_test_tags="$(scope_test_tags "${module}" "${TEST_TAGS_INPUT}")"; then
+              failed=1
+              continue
+            fi
+            echo "backend suite selector: ${module_test_tags}"
             if [ "${module}" = "smart_construction_demo" ]; then
               # The demo payload's pre_init_hook refuses non-demo databases
               # by design (guard_demo_scope): authorized db name +
@@ -202,18 +306,11 @@ jobs:
               echo "::add-mask::${demo_password}"
               printf 'SC_ALLOW_DEMO_DATA=1\nSC_DEMO_USER_PASSWORD=%s\n' \
                 "${demo_password}" >> "${demo_env}"
-              if ! ENV_FILE="${demo_env}" make test MODULE="${module}" DB_NAME="${module_db}"; then
-                echo "::error::backend suite failed for module ${module}"
-                failed=1
-              fi
-            elif [ -n "${TEST_TAGS_INPUT}" ]; then
-              if ! make test MODULE="${module}" TEST_TAGS="${TEST_TAGS_INPUT}" DB_NAME="${module_db}"; then
-                echo "::error::backend suite failed for module ${module}"
+              if ! run_module_test "${module}" "${module_db}" "${demo_env}" "${module_test_tags}"; then
                 failed=1
               fi
             else
-              if ! make test MODULE="${module}" DB_NAME="${module_db}"; then
-                echo "::error::backend suite failed for module ${module}"
+              if ! run_module_test "${module}" "${module_db}" "${ENV_FILE}" "${module_test_tags}"; then
                 failed=1
               fi
             fi

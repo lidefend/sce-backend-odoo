@@ -8553,3 +8553,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Cost: merges now take ~8 extra minutes locally. That is the price of not
   shipping guard drift to main; a faster subset can be carved out later if it
   becomes a bottleneck.
+
+## 2026-09-07 — Backend suite module isolation and non-zero evidence
+
+- Branch / baseline: `fix/backend-suite-module-isolation-v1` /
+  `5a18788534981a2025bc24acecb9bfb1740b0f7c`.
+- Formal Product Layer: P4 ops delivery tool.
+- Layer Target: nightly/manual backend test orchestration and GitHub Actions
+  governance guard.
+- Module: `.github/workflows/backend_test_suite.yml`, `scripts/_lib/common.sh`,
+  and `scripts/verify/github_actions_security_guard.py` with its unit tests.
+- Reason: same-SHA evidence showed `frontend_release_gate` success followed by
+  scheduled `backend_test_suite` failure. The common tag normalizer leaked
+  bare `sc_smoke,sc_gate` selectors across dependency modules, while its old
+  scoped form did not match Odoo 17 selector grammar, so the workflow ran
+  local.dev fixture-dependent P1 tests in isolated clean databases; it also
+  accepted zero-test summaries.
+- Boundary: no product model, fixture, runtime profile, database identity,
+  contract, public intent, startup chain, or frontend behavior change.
+- Validation: `make verify.ci.scheduled_gates` PASS; 20/20 workflow guard tests
+  PASS. Earlier `verify.restricted` and `verify.backend.guard` reached unrelated live
+  scene probes and stopped on unavailable/stale `dev_test_bootstrap`
+  authentication (backend trace `2d9b393b2d67`). Exact-head remote workflow
+  dispatch remains pending publication.
+- Detail: `docs/ops/iterations/backend_suite_module_isolation_batch_20260907.md`.

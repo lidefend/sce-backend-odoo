@@ -203,7 +203,7 @@ CONFIG_MOUNT_HOST ?= $(ROOT_DIR)/config
 CONFIG_MOUNT_CONT ?= /mnt/config
 
 # ------------------ Test tags ------------------
-# 你写 sc_gate,sc_perm，脚本会自动变成 /smart_construction_core:sc_gate,/smart_construction_core:sc_perm
+# 你写 sc_gate,sc_perm，脚本会自动变成 sc_gate/smart_construction_core,sc_perm/smart_construction_core
 TEST_TAGS ?= sc_smoke,sc_gate
 
 # ------------------ CI artifacts ------------------

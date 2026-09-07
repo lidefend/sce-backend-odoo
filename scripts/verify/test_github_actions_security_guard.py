@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+import textwrap
 import unittest
 from pathlib import Path
 
@@ -251,6 +252,136 @@ jobs:
             )
             classes = {item.classification for item in guard.scan(root)}
             self.assertIn("BACKEND_SUITE_DYNAMIC_SECRET_MASKING_INCOMPLETE", classes)
+
+    def test_backend_suite_module_isolation_and_nonzero_evidence_are_required(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            workflow = root / ".github/workflows/backend_test_suite.yml"
+            workflow.parent.mkdir(parents=True)
+            source = (ROOT / workflow.relative_to(root)).read_text(encoding="utf-8")
+
+            workflow.write_text(
+                source.replace("scope_test_tags()", "scope_all_test_tags()", 1),
+                encoding="utf-8",
+            )
+            classes = {item.classification for item in guard.scan(root)}
+            self.assertIn("BACKEND_SUITE_MODULE_ISOLATION_INCOMPLETE", classes)
+
+            workflow.write_text(
+                source.replace("NON_ZERO_RESULT_RE=", "UNTRUSTED_RESULT_RE=", 1),
+                encoding="utf-8",
+            )
+            classes = {item.classification for item in guard.scan(root)}
+            self.assertIn("BACKEND_SUITE_NONZERO_EVIDENCE_INCOMPLETE", classes)
+
+    def backend_suite_functions(self) -> str:
+        source = (ROOT / ".github/workflows/backend_test_suite.yml").read_text(encoding="utf-8")
+        start = source.index("          NON_ZERO_RESULT_RE=")
+        end = source.index("\n          failed=0", start)
+        return textwrap.dedent(source[start:end])
+
+    def run_backend_suite_function(self, command: str) -> subprocess.CompletedProcess[str]:
+        with tempfile.TemporaryDirectory() as directory:
+            environment = os.environ.copy()
+            environment.update({"RUNNER_TEMP": directory, "GITHUB_RUN_ID": "12345"})
+            return subprocess.run(
+                ["bash", "-c", f"set -uo pipefail\n{self.backend_suite_functions()}\n{command}"],
+                check=False,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                env=environment,
+            )
+
+    def test_backend_suite_default_and_override_selectors_stay_in_module(self) -> None:
+        result = self.run_backend_suite_function(
+            "test \"$(scope_test_tags smart_core '')\" = 'sc_smoke/smart_core' && "
+            "test \"$(scope_test_tags smart_construction_core '')\" = "
+            "'sc_install/smart_construction_core' && "
+            "test \"$(scope_test_tags smart_construction_scene '')\" = "
+            "'/smart_construction_scene' && "
+            "test \"$(scope_test_tags smart_core 'sc_smoke,sc_gate')\" = "
+            "'sc_smoke/smart_core,sc_gate/smart_core' && "
+            "test \"$(scope_test_tags smart_core '-slow')\" = '-slow/smart_core' && "
+            "test \"$(scope_test_tags smart_core '.test_one')\" = "
+            "'/smart_core.test_one'"
+        )
+        self.assertEqual(result.returncode, 0, result.stdout)
+
+        result = self.run_backend_suite_function(
+            "scope_test_tags smart_core 'sc_gate/smart_construction_core'"
+        )
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn("escapes target module smart_core", result.stdout)
+
+    def test_backend_suite_default_selectors_reference_real_module_tests(self) -> None:
+        expected = {
+            "sc_norm_engine": "sc_regression",
+            "smart_construction_acceptance_fixture": "acceptance_fixture_gate",
+            "smart_construction_bootstrap": "locale_baseline",
+            "smart_construction_core": "sc_install",
+            "smart_construction_demo": "demo_gate",
+            "smart_construction_portal": "contract_dashboard",
+            "smart_construction_seed": "sc_smoke",
+            "smart_core": "sc_smoke",
+            "smart_license_core": "tier_gate",
+            "smart_owner_bundle": "registry_consistency",
+            "smart_owner_core": "extension_contract",
+            "smart_scene": "scene_resolver",
+        }
+        for module, tag in expected.items():
+            with self.subTest(module=module):
+                result = self.run_backend_suite_function(f"scope_test_tags {module} ''")
+                self.assertEqual(result.returncode, 0, result.stdout)
+                self.assertEqual(result.stdout.strip(), f"{tag}/{module}")
+                module_root = ROOT / ("demo_addons" if module == "smart_construction_demo" else "addons") / module
+                test_source = "\n".join(
+                    path.read_text(encoding="utf-8")
+                    for path in sorted((module_root / "tests").glob("test_*.py"))
+                )
+                self.assertRegex(test_source, rf"['\"]{tag}['\"]")
+
+        for module in ("smart_construction_bundle", "smart_construction_scene"):
+            with self.subTest(module=module):
+                result = self.run_backend_suite_function(f"scope_test_tags {module} ''")
+                self.assertEqual(result.returncode, 0, result.stdout)
+                self.assertEqual(result.stdout.strip(), f"/{module}")
+                self.assertTrue(list((ROOT / "addons" / module / "tests").glob("test_*.py")))
+
+    def test_common_tag_normalizer_emits_only_odoo_module_scoped_selectors(self) -> None:
+        command = """
+source scripts/_lib/common.sh
+test "$(normalize_test_tags smart_core 'sc_smoke,sc_gate,-slow')" = \
+  'sc_smoke/smart_core,sc_gate/smart_core,-slow/smart_core'
+test "$(normalize_test_tags smart_core 'sc_install/smart_core,/smart_core:TestCase,.test_one')" = \
+  'sc_install/smart_core,/smart_core:TestCase,/smart_core.test_one'
+"""
+        result = subprocess.run(
+            ["bash", "-c", command],
+            cwd=ROOT,
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout)
+
+    def test_backend_suite_rejects_zero_test_summary(self) -> None:
+        command = """
+make() { printf '%s\n' '0 failed, 0 error(s) of 0 tests'; }
+run_module_test smart_core sc_suite_ci_smart_core /tmp/fake.env /smart_core
+"""
+        result = self.run_backend_suite_function(command)
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn("produced no non-zero passing test summary", result.stdout)
+
+    def test_backend_suite_accepts_nonzero_passing_summary(self) -> None:
+        command = """
+make() { printf '%s\n' '0 failed, 0 error(s) of 14 tests'; }
+run_module_test smart_core sc_suite_ci_smart_core /tmp/fake.env /smart_core
+"""
+        result = self.run_backend_suite_function(command)
+        self.assertEqual(result.returncode, 0, result.stdout)
 
     def run_cleanup_fixture(self, project: str) -> tuple[subprocess.CompletedProcess[str], str]:
         with tempfile.TemporaryDirectory() as directory:

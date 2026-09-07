@@ -163,6 +163,23 @@ def scan(root: Path) -> list[Finding]:
             )
             if any(item not in text for item in mask_requirements):
                 findings.add(Finding("GA019", relative, "BACKEND_SUITE_DYNAMIC_SECRET_MASKING_INCOMPLETE"))
+            isolation_requirements = (
+                "-type f -path '*/tests/test_*.py'",
+                "default_test_tags()",
+                "scope_test_tags()",
+                'module_test_tags="/${module}"',
+                'smart_construction_core) tag="sc_install"',
+                'TEST_TAGS="${module_test_tags}"',
+            )
+            if any(item not in text for item in isolation_requirements):
+                findings.add(Finding("GA020", relative, "BACKEND_SUITE_MODULE_ISOLATION_INCOMPLETE"))
+            nonzero_requirements = (
+                "NON_ZERO_RESULT_RE=",
+                'grep -Eq "${NON_ZERO_RESULT_RE}"',
+                "backend suite produced no non-zero passing test summary",
+            )
+            if any(item not in text for item in nonzero_requirements):
+                findings.add(Finding("GA021", relative, "BACKEND_SUITE_NONZERO_EVIDENCE_INCOMPLETE"))
         if path.name == "frontend_release_gate.yml":
             required = (
                 "push:\n    branches: [main]",
