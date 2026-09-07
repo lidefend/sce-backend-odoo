@@ -8671,3 +8671,16 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   attempt reached Contract V2 then failed only because the registered off-repo
   artifact path was read-only inside the sandbox；the same exact candidate gate
   passed when executed with authorized artifact access.
+
+## 2026-09-07 — PR exact-head guard registry 收口
+
+- Formal Product Layer / target: P4 verification governance / existing Make owners.
+- Root cause: `professional_quality_gate` correctly rejected five unit-test scripts that
+  existed under `scripts/verify/` but were not statically referenced by Make/CI.
+- Change: attach the tests to the existing backend business-fact, scene inventory,
+  scene R3 runtime, and product-delivery action-closure targets. No orphan acknowledgement
+  or product-layer workaround was added.
+- Evidence: 67 focused tests PASS; `make verify.guard.registry`, all affected owner targets,
+  `make ci.local.quick`, and `make verify.restricted` PASS.
+- Pending: publish the new exact HEAD, rerun required checks, then merge and clean up only
+  this verified topic branch.

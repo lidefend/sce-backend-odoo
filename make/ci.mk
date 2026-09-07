@@ -602,6 +602,7 @@ verify.output_invoice.source_gap_audit: guard.prod.forbid
 
 verify.backend_business_fact.model_audit: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/backend_business_fact_model_audit.py
+	@python3 scripts/verify/test_backend_business_fact_model_audit.py
 	@python3 scripts/verify/backend_business_fact_model_audit.py --registry docs/architecture/backend_business_fact_model_standard_registry_v1.json --report artifacts/backend/backend_business_fact_model_audit.json --markdown artifacts/backend/backend_business_fact_model_audit.md
 
 verify.backend_business_fact.model_standard: verify.backend_business_fact.model_audit

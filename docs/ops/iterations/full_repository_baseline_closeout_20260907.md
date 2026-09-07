@@ -69,3 +69,24 @@
 - 目标：冻结完整 tracked+untracked 候选指纹，完成独立只读审查，并在审查通过后形成单一可回滚提交。
 - 前置条件：确认当前 31 个文件组成一个可接受产品结果，且没有新的非本轮写入或共享数据库竞争。
 - 阻塞：当前无本地验证阻塞；独立审查与远端发布尚未执行。
+
+## 8. Batch-CI-Registry 收口
+
+- 目标：关闭 exact-head `professional_quality_gate` 报出的 5 个 orphan
+  单元测试脚本，使测试由其真实 owner 的既有 Make 门禁执行，而不是仅在 registry
+  中登记豁免。
+- Formal Product Layer / target：P4 ops delivery tool / Make 验证编排。
+- 完成：backend business fact、scene inventory freeze、scene test boundary、scene R3
+  action resolution 与 product delivery action closure 共 5 个测试脚本已接入现有 owner
+  门禁；不改变产品模块、contract/schema、路由、fixture、数据库或凭据。
+- 验证：5 个脚本共 67 tests PASS；`make verify.guard.registry` PASS（1290 scripts，
+  1186 referenced，104/104 acknowledged orphans）；对应 backend/scene/action-closure
+  owner 门禁 PASS；`make ci.local.quick` PASS；`make verify.restricted` PASS。
+- 失败分流：沙箱内报告写入因受控 `artifacts` 路径只读而失败，分类为
+  `environment_defect`；相同 Make 入口在获准写入受控证据目录后 PASS。
+- 产物：`artifacts/backend/backend_business_fact_model_audit.json`、
+  `artifacts/backend/product_delivery_action_closure_report.json`、
+  `artifacts/backend/delivery_mainline_run_summary.json` 与本文件。
+- 回滚：对本批 P4 提交执行普通 `git revert`；无需模块升级、数据库恢复或 fixture reset。
+- Pending：冻结并提交新 HEAD、`make pr.push`、exact-head required checks、独立复核、
+  squash merge 与受管分支清理。

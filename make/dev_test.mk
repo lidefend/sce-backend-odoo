@@ -1725,6 +1725,7 @@ verify.product.delivery.governance_truth.schema.guard: guard.prod.forbid
 
 .PHONY: verify.product.delivery.action_closure.smoke
 verify.product.delivery.action_closure.smoke: guard.prod.forbid
+	@PYTHONPATH=. python3 scripts/verify/test_product_delivery_action_closure_smoke.py
 	@ACTION_CLOSURE_STATE=artifacts/backend/scene_contract_field_schema_state.action_closure_finance.json; \
 	E2E_LOGIN=$${ROLE_FINANCE_LOGIN:-demo_role_finance} \
 	E2E_PASSWORD=$${ROLE_FINANCE_PASSWORD:-$${SC_DEMO_USER_PASSWORD:-demo}} \

@@ -520,10 +520,12 @@ verify.scene.coverage.dashboard: guard.prod.forbid
 
 .PHONY: verify.scene.inventory.freeze.guard
 verify.scene.inventory.freeze.guard: guard.prod.forbid
+	@python3 scripts/verify/test_scene_inventory_freeze_guard.py
 	@python3 scripts/verify/scene_inventory_freeze_guard.py
 
 .PHONY: verify.scene.inventory.test_boundary.guard
 verify.scene.inventory.test_boundary.guard: guard.prod.forbid
+	@python3 scripts/verify/test_scene_inventory_test_boundary_guard.py
 	@python3 scripts/verify/scene_inventory_test_boundary_guard.py
 
 .PHONY: verify.scene.inventory.hygiene.guard
@@ -546,10 +548,12 @@ verify.scene.data_source.schema.guard: guard.prod.forbid
 
 .PHONY: verify.scene.r3.runtime.guard
 verify.scene.r3.runtime.guard: guard.prod.forbid
+	@python3 scripts/verify/test_scene_r3_action_target_scene_resolution.py
 	@python3 scripts/verify/scene_r3_runtime_guard.py
 
 .PHONY: verify.scene.r3.runtime.strict
 verify.scene.r3.runtime.strict: guard.prod.forbid
+	@python3 scripts/verify/test_scene_r3_action_target_scene_resolution.py
 	@python3 scripts/verify/scene_r3_runtime_guard.py \
 		--max-action-chain-fail-count 0 \
 		--min-pass-rate 1.0 \
