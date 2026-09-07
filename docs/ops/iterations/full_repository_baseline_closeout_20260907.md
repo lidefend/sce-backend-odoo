@@ -107,7 +107,11 @@
 - 风险：视觉颜色由已全局加载的 semantic token 决定，亮/暗主题不再回退到固定浅色值；
   exact-head frontend release/browser evidence 尚待远端 CI 重跑确认。
 - 产物：`frontend/apps/web/dist-dev/`、`frontend/apps/web/dist/`、
+  `docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json`、
   `artifacts/backend/delivery_mainline_run_summary.json` 与最新 delivery scoreboard。
+- Snapshot：样式行变化后通过权威生成器刷新 component-driver inventory input digest；
+  `make verify.frontend.component_driver_takeover.unit` 与完整
+  `make verify.frontend.release.unit` 均 PASS。
 - 回滚：普通 `git revert` 本批提交；无需数据库、模块升级、fixture 或 contract snapshot 回退。
 - Pending：提交并发布新 exact HEAD，重跑 candidate checks；全绿后独立复核、squash merge
   与受管清理。
