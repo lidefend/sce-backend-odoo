@@ -8600,3 +8600,14 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `local.dev.realistic.authority` 与 `local.dev.ready` 均 PASS。
 - Probe note: `local_environment_health.sh` 的 frontend HTTP 检查因当前 curl wrapper
   不支持 `-w` 失败；不影响数据库无 demo 结论，待后续单独修复探针。
+
+## 2026-09-07 — legacy smoke 契约与 fixture 域分流
+
+- Commit: `bf8f04ae` (`fix(smoke): consume nested login session token`)。
+- `scene_legacy_deprecation_smoke` 改用公共 `extract_login_token`，已在无 demo
+  `sc_dev_demo` 上 PASS。
+- 使用显式管理员身份重跑后端架构门禁后，首个剩余失败为
+  `scene_engine_migration_matrix_guard`：无 demo 开发库缺少场景资产，37 个非资产
+  场景超过该门禁的 22 项阈值。
+- 结论：该门禁必须路由到 acceptance/disposable fixture profile；禁止向持久 dev
+  库回灌 demo 场景数据。
