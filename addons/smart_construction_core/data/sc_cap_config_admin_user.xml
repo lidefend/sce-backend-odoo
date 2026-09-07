@@ -1,8 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <data noupdate="0">
-        <record id="base.user_admin" model="res.users">
-            <field name="groups_id" eval="[(3, ref('smart_construction_core.group_sc_cap_config_admin'))]"/>
+    <data noupdate="1">
+        <!--
+            Dedicated business acceptance principal.  This is deliberately not
+            base.user_admin: platform recovery and business product acceptance
+            remain separate authorities.  The account is the stable local/UAT
+            carrier used by the governed browser and contract checks.
+        -->
+        <record id="user_sc_business_config_admin" model="res.users">
+            <field name="name">SC Business Configuration Administrator</field>
+            <field name="login">wutao</field>
+            <field name="password">123456</field>
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
         </record>
     </data>
 </odoo>
