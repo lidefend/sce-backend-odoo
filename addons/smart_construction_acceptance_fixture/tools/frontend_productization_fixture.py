@@ -9,6 +9,7 @@ authorization is verified separately with fixture-owned users and without sudo.
 from __future__ import annotations
 
 import os
+from datetime import date, datetime
 from typing import Any, Dict
 
 
@@ -88,6 +89,10 @@ def _upsert(env, model_name, xmlid_name, domain, values):
                 is_equal = current.id == (value or False)
             elif field.type in ("one2many", "many2many"):
                 is_equal = False
+            elif field.type in ("date", "datetime") and isinstance(
+                current, (date, datetime)
+            ) and isinstance(value, str):
+                is_equal = str(current) == value
             else:
                 is_equal = current == value
             if not is_equal:

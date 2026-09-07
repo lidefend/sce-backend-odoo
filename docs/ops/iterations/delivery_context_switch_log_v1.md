@@ -8711,7 +8711,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Follow-up CI evidence exposed four settlement fixture constructors with the same stale
   direct-state pattern. They now create and reconcile draft facts plus lines first, then
   use the model-owned lifecycle service to reach `approve`; unexpected states fail closed.
-- Focused evidence: fixture upsert unit tests 3/3 PASS. The local governed acceptance
+- The first successful browser pass then exposed an idempotency mismatch between Odoo
+  `date` objects and fixture ISO date strings. The shared upsert comparator now treats
+  those canonical values as equal instead of attempting to rewrite immutable facts.
+- Focused evidence: fixture upsert unit tests 4/4 PASS. The local governed acceptance
   run is environment-blocked because the existing `sc_frontend_acceptance` database
   cannot upgrade an unrelated historical payment-allocation row; no manual SQL or
   unregistered database reset was used. Exact-head CI uses the governed clean acceptance

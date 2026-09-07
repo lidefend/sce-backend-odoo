@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 import unittest
 from unittest.mock import patch
 
@@ -106,6 +107,25 @@ class FrontendProductizationFixtureUpsertTest(unittest.TestCase):
         self.assertEqual(model.search_calls, 0)
         self.assertEqual(safe_record.write_calls, [])
         bind_xmlid.assert_called_once()
+
+    def test_date_string_matches_existing_orm_date_without_write(self) -> None:
+        safe_record = _SafeRecord(8, {"period_start": date(2026, 1, 1)})
+        safe_record._fields = {"period_start": _Field("date")}
+        model = _FakeModel(safe_record)
+        env = _FakeEnv(model, _UnsafeXmlidRecord(8))
+
+        with patch(
+            "addons.smart_construction_acceptance_fixture.tools.frontend_productization_fixture._bind_xmlid"
+        ):
+            _upsert(
+                env,
+                "sc.payment.execution",
+                "fixture_date",
+                [("id", "=", 8)],
+                {"period_start": "2026-01-01"},
+            )
+
+        self.assertEqual(safe_record.write_calls, [])
 
     def test_funding_baseline_uses_controlled_draft_activation(self) -> None:
         class _Project:
