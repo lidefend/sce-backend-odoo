@@ -15,6 +15,7 @@ workflow:
   lifecycle:
     - select_one_independently_acceptable_batch
     - declare_product_layer_target_scope_and_exclusions
+    - resolve_data_policy_before_runtime_feedback
     - run_development_feedback_loop
     - create_small_responsibility_commits
     - freeze_candidate_once
@@ -31,3 +32,19 @@ workflow:
     - required_authority_missing
     - candidate_fingerprint_drift
     - browser_or_mutation_failure
+
+  data_policy:
+    persistent_dev:
+      database: sc_dev_demo
+      odoo_demo: false
+      synthetic_fixture: explicit_only
+      rule: prefer_realistic_persistent_data; invoke_a_registered_fixture_only_for_a_declared_scenario
+    test:
+      synthetic_fixture: true
+      disposable: true
+    acceptance:
+      demo_fixture: true
+      explicit_guard_required: true
+    production:
+      odoo_demo: false
+      synthetic_fixture: forbidden
