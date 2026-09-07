@@ -8588,3 +8588,15 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Remaining blocker: the full backend chain stops at the pre-existing
   `scene_legacy_deprecation_smoke` login response missing a token；no database or
   product runtime mutation was performed。
+
+## 2026-09-07 — 持久开发库无 demo 生命周期迁移
+
+- Branch / head: `audit/full-repository-baseline-20260907` / `9e126bc6`。
+- Layer Target: P4 runtime governance / `local.dev` lifecycle。
+- Change: 新增 `make local.dev.rebuild_realistic` 与
+  `make local.dev.verify_realistic`；重建时使用 `--without-demo=all`，不安装
+  `smart_construction_demo`，并通过 authority verify 拒绝 demo carrier。
+- Runtime evidence: `sc-local-dev` / `sc_dev_demo` 重建成功；
+  `local.dev.realistic.authority` 与 `local.dev.ready` 均 PASS。
+- Probe note: `local_environment_health.sh` 的 frontend HTTP 检查因当前 curl wrapper
+  不支持 `-w` 失败；不影响数据库无 demo 结论，待后续单独修复探针。
