@@ -4,6 +4,7 @@ import unittest
 from unittest.mock import patch
 
 from addons.smart_construction_acceptance_fixture.tools.frontend_productization_fixture import (
+    _ensure_settlement_state,
     _funding_baseline,
     _upsert,
 )
@@ -133,6 +134,25 @@ class FrontendProductizationFixtureUpsertTest(unittest.TestCase):
         self.assertEqual(line_call.args[1], "project.funding.baseline.line")
         self.assertEqual(line_call.args[4]["planned_amount"], 5000.0)
         self.assertEqual(baseline.state, "active")
+
+    def test_settlement_uses_controlled_lifecycle_transition(self) -> None:
+        class _Settlement:
+            state = "draft"
+
+            def __init__(self) -> None:
+                self.targets: list[str] = []
+
+            def _write_lifecycle(self, target_state: str) -> None:
+                self.targets.append(target_state)
+                self.state = target_state
+
+        settlement = _Settlement()
+        _ensure_settlement_state(settlement, "approve")
+        self.assertEqual(settlement.targets, ["approve"])
+        self.assertEqual(settlement.state, "approve")
+
+        _ensure_settlement_state(settlement, "approve")
+        self.assertEqual(settlement.targets, ["approve"])
 
 
 if __name__ == "__main__":

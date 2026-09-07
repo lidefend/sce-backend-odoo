@@ -327,6 +327,18 @@ def _general_contract(env, suffix, project, partner, tax, state, amount):
     )
 
 
+def _ensure_settlement_state(record, target_state):
+    if target_state not in ("draft", "approve"):
+        raise RuntimeError("unsupported frontend fixture settlement state: %s" % target_state)
+    if record.state == "draft" and target_state != "draft":
+        record._write_lifecycle(target_state)
+    if record.state != target_state:
+        raise RuntimeError(
+            "frontend fixture settlement state mismatch: expected %s, got %s"
+            % (target_state, record.state)
+        )
+
+
 def _settlement(env, suffix, project, contract, partner, state, amount):
     name = "FE-%s-SET-001" % suffix
     record = _upsert(
@@ -348,7 +360,6 @@ def _settlement(env, suffix, project, contract, partner, state, amount):
             "settlement_period_end": "2026-07-31",
             "submitted_amount": amount,
             "approved_amount": amount,
-            "state": state,
         },
     )
     _upsert(
@@ -365,6 +376,7 @@ def _settlement(env, suffix, project, contract, partner, state, amount):
         },
     )
     record.invalidate_recordset()
+    _ensure_settlement_state(record, state)
     return record
 
 
@@ -502,7 +514,6 @@ def _payment_journey(env, project, contract, partner, finance):
             "settlement_period_end": "2026-07-31",
             "submitted_amount": 200.0,
             "approved_amount": 200.0,
-            "state": "approve",
         },
     )
     _upsert(
@@ -518,6 +529,8 @@ def _payment_journey(env, project, contract, partner, finance):
             "price_unit": 100.0,
         },
     )
+    settlement.invalidate_recordset()
+    _ensure_settlement_state(settlement, "approve")
     # J06 mutates its request.  Keep it on a dedicated settlement so the
     # following J07 My Work journey still sees its own request in draft.
     j06_settlement = _upsert(
@@ -539,7 +552,6 @@ def _payment_journey(env, project, contract, partner, finance):
             "settlement_period_end": "2026-07-31",
             "submitted_amount": 200.0,
             "approved_amount": 200.0,
-            "state": "approve",
         },
     )
     _upsert(
@@ -555,6 +567,8 @@ def _payment_journey(env, project, contract, partner, finance):
             "price_unit": 100.0,
         },
     )
+    j06_settlement.invalidate_recordset()
+    _ensure_settlement_state(j06_settlement, "approve")
     # FE-B05 approval probes use an isolated settlement so their reserved
     # amounts cannot change the FE-B04 journey's fixed 100.00 balance.
     work_settlement = _upsert(
@@ -576,7 +590,6 @@ def _payment_journey(env, project, contract, partner, finance):
             "settlement_period_end": "2026-07-31",
             "submitted_amount": 200.0,
             "approved_amount": 200.0,
-            "state": "approve",
         },
     )
     _upsert(
@@ -592,6 +605,8 @@ def _payment_journey(env, project, contract, partner, finance):
             "price_unit": 200.0,
         },
     )
+    work_settlement.invalidate_recordset()
+    _ensure_settlement_state(work_settlement, "approve")
     # Browser-created FE-B05 requests are real intent mutations and therefore
     # receive sequence numbers rather than stable XML IDs.  Acceptance reset
     # removes only rows created from this isolated settlement by the finance

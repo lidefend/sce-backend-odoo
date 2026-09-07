@@ -8698,7 +8698,7 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   component-driver inventory, and full frontend release unit suite PASS.
 - Pending: exact-head frontend release and candidate aggregation checks.
 
-## 2026-09-07 — frontend acceptance 资金基线夹具生命周期收口
+## 2026-09-07 — frontend acceptance 财务夹具生命周期收口
 
 - Formal Product Layer / target: P4 acceptance fixture governance /
   `smart_construction_acceptance_fixture`。
@@ -8708,7 +8708,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Change: create or reconcile the fixture-owned draft baseline and its annual plan line,
   then activate it through the public lifecycle action. Product funding semantics and
   enforcement remain unchanged.
-- Focused evidence: fixture upsert unit tests 2/2 PASS. The local governed acceptance
+- Follow-up CI evidence exposed four settlement fixture constructors with the same stale
+  direct-state pattern. They now create and reconcile draft facts plus lines first, then
+  use the model-owned lifecycle service to reach `approve`; unexpected states fail closed.
+- Focused evidence: fixture upsert unit tests 3/3 PASS. The local governed acceptance
   run is environment-blocked because the existing `sc_frontend_acceptance` database
   cannot upgrade an unrelated historical payment-allocation row; no manual SQL or
   unregistered database reset was used. Exact-head CI uses the governed clean acceptance
