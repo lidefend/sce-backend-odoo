@@ -54,6 +54,10 @@ def _get_showroom_projects(env):
 
 def _ensure_project(env, code, vals, owned_xmlid=None):
     Project = env["project.project"].sudo()
+    # All generated business facts require an explicit project company; never
+    # rely on the current user's company as an implicit data default.
+    vals = dict(vals)
+    vals.setdefault("company_id", env.company.id)
     project = Project.search([("project_code", "=", code)], limit=1)
     owned_project = (
         env.ref(owned_xmlid, raise_if_not_found=False) if owned_xmlid else False

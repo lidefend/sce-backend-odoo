@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4303`
+- Scanned files: `4305`
 - Files requiring split plan: `48`
 - Files above warning threshold: `86`
 
@@ -23,7 +23,7 @@ Generated from repository source files. This report is informational during the 
 | 3351 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3272 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3240 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
-| 3136 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
+| 3180 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3016 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2875 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2547 | Python source | `addons/smart_core/handlers/api_data.py` |
@@ -167,7 +167,7 @@ Generated from repository source files. This report is informational during the 
 | 3351 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3272 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3240 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
-| 3136 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
+| 3180 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3016 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2875 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2547 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |

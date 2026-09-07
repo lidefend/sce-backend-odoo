@@ -60,7 +60,7 @@
         <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_user')),                                       (4, ref('smart_construction_core.group_sc_cap_cost_manager'))]" />
     </record>
     <record id="action_project_progress_entry" model="ir.actions.act_window">
-        <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_user')),                                       (4, ref('smart_construction_core.group_sc_cap_cost_manager'))]" />
+        <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_cost_read'), ref('smart_construction_core.group_sc_cap_cost_user'), ref('smart_construction_core.group_sc_cap_cost_manager')])]" />
     </record>
     <record id="action_project_budget_quick" model="ir.actions.act_window">
         <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_user')),                                       (4, ref('smart_construction_core.group_sc_cap_cost_manager'))]" />

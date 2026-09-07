@@ -1725,8 +1725,14 @@ verify.product.delivery.governance_truth.schema.guard: guard.prod.forbid
 
 .PHONY: verify.product.delivery.action_closure.smoke
 verify.product.delivery.action_closure.smoke: guard.prod.forbid
-	@python3 scripts/verify/product_delivery_action_closure_smoke.py
-	@python3 scripts/verify/product_delivery_smoke_schema_guard.py --report action
+	@ACTION_CLOSURE_STATE=artifacts/backend/scene_contract_field_schema_state.action_closure_finance.json; \
+	E2E_LOGIN=$${ROLE_FINANCE_LOGIN:-demo_role_finance} \
+	E2E_PASSWORD=$${ROLE_FINANCE_PASSWORD:-$${SC_DEMO_USER_PASSWORD:-demo}} \
+	SC_SCENE_CONTRACT_FIELD_SCHEMA_STATE_FILE=$$ACTION_CLOSURE_STATE \
+	$(MAKE) --no-print-directory verify.scene.contract.field_schema.guard; \
+	SC_PRODUCT_DELIVERY_ACTION_CLOSURE_STATE_FILE=$$ACTION_CLOSURE_STATE \
+	python3 scripts/verify/product_delivery_action_closure_smoke.py; \
+	python3 scripts/verify/product_delivery_smoke_schema_guard.py --report action
 
 .PHONY: verify.product.delivery.action_closure.schema.guard
 verify.product.delivery.action_closure.schema.guard: guard.prod.forbid

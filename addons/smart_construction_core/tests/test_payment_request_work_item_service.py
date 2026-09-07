@@ -179,12 +179,29 @@ class TestPaymentRequestWorkItemService(TransactionCase):
         )
         self.assertEqual([row["key"] for row in submitted["actions"]], ["approve", "reject"])
         self.assertEqual(rejected["actions"][0]["label"], "重新提交审批")
-        self.assertEqual(rejected["facts"][0], {"key": "reject_reason", "label": "驳回原因", "value": "请补充签章页"})
+        self.assertEqual(
+            rejected["facts"][0],
+            {
+                "key": "reject_reason",
+                "label": "驳回原因",
+                "field_group": "business",
+                "value": "请补充签章页",
+            },
+        )
         self.assertEqual(draft["actions"][0]["presentation"]["tier"], "primary")
         self.assertEqual(draft["amount"]["value"], 100.0)
         self.assertEqual(
             [row["label"] for row in draft["facts"]],
-            ["项目", "公司", "往来方", "金额", "发起人", "发起时间"],
+            [
+                "项目",
+                "公司",
+                "往来方",
+                "金额",
+                "创建人",
+                "创建时间",
+                "最后更新人",
+                "最后更新时间",
+            ],
         )
         self.assertIn("WORK-ITEM-DRAFT-001", draft["search_text"])
         self.assertEqual(workspace["presentation"]["default_sort"], "updated_desc")

@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-STATE_PATH = ROOT / "artifacts" / "backend" / "scene_contract_field_schema_state.json"
+DEFAULT_STATE_PATH = ROOT / "artifacts" / "backend" / "scene_contract_field_schema_state.json"
 REPORT_JSON = ROOT / "artifacts" / "backend" / "product_delivery_action_closure_report.json"
 REPORT_MD = ROOT / "docs" / "ops" / "audit" / "product_delivery_action_closure_report.md"
 
@@ -20,6 +21,11 @@ def _load_json(path: Path) -> dict:
     except Exception:
         return {}
     return payload if isinstance(payload, dict) else {}
+
+
+def _state_path() -> Path:
+    configured = str(os.getenv("SC_PRODUCT_DELIVERY_ACTION_CLOSURE_STATE_FILE") or "").strip()
+    return ROOT / configured if configured else DEFAULT_STATE_PATH
 
 
 def _as_dict(value) -> dict:
@@ -103,7 +109,7 @@ def main() -> int:
     warnings: list[str] = []
     checks: list[dict] = []
 
-    payload = _load_json(STATE_PATH)
+    payload = _load_json(_state_path())
     contract = _as_dict(payload.get("scene_ready_contract"))
     scenes = _as_list(contract.get("scenes"))
 

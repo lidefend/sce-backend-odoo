@@ -17,6 +17,7 @@ from . import test_profit_compare
 from . import test_stock_cost
 from . import test_p0_state_closure
 from . import test_project_state_transition_validation
+from . import test_project_progress_read_boundary
 from . import test_partner_blacklist_capability
 from . import test_p1_payment_request_capability
 from . import test_tender_document_advisory
