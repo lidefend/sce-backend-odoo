@@ -1,4 +1,5 @@
 # ======================================================
+.PHONY: verify.backend.architecture.static
 # ==================== Dev Test ========================
 # ======================================================
 .PHONY: test test.safe test.admin-vis-p3.project-record-rule-orm test.chatter-timeline.authorization.orm
@@ -2320,6 +2321,14 @@ verify.backend.architecture.full: guard.prod.forbid verify.intent.router.purity 
 	@$(MAKE) --no-print-directory verify.backend.architecture.full.report.guard.schema.guard
 	@$(MAKE) --no-print-directory verify.backend.evidence.manifest.guard
 	@echo "[OK] verify.backend.architecture.full done"
+
+verify.backend.architecture.static: guard.prod.forbid
+	@python3 scripts/verify/intent_router_purity_guard.py
+	@python3 scripts/verify/baseline_policy_integrity_guard.py
+	@python3 scripts/verify/smart_core_boundary_guard.py
+	@python3 scripts/verify/app_config_engine_boundary_guard.py
+	@python3 scripts/verify/backend_boundary_guard.py
+	@echo "[OK] verify.backend.architecture.static done (persistent dev / no demo runtime)"
 
 verify.extension_modules.guard: guard.prod.forbid check-compose-project check-compose-env
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/verify/extension_modules_guard.sh

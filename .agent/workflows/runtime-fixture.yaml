@@ -34,6 +34,7 @@ workflow:
     acceptance_fixture: make acceptance.frontend.fixture
     local_dev_no_demo: make local.dev.rebuild_realistic
     local_dev_authority: make local.dev.verify_realistic
+    local_dev_static_architecture: make verify.backend.architecture.static
 
   stop_conditions:
     - persistent_dev_selected_for_scene_runtime_guard
