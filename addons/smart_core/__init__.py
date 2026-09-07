@@ -14,6 +14,8 @@ import logging
 
 # 导入子模块
 try:
+    from . import hooks
+    post_init_hook = hooks.post_init_hook
     from . import controllers
     from . import app_config_engine
     from . import core

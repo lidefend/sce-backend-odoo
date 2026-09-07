@@ -23,6 +23,9 @@ class FrontendInlineStateGuardTest(unittest.TestCase):
     def test_reduced_motion_is_required(self) -> None:
         self.assertTrue(any("reduced-motion" in error for error in validate(self.altered("inline", "prefers-reduced-motion: reduce"))))
 
+    def test_info_description_uses_semantic_contrast_token(self) -> None:
+        self.assertTrue(any("info-text" in error for error in validate(self.altered("inline", "color: var(--sc-app-info-text)"))))
+
     def test_error_heading_must_not_be_fixed(self) -> None:
         values = dict(self.sources)
         values["error"] = values["error"].replace('<component :is="titleTag"', '<h2').replace('</component>', '</h2>')

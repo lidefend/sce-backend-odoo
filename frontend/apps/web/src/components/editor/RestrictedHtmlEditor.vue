@@ -252,11 +252,11 @@ function execCommand(item: ToolbarItem) {
 .restricted-html-editor__counter {
   margin-left: auto;
   font-size: 12px;
-  color: var(--sc-text-secondary, #666);
+  color: var(--sc-semantic-text-secondary);
 }
 
 .restricted-html-editor__counter--over {
-  color: var(--sc-danger, #d54941);
+  color: var(--sc-semantic-state-danger-text);
   font-weight: 600;
 }
 
@@ -265,22 +265,22 @@ function execCommand(item: ToolbarItem) {
   max-height: 420px;
   overflow-y: auto;
   padding: 8px 10px;
-  border: 1px solid var(--sc-border, #dcdcdc);
+  border: 1px solid var(--sc-semantic-border-default);
   border-radius: 4px;
-  background: var(--sc-surface, #fff);
+  background: var(--sc-semantic-surface-panel);
   font-size: 14px;
   line-height: 1.6;
-  color: var(--sc-text, #333);
+  color: var(--sc-semantic-text-primary);
 }
 
 .restricted-html-editor__surface:focus {
   outline: none;
-  border-color: var(--sc-primary, #0052d9);
+  border-color: var(--sc-semantic-surface-interactive);
 }
 
 .restricted-html-editor__surface:empty::before {
   content: attr(data-placeholder);
-  color: var(--sc-text-placeholder, #999);
+  color: var(--sc-semantic-text-muted);
   pointer-events: none;
 }
 
@@ -307,6 +307,6 @@ function execCommand(item: ToolbarItem) {
 
 .restricted-html-editor__hint {
   font-size: 12px;
-  color: var(--sc-danger, #d54941);
+  color: var(--sc-semantic-state-danger-text);
 }
 </style>

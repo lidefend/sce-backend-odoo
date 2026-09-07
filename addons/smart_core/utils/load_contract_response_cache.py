@@ -115,10 +115,7 @@ def build_projection_cache_key(env, *, namespace, params, model_name, view_types
 
 _CODE_FINGERPRINT_LOCK = RLock()
 _CODE_FINGERPRINT_CACHE: dict[str, str | None] = {"value": None}
-_CODE_FINGERPRINT_ROOTS = (
-    "/mnt/source-addons/smart_core",
-    "/mnt/source-addons/smart_construction_core",
-)
+_CODE_FINGERPRINT_ROOT = "/mnt/source-addons"
 
 
 def contract_code_fingerprint() -> str:
@@ -126,7 +123,7 @@ def contract_code_fingerprint() -> str:
 
     ``build_projection_source_token`` 只依赖权威表的 ``write_date`` 与部署期
     环境变量，纯 Python/XML 代码改动不会改变它们，导致旧契约缓存被继续命中。
-    这里对 smart_core / smart_construction_core 的 .py/.xml 文件做聚合指纹；
+    这里对受管源码根下的 .py/.xml 文件做聚合指纹；
     代码改动后重启进程会重算指纹，token 变化使旧缓存立即失效。
     指纹按进程缓存，首次计算后 O(1) 命中。
     """
@@ -134,9 +131,8 @@ def contract_code_fingerprint() -> str:
         if _CODE_FINGERPRINT_CACHE["value"]:
             return _CODE_FINGERPRINT_CACHE["value"]
         rows: list[tuple[str, int, int]] = []
-        for root in _CODE_FINGERPRINT_ROOTS:
-            if not os.path.isdir(root):
-                continue
+        root = os.getenv("SC_SOURCE_ADDONS_ROOT", _CODE_FINGERPRINT_ROOT)
+        if os.path.isdir(root):
             for dirpath, dirnames, filenames in os.walk(root):
                 dirnames[:] = [
                     name for name in dirnames

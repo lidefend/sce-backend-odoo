@@ -3,6 +3,11 @@
 
 def migrate(cr, installed_version):
     del installed_version
+    # Restored tenants created before the allocation model have no historical
+    # rows to classify; let the registry create the table during this update.
+    cr.execute("SELECT to_regclass('public.payment_ledger_allocation')")
+    if cr.fetchone()[0] is None:
+        return
     cr.execute(
         "LOCK TABLE payment_ledger, payment_ledger_allocation, payment_request, "
         "project_project IN SHARE ROW EXCLUSIVE MODE"

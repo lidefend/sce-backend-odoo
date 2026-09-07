@@ -23,7 +23,7 @@
 
 <script setup lang="ts">
 /**
- * 驾驶舱只读图表块包装（page orchestration block，G6.1 Task #100，
+ * 驾驶舱只读图表块包装（page orchestration block，G6.1 Task 100，
  * 与数据快照块包装同款纪律）。
  *
  * 职责（共享层，无行业语义）：
@@ -153,7 +153,7 @@ watch([projectId, chartKey], () => {
 <style scoped>
 .block-chart-dataset__hint {
   margin: 0;
-  color: var(--sc-text-secondary, #666);
+  color: var(--sc-semantic-text-secondary);
   font-size: 13px;
 }
 </style>

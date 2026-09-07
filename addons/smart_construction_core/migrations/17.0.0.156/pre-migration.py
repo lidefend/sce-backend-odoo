@@ -3,6 +3,22 @@
 
 def migrate(cr, installed_version):
     del installed_version
+    cr.execute("SELECT to_regclass('public.project_funding_actual_event_allocation')")
+    if cr.fetchone()[0] is None:
+        return
+    # These columns are introduced by the current registry, but pre-migration
+    # runs before that registry has synchronized an older restored database.
+    cr.execute(
+        "ALTER TABLE payment_ledger "
+        "ADD COLUMN IF NOT EXISTS normalization_state varchar, "
+        "ADD COLUMN IF NOT EXISTS fund_plan_allocated_amount numeric, "
+        "ADD COLUMN IF NOT EXISTS fund_plan_unallocated_amount numeric"
+    )
+    cr.execute(
+        "ALTER TABLE project_funding_actual_event_allocation "
+        "ADD COLUMN IF NOT EXISTS normalization_state varchar, "
+        "ADD COLUMN IF NOT EXISTS effective_amount numeric"
+    )
     cr.execute(
         "LOCK TABLE payment_ledger, project_funding_actual_event_allocation, "
         "project_funding_baseline, project_funding_baseline_line "

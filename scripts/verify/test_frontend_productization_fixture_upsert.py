@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from datetime import date
 import unittest
 from unittest.mock import patch
 
 from addons.smart_construction_acceptance_fixture.tools.frontend_productization_fixture import (
+    _ensure_settlement_state,
+    _funding_baseline,
     _upsert,
 )
 
@@ -104,6 +107,72 @@ class FrontendProductizationFixtureUpsertTest(unittest.TestCase):
         self.assertEqual(model.search_calls, 0)
         self.assertEqual(safe_record.write_calls, [])
         bind_xmlid.assert_called_once()
+
+    def test_date_string_matches_existing_orm_date_without_write(self) -> None:
+        safe_record = _SafeRecord(8, {"period_start": date(2026, 1, 1)})
+        safe_record._fields = {"period_start": _Field("date")}
+        model = _FakeModel(safe_record)
+        env = _FakeEnv(model, _UnsafeXmlidRecord(8))
+
+        with patch(
+            "addons.smart_construction_acceptance_fixture.tools.frontend_productization_fixture._bind_xmlid"
+        ):
+            _upsert(
+                env,
+                "sc.payment.execution",
+                "fixture_date",
+                [("id", "=", 8)],
+                {"period_start": "2026-01-01"},
+            )
+
+        self.assertEqual(safe_record.write_calls, [])
+
+    def test_funding_baseline_uses_controlled_draft_activation(self) -> None:
+        class _Project:
+            id = 17
+
+        class _Baseline:
+            id = 23
+            state = "draft"
+
+            def action_activate(self):
+                self.state = "active"
+
+        baseline = _Baseline()
+        line = object()
+        with patch(
+            "addons.smart_construction_acceptance_fixture.tools.frontend_productization_fixture._upsert",
+            side_effect=[baseline, line],
+        ) as upsert:
+            self.assertIs(_funding_baseline(object(), "A", _Project()), baseline)
+
+        baseline_call, line_call = upsert.call_args_list
+        self.assertEqual(baseline_call.args[1], "project.funding.baseline")
+        self.assertNotIn("state", baseline_call.args[4])
+        self.assertEqual(baseline_call.args[4]["period_start"], "2026-01-01")
+        self.assertEqual(baseline_call.args[4]["period_end"], "2026-12-31")
+        self.assertEqual(line_call.args[1], "project.funding.baseline.line")
+        self.assertEqual(line_call.args[4]["planned_amount"], 5000.0)
+        self.assertEqual(baseline.state, "active")
+
+    def test_settlement_uses_controlled_lifecycle_transition(self) -> None:
+        class _Settlement:
+            state = "draft"
+
+            def __init__(self) -> None:
+                self.targets: list[str] = []
+
+            def _write_lifecycle(self, target_state: str) -> None:
+                self.targets.append(target_state)
+                self.state = target_state
+
+        settlement = _Settlement()
+        _ensure_settlement_state(settlement, "approve")
+        self.assertEqual(settlement.targets, ["approve"])
+        self.assertEqual(settlement.state, "approve")
+
+        _ensure_settlement_state(settlement, "approve")
+        self.assertEqual(settlement.targets, ["approve"])
 
 
 if __name__ == "__main__":

@@ -287,7 +287,7 @@ function extractReasonCode(err: unknown): string {
 .block-rich-text-overview__content {
   font-size: 14px;
   line-height: 1.7;
-  color: var(--sc-text, #333);
+  color: var(--sc-semantic-text-primary);
   overflow-wrap: break-word;
 }
 
@@ -309,24 +309,24 @@ function extractReasonCode(err: unknown): string {
 
 .block-rich-text-overview__content :deep(td),
 .block-rich-text-overview__content :deep(th) {
-  border: 1px solid var(--sc-border, #dcdcdc);
+  border: 1px solid var(--sc-semantic-border-default);
   padding: 4px 8px;
 }
 
 .block-rich-text-overview__hint {
   margin: 0;
-  color: var(--sc-text-secondary, #666);
+  color: var(--sc-semantic-text-secondary);
   font-size: 13px;
 }
 
 .block-rich-text-overview__notice {
   margin: 0;
   font-size: 13px;
-  color: var(--sc-text-secondary, #666);
+  color: var(--sc-semantic-text-secondary);
 }
 
 .block-rich-text-overview__notice[data-state='error'] {
-  color: var(--sc-danger, #d54941);
+  color: var(--sc-semantic-state-danger-text);
 }
 
 .block-rich-text-overview__link {

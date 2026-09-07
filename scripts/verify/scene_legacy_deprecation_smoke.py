@@ -5,7 +5,12 @@ from __future__ import annotations
 import os
 
 from intent_smoke_utils import require_ok
-from python_http_smoke_utils import get_base_url, http_get_json_with_headers, http_post_json
+from python_http_smoke_utils import (
+    extract_login_token,
+    get_base_url,
+    http_get_json_with_headers,
+    http_post_json,
+)
 from scene_legacy_assertions import require_deprecation_headers, require_deprecation_payload
 
 
@@ -23,7 +28,7 @@ def main() -> None:
         headers={"X-Anonymous-Intent": "1"},
     )
     require_ok(status, login_resp, "login")
-    token = (login_resp.get("data") or {}).get("token")
+    token = extract_login_token(login_resp)
     if not token:
         raise RuntimeError("login response missing token")
 

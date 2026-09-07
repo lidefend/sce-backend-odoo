@@ -20,8 +20,7 @@
       <field name="ui_hint">用于演示场景编排和能力目录。</field>
       <field name="intent">ui.contract</field>
       <field name="default_payload" eval="{'action': 'open_demo_ops', 'scenario': 's67_scene_pack_surface'}"/>
-      <field name="role_scope">admin,project_manager,finance_manager</field>
-      <field name="capability_scope">project.work.dashboard</field>
+      <field name="role_scope">business_admin,project_manager,finance_manager</field>
       <field name="tags">demo,scene,pack</field>
       <field name="status">ga</field>
       <field name="version">v1.0</field>

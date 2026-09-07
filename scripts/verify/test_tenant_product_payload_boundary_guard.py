@@ -39,6 +39,34 @@ class TenantProductPayloadBoundaryGuardTests(unittest.TestCase):
         rules = self.rules("config/example.json", json.dumps({"tenant_id": "scbs55"}))
         self.assertIn("customer_identity_or_brand_reference", rules)
 
+    def test_product_addon_cannot_seed_a_login_credential(self) -> None:
+        content = """<odoo><record id="acceptance_user" model="res.users">
+        <field name="login">development_admin</field>
+        <field name="password">development-only</field>
+        </record></odoo>"""
+        self.assertIn(
+            "product_addon_seeds_login_credential",
+            self.rules("addons/product_module/data/users.xml", content),
+        )
+
+    def test_acceptance_fixture_owns_runtime_test_users(self) -> None:
+        content = """<odoo><record id="acceptance_user" model="res.users">
+        <field name="login">fixture_admin</field>
+        </record></odoo>"""
+        self.assertNotIn(
+            "product_addon_seeds_login_credential",
+            self.rules("addons/smart_construction_acceptance_fixture/data/users.xml", content),
+        )
+
+    def test_acceptance_fixture_must_source_password_from_environment(self) -> None:
+        content = """<odoo><record id="acceptance_user" model="res.users">
+        <field name="password">fixed-password</field>
+        </record></odoo>"""
+        self.assertIn(
+            "acceptance_fixture_seeds_fixed_password",
+            self.rules("addons/smart_construction_acceptance_fixture/data/users.xml", content),
+        )
+
     def test_fixed_customer_archive_name_is_rejected(self) -> None:
         rules = self.rules("artifacts/baosheng-history.tar.gz", "")
         self.assertIn("tracked_payload_or_archive", rules)

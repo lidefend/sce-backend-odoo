@@ -39,6 +39,19 @@ RUNTIME_FILES = {
 CUSTOMER_RUNTIME_TOKENS = ("smart_construction_custom",)
 PLACEHOLDER_MARKERS = ("<tenant_key>", "sce_customer_sample", "sce_customer_template")
 CUSTOMER_IDENTITY_TOKENS = ("baosheng", "builderp", "scbsly", "scbs55", "scbs_55", "保盛")
+ACCEPTANCE_FIXTURE_PREFIX = "addons/smart_construction_acceptance_fixture/"
+PRODUCT_USER_CREDENTIAL = re.compile(
+    r"<record\b[^>]*\bmodel=[\"']res\.users[\"'][^>]*>"
+    r"(?:(?!</record>).)*"
+    r"<field\b[^>]*\bname=[\"'](?:login|password)[\"']",
+    re.DOTALL,
+)
+ACCEPTANCE_FIXTURE_FIXED_PASSWORD = re.compile(
+    r"<record\b[^>]*\bmodel=[\"']res\.users[\"'][^>]*>"
+    r"(?:(?!</record>).)*"
+    r"<field\b[^>]*\bname=[\"']password[\"']",
+    re.DOTALL,
+)
 NEGATIVE_POLICY_FILES = {
     "config/security/repository_clean_history_policy.v1.json",
     "scripts/verify/tenant_product_payload_boundary_guard.py",
@@ -116,6 +129,12 @@ def classify_file(relative: str, content: str | None) -> list[tuple[str, str]]:
         findings.append(("tracked_payload_or_archive", relative))
     if content is None:
         return findings
+    if relative.startswith("addons/") and relative.endswith(".xml"):
+        if relative.startswith(ACCEPTANCE_FIXTURE_PREFIX):
+            if ACCEPTANCE_FIXTURE_FIXED_PASSWORD.search(content):
+                findings.append(("acceptance_fixture_seeds_fixed_password", relative))
+        elif PRODUCT_USER_CREDENTIAL.search(content):
+            findings.append(("product_addon_seeds_login_credential", relative))
     identity_surface = f"{relative}\n{content}".lower()
     if relative not in NEGATIVE_POLICY_FILES and any(
         token in identity_surface for token in CUSTOMER_IDENTITY_TOKENS

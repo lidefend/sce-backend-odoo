@@ -8,8 +8,15 @@ workflow:
   steps:
     - load_goal
     - read_domain_contract
+    - resolve_data_policy_before_runtime_feedback
     - inspect_backend_model
     - implement_backend_change
     - run_backend_tests
     - verify_security
     - collect_evidence
+
+  data_policy_ref: .agent/workflows/data-change.yaml#data_policy
+  runtime_rules:
+    - persistent_dev_never_enables_automatic_odoo_demo
+    - test_and_fixture_databases_must_be_disposable_when_synthetic_data_is_used
+    - acceptance_demo_data_requires_explicit_guard

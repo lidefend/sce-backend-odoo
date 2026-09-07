@@ -93,7 +93,7 @@ defineProps<{
   flex-direction: column;
   gap: 12px;
   padding: 12px;
-  border: 1px solid var(--sc-border-color, #d9d9d9);
+  border: 1px solid var(--sc-semantic-border-default);
   border-radius: 8px;
   font-size: 14px;
 }
@@ -123,7 +123,7 @@ defineProps<{
 }
 
 .boq-import-preview__meta-item dt {
-  color: var(--sc-text-secondary, #666);
+  color: var(--sc-semantic-text-secondary);
 }
 
 .boq-import-preview__meta-item dd {
@@ -145,15 +145,15 @@ defineProps<{
   gap: 2px;
   padding: 8px;
   border-radius: 6px;
-  background: var(--sc-surface-muted, #f5f5f5);
+  background: var(--sc-semantic-surface-panel-muted);
 }
 
 .boq-import-preview__stat--warning {
-  background: var(--sc-surface-warning, #fff7e6);
+  background: var(--sc-semantic-state-warning-bg);
 }
 
 .boq-import-preview__stat-label {
-  color: var(--sc-text-secondary, #666);
+  color: var(--sc-semantic-text-secondary);
   font-size: 12px;
 }
 
@@ -162,7 +162,7 @@ defineProps<{
 }
 
 .boq-import-preview__diagnostics {
-  border-top: 1px solid var(--sc-border-color, #e8e8e8);
+  border-top: 1px solid var(--sc-semantic-border-default);
   padding-top: 8px;
 }
 
@@ -174,7 +174,7 @@ defineProps<{
 .boq-import-preview__diagnostics ul {
   margin: 0;
   padding-left: 18px;
-  color: var(--sc-text-secondary, #666);
+  color: var(--sc-semantic-text-secondary);
   font-size: 12px;
 }
 
@@ -185,14 +185,14 @@ defineProps<{
 }
 
 .boq-import-preview__error {
-  background: var(--sc-surface-danger-muted, #fff1f0);
+  background: var(--sc-semantic-state-danger-bg);
 }
 
 .boq-import-preview__error-code {
   margin: 0;
   font-size: 12px;
   font-weight: 600;
-  color: var(--sc-danger, #cf1322);
+  color: var(--sc-semantic-state-danger-text);
 }
 
 .boq-import-preview__error-message,
@@ -203,11 +203,11 @@ defineProps<{
 .boq-import-preview__error-hint {
   margin: 4px 0 0;
   font-size: 12px;
-  color: var(--sc-text-secondary, #666);
+  color: var(--sc-semantic-text-secondary);
 }
 
 .boq-import-preview__empty {
-  background: var(--sc-surface-muted, #f5f5f5);
+  background: var(--sc-semantic-surface-panel-muted);
 }
 
 .boq-import-preview__empty-title {

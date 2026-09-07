@@ -1,7 +1,7 @@
 goal:
   id: REPO-BASELINE-AUDIT
   title: repository_current_state_and_agent_governance_baseline
-  status: planned
+  status: verification_pending
   formal_product_layer: P4
 
   objective: establish_a_resumable_governed_repository_work_environment_baseline
@@ -41,11 +41,15 @@ goal:
     - agent_context_guards_pass
 
   current_batch:
-    id: Batch-U
-    objective: refresh_contract_form_split_line_count_evidence
-    status: planned
+    id: Batch-AUDIT-20260907
+    objective: establish_reproducible_repository_baseline_and_sync_next_iteration_workflow
+    status: verification_pending
 
   next_iteration_direction:
-    - paused_by_payment_request_product_floorplan_redirect
-    - strengthen_agent_context_schema_guards
-    - reconcile_legacy_readme_and_runtime_entry_documentation
+    - resolve_smart_core_boundary_owner_for_load_contract_response_cache
+    - migrate_local_dev_lifecycle_to_no_demo_persistent_db_with_explicit_disposable_fixtures
+    - route_scene_runtime_guards_to_acceptance_or_disposable_fixture_profile
+    - reconcile_rendering_detail_gap_7_machine_report_with_zero_gap_landing_docs
+    - close_four_orphan_guard_registry_entries_with_explicit_owners
+    - rerun_frontend_quick_and_backend_architecture_gates_before_runtime_acceptance
+    - close_scheduled_backend_suite_zero_test_module_routing_and_rerun_exact_head

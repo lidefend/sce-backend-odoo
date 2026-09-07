@@ -26,6 +26,18 @@ def migrate(cr, installed_version):
         ALTER TABLE payment_request
           ADD COLUMN IF NOT EXISTS funding_baseline_id integer;
 
+        -- The registry has not yet applied fields introduced after the
+        -- restored tenant's source version when this pre-migration runs.
+        -- Ensure the ledger state column exists before the normalization
+        -- queries below reference it.  The model definition remains the
+        -- authority for the final type/default/constraint during registry
+        -- loading.
+        ALTER TABLE payment_ledger
+          ADD COLUMN IF NOT EXISTS state varchar;
+        UPDATE payment_ledger
+           SET state = 'posted'
+         WHERE state IS NULL;
+
         ALTER TABLE project_funding_actual_event_allocation
           ADD COLUMN IF NOT EXISTS baseline_id integer,
           ADD COLUMN IF NOT EXISTS operation_key varchar,
@@ -38,6 +50,27 @@ def migrate(cr, installed_version):
           ADD COLUMN IF NOT EXISTS effective_date date,
           ADD COLUMN IF NOT EXISTS normalization_state varchar,
           ADD COLUMN IF NOT EXISTS reason text
+        """
+    )
+    # A tenant backup taken before these models were introduced has no
+    # ir.model rows for the new parents.  Odoo reflects child inheritance
+    # before it persists newly discovered parent models during an upgrade,
+    # which otherwise produces a NULL ir_model_inherit.parent_id.  Seed only
+    # stable parent metadata; the registry remains authoritative for fields
+    # and the model implementation.
+    cr.execute(
+        """
+        INSERT INTO ir_model (model, "order", state, name, info, transient)
+        VALUES
+            ('project.boq.version', 0, 'base', json_build_object('en_US', 'Project BOQ Version'), NULL, false),
+            ('project.boq.analysis', 0, 'base', json_build_object('en_US', 'Project BOQ Analysis'), NULL, false),
+            ('project.boq.analysis.norm.line', 0, 'base', json_build_object('en_US', 'Project BOQ Analysis Norm Line'), NULL, false),
+            ('sc.optional.product.projection', 0, 'base', json_build_object('en_US', 'Optional Product Projection'), NULL, false),
+            ('sc.effective.document.change.mixin', 0, 'base', json_build_object('en_US', 'Effective Document Change Mixin'), NULL, false),
+            ('sc.history.todo', 0, 'base', json_build_object('en_US', 'History Todo'), NULL, false),
+            ('sc.legacy.direct.acceptance.fact', 0, 'base', json_build_object('en_US', 'Legacy Direct Acceptance Fact'), NULL, false),
+            ('sc.legacy.fund.daily.snapshot.fact', 0, 'base', json_build_object('en_US', 'Legacy Fund Daily Snapshot Fact'), NULL, false)
+        ON CONFLICT (model) DO NOTHING
         """
     )
     cr.execute(

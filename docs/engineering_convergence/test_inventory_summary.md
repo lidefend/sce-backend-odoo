@@ -4,13 +4,13 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1354`
+- Total assets: `1355`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `175`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `954`
+- PR dedupe candidates: `955`
 
 ## By Layer
 
@@ -18,7 +18,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | governance | 548 |
 | contract | 360 |
-| unit | 238 |
+| unit | 239 |
 | odoo_integration | 102 |
 | e2e | 46 |
 | security | 32 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1173 |
+| pr_candidate | 1174 |
 | integration_candidate | 128 |
 | release_candidate | 44 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 954 |
+| deduplicate_before_required | 955 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 127 |
 | keep_release_only | 44 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1175 |
+| <5m | 1176 |
 | 10-30m | 129 |
 | 30-60m | 46 |
 | unknown | 3 |
@@ -154,7 +154,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | architecture owner | 548 |
 | platform owner | 360 |
-| test owner | 239 |
+| test owner | 240 |
 | backend owner | 102 |
 | qa owner | 46 |
 | security owner | 32 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1213 |
+| scripts/verify | 1214 |
 | scripts/ops | 68 |
 | frontend/apps/web/scripts | 29 |
 | scripts/ci | 19 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-187 | governance | `scripts/verify/business_core_journey_guard.py` | architecture owner |
 | T-ASSET-189 | unit | `scripts/verify/business_document_state_policy_switch_smoke.py` | test owner |
 | T-ASSET-190 | governance | `scripts/verify/business_entry_ownership_guard.py` | architecture owner |
-| ... | ... | 874 more | ... |
+| ... | ... | 875 more | ... |
 
 ## Dedupe Hotspots
 

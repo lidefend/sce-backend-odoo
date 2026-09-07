@@ -28,6 +28,14 @@
     <field name="category_id" ref="base.module_category_hidden"/>
   </record>
 
+  <!-- Fresh databases need an explicit product-admin carrier for the built-in
+       administrator. This is assignment, not a group implication: ordinary
+       Odoo system users remain restricted until an authorized product group is
+       granted to them. -->
+  <record id="base.user_admin" model="res.users">
+    <field name="groups_id" eval="[(4, ref('group_smart_core_admin'))]"/>
+  </record>
+
   <record id="rule_sc_auth_credential_policy_admin" model="ir.rule">
     <field name="name">Credential policy: security administration</field>
     <field name="model_id" ref="model_sc_auth_credential_policy"/>

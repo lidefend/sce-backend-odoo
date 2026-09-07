@@ -237,6 +237,7 @@
   - Enforces branch/commit/profile metadata, required step statuses, and `ok` consistency with all required steps.
 - `make verify.product.delivery.action_closure.smoke`
   - Verifies action/search/workflow/validation closure signals for delivery high-frequency scenes.
+  - Collects a dedicated field-contract state with the governed finance role before evaluating the mixed finance/project/cost closure set; it does not reuse a preceding role-matrix snapshot.
   - Current focus scenes:
     - `finance.payment_requests`
     - `projects.list`
@@ -402,7 +403,7 @@
   - Default profiles write to:
     - `artifacts/backend/scene_registry_asset_snapshot_state.company_primary.json`
     - `artifacts/backend/scene_registry_asset_snapshot_state.company_secondary.json`
-  - Profile-level `login/password` is supported in baseline for deterministic company target sampling (current baseline: `primary=admin`, `secondary=demo_role_pm`).
+  - Profile-level `login/password` is supported in baseline for deterministic company target sampling. The governed default compares the same project-manager role (`demo_role_pm`) across the primary and secondary companies so the company matrix does not mix company and role dimensions.
   - For an isolated acceptance database, set `SC_SCENE_COMPANY_SNAPSHOT_PROFILES_JSON` to a non-empty JSON array of profile objects. This overrides only baseline `profiles`; all other baseline thresholds and report settings remain unchanged. Invalid JSON, non-array JSON, and empty arrays fail closed. Profile objects retain the baseline field requirements (`key` and `state_file` are required). The override variable is removed from each child process environment; every non-empty profile password is redacted from all child guard output, reports, and collector messages.
   - Wired into `verify.scene.delivery.readiness.role_company_matrix` before company matrix guard.
   - `company_secondary` collection resolves credentials from the governed role environment, discovers an allowed non-primary company, and reruns the live snapshot with that effective company ID; no database-local numeric ID or password is frozen in the baseline.

@@ -1,0 +1,57 @@
+run:
+  id: REPO-BASELINE-AUDIT-20260907
+  goal: REPO-BASELINE-AUDIT
+  status: verification_pending
+  batch: Batch-AUDIT-20260907
+  branch: audit/full-repository-baseline-20260907
+  baseline_full_sha: 5a18788534981a2025bc24acecb9bfb1740b0f7c
+  objective: establish_reproducible_repository_baseline_and_sync_next_iteration_workflow
+  formal_product_layer: P4
+  layer_target: repository_audit_and_agent_collaboration_governance
+  module_scope:
+    - addons/smart_core
+    - addons/smart_construction_core
+    - frontend/apps/web
+    - scripts/verify
+    - scripts/ci
+    - .agent
+  excluded:
+    - product_source_semantics
+    - contract_or_schema_change
+    - runtime_or_database_mutation
+    - fixture_reset_or_module_upgrade
+    - browser_acceptance
+    - preexisting_dirty_files
+  commands:
+    - command: make verify.repository.clean_history
+      result: PASS
+    - command: make ci.generated_reports.guard
+      result: PASS
+    - command: make verify.ci.scheduled_gates
+      result: PASS
+    - command: make verify.frontend.quick.gate
+      result: FAIL
+      classification: baseline_evidence_defect
+      detail: rendering-detail report gap=7; zero-gap test failed
+    - command: make verify.backend.architecture.full
+      result: FAIL
+      classification: product_boundary_defect
+      detail: smart_core contains smart_construction_core reference in load_contract_response_cache.py
+    - command: make verify.guard.registry
+      result: FAIL
+      classification: validation_governance_defect
+      detail: 4 orphan scripts are not acknowledged in registry.yaml
+  evidence:
+    test_assets: 1354
+    addon_modules: 13
+    internal_dependency_edges: 19
+    circular_internal_dependencies: 0
+    files_scanned_for_complexity: 4299
+    split_plan_required: 48
+  next_batch:
+    objective: close_the_three_earliest_audit_blockers_in_owner_order
+    order:
+      - smart_core_boundary_ownership_decision
+      - rendering_detail_report_reconciliation
+      - orphan_guard_registry_closure
+  rollback: revert_the_audit_metadata_commit_only

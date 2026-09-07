@@ -102,7 +102,10 @@ if [[ ",${expected_product_modules:-}," == *",sc_norm_engine,"* ]]; then
   check_equal clean_business_counts "${clean_counts}" '0,0,0,0'
 fi
 
-http_code="$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:${NGINX_PORT}/" || true)"
+# Prefer the system curl because some managed developer environments expose a
+# reduced curl-compatible wrapper that does not implement --write-out/-w.
+CURL_BIN="${CURL_BIN:-/usr/bin/curl}"
+http_code="$("${CURL_BIN}" -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:${NGINX_PORT}/" || true)"
 check_equal frontend_http "${http_code}" 200
 
 if [[ "${fail}" != "0" ]]; then

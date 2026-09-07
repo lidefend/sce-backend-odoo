@@ -31,6 +31,19 @@ class SceneCompanySnapshotCollectProfilesTest(unittest.TestCase):
 
         self.assertIs(profiles, self.baseline_profiles)
 
+    def test_governed_company_profiles_compare_the_same_role(self) -> None:
+        baseline = collector._load_json(collector.BASELINE_PATH)
+        profiles = baseline.get("profiles", [])
+
+        self.assertEqual([profile.get("key") for profile in profiles], ["primary", "secondary"])
+        self.assertEqual(
+            {profile.get("login_default") for profile in profiles},
+            {"demo_role_pm"},
+        )
+        for profile in profiles:
+            self.assertIn("ROLE_PM_LOGIN", profile.get("login_envs", []))
+            self.assertIn("ROLE_PM_PASSWORD", profile.get("password_envs", []))
+
     def test_main_uses_baseline_profiles_when_override_is_unset(self) -> None:
         state_payload = {"company_id": 1, "scene_count": 1}
         output = io.StringIO()

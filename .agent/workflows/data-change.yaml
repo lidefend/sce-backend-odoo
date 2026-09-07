@@ -7,9 +7,37 @@ workflow:
 
   steps:
     - load_goal
+    - resolve_data_policy_and_environment_role
     - confirm_data_source
     - verify_data_baseline
     - create_snapshot
     - execute_data_change
     - validate_result
     - collect_evidence
+
+  data_policy:
+    persistent_dev:
+      odoo_demo: false
+      synthetic_fixture: explicit_only
+      use: realistic_continuous_feature_iteration
+    test:
+      synthetic_fixture: explicit_only
+      disposable: true
+      use: deterministic_verification
+    acceptance:
+      demo_fixture: allowed_only_with_explicit_guard
+      use: curated_browser_and_role_matrix_acceptance
+    production:
+      odoo_demo: false
+      synthetic_fixture: forbidden
+
+  fixture_rules:
+    - never_enable_global_odoo_demo_for_persistent_dev
+    - generate_scenario_fixture_only_through_registered_entrypoint
+    - bind_fixture_to_disposable_database_and_creation_batch
+    - destroy_disposable_fixture_after_iteration
+    - prohibit_fixture_data_in_sc_dev_demo
+
+  entrypoints:
+    persistent_dev_rebuild: make local.dev.rebuild_realistic
+    persistent_dev_authority_verify: make local.dev.verify_realistic

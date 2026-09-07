@@ -52,7 +52,11 @@ governed_runtime_profiles:
     make_prefix: local.dev
     compose_project: sc-local-dev
     database: sc_dev_demo
-    purpose: persistent_demo_backed_feature_iteration
+    purpose: persistent_realistic_feature_iteration_no_automatic_odoo_demo
+    odoo_demo: false
+    synthetic_fixture: explicit_only
+    rebuild_entrypoint: local.dev.rebuild_realistic
+    authority_verify_entrypoint: local.dev.verify_realistic
   local_sample:
     make_prefix: local.sample
     compose_project: sc-local-sample
@@ -64,6 +68,38 @@ governed_runtime_profiles:
     database: sc_clean
     purpose: disposable_clean_installation
   manual_environment_assembly_forbidden: true
+
+delivery_auth:
+  github_cli_config_dir: /home/lidefend/.config/gh-new-account
+  credential_policy: use_workspace_managed_gh_config; never record tokens
+
+acceptance_identity:
+  login: fixture_role_config_admin
+  role: business_config_admin
+  carrier: smart_construction_acceptance_fixture.fe_user_config_admin
+  platform_admin_separate: true
+  fixture_only: true
+
+data_policy:
+  persistent_dev:
+    database: sc_dev_demo
+    odoo_demo: false
+    synthetic_fixture: explicit_only
+    fixture_database_creation: forbidden_by_default
+    purpose: realistic_continuous_feature_iteration
+  test:
+    odoo_demo: false
+    synthetic_fixture: true
+    disposable: true
+    purpose: deterministic_unit_and_integration_verification
+  acceptance:
+    odoo_demo: false
+    demo_fixture: true
+    explicit_guard_required: true
+    purpose: curated_browser_and_role_matrix_acceptance
+  production:
+    odoo_demo: false
+    synthetic_fixture: forbidden
 
 ports:
   backend_development: 18081

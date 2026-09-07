@@ -190,8 +190,9 @@ class TestMyWorkBackend(TransactionCase):
             "done_at": "mock",
         }
         with patch(
-            "odoo.addons.smart_construction_core.handlers.my_work_complete.resolve_idempotency_decision",
+            "odoo.addons.smart_core.utils.idempotency.resolve_write_idempotency",
             return_value={
+                "mode": "replay",
                 "conflict": False,
                 "replay_entry": {"audit_id": 9, "trace_id": "trace-replay"},
                 "replay_payload": replay_payload,
@@ -210,8 +211,9 @@ class TestMyWorkBackend(TransactionCase):
     def test_batch_conflict_contract_shape_without_audit_model(self):
         handler = MyWorkCompleteBatchHandler(self.env, payload={})
         with patch(
-            "odoo.addons.smart_construction_core.handlers.my_work_complete.resolve_idempotency_decision",
+            "odoo.addons.smart_core.utils.idempotency.resolve_write_idempotency",
             return_value={
+                "mode": "conflict",
                 "conflict": True,
                 "replay_entry": None,
                 "replay_payload": None,
