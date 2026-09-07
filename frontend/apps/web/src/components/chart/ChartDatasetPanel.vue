@@ -213,7 +213,7 @@ if (typeof ResizeObserver !== 'undefined') {
   flex-direction: column;
   gap: 8px;
   padding: 12px;
-  border: 1px solid var(--sc-border-color, #d9d9d9);
+  border: 1px solid var(--sc-semantic-border-default);
   border-radius: 8px;
   font-size: 14px;
 }
@@ -234,7 +234,7 @@ if (typeof ResizeObserver !== 'undefined') {
   margin: 0;
   display: flex;
   gap: 12px;
-  color: var(--sc-text-secondary, #666);
+  color: var(--sc-semantic-text-secondary);
   font-size: 12px;
 }
 
@@ -252,7 +252,7 @@ if (typeof ResizeObserver !== 'undefined') {
   align-items: center;
   justify-content: center;
   margin: 0;
-  color: var(--sc-text-secondary, #666);
+  color: var(--sc-semantic-text-secondary);
   font-size: 13px;
 }
 
@@ -263,14 +263,14 @@ if (typeof ResizeObserver !== 'undefined') {
 }
 
 .chart-dataset-panel__error {
-  background: var(--sc-surface-danger-muted, #fff1f0);
+  background: var(--sc-semantic-state-danger-bg);
 }
 
 .chart-dataset-panel__error-code {
   margin: 0;
   font-size: 12px;
   font-weight: 600;
-  color: var(--sc-danger, #cf1322);
+  color: var(--sc-semantic-state-danger-text);
 }
 
 .chart-dataset-panel__error-message,
@@ -281,11 +281,11 @@ if (typeof ResizeObserver !== 'undefined') {
 .chart-dataset-panel__error-hint {
   margin: 4px 0 0;
   font-size: 12px;
-  color: var(--sc-text-secondary, #666);
+  color: var(--sc-semantic-text-secondary);
 }
 
 .chart-dataset-panel__empty {
-  background: var(--sc-surface-muted, #f5f5f5);
+  background: var(--sc-semantic-surface-panel-muted);
 }
 
 .chart-dataset-panel__empty-title {

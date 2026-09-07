@@ -90,3 +90,24 @@
 - 回滚：对本批 P4 提交执行普通 `git revert`；无需模块升级、数据库恢复或 fixture reset。
 - Pending：冻结并提交新 HEAD、`make pr.push`、exact-head required checks、独立复核、
   squash merge 与受管分支清理。
+
+## 9. Batch-Frontend-Token-Zero 收口
+
+- 目标：关闭 exact-head `frontend_release_gate` 中 style-system 的 34 个硬编码颜色引用，
+  恢复正式设计令牌零字面量门禁。
+- Formal Product Layer / target：P0 platform visual mechanism / generic frontend
+  semantic-token consumption。
+- 完成：6 个 BOQ、图表、富文本与 page-block 组件移除颜色 fallback，直接消费既有
+  `--sc-semantic-*` token；注释中的 `Task #100` 改为 `Task 100`，避免被十六进制颜色
+  正则误判。未修改 token authority、门禁阈值、业务逻辑、contract/schema、route 或 intent。
+- 验证：`make verify.frontend.style_system.guard` PASS，hardcoded refs=0；BOQ import
+  preview 9 tests 与 BOQ/chart/rich-text 模型专项 PASS；`make verify.frontend.lint.src`
+  0 errors / 31 existing warnings；strict typecheck 与 build PASS；`make ci.local.quick`
+  PASS；`make verify.restricted` PASS。
+- 风险：视觉颜色由已全局加载的 semantic token 决定，亮/暗主题不再回退到固定浅色值；
+  exact-head frontend release/browser evidence 尚待远端 CI 重跑确认。
+- 产物：`frontend/apps/web/dist-dev/`、`frontend/apps/web/dist/`、
+  `artifacts/backend/delivery_mainline_run_summary.json` 与最新 delivery scoreboard。
+- 回滚：普通 `git revert` 本批提交；无需数据库、模块升级、fixture 或 contract snapshot 回退。
+- Pending：提交并发布新 exact HEAD，重跑 candidate checks；全绿后独立复核、squash merge
+  与受管清理。

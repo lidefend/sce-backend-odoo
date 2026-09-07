@@ -8684,3 +8684,15 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `make ci.local.quick`, and `make verify.restricted` PASS.
 - Pending: publish the new exact HEAD, rerun required checks, then merge and clean up only
   this verified topic branch.
+
+## 2026-09-07 — frontend semantic token 零字面量收口
+
+- Formal Product Layer / target: P0 generic frontend visual mechanism / semantic-token
+  consumption in six existing components.
+- Root cause: the exact-head frontend release lane exposed 33 CSS fallback literals plus
+  one `Task #100` comment matched by the color regex; the same debt existed at the PR base.
+- Change: consume existing `--sc-semantic-*` variables directly and remove the ambiguous
+  hash marker. The style guard threshold remains zero and no exemption was introduced.
+- Evidence: style-system refs=0；BOQ/chart/rich-text focused tests PASS；frontend lint
+  0 errors / 31 existing warnings；strict typecheck/build, Quick, and restricted PASS.
+- Pending: exact-head frontend release and candidate aggregation checks.

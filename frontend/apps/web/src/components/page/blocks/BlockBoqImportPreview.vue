@@ -116,7 +116,7 @@ watch(projectId, () => {
 <style scoped>
 .block-boq-import-preview__hint {
   margin: 0;
-  color: var(--sc-text-secondary, #666);
+  color: var(--sc-semantic-text-secondary);
   font-size: 13px;
 }
 </style>
