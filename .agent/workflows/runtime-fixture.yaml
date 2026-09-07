@@ -1,0 +1,43 @@
+workflow:
+  id: runtime-fixture
+  purpose: disposable_runtime_fixture_for_scene_and_browser_guards
+  formal_product_layer: P4
+
+  profile_selection:
+    persistent_dev:
+      database: sc_dev_demo
+      odoo_demo: false
+      allowed: [static_guards, contract_guards, realistic_feature_iteration]
+      forbidden: [scene_demo_fixture, acceptance_role_matrix]
+    test:
+      database: isolated_per_run
+      synthetic_fixture: explicit_only
+      disposable: true
+      allowed: [module_tests, integration_tests, contract_runtime_guards]
+    acceptance:
+      database: governed_acceptance_database
+      demo_fixture: true
+      explicit_guard_required: true
+      allowed: [scene_runtime_guards, browser_acceptance, role_matrix]
+
+  lifecycle:
+    - resolve_profile_and_database_role
+    - create_or_reset_only_through_registered_make_entrypoint
+    - install_product_modules_without_global_odoo_demo
+    - apply_explicit_fixture_carrier_when_profile_allows
+    - verify_fixture_authority_and_exact_credentials
+    - run_runtime_guards
+    - collect_exact_head_and_fixture_evidence
+    - destroy_disposable_fixture_after_run
+
+  registered_entrypoints:
+    acceptance_fixture: make acceptance.frontend.fixture
+    local_dev_no_demo: make local.dev.rebuild_realistic
+    local_dev_authority: make local.dev.verify_realistic
+
+  stop_conditions:
+    - persistent_dev_selected_for_scene_runtime_guard
+    - missing_explicit_fixture_guard
+    - unresolved_database_or_credential_identity
+    - fixture_data_written_to_sc_dev_demo
+    - zero_runtime_tests_collected
