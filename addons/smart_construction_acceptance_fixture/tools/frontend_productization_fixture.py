@@ -233,17 +233,34 @@ def _project(env, suffix, company, manager, partner):
 
 
 def _funding_baseline(env, suffix, project):
-    return _upsert(
+    baseline = _upsert(
         env,
         "project.funding.baseline",
         "fe_funding_baseline_%s" % suffix.lower(),
-        [("project_id", "=", project.id), ("state", "=", "active")],
+        [("project_id", "=", project.id)],
         {
             "project_id": project.id,
             "total_amount": 5000.0,
-            "state": "active",
+            "period_start": "2026-01-01",
+            "period_end": "2026-12-31",
         },
     )
+    _upsert(
+        env,
+        "project.funding.baseline.line",
+        "fe_funding_baseline_line_%s" % suffix.lower(),
+        [("baseline_id", "=", baseline.id), ("name", "=", "FE annual plan")],
+        {
+            "baseline_id": baseline.id,
+            "name": "FE annual plan",
+            "planned_amount": 5000.0,
+        },
+    )
+    if baseline.state == "draft":
+        baseline.action_activate()
+    if baseline.state != "active":
+        raise RuntimeError("frontend fixture funding baseline must be active")
+    return baseline
 
 
 def _contract(env, suffix, project, partner, tax, state, amount):

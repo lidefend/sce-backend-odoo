@@ -8697,3 +8697,19 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   0 errors / 31 existing warnings；strict typecheck/build, Quick, restricted, refreshed
   component-driver inventory, and full frontend release unit suite PASS.
 - Pending: exact-head frontend release and candidate aggregation checks.
+
+## 2026-09-07 — frontend acceptance 资金基线夹具生命周期收口
+
+- Formal Product Layer / target: P4 acceptance fixture governance /
+  `smart_construction_acceptance_fixture`。
+- Root cause: the fixture created funding baselines directly in `active` state after the
+  P1 model had established the controlled `draft -> plan line -> action_activate`
+  lifecycle.
+- Change: create or reconcile the fixture-owned draft baseline and its annual plan line,
+  then activate it through the public lifecycle action. Product funding semantics and
+  enforcement remain unchanged.
+- Focused evidence: fixture upsert unit tests 2/2 PASS. The local governed acceptance
+  run is environment-blocked because the existing `sc_frontend_acceptance` database
+  cannot upgrade an unrelated historical payment-allocation row; no manual SQL or
+  unregistered database reset was used. Exact-head CI uses the governed clean acceptance
+  lifecycle and remains the system-bound authority.
