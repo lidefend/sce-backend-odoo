@@ -22,6 +22,8 @@ def validate(sources: dict[str, str] | None = None) -> list[str]:
         ':data-density="density"',
         ":role=\"state === 'error' ? 'alert' : 'status'\"",
         ":aria-busy=\"state === 'loading' || undefined\"",
+        ".sc-inline-state.t-alert--info :deep(.t-alert__description)",
+        "color: var(--sc-app-info-text)",
         "prefers-reduced-motion: reduce",
     ):
         if marker not in inline:

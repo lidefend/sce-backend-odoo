@@ -39,6 +39,7 @@ def validate() -> list[str]:
         "<ScDisclosure",
         'data-floorplan-region="supplementary-input"',
         'data-floorplan-region="overflow-context"',
+        'role="region"',
         'title="补充信息"',
         'title="更多业务信息"',
     ):

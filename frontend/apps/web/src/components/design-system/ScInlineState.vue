@@ -16,6 +16,9 @@ withDefaults(defineProps<{state?:'info'|'loading'|'empty'|'error';density?:'regu
 </script>
 <style scoped>
 .sc-inline-state{width:100%}.sc-inline-state[data-density='compact']{padding-block:0}
+.sc-inline-state.t-alert--info :deep(.t-alert__description) {
+  color: var(--sc-app-info-text);
+}
 @media (prefers-reduced-motion: reduce) {
   .sc-inline-state :deep(*) { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }

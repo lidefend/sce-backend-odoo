@@ -8727,3 +8727,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   from 1200 ms to 1600 ms; its 2500 ms p95/max limits, five-sample minimum, relative regression
   guard, and every other scenario budget remain unchanged. This is delivery validation
   configuration only and does not enter the formal product runtime.
+- After the calibrated performance phase passed, the complete matrix exposed five axe
+  findings with two shared P0 causes. The contract-form relation card now pairs its existing
+  accessible name with `role="region"`, and the generic info/empty inline-state description
+  consumes the existing semantic info-text token. No business label, role, route, permission,
+  contract field, or product-specific presentation rule was added; focused guards lock both
+  generic accessibility invariants.

@@ -216,6 +216,7 @@
     <ScCard
       v-if="presentableRelationNodes.length"
       class="object-task-page__relation"
+      role="region"
       aria-label="关系明细"
       data-floorplan-region="relation"
       data-canonical-zone="primary"

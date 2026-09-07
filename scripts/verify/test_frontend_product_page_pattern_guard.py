@@ -31,6 +31,18 @@ class ProductPagePatternGuardTest(unittest.TestCase):
         with patch("pathlib.Path.read_text", altered):
             self.assertTrue(any("professional disclosure" in item for item in validate()))
 
+    def test_relation_floorplan_requires_named_region_semantics(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "ObjectTaskPage.vue":
+                return value.replace('role="region"', 'data-role-removed', 1)
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertTrue(any('role="region"' in item for item in validate()))
+
 
 if __name__ == "__main__":
     unittest.main()
