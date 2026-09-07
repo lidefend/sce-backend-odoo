@@ -8643,7 +8643,7 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - GitHub CLI auth source: workspace-managed `GH_CONFIG_DIR=/home/lidefend/.config/gh-new-account`;
   tokens are not recorded. `make pr.push` and the exact-SHA scheduled workflow
   dispatch were performed through this source.
-- Acceptance carrier: `wutao` / `SC Business Configuration Administrator`,
+- Acceptance carrier: `sc_business_admin` / `SC Business Configuration Administrator`,
   backed by `smart_construction_core.user_sc_business_config_admin` and the
   `group_sc_cap_business_config_admin` capability. Its password is a local/UAT
   credential, not a platform-admin credential; the frontend must use the
