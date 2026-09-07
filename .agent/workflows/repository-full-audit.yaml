@@ -1,0 +1,57 @@
+workflow:
+  id: repository-full-audit
+  purpose: establish_a_reproducible_product_repository_baseline_and_next_iteration_queue
+  capability: governance
+  formal_product_layer: P4
+
+  authority_chain:
+    - AGENTS.md
+    - docs/ops/codex_execution_allowlist.md
+    - docs/ops/codex_workspace_execution_rules.md
+    - ARCHITECTURE_GUARD.md
+    - docs/architecture/ai_development_guard.md
+    - .agent/context.yaml
+    - .agent/decisions
+    - .agent/goals/REPO-BASELINE-AUDIT.yaml
+
+  inputs:
+    - baseline_full_sha
+    - allowed_audit_branch
+    - complete_worktree_fingerprint
+    - registered_make_targets
+    - existing_agent_context
+
+  steps:
+    - freeze_preflight_and_excluded_changes
+    - inventory_architecture_contract_backend_frontend_ci_security_and_docs
+    - run_repository_clean_history_guard
+    - run_generated_reports_guard
+    - run_scheduled_ci_guards
+    - run_frontend_quick_gate
+    - run_backend_architecture_full_gate
+    - classify_findings_by_owner_and_layer
+    - write_audit_report_and_run_record
+    - update_next_iteration_goal_and_workflow
+    - independent_readonly_review
+
+  required_outputs:
+    - audit_report_with_exact_commands_and_results
+    - goal_status_and_next_batch_queue
+    - resumable_run_record
+    - exact_file_scope_and_rollback
+
+  stop_conditions:
+    - branch_or_baseline_identity_drift
+    - unowned_worktree_change
+    - unresolved_database_or_runtime_identity
+    - static_gate_failure_before_long_runtime_chain
+    - zero_tests_collected
+    - boundary_finding_without_owner
+    - report_fingerprint_drift
+
+  next_iteration_order:
+    - smart_core_boundary_ownership_decision
+    - rendering_detail_report_reconciliation
+    - orphan_guard_registry_closure
+    - rerun_frontend_and_backend_static_gates
+    - only_then_runtime_contract_and_browser_acceptance

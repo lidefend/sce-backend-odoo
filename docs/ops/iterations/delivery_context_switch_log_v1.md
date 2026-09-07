@@ -8553,3 +8553,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Cost: merges now take ~8 extra minutes locally. That is the price of not
   shipping guard drift to main; a faster subset can be carved out later if it
   becomes a bottleneck.
+## 2026-09-07 — 主产品仓库全量审计与下一轮 workflow 收口
+
+- Branch / baseline: `audit/full-repository-baseline-20260907` /
+  `5a18788534981a2025bc24acecb9bfb1740b0f7c`。
+- Formal Product Layer: P4 ops delivery / verification governance。
+- Layer Target: repository-wide audit and `.agent` collaboration workflow。
+- Module: `addons/smart_core`、`addons/smart_construction_core`、`frontend/apps/web`、
+  `scripts/verify`、`scripts/ci`、`.agent` metadata。
+- Reason: prepare the next iteration from a frozen full-repository baseline rather than
+  starting from stale product or frontend assumptions.
+- Results: clean-history/security, generated-report consistency and scheduled CI guards
+  passed; frontend quick gate found rendering-detail report gap=7; backend architecture
+  full found one `smart_core` → `smart_construction_core` boundary violation; guard registry
+  found four orphan scripts.
+- Boundary: audit/report/workflow metadata only; no product source, contract, runtime,
+  database, fixture, port, volume, credential or remote-state mutation.
+- Evidence: `docs/ops/iterations/repository_full_audit_batch_20260907.md` and
+  `.agent/runs/REPO-BASELINE-AUDIT/20260907.yaml`。
+- Next order: boundary ownership decision → rendering report reconciliation → orphan
+  registry closure → rerun static gates → runtime/contract/browser acceptance。
