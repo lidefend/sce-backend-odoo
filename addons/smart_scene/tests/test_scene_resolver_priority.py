@@ -14,7 +14,7 @@ from odoo.tests.common import TransactionCase, tagged
 from odoo.addons.smart_scene.core.scene_resolver import resolve_scene_identity
 
 
-@tagged("post_install", "-at_install", "smart_scene", "scene_resolver")
+@tagged("post_install", "-at_install", "sc_gate", "smart_scene", "scene_resolver")
 class TestSceneResolverPriority(TransactionCase):
     def test_scene_hint_wins_over_defaults(self):
         result = resolve_scene_identity(

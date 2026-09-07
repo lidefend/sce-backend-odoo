@@ -2,7 +2,7 @@
 from odoo.tests.common import TransactionCase, tagged
 
 
-@tagged("post_install", "-at_install", "sc_regression", "norm", "boq_version")
+@tagged("post_install", "-at_install", "sc_gate", "sc_regression", "norm", "boq_version")
 class TestBoqNormLink(TransactionCase):
 
     def test_imported_norm_snapshot_links_to_selected_catalog_and_keeps_source_code(self):

@@ -30,6 +30,17 @@ class TestCostFactModelV2(TransactionCase):
         )
         self.Ledger = self.env["project.cost.ledger"]
 
+    def _foreign_currency(self):
+        currency = self.env["res.currency"].search(
+            [("id", "!=", self.project.company_id.currency_id.id)],
+            order="id",
+            limit=1,
+        )
+        self.assertTrue(currency, "test database must provide a non-company currency")
+        if not currency.active:
+            currency.active = True
+        return currency
+
     def _generated_values(self, source_model="account.move.line", source_id=101, source_line_id=201):
         return {
             "project_id": self.project.id,
@@ -136,8 +147,7 @@ class TestCostFactModelV2(TransactionCase):
         migration = runpy.run_path(
             os.path.join(module_path, "migrations/17.0.0.141/post-migration.py")
         )["migrate"]
-        foreign_currency = self.env.ref("base.USD")
-        self.assertNotEqual(foreign_currency, self.project.company_id.currency_id)
+        foreign_currency = self._foreign_currency()
         row = self.Ledger.create({
             "project_id": self.project.id,
             "cost_code_id": self.cost_code.id,
@@ -903,8 +913,7 @@ class TestCostFactModelV2(TransactionCase):
             move.button_draft()
             self.assertEqual(row.recognition_state, "withdrawn")
 
-            usd = self.env.ref("base.USD")
-            usd.active = True
+            foreign_currency = self._foreign_currency()
             source_amount = 40.0
             company_amount = 123.45
             foreign_move = self.env["account.move"].create(
@@ -918,7 +927,7 @@ class TestCostFactModelV2(TransactionCase):
                             "name": "外币成本确认",
                             "account_id": expense.id,
                             "debit": company_amount,
-                            "currency_id": usd.id,
+                            "currency_id": foreign_currency.id,
                             "amount_currency": source_amount,
                             "wbs_id": self.wbs.id,
                             "cost_code_id": self.cost_code.id,
@@ -927,7 +936,7 @@ class TestCostFactModelV2(TransactionCase):
                             "name": "外币应付",
                             "account_id": payable.id,
                             "credit": company_amount,
-                            "currency_id": usd.id,
+                            "currency_id": foreign_currency.id,
                             "amount_currency": -source_amount,
                         }),
                     ],
@@ -938,7 +947,7 @@ class TestCostFactModelV2(TransactionCase):
                 ("source_model", "=", "account.move.line"),
                 ("source_id", "=", foreign_move.id),
             ])
-            self.assertEqual(foreign_row.source_currency_id, usd)
+            self.assertEqual(foreign_row.source_currency_id, foreign_currency)
             self.assertEqual(foreign_row.source_amount, source_amount)
             self.assertAlmostEqual(foreign_row.amount, company_amount, places=2)
 

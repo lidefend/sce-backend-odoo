@@ -23,7 +23,7 @@ class _ContextEnv:
         self.context = context
 
 
-@tagged("post_install", "-at_install", "smart_owner_core", "extension_contract")
+@tagged("post_install", "-at_install", "sc_gate", "smart_owner_core", "extension_contract")
 class TestOwnerCoreExtensionContract(TransactionCase):
     def test_intent_contributions_are_unique_and_active(self):
         contributions = get_intent_handler_contributions()

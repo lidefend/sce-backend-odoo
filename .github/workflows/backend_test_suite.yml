@@ -211,13 +211,13 @@ jobs:
             # observe state left behind by earlier modules in the same run.
             module_db="${DB_NAME}_${module}"
             module_test_tags="${TEST_TAGS_INPUT}"
-            if [ -z "${module_test_tags}" ] && [ "${module}" = "smart_construction_bundle" ]; then
-              # The bundle identity test is intentionally post-install because
-              # it validates the fully assembled delivery package. Keep the
-              # tag module-qualified: a bare post_install tag would also run
-              # every post-install test inherited from bundle dependencies.
-              module_test_tags="/smart_construction_bundle:post_install"
+            if [ -z "${module_test_tags}" ]; then
+              # Select only tests owned by this module. Bare sc_gate/sc_smoke
+              # tags also select dependency tests and made wrapper modules run
+              # smart_construction_core's suite repeatedly.
+              module_test_tags="sc_smoke/${module},sc_gate/${module}"
             fi
+            module_env_file=""
             if [ "${module}" = "smart_construction_demo" ]; then
               # The demo payload's pre_init_hook refuses non-demo databases
               # by design (guard_demo_scope): authorized db name +
@@ -233,20 +233,23 @@ jobs:
               echo "::add-mask::${demo_password}"
               printf 'SC_ALLOW_DEMO_DATA=1\nSC_DEMO_USER_PASSWORD=%s\n' \
                 "${demo_password}" >> "${demo_env}"
-              if ! ENV_FILE="${demo_env}" make test MODULE="${module}" DB_NAME="${module_db}"; then
-                echo "::error::backend suite failed for module ${module}"
-                failed=1
-              fi
-            elif [ -n "${module_test_tags}" ]; then
-              if ! make test MODULE="${module}" TEST_TAGS="${module_test_tags}" DB_NAME="${module_db}"; then
-                echo "::error::backend suite failed for module ${module}"
-                failed=1
-              fi
+              module_env_file="${demo_env}"
+            fi
+            module_log="${RUNNER_TEMP}/backend-suite-odoo-${module}-${GITHUB_RUN_ID}.log"
+            if [ -n "${module_env_file}" ]; then
+              ENV_FILE="${module_env_file}" make test MODULE="${module}" \
+                TEST_TAGS="${module_test_tags}" DB_NAME="${module_db}" 2>&1 | tee "${module_log}"
             else
-              if ! make test MODULE="${module}" DB_NAME="${module_db}"; then
-                echo "::error::backend suite failed for module ${module}"
-                failed=1
-              fi
+              make test MODULE="${module}" TEST_TAGS="${module_test_tags}" \
+                DB_NAME="${module_db}" 2>&1 | tee "${module_log}"
+            fi
+            module_status="${PIPESTATUS[0]}"
+            if [ "${module_status}" -ne 0 ]; then
+              echo "::error::backend suite failed for module ${module}"
+              failed=1
+            elif ! grep -Eq '0 failed, 0 error\(s\) of [1-9][0-9]* tests when loading database' "${module_log}"; then
+              echo "::error::backend suite collected zero tests for module ${module}"
+              failed=1
             fi
           done
           for module in ${PYTHON_MODULES}; do

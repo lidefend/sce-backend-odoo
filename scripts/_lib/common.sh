@@ -10,7 +10,7 @@ log() { printf '[%s] %s\n' "$(date +'%H:%M:%S')" "$*"; }
 : "${COMPOSE_FILE_BASE:=docker-compose.yml}"
 : "${COMPOSE_FILES:=-f ${COMPOSE_FILE_BASE}}"
 
-# 把 "sc_gate,sc_perm,/mod:tag" 统一转换为 "/MODULE:tag" 形式
+# 把裸标签扩展为模块限定选择器；已限定的 Odoo 选择器保持不变。
 normalize_test_tags() {
   local module="$1"
   local raw="${2:-}"
@@ -24,12 +24,10 @@ normalize_test_tags() {
   local p
   for p in "${parts[@]}"; do
     [[ -z "$p" ]] && continue
-    if [[ "$p" == /*:* ]]; then
+    if [[ "$p" == */* ]]; then
       out+=("$p")
     else
-      # 同时保留裸 tag，确保 Odoo 解析（sc_gate,sc_perm 等）
-      out+=("/${module}:${p}")
-      out+=("$p")
+      out+=("${p}/${module}")
     fi
   done
 

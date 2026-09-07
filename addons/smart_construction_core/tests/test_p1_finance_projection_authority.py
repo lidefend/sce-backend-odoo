@@ -77,7 +77,9 @@ class TestP1FinanceProjectionAuthority(TransactionCase):
         if not cls.other_currency.active:
             cls.other_currency.active = True
 
-    def _cleanup_committed_cash_source_race(self, request_id):
+    def _cleanup_committed_cash_source_race(
+        self, request_id, contract_id, project_id, partner_id
+    ):
         registry = Registry(self.env.cr.dbname)
         with registry.cursor() as cursor:
             env = api.Environment(cursor, SUPERUSER_ID, {"tracking_disable": True})
@@ -123,6 +125,15 @@ class TestP1FinanceProjectionAuthority(TransactionCase):
                 )
                 request.invalidate_recordset()
                 request.unlink()
+            contract = env["construction.contract"].sudo().browse(contract_id).exists()
+            if contract:
+                contract.unlink()
+            project = env["project.project"].sudo().browse(project_id).exists()
+            if project:
+                project.unlink()
+            partner = env["res.partner"].sudo().browse(partner_id).exists()
+            if partner:
+                partner.unlink()
             cursor.execute(
                 "SELECT EXISTS(SELECT 1 FROM payment_request WHERE id = %s), "
                 "EXISTS(SELECT 1 FROM sc_receipt_income WHERE payment_request_id = %s), "
@@ -1591,22 +1602,28 @@ class TestP1FinanceProjectionAuthority(TransactionCase):
         registry = Registry(self.env.cr.dbname)
         with registry.cursor() as setup_cursor:
             setup_env = api.Environment(setup_cursor, SUPERUSER_ID, {})
-            contract = setup_env["construction.contract"].search(
-                [
-                    ("type", "=", "out"),
-                    ("project_id", "!=", False),
-                    ("partner_id", "!=", False),
-                    ("company_id", "!=", False),
-                ],
-                order="id",
-                limit=1,
+            suffix = uuid.uuid4().hex[:8]
+            project = setup_env["project.project"].create(
+                {
+                    "name": "P1 终态来源并发隔离项目 " + suffix,
+                    "code": "P1-CASH-RACE-" + suffix,
+                    "company_id": setup_env.company.id,
+                    "operation_strategy": "direct",
+                }
             )
-            self.assertTrue(
-                contract,
-                "governed local.dev fixture must provide an income contract",
+            partner = setup_env["res.partner"].create(
+                {"name": "P1 终态来源并发往来单位 " + suffix}
             )
-            project = contract.project_id
-            partner = contract.partner_id
+            contract = setup_env["construction.contract"].create(
+                {
+                    "subject": "P1 终态来源并发收款合同 " + suffix,
+                    "type": "out",
+                    "project_id": project.id,
+                    "partner_id": partner.id,
+                    "company_id": setup_env.company.id,
+                    "currency_id": setup_env.company.currency_id.id,
+                }
+            )
             request = setup_env["payment.request"].create(
                 {
                     "name": "P1-CASH-SOURCE-RACE-" + uuid.uuid4().hex[:8],
@@ -1642,8 +1659,13 @@ class TestP1FinanceProjectionAuthority(TransactionCase):
                 "state": "legacy_confirmed",
             }
             request_id = request.id
+            committed_fixture_ids = (contract.id, project.id, partner.id)
             setup_cursor.commit()
-        self.addCleanup(self._cleanup_committed_cash_source_race, request_id)
+        self.addCleanup(
+            self._cleanup_committed_cash_source_race,
+            request_id,
+            *committed_fixture_ids,
+        )
 
         started = threading.Event()
         finished = threading.Event()

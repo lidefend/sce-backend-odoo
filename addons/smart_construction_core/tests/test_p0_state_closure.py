@@ -14,6 +14,19 @@ class TestP0StateClosure(TransactionCase):
         self.company = self.env.ref("base.main_company")
         self.uom_unit = self.env.ref("uom.product_uom_unit")
 
+    def _complete_tier_validation(self, record, user):
+        reviewer_groups = record.review_ids.mapped("reviewer_group_id")
+        reviewer_groups.sudo().write({"users": [(4, user.id)]})
+        for _step in range(8):
+            candidate = record.with_user(user)
+            candidate.invalidate_recordset()
+            if candidate.validation_status == "validated":
+                break
+            self.assertTrue(candidate.can_review, "test approver must own the next tier")
+            candidate.validate_tier()
+        record.invalidate_recordset()
+        self.assertEqual(record.validation_status, "validated")
+
     def _create_project(self, name, with_boq=False):
         owner = self._create_partner(f"{name} Owner")
         project = self.env["project.project"].create(
@@ -289,7 +302,7 @@ class TestP0StateClosure(TransactionCase):
         finance_manager = self._create_finance_manager("p0_finance_manager_settle_state")
         project.message_subscribe(partner_ids=finance_user.partner_id.ids)
         pr.with_user(finance_user).action_submit()
-        pr.with_user(finance_manager).validate_tier()
+        self._complete_tier_validation(pr, finance_manager)
         pr.invalidate_recordset()
         self.assertEqual(pr.state, "approved")
 
@@ -316,7 +329,7 @@ class TestP0StateClosure(TransactionCase):
         finance_manager = self._create_finance_manager("p0_finance_manager_overpay")
         project.message_subscribe(partner_ids=finance_user.partner_id.ids)
         pr.with_user(finance_user).action_submit()
-        pr.with_user(finance_manager).validate_tier()
+        self._complete_tier_validation(pr, finance_manager)
         pr.invalidate_recordset()
         self.assertEqual(pr.state, "approved")
 
@@ -642,6 +655,7 @@ class TestP0StateClosure(TransactionCase):
                 "contract_id": contract.id,
                 "payment_request_id": pr.id,
                 "amount": 10.0,
+                "currency_id": pr.currency_id.id,
             }
         )
         pr.invalidate_recordset()
@@ -737,6 +751,7 @@ class TestP0StateClosure(TransactionCase):
                 "contract_id": contract.id,
                 "payment_request_id": pr.id,
                 "amount": 0.0,
+                "currency_id": pr.currency_id.id,
             }
         )
         with self.assertRaises(UserError):
@@ -783,6 +798,7 @@ class TestP0StateClosure(TransactionCase):
                 "payment_request_id": pr.id,
                 "amount": 10.0,
                 "approved_amount": 10.0,
+                "currency_id": pr.currency_id.id,
                 "state": "approved",
             }
         )

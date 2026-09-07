@@ -50,7 +50,7 @@ class _ParamEnv:
         return _ICP(self._params)
 
 
-@tagged("post_install", "-at_install", "smart_license_core", "tier_gate")
+@tagged("post_install", "-at_install", "sc_gate", "smart_license_core", "tier_gate")
 class TestLicenseTierGate(TransactionCase):
     def test_tier_rank_ordering(self):
         self.assertLess(TIER_RANK["community"], TIER_RANK["pro"])

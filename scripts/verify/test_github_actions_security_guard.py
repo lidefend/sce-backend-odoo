@@ -252,6 +252,34 @@ jobs:
             classes = {item.classification for item in guard.scan(root)}
             self.assertIn("BACKEND_SUITE_DYNAMIC_SECRET_MASKING_INCOMPLETE", classes)
 
+    def test_backend_suite_module_routing_and_nonzero_tests_are_required(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            workflow = root / ".github/workflows/backend_test_suite.yml"
+            workflow.parent.mkdir(parents=True)
+            source = (ROOT / ".github/workflows/backend_test_suite.yml").read_text(encoding="utf-8")
+            workflow.write_text(
+                source.replace(
+                    'module_test_tags="sc_smoke/${module},sc_gate/${module}"\n',
+                    'module_test_tags="sc_smoke,sc_gate"\n',
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            classes = {item.classification for item in guard.scan(root)}
+            self.assertIn("BACKEND_SUITE_TEST_ROUTING_NOT_FAIL_CLOSED", classes)
+
+            workflow.write_text(
+                source.replace(
+                    "elif ! grep -Eq '0 failed, 0 error\\(s\\) of [1-9][0-9]* tests when loading database' \"${module_log}\"; then\n",
+                    "elif false; then\n",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            classes = {item.classification for item in guard.scan(root)}
+            self.assertIn("BACKEND_SUITE_TEST_ROUTING_NOT_FAIL_CLOSED", classes)
+
     def run_cleanup_fixture(self, project: str) -> tuple[subprocess.CompletedProcess[str], str]:
         with tempfile.TemporaryDirectory() as directory:
             fixture = Path(directory)

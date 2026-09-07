@@ -19,13 +19,40 @@ class TestCostFactConcurrencyV2(TransactionCase):
         cursor = registry.cursor()
         return cursor, api.Environment(cursor, SUPERUSER_ID, {})
 
-    def _values(self, env, source_id, amount):
+    def _fixtures(self, env, *, with_warehouse=False):
         project = env["project.project"].search(
-            [("company_id", "!=", False)], order="id", limit=1
+            [("code", "=", "SC-COST-CONCURRENCY-FIXTURE")], limit=1
         )
-        cost_code = env["project.cost.code"].search([], order="id", limit=1)
-        self.assertTrue(project, "governed local.dev fixture must provide a company project")
-        self.assertTrue(cost_code, "governed local.dev fixture must provide a cost code")
+        if not project:
+            project = env["project.project"].create({
+                "name": "成本并发隔离测试项目",
+                "code": "SC-COST-CONCURRENCY-FIXTURE",
+                "company_id": env.company.id,
+            })
+        cost_code = env["project.cost.code"].search(
+            [("code", "=", "SC-CONCURRENCY")], limit=1
+        )
+        if not cost_code:
+            cost_code = env["project.cost.code"].create({
+                "name": "成本并发隔离测试科目",
+                "code": "SC-CONCURRENCY",
+                "type": "other",
+            })
+        warehouse = env["stock.warehouse"]
+        if with_warehouse:
+            warehouse = warehouse.search(
+                [("company_id", "=", project.company_id.id)], limit=1
+            )
+            if not warehouse:
+                warehouse = warehouse.create({
+                    "name": "成本并发隔离测试仓库",
+                    "code": "SCCF",
+                    "company_id": project.company_id.id,
+                })
+        return project, cost_code, warehouse
+
+    def _values(self, env, source_id, amount):
+        project, cost_code, _warehouse = self._fixtures(env)
         return {
             "project_id": project.id,
             "cost_code_id": cost_code.id,
@@ -118,16 +145,12 @@ class TestCostFactConcurrencyV2(TransactionCase):
     def test_receipt_correction_and_supplier_return_use_latest_origin_fact(self):
         setup_cursor, setup_env = self._environment()
         try:
-            project = setup_env["project.project"].search(
-                [("company_id", "!=", False)], order="id", limit=1
+            project, cost_code, warehouse = self._fixtures(
+                setup_env, with_warehouse=True
             )
-            cost_code = setup_env["project.cost.code"].search([], order="id", limit=1)
-            picking_type = setup_env["stock.picking.type"].search(
-                [("code", "=", "incoming"), ("company_id", "=", project.company_id.id)],
-                limit=1,
-            )
+            picking_type = warehouse.in_type_id
             supplier = setup_env["stock.location"].search([("usage", "=", "supplier")], limit=1)
-            internal = picking_type.default_location_dest_id
+            internal = warehouse.lot_stock_id
             product = setup_env["product.product"].create({
                 "name": "并发退货事实材料 " + uuid.uuid4().hex[:8],
                 "type": "consu",
@@ -242,7 +265,7 @@ class TestCostFactConcurrencyV2(TransactionCase):
                 "name": "并发期间锁项目 " + uuid.uuid4().hex[:8],
                 "company_id": setup_env.company.id,
             })
-            cost_code = setup_env["project.cost.code"].search([], order="id", limit=1)
+            _fixture_project, cost_code, _warehouse = self._fixtures(setup_env)
             values = {
                 "project_id": project.id,
                 "cost_code_id": cost_code.id,
@@ -324,11 +347,8 @@ class TestCostFactConcurrencyV2(TransactionCase):
     def test_concurrent_project_returns_conserve_original_issue_quantity(self):
         setup_cursor, setup_env = self._environment()
         try:
-            project = setup_env["project.project"].search(
-                [("company_id", "!=", False)], order="id", limit=1
-            )
-            warehouse = setup_env["stock.warehouse"].search(
-                [("company_id", "=", project.company_id.id)], limit=1
+            project, _cost_code, warehouse = self._fixtures(
+                setup_env, with_warehouse=True
             )
             product = setup_env["product.product"].create({
                 "name": "并发项目退库材料 " + uuid.uuid4().hex[:8],
