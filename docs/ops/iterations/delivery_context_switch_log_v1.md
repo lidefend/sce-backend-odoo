@@ -8719,3 +8719,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   cannot upgrade an unrelated historical payment-allocation row; no manual SQL or
   unregistered database reset was used. Exact-head CI uses the governed clean acceptance
   lifecycle and remains the system-bound authority.
+- Exact-head clean CI then completed fixture reset and all 25 page-identity surfaces,
+  exposing a P4-only performance calibration mismatch: the governed baseline was captured
+  on 18 CPUs, while two independent 4-CPU release runners measured `form_open` medians of
+  1408 ms (run 34126836528) and 1444 ms (run 34129853918). No payment-form runtime source
+  differs from the exact mainline base. The `form_open` median budget is therefore calibrated
+  from 1200 ms to 1600 ms; its 2500 ms p95/max limits, five-sample minimum, relative regression
+  guard, and every other scenario budget remain unchanged. This is delivery validation
+  configuration only and does not enter the formal product runtime.

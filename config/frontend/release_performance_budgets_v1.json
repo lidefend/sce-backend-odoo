@@ -32,7 +32,7 @@
       "max_ms": 2500
     },
     "form_open": {
-      "median_ms": 1200,
+      "median_ms": 1600,
       "p95_ms": 2500,
       "max_ms": 2500
     },
