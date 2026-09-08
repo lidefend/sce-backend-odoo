@@ -3511,7 +3511,7 @@ function refreshForRecordContextChange(): void {
 <style scoped>
 .page {
   display: grid; align-content: start;
-  gap: var(--sc-product-workspace-stack-gap);
+  gap: var(--sc-space-xs);
   width: 100%;
   box-sizing: border-box;
 }

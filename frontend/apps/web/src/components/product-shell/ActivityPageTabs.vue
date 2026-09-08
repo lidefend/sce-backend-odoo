@@ -112,7 +112,7 @@ async function handleKeydown(event: KeyboardEvent) {
   overflow: hidden;
   padding: 0 12px;
   border-bottom: 1px solid var(--sc-app-border);
-  background: var(--sc-app-panel);
+  background: var(--sc-app-bg);
 }
 
 .activity-page-tab-label {
