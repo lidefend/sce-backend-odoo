@@ -40,6 +40,18 @@ def run(env):
     if existing:
         existing.unlink()
     contract = env.ref("smart_construction_demo.sc_demo_contract_in_069_payment")
+    funding_baseline = env["project.funding.baseline"].sudo().search(
+        [
+            ("project_id", "=", contract.project_id.id),
+            ("state", "=", "active"),
+            ("normalization_state", "=", "normalized"),
+        ],
+        limit=2,
+    )
+    if len(funding_baseline) != 1 or not funding_baseline.period_start:
+        raise RuntimeError(
+            "payment request floorplan fixture requires one active normalized funding baseline"
+        )
     record = payment_model.create(
         {
             "name": FIXTURE_NAME,
@@ -48,7 +60,7 @@ def run(env):
             "contract_id": contract.id,
             "partner_id": contract.partner_id.id,
             "amount": 10000.0,
-            "date_request": "2025-08-22",
+            "date_request": funding_baseline.period_start,
             "note": "受管付款申请黄金页面提交闭环 fixture",
         }
     )

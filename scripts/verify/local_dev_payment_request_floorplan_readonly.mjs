@@ -79,6 +79,45 @@ function collectNodeKindCounts(value, counts = {}) {
   return counts;
 }
 
+async function locateCollectionRecord(page, surface, id, name) {
+  const byIdentity = surface.locator(`[data-record-key="${id}"]`).first();
+  const byText = surface.locator('tbody tr').filter({ hasText: String(name || '') }).first();
+  for (let pageIndex = 0; pageIndex < 50; pageIndex += 1) {
+    const pagination = surface.locator('[data-semantic-component="CollectionPaginationFooter"]').first();
+    await pagination.waitFor({ state: 'visible', timeout: 45000 });
+    await page.waitForFunction(() => (
+      document.querySelector('[data-semantic-component="CollectionPaginationFooter"]')?.getAttribute('data-state') === 'ready'
+    ), null, { timeout: 45000 });
+    if (await byIdentity.isVisible().catch(() => false)) return byIdentity;
+    if (await byText.isVisible().catch(() => false)) return byText;
+    const nextPage = pagination.locator('.t-pagination__btn-next').first();
+    const nextPageClass = await nextPage.getAttribute('class').catch(() => '');
+    if (
+      !await nextPage.isVisible().catch(() => false)
+      || !await nextPage.isEnabled().catch(() => false)
+      || await nextPage.getAttribute('disabled').catch(() => null) !== null
+      || await nextPage.getAttribute('aria-disabled').catch(() => null) === 'true'
+      || String(nextPageClass || '').includes('t-is-disabled')
+    ) break;
+    const rowSignature = normalize(await surface.locator('tbody tr:visible').first().innerText().catch(() => ''));
+    const exchangeCount = dataListExchanges.length;
+    await nextPage.click();
+    await page.waitForFunction(({ previousRowSignature, previousExchangeCount }) => {
+      const footer = document.querySelector('[data-semantic-component="CollectionPaginationFooter"]');
+      const visibleRow = [...document.querySelectorAll('tbody tr')].find((row) => {
+        const style = window.getComputedStyle(row);
+        return style.visibility !== 'hidden' && style.display !== 'none' && row.getClientRects().length > 0;
+      });
+      const currentRowSignature = String(visibleRow?.textContent || '').replace(/\s+/g, ' ').trim();
+      return footer?.getAttribute('data-state') === 'ready'
+        && Boolean(currentRowSignature)
+        && currentRowSignature !== previousRowSignature
+        && window.__paymentFloorplanListExchangeCount > previousExchangeCount;
+    }, { previousRowSignature: rowSignature, previousExchangeCount: exchangeCount }, { timeout: 45000 });
+  }
+  throw new Error(`governed record ${id}/${String(name || '')} is not reachable through collection pagination`);
+}
+
 check(frontendUrl && database && password && login, 'local.dev floorplan identity is incomplete');
 check(actionId > 0 && menuId > 0 && recordId > 0, 'local.dev floorplan target is invalid', target);
 fs.mkdirSync(outputDir, { recursive: true });
@@ -114,7 +153,10 @@ page.on('response', async (response) => {
   const intent = String(payload?.intent || '');
   const operation = String(payload?.params?.op || payload?.op || '');
   if (intent === 'api.data' && operation === 'list') {
-    try { dataListExchanges.push({ request: payload, response: await response.json() }); } catch {}
+    try {
+      dataListExchanges.push({ request: payload, response: await response.json() });
+      await page.evaluate((count) => { window.__paymentFloorplanListExchangeCount = count; }, dataListExchanges.length).catch(() => {});
+    } catch {}
     return;
   }
   if (intent === 'chatter.timeline') {
@@ -157,8 +199,8 @@ try {
   await page.goto(`${frontendUrl}/a/${actionId}?menu_id=${menuId}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
   const listSurface = page.locator('[data-product-page-mode="list"]:visible').first();
   await listSurface.waitFor({ timeout: 45000 });
-  const targetRow = listSurface.locator('tbody tr').filter({ hasText: String(target.record.name || '') }).first();
-  await targetRow.waitFor({ timeout: 45000 });
+  await page.evaluate(() => { window.__paymentFloorplanListExchangeCount = 0; });
+  const targetRow = await locateCollectionRecord(page, listSurface, recordId, target.record.name);
   const listContract = await waitForContract(['tree', 'list']);
   const listExchange = await waitForListExchange();
   check(listContract, 'list ui.contract.v2 response was not observed');
@@ -271,7 +313,20 @@ try {
     expectedActionId: String(actionId),
     expectedMenuId: String(menuId),
   }, { timeout: 45000 });
-  report.list.rowNavigation = { url: page.url(), path: new URL(page.url()).pathname };
+  const rowNavigationUrl = new URL(page.url());
+  report.list.rowNavigation = {
+    url: rowNavigationUrl.toString(),
+    path: rowNavigationUrl.pathname,
+    actionId: rowNavigationUrl.searchParams.get('action_id'),
+    menuId: rowNavigationUrl.searchParams.get('menu_id'),
+    listOffset: rowNavigationUrl.searchParams.get('list_offset'),
+  };
+  check(report.list.rowNavigation.path === `/f/${model}/${recordId}`,
+    'authorized payment list row did not open the governed edit route', report.list.rowNavigation);
+  check(report.list.rowNavigation.actionId === String(actionId)
+    && report.list.rowNavigation.menuId === String(menuId)
+    && Number(report.list.rowNavigation.listOffset || -1) >= 0,
+  'payment list row did not preserve governed action/menu/list context', report.list.rowNavigation);
   await page.goto(`${frontendUrl}/r/${model}/${recordId}?action_id=${actionId}&menu_id=${menuId}`, {
     waitUntil: 'domcontentloaded',
     timeout: 45000,
@@ -373,7 +428,7 @@ try {
     check(regions.includes(region), `floorplan region missing: ${region}`, regions);
   }
   check(enabledPrimary === 0, 'the governed blocked record exposed a false executable primary action', enabledPrimary);
-  check(continueProcessing === 1, 'the governed blocked record must expose one path to complete missing facts', continueProcessing);
+  check(continueProcessing === 0, 'explicit readonly route exposed a legacy edit-mode switch', continueProcessing);
   check(readonlyEditableControls === 0, 'readonly product surface exposes editable field/configuration controls', readonlyEditableControls);
   check(readonlyStatusButtons === 0, 'readonly product surface renders workflow states as buttons', readonlyStatusButtons);
   check(Object.values(leakedConfigurationLabels).every((count) => count === 0),
@@ -384,11 +439,12 @@ try {
     'readonly product surface exposes empty disabled controls', emptyReadonlyControls);
   check(emptyReadonlyRelations === 0,
     'readonly product surface retains empty one2many relationship groups', emptyReadonlyRelations);
-  check(relationUploadActions > 0,
-    'readonly relationship cleanup removed the attachment interaction surface', relationUploadActions);
+  check(relationUploadActions === 0,
+    'readonly relationship surface exposed a write-capable attachment action', relationUploadActions);
   check(duplicateSemanticTitles.length === 0,
     'readonly product surface repeats semantic section titles', duplicateSemanticTitles);
-  check(enabledPrimary + continueProcessing === 1, 'more than one product primary action is visible', { enabledPrimary, continueProcessing });
+  check(enabledPrimary + continueProcessing === 0,
+    'explicit readonly route exposed a write-capable primary action', { enabledPrimary, continueProcessing });
   check(canonicalActions.filter((action) => action.label === '取消').length === 0,
     'readonly product surface exposed an edit/dialog cancel operation', canonicalActions);
   check(report.desktop.overflow <= 0, 'desktop has horizontal overflow', report.desktop);

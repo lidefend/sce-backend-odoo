@@ -49,4 +49,14 @@ class TestPaymentRequestFloorplanFixtureOwnership(TransactionCase):
         self.assertNotEqual(first["payment_request_id"], second["payment_request_id"])
         self.assertEqual(second_record.id, second["payment_request_id"])
         self.assertEqual(second_record.name, name)
+        funding_baseline = self.env["project.funding.baseline"].sudo().search(
+            [
+                ("project_id", "=", second_record.project_id.id),
+                ("state", "=", "active"),
+                ("normalization_state", "=", "normalized"),
+            ],
+            limit=2,
+        )
+        self.assertEqual(len(funding_baseline), 1)
+        self.assertEqual(second_record.date_request, funding_baseline.period_start)
         self.assertTrue(unrelated.exists())

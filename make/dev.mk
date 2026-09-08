@@ -276,7 +276,12 @@ verify.frontend.professionalization.systemwide_public_metric.acceptance: guard.p
 
 verify.local.dev.payment_request.floorplan.submit: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
-	  bash scripts/verify/local_dev_payment_request_floorplan_submit.sh
+	  PAYMENT_REQUEST_JOURNEY_SCOPE=payment bash scripts/verify/local_dev_payment_request_floorplan_submit.sh
+
+.PHONY: verify.local.dev.payment_request.relation_lifecycle
+verify.local.dev.payment_request.relation_lifecycle: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  PAYMENT_REQUEST_JOURNEY_SCOPE=relation bash scripts/verify/local_dev_payment_request_floorplan_submit.sh
 
 verify.local.dev.payment_request.settlement_component.journey: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \

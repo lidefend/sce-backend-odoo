@@ -177,9 +177,157 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         submit = (
             ROOT / "scripts/verify/local_dev_payment_request_floorplan_submit.sh"
         ).read_text(encoding="utf-8")
+        submit_browser = (
+            ROOT / "scripts/verify/local_dev_payment_request_floorplan_submit.mjs"
+        ).read_text(encoding="utf-8")
         self.assertIn('LOCAL_DEV_CANONICAL_ENV_FILE="$(readlink -f "$ENV_FILE")"', submit)
         self.assertIn('ENV_FILE="$LOCAL_DEV_CANONICAL_ENV_FILE"', submit)
         self.assertIn('make -C "$ROOT_DIR" --no-print-directory local.dev.sync_demo', submit)
+        self.assertIn('JOURNEY_SCOPE="${PAYMENT_REQUEST_JOURNEY_SCOPE:-payment}"', submit)
+        self.assertIn('PAYMENT_REQUEST_JOURNEY_SCOPE="$JOURNEY_SCOPE"', submit)
+        self.assertIn("if (journeyScope === 'relation')", submit_browser)
+        self.assertIn("payment_request_relation_lifecycle.v1", submit_browser)
+        self.assertNotIn("report.projectRelationCreate =", submit_browser)
+        self.assertIn("fillOptionalLoginDatabase", submit_browser)
+        self.assertIn("count <= 1", submit_browser)
+        self.assertIn("unique_response_auto_selected", submit_browser)
+        self.assertIn("&& await visibleOptionPanel.count() === 0", submit_browser)
+        self.assertEqual(
+            submit_browser.count('[data-professional-relation-lifecycle="search"][role="dialog"]:visible'),
+            2,
+        )
+        self.assertIn("targetId", submit_browser)
+        self.assertIn("relation option action", submit_browser)
+        self.assertIn("optionAction.click()", submit_browser)
+        self.assertIn("managed project create dialog close action", submit_browser)
+        self.assertIn("data-professional-relation-lifecycle", submit_browser)
+        self.assertIn("project name input did not enter the child form state", submit_browser)
+        self.assertIn("project.project.name has no such action", submit_browser)
+        self.assertNotIn("projectNameOnchangePromise", submit_browser)
+        self.assertNotIn("project name onchange failed before save", submit_browser)
+        self.assertIn(
+            "relation lifecycle must not emit a parent payment mutation",
+            submit_browser,
+        )
+        self.assertNotIn("returned parent payment save action", submit_browser)
+        self.assertNotIn("parent payment must emit exactly one create mutation", submit_browser)
+        self.assertEqual(
+            submit_browser.count(
+                '[data-action-ref="form.save"][data-action-enabled="true"]'
+            ),
+            2,
+        )
+        self.assertNotIn(
+            '[data-action-ref="form.save"][data-action-tier="primary"]',
+            submit_browser,
+        )
+        self.assertIn(
+            "page.locator('[data-product-page-header]').getByRole('button', { name: /^新建$/ })",
+            submit_browser,
+        )
+        self.assertNotIn(
+            "listSurface.getByRole('button', { name: /^新建$/ })",
+            submit_browser,
+        )
+        self.assertNotIn(
+            '[data-product-primary-action][data-action-tier="primary"]',
+            submit_browser,
+        )
+        self.assertIn(
+            "JSON.stringify(['attachment_ids', 'outflow_line_ids'])",
+            submit_browser,
+        )
+        self.assertIn(
+            "relation capabilities were duplicated into supplementary input",
+            submit_browser,
+        )
+        self.assertNotIn(
+            "attachment capability was duplicated into the business relation region",
+            submit_browser,
+        )
+        self.assertNotIn(
+            "lost its backend-authorized search entry",
+            submit_browser,
+        )
+        self.assertIn("project create action", submit_browser)
+        self.assertIn("project search-more action", submit_browser)
+        self.assertEqual(submit_browser.count("[data-disclosure-trigger]"), 2)
+        self.assertNotIn("supplementaryDetails.locator('summary')", submit_browser)
+        self.assertNotIn("auditRegion.locator('summary')", submit_browser)
+        self.assertEqual(
+            submit_browser.count('[data-dialog-purpose="intent-confirmation"][role="dialog"]:visible'),
+            3,
+        )
+        self.assertIn(
+            '[data-professional-workflow-component="statusbar"][data-workflow-current="submit"]',
+            submit_browser,
+        )
+        self.assertLess(
+            submit_browser.index("const postSubmitRecordPromise = page.waitForResponse"),
+            submit_browser.index("await submitConfirm.click()"),
+        )
+        self.assertIn(
+            "await Promise.all([postSubmitContractPromise, postSubmitRecordPromise])",
+            submit_browser,
+        )
+        self.assertIn("String(body?.params?.op || '') === 'action_open'", submit_browser)
+        self.assertIn("Number(body?.params?.action_id || 0) === Number(expectedActionId)", submit_browser)
+        self.assertIn("Number(body?.params?.record_id || 0) === Number(expectedRecordId)", submit_browser)
+        self.assertNotIn("String(body?.params?.model || '') === 'payment.request';\n  } catch", submit_browser)
+        self.assertLess(
+            submit_browser.index("submittedRecordSurface.locator('[data-object-task-page]').waitFor"),
+            submit_browser.index("const statusSummary = await requireUnique"),
+        )
+        self.assertNotIn('data-form-mode-action="edit"', submit_browser)
+        self.assertNotIn("project login database", submit_browser)
+        self.assertNotIn("payment login database", submit_browser)
+
+    def test_payment_parity_resolver_fails_closed_on_runtime_authority_drift(self):
+        resolver = (
+            ROOT / "scripts/verify/local_dev_payment_request_native_parity_ids.py"
+        ).read_text(encoding="utf-8")
+        browser = (
+            ROOT / "scripts/verify/local_dev_payment_request_native_parity_readonly.mjs"
+        ).read_text(encoding="utf-8")
+        floorplan_browser = (
+            ROOT / "scripts/verify/local_dev_payment_request_floorplan_readonly.mjs"
+        ).read_text(encoding="utf-8")
+        for required in (
+            "_visible_menu_ids",
+            "expression.AND",
+            "record_in_action_domain",
+            "build_route_authority",
+            "route_matches",
+            "actionable_funding_baseline",
+            "submit-ready payment request date is outside the active funding baseline",
+        ):
+            self.assertIn(required, resolver)
+        self.assertIn("catch (error)", browser)
+        self.assertIn("report.failure", browser)
+        self.assertIn("locateCollectionRecord", browser)
+        self.assertIn('data-record-key=', browser)
+        self.assertIn("全部展开", browser)
+        self.assertIn("CollectionPaginationFooter", browser)
+        self.assertIn("t-pagination__btn-next", browser)
+        self.assertIn("api.data", browser)
+        self.assertIn("previousRowSignature", browser)
+        self.assertIn('url.pathname === `/f/${model}/${recordId}`', browser)
+        self.assertIn("list_offset", browser)
+        self.assertIn("collectContractStrings", browser)
+        self.assertIn("report.projectionGaps", browser)
+        self.assertIn("report.contractSemanticEvidence", browser)
+        self.assertIn("renderedFieldCount", browser)
+        self.assertIn("floorplanRegions", browser)
+        self.assertIn("report.failureSurface", browser)
+        self.assertIn("pagination:", browser)
+        self.assertIn("locateCollectionRecord", floorplan_browser)
+        self.assertIn("CollectionPaginationFooter", floorplan_browser)
+        self.assertIn("previousRowSignature", floorplan_browser)
+        self.assertIn("__paymentFloorplanListExchangeCount", floorplan_browser)
+        self.assertIn("authorized payment list row did not open the governed edit route", floorplan_browser)
+        self.assertIn("payment list row did not preserve governed action/menu/list context", floorplan_browser)
+        self.assertIn("explicit readonly route exposed a legacy edit-mode switch", floorplan_browser)
+        self.assertIn("readonly relationship surface exposed a write-capable attachment action", floorplan_browser)
 
     def test_payment_settlement_component_reset_keeps_canonical_env_authority(self):
         journey = (
