@@ -357,13 +357,14 @@ pr.ready: guard.prod.forbid
 pr.push: guard.prod.forbid
 	@GITHUB_AUTH_REMOTE="$(or $(GITHUB_AUTH_REMOTE),origin)" bash scripts/ops/git_safe_push.sh
 
-# Local quick gate before pr.merge.
+# Exact-head local quick evidence gate before pr.merge.
 #
 # The remote PR gates do not run the local quick suite, so guard drift
 # (stale split-guard tokens, line budgets, evidence locks) used to
-# accumulate silently on main. This gate runs ci.local.quick on the exact
-# PR head before the merge is dispatched: the local checkout must be clean
-# and equal to EXPECTED_HEAD, otherwise the merge is refused.
+# accumulate silently on main. A clean exact-head ci.local.quick run now records
+# worktree-local evidence. This gate reuses that evidence when available and
+# otherwise runs the suite once as a fail-closed fallback. The local checkout
+# must always be clean and equal to EXPECTED_HEAD.
 pr.merge.local_quick_gate:
 	@bash -c '\
 	set -euo pipefail; \
@@ -382,8 +383,13 @@ pr.merge.local_quick_gate:
 	if [ "$${PR_MERGE_LOCAL_QUICK_GATE_SKIP:-0}" = "1" ]; then \
 	  echo "[pr.merge.local_quick_gate] SKIP: PR_MERGE_LOCAL_QUICK_GATE_SKIP=1 (unit-test harness; quick suite not run)"; exit 0; \
 	fi; \
+	if python3 scripts/ops/local_quick_evidence.py verify --expected-head "$$EXPECTED" >/dev/null 2>&1; then \
+	  echo "[pr.merge.local_quick_gate] REUSE: exact-head ci.local.quick evidence verified for $$EXPECTED"; exit 0; \
+	fi; \
+	echo "[pr.merge.local_quick_gate] evidence miss; running fail-closed fallback"; \
 	echo "[pr.merge.local_quick_gate] running make ci.local.quick on $$EXPECTED (this takes several minutes)"; \
 	$(MAKE) --no-print-directory ci.local.quick; \
+	python3 scripts/ops/local_quick_evidence.py verify --expected-head "$$EXPECTED" >/dev/null; \
 	echo "[pr.merge.local_quick_gate] PASS"; \
 	'
 

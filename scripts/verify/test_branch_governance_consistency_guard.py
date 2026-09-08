@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -13,6 +15,7 @@ import branch_governance_consistency_guard as guard
 ROOT = Path(__file__).resolve().parents[2]
 FULL_SHA = "a" * 40
 OTHER_SHA = "b" * 40
+MAKE = shutil.which("make") or "make"
 
 # Variables exported by make/codex.mk (`export PR PR_MERGE_METHOD ... EXPECTED_HEAD`).
 # When this test suite itself runs inside `make ci.local.quick` under a real
@@ -227,6 +230,94 @@ class ControlledMergeExpectedHeadTests(unittest.TestCase):
             ],
         )
         self.assertNotIn("--auto", arguments)
+
+
+class LocalQuickEvidenceGateTests(unittest.TestCase):
+    def run_gate(self, *, evidence_mode: str) -> tuple[subprocess.CompletedProcess[str], list[str]]:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            evidence_log = root / "evidence.log"
+            evidence_count = root / "evidence.count"
+            git = bin_dir / "git"
+            git.write_text(
+                "#!/usr/bin/env bash\n"
+                "set -euo pipefail\n"
+                "if [[ \"$1 $2\" == \"rev-parse HEAD\" ]]; then\n"
+                f"  printf '%s\\n' '{FULL_SHA}'\n"
+                "elif [[ \"$1 $2\" == \"status --porcelain=v1\" || \"$1 $2\" == \"status --porcelain\" ]]; then\n"
+                "  exit 0\n"
+                "else\n"
+                "  echo \"unexpected git invocation: $*\" >&2\n"
+                "  exit 90\n"
+                "fi\n",
+                encoding="utf-8",
+            )
+            python = bin_dir / "python3"
+            python.write_text(
+                "#!/usr/bin/env bash\n"
+                "set -euo pipefail\n"
+                "if [[ \"$*\" != *\"scripts/ops/local_quick_evidence.py verify\"* ]]; then\n"
+                "  exec \"${FAKE_REAL_PYTHON:?}\" \"$@\"\n"
+                "fi\n"
+                "echo \"$*\" >>\"${FAKE_EVIDENCE_LOG:?}\"\n"
+                "COUNT=0\n"
+                "if [ -f \"${FAKE_EVIDENCE_COUNT:?}\" ]; then COUNT=$(cat \"$FAKE_EVIDENCE_COUNT\"); fi\n"
+                "COUNT=$((COUNT + 1))\n"
+                "printf '%s\\n' \"$COUNT\" >\"$FAKE_EVIDENCE_COUNT\"\n"
+                "if [ \"${FAKE_EVIDENCE_MODE:?}\" = miss_then_hit ] && [ \"$COUNT\" = 1 ]; then exit 2; fi\n"
+                "exit 0\n",
+                encoding="utf-8",
+            )
+            git.chmod(0o755)
+            python.chmod(0o755)
+            environment = harness_environment()
+            environment.update(
+                {
+                    "PATH": f"{bin_dir}:{environment['PATH']}",
+                    "FAKE_EVIDENCE_LOG": str(evidence_log),
+                    "FAKE_EVIDENCE_COUNT": str(evidence_count),
+                    "FAKE_EVIDENCE_MODE": evidence_mode,
+                    "FAKE_REAL_PYTHON": sys.executable,
+                }
+            )
+            completed = subprocess.run(
+                [
+                    MAKE,
+                    "--no-print-directory",
+                    "pr.merge.local_quick_gate",
+                    f"EXPECTED_HEAD={FULL_SHA}",
+                    "MAKE=true",
+                ],
+                cwd=ROOT,
+                env=environment,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                check=False,
+            )
+            calls = (
+                evidence_log.read_text(encoding="utf-8").splitlines()
+                if evidence_log.exists()
+                else []
+            )
+            return completed, calls
+
+    def test_matching_receipt_reuses_without_running_quick(self) -> None:
+        completed, calls = self.run_gate(evidence_mode="hit")
+        self.assertEqual(completed.returncode, 0, completed.stdout)
+        self.assertIn("REUSE: exact-head ci.local.quick evidence verified", completed.stdout)
+        self.assertNotIn("running make ci.local.quick", completed.stdout)
+        self.assertEqual(len(calls), 1)
+
+    def test_receipt_miss_runs_fallback_and_requires_new_receipt(self) -> None:
+        completed, calls = self.run_gate(evidence_mode="miss_then_hit")
+        self.assertEqual(completed.returncode, 0, completed.stdout)
+        self.assertIn("evidence miss; running fail-closed fallback", completed.stdout)
+        self.assertIn("running make ci.local.quick", completed.stdout)
+        self.assertIn("PASS", completed.stdout)
+        self.assertEqual(len(calls), 2)
 
 
 class ControlledReadyExpectedHeadTests(unittest.TestCase):
