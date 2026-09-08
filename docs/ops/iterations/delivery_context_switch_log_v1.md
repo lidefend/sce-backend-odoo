@@ -8978,3 +8978,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - P0 shell presentation only; home routes are not activity pages, so they must not visually claim the last business tab is current. Preserve stored activity key and navigation/dirty-state mechanisms.
 - Baseline 204f2921940e1e71bc34380692831c52654333e1; fingerprint f43cbfb95adf308d11d4a9b8b81a6513f976c3e28a550587875410a407b4dab8. Existing state/dashboard checks and typecheck PASS. Browser home has zero active tabs; business tab reactivation works.
 - Theme samples preserved geometry; dynamic system-theme following was identified as an explicit next item. No business writes or remote operations.
+
+## 2026-09-09 — 动态系统主题与场景深色继承
+
+- P0 theme runtime, shell lifecycle and SceneUiProvider color aliases. Generic presentation ownership; preserve manual preference and contract semantics. P4 extends the existing theme-profile gate with actual module runtime assertions, no new test entrypoint.
+- Baseline 08a207fcf8d45cd74972debb6f642a5fec82e7e7; fingerprint a6c6a428b55258f28b4634d3afe3756592a6fa8ebaa79f8f27aa027878ab0f16.
+- System mode now follows live preference changes with listener cleanup. Scene colors inherit semantic theme tokens and retain standalone palette fallbacks, fixing white-on-light dark-detail surfaces and low-contrast amounts.
+- Real work/detail checks and registered theme/bridge/presenter/boundary/type checks PASS; detailed counts and observations in the matrix. Original system/neutral preferences and viewport restored; no business writes or remote publication.

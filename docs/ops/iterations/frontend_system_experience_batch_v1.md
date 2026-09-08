@@ -114,3 +114,14 @@ Complete baseline fingerprint: `112758622e9a3dc6c1ce8437120cfe0f553760fcd7a8d7dc
 - Existing state/dashboard suite and strict typecheck PASS; diff whitespace PASS.
 - My Work at 390px: business-soft and accessible-contrast inspected, no document overflow; metric selection and 44px filter controls remain clear. Enterprise-neutral restored.
 - New confirmed gap: prefers-color-scheme changed to dark while the UI still showed 跟随系统, but the page stayed light. Source theme.ts reads the system preference only when applyTheme runs; no change listener exists. Dynamic system-theme following is the next P0 batch. Temporary media override and viewport restored; no permanent browser setting changed.
+
+### Follow-up: live system theme and scene inheritance
+
+- Baseline `08a207fcf8d45cd74972debb6f642a5fec82e7e7`; fingerprint `a6c6a428b55258f28b4634d3afe3756592a6fa8ebaa79f8f27aa027878ab0f16`.
+- P0 theme module now subscribes to system preference changes for the mounted shell. It updates only system mode; manual light/dark remain authoritative. Shell unmount removes the listener. Existing theme-profile gate now runs the real transpiled module through 9 runtime assertions (following, manual override, profile preservation and disposal).
+- Dark detail sampling exposed a second issue: SceneUiProvider injected fixed light colors, overriding vendor variables underneath otherwise correct global dark tokens. Provider color aliases now consume semantic tokens, retaining palette values as standalone fallbacks. Density/radius and contract field/action structure are unchanged.
+- Actual system preference change: My Work resolves system/dark without reload; card background rgb(17,24,39), text rgb(249,250,251). Manual light stayed light through another system dark change.
+- Actual payment detail 754: previously white task/context/list surfaces with nearly unreadable text become dark surfaces with light text; application amount 10,000, completed state and current-task facts visible. Desktop and 390px checked; narrow document width/height equal viewport, zero white ScCard panels.
+- Restored system mode, enterprise-neutral, light system preference and original viewport. Explicit browser error log empty. No business action or data write.
+- Registered checks PASS: theme runtime 9 assertions and 3 profile guard, scene bridge 38 cases, canonical form presenter 142 cases, boundary tests 13, feature flags 7, strict typecheck and diff whitespace.
+- Next: unsaved-leave interaction without saving business data, browser enlargement/reflow, and consolidate the matrix into current results rather than treating historical pending rows as current truth.

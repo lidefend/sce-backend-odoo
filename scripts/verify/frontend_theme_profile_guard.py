@@ -19,6 +19,7 @@ Exits non-zero on any violation (fail-closed).
 from __future__ import annotations
 
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -161,6 +162,47 @@ def main() -> int:
         for error in errors:
             print(f"  - {error}")
         return 1
+
+    # Exercise the real TypeScript module through the existing registered gate.
+    runtime = subprocess.run(["node", "-e", r"""
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const ts = require('./frontend/apps/web/node_modules/typescript');
+const source = fs.readFileSync('./frontend/apps/web/src/styles/theme.ts', 'utf8');
+const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+const attrs = new Map();
+const listeners = new Set();
+const media = { matches: false,
+  addEventListener: (name, handler) => { assert.equal(name, 'change'); listeners.add(handler); },
+  removeEventListener: (name, handler) => { assert.equal(name, 'change'); listeners.delete(handler); } };
+const root = { style: {}, setAttribute: (name, value) => attrs.set(name, value), getAttribute: name => attrs.get(name) };
+const moduleObject = { exports: {} };
+vm.runInNewContext(code, { exports: moduleObject.exports, module: moduleObject,
+  window: { matchMedia: () => media }, document: { documentElement: root } });
+const theme = moduleObject.exports;
+const resolved = () => attrs.get('data-sc-theme-resolved');
+theme.applyThemeProfile('business-soft');
+theme.applyTheme('system');
+const stop = theme.watchSystemTheme();
+assert.equal(listeners.size, 1);
+assert.equal(resolved(), 'light');
+media.matches = true; listeners.forEach(handler => handler());
+assert.equal(resolved(), 'dark');
+theme.applyTheme('light'); listeners.forEach(handler => handler());
+assert.equal(resolved(), 'light', 'explicit light mode ignores system dark');
+theme.applyTheme('dark'); media.matches = false; listeners.forEach(handler => handler());
+assert.equal(resolved(), 'dark', 'explicit dark mode ignores system light');
+theme.applyTheme('system');
+assert.equal(resolved(), 'light');
+assert.equal(attrs.get('data-sc-theme-profile'), 'business-soft', 'mode changes preserve style profile');
+stop(); assert.equal(listeners.size, 0);
+media.matches = true; listeners.forEach(handler => handler());
+assert.equal(resolved(), 'light', 'disposed listener cannot update theme');
+console.log('[theme_system_runtime] PASS assertions=9');
+"""], cwd=ROOT, check=False)
+    if runtime.returncode:
+        return runtime.returncode
 
     print(
         "[theme_profile_guard] PASS profiles=3 declared=3 "

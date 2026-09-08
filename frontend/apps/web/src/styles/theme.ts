@@ -31,6 +31,16 @@ export function applyTheme(theme: ScTheme): void {
   root.style.colorScheme = resolved;
 }
 
+export function watchSystemTheme(): () => void {
+  if (typeof window === 'undefined' || !window.matchMedia) return () => {};
+  const media = window.matchMedia('(prefers-color-scheme: dark)');
+  const sync = () => {
+    if (document.documentElement.getAttribute('data-sc-theme-mode') === 'system') applyTheme('system');
+  };
+  media.addEventListener('change', sync);
+  return () => media.removeEventListener('change', sync);
+}
+
 export function bootTheme(): void {
   let theme: ScTheme = 'system';
   try {
