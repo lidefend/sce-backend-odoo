@@ -329,19 +329,34 @@ try {
   const duplicate = await apiEnvelope(manager, paidRequestPayload);
   const duplicateReason = String(duplicate.body?.error?.reason_code || duplicate.body?.data?.result?.reason_code || '');
   const duplicateMessage = String(duplicate.body?.error?.message || duplicate.body?.data?.result?.message || '');
+  const duplicateBusinessStateGuard = duplicate.status === 400
+    && duplicateReason === 'BUSINESS_RULE_FAILED'
+    && /只有.*已确认状态.*登记付款/.test(duplicateMessage);
+  const duplicateContractStateGuard = duplicate.status === 403
+    && duplicateReason === 'PERMISSION_DENIED'
+    && duplicateMessage === 'ACTION_NOT_VISIBLE_IN_STATE';
+  const duplicateGuardKind = duplicateBusinessStateGuard
+    ? 'duplicate_payment_business_state_guard'
+    : duplicateContractStateGuard
+      ? 'duplicate_payment_contract_state_guard'
+      : '';
   check(
-    duplicate.status === 400
-      && duplicateReason === 'BUSINESS_RULE_FAILED'
-      && /只有.*已确认状态.*登记付款/.test(duplicateMessage)
-      && !/ACTION_CONTRACT_AUTHORITY_MISSING/.test(duplicateMessage),
-    'exact authorized paid request replay reaches duplicate-payment business guard',
-    { status: duplicate.status, reason: duplicateReason, message: duplicateMessage },
+    Boolean(duplicateGuardKind),
+    'exact authorized paid request replay is rejected by an explicit paid-state guard',
+    {
+      status: duplicate.status,
+      reason: duplicateReason,
+      message: duplicateMessage,
+      guard_kind: duplicateGuardKind,
+      authority_metadata_missing: duplicateMessage === 'ACTION_CONTRACT_AUTHORITY_MISSING',
+      server_error: duplicate.status >= 500,
+    },
   );
   for (const failure of report.failed_requests.slice(duplicateFailureStart)) {
-    if (failure.intent === 'execute_button' && failure.status === 400) failure.expected = 'duplicate_payment_business_guard';
+    if (failure.intent === 'execute_button' && failure.status === duplicate.status) failure.expected = duplicateGuardKind;
   }
   for (const error of report.errors.slice(duplicateErrorStart)) {
-    if (error.type === 'console' && /status of 400|BAD REQUEST/i.test(error.text || '')) error.expected = 'duplicate_payment_business_guard';
+    if (error.type === 'console' && /status of (400|403)|BAD REQUEST|FORBIDDEN/i.test(error.text || '')) error.expected = duplicateGuardKind;
   }
   const paidAfterReplay = await readOne(manager, 'sc.payment.execution', ['id', 'state', 'paid_amount', 'payment_request_id'], executionId);
   const completedAfterReplay = await readOne(manager, 'payment.request', ['id', 'state', 'amount', 'paid_amount_total', 'unpaid_amount', 'is_fully_paid'], requestId);
