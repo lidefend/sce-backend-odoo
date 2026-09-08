@@ -25,8 +25,8 @@
           <ScIcon name="plus" :size="16" />
           {{ createLabel }}
         </ScButton>
-        <div v-if="columns.length" class="list-surface-column-manager">
-          <ScPopover placement="bottom-right" trigger="click" :disabled="loading">
+        <div v-if="columns.length" ref="columnManager" class="list-surface-column-manager">
+          <ScPopover placement="bottom-right" trigger="click" :disabled="loading" :visible="columnPanelOpen" @visible-change="columnPanelOpen = $event">
             <template #trigger>
               <ScButton
                 type="button"
@@ -34,15 +34,21 @@
                 class="list-surface-column-button"
                 appearance="outline-action"
                 :aria-label="settingsDescription"
+                :aria-expanded="columnPanelOpen"
+                :aria-controls="columnPanelId"
                 :title="settingsDescription"
                 :disabled="loading"
+                @keydown.esc.stop.prevent="closeColumnPanel"
               >
                 <ScIcon name="columns" :size="16" />
                 <span class="list-surface-column-label">列设置</span>
               </ScButton>
             </template>
-            <div class="list-surface-column-panel" aria-label="列设置">
-              <p class="list-surface-column-summary">已启用 {{ enabledCount }} 列，共 {{ columns.length }} 列</p>
+            <div :id="columnPanelId" class="list-surface-column-panel" aria-label="列设置" @keydown.esc.stop.prevent="closeColumnPanel">
+              <div class="list-surface-column-heading">
+                <p class="list-surface-column-summary">已启用 {{ enabledCount }} 列，共 {{ columns.length }} 列</p>
+                <ScButton type="button" variant="ghost" size="small" aria-label="关闭列设置" @click="closeColumnPanel">关闭</ScButton>
+              </div>
               <ScCheckbox
                 v-for="column in columns"
                 :key="column.name"
@@ -76,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, nextTick, ref, useId, watch } from 'vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScCheckbox from '../design-system/ScCheckbox.vue';
 import ScIcon from '../design-system/ScIcon.vue';
@@ -113,6 +119,17 @@ const emit = defineEmits<{
 }>();
 
 const enabledCount = computed(() => props.visibleColumns.length);
+const columnPanelOpen = ref(false);
+const columnPanelId = `column-panel-${useId()}`;
+const columnManager = ref<HTMLElement | null>(null);
+
+async function closeColumnPanel() {
+  columnPanelOpen.value = false;
+  await nextTick();
+  columnManager.value?.querySelector<HTMLButtonElement>('button')?.focus();
+}
+
+watch(() => props.loading, (loading) => { if (loading) columnPanelOpen.value = false; });
 const settingsDescription = computed(() => `列设置，已启用 ${enabledCount.value} 列，共 ${props.columns.length} 列`);
 
 function emitVisibility(name: string, checked: boolean) {
@@ -129,6 +146,8 @@ function emitVisibility(name: string, checked: boolean) {
 .list-surface-column-button { font-size: 12px; }
 .list-surface-column-button:disabled { opacity: .6; cursor: not-allowed; }
 .list-surface-column-summary { margin: 0; color: var(--sc-app-text-secondary); font-size: 12px; font-variant-numeric: tabular-nums; }
+.list-surface-column-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-toolbar-gap); }
+.list-surface-column-heading :deep(.sc-btn) { min-width: 44px; min-height: 44px; }
 .list-surface-save-badge, .list-surface-save-message { border: 1px solid var(--sc-app-success-border); border-radius: var(--sc-product-radius-control); background: var(--sc-app-success-bg); color: var(--sc-app-success-text); padding: 2px var(--sc-space-2xs); font-size: 12px; }
 .list-surface-save-badge.is-saving, .list-surface-save-message.is-saving { border-color: var(--sc-app-info-border); background: var(--sc-app-info-bg); color: var(--sc-app-info-text); }
 .list-surface-save-badge.is-error, .list-surface-save-message.is-error { border-color: var(--sc-app-danger-border); background: var(--sc-app-danger-bg); color: var(--sc-app-danger-text); }

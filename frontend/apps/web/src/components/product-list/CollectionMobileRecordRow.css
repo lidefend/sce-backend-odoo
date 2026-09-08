@@ -23,8 +23,8 @@
   cursor: pointer;
 }
 
-.collection-mobile-record-row:has(.collection-mobile-record-row__selection) .collection-mobile-record-row__card {
-  padding-right: calc(var(--sc-touch-target-min) + var(--sc-space-xs));
+.collection-mobile-record-row:has(.collection-mobile-record-row__selection) :deep(.sc-design-mobile-record-card__header) {
+  padding-right: var(--sc-touch-target-min);
 }
 
 .collection-mobile-record-row__card {
@@ -44,10 +44,11 @@
   outline-offset: 2px;
 }
 
-.collection-mobile-record-row__card :deep(.sc-badge) {
+.collection-mobile-record-row__card :deep(.sc-status-badge) {
   flex: 0 0 auto;
   max-width: 42%;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .collection-mobile-record-row__identity {
