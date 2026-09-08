@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "c70c87fa48c16b2e92813a6b694022903c648d92793407738e9b5b7cf5628f4b",
+  "inputDigest": "80295191e305a60493f4a15991e33b79da6216aa6ae121a6a2d2ec08afa0ce9b",
   "internalVendorSelectorGaps": [
     {
       "file": "frontend/apps/web/src/components/design-system/ScInlineState.vue",
