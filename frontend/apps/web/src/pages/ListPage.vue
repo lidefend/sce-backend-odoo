@@ -1426,7 +1426,6 @@ const displayedColumns = computed(() => desktopColumnDecision.value.visibleColum
 const mobileResponsiveCandidates = computed(() => enabledColumns.value
   .map((field, index) => ({ field, index, priority: columnBusinessPriority(field) }))
   .sort((left, right) => left.priority - right.priority || left.index - right.index)
-  .slice(0, 8)
   .map((item) => item.field));
 const mobileColumnDecision = computed(() => resolveResponsiveListColumns({
   enabledColumns: enabledColumns.value,
@@ -1435,7 +1434,7 @@ const mobileColumnDecision = computed(() => resolveResponsiveListColumns({
   defaultVisibility: defaultVisibleColumnMap.value,
   visibility: props.columnVisibility || {},
   responsiveCandidates: mobileResponsiveCandidates.value,
-  capacity: 8,
+  capacity: enabledColumns.value.length,
 }));
 const lastVisibleColumnName = computed(() => enabledColumns.value.length === 1 ? enabledColumns.value[0] : '');
 const columnDecisionTraceJson = computed(() => JSON.stringify({
@@ -1481,8 +1480,7 @@ const mobileFactColumns = computed(() => {
   const identity = mobileIdentityField.value;
   const status = mobileStatusField.value;
   return mobileAvailableColumns.value
-    .filter((field) => field !== identity && field !== status)
-    .slice(0, 6);
+    .filter((field) => field !== identity && field !== status);
 });
 const defaultColumnWidths = computed<Record<string, number>>(() => {
   const fields = displayedColumns.value;

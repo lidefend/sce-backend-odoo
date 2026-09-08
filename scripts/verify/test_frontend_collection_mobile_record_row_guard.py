@@ -23,6 +23,18 @@ class CollectionMobileRecordRowGuardTest(unittest.TestCase):
     def test_repository_contract_passes(self):
         self.assertEqual(validate(), [])
 
+    def test_tail_fact_truncation_fails(self):
+        marker = '.filter((field) => field !== identity && field !== status)'
+        self.assertIn(marker, self.list_source)
+        altered = self.list_source.replace(marker, marker + '.slice(0, 6)')
+        self.assertTrue(any('preserve all visible columns' in item for item in validate(altered)))
+
+    def test_fixed_mobile_budget_fails(self):
+        marker = 'capacity: enabledColumns.value.length'
+        self.assertIn(marker, self.list_source)
+        altered = self.list_source.replace(marker, 'capacity: 8')
+        self.assertTrue(any('accommodate enabled columns' in item for item in validate(altered)))
+
     def test_duplicate_adapter_fails(self):
         altered = self.list_source + "\n<CollectionMobileRecordRow />\n"
         self.assertTrue(any("exactly one" in item for item in validate(altered, self.row_source, self.row_css, self.legacy_css)))

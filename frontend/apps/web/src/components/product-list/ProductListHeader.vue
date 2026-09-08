@@ -155,6 +155,7 @@ defineEmits<{
 }
 @media (max-width: 760px) {
   .product-list-header__tools { gap: var(--sc-toolbar-gap); }
+  .product-list-header__tools :deep(.list-surface-utilities) { align-self: end; }
   .product-list-header__search { min-width: 0; }
   .product-list-header__search :deep(.sc-btn) { min-width: 44px; min-height: 44px; }
 }
