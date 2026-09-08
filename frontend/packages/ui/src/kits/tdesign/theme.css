@@ -366,6 +366,9 @@
 .sc-btn[data-appearance='context-action'] { border: 0; background: transparent; color: var(--sc-app-text-secondary); }
 .sc-btn[data-appearance='context-action']:hover { color: var(--sc-app-accent); }
 .sc-btn[data-appearance='auth-link'] { border: 0; background: transparent; color: var(--sc-app-info-text); }
+.sc-btn[data-semantic-cell-kind='primary'] { width: 100%; max-width: 100%; min-width: 0; padding-inline: 0; font: inherit; text-align: left; }
+.sc-btn[data-semantic-cell-kind='primary'] > .t-button__text,
+.sc-btn[data-semantic-cell-kind='primary'] .sc-btn__content { display: block; width: 100%; max-width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sc-btn[data-appearance='primary-submit'] { border-color: var(--sc-app-accent); background: var(--sc-app-accent); color: var(--sc-semantic-text-on-interactive); }
 .sc-checkbox[data-appearance='menu-choice'] { color: var(--sc-app-text-primary); }
 [data-semantic-component='ScTable'][data-appearance='flush'] { border: 0; border-radius: 0; box-shadow: none; }
@@ -427,6 +430,12 @@
 .sc-textarea[data-appearance='form-field'] { width: 100%; border-color: var(--sc-app-border); border-radius: var(--sc-component-input-radius); background: var(--sc-app-input-bg); color: var(--sc-app-text-primary); }
 .sc-input[data-appearance='collection-search'] { height: var(--sc-component-input-form-height); min-height: var(--sc-component-input-form-height); box-sizing: border-box; }
 .sc-input[data-appearance='collection-search'] .t-input { height: 100%; min-height: inherit; box-sizing: border-box; }
+.collection-search-control .sc-icon-button[data-appearance='toolbar-menu-toggle'] {
+  height: var(--sc-component-input-form-height, 36px);
+  min-height: var(--sc-component-input-form-height, 36px);
+  max-height: var(--sc-component-input-form-height, 36px);
+  width: var(--sc-component-input-form-height, 36px);
+}
 .sc-input[data-appearance='numeric-entry'] { font-variant-numeric: tabular-nums; }
 .sc-input[data-appearance='record-title'] {
   flex: 1 1 auto;

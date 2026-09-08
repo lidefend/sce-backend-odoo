@@ -809,14 +809,6 @@ onBeforeUnmount(() => {
   flex: 0 0 auto;
 }
 
-/* Keep the menu toggle on the same responsive height as the search input. */
-.collection-search-control .search-menu-toggle {
-  height: var(--sc-component-input-form-height, 36px);
-  min-height: var(--sc-component-input-form-height, 36px);
-  max-height: var(--sc-component-input-form-height, 36px);
-  width: var(--sc-component-input-form-height, 36px);
-}
-
 .search-menu-caret {
   display: inline-block;
   line-height: 1;
