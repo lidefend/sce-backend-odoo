@@ -249,18 +249,38 @@ def normalize_odoo_action_result(env, result, *, menu_id=None, source_model: str
         if action_type == "ir.actions.act_window" and action_target == "new" and model
         else ""
     )
-    entry_target = nested_entry_target or normalize_entry_target(
-        env=env,
-        menu_id=effective_menu_id,
-        action_id=action_id,
-        model=model,
-        view_modes=view_modes,
-        record_id=record_id,
-        url=url,
-        route=route,
-        target_type="url" if url else "action",
-        delivery_mode="external_url" if url else "odoo_action_result",
-        entry_intent=_action_result_entry_intent(payload),
+    explicit_form_destination = bool(
+        action_type == "ir.actions.act_window"
+        and model
+        and (action_target == "new" or explicit_record_id)
+    )
+    entry_target = nested_entry_target or (
+        build_compatibility_entry_target(
+            env=env,
+            menu_id=effective_menu_id,
+            action_id=action_id,
+            model=model,
+            view_modes=view_modes,
+            record_id=record_id,
+            route=route,
+            target_type="action",
+            delivery_mode="odoo_action_result",
+            entry_intent=_action_result_entry_intent(payload),
+        )
+        if explicit_form_destination
+        else normalize_entry_target(
+            env=env,
+            menu_id=effective_menu_id,
+            action_id=action_id,
+            model=model,
+            view_modes=view_modes,
+            record_id=record_id,
+            url=url,
+            route=route,
+            target_type="url" if url else "action",
+            delivery_mode="external_url" if url else "odoo_action_result",
+            entry_intent=_action_result_entry_intent(payload),
+        )
     )
     if entry_target:
         if view_id:

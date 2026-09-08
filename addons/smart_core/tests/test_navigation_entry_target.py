@@ -260,6 +260,64 @@ class TestNavigationEntryTarget(unittest.TestCase):
         self.assertEqual(entry_target["compatibility_refs"]["view_id"], 812)
         self.assertNotIn("action_id", entry_target["compatibility_refs"])
 
+    def test_explicit_form_destination_is_not_replaced_by_matching_scene(self):
+        original_loader = navigation_entry_target._load_scene_configs
+        navigation_entry_target._load_scene_configs = lambda _env: [
+            {
+                "scene_key": "payments.list",
+                "target": {
+                    "menu_id": 627,
+                    "action_id": 626,
+                    "model": "sc.payment.execution",
+                    "view_mode": "tree,form",
+                },
+            }
+        ]
+        try:
+            action = navigation_entry_target.normalize_odoo_action_result(
+                object(),
+                {
+                    "type": "ir.actions.act_window",
+                    "id": 626,
+                    "menu_id": 627,
+                    "res_model": "sc.payment.execution",
+                    "view_mode": "form",
+                    "target": "new",
+                },
+            )
+        finally:
+            navigation_entry_target._load_scene_configs = original_loader
+
+        entry_target = action["entry_target"]
+        self.assertEqual(entry_target["type"], "compatibility")
+        self.assertEqual(entry_target["route"], "/f/sc.payment.execution/new")
+        self.assertEqual(entry_target["compatibility_refs"]["menu_id"], 627)
+        self.assertEqual(entry_target["compatibility_refs"]["action_id"], 626)
+
+        navigation_entry_target._load_scene_configs = lambda _env: [
+            {"scene_key": "payments.list", "target": {"action_id": 626}}
+        ]
+        try:
+            record_action = navigation_entry_target.normalize_odoo_action_result(
+                object(),
+                {
+                    "type": "ir.actions.act_window",
+                    "id": 626,
+                    "menu_id": 627,
+                    "res_model": "sc.payment.execution",
+                    "res_id": 91,
+                    "view_mode": "form",
+                    "target": "current",
+                },
+            )
+        finally:
+            navigation_entry_target._load_scene_configs = original_loader
+
+        record_target = record_action["entry_target"]
+        self.assertEqual(record_target["type"], "compatibility")
+        self.assertEqual(record_target["record_entry"]["model"], "sc.payment.execution")
+        self.assertEqual(record_target["record_entry"]["record_id"], 91)
+
 
 if __name__ == "__main__":
     unittest.main()
