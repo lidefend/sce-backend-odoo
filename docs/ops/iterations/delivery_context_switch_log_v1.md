@@ -8776,3 +8776,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Linked-worktree closure: repo-level Quick reuses the existing Git common-dir local.dev authority resolver and isolated environment to invoke `ci.local.quick.run`; it never copies or links `.env.dev`, and the internal target is not a public bypass. This closes the previously unprepared env path exposed by the independent P4 worktree.
 - Boundary: GitHub exact-head checks, `pr.merge.prep`, branch protection and merge-time `--match-head-commit` remain unchanged. No product, contract, frontend, backend, database, fixture or runtime behavior is modified.
 - Rollback: revert the receipt recorder and restore `ci.local.quick` as the unconditional `pr.merge.local_quick_gate` action.
+## 2026-09-08 — 前端复合输入焦点所有权收敛
+
+- Formal Product Layer / target: P0 generic frontend design-system focus presentation; TDesign-backed composite input primitives own their focus chrome.
+- Change: keep the global `:focus-visible` rule as the accessible fallback for standalone native controls, while excluding component-owned roots and descendants through the explicit `data-focus-ring-owner="component"` marker.
+- Scope: `ScInput`, `ScTextarea`, `ScSelect`, `ScDateField`, `ScAutoComplete`, `ScNumberInput`, `ScDatePicker`, and `ScTimePicker`; no route, role, permission, contract, business model, database, or fixture change.
+- Guard: rendering-detail accessibility validation requires both the global fallback exclusion and focus-owner registration on every governed composite input primitive.
+- Runtime evidence: keyboard focus on the local-dev login input changed from an inner `2px` outline plus `3px` shadow to no inner ring, while the TDesign shell retained its `2px` focus shadow and branded border.

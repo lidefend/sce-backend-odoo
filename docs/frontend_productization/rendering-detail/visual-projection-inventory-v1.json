@@ -427,7 +427,7 @@
     },
     {
       "category": "other",
-      "digest": "8b5eaf9f29f5cd7bdfd56f9586e36b40a31b984c851a8a2a4296b6ce2688f0ec",
+      "digest": "c38599c36d59b25d0a807f783aeeec1fbad6488e1daa97c606117b0163a7713c",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScAutoComplete.vue",
       "referenceNativeStyleSelectors": [],
@@ -499,7 +499,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "a3ddcdf9ca4a03d901260ded184bde30831b97bf9e63bb1087cc7b2f890a3998",
+      "digest": "99a666fbd45e973e6a3f7fef854311d141400971b6672f7e16541247071d13c8",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScDateField.vue",
       "referenceNativeStyleSelectors": [],
@@ -509,7 +509,7 @@
     },
     {
       "category": "other",
-      "digest": "4632fe6cbac88ea7a74201a069b3447817605f25d1a7c4437fc64c14af4ed7ee",
+      "digest": "05ac8a003b58ff86e51201d631913f2dc9974b84b72fec587b592de0fa99219c",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScDatePicker.vue",
       "referenceNativeStyleSelectors": [],
@@ -697,7 +697,7 @@
     },
     {
       "category": "other",
-      "digest": "d156cc81dda6b700dd893e0fcd1f62ad2ab31a28278b50f7eb86434c62750c1a",
+      "digest": "0d9cdf857103aeff358efdd196a0139e55df6ff940645642bf316126f5a5eb3f",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScInput.vue",
       "referenceNativeStyleSelectors": [],
@@ -747,7 +747,7 @@
     },
     {
       "category": "other",
-      "digest": "a3f5d9e8943e0cde494330449fdd98904a25b7469aecc7d3c9d155fd62315ed6",
+      "digest": "c82c5470b329a13ea3f793cfd12e6d7a1cc24a0866baf55e21c0ed6d8ddb782f",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScNumberInput.vue",
       "referenceNativeStyleSelectors": [],
@@ -847,7 +847,7 @@
     },
     {
       "category": "other",
-      "digest": "d89172299cb8a384a50ea3a4c6f76f54bf2081c436f37f662728c3e50742f60d",
+      "digest": "9bba3fbc75e80f0cfc2261e9c862d5767d7955ec863d9163be26ef5444f330e1",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScSelect.vue",
       "referenceNativeStyleSelectors": [],
@@ -917,7 +917,7 @@
     },
     {
       "category": "other",
-      "digest": "d167f2d49e8ac26bbcdca85fbde0ee11d599cd164cd6a8d1eb4de901922fda72",
+      "digest": "eaa5ac36fe75bad808b98f4c053ee6564f4cc05414d4d554a63e3736c8f01484",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScTextarea.vue",
       "referenceNativeStyleSelectors": [],
@@ -927,7 +927,7 @@
     },
     {
       "category": "other",
-      "digest": "bcd66571c1bce9012174a07eed3f9f27551bcec78c756fe110b70b2802d0d68e",
+      "digest": "aff9a978dc354d2edee6763771ae339a5b0f79d1dc53adf20e57a2705c46e1c8",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScTimePicker.vue",
       "referenceNativeStyleSelectors": [],
@@ -2698,7 +2698,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "5bf03467133ae2630686540ae307637dff1669ae31f0e1eb9f68fbcaeaa24e50",
+  "currentInputDigest": "61e3f79399157197704d98028d5ae3bc1308f126ddc0cccd10d08ae11867dbda",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

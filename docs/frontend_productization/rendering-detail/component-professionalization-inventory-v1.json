@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "960f1e846fbfef4f573f7af43cff33f33f23dcfc671e7415c637dd853e366162",
+  "sourceIdentity": "89d65aa07edcda91faae83a5cbd0b6ff928e0c65e4aebc218da80017940c042f",
   "generatorDigest": "210b00d010e07701759e45d9d243ff7547834aba8e9817fbdc676f2c7592883d",
   "ownershipDigest": "c0501b51c355e1c76a769d9196aad4062fac82b27d11b98768eca645590989ce",
-  "inputDigest": "5da2e8bb9bbb64b4ea5deeb6bf62a8f3ebbe37d376e5b11ad5cd71041319d89a",
+  "inputDigest": "59a71b49e945bd96d7a00c740e7b260c8eea9a641c8fd75392c7e61ede922515",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -269,7 +269,8 @@
       "status": "governed_primitive",
       "reason": "design-system primitive source",
       "stateTypes": [
-        "disabled"
+        "disabled",
+        "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -320,7 +321,8 @@
       "status": "governed_primitive",
       "reason": "design-system primitive source",
       "stateTypes": [
-        "disabled"
+        "disabled",
+        "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -332,7 +334,8 @@
       "status": "governed_primitive",
       "reason": "design-system primitive source",
       "stateTypes": [
-        "disabled"
+        "disabled",
+        "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -568,7 +571,8 @@
       "reason": "design-system primitive source",
       "stateTypes": [
         "error",
-        "disabled"
+        "disabled",
+        "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -744,7 +748,8 @@
       "status": "governed_primitive",
       "reason": "design-system primitive source",
       "stateTypes": [
-        "disabled"
+        "disabled",
+        "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
