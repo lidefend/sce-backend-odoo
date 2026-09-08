@@ -122,26 +122,30 @@ Runner = Callable[..., subprocess.CompletedProcess[str]]
 def run_gate(
     repo_root: Path = ROOT,
     runner: Runner = subprocess.run,
+    *,
+    target: str = "verify.frontend.quick.gate",
+    require_ready: bool = True,
 ) -> int:
     repo_root = repo_root.resolve()
     authority = resolve_authority_env(repo_root)
     environment = _isolated_environment()
     print("[local.dev.frontend.quick] governed authority validated")
 
-    ready = runner(
-        [
-            "make",
-            "--no-print-directory",
-            f"LOCAL_DEV_ENV_FILE={authority}",
-            "local.dev.ready",
-        ],
-        cwd=repo_root,
-        env=environment,
-        check=False,
-        text=True,
-    )
-    if ready.returncode != 0:
-        return ready.returncode
+    if require_ready:
+        ready = runner(
+            [
+                "make",
+                "--no-print-directory",
+                f"LOCAL_DEV_ENV_FILE={authority}",
+                "local.dev.ready",
+            ],
+            cwd=repo_root,
+            env=environment,
+            check=False,
+            text=True,
+        )
+        if ready.returncode != 0:
+            return ready.returncode
 
     quick = runner(
         [
@@ -150,7 +154,7 @@ def run_gate(
             "ENV=dev",
             f"ENV_FILE={authority}",
             f"LOCAL_DEV_ENV_FILE={authority}",
-            "verify.frontend.quick.gate",
+            target,
         ],
         cwd=repo_root,
         env=environment,
@@ -161,7 +165,12 @@ def run_gate(
 
 
 def main() -> int:
+    if len(sys.argv) > 2 or (len(sys.argv) == 2 and sys.argv[1] != "--full-ci-local-quick"):
+        print("usage: local_dev_frontend_quick.py [--full-ci-local-quick]", file=sys.stderr)
+        return 2
     try:
+        if len(sys.argv) == 2:
+            return run_gate(target="ci.local.quick.run", require_ready=False)
         return run_gate()
     except (LocalDevAuthorityError, subprocess.CalledProcessError) as exc:
         print(f"[local.dev.frontend.quick] DENY {exc}", file=sys.stderr)

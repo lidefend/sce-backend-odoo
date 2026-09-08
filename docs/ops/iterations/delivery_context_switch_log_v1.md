@@ -8765,3 +8765,14 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Invariant: either accepted rejection path must leave payment execution, payment request amounts/state and ledger rows unchanged.
 - Evidence status: the business-layer exact replay test passes. The browser classifier is code-complete but remains unverified in a new browser run; the existing report belongs to `087672fe` and is not reused as evidence for this assertion. Creation and four-level approval are intentionally not rerun in this P4 closeout.
 - CI follow-up: `public_guard` RH018 identified the unchanged synthetic ledger account after the test file acquired a new immutable blob. The false-positive registry is updated only for rule `PD003`, the exact test path, blob `1cd140f6014033d7b122fb88bd6cc3324f455012`, and `BANK_ACCOUNT_PATTERN`; no directory, wildcard, mutable ref or real-data exemption is introduced.
+
+## 2026-09-08 — pr.merge exact-head Quick 证据复用
+
+- Branch / baseline: `fix/p4-pr-merge-evidence-reuse-v1` / `79e6979d82ea31fbeb4f11e0897d3c3752cfc5a5`。
+- Formal Product Layer / target: P4 ops delivery tool / `ci.local.quick` evidence and `pr.merge` orchestration。
+- Reason: the governed lifecycle already executes Quick on the frozen candidate before PR publication, while `pr.merge` unconditionally repeated the same multi-minute suite on the unchanged exact head.
+- Change: a Quick run that starts and ends on the same clean HEAD records a worktree-local receipt bound to the commit and tree. `pr.merge` reuses only an exact matching receipt; missing, unreadable, dirty-worktree or changed-HEAD evidence falls back to the full local Quick suite and must produce a valid receipt before merge dispatch continues.
+- Integrity closure: receipt schema v2 has no standalone signing CLI. The sole signer atomically dispatches the fixed primary or linked-worktree Quick body, requires exit zero, then rechecks the original clean HEAD/tree before issuing the receipt; failure or in-run drift issues nothing.
+- Linked-worktree closure: repo-level Quick reuses the existing Git common-dir local.dev authority resolver and isolated environment to invoke `ci.local.quick.run`; it never copies or links `.env.dev`, and the internal target is not a public bypass. This closes the previously unprepared env path exposed by the independent P4 worktree.
+- Boundary: GitHub exact-head checks, `pr.merge.prep`, branch protection and merge-time `--match-head-commit` remain unchanged. No product, contract, frontend, backend, database, fixture or runtime behavior is modified.
+- Rollback: revert the receipt recorder and restore `ci.local.quick` as the unconditional `pr.merge.local_quick_gate` action.
