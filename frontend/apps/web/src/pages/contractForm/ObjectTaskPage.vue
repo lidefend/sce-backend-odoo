@@ -369,6 +369,17 @@ const presentableRelationNodes = computed(() => props.relationNodes.filter((node
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0;
 }
+.object-task-page__summary {
+  border: 0;
+  background: var(--sc-app-subtle-bg);
+}
+.object-task-page__current-task,
+.object-task-page__context {
+  border: 0;
+  border-top: 1px solid var(--sc-app-border);
+  border-radius: 0;
+  box-shadow: none;
+}
 .object-task-page__summary-grid :deep(.canonical-form-node) {
   grid-column: auto !important;
   height: auto;

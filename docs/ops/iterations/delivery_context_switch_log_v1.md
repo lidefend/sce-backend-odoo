@@ -8898,3 +8898,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Header buttons now measure 36px desktop and 44px at 320px, with zero document horizontal overflow. Primary identifiers use the existing selected-text color, with hover/focus underline; full title and identity remain unchanged.
 - Browser clicked DEMO-PR-FLOORPLAN-003 and reached `/f/payment.request/754`; correct record label visible. No record mutation.
 - Primitive adapter 46 components/25 tests, row-cell 8 tests and page-pattern 8 tests/13 surfaces PASS. Local visual iteration only, no remote publication.
+
+## 2026-09-09 — 详情摘要与任务分组
+
+- P0 ObjectTaskPage visual grouping; baseline `69309207`, fingerprint `9caf5351ae710bdc869ff7af49bfefc06942e338c1ad724efebee7a0b8f4173f`.
+- Summary uses existing subtle background without outer stroke. Current task and business context use top separators instead of enclosing rounded frames. Explicit canonical spans and field ordering are preserved; no inferred multicolumn override or risk-style change.
+- Browser on payment request 754: correct complete identity, completed status, 10,000 amount and task/context facts visible; summary border 0, task/context square separators. At 390px document width equals viewport and 39 field DOM nodes remain mounted. Original viewport restored.
+- Page-pattern parity 8 tests/13 surfaces, product-page model 12 cases/4 tests, strict typecheck PASS. Daily read-only evidence; no business writes or remote publication.
