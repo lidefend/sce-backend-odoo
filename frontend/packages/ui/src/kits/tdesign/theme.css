@@ -490,6 +490,10 @@
   text-underline-offset: 3px;
 }
 @media (max-width: 760px) {
+  .list-empty-surface .sc-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
   .product-page-header--collection [data-workspace-action-bar] .sc-btn {
     min-height: 44px;
     min-width: 44px;

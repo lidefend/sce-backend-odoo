@@ -51,7 +51,7 @@
       >
         <slot name="toolbar"></slot>
       </ListSurfaceHeader>
-      <ScEmptyState :title="emptyStateTitle" :description="emptyStateMessage">
+      <ScEmptyState class="list-empty-surface" :title="emptyStateTitle" :description="emptyStateMessage">
         <template #actions>
           <ScButton
             v-if="hasActiveConditions"
