@@ -52,6 +52,8 @@ def validate() -> list[str]:
         failures.append("contract header desktop overflow must be structurally excluded on narrow viewports")
     if 'v-if="headerOverflowItems.length" class="form-header-more-actions"' in contract:
         failures.append("contract header must not rely on CSS to hide a parallel desktop overflow control")
+    if "...(mobileActionAuthority.value.keys.includes('back:form.back') ? [{ value: 'builtin:back', label: props.backLabel" not in contract:
+        failures.append("contract header mobile action settlement can hide the only exit action")
     if 'role="menu"' in contract or 'role="menuitem"' in contract:
         failures.append("contract header disclosure must preserve native button semantics")
     action_view = source("frontend/apps/web/src/views/ActionView.vue")

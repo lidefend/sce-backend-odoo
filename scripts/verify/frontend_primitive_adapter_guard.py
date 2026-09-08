@@ -39,6 +39,7 @@ STYLE_RULE = re.compile(r"(?P<selector>[^{}]+)\{(?P<body>[^{}]*)\}", re.DOTALL)
 STYLE_SOURCE = re.compile(r"<style\b[^>]*\bsrc\s*=\s*['\"](?P<value>[^'\"]+)['\"][^>]*>", re.IGNORECASE)
 PROFESSIONAL_COMPOSITE_OWNERS: set[str] = set()
 RAW_INTERACTIVE_CONTROL = re.compile(r"<(?:button|input|select|textarea|table)(?:\s|>)", re.IGNORECASE)
+SC_DIALOG_CONSUMER = re.compile(r"<ScDialog\b(?P<attrs>[^>]*)>", re.DOTALL)
 
 
 def p3_scope(root: Path) -> tuple[set[str], tuple[str, ...]]:
@@ -127,6 +128,8 @@ def validate(root: Path = ROOT) -> list[str]:
             source_text = path.read_text(encoding="utf-8")
             if RAW_INTERACTIVE_CONTROL.search(source_text):
                 errors.append(f"business surface bypasses the professional primitive adapter: {relative}")
+            if any('data-semantic-component=' in match.group("attrs") for match in SC_DIALOG_CONSUMER.finditer(source_text)):
+                errors.append(f"ScDialog consumer must use data-dialog-purpose instead of overriding primitive semantic identity: {relative}")
             if relative in PROFESSIONAL_COMPOSITE_OWNERS:
                 continue
             if relative in p3_files or relative.startswith(p3_prefixes):
@@ -272,6 +275,20 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("ScSelect must expose readonly state without inventing write authority")
     if "<TDesignSelect" not in select_text or ':options="tdesignOptions"' not in select_text or "v-native-control-projection" not in select_text:
         errors.append("ScSelect must use the TDesign option driver and native accessibility projection")
+
+    disclosure_text = (design / "ScDisclosure.vue").read_text(encoding="utf-8") if (design / "ScDisclosure.vue").is_file() else ""
+    for marker in (
+        '<TDesignCollapse',
+        '<ScButton',
+        "import ScButton from './ScButton.vue'",
+        'data-disclosure-trigger',
+        ':aria-expanded="String(localOpen)"',
+        ':aria-controls="contentId"',
+        'appearance="context-action"',
+        '@click.stop="toggle"',
+    ):
+        if marker not in disclosure_text:
+            errors.append(f"ScDisclosure missing governed accessible disclosure trigger: {marker}")
 
     state_contracts = {
         "ScLoading": ('data-state', 'aria-busy'),

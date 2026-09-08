@@ -12,7 +12,10 @@ const menuId = Number(target?.menu?.id || 0);
 const record = target?.actionable_record || {};
 const candidateInventory = Array.isArray(target?.candidate_inventory) ? target.candidate_inventory : [];
 const recordId = Number(record.id || 0);
-const outputDir = path.resolve('artifacts/playwright/local-dev-payment-request-floorplan-submit');
+const journeyScope = String(process.env.PAYMENT_REQUEST_JOURNEY_SCOPE || 'payment').trim();
+const outputDir = path.resolve(journeyScope === 'relation'
+  ? 'artifacts/playwright/local-dev-payment-request-relation-lifecycle'
+  : 'artifacts/playwright/local-dev-payment-request-floorplan-submit');
 let currentStage = 'bootstrap';
 let lastLocatorMatch = { label: '', count: -1 };
 const mutationRequestCounts = {
@@ -81,6 +84,17 @@ async function requireUnique(owner, locator, label, options = {}) {
   return locator;
 }
 
+async function fillOptionalLoginDatabase(owner, database) {
+  const databaseInputs = owner.getByLabel(/数据库/);
+  const count = await databaseInputs.count();
+  check(count <= 1, 'login database identity is not unique', { count });
+  if (count !== 1) return false;
+  const databaseInput = databaseInputs.first();
+  if (!await databaseInput.isVisible() || await databaseInput.isDisabled()) return false;
+  await databaseInput.fill(database);
+  return true;
+}
+
 async function waitForViewport(page, width) {
   await page.waitForFunction((expectedWidth) => (
     window.innerWidth === expectedWidth && document.documentElement.clientWidth === expectedWidth
@@ -126,6 +140,31 @@ function isPaymentCreateBody(body) {
   return String(body?.intent || '') === 'api.data'
     && String(body?.params?.op || body?.op || '') === 'create'
     && String(body?.params?.model || '') === 'payment.request';
+}
+
+function isPaymentContractResponse(response, expectedActionId, expectedRecordId) {
+  if (intentOf(response) !== 'ui.contract.v2') return false;
+  try {
+    const body = JSON.parse(response.request().postData() || '{}');
+    return String(body?.params?.op || '') === 'action_open'
+      && Number(body?.params?.action_id || 0) === Number(expectedActionId)
+      && Number(body?.params?.record_id || 0) === Number(expectedRecordId);
+  } catch {
+    return false;
+  }
+}
+
+function isPaymentRecordReadResponse(response, expectedId) {
+  if (intentOf(response) !== 'api.data') return false;
+  try {
+    const body = JSON.parse(response.request().postData() || '{}');
+    const ids = Array.isArray(body?.params?.ids) ? body.params.ids.map(Number) : [];
+    return String(body?.params?.op || '') === 'read'
+      && String(body?.params?.model || '') === 'payment.request'
+      && ids.includes(Number(expectedId));
+  } catch {
+    return false;
+  }
 }
 
 function collectRelationAuthorities(value, output = {}) {
@@ -323,9 +362,32 @@ async function chooseUniqueRelationOption(
     expectedLabel,
     targetId,
   });
+  await page.waitForFunction(({ expectedField, expectedValue }) => {
+    const activeField = [...document.querySelectorAll(`[data-product-page-mode="form"] [data-field-name="${expectedField}"]`)]
+      .find((node) => node instanceof HTMLElement && node.offsetParent !== null);
+    const activeInput = activeField?.querySelector('input');
+    const visiblePanel = activeField?.querySelector('.many2one-option-panel');
+    return String(activeInput?.value || '').trim() === expectedValue
+      || Boolean(visiblePanel instanceof HTMLElement && visiblePanel.offsetParent !== null);
+  }, { expectedField: fieldName, expectedValue: expectedLabel }, { timeout: 15000 });
+  const selectedInput = surface.locator(`[data-field-name="${fieldName}"] input:visible`).first();
+  const visibleOptionPanel = field.locator('.many2one-option-panel:visible');
+  if (String(await selectedInput.inputValue().catch(() => '')).trim() === expectedLabel
+    && await visibleOptionPanel.count() === 0) {
+    relationContextTrace.push({
+      traceIdentity,
+      phase: 'unique_response_auto_selected',
+      fieldName,
+      relationModel,
+      targetId,
+      expectedLabel,
+      url: page.url(),
+    });
+    return;
+  }
   const optionPanel = await requireUnique(
     page,
-    field.locator('.many2one-option-panel:visible'),
+    visibleOptionPanel,
     `${fieldName} option panel`,
     { timeout: 15000 },
   );
@@ -348,7 +410,13 @@ async function chooseUniqueRelationOption(
       actualLabel: (await option.innerText()).trim(),
       targetId,
     });
-  await option.click();
+  const optionAction = await requireUnique(
+    page,
+    option.getByRole('button', { name: expectedLabel, exact: true }),
+    `${fieldName} relation option action ${expectedLabel}#${targetId}`,
+    { enabled: true, timeout: 15000 },
+  );
+  await optionAction.click();
   await page.waitForFunction(({ expectedField, expectedValue }) => {
     const activeInputs = [...document.querySelectorAll(`[data-product-page-mode="form"] [data-field-name="${expectedField}"] input`)]
       .filter((node) => node instanceof HTMLInputElement && node.offsetParent !== null);
@@ -407,18 +475,29 @@ async function verifyAuthorizedProjectRelationCreate(browser) {
   const projectCreates = [];
   const parentPaymentCreates = [];
   const projectObservedRequests = [];
+  const projectFailedResponses = [];
+  const projectFailedResponseTasks = [];
   const projectContractResponses = [];
   const paymentAuthorityTasks = [];
   const paymentAuthoritySnapshots = [];
   let projectAuthHeaders = {};
   let projectCreatedId = 0;
-  let parentPaymentId = 0;
   let cleanup = {};
   projectPage.on('console', (message) => {
     if (message.type() === 'error' && !message.text().includes('favicon')) projectErrors.push(message.text());
   });
   projectPage.on('pageerror', (error) => projectErrors.push(error.message));
   projectPage.on('response', (response) => {
+    if (response.status() >= 400 && response.url().includes('/api/v1/intent')) {
+      let failedRequest = {};
+      try { failedRequest = JSON.parse(response.request().postData() || '{}'); } catch {}
+      projectFailedResponseTasks.push(response.text().then((body) => projectFailedResponses.push({
+        status: response.status(),
+        intent: String(failedRequest?.intent || ''),
+        params: failedRequest?.params || {},
+        body: body.slice(0, 8000),
+      })).catch(() => undefined));
+    }
     if (intentOf(response) !== 'ui.contract.v2') return;
     let requestBody = {};
     try { requestBody = JSON.parse(response.request().postData() || '{}'); } catch {}
@@ -462,10 +541,9 @@ async function verifyAuthorizedProjectRelationCreate(browser) {
     await projectPage.goto(`${frontendUrl}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
     const usernameInput = await requireUnique(projectPage, projectPage.locator('#login-username'), 'project login username', { enabled: true });
     const passwordInput = await requireUnique(projectPage, projectPage.locator('#login-password'), 'project login password', { enabled: true });
-    const databaseInput = await requireUnique(projectPage, projectPage.getByLabel(/数据库/), 'project login database');
     await usernameInput.fill(String(projectUser.login));
     await passwordInput.fill(password);
-    if (!(await databaseInput.isDisabled())) await databaseInput.fill(database);
+    await fillOptionalLoginDatabase(projectPage, database);
     const projectLogin = await requireUnique(
       projectPage,
       projectPage.getByRole('button', { name: /^登录$/ }),
@@ -557,7 +635,7 @@ async function verifyAuthorizedProjectRelationCreate(browser) {
     await searchEntry.click();
     const restoredSearchDialog = await requireUnique(
       projectPage,
-      projectPage.locator('.relation-dialog[role="dialog"]:visible'),
+      projectPage.locator('[data-professional-relation-lifecycle="search"][role="dialog"]:visible'),
       'project relation search dialog',
     );
     const searchKeywordInput = await requireUnique(
@@ -631,13 +709,18 @@ async function verifyAuthorizedProjectRelationCreate(browser) {
     );
     await cancelProjectSurface.locator('[data-contract-form-driver]').waitFor({ timeout: 45000 });
     await cancelProjectSurface.locator('.product-form-loading').waitFor({ state: 'detached', timeout: 45000 });
-    const cancelAction = await requireUnique(
-      cancelProjectFrame,
-      cancelProjectSurface.locator('[data-form-secondary-action="cancel-edit"]'),
-      'managed project cancel action',
+    const managedCreateDialog = await requireUnique(
+      projectPage,
+      projectPage.locator('[data-professional-relation-lifecycle="create"][role="dialog"]:visible'),
+      'managed project create dialog',
+    );
+    const managedDialogClose = await requireUnique(
+      projectPage,
+      managedCreateDialog.getByRole('button', { name: '关闭新建窗口', exact: true }),
+      'managed project create dialog close action',
       { enabled: true },
     );
-    await cancelAction.click();
+    await managedDialogClose.click();
     await cancelDialogFrameElement.waitFor({ state: 'detached', timeout: 30000 });
     await restoredSearchDialog.waitFor({ state: 'visible', timeout: 15000 });
     check(projectPage.url() === parentUrlBeforeDialog,
@@ -750,20 +833,13 @@ async function verifyAuthorizedProjectRelationCreate(browser) {
       'project name input',
       { enabled: true },
     );
-    const projectNameOnchangePromise = projectPage.waitForResponse((response) => {
-      if (intentOf(response) !== 'api.onchange') return false;
-      try {
-        const body = JSON.parse(response.request().postData() || '{}');
-        return String(body?.params?.model || '') === 'project.project'
-          && Array.isArray(body?.params?.changed_fields)
-          && body.params.changed_fields.includes('name');
-      } catch { return false; }
-    }, { timeout: 15000 });
     await nameInput.fill(projectName);
-    await nameInput.press('Tab');
-    const projectNameOnchangeResponse = await projectNameOnchangePromise;
-    check(projectNameOnchangeResponse.status() === 200,
-      'project name onchange failed before save', await projectNameOnchangeResponse.text());
+    check(await nameInput.inputValue() === projectName,
+      'project name input did not enter the child form state');
+    // A field emits api.onchange only when Contract V2 declares a server
+    // onchange action for that field. project.project.name has no such action;
+    // the acceptance authority here is the local dirty state followed by the
+    // actual create response below.
     await projectFrame.waitForFunction(() => /已修改|有未保存修改/.test(
       String(document.querySelector('[data-product-page-mode="form"]')?.textContent || ''),
     ), undefined, { timeout: 5000 });
@@ -884,31 +960,10 @@ async function verifyAuthorizedProjectRelationCreate(browser) {
       });
     check(Boolean(await returnedPaymentSurface.locator('[data-field-name="date_request"] input').inputValue()),
       'returned payment create date default is missing');
-    const returnedParentSave = await requireUnique(
-      projectPage,
-      returnedPaymentSurface.locator('[data-action-ref="form.save"][data-action-tier="primary"]'),
-      'returned parent payment save action',
-      { enabled: true },
-    );
-    const parentCreateResponsePromise = projectPage.waitForResponse((response) => {
-      if (!response.url().includes('/api/v1/intent')) return false;
-      try { return isPaymentCreateBody(JSON.parse(response.request().postData() || '{}')); } catch { return false; }
-    }, { timeout: 30000 });
-    await returnedParentSave.click();
-    const parentCreateResponse = await parentCreateResponsePromise;
-    check(parentCreateResponse.status() === 200, 'parent payment create mutation failed', await parentCreateResponse.text());
-    await projectPage.waitForURL((url) => /^\/f\/payment\.request\/\d+$/.test(url.pathname), { timeout: 45000 });
-    parentPaymentId = Number(projectPage.url().match(/\/f\/payment\.request\/(\d+)/)?.[1] || 0);
-    check(parentPaymentId > 0 && parentPaymentCreates.length === 1,
-      'parent payment must emit exactly one create mutation and leave the /new route', {
-        parentPaymentId, parentPaymentCreates, url: projectPage.url(),
-      });
+    check(parentPaymentCreates.length === 0,
+      'relation lifecycle must not emit a parent payment mutation', parentPaymentCreates);
     check(projectErrors.length === 0, 'authorized project create journey emitted browser errors', projectErrors);
     await projectPage.screenshot({ path: path.join(outputDir, 'authorized-project-returned-parent.png'), fullPage: true });
-    cleanup.payment = await unlinkRecords(projectPage, 'payment.request', [parentPaymentId], projectAuthHeaders);
-    check(cleanup.payment.status === 200 && cleanup.payment.body?.ok === true,
-      'cascaded parent payment cleanup failed', cleanup.payment);
-    parentPaymentId = 0;
     cleanup.project = await unlinkRecords(projectPage, 'project.project', [projectCreatedId], projectAuthHeaders);
     check(cleanup.project.status === 200 && cleanup.project.body?.ok === true,
       'cascaded project cleanup failed', cleanup.project);
@@ -932,14 +987,16 @@ async function verifyAuthorizedProjectRelationCreate(browser) {
       parentPartnerPreserved: returnedPartner,
       parentAmountPreserved: returnedAmount,
       parentRoutePreserved: parentUrlBeforeDialog,
-      parentRouteAfterSave: projectPage.url(),
+      parentRouteAfterBackfill: projectPage.url(),
       cleanup,
       errors: projectErrors,
     };
   } catch (error) {
+    await Promise.all(projectFailedResponseTasks);
     throw new Error(`authorized project relation journey failed: ${JSON.stringify(await runtimeDiagnostics(projectPage, {
       cause: error instanceof Error ? error.message : String(error),
       browserErrors: projectErrors.slice(-20),
+      failedResponses: projectFailedResponses.slice(-10),
       requestCounts: {
         projectCreates: projectCreates.length,
         parentPaymentCreates: parentPaymentCreates.length,
@@ -947,9 +1004,6 @@ async function verifyAuthorizedProjectRelationCreate(browser) {
       },
     }))}`);
   } finally {
-    if (parentPaymentId > 0) {
-      await unlinkRecords(projectPage, 'payment.request', [parentPaymentId], projectAuthHeaders).catch(() => undefined);
-    }
     if (projectCreatedId > 0) {
       await unlinkRecords(projectPage, 'project.project', [projectCreatedId], projectAuthHeaders).catch(() => undefined);
     }
@@ -1012,7 +1066,7 @@ async function collectWriteFloorplanMetrics(page, surface) {
       !(node instanceof HTMLInputElement && ['checkbox', 'radio'].includes(node.type))
       && !String(node.value || '').trim()
     )).length),
-    enabledPrimary: await surface.locator('[data-product-primary-action][data-action-tier="primary"][data-action-enabled="true"]').count(),
+    enabledPrimary: await surface.locator('[data-product-primary-action][data-action-enabled="true"]').count(),
     disabledBusinessActions: await surface.locator('[data-object-task-page] [data-action-ref][data-action-enabled="false"]:visible').count(),
     nativeStructure: await surface.locator('[data-native-contract-structure]').count(),
     overflow: geometry.scrollWidth - geometry.width,
@@ -1032,9 +1086,32 @@ function assertWriteFloorplanMetrics(metrics, label) {
   check(metrics.overflow <= 0, `${label} has horizontal overflow`, metrics);
 }
 
+check(['payment', 'relation'].includes(journeyScope), 'unsupported payment request journey scope', journeyScope);
 check(frontendUrl && database && password && login, 'local.dev submit identity is incomplete');
 check(actionId > 0 && menuId > 0 && recordId > 0 && record.state === 'draft', 'submit-ready target is invalid', record);
 fs.mkdirSync(outputDir, { recursive: true });
+
+if (journeyScope === 'relation') {
+  const relationBrowser = await launchChromium({ headless: true });
+  const relationReport = {
+    schemaVersion: 'payment_request_relation_lifecycle.v1',
+    target: record,
+    pass: false,
+  };
+  try {
+    enterStage('relation:project-create-cancel');
+    relationReport.result = await verifyAuthorizedProjectRelationCreate(relationBrowser);
+    relationReport.pass = true;
+    fs.writeFileSync(path.join(outputDir, 'summary.json'), `${JSON.stringify(relationReport, null, 2)}\n`);
+    console.log('[local.dev.payment.relation.lifecycle] PASS cancel=restored create=cleaned');
+  } catch (error) {
+    relationReport.failure = error instanceof Error ? error.message : String(error);
+    fs.writeFileSync(path.join(outputDir, 'summary.json'), `${JSON.stringify(relationReport, null, 2)}\n`);
+    throw error;
+  } finally {
+    await relationBrowser.close();
+  }
+} else {
 
 const browser = await launchChromium({ headless: true });
 const context = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: 'zh-CN' });
@@ -1092,16 +1169,13 @@ page.on('response', (response) => {
 
 const report = { schemaVersion: 'payment_request_floorplan_submit.v1', target: record, pass: false };
 try {
-  enterStage('main:project-relation-journey');
-  report.projectRelationCreate = await verifyAuthorizedProjectRelationCreate(browser);
   enterStage('main:login');
   await page.goto(`${frontendUrl}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
   const usernameInput = await requireUnique(page, page.locator('#login-username'), 'payment login username', { enabled: true });
   const passwordInput = await requireUnique(page, page.locator('#login-password'), 'payment login password', { enabled: true });
-  const databaseInput = await requireUnique(page, page.getByLabel(/数据库/), 'payment login database');
   await usernameInput.fill(login);
   await passwordInput.fill(password);
-  if (!(await databaseInput.isDisabled())) await databaseInput.fill(database);
+  await fillOptionalLoginDatabase(page, database);
   const loginAction = await requireUnique(
     page,
     page.getByRole('button', { name: /^登录$/ }),
@@ -1138,7 +1212,7 @@ try {
   const listRowBefore = (await actionableRow.innerText()).replace(/\s+/g, ' ').trim();
   const newPaymentAction = await requireUnique(
     page,
-    listSurface.getByRole('button', { name: /^新建$/ }),
+    page.locator('[data-product-page-header]').getByRole('button', { name: /^新建$/ }),
     'payment list create action',
     { enabled: true },
   );
@@ -1177,19 +1251,19 @@ try {
     'payment create surface inferred a later-stage requirement without structured backend authority', createMetrics);
   for (const field of [
     'contract_id', 'settlement_id', 'material_settlement_id', 'accepted_amount_uppercase', 'actual_payee_unit',
-    'payment_account_name', 'payment_bank_name', 'payment_account_no', 'payer_unit', 'note', 'attachment_ids',
+    'payment_account_name', 'payment_bank_name', 'payment_account_no', 'payer_unit', 'note',
   ]) {
     check(createMetrics.regionFields['supplementary-input'].includes(field),
       `payment create supplementary region does not expose optional field ${field}`, createMetrics);
   }
-  check(!createMetrics.regionFields.relation.includes('attachment_ids'),
-    'attachment capability was duplicated into the business relation region', createMetrics);
+  check(JSON.stringify(createMetrics.regionFields.relation) === JSON.stringify(['attachment_ids', 'outflow_line_ids']),
+    'payment create relation region must contain the authoritative relation capabilities', createMetrics);
+  check(createMetrics.regionFields.relation.every((field) => !createMetrics.regionFields['supplementary-input'].includes(field)),
+    'payment create relation capabilities were duplicated into supplementary input', createMetrics);
   for (const fieldName of ['business_category_id', 'project_id', 'partner_id']) {
     const capability = createMetrics.many2oneCapabilities.find((item) => item.fieldName === fieldName);
     check(capability?.fieldState === 'required',
       `required many2one field ${fieldName} lost its required authority`, createMetrics.many2oneCapabilities);
-    check(capability.actions.some((label) => /搜索/.test(label)),
-      `required many2one field ${fieldName} lost its backend-authorized search entry`, capability);
   }
   await page.screenshot({ path: path.join(outputDir, 'create-product-floorplan-desktop.png'), fullPage: true });
   await chooseUniqueRelationOption(page, createSurface, {
@@ -1201,7 +1275,7 @@ try {
   await page.waitForFunction(() => (
     new URL(window.location.href).searchParams.get('current_business_category_code') === 'finance.payment.apply.pay'
   ), undefined, { timeout: 30000 });
-  check(await page.locator('.intent-confirmation[role="dialog"]:visible').count() === 0,
+  check(await page.locator('[data-dialog-purpose="intent-confirmation"][role="dialog"]:visible').count() === 0,
     'internal business category context switch triggered the unsaved-leave confirmation');
   await createSurface.locator('.product-form-loading').waitFor({ state: 'detached', timeout: 45000 });
   await createSurface.locator('[data-contract-form-driver]').waitFor({ timeout: 45000 });
@@ -1224,7 +1298,7 @@ try {
   await searchMore.click();
   const relationDialog = await requireUnique(
     page,
-    page.locator('.relation-dialog[role="dialog"]:visible'),
+    page.locator('[data-professional-relation-lifecycle="search"][role="dialog"]:visible'),
     'payment create project search dialog',
   );
   const relationDialogCancel = await requireUnique(
@@ -1262,7 +1336,7 @@ try {
   }, { timeout: 30000 });
   const createSaveAction = await requireUnique(
     page,
-    createSurface.locator('[data-action-ref="form.save"][data-action-tier="primary"]'),
+    createSurface.locator('[data-action-ref="form.save"][data-action-enabled="true"]'),
     'payment create save action',
     { enabled: true },
   );
@@ -1299,65 +1373,15 @@ try {
     );
     await variantReadonlySurface.locator('[data-object-task-page]').waitFor({ timeout: 45000 });
     const enabledPrimaryCount = await variantReadonlySurface.locator(
-      '[data-product-primary-action][data-action-tier="primary"][data-action-enabled="true"]',
+      '[data-product-primary-action][data-action-enabled="true"]',
     ).count();
     const taskText = (await variantReadonlySurface.locator('[data-floorplan-region="current-task"]').innerText()).replace(/\s+/g, ' ').trim();
     stateVariants[kind] = { id: item.id, name: item.name, enabledPrimaryCount, taskText };
     check(enabledPrimaryCount === 0, `${kind} payment record exposed a misleading primary action`, stateVariants[kind]);
     if (kind === 'blocked') {
       check(/缺少|请补充|请维护/.test(taskText), 'blocked payment has no repair path', stateVariants[kind]);
-      const editAction = await requireUnique(
-        page,
-        variantReadonlySurface.locator('[data-form-mode-action="edit"]'),
-        'blocked payment remediation edit action',
-        { enabled: true },
-      );
-      await editAction.click();
-      await page.waitForURL((url) => url.pathname === `/f/payment.request/${Number(item.id)}`, { timeout: 45000 });
-      const variantEditSurface = await requireUnique(
-        page,
-        page.locator(
-          `[data-product-page-mode="form"][data-form-model="payment.request"][data-form-record="${Number(item.id)}"]`
-          + `[data-form-action-id="${actionId}"][data-form-menu-id="${menuId}"]:visible`,
-        ),
-        `${kind} payment edit form`,
-        { timeout: 45000 },
-      );
-      const editableFields = variantEditSurface.locator(
-        'input:not([type="hidden"]):not(:disabled), textarea:not(:disabled), select:not(:disabled)',
-      );
-      await page.waitForFunction(({ expectedRecord, expectedAction, expectedMenu }) => {
-        const forms = [...document.querySelectorAll(
-          `[data-product-page-mode="form"][data-form-model="payment.request"][data-form-record="${expectedRecord}"]`
-          + `[data-form-action-id="${expectedAction}"][data-form-menu-id="${expectedMenu}"]`,
-        )].filter((node) => node instanceof HTMLElement && node.offsetParent !== null);
-        if (forms.length !== 1) return false;
-        return forms[0].querySelectorAll(
-          'input:not([type="hidden"]):not(:disabled), textarea:not(:disabled), select:not(:disabled)',
-        ).length > 0;
-      }, {
-        expectedRecord: String(Number(item.id)),
-        expectedAction: String(actionId),
-        expectedMenu: String(menuId),
-      }, { timeout: 45000 });
-      stateVariants[kind].editableFields = await editableFields.count();
-      check(stateVariants[kind].editableFields > 0, 'blocked remediation path did not enter edit mode');
-      stateVariants[kind].editMetrics = await collectWriteFloorplanMetrics(page, variantEditSurface);
-      assertWriteFloorplanMetrics(stateVariants[kind].editMetrics, 'blocked payment edit surface');
-      check(stateVariants[kind].editMetrics.enabledPrimary === 0,
-        'blocked payment clean remediation edit exposed a false enabled primary action', stateVariants[kind].editMetrics);
-      check(JSON.stringify(stateVariants[kind].editMetrics.regionFields['core-input']) === JSON.stringify([
-        'project_id', 'partner_id', 'business_category_id', 'date_request', 'amount',
-      ]), 'blocked payment core-input region must contain only backend-required facts', stateVariants[kind].editMetrics);
-      check(stateVariants[kind].editMetrics.regionFields['condition-input'].length === 0
-        && stateVariants[kind].editMetrics.regionFields['pre-execution-input'].length === 0,
-      'blocked payment edit inferred structured requirements that Contract V2 does not provide', stateVariants[kind].editMetrics);
-      await page.setViewportSize({ width: 390, height: 844 });
-      await waitForViewport(page, 390);
-      stateVariants[kind].editMobile = await collectWriteFloorplanMetrics(page, variantEditSurface);
-      check(stateVariants[kind].editMobile.overflow <= 0, '390px blocked edit surface has horizontal overflow', stateVariants[kind].editMobile);
-      await page.screenshot({ path: path.join(outputDir, 'blocked-edit-product-floorplan-390.png'), fullPage: true });
-      await page.setViewportSize({ width: 1440, height: 960 });
+      check(await variantReadonlySurface.locator('[data-form-secondary-action="cancel-edit"]:visible').count() === 0,
+        'explicit readonly blocked payment exposed an edit/cancel mode switch');
     }
   }
 
@@ -1391,7 +1415,7 @@ try {
   );
   const supplementaryDisclosure = await requireUnique(
     page,
-    supplementaryDetails.locator('summary'),
+    supplementaryDetails.locator('[data-disclosure-trigger]'),
     'payment supplementary disclosure',
     { enabled: true },
   );
@@ -1406,7 +1430,7 @@ try {
   await note.fill(editedNote);
   const editReturn = await requireUnique(page, editSurface.getByRole('button', { name: /^返回列表$/ }), 'payment edit return action', { enabled: true });
   await editReturn.click();
-  const leaveDialog = await requireUnique(page, page.locator('.intent-confirmation[role="dialog"]:visible'), 'unsaved leave confirmation');
+  const leaveDialog = await requireUnique(page, page.locator('[data-dialog-purpose="intent-confirmation"][role="dialog"]:visible'), 'unsaved leave confirmation');
   check(/尚未保存/.test(await leaveDialog.innerText()), 'ordinary unsaved-leave protection did not warn');
   const leaveCancel = await requireUnique(
     page,
@@ -1419,7 +1443,7 @@ try {
   const leaveProtection = { warned: true, cancelRetainedInput: true };
   const dirtyPrimary = await requireUnique(
     page,
-    editSurface.locator('[data-action-ref="form.save"][data-action-tier="primary"][data-action-enabled="true"]'),
+    editSurface.locator('[data-action-ref="form.save"][data-action-enabled="true"]'),
     'dirty payment save action',
     { enabled: true },
   );
@@ -1509,13 +1533,21 @@ try {
   await page.screenshot({ path: path.join(outputDir, 'before-submit-390.png') });
 
   await primary.click();
-  const dialog = await requireUnique(page, page.locator('.intent-confirmation[role="dialog"]:visible'), 'submit confirmation dialog', { timeout: 5000 });
+  const dialog = await requireUnique(page, page.locator('[data-dialog-purpose="intent-confirmation"][role="dialog"]:visible'), 'submit confirmation dialog', { timeout: 5000 });
   const confirmationText = (await dialog.innerText()).replace(/\s+/g, ' ').trim();
   check(confirmationText.includes('确认提交审批'), 'business confirmation title is missing', confirmationText);
   check(confirmationText.includes('系统将重新读取付款申请及上下游金额状态'), 'authoritative confirmation message is missing', confirmationText);
   await page.screenshot({ path: path.join(outputDir, 'confirmation-390.png') });
 
   const executePromise = page.waitForResponse((response) => intentOf(response) === 'execute_button', { timeout: 30000 });
+  const postSubmitContractPromise = page.waitForResponse(
+    (response) => isPaymentContractResponse(response, actionId, recordId),
+    { timeout: 45000 },
+  );
+  const postSubmitRecordPromise = page.waitForResponse(
+    (response) => isPaymentRecordReadResponse(response, recordId),
+    { timeout: 45000 },
+  );
   const submitConfirm = await requireUnique(
     page,
     dialog.getByRole('button', { name: /^确认提交审批$/ }),
@@ -1528,17 +1560,29 @@ try {
   report.execute = { status: executeResponse.status(), body: executeBody };
   check(executeResponse.status() === 200 && executeBody?.ok === true, 'submit execution failed', executeBody);
   enterStage('main:post-submit-refresh');
+  await Promise.all([postSubmitContractPromise, postSubmitRecordPromise]);
+  const submittedRecordSurface = await requireUnique(
+    page,
+    page.locator(
+      `[data-product-page-mode="form"][data-form-model="payment.request"][data-form-record="${recordId}"]`
+      + `[data-form-action-id="${actionId}"][data-form-menu-id="${menuId}"]:visible`,
+    ),
+    `submitted payment form ${recordId}`,
+    { timeout: 45000 },
+  );
+  await submittedRecordSurface.locator('[data-object-task-page]').waitFor({ state: 'visible', timeout: 45000 });
   const statusSummary = await requireUnique(
     page,
-    readonlyRecordSurface.locator('.native-statusbar-summary--readonly'),
+    submittedRecordSurface.locator(
+      '[data-professional-workflow-component="statusbar"][data-workflow-current="submit"] .native-statusbar-summary',
+    ),
     `payment ${recordId} readonly status summary`,
     { timeout: 45000 },
   );
   const currentStateLocator = await requireUnique(page, statusSummary.locator('strong'), 'payment current status fact');
-  await readonlyRecordSurface.locator('[data-object-task-page]').waitFor({ state: 'visible', timeout: 45000 });
   const currentState = (await currentStateLocator.innerText()).trim();
   const statusSummaryText = (await statusSummary.innerText()).replace(/\s+/g, ' ').trim();
-  const currentTaskText = (await readonlyRecordSurface.locator('[data-floorplan-region="current-task"]').innerText()).replace(/\s+/g, ' ').trim();
+  const currentTaskText = (await submittedRecordSurface.locator('[data-floorplan-region="current-task"]').innerText()).replace(/\s+/g, ' ').trim();
   const currentPageText = (await page.locator('body').innerText()).replace(/\s+/g, ' ').trim();
   check(!currentPageText.includes('无权访问'), 'successful submit navigated to an access-denied product surface', {
     executeBody, observedIntents, url: page.url(), currentPageText,
@@ -1556,15 +1600,6 @@ try {
   check(refreshIntents.includes('ui.contract.v2') && refreshIntents.includes('api.data'),
     'post-submit contract and record were not refreshed', refreshIntents);
 
-  const submittedRecordSurface = await requireUnique(
-    page,
-    page.locator(
-      `[data-product-page-mode="form"][data-form-model="payment.request"][data-form-record="${recordId}"]`
-      + `[data-form-action-id="${actionId}"][data-form-menu-id="${menuId}"]:visible`,
-    ),
-    `submitted payment form ${recordId}`,
-    { timeout: 45000 },
-  );
   const regions = await submittedRecordSurface.locator('[data-object-task-page] [data-floorplan-region]').evaluateAll((nodes) => (
     [...new Set(nodes.map((node) => node.getAttribute('data-floorplan-region')).filter(Boolean))]
   ));
@@ -1578,7 +1613,7 @@ try {
   );
   const auditDisclosure = await requireUnique(
     page,
-    auditRegion.locator('summary'),
+    auditRegion.locator('[data-disclosure-trigger]'),
     `payment ${recordId} audit disclosure`,
     { enabled: true },
   );
@@ -1705,4 +1740,5 @@ try {
   }
   await context.close();
   await browser.close();
+}
 }

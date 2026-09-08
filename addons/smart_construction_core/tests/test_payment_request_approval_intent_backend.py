@@ -40,6 +40,14 @@ class TestPaymentRequestApprovalIntentBackend(TransactionCase):
             }
         )
 
+    def _set_handler_contract_state(self, payment_request, state, validation_status="validated"):
+        """Prepare an isolated handler result test without bypassing model guards via ORM."""
+        self.env.cr.execute(
+            "UPDATE payment_request SET state=%s, validation_status=%s WHERE id=%s",
+            (state, validation_status, payment_request.id),
+        )
+        payment_request.invalidate_recordset(["state", "validation_status"])
+
     def test_payment_request_submit_missing_id(self):
         handler = PaymentRequestSubmitHandler(self.env, payload={})
         result = handler.handle({"request_id": "req-pr-submit-missing"})
@@ -119,7 +127,7 @@ class TestPaymentRequestApprovalIntentBackend(TransactionCase):
 
     def test_payment_request_approve_success_contract_with_mocked_method(self):
         payment_request = self._create_payment_request_minimal()
-        payment_request.sudo().with_context(allow_transition=True).write({"state": "submit"})
+        self._set_handler_contract_state(payment_request, "submit", "pending")
         handler = PaymentRequestApproveHandler(self.env, payload={})
         with patch("odoo.addons.smart_construction_core.models.core.payment_request.PaymentRequest.action_approve", autospec=True, return_value=None):
             result = handler.handle({"id": payment_request.id, "request_id": "req-pr-approve-success"})
@@ -158,7 +166,7 @@ class TestPaymentRequestApprovalIntentBackend(TransactionCase):
 
     def test_payment_request_reject_success_contract_with_mocked_method(self):
         payment_request = self._create_payment_request_minimal()
-        payment_request.sudo().with_context(allow_transition=True).write({"state": "submit"})
+        self._set_handler_contract_state(payment_request, "submit", "pending")
         handler = PaymentRequestRejectHandler(self.env, payload={})
         with patch(
             "odoo.addons.smart_construction_core.models.core.payment_request.PaymentRequest.action_on_tier_rejected",
@@ -180,7 +188,7 @@ class TestPaymentRequestApprovalIntentBackend(TransactionCase):
 
     def test_payment_request_done_success_contract_with_mocked_method(self):
         payment_request = self._create_payment_request_minimal()
-        payment_request.sudo().with_context(allow_transition=True).write({"state": "approved"})
+        self._set_handler_contract_state(payment_request, "approved")
         handler = PaymentRequestDoneHandler(self.env, payload={})
         with patch(
             "odoo.addons.smart_construction_core.models.core.payment_request.PaymentRequest.action_done",
@@ -196,10 +204,10 @@ class TestPaymentRequestApprovalIntentBackend(TransactionCase):
 
     def test_payment_request_done_returns_paid_contract_state(self):
         payment_request = self._create_payment_request_minimal()
-        payment_request.sudo().with_context(allow_transition=True).write({"state": "approved"})
+        self._set_handler_contract_state(payment_request, "approved")
 
         def _mark_done(record):
-            record.with_context(allow_transition=True).write({"state": "done"})
+            self._set_handler_contract_state(record, "done")
             return {"ok": True}
 
         handler = PaymentRequestDoneHandler(self.env, payload={})
@@ -216,10 +224,10 @@ class TestPaymentRequestApprovalIntentBackend(TransactionCase):
 
     def test_payment_request_cancel_by_contract_returns_reversed_contract_state(self):
         payment_request = self._create_payment_request_minimal()
-        payment_request.sudo().with_context(allow_transition=True).write({"state": "approved"})
+        self._set_handler_contract_state(payment_request, "approved")
 
         def _cancel(record):
-            record.with_context(allow_transition=True).write({"state": "cancel"})
+            self._set_handler_contract_state(record, "cancel")
             return {"ok": True}
 
         handler = PaymentRequestCancelByContractHandler(self.env, payload={})

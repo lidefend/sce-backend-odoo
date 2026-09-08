@@ -22,6 +22,7 @@ import {
   groupCollectionRecords,
   resolveResponsiveCollectionPresentation,
 } from '../src/app/runtime/collectionViewRuntime';
+import { collectionContextStorageKey, resolveCollectionAnchorId } from '../src/app/action_runtime/useCollectionViewContextRuntime';
 import { buildActionViewRowClickTarget, resolveCollectionWriteAuthority, shouldUseCanonicalCollectionDetail } from '../src/app/runtime/actionViewInteractionRuntime';
 import { pickContractNavQuery } from '../src/app/navigationContext';
 import { extractKanbanFieldsFromContract } from '../src/app/action_runtime/useActionViewContractShapeRuntime';
@@ -260,6 +261,15 @@ assert.equal(shouldUseCanonicalCollectionDetail({ viewMode: 'kanban', collection
 
 // detail_back_restores_collection_context
 assert.deepEqual(pickContractNavQuery(switched), switched);
+const completeGroupedContext = {
+  ...switched,
+  group_sample_limit: '10', group_sort: 'asc', group_collapsed: 'draft', group_page: 'draft:20',
+  group_offset: '40', group_fp: 'fingerprint', group_wid: 'window', group_wdg: 'digest', group_wik: 'identity',
+};
+assert.deepEqual(pickContractNavQuery(completeGroupedContext), completeGroupedContext);
+assert.equal(collectionContextStorageKey('anchor', 4, 3), 'sc:collection-anchor:4:3');
+assert.equal(resolveCollectionAnchorId({ id: 27 }), '27');
+assert.equal(resolveCollectionAnchorId({ id: 0 }), '');
 
 // responsive_auto_card_distinct_from_explicit_card
 assert.equal(resolveResponsiveCollectionPresentation({ explicitMode: 'table', compactViewport: true }), 'responsive_table_card');

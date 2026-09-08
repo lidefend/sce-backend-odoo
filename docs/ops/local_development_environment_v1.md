@@ -41,8 +41,10 @@ make local.dev.frontend
 make local.dev.frontend.watch
 make verify.local.dev.frontend.quick.gate
 make verify.local.dev.payment_request.native_parity.readonly
+make verify.local.dev.payment_request.full_chain SOURCE_SHA=$(git rev-parse HEAD) CANDIDATE_FINGERPRINT=<full-fingerprint-sha256>
 make verify.local.dev.payment_request.settlement_component.journey
 make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestP1PaymentRequestCapability'
+make local.dev.reset_payment_request_fixture
 make local.dev.sync_demo
 make local.dev.verify_demo
 make local.dev.contract_snapshot
@@ -64,6 +66,12 @@ make local.clean.install LOCAL_CLEAN_MODULES=sc_norm_engine
 make local.clean.health
 make local.clean.down
 ```
+
+`verify.local.dev.payment_request.full_chain` 只使用 `sc_dev_demo` 中登记的专用付款申请
+fixture，按真实角色完成提交、管理层审批、付款登记审批、支付和台账核对。整条旅程期间不重置；
+成功后保留已付款申请、付款登记和台账作为不可变验收历史，下次运行时由已登记的
+`payment_request_floorplan_demo` seed 创建新一期受管 fixture；只清理付款前中断的可删除数据，
+不重载无关演示数据，也不绕过财务追溯规则。
 
 当持久样本库损坏或明确需要从日常开发服务器刷新时，先用日常环境的 governed paired
 backup 取得 `database.dump + filestore.tar.gz + manifest.json + SHA256SUMS`，下载到

@@ -45,6 +45,16 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     ):
         if marker not in many2one:
             failures.append(f"many2one lifecycle command authority is incomplete: {marker}")
+    if "function emitCommit(value: string) {\n  if (!focused.value) return;" not in many2one:
+        failures.append("many2one selection can regress into a duplicate blur commit")
+    if ':aria-selected="activeIndex === optionIndex"\n              @mousedown.prevent' not in many2one:
+        failures.append("many2one option pointer-down can blur before selection")
+    if '@mousedown.prevent\n              @click="emitSelect(option.value, $event)"' not in many2one:
+        failures.append("many2one role option does not own its selection event")
+    if '@change="emitCommit' in many2one:
+        failures.append("many2one query updates can regress into an eager commit")
+    if "resolveProfessionalMany2oneTextValue(props.field)" not in many2one or "resolveProfessionalMany2oneTextValue" not in model:
+        failures.append("many2one input does not consume the authoritative projected display value")
     if ".many2one-action:hover" in many2one or ".many2one-action {\n  min-height:" in many2one:
         failures.append("many2one lifecycle commands override shared ScButton presentation")
     if '<ScButton\n                type="button"' not in many2one:

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { ref } from 'vue';
 import { resolveCreateDefaults, resolveCreateRouteRelationLabels } from '../src/pages/contractForm/createDefaults';
 import { applyIncomingFormFieldValue } from '../src/pages/contractForm/recordHydration';
-import { buildSaveRecordPayload } from '../src/pages/contractForm/saveRecordHelpers';
+import { buildSaveRecordPayload, createSingleFlightSave } from '../src/pages/contractForm/saveRecordHelpers';
 import { usePrimaryFormActionRuntime } from '../src/pages/contractForm/usePrimaryFormActionRuntime';
 
 const fieldDescriptors = {
@@ -72,6 +72,19 @@ const payload = buildSaveRecordPayload({
   recordId: null,
 });
 assert.deepEqual(payload, { amount: 80, owner_id: 17, title: 'Draft A' });
+
+let releaseSave: ((value: number) => void) | null = null;
+let createCalls = 0;
+const singleFlightSave = createSingleFlightSave(async () => {
+  createCalls += 1;
+  return new Promise<number>((resolve) => { releaseSave = resolve; });
+});
+const firstSave = singleFlightSave();
+const duplicateSave = singleFlightSave();
+assert.equal(firstSave, duplicateSave, 'duplicate save clicks must share one in-flight write');
+assert.equal(createCalls, 1);
+releaseSave?.(501);
+assert.equal(await duplicateSave, 501);
 
 const events: string[] = [];
 const stored: Record<string, unknown> = { ...payload, id: 501, state: 'draft' };
@@ -156,4 +169,4 @@ await runtime.runPrimaryFormAction();
 assert.deepEqual(events, ['save-draft', 'reopen-draft', 'save-edit', 'confirm', 'submit', 'refresh', 'reopen']);
 assert.deepEqual(stored, { amount: 80, owner_id: 17, title: 'Draft A revised', id: 501, state: 'submit' });
 
-console.log('[create-record-user-journey] PASS checkpoints=defaults,save,reopen,edit,submit,refresh');
+console.log('[create-record-user-journey] PASS checkpoints=defaults,single-flight-save,reopen,edit,submit,refresh');

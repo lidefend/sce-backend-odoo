@@ -1,6 +1,6 @@
 <template>
   <ScDialog
-    data-semantic-component="PaymentSettlementIntroduceDialog"
+    data-dialog-purpose="payment-settlement-introduce"
     :open="open"
     title="从结算单引入明细"
     description="选择结算单，勾选结算行并设置申请金额，确认后引入为付款申请明细"

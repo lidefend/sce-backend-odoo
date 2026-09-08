@@ -44,6 +44,55 @@ class ProfessionalRelationFieldGuardTests(unittest.TestCase):
             return f"{value}\n.many2one-action:hover {{ background: red; }}" if path.endswith("ProfessionalMany2oneFieldControl.vue") else value
         self.assertTrue(any("override" in item for item in validate(read_text)))
 
+    def test_many2one_selection_cannot_regress_into_duplicate_blur_commit(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalMany2oneFieldControl.vue"):
+                return value.replace("if (!focused.value) return;", "// missing focus guard", 1)
+            return value
+
+        self.assertTrue(any("duplicate blur commit" in item for item in validate(read_text)))
+
+    def test_many2one_option_cannot_blur_before_selection(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalMany2oneFieldControl.vue"):
+                return value.replace("@mousedown.prevent", "@mousedown", 1)
+            return value
+
+        self.assertTrue(any("blur before selection" in item for item in validate(read_text)))
+
+    def test_many2one_query_update_cannot_regress_into_eager_commit(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalMany2oneFieldControl.vue"):
+                return value.replace('@focus="focusField"', '@focus="focusField"\n          @change="emitCommit(($event.target as HTMLInputElement).value)"', 1)
+            return value
+
+        self.assertTrue(any("eager commit" in item for item in validate(read_text)))
+
+    def test_many2one_role_option_must_own_selection_event(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalMany2oneFieldControl.vue"):
+                return value.replace('@click="emitSelect(option.value, $event)"', "", 1)
+            return value
+
+        self.assertTrue(any("does not own" in item for item in validate(read_text)))
+
+    def test_many2one_must_consume_projected_display_value(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalMany2oneFieldControl.vue"):
+                return value.replace(
+                    "resolveProfessionalMany2oneTextValue(props.field)",
+                    "''",
+                    1,
+                )
+            return value
+
+        self.assertTrue(any("projected display value" in item for item in validate(read_text)))
+
     def test_field_label_editor_cannot_regress_to_private_input(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")

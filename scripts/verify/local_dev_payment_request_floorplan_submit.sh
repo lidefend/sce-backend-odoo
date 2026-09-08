@@ -15,6 +15,9 @@ set +a
 [[ "${DB_NAME:-}" == "sc_dev_demo" ]] || { echo "expected sc_dev_demo" >&2; exit 2; }
 [[ "${NGINX_PORT:-}" == "18081" ]] || { echo "expected custom frontend port 18081" >&2; exit 2; }
 [[ -n "${SC_DEMO_USER_PASSWORD:-}" ]] || { echo "SC_DEMO_USER_PASSWORD is required" >&2; exit 2; }
+JOURNEY_SCOPE="${PAYMENT_REQUEST_JOURNEY_SCOPE:-payment}"
+[[ "$JOURNEY_SCOPE" == "payment" || "$JOURNEY_SCOPE" == "relation" ]] \
+  || { echo "unsupported payment request journey scope: $JOURNEY_SCOPE" >&2; exit 2; }
 
 resolve_target() {
   DB_NAME="$DB_NAME" bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" \
@@ -29,21 +32,28 @@ browser_status=0
 LOCAL_DEV_PAYMENT_FLOORPLAN_JSON="$before" \
 FRONTEND_URL="http://127.0.0.1:${NGINX_PORT}" \
 DB_NAME="$DB_NAME" E2E_PASSWORD="$SC_DEMO_USER_PASSWORD" \
+PAYMENT_REQUEST_JOURNEY_SCOPE="$JOURNEY_SCOPE" \
 node "$ROOT_DIR/scripts/verify/local_dev_payment_request_floorplan_submit.mjs" || browser_status=$?
 
 after="$(resolve_target)"
 transition_status=0
-BEFORE_JSON="$before" AFTER_JSON="$after" python3 - <<'PY' || transition_status=$?
+BEFORE_JSON="$before" AFTER_JSON="$after" JOURNEY_SCOPE="$JOURNEY_SCOPE" python3 - <<'PY' || transition_status=$?
 import json
 import os
 
 before = json.loads(os.environ["BEFORE_JSON"])["actionable_record"]
 after = json.loads(os.environ["AFTER_JSON"])["actionable_record"]
-if before["state"] != "draft" or after["state"] != "submit":
-    raise SystemExit("submit journey did not transition the governed fixture from draft to submit")
-if before["name"] != after["name"] or before["amount"] != after["amount"]:
-    raise SystemExit("submit journey changed immutable fixture identity facts")
-print("[local.dev.payment.floorplan.submit] authoritative transition draft -> submit")
+scope = os.environ.get("JOURNEY_SCOPE", "payment")
+if scope == "payment":
+    if before["state"] != "draft" or after["state"] != "submit":
+        raise SystemExit("submit journey did not transition the governed fixture from draft to submit")
+    if before["name"] != after["name"] or before["amount"] != after["amount"]:
+        raise SystemExit("submit journey changed immutable fixture identity facts")
+    print("[local.dev.payment.floorplan.submit] authoritative transition draft -> submit")
+else:
+    if after != before:
+        raise SystemExit("relation lifecycle journey changed the governed payment fixture")
+    print("[local.dev.payment.relation.lifecycle] payment fixture unchanged")
 PY
 
 reset_status=0

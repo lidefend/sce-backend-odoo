@@ -3,9 +3,13 @@
 import hashlib
 import json
 
+from odoo.osv import expression
+from odoo.tools.safe_eval import safe_eval
 from odoo.addons.smart_construction_core.services.financial_workspace_contract import (
     build_financial_form_business_actions,
 )
+from odoo.addons.smart_core.delivery.menu_service import MenuService
+from odoo.addons.smart_core.identity.identity_resolver import IdentityResolver
 
 
 def xmlid(record):
@@ -32,11 +36,35 @@ if not record:
     raise RuntimeError("governed local.dev payment request is not readable by demo_role_finance")
 record.check_access_rights("read")
 record.check_access_rule("read")
-actionable_record = payment_env.search([("name", "=", "DEMO-PR-FLOORPLAN-001")], limit=1)
+actionable_fixture = env.ref(
+    "smart_construction_demo.payment_request_floorplan_demo_record",
+    raise_if_not_found=False,
+)
+actionable_record = (
+    payment_env.browse(actionable_fixture.id).exists()
+    if actionable_fixture and actionable_fixture._name == "payment.request"
+    else payment_env.browse()
+)
 if not actionable_record:
     raise RuntimeError("governed submit-ready payment request fixture is missing")
 actionable_record.check_access_rights("read")
 actionable_record.check_access_rule("read")
+actionable_funding_baseline = env["project.funding.baseline"].sudo().search(
+    [
+        ("project_id", "=", actionable_record.project_id.id),
+        ("state", "=", "active"),
+        ("normalization_state", "=", "normalized"),
+    ],
+    limit=2,
+)
+if len(actionable_funding_baseline) != 1:
+    raise RuntimeError("submit-ready payment request requires one active normalized funding baseline")
+if not actionable_record.date_request or not (
+    actionable_funding_baseline.period_start
+    <= actionable_record.date_request
+    <= actionable_funding_baseline.period_end
+):
+    raise RuntimeError("submit-ready payment request date is outside the active funding baseline")
 execution_env = env["sc.payment.execution"].with_user(user).with_company(user.company_id).with_context(
     allowed_company_ids=user.company_ids.ids,
     active_test=False,
@@ -50,6 +78,35 @@ if menu.action != action or action.res_model != "payment.request":
     raise RuntimeError("payment request menu/action authority mismatch")
 if view.model != "payment.request" or view.type != "form":
     raise RuntimeError("payment request native form authority mismatch")
+if not menu.active or menu.id not in env["ir.ui.menu"].with_user(user)._visible_menu_ids():
+    raise RuntimeError("payment request menu is not active and visible to demo_role_finance")
+
+action_domain = safe_eval(
+    action.domain or "[]",
+    {"uid": user.id, "user": user, "context": dict(payment_env.env.context)},
+)
+record_in_action_domain = payment_env.search_count(
+    expression.AND([action_domain, [("id", "=", record.id)]])
+)
+if record_in_action_domain != 1:
+    raise RuntimeError("governed local.dev payment request is outside the formal action domain")
+
+identity_resolver = IdentityResolver(payment_env.env)
+role_surface = identity_resolver.build_role_surface(
+    identity_resolver.user_group_xmlids(user),
+    [],
+    {"workspace.home"},
+)
+route_authority = MenuService(payment_env.env).build_route_authority(role_surface)
+route_matches = [
+    (bucket, entry)
+    for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions")
+    for entry in route_authority.get(bucket) or []
+    if int(entry.get("menu_id") or 0) == menu.id
+    and int(entry.get("action_id") or 0) == action.id
+]
+if len(route_matches) != 1:
+    raise RuntimeError("payment request route authority is not uniquely projected for demo_role_finance")
 
 
 project_create_env = env["project.project"].with_user(project_create_user).with_company(
@@ -130,6 +187,20 @@ payload = {
     "menu": {"id": int(menu.id), "xmlid": xmlid(menu)},
     "action": {"id": int(action.id), "xmlid": xmlid(action)},
     "view": {"id": int(view.id), "xmlid": xmlid(view)},
+    "acceptance_authority": {
+        "role_code": str(role_surface.get("role_code") or ""),
+        "route_bucket": route_matches[0][0],
+        "menu_active": bool(menu.active),
+        "menu_visible": True,
+        "record_in_action_domain": True,
+        "action_domain": action_domain,
+        "funding_baseline": {
+            "id": int(actionable_funding_baseline.id),
+            "period_start": str(actionable_funding_baseline.period_start),
+            "period_end": str(actionable_funding_baseline.period_end),
+            "request_date": str(actionable_record.date_request),
+        },
+    },
     "reuse_target": {
         "model": "sc.payment.execution",
         "action_id": int(execution_action.id),

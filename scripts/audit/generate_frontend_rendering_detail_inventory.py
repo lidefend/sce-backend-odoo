@@ -118,7 +118,7 @@ BATCH_BINDINGS = {
         "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue": {"div": {"attrs": {"data-semantic-component": "ProfessionalBaseFieldControl", ":data-state": "model.controlState"}}},
         "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue": {"div": {"attrs": {"data-semantic-component": "ProfessionalBusinessValueControl"}}},
         "frontend/apps/web/src/components/professional-fields/PaymentSettlementDetailCollectionControl.vue": {"div": {"attrs": {"data-semantic-component": "PaymentSettlementDetailCollectionControl"}}},
-        "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue": {"scdialog": {"attrs": {"data-semantic-component": "PaymentSettlementIntroduceDialog"}}, "scinlinestate": {"states": {"loading", "empty", "error", "info"}, "minimum": 4}},
+        "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue": {"scdialog": {"attrs": {"data-dialog-purpose": "payment-settlement-introduce"}}, "scinlinestate": {"states": {"loading", "empty", "error", "info"}, "minimum": 4}},
         "frontend/apps/web/src/components/professional-fields/ProfessionalMany2oneFieldControl.vue": {"professionalrelationfieldcontrol": {"attrs": {"data-semantic-component": "ProfessionalMany2oneFieldControl"}}},
         "frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue": {"div": {"attrs": {"data-semantic-component": "ProfessionalManyToManySelect"}}},
         "frontend/apps/web/src/components/template/FormSection.vue": {"sccard": {"attrs": {"data-semantic-component": "FormSection"}}},
@@ -142,7 +142,7 @@ BATCH_BINDINGS = {
     },
     "p0-shared-utility-scene-completion-v1": {
         "frontend/apps/web/src/components/DevContextPanel.vue": {"aside": {"attrs": {"data-semantic-component": "DevContextPanel"}}},
-        "frontend/apps/web/src/components/business/IntentConfirmationDialog.vue": {"scdialog": {"attrs": {"data-semantic-component": "IntentConfirmationDialog"}}},
+        "frontend/apps/web/src/components/business/IntentConfirmationDialog.vue": {"scdialog": {"attrs": {"data-dialog-purpose": "intent-confirmation"}}},
         "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue": {"scsection": {"attrs": {"data-semantic-component": "MyWorkApprovalWorkspace"}}},
         "frontend/apps/web/src/components/page/PageRenderer.vue": {"section": {"attrs": {"data-semantic-component": "PageRenderer"}}},
         "frontend/apps/web/src/components/page/ZoneRenderer.vue": {"section": {"attrs": {"data-semantic-component": "ZoneRenderer"}}},

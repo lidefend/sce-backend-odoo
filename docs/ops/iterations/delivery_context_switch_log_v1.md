@@ -8741,3 +8741,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Result: rendering inventory moved from 157 to 164 surfaces, `gap` from 7 to 0 and `governed_composite` from 99 to 106；formal raw-control bypass remains zero.
 - Evidence: 21 focused inventory tests PASS；49 rendering-detail tests PASS；full frontend Quick PASS；independent read-only review S0–S2=0. Restricted frontend/build stages passed but the shared live scene probe was environment-blocked by unavailable `dev_test_bootstrap` authentication.
 - Follow-up: merge this independent governance candidate before resuming FE-01～FE-03 browser acceptance；the existing `ScInlineState` internal vendor-selector item remains a separate non-blocking governance topic.
+
+## 2026-09-08 — FE-PEC-01A ListPage design-system penetration
+
+- Formal Product Layer / target: P0 generic frontend presentation / existing `ListPage` cell renderer.
+- Change: route formal status cells through `ScStatusBadge` and explicitly monetary body/aggregate cells through `ScMoney`. Raw buttons were already zero and no `ListPage.css` selector became unused.
+- Boundary: no backend, schema, business semantics, model/role/field-specific branch, or list interaction behavior changed.
+- Evidence: focused row-cell tests 8/8 PASS; incremental strict typecheck, style-system guard, list scroll-contract guard, explicit `pnpm run typecheck:strict`, and production build PASS.
+
+## 2026-09-08 — FE-01～FE-03 付款申请列表—表单闭环
+
+- Formal Product Layer / target: P0 generic frontend list/form runtime；existing P1 payment-request contract remains the sole owner of money, currency, status and aggregate semantics.
+- Change: preserve advanced grouped-list query state and the opened-record anchor across list/form navigation；render aggregate footers only from backend authority；serialize duplicate save clicks through one in-flight write and require an authoritative readback before success feedback.
+- Boundary: no model/role/field-name special case, backend contract, Odoo module, runtime profile, database or fixture change.
+- Focused evidence: collection navigation/native parser tests 10/29 plus non-zero JS journey PASS；aggregate presentation 7 and guard 11 PASS；row/mobile guards 8/9 PASS；form runtime protocol, behavior, side-effect and payload guards PASS；strict typecheck PASS.
+- Gate status: code complete, local acceptance not complete. Frontend Quick built successfully and passed the affected guards, then stopped on seven pre-existing rendering-detail ownership gaps in untouched BOQ/chart/rich-text/analysis surfaces. In accordance with the static-before-browser hard lock, no current-candidate browser evidence or acceptance claim was produced.
+
+## 2026-09-08 — 重复支付验收证明分层收口
+
+- Formal Product Layer / target: P4 validation tooling / payment-request full-chain duplicate-payment replay.
+- Classification: the product payment guard is not changed. The exact handler test proves the P1 business-state defense after contract authorization has allowed execution; the browser journey independently classifies the real runtime rejection selected by the current contract.
+- Browser rule: replay the complete successful request envelope and accept only either `400 / BUSINESS_RULE_FAILED` with the confirmed-state payment message, or `403 / PERMISSION_DENIED` with the explicit contract-state reason `ACTION_NOT_VISIBLE_IN_STATE`. Missing authority metadata, generic authorization failures and server errors remain failures.
+- Invariant: either accepted rejection path must leave payment execution, payment request amounts/state and ledger rows unchanged.
+- Evidence status: the business-layer exact replay test passes. The browser classifier is code-complete but remains unverified in a new browser run; the existing report belongs to `087672fe` and is not reused as evidence for this assertion. Creation and four-level approval are intentionally not rerun in this P4 closeout.
+- CI follow-up: `public_guard` RH018 identified the unchanged synthetic ledger account after the test file acquired a new immutable blob. The false-positive registry is updated only for rule `PD003`, the exact test path, blob `1cd140f6014033d7b122fb88bd6cc3324f455012`, and `BANK_ACCOUNT_PATTERN`; no directory, wildcard, mutable ref or real-data exemption is introduced.

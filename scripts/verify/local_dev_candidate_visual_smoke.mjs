@@ -16,7 +16,7 @@ if (!Array.isArray(routes) || routes.length === 0 || routes.some((item) => !item
 }
 
 fs.mkdirSync(outputDir, { recursive: true });
-const report = { head, baseUrl, database, login, mutationCount: 0, routes: [] };
+const report = { head, baseUrl, database, login, mutationCount: 0, startup: {}, routes: [] };
 const browser = await launchChromium({ headless: true });
 
 async function loginPage(page) {
@@ -25,9 +25,14 @@ async function loginPage(page) {
   await inputs.nth(0).fill(login);
   await inputs.nth(1).fill(password);
   if (await inputs.nth(2).count() && !(await inputs.nth(2).isDisabled())) await inputs.nth(2).fill(database);
+  const systemInitResponse = page.waitForResponse(isSystemInitResponse, { timeout: 45000 });
   await page.getByRole('button', { name: /^登录$/ }).click();
+  const response = await systemInitResponse;
+  if (!response.ok()) throw new Error(`system.init request failed: ${response.status()}`);
+  const payload = await response.json();
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
   await page.locator('.layout-shell').waitFor({ timeout: 45000 });
+  return summarizeSystemInit(payload);
 }
 
 async function waitForStableProductSurface(page) {
@@ -53,6 +58,37 @@ function isContractV2Response(response) {
   } catch {
     return false;
   }
+}
+
+function isSystemInitResponse(response) {
+  if (!response.url().includes('/api/v1/intent') || response.request().method() !== 'POST') return false;
+  try {
+    return JSON.parse(response.request().postData() || '{}').intent === 'system.init';
+  } catch {
+    return false;
+  }
+}
+
+function summarizeSystemInit(payload) {
+  const data = payload?.data && typeof payload.data === 'object' ? payload.data : payload;
+  const navigation = data?.navigation && typeof data.navigation === 'object' ? data.navigation : {};
+  const authority = navigation?.route_authority && typeof navigation.route_authority === 'object'
+    ? navigation.route_authority
+    : {};
+  const routeEntries = ['primary_actions', 'role_home_actions', 'contextual_actions', 'admin_actions']
+    .flatMap((bucket) => Array.isArray(authority[bucket]) ? authority[bucket].map((entry) => ({
+      bucket,
+      menuId: Number(entry?.menu_id || 0),
+      actionId: Number(entry?.action_id || 0),
+      menuXmlid: String(entry?.menu_xmlid || ''),
+      actionXmlid: String(entry?.action_xmlid || ''),
+    })) : []);
+  return {
+    roleCode: String(data?.role_surface?.role_code || ''),
+    userId: Number(authority?.principal_scope?.user_id || 0),
+    companyId: Number(authority?.principal_scope?.company_id || 0),
+    routeEntries,
+  };
 }
 
 function summarizeContractH1(payload) {
@@ -324,7 +360,7 @@ try {
       }
     };
     if (bootSummaryFixtureTarget) await page.route(bootContractRoutePattern, bootContractRouteHandler);
-    await loginPage(page);
+    report.startup[viewport.name] = await loginPage(page);
     if (viewport.name === 'desktop') {
       const revealSidebar = page.getByRole('button', { name: '显示侧边栏', exact: true });
       if (await revealSidebar.count() === 1) {
@@ -1253,6 +1289,11 @@ try {
 const errors = report.routes.flatMap((item) => item.errors || []);
 const failures = report.routes.filter((item) => item.path && (!item.tokenLoaded || item.h1 !== 1 || item.overflow > 0));
 for (const item of report.routes) {
+  const configuredTarget = routes.find((target) => target.name === item.name);
+  const finalPath = item.finalUrl ? new URL(item.finalUrl).pathname : '';
+  if (item.path && finalPath === '/access-denied' && configuredTarget?.allowAccessDenied !== true) {
+    failures.push({ name: item.name, expectedAuthorizedRoute: item.path, finalUrl: item.finalUrl });
+  }
   if (item.path && item.primitiveDriverEvidence && !item.primitiveDriverEvidence.pass) {
     failures.push({ name: item.name, primitiveDriverEvidence: item.primitiveDriverEvidence });
   }

@@ -1279,7 +1279,12 @@ class PaymentRequest(models.Model):
             if record.is_fully_paid:
                 raise UserError(_("付款申请已足额付款，不能继续生成付款登记。"))
         self._assert_payment_execution_ready(require_authorized_actor=True)
-        action = self.env.ref("smart_construction_core.action_sc_payment_execution").read()[0]
+        action = self.env.ref(
+            "smart_construction_core.action_sc_payment_execution_partner_payment"
+        ).read()[0]
+        action["menu_id"] = self.env.ref(
+            "smart_construction_core.menu_sc_partner_payment"
+        ).id
         action["name"] = _("新建付款登记")
         action["view_mode"] = "form"
         action["views"] = [(False, "form")]
@@ -1341,9 +1346,14 @@ class PaymentRequest(models.Model):
         ).sorted(key=lambda execution: execution.id, reverse=True)
         if not executions:
             raise UserError(_("该付款申请尚未生成有效的付款登记。"))
-        action = self.env.ref("smart_construction_core.action_sc_payment_execution").read()[0]
+        action = self.env.ref(
+            "smart_construction_core.action_sc_payment_execution_partner_payment"
+        ).read()[0]
         action.update(
             {
+                "menu_id": self.env.ref(
+                    "smart_construction_core.menu_sc_partner_payment"
+                ).id,
                 "name": _("查看付款登记"),
                 "view_mode": "form",
                 "views": [(False, "form")],
@@ -2076,10 +2086,10 @@ class PaymentRequest(models.Model):
             advisories.append(
                 self._payment_advisory(
                     "P0_PAYMENT_NOT_FULLY_PAID",
-                    _("付款申请尚未登记足额付款，完成时将自动生成付款记录。"),
+                    _("付款申请尚未足额付款；请先完成付款登记，登记付款后系统将自动生成付款台账。"),
                     suggested_action="complete_payment_execution",
                     reasons=["payment ledger is not fully paid"],
-                    hints=["请确认审批风险后完成付款办理"],
+                    hints=["请由财务人员核对实付金额和付款账户后完成付款登记"],
                 )
             )
         for check in (

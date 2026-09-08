@@ -204,6 +204,7 @@
             :class="{ 'has-selection-column': showSelectionColumn }" :label="group.label"
             :data="group.sampleRows" :columns="collectionTableColumns(group.key)"
             :foot-data="collectionFootData(groupAggregateFooterRows(group))" row-key="id" size="small"
+            :row-attributes="collectionRowAttributes"
             :table-content-width="tableContentWidth"
             @row-click="handleTableRowClick" />
         </article>
@@ -247,6 +248,7 @@
         :class="{ 'has-selection-column': showSelectionColumn }" :label="title"
         :data="records" :columns="collectionTableColumns()"
         :foot-data="collectionFootData(flatAggregateFooterRows)" row-key="id" size="small"
+        :row-attributes="collectionRowAttributes"
         :table-content-width="tableContentWidth"
         @row-click="handleTableRowClick" />
 
@@ -300,7 +302,9 @@ import CollectionSelectionControl from '../components/product-list/CollectionSel
 import CollectionSummaryStrip from '../components/product-list/CollectionSummaryStrip.vue';
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import ScButton from '../components/design-system/ScButton.vue';
+import ScMoney from '../components/design-system/ScMoney.vue';
 import ScPage from '../components/design-system/ScPage.vue';
+import ScStatusBadge from '../components/design-system/ScStatusBadge.vue';
 import { resolveCollectionPageJump, resolveCollectionPageLimit, resolveCollectionPageOffset, resolveCollectionPaginationMode } from '../app/presentation/collectionPaginationPresentation';
 import { resolveCollectionAggregateEntry } from '../app/presentation/collectionAggregatePresentation';
 import ScTable from '../components/design-system/ScTable.vue';
@@ -1032,6 +1036,17 @@ function rowId(row: Record<string, unknown>) {
   return null;
 }
 
+function collectionRowAttributes(context: unknown) {
+  const candidate = context && typeof context === 'object' && !Array.isArray(context)
+    ? context as Record<string, unknown>
+    : {};
+  const row = candidate.row && typeof candidate.row === 'object' && !Array.isArray(candidate.row)
+    ? candidate.row as Record<string, unknown>
+    : candidate;
+  const id = rowId(row);
+  return id === null ? {} : { 'data-record-key': String(id), tabindex: '-1' };
+}
+
 const selectedIdSet = computed(() => new Set((props.selectedIds || []).filter((id) => Number.isFinite(id))));
 const selectedCount = computed(() => (props.selectedIds || []).length);
 const selectionActions = computed(() =>
@@ -1534,7 +1549,23 @@ function collectionHeader(field: string) {
   });
 }
 function collectionCell(row: Record<string, unknown>, field: string) {
-  if (row.__aggregate === true) return String(row[field] || '');
+  const display = String(row[field] || '');
+  if (row.__aggregate === true) {
+    return isMoneyDisplayColumn(field) && display
+      ? h(ScMoney, { display, label: columnLabel(field) })
+      : display;
+  }
+  const cellProps = collectionRowCellProps(row, field);
+  if (cellProps.kind === 'status') {
+    return h(ScStatusBadge, {
+      value: String(normalizeCellRawValue(columnValue(row, field)) ?? ''),
+      label: cellProps.text,
+      semantic: statusSemantic(cellProps.tone),
+    });
+  }
+  if (isMoneyDisplayColumn(field)) {
+    return h(ScMoney, { display: cellProps.text, label: columnLabel(field) });
+  }
   return h(CollectionRowCell, {
     ...collectionRowCellProps(row, field),
     onToggleFavorite: () => toggleRecordFavorite(row, field),
@@ -1820,6 +1851,13 @@ function isNumericColumn(field: string) {
   return type === 'integer' || type === 'float' || type === 'monetary';
 }
 
+function isMoneyDisplayColumn(field: string) {
+  const option = columnOption(field);
+  const type = String(option?.dataType || option?.type || '').trim().toLowerCase();
+  const cellRole = String(option?.cellRole || '').trim().toLowerCase();
+  return type === 'monetary' || cellRole === 'money' || cellRole === 'monetary';
+}
+
 function isAggregateColumn(field: string) {
   return isNumericColumn(field) && String(columnOption(field)?.aggregate || '').trim() === 'sum';
 }
@@ -1867,24 +1905,12 @@ const pageFooterStats = computed(() =>
   displayedColumns.value
     .filter((field) => isAggregateColumn(field))
     .map((field) => {
-      const semanticAggregate = String(columnOption(field)?.aggregationField || '').trim();
-      if (semanticAggregate) {
-        const authoritative = pageAggregateValue(field);
-        return {
-          name: field,
-          label: uiLabel('page_footer_summary', '{column} 汇总', { column: columnLabel(field) }),
-          count: authoritative === null ? 0 : pageVisibleRows.value.length,
-          sumText: authoritative === null ? '--' : formatFooterNumber(authoritative, field),
-        };
-      }
-      const values = pageVisibleRows.value
-        .map((row) => numericCellValue(columnValue(row, field)))
-        .filter((value): value is number => typeof value === 'number');
+      const authoritative = pageAggregateValue(field);
       return {
         name: field,
         label: uiLabel('page_footer_summary', '{column} 汇总', { column: columnLabel(field) }),
-        count: values.length,
-        sumText: formatFooterNumber(values.reduce((total, value) => total + value, 0), field),
+        count: authoritative === null ? 0 : pageVisibleRows.value.length,
+        sumText: authoritative === null ? '--' : formatFooterNumber(authoritative, field),
       };
     })
     .filter((item) => item.count > 0),
@@ -1954,14 +1980,6 @@ function footerValues(scope: 'page' | 'total') {
   }, {});
 }
 
-function rowsNumericSum(rows: Array<Record<string, unknown>>, field: string) {
-  const values = rows
-    .map((row) => numericCellValue(columnValue(row, field)))
-    .filter((value): value is number => typeof value === 'number');
-  if (!values.length) return null;
-  return values.reduce((total, value) => total + value, 0);
-}
-
 function groupAggregateValue(group: { aggregates?: Record<string, Record<string, unknown>> }, field: string) {
   const aggregate = resolveCollectionAggregateEntry(group.aggregates, field, columnAggregationField(field));
   const value = aggregate.sum;
@@ -1979,8 +1997,7 @@ function showGroupPageAggregateFooter(
 ) {
   return displayedColumns.value.some((field) => {
     if (!isAggregateColumn(field)) return false;
-    if (hasServerSemanticAggregate(field)) return groupPageAggregateValue(group, field) !== null;
-    return rowsNumericSum(group.sampleRows || [], field) !== null;
+    return groupPageAggregateValue(group, field) !== null;
   });
 }
 
@@ -1997,9 +2014,7 @@ function groupFooterCellText(
 ) {
   if (!isAggregateColumn(field)) return '';
   if (scope === 'page') {
-    const value = hasServerSemanticAggregate(field)
-      ? groupPageAggregateValue(group, field)
-      : rowsNumericSum(group.sampleRows || [], field);
+    const value = groupPageAggregateValue(group, field);
     return value === null ? '--' : formatFooterNumber(value, field);
   }
   const value = groupAggregateValue(group, field);
