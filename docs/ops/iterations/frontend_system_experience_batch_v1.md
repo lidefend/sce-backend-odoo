@@ -69,3 +69,13 @@ Complete baseline fingerprint: `112758622e9a3dc6c1ce8437120cfe0f553760fcd7a8d7dc
 - Reduced-motion behavior and non-HUD recovery feedback have code/targeted-guard validation, not forced runtime error or OS-setting evidence. Timed loading-layout continuity remains pending.
 - Alternate profile sampling covers one populated page, not all themes, zoom levels or roles. No WCAG-wide or whole-system certification is claimed.
 - Edit/save/unsaved-change interactions, visible overflow hints and additional business-module samples remain in the queue.
+
+### Follow-up: responsive worksheet and visible table scrolling
+
+- Baseline `d324f993bc13185a57931956d4806feb26f55d46`; complete fingerprint `9b5715f9569565b322f2807fdbb40d47175bdf3c70a60a80c5910165f3a5b110`.
+- Authenticated tab viewport control recovered. Income contracts at 390/320px: document width equals viewport; detail label/value grid measures 84+216 / 84+146px; search input/button both 44px at 320px. This closes the worksheet narrow-layout evidence gap above.
+- P0 ScTable now shows horizontal browsing controls only when the rendered table exceeds its viewport. Resize handles extending outside a fitting table do not trigger the controls. Scroll/resize observers update direction availability and disconnect on unmount; existing topContent slot is preserved.
+- Real 320px contract click moved scrollLeft 0 to 211; left button became enabled; left click restored the starting position. Desktop contract traversal reached the right edge (scrollLeft 2197.5, integer max 2197) and disabled the right button. Narrow controls measure 44px.
+- Payment collection reuses the hint at 1088px; 1600px fitting table and 390px mobile cards hide it. No document overflow. Original viewport restored; explicit browser error log empty.
+- Existing primitive adapter: 46 components / 25 tests PASS; worksheet: 4 interaction cases and domain-tab assertions PASS; strict typecheck and diff whitespace PASS. No business writes or remote operations.
+- Offscreen activity-tab automation first scrolled its label into view without navigation; clicking the visible title reached the correct contract route. Do not classify this observation alone as a product navigation failure. Narrow tab-strip visibility remains under review.

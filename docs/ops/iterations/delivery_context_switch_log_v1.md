@@ -8946,3 +8946,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Real cross-module samples: operating metrics empty collection, two workbench items (neutral and high-contrast), 46 income contracts in a hierarchical workspace, and completed payment request 754. Contract query 46 → 0 → 46 passed; search controls measured 36/36. Payment identity/state/amount remained visible. Final original payment collection restored with 70 records and enterprise-neutral; explicitly read browser error log empty.
 - Existing state/dashboard, primitive, page-pattern, worksheet and strict typecheck checks PASS. Details in the matrix separate code/targeted-test evidence from browser proof.
 - Limitations: supplemental homepage tab redirected to login; no credentials copied. Cross-page viewport override did not reach the authenticated tab, so new worksheet mobile CSS is not claimed browser-accepted. Loading continuity, real error recovery, zoom and multi-role coverage remain pending. This is a completed local batch, not full-system or release acceptance. No business-record writes, fixture/runtime mutations, push, PR or merge.
+
+## 2026-09-09 — 窄屏工作区与表格横向浏览
+
+- P0 frontend renderer / ScTable adapter: generic overflow discovery and directional controls belong to shared presentation, not P1/P2 business fields or P3 configuration. P4 documentation only. Scope: ScTable.vue, TDesign theme, delivery matrix and this log; contract field order, state and permissions unchanged.
+- Baseline d324f993bc13185a57931956d4806feb26f55d46; complete fingerprint 9b5715f9569565b322f2807fdbb40d47175bdf3c70a60a80c5910165f3a5b110. One writer, existing feature branch and local.dev runtime.
+- Closed actual 390/320px hierarchical-workspace viewport proof. Added shared overflow controls with measured scroll and boundary state; suppressed unnecessary controls for fitting tables and mobile cards. Full observations in frontend_system_experience_batch_v1.md.
+- Registered primitive/worksheet checks and strict typecheck PASS, explicit browser error log empty. No business/fixture writes, environment changes, push, PR or merge. Revert this scoped commit to roll back the presentation batch.

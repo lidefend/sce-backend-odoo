@@ -603,3 +603,20 @@
 .sc-textarea[aria-invalid='true'] {
   border-color: var(--sc-app-danger-border);
 }
+.sc-table-scroll-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 4px 8px;
+  color: var(--sc-semantic-text-secondary);
+  font-size: 12px;
+  background: var(--sc-semantic-surface-panel-muted);
+}
+
+@media (max-width: 760px) {
+  .sc-table-scroll-tools .sc-icon-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
