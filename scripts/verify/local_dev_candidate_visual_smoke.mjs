@@ -509,6 +509,42 @@ try {
             .map((label) => String(label.textContent || '').trim())
             .filter(Boolean),
         );
+        const homeRoot = document.querySelector('[data-role-home]');
+        const homeQuickEntries = homeRoot
+          ? [...homeRoot.querySelectorAll('[data-appearance="dashboard-quick-link"]')]
+            .filter((node) => node instanceof HTMLElement && node.offsetParent !== null)
+            .map((node) => {
+              const content = node.querySelector('.sc-btn__content');
+              const icon = node.querySelector('.role-home-surface__entry-icon');
+              const copy = node.querySelector('.role-home-surface__entry-copy');
+              const label = copy?.querySelector('strong');
+              const detail = copy?.querySelector('small');
+              const arrow = node.querySelector('.role-home-surface__entry-arrow');
+              const contentStyle = content instanceof HTMLElement ? getComputedStyle(content) : null;
+              const copyStyle = copy instanceof HTMLElement ? getComputedStyle(copy) : null;
+              const iconRect = icon?.getBoundingClientRect();
+              const copyRect = copy?.getBoundingClientRect();
+              const labelRect = label?.getBoundingClientRect();
+              const detailRect = detail?.getBoundingClientRect();
+              const arrowRect = arrow?.getBoundingClientRect();
+              return {
+                label: String(label?.textContent || '').trim(),
+                detail: String(detail?.textContent || '').trim(),
+                contentDisplay: contentStyle?.display || '',
+                contentColumns: contentStyle?.gridTemplateColumns || '',
+                copyDisplay: copyStyle?.display || '',
+                ordered: Boolean(
+                  iconRect && copyRect && arrowRect
+                  && iconRect.right <= copyRect.left
+                  && copyRect.right <= arrowRect.left
+                  && (!detailRect || !labelRect || labelRect.bottom <= detailRect.top)
+                ),
+                horizontalClipped: node.scrollWidth > node.clientWidth + 1,
+              };
+            })
+          : [];
+        const navigationTree = document.querySelector('#primary-sidebar .product-side-navigation__tree');
+        const navigationMenu = navigationTree?.querySelector('.sc-navigation-menu');
         return {
           h1: document.querySelectorAll('h1').length,
           pageHeaders: document.querySelectorAll('.template-page-header, [data-product-page-header]').length,
@@ -518,6 +554,25 @@ try {
           nativeStructureCount: document.querySelectorAll('[data-native-contract-structure]').length,
           nativeNotebookPageCount: document.querySelectorAll('[data-native-contract-structure] .t-tabs__nav-item').length,
           overflow: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - window.innerWidth,
+          homePresentationEvidence: homeRoot ? {
+            quickEntryCount: homeQuickEntries.length,
+            quickEntries: homeQuickEntries,
+            pass: homeQuickEntries.length > 0
+              && homeQuickEntries.every((entry) => entry.label
+                && entry.contentDisplay === 'grid'
+                && entry.contentColumns !== 'none'
+                && entry.copyDisplay === 'grid'
+                && entry.ordered
+                && !entry.horizontalClipped),
+          } : null,
+          navigationHorizontalEvidence: navigationTree instanceof HTMLElement && navigationMenu instanceof HTMLElement ? {
+            treeClientWidth: navigationTree.clientWidth,
+            treeScrollWidth: navigationTree.scrollWidth,
+            menuClientWidth: navigationMenu.clientWidth,
+            menuScrollWidth: navigationMenu.scrollWidth,
+            pass: navigationTree.scrollWidth <= navigationTree.clientWidth + 1
+              && navigationMenu.scrollWidth <= navigationMenu.clientWidth + 1,
+          } : null,
           tokenLoaded: Boolean(style.getPropertyValue('--sc-semantic-surface-interactive').trim()),
           nativeTitle: document.querySelector('.native-title-text')?.textContent?.trim() || '',
           primitiveDriverEvidence: {
@@ -1299,6 +1354,12 @@ for (const item of report.routes) {
   }
   if (item.path && item.overlayResidueEvidence && !item.overlayResidueEvidence.pass) {
     failures.push({ name: item.name, overlayResidueEvidence: item.overlayResidueEvidence });
+  }
+  if (item.path && item.homePresentationEvidence && !item.homePresentationEvidence.pass) {
+    failures.push({ name: item.name, homePresentationEvidence: item.homePresentationEvidence });
+  }
+  if (item.path && item.navigationHorizontalEvidence && !item.navigationHorizontalEvidence.pass) {
+    failures.push({ name: item.name, navigationHorizontalEvidence: item.navigationHorizontalEvidence });
   }
   if (item.path && item.viewport === 'desktop' && item.shellAdapterEvidence && routes.find((target) => target.name === item.name)?.exerciseShellAdapterProjection === true && !item.shellAdapterEvidence.pass) {
     failures.push({ name: item.name, shellAdapterEvidence: item.shellAdapterEvidence });

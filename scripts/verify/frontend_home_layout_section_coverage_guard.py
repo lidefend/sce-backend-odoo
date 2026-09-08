@@ -16,6 +16,8 @@ def main() -> int:
         'v-else-if="error"',
         'v-else-if="tasks.length"',
         '@media (max-width: 960px)',
+        'class="role-home-surface__entry-copy"',
+        'grid-template-columns: auto minmax(0, 1fr) auto',
     ]
     forbidden = [
         "role ===",
@@ -23,6 +25,7 @@ def main() -> int:
         "legacy_home",
         "HUD:",
         "contract-role-home__",
+        "<h1",
     ]
     errors = [f"missing token: {token}" for token in required if token not in text]
     errors += [f"forbidden token: {token}" for token in forbidden if token in text]

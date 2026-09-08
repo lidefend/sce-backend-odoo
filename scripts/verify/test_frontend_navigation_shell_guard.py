@@ -155,6 +155,27 @@ class FrontendNavigationShellGuardTest(unittest.TestCase):
         path.write_text(path.read_text() + "\n<style>.x { border-color: red; }</style>\n", encoding="utf-8")
         self.assertIn("ProductSideNavigation must not own ScInput visual chrome", validate(root))
 
+    def test_vendor_fixed_menu_width_must_be_overridden(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        path = root / "frontend/apps/web/src/components/MenuTree.vue"
+        path.write_text(
+            path.read_text().replace(".sc-navigation-menu.t-default-menu", ".sc-navigation-menu"),
+            encoding="utf-8",
+        )
+        self.assertTrue(any("vendor fixed width" in error for error in validate(root)))
+
+    def test_menu_host_must_not_reintroduce_horizontal_scroll(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        path = root / "frontend/apps/web/src/layouts/AppShell.css"
+        source = path.read_text().replace(
+            ".menu {\n  min-width: 0;\n  overflow: hidden;",
+            ".menu {\n  min-width: 0;\n  overflow: auto;",
+        )
+        path.write_text(source, encoding="utf-8")
+        self.assertTrue(any("tree owns vertical scrolling" in error for error in validate(root)))
+
 
 if __name__ == "__main__":
     unittest.main()

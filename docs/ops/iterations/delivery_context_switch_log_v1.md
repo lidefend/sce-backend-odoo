@@ -8783,3 +8783,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Scope: `ScInput`, `ScTextarea`, `ScSelect`, `ScDateField`, `ScAutoComplete`, `ScNumberInput`, `ScDatePicker`, and `ScTimePicker`; no route, role, permission, contract, business model, database, or fixture change.
 - Guard: rendering-detail accessibility validation requires both the global fallback exclusion and focus-owner registration on every governed composite input primitive.
 - Runtime evidence: keyboard focus on the local-dev login input changed from an inner `2px` outline plus `3px` shadow to no inner ring, while the TDesign shell retained its `2px` focus shadow and branded border.
+
+## 2026-09-08 — 登录后首页确定性表达收敛
+
+- Formal Product Layer / target: P0 generic frontend presentation / shared `WorkspaceHome` and canonical product navigation shell.
+- Change: give quick-entry buttons an owned icon / primary label / secondary detail / trailing-arrow grid; override TDesign's fixed `232px` default-menu width inside the existing adapter; keep vertical scrolling in the menu tree while containing the shell host; remove the nested visually-hidden home H1 because `AppShell` is the sole page-title owner.
+- Boundary: no work-item field splitting, role/model/menu special case, route authority, permission, contract/schema, database or fixture change. Structured task presentation remains a later batch gated by the existing my-work contract.
+- Guard: home layout rejects a nested H1 and requires the quick-entry structure; navigation shell tests reject loss of the vendor-width override or reintroduction of host-level horizontal scrolling. The existing frozen-candidate smoke records quick-entry column order and nested menu client/scroll widths from the real DOM.
+- Evidence before browser freeze: home/static guard PASS; navigation model 12, delivery-menu 42 and navigation guard 17 tests PASS; affected incremental frontend gate PASS; strict typecheck PASS; source lint 0 errors with 31 pre-existing warnings.

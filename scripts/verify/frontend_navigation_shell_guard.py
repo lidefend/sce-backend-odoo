@@ -68,6 +68,7 @@ def validate(root: Path = ROOT) -> list[str]:
         "grid-template-rows: max-content minmax(0, 1fr)",
         "var(--sc-nav-row-gap)",
         "overscroll-behavior: contain",
+        "overflow-x: hidden",
         "<template #prefix><ScIcon name=\"search\"",
         "clearable",
         'appearance="navigation-search"',
@@ -81,6 +82,15 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("ProductSideNavigation must not own ScInput visual chrome")
     if "product-side-navigation__search > .sc-icon" in side_navigation or "padding-left: 34px" in side_navigation:
         errors.append("navigation search must use the ScInput prefix adapter instead of manual icon positioning")
+    for marker in (
+        ".sc-navigation-menu.t-default-menu",
+        "max-width: 100%",
+        "display: block",
+    ):
+        if marker not in tree:
+            errors.append(f"canonical menu must override the vendor fixed width: {marker}")
+    if not re.search(r"\.menu\s*\{[^}]*min-width:\s*0;[^}]*overflow:\s*hidden", shell_style, re.DOTALL):
+        errors.append("navigation shell menu host must contain width while the tree owns vertical scrolling")
     for marker in (
         ".shell :deep(.sidebar)",
         "grid-template-columns: minmax(0, 1fr)",
