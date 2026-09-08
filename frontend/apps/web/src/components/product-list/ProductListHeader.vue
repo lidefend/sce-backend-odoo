@@ -19,6 +19,7 @@
         <label>
           <span class="sc-visually-hidden">{{ searchLabel }}</span>
           <ScInput
+            appearance="collection-search"
             type="search"
             :model-value="searchValue"
             :disabled="loading"
@@ -117,12 +118,10 @@ defineEmits<{
 }
 .product-list-header__tools :deep(.toolbar-actions) { width: auto; }
 .product-list-header__tools :deep(.list-surface-utilities) { grid-area: utility; }
-.product-list-header__search { grid-area: main; display: flex; gap: var(--sc-toolbar-gap); align-items: center; min-width: 320px; }
+.product-list-header__search { grid-area: main; display: flex; gap: var(--sc-toolbar-gap); align-items: center; min-width: 320px; --sc-component-input-form-height: 36px; }
 .product-list-header__search label { min-width: 0; flex: 1; }
-.product-list-header__search :deep(.sc-btn) { min-height: 40px; }
 .product-list-header__search :deep(.sc-input) {
   width: 100%;
-  min-height: 40px;
 }
 .product-list-header__tools--aligned {
   grid-template-areas: 'leading divider-left search divider-right actions';
@@ -152,6 +151,6 @@ defineEmits<{
   .product-list-header__tools { gap: var(--sc-toolbar-gap); }
   .product-list-header__tools :deep(.list-surface-utilities) { align-self: end; }
   .product-list-header__search { min-width: 0; }
-  .product-list-header__search :deep(.sc-btn) { min-width: 44px; min-height: 44px; }
+  .product-list-header__search { --sc-component-input-form-height: 44px; }
 }
 </style>

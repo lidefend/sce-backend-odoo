@@ -62,8 +62,8 @@
             <span>{{ patchNotice.text }}</span>
             <ScButton variant="ghost" size="small" @click="patchNotice = null">{{ labels.dismiss || '关闭' }}</ScButton>
           </div>
-          <div v-if="loading" class="worksheet-state">{{ labels.loading }}</div>
-          <div v-else-if="!visibleRows.length" class="worksheet-state">{{ labels.empty }}</div>
+          <div v-if="loading" class="worksheet-state" role="status">{{ labels.loading }}</div>
+          <div v-else-if="!visibleRows.length" class="worksheet-state" role="status">{{ keyword.trim() ? (labels.empty_filtered || '没有符合当前条件的记录') : labels.empty }}</div>
           <div v-else class="worksheet-table-scroll">
             <ScTable
               appearance="worksheet"
@@ -584,8 +584,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .worksheet { display: grid; min-width: 0; color: var(--sc-app-text-primary); }
-.worksheet-head { min-height: var(--sc-product-toolbar-height); border: 1px solid var(--sc-app-border); border-radius: var(--sc-component-toolbar-radius) var(--sc-component-toolbar-radius) 0 0; background: var(--sc-app-panel); box-shadow: none; }
-.worksheet-layout { display: grid; height: calc(100vh - 170px); min-height: 600px; overflow: hidden; border: 1px solid var(--sc-app-border); border-top: 0; background: var(--sc-app-panel); }
+.worksheet-head { min-height: var(--sc-product-toolbar-height); border: 0; border-radius: var(--sc-component-toolbar-radius) var(--sc-component-toolbar-radius) 0 0; background: var(--sc-app-panel); box-shadow: none; }
+.worksheet-layout { display: grid; height: calc(100vh - 170px); min-height: 600px; overflow: hidden; border: 0; border-radius: 0 0 var(--sc-product-radius-panel) var(--sc-product-radius-panel); background: var(--sc-app-panel); }
 .worksheet-navigation { min-width: 0; overflow: auto; padding: var(--sc-space-sm); }
 .worksheet-navigation h3 { margin: 0 0 var(--sc-space-xs); color: var(--sc-app-text-secondary); font-size: var(--sc-product-text-body); }
 .navigation-all { width: 100%; min-height: var(--sc-touch-target-min); padding: var(--sc-space-xs); text-align: left; }
@@ -625,4 +625,7 @@ onBeforeUnmount(() => {
 .worksheet-detail-fields dd { margin: 0; overflow-wrap: anywhere; }
 .worksheet-error { padding: var(--sc-space-sm); color: var(--sc-app-danger); }
 @media (max-width: 960px) { .worksheet-layout { grid-template-columns: 1fr !important; height: auto; } .worksheet-navigation, .worksheet-resizer-navigation { display: none; } .worksheet-main { min-height: 680px; } }
+@media (max-width: 640px) {
+  .worksheet-detail-fields { grid-template-columns: max-content minmax(0, 1fr); }
+}
 </style>

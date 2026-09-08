@@ -456,9 +456,31 @@
   width: var(--sc-component-input-form-height, 36px);
 }
 .sc-input[data-appearance='numeric-entry'] { font-variant-numeric: tabular-nums; }
+.product-list-header__search .sc-btn {
+  height: var(--sc-component-input-form-height, 36px);
+  min-height: var(--sc-component-input-form-height, 36px);
+  min-width: var(--sc-component-input-form-height, 36px);
+}
+.worksheet-table-scroll > [data-semantic-component='ScTable'][data-appearance='worksheet'] {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
 [data-table-scroll-region]:focus-visible {
   outline: 2px solid var(--sc-semantic-focus-ring);
   outline-offset: -2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-semantic-component='ScSkeleton'],
+  [data-semantic-component='ScSkeleton'] *,
+  [data-semantic-component='ScSkeleton'] *::before,
+  [data-semantic-component='ScSkeleton'] *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+@media (max-width: 760px) {
+  .sc-state-panel .sc-btn { min-height: 44px; min-width: 44px; }
 }
 .sc-btn[data-navigation-control='activity-page-title'] {
   min-width: 0;
