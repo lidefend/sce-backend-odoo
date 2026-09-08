@@ -23,6 +23,10 @@ class CollectionAggregateFooterGuardTest(unittest.TestCase):
         altered = self.list_source.replace(':foot-data="collectionFootData(groupAggregateFooterRows(group))"', '')
         self.assertTrue(any('groupAggregateFooterRows' in item for item in validate(altered, self.footer_source, self.css_source)))
 
+    def test_missing_server_semantic_aggregate_predicate_fails(self):
+        altered = self.list_source.replace("function hasServerSemanticAggregate(field: string)", "function removedAggregatePredicate(field: string)")
+        self.assertTrue(any("hasServerSemanticAggregate" in item for item in validate(altered, self.footer_source, self.css_source)))
+
     def test_missing_scope_marker_fails(self):
         altered = self.footer_source.replace(':data-aggregate-scope="row.scope"', '')
         self.assertTrue(any("aggregate-scope" in item for item in validate(self.list_source, altered, self.css_source)))

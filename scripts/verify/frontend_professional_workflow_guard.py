@@ -17,6 +17,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     for marker in (":data-professional-workflow-component", "canonicalWorkflowAuthority", "workflowDisabledReason(action)"):
         if marker not in header: failures.append(f"header workflow actions bypass shared authority {marker}")
     if "<ScDialog" not in confirm or 'data-professional-workflow-component="confirm-dialog"' not in confirm: failures.append("workflow confirmation bypasses the dialog primitive")
+    if 'data-dialog-purpose="intent-confirmation"' not in confirm: failures.append("workflow confirmation lacks a non-conflicting dialog purpose")
     if "当前操作不可用" not in model: failures.append("disabled workflow action lacks a fail-closed reason")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
         if forbidden in model or forbidden in action_bar: failures.append(f"workflow components contain forbidden product special case {forbidden}")

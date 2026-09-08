@@ -16,5 +16,10 @@ class ProfessionalWorkflowGuardTests(unittest.TestCase):
             value = (ROOT / path).read_text(encoding="utf-8")
             return value + "\n// project.project\n" if path.endswith("professionalWorkflowModel.ts") else value
         self.assertTrue(any("forbidden product special case" in item for item in validate(read_text)))
+    def test_missing_dialog_purpose_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            return value.replace('data-dialog-purpose="intent-confirmation"', "data-purpose-removed")
+        self.assertTrue(any("dialog purpose" in item for item in validate(read_text)))
 
 if __name__ == "__main__": unittest.main()

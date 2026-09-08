@@ -42,6 +42,7 @@ def validate(list_source: str | None = None, footer_source: str | None = None, c
         ':rows="flatAggregateFooterRows"',
         ':foot-data="collectionFootData(flatAggregateFooterRows)"',
         ':foot-data="collectionFootData(groupAggregateFooterRows(group))"',
+        "function hasServerSemanticAggregate(field: string)",
     ):
         if marker not in list_text:
             failures.append(f"collection aggregate adapter missing {marker}")

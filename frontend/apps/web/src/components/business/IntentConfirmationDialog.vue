@@ -5,7 +5,7 @@
     close-label="取消操作"
     panel-class="intent-confirmation"
     data-professional-workflow-component="confirm-dialog"
-    data-semantic-component="IntentConfirmationDialog"
+    data-dialog-purpose="intent-confirmation"
     :data-state="open ? 'open' : 'closed'"
     @close="settle(false)"
   >

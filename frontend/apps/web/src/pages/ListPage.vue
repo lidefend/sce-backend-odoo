@@ -1862,6 +1862,10 @@ function isAggregateColumn(field: string) {
   return isNumericColumn(field) && String(columnOption(field)?.aggregate || '').trim() === 'sum';
 }
 
+function hasServerSemanticAggregate(field: string) {
+  return Boolean(String(columnOption(field)?.aggregationField || '').trim());
+}
+
 function isNumericDisplayColumn(field: string) {
   return isNumericColumn(field);
 }

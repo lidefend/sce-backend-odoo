@@ -78,6 +78,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 "ScEmptyState": '<TDesignEmpty data-state="empty" role="status" />',
                 "ScErrorState": '<TDesignAlert data-state="error" role="alert" />',
                 "ScFormField": '<label :data-state="state" :data-required="required" />',
+                "ScDisclosure": '<TDesignCollapse><ScButton appearance="context-action" data-disclosure-trigger :aria-expanded="String(localOpen)" :aria-controls="contentId" @click.stop="toggle" /></TDesignCollapse>\n<script>import ScButton from \'./ScButton.vue\'</script>',
             }.get(name, "")
             (design / f"{name}.vue").write_text(
                 f'<template><div data-semantic-component="{name}" data-semantic-layer="primitive">{state_contract}</div></template>{modal_contract}\n',
@@ -156,6 +157,15 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         )
         self.assertTrue(any("native input control" in error for error in validate(root)))
 
+    def test_disclosure_without_accessible_trigger_fails(self) -> None:
+        root = self.make_root()
+        source = root / "frontend/apps/web/src/components/design-system/ScDisclosure.vue"
+        source.write_text(
+            source.read_text(encoding="utf-8").replace("data-disclosure-trigger", ""),
+            encoding="utf-8",
+        )
+        self.assertTrue(any("governed accessible disclosure trigger" in error for error in validate(root)))
+
     def test_tabs_without_formal_label_projection_fails(self) -> None:
         root = self.make_root()
         source = root / "frontend/apps/web/src/components/design-system/ScTabs.vue"
@@ -174,6 +184,16 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         source.parent.mkdir(parents=True, exist_ok=True)
         source.write_text('<template><button type="button">Save</button></template>\n', encoding="utf-8")
         self.assertTrue(any("bypasses the professional primitive adapter" in error for error in validate(root)))
+
+    def test_dialog_consumer_cannot_override_primitive_semantic_identity(self) -> None:
+        root = self.make_root()
+        source = root / "frontend/apps/web/src/views/LegacyDialog.vue"
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_text(
+            '<template><ScDialog data-semantic-component="LegacyDialog" /></template>\n',
+            encoding="utf-8",
+        )
+        self.assertTrue(any("data-dialog-purpose" in error for error in validate(root)))
 
     def test_interaction_state_markers_are_required(self) -> None:
         root = self.make_root()

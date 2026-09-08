@@ -30,3 +30,16 @@ export function relationFieldAuthority(field: FormSectionFieldSchema) {
     canCreate: Boolean(field.many2oneCreateToken || field.relationInlineCreate),
   });
 }
+
+export function resolveProfessionalMany2oneTextValue(
+  field: Pick<FormSectionFieldSchema, 'many2oneTextValue' | 'inputValue' | 'relationOptions'>,
+): string {
+  const projected = String(field.many2oneTextValue ?? '').trim();
+  if (projected) return projected;
+  const value = String(field.inputValue ?? '').trim();
+  if (!value) return '';
+  const option = (field.relationOptions || [])
+    .filter(Boolean)
+    .find((item) => String(item.id ?? item.value) === value);
+  return String(option?.label || '').trim();
+}

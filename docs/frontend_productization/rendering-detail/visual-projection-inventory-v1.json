@@ -344,7 +344,7 @@
     },
     {
       "category": "overlay",
-      "digest": "74501b1ee44587394c428b9897220b16d6cf8d2f6485989a0d38eefecac20b25",
+      "digest": "f8a6f4c9ffb047b8d8644125d10d86a8dc2a0104888957275aa23b3f6d010dc0",
       "nativeStyleSelectors": [],
       "path": "components/business/IntentConfirmationDialog.vue",
       "referenceNativeStyleSelectors": [],
@@ -545,13 +545,15 @@
     },
     {
       "category": "other",
-      "digest": "a8b8e51e4132326fc8af7470d362c9bbc4cce6e9cfdac84be1604c9f36cb21f4",
+      "digest": "9cc607a03f17a90bee526b719155173b3a162540ebfd998db78756c75e1325d2",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScDisclosure.vue",
       "referenceNativeStyleSelectors": [],
       "referencePresent": false,
       "referenceScComponents": [],
-      "scComponents": []
+      "scComponents": [
+        "ScButton"
+      ]
     },
     {
       "category": "overlay",
@@ -1594,7 +1596,7 @@
     },
     {
       "category": "overlay",
-      "digest": "c4c48eba35faa4e27e95b900f3b79d2bf24c686168f342c9fa942ea2693ee68c",
+      "digest": "938cd0e5c42b23ae965aadd64698dc031f3f7b4161dfdf9ea141aa73c5966946",
       "nativeStyleSelectors": [],
       "path": "components/professional-fields/PaymentSettlementIntroduceDialog.vue",
       "referenceNativeStyleSelectors": [],
@@ -1652,7 +1654,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "2d8df8c2e6f5253ed69aca5012da5d309be9627c641937be4eeff1d91d2e8346",
+      "digest": "f031834e9e5f5a11cd0c34ab270bbfa21dfc6fd215707657fb3edf1ac1ee93d3",
       "nativeStyleSelectors": [],
       "path": "components/professional-fields/ProfessionalMany2oneFieldControl.vue",
       "referenceNativeStyleSelectors": [],
@@ -1958,7 +1960,7 @@
     },
     {
       "category": "collection",
-      "digest": "1cc40960da50659f1336139779ab81a75ed2b28c533123e68e42783386fbac0a",
+      "digest": "ecc7f2e1649cb1a36ea768e4142e600f81e6d578f5b253e7df980759afb85090",
       "nativeStyleSelectors": [],
       "path": "pages/ListPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2068,7 +2070,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "85a79a2db0f9c8e5d4d5428fdc75c5e54a957e522ceeef3d8ce5f500cb7038ef",
+      "digest": "f7b8787e373e0d1b89d1897e5f64b55b81c6397ffb08311f36db7d8a9072db38",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormProductHeader.vue",
       "referenceNativeStyleSelectors": [],
@@ -2696,7 +2698,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "e2e22778048e36e98bb024bd90419a3c970750ac805a41c4054c448f503cdcfa",
+  "currentInputDigest": "5bf03467133ae2630686540ae307637dff1669ae31f0e1eb9f68fbcaeaa24e50",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

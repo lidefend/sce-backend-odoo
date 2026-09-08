@@ -24,7 +24,6 @@
           :aria-activedescendant="activeDescendant"
           @update:model-value="emitQuery"
           @focus="focusField"
-          @change="emitCommit(($event.target as HTMLInputElement).value)"
           @keydown="handleKeydown"
           @blur="blurField"
         />
@@ -38,6 +37,8 @@
               :data-active="activeIndex === optionIndex || undefined"
               role="option"
               :aria-selected="activeIndex === optionIndex"
+              @mousedown.prevent
+              @click="emitSelect(option.value, $event)"
             >
               <ScButton
                 type="button"
@@ -45,7 +46,6 @@
                 size="small"
                 variant="ghost"
                 @mousedown.prevent
-                @click="emitSelect(option.value, $event)"
               >
                 {{ option.label }}
               </ScButton>
@@ -113,6 +113,7 @@ import ScButton from '../design-system/ScButton.vue';
 import ScRelationField from '../design-system/ScRelationField.vue';
 import type { FormSectionFieldSchema } from '../template/formSection.types';
 import ProfessionalRelationFieldControl from './ProfessionalRelationFieldControl.vue';
+import { resolveProfessionalMany2oneTextValue } from './professionalRelationFieldModel';
 
 const props = defineProps<{
   field: FormSectionFieldSchema;
@@ -132,12 +133,7 @@ const activeIndex = ref(-1);
 
 const normalizedWidget = computed(() => String(props.field.widget || '').trim().toLowerCase());
 const visibleOptions = computed(() => (props.field.relationOptions || []).filter(Boolean).slice(0, 8));
-const many2oneTextValue = computed(() => {
-  const value = String(props.field.inputValue ?? '').trim();
-  if (!value) return '';
-  const option = (props.field.relationOptions || []).filter(Boolean).find((item) => String(item.id ?? item.value) === value);
-  return String(option?.label || '').trim();
-});
+const many2oneTextValue = computed(() => resolveProfessionalMany2oneTextValue(props.field));
 const showInlineCreate = computed(() => {
   const text = many2oneTextValue.value;
   if (!text || !props.field.relationInlineCreate?.enabled || !props.field.relationInlineCreate.createOnNoMatch) return false;
@@ -188,6 +184,7 @@ function emitQuery(value: string) {
 }
 
 function emitCommit(value: string) {
+  if (!focused.value) return;
   emit('commit', value);
 }
 

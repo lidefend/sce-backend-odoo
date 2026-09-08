@@ -158,7 +158,7 @@
         "TDesignButton"
       ],
       "officialComponent": "button",
-      "productionConsumerCount": 390,
+      "productionConsumerCount": 391,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -234,6 +234,7 @@
     },
     {
       "adapterKeys": [
+        "ScButton",
         "ScCollapse",
         "ScDisclosure"
       ],
@@ -246,12 +247,14 @@
         },
         {
           "semanticAdapters": [
+            "ScButton",
             "ScDisclosure"
           ],
           "source": "frontend/apps/web/src/components/design-system/ScDisclosure.vue"
         },
         {
           "semanticAdapters": [
+            "ScButton",
             "ScDisclosure"
           ],
           "source": "frontend/apps/web/src/components/design-system/ScDisclosure.vue"
@@ -262,7 +265,7 @@
         "TDesignCollapsePanel"
       ],
       "officialComponent": "collapse",
-      "productionConsumerCount": 4,
+      "productionConsumerCount": 379,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1279,7 +1282,7 @@
         "TDesignUpload"
       ],
       "officialComponent": "upload",
-      "productionConsumerCount": 377,
+      "productionConsumerCount": 378,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1296,7 +1299,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "d94f7bf23038f3dd0e1466cc9491a7cb7ba879b46025c35c741b47136d8051f9",
+  "inputDigest": "7491a23371eb3954a2bcf6989d8f73ba628ca3616477708d4c9136658b867728",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",

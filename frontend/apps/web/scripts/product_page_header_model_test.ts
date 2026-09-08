@@ -83,6 +83,11 @@ assert.deepEqual(mobileAuthority.keys, [
 ]);
 assert.equal(mobileAuthority.items.find((item) => item.key === 'draft:form.save-draft')?.enabled, false);
 assert.equal(mobileAuthority.items.find((item) => item.key === 'business:business.disabled')?.enabled, false);
+assert.equal(resolveMobileFormActionAuthority({
+  showBack: false, showReturn: false, showDraftSave: false, draftSaveDisabled: false,
+  businessDirect: [], businessOverflow: [], canonicalDirect: [], canonicalOverflow: [], config: [],
+  showDiscard: false, busy: false,
+}).keys.includes('back:form.back'), false);
 assert.throws(() => resolveMobileFormActionAuthority({
   showBack: false, showReturn: false, showDraftSave: false, draftSaveDisabled: false,
   businessDirect: [{ key: 'duplicate', enabled: true }], businessOverflow: [{ key: 'duplicate', enabled: true }],

@@ -158,6 +158,7 @@
       "appearance": "context-action",
       "consumers": [
         "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/design-system/ScDisclosure.vue",
         "frontend/apps/web/src/components/product-list/CollectionColumnHeaderControl.vue",
         "frontend/apps/web/src/components/product-shell/WorkspaceContextIndicator.vue",
         "frontend/apps/web/src/layouts/AppShell.vue",

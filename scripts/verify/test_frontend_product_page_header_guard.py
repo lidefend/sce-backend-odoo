@@ -33,6 +33,24 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
                 validate(),
             )
 
+    def test_mobile_exit_action_cannot_be_inverted(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "ContractFormProductHeader.vue":
+                return value.replace(
+                    "...(mobileActionAuthority.value.keys.includes('back:form.back') ? [{ value: 'builtin:back', label: props.backLabel",
+                    "...(props.showBack === false ? [{ value: 'builtin:back', label: props.backLabel",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertIn(
+                "contract header mobile action settlement can hide the only exit action",
+                validate(),
+            )
+
     def test_content_heading_authority_is_required(self):
         real = Path.read_text
 
