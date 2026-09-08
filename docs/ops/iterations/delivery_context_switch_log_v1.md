@@ -8991,3 +8991,8 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - P0 generic confirmation presentation: remove unconditional business-state-change wording; focus Cancel initially. Action-specific text, confirmation result, navigation authority and write logic unchanged. Existing one-writer feature worktree and local.dev reused.
 - Baseline 6159c895067fca840c827a5ab292896c23906b12; fingerprint be48f7883082da5853d424de34e30fc96d4018f44adee23f65ca4ebc4d5a29ac.
 - Real unsaved New-form note survives Cancel/Escape with focus restored; test-created pages explicitly discarded and closed. No save/submit invoked; collection still 70. Workflow/overlay checks and typecheck PASS. Matrix documents exact enlargement/reflow evidence and desktop-zoom limitation.
+
+## 2026-09-09 — 表单返回文案与实际行为一致
+
+- P0 contract-form exit presentation only. Generic history return is not guaranteed to lead to a list; use 返回 while preserving its existing semantic action and managed-dialog cancellation. Baseline 363791039e59f472a97773e14271ce0a3b5ee939; fingerprint 3d043f4c611066569e5281dc870652feaaf56a7761dbe91e19844d9d1f474fc0.
+- Existing presenter 142 cases and typecheck PASS; real record 15 return observed. No business/navigation mechanism change.

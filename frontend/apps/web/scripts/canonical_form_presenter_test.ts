@@ -163,8 +163,8 @@ assert.equal(relationCreateMode({
 } as never), 'dialog', 'a backend-authorized dialog create entry must remain in-page');
 
 for (const scenario of [
-  { managed: false, decisionMode: false, label: '返回列表', semanticIdentity: 'return-list' },
-  { managed: false, decisionMode: true, label: '返回列表', semanticIdentity: 'return-list' },
+  { managed: false, decisionMode: false, label: '返回', semanticIdentity: 'return-list' },
+  { managed: false, decisionMode: true, label: '返回', semanticIdentity: 'return-list' },
   { managed: true, decisionMode: false, label: '取消', semanticIdentity: 'cancel-edit' },
   { managed: true, decisionMode: true, label: '取消', semanticIdentity: 'cancel-edit' },
 ] as const) {

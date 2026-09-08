@@ -135,3 +135,9 @@ Complete baseline fingerprint: `112758622e9a3dc6c1ce8437120cfe0f553760fcd7a8d7dc
 - Registered workflow model 10 cases, workflow guard 4 tests / 3 components, overlay guard 9 tests, strict typecheck and diff whitespace PASS. Browser error log empty.
 - Browser enlargement: CDP page scale 2 produced visualViewport width 544 from layout width 1088; scale reset to 1. Separately, 544x396 layout reflow has no document overflow and Refresh/New controls remain 44px. This is visual-scale plus responsive-reflow evidence, not Chromium desktop 200% zoom: the browser shortcut did not change dimensions.
 - Restored 1088x791 normal viewport, page scale 1, system theme and enterprise-neutral. Original payment collection displayed; no new draft tabs remain.
+
+### Follow-up: truthful form return label
+
+- Baseline `363791039e59f472a97773e14271ce0a3b5ee939`; fingerprint `3d043f4c611066569e5281dc870652feaaf56a7761dbe91e19844d9d1f474fc0`.
+- P0 contract-form exit presentation: independent forms execute browser-history return, whose destination can be a work page or collection. Changed the generic label from 返回列表 to 返回; kept the existing return-list semantic identifier and managed-dialog 取消 behavior. No navigation behavior change.
+- Canonical presenter 142 cases and strict typecheck PASS. Real record 15 displays 返回; invoking it returned to `/a/809`. Diff whitespace PASS.
