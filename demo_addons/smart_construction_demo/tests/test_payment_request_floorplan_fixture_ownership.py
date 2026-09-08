@@ -59,4 +59,37 @@ class TestPaymentRequestFloorplanFixtureOwnership(TransactionCase):
         )
         self.assertEqual(len(funding_baseline), 1)
         self.assertEqual(second_record.date_request, funding_baseline.period_start)
+        self.assertEqual(second_record.payee_account_completeness, "complete")
+        self.assertEqual(second_record.payer_unit, "演示付款单位基本户")
+        self.assertTrue(second["approval_actor_ids"])
+        follower_partners = second_record.project_id.message_follower_ids.mapped(
+            "partner_id"
+        )
+        approval_partners = self.env["res.users"].browse(
+            second["approval_actor_ids"]
+        ).mapped("partner_id")
+        self.assertFalse(approval_partners - follower_partners)
         self.assertTrue(unrelated.exists())
+
+    def test_completed_financial_history_is_preserved_and_xmlid_moves_to_next_fixture(self):
+        name = "TEST-DEMO-PR-HISTORY-001"
+        xmlid = "smart_construction_demo.test_payment_request_floorplan_history"
+
+        with patch.object(fixture_step, "FIXTURE_NAME", name), patch.object(
+            fixture_step, "FIXTURE_XMLID", xmlid
+        ):
+            first = fixture_step.run(self.env)
+            first_record = self.env.ref(xmlid)
+            ledger_model = type(self.env["payment.ledger"])
+            with patch.object(ledger_model, "search_count", return_value=1):
+                second = fixture_step.run(self.env)
+            module, xmlid_name = xmlid.split(".", 1)
+            mapping = self.env["ir.model.data"].search(
+                [("module", "=", module), ("name", "=", xmlid_name)], limit=1
+            )
+            second_record = self.env["payment.request"].browse(mapping.res_id)
+
+        self.assertTrue(first_record.exists())
+        self.assertEqual(second["preserved_history_id"], first["payment_request_id"])
+        self.assertNotEqual(first_record.id, second_record.id)
+        self.assertEqual(second_record.name, "TEST-DEMO-PR-HISTORY-002")

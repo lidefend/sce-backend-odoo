@@ -135,7 +135,9 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
             "local.dev.contract_snapshot",
             "local.dev.rebuild_demo",
             "local.dev.verify_demo",
+            "local.dev.reset_payment_request_fixture",
             "verify.local.dev.payment_request.native_parity.readonly",
+            "verify.local.dev.payment_request.full_chain",
             "verify.local.dev.payment_request.settlement_component.journey",
             "local.sample.prepare",
             "local.sample.up",
@@ -282,6 +284,72 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         self.assertNotIn("project login database", submit_browser)
         self.assertNotIn("payment login database", submit_browser)
 
+    def test_payment_full_chain_is_bound_to_local_dev_and_retains_completed_facts(self):
+        make_text = (ROOT / "make/dev.mk").read_text(encoding="utf-8")
+        wrapper = (
+            ROOT / "scripts/verify/local_dev_payment_request_full_chain.sh"
+        ).read_text(encoding="utf-8")
+        browser = (
+            ROOT / "scripts/verify/local_dev_payment_request_full_chain.mjs"
+        ).read_text(encoding="utf-8")
+        self.assertIn(
+            "verify.local.dev.payment_request.full_chain: guard.prod.forbid local.dev.ready",
+            make_text,
+        )
+        for authority in ("sc-local-dev", "sc_dev_demo", "18081"):
+            self.assertIn(authority, wrapper)
+        self.assertIn('[[ -n "${SOURCE_SHA:-}" ]]', wrapper)
+        self.assertIn('[[ -n "${CANDIDATE_FINGERPRINT:-}" ]]', wrapper)
+        self.assertEqual(wrapper.count("local.dev.reset_payment_request_fixture"), 2)
+        self.assertNotIn("local.dev.sync_demo", wrapper)
+        self.assertIn(
+            "STEPS=payment_request_floorplan_demo",
+            make_text,
+        )
+        self.assertIn("bash scripts/demo/run_seed.sh", make_text)
+        self.assertIn("trap restore_on_exit EXIT", wrapper)
+        self.assertIn("completed payment facts retained as immutable acceptance history", wrapper)
+        self.assertNotIn("governed fixture restoration left payment facts behind", wrapper)
+        self.assertIn("if (( browser_status == 0 && facts_status == 0 )); then", wrapper)
+        self.assertIn("payment.request.execute", browser)
+        self.assertIn("payload?.params?.action === 'approve'", browser)
+        self.assertIn("`${baseUrl}/my-work`", browser)
+        self.assertIn('.count-card[data-section-key="todo"]', browser)
+        self.assertIn("for (const [index, review] of approvalChain.entries())", browser)
+        self.assertIn("await login(approvalPage, review.actor_login)", browser)
+        self.assertIn("LOCAL_DEV_PAYMENT_APPROVAL_CHAIN_JSON", wrapper)
+        approval_resolver = (
+            ROOT / "scripts/verify/local_dev_payment_request_approval_chain.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("request.review_ids", approval_resolver)
+        self.assertIn("review.reviewer_ids", approval_resolver)
+        self.assertIn("has no governed demo reviewer with record access", approval_resolver)
+        self.assertIn('"sc.payment.execution", company=request.company_id', approval_resolver)
+        self.assertIn('"payment_execution_policy"', approval_resolver)
+        self.assertIn(
+            'data-product-primary-action][data-action-key="payment_execution"]'
+            '[data-action-method="action_create_payment_execution"]'
+            '[data-action-enabled="true"]',
+            browser,
+        )
+        self.assertIn(
+            "submitted payment execution preserves the authoritative request amount and payee snapshot",
+            browser,
+        )
+        self.assertIn("payment execution intake exposes one visible handler component input", browser)
+        self.assertIn("name: /^保存草稿$/", browser)
+        self.assertIn("group_sc_role_finance_user", browser)
+        self.assertIn("finance_user_execution_submitter", browser)
+        self.assertIn('data-product-primary-action][data-action-method="action_confirm"', browser)
+        self.assertIn('data-action-method="validate_tier"', browser)
+        self.assertIn("optional payment execution approval confirms directly when disabled", browser)
+        self.assertIn("configured payment execution approval creates tier reviews", browser)
+        self.assertIn('data-action-method="action_paid"', browser)
+        self.assertIn("exactly one posted ledger reconciles", browser)
+        self.assertIn("duplicate_payment_rejection", browser)
+        self.assertIn("no unexpected browser console errors", browser)
+        self.assertIn("390px final request has no horizontal overflow", browser)
+
     def test_payment_parity_resolver_fails_closed_on_runtime_authority_drift(self):
         resolver = (
             ROOT / "scripts/verify/local_dev_payment_request_native_parity_ids.py"
@@ -300,8 +368,10 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
             "route_matches",
             "actionable_funding_baseline",
             "submit-ready payment request date is outside the active funding baseline",
+            "smart_construction_demo.payment_request_floorplan_demo_record",
         ):
             self.assertIn(required, resolver)
+        self.assertNotIn('search([("name", "=", "DEMO-PR-FLOORPLAN-001")]', resolver)
         self.assertIn("catch (error)", browser)
         self.assertIn("report.failure", browser)
         self.assertIn("locateCollectionRecord", browser)

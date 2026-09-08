@@ -36,7 +36,15 @@ if not record:
     raise RuntimeError("governed local.dev payment request is not readable by demo_role_finance")
 record.check_access_rights("read")
 record.check_access_rule("read")
-actionable_record = payment_env.search([("name", "=", "DEMO-PR-FLOORPLAN-001")], limit=1)
+actionable_fixture = env.ref(
+    "smart_construction_demo.payment_request_floorplan_demo_record",
+    raise_if_not_found=False,
+)
+actionable_record = (
+    payment_env.browse(actionable_fixture.id).exists()
+    if actionable_fixture and actionable_fixture._name == "payment.request"
+    else payment_env.browse()
+)
 if not actionable_record:
     raise RuntimeError("governed submit-ready payment request fixture is missing")
 actionable_record.check_access_rights("read")
