@@ -8985,3 +8985,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Baseline 08a207fcf8d45cd74972debb6f642a5fec82e7e7; fingerprint a6c6a428b55258f28b4634d3afe3756592a6fa8ebaa79f8f27aa027878ab0f16.
 - System mode now follows live preference changes with listener cleanup. Scene colors inherit semantic theme tokens and retain standalone palette fallbacks, fixing white-on-light dark-detail surfaces and low-contrast amounts.
 - Real work/detail checks and registered theme/bridge/presenter/boundary/type checks PASS; detailed counts and observations in the matrix. Original system/neutral preferences and viewport restored; no business writes or remote publication.
+
+## 2026-09-09 — 未保存输入保护与确认框表达
+
+- P0 generic confirmation presentation: remove unconditional business-state-change wording; focus Cancel initially. Action-specific text, confirmation result, navigation authority and write logic unchanged. Existing one-writer feature worktree and local.dev reused.
+- Baseline 6159c895067fca840c827a5ab292896c23906b12; fingerprint be48f7883082da5853d424de34e30fc96d4018f44adee23f65ca4ebc4d5a29ac.
+- Real unsaved New-form note survives Cancel/Escape with focus restored; test-created pages explicitly discarded and closed. No save/submit invoked; collection still 70. Workflow/overlay checks and typecheck PASS. Matrix documents exact enlargement/reflow evidence and desktop-zoom limitation.

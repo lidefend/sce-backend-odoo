@@ -125,3 +125,13 @@ Complete baseline fingerprint: `112758622e9a3dc6c1ce8437120cfe0f553760fcd7a8d7dc
 - Restored system mode, enterprise-neutral, light system preference and original viewport. Explicit browser error log empty. No business action or data write.
 - Registered checks PASS: theme runtime 9 assertions and 3 profile guard, scene bridge 38 cases, canonical form presenter 142 cases, boundary tests 13, feature flags 7, strict typecheck and diff whitespace.
 - Next: unsaved-leave interaction without saving business data, browser enlargement/reflow, and consolidate the matrix into current results rather than treating historical pending rows as current truth.
+
+### Follow-up: unsaved-input protection and enlargement
+
+- Baseline `6159c895067fca840c827a5ab292896c23906b12`; fingerprint `be48f7883082da5853d424de34e30fc96d4018f44adee23f65ca4ebc4d5a29ac`.
+- Existing draft 15 exposes its governed read/submit/cancel actions, not an edit action. No URL edit-mode override attempted. Used the actual New action for an unsaved-input-only journey, without saving/submitting or completing required business fields.
+- Entered temporary notes, selected Return, and observed the leave confirmation. Cancel retained the exact note and restored focus to Return. Closed the test-created retained page with explicit discard; all test-created new tabs removed. List still reports 70 records. No save/submit action invoked; empty request-event sampling is not treated as a full network audit.
+- P0 shared IntentConfirmationDialog removes the misleading fixed business-state-change statement (not applicable to discarding a page) and initially focuses Cancel. The action-specific title/message remain authoritative. Post-change browser confirms Cancel is the focused button, Escape retains the note and returns focus to Return, then explicit close discards the temporary page.
+- Registered workflow model 10 cases, workflow guard 4 tests / 3 components, overlay guard 9 tests, strict typecheck and diff whitespace PASS. Browser error log empty.
+- Browser enlargement: CDP page scale 2 produced visualViewport width 544 from layout width 1088; scale reset to 1. Separately, 544x396 layout reflow has no document overflow and Refresh/New controls remain 44px. This is visual-scale plus responsive-reflow evidence, not Chromium desktop 200% zoom: the browser shortcut did not change dimensions.
+- Restored 1088x791 normal viewport, page scale 1, system theme and enterprise-neutral. Original payment collection displayed; no new draft tabs remain.
