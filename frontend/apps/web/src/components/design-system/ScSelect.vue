@@ -5,6 +5,7 @@
     class="sc-select"
     data-semantic-component="ScSelect"
     data-semantic-layer="primitive"
+    data-focus-ring-owner="component"
     data-primitive-driver="tdesign"
     :data-size="size"
     :data-status="status"
