@@ -8884,3 +8884,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Remove query/table enclosing strokes and the inner driver table's duplicate rounded border. Query retains upper 8px token corners, table surface lower 8px token corners; row separators and focus rules remain. No additional clipping container is introduced.
 - Browser after full reload: query border 0/radius 8px 8px 0 0; outer table border 0/radius 0 0 8px 8px; inner collection table border 0/radius 0. At 390px query border remains 0 and document width equals viewport; card facts visible. Original viewport restored.
 - Validation: page-pattern parity 8 tests/13 surfaces, layout matrices 12/7 and alignment guard 37 entries, primitive adapter 46 components/25 tests PASS. Daily visual acceptance only; no business write, fixture operation or remote publication.
+
+## 2026-09-09 — 窄屏列表页头自然换行
+
+- Baseline: `6ce79a136d3d3b0dbb20752b9bfffddfb5d0c6a0`; clean branch fingerprint `b330c2dad947551f747b1295d657ffd454bf3352ca2e1d9b2806b51f905ccfed`.
+- P0 shared ProductPageHeader collection variant only. Replace the inherited forced narrow column layout with a wrapping row; identity reserves a flexible text basis, actions keep intrinsic width and may wrap when necessary. Form/task/dialog headers retain existing responsive rules. No business or navigation changes.
+- Daily browser: 390px header height 82 to 56px; first record starts 26px earlier. At 320px title box x=12..161 and actions x=173..293, no overlap; document width equals viewport at both widths. Card facts remain visible. Original desktop viewport restored; desktop styling is outside the changed media query.
+- Validation: page-pattern parity 8 tests/13 surfaces, layout matrices 12/7, alignment guard 37 entries and diff whitespace PASS. No business writes or remote publication; no full-release claim.
