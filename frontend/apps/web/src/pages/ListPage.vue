@@ -300,7 +300,9 @@ import CollectionSelectionControl from '../components/product-list/CollectionSel
 import CollectionSummaryStrip from '../components/product-list/CollectionSummaryStrip.vue';
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import ScButton from '../components/design-system/ScButton.vue';
+import ScMoney from '../components/design-system/ScMoney.vue';
 import ScPage from '../components/design-system/ScPage.vue';
+import ScStatusBadge from '../components/design-system/ScStatusBadge.vue';
 import { resolveCollectionPageJump, resolveCollectionPageLimit, resolveCollectionPageOffset, resolveCollectionPaginationMode } from '../app/presentation/collectionPaginationPresentation';
 import { resolveCollectionAggregateEntry } from '../app/presentation/collectionAggregatePresentation';
 import ScTable from '../components/design-system/ScTable.vue';
@@ -1534,7 +1536,23 @@ function collectionHeader(field: string) {
   });
 }
 function collectionCell(row: Record<string, unknown>, field: string) {
-  if (row.__aggregate === true) return String(row[field] || '');
+  const display = String(row[field] || '');
+  if (row.__aggregate === true) {
+    return isMoneyDisplayColumn(field) && display
+      ? h(ScMoney, { display, label: columnLabel(field) })
+      : display;
+  }
+  const cellProps = collectionRowCellProps(row, field);
+  if (cellProps.kind === 'status') {
+    return h(ScStatusBadge, {
+      value: String(normalizeCellRawValue(columnValue(row, field)) ?? ''),
+      label: cellProps.text,
+      semantic: statusSemantic(cellProps.tone),
+    });
+  }
+  if (isMoneyDisplayColumn(field)) {
+    return h(ScMoney, { display: cellProps.text, label: columnLabel(field) });
+  }
   return h(CollectionRowCell, {
     ...collectionRowCellProps(row, field),
     onToggleFavorite: () => toggleRecordFavorite(row, field),
@@ -1818,6 +1836,13 @@ function isNumericColumn(field: string) {
   const option = columnOption(field);
   const type = String(option?.dataType || option?.type || '').trim();
   return type === 'integer' || type === 'float' || type === 'monetary';
+}
+
+function isMoneyDisplayColumn(field: string) {
+  const option = columnOption(field);
+  const type = String(option?.dataType || option?.type || '').trim().toLowerCase();
+  const cellRole = String(option?.cellRole || '').trim().toLowerCase();
+  return type === 'monetary' || cellRole === 'money' || cellRole === 'monetary';
 }
 
 function isAggregateColumn(field: string) {
