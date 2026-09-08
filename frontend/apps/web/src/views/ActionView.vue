@@ -3516,6 +3516,11 @@ function refreshForRecordContextChange(): void {
   box-sizing: border-box;
 }
 
+/* The routed page owns the gutter; its embedded list must not add it again. */
+.page .action-list-surface[data-product-page-mode='list'] {
+  padding-inline: 0;
+}
+
 @media (min-width: 761px) {
   .page[data-product-page-mode='list'] {
     min-height: 100%; height: auto;
