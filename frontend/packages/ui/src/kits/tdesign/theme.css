@@ -456,6 +456,23 @@
   width: var(--sc-component-input-form-height, 36px);
 }
 .sc-input[data-appearance='numeric-entry'] { font-variant-numeric: tabular-nums; }
+.sc-btn[data-navigation-control='activity-page-title'] {
+  min-width: 0;
+  max-width: 100%;
+  height: 35px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.sc-btn[data-navigation-control='activity-page-title'] :is(.t-button__text, .sc-btn__content) {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .product-page-header--collection [data-workspace-action-bar] .sc-btn {
   min-height: var(--sc-component-input-form-height, 36px);
   height: auto;

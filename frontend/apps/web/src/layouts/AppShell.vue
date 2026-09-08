@@ -329,6 +329,7 @@
       <ActivityPageTabs
         :pages="activityPages"
         :active-key="activeActivityPageKey"
+        :activate-page="activateActivityPage"
         @activate="activateActivityPage"
         @close="closeActivityPage"
         @focus-exit="focusMainContent"

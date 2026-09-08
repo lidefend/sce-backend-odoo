@@ -1,4 +1,5 @@
 <template>
+  <div ref="focusHost" class="activity-page-tabs-host" @keydown.capture="handleKeydown">
   <TDesignTabs
     v-if="shouldShowActivityPageTabs(pages.length)"
     ref="tabsRef"
@@ -10,7 +11,6 @@
     :addable="false"
     @change="handleChange"
     @remove="handleRemove"
-    @keydown="handleKeydown"
   >
     <TDesignTabPanel
       v-for="page in pages"
@@ -22,7 +22,15 @@
     >
       <template #label>
         <span class="activity-page-tab-label" :title="page.title" :data-activity-page-key="page.key">
-          <span class="activity-page-tab-title">{{ page.title }}</span>
+          <ScButton
+            class="activity-page-tab-title"
+            appearance="auth-link"
+            data-navigation-control="activity-page-title"
+            variant="ghost"
+            :aria-label="`切换至${page.title}`"
+            :aria-pressed="page.key === activeKey"
+            @click.stop="handleTitleActivate(page)"
+          >{{ page.title }}</ScButton>
           <ScIconButton
             class="activity-page-tab-close"
             appearance="activity-tab-close"
@@ -34,12 +42,14 @@
       <!-- 内容由路由渲染，此处不渲染 -->
     </TDesignTabPanel>
   </TDesignTabs>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref } from 'vue';
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { TDesignTabs, TDesignTabPanel } from '../design-system/tdesignPrimitiveBridge';
 import ScIconButton from '../design-system/ScIconButton.vue';
+import ScButton from '../design-system/ScButton.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import type { ActivityPage } from '../../stores/session';
 import { resolveActivityTabKeyboardIndex, shouldShowActivityPageTabs } from './activityPageTabKeyboard';
@@ -47,6 +57,7 @@ import { resolveActivityTabKeyboardIndex, shouldShowActivityPageTabs } from './a
 const props = withDefaults(defineProps<{
   pages: ActivityPage[];
   activeKey: string;
+  activatePage?: (page: ActivityPage) => Promise<void>;
   label?: string;
   closeLabel?: string;
 }>(), {
@@ -61,6 +72,29 @@ const emit = defineEmits<{
 }>();
 
 const tabsRef = ref<InstanceType<typeof TDesignTabs> | null>(null);
+const focusHost = ref<HTMLElement | null>(null);
+let pendingFocusKey = '';
+// The driver can remount tab labels after the route has already settled.
+function restoreKeyboardFocus() {
+  if (!pendingFocusKey || props.activeKey !== pendingFocusKey) return;
+  const label = Array.from(focusHost.value?.querySelectorAll<HTMLElement>('[data-activity-page-key]') || [])
+    .find((element) => element.dataset.activityPageKey === pendingFocusKey);
+  const button = label?.querySelector<HTMLElement>('.activity-page-tab-title');
+  if (!button) return;
+  button.focus();
+  pendingFocusKey = '';
+}
+let focusObserver: MutationObserver | null = null;
+onMounted(() => {
+  focusObserver = new MutationObserver(restoreKeyboardFocus);
+  if (focusHost.value) focusObserver.observe(focusHost.value, { childList: true, subtree: true });
+});
+onBeforeUnmount(() => focusObserver?.disconnect());
+
+function handleTitleActivate(page: ActivityPage) {
+  pendingFocusKey = '';
+  emit('activate', page);
+}
 
 function handleChange(value: string | number) {
   const key = String(value);
@@ -79,12 +113,15 @@ function handleRemove(options: { value: string | number; e: MouseEvent }) {
 }
 
 function handleExplicitClose(page: ActivityPage) {
+  pendingFocusKey = '';
   emit('close', page);
 }
 
 async function handleKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
+    pendingFocusKey = '';
     event.preventDefault();
+    event.stopPropagation();
     emit('focus-exit');
     return;
   }
@@ -97,14 +134,16 @@ async function handleKeydown(event: KeyboardEvent) {
   event.stopPropagation();
   const nextPage = props.pages[nextIndex];
   if (!nextPage) return;
-  emit('activate', nextPage);
+  pendingFocusKey = nextPage.key;
+  if (props.activatePage) await props.activatePage(nextPage);
+  else emit('activate', nextPage);
   await nextTick();
-  const root = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
-  root?.querySelectorAll<HTMLElement>('.activity-page-tab-close')[nextIndex]?.focus();
+  restoreKeyboardFocus();
 }
 </script>
 
 <style scoped>
+.activity-page-tabs-host { min-width: 0; }
 .activity-page-tabs {
   width: 100%;
   min-width: 0;
