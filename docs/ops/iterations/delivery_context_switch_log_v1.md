@@ -8966,3 +8966,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Baseline 304369fe73009503f1912e9fc44d537915f1fc8f; fingerprint e582a71cf94c65871092856d721ce5717570a43237bce66b79f8cb175b87e0af.
 - Replaced nested panels, separated selected state from keyboard focus, added pressed semantics, and projected input-height tokens to native driver controls. Existing component/parity tests and strict typecheck PASS. Real filter recovery, category switch, 320/390/1088 layout and single focus outline verified; see matrix.
 - Remains local iteration; no remote publication or business writes. Revert scoped presentation commit for rollback. Continue matrix gaps rather than treating this batch as full-system acceptance.
+
+## 2026-09-09 — 首页滚动边界与真实状态恢复验收
+
+- P0 frontend shared visually-hidden utility; positioning belongs to common rendering, not business modules/configuration. Fix hidden labels enlarging the root document outside an internal scroller. Baseline 0b2628083a4f831525277d4289e1792e517a82e9; fingerprint a8cad6ca79b9831ee9bf9555eb828c7907f8e8d9cc3ff30bc9726b9f42c5a781.
+- Homepage 320px document height 897 to 844, viewport 844; hidden status/money text retained. Home accessed through original authenticated tab. Existing parity/state tests PASS.
+- Browser developer controls supplied bounded read-only loading and network-failure tests: retained list during refresh, genuine initial skeleton with reduced motion, one failed work-summary read and successful retry to 4 items. All temporary overrides cleared; full details and precise limitations in the matrix. No business/fixture writes or remote operations.
