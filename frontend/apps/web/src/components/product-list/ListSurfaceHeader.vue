@@ -49,6 +49,7 @@
                 <p class="list-surface-column-summary">已启用 {{ enabledCount }} 列，共 {{ columns.length }} 列</p>
                 <ScButton type="button" variant="ghost" size="small" aria-label="关闭列设置" @click="closeColumnPanel">关闭</ScButton>
               </div>
+              <p v-if="columnSettingsMessage" class="list-surface-column-summary" role="note">{{ columnSettingsMessage }}</p>
               <ScCheckbox
                 v-for="column in columns"
                 :key="column.name"
@@ -56,9 +57,9 @@
                 appearance="menu-choice"
                 size="small"
                 :checked="visibleColumns.includes(column.name)"
-                :disabled="loading || lastVisibleColumn === column.name"
+                :disabled="loading || Boolean(columnDisabledReasons?.[column.name]) || lastVisibleColumn === column.name"
                 :label="column.label"
-                :title="lastVisibleColumn === column.name ? '至少保留一列' : undefined"
+                :title="columnDisabledReasons?.[column.name] || (lastVisibleColumn === column.name ? '至少保留一列' : undefined)"
                 @change="(checked) => emitVisibility(column.name, checked)"
               />
               <ScButton type="button" class="list-surface-column-reset" appearance="outline-action" variant="secondary" size="small" :disabled="loading" @click="$emit('column-reset')">恢复默认</ScButton>
@@ -100,6 +101,8 @@ const props = defineProps<{
   columns: ColumnChoice[];
   visibleColumns: string[];
   lastVisibleColumn?: string;
+  columnDisabledReasons?: Record<string, string>;
+  columnSettingsMessage?: string;
   saveStatus?: 'idle' | 'saving' | 'saved' | 'error';
   saveStatusText?: string;
   contextual?: boolean;

@@ -3,6 +3,17 @@ export type ListColumnVisibilityOption = {
   defaultVisible?: boolean;
 };
 
+export function listColumnVisibilityBlockReason(
+  policy: { allow_visibility?: boolean; locked_columns?: string[] } | undefined,
+  field: string,
+  lastVisibleColumn?: string,
+): string {
+  if (policy?.allow_visibility === false) return '当前页面的显示列已固定';
+  if (policy?.locked_columns?.includes(field)) return '此列由页面配置固定';
+  if (lastVisibleColumn === field) return '至少保留一列';
+  return '';
+}
+
 export type ListColumnSelectionReason =
   | 'critical_contract'
   | 'explicit_visible'

@@ -34,6 +34,8 @@
         :columns="columnChoices"
         :visible-columns="enabledColumns"
         :last-visible-column="lastVisibleColumnName"
+        :column-disabled-reasons="columnVisibilityDisabledReasons"
+        :column-settings-message="columnVisibilityMessage"
         :save-status="columnSaveStatus"
         :save-status-text="columnSaveStatusText"
         :show-fallback-create="canCreateRecord && !hasToolbarSlot"
@@ -91,6 +93,8 @@
         :columns="columnChoices"
         :visible-columns="enabledColumns"
         :last-visible-column="lastVisibleColumnName"
+        :column-disabled-reasons="columnVisibilityDisabledReasons"
+        :column-settings-message="columnVisibilityMessage"
         :save-status="columnSaveStatus"
         :save-status-text="columnSaveStatusText"
         :contextual="showBatchBar"
@@ -329,6 +333,7 @@ import {
   prioritizeExplicitlyEnabledListColumns,
   resolveEnabledListColumns,
   resolveResponsiveListColumns,
+  listColumnVisibilityBlockReason,
 } from './listPage/listColumnVisibility';
 
 import type { CollectionBatchAction as SelectionAction } from '../app/presentation/collectionActionSettlement';
@@ -1437,6 +1442,10 @@ const mobileColumnDecision = computed(() => resolveResponsiveListColumns({
   capacity: enabledColumns.value.length,
 }));
 const lastVisibleColumnName = computed(() => enabledColumns.value.length === 1 ? enabledColumns.value[0] : '');
+const columnVisibilityMessage = computed(() => props.listProfile?.preference_policy?.allow_visibility === false ? '当前页面的显示列已固定' : '');
+const columnVisibilityDisabledReasons = computed(() => Object.fromEntries(columnChoices.value.map((column) => [
+  column.name, listColumnVisibilityBlockReason(props.listProfile?.preference_policy, column.name, lastVisibleColumnName.value),
+])));
 const columnDecisionTraceJson = computed(() => JSON.stringify({
   authoritativeColumns: orderedColumnNames.value,
   columnOptions: columnChoices.value.map((column) => ({
@@ -1530,6 +1539,7 @@ function collectionHeader(field: string) {
     field,
     label: columnLabel(field),
     sortable: isColumnSortable(field),
+    reorderable: props.listProfile?.preference_policy?.allow_order !== false,
     sorted: isSortedColumn(field),
     dragging: draggingColumn.value === field,
     sortIcon: columnSortIcon(field),
@@ -1678,6 +1688,7 @@ function toggleColumnSort(col: string) {
 }
 
 function onColumnDragStart(col: string, event: DragEvent) {
+  if (props.listProfile?.preference_policy?.allow_order === false) { event.preventDefault(); return; }
   if (resizingColumn.value) {
     event.preventDefault();
     return;
@@ -1696,6 +1707,7 @@ function onColumnDragOver(col: string, event: DragEvent) {
 
 function onColumnDrop(target: string, event: DragEvent) {
   event.preventDefault();
+  if (props.listProfile?.preference_policy?.allow_order === false) { draggingColumn.value = ''; return; }
   const source = draggingColumn.value || event.dataTransfer?.getData('text/plain') || '';
   draggingColumn.value = '';
   if (!source || source === target) return;
@@ -1822,6 +1834,7 @@ function isColumnSortable(field: string) {
 }
 
 function onColumnVisibilityToggle(payload: { name: string; checked: boolean }) {
+  if (listColumnVisibilityBlockReason(props.listProfile?.preference_policy, payload.name)) return;
   if (!payload.checked && lastVisibleColumnName.value === payload.name) return;
   emit('column-visibility-change', {
     visibility: {

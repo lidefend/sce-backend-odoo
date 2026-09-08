@@ -4,6 +4,7 @@
     data-semantic-component="CollectionColumnHeaderControl"
     :class="[densityClass, { 'is-sorted': sorted, 'is-dragging': dragging, 'is-sort-disabled': !sortable }]"
     :data-column="field"
+    :data-reorderable="reorderable !== false"
     :style="columnStyle"
     :tabindex="sortable ? 0 : -1"
     :title="sortTitle"
@@ -14,7 +15,7 @@
     @keydown.enter.prevent="$emit('sort')"
     @keydown.space.prevent="$emit('sort')"
   >
-    <ScIconButton class="column-drag-handle" appearance="column-handle" :label="dragLabel" draggable="true" @click.stop @keydown.stop @dragstart.stop="$emit('drag-start', $event)" @dragend.stop="$emit('drag-end')">
+    <ScIconButton v-if="reorderable !== false" class="column-drag-handle" appearance="column-handle" :label="dragLabel" draggable="true" @click.stop @keydown.stop @dragstart.stop="$emit('drag-start', $event)" @dragend.stop="$emit('drag-end')">
       <ScIcon name="menu" :size="14" />
     </ScIconButton>
     <ScButton type="button" class="column-sort-btn" appearance="context-action" variant="ghost" size="small" :title="sortTitle" :aria-disabled="!sortable" draggable="false" @click.stop="$emit('sort')">
@@ -34,6 +35,7 @@ defineProps<{
   field: string;
   label: string;
   sortable: boolean;
+  reorderable?: boolean;
   sorted: boolean;
   dragging: boolean;
   sortIcon: 'chevron-down' | 'chevron-up';

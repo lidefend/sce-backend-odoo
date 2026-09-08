@@ -4,6 +4,7 @@ import {
   prioritizeExplicitlyEnabledListColumns,
   resolveEnabledListColumns,
   resolveResponsiveListColumns,
+  listColumnVisibilityBlockReason,
 } from '../../frontend/apps/web/src/pages/listPage/listColumnVisibility.ts';
 import {
   deriveListColumnWidth,
@@ -16,6 +17,12 @@ const columns = [
   { name: 'company_type', defaultVisible: true },
   { name: 'sc_source_project_name', defaultVisible: false },
 ];
+
+assert.equal(listColumnVisibilityBlockReason({ allow_visibility: false }, 'amount'), '当前页面的显示列已固定');
+assert.equal(listColumnVisibilityBlockReason({ locked_columns: ['amount'] }, 'amount'), '此列由页面配置固定');
+assert.equal(listColumnVisibilityBlockReason({ locked_columns: ['amount'] }, 'note'), '');
+assert.equal(listColumnVisibilityBlockReason(undefined, 'name', 'name'), '至少保留一列');
+assert.equal(listColumnVisibilityBlockReason(undefined, 'note', 'name'), '');
 
 assert.deepEqual(
   resolveEnabledListColumns(columns, [], {}),
