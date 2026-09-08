@@ -984,6 +984,7 @@ import {
   buildActionViewClearedPresetQuery,
   buildActionViewPatchedRouteQuery,
   buildActionActivityRouteKey,
+  isActionPageIdentityOwner,
   buildActivityRuntimeRouteState,
   normalizeActivityRuntimeRouteQuery,
   normalizeActionViewRouteQuery,
@@ -1828,7 +1829,9 @@ const actionIdentityInput = computed(() => buildActionPageIdentity({
     modelName: resolvedModelRef.value || model.value, status: status.value, subtitle: subtitle.value,
 }));
 const pageIdentity = usePublishedPageIdentity(actionIdentityInput, { routeKey: () => route.fullPath,
-  active: () => isComponentActive.value, onTitle: (title) => session.updateActiveActivityTitle(title, route.fullPath), immediate: true });
+  active: () => isActionPageIdentityOwner({ routeName: route.name, active: isComponentActive.value,
+    instanceRouteKey: instanceActivityRouteKey.value, currentRouteKey: currentActionActivityRouteKey() }),
+  onTitle: (title) => session.updateActiveActivityTitle(title, route.fullPath), immediate: true });
 const pageTitle = computed(() => pageIdentity.value.title);
 const showSceneBlocksDebug = computed(() => isSceneBlocksDebugEnabled(route));
 function resolveContractActionCountForHud() {

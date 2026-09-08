@@ -79,3 +79,11 @@ Complete baseline fingerprint: `112758622e9a3dc6c1ce8437120cfe0f553760fcd7a8d7dc
 - Payment collection reuses the hint at 1088px; 1600px fitting table and 390px mobile cards hide it. No document overflow. Original viewport restored; explicit browser error log empty.
 - Existing primitive adapter: 46 components / 25 tests PASS; worksheet: 4 interaction cases and domain-tab assertions PASS; strict typecheck and diff whitespace PASS. No business writes or remote operations.
 - Offscreen activity-tab automation first scrolled its label into view without navigation; clicking the visible title reached the correct contract route. Do not classify this observation alone as a product navigation failure. Narrow tab-strip visibility remains under review.
+
+### Follow-up: route-owned page titles
+
+- Baseline `c79e2e6bd87afcac4885b0897780c54dc6947265`, fingerprint `17cdcd8e42da9a3470a6ef0feb84beae24463ea427ec012c9c163490cf42c884`.
+- Real defect: payment collection to `/my-work` showed work items but retained payment title in h1, breadcrumb and document title. The departing ActionView could publish using the already-updated shared route before deactivation.
+- P0 ActionView publication now requires active action route plus matching instance action/menu key. Reuses existing route-runtime ownership; no routing or permission change.
+- Existing retention test entry now covers 9 ownership cases, including the pre-deactivation race against work/home/form destinations. State/dashboard tests, page-identity 23+12 assertions and guard, strict typecheck PASS.
+- Runtime after reload and a fresh payment-list to My Work transition: `/my-work`, h1 and document title are 我的工作; identity source product-fallback; 390px document equals viewport. Four existing work items remain visible; no business action executed.

@@ -8953,3 +8953,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Baseline d324f993bc13185a57931956d4806feb26f55d46; complete fingerprint 9b5715f9569565b322f2807fdbb40d47175bdf3c70a60a80c5910165f3a5b110. One writer, existing feature branch and local.dev runtime.
 - Closed actual 390/320px hierarchical-workspace viewport proof. Added shared overflow controls with measured scroll and boundary state; suppressed unnecessary controls for fitting tables and mobile cards. Full observations in frontend_system_experience_batch_v1.md.
 - Registered primitive/worksheet checks and strict typecheck PASS, explicit browser error log empty. No business/fixture writes, environment changes, push, PR or merge. Revert this scoped commit to roll back the presentation batch.
+
+## 2026-09-09 — 跨页面标题发布归属修复
+
+- P0 frontend / ActionView route runtime. Departing retained lists could publish their old action title against a new shared router path before deactivation. Require matching action/menu instance and action route; frontend identity ownership belongs here, not in business contracts or backend modules.
+- Baseline c79e2e6bd87afcac4885b0897780c54dc6947265; fingerprint 17cdcd8e42da9a3470a6ef0feb84beae24463ea427ec012c9c163490cf42c884.
+- Existing retention entry adds 9 ownership assertions; state/dashboard, page identity 23+12 assertions, identity guard and strict typecheck PASS. Real list to My Work navigation now keeps route/title/content aligned. No business writes. Matrix records runtime details and remaining visual work.
