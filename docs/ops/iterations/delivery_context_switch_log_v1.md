@@ -8891,3 +8891,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - P0 shared ProductPageHeader collection variant only. Replace the inherited forced narrow column layout with a wrapping row; identity reserves a flexible text basis, actions keep intrinsic width and may wrap when necessary. Form/task/dialog headers retain existing responsive rules. No business or navigation changes.
 - Daily browser: 390px header height 82 to 56px; first record starts 26px earlier. At 320px title box x=12..161 and actions x=173..293, no overlap; document width equals viewport at both widths. Card facts remain visible. Original desktop viewport restored; desktop styling is outside the changed media query.
 - Validation: page-pattern parity 8 tests/13 surfaces, layout matrices 12/7, alignment guard 37 entries and diff whitespace PASS. No business writes or remote publication; no full-release claim.
+
+## 2026-09-09 — 操作目标与列表编号入口
+
+- P0 TDesign adapter, collection header buttons and primary record cell only. Baseline `cfc6ac39a80532e97fb5e659b2a971b0ee940ac8`, fingerprint `60f261bcc5b1245e699116db6d128d55bd46c9c9ac27a046279357f0d677a948`.
+- Header buttons now measure 36px desktop and 44px at 320px, with zero document horizontal overflow. Primary identifiers use the existing selected-text color, with hover/focus underline; full title and identity remain unchanged.
+- Browser clicked DEMO-PR-FLOORPLAN-003 and reached `/f/payment.request/754`; correct record label visible. No record mutation.
+- Primitive adapter 46 components/25 tests, row-cell 8 tests and page-pattern 8 tests/13 surfaces PASS. Local visual iteration only, no remote publication.

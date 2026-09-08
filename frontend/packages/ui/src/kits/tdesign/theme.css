@@ -456,6 +456,24 @@
   width: var(--sc-component-input-form-height, 36px);
 }
 .sc-input[data-appearance='numeric-entry'] { font-variant-numeric: tabular-nums; }
+.product-page-header--collection [data-workspace-action-bar] .sc-btn {
+  min-height: var(--sc-component-input-form-height, 36px);
+  height: auto;
+}
+.sc-btn[data-semantic-cell-kind='primary'] {
+  color: var(--sc-app-selected-text);
+  font-weight: 500;
+}
+.sc-btn[data-semantic-cell-kind='primary']:is(:hover, :focus-visible) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+@media (max-width: 760px) {
+  .product-page-header--collection [data-workspace-action-bar] .sc-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
 .sc-input[data-appearance='record-title'] {
   flex: 1 1 auto;
   min-width: 0;
