@@ -64,3 +64,10 @@ defineExpose({
   },
 });
 </script>
+
+<style scoped>
+.sc-btn[data-appearance='dashboard-quick-link'] :deep(.t-button__text) {
+  width: 100%;
+  min-width: 0;
+}
+</style>
