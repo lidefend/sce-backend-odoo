@@ -2,23 +2,36 @@
 
 Scope: shared frontend surfaces across the system, with representative browser evidence. Business contracts, permissions and state transitions remain authoritative. Local commits only; no remote publication or fixture mutation.
 
-Baseline: `2d380e5b59e5d4ce8b34516424dc5aaad51abdb8` on `feature/frontend-page-experience-iteration-v1`.
+Initial batch baseline: `2d380e5b59e5d4ce8b34516424dc5aaad51abdb8` on `feature/frontend-page-experience-iteration-v1`.
 Complete baseline fingerprint: `112758622e9a3dc6c1ce8437120cfe0f553760fcd7a8d7dc0a1268d14e003a39`.
 
-## Acceptance matrix
+## Current acceptance matrix (2026-09-09)
+
+Reviewed product HEAD: `0876a2d698fb931a008869079237417d99284c71`.
+Complete clean-worktree fingerprint before this documentation closeout: `ffbdec96dddad601cee9ccde0c6af262f8e352f1402359afc6aac5568eebf013` (7321 paths).
+The entries below supersede historical pending notes in the chronological results. Acceptance is local and representative, not a release or all-role certification.
 
 | Area | Shared owner | Acceptance condition | Current evidence / outstanding work |
 | --- | --- | --- | --- |
-| Navigation | AppShell, ActivityPageTabs | Mouse/keyboard activate correct route; focus follows stable page key; Escape reaches main | Prior real payment-list/detail route and focus checks passed; wider page sampling in this batch |
-| List layout | ListPage, ProductListHeader | One horizontal gutter and content surface; controls align; no document overflow | Prior desktop/320/390 checks passed |
-| List recovery | ListPage, ScEmptyState | Query survives zero results; clear restores authoritative results | Prior 70 → 0 → 70 browser journey passed |
-| Table access | ScTable, CollectionRowCell | Complete identifiers retained; record opens correctly; actual scroll region keyboard-accessible | Prior real record 754 and scrollLeft 0 → 40 checks passed; visible overflow affordance remains queued |
-| Detail | ProductPageHeader, ObjectTaskPage | Summary, state, task and action remain readable; no field-span override | Prior readonly 754 desktop/390 checks passed; edit interaction not claimed |
-| Loading | ProductLoadingSkeleton, ScSkeleton | One meaningful loading announcement; decorative skeleton ignored; reduced-motion respected | Shared implementation and targeted validation in this batch; timed layout continuity remains pending |
-| Error / recovery | StatusPanel | Recovery feedback is visible without debug mode; busy action remains identifiable; narrow touch target usable | Shared implementation and targeted validation in this batch; no deliberate business failures |
-| Workbench | DashboardPattern, home renderer | Meaningful task hierarchy; visible actions; no narrow overflow | Live sampling in this batch |
-| Theme / zoom | semantic token bridge | Default and alternate theme preserve legibility and layout | Live theme sampling in this batch; zoom matrix remains pending |
-| Hierarchical workspace | HierarchicalWorksheet, ProductListHeader | Search sizes align; selected scope/data preserved; filtered zero results distinguish from no data | Added after live income-contract inspection; browser recovery below |
+| Navigation | AppShell, ActivityPageTabs | Mouse/keyboard activate correct route; focus follows stable page key; Escape reaches main | PASS: existing keyboard journey plus cross-module routes; stale work-page title fixed; home shows no false selected tab; return label matches history behavior |
+| List layout | ListPage, ProductListHeader | One horizontal gutter and content surface; controls align; no document overflow | PASS: desktop/320/390 and short 544x396 reflow; mobile actions 44px |
+| List recovery | ListPage, ScEmptyState | Query survives zero results; clear restores authoritative results | PASS: 70 → 0 → 70 list journey; 4 → 0 → 4 work-item query; no save/submit invoked |
+| Table access | ScTable, CollectionRowCell | Complete identifiers retained; record opens correctly; actual scroll region keyboard-accessible | PASS: record 754 read journey, keyboard scroll, visible directional controls with real movement and end-state disabling; hidden for fitting tables/mobile cards |
+| Detail | ProductPageHeader, ObjectTaskPage | Summary, state, task and action remain readable; no field-span override | PASS: 754 and 15 readonly; desktop/390 dark detail and amount readable; temporary new-form note retained on Cancel/Escape, then explicitly discarded |
+| Loading | ProductLoadingSkeleton, ScSkeleton | One meaningful loading announcement; decorative skeleton ignored; reduced-motion respected | PASS: paused actual reads expose named skeleton with aria-hidden decoration and animation none; refresh retains existing records with busy state |
+| Error / recovery | StatusPanel | Recovery feedback is visible without debug mode; busy action remains identifiable; narrow touch target usable | Runtime retry PASS: failed work-summary read → alert → 44px retry → 4 items restored. Suggested-action feedback is verified in code outside HUD-only markup; its runtime branch remains separately unexercised |
+| Workbench | DashboardPattern, home renderer | Meaningful task hierarchy; visible actions; no narrow overflow | PASS: authenticated home todo 4 / initiated 0 and first 3 previews, My Work 4 items; single scroll region at 320px; repeated card frames removed |
+| Theme / zoom | semantic token bridge | Default and alternate theme preserve legibility and layout | PASS for 3 style profiles, live system light/dark, manual override and dark scene inheritance. Visual scale 2 and 544x396 reflow observed; native desktop 200% zoom not proven |
+| Hierarchical workspace | HierarchicalWorksheet, ProductListHeader | Search sizes align; selected scope/data preserved; filtered zero results distinguish from no data | PASS: income contracts 46 → 0 → 46; search 36px desktop / 44px mobile; 320/390 no document overflow and one label/value pair per detail row |
+
+## Closeout boundaries and evidence limits
+
+- Delivered: shared P0 frontend implementation and representative local journeys across collection, detail/new-form, dashboard/workspace and hierarchical workspace. P4 changes are existing test cases/guard and this evidence ledger. Scope audit from the initial batch baseline contains 21 paths, all frontend/tests/docs; no backend, contract snapshot, environment or fixture file changed.
+- Validated through existing registered gates: primitive adapter; page pattern parity; state/dashboard and activity ownership; page identity; hierarchical worksheet; scene bridge/presenter; workflow/overlay lifecycle; theme profile/runtime; strict typechecking. The final scene bridge architecture guard also passed 6 + 7 tests and 63 checks. Per-batch non-zero counts and runtime observations remain below.
+- Not claimed: save/payment mutation requalification, multi-role/ACL acceptance, PR/CI/release qualification, quantitative loading-layout shift, native desktop 200% browser zoom, or runtime suggested-action execution feedback. Native zoom shortcut was ineffective in this browser; no substitute is labelled native zoom. Suggested-action feedback remains a direct code-verification result, not a fabricated server-action journey.
+- The existing unrelated style-system line-count blocker remains outside this batch. No full release gate was run or reported passing. Remote push/PR/merge remain unperformed.
+- Final browser restoration: payment collection `/a/809?menu_id=559&action_id=809`, 70 records, 1088x791 viewport, scale 1, system theme / enterprise-neutral. Temporary read interception, latency and media overrides removed; test-created unsaved tabs discarded; explicit browser error log empty.
+- Remaining unexercised cases above are explicit evidence limitations, not hidden PASS results. Further business mutation or release acceptance must be a separately scoped run; this local frontend milestone does not replace the prior payment business baseline.
 
 ## Batch execution
 

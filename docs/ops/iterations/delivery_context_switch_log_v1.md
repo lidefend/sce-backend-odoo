@@ -8996,3 +8996,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 
 - P0 contract-form exit presentation only. Generic history return is not guaranteed to lead to a list; use 返回 while preserving its existing semantic action and managed-dialog cancellation. Baseline 363791039e59f472a97773e14271ce0a3b5ee939; fingerprint 3d043f4c611066569e5281dc870652feaaf56a7761dbe91e19844d9d1f474fc0.
 - Existing presenter 142 cases and typecheck PASS; real record 15 return observed. No business/navigation mechanism change.
+
+## 2026-09-09 — 共享前端本地迭代矩阵收口
+
+- P4 documentation closeout only. Reviewed product HEAD 0876a2d698fb931a008869079237417d99284c71, complete fingerprint ffbdec96dddad601cee9ccde0c6af262f8e352f1402359afc6aac5568eebf013 (7321 paths). Scope from initial batch baseline is 21 frontend/test/doc paths; no backend, contract, runtime or fixture changes.
+- Updated the matrix's primary table to current results across all 10 areas; chronological records remain historical evidence. Existing registered checks and real representative journeys are mapped explicitly, including final scene architecture guard 6+7 tests and 63 checks.
+- Local frontend milestone is closed with evidence limits stated: native desktop zoom, quantitative layout shift, suggested-action feedback runtime branch, multi-role/business-write/release qualification are not claimed. Generic retry, loading/reduced motion, keyboard/unsaved-input protection, shared table access, home, work, list, detail and hierarchical workspace have the recorded representative observations.
+- Original payment list, viewport, scale, theme and absence of test-created unsaved tabs restored. No push/PR/merge performed. Documentation-only closeout follows the reviewed product HEAD without further product changes.
