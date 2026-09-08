@@ -522,6 +522,8 @@ try {
               const arrow = node.querySelector('.role-home-surface__entry-arrow');
               const contentStyle = content instanceof HTMLElement ? getComputedStyle(content) : null;
               const copyStyle = copy instanceof HTMLElement ? getComputedStyle(copy) : null;
+              const nodeRect = node.getBoundingClientRect();
+              const contentRect = content?.getBoundingClientRect();
               const iconRect = icon?.getBoundingClientRect();
               const copyRect = copy?.getBoundingClientRect();
               const labelRect = label?.getBoundingClientRect();
@@ -533,10 +535,19 @@ try {
                 contentDisplay: contentStyle?.display || '',
                 contentColumns: contentStyle?.gridTemplateColumns || '',
                 copyDisplay: copyStyle?.display || '',
+                buttonWidth: Math.round(nodeRect.width),
+                contentWidth: Math.round(contentRect?.width || 0),
+                copyWidth: Math.round(copyRect?.width || 0),
+                arrowRightGap: Math.round(nodeRect.right - (arrowRect?.right || nodeRect.right)),
+                arrowVisible: Boolean(
+                  arrowRect && arrowRect.width > 0 && arrowRect.height > 0
+                  && arrow instanceof Element && getComputedStyle(arrow).visibility !== 'hidden'
+                ),
                 ordered: Boolean(
                   iconRect && copyRect && arrowRect
                   && iconRect.right <= copyRect.left
                   && copyRect.right <= arrowRect.left
+                  && copyRect.width > 0
                   && (!detailRect || !labelRect || labelRect.bottom <= detailRect.top)
                 ),
                 horizontalClipped: node.scrollWidth > node.clientWidth + 1,
@@ -562,6 +573,10 @@ try {
                 && entry.contentDisplay === 'grid'
                 && entry.contentColumns !== 'none'
                 && entry.copyDisplay === 'grid'
+                && entry.contentWidth >= entry.buttonWidth - 24
+                && entry.arrowVisible
+                && entry.arrowRightGap >= 8
+                && entry.arrowRightGap <= 16
                 && entry.ordered
                 && !entry.horizontalClipped),
           } : null,
