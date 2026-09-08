@@ -8876,3 +8876,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - P0 primitive TDesign adapter, navigation-search appearance only. Wrapper previously painted a background/min-height around the driver's separate input surface. Move visual ownership to the inner driver control and keep the wrapper transparent with zero border, padding, shadow and outline. Remove inset shadow and retain one explicit focus outline. Native specialized appearance remains supported. No navigation or business contract changes.
 - Browser after reload: wrapper and inner height both 38px; wrapper background transparent, border 0, shadow none. Inner border 1px, default shadow none; focused inner owns the border and outline, wrapper stays undecorated. Typing 付款 filters navigation to 财务中心/付款申请. Query cleared and focus moved away afterward.
 - Primitive adapter validation: 46 components and 25 tests PASS. Local UI observation only, no business writes or remote publication.
+
+## 2026-09-09 — 内容区外围边框减重
+
+- Baseline: `0498836f1be8ec18b327b941d163a3a7ce49fee9`; clean branch fingerprint `7a845b1c24a73af569c3cdb7a779f3a218d71337bdc696dfcc2f341c7d378d36`.
+- P0 generic list presentation: ProductListHeader and ListPage own the content surface; TDesign adapter removes decoration on collection tables embedded directly in that surface. No business configuration or contract changes.
+- Remove query/table enclosing strokes and the inner driver table's duplicate rounded border. Query retains upper 8px token corners, table surface lower 8px token corners; row separators and focus rules remain. No additional clipping container is introduced.
+- Browser after full reload: query border 0/radius 8px 8px 0 0; outer table border 0/radius 0 0 8px 8px; inner collection table border 0/radius 0. At 390px query border remains 0 and document width equals viewport; card facts visible. Original viewport restored.
+- Validation: page-pattern parity 8 tests/13 surfaces, layout matrices 12/7 and alignment guard 37 entries, primitive adapter 46 components/25 tests PASS. Daily visual acceptance only; no business write, fixture operation or remote publication.

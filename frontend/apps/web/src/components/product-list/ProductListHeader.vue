@@ -74,8 +74,8 @@ defineEmits<{
   width: 100cqw;
   min-height: 44px;
   padding: 0 var(--sc-space-sm);
-  border: 1px solid var(--sc-app-border);
-  border-radius: 0;
+  border: 0;
+  border-radius: var(--sc-product-radius-panel) var(--sc-product-radius-panel) 0 0;
   background: var(--sc-app-panel);
   box-shadow: none;
 }
@@ -85,8 +85,6 @@ defineEmits<{
     position: relative;
     top: 0;
     padding: 0 var(--sc-space-sm);
-    border: 1px solid var(--sc-app-border);
-    border-radius: 0;
     background: var(--sc-app-panel);
     box-shadow: none;
     min-height: var(--sc-product-list-toolbar-height);
@@ -143,9 +141,6 @@ defineEmits<{
   .product-list-query-bar {
     width: 100%;
     padding: 0 var(--sc-space-xs);
-    border: 1px solid var(--sc-app-border);
-    border-bottom: 1px solid var(--sc-app-border);
-    border-radius: 0;
     background: transparent;
     box-shadow: none;
   }
