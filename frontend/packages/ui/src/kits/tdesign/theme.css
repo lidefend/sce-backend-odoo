@@ -456,6 +456,10 @@
   width: var(--sc-component-input-form-height, 36px);
 }
 .sc-input[data-appearance='numeric-entry'] { font-variant-numeric: tabular-nums; }
+[data-table-scroll-region]:focus-visible {
+  outline: 2px solid var(--sc-semantic-focus-ring);
+  outline-offset: -2px;
+}
 .sc-btn[data-navigation-control='activity-page-title'] {
   min-width: 0;
   max-width: 100%;
