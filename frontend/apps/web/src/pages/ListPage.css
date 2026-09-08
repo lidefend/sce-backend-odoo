@@ -153,6 +153,11 @@
   touch-action: pan-x pan-y;
 }
 
+.table :deep([data-return-anchor='active']) {
+  outline: 3px solid var(--sc-app-focus-ring);
+  outline-offset: -3px;
+}
+
 /* Dense ledger surface: toolbar, rows and pagination read as one business canvas.
  * Density variant is declared on product-level tokens in tokens/pattern.css;
  * this page only consumes them. */

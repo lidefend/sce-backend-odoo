@@ -11,6 +11,19 @@ export type SaveRecordValidationResult = {
   submissionFeedback?: SubmissionFeedback;
 };
 
+export function createSingleFlightSave<TArgs extends unknown[], T>(
+  execute: (...args: TArgs) => Promise<T>,
+): (...args: TArgs) => Promise<T> {
+  let active: Promise<T> | null = null;
+  return (...args: TArgs) => {
+    if (active) return active;
+    active = execute(...args).finally(() => {
+      active = null;
+    });
+    return active;
+  };
+}
+
 export async function validateBeforeSaveRecord(params: {
   collectSceneValidationPrecheckErrors: (fieldLabels: Record<string, string>) => string[];
   collectWritableValues: () => Record<string, unknown>;

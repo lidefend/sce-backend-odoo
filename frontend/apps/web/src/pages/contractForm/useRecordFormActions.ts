@@ -4,6 +4,7 @@ import type {
   FormSectionFieldSchema,
 } from '../../components/template/formSection.types';
 import type { ContractAction, LayoutNode } from './types';
+import { createSingleFlightSave } from './saveRecordHelpers';
 
 type ActionDependencies = Record<string, any>;
 
@@ -491,11 +492,22 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
           vals: values,
           ifMatch: recordVersionPolicy() ? recordVersionToken.value : undefined,
         });
-        submissionFeedback.value = { kind: 'success', message: formUiLabel('save_success') };
         formConflict.value = false;
         originalValues.value = snapshotOriginalFormValues(Object.keys(formData), formData);
         dirtyFieldSet.clear();
-        await applyProjectionRefreshPolicy(refreshPolicy || { on_success: ['scene_projection'] });
+        const appliedRefreshPolicy = refreshPolicy || { on_success: ['scene_projection'] };
+        await applyProjectionRefreshPolicy(appliedRefreshPolicy);
+        if (!appliedRefreshPolicy.on_success?.includes('scene_projection')) {
+          await reload();
+        }
+        if (status.value !== 'ok') {
+          submissionFeedback.value = {
+            kind: 'error',
+            message: '修改已写入，但未能读取服务端最新结果，请重新加载页面。',
+          };
+          return true;
+        }
+        submissionFeedback.value = { kind: 'success', message: formUiLabel('save_success') };
         return true;
       }
       const context = buildFormRequestContext(
@@ -556,6 +568,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     }
     return false;
   }
+  const singleFlightSaveRecord = createSingleFlightSave(saveRecord);
 
   useFormPageLifecycleRuntime({
     formRouteIdentity: () => formRouteIdentity(),
@@ -604,6 +617,6 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     previewCurrentFormConfiguration,
     returnToBusinessConfigDesigner,
     applyProjectionRefreshPolicy,
-    saveRecord,
+    saveRecord: singleFlightSaveRecord,
   };
 }

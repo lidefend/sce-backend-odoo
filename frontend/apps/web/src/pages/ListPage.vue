@@ -204,6 +204,7 @@
             :class="{ 'has-selection-column': showSelectionColumn }" :label="group.label"
             :data="group.sampleRows" :columns="collectionTableColumns(group.key)"
             :foot-data="collectionFootData(groupAggregateFooterRows(group))" row-key="id" size="small"
+            :row-attributes="collectionRowAttributes"
             :table-content-width="tableContentWidth"
             @row-click="handleTableRowClick" />
         </article>
@@ -247,6 +248,7 @@
         :class="{ 'has-selection-column': showSelectionColumn }" :label="title"
         :data="records" :columns="collectionTableColumns()"
         :foot-data="collectionFootData(flatAggregateFooterRows)" row-key="id" size="small"
+        :row-attributes="collectionRowAttributes"
         :table-content-width="tableContentWidth"
         @row-click="handleTableRowClick" />
 
@@ -1032,6 +1034,17 @@ function rowId(row: Record<string, unknown>) {
     return Number.isNaN(parsed) ? null : parsed;
   }
   return null;
+}
+
+function collectionRowAttributes(context: unknown) {
+  const candidate = context && typeof context === 'object' && !Array.isArray(context)
+    ? context as Record<string, unknown>
+    : {};
+  const row = candidate.row && typeof candidate.row === 'object' && !Array.isArray(candidate.row)
+    ? candidate.row as Record<string, unknown>
+    : candidate;
+  const id = rowId(row);
+  return id === null ? {} : { 'data-record-key': String(id), tabindex: '-1' };
 }
 
 const selectedIdSet = computed(() => new Set((props.selectedIds || []).filter((id) => Number.isFinite(id))));
@@ -1849,10 +1862,6 @@ function isAggregateColumn(field: string) {
   return isNumericColumn(field) && String(columnOption(field)?.aggregate || '').trim() === 'sum';
 }
 
-function hasServerSemanticAggregate(field: string) {
-  return Boolean(String(columnOption(field)?.aggregationField || '').trim());
-}
-
 function isNumericDisplayColumn(field: string) {
   return isNumericColumn(field);
 }
@@ -1892,24 +1901,12 @@ const pageFooterStats = computed(() =>
   displayedColumns.value
     .filter((field) => isAggregateColumn(field))
     .map((field) => {
-      const semanticAggregate = String(columnOption(field)?.aggregationField || '').trim();
-      if (semanticAggregate) {
-        const authoritative = pageAggregateValue(field);
-        return {
-          name: field,
-          label: uiLabel('page_footer_summary', '{column} 汇总', { column: columnLabel(field) }),
-          count: authoritative === null ? 0 : pageVisibleRows.value.length,
-          sumText: authoritative === null ? '--' : formatFooterNumber(authoritative, field),
-        };
-      }
-      const values = pageVisibleRows.value
-        .map((row) => numericCellValue(columnValue(row, field)))
-        .filter((value): value is number => typeof value === 'number');
+      const authoritative = pageAggregateValue(field);
       return {
         name: field,
         label: uiLabel('page_footer_summary', '{column} 汇总', { column: columnLabel(field) }),
-        count: values.length,
-        sumText: formatFooterNumber(values.reduce((total, value) => total + value, 0), field),
+        count: authoritative === null ? 0 : pageVisibleRows.value.length,
+        sumText: authoritative === null ? '--' : formatFooterNumber(authoritative, field),
       };
     })
     .filter((item) => item.count > 0),
@@ -1979,14 +1976,6 @@ function footerValues(scope: 'page' | 'total') {
   }, {});
 }
 
-function rowsNumericSum(rows: Array<Record<string, unknown>>, field: string) {
-  const values = rows
-    .map((row) => numericCellValue(columnValue(row, field)))
-    .filter((value): value is number => typeof value === 'number');
-  if (!values.length) return null;
-  return values.reduce((total, value) => total + value, 0);
-}
-
 function groupAggregateValue(group: { aggregates?: Record<string, Record<string, unknown>> }, field: string) {
   const aggregate = resolveCollectionAggregateEntry(group.aggregates, field, columnAggregationField(field));
   const value = aggregate.sum;
@@ -2004,8 +1993,7 @@ function showGroupPageAggregateFooter(
 ) {
   return displayedColumns.value.some((field) => {
     if (!isAggregateColumn(field)) return false;
-    if (hasServerSemanticAggregate(field)) return groupPageAggregateValue(group, field) !== null;
-    return rowsNumericSum(group.sampleRows || [], field) !== null;
+    return groupPageAggregateValue(group, field) !== null;
   });
 }
 
@@ -2022,9 +2010,7 @@ function groupFooterCellText(
 ) {
   if (!isAggregateColumn(field)) return '';
   if (scope === 'page') {
-    const value = hasServerSemanticAggregate(field)
-      ? groupPageAggregateValue(group, field)
-      : rowsNumericSum(group.sampleRows || [], field);
+    const value = groupPageAggregateValue(group, field);
     return value === null ? '--' : formatFooterNumber(value, field);
   }
   const value = groupAggregateValue(group, field);
