@@ -190,12 +190,13 @@
     >
       <ScHeader
         class="topbar sc-toolbar"
-        :class="{ 'topbar--compact': activeLayout.header === 'compact', 'topbar--minimal': useMinimalTopbar }"
+        :class="{ 'topbar--compact': activeLayout.header === 'compact', 'topbar--minimal': useMinimalTopbar, 'topbar--single-heading': showTopbarHeadline && displayBreadcrumb.length <= 1 }"
       >
         <div class="topbar-main">
           <p v-if="!useMinimalTopbar" class="eyebrow">{{ config.appBrand.name }}</p>
           <div class="topbar-title-row">
             <NavigationBreadcrumb
+              class="topbar-breadcrumb"
               :items="displayBreadcrumb"
               :minimal="useMinimalTopbar"
               :compact="activeLayout.header === 'compact'"

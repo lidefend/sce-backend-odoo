@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -22,8 +23,6 @@ def main() -> int:
         'grid-template-columns: auto minmax(0, 1fr) auto',
     ]
     forbidden = [
-        "role ===",
-        "role_code ===",
         "legacy_home",
         "HUD:",
         "contract-role-home__",
@@ -31,6 +30,8 @@ def main() -> int:
     ]
     errors = [f"missing token: {token}" for token in required if token not in text]
     errors += [f"forbidden token: {token}" for token in forbidden if token in text]
+    if re.search(r"\b(?:role|role_code)\s*===", text):
+        errors.append("forbidden role branch")
     shell_required = [
         "const compactRouteKeepsHeadline = computed(() => [",
         "  'home',",

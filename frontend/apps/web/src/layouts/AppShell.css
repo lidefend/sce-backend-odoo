@@ -858,6 +858,11 @@
 }
 
 @media (max-width: 960px) {
+  .topbar--single-heading .eyebrow,
+  .topbar--single-heading .topbar-breadcrumb {
+    display: none;
+  }
+
   .shell {
     grid-template-columns: 1fr;
     height: 100dvh;

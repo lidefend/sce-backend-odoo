@@ -14,11 +14,21 @@
       </ScInlineState>
       <div v-else-if="tasks.length" class="role-home-surface__task-list">
         <article v-for="task in tasks" :key="task.key">
-          <div>
-            <h3>{{ task.label }}</h3>
-            <p v-if="task.detail">{{ task.detail }}</p>
+          <div class="role-home-surface__task-copy">
+            <div class="role-home-surface__task-heading">
+              <h3>{{ task.kind || task.label }}</h3>
+              <ScStatusBadge v-if="task.state?.label" :value="task.state.key" :label="task.state.label" />
+              <ScMoney v-if="task.amount" class="role-home-surface__task-amount" :label="task.amount.label" :display="formatFact(task.amount)" />
+            </div>
+            <p v-if="task.kind" class="role-home-surface__task-record" :title="task.label">{{ task.label }}</p>
+            <dl v-if="task.facts.length" class="role-home-surface__task-facts">
+              <div v-for="fact in task.facts" :key="fact.key">
+                <dt>{{ fact.label }}</dt>
+                <dd><ScMoney v-if="fact.display_role === 'money'" :display="formatFact(fact)" /><template v-else>{{ formatFact(fact) }}</template></dd>
+              </div>
+            </dl>
           </div>
-          <ScButton type="button" variant="ghost" appearance="dashboard-action" @click="navigate(task.route)">打开</ScButton>
+          <ScButton type="button" variant="ghost" appearance="dashboard-action" :aria-label="`打开：${task.label}`" @click="navigate(task.route)">打开</ScButton>
         </article>
       </div>
       <ScInlineState v-else state="empty" label="当前没有待处理事项。" />
@@ -81,6 +91,19 @@ import { useWorkspaceHome } from '../../composables/shared-surface/useWorkspaceH
 import ScButton from '../design-system/ScButton.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScInlineState from '../design-system/ScInlineState.vue';
+import ScStatusBadge from '../design-system/ScStatusBadge.vue';
+import ScMoney from '../design-system/ScMoney.vue';
+import type { ProductMyWorkFact } from '../../api/myWork';
+
+function formatFact(fact: ProductMyWorkFact): string {
+  if (fact.display_role === 'money') {
+    const money = fact.money;
+    if (money?.value == null || !Number.isFinite(money.value)) return '未填写';
+    const digits = Number.isFinite(money.digits) ? Math.min(20, Math.max(0, Math.trunc(money.digits!))) : 2;
+    return `${money.currency_symbol || ''}${money.value.toLocaleString('zh-CN', { minimumFractionDigits: digits, maximumFractionDigits: digits })} ${money.currency || ''}`.trim();
+  }
+  return fact.value || '未填写';
+}
 
 type HomeIconName = 'briefcase' | 'folder' | 'building' | 'apps';
 
@@ -119,6 +142,7 @@ const {
 .role-home-surface__overview,
 .role-home-surface__access {
   background: var(--sc-app-panel);
+  min-width: 0;
 }
 
 .role-home-surface__section-heading p,
@@ -172,6 +196,7 @@ const {
 
 .role-home-surface__task-list article {
   display: flex;
+  min-width: 0;
   align-items: center;
   justify-content: space-between;
   gap: var(--sc-space-3, 12px);
@@ -184,6 +209,17 @@ const {
 .role-home-surface__section-heading :deep(.sc-btn) {
   flex: none;
 }
+
+.role-home-surface__task-copy { min-width: 0; flex: 1; }
+.role-home-surface__task-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.role-home-surface__task-heading h3 { font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.role-home-surface__task-list .role-home-surface__task-record { margin-top: 4px; font-size: 12px; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.role-home-surface__task-amount { margin-left: auto; font-weight: 600; max-width: 100%; overflow-wrap: anywhere; white-space: normal; }
+.role-home-surface__task-facts { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; font-size: 12px; line-height: 1.5; }
+.role-home-surface__task-facts > div { min-width: 0; }
+.role-home-surface__task-facts dt { color: var(--sc-app-text-muted); }
+.role-home-surface__task-facts dd { margin: 0; color: var(--sc-app-text-primary); overflow-wrap: anywhere; }
+.role-home-surface__task-list :deep(.sc-btn) { min-height: 44px; align-self: flex-start; }
 
 .role-home-surface__summary-list {
   display: grid;
@@ -295,8 +331,8 @@ const {
     gap: var(--sc-space-3, 12px);
   }
 
-  .role-home-surface__tasks { order: 1; }
-  .role-home-surface__overview { order: 2; }
+  .role-home-surface__tasks { order: 2; }
+  .role-home-surface__overview { order: 1; }
   .role-home-surface__access { order: 3; }
 
   .role-home-surface__access-grid {
@@ -310,7 +346,7 @@ const {
 
   .role-home-surface__task-list article {
     align-items: flex-start;
-    flex-direction: column;
+    flex-direction: row;
   }
 
   .role-home-surface :deep(.sc-btn) {
