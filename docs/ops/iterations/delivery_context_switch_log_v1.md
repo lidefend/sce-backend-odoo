@@ -8905,3 +8905,14 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Summary uses existing subtle background without outer stroke. Current task and business context use top separators instead of enclosing rounded frames. Explicit canonical spans and field ordering are preserved; no inferred multicolumn override or risk-style change.
 - Browser on payment request 754: correct complete identity, completed status, 10,000 amount and task/context facts visible; summary border 0, task/context square separators. At 390px document width equals viewport and 39 field DOM nodes remain mounted. Original viewport restored.
 - Page-pattern parity 8 tests/13 surfaces, product-page model 12 cases/4 tests, strict typecheck PASS. Daily read-only evidence; no business writes or remote publication.
+
+## 2026-09-09 — 只读详情移动页头与返回闭环
+
+- Baseline `a2e78175`. P0 ProductPageHeader and ContractFormProductHeader; CSS explicitly scoped to task/readonly and narrow media query. Identity occupies the first grid row; status and action share the following row, while status facts can wrap. Edit/save/dirty-state logic and layout are not changed.
+- At 390px the payment detail header measures 102px, down from approximately 174px; record identity, completed state and More remain visible. Document width equals viewport. Opened 更多 via accessible name 打开更多页面操作, observed 返回列表, clicked it and reached `/a/809`. Original desktop viewport restored. Browser error log empty.
+- Validation: header model 28 cases and 6 guard tests, form-header action primitives 6 tests, strict typecheck PASS. No business mutations. This proves the list identifier → detail → mobile More → return-list read-only route, not the earlier pending activity-tab switch or duplicate-payment assertions.
+
+### 页面体验后续队列
+
+- Completed this batch: collection action dimensions, record-link affordance, detail grouping, readonly mobile header and read-only return journey.
+- Remaining: column overflow discovery and meaningful long-text access, keyboard navigation/focus return, activity-tab switching runtime proof, wider theme/zoom checks. Explicit contract field spans and business state rules remain authoritative; do not fabricate success or rerun payment writes for visual acceptance.

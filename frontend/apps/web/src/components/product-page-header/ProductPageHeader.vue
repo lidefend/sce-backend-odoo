@@ -118,6 +118,17 @@ const model = computed(() => resolveProductPageHeaderModel({
 .product-page-header--dialog { box-shadow:none; border-width:0 0 1px; border-radius:0; }
 @media(max-width:860px){.product-page-header{align-items:stretch;flex-direction:column}.product-page-header--title-hidden{align-items:stretch}.product-page-header__status{width:100%;margin-left:0;text-align:left}.product-page-header__actions{width:100%}.product-page-header h1{font-size:20px}}
 @media (max-width: 860px) {
+  .product-page-header--task[data-render-profile='readonly'] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+  .product-page-header--task[data-render-profile='readonly'] .product-page-header__identity {
+    grid-column: 1 / -1;
+  }
+  .product-page-header--task[data-render-profile='readonly'] .product-page-header__actions {
+    width: auto;
+  }
   .product-page-header--collection {
     flex-direction: row;
     flex-wrap: wrap;
