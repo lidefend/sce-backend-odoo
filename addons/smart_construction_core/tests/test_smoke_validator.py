@@ -6,6 +6,24 @@ from odoo.tests.common import TransactionCase, tagged
 @tagged("post_install", "-at_install", "sc_smoke", "smoke_validator")
 class TestValidatorSmoke(TransactionCase):
 
+    def _approved_settlement_fixture(self, values):
+        settlement = self.env["sc.settlement.order"].create(values)
+        settlement._write_lifecycle("approve")
+        return settlement
+
+    def _complete_tier_validation(self, record, user):
+        reviewer_groups = record.review_ids.mapped("reviewer_group_id")
+        reviewer_groups.sudo().write({"users": [(4, user.id)]})
+        for _step in range(8):
+            candidate = record.with_user(user)
+            candidate.invalidate_recordset()
+            if candidate.validation_status == "validated":
+                break
+            self.assertTrue(candidate.can_review, "test approver must own the next tier")
+            candidate.validate_tier()
+        record.invalidate_recordset()
+        self.assertEqual(record.validation_status, "validated")
+
     def test_validator_runs(self):
         payload = self.env["sc.data.validator"].run(return_dict=True)
         self.assertIn("rules", payload)
@@ -71,14 +89,13 @@ class TestValidatorSmoke(TransactionCase):
                 ],
             }
         )
-        settle = self.env["sc.settlement.order"].create(
+        settle = self._approved_settlement_fixture(
             {
                 "project_id": project.id,
                 "partner_id": partner.id,
                 "contract_id": contract.id,
                 "purchase_order_ids": [(6, 0, [po.id])],
                 "line_ids": [(0, 0, {"name": "Settlement Line", "qty": 1, "price_unit": 10})],
-                "state": "approve",
             }
         )
         finance_group = self.env.ref("smart_construction_core.group_sc_cap_finance_user")
@@ -162,14 +179,13 @@ class TestValidatorSmoke(TransactionCase):
                 ],
             }
         )
-        settle2 = self.env["sc.settlement.order"].create(
+        settle2 = self._approved_settlement_fixture(
             {
                 "project_id": project2.id,
                 "partner_id": partner2.id,
                 "contract_id": contract2.id,
                 "purchase_order_ids": [(6, 0, [po2.id])],
                 "line_ids": [(0, 0, {"name": "Settlement Line", "qty": 1, "price_unit": 10})],
-                "state": "approve",
             }
         )
         good_pr = self.env["payment.request"].sudo().with_context(payment_soft_gate=True).create(
@@ -250,14 +266,13 @@ class TestValidatorSmoke(TransactionCase):
                 ],
             }
         )
-        settle = self.env["sc.settlement.order"].create(
+        settle = self._approved_settlement_fixture(
             {
                 "project_id": project.id,
                 "partner_id": partner.id,
                 "contract_id": contract.id,
                 "purchase_order_ids": [(6, 0, [po.id])],
                 "line_ids": [(0, 0, {"name": "Settlement Line", "qty": 1, "price_unit": 100})],
-                "state": "approve",
             }
         )
         finance_group = self.env.ref("smart_construction_core.group_sc_cap_finance_user")
@@ -293,7 +308,7 @@ class TestValidatorSmoke(TransactionCase):
             }
         )
         pr1.with_user(fin_user).action_submit()
-        pr1.with_user(fin_mgr).validate_tier()
+        self._complete_tier_validation(pr1, fin_mgr)
         pr1.invalidate_recordset()
         self.assertIn(pr1.state, ("approve", "approved"))
 
@@ -311,7 +326,7 @@ class TestValidatorSmoke(TransactionCase):
             }
         )
         pr2.with_user(fin_user).action_submit()
-        pr2.with_user(fin_mgr).validate_tier()
+        self._complete_tier_validation(pr2, fin_mgr)
         pr2.invalidate_recordset()
         self.assertEqual(pr2.state, "approved")
 
@@ -359,14 +374,13 @@ class TestValidatorSmoke(TransactionCase):
                 ],
             }
         )
-        settle = self.env["sc.settlement.order"].create(
+        settle = self._approved_settlement_fixture(
             {
                 "project_id": project.id,
                 "partner_id": partner.id,
                 "contract_id": contract.id,
                 "purchase_order_ids": [(6, 0, [po.id])],
                 "line_ids": [(0, 0, {"name": "Settlement Line", "qty": 1, "price_unit": 100})],
-                "state": "approve",
             }
         )
         company = self.env.ref("base.main_company")
@@ -404,7 +418,7 @@ class TestValidatorSmoke(TransactionCase):
             }
         )
         pr1.with_user(fin_user).action_submit()
-        pr1.with_user(fin_mgr).validate_tier()
+        self._complete_tier_validation(pr1, fin_mgr)
         pr1.invalidate_recordset()
 
         settle.invalidate_recordset()
@@ -502,6 +516,6 @@ class TestValidatorSmoke(TransactionCase):
             "email": "settle+happy@test.com",
         })
         settle.action_submit()
-        settle.with_user(settlement_mgr).validate_tier()
+        self._complete_tier_validation(settle, settlement_mgr)
         settle.invalidate_recordset()
         self.assertEqual(settle.state, "approve")

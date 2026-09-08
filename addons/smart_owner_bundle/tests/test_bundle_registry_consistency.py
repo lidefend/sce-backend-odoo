@@ -19,7 +19,7 @@ from odoo.addons.smart_owner_bundle.services.bundle_registry import (
 )
 
 
-@tagged("post_install", "-at_install", "smart_owner_bundle", "registry_consistency")
+@tagged("post_install", "-at_install", "sc_gate", "smart_owner_bundle", "registry_consistency")
 class TestOwnerBundleRegistryConsistency(TransactionCase):
     def test_scene_tile_capabilities_are_declared(self):
         capability_keys = {cap["key"] for cap in list_bundle_capabilities()}

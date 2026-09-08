@@ -55,7 +55,7 @@ class _DummyEnv:
         raise KeyError(key)
 
 
-@tagged("post_install", "-at_install", "smart_construction_portal", "contract_dashboard")
+@tagged("post_install", "-at_install", "sc_gate", "smart_construction_portal", "contract_dashboard")
 class TestPortalLifecycleDashboardContract(TransactionCase):
     def _build(self, params=None):
         service = PortalContractService(_DummyEnv(params or {}))

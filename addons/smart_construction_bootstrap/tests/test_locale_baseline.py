@@ -13,7 +13,7 @@ from odoo.tests.common import TransactionCase, tagged
 from odoo.addons.smart_construction_bootstrap.hooks import post_init_hook
 
 
-@tagged("post_install", "-at_install", "smart_construction_bootstrap", "locale_baseline")
+@tagged("post_install", "-at_install", "sc_gate", "smart_construction_bootstrap", "locale_baseline")
 class TestBootstrapLocaleBaseline(TransactionCase):
     def test_post_init_hook_applies_baseline_params(self):
         post_init_hook(self.env)

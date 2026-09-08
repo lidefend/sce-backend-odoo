@@ -163,6 +163,14 @@ def scan(root: Path) -> list[Finding]:
             )
             if any(item not in text for item in mask_requirements):
                 findings.add(Finding("GA019", relative, "BACKEND_SUITE_DYNAMIC_SECRET_MASKING_INCOMPLETE"))
+            test_routing_requirements = (
+                'module_test_tags="sc_smoke/${module},sc_gate/${module}"',
+                'module_status="${PIPESTATUS[0]}"',
+                "0 failed, 0 error\\(s\\) of [1-9][0-9]* tests when loading database",
+                "backend suite collected zero tests for module ${module}",
+            )
+            if any(item not in text for item in test_routing_requirements):
+                findings.add(Finding("GA020", relative, "BACKEND_SUITE_TEST_ROUTING_NOT_FAIL_CLOSED"))
         if path.name == "frontend_release_gate.yml":
             required = (
                 "push:\n    branches: [main]",
