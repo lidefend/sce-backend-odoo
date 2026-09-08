@@ -70,6 +70,15 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
             self.assertEqual(self.by_source[source]["status"], "governed_composite")
             self.assertEqual(self.by_source[source]["targetBatch"], batch)
 
+    def test_dataset_editor_analysis_sources_have_machine_proven_completion(self) -> None:
+        batch = "p0-dataset-editor-analysis-ownership-v1"
+        sources = INVENTORY.BATCH_BINDINGS[batch]
+        self.assertEqual(len(sources), 7)
+        for source in sources:
+            self.assertIn(source, self.by_source)
+            self.assertEqual(self.by_source[source]["status"], "governed_composite")
+            self.assertEqual(self.by_source[source]["targetBatch"], batch)
+
     def test_zero_gap_report_has_no_stale_next_batch(self) -> None:
         self.assertEqual(self.report["summary"]["gap"], 0)
         self.assertIsNone(self.report["nextBatch"])

@@ -8733,3 +8733,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   consumes the existing semantic info-text token. No business label, role, route, permission,
   contract field, or product-specific presentation rule was added; focused guards lock both
   generic accessibility invariants.
+
+## 2026-09-08 — rendering-detail 7-gap baseline ownership closure
+
+- Formal Product Layer / target: P4 audit and evidence tooling for existing P0 generic frontend surfaces.
+- Change: registered one machine-verified owner for seven already-present BOQ/chart/rich-text/analysis surfaces and refreshed the four directly affected generated inventories. No product source, contract, role, database, fixture or runtime behavior changed.
+- Result: rendering inventory moved from 157 to 164 surfaces, `gap` from 7 to 0 and `governed_composite` from 99 to 106；formal raw-control bypass remains zero.
+- Evidence: 21 focused inventory tests PASS；49 rendering-detail tests PASS；full frontend Quick PASS；independent read-only review S0–S2=0. Restricted frontend/build stages passed but the shared live scene probe was environment-blocked by unavailable `dev_test_bootstrap` authentication.
+- Follow-up: merge this independent governance candidate before resuming FE-01～FE-03 browser acceptance；the existing `ScInlineState` internal vendor-selector item remains a separate non-blocking governance topic.

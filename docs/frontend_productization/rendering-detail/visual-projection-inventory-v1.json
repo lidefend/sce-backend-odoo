@@ -142,7 +142,7 @@
     },
     {
       "category": "other",
-      "digest": "dce4bff96882dc3e6446f55b72800376c09a3e0609f13597e7acb53083d5e75f",
+      "digest": "7d0e5f80eb33c39a818f900b3ebcf3fff8148c302601cf013b19808c4b31f859",
       "nativeStyleSelectors": [],
       "path": "components/GlobalMessagePanel.vue",
       "referenceNativeStyleSelectors": [
@@ -237,7 +237,7 @@
     },
     {
       "category": "other",
-      "digest": "e8b792b33fb0687d7b048c7a6d71d244ad82d430545b3e76db1201dc8b302fb7",
+      "digest": "bc4f96deed42e29638cac91c656b23983fd882a6dc7355da63088c5542430bfa",
       "nativeStyleSelectors": [],
       "path": "components/action/HierarchicalWorksheet.vue",
       "referenceNativeStyleSelectors": [
@@ -333,6 +333,16 @@
       ]
     },
     {
+      "category": "other",
+      "digest": "c19b4675fe755e13f19caf30a5d9247e73b2eca4c20e590dfc31358a5444a5a9",
+      "nativeStyleSelectors": [],
+      "path": "components/boq/BoqImportPreviewPanel.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
       "category": "overlay",
       "digest": "74501b1ee44587394c428b9897220b16d6cf8d2f6485989a0d38eefecac20b25",
       "nativeStyleSelectors": [],
@@ -384,6 +394,16 @@
         "ScStatusBadge",
         "ScTextarea"
       ]
+    },
+    {
+      "category": "other",
+      "digest": "5e2eff6628ecb29483361996da6a9e133280c333aaae116931b8493b6b493a44",
+      "nativeStyleSelectors": [],
+      "path": "components/chart/ChartDatasetPanel.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
     },
     {
       "category": "workflow",
@@ -665,7 +685,7 @@
     },
     {
       "category": "states",
-      "digest": "fd8aab507729ce1f361c2ff722c3ded53f4368e4dcde9ed7e819c5f065e6ce82",
+      "digest": "a7e444f23a67b675865fc1ce13ee34a734dc7e469bdfa758e41f2bd49e48198d",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScInlineState.vue",
       "referenceNativeStyleSelectors": [],
@@ -815,7 +835,7 @@
     },
     {
       "category": "relations-x2many",
-      "digest": "3de7548fa8f01902014793c59ad8e03288814d026eaa939800dfd33c684084f4",
+      "digest": "1353c70c5d8621c9b246337cdd7b5800e0c23bebb7ce23228778447a0271ceed",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScRelationField.vue",
       "referenceNativeStyleSelectors": [],
@@ -945,7 +965,21 @@
     },
     {
       "category": "other",
-      "digest": "42460d8154fd67c1ead4b190456eb0705a3b0cdc21737af135f848b0311117aa",
+      "digest": "61fdfe4c7806d94138e02dc11be4459d2649eee02a67861cfdc6a8ad4b54fc25",
+      "nativeStyleSelectors": [],
+      "path": "components/editor/RestrictedHtmlEditor.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScDialog",
+        "ScInput"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "4d7866c4dff70935c922fade7bc8c44e293f4456dd557098adab04d488061477",
       "nativeStyleSelectors": [],
       "path": "components/page/BlockRenderer.vue",
       "referenceNativeStyleSelectors": [],
@@ -1028,6 +1062,26 @@
     },
     {
       "category": "other",
+      "digest": "e8de64c7c38735029fc8456c313b131047f1658990ae7027d23deffc4f8ed991",
+      "nativeStyleSelectors": [],
+      "path": "components/page/blocks/BlockBoqImportPreview.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "d38a2bdb38dbf1959896fd5fce70bb6eb9f4b7d8f71e20b4d744bc7a3a27db47",
+      "nativeStyleSelectors": [],
+      "path": "components/page/blocks/BlockChartDataset.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
       "digest": "d9b25df7e02090afd6b04d5b5a513ef7c0461fe7022ad9c3bbece156286cc890",
       "nativeStyleSelectors": [],
       "path": "components/page/blocks/BlockEntryGrid.vue",
@@ -1041,7 +1095,7 @@
     },
     {
       "category": "dashboard",
-      "digest": "df1a8d6457066f28c31e1a86177909be6d13200a86e761e1398dad676238b688",
+      "digest": "024d4ea4aeaf0fde0ceb170ee5c595e73666173f73560a884a2fcb589618d382",
       "nativeStyleSelectors": [],
       "path": "components/page/blocks/BlockMetricRow.vue",
       "referenceNativeStyleSelectors": [
@@ -1096,8 +1150,20 @@
       ]
     },
     {
+      "category": "other",
+      "digest": "2e69b925ede395e83d4b51acb0a03c718789a305a529a3e20e40055029aa4a02",
+      "nativeStyleSelectors": [],
+      "path": "components/page/blocks/BlockRichTextOverview.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton"
+      ]
+    },
+    {
       "category": "dashboard",
-      "digest": "3890409abd8d782091f05a3968bd310cace32c2d743d27d566416fcae66d075b",
+      "digest": "34b2c8baf710e91b482a5a9662a4a567b295cab1cfd22c80aafa14b9a142b41b",
       "nativeStyleSelectors": [],
       "path": "components/page/blocks/BlockTodoList.vue",
       "referenceNativeStyleSelectors": [],
@@ -1222,7 +1288,7 @@
     },
     {
       "category": "collection",
-      "digest": "cb80e8b2f9e50782c53db03d22cd7b8c59fd3f6419eb1791605705e35b4767e2",
+      "digest": "4aeb8c01fa62497223fbcbef2ef4f59a3109d1ced604a15697afbf0cf652f930",
       "nativeStyleSelectors": [],
       "path": "components/product-list/CollectionMobileRecordRow.vue",
       "referenceNativeStyleSelectors": [],
@@ -1249,7 +1315,7 @@
     },
     {
       "category": "collection",
-      "digest": "b872d6cb574ee108ad96ff18618216db27c089efac788c9a9b8cf3b8ba9d90d1",
+      "digest": "95f94fe643c263bef0dc45717d7e359a166a9058553db94a2f4a66808a0e2875",
       "nativeStyleSelectors": [],
       "path": "components/product-list/CollectionRowCell.vue",
       "referenceNativeStyleSelectors": [],
@@ -1561,7 +1627,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "76b09996816a33ede3f6d78a4554020333c001a31180886b9fa02040f8f50f8d",
+      "digest": "aecb3880b7a5a29d505274e4b1165faf9fb6f748c76e4c94837af7468a879deb",
       "nativeStyleSelectors": [],
       "path": "components/professional-fields/ProfessionalBusinessValueControl.vue",
       "referenceNativeStyleSelectors": [],
@@ -1658,7 +1724,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "6738b7a1abd7ff10ec3eb8db65de304e18606bf742cdc8526d8475f4f3ae8297",
+      "digest": "2a1969160ccaed83fb88ba31d8301e18ecc52b6a613e3b2c22f46a99c065ff9d",
       "nativeStyleSelectors": [],
       "path": "components/template/FormSection.vue",
       "referenceNativeStyleSelectors": [
@@ -1701,7 +1767,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "d78a5bb4a5fa5d8a57fff1f56f2d1f90f3677f0f46c1af1faed22ea34cf9e848",
+      "digest": "9f228ae15ec9911b49a85e918224e040e2aed7b522223ffa8d68f5b45f5c25b6",
       "nativeStyleSelectors": [],
       "path": "components/template/NativeFormTreeRenderer.vue",
       "referenceNativeStyleSelectors": [],
@@ -1830,7 +1896,7 @@
     },
     {
       "category": "collaboration",
-      "digest": "56672e0be6f264c57e5d1fe4d368bc5de4f4a977b01c8c1c2aae741e1eda1f2c",
+      "digest": "e07c6002638aeadd6a5fc3f219fe9fd068d7817761153c077e6b5337cc2a28e2",
       "nativeStyleSelectors": [],
       "path": "pages/ActivityPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -1844,8 +1910,32 @@
       ]
     },
     {
+      "category": "collaboration",
+      "digest": "94ccde0465659d3a2b2e4bedd9d789fe99a66d7e7242810621b61cd69272d048",
+      "nativeStyleSelectors": [],
+      "path": "pages/ActivityTemplateNode.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "830f56f2046650ba1db29c875a63bfdd14f414a3798f401bf69da371594c1e7f",
+      "nativeStyleSelectors": [],
+      "path": "pages/AnalysisPage.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScEmptyState",
+        "ScInlineState",
+        "ScTable"
+      ]
+    },
+    {
       "category": "form-fields",
-      "digest": "98915f1fb5bbe85bca0668a0be727967ad73154c1b2d6f4729df89953863af10",
+      "digest": "1d5109e834b88889f780478ee92559ae9e57abadef74b75cc6508f40307fcefc",
       "nativeStyleSelectors": [],
       "path": "pages/ContractFormPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -1868,7 +1958,7 @@
     },
     {
       "category": "collection",
-      "digest": "e634d4f359d3d32dcf94d32f71e41c990bcc0b184d9200f9f08fd92d3af8fd0a",
+      "digest": "77ca7079f2e094e35217760514468789a17d2265f28e5f743511c88d363c8e80",
       "nativeStyleSelectors": [],
       "path": "pages/ListPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -1978,7 +2068,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "17ab5a711991fc49e89c02b2d6206f56dca66d756440d4b5ea3b72708ec22b04",
+      "digest": "85a79a2db0f9c8e5d4d5428fdc75c5e54a957e522ceeef3d8ce5f500cb7038ef",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormProductHeader.vue",
       "referenceNativeStyleSelectors": [],
@@ -2057,7 +2147,7 @@
     },
     {
       "category": "collaboration",
-      "digest": "b5507775e627ba4ab678e5ba3abdeb31deaf601b31dac232edaba4f6ed480409",
+      "digest": "85d7136d02f7fc0a9a6e69a14c17180ec3f1cf3b02f4ec64b039ec54d0219917",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/NativeCollaborationPanel.vue",
       "referenceNativeStyleSelectors": [],
@@ -2070,7 +2160,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "bd9bdcc123ac4eda59d3eac5592f2b01bcece47075e7a7b4a8e0988d5d75fe53",
+      "digest": "3c55b2c365b7f3fdadc6009c9b2cfc8266def3af7cb57898a7e58e215a2dfc4c",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ObjectTaskPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2121,7 +2211,7 @@
     },
     {
       "category": "collaboration",
-      "digest": "806abf2a7ee5509eab5794308cbc96da3211f3e381fce2995fc15735cf56193f",
+      "digest": "a2616b3fffac5a98a9880361a44f2204721224b83c38b18062eef12d5935ffb8",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ProfessionalCollaborationComposer.vue",
       "referenceNativeStyleSelectors": [],
@@ -2237,7 +2327,7 @@
     },
     {
       "category": "collection",
-      "digest": "0947a97d8d99386d3c727520cdaec54da1d8467b6d6782cb70fb8bed6b96f957",
+      "digest": "ade362c3866ce8a7665b09ec2b90c1da0f4ec470ec341bf24fac256257c58aa7",
       "nativeStyleSelectors": [],
       "path": "views/ActionView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2393,7 +2483,7 @@
     },
     {
       "category": "other",
-      "digest": "e46a275c12eb34a7aa4c69f899ad4d0fcd272f557d55549c01afa51001f8de5b",
+      "digest": "ef423f170dc6cc8d2d5cd129e952d8798ffc0dfda1a149b1d9f73a2c628afd9e",
       "nativeStyleSelectors": [],
       "path": "views/SceneContractBlockGridView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2447,7 +2537,7 @@
     },
     {
       "category": "other",
-      "digest": "9dbe119f7b82167e250eafb64734ec0b00e1823846b6e9aed549280cb9eaaaf0",
+      "digest": "6314f0965dbe2ee4c12bc5c2f5915adc72cf87069b949f74c38a944ed3622121",
       "nativeStyleSelectors": [],
       "path": "views/SceneView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2606,7 +2696,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "da9b87801c8687936bb4fff2b86938a703575d7d29a33723d8d4ee2245f33420",
+  "currentInputDigest": "07e73d5b2f079e0ce9578a010096431853871942d7fc6acb1d0c5d205694e87a",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
@@ -2838,9 +2928,9 @@
   "scope": "repository formal P0/P1 frontend source projection",
   "summary": {
     "adapterCount": 18,
-    "changedSourceCount": 182,
+    "changedSourceCount": 190,
     "consumerPrimitiveVisualChromeCount": 0,
-    "currentSourceCount": 209,
+    "currentSourceCount": 216,
     "invalidFormalVisualEvidenceBindingCount": 0,
     "projectedAdapterCount": 18,
     "referenceSourceCount": 132,

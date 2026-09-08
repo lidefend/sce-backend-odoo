@@ -110,6 +110,18 @@
         "frontend/apps/web/src/views/WorkbenchView.vue"
       ]
     },
+    "p0-dataset-editor-analysis-ownership-v1": {
+      "formalProductLayer": "P0",
+      "sources": [
+        "frontend/apps/web/src/components/boq/BoqImportPreviewPanel.vue",
+        "frontend/apps/web/src/components/chart/ChartDatasetPanel.vue",
+        "frontend/apps/web/src/components/editor/RestrictedHtmlEditor.vue",
+        "frontend/apps/web/src/components/page/blocks/BlockBoqImportPreview.vue",
+        "frontend/apps/web/src/components/page/blocks/BlockChartDataset.vue",
+        "frontend/apps/web/src/components/page/blocks/BlockRichTextOverview.vue",
+        "frontend/apps/web/src/pages/AnalysisPage.vue"
+      ]
+    },
     "p3-low-code-administration": {
       "formalProductLayer": "P3",
       "sources": [
