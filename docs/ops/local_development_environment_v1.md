@@ -111,6 +111,11 @@ Compose project、数据库、卷或端口。若 clean 凭据文件缺失但固�
 身份；它不会在链接工作树复制、生成或链接凭据文件。普通
 `make verify.frontend.quick.gate` 的默认语义保持不变。
 
+链接工作树执行仓库级 `make ci.local.quick` 时，入口同样通过上述权威解析器，在隔离环境中
+调用内部 `ci.local.quick.run`；禁止直接调用内部目标。主工作树的 `ci.local.quick` 行为保持
+不变。clean exact-head 成功后生成的工作树本地收据可由 `make pr.merge` 复用；HEAD、tree、
+clean 状态或收据任一不匹配时仍回退执行完整门禁。
+
 所有本地入口会先清除父进程继承的 project、database、dbfilter、volume 与 port 身份，再从
 对应的权威 env 文件重新装载。不得通过 shell export 覆盖身份，也不得直接调用嵌套 Make、
 Compose 或底层脚本。`down`/`logs` 不隐式创建凭据或资源；`up`/`health`/`test`/`upgrade` 会先

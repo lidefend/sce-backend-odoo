@@ -148,6 +148,29 @@ class LocalDevFrontendQuickTest(unittest.TestCase):
             self.assertNotIn("MAKEFLAGS", environment)
             self.assertNotIn("GIT_DIR", environment)
 
+    def test_full_repo_quick_uses_authority_without_runtime_readiness(self):
+        _temporary, _primary, linked, authority = self._authority_fixture()
+        calls: list[list[str]] = []
+
+        def runner(command, **_kwargs):
+            calls.append(command)
+            return subprocess.CompletedProcess(command, 0)
+
+        with mock.patch.object(QUICK, "resolve_authority_env", return_value=authority):
+            self.assertEqual(
+                QUICK.run_gate(
+                    linked,
+                    runner=runner,
+                    target="ci.local.quick.run",
+                    require_ready=False,
+                ),
+                0,
+            )
+        self.assertEqual(len(calls), 1)
+        self.assertIn("ci.local.quick.run", calls[0])
+        self.assertNotIn("local.dev.ready", calls[0])
+        self.assertIn(f"ENV_FILE={authority}", calls[0])
+
     def test_wrong_profile_is_rejected_by_existing_local_dev_readiness(self):
         with tempfile.TemporaryDirectory() as directory:
             env_file = Path(directory) / ".env.dev"
@@ -193,6 +216,8 @@ class LocalDevFrontendQuickTest(unittest.TestCase):
         local_frontend = dev_make.split("local.dev.frontend:", 1)[1].split("\n\n", 1)[0]
         self.assertIn("local.dev.ready", local_frontend)
         self.assertIn("frontend_static_build.sh", local_frontend)
+        ci_make = (ROOT / "make/ci.mk").read_text(encoding="utf-8")
+        self.assertIn("--full-ci-local-quick", ci_make)
 
     def test_terminal_frontend_build_recipe_receives_the_authoritative_env_file(self):
         """The final shell recipe, not only Python's make arguments, carries authority."""

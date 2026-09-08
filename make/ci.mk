@@ -816,7 +816,13 @@ ci.local.quick: guard.prod.forbid
 	else \
 	  echo "[ci.local.quick] evidence disabled: worktree was not clean at suite start"; \
 	fi; \
-	$(MAKE) --no-print-directory ci.local.quick.run; \
+	GIT_DIR="$$(git rev-parse --path-format=absolute --git-dir)"; \
+	GIT_COMMON_DIR="$$(git rev-parse --path-format=absolute --git-common-dir)"; \
+	if [ "$$GIT_DIR" = "$$GIT_COMMON_DIR" ]; then \
+	  $(MAKE) --no-print-directory ci.local.quick.run; \
+	else \
+	  python3 scripts/dev/local_dev_frontend_quick.py --full-ci-local-quick; \
+	fi; \
 	if [ -n "$$EVIDENCE_HEAD" ]; then \
 	  python3 scripts/ops/local_quick_evidence.py record --expected-head "$$EVIDENCE_HEAD"; \
 	fi; \
