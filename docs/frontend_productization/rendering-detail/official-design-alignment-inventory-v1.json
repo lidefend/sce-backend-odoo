@@ -14,8 +14,15 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "9b259b564c23b028b8092c3950582adee4bdfb9a199311d18f9ac3ba0ba6b7f9",
-  "internalVendorSelectorGaps": [],
+  "inputDigest": "c70c87fa48c16b2e92813a6b694022903c648d92793407738e9b5b7cf5628f4b",
+  "internalVendorSelectorGaps": [
+    {
+      "file": "frontend/apps/web/src/components/design-system/ScInlineState.vue",
+      "line": 18,
+      "selector": ".sc-inline-state.t-alert--info :deep(.t-alert__description)",
+      "status": "legacy_override_gap"
+    }
+  ],
   "productAppearanceVariants": [
     {
       "appearance": "account-context",
@@ -154,6 +161,7 @@
         "frontend/apps/web/src/components/product-list/CollectionColumnHeaderControl.vue",
         "frontend/apps/web/src/components/product-shell/WorkspaceContextIndicator.vue",
         "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/src/pages/ActivityPage.vue",
         "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
         "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue"
       ],
@@ -317,6 +325,7 @@
     {
       "appearance": "numeric-entry",
       "consumers": [
+        "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
         "frontend/apps/web/src/components/design-system/ScInput.vue",
         "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue"
       ],
@@ -392,7 +401,8 @@
     {
       "appearance": "relation-tag",
       "consumers": [
-        "frontend/apps/web/src/components/design-system/ScButton.vue"
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/product-list/CollectionRowCell.vue"
       ],
       "selectors": [
         ".sc-btn[data-appearance='relation-tag']",
@@ -554,7 +564,8 @@
       "appearance": "worksheet",
       "consumers": [
         "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
-        "frontend/apps/web/src/components/design-system/ScTable.vue"
+        "frontend/apps/web/src/components/design-system/ScTable.vue",
+        "frontend/apps/web/src/pages/AnalysisPage.vue"
       ],
       "selectors": [
         "[data-semantic-component='ScTable'][data-appearance='worksheet']",
@@ -605,8 +616,8 @@
   "schemaVersion": "frontend.official-design-alignment.inventory.v1",
   "scope": "formal P0/P1 frontend TDesign driver and product adapter styling",
   "summary": {
-    "formalStyleSourceCount": 201,
-    "internalVendorSelectorGapCount": 0,
+    "formalStyleSourceCount": 208,
+    "internalVendorSelectorGapCount": 1,
     "officialPublicTokenCount": 240,
     "orphanedProductAppearanceVariantCount": 0,
     "productAppearanceVariantCount": 39,

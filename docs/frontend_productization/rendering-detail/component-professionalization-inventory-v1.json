@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "9aee278e70400ba7e87f6b6f89bed903039e41f91db46c88c43774f59e8a2a9c",
-  "generatorDigest": "b6d9ae350740a6721fe0aec7b6f89eacba12c6489334dd084700d23363637a22",
-  "ownershipDigest": "52e0d9764b40ce8c499255abd36bbee03a816ce9d02e7f9ffdda9bf0ba230406",
-  "inputDigest": "2298bc29aaaed4c9da917f9e28fc31ee3af430b865fcdee1d1428076bd3cca5a",
+  "sourceIdentity": "318f0b5bd4e68d2c78d09d4ce9743acd41e322a24ade416d076a07ff11a1ed50",
+  "generatorDigest": "ccaa710e41b151771fa0b9bff2e78c3d3a9713e4fc6b9584920b383f6ed10f95",
+  "ownershipDigest": "c0501b51c355e1c76a769d9196aad4062fac82b27d11b98768eca645590989ce",
+  "inputDigest": "c734b1f9ee88c74b330d867745a8581f0a2c8f6e61c4bef3d1e7ccc4c9e39b63",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -20,12 +20,12 @@
     "permission and route authority changes"
   ],
   "summary": {
-    "surfaceCount": 157,
+    "surfaceCount": 164,
     "p0P1RawControlBypassSurfaceCount": 0,
     "p0P1RawControlBypassControlCount": 0,
     "deliberate_native_composite": 0,
     "gap": 0,
-    "governed_composite": 99,
+    "governed_composite": 106,
     "governed_primitive": 40,
     "p3_out_of_scope": 18
   },
@@ -120,6 +120,7 @@
         "loading",
         "empty",
         "error",
+        "disabled",
         "focus"
       ],
       "rawControls": {},
@@ -206,6 +207,19 @@
       "targetBatch": null
     },
     {
+      "source": "frontend/apps/web/src/components/boq/BoqImportPreviewPanel.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "empty",
+        "error"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-dataset-editor-analysis-ownership-v1"
+    },
+    {
       "source": "frontend/apps/web/src/components/business/IntentConfirmationDialog.vue",
       "formalProductLayer": "P0",
       "status": "governed_composite",
@@ -234,6 +248,20 @@
         "ScEmptyState"
       ],
       "targetBatch": "p0-shared-utility-scene-completion-v1"
+    },
+    {
+      "source": "frontend/apps/web/src/components/chart/ChartDatasetPanel.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "loading",
+        "empty",
+        "error"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-dataset-editor-analysis-ownership-v1"
     },
     {
       "source": "frontend/apps/web/src/components/design-system/ScAutoComplete.vue",
@@ -613,7 +641,8 @@
       "status": "governed_primitive",
       "reason": "design-system primitive source",
       "stateTypes": [
-        "disabled"
+        "disabled",
+        "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -746,6 +775,21 @@
       "targetBatch": null
     },
     {
+      "source": "frontend/apps/web/src/components/editor/RestrictedHtmlEditor.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "empty",
+        "error",
+        "disabled",
+        "focus"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-dataset-editor-analysis-ownership-v1"
+    },
+    {
       "source": "frontend/apps/web/src/components/page/BlockRenderer.vue",
       "formalProductLayer": "P0",
       "status": "governed_composite",
@@ -825,6 +869,34 @@
       "targetBatch": null
     },
     {
+      "source": "frontend/apps/web/src/components/page/blocks/BlockBoqImportPreview.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "loading",
+        "empty",
+        "error"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-dataset-editor-analysis-ownership-v1"
+    },
+    {
+      "source": "frontend/apps/web/src/components/page/blocks/BlockChartDataset.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "loading",
+        "empty",
+        "error"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-dataset-editor-analysis-ownership-v1"
+    },
+    {
       "source": "frontend/apps/web/src/components/page/blocks/BlockEntryGrid.vue",
       "formalProductLayer": "P0",
       "status": "governed_composite",
@@ -895,6 +967,21 @@
         "ScEmptyState"
       ],
       "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/components/page/blocks/BlockRichTextOverview.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "loading",
+        "empty",
+        "error",
+        "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-dataset-editor-analysis-ownership-v1"
     },
     {
       "source": "frontend/apps/web/src/components/page/blocks/BlockTodoList.vue",
@@ -1441,6 +1528,21 @@
         "ScErrorState"
       ],
       "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/pages/AnalysisPage.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "empty",
+        "error"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [
+        "ScEmptyState"
+      ],
+      "targetBatch": "p0-dataset-editor-analysis-ownership-v1"
     },
     {
       "source": "frontend/apps/web/src/pages/ContractFormPage.vue",

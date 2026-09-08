@@ -163,6 +163,15 @@ BATCH_BINDINGS = {
         "frontend/apps/web/src/views/SceneView.vue": {"section": {"attrs": {"data-semantic-component": "SceneView", ":aria-busy": "isLoading || undefined"}}},
         "frontend/apps/web/src/views/WorkbenchView.vue": {"pagerenderer": {"attrs": {"data-semantic-component": "WorkbenchView", "data-state": "unified"}}, "section": {"attrs": {"data-semantic-component": "WorkbenchView", "data-state": "fallback"}}},
     },
+    "p0-dataset-editor-analysis-ownership-v1": {
+        "frontend/apps/web/src/components/boq/BoqImportPreviewPanel.vue": {"section": {"attrs": {"data-boq-import-preview": "", ":data-view-state": "model.viewState", "data-readonly": "true"}}},
+        "frontend/apps/web/src/components/chart/ChartDatasetPanel.vue": {"section": {"attrs": {"data-chart-dataset": "", ":data-view-state": "model.viewState", "data-readonly": "true"}}},
+        "frontend/apps/web/src/components/editor/RestrictedHtmlEditor.vue": {"div": {"attrs": {"data-semantic-component": "RestrictedHtmlEditor", ":data-state": "disabled ? 'disabled' : 'active'"}}},
+        "frontend/apps/web/src/components/page/blocks/BlockBoqImportPreview.vue": {"article": {"attrs": {"data-semantic-component": "BlockBoqImportPreview", ":data-state": "phase", "data-readonly": "true"}}},
+        "frontend/apps/web/src/components/page/blocks/BlockChartDataset.vue": {"article": {"attrs": {"data-semantic-component": "BlockChartDataset", ":data-state": "phase", "data-readonly": "true"}}},
+        "frontend/apps/web/src/components/page/blocks/BlockRichTextOverview.vue": {"article": {"attrs": {"data-semantic-component": "BlockRichTextOverview", ":data-state": "phase", ":data-editable": "view.canEdit ? 'true' : 'false'"}}},
+        "frontend/apps/web/src/pages/AnalysisPage.vue": {"section": {"attrs": {":data-analysis-view": "model.viewType", ":data-analysis-state": "model.ok ? 'ready' : 'unavailable'", ":data-analysis-reason": "model.reasonCode"}}},
+    },
 }
 OWNED_BINDINGS = {
     source: (batch, requirements)
