@@ -346,7 +346,11 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         self.assertIn("configured payment execution approval creates tier reviews", browser)
         self.assertIn('data-action-method="action_paid"', browser)
         self.assertIn("exactly one posted ledger reconciles", browser)
-        self.assertIn("duplicate_payment_rejection", browser)
+        self.assertIn("successful paid request captures complete contract authority envelope", browser)
+        self.assertIn("duplicate_payment_business_guard", browser)
+        self.assertIn("duplicate.status === 400", browser)
+        self.assertIn("duplicateReason === 'BUSINESS_RULE_FAILED'", browser)
+        self.assertIn("duplicate payment replay leaves execution request and ledger facts unchanged", browser)
         self.assertIn("no unexpected browser console errors", browser)
         self.assertIn("390px final request has no horizontal overflow", browser)
 

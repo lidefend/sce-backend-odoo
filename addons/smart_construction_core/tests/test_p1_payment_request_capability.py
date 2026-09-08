@@ -2,6 +2,7 @@
 import json
 import threading
 from pathlib import Path
+from unittest.mock import patch
 
 import odoo
 from odoo import SUPERUSER_ID, api
@@ -16,6 +17,7 @@ from odoo.addons.smart_construction_core.core_extension_policy_maps import (
     BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL,
 )
 from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+from odoo.addons.smart_core.handlers.execute_button import ExecuteButtonHandler
 from odoo.addons.smart_core.core import unified_page_contract_v2_assembler as contract_assembler
 
 
@@ -1062,6 +1064,124 @@ class TestP1PaymentRequestCapability(TransactionCase):
         ])
         self.assertEqual(set(posted_ledgers.mapped("payment_execution_id").ids), {second.id, replacement.id})
         self.assertEqual(sum(posted_ledgers.mapped("amount")), request.amount)
+
+    def test_exact_authorized_paid_request_replay_reaches_business_state_guard(self):
+        manager = self._internal_user(
+            "p1_duplicate_payment_replay_manager",
+            "smart_construction_core.group_sc_cap_finance_manager",
+        )
+        request, execution = self._approved_execution()
+        self.env.cr.execute(
+            "UPDATE payment_request SET validation_status = 'validated' WHERE id = %s",
+            (request.id,),
+        )
+        request.invalidate_recordset(["validation_status"])
+        self.env.cr.execute(
+            "UPDATE sc_payment_execution SET state = 'confirmed', validation_status = 'validated' WHERE id = %s",
+            (execution.id,),
+        )
+        execution.invalidate_recordset(["state", "validation_status"])
+        action = self.env.ref(
+            "smart_construction_core.action_sc_payment_execution_partner_payment"
+        )
+        menu = self.env.ref("smart_construction_core.menu_sc_partner_payment")
+        context = {
+            "trace_id": "p1-duplicate-payment-replay",
+            "allowed_company_ids": manager.company_ids.ids,
+        }
+        payload = {
+            "intent": "execute_button",
+            "params": {
+                "model": "sc.payment.execution",
+                "res_id": execution.id,
+                "button": {
+                    "name": "action_paid",
+                    "type": "object",
+                    "action_id": "action.paid",
+                    "backend_identity": "button:object:action_paid",
+                    "source_widget_id": "page.header",
+                },
+            },
+            "context": context,
+            "meta": {"action_id": action.id, "menu_id": menu.id},
+        }
+        authorized_contract = {
+            "actionContract": {
+                "actionRuleList": [
+                    {
+                        "actionId": "action.paid",
+                        "actionKey": "paid",
+                        "backendIdentity": "button:object:action_paid",
+                        "sourceWidgetId": "page.header",
+                        "button": {"name": "action_paid", "type": "object"},
+                        "allowed": True,
+                        "enabled": True,
+                        "disabled": False,
+                        "entitlementEvaluated": True,
+                    }
+                ]
+            },
+            "statusContract": {
+                "buttonStatus": [
+                    {
+                        "btnId": "btn.paid",
+                        "backendIdentity": "button:object:action_paid",
+                        "visible": True,
+                        "disabled": False,
+                    }
+                ]
+            },
+        }
+        manager_env = self.env(user=manager)
+
+        def execute_same_payload():
+            handler = ExecuteButtonHandler(
+                manager_env,
+                payload=payload,
+                context=context,
+            )
+            with patch.object(
+                handler,
+                "_load_current_action_contract",
+                return_value=authorized_contract,
+            ):
+                return handler.handle()
+
+        first = execute_same_payload()
+        self.assertTrue(first["ok"], first)
+        execution.invalidate_recordset()
+        request.invalidate_recordset()
+        ledgers_before = self.env["payment.ledger"].search(
+            [("payment_execution_id", "=", execution.id)], order="id"
+        )
+        facts_before = (
+            execution.state,
+            request.state,
+            request.paid_amount_total,
+            request.unpaid_amount,
+            tuple((row.id, row.state, row.amount) for row in ledgers_before),
+        )
+
+        replay = execute_same_payload()
+        self.assertFalse(replay["ok"])
+        self.assertEqual(replay["code"], 400)
+        self.assertEqual(replay["error"]["reason_code"], "BUSINESS_RULE_FAILED")
+        self.assertIn("只有完成审批并处于已确认状态", replay["error"]["message"])
+        self.assertNotIn("ACTION_CONTRACT_AUTHORITY_MISSING", replay["error"]["message"])
+        execution.invalidate_recordset()
+        request.invalidate_recordset()
+        ledgers_after = self.env["payment.ledger"].search(
+            [("payment_execution_id", "=", execution.id)], order="id"
+        )
+        facts_after = (
+            execution.state,
+            request.state,
+            request.paid_amount_total,
+            request.unpaid_amount,
+            tuple((row.id, row.state, row.amount) for row in ledgers_after),
+        )
+        self.assertEqual(facts_after, facts_before)
+        self.assertEqual(len(ledgers_after), 1)
 
     def test_payment_flow_label_is_live_derived_fact_for_existing_rows(self):
         request = self._request()

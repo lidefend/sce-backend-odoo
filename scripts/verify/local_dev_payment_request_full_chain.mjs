@@ -93,15 +93,18 @@ async function shot(page, name) {
   report.screenshots.push({ name, file, url: page.url(), viewport: page.viewportSize() });
 }
 async function apiIntent(page, intent, params) {
+  return apiEnvelope(page, { intent, params });
+}
+async function apiEnvelope(page, envelope) {
   const token = await page.evaluate((db) => sessionStorage.getItem(`sc_auth_token:${db}`) || '', database);
-  return page.evaluate(async ({ db, tokenValue, intentNameValue, paramsValue }) => {
+  return page.evaluate(async ({ db, tokenValue, envelopeValue }) => {
     const response = await fetch(`/api/v1/intent?db=${encodeURIComponent(db)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: tokenValue ? `Bearer ${tokenValue}` : '', 'X-Trace-Id': `local-dev-payment-full-chain-${Date.now()}` },
-      body: JSON.stringify({ intent: intentNameValue, params: paramsValue }),
+      body: JSON.stringify(envelopeValue),
     });
     return { status: response.status, body: await response.json().catch(() => ({})) };
-  }, { db: database, tokenValue: token, intentNameValue: intent, paramsValue: params });
+  }, { db: database, tokenValue: token, envelopeValue: envelope });
 }
 async function clickAction(page, selector, expectedIntent, label) {
   const button = page.locator(selector);
@@ -119,6 +122,7 @@ async function clickAction(page, selector, expectedIntent, label) {
     const response = await responsePromise;
     check(response.status() < 400, `${label} request succeeds`, { status: response.status() });
     const body = await response.json().catch(() => ({}));
+    const requestPayload = JSON.parse(response.request().postData() || '{}');
     const result = body?.data?.result || body?.result || {};
     const rawAction = result?.raw_action || {};
     report.action_responses.push({
@@ -127,6 +131,7 @@ async function clickAction(page, selector, expectedIntent, label) {
       action_id: Number(result?.action_id || rawAction?.id || rawAction?.action_id || 0),
       menu_id: Number(rawAction?.menu_id || rawAction?.entry_target?.compatibility_refs?.menu_id || 0),
       entry_target: result?.entry_target || rawAction?.entry_target || null,
+      request_payload: requestPayload,
     });
     return result;
   }
@@ -292,6 +297,18 @@ try {
     { confirmed, executionPolicy },
   );
   await clickAction(manager, '[data-action-method="action_paid"][data-action-enabled="true"]:visible', 'execute_button', 'register paid');
+  const paidRequestPayload = report.action_responses.findLast((row) => row.label === 'register paid')?.request_payload;
+  check(
+    paidRequestPayload?.intent === 'execute_button'
+      && paidRequestPayload?.params?.button?.name === 'action_paid'
+      && Number(paidRequestPayload?.meta?.action_id || 0) > 0
+      && Number(paidRequestPayload?.meta?.menu_id || 0) > 0
+      && Boolean(paidRequestPayload?.params?.button?.action_id)
+      && Boolean(paidRequestPayload?.params?.button?.backend_identity)
+      && Boolean(paidRequestPayload?.params?.button?.source_widget_id),
+    'successful paid request captures complete contract authority envelope',
+    { paidRequestPayload },
+  );
   await waitForm(manager, 'sc.payment.execution', executionId);
   await manager.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
   await waitForm(manager, 'sc.payment.execution', executionId);
@@ -302,20 +319,39 @@ try {
   report.transitions.push({ actor: managerLogin, execution_id: executionId, from: 'draft', via: ['confirmed'], to: paid.state, request_state: completed.state });
   await shot(manager, '05-paid-desktop');
 
-  const duplicateFailureStart = report.failed_requests.length;
-  const duplicateErrorStart = report.errors.length;
-  const duplicate = await apiIntent(manager, 'execute_button', { model: 'sc.payment.execution', res_id: executionId, button: { name: 'action_paid', type: 'object' } });
-  check(duplicate.status >= 400, 'duplicate paid attempt is rejected', { status: duplicate.status });
-  for (const failure of report.failed_requests.slice(duplicateFailureStart)) {
-    if (failure.intent === 'execute_button' && failure.status === duplicate.status) failure.expected = 'duplicate_payment_rejection';
-  }
-  for (const error of report.errors.slice(duplicateErrorStart)) {
-    if (error.type === 'console' && /status of 4\d\d|FORBIDDEN/i.test(error.text || '')) error.expected = 'duplicate_payment_rejection';
-  }
   const ledger = await apiIntent(manager, 'api.data', { op: 'list', model: 'payment.ledger', fields: ['id', 'state', 'amount', 'payment_execution_id'], domain: [['payment_request_id', '=', requestId]], limit: 10 });
   const ledgerRows = ledger.body?.data?.records || ledger.body?.result?.records || [];
   const posted = ledgerRows.filter((row) => row.state === 'posted');
   check(ledger.status === 200 && posted.length === 1 && Number(posted[0].amount) === 10000, 'exactly one posted ledger reconciles', { rows: ledgerRows });
+  const factsBeforeReplay = { paid, completed, ledgerRows };
+  const duplicateFailureStart = report.failed_requests.length;
+  const duplicateErrorStart = report.errors.length;
+  const duplicate = await apiEnvelope(manager, paidRequestPayload);
+  const duplicateReason = String(duplicate.body?.error?.reason_code || duplicate.body?.data?.result?.reason_code || '');
+  const duplicateMessage = String(duplicate.body?.error?.message || duplicate.body?.data?.result?.message || '');
+  check(
+    duplicate.status === 400
+      && duplicateReason === 'BUSINESS_RULE_FAILED'
+      && /只有.*已确认状态.*登记付款/.test(duplicateMessage)
+      && !/ACTION_CONTRACT_AUTHORITY_MISSING/.test(duplicateMessage),
+    'exact authorized paid request replay reaches duplicate-payment business guard',
+    { status: duplicate.status, reason: duplicateReason, message: duplicateMessage },
+  );
+  for (const failure of report.failed_requests.slice(duplicateFailureStart)) {
+    if (failure.intent === 'execute_button' && failure.status === 400) failure.expected = 'duplicate_payment_business_guard';
+  }
+  for (const error of report.errors.slice(duplicateErrorStart)) {
+    if (error.type === 'console' && /status of 400|BAD REQUEST/i.test(error.text || '')) error.expected = 'duplicate_payment_business_guard';
+  }
+  const paidAfterReplay = await readOne(manager, 'sc.payment.execution', ['id', 'state', 'paid_amount', 'payment_request_id'], executionId);
+  const completedAfterReplay = await readOne(manager, 'payment.request', ['id', 'state', 'amount', 'paid_amount_total', 'unpaid_amount', 'is_fully_paid'], requestId);
+  const ledgerAfterReplay = await apiIntent(manager, 'api.data', { op: 'list', model: 'payment.ledger', fields: ['id', 'state', 'amount', 'payment_execution_id'], domain: [['payment_request_id', '=', requestId]], limit: 10 });
+  const ledgerRowsAfterReplay = ledgerAfterReplay.body?.data?.records || ledgerAfterReplay.body?.result?.records || [];
+  check(
+    JSON.stringify({ paid: paidAfterReplay, completed: completedAfterReplay, ledgerRows: ledgerRowsAfterReplay }) === JSON.stringify(factsBeforeReplay),
+    'duplicate payment replay leaves execution request and ledger facts unchanged',
+    { before: factsBeforeReplay, after: { paid: paidAfterReplay, completed: completedAfterReplay, ledgerRows: ledgerRowsAfterReplay } },
+  );
 
   await manager.setViewportSize({ width: 390, height: 844 });
   await manager.goto(`${baseUrl}/r/payment.request/${requestId}?action_id=${actionId}&menu_id=${menuId}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
