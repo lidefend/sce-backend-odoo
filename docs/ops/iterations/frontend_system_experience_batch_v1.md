@@ -87,3 +87,11 @@ Complete baseline fingerprint: `112758622e9a3dc6c1ce8437120cfe0f553760fcd7a8d7dc
 - P0 ActionView publication now requires active action route plus matching instance action/menu key. Reuses existing route-runtime ownership; no routing or permission change.
 - Existing retention test entry now covers 9 ownership cases, including the pre-deactivation race against work/home/form destinations. State/dashboard tests, page-identity 23+12 assertions and guard, strict typecheck PASS.
 - Runtime after reload and a fresh payment-list to My Work transition: `/my-work`, h1 and document title are 我的工作; identity source product-fallback; 390px document equals viewport. Four existing work items remain visible; no business action executed.
+
+### Follow-up: My Work visual structure and keyboard access
+
+- Baseline `304369fe73009503f1912e9fc44d537915f1fc8f`; fingerprint `e582a71cf94c65871092856d721ce5717570a43237bce66b79f8cb175b87e0af`.
+- P0 generic work-workspace presentation now uses ScButton metric appearance for actionable counts and existing ScCard record appearance for work items. Removes nested ScPanel borders/padding. Counts adapt to available sections; selected state uses a single border/subtle fill and aria-pressed. Keyboard focus uses one 2px outline, no additional shadow.
+- Filter controls use existing form-field appearance. The adapter now applies the form-height token to the actual TDesign input/select control; workspace mobile token is 44px. Desktop controls measure 36px, mobile controls 44px.
+- Real `/my-work` browser: 4 items to filtered empty with keyword retained, clear restores 4; initiated section shows authoritative zero state, then returned to todo. At 320/390/1088px document width equals viewport. Work cards contain no nested cards; original data facts/actions remain. Tab focuses the next metric with visible 2px outline and computed box-shadow none.
+- Registered primitive adapter (46 components, 25 tests), page-pattern parity (8 tests, 13 surfaces), strict typecheck and diff whitespace PASS. Browser error log explicitly empty. No business action invoked; viewport restored.

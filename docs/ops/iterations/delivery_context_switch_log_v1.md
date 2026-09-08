@@ -8959,3 +8959,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - P0 frontend / ActionView route runtime. Departing retained lists could publish their old action title against a new shared router path before deactivation. Require matching action/menu instance and action route; frontend identity ownership belongs here, not in business contracts or backend modules.
 - Baseline c79e2e6bd87afcac4885b0897780c54dc6947265; fingerprint 17cdcd8e42da9a3470a6ef0feb84beae24463ea427ec012c9c163490cf42c884.
 - Existing retention entry adds 9 ownership assertions; state/dashboard, page identity 23+12 assertions, identity guard and strict typecheck PASS. Real list to My Work navigation now keeps route/title/content aligned. No business writes. Matrix records runtime details and remaining visual work.
+
+## 2026-09-09 — 我的工作页面去重与交互一致性
+
+- P0 shared workspace renderer and primitive adapter; platform-generic metric state, panel ownership and input geometry. No P1/P2 business field or action changes. Reused ScCard record and ScButton; no new page framework.
+- Baseline 304369fe73009503f1912e9fc44d537915f1fc8f; fingerprint e582a71cf94c65871092856d721ce5717570a43237bce66b79f8cb175b87e0af.
+- Replaced nested panels, separated selected state from keyboard focus, added pressed semantics, and projected input-height tokens to native driver controls. Existing component/parity tests and strict typecheck PASS. Real filter recovery, category switch, 320/390/1088 layout and single focus outline verified; see matrix.
+- Remains local iteration; no remote publication or business writes. Revert scoped presentation commit for rollback. Continue matrix gaps rather than treating this batch as full-system acceptance.
