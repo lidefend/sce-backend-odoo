@@ -57,6 +57,8 @@ from . import test_my_work_backend
 from . import test_reason_codes_backend
 from . import test_payment_request_permission
 from . import test_payment_request_available_actions_backend
+from . import test_payment_request_approval_intent_backend
+from . import test_payment_request_action_surface_backend
 from . import test_payment_request_work_item_service
 from . import test_payment_domain_permission_isolation
 from . import test_approval_policy_toggle_backend

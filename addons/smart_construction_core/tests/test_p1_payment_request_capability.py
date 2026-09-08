@@ -275,6 +275,16 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(view_action["visible_profiles"], ["edit", "readonly"])
         opened = request.action_view_payment_execution()
         self.assertEqual(opened["res_id"], execution.id)
+        self.assertEqual(
+            opened.get("id"),
+            self.env.ref(
+                "smart_construction_core.action_sc_payment_execution_partner_payment"
+            ).id,
+        )
+        self.assertEqual(
+            opened.get("menu_id"),
+            self.env.ref("smart_construction_core.menu_sc_partner_payment").id,
+        )
         self.assertEqual(opened["name"], "查看付款登记")
 
     def test_existing_execution_projects_view_action_into_normalized_contract(self):
@@ -675,6 +685,16 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(action.get("res_model"), "sc.payment.execution")
         self.assertEqual(action.get("view_mode"), "form")
         self.assertEqual(action.get("target"), "new")
+        self.assertEqual(
+            action.get("id"),
+            self.env.ref(
+                "smart_construction_core.action_sc_payment_execution_partner_payment"
+            ).id,
+        )
+        self.assertEqual(
+            action.get("menu_id"),
+            self.env.ref("smart_construction_core.menu_sc_partner_payment").id,
+        )
         self.assertEqual(action.get("name"), "新建付款登记")
         self.assertEqual(action.get("context", {}).get("default_payment_request_id"), request.id)
         self.assertEqual(action.get("context", {}).get("default_payment_request_id_label"), request.display_name)
@@ -1068,6 +1088,20 @@ class TestP1PaymentRequestCapability(TransactionCase):
                 [("payment_request_id", "=", request.id)]
             )
         )
+
+    def test_not_fully_paid_advisory_requires_user_payment_execution_before_automatic_ledger(self):
+        request = self._set_request_state(self._request())
+
+        advisory = next(
+            row
+            for row in request._collect_payment_advisories("done")
+            if row["reason_code"] == "P0_PAYMENT_NOT_FULLY_PAID"
+        )
+
+        self.assertEqual(advisory["suggested_action"], "complete_payment_execution")
+        self.assertIn("请先完成付款登记", advisory["message"])
+        self.assertIn("登记付款后系统将自动生成付款台账", advisory["message"])
+        self.assertNotIn("完成时将自动生成付款记录", advisory["message"])
 
     def test_payment_execution_native_actions_follow_submit_approve_paid_sequence(self):
         form = self.env.ref("smart_construction_core.view_sc_payment_execution_form")

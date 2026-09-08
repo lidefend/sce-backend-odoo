@@ -528,18 +528,24 @@ class TestCorePaymentAmountSemantics(TransactionCase):
                 ],
             }
         )
-        execution = self._model("sc.payment.execution").with_user(finance_manager).create(
-            {
-                "name": "T1-B Paid Execution",
-                "project_id": self.project.id,
-                "partner_id": self.partner.id,
-                "contract_id": self.contract.id,
-                "payment_request_id": request.id,
-                "currency_id": self.currency.id,
-                "paid_amount": 80.0,
-                "planned_amount": 80.0,
-                "state": "paid",
-            }
+        execution = (
+            self.env["sc.payment.execution"]
+            .with_user(finance_manager)
+            .with_context(allowed_company_ids=finance_manager.company_ids.ids)
+            .with_company(finance_manager.company_id)
+            .create(
+                {
+                    "name": "T1-B Paid Execution",
+                    "project_id": self.project.id,
+                    "partner_id": self.partner.id,
+                    "contract_id": self.contract.id,
+                    "payment_request_id": request.id,
+                    "currency_id": self.currency.id,
+                    "paid_amount": 80.0,
+                    "planned_amount": 80.0,
+                    "state": "paid",
+                }
+            )
         )
         execution.reversal_reason = "T1-B ledger reversal evidence"
         execution._reverse_paid_execution()
