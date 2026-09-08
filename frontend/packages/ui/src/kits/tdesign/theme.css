@@ -477,10 +477,15 @@
   text-align: left;
   transition: transform var(--sc-motion-fast, 120ms) ease, border-color var(--sc-motion-fast, 120ms) ease;
 }
-.sc-btn[data-appearance='dashboard-quick-link'] > .sc-btn__content > .sc-icon:first-child {
+.sc-btn[data-appearance='dashboard-quick-link'] > .t-button__text {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+}
+.sc-btn[data-appearance='dashboard-quick-link'] > .t-button__text > .sc-btn__content > .sc-icon:first-child {
   width: var(--sc-component-button-dashboard-icon-size); height: var(--sc-component-button-dashboard-icon-size); padding: var(--sc-component-button-dashboard-icon-padding); border-radius: var(--sc-component-button-dashboard-icon-radius); background: var(--sc-app-subtle-bg); color: var(--sc-text-link);
 }
-.sc-btn[data-appearance='dashboard-quick-link'] > .sc-btn__content > span { display: grid; gap: var(--sc-component-button-menu-gap); }
+.sc-btn[data-appearance='dashboard-quick-link'] > .t-button__text > .sc-btn__content > span { display: grid; gap: var(--sc-component-button-menu-gap); }
 .sc-btn[data-appearance='dashboard-quick-link'] small,
 .sc-btn[data-appearance='dashboard-recent-link'] small { color: var(--sc-app-text-secondary); font-size: calc(var(--sc-component-input-font-size) * 1px); }
 .sc-btn[data-appearance='dashboard-quick-link']:hover { transform: translateY(calc(-1 * var(--sc-component-panel-border-width))); }
