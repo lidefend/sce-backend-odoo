@@ -6,19 +6,16 @@
     :data-column="field"
     :data-reorderable="reorderable !== false"
     :style="columnStyle"
-    :tabindex="sortable ? 0 : -1"
     :title="sortTitle"
     @dragover="$emit('drag-over', $event)"
     @drop="$emit('drop-column', $event)"
     @dragend="$emit('drag-end')"
-    @click="$emit('sort')"
-    @keydown.enter.prevent="$emit('sort')"
-    @keydown.space.prevent="$emit('sort')"
+    @click="sortable && $emit('sort')"
   >
     <ScIconButton v-if="reorderable !== false" class="column-drag-handle" appearance="column-handle" :label="dragLabel" draggable="true" @click.stop @keydown.stop @dragstart.stop="$emit('drag-start', $event)" @dragend.stop="$emit('drag-end')">
       <ScIcon name="menu" :size="14" />
     </ScIconButton>
-    <ScButton type="button" class="column-sort-btn" appearance="context-action" variant="ghost" size="small" :title="sortTitle" :aria-disabled="!sortable" draggable="false" @click.stop="$emit('sort')">
+    <ScButton type="button" class="column-sort-btn" appearance="context-action" variant="ghost" size="small" :title="sortTitle" :aria-disabled="!sortable" draggable="false" @click.stop="sortable && $emit('sort')">
       <span>{{ label }}</span>
       <ScIcon v-if="sorted" class="sort-indicator" :name="sortIcon" :size="14" />
     </ScButton>

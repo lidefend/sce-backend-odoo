@@ -154,3 +154,13 @@ The entries below supersede historical pending notes in the chronological result
 - Baseline `363791039e59f472a97773e14271ce0a3b5ee939`; fingerprint `3d043f4c611066569e5281dc870652feaaf56a7761dbe91e19844d9d1f474fc0`.
 - P0 contract-form exit presentation: independent forms execute browser-history return, whose destination can be a work page or collection. Changed the generic label from 返回列表 to 返回; kept the existing return-list semantic identifier and managed-dialog 取消 behavior. No navigation behavior change.
 - Canonical presenter 142 cases and strict typecheck PASS. Real record 15 displays 返回; invoking it returned to `/a/809`. Diff whitespace PASS.
+
+## 2026-09-09：共用列表表头键盘焦点收敛
+
+- 基线：5f7556e6d636623d9830e52c42972ed914229b45；完整指纹 00f0d525f0aa92a021c10b2d9a12a50db83df4a294c73f793c65d81480df308e。
+- P0 / frontend renderer / CollectionColumnHeaderControl：通用控件焦点与排序事件归属，不属于行业默认、客户配置或支付业务。影响消费此组件的平面及分组列表；层级工作表不假定复用。
+- 移除表头外容器重复 Tab 停留与冒泡键盘排序处理，由原生按钮承担 Enter/Space 激活；容器与按钮均在 sortable 为 true 时才发出排序事件。拖拽及调整列宽接口保留。
+- 验证：既有 collection_navigation_controls.unit 12 + 11 项通过；typecheck.strict 与 diff --check 通过。
+- local.dev 原登录会话，1088px：付款列表九个表头外容器均无 tabindex；单据编号点击变 name asc，Enter 变 name desc，Space 变 name asc，下一次 Tab 聚焦调整列宽。无保存或业务动作，恢复原付款列表 URL。
+- 合同列表只读导航成功、无页面横向溢出；该页面没有可见 CollectionColumnHeaderControl，不计为此组件运行时覆盖。浏览器错误日志为空。
+- 本批为本地交互验收，不包含发布或多角色验收。回滚仅恢复该 Vue 组件，不涉及数据。
