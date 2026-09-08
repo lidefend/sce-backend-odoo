@@ -1554,6 +1554,7 @@ function collectionHeader(field: string) {
     onSort: () => toggleColumnSort(field),
     onDragStart: (event: DragEvent) => onColumnDragStart(field, event),
     onResizeStart: (event: MouseEvent) => startColumnResize(field, event),
+    onResizeStep: (delta: number) => resizeColumnBy(field, delta),
   });
 }
 function collectionCell(row: Record<string, unknown>, field: string) {
@@ -1796,6 +1797,13 @@ function startColumnResize(field: string, event: MouseEvent) {
   resizeStartWidth.value = effectiveColumnWidth(field) || Math.trunc(header?.getBoundingClientRect().width || 160);
   window.addEventListener('mousemove', onColumnResizeMove);
   window.addEventListener('mouseup', stopColumnResize, { once: true });
+}
+
+function resizeColumnBy(field: string, delta: number) {
+  const width = normalizeColumnWidth(resolvedColumnWidth(field) + delta);
+  if (!width || width === resolvedColumnWidth(field)) return;
+  draftColumnWidths.value = { ...draftColumnWidths.value, [field]: width };
+  emit('column-widths-change', { columnWidths: { ...draftColumnWidths.value } });
 }
 
 function onColumnResizeMove(event: MouseEvent) {

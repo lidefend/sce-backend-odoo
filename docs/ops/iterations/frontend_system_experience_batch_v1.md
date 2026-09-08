@@ -164,3 +164,13 @@ The entries below supersede historical pending notes in the chronological result
 - local.dev 原登录会话，1088px：付款列表九个表头外容器均无 tabindex；单据编号点击变 name asc，Enter 变 name desc，Space 变 name asc，下一次 Tab 聚焦调整列宽。无保存或业务动作，恢复原付款列表 URL。
 - 合同列表只读导航成功、无页面横向溢出；该页面没有可见 CollectionColumnHeaderControl，不计为此组件运行时覆盖。浏览器错误日志为空。
 - 本批为本地交互验收，不包含发布或多角色验收。回滚仅恢复该 Vue 组件，不涉及数据。
+
+## 2026-09-09：列宽键盘操作与单层焦点
+
+- 基线 38e0b08992c38af1dc18f277aad23fd303031925，完整指纹 465cf999bd247490023bcfc1da138d368348f775360124a6c31ac04adfbf1693。
+- P0 / frontend renderer / 共用表头与 TDesign 主题桥：补齐鼠标列宽调整的键盘入口；通用交互归平台，业务规则及客户字段配置不变。复用已有 normalizeColumnWidth、column-widths-change 和列表偏好保存链。
+- 左右键每次 10px，Shift + 左右键每次 40px；提示包含列名和键盘说明；控件焦点改为单层内收轮廓，去掉叠加阴影。
+- 验证：collection_navigation_controls.unit 12 + 11 项，typecheck.strict 通过；scene_component_bridge.guard 6 + 7 项及 63 checks 通过；diff --check 通过。
+- local.dev 浏览器：Tab 从单据编号排序按钮进入其列宽控件；宽度 136 → 146 → 186 → 146 → 136，焦点保持，排序保持 name asc；刷新后宽度 136。聚焦样式 outline 2px、box-shadow none。浏览器错误为空。
+- 列宽偏好经既有链路保存，测试后数值恢复原值；未调用业务保存、审批或支付。最终恢复 /a/809?menu_id=559&action_id=809。
+- 范围：CollectionColumnHeaderControl.vue、ListPage.vue、主题桥 theme.css、既有 guard 标签匹配及本登记；本地验收，不含 PR/CI 发布。可独立回滚本批代码，不需要数据回滚。
