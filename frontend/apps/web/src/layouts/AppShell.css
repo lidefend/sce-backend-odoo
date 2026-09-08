@@ -357,7 +357,8 @@
 }
 
 .menu {
-  overflow: auto;
+  min-width: 0;
+  overflow: hidden;
   padding-right: 2px;
   padding-top: 2px;
   min-height: 0;

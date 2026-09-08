@@ -1,8 +1,5 @@
 <template>
   <div class="role-home-surface" data-role-home data-role-home-renderer="workspace-contract" data-semantic-component="WorkspaceHome" :data-state="loading ? 'loading' : error ? 'error' : 'ready'" :aria-busy="loading || undefined">
-    <h1 class="sc-visually-hidden">{{ title }}</h1>
-    <p class="sc-visually-hidden">{{ subtitle }}</p>
-
     <section class="role-home-surface__tasks" aria-labelledby="role-home-task-title">
       <div class="role-home-surface__section-heading">
         <div>
@@ -55,9 +52,12 @@
           <h3>常用入口</h3>
           <div v-if="quickLinks.length" class="role-home-surface__link-list role-home-surface__link-list--quick">
             <ScButton v-for="link in quickLinks" :key="link.key" type="button" variant="ghost" appearance="dashboard-quick-link" @click="navigate(link.route)">
-              <ScIcon :name="entryIcon(link.key)" :size="18" />
-              <span><strong>{{ link.label }}</strong><small v-if="link.detail && link.detail !== link.label">{{ link.detail }}</small></span>
-              <ScIcon name="arrow-right" :size="16" />
+              <ScIcon class="role-home-surface__entry-icon" :name="entryIcon(link.key)" :size="18" />
+              <span class="role-home-surface__entry-copy">
+                <strong>{{ link.label }}</strong>
+                <small v-if="link.detail && link.detail !== link.label">{{ link.detail }}</small>
+              </span>
+              <ScIcon class="role-home-surface__entry-arrow" name="arrow-right" :size="16" />
             </ScButton>
           </div>
           <p v-else class="role-home-surface__state">当前没有可用入口。</p>
@@ -93,8 +93,6 @@ function entryIcon(key: string): HomeIconName {
 }
 
 const {
-  title,
-  subtitle,
   tasks,
   summaries,
   quickLinks,
@@ -232,6 +230,56 @@ const {
   display: grid;
   gap: var(--sc-space-2, 8px);
   margin-top: var(--sc-space-2, 8px);
+}
+
+.role-home-surface__link-list--quick :deep(.sc-btn) {
+  width: 100%;
+  min-height: 58px;
+  height: auto;
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.role-home-surface__link-list--quick :deep(.sc-btn__content) {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--sc-space-3, 12px);
+  width: 100%;
+}
+
+.role-home-surface__entry-icon,
+.role-home-surface__entry-arrow {
+  flex: none;
+}
+
+.role-home-surface__entry-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.role-home-surface__entry-copy strong,
+.role-home-surface__entry-copy small {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.role-home-surface__entry-copy strong {
+  color: var(--sc-app-text-primary);
+  font-size: 14px;
+}
+
+.role-home-surface__entry-copy small {
+  color: var(--sc-app-text-secondary);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.role-home-surface__entry-arrow {
+  color: var(--sc-app-text-muted);
 }
 
 .role-home-surface__state {

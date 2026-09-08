@@ -58,6 +58,7 @@ const emit = defineEmits<{
   grid-template-rows: max-content minmax(0, 1fr);
   gap: var(--sc-nav-row-gap);
   min-height: 0;
+  min-width: 0;
 }
 
 .product-side-navigation__search {
@@ -70,7 +71,9 @@ const emit = defineEmits<{
 
 .product-side-navigation__tree {
   min-height: 0;
+  min-width: 0;
   overflow: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
 }
