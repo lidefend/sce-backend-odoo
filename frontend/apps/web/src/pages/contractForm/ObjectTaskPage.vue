@@ -380,6 +380,8 @@ const presentableRelationNodes = computed(() => props.relationNodes.filter((node
   background: transparent;
 }
 .object-task-page__summary-grid :deep(.canonical-form-node:last-child) { border-right:0; }
+.object-task-page__summary-grid > :deep(.canonical-form-node:nth-child(4n)) { border-right: 0; }
+.object-task-page__summary-grid > :deep(.canonical-form-node:nth-child(n + 5)) { border-top: 1px solid var(--sc-app-border); }
 .object-task-page__current-task {
   min-width: 0;
 }
@@ -389,7 +391,6 @@ const presentableRelationNodes = computed(() => props.relationNodes.filter((node
   align-content: start;
   gap: 6px;
 }
-.object-task-page__current-task-copy :deep(.canonical-form-node + .canonical-form-node) { margin-top: 8px; }
 .object-task-page__current-task-facts {
   color: var(--sc-app-text-secondary);
 }

@@ -256,7 +256,12 @@ function fieldChildOrphanClass(child: CanonicalFormNode): string {
   font-size: 13px;
   line-height: 18px;
 }
-.canonical-form-node[data-density='compact-task'].canonical-form-node--readonly-fact { padding: 4px 0; }
+.canonical-form-node[data-density='compact-task'] + .canonical-form-node[data-density='compact-task'] { margin-top: 8px; }
+.canonical-form-node[data-density='compact-task'].canonical-form-node--container,
+.canonical-form-node[data-density='compact-task'].canonical-form-node--group { row-gap: 8px; }
+.canonical-form-node[data-density='compact-task'].canonical-form-node--container > .canonical-form-node,
+.canonical-form-node[data-density='compact-task'].canonical-form-node--group > .canonical-form-node { margin-top: 0; }
+.canonical-form-node[data-density='compact-task'].canonical-form-node--readonly-fact { padding: 0; }
 .canonical-form-native-action:disabled { cursor: not-allowed; opacity: 0.55; }
 .canonical-form-native-widget { color: var(--sc-app-text-secondary); }
 .canonical-form-native-text { white-space: pre-wrap; }
