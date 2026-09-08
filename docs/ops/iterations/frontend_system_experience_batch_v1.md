@@ -106,3 +106,11 @@ Complete baseline fingerprint: `112758622e9a3dc6c1ce8437120cfe0f553760fcd7a8d7dc
 - Real first-entry observation: paused 2 reads during activity navigation to income contracts. ProductLoadingSkeleton announced 收入合同，正在载入数据; decorative ScSkeleton had aria-hidden=true. With prefers-reduced-motion emulation, sampled skeleton elements and pseudo-elements had animationName=none. All interception/media overrides cleared immediately afterward. Whole-page navigation throttling was not used as loading-layout proof.
 - Real error recovery: failed exactly one my.work.summary read in the browser (InternetDisconnected, no backend/business mutation). My Work displayed role=alert, 当前无法读取工作事项，请检查网络后重试 and an enabled retry button. At 390px retry measured 44px. Retrying normally removed the error panel and restored 4 items. Explicit browser error log returned empty afterward.
 - These observations close basic loading, reduced-motion and retry runtime gaps. Suggested-action feedback remains unexercised; no continuous layout-shift metric or release-wide certification is claimed. Network latency, request interception, media override and viewport were restored.
+
+### Follow-up: homepage tab state and theme sampling
+
+- Baseline `204f2921940e1e71bc34380692831c52654333e1`; fingerprint `f43cbfb95adf308d11d4a9b8b81a6513f976c3e28a550587875410a407b4dab8`.
+- P0 AppShell supplies an empty displayed activity key on home/scene-home, which intentionally do not register activity pages. Stored active-page identity and dirty-navigation safeguards are unchanged. Real homepage now has zero pressed titles and zero vendor active tabs; clicking My Work returns `/my-work` with exactly its title pressed.
+- Existing state/dashboard suite and strict typecheck PASS; diff whitespace PASS.
+- My Work at 390px: business-soft and accessible-contrast inspected, no document overflow; metric selection and 44px filter controls remain clear. Enterprise-neutral restored.
+- New confirmed gap: prefers-color-scheme changed to dark while the UI still showed 跟随系统, but the page stayed light. Source theme.ts reads the system preference only when applyTheme runs; no change listener exists. Dynamic system-theme following is the next P0 batch. Temporary media override and viewport restored; no permanent browser setting changed.

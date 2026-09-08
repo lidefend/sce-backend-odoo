@@ -8972,3 +8972,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - P0 frontend shared visually-hidden utility; positioning belongs to common rendering, not business modules/configuration. Fix hidden labels enlarging the root document outside an internal scroller. Baseline 0b2628083a4f831525277d4289e1792e517a82e9; fingerprint a8cad6ca79b9831ee9bf9555eb828c7907f8e8d9cc3ff30bc9726b9f42c5a781.
 - Homepage 320px document height 897 to 844, viewport 844; hidden status/money text retained. Home accessed through original authenticated tab. Existing parity/state tests PASS.
 - Browser developer controls supplied bounded read-only loading and network-failure tests: retained list during refresh, genuine initial skeleton with reduced motion, one failed work-summary read and successful retry to 4 items. All temporary overrides cleared; full details and precise limitations in the matrix. No business/fixture writes or remote operations.
+
+## 2026-09-09 — 首页页签显示归属
+
+- P0 shell presentation only; home routes are not activity pages, so they must not visually claim the last business tab is current. Preserve stored activity key and navigation/dirty-state mechanisms.
+- Baseline 204f2921940e1e71bc34380692831c52654333e1; fingerprint f43cbfb95adf308d11d4a9b8b81a6513f976c3e28a550587875410a407b4dab8. Existing state/dashboard checks and typecheck PASS. Browser home has zero active tabs; business tab reactivation works.
+- Theme samples preserved geometry; dynamic system-theme following was identified as an explicit next item. No business writes or remote operations.

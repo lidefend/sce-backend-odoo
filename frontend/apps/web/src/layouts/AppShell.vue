@@ -328,7 +328,7 @@
 
       <ActivityPageTabs
         :pages="activityPages"
-        :active-key="activeActivityPageKey"
+        :active-key="['home', 'scene-home'].includes(String(route.name || '')) ? '' : activeActivityPageKey"
         :activate-page="activateActivityPage"
         @activate="activateActivityPage"
         @close="closeActivityPage"
