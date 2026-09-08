@@ -217,7 +217,11 @@ class LocalDevFrontendQuickTest(unittest.TestCase):
         self.assertIn("local.dev.ready", local_frontend)
         self.assertIn("frontend_static_build.sh", local_frontend)
         ci_make = (ROOT / "make/ci.mk").read_text(encoding="utf-8")
-        self.assertIn("--full-ci-local-quick", ci_make)
+        evidence_runner = (ROOT / "scripts/ops/local_quick_evidence.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("local_quick_evidence.py run", ci_make)
+        self.assertIn("--full-ci-local-quick", evidence_runner)
 
     def test_terminal_frontend_build_recipe_receives_the_authoritative_env_file(self):
         """The final shell recipe, not only Python's make arguments, carries authority."""

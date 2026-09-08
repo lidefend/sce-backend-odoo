@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Record and verify worktree-local evidence for an exact-head quick gate."""
+"""Atomically run the local Quick gate and verify its exact-head receipt."""
 
 from __future__ import annotations
 
@@ -12,13 +12,20 @@ import tempfile
 from pathlib import Path
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 SUITE = "ci.local.quick"
+PRODUCER = "atomic-ci-local-quick-runner-v1"
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 
 
 class EvidenceError(RuntimeError):
     pass
+
+
+class QuickRunFailed(EvidenceError):
+    def __init__(self, returncode: int):
+        super().__init__(f"{SUITE} failed with exit {returncode}; receipt not issued")
+        self.returncode = returncode
 
 
 def git(root: Path, *args: str) -> str:
@@ -61,13 +68,14 @@ def evidence_path(root: Path, head: str) -> Path:
     return raw if raw.is_absolute() else root / raw
 
 
-def record(root: Path, expected_head: str) -> Path:
+def _write_receipt_after_success(root: Path, expected_head: str) -> Path:
     root, tree = require_exact_clean_head(root, expected_head)
     path = evidence_path(root, expected_head)
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "schema_version": SCHEMA_VERSION,
         "suite": SUITE,
+        "producer": PRODUCER,
         "head": expected_head,
         "tree": tree,
     }
@@ -83,6 +91,36 @@ def record(root: Path, expected_head: str) -> Path:
     return path
 
 
+def is_linked_worktree(root: Path) -> bool:
+    git_dir = Path(git(root, "rev-parse", "--path-format=absolute", "--git-dir")).resolve()
+    common_dir = Path(
+        git(root, "rev-parse", "--path-format=absolute", "--git-common-dir")
+    ).resolve()
+    return git_dir != common_dir
+
+
+def run_quick(root: Path, runner=subprocess.run) -> Path | None:
+    root = repository_root(root)
+    start_status = git(root, "status", "--porcelain=v1", "--untracked-files=all")
+    start_head = git(root, "rev-parse", "HEAD") if not start_status else None
+    if start_head and not FULL_SHA.fullmatch(start_head):
+        raise EvidenceError("Quick start HEAD identity is invalid")
+    if start_head is None:
+        print("[ci.local.quick] evidence disabled: worktree was not clean at suite start")
+
+    command = (
+        ["python3", "scripts/dev/local_dev_frontend_quick.py", "--full-ci-local-quick"]
+        if is_linked_worktree(root)
+        else ["make", "--no-print-directory", "ci.local.quick.run"]
+    )
+    completed = runner(command, cwd=root, check=False, text=True)
+    if completed.returncode:
+        raise QuickRunFailed(completed.returncode)
+    if start_head is None:
+        return None
+    return _write_receipt_after_success(root, start_head)
+
+
 def verify(root: Path, expected_head: str) -> Path:
     root, tree = require_exact_clean_head(root, expected_head)
     path = evidence_path(root, expected_head)
@@ -95,6 +133,7 @@ def verify(root: Path, expected_head: str) -> Path:
     expected = {
         "schema_version": SCHEMA_VERSION,
         "suite": SUITE,
+        "producer": PRODUCER,
         "head": expected_head,
         "tree": tree,
     }
@@ -105,20 +144,27 @@ def verify(root: Path, expected_head: str) -> Path:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("record", "verify"))
+    parser.add_argument("mode", choices=("run", "verify"))
     parser.add_argument("--root", type=Path, default=Path.cwd())
-    parser.add_argument("--expected-head", required=True)
+    parser.add_argument("--expected-head")
     args = parser.parse_args()
     try:
-        path = (
-            record(args.root, args.expected_head)
-            if args.mode == "record"
-            else verify(args.root, args.expected_head)
-        )
+        if args.mode == "run":
+            if args.expected_head is not None:
+                raise EvidenceError("run mode does not accept --expected-head")
+            path = run_quick(args.root)
+        else:
+            if args.expected_head is None:
+                raise EvidenceError("verify mode requires --expected-head")
+            path = verify(args.root, args.expected_head)
+    except QuickRunFailed as exc:
+        print(f"[local_quick_evidence] FAIL {exc}")
+        return exc.returncode
     except EvidenceError as exc:
         print(f"[local_quick_evidence] MISS {exc}")
         return 2
-    print(f"[local_quick_evidence] {'RECORDED' if args.mode == 'record' else 'VERIFIED'} {path}")
+    if path is not None:
+        print(f"[local_quick_evidence] {'RECORDED' if args.mode == 'run' else 'VERIFIED'} {path}")
     return 0
 
 

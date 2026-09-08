@@ -808,25 +808,7 @@ verify.overview.rich.text.patch.capability: guard.prod.forbid
 	@python3 addons/smart_construction_core/tests/test_project_overview_builder.py
 
 ci.local.quick: guard.prod.forbid
-	@bash -c '\
-	set -euo pipefail; \
-	EVIDENCE_HEAD=""; \
-	if [ -z "$$(git status --porcelain=v1 --untracked-files=all)" ]; then \
-	  EVIDENCE_HEAD="$$(git rev-parse HEAD)"; \
-	else \
-	  echo "[ci.local.quick] evidence disabled: worktree was not clean at suite start"; \
-	fi; \
-	GIT_DIR="$$(git rev-parse --path-format=absolute --git-dir)"; \
-	GIT_COMMON_DIR="$$(git rev-parse --path-format=absolute --git-common-dir)"; \
-	if [ "$$GIT_DIR" = "$$GIT_COMMON_DIR" ]; then \
-	  $(MAKE) --no-print-directory ci.local.quick.run; \
-	else \
-	  python3 scripts/dev/local_dev_frontend_quick.py --full-ci-local-quick; \
-	fi; \
-	if [ -n "$$EVIDENCE_HEAD" ]; then \
-	  python3 scripts/ops/local_quick_evidence.py record --expected-head "$$EVIDENCE_HEAD"; \
-	fi; \
-	'
+	@python3 scripts/ops/local_quick_evidence.py run
 
 ci.local.quick.run: guard.prod.forbid verify.contract.page_v1_zero_residue.guard security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.formal_product_field_purity verify.tenant_extension_storage ci.generated_reports.guard architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2 verify.menu_config_tree_editor.behavior verify.g1.acceptance.baseline verify.visualization.chart.capability verify.boq.export.capability verify.write.idempotency.capability verify.boq.dangerous.import.capability verify.boq.line.patch.capability verify.overview.rich.text.patch.capability verify.frontend.chart_engine.guard verify.frontend.chart_dataset.unit verify.frontend.boq_line_patch.unit verify.frontend.overview_rich_text.unit
 	@python3 scripts/ci/verify_contract_form_split_evidence.py
@@ -968,8 +950,8 @@ security.legacy_credential_guard:
 
 .PHONY: verify.branch.governance.consistency verify.baseline.iteration.execution.policy verify.github_actions.security
 verify.branch.governance.consistency:
-	@python3 -m py_compile scripts/verify/branch_governance_consistency_guard.py scripts/verify/test_branch_governance_consistency_guard.py scripts/ops/local_quick_evidence.py scripts/ops/test_local_quick_evidence.py
-	@python3 scripts/ops/test_local_quick_evidence.py
+	@python3 -m py_compile scripts/verify/branch_governance_consistency_guard.py scripts/verify/test_branch_governance_consistency_guard.py scripts/ops/local_quick_evidence.py scripts/verify/test_local_quick_evidence.py
+	@python3 scripts/verify/test_local_quick_evidence.py
 	@python3 scripts/verify/test_branch_governance_consistency_guard.py
 	@python3 scripts/verify/branch_governance_consistency_guard.py
 
