@@ -667,6 +667,7 @@ const useMinimalTopbar = computed(() =>
   || businessRouteUsesCompactTopbar.value,
 );
 const compactRouteKeepsHeadline = computed(() => [
+  'home',
   'menu',
   'access-denied',
 ].includes(String(route.name || '')));
