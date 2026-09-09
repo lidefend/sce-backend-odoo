@@ -621,14 +621,19 @@ function expandAll() {
 function collapseAll() { sheetExpandedKeys.value = new Set(); }
 function onSearchInput(value: string) { keyword.value = value; }
 function clearSearch() { keyword.value = ''; }
+function resolveTableScrollOwner(): HTMLElement | null {
+  return tableScroll.value?.querySelector<HTMLElement>('[data-table-scroll-region="true"]') || tableScroll.value;
+}
 function captureTableScroll() {
-  retainedTableScroll = { left: tableScroll.value?.scrollLeft || 0, top: tableScroll.value?.scrollTop || 0 };
+  const owner = resolveTableScrollOwner();
+  retainedTableScroll = { left: owner?.scrollLeft || 0, top: owner?.scrollTop || 0 };
 }
 async function restoreTableScroll() {
   await nextTick();
-  if (tableScroll.value) {
-    tableScroll.value.scrollLeft = retainedTableScroll.left;
-    tableScroll.value.scrollTop = retainedTableScroll.top;
+  const owner = resolveTableScrollOwner();
+  if (owner) {
+    owner.scrollLeft = retainedTableScroll.left;
+    owner.scrollTop = retainedTableScroll.top;
   }
 }
 function openSelectedRecord(record: WorksheetDict) {

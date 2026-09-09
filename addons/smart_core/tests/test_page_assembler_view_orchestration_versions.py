@@ -73,6 +73,37 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
         self.PageAssembler = _load_page_assembler()
         self.assembler = self.PageAssembler.__new__(self.PageAssembler)
 
+    def test_fields_map_preserves_authoritative_monetary_metadata(self):
+        field = types.SimpleNamespace(
+            type="monetary",
+            string="Amount",
+            comodel_name=None,
+            inverse_name=None,
+            readonly=False,
+            required=False,
+            help="",
+            domain=None,
+            selection=None,
+            digits=(16, 2),
+            currency_field="currency_id",
+        )
+
+        class Model:
+            _fields = {"amount": field}
+
+            @staticmethod
+            def fields_get():
+                return {"amount": {"type": "monetary", "string": "Amount", "digits": [16, 2], "currency_field": "currency_id"}}
+
+        class Env:
+            def __getitem__(self, _model_name):
+                return Model()
+
+        mapped = self.assembler._to_fields_map(["amount"], env=Env(), model="generic.line")
+
+        self.assertEqual(mapped["amount"]["digits"], [16, 2])
+        self.assertEqual(mapped["amount"]["currency_field"], "currency_id")
+
     def test_record_rule_rights_are_distinct_from_model_acl(self):
         AccessError = sys.modules["odoo.exceptions"].AccessError
 

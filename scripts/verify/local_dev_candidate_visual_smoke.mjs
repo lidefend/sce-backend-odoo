@@ -887,6 +887,7 @@ try {
         await worksheet.waitFor({ state: 'visible', timeout: 45000 });
         const search = worksheet.locator('[data-semantic-component="ProductListHeader"] input[type="search"]');
         const scopeTrigger = worksheet.locator('.worksheet-scope-trigger:visible');
+        const initialCountText = String(await worksheet.locator('.worksheet-grid-title span').first().textContent() || '').trim();
         let mobileScopeEvidence = null;
         if (viewport.name === 'mobile') {
           await scopeTrigger.click();
@@ -919,7 +920,7 @@ try {
         }
         await page.waitForFunction(() => document.querySelectorAll('.worksheet-table-scroll tbody tr[data-record-id]').length > 0);
         const scopedTitle = String(await worksheet.locator('.worksheet-grid-title strong').textContent() || '').trim();
-        const initialCountText = String(await worksheet.locator('.worksheet-grid-title span').first().textContent() || '').trim();
+        const scopedCountText = String(await worksheet.locator('.worksheet-grid-title span').first().textContent() || '').trim();
         const initialSelectedId = String(await worksheet.locator('tbody tr[aria-selected="true"]').first().getAttribute('data-record-id') || '');
         await search.fill('__c1_no_match__');
         await page.waitForFunction(() => document.querySelectorAll('.worksheet-table-scroll tbody tr[data-record-id]').length === 0
@@ -946,7 +947,7 @@ try {
         const retainedQuery = await search.inputValue();
         const retainedSelectedId = String(await worksheet.locator('tbody tr[aria-selected="true"]').first().getAttribute('data-record-id') || '');
         const monetaryValues = await worksheet.locator('[data-detail-field][data-field-type="monetary"]:visible').allTextContents();
-        const tableScroll = worksheet.locator('.worksheet-table-scroll');
+        const tableScroll = worksheet.locator('[data-table-scroll-region="true"]');
         const scrollBefore = await tableScroll.evaluate((node) => {
           node.scrollLeft = Math.min(96, Math.max(0, node.scrollWidth - node.clientWidth));
           return { left: Math.round(node.scrollLeft), max: Math.round(node.scrollWidth - node.clientWidth) };
@@ -997,10 +998,10 @@ try {
           query: await restoredWorksheet.locator('[data-semantic-component="ProductListHeader"] input[type="search"]').inputValue(),
           scope: String(await restoredWorksheet.locator('.worksheet-grid-title strong').textContent() || '').trim(),
           selectedId: String(await restoredWorksheet.locator('tbody tr[aria-selected="true"]').first().getAttribute('data-record-id') || ''),
-          scrollLeft: Math.round(await restoredWorksheet.locator('.worksheet-table-scroll').evaluate((node) => node.scrollLeft)),
+          scrollLeft: Math.round(await restoredWorksheet.locator('[data-table-scroll-region="true"]').evaluate((node) => node.scrollLeft)),
         };
         hierarchicalWorkspaceEvidence = {
-          initialCountText, scopedTitle, initialSelectedId, zeroState, restoredCountText, restoredSelectedId,
+          initialCountText, scopedCountText, scopedTitle, initialSelectedId, zeroState, restoredCountText, restoredSelectedId,
           retainedQuery, retainedSelectedId, monetaryValues, scrollBefore, separatorEvidence, mobileScopeEvidence,
           detailRecordId, returnState,
           pass: /46/.test(initialCountText)

@@ -4140,6 +4140,8 @@ class PageAssembler:
                         "help": translated.get("help") or getattr(f, "help", None) or "",
                         "domain": translated.get("domain") or _resolve_domain(f),
                         "selection": translated.get("selection") or _resolve_selection(f),
+                        "digits": translated.get("digits") or getattr(f, "digits", None),
+                        "currency_field": translated.get("currency_field") or getattr(f, "currency_field", None),
                     }
             except Exception:
                 meta = {}
@@ -4167,6 +4169,12 @@ class PageAssembler:
                 info["domain"] = domain
             if localized_selection:
                 info["selection"] = localized_selection
+            digits = meta_info.get("digits")
+            if isinstance(digits, (list, tuple)) and len(digits) == 2:
+                info["digits"] = list(digits)
+            currency_field = str(meta_info.get("currency_field") or "").strip()
+            if currency_field:
+                info["currency_field"] = currency_field
             if isinstance(extra, dict):
                 for k, v in extra.items():
                     if v is None:
