@@ -630,6 +630,7 @@ function captureTableScroll() {
 }
 async function restoreTableScroll() {
   await nextTick();
+  await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
   const owner = resolveTableScrollOwner();
   if (owner) {
     owner.scrollLeft = retainedTableScroll.left;
