@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "4df6e7075a989eba9f7724f8a0b3416d5d97ac6f08fc9f8acd51f07cbc580122",
+  "inputDigest": "45ce1d7f4245f91865aa8eae413a7758c933b86582a9bd4dd152805c6358e44b",
   "internalVendorSelectorGaps": [
     {
       "file": "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
@@ -701,6 +701,7 @@
         "frontend/apps/web/src/app/presentation/productPagePattern.ts",
         "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
         "frontend/apps/web/src/app/resolvers/sceneRegistry.ts",
+        "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
         "frontend/apps/web/src/components/attachment/AttachmentViewer.vue",
         "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
         "frontend/apps/web/src/components/design-system/ScDialog.vue",

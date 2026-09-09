@@ -10,7 +10,7 @@
       :aligned-layout="false"
       @search-input="onSearchInput"
       @search-submit="keyword = keyword.trim()"
-      @search-clear="keyword = ''"
+      @search-clear="clearSearch"
     >
       <template #actions>
         <ScButton v-for="action in actions" :key="action.key" :variant="action.variant === 'primary' ? 'primary' : 'secondary'" @click="emit('open-action', action)">{{ action.label }}</ScButton>
@@ -18,7 +18,7 @@
     </ProductListHeader>
     <div v-if="errorMessage" class="worksheet-error" role="alert">{{ errorMessage }}</div>
     <div class="worksheet-layout" :style="layoutStyle">
-      <aside class="worksheet-navigation">
+      <aside :id="navigationPaneId" class="worksheet-navigation">
         <h3>{{ navigationTitle }}</h3>
         <ScButton class="navigation-all" appearance="tree-item" variant="ghost" size="small" :class="{ active: !selectedNavigationNode }" @click="selectNavigation(null)">{{ labels.all }}</ScButton>
         <HierarchyTreeNode
@@ -32,10 +32,19 @@
           @toggle="toggleNavigation"
         />
       </aside>
-      <div class="worksheet-resizer worksheet-resizer-navigation" role="separator" aria-orientation="vertical" :aria-label="labels.resize_navigation" tabindex="0" @pointerdown="startNavigationResize" />
+      <div class="worksheet-resizer worksheet-resizer-navigation" role="separator" aria-orientation="vertical" :aria-label="labels.resize_navigation" :aria-controls="navigationPaneId" :aria-valuemin="NAVIGATION_MIN" :aria-valuemax="NAVIGATION_MAX" :aria-valuenow="navigationWidth" tabindex="0" @keydown="resizeNavigationFromKeyboard" @pointerdown="startNavigationResize" />
       <main class="worksheet-main" :style="mainStyle">
         <section class="worksheet-grid-pane">
           <div class="worksheet-grid-toolbar">
+            <ScButton
+              v-if="compactViewport"
+              class="worksheet-scope-trigger"
+              variant="secondary"
+              size="small"
+              :aria-expanded="mobileNavigationOpen"
+              aria-haspopup="dialog"
+              @click="mobileNavigationOpen = true"
+            >{{ labels.scope || '当前范围' }}：{{ currentScopeTitle }}</ScButton>
             <div class="worksheet-grid-title">
               <strong>{{ currentScopeTitle }}</strong><span>{{ labels.total_prefix }} {{ visibleLeafCount }} {{ labels.total_suffix }}</span>
               <div v-if="domainTabs.length" class="worksheet-domain-tabs" role="tablist" :aria-label="labels.domain_tabs || '数据域切换'">
@@ -63,8 +72,20 @@
             <ScButton variant="ghost" size="small" @click="patchNotice = null">{{ labels.dismiss || '关闭' }}</ScButton>
           </div>
           <div v-if="loading" class="worksheet-state" role="status">{{ labels.loading }}</div>
-          <div v-else-if="!visibleRows.length" class="worksheet-state" role="status">{{ keyword.trim() ? (labels.empty_filtered || '没有符合当前条件的记录') : labels.empty }}</div>
-          <div v-else class="worksheet-table-scroll">
+          <ScEmptyState
+            v-else-if="!visibleRows.length"
+            class="worksheet-state"
+            density="compact"
+            :heading-level="3"
+            :title="keyword.trim() ? (labels.empty_filtered || '没有符合当前条件的记录') : labels.empty"
+            :description="selectedNavigationNode ? `${labels.scope || '当前范围'}：${currentScopeTitle}` : ''"
+          >
+            <template v-if="keyword.trim() || selectedNavigationNode" #actions>
+              <ScButton v-if="keyword.trim()" variant="secondary" @click="clearSearch">{{ labels.clear_search || '清除搜索' }}</ScButton>
+              <ScButton v-if="selectedNavigationNode" variant="ghost" @click="selectNavigation(null)">{{ labels.clear_scope || '清除范围' }}</ScButton>
+            </template>
+          </ScEmptyState>
+          <div v-else ref="tableScroll" class="worksheet-table-scroll">
             <ScTable
               appearance="worksheet"
               :data="worksheetTableData"
@@ -80,8 +101,8 @@
             />
           </div>
         </section>
-        <div class="worksheet-resizer worksheet-resizer-detail" role="separator" aria-orientation="horizontal" :aria-label="labels.resize_detail" tabindex="0" @pointerdown="startDetailResize" />
-        <section class="worksheet-detail">
+        <div class="worksheet-resizer worksheet-resizer-detail" role="separator" aria-orientation="horizontal" :aria-label="labels.resize_detail" :aria-controls="detailPaneId" :aria-valuemin="DETAIL_MIN" :aria-valuemax="DETAIL_MAX" :aria-valuenow="detailHeight" tabindex="0" @keydown="resizeDetailFromKeyboard" @pointerdown="startDetailResize" />
+        <section :id="detailPaneId" class="worksheet-detail">
           <nav class="worksheet-tabs" aria-label="detail tabs">
             <ScButton v-for="tab in detailTabs" :key="tab.key" variant="ghost" size="small" appearance="section-tab" :class="{ active: activeTab === tab.key }" @click="activeTab = tab.key">{{ tab.label }}</ScButton>
             <ScButton
@@ -89,24 +110,46 @@
               class="worksheet-open-record"
               variant="secondary"
               data-semantic-action="record.open"
-              @click="emit('open-record', selectedRecord)"
+              @click="openSelectedRecord(selectedRecord)"
             >{{ labels.open || '打开记录' }}</ScButton>
           </nav>
           <div v-if="!selectedRecord" class="worksheet-detail-empty">{{ labels.select_hint }}</div>
           <dl v-else class="worksheet-detail-fields">
             <template v-for="field in activeTabFields" :key="field.field">
-              <dt>{{ field.label }}</dt><dd>{{ formatValue(selectedRecord[field.field], field) }}</dd>
+              <dt>{{ field.label }}</dt><dd :data-detail-field="field.field" :data-field-type="field.type">{{ formatValue(selectedRecord[field.field], field, selectedRecord) }}</dd>
             </template>
           </dl>
         </section>
       </main>
     </div>
+    <ScDrawer
+      :open="mobileNavigationOpen"
+      :title="navigationTitle || (labels.scope || '选择范围')"
+      :description="`${labels.scope || '当前范围'}：${currentScopeTitle}`"
+      appearance="workspace"
+      @close="mobileNavigationOpen = false"
+    >
+      <nav class="worksheet-mobile-navigation" :aria-label="navigationTitle || (labels.scope || '选择范围')">
+        <ScButton class="navigation-all" appearance="tree-item" variant="ghost" :class="{ active: !selectedNavigationNode }" @click="selectMobileNavigation(null)">{{ labels.all }}</ScButton>
+        <HierarchyTreeNode
+          v-for="node in navigationRoots"
+          :key="`mobile:${node.key}`"
+          :node="node"
+          :selected-key="selectedNavigationNode?.key || ''"
+          :expanded-keys="navigationExpandedKeys"
+          empty-children-label=""
+          @select="selectMobileNavigation"
+          @toggle="toggleNavigation"
+        />
+      </nav>
+    </ScDrawer>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, h, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, h, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, useId, watch } from 'vue';
 import { formatDisplayValue } from '../../utils/display';
+import { formatMonetaryDisplayValue, normalizeMonetaryDigits, resolveCurrencyDisplayLabel } from '../template/formSection.mapper';
 import {
   applyWorksheetDomainTab,
   collectNodeIds,
@@ -118,7 +161,12 @@ import {
   type WorksheetNode,
   type WorksheetSheetConfig,
 } from '../../app/action_runtime/hierarchicalWorksheetDataSource';
-import { shouldOpenWorksheetRecordFromKeyboard } from '../../app/action_runtime/hierarchicalWorksheetInteraction';
+import {
+  clampWorksheetPaneSize,
+  resizeWorksheetPaneFromKeyboard,
+  resolveVisibleWorksheetRecordId,
+  shouldOpenWorksheetRecordFromKeyboard,
+} from '../../app/action_runtime/hierarchicalWorksheetInteraction';
 import { ApiError } from '../../api/client';
 import { buildBoqLinePatchIdempotencyKey, patchBoqLineQuantity } from '../../api/boqLinePatch';
 import {
@@ -134,14 +182,17 @@ import {
   type BoqLinePatchSession,
 } from '../../app/presentation/boqLinePatch';
 import ScButton from '../design-system/ScButton.vue';
+import ScDrawer from '../design-system/ScDrawer.vue';
+import ScEmptyState from '../design-system/ScEmptyState.vue';
 import ScInput from '../design-system/ScInput.vue';
 import ScTable from '../design-system/ScTable.vue';
 import ProductListHeader from '../product-list/ProductListHeader.vue';
 import HierarchyTreeNode from './HierarchyTreeNode.vue';
 
 type Dict = Record<string, unknown>;
-type Column = { field: string; label: string; type: string; selection: Array<[string, string]>; align: string; width: number; precision?: number };
-type DetailField = { field: string; label: string; type: string; selection: Array<[string, string]> };
+type DisplayField = { field: string; label: string; type: string; selection: Array<[string, string]>; precision?: number; digits?: [number, number]; currency_field?: string };
+type Column = DisplayField & { align: string; width: number };
+type DetailField = DisplayField;
 type DetailTab = { key: string; label: string; fields: DetailField[] };
 type SurfaceAction = { key: string; label: string; action_id: number; menu_id: number; route: string; variant: string };
 type VisibleEntry = { key: string; node: WorksheetNode; record: WorksheetDict | null; ordinal: number; rowKind: string };
@@ -149,9 +200,12 @@ type NavigationTreeNode = { key: string; id: number; levelKey?: string; code: st
 
 const props = withDefaults(defineProps<{ config: Dict; preferenceScope?: string }>(), { preferenceScope: 'default' });
 const emit = defineEmits<{ 'open-record': [row: WorksheetDict]; 'open-action': [action: SurfaceAction] }>();
+const componentId = useId();
+const navigationPaneId = `worksheet-navigation-${componentId}`;
+const detailPaneId = `worksheet-detail-${componentId}`;
 
 function openRecordFromKeyboard(event: KeyboardEvent, record: WorksheetDict | null): void {
-  if (shouldOpenWorksheetRecordFromKeyboard(event, record)) emit('open-record', record as WorksheetDict);
+  if (shouldOpenWorksheetRecordFromKeyboard(event, record)) openSelectedRecord(record as WorksheetDict);
 }
 const hierarchyConfig = computed(() => props.config.hierarchy as unknown as WorksheetHierarchyConfig);
 const sheetConfig = computed(() => props.config.sheet as unknown as WorksheetSheetConfig);
@@ -180,6 +234,8 @@ const navigationExpandedKeys = ref(new Set<string>());
 const activeTab = ref('');
 const navigationWidth = ref(260);
 const detailHeight = ref(210);
+const mobileNavigationOpen = ref(false);
+const tableScroll = ref<HTMLElement | null>(null);
 /** G7.2 内联编辑：编辑会话（行级单例）+ 结果通知 + 窄屏禁用 */
 const patchSession = ref<BoqLinePatchSession | null>(null);
 const patchNotice = ref<{ kind: 'success' | 'error'; text: string } | null>(null);
@@ -189,6 +245,11 @@ const editableFields = computed(() => resolveBoqLinePatchEditableFields(sheetCon
 let resizeMode: '' | 'navigation' | 'detail' = '';
 let resizeStart = 0;
 let resizeStartSize = 0;
+let retainedTableScroll = { left: 0, top: 0 };
+const NAVIGATION_MIN = 200;
+const NAVIGATION_MAX = 480;
+const DETAIL_MIN = 140;
+const DETAIL_MAX = 420;
 
 const leafValues = computed(() => new Set(hierarchyConfig.value.leaf_values || []));
 const itemValues = computed(() => new Set(sheetConfig.value.item_values || []));
@@ -270,6 +331,16 @@ const worksheetTableColumns = computed(() => columns.value.map((column) => ({
   className: ({ row }: { row: VisibleEntry }) => [`align-${column.align}`, { 'variance-nonzero': isVarianceCell(row, column) }],
   cell: (_h: unknown, { row }: { row: VisibleEntry }) => worksheetCell(row, column),
 })));
+
+watch(visibleRows, (entries) => {
+  const records = entries.filter((entry): entry is VisibleEntry & { record: WorksheetDict } => Boolean(entry.record));
+  const visibleIds = records.map((entry) => Number(entry.record.id || 0)).filter(Boolean);
+  const selectedId = selectedRecord.value ? Number(selectedRecord.value.id || 0) : null;
+  const nextId = resolveVisibleWorksheetRecordId(visibleIds, selectedId);
+  const nextEntry = nextId ? records.find((entry) => Number(entry.record.id || 0) === nextId) : null;
+  selectedNode.value = nextEntry?.node || null;
+  selectedRecord.value = nextEntry?.record || null;
+}, { flush: 'sync' });
 
 function worksheetCell(entry: VisibleEntry, column: Column) {
   if (isEditablePatchCell(entry, column)) return renderPatchCell(entry, column);
@@ -425,7 +496,7 @@ async function reloadWorksheet(): Promise<void> {
   sourceRows.value = result.sourceRows;
   recordCount.value = result.recordCount;
   if (selectedNode.value) selectedNode.value = nodesById.value.get(selectedNode.value.id) || selectedNode.value;
-  if (selectedRecord.value) selectedRecord.value = findRecordById(Number(selectedRecord.value.id || 0)) || selectedRecord.value;
+  if (selectedRecord.value) selectedRecord.value = findRecordById(Number(selectedRecord.value.id || 0));
 }
 
 /** 数据域 tab 切换（G7.3）：换 domain 权威重载，编辑会话/选中态复位避免悬空行 */
@@ -462,7 +533,7 @@ function onWorksheetRowClick(context: unknown) {
 }
 function onWorksheetRowDblclick(context: unknown) {
   const row = worksheetContextRow(context);
-  if (row?.record) emit('open-record', row.record);
+  if (row?.record) openSelectedRecord(row.record);
 }
 
 function groupValue(node: WorksheetNode, field: string): unknown {
@@ -470,7 +541,16 @@ function groupValue(node: WorksheetNode, field: string): unknown {
   const value = source ? node.raw[source] : '';
   return value === null || value === undefined || value === false ? '' : value;
 }
-function formatValue(value: unknown, field: { type: string; selection?: Array<[string, string]>; precision?: number }): string {
+function formatValue(value: unknown, field: DisplayField, record?: WorksheetDict | null): string {
+  if (String(field.type || '').trim().toLowerCase() === 'monetary') {
+    const explicitDigits = typeof field.precision === 'number'
+      ? [Math.max(16, field.precision), field.precision] as [number, number]
+      : normalizeMonetaryDigits(field.digits);
+    const currencyLabel = field.currency_field && record
+      ? resolveCurrencyDisplayLabel(record[field.currency_field])
+      : '';
+    return formatMonetaryDisplayValue(value, explicitDigits, currencyLabel);
+  }
   if (
     typeof field.precision === 'number'
     && ['float', 'monetary'].includes(String(field.type || '').trim().toLowerCase())
@@ -488,7 +568,7 @@ function formatValue(value: unknown, field: { type: string; selection?: Array<[s
 function displayCell(entry: VisibleEntry, column: Column): string {
   if (entry.record && column.field === sheetConfig.value.ordinal_field) return entry.ordinal ? String(entry.ordinal) : '';
   if ((sheetConfig.value.blank_fields_by_kind?.[entry.rowKind] || []).includes(column.field)) return '';
-  if (entry.record) return formatValue(entry.record[column.field], column);
+  if (entry.record) return formatValue(entry.record[column.field], column, entry.record);
   if (!hierarchyConfig.value.group_field_map?.[column.field]) return '';
   const value = groupValue(entry.node, column.field);
   return value === '' ? '' : formatValue(value, column);
@@ -515,6 +595,10 @@ function selectNavigation(rawNode: NavigationTreeNode | null) {
   };
   selectedNavigationNode.value = find(roots.value) || node;
 }
+function selectMobileNavigation(rawNode: NavigationTreeNode | null) {
+  selectNavigation(rawNode);
+  mobileNavigationOpen.value = false;
+}
 function toggleNavigation(rawNode: NavigationTreeNode) {
   const node = rawNode as WorksheetNode;
   const next = new Set(navigationExpandedKeys.value);
@@ -534,6 +618,21 @@ function expandAll() {
 }
 function collapseAll() { sheetExpandedKeys.value = new Set(); }
 function onSearchInput(value: string) { keyword.value = value; }
+function clearSearch() { keyword.value = ''; }
+function captureTableScroll() {
+  retainedTableScroll = { left: tableScroll.value?.scrollLeft || 0, top: tableScroll.value?.scrollTop || 0 };
+}
+async function restoreTableScroll() {
+  await nextTick();
+  if (tableScroll.value) {
+    tableScroll.value.scrollLeft = retainedTableScroll.left;
+    tableScroll.value.scrollTop = retainedTableScroll.top;
+  }
+}
+function openSelectedRecord(record: WorksheetDict) {
+  captureTableScroll();
+  emit('open-record', record);
+}
 function storageKey() { return `sc:hierarchical-worksheet:${props.preferenceScope}:layout`; }
 function persistLayout() { window.localStorage.setItem(storageKey(), JSON.stringify({ navigationWidth: navigationWidth.value, detailHeight: detailHeight.value })); }
 function restoreLayout() {
@@ -545,10 +644,24 @@ function restoreLayout() {
 }
 function startNavigationResize(event: PointerEvent) { event.preventDefault(); resizeMode = 'navigation'; resizeStart = event.clientX; resizeStartSize = navigationWidth.value; bindResize(); }
 function startDetailResize(event: PointerEvent) { event.preventDefault(); resizeMode = 'detail'; resizeStart = event.clientY; resizeStartSize = detailHeight.value; bindResize(); }
+function resizeNavigationFromKeyboard(event: KeyboardEvent) {
+  const result = resizeWorksheetPaneFromKeyboard('navigation', navigationWidth.value, event.key);
+  if (!result.handled) return;
+  event.preventDefault();
+  navigationWidth.value = result.value;
+  persistLayout();
+}
+function resizeDetailFromKeyboard(event: KeyboardEvent) {
+  const result = resizeWorksheetPaneFromKeyboard('detail', detailHeight.value, event.key);
+  if (!result.handled) return;
+  event.preventDefault();
+  detailHeight.value = result.value;
+  persistLayout();
+}
 function bindResize() { window.addEventListener('pointermove', resizeMove); window.addEventListener('pointerup', stopResize); }
 function resizeMove(event: PointerEvent) {
-  if (resizeMode === 'navigation') navigationWidth.value = Math.max(200, Math.min(480, resizeStartSize + event.clientX - resizeStart));
-  if (resizeMode === 'detail') detailHeight.value = Math.max(140, Math.min(420, resizeStartSize - (event.clientY - resizeStart)));
+  if (resizeMode === 'navigation') navigationWidth.value = clampWorksheetPaneSize('navigation', resizeStartSize + event.clientX - resizeStart);
+  if (resizeMode === 'detail') detailHeight.value = clampWorksheetPaneSize('detail', resizeStartSize - (event.clientY - resizeStart));
 }
 function stopResize() { if (resizeMode) persistLayout(); resizeMode = ''; window.removeEventListener('pointermove', resizeMove); window.removeEventListener('pointerup', stopResize); }
 
@@ -575,6 +688,8 @@ onMounted(async () => {
   } catch (error) { errorMessage.value = error instanceof Error ? error.message : String(error); }
   finally { loading.value = false; }
 });
+onDeactivated(captureTableScroll);
+onActivated(() => { void restoreTableScroll(); });
 onBeforeUnmount(() => {
   stopResize();
   viewportMedia?.removeEventListener('change', onViewportChange);
@@ -592,10 +707,12 @@ onBeforeUnmount(() => {
 .worksheet-resizer { position: relative; z-index: 2; background: var(--sc-app-border); }
 .worksheet-resizer::after { position: absolute; content: ''; inset: -5px; }
 .worksheet-resizer:hover { background: var(--sc-app-accent); }
+.worksheet-resizer:focus-visible { outline: var(--sc-component-button-focus-ring-width) solid var(--sc-app-focus-ring); outline-offset: var(--sc-component-button-focus-offset); background: var(--sc-app-accent); }
 .worksheet-resizer-navigation { cursor: col-resize; }
 .worksheet-main { display: grid; min-width: 0; min-height: 0; overflow: hidden; }
 .worksheet-grid-pane { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; }
 .worksheet-grid-toolbar { display: flex; align-items: center; justify-content: space-between; min-height: 48px; padding: 0 var(--sc-space-sm); border-bottom: 1px solid var(--sc-app-border); }
+.worksheet-scope-trigger { display: none; max-width: 100%; }
 .worksheet-grid-toolbar span { margin-left: var(--sc-space-sm); color: var(--sc-app-text-secondary); }
 .worksheet-grid-title { display: flex; align-items: center; min-width: 0; flex-wrap: wrap; gap: var(--sc-space-xs); }
 .worksheet-domain-tabs { display: inline-flex; align-items: center; gap: 2px; margin-left: var(--sc-space-sm); }
@@ -624,7 +741,8 @@ onBeforeUnmount(() => {
 .worksheet-detail-fields dt { color: var(--sc-app-text-secondary); }
 .worksheet-detail-fields dd { margin: 0; overflow-wrap: anywhere; }
 .worksheet-error { padding: var(--sc-space-sm); color: var(--sc-app-danger); }
-@media (max-width: 960px) { .worksheet-layout { grid-template-columns: 1fr !important; height: auto; } .worksheet-navigation, .worksheet-resizer-navigation { display: none; } .worksheet-main { min-height: 680px; } }
+.worksheet-mobile-navigation { min-width: 0; max-height: calc(100vh - 160px); overflow: auto; }
+@media (max-width: 960px) { .worksheet-layout { grid-template-columns: 1fr !important; height: auto; } .worksheet-navigation, .worksheet-resizer-navigation { display: none; } .worksheet-main { min-height: 680px; } .worksheet-grid-toolbar { align-items: stretch; flex-direction: column; gap: var(--sc-space-xs); padding-block: var(--sc-space-xs); } .worksheet-scope-trigger { display: inline-flex; justify-content: flex-start; min-height: var(--sc-touch-target-min); overflow: hidden; text-overflow: ellipsis; } }
 @media (max-width: 640px) {
   .worksheet-detail-fields { grid-template-columns: max-content minmax(0, 1fr); }
 }

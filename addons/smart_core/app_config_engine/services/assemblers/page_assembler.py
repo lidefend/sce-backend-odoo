@@ -1144,6 +1144,12 @@ class PageAssembler:
         }
         column_widths = raw.get("column_widths") if isinstance(raw.get("column_widths"), dict) else {}
         column_precisions = raw.get("column_precisions") if isinstance(raw.get("column_precisions"), dict) else {}
+        def worksheet_precision(name):
+            value = column_precisions.get(name)
+            try:
+                return max(0, min(8, int(value))) if value is not None else None
+            except (TypeError, ValueError):
+                return None
         columns = []
         for row in columns_schema:
             if not isinstance(row, dict):
@@ -1156,11 +1162,11 @@ class PageAssembler:
                 width = int(column_widths.get(name) or 120)
             except (TypeError, ValueError):
                 width = 120
-            precision = column_precisions.get(name)
-            try:
-                precision = max(0, min(8, int(precision))) if precision is not None else None
-            except (TypeError, ValueError):
-                precision = None
+            precision = worksheet_precision(name)
+            digits = descriptor.get("digits")
+            if not isinstance(digits, (list, tuple)) or len(digits) != 2:
+                digits = None
+            currency_field = str(descriptor.get("currency_field") or "").strip()
             columns.append({
                 "field": name,
                 "label": str(row.get("label") or row.get("string") or descriptor.get("string") or name).strip(),
@@ -1169,6 +1175,8 @@ class PageAssembler:
                 "align": "right" if descriptor.get("type") in {"integer", "float", "monetary"} else "left",
                 "width": max(44, min(480, width)),
                 **({"precision": precision} if precision is not None else {}),
+                **({"digits": list(digits)} if digits else {}),
+                **({"currency_field": currency_field} if currency_field else {}),
             })
 
         raw_tabs = raw.get("tabs") if isinstance(raw.get("tabs"), list) else []
@@ -1182,11 +1190,15 @@ class PageAssembler:
                 descriptor = fields_map.get(name) if isinstance(fields_map.get(name), dict) else {}
                 if not name or not descriptor:
                     continue
+                precision = worksheet_precision(name)
                 rows.append({
                     "field": name,
                     "label": str(descriptor.get("string") or name).strip(),
                     "type": str(descriptor.get("type") or "").strip(),
                     "selection": descriptor.get("selection") if isinstance(descriptor.get("selection"), list) else [],
+                    **({"precision": precision} if precision is not None else {}),
+                    **({"digits": list(descriptor.get("digits"))} if isinstance(descriptor.get("digits"), (list, tuple)) and len(descriptor.get("digits")) == 2 else {}),
+                    **({"currency_field": str(descriptor.get("currency_field") or "").strip()} if str(descriptor.get("currency_field") or "").strip() else {}),
                 })
                 tab_fields.append(name)
             if rows:
@@ -1221,6 +1233,10 @@ class PageAssembler:
         for name in [*(column["field"] for column in columns), *tab_fields, *(row["field"] for row in navigation_groups)]:
             if name in fields_map and name not in read_fields:
                 read_fields.append(name)
+        for field in [*columns, *(field for tab in tabs for field in tab["fields"])]:
+            currency_field = str(field.get("currency_field") or "").strip()
+            if currency_field in fields_map and currency_field not in read_fields:
+                read_fields.append(currency_field)
         row_kind_field = str(raw.get("row_kind_field") or "").strip()
         if row_kind_field and row_kind_field in fields_map and row_kind_field not in read_fields:
             read_fields.append(row_kind_field)

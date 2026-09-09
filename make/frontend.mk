@@ -185,10 +185,13 @@ verify.frontend.collection_selection_control.unit: guard.prod.forbid
 verify.frontend.product_page_header.browser: guard.prod.forbid
 	@node scripts/verify/frontend_product_page_header_browser.mjs
 
-.PHONY: verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit verify.frontend.component_driver_takeover.unit
+.PHONY: verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit verify.frontend.component_driver_takeover.unit refresh.frontend.component_driver_takeover.inventory
 verify.frontend.component_driver_takeover.unit: guard.prod.forbid
 	@python3 -m unittest scripts.audit.test_generate_frontend_component_driver_takeover_inventory
 	@python3 scripts/audit/generate_frontend_component_driver_takeover_inventory.py --check
+
+refresh.frontend.component_driver_takeover.inventory: guard.prod.forbid
+	@python3 scripts/audit/generate_frontend_component_driver_takeover_inventory.py
 
 .PHONY: verify.frontend.theme_profile.unit verify.frontend.boq_import_preview.unit
 verify.frontend.theme_profile.unit: guard.prod.forbid
@@ -309,6 +312,7 @@ verify.frontend.state_dashboard.unit: guard.prod.forbid
 verify.frontend.state_dashboard.browser: guard.prod.forbid
 	@node scripts/verify/frontend_state_dashboard_browser.mjs
 
+.PHONY: verify.frontend.rendering_detail_state.unit refresh.frontend.rendering_detail.inventory
 verify.frontend.rendering_detail_state.unit: guard.prod.forbid
 	@python3 -m unittest scripts.audit.test_generate_frontend_rendering_detail_inventory scripts.audit.test_generate_frontend_visual_projection_inventory scripts.audit.test_generate_frontend_official_design_alignment_inventory scripts.verify.test_frontend_inline_state_guard scripts.verify.test_frontend_rendering_detail_state_guard
 	@python3 scripts/verify/frontend_inline_state_guard.py
@@ -316,6 +320,11 @@ verify.frontend.rendering_detail_state.unit: guard.prod.forbid
 	@python3 scripts/audit/generate_frontend_rendering_detail_inventory.py --check
 	@python3 scripts/audit/generate_frontend_visual_projection_inventory.py --check
 	@python3 scripts/audit/generate_frontend_official_design_alignment_inventory.py --check
+
+refresh.frontend.rendering_detail.inventory: guard.prod.forbid
+	@python3 scripts/audit/generate_frontend_rendering_detail_inventory.py
+	@python3 scripts/audit/generate_frontend_visual_projection_inventory.py
+	@python3 scripts/audit/generate_frontend_official_design_alignment_inventory.py
 
 verify.frontend.rendering_detail_state.browser: guard.prod.forbid
 	@node scripts/verify/frontend_rendering_detail_state_browser.mjs
@@ -365,6 +374,7 @@ verify.frontend.native_form_action_presentation.browser: guard.prod.forbid
 	@node scripts/verify/frontend_native_form_action_presentation_browser.mjs
 
 verify.frontend.hierarchical_worksheet.unit: guard.prod.forbid
+	@python3 addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/hierarchical_worksheet_interaction_test.ts --bundle --platform=node --format=esm --outfile=/tmp/hierarchical-worksheet-interaction-test.mjs >/dev/null
 	@node /tmp/hierarchical-worksheet-interaction-test.mjs
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/hierarchical_worksheet_domain_tab_test.ts --bundle --platform=node --format=esm --outfile=/tmp/hierarchical-worksheet-domain-tab-test.mjs >/dev/null
