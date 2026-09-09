@@ -452,14 +452,13 @@ function invalidateOne2manyRelationQuery(key: string) {
 
 function closeOne2manyRelationQuery(key: string) {
   clearRelationQueryTimer(key);
-  delete relationActiveRequestRevisions[key];
   o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: false };
 }
 
-function one2manyRelationResponseIsRelevant(key: string, revision: number, keyword: string) {
+function one2manyRelationResponseIsRelevant(key: string, revision: number) {
   return relationQueryAuthority.isCurrent(key, revision)
     || (relationActiveRequestRevisions[key] === revision
-      && (o2mRelationSearchMap.value[key] || '') === keyword);
+      && !relationQueryTimers[key]);
 }
 
 async function runOne2manyRelationOptionsQuery(
@@ -481,7 +480,7 @@ async function runOne2manyRelationOptionsQuery(
   o2mRelationErrors.value = { ...o2mRelationErrors.value, [key]: '' };
   try {
     const options = await props.adapter.queryOne2manyColumnOptions(fieldName, rowKey, column, keyword);
-    if (!one2manyRelationResponseIsRelevant(key, revision, keyword)) return;
+    if (!one2manyRelationResponseIsRelevant(key, revision)) return;
     o2mRelationOptionMap.value = {
       ...o2mRelationOptionMap.value,
       [key]: preserveSelectedOne2manyRelationOption({
@@ -491,7 +490,7 @@ async function runOne2manyRelationOptionsQuery(
       }),
     };
   } catch {
-    if (!one2manyRelationResponseIsRelevant(key, revision, keyword)) return;
+    if (!one2manyRelationResponseIsRelevant(key, revision)) return;
     o2mRelationOptionMap.value = {
       ...o2mRelationOptionMap.value,
       [key]: preserveSelectedOne2manyRelationOption({
