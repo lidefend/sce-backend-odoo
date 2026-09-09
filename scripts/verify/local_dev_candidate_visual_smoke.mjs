@@ -1546,25 +1546,39 @@ try {
               && String(body?.params?.search_term || '') === searchTerm;
           }, { timeout: 15000 });
           const waitForVisibleRelationOptionCount = async (maximum) => {
-            const deadline = Date.now() + 15000;
-            while (Date.now() < deadline) {
-              const count = Number(await relationSelect.getAttribute('data-option-count') ?? -1);
-              if (count >= 0 && count <= maximum) return;
-              await page.waitForTimeout(50);
+            const selectHandle = await relationSelect.elementHandle();
+            try {
+              await page.waitForFunction(
+                ({ select, limit }) => {
+                  const count = Number(select?.getAttribute('data-option-count') ?? -1);
+                  return count >= 0 && count <= limit;
+                },
+                { select: selectHandle, limit: maximum },
+                { timeout: 15000 },
+              );
+            } catch (error) {
+              const diagnostics = await form.locator('[data-semantic-component="One2ManyCellEditor"][data-validation-target$=":material_catalog_id"]')
+                .evaluateAll((editors) => editors.map((editor) => ({
+                  target: editor.getAttribute('data-validation-target'),
+                  visible: editor instanceof HTMLElement && editor.offsetParent !== null,
+                  diagnostic: editor.getAttribute('data-relation-query-diagnostic'),
+                  optionCount: editor.querySelector('[data-semantic-component="ScSelect"]')?.getAttribute('data-option-count'),
+                })));
+              throw new Error(`${target.name}: active relation selector did not project at most ${maximum} options diagnostics=${JSON.stringify(diagnostics)}`, { cause: error });
+            } finally {
+              await selectHandle?.dispose();
             }
-            const diagnostics = await form.locator('[data-semantic-component="One2ManyCellEditor"][data-validation-target$=":material_catalog_id"]')
-              .evaluateAll((editors) => editors.map((editor) => ({
-                target: editor.getAttribute('data-validation-target'),
-                visible: editor instanceof HTMLElement && editor.offsetParent !== null,
-                diagnostic: editor.getAttribute('data-relation-query-diagnostic'),
-                optionCount: editor.querySelector('[data-semantic-component="ScSelect"]')?.getAttribute('data-option-count'),
-              })));
-            throw new Error(`${target.name}: active relation selector did not project at most ${maximum} options diagnostics=${JSON.stringify(diagnostics)}`);
           };
           await relationInput.click();
           await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
-          let relationSearchInput = page.locator('input:focus').first();
-          if (await relationSearchInput.count() !== 1) relationSearchInput = relationInput;
+          const requireActiveRelationInput = async (phase) => {
+            const ownsFocus = await relationInput.evaluate((input) => document.activeElement === input);
+            if (!ownsFocus) {
+              throw new Error(`${target.name}: visible relation selector did not retain its official search input during ${phase}`);
+            }
+            return relationInput;
+          };
+          let relationSearchInput = await requireActiveRelationInput('initial-open');
           await visibleOptions.first().waitFor({ state: 'visible', timeout: 15000 });
           const initialCount = await visibleOptions.count();
           const noMatchKeyword = '__shared_relation_no_match__';
@@ -1612,8 +1626,7 @@ try {
             .evaluateAll((inputs) => inputs.map((input) => input.value));
           await relationInput.click();
           await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
-          relationSearchInput = page.locator('input:focus').first();
-          if (await relationSearchInput.count() !== 1) relationSearchInput = relationInput;
+          relationSearchInput = await requireActiveRelationInput('selected-reopen');
           const selectedOptionBeforeSearch = String(await visibleDropdown.locator('[aria-selected="true"]:visible').first().textContent().catch(() => '') || '').replace(/\s+/g, ' ').trim();
           const selectedNoMatchResponse = waitForMaterialCatalogQuery(noMatchKeyword);
           await relationSearchInput.fill(noMatchKeyword);
@@ -1635,8 +1648,16 @@ try {
           await visibleDropdown.waitFor({ state: 'hidden', timeout: 15000 });
           const noteInput = relationRow.locator('[data-validation-target$=":note"] input:visible').first();
           const relationQueriesBeforeNote = relationQueryCount;
+          const unrelatedRelationRequest = page.waitForRequest((request) => {
+            if (request.method() !== 'POST') return false;
+            let body = {};
+            try { body = JSON.parse(request.postData() || '{}'); } catch {}
+            return body.intent === 'api.data'
+              && body?.params?.op === 'list'
+              && body?.params?.model === 'sc.material.catalog';
+          }, { timeout: 750 }).then(() => true).catch(() => false);
           if (await noteInput.count() === 1) await noteInput.fill('未提交的关系查询验证');
-          await page.waitForTimeout(500);
+          const noteTriggeredRelationQuery = await unrelatedRelationRequest;
           const relationQueriesAfterNote = relationQueryCount;
 
           let failureInjected = false;
@@ -1664,8 +1685,7 @@ try {
           await page.route(failureRoutePattern, failureRouteHandler);
           await relationInput.click();
           await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
-          let failureSearchInput = page.locator('input:focus').first();
-          if (await failureSearchInput.count() !== 1) failureSearchInput = relationInput;
+          const failureSearchInput = await requireActiveRelationInput('failure-injection-open');
           await failureSearchInput.fill('__shared_relation_failure__');
           const failureState = page.locator('[data-relation-query-state="error"]:visible').filter({ hasText: '可选内容加载失败' }).first();
           try {
@@ -1698,9 +1718,10 @@ try {
             path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-relation-failure.png`),
             fullPage: false,
           });
+          const failureRecoveryResponse = waitForMaterialCatalogQuery('__shared_relation_failure__');
           await failureState.getByRole('button', { name: '重试', exact: true }).click();
+          await failureRecoveryResponse;
           await failureState.waitFor({ state: 'hidden', timeout: 15000 });
-          await page.waitForTimeout(500);
           const failureRecovered = failureInjected && await failureState.count() === 0;
           await page.unroute(failureRoutePattern, failureRouteHandler);
           await page.keyboard.press('Escape');
@@ -1722,8 +1743,9 @@ try {
             selectedDisplaysAfterSearch,
             reopenedCount,
             selectedOptionAfterReopen,
-            relationQueriesBeforeNote,
-            relationQueriesAfterNote,
+              relationQueriesBeforeNote,
+              relationQueriesAfterNote,
+              noteTriggeredRelationQuery,
             failureInjected,
             failureText,
             failureOwnerTarget,
@@ -1740,6 +1762,7 @@ try {
               && (selectedDisplayAfterSearch === selectedLabel || selectedDisplaysAfterSearch.includes(selectedLabel) || selectedOptionAfterReopen === selectedLabel)
               && reopenedCount > 0
               && relationQueryEvents.filter((event) => event.kind === 'request' && event.searchTerm === noMatchKeyword).length === 2
+              && !noteTriggeredRelationQuery
               && relationQueriesAfterNote === relationQueriesBeforeNote
               && failureText.includes('加载失败')
               && failureOwnerTarget.endsWith(':material_catalog_id')
