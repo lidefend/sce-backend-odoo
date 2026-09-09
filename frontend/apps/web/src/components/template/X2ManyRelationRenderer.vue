@@ -387,6 +387,7 @@ const relationQueryAuthority = createOne2manyRelationRequestAuthority();
 const relationQueryTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 const relationCloseTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 const relationActiveRequestRevisions: Record<string, number> = {};
+const RELATION_POPUP_OWNER_HANDOFF_MS = 80;
 
 onBeforeUnmount(() => {
   Object.keys(relationQueryTimers).forEach(clearRelationQueryTimer);
@@ -561,7 +562,7 @@ function handleOne2manyRelationPopup(
     delete relationCloseTimers[key];
     if (relationPopupAuthority.isOpen(key)) return;
     closeOne2manyRelationQuery(key);
-  }, 0);
+  }, RELATION_POPUP_OWNER_HANDOFF_MS);
 }
 
 function retryOne2manyRelationOptions(fieldName: string, rowKey: string, column: RelationFieldColumn) {

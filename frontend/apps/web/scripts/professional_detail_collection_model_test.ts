@@ -71,6 +71,8 @@ assert.equal(popupAuthority.update('line:1:partner_id', 'desktop-clone', true), 
 assert.equal(popupAuthority.update('line:1:partner_id', 'desktop-primary', false), 'unchanged');
 assert.equal(popupAuthority.update('line:1:partner_id', 'desktop-clone', false), 'closed');
 assert.equal(popupAuthority.isOpen('line:1:partner_id'), false);
+assert.equal(popupAuthority.update('line:1:partner_id', 'desktop-replacement', true), 'opened');
+assert.equal(popupAuthority.isOpen('line:1:partner_id'), true);
 popupAuthority.clear();
 assert.equal(popupAuthority.update('line:1:partner_id', 'mobile', true), 'opened');
 assert.equal(popupAuthority.isOpen('line:1:partner_id'), true);
