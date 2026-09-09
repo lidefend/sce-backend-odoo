@@ -1305,17 +1305,21 @@ class TestFormFieldConfigurationParams(unittest.TestCase):
             name = "contract"
             model = "res.partner"
             version_no = 4
+            restore_called = False
 
-            def write(self, vals):
+            def restore_published_version(self, version):
+                self.restore_called = True
                 raise RuntimeError("rollback write failed")
 
         class Version:
             version_no = 2
             snapshot_json = {"view_orchestration": {"views": {"form": {"fields": [{"name": "name"}]}}}}
 
+        contract = Contract()
+
         class ContractModel:
             def search(self, domain, limit=None):
-                return Contract()
+                return contract
 
         class VersionModel:
             def search(self, domain, order=None, limit=None):
@@ -1337,6 +1341,7 @@ class TestFormFieldConfigurationParams(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertEqual(result["code"], 500)
         self.assertEqual(result["error"]["reason_code"], "WRITE_FAILED")
+        self.assertTrue(contract.restore_called)
 
     def test_business_config_contract_rollback_specific_version_not_found(self):
         class Company:
