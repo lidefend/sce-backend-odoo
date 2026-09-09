@@ -1412,6 +1412,7 @@ try {
           && (target.returnScrollMobileOnly !== true || viewport.name === 'mobile');
         const scrollBefore = captureReturnScroll
           ? await recordOwner.evaluate((node) => {
+            node.scrollIntoView({ block: 'center', inline: 'nearest' });
             const candidates = [];
             let current = node.parentElement;
             while (current) {
@@ -1423,12 +1424,11 @@ try {
             const owner = candidates[0];
             if (!(owner instanceof HTMLElement)) return { available: false, scrollTop: 0, maxScrollTop: 0 };
             const maxScrollTop = Math.max(0, owner.scrollHeight - owner.clientHeight);
-            owner.scrollTop = Math.min(160, maxScrollTop);
             return { available: true, scrollTop: Math.round(owner.scrollTop), maxScrollTop: Math.round(maxScrollTop) };
           })
           : null;
         const detailContractResponse = page.waitForResponse(isContractV2Response, { timeout: 45000 });
-        await opener.click();
+        await opener.click(captureReturnScroll ? { force: true } : undefined);
         await page.waitForURL((url) => url.href !== beforeUrl, { timeout: 15000 });
         const response = await detailContractResponse;
         const payload = await response.json();

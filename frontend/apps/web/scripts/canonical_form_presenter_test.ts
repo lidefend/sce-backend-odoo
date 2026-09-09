@@ -588,6 +588,7 @@ nativeMonetarySnapshot.dataContract.mainData.currency_id = [6, 'CNY'];
 const nativeMonetaryField = collectFields(presentContractV2Form(
   createContractV2Store(decodeContractV2Snapshot(nativeMonetarySnapshot)),
   'edit',
+  { amount: 50, currency_id: 6 },
 ).zones.primary).find((field) => field.fieldCode === 'amount');
 assert.deepEqual(nativeMonetaryField?.componentConfig.currencyValue, [6, 'CNY']);
 const nativeMonetarySchema = canonicalFieldToFormSection(nativeMonetaryField!);
