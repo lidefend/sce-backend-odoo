@@ -53,6 +53,13 @@ class FrontendPagePatternReferenceParityGuardTest(unittest.TestCase):
         failures = validate(lambda source: values[source])
         self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))
 
+    def test_canonical_validation_state_must_reach_the_rendered_control(self) -> None:
+        values = self.source_map()
+        target = "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts"
+        values[target] = values[target].replace("invalid: field.invalid", "invalid: false")
+        failures = validate(lambda source: values[source])
+        self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))
+
     def test_record_page_must_not_hide_its_authoritative_title(self) -> None:
         values = self.source_map()
         target = "frontend/apps/web/src/pages/ContractFormPage.vue"

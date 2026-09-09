@@ -2663,6 +2663,9 @@ const validationProjection = applyCanonicalFormValidation(model, ['Name 为必�
 const validationField = collectFields(validationProjection.zones.primary).find((field) => field.fieldCode === 'name');
 assert.equal(validationField?.invalid, true, 'canonical validation must mark the matching field invalid');
 assert.equal(validationField?.errorText, 'Name 为必填项', 'canonical validation must retain the authoritative error text');
+const renderedValidationField = canonicalFieldToFormSection(validationField!);
+assert.equal(renderedValidationField.invalid, true, 'canonical field validation must reach the rendered control');
+assert.equal(renderedValidationField.errorText, 'Name 为必填项', 'rendered validation must retain its accessible description');
 const unrelatedValidationField = collectFields(validationProjection.zones.primary).find((field) => field.fieldCode === 'state');
 assert.equal(unrelatedValidationField?.invalid, false, 'canonical validation must not mark unrelated fields invalid');
 

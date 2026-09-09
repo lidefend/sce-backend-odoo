@@ -41,6 +41,10 @@ REQUIREMENTS = {
         "applyCanonicalFormValidation",
         "message.includes(field.label)",
     ),
+    "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts": (
+        "invalid: field.invalid",
+        "errorText: field.errorText || undefined",
+    ),
     "frontend/apps/web/src/pages/ContractFormPage.vue": (
         "const suppressPageHeaderTitle = computed(() => false)",
         ':title="pageDisplayTitle"',
