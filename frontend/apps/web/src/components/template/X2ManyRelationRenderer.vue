@@ -506,6 +506,7 @@ function loadOne2manyRelationOptions(fieldName: string, rowKey: string, column: 
 function scheduleOne2manyRelationSearch(fieldName: string, rowKey: string, column: RelationFieldColumn, keyword: string) {
   const key = relationCellKey(fieldName, rowKey, column.name);
   const normalizedKeyword = String(keyword || '');
+  if (o2mRelationSearchMap.value[key] === normalizedKeyword) return;
   o2mRelationSearchMap.value = { ...o2mRelationSearchMap.value, [key]: normalizedKeyword };
   clearRelationQueryTimer(key);
   const revision = relationQueryAuthority.begin(key);
