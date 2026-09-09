@@ -32,16 +32,27 @@
 
     <ScSection v-for="section in visibleSections" :key="section.key" class="work-section" :title="`${section.label} ${section.count}`" :data-section-key="section.key">
       <ScEmptyState v-if="!section.items.length" :title="searchText ? '没有符合当前查找条件的事项。' : `当前范围内没有${section.label}事项。`" />
-      <ScCard v-for="item in section.items" :key="item.key" appearance="record" class="work-card" :data-work-item-key="item.key">
+      <ScCard v-for="item in section.items" :key="item.key" appearance="record" class="work-card" :data-work-item-key="item.key" :data-record-id="item.target.record_id" :data-work-item-state="item.state.key">
         <div class="work-card__main">
           <div class="work-card__identity">
             <span class="business-type">{{ item.business_type }}</span>
             <ScStatusBadge :value="item.state.key" :label="item.state.label" :semantic="statusSemantic(item.state.key)" />
           </div>
           <h3>{{ item.record.label }}</h3>
-          <ScDescriptions :column="2" :items="item.facts.map((fact) => ({ ...fact, key: fact.key, label: fact.label }))">
-            <template #item="{ item: fact }"><ScMoney v-if="fact.display_role === 'money'" :display="formatFact(fact as ProductMyWorkFact)" :label="fact.label" /><template v-else>{{ formatFact(fact as ProductMyWorkFact) }}</template></template>
-          </ScDescriptions>
+          <dl class="work-card__summary" aria-label="关键事实">
+            <div v-for="entry in primaryFacts(item)" :key="entry.key" :data-primary-fact-key="entry.fact.key">
+              <dt>{{ entry.fact.label }}</dt>
+              <dd><ScMoney v-if="entry.fact.display_role === 'money'" :display="entry.display" :label="entry.fact.label" /><template v-else>{{ entry.display }}</template></dd>
+            </div>
+          </dl>
+          <ScDisclosure v-if="supplementaryFacts(item).length" class="work-card__disclosure" :title="`查看其余 ${supplementaryFacts(item).length} 项信息`">
+            <dl class="work-card__supplementary">
+              <div v-for="entry in supplementaryFacts(item)" :key="entry.key" :data-supplementary-fact-key="entry.fact.key">
+                <dt>{{ entry.fact.label }}</dt>
+                <dd><ScMoney v-if="entry.fact.display_role === 'money'" :display="entry.display" :label="entry.fact.label" /><template v-else>{{ entry.display }}</template></dd>
+              </div>
+            </dl>
+          </ScDisclosure>
         </div>
         <ScActionBar class="work-card__actions" :label="`${item.record.label}操作`">
           <ScButton variant="ghost" @click="openItem(item)">打开详情</ScButton>
@@ -95,11 +106,12 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { executeProductMyWorkAction, type ProductMyWorkAction, type ProductMyWorkFact, type ProductMyWorkItem, type ProductMyWorkMoney, type ProductMyWorkWorkspace } from '../../api/myWork';
+import { executeProductMyWorkAction, type ProductMyWorkAction, type ProductMyWorkFact, type ProductMyWorkItem, type ProductMyWorkWorkspace } from '../../api/myWork';
+import { formatProductMyWorkFact, partitionProductMyWorkFacts } from '../../app/presentation/productMyWorkPresentation';
 import ScActionBar from '../design-system/ScActionBar.vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScDialog from '../design-system/ScDialog.vue';
-import ScDescriptions from '../design-system/ScDescriptions.vue';
+import ScDisclosure from '../design-system/ScDisclosure.vue';
 import ScDropdown, { type ScDropdownItem } from '../design-system/ScDropdown.vue';
 import ScEmptyState from '../design-system/ScEmptyState.vue';
 import ScField from '../design-system/ScField.vue';
@@ -167,23 +179,16 @@ watch(
   { deep: true },
 );
 
-function formatMoney(money?: ProductMyWorkMoney) {
-  if (!money || money.value === null || money.value === undefined) return '未填写';
-  const digits = Number.isFinite(money.digits) ? Number(money.digits) : 2;
-  return `${money.currency_symbol || ''}${Number(money.value).toLocaleString('zh-CN', {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  })} ${money.currency || ''}`.trim();
-}
-
-function formatDate(value?: string) {
-  return value ? String(value).replace('T', ' ').slice(0, 16) : '未知';
-}
-
 function formatFact(fact: ProductMyWorkFact) {
-  if (fact.display_role === 'money') return formatMoney(fact.money);
-  if (fact.display_role === 'datetime') return formatDate(fact.value);
-  return fact.value || '未填写';
+  return formatProductMyWorkFact(fact);
+}
+
+function primaryFacts(item: ProductMyWorkItem) {
+  return partitionProductMyWorkFacts(item.facts, 3).primary;
+}
+
+function supplementaryFacts(item: ProductMyWorkItem) {
+  return partitionProductMyWorkFacts(item.facts, 3).supplementary;
 }
 
 function statusSemantic(value?: string) {
@@ -278,15 +283,19 @@ async function confirmAction() {
 .work-section h2 { margin: 0; font-size: 20px; }
 .work-section h2 span { color: var(--sc-app-text-secondary); font-weight: 500; }
 .work-card { min-width: 0; }
-.work-card__main { min-width: 0; flex: 1; }
-.work-card__identity { display: flex; gap: 8px; align-items: center; }
+.work-card__main { display: grid; grid-template-columns: auto minmax(220px, 1.2fr) minmax(270px, 1fr) auto; grid-template-areas: 'identity title summary disclosure'; align-items: center; min-width: 0; flex: 1; gap: 6px 16px; }
+.work-card__identity { grid-area: identity; display: flex; gap: 8px; align-items: center; }
 .business-type, .status-badge { display: inline-flex; padding: 3px 8px; border-radius: var(--sc-component-tag-radius); background: var(--sc-app-info-bg); color: var(--sc-app-info-text); font-size: var(--sc-product-text-sm); }
 .status-badge { background: var(--sc-app-subtle-bg); color: var(--sc-app-text-primary); }
-.work-card h3 { margin: 10px 0 14px; overflow-wrap: anywhere; }
-.work-card dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 20px; margin: 0; }
+.work-card h3 { grid-area: title; margin: 2px 0; overflow-wrap: anywhere; }
+.work-card :deep(.t-card__body) { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+.work-card dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 20px; margin: 0; }
+.work-card__summary { grid-area: summary; }
 .work-card dl div { min-width: 0; }
 .work-card dt { color: var(--sc-app-text-secondary); font-size: var(--sc-product-text-sm); }
 .work-card dd { margin: 3px 0 0; overflow-wrap: anywhere; }
+.work-card__disclosure { grid-area: disclosure; margin-top: 0; }
+.work-card__supplementary { padding-top: 8px; border-top: 1px solid var(--sc-app-border); }
 .work-card__actions { display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start; }
 .more-actions { position: relative; }
 .more-actions summary { cursor: pointer; min-height: var(--sc-product-control-height); display: inline-flex; align-items: center; padding: 0 12px; border: 1px solid var(--sc-app-border); border-radius: var(--sc-product-radius-control); }
@@ -302,8 +311,10 @@ async function confirmAction() {
   .product-work { gap: 14px; }
   .product-work__counts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .product-work__filters { grid-template-columns: 1fr; padding: 12px; --sc-component-input-form-height: 44px; }
+  .work-card__main { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'identity' 'title' 'summary' 'disclosure'; gap: 8px; }
   .work-card h3 { margin: 9px 0 12px; font-size: 17px; line-height: 1.3; }
   .work-card dl { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; }
+  .work-card :deep(.t-card__body) { grid-template-columns: minmax(0, 1fr); }
   .work-card dt { font-size: 11px; }
   .work-card dd { font-size: 13px; }
   .work-card__actions { width: 100%; }

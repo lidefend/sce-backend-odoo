@@ -8,6 +8,7 @@ const login = String(process.env.E2E_LOGIN || '');
 const password = String(process.env.E2E_PASSWORD || '');
 const head = String(process.env.CANDIDATE_GIT_HEAD || '');
 const routes = JSON.parse(process.env.CANDIDATE_VISUAL_ROUTES_JSON || '[]');
+const desktopHeight = Math.max(720, Math.trunc(Number(process.env.CANDIDATE_VISUAL_DESKTOP_HEIGHT || 960)) || 960);
 const outputDir = path.resolve('artifacts/playwright/local-dev-candidate-visual-smoke');
 
 if (!baseUrl || !database || !login || !password || !/^[0-9a-f]{40}$/.test(head)) throw new Error('candidate visual identity is incomplete');
@@ -44,7 +45,11 @@ async function waitForStableProductSurface(page) {
     const formSettled = !(formPage instanceof HTMLElement) || formPage.dataset.state !== 'loading';
     const actionPage = document.querySelector('[data-semantic-component="ActionView"]');
     const actionSettled = !(actionPage instanceof HTMLElement) || actionPage.dataset.collectionState !== 'loading';
-    return !pendingForm && !pendingCollection && formSettled && actionSettled;
+    const homePage = document.querySelector('[data-semantic-component="WorkspaceHome"]');
+    const homeSettled = !(homePage instanceof HTMLElement) || homePage.dataset.state !== 'loading';
+    const myWorkPage = document.querySelector('[data-semantic-component="MyWorkView"]');
+    const myWorkSettled = !(myWorkPage instanceof HTMLElement) || myWorkPage.dataset.state !== 'loading';
+    return !pendingForm && !pendingCollection && formSettled && actionSettled && homeSettled && myWorkSettled;
   }, undefined, { timeout: 45000 });
   await page.evaluate(() => new Promise((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(resolve));
@@ -299,7 +304,7 @@ function isApiDataListResponse(response) {
 }
 
 try {
-  for (const viewport of [{ name: 'desktop', width: 1440, height: 960 }, { name: 'mobile', width: 390, height: 844 }]) {
+  for (const viewport of [{ name: 'desktop', width: 1440, height: desktopHeight }, { name: 'mobile', width: 390, height: 844 }]) {
     const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, locale: 'zh-CN' });
     const page = await context.newPage();
     const errors = [];
@@ -411,6 +416,9 @@ try {
       await page.locator('.layout-shell').waitFor({ timeout: 45000 });
       await page.locator('[data-product-page-mode], main').filter({ visible: true }).first().waitFor({ timeout: 45000 });
       await waitForStableProductSurface(page);
+      if (target.expectedLoadedSelector) {
+        await page.locator(String(target.expectedLoadedSelector)).filter({ visible: true }).first().waitFor({ timeout: 45000 });
+      }
       if (bootSummaryFixtureTarget === target) {
         while (bootSummaryRoutesInFlight > 0) await new Promise((resolve) => setTimeout(resolve, 10));
         await page.unroute(bootContractRoutePattern, bootContractRouteHandler);
@@ -560,6 +568,32 @@ try {
         const pageFrame = document.querySelector('.router-host > [data-product-page-mode]');
         const topbarRect = topbar?.getBoundingClientRect();
         const pageFrameRect = pageFrame?.getBoundingClientRect();
+        const workItemCards = [...document.querySelectorAll('[data-work-item-key]')]
+          .filter((node) => node instanceof HTMLElement && node.offsetParent !== null)
+          .map((node) => {
+            const rect = node.getBoundingClientRect();
+            return {
+              recordId: node.getAttribute('data-record-id') || '',
+              state: node.getAttribute('data-work-item-state') || '',
+              rect: [Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom)],
+              fullyVisible: rect.top >= 0 && rect.bottom <= window.innerHeight,
+              primaryFactCount: node.querySelectorAll('[data-primary-fact-key]').length,
+              supplementaryFactCount: node.querySelectorAll('[data-supplementary-fact-key]').length,
+              disclosureCount: node.querySelectorAll('[data-disclosure-trigger]').length,
+              actionLabels: [...node.querySelectorAll('button')]
+                .filter((button) => button instanceof HTMLElement && button.offsetParent !== null)
+                .map((button) => String(button.textContent || '').replace(/\s+/g, ' ').trim())
+                .filter(Boolean),
+            };
+          });
+        const homeWorkItems = [...document.querySelectorAll('[data-role-home] [data-record-id]')]
+          .filter((node) => node instanceof HTMLElement && node.offsetParent !== null)
+          .map((node) => ({
+            recordId: node.getAttribute('data-record-id') || '',
+            state: node.getAttribute('data-work-item-state') || '',
+            text: String(node.textContent || '').replace(/\s+/g, ' ').trim(),
+          }));
+        const detailRecordId = document.querySelector('[data-semantic-component="ContractFormPage"]')?.getAttribute('data-form-record') || '';
         return {
           h1: document.querySelectorAll('h1').length,
           pageHeaders: document.querySelectorAll('.template-page-header, [data-product-page-header]').length,
@@ -568,6 +602,18 @@ try {
           presentationModes: [...new Set([...document.querySelectorAll('[data-product-page-pattern][data-presentation-mode]')].map((node) => node.getAttribute('data-presentation-mode')).filter(Boolean))],
           nativeStructureCount: document.querySelectorAll('[data-native-contract-structure]').length,
           nativeNotebookPageCount: document.querySelectorAll('[data-native-contract-structure] .t-tabs__nav-item').length,
+          loadedSurfaceEvidence: {
+            homeState: homeRoot?.getAttribute('data-state') || '',
+            myWorkState: document.querySelector('[data-semantic-component="MyWorkView"]')?.getAttribute('data-state') || '',
+            collectionState: document.querySelector('[data-semantic-component="ActionView"]')?.getAttribute('data-collection-state') || '',
+            formState: document.querySelector('[data-semantic-component="ContractFormPage"]')?.getAttribute('data-state') || '',
+          },
+          workItemEvidence: {
+            cards: workItemCards,
+            homeItems: homeWorkItems,
+            detailRecordId,
+            fullyVisibleCardCount: workItemCards.filter((item) => item.fullyVisible).length,
+          },
           overflow: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - window.innerWidth,
           shellGeometry: {
             topbarHeight: Math.round(topbarRect?.height || 0),
@@ -843,7 +889,7 @@ try {
       }
       if (target.captureCollectionMobileRecords === true && viewport.name === 'mobile') {
         const rows = await page.locator('[data-semantic-component="CollectionMobileRecordRow"]:visible').evaluateAll((nodes) => nodes.map((node) => {
-          const card = node.querySelector('button.collection-mobile-record-row__card');
+          const card = node.querySelector('button.collection-mobile-record-row__open-action');
           const selection = node.querySelector('[data-semantic-component="CollectionSelectionControl"]');
           const selectionRect = selection?.getBoundingClientRect();
           return {
@@ -1224,7 +1270,7 @@ try {
         if (!recordId) throw new Error(`${target.name}: record entry requires recordId`);
         const recordOwner = page.locator(`[data-record-key="${recordId}"]:visible`);
         if (await recordOwner.count() !== 1) throw new Error(`${target.name}: expected exactly one visible record ${recordId}`);
-        const opener = recordOwner.locator('.cell-primary-link, [data-semantic-action="open-record"]');
+        const opener = recordOwner.locator('.cell-primary-link, .collection-mobile-record-row__open-action, [data-semantic-action="open-record"]');
         if (await opener.count() !== 1) throw new Error(`${target.name}: expected exactly one record opener for ${recordId}`);
         const beforeUrl = page.url();
         const detailContractResponse = page.waitForResponse(isContractV2Response, { timeout: 45000 });
@@ -1240,7 +1286,7 @@ try {
           Object.values(value).forEach(visit);
         };
         visit(payload.layoutContract?.containerTree || []);
-        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        await waitForStableProductSurface(page);
         recordEntryEvidence = {
           recordId,
           beforeUrl,
@@ -1249,6 +1295,71 @@ try {
           pageInfo: payload.pageInfo || null,
           widgetTypes: [...new Set(widgetTypes)].sort(),
           visibleError: await page.locator('[role="alert"]:visible, .error-state:visible, .form-error:visible').allTextContents(),
+        };
+        if (target.exerciseRecordReturn === true && (target.recordReturnDesktopOnly !== true || viewport.name === 'desktop')) {
+          const preservedKeys = Array.isArray(target.preservedQueryKeys) ? target.preservedQueryKeys.map(String) : ['search', 'order', 'list_offset'];
+          const before = new URL(beforeUrl);
+          const detailRecordId = String(await page.locator('[data-semantic-component="ContractFormPage"]').getAttribute('data-form-record') || '');
+          const returnAction = page.locator('[data-form-secondary-action="return-list"]:visible');
+          if (await returnAction.count() !== 1) throw new Error(`${target.name}: expected exactly one return-to-list action`);
+          await returnAction.click();
+          await page.waitForURL((url) => url.pathname === before.pathname, { timeout: 15000 });
+          await waitForStableProductSurface(page);
+          const afterUrl = page.url();
+          const after = new URL(afterUrl);
+          const preservedQuery = Object.fromEntries(preservedKeys.map((key) => [key, {
+            before: before.searchParams.get(key) || '',
+            after: after.searchParams.get(key) || '',
+          }]));
+          recordEntryEvidence.returnEvidence = {
+            detailRecordId,
+            afterUrl,
+            preservedQuery,
+            pass: detailRecordId === recordId
+              && preservedKeys.every((key) => (before.searchParams.get(key) || '') === (after.searchParams.get(key) || '')),
+          };
+        }
+      }
+      let collectionSearchEvidence = null;
+      if (target.exerciseCollectionSearchCycle === true && (target.collectionSearchDesktopOnly !== true || viewport.name === 'desktop')) {
+        const queryBar = page.locator('[data-semantic-component="ProductListHeader"]:visible, [data-semantic-component="CollectionActionToolbar"]:visible').first();
+        const searchForm = queryBar.locator('form[role="search"]');
+        const searchOwner = await searchForm.count() === 1 ? searchForm : queryBar;
+        const searchInput = searchOwner.locator('input[type="search"]');
+        if (await queryBar.count() !== 1 || await searchInput.count() !== 1) throw new Error(`${target.name}: collection search control is missing`);
+        const footer = page.locator('[data-semantic-component="CollectionPaginationFooter"]:visible').last();
+        const totalBefore = String(await footer.textContent() || '').replace(/\s+/g, ' ').trim();
+        const noMatchQuery = String(target.noMatchQuery || '__codex_no_matching_record__');
+        await searchInput.fill(noMatchQuery);
+        await searchOwner.getByRole('button', { name: /^搜索$/ }).click();
+        await waitForStableProductSurface(page);
+        const emptySurface = page.locator('.list-empty-surface:visible');
+        await emptySurface.waitFor({ state: 'visible', timeout: 15000 });
+        const noResultUrl = page.url();
+        const noResultText = String(await emptySurface.textContent() || '').replace(/\s+/g, ' ').trim();
+        const clearAction = searchOwner.getByRole('button', { name: /^清除$/ });
+        if (await clearAction.count() !== 1) throw new Error(`${target.name}: collection clear-search action is missing`);
+        await clearAction.click();
+        await waitForStableProductSurface(page);
+        await page.locator('[data-record-key]:visible').first().waitFor({ state: 'visible', timeout: 15000 });
+        const restoredFooter = page.locator('[data-semantic-component="CollectionPaginationFooter"]:visible').last();
+        const totalAfter = String(await restoredFooter.textContent() || '').replace(/\s+/g, ' ').trim();
+        const recordTotal = (text) => Number(text.match(/共\s*(\d+)\s*条/)?.[1] || 0);
+        collectionSearchEvidence = {
+          totalBefore,
+          recordTotalBefore: recordTotal(totalBefore),
+          noMatchQuery,
+          noResultUrl,
+          noResultText,
+          totalAfter,
+          recordTotalAfter: recordTotal(totalAfter),
+          finalUrl: page.url(),
+          finalSearchValue: await searchInput.inputValue(),
+          pass: Boolean(totalBefore)
+            && noResultText.length > 0
+            && recordTotal(totalBefore) > 0
+            && recordTotal(totalAfter) === recordTotal(totalBefore)
+            && await searchInput.inputValue() === '',
         };
       }
       const taskDensityEvidence = target.captureTaskDensity === true
@@ -1356,7 +1467,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, taskDensityEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, taskDensityEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -1413,6 +1524,33 @@ for (const item of report.routes) {
   if (item.path && routes.find((target) => target.name === item.name)?.expectedRelationTagsReady === true && !item.relationTagEvidence?.pass) {
     failures.push({ name: item.name, expectedRelationTagsReady: true, relationTagEvidence: item.relationTagEvidence || null });
   }
+  if (item.path && configuredTarget?.expectedLoadedSelector) {
+    const states = item.loadedSurfaceEvidence || {};
+    if (Object.values(states).some((state) => state === 'loading')) {
+      failures.push({ name: item.name, expectedLoadedSelector: configuredTarget.expectedLoadedSelector, loadedSurfaceEvidence: states });
+    }
+  }
+  if (item.path && configuredTarget?.expectedWorkRecordId) {
+    const expectedRecordId = String(configuredTarget.expectedWorkRecordId);
+    const evidence = item.workItemEvidence || {};
+    const observedRecordIds = [
+      ...(evidence.cards || []).map((entry) => entry.recordId),
+      ...(evidence.homeItems || []).map((entry) => entry.recordId),
+      evidence.detailRecordId,
+    ].filter(Boolean);
+    if (!observedRecordIds.includes(expectedRecordId)) {
+      failures.push({ name: item.name, expectedWorkRecordId: expectedRecordId, observedRecordIds });
+    }
+  }
+  if (item.path && configuredTarget?.captureWorkItemDensity === true && item.viewport === 'desktop') {
+    const evidence = item.workItemEvidence || {};
+    const cards = evidence.cards || [];
+    const compactAndComplete = Number(evidence.fullyVisibleCardCount || 0) >= 3
+      && cards.slice(0, 3).every((entry) => entry.recordId && entry.state && entry.primaryFactCount > 0
+        && entry.actionLabels.includes('打开详情')
+        && (entry.supplementaryFactCount === 0 || entry.disclosureCount > 0));
+    if (!compactAndComplete) failures.push({ name: item.name, workItemDensityEvidence: evidence });
+  }
   if (item.sidebarScrollEvidence && !item.sidebarScrollEvidence.pass) failures.push({ name: item.name, sidebarScrollEvidence: item.sidebarScrollEvidence });
   if (item.taskDensityEvidence && (!item.taskDensityEvidence.present || !item.taskDensityEvidence.summary?.pass)) failures.push({ name: item.name, taskDensityEvidence: item.taskDensityEvidence });
 }
@@ -1428,6 +1566,8 @@ for (const item of report.routes) {
   if (item.dialogLifecycleEvidence && !item.dialogLifecycleEvidence.pass) failures.push({ name: item.name, dialogLifecycleEvidence: item.dialogLifecycleEvidence });
   if (item.collectionToolbarEvidence && !item.collectionToolbarEvidence.pass) failures.push({ name: item.name, collectionToolbarEvidence: item.collectionToolbarEvidence });
   if (item.collectionNavigationEvidence && !item.collectionNavigationEvidence.pass) failures.push({ name: item.name, collectionNavigationEvidence: item.collectionNavigationEvidence });
+  if (item.recordEntryEvidence?.returnEvidence && !item.recordEntryEvidence.returnEvidence.pass) failures.push({ name: item.name, recordReturnEvidence: item.recordEntryEvidence.returnEvidence });
+  if (item.collectionSearchEvidence && !item.collectionSearchEvidence.pass) failures.push({ name: item.name, collectionSearchEvidence: item.collectionSearchEvidence });
 }
 for (const viewport of ['desktop', 'mobile']) {
   const groups = [...new Set(routes.map((target) => String(target.equivalentGroup || '')).filter(Boolean))];

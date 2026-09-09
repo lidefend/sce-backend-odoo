@@ -27,9 +27,9 @@ type ColumnPriorityInput = {
 };
 
 const limits: Record<ListColumnLayoutRole, [number, number]> = {
-  identity: [136, 260],
-  description: [176, 300],
-  relation: [132, 232],
+  identity: [168, 260],
+  description: [192, 300],
+  relation: [144, 232],
   text: [96, 192],
   status: [80, 120],
   money: [128, 148],
@@ -39,7 +39,7 @@ const limits: Record<ListColumnLayoutRole, [number, number]> = {
 
 export function listColumnAdaptiveFloor(role: ListColumnLayoutRole) {
   const floors: Record<ListColumnLayoutRole, number> = {
-    identity: 136, description: 176, relation: 120, text: 96,
+    identity: 168, description: 192, relation: 144, text: 96,
     status: 80, money: 128, date: 108, actions: 80,
   };
   return floors[role];

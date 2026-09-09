@@ -8,7 +8,7 @@ import { mergeWorkspaceNavigationLinks, resolveWorkspaceNavigationLink } from '.
 import { useSessionStore, type ActivityPage } from '../../stores/session';
 
 type SurfaceLink = { key: string; label: string; detail: string; route: string };
-type SurfaceTask = SurfaceLink & { kind: string; state: ProductMyWorkItem['state']; facts: ProductMyWorkItem['facts']; amount?: ProductMyWorkItem['facts'][number] };
+type SurfaceTask = SurfaceLink & { kind: string; recordId: number; state: ProductMyWorkItem['state']; facts: ProductMyWorkItem['facts']; amount?: ProductMyWorkItem['facts'][number] };
 type SurfaceCount = { key: string; label: string; value: number };
 
 function text(value: unknown): string {
@@ -29,6 +29,7 @@ function taskLink(item: ProductMyWorkItem): SurfaceTask | null {
     detail: [text(item.business_type), text(item.state?.label)].filter(Boolean).join(' · '),
     route,
     kind: text(item.business_type),
+    recordId: Number(item.target?.record_id || 0),
     state: item.state,
     facts: (item.facts || []).filter((fact) => fact.field_group !== 'audit' && fact.display_role !== 'money').slice(0, 2),
     amount: (item.facts || []).find((fact) => fact.field_group !== 'audit' && fact.display_role === 'money'),

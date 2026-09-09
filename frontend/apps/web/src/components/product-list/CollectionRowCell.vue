@@ -51,7 +51,7 @@
     data-semantic-cell-kind="relation-tags"
     class="collection-row-cell relation-tags"
   >
-    <span v-for="item in relationItems" :key="item.id" class="relation-tag">{{ item.label }}</span>
+    <span v-for="item in relationItems" :key="item.id" class="relation-tag" :title="item.label">{{ item.label }}</span>
   </span>
   <span v-else data-semantic-component="CollectionRowCell" class="collection-row-cell" :title="text">{{ text }}</span>
 </template>

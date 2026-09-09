@@ -54,9 +54,13 @@ def validate(
         ':aria-selected="selectionEnabled ? selected : undefined"',
         ':aria-label="openAriaLabel"',
         ':data-fact-key="fact.key"',
+        'v-for="fact in visibleFacts"',
+        'v-for="fact in additionalFacts"',
         "CollectionSelectionControl",
+        "ScDisclosure",
         "ScMobileRecordCard",
         "ScStatusBadge",
+        "collection-mobile-record-row__open-action",
         "emit('selection-change', $event)",
         "emit('open')",
     ):
@@ -96,4 +100,4 @@ if __name__ == "__main__":
         for error in errors:
             print(f"- {error}")
         raise SystemExit(1)
-    print("[frontend_collection_mobile_record_row_guard] PASS owner=1 selection=open_passthrough")
+    print("[frontend_collection_mobile_record_row_guard] PASS owner=1 selection=open_passthrough facts=progressive_disclosure")

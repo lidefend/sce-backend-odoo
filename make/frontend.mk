@@ -294,6 +294,8 @@ verify.frontend.collaboration_primitives.browser: guard.prod.forbid
 	@node scripts/verify/frontend_collaboration_primitives_browser.mjs
 
 verify.frontend.state_dashboard.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_my_work_presentation_test.ts --bundle --platform=node --format=esm --outfile=/tmp/product-my-work-presentation-test.mjs >/dev/null
+	@node /tmp/product-my-work-presentation-test.mjs
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/activity_page_tab_keyboard_test.ts --bundle --platform=node --format=esm --outfile=/tmp/activity-page-tab-keyboard-test.mjs >/dev/null
 	@node /tmp/activity-page-tab-keyboard-test.mjs
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/form_route_instance_identity_test.ts --bundle --platform=node --format=esm --outfile=/tmp/form-route-instance-identity-test.mjs >/dev/null

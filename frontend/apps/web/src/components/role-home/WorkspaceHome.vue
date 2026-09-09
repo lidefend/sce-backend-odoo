@@ -13,7 +13,7 @@
         <template #actions><ScButton type="button" variant="secondary" @click="load">重试</ScButton></template>
       </ScInlineState>
       <div v-else-if="tasks.length" class="role-home-surface__task-list">
-        <article v-for="task in tasks" :key="task.key">
+        <article v-for="task in tasks" :key="task.key" :data-record-id="task.recordId" :data-work-item-state="task.state?.key">
           <div class="role-home-surface__task-copy">
             <div class="role-home-surface__task-heading">
               <h3>{{ task.kind || task.label }}</h3>
@@ -94,16 +94,9 @@ import ScInlineState from '../design-system/ScInlineState.vue';
 import ScStatusBadge from '../design-system/ScStatusBadge.vue';
 import ScMoney from '../design-system/ScMoney.vue';
 import type { ProductMyWorkFact } from '../../api/myWork';
+import { formatProductMyWorkFact } from '../../app/presentation/productMyWorkPresentation';
 
-function formatFact(fact: ProductMyWorkFact): string {
-  if (fact.display_role === 'money') {
-    const money = fact.money;
-    if (money?.value == null || !Number.isFinite(money.value)) return '未填写';
-    const digits = Number.isFinite(money.digits) ? Math.min(20, Math.max(0, Math.trunc(money.digits!))) : 2;
-    return `${money.currency_symbol || ''}${money.value.toLocaleString('zh-CN', { minimumFractionDigits: digits, maximumFractionDigits: digits })} ${money.currency || ''}`.trim();
-  }
-  return fact.value || '未填写';
-}
+const formatFact = (fact: ProductMyWorkFact) => formatProductMyWorkFact(fact);
 
 type HomeIconName = 'briefcase' | 'folder' | 'building' | 'apps';
 
