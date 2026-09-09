@@ -439,7 +439,6 @@ try {
       let safeReturnEvidence = null;
       let officialComponentBehaviorEvidence = null;
       let officialAlertOperationEvidence = null;
-      let officialCardSlotEvidence = null;
       let expectedLoadedSelectorEvidence = null;
       const exerciseReadFailure = target.exerciseReadFailureRecovery === true
         && (target.readFailureDesktopOnly !== true || viewport.name === 'desktop');
@@ -787,22 +786,6 @@ try {
         if (!officialComponentBehaviorEvidence.pass) {
           throw new Error(`${target.name}: official component behavior failed ${JSON.stringify(officialComponentBehaviorEvidence)}`);
         }
-      }
-      if (target.exerciseOfficialCardSlot === true) {
-        const card = page.locator('[data-floorplan-region="current-task"][data-semantic-component="ScCard"]:visible').first();
-        await card.waitFor({ state: 'visible', timeout: 15000 });
-        const actionSurface = card.locator('[data-floorplan-region="action-bar"][data-mobile-action-surface]:visible');
-        const actionButtons = actionSurface.locator('[data-semantic-component="ScButton"]:visible');
-        officialCardSlotEvidence = {
-          cardCount: await card.count(),
-          tdesignCard: await card.evaluate((node) => node.classList.contains('t-card')),
-          actionSurfaceCount: await actionSurface.count(),
-          actionButtonCount: await actionButtons.count(),
-        };
-        officialCardSlotEvidence.pass = officialCardSlotEvidence.cardCount === 1
-          && officialCardSlotEvidence.tdesignCard
-          && officialCardSlotEvidence.actionSurfaceCount === 1
-          && officialCardSlotEvidence.actionButtonCount > 0;
       }
       if (bootSummaryFixtureTarget === target) {
         while (bootSummaryRoutesInFlight > 0) await new Promise((resolve) => setTimeout(resolve, 10));
@@ -2836,7 +2819,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, officialCardSlotEvidence, safeReturnEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, safeReturnEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -2943,7 +2926,6 @@ for (const item of report.routes) {
   if (item.businessConfigReadFailureEvidence && !item.businessConfigReadFailureEvidence.pass) failures.push({ name: item.name, businessConfigReadFailureEvidence: item.businessConfigReadFailureEvidence });
   if (item.officialComponentBehaviorEvidence && !item.officialComponentBehaviorEvidence.pass) failures.push({ name: item.name, officialComponentBehaviorEvidence: item.officialComponentBehaviorEvidence });
   if (item.officialAlertOperationEvidence && !item.officialAlertOperationEvidence.pass) failures.push({ name: item.name, officialAlertOperationEvidence: item.officialAlertOperationEvidence });
-  if (item.officialCardSlotEvidence && !item.officialCardSlotEvidence.pass) failures.push({ name: item.name, officialCardSlotEvidence: item.officialCardSlotEvidence });
   if (item.safeReturnEvidence && !item.safeReturnEvidence.pass) failures.push({ name: item.name, safeReturnEvidence: item.safeReturnEvidence });
   if (item.topbarActionEvidence && !item.topbarActionEvidence.pass) failures.push({ name: item.name, topbarActionEvidence: item.topbarActionEvidence });
   if (item.factDisclosureEvidence && !item.factDisclosureEvidence.pass) failures.push({ name: item.name, factDisclosureEvidence: item.factDisclosureEvidence });

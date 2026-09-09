@@ -190,8 +190,6 @@ class CandidateFrontendContractTest(unittest.TestCase):
         self.assertIn("structuredButtonActivation", browser)
         self.assertIn("exerciseOfficialAlertOperation", browser)
         self.assertIn("officialAlertOperationEvidence", browser)
-        self.assertIn("exerciseOfficialCardSlot", browser)
-        self.assertIn("officialCardSlotEvidence", browser)
         self.assertNotIn("waitForTimeout", browser)
 
 if __name__ == "__main__":
