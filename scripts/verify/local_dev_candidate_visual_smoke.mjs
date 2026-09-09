@@ -1552,8 +1552,14 @@ try {
               if (count >= 0 && count <= maximum) return;
               await page.waitForTimeout(50);
             }
-            const diagnostic = await relationEditor.getAttribute('data-relation-query-diagnostic');
-            throw new Error(`${target.name}: active relation selector did not project at most ${maximum} options diagnostic=${diagnostic || 'missing'}`);
+            const diagnostics = await form.locator('[data-semantic-component="One2ManyCellEditor"][data-validation-target$=":material_catalog_id"]')
+              .evaluateAll((editors) => editors.map((editor) => ({
+                target: editor.getAttribute('data-validation-target'),
+                visible: editor instanceof HTMLElement && editor.offsetParent !== null,
+                diagnostic: editor.getAttribute('data-relation-query-diagnostic'),
+                optionCount: editor.querySelector('[data-semantic-component="ScSelect"]')?.getAttribute('data-option-count'),
+              })));
+            throw new Error(`${target.name}: active relation selector did not project at most ${maximum} options diagnostics=${JSON.stringify(diagnostics)}`);
           };
           await relationInput.click();
           await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
