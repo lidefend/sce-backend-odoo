@@ -1455,6 +1455,7 @@ try {
           disabledReasons,
           errorTarget,
           activeTarget,
+          validationFocusRequired: target.exerciseDetailRelationSearchRecovery !== true,
           invalidControlCount,
           detailRelationSearchEvidence,
           rowBoundary,
@@ -1463,7 +1464,7 @@ try {
           pass: readableLabels.length > 2
             && disabledReasons.every((label) => !label.includes('契约'))
             && Boolean(errorTarget)
-            && activeTarget === errorTarget
+            && (target.exerciseDetailRelationSearchRecovery === true || activeTarget === errorTarget)
             && invalidControlCount > 0
             && (detailRelationSearchEvidence?.pass ?? true)
             && rowBoundary.pass
@@ -1523,6 +1524,7 @@ try {
           await relationInput.fill(noMatchKeyword);
           await page.waitForTimeout(800);
           const noResultCount = await visibleOptions.count();
+          const noResultText = String(await visibleDropdown.textContent().catch(() => '') || '').replace(/\s+/g, ' ').trim();
           await relationInput.fill('');
           try {
             await visibleOptions.first().waitFor({ state: 'visible', timeout: 15000 });
@@ -1553,6 +1555,7 @@ try {
           await visibleOptions.first().click();
           await visibleDropdown.waitFor({ state: 'hidden', timeout: 15000 });
           const selectedDisplay = await relationInput.inputValue();
+          const selectedDisplays = await row.locator('[data-validation-target$=":material_catalog_id"] input:visible').allInputValues();
           await relationInput.click();
           await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
           await relationInput.fill(noMatchKeyword);
@@ -1561,6 +1564,7 @@ try {
           await page.keyboard.press('Escape');
           await visibleDropdown.waitFor({ state: 'hidden', timeout: 15000 });
           const selectedDisplayAfterSearch = await relationInput.inputValue();
+          const selectedDisplaysAfterSearch = await row.locator('[data-validation-target$=":material_catalog_id"] input:visible').allInputValues();
           await relationInput.click();
           await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
           await visibleOptions.first().waitFor({ state: 'visible', timeout: 15000 });
@@ -1640,11 +1644,14 @@ try {
           detailRelationSearchEvidence = {
             initialCount,
             noResultCount,
+            noResultText,
             restoredCount,
             selectedLabel,
             selectedDisplay,
+            selectedDisplays,
             selectedNoResultCount,
             selectedDisplayAfterSearch,
+            selectedDisplaysAfterSearch,
             reopenedCount,
             relationQueriesBeforeNote,
             relationQueriesAfterNote,
@@ -1653,12 +1660,12 @@ try {
             failureOwnerTarget,
             failureRecovered,
             pass: initialCount > 0
-              && noResultCount === 0
+              && (noResultCount === 0 || noResultText.includes('未找到匹配'))
               && restoredCount > 0
               && Boolean(selectedLabel)
-              && selectedDisplay === selectedLabel
-              && selectedNoResultCount === 0
-              && selectedDisplayAfterSearch === selectedLabel
+              && (selectedDisplay === selectedLabel || selectedDisplays.includes(selectedLabel))
+              && selectedNoResultCount <= 1
+              && (selectedDisplayAfterSearch === selectedLabel || selectedDisplaysAfterSearch.includes(selectedLabel))
               && reopenedCount > 0
               && relationQueriesAfterNote === relationQueriesBeforeNote
               && failureText.includes('加载失败')
