@@ -560,7 +560,6 @@ function handleOne2manyRelationPopup(
   relationCloseTimers[key] = setTimeout(() => {
     delete relationCloseTimers[key];
     if (relationPopupAuthority.isOpen(key)) return;
-    invalidateOne2manyRelationQuery(key);
     closeOne2manyRelationQuery(key);
   }, 0);
 }

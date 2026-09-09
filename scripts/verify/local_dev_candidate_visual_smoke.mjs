@@ -1498,6 +1498,10 @@ try {
           if (await relationSelect.count() !== 1 || await relationInput.count() !== 1) {
             throw new Error(`${target.name}: editable detail relation selector is missing`);
           }
+          const relationEditorInstances = {
+            mounted: await form.locator('[data-semantic-component="One2ManyCellEditor"][data-validation-target$=":material_catalog_id"]').count(),
+            visible: await relationEditors.count(),
+          };
           let relationQueryCount = 0;
           const relationQueryEvents = [];
           const countRelationQuery = (request) => {
@@ -1705,6 +1709,7 @@ try {
             failureText,
             failureOwnerTarget,
             failureRecovered,
+            relationEditorInstances,
             relationQueryEvents,
             pass: initialCount > 0
               && (noResultCount === 0 || noResultText.includes('未找到匹配'))
