@@ -2400,6 +2400,16 @@
     },
     {
       "category": "other",
+      "digest": "0e28e93c2f5c81a4990a05a6ca67adfbb7a51a1e92fb00eeefe2425f2afab8d3",
+      "nativeStyleSelectors": [],
+      "path": "views/BusinessConfigSurfaceView.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
       "digest": "411e0891b6b661462909c0de7e8dd89294a32b53836973c18b731c104b9a15fb",
       "nativeStyleSelectors": [],
       "path": "views/HomeView.vue",
@@ -2652,7 +2662,25 @@
     },
     {
       "category": "other",
-      "digest": "5258a91fb9df2cf8d50854f128a31584735207c2edb88433d313c2e93dba2037",
+      "digest": "fbf92316aa23c4b6d87c08657f0d28c682fcc182f0a0bf21b99baa97dfb50133",
+      "nativeStyleSelectors": [],
+      "path": "views/businessConfigSurface/BusinessConfigChangeSetPanel.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScButton",
+        "ScPanel",
+        "ScStatusBadge"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScPanel",
+        "ScStatusBadge"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "0fe69b9e9fb75fe458ccf512ac0341660007fd4c3c99ab9a97e73838fd891aaa",
       "nativeStyleSelectors": [],
       "path": "views/businessConfigSurface/BusinessConfigCoverageWorkspace.vue",
       "referenceNativeStyleSelectors": [],
@@ -2666,6 +2694,7 @@
         "ScButton",
         "ScCard",
         "ScCheckbox",
+        "ScEmptyState",
         "ScInput",
         "ScSelect",
         "ScStatusBadge"
@@ -2734,7 +2763,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "14cf3939531d335f69705e54f1dce63bb8ba60f3b5dfa11709811ed8f62a4549",
+  "currentInputDigest": "2601efa0f65b2f41d8d0c27dc037c315c8e121996a617d8aa3473feb21476762",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
@@ -2966,7 +2995,7 @@
   "scope": "repository formal P0/P1 frontend source projection",
   "summary": {
     "adapterCount": 18,
-    "changedSourceCount": 192,
+    "changedSourceCount": 194,
     "consumerPrimitiveVisualChromeCount": 0,
     "currentSourceCount": 216,
     "invalidFormalVisualEvidenceBindingCount": 0,

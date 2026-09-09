@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "1522278c141666eb93ef60328116e8e85d58438df296709c6f75a36a7c366b61",
+  "sourceIdentity": "e68afe6b59c2ebfd58048ce32a43197afb6a7957fc03863b2aab0cc86e1211b8",
   "generatorDigest": "5f976f799e155d3f4519a80b5e86f24cb38437e48aa33790c6b176ba2cf23789",
   "ownershipDigest": "c0501b51c355e1c76a769d9196aad4062fac82b27d11b98768eca645590989ce",
-  "inputDigest": "9d21e1ebe550f50d67c36e2ad8e39aad68ac017918d399ba8153ef3b8c6711ff",
+  "inputDigest": "455b1b617b5e6b8128a2de085d42a3daee7dd8846794cece811cb033f101b107",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -1923,7 +1923,9 @@
         "focus"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScErrorState"
+      ],
       "targetBatch": null
     },
     {
@@ -2157,7 +2159,7 @@
       "status": "p3_out_of_scope",
       "reason": "low-code or administration product surface; handled by a separate P3 batch",
       "stateTypes": [
-        "empty",
+        "loading",
         "error",
         "disabled"
       ],
@@ -2189,7 +2191,9 @@
         "focus"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScEmptyState"
+      ],
       "targetBatch": null
     },
     {

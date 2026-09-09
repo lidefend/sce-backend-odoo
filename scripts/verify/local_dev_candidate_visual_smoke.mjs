@@ -415,6 +415,9 @@ try {
       let contractSummaryItems = [];
       let listAggregates = [];
       let readFailureEvidence = null;
+      let businessConfigExperienceEvidence = null;
+      let businessConfigReadFailureEvidence = null;
+      let safeReturnEvidence = null;
       const exerciseReadFailure = target.exerciseReadFailureRecovery === true
         && (target.readFailureDesktopOnly !== true || viewport.name === 'desktop');
       let readFailureInjected = false;
@@ -446,6 +449,27 @@ try {
         await route.continue();
       };
       if (exerciseReadFailure) await page.route(readFailurePattern, readFailureHandler);
+      const exerciseBusinessConfigReadFailure = target.exerciseBusinessConfigReadFailure === true
+        && (target.businessConfigReadFailureDesktopOnly !== true || viewport.name === 'desktop');
+      let businessConfigReadFailureInjected = false;
+      const businessConfigReadFailureHandler = async (route) => {
+        const request = route.request();
+        let body = {};
+        try { body = JSON.parse(request.postData() || '{}'); } catch {}
+        if (request.method() === 'POST' && body.intent === 'ui.business_config.surface.get' && !businessConfigReadFailureInjected) {
+          businessConfigReadFailureInjected = true;
+          expectedReadFailureResponses += 1;
+          expectedReadFailureConsoleErrors += 1;
+          await route.fulfill({
+            status: 503,
+            contentType: 'application/json',
+            body: JSON.stringify({ error: { message: '受控配置读取失败，请重试。', reason_code: 'CONTROLLED_CONFIG_READ_FAILURE', retryable: true } }),
+          });
+          return;
+        }
+        await route.continue();
+      };
+      if (exerciseBusinessConfigReadFailure) await page.route(readFailurePattern, businessConfigReadFailureHandler);
       const contractResponse = target.expectContractResponse !== false && /^\/(?:a|r|f)\//.test(target.path)
         ? page.waitForResponse(isContractV2Response, { timeout: 45000 })
         : null;
@@ -471,6 +495,25 @@ try {
       await page.locator('.layout-shell').waitFor({ timeout: 45000 });
       await page.locator('[data-product-page-mode], main').filter({ visible: true }).first().waitFor({ timeout: 45000 });
       await waitForStableProductSurface(page);
+      if (exerciseBusinessConfigReadFailure) {
+        const errorSurface = page.locator('[data-business-config-surface-error="true"]:visible');
+        await errorSurface.waitFor({ state: 'visible', timeout: 15000 });
+        const errorText = String(await errorSurface.textContent() || '').replace(/\s+/g, ' ').trim();
+        const retry = errorSurface.getByRole('button', { name: '重试读取' });
+        await page.unroute(readFailurePattern, businessConfigReadFailureHandler);
+        await retry.click();
+        await page.locator('[data-business-config-change-set="v1"]:visible').waitFor({ state: 'visible', timeout: 45000 });
+        await page.locator('.page-picker-panel:visible').waitFor({ state: 'visible', timeout: 45000 });
+        businessConfigReadFailureEvidence = {
+          injected: businessConfigReadFailureInjected,
+          errorText,
+          retryCount: await retry.count(),
+          recovered: await page.locator('[data-business-config-surface-error="true"]:visible').count() === 0,
+        };
+        businessConfigReadFailureEvidence.pass = businessConfigReadFailureEvidence.injected
+          && businessConfigReadFailureEvidence.errorText.includes('受控配置读取失败')
+          && businessConfigReadFailureEvidence.recovered;
+      }
       if (exerciseReadFailure) {
         const errorSurface = page.locator('[data-semantic-state-surface="page"][data-state="error"]:visible').first();
         await errorSurface.waitFor({ state: 'visible', timeout: 15000 });
@@ -1110,6 +1153,59 @@ try {
         if (!hierarchicalWorkspaceEvidence.pass) throw new Error(`${target.name}: hierarchical workspace journey failed ${JSON.stringify(hierarchicalWorkspaceEvidence)}`);
       }
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
+      if (target.exerciseBusinessConfigExperience === true) {
+        const changeSetPanel = page.locator('[data-business-config-change-set="v1"]:visible');
+        const initialChangeSetState = String(await changeSetPanel.getAttribute('data-change-set-state') || '');
+        const initialChangeSetText = String(await changeSetPanel.textContent() || '').replace(/\s+/g, ' ').trim();
+        const selectionPrompt = page.getByRole('heading', { name: '选择一个业务页面' });
+        const selectionPromptVisible = await selectionPrompt.isVisible();
+        const falseCurrentPageCount = await page.getByText('正在配置 当前页面', { exact: true }).count();
+        const pageSearch = page.locator('.page-search input').first();
+        const initialRowCount = await page.locator('.page-picker-panel .scan-row').count();
+        await pageSearch.fill('__no_matching_business_page__');
+        const emptyState = page.getByRole('heading', { name: '当前没有匹配的业务页面' });
+        await emptyState.waitFor({ state: 'visible', timeout: 15000 });
+        await page.getByRole('button', { name: '清除筛选' }).click();
+        await page.waitForFunction(() => document.querySelectorAll('.page-picker-panel .scan-row').length > 0, undefined, { timeout: 15000 });
+        const restoredRowCount = await page.locator('.page-picker-panel .scan-row').count();
+        const firstRow = page.locator('.page-picker-panel .scan-row').first();
+        const selectedLabel = String(await firstRow.getAttribute('aria-label') || '');
+        await firstRow.click();
+        const selectedPanel = page.locator('[aria-label="已选页面配置"]:visible');
+        await selectedPanel.waitFor({ state: 'visible', timeout: 45000 });
+        const selectedText = String(await selectedPanel.textContent() || '').replace(/\s+/g, ' ').trim();
+        await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-selected.png`), fullPage: false });
+        businessConfigExperienceEvidence = {
+          initialChangeSetState,
+          initialChangeSetText,
+          selectionPromptVisible,
+          falseCurrentPageCount,
+          initialRowCount,
+          emptyRecoveryVisible: await emptyState.count() === 0,
+          restoredRowCount,
+          selectedLabel,
+          selectedText,
+          pass: initialChangeSetState === String(target.expectedChangeSetState || initialChangeSetState)
+            && !(initialChangeSetState === 'empty' && initialChangeSetText.includes('有未发布修改'))
+            && selectionPromptVisible
+            && falseCurrentPageCount === 0
+            && initialRowCount > 0
+            && restoredRowCount === initialRowCount
+            && selectedLabel.length > 0
+            && selectedText.includes('正在配置'),
+        };
+      }
+      if (target.exerciseSafeReturn === true) {
+        const errorState = page.locator('[data-semantic-component="ScErrorState"]:visible');
+        const beforePath = new URL(page.url()).pathname;
+        const errorText = String(await errorState.textContent() || '').replace(/\s+/g, ' ').trim();
+        const returnAction = errorState.getByRole('button', { name: '返回安全页面' });
+        const actionCount = await returnAction.count();
+        await returnAction.click();
+        await page.waitForURL((url) => url.pathname === '/', { timeout: 15000 });
+        safeReturnEvidence = { beforePath, errorText, actionCount, afterPath: new URL(page.url()).pathname };
+        safeReturnEvidence.pass = errorText.length > 0 && actionCount === 1 && safeReturnEvidence.afterPath === '/';
+      }
       let relationSearchDialogEvidence = null;
       if (target.captureRelationSearchDialog === true) {
         const relations = page.locator('.many2one-combobox:visible');
@@ -1938,7 +2034,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, safeReturnEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -2040,6 +2136,9 @@ for (const item of report.routes) {
   if (item.recordEntryEvidence?.returnEvidence && !item.recordEntryEvidence.returnEvidence.pass) failures.push({ name: item.name, recordReturnEvidence: item.recordEntryEvidence.returnEvidence });
   if (item.collectionSearchEvidence && !item.collectionSearchEvidence.pass) failures.push({ name: item.name, collectionSearchEvidence: item.collectionSearchEvidence });
   if (item.readFailureEvidence && !item.readFailureEvidence.pass) failures.push({ name: item.name, readFailureEvidence: item.readFailureEvidence });
+  if (item.businessConfigExperienceEvidence && !item.businessConfigExperienceEvidence.pass) failures.push({ name: item.name, businessConfigExperienceEvidence: item.businessConfigExperienceEvidence });
+  if (item.businessConfigReadFailureEvidence && !item.businessConfigReadFailureEvidence.pass) failures.push({ name: item.name, businessConfigReadFailureEvidence: item.businessConfigReadFailureEvidence });
+  if (item.safeReturnEvidence && !item.safeReturnEvidence.pass) failures.push({ name: item.name, safeReturnEvidence: item.safeReturnEvidence });
   if (item.factDisclosureEvidence && !item.factDisclosureEvidence.pass) failures.push({ name: item.name, factDisclosureEvidence: item.factDisclosureEvidence });
   if (item.monetaryExpressionEvidence && !item.monetaryExpressionEvidence.pass) failures.push({ name: item.name, monetaryExpressionEvidence: item.monetaryExpressionEvidence });
   if (item.hierarchicalWorkspaceEvidence && !item.hierarchicalWorkspaceEvidence.pass) failures.push({ name: item.name, hierarchicalWorkspaceEvidence: item.hierarchicalWorkspaceEvidence });
