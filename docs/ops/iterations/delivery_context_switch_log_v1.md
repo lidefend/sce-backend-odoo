@@ -9035,6 +9035,12 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - C1 product candidate `ea971cea500590a0686155b698ded828a6d7a1d3` PASS：46→scope 1→query 0→clear/selection restore；record 15 return preserves query/scope/selection/table scroll；desktop separator keyboard bounds PASS；390 light and 320 dark mobile scope drawer/touch target/root overflow PASS。Payment record 15 shared regression remains `¥50.00`; all browser evidence has mutationCount 0 and empty errors/failures.
 - Generated-inventory closeout HEAD `8d3c67694e5b69acba713b2b2ff500737e4ee1a2` complete fingerprint `a4a1582cc04547edf9797e4b6ba9988ac0fe04f2d93113f9da01f803ec8550f4` (7328 paths); full frontend Quick PASS. Detailed evidence: `frontend_hierarchical_workspace_c1_20260909.md`. Release state remains verification_pending; no push/PR/merge.
 
+## 2026-09-09 — C1 层级范围抽屉补验收口
+
+- P0 shared overlay correction with P4 evidence only. `ScDrawer` retains formal desktop width tokens and clamps portal width to `100vw`; no business contract, configuration or runtime authority changed.
+- Candidate `abda10891b1d0c3f8b2c3177bce7c2b91033429a`; complete fingerprint `5a81936b3f6e1d8f1114afec37789181e9a47068651166950fb6952c611f3d5f` (7329 paths). 320 dark and 390 light first-open/reopen/open-resize-return bounds PASS for panel, surface, title, close action and tree node; Escape focus restored. Both runs mutationCount 0, errors/failures empty.
+- Detailed evidence: `frontend_hierarchical_workspace_c1_drawer_closure_20260909.md`. C1 supplement closed independently before C2; no push/PR/release.
+
 ## 2026-09-09 — 页面体验 Phase A 外壳样板
 
 - Batch-A / A1+A2, P0 frontend shell and page-pattern presentation with P4 verification support. Baseline `3d3975b3d45c1462677df0abcbb5708e4b53e0b1`; the supplied product-analysis fingerprint is `c243b67e2b4bbb5700a3a4a2d7a36cd7546a6390c131b00fb7a27831fca78e05` (7321 paths). The complete working-tree fingerprint becomes 7322 paths when the supplied untracked analysis report itself is included.
