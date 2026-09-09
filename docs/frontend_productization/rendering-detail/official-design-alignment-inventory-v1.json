@@ -14,17 +14,17 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "5494ad769036802416f68f00866f40d885ee086d479b926fb225f257653859fe",
+  "inputDigest": "4df6e7075a989eba9f7724f8a0b3416d5d97ac6f08fc9f8acd51f07cbc580122",
   "internalVendorSelectorGaps": [
     {
       "file": "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
-      "line": 290,
+      "line": 294,
       "selector": ".work-card :deep(.t-card__body)",
       "status": "legacy_override_gap"
     },
     {
       "file": "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
-      "line": 316,
+      "line": 322,
       "selector": ".work-card :deep(.t-card__body)",
       "status": "legacy_override_gap"
     },

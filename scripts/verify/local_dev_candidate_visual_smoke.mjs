@@ -307,7 +307,11 @@ function isApiDataListResponse(response) {
 
 try {
   for (const viewport of [{ name: 'desktop', width: 1440, height: desktopHeight }, { name: 'mobile', width: mobileWidth, height: 844 }]) {
-    const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, locale: 'zh-CN' });
+    const context = await browser.newContext({
+      viewport: { width: viewport.width, height: viewport.height },
+      locale: 'zh-CN',
+      hasTouch: viewport.name === 'mobile',
+    });
     await context.addInitScript((requestedTheme) => localStorage.setItem('sc_theme', requestedTheme), theme);
     const page = await context.newPage();
     const errors = [];
@@ -1015,16 +1019,43 @@ try {
       }
       let factDisclosureEvidence = null;
       if (target.exerciseFactDisclosure === true) {
-        const disclosure = page.locator('[data-work-item-key] [data-disclosure-trigger], [data-semantic-component="CollectionMobileRecordRow"] [data-disclosure-trigger]').filter({ visible: true }).first();
+        const recordId = String(target.recordId || '').trim();
+        const ownerSelector = recordId ? `[data-work-item-key][data-record-id="${recordId}"]` : '[data-work-item-key]';
+        const owner = page.locator(`${ownerSelector}:visible, [data-semantic-component="CollectionMobileRecordRow"]:visible`).first();
+        const disclosure = owner.locator('[data-disclosure-trigger]').filter({ visible: true }).first();
         if (await disclosure.count() !== 1) throw new Error(`${target.name}: progressive fact disclosure is missing`);
+        const rawIdentity = String(await owner.locator('h3').first().textContent() || '').replace(/\s+/g, ' ').trim();
         const before = await disclosure.getAttribute('aria-expanded');
-        await disclosure.click();
+        if (viewport.name === 'mobile') await disclosure.tap();
+        else {
+          await disclosure.focus();
+          await disclosure.press('Enter');
+        }
         await page.waitForFunction((node) => node?.getAttribute('aria-expanded') === 'true', await disclosure.elementHandle(), { timeout: 5000 });
         const expanded = await disclosure.getAttribute('aria-expanded');
-        await disclosure.click();
+        const fullIdentity = String(await owner.locator('[data-work-item-full-identity]').textContent() || '').replace(/\s+/g, ' ').trim();
+        if (viewport.name === 'mobile') await disclosure.tap();
+        else {
+          await disclosure.focus();
+          await disclosure.press('Space');
+        }
         await page.waitForFunction((node) => node?.getAttribute('aria-expanded') === 'false', await disclosure.elementHandle(), { timeout: 5000 });
         const after = await disclosure.getAttribute('aria-expanded');
-        factDisclosureEvidence = { before, expanded, after, pass: before === 'false' && expanded === 'true' && after === 'false' };
+        const expectedIdentityText = String(target.expectedIdentityText || '').trim();
+        factDisclosureEvidence = {
+          method: viewport.name === 'mobile' ? 'touch' : 'keyboard',
+          rawIdentity,
+          fullIdentity,
+          before,
+          expanded,
+          after,
+          pass: Boolean(rawIdentity)
+            && fullIdentity === rawIdentity
+            && (!expectedIdentityText || fullIdentity.includes(expectedIdentityText))
+            && before === 'false'
+            && expanded === 'true'
+            && after === 'false',
+        };
       }
       if (target.captureCollectionKanban === true) {
         const lanes = await page.locator('[data-semantic-component="CollectionKanbanLane"]:visible').evaluateAll((nodes) => nodes.map((node) => ({
@@ -1377,6 +1408,23 @@ try {
         const opener = recordOwner.locator('.cell-primary-link, .collection-mobile-record-row__open-action, [data-semantic-action="open-record"]');
         if (await opener.count() !== 1) throw new Error(`${target.name}: expected exactly one record opener for ${recordId}`);
         const beforeUrl = page.url();
+        const scrollBefore = target.captureReturnScroll === true
+          ? await recordOwner.evaluate((node) => {
+            const candidates = [];
+            let current = node.parentElement;
+            while (current) {
+              if (current.scrollHeight > current.clientHeight + 1) candidates.push(current);
+              current = current.parentElement;
+            }
+            const scrolling = document.scrollingElement;
+            if (scrolling && scrolling.scrollHeight > scrolling.clientHeight + 1) candidates.push(scrolling);
+            const owner = candidates[0];
+            if (!(owner instanceof HTMLElement)) return { available: false, scrollTop: 0, maxScrollTop: 0 };
+            const maxScrollTop = Math.max(0, owner.scrollHeight - owner.clientHeight);
+            owner.scrollTop = Math.min(160, maxScrollTop);
+            return { available: true, scrollTop: Math.round(owner.scrollTop), maxScrollTop: Math.round(maxScrollTop) };
+          })
+          : null;
         const detailContractResponse = page.waitForResponse(isContractV2Response, { timeout: 45000 });
         await opener.click();
         await page.waitForURL((url) => url.href !== beforeUrl, { timeout: 15000 });
@@ -1412,6 +1460,22 @@ try {
           await waitForStableProductSurface(page);
           const afterUrl = page.url();
           const after = new URL(afterUrl);
+          const scrollAfter = target.captureReturnScroll === true
+            ? await page.locator(`[data-record-key="${recordId}"]:visible`).evaluate((node) => {
+              const candidates = [];
+              let current = node.parentElement;
+              while (current) {
+                if (current.scrollHeight > current.clientHeight + 1) candidates.push(current);
+                current = current.parentElement;
+              }
+              const scrolling = document.scrollingElement;
+              if (scrolling && scrolling.scrollHeight > scrolling.clientHeight + 1) candidates.push(scrolling);
+              const owner = candidates[0];
+              return owner instanceof HTMLElement
+                ? { available: true, scrollTop: Math.round(owner.scrollTop), maxScrollTop: Math.round(owner.scrollHeight - owner.clientHeight) }
+                : { available: false, scrollTop: 0, maxScrollTop: 0 };
+            })
+            : null;
           const preservedQuery = Object.fromEntries(preservedKeys.map((key) => [key, {
             before: before.searchParams.get(key) || '',
             after: after.searchParams.get(key) || '',
@@ -1420,8 +1484,16 @@ try {
             detailRecordId,
             afterUrl,
             preservedQuery,
+            scrollBefore,
+            scrollAfter,
             pass: detailRecordId === recordId
-              && preservedKeys.every((key) => (before.searchParams.get(key) || '') === (after.searchParams.get(key) || '')),
+              && preservedKeys.every((key) => (before.searchParams.get(key) || '') === (after.searchParams.get(key) || ''))
+              && (target.captureReturnScroll !== true || (
+                scrollBefore?.available === true
+                && scrollAfter?.available === true
+                && scrollBefore.scrollTop > 0
+                && Math.abs(scrollAfter.scrollTop - scrollBefore.scrollTop) <= 2
+              )),
           };
         }
       }
@@ -1527,6 +1599,47 @@ try {
           };
         }, viewport.name)
         : null;
+      const monetaryExpressionEvidence = target.captureMonetaryExpression === true
+        ? await page.evaluate((configuration) => {
+          const recordId = String(configuration.recordId || '').trim();
+          const fieldName = String(configuration.monetaryFieldName || '').trim();
+          const selectors = [
+            recordId ? `[data-work-item-key][data-record-id="${recordId}"]` : '',
+            recordId ? `[data-role-home] [data-record-id="${recordId}"]` : '',
+            recordId ? `[data-record-key="${recordId}"]` : '',
+            recordId ? `[data-semantic-component="ContractFormPage"][data-form-record="${recordId}"]` : '',
+          ].filter(Boolean);
+          const roots = selectors.flatMap((selector) => [...document.querySelectorAll(selector)])
+            .filter((node) => node instanceof HTMLElement && node.offsetParent !== null);
+          const root = roots[0];
+          if (!(root instanceof HTMLElement)) return { present: false, roots: 0, displayValues: [], fieldCount: 0, input: null, pass: false };
+          const fieldSelector = fieldName ? `[data-field-name="${fieldName}"]` : '[data-field-type="monetary"]';
+          const fields = [...root.querySelectorAll(fieldSelector)].filter((node) => node instanceof HTMLElement && node.offsetParent !== null);
+          const displayValues = [...root.querySelectorAll('[data-money-display], [data-fact-role="money"] b')]
+            .filter((node) => node instanceof HTMLElement && node.offsetParent !== null)
+            .map((node) => node.getAttribute('data-money-display') || node.textContent?.replace(/\s+/g, ' ').trim() || '')
+            .filter(Boolean);
+          const input = fields[0]?.querySelector('input[type="number"]');
+          const expectedDisplay = String(configuration.expectedMoneyDisplay || '').trim();
+          const expectedInput = String(configuration.expectedMoneyInput || '').trim();
+          return {
+            present: true,
+            roots: roots.length,
+            text: root.textContent?.replace(/\s+/g, ' ').trim() || '',
+            displayValues,
+            fieldCount: fields.length,
+            input: input instanceof HTMLInputElement ? { value: input.value, step: input.step } : null,
+            pass: (!expectedDisplay || displayValues.includes(expectedDisplay) || (root.textContent || '').includes(expectedDisplay))
+              && (!fieldName || fields.length === 1)
+              && (!expectedInput || (input instanceof HTMLInputElement && input.value === expectedInput && input.step === '0.01')),
+          };
+        }, {
+          recordId: target.recordId,
+          monetaryFieldName: target.monetaryFieldName,
+          expectedMoneyDisplay: target.expectedMoneyDisplay,
+          expectedMoneyInput: target.expectedMoneyInput,
+        })
+        : null;
       const verticalLineEvidence = target.captureVerticalLineEvidence === true
         ? await page.evaluate(() => {
           const x = Math.round(window.innerWidth * 0.568);
@@ -1581,7 +1694,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, factDisclosureEvidence, taskDensityEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -1684,6 +1797,7 @@ for (const item of report.routes) {
   if (item.collectionSearchEvidence && !item.collectionSearchEvidence.pass) failures.push({ name: item.name, collectionSearchEvidence: item.collectionSearchEvidence });
   if (item.readFailureEvidence && !item.readFailureEvidence.pass) failures.push({ name: item.name, readFailureEvidence: item.readFailureEvidence });
   if (item.factDisclosureEvidence && !item.factDisclosureEvidence.pass) failures.push({ name: item.name, factDisclosureEvidence: item.factDisclosureEvidence });
+  if (item.monetaryExpressionEvidence && !item.monetaryExpressionEvidence.pass) failures.push({ name: item.name, monetaryExpressionEvidence: item.monetaryExpressionEvidence });
 }
 for (const viewport of ['desktop', 'mobile']) {
   const groups = [...new Set(routes.map((target) => String(target.equivalentGroup || '')).filter(Boolean))];

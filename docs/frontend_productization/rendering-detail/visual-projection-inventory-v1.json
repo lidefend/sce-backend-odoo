@@ -357,7 +357,7 @@
     },
     {
       "category": "other",
-      "digest": "ddc821ce628590d42997c71ba265fa2fe776d1fcac6029d8c13301f64d90a5dc",
+      "digest": "bc7faa79c11e69fdf6368db630d1ff3b47e403bd005b8c20642781cf3b4f45c4",
       "nativeStyleSelectors": [],
       "path": "components/business/MyWorkApprovalWorkspace.vue",
       "referenceNativeStyleSelectors": [
@@ -743,6 +743,16 @@
       "path": "components/design-system/ScLoading.vue",
       "referenceNativeStyleSelectors": [],
       "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "e5b8509424bcf542c84c5bfe710d22b319a5b6cf60710fbb4075ab17f40273f2",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScMoney.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
       "referenceScComponents": [],
       "scComponents": []
     },
@@ -1636,7 +1646,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "aecb3880b7a5a29d505274e4b1165faf9fb6f748c76e4c94837af7468a879deb",
+      "digest": "71f8497f70bec9972dd34f11bd3dc7296ee5e19b0de0dfe2734a078ff915bd5c",
       "nativeStyleSelectors": [],
       "path": "components/professional-fields/ProfessionalBusinessValueControl.vue",
       "referenceNativeStyleSelectors": [],
@@ -1735,7 +1745,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "2a1969160ccaed83fb88ba31d8301e18ecc52b6a613e3b2c22f46a99c065ff9d",
+      "digest": "349615748b194ff64501bc7a34b230129cfc59f288527a6eb166860438dcab48",
       "nativeStyleSelectors": [],
       "path": "components/template/FormSection.vue",
       "referenceNativeStyleSelectors": [
@@ -1969,7 +1979,7 @@
     },
     {
       "category": "collection",
-      "digest": "58a0c6656eb9cfb326e555fcc7756f025d56d6aad92781d9569fd59a9e82c9bf",
+      "digest": "cc9b2a219de2f8b4dd18608cdabc56948b4c124ce2f1c331566191737daa892f",
       "nativeStyleSelectors": [],
       "path": "pages/ListPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2722,7 +2732,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "409ee145da9143336614270a2b051015849ad456ee6298b67c60fad78a967707",
+  "currentInputDigest": "8328167b133abd2af8febcbe4b6ec3a2e780c35913d85516b260103fc604e0ca",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
@@ -2954,7 +2964,7 @@
   "scope": "repository formal P0/P1 frontend source projection",
   "summary": {
     "adapterCount": 18,
-    "changedSourceCount": 191,
+    "changedSourceCount": 192,
     "consumerPrimitiveVisualChromeCount": 0,
     "currentSourceCount": 216,
     "invalidFormalVisualEvidenceBindingCount": 0,

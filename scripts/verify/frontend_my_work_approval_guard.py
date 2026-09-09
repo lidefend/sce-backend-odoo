@@ -46,6 +46,8 @@ def main() -> int:
             "item.state.label",
             'data-primary-fact-key',
             'data-supplementary-fact-key',
+            'data-work-item-full-identity',
+            '<dd data-work-item-full-identity>{{ item.record.label }}</dd>',
             "partitionProductMyWorkFacts(item.facts, 1)",
             "formatProductMyWorkFact(fact)",
             "ScDisclosure",
