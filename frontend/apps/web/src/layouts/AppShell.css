@@ -948,9 +948,14 @@
   }
   .topbar-actions {
     width: 100%;
-    flex-wrap: nowrap;
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
     gap: 4px;
     justify-content: flex-start;
+  }
+  .topbar-actions > * {
+    max-width: 100%;
   }
   .topbar-context,
   .theme-switch {
