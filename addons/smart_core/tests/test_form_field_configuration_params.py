@@ -1250,6 +1250,11 @@ class TestFormFieldConfigurationParams(unittest.TestCase):
             def action_publish(self):
                 self.status = "published"
 
+            def restore_published_version(self, version):
+                self.contract_json = version.snapshot_json
+                self.status = "published"
+                self.version_no = version.version_no
+
         class Version:
             id = 8
             version_no = 2

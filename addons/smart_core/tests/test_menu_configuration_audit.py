@@ -445,6 +445,11 @@ class _Contract:
         self.status = "published"
         self.version_no = int(getattr(self, "version_no", 1) or 1) + 1
 
+    def replace_and_publish(self, payload):
+        self.contract_json = payload
+        self.status = "published"
+        self.version_no = int(getattr(self, "version_no", 1) or 1) + 1
+
 
 class _ContractModel(_RecordSet):
     def sudo(self):
@@ -1237,7 +1242,7 @@ class TestMenuConfigurationAudit(unittest.TestCase):
         self.assertFalse(extra.active)
         self.assertEqual(contract.contract_json, snapshot)
         self.assertEqual(contract.status, "published")
-        self.assertEqual(contract.version_no, 3)
+        self.assertEqual(contract.version_no, 4)
 
     def test_menu_config_versions_lists_contract_version_summaries(self):
         company = types.SimpleNamespace(id=7, display_name="测试公司", name="测试公司")
