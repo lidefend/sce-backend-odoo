@@ -40,8 +40,8 @@ def validate() -> list[str]:
         'data-floorplan-region="supplementary-input"',
         'data-floorplan-region="overflow-context"',
         'role="region"',
-        'title="补充信息"',
-        'title="更多业务信息"',
+        '\n      title="补充信息"',
+        '\n      title="更多业务信息"',
     ):
         if marker not in task_page:
             failures.append(f"task floorplan bypasses professional disclosure: {marker}")

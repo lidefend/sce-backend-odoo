@@ -25,7 +25,7 @@ class ProductPagePatternGuardTest(unittest.TestCase):
         def altered(path, *args, **kwargs):
             value = real(path, *args, **kwargs)
             if path.name == "ObjectTaskPage.vue":
-                return value.replace('title="补充信息"', 'data-title-removed', 1)
+                return value.replace('\n      title="补充信息"', '\n      data-title-removed', 1)
             return value
 
         with patch("pathlib.Path.read_text", altered):
