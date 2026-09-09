@@ -1157,7 +1157,7 @@ try {
         const changeSetPanel = page.locator('[data-business-config-change-set="v1"]:visible');
         const initialChangeSetState = String(await changeSetPanel.getAttribute('data-change-set-state') || '');
         const initialChangeSetText = String(await changeSetPanel.textContent() || '').replace(/\s+/g, ' ').trim();
-        const selectionPrompt = page.getByRole('heading', { name: '选择一个业务页面' });
+        const selectionPrompt = page.getByRole('heading', { name: '选择一个业务页面', exact: true });
         const selectionPromptVisible = await selectionPrompt.isVisible();
         const falseCurrentPageCount = await page.getByText('正在配置 当前页面', { exact: true }).count();
         const pageSearch = page.locator('.page-search input').first();
