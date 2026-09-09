@@ -1501,7 +1501,28 @@ try {
           await page.waitForTimeout(800);
           const noResultCount = await visibleOptions.count();
           await relationInput.fill('');
-          await visibleOptions.first().waitFor({ state: 'visible', timeout: 15000 });
+          try {
+            await visibleOptions.first().waitFor({ state: 'visible', timeout: 15000 });
+          } catch (error) {
+            const recoveryDiagnostic = {
+              inputValue: await relationInput.inputValue(),
+              relationQueryCount,
+              visibleDropdownCount: await page.locator('.t-select__dropdown:visible').count(),
+              visibleOptionCount: await visibleOptions.count(),
+              loading: await relationSelect.locator('.t-loading:visible, [aria-busy="true"]:visible').count(),
+              failureText: String(await relationSelect.locator('[data-relation-query-state="error"]:visible').textContent().catch(() => '') || '').replace(/\s+/g, ' ').trim(),
+            };
+            await page.screenshot({
+              path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-relation-recovery-failure.png`),
+              fullPage: false,
+            });
+            fs.writeFileSync(
+              path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-relation-recovery-failure.json`),
+              `${JSON.stringify(recoveryDiagnostic, null, 2)}\n`,
+              'utf8',
+            );
+            throw new Error(`${target.name}: relation clear recovery failed: ${JSON.stringify(recoveryDiagnostic)}`, { cause: error });
+          }
           const restoredCount = await visibleOptions.count();
           const selectedLabel = String(await visibleOptions.first().textContent() || '').replace(/\s+/g, ' ').trim();
           await visibleOptions.first().click();
