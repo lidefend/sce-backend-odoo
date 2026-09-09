@@ -9026,6 +9026,13 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Local frontend milestone is closed with evidence limits stated: native desktop zoom, quantitative layout shift, suggested-action feedback runtime branch, multi-role/business-write/release qualification are not claimed. Generic retry, loading/reduced motion, keyboard/unsaved-input protection, shared table access, home, work, list, detail and hierarchical workspace have the recorded representative observations.
 - Original payment list, viewport, scale, theme and absence of test-created unsaved tabs restored. No push/PR/merge performed. Documentation-only closeout follows the reviewed product HEAD without further product changes.
 
+## 2026-09-09 — C1 层级工作区对齐
+
+- Formal Product Layer: P0 platform kernel product；P4 仅承载候选证据。Layer Target: `smart_core` 通用层级契约装配器、Web `HierarchicalWorksheet` renderer 与既有定向验证。Standard vs User-Specific: 平台通用的作用域、选中态、响应式入口、可访问分隔条和权威显示元数据消费；不是施工行业字段默认值、客户偏好或管理员配置。
+- Why Here: 收入合同模型已经声明 monetary/currency_field，P1 工作区配置已经声明列精度；缺口是 P0 装配器未透传这些元数据，以及通用 renderer 未保持可见结果和详情一致。Why Not Elsewhere: 不在前端猜字段/币种，不修改 P1 合同事实或工作流，不新增 P2/P3 配置，也不以 P4 脚本承载产品行为。
+- Baseline: `178df07bcdb8cabba19648e35a2deb4de5f3314d`；complete fingerprint `39cdb64f8a7c57ecca5dc88cb2d74e8d94c22e8cb2e2873aed5109658d46024d`，7328 paths。复用唯一已注册 feature worktree 与 local.dev（`sc-local-dev` / `sc_dev_demo`），不创建环境、数据库、端口、卷或 fixture。
+- Blast Radius: 层级工作区 config 的列/详情显示元数据、可见结果选择、移动作用域入口、两处分隔条和 action→record→return 的前端保留态。收入合同 46 条为真实只读样板；付款旅程仅做共享回归。合同审批/支付、业务写入、配置台 C2、push/PR/release 均不在范围。
+
 ## 2026-09-09 — 页面体验 Phase A 外壳样板
 
 - Batch-A / A1+A2, P0 frontend shell and page-pattern presentation with P4 verification support. Baseline `3d3975b3d45c1462677df0abcbb5708e4b53e0b1`; the supplied product-analysis fingerprint is `c243b67e2b4bbb5700a3a4a2d7a36cd7546a6390c131b00fb7a27831fca78e05` (7321 paths). The complete working-tree fingerprint becomes 7322 paths when the supplied untracked analysis report itself is included.
