@@ -890,10 +890,62 @@ try {
         const initialCountText = String(await worksheet.locator('.worksheet-grid-title span').first().textContent() || '').trim();
         let mobileScopeEvidence = null;
         if (viewport.name === 'mobile') {
+          const captureDrawerBoundary = async (drawer) => drawer.evaluate((surface) => {
+            const rect = (node) => {
+              if (!(node instanceof HTMLElement)) return null;
+              const box = node.getBoundingClientRect();
+              return {
+                left: Math.round(box.left),
+                right: Math.round(box.right),
+                top: Math.round(box.top),
+                bottom: Math.round(box.bottom),
+                width: Math.round(box.width),
+                height: Math.round(box.height),
+              };
+            };
+            const panel = surface.closest('.sc-design-drawer');
+            const title = surface.querySelector('h2');
+            const close = surface.querySelector('[aria-label="关闭"]');
+            const firstTreeNode = surface.querySelector('.tree-node');
+            const fitsViewport = (box) => Boolean(box && box.left >= -1 && box.right <= window.innerWidth + 1 && box.top >= -1 && box.bottom <= window.innerHeight + 1);
+            return {
+              viewport: { width: window.innerWidth, height: window.innerHeight },
+              panel: rect(panel),
+              surface: rect(surface),
+              title: rect(title),
+              titleText: String(title?.textContent || '').trim(),
+              titleClipped: title instanceof HTMLElement && (title.scrollWidth > title.clientWidth + 1 || title.scrollHeight > title.clientHeight + 1),
+              close: rect(close),
+              treeNode: rect(firstTreeNode),
+              pass: fitsViewport(rect(panel))
+                && fitsViewport(rect(surface))
+                && fitsViewport(rect(title))
+                && fitsViewport(rect(close))
+                && fitsViewport(rect(firstTreeNode))
+                && String(title?.textContent || '').trim().length > 0
+                && !(title instanceof HTMLElement && (title.scrollWidth > title.clientWidth + 1 || title.scrollHeight > title.clientHeight + 1)),
+            };
+          });
+          const originalViewport = page.viewportSize();
           await scopeTrigger.click();
           const drawer = page.getByRole('dialog', { name: /收入合同履约结构|选择范围/ });
           await drawer.waitFor({ state: 'visible', timeout: 15000 });
           const initialDescription = String(await drawer.getAttribute('aria-describedby') || '');
+          const initialBoundary = await captureDrawerBoundary(drawer);
+          await drawer.press('Escape');
+          await drawer.waitFor({ state: 'hidden', timeout: 15000 });
+          const escapeFocusRestored = await scopeTrigger.evaluate((node) => node === document.activeElement);
+          await scopeTrigger.click();
+          await drawer.waitFor({ state: 'visible', timeout: 15000 });
+          const reopenedBoundary = await captureDrawerBoundary(drawer);
+          const alternateWidth = originalViewport?.width === 320 ? 390 : 320;
+          await page.setViewportSize({ width: alternateWidth, height: originalViewport?.height || 900 });
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          const resizedBoundary = await captureDrawerBoundary(drawer);
+          await page.setViewportSize({ width: originalViewport?.width || mobileWidth, height: originalViewport?.height || 900 });
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          const restoredBoundary = await captureDrawerBoundary(drawer);
+          await page.screenshot({ path: path.join(outputDir, `mobile-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-scope-drawer-open.png`), fullPage: false });
           const firstScope = drawer.locator('.tree-node').first();
           const chosenScope = String(await firstScope.textContent() || '').replace(/\s+/g, ' ').trim().replace(/^[▾▸]\s*/, '');
           await firstScope.click();
@@ -914,6 +966,11 @@ try {
             selectedScope,
             clearedScope,
             touchHeight: Math.round((await scopeTrigger.boundingBox())?.height || 0),
+            initialBoundary,
+            reopenedBoundary,
+            resizedBoundary,
+            restoredBoundary,
+            escapeFocusRestored,
           };
         } else {
           await worksheet.locator('.worksheet-navigation .tree-node').first().click();
@@ -1031,6 +1088,11 @@ try {
               && mobileScopeEvidence.selectedScope.includes(mobileScopeEvidence.chosenScope)
               && mobileScopeEvidence.clearedScope.includes('全部收入合同')
               && mobileScopeEvidence.touchHeight >= 44
+              && mobileScopeEvidence.initialBoundary.pass
+              && mobileScopeEvidence.reopenedBoundary.pass
+              && mobileScopeEvidence.resizedBoundary.pass
+              && mobileScopeEvidence.restoredBoundary.pass
+              && mobileScopeEvidence.escapeFocusRestored
             )),
         };
         if (!hierarchicalWorkspaceEvidence.pass) throw new Error(`${target.name}: hierarchical workspace journey failed ${JSON.stringify(hierarchicalWorkspaceEvidence)}`);
