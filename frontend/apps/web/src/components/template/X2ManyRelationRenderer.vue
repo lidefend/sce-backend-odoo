@@ -450,6 +450,12 @@ function invalidateOne2manyRelationQuery(key: string) {
   o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: false };
 }
 
+function closeOne2manyRelationQuery(key: string) {
+  clearRelationQueryTimer(key);
+  delete relationActiveRequestRevisions[key];
+  o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: false };
+}
+
 function one2manyRelationResponseIsRelevant(key: string, revision: number, keyword: string) {
   return relationQueryAuthority.isCurrent(key, revision)
     || (relationActiveRequestRevisions[key] === revision
@@ -535,7 +541,7 @@ function handleOne2manyRelationPopup(fieldName: string, rowKey: string, column: 
     void loadOne2manyRelationOptions(fieldName, rowKey, column, '');
     return;
   }
-  invalidateOne2manyRelationQuery(key);
+  closeOne2manyRelationQuery(key);
 }
 
 function retryOne2manyRelationOptions(fieldName: string, rowKey: string, column: RelationFieldColumn) {
