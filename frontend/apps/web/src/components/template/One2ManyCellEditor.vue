@@ -21,7 +21,6 @@
       :described-by="errorId"
       :disabled="column.readonly || !adapter.one2manyCanInlineEdit(fieldName) || adapter.busy"
       filterable
-      :search-value="relationSearchValue"
       :loading="relationLoading"
       :empty-text="relationEmptyText"
       :placeholder="relationPlaceholder"
@@ -87,7 +86,6 @@ const props = withDefaults(defineProps<{
   validationTarget: string;
   relationOptions?: ReadonlyArray<{ value: string | number; label: string; disabled?: boolean }>;
   relationLoading?: boolean;
-  relationSearchValue?: string;
   relationEmptyText?: string;
   relationPlaceholder?: string;
   showReadonlyReason?: boolean;
@@ -97,7 +95,6 @@ const props = withDefaults(defineProps<{
   relationError: '',
   relationOptions: () => [],
   relationLoading: false,
-  relationSearchValue: '',
   relationEmptyText: '暂无可选内容',
   relationPlaceholder: '',
   showReadonlyReason: false,

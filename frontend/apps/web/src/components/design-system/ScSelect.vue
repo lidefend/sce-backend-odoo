@@ -18,7 +18,6 @@
     :disabled="disabled"
     :readonly="readonly"
     :filterable="filterable"
-    :input-value="filterable ? searchValue : undefined"
     :loading="loading"
     :empty="emptyText"
     :reserve-keyword="false"
@@ -59,7 +58,6 @@ const props = withDefaults(defineProps<{
   invalid?: boolean;
   describedBy?: string;
   filterable?: boolean;
-  searchValue?: string;
   loading?: boolean;
   emptyText?: string;
   appearance?: 'default' | 'form-field';
@@ -71,7 +69,6 @@ const props = withDefaults(defineProps<{
   describedBy: undefined,
   appearance: 'default',
   filterable: false,
-  searchValue: undefined,
   loading: false,
   emptyText: undefined,
 });

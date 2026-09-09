@@ -11,6 +11,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     section = read_text("frontend/apps/web/src/components/template/FormSection.vue")
     renderer = read_text("frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue")
     cell_editor = read_text("frontend/apps/web/src/components/template/One2ManyCellEditor.vue")
+    sc_select = read_text("frontend/apps/web/src/components/design-system/ScSelect.vue")
     relation_types = read_text("frontend/apps/web/src/components/template/relationField.types.ts")
     relation_utils = read_text("frontend/apps/web/src/pages/contractForm/one2manyUtils.ts")
     relation_runtime = read_text("frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts")
@@ -96,7 +97,10 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection relation queries still depend on unrelated row values")
     if "preserveSelectedOne2manyRelationOption" not in renderer or "currentValue" not in relation_query:
         failures.append("detail collection search can discard the selected relation label")
-    if "popup-change" not in renderer or "relation-search-value" not in renderer:
+    if ("popup-change" not in renderer
+            or "o2mRelationSearchMap.value[key] === normalizedKeyword" not in renderer
+            or '@input-change="onInputChange"' not in sc_select
+            or '@search="onInputChange"' not in sc_select):
         failures.append("detail collection search lifecycle is not explicitly controlled")
     if "data-relation-query-state=\"error\"" not in cell_editor or "@click=\"$emit('retry')\"" not in cell_editor:
         failures.append("detail collection relation failure does not expose retry")

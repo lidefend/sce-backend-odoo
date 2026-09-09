@@ -874,7 +874,7 @@
     },
     {
       "category": "other",
-      "digest": "e923b0ecf824379668e646d808afa54072f10f8ca1899a636354e01c86428b66",
+      "digest": "fe18c10318f17269b77557c586dbc9895741ef842b3f7e1bca2ebfd3408ccae4",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScSelect.vue",
       "referenceNativeStyleSelectors": [],
@@ -1834,7 +1834,7 @@
     },
     {
       "category": "other",
-      "digest": "7ca403f86cdead1e5c6b3d9eb126a91b4d41f0465f7b98622ce8fe44038e13e0",
+      "digest": "d1c3601ac280bc17d649e4fad1927875daadbc2e20e31c59904a1582845b36f3",
       "nativeStyleSelectors": [],
       "path": "components/template/One2ManyCellEditor.vue",
       "referenceNativeStyleSelectors": [],
@@ -1859,7 +1859,7 @@
     },
     {
       "category": "relations-x2many",
-      "digest": "49c334b97ae6c9d520e9407526b75cd3b767de7e3ce25700fb1718e4a9a036e7",
+      "digest": "cbaeda16c9cea2f6b5a20df0d1de03fc84bf1c05edebbb91053876531d4f1acb",
       "nativeStyleSelectors": [],
       "path": "components/template/X2ManyRelationRenderer.vue",
       "referenceNativeStyleSelectors": [
@@ -2790,7 +2790,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "51724a4f1fba6e53f4f361734747a01f75348fd6c5c99793190b7d4196718dcc",
+  "currentInputDigest": "59d0057639918f2c90b11193eb132dfb01c10b75d896d3da1ffdbc407c639246",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

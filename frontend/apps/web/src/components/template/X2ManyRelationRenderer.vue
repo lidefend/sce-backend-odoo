@@ -152,7 +152,6 @@
               :validation-target="one2manyValidationTarget(field.name, row._key, column.name)"
               :relation-options="one2manyRelationOptions(field.name, row._key, column)"
               :relation-loading="one2manyRelationIsLoading(field.name, row._key, column.name)"
-              :relation-search-value="one2manyRelationSearchValue(field.name, row._key, column.name)"
               :relation-empty-text="one2manyRelationEmptyText(field.name, row._key, column)"
               :relation-placeholder="one2manyRelationPlaceholder(field.name, row._key, column)"
               @update="adapter.setOne2manyRowField(field.name, row._key, column, $event)"
@@ -233,7 +232,6 @@
                 :validation-target="one2manyValidationTarget(field.name, row.key, column.name)"
                 :relation-options="one2manyRelationOptions(field.name, row.key, column)"
                 :relation-loading="one2manyRelationIsLoading(field.name, row.key, column.name)"
-                :relation-search-value="one2manyRelationSearchValue(field.name, row.key, column.name)"
                 :relation-empty-text="one2manyRelationEmptyText(field.name, row.key, column)"
                 :relation-placeholder="one2manyRelationPlaceholder(field.name, row.key, column)"
                 show-readonly-reason
