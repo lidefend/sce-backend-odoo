@@ -46,5 +46,9 @@ const titleTag = computed(() => `h${props.headingLevel}`);
   .sc-error-state__actions :deep(.sc-btn) {
     width: 100%;
   }
+
+  .sc-error-state__actions :deep(.sc-btn) {
+    min-height: 44px;
+  }
 }
 </style>
