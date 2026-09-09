@@ -147,7 +147,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, useId, watch } from 'vue';
+import { computed, h, nextTick, onActivated, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue';
 import { formatDisplayValue } from '../../utils/display';
 import { formatMonetaryDisplayValue, normalizeMonetaryDigits, resolveCurrencyDisplayLabel } from '../template/formSection.mapper';
 import {
@@ -696,7 +696,6 @@ onMounted(async () => {
   } catch (error) { errorMessage.value = error instanceof Error ? error.message : String(error); }
   finally { loading.value = false; }
 });
-onDeactivated(captureTableScroll);
 onActivated(() => { void restoreTableScroll(); });
 onBeforeUnmount(() => {
   stopResize();
