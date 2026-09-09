@@ -114,22 +114,46 @@ export function resolveCurrencyDisplayLabel(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-export function monetaryInputStep(digits?: [number, number]): string {
-  if (!digits) return 'any';
-  const scale = digits[1];
+export function resolveMonetaryScale(digits?: [number, number], currencyLabel = ''): number | undefined {
+  if (digits) return digits[1];
+  const currencyCode = /^[A-Z]{3}$/.test(currencyLabel) ? currencyLabel : '';
+  if (!currencyCode) return undefined;
+  try {
+    return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: currencyCode })
+      .resolvedOptions().maximumFractionDigits;
+  } catch {
+    return undefined;
+  }
+}
+
+export function monetaryInputStep(digits?: [number, number], currencyLabel = ''): string {
+  const scale = resolveMonetaryScale(digits, currencyLabel);
+  if (!Number.isInteger(scale)) return 'any';
   return scale === 0 ? '1' : `0.${'0'.repeat(Math.max(0, scale - 1))}1`;
+}
+
+export function formatMonetaryInputValue(
+  value: unknown,
+  digits?: [number, number],
+  currencyLabel = '',
+): string | number {
+  if (value === null || value === undefined || value === '') return '';
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return String(value);
+  const scale = resolveMonetaryScale(digits, currencyLabel);
+  return Number.isInteger(scale) ? numeric.toFixed(scale) : value as string | number;
 }
 
 export function formatMonetaryDisplayValue(
   value: unknown,
   digits?: [number, number],
   currencyLabel = '',
-  locale?: string,
+  locale = 'zh-CN',
 ): string {
   if (value === null || value === undefined || value === false || value === '') return '-';
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return '-';
-  const scale = digits?.[1];
+  const scale = resolveMonetaryScale(digits, currencyLabel);
   const options: Intl.NumberFormatOptions = Number.isInteger(scale)
     ? { minimumFractionDigits: scale, maximumFractionDigits: scale }
     : {};

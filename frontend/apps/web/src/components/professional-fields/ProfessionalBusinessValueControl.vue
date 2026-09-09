@@ -50,7 +50,7 @@ import ScInput from '../design-system/ScInput.vue';
 import ScMoney from '../design-system/ScMoney.vue';
 import ScSelect from '../design-system/ScSelect.vue';
 import ScStatusBadge from '../design-system/ScStatusBadge.vue';
-import { formatMonetaryDisplayValue, monetaryInputStep } from '../template/formSection.mapper';
+import { formatMonetaryDisplayValue, formatMonetaryInputValue, monetaryInputStep } from '../template/formSection.mapper';
 import type { FormSectionFieldSchema } from '../template/formSection.types';
 import {
   businessValueKind,
@@ -71,10 +71,15 @@ defineEmits<{ 'update:value': [value: string | number | boolean | null] }>();
 const kind = computed(() => businessValueKind(props.field));
 const isChoice = computed(() => ['sc.display.status'].includes(kind.value));
 const numeric = computed(() => ['sc.value.money', 'sc.value.percentage', 'sc.value.duration'].includes(kind.value));
-const inputModelValue = computed(() => typeof props.field.inputValue === 'boolean' ? String(props.field.inputValue) : props.field.inputValue ?? '');
+const inputModelValue = computed(() => {
+  if (kind.value === 'sc.value.money') {
+    return formatMonetaryInputValue(props.field.inputValue, props.field.digits, props.field.currencyLabel);
+  }
+  return typeof props.field.inputValue === 'boolean' ? String(props.field.inputValue) : props.field.inputValue ?? '';
+});
 const choiceOptions = computed(() => props.field.relationOptions?.length ? props.field.relationOptions : props.field.selectionOptions || []);
 const normalizedChoiceOptions = computed(() => normalizeBusinessValueChoiceOptions(choiceOptions.value));
-const inputStep = computed(() => kind.value === 'sc.value.money' ? monetaryInputStep(props.field.digits) : 'any');
+const inputStep = computed(() => kind.value === 'sc.value.money' ? monetaryInputStep(props.field.digits, props.field.currencyLabel) : 'any');
 
 const suffix = computed(() => {
   if (kind.value === 'sc.value.money') return props.field.currencyLabel || '';

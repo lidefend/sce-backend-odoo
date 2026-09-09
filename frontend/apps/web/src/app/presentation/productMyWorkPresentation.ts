@@ -1,4 +1,5 @@
 import type { ProductMyWorkFact } from '../../api/myWork';
+import { formatMonetaryDisplayValue } from '../../components/template/formSection.mapper';
 
 export type ProductMyWorkFactPresentation = {
   key: string;
@@ -16,10 +17,7 @@ export function formatProductMyWorkFact(fact: ProductMyWorkFact): string {
     const money = fact.money;
     if (money?.value == null || !Number.isFinite(Number(money.value))) return '未填写';
     const digits = normalizedDigits(money.digits);
-    return `${money.currency_symbol || ''}${Number(money.value).toLocaleString('zh-CN', {
-      minimumFractionDigits: digits,
-      maximumFractionDigits: digits,
-    })} ${money.currency || ''}`.trim();
+    return formatMonetaryDisplayValue(Number(money.value), [20, digits], money.currency || money.currency_symbol || '');
   }
   if (fact.display_role === 'datetime') {
     return fact.value ? String(fact.value).replace('T', ' ').slice(0, 16) : '未知';

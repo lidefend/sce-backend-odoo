@@ -309,6 +309,7 @@ import ScButton from '../components/design-system/ScButton.vue';
 import ScMoney from '../components/design-system/ScMoney.vue';
 import ScPage from '../components/design-system/ScPage.vue';
 import ScStatusBadge from '../components/design-system/ScStatusBadge.vue';
+import { formatMonetaryDisplayValue, resolveCurrencyDisplayLabel } from '../components/template/formSection.mapper';
 import { resolveCollectionPageJump, resolveCollectionPageLimit, resolveCollectionPageOffset, resolveCollectionPaginationMode } from '../app/presentation/collectionPaginationPresentation';
 import { resolveCollectionAggregateEntry } from '../app/presentation/collectionAggregatePresentation';
 import ScTable from '../components/design-system/ScTable.vue';
@@ -353,6 +354,7 @@ type ColumnOption = {
   aggregationField?: string;
   dataType?: string;
   currencyField?: string;
+  digits?: [number, number];
   aggregate?: string;
   sortField?: string;
   filterField?: string;
@@ -683,7 +685,7 @@ function selectionLabel(option: ColumnOption | null, value: unknown) {
   if (!key || !Array.isArray(option?.selection)) return '';
   return option.selection.find((item) => item.value === key)?.label || '';
 }
-function semanticCell(field: string, value: unknown, relationItems: Array<{ id: number; label: string }> = []) {
+function semanticCell(field: string, value: unknown, relationItems: Array<{ id: number; label: string }> = [], row?: Record<string, unknown>) {
   const option = columnOption(field);
   if (option?.widget === 'many2many_tags') {
     return { text: relationItems.map((item) => item.label).join('、') || '--', tone: 'neutral' };
@@ -697,7 +699,7 @@ function semanticCell(field: string, value: unknown, relationItems: Array<{ id: 
     raw,
     column: columnSemanticInput(field),
     selectionText: selectionLabel(option, value),
-    numericText: formatNumericCellValue(field, raw),
+    numericText: formatNumericCellValue(field, raw, row),
     attachmentText,
     trueText: uiLabel('boolean_true', '是'),
     falseText: uiLabel('boolean_false', '否'),
@@ -716,7 +718,7 @@ function mobileRecordFacts(row: Record<string, unknown>): CollectionMobileRecord
     return {
       key: column,
       label: columnLabel(column),
-      value: semanticCell(column, columnValue(row, column), relationItems).text,
+      value: semanticCell(column, columnValue(row, column), relationItems, row).text,
       layoutRole: columnLayoutRole(column),
       relationItems,
     };
@@ -799,7 +801,7 @@ function favoriteTitle(field: string) {
 function collectionRowCellProps(row: Record<string, unknown>, field: string) {
   const value = columnValue(row, field);
   const relationItems = relationDisplayItems(row, field);
-  const presentation = semanticCell(field, value, relationItems);
+  const presentation = semanticCell(field, value, relationItems, row);
   const links = attachmentLinks(value);
   let kind: CollectionRowCellKind = 'text';
   if (isFavoriteColumn(field)) kind = 'favorite';
@@ -1900,12 +1902,18 @@ function numericCellValue(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function formatNumericCellValue(field: string, value: unknown) {
+function formatNumericCellValue(field: string, value: unknown, row?: Record<string, unknown>) {
   if (!isNumericColumn(field)) return '';
   const numeric = numericCellValue(value);
   if (numeric === null) return '';
   const option = columnOption(field);
   const type = String(option?.dataType || option?.type || '').trim();
+  if (type === 'monetary') {
+    const currencyLabel = option?.currencyField && row
+      ? resolveCurrencyDisplayLabel(row[option.currencyField])
+      : '';
+    return formatMonetaryDisplayValue(numeric, option?.digits, currencyLabel);
+  }
   return numeric.toLocaleString('zh-CN', {
     maximumFractionDigits: type === 'integer' ? 0 : 2,
     minimumFractionDigits: type === 'integer' ? 0 : 2,

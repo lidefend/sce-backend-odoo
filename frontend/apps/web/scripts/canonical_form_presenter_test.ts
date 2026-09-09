@@ -59,6 +59,7 @@ import {
 } from '../src/pages/contractForm/relationCreateDialogRuntime';
 import {
   formatMonetaryDisplayValue,
+  formatMonetaryInputValue,
   monetaryInputStep,
   normalizeMonetaryDigits,
   resolveCurrencyDisplayLabel,
@@ -125,7 +126,10 @@ assert.equal(resolveCurrencyDisplayLabel([7, 'USD']), 'USD');
 assert.equal(resolveCurrencyDisplayLabel({ id: 7, symbol: '€', name: 'EUR' }), 'EUR');
 assert.equal(monetaryInputStep([16, 2]), '0.01');
 assert.equal(monetaryInputStep(undefined), 'any');
+assert.equal(monetaryInputStep(undefined, 'CNY'), '0.01');
+assert.equal(formatMonetaryInputValue(50, undefined, 'CNY'), '50.00');
 assert.equal(formatMonetaryDisplayValue(1234.5, [16, 2], 'USD', 'en-US'), '$1,234.50');
+assert.equal(formatMonetaryDisplayValue(50, undefined, 'CNY'), '¥50.00');
 assert.equal(formatMonetaryDisplayValue(1234.5, [16, 1], '元', 'en-US'), '1,234.5 元');
 assert.equal(formatMonetaryDisplayValue('', [16, 2], 'USD', 'en-US'), '-');
 assert.equal(normalizeContractFieldValue({

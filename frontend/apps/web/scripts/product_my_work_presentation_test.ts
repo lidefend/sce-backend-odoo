@@ -8,7 +8,7 @@ const facts = [
   { key: 'created_at', label: '创建时间', value: '2026-09-09T08:30:45', field_group: 'audit', display_role: 'datetime' },
 ] as const;
 
-assert.equal(formatProductMyWorkFact(facts[1]), '¥50.00 CNY');
+assert.equal(formatProductMyWorkFact(facts[1]), '¥50.00');
 assert.equal(formatProductMyWorkFact(facts[3]), '2026-09-09 08:30');
 
 const presentation = partitionProductMyWorkFacts([...facts], 2);

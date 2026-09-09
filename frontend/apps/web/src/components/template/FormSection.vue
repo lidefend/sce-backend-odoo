@@ -202,7 +202,7 @@
                 <div v-else-if="isDateRangeWidget(field)" class="native-date-range">
                   <ScDateField
                     :id="fieldControlId(field)"
-                    :model-value="String(field.inputValue ?? '')"
+                    :model-value="formatMonetaryInputValue(field.inputValue, field.digits, field.currencyLabel)"
                     class="input"
                     appearance="form-field"
                     :aria-label="field.label"
@@ -233,7 +233,7 @@
                     :status="field.invalid ? 'error' : 'default'"
                     :described-by="fieldDescribedBy(field)"
                     type="number"
-                    :step="monetaryInputStep(field.digits)"
+                    :step="monetaryInputStep(field.digits, field.currencyLabel)"
                     :placeholder="field.inputPlaceholder || inputPlaceholderText(field)"
                     @update:model-value="emitFieldChange(field, $event)"
                   />
@@ -290,7 +290,7 @@ import { isPaymentSettlementDetailCollectionField } from '../professional-fields
 import X2ManyRelationRenderer from './X2ManyRelationRenderer.vue';
 import { formatDisplayValue } from '../../utils/display';
 import { sanitizeReadonlyHtml } from '../../utils/sanitizeReadonlyHtml';
-import { formatMonetaryDisplayValue, monetaryInputStep } from './formSection.mapper';
+import { formatMonetaryDisplayValue, formatMonetaryInputValue, monetaryInputStep } from './formSection.mapper';
 import type {
   FormSectionFieldAction,
   FormSectionFieldActionPayload,

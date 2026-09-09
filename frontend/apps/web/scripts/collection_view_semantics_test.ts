@@ -26,6 +26,7 @@ import { collectionContextStorageKey, resolveCollectionAnchorId } from '../src/a
 import { buildActionViewRowClickTarget, resolveCollectionWriteAuthority, shouldUseCanonicalCollectionDetail } from '../src/app/runtime/actionViewInteractionRuntime';
 import { pickContractNavQuery } from '../src/app/navigationContext';
 import { extractKanbanFieldsFromContract } from '../src/app/action_runtime/useActionViewContractShapeRuntime';
+import { resolveListSemanticDependencyFields } from '../src/app/action_runtime/useActionViewLoadRequestRuntime';
 import { resolveLoadKanbanFieldApplyState } from '../src/app/runtime/actionViewLoadViewFieldStateRuntime';
 import { resolveDesktopListCandidates } from '../src/pages/listPage/listColumnVisibility';
 import type { ContractV2NormalizedStore } from '../src/app/contracts/v2/types';
@@ -79,6 +80,10 @@ assert.equal(resolveGroupedCollectionPresentation(
 assert.deepEqual(extractKanbanFieldsFromContract(
   normalizedCollectionContract('kanban', {}, ['name', 'lifecycle_state']),
 ), ['name', 'lifecycle_state']);
+assert.deepEqual(resolveListSemanticDependencyFields([
+  { display_field: 'request_amount_display', currency_field: 'currency_id' },
+  { display_field: 'partner_id', currency_field: '' },
+], ['name', 'request_amount_display']), ['currency_id']);
 const inlineNativeSubview = { tree: { columns: [{ name: 'partner_id' }], column_occurrences: [
   {
     name: 'partner_id', field_type: 'many2one', native_locator: '/form/field[1]/tree[1]/field[1]', occurrence_index: 1,

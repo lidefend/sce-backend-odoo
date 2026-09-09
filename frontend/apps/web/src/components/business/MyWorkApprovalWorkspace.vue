@@ -47,6 +47,10 @@
           </dl>
           <ScDisclosure v-if="supplementaryFacts(item).length" class="work-card__disclosure" :title="`查看其余 ${supplementaryFacts(item).length} 项信息`">
             <dl class="work-card__supplementary">
+              <div class="work-card__full-identity">
+                <dt>完整事项身份</dt>
+                <dd data-work-item-full-identity>{{ item.record.label }}</dd>
+              </div>
               <div v-for="entry in supplementaryFacts(item)" :key="entry.key" :data-supplementary-fact-key="entry.fact.key">
                 <dt>{{ entry.fact.label }}</dt>
                 <dd><ScMoney v-if="entry.fact.display_role === 'money'" :display="entry.display" :label="entry.fact.label" /><template v-else>{{ entry.display }}</template></dd>
@@ -296,6 +300,8 @@ async function confirmAction() {
 .work-card dd { margin: 3px 0 0; overflow-wrap: anywhere; }
 .work-card__disclosure { grid-area: disclosure; margin-top: 0; }
 .work-card__supplementary { padding-top: 8px; border-top: 1px solid var(--sc-app-border); }
+.work-card__full-identity { grid-column: 1 / -1; }
+.work-card__full-identity dd { white-space: normal; }
 .work-card__actions { display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start; }
 .more-actions { position: relative; }
 .more-actions summary { cursor: pointer; min-height: var(--sc-product-control-height); display: inline-flex; align-items: center; padding: 0 12px; border: 1px solid var(--sc-app-border); border-radius: var(--sc-product-radius-control); }
