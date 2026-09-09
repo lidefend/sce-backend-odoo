@@ -443,6 +443,12 @@ function clearRelationQueryTimer(key: string) {
   delete relationQueryTimers[key];
 }
 
+function invalidateOne2manyRelationQuery(key: string) {
+  clearRelationQueryTimer(key);
+  relationQueryAuthority.invalidate(key);
+  o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: false };
+}
+
 async function runOne2manyRelationOptionsQuery(
   fieldName: string,
   rowKey: string,
@@ -511,8 +517,7 @@ function handleOne2manyRelationPopup(fieldName: string, rowKey: string, column: 
     void loadOne2manyRelationOptions(fieldName, rowKey, column, '');
     return;
   }
-  relationQueryAuthority.invalidate(key);
-  o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: false };
+  invalidateOne2manyRelationQuery(key);
 }
 
 function retryOne2manyRelationOptions(fieldName: string, rowKey: string, column: RelationFieldColumn) {
@@ -548,16 +553,14 @@ watch(() => {
   const currentKeys = new Set(current.map((entry) => relationCellKey(entry.fieldName, entry.rowKey, entry.columnName)));
   previousScopes.forEach((_scope, key) => {
     if (currentKeys.has(key)) return;
-    clearRelationQueryTimer(key);
-    relationQueryAuthority.invalidate(key);
+    invalidateOne2manyRelationQuery(key);
   });
   current.forEach((entry) => {
     const key = relationCellKey(entry.fieldName, entry.rowKey, entry.columnName);
     if (previousScopes.get(key) === entry.scope) return;
     const column = props.adapter.one2manyColumns(entry.fieldName).find((item) => item.name === entry.columnName);
     if (!column) return;
-    clearRelationQueryTimer(key);
-    relationQueryAuthority.invalidate(key);
+    invalidateOne2manyRelationQuery(key);
     const { [key]: _discarded, ...remaining } = o2mRelationOptionMap.value;
     o2mRelationOptionMap.value = remaining;
     o2mRelationSearchMap.value = { ...o2mRelationSearchMap.value, [key]: '' };
