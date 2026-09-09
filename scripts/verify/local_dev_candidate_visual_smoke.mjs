@@ -1545,6 +1545,15 @@ try {
               && body?.params?.model === 'sc.material.catalog'
               && String(body?.params?.search_term || '') === searchTerm;
           }, { timeout: 15000 });
+          const waitForVisibleRelationOptionCount = (maximum) => page.waitForFunction((limit) => (
+            [...document.querySelectorAll('[data-semantic-component="One2ManyCellEditor"][data-validation-target$=":material_catalog_id"]')]
+              .filter((editor) => editor instanceof HTMLElement && editor.offsetParent !== null)
+              .some((editor) => {
+                const select = editor.querySelector('[data-semantic-component="ScSelect"]');
+                const count = Number(select?.getAttribute('data-option-count') ?? -1);
+                return count >= 0 && count <= limit;
+              })
+          ), maximum, { timeout: 15000 });
           await relationInput.click();
           await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
           let relationSearchInput = page.locator('input:focus').first();
@@ -1556,7 +1565,7 @@ try {
           await relationSearchInput.fill('S');
           await relationSearchInput.fill(noMatchKeyword);
           await noMatchResponse;
-          await page.waitForTimeout(100);
+          await waitForVisibleRelationOptionCount(0);
           const noResultCount = await visibleOptions.count();
           const noResultControlOptionCount = Number(await relationSelect.getAttribute('data-option-count') || -1);
           const noResultText = String(await visibleDropdown.textContent().catch(() => '') || '').replace(/\s+/g, ' ').trim();
@@ -1602,7 +1611,7 @@ try {
           const selectedNoMatchResponse = waitForMaterialCatalogQuery(noMatchKeyword);
           await relationSearchInput.fill(noMatchKeyword);
           await selectedNoMatchResponse;
-          await page.waitForTimeout(100);
+          await waitForVisibleRelationOptionCount(1);
           const selectedNoResultCount = await visibleOptions.count();
           const selectedNoResultLabels = (await visibleOptions.allTextContents()).map((value) => value.replace(/\s+/g, ' ').trim());
           await page.keyboard.press('Escape');
