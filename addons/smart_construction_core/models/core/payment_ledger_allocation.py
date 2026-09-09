@@ -222,7 +222,7 @@ class PaymentLedgerAllocation(models.Model):
             SELECT l.id, l.payment_request_id, NULL, NULL, r.settlement_id, NULL,
                    0, 0, 'unresolved_global', 'historical_backfill_unresolved',
                    l.project_id, l.company_id, l.currency_id,
-                   COALESCE(l.normalization_state, 'legacy_unresolved_identity'),
+                   'legacy_unresolved_identity',
                    'backfill:unresolved', 1, NOW(), 1, NOW()
               FROM payment_ledger l
               JOIN payment_request r ON r.id = l.payment_request_id

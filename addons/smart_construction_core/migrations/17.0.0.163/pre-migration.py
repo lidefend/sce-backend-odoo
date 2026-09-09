@@ -56,7 +56,7 @@ def migrate(cr, installed_version):
         """
         UPDATE payment_ledger
            SET normalization_state = 'legacy_unresolved_identity'
-         WHERE normalization_state IN ('normalized', 'legacy_observed_identity')
+         WHERE normalization_state IS DISTINCT FROM 'legacy_unresolved_identity'
            AND (
                 project_id IS NULL
              OR company_id IS NULL
