@@ -666,8 +666,10 @@ try {
         const mouseOptions = page.locator('.t-select-option:visible:not(.t-is-disabled), [role="option"]:visible:not([aria-disabled="true"])');
         await mouseOptions.first().waitFor({ state: 'visible', timeout: 15000 });
         const mouseOptionCount = await mouseOptions.count();
-        const mouseOptionLabels = (await mouseOptions.allTextContents()).map((value) => value.replace(/\s+/g, ' ').trim());
-        const mouseOptionIndex = Math.max(0, mouseOptionLabels.findIndex((value) => value && value !== initialSelectValue));
+        const mouseOptionIndex = await mouseOptions.evaluateAll((nodes) => nodes.findIndex((node) => (
+          node.getAttribute('aria-selected') !== 'true' && !node.classList.contains('t-is-selected')
+        )));
+        if (mouseOptionIndex < 0) throw new Error(`${target.name}: select has no unselected mouse option`);
         const mouseOption = mouseOptions.nth(mouseOptionIndex);
         const mouseOptionText = String(await mouseOption.textContent() || '').replace(/\s+/g, ' ').trim();
         await mouseOption.click();
