@@ -1426,6 +1426,7 @@ try {
         const readableLabels = labels.map((label) => label.replace(/\s+/g, ' ').replace(/\*$/, '').trim()).filter(Boolean);
         const disabledReasons = (await row.locator('.o2m-disabled-reason:visible').allTextContents())
           .map((label) => label.replace(/\s+/g, ' ').trim()).filter(Boolean);
+        let detailRelationSearchEvidence = null;
         await saveAction.click();
         const cellError = row.locator('.o2m-cell-error[role="alert"]:visible').first();
         await cellError.waitFor({ state: 'visible', timeout: 15000 });
@@ -1455,6 +1456,7 @@ try {
           errorTarget,
           activeTarget,
           invalidControlCount,
+          detailRelationSearchEvidence,
           rowBoundary,
           mutationCountBefore,
           mutationCountAfter: report.mutationCount,
@@ -1463,6 +1465,7 @@ try {
             && Boolean(errorTarget)
             && activeTarget === errorTarget
             && invalidControlCount > 0
+            && (detailRelationSearchEvidence?.pass ?? true)
             && rowBoundary.pass
             && mutationCountBefore === report.mutationCount,
         };
@@ -1470,6 +1473,63 @@ try {
           path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-detail-validation.png`),
           fullPage: false,
         });
+        if (target.exerciseDetailRelationSearchRecovery === true) {
+          const relationSelect = row.locator('[data-validation-target$=":material_catalog_id"] [data-semantic-component="ScSelect"]:visible').first();
+          const relationInput = relationSelect.locator('input').first();
+          if (await relationSelect.count() !== 1 || await relationInput.count() !== 1) {
+            throw new Error(`${target.name}: editable detail relation selector is missing`);
+          }
+          const visibleDropdown = page.locator('.t-select__dropdown:visible').last();
+          const visibleOptions = visibleDropdown.locator('[role="option"]:visible, .t-select-option:visible');
+          await relationInput.click();
+          await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
+          await visibleOptions.first().waitFor({ state: 'visible', timeout: 15000 });
+          const initialCount = await visibleOptions.count();
+          const noMatchKeyword = '__shared_relation_no_match__';
+          await relationInput.fill(noMatchKeyword);
+          await page.waitForTimeout(800);
+          const noResultCount = await visibleOptions.count();
+          await relationInput.fill('');
+          await visibleOptions.first().waitFor({ state: 'visible', timeout: 15000 });
+          const restoredCount = await visibleOptions.count();
+          const selectedLabel = String(await visibleOptions.first().textContent() || '').replace(/\s+/g, ' ').trim();
+          await visibleOptions.first().click();
+          await visibleDropdown.waitFor({ state: 'hidden', timeout: 15000 });
+          const selectedDisplay = await relationInput.inputValue();
+          await relationInput.click();
+          await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
+          await relationInput.fill(noMatchKeyword);
+          await page.waitForTimeout(800);
+          const selectedNoResultCount = await visibleOptions.count();
+          await page.keyboard.press('Escape');
+          await visibleDropdown.waitFor({ state: 'hidden', timeout: 15000 });
+          const selectedDisplayAfterSearch = await relationInput.inputValue();
+          await relationInput.click();
+          await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
+          await page.waitForTimeout(800);
+          const reopenedCount = await visibleOptions.count();
+          await page.keyboard.press('Escape');
+          detailRelationSearchEvidence = {
+            initialCount,
+            noResultCount,
+            restoredCount,
+            selectedLabel,
+            selectedDisplay,
+            selectedNoResultCount,
+            selectedDisplayAfterSearch,
+            reopenedCount,
+            pass: initialCount > 0
+              && noResultCount === 0
+              && restoredCount > 0
+              && Boolean(selectedLabel)
+              && selectedDisplay === selectedLabel
+              && selectedNoResultCount === 0
+              && selectedDisplayAfterSearch === selectedLabel
+              && reopenedCount > 0,
+          };
+          detailCollectionEvidence.detailRelationSearchEvidence = detailRelationSearchEvidence;
+          detailCollectionEvidence.pass = detailCollectionEvidence.pass && detailRelationSearchEvidence.pass;
+        }
         const removeRow = row.locator('.o2m-row-remove:visible, button[aria-label^="移除"]:visible').first();
         if (await removeRow.count() !== 1) throw new Error(`${target.name}: temporary detail row cannot be removed`);
         await removeRow.click();
