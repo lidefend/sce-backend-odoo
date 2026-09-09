@@ -105,6 +105,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     resolvePendingMany2manyTagCreates,
     retainedRouteIdentity,
     route,
+    routeQueryText,
     router,
     runContractRuleAction,
     sanitizeUiErrorMessage,
@@ -373,12 +374,6 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
 
   function fieldGroupTitleForDraft(fieldKey: string) {
     return effectiveFieldGroupTitleForDraft(fieldKey);
-  }
-
-  function routeQueryText(key: string) {
-    const value = route.query[key];
-    if (Array.isArray(value)) return String(value[0] || '').trim();
-    return String(value || '').trim();
   }
 
   function lowCodeReturnQuery() {

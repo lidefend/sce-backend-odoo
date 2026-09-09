@@ -1014,12 +1014,12 @@ onBeforeUnmount(() => {
 @media (max-width: 760px) {
   .action-toolbar,
   .action-toolbar--without-view {
-    --sc-component-input-form-height: 44px;
     grid-template-columns: minmax(0, 1fr) max-content;
     grid-template-areas:
       'search overflow'
       'total total';
   }
+  :deep(.collection-search-control .sc-input) { height: var(--sc-component-button-touch-target); }
   .action-toolbar--with-primary { grid-template-areas: 'search overflow' 'total total' 'primary primary'; }
   .toolbar-actions { display: flex; justify-self: stretch; }
   .toolbar-actions :deep(.sc-btn) { width: 100%; }

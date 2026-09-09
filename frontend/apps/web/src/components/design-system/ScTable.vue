@@ -32,8 +32,8 @@
       <slot name="topContent" />
       <div v-if="canScrollLeft || canScrollRight" class="sc-table-scroll-tools" aria-label="表格横向浏览">
         <span>横向浏览更多列</span>
-        <ScIconButton label="查看左侧列" :disabled="!canScrollLeft" @click="scrollColumns(-1)">←</ScIconButton>
-        <ScIconButton label="查看右侧列" :disabled="!canScrollRight" @click="scrollColumns(1)">→</ScIconButton>
+        <ScIconButton label="查看左侧列" :disabled="!canScrollLeft" @click="scrollColumns(-1)"><ScIcon name="arrow-left" :size="16" /></ScIconButton>
+        <ScIconButton label="查看右侧列" :disabled="!canScrollRight" @click="scrollColumns(1)"><ScIcon name="arrow-right" :size="16" /></ScIconButton>
       </div>
     </template>
     <template v-for="name in Object.keys($slots).filter((name) => name !== 'topContent')" #[name]="slotProps">
@@ -44,6 +44,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, onUpdated, ref, type ComputedRef } from 'vue';
+import ScIcon from './ScIcon.vue';
 import ScIconButton from './ScIconButton.vue';
 import { TDesignTable } from './tdesignPrimitiveBridge';
 import type { TDesignTableRowAttributes, TDesignTableRowData } from './tdesignPrimitiveBridge';

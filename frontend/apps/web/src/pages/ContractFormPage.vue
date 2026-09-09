@@ -1809,7 +1809,7 @@ const {
   recordId, recordVersionPolicy, recordVersionToken,
   reload, rememberFormConfigFieldLabel, renderErrorMessage,
   resolvePendingInlineRelationCreates, resolvePendingMany2manyTagCreates, retainedRouteIdentity,
-  route, router, runContractRuleAction,
+  route, routeQueryText: designerRouteQueryText, router, runContractRuleAction,
   sanitizeUiErrorMessage, saveContractFieldOrder, sceneReadyFormSurface,
   snapshotOriginalFormValues,
   buildFormRequestContext, selectedFormSettingsFieldGroupTitle, selectedFormSettingsFieldGroupTitleDraft,
