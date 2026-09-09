@@ -76,7 +76,7 @@ assert.equal(popupAuthority.isOpen('line:1:partner_id'), false);
 assert.equal(popupAuthority.update('line:1:partner_id', 'desktop-replacement', true), 'opened');
 assert.equal(popupAuthority.isOpen('line:1:partner_id'), true);
 assert.equal(isExplicitOne2manyRelationPopupClose('keydown-esc'), true);
-assert.equal(isExplicitOne2manyRelationPopupClose('document'), true);
+assert.equal(isExplicitOne2manyRelationPopupClose('document'), false);
 assert.equal(isExplicitOne2manyRelationPopupClose('trigger-element-click'), false);
 assert.equal(isExplicitOne2manyRelationPopupClose('trigger-element-blur'), false);
 assert.equal(isExplicitOne2manyRelationPopupClose('owner-unmount'), false);

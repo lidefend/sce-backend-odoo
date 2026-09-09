@@ -52,7 +52,7 @@ export function createOne2manyRelationPopupAuthority() {
 }
 
 export function isExplicitOne2manyRelationPopupClose(trigger: string): boolean {
-  return ['document', 'keydown-esc'].includes(trigger);
+  return trigger === 'keydown-esc';
 }
 
 export function isExplicitOne2manyRelationPopupOpen(trigger: string): boolean {
