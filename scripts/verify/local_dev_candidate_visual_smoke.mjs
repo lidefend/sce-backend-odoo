@@ -1461,7 +1461,7 @@ try {
           } else if (viewport.name === 'mobile') {
             const mobileActions = page.locator('.form-header-mobile-actions:visible');
             if (await mobileActions.count() !== 1) throw new Error(`${target.name}: mobile return action owner is missing`);
-            const mobileActionTrigger = mobileActions.locator('button').first();
+            const mobileActionTrigger = page.locator('[data-semantic-component="ScButton"][aria-label="打开更多页面操作"]:visible');
             if (await mobileActionTrigger.count() !== 1) throw new Error(`${target.name}: mobile return action trigger is missing`);
             await mobileActionTrigger.click();
             const mobileReturn = page.locator('.t-dropdown__item:visible').filter({ hasText: /^返回$/ });
