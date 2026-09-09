@@ -1474,7 +1474,8 @@ try {
           fullPage: false,
         });
         if (target.exerciseDetailRelationSearchRecovery === true) {
-          const relationSelect = row.locator('[data-validation-target$=":material_catalog_id"] [data-semantic-component="ScSelect"]:visible').first();
+          const relationEditor = row.locator('[data-semantic-component="One2ManyCellEditor"][data-validation-target$=":material_catalog_id"]:visible').first();
+          const relationSelect = relationEditor.locator('[data-semantic-component="ScSelect"]:visible').first();
           const relationInput = relationSelect.locator('input').first();
           if (await relationSelect.count() !== 1 || await relationInput.count() !== 1) {
             throw new Error(`${target.name}: editable detail relation selector is missing`);
@@ -1595,7 +1596,7 @@ try {
           await relationInput.click();
           await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
           await relationInput.fill(failureKeyword);
-          const failureState = relationSelect.locator('[data-relation-query-state="error"]:visible');
+          const failureState = relationEditor.locator('[data-relation-query-state="error"]:visible');
           await failureState.waitFor({ state: 'visible', timeout: 15000 });
           const failureText = String(await failureState.textContent() || '').replace(/\s+/g, ' ').trim();
           await page.screenshot({
