@@ -1181,6 +1181,28 @@ try {
         const selectedPanel = page.locator('[aria-label="已选页面配置"]:visible');
         await selectedPanel.waitFor({ state: 'visible', timeout: 45000 });
         const selectedText = String(await selectedPanel.textContent() || '').replace(/\s+/g, ' ').trim();
+        const responsiveEvidence = await page.evaluate(() => {
+          const selectors = ['.selected-page-overview', '.selected-page-overview-meta span', '.config-type-tabs .sc-btn', '[aria-label="已选页面配置"]'];
+          const entries = selectors.flatMap((selector) => [...document.querySelectorAll(selector)]
+            .filter((node) => node instanceof HTMLElement && node.offsetParent !== null)
+            .map((node) => {
+              const rect = node.getBoundingClientRect();
+              return {
+                selector,
+                rect: [Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom)],
+                withinViewport: rect.left >= -1 && rect.right <= window.innerWidth + 1,
+                horizontallyClipped: node.scrollWidth > node.clientWidth + 1,
+                height: Math.round(rect.height),
+              };
+            }));
+          return {
+            entries,
+            pass: entries.length > 0
+              && entries.every((entry) => entry.withinViewport && !entry.horizontallyClipped)
+              && (window.innerWidth > 480
+                || entries.filter((entry) => entry.selector === '.config-type-tabs .sc-btn').every((entry) => entry.height >= 44)),
+          };
+        });
         await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-selected.png`), fullPage: false });
         businessConfigExperienceEvidence = {
           initialChangeSetState,
@@ -1192,6 +1214,7 @@ try {
           restoredRowCount,
           selectedLabel,
           selectedText,
+          responsiveEvidence,
           pass: initialChangeSetState === String(target.expectedChangeSetState || initialChangeSetState)
             && !(initialChangeSetState === 'empty' && initialChangeSetText.includes('状态：有未发布修改'))
             && selectionPromptVisible
@@ -1200,7 +1223,8 @@ try {
             && restoredRowCount === initialRowCount
             && emptyRecoveryVisible
             && selectedLabel.length > 0
-            && selectedText.includes('正在配置'),
+            && selectedText.includes('正在配置')
+            && responsiveEvidence.pass,
         };
       }
       if (target.exerciseSafeReturn === true) {
@@ -1209,10 +1233,27 @@ try {
         const errorText = String(await errorState.textContent() || '').replace(/\s+/g, ' ').trim();
         const returnAction = errorState.getByRole('button', { name: '返回安全页面' });
         const actionCount = await returnAction.count();
+        const responsiveEvidence = await errorState.evaluate((root) => {
+          const description = root.querySelector('p');
+          const action = root.querySelector('button');
+          const rootRect = root.getBoundingClientRect();
+          const descriptionRect = description?.getBoundingClientRect();
+          const actionRect = action?.getBoundingClientRect();
+          return {
+            rootRect: [Math.round(rootRect.left), Math.round(rootRect.top), Math.round(rootRect.right), Math.round(rootRect.bottom)],
+            descriptionRect: descriptionRect ? [Math.round(descriptionRect.left), Math.round(descriptionRect.top), Math.round(descriptionRect.right), Math.round(descriptionRect.bottom)] : null,
+            actionRect: actionRect ? [Math.round(actionRect.left), Math.round(actionRect.top), Math.round(actionRect.right), Math.round(actionRect.bottom)] : null,
+            pass: Boolean(descriptionRect && actionRect)
+              && rootRect.left >= -1 && rootRect.right <= window.innerWidth + 1
+              && descriptionRect.left >= rootRect.left && descriptionRect.right <= rootRect.right + 1
+              && actionRect.left >= rootRect.left && actionRect.right <= rootRect.right + 1
+              && (window.innerWidth > 480 || (actionRect.top >= descriptionRect.bottom && actionRect.height >= 44)),
+          };
+        });
         await returnAction.click();
         await page.waitForURL((url) => url.pathname === '/', { timeout: 15000 });
-        safeReturnEvidence = { beforePath, errorText, actionCount, afterPath: new URL(page.url()).pathname };
-        safeReturnEvidence.pass = errorText.length > 0 && actionCount === 1 && safeReturnEvidence.afterPath === '/';
+        safeReturnEvidence = { beforePath, errorText, actionCount, responsiveEvidence, afterPath: new URL(page.url()).pathname };
+        safeReturnEvidence.pass = errorText.length > 0 && actionCount === 1 && responsiveEvidence.pass && safeReturnEvidence.afterPath === '/';
       }
       let relationSearchDialogEvidence = null;
       if (target.captureRelationSearchDialog === true) {
