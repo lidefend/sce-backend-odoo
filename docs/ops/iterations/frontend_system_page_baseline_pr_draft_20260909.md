@@ -8,7 +8,7 @@
 
 - P0：共享外壳、页面模式、工作区、列表/详情表达和通用错误/浮层机制。
 - P3：配置工作台的对象、草稿、发布及请求状态表达。
-- P4：非零单元/静态门禁、受管候选浏览器载体、生成清单、证据、阶段报告及非执行性的 acceptance 命名空间重建设计。
+- P4：非零单元/静态门禁、受管候选浏览器载体、生成清单、证据、阶段报告，以及默认 dry-run 的 acceptance 完整生命周期恢复入口。
 - 不含：P1 历史迁移、fixture 生命周期改造、新增审批/支付能力、业务数据写入、多角色授权、独立移动端、性能重构、远程发布。
 
 ## 验证
@@ -24,7 +24,7 @@
 - 1088/390 明色与 1440/320 暗色受管候选浏览器矩阵
 - `CONFIRM_FRONTEND_RELEASE_AUDIT=RUN_FROZEN_FRONTEND_RELEASE_AUDIT make verify.frontend.release.local`
 
-当前 release gate 为 `not_run`：必须先由独立 P4 批次重建与源码版本一致的 acceptance 命名空间，并修正错误的详情验收目标；草稿不预写 PASS。
+当前 Frontend Quick 已 PASS；release gate 仍为 `not_run`。受管 audit 已证明 acceptance 数据库为 `.164`、源码为 `.162` 且没有兼容备份；完整环境重建 dry-run 已通过。实际删除三个精确卷仍需单独 destructive 授权，完成恢复和错误详情目标修正后才可运行 release gate；草稿不预写 PASS。
 
 ## 证据与回退
 

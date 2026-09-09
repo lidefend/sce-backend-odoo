@@ -1,4 +1,9 @@
 path,formal_product_layer,batches,verification,rollback
+"scripts/dev/frontend_acceptance_baseline_rebuild.sh","P4","acceptance-baseline-recovery","non-zero contract tests + governed audit/dry-run; destructive apply separately authorized","remove the P4 recovery implementation commit"
+"scripts/verify/test_frontend_acceptance_baseline_rebuild.py","P4","acceptance-baseline-recovery","registered P4 unit target; 29 combined non-zero tests","remove the P4 recovery implementation commit"
+"scripts/dev/frontend_acceptance_runtime.sh","P4","acceptance-baseline-recovery","runtime profile tests + governed audit/dry-run","revert the P4 recovery implementation commit"
+"make/dev.mk","P4","acceptance-baseline-recovery","Make target routing contract + governed audit/dry-run","revert the P4 recovery implementation commit"
+"docs/ops/environment_tiers_unified_runbook_v1.md","P4","acceptance-baseline-recovery","documentation review + registered target parity","revert the P4 recovery documentation commit"
 "docs/ops/iterations/frontend_acceptance_fixture_namespace_rebuild_design_20260909.md","P4","governance-scope-separation","document review only; implementation and destructive execution not authorized","remove design artifact with the governance separation commit"
 "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py","P0","C1-workspace","verify.business_config.unit + real Odoo tagged tests","dbf8e70cf4ac09e6fbbd78efa7b725b1c1f6a953;d5aa8088f9eb2e535a2895486ba0cc1f41bdf206"
 "addons/smart_core/handlers/execute_button.py","P0","config-errors-closure","verify.business_config.unit + real Odoo tagged tests","377ce708b7fe2c5de7e87d57c836601d5e4ff6cf"

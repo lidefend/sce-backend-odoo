@@ -9063,3 +9063,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Blast Radius：源码净效果恢复到页面候选的 `smart_construction_core 17.0.0.162` 与原 fixture 实现；新增一份非执行性 P4 命名空间重建设计。没有修改页面产品、契约、权限、业务流程或业务数据。
 - 现有 `sc_frontend_acceptance` 已执行 `.163/.164`，与恢复后的源码版本不一致，因此 fixture、snapshot、浏览器和 release gate 均暂停。未来清理/重建必须经过独立 P4 实现、只读审计和显式 destructive 授权；本批次不执行数据库、filestore、volume 或 session 清理。
 - 撤出前 exact HEAD `016a844351aa92ddfd9a4f639a72f30ed784edfe` 的正式 gate 为 FAIL：产品正确拒绝非当前用户的“我的付款申请”记录，`delivery_hardening` 验证器却等待普通详情表面。该问题登记为 P4 validation-tool defect，不通过修改权限或 fixture 记录规避。
+
+## 2026-09-09 — Acceptance 基线恢复预演
+
+- Formal Product Layer P4；Layer Target 为静态生成证据与 `sc_frontend_acceptance` 完整生命周期恢复。没有 P0-P3 产品、契约、权限、fixture 语义或业务数据修改。
+- 原候选 HEAD `92a50e59d7e712a0ab67a066d17a686c1dc8b43f`、完整指纹 `6aa1fc3b09cef69a6f902b7811773e0c1b5545b0c23eee0524af36595eb2b8e2`（7339 paths）。官方设计 inventory 的唯一变化由上次生成后 `AppShell.css` 合法输入变化产生；原生成器刷新后完整 Frontend Quick PASS。
+- 受管 audit 确认 `sc_frontend_acceptance` 为 `17.0.0.164`，约 319 MB；filestore 约 125 MB/421 files；Redis 0 keys；不存在兼容 `.162` 的完整备份。选择精确 profile 的整环境重建，不以 namespace cleanup 冒充版本恢复。
+- 新受管入口默认 dry-run，绑定 exact HEAD，并在 apply 前要求 clean worktree、停止 carrier 与精确确认；执行时先冷备并校验 database+filestore+session，失败自动恢复。当前只读 audit 与 dry-run PASS，未停止服务、创建恢复包、删除卷、写 fixture 或运行 release gate。

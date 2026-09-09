@@ -2,7 +2,7 @@
 
 日期：2026-09-09
 
-状态：页面独立复审已通过；P1/P4 acceptance 兼容改动已撤出；发布验证因运行态版本不匹配及验证目标缺陷而阻断
+状态：页面独立复审已通过；P1 acceptance 兼容改动已撤出；Frontend Quick 已恢复，受管整环境重建等待 destructive 授权
 
 原始基线：`3d3975b3d45c1462677df0abcbb5708e4b53e0b1`
 
@@ -19,9 +19,9 @@
 - P4：回滚失败 fake 调用真实 production seam；浏览器报告记录完整输入、加载完成选择器、顶栏子动作边界及实际路由 authority 拒绝。
 - P4：补充全量 scope manifest、artifact SHA-256 清单和 PR 草稿。
 
-没有 P1/P2 修改，没有新增页面、业务流程、合同语义、数据库、fixture、端口、volume 或验证入口。首次正式 release gate 在持久化 `sc_frontend_acceptance` 上暴露的付款历史兼容问题曾被实现为 `.163/.164` 迁移和资金基线 fixture 修订；后续范围审计确认，旧人工 fixture 升级失败不能单独证明客户历史兼容需求，因此这些改动已通过后续可审计提交撤出当前前端候选。其历史提交和数据库执行事实仍保留，不改写历史。
+没有 P1/P2 修改，没有新增页面、业务流程、合同语义、数据库、fixture、端口或 volume。页面实现阶段没有另造验证入口；本次独立 P4 环境任务只增加了所选恢复路径缺失的受管 audit、dry-run/apply 和非零测试入口。首次正式 release gate 在持久化 `sc_frontend_acceptance` 上暴露的付款历史兼容问题曾被实现为 `.163/.164` 迁移和资金基线 fixture 修订；后续范围审计确认，旧人工 fixture 升级失败不能单独证明客户历史兼容需求，因此这些改动已通过后续可审计提交撤出当前前端候选。其历史提交和数据库执行事实仍保留，不改写历史。
 
-当前候选相对原始基线为 87 路径，其中新增 1 份非执行性 P4 重建设计；归属及逐路径回退见 `frontend_system_page_baseline_scope_manifest_20260909.csv`。
+当前候选继续以原始基线为范围 authority；页面产品范围不再扩大。本批只增加 P4 受管恢复入口、测试和文档，并刷新已有生成清单；归属及逐路径回退见 `frontend_system_page_baseline_scope_manifest_20260909.csv`。
 
 ## 2. 验证可信度
 
@@ -66,7 +66,9 @@ stdlib XML stub 仅用于宿主机缺少 lxml 时加载隔离单元测试，不�
 
 撤出前最后一次 `verify.frontend.release.local` 在 exact HEAD `016a844351aa92ddfd9a4f639a72f30ed784edfe` 上仍为 FAIL：静态、构建、受管升级、fixture、snapshot 和 25 个页面身份检查通过；`delivery_hardening` 将非 fixture 财务用户创建的 `FE-A-PR-001` 放入“我的付款申请”动作上下文，产品正确返回 403，验证器却等待普通详情工作区而超时。该结果归类为 P4 `validation_tool_defect`，不能通过放宽权限或改写业务记录消除。
 
-当前候选只允许执行静态和纯单元验证。正式 release gate、fixture reset、snapshot 与浏览器验收保持 `not_run`，直到独立 P4 任务实现并授权执行命名空间重建，且修正验证目标后重新冻结候选。
+当前候选已通过完整 `verify.frontend.quick.gate`。生成清单差异被证明来自上次清单生成后合法修改的 `AppShell.css`；TDesign 锁定版本、package/lock 输入未变化，通过原 `refresh.frontend.rendering_detail.inventory` 入口更新后只有 `inputDigest` 改变，全部语义统计保持一致。
+
+P4 只读审计确认数据库为 `17.0.0.164`，而源码仍为 `17.0.0.162`；数据库、filestore、session 均精确绑定现有 profile，未发现兼容 `.162` 的完整备份。已实现并通过完整生命周期重建 dry-run，默认不写入，并在 apply 路径中要求 exact HEAD、clean worktree、停止 carrier、冷备数据库/filestore/session、校验恢复包及失败自动恢复。正式 release gate、fixture reset、snapshot 与新浏览器验收仍为 `not_run`，等待对三个精确卷的 destructive 授权。
 
 本文件不预写 release PASS。最终命令结果必须绑定运行时的完整 HEAD，且执行后工作区保持干净；远程推送、PR 创建、合并和发布不在授权内。
 
@@ -78,6 +80,6 @@ stdlib XML stub 仅用于宿主机缺少 lxml 时加载隔离单元测试，不�
 - 性能、独立移动端及 fallback 页面能力不在本阶段。
 - build large chunk warning 仍存在，没有性能量化结论。
 - 现有 acceptance 数据库已执行撤出候选中的 `.163/.164`，不能代表当前源码候选，也不会执行逆向数据迁移。
-- 命名空间重建方案仅记录于 `frontend_acceptance_fixture_namespace_rebuild_design_20260909.md`，本批次未实现、未执行。
+- 受管整环境恢复方案与预演记录于 `frontend_acceptance_fixture_namespace_rebuild_design_20260909.md`。实现与 dry-run 已完成，实际删除/覆盖未执行；通用命名空间清理不再是当前版本恢复的前置。
 
 回退先按 formal layer 和文件执行：P0 顶栏修正可回退 `5d9e994b`；P4 fake 与验证器可分别回退 `e3e134c0`、`dc6e81d6`；历史混合提交依全量 manifest 的路径与 commit 列回退。曾执行的 P1 数据迁移不可通过代码回退逆向恢复，现有 acceptance 环境只能通过未来明确授权的受管重建重新成为当前页面候选证据。

@@ -152,6 +152,8 @@ Use only these entries for the managed acceptance lifecycle:
 ```bash
 make acceptance.runtime.preflight
 make acceptance.runtime.infrastructure.restore
+make acceptance.runtime.baseline_recovery.audit
+make acceptance.runtime.baseline_rebuild EXPECTED_HEAD=<full-40-char-sha>
 make backend.acceptance.up
 make frontend.acceptance.up
 make acceptance.frontend.fixture
@@ -169,6 +171,12 @@ fails closed if the database/filter, any named volume, the mounted database or
 Redis volume, the credential authority, or the Odoo filestore differs from the
 profile. `acceptance.runtime.infrastructure.restore` only reconnects the
 already-declared managed volumes; it does not create a database or fixture.
+`acceptance.runtime.baseline_recovery.audit` reads the exact database module
+version and the database/filestore/session inventory. The baseline rebuild
+entry is dry-run by default. Its destructive mode is reserved for an explicitly
+approved reset of this disposable fixture-only environment; it requires exact
+HEAD and confirmation, creates and verifies a cold three-part recovery bundle,
+and automatically restores that bundle if recreation fails.
 For a recovered or version-lagged acceptance database,
 `acceptance.baseline.upgrade` fixes the dependency order to `smart_core` first
 and `smart_construction_core` second. The single-module target is reserved for

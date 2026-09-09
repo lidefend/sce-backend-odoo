@@ -440,6 +440,17 @@ case "$command" in
     compose_dev up -d db redis
     preflight
     ;;
+  baseline-recovery-audit)
+    preflight
+    bash "$ROOT_DIR/scripts/dev/frontend_acceptance_baseline_rebuild.sh" audit
+    ;;
+  baseline-rebuild)
+    preflight
+    EXPECTED_HEAD="${EXPECTED_HEAD:-}" \
+      APPLY="${APPLY:-0}" \
+      CONFIRM_ACCEPTANCE_BASELINE_REBUILD="${CONFIRM_ACCEPTANCE_BASELINE_REBUILD:-}" \
+      bash "$ROOT_DIR/scripts/dev/frontend_acceptance_baseline_rebuild.sh" rebuild
+    ;;
   module-upgrade)
     preflight
     : "${MODULE:?MODULE is required}"
