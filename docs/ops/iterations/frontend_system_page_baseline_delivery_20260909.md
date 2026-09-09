@@ -68,7 +68,7 @@ stdlib XML stub 仅用于宿主机缺少 lxml 时加载隔离单元测试，不�
 
 当前候选已通过完整 `verify.frontend.quick.gate`。生成清单差异被证明来自上次清单生成后合法修改的 `AppShell.css`；TDesign 锁定版本、package/lock 输入未变化，通过原 `refresh.frontend.rendering_detail.inventory` 入口更新后只有 `inputDigest` 改变，全部语义统计保持一致。
 
-P4 只读审计确认数据库为 `17.0.0.164`，而源码仍为 `17.0.0.162`；数据库、filestore、session 均精确绑定现有 profile，未发现兼容 `.162` 的完整备份。可靠性复核又发现 PostgreSQL 卷包含额外 `sc_odoo`（约 7.5 MB、0 public tables、无 Odoo registry），因此默认预检必须阻断，不能只备份主库后删除整卷。加固入口要求显式数据库全集并冷备整个 PostgreSQL 卷，逐步验证停止、备份、删除、解包与恢复结果。正式 release gate、fixture reset、snapshot 与新浏览器验收仍为 `not_run`，等待 clean 候选预演和对 `sc_odoo` 及三个精确卷的 destructive 授权。
+P4 只读审计确认数据库为 `17.0.0.164`，而源码仍为 `17.0.0.162`；数据库、filestore、session 均精确绑定现有 profile，未发现兼容 `.162` 的完整备份。可靠性复核又发现 PostgreSQL 卷包含额外 `sc_odoo`（约 7.5 MB、0 public tables、无 Odoo registry），因此默认预检会阻断，不能只备份主库后删除整卷。加固入口要求显式数据库全集并冷备整个 PostgreSQL 卷，逐步验证停止、备份、删除、解包与恢复结果；44 项失败注入/身份测试、只读 audit、完整 dry-run 和 Frontend Quick 已在实现候选通过。正式 release gate、fixture reset、snapshot 与新浏览器验收仍为 `not_run`，等待对 `sc_odoo` 及三个精确卷的 destructive 授权。
 
 本文件不预写 release PASS。最终命令结果必须绑定运行时的完整 HEAD，且执行后工作区保持干净；远程推送、PR 创建、合并和发布不在授权内。
 

@@ -9077,3 +9077,4 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 真实只读 audit 发现 PostgreSQL 卷还包含 `sc_odoo`（约 7.5 MB、0 public tables、无 Odoo registry）。新预检要求调用者显式声明排序后的非系统数据库全集，并校验每个卷唯一挂载者；意外数据库或容器一律阻断 dry-run readiness 和 apply。
 - 恢复包覆盖完整 PostgreSQL/Odoo/Redis 三卷，并保留主库逻辑 dump 校验。writer 停止、archive、checksum、dump 可读性全部通过后 manifest 才从 staging 进入 complete。
 - 恢复路径逐步检查删除、解包、启动和恢复后数据库/附件/filestore/session；失败注入禁止任何失败分支输出 `RECOVERED`。自动恢复只覆盖卷删除至空基础设施重建，后续安装、fixture、snapshot 和 release gate 失败仅保留恢复包与诊断。
+- 实现候选 `c6f5658ecd967e57a98fb6327112a680a7177455` 的 44 项重建/身份测试、Frontend Quick、受管 audit 与完整 dry-run PASS；错误 HEAD 和遗漏 `sc_odoo` 均按预期 DENY。没有停止服务、创建恢复包、删除卷、写数据库或运行 release gate。

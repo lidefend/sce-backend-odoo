@@ -49,19 +49,19 @@
 
 ## 4. 已完成预演
 
-当前 HEAD `92a50e59d7e712a0ab67a066d17a686c1dc8b43f` 上执行：
+可靠性实现候选 `c6f5658ecd967e57a98fb6327112a680a7177455` 上执行：
 
 ```bash
 make verify.acceptance.runtime.baseline_rebuild.unit
 make acceptance.runtime.baseline_recovery.audit
 make acceptance.runtime.baseline_rebuild \
-  EXPECTED_HEAD=92a50e59d7e712a0ab67a066d17a686c1dc8b43f \
+  EXPECTED_HEAD=c6f5658ecd967e57a98fb6327112a680a7177455 \
   EXPECTED_DATABASES=sc_frontend_acceptance,sc_odoo
 ```
 
-扩展后的失败注入、profile 与身份组共 44 个非零测试已在未冻结候选上通过；最终 clean HEAD 必须重新运行。其 dry-run 还必须证明：精确数据库集合、三个卷唯一挂载者、外部 carrier 已关闭、恢复工具就绪和工作区干净。此前仅生成计划即返回的 PASS 不再作为可执行证明。
+扩展后的失败注入、profile 与身份组共 44 个非零测试 PASS，Frontend Quick 完整 PASS。受管 audit 和完整 dry-run 证明：精确数据库集合、三个卷唯一挂载者、外部 carrier 已关闭、恢复工具就绪和工作区干净。另有两个预期拒绝结果：错误 exact HEAD 在环境动作前 DENY；省略 `sc_odoo` 时以数据库范围错配 DENY。此前仅生成计划即返回的 PASS 不再作为可执行证明。
 
-最终提交后必须以新 exact HEAD 重新预演，旧 HEAD 不能授权实际执行。
+后续文档提交形成的最终交付 HEAD 必须重新运行受影响单元组和 exact-HEAD dry-run；旧 HEAD 不能授权实际执行。
 
 ## 5. 待单独确认的破坏性执行
 
