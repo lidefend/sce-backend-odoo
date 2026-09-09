@@ -1350,15 +1350,18 @@ try {
           .slice(0, 12)
           .map((node) => {
             const rect = node.getBoundingClientRect();
+            const gridRect = node.closest('.template-form-section-grid')?.getBoundingClientRect();
             return {
               name: node.getAttribute('data-field-name') || '',
               left: Math.round(rect.left),
               right: Math.round(rect.right),
               width: Math.round(rect.width),
+              gridWidth: Math.round(gridRect?.width || 0),
+              gridWidthRatio: gridRect?.width ? Number((rect.width / gridRect.width).toFixed(3)) : 0,
             };
           }));
         const minimumPhoneFieldWidth = viewport.name === 'mobile'
-          ? Math.max(220, viewport.width - 100)
+          ? Math.max(180, viewport.width - 140)
           : 0;
         formValidationEvidence = {
           invalidFieldName,
@@ -1373,7 +1376,9 @@ try {
             && activeFieldName === invalidFieldName
             && alertText.length > 0
             && mutationCountBefore === report.mutationCount
-            && (viewport.name !== 'mobile' || fieldGeometry.every((item) => item.width >= minimumPhoneFieldWidth)),
+            && (viewport.name !== 'mobile' || fieldGeometry.every((item) => (
+              item.width >= minimumPhoneFieldWidth && item.gridWidthRatio >= 0.9
+            ))),
         };
       }
       let relationSearchDialogEvidence = null;
