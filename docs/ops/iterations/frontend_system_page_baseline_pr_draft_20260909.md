@@ -24,7 +24,7 @@
 - 1088/390 明色与 1440/320 暗色受管候选浏览器矩阵
 - `CONFIRM_FRONTEND_RELEASE_AUDIT=RUN_FROZEN_FRONTEND_RELEASE_AUDIT make verify.frontend.release.local`
 
-当前 Frontend Quick 已 PASS；release gate 仍为 `not_run`。受管 audit 已证明 acceptance 数据库为 `.164`、源码为 `.162` 且没有兼容备份；完整环境重建 dry-run 已通过。实际删除三个精确卷仍需单独 destructive 授权，完成恢复和错误详情目标修正后才可运行 release gate；草稿不预写 PASS。
+当前 Frontend Quick 已 PASS；release gate 仍为 `not_run`。受管 audit 已证明 acceptance 数据库为 `.164`、源码为 `.162` 且没有兼容备份，并发现同一 PostgreSQL 卷还有空的 `sc_odoo`。加固后的 dry-run 必须显式声明两个非系统数据库并证明三个卷的唯一挂载者；实际删除仍需单独 destructive 授权。完成恢复和错误详情目标修正后才可运行 release gate；草稿不预写 PASS。
 
 ## 证据与回退
 

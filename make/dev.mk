@@ -444,7 +444,7 @@ acceptance.runtime.baseline_recovery.audit: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh baseline-recovery-audit
 
 acceptance.runtime.baseline_rebuild: guard.prod.forbid
-	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" EXPECTED_HEAD="$(EXPECTED_HEAD)" APPLY="$(APPLY)" CONFIRM_ACCEPTANCE_BASELINE_REBUILD="$${CONFIRM_ACCEPTANCE_BASELINE_REBUILD:-}" bash scripts/dev/frontend_acceptance_operation_entry.sh baseline-rebuild
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" EXPECTED_HEAD="$(EXPECTED_HEAD)" EXPECTED_DATABASES="$(EXPECTED_DATABASES)" APPLY="$(APPLY)" CONFIRM_ACCEPTANCE_BASELINE_REBUILD="$${CONFIRM_ACCEPTANCE_BASELINE_REBUILD:-}" bash scripts/dev/frontend_acceptance_operation_entry.sh baseline-rebuild
 
 frontend.acceptance.up: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh frontend-up

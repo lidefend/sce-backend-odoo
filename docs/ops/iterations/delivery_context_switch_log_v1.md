@@ -9070,3 +9070,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 原候选 HEAD `92a50e59d7e712a0ab67a066d17a686c1dc8b43f`、完整指纹 `6aa1fc3b09cef69a6f902b7811773e0c1b5545b0c23eee0524af36595eb2b8e2`（7339 paths）。官方设计 inventory 的唯一变化由上次生成后 `AppShell.css` 合法输入变化产生；原生成器刷新后完整 Frontend Quick PASS。
 - 受管 audit 确认 `sc_frontend_acceptance` 为 `17.0.0.164`，约 319 MB；filestore 约 125 MB/421 files；Redis 0 keys；不存在兼容 `.162` 的完整备份。选择精确 profile 的整环境重建，不以 namespace cleanup 冒充版本恢复。
 - 新受管入口默认 dry-run，绑定 exact HEAD，并在 apply 前要求 clean worktree、停止 carrier 与精确确认；执行时先冷备并校验 database+filestore+session，失败自动恢复。当前只读 audit 与 dry-run PASS，未停止服务、创建恢复包、删除卷、写 fixture 或运行 release gate。
+
+## 2026-09-09 — Acceptance 重建执行可靠性收口
+
+- P4 only：集中加固既有完整环境重建入口；页面产品、P1 兼容候选、fixture 语义和业务数据继续冻结。
+- 真实只读 audit 发现 PostgreSQL 卷还包含 `sc_odoo`（约 7.5 MB、0 public tables、无 Odoo registry）。新预检要求调用者显式声明排序后的非系统数据库全集，并校验每个卷唯一挂载者；意外数据库或容器一律阻断 dry-run readiness 和 apply。
+- 恢复包覆盖完整 PostgreSQL/Odoo/Redis 三卷，并保留主库逻辑 dump 校验。writer 停止、archive、checksum、dump 可读性全部通过后 manifest 才从 staging 进入 complete。
+- 恢复路径逐步检查删除、解包、启动和恢复后数据库/附件/filestore/session；失败注入禁止任何失败分支输出 `RECOVERED`。自动恢复只覆盖卷删除至空基础设施重建，后续安装、fixture、snapshot 和 release gate 失败仅保留恢复包与诊断。

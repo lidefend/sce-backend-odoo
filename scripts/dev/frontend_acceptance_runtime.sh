@@ -447,6 +447,7 @@ case "$command" in
   baseline-rebuild)
     preflight
     EXPECTED_HEAD="${EXPECTED_HEAD:-}" \
+      EXPECTED_DATABASES="${EXPECTED_DATABASES:-}" \
       APPLY="${APPLY:-0}" \
       CONFIRM_ACCEPTANCE_BASELINE_REBUILD="${CONFIRM_ACCEPTANCE_BASELINE_REBUILD:-}" \
       bash "$ROOT_DIR/scripts/dev/frontend_acceptance_baseline_rebuild.sh" rebuild
