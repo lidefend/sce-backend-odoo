@@ -70,7 +70,7 @@ Generated from repository source files. This report is informational during the 
 | 1557 | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1488 | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1484 | Python source | `scripts/release/release_publication.py` |
-| 1443 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
+| 1445 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1438 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1432 | Python source | `scripts/product/build_capability_productization_v1.py` |
 | 1423 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
@@ -207,7 +207,7 @@ Generated from repository source files. This report is informational during the 
 | 1515 | split_plan_required | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1488 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1484 | warning | Python source | `scripts/release/release_publication.py` |
-| 1443 | warning | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
+| 1445 | warning | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1438 | warning | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1432 | warning | Python source | `scripts/product/build_capability_productization_v1.py` |
 | 1423 | warning | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |

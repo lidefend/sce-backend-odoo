@@ -536,9 +536,10 @@ async function runOne2manyRelationOptionsQuery(
     };
     o2mRelationErrors.value = { ...o2mRelationErrors.value, [key]: '可选内容加载失败，请重试' };
   } finally {
-    if (relationActiveRequestRevisions[key] !== revision) return;
-    delete relationActiveRequestRevisions[key];
-    o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: false };
+    if (relationActiveRequestRevisions[key] === revision) {
+      delete relationActiveRequestRevisions[key];
+      o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: false };
+    }
   }
 }
 
@@ -642,7 +643,8 @@ watch(() => {
     const column = props.adapter.one2manyColumns(entry.fieldName).find((item) => item.name === entry.columnName);
     if (!column) return;
     invalidateOne2manyRelationQuery(key);
-    const { [key]: _discarded, ...remaining } = o2mRelationOptionMap.value;
+    const remaining = { ...o2mRelationOptionMap.value };
+    delete remaining[key];
     o2mRelationOptionMap.value = remaining;
     o2mRelationSearchMap.value = { ...o2mRelationSearchMap.value, [key]: '' };
     o2mRelationErrors.value = { ...o2mRelationErrors.value, [key]: '' };

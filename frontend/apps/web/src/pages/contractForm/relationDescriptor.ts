@@ -278,7 +278,7 @@ export function analyzeDynamicRelationDomain(descriptor?: FieldDescriptor) {
   }
   const unsupportedRemainder = text
     .replace(new RegExp(dynamicDomainTupleSource, 'g'), '')
-    .replace(/[\s,\[\]]/g, '');
+    .replace(/\s|,|\[|\]/g, '');
   return {
     supported: tupleCount > 0 && unsupportedRemainder.length === 0,
     dependencies: Array.from(deps),
