@@ -136,11 +136,12 @@ Blast Radius：首页、我的工作、通用列表/详情、关系字段、层�
 | 契约缺口 | 本阶段未新增或补写 contract/schema；现有链仍为 `login → system.init → ui.contract` | 若业务页面缺少正式字段、动作或权限原因，单独按契约专题处理，不回到前端猜测 |
 | 多角色 | 未覆盖 | 以正式角色 fixture 执行独立授权/可见性矩阵 |
 | 真实写入 | 未覆盖 | 对保存、提交审批、配置发布/回滚分别建立受权业务验收；不复用本批只读结论 |
-| 升级兼容 | 未完成 | 先解决/重建 acceptance authority，再执行受管增量升级、fixture 和 snapshot |
+| 当前版本 acceptance 环境恢复 | 未执行 | 独立 P4 任务：通过受管重建使验收数据库、filestore、session、fixture 和当前源码版本重新形成可信 authority；只证明当前版本载体，不证明旧版本升级 |
+| 旧版本升级兼容 | 未证明；尚未冻结明确源版本样本 | 独立兼容专题：先定义源版本数据库、filestore、模块版本、数据特征和预期迁移结果，再执行受管增量升级与兼容验收；不能由当前版本环境重建替代 |
 | PR/CI | 未运行 | 获得授权后 push、创建 draft PR，冻结 exact head 并等待四项 required checks |
 | 发布验收 | 未运行 | 独立授权 acceptance/release candidate 流程；不得把 merge gate 等同发布 gate |
 
-这些事项均不阻断“待授权进入 PR”，但阻断“可合并”或“可发布”的提前声明。
+这些事项均不阻断“待授权进入 PR”，但阻断“可合并”或“可发布”的提前声明。当前版本 acceptance 环境恢复与旧版本升级兼容没有前后替代关系；是否分别启动及其样本 authority 均需另行授权。
 
 ## 10. 风险与回退
 

@@ -74,7 +74,7 @@
 
 - 首次系统页面独立审查的 `REQUEST_CHANGES` 已由后续候选修正；旧报告不作为最终通过证据。
 - `016a8443…` 的历史 release gate 仍记为 FAIL，归因 P4 validation-tool defect；没有改写或用视觉 smoke 替代。
-- 当前 acceptance authority 尚未重建，因此 release/production qualification 为 `not_run`。
+- 当前 acceptance authority 尚未重建，因此当前版本的 release/production qualification 为 `not_run`。该恢复任务只建立当前源码候选的可信验收载体，不证明任何旧版本升级兼容。
 
 ## PR/CI state
 
@@ -86,7 +86,7 @@
 ## Not included
 
 - 不新增或补写业务契约、角色权限和业务规则。
-- 不覆盖多角色、真实保存/审批/配置发布、历史升级兼容和生产发布。
+- 不覆盖多角色、真实保存/审批/配置发布、旧版本升级兼容和生产发布。旧版本兼容需另行指定源版本数据库、filestore、模块版本与预期迁移结果，不能由当前版本 acceptance 重建替代。
 - 不执行 acceptance 重建、数据库/fixture/module lifecycle、push、merge 或 release。
 
 ## Risk and rollback

@@ -9117,3 +9117,4 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - acceptance baseline rebuild、runtime、Make 接线、失败注入测试和恢复设计作为独立 P4 环境工具单列；历史 P1 `.163/.164` 迁移已撤出净候选，不计入前端产品改善。
 - `make pr.status` 只读确认当前分支无 PR。完整差异经现有分类器判定 HIGH_RISK、frontend/professional full、backend changed；四项 required checks 及 release candidate gate 均保持 not_run，未执行 push、PR 创建/更新、acceptance 重建或远端 mutation。
 - 本地交付状态为 `READY_FOR_PR_AUTHORIZATION`，不是 merge-ready 或 release-ready。唯一下一步是在明确授权后冻结最终 clean HEAD，并通过受管入口进入 draft PR。
+- 审查澄清：当前版本 acceptance 环境恢复与旧版本升级兼容是两个独立 P4 任务。前者只恢复当前候选的可信验收载体；后者必须先冻结明确源版本样本及预期迁移结果，不能由重建替代。
