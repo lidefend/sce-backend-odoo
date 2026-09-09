@@ -9085,4 +9085,5 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 产品候选 `f9797273e0e6bd210f9c0b8ed726ff1d500a7fbd`；完整 fingerprint `9d22470f4384717fff5d122cbc7dca55ead3c24b426cfdd0150597605f0918cf`（7347 paths），baseline `f8f5088e54479a60cd9991bf186348d571580a17`。
 - 209 个正式样式源中的 14 个 TDesign 内部 selector gap 和 16 个视觉字面量 gap 已清零；inventory `--check` 现在对四项完成条件 fail-closed。Input/Select/Card/Alert 迁到公开扩展点，结构化按钮不再误用官方文本插槽承载多列布局。
 - 全系统 TDesign 入口守卫限制为公共 primitive authority，并绑定已安装版本的公开类型声明。最终 Frontend Quick PASS；冻结候选在首页、我的工作和材料入库新建关系表单的 1440/390 只读旅程 PASS，mutation 0、errors/failures empty。
+- ECharts 6.1.0 无产品改动；补齐基于已安装 `exports` 的公开子路径、动态 import 与单一 CanvasRenderer 守卫，4 个反例测试和 chart dataset 定向门禁 PASS。
 - 完整记录：`frontend_official_component_usage_cleanup_20260909.md`。未执行 release gate、push、PR 或 merge；正式发布资格仍待独立审查和显式开启发布流程。

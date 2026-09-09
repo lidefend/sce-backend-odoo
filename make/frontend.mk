@@ -57,6 +57,7 @@ verify.frontend.typecheck.strict: guard.prod.forbid
 
 verify.frontend.chart_engine.guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/frontend_chart_engine_guard.py
+	@python3 -m unittest scripts.verify.test_frontend_chart_engine_guard
 	@python3 scripts/verify/frontend_chart_engine_guard.py
 
 

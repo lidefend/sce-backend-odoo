@@ -76,6 +76,7 @@
 - Input/Select 改用已安装 1.20.5 声明的 `inputClass` / `inputProps`；Card 改用 `bodyClassName`；Alert 只使用 default/operation slots，不再同时传 message prop，也不再选择 TDesign 内部 description DOM。
 - 普通按钮继续由 TDesign Button 驱动；复杂多列 quick-link/metric/structured-content 在 `ScButton` 内使用 browser-structured 专用语义按钮，避免把官方 Button 的文本插槽当布局容器。业务消费者仍禁止直接使用原生交互控件。
 - 全前端直接 TDesign import 只允许 `@sc/ui/primitives` 与登记的按需注册器；守卫读取锁定版本的 Input/Select/Card/Alert 类型声明，公开扩展点缺失、私有入口、重复内容通道或绕过公共桥均 fail-closed。
+- ECharts 6.1.0 产品代码保持官方按需入口（core/charts/components/renderers）与 `core.use` 注册方式；chart-engine guard 现在从已安装包的 `exports` 核对公开子路径，并覆盖动态 import、全量 bundle、未批准子路径和 SVGRenderer 反例。
 - 视觉尺寸全部进入既有或新增 component token 单一事实源，生成的 web light/dark/default 与 shared TS 产物同步。
 
 ### 验证结果
@@ -83,6 +84,7 @@
 - `verify.frontend.rendering_detail_state.unit`：53 tests OK；165 surfaces、0 gaps；official alignment 四项缺口为 0。
 - `verify.frontend.primitive_adapter.unit`：46 component contract PASS；27 guard tests OK。
 - `verify.frontend.typecheck.strict`、design-token verify、`git diff --check`：PASS。
+- `verify.frontend.chart_engine.guard`：4 tests OK；`verify.frontend.chart_dataset.unit`：非零模型测试与 chart guard 均 PASS。
 - 最终 `verify.frontend.quick.gate`：PASS，包括 strict typecheck、development build、组件驱动、专业字段、集合、工作流、导航、主题与创建旅程检查。
 - 冻结候选只读浏览器：`/`、`/my-work`、`/f/sc.material.inbound/new?menu_id=494&action_id=546` 在 1440×960 与 390×844 均 PASS；`mutationCount=0`、`errors=[]`、`failures=[]`。证据：`artifacts/playwright/frontend-official-component-usage-f9797273/summary.json`。
 
