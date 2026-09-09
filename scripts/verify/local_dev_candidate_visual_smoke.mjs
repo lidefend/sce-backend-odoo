@@ -1408,7 +1408,9 @@ try {
         const opener = recordOwner.locator('.cell-primary-link, .collection-mobile-record-row__open-action, [data-semantic-action="open-record"]');
         if (await opener.count() !== 1) throw new Error(`${target.name}: expected exactly one record opener for ${recordId}`);
         const beforeUrl = page.url();
-        const scrollBefore = target.captureReturnScroll === true
+        const captureReturnScroll = target.captureReturnScroll === true
+          && (target.returnScrollMobileOnly !== true || viewport.name === 'mobile');
+        const scrollBefore = captureReturnScroll
           ? await recordOwner.evaluate((node) => {
             const candidates = [];
             let current = node.parentElement;
@@ -1460,7 +1462,7 @@ try {
           await waitForStableProductSurface(page);
           const afterUrl = page.url();
           const after = new URL(afterUrl);
-          const scrollAfter = target.captureReturnScroll === true
+          const scrollAfter = captureReturnScroll
             ? await page.locator(`[data-record-key="${recordId}"]:visible`).evaluate((node) => {
               const candidates = [];
               let current = node.parentElement;
@@ -1488,7 +1490,7 @@ try {
             scrollAfter,
             pass: detailRecordId === recordId
               && preservedKeys.every((key) => (before.searchParams.get(key) || '') === (after.searchParams.get(key) || ''))
-              && (target.captureReturnScroll !== true || (
+              && (!captureReturnScroll || (
                 scrollBefore?.available === true
                 && scrollAfter?.available === true
                 && scrollBefore.scrollTop > 0
