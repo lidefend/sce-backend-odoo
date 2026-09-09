@@ -3,7 +3,6 @@ import {
   SC_PRIMITIVE_KEYS,
   normalizePrimitiveSize,
   normalizePrimitiveStatus,
-  isUserSelectSearchInput,
   resolvePrimitiveControlUpdate,
   semanticPrimitiveIdentity,
   tdesignButtonPresentation,
@@ -29,11 +28,6 @@ assert.equal(resolvePrimitiveControlUpdate({ value: 7 }), '7');
 assert.equal(resolvePrimitiveControlUpdate({ value: 'blocked', disabled: true }), null);
 assert.equal(resolvePrimitiveControlUpdate({ value: 'blocked', readonly: true }), null);
 assert.equal(resolvePrimitiveControlUpdate({ value: 'blocked', loading: true }), null);
-assert.equal(isUserSelectSearchInput('input'), true);
-assert.equal(isUserSelectSearchInput('clear'), true);
-assert.equal(isUserSelectSearchInput('blur'), false);
-assert.equal(isUserSelectSearchInput('initial'), false);
-assert.equal(isUserSelectSearchInput(undefined), false);
 assert.equal(tdesignTabsSize('small'), 'medium');
 assert.equal(tdesignTabsSize('medium'), 'medium');
 assert.equal(tdesignTabsSize('large'), 'large');

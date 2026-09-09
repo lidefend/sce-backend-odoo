@@ -29,7 +29,7 @@
     :aria-invalid="invalid || status === 'error' || undefined"
     :aria-describedby="describedBy"
     @change="onChange"
-    @input-change="onInputChange"
+    @search="onSearch"
     @popup-visible-change="emit('popup-visible-change', Boolean($event))"
   />
 </template>
@@ -38,12 +38,7 @@
 import { computed, ref } from 'vue';
 import { TDesignSelect } from './tdesignPrimitiveBridge';
 import { nativeControlProjection } from './nativeControlProjection';
-import {
-  isUserSelectSearchInput,
-  resolvePrimitiveControlUpdate,
-  type ScPrimitiveSize,
-  type ScPrimitiveStatus,
-} from './primitiveAdapter';
+import { resolvePrimitiveControlUpdate, type ScPrimitiveSize, type ScPrimitiveStatus } from './primitiveAdapter';
 
 export interface ScSelectOption {
   value: string | number;
@@ -85,7 +80,6 @@ const emit = defineEmits<{
 }>();
 const selectRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null);
 let lastSearchValue: string | undefined;
-type InputChangeContext = { trigger?: 'input' | 'clear' | 'blur' | 'focus' | 'initial' | 'change' };
 const vNativeControlProjection = nativeControlProjection;
 const tdesignOptions = computed(() => props.options.map((option) => ({
   value: option.value,
@@ -117,8 +111,7 @@ function emitSearchValue(value: unknown) {
   emit('search', normalized);
 }
 
-function onInputChange(value: unknown, context?: InputChangeContext) {
-  if (!isUserSelectSearchInput(context?.trigger)) return;
+function onSearch(value: unknown) {
   emitSearchValue(value);
 }
 
