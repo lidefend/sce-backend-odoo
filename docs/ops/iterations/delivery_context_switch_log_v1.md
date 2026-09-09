@@ -9087,3 +9087,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 全系统 TDesign 入口守卫限制为公共 primitive authority，并绑定已安装版本的公开类型声明。最终 Frontend Quick PASS；冻结候选在首页、我的工作和材料入库新建关系表单的 1440/390 只读旅程 PASS，mutation 0、errors/failures empty。
 - ECharts 6.1.0 无产品改动；补齐基于已安装 `exports` 的公开子路径、动态 import 与单一 CanvasRenderer 守卫，4 个反例测试和 chart dataset 定向门禁 PASS。
 - 完整记录：`frontend_official_component_usage_cleanup_20260909.md`。未执行 release gate、push、PR 或 merge；正式发布资格仍待独立审查和显式开启发布流程。
+
+## 2026-09-09 — 共享组件行为确认与全局表达收口
+
+- Branch `feature/frontend-page-experience-iteration-v1` at `314a0ac2`。Formal Product Layer：P0 通用前端运行时；P4 仅承载验证与证据。
+- Layer Target：frontend shared primitives、shell、通用页面 surface/theme 与既有 local.dev candidate browser evidence。Module：frontend。
+- Reason：把官方组件接入从静态公开 API 证据推进到真实行为证据，再以同视口对照统一首页、我的工作、付款列表/详情和代表工作区的全局表达；不修改契约、启动链、路由、权限、业务数据或发布环境。
