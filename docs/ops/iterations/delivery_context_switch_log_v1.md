@@ -9109,3 +9109,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Alert 正式页面恢复旅程对 `my.work.summary` 请求精确计数：light 1440/390 与 dark 1088/320 的桌面、移动结果均为 `operationCount=1`、`retryRequestCount=1`、焦点正确、恢复成功，mutation 0 且 errors/failures empty。
 - 最终视觉矩阵覆盖首页、我的工作、付款列表/详情及收入合同工作区的 1440/1088/390/320，共 20 个样本；自动溢出/浮层/页头/可见操作检查与人工截图复核均未发现阅读或操作阻断。没有继续做常规美化。
 - 本地前端表达基线已冻结；真实业务写入、全角色、acceptance/release/production 仍明确不在本轮证明范围。未升级模块、reset fixture、写业务数据或执行 push/PR/merge/release。
+
+## 2026-09-10 — 前端阶段交付包整理
+
+- Formal Product Layer P4；Layer Target 为最终范围、证据索引、PR 草稿及后续依赖清单。产品候选继续冻结在 `df3227c38e908b883ed45553e9511b03b59a3348`，整理前最终审查 HEAD 为 `8cd5cdebcd0b1127e1d7ddcada672077f25afa7f`；没有重新打开 P0/P3 产品实现。
+- 明确区分 `main` 合并基线 `74297675…`、前端阶段产品基线 `3d3975b3…`、产品候选和证据 HEAD。整理前完整 PR 范围为 173 commits / 191 paths；阶段产品范围为 131 commits / 155 paths，最后证明修正仅 3 commits / 5 paths。
+- acceptance baseline rebuild、runtime、Make 接线、失败注入测试和恢复设计作为独立 P4 环境工具单列；历史 P1 `.163/.164` 迁移已撤出净候选，不计入前端产品改善。
+- `make pr.status` 只读确认当前分支无 PR。完整差异经现有分类器判定 HIGH_RISK、frontend/professional full、backend changed；四项 required checks 及 release candidate gate 均保持 not_run，未执行 push、PR 创建/更新、acceptance 重建或远端 mutation。
+- 本地交付状态为 `READY_FOR_PR_AUTHORIZATION`，不是 merge-ready 或 release-ready。唯一下一步是在明确授权后冻结最终 clean HEAD，并通过受管入口进入 draft PR。

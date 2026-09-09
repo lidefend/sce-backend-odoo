@@ -1,38 +1,100 @@
-# PR 草稿：统一系统页面体验并冻结独立审查基线
+# PR 草稿：统一共享前端体验并冻结官方组件接入
 
-## 摘要
+## Summary
 
-以页面体系为交付单位，统一系统外壳、工作事项、付款集合与详情、层级工作区、配置工作台和异常恢复；冻结付款样板，并补齐独立审查所需的真实依赖、页面边界、候选身份和回退证据。
+统一系统外壳、首页、我的工作、集合/详情、关系表单和层级工作区的页面表达；把 Input、Select、Card、Alert、Button 等共享组件收敛到官方公开 props、事件和插槽，并补齐真实组件参数、单次重试、明暗主题及 1440/1088/390/320 的最终证据。
 
-## 范围
+本草稿描述完整分支范围，而不是只描述最后一次视觉调整。分支同时包含独立 P4 acceptance 环境恢复工具，已在下文单列，不将其称为前端产品改进。
 
-- P0：共享外壳、页面模式、工作区、列表/详情表达和通用错误/浮层机制。
-- P3：配置工作台的对象、草稿、发布及请求状态表达。
-- P4：非零单元/静态门禁、受管候选浏览器载体、生成清单、证据、阶段报告，以及默认 dry-run 的 acceptance 完整生命周期恢复入口。
-- 不含：P1 历史迁移、fixture 生命周期改造、新增审批/支付能力、业务数据写入、多角色授权、独立移动端、性能重构、远程发布。
+## User-visible improvements
 
-## 验证
+- 首页入口恢复完整宽度，待办、状态、常用入口和最近访问形成稳定层级。
+- “我的工作”减少重复包框，搜索、排序、工作事实和主要操作在桌面/窄屏保持可访问。
+- 付款列表/详情统一页头、工作表面、金额与返回上下文，移动端保留关键事实和操作。
+- 收入合同层级工作区补齐范围选择、横向浏览、详情和滚动恢复。
+- 表单错误、关系搜索、空态、loading、Alert 恢复和浮层焦点使用共享组件一致表达。
+- 明暗/系统主题消费同一套语义 token，没有新增平行样式体系。
 
-- `make verify.frontend.quick.gate`
-- `make verify.business_config.unit`
-- `make verify.frontend.hierarchical_worksheet.unit`
-- `make verify.frontend.overlay_lifecycle.unit`
-- `make verify.frontend.page_identity`
-- `make verify.frontend.theme_profile.unit`
-- `make local.dev.test MODULE=smart_core TEST_TAGS=runtime_view_contract`
-- `make local.dev.test MODULE=smart_core TEST_TAGS=business_config_change_set`
-- 1088/390 明色与 1440/320 暗色受管候选浏览器矩阵
-- `CONFIRM_FRONTEND_RELEASE_AUDIT=RUN_FROZEN_FRONTEND_RELEASE_AUDIT make verify.frontend.release.local`
+## Architecture Impact
 
-当前 Frontend Quick 已 PASS；release gate 仍为 `not_run`。受管 audit 已证明 acceptance 数据库为 `.164`、源码为 `.162` 且没有兼容备份，并发现同一 PostgreSQL 卷还有空的 `sc_odoo`。加固后的完整 dry-run 已显式声明两个非系统数据库并证明三个卷的唯一挂载者；省略 `sc_odoo` 的预演按预期阻断。实际删除仍需单独 destructive 授权。完成环境恢复和错误详情目标修正后才可运行 release gate；草稿不预写 PASS。
+- P0：通用前端 primitives、shell、page header、list/form/hierarchical renderers 和主题桥；少量通用后端页面装配/失败文案。
+- P3：配置工作台已有状态的前端表达，不改变配置事实、发布和回滚语义。
+- P4：静态/浏览器验证、生成 inventory、候选证据、交付文档，以及独立列明的 acceptance 完整恢复入口。
+- 启动链 `login → system.init → ui.contract`、contract/schema、public intent、default route、权限裁决和业务状态写入均未改变。
 
-## 证据与回退
+## Layer Target
 
-- 独立审查交付包：`docs/ops/iterations/frontend_system_page_baseline_delivery_20260909.md`
-- 全量范围：`docs/ops/iterations/frontend_system_page_baseline_scope_manifest_20260909.csv`
-- artifact 哈希：`docs/ops/iterations/frontend_system_page_baseline_evidence_manifest_20260909.csv`
-- 回退按 manifest 的 formal layer、逐路径 commit 和验证列执行；混合 P0/P3 提交不作整提交单层回退。
+`frontend shared runtime + generic page renderers + business-config presentation + P4 verification/delivery tooling`
 
-## 已知限制
+## Affected Modules
 
-仅管理员真实会话与既有 demo 数据；配置写操作、其他角色、认证、独立移动端、性能和远程交付另行处理。
+- `frontend/apps/web`
+- `frontend/packages/design-tokens`
+- `frontend/packages/ui`
+- `addons/smart_core`（仅通用页面装配、失败文案及测试）
+- `scripts/verify`、`scripts/audit`、`scripts/dev`
+- `make/frontend.mk`、`make/runtime_ops.mk`、`make/dev.mk`
+- `docs/frontend_productization`、`docs/ops`
+
+## Scope identity
+
+- Base：`main`；整理时 base SHA `74297675ea86af98af0d222efa4fe692c28e1ffe`。
+- 前端阶段产品基线：`3d3975b3d45c1462677df0abcbb5708e4b53e0b1`。
+- 冻结产品候选：`df3227c38e908b883ed45553e9511b03b59a3348`。
+- 最终审查证据 HEAD：`8cd5cdebcd0b1127e1d7ddcada672077f25afa7f`。
+- PR exact head：创建前以本地 clean HEAD 重新冻结，禁止沿用本草稿中的历史 SHA 推断。
+
+## P4 acceptance tooling carried by the branch
+
+以下内容不是用户可见前端产品范围：
+
+- `scripts/dev/frontend_acceptance_baseline_rebuild.sh`
+- `scripts/dev/frontend_acceptance_runtime.sh`
+- `scripts/verify/test_frontend_acceptance_baseline_rebuild.py`
+- `make/dev.mk`
+- `docs/ops/environment_tiers_unified_runbook_v1.md`
+- `docs/ops/iterations/frontend_acceptance_fixture_namespace_rebuild_design_20260909.md`
+
+这些文件只提供 fail-closed audit/dry-run、整卷恢复和失败注入测试。没有执行 destructive rebuild、fixture reset 或 release gate。历史 P1 `.163/.164` 迁移及 funding fixture 修改已经从当前净候选撤出。
+
+## Verification
+
+- `make verify.frontend.quick.gate`：产品候选 PASS。
+- 官方组件 inventory：内部 vendor selector、视觉字面量、未知项目 token、孤立 appearance variant 均为 0。
+- `python3 -m unittest scripts.verify.test_local_dev_candidate_frontend`：9 tests PASS。
+- `make verify.frontend.overlay_lifecycle.unit`：10 tests PASS。
+- `make verify.frontend.primitive_adapter.unit`：27 Python tests + 46 JS component scenarios PASS。
+- `make verify.frontend.overlay_lifecycle.browser`：10 browser scenarios PASS；真实 `ScButton` props 证明 disabled/loading 和恢复。
+- Alert 正式页面四个桌面/移动组合均为 `operationCount=1`、`retryRequestCount=1`。
+- 首页、我的工作、付款列表/详情、收入合同工作区在 light 1440/390、dark 1088/320 共 20 个最终样本 PASS；mutation 0，errors/failures 0。
+
+详细索引：`docs/ops/iterations/frontend_stage_delivery_package_20260910.md`。
+
+## Historical failures kept as history
+
+- 首次系统页面独立审查的 `REQUEST_CHANGES` 已由后续候选修正；旧报告不作为最终通过证据。
+- `016a8443…` 的历史 release gate 仍记为 FAIL，归因 P4 validation-tool defect；没有改写或用视觉 smoke 替代。
+- 当前 acceptance authority 尚未重建，因此 release/production qualification 为 `not_run`。
+
+## PR/CI state
+
+- 本地 `make pr.status`：当前分支没有关联 PR。
+- 完整范围分类：`HIGH_RISK`，`frontend_mode=full`、`professional_mode=full`、`backend_changed=true`。
+- PR 创建后必须在 exact head 通过 `public_guard`、`professional_quality_gate`、`frontend_release_gate`、`merge_policy_gate`。
+- `release_candidate_gate` 属于后续发布资格，不是本 PR 草稿的已完成项。
+
+## Not included
+
+- 不新增或补写业务契约、角色权限和业务规则。
+- 不覆盖多角色、真实保存/审批/配置发布、历史升级兼容和生产发布。
+- 不执行 acceptance 重建、数据库/fixture/module lifecycle、push、merge 或 release。
+
+## Risk and rollback
+
+- 完整 PR 范围大且包含 backend/Make/P4 environment paths，必须按 HIGH_RISK 分层审查。
+- 产品阶段可整体回到 `3d3975b3`；官方组件、最终表达、证明修正分别以 `f9797273`、`df3227c3`、`c755e551` 为审查/回退节点。
+- acceptance 恢复工具以 `aba26adc`、`c6f5658e` 为独立 P4 回退节点，不与前端产品混回退。
+
+## Delivery status
+
+`READY_FOR_PR_AUTHORIZATION`：等待明确授权后，通过受管入口 push 并创建 draft PR。当前不是 `merge-ready` 或 `release-ready`。
