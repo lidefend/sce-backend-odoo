@@ -550,6 +550,14 @@ try {
         await retry.focus();
         const focusedBeforeActivation = await retry.evaluate((node) => node === document.activeElement);
         await page.unroute(readFailurePattern, officialAlertFailureHandler);
+        let retryRequestCount = 0;
+        const countRetryRequest = (request) => {
+          if (!request.url().includes('/api/v1/intent') || request.method() !== 'POST') return;
+          try {
+            if (JSON.parse(request.postData() || '{}').intent === 'my.work.summary') retryRequestCount += 1;
+          } catch {}
+        };
+        page.on('request', countRetryRequest);
         const recoveryResponse = page.waitForResponse((response) => {
           if (!response.url().includes('/api/v1/intent') || response.request().method() !== 'POST') return false;
           try { return JSON.parse(response.request().postData() || '{}').intent === 'my.work.summary'; } catch { return false; }
@@ -558,6 +566,8 @@ try {
         const recovered = await recoveryResponse;
         if (!recovered.ok()) throw new Error(`${target.name}: alert operation recovery failed with ${recovered.status()}`);
         await page.locator('[data-semantic-component="WorkspaceHome"][data-state="ready"]:visible').waitFor({ state: 'visible', timeout: 45000 });
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        page.off('request', countRetryRequest);
         officialAlertOperationEvidence = {
           failureInjected: officialAlertFailureInjected,
           driverClassPresent,
@@ -565,6 +575,7 @@ try {
           retryCount,
           descriptionText,
           focusedBeforeActivation,
+          retryRequestCount,
           recovered: await page.locator('[data-semantic-component="WorkspaceHome"][data-state="ready"]:visible').count() === 1,
         };
         officialAlertOperationEvidence.pass = officialAlertOperationEvidence.failureInjected
@@ -573,6 +584,7 @@ try {
           && officialAlertOperationEvidence.driverClassPresent
           && officialAlertOperationEvidence.descriptionText.length > 0
           && officialAlertOperationEvidence.focusedBeforeActivation
+          && officialAlertOperationEvidence.retryRequestCount === 1
           && officialAlertOperationEvidence.recovered;
       }
       if (exerciseBusinessConfigReadFailure) {
@@ -712,29 +724,6 @@ try {
         const keyboardActivationAfter = Number(await keyboardMetric.getAttribute('data-browser-activation-count') || 0);
         const keyboardPressed = await keyboardMetric.getAttribute('aria-pressed');
         const metricFocused = await keyboardMetric.evaluate((node) => node === document.activeElement);
-        const disabledProjection = await keyboardMetric.evaluate((node) => {
-          const button = node;
-          const before = Number(button.dataset.browserActivationCount || '0');
-          button.disabled = true;
-          button.setAttribute('aria-disabled', 'true');
-          button.setAttribute('aria-busy', 'true');
-          button.dataset.loading = 'true';
-          button.click();
-          const after = Number(button.dataset.browserActivationCount || '0');
-          const projected = {
-            disabled: button.disabled,
-            ariaDisabled: button.getAttribute('aria-disabled'),
-            ariaBusy: button.getAttribute('aria-busy'),
-            loading: button.dataset.loading,
-            activationDelta: after - before,
-          };
-          button.disabled = false;
-          button.removeAttribute('aria-disabled');
-          button.removeAttribute('aria-busy');
-          delete button.dataset.loading;
-          return projected;
-        });
-
         const publicBodyCards = workspace.locator('.work-card .t-card__body.work-card__body');
         officialComponentBehaviorEvidence = {
           inputSearchClear: {
@@ -756,7 +745,6 @@ try {
             keyboardActivationAfter,
             keyboardPressed,
             focused: metricFocused,
-            disabledProjection,
           },
           cardPublicBodyClass: { count: await publicBodyCards.count() },
         };
@@ -777,11 +765,6 @@ try {
           && officialComponentBehaviorEvidence.structuredButtonActivation.keyboardActivationAfter === 1
           && officialComponentBehaviorEvidence.structuredButtonActivation.keyboardPressed === 'true'
           && officialComponentBehaviorEvidence.structuredButtonActivation.focused
-          && officialComponentBehaviorEvidence.structuredButtonActivation.disabledProjection.disabled
-          && officialComponentBehaviorEvidence.structuredButtonActivation.disabledProjection.ariaDisabled === 'true'
-          && officialComponentBehaviorEvidence.structuredButtonActivation.disabledProjection.ariaBusy === 'true'
-          && officialComponentBehaviorEvidence.structuredButtonActivation.disabledProjection.loading === 'true'
-          && officialComponentBehaviorEvidence.structuredButtonActivation.disabledProjection.activationDelta === 0
           && officialComponentBehaviorEvidence.cardPublicBodyClass.count > 0;
         if (!officialComponentBehaviorEvidence.pass) {
           throw new Error(`${target.name}: official component behavior failed ${JSON.stringify(officialComponentBehaviorEvidence)}`);

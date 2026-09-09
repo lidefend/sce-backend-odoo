@@ -190,6 +190,12 @@ class CandidateFrontendContractTest(unittest.TestCase):
         self.assertIn("structuredButtonActivation", browser)
         self.assertIn("exerciseOfficialAlertOperation", browser)
         self.assertIn("officialAlertOperationEvidence", browser)
+        self.assertIn("retryRequestCount", browser)
+        self.assertIn("retryRequestCount === 1", browser)
+        self.assertNotIn("button.disabled = true", browser)
+        self.assertNotIn("button.setAttribute('aria-disabled', 'true')", browser)
+        self.assertNotIn("button.setAttribute('aria-busy', 'true')", browser)
+        self.assertNotIn("button.dataset.loading = 'true'", browser)
         self.assertNotIn("waitForTimeout", browser)
 
 if __name__ == "__main__":
