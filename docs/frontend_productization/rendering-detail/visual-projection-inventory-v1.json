@@ -237,7 +237,7 @@
     },
     {
       "category": "other",
-      "digest": "58d95ea222de6c44618a8572c0708c41281dbcd818abc899b908e4be94073f2f",
+      "digest": "92543b53f72dd454522a712de3be6f07abe7563453bc5fa6a2eb098737e16c62",
       "nativeStyleSelectors": [],
       "path": "components/action/HierarchicalWorksheet.vue",
       "referenceNativeStyleSelectors": [
@@ -2734,7 +2734,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "21913bc2def05632ca94bebedad431b5075d4b1ef3072d68d1d19f0ad99d9a37",
+  "currentInputDigest": "2cd73b6cc4f2a79fa31d44122aacb57c88343944d0398bd9fa84cf46ada7d4f5",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

@@ -749,7 +749,7 @@ onBeforeUnmount(() => {
 .worksheet-detail-fields dd { margin: 0; overflow-wrap: anywhere; }
 .worksheet-error { padding: var(--sc-space-sm); color: var(--sc-app-danger); }
 .worksheet-mobile-navigation { min-width: 0; max-height: calc(100vh - 160px); overflow: auto; }
-@media (max-width: 960px) { .worksheet-layout { grid-template-columns: 1fr !important; height: auto; } .worksheet-navigation, .worksheet-resizer-navigation { display: none; } .worksheet-main { min-height: 680px; } .worksheet-grid-toolbar { align-items: stretch; flex-direction: column; gap: var(--sc-space-xs); padding-block: var(--sc-space-xs); } .worksheet-scope-trigger { display: inline-flex; justify-content: flex-start; height: var(--sc-component-button-touch-target); min-height: var(--sc-component-button-touch-target); overflow: hidden; text-overflow: ellipsis; } }
+@media (max-width: 960px) { .worksheet-layout { grid-template-columns: 1fr !important; height: auto; } .worksheet-navigation, .worksheet-resizer-navigation { display: none; } .worksheet-main { min-height: 680px; } .worksheet-grid-toolbar { align-items: stretch; flex-direction: column; gap: var(--sc-space-xs); padding-block: var(--sc-space-xs); } :deep(.worksheet-scope-trigger.sc-btn) { display: inline-flex; justify-content: flex-start; height: var(--sc-component-button-touch-target); min-height: var(--sc-component-button-touch-target); overflow: hidden; text-overflow: ellipsis; } }
 @media (max-width: 640px) {
   .worksheet-detail-fields { grid-template-columns: max-content minmax(0, 1fr); }
 }
