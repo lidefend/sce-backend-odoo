@@ -1475,9 +1475,26 @@ try {
           fullPage: false,
         });
         if (target.exerciseDetailRelationSearchRecovery === true) {
-          const relationEditor = row.locator('[data-semantic-component="One2ManyCellEditor"][data-validation-target$=":material_catalog_id"]:visible').first();
+          const relationEditors = form.locator('[data-semantic-component="One2ManyCellEditor"][data-validation-target$=":material_catalog_id"]:visible');
+          let relationEditor = relationEditors.first();
+          for (let index = 0; index < await relationEditors.count(); index += 1) {
+            const candidate = relationEditors.nth(index);
+            const candidateInput = candidate.locator('input:visible').first();
+            const hitTarget = await candidateInput.evaluate((input) => {
+              const rect = input.getBoundingClientRect();
+              const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+              return Boolean(hit && (hit === input || input.contains(hit) || hit.contains(input)));
+            }).catch(() => false);
+            if (hitTarget) {
+              relationEditor = candidate;
+              break;
+            }
+          }
           const relationSelect = relationEditor.locator('[data-semantic-component="ScSelect"]:visible').first();
           const relationInput = relationSelect.locator('input').first();
+          const relationRow = viewport.name === 'mobile'
+            ? relationEditor.locator('xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " o2m-mobile-row ")][1]')
+            : relationEditor.locator('xpath=ancestor::tr[1]');
           if (await relationSelect.count() !== 1 || await relationInput.count() !== 1) {
             throw new Error(`${target.name}: editable detail relation selector is missing`);
           }
@@ -1555,7 +1572,7 @@ try {
           await visibleOptions.first().click();
           await visibleDropdown.waitFor({ state: 'hidden', timeout: 15000 });
           const selectedDisplay = await relationInput.inputValue();
-          const selectedDisplays = await row.locator('[data-validation-target$=":material_catalog_id"] input:visible')
+          const selectedDisplays = await relationRow.locator('[data-validation-target$=":material_catalog_id"] input:visible')
             .evaluateAll((inputs) => inputs.map((input) => input.value));
           await relationInput.click();
           await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
@@ -1565,7 +1582,7 @@ try {
           await page.keyboard.press('Escape');
           await visibleDropdown.waitFor({ state: 'hidden', timeout: 15000 });
           const selectedDisplayAfterSearch = await relationInput.inputValue();
-          const selectedDisplaysAfterSearch = await row.locator('[data-validation-target$=":material_catalog_id"] input:visible')
+          const selectedDisplaysAfterSearch = await relationRow.locator('[data-validation-target$=":material_catalog_id"] input:visible')
             .evaluateAll((inputs) => inputs.map((input) => input.value));
           await relationInput.click();
           await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
@@ -1573,7 +1590,7 @@ try {
           const reopenedCount = await visibleOptions.count();
           await page.keyboard.press('Escape');
           await visibleDropdown.waitFor({ state: 'hidden', timeout: 15000 });
-          const noteInput = row.locator('[data-validation-target$=":note"] input:visible').first();
+          const noteInput = relationRow.locator('[data-validation-target$=":note"] input:visible').first();
           const relationQueriesBeforeNote = relationQueryCount;
           if (await noteInput.count() === 1) await noteInput.fill('未提交的关系查询验证');
           await page.waitForTimeout(500);
