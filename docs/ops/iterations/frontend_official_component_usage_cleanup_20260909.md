@@ -61,3 +61,38 @@
 
 - 每个不兼容组件按拥有层独立修复；不得通过 `any`、`unknown` 强转或放宽类型来通过守卫。
 - 若发现需要改变产品交互语义，停止并拆出独立 PFL 批次。
+
+## 执行结果
+
+### 产品候选身份
+
+- Baseline：`f8f5088e54479a60cd9991bf186348d571580a17`。
+- 产品候选：`f9797273e0e6bd210f9c0b8ed726ff1d500a7fbd`。
+- 完整 tracked + untracked fingerprint：`9d22470f4384717fff5d122cbc7dca55ead3c24b426cfdd0150597605f0918cf`，7347 paths；scope manifest：`02478d69028c7ef662c57186e6ae2307cafcb85ea7c55dd7c9a3cfd0d69674b8`。
+
+### 清理结论
+
+- official design alignment inventory：209 个正式样式源；`unknownProjectTokenOverrideCount=0`、`internalVendorSelectorGapCount=0`、`visualLiteralGapCount=0`、`orphanedProductAppearanceVariantCount=0`。
+- Input/Select 改用已安装 1.20.5 声明的 `inputClass` / `inputProps`；Card 改用 `bodyClassName`；Alert 只使用 default/operation slots，不再同时传 message prop，也不再选择 TDesign 内部 description DOM。
+- 普通按钮继续由 TDesign Button 驱动；复杂多列 quick-link/metric/structured-content 在 `ScButton` 内使用 browser-structured 专用语义按钮，避免把官方 Button 的文本插槽当布局容器。业务消费者仍禁止直接使用原生交互控件。
+- 全前端直接 TDesign import 只允许 `@sc/ui/primitives` 与登记的按需注册器；守卫读取锁定版本的 Input/Select/Card/Alert 类型声明，公开扩展点缺失、私有入口、重复内容通道或绕过公共桥均 fail-closed。
+- 视觉尺寸全部进入既有或新增 component token 单一事实源，生成的 web light/dark/default 与 shared TS 产物同步。
+
+### 验证结果
+
+- `verify.frontend.rendering_detail_state.unit`：53 tests OK；165 surfaces、0 gaps；official alignment 四项缺口为 0。
+- `verify.frontend.primitive_adapter.unit`：46 component contract PASS；27 guard tests OK。
+- `verify.frontend.typecheck.strict`、design-token verify、`git diff --check`：PASS。
+- 最终 `verify.frontend.quick.gate`：PASS，包括 strict typecheck、development build、组件驱动、专业字段、集合、工作流、导航、主题与创建旅程检查。
+- 冻结候选只读浏览器：`/`、`/my-work`、`/f/sc.material.inbound/new?menu_id=494&action_id=546` 在 1440×960 与 390×844 均 PASS；`mutationCount=0`、`errors=[]`、`failures=[]`。证据：`artifacts/playwright/frontend-official-component-usage-f9797273/summary.json`。
+
+### 失败闭环记录
+
+- 第一版移除 `.t-button__text` 后，浏览器准确暴露首页 quick-link 文案列宽为 0；未恢复 vendor selector。
+- 容器查询尝试仍受官方文本 wrapper 的 shrink-to-fit 行为影响，同门禁再次失败。
+- 最终按组件适用边界将复杂结构切换到适配层专用 browser-structured button，第三次冻结候选通过；两次失败运行均为 `mutationCount=0` 且浏览器 errors 为空。
+
+### 发布状态
+
+- 本地产品候选与文档收口完成；未执行数据库写入、fixture reset、release gate、push、PR 或 merge。
+- 正式发布资格仍需独立审查与显式开启 release/push 流程，当前不作发布就绪声明。

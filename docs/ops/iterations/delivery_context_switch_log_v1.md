@@ -9078,3 +9078,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 恢复包覆盖完整 PostgreSQL/Odoo/Redis 三卷，并保留主库逻辑 dump 校验。writer 停止、archive、checksum、dump 可读性全部通过后 manifest 才从 staging 进入 complete。
 - 恢复路径逐步检查删除、解包、启动和恢复后数据库/附件/filestore/session；失败注入禁止任何失败分支输出 `RECOVERED`。自动恢复只覆盖卷删除至空基础设施重建，后续安装、fixture、snapshot 和 release gate 失败仅保留恢复包与诊断。
 - 实现候选 `c6f5658ecd967e57a98fb6327112a680a7177455` 的 44 项重建/身份测试、Frontend Quick、受管 audit 与完整 dry-run PASS；错误 HEAD 和遗漏 `sc_odoo` 均按预期 DENY。没有停止服务、创建恢复包、删除卷、写数据库或运行 release gate。
+
+## 2026-09-09 — 官方组件用法全量收口
+
+- P0 通用组件适配与主题桥，P4 仅承载清单、守卫和证据；锁定 `tdesign-vue-next@1.20.5`，未改变后端、契约、路由、权限、业务语义、数据库或 fixture。
+- 产品候选 `f9797273e0e6bd210f9c0b8ed726ff1d500a7fbd`；完整 fingerprint `9d22470f4384717fff5d122cbc7dca55ead3c24b426cfdd0150597605f0918cf`（7347 paths），baseline `f8f5088e54479a60cd9991bf186348d571580a17`。
+- 209 个正式样式源中的 14 个 TDesign 内部 selector gap 和 16 个视觉字面量 gap 已清零；inventory `--check` 现在对四项完成条件 fail-closed。Input/Select/Card/Alert 迁到公开扩展点，结构化按钮不再误用官方文本插槽承载多列布局。
+- 全系统 TDesign 入口守卫限制为公共 primitive authority，并绑定已安装版本的公开类型声明。最终 Frontend Quick PASS；冻结候选在首页、我的工作和材料入库新建关系表单的 1440/390 只读旅程 PASS，mutation 0、errors/failures empty。
+- 完整记录：`frontend_official_component_usage_cleanup_20260909.md`。未执行 release gate、push、PR 或 merge；正式发布资格仍待独立审查和显式开启发布流程。
