@@ -4,6 +4,7 @@ import {
   isProfessionalDetailCollectionField,
 } from '../src/components/professional-fields/professionalDetailCollectionModel';
 import {
+  createOne2manyRelationPopupAuthority,
   createOne2manyRelationRequestAuthority,
   one2manyRelationDependencyKey,
   preserveSelectedOne2manyRelationOption,
@@ -52,6 +53,16 @@ assert.equal(requestAuthority.isCurrent('line:1:partner_id', firstRequest), fals
 assert.equal(requestAuthority.isCurrent('line:1:partner_id', secondRequest), true);
 requestAuthority.invalidate('line:1:partner_id');
 assert.equal(requestAuthority.isCurrent('line:1:partner_id', secondRequest), false);
+
+const popupAuthority = createOne2manyRelationPopupAuthority();
+assert.equal(popupAuthority.update('line:1:partner_id', 'desktop-primary', true), 'opened');
+assert.equal(popupAuthority.update('line:1:partner_id', 'desktop-primary', true), 'unchanged');
+assert.equal(popupAuthority.update('line:1:partner_id', 'desktop-clone', false), 'unchanged');
+assert.equal(popupAuthority.update('line:1:partner_id', 'desktop-clone', true), 'unchanged');
+assert.equal(popupAuthority.update('line:1:partner_id', 'desktop-primary', false), 'unchanged');
+assert.equal(popupAuthority.update('line:1:partner_id', 'desktop-clone', false), 'closed');
+popupAuthority.clear();
+assert.equal(popupAuthority.update('line:1:partner_id', 'mobile', true), 'opened');
 
 assert.deepEqual(preserveSelectedOne2manyRelationOption({
   incoming: [],

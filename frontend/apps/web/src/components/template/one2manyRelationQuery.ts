@@ -25,6 +25,29 @@ export function createOne2manyRelationRequestAuthority() {
   };
 }
 
+export function createOne2manyRelationPopupAuthority() {
+  const owners = new Map<string, Set<string>>();
+  return {
+    update(key: string, ownerId: string, visible: boolean): 'opened' | 'closed' | 'unchanged' {
+      const current = owners.get(key) || new Set<string>();
+      if (visible) {
+        if (current.has(ownerId)) return 'unchanged';
+        const wasClosed = current.size === 0;
+        current.add(ownerId);
+        owners.set(key, current);
+        return wasClosed ? 'opened' : 'unchanged';
+      }
+      if (!current.delete(ownerId)) return 'unchanged';
+      if (current.size) return 'unchanged';
+      owners.delete(key);
+      return 'closed';
+    },
+    clear() {
+      owners.clear();
+    },
+  };
+}
+
 export function preserveSelectedOne2manyRelationOption(params: {
   incoming: One2manyRelationOption[];
   previous: One2manyRelationOption[];

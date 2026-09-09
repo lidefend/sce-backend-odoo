@@ -311,6 +311,7 @@ import ScTable from '../design-system/ScTable.vue';
 import ProfessionalManyToManySelect from '../professional-fields/ProfessionalManyToManySelect.vue';
 import One2ManyCellEditor from './One2ManyCellEditor.vue';
 import {
+  createOne2manyRelationPopupAuthority,
   createOne2manyRelationRequestAuthority,
   preserveSelectedOne2manyRelationOption,
 } from './one2manyRelationQuery';
@@ -381,7 +382,7 @@ const o2mRelationOptionMap = ref<Record<string, Array<{ value: number; label: st
 const o2mRelationLoading = ref<Record<string, boolean>>({});
 const o2mRelationErrors = ref<Record<string, string>>({});
 const o2mRelationSearchMap = ref<Record<string, string>>({});
-const o2mRelationPopupOpenMap = ref<Record<string, boolean>>({});
+const relationPopupAuthority = createOne2manyRelationPopupAuthority();
 const relationQueryAuthority = createOne2manyRelationRequestAuthority();
 const relationQueryTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 const relationActiveRequestRevisions: Record<string, number> = {};
@@ -389,6 +390,7 @@ const relationActiveRequestRevisions: Record<string, number> = {};
 onBeforeUnmount(() => {
   Object.keys(relationQueryTimers).forEach(clearRelationQueryTimer);
   Object.keys(relationActiveRequestRevisions).forEach((key) => delete relationActiveRequestRevisions[key]);
+  relationPopupAuthority.clear();
   relationQueryAuthority.clear();
 });
 
@@ -533,13 +535,18 @@ function scheduleOne2manyRelationSearch(fieldName: string, rowKey: string, colum
   }, 180);
 }
 
-function handleOne2manyRelationPopup(fieldName: string, rowKey: string, column: RelationFieldColumn, visible: boolean) {
+function handleOne2manyRelationPopup(
+  fieldName: string,
+  rowKey: string,
+  column: RelationFieldColumn,
+  event: { visible: boolean; ownerId: string },
+) {
   const key = relationCellKey(fieldName, rowKey, column.name);
-  if (o2mRelationPopupOpenMap.value[key] === visible) return;
-  o2mRelationPopupOpenMap.value = { ...o2mRelationPopupOpenMap.value, [key]: visible };
+  const transition = relationPopupAuthority.update(key, event.ownerId, event.visible);
+  if (transition === 'unchanged') return;
   clearRelationQueryTimer(key);
   o2mRelationSearchMap.value = { ...o2mRelationSearchMap.value, [key]: '' };
-  if (visible) {
+  if (transition === 'opened') {
     void loadOne2manyRelationOptions(fieldName, rowKey, column, '');
     return;
   }

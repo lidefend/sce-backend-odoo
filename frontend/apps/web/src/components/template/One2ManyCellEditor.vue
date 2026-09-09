@@ -27,7 +27,7 @@
       :title="column.disabledReason"
       @update:model-value="$emit('update', $event)"
       @search="$emit('search', $event)"
-      @popup-visible-change="$emit('popup-change', $event)"
+      @popup-visible-change="$emit('popup-change', { visible: $event, ownerId: popupOwnerId })"
     />
     <ScSelect
       v-else-if="column.ttype === 'selection'"
@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, getCurrentInstance } from 'vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScCheckbox from '../design-system/ScCheckbox.vue';
 import ScInput from '../design-system/ScInput.vue';
@@ -103,9 +103,11 @@ const props = withDefaults(defineProps<{
 defineEmits<{
   update: [value: unknown];
   search: [keyword: string];
-  'popup-change': [visible: boolean];
+  'popup-change': [event: { visible: boolean; ownerId: string }];
   retry: [];
 }>();
+
+const popupOwnerId = `o2m-editor-${getCurrentInstance()?.uid ?? 'unknown'}`;
 
 const errorText = computed(() => props.error);
 const relationValue = computed(() => {
