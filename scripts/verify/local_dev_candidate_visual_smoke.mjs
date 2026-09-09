@@ -437,6 +437,7 @@ try {
       let businessConfigExperienceEvidence = null;
       let businessConfigReadFailureEvidence = null;
       let safeReturnEvidence = null;
+      let formStructureEvidence = null;
       let officialComponentBehaviorEvidence = null;
       let officialAlertOperationEvidence = null;
       let expectedLoadedSelectorEvidence = null;
@@ -1408,6 +1409,56 @@ try {
         if (!hierarchicalWorkspaceEvidence.pass) throw new Error(`${target.name}: hierarchical workspace journey failed ${JSON.stringify(hierarchicalWorkspaceEvidence)}`);
       }
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
+      if (target.captureFormStructure === true) {
+        const screenshotStem = `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+        const top = await page.evaluate(() => {
+          const visible = (node) => node instanceof HTMLElement && node.offsetParent !== null;
+          const header = [...document.querySelectorAll('.template-page-header')].find(visible);
+          const relation = [...document.querySelectorAll('[data-floorplan-region="relation"]')].find(visible);
+          const addAction = [...document.querySelectorAll('button')].find((node) => visible(node) && /添加.*明细/.test(String(node.textContent || '')));
+          const background = header instanceof HTMLElement ? getComputedStyle(header).backgroundColor : '';
+          const alpha = background.match(/rgba?\([^)]*(?:,|\/)\s*([\d.]+)\s*\)$/)?.[1];
+          return {
+            sectionLinks: [...document.querySelectorAll('[data-form-section-navigation] [data-section-link]')]
+              .filter(visible).map((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim()),
+            sectionTitles: [...document.querySelectorAll('[data-section-title], [data-form-semantic-role] .native-container-head h3')]
+              .filter(visible).map((node) => String(node instanceof HTMLElement ? node.dataset.sectionTitle || node.textContent || '' : '').replace(/\s+/g, ' ').trim()).filter(Boolean),
+            relationInFirstViewport: relation instanceof HTMLElement && relation.getBoundingClientRect().top < window.innerHeight,
+            addActionInFirstViewport: addAction instanceof HTMLElement && addAction.getBoundingClientRect().bottom <= window.innerHeight,
+            stickyHeaderBackground: background,
+            stickyHeaderOpaque: Boolean(background) && background !== 'transparent' && background !== 'rgba(0, 0, 0, 0)' && alpha !== '0',
+            readonlyTableVisible: [...document.querySelectorAll('.o2m-readonly-table')].some(visible),
+            readonlyCardsVisible: [...document.querySelectorAll('.o2m-readonly-list')].some(visible),
+            attachmentHeadings: [...document.querySelectorAll('.relation-attachment-heading, .professional-attachment-heading')]
+              .filter(visible).map((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim()),
+          };
+        });
+        const scrollHeight = await page.evaluate(() => document.scrollingElement?.scrollHeight || document.documentElement.scrollHeight);
+        const viewportHeight = page.viewportSize()?.height || 960;
+        const captures = [];
+        for (const [position, topOffset] of [['middle', Math.max(0, Math.floor((scrollHeight - viewportHeight) / 2))], ['bottom', Math.max(0, scrollHeight - viewportHeight)]]) {
+          await page.evaluate((top) => window.scrollTo({ top, behavior: 'auto' }), topOffset);
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          const sticky = await page.evaluate(() => {
+            const header = [...document.querySelectorAll('.template-page-header')]
+              .find((node) => node instanceof HTMLElement && node.offsetParent !== null);
+            const rect = header instanceof HTMLElement ? header.getBoundingClientRect() : null;
+            const background = header instanceof HTMLElement ? getComputedStyle(header).backgroundColor : '';
+            return { scrollY: Math.round(window.scrollY), headerRect: rect ? [Math.round(rect.top), Math.round(rect.bottom)] : null, background };
+          });
+          await page.screenshot({ path: path.join(outputDir, `${screenshotStem}-${position}.png`), fullPage: false });
+          captures.push({ position, ...sticky });
+        }
+        await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'auto' }));
+        formStructureEvidence = {
+          ...top,
+          captures,
+          pass: top.sectionLinks.length > 1
+            && top.stickyHeaderOpaque
+            && (target.expectRelationFirstViewport !== true || (top.relationInFirstViewport && top.addActionInFirstViewport))
+            && (target.expectReadonlyDetailComparison !== true || (viewport.name === 'desktop' ? top.readonlyTableVisible : top.readonlyCardsVisible)),
+        };
+      }
       if (target.exerciseBusinessConfigExperience === true) {
         const changeSetPanel = page.locator('[data-business-config-change-set="v1"]:visible');
         const initialChangeSetState = String(await changeSetPanel.getAttribute('data-change-set-state') || '');
@@ -2802,7 +2853,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, safeReturnEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, safeReturnEvidence, formStructureEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -2824,6 +2875,9 @@ for (const item of report.routes) {
   }
   if (item.path && item.overlayResidueEvidence && !item.overlayResidueEvidence.pass) {
     failures.push({ name: item.name, overlayResidueEvidence: item.overlayResidueEvidence });
+  }
+  if (item.path && configuredTarget?.captureFormStructure === true && !item.formStructureEvidence?.pass) {
+    failures.push({ name: item.name, formStructureEvidence: item.formStructureEvidence || null });
   }
   if (item.path && item.homePresentationEvidence && !item.homePresentationEvidence.pass) {
     failures.push({ name: item.name, homePresentationEvidence: item.homePresentationEvidence });
