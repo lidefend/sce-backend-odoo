@@ -664,9 +664,10 @@ const activeLayout = computed(() => {
 // surface. Keep their shell density identical so moving navigation authority
 // from `/a/:id` to `/s/:sceneKey` cannot re-expand company, role and tool text.
 const businessRouteUsesCompactTopbar = computed(() => ['scene', 'action', 'record', 'model-form'].includes(String(route.name || '')));
+const routeUsesMinimalTopbar = computed(() => route.meta?.shellDensity === 'minimal');
 const useMinimalTopbar = computed(() =>
   route.name === 'workbench'
-  || route.name === 'home'
+  || routeUsesMinimalTopbar.value
   || isConfigurationRoute.value
   || businessRouteUsesCompactTopbar.value,
 );

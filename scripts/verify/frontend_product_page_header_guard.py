@@ -99,13 +99,18 @@ def validate() -> list[str]:
             failures.append(f"native record title responsive treatment is missing {marker}")
     app_shell = source("frontend/apps/web/src/layouts/AppShell.vue")
     router = source("frontend/apps/web/src/router/index.ts")
-    for page_route in ("api-key-management", "action", "record", "model-form", "not-found"):
+    for page_route in ("home", "scene-home", "my-work", "scene-my-work", "api-key-management", "action", "record", "model-form", "not-found"):
         route_declaration = next(
             (line for line in router.splitlines() if f"name: '{page_route}'" in line),
             "",
         )
         if "pageHeadingOwner: 'content'" not in route_declaration:
             failures.append(f"page-header route does not declare content heading authority: {page_route}")
+    for view in ("frontend/apps/web/src/views/HomeView.vue", "frontend/apps/web/src/views/MyWorkView.vue"):
+        view_source = source(view)
+        for marker in ("<ProductPageHeader", "usePageIdentityRuntime"):
+            if marker not in view_source:
+                failures.append(f"workspace page does not consume content heading authority: {view}: {marker}")
     for marker in ("contentOwnsPageHeading", "route.meta?.pageHeadingOwner === 'content'", "!contentOwnsPageHeading.value"):
         if marker not in app_shell:
             failures.append(f"AppShell does not consume route heading authority: {marker}")

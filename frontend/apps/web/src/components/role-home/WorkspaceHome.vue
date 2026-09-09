@@ -169,6 +169,17 @@ const {
 
 .role-home-surface__access { grid-column: 1 / -1; }
 
+@media (min-width: 961px) {
+  .role-home-surface__tasks { grid-row: 1 / span 2; }
+  .role-home-surface__overview,
+  .role-home-surface__access { grid-column: 2; }
+  .role-home-surface__access-grid { grid-template-columns: 1fr; }
+  .role-home-surface__access-grid > div + div {
+    padding-top: var(--sc-space-3, 12px);
+    border-top: 1px solid var(--sc-app-border);
+  }
+}
+
 .role-home-surface__section-heading {
   display: flex;
   align-items: center;
@@ -200,10 +211,12 @@ const {
   align-items: center;
   justify-content: space-between;
   gap: var(--sc-space-3, 12px);
-  padding: var(--sc-space-3, 12px);
-  border: 1px solid var(--sc-app-border);
-  border-radius: 4px;
+  padding: var(--sc-space-3, 12px) 0;
+  border-bottom: 1px solid var(--sc-app-border);
 }
+
+.role-home-surface__task-list article:first-child { padding-top: 0; }
+.role-home-surface__task-list article:last-child { padding-bottom: 0; border-bottom: 0; }
 
 .role-home-surface__task-list :deep(.sc-btn),
 .role-home-surface__section-heading :deep(.sc-btn) {
@@ -234,11 +247,8 @@ const {
   gap: var(--sc-space-2, 8px);
   min-height: 54px;
   padding: 10px 12px;
-  border: 1px solid var(--sc-app-border);
   border-radius: var(--sc-product-radius-control);
-  border-color: var(--sc-app-border);
-  border-left: 3px solid var(--sc-app-border);
-  background: var(--sc-app-panel);
+  background: var(--sc-app-subtle-bg);
   box-shadow: none;
 }
 

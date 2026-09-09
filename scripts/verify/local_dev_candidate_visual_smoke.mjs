@@ -556,6 +556,10 @@ try {
           : [];
         const navigationTree = document.querySelector('#primary-sidebar .product-side-navigation__tree');
         const navigationMenu = navigationTree?.querySelector('.sc-navigation-menu');
+        const topbar = document.querySelector('.topbar');
+        const pageFrame = document.querySelector('.router-host > [data-product-page-mode]');
+        const topbarRect = topbar?.getBoundingClientRect();
+        const pageFrameRect = pageFrame?.getBoundingClientRect();
         return {
           h1: document.querySelectorAll('h1').length,
           pageHeaders: document.querySelectorAll('.template-page-header, [data-product-page-header]').length,
@@ -565,6 +569,11 @@ try {
           nativeStructureCount: document.querySelectorAll('[data-native-contract-structure]').length,
           nativeNotebookPageCount: document.querySelectorAll('[data-native-contract-structure] .t-tabs__nav-item').length,
           overflow: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - window.innerWidth,
+          shellGeometry: {
+            topbarHeight: Math.round(topbarRect?.height || 0),
+            contentStart: Math.round(pageFrameRect?.top || 0),
+            minimal: Boolean(topbar?.classList.contains('topbar--minimal')),
+          },
           homePresentationEvidence: homeRoot ? {
             quickEntryCount: homeQuickEntries.length,
             quickEntries: homeQuickEntries,
@@ -1419,6 +1428,19 @@ for (const item of report.routes) {
   if (item.dialogLifecycleEvidence && !item.dialogLifecycleEvidence.pass) failures.push({ name: item.name, dialogLifecycleEvidence: item.dialogLifecycleEvidence });
   if (item.collectionToolbarEvidence && !item.collectionToolbarEvidence.pass) failures.push({ name: item.name, collectionToolbarEvidence: item.collectionToolbarEvidence });
   if (item.collectionNavigationEvidence && !item.collectionNavigationEvidence.pass) failures.push({ name: item.name, collectionNavigationEvidence: item.collectionNavigationEvidence });
+}
+for (const viewport of ['desktop', 'mobile']) {
+  const groups = [...new Set(routes.map((target) => String(target.equivalentGroup || '')).filter(Boolean))];
+  for (const group of groups) {
+    const names = routes.filter((target) => target.equivalentGroup === group).map((target) => target.name);
+    const rows = report.routes.filter((item) => item.viewport === viewport && names.includes(item.name));
+    const geometry = rows.map((item) => item.shellGeometry);
+    const equivalent = rows.length === names.length
+      && geometry.every((item) => item?.minimal === true)
+      && new Set(geometry.map((item) => item?.topbarHeight)).size === 1
+      && new Set(geometry.map((item) => item?.contentStart)).size === 1;
+    if (!equivalent) failures.push({ equivalentGroup: group, viewport, names, geometry });
+  }
 }
 const primitiveInput = report.routes.find((item) => item.primitiveInputContract)?.primitiveInputContract;
 if (!primitiveInput || primitiveInput.rootCount !== 1 || primitiveInput.inputCount !== 1 || primitiveInput.value !== '__primitive_adapter_probe__') {

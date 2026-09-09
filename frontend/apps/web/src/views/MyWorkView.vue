@@ -1,6 +1,7 @@
 <template>
   <ScPage
-    class="my-work-page"
+    class="my-work-page sc-product-workspace-stack"
+    data-product-page-mode="dashboard"
     data-semantic-component="MyWorkView"
     data-state="ready"
     data-my-work-renderer="product-workspace"
@@ -9,35 +10,40 @@
     :content-layout="myWorkContentLayoutMode"
     :style="pageSectionStyle('hero')"
   >
-    <StatusPanel v-if="loading" title="正在加载工作事项" message="正在读取当前账号可处理的业务事项。" variant="info" busy />
-    <StatusPanel
-      v-else-if="errorMessage && pageSectionEnabled('retry_panel', true) && pageSectionTagIs('retry_panel', 'details')"
-      title="工作事项加载失败"
-      :message="errorMessage"
-      variant="error"
-      :on-retry="load"
-      :style="pageSectionStyle('retry_panel')"
-    />
-    <MyWorkApprovalWorkspace
-      v-else-if="workspace
-        && pageSectionEnabled('hero', true)
-        && pageSectionTagIs('hero', 'header')
-        && (
-          (pageSectionEnabled('todo_focus', true) && pageSectionTagIs('todo_focus', 'section'))
-          || (pageSectionEnabled('list_main', true) && pageSectionTagIs('list_main', 'section'))
-        )"
-      :workspace="workspace"
-      :style="[pageSectionStyle('todo_focus'), pageSectionStyle('list_main')]"
-      @refresh="load"
-    />
-    <StatusPanel
-      v-else
-      title="当前没有工作事项"
-      message="当前账号与业务范围内没有需要处理的事项。"
-      variant="info"
-      :on-retry="load"
-      retry-label="刷新"
-    />
+    <ProductPageHeader :title="pageTitle" :subtitle="workspace?.presentation.description || pageSubtitle" presentation-mode="dashboard" render-profile="readonly">
+      <template #actions><ScButton variant="secondary" size="small" :disabled="loading" @click="load">刷新</ScButton></template>
+    </ProductPageHeader>
+    <DashboardPattern>
+      <StatusPanel v-if="loading" title="正在加载工作事项" message="正在读取当前账号可处理的业务事项。" variant="info" busy />
+      <StatusPanel
+        v-else-if="errorMessage && pageSectionEnabled('retry_panel', true) && pageSectionTagIs('retry_panel', 'details')"
+        title="工作事项加载失败"
+        :message="errorMessage"
+        variant="error"
+        :on-retry="load"
+        :style="pageSectionStyle('retry_panel')"
+      />
+      <MyWorkApprovalWorkspace
+        v-else-if="workspace
+          && pageSectionEnabled('hero', true)
+          && pageSectionTagIs('hero', 'header')
+          && (
+            (pageSectionEnabled('todo_focus', true) && pageSectionTagIs('todo_focus', 'section'))
+            || (pageSectionEnabled('list_main', true) && pageSectionTagIs('list_main', 'section'))
+          )"
+        :workspace="workspace"
+        :style="[pageSectionStyle('todo_focus'), pageSectionStyle('list_main')]"
+        @refresh="load"
+      />
+      <StatusPanel
+        v-else
+        title="当前没有工作事项"
+        message="当前账号与业务范围内没有需要处理的事项。"
+        variant="info"
+        :on-retry="load"
+        retry-label="刷新"
+      />
+    </DashboardPattern>
   </ScPage>
 </template>
 
@@ -46,13 +52,18 @@ import { computed, ref, watch } from 'vue';
 import { fetchMyWorkSummary, type ProductMyWorkWorkspace } from '../api/myWork';
 import { currentContextEpoch, isCurrentContextEpoch } from '../app/contextEpoch';
 import { usePageContract } from '../app/pageContract';
+import { usePageIdentityRuntime } from '../app/pageIdentityRuntime';
 import MyWorkApprovalWorkspace from '../components/business/MyWorkApprovalWorkspace.vue';
 import StatusPanel from '../components/StatusPanel.vue';
+import ScButton from '../components/design-system/ScButton.vue';
 import ScPage from '../components/design-system/ScPage.vue';
+import DashboardPattern from '../components/product-page-patterns/DashboardPattern.vue';
+import ProductPageHeader from '../components/product-page-header/ProductPageHeader.vue';
 import { contractContentLayoutMode, resolveContentLayoutMode } from '../components/design-system/pageWidth';
 import { useSessionStore } from '../stores/session';
 
 const session = useSessionStore();
+const { title: pageTitle, subtitle: pageSubtitle } = usePageIdentityRuntime();
 const pageContract = usePageContract('my_work');
 const pageSectionEnabled = pageContract.sectionEnabled;
 const pageSectionOpenDefault = pageContract.sectionOpenDefault;
