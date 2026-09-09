@@ -545,11 +545,11 @@
   align-items: center;
   gap: var(--sc-toolbar-group-gap);
   margin-bottom: var(--sc-field-row-gap);
-  padding: var(--sc-space-sm) var(--sc-surface-padding);
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-product-panel-radius);
-  background: var(--sc-app-panel);
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 36%, transparent);
+  padding: var(--sc-space-xs) 0 var(--sc-space-sm);
+  border-width: 0 0 1px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .contract-form-native-shell :deep(.template-page-header--title-hidden:not(:has(.template-page-header-status > *))) {
@@ -629,7 +629,7 @@
     flex-wrap: nowrap;
     gap: var(--sc-toolbar-gap);
     margin-bottom: var(--sc-toolbar-gap);
-    padding: var(--sc-space-xs) var(--sc-space-sm);
+    padding: var(--sc-space-xs) 0 var(--sc-space-sm);
   }
 
   .contract-form-native-shell :deep(.template-page-header--title-hidden:not(:has(.template-page-header-status > *))) {
@@ -664,7 +664,7 @@
   .contract-form-native-shell :deep(.template-page-header) {
     position: sticky;
     top: 0;
-    border-radius: 8px;
+    border-radius: 0;
   }
 
   .contract-form-native-shell :deep(.template-page-header-actions) {
