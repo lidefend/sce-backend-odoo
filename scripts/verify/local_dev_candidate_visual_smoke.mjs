@@ -1433,23 +1433,37 @@ try {
               .filter(visible).map((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim()),
           };
         });
-        const scrollHeight = await page.evaluate(() => document.scrollingElement?.scrollHeight || document.documentElement.scrollHeight);
-        const viewportHeight = page.viewportSize()?.height || 960;
+        const scrollMetrics = await page.evaluate(() => {
+          const owner = document.querySelector('.router-host');
+          if (owner instanceof HTMLElement) return { scrollHeight: owner.scrollHeight, viewportHeight: owner.clientHeight };
+          const fallback = document.scrollingElement || document.documentElement;
+          return { scrollHeight: fallback.scrollHeight, viewportHeight: fallback.clientHeight };
+        });
         const captures = [];
-        for (const [position, topOffset] of [['middle', Math.max(0, Math.floor((scrollHeight - viewportHeight) / 2))], ['bottom', Math.max(0, scrollHeight - viewportHeight)]]) {
-          await page.evaluate((top) => window.scrollTo({ top, behavior: 'auto' }), topOffset);
+        for (const [position, topOffset] of [['middle', Math.max(0, Math.floor((scrollMetrics.scrollHeight - scrollMetrics.viewportHeight) / 2))], ['bottom', Math.max(0, scrollMetrics.scrollHeight - scrollMetrics.viewportHeight)]]) {
+          await page.evaluate((top) => {
+            const owner = document.querySelector('.router-host');
+            if (owner instanceof HTMLElement) owner.scrollTo({ top, behavior: 'auto' });
+            else window.scrollTo({ top, behavior: 'auto' });
+          }, topOffset);
           await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
           const sticky = await page.evaluate(() => {
             const header = [...document.querySelectorAll('.template-page-header')]
               .find((node) => node instanceof HTMLElement && node.offsetParent !== null);
             const rect = header instanceof HTMLElement ? header.getBoundingClientRect() : null;
             const background = header instanceof HTMLElement ? getComputedStyle(header).backgroundColor : '';
-            return { scrollY: Math.round(window.scrollY), headerRect: rect ? [Math.round(rect.top), Math.round(rect.bottom)] : null, background };
+            const owner = document.querySelector('.router-host');
+            const scrollTop = owner instanceof HTMLElement ? owner.scrollTop : window.scrollY;
+            return { scrollY: Math.round(scrollTop), headerRect: rect ? [Math.round(rect.top), Math.round(rect.bottom)] : null, background };
           });
           await page.screenshot({ path: path.join(outputDir, `${screenshotStem}-${position}.png`), fullPage: false });
           captures.push({ position, ...sticky });
         }
-        await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'auto' }));
+        await page.evaluate(() => {
+          const owner = document.querySelector('.router-host');
+          if (owner instanceof HTMLElement) owner.scrollTo({ top: 0, behavior: 'auto' });
+          else window.scrollTo({ top: 0, behavior: 'auto' });
+        });
         formStructureEvidence = {
           ...top,
           captures,
