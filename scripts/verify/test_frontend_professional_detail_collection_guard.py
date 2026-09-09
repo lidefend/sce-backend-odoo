@@ -204,7 +204,7 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("X2ManyRelationRenderer.vue"):
-                return value.replace("if (!relationQueryAuthority.isCurrent(key, revision)) return;", "", 1)
+                return value.replace("return relationQueryAuthority.isCurrent(key, revision)", "return true", 1)
             return value
 
         self.assertTrue(any("latest-condition" in item for item in validate(read_text)))
