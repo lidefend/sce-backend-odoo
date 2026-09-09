@@ -31,7 +31,7 @@ function taskLink(item: ProductMyWorkItem): SurfaceTask | null {
     kind: text(item.business_type),
     recordId: Number(item.target?.record_id || 0),
     state: item.state,
-    facts: (item.facts || []).filter((fact) => fact.field_group !== 'audit' && fact.display_role !== 'money').slice(0, 2),
+    facts: [],
     amount: (item.facts || []).find((fact) => fact.field_group !== 'audit' && fact.display_role === 'money'),
   };
 }

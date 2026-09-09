@@ -7,6 +7,7 @@ import type {
 
 export type CanonicalFormFloorplan = {
   summaryNodes: CanonicalFormNode[];
+  decisionInputNodes: CanonicalFormNode[];
   taskNodes: CanonicalFormNode[];
   coreInputNodes: CanonicalFormNode[];
   conditionInputNodes: CanonicalFormNode[];
@@ -285,6 +286,13 @@ function fieldHasBusinessRelationCapability(field: CanonicalFormNode['fields'][n
   return fieldHasRelationCapability(field) && !fieldHasAttachmentCapability(field);
 }
 
+function fieldIsDecisionMoney(field: CanonicalFormNode['fields'][number]): boolean {
+  return field.semanticRole === 'summary'
+    && field.fieldType.trim().toLowerCase() === 'monetary'
+    && !field.readonly
+    && !field.disabled;
+}
+
 function projectRelationNode(node: CanonicalFormNode): CanonicalFormNode {
   const directRelation = node.semanticRole === 'relation' || node.kind.trim().toLowerCase() === 'relation';
   const revealRelationIdentity = (field: CanonicalFormNode['fields'][number]) => (
@@ -426,6 +434,10 @@ export function composeCanonicalFormFloorplan(
       field.semanticRole === 'summary' && field.readonly && hasPresentableValue(field)
     ), true), 'summary')
     : [];
+  const decisionInputNodes = semanticProductMode && writeMode
+    ? fieldNodes(primaryNodes, fieldIsDecisionMoney, true)
+    : [];
+  const decisionInputFields = new Set(decisionInputNodes.flatMap((node) => collectVisibleFields(node)));
   const riskNodes = semanticProductMode
     ? fieldNodes(primaryNodes, (field) => field.semanticRole === 'risk' && field.readonly && hasPresentableValue(field), true)
     : [];
@@ -444,7 +456,7 @@ export function composeCanonicalFormFloorplan(
   const coreInputNodes = semanticProductMode && writeMode
     ? fieldNodes(primaryNodes, (field) => (
       !field.readonly && !field.disabled && !fieldHasBusinessRelationCapability(field)
-      && field.required && !conditionFields.has(field)
+      && field.required && !conditionFields.has(field) && !decisionInputFields.has(field)
     ))
     : [];
   const coreFields = new Set(coreInputNodes.flatMap((node) => collectVisibleFields(node)));
@@ -455,7 +467,7 @@ export function composeCanonicalFormFloorplan(
   const supplementaryInputNodes = semanticProductMode && writeMode
     ? fieldNodes(primaryNodes, (field) => (
       !field.readonly && !field.disabled && !fieldHasBusinessRelationCapability(field)
-      && !conditionFields.has(field) && !coreFields.has(field)
+      && !conditionFields.has(field) && !coreFields.has(field) && !decisionInputFields.has(field)
     ))
     : [];
   const subordinateNodes = visibleNodes(renderModel.zones.subordinate, renderModel.identity.mode);
@@ -505,6 +517,7 @@ export function composeCanonicalFormFloorplan(
 
   const titleRegistry = new Set<string>();
   const titledSummaryNodes = suppressRepeatedTitles(summaryNodes, titleRegistry);
+  const titledDecisionInputNodes = suppressRepeatedTitles(decisionInputNodes, titleRegistry);
   const titledTaskNodes = suppressRepeatedTitles(taskNodes, titleRegistry);
   const titledRiskNodes = suppressRepeatedTitles(riskNodes, titleRegistry);
   const titledCoreNodes = suppressRepeatedTitles(coreInputNodes, titleRegistry);
@@ -528,6 +541,7 @@ export function composeCanonicalFormFloorplan(
 
   return {
     summaryNodes: titledSummaryNodes,
+    decisionInputNodes: titledDecisionInputNodes,
     taskNodes: titledTaskNodes,
     coreInputNodes: titledCoreNodes,
     conditionInputNodes: titledConditionNodes,

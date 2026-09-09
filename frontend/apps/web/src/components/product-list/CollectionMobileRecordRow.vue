@@ -40,6 +40,8 @@
         :key="fact.key"
         class="collection-mobile-record-row__fact"
         :data-fact-key="fact.key"
+        :data-fact-role="fact.layoutRole || 'text'"
+        data-fact-visibility="primary"
       >
         <small>{{ fact.label }}</small>
         <span
@@ -53,7 +55,7 @@
       </span>
       <ScDisclosure v-if="additionalFacts.length" class="collection-mobile-record-row__disclosure" :title="`查看其余 ${additionalFacts.length} 项信息`">
         <span class="collection-mobile-record-row__additional-facts">
-          <span v-for="fact in additionalFacts" :key="fact.key" class="collection-mobile-record-row__fact" :data-fact-key="fact.key">
+          <span v-for="fact in additionalFacts" :key="fact.key" class="collection-mobile-record-row__fact" :data-fact-key="fact.key" :data-fact-role="fact.layoutRole || 'text'" data-fact-visibility="additional">
             <small>{{ fact.label }}</small>
             <span v-if="fact.relationItems?.length" class="collection-mobile-record-row__relation-tags" data-semantic-cell-kind="relation-tags">
               <b v-for="item in fact.relationItems" :key="item.id" class="collection-mobile-record-row__relation-tag" :title="item.label">{{ item.label }}</b>
@@ -63,7 +65,7 @@
         </span>
       </ScDisclosure>
       <template #actions>
-        <ScButton class="collection-mobile-record-row__open-action" appearance="auth-link" variant="ghost" size="small" :aria-label="openAriaLabel" @click="emit('open')"><span class="collection-mobile-record-row__open">
+        <ScButton data-semantic-action="open-record" appearance="auth-link" variant="ghost" :aria-label="openAriaLabel" @click="emit('open')"><span class="collection-mobile-record-row__open">
           {{ openLabel }}
           <ScIcon name="arrow-right" :size="16" aria-hidden="true" />
         </span></ScButton>
@@ -85,6 +87,7 @@ export type CollectionMobileRecordFact = {
   key: string;
   label: string;
   value: string;
+  layoutRole?: 'identity' | 'description' | 'relation' | 'text' | 'status' | 'money' | 'date' | 'actions';
   relationItems?: Array<{ id: number; label: string }>;
 };
 
@@ -121,8 +124,13 @@ const emit = defineEmits<{
 }>();
 
 const openAriaLabel = computed(() => `${props.openLabel}：${props.identity}`);
-const visibleFacts = computed(() => props.facts.slice(0, Math.max(1, props.visibleFactLimit)));
-const additionalFacts = computed(() => props.facts.slice(visibleFacts.value.length));
+const prioritizedFacts = computed(() => props.facts
+  .map((fact, index) => ({ fact, index }))
+  .sort((left, right) => Number(right.fact.layoutRole === 'money') - Number(left.fact.layoutRole === 'money')
+    || left.index - right.index)
+  .map((entry) => entry.fact));
+const visibleFacts = computed(() => prioritizedFacts.value.slice(0, Math.max(1, props.visibleFactLimit)));
+const additionalFacts = computed(() => prioritizedFacts.value.slice(visibleFacts.value.length));
 </script>
 
 <style scoped src="./CollectionMobileRecordRow.css"></style>

@@ -143,7 +143,7 @@ BATCH_BINDINGS = {
     "p0-shared-utility-scene-completion-v1": {
         "frontend/apps/web/src/components/DevContextPanel.vue": {"aside": {"attrs": {"data-semantic-component": "DevContextPanel"}}},
         "frontend/apps/web/src/components/business/IntentConfirmationDialog.vue": {"scdialog": {"attrs": {"data-dialog-purpose": "intent-confirmation"}}},
-        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue": {"scsection": {"attrs": {"data-semantic-component": "MyWorkApprovalWorkspace"}}},
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue": {"scpanel": {"attrs": {"data-semantic-component": "MyWorkApprovalWorkspace"}}},
         "frontend/apps/web/src/components/page/PageRenderer.vue": {"section": {"attrs": {"data-semantic-component": "PageRenderer"}}},
         "frontend/apps/web/src/components/page/ZoneRenderer.vue": {"section": {"attrs": {"data-semantic-component": "ZoneRenderer"}}},
         "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue": {"header": {"attrs": {"data-semantic-component": "ProductPageHeader"}}},

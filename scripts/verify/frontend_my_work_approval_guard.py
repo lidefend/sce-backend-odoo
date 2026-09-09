@@ -46,7 +46,7 @@ def main() -> int:
             "item.state.label",
             'data-primary-fact-key',
             'data-supplementary-fact-key',
-            "partitionProductMyWorkFacts(item.facts, 3)",
+            "partitionProductMyWorkFacts(item.facts, 1)",
             "formatProductMyWorkFact(fact)",
             "ScDisclosure",
             "workspace.presentation.search_placeholder",

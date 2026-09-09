@@ -9,7 +9,9 @@ const password = String(process.env.E2E_PASSWORD || '');
 const head = String(process.env.CANDIDATE_GIT_HEAD || '');
 const routes = JSON.parse(process.env.CANDIDATE_VISUAL_ROUTES_JSON || '[]');
 const desktopHeight = Math.max(720, Math.trunc(Number(process.env.CANDIDATE_VISUAL_DESKTOP_HEIGHT || 960)) || 960);
-const outputDir = path.resolve('artifacts/playwright/local-dev-candidate-visual-smoke');
+const mobileWidth = Math.max(320, Math.min(560, Math.trunc(Number(process.env.CANDIDATE_VISUAL_MOBILE_WIDTH || 390)) || 390));
+const theme = String(process.env.CANDIDATE_VISUAL_THEME || 'light') === 'dark' ? 'dark' : 'light';
+const outputDir = path.resolve(process.env.CANDIDATE_VISUAL_OUTPUT_DIR || 'artifacts/playwright/local-dev-candidate-visual-smoke');
 
 if (!baseUrl || !database || !login || !password || !/^[0-9a-f]{40}$/.test(head)) throw new Error('candidate visual identity is incomplete');
 if (!Array.isArray(routes) || routes.length === 0 || routes.some((item) => !item || typeof item.name !== 'string' || !String(item.path || '').startsWith('/'))) {
@@ -304,13 +306,30 @@ function isApiDataListResponse(response) {
 }
 
 try {
-  for (const viewport of [{ name: 'desktop', width: 1440, height: desktopHeight }, { name: 'mobile', width: 390, height: 844 }]) {
+  for (const viewport of [{ name: 'desktop', width: 1440, height: desktopHeight }, { name: 'mobile', width: mobileWidth, height: 844 }]) {
     const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, locale: 'zh-CN' });
+    await context.addInitScript((requestedTheme) => localStorage.setItem('sc_theme', requestedTheme), theme);
     const page = await context.newPage();
     const errors = [];
-    page.on('console', (message) => { if (message.type() === 'error' && !message.text().includes('favicon')) errors.push(`console:${message.text()}`); });
+    let expectedReadFailureResponses = 0;
+    let expectedReadFailureConsoleErrors = 0;
+    page.on('console', (message) => {
+      if (message.type() !== 'error' || message.text().includes('favicon')) return;
+      if (expectedReadFailureConsoleErrors > 0 && message.text().includes('503 (Service Unavailable)')) {
+        expectedReadFailureConsoleErrors -= 1;
+        return;
+      }
+      errors.push(`console:${message.text()}`);
+    });
     page.on('pageerror', (error) => errors.push(`page:${error.message}`));
-    page.on('response', (response) => { if (response.status() >= 400 && response.url().includes('/api/')) errors.push(`http:${response.status()}:${response.url()}`); });
+    page.on('response', (response) => {
+      if (response.status() < 400 || !response.url().includes('/api/')) return;
+      if (expectedReadFailureResponses > 0) {
+        expectedReadFailureResponses -= 1;
+        return;
+      }
+      errors.push(`http:${response.status()}:${response.url()}`);
+    });
     page.on('request', (request) => {
       if (request.method() !== 'POST') return;
       let body = {};
@@ -391,6 +410,38 @@ try {
       let contractAggregates = [];
       let contractSummaryItems = [];
       let listAggregates = [];
+      let readFailureEvidence = null;
+      const exerciseReadFailure = target.exerciseReadFailureRecovery === true
+        && (target.readFailureDesktopOnly !== true || viewport.name === 'desktop');
+      let readFailureInjected = false;
+      let readFailureOperation = '';
+      const readFailurePattern = '**/api/v1/**';
+      const readFailureHandler = async (route) => {
+        const request = route.request();
+        let body = {};
+        try { body = JSON.parse(request.postData() || '{}'); } catch {}
+        const operation = body.intent === 'ui.contract.v2' ? 'ui.contract.v2' : body?.params?.op;
+        const expectedRecordId = Number(target.recordId || 0);
+        const requestRecordIds = body.intent === 'ui.contract.v2'
+          ? [Number(body?.params?.record_id || 0)]
+          : (Array.isArray(body?.params?.ids) ? body.params.ids.map(Number) : []);
+        const matchesRecord = expectedRecordId <= 0 || requestRecordIds.includes(expectedRecordId);
+        if (request.method() === 'POST' && matchesRecord
+          && (operation === 'ui.contract.v2' || (body.intent === 'api.data' && operation === 'read'))) {
+          readFailureInjected = true;
+          readFailureOperation = operation;
+          expectedReadFailureResponses += 1;
+          expectedReadFailureConsoleErrors += 1;
+          await route.fulfill({
+            status: 503,
+            contentType: 'application/json',
+            body: JSON.stringify({ error: { message: '受控读取失败，请重试。', reason_code: 'CONTROLLED_READ_FAILURE', retryable: true } }),
+          });
+          return;
+        }
+        await route.continue();
+      };
+      if (exerciseReadFailure) await page.route(readFailurePattern, readFailureHandler);
       const contractResponse = target.expectContractResponse !== false && /^\/(?:a|r|f)\//.test(target.path)
         ? page.waitForResponse(isContractV2Response, { timeout: 45000 })
         : null;
@@ -416,6 +467,38 @@ try {
       await page.locator('.layout-shell').waitFor({ timeout: 45000 });
       await page.locator('[data-product-page-mode], main').filter({ visible: true }).first().waitFor({ timeout: 45000 });
       await waitForStableProductSurface(page);
+      if (exerciseReadFailure) {
+        const errorSurface = page.locator('[data-semantic-state-surface="page"][data-state="error"]:visible').first();
+        await errorSurface.waitFor({ state: 'visible', timeout: 15000 });
+        const errorText = String(await errorSurface.textContent() || '').replace(/\s+/g, ' ').trim();
+        const retry = errorSurface.getByRole('button').filter({ hasText: /重试|重新加载/ }).first();
+        const retryCount = await retry.count();
+        await page.unroute(readFailurePattern, readFailureHandler);
+        if (retryCount !== 1) throw new Error(`${target.name}: read failure did not expose one retry action`);
+        const retryContractResponse = page.waitForResponse(isContractV2Response, { timeout: 45000 });
+        await retry.click();
+        const recoveredResponse = await retryContractResponse;
+        if (!recoveredResponse.ok()) {
+          throw new Error(`${target.name}: retry contract request failed with ${recoveredResponse.status()}`);
+        }
+        try {
+          await page.locator('[data-semantic-component="ContractFormPage"][data-state="ok"]').waitFor({ state: 'visible', timeout: 45000 });
+        } catch (error) {
+          const retryState = await page.locator('[data-semantic-component="ContractFormPage"]').getAttribute('data-state');
+          const retrySurfaceText = String(await page.locator('[data-semantic-state-surface="page"]:visible').first().textContent().catch(() => '') || '').replace(/\s+/g, ' ').trim();
+          throw new Error(`${target.name}: retry did not restore ready state (state=${retryState || '-'}, surface=${retrySurfaceText || '-'})`, { cause: error });
+        }
+        await waitForStableProductSurface(page);
+        const restoredState = await page.locator('[data-semantic-component="ContractFormPage"]').getAttribute('data-state');
+        readFailureEvidence = {
+          injected: readFailureInjected,
+          operation: readFailureOperation,
+          errorText,
+          retryCount,
+          restoredState,
+          pass: readFailureInjected && errorText.length > 0 && restoredState === 'ok',
+        };
+      }
       if (target.expectedLoadedSelector) {
         await page.locator(String(target.expectedLoadedSelector)).filter({ visible: true }).first().waitFor({ timeout: 45000 });
       }
@@ -644,6 +727,10 @@ try {
               && navigationMenu.scrollWidth <= navigationMenu.clientWidth + 1,
           } : null,
           tokenLoaded: Boolean(style.getPropertyValue('--sc-semantic-surface-interactive').trim()),
+          themeEvidence: {
+            mode: root.getAttribute('data-sc-theme-mode') || '',
+            resolved: root.getAttribute('data-sc-theme-resolved') || '',
+          },
           nativeTitle: document.querySelector('.native-title-text')?.textContent?.trim() || '',
           primitiveDriverEvidence: {
             drivers: primitiveDrivers,
@@ -889,7 +976,7 @@ try {
       }
       if (target.captureCollectionMobileRecords === true && viewport.name === 'mobile') {
         const rows = await page.locator('[data-semantic-component="CollectionMobileRecordRow"]:visible').evaluateAll((nodes) => nodes.map((node) => {
-          const card = node.querySelector('button.collection-mobile-record-row__open-action');
+          const card = node.querySelector('.collection-mobile-record-row__open')?.closest('button');
           const selection = node.querySelector('[data-semantic-component="CollectionSelectionControl"]');
           const selectionRect = selection?.getBoundingClientRect();
           return {
@@ -903,6 +990,8 @@ try {
               key: fact.getAttribute('data-fact-key') || '',
               label: fact.querySelector('small')?.textContent?.trim() || '',
               value: fact.querySelector('b')?.textContent?.trim() || '',
+              role: fact.getAttribute('data-fact-role') || '',
+              visibility: fact.getAttribute('data-fact-visibility') || '',
             })),
             openLabel: node.querySelector('.collection-mobile-record-row__open')?.textContent?.replace(/\s+/g, ' ').trim() || '',
             openAriaLabel: card?.getAttribute('aria-label') || '',
@@ -919,8 +1008,23 @@ try {
             && row.openAriaLabel.includes(row.identity)
             && row.facts.length > 0
             && row.facts.every((fact) => fact.key && fact.label && fact.value)
+            && (!row.facts.some((fact) => fact.role === 'money')
+              || row.facts.some((fact) => fact.role === 'money' && fact.visibility === 'primary'))
             && (row.selectionWidth === 0 || (row.selectionWidth >= 44 && row.selectionHeight >= 44))),
         };
+      }
+      let factDisclosureEvidence = null;
+      if (target.exerciseFactDisclosure === true) {
+        const disclosure = page.locator('[data-work-item-key] [data-disclosure-trigger], [data-semantic-component="CollectionMobileRecordRow"] [data-disclosure-trigger]').filter({ visible: true }).first();
+        if (await disclosure.count() !== 1) throw new Error(`${target.name}: progressive fact disclosure is missing`);
+        const before = await disclosure.getAttribute('aria-expanded');
+        await disclosure.click();
+        await page.waitForFunction((node) => node?.getAttribute('aria-expanded') === 'true', await disclosure.elementHandle(), { timeout: 5000 });
+        const expanded = await disclosure.getAttribute('aria-expanded');
+        await disclosure.click();
+        await page.waitForFunction((node) => node?.getAttribute('aria-expanded') === 'false', await disclosure.elementHandle(), { timeout: 5000 });
+        const after = await disclosure.getAttribute('aria-expanded');
+        factDisclosureEvidence = { before, expanded, after, pass: before === 'false' && expanded === 'true' && after === 'false' };
       }
       if (target.captureCollectionKanban === true) {
         const lanes = await page.locator('[data-semantic-component="CollectionKanbanLane"]:visible').evaluateAll((nodes) => nodes.map((node) => ({
@@ -1287,6 +1391,7 @@ try {
         };
         visit(payload.layoutContract?.containerTree || []);
         await waitForStableProductSurface(page);
+        await page.locator('[data-semantic-component="ContractFormPage"][data-state="ok"]').waitFor({ state: 'visible', timeout: 45000 });
         recordEntryEvidence = {
           recordId,
           beforeUrl,
@@ -1408,6 +1513,15 @@ try {
                 && Math.max(0, ...summaryNodes.map((node) => node.rect[3])) <= maxSummaryItemHeight
               ),
             },
+            decisionInput: (() => {
+              const region = root.querySelector('[data-floorplan-region="decision-input"]');
+              const money = region?.querySelector('[data-field-type="monetary"]');
+              return {
+                present: region instanceof HTMLElement,
+                monetaryFieldPresent: money instanceof HTMLElement,
+                rect: region instanceof HTMLElement ? describe(region).rect : [],
+              };
+            })(),
             regions: [...root.querySelectorAll('[data-floorplan-region]')].map(describe),
             nodes: [...root.querySelectorAll('.canonical-form-node')].map(describe),
           };
@@ -1467,7 +1581,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, taskDensityEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, factDisclosureEvidence, taskDensityEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -1568,6 +1682,8 @@ for (const item of report.routes) {
   if (item.collectionNavigationEvidence && !item.collectionNavigationEvidence.pass) failures.push({ name: item.name, collectionNavigationEvidence: item.collectionNavigationEvidence });
   if (item.recordEntryEvidence?.returnEvidence && !item.recordEntryEvidence.returnEvidence.pass) failures.push({ name: item.name, recordReturnEvidence: item.recordEntryEvidence.returnEvidence });
   if (item.collectionSearchEvidence && !item.collectionSearchEvidence.pass) failures.push({ name: item.name, collectionSearchEvidence: item.collectionSearchEvidence });
+  if (item.readFailureEvidence && !item.readFailureEvidence.pass) failures.push({ name: item.name, readFailureEvidence: item.readFailureEvidence });
+  if (item.factDisclosureEvidence && !item.factDisclosureEvidence.pass) failures.push({ name: item.name, factDisclosureEvidence: item.factDisclosureEvidence });
 }
 for (const viewport of ['desktop', 'mobile']) {
   const groups = [...new Set(routes.map((target) => String(target.equivalentGroup || '')).filter(Boolean))];

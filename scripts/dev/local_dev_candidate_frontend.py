@@ -217,6 +217,14 @@ def visual_smoke(root: Path = ROOT) -> None:
         CANDIDATE_GIT_HEAD=head,
         CANDIDATE_VISUAL_ROUTES_JSON=routes,
     )
+    for key in (
+        "CANDIDATE_VISUAL_DESKTOP_HEIGHT",
+        "CANDIDATE_VISUAL_MOBILE_WIDTH",
+        "CANDIDATE_VISUAL_THEME",
+        "CANDIDATE_VISUAL_OUTPUT_DIR",
+    ):
+        if os.environ.get(key):
+            environment[key] = os.environ[key]
     result = subprocess.run(
         ["bash", str(root / "scripts/verify/local_dev_candidate_visual_smoke.sh")],
         cwd=root,

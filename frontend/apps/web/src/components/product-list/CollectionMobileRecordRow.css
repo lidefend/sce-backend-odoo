@@ -38,11 +38,6 @@
   cursor: pointer;
 }
 
-.collection-mobile-record-row__open-action:focus-visible {
-  outline: 3px solid var(--sc-app-focus-ring);
-  outline-offset: 2px;
-}
-
 .collection-mobile-record-row__disclosure {
   grid-column: 1 / -1;
 }
@@ -114,10 +109,6 @@
   color: var(--sc-app-info-text);
   font-size: 12px;
   font-weight: 700;
-}
-
-.collection-mobile-record-row__open-action {
-  min-height: var(--sc-touch-target-min);
 }
 
 @media (prefers-reduced-motion: reduce) {

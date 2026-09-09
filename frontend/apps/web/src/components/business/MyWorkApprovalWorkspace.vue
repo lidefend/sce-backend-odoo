@@ -38,7 +38,7 @@
             <span class="business-type">{{ item.business_type }}</span>
             <ScStatusBadge :value="item.state.key" :label="item.state.label" :semantic="statusSemantic(item.state.key)" />
           </div>
-          <h3>{{ item.record.label }}</h3>
+          <h3 :title="item.record.label">{{ item.record.label }}</h3>
           <dl class="work-card__summary" aria-label="关键事实">
             <div v-for="entry in primaryFacts(item)" :key="entry.key" :data-primary-fact-key="entry.fact.key">
               <dt>{{ entry.fact.label }}</dt>
@@ -184,11 +184,11 @@ function formatFact(fact: ProductMyWorkFact) {
 }
 
 function primaryFacts(item: ProductMyWorkItem) {
-  return partitionProductMyWorkFacts(item.facts, 3).primary;
+  return partitionProductMyWorkFacts(item.facts, 1).primary;
 }
 
 function supplementaryFacts(item: ProductMyWorkItem) {
-  return partitionProductMyWorkFacts(item.facts, 3).supplementary;
+  return partitionProductMyWorkFacts(item.facts, 1).supplementary;
 }
 
 function statusSemantic(value?: string) {
@@ -287,7 +287,7 @@ async function confirmAction() {
 .work-card__identity { grid-area: identity; display: flex; gap: 8px; align-items: center; }
 .business-type, .status-badge { display: inline-flex; padding: 3px 8px; border-radius: var(--sc-component-tag-radius); background: var(--sc-app-info-bg); color: var(--sc-app-info-text); font-size: var(--sc-product-text-sm); }
 .status-badge { background: var(--sc-app-subtle-bg); color: var(--sc-app-text-primary); }
-.work-card h3 { grid-area: title; margin: 2px 0; overflow-wrap: anywhere; }
+.work-card h3 { grid-area: title; min-width: 0; margin: 2px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .work-card :deep(.t-card__body) { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
 .work-card dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 20px; margin: 0; }
 .work-card__summary { grid-area: summary; }
@@ -312,7 +312,7 @@ async function confirmAction() {
   .product-work__counts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .product-work__filters { grid-template-columns: 1fr; padding: 12px; --sc-component-input-form-height: 44px; }
   .work-card__main { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'identity' 'title' 'summary' 'disclosure'; gap: 8px; }
-  .work-card h3 { margin: 9px 0 12px; font-size: 17px; line-height: 1.3; }
+  .work-card h3 { display: -webkit-box; margin: 9px 0 12px; overflow: hidden; font-size: 17px; line-height: 1.3; white-space: normal; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
   .work-card dl { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; }
   .work-card :deep(.t-card__body) { grid-template-columns: minmax(0, 1fr); }
   .work-card dt { font-size: 11px; }

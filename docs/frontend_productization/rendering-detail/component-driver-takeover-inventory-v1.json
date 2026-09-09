@@ -158,7 +158,7 @@
         "TDesignButton"
       ],
       "officialComponent": "button",
-      "productionConsumerCount": 391,
+      "productionConsumerCount": 397,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -196,7 +196,7 @@
         "TDesignCard"
       ],
       "officialComponent": "card",
-      "productionConsumerCount": 61,
+      "productionConsumerCount": 62,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -265,7 +265,7 @@
         "TDesignCollapsePanel"
       ],
       "officialComponent": "collapse",
-      "productionConsumerCount": 379,
+      "productionConsumerCount": 385,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -341,10 +341,10 @@
         "TDesignDescriptionsItem"
       ],
       "officialComponent": "descriptions",
-      "productionConsumerCount": 1,
+      "productionConsumerCount": 0,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
-      "status": "adapter_present"
+      "status": "adapter_unconsumed"
     },
     {
       "adapterKeys": [
@@ -366,7 +366,7 @@
         "TDesignDialog"
       ],
       "officialComponent": "dialog",
-      "productionConsumerCount": 76,
+      "productionConsumerCount": 80,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -401,7 +401,7 @@
         "TDesignDrawer"
       ],
       "officialComponent": "drawer",
-      "productionConsumerCount": 64,
+      "productionConsumerCount": 68,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -716,7 +716,7 @@
         "TDesignMenuItem"
       ],
       "officialComponent": "menu",
-      "productionConsumerCount": 49,
+      "productionConsumerCount": 51,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1044,11 +1044,15 @@
     },
     {
       "adapterKeys": [
+        "ScIcon",
+        "ScIconButton",
         "ScTable"
       ],
       "adapterSources": [
         {
           "semanticAdapters": [
+            "ScIcon",
+            "ScIconButton",
             "ScTable"
           ],
           "source": "frontend/apps/web/src/components/design-system/ScTable.vue"
@@ -1060,13 +1064,14 @@
         "TDesignTableRowData"
       ],
       "officialComponent": "table",
-      "productionConsumerCount": 20,
+      "productionConsumerCount": 87,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
     },
     {
       "adapterKeys": [
+        "ScButton",
         "ScIcon",
         "ScIconButton",
         "ScTabs"
@@ -1080,6 +1085,7 @@
         },
         {
           "semanticAdapters": [
+            "ScButton",
             "ScIcon",
             "ScIconButton"
           ],
@@ -1090,7 +1096,7 @@
         "TDesignTabs"
       ],
       "officialComponent": "tabs",
-      "productionConsumerCount": 65,
+      "productionConsumerCount": 448,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1111,7 +1117,7 @@
         "TDesignTag"
       ],
       "officialComponent": "tag",
-      "productionConsumerCount": 12,
+      "productionConsumerCount": 13,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1282,7 +1288,7 @@
         "TDesignUpload"
       ],
       "officialComponent": "upload",
-      "productionConsumerCount": 378,
+      "productionConsumerCount": 382,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1299,13 +1305,13 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "7491a23371eb3954a2bcf6989d8f73ba628ca3616477708d4c9136658b867728",
+  "inputDigest": "b9445657b78a250edfa870bdf7725139504b7b12e948119e1a8af1da404ccd09",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",
   "summary": {
-    "adapter_present": 35,
-    "adapter_unconsumed": 0,
+    "adapter_present": 34,
+    "adapter_unconsumed": 1,
     "bridge_only": 0,
     "directLibraryImportBypasses": 0,
     "missing": 0,

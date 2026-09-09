@@ -1434,6 +1434,16 @@ assert.deepEqual(relationMappedField.relationInlineCreate, {
 });
 semanticEditNameNode.fields.push({
   ...semanticEditNameField,
+  widgetId: 'field.amount',
+  fieldCode: 'amount',
+  label: 'Amount',
+  value: 50,
+  fieldType: 'monetary',
+  componentKey: 'sc.field.monetary',
+  semanticRole: 'summary',
+});
+semanticEditNameNode.fields.push({
+  ...semanticEditNameField,
   widgetId: 'field.note',
   fieldCode: 'note',
   label: 'Note',
@@ -1513,6 +1523,11 @@ assert.deepEqual(
   'editable summary fields must stay in the editing canvas instead of duplicating as readonly facts',
 );
 assert.deepEqual(
+  collectFields(semanticEditFloorplan.decisionInputNodes).map((field) => field.fieldCode),
+  ['amount'],
+  'an editable monetary summary must remain editable while moving into the early decision region',
+);
+assert.deepEqual(
   collectFields(semanticEditFloorplan.riskNodes).map((field) => field.fieldCode),
   ['state'],
   'readonly risk authority must remain factual in create/edit mode',
@@ -1530,6 +1545,7 @@ assert.deepEqual(
 assert.deepEqual(
   collectFields([
     ...semanticEditFloorplan.summaryNodes,
+    ...semanticEditFloorplan.decisionInputNodes,
     ...semanticEditFloorplan.taskNodes,
     ...semanticEditFloorplan.riskNodes,
     ...semanticEditFloorplan.coreInputNodes,
@@ -1539,7 +1555,7 @@ assert.deepEqual(
     ...semanticEditFloorplan.contextNodes,
     ...semanticEditFloorplan.overflowContextNodes,
   ]).map((field) => field.fieldCode),
-  ['state', 'name', 'note'],
+  ['amount', 'state', 'name', 'note'],
   'create/edit Product Floorplan regions must not duplicate a field identity',
 );
 

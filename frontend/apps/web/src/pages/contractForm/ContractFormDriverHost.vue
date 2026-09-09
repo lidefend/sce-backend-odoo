@@ -23,6 +23,7 @@
       <TaskFormPattern v-if="renderModel.identity.presentationMode === 'task'" :render-profile="renderModel.identity.mode">
       <ObjectTaskPage
         :summary-nodes="floorplan.summaryNodes"
+        :decision-input-nodes="floorplan.decisionInputNodes"
         :task-nodes="floorplan.taskNodes"
         :core-input-nodes="floorplan.coreInputNodes"
         :condition-input-nodes="floorplan.conditionInputNodes"
@@ -191,7 +192,7 @@ const contractLayoutColumns = computed(() => Math.max(
 ));
 const activeKit = computed<SceneUiKitId>(() => props.driverConfig?.activeKit || 'tdesign-modern');
 const emptyFloorplan: CanonicalFormFloorplan = {
-    summaryNodes: [], taskNodes: [], coreInputNodes: [], conditionInputNodes: [], preExecutionInputNodes: [], preExecutionInputTitle: '', supplementaryInputNodes: [],
+    summaryNodes: [], decisionInputNodes: [], taskNodes: [], coreInputNodes: [], conditionInputNodes: [], preExecutionInputNodes: [], preExecutionInputTitle: '', supplementaryInputNodes: [],
     contextNodes: [], overflowContextNodes: [], riskNodes: [], auditNodes: [], auditDeclared: false,
   relationNodes: [], subordinateNodes: [], blockedActions: [], directActions: [], overflowActions: [],
   effectivePrimaryKey: '', decisionMode: false,

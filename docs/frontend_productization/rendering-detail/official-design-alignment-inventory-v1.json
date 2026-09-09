@@ -14,12 +14,90 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "0918fa6da7614e95ec5729fbacb8f86299ec428c31ca9fec14bd393fa7123a1f",
+  "inputDigest": "5494ad769036802416f68f00866f40d885ee086d479b926fb225f257653859fe",
   "internalVendorSelectorGaps": [
+    {
+      "file": "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+      "line": 290,
+      "selector": ".work-card :deep(.t-card__body)",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+      "line": 316,
+      "selector": ".work-card :deep(.t-card__body)",
+      "status": "legacy_override_gap"
+    },
     {
       "file": "frontend/apps/web/src/components/design-system/ScInlineState.vue",
       "line": 18,
       "selector": ".sc-inline-state.t-alert--info :deep(.t-alert__description)",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/packages/ui/src/kits/tdesign/theme.css",
+      "line": 176,
+      "selector": ".sc-input[data-appearance='navigation-search']:not([data-primitive-driver='tdesign']), .sc-input[data-appearance='navigation-search'][data-primitive-driver='tdesign'] .t-input",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/packages/ui/src/kits/tdesign/theme.css",
+      "line": 187,
+      "selector": ".sc-input[data-appearance='navigation-search']:not([data-primitive-driver='tdesign']):hover, .sc-input[data-appearance='navigation-search'][data-primitive-driver='tdesign'] .t-input:hover",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/packages/ui/src/kits/tdesign/theme.css",
+      "line": 190,
+      "selector": ".sc-input[data-appearance='navigation-search']:not([data-primitive-driver='tdesign']):focus-within, .sc-input[data-appearance='navigation-search'][data-primitive-driver='tdesign'] .t-input:focus-within",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/packages/ui/src/kits/tdesign/theme.css",
+      "line": 384,
+      "selector": ".sc-btn[data-semantic-cell-kind='primary'] > .t-button__text, .sc-btn[data-semantic-cell-kind='primary'] .sc-btn__content",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/packages/ui/src/kits/tdesign/theme.css",
+      "line": 450,
+      "selector": ".sc-input[data-appearance='form-field'][data-primitive-driver='tdesign'] .t-input, .sc-select[data-appearance='form-field'][data-primitive-driver='tdesign'] .t-input",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/packages/ui/src/kits/tdesign/theme.css",
+      "line": 456,
+      "selector": ".sc-input[data-appearance='collection-search'] .t-input",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/packages/ui/src/kits/tdesign/theme.css",
+      "line": 500,
+      "selector": ".sc-btn[data-navigation-control='activity-page-title'] :is(.t-button__text, .sc-btn__content)",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/packages/ui/src/kits/tdesign/theme.css",
+      "line": 579,
+      "selector": ".sc-btn[data-appearance='dashboard-quick-link'] > .t-button__text",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/packages/ui/src/kits/tdesign/theme.css",
+      "line": 584,
+      "selector": ".sc-btn[data-appearance='dashboard-quick-link'] > .t-button__text > .sc-btn__content > .sc-icon:first-child",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/packages/ui/src/kits/tdesign/theme.css",
+      "line": 587,
+      "selector": ".sc-btn[data-appearance='dashboard-quick-link'] > .t-button__text > .sc-btn__content > span",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/packages/ui/src/kits/tdesign/theme.css",
+      "line": 639,
+      "selector": ".sc-btn[data-appearance='metric'] .t-button__text, .sc-btn[data-appearance='metric'] .sc-btn__content",
       "status": "legacy_override_gap"
     }
   ],
@@ -78,7 +156,9 @@
       "appearance": "auth-link",
       "consumers": [
         "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/product-list/CollectionMobileRecordRow.vue",
         "frontend/apps/web/src/components/product-list/CollectionRowCell.vue",
+        "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
         "frontend/apps/web/src/views/AccountActivationView.vue",
         "frontend/apps/web/src/views/LoginView.vue",
         "frontend/apps/web/src/views/PasswordRecoveryView.vue"
@@ -115,6 +195,7 @@
         "frontend/apps/web/src/views/ActionView.vue"
       ],
       "selectors": [
+        ".sc-product-main-surface > [data-semantic-component='ScTable'][data-appearance='collection']",
         "[data-semantic-component='ScTable'][data-appearance='collection'] .cell-select, [data-semantic-component='ScTable'][data-appearance='collection'] .cell-row-number, [data-semantic-component='ScTable'][data-appearance='collection'] tbody .column-layout-identity",
         "[data-semantic-component='ScTable'][data-appearance='collection'] .column-layout-identity",
         "[data-semantic-component='ScTable'][data-appearance='collection'] tbody td",
@@ -134,10 +215,12 @@
       "appearance": "collection-search",
       "consumers": [
         "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
-        "frontend/apps/web/src/components/design-system/ScInput.vue"
+        "frontend/apps/web/src/components/design-system/ScInput.vue",
+        "frontend/apps/web/src/components/product-list/ProductListHeader.vue"
       ],
       "selectors": [
-        ".sc-input[data-appearance='collection-search']"
+        ".sc-input[data-appearance='collection-search']",
+        ".sc-input[data-appearance='collection-search'] .t-input"
       ],
       "status": "registered_product_variance"
     },
@@ -150,6 +233,7 @@
       "selectors": [
         ".sc-icon-button[data-appearance='column-handle']",
         ".sc-icon-button[data-appearance='column-handle']::before",
+        ".sc-icon-button[data-appearance='column-handle']:focus-visible",
         ".sc-icon-button[data-appearance='column-handle']:hover::before"
       ],
       "status": "registered_product_variance"
@@ -191,8 +275,9 @@
       ],
       "selectors": [
         ".sc-btn[data-appearance='dashboard-quick-link']",
-        ".sc-btn[data-appearance='dashboard-quick-link'] > .sc-btn__content > .sc-icon:first-child",
-        ".sc-btn[data-appearance='dashboard-quick-link'] > .sc-btn__content > span",
+        ".sc-btn[data-appearance='dashboard-quick-link'] > .t-button__text",
+        ".sc-btn[data-appearance='dashboard-quick-link'] > .t-button__text > .sc-btn__content > .sc-icon:first-child",
+        ".sc-btn[data-appearance='dashboard-quick-link'] > .t-button__text > .sc-btn__content > span",
         ".sc-btn[data-appearance='dashboard-quick-link'] small, .sc-btn[data-appearance='dashboard-recent-link'] small",
         ".sc-btn[data-appearance='dashboard-quick-link']:hover"
       ],
@@ -248,6 +333,7 @@
     {
       "appearance": "form-field",
       "consumers": [
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
         "frontend/apps/web/src/components/design-system/ScDateField.vue",
         "frontend/apps/web/src/components/design-system/ScInput.vue",
         "frontend/apps/web/src/components/design-system/ScRelationField.vue",
@@ -261,6 +347,7 @@
       ],
       "selectors": [
         ".sc-input[data-appearance='form-field'], .sc-select[data-appearance='form-field'], [data-semantic-component='ScRelationField'][data-appearance='form-field'], [data-semantic-component='ScDateField'][data-appearance='form-field']",
+        ".sc-input[data-appearance='form-field'][data-primitive-driver='tdesign'] .t-input, .sc-select[data-appearance='form-field'][data-primitive-driver='tdesign'] .t-input",
         ".sc-textarea[data-appearance='form-field']"
       ],
       "status": "registered_product_variance"
@@ -310,6 +397,28 @@
       "status": "registered_product_variance"
     },
     {
+      "appearance": "metric",
+      "consumers": [
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/design-system/ScCard.vue",
+        "frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/views/SceneHealthView.vue",
+        "frontend/apps/web/src/views/UsageAnalyticsView.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='metric']",
+        ".sc-btn[data-appearance='metric'] .sc-btn__content",
+        ".sc-btn[data-appearance='metric'] .t-button__text, .sc-btn[data-appearance='metric'] .sc-btn__content",
+        ".sc-btn[data-appearance='metric'] strong",
+        ".sc-btn[data-appearance='metric']:focus-visible",
+        ".sc-btn[data-appearance='metric'][aria-pressed='true']"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
       "appearance": "navigation-search",
       "consumers": [
         "frontend/apps/web/src/components/design-system/ScInput.vue",
@@ -317,9 +426,10 @@
         "frontend/apps/web/src/layouts/AppShell.vue"
       ],
       "selectors": [
-        ".sc-input[data-appearance='navigation-search']",
-        ".sc-input[data-appearance='navigation-search']:focus-within",
-        ".sc-input[data-appearance='navigation-search']:hover"
+        ".sc-input[data-appearance='navigation-search']:not([data-primitive-driver='tdesign']), .sc-input[data-appearance='navigation-search'][data-primitive-driver='tdesign'] .t-input",
+        ".sc-input[data-appearance='navigation-search']:not([data-primitive-driver='tdesign']):focus-within, .sc-input[data-appearance='navigation-search'][data-primitive-driver='tdesign'] .t-input:focus-within",
+        ".sc-input[data-appearance='navigation-search']:not([data-primitive-driver='tdesign']):hover, .sc-input[data-appearance='navigation-search'][data-primitive-driver='tdesign'] .t-input:hover",
+        "/* Navigation search has one visible control surface, owned by the driver. */ .sc-input[data-appearance='navigation-search'][data-primitive-driver='tdesign']"
       ],
       "status": "registered_product_variance"
     },
@@ -541,6 +651,7 @@
         "frontend/apps/web/src/components/design-system/ScIconButton.vue"
       ],
       "selectors": [
+        ".collection-search-control .sc-icon-button[data-appearance='toolbar-menu-toggle']",
         ".sc-btn[data-appearance='toolbar-menu-toggle'], .sc-icon-button[data-appearance='toolbar-menu-toggle']",
         ".sc-btn[data-appearance='toolbar-menu-toggle'].active, .sc-btn[data-appearance='toolbar-menu-toggle'][aria-expanded='true'], .sc-icon-button[data-appearance='toolbar-menu-toggle'][aria-expanded='true']"
       ],
@@ -569,6 +680,7 @@
         "frontend/apps/web/src/pages/AnalysisPage.vue"
       ],
       "selectors": [
+        ".worksheet-table-scroll > [data-semantic-component='ScTable'][data-appearance='worksheet']",
         "[data-semantic-component='ScTable'][data-appearance='worksheet']",
         "[data-semantic-component='ScTable'][data-appearance='worksheet'] .summary-row td",
         "[data-semantic-component='ScTable'][data-appearance='worksheet'] :is(.group-row, .heading-row) td",
@@ -618,13 +730,13 @@
   "scope": "formal P0/P1 frontend TDesign driver and product adapter styling",
   "summary": {
     "formalStyleSourceCount": 208,
-    "internalVendorSelectorGapCount": 1,
+    "internalVendorSelectorGapCount": 14,
     "officialPublicTokenCount": 240,
     "orphanedProductAppearanceVariantCount": 0,
-    "productAppearanceVariantCount": 39,
+    "productAppearanceVariantCount": 40,
     "projectPublicTokenOverrideCount": 38,
     "unknownProjectTokenOverrideCount": 0,
-    "visualLiteralGapCount": 0
+    "visualLiteralGapCount": 16
   },
   "themeTokens": {
     "inheritedOfficialTokenCount": 202,
@@ -912,5 +1024,141 @@
     ],
     "unknownProjectTokenOverrides": []
   },
-  "visualLiteralGaps": []
+  "visualLiteralGaps": [
+    {
+      "line": 349,
+      "literals": [
+        "-2px",
+        "2px"
+      ],
+      "selector": ".sc-icon-button[data-appearance='column-handle']:focus-visible",
+      "status": "legacy_override_gap"
+    },
+    {
+      "line": 457,
+      "literals": [
+        "36px"
+      ],
+      "selector": ".collection-search-control .sc-icon-button[data-appearance='toolbar-menu-toggle']",
+      "status": "legacy_override_gap"
+    },
+    {
+      "line": 464,
+      "literals": [
+        "36px"
+      ],
+      "selector": ".product-list-header__search .sc-btn",
+      "status": "legacy_override_gap"
+    },
+    {
+      "line": 474,
+      "literals": [
+        "-2px",
+        "2px"
+      ],
+      "selector": "[data-table-scroll-region]:focus-visible",
+      "status": "legacy_override_gap"
+    },
+    {
+      "line": 488,
+      "literals": [
+        "44px"
+      ],
+      "selector": ".sc-state-panel .sc-btn",
+      "status": "legacy_override_gap"
+    },
+    {
+      "line": 490,
+      "literals": [
+        "35px"
+      ],
+      "selector": ".sc-btn[data-navigation-control='activity-page-title']",
+      "status": "legacy_override_gap"
+    },
+    {
+      "line": 507,
+      "literals": [
+        "36px"
+      ],
+      "selector": ".product-page-header--collection [data-workspace-action-bar] .sc-btn",
+      "status": "legacy_override_gap"
+    },
+    {
+      "line": 515,
+      "literals": [
+        "3px"
+      ],
+      "selector": ".sc-btn[data-semantic-cell-kind='primary']:is(:hover, :focus-visible)",
+      "status": "legacy_override_gap"
+    },
+    {
+      "line": 520,
+      "literals": [
+        "44px"
+      ],
+      "selector": ".list-empty-surface .sc-btn",
+      "status": "legacy_override_gap"
+    },
+    {
+      "line": 524,
+      "literals": [
+        "44px"
+      ],
+      "selector": ".product-page-header--collection [data-workspace-action-bar] .sc-btn",
+      "status": "legacy_override_gap"
+    },
+    {
+      "line": 611,
+      "literals": [
+        "12px",
+        "4px",
+        "8px"
+      ],
+      "selector": ".sc-table-scroll-tools",
+      "status": "legacy_override_gap"
+    },
+    {
+      "line": 623,
+      "literals": [
+        "44px"
+      ],
+      "selector": ".sc-table-scroll-tools .sc-icon-button",
+      "status": "legacy_override_gap"
+    },
+    {
+      "line": 628,
+      "literals": [
+        "12px",
+        "16px",
+        "1px",
+        "68px"
+      ],
+      "selector": ".sc-btn[data-appearance='metric']",
+      "status": "legacy_override_gap"
+    },
+    {
+      "line": 641,
+      "literals": [
+        "8px"
+      ],
+      "selector": ".sc-btn[data-appearance='metric'] .sc-btn__content",
+      "status": "legacy_override_gap"
+    },
+    {
+      "line": 647,
+      "literals": [
+        "24px"
+      ],
+      "selector": ".sc-btn[data-appearance='metric'] strong",
+      "status": "legacy_override_gap"
+    },
+    {
+      "line": 653,
+      "literals": [
+        "2px"
+      ],
+      "selector": ".sc-btn[data-appearance='metric']:focus-visible",
+      "status": "legacy_override_gap"
+    }
+  ]
 }

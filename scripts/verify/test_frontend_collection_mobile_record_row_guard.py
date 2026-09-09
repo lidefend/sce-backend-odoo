@@ -55,6 +55,14 @@ class CollectionMobileRecordRowGuardTest(unittest.TestCase):
         altered = self.list_source.replace('@open="handleRow(row)"', "")
         self.assertTrue(any("handleRow" in item for item in validate(altered, self.row_source, self.row_css, self.legacy_css)))
 
+    def test_money_role_priority_fails_closed(self):
+        marker = "right.fact.layoutRole === 'money'"
+        self.assertIn(marker, self.row_source)
+        altered = self.row_source.replace(marker, "false")
+        self.assertTrue(any("layoutRole" in item for item in validate(
+            self.list_source, altered, self.row_css, self.legacy_css,
+        )))
+
     def test_missing_touch_target_fails(self):
         altered = self.row_css.replace("var(--sc-touch-target-min)", "40px")
         self.assertTrue(any("touch-target" in item for item in validate(self.list_source, self.row_source, altered, self.legacy_css)))

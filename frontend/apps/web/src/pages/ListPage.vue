@@ -717,6 +717,7 @@ function mobileRecordFacts(row: Record<string, unknown>): CollectionMobileRecord
       key: column,
       label: columnLabel(column),
       value: semanticCell(column, columnValue(row, column), relationItems).text,
+      layoutRole: columnLayoutRole(column),
       relationItems,
     };
   });
