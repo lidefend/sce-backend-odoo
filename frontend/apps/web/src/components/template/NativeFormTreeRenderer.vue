@@ -554,7 +554,10 @@ function containerTitle(node: NativeFormLayoutNode) {
 }
 
 function semanticFormRole(node: NativeFormLayoutNode) {
-  return String(node?.attributes?.semanticFormRole || '').trim().toLowerCase();
+  const direct = String(node?.attributes?.semanticFormRole || '').trim().toLowerCase();
+  if (direct) return direct;
+  const descendantRoles = [...new Set(rawChildren(node).map(semanticFormRole).filter(Boolean))];
+  return descendantRoles.length === 1 ? descendantRoles[0] : '';
 }
 
 function semanticSectionTitle(node: NativeFormLayoutNode) {

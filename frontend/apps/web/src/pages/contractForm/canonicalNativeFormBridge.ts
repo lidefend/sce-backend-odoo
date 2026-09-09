@@ -132,7 +132,7 @@ function fieldNode(
       canonicalNodeId: sourceNode?.nodeId || field.widgetId,
       canonicalNodeKind: 'field',
       sectionNavigationRole: sourceNode?.zoneRole,
-      semanticFormRole: sourceNode?.semanticRole,
+      semanticFormRole: sourceNode?.semanticRole || field.semanticRole,
       contractStyleToken: sourceNode?.styleToken,
       surfaceRole: text((field.componentConfig as Record<string, unknown>)?.surfaceRole),
       technical: (field.componentConfig as Record<string, unknown>)?.technical === true,

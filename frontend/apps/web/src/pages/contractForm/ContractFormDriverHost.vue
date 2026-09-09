@@ -259,6 +259,7 @@ const workspaceSectionLinks = computed(() => {
   const roles = new Set<string>();
   const visit = (nodes: CanonicalFormNode[]) => nodes.forEach((node) => {
     if (node.visible && node.semanticRole) roles.add(node.semanticRole);
+    node.fields.filter((field) => field.visible && field.semanticRole).forEach((field) => roles.add(field.semanticRole));
     visit(node.children);
   });
   if (props.renderModel) visit([...props.renderModel.zones.primary, ...props.renderModel.zones.subordinate]);
