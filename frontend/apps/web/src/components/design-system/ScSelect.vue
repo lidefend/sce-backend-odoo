@@ -30,6 +30,7 @@
     :aria-describedby="describedBy"
     @change="onChange"
     @input-change="onInputChange"
+    @search="onInputChange"
     @popup-visible-change="emit('popup-visible-change', Boolean($event))"
   />
 </template>
@@ -81,6 +82,7 @@ const emit = defineEmits<{
   'popup-visible-change': [visible: boolean];
 }>();
 const selectRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null);
+let lastSearchValue: string | undefined;
 const vNativeControlProjection = nativeControlProjection;
 const tdesignOptions = computed(() => props.options.map((option) => ({
   value: option.value,
@@ -106,7 +108,10 @@ function onChange(nextValue: unknown) {
 }
 
 function onInputChange(value: unknown) {
-  emit('search', String(value || ''));
+  const normalized = String(value || '');
+  if (lastSearchValue === normalized) return;
+  lastSearchValue = normalized;
+  emit('search', normalized);
 }
 
 defineExpose({ focus: () => selectRef.value?.focus?.() ?? selectRef.value?.$el?.querySelector('input')?.focus() });
