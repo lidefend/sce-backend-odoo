@@ -9032,6 +9032,8 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Why Here: 收入合同模型已经声明 monetary/currency_field，P1 工作区配置已经声明列精度；缺口是 P0 装配器未透传这些元数据，以及通用 renderer 未保持可见结果和详情一致。Why Not Elsewhere: 不在前端猜字段/币种，不修改 P1 合同事实或工作流，不新增 P2/P3 配置，也不以 P4 脚本承载产品行为。
 - Baseline: `178df07bcdb8cabba19648e35a2deb4de5f3314d`；complete fingerprint `39cdb64f8a7c57ecca5dc88cb2d74e8d94c22e8cb2e2873aed5109658d46024d`，7328 paths。复用唯一已注册 feature worktree 与 local.dev（`sc-local-dev` / `sc_dev_demo`），不创建环境、数据库、端口、卷或 fixture。
 - Blast Radius: 层级工作区 config 的列/详情显示元数据、可见结果选择、移动作用域入口、两处分隔条和 action→record→return 的前端保留态。收入合同 46 条为真实只读样板；付款旅程仅做共享回归。合同审批/支付、业务写入、配置台 C2、push/PR/release 均不在范围。
+- C1 product candidate `ea971cea500590a0686155b698ded828a6d7a1d3` PASS：46→scope 1→query 0→clear/selection restore；record 15 return preserves query/scope/selection/table scroll；desktop separator keyboard bounds PASS；390 light and 320 dark mobile scope drawer/touch target/root overflow PASS。Payment record 15 shared regression remains `¥50.00`; all browser evidence has mutationCount 0 and empty errors/failures.
+- Generated-inventory closeout HEAD `8d3c67694e5b69acba713b2b2ff500737e4ee1a2` complete fingerprint `a4a1582cc04547edf9797e4b6ba9988ac0fe04f2d93113f9da01f803ec8550f4` (7328 paths); full frontend Quick PASS. Detailed evidence: `frontend_hierarchical_workspace_c1_20260909.md`. Release state remains verification_pending; no push/PR/merge.
 
 ## 2026-09-09 — 页面体验 Phase A 外壳样板
 
