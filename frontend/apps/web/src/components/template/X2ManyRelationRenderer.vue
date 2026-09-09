@@ -381,6 +381,7 @@ const o2mRelationOptionMap = ref<Record<string, Array<{ value: number; label: st
 const o2mRelationLoading = ref<Record<string, boolean>>({});
 const o2mRelationErrors = ref<Record<string, string>>({});
 const o2mRelationSearchMap = ref<Record<string, string>>({});
+const o2mRelationPopupOpenMap = ref<Record<string, boolean>>({});
 const relationQueryAuthority = createOne2manyRelationRequestAuthority();
 const relationQueryTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 const relationActiveRequestRevisions: Record<string, number> = {};
@@ -534,6 +535,8 @@ function scheduleOne2manyRelationSearch(fieldName: string, rowKey: string, colum
 
 function handleOne2manyRelationPopup(fieldName: string, rowKey: string, column: RelationFieldColumn, visible: boolean) {
   const key = relationCellKey(fieldName, rowKey, column.name);
+  if (o2mRelationPopupOpenMap.value[key] === visible) return;
+  o2mRelationPopupOpenMap.value = { ...o2mRelationPopupOpenMap.value, [key]: visible };
   clearRelationQueryTimer(key);
   o2mRelationSearchMap.value = { ...o2mRelationSearchMap.value, [key]: '' };
   if (visible) {
