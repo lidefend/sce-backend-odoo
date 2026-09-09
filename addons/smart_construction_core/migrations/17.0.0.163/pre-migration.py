@@ -29,6 +29,19 @@ def migrate(cr, installed_version):
           ADD COLUMN IF NOT EXISTS normalization_state varchar
         """
     )
+    # Constraint names are stable but restored databases may carry an older
+    # definition.  Remove those definitions before normalization; the current
+    # registry recreates both constraints from the model authority.
+    cr.execute(
+        "ALTER TABLE payment_ledger "
+        "DROP CONSTRAINT IF EXISTS payment_ledger_canonical_identity_complete"
+    )
+    if allocation_exists:
+        cr.execute(
+            "ALTER TABLE payment_ledger_allocation "
+            "DROP CONSTRAINT IF EXISTS "
+            "payment_ledger_allocation_canonical_identity_complete"
+        )
 
     locked_tables = ["payment_ledger"]
     if allocation_exists:
