@@ -1615,7 +1615,7 @@ h1 {
   white-space: nowrap;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1200px) {
   .business-config-header,
   .edit-panel-head,
   .version-card-head {
