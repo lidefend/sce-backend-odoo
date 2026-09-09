@@ -9093,3 +9093,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Branch `feature/frontend-page-experience-iteration-v1` at `314a0ac2`。Formal Product Layer：P0 通用前端运行时；P4 仅承载验证与证据。
 - Layer Target：frontend shared primitives、shell、通用页面 surface/theme 与既有 local.dev candidate browser evidence。Module：frontend。
 - Reason：把官方组件接入从静态公开 API 证据推进到真实行为证据，再以同视口对照统一首页、我的工作、付款列表/详情和代表工作区的全局表达；不修改契约、启动链、路由、权限、业务数据或发布环境。
+
+## 2026-09-10 — 共享组件行为与全局表达完成
+
+- P0 通用 frontend primitives/page header/form shell/role home；P4 只扩展既有候选浏览器断言与生成证据。产品候选 `df3227c38e908b883ed45553e9511b03b59a3348`，baseline `314a0ac2ccdbc4793455a323620cfc988dd4e7b2`。
+- Input 搜索/清除/焦点、Select 鼠标/键盘选择、Card `bodyClassName`、Alert description/operation/retry、结构化按钮 exactly-once/pressed/disabled/loading，以及材料样本错误聚焦，在 light/dark × 1440/390 的真实只读页面均 PASS；所有最终运行 mutation 0、errors/failures empty。
+- 首页入口恢复完整宽度，“我的工作”去除外层套卡，通用任务/工作区页头与 ContractForm 命令栏改为单一下边界；付款详情桌面/移动均只保留主体工作表面。五个代表页面共 20 个最终视觉样本无根横向溢出。
+- Full Frontend Quick 与四项官方设计零缺口库存 PASS。结论限定为官方组件接入与代表页面表达收口，不宣称全业务交互、业务写入、全角色、release 或生产验收；未执行数据库/fixture/module lifecycle、push、PR、merge 或 release。
+- 完整记录：`frontend_component_behavior_global_expression_20260909.md`。

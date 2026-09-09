@@ -95,4 +95,35 @@
 - contract/schema：不变。
 - default_route：不变。
 - public intent：不变。
-- 状态：active，先执行 Step A。
+- 产品候选 HEAD：`df3227c38e908b883ed45553e9511b03b59a3348`。
+- 状态：本地候选完成；发布资格仍为 `verification_pending`。
+
+## Step A 结果：官方组件行为
+
+- Input：我的工作真实搜索输入获得焦点，4 张工作卡筛到空态后通过公开清除能力恢复为 4 张，输入值为空。
+- Select：真实 `ScSelect` 通过鼠标从“最近更新”切到“金额从低到高”，再通过键盘切回其他选项；焦点保留，选项数量非零。
+- Card：4 张真实工作卡均通过公开 `bodyClassName` 投影正文 class；付款只读详情没有 Card actions slot，因此未将不存在的插槽当作通过条件。
+- Alert：受控只读失败显示官方 Alert driver、description 和 1 个 operation；重试按钮先获得焦点，键盘单次触发后恢复。
+- 结构化按钮：真实工作指标按钮的鼠标、Enter 各只触发 1 次并更新 `aria-pressed`；disabled/loading 原生属性投影为 `disabled`、`aria-disabled`、`aria-busy`、`data-loading`，点击增量为 0。
+- 表单错误：材料入库只作为组件样本；空项目触发错误摘要并把焦点移到 `project_id`，未保存数据。
+- light/dark × 1440×960/390×844 全部通过；两份摘要的 `mutationCount=0`，`errors=[]`，`failures=[]`：
+  - `artifacts/playwright/frontend-official-component-behavior-light-df3227c3/summary.json`
+  - `artifacts/playwright/frontend-official-component-behavior-dark-df3227c3/summary.json`
+
+## Step B 结果：全局表达
+
+- `ScPanel` 新增通用 `workspace` tone；“我的工作”取消外层套卡，筛选区改为次级工作带，记录卡继续作为主要表面。
+- 首页桌面端改为“待办 + 状态”首行、完整宽度入口区次行；常用入口为双列，最近访问保持独立区域，修复右侧窄长入口列和左侧无效空白。
+- `ProductPageHeader` 的 task/workspace 表达统一为透明背景和单一下边界；通用 ContractForm 命令栏同步消费该层级，桌面和窄屏均移除页头卡 + 主体卡的重复框层。
+- 首页、我的工作、付款列表、付款详情、收入合同工作区在 light/dark × 1440×960/390×844 共 20 个页面样本均无根横向溢出；标题、状态、返回/更多/主要操作可见可达。
+- 两份最终摘要均 `pass=true`、`mutationCount=0`、`errors=[]`、`failures=[]`：
+  - `artifacts/playwright/frontend-global-expression-after-light-df3227c3/summary.json`
+  - `artifacts/playwright/frontend-global-expression-after-dark-df3227c3/summary.json`
+- 同视口 before 基线保留在 `frontend-global-expression-before-{light,dark}-af9df37b`，after 保留在 `frontend-global-expression-after-{light,dark}-df3227c3`。
+
+## 门禁与结论边界
+
+- `make verify.frontend.quick.gate`：PASS；严格类型、构建、组件适配、页面身份、表单页头、工作台、主题及生成库存均通过。
+- 官方设计库存保持四项零缺口：内部 vendor selector、视觉字面量、未知项目 token、孤立 appearance variant 均为 0。
+- 本批结论是“官方组件能力在本轮影响面正确使用，且代表页面的全局表达已改善”。它不是全业务流程、全角色、业务写入、release 或生产环境验收完成。
+- 未升级模块、未 reset fixture、未保存业务数据，未执行 push、PR、merge 或 release。
