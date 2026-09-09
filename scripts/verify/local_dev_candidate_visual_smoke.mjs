@@ -678,8 +678,7 @@ try {
         );
         const mouseSelectValue = await selectInput.inputValue();
         await selectInput.focus();
-        await selectInput.press('Home');
-        await selectInput.press('ArrowDown');
+        await selectInput.press('ArrowUp');
         await selectInput.press('Enter');
         await page.waitForFunction(
           (before) => document.querySelector('.product-work__filters [data-semantic-component="ScSelect"] input')?.value !== before,
