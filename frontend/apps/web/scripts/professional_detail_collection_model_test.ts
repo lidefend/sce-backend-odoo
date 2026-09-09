@@ -53,6 +53,15 @@ assert.equal(requestAuthority.isCurrent('line:1:partner_id', firstRequest), fals
 assert.equal(requestAuthority.isCurrent('line:1:partner_id', secondRequest), true);
 requestAuthority.invalidate('line:1:partner_id');
 assert.equal(requestAuthority.isCurrent('line:1:partner_id', secondRequest), false);
+const pendingSearchRequest = requestAuthority.begin('line:2:partner_id');
+const clearSearchRequest = requestAuthority.begin('line:2:partner_id');
+assert.equal(requestAuthority.isCurrent('line:2:partner_id', pendingSearchRequest), false);
+assert.equal(requestAuthority.isCurrent('line:2:partner_id', clearSearchRequest), true);
+const pendingClosedRequest = requestAuthority.begin('line:3:partner_id');
+requestAuthority.invalidate('line:3:partner_id');
+const reopenedRequest = requestAuthority.begin('line:3:partner_id');
+assert.equal(requestAuthority.isCurrent('line:3:partner_id', pendingClosedRequest), false);
+assert.equal(requestAuthority.isCurrent('line:3:partner_id', reopenedRequest), true);
 
 const popupAuthority = createOne2manyRelationPopupAuthority();
 assert.equal(popupAuthority.update('line:1:partner_id', 'desktop-primary', true), 'opened');
@@ -61,8 +70,10 @@ assert.equal(popupAuthority.update('line:1:partner_id', 'desktop-clone', false),
 assert.equal(popupAuthority.update('line:1:partner_id', 'desktop-clone', true), 'unchanged');
 assert.equal(popupAuthority.update('line:1:partner_id', 'desktop-primary', false), 'unchanged');
 assert.equal(popupAuthority.update('line:1:partner_id', 'desktop-clone', false), 'closed');
+assert.equal(popupAuthority.isOpen('line:1:partner_id'), false);
 popupAuthority.clear();
 assert.equal(popupAuthority.update('line:1:partner_id', 'mobile', true), 'opened');
+assert.equal(popupAuthority.isOpen('line:1:partner_id'), true);
 
 assert.deepEqual(preserveSelectedOne2manyRelationOption({
   incoming: [],

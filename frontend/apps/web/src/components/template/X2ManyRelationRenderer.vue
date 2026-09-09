@@ -385,10 +385,12 @@ const o2mRelationSearchMap = ref<Record<string, string>>({});
 const relationPopupAuthority = createOne2manyRelationPopupAuthority();
 const relationQueryAuthority = createOne2manyRelationRequestAuthority();
 const relationQueryTimers: Record<string, ReturnType<typeof setTimeout>> = {};
+const relationCloseTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 const relationActiveRequestRevisions: Record<string, number> = {};
 
 onBeforeUnmount(() => {
   Object.keys(relationQueryTimers).forEach(clearRelationQueryTimer);
+  Object.values(relationCloseTimers).forEach(clearTimeout);
   Object.keys(relationActiveRequestRevisions).forEach((key) => delete relationActiveRequestRevisions[key]);
   relationPopupAuthority.clear();
   relationQueryAuthority.clear();
@@ -544,13 +546,23 @@ function handleOne2manyRelationPopup(
   const key = relationCellKey(fieldName, rowKey, column.name);
   const transition = relationPopupAuthority.update(key, event.ownerId, event.visible);
   if (transition === 'unchanged') return;
-  clearRelationQueryTimer(key);
-  o2mRelationSearchMap.value = { ...o2mRelationSearchMap.value, [key]: '' };
   if (transition === 'opened') {
+    if (relationCloseTimers[key]) {
+      clearTimeout(relationCloseTimers[key]);
+      delete relationCloseTimers[key];
+      return;
+    }
+    invalidateOne2manyRelationQuery(key);
+    o2mRelationSearchMap.value = { ...o2mRelationSearchMap.value, [key]: '' };
     void loadOne2manyRelationOptions(fieldName, rowKey, column, '');
     return;
   }
-  closeOne2manyRelationQuery(key);
+  relationCloseTimers[key] = setTimeout(() => {
+    delete relationCloseTimers[key];
+    if (relationPopupAuthority.isOpen(key)) return;
+    invalidateOne2manyRelationQuery(key);
+    closeOne2manyRelationQuery(key);
+  }, 0);
 }
 
 function retryOne2manyRelationOptions(fieldName: string, rowKey: string, column: RelationFieldColumn) {

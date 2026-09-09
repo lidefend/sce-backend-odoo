@@ -45,6 +45,9 @@ export function createOne2manyRelationPopupAuthority() {
     clear() {
       owners.clear();
     },
+    isOpen(key: string) {
+      return Boolean(owners.get(key)?.size);
+    },
   };
 }
 

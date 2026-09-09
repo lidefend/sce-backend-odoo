@@ -100,7 +100,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     if ("popup-change" not in renderer
             or "o2mRelationSearchMap.value[key] === normalizedKeyword" not in renderer
             or '@input-change="onInputChange"' not in sc_select
-            or '@search="onInputChange"' not in sc_select):
+            or '@search="onSearch"' not in sc_select
+            or "isUserSelectSearchInput(context?.trigger)" not in sc_select):
         failures.append("detail collection search lifecycle is not explicitly controlled")
     if "data-relation-query-state=\"error\"" not in cell_editor or "@click=\"$emit('retry')\"" not in cell_editor:
         failures.append("detail collection relation failure does not expose retry")

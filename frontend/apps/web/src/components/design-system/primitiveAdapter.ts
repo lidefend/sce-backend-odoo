@@ -102,6 +102,10 @@ export function resolvePrimitiveControlUpdate(input: {
   return String(input.value ?? '');
 }
 
+export function isUserSelectSearchInput(trigger?: string): boolean {
+  return trigger === 'input' || trigger === 'clear';
+}
+
 export function tdesignTabsSize(size?: ScPrimitiveSize): 'medium' | 'large' {
   return normalizePrimitiveSize(size) === 'large' ? 'large' : 'medium';
 }

@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, getCurrentInstance } from 'vue';
+import { computed, getCurrentInstance, onBeforeUnmount } from 'vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScCheckbox from '../design-system/ScCheckbox.vue';
 import ScInput from '../design-system/ScInput.vue';
@@ -100,7 +100,7 @@ const props = withDefaults(defineProps<{
   showReadonlyReason: false,
 });
 
-defineEmits<{
+const emit = defineEmits<{
   update: [value: unknown];
   search: [keyword: string];
   'popup-change': [event: { visible: boolean; ownerId: string }];
@@ -108,6 +108,8 @@ defineEmits<{
 }>();
 
 const popupOwnerId = `o2m-editor-${getCurrentInstance()?.uid ?? 'unknown'}`;
+
+onBeforeUnmount(() => emit('popup-change', { visible: false, ownerId: popupOwnerId }));
 
 const errorText = computed(() => props.error);
 const relationValue = computed(() => {
