@@ -21,7 +21,7 @@
 
 页面修正本身没有 P1/P2 修改，也没有新增页面、业务流程或合同语义。首次正式 release gate 随后在既有 acceptance 数据库的 `smart_construction_core` 增量升级中发现历史付款台账身份不满足当前约束；经用户单独授权，追加一个 P1 历史迁移兼容批次，以及一个 P4 acceptance fixture 幂等兼容批次。两者不改变审批、支付或前端契约语义，不新建数据库、端口、volume、credential file 或验证入口。
 
-最终候选相对原始基线为 95 路径，归属及逐路径回退见 `frontend_system_page_baseline_scope_manifest_20260909.csv`。
+最终候选相对原始基线为 96 路径，归属及逐路径回退见 `frontend_system_page_baseline_scope_manifest_20260909.csv`。
 
 ## 2. 验证可信度
 
@@ -64,12 +64,12 @@ stdlib XML stub 仅用于宿主机缺少 lxml 时加载隔离单元测试，不�
 
 首次 release gate 在 frontend 静态、单元和构建通过后，于真实 acceptance 增量升级失败。修复及恢复证据为：
 
-- `make local.dev.test MODULE=smart_construction_core TEST_TAGS=p1_contract_payment_allocation`：15 post-tests，统计 17 tests，0 failed / 0 errors；覆盖 NULL/不完整历史身份隔离及 unresolved allocation 一致性。
-- `CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core make acceptance.module.upgrade MODULE=smart_construction_core`：PASS；`17.0.0.163` 在既有 `sc_frontend_acceptance` 上完成增量迁移及 registry 加载。
+- `make local.dev.test MODULE=smart_construction_core TEST_TAGS=p1_contract_payment_allocation`：16 post-tests，统计 18 tests，0 failed / 0 errors；覆盖 NULL/不完整历史身份隔离、unresolved allocation 一致性、合同与资金 stored 父汇总差异重算，以及 replay 不改已正确父记录 CTID。
+- `CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core make acceptance.module.upgrade MODULE=smart_construction_core`：两次 PASS；`17.0.0.163` 完成历史身份隔离，独立复审指出父汇总缺口后，`17.0.0.164` post-migration 在 registry/回填后完成父汇总重算。两版均在既有 `sc_frontend_acceptance` 上实际增量执行。
 - `python3 -m unittest scripts.verify.test_frontend_productization_fixture_upsert`：3 tests，PASS。
 - `make local.dev.test MODULE=smart_construction_acceptance_fixture TEST_TAGS=acceptance_fixture_gate`：5 post-tests，统计 9 tests，0 failed / 0 errors；覆盖 guard 及已生效资金基线通过正式修订生命周期对齐。此前一次同命令因模块未安装产生 0 tests，已明确判为无效证据；后续受管安装测试中暴露的同进程 XMLID cache 测试假设也未计入 PASS。
 - `make acceptance.frontend.fixture`：PASS，包含 `acceptance.frontend.fixture.auth`；没有放宽已生效资金基线不可修改规则。
-- `make acceptance.frontend.release_snapshot`：PASS，snapshot 56，source revision `d27b0270e4f507b8298d92753f7179c7cb75d819`。
+- `make acceptance.frontend.release_snapshot`：PASS，最新 snapshot 57，source revision `b14733042e67accd8e0be7906ace56f7499cdd8a`。
 
 最终文档候选冻结后由独立审查者复核新增 P1/P4 范围；只有复审无 S0-S2，才重新运行受管 `verify.frontend.release.local`。
 
@@ -84,4 +84,4 @@ stdlib XML stub 仅用于宿主机缺少 lxml 时加载隔离单元测试，不�
 - build large chunk warning 仍存在，没有性能量化结论。
 - acceptance 历史付款身份被保留为 `legacy_unresolved_identity`，没有伪造项目、公司、往来单位、币种或操作策略；这些隔离事实不构成业务可执行记录。
 
-回退先按 formal layer 和文件执行：P0 顶栏修正可回退 `5d9e994b`；P4 fake 与验证器可分别回退 `e3e134c0`、`dc6e81d6`；P1 迁移提交为 `34adf9e5` 至 `132951d0`，P4 fixture 兼容提交为 `d27b0270`。数据库已执行版本迁移，代码回退前必须按数据库架构政策评估兼容性，不能直接逆向改写已隔离历史事实；历史混合提交依全量 manifest 的路径与 commit 列回退。
+回退先按 formal layer 和文件执行：P0 顶栏修正可回退 `5d9e994b`；P4 fake 与验证器可分别回退 `e3e134c0`、`dc6e81d6`；P1 迁移提交为 `34adf9e5` 至 `b1473304`，P4 fixture 兼容提交为 `d27b0270`。数据库已执行版本迁移，代码回退前必须按数据库架构政策评估兼容性，不能直接逆向改写已隔离历史事实；历史混合提交依全量 manifest 的路径与 commit 列回退。
