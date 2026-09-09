@@ -230,7 +230,11 @@ function fieldFromWidget(
     : false;
   const fieldAuth = text(status?.auth);
   const componentConfig = { ...widget.componentConfig };
-  const currencyField = text(componentConfig.currencyField || componentConfig.currency_field);
+  const currencyField = text(
+    componentConfig.currencyField
+    || componentConfig.currency_field
+    || widget.fieldDescriptor?.currency_field,
+  );
   if (fieldType === 'monetary' && currencyField) {
     componentConfig.currencyValue = runtimeValues?.[currencyField] ?? contractValues[currencyField];
   }

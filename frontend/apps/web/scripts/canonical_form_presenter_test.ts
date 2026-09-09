@@ -567,6 +567,33 @@ const source = snapshot();
 const before = JSON.stringify(source);
 const store = createContractV2Store(decodeContractV2Snapshot(source));
 
+const nativeMonetarySnapshot = snapshot();
+nativeMonetarySnapshot.layoutContract.componentRegistry['sc.value.money'] = {
+  version: '1.0', adapter: { web_pc: 'ScMoney' }, selectedAdapter: 'ScMoney',
+};
+nativeMonetarySnapshot.layoutContract.containerTree[0].children.push({
+  containerId: 'field.amount', containerType: 'field', type: 'field', name: 'amount', title: '', span: 12,
+  children: [], widgetList: [{
+    widgetId: 'field.amount', widgetType: 'input', fieldCode: 'amount', label: 'Amount', span: 12,
+    componentKey: 'sc.value.money', capabilities: [], componentConfig: { fieldType: 'monetary' },
+    fieldDescriptor: { name: 'amount', type: 'monetary', currency_field: 'currency_id' },
+    ownerContainerId: 'field.amount',
+  }],
+});
+nativeMonetarySnapshot.statusContract.widgetStatus.push({
+  widgetId: 'field.amount', visible: true, readonly: false, required: true, disabled: false,
+});
+nativeMonetarySnapshot.dataContract.mainData.amount = 50;
+nativeMonetarySnapshot.dataContract.mainData.currency_id = [6, 'CNY'];
+const nativeMonetaryField = collectFields(presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(nativeMonetarySnapshot)),
+  'edit',
+).zones.primary).find((field) => field.fieldCode === 'amount');
+assert.deepEqual(nativeMonetaryField?.componentConfig.currencyValue, [6, 'CNY']);
+const nativeMonetarySchema = canonicalFieldToFormSection(nativeMonetaryField!);
+assert.equal(nativeMonetarySchema.currencyField, 'currency_id');
+assert.equal(nativeMonetarySchema.currencyLabel, 'CNY');
+
 for (const legacyVersion of ['2.0.0', '2.1.0']) {
   const legacyServerSnapshot = snapshot() as ContractV2Snapshot & {
     layoutContract: { containerTree: Array<Record<string, unknown>> };
