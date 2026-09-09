@@ -890,6 +890,16 @@ try {
         const initialCountText = String(await worksheet.locator('.worksheet-grid-title span').first().textContent() || '').trim();
         let mobileScopeEvidence = null;
         if (viewport.name === 'mobile') {
+          const waitForDrawerBoundaryToSettle = async () => {
+            await page.waitForFunction(() => {
+              const surface = [...document.querySelectorAll('[data-semantic-component="ScDrawer"][data-state="open"]')]
+                .find((node) => node instanceof HTMLElement && node.offsetParent !== null);
+              if (!(surface instanceof HTMLElement)) return false;
+              const box = surface.getBoundingClientRect();
+              return box.left >= -1 && box.right <= window.innerWidth + 1;
+            }, undefined, { timeout: 2000 });
+            await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          };
           const captureDrawerBoundary = async (drawer) => drawer.evaluate((surface) => {
             const rect = (node) => {
               if (!(node instanceof HTMLElement)) return null;
@@ -930,6 +940,7 @@ try {
           await scopeTrigger.click();
           const drawer = page.getByRole('dialog', { name: /收入合同履约结构|选择范围/ });
           await drawer.waitFor({ state: 'visible', timeout: 15000 });
+          await waitForDrawerBoundaryToSettle();
           const initialDescription = String(await drawer.getAttribute('aria-describedby') || '');
           const initialBoundary = await captureDrawerBoundary(drawer);
           await drawer.press('Escape');
@@ -937,13 +948,14 @@ try {
           const escapeFocusRestored = await scopeTrigger.evaluate((node) => node === document.activeElement);
           await scopeTrigger.click();
           await drawer.waitFor({ state: 'visible', timeout: 15000 });
+          await waitForDrawerBoundaryToSettle();
           const reopenedBoundary = await captureDrawerBoundary(drawer);
           const alternateWidth = originalViewport?.width === 320 ? 390 : 320;
           await page.setViewportSize({ width: alternateWidth, height: originalViewport?.height || 900 });
-          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          await waitForDrawerBoundaryToSettle();
           const resizedBoundary = await captureDrawerBoundary(drawer);
           await page.setViewportSize({ width: originalViewport?.width || mobileWidth, height: originalViewport?.height || 900 });
-          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          await waitForDrawerBoundaryToSettle();
           const restoredBoundary = await captureDrawerBoundary(drawer);
           await page.screenshot({ path: path.join(outputDir, `mobile-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-scope-drawer-open.png`), fullPage: false });
           const firstScope = drawer.locator('.tree-node').first();
