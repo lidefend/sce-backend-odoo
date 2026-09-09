@@ -29,7 +29,12 @@
 
 .skip-link:focus { transform: translateY(0); }
 
-:is(a, button, input, select, textarea, [tabindex]):focus-visible {
+:is(a, button, input, select, textarea, [tabindex]):focus-visible:not(
+  :where(
+    [data-focus-ring-owner='component'],
+    [data-focus-ring-owner='component'] *
+  )
+) {
   outline: 2px solid var(--sc-semantic-surface-interactive);
   outline-offset: 2px;
   box-shadow: 0 0 0 3px var(--sc-app-focus-ring);
@@ -440,6 +445,9 @@
 }
 .sc-visually-hidden {
   position: absolute !important;
+  /* Static absolute positions inside scrollers can enlarge the document. */
+  top: 0 !important;
+  left: 0 !important;
   width: 1px !important;
   height: 1px !important;
   padding: 0 !important;

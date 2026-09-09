@@ -19,6 +19,7 @@
         <label>
           <span class="sc-visually-hidden">{{ searchLabel }}</span>
           <ScInput
+            appearance="collection-search"
             type="search"
             :model-value="searchValue"
             :disabled="loading"
@@ -74,8 +75,8 @@ defineEmits<{
   width: 100cqw;
   min-height: 44px;
   padding: 0 var(--sc-space-sm);
-  border: 1px solid var(--sc-app-border);
-  border-radius: 0;
+  border: 0;
+  border-radius: var(--sc-product-radius-panel) var(--sc-product-radius-panel) 0 0;
   background: var(--sc-app-panel);
   box-shadow: none;
 }
@@ -85,8 +86,6 @@ defineEmits<{
     position: relative;
     top: 0;
     padding: 0 var(--sc-space-sm);
-    border: 1px solid var(--sc-app-border);
-    border-radius: 0;
     background: var(--sc-app-panel);
     box-shadow: none;
     min-height: var(--sc-product-list-toolbar-height);
@@ -119,12 +118,10 @@ defineEmits<{
 }
 .product-list-header__tools :deep(.toolbar-actions) { width: auto; }
 .product-list-header__tools :deep(.list-surface-utilities) { grid-area: utility; }
-.product-list-header__search { grid-area: main; display: flex; gap: var(--sc-toolbar-gap); align-items: center; min-width: 320px; }
+.product-list-header__search { grid-area: main; display: flex; gap: var(--sc-toolbar-gap); align-items: center; min-width: 320px; --sc-component-input-form-height: 36px; }
 .product-list-header__search label { min-width: 0; flex: 1; }
-.product-list-header__search :deep(.sc-btn) { min-height: 40px; }
 .product-list-header__search :deep(.sc-input) {
   width: 100%;
-  min-height: 40px;
 }
 .product-list-header__tools--aligned {
   grid-template-areas: 'leading divider-left search divider-right actions';
@@ -143,9 +140,6 @@ defineEmits<{
   .product-list-query-bar {
     width: 100%;
     padding: 0 var(--sc-space-xs);
-    border: 1px solid var(--sc-app-border);
-    border-bottom: 1px solid var(--sc-app-border);
-    border-radius: 0;
     background: transparent;
     box-shadow: none;
   }
@@ -155,7 +149,8 @@ defineEmits<{
 }
 @media (max-width: 760px) {
   .product-list-header__tools { gap: var(--sc-toolbar-gap); }
+  .product-list-header__tools :deep(.list-surface-utilities) { align-self: end; }
   .product-list-header__search { min-width: 0; }
-  .product-list-header__search :deep(.sc-btn) { min-width: 44px; min-height: 44px; }
+  .product-list-header__search { --sc-component-input-form-height: 44px; }
 }
 </style>

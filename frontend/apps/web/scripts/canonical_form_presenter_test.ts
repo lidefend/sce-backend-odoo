@@ -12,6 +12,7 @@ import {
 } from '../src/app/contracts/v2/formStructureRoles';
 import { presentContractV2Form } from '../src/app/presentation/contractFormPresenter';
 import { composeCanonicalFormFloorplan } from '../src/app/presentation/canonicalFormFloorplan';
+import { applyCanonicalFormValidation } from '../src/pages/contractForm/canonicalFormRenderState';
 import {
   canonicalFieldToFormSection,
   canonicalFieldHasPresentableValue,
@@ -59,6 +60,7 @@ import {
 } from '../src/pages/contractForm/relationCreateDialogRuntime';
 import {
   formatMonetaryDisplayValue,
+  formatMonetaryInputValue,
   monetaryInputStep,
   normalizeMonetaryDigits,
   resolveCurrencyDisplayLabel,
@@ -125,7 +127,10 @@ assert.equal(resolveCurrencyDisplayLabel([7, 'USD']), 'USD');
 assert.equal(resolveCurrencyDisplayLabel({ id: 7, symbol: '€', name: 'EUR' }), 'EUR');
 assert.equal(monetaryInputStep([16, 2]), '0.01');
 assert.equal(monetaryInputStep(undefined), 'any');
+assert.equal(monetaryInputStep(undefined, 'CNY'), '0.01');
+assert.equal(formatMonetaryInputValue(50, undefined, 'CNY'), '50.00');
 assert.equal(formatMonetaryDisplayValue(1234.5, [16, 2], 'USD', 'en-US'), '$1,234.50');
+assert.equal(formatMonetaryDisplayValue(50, undefined, 'CNY'), '¥50.00');
 assert.equal(formatMonetaryDisplayValue(1234.5, [16, 1], '元', 'en-US'), '1,234.5 元');
 assert.equal(formatMonetaryDisplayValue('', [16, 2], 'USD', 'en-US'), '-');
 assert.equal(normalizeContractFieldValue({
@@ -163,8 +168,8 @@ assert.equal(relationCreateMode({
 } as never), 'dialog', 'a backend-authorized dialog create entry must remain in-page');
 
 for (const scenario of [
-  { managed: false, decisionMode: false, label: '返回列表', semanticIdentity: 'return-list' },
-  { managed: false, decisionMode: true, label: '返回列表', semanticIdentity: 'return-list' },
+  { managed: false, decisionMode: false, label: '返回', semanticIdentity: 'return-list' },
+  { managed: false, decisionMode: true, label: '返回', semanticIdentity: 'return-list' },
   { managed: true, decisionMode: false, label: '取消', semanticIdentity: 'cancel-edit' },
   { managed: true, decisionMode: true, label: '取消', semanticIdentity: 'cancel-edit' },
 ] as const) {
@@ -562,6 +567,34 @@ function collectTexts(nodes: ReturnType<typeof presentContractV2Form>['zones']['
 const source = snapshot();
 const before = JSON.stringify(source);
 const store = createContractV2Store(decodeContractV2Snapshot(source));
+
+const nativeMonetarySnapshot = snapshot();
+nativeMonetarySnapshot.layoutContract.componentRegistry['sc.value.money'] = {
+  version: '1.0', adapter: { web_pc: 'ScMoney' }, selectedAdapter: 'ScMoney',
+};
+nativeMonetarySnapshot.layoutContract.containerTree[0].children.push({
+  containerId: 'field.amount', containerType: 'field', type: 'field', name: 'amount', title: '', span: 12,
+  children: [], widgetList: [{
+    widgetId: 'field.amount', widgetType: 'input', fieldCode: 'amount', label: 'Amount', span: 12,
+    componentKey: 'sc.value.money', capabilities: [], componentConfig: { fieldType: 'monetary' },
+    fieldDescriptor: { name: 'amount', type: 'monetary', currency_field: 'currency_id' },
+    ownerContainerId: 'field.amount',
+  }],
+});
+nativeMonetarySnapshot.statusContract.widgetStatus.push({
+  widgetId: 'field.amount', visible: true, readonly: false, required: true, disabled: false,
+});
+nativeMonetarySnapshot.dataContract.mainData.amount = 50;
+nativeMonetarySnapshot.dataContract.mainData.currency_id = [6, 'CNY'];
+const nativeMonetaryField = collectFields(presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(nativeMonetarySnapshot)),
+  'edit',
+  { amount: 50, currency_id: 6 },
+).zones.primary).find((field) => field.fieldCode === 'amount');
+assert.deepEqual(nativeMonetaryField?.componentConfig.currencyValue, [6, 'CNY']);
+const nativeMonetarySchema = canonicalFieldToFormSection(nativeMonetaryField!);
+assert.equal(nativeMonetarySchema.currencyField, 'currency_id');
+assert.equal(nativeMonetarySchema.currencyLabel, 'CNY');
 
 for (const legacyVersion of ['2.0.0', '2.1.0']) {
   const legacyServerSnapshot = snapshot() as ContractV2Snapshot & {
@@ -1434,6 +1467,16 @@ assert.deepEqual(relationMappedField.relationInlineCreate, {
 });
 semanticEditNameNode.fields.push({
   ...semanticEditNameField,
+  widgetId: 'field.amount',
+  fieldCode: 'amount',
+  label: 'Amount',
+  value: 50,
+  fieldType: 'monetary',
+  componentKey: 'sc.field.monetary',
+  semanticRole: 'summary',
+});
+semanticEditNameNode.fields.push({
+  ...semanticEditNameField,
   widgetId: 'field.note',
   fieldCode: 'note',
   label: 'Note',
@@ -1513,6 +1556,11 @@ assert.deepEqual(
   'editable summary fields must stay in the editing canvas instead of duplicating as readonly facts',
 );
 assert.deepEqual(
+  collectFields(semanticEditFloorplan.decisionInputNodes).map((field) => field.fieldCode),
+  ['amount'],
+  'an editable monetary summary must remain editable while moving into the early decision region',
+);
+assert.deepEqual(
   collectFields(semanticEditFloorplan.riskNodes).map((field) => field.fieldCode),
   ['state'],
   'readonly risk authority must remain factual in create/edit mode',
@@ -1530,6 +1578,7 @@ assert.deepEqual(
 assert.deepEqual(
   collectFields([
     ...semanticEditFloorplan.summaryNodes,
+    ...semanticEditFloorplan.decisionInputNodes,
     ...semanticEditFloorplan.taskNodes,
     ...semanticEditFloorplan.riskNodes,
     ...semanticEditFloorplan.coreInputNodes,
@@ -1539,7 +1588,7 @@ assert.deepEqual(
     ...semanticEditFloorplan.contextNodes,
     ...semanticEditFloorplan.overflowContextNodes,
   ]).map((field) => field.fieldCode),
-  ['state', 'name', 'note'],
+  ['amount', 'state', 'name', 'note'],
   'create/edit Product Floorplan regions must not duplicate a field identity',
 );
 
@@ -2610,4 +2659,25 @@ assert.deepEqual(
   'an executable body-node action without an adapter must fail closed',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=142');
+const validationProjection = applyCanonicalFormValidation(model, { name: 'Name 为必填项' });
+const validationField = collectFields(validationProjection.zones.primary).find((field) => field.fieldCode === 'name');
+assert.equal(validationField?.invalid, true, 'canonical validation must mark the matching field invalid');
+assert.equal(validationField?.errorText, 'Name 为必填项', 'canonical validation must retain the authoritative error text');
+const renderedValidationField = canonicalFieldToFormSection(validationField!);
+assert.equal(renderedValidationField.invalid, true, 'canonical field validation must reach the rendered control');
+assert.equal(renderedValidationField.errorText, 'Name 为必填项', 'rendered validation must retain its accessible description');
+const unrelatedValidationField = collectFields(validationProjection.zones.primary).find((field) => field.fieldCode === 'state');
+assert.equal(unrelatedValidationField?.invalid, false, 'canonical validation must not mark unrelated fields invalid');
+const labelCollisionProjection = applyCanonicalFormValidation(model, { state: 'Name 与 State 的组合提示' });
+assert.equal(
+  collectFields(labelCollisionProjection.zones.primary).find((field) => field.fieldCode === 'name')?.invalid,
+  false,
+  'canonical validation must never infer field identity from a label substring',
+);
+assert.equal(
+  collectFields(labelCollisionProjection.zones.primary).find((field) => field.fieldCode === 'state')?.invalid,
+  true,
+  'canonical validation must project an explicit field identity even when labels overlap',
+);
+
+console.log('[canonical_form_presenter_test] PASS cases=143');

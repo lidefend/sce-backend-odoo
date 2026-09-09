@@ -2,7 +2,7 @@
   <section
     ref="toolbarRoot"
     class="action-toolbar"
-    :class="{ 'action-toolbar--without-view': !showViewSwitch || viewModes.length <= 1 }"
+    :class="{ 'action-toolbar--without-view': !showViewSwitch || viewModes.length <= 1, 'action-toolbar--with-primary': canCreateRecord }"
     data-semantic-component="CollectionActionToolbar"
     data-semantic-layer="pattern"
     :data-open-layer="searchMenuOpen ? 'search' : overflowMenuOpen ? 'overflow' : 'none'"
@@ -809,16 +809,6 @@ onBeforeUnmount(() => {
   flex: 0 0 auto;
 }
 
-/* Search control renders as one seamless unit. The square search-menu
- * toggle is pinned to the shared 36px control height, matching the adjacent
- * field control metrics via the component touch-target token. */
-.collection-search-control .search-menu-toggle {
-  height: 36px;
-  min-height: 36px;
-  max-height: 36px;
-  width: 36px;
-}
-
 .search-menu-caret {
   display: inline-block;
   line-height: 1;
@@ -976,8 +966,8 @@ onBeforeUnmount(() => {
 
 @media (max-width: 1199px) {
   .action-toolbar {
-    grid-template-columns: minmax(240px, 1fr) max-content max-content;
-    grid-template-areas: 'search primary overflow';
+    grid-template-columns: minmax(0, 1fr) max-content max-content max-content;
+    grid-template-areas: 'search total primary overflow';
   }
 
   .view-switch,
@@ -1024,18 +1014,20 @@ onBeforeUnmount(() => {
 @media (max-width: 760px) {
   .action-toolbar,
   .action-toolbar--without-view {
-    grid-template-columns: minmax(190px, 1fr) max-content;
+    grid-template-columns: minmax(0, 1fr) max-content;
     grid-template-areas:
       'search overflow'
-      'primary primary';
+      'total total';
   }
+  :deep(.collection-search-control .sc-input) { height: var(--sc-component-button-touch-target); }
+  .action-toolbar--with-primary { grid-template-areas: 'search overflow' 'total total' 'primary primary'; }
   .toolbar-actions { display: flex; justify-self: stretch; }
   .toolbar-actions :deep(.sc-btn) { width: 100%; }
   .toolbar-overflow-create { display: none; }
-  .toolbar-search-clear,
-  .toolbar-clear-all { display: none; }
-  .toolbar-search-submit { width: 44px; min-height: 44px; padding-inline: 0; font-size: 0; justify-content: center; }
-  .search-menu-toggle { width: 44px; min-height: 44px; }
+  :deep(.toolbar-search-clear),
+  :deep(.toolbar-clear-all) { display: none; }
+  :deep(.toolbar-search-submit) { width: 44px; min-height: 44px; padding-inline: 0; font-size: 0; justify-content: center; }
+  :deep(.search-menu-toggle) { width: 44px; min-height: 44px; }
   .search-menu-item,
   .toolbar-overflow-section :deep(.sc-btn),
   .toolbar-overflow-create,

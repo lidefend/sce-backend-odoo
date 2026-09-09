@@ -9,11 +9,10 @@
     :data-state="open ? 'open' : 'closed'"
     @close="settle(false)"
   >
-    <p class="intent-confirmation__eyebrow">业务状态将发生变化</p>
     <p id="intent-confirmation-message">{{ message }}</p>
     <template #actions>
-      <ScButton variant="ghost" @click="settle(false)">取消</ScButton>
-      <ScButton variant="primary" autofocus @click="settle(true)">确认{{ actionLabel }}</ScButton>
+      <ScButton variant="ghost" autofocus @click="settle(false)">取消</ScButton>
+      <ScButton variant="primary" @click="settle(true)">确认{{ actionLabel }}</ScButton>
     </template>
   </ScDialog>
 </template>
@@ -52,6 +51,5 @@ defineExpose({ confirm });
 </script>
 
 <style scoped>
-.intent-confirmation__eyebrow { margin: var(--sc-product-space-2) 0 var(--sc-product-space-1); color: var(--sc-app-text-secondary); font-size: var(--sc-product-text-sm); }
 #intent-confirmation-message { margin: var(--sc-product-space-2) 0; line-height: 1.6; }
 </style>

@@ -3,12 +3,18 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 X2MANY = ROOT / "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue"
+ONE2MANY_CELL = ROOT / "frontend/apps/web/src/components/template/One2ManyCellEditor.vue"
 VIEW_RELATION = ROOT / "frontend/apps/web/src/components/view/ViewRelationalRenderer.vue"
 
 
-def validate(x2many: str | None = None, view_relation: str | None = None) -> list[str]:
+def validate(
+    x2many: str | None = None,
+    view_relation: str | None = None,
+    one2many_cell: str | None = None,
+) -> list[str]:
     x2m = x2many if x2many is not None else X2MANY.read_text(encoding="utf-8")
     view = view_relation if view_relation is not None else VIEW_RELATION.read_text(encoding="utf-8")
+    cell = one2many_cell if one2many_cell is not None else ONE2MANY_CELL.read_text(encoding="utf-8")
     failures: list[str] = []
     x2many_actions = (
         '<slot name="collection-actions" />',
@@ -65,7 +71,7 @@ def validate(x2many: str | None = None, view_relation: str | None = None) -> lis
     for marker in stateful_relation_controls:
         if marker not in x2m:
             failures.append(f"X2Many lost stateful governed relation control {marker}")
-    if '<button' in x2m or '<input' in x2m or '<select' in x2m:
+    if any(marker in source for source in (x2m, cell) for marker in ('<button', '<input', '<select')):
         failures.append("X2Many retains a raw interactive control outside the primitive adapter")
     readonly_attachment_markers = (
         ':data-control-state="field.readonly ? \'readonly\' : \'editable\'"',
@@ -77,8 +83,8 @@ def validate(x2many: str | None = None, view_relation: str | None = None) -> lis
     for marker in readonly_attachment_markers:
         if marker not in x2m:
             failures.append(f"readonly attachment authority is incomplete: {marker}")
-    if x2m.count("<ScButton") != 8:
-        failures.append(f"X2Many expected 8 governed commands, found {x2m.count('<ScButton')}")
+    if x2m.count("<ScButton") != 9:
+        failures.append(f"X2Many expected 9 governed commands, found {x2m.count('<ScButton')}")
     if view.count("<ScButton") != 6:
         failures.append(f"View relational expected 6 governed commands, found {view.count('<ScButton')}")
     return failures
@@ -91,4 +97,4 @@ if __name__ == "__main__":
         for error in errors:
             print(f"- {error}")
         raise SystemExit(1)
-    print("[frontend_relational_action_primitives_guard] PASS x2many=8 delegated_slots=1 view_relation=6 raw_controls=0 readonly_attachments=fail_closed")
+    print("[frontend_relational_action_primitives_guard] PASS x2many=9 delegated_slots=1 cell_editor=governed view_relation=6 raw_controls=0 readonly_attachments=fail_closed")

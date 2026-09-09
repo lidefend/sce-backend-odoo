@@ -42,12 +42,13 @@ export function useRecordContractSemantics(context: {
   renderProfile: ComputedRef<string>;
   runtimeRoleCode: ComputedRef<string>;
   validationErrors: Ref<string[]>;
+  validationFieldErrors: Ref<Record<string, string>>;
   isIntakeCreateMode: ComputedRef<boolean>;
   intentConfirmationRef: Ref<{ confirm: (input: { actionLabel: string; message: string }) => Promise<boolean> } | null>;
   formConflict: Ref<boolean>;
   layoutNodes: () => Array<{ kind: string; name: string; label: string }>;
   reload: () => Promise<unknown>;
-  focusValidationError: (message: string, fields: Array<{ kind: string; name: string; label: string }>) => void;
+  focusValidationError: (fieldName: string, fields: Array<{ kind: string; name: string; label: string }>) => void;
 }) {
   const semanticFieldGroups = computed<Record<string, SemanticFieldGroup>>(() => {
     return normalizeSemanticFieldGroups(resolveContractV2FieldGroups(context.v2ContractStore.value), undefined);
@@ -127,11 +128,13 @@ export function useRecordContractSemantics(context: {
   const nonSceneValidationErrors = computed(() => context.validationErrors.value.filter(
     (item) => !String(item || '').trim().startsWith(sceneValidationRequiredErrorPrefix),
   ));
-  const focusValidationError = (message: string) => context.focusValidationError(message, context.layoutNodes());
+  const focusValidationError = (fieldName: string) => context.focusValidationError(fieldName, context.layoutNodes());
   const focusFirstValidationError = async () => {
     await nextTick();
-    const message = nonSceneValidationErrors.value[0] || context.validationErrors.value[0] || '';
-    if (message) focusValidationError(message);
+    const fieldName = Object.keys(context.validationFieldErrors.value)[0] || '';
+    if (fieldName || nonSceneValidationErrors.value.length || context.validationErrors.value.length) {
+      focusValidationError(fieldName);
+    }
   };
   const reloadLatestRecord = async () => {
     const confirmed = await context.intentConfirmationRef.value?.confirm({

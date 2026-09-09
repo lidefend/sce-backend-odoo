@@ -5,6 +5,7 @@ import type { LayoutNode, SubmissionFeedback } from './types';
 
 export type SaveRecordValidationResult = {
   editableMap?: Record<string, unknown>;
+  fieldErrors?: Record<string, string>;
   ok: boolean;
   showOne2manyErrors?: boolean;
   validationErrors?: string[];
@@ -32,6 +33,7 @@ export async function validateBeforeSaveRecord(params: {
   layoutNodes: LayoutNode[];
   layoutFieldLabels: () => Record<string, string>;
   normalizeFieldValue: (name: string, value: unknown) => unknown;
+  one2manyFieldErrors: Record<string, string>;
   one2manyIssues: string[];
   recordId: number | null;
   resolvePendingInlineRelationCreates: () => Promise<string[]>;
@@ -42,6 +44,7 @@ export async function validateBeforeSaveRecord(params: {
       ok: false,
       showOne2manyErrors: true,
       validationErrors: params.one2manyIssues.slice(0, 5),
+      fieldErrors: params.one2manyFieldErrors,
       submissionFeedback: { kind: 'warn', message: '创建失败，请检查填写内容' },
     };
   }
@@ -75,18 +78,19 @@ export async function validateBeforeSaveRecord(params: {
   }
   const editableMap = params.collectWritableValues();
   if (!params.recordId) {
-    const requiredIssues = collectRequiredFieldIssues({
+    const requiredValidation = collectRequiredFieldValidation({
       formData: params.formData,
       isWritableFieldVisible: params.isWritableFieldVisible,
       layoutNodes: params.layoutNodes,
       normalizeFieldValue: params.normalizeFieldValue,
       values: editableMap,
     });
-    if (requiredIssues.length) {
+    if (requiredValidation.messages.length) {
       return {
         ok: false,
         showOne2manyErrors: false,
-        validationErrors: requiredIssues,
+        validationErrors: requiredValidation.messages,
+        fieldErrors: requiredValidation.fieldErrors,
         submissionFeedback: { kind: 'warn', message: '请先补充必填信息，再保存草稿或提交。' },
       };
     }
@@ -105,6 +109,16 @@ export function collectRequiredFieldIssues(params: {
   normalizeFieldValue: (name: string, value: unknown) => unknown;
   values: Record<string, unknown>;
 }) {
+  return collectRequiredFieldValidation(params).messages;
+}
+
+export function collectRequiredFieldValidation(params: {
+  formData: Record<string, unknown>;
+  isWritableFieldVisible: (name: string) => boolean;
+  layoutNodes: LayoutNode[];
+  normalizeFieldValue: (name: string, value: unknown) => unknown;
+  values: Record<string, unknown>;
+}) {
   const missing = params.layoutNodes
     .filter((node) => node.kind === 'field' && !node.readonly && params.isWritableFieldVisible(node.name))
     .filter((node) => {
@@ -115,10 +129,18 @@ export function collectRequiredFieldIssues(params: {
         : params.normalizeFieldValue(node.name, params.formData[node.name]);
       return isRequiredFieldEmptyByType(value, fieldType(descriptor));
     })
-    .map((node) => String(node.label || node.descriptor?.string || node.name).trim())
-    .filter(Boolean);
-  if (!missing.length) return [];
-  return [`保存前请填写：${Array.from(new Set(missing)).slice(0, 5).join('、')}`];
+    .map((node) => ({
+      name: node.name,
+      label: String(node.label || node.descriptor?.string || node.name).trim(),
+    }))
+    .filter((item) => Boolean(item.name && item.label));
+  if (!missing.length) return { messages: [], fieldErrors: {} };
+  const unique = Array.from(new Map(missing.map((item) => [item.name, item])).values()).slice(0, 5);
+  const message = `保存前请填写：${unique.map((item) => item.label).join('、')}`;
+  return {
+    messages: [message],
+    fieldErrors: Object.fromEntries(unique.map((item) => [item.name, `${item.label}不能为空`])),
+  };
 }
 
 export type SaveRecordPayloadBuildInput = {

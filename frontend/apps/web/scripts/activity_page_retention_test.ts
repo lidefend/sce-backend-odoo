@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { isActionPageIdentityOwner } from '../src/app/runtime/actionViewRouteRuntime';
+import { createPageIdentityCoordinator } from '../src/app/pageIdentityCoordinator';
 import {
   activityPageTitleTargetKeys,
   isSupersededEntryActionActivityPage,
@@ -175,3 +177,21 @@ assert.equal(
 );
 
 console.log('[activity_page_title_publication_test] PASS cases=3');
+
+const actionOwner = { active: true, routeName: 'action', instanceRouteKey: 'action:809:menu:559', currentRouteKey: 'action:809:menu:559' };
+assert.equal(isActionPageIdentityOwner(actionOwner), true, 'active action can publish its own title');
+assert.equal(isActionPageIdentityOwner({ ...actionOwner, active: false }), false, 'cached action cannot publish');
+assert.equal(isActionPageIdentityOwner({ ...actionOwner, currentRouteKey: 'action:609:menu:660' }), false, 'another action instance cannot publish');
+assert.equal(isActionPageIdentityOwner({ ...actionOwner, instanceRouteKey: '', currentRouteKey: '' }), false, 'unresolved ownership fails closed');
+for (const routeName of ['my-work', 'scene-my-work', 'home', 'scene-home', 'model-form']) {
+  const coordinator = createPageIdentityCoordinator();
+  const title = routeName.includes('work') ? '我的工作' : '目标页面';
+  let identity = coordinator.begin(`/${routeName}`, { fallbackTitle: title });
+  // The old action is still active before its deactivation hook runs, and the
+  // shared router already points at the destination. It must not publish there.
+  if (isActionPageIdentityOwner({ ...actionOwner, routeName })) {
+    identity = coordinator.publish(`/${routeName}`, { actionName: '付款申请' })!;
+  }
+  assert.equal(identity.title, title, `${routeName} keeps its route-owned title during deactivation`);
+}
+console.log('[action_page_identity_owner_test] PASS cases=9');

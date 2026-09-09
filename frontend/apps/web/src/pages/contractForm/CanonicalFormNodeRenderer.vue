@@ -256,7 +256,28 @@ function fieldChildOrphanClass(child: CanonicalFormNode): string {
   font-size: 13px;
   line-height: 18px;
 }
-.canonical-form-node[data-density='compact-task'].canonical-form-node--readonly-fact { padding: 4px 0; }
+.canonical-form-node[data-density='compact-task'] + .canonical-form-node[data-density='compact-task'] { margin-top: 8px; }
+.canonical-form-node[data-density='compact-task'].canonical-form-node--container,
+.canonical-form-node[data-density='compact-task'].canonical-form-node--group { row-gap: 8px; }
+.canonical-form-node[data-density='compact-task'].canonical-form-node--container > .canonical-form-node,
+.canonical-form-node[data-density='compact-task'].canonical-form-node--group > .canonical-form-node { margin-top: 0; }
+.canonical-form-node[data-density='compact-task'].canonical-form-node--readonly-fact { padding: 0; }
+
+/* Contract columns describe field relationships, but half-width writable
+ * controls are too narrow on phones. Preserve compact readonly fact grids and
+ * stack editable fields so labels, validation text and relation controls keep
+ * a usable inline size across canonical forms. */
+@media (max-width: 480px) {
+  .canonical-form-node--container:not(.canonical-form-node--readonly-fact),
+  .canonical-form-node--group:not(.canonical-form-node--readonly-fact) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .canonical-form-node--container:not(.canonical-form-node--readonly-fact) > .canonical-form-node,
+  .canonical-form-node--group:not(.canonical-form-node--readonly-fact) > .canonical-form-node {
+    grid-column: 1 / -1;
+  }
+}
 .canonical-form-native-action:disabled { cursor: not-allowed; opacity: 0.55; }
 .canonical-form-native-widget { color: var(--sc-app-text-secondary); }
 .canonical-form-native-text { white-space: pre-wrap; }

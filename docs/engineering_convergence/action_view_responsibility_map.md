@@ -170,6 +170,17 @@ collaboration user search):
   only, with no router, API, session, lifecycle, window, or notification
   side effects moved.
 
+## Stage 8 Re-baseline (2026-09-10)
+
+The frontend page-experience iteration added authoritative page-identity
+ownership checks, list-preference policy enforcement, and routed-page gutter
+settlement without moving transaction or navigation ownership:
+
+- `ActionView.vue` is locked at `<=3769` lines and remains tracked as P1
+  extraction debt in `split_plan_queue.md`;
+- future work must modify existing owned paths or extract responsibilities
+  rather than increasing the route orchestration shell.
+
 ## Verification Gaps
 
 Before moving transaction-heavy methods, add or confirm behavior coverage for:

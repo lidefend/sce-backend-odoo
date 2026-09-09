@@ -39,6 +39,15 @@ function bool(value: unknown, fallback: boolean): boolean {
   return typeof value === 'boolean' ? value : fallback;
 }
 
+function hasCurrencyDisplayLabel(value: unknown): boolean {
+  if (Array.isArray(value)) return text(value[1]).length > 0;
+  if (value && typeof value === 'object') {
+    const row = value as ContractV2Dictionary;
+    return text(row.name || row.display_name || row.symbol).length > 0;
+  }
+  return typeof value === 'string' && text(value).length > 0;
+}
+
 function containerModifierValue(container: ContractV2Container, key: 'invisible' | 'readonly' | 'required'): unknown {
   const attributes = asDict(container.attributes);
   const fieldInfo = asDict(container.fieldInfo);
@@ -230,9 +239,16 @@ function fieldFromWidget(
     : false;
   const fieldAuth = text(status?.auth);
   const componentConfig = { ...widget.componentConfig };
-  const currencyField = text(componentConfig.currencyField || componentConfig.currency_field);
+  const currencyField = text(
+    componentConfig.currencyField
+    || componentConfig.currency_field
+    || widget.fieldDescriptor?.currency_field,
+  );
   if (fieldType === 'monetary' && currencyField) {
-    componentConfig.currencyValue = runtimeValues?.[currencyField] ?? contractValues[currencyField];
+    const runtimeCurrencyValue = runtimeValues?.[currencyField];
+    componentConfig.currencyValue = hasCurrencyDisplayLabel(runtimeCurrencyValue)
+      ? runtimeCurrencyValue
+      : contractValues[currencyField];
   }
   return {
     widgetId: widget.widgetId,

@@ -8,6 +8,7 @@ import { mergeWorkspaceNavigationLinks, resolveWorkspaceNavigationLink } from '.
 import { useSessionStore, type ActivityPage } from '../../stores/session';
 
 type SurfaceLink = { key: string; label: string; detail: string; route: string };
+type SurfaceTask = SurfaceLink & { kind: string; recordId: number; state: ProductMyWorkItem['state']; facts: ProductMyWorkItem['facts']; amount?: ProductMyWorkItem['facts'][number] };
 type SurfaceCount = { key: string; label: string; value: number };
 
 function text(value: unknown): string {
@@ -18,7 +19,7 @@ function topNodes(nodes: NavNode[]): NavNode[] {
   return nodes.length === 1 && nodes[0]?.children?.length ? nodes[0].children : nodes;
 }
 
-function taskLink(item: ProductMyWorkItem): SurfaceLink | null {
+function taskLink(item: ProductMyWorkItem): SurfaceTask | null {
   const route = text(item.target?.route);
   const label = text(item.record?.label);
   if (!route || !label) return null;
@@ -27,6 +28,11 @@ function taskLink(item: ProductMyWorkItem): SurfaceLink | null {
     label,
     detail: [text(item.business_type), text(item.state?.label)].filter(Boolean).join(' · '),
     route,
+    kind: text(item.business_type),
+    recordId: Number(item.target?.record_id || 0),
+    state: item.state,
+    facts: [],
+    amount: (item.facts || []).find((fact) => fact.field_group !== 'audit' && fact.display_role === 'money'),
   };
 }
 
@@ -49,9 +55,9 @@ export function useWorkspaceHome() {
   const title = computed(() => text(pageProfile.value.title) || pageContract.text('title', '首页'));
   const subtitle = computed(() => text(pageProfile.value.subtitle) || pageContract.text('subtitle', '查看当前账号可处理的事项和可用入口。'));
   const taskSection = computed(() => workWorkspace.value?.sections.find((section) => section.key === 'todo') || null);
-  const tasks = computed<SurfaceLink[]>(() => (taskSection.value?.items || [])
+  const tasks = computed<SurfaceTask[]>(() => (taskSection.value?.items || [])
     .map(taskLink)
-    .filter((item): item is SurfaceLink => Boolean(item))
+    .filter((item): item is SurfaceTask => Boolean(item))
     .slice(0, 3));
   const summaries = computed<SurfaceCount[]>(() => (workWorkspace.value?.sections || [])
     .map((section) => ({ key: section.key, label: section.label, value: section.count }))

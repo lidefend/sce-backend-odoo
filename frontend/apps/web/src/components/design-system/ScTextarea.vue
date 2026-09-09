@@ -5,6 +5,7 @@
     class="sc-input sc-textarea"
     data-semantic-component="ScTextarea"
     data-semantic-layer="primitive"
+    data-focus-ring-owner="component"
     :data-size="normalizePrimitiveSize(size)"
     :data-status="status"
     :data-loading="loading || undefined"

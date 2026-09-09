@@ -16,7 +16,7 @@
     {{ text }}
   </span>
   <div v-else-if="kind === 'primary'" data-semantic-component="CollectionRowCell" class="collection-row-cell cell-primary">
-    <ScButton type="button" class="cell-primary-link" appearance="auth-link" variant="ghost" size="small" @click.stop="$emit('open-record')">
+    <ScButton type="button" class="cell-primary-link" data-semantic-cell-kind="primary" appearance="auth-link" variant="ghost" size="small" :title="text" :aria-label="text" @click.stop="$emit('open-record')">
       {{ text }}
     </ScButton>
     <span v-if="secondaryText" class="secondary"> · {{ secondaryText }}</span>
@@ -51,7 +51,7 @@
     data-semantic-cell-kind="relation-tags"
     class="collection-row-cell relation-tags"
   >
-    <span v-for="item in relationItems" :key="item.id" class="relation-tag">{{ item.label }}</span>
+    <span v-for="item in relationItems" :key="item.id" class="relation-tag" :title="item.label">{{ item.label }}</span>
   </span>
   <span v-else data-semantic-component="CollectionRowCell" class="collection-row-cell" :title="text">{{ text }}</span>
 </template>

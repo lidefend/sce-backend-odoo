@@ -6,6 +6,7 @@ import importlib.util
 import sys
 import types
 import unittest
+from xml.etree import ElementTree
 from pathlib import Path
 
 
@@ -83,8 +84,23 @@ def _install_odoo_stubs() -> None:
     sys.modules["odoo.exceptions"] = exceptions_mod
 
 
+def _install_xml_stubs() -> None:
+    if "lxml" in sys.modules:
+        return
+    if importlib.util.find_spec("lxml") is not None:
+        return
+    lxml_mod = types.ModuleType("lxml")
+    lxml_mod.__path__ = []
+    etree_mod = types.ModuleType("lxml.etree")
+    etree_mod.fromstring = ElementTree.fromstring
+    lxml_mod.etree = etree_mod
+    sys.modules["lxml"] = lxml_mod
+    sys.modules["lxml.etree"] = etree_mod
+
+
 def _load_module():
     _install_odoo_stubs()
+    _install_xml_stubs()
     module_name = "odoo.addons.smart_core.model.ui_business_config_contract"
     spec = importlib.util.spec_from_file_location(module_name, MODULE_PATH)
     module = importlib.util.module_from_spec(spec)

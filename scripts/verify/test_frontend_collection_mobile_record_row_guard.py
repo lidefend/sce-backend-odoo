@@ -23,6 +23,18 @@ class CollectionMobileRecordRowGuardTest(unittest.TestCase):
     def test_repository_contract_passes(self):
         self.assertEqual(validate(), [])
 
+    def test_tail_fact_truncation_fails(self):
+        marker = '.filter((field) => field !== identity && field !== status)'
+        self.assertIn(marker, self.list_source)
+        altered = self.list_source.replace(marker, marker + '.slice(0, 6)')
+        self.assertTrue(any('preserve all visible columns' in item for item in validate(altered)))
+
+    def test_fixed_mobile_budget_fails(self):
+        marker = 'capacity: enabledColumns.value.length'
+        self.assertIn(marker, self.list_source)
+        altered = self.list_source.replace(marker, 'capacity: 8')
+        self.assertTrue(any('accommodate enabled columns' in item for item in validate(altered)))
+
     def test_duplicate_adapter_fails(self):
         altered = self.list_source + "\n<CollectionMobileRecordRow />\n"
         self.assertTrue(any("exactly one" in item for item in validate(altered, self.row_source, self.row_css, self.legacy_css)))
@@ -42,6 +54,14 @@ class CollectionMobileRecordRowGuardTest(unittest.TestCase):
     def test_missing_open_passthrough_fails(self):
         altered = self.list_source.replace('@open="handleRow(row)"', "")
         self.assertTrue(any("handleRow" in item for item in validate(altered, self.row_source, self.row_css, self.legacy_css)))
+
+    def test_money_role_priority_fails_closed(self):
+        marker = "right.fact.layoutRole === 'money'"
+        self.assertIn(marker, self.row_source)
+        altered = self.row_source.replace(marker, "false")
+        self.assertTrue(any("layoutRole" in item for item in validate(
+            self.list_source, altered, self.row_css, self.legacy_css,
+        )))
 
     def test_missing_touch_target_fails(self):
         altered = self.row_css.replace("var(--sc-touch-target-min)", "40px")

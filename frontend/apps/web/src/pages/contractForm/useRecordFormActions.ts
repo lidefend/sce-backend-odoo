@@ -105,6 +105,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     resolvePendingMany2manyTagCreates,
     retainedRouteIdentity,
     route,
+    routeQueryText,
     router,
     runContractRuleAction,
     sanitizeUiErrorMessage,
@@ -127,6 +128,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     v2ContractStore,
     validateBeforeSaveRecord,
     validationErrors,
+    validationFieldErrors,
     writeContractFormRecord,
   } = dependencies;
   async function discardChanges() {
@@ -375,12 +377,6 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     return effectiveFieldGroupTitleForDraft(fieldKey);
   }
 
-  function routeQueryText(key: string) {
-    const value = route.query[key];
-    if (Array.isArray(value)) return String(value[0] || '').trim();
-    return String(value || '').trim();
-  }
-
   function lowCodeReturnQuery() {
     return buildLowCodeReturnQuery({
       routeQuery: route.query as Record<string, unknown>,
@@ -442,6 +438,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     if (!canSave.value || !model.value) return false;
     submissionFeedback.value = null;
     validationErrors.value = [];
+    validationFieldErrors.value = {};
     formConflict.value = false;
     const validation = await validateBeforeSaveRecord({
       collectSceneValidationPrecheckErrors: (fieldLabels) =>
@@ -456,6 +453,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
           return acc;
         }, {}),
       normalizeFieldValue: (name, value) => normalizeFieldValue(name, value),
+      one2manyFieldErrors: one2manyValidation.value.cellErrors,
       one2manyIssues: one2manyValidation.value.issues,
       recordId: recordId.value,
       resolvePendingInlineRelationCreates: () => resolvePendingInlineRelationCreates(),
@@ -464,6 +462,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     showOne2manyErrors.value = Boolean(validation.showOne2manyErrors);
     if (!validation.ok || !validation.editableMap) {
       validationErrors.value = validation.validationErrors || [];
+      validationFieldErrors.value = validation.fieldErrors || {};
       submissionFeedback.value = validation.submissionFeedback || null;
       await focusFirstValidationError();
       return false;
@@ -551,6 +550,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
       if (err instanceof ApiError && err.status === 409) {
         formConflict.value = true;
         validationErrors.value = ['当前记录已发生变化，请加载最新数据后重新核对本次修改。'];
+        validationFieldErrors.value = {};
         submissionFeedback.value = {
           kind: 'error',
           message: '记录已被其他操作更新，当前输入尚未写入。',
@@ -560,6 +560,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
       }
       const message = sanitizeUiErrorMessage(err instanceof Error ? err.message : err, fallback);
       validationErrors.value = [message];
+      validationFieldErrors.value = {};
       submissionFeedback.value = { kind: 'error', message: message && message !== fallback ? message : fallback };
       await focusFirstValidationError();
       return false;

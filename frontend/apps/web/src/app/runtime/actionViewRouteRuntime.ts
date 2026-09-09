@@ -119,6 +119,17 @@ export function buildActionActivityRouteKey(options: {
   return currentActionId ? `action:${currentActionId}:menu:${currentMenuId}` : '';
 }
 
+export function isActionPageIdentityOwner(options: {
+  routeName: unknown;
+  active: boolean;
+  instanceRouteKey: string;
+  currentRouteKey: string;
+}): boolean {
+  return options.active && options.routeName === 'action'
+    && Boolean(options.instanceRouteKey)
+    && options.instanceRouteKey === options.currentRouteKey;
+}
+
 import { pickContractNavQuery } from '../navigationContext';
 import { stripWorkspaceContext } from '../workspaceContext';
 import { serializeGroupPageOffsets } from './actionViewGroupWindowRuntime';

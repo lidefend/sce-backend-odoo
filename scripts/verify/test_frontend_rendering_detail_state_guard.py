@@ -47,6 +47,35 @@ class FrontendRenderingDetailStateGuardTest(unittest.TestCase):
         failures = validate(fake)
         self.assertTrue(any("contract missing" in failure and target in failure for failure in failures))
 
+    def test_component_owned_focus_is_excluded_from_global_fallback(self) -> None:
+        target = "frontend/apps/web/src/styles/product-patterns.css"
+        original = (INVENTORY.ROOT / target).read_text(encoding="utf-8")
+        regressed = original.replace(
+            "[data-focus-ring-owner='component'] *",
+            "[data-focus-ring-owner='missing'] *",
+        )
+
+        def fake(source):
+            if source == target:
+                return regressed
+            return (INVENTORY.ROOT / source).read_text(encoding="utf-8")
+
+        failures = validate(fake)
+        self.assertTrue(any("component-owned focus exclusion" in failure for failure in failures))
+
+    def test_composite_input_must_declare_focus_owner(self) -> None:
+        target = "frontend/apps/web/src/components/design-system/ScSelect.vue"
+        original = (INVENTORY.ROOT / target).read_text(encoding="utf-8")
+        regressed = original.replace('data-focus-ring-owner="component"', "")
+
+        def fake(source):
+            if source == target:
+                return regressed
+            return (INVENTORY.ROOT / source).read_text(encoding="utf-8")
+
+        failures = validate(fake)
+        self.assertTrue(any("component focus owner contract missing" in failure and target in failure for failure in failures))
+
     def test_topbar_uses_authoritative_shell_token(self) -> None:
         target = "frontend/apps/web/src/layouts/AppShell.css"
         original = (INVENTORY.ROOT / target).read_text(encoding="utf-8")

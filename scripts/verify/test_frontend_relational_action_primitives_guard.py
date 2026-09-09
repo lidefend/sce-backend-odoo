@@ -1,16 +1,17 @@
 import unittest
 
-from scripts.verify.frontend_relational_action_primitives_guard import X2MANY, VIEW_RELATION, validate
+from scripts.verify.frontend_relational_action_primitives_guard import ONE2MANY_CELL, X2MANY, VIEW_RELATION, validate
 
 
 class RelationalActionPrimitivesGuardTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.x2many = X2MANY.read_text(encoding="utf-8")
+        cls.one2many_cell = ONE2MANY_CELL.read_text(encoding="utf-8")
         cls.view_relation = VIEW_RELATION.read_text(encoding="utf-8")
 
     def test_repository_contract_passes(self):
-        self.assertEqual(validate(self.x2many, self.view_relation), [])
+        self.assertEqual(validate(self.x2many, self.view_relation, self.one2many_cell), [])
 
     def test_one2many_create_cannot_regress_to_legacy_button(self):
         altered = self.x2many.replace('<ScButton\n          v-if="adapter.one2manyCanCreate(field.name)"', '<button\n          v-if="adapter.one2manyCanCreate(field.name)"')
@@ -41,8 +42,13 @@ class RelationalActionPrimitivesGuardTest(unittest.TestCase):
         self.assertTrue(any("stateful governed" in error for error in validate(altered, self.view_relation)))
 
     def test_raw_relation_control_is_rejected(self):
-        altered = self.x2many.replace('<ScCheckbox', '<input', 1)
-        self.assertTrue(any("raw interactive control" in error for error in validate(altered, self.view_relation)))
+        altered = self.one2many_cell.replace('<ScCheckbox', '<input', 1)
+        self.assertTrue(
+            any(
+                "raw interactive control" in error
+                for error in validate(self.x2many, self.view_relation, altered)
+            )
+        )
 
     def test_business_specific_collection_action_is_rejected(self):
         altered = self.x2many.replace(

@@ -23,6 +23,10 @@ function publishFailureMessage(changeSet: BusinessConfigChangeSet) {
   return String(firstError || changeSet.failure_message || '变更集校验未通过，请修正后重试');
 }
 
+function requestFailureMessage(cause: unknown) {
+  return cause instanceof Error && cause.message.trim() ? cause.message : '待发布变更读取失败，请重试。';
+}
+
 export function useBusinessConfigDraftSession(roleKey: () => string) {
   const changeSet = ref<BusinessConfigChangeSet | null>(null);
   const loading = ref(false);
@@ -41,6 +45,9 @@ export function useBusinessConfigDraftSession(roleKey: () => string) {
     try {
       changeSet.value = await openBusinessConfigChangeSet({ role_key: roleKey() || undefined });
       return changeSet.value;
+    } catch (cause) {
+      error.value = requestFailureMessage(cause);
+      throw cause;
     } finally {
       loading.value = false;
     }

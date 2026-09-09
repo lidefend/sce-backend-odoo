@@ -68,6 +68,7 @@
         "frontend/apps/web/src/components/template/NativeActionOverflowMenu.vue",
         "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
         "frontend/apps/web/src/components/template/NativeSmartAction.vue",
+        "frontend/apps/web/src/components/template/One2ManyCellEditor.vue",
         "frontend/apps/web/src/components/view/ViewFieldRenderer.vue",
         "frontend/apps/web/src/components/view/ViewRelationalRenderer.vue",
         "frontend/apps/web/src/components/view/ViewNotebookRenderer.vue",

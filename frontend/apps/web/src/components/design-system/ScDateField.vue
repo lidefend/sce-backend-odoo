@@ -4,6 +4,7 @@
     data-semantic-component="ScDateField"
     data-semantic-driver="tdesign-date-picker"
     data-semantic-layer="primitive"
+    data-focus-ring-owner="component"
     :data-appearance="appearance"
     :value="modelValue"
     :disabled="disabled"

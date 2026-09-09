@@ -5,17 +5,24 @@
     class="sc-select"
     data-semantic-component="ScSelect"
     data-semantic-layer="primitive"
+    data-focus-ring-owner="component"
     data-primitive-driver="tdesign"
+    :data-option-count="tdesignOptions.length"
     :data-size="size"
     :data-status="status"
     :data-readonly="readonly || undefined"
     :data-appearance="appearance"
     :model-value="modelValue"
     :options="tdesignOptions"
+    :input-props="{ inputClass: `sc-select__control sc-select__control--${appearance}` }"
     :size="size"
     :status="invalid ? 'error' : status"
     :disabled="disabled"
     :readonly="readonly"
+    :filterable="filterable"
+    :loading="loading"
+    :empty="emptyText"
+    :reserve-keyword="false"
     :placeholder="placeholder"
     :aria-disabled="disabled || undefined"
     :aria-readonly="readonly || undefined"
@@ -23,6 +30,8 @@
     :aria-invalid="invalid || status === 'error' || undefined"
     :aria-describedby="describedBy"
     @change="onChange"
+    @search="onSearch"
+    @popup-visible-change="onPopupVisibleChange"
   />
 </template>
 
@@ -30,7 +39,12 @@
 import { computed, ref } from 'vue';
 import { TDesignSelect } from './tdesignPrimitiveBridge';
 import { nativeControlProjection } from './nativeControlProjection';
-import { resolvePrimitiveControlUpdate, type ScPrimitiveSize, type ScPrimitiveStatus } from './primitiveAdapter';
+import {
+  resolvePrimitiveControlUpdate,
+  selectPopupVisibilityEvent,
+  type ScPrimitiveSize,
+  type ScPrimitiveStatus,
+} from './primitiveAdapter';
 
 export interface ScSelectOption {
   value: string | number;
@@ -49,6 +63,9 @@ const props = withDefaults(defineProps<{
   required?: boolean;
   invalid?: boolean;
   describedBy?: string;
+  filterable?: boolean;
+  loading?: boolean;
+  emptyText?: string;
   appearance?: 'default' | 'form-field';
 }>(), {
   options: () => [],
@@ -57,9 +74,18 @@ const props = withDefaults(defineProps<{
   status: 'default',
   describedBy: undefined,
   appearance: 'default',
+  filterable: false,
+  loading: false,
+  emptyText: undefined,
 });
-const emit = defineEmits<{ 'update:modelValue': [value: string]; change: [value: string] }>();
+const emit = defineEmits<{
+  'update:modelValue': [value: string];
+  change: [value: string];
+  search: [value: string];
+  'popup-visible-change': [event: { visible: boolean; trigger: string }];
+}>();
 const selectRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null);
+let lastSearchValue: string | undefined;
 const vNativeControlProjection = nativeControlProjection;
 const tdesignOptions = computed(() => props.options.map((option) => ({
   value: option.value,
@@ -82,6 +108,21 @@ function onChange(nextValue: unknown) {
   if (value === null) return;
   emit('update:modelValue', value);
   emit('change', value);
+}
+
+function emitSearchValue(value: unknown) {
+  const normalized = String(value || '');
+  if (lastSearchValue === normalized) return;
+  lastSearchValue = normalized;
+  emit('search', normalized);
+}
+
+function onSearch(value: unknown) {
+  emitSearchValue(value);
+}
+
+function onPopupVisibleChange(visible: unknown, context?: { trigger?: string }) {
+  emit('popup-visible-change', selectPopupVisibilityEvent(visible, context?.trigger));
 }
 
 defineExpose({ focus: () => selectRef.value?.focus?.() ?? selectRef.value?.$el?.querySelector('input')?.focus() });

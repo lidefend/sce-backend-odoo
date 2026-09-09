@@ -357,7 +357,8 @@
 }
 
 .menu {
-  overflow: auto;
+  min-width: 0;
+  overflow: hidden;
   padding-right: 2px;
   padding-top: 2px;
   min-height: 0;
@@ -857,6 +858,11 @@
 }
 
 @media (max-width: 960px) {
+  .topbar--single-heading .eyebrow,
+  .topbar--single-heading .topbar-breadcrumb {
+    display: none;
+  }
+
   .shell {
     grid-template-columns: 1fr;
     height: 100dvh;
@@ -942,9 +948,14 @@
   }
   .topbar-actions {
     width: 100%;
-    flex-wrap: nowrap;
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
     gap: 4px;
     justify-content: flex-start;
+  }
+  .topbar-actions > * {
+    max-width: 100%;
   }
   .topbar-context,
   .theme-switch {
@@ -1038,10 +1049,8 @@
     max-block-size: 100%;
     grid-template-columns: minmax(0, 1fr);
     border-right-color: var(--sc-app-border);
-    background:
-      linear-gradient(180deg, color-mix(in srgb, var(--sc-app-accent) 10%, transparent) 0, color-mix(in srgb, var(--sc-app-accent) 3%, transparent) 132px, transparent 260px),
-      var(--sc-navigation-bg);
-    box-shadow: 8px 0 28px color-mix(in srgb, var(--sc-app-shadow) 12%, transparent);
+    background: var(--sc-app-bg);
+    box-shadow: none;
   }
 
   .workspace-activity-rail {
@@ -1060,7 +1069,7 @@
     min-height: 72px;
     margin: -14px -16px 2px;
     padding: 15px 18px;
-    border-bottom: 1px solid color-mix(in srgb, var(--sc-app-accent) 16%, transparent);
+    border-bottom: 1px solid transparent;
     background: transparent;
   }
 
@@ -1097,10 +1106,9 @@
     width: 100%;
     margin-inline-start: 0;
     padding: var(--sc-space-2xs) var(--sc-page-inline-padding);
-    border-bottom: 1px solid var(--sc-app-border);
-    background: color-mix(in srgb, var(--sc-app-panel) 96%, transparent);
-    box-shadow: 0 4px 16px color-mix(in srgb, var(--sc-app-shadow) 10%, transparent), inset 0 3px 0 var(--sc-app-border);
-    backdrop-filter: blur(12px);
+    border-bottom: 1px solid transparent;
+    background: var(--sc-app-bg);
+    box-shadow: none;
   }
 
   .topbar--minimal .crumb {

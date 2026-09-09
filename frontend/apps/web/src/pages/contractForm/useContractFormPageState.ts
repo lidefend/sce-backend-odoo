@@ -13,6 +13,7 @@ export function useContractFormPageState() {
     errorMessage: ref(''),
     loadError: reactive<{ status: number | null; reason: string; trace: string }>({ status: null, reason: '', trace: '' }),
     validationErrors: ref<string[]>([]),
+    validationFieldErrors: ref<Record<string, string>>({}),
     submissionFeedback: ref<SubmissionFeedback>(null),
     formConflict: ref(false),
     showOne2manyErrors: ref(false),

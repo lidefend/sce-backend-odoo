@@ -14,6 +14,19 @@ export function resolveCollectionAnchorId(row: Dict): string {
   return '';
 }
 
+function collectionScrollOwner(anchorId: string): HTMLElement | null {
+  const anchor = anchorId
+    ? Array.from(document.querySelectorAll<HTMLElement>('[data-record-key]'))
+      .find((element) => element.dataset.recordKey === anchorId)
+    : null;
+  let current = anchor?.parentElement || null;
+  while (current) {
+    if (current.scrollHeight > current.clientHeight + 1) return current;
+    current = current.parentElement;
+  }
+  return document.scrollingElement instanceof HTMLElement ? document.scrollingElement : null;
+}
+
 export function useCollectionViewContextRuntime(options: {
   actionId: Ref<number | null>;
   menuId: Ref<number | null>;
@@ -47,8 +60,9 @@ export function useCollectionViewContextRuntime(options: {
 
   function handleRowClick(row: Dict): void {
     if (typeof window !== 'undefined') {
-      window.sessionStorage.setItem(storageKey('scroll'), String(Math.max(0, Math.trunc(window.scrollY || 0))));
       const anchorId = resolveCollectionAnchorId(row);
+      const scrollOwner = collectionScrollOwner(anchorId);
+      window.sessionStorage.setItem(storageKey('scroll'), String(Math.max(0, Math.trunc(scrollOwner?.scrollTop || window.scrollY || 0))));
       if (anchorId) window.sessionStorage.setItem(storageKey('anchor'), anchorId);
     }
     options.openRow(row);
@@ -59,7 +73,11 @@ export function useCollectionViewContextRuntime(options: {
     const top = Number(window.sessionStorage.getItem(storageKey('scroll')) || 0);
     const anchorId = String(window.sessionStorage.getItem(storageKey('anchor')) || '').trim();
     window.requestAnimationFrame(() => {
-      if (Number.isFinite(top) && top > 0) window.scrollTo({ top, behavior: 'auto' });
+      const scrollOwner = collectionScrollOwner(anchorId);
+      if (Number.isFinite(top) && top > 0) {
+        if (scrollOwner) scrollOwner.scrollTop = top;
+        else window.scrollTo({ top, behavior: 'auto' });
+      }
       document.querySelectorAll<HTMLElement>('[data-return-anchor="active"]').forEach((element) => {
         element.removeAttribute('data-return-anchor');
       });

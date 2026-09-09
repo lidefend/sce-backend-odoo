@@ -102,6 +102,13 @@ export function resolvePrimitiveControlUpdate(input: {
   return String(input.value ?? '');
 }
 
+export function selectPopupVisibilityEvent(visible: unknown, trigger?: string) {
+  return {
+    visible: Boolean(visible),
+    trigger: String(trigger || 'component-sync'),
+  };
+}
+
 export function tdesignTabsSize(size?: ScPrimitiveSize): 'medium' | 'large' {
   return normalizePrimitiveSize(size) === 'large' ? 'large' : 'medium';
 }

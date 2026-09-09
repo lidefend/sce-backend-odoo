@@ -114,12 +114,39 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
     def test_input_without_inline_edit_authority_fails(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
-            if path.endswith("X2ManyRelationRenderer.vue"):
-                return value.replace(" || !adapter.one2manyCanInlineEdit(field.name)", "", 1)
+            if path.endswith("One2ManyCellEditor.vue"):
+                return value.replace(" || !adapter.one2manyCanInlineEdit(fieldName)", "", 1)
             return value
 
         failures = validate(read_text)
         self.assertTrue(any("inputs do not consistently" in item for item in failures))
+
+    def test_desktop_and_mobile_cell_logic_cannot_diverge(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace("<One2ManyCellEditor", "<RemovedCellEditor", 1)
+            return value
+
+        self.assertTrue(any("same cell editor" in item for item in validate(read_text)))
+
+    def test_editable_controls_cannot_use_text_ellipsis(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace("ellipsis: false", "ellipsis: true", 1)
+            return value
+
+        self.assertTrue(any("TDesign text ellipsis" in item for item in validate(read_text)))
+
+    def test_missing_column_label_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace("title: column.label", "title: ''")
+            return value
+
+        self.assertTrue(any("authoritative labels" in item for item in validate(read_text)))
 
     def test_unguarded_inline_update_handler_fails(self):
         def read_text(path):
@@ -151,6 +178,19 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
         failures = validate(read_text)
         self.assertTrue(any("row creation handler" in item for item in failures))
 
+    def test_row_creation_cannot_wait_for_optional_column_hydration(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordActionPresentation.ts"):
+                return value.replace(
+                    "addOne2manyRow(fieldName);",
+                    "Promise.resolve(dependencies.ensureRelationFieldDescriptors?.(fieldName)).then(() => addOne2manyRow(fieldName));",
+                    1,
+                )
+            return value
+
+        self.assertTrue(any("optional column hydration" in item for item in validate(read_text)))
+
     def test_missing_row_open_authority_fails(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
@@ -168,6 +208,51 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
             return value
 
         self.assertTrue(any("row-open handler" in item for item in validate(read_text)))
+
+    def test_stale_relation_request_can_never_become_authoritative(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace("return relationQueryAuthority.isCurrent(key, revision)", "return true", 1)
+            return value
+
+        self.assertTrue(any("latest-condition" in item for item in validate(read_text)))
+
+    def test_unrelated_row_values_cannot_drive_relation_queries(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace("rowKey: row.key,", "rowKey: `${row.key}:${JSON.stringify(row.values)}`,", 1)
+            return value
+
+        self.assertTrue(any("unrelated row values" in item for item in validate(read_text)))
+
+    def test_relation_search_must_preserve_selected_label(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace("preserveSelectedOne2manyRelationOption", "discardSelectedRelationOption")
+            return value
+
+        self.assertTrue(any("selected relation label" in item for item in validate(read_text)))
+
+    def test_relation_failure_without_retry_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("One2ManyCellEditor.vue"):
+                return value.replace("@click=\"$emit('retry')\"", "")
+            return value
+
+        self.assertTrue(any("does not expose retry" in item for item in validate(read_text)))
+
+    def test_unsupported_relation_domain_must_fail_closed(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("one2manyUtils.ts"):
+                return value.replace("relationDomainSupported: domainAnalysis.supported,", "")
+            return value
+
+        self.assertTrue(any("do not fail closed" in item for item in validate(read_text)))
 
 
 if __name__ == "__main__":

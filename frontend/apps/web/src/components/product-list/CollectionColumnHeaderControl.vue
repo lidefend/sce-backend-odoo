@@ -4,24 +4,22 @@
     data-semantic-component="CollectionColumnHeaderControl"
     :class="[densityClass, { 'is-sorted': sorted, 'is-dragging': dragging, 'is-sort-disabled': !sortable }]"
     :data-column="field"
+    :data-reorderable="reorderable !== false"
     :style="columnStyle"
-    :tabindex="sortable ? 0 : -1"
     :title="sortTitle"
     @dragover="$emit('drag-over', $event)"
     @drop="$emit('drop-column', $event)"
     @dragend="$emit('drag-end')"
-    @click="$emit('sort')"
-    @keydown.enter.prevent="$emit('sort')"
-    @keydown.space.prevent="$emit('sort')"
+    @click="sortable && $emit('sort')"
   >
-    <ScIconButton class="column-drag-handle" appearance="column-handle" :label="dragLabel" draggable="true" @click.stop @keydown.stop @dragstart.stop="$emit('drag-start', $event)" @dragend.stop="$emit('drag-end')">
+    <ScIconButton v-if="reorderable !== false" class="column-drag-handle" appearance="column-handle" :label="dragLabel" draggable="true" @click.stop @keydown.stop @dragstart.stop="$emit('drag-start', $event)" @dragend.stop="$emit('drag-end')">
       <ScIcon name="menu" :size="14" />
     </ScIconButton>
-    <ScButton type="button" class="column-sort-btn" appearance="context-action" variant="ghost" size="small" :title="sortTitle" :aria-disabled="!sortable" draggable="false" @click.stop="$emit('sort')">
+    <ScButton type="button" class="column-sort-btn" appearance="context-action" variant="ghost" size="small" :title="sortTitle" :aria-disabled="!sortable" draggable="false" @click.stop="sortable && $emit('sort')">
       <span>{{ label }}</span>
       <ScIcon v-if="sorted" class="sort-indicator" :name="sortIcon" :size="14" />
     </ScButton>
-    <ScIconButton class="column-resize-handle" appearance="column-handle" :label="resizeLabel" draggable="false" @click.stop @dragstart.stop.prevent @mousedown.stop.prevent="$emit('resize-start', $event)" />
+    <ScIconButton class="column-resize-handle" appearance="column-handle" :label="`${label}：${resizeLabel}`" aria-description="使用左右方向键调整列宽，按住 Shift 加快调整。" draggable="false" @click.stop @dragstart.stop.prevent @mousedown.stop.prevent="$emit('resize-start', $event)" @keydown.left.stop.prevent="$emit('resize-step', $event.shiftKey ? -40 : -10)" @keydown.right.stop.prevent="$emit('resize-step', $event.shiftKey ? 40 : 10)" />
   </div>
 </template>
 
@@ -34,6 +32,7 @@ defineProps<{
   field: string;
   label: string;
   sortable: boolean;
+  reorderable?: boolean;
   sorted: boolean;
   dragging: boolean;
   sortIcon: 'chevron-down' | 'chevron-up';
@@ -44,7 +43,7 @@ defineProps<{
   columnStyle: Record<string, string>;
 }>();
 
-defineEmits<{ sort: []; 'drag-start': [event: DragEvent]; 'drag-over': [event: DragEvent]; 'drop-column': [event: DragEvent]; 'drag-end': []; 'resize-start': [event: MouseEvent] }>();
+defineEmits<{ sort: []; 'drag-start': [event: DragEvent]; 'drag-over': [event: DragEvent]; 'drop-column': [event: DragEvent]; 'drag-end': []; 'resize-start': [event: MouseEvent]; 'resize-step': [delta: number] }>();
 </script>
 
 <style scoped src="./CollectionColumnHeaderControl.css"></style>

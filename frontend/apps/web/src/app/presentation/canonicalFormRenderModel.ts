@@ -52,6 +52,8 @@ export type CanonicalFormField = {
   visible: boolean;
   readonly: boolean;
   required: boolean;
+  invalid?: boolean;
+  errorText?: string;
   disabled: boolean;
   reasonCode: string;
   placeholder: string;

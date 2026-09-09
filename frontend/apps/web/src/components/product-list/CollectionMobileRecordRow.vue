@@ -22,12 +22,10 @@
     />
     <ScMobileRecordCard
       class="collection-mobile-record-row__card"
-      as="button"
-      :aria-label="openAriaLabel"
-      @click="emit('open')"
+      as="article"
     >
       <template #identity>
-        <strong class="collection-mobile-record-row__identity">{{ identity }}</strong>
+        <strong class="collection-mobile-record-row__identity" :title="identity">{{ identity }}</strong>
       </template>
       <template #status>
         <ScStatusBadge
@@ -38,10 +36,12 @@
         />
       </template>
       <span
-        v-for="fact in facts"
+        v-for="fact in visibleFacts"
         :key="fact.key"
         class="collection-mobile-record-row__fact"
         :data-fact-key="fact.key"
+        :data-fact-role="fact.layoutRole || 'text'"
+        data-fact-visibility="primary"
       >
         <small>{{ fact.label }}</small>
         <span
@@ -53,11 +53,22 @@
         </span>
         <b v-else>{{ fact.value }}</b>
       </span>
+      <ScDisclosure v-if="additionalFacts.length" class="collection-mobile-record-row__disclosure" :title="`查看其余 ${additionalFacts.length} 项信息`">
+        <span class="collection-mobile-record-row__additional-facts">
+          <span v-for="fact in additionalFacts" :key="fact.key" class="collection-mobile-record-row__fact" :data-fact-key="fact.key" :data-fact-role="fact.layoutRole || 'text'" data-fact-visibility="additional">
+            <small>{{ fact.label }}</small>
+            <span v-if="fact.relationItems?.length" class="collection-mobile-record-row__relation-tags" data-semantic-cell-kind="relation-tags">
+              <b v-for="item in fact.relationItems" :key="item.id" class="collection-mobile-record-row__relation-tag" :title="item.label">{{ item.label }}</b>
+            </span>
+            <b v-else>{{ fact.value }}</b>
+          </span>
+        </span>
+      </ScDisclosure>
       <template #actions>
-        <span class="collection-mobile-record-row__open">
+        <ScButton data-semantic-action="open-record" appearance="auth-link" variant="ghost" :aria-label="openAriaLabel" @click="emit('open')"><span class="collection-mobile-record-row__open">
           {{ openLabel }}
           <ScIcon name="arrow-right" :size="16" aria-hidden="true" />
-        </span>
+        </span></ScButton>
       </template>
     </ScMobileRecordCard>
   </article>
@@ -65,6 +76,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import ScButton from '../design-system/ScButton.vue';
+import ScDisclosure from '../design-system/ScDisclosure.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScMobileRecordCard from '../design-system/ScMobileRecordCard.vue';
 import ScStatusBadge from '../design-system/ScStatusBadge.vue';
@@ -74,6 +87,7 @@ export type CollectionMobileRecordFact = {
   key: string;
   label: string;
   value: string;
+  layoutRole?: 'identity' | 'description' | 'relation' | 'text' | 'status' | 'money' | 'date' | 'actions';
   relationItems?: Array<{ id: number; label: string }>;
 };
 
@@ -90,6 +104,7 @@ const props = withDefaults(defineProps<{
   selectionDisabledReason?: string;
   selectionLabel?: string;
   openLabel: string;
+  visibleFactLimit?: number;
 }>(), {
   facts: () => [],
   statusValue: '',
@@ -100,6 +115,7 @@ const props = withDefaults(defineProps<{
   selectionDisabled: false,
   selectionDisabledReason: '',
   selectionLabel: '',
+  visibleFactLimit: 3,
 });
 
 const emit = defineEmits<{
@@ -108,6 +124,13 @@ const emit = defineEmits<{
 }>();
 
 const openAriaLabel = computed(() => `${props.openLabel}：${props.identity}`);
+const prioritizedFacts = computed(() => props.facts
+  .map((fact, index) => ({ fact, index }))
+  .sort((left, right) => Number(right.fact.layoutRole === 'money') - Number(left.fact.layoutRole === 'money')
+    || left.index - right.index)
+  .map((entry) => entry.fact));
+const visibleFacts = computed(() => prioritizedFacts.value.slice(0, Math.max(1, props.visibleFactLimit)));
+const additionalFacts = computed(() => prioritizedFacts.value.slice(visibleFacts.value.length));
 </script>
 
 <style scoped src="./CollectionMobileRecordRow.css"></style>

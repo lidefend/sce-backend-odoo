@@ -135,9 +135,11 @@ export function canonicalFieldToFormSection(
       many2oneOpenToken: MANY2ONE_OPEN_RECORD_OPTION,
     })
     : { relationCreateMode: 'none' as const };
-  const digits = type === 'monetary' ? normalizeMonetaryDigits(config.digits) : undefined;
+  const digits = type === 'monetary'
+    ? normalizeMonetaryDigits(config.digits || descriptor.digits)
+    : undefined;
   const currencyField = type === 'monetary'
-    ? text(config.currencyField || config.currency_field || 'currency_id')
+    ? text(config.currencyField || config.currency_field || descriptor.currency_field)
     : '';
   const currencyLabel = type === 'monetary'
     ? resolveCurrencyDisplayLabel(config.currencyLabel || config.currency_label || config.currencyValue || config.currency_value)
@@ -166,6 +168,8 @@ export function canonicalFieldToFormSection(
     currencyField: currencyField || undefined,
     currencyLabel: currencyLabel || undefined,
     required: field.required,
+    invalid: field.invalid,
+    errorText: field.errorText || undefined,
     readonly: field.readonly || field.disabled,
     auth: field.auth || undefined,
     helpText: field.reasonCode,

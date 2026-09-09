@@ -74,7 +74,7 @@ def validate(
         'class="column-drag-handle"',
         ':label="dragLabel"',
         'class="column-resize-handle"',
-        ':label="resizeLabel"',
+        ':label="`${label}：${resizeLabel}`"',
         "@dragstart.stop=\"$emit('drag-start', $event)\"",
         "@mousedown.stop.prevent=\"$emit('resize-start', $event)\"",
     )

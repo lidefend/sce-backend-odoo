@@ -37,6 +37,26 @@ GLOBAL_ACCESSIBILITY_CONTRACTS = (
         "global focus-visible rule",
         ":is(a, button, input, select, textarea, [tabindex]):focus-visible",
     ),
+    (
+        "frontend/apps/web/src/styles/product-patterns.css",
+        "component-owned focus exclusion",
+        "[data-focus-ring-owner='component'] *",
+    ),
+)
+
+
+# Composite input primitives delegate their focus chrome to the component
+# driver. The global native-control fallback must not draw a second ring on
+# their internal input/textarea elements.
+COMPONENT_FOCUS_OWNER_CONTRACTS = (
+    ("frontend/apps/web/src/components/design-system/ScInput.vue", "ScInput"),
+    ("frontend/apps/web/src/components/design-system/ScTextarea.vue", "ScTextarea"),
+    ("frontend/apps/web/src/components/design-system/ScSelect.vue", "ScSelect"),
+    ("frontend/apps/web/src/components/design-system/ScDateField.vue", "ScDateField"),
+    ("frontend/apps/web/src/components/design-system/ScAutoComplete.vue", "ScAutoComplete"),
+    ("frontend/apps/web/src/components/design-system/ScNumberInput.vue", "ScNumberInput"),
+    ("frontend/apps/web/src/components/design-system/ScDatePicker.vue", "ScDatePicker"),
+    ("frontend/apps/web/src/components/design-system/ScTimePicker.vue", "ScTimePicker"),
 )
 
 
@@ -99,6 +119,13 @@ def validate(read_text=lambda source: (ROOT / source).read_text(encoding="utf-8"
             text = (ROOT / source).read_text(encoding="utf-8")
         if marker not in text:
             failures.append(f"global rendering-detail contract missing: {source}: {label}")
+    for source, label in COMPONENT_FOCUS_OWNER_CONTRACTS:
+        try:
+            text = read_text(source)
+        except (KeyError, FileNotFoundError):
+            text = (ROOT / source).read_text(encoding="utf-8")
+        if 'data-focus-ring-owner="component"' not in text:
+            failures.append(f"component focus owner contract missing: {source}: {label}")
     failures.extend(authority_density_token_violations())
     return failures
 

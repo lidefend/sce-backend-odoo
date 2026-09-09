@@ -3,6 +3,7 @@ import { fieldType, fromDatetimeInputValue, normalizeRelationIds, toDateInputVal
 import type { One2ManyColumn, One2ManyInlineRow } from './types';
 import type { FieldDescriptor } from '@sc/schema';
 import { evaluateNativeModifierValue } from './nativeLayoutUtils';
+import { analyzeDynamicRelationDomain, relationEntry } from './relationDescriptor';
 
 export function subviewColumnCount(subview: unknown): number {
   if (!subview || typeof subview !== 'object' || Array.isArray(subview)) return 0;
@@ -126,6 +127,10 @@ export function one2manyColumnsFromSubview(
       const required = staticNativeBoolean(modifiers.required ?? attributes.required ?? row.required);
       const readonly = staticNativeBoolean(modifiers.readonly ?? attributes.readonly ?? row.readonly);
       const relationValueRequiresSelector = ['many2one', 'many2many', 'one2many'].includes(ttype);
+      const relation = String(descriptor?.relation || '').trim();
+      const domainAnalysis = analyzeDynamicRelationDomain(descriptor);
+      const relationReadable = Boolean(relation && relationEntry(descriptor)?.canRead === true && domainAnalysis.supported);
+      const explicitReadonly = readonly ?? Boolean(descriptor?.readonly);
       out.push({
         key: locator || `${colName}@@${occurrenceIndex || out.length + 1}`,
         name: colName,
@@ -135,7 +140,22 @@ export function one2manyColumnsFromSubview(
         ),
         ttype,
         required: required ?? Boolean(descriptor?.required),
-        readonly: relationValueRequiresSelector || (readonly ?? Boolean(descriptor?.readonly)),
+        readonly: ttype === 'many2one'
+          ? Boolean(explicitReadonly || !relationReadable)
+          : Boolean(relationValueRequiresSelector || explicitReadonly),
+        ...(ttype === 'many2one' ? {
+          relation: relation || undefined,
+          relationReadable,
+          relationDomainSupported: domainAnalysis.supported,
+          relationDependencies: domainAnalysis.dependencies,
+          disabledReason: explicitReadonly
+            ? '此字段目前仅供查看'
+            : !domainAnalysis.supported
+              ? '可选范围暂不可用'
+            : !relationReadable
+              ? '可选内容暂不可用'
+              : undefined,
+        } : {}),
         nativeLocator: locator || undefined,
         occurrenceIndex: occurrenceIndex > 0 ? occurrenceIndex : undefined,
         modifiers: Object.keys(modifiers).length ? modifiers : undefined,
@@ -464,6 +484,7 @@ export function collectOne2manyDraftValidationFromRows(params: {
 }) {
   const issues: string[] = [];
   const rowErrors: Record<string, string[]> = {};
+  const cellErrors: Record<string, string> = {};
   Object.entries(params.rowsByField).forEach(([fieldName, rows]) => {
     if (!Array.isArray(rows) || !rows.length) return;
     const hasTouchedRows = rows.some((row) => row.isNew || row.dirty || row.removed);
@@ -484,7 +505,9 @@ export function collectOne2manyDraftValidationFromRows(params: {
         checkedRequiredFields.add(column.name);
         const value = row.values?.[column.name];
         if (isOne2manyEmptyValue(column, value)) {
-          perRow.push(`${column.label}不能为空`);
+          const message = `${column.label}不能为空`;
+          perRow.push(message);
+          cellErrors[`${fieldName}:${row.key}:${column.name}`] = message;
           issues.push(`${fieldName} 第${index + 1}行${column.label}不能为空`);
         }
       });
@@ -503,7 +526,7 @@ export function collectOne2manyDraftValidationFromRows(params: {
       }
     });
   });
-  return { issues, rowErrors };
+  return { issues, rowErrors, cellErrors };
 }
 
 export function buildOne2manyCommandValue(
@@ -529,6 +552,10 @@ export function buildOne2manyCommandValue(
 export function normalizeOne2manyColumnValue(column: One2ManyColumn, value: unknown) {
   const ttype = String(column.ttype || '').trim().toLowerCase();
   if (ttype === 'boolean') return Boolean(value);
+  if (ttype === 'many2one') {
+    const parsed = Number(Array.isArray(value) ? value[0] : value);
+    return Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : false;
+  }
   if (ttype === 'integer') {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? Math.trunc(parsed) : false;
@@ -605,6 +632,10 @@ export function one2manyColumnDisplayValue(column: One2ManyColumn, value: unknow
 export function isOne2manyEmptyValue(column: One2ManyColumn, value: unknown) {
   const ttype = String(column.ttype || '').trim().toLowerCase();
   if (ttype === 'boolean') return value === null || value === undefined;
+  if (ttype === 'many2one') {
+    const parsed = Number(Array.isArray(value) ? value[0] : value);
+    return !Number.isFinite(parsed) || parsed <= 0;
+  }
   if (ttype === 'integer' || ttype === 'float' || ttype === 'monetary') {
     return value === false || value === null || value === undefined || Number.isNaN(Number(value));
   }

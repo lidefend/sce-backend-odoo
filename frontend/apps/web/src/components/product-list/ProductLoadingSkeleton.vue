@@ -1,7 +1,7 @@
 <template>
   <section class="product-loading-shell" :class="`mode-${mode}`" role="status" data-semantic-component="ProductLoadingSkeleton" data-state="loading" :data-mode="mode" aria-live="polite" aria-busy="true">
     <p class="sc-visually-hidden">{{ title }}，{{ loadingLabel }}</p>
-    <ScSkeleton class="product-loading-skeleton" :loading="true" animation="gradient" :row-col="mode === 'kanban' ? kanbanSkeleton : listSkeleton" />
+    <ScSkeleton class="product-loading-skeleton" aria-hidden="true" :loading="true" animation="gradient" :row-col="mode === 'kanban' ? kanbanSkeleton : listSkeleton" />
   </section>
 </template>
 

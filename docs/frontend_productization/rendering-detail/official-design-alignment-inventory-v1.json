@@ -14,15 +14,8 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "80295191e305a60493f4a15991e33b79da6216aa6ae121a6a2d2ec08afa0ce9b",
-  "internalVendorSelectorGaps": [
-    {
-      "file": "frontend/apps/web/src/components/design-system/ScInlineState.vue",
-      "line": 18,
-      "selector": ".sc-inline-state.t-alert--info :deep(.t-alert__description)",
-      "status": "legacy_override_gap"
-    }
-  ],
+  "inputDigest": "d83ca7d3395cdbd60f2eb3c5647ea80dbd3c577284f52a3f32ec524cbed3e97a",
+  "internalVendorSelectorGaps": [],
   "productAppearanceVariants": [
     {
       "appearance": "account-context",
@@ -78,7 +71,9 @@
       "appearance": "auth-link",
       "consumers": [
         "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/product-list/CollectionMobileRecordRow.vue",
         "frontend/apps/web/src/components/product-list/CollectionRowCell.vue",
+        "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
         "frontend/apps/web/src/views/AccountActivationView.vue",
         "frontend/apps/web/src/views/LoginView.vue",
         "frontend/apps/web/src/views/PasswordRecoveryView.vue"
@@ -115,6 +110,7 @@
         "frontend/apps/web/src/views/ActionView.vue"
       ],
       "selectors": [
+        ".sc-product-main-surface > [data-semantic-component='ScTable'][data-appearance='collection']",
         "[data-semantic-component='ScTable'][data-appearance='collection'] .cell-select, [data-semantic-component='ScTable'][data-appearance='collection'] .cell-row-number, [data-semantic-component='ScTable'][data-appearance='collection'] tbody .column-layout-identity",
         "[data-semantic-component='ScTable'][data-appearance='collection'] .column-layout-identity",
         "[data-semantic-component='ScTable'][data-appearance='collection'] tbody td",
@@ -134,7 +130,8 @@
       "appearance": "collection-search",
       "consumers": [
         "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
-        "frontend/apps/web/src/components/design-system/ScInput.vue"
+        "frontend/apps/web/src/components/design-system/ScInput.vue",
+        "frontend/apps/web/src/components/product-list/ProductListHeader.vue"
       ],
       "selectors": [
         ".sc-input[data-appearance='collection-search']"
@@ -150,6 +147,7 @@
       "selectors": [
         ".sc-icon-button[data-appearance='column-handle']",
         ".sc-icon-button[data-appearance='column-handle']::before",
+        ".sc-icon-button[data-appearance='column-handle']:focus-visible",
         ".sc-icon-button[data-appearance='column-handle']:hover::before"
       ],
       "status": "registered_product_variance"
@@ -191,8 +189,9 @@
       ],
       "selectors": [
         ".sc-btn[data-appearance='dashboard-quick-link']",
-        ".sc-btn[data-appearance='dashboard-quick-link'] > .sc-btn__content > .sc-icon:first-child",
-        ".sc-btn[data-appearance='dashboard-quick-link'] > .sc-btn__content > span",
+        ".sc-btn[data-appearance='dashboard-quick-link'] .sc-btn__content",
+        ".sc-btn[data-appearance='dashboard-quick-link'] .sc-btn__content > .sc-icon:first-child",
+        ".sc-btn[data-appearance='dashboard-quick-link'] .sc-btn__content > span",
         ".sc-btn[data-appearance='dashboard-quick-link'] small, .sc-btn[data-appearance='dashboard-recent-link'] small",
         ".sc-btn[data-appearance='dashboard-quick-link']:hover"
       ],
@@ -248,6 +247,7 @@
     {
       "appearance": "form-field",
       "consumers": [
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
         "frontend/apps/web/src/components/design-system/ScDateField.vue",
         "frontend/apps/web/src/components/design-system/ScInput.vue",
         "frontend/apps/web/src/components/design-system/ScRelationField.vue",
@@ -310,6 +310,27 @@
       "status": "registered_product_variance"
     },
     {
+      "appearance": "metric",
+      "consumers": [
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/design-system/ScCard.vue",
+        "frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/views/SceneHealthView.vue",
+        "frontend/apps/web/src/views/UsageAnalyticsView.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='metric']",
+        ".sc-btn[data-appearance='metric'] .sc-btn__content",
+        ".sc-btn[data-appearance='metric'] strong",
+        ".sc-btn[data-appearance='metric']:focus-visible",
+        ".sc-btn[data-appearance='metric'][aria-pressed='true']"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
       "appearance": "navigation-search",
       "consumers": [
         "frontend/apps/web/src/components/design-system/ScInput.vue",
@@ -317,9 +338,10 @@
         "frontend/apps/web/src/layouts/AppShell.vue"
       ],
       "selectors": [
-        ".sc-input[data-appearance='navigation-search']",
-        ".sc-input[data-appearance='navigation-search']:focus-within",
-        ".sc-input[data-appearance='navigation-search']:hover"
+        ".sc-input[data-appearance='navigation-search']:not([data-primitive-driver='tdesign']), .sc-input__control--navigation-search",
+        ".sc-input[data-appearance='navigation-search']:not([data-primitive-driver='tdesign']):focus-within, .sc-input__control--navigation-search:focus-within",
+        ".sc-input[data-appearance='navigation-search']:not([data-primitive-driver='tdesign']):hover, .sc-input__control--navigation-search:hover",
+        "/* Navigation search has one visible control surface, owned by the driver. */ .sc-input[data-appearance='navigation-search'][data-primitive-driver='tdesign']"
       ],
       "status": "registered_product_variance"
     },
@@ -328,7 +350,7 @@
       "consumers": [
         "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
         "frontend/apps/web/src/components/design-system/ScInput.vue",
-        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue"
+        "frontend/apps/web/src/components/template/One2ManyCellEditor.vue"
       ],
       "selectors": [
         ".sc-input[data-appearance='numeric-entry']"
@@ -541,6 +563,7 @@
         "frontend/apps/web/src/components/design-system/ScIconButton.vue"
       ],
       "selectors": [
+        ".collection-search-control .sc-icon-button[data-appearance='toolbar-menu-toggle']",
         ".sc-btn[data-appearance='toolbar-menu-toggle'], .sc-icon-button[data-appearance='toolbar-menu-toggle']",
         ".sc-btn[data-appearance='toolbar-menu-toggle'].active, .sc-btn[data-appearance='toolbar-menu-toggle'][aria-expanded='true'], .sc-icon-button[data-appearance='toolbar-menu-toggle'][aria-expanded='true']"
       ],
@@ -569,6 +592,7 @@
         "frontend/apps/web/src/pages/AnalysisPage.vue"
       ],
       "selectors": [
+        ".worksheet-table-scroll > [data-semantic-component='ScTable'][data-appearance='worksheet']",
         "[data-semantic-component='ScTable'][data-appearance='worksheet']",
         "[data-semantic-component='ScTable'][data-appearance='worksheet'] .summary-row td",
         "[data-semantic-component='ScTable'][data-appearance='worksheet'] :is(.group-row, .heading-row) td",
@@ -589,10 +613,12 @@
         "frontend/apps/web/src/app/presentation/productPagePattern.ts",
         "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
         "frontend/apps/web/src/app/resolvers/sceneRegistry.ts",
+        "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
         "frontend/apps/web/src/components/attachment/AttachmentViewer.vue",
         "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
         "frontend/apps/web/src/components/design-system/ScDialog.vue",
         "frontend/apps/web/src/components/design-system/ScDrawer.vue",
+        "frontend/apps/web/src/components/design-system/ScPanel.vue",
         "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue",
         "frontend/apps/web/src/components/product-page-patterns/WorkspaceFormPattern.vue",
         "frontend/apps/web/src/components/template/PageHeader.vue",
@@ -617,11 +643,11 @@
   "schemaVersion": "frontend.official-design-alignment.inventory.v1",
   "scope": "formal P0/P1 frontend TDesign driver and product adapter styling",
   "summary": {
-    "formalStyleSourceCount": 208,
-    "internalVendorSelectorGapCount": 1,
+    "formalStyleSourceCount": 209,
+    "internalVendorSelectorGapCount": 0,
     "officialPublicTokenCount": 240,
     "orphanedProductAppearanceVariantCount": 0,
-    "productAppearanceVariantCount": 39,
+    "productAppearanceVariantCount": 40,
     "projectPublicTokenOverrideCount": 38,
     "unknownProjectTokenOverrideCount": 0,
     "visualLiteralGapCount": 0

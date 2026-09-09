@@ -4,6 +4,7 @@ import {
   prioritizeExplicitlyEnabledListColumns,
   resolveEnabledListColumns,
   resolveResponsiveListColumns,
+  listColumnVisibilityBlockReason,
 } from '../../frontend/apps/web/src/pages/listPage/listColumnVisibility.ts';
 import {
   deriveListColumnWidth,
@@ -16,6 +17,12 @@ const columns = [
   { name: 'company_type', defaultVisible: true },
   { name: 'sc_source_project_name', defaultVisible: false },
 ];
+
+assert.equal(listColumnVisibilityBlockReason({ allow_visibility: false }, 'amount'), '当前页面的显示列已固定');
+assert.equal(listColumnVisibilityBlockReason({ locked_columns: ['amount'] }, 'amount'), '此列由页面配置固定');
+assert.equal(listColumnVisibilityBlockReason({ locked_columns: ['amount'] }, 'note'), '');
+assert.equal(listColumnVisibilityBlockReason(undefined, 'name', 'name'), '至少保留一列');
+assert.equal(listColumnVisibilityBlockReason(undefined, 'note', 'name'), '');
 
 assert.deepEqual(
   resolveEnabledListColumns(columns, [], {}),
@@ -45,7 +52,9 @@ assert.match(selectionExportSource, /ids: options\.ids/, 'selected-record export
 assert.match(selectionExportSource, /columnLabels:/, 'selected-record export must preserve governed business labels');
 
 assert.equal(listColumnAdaptiveFloor('money'), 128, 'money columns must reserve enough width for business amounts and footer totals');
-assert.equal(listColumnAdaptiveFloor('description'), 176, 'business names must retain a readable non-truncating floor');
+assert.equal(listColumnAdaptiveFloor('identity'), 168, 'business identifiers must retain a scannable desktop floor');
+assert.equal(listColumnAdaptiveFloor('description'), 192, 'business names must retain a readable non-truncating floor');
+assert.equal(listColumnAdaptiveFloor('relation'), 144, 'counterparty and relation labels must not collapse to token-sized columns');
 assert.equal(
   deriveListColumnWidth({ label: '合同金额', type: 'monetary', role: 'money', values: [3665000] }),
   128,

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[2]
 LIST_PAGE = ROOT / "frontend/apps/web/src/pages/ListPage.vue"
@@ -25,6 +26,12 @@ def validate(
     )
     visual_text = visual_source if visual_source is not None else VISUAL_SMOKE.read_text(encoding="utf-8")
     failures: list[str] = []
+    fact_projection = re.search(r"const mobileFactColumns = computed\(\(\) => \{(.*?)\n\}\);", list_text, re.S)
+    if not fact_projection or re.search(r"\.slice\s*\(", fact_projection.group(1)):
+        failures.append("mobile facts must preserve all visible columns from the governed column decision")
+    mobile_budget = list_text.split('const mobileResponsiveCandidates = computed', 1)[-1].split('const lastVisibleColumnName', 1)[0]
+    if '.slice(' in mobile_budget or 'capacity: enabledColumns.value.length' not in mobile_budget:
+        failures.append("mobile card budget must accommodate enabled columns")
 
     if list_text.count("<CollectionMobileRecordRow") != 1:
         failures.append("ListPage must expose exactly one shared mobile-record-row adapter")
@@ -46,8 +53,13 @@ def validate(
         ':data-record-key="recordKey"',
         ':aria-selected="selectionEnabled ? selected : undefined"',
         ':aria-label="openAriaLabel"',
+        'data-semantic-action="open-record"',
         ':data-fact-key="fact.key"',
+        'v-for="fact in visibleFacts"',
+        'v-for="fact in additionalFacts"',
+        "right.fact.layoutRole === 'money'",
         "CollectionSelectionControl",
+        "ScDisclosure",
         "ScMobileRecordCard",
         "ScStatusBadge",
         "emit('selection-change', $event)",
@@ -89,4 +101,4 @@ if __name__ == "__main__":
         for error in errors:
             print(f"- {error}")
         raise SystemExit(1)
-    print("[frontend_collection_mobile_record_row_guard] PASS owner=1 selection=open_passthrough")
+    print("[frontend_collection_mobile_record_row_guard] PASS owner=1 selection=open_passthrough facts=progressive_disclosure")

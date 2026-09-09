@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
 import re
 import sys
 
@@ -21,6 +22,17 @@ PRIMITIVES = (
     "ScSteps", "ScPagination", "ScSwitch", "ScTimePicker", "ScPopconfirm",
 )
 FORBIDDEN_PRIVATE_TDESIGN = re.compile(r"tdesign-vue-next/(?:lib|cjs|src)/")
+TDESIGN_DIRECT_IMPORT = re.compile(r"(?:from\s+|import\()['\"]tdesign-vue-next")
+TDESIGN_IMPORT_AUTHORITIES = {
+    "frontend/packages/ui/src/primitives.ts",
+    "frontend/packages/ui/src/kits/tdesign/register.ts",
+}
+OFFICIAL_PUBLIC_TYPE_MARKERS = {
+    "input/type.d.ts": ("inputClass?: ClassName", "onChange?:", "onFocus?:", "onBlur?:"),
+    "select/type.d.ts": ("inputProps?: InputProps", "inputValue?: string", "popupVisible?: boolean", "onPopupVisibleChange?:"),
+    "card/type.d.ts": ("bodyClassName?: string", "bodyStyle?: Styles"),
+    "alert/type.d.ts": ("default?: string | TNode", "message?: string | TNode", "operation?: TNode"),
+}
 FORBIDDEN_BUSINESS_IDENTITY = re.compile(
     r"\b(?:project\.project|payment\.request|construction\.contract|action_id|menu_id|role_code)\b",
     re.IGNORECASE,
@@ -118,6 +130,32 @@ def validate(root: Path = ROOT) -> list[str]:
     ui_theme = ui_theme_path.read_text(encoding="utf-8") if ui_theme_path.is_file() else ""
     errors: list[str] = []
 
+    frontend_root = root / "frontend"
+    if frontend_root.is_dir():
+        for suffix in ("*.ts", "*.vue", "*.js", "*.mjs"):
+            for path in sorted(frontend_root.rglob(suffix)):
+                if "node_modules" in path.parts or "dist" in path.parts:
+                    continue
+                relative = path.relative_to(root).as_posix()
+                if relative not in TDESIGN_IMPORT_AUTHORITIES and TDESIGN_DIRECT_IMPORT.search(path.read_text(encoding="utf-8", errors="ignore")):
+                    errors.append(f"TDesign consumer bypasses the public project primitive authority: {relative}")
+
+    package_path = root / "frontend/packages/ui/package.json"
+    if package_path.is_file():
+        version = str(json.loads(package_path.read_text(encoding="utf-8"))["dependencies"]["tdesign-vue-next"])
+        if version != "1.20.5":
+            errors.append(f"TDesign official API guard expected locked version 1.20.5, found {version}")
+        installs = sorted((root / "frontend/node_modules/.pnpm").glob(f"tdesign-vue-next@{version}_*/node_modules/tdesign-vue-next/esm"))
+        if len(installs) != 1:
+            errors.append(f"TDesign official API declarations unavailable for locked version {version}")
+        else:
+            for relative, markers in OFFICIAL_PUBLIC_TYPE_MARKERS.items():
+                declaration = installs[0] / relative
+                text = declaration.read_text(encoding="utf-8") if declaration.is_file() else ""
+                for marker in markers:
+                    if marker not in text:
+                        errors.append(f"locked TDesign declaration {relative} missing public contract {marker}")
+
     source_root = root / "frontend/apps/web/src"
     p3_files, p3_prefixes = p3_scope(root)
     if source_root.is_dir():
@@ -183,6 +221,8 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("ScInput must project its registered appearance to both standard and specialized drivers")
     if ':size="normalizePrimitiveSize(size)"' not in input_text or ':status="status"' not in input_text:
         errors.append("ScInput must delegate size and status to the official TDesign API")
+    if ':input-class="' not in input_text or "sc-input__control" not in input_text:
+        errors.append("ScInput must style the official input surface through the public inputClass API")
     input_group_text = (design / "ScInputGroup.vue").read_text(encoding="utf-8") if (design / "ScInputGroup.vue").is_file() else ""
     if "<TDesignInputAdornment" not in input_group_text or 'data-primitive-driver="tdesign"' not in input_group_text:
         errors.append("ScInputGroup must delegate grouped input chrome to TDesign InputAdornment")
@@ -231,6 +271,9 @@ def validate(root: Path = ROOT) -> list[str]:
     button_text = (design / "ScButton.vue").read_text(encoding="utf-8") if (design / "ScButton.vue").is_file() else ""
     for marker in (
         '<TDesignButton',
+        '<button',
+        'data-primitive-driver="browser-structured"',
+        "['structured-content', 'metric', 'dashboard-quick-link']",
         ':data-loading="loading || undefined"',
         ':aria-disabled="disabled || loading || undefined"',
         ':loading="loading"',
@@ -275,6 +318,29 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("ScSelect must expose readonly state without inventing write authority")
     if "<TDesignSelect" not in select_text or ':options="tdesignOptions"' not in select_text or "v-native-control-projection" not in select_text:
         errors.append("ScSelect must use the TDesign option driver and native accessibility projection")
+    if ':input-props="' not in select_text or "sc-select__control" not in select_text:
+        errors.append("ScSelect must style the official input surface through the public inputProps API")
+
+    card_text = (design / "ScCard.vue").read_text(encoding="utf-8") if (design / "ScCard.vue").is_file() else ""
+    if ':body-class-name="bodyClassName"' not in card_text or "bodyClassName?: string" not in card_text:
+        errors.append("ScCard must expose the official public bodyClassName extension point")
+
+    inline_state_text = (design / "ScInlineState.vue").read_text(encoding="utf-8") if (design / "ScInlineState.vue").is_file() else ""
+    if '<slot>{{ label }}</slot>' not in inline_state_text or "#operation" not in inline_state_text:
+        errors.append("ScInlineState must consume the official Alert default and operation slots")
+    if ':message="label"' in inline_state_text:
+        errors.append("ScInlineState must not supply both the Alert message prop and default slot")
+
+    relation_text = (design / "ScRelationField.vue").read_text(encoding="utf-8") if (design / "ScRelationField.vue").is_file() else ""
+    for marker in (
+        "<TDesignAutoComplete",
+        'v-native-control-projection="nativeProjection"',
+        "'aria-required': props.required || undefined",
+        "'aria-invalid': props.invalid || undefined",
+        "'aria-describedby': props.describedBy",
+    ):
+        if marker not in relation_text:
+            errors.append(f"ScRelationField missing native accessibility projection marker: {marker}")
 
     disclosure_text = (design / "ScDisclosure.vue").read_text(encoding="utf-8") if (design / "ScDisclosure.vue").is_file() else ""
     for marker in (

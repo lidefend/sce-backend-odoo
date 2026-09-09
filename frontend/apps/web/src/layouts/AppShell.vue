@@ -190,12 +190,13 @@
     >
       <ScHeader
         class="topbar sc-toolbar"
-        :class="{ 'topbar--compact': activeLayout.header === 'compact', 'topbar--minimal': useMinimalTopbar }"
+        :class="{ 'topbar--compact': activeLayout.header === 'compact', 'topbar--minimal': useMinimalTopbar, 'topbar--single-heading': showTopbarHeadline && displayBreadcrumb.length <= 1 }"
       >
         <div class="topbar-main">
           <p v-if="!useMinimalTopbar" class="eyebrow">{{ config.appBrand.name }}</p>
           <div class="topbar-title-row">
             <NavigationBreadcrumb
+              class="topbar-breadcrumb"
               :items="displayBreadcrumb"
               :minimal="useMinimalTopbar"
               :compact="activeLayout.header === 'compact'"
@@ -327,7 +328,8 @@
 
       <ActivityPageTabs
         :pages="activityPages"
-        :active-key="activeActivityPageKey"
+        :active-key="['home', 'scene-home'].includes(String(route.name || '')) ? '' : activeActivityPageKey"
+        :activate-page="activateActivityPage"
         @activate="activateActivityPage"
         @close="closeActivityPage"
         @focus-exit="focusMainContent"
@@ -410,6 +412,7 @@ import { buildBusinessEntryNavQuery } from '../app/navigationContext';
 import { clearPageIdentity, usePageIdentityRuntime } from '../app/pageIdentityRuntime';
 import {
   applyTheme,
+  watchSystemTheme,
   nextTheme,
   persistTheme,
   type ScTheme,
@@ -500,6 +503,7 @@ const openingAppId = ref('');
 let recordContextSearchTimer: ReturnType<typeof setTimeout> | null = null;
 let scopeRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 let mobileMediaQuery: MediaQueryList | null = null;
+let stopSystemThemeWatch: (() => void) | null = null;
 let recordContextSearchRequestSequence = 0;
 let appCatalogRequestSequence = 0;
 
@@ -660,13 +664,15 @@ const activeLayout = computed(() => {
 // surface. Keep their shell density identical so moving navigation authority
 // from `/a/:id` to `/s/:sceneKey` cannot re-expand company, role and tool text.
 const businessRouteUsesCompactTopbar = computed(() => ['scene', 'action', 'record', 'model-form'].includes(String(route.name || '')));
+const routeUsesMinimalTopbar = computed(() => route.meta?.shellDensity === 'minimal');
 const useMinimalTopbar = computed(() =>
   route.name === 'workbench'
-  || route.name === 'home'
+  || routeUsesMinimalTopbar.value
   || isConfigurationRoute.value
   || businessRouteUsesCompactTopbar.value,
 );
 const compactRouteKeepsHeadline = computed(() => [
+  'home',
   'menu',
   'access-denied',
 ].includes(String(route.name || '')));
@@ -1319,6 +1325,7 @@ onMounted(() => {
   themeMode.value = loadThemeMode();
   sidebarHidden.value = loadSidebarHidden();
   applyTheme(themeMode.value);
+  stopSystemThemeWatch = watchSystemTheme();
   profileMode.value = loadThemeProfile();
   applyThemeProfile(profileMode.value);
   showExtractionStats.value = String(route.query.hud_stats || '').trim() === '1';
@@ -1341,6 +1348,8 @@ watch(
 );
 
 onUnmounted(() => {
+  stopSystemThemeWatch?.();
+  stopSystemThemeWatch = null;
   if (typeof window === 'undefined') return;
   mobileMediaQuery?.removeEventListener('change', syncMobileViewport);
   mobileMediaQuery = null;

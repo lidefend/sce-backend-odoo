@@ -8,7 +8,11 @@ const login = String(process.env.E2E_LOGIN || '');
 const password = String(process.env.E2E_PASSWORD || '');
 const head = String(process.env.CANDIDATE_GIT_HEAD || '');
 const routes = JSON.parse(process.env.CANDIDATE_VISUAL_ROUTES_JSON || '[]');
-const outputDir = path.resolve('artifacts/playwright/local-dev-candidate-visual-smoke');
+const desktopWidth = Math.max(960, Math.min(1920, Math.trunc(Number(process.env.CANDIDATE_VISUAL_DESKTOP_WIDTH || 1440)) || 1440));
+const desktopHeight = Math.max(720, Math.trunc(Number(process.env.CANDIDATE_VISUAL_DESKTOP_HEIGHT || 960)) || 960);
+const mobileWidth = Math.max(320, Math.min(560, Math.trunc(Number(process.env.CANDIDATE_VISUAL_MOBILE_WIDTH || 390)) || 390));
+const theme = String(process.env.CANDIDATE_VISUAL_THEME || 'light') === 'dark' ? 'dark' : 'light';
+const outputDir = path.resolve(process.env.CANDIDATE_VISUAL_OUTPUT_DIR || 'artifacts/playwright/local-dev-candidate-visual-smoke');
 
 if (!baseUrl || !database || !login || !password || !/^[0-9a-f]{40}$/.test(head)) throw new Error('candidate visual identity is incomplete');
 if (!Array.isArray(routes) || routes.length === 0 || routes.some((item) => !item || typeof item.name !== 'string' || !String(item.path || '').startsWith('/'))) {
@@ -16,7 +20,21 @@ if (!Array.isArray(routes) || routes.length === 0 || routes.some((item) => !item
 }
 
 fs.mkdirSync(outputDir, { recursive: true });
-const report = { head, baseUrl, database, login, mutationCount: 0, startup: {}, routes: [] };
+const report = {
+  head,
+  baseUrl,
+  database,
+  login,
+  mutationCount: 0,
+  inputs: {
+    desktop: { width: desktopWidth, height: desktopHeight },
+    mobile: { width: mobileWidth, height: 844 },
+    theme,
+    routes,
+  },
+  startup: {},
+  routes: [],
+};
 const browser = await launchChromium({ headless: true });
 
 async function loginPage(page) {
@@ -44,7 +62,15 @@ async function waitForStableProductSurface(page) {
     const formSettled = !(formPage instanceof HTMLElement) || formPage.dataset.state !== 'loading';
     const actionPage = document.querySelector('[data-semantic-component="ActionView"]');
     const actionSettled = !(actionPage instanceof HTMLElement) || actionPage.dataset.collectionState !== 'loading';
-    return !pendingForm && !pendingCollection && formSettled && actionSettled;
+    const homePage = document.querySelector('[data-semantic-component="WorkspaceHome"]');
+    const homeSettled = !(homePage instanceof HTMLElement) || homePage.dataset.state !== 'loading';
+    const myWorkPage = document.querySelector('[data-semantic-component="MyWorkView"]');
+    const myWorkSettled = !(myWorkPage instanceof HTMLElement) || myWorkPage.dataset.state !== 'loading';
+    const configPage = document.querySelector('[data-product-page-mode="admin"]');
+    const configSettled = !(configPage instanceof HTMLElement)
+      || Boolean(configPage.querySelector('[data-business-config-surface-error="true"]'))
+      || Boolean(configPage.querySelector('[data-business-config-change-set="v1"]') && configPage.querySelector('.page-picker-panel'));
+    return !pendingForm && !pendingCollection && formSettled && actionSettled && homeSettled && myWorkSettled && configSettled;
   }, undefined, { timeout: 45000 });
   await page.evaluate(() => new Promise((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(resolve));
@@ -299,13 +325,34 @@ function isApiDataListResponse(response) {
 }
 
 try {
-  for (const viewport of [{ name: 'desktop', width: 1440, height: 960 }, { name: 'mobile', width: 390, height: 844 }]) {
-    const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, locale: 'zh-CN' });
+  for (const viewport of [{ name: 'desktop', width: desktopWidth, height: desktopHeight }, { name: 'mobile', width: mobileWidth, height: 844 }]) {
+    const context = await browser.newContext({
+      viewport: { width: viewport.width, height: viewport.height },
+      locale: 'zh-CN',
+      hasTouch: viewport.name === 'mobile',
+    });
+    await context.addInitScript((requestedTheme) => localStorage.setItem('sc_theme', requestedTheme), theme);
     const page = await context.newPage();
     const errors = [];
-    page.on('console', (message) => { if (message.type() === 'error' && !message.text().includes('favicon')) errors.push(`console:${message.text()}`); });
+    let expectedReadFailureResponses = 0;
+    let expectedReadFailureConsoleErrors = 0;
+    page.on('console', (message) => {
+      if (message.type() !== 'error' || message.text().includes('favicon')) return;
+      if (expectedReadFailureConsoleErrors > 0 && message.text().includes('503 (Service Unavailable)')) {
+        expectedReadFailureConsoleErrors -= 1;
+        return;
+      }
+      errors.push(`console:${message.text()}`);
+    });
     page.on('pageerror', (error) => errors.push(`page:${error.message}`));
-    page.on('response', (response) => { if (response.status() >= 400 && response.url().includes('/api/')) errors.push(`http:${response.status()}:${response.url()}`); });
+    page.on('response', (response) => {
+      if (response.status() < 400 || !response.url().includes('/api/')) return;
+      if (expectedReadFailureResponses > 0) {
+        expectedReadFailureResponses -= 1;
+        return;
+      }
+      errors.push(`http:${response.status()}:${response.url()}`);
+    });
     page.on('request', (request) => {
       if (request.method() !== 'POST') return;
       let body = {};
@@ -386,6 +433,85 @@ try {
       let contractAggregates = [];
       let contractSummaryItems = [];
       let listAggregates = [];
+      let readFailureEvidence = null;
+      let businessConfigExperienceEvidence = null;
+      let businessConfigReadFailureEvidence = null;
+      let safeReturnEvidence = null;
+      let officialComponentBehaviorEvidence = null;
+      let officialAlertOperationEvidence = null;
+      let expectedLoadedSelectorEvidence = null;
+      const exerciseReadFailure = target.exerciseReadFailureRecovery === true
+        && (target.readFailureDesktopOnly !== true || viewport.name === 'desktop');
+      let readFailureInjected = false;
+      let readFailureOperation = '';
+      const readFailurePattern = '**/api/v1/**';
+      const readFailureHandler = async (route) => {
+        const request = route.request();
+        let body = {};
+        try { body = JSON.parse(request.postData() || '{}'); } catch {}
+        const operation = body.intent === 'ui.contract.v2' ? 'ui.contract.v2' : body?.params?.op;
+        const expectedRecordId = Number(target.recordId || 0);
+        const requestRecordIds = body.intent === 'ui.contract.v2'
+          ? [Number(body?.params?.record_id || 0)]
+          : (Array.isArray(body?.params?.ids) ? body.params.ids.map(Number) : []);
+        const matchesRecord = expectedRecordId <= 0 || requestRecordIds.includes(expectedRecordId);
+        if (request.method() === 'POST' && matchesRecord
+          && (operation === 'ui.contract.v2' || (body.intent === 'api.data' && operation === 'read'))) {
+          readFailureInjected = true;
+          readFailureOperation = operation;
+          expectedReadFailureResponses += 1;
+          expectedReadFailureConsoleErrors += 1;
+          await route.fulfill({
+            status: 503,
+            contentType: 'application/json',
+            body: JSON.stringify({ error: { message: '受控读取失败，请重试。', reason_code: 'CONTROLLED_READ_FAILURE', retryable: true } }),
+          });
+          return;
+        }
+        await route.continue();
+      };
+      if (exerciseReadFailure) await page.route(readFailurePattern, readFailureHandler);
+      const exerciseBusinessConfigReadFailure = target.exerciseBusinessConfigReadFailure === true
+        && (target.businessConfigReadFailureDesktopOnly !== true || viewport.name === 'desktop');
+      let businessConfigReadFailureInjected = false;
+      const businessConfigReadFailureHandler = async (route) => {
+        const request = route.request();
+        let body = {};
+        try { body = JSON.parse(request.postData() || '{}'); } catch {}
+        if (request.method() === 'POST' && body.intent === 'ui.business_config.surface.get' && !businessConfigReadFailureInjected) {
+          businessConfigReadFailureInjected = true;
+          expectedReadFailureResponses += 1;
+          expectedReadFailureConsoleErrors += 1;
+          await route.fulfill({
+            status: 503,
+            contentType: 'application/json',
+            body: JSON.stringify({ error: { message: '受控配置读取失败，请重试。', reason_code: 'CONTROLLED_CONFIG_READ_FAILURE', retryable: true } }),
+          });
+          return;
+        }
+        await route.continue();
+      };
+      if (exerciseBusinessConfigReadFailure) await page.route(readFailurePattern, businessConfigReadFailureHandler);
+      const exerciseOfficialAlertOperation = target.exerciseOfficialAlertOperation === true;
+      let officialAlertFailureInjected = false;
+      const officialAlertFailureHandler = async (route) => {
+        const request = route.request();
+        let body = {};
+        try { body = JSON.parse(request.postData() || '{}'); } catch {}
+        if (!officialAlertFailureInjected && request.method() === 'POST' && body.intent === 'my.work.summary') {
+          officialAlertFailureInjected = true;
+          expectedReadFailureResponses += 1;
+          expectedReadFailureConsoleErrors += 1;
+          await route.fulfill({
+            status: 503,
+            contentType: 'application/json',
+            body: JSON.stringify({ error: { message: '受控组件读取失败，请重试。', reason_code: 'CONTROLLED_COMPONENT_FAILURE', retryable: true } }),
+          });
+          return;
+        }
+        await route.continue();
+      };
+      if (exerciseOfficialAlertOperation) await page.route(readFailurePattern, officialAlertFailureHandler);
       const contractResponse = target.expectContractResponse !== false && /^\/(?:a|r|f)\//.test(target.path)
         ? page.waitForResponse(isContractV2Response, { timeout: 45000 })
         : null;
@@ -411,6 +537,239 @@ try {
       await page.locator('.layout-shell').waitFor({ timeout: 45000 });
       await page.locator('[data-product-page-mode], main').filter({ visible: true }).first().waitFor({ timeout: 45000 });
       await waitForStableProductSurface(page);
+      if (exerciseOfficialAlertOperation) {
+        const alert = page.locator('[data-semantic-component="ScInlineState"][data-semantic-driver="tdesign-alert"][data-state="error"]:visible');
+        await alert.waitFor({ state: 'visible', timeout: 15000 });
+        const retry = alert.getByRole('button', { name: '重试', exact: true });
+        const operation = alert.locator('.t-alert__operation');
+        const description = alert.locator('.sc-inline-state__description');
+        const retryCount = await retry.count();
+        const operationCount = await operation.count();
+        const descriptionText = String(await description.textContent() || '').replace(/\s+/g, ' ').trim();
+        const driverClassPresent = await alert.evaluate((node) => node.classList.contains('t-alert'));
+        await retry.focus();
+        const focusedBeforeActivation = await retry.evaluate((node) => node === document.activeElement);
+        await page.unroute(readFailurePattern, officialAlertFailureHandler);
+        let retryRequestCount = 0;
+        const countRetryRequest = (request) => {
+          if (!request.url().includes('/api/v1/intent') || request.method() !== 'POST') return;
+          try {
+            if (JSON.parse(request.postData() || '{}').intent === 'my.work.summary') retryRequestCount += 1;
+          } catch {}
+        };
+        page.on('request', countRetryRequest);
+        const recoveryResponse = page.waitForResponse((response) => {
+          if (!response.url().includes('/api/v1/intent') || response.request().method() !== 'POST') return false;
+          try { return JSON.parse(response.request().postData() || '{}').intent === 'my.work.summary'; } catch { return false; }
+        }, { timeout: 45000 });
+        await retry.press('Enter');
+        const recovered = await recoveryResponse;
+        if (!recovered.ok()) throw new Error(`${target.name}: alert operation recovery failed with ${recovered.status()}`);
+        await page.locator('[data-semantic-component="WorkspaceHome"][data-state="ready"]:visible').waitFor({ state: 'visible', timeout: 45000 });
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        page.off('request', countRetryRequest);
+        officialAlertOperationEvidence = {
+          failureInjected: officialAlertFailureInjected,
+          driverClassPresent,
+          operationCount,
+          retryCount,
+          descriptionText,
+          focusedBeforeActivation,
+          retryRequestCount,
+          recovered: await page.locator('[data-semantic-component="WorkspaceHome"][data-state="ready"]:visible').count() === 1,
+        };
+        officialAlertOperationEvidence.pass = officialAlertOperationEvidence.failureInjected
+          && officialAlertOperationEvidence.operationCount === 1
+          && officialAlertOperationEvidence.retryCount === 1
+          && officialAlertOperationEvidence.driverClassPresent
+          && officialAlertOperationEvidence.descriptionText.length > 0
+          && officialAlertOperationEvidence.focusedBeforeActivation
+          && officialAlertOperationEvidence.retryRequestCount === 1
+          && officialAlertOperationEvidence.recovered;
+      }
+      if (exerciseBusinessConfigReadFailure) {
+        const errorSurface = page.locator('[data-business-config-surface-error="true"]:visible');
+        await errorSurface.waitFor({ state: 'visible', timeout: 15000 });
+        const errorText = String(await errorSurface.textContent() || '').replace(/\s+/g, ' ').trim();
+        const retry = errorSurface.getByRole('button', { name: '重试读取' });
+        const retryCount = await retry.count();
+        await page.unroute(readFailurePattern, businessConfigReadFailureHandler);
+        await retry.click();
+        await page.locator('[data-business-config-change-set="v1"]:visible').waitFor({ state: 'visible', timeout: 45000 });
+        await page.locator('.page-picker-panel:visible').waitFor({ state: 'visible', timeout: 45000 });
+        businessConfigReadFailureEvidence = {
+          injected: businessConfigReadFailureInjected,
+          errorText,
+          retryCount,
+          recovered: await page.locator('[data-business-config-surface-error="true"]:visible').count() === 0,
+        };
+        businessConfigReadFailureEvidence.pass = businessConfigReadFailureEvidence.injected
+          && businessConfigReadFailureEvidence.errorText.includes('受控配置读取失败')
+          && businessConfigReadFailureEvidence.retryCount === 1
+          && businessConfigReadFailureEvidence.recovered;
+      }
+      if (exerciseReadFailure) {
+        const errorSurface = page.locator('[data-semantic-state-surface="page"][data-state="error"]:visible').first();
+        await errorSurface.waitFor({ state: 'visible', timeout: 15000 });
+        const errorText = String(await errorSurface.textContent() || '').replace(/\s+/g, ' ').trim();
+        const retry = errorSurface.getByRole('button').filter({ hasText: /重试|重新加载/ }).first();
+        const retryCount = await retry.count();
+        await page.unroute(readFailurePattern, readFailureHandler);
+        if (retryCount !== 1) throw new Error(`${target.name}: read failure did not expose one retry action`);
+        const retryContractResponse = page.waitForResponse(isContractV2Response, { timeout: 45000 });
+        await retry.click();
+        const recoveredResponse = await retryContractResponse;
+        if (!recoveredResponse.ok()) {
+          throw new Error(`${target.name}: retry contract request failed with ${recoveredResponse.status()}`);
+        }
+        try {
+          await page.locator('[data-semantic-component="ContractFormPage"][data-state="ok"]').waitFor({ state: 'visible', timeout: 45000 });
+        } catch (error) {
+          const retryState = await page.locator('[data-semantic-component="ContractFormPage"]').getAttribute('data-state');
+          const retrySurfaceText = String(await page.locator('[data-semantic-state-surface="page"]:visible').first().textContent().catch(() => '') || '').replace(/\s+/g, ' ').trim();
+          throw new Error(`${target.name}: retry did not restore ready state (state=${retryState || '-'}, surface=${retrySurfaceText || '-'})`, { cause: error });
+        }
+        await waitForStableProductSurface(page);
+        const restoredState = await page.locator('[data-semantic-component="ContractFormPage"]').getAttribute('data-state');
+        readFailureEvidence = {
+          injected: readFailureInjected,
+          operation: readFailureOperation,
+          errorText,
+          retryCount,
+          restoredState,
+          pass: readFailureInjected && errorText.length > 0 && restoredState === 'ok',
+        };
+      }
+      if (target.expectedLoadedSelector) {
+        const expectedLoadedSelector = String(target.expectedLoadedSelector);
+        const loadedSurface = page.locator(expectedLoadedSelector).filter({ visible: true });
+        await loadedSurface.first().waitFor({ state: 'visible', timeout: 45000 });
+        expectedLoadedSelectorEvidence = {
+          selector: expectedLoadedSelector,
+          visibleCount: await loadedSurface.count(),
+          pass: await loadedSurface.count() > 0,
+        };
+      }
+      if (target.exerciseOfficialComponentBehavior === true) {
+        const workspace = page.locator('[data-semantic-component="MyWorkApprovalWorkspace"][data-state="ready"]:visible');
+        await workspace.waitFor({ state: 'visible', timeout: 45000 });
+        const searchRoot = workspace.locator('.product-work__filters [data-semantic-component="ScInput"]').first();
+        const searchInput = searchRoot.locator('input[type="search"]');
+        const initialCardCount = await workspace.locator('.work-card:visible').count();
+        await searchInput.focus();
+        const inputFocused = await searchInput.evaluate((node) => node === document.activeElement);
+        await searchInput.fill('__official_component_no_match__');
+        await workspace.getByRole('button', { name: '清除查找', exact: true }).waitFor({ state: 'visible', timeout: 15000 });
+        const filteredEmptyCount = await workspace.locator('[data-semantic-component="ScEmptyState"]:visible').count();
+        await workspace.getByRole('button', { name: '清除查找', exact: true }).click();
+        await page.waitForFunction(
+          () => document.querySelector('.product-work__filters input[type="search"]')?.value === ''
+            && document.querySelectorAll('.work-card').length > 0,
+          undefined,
+          { timeout: 15000 },
+        );
+        const restoredCardCount = await workspace.locator('.work-card:visible').count();
+
+        const selectRoot = workspace.locator('.product-work__filters [data-semantic-component="ScSelect"]').first();
+        const selectInput = selectRoot.locator('input').first();
+        const initialSelectValue = await selectInput.inputValue();
+        await selectRoot.click();
+        const mouseOptions = page.locator('.t-select-option:visible:not(.t-is-disabled)');
+        await mouseOptions.first().waitFor({ state: 'visible', timeout: 15000 });
+        const mouseOptionCount = await mouseOptions.count();
+        const mouseOption = mouseOptions.last();
+        const mouseOptionText = String(await mouseOption.textContent() || '').replace(/\s+/g, ' ').trim();
+        await mouseOption.click();
+        await page.waitForFunction(
+          (before) => document.querySelector('.product-work__filters [data-semantic-component="ScSelect"] input')?.value !== before,
+          initialSelectValue,
+          { timeout: 15000 },
+        );
+        const mouseSelectValue = await selectInput.inputValue();
+        await selectInput.focus();
+        await selectInput.press('ArrowDown');
+        await selectInput.press('ArrowUp');
+        await selectInput.press('Enter');
+        await page.waitForFunction(
+          (before) => document.querySelector('.product-work__filters [data-semantic-component="ScSelect"] input')?.value !== before,
+          mouseSelectValue,
+          { timeout: 15000 },
+        );
+        const keyboardSelectValue = await selectInput.inputValue();
+        const selectFocused = await selectInput.evaluate((node) => node === document.activeElement);
+
+        const metricButtons = workspace.locator('.count-card[data-primitive-driver="browser-structured"]');
+        const metricCount = await metricButtons.count();
+        const mouseMetric = metricButtons.nth(Math.min(1, Math.max(0, metricCount - 1)));
+        const mouseMetricKey = String(await mouseMetric.getAttribute('data-section-key') || '');
+        const mouseActivationCount = await mouseMetric.evaluate((node) => {
+          node.dataset.browserActivationCount = '0';
+          node.addEventListener('click', () => {
+            node.dataset.browserActivationCount = String(Number(node.dataset.browserActivationCount || '0') + 1);
+          });
+          return Number(node.dataset.browserActivationCount || '0');
+        });
+        await mouseMetric.click();
+        const mouseActivationAfter = Number(await mouseMetric.getAttribute('data-browser-activation-count') || 0);
+        const mousePressed = await mouseMetric.getAttribute('aria-pressed');
+        const keyboardMetric = metricButtons.first();
+        await keyboardMetric.evaluate((node) => {
+          node.dataset.browserActivationCount = '0';
+          node.addEventListener('click', () => {
+            node.dataset.browserActivationCount = String(Number(node.dataset.browserActivationCount || '0') + 1);
+          });
+        });
+        await keyboardMetric.focus();
+        await keyboardMetric.press('Enter');
+        const keyboardActivationAfter = Number(await keyboardMetric.getAttribute('data-browser-activation-count') || 0);
+        const keyboardPressed = await keyboardMetric.getAttribute('aria-pressed');
+        const metricFocused = await keyboardMetric.evaluate((node) => node === document.activeElement);
+        const publicBodyCards = workspace.locator('.work-card .t-card__body.work-card__body');
+        officialComponentBehaviorEvidence = {
+          inputSearchClear: {
+            driver: await searchRoot.getAttribute('data-primitive-driver'),
+            inputFocused,
+            filteredEmptyCount,
+            initialCardCount,
+            restoredCardCount,
+            valueAfterClear: await searchInput.inputValue(),
+          },
+          selectMouse: { initialSelectValue, mouseOptionCount, mouseOptionText, value: mouseSelectValue },
+          selectKeyboard: { before: mouseSelectValue, value: keyboardSelectValue, focused: selectFocused },
+          structuredButtonActivation: {
+            metricCount,
+            mouseMetricKey,
+            mouseActivationCount,
+            mouseActivationAfter,
+            mousePressed,
+            keyboardActivationAfter,
+            keyboardPressed,
+            focused: metricFocused,
+          },
+          cardPublicBodyClass: { count: await publicBodyCards.count() },
+        };
+        officialComponentBehaviorEvidence.pass = officialComponentBehaviorEvidence.inputSearchClear.driver === 'tdesign'
+          && officialComponentBehaviorEvidence.inputSearchClear.inputFocused
+          && officialComponentBehaviorEvidence.inputSearchClear.filteredEmptyCount === 1
+          && officialComponentBehaviorEvidence.inputSearchClear.initialCardCount > 0
+          && officialComponentBehaviorEvidence.inputSearchClear.restoredCardCount === officialComponentBehaviorEvidence.inputSearchClear.initialCardCount
+          && officialComponentBehaviorEvidence.inputSearchClear.valueAfterClear === ''
+          && officialComponentBehaviorEvidence.selectMouse.mouseOptionCount > 1
+          && officialComponentBehaviorEvidence.selectMouse.mouseOptionText.length > 0
+          && officialComponentBehaviorEvidence.selectMouse.value !== officialComponentBehaviorEvidence.selectMouse.initialSelectValue
+          && officialComponentBehaviorEvidence.selectKeyboard.value !== officialComponentBehaviorEvidence.selectKeyboard.before
+          && officialComponentBehaviorEvidence.selectKeyboard.focused
+          && officialComponentBehaviorEvidence.structuredButtonActivation.metricCount > 1
+          && officialComponentBehaviorEvidence.structuredButtonActivation.mouseActivationAfter === 1
+          && officialComponentBehaviorEvidence.structuredButtonActivation.mousePressed === 'true'
+          && officialComponentBehaviorEvidence.structuredButtonActivation.keyboardActivationAfter === 1
+          && officialComponentBehaviorEvidence.structuredButtonActivation.keyboardPressed === 'true'
+          && officialComponentBehaviorEvidence.structuredButtonActivation.focused
+          && officialComponentBehaviorEvidence.cardPublicBodyClass.count > 0;
+        if (!officialComponentBehaviorEvidence.pass) {
+          throw new Error(`${target.name}: official component behavior failed ${JSON.stringify(officialComponentBehaviorEvidence)}`);
+        }
+      }
       if (bootSummaryFixtureTarget === target) {
         while (bootSummaryRoutesInFlight > 0) await new Promise((resolve) => setTimeout(resolve, 10));
         await page.unroute(bootContractRoutePattern, bootContractRouteHandler);
@@ -509,6 +868,104 @@ try {
             .map((label) => String(label.textContent || '').trim())
             .filter(Boolean),
         );
+        const homeRoot = document.querySelector('[data-role-home]');
+        const homeQuickEntries = homeRoot
+          ? [...homeRoot.querySelectorAll('[data-appearance="dashboard-quick-link"]')]
+            .filter((node) => node instanceof HTMLElement && node.offsetParent !== null)
+            .map((node) => {
+              const content = node.querySelector('.sc-btn__content');
+              const icon = node.querySelector('.role-home-surface__entry-icon');
+              const copy = node.querySelector('.role-home-surface__entry-copy');
+              const label = copy?.querySelector('strong');
+              const detail = copy?.querySelector('small');
+              const arrow = node.querySelector('.role-home-surface__entry-arrow');
+              const contentStyle = content instanceof HTMLElement ? getComputedStyle(content) : null;
+              const copyStyle = copy instanceof HTMLElement ? getComputedStyle(copy) : null;
+              const nodeRect = node.getBoundingClientRect();
+              const contentRect = content?.getBoundingClientRect();
+              const iconRect = icon?.getBoundingClientRect();
+              const copyRect = copy?.getBoundingClientRect();
+              const labelRect = label?.getBoundingClientRect();
+              const detailRect = detail?.getBoundingClientRect();
+              const arrowRect = arrow?.getBoundingClientRect();
+              return {
+                label: String(label?.textContent || '').trim(),
+                detail: String(detail?.textContent || '').trim(),
+                contentDisplay: contentStyle?.display || '',
+                contentColumns: contentStyle?.gridTemplateColumns || '',
+                copyDisplay: copyStyle?.display || '',
+                buttonWidth: Math.round(nodeRect.width),
+                contentWidth: Math.round(contentRect?.width || 0),
+                copyWidth: Math.round(copyRect?.width || 0),
+                arrowRightGap: Math.round(nodeRect.right - (arrowRect?.right || nodeRect.right)),
+                arrowVisible: Boolean(
+                  arrowRect && arrowRect.width > 0 && arrowRect.height > 0
+                  && arrow instanceof Element && getComputedStyle(arrow).visibility !== 'hidden'
+                ),
+                ordered: Boolean(
+                  iconRect && copyRect && arrowRect
+                  && iconRect.right <= copyRect.left
+                  && copyRect.right <= arrowRect.left
+                  && copyRect.width > 0
+                  && (!detailRect || !labelRect || labelRect.bottom <= detailRect.top)
+                ),
+                horizontalClipped: node.scrollWidth > node.clientWidth + 1,
+              };
+            })
+          : [];
+        const navigationTree = document.querySelector('#primary-sidebar .product-side-navigation__tree');
+        const navigationMenu = navigationTree?.querySelector('.sc-navigation-menu');
+        const topbar = document.querySelector('.topbar');
+        const topbarActions = topbar?.querySelector('.topbar-actions');
+        const pageFrame = document.querySelector('.router-host > [data-product-page-mode]');
+        const topbarRect = topbar?.getBoundingClientRect();
+        const topbarActionsRect = topbarActions?.getBoundingClientRect();
+        const pageFrameRect = pageFrame?.getBoundingClientRect();
+        const topbarActionItems = topbarActions instanceof HTMLElement
+          ? [...topbarActions.children]
+            .filter((node) => {
+              if (!(node instanceof HTMLElement)) return false;
+              const rect = node.getBoundingClientRect();
+              const nodeStyle = getComputedStyle(node);
+              return nodeStyle.display !== 'none' && nodeStyle.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+            })
+            .map((node) => {
+              const rect = node.getBoundingClientRect();
+              const action = node.matches('button') ? node : node.querySelector('button');
+              return {
+                label: String(action?.getAttribute('aria-label') || action?.getAttribute('title') || action?.textContent || '').replace(/\s+/g, ' ').trim(),
+                rect: [Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom)],
+                withinViewport: rect.left >= -1 && rect.right <= window.innerWidth + 1,
+                withinActions: Boolean(topbarActionsRect) && rect.left >= topbarActionsRect.left - 1 && rect.right <= topbarActionsRect.right + 1,
+              };
+            })
+          : [];
+        const workItemCards = [...document.querySelectorAll('[data-work-item-key]')]
+          .filter((node) => node instanceof HTMLElement && node.offsetParent !== null)
+          .map((node) => {
+            const rect = node.getBoundingClientRect();
+            return {
+              recordId: node.getAttribute('data-record-id') || '',
+              state: node.getAttribute('data-work-item-state') || '',
+              rect: [Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom)],
+              fullyVisible: rect.top >= 0 && rect.bottom <= window.innerHeight,
+              primaryFactCount: node.querySelectorAll('[data-primary-fact-key]').length,
+              supplementaryFactCount: node.querySelectorAll('[data-supplementary-fact-key]').length,
+              disclosureCount: node.querySelectorAll('[data-disclosure-trigger]').length,
+              actionLabels: [...node.querySelectorAll('button')]
+                .filter((button) => button instanceof HTMLElement && button.offsetParent !== null)
+                .map((button) => String(button.textContent || '').replace(/\s+/g, ' ').trim())
+                .filter(Boolean),
+            };
+          });
+        const homeWorkItems = [...document.querySelectorAll('[data-role-home] [data-record-id]')]
+          .filter((node) => node instanceof HTMLElement && node.offsetParent !== null)
+          .map((node) => ({
+            recordId: node.getAttribute('data-record-id') || '',
+            state: node.getAttribute('data-work-item-state') || '',
+            text: String(node.textContent || '').replace(/\s+/g, ' ').trim(),
+          }));
+        const detailRecordId = document.querySelector('[data-semantic-component="ContractFormPage"]')?.getAttribute('data-form-record') || '';
         return {
           h1: document.querySelectorAll('h1').length,
           pageHeaders: document.querySelectorAll('.template-page-header, [data-product-page-header]').length,
@@ -517,8 +974,65 @@ try {
           presentationModes: [...new Set([...document.querySelectorAll('[data-product-page-pattern][data-presentation-mode]')].map((node) => node.getAttribute('data-presentation-mode')).filter(Boolean))],
           nativeStructureCount: document.querySelectorAll('[data-native-contract-structure]').length,
           nativeNotebookPageCount: document.querySelectorAll('[data-native-contract-structure] .t-tabs__nav-item').length,
+          loadedSurfaceEvidence: {
+            homeState: homeRoot?.getAttribute('data-state') || '',
+            myWorkState: document.querySelector('[data-semantic-component="MyWorkView"]')?.getAttribute('data-state') || '',
+            collectionState: document.querySelector('[data-semantic-component="ActionView"]')?.getAttribute('data-collection-state') || '',
+            formState: document.querySelector('[data-semantic-component="ContractFormPage"]')?.getAttribute('data-state') || '',
+          },
+          workItemEvidence: {
+            cards: workItemCards,
+            homeItems: homeWorkItems,
+            detailRecordId,
+            fullyVisibleCardCount: workItemCards.filter((item) => item.fullyVisible).length,
+          },
           overflow: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - window.innerWidth,
+          shellGeometry: {
+            topbarHeight: Math.round(topbarRect?.height || 0),
+            contentStart: Math.round(pageFrameRect?.top || 0),
+            minimal: Boolean(topbar?.classList.contains('topbar--minimal')),
+          },
+          topbarActionEvidence: topbar instanceof HTMLElement && topbarActions instanceof HTMLElement && topbarRect && topbarActionsRect ? {
+            topbarRect: [Math.round(topbarRect.left), Math.round(topbarRect.top), Math.round(topbarRect.right), Math.round(topbarRect.bottom)],
+            actionsRect: [Math.round(topbarActionsRect.left), Math.round(topbarActionsRect.top), Math.round(topbarActionsRect.right), Math.round(topbarActionsRect.bottom)],
+            actionItems: topbarActionItems,
+            horizontalClipped: topbarActions.scrollWidth > topbarActions.clientWidth + 1,
+            pass: topbarActionsRect.left >= topbarRect.left - 1
+              && topbarActionsRect.right <= topbarRect.right + 1
+              && topbarActionsRect.left >= -1
+              && topbarActionsRect.right <= window.innerWidth + 1
+              && topbarActions.scrollWidth <= topbarActions.clientWidth + 1
+              && topbarActionItems.length > 0
+              && topbarActionItems.every((item) => item.label && item.withinViewport && item.withinActions),
+          } : null,
+          homePresentationEvidence: homeRoot ? {
+            quickEntryCount: homeQuickEntries.length,
+            quickEntries: homeQuickEntries,
+            pass: homeQuickEntries.length > 0
+              && homeQuickEntries.every((entry) => entry.label
+                && entry.contentDisplay === 'grid'
+                && entry.contentColumns !== 'none'
+                && entry.copyDisplay === 'grid'
+                && entry.contentWidth >= entry.buttonWidth - 24
+                && entry.arrowVisible
+                && entry.arrowRightGap >= 8
+                && entry.arrowRightGap <= 16
+                && entry.ordered
+                && !entry.horizontalClipped),
+          } : null,
+          navigationHorizontalEvidence: navigationTree instanceof HTMLElement && navigationMenu instanceof HTMLElement ? {
+            treeClientWidth: navigationTree.clientWidth,
+            treeScrollWidth: navigationTree.scrollWidth,
+            menuClientWidth: navigationMenu.clientWidth,
+            menuScrollWidth: navigationMenu.scrollWidth,
+            pass: navigationTree.scrollWidth <= navigationTree.clientWidth + 1
+              && navigationMenu.scrollWidth <= navigationMenu.clientWidth + 1,
+          } : null,
           tokenLoaded: Boolean(style.getPropertyValue('--sc-semantic-surface-interactive').trim()),
+          themeEvidence: {
+            mode: root.getAttribute('data-sc-theme-mode') || '',
+            resolved: root.getAttribute('data-sc-theme-resolved') || '',
+          },
           nativeTitle: document.querySelector('.native-title-text')?.textContent?.trim() || '',
           primitiveDriverEvidence: {
             drivers: primitiveDrivers,
@@ -665,7 +1179,794 @@ try {
         };
         if (!nativeActionPresentationEvidence.pass) throw new Error(`${target.name}: native action disclosure semantics failed`);
       }
+      let hierarchicalWorkspaceEvidence = null;
+      if (target.exerciseHierarchicalWorkspace === true) {
+        const worksheet = page.locator('[data-semantic-component="HierarchicalWorksheet"][data-state="ready"]:visible');
+        await worksheet.waitFor({ state: 'visible', timeout: 45000 });
+        const search = worksheet.locator('[data-semantic-component="ProductListHeader"] input[type="search"]');
+        const scopeTrigger = worksheet.locator('.worksheet-scope-trigger:visible');
+        const initialCountText = String(await worksheet.locator('.worksheet-grid-title span').first().textContent() || '').trim();
+        let mobileScopeEvidence = null;
+        if (viewport.name === 'mobile') {
+          const waitForDrawerBoundaryToSettle = async () => {
+            await page.waitForFunction(() => {
+              const surface = [...document.querySelectorAll('[data-semantic-component="ScDrawer"][data-state="open"]')]
+                .find((node) => node instanceof HTMLElement && node.offsetParent !== null);
+              if (!(surface instanceof HTMLElement)) return false;
+              const box = surface.getBoundingClientRect();
+              return box.left >= -1 && box.right <= window.innerWidth + 1;
+            }, undefined, { timeout: 2000 });
+            await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          };
+          const captureDrawerBoundary = async (drawer) => drawer.evaluate((surface) => {
+            const rect = (node) => {
+              if (!(node instanceof HTMLElement)) return null;
+              const box = node.getBoundingClientRect();
+              return {
+                left: Math.round(box.left),
+                right: Math.round(box.right),
+                top: Math.round(box.top),
+                bottom: Math.round(box.bottom),
+                width: Math.round(box.width),
+                height: Math.round(box.height),
+              };
+            };
+            const panel = surface.closest('.sc-design-drawer');
+            const title = surface.querySelector('h2');
+            const close = surface.querySelector('[aria-label="关闭"]');
+            const firstTreeNode = surface.querySelector('.tree-node');
+            const fitsViewport = (box) => Boolean(box && box.left >= -1 && box.right <= window.innerWidth + 1 && box.top >= -1 && box.bottom <= window.innerHeight + 1);
+            return {
+              viewport: { width: window.innerWidth, height: window.innerHeight },
+              panel: rect(panel),
+              surface: rect(surface),
+              title: rect(title),
+              titleText: String(title?.textContent || '').trim(),
+              titleClipped: title instanceof HTMLElement && (title.scrollWidth > title.clientWidth + 1 || title.scrollHeight > title.clientHeight + 1),
+              close: rect(close),
+              treeNode: rect(firstTreeNode),
+              pass: fitsViewport(rect(panel))
+                && fitsViewport(rect(surface))
+                && fitsViewport(rect(title))
+                && fitsViewport(rect(close))
+                && fitsViewport(rect(firstTreeNode))
+                && String(title?.textContent || '').trim().length > 0
+                && !(title instanceof HTMLElement && (title.scrollWidth > title.clientWidth + 1 || title.scrollHeight > title.clientHeight + 1)),
+            };
+          });
+          const originalViewport = page.viewportSize();
+          await scopeTrigger.click();
+          const drawer = page.getByRole('dialog', { name: /收入合同履约结构|选择范围/ });
+          await drawer.waitFor({ state: 'visible', timeout: 15000 });
+          await waitForDrawerBoundaryToSettle();
+          const initialDescription = String(await drawer.getAttribute('aria-describedby') || '');
+          const initialBoundary = await captureDrawerBoundary(drawer);
+          await drawer.press('Escape');
+          await drawer.waitFor({ state: 'hidden', timeout: 15000 });
+          const escapeFocusRestored = await scopeTrigger.evaluate((node) => node === document.activeElement);
+          await scopeTrigger.click();
+          await drawer.waitFor({ state: 'visible', timeout: 15000 });
+          await waitForDrawerBoundaryToSettle();
+          const reopenedBoundary = await captureDrawerBoundary(drawer);
+          const alternateWidth = originalViewport?.width === 320 ? 390 : 320;
+          await page.setViewportSize({ width: alternateWidth, height: originalViewport?.height || 900 });
+          await waitForDrawerBoundaryToSettle();
+          const resizedBoundary = await captureDrawerBoundary(drawer);
+          await page.setViewportSize({ width: originalViewport?.width || mobileWidth, height: originalViewport?.height || 900 });
+          await waitForDrawerBoundaryToSettle();
+          const restoredBoundary = await captureDrawerBoundary(drawer);
+          await page.screenshot({ path: path.join(outputDir, `mobile-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-scope-drawer-open.png`), fullPage: false });
+          const firstScope = drawer.locator('.tree-node').first();
+          const chosenScope = String(await firstScope.textContent() || '').replace(/\s+/g, ' ').trim().replace(/^[▾▸]\s*/, '');
+          await firstScope.click();
+          await drawer.waitFor({ state: 'hidden', timeout: 15000 });
+          const selectedScope = String(await scopeTrigger.textContent() || '').replace(/\s+/g, ' ').trim();
+          await scopeTrigger.click();
+          await drawer.waitFor({ state: 'visible', timeout: 15000 });
+          await drawer.locator('.navigation-all').click();
+          await drawer.waitFor({ state: 'hidden', timeout: 15000 });
+          const clearedScope = String(await scopeTrigger.textContent() || '').replace(/\s+/g, ' ').trim();
+          await scopeTrigger.click();
+          await drawer.waitFor({ state: 'visible', timeout: 15000 });
+          await drawer.locator('.tree-node').first().click();
+          await drawer.waitFor({ state: 'hidden', timeout: 15000 });
+          mobileScopeEvidence = {
+            initialDescription,
+            chosenScope,
+            selectedScope,
+            clearedScope,
+            touchHeight: Math.round((await scopeTrigger.boundingBox())?.height || 0),
+            initialBoundary,
+            reopenedBoundary,
+            resizedBoundary,
+            restoredBoundary,
+            escapeFocusRestored,
+          };
+        } else {
+          await worksheet.locator('.worksheet-navigation .tree-node').first().click();
+        }
+        await page.waitForFunction(() => document.querySelectorAll('.worksheet-table-scroll tbody tr[data-record-id]').length > 0);
+        const scopedTitle = String(await worksheet.locator('.worksheet-grid-title strong').textContent() || '').trim();
+        const scopedCountText = String(await worksheet.locator('.worksheet-grid-title span').first().textContent() || '').trim();
+        const initialSelectedId = String(await worksheet.locator('tbody tr[aria-selected="true"]').first().getAttribute('data-record-id') || '');
+        await search.fill('__c1_no_match__');
+        await page.waitForFunction(() => document.querySelectorAll('.worksheet-table-scroll tbody tr[data-record-id]').length === 0
+          && !document.querySelector('.worksheet-open-record'));
+        const zeroState = {
+          countText: String(await worksheet.locator('.worksheet-grid-title span').first().textContent() || '').trim(),
+          selectedRows: await worksheet.locator('tbody tr[aria-selected="true"]').count(),
+          openActions: await worksheet.locator('.worksheet-open-record').count(),
+          emptyStates: await worksheet.locator('[data-semantic-component="ScEmptyState"]:visible').count(),
+          detailHint: String(await worksheet.locator('.worksheet-detail-empty').textContent() || '').trim(),
+        };
+        await worksheet.locator('[data-semantic-component="ProductListHeader"]').getByRole('button', { name: '清除', exact: true }).click();
+        await page.waitForFunction(() => document.querySelectorAll('.worksheet-table-scroll tbody tr[data-record-id]').length > 0
+          && Boolean(document.querySelector('.worksheet-open-record')));
+        const restoredCountText = String(await worksheet.locator('.worksheet-grid-title span').first().textContent() || '').trim();
+        const restoredSelectedId = String(await worksheet.locator('tbody tr[aria-selected="true"]').first().getAttribute('data-record-id') || '');
+        const selectedRow = worksheet.locator('tbody tr[aria-selected="true"]').first();
+        const searchableText = await selectedRow.locator('td').evaluateAll((cells) => cells
+          .map((cell) => String(cell.textContent || '').replace(/\s+/g, ' ').trim())
+          .find((value) => value.length >= 2) || '');
+        if (!searchableText) throw new Error(`${target.name}: selected hierarchical row has no searchable text`);
+        await search.fill(searchableText);
+        await page.waitForFunction(() => document.querySelectorAll('.worksheet-table-scroll tbody tr[data-record-id]').length > 0);
+        const retainedQuery = await search.inputValue();
+        const retainedSelectedId = String(await worksheet.locator('tbody tr[aria-selected="true"]').first().getAttribute('data-record-id') || '');
+        const monetaryValues = await worksheet.locator('[data-detail-field][data-field-type="monetary"]:visible').allTextContents();
+        const tableScroll = worksheet.locator('[data-table-scroll-region="true"]');
+        const scrollBefore = await tableScroll.evaluate((node) => {
+          node.scrollLeft = Math.min(96, Math.max(0, node.scrollWidth - node.clientWidth));
+          return { left: Math.round(node.scrollLeft), max: Math.round(node.scrollWidth - node.clientWidth) };
+        });
+        let separatorEvidence = null;
+        if (viewport.name === 'desktop') {
+          const navigationSeparator = worksheet.locator('.worksheet-resizer-navigation');
+          const detailSeparator = worksheet.locator('.worksheet-resizer-detail');
+          const navigationBefore = Number(await navigationSeparator.getAttribute('aria-valuenow'));
+          await navigationSeparator.focus();
+          await navigationSeparator.press('ArrowRight');
+          const navigationAfter = Number(await navigationSeparator.getAttribute('aria-valuenow'));
+          await navigationSeparator.press('Home');
+          const navigationMinimum = Number(await navigationSeparator.getAttribute('aria-valuenow'));
+          const detailBefore = Number(await detailSeparator.getAttribute('aria-valuenow'));
+          await detailSeparator.focus();
+          await detailSeparator.press('ArrowUp');
+          const detailAfter = Number(await detailSeparator.getAttribute('aria-valuenow'));
+          await detailSeparator.press('End');
+          const detailMaximum = Number(await detailSeparator.getAttribute('aria-valuenow'));
+          separatorEvidence = {
+            navigationBefore, navigationAfter, navigationMinimum,
+            detailBefore, detailAfter, detailMaximum,
+            navigationFocused: await navigationSeparator.evaluate((node) => node === document.activeElement),
+            detailFocused: await detailSeparator.evaluate((node) => node === document.activeElement),
+          };
+        }
+        const beforeOpenUrl = page.url();
+        const detailResponse = page.waitForResponse(isContractV2Response, { timeout: 45000 });
+        await worksheet.locator('.worksheet-open-record').click();
+        await page.waitForURL((url) => url.href !== beforeOpenUrl, { timeout: 15000 });
+        await detailResponse;
+        await waitForStableProductSurface(page);
+        const detailRecordId = String(await page.locator('[data-semantic-component="ContractFormPage"]').getAttribute('data-form-record') || '');
+        const returnAction = page.locator('[data-form-secondary-action="return-list"]:visible');
+        if (await returnAction.count() === 1) {
+          await returnAction.click();
+        } else {
+          const mobileActionTrigger = page.locator('[data-semantic-component="ScButton"][aria-label="打开更多页面操作"]:visible');
+          await mobileActionTrigger.click();
+          const mobileReturn = page.locator('.t-dropdown__item:visible').filter({ hasText: '返回' });
+          await mobileReturn.click();
+        }
+        await page.waitForURL((url) => url.pathname === new URL(beforeOpenUrl).pathname, { timeout: 15000 });
+        await waitForStableProductSurface(page);
+        const restoredWorksheet = page.locator('[data-semantic-component="HierarchicalWorksheet"][data-state="ready"]:visible');
+        const returnState = {
+          query: await restoredWorksheet.locator('[data-semantic-component="ProductListHeader"] input[type="search"]').inputValue(),
+          scope: String(await restoredWorksheet.locator('.worksheet-grid-title strong').textContent() || '').trim(),
+          selectedId: String(await restoredWorksheet.locator('tbody tr[aria-selected="true"]').first().getAttribute('data-record-id') || ''),
+          scrollLeft: Math.round(await restoredWorksheet.locator('[data-table-scroll-region="true"]').evaluate((node) => node.scrollLeft)),
+        };
+        hierarchicalWorkspaceEvidence = {
+          initialCountText, scopedCountText, scopedTitle, initialSelectedId, zeroState, restoredCountText, restoredSelectedId,
+          retainedQuery, retainedSelectedId, monetaryValues, scrollBefore, separatorEvidence, mobileScopeEvidence,
+          detailRecordId, returnState,
+          pass: /46/.test(initialCountText)
+            && initialSelectedId.length > 0
+            && /0/.test(zeroState.countText)
+            && zeroState.selectedRows === 0
+            && zeroState.openActions === 0
+            && zeroState.emptyStates === 1
+            && zeroState.detailHint.length > 0
+            && restoredSelectedId.length > 0
+            && monetaryValues.length > 0
+            && monetaryValues.every((value) => /¥|CNY/.test(value) && /\.\d{2}/.test(value))
+            && detailRecordId === retainedSelectedId
+            && returnState.query === retainedQuery
+            && returnState.scope === scopedTitle
+            && returnState.selectedId === retainedSelectedId
+            && returnState.scrollLeft === scrollBefore.left
+            && (viewport.name !== 'desktop' || (
+              separatorEvidence.navigationAfter > separatorEvidence.navigationBefore
+              && separatorEvidence.navigationMinimum === 200
+              && separatorEvidence.detailAfter > separatorEvidence.detailBefore
+              && separatorEvidence.detailMaximum === 420
+              && separatorEvidence.detailFocused
+            ))
+            && (viewport.name !== 'mobile' || (
+              mobileScopeEvidence.chosenScope.length > 0
+              && mobileScopeEvidence.selectedScope.includes(mobileScopeEvidence.chosenScope)
+              && mobileScopeEvidence.clearedScope.includes('全部收入合同')
+              && mobileScopeEvidence.touchHeight >= 44
+              && mobileScopeEvidence.initialBoundary.pass
+              && mobileScopeEvidence.reopenedBoundary.pass
+              && mobileScopeEvidence.resizedBoundary.pass
+              && mobileScopeEvidence.restoredBoundary.pass
+              && mobileScopeEvidence.escapeFocusRestored
+            )),
+        };
+        if (!hierarchicalWorkspaceEvidence.pass) throw new Error(`${target.name}: hierarchical workspace journey failed ${JSON.stringify(hierarchicalWorkspaceEvidence)}`);
+      }
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
+      if (target.exerciseBusinessConfigExperience === true) {
+        const changeSetPanel = page.locator('[data-business-config-change-set="v1"]:visible');
+        const initialChangeSetState = String(await changeSetPanel.getAttribute('data-change-set-state') || '');
+        const initialChangeSetText = String(await changeSetPanel.textContent() || '').replace(/\s+/g, ' ').trim();
+        const selectionPrompt = page.getByRole('heading', { name: '选择一个业务页面', exact: true });
+        const selectionPromptVisible = await selectionPrompt.isVisible();
+        const falseCurrentPageCount = await page.getByText('正在配置 当前页面', { exact: true }).count();
+        const pageSearch = page.locator('.page-search input').first();
+        const initialRowCount = await page.locator('.page-picker-panel .scan-row').count();
+        await pageSearch.fill('__no_matching_business_page__');
+        const emptyState = page.getByRole('heading', { name: '当前没有匹配的业务页面' });
+        await emptyState.waitFor({ state: 'visible', timeout: 15000 });
+        await page.getByRole('button', { name: '清除筛选' }).click();
+        await page.waitForFunction(() => document.querySelectorAll('.page-picker-panel .scan-row').length > 0, undefined, { timeout: 15000 });
+        const restoredRowCount = await page.locator('.page-picker-panel .scan-row').count();
+        const emptyRecoveryVisible = await emptyState.count() === 0;
+        const firstRow = page.locator('.page-picker-panel .scan-row').first();
+        const selectedLabel = String(await firstRow.getAttribute('aria-label') || '');
+        await firstRow.click();
+        const selectedPanel = page.locator('[aria-label="已选页面配置"]:visible');
+        await selectedPanel.waitFor({ state: 'visible', timeout: 45000 });
+        const selectedText = String(await selectedPanel.textContent() || '').replace(/\s+/g, ' ').trim();
+        const responsiveEvidence = await page.evaluate(() => {
+          const selectors = ['.selected-page-overview', '.selected-page-overview-meta span', '.config-type-tabs .sc-btn', '[aria-label="已选页面配置"]'];
+          const entries = selectors.flatMap((selector) => [...document.querySelectorAll(selector)]
+            .filter((node) => node instanceof HTMLElement && node.offsetParent !== null)
+            .map((node) => {
+              const rect = node.getBoundingClientRect();
+              return {
+                selector,
+                rect: [Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom)],
+                withinViewport: rect.left >= -1 && rect.right <= window.innerWidth + 1,
+                horizontallyClipped: node.scrollWidth > node.clientWidth + 1,
+                height: Math.round(rect.height),
+              };
+            }));
+          return {
+            entries,
+            pass: entries.length > 0
+              && entries.every((entry) => entry.withinViewport && !entry.horizontallyClipped)
+              && (window.innerWidth > 480
+                || entries.filter((entry) => entry.selector === '.config-type-tabs .sc-btn').every((entry) => entry.height >= 44)),
+          };
+        });
+        await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-selected.png`), fullPage: false });
+        businessConfigExperienceEvidence = {
+          initialChangeSetState,
+          initialChangeSetText,
+          selectionPromptVisible,
+          falseCurrentPageCount,
+          initialRowCount,
+          emptyRecoveryVisible,
+          restoredRowCount,
+          selectedLabel,
+          selectedText,
+          responsiveEvidence,
+          pass: initialChangeSetState === String(target.expectedChangeSetState || initialChangeSetState)
+            && !(initialChangeSetState === 'empty' && initialChangeSetText.includes('状态：有未发布修改'))
+            && selectionPromptVisible
+            && falseCurrentPageCount === 0
+            && initialRowCount > 0
+            && restoredRowCount === initialRowCount
+            && emptyRecoveryVisible
+            && selectedLabel.length > 0
+            && selectedText.includes('正在配置')
+            && responsiveEvidence.pass,
+        };
+      }
+      if (target.exerciseSafeReturn === true) {
+        const errorState = page.locator('[data-semantic-component="ScErrorState"]:visible');
+        const deniedUrl = new URL(page.url());
+        const beforePath = deniedUrl.pathname;
+        const authorityDeniedEvidence = target.expectAuthorityDenied === true ? {
+          from: deniedUrl.searchParams.get('from') || '',
+          reason: deniedUrl.searchParams.get('reason') || '',
+        } : null;
+        if (authorityDeniedEvidence) {
+          authorityDeniedEvidence.pass = beforePath === '/access-denied'
+            && authorityDeniedEvidence.from === target.path
+            && authorityDeniedEvidence.reason === 'NAVIGATION_AUTHORITY_DENIED';
+        }
+        const errorText = String(await errorState.textContent() || '').replace(/\s+/g, ' ').trim();
+        const returnAction = errorState.getByRole('button', { name: '返回安全页面' });
+        const actionCount = await returnAction.count();
+        const responsiveEvidence = await errorState.evaluate((root) => {
+          const description = root.querySelector('p');
+          const action = root.querySelector('button');
+          const rootRect = root.getBoundingClientRect();
+          const descriptionRect = description?.getBoundingClientRect();
+          const actionRect = action?.getBoundingClientRect();
+          return {
+            rootRect: [Math.round(rootRect.left), Math.round(rootRect.top), Math.round(rootRect.right), Math.round(rootRect.bottom)],
+            descriptionRect: descriptionRect ? [Math.round(descriptionRect.left), Math.round(descriptionRect.top), Math.round(descriptionRect.right), Math.round(descriptionRect.bottom)] : null,
+            actionRect: actionRect ? [Math.round(actionRect.left), Math.round(actionRect.top), Math.round(actionRect.right), Math.round(actionRect.bottom)] : null,
+            pass: Boolean(descriptionRect && actionRect)
+              && rootRect.left >= -1 && rootRect.right <= window.innerWidth + 1
+              && descriptionRect.left >= rootRect.left && descriptionRect.right <= rootRect.right + 1
+              && actionRect.left >= rootRect.left && actionRect.right <= rootRect.right + 1
+              && (window.innerWidth > 480 || (actionRect.top >= descriptionRect.bottom && actionRect.height >= 44)),
+          };
+        });
+        await returnAction.click();
+        await page.waitForURL((url) => url.pathname === '/', { timeout: 15000 });
+        safeReturnEvidence = { beforePath, authorityDeniedEvidence, errorText, actionCount, responsiveEvidence, afterPath: new URL(page.url()).pathname };
+        safeReturnEvidence.pass = errorText.length > 0
+          && actionCount === 1
+          && responsiveEvidence.pass
+          && (authorityDeniedEvidence?.pass ?? true)
+          && safeReturnEvidence.afterPath === '/';
+      }
+      let formValidationEvidence = null;
+      if (target.exerciseFormValidation === true) {
+        const form = page.locator('[data-product-page-mode="form"]:visible');
+        const saveAction = page.locator('button[data-action-ref="form.save"]:visible').first();
+        if (await form.count() !== 1 || await saveAction.count() !== 1) {
+          throw new Error(`${target.name}: editable form validation entry is missing`);
+        }
+        const mutationCountBefore = report.mutationCount;
+        await saveAction.click();
+        const validationAlert = form.locator('[role="alert"]:visible').first();
+        await validationAlert.waitFor({ state: 'visible', timeout: 15000 });
+        const invalidControl = form.locator('[aria-invalid="true"]:visible').first();
+        const invalidControlCount = await invalidControl.count();
+        const invalidField = invalidControlCount === 1
+          ? invalidControl.locator('xpath=ancestor::*[@data-field-name][1]')
+          : null;
+        const activeFieldName = await page.evaluate(() => document.activeElement?.closest('[data-field-name]')?.getAttribute('data-field-name') || '');
+        const invalidFieldName = String(await invalidField?.getAttribute('data-field-name') || '');
+        const alertText = String(await validationAlert.textContent() || '').replace(/\s+/g, ' ').trim();
+        const fieldGeometry = await form.locator('[data-field-name]:visible').evaluateAll((nodes) => nodes
+          .filter((node) => node.querySelector('input:not([disabled]), textarea:not([disabled]), button:not([disabled])'))
+          .slice(0, 12)
+          .map((node) => {
+            const rect = node.getBoundingClientRect();
+            const gridRect = node.closest('.template-form-section-grid')?.getBoundingClientRect();
+            return {
+              name: node.getAttribute('data-field-name') || '',
+              left: Math.round(rect.left),
+              right: Math.round(rect.right),
+              width: Math.round(rect.width),
+              gridWidth: Math.round(gridRect?.width || 0),
+              gridWidthRatio: gridRect?.width ? Number((rect.width / gridRect.width).toFixed(3)) : 0,
+            };
+          }));
+        const minimumPhoneFieldWidth = viewport.name === 'mobile'
+          ? Math.max(180, viewport.width - 140)
+          : 0;
+        formValidationEvidence = {
+          invalidFieldName,
+          invalidControlCount,
+          activeFieldName,
+          alertText,
+          mutationCountBefore,
+          mutationCountAfter: report.mutationCount,
+          fieldGeometry,
+          minimumPhoneFieldWidth,
+          pass: Boolean(invalidFieldName)
+            && activeFieldName === invalidFieldName
+            && alertText.length > 0
+            && mutationCountBefore === report.mutationCount
+            && (viewport.name !== 'mobile' || fieldGeometry.every((item) => (
+              item.width >= minimumPhoneFieldWidth && item.gridWidthRatio >= 0.9
+            ))),
+        };
+      }
+      let detailCollectionEvidence = null;
+      if (target.exerciseDetailCollection === true) {
+        if (formValidationEvidence) {
+          await page.goto(`${baseUrl}${target.path}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+          await page.locator('[data-semantic-component="ContractFormPage"][data-state="ok"]:visible').waitFor({ state: 'visible', timeout: 45000 });
+          await waitForStableProductSurface(page);
+        }
+        const form = page.locator('[data-product-page-mode="form"]:visible');
+        const addRow = form.locator('.o2m-create:visible').first();
+        const saveAction = page.locator('button[data-action-ref="form.save"]:visible').first();
+        if (await form.count() !== 1 || await addRow.count() !== 1 || await saveAction.count() !== 1) {
+          throw new Error(`${target.name}: editable detail collection entry is missing ${JSON.stringify({
+            url: page.url(),
+            forms: await form.count(),
+            addActions: await addRow.count(),
+            saveActions: await saveAction.count(),
+          })}`);
+        }
+        const mutationCountBefore = report.mutationCount;
+        await addRow.click();
+        const cellEditor = form.locator('[data-semantic-component="One2ManyCellEditor"]:visible').first();
+        try {
+          await cellEditor.waitFor({ state: 'visible', timeout: 15000 });
+        } catch (error) {
+          const detailState = await form.locator('.o2m-card:visible').evaluateAll((cards) => cards.map((card) => ({
+            title: card.querySelector('.o2m-title')?.textContent?.trim() || '',
+            count: card.querySelector('.o2m-count')?.textContent?.trim() || '',
+            empty: card.querySelector('.o2m-empty')?.textContent?.replace(/\s+/g, ' ').trim() || '',
+            desktopRows: card.querySelectorAll('.o2m-table-scroll tbody tr').length,
+            mobileRows: card.querySelectorAll('[data-o2m-row]').length,
+            editors: card.querySelectorAll('[data-semantic-component="One2ManyCellEditor"]').length,
+            text: card.textContent?.replace(/\s+/g, ' ').trim().slice(0, 500) || '',
+          })));
+          throw new Error(`${target.name}: detail row did not expose shared cell editors ${JSON.stringify({ detailState, browserErrors: errors, mutationCount: report.mutationCount })}`, { cause: error });
+        }
+        const row = viewport.name === 'mobile'
+          ? cellEditor.locator('xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " o2m-mobile-row ")][1]')
+          : cellEditor.locator('xpath=ancestor::tr[1]');
+        await row.waitFor({ state: 'visible', timeout: 15000 });
+        const labels = viewport.name === 'mobile'
+          ? await row.locator('.o2m-mobile-label:visible').allTextContents()
+          : await form.locator('.o2m-table-scroll:visible thead th:visible').allTextContents();
+        const readableLabels = labels.map((label) => label.replace(/\s+/g, ' ').replace(/\*$/, '').trim()).filter(Boolean);
+        const disabledReasons = (await row.locator('.o2m-disabled-reason:visible').allTextContents())
+          .map((label) => label.replace(/\s+/g, ' ').trim()).filter(Boolean);
+        let detailRelationSearchEvidence = null;
+        await saveAction.click();
+        const cellError = row.locator('.o2m-cell-error[role="alert"]:visible').first();
+        await cellError.waitFor({ state: 'visible', timeout: 15000 });
+        const errorCell = cellError.locator('xpath=ancestor::*[@data-validation-target][1]');
+        const errorTarget = String(await errorCell.getAttribute('data-validation-target') || '');
+        const activeTarget = await page.evaluate(() => document.activeElement?.closest('[data-validation-target]')?.getAttribute('data-validation-target') || '');
+        const invalidControlCount = await errorCell.locator('[aria-invalid="true"]:visible').count();
+        const boundaryOwner = viewport.name === 'mobile' ? row : form.locator('.o2m-table-scroll:visible').first();
+        const rowBoundary = await boundaryOwner.evaluate((node) => {
+          const rect = node.getBoundingClientRect();
+          const documentRoot = document.documentElement;
+          return {
+            left: Math.round(rect.left),
+            right: Math.round(rect.right),
+            viewportWidth: window.innerWidth,
+            documentClientWidth: documentRoot.clientWidth,
+            documentScrollWidth: documentRoot.scrollWidth,
+            pass: rect.left >= -1
+              && rect.right <= window.innerWidth + 1
+              && documentRoot.scrollWidth <= documentRoot.clientWidth + 1,
+          };
+        });
+        detailCollectionEvidence = {
+          layout: viewport.name === 'mobile' ? 'mobile-card' : 'desktop-table',
+          readableLabels,
+          disabledReasons,
+          errorTarget,
+          activeTarget,
+          validationFocusRequired: target.exerciseDetailRelationSearchRecovery !== true,
+          invalidControlCount,
+          detailRelationSearchEvidence,
+          rowBoundary,
+          mutationCountBefore,
+          mutationCountAfter: report.mutationCount,
+          pass: readableLabels.length > 2
+            && disabledReasons.every((label) => !label.includes('契约'))
+            && Boolean(errorTarget)
+            && (target.exerciseDetailRelationSearchRecovery === true || activeTarget === errorTarget)
+            && invalidControlCount > 0
+            && (detailRelationSearchEvidence?.pass ?? true)
+            && rowBoundary.pass
+            && mutationCountBefore === report.mutationCount,
+        };
+        await page.screenshot({
+          path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-detail-validation.png`),
+          fullPage: false,
+        });
+        if (target.exerciseDetailRelationSearchRecovery === true) {
+          const relationEditors = form.locator('[data-semantic-component="One2ManyCellEditor"][data-validation-target$=":material_catalog_id"]:visible');
+          let relationEditor = relationEditors.first();
+          for (let index = 0; index < await relationEditors.count(); index += 1) {
+            const candidate = relationEditors.nth(index);
+            const candidateInput = candidate.locator('input:visible').first();
+            const hitTarget = await candidateInput.evaluate((input) => {
+              const rect = input.getBoundingClientRect();
+              const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+              return Boolean(hit && (hit === input || input.contains(hit) || hit.contains(input)));
+            }).catch(() => false);
+            if (hitTarget) {
+              relationEditor = candidate;
+              break;
+            }
+          }
+          const relationSelect = relationEditor.locator('[data-semantic-component="ScSelect"]:visible').first();
+          const relationInput = relationSelect.locator('input').first();
+          const relationRow = viewport.name === 'mobile'
+            ? relationEditor.locator('xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " o2m-mobile-row ")][1]')
+            : relationEditor.locator('xpath=ancestor::tr[1]');
+          if (await relationSelect.count() !== 1 || await relationInput.count() !== 1) {
+            throw new Error(`${target.name}: editable detail relation selector is missing`);
+          }
+          const relationEditorInstances = {
+            mounted: await form.locator('[data-semantic-component="One2ManyCellEditor"][data-validation-target$=":material_catalog_id"]').count(),
+            visible: await relationEditors.count(),
+          };
+          let relationQueryCount = 0;
+          const relationQueryEvents = [];
+          const countRelationQuery = (request) => {
+            if (request.method() !== 'POST') return;
+            let body = {};
+            try { body = JSON.parse(request.postData() || '{}'); } catch {}
+            if (body.intent === 'api.data' && body?.params?.op === 'list' && body?.params?.model === 'sc.material.catalog') {
+              relationQueryCount += 1;
+              relationQueryEvents.push({
+                kind: 'request',
+                searchTerm: String(body?.params?.search_term || ''),
+              });
+            }
+          };
+          const countRelationResponse = async (response) => {
+            const request = response.request();
+            if (request.method() !== 'POST') return;
+            let body = {};
+            try { body = JSON.parse(request.postData() || '{}'); } catch {}
+            if (body.intent === 'api.data' && body?.params?.op === 'list' && body?.params?.model === 'sc.material.catalog') {
+              const payload = await response.json().catch(() => null);
+              relationQueryEvents.push({
+                kind: 'response',
+                searchTerm: String(body?.params?.search_term || ''),
+                status: response.status(),
+                recordCount: Array.isArray(payload?.data?.records) ? payload.data.records.length : null,
+                ok: payload?.ok ?? null,
+              });
+            }
+          };
+          page.on('request', countRelationQuery);
+          page.on('response', countRelationResponse);
+          const visibleDropdown = page.locator('.t-select__dropdown:visible').last();
+          const visibleOptions = visibleDropdown.locator('[role="option"]:visible, .t-select-option:visible');
+          const waitForMaterialCatalogQuery = (searchTerm) => page.waitForResponse((response) => {
+            if (response.request().method() !== 'POST') return false;
+            let body = {};
+            try { body = JSON.parse(response.request().postData() || '{}'); } catch {}
+            return body.intent === 'api.data'
+              && body?.params?.op === 'list'
+              && body?.params?.model === 'sc.material.catalog'
+              && String(body?.params?.search_term || '') === searchTerm;
+          }, { timeout: 15000 });
+          const waitForVisibleRelationOptionCount = async (maximum) => {
+            const selectHandle = await relationSelect.elementHandle();
+            try {
+              await page.waitForFunction(
+                ({ select, limit }) => {
+                  const count = Number(select?.getAttribute('data-option-count') ?? -1);
+                  return count >= 0 && count <= limit;
+                },
+                { select: selectHandle, limit: maximum },
+                { timeout: 15000 },
+              );
+            } catch (error) {
+              const diagnostics = await form.locator('[data-semantic-component="One2ManyCellEditor"][data-validation-target$=":material_catalog_id"]')
+                .evaluateAll((editors) => editors.map((editor) => ({
+                  target: editor.getAttribute('data-validation-target'),
+                  visible: editor instanceof HTMLElement && editor.offsetParent !== null,
+                  diagnostic: editor.getAttribute('data-relation-query-diagnostic'),
+                  optionCount: editor.querySelector('[data-semantic-component="ScSelect"]')?.getAttribute('data-option-count'),
+                })));
+              throw new Error(`${target.name}: active relation selector did not project at most ${maximum} options diagnostics=${JSON.stringify(diagnostics)}`, { cause: error });
+            } finally {
+              await selectHandle?.dispose();
+            }
+          };
+          await relationInput.click();
+          await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
+          const requireActiveRelationInput = async (phase) => {
+            const ownsFocus = await relationInput.evaluate((input) => document.activeElement === input);
+            if (!ownsFocus) {
+              throw new Error(`${target.name}: visible relation selector did not retain its official search input during ${phase}`);
+            }
+            return relationInput;
+          };
+          let relationSearchInput = await requireActiveRelationInput('initial-open');
+          await visibleOptions.first().waitFor({ state: 'visible', timeout: 15000 });
+          const initialCount = await visibleOptions.count();
+          const noMatchKeyword = '__shared_relation_no_match__';
+          const noMatchResponse = waitForMaterialCatalogQuery(noMatchKeyword);
+          await relationSearchInput.fill('S');
+          await relationSearchInput.fill(noMatchKeyword);
+          await noMatchResponse;
+          await waitForVisibleRelationOptionCount(0);
+          const noResultCount = await visibleOptions.count();
+          const noResultControlOptionCount = Number(await relationSelect.getAttribute('data-option-count') || -1);
+          const noResultText = String(await visibleDropdown.textContent().catch(() => '') || '').replace(/\s+/g, ' ').trim();
+          const clearResponse = waitForMaterialCatalogQuery('');
+          await relationSearchInput.fill('');
+          await clearResponse;
+          try {
+            await visibleOptions.first().waitFor({ state: 'visible', timeout: 15000 });
+          } catch (error) {
+            const recoveryDiagnostic = {
+              inputValue: await relationInput.inputValue(),
+              relationQueryCount,
+              relationQueryEvents,
+              visibleDropdownCount: await page.locator('.t-select__dropdown:visible').count(),
+              visibleOptionCount: await visibleOptions.count(),
+              dropdownText: String(await visibleDropdown.textContent().catch(() => '') || '').replace(/\s+/g, ' ').trim(),
+              loading: await relationSelect.locator('.t-loading:visible, [aria-busy="true"]:visible').count(),
+              failureText: String(await relationSelect.locator('[data-relation-query-state="error"]:visible').textContent().catch(() => '') || '').replace(/\s+/g, ' ').trim(),
+            };
+            await page.screenshot({
+              path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-relation-recovery-failure.png`),
+              fullPage: false,
+            });
+            fs.writeFileSync(
+              path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-relation-recovery-failure.json`),
+              `${JSON.stringify(recoveryDiagnostic, null, 2)}\n`,
+              'utf8',
+            );
+            throw new Error(`${target.name}: relation clear recovery failed: ${JSON.stringify(recoveryDiagnostic)}`, { cause: error });
+          }
+          const restoredCount = await visibleOptions.count();
+          const selectedLabel = String(await visibleOptions.first().textContent() || '').replace(/\s+/g, ' ').trim();
+          await visibleOptions.first().click();
+          await visibleDropdown.waitFor({ state: 'hidden', timeout: 15000 });
+          const selectedDisplay = await relationInput.inputValue();
+          const selectedDisplays = await relationRow.locator('[data-validation-target$=":material_catalog_id"] input:visible')
+            .evaluateAll((inputs) => inputs.map((input) => input.value));
+          await relationInput.click();
+          await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
+          relationSearchInput = await requireActiveRelationInput('selected-reopen');
+          const selectedOptionBeforeSearch = String(await visibleDropdown.locator('[aria-selected="true"]:visible').first().textContent().catch(() => '') || '').replace(/\s+/g, ' ').trim();
+          const selectedNoMatchResponse = waitForMaterialCatalogQuery(noMatchKeyword);
+          await relationSearchInput.fill(noMatchKeyword);
+          await selectedNoMatchResponse;
+          await waitForVisibleRelationOptionCount(1);
+          const selectedNoResultCount = await visibleOptions.count();
+          const selectedNoResultLabels = (await visibleOptions.allTextContents()).map((value) => value.replace(/\s+/g, ' ').trim());
+          await page.keyboard.press('Escape');
+          await visibleDropdown.waitFor({ state: 'hidden', timeout: 15000 });
+          const selectedDisplayAfterSearch = await relationInput.inputValue();
+          const selectedDisplaysAfterSearch = await relationRow.locator('[data-validation-target$=":material_catalog_id"] input:visible')
+            .evaluateAll((inputs) => inputs.map((input) => input.value));
+          await relationInput.click();
+          await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
+          await visibleOptions.first().waitFor({ state: 'visible', timeout: 15000 });
+          const reopenedCount = await visibleOptions.count();
+          const selectedOptionAfterReopen = String(await visibleDropdown.locator('[aria-selected="true"]:visible').first().textContent().catch(() => '') || '').replace(/\s+/g, ' ').trim();
+          await page.keyboard.press('Escape');
+          await visibleDropdown.waitFor({ state: 'hidden', timeout: 15000 });
+          const noteInput = relationRow.locator('[data-validation-target$=":note"] input:visible').first();
+          const relationQueriesBeforeNote = relationQueryCount;
+          const unrelatedRelationRequest = page.waitForRequest((request) => {
+            if (request.method() !== 'POST') return false;
+            let body = {};
+            try { body = JSON.parse(request.postData() || '{}'); } catch {}
+            return body.intent === 'api.data'
+              && body?.params?.op === 'list'
+              && body?.params?.model === 'sc.material.catalog';
+          }, { timeout: 750 }).then(() => true).catch(() => false);
+          if (await noteInput.count() === 1) await noteInput.fill('未提交的关系查询验证');
+          const noteTriggeredRelationQuery = await unrelatedRelationRequest;
+          const relationQueriesAfterNote = relationQueryCount;
+
+          let failureInjected = false;
+          const failureRoutePattern = '**/api/v1/**';
+          const failureRouteHandler = async (route) => {
+            const request = route.request();
+            let body = {};
+            try { body = JSON.parse(request.postData() || '{}'); } catch {}
+            if (!failureInjected
+              && body.intent === 'api.data'
+              && body?.params?.op === 'list'
+              && body?.params?.model === 'sc.material.catalog') {
+              failureInjected = true;
+              expectedReadFailureResponses += 1;
+              expectedReadFailureConsoleErrors += 1;
+              await route.fulfill({
+                status: 503,
+                contentType: 'application/json',
+                body: JSON.stringify({ ok: false, error: { code: 'TEMPORARY_UNAVAILABLE', message: 'injected relation read failure' } }),
+              });
+              return;
+            }
+            await route.continue();
+          };
+          await page.route(failureRoutePattern, failureRouteHandler);
+          await relationInput.click();
+          await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
+          const failureSearchInput = await requireActiveRelationInput('failure-injection-open');
+          await failureSearchInput.fill('__shared_relation_failure__');
+          const failureState = page.locator('[data-relation-query-state="error"]:visible').filter({ hasText: '可选内容加载失败' }).first();
+          try {
+            await failureState.waitFor({ state: 'visible', timeout: 15000 });
+          } catch (error) {
+            const failureDiagnostic = {
+              inputValue: await relationInput.inputValue(),
+              failureInjected,
+              relationQueryCount,
+              relationQueryEvents,
+              loading: await relationSelect.locator('.t-loading:visible, [aria-busy="true"]:visible').count(),
+              visibleOptionCount: await visibleOptions.count(),
+            };
+            await page.screenshot({
+              path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-relation-failure-missing.png`),
+              fullPage: false,
+            });
+            fs.writeFileSync(
+              path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-relation-failure-missing.json`),
+              `${JSON.stringify(failureDiagnostic, null, 2)}\n`,
+              'utf8',
+            );
+            throw new Error(`${target.name}: relation failure state missing: ${JSON.stringify(failureDiagnostic)}`, { cause: error });
+          }
+          const failureText = String(await failureState.textContent() || '').replace(/\s+/g, ' ').trim();
+          const failureOwnerTarget = await failureState.evaluate((node) => (
+            node.closest('[data-semantic-component="One2ManyCellEditor"]')?.getAttribute('data-validation-target') || ''
+          ));
+          await page.screenshot({
+            path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-relation-failure.png`),
+            fullPage: false,
+          });
+          const failureRecoveryResponse = waitForMaterialCatalogQuery('__shared_relation_failure__');
+          await failureState.getByRole('button', { name: '重试', exact: true }).click();
+          await failureRecoveryResponse;
+          await failureState.waitFor({ state: 'hidden', timeout: 15000 });
+          const failureRecovered = failureInjected && await failureState.count() === 0;
+          await page.unroute(failureRoutePattern, failureRouteHandler);
+          await page.keyboard.press('Escape');
+          page.off('request', countRelationQuery);
+          page.off('response', countRelationResponse);
+          detailRelationSearchEvidence = {
+            initialCount,
+            noResultCount,
+            noResultControlOptionCount,
+            noResultText,
+            restoredCount,
+            selectedLabel,
+            selectedDisplay,
+            selectedDisplays,
+            selectedOptionBeforeSearch,
+            selectedNoResultCount,
+            selectedNoResultLabels,
+            selectedDisplayAfterSearch,
+            selectedDisplaysAfterSearch,
+            reopenedCount,
+            selectedOptionAfterReopen,
+              relationQueriesBeforeNote,
+              relationQueriesAfterNote,
+              noteTriggeredRelationQuery,
+            failureInjected,
+            failureText,
+            failureOwnerTarget,
+            failureRecovered,
+            relationEditorInstances,
+            relationQueryEvents,
+            pass: initialCount > 0
+              && (noResultCount === 0 || noResultText.includes('未找到匹配'))
+              && restoredCount > 0
+              && Boolean(selectedLabel)
+              && (selectedDisplay === selectedLabel || selectedDisplays.includes(selectedLabel) || selectedOptionBeforeSearch === selectedLabel)
+              && selectedNoResultCount <= 1
+              && (selectedNoResultCount === 0 || selectedNoResultLabels.includes(selectedLabel))
+              && (selectedDisplayAfterSearch === selectedLabel || selectedDisplaysAfterSearch.includes(selectedLabel) || selectedOptionAfterReopen === selectedLabel)
+              && reopenedCount > 0
+              && relationQueryEvents.filter((event) => event.kind === 'request' && event.searchTerm === noMatchKeyword).length === 2
+              && !noteTriggeredRelationQuery
+              && relationQueriesAfterNote === relationQueriesBeforeNote
+              && failureText.includes('加载失败')
+              && failureOwnerTarget.endsWith(':material_catalog_id')
+              && failureRecovered,
+          };
+          detailCollectionEvidence.detailRelationSearchEvidence = detailRelationSearchEvidence;
+          detailCollectionEvidence.pass = detailCollectionEvidence.pass && detailRelationSearchEvidence.pass;
+        }
+        const removeRow = row.locator('.o2m-row-remove:visible, button[aria-label^="移除"]:visible').first();
+        if (await removeRow.count() !== 1) throw new Error(`${target.name}: temporary detail row cannot be removed`);
+        await removeRow.click();
+      }
       let relationSearchDialogEvidence = null;
       if (target.captureRelationSearchDialog === true) {
         const relations = page.locator('.many2one-combobox:visible');
@@ -764,7 +2065,7 @@ try {
       }
       if (target.captureCollectionMobileRecords === true && viewport.name === 'mobile') {
         const rows = await page.locator('[data-semantic-component="CollectionMobileRecordRow"]:visible').evaluateAll((nodes) => nodes.map((node) => {
-          const card = node.querySelector('button.collection-mobile-record-row__card');
+          const card = node.querySelector('.collection-mobile-record-row__open')?.closest('button');
           const selection = node.querySelector('[data-semantic-component="CollectionSelectionControl"]');
           const selectionRect = selection?.getBoundingClientRect();
           return {
@@ -778,6 +2079,8 @@ try {
               key: fact.getAttribute('data-fact-key') || '',
               label: fact.querySelector('small')?.textContent?.trim() || '',
               value: fact.querySelector('b')?.textContent?.trim() || '',
+              role: fact.getAttribute('data-fact-role') || '',
+              visibility: fact.getAttribute('data-fact-visibility') || '',
             })),
             openLabel: node.querySelector('.collection-mobile-record-row__open')?.textContent?.replace(/\s+/g, ' ').trim() || '',
             openAriaLabel: card?.getAttribute('aria-label') || '',
@@ -794,7 +2097,49 @@ try {
             && row.openAriaLabel.includes(row.identity)
             && row.facts.length > 0
             && row.facts.every((fact) => fact.key && fact.label && fact.value)
+            && (!row.facts.some((fact) => fact.role === 'money')
+              || row.facts.some((fact) => fact.role === 'money' && fact.visibility === 'primary'))
             && (row.selectionWidth === 0 || (row.selectionWidth >= 44 && row.selectionHeight >= 44))),
+        };
+      }
+      let factDisclosureEvidence = null;
+      if (target.exerciseFactDisclosure === true && (target.factDisclosureMobileOnly !== true || viewport.name === 'mobile')) {
+        const recordId = String(target.recordId || '').trim();
+        const ownerSelector = recordId ? `[data-work-item-key][data-record-id="${recordId}"]` : '[data-work-item-key]';
+        const owner = page.locator(`${ownerSelector}:visible, [data-semantic-component="CollectionMobileRecordRow"]:visible`).first();
+        const disclosure = owner.locator('[data-disclosure-trigger]').filter({ visible: true }).first();
+        if (await disclosure.count() !== 1) throw new Error(`${target.name}: progressive fact disclosure is missing`);
+        const rawIdentity = String(await owner.locator('h3').first().textContent() || '').replace(/\s+/g, ' ').trim();
+        const before = await disclosure.getAttribute('aria-expanded');
+        if (viewport.name === 'mobile') await disclosure.tap();
+        else {
+          await disclosure.focus();
+          await disclosure.press('Enter');
+        }
+        await page.waitForFunction((node) => node?.getAttribute('aria-expanded') === 'true', await disclosure.elementHandle(), { timeout: 5000 });
+        const expanded = await disclosure.getAttribute('aria-expanded');
+        const fullIdentity = String(await owner.locator('[data-work-item-full-identity]').textContent() || '').replace(/\s+/g, ' ').trim();
+        if (viewport.name === 'mobile') await disclosure.tap();
+        else {
+          await disclosure.focus();
+          await disclosure.press('Space');
+        }
+        await page.waitForFunction((node) => node?.getAttribute('aria-expanded') === 'false', await disclosure.elementHandle(), { timeout: 5000 });
+        const after = await disclosure.getAttribute('aria-expanded');
+        const expectedIdentityText = String(target.expectedIdentityText || '').trim();
+        factDisclosureEvidence = {
+          method: viewport.name === 'mobile' ? 'touch' : 'keyboard',
+          rawIdentity,
+          fullIdentity,
+          before,
+          expanded,
+          after,
+          pass: Boolean(rawIdentity)
+            && fullIdentity === rawIdentity
+            && (!expectedIdentityText || fullIdentity.includes(expectedIdentityText))
+            && before === 'false'
+            && expanded === 'true'
+            && after === 'false',
         };
       }
       if (target.captureCollectionKanban === true) {
@@ -1122,9 +2467,11 @@ try {
         const missingResizeLabels = await columnHeaders.locator('.column-resize-handle:not([aria-label])').count();
         const groupingToolbarCount = await page.locator('[data-semantic-component="CollectionGroupingToolbar"]').count();
         const groupPageControlsCount = await page.locator('[data-semantic-component="CollectionGroupPageControls"]').count();
+        const collectionState = String(await page.locator('[data-semantic-component="ActionView"]').getAttribute('data-collection-state') || '');
         collectionNavigationEvidence = {
           footerCount,
           paginationMode,
+          collectionState,
           columnHeaderCount,
           invalidColumnRoots,
           missingDragLabels,
@@ -1133,7 +2480,7 @@ try {
           groupPageControlsCount,
           pass: footerCount === 1
             && ['count', 'grouped', 'paged'].includes(paginationMode)
-            && columnHeaderCount > 0
+            && (collectionState === 'empty' || columnHeaderCount > 0)
             && invalidColumnRoots === 0
             && missingDragLabels === 0
             && missingResizeLabels === 0,
@@ -1145,11 +2492,30 @@ try {
         if (!recordId) throw new Error(`${target.name}: record entry requires recordId`);
         const recordOwner = page.locator(`[data-record-key="${recordId}"]:visible`);
         if (await recordOwner.count() !== 1) throw new Error(`${target.name}: expected exactly one visible record ${recordId}`);
-        const opener = recordOwner.locator('.cell-primary-link, [data-semantic-action="open-record"]');
+        const opener = recordOwner.locator('.cell-primary-link, .collection-mobile-record-row__open-action, [data-semantic-action="open-record"]');
         if (await opener.count() !== 1) throw new Error(`${target.name}: expected exactly one record opener for ${recordId}`);
         const beforeUrl = page.url();
+        const captureReturnScroll = target.captureReturnScroll === true
+          && (target.returnScrollMobileOnly !== true || viewport.name === 'mobile');
+        const scrollBefore = captureReturnScroll
+          ? await recordOwner.evaluate((node) => {
+            node.scrollIntoView({ block: 'center', inline: 'nearest' });
+            const candidates = [];
+            let current = node.parentElement;
+            while (current) {
+              if (current.scrollHeight > current.clientHeight + 1) candidates.push(current);
+              current = current.parentElement;
+            }
+            const scrolling = document.scrollingElement;
+            if (scrolling && scrolling.scrollHeight > scrolling.clientHeight + 1) candidates.push(scrolling);
+            const owner = candidates[0];
+            if (!(owner instanceof HTMLElement)) return { available: false, scrollTop: 0, maxScrollTop: 0 };
+            const maxScrollTop = Math.max(0, owner.scrollHeight - owner.clientHeight);
+            return { available: true, scrollTop: Math.round(owner.scrollTop), maxScrollTop: Math.round(maxScrollTop) };
+          })
+          : null;
         const detailContractResponse = page.waitForResponse(isContractV2Response, { timeout: 45000 });
-        await opener.click();
+        await opener.click(captureReturnScroll ? { force: true } : undefined);
         await page.waitForURL((url) => url.href !== beforeUrl, { timeout: 15000 });
         const response = await detailContractResponse;
         const payload = await response.json();
@@ -1161,7 +2527,8 @@ try {
           Object.values(value).forEach(visit);
         };
         visit(payload.layoutContract?.containerTree || []);
-        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        await waitForStableProductSurface(page);
+        await page.locator('[data-semantic-component="ContractFormPage"][data-state="ok"]').waitFor({ state: 'visible', timeout: 45000 });
         recordEntryEvidence = {
           recordId,
           beforeUrl,
@@ -1170,6 +2537,114 @@ try {
           pageInfo: payload.pageInfo || null,
           widgetTypes: [...new Set(widgetTypes)].sort(),
           visibleError: await page.locator('[role="alert"]:visible, .error-state:visible, .form-error:visible').allTextContents(),
+        };
+        if (target.exerciseRecordReturn === true && (target.recordReturnDesktopOnly !== true || viewport.name === 'desktop')) {
+          const preservedKeys = Array.isArray(target.preservedQueryKeys) ? target.preservedQueryKeys.map(String) : ['search', 'order', 'list_offset'];
+          const before = new URL(beforeUrl);
+          const detailRecordId = String(await page.locator('[data-semantic-component="ContractFormPage"]').getAttribute('data-form-record') || '');
+          const returnAction = page.locator('[data-form-secondary-action="return-list"]:visible');
+          if (await returnAction.count() === 1) {
+            await returnAction.click();
+          } else if (viewport.name === 'mobile') {
+            const mobileActions = page.locator('.form-header-mobile-actions:visible');
+            if (await mobileActions.count() !== 1) throw new Error(`${target.name}: mobile return action owner is missing`);
+            const mobileActionTrigger = page.locator('[data-semantic-component="ScButton"][aria-label="打开更多页面操作"]:visible');
+            if (await mobileActionTrigger.count() !== 1) throw new Error(`${target.name}: mobile return action trigger is missing`);
+            await mobileActionTrigger.click();
+            const mobileItems = page.locator('.t-dropdown__item:visible');
+            await mobileItems.first().waitFor({ state: 'visible', timeout: 15000 });
+            const mobileReturn = mobileItems.filter({ hasText: '返回' });
+            if (await mobileReturn.count() !== 1) throw new Error(`${target.name}: expected exactly one mobile return-to-list action`);
+            await mobileReturn.click();
+          } else {
+            throw new Error(`${target.name}: expected exactly one return-to-list action`);
+          }
+          await page.waitForURL((url) => url.pathname === before.pathname, { timeout: 15000 });
+          await waitForStableProductSurface(page);
+          const afterUrl = page.url();
+          const after = new URL(afterUrl);
+          const scrollAfter = captureReturnScroll
+            ? await page.locator(`[data-record-key="${recordId}"]:visible`).evaluate((node) => {
+              const candidates = [];
+              let current = node.parentElement;
+              while (current) {
+                if (current.scrollHeight > current.clientHeight + 1) candidates.push(current);
+                current = current.parentElement;
+              }
+              const scrolling = document.scrollingElement;
+              if (scrolling && scrolling.scrollHeight > scrolling.clientHeight + 1) candidates.push(scrolling);
+              const owner = candidates[0];
+              return owner instanceof HTMLElement
+                ? { available: true, scrollTop: Math.round(owner.scrollTop), maxScrollTop: Math.round(owner.scrollHeight - owner.clientHeight) }
+                : { available: false, scrollTop: 0, maxScrollTop: 0 };
+            })
+            : null;
+          const preservedQuery = Object.fromEntries(preservedKeys.map((key) => [key, {
+            before: before.searchParams.get(key) || '',
+            after: after.searchParams.get(key) || '',
+          }]));
+          recordEntryEvidence.returnEvidence = {
+            detailRecordId,
+            afterUrl,
+            preservedQuery,
+            scrollBefore,
+            scrollAfter,
+            pass: detailRecordId === recordId
+              && preservedKeys.every((key) => (before.searchParams.get(key) || '') === (after.searchParams.get(key) || ''))
+              && (!captureReturnScroll || (
+                scrollBefore?.available === true
+                && scrollAfter?.available === true
+                && scrollBefore.scrollTop > 0
+                && Math.abs(scrollAfter.scrollTop - scrollBefore.scrollTop) <= 2
+              )),
+          };
+        }
+      }
+      let collectionSearchEvidence = null;
+      if (target.exerciseCollectionSearchCycle === true && (target.collectionSearchDesktopOnly !== true || viewport.name === 'desktop')) {
+        const queryBar = page.locator('[data-semantic-component="ProductListHeader"]:visible, [data-semantic-component="CollectionActionToolbar"]:visible').first();
+        const searchForm = queryBar.locator('form[role="search"]');
+        const searchOwner = await searchForm.count() === 1 ? searchForm : queryBar;
+        const searchInput = searchOwner.locator('input[type="search"]');
+        if (await queryBar.count() !== 1 || await searchInput.count() !== 1) throw new Error(`${target.name}: collection search control is missing`);
+        const footer = page.locator('[data-semantic-component="CollectionPaginationFooter"]:visible').last();
+        const totalBefore = String(await footer.textContent() || '').replace(/\s+/g, ' ').trim();
+        const noMatchQuery = String(target.noMatchQuery || '__codex_no_matching_record__');
+        await searchInput.fill(noMatchQuery);
+        await searchOwner.getByRole('button', { name: /^搜索$/ }).click();
+        await waitForStableProductSurface(page);
+        const emptySurface = page.locator('.list-empty-surface:visible');
+        await emptySurface.waitFor({ state: 'visible', timeout: 15000 });
+        const noResultUrl = page.url();
+        const noResultText = String(await emptySurface.textContent() || '').replace(/\s+/g, ' ').trim();
+        const emptyClearAction = emptySurface.getByRole('button', { name: /^清除查询条件$/ });
+        const toolbarClearAction = searchOwner.getByRole('button', { name: /^清除$/ });
+        const clearAction = await emptyClearAction.count() === 1 ? emptyClearAction : toolbarClearAction;
+        if (await clearAction.count() !== 1) throw new Error(`${target.name}: collection clear-search action is missing`);
+        const clearActionLabel = String(await clearAction.textContent() || '').replace(/\s+/g, ' ').trim();
+        await clearAction.click();
+        await waitForStableProductSurface(page);
+        await page.locator('[data-record-key]:visible').first().waitFor({ state: 'visible', timeout: 15000 });
+        const restoredFooter = page.locator('[data-semantic-component="CollectionPaginationFooter"]:visible').last();
+        const totalAfter = String(await restoredFooter.textContent() || '').replace(/\s+/g, ' ').trim();
+        const recordTotal = (text) => Number(text.match(/共\s*(\d+)\s*条/)?.[1] || 0);
+        collectionSearchEvidence = {
+          totalBefore,
+          recordTotalBefore: recordTotal(totalBefore),
+          noMatchQuery,
+          noResultUrl,
+          noResultText,
+          clearActionLabel,
+          totalAfter,
+          recordTotalAfter: recordTotal(totalAfter),
+          finalUrl: page.url(),
+          finalSearchValue: await searchInput.inputValue(),
+          pass: Boolean(totalBefore)
+            && noResultText.length > 0
+            && ['清除查询条件', '清除'].includes(clearActionLabel)
+            && recordTotal(totalBefore) > 0
+            && recordTotal(totalAfter) === recordTotal(totalBefore)
+            && await searchInput.inputValue() === '',
         };
       }
       const taskDensityEvidence = target.captureTaskDensity === true
@@ -1218,10 +2693,60 @@ try {
                 && Math.max(0, ...summaryNodes.map((node) => node.rect[3])) <= maxSummaryItemHeight
               ),
             },
+            decisionInput: (() => {
+              const region = root.querySelector('[data-floorplan-region="decision-input"]');
+              const money = region?.querySelector('[data-field-type="monetary"]');
+              return {
+                present: region instanceof HTMLElement,
+                monetaryFieldPresent: money instanceof HTMLElement,
+                rect: region instanceof HTMLElement ? describe(region).rect : [],
+              };
+            })(),
             regions: [...root.querySelectorAll('[data-floorplan-region]')].map(describe),
             nodes: [...root.querySelectorAll('.canonical-form-node')].map(describe),
           };
         }, viewport.name)
+        : null;
+      const monetaryExpressionEvidence = target.captureMonetaryExpression === true
+        ? await page.evaluate((configuration) => {
+          const recordId = String(configuration.recordId || '').trim();
+          const fieldName = String(configuration.monetaryFieldName || '').trim();
+          const selectors = [
+            recordId ? `[data-work-item-key][data-record-id="${recordId}"]` : '',
+            recordId ? `[data-role-home] [data-record-id="${recordId}"]` : '',
+            recordId ? `[data-record-key="${recordId}"]` : '',
+            recordId ? `[data-semantic-component="ContractFormPage"][data-form-record="${recordId}"]` : '',
+          ].filter(Boolean);
+          const roots = selectors.flatMap((selector) => [...document.querySelectorAll(selector)])
+            .filter((node) => node instanceof HTMLElement && node.offsetParent !== null);
+          const root = roots[0];
+          if (!(root instanceof HTMLElement)) return { present: false, roots: 0, displayValues: [], fieldCount: 0, input: null, pass: false };
+          const fieldSelector = fieldName ? `[data-field-name="${fieldName}"]` : '[data-field-type="monetary"]';
+          const fields = [...root.querySelectorAll(fieldSelector)].filter((node) => node instanceof HTMLElement && node.offsetParent !== null);
+          const displayValues = [...root.querySelectorAll('[data-money-display], [data-fact-role="money"] b')]
+            .filter((node) => node instanceof HTMLElement && node.offsetParent !== null)
+            .map((node) => node.getAttribute('data-money-display') || node.textContent?.replace(/\s+/g, ' ').trim() || '')
+            .filter(Boolean);
+          const input = fields[0]?.querySelector('input[type="number"]');
+          const expectedDisplay = String(configuration.expectedMoneyDisplay || '').trim();
+          const expectedInput = String(configuration.expectedMoneyInput || '').trim();
+          return {
+            present: true,
+            roots: roots.length,
+            text: root.textContent?.replace(/\s+/g, ' ').trim() || '',
+            displayValues,
+            fieldCount: fields.length,
+            input: input instanceof HTMLInputElement ? { value: input.value, step: input.step } : null,
+            pass: (!expectedDisplay || displayValues.includes(expectedDisplay) || (root.textContent || '').includes(expectedDisplay))
+              && (!fieldName || fields.length === 1)
+              && (!expectedInput || (input instanceof HTMLInputElement && input.value === expectedInput && input.step === '0.01')),
+          };
+        }, {
+          recordId: target.recordId,
+          monetaryFieldName: target.monetaryFieldName,
+          expectedMoneyDisplay: target.expectedMoneyDisplay,
+          expectedMoneyInput: target.expectedMoneyInput,
+        })
         : null;
       const verticalLineEvidence = target.captureVerticalLineEvidence === true
         ? await page.evaluate(() => {
@@ -1277,7 +2802,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, taskDensityEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, safeReturnEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -1299,6 +2824,12 @@ for (const item of report.routes) {
   }
   if (item.path && item.overlayResidueEvidence && !item.overlayResidueEvidence.pass) {
     failures.push({ name: item.name, overlayResidueEvidence: item.overlayResidueEvidence });
+  }
+  if (item.path && item.homePresentationEvidence && !item.homePresentationEvidence.pass) {
+    failures.push({ name: item.name, homePresentationEvidence: item.homePresentationEvidence });
+  }
+  if (item.path && item.navigationHorizontalEvidence && !item.navigationHorizontalEvidence.pass) {
+    failures.push({ name: item.name, navigationHorizontalEvidence: item.navigationHorizontalEvidence });
   }
   if (item.path && item.viewport === 'desktop' && item.shellAdapterEvidence && routes.find((target) => target.name === item.name)?.exerciseShellAdapterProjection === true && !item.shellAdapterEvidence.pass) {
     failures.push({ name: item.name, shellAdapterEvidence: item.shellAdapterEvidence });
@@ -1328,6 +2859,32 @@ for (const item of report.routes) {
   if (item.path && routes.find((target) => target.name === item.name)?.expectedRelationTagsReady === true && !item.relationTagEvidence?.pass) {
     failures.push({ name: item.name, expectedRelationTagsReady: true, relationTagEvidence: item.relationTagEvidence || null });
   }
+  if (item.path && configuredTarget?.expectedLoadedSelector) {
+    if (!item.expectedLoadedSelectorEvidence?.pass) {
+      failures.push({ name: item.name, expectedLoadedSelector: configuredTarget.expectedLoadedSelector, expectedLoadedSelectorEvidence: item.expectedLoadedSelectorEvidence || null });
+    }
+  }
+  if (item.path && configuredTarget?.expectedWorkRecordId) {
+    const expectedRecordId = String(configuredTarget.expectedWorkRecordId);
+    const evidence = item.workItemEvidence || {};
+    const observedRecordIds = [
+      ...(evidence.cards || []).map((entry) => entry.recordId),
+      ...(evidence.homeItems || []).map((entry) => entry.recordId),
+      evidence.detailRecordId,
+    ].filter(Boolean);
+    if (!observedRecordIds.includes(expectedRecordId)) {
+      failures.push({ name: item.name, expectedWorkRecordId: expectedRecordId, observedRecordIds });
+    }
+  }
+  if (item.path && configuredTarget?.captureWorkItemDensity === true && item.viewport === 'desktop') {
+    const evidence = item.workItemEvidence || {};
+    const cards = evidence.cards || [];
+    const compactAndComplete = Number(evidence.fullyVisibleCardCount || 0) >= 3
+      && cards.slice(0, 3).every((entry) => entry.recordId && entry.state && entry.primaryFactCount > 0
+        && entry.actionLabels.includes('打开详情')
+        && (entry.supplementaryFactCount === 0 || entry.disclosureCount > 0));
+    if (!compactAndComplete) failures.push({ name: item.name, workItemDensityEvidence: evidence });
+  }
   if (item.sidebarScrollEvidence && !item.sidebarScrollEvidence.pass) failures.push({ name: item.name, sidebarScrollEvidence: item.sidebarScrollEvidence });
   if (item.taskDensityEvidence && (!item.taskDensityEvidence.present || !item.taskDensityEvidence.summary?.pass)) failures.push({ name: item.name, taskDensityEvidence: item.taskDensityEvidence });
 }
@@ -1338,11 +2895,38 @@ for (const item of report.routes) {
   if (item.collectionMobileRecordEvidence && !item.collectionMobileRecordEvidence.pass) failures.push({ name: item.name, collectionMobileRecordEvidence: item.collectionMobileRecordEvidence });
   if (item.collectionKanbanEvidence && !item.collectionKanbanEvidence.pass) failures.push({ name: item.name, collectionKanbanEvidence: item.collectionKanbanEvidence });
   if (item.relationSearchDialogEvidence && !item.relationSearchDialogEvidence.pass) failures.push({ name: item.name, relationSearchDialogEvidence: item.relationSearchDialogEvidence });
+  if (item.formValidationEvidence && !item.formValidationEvidence.pass) failures.push({ name: item.name, formValidationEvidence: item.formValidationEvidence });
+  if (item.detailCollectionEvidence && !item.detailCollectionEvidence.pass) failures.push({ name: item.name, detailCollectionEvidence: item.detailCollectionEvidence });
   if (item.collectionAggregateEvidence && !item.collectionAggregateEvidence.pass) failures.push({ name: item.name, collectionAggregateEvidence: item.collectionAggregateEvidence });
   if (item.collectionGroupHeaderEvidence && !item.collectionGroupHeaderEvidence.pass) failures.push({ name: item.name, collectionGroupHeaderEvidence: item.collectionGroupHeaderEvidence });
   if (item.dialogLifecycleEvidence && !item.dialogLifecycleEvidence.pass) failures.push({ name: item.name, dialogLifecycleEvidence: item.dialogLifecycleEvidence });
   if (item.collectionToolbarEvidence && !item.collectionToolbarEvidence.pass) failures.push({ name: item.name, collectionToolbarEvidence: item.collectionToolbarEvidence });
   if (item.collectionNavigationEvidence && !item.collectionNavigationEvidence.pass) failures.push({ name: item.name, collectionNavigationEvidence: item.collectionNavigationEvidence });
+  if (item.recordEntryEvidence?.returnEvidence && !item.recordEntryEvidence.returnEvidence.pass) failures.push({ name: item.name, recordReturnEvidence: item.recordEntryEvidence.returnEvidence });
+  if (item.collectionSearchEvidence && !item.collectionSearchEvidence.pass) failures.push({ name: item.name, collectionSearchEvidence: item.collectionSearchEvidence });
+  if (item.readFailureEvidence && !item.readFailureEvidence.pass) failures.push({ name: item.name, readFailureEvidence: item.readFailureEvidence });
+  if (item.businessConfigExperienceEvidence && !item.businessConfigExperienceEvidence.pass) failures.push({ name: item.name, businessConfigExperienceEvidence: item.businessConfigExperienceEvidence });
+  if (item.businessConfigReadFailureEvidence && !item.businessConfigReadFailureEvidence.pass) failures.push({ name: item.name, businessConfigReadFailureEvidence: item.businessConfigReadFailureEvidence });
+  if (item.officialComponentBehaviorEvidence && !item.officialComponentBehaviorEvidence.pass) failures.push({ name: item.name, officialComponentBehaviorEvidence: item.officialComponentBehaviorEvidence });
+  if (item.officialAlertOperationEvidence && !item.officialAlertOperationEvidence.pass) failures.push({ name: item.name, officialAlertOperationEvidence: item.officialAlertOperationEvidence });
+  if (item.safeReturnEvidence && !item.safeReturnEvidence.pass) failures.push({ name: item.name, safeReturnEvidence: item.safeReturnEvidence });
+  if (item.topbarActionEvidence && !item.topbarActionEvidence.pass) failures.push({ name: item.name, topbarActionEvidence: item.topbarActionEvidence });
+  if (item.factDisclosureEvidence && !item.factDisclosureEvidence.pass) failures.push({ name: item.name, factDisclosureEvidence: item.factDisclosureEvidence });
+  if (item.monetaryExpressionEvidence && !item.monetaryExpressionEvidence.pass) failures.push({ name: item.name, monetaryExpressionEvidence: item.monetaryExpressionEvidence });
+  if (item.hierarchicalWorkspaceEvidence && !item.hierarchicalWorkspaceEvidence.pass) failures.push({ name: item.name, hierarchicalWorkspaceEvidence: item.hierarchicalWorkspaceEvidence });
+}
+for (const viewport of ['desktop', 'mobile']) {
+  const groups = [...new Set(routes.map((target) => String(target.equivalentGroup || '')).filter(Boolean))];
+  for (const group of groups) {
+    const names = routes.filter((target) => target.equivalentGroup === group).map((target) => target.name);
+    const rows = report.routes.filter((item) => item.viewport === viewport && names.includes(item.name));
+    const geometry = rows.map((item) => item.shellGeometry);
+    const equivalent = rows.length === names.length
+      && geometry.every((item) => item?.minimal === true)
+      && new Set(geometry.map((item) => item?.topbarHeight)).size === 1
+      && new Set(geometry.map((item) => item?.contentStart)).size === 1;
+    if (!equivalent) failures.push({ equivalentGroup: group, viewport, names, geometry });
+  }
 }
 const primitiveInput = report.routes.find((item) => item.primitiveInputContract)?.primitiveInputContract;
 if (!primitiveInput || primitiveInput.rootCount !== 1 || primitiveInput.inputCount !== 1 || primitiveInput.value !== '__primitive_adapter_probe__') {

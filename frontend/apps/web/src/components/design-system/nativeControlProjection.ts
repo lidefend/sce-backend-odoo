@@ -1,7 +1,7 @@
 import type { Directive, DirectiveBinding } from 'vue';
 
 export interface NativeControlProjection {
-  selector: 'input' | 'textarea';
+  selector: 'input' | 'textarea' | '.t-table__content';
   attributes: Record<string, string | number | boolean | undefined>;
 }
 

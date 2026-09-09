@@ -1,5 +1,7 @@
 <template>
   <TDesignTable
+    ref="tableRef"
+    v-native-control-projection="scrollProjection"
     v-bind="semanticPrimitiveIdentity('ScTable')"
     :data="data"
     :columns="columns"
@@ -26,17 +28,69 @@
     @row-dblclick="emit('rowDblclick', $event)"
     @select-change="onSelectChange"
   >
-    <template v-for="(_, name) in $slots" #[name]="slotProps">
+    <template #topContent>
+      <slot name="topContent" />
+      <div v-if="canScrollLeft || canScrollRight" class="sc-table-scroll-tools" aria-label="表格横向浏览">
+        <span>横向浏览更多列</span>
+        <ScIconButton label="查看左侧列" :disabled="!canScrollLeft" @click="scrollColumns(-1)"><ScIcon name="arrow-left" :size="16" /></ScIconButton>
+        <ScIconButton label="查看右侧列" :disabled="!canScrollRight" @click="scrollColumns(1)"><ScIcon name="arrow-right" :size="16" /></ScIconButton>
+      </div>
+    </template>
+    <template v-for="name in Object.keys($slots).filter((name) => name !== 'topContent')" #[name]="slotProps">
       <slot :name="name" v-bind="slotProps ?? {}" />
     </template>
   </TDesignTable>
 </template>
 
 <script setup lang="ts">
-import { computed, type ComputedRef } from 'vue';
+import { computed, onBeforeUnmount, onMounted, onUpdated, ref, type ComputedRef } from 'vue';
+import ScIcon from './ScIcon.vue';
+import ScIconButton from './ScIconButton.vue';
 import { TDesignTable } from './tdesignPrimitiveBridge';
 import type { TDesignTableRowAttributes, TDesignTableRowData } from './tdesignPrimitiveBridge';
 import { normalizePrimitiveSize, semanticPrimitiveIdentity, type ScPrimitiveSize } from './primitiveAdapter';
+import { nativeControlProjection } from './nativeControlProjection';
+const vNativeControlProjection = nativeControlProjection;
+
+const tableRef = ref<{ $el?: HTMLElement } | null>(null);
+const canScrollLeft = ref(false);
+const canScrollRight = ref(false);
+let scrollContent: HTMLElement | null = null;
+let resizeObserver: ResizeObserver | null = null;
+function updateScrollEdges() {
+  const content = scrollContent;
+  // Resize handles can extend a few pixels past a table that otherwise fits.
+  const tableWidth = content?.querySelector('table')?.getBoundingClientRect().width ?? 0;
+  const overflows = Boolean(content && tableWidth > content.clientWidth + 1);
+  canScrollLeft.value = Boolean(overflows && content && content.scrollLeft > 1);
+  canScrollRight.value = Boolean(overflows && content && content.scrollWidth - content.clientWidth - content.scrollLeft > 1);
+}
+function bindScrollContent() {
+  const content = tableRef.value?.$el?.querySelector<HTMLElement>('.t-table__content') ?? null;
+  if (content !== scrollContent) {
+    scrollContent?.removeEventListener('scroll', updateScrollEdges);
+    resizeObserver?.disconnect();
+    scrollContent = content;
+    if (content) {
+      content.addEventListener('scroll', updateScrollEdges, { passive: true });
+      resizeObserver = new ResizeObserver(updateScrollEdges);
+      resizeObserver.observe(content);
+      const table = content.querySelector('table');
+      if (table) resizeObserver.observe(table);
+    }
+  }
+  updateScrollEdges();
+}
+function scrollColumns(direction: number) {
+  if (!scrollContent) return;
+  scrollContent.scrollBy({ left: direction * Math.max(160, scrollContent.clientWidth * 0.75), behavior: 'instant' });
+}
+onMounted(bindScrollContent);
+onUpdated(bindScrollContent);
+onBeforeUnmount(() => {
+  scrollContent?.removeEventListener('scroll', updateScrollEdges);
+  resizeObserver?.disconnect();
+});
 
 const props = withDefaults(defineProps<{
   data?: Record<string, unknown>[];
@@ -75,6 +129,16 @@ function projectRowAttributes(attributes: Record<string, unknown> | undefined): 
     /^on[A-Z]/.test(name) && typeof value === 'function' ? value : String(value ?? ''),
   ]));
 }
+const scrollProjection = computed(() => ({
+  selector: '.t-table__content' as const,
+  attributes: {
+    tabindex: props.tableContentWidth ? 0 : undefined,
+    role: props.tableContentWidth ? 'region' : undefined,
+    'aria-label': props.tableContentWidth ? `${props.label}，可横向滚动` : undefined,
+    'aria-description': props.tableContentWidth ? '聚焦表格区域后，可使用左右方向键查看其余列。' : undefined,
+    'data-table-scroll-region': props.tableContentWidth ? 'true' : undefined,
+  },
+}));
 const tdesignRowAttributes = computed(() => typeof props.rowAttributes === 'function'
   ? (context: unknown) => projectRowAttributes(props.rowAttributes instanceof Function ? props.rowAttributes(context) : undefined)
   : projectRowAttributes(props.rowAttributes)) as unknown as ComputedRef<TDesignTableRowAttributes<TDesignTableRowData>>;

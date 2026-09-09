@@ -24,16 +24,16 @@ let requestSerial = 0;
 const tokenStyle = computed<CSSProperties>(() => {
   const tokens = SCENE_DESIGN_TOKEN_PROFILES[props.tokenProfile].tokens;
   return {
-    '--sc-scene-bg': tokens.background,
-    '--sc-scene-surface': tokens.surface,
-    '--sc-scene-border': tokens.border,
-    '--sc-scene-muted': tokens.mutedText,
-    '--sc-scene-text': tokens.text,
-    '--sc-scene-brand': tokens.brand,
-    '--sc-scene-accent-soft': tokens.accentSoft,
-    '--sc-scene-warning': tokens.warning,
-    '--sc-scene-success': tokens.success,
-    '--sc-scene-focus': tokens.focus,
+    '--sc-scene-bg': `var(--sc-semantic-surface-page, ${tokens.background})`,
+    '--sc-scene-surface': `var(--sc-semantic-surface-panel, ${tokens.surface})`,
+    '--sc-scene-border': `var(--sc-semantic-border-default, ${tokens.border})`,
+    '--sc-scene-muted': `var(--sc-semantic-text-secondary, ${tokens.mutedText})`,
+    '--sc-scene-text': `var(--sc-semantic-text-primary, ${tokens.text})`,
+    '--sc-scene-brand': `var(--sc-semantic-surface-interactive, ${tokens.brand})`,
+    '--sc-scene-accent-soft': `var(--sc-semantic-surface-selected, ${tokens.accentSoft})`,
+    '--sc-scene-warning': `var(--sc-semantic-state-warning-text, ${tokens.warning})`,
+    '--sc-scene-success': `var(--sc-semantic-state-success-text, ${tokens.success})`,
+    '--sc-scene-focus': `var(--sc-semantic-focus-ring, ${tokens.focus})`,
     '--sc-scene-control-radius': tokens.controlRadius,
     '--sc-scene-surface-radius': tokens.surfaceRadius,
   } as CSSProperties;

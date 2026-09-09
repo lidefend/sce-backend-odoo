@@ -90,6 +90,25 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
                 validate(),
             )
 
+    def test_workspace_aliases_must_share_content_heading_authority(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "index.ts" and path.parent.name == "router":
+                return "\n".join(
+                    line.replace(", pageHeadingOwner: 'content'", "")
+                    if "name: 'scene-home'" in line else line
+                    for line in value.splitlines()
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertIn(
+                "page-header route does not declare content heading authority: scene-home",
+                validate(),
+            )
+
 
 from pathlib import Path
 

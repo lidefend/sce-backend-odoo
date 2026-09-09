@@ -3,6 +3,28 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-09-09 — FRONTEND-PAYMENT-DECISION-EXPRESSION-B3-B4-01
+
+- Branch / anchor: `feature/frontend-page-experience-iteration-v1` product
+  candidate `c3ab688b`; the batch remains local and is not a release claim.
+- Formal Product Layer / Layer Target / Module: P0 contract-driven presentation /
+  task floorplan, work items, and mobile collection facts / existing Web
+  renderer and product-pattern chain; P4 only for the governed browser evidence.
+- Root cause and product result: the payment amount already carried authoritative
+  summary/monetary semantics, but editable summary fields were excluded from the
+  early floorplan and mobile cards used a fixed first-three slice. The generic
+  renderer now presents editable decision money between summary and current task,
+  mobile cards prioritize the formal money role, and work cards keep one key fact
+  while preserving all auxiliary facts in disclosure. No title parsing, currency
+  inference, P1 contract change, or workflow mutation was introduced.
+- Acceptance evidence: quick gate and readonly payment floorplan pass. Frozen
+  1440/390 light and 1440/320 dark journeys bind record 15, retain four fully
+  visible desktop work items, make every inspected mobile money fact primary,
+  preserve menu/order/offset after record return, recover 70→0→70 search and a
+  controlled 503 through one retry, and report zero business mutations, browser
+  errors, failures, or mobile root overflow. Formal release and independent review
+  remain unexecuted.
+
 ## 2026-09-02 — READONLY-EMPTY-RELATION-INFORMATION-EFFICIENCY-CLOSURE-01
 
 - Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
@@ -8776,3 +8798,323 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Linked-worktree closure: repo-level Quick reuses the existing Git common-dir local.dev authority resolver and isolated environment to invoke `ci.local.quick.run`; it never copies or links `.env.dev`, and the internal target is not a public bypass. This closes the previously unprepared env path exposed by the independent P4 worktree.
 - Boundary: GitHub exact-head checks, `pr.merge.prep`, branch protection and merge-time `--match-head-commit` remain unchanged. No product, contract, frontend, backend, database, fixture or runtime behavior is modified.
 - Rollback: revert the receipt recorder and restore `ci.local.quick` as the unconditional `pr.merge.local_quick_gate` action.
+## 2026-09-08 — 前端复合输入焦点所有权收敛
+
+- Formal Product Layer / target: P0 generic frontend design-system focus presentation; TDesign-backed composite input primitives own their focus chrome.
+- Change: keep the global `:focus-visible` rule as the accessible fallback for standalone native controls, while excluding component-owned roots and descendants through the explicit `data-focus-ring-owner="component"` marker.
+- Scope: `ScInput`, `ScTextarea`, `ScSelect`, `ScDateField`, `ScAutoComplete`, `ScNumberInput`, `ScDatePicker`, and `ScTimePicker`; no route, role, permission, contract, business model, database, or fixture change.
+- Guard: rendering-detail accessibility validation requires both the global fallback exclusion and focus-owner registration on every governed composite input primitive.
+- Runtime evidence: keyboard focus on the local-dev login input changed from an inner `2px` outline plus `3px` shadow to no inner ring, while the TDesign shell retained its `2px` focus shadow and branded border.
+
+## 2026-09-08 — 登录后首页确定性表达收敛
+
+- Formal Product Layer / target: P0 generic frontend presentation / shared `WorkspaceHome` and canonical product navigation shell.
+- Change: give quick-entry buttons an owned icon / primary label / secondary detail / trailing-arrow grid; override TDesign's fixed `232px` default-menu width inside the existing adapter; keep vertical scrolling in the menu tree while containing the shell host; remove the nested visually-hidden home H1 because `AppShell` is the sole page-title owner.
+- Boundary: no work-item field splitting, role/model/menu special case, route authority, permission, contract/schema, database or fixture change. Structured task presentation remains a later batch gated by the existing my-work contract.
+- Guard: home layout rejects a nested H1 and requires the quick-entry structure; navigation shell tests reject loss of the vendor-width override or reintroduction of host-level horizontal scrolling. The existing frozen-candidate smoke records quick-entry column order and nested menu client/scroll widths from the real DOM.
+- Evidence before browser freeze: home/static guard PASS; navigation model 12, delivery-menu 42 and navigation guard 17 tests PASS; affected incremental frontend gate PASS; strict typecheck PASS; source lint 0 errors with 31 pre-existing warnings.
+
+## 2026-09-08 — 首页待办层级与窄屏表达迭代
+
+- Branch / baseline: `feature/frontend-page-experience-iteration-v1` / `083f457ce0e9f3b3ebb83d8cf14aa2751a06497d`.
+- Formal Product Layer / target: P0 generic homepage presentation. Reuse the existing quick-link content bridge; separate contract business-type label, neutral state badge, first non-audit money fact and first two non-money/non-audit facts in contract order. Preserve the full authoritative record label in DOM, tooltip and action accessible name; never split the label or infer model-specific fields.
+- Responsive behavior: overview precedes tasks below 960px; task actions remain beside content with a 44px target; single-heading narrow headers hide duplicate brand/breadcrumb text while multi-level record breadcrumbs remain available.
+- P4 supporting correction: home guard uses an identifier boundary for role comparisons, so legitimate `display_role` formatting is not classified as a role branch.
+- Daily local checks: strict typecheck PASS; navigation model 12, delivery-menu 42, navigation guard 17 and page-pattern parity 8 tests PASS; home layout and shared-surface semantic guards PASS; lint 0 errors / 31 existing warnings; diff whitespace check PASS.
+- Existing gate limitation: style-system guard FAIL because unchanged `useRecordFormActions.ts` has 622 lines against a 619-line limit. The baseline blob also has 622 lines. This batch does not change that file or claim a fully green release gate.
+- Live iab observation (daily HMR, not frozen release acceptance): 1088x791, 597x791 and 390x844 show no document/card horizontal overflow; all three task open buttons are 44px high; all seven quick-link text columns have positive width and trailing arrows have a 10px right inset. At 597px the header is 91.2px high, overview starts at y=103.2 and tasks at y=272.2. One H1 observed at desktop.
+- Read-only journey: first task opened `/r/payment.request/15?action_id=809&menu_id=559`, rendered `SHOW-PR-04`, draft and amount 50; close returned to home. No business-write action was invoked. Browser error log returned no entries. Original viewport restored.
+- Evidence boundary: browser observations are recorded in this task and this log; no old frozen-candidate report is reused. Empty/error states, alternate roles and full release/browser suites were not rerun. No backend, contract, permission, database, fixture or environment changes; no push, PR or merge.
+
+## 2026-09-08 — 付款申请详情紧凑表达续批
+
+- Branch / baseline: `feature/frontend-page-experience-iteration-v1` / `f63d993aff635a2205fcce36dd77bfbc7f5c8461`.
+- Formal Product Layer / target / module: P0 generic form renderer / existing compact-task density / `CanonicalFormNodeRenderer` and `ObjectTaskPage`. Standard platform layout behavior, not P1 payment semantics or P2 customer preference. No contract, field order, action or business-rule change.
+- Change: let compact canonical groups own their 8px row gap, remove the parent deep sibling margin that stacked with group gaps, and remove compact readonly fact padding. Keep default-density forms untouched. Complete desktop four-column summary separators at row boundaries.
+- Static evidence: canonical form presenter 142 cases PASS; page-pattern parity 8 tests PASS and 13 surfaces guard PASS; strict typecheck PASS. The previously recorded style-system baseline limit (622 lines versus 619 in untouched `useRecordFormActions.ts`) remains open; no full gate/release claim.
+- Daily live iab evidence: same draft `SHOW-PR-04` at `/r/payment.request/15` renders all handling prompts after the change; desktop current-task card is 270px high versus approximately 318px before. At viewport widths 1088, 597 and 390, document horizontal overflow is zero; task heights are respectively 270, 292 and 314px. Narrow task containers have zero horizontal overflow and retain all eight summary items. Desktop summary right borders reset every fourth cell and the second row has top separators. Error logs returned no entries; original viewport restored.
+- Read-only scope: inspected payment list and switched back to the existing record tab. No create, save, submit, approval, payment, fixture or environment mutation. This is daily HMR observation, not frozen release acceptance. No push, PR or merge.
+- Next batch: payment-list query toolbar wraps search, count and column settings inefficiently at the current desktop content width. Inspect the generic toolbar layout owner and acceptance at 1088/597/390px; do not change list field order or expand business scope.
+
+## 2026-09-08 — 列表查询栏与移动卡片连续迭代
+
+- Branch / baseline: `feature/frontend-page-experience-iteration-v1` / `ae298ff30b49d9853328b0f311c41f5dd2821616`. P0 generic list presentation; toolbar, mobile projection and TDesign collection-search adapter. No model/field-name special case, backend contract, payment rule or permission changes.
+- Toolbar: declare the missing total grid area below 1199px; reserve a mobile primary-action row only when the action exists; align narrow column utilities. Correct child button style reach and make search input, submit and menu toggle share the responsive height token. TDesign inner input now inherits the collection-search wrapper height.
+- Mobile facts: remove the fixed eight-column candidate budget and six-fact truncation. Cards retain all enabled columns in governed order, with identity/status represented in the card header. Explicit visibility filtering remains in the existing resolver. Enabling many columns can therefore produce taller cards; no enabled field is silently dropped for card density.
+- Static checks: toolbar settlement 6 cases and guard 11 tests PASS; mobile row guard 11 tests PASS including fixed-budget and tail-truncation regressions; navigation controls 12 cases and guard 11 tests PASS; page-pattern parity 8 tests PASS; primitive adapter 46 components and 25 guard tests PASS; strict typecheck PASS; lint 0 errors / 31 existing warnings. Existing unrelated style-system line-count blocker remains open; no full release claim.
+- Daily browser evidence: desktop toolbar 42px and document overflow zero. Search `SHOW-PR-04` returned one row; opening it entered `/f/payment.request/15` without edits, returning to the list retained the search and one-row result. At 390px the card shows seven facts including amount 50.00, matching both displayed aggregate totals. At 597px all seven facts remain and horizontal overflow is zero. At 1088px input/submit/menu heights are 36/36/36px; at 390px they are 44/44/44px with zero document overflow.
+- Runtime limitation: attempted amount-column checkbox interactions did not produce a confirmed hidden state; do not count hidden-column browser acceptance as passed. Final observed checkbox remained enabled and the configured count was the original nine columns. Investigate this separately before claiming column-setting interaction closure.
+- Cleanup / evidence scope: cleared temporary search using desktop Clear; restored 70-row list and original viewport. Browser error log empty before the final height-only adjustment. No save, submission, approval, payment, database reset, fixture change, push, PR or merge. Evidence is daily iab observation recorded here and in the task, not a frozen release report.
+
+## 2026-09-09 — 移动卡片空间与列设置退出反馈
+
+- Baseline: `8473298bb91b9e26a979a59f74a1d27499152b93`, same clean feature branch. Formal Product Layer / target: P0 generic collection presentation; `CollectionMobileRecordRow` and `ListSurfaceHeader`. No backend, contract, model-specific logic, payment lifecycle or environment changes.
+- Mobile card: reserve checkbox space only in the card header, so facts use the full inner width. Update the status selector to the actual `ScStatusBadge` owner and allow long labels to wrap. Preserve all enabled facts and the 44px selection target.
+- Column panel: control the existing popover visibility; expose expanded/controls attributes; provide a 44px Close control; Escape on the trigger or panel closes it and returns focus to the trigger. Close on loading. No shared popover or global keyboard behavior change.
+- Daily iab evidence: at 390px, first card fact width increased from 253 to 289px and height decreased from 360 to 341.5px, retaining seven facts. At 320px, first three cards have zero horizontal overflow and seven facts; state right edge 218px stays before selection left edge 231px. Selection target remains 44x44. Explicit Close and Escape both removed the panel, set expanded=false and restored focus to the column-settings trigger.
+- Column persistence remains verification_pending: visible-label click changed the native checkbox appearance, but refresh restored nine enabled columns and no confirmed preference-save feedback was observed. This does not prove a product save or a successful hidden-column journey. No speculative checkbox/product persistence fix was made; final state is the original nine enabled columns.
+- Validation: mobile guard 11 tests, page-pattern parity 8 tests, navigation controls 12 cases plus 11 tests, overlay lifecycle 9 tests, strict typecheck PASS. Final desktop viewport restored to 1088px; panel closed; list count 70; browser error log empty. Full release gates not rerun; existing unrelated style-system line-count blocker remains separately open.
+- Delivery scope: local page iteration only; no business record save, submit, approve or pay, no fixture reset, push, PR or merge. Browser observations belong to this daily candidate, not a release report.
+
+## 2026-09-09 — 固定列表偏好策略的界面消费闭环
+
+- Baseline: `1183b36d7bb6908ec2c948987a2ba38a314efc11`, same feature branch. Formal Product Layer / target: P0 generic list renderer and action-view preference submission. Contract policy remains owned by the backend; this batch only consumes it, without changing industry/user defaults or permissions.
+- Root cause confirmed: temporary boolean-only checkbox logging observed change=false and `user.view.preference.set status=ok`. Runtime policy logging confirmed `allow_visibility=false`, `allow_order=false`, `allow_width=true`, with locked columns. Reload then correctly reapplied the policy, while the old settings UI had misleadingly allowed the attempted change. All temporary logs were removed; `ScCheckbox` has no final diff.
+- Change: a shared visibility-block reason consumes allow_visibility/locked_columns/last-visible-column constraints. Both normal and empty list headers receive reasons; locked choices are disabled and explain the fixed display policy. ListPage and ActionView refuse prohibited visibility changes. Prohibited reordering has no drag handle and is rejected by drag/drop and preference-save entry points. Column-width controls and record sorting remain available. Fixed-order headers recover the unused drag-handle padding (30px to 8px).
+- Tests: existing optional-columns contract test PASS with five added policy cases (global lock, individual lock, unlocked field, last column, normal column); navigation controls 12 cases and 11 guard tests PASS; page-pattern parity 8 tests PASS; strict typecheck PASS; source lint 0 errors / 31 existing warnings; diff whitespace PASS.
+- Daily browser evidence: desktop has zero drag handles, nine resize handles, nine enabled columns and 70 records; header padding is 8px. Settings shows the fixed-column explanation and all 22 choices disabled. At 390px, the explanation remains readable, all 22 disabled states remain present, panel bounds are x=124..334 inside the viewport, and document horizontal overflow is zero. Panel closed and original viewport restored.
+- Supersedes the previous ambiguous column-persistence item for this fixed-policy payment list: product persistence failure was not established. The confirmed defect was exposing operations rejected by the current presentation policy. Writable-view persistence across reload is not claimed by this browser evidence; unlocked-policy behavior has targeted test coverage only.
+- Boundary: no business-record mutation, fixture reset, database/environment change, backend contract edit, PR, push or merge. The diagnostic preference request used the existing UI endpoint and did not change the final effective nine-column configuration. Existing unrelated style-system line-count blocker remains separately registered; no full release claim.
+
+## 2026-09-09 — 列表长编号截断与控件样式所有权
+
+- Baseline: `1ca549dfb4310fec7210118bf86bfd647927e0b7`, existing feature branch. P0 generic primary collection cell and TDesign style adapter; no record identity, navigation target, contract, field order, permission or business-rule changes.
+- Root cause: the primary-link button measured 175px inside a 120px cell; nested vendor text stayed intrinsic-width and was clipped by the parent, losing the ellipsis and complete-name hint.
+- Change: constrain the primary-cell/button content chain to the cell width using an explicit semantic cell marker, keep vendor wrapper rules in the TDesign adapter, and preserve the full record label in title and aria-label. Actual button width is now 120px; inner text width 106px versus 161px scroll width renders ellipsis.
+- Supporting correction: primitive-adapter guard exposed the previous search-menu height rule in the consumer component. Move that rule to the TDesign adapter without changing the responsive height token. The previously failing primitive guard now passes.
+- Validation: row-cell 8 tests PASS; primitive adapter 46 components and 25 tests PASS; toolbar settlement 6 cases and 11 guard tests PASS; strict typecheck PASS. Browser: first three long identifiers preserve full title/accessible label and ellipsis; clicking `DEMO-PR-FLOORPLAN-003` opens `/f/payment.request/754`, whose record identity matches. Returned to the 70-row list. Search input/submit/menu heights remain 36/36/36px at 1088px and 44/44/44px at 390px; narrow document overflow zero; browser errors empty; original viewport restored.
+- Delivery boundary: daily local observation only, no business write, fixture/environment operation, push, PR or merge. The unrelated style-system line-count blocker remains separately recorded; no full release qualification claimed.
+
+## 2026-09-09 — 列表与侧栏间距去重
+
+- Baseline: `bed17106dc11eb062479e7a2a8d5c252eb2c6ac5`, clean existing feature branch; complete baseline fingerprint `4c17c92815cc43403ce06b0db98d6d89d0124d281f051db8e655acd75a7793b4`.
+- Ownership: P0 frontend renderer, ActionView embedded ListPage composition. Generic container geometry belongs here, not P1/P2 business defaults or P3 configuration. Only this embedded-list combination removes duplicate horizontal padding; standalone list and form frames retain their own gutters.
+- Root cause: outer routed frame and embedded list each contributed 16px horizontal padding. Scoped composition rule makes the outer frame the sole horizontal gutter owner.
+- Browser evidence at 1088px: sidebar right=232; table left 264 to 248; sidebar gap 32 to 16; table width 777 to 809. Query bar and table share the same edges. Sidebar collapsed: content x=0, table x=16, width=1041. At 390px: list/query x=12, width=351; document scrollWidth=390; cards retain amount and other facts. Original viewport and expanded sidebar restored; browser error log empty.
+- Validation: workspace layout matrix 12, form canvas matrix 7, canvas guard and alignment guard (37 entries) PASS; page-pattern parity 8 tests and 13 surfaces PASS; git diff whitespace PASS.
+- Daily visual iteration only: no business record mutation, contract change, environment operation or remote publication. Existing unrelated style-system blocker remains separate; no release acceptance or pending duplicate-payment assertion is claimed closed.
+
+## 2026-09-09 — 外壳与列表视觉连续性
+
+- Baseline: `2049df902c0de765f20899d89bb4ca6856b027ac`, clean feature branch, complete fingerprint `ab1c6ae574b6eabfb42bda3dfc060f10e767dab5bc71ebfe1950c40311b1fcf8`.
+- P0 generic frontend shell and collection-header presentation. Module: AppShell, ActivityPageTabs, ProductPageHeader and ActionView. Visual composition belongs to the frontend; no industry/customer semantics, navigation structure or contract changes. Shared shell affects its consumers; compact header applies to collection variant only.
+- Desktop shell removes sidebar gradient/shadow and topbar shadow/divider; sidebar, topbar and actual activity-page tabs share the existing canvas token. White query/table surfaces retain content emphasis. Collection header uses 56px minimum instead of 72px, 22px title instead of 24px, zero horizontal inset; ActionView gap follows the existing small-space token.
+- Daily browser: complete reload renders all three activity labels and the 70-record payment list. Desktop query top moves from 172 to 152px; title and table now align at x=248. At 390px, header wraps to 82px, title x=12, document scrollWidth=390; first card retains amount and business facts. Original viewport restored. Attempted activity-label click did not establish a different route, so cross-tab navigation acceptance is not claimed.
+- Validation: workspace matrices 12/7 and alignment guard 37 entries PASS; page-pattern parity 8 tests/13 surfaces PASS; theme profiles 3 PASS; overlay lifecycle 9 tests PASS; primitive adapter 46 components/25 tests PASS. CSS/presentation change only; no business mutation or release-gate claim. Remote publication not performed.
+
+## 2026-09-09 — 导航搜索框双层外观修正
+
+- Baseline: `930d904b0b3be70b5c93721b6908c1e6bae2570d`, clean branch; fingerprint `d117f8b9c938d6147afeab58b9e701b39225a76dd2b05a86c43ffd44ca0e80f4`.
+- P0 primitive TDesign adapter, navigation-search appearance only. Wrapper previously painted a background/min-height around the driver's separate input surface. Move visual ownership to the inner driver control and keep the wrapper transparent with zero border, padding, shadow and outline. Remove inset shadow and retain one explicit focus outline. Native specialized appearance remains supported. No navigation or business contract changes.
+- Browser after reload: wrapper and inner height both 38px; wrapper background transparent, border 0, shadow none. Inner border 1px, default shadow none; focused inner owns the border and outline, wrapper stays undecorated. Typing 付款 filters navigation to 财务中心/付款申请. Query cleared and focus moved away afterward.
+- Primitive adapter validation: 46 components and 25 tests PASS. Local UI observation only, no business writes or remote publication.
+
+## 2026-09-09 — 内容区外围边框减重
+
+- Baseline: `0498836f1be8ec18b327b941d163a3a7ce49fee9`; clean branch fingerprint `7a845b1c24a73af569c3cdb7a779f3a218d71337bdc696dfcc2f341c7d378d36`.
+- P0 generic list presentation: ProductListHeader and ListPage own the content surface; TDesign adapter removes decoration on collection tables embedded directly in that surface. No business configuration or contract changes.
+- Remove query/table enclosing strokes and the inner driver table's duplicate rounded border. Query retains upper 8px token corners, table surface lower 8px token corners; row separators and focus rules remain. No additional clipping container is introduced.
+- Browser after full reload: query border 0/radius 8px 8px 0 0; outer table border 0/radius 0 0 8px 8px; inner collection table border 0/radius 0. At 390px query border remains 0 and document width equals viewport; card facts visible. Original viewport restored.
+- Validation: page-pattern parity 8 tests/13 surfaces, layout matrices 12/7 and alignment guard 37 entries, primitive adapter 46 components/25 tests PASS. Daily visual acceptance only; no business write, fixture operation or remote publication.
+
+## 2026-09-09 — 窄屏列表页头自然换行
+
+- Baseline: `6ce79a136d3d3b0dbb20752b9bfffddfb5d0c6a0`; clean branch fingerprint `b330c2dad947551f747b1295d657ffd454bf3352ca2e1d9b2806b51f905ccfed`.
+- P0 shared ProductPageHeader collection variant only. Replace the inherited forced narrow column layout with a wrapping row; identity reserves a flexible text basis, actions keep intrinsic width and may wrap when necessary. Form/task/dialog headers retain existing responsive rules. No business or navigation changes.
+- Daily browser: 390px header height 82 to 56px; first record starts 26px earlier. At 320px title box x=12..161 and actions x=173..293, no overlap; document width equals viewport at both widths. Card facts remain visible. Original desktop viewport restored; desktop styling is outside the changed media query.
+- Validation: page-pattern parity 8 tests/13 surfaces, layout matrices 12/7, alignment guard 37 entries and diff whitespace PASS. No business writes or remote publication; no full-release claim.
+
+## 2026-09-09 — 操作目标与列表编号入口
+
+- P0 TDesign adapter, collection header buttons and primary record cell only. Baseline `cfc6ac39a80532e97fb5e659b2a971b0ee940ac8`, fingerprint `60f261bcc5b1245e699116db6d128d55bd46c9c9ac27a046279357f0d677a948`.
+- Header buttons now measure 36px desktop and 44px at 320px, with zero document horizontal overflow. Primary identifiers use the existing selected-text color, with hover/focus underline; full title and identity remain unchanged.
+- Browser clicked DEMO-PR-FLOORPLAN-003 and reached `/f/payment.request/754`; correct record label visible. No record mutation.
+- Primitive adapter 46 components/25 tests, row-cell 8 tests and page-pattern 8 tests/13 surfaces PASS. Local visual iteration only, no remote publication.
+
+## 2026-09-09 — 详情摘要与任务分组
+
+- P0 ObjectTaskPage visual grouping; baseline `69309207`, fingerprint `9caf5351ae710bdc869ff7af49bfefc06942e338c1ad724efebee7a0b8f4173f`.
+- Summary uses existing subtle background without outer stroke. Current task and business context use top separators instead of enclosing rounded frames. Explicit canonical spans and field ordering are preserved; no inferred multicolumn override or risk-style change.
+- Browser on payment request 754: correct complete identity, completed status, 10,000 amount and task/context facts visible; summary border 0, task/context square separators. At 390px document width equals viewport and 39 field DOM nodes remain mounted. Original viewport restored.
+- Page-pattern parity 8 tests/13 surfaces, product-page model 12 cases/4 tests, strict typecheck PASS. Daily read-only evidence; no business writes or remote publication.
+
+## 2026-09-09 — 只读详情移动页头与返回闭环
+
+- Baseline `a2e78175`. P0 ProductPageHeader and ContractFormProductHeader; CSS explicitly scoped to task/readonly and narrow media query. Identity occupies the first grid row; status and action share the following row, while status facts can wrap. Edit/save/dirty-state logic and layout are not changed.
+- At 390px the payment detail header measures 102px, down from approximately 174px; record identity, completed state and More remain visible. Document width equals viewport. Opened 更多 via accessible name 打开更多页面操作, observed 返回列表, clicked it and reached `/a/809`. Original desktop viewport restored. Browser error log empty.
+- Validation: header model 28 cases and 6 guard tests, form-header action primitives 6 tests, strict typecheck PASS. No business mutations. This proves the list identifier → detail → mobile More → return-list read-only route, not the earlier pending activity-tab switch or duplicate-payment assertions.
+
+### 页面体验后续队列
+
+- Completed this batch: collection action dimensions, record-link affordance, detail grouping, readonly mobile header and read-only return journey.
+- Remaining: column overflow discovery and meaningful long-text access, keyboard navigation/focus return, activity-tab switching runtime proof, wider theme/zoom checks. Explicit contract field spans and business state rules remain authoritative; do not fabricate success or rerun payment writes for visual acceptance.
+
+## 2026-09-09 — 全系统共用页签键盘交互
+
+- User broadened scope to system-wide frontend professionalization. Continue through shared components with representative real-page acceptance; no authorization to change backend business rules, publish or mutate fixtures is inferred.
+- P0 navigation shell and primitive adapter. Baseline `0f2540eb7614ad5e6c39a0a40146feec91f866e6`, fingerprint `affa3748a5ca733549987412cfc8bd15d14c4c5ff9967e37bc877df33d777189`.
+- Activity titles are explicit ScButton controls with full accessible labels and pressed state; close buttons remain separate. Keyboard handling is captured at a native host before the driver consumes it. AppShell provides its existing asynchronous activation function so keyboard focus restoration follows context restoration and route navigation. A scoped child-list observer handles the driver's transient label remount, matches stable page keys, and disconnects on unmount. Mouse selection, close and Escape clear pending focus. No fixed timing delay or bypass of dirty-page navigation authority.
+- Browser proof: mouse title activation reached payment request 15; ArrowRight reached `/a/809` with focus on 切换至付款申请; ArrowLeft returned `/f/payment.request/15` with focus on 切换至SHOW-PR-04; Escape focused main-content. Returned to the payment list. At 390px, document width equals viewport, all three titles preserve full accessible names, long visible title truncates. Original viewport restored. Explicitly printed error-log result is empty. Temporary diagnostic logs removed.
+- Validation: navigation model 12 cases, navigation tests 42+17, overlay lifecycle 9, primitive adapter 46 components/25 tests, strict typecheck PASS. Real keyboard/browser evidence supplements these guards. No record edits, saves, approvals, payments, fixture operations or remote publication.
+- Closed: previously pending activity-tab runtime switch proof, plus keyboard focus target correction. Remaining system queue: horizontal overflow affordance, rich long-text access, empty/error/loading consistency, representative form interactions, theme/zoom and additional role/page sampling. This batch does not assert whole-system acceptance.
+
+## 2026-09-09 — 表格原生横向滚动的键盘入口
+
+- Baseline `b980dc83`. P0 ScTable driver projection and TDesign adapter. Extend the existing native-control attribute projection to the driver's scroll container, only for tables configured with tableContentWidth. Add a named region, tabindex=0, keyboard description and visible focus outline. No column width/order/data or row-action changes.
+- Runtime measured content width 809 versus scroll width 1032. Tab navigation from column settings reaches the existing outer/table stops and then the actual named scroll region 付款申请，可横向滚动. ArrowRight moves scrollLeft 0 to 40; URL remains `/a/809`; ArrowLeft restores the offset. This is a real keyboard scroll proof, not a locator-only check.
+- Primitive adapter 46 components/25 tests and strict typecheck PASS. Native row-navigation stops remain, so keyboard tab-stop consolidation is still a potential follow-up. Visual overflow discovery beyond focus remains queued. No business writes or remote publication.
+
+## 2026-09-09 — 列表空状态视觉与查询恢复
+
+- Baseline `2647d5b05d71a0e76fd22d41ce0db30000ee27d5`, clean branch fingerprint `141bc685c3a9fe412d3697ea1d3d37d7974fc7e06c63ad3d23b8a1ae6d074c40`.
+- P0 ListPage presentation and primitive button sizing. Replace the list empty state's dashed frame with the same white content surface as the query/table area; retain existing filtered/no-data copy and recovery logic. Narrow recovery controls use 44px targets. Other empty-state consumers keep their current appearance.
+- Browser: query UX-NO-MATCH-20260909 produced zero records with preserved input and search URL parameter; the explanation and clear/reset actions remained visible. At 390px border is zero, both recovery buttons measure 44px, document width equals viewport. Clicking 清除查询条件 removed search from URL, cleared input and restored the 70-record list. Viewport restored; explicitly retrieved error log is empty.
+- Validation: page-pattern parity 8 tests/13 surfaces and primitive adapter 46 components/25 tests PASS; diff whitespace PASS. Loading-layout continuity was not established by continuous observation and remains pending. No business-record writes, environment operations or remote publication.
+
+## 2026-09-09 — 系统化共用状态与跨模块工作区整批推进
+
+- Full scope, ownership, acceptance conditions and evidence matrix: `docs/ops/iterations/frontend_system_experience_batch_v1.md`. Baseline `2d380e5b59e5d4ce8b34516424dc5aaad51abdb8`, fingerprint `112758622e9a3dc6c1ce8437120cfe0f553760fcd7a8d7dc0a1268d14e003a39`.
+- P0 product commit `b77981da`: shared non-HUD recovery feedback, busy retry protection, decorative loading semantics, reduced-motion skeleton styling, unified fallback search sizing and hierarchical workspace grouping/filtered-empty presentation.
+- Real cross-module samples: operating metrics empty collection, two workbench items (neutral and high-contrast), 46 income contracts in a hierarchical workspace, and completed payment request 754. Contract query 46 → 0 → 46 passed; search controls measured 36/36. Payment identity/state/amount remained visible. Final original payment collection restored with 70 records and enterprise-neutral; explicitly read browser error log empty.
+- Existing state/dashboard, primitive, page-pattern, worksheet and strict typecheck checks PASS. Details in the matrix separate code/targeted-test evidence from browser proof.
+- Limitations: supplemental homepage tab redirected to login; no credentials copied. Cross-page viewport override did not reach the authenticated tab, so new worksheet mobile CSS is not claimed browser-accepted. Loading continuity, real error recovery, zoom and multi-role coverage remain pending. This is a completed local batch, not full-system or release acceptance. No business-record writes, fixture/runtime mutations, push, PR or merge.
+
+## 2026-09-09 — 窄屏工作区与表格横向浏览
+
+- P0 frontend renderer / ScTable adapter: generic overflow discovery and directional controls belong to shared presentation, not P1/P2 business fields or P3 configuration. P4 documentation only. Scope: ScTable.vue, TDesign theme, delivery matrix and this log; contract field order, state and permissions unchanged.
+- Baseline d324f993bc13185a57931956d4806feb26f55d46; complete fingerprint 9b5715f9569565b322f2807fdbb40d47175bdf3c70a60a80c5910165f3a5b110. One writer, existing feature branch and local.dev runtime.
+- Closed actual 390/320px hierarchical-workspace viewport proof. Added shared overflow controls with measured scroll and boundary state; suppressed unnecessary controls for fitting tables and mobile cards. Full observations in frontend_system_experience_batch_v1.md.
+- Registered primitive/worksheet checks and strict typecheck PASS, explicit browser error log empty. No business/fixture writes, environment changes, push, PR or merge. Revert this scoped commit to roll back the presentation batch.
+
+## 2026-09-09 — 跨页面标题发布归属修复
+
+- P0 frontend / ActionView route runtime. Departing retained lists could publish their old action title against a new shared router path before deactivation. Require matching action/menu instance and action route; frontend identity ownership belongs here, not in business contracts or backend modules.
+- Baseline c79e2e6bd87afcac4885b0897780c54dc6947265; fingerprint 17cdcd8e42da9a3470a6ef0feb84beae24463ea427ec012c9c163490cf42c884.
+- Existing retention entry adds 9 ownership assertions; state/dashboard, page identity 23+12 assertions, identity guard and strict typecheck PASS. Real list to My Work navigation now keeps route/title/content aligned. No business writes. Matrix records runtime details and remaining visual work.
+
+## 2026-09-09 — 我的工作页面去重与交互一致性
+
+- P0 shared workspace renderer and primitive adapter; platform-generic metric state, panel ownership and input geometry. No P1/P2 business field or action changes. Reused ScCard record and ScButton; no new page framework.
+- Baseline 304369fe73009503f1912e9fc44d537915f1fc8f; fingerprint e582a71cf94c65871092856d721ce5717570a43237bce66b79f8cb175b87e0af.
+- Replaced nested panels, separated selected state from keyboard focus, added pressed semantics, and projected input-height tokens to native driver controls. Existing component/parity tests and strict typecheck PASS. Real filter recovery, category switch, 320/390/1088 layout and single focus outline verified; see matrix.
+- Remains local iteration; no remote publication or business writes. Revert scoped presentation commit for rollback. Continue matrix gaps rather than treating this batch as full-system acceptance.
+
+## 2026-09-09 — 首页滚动边界与真实状态恢复验收
+
+- P0 frontend shared visually-hidden utility; positioning belongs to common rendering, not business modules/configuration. Fix hidden labels enlarging the root document outside an internal scroller. Baseline 0b2628083a4f831525277d4289e1792e517a82e9; fingerprint a8cad6ca79b9831ee9bf9555eb828c7907f8e8d9cc3ff30bc9726b9f42c5a781.
+- Homepage 320px document height 897 to 844, viewport 844; hidden status/money text retained. Home accessed through original authenticated tab. Existing parity/state tests PASS.
+- Browser developer controls supplied bounded read-only loading and network-failure tests: retained list during refresh, genuine initial skeleton with reduced motion, one failed work-summary read and successful retry to 4 items. All temporary overrides cleared; full details and precise limitations in the matrix. No business/fixture writes or remote operations.
+
+## 2026-09-09 — 首页页签显示归属
+
+- P0 shell presentation only; home routes are not activity pages, so they must not visually claim the last business tab is current. Preserve stored activity key and navigation/dirty-state mechanisms.
+- Baseline 204f2921940e1e71bc34380692831c52654333e1; fingerprint f43cbfb95adf308d11d4a9b8b81a6513f976c3e28a550587875410a407b4dab8. Existing state/dashboard checks and typecheck PASS. Browser home has zero active tabs; business tab reactivation works.
+- Theme samples preserved geometry; dynamic system-theme following was identified as an explicit next item. No business writes or remote operations.
+
+## 2026-09-09 — 动态系统主题与场景深色继承
+
+- P0 theme runtime, shell lifecycle and SceneUiProvider color aliases. Generic presentation ownership; preserve manual preference and contract semantics. P4 extends the existing theme-profile gate with actual module runtime assertions, no new test entrypoint.
+- Baseline 08a207fcf8d45cd74972debb6f642a5fec82e7e7; fingerprint a6c6a428b55258f28b4634d3afe3756592a6fa8ebaa79f8f27aa027878ab0f16.
+- System mode now follows live preference changes with listener cleanup. Scene colors inherit semantic theme tokens and retain standalone palette fallbacks, fixing white-on-light dark-detail surfaces and low-contrast amounts.
+- Real work/detail checks and registered theme/bridge/presenter/boundary/type checks PASS; detailed counts and observations in the matrix. Original system/neutral preferences and viewport restored; no business writes or remote publication.
+
+## 2026-09-09 — 未保存输入保护与确认框表达
+
+- P0 generic confirmation presentation: remove unconditional business-state-change wording; focus Cancel initially. Action-specific text, confirmation result, navigation authority and write logic unchanged. Existing one-writer feature worktree and local.dev reused.
+- Baseline 6159c895067fca840c827a5ab292896c23906b12; fingerprint be48f7883082da5853d424de34e30fc96d4018f44adee23f65ca4ebc4d5a29ac.
+- Real unsaved New-form note survives Cancel/Escape with focus restored; test-created pages explicitly discarded and closed. No save/submit invoked; collection still 70. Workflow/overlay checks and typecheck PASS. Matrix documents exact enlargement/reflow evidence and desktop-zoom limitation.
+
+## 2026-09-09 — 表单返回文案与实际行为一致
+
+- P0 contract-form exit presentation only. Generic history return is not guaranteed to lead to a list; use 返回 while preserving its existing semantic action and managed-dialog cancellation. Baseline 363791039e59f472a97773e14271ce0a3b5ee939; fingerprint 3d043f4c611066569e5281dc870652feaaf56a7761dbe91e19844d9d1f474fc0.
+- Existing presenter 142 cases and typecheck PASS; real record 15 return observed. No business/navigation mechanism change.
+
+## 2026-09-09 — 共享前端本地迭代矩阵收口
+
+- P4 documentation closeout only. Reviewed product HEAD 0876a2d698fb931a008869079237417d99284c71, complete fingerprint ffbdec96dddad601cee9ccde0c6af262f8e352f1402359afc6aac5568eebf013 (7321 paths). Scope from initial batch baseline is 21 frontend/test/doc paths; no backend, contract, runtime or fixture changes.
+- Updated the matrix's primary table to current results across all 10 areas; chronological records remain historical evidence. Existing registered checks and real representative journeys are mapped explicitly, including final scene architecture guard 6+7 tests and 63 checks.
+- Local frontend milestone is closed with evidence limits stated: native desktop zoom, quantitative layout shift, suggested-action feedback runtime branch, multi-role/business-write/release qualification are not claimed. Generic retry, loading/reduced motion, keyboard/unsaved-input protection, shared table access, home, work, list, detail and hierarchical workspace have the recorded representative observations.
+- Original payment list, viewport, scale, theme and absence of test-created unsaved tabs restored. No push/PR/merge performed. Documentation-only closeout follows the reviewed product HEAD without further product changes.
+
+## 2026-09-09 — C1 层级工作区对齐
+
+- Formal Product Layer: P0 platform kernel product；P4 仅承载候选证据。Layer Target: `smart_core` 通用层级契约装配器、Web `HierarchicalWorksheet` renderer 与既有定向验证。Standard vs User-Specific: 平台通用的作用域、选中态、响应式入口、可访问分隔条和权威显示元数据消费；不是施工行业字段默认值、客户偏好或管理员配置。
+- Why Here: 收入合同模型已经声明 monetary/currency_field，P1 工作区配置已经声明列精度；缺口是 P0 装配器未透传这些元数据，以及通用 renderer 未保持可见结果和详情一致。Why Not Elsewhere: 不在前端猜字段/币种，不修改 P1 合同事实或工作流，不新增 P2/P3 配置，也不以 P4 脚本承载产品行为。
+- Baseline: `178df07bcdb8cabba19648e35a2deb4de5f3314d`；complete fingerprint `39cdb64f8a7c57ecca5dc88cb2d74e8d94c22e8cb2e2873aed5109658d46024d`，7328 paths。复用唯一已注册 feature worktree 与 local.dev（`sc-local-dev` / `sc_dev_demo`），不创建环境、数据库、端口、卷或 fixture。
+- Blast Radius: 层级工作区 config 的列/详情显示元数据、可见结果选择、移动作用域入口、两处分隔条和 action→record→return 的前端保留态。收入合同 46 条为真实只读样板；付款旅程仅做共享回归。合同审批/支付、业务写入、配置台 C2、push/PR/release 均不在范围。
+- C1 product candidate `ea971cea500590a0686155b698ded828a6d7a1d3` PASS：46→scope 1→query 0→clear/selection restore；record 15 return preserves query/scope/selection/table scroll；desktop separator keyboard bounds PASS；390 light and 320 dark mobile scope drawer/touch target/root overflow PASS。Payment record 15 shared regression remains `¥50.00`; all browser evidence has mutationCount 0 and empty errors/failures.
+- Generated-inventory closeout HEAD `8d3c67694e5b69acba713b2b2ff500737e4ee1a2` complete fingerprint `a4a1582cc04547edf9797e4b6ba9988ac0fe04f2d93113f9da01f803ec8550f4` (7328 paths); full frontend Quick PASS. Detailed evidence: `frontend_hierarchical_workspace_c1_20260909.md`. Release state remains verification_pending; no push/PR/merge.
+
+## 2026-09-09 — C1 层级范围抽屉补验收口
+
+- P0 shared overlay correction with P4 evidence only. `ScDrawer` retains formal desktop width tokens and clamps portal width to `100vw`; no business contract, configuration or runtime authority changed.
+- Candidate `abda10891b1d0c3f8b2c3177bce7c2b91033429a`; complete fingerprint `5a81936b3f6e1d8f1114afec37789181e9a47068651166950fb6952c611f3d5f` (7329 paths). 320 dark and 390 light first-open/reopen/open-resize-return bounds PASS for panel, surface, title, close action and tree node; Escape focus restored. Both runs mutationCount 0, errors/failures empty.
+- Detailed evidence: `frontend_hierarchical_workspace_c1_drawer_closure_20260909.md`. C1 supplement closed independently before C2; no push/PR/release.
+
+## 2026-09-09 — 页面体验 Phase A 外壳样板
+
+- Batch-A / A1+A2, P0 frontend shell and page-pattern presentation with P4 verification support. Baseline `3d3975b3d45c1462677df0abcbb5708e4b53e0b1`; the supplied product-analysis fingerprint is `c243b67e2b4bbb5700a3a4a2d7a36cd7546a6390c131b00fb7a27831fca78e05` (7321 paths). The complete working-tree fingerprint becomes 7322 paths when the supplied untracked analysis report itself is included.
+- One objective: make Home and My Work route aliases use the same minimal shell and content-owned page heading, then consume the existing DashboardPattern/ProductPageHeader and remove repeated nested home-card borders. Payment list/detail remain comparison surfaces; no contract, route authority, permission, state action, business data or runtime fixture changes.
+- Targeted page identity, ProductPageHeader, page-pattern, navigation-shell, shared semantic-boundary, theme, mobile viewport, state/dashboard, lint and strict type checks pass. The My Work main surface now consumes ScPanel. The style-system gate remains blocked by three pre-existing files outside this batch: ActionSurfaceToolbar token declaration, ScTable Unicode glyphs and useRecordFormActions 622/619 line ratchet.
+- Formal release acceptance remains blocked by that earlier static gate. The governed local.dev candidate visual smoke passed read-only development checks for `/`, `/s/workspace.home`, `/my-work` and `/s/my_work.workspace`: each route has one visible H1, one ProductPageHeader, dashboard mode and zero root overflow at 1440/390; equivalent aliases have identical topbar height/content start; mutation count and browser error/failure lists are zero. Screenshots captured loading states, so B1 task-density and business-action acceptance remain pending. Full batch record: `frontend_page_experience_phase_a_batch_a1_a2_20260909.md`. No push, PR or merge is authorized.
+
+## 2026-09-09 — 系统页面体系：工作区、配置与异常体验收口
+
+- 三批按页面体系完成：C1 工作区/共享交互、配置与异常产品化、全系统一致性矩阵。P0 仅承担通用 renderer、状态、浮层和响应式行为；P4 承担受管验证、清单和报告。付款样板冻结，无 P1/P2/P3 语义、配置或业务动作扩展。
+- 产品候选 `de1c04cd6191acafada58746cddcedf7416676fa`；完整工作树指纹 `469bbe662245b7610e15398b4cf6c01d1473668ebc5e0e225a9cf41febd91e48`，scope manifest `8c9b1099ec609d073daa2b8ae2600da98b918c4c797a833abe45a5f59a97f058`，7333 paths，baseline `3d3975b3d45c1462677df0abcbb5708e4b53e0b1`。
+- 真实页面矩阵覆盖首页、我的工作、付款列表/详情、收入合同层级工作区、配置工作台、403/404，在 1440/1088/390/320、明暗主题均 PASS。层级往返恢复、配置 60→0→60、对象选择、安全返回及同候选受控 503→一次重试恢复通过；所有最终浏览器运行 mutationCount 0、errors/failures empty。
+- Full frontend Quick、business config 非零单元组、hierarchy、overlay、page identity、theme profile 均 PASS。真实 DB 仅证明 empty changeset；draft/published 等由 presentation 单元测试覆盖，没有执行配置或业务写入。完整报告：`frontend_system_page_experience_closure_20260909.md`。
+- 页面体系本地候选完成，但 `verify.frontend.release.local`、独立审查、push/PR/merge/release 未执行，状态保持 `verification_pending`。
+
+## 2026-09-09 — 前端候选与 acceptance 历史兼容拆分
+
+- Formal Product Layer：P4 交付治理；当前候选不再包含 P1 历史迁移。Layer Target：前端页面候选范围与 acceptance fixture 生命周期设计。Standard vs User-Specific：平台内部验收治理，不是行业事实、客户数据或管理员配置。
+- Why Here：旧人工 acceptance 数据升级失败不能单独证明客户历史兼容需求。`.163/.164` 及资金基线 revision fixture 曾实际执行，但已从前端候选源码中撤出；历史提交和数据库事实保留。Why Not Elsewhere：不放宽付款/资金基线约束，不在前端猜测历史身份，不逆向改写已迁移数据库。
+- Blast Radius：源码净效果恢复到页面候选的 `smart_construction_core 17.0.0.162` 与原 fixture 实现；新增一份非执行性 P4 命名空间重建设计。没有修改页面产品、契约、权限、业务流程或业务数据。
+- 现有 `sc_frontend_acceptance` 已执行 `.163/.164`，与恢复后的源码版本不一致，因此 fixture、snapshot、浏览器和 release gate 均暂停。未来清理/重建必须经过独立 P4 实现、只读审计和显式 destructive 授权；本批次不执行数据库、filestore、volume 或 session 清理。
+- 撤出前 exact HEAD `016a844351aa92ddfd9a4f639a72f30ed784edfe` 的正式 gate 为 FAIL：产品正确拒绝非当前用户的“我的付款申请”记录，`delivery_hardening` 验证器却等待普通详情表面。该问题登记为 P4 validation-tool defect，不通过修改权限或 fixture 记录规避。
+
+## 2026-09-09 — Acceptance 基线恢复预演
+
+- Formal Product Layer P4；Layer Target 为静态生成证据与 `sc_frontend_acceptance` 完整生命周期恢复。没有 P0-P3 产品、契约、权限、fixture 语义或业务数据修改。
+- 原候选 HEAD `92a50e59d7e712a0ab67a066d17a686c1dc8b43f`、完整指纹 `6aa1fc3b09cef69a6f902b7811773e0c1b5545b0c23eee0524af36595eb2b8e2`（7339 paths）。官方设计 inventory 的唯一变化由上次生成后 `AppShell.css` 合法输入变化产生；原生成器刷新后完整 Frontend Quick PASS。
+- 受管 audit 确认 `sc_frontend_acceptance` 为 `17.0.0.164`，约 319 MB；filestore 约 125 MB/421 files；Redis 0 keys；不存在兼容 `.162` 的完整备份。选择精确 profile 的整环境重建，不以 namespace cleanup 冒充版本恢复。
+- 新受管入口默认 dry-run，绑定 exact HEAD，并在 apply 前要求 clean worktree、停止 carrier 与精确确认；执行时先冷备并校验 database+filestore+session，失败自动恢复。当前只读 audit 与 dry-run PASS，未停止服务、创建恢复包、删除卷、写 fixture 或运行 release gate。
+
+## 2026-09-09 — Acceptance 重建执行可靠性收口
+
+- P4 only：集中加固既有完整环境重建入口；页面产品、P1 兼容候选、fixture 语义和业务数据继续冻结。
+- 真实只读 audit 发现 PostgreSQL 卷还包含 `sc_odoo`（约 7.5 MB、0 public tables、无 Odoo registry）。新预检要求调用者显式声明排序后的非系统数据库全集，并校验每个卷唯一挂载者；意外数据库或容器一律阻断 dry-run readiness 和 apply。
+- 恢复包覆盖完整 PostgreSQL/Odoo/Redis 三卷，并保留主库逻辑 dump 校验。writer 停止、archive、checksum、dump 可读性全部通过后 manifest 才从 staging 进入 complete。
+- 恢复路径逐步检查删除、解包、启动和恢复后数据库/附件/filestore/session；失败注入禁止任何失败分支输出 `RECOVERED`。自动恢复只覆盖卷删除至空基础设施重建，后续安装、fixture、snapshot 和 release gate 失败仅保留恢复包与诊断。
+- 实现候选 `c6f5658ecd967e57a98fb6327112a680a7177455` 的 44 项重建/身份测试、Frontend Quick、受管 audit 与完整 dry-run PASS；错误 HEAD 和遗漏 `sc_odoo` 均按预期 DENY。没有停止服务、创建恢复包、删除卷、写数据库或运行 release gate。
+
+## 2026-09-09 — 官方组件用法全量收口
+
+- P0 通用组件适配与主题桥，P4 仅承载清单、守卫和证据；锁定 `tdesign-vue-next@1.20.5`，未改变后端、契约、路由、权限、业务语义、数据库或 fixture。
+- 产品候选 `f9797273e0e6bd210f9c0b8ed726ff1d500a7fbd`；完整 fingerprint `9d22470f4384717fff5d122cbc7dca55ead3c24b426cfdd0150597605f0918cf`（7347 paths），baseline `f8f5088e54479a60cd9991bf186348d571580a17`。
+- 209 个正式样式源中的 14 个 TDesign 内部 selector gap 和 16 个视觉字面量 gap 已清零；inventory `--check` 现在对四项完成条件 fail-closed。Input/Select/Card/Alert 迁到公开扩展点，结构化按钮不再误用官方文本插槽承载多列布局。
+- 全系统 TDesign 入口守卫限制为公共 primitive authority，并绑定已安装版本的公开类型声明。最终 Frontend Quick PASS；冻结候选在首页、我的工作和材料入库新建关系表单的 1440/390 只读旅程 PASS，mutation 0、errors/failures empty。
+- ECharts 6.1.0 无产品改动；补齐基于已安装 `exports` 的公开子路径、动态 import 与单一 CanvasRenderer 守卫，4 个反例测试和 chart dataset 定向门禁 PASS。
+- 完整记录：`frontend_official_component_usage_cleanup_20260909.md`。未执行 release gate、push、PR 或 merge；正式发布资格仍待独立审查和显式开启发布流程。
+
+## 2026-09-09 — 共享组件行为确认与全局表达收口
+
+- Branch `feature/frontend-page-experience-iteration-v1` at `314a0ac2`。Formal Product Layer：P0 通用前端运行时；P4 仅承载验证与证据。
+- Layer Target：frontend shared primitives、shell、通用页面 surface/theme 与既有 local.dev candidate browser evidence。Module：frontend。
+- Reason：把官方组件接入从静态公开 API 证据推进到真实行为证据，再以同视口对照统一首页、我的工作、付款列表/详情和代表工作区的全局表达；不修改契约、启动链、路由、权限、业务数据或发布环境。
+
+## 2026-09-10 — 共享组件行为与全局表达完成
+
+- P0 通用 frontend primitives/page header/form shell/role home；P4 只扩展既有候选浏览器断言与生成证据。产品候选 `df3227c38e908b883ed45553e9511b03b59a3348`，baseline `314a0ac2ccdbc4793455a323620cfc988dd4e7b2`。
+- Input 搜索/清除/焦点、Select 鼠标/键盘选择、Card `bodyClassName`、Alert description/operation/retry、结构化按钮 exactly-once/pressed/disabled/loading，以及材料样本错误聚焦，在 light/dark × 1440/390 的真实只读页面均 PASS；所有最终运行 mutation 0、errors/failures empty。
+- 首页入口恢复完整宽度，“我的工作”去除外层套卡，通用任务/工作区页头与 ContractForm 命令栏改为单一下边界；付款详情桌面/移动均只保留主体工作表面。五个代表页面共 20 个最终视觉样本无根横向溢出。
+- Full Frontend Quick 与四项官方设计零缺口库存 PASS。结论限定为官方组件接入与代表页面表达收口，不宣称全业务交互、业务写入、全角色、release 或生产验收；未执行数据库/fixture/module lifecycle、push、PR、merge 或 release。
+- 完整记录：`frontend_component_behavior_global_expression_20260909.md`。
+
+## 2026-09-10 — 前端表达阶段最终验收与冻结
+
+- Formal Product Layer P4；Layer Target 为既有组件浏览器机制、local.dev candidate 只读证据与冻结记录。产品代码保持在 `df3227c38e908b883ed45553e9511b03b59a3348`，最终证据候选为 `c755e5515b9f876565080f4c0ced1c87d5f12cf0`；未修改 P0-P3 产品、契约、路由、权限或业务语义。
+- disabled/loading 改由父组件响应式状态向真实 `ScButton` 传 props，验证组件生成的 disabled/ARIA/loading 投影与点击阻断；验证脚本不再直接改被测 DOM。该结论登记为组件浏览器测试，不冒充正式页面状态。
+- Alert 正式页面恢复旅程对 `my.work.summary` 请求精确计数：light 1440/390 与 dark 1088/320 的桌面、移动结果均为 `operationCount=1`、`retryRequestCount=1`、焦点正确、恢复成功，mutation 0 且 errors/failures empty。
+- 最终视觉矩阵覆盖首页、我的工作、付款列表/详情及收入合同工作区的 1440/1088/390/320，共 20 个样本；自动溢出/浮层/页头/可见操作检查与人工截图复核均未发现阅读或操作阻断。没有继续做常规美化。
+- 本地前端表达基线已冻结；真实业务写入、全角色、acceptance/release/production 仍明确不在本轮证明范围。未升级模块、reset fixture、写业务数据或执行 push/PR/merge/release。
+
+## 2026-09-10 — 前端阶段交付包整理
+
+- Formal Product Layer P4；Layer Target 为最终范围、证据索引、PR 草稿及后续依赖清单。产品候选继续冻结在 `df3227c38e908b883ed45553e9511b03b59a3348`，整理前最终审查 HEAD 为 `8cd5cdebcd0b1127e1d7ddcada672077f25afa7f`；没有重新打开 P0/P3 产品实现。
+- 明确区分 `main` 合并基线 `74297675…`、前端阶段产品基线 `3d3975b3…`、产品候选和证据 HEAD。整理前完整 PR 范围为 173 commits / 191 paths；阶段产品范围为 131 commits / 155 paths，最后证明修正仅 3 commits / 5 paths。
+- acceptance baseline rebuild、runtime、Make 接线、失败注入测试和恢复设计作为独立 P4 环境工具单列；历史 P1 `.163/.164` 迁移已撤出净候选，不计入前端产品改善。
+- `make pr.status` 只读确认当前分支无 PR。完整差异经现有分类器判定 HIGH_RISK、frontend/professional full、backend changed；四项 required checks 及 release candidate gate 均保持 not_run，未执行 push、PR 创建/更新、acceptance 重建或远端 mutation。
+- 本地交付状态为 `READY_FOR_PR_AUTHORIZATION`，不是 merge-ready 或 release-ready。唯一下一步是在明确授权后冻结最终 clean HEAD，并通过受管入口进入 draft PR。
+- 审查澄清：当前版本 acceptance 环境恢复与旧版本升级兼容是两个独立 P4 任务。前者只恢复当前候选的可信验收载体；后者必须先冻结明确源版本样本及预期迁移结果，不能由重建替代。

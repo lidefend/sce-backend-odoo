@@ -4,10 +4,10 @@
     role="status" aria-live="polite" :aria-busy="state === 'loading' || undefined" size="small" :text="label" />
   <TDesignAlert v-else class="sc-inline-state" data-semantic-component="ScInlineState" data-semantic-driver="tdesign-alert"
     data-semantic-layer="primitive" :data-state="state" :data-density="density"
-    :theme="state === 'error' ? 'error' : 'info'" :message="label"
+    :theme="state === 'error' ? 'error' : 'info'"
     :role="state === 'error' ? 'alert' : 'status'" :aria-live="state === 'error' ? 'assertive' : 'polite'"
     :aria-busy="undefined">
-    <slot>{{ label }}</slot><template v-if="$slots.actions" #operation><slot name="actions" /></template>
+    <span class="sc-inline-state__description"><slot>{{ label }}</slot></span><template v-if="$slots.actions" #operation><slot name="actions" /></template>
   </TDesignAlert>
 </template>
 <script setup lang="ts">
@@ -16,7 +16,7 @@ withDefaults(defineProps<{state?:'info'|'loading'|'empty'|'error';density?:'regu
 </script>
 <style scoped>
 .sc-inline-state{width:100%}.sc-inline-state[data-density='compact']{padding-block:0}
-.sc-inline-state.t-alert--info :deep(.t-alert__description) {
+.sc-inline-state[data-state='info'] .sc-inline-state__description {
   color: var(--sc-app-info-text);
 }
 @media (prefers-reduced-motion: reduce) {

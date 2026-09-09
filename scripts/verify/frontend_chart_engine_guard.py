@@ -30,21 +30,16 @@ ALLOWED_SUBPATHS = (
     "echarts/components",
     "echarts/renderers",
     "echarts/features",
-    "echarts/types",
 )
 
 # 全量引入：from 'echarts' / import 'echarts'（含双引号变体），
 # 但不含合法子路径（echarts/xxx）。
-full_import = re.compile(r"""(?:from\s+|import\s*\(\s*|import\s+)['"]echarts['"]""")
-any_echarts_import = re.compile(r"""(?:from\s+|import\s*\(\s*|import\s+)['"]echarts[/'"]""")
-renderer_import = re.compile(
-    r"""import\s*\{([^}]*)\}\s*from\s*['"]echarts/renderers['"]"""
-)
+echarts_import = re.compile(r"""(?:from\s+|import\s*\(\s*|import\s+)['"](?P<module>echarts(?:/[^'"]*)?)['"]""")
 
 
-def _source_roots():
-    yield ROOT / "frontend/apps/web/src"
-    for pkg in (ROOT / "frontend/packages").glob("*/src"):
+def _source_roots(root: Path):
+    yield root / "frontend/apps/web/src"
+    for pkg in (root / "frontend/packages").glob("*/src"):
         if pkg.is_dir():
             yield pkg
 
@@ -55,50 +50,49 @@ def _iter_files(root: Path):
     yield from root.rglob("*.mjs")
 
 
-def require(condition: bool, message: str) -> None:
-    if not condition:
-        raise SystemExit(f"[verify.frontend.chart_engine.guard] FAIL {message}")
-
-
-def main() -> None:
+def validate(root: Path = ROOT) -> list[str]:
+    failures: list[str] = []
     # 1. 精确锁版
-    package = json.loads(WEB_PACKAGE.read_text(encoding="utf-8"))
+    package_path = root / WEB_PACKAGE.relative_to(ROOT)
+    package = json.loads(package_path.read_text(encoding="utf-8"))
     version = str(package.get("dependencies", {}).get("echarts") or "")
-    require(
-        version == APPROVED_ECHARTS_VERSION,
-        f"echarts must be exact-pinned to {APPROVED_ECHARTS_VERSION} in web "
-        f"dependencies (found {version!r}; patch bump requires gate + guard baseline update)",
-    )
+    if version != APPROVED_ECHARTS_VERSION:
+        failures.append(f"echarts must be exact-pinned to {APPROVED_ECHARTS_VERSION} (found {version!r})")
+
+    installed_package = root / f"frontend/node_modules/.pnpm/echarts@{version}/node_modules/echarts/package.json"
+    if not installed_package.is_file():
+        failures.append(f"installed echarts package metadata missing for {version}")
+    else:
+        exports = json.loads(installed_package.read_text(encoding="utf-8")).get("exports", {})
+        for module in ALLOWED_SUBPATHS:
+            if f"./{module.removeprefix('echarts/')}" not in exports:
+                failures.append(f"installed echarts {version} does not export approved public entrypoint {module}")
 
     # 2/3. tree-shakeable + 单一 CanvasRenderer
-    offenders: list[str] = []
-    renderer_offenders: list[str] = []
-    for root in _source_roots():
-        for path in _iter_files(root):
+    for source_root in _source_roots(root):
+        for path in _iter_files(source_root):
             if not path.is_file():
                 continue
             text = path.read_text(encoding="utf-8", errors="ignore")
-            rel = str(path.relative_to(ROOT))
-            for match in any_echarts_import.finditer(text):
-                snippet = match.group(0)
-                if full_import.search(snippet):
-                    offenders.append(f"{rel}: {snippet.strip()}")
-            for match in renderer_import.finditer(text):
-                names = [n.strip() for n in match.group(1).split(",") if n.strip()]
-                bad = [n for n in names if n != "CanvasRenderer"]
-                if bad:
-                    renderer_offenders.append(f"{rel}: {bad}")
+            rel = str(path.relative_to(root))
+            modules = [match.group("module") for match in echarts_import.finditer(text)]
+            for module in modules:
+                if module == "echarts":
+                    failures.append(f"full echarts import is forbidden: {rel}")
+                elif module not in ALLOWED_SUBPATHS:
+                    failures.append(f"echarts import is not an approved public entrypoint: {rel}: {module}")
+            if "echarts/renderers" in modules:
+                if "CanvasRenderer" not in text:
+                    failures.append(f"renderer entrypoint must register CanvasRenderer: {rel}")
+                if "SVGRenderer" in text:
+                    failures.append(f"SVGRenderer is forbidden by the single-renderer contract: {rel}")
+    return failures
 
-    require(
-        not offenders,
-        f"full echarts imports are forbidden (ADR-002 condition 1, "
-        f"use echarts/core + on-demand subpaths): {offenders}",
-    )
-    require(
-        not renderer_offenders,
-        f"only CanvasRenderer is allowed from echarts/renderers "
-        f"(ADR-002 condition 1): {renderer_offenders}",
-    )
+
+def main() -> None:
+    failures = validate()
+    if failures:
+        raise SystemExit("[verify.frontend.chart_engine.guard] FAIL " + "; ".join(failures))
     print(
         "[verify.frontend.chart_engine.guard] PASS "
         f"echarts@{APPROVED_ECHARTS_VERSION} exact-pinned, tree-shakeable imports clean"

@@ -374,6 +374,13 @@ function canonicalButtonVariant(action: CanonicalFormAction): 'primary' | 'ghost
 }
 @media (max-width: 860px) {
   .record-header-status { align-items: flex-start; flex-direction: column; width: 100%; }
+  [data-render-profile='readonly'] .record-header-status {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+  }
+  [data-render-profile='readonly'] .native-statusbar--header { width: auto; }
   .record-header-context { justify-content: flex-start; }
   .native-statusbar--header { width: 100%; }
 }

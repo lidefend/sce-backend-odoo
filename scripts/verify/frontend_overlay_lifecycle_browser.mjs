@@ -19,13 +19,19 @@ const server = await createServer({
       if (id !== entryId) return undefined;
       return `
         import { createApp, h, reactive } from 'vue';
+        import ScButton from '/src/components/design-system/ScButton.vue';
         import Dialog from '/src/components/design-system/ScDialog.vue';
         import Drawer from '/src/components/design-system/ScDrawer.vue';
         import '/src/styles/design-system.css';
-        const state = reactive({ dialog: false, drawer: false, locked: false, empty: false, closes: 0 });
+        const state = reactive({ dialog: false, drawer: false, locked: false, empty: false, closes: 0, structuredDisabled: false, structuredLoading: false, structuredActivations: 0 });
         window.overlayState = state;
         document.querySelector('#opener').addEventListener('click', () => { state.dialog = true; });
         createApp({ render() { return h('div', [
+          h(ScButton, {
+            id: 'structured-prop-button', appearance: 'metric',
+            disabled: state.structuredDisabled, loading: state.structuredLoading, loadingLabel: '组件处理中',
+            onClick: () => { state.structuredActivations += 1; },
+          }, () => '组件参数按钮'),
           h(Dialog, { open: state.dialog, title: '详情', description: '对话说明', size: 'wide', onClose: () => { state.dialog = false; state.closes += 1; } }, {
             default: () => [h('button', { id: 'dialog-first', 'data-dialog-primary': '' }, '第一项'), h('button', { id: 'open-drawer', onClick: () => { state.drawer = true; } }, '打开抽屉')],
           }),
@@ -50,6 +56,33 @@ try {
   page.on('console', (message) => { if (message.type() === 'error') errors.push(`console:${message.text()}`); });
   page.on('pageerror', (error) => errors.push(`page:${error.message}`));
   await page.goto(`http://127.0.0.1:${address.port}/__overlay_lifecycle.html`);
+  const structuredButton = page.locator('#structured-prop-button');
+  await structuredButton.click();
+  const initialStructuredActivations = await page.evaluate(() => window.overlayState.structuredActivations);
+  await page.evaluate(() => { window.overlayState.structuredDisabled = true; });
+  await page.waitForFunction(() => document.querySelector('#structured-prop-button')?.hasAttribute('disabled'));
+  await structuredButton.evaluate((node) => node.click());
+  const disabledPropEvidence = await structuredButton.evaluate((node) => ({
+    disabled: node.hasAttribute('disabled'), ariaDisabled: node.getAttribute('aria-disabled'),
+    ariaBusy: node.getAttribute('aria-busy'), dataLoading: node.getAttribute('data-loading'),
+  }));
+  disabledPropEvidence.activationCount = await page.evaluate(() => window.overlayState.structuredActivations);
+  await page.evaluate(() => {
+    window.overlayState.structuredDisabled = false;
+    window.overlayState.structuredLoading = true;
+  });
+  await page.waitForFunction(() => document.querySelector('#structured-prop-button')?.getAttribute('data-loading') === 'true');
+  await structuredButton.evaluate((node) => node.click());
+  const loadingPropEvidence = await structuredButton.evaluate((node) => ({
+    disabled: node.hasAttribute('disabled'), ariaDisabled: node.getAttribute('aria-disabled'),
+    ariaBusy: node.getAttribute('aria-busy'), dataLoading: node.getAttribute('data-loading'),
+    loadingLabel: node.querySelector('.sc-visually-hidden')?.textContent?.trim() || '',
+  }));
+  loadingPropEvidence.activationCount = await page.evaluate(() => window.overlayState.structuredActivations);
+  await page.evaluate(() => { window.overlayState.structuredLoading = false; });
+  await page.waitForFunction(() => !document.querySelector('#structured-prop-button')?.hasAttribute('disabled'));
+  await structuredButton.click();
+  const restoredStructuredActivations = await page.evaluate(() => window.overlayState.structuredActivations);
   const visibleOverlayResidueCount = async () => page.locator('.t-drawer:visible, .t-drawer__mask:visible, .t-dialog:visible, .t-dialog__mask:visible, [data-overlay-kind]:visible').count();
   const initialOverlayResidueCount = await visibleOverlayResidueCount();
   const waitForActiveWithin = async (selector) => {
@@ -105,13 +138,22 @@ try {
   await page.evaluate(() => { window.overlayState.empty = false; });
 
   const pass = initialOverlayResidueCount === 0 && closedDrawerResidueCount === 0
+    && initialStructuredActivations === 1
+    && disabledPropEvidence.disabled && disabledPropEvidence.ariaDisabled === 'true'
+    && disabledPropEvidence.ariaBusy === null && disabledPropEvidence.dataLoading === null
+    && disabledPropEvidence.activationCount === 1
+    && loadingPropEvidence.disabled && loadingPropEvidence.ariaDisabled === 'true'
+    && loadingPropEvidence.ariaBusy === 'true' && loadingPropEvidence.dataLoading === 'true'
+    && loadingPropEvidence.loadingLabel === '组件处理中'
+    && loadingPropEvidence.activationCount === 1
+    && restoredStructuredActivations === 2
     && initialFocus && nestedFocus
     && nestedRestore && openerRestored
     && bodyLocked && nestedBodyLocked && bodyReleased && lockedRemains
     && emptyInitialFocus && emptyTabContained
     && Boolean(labelled.labelledby) && Boolean(labelled.describedby)
     && errors.length === 0;
-  console.log(JSON.stringify({ pass, initialOverlayResidueCount, closedDrawerResidueCount, initialFocus, nestedFocus, nestedRestore, openerRestored, bodyLocked, nestedBodyLocked, bodyReleased, lockedRemains, emptyInitialFocus, emptyTabContained, labelled, errors }, null, 2));
+  console.log(JSON.stringify({ pass, structuredButtonProps: { initialStructuredActivations, disabledPropEvidence, loadingPropEvidence, restoredStructuredActivations }, initialOverlayResidueCount, closedDrawerResidueCount, initialFocus, nestedFocus, nestedRestore, openerRestored, bodyLocked, nestedBodyLocked, bodyReleased, lockedRemains, emptyInitialFocus, emptyTabContained, labelled, errors }, null, 2));
   if (!pass) process.exitCode = 1;
 } finally {
   await browser.close();

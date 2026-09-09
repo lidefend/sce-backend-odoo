@@ -139,31 +139,26 @@
             :key="`cell-${column.name}`"
             #[column.name]="{ row }"
           >
-            <ScCheckbox
-              v-if="column.ttype === 'boolean'"
-              class="input-checkbox"
-              :disabled="column.readonly || !adapter.one2manyCanInlineEdit(field.name) || adapter.busy"
-              :checked="Boolean(row._row.values[column.name])"
-              :label="column.label"
-              @change="adapter.setOne2manyRowField(field.name, row._key, column, $event)"
-            />
-            <ScSelect
-              v-else-if="column.ttype === 'selection'"
-              :disabled="column.readonly || !adapter.one2manyCanInlineEdit(field.name) || adapter.busy"
-              :model-value="String(row._row.values[column.name] ?? '')"
-              :placeholder="adapter.selectPlaceholder(column.label)"
-              :options="(column.selection || []).map((option) => ({ value: String(option[0]), label: String(option[1]) }))"
-              @update:model-value="adapter.setOne2manyRowField(field.name, row._key, column, $event)"
-            />
-            <ScInput
-              v-else
-              :appearance="isO2mAmountColumn(column) ? 'numeric-entry' : 'default'"
-              :align="isO2mAmountColumn(column) ? 'right' : 'left'"
-              :type="adapter.one2manyColumnInputType(column)"
-              :disabled="column.readonly || !adapter.one2manyCanInlineEdit(field.name) || adapter.busy"
-              :model-value="adapter.one2manyColumnDisplayValue(column, row._row.values[column.name])"
-              :placeholder="column.label"
-              @update:model-value="adapter.setOne2manyRowField(field.name, row._key, column, $event)"
+            <One2ManyCellEditor
+              :adapter="adapter"
+              :field-name="field.name"
+              :row-key="row._key"
+              :column="column"
+              :value="row._row.values[column.name]"
+              :amount="isO2mAmountColumn(column)"
+              :error="one2manyCellError(field.name, row._key, column.name)"
+              :relation-error="one2manyRelationError(field.name, row._key, column.name)"
+              :error-id="one2manyCellErrorId(field.name, row._key, column.name)"
+              :validation-target="one2manyValidationTarget(field.name, row._key, column.name)"
+              :relation-options="one2manyRelationOptions(field.name, row._key, column)"
+              :relation-loading="one2manyRelationIsLoading(field.name, row._key, column.name)"
+              :relation-empty-text="one2manyRelationEmptyText(field.name, row._key, column)"
+              :relation-placeholder="one2manyRelationPlaceholder(field.name, row._key, column)"
+              :relation-query-diagnostic="one2manyRelationDiagnostic(field.name, row._key, column.name)"
+              @update="adapter.setOne2manyRowField(field.name, row._key, column, $event)"
+              @search="scheduleOne2manyRelationSearch(field.name, row._key, column, $event)"
+              @popup-change="handleOne2manyRelationPopup(field.name, row._key, column, $event)"
+              @retry="retryOne2manyRelationOptions(field.name, row._key, column)"
             />
           </template>
           <template #_action="{ row }">
@@ -189,6 +184,75 @@
             >移除</ScButton>
           </template>
         </ScTable>
+      </div>
+
+      <div
+        v-if="adapter.one2manyColumns(field.name).length && adapter.visibleOne2manyRows(field.name).length"
+        class="o2m-mobile-list"
+      >
+        <article
+          v-for="row in paginatedOne2manyRows"
+          :key="`mobile-${row.key}`"
+          class="o2m-mobile-row"
+          data-o2m-row
+          :data-o2m-row-key="row.key"
+        >
+          <header class="o2m-mobile-row-header">
+            <span class="o2m-state-badge">{{ adapter.one2manyRowStateLabel(row) }}</span>
+            <span v-if="o2mRowHasMessages(row)" class="o2m-mobile-row-status">需要检查</span>
+            <ScButton
+              v-if="adapter.one2manyCanUnlink(field.name)"
+              type="button"
+              variant="danger"
+              size="small"
+              :aria-label="`移除${adapter.one2manyRowLabel(field.name, row)}`"
+              :disabled="adapter.busy"
+              @click="adapter.removeOne2manyRow(field.name, row.key)"
+            >移除</ScButton>
+          </header>
+          <div class="o2m-mobile-fields">
+            <label
+              v-for="column in adapter.one2manyColumns(field.name)"
+              :key="`${row.key}-mobile-${column.name}`"
+              class="o2m-mobile-field"
+              :data-validation-target="one2manyValidationTarget(field.name, row.key, column.name)"
+            >
+              <span class="o2m-mobile-label">
+                {{ column.label }}<span v-if="column.required" class="required">*</span>
+              </span>
+              <One2ManyCellEditor
+                :adapter="adapter"
+                :field-name="field.name"
+                :row-key="row.key"
+                :column="column"
+                :value="row.values[column.name]"
+                :amount="isO2mAmountColumn(column)"
+                :error="one2manyCellError(field.name, row.key, column.name)"
+                :relation-error="one2manyRelationError(field.name, row.key, column.name)"
+                :error-id="one2manyCellErrorId(field.name, row.key, column.name, 'mobile')"
+                :validation-target="one2manyValidationTarget(field.name, row.key, column.name)"
+                :relation-options="one2manyRelationOptions(field.name, row.key, column)"
+                :relation-loading="one2manyRelationIsLoading(field.name, row.key, column.name)"
+                :relation-empty-text="one2manyRelationEmptyText(field.name, row.key, column)"
+                :relation-placeholder="one2manyRelationPlaceholder(field.name, row.key, column)"
+                :relation-query-diagnostic="one2manyRelationDiagnostic(field.name, row.key, column.name)"
+                show-readonly-reason
+                @update="adapter.setOne2manyRowField(field.name, row.key, column, $event)"
+                @search="scheduleOne2manyRelationSearch(field.name, row.key, column, $event)"
+                @popup-change="handleOne2manyRelationPopup(field.name, row.key, column, $event)"
+                @retry="retryOne2manyRelationOptions(field.name, row.key, column)"
+              />
+            </label>
+          </div>
+          <div v-if="o2mRowMessages(row).length" class="o2m-mobile-messages">
+            <ScInlineState
+              v-for="message in o2mRowMessages(row)"
+              :key="`${row.key}-mobile-${message.state}-${message.label}`"
+              :state="message.state"
+              :label="message.label"
+            />
+          </div>
+        </article>
       </div>
 
       <ScInlineState
@@ -238,17 +302,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import type { FormSectionFieldSchema } from './formSection.types';
 import ScButton from '../design-system/ScButton.vue';
-import ScCheckbox from '../design-system/ScCheckbox.vue';
 import ScFileField from '../design-system/ScFileField.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScInput from '../design-system/ScInput.vue';
 import ScInlineState from '../design-system/ScInlineState.vue';
-import ScSelect from '../design-system/ScSelect.vue';
 import ScTable from '../design-system/ScTable.vue';
 import ProfessionalManyToManySelect from '../professional-fields/ProfessionalManyToManySelect.vue';
+import One2ManyCellEditor from './One2ManyCellEditor.vue';
+import {
+  createOne2manyRelationPopupAuthority,
+  createOne2manyRelationRequestAuthority,
+  isExplicitOne2manyRelationPopupClose,
+  isExplicitOne2manyRelationPopupOpen,
+  preserveSelectedOne2manyRelationOption,
+} from './one2manyRelationQuery';
 import { downloadFile, fileToBase64, uploadFile } from '../../api/files';
 import type { RelationFieldColumn, RelationFieldRow, X2ManyRelationRendererProps } from './relationField.types';
 
@@ -283,9 +353,10 @@ function isO2mAmountColumn(column: RelationFieldColumn) {
 const o2mTableColumns = computed(() => {
   const fieldColumns = props.adapter.one2manyColumns(props.field.name).map((column) => ({
     colKey: column.name,
+    title: column.label,
     width: isO2mAmountColumn(column) ? 140 : undefined,
     align: isO2mAmountColumn(column) ? 'right' : 'left',
-    ellipsis: true,
+    ellipsis: false,
   }));
   return [
     { colKey: '_state', title: '状态', width: 90, fixed: 'left' },
@@ -310,6 +381,292 @@ const o2mTableData = computed(() => paginatedOne2manyRows.value.map((row) => {
   });
   return rowData;
 }));
+
+const o2mRelationOptionMap = ref<Record<string, Array<{ value: number; label: string }>>>({});
+const o2mRelationLoading = ref<Record<string, boolean>>({});
+const o2mRelationErrors = ref<Record<string, string>>({});
+const o2mRelationSearchMap = ref<Record<string, string>>({});
+const o2mRelationDiagnostics = ref<Record<string, string>>({});
+const relationPopupAuthority = createOne2manyRelationPopupAuthority();
+const relationQueryAuthority = createOne2manyRelationRequestAuthority();
+const relationQueryTimers: Record<string, ReturnType<typeof setTimeout>> = {};
+const relationCloseTimers: Record<string, ReturnType<typeof setTimeout>> = {};
+const relationActiveRequestRevisions: Record<string, number> = {};
+const relationStartedSessions = new Set<string>();
+const relationClosedSessions = new Set<string>();
+
+onBeforeUnmount(() => {
+  Object.keys(relationQueryTimers).forEach(clearRelationQueryTimer);
+  Object.values(relationCloseTimers).forEach(clearTimeout);
+  Object.keys(relationActiveRequestRevisions).forEach((key) => delete relationActiveRequestRevisions[key]);
+  relationPopupAuthority.clear();
+  relationStartedSessions.clear();
+  relationClosedSessions.clear();
+  relationQueryAuthority.clear();
+});
+
+function relationCellKey(fieldName: string, rowKey: string, columnName: string) {
+  return `${fieldName}:${rowKey}:${columnName}`;
+}
+
+function one2manyRelationOptions(fieldName: string, rowKey: string, column: RelationFieldColumn) {
+  return o2mRelationOptionMap.value[relationCellKey(fieldName, rowKey, column.name)] || [];
+}
+
+function one2manyRelationError(fieldName: string, rowKey: string, columnName: string) {
+  return o2mRelationErrors.value[relationCellKey(fieldName, rowKey, columnName)] || '';
+}
+
+function one2manyRelationIsLoading(fieldName: string, rowKey: string, columnName: string) {
+  return o2mRelationLoading.value[relationCellKey(fieldName, rowKey, columnName)] === true;
+}
+
+function one2manyRelationSearchValue(fieldName: string, rowKey: string, columnName: string) {
+  return o2mRelationSearchMap.value[relationCellKey(fieldName, rowKey, columnName)] || '';
+}
+
+function one2manyRelationDiagnostic(fieldName: string, rowKey: string, columnName: string) {
+  return o2mRelationDiagnostics.value[relationCellKey(fieldName, rowKey, columnName)] || '';
+}
+
+function one2manyRelationEmptyText(fieldName: string, rowKey: string, column: RelationFieldColumn) {
+  const key = relationCellKey(fieldName, rowKey, column.name);
+  if (o2mRelationErrors.value[key]) return '可选内容加载失败';
+  if (String(o2mRelationSearchMap.value[key] || '').trim()) return '未找到匹配的可选内容';
+  return '暂无可选内容';
+}
+
+function one2manyRelationPlaceholder(fieldName: string, rowKey: string, column: RelationFieldColumn) {
+  const key = relationCellKey(fieldName, rowKey, column.name);
+  if (column.disabledReason) return column.disabledReason;
+  if (o2mRelationLoading.value[key]) return '正在加载可选内容…';
+  if (o2mRelationErrors.value[key]) return '加载失败';
+  if (!one2manyRelationOptions(fieldName, rowKey, column).length) return '暂无可选内容';
+  return props.adapter.selectPlaceholder(column.label);
+}
+
+function relationColumnCanQuery(fieldName: string, column: RelationFieldColumn) {
+  if (column.ttype !== 'many2one' || column.readonly || column.relationReadable !== true) return false;
+  return column.relationDomainSupported !== false && props.adapter.one2manyCanInlineEdit(fieldName);
+}
+
+function currentOne2manyRelationValue(fieldName: string, rowKey: string, columnName: string) {
+  return props.adapter.visibleOne2manyRows(fieldName)
+    .find((row) => row.key === rowKey)?.values[columnName];
+}
+
+function clearRelationQueryTimer(key: string) {
+  if (!relationQueryTimers[key]) return;
+  clearTimeout(relationQueryTimers[key]);
+  delete relationQueryTimers[key];
+}
+
+function invalidateOne2manyRelationQuery(key: string) {
+  clearRelationQueryTimer(key);
+  relationQueryAuthority.invalidate(key);
+  delete relationActiveRequestRevisions[key];
+  o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: false };
+}
+
+function closeOne2manyRelationQuery(key: string) {
+  clearRelationQueryTimer(key);
+  o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: false };
+}
+
+function one2manyRelationResponseIsRelevant(key: string, revision: number) {
+  return relationQueryAuthority.isCurrent(key, revision)
+    || (relationActiveRequestRevisions[key] === revision
+      && !relationQueryTimers[key]);
+}
+
+async function runOne2manyRelationOptionsQuery(
+  fieldName: string,
+  rowKey: string,
+  column: RelationFieldColumn,
+  keyword: string,
+  revision: number,
+) {
+  const key = relationCellKey(fieldName, rowKey, column.name);
+  if (!relationColumnCanQuery(fieldName, column)) {
+    if (relationQueryAuthority.isCurrent(key, revision)) {
+      o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: false };
+    }
+    return;
+  }
+  relationActiveRequestRevisions[key] = revision;
+  o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: true };
+  o2mRelationErrors.value = { ...o2mRelationErrors.value, [key]: '' };
+  try {
+    const options = await props.adapter.queryOne2manyColumnOptions(fieldName, rowKey, column, keyword);
+    const relevant = one2manyRelationResponseIsRelevant(key, revision);
+    o2mRelationDiagnostics.value = {
+      ...o2mRelationDiagnostics.value,
+      [key]: JSON.stringify({
+        keyword,
+        revision,
+        relevant,
+        current: relationQueryAuthority.isCurrent(key, revision),
+        active: relationActiveRequestRevisions[key] || 0,
+        timer: Boolean(relationQueryTimers[key]),
+        incoming: options.length,
+      }),
+    };
+    if (!relevant) return;
+    o2mRelationOptionMap.value = {
+      ...o2mRelationOptionMap.value,
+      [key]: preserveSelectedOne2manyRelationOption({
+        incoming: options.map((option) => ({ value: option.id, label: option.label })),
+        previous: o2mRelationOptionMap.value[key] || [],
+        currentValue: currentOne2manyRelationValue(fieldName, rowKey, column.name),
+      }),
+    };
+    o2mRelationDiagnostics.value = {
+      ...o2mRelationDiagnostics.value,
+      [key]: JSON.stringify({ keyword, revision, relevant, incoming: options.length, applied: o2mRelationOptionMap.value[key]?.length || 0 }),
+    };
+  } catch {
+    if (!one2manyRelationResponseIsRelevant(key, revision)) return;
+    o2mRelationOptionMap.value = {
+      ...o2mRelationOptionMap.value,
+      [key]: preserveSelectedOne2manyRelationOption({
+        incoming: [],
+        previous: o2mRelationOptionMap.value[key] || [],
+        currentValue: currentOne2manyRelationValue(fieldName, rowKey, column.name),
+      }),
+    };
+    o2mRelationErrors.value = { ...o2mRelationErrors.value, [key]: '可选内容加载失败，请重试' };
+  } finally {
+    if (relationActiveRequestRevisions[key] === revision) {
+      delete relationActiveRequestRevisions[key];
+      o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: false };
+    }
+  }
+}
+
+function loadOne2manyRelationOptions(fieldName: string, rowKey: string, column: RelationFieldColumn, keyword = '') {
+  const key = relationCellKey(fieldName, rowKey, column.name);
+  clearRelationQueryTimer(key);
+  if (!relationColumnCanQuery(fieldName, column)) {
+    invalidateOne2manyRelationQuery(key);
+    return Promise.resolve();
+  }
+  const revision = relationQueryAuthority.begin(key);
+  return runOne2manyRelationOptionsQuery(fieldName, rowKey, column, keyword, revision);
+}
+
+function scheduleOne2manyRelationSearch(fieldName: string, rowKey: string, column: RelationFieldColumn, keyword: string) {
+  const key = relationCellKey(fieldName, rowKey, column.name);
+  const normalizedKeyword = String(keyword || '');
+  if (o2mRelationSearchMap.value[key] === normalizedKeyword) return;
+  o2mRelationSearchMap.value = { ...o2mRelationSearchMap.value, [key]: normalizedKeyword };
+  clearRelationQueryTimer(key);
+  const revision = relationQueryAuthority.begin(key);
+  o2mRelationErrors.value = { ...o2mRelationErrors.value, [key]: '' };
+  relationQueryTimers[key] = setTimeout(() => {
+    delete relationQueryTimers[key];
+    void runOne2manyRelationOptionsQuery(fieldName, rowKey, column, normalizedKeyword, revision);
+  }, 180);
+}
+
+function handleOne2manyRelationPopup(
+  fieldName: string,
+  rowKey: string,
+  column: RelationFieldColumn,
+  event: { visible: boolean; ownerId: string; trigger: string },
+) {
+  const key = relationCellKey(fieldName, rowKey, column.name);
+  const transition = relationPopupAuthority.update(key, event.ownerId, event.visible);
+  if (transition === 'unchanged') return;
+  if (transition === 'opened') {
+    if (relationCloseTimers[key]) {
+      clearTimeout(relationCloseTimers[key]);
+      delete relationCloseTimers[key];
+      return;
+    }
+    if (relationStartedSessions.has(key) && !relationClosedSessions.has(key)) return;
+    if (relationStartedSessions.has(key) && !isExplicitOne2manyRelationPopupOpen(event.trigger)) return;
+    relationStartedSessions.add(key);
+    relationClosedSessions.delete(key);
+    invalidateOne2manyRelationQuery(key);
+    o2mRelationSearchMap.value = { ...o2mRelationSearchMap.value, [key]: '' };
+    void loadOne2manyRelationOptions(fieldName, rowKey, column, '');
+    return;
+  }
+  relationCloseTimers[key] = setTimeout(() => {
+    delete relationCloseTimers[key];
+    if (relationPopupAuthority.isOpen(key)) return;
+    closeOne2manyRelationQuery(key);
+    if (isExplicitOne2manyRelationPopupClose(event.trigger)) {
+      relationClosedSessions.add(key);
+    }
+  }, 0);
+}
+
+function retryOne2manyRelationOptions(fieldName: string, rowKey: string, column: RelationFieldColumn) {
+  void loadOne2manyRelationOptions(
+    fieldName,
+    rowKey,
+    column,
+    one2manyRelationSearchValue(fieldName, rowKey, column.name),
+  );
+}
+
+watch(() => props.field.name, (fieldName) => {
+  void Promise.resolve(props.adapter.prepareOne2manyColumns(fieldName));
+}, { immediate: true });
+
+watch(() => {
+  const fieldName = props.field.name;
+  return props.adapter.visibleOne2manyRows(fieldName).flatMap((row) => (
+    props.adapter.one2manyColumns(fieldName)
+      .filter((column) => column.ttype === 'many2one')
+      .map((column) => ({
+        fieldName,
+        rowKey: row.key,
+        columnName: column.name,
+        scope: props.adapter.one2manyColumnQueryScope(fieldName, row.key, column),
+      }))
+  ));
+}, (current, previous = []) => {
+  const previousScopes = new Map(previous.map((entry) => [
+    relationCellKey(entry.fieldName, entry.rowKey, entry.columnName),
+    entry.scope,
+  ]));
+  const currentKeys = new Set(current.map((entry) => relationCellKey(entry.fieldName, entry.rowKey, entry.columnName)));
+  previousScopes.forEach((_scope, key) => {
+    if (currentKeys.has(key)) return;
+    invalidateOne2manyRelationQuery(key);
+  });
+  current.forEach((entry) => {
+    const key = relationCellKey(entry.fieldName, entry.rowKey, entry.columnName);
+    if (previousScopes.get(key) === entry.scope) return;
+    const column = props.adapter.one2manyColumns(entry.fieldName).find((item) => item.name === entry.columnName);
+    if (!column) return;
+    invalidateOne2manyRelationQuery(key);
+    const remaining = { ...o2mRelationOptionMap.value };
+    delete remaining[key];
+    o2mRelationOptionMap.value = remaining;
+    o2mRelationSearchMap.value = { ...o2mRelationSearchMap.value, [key]: '' };
+    o2mRelationErrors.value = { ...o2mRelationErrors.value, [key]: '' };
+    if (relationColumnCanQuery(entry.fieldName, column)) {
+      void loadOne2manyRelationOptions(entry.fieldName, entry.rowKey, column);
+    }
+  });
+}, { immediate: true });
+
+function one2manyCellError(fieldName: string, rowKey: string, columnName: string) {
+  return props.adapter.showOne2manyErrors
+    ? props.adapter.one2manyCellError(fieldName, rowKey, columnName)
+    : '';
+}
+
+function one2manyCellErrorId(fieldName: string, rowKey: string, columnName: string, suffix = 'desktop') {
+  return `o2m-error-${[fieldName, rowKey, columnName, suffix].join('-').replace(/[^A-Za-z0-9_-]/g, '-')}`;
+}
+
+function one2manyValidationTarget(fieldName: string, rowKey: string, columnName: string) {
+  return `${fieldName}:${rowKey}:${columnName}`;
+}
 
 const o2mTableFootData = computed(() => {
   const footRow: Record<string, unknown> = {
@@ -832,6 +1189,10 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
   border-top: 1px solid var(--sc-app-border);
 }
 
+.o2m-mobile-list {
+  display: none;
+}
+
 .o2m-table {
   display: table;
   width: 100%;
@@ -962,6 +1323,79 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
 }
 
 @media (max-width: 760px) {
+  .o2m-table-scroll {
+    display: none;
+  }
+
+  .o2m-mobile-list {
+    display: grid;
+    gap: 10px;
+    padding: 10px;
+    border-top: 1px solid var(--sc-app-border);
+  }
+
+  .o2m-mobile-row {
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--sc-app-border);
+    border-radius: 8px;
+    background: var(--sc-app-panel);
+  }
+
+  .o2m-mobile-row-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--sc-app-border);
+  }
+
+  .o2m-mobile-row-header > :last-child {
+    margin-inline-start: auto;
+  }
+
+  .o2m-mobile-row-status {
+    color: var(--sc-app-danger-text);
+    font-size: 12px;
+  }
+
+  .o2m-mobile-fields {
+    display: grid;
+    gap: 12px;
+    padding-top: 12px;
+  }
+
+  .o2m-mobile-field {
+    display: grid;
+    min-width: 0;
+    gap: 5px;
+  }
+
+  .o2m-mobile-label {
+    color: var(--sc-app-text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .o2m-mobile-messages {
+    display: grid;
+    gap: 6px;
+    padding-top: 10px;
+  }
+
+  .o2m-toolbar {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .o2m-spacer {
+    display: none;
+  }
+
+  .o2m-create {
+    margin-inline-start: auto;
+  }
+
   .o2m-header {
     display: none;
   }

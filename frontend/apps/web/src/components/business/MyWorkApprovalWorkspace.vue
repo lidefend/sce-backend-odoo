@@ -1,33 +1,29 @@
 <template>
-  <ScSection class="product-work" label="我的工作事项" data-semantic-component="MyWorkApprovalWorkspace" :data-state="busy ? 'loading' : 'ready'" :aria-busy="busy || undefined">
-    <header class="product-work__header">
-      <p>{{ workspace.presentation.description }}</p>
-      <ScButton variant="ghost" :disabled="busy" @click="$emit('refresh')">刷新</ScButton>
-    </header>
-
+  <ScPanel tone="workspace" class="product-work" aria-label="我的工作事项" data-semantic-component="MyWorkApprovalWorkspace" :data-state="busy ? 'loading' : 'ready'" :aria-busy="busy || undefined">
     <div class="product-work__counts" aria-label="工作项汇总">
-      <ScPanel
+      <ScButton
         v-for="section in workspace.sections"
         :key="section.key"
-        as="button"
-        tone="subtle"
+        appearance="metric"
+        variant="ghost"
         type="button"
         class="count-card"
         :data-section-key="section.key"
         :class="{ active: activeSection === section.key }"
+        :aria-pressed="activeSection === section.key"
         @click="activeSection = section.key"
       >
         <span>{{ section.label }}</span>
         <strong>{{ section.count }}</strong>
-      </ScPanel>
+      </ScButton>
     </div>
 
     <section class="product-work__filters" aria-label="筛选和排序工作事项">
       <ScField v-slot="{ controlId, describedBy }" :label="workspace.presentation.search_label" field-key="my-work-search">
-        <ScInput :id="controlId" v-model="searchText" type="search" :described-by="describedBy" :placeholder="workspace.presentation.search_placeholder" />
+        <ScInput :id="controlId" v-model="searchText" appearance="form-field" type="search" :described-by="describedBy" :placeholder="workspace.presentation.search_placeholder" />
       </ScField>
       <ScField v-slot="{ controlId, describedBy }" label="排序方式" field-key="my-work-sort">
-        <ScSelect :id="controlId" v-model="sortMode" :described-by="describedBy" :options="workspace.presentation.sort_options.map((option) => ({ value: option.key, label: option.label }))" />
+        <ScSelect :id="controlId" v-model="sortMode" appearance="form-field" :described-by="describedBy" :options="workspace.presentation.sort_options.map((option) => ({ value: option.key, label: option.label }))" />
       </ScField>
       <ScButton v-if="searchText" variant="ghost" @click="searchText = ''">清除查找</ScButton>
     </section>
@@ -36,16 +32,31 @@
 
     <ScSection v-for="section in visibleSections" :key="section.key" class="work-section" :title="`${section.label} ${section.count}`" :data-section-key="section.key">
       <ScEmptyState v-if="!section.items.length" :title="searchText ? '没有符合当前查找条件的事项。' : `当前范围内没有${section.label}事项。`" />
-      <ScPanel v-for="item in section.items" :key="item.key" as="article" class="work-card" :data-work-item-key="item.key">
+      <ScCard v-for="item in section.items" :key="item.key" appearance="record" body-class-name="work-card__body" class="work-card" :data-work-item-key="item.key" :data-record-id="item.target.record_id" :data-work-item-state="item.state.key">
         <div class="work-card__main">
           <div class="work-card__identity">
             <span class="business-type">{{ item.business_type }}</span>
             <ScStatusBadge :value="item.state.key" :label="item.state.label" :semantic="statusSemantic(item.state.key)" />
           </div>
-          <h3>{{ item.record.label }}</h3>
-          <ScDescriptions :column="2" :items="item.facts.map((fact) => ({ ...fact, key: fact.key, label: fact.label }))">
-            <template #item="{ item: fact }"><ScMoney v-if="fact.display_role === 'money'" :display="formatFact(fact as ProductMyWorkFact)" :label="fact.label" /><template v-else>{{ formatFact(fact as ProductMyWorkFact) }}</template></template>
-          </ScDescriptions>
+          <h3 :title="item.record.label">{{ item.record.label }}</h3>
+          <dl class="work-card__summary" aria-label="关键事实">
+            <div v-for="entry in primaryFacts(item)" :key="entry.key" :data-primary-fact-key="entry.fact.key">
+              <dt>{{ entry.fact.label }}</dt>
+              <dd><ScMoney v-if="entry.fact.display_role === 'money'" :display="entry.display" :label="entry.fact.label" /><template v-else>{{ entry.display }}</template></dd>
+            </div>
+          </dl>
+          <ScDisclosure v-if="supplementaryFacts(item).length" class="work-card__disclosure" :title="`查看其余 ${supplementaryFacts(item).length} 项信息`">
+            <dl class="work-card__supplementary">
+              <div class="work-card__full-identity">
+                <dt>完整事项身份</dt>
+                <dd data-work-item-full-identity>{{ item.record.label }}</dd>
+              </div>
+              <div v-for="entry in supplementaryFacts(item)" :key="entry.key" :data-supplementary-fact-key="entry.fact.key">
+                <dt>{{ entry.fact.label }}</dt>
+                <dd><ScMoney v-if="entry.fact.display_role === 'money'" :display="entry.display" :label="entry.fact.label" /><template v-else>{{ entry.display }}</template></dd>
+              </div>
+            </dl>
+          </ScDisclosure>
         </div>
         <ScActionBar class="work-card__actions" :label="`${item.record.label}操作`">
           <ScButton variant="ghost" @click="openItem(item)">打开详情</ScButton>
@@ -73,7 +84,7 @@
             <template #trigger><ScButton variant="ghost" :disabled="busy">更多操作</ScButton></template>
           </ScDropdown>
         </ScActionBar>
-      </ScPanel>
+      </ScCard>
     </ScSection>
 
     <ScDialog :open="dialogOpen" :title="pendingAction?.label || '确认操作'" appearance="workspace" panel-class="intent-dialog" @close="closeDialog">
@@ -93,21 +104,23 @@
         </ScActionBar>
       </form>
     </ScDialog>
-  </ScSection>
+  </ScPanel>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { executeProductMyWorkAction, type ProductMyWorkAction, type ProductMyWorkFact, type ProductMyWorkItem, type ProductMyWorkMoney, type ProductMyWorkWorkspace } from '../../api/myWork';
+import { executeProductMyWorkAction, type ProductMyWorkAction, type ProductMyWorkFact, type ProductMyWorkItem, type ProductMyWorkWorkspace } from '../../api/myWork';
+import { formatProductMyWorkFact, partitionProductMyWorkFacts } from '../../app/presentation/productMyWorkPresentation';
 import ScActionBar from '../design-system/ScActionBar.vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScDialog from '../design-system/ScDialog.vue';
-import ScDescriptions from '../design-system/ScDescriptions.vue';
+import ScDisclosure from '../design-system/ScDisclosure.vue';
 import ScDropdown, { type ScDropdownItem } from '../design-system/ScDropdown.vue';
 import ScEmptyState from '../design-system/ScEmptyState.vue';
 import ScField from '../design-system/ScField.vue';
 import ScMoney from '../design-system/ScMoney.vue';
+import ScCard from '../design-system/ScCard.vue';
 import ScPanel from '../design-system/ScPanel.vue';
 import ScSection from '../design-system/ScSection.vue';
 import ScSelect from '../design-system/ScSelect.vue';
@@ -170,23 +183,16 @@ watch(
   { deep: true },
 );
 
-function formatMoney(money?: ProductMyWorkMoney) {
-  if (!money || money.value === null || money.value === undefined) return '未填写';
-  const digits = Number.isFinite(money.digits) ? Number(money.digits) : 2;
-  return `${money.currency_symbol || ''}${Number(money.value).toLocaleString('zh-CN', {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  })} ${money.currency || ''}`.trim();
-}
-
-function formatDate(value?: string) {
-  return value ? String(value).replace('T', ' ').slice(0, 16) : '未知';
-}
-
 function formatFact(fact: ProductMyWorkFact) {
-  if (fact.display_role === 'money') return formatMoney(fact.money);
-  if (fact.display_role === 'datetime') return formatDate(fact.value);
-  return fact.value || '未填写';
+  return formatProductMyWorkFact(fact);
+}
+
+function primaryFacts(item: ProductMyWorkItem) {
+  return partitionProductMyWorkFacts(item.facts, 1).primary;
+}
+
+function supplementaryFacts(item: ProductMyWorkItem) {
+  return partitionProductMyWorkFacts(item.facts, 1).supplementary;
 }
 
 function statusSemantic(value?: string) {
@@ -272,29 +278,30 @@ async function confirmAction() {
 </script>
 
 <style scoped>
-.product-work { display: grid; align-content: start; gap: 18px; }
-.product-work__header { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
-.product-work__header p { margin: 0; color: var(--sc-app-text-secondary); }
-.product-work__counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.product-work__filters { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(180px, auto) auto; gap: 12px; align-items: end; padding: var(--sc-product-space-2); border: 1px solid var(--sc-app-border); border-radius: var(--sc-product-radius-panel); background: var(--sc-app-panel); }
+.product-work { display: grid; align-content: start; gap: var(--sc-space-4, 16px); }
+.product-work__counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.product-work__filters { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(180px, auto) auto; gap: 12px; align-items: end; padding: var(--sc-product-space-2); border: 0; border-radius: var(--sc-product-radius-panel); background: var(--sc-app-subtle-bg); }
 .product-work__filters label { display: grid; gap: 6px; color: var(--sc-app-text-secondary); font-size: var(--sc-product-text-sm); }
 .product-work__filters :deep(.sc-input), .product-work__filters :deep(.sc-select) { width: 100%; min-height: var(--sc-product-control-height); }
-.count-card { display: flex; justify-content: space-between; align-items: center; min-height: 72px; padding: var(--sc-product-space-2); background: var(--sc-app-panel); color: inherit; border: 1px solid var(--sc-app-border); border-radius: var(--sc-product-radius-panel); }
-.count-card strong { font-size: 24px; }
-.count-card.active { border-color: var(--sc-semantic-surface-interactive); box-shadow: 0 0 0 3px var(--sc-app-focus-ring); }
 .work-section { display: grid; gap: 12px; }
 .work-section h2 { margin: 0; font-size: 20px; }
 .work-section h2 span { color: var(--sc-app-text-secondary); font-weight: 500; }
-.work-card { display: flex; justify-content: space-between; gap: 20px; padding: var(--sc-product-space-2); background: var(--sc-app-panel); border: 1px solid var(--sc-app-border); border-radius: var(--sc-product-radius-panel); }
-.work-card__main { min-width: 0; flex: 1; }
-.work-card__identity { display: flex; gap: 8px; align-items: center; }
+.work-card { min-width: 0; }
+.work-card__main { display: grid; grid-template-columns: auto minmax(220px, 1.2fr) minmax(270px, 1fr) auto; grid-template-areas: 'identity title summary disclosure'; align-items: center; min-width: 0; flex: 1; gap: 6px 16px; }
+.work-card__identity { grid-area: identity; display: flex; gap: 8px; align-items: center; }
 .business-type, .status-badge { display: inline-flex; padding: 3px 8px; border-radius: var(--sc-component-tag-radius); background: var(--sc-app-info-bg); color: var(--sc-app-info-text); font-size: var(--sc-product-text-sm); }
 .status-badge { background: var(--sc-app-subtle-bg); color: var(--sc-app-text-primary); }
-.work-card h3 { margin: 10px 0 14px; overflow-wrap: anywhere; }
-.work-card dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 20px; margin: 0; }
+.work-card h3 { grid-area: title; min-width: 0; margin: 2px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.work-card :deep(.work-card__body) { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+.work-card dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 20px; margin: 0; }
+.work-card__summary { grid-area: summary; }
 .work-card dl div { min-width: 0; }
 .work-card dt { color: var(--sc-app-text-secondary); font-size: var(--sc-product-text-sm); }
 .work-card dd { margin: 3px 0 0; overflow-wrap: anywhere; }
+.work-card__disclosure { grid-area: disclosure; margin-top: 0; }
+.work-card__supplementary { padding-top: 8px; border-top: 1px solid var(--sc-app-border); }
+.work-card__full-identity { grid-column: 1 / -1; }
+.work-card__full-identity dd { white-space: normal; }
 .work-card__actions { display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start; }
 .more-actions { position: relative; }
 .more-actions summary { cursor: pointer; min-height: var(--sc-product-control-height); display: inline-flex; align-items: center; padding: 0 12px; border: 1px solid var(--sc-app-border); border-radius: var(--sc-product-radius-control); }
@@ -308,16 +315,12 @@ async function confirmAction() {
 .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 @media (max-width: 640px) {
   .product-work { gap: 14px; }
-  .product-work__header, .work-card { align-items: stretch; flex-direction: column; }
-  .product-work__header { gap: 10px; }
-  .product-work__header .secondary { align-self: flex-start; }
   .product-work__counts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .product-work__filters { grid-template-columns: 1fr; padding: 12px; }
-  .count-card { min-height: 62px; padding: 12px; }
-  .count-card strong { font-size: 22px; }
-  .work-card { gap: 14px; padding: 14px; }
-  .work-card h3 { margin: 9px 0 12px; font-size: 17px; line-height: 1.3; }
+  .product-work__filters { grid-template-columns: 1fr; padding: 12px; --sc-component-input-form-height: 44px; }
+  .work-card__main { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'identity' 'title' 'summary' 'disclosure'; gap: 8px; }
+  .work-card h3 { display: -webkit-box; margin: 9px 0 12px; overflow: hidden; font-size: 17px; line-height: 1.3; white-space: normal; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
   .work-card dl { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; }
+  .work-card :deep(.work-card__body) { grid-template-columns: minmax(0, 1fr); }
   .work-card dt { font-size: 11px; }
   .work-card dd { font-size: 13px; }
   .work-card__actions { width: 100%; }

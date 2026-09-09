@@ -3,7 +3,7 @@ import type { BusinessConfigCoverageScanItem } from '../../api/businessConfig';
 import { ApiError } from '../../api/client';
 
 export function useBusinessConfigScopeLifecycle(deps: Record<string, any>) {
-  const { scopeAction, currentModel, scopeView, message, surfaceLoadSeq, loading, error, withSurfaceLoadTimeout, loadBusinessConfigSurface, SURFACE_LOAD_TIMEOUT_MS, scopeRole, session, router, route, surface, scanLoading, coverageScan, scanBusinessConfigCoverage, rootMenuXmlid, selectedPageLabel, scopeModel, scopeActionId, scopeViewId, selectedRuntimeRoute, replaceWorkbenchQuerySilently, focusSelectedConfigPanelOnMobile, resetEditorPanels, runtimeReturnQuery } = deps;
+  const { scopeAction, currentModel, scopeView, message, surfaceLoadSeq, loading, error, surfaceError, withSurfaceLoadTimeout, loadBusinessConfigSurface, SURFACE_LOAD_TIMEOUT_MS, scopeRole, session, router, route, surface, scanLoading, coverageScan, scanBusinessConfigCoverage, rootMenuXmlid, selectedPageLabel, scopeModel, scopeActionId, scopeViewId, selectedRuntimeRoute, replaceWorkbenchQuerySilently, focusSelectedConfigPanelOnMobile, resetEditorPanels, runtimeReturnQuery } = deps;
   function coverageRowKey(row: Pick<BusinessConfigCoverageScanItem, 'model' | 'action_id' | 'view_id'>) {
     return [
       String(row.model || '').trim(),
@@ -40,7 +40,7 @@ export function useBusinessConfigScopeLifecycle(deps: Record<string, any>) {
   async function loadSurface() {
     const seq = ++surfaceLoadSeq.value;
     loading.value = true;
-    error.value = '';
+    surfaceError.value = '';
     clearMessage();
     try {
       const nextSurface = await withSurfaceLoadTimeout(
@@ -58,7 +58,7 @@ export function useBusinessConfigScopeLifecycle(deps: Record<string, any>) {
       if (seq !== surfaceLoadSeq.value) return;
       if (err instanceof ApiError && err.status === 401) { await session.logout(); await router.replace({ path: '/login', query: { next: route.fullPath } }); return; }
       if (err instanceof ApiError && err.status === 403) { await router.replace({ path: '/access-denied', query: { from: route.fullPath, reason: err.reasonCode || 'PERMISSION_DENIED' } }); return; }
-      error.value = err instanceof Error ? err.message : '业务配置工作台加载失败';
+      surfaceError.value = err instanceof Error ? err.message : '业务配置工作台加载失败';
     } finally {
       if (seq === surfaceLoadSeq.value) {
         loading.value = false;

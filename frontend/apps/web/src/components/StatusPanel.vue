@@ -24,7 +24,6 @@
       <ScButton v-if="canRunSuggestedAction && suggestedActionLabel" class="trace-copy" variant="ghost" size="small" @click="runSuggestedAction">
         {{ suggestedActionLabel }}
       </ScButton>
-      <p v-if="actionRunFeedback" class="trace action-feedback">{{ actionRunFeedback }}</p>
     </div>
     <ScButton
       v-else-if="variant === 'error' && canRunSuggestedAction && suggestedActionLabel"
@@ -34,7 +33,8 @@
     >
       {{ suggestedActionLabel }}
     </ScButton>
-    <ScButton v-if="onRetry" variant="primary" :disabled="retrying" :loading="retrying" loading-label="正在重试" @click="retry">
+    <p v-if="actionRunFeedback" class="action-feedback" role="status" aria-live="polite">{{ actionRunFeedback }}</p>
+    <ScButton v-if="onRetry" variant="primary" :disabled="retrying || busy" :loading="retrying" loading-label="正在重试" @click="retry">
       {{ retrying ? '正在重试…' : (retryLabel || productState.actionLabel) }}
     </ScButton>
   </section>
@@ -118,7 +118,7 @@ function runSuggestedAction() {
 }
 
 async function retry() {
-  if (!props.onRetry || retrying.value) return;
+  if (!props.onRetry || retrying.value || props.busy) return;
   retrying.value = true;
   try { await props.onRetry(); } finally { retrying.value = false; }
 }

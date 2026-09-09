@@ -31,6 +31,25 @@
       </div>
     </ScCard>
     <ScCard
+      v-if="decisionInputNodes.length"
+      class="object-task-page__decision-input"
+      aria-label="关键办理金额"
+      data-floorplan-region="decision-input"
+      data-canonical-zone="primary"
+      :bordered="true"
+      appearance="task-section"
+    >
+      <CanonicalFormNodeRenderer
+        v-for="node in decisionInputNodes"
+        :key="node.nodeId"
+        :node="node"
+        :relation-adapter="relationAdapter"
+        prefer-readonly-facts
+        @field-change="emit('field-change', $event)"
+        @field-action="emit('field-action', $event)"
+      />
+    </ScCard>
+    <ScCard
       v-if="decisionMode && (taskNodes.length || riskNodes.length || $slots.actions || $slots.blocking)"
       class="object-task-page__current-task"
       aria-label="当前任务"
@@ -291,6 +310,7 @@ import { canonicalNodeHasPresentableContent } from './canonicalFormRenderer';
 
 const props = defineProps<{
   summaryNodes: CanonicalFormNode[];
+  decisionInputNodes: CanonicalFormNode[];
   taskNodes: CanonicalFormNode[];
   coreInputNodes: CanonicalFormNode[];
   conditionInputNodes: CanonicalFormNode[];
@@ -351,6 +371,7 @@ const presentableRelationNodes = computed(() => props.relationNodes.filter((node
 .object-task-page__canvas,
 .object-task-page__context,
 .object-task-page__summary,
+.object-task-page__decision-input,
 .object-task-page__current-task,
 .object-task-page__core-input,
 .object-task-page__condition-input,
@@ -369,6 +390,17 @@ const presentableRelationNodes = computed(() => props.relationNodes.filter((node
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0;
 }
+.object-task-page__summary {
+  border: 0;
+  background: var(--sc-app-subtle-bg);
+}
+.object-task-page__current-task,
+.object-task-page__context {
+  border: 0;
+  border-top: 1px solid var(--sc-app-border);
+  border-radius: 0;
+  box-shadow: none;
+}
 .object-task-page__summary-grid :deep(.canonical-form-node) {
   grid-column: auto !important;
   height: auto;
@@ -380,6 +412,8 @@ const presentableRelationNodes = computed(() => props.relationNodes.filter((node
   background: transparent;
 }
 .object-task-page__summary-grid :deep(.canonical-form-node:last-child) { border-right:0; }
+.object-task-page__summary-grid > :deep(.canonical-form-node:nth-child(4n)) { border-right: 0; }
+.object-task-page__summary-grid > :deep(.canonical-form-node:nth-child(n + 5)) { border-top: 1px solid var(--sc-app-border); }
 .object-task-page__current-task {
   min-width: 0;
 }
@@ -389,8 +423,9 @@ const presentableRelationNodes = computed(() => props.relationNodes.filter((node
   align-content: start;
   gap: 6px;
 }
-.object-task-page__current-task-copy :deep(.canonical-form-node + .canonical-form-node) { margin-top: 8px; }
 .object-task-page__current-task-facts {
+  padding-top: 8px;
+  border-top: 1px solid var(--sc-app-warning-border);
   color: var(--sc-app-text-secondary);
 }
 .object-task-page__current-task-actions { min-width: max-content; }
@@ -486,7 +521,6 @@ const presentableRelationNodes = computed(() => props.relationNodes.filter((node
   .object-task-page--decision {
     padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
   }
-  .object-task-page--decision .object-task-page__current-task { order: -1; }
   .object-task-page__summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;

@@ -34,6 +34,16 @@ REQUIREMENTS = {
         "fields.value.every((field) => field.readonly)",
         ':prefer-readonly-facts="readonlyFactLayout"',
         "canonical-form-node--readonly-fact",
+        "@media (max-width: 480px)",
+        ".canonical-form-node--container:not(.canonical-form-node--readonly-fact)",
+    ),
+    "frontend/apps/web/src/pages/contractForm/canonicalFormRenderState.ts": (
+        "applyCanonicalFormValidation",
+        "validationFieldErrors[field.fieldCode]",
+    ),
+    "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts": (
+        "invalid: field.invalid",
+        "errorText: field.errorText || undefined",
     ),
     "frontend/apps/web/src/pages/ContractFormPage.vue": (
         "const suppressPageHeaderTitle = computed(() => false)",
@@ -72,6 +82,9 @@ REQUIREMENTS = {
     ),
 }
 FORBIDDEN_BY_SOURCE = {
+    "frontend/apps/web/src/pages/contractForm/canonicalFormRenderState.ts": (
+        "message.includes(field.label)",
+    ),
     "frontend/apps/web/src/pages/ListPage.vue": (
         "ScPageHeader",
         "ProductPageHeader",

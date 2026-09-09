@@ -1,5 +1,5 @@
 export type ContractFormExitPresentation = {
-  label: '返回列表' | '取消';
+  label: '返回' | '取消';
   semanticIdentity: 'return-list' | 'cancel-edit';
 };
 
@@ -13,5 +13,5 @@ export function resolveContractFormExitPresentation(
 ): ContractFormExitPresentation {
   return managedRelationDialog
     ? { label: '取消', semanticIdentity: 'cancel-edit' }
-    : { label: '返回列表', semanticIdentity: 'return-list' };
+    : { label: '返回', semanticIdentity: 'return-list' };
 }

@@ -36,6 +36,8 @@ verify.business_config.publish_boundary_guard: guard.prod.forbid
 	@node scripts/verify/low_code_publish_boundary_guard.mjs
 
 verify.business_config.unit: guard.prod.forbid verify.frontend.product_language.guard verify.business_config.product_guard verify.business_config.publish_boundary_guard
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/business_config_change_set_presentation_test.ts --bundle --platform=node --format=esm --outfile=/tmp/business-config-change-set-presentation-test.mjs >/dev/null
+	@node /tmp/business-config-change-set-presentation-test.mjs
 	@python3 scripts/verify/business_config_user_language_guard.py
 	@python3 scripts/verify/lowcode_config_boundary_guard.py
 	@python3 scripts/verify/backend_contract_boundary_guard.py

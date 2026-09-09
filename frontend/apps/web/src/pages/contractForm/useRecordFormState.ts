@@ -19,7 +19,7 @@ export function useRecordFormState(context: {
   rights:ComputedRef<{write:boolean}>; formData:Record<string,unknown>; originalValues:Ref<Record<string,unknown>>;
   submissionFeedback:Ref<any>; relationKeywords:Record<string,string>; invalidatedRelationKeywords:Record<string,string>;
   clearedDynamicRelationFields:Record<string,boolean>; relationQueryTimers:Record<string,ReturnType<typeof setTimeout>>;
-  relationOptions:Ref<Record<string,RelationOption[]>>; validationErrors:Ref<string[]>;
+  relationOptions:Ref<Record<string,RelationOption[]>>; validationErrors:Ref<string[]>; validationFieldErrors:Ref<Record<string,string>>;
   onchangeModifiersPatch:Ref<Record<string,Record<string,unknown>>>; onchangeWarnings:Ref<any[]>; onchangeLinePatches:Ref<any[]>;
   applyingOnchangePatch:Ref<boolean>; changedFieldSet:Set<string>; dirtyFieldSet:Set<string>;
   getOnchangeTimer:()=>ReturnType<typeof setTimeout>|null; setOnchangeTimer:(timer:ReturnType<typeof setTimeout>|null)=>void;
@@ -46,7 +46,7 @@ export function useRecordFormState(context: {
   const isFieldWritable=(name:string)=>{const canonical=context.canonicalFieldWritable?.(name);if(typeof canonical==='boolean')return canonical;const node=context.layoutNodes.value.find(item=>item.kind==='field'&&item.name===name);if(node)return !node.readonly;return Boolean(context.nativeStatusbar.value.field===name&&!context.nativeStatusbar.value.readonly);};
   const normalizeFieldValue=(name:string,value:unknown)=>normalizeContractFieldValue({name,value,descriptor:context.formFields.value[name],originalValue:context.originalValues.value[name],buildOne2manyValue:context.buildOne2manyCommandValue});
   let onchangeTimer:ReturnType<typeof setTimeout>|null=context.getOnchangeTimer();
-  const markFieldChanged=(name:string)=>{const key=String(name||'').trim();if(!key||context.applyingOnchangePatch.value)return;context.dirtyFieldSet.add(key);
+  const markFieldChanged=(name:string)=>{const key=String(name||'').trim();if(!key||context.applyingOnchangePatch.value)return;delete context.validationFieldErrors.value[key];if(!Object.keys(context.validationFieldErrors.value).length)context.validationErrors.value=[];context.dirtyFieldSet.add(key);
     if(!fieldRequiresServerOnchange(context.contractV2ActionRules.value,key))return;context.changedFieldSet.add(key);if(onchangeTimer)clearTimeout(onchangeTimer);
     onchangeTimer=setTimeout(()=>void runOnchangeRoundtrip(),300);context.setOnchangeTimer(onchangeTimer);};
   const persistNativeFavoriteField=async(name:string,checked:boolean,previous:unknown)=>{try{await writeContractFormRecord({model:context.model.value,ids:[context.recordId.value],vals:{[name]:checked},context:{}});context.originalValues.value={...context.originalValues.value,[name]:checked};context.changedFieldSet.delete(name);context.dirtyFieldSet.delete(name);}catch{context.formData[name]=previous;context.submissionFeedback.value={kind:'error',message:'保存失败，请稍后重试。'};}};

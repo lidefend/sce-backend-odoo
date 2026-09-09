@@ -85,9 +85,12 @@ watchEffect(() => {
 </script>
 
 <style scoped>
-.sc-navigation-menu {
+.sc-navigation-menu.t-default-menu {
+  box-sizing: border-box;
   width: 100%;
   min-width: 0;
+  max-width: 100%;
+  display: block;
   border-right: 0;
   background: transparent;
 }

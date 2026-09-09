@@ -73,6 +73,37 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
         self.PageAssembler = _load_page_assembler()
         self.assembler = self.PageAssembler.__new__(self.PageAssembler)
 
+    def test_fields_map_preserves_authoritative_monetary_metadata(self):
+        field = types.SimpleNamespace(
+            type="monetary",
+            string="Amount",
+            comodel_name=None,
+            inverse_name=None,
+            readonly=False,
+            required=False,
+            help="",
+            domain=None,
+            selection=None,
+            digits=(16, 2),
+            currency_field="currency_id",
+        )
+
+        class Model:
+            _fields = {"amount": field}
+
+            @staticmethod
+            def fields_get():
+                return {"amount": {"type": "monetary", "string": "Amount", "digits": [16, 2], "currency_field": "currency_id"}}
+
+        class Env:
+            def __getitem__(self, _model_name):
+                return Model()
+
+        mapped = self.assembler._to_fields_map(["amount"], env=Env(), model="generic.line")
+
+        self.assertEqual(mapped["amount"]["digits"], [16, 2])
+        self.assertEqual(mapped["amount"]["currency_field"], "currency_id")
+
     def test_record_rule_rights_are_distinct_from_model_acl(self):
         AccessError = sys.modules["odoo.exceptions"].AccessError
 
@@ -642,7 +673,8 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
                 "binding_id": {"type": "many2one", "relation": "generic.hierarchy"},
                 "code": {"type": "char", "string": "Code"},
                 "name": {"type": "char", "string": "Name"},
-                "amount": {"type": "monetary", "string": "Amount"},
+                "amount": {"type": "monetary", "string": "Amount", "digits": [16, 2], "currency_field": "currency_id"},
+                "currency_id": {"type": "many2one", "string": "Currency"},
                 "description": {"type": "char", "string": "Description"},
                 "row_kind": {"type": "selection", "string": "Row kind"},
             },
@@ -678,7 +710,7 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
                 "variance_field": "amount",
                 "variance_tolerance": 0.005,
                 "sheet_order": "source_index, sequence, id",
-                "tabs": [{"key": "detail", "label": "Detail", "fields": ["description"]}],
+                "tabs": [{"key": "detail", "label": "Detail", "fields": ["description", "amount"]}],
                 "sheet_domain_tabs": [
                     {"key": "published", "label": "Published", "domain": [("state", "=", "published")]},
                     {"key": "editing", "domain": "not-a-list"},
@@ -695,6 +727,9 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
         self.assertEqual(presentation["config"]["sheet"]["binding_field"], "binding_id")
         self.assertEqual(presentation["config"]["sheet"]["columns"][2]["align"], "right")
         self.assertEqual(presentation["config"]["sheet"]["columns"][2]["precision"], 2)
+        self.assertEqual(presentation["config"]["sheet"]["columns"][2]["digits"], [16, 2])
+        self.assertEqual(presentation["config"]["sheet"]["columns"][2]["currency_field"], "currency_id")
+        self.assertIn("currency_id", presentation["config"]["sheet"]["fields"])
         self.assertEqual(presentation["config"]["sheet"]["presentation_mode"], "source_order")
         self.assertEqual(presentation["config"]["sheet"]["row_kind_field"], "row_kind")
         self.assertIn("row_kind", presentation["config"]["sheet"]["fields"])
@@ -702,6 +737,10 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
         self.assertEqual(presentation["config"]["sheet"]["variance_field"], "amount")
         self.assertEqual(presentation["config"]["sheet"]["variance_tolerance"], 0.005)
         self.assertEqual(presentation["config"]["detail"]["tabs"][0]["fields"][0]["field"], "description")
+        detail_amount = presentation["config"]["detail"]["tabs"][0]["fields"][1]
+        self.assertEqual(detail_amount["precision"], 2)
+        self.assertEqual(detail_amount["digits"], [16, 2])
+        self.assertEqual(detail_amount["currency_field"], "currency_id")
         # sheet_domain_tabs（G7.3）：非法条目（key 缺失 / domain 非列表）剔除，label 缺省回退 key
         domain_tabs = presentation["config"]["sheet"]["domain_tabs"]
         self.assertEqual(len(domain_tabs), 2)

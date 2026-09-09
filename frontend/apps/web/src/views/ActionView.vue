@@ -732,6 +732,7 @@
   </ScPage>
 </template>
 <script setup lang="ts">
+import { listColumnVisibilityBlockReason } from '../pages/listPage/listColumnVisibility';
 import { computed, inject, onActivated, onBeforeUnmount, onDeactivated, onErrorCaptured, onMounted, ref, watch, type Ref } from 'vue';
 import { applyBusinessListCustomFilter, applyBusinessListGroup, clearBusinessListCustomFilter, clearBusinessListGroup, clearBusinessListQueryState, countBusinessListConditions } from '../app/runtime/businessListQueryRuntime';
 import { useRoute, useRouter } from 'vue-router';
@@ -983,6 +984,7 @@ import {
   buildActionViewClearedPresetQuery,
   buildActionViewPatchedRouteQuery,
   buildActionActivityRouteKey,
+  isActionPageIdentityOwner,
   buildActivityRuntimeRouteState,
   normalizeActivityRuntimeRouteQuery,
   normalizeActionViewRouteQuery,
@@ -1827,7 +1829,9 @@ const actionIdentityInput = computed(() => buildActionPageIdentity({
     modelName: resolvedModelRef.value || model.value, status: status.value, subtitle: subtitle.value,
 }));
 const pageIdentity = usePublishedPageIdentity(actionIdentityInput, { routeKey: () => route.fullPath,
-  active: () => isComponentActive.value, onTitle: (title) => session.updateActiveActivityTitle(title, route.fullPath), immediate: true });
+  active: () => isActionPageIdentityOwner({ routeName: route.name, active: isComponentActive.value,
+    instanceRouteKey: instanceActivityRouteKey.value, currentRouteKey: currentActionActivityRouteKey() }),
+  onTitle: (title) => session.updateActiveActivityTitle(title, route.fullPath), immediate: true });
 const pageTitle = computed(() => pageIdentity.value.title);
 const showSceneBlocksDebug = computed(() => isSceneBlocksDebugEnabled(route));
 function resolveContractActionCountForHud() {
@@ -3178,11 +3182,15 @@ function buildListColumnPreference(visibility: Record<string, boolean>, columnOr
 
 async function handleListColumnVisibilityChange(payload: { visibility: Record<string, boolean> }): Promise<void> {
   const next = payload.visibility || {};
+  const policy = listProfile.value?.preference_policy;
+  if (policy?.allow_visibility === false || Object.keys(next).some((field) =>
+    next[field] !== listColumnVisibility.value[field] && listColumnVisibilityBlockReason(policy, field))) return;
   listColumnVisibility.value = { ...next };
   await persistListColumnPreference('[list-columns] failed to save preference');
 }
 
 async function handleListColumnOrderChange(payload: { columnOrder: string[] }): Promise<void> {
+  if (listProfile.value?.preference_policy?.allow_order === false) return;
   const next = Array.isArray(payload.columnOrder) ? payload.columnOrder.map((item) => String(item || '').trim()).filter(Boolean) : [];
   listColumnOrder.value = next;
   await persistListColumnPreference('[list-columns] failed to save column order preference');
@@ -3506,9 +3514,14 @@ function refreshForRecordContextChange(): void {
 <style scoped>
 .page {
   display: grid; align-content: start;
-  gap: var(--sc-product-workspace-stack-gap);
+  gap: var(--sc-space-xs);
   width: 100%;
   box-sizing: border-box;
+}
+
+/* The routed page owns the gutter; its embedded list must not add it again. */
+.page .action-list-surface[data-product-page-mode='list'] {
+  padding-inline: 0;
 }
 
 @media (min-width: 761px) {

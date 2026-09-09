@@ -125,6 +125,7 @@ BATCH_BINDINGS = {
         "frontend/apps/web/src/components/template/NativeActionOverflowMenu.vue": {"div": {"attrs": {"data-semantic-component": "NativeActionOverflowMenu"}}},
         "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue": {"div": {"attrs": {"data-semantic-component": "NativeFormTreeRenderer"}}},
         "frontend/apps/web/src/components/template/NativeSmartAction.vue": {"scbutton": {"minimum": 1}},
+        "frontend/apps/web/src/components/template/One2ManyCellEditor.vue": {"div": {"attrs": {"data-semantic-component": "One2ManyCellEditor"}}},
         "frontend/apps/web/src/components/view/ViewFieldRenderer.vue": {"div": {"attrs": {"data-semantic-component": "ViewFieldRenderer"}}},
         "frontend/apps/web/src/components/view/ViewRelationalRenderer.vue": {"div": {"attrs": {"data-semantic-component": "ViewRelationalRenderer", ":aria-busy": "loading || undefined"}}, "scinlinestate": {"states": {"loading", "empty", "error", "info"}, "minimum": 4}},
         "frontend/apps/web/src/components/view/ViewNotebookRenderer.vue": {"sctabs": {"minimum": 1}},
@@ -143,7 +144,7 @@ BATCH_BINDINGS = {
     "p0-shared-utility-scene-completion-v1": {
         "frontend/apps/web/src/components/DevContextPanel.vue": {"aside": {"attrs": {"data-semantic-component": "DevContextPanel"}}},
         "frontend/apps/web/src/components/business/IntentConfirmationDialog.vue": {"scdialog": {"attrs": {"data-dialog-purpose": "intent-confirmation"}}},
-        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue": {"scsection": {"attrs": {"data-semantic-component": "MyWorkApprovalWorkspace"}}},
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue": {"scpanel": {"attrs": {"data-semantic-component": "MyWorkApprovalWorkspace"}}},
         "frontend/apps/web/src/components/page/PageRenderer.vue": {"section": {"attrs": {"data-semantic-component": "PageRenderer"}}},
         "frontend/apps/web/src/components/page/ZoneRenderer.vue": {"section": {"attrs": {"data-semantic-component": "ZoneRenderer"}}},
         "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue": {"header": {"attrs": {"data-semantic-component": "ProductPageHeader"}}},

@@ -62,19 +62,21 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 if name in {"ScDialog", "ScDrawer"} else ""
             )
             state_contract = {
-                "ScButton": '<TDesignButton v-bind="attrs" :data-appearance="appearance" :data-loading="loading || undefined" :aria-disabled="disabled || loading || undefined" :loading="loading" /><!-- tdesignButtonPresentation inheritAttrs: false -->',
+                "ScButton": '<button data-primitive-driver="browser-structured" /><TDesignButton v-bind="attrs" :data-appearance="appearance" :data-loading="loading || undefined" :aria-disabled="disabled || loading || undefined" :loading="loading" /><!-- tdesignButtonPresentation inheritAttrs: false [\'structured-content\', \'metric\', \'dashboard-quick-link\'] -->',
                 "ScIconButton": '<TDesignButton :data-appearance="appearance" />',
                 "ScCheckbox": '<TDesignCheckbox v-native-control-projection :data-checked="checked || undefined" :data-indeterminate="indeterminate || undefined" :data-disabled="disabled || undefined" /><!-- \'aria-checked\': props.indeterminate ? \'mixed\' : String(props.checked) \'aria-label\': props.label -->',
                 "ScRadioGroup": '<TDesignRadioGroup :options="options" :aria-required="required || undefined" /><!-- semanticPrimitiveIdentity(\'ScRadioGroup\') -->',
                 "ScRadio": '<TDesignRadio :checked="checked" :aria-required="required || undefined" /><!-- semanticPrimitiveIdentity(\'ScRadio\') -->',
-                "ScInput": '<TDesignInput v-native-control-projection :size="normalizePrimitiveSize(size)" :status="status" :data-appearance="appearance" :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" /><input :data-appearance="appearance" data-primitive-driver="browser-specialized" />',
+                "ScInput": '<TDesignInput v-native-control-projection :input-class="\'sc-input__control\'" :size="normalizePrimitiveSize(size)" :status="status" :data-appearance="appearance" :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" /><input :data-appearance="appearance" data-primitive-driver="browser-specialized" />',
                 "ScInputGroup": '<TDesignInputAdornment data-primitive-driver="tdesign" />',
                 "ScTextarea": '<TDesignTextarea v-native-control-projection :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" />',
-                "ScSelect": '<TDesignSelect v-native-control-projection :options="tdesignOptions" :data-readonly="readonly || undefined" :aria-readonly="readonly || undefined" />',
+                "ScSelect": '<TDesignSelect v-native-control-projection :input-props="{ inputClass: \'sc-select__control\' }" :options="tdesignOptions" :data-readonly="readonly || undefined" :aria-readonly="readonly || undefined" />',
+                "ScRelationField": '<TDesignAutoComplete v-native-control-projection="nativeProjection" /><!-- \'aria-required\': props.required || undefined \'aria-invalid\': props.invalid || undefined \'aria-describedby\': props.describedBy -->',
                 "ScTabs": "<TDesignTabs :list=\"items.length ? tdesignItems : undefined\" />\nlabel: tabLabel(item)\nreturn (render: typeof h) => render('span', {}, item.label)",
                 "ScStatusBadge": "<div :data-semantic-status=\"semantic\" />\n<style>.sc-status-badge[data-semantic-status='info'] { color: var(--sc-app-info-text); background-color: var(--sc-app-info-bg); }</style>",
                 "ScLoading": '<div data-state="loading" aria-busy="true" />',
-                "ScInlineState": '<div :data-state="state" :aria-busy="state === \'loading\' || undefined" />',
+                "ScInlineState": '<TDesignAlert :data-state="state" :aria-busy="state === \'loading\' || undefined"><slot>{{ label }}</slot><template #operation /></TDesignAlert>',
+                "ScCard": '<TDesignCard :body-class-name="bodyClassName" /><!-- bodyClassName?: string -->',
                 "ScEmptyState": '<TDesignEmpty data-state="empty" role="status" />',
                 "ScErrorState": '<TDesignAlert data-state="error" role="alert" />',
                 "ScFormField": '<label :data-state="state" :data-required="required" />',
@@ -84,6 +86,13 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 f'<template><div data-semantic-component="{name}" data-semantic-layer="primitive">{state_contract}</div></template>{modal_contract}\n',
                 encoding="utf-8",
             )
+        (design / "ScRelationField.vue").write_text(
+            '<template><TDesignAutoComplete v-native-control-projection="nativeProjection" /></template>\n'
+            "<script>const nativeProjection = { selector: 'input' as const, attributes: { "
+            "'aria-required': props.required || undefined, 'aria-invalid': props.invalid || undefined, "
+            "'aria-describedby': props.describedBy } };</script>\n",
+            encoding="utf-8",
+        )
         (design / "ScDateField.vue").write_text(
             '<template><TDesignDatePicker v-native-control-projection="nativeProjection" /></template>\n'
             "<script>const nativeProjection = { selector: 'input' as const, attributes: { required: props.required, "
@@ -100,6 +109,19 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         root = self.make_root()
         (root / "frontend/apps/web/src/components/design-system/ScInput.vue").unlink()
         self.assertTrue(any("missing primitive source" in error for error in validate(root)))
+
+    def test_frontend_consumer_cannot_import_tdesign_directly(self) -> None:
+        root = self.make_root()
+        consumer = root / "frontend/apps/web/src/pages/LegacyPage.vue"
+        consumer.parent.mkdir(parents=True, exist_ok=True)
+        consumer.write_text("<script setup>import { Button } from 'tdesign-vue-next/es/button';</script>", encoding="utf-8")
+        self.assertTrue(any("bypasses the public project primitive authority" in error for error in validate(root)))
+
+    def test_alert_cannot_duplicate_message_prop_and_default_slot(self) -> None:
+        root = self.make_root()
+        inline = root / "frontend/apps/web/src/components/design-system/ScInlineState.vue"
+        inline.write_text(inline.read_text(encoding="utf-8").replace("<TDesignAlert", '<TDesignAlert :message="label"'), encoding="utf-8")
+        self.assertTrue(any("must not supply both" in error for error in validate(root)))
 
     def test_private_tdesign_import_fails(self) -> None:
         root = self.make_root()

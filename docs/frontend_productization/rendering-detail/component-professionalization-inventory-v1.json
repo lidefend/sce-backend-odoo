@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "960f1e846fbfef4f573f7af43cff33f33f23dcfc671e7415c637dd853e366162",
-  "generatorDigest": "210b00d010e07701759e45d9d243ff7547834aba8e9817fbdc676f2c7592883d",
-  "ownershipDigest": "c0501b51c355e1c76a769d9196aad4062fac82b27d11b98768eca645590989ce",
-  "inputDigest": "5da2e8bb9bbb64b4ea5deeb6bf62a8f3ebbe37d376e5b11ad5cd71041319d89a",
+  "sourceIdentity": "ad3cce6abec7b8f45e7ea218f6bef4b93911be70626479d8ac19896fc31a7866",
+  "generatorDigest": "ba7b31dffe73ee4fb08dd70311cc1d5ca1cbc4b0cd4d74ee4dcb23f5bb60c07b",
+  "ownershipDigest": "26fdbff1d3b56069a878c04d0612a9b75426afe07bf0db12edf34dc55f8ef873",
+  "inputDigest": "dce7aedbbb897d8f4ffc38891c3a6e2e4d812057e2b7ec97098050a27f499c77",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -20,12 +20,12 @@
     "permission and route authority changes"
   ],
   "summary": {
-    "surfaceCount": 164,
+    "surfaceCount": 165,
     "p0P1RawControlBypassSurfaceCount": 0,
     "p0P1RawControlBypassControlCount": 0,
     "deliberate_native_composite": 0,
     "gap": 0,
-    "governed_composite": 106,
+    "governed_composite": 107,
     "governed_primitive": 40,
     "p3_out_of_scope": 18
   },
@@ -124,7 +124,9 @@
         "focus"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScEmptyState"
+      ],
       "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
     {
@@ -269,7 +271,8 @@
       "status": "governed_primitive",
       "reason": "design-system primitive source",
       "stateTypes": [
-        "disabled"
+        "disabled",
+        "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -297,7 +300,9 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {},
+      "rawControls": {
+        "button": 1
+      },
       "governedStatePrimitives": [],
       "targetBatch": null
     },
@@ -320,7 +325,8 @@
       "status": "governed_primitive",
       "reason": "design-system primitive source",
       "stateTypes": [
-        "disabled"
+        "disabled",
+        "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -332,7 +338,8 @@
       "status": "governed_primitive",
       "reason": "design-system primitive source",
       "stateTypes": [
-        "disabled"
+        "disabled",
+        "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -568,7 +575,8 @@
       "reason": "design-system primitive source",
       "stateTypes": [
         "error",
-        "disabled"
+        "disabled",
+        "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -654,6 +662,8 @@
       "status": "governed_primitive",
       "reason": "design-system primitive source",
       "stateTypes": [
+        "loading",
+        "empty",
         "error",
         "disabled",
         "focus"
@@ -705,7 +715,8 @@
       "reason": "design-system primitive source",
       "stateTypes": [
         "loading",
-        "disabled"
+        "disabled",
+        "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -744,7 +755,8 @@
       "status": "governed_primitive",
       "reason": "design-system primitive source",
       "stateTypes": [
-        "disabled"
+        "disabled",
+        "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -1135,7 +1147,8 @@
       "stateTypes": [
         "loading",
         "error",
-        "disabled"
+        "disabled",
+        "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -1438,6 +1451,21 @@
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
+        "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
+    },
+    {
+      "source": "frontend/apps/web/src/components/template/One2ManyCellEditor.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "loading",
+        "empty",
+        "error",
         "disabled"
       ],
       "rawControls": {},
@@ -1914,7 +1942,9 @@
         "focus"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScErrorState"
+      ],
       "targetBatch": null
     },
     {
@@ -1970,6 +2000,7 @@
         "loading",
         "empty",
         "error",
+        "disabled",
         "focus"
       ],
       "rawControls": {},
@@ -2147,7 +2178,7 @@
       "status": "p3_out_of_scope",
       "reason": "low-code or administration product surface; handled by a separate P3 batch",
       "stateTypes": [
-        "empty",
+        "loading",
         "error",
         "disabled"
       ],
@@ -2179,7 +2210,9 @@
         "focus"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScEmptyState"
+      ],
       "targetBatch": null
     },
     {

@@ -39,6 +39,34 @@ class FrontendPagePatternReferenceParityGuardTest(unittest.TestCase):
         failures = validate(lambda source: values[source])
         self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))
 
+    def test_phone_editable_fields_must_stack_without_flattening_readonly_facts(self) -> None:
+        values = self.source_map()
+        target = "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue"
+        values[target] = values[target].replace("@media (max-width: 480px)", "@media (max-width: 1px)")
+        failures = validate(lambda source: values[source])
+        self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))
+
+    def test_canonical_validation_must_reach_the_matching_field(self) -> None:
+        values = self.source_map()
+        target = "frontend/apps/web/src/pages/contractForm/canonicalFormRenderState.ts"
+        values[target] = values[target].replace("validationFieldErrors[field.fieldCode]", "undefined")
+        failures = validate(lambda source: values[source])
+        self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))
+
+    def test_canonical_validation_cannot_guess_field_identity_from_labels(self) -> None:
+        values = self.source_map()
+        target = "frontend/apps/web/src/pages/contractForm/canonicalFormRenderState.ts"
+        values[target] += "\nconst guessed = message.includes(field.label);\n"
+        failures = validate(lambda source: values[source])
+        self.assertTrue(any("message.includes(field.label)" in failure and target in failure for failure in failures))
+
+    def test_canonical_validation_state_must_reach_the_rendered_control(self) -> None:
+        values = self.source_map()
+        target = "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts"
+        values[target] = values[target].replace("invalid: field.invalid", "invalid: false")
+        failures = validate(lambda source: values[source])
+        self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))
+
     def test_record_page_must_not_hide_its_authoritative_title(self) -> None:
         values = self.source_map()
         target = "frontend/apps/web/src/pages/ContractFormPage.vue"

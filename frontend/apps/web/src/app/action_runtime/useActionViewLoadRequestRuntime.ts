@@ -99,6 +99,14 @@ function readRouteQueryValue(key: string): string {
   }
 }
 
+export function resolveListSemanticDependencyFields(fieldSemantics: Dict[], requestedFields: string[]): string[] {
+  const visible = new Set(requestedFields);
+  return fieldSemantics
+    .filter((row) => visible.has(String(row.display_field || '').trim()))
+    .map((row) => String(row.currency_field || '').trim())
+    .filter((field) => /^[A-Za-z_][A-Za-z0-9_]*$/.test(field));
+}
+
 export function useActionViewLoadRequestRuntime() {
   async function executeLoadDataRequest(options: ExecuteLoadDataRequestOptions): Promise<ExecuteLoadDataRequestResult> {
     const profileColumns = (
@@ -154,9 +162,13 @@ export function useActionViewLoadRequestRuntime() {
       advancedFields: kanbanFieldState.advancedFields,
       resolveRequestedFieldsFn: options.resolveRequestedFields,
     });
+    const surfaceRequestedFields = requestedFieldState.requestedFields;
     const fieldSemantics = extractListFieldSemanticsFromContract(options.contract)
-      .filter((row) => requestedFieldState.requestedFields.includes(String(row.display_field || '').trim()));
-    const requestedFields = requestedFieldState.requestedFields;
+      .filter((row) => surfaceRequestedFields.includes(String(row.display_field || '').trim()));
+    const requestedFields = options.uniqueFields([
+      ...surfaceRequestedFields,
+      ...resolveListSemanticDependencyFields(fieldSemantics, surfaceRequestedFields),
+    ]);
 
     const missingColumnsState = options.resolveLoadMissingTreeColumnsErrorState({
       viewMode: options.viewMode,
@@ -238,7 +250,7 @@ export function useActionViewLoadRequestRuntime() {
     const result = await options.listRecordsRaw(requestPayload);
     const resolvedContractColumns = options.uniqueFields([
       ...contractColumns,
-      ...requestedFields,
+      ...surfaceRequestedFields,
     ]);
 
     return {

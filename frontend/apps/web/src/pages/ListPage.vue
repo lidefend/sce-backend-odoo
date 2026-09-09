@@ -34,6 +34,8 @@
         :columns="columnChoices"
         :visible-columns="enabledColumns"
         :last-visible-column="lastVisibleColumnName"
+        :column-disabled-reasons="columnVisibilityDisabledReasons"
+        :column-settings-message="columnVisibilityMessage"
         :save-status="columnSaveStatus"
         :save-status-text="columnSaveStatusText"
         :show-fallback-create="canCreateRecord && !hasToolbarSlot"
@@ -49,7 +51,7 @@
       >
         <slot name="toolbar"></slot>
       </ListSurfaceHeader>
-      <ScEmptyState :title="emptyStateTitle" :description="emptyStateMessage">
+      <ScEmptyState class="list-empty-surface" :title="emptyStateTitle" :description="emptyStateMessage">
         <template #actions>
           <ScButton
             v-if="hasActiveConditions"
@@ -91,6 +93,8 @@
         :columns="columnChoices"
         :visible-columns="enabledColumns"
         :last-visible-column="lastVisibleColumnName"
+        :column-disabled-reasons="columnVisibilityDisabledReasons"
+        :column-settings-message="columnVisibilityMessage"
         :save-status="columnSaveStatus"
         :save-status-text="columnSaveStatusText"
         :contextual="showBatchBar"
@@ -305,6 +309,7 @@ import ScButton from '../components/design-system/ScButton.vue';
 import ScMoney from '../components/design-system/ScMoney.vue';
 import ScPage from '../components/design-system/ScPage.vue';
 import ScStatusBadge from '../components/design-system/ScStatusBadge.vue';
+import { formatMonetaryDisplayValue, resolveCurrencyDisplayLabel } from '../components/template/formSection.mapper';
 import { resolveCollectionPageJump, resolveCollectionPageLimit, resolveCollectionPageOffset, resolveCollectionPaginationMode } from '../app/presentation/collectionPaginationPresentation';
 import { resolveCollectionAggregateEntry } from '../app/presentation/collectionAggregatePresentation';
 import ScTable from '../components/design-system/ScTable.vue';
@@ -329,6 +334,7 @@ import {
   prioritizeExplicitlyEnabledListColumns,
   resolveEnabledListColumns,
   resolveResponsiveListColumns,
+  listColumnVisibilityBlockReason,
 } from './listPage/listColumnVisibility';
 
 import type { CollectionBatchAction as SelectionAction } from '../app/presentation/collectionActionSettlement';
@@ -348,6 +354,7 @@ type ColumnOption = {
   aggregationField?: string;
   dataType?: string;
   currencyField?: string;
+  digits?: [number, number];
   aggregate?: string;
   sortField?: string;
   filterField?: string;
@@ -678,7 +685,7 @@ function selectionLabel(option: ColumnOption | null, value: unknown) {
   if (!key || !Array.isArray(option?.selection)) return '';
   return option.selection.find((item) => item.value === key)?.label || '';
 }
-function semanticCell(field: string, value: unknown, relationItems: Array<{ id: number; label: string }> = []) {
+function semanticCell(field: string, value: unknown, relationItems: Array<{ id: number; label: string }> = [], row?: Record<string, unknown>) {
   const option = columnOption(field);
   if (option?.widget === 'many2many_tags') {
     return { text: relationItems.map((item) => item.label).join('、') || '--', tone: 'neutral' };
@@ -692,7 +699,7 @@ function semanticCell(field: string, value: unknown, relationItems: Array<{ id: 
     raw,
     column: columnSemanticInput(field),
     selectionText: selectionLabel(option, value),
-    numericText: formatNumericCellValue(field, raw),
+    numericText: formatNumericCellValue(field, raw, row),
     attachmentText,
     trueText: uiLabel('boolean_true', '是'),
     falseText: uiLabel('boolean_false', '否'),
@@ -711,7 +718,8 @@ function mobileRecordFacts(row: Record<string, unknown>): CollectionMobileRecord
     return {
       key: column,
       label: columnLabel(column),
-      value: semanticCell(column, columnValue(row, column), relationItems).text,
+      value: semanticCell(column, columnValue(row, column), relationItems, row).text,
+      layoutRole: columnLayoutRole(column),
       relationItems,
     };
   });
@@ -793,7 +801,7 @@ function favoriteTitle(field: string) {
 function collectionRowCellProps(row: Record<string, unknown>, field: string) {
   const value = columnValue(row, field);
   const relationItems = relationDisplayItems(row, field);
-  const presentation = semanticCell(field, value, relationItems);
+  const presentation = semanticCell(field, value, relationItems, row);
   const links = attachmentLinks(value);
   let kind: CollectionRowCellKind = 'text';
   if (isFavoriteColumn(field)) kind = 'favorite';
@@ -1426,7 +1434,6 @@ const displayedColumns = computed(() => desktopColumnDecision.value.visibleColum
 const mobileResponsiveCandidates = computed(() => enabledColumns.value
   .map((field, index) => ({ field, index, priority: columnBusinessPriority(field) }))
   .sort((left, right) => left.priority - right.priority || left.index - right.index)
-  .slice(0, 8)
   .map((item) => item.field));
 const mobileColumnDecision = computed(() => resolveResponsiveListColumns({
   enabledColumns: enabledColumns.value,
@@ -1435,9 +1442,13 @@ const mobileColumnDecision = computed(() => resolveResponsiveListColumns({
   defaultVisibility: defaultVisibleColumnMap.value,
   visibility: props.columnVisibility || {},
   responsiveCandidates: mobileResponsiveCandidates.value,
-  capacity: 8,
+  capacity: enabledColumns.value.length,
 }));
 const lastVisibleColumnName = computed(() => enabledColumns.value.length === 1 ? enabledColumns.value[0] : '');
+const columnVisibilityMessage = computed(() => props.listProfile?.preference_policy?.allow_visibility === false ? '当前页面的显示列已固定' : '');
+const columnVisibilityDisabledReasons = computed(() => Object.fromEntries(columnChoices.value.map((column) => [
+  column.name, listColumnVisibilityBlockReason(props.listProfile?.preference_policy, column.name, lastVisibleColumnName.value),
+])));
 const columnDecisionTraceJson = computed(() => JSON.stringify({
   authoritativeColumns: orderedColumnNames.value,
   columnOptions: columnChoices.value.map((column) => ({
@@ -1481,8 +1492,7 @@ const mobileFactColumns = computed(() => {
   const identity = mobileIdentityField.value;
   const status = mobileStatusField.value;
   return mobileAvailableColumns.value
-    .filter((field) => field !== identity && field !== status)
-    .slice(0, 6);
+    .filter((field) => field !== identity && field !== status);
 });
 const defaultColumnWidths = computed<Record<string, number>>(() => {
   const fields = displayedColumns.value;
@@ -1532,6 +1542,7 @@ function collectionHeader(field: string) {
     field,
     label: columnLabel(field),
     sortable: isColumnSortable(field),
+    reorderable: props.listProfile?.preference_policy?.allow_order !== false,
     sorted: isSortedColumn(field),
     dragging: draggingColumn.value === field,
     sortIcon: columnSortIcon(field),
@@ -1546,6 +1557,7 @@ function collectionHeader(field: string) {
     onSort: () => toggleColumnSort(field),
     onDragStart: (event: DragEvent) => onColumnDragStart(field, event),
     onResizeStart: (event: MouseEvent) => startColumnResize(field, event),
+    onResizeStep: (delta: number) => resizeColumnBy(field, delta),
   });
 }
 function collectionCell(row: Record<string, unknown>, field: string) {
@@ -1680,6 +1692,7 @@ function toggleColumnSort(col: string) {
 }
 
 function onColumnDragStart(col: string, event: DragEvent) {
+  if (props.listProfile?.preference_policy?.allow_order === false) { event.preventDefault(); return; }
   if (resizingColumn.value) {
     event.preventDefault();
     return;
@@ -1698,6 +1711,7 @@ function onColumnDragOver(col: string, event: DragEvent) {
 
 function onColumnDrop(target: string, event: DragEvent) {
   event.preventDefault();
+  if (props.listProfile?.preference_policy?.allow_order === false) { draggingColumn.value = ''; return; }
   const source = draggingColumn.value || event.dataTransfer?.getData('text/plain') || '';
   draggingColumn.value = '';
   if (!source || source === target) return;
@@ -1788,6 +1802,13 @@ function startColumnResize(field: string, event: MouseEvent) {
   window.addEventListener('mouseup', stopColumnResize, { once: true });
 }
 
+function resizeColumnBy(field: string, delta: number) {
+  const width = normalizeColumnWidth(resolvedColumnWidth(field) + delta);
+  if (!width || width === resolvedColumnWidth(field)) return;
+  draftColumnWidths.value = { ...draftColumnWidths.value, [field]: width };
+  emit('column-widths-change', { columnWidths: { ...draftColumnWidths.value } });
+}
+
 function onColumnResizeMove(event: MouseEvent) {
   const field = resizingColumn.value;
   if (!field) return;
@@ -1824,6 +1845,7 @@ function isColumnSortable(field: string) {
 }
 
 function onColumnVisibilityToggle(payload: { name: string; checked: boolean }) {
+  if (listColumnVisibilityBlockReason(props.listProfile?.preference_policy, payload.name)) return;
   if (!payload.checked && lastVisibleColumnName.value === payload.name) return;
   emit('column-visibility-change', {
     visibility: {
@@ -1880,12 +1902,18 @@ function numericCellValue(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function formatNumericCellValue(field: string, value: unknown) {
+function formatNumericCellValue(field: string, value: unknown, row?: Record<string, unknown>) {
   if (!isNumericColumn(field)) return '';
   const numeric = numericCellValue(value);
   if (numeric === null) return '';
   const option = columnOption(field);
   const type = String(option?.dataType || option?.type || '').trim();
+  if (type === 'monetary') {
+    const currencyLabel = option?.currencyField && row
+      ? resolveCurrencyDisplayLabel(row[option.currencyField])
+      : '';
+    return formatMonetaryDisplayValue(numeric, option?.digits, currencyLabel);
+  }
   return numeric.toLocaleString('zh-CN', {
     maximumFractionDigits: type === 'integer' ? 0 : 2,
     minimumFractionDigits: type === 'integer' ? 0 : 2,

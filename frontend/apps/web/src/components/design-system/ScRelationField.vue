@@ -1,5 +1,6 @@
 <template>
   <TDesignAutoComplete
+    v-native-control-projection="nativeProjection"
     data-semantic-component="ScRelationField"
     data-semantic-driver="tdesign-auto-complete"
     data-semantic-layer="primitive"
@@ -19,14 +20,25 @@
   />
 </template>
 <script setup lang="ts">
+import { computed } from 'vue';
 import { TDesignAutoComplete } from './tdesignPrimitiveBridge';
-withDefaults(defineProps<{ modelValue:string; readonly?:boolean; disabled?:boolean; required?:boolean; invalid?:boolean; describedBy?:string; appearance?:'default'|'form-field' }>(), { appearance:'default' });
+import { nativeControlProjection } from './nativeControlProjection';
+const props = withDefaults(defineProps<{ modelValue:string; readonly?:boolean; disabled?:boolean; required?:boolean; invalid?:boolean; describedBy?:string; appearance?:'default'|'form-field' }>(), { appearance:'default' });
+const vNativeControlProjection = nativeControlProjection;
+const nativeProjection = computed(() => ({
+  selector: 'input' as const,
+  attributes: {
+    'aria-required': props.required || undefined,
+    'aria-invalid': props.invalid || undefined,
+    'aria-describedby': props.describedBy,
+  },
+}));
 const emit = defineEmits<{
   'update:modelValue': [value: string];
-  focus: [event: FocusEvent];
-  blur: [event: FocusEvent];
-  keydown: [event: KeyboardEvent];
-  keyup: [event: KeyboardEvent];
+  focus: [event: unknown];
+  blur: [event: unknown];
+  keydown: [event: unknown];
+  keyup: [event: unknown];
   change: [event: Event];
 }>();
 function emitChange(value: string | number) {
