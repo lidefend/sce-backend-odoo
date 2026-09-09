@@ -356,7 +356,7 @@ const o2mTableColumns = computed(() => {
     title: column.label,
     width: isO2mAmountColumn(column) ? 140 : undefined,
     align: isO2mAmountColumn(column) ? 'right' : 'left',
-    ellipsis: true,
+    ellipsis: false,
   }));
   return [
     { colKey: '_state', title: '状态', width: 90, fixed: 'left' },

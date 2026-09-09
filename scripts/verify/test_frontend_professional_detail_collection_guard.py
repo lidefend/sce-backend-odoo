@@ -130,6 +130,15 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
 
         self.assertTrue(any("same cell editor" in item for item in validate(read_text)))
 
+    def test_editable_controls_cannot_use_text_ellipsis(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace("ellipsis: false", "ellipsis: true", 1)
+            return value
+
+        self.assertTrue(any("TDesign text ellipsis" in item for item in validate(read_text)))
+
     def test_missing_column_label_fails(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
