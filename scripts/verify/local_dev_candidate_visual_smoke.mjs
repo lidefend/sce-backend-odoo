@@ -51,7 +51,11 @@ async function waitForStableProductSurface(page) {
     const homeSettled = !(homePage instanceof HTMLElement) || homePage.dataset.state !== 'loading';
     const myWorkPage = document.querySelector('[data-semantic-component="MyWorkView"]');
     const myWorkSettled = !(myWorkPage instanceof HTMLElement) || myWorkPage.dataset.state !== 'loading';
-    return !pendingForm && !pendingCollection && formSettled && actionSettled && homeSettled && myWorkSettled;
+    const configPage = document.querySelector('[data-product-page-mode="admin"]');
+    const configSettled = !(configPage instanceof HTMLElement)
+      || Boolean(configPage.querySelector('[data-business-config-surface-error="true"]'))
+      || Boolean(configPage.querySelector('[data-business-config-change-set="v1"]') && configPage.querySelector('.page-picker-panel'));
+    return !pendingForm && !pendingCollection && formSettled && actionSettled && homeSettled && myWorkSettled && configSettled;
   }, undefined, { timeout: 45000 });
   await page.evaluate(() => new Promise((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(resolve));
@@ -500,6 +504,7 @@ try {
         await errorSurface.waitFor({ state: 'visible', timeout: 15000 });
         const errorText = String(await errorSurface.textContent() || '').replace(/\s+/g, ' ').trim();
         const retry = errorSurface.getByRole('button', { name: '重试读取' });
+        const retryCount = await retry.count();
         await page.unroute(readFailurePattern, businessConfigReadFailureHandler);
         await retry.click();
         await page.locator('[data-business-config-change-set="v1"]:visible').waitFor({ state: 'visible', timeout: 45000 });
@@ -507,11 +512,12 @@ try {
         businessConfigReadFailureEvidence = {
           injected: businessConfigReadFailureInjected,
           errorText,
-          retryCount: await retry.count(),
+          retryCount,
           recovered: await page.locator('[data-business-config-surface-error="true"]:visible').count() === 0,
         };
         businessConfigReadFailureEvidence.pass = businessConfigReadFailureEvidence.injected
           && businessConfigReadFailureEvidence.errorText.includes('受控配置读取失败')
+          && businessConfigReadFailureEvidence.retryCount === 1
           && businessConfigReadFailureEvidence.recovered;
       }
       if (exerciseReadFailure) {
@@ -1168,6 +1174,7 @@ try {
         await page.getByRole('button', { name: '清除筛选' }).click();
         await page.waitForFunction(() => document.querySelectorAll('.page-picker-panel .scan-row').length > 0, undefined, { timeout: 15000 });
         const restoredRowCount = await page.locator('.page-picker-panel .scan-row').count();
+        const emptyRecoveryVisible = await emptyState.count() === 0;
         const firstRow = page.locator('.page-picker-panel .scan-row').first();
         const selectedLabel = String(await firstRow.getAttribute('aria-label') || '');
         await firstRow.click();
@@ -1181,16 +1188,17 @@ try {
           selectionPromptVisible,
           falseCurrentPageCount,
           initialRowCount,
-          emptyRecoveryVisible: await emptyState.count() === 0,
+          emptyRecoveryVisible,
           restoredRowCount,
           selectedLabel,
           selectedText,
           pass: initialChangeSetState === String(target.expectedChangeSetState || initialChangeSetState)
-            && !(initialChangeSetState === 'empty' && initialChangeSetText.includes('有未发布修改'))
+            && !(initialChangeSetState === 'empty' && initialChangeSetText.includes('状态：有未发布修改'))
             && selectionPromptVisible
             && falseCurrentPageCount === 0
             && initialRowCount > 0
             && restoredRowCount === initialRowCount
+            && emptyRecoveryVisible
             && selectedLabel.length > 0
             && selectedText.includes('正在配置'),
         };
