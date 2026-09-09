@@ -1456,8 +1456,18 @@ try {
           const before = new URL(beforeUrl);
           const detailRecordId = String(await page.locator('[data-semantic-component="ContractFormPage"]').getAttribute('data-form-record') || '');
           const returnAction = page.locator('[data-form-secondary-action="return-list"]:visible');
-          if (await returnAction.count() !== 1) throw new Error(`${target.name}: expected exactly one return-to-list action`);
-          await returnAction.click();
+          if (await returnAction.count() === 1) {
+            await returnAction.click();
+          } else if (viewport.name === 'mobile') {
+            const mobileActions = page.locator('.form-header-mobile-actions:visible');
+            if (await mobileActions.count() !== 1) throw new Error(`${target.name}: mobile return action owner is missing`);
+            await mobileActions.getByRole('button', { name: '打开更多页面操作' }).click();
+            const mobileReturn = page.locator('.t-dropdown__item:visible').filter({ hasText: /^返回$/ });
+            if (await mobileReturn.count() !== 1) throw new Error(`${target.name}: expected exactly one mobile return-to-list action`);
+            await mobileReturn.click();
+          } else {
+            throw new Error(`${target.name}: expected exactly one return-to-list action`);
+          }
           await page.waitForURL((url) => url.pathname === before.pathname, { timeout: 15000 });
           await waitForStableProductSurface(page);
           const afterUrl = page.url();
