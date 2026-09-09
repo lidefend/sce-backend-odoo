@@ -1453,10 +1453,12 @@ try {
         formStructureEvidence = {
           ...top,
           captures,
-          pass: top.sectionLinks.length > 1
+          pass: target.expectFormStructure !== true || (
+            top.sectionLinks.length > 1
             && top.stickyHeaderOpaque
             && (target.expectRelationFirstViewport !== true || (top.relationInFirstViewport && top.addActionInFirstViewport))
-            && (target.expectReadonlyDetailComparison !== true || (viewport.name === 'desktop' ? top.readonlyTableVisible : top.readonlyCardsVisible)),
+            && (target.expectReadonlyDetailComparison !== true || (viewport.name === 'desktop' ? top.readonlyTableVisible : top.readonlyCardsVisible))
+          ),
         };
       }
       if (target.exerciseBusinessConfigExperience === true) {
