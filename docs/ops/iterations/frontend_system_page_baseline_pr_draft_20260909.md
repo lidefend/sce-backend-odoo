@@ -7,10 +7,9 @@
 ## 范围
 
 - P0：共享外壳、页面模式、工作区、列表/详情表达和通用错误/浮层机制。
-- P1：对既有 acceptance 历史付款台账做当前约束兼容迁移；缺失身份只隔离，不推导或伪造。
 - P3：配置工作台的对象、草稿、发布及请求状态表达。
-- P4：非零单元/静态门禁、受管候选浏览器载体、fixture 通过正式资金基线修订生命周期保持幂等、生成清单、证据与阶段报告。
-- 不含：新增审批/支付能力、新增业务写入口或未经治理的数据写入、多角色授权、独立移动端、性能重构、远程发布。已授权的 acceptance migration、fixture reset 与 release snapshot 写入单独登记。
+- P4：非零单元/静态门禁、受管候选浏览器载体、生成清单、证据、阶段报告及非执行性的 acceptance 命名空间重建设计。
+- 不含：P1 历史迁移、fixture 生命周期改造、新增审批/支付能力、业务数据写入、多角色授权、独立移动端、性能重构、远程发布。
 
 ## 验证
 
@@ -22,15 +21,10 @@
 - `make verify.frontend.theme_profile.unit`
 - `make local.dev.test MODULE=smart_core TEST_TAGS=runtime_view_contract`
 - `make local.dev.test MODULE=smart_core TEST_TAGS=business_config_change_set`
-- `make local.dev.test MODULE=smart_construction_core TEST_TAGS=p1_contract_payment_allocation`
-- `make local.dev.test MODULE=smart_construction_acceptance_fixture TEST_TAGS=acceptance_fixture_gate`
-- `CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core make acceptance.module.upgrade MODULE=smart_construction_core`
-- `make acceptance.frontend.fixture`
-- `make acceptance.frontend.release_snapshot`
 - 1088/390 明色与 1440/320 暗色受管候选浏览器矩阵
 - `CONFIRM_FRONTEND_RELEASE_AUDIT=RUN_FROZEN_FRONTEND_RELEASE_AUDIT make verify.frontend.release.local`
 
-最终 release 命令结果以交付时同一 HEAD 的本地输出为准，不在草稿中预写 PASS。
+当前 release gate 为 `not_run`：必须先由独立 P4 批次重建与源码版本一致的 acceptance 命名空间，并修正错误的详情验收目标；草稿不预写 PASS。
 
 ## 证据与回退
 

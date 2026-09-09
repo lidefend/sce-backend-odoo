@@ -2,7 +2,7 @@
 
 日期：2026-09-09
 
-状态：页面独立复审已通过；acceptance 基线修复已完成，最终候选独立复审与 `verify.frontend.release.local` 待执行
+状态：页面独立复审已通过；P1/P4 acceptance 兼容改动已撤出；发布验证因运行态版本不匹配及验证目标缺陷而阻断
 
 原始基线：`3d3975b3d45c1462677df0abcbb5708e4b53e0b1`
 
@@ -19,9 +19,9 @@
 - P4：回滚失败 fake 调用真实 production seam；浏览器报告记录完整输入、加载完成选择器、顶栏子动作边界及实际路由 authority 拒绝。
 - P4：补充全量 scope manifest、artifact SHA-256 清单和 PR 草稿。
 
-页面修正本身没有 P1/P2 修改，也没有新增页面、业务流程或合同语义。首次正式 release gate 随后在既有 acceptance 数据库的 `smart_construction_core` 增量升级中发现历史付款台账身份不满足当前约束；经用户单独授权，追加一个 P1 历史迁移兼容批次，以及一个 P4 acceptance fixture 幂等兼容批次。两者不改变审批、支付或前端契约语义，不新建数据库、端口、volume、credential file 或验证入口。
+没有 P1/P2 修改，没有新增页面、业务流程、合同语义、数据库、fixture、端口、volume 或验证入口。首次正式 release gate 在持久化 `sc_frontend_acceptance` 上暴露的付款历史兼容问题曾被实现为 `.163/.164` 迁移和资金基线 fixture 修订；后续范围审计确认，旧人工 fixture 升级失败不能单独证明客户历史兼容需求，因此这些改动已通过后续可审计提交撤出当前前端候选。其历史提交和数据库执行事实仍保留，不改写历史。
 
-最终候选相对原始基线为 96 路径，归属及逐路径回退见 `frontend_system_page_baseline_scope_manifest_20260909.csv`。
+当前候选相对原始基线为 87 路径，其中新增 1 份非执行性 P4 重建设计；归属及逐路径回退见 `frontend_system_page_baseline_scope_manifest_20260909.csv`。
 
 ## 2. 验证可信度
 
@@ -62,16 +62,11 @@ stdlib XML stub 仅用于宿主机缺少 lxml 时加载隔离单元测试，不�
 
 修正前置静态门禁均已通过：`verify.business_config.unit`、`verify.frontend.page_identity`、`verify.frontend.style_system.guard`、候选脚本 9 个单测、Node 语法和 `git diff --check`。
 
-首次 release gate 在 frontend 静态、单元和构建通过后，于真实 acceptance 增量升级失败。修复及恢复证据为：
+首次 release gate 在 frontend 静态、单元和构建通过后，于持久化 acceptance 增量升级失败。曾执行的 `.163/.164`、fixture 修订、模块升级及 snapshot 只作为已撤出候选的历史证据，不再计入当前页面候选 PASS。当前 `sc_frontend_acceptance` 已实际升级到 `17.0.0.164`，而源码候选恢复为 `17.0.0.162`，因此该运行态在受管重建前不得用于当前候选验收。
 
-- `make local.dev.test MODULE=smart_construction_core TEST_TAGS=p1_contract_payment_allocation`：16 post-tests，统计 18 tests，0 failed / 0 errors；覆盖 NULL/不完整历史身份隔离、unresolved allocation 一致性、合同与资金 stored 父汇总差异重算，以及 replay 不改已正确父记录 CTID。
-- `CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core make acceptance.module.upgrade MODULE=smart_construction_core`：两次 PASS；`17.0.0.163` 完成历史身份隔离，独立复审指出父汇总缺口后，`17.0.0.164` post-migration 在 registry/回填后完成父汇总重算。两版均在既有 `sc_frontend_acceptance` 上实际增量执行。
-- `python3 -m unittest scripts.verify.test_frontend_productization_fixture_upsert`：3 tests，PASS。
-- `make local.dev.test MODULE=smart_construction_acceptance_fixture TEST_TAGS=acceptance_fixture_gate`：5 post-tests，统计 9 tests，0 failed / 0 errors；覆盖 guard 及已生效资金基线通过正式修订生命周期对齐。此前一次同命令因模块未安装产生 0 tests，已明确判为无效证据；后续受管安装测试中暴露的同进程 XMLID cache 测试假设也未计入 PASS。
-- `make acceptance.frontend.fixture`：PASS，包含 `acceptance.frontend.fixture.auth`；没有放宽已生效资金基线不可修改规则。
-- `make acceptance.frontend.release_snapshot`：PASS，最新 snapshot 57，source revision `b14733042e67accd8e0be7906ace56f7499cdd8a`。
+撤出前最后一次 `verify.frontend.release.local` 在 exact HEAD `016a844351aa92ddfd9a4f639a72f30ed784edfe` 上仍为 FAIL：静态、构建、受管升级、fixture、snapshot 和 25 个页面身份检查通过；`delivery_hardening` 将非 fixture 财务用户创建的 `FE-A-PR-001` 放入“我的付款申请”动作上下文，产品正确返回 403，验证器却等待普通详情工作区而超时。该结果归类为 P4 `validation_tool_defect`，不能通过放宽权限或改写业务记录消除。
 
-最终文档候选冻结后由独立审查者复核新增 P1/P4 范围；只有复审无 S0-S2，才重新运行受管 `verify.frontend.release.local`。
+当前候选只允许执行静态和纯单元验证。正式 release gate、fixture reset、snapshot 与浏览器验收保持 `not_run`，直到独立 P4 任务实现并授权执行命名空间重建，且修正验证目标后重新冻结候选。
 
 本文件不预写 release PASS。最终命令结果必须绑定运行时的完整 HEAD，且执行后工作区保持干净；远程推送、PR 创建、合并和发布不在授权内。
 
@@ -82,6 +77,7 @@ stdlib XML stub 仅用于宿主机缺少 lxml 时加载隔离单元测试，不�
 - 受控 503 沿用原产品候选证据；本次修正未触及读取恢复逻辑。
 - 性能、独立移动端及 fallback 页面能力不在本阶段。
 - build large chunk warning 仍存在，没有性能量化结论。
-- acceptance 历史付款身份被保留为 `legacy_unresolved_identity`，没有伪造项目、公司、往来单位、币种或操作策略；这些隔离事实不构成业务可执行记录。
+- 现有 acceptance 数据库已执行撤出候选中的 `.163/.164`，不能代表当前源码候选，也不会执行逆向数据迁移。
+- 命名空间重建方案仅记录于 `frontend_acceptance_fixture_namespace_rebuild_design_20260909.md`，本批次未实现、未执行。
 
-回退先按 formal layer 和文件执行：P0 顶栏修正可回退 `5d9e994b`；P4 fake 与验证器可分别回退 `e3e134c0`、`dc6e81d6`；P1 迁移提交为 `34adf9e5` 至 `b1473304`，P4 fixture 兼容提交为 `d27b0270`。数据库已执行版本迁移，代码回退前必须按数据库架构政策评估兼容性，不能直接逆向改写已隔离历史事实；历史混合提交依全量 manifest 的路径与 commit 列回退。
+回退先按 formal layer 和文件执行：P0 顶栏修正可回退 `5d9e994b`；P4 fake 与验证器可分别回退 `e3e134c0`、`dc6e81d6`；历史混合提交依全量 manifest 的路径与 commit 列回退。曾执行的 P1 数据迁移不可通过代码回退逆向恢复，现有 acceptance 环境只能通过未来明确授权的受管重建重新成为当前页面候选证据。

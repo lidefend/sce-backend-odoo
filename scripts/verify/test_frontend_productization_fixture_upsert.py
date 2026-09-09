@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 from addons.smart_construction_acceptance_fixture.tools.frontend_productization_fixture import (
     _ensure_settlement_state,
+    _funding_baseline,
     _upsert,
 )
 
@@ -125,6 +126,34 @@ class FrontendProductizationFixtureUpsertTest(unittest.TestCase):
             )
 
         self.assertEqual(safe_record.write_calls, [])
+
+    def test_funding_baseline_uses_controlled_draft_activation(self) -> None:
+        class _Project:
+            id = 17
+
+        class _Baseline:
+            id = 23
+            state = "draft"
+
+            def action_activate(self):
+                self.state = "active"
+
+        baseline = _Baseline()
+        line = object()
+        with patch(
+            "addons.smart_construction_acceptance_fixture.tools.frontend_productization_fixture._upsert",
+            side_effect=[baseline, line],
+        ) as upsert:
+            self.assertIs(_funding_baseline(object(), "A", _Project()), baseline)
+
+        baseline_call, line_call = upsert.call_args_list
+        self.assertEqual(baseline_call.args[1], "project.funding.baseline")
+        self.assertNotIn("state", baseline_call.args[4])
+        self.assertEqual(baseline_call.args[4]["period_start"], "2026-01-01")
+        self.assertEqual(baseline_call.args[4]["period_end"], "2026-12-31")
+        self.assertEqual(line_call.args[1], "project.funding.baseline.line")
+        self.assertEqual(line_call.args[4]["planned_amount"], 5000.0)
+        self.assertEqual(baseline.state, "active")
 
     def test_settlement_uses_controlled_lifecycle_transition(self) -> None:
         class _Settlement:

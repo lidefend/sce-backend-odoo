@@ -55,26 +55,6 @@ def _bind_xmlid(env, name, record):
         imd.create({"module": MODULE, "name": name, **values})
 
 
-def _changed_values(record, values):
-    changed = {}
-    for field_name, value in values.items():
-        field = record._fields[field_name]
-        current = record[field_name]
-        if field.type == "many2one":
-            is_equal = current.id == (value or False)
-        elif field.type in ("one2many", "many2many"):
-            is_equal = False
-        elif field.type in ("date", "datetime") and isinstance(
-            current, (date, datetime)
-        ) and isinstance(value, str):
-            is_equal = str(current) == value
-        else:
-            is_equal = current == value
-        if not is_equal:
-            changed[field_name] = value
-    return changed
-
-
 def _upsert(env, model_name, xmlid_name, domain, values):
     model = env[model_name].sudo().with_context(active_test=False, tracking_disable=True)
     record = env.ref("%s.%s" % (MODULE, xmlid_name), raise_if_not_found=False)
@@ -101,7 +81,22 @@ def _upsert(env, model_name, xmlid_name, domain, values):
                 "fixture refuses to adopt unowned %s matching %s" % (model_name, domain)
             )
     if record:
-        changed = _changed_values(record, values)
+        changed = {}
+        for field_name, value in values.items():
+            field = record._fields[field_name]
+            current = record[field_name]
+            if field.type == "many2one":
+                is_equal = current.id == (value or False)
+            elif field.type in ("one2many", "many2many"):
+                is_equal = False
+            elif field.type in ("date", "datetime") and isinstance(
+                current, (date, datetime)
+            ) and isinstance(value, str):
+                is_equal = str(current) == value
+            else:
+                is_equal = current == value
+            if not is_equal:
+                changed[field_name] = value
         if changed:
             record.write(changed)
     else:
@@ -243,80 +238,33 @@ def _project(env, suffix, company, manager, partner):
 
 
 def _funding_baseline(env, suffix, project):
-    baseline_xmlid = "fe_funding_baseline_%s" % suffix.lower()
-    line_xmlid = "fe_funding_baseline_line_%s" % suffix.lower()
-    baseline_values = {
-        "project_id": project.id,
-        "total_amount": 5000.0,
-        "period_start": "2026-01-01",
-        "period_end": "2026-12-31",
-    }
-    line_values = {"name": "FE annual plan", "planned_amount": 5000.0}
-    baseline_model = env["project.funding.baseline"].sudo().with_context(
-        active_test=False, tracking_disable=True
+    baseline = _upsert(
+        env,
+        "project.funding.baseline",
+        "fe_funding_baseline_%s" % suffix.lower(),
+        [("project_id", "=", project.id)],
+        {
+            "project_id": project.id,
+            "total_amount": 5000.0,
+            "period_start": "2026-01-01",
+            "period_end": "2026-12-31",
+        },
     )
-    line_model = env["project.funding.baseline.line"].sudo().with_context(
-        active_test=False, tracking_disable=True
+    _upsert(
+        env,
+        "project.funding.baseline.line",
+        "fe_funding_baseline_line_%s" % suffix.lower(),
+        [("baseline_id", "=", baseline.id), ("name", "=", "FE annual plan")],
+        {
+            "baseline_id": baseline.id,
+            "name": "FE annual plan",
+            "planned_amount": 5000.0,
+        },
     )
-    baseline = env.ref("%s.%s" % (MODULE, baseline_xmlid), raise_if_not_found=False)
-    if baseline:
-        if baseline._name != "project.funding.baseline":
-            raise RuntimeError("xmlid %s points to %s" % (baseline_xmlid, baseline._name))
-        baseline = baseline_model.browse(baseline.id).exists()
-    if not baseline:
-        matches = baseline_model.search([("project_id", "=", project.id)])
-        if matches:
-            raise RuntimeError(
-                "fixture refuses to adopt unowned project.funding.baseline for project %s"
-                % project.id
-            )
-        baseline = baseline_model.create(baseline_values)
-        _bind_xmlid(env, baseline_xmlid, baseline)
-
-    target_lines = baseline.line_ids.filtered(lambda row: row.name == line_values["name"])
-    if len(target_lines) > 1:
-        raise RuntimeError("frontend fixture funding baseline line is not unique")
-    target_line = target_lines[:1]
-    baseline_changed = _changed_values(baseline, baseline_values)
-    line_changed = not target_line or bool(_changed_values(target_line, line_values))
-    if baseline.state != "draft" and (baseline_changed or line_changed):
-        if baseline.state not in ("active", "closed"):
-            raise RuntimeError(
-                "frontend fixture cannot revise funding baseline in state %s" % baseline.state
-            )
-        baseline = baseline.action_create_revision(
-            "Acceptance fixture baseline reconciliation",
-            period_start=baseline_values["period_start"],
-            period_end=baseline_values["period_end"],
-        )
-        _bind_xmlid(env, baseline_xmlid, baseline)
-        target_lines = baseline.line_ids.filtered(
-            lambda row: row.name == line_values["name"]
-        )
-        if len(target_lines) > 1:
-            raise RuntimeError("frontend fixture funding baseline line is not unique")
-        target_line = target_lines[:1]
-
     if baseline.state == "draft":
-        changed = _changed_values(baseline, baseline_values)
-        if changed:
-            baseline.write(changed)
-        if target_line:
-            changed = _changed_values(target_line, line_values)
-            if changed:
-                target_line.write(changed)
-        else:
-            target_line = line_model.create({"baseline_id": baseline.id, **line_values})
-        _bind_xmlid(env, line_xmlid, target_line)
         baseline.action_activate()
-    else:
-        if baseline.state != "active" or _changed_values(baseline, baseline_values):
-            raise RuntimeError("frontend fixture funding baseline is not canonical and active")
-        if not target_line or _changed_values(target_line, line_values):
-            raise RuntimeError("frontend fixture funding baseline line is not canonical")
-        _bind_xmlid(env, line_xmlid, target_line)
     if baseline.state != "active":
-        raise RuntimeError("frontend fixture funding baseline activation did not complete")
+        raise RuntimeError("frontend fixture funding baseline must be active")
     return baseline
 
 

@@ -9055,3 +9055,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 真实页面矩阵覆盖首页、我的工作、付款列表/详情、收入合同层级工作区、配置工作台、403/404，在 1440/1088/390/320、明暗主题均 PASS。层级往返恢复、配置 60→0→60、对象选择、安全返回及同候选受控 503→一次重试恢复通过；所有最终浏览器运行 mutationCount 0、errors/failures empty。
 - Full frontend Quick、business config 非零单元组、hierarchy、overlay、page identity、theme profile 均 PASS。真实 DB 仅证明 empty changeset；draft/published 等由 presentation 单元测试覆盖，没有执行配置或业务写入。完整报告：`frontend_system_page_experience_closure_20260909.md`。
 - 页面体系本地候选完成，但 `verify.frontend.release.local`、独立审查、push/PR/merge/release 未执行，状态保持 `verification_pending`。
+
+## 2026-09-09 — 前端候选与 acceptance 历史兼容拆分
+
+- Formal Product Layer：P4 交付治理；当前候选不再包含 P1 历史迁移。Layer Target：前端页面候选范围与 acceptance fixture 生命周期设计。Standard vs User-Specific：平台内部验收治理，不是行业事实、客户数据或管理员配置。
+- Why Here：旧人工 acceptance 数据升级失败不能单独证明客户历史兼容需求。`.163/.164` 及资金基线 revision fixture 曾实际执行，但已从前端候选源码中撤出；历史提交和数据库事实保留。Why Not Elsewhere：不放宽付款/资金基线约束，不在前端猜测历史身份，不逆向改写已迁移数据库。
+- Blast Radius：源码净效果恢复到页面候选的 `smart_construction_core 17.0.0.162` 与原 fixture 实现；新增一份非执行性 P4 命名空间重建设计。没有修改页面产品、契约、权限、业务流程或业务数据。
+- 现有 `sc_frontend_acceptance` 已执行 `.163/.164`，与恢复后的源码版本不一致，因此 fixture、snapshot、浏览器和 release gate 均暂停。未来清理/重建必须经过独立 P4 实现、只读审计和显式 destructive 授权；本批次不执行数据库、filestore、volume 或 session 清理。
+- 撤出前 exact HEAD `016a844351aa92ddfd9a4f639a72f30ed784edfe` 的正式 gate 为 FAIL：产品正确拒绝非当前用户的“我的付款申请”记录，`delivery_hardening` 验证器却等待普通详情表面。该问题登记为 P4 validation-tool defect，不通过修改权限或 fixture 记录规避。
