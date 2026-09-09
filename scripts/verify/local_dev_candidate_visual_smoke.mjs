@@ -1598,7 +1598,7 @@ try {
           await page.route(failureRoutePattern, failureRouteHandler);
           await relationInput.click();
           await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
-          const failureState = relationEditor.locator('[data-relation-query-state="error"]:visible');
+          const failureState = page.locator('[data-relation-query-state="error"]:visible').filter({ hasText: '可选内容加载失败' }).first();
           try {
             await failureState.waitFor({ state: 'visible', timeout: 15000 });
           } catch (error) {
@@ -1622,6 +1622,9 @@ try {
             throw new Error(`${target.name}: relation failure state missing: ${JSON.stringify(failureDiagnostic)}`, { cause: error });
           }
           const failureText = String(await failureState.textContent() || '').replace(/\s+/g, ' ').trim();
+          const failureOwnerTarget = await failureState.evaluate((node) => (
+            node.closest('[data-semantic-component="One2ManyCellEditor"]')?.getAttribute('data-validation-target') || ''
+          ));
           await page.screenshot({
             path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-relation-failure.png`),
             fullPage: false,
@@ -1647,6 +1650,7 @@ try {
             relationQueriesAfterNote,
             failureInjected,
             failureText,
+            failureOwnerTarget,
             failureRecovered,
             pass: initialCount > 0
               && noResultCount === 0
@@ -1658,6 +1662,7 @@ try {
               && reopenedCount > 0
               && relationQueriesAfterNote === relationQueriesBeforeNote
               && failureText.includes('加载失败')
+              && failureOwnerTarget.endsWith(':material_catalog_id')
               && failureRecovered,
           };
           detailCollectionEvidence.detailRelationSearchEvidence = detailRelationSearchEvidence;
