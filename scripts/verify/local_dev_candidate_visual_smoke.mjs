@@ -1500,10 +1500,13 @@ try {
             let body = {};
             try { body = JSON.parse(request.postData() || '{}'); } catch {}
             if (body.intent === 'api.data' && body?.params?.op === 'list' && body?.params?.model === 'sc.material.catalog') {
+              const payload = await response.json().catch(() => null);
               relationQueryEvents.push({
                 kind: 'response',
                 searchTerm: String(body?.params?.search_term || ''),
                 status: response.status(),
+                recordCount: Array.isArray(payload?.data?.records) ? payload.data.records.length : null,
+                ok: payload?.ok ?? null,
               });
             }
           };
@@ -1530,6 +1533,7 @@ try {
               relationQueryEvents,
               visibleDropdownCount: await page.locator('.t-select__dropdown:visible').count(),
               visibleOptionCount: await visibleOptions.count(),
+              dropdownText: String(await visibleDropdown.textContent().catch(() => '') || '').replace(/\s+/g, ' ').trim(),
               loading: await relationSelect.locator('.t-loading:visible, [aria-busy="true"]:visible').count(),
               failureText: String(await relationSelect.locator('[data-relation-query-state="error"]:visible').textContent().catch(() => '') || '').replace(/\s+/g, ' ').trim(),
             };
