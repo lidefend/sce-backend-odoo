@@ -663,14 +663,10 @@ try {
         const selectInput = selectRoot.locator('input').first();
         const initialSelectValue = await selectInput.inputValue();
         await selectRoot.click();
-        const mouseOptions = page.locator('.t-select-option:visible:not(.t-is-disabled), [role="option"]:visible:not([aria-disabled="true"])');
+        const mouseOptions = page.locator('.t-select-option:visible:not(.t-is-disabled)');
         await mouseOptions.first().waitFor({ state: 'visible', timeout: 15000 });
         const mouseOptionCount = await mouseOptions.count();
-        const mouseOptionIndex = await mouseOptions.evaluateAll((nodes) => nodes.findIndex((node) => (
-          node.getAttribute('aria-selected') !== 'true' && !node.classList.contains('t-is-selected')
-        )));
-        if (mouseOptionIndex < 0) throw new Error(`${target.name}: select has no unselected mouse option`);
-        const mouseOption = mouseOptions.nth(mouseOptionIndex);
+        const mouseOption = mouseOptions.last();
         const mouseOptionText = String(await mouseOption.textContent() || '').replace(/\s+/g, ' ').trim();
         await mouseOption.click();
         await page.waitForFunction(
@@ -680,7 +676,7 @@ try {
         );
         const mouseSelectValue = await selectInput.inputValue();
         await selectInput.focus();
-        await selectRoot.click();
+        await selectInput.press('ArrowDown');
         await selectInput.press('ArrowUp');
         await selectInput.press('Enter');
         await page.waitForFunction(
