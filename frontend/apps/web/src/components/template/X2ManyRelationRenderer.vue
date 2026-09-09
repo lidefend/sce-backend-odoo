@@ -463,6 +463,7 @@ async function runOne2manyRelationOptionsQuery(
   try {
     const options = await props.adapter.queryOne2manyColumnOptions(fieldName, rowKey, column, keyword);
     if (!relationQueryAuthority.isCurrent(key, revision)) return;
+    o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: false };
     o2mRelationOptionMap.value = {
       ...o2mRelationOptionMap.value,
       [key]: preserveSelectedOne2manyRelationOption({
@@ -473,6 +474,7 @@ async function runOne2manyRelationOptionsQuery(
     };
   } catch {
     if (!relationQueryAuthority.isCurrent(key, revision)) return;
+    o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: false };
     o2mRelationOptionMap.value = {
       ...o2mRelationOptionMap.value,
       [key]: preserveSelectedOne2manyRelationOption({
@@ -482,9 +484,6 @@ async function runOne2manyRelationOptionsQuery(
       }),
     };
     o2mRelationErrors.value = { ...o2mRelationErrors.value, [key]: '可选内容加载失败，请重试' };
-  } finally {
-    if (!relationQueryAuthority.isCurrent(key, revision)) return;
-    o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: false };
   }
 }
 
