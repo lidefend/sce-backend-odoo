@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+import runpy
+from pathlib import Path
+
 from odoo.exceptions import AccessError, UserError
 from odoo.tests.common import TransactionCase, tagged
 
@@ -453,6 +456,50 @@ class TestContractPaymentAllocationFact(TransactionCase):
         self.assertEqual(allocation.allocation_state, "unresolved_global")
         self.assertEqual(allocation.reason_code, "historical_backfill_unresolved")
         self.assertFalse(allocation.contract_id)
+
+    def test_current_migration_quarantines_incomplete_ledger_before_backfill(self):
+        request = self._request(
+            "Allocation Current Migration Quarantine",
+            17.0,
+            contract=self.contract_a,
+            settlement=self.settlement_a,
+        )
+        ledger = request.sudo()._ensure_payment_ledger(amount=17.0)
+        self.env.cr.execute(
+            "DELETE FROM payment_ledger_allocation WHERE ledger_id=%s",
+            (ledger.id,),
+        )
+        self.env.cr.execute(
+            "ALTER TABLE payment_ledger "
+            "DROP CONSTRAINT IF EXISTS payment_ledger_canonical_identity_complete"
+        )
+        self.env.cr.execute(
+            """
+            UPDATE payment_ledger
+               SET company_id=NULL,
+                   normalization_state='normalized'
+             WHERE id=%s
+            """,
+            (ledger.id,),
+        )
+
+        migration_path = (
+            Path(__file__).resolve().parents[1]
+            / "migrations"
+            / "17.0.0.163"
+            / "pre-migration.py"
+        )
+        migrate = runpy.run_path(str(migration_path))["migrate"]
+        migrate(self.env.cr, "17.0.0.162")
+        self.env["payment.ledger.allocation"].init()
+
+        ledger.invalidate_recordset(["normalization_state", "contract_allocation_ids"])
+        allocation = ledger.contract_allocation_ids
+        self.assertEqual(ledger.normalization_state, "legacy_unresolved_identity")
+        self.assertEqual(len(allocation), 1)
+        self.assertEqual(allocation.normalization_state, "legacy_unresolved_identity")
+        self.assertEqual(allocation.allocation_state, "unresolved_global")
+        self.assertEqual(allocation.reason_code, "historical_backfill_unresolved")
 
     def test_allocation_visibility_is_project_and_company_scoped(self):
         def create_user(login, groups, company=None):
