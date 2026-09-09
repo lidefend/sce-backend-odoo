@@ -1326,6 +1326,51 @@ try {
           && (authorityDeniedEvidence?.pass ?? true)
           && safeReturnEvidence.afterPath === '/';
       }
+      let formValidationEvidence = null;
+      if (target.exerciseFormValidation === true) {
+        const form = page.locator('[data-product-page-mode="form"]:visible');
+        const saveAction = page.locator('button[data-action-ref="form.save"]:visible').first();
+        if (await form.count() !== 1 || await saveAction.count() !== 1) {
+          throw new Error(`${target.name}: editable form validation entry is missing`);
+        }
+        const mutationCountBefore = report.mutationCount;
+        await saveAction.click();
+        const invalidControl = form.locator('[aria-invalid="true"]:visible').first();
+        await invalidControl.waitFor({ state: 'visible', timeout: 15000 });
+        const invalidField = invalidControl.locator('xpath=ancestor::*[@data-field-name][1]');
+        const activeFieldName = await page.evaluate(() => document.activeElement?.closest('[data-field-name]')?.getAttribute('data-field-name') || '');
+        const invalidFieldName = String(await invalidField.getAttribute('data-field-name') || '');
+        const alertText = String(await form.locator('[role="alert"]:visible').first().textContent() || '').replace(/\s+/g, ' ').trim();
+        const fieldGeometry = await form.locator('[data-field-name]:visible').evaluateAll((nodes) => nodes
+          .filter((node) => node.querySelector('input:not([disabled]), textarea:not([disabled]), button:not([disabled])'))
+          .slice(0, 12)
+          .map((node) => {
+            const rect = node.getBoundingClientRect();
+            return {
+              name: node.getAttribute('data-field-name') || '',
+              left: Math.round(rect.left),
+              right: Math.round(rect.right),
+              width: Math.round(rect.width),
+            };
+          }));
+        const minimumPhoneFieldWidth = viewport.name === 'mobile'
+          ? Math.max(220, viewport.width - 100)
+          : 0;
+        formValidationEvidence = {
+          invalidFieldName,
+          activeFieldName,
+          alertText,
+          mutationCountBefore,
+          mutationCountAfter: report.mutationCount,
+          fieldGeometry,
+          minimumPhoneFieldWidth,
+          pass: Boolean(invalidFieldName)
+            && activeFieldName === invalidFieldName
+            && alertText.length > 0
+            && mutationCountBefore === report.mutationCount
+            && (viewport.name !== 'mobile' || fieldGeometry.every((item) => item.width >= minimumPhoneFieldWidth)),
+        };
+      }
       let relationSearchDialogEvidence = null;
       if (target.captureRelationSearchDialog === true) {
         const relations = page.locator('.many2one-combobox:visible');
@@ -1462,7 +1507,7 @@ try {
         };
       }
       let factDisclosureEvidence = null;
-      if (target.exerciseFactDisclosure === true) {
+      if (target.exerciseFactDisclosure === true && (target.factDisclosureMobileOnly !== true || viewport.name === 'mobile')) {
         const recordId = String(target.recordId || '').trim();
         const ownerSelector = recordId ? `[data-work-item-key][data-record-id="${recordId}"]` : '[data-work-item-key]';
         const owner = page.locator(`${ownerSelector}:visible, [data-semantic-component="CollectionMobileRecordRow"]:visible`).first();
@@ -1826,9 +1871,11 @@ try {
         const missingResizeLabels = await columnHeaders.locator('.column-resize-handle:not([aria-label])').count();
         const groupingToolbarCount = await page.locator('[data-semantic-component="CollectionGroupingToolbar"]').count();
         const groupPageControlsCount = await page.locator('[data-semantic-component="CollectionGroupPageControls"]').count();
+        const collectionState = String(await page.locator('[data-semantic-component="ActionView"]').getAttribute('data-collection-state') || '');
         collectionNavigationEvidence = {
           footerCount,
           paginationMode,
+          collectionState,
           columnHeaderCount,
           invalidColumnRoots,
           missingDragLabels,
@@ -1837,7 +1884,7 @@ try {
           groupPageControlsCount,
           pass: footerCount === 1
             && ['count', 'grouped', 'paged'].includes(paginationMode)
-            && columnHeaderCount > 0
+            && (collectionState === 'empty' || columnHeaderCount > 0)
             && invalidColumnRoots === 0
             && missingDragLabels === 0
             && missingResizeLabels === 0,
@@ -1974,8 +2021,11 @@ try {
         await emptySurface.waitFor({ state: 'visible', timeout: 15000 });
         const noResultUrl = page.url();
         const noResultText = String(await emptySurface.textContent() || '').replace(/\s+/g, ' ').trim();
-        const clearAction = searchOwner.getByRole('button', { name: /^清除$/ });
+        const emptyClearAction = emptySurface.getByRole('button', { name: /^清除查询条件$/ });
+        const toolbarClearAction = searchOwner.getByRole('button', { name: /^清除$/ });
+        const clearAction = await emptyClearAction.count() === 1 ? emptyClearAction : toolbarClearAction;
         if (await clearAction.count() !== 1) throw new Error(`${target.name}: collection clear-search action is missing`);
+        const clearActionLabel = String(await clearAction.textContent() || '').replace(/\s+/g, ' ').trim();
         await clearAction.click();
         await waitForStableProductSurface(page);
         await page.locator('[data-record-key]:visible').first().waitFor({ state: 'visible', timeout: 15000 });
@@ -1988,12 +2038,14 @@ try {
           noMatchQuery,
           noResultUrl,
           noResultText,
+          clearActionLabel,
           totalAfter,
           recordTotalAfter: recordTotal(totalAfter),
           finalUrl: page.url(),
           finalSearchValue: await searchInput.inputValue(),
           pass: Boolean(totalBefore)
             && noResultText.length > 0
+            && ['清除查询条件', '清除'].includes(clearActionLabel)
             && recordTotal(totalBefore) > 0
             && recordTotal(totalAfter) === recordTotal(totalBefore)
             && await searchInput.inputValue() === '',
@@ -2154,7 +2206,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, safeReturnEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, safeReturnEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -2247,6 +2299,7 @@ for (const item of report.routes) {
   if (item.collectionMobileRecordEvidence && !item.collectionMobileRecordEvidence.pass) failures.push({ name: item.name, collectionMobileRecordEvidence: item.collectionMobileRecordEvidence });
   if (item.collectionKanbanEvidence && !item.collectionKanbanEvidence.pass) failures.push({ name: item.name, collectionKanbanEvidence: item.collectionKanbanEvidence });
   if (item.relationSearchDialogEvidence && !item.relationSearchDialogEvidence.pass) failures.push({ name: item.name, relationSearchDialogEvidence: item.relationSearchDialogEvidence });
+  if (item.formValidationEvidence && !item.formValidationEvidence.pass) failures.push({ name: item.name, formValidationEvidence: item.formValidationEvidence });
   if (item.collectionAggregateEvidence && !item.collectionAggregateEvidence.pass) failures.push({ name: item.name, collectionAggregateEvidence: item.collectionAggregateEvidence });
   if (item.collectionGroupHeaderEvidence && !item.collectionGroupHeaderEvidence.pass) failures.push({ name: item.name, collectionGroupHeaderEvidence: item.collectionGroupHeaderEvidence });
   if (item.dialogLifecycleEvidence && !item.dialogLifecycleEvidence.pass) failures.push({ name: item.name, dialogLifecycleEvidence: item.dialogLifecycleEvidence });

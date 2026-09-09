@@ -34,6 +34,8 @@ REQUIREMENTS = {
         "fields.value.every((field) => field.readonly)",
         ':prefer-readonly-facts="readonlyFactLayout"',
         "canonical-form-node--readonly-fact",
+        "@media (max-width: 480px)",
+        ".canonical-form-node--container:not(.canonical-form-node--readonly-fact)",
     ),
     "frontend/apps/web/src/pages/ContractFormPage.vue": (
         "const suppressPageHeaderTitle = computed(() => false)",

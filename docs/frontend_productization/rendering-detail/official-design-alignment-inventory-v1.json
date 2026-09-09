@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "2512d17d0a27332121dfd8d60221f9414d2b8149ce141fa54b36a78bf51136b5",
+  "inputDigest": "da87623a5ca93ae63e6881e79176818fd98df5d4d3d2021257d8ad8d0f8724c9",
   "internalVendorSelectorGaps": [
     {
       "file": "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
