@@ -182,6 +182,16 @@ class CandidateFrontendContractTest(unittest.TestCase):
         self.assertIn("清除查询条件", browser)
         self.assertIn("exerciseSidebarScroll", browser)
         self.assertIn("sidebarScrollEvidence", browser)
+        self.assertIn("exerciseOfficialComponentBehavior", browser)
+        self.assertIn("officialComponentBehaviorEvidence", browser)
+        self.assertIn("inputSearchClear", browser)
+        self.assertIn("selectMouse", browser)
+        self.assertIn("selectKeyboard", browser)
+        self.assertIn("structuredButtonActivation", browser)
+        self.assertIn("exerciseOfficialAlertOperation", browser)
+        self.assertIn("officialAlertOperationEvidence", browser)
+        self.assertIn("exerciseOfficialCardSlot", browser)
+        self.assertIn("officialCardSlotEvidence", browser)
         self.assertNotIn("waitForTimeout", browser)
 
 if __name__ == "__main__":

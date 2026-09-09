@@ -437,6 +437,9 @@ try {
       let businessConfigExperienceEvidence = null;
       let businessConfigReadFailureEvidence = null;
       let safeReturnEvidence = null;
+      let officialComponentBehaviorEvidence = null;
+      let officialAlertOperationEvidence = null;
+      let officialCardSlotEvidence = null;
       let expectedLoadedSelectorEvidence = null;
       const exerciseReadFailure = target.exerciseReadFailureRecovery === true
         && (target.readFailureDesktopOnly !== true || viewport.name === 'desktop');
@@ -490,6 +493,26 @@ try {
         await route.continue();
       };
       if (exerciseBusinessConfigReadFailure) await page.route(readFailurePattern, businessConfigReadFailureHandler);
+      const exerciseOfficialAlertOperation = target.exerciseOfficialAlertOperation === true;
+      let officialAlertFailureInjected = false;
+      const officialAlertFailureHandler = async (route) => {
+        const request = route.request();
+        let body = {};
+        try { body = JSON.parse(request.postData() || '{}'); } catch {}
+        if (!officialAlertFailureInjected && request.method() === 'POST' && body.intent === 'my.work.summary') {
+          officialAlertFailureInjected = true;
+          expectedReadFailureResponses += 1;
+          expectedReadFailureConsoleErrors += 1;
+          await route.fulfill({
+            status: 503,
+            contentType: 'application/json',
+            body: JSON.stringify({ error: { message: '受控组件读取失败，请重试。', reason_code: 'CONTROLLED_COMPONENT_FAILURE', retryable: true } }),
+          });
+          return;
+        }
+        await route.continue();
+      };
+      if (exerciseOfficialAlertOperation) await page.route(readFailurePattern, officialAlertFailureHandler);
       const contractResponse = target.expectContractResponse !== false && /^\/(?:a|r|f)\//.test(target.path)
         ? page.waitForResponse(isContractV2Response, { timeout: 45000 })
         : null;
@@ -515,6 +538,44 @@ try {
       await page.locator('.layout-shell').waitFor({ timeout: 45000 });
       await page.locator('[data-product-page-mode], main').filter({ visible: true }).first().waitFor({ timeout: 45000 });
       await waitForStableProductSurface(page);
+      if (exerciseOfficialAlertOperation) {
+        const alert = page.locator('[data-semantic-component="ScInlineState"][data-semantic-driver="tdesign-alert"][data-state="error"]:visible');
+        await alert.waitFor({ state: 'visible', timeout: 15000 });
+        const retry = alert.getByRole('button', { name: '重试', exact: true });
+        const operation = alert.locator('.t-alert__operation');
+        const description = alert.locator('.sc-inline-state__description');
+        const retryCount = await retry.count();
+        const operationCount = await operation.count();
+        const descriptionText = String(await description.textContent() || '').replace(/\s+/g, ' ').trim();
+        const driverClassPresent = await alert.evaluate((node) => node.classList.contains('t-alert'));
+        await retry.focus();
+        const focusedBeforeActivation = await retry.evaluate((node) => node === document.activeElement);
+        await page.unroute(readFailurePattern, officialAlertFailureHandler);
+        const recoveryResponse = page.waitForResponse((response) => {
+          if (!response.url().includes('/api/v1/intent') || response.request().method() !== 'POST') return false;
+          try { return JSON.parse(response.request().postData() || '{}').intent === 'my.work.summary'; } catch { return false; }
+        }, { timeout: 45000 });
+        await retry.press('Enter');
+        const recovered = await recoveryResponse;
+        if (!recovered.ok()) throw new Error(`${target.name}: alert operation recovery failed with ${recovered.status()}`);
+        await page.locator('[data-semantic-component="WorkspaceHome"][data-state="ready"]:visible').waitFor({ state: 'visible', timeout: 45000 });
+        officialAlertOperationEvidence = {
+          failureInjected: officialAlertFailureInjected,
+          driverClassPresent,
+          operationCount,
+          retryCount,
+          descriptionText,
+          focusedBeforeActivation,
+          recovered: await page.locator('[data-semantic-component="WorkspaceHome"][data-state="ready"]:visible').count() === 1,
+        };
+        officialAlertOperationEvidence.pass = officialAlertOperationEvidence.failureInjected
+          && officialAlertOperationEvidence.operationCount === 1
+          && officialAlertOperationEvidence.retryCount === 1
+          && officialAlertOperationEvidence.driverClassPresent
+          && officialAlertOperationEvidence.descriptionText.length > 0
+          && officialAlertOperationEvidence.focusedBeforeActivation
+          && officialAlertOperationEvidence.recovered;
+      }
       if (exerciseBusinessConfigReadFailure) {
         const errorSurface = page.locator('[data-business-config-surface-error="true"]:visible');
         await errorSurface.waitFor({ state: 'visible', timeout: 15000 });
@@ -577,6 +638,173 @@ try {
           visibleCount: await loadedSurface.count(),
           pass: await loadedSurface.count() > 0,
         };
+      }
+      if (target.exerciseOfficialComponentBehavior === true) {
+        const workspace = page.locator('[data-semantic-component="MyWorkApprovalWorkspace"][data-state="ready"]:visible');
+        await workspace.waitFor({ state: 'visible', timeout: 45000 });
+        const searchRoot = workspace.locator('.product-work__filters [data-semantic-component="ScInput"]').first();
+        const searchInput = searchRoot.locator('input[type="search"]');
+        const initialCardCount = await workspace.locator('.work-card:visible').count();
+        await searchInput.focus();
+        const inputFocused = await searchInput.evaluate((node) => node === document.activeElement);
+        await searchInput.fill('__official_component_no_match__');
+        await workspace.getByRole('button', { name: '清除查找', exact: true }).waitFor({ state: 'visible', timeout: 15000 });
+        const filteredEmptyCount = await workspace.locator('[data-semantic-component="ScEmptyState"]:visible').count();
+        await workspace.getByRole('button', { name: '清除查找', exact: true }).click();
+        await page.waitForFunction(
+          () => document.querySelector('.product-work__filters input[type="search"]')?.value === ''
+            && document.querySelectorAll('.work-card').length > 0,
+          undefined,
+          { timeout: 15000 },
+        );
+        const restoredCardCount = await workspace.locator('.work-card:visible').count();
+
+        const selectRoot = workspace.locator('.product-work__filters [data-semantic-component="ScSelect"]').first();
+        const selectInput = selectRoot.locator('input').first();
+        const initialSelectValue = await selectInput.inputValue();
+        await selectRoot.click();
+        const mouseOptions = page.locator('.t-select-option:visible:not(.t-is-disabled), [role="option"]:visible:not([aria-disabled="true"])');
+        await mouseOptions.first().waitFor({ state: 'visible', timeout: 15000 });
+        const mouseOptionCount = await mouseOptions.count();
+        const mouseOptionLabels = (await mouseOptions.allTextContents()).map((value) => value.replace(/\s+/g, ' ').trim());
+        const mouseOptionIndex = Math.max(0, mouseOptionLabels.findIndex((value) => value && value !== initialSelectValue));
+        const mouseOption = mouseOptions.nth(mouseOptionIndex);
+        const mouseOptionText = String(await mouseOption.textContent() || '').replace(/\s+/g, ' ').trim();
+        await mouseOption.click();
+        await page.waitForFunction(
+          (before) => document.querySelector('.product-work__filters [data-semantic-component="ScSelect"] input')?.value !== before,
+          initialSelectValue,
+          { timeout: 15000 },
+        );
+        const mouseSelectValue = await selectInput.inputValue();
+        await selectInput.focus();
+        await selectInput.press('Home');
+        await selectInput.press('ArrowDown');
+        await selectInput.press('Enter');
+        await page.waitForFunction(
+          (before) => document.querySelector('.product-work__filters [data-semantic-component="ScSelect"] input')?.value !== before,
+          mouseSelectValue,
+          { timeout: 15000 },
+        );
+        const keyboardSelectValue = await selectInput.inputValue();
+        const selectFocused = await selectInput.evaluate((node) => node === document.activeElement);
+
+        const metricButtons = workspace.locator('.count-card[data-primitive-driver="browser-structured"]');
+        const metricCount = await metricButtons.count();
+        const mouseMetric = metricButtons.nth(Math.min(1, Math.max(0, metricCount - 1)));
+        const mouseMetricKey = String(await mouseMetric.getAttribute('data-section-key') || '');
+        const mouseActivationCount = await mouseMetric.evaluate((node) => {
+          node.dataset.browserActivationCount = '0';
+          node.addEventListener('click', () => {
+            node.dataset.browserActivationCount = String(Number(node.dataset.browserActivationCount || '0') + 1);
+          });
+          return Number(node.dataset.browserActivationCount || '0');
+        });
+        await mouseMetric.click();
+        const mouseActivationAfter = Number(await mouseMetric.getAttribute('data-browser-activation-count') || 0);
+        const mousePressed = await mouseMetric.getAttribute('aria-pressed');
+        const keyboardMetric = metricButtons.first();
+        await keyboardMetric.evaluate((node) => {
+          node.dataset.browserActivationCount = '0';
+          node.addEventListener('click', () => {
+            node.dataset.browserActivationCount = String(Number(node.dataset.browserActivationCount || '0') + 1);
+          });
+        });
+        await keyboardMetric.focus();
+        await keyboardMetric.press('Enter');
+        const keyboardActivationAfter = Number(await keyboardMetric.getAttribute('data-browser-activation-count') || 0);
+        const keyboardPressed = await keyboardMetric.getAttribute('aria-pressed');
+        const metricFocused = await keyboardMetric.evaluate((node) => node === document.activeElement);
+        const disabledProjection = await keyboardMetric.evaluate((node) => {
+          const button = node;
+          const before = Number(button.dataset.browserActivationCount || '0');
+          button.disabled = true;
+          button.setAttribute('aria-disabled', 'true');
+          button.setAttribute('aria-busy', 'true');
+          button.dataset.loading = 'true';
+          button.click();
+          const after = Number(button.dataset.browserActivationCount || '0');
+          const projected = {
+            disabled: button.disabled,
+            ariaDisabled: button.getAttribute('aria-disabled'),
+            ariaBusy: button.getAttribute('aria-busy'),
+            loading: button.dataset.loading,
+            activationDelta: after - before,
+          };
+          button.disabled = false;
+          button.removeAttribute('aria-disabled');
+          button.removeAttribute('aria-busy');
+          delete button.dataset.loading;
+          return projected;
+        });
+
+        const publicBodyCards = workspace.locator('.work-card .t-card__body.work-card__body');
+        officialComponentBehaviorEvidence = {
+          inputSearchClear: {
+            driver: await searchRoot.getAttribute('data-primitive-driver'),
+            inputFocused,
+            filteredEmptyCount,
+            initialCardCount,
+            restoredCardCount,
+            valueAfterClear: await searchInput.inputValue(),
+          },
+          selectMouse: { initialSelectValue, mouseOptionCount, mouseOptionText, value: mouseSelectValue },
+          selectKeyboard: { before: mouseSelectValue, value: keyboardSelectValue, focused: selectFocused },
+          structuredButtonActivation: {
+            metricCount,
+            mouseMetricKey,
+            mouseActivationCount,
+            mouseActivationAfter,
+            mousePressed,
+            keyboardActivationAfter,
+            keyboardPressed,
+            focused: metricFocused,
+            disabledProjection,
+          },
+          cardPublicBodyClass: { count: await publicBodyCards.count() },
+        };
+        officialComponentBehaviorEvidence.pass = officialComponentBehaviorEvidence.inputSearchClear.driver === 'tdesign'
+          && officialComponentBehaviorEvidence.inputSearchClear.inputFocused
+          && officialComponentBehaviorEvidence.inputSearchClear.filteredEmptyCount === 1
+          && officialComponentBehaviorEvidence.inputSearchClear.initialCardCount > 0
+          && officialComponentBehaviorEvidence.inputSearchClear.restoredCardCount === officialComponentBehaviorEvidence.inputSearchClear.initialCardCount
+          && officialComponentBehaviorEvidence.inputSearchClear.valueAfterClear === ''
+          && officialComponentBehaviorEvidence.selectMouse.mouseOptionCount > 1
+          && officialComponentBehaviorEvidence.selectMouse.mouseOptionText.length > 0
+          && officialComponentBehaviorEvidence.selectMouse.value !== officialComponentBehaviorEvidence.selectMouse.initialSelectValue
+          && officialComponentBehaviorEvidence.selectKeyboard.value !== officialComponentBehaviorEvidence.selectKeyboard.before
+          && officialComponentBehaviorEvidence.selectKeyboard.focused
+          && officialComponentBehaviorEvidence.structuredButtonActivation.metricCount > 1
+          && officialComponentBehaviorEvidence.structuredButtonActivation.mouseActivationAfter === 1
+          && officialComponentBehaviorEvidence.structuredButtonActivation.mousePressed === 'true'
+          && officialComponentBehaviorEvidence.structuredButtonActivation.keyboardActivationAfter === 1
+          && officialComponentBehaviorEvidence.structuredButtonActivation.keyboardPressed === 'true'
+          && officialComponentBehaviorEvidence.structuredButtonActivation.focused
+          && officialComponentBehaviorEvidence.structuredButtonActivation.disabledProjection.disabled
+          && officialComponentBehaviorEvidence.structuredButtonActivation.disabledProjection.ariaDisabled === 'true'
+          && officialComponentBehaviorEvidence.structuredButtonActivation.disabledProjection.ariaBusy === 'true'
+          && officialComponentBehaviorEvidence.structuredButtonActivation.disabledProjection.loading === 'true'
+          && officialComponentBehaviorEvidence.structuredButtonActivation.disabledProjection.activationDelta === 0
+          && officialComponentBehaviorEvidence.cardPublicBodyClass.count > 0;
+        if (!officialComponentBehaviorEvidence.pass) {
+          throw new Error(`${target.name}: official component behavior failed ${JSON.stringify(officialComponentBehaviorEvidence)}`);
+        }
+      }
+      if (target.exerciseOfficialCardSlot === true) {
+        const card = page.locator('[data-floorplan-region="current-task"][data-semantic-component="ScCard"]:visible').first();
+        await card.waitFor({ state: 'visible', timeout: 15000 });
+        const actionSurface = card.locator('[data-floorplan-region="action-bar"][data-mobile-action-surface]:visible');
+        const actionButtons = actionSurface.locator('[data-semantic-component="ScButton"]:visible');
+        officialCardSlotEvidence = {
+          cardCount: await card.count(),
+          tdesignCard: await card.evaluate((node) => node.classList.contains('t-card')),
+          actionSurfaceCount: await actionSurface.count(),
+          actionButtonCount: await actionButtons.count(),
+        };
+        officialCardSlotEvidence.pass = officialCardSlotEvidence.cardCount === 1
+          && officialCardSlotEvidence.tdesignCard
+          && officialCardSlotEvidence.actionSurfaceCount === 1
+          && officialCardSlotEvidence.actionButtonCount > 0;
       }
       if (bootSummaryFixtureTarget === target) {
         while (bootSummaryRoutesInFlight > 0) await new Promise((resolve) => setTimeout(resolve, 10));
@@ -2610,7 +2838,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, safeReturnEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, officialCardSlotEvidence, safeReturnEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -2715,6 +2943,9 @@ for (const item of report.routes) {
   if (item.readFailureEvidence && !item.readFailureEvidence.pass) failures.push({ name: item.name, readFailureEvidence: item.readFailureEvidence });
   if (item.businessConfigExperienceEvidence && !item.businessConfigExperienceEvidence.pass) failures.push({ name: item.name, businessConfigExperienceEvidence: item.businessConfigExperienceEvidence });
   if (item.businessConfigReadFailureEvidence && !item.businessConfigReadFailureEvidence.pass) failures.push({ name: item.name, businessConfigReadFailureEvidence: item.businessConfigReadFailureEvidence });
+  if (item.officialComponentBehaviorEvidence && !item.officialComponentBehaviorEvidence.pass) failures.push({ name: item.name, officialComponentBehaviorEvidence: item.officialComponentBehaviorEvidence });
+  if (item.officialAlertOperationEvidence && !item.officialAlertOperationEvidence.pass) failures.push({ name: item.name, officialAlertOperationEvidence: item.officialAlertOperationEvidence });
+  if (item.officialCardSlotEvidence && !item.officialCardSlotEvidence.pass) failures.push({ name: item.name, officialCardSlotEvidence: item.officialCardSlotEvidence });
   if (item.safeReturnEvidence && !item.safeReturnEvidence.pass) failures.push({ name: item.name, safeReturnEvidence: item.safeReturnEvidence });
   if (item.topbarActionEvidence && !item.topbarActionEvidence.pass) failures.push({ name: item.name, topbarActionEvidence: item.topbarActionEvidence });
   if (item.factDisclosureEvidence && !item.factDisclosureEvidence.pass) failures.push({ name: item.name, factDisclosureEvidence: item.factDisclosureEvidence });
