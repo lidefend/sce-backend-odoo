@@ -154,6 +154,7 @@
               :relation-loading="one2manyRelationIsLoading(field.name, row._key, column.name)"
               :relation-empty-text="one2manyRelationEmptyText(field.name, row._key, column)"
               :relation-placeholder="one2manyRelationPlaceholder(field.name, row._key, column)"
+              :relation-query-diagnostic="one2manyRelationDiagnostic(field.name, row._key, column.name)"
               @update="adapter.setOne2manyRowField(field.name, row._key, column, $event)"
               @search="scheduleOne2manyRelationSearch(field.name, row._key, column, $event)"
               @popup-change="handleOne2manyRelationPopup(field.name, row._key, column, $event)"
@@ -234,6 +235,7 @@
                 :relation-loading="one2manyRelationIsLoading(field.name, row.key, column.name)"
                 :relation-empty-text="one2manyRelationEmptyText(field.name, row.key, column)"
                 :relation-placeholder="one2manyRelationPlaceholder(field.name, row.key, column)"
+                :relation-query-diagnostic="one2manyRelationDiagnostic(field.name, row.key, column.name)"
                 show-readonly-reason
                 @update="adapter.setOne2manyRowField(field.name, row.key, column, $event)"
                 @search="scheduleOne2manyRelationSearch(field.name, row.key, column, $event)"
@@ -383,6 +385,7 @@ const o2mRelationOptionMap = ref<Record<string, Array<{ value: number; label: st
 const o2mRelationLoading = ref<Record<string, boolean>>({});
 const o2mRelationErrors = ref<Record<string, string>>({});
 const o2mRelationSearchMap = ref<Record<string, string>>({});
+const o2mRelationDiagnostics = ref<Record<string, string>>({});
 const relationPopupAuthority = createOne2manyRelationPopupAuthority();
 const relationQueryAuthority = createOne2manyRelationRequestAuthority();
 const relationQueryTimers: Record<string, ReturnType<typeof setTimeout>> = {};
@@ -419,6 +422,10 @@ function one2manyRelationIsLoading(fieldName: string, rowKey: string, columnName
 
 function one2manyRelationSearchValue(fieldName: string, rowKey: string, columnName: string) {
   return o2mRelationSearchMap.value[relationCellKey(fieldName, rowKey, columnName)] || '';
+}
+
+function one2manyRelationDiagnostic(fieldName: string, rowKey: string, columnName: string) {
+  return o2mRelationDiagnostics.value[relationCellKey(fieldName, rowKey, columnName)] || '';
 }
 
 function one2manyRelationEmptyText(fieldName: string, rowKey: string, column: RelationFieldColumn) {
@@ -490,7 +497,20 @@ async function runOne2manyRelationOptionsQuery(
   o2mRelationErrors.value = { ...o2mRelationErrors.value, [key]: '' };
   try {
     const options = await props.adapter.queryOne2manyColumnOptions(fieldName, rowKey, column, keyword);
-    if (!one2manyRelationResponseIsRelevant(key, revision)) return;
+    const relevant = one2manyRelationResponseIsRelevant(key, revision);
+    o2mRelationDiagnostics.value = {
+      ...o2mRelationDiagnostics.value,
+      [key]: JSON.stringify({
+        keyword,
+        revision,
+        relevant,
+        current: relationQueryAuthority.isCurrent(key, revision),
+        active: relationActiveRequestRevisions[key] || 0,
+        timer: Boolean(relationQueryTimers[key]),
+        incoming: options.length,
+      }),
+    };
+    if (!relevant) return;
     o2mRelationOptionMap.value = {
       ...o2mRelationOptionMap.value,
       [key]: preserveSelectedOne2manyRelationOption({
@@ -498,6 +518,10 @@ async function runOne2manyRelationOptionsQuery(
         previous: o2mRelationOptionMap.value[key] || [],
         currentValue: currentOne2manyRelationValue(fieldName, rowKey, column.name),
       }),
+    };
+    o2mRelationDiagnostics.value = {
+      ...o2mRelationDiagnostics.value,
+      [key]: JSON.stringify({ keyword, revision, relevant, incoming: options.length, applied: o2mRelationOptionMap.value[key]?.length || 0 }),
     };
   } catch {
     if (!one2manyRelationResponseIsRelevant(key, revision)) return;

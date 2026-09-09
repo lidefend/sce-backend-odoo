@@ -1552,7 +1552,8 @@ try {
               if (count >= 0 && count <= maximum) return;
               await page.waitForTimeout(50);
             }
-            throw new Error(`${target.name}: active relation selector did not project at most ${maximum} options`);
+            const diagnostic = await relationEditor.getAttribute('data-relation-query-diagnostic');
+            throw new Error(`${target.name}: active relation selector did not project at most ${maximum} options diagnostic=${diagnostic || 'missing'}`);
           };
           await relationInput.click();
           await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });

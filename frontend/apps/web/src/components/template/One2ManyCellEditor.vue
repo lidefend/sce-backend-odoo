@@ -3,6 +3,7 @@
     class="o2m-cell-editor"
     data-semantic-component="One2ManyCellEditor"
     :data-validation-target="validationTarget"
+    :data-relation-query-diagnostic="relationQueryDiagnostic || undefined"
   >
     <ScCheckbox
       v-if="column.ttype === 'boolean'"
@@ -88,6 +89,7 @@ const props = withDefaults(defineProps<{
   relationLoading?: boolean;
   relationEmptyText?: string;
   relationPlaceholder?: string;
+  relationQueryDiagnostic?: string;
   showReadonlyReason?: boolean;
 }>(), {
   amount: false,
@@ -97,6 +99,7 @@ const props = withDefaults(defineProps<{
   relationLoading: false,
   relationEmptyText: '暂无可选内容',
   relationPlaceholder: '',
+  relationQueryDiagnostic: '',
   showReadonlyReason: false,
 });
 
