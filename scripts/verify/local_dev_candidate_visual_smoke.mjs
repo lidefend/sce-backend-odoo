@@ -1572,7 +1572,6 @@ try {
           await page.waitForTimeout(500);
           const relationQueriesAfterNote = relationQueryCount;
 
-          const failureKeyword = '__shared_relation_failure__';
           let failureInjected = false;
           const failureRoutePattern = '**/api/v1/**';
           const failureRouteHandler = async (route) => {
@@ -1582,8 +1581,7 @@ try {
             if (!failureInjected
               && body.intent === 'api.data'
               && body?.params?.op === 'list'
-              && body?.params?.model === 'sc.material.catalog'
-              && body?.params?.search_term === failureKeyword) {
+              && body?.params?.model === 'sc.material.catalog') {
               failureInjected = true;
               expectedReadFailureResponses += 1;
               expectedReadFailureConsoleErrors += 1;
@@ -1599,7 +1597,6 @@ try {
           await page.route(failureRoutePattern, failureRouteHandler);
           await relationInput.click();
           await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
-          await relationInput.fill(failureKeyword);
           const failureState = relationEditor.locator('[data-relation-query-state="error"]:visible');
           try {
             await failureState.waitFor({ state: 'visible', timeout: 15000 });
