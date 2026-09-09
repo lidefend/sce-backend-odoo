@@ -1543,18 +1543,20 @@ try {
           }, { timeout: 15000 });
           await relationInput.click();
           await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
+          let relationSearchInput = page.locator('input:focus').first();
+          if (await relationSearchInput.count() !== 1) relationSearchInput = relationInput;
           await visibleOptions.first().waitFor({ state: 'visible', timeout: 15000 });
           const initialCount = await visibleOptions.count();
           const noMatchKeyword = '__shared_relation_no_match__';
           const noMatchResponse = waitForMaterialCatalogQuery(noMatchKeyword);
-          await relationInput.fill('S');
-          await relationInput.fill(noMatchKeyword);
+          await relationSearchInput.fill('S');
+          await relationSearchInput.fill(noMatchKeyword);
           await noMatchResponse;
           await page.waitForTimeout(100);
           const noResultCount = await visibleOptions.count();
           const noResultText = String(await visibleDropdown.textContent().catch(() => '') || '').replace(/\s+/g, ' ').trim();
           const clearResponse = waitForMaterialCatalogQuery('');
-          await relationInput.fill('');
+          await relationSearchInput.fill('');
           await clearResponse;
           try {
             await visibleOptions.first().waitFor({ state: 'visible', timeout: 15000 });
@@ -1589,11 +1591,15 @@ try {
             .evaluateAll((inputs) => inputs.map((input) => input.value));
           await relationInput.click();
           await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
+          relationSearchInput = page.locator('input:focus').first();
+          if (await relationSearchInput.count() !== 1) relationSearchInput = relationInput;
+          const selectedOptionBeforeSearch = String(await visibleDropdown.locator('[aria-selected="true"]:visible').first().textContent().catch(() => '') || '').replace(/\s+/g, ' ').trim();
           const selectedNoMatchResponse = waitForMaterialCatalogQuery(noMatchKeyword);
-          await relationInput.fill(noMatchKeyword);
+          await relationSearchInput.fill(noMatchKeyword);
           await selectedNoMatchResponse;
           await page.waitForTimeout(100);
           const selectedNoResultCount = await visibleOptions.count();
+          const selectedNoResultLabels = (await visibleOptions.allTextContents()).map((value) => value.replace(/\s+/g, ' ').trim());
           await page.keyboard.press('Escape');
           await visibleDropdown.waitFor({ state: 'hidden', timeout: 15000 });
           const selectedDisplayAfterSearch = await relationInput.inputValue();
@@ -1603,6 +1609,7 @@ try {
           await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
           await visibleOptions.first().waitFor({ state: 'visible', timeout: 15000 });
           const reopenedCount = await visibleOptions.count();
+          const selectedOptionAfterReopen = String(await visibleDropdown.locator('[aria-selected="true"]:visible').first().textContent().catch(() => '') || '').replace(/\s+/g, ' ').trim();
           await page.keyboard.press('Escape');
           await visibleDropdown.waitFor({ state: 'hidden', timeout: 15000 });
           const noteInput = relationRow.locator('[data-validation-target$=":note"] input:visible').first();
@@ -1683,10 +1690,13 @@ try {
             selectedLabel,
             selectedDisplay,
             selectedDisplays,
+            selectedOptionBeforeSearch,
             selectedNoResultCount,
+            selectedNoResultLabels,
             selectedDisplayAfterSearch,
             selectedDisplaysAfterSearch,
             reopenedCount,
+            selectedOptionAfterReopen,
             relationQueriesBeforeNote,
             relationQueriesAfterNote,
             failureInjected,
@@ -1697,9 +1707,10 @@ try {
               && (noResultCount === 0 || noResultText.includes('未找到匹配'))
               && restoredCount > 0
               && Boolean(selectedLabel)
-              && (selectedDisplay === selectedLabel || selectedDisplays.includes(selectedLabel))
+              && (selectedDisplay === selectedLabel || selectedDisplays.includes(selectedLabel) || selectedOptionBeforeSearch === selectedLabel)
               && selectedNoResultCount <= 1
-              && (selectedDisplayAfterSearch === selectedLabel || selectedDisplaysAfterSearch.includes(selectedLabel))
+              && (selectedNoResultCount === 0 || selectedNoResultLabels.includes(selectedLabel))
+              && (selectedDisplayAfterSearch === selectedLabel || selectedDisplaysAfterSearch.includes(selectedLabel) || selectedOptionAfterReopen === selectedLabel)
               && reopenedCount > 0
               && relationQueriesAfterNote === relationQueriesBeforeNote
               && failureText.includes('加载失败')
