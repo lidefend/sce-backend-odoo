@@ -1739,3 +1739,49 @@ h1 {
 .preview-item dt { color: var(--sc-app-text-secondary); }
 .preview-item dd { margin: 0; color: var(--sc-app-text-primary); }
 @media (max-width: 640px) { .preview-item dl { grid-template-columns: 1fr; } }
+
+@media (max-width: 480px) {
+  .scan-toolbar > *,
+  .selected-page-overview-side,
+  .selected-page-overview-meta {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .page-search {
+    min-width: 0;
+  }
+
+  .page-type-tabs,
+  .config-type-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    overflow: visible;
+  }
+
+  .page-type-tabs .sc-btn,
+  .config-type-tabs .sc-btn {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    white-space: normal;
+  }
+
+  .selected-page-overview-meta {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .selected-page-overview-meta span {
+    width: 100%;
+    min-height: 32px;
+    border-radius: 6px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .selected-page-overview-side > .sc-btn {
+    width: 100%;
+  }
+}
