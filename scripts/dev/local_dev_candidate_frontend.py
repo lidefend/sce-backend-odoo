@@ -218,6 +218,7 @@ def visual_smoke(root: Path = ROOT) -> None:
         CANDIDATE_VISUAL_ROUTES_JSON=routes,
     )
     for key in (
+        "CANDIDATE_VISUAL_DESKTOP_WIDTH",
         "CANDIDATE_VISUAL_DESKTOP_HEIGHT",
         "CANDIDATE_VISUAL_MOBILE_WIDTH",
         "CANDIDATE_VISUAL_THEME",

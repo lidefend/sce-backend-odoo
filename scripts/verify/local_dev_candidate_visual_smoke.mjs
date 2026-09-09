@@ -8,6 +8,7 @@ const login = String(process.env.E2E_LOGIN || '');
 const password = String(process.env.E2E_PASSWORD || '');
 const head = String(process.env.CANDIDATE_GIT_HEAD || '');
 const routes = JSON.parse(process.env.CANDIDATE_VISUAL_ROUTES_JSON || '[]');
+const desktopWidth = Math.max(960, Math.min(1920, Math.trunc(Number(process.env.CANDIDATE_VISUAL_DESKTOP_WIDTH || 1440)) || 1440));
 const desktopHeight = Math.max(720, Math.trunc(Number(process.env.CANDIDATE_VISUAL_DESKTOP_HEIGHT || 960)) || 960);
 const mobileWidth = Math.max(320, Math.min(560, Math.trunc(Number(process.env.CANDIDATE_VISUAL_MOBILE_WIDTH || 390)) || 390));
 const theme = String(process.env.CANDIDATE_VISUAL_THEME || 'light') === 'dark' ? 'dark' : 'light';
@@ -310,7 +311,7 @@ function isApiDataListResponse(response) {
 }
 
 try {
-  for (const viewport of [{ name: 'desktop', width: 1440, height: desktopHeight }, { name: 'mobile', width: mobileWidth, height: 844 }]) {
+  for (const viewport of [{ name: 'desktop', width: desktopWidth, height: desktopHeight }, { name: 'mobile', width: mobileWidth, height: 844 }]) {
     const context = await browser.newContext({
       viewport: { width: viewport.width, height: viewport.height },
       locale: 'zh-CN',
