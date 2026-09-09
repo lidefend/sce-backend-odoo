@@ -1479,6 +1479,16 @@ try {
           if (await relationSelect.count() !== 1 || await relationInput.count() !== 1) {
             throw new Error(`${target.name}: editable detail relation selector is missing`);
           }
+          let relationQueryCount = 0;
+          const countRelationQuery = (request) => {
+            if (request.method() !== 'POST') return;
+            let body = {};
+            try { body = JSON.parse(request.postData() || '{}'); } catch {}
+            if (body.intent === 'api.data' && body?.params?.op === 'list' && body?.params?.model === 'sc.material.catalog') {
+              relationQueryCount += 1;
+            }
+          };
+          page.on('request', countRelationQuery);
           const visibleDropdown = page.locator('.t-select__dropdown:visible').last();
           const visibleOptions = visibleDropdown.locator('[role="option"]:visible, .t-select-option:visible');
           await relationInput.click();
@@ -1486,6 +1496,7 @@ try {
           await visibleOptions.first().waitFor({ state: 'visible', timeout: 15000 });
           const initialCount = await visibleOptions.count();
           const noMatchKeyword = '__shared_relation_no_match__';
+          await relationInput.fill('S');
           await relationInput.fill(noMatchKeyword);
           await page.waitForTimeout(800);
           const noResultCount = await visibleOptions.count();
@@ -1506,9 +1517,57 @@ try {
           const selectedDisplayAfterSearch = await relationInput.inputValue();
           await relationInput.click();
           await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
-          await page.waitForTimeout(800);
+          await visibleOptions.first().waitFor({ state: 'visible', timeout: 15000 });
           const reopenedCount = await visibleOptions.count();
           await page.keyboard.press('Escape');
+          const noteInput = row.locator('[data-validation-target$=":note"] input:visible').first();
+          const relationQueriesBeforeNote = relationQueryCount;
+          if (await noteInput.count() === 1) await noteInput.fill('未提交的关系查询验证');
+          await page.waitForTimeout(500);
+          const relationQueriesAfterNote = relationQueryCount;
+
+          const failureKeyword = '__shared_relation_failure__';
+          let failureInjected = false;
+          const failureRoutePattern = '**/api/v1/intent';
+          const failureRouteHandler = async (route) => {
+            const request = route.request();
+            let body = {};
+            try { body = JSON.parse(request.postData() || '{}'); } catch {}
+            if (!failureInjected
+              && body.intent === 'api.data'
+              && body?.params?.op === 'list'
+              && body?.params?.model === 'sc.material.catalog'
+              && body?.params?.search_term === failureKeyword) {
+              failureInjected = true;
+              expectedReadFailureResponses += 1;
+              expectedReadFailureConsoleErrors += 1;
+              await route.fulfill({
+                status: 503,
+                contentType: 'application/json',
+                body: JSON.stringify({ ok: false, error: { code: 'TEMPORARY_UNAVAILABLE', message: 'injected relation read failure' } }),
+              });
+              return;
+            }
+            await route.continue();
+          };
+          await page.route(failureRoutePattern, failureRouteHandler);
+          await relationInput.click();
+          await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
+          await relationInput.fill(failureKeyword);
+          const failureState = relationSelect.locator('[data-relation-query-state="error"]:visible');
+          await failureState.waitFor({ state: 'visible', timeout: 15000 });
+          const failureText = String(await failureState.textContent() || '').replace(/\s+/g, ' ').trim();
+          await page.screenshot({
+            path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-relation-failure.png`),
+            fullPage: false,
+          });
+          await failureState.getByRole('button', { name: '重试', exact: true }).click();
+          await failureState.waitFor({ state: 'hidden', timeout: 15000 });
+          await page.waitForTimeout(500);
+          const failureRecovered = failureInjected && await failureState.count() === 0;
+          await page.unroute(failureRoutePattern, failureRouteHandler);
+          await page.keyboard.press('Escape');
+          page.off('request', countRelationQuery);
           detailRelationSearchEvidence = {
             initialCount,
             noResultCount,
@@ -1518,6 +1577,11 @@ try {
             selectedNoResultCount,
             selectedDisplayAfterSearch,
             reopenedCount,
+            relationQueriesBeforeNote,
+            relationQueriesAfterNote,
+            failureInjected,
+            failureText,
+            failureRecovered,
             pass: initialCount > 0
               && noResultCount === 0
               && restoredCount > 0
@@ -1525,7 +1589,10 @@ try {
               && selectedDisplay === selectedLabel
               && selectedNoResultCount === 0
               && selectedDisplayAfterSearch === selectedLabel
-              && reopenedCount > 0,
+              && reopenedCount > 0
+              && relationQueriesAfterNote === relationQueriesBeforeNote
+              && failureText.includes('加载失败')
+              && failureRecovered,
           };
           detailCollectionEvidence.detailRelationSearchEvidence = detailRelationSearchEvidence;
           detailCollectionEvidence.pass = detailCollectionEvidence.pass && detailRelationSearchEvidence.pass;

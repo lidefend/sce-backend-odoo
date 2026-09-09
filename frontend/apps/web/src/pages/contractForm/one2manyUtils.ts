@@ -3,7 +3,7 @@ import { fieldType, fromDatetimeInputValue, normalizeRelationIds, toDateInputVal
 import type { One2ManyColumn, One2ManyInlineRow } from './types';
 import type { FieldDescriptor } from '@sc/schema';
 import { evaluateNativeModifierValue } from './nativeLayoutUtils';
-import { relationEntry } from './relationDescriptor';
+import { analyzeDynamicRelationDomain, relationEntry } from './relationDescriptor';
 
 export function subviewColumnCount(subview: unknown): number {
   if (!subview || typeof subview !== 'object' || Array.isArray(subview)) return 0;
@@ -128,7 +128,8 @@ export function one2manyColumnsFromSubview(
       const readonly = staticNativeBoolean(modifiers.readonly ?? attributes.readonly ?? row.readonly);
       const relationValueRequiresSelector = ['many2one', 'many2many', 'one2many'].includes(ttype);
       const relation = String(descriptor?.relation || '').trim();
-      const relationReadable = Boolean(relation && relationEntry(descriptor)?.canRead === true);
+      const domainAnalysis = analyzeDynamicRelationDomain(descriptor);
+      const relationReadable = Boolean(relation && relationEntry(descriptor)?.canRead === true && domainAnalysis.supported);
       const explicitReadonly = readonly ?? Boolean(descriptor?.readonly);
       out.push({
         key: locator || `${colName}@@${occurrenceIndex || out.length + 1}`,
@@ -145,8 +146,12 @@ export function one2manyColumnsFromSubview(
         ...(ttype === 'many2one' ? {
           relation: relation || undefined,
           relationReadable,
+          relationDomainSupported: domainAnalysis.supported,
+          relationDependencies: domainAnalysis.dependencies,
           disabledReason: explicitReadonly
             ? '此字段目前仅供查看'
+            : !domainAnalysis.supported
+              ? '可选范围暂不可用'
             : !relationReadable
               ? '可选内容暂不可用'
               : undefined,

@@ -14,6 +14,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     relation_types = read_text("frontend/apps/web/src/components/template/relationField.types.ts")
     relation_utils = read_text("frontend/apps/web/src/pages/contractForm/one2manyUtils.ts")
     relation_runtime = read_text("frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts")
+    relation_query = read_text("frontend/apps/web/src/components/template/one2manyRelationQuery.ts")
+    relation_descriptor = read_text("frontend/apps/web/src/pages/contractForm/relationDescriptor.ts")
     action_presentation = read_text("frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts")
     registry = read_text("frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts")
     assembler = read_text("addons/smart_core/core/unified_page_contract_v2_assembler.py")
@@ -81,6 +83,20 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection inputs do not consistently consume inline-edit authority")
     if "queryOne2manyColumnOptions" not in relation_types or "column.relationReadable !== true" not in renderer:
         failures.append("detail collection relation columns do not consume authoritative relation access")
+    if "one2manyColumnQueryScope" not in relation_types or "relationDependencies" not in relation_types:
+        failures.append("detail collection relation query scope omits authoritative dependencies")
+    if "createOne2manyRelationRequestAuthority" not in renderer or renderer.count("isCurrent(key, revision)") < 3:
+        failures.append("detail collection relation requests are not latest-condition authoritative")
+    if "JSON.stringify(row.values)" in renderer:
+        failures.append("detail collection relation queries still depend on unrelated row values")
+    if "preserveSelectedOne2manyRelationOption" not in renderer or "currentValue" not in relation_query:
+        failures.append("detail collection search can discard the selected relation label")
+    if "popup-change" not in renderer or "relation-search-value" not in renderer:
+        failures.append("detail collection search lifecycle is not explicitly controlled")
+    if "data-relation-query-state=\"error\"" not in cell_editor or "@click=\"$emit('retry')\"" not in cell_editor:
+        failures.append("detail collection relation failure does not expose retry")
+    if "analyzeDynamicRelationDomain" not in relation_descriptor or "relationDomainSupported" not in relation_utils:
+        failures.append("unsupported detail relation domains do not fail closed")
     if "rowKey: string" not in relation_types or "rowValues[normalized] ?? formData[normalized]" not in relation_runtime:
         failures.append("detail collection relation domain is not bound to the current row and parent form")
     if "one2manyCellError" not in relation_types or 'role="alert"' not in cell_editor:

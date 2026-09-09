@@ -18,7 +18,10 @@
     :disabled="disabled"
     :readonly="readonly"
     :filterable="filterable"
+    :input-value="filterable ? searchValue : undefined"
     :loading="loading"
+    :empty="emptyText"
+    :reserve-keyword="false"
     :placeholder="placeholder"
     :aria-disabled="disabled || undefined"
     :aria-readonly="readonly || undefined"
@@ -26,7 +29,8 @@
     :aria-invalid="invalid || status === 'error' || undefined"
     :aria-describedby="describedBy"
     @change="onChange"
-    @search="emit('search', String($event || ''))"
+    @input-change="onInputChange"
+    @popup-visible-change="emit('popup-visible-change', Boolean($event))"
   />
 </template>
 
@@ -54,7 +58,9 @@ const props = withDefaults(defineProps<{
   invalid?: boolean;
   describedBy?: string;
   filterable?: boolean;
+  searchValue?: string;
   loading?: boolean;
+  emptyText?: string;
   appearance?: 'default' | 'form-field';
 }>(), {
   options: () => [],
@@ -64,9 +70,16 @@ const props = withDefaults(defineProps<{
   describedBy: undefined,
   appearance: 'default',
   filterable: false,
+  searchValue: undefined,
   loading: false,
+  emptyText: undefined,
 });
-const emit = defineEmits<{ 'update:modelValue': [value: string]; change: [value: string]; search: [value: string] }>();
+const emit = defineEmits<{
+  'update:modelValue': [value: string];
+  change: [value: string];
+  search: [value: string];
+  'popup-visible-change': [visible: boolean];
+}>();
 const selectRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null);
 const vNativeControlProjection = nativeControlProjection;
 const tdesignOptions = computed(() => props.options.map((option) => ({
@@ -90,6 +103,10 @@ function onChange(nextValue: unknown) {
   if (value === null) return;
   emit('update:modelValue', value);
   emit('change', value);
+}
+
+function onInputChange(value: unknown) {
+  emit('search', String(value || ''));
 }
 
 defineExpose({ focus: () => selectRef.value?.focus?.() ?? selectRef.value?.$el?.querySelector('input')?.focus() });

@@ -22,6 +22,8 @@ export type RelationFieldColumn = {
   selection?: Array<[string, string]>;
   relation?: string;
   relationReadable?: boolean;
+  relationDomainSupported?: boolean;
+  relationDependencies?: string[];
   disabledReason?: string;
 };
 
@@ -66,6 +68,7 @@ export type RelationFieldAdapter = {
   one2manyRowStateLabel: (row: RelationFieldRow) => string;
   prepareOne2manyColumns: (name: string) => Promise<void> | void;
   one2manyColumns: (name: string) => RelationFieldColumn[];
+  one2manyColumnQueryScope: (name: string, rowKey: string, column: RelationFieldColumn) => string;
   queryOne2manyColumnOptions: (name: string, rowKey: string, column: RelationFieldColumn, keyword?: string) => Promise<RelationFieldOption[]>;
   setOne2manyRowField: (name: string, rowKey: string, column: RelationFieldColumn, value: unknown) => void;
   removeOne2manyRow: (name: string, rowKey: string) => void;

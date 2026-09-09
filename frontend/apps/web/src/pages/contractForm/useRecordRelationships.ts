@@ -4,6 +4,7 @@ import {
   resolveContractV2FormFieldMap,
   resolveContractV2VisibleFieldCodes,
 } from '../../app/contracts/v2/store';
+import { one2manyRelationDependencyKey } from '../../components/template/one2manyRelationQuery';
 import type { RelationOption, RelationSearchColumn, RelationSearchRow } from './types';
 import {
   settleRelationSelectionContextSwitch,
@@ -577,6 +578,32 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     });
   }
 
+  function one2manyColumnQueryScope(
+    fieldName: string,
+    rowKey: string,
+    column: { name: string },
+  ) {
+    const descriptor = one2manyRelationFieldDescriptor(fieldName, column.name);
+    const relation = relationModelFromDescriptor(descriptor);
+    const entry = relationEntry(descriptor);
+    const dependencies = dynamicDomainDependencyFields(descriptor);
+    const row = one2manyFieldRows(fieldName).find((item: { key?: string }) => item.key === rowKey);
+    const rowValues = row?.values && typeof row.values === 'object' ? row.values : {};
+    const resolveDependencyValue = (dependencyName: string) => {
+      const normalized = String(dependencyName || '').trim();
+      return normalized.startsWith('parent.')
+        ? formData[normalized.slice('parent.'.length)]
+        : rowValues[normalized] ?? formData[normalized];
+    };
+    return one2manyRelationDependencyKey({
+      relation,
+      canRead: entry?.canRead === true,
+      domainSupported: column && (column as { relationDomainSupported?: boolean }).relationDomainSupported !== false,
+      dependencies,
+      resolveValue: resolveDependencyValue,
+    });
+  }
+
   const {
     ensureRelationFieldDescriptors,
     openRelationCreateForm,
@@ -641,6 +668,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     isOne2manyHydrating,
     one2manyRowErrors,
     one2manyCellError,
+    one2manyColumnQueryScope,
     queryOne2manyColumnOptions,
     setRelationKeyword,
     filteredRelationOptions,

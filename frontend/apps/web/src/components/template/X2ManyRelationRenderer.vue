@@ -152,9 +152,13 @@
               :validation-target="one2manyValidationTarget(field.name, row._key, column.name)"
               :relation-options="one2manyRelationOptions(field.name, row._key, column)"
               :relation-loading="one2manyRelationIsLoading(field.name, row._key, column.name)"
+              :relation-search-value="one2manyRelationSearchValue(field.name, row._key, column.name)"
+              :relation-empty-text="one2manyRelationEmptyText(field.name, row._key, column)"
               :relation-placeholder="one2manyRelationPlaceholder(field.name, row._key, column)"
               @update="adapter.setOne2manyRowField(field.name, row._key, column, $event)"
-              @search="loadOne2manyRelationOptions(field.name, row._key, column, $event)"
+              @search="scheduleOne2manyRelationSearch(field.name, row._key, column, $event)"
+              @popup-change="handleOne2manyRelationPopup(field.name, row._key, column, $event)"
+              @retry="retryOne2manyRelationOptions(field.name, row._key, column)"
             />
           </template>
           <template #_action="{ row }">
@@ -229,10 +233,14 @@
                 :validation-target="one2manyValidationTarget(field.name, row.key, column.name)"
                 :relation-options="one2manyRelationOptions(field.name, row.key, column)"
                 :relation-loading="one2manyRelationIsLoading(field.name, row.key, column.name)"
+                :relation-search-value="one2manyRelationSearchValue(field.name, row.key, column.name)"
+                :relation-empty-text="one2manyRelationEmptyText(field.name, row.key, column)"
                 :relation-placeholder="one2manyRelationPlaceholder(field.name, row.key, column)"
                 show-readonly-reason
                 @update="adapter.setOne2manyRowField(field.name, row.key, column, $event)"
-                @search="loadOne2manyRelationOptions(field.name, row.key, column, $event)"
+                @search="scheduleOne2manyRelationSearch(field.name, row.key, column, $event)"
+                @popup-change="handleOne2manyRelationPopup(field.name, row.key, column, $event)"
+                @retry="retryOne2manyRelationOptions(field.name, row.key, column)"
               />
             </label>
           </div>
@@ -294,7 +302,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import type { FormSectionFieldSchema } from './formSection.types';
 import ScButton from '../design-system/ScButton.vue';
 import ScFileField from '../design-system/ScFileField.vue';
@@ -304,6 +312,10 @@ import ScInlineState from '../design-system/ScInlineState.vue';
 import ScTable from '../design-system/ScTable.vue';
 import ProfessionalManyToManySelect from '../professional-fields/ProfessionalManyToManySelect.vue';
 import One2ManyCellEditor from './One2ManyCellEditor.vue';
+import {
+  createOne2manyRelationRequestAuthority,
+  preserveSelectedOne2manyRelationOption,
+} from './one2manyRelationQuery';
 import { downloadFile, fileToBase64, uploadFile } from '../../api/files';
 import type { RelationFieldColumn, RelationFieldRow, X2ManyRelationRendererProps } from './relationField.types';
 
@@ -370,6 +382,14 @@ const o2mTableData = computed(() => paginatedOne2manyRows.value.map((row) => {
 const o2mRelationOptionMap = ref<Record<string, Array<{ value: number; label: string }>>>({});
 const o2mRelationLoading = ref<Record<string, boolean>>({});
 const o2mRelationErrors = ref<Record<string, string>>({});
+const o2mRelationSearchMap = ref<Record<string, string>>({});
+const relationQueryAuthority = createOne2manyRelationRequestAuthority();
+const relationQueryTimers: Record<string, ReturnType<typeof setTimeout>> = {};
+
+onBeforeUnmount(() => {
+  Object.keys(relationQueryTimers).forEach(clearRelationQueryTimer);
+  relationQueryAuthority.clear();
+});
 
 function relationCellKey(fieldName: string, rowKey: string, columnName: string) {
   return `${fieldName}:${rowKey}:${columnName}`;
@@ -387,6 +407,17 @@ function one2manyRelationIsLoading(fieldName: string, rowKey: string, columnName
   return o2mRelationLoading.value[relationCellKey(fieldName, rowKey, columnName)] === true;
 }
 
+function one2manyRelationSearchValue(fieldName: string, rowKey: string, columnName: string) {
+  return o2mRelationSearchMap.value[relationCellKey(fieldName, rowKey, columnName)] || '';
+}
+
+function one2manyRelationEmptyText(fieldName: string, rowKey: string, column: RelationFieldColumn) {
+  const key = relationCellKey(fieldName, rowKey, column.name);
+  if (o2mRelationErrors.value[key]) return '可选内容加载失败';
+  if (String(o2mRelationSearchMap.value[key] || '').trim()) return '未找到匹配的可选内容';
+  return '暂无可选内容';
+}
+
 function one2manyRelationPlaceholder(fieldName: string, rowKey: string, column: RelationFieldColumn) {
   const key = relationCellKey(fieldName, rowKey, column.name);
   if (column.disabledReason) return column.disabledReason;
@@ -396,44 +427,144 @@ function one2manyRelationPlaceholder(fieldName: string, rowKey: string, column: 
   return props.adapter.selectPlaceholder(column.label);
 }
 
-async function loadOne2manyRelationOptions(fieldName: string, rowKey: string, column: RelationFieldColumn, keyword = '') {
-  if (column.ttype !== 'many2one' || column.readonly || column.relationReadable !== true || !props.adapter.one2manyCanInlineEdit(fieldName)) return;
+function relationColumnCanQuery(fieldName: string, column: RelationFieldColumn) {
+  if (column.ttype !== 'many2one' || column.readonly || column.relationReadable !== true) return false;
+  return column.relationDomainSupported !== false && props.adapter.one2manyCanInlineEdit(fieldName);
+}
+
+function currentOne2manyRelationValue(fieldName: string, rowKey: string, columnName: string) {
+  return props.adapter.visibleOne2manyRows(fieldName)
+    .find((row) => row.key === rowKey)?.values[columnName];
+}
+
+function clearRelationQueryTimer(key: string) {
+  if (!relationQueryTimers[key]) return;
+  clearTimeout(relationQueryTimers[key]);
+  delete relationQueryTimers[key];
+}
+
+async function runOne2manyRelationOptionsQuery(
+  fieldName: string,
+  rowKey: string,
+  column: RelationFieldColumn,
+  keyword: string,
+  revision: number,
+) {
+  if (!relationColumnCanQuery(fieldName, column)) return;
   const key = relationCellKey(fieldName, rowKey, column.name);
-  if (o2mRelationLoading.value[key]) return;
   o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: true };
   o2mRelationErrors.value = { ...o2mRelationErrors.value, [key]: '' };
   try {
     const options = await props.adapter.queryOne2manyColumnOptions(fieldName, rowKey, column, keyword);
+    if (!relationQueryAuthority.isCurrent(key, revision)) return;
     o2mRelationOptionMap.value = {
       ...o2mRelationOptionMap.value,
-      [key]: options.map((option) => ({ value: option.id, label: option.label })),
+      [key]: preserveSelectedOne2manyRelationOption({
+        incoming: options.map((option) => ({ value: option.id, label: option.label })),
+        previous: o2mRelationOptionMap.value[key] || [],
+        currentValue: currentOne2manyRelationValue(fieldName, rowKey, column.name),
+      }),
     };
   } catch {
+    if (!relationQueryAuthority.isCurrent(key, revision)) return;
+    o2mRelationOptionMap.value = {
+      ...o2mRelationOptionMap.value,
+      [key]: preserveSelectedOne2manyRelationOption({
+        incoming: [],
+        previous: o2mRelationOptionMap.value[key] || [],
+        currentValue: currentOne2manyRelationValue(fieldName, rowKey, column.name),
+      }),
+    };
     o2mRelationErrors.value = { ...o2mRelationErrors.value, [key]: '可选内容加载失败，请重试' };
   } finally {
+    if (!relationQueryAuthority.isCurrent(key, revision)) return;
     o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: false };
   }
+}
+
+function loadOne2manyRelationOptions(fieldName: string, rowKey: string, column: RelationFieldColumn, keyword = '') {
+  const key = relationCellKey(fieldName, rowKey, column.name);
+  clearRelationQueryTimer(key);
+  const revision = relationQueryAuthority.begin(key);
+  return runOne2manyRelationOptionsQuery(fieldName, rowKey, column, keyword, revision);
+}
+
+function scheduleOne2manyRelationSearch(fieldName: string, rowKey: string, column: RelationFieldColumn, keyword: string) {
+  const key = relationCellKey(fieldName, rowKey, column.name);
+  const normalizedKeyword = String(keyword || '');
+  o2mRelationSearchMap.value = { ...o2mRelationSearchMap.value, [key]: normalizedKeyword };
+  clearRelationQueryTimer(key);
+  const revision = relationQueryAuthority.begin(key);
+  o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: true };
+  o2mRelationErrors.value = { ...o2mRelationErrors.value, [key]: '' };
+  relationQueryTimers[key] = setTimeout(() => {
+    delete relationQueryTimers[key];
+    void runOne2manyRelationOptionsQuery(fieldName, rowKey, column, normalizedKeyword, revision);
+  }, 180);
+}
+
+function handleOne2manyRelationPopup(fieldName: string, rowKey: string, column: RelationFieldColumn, visible: boolean) {
+  const key = relationCellKey(fieldName, rowKey, column.name);
+  clearRelationQueryTimer(key);
+  o2mRelationSearchMap.value = { ...o2mRelationSearchMap.value, [key]: '' };
+  if (visible) {
+    void loadOne2manyRelationOptions(fieldName, rowKey, column, '');
+    return;
+  }
+  relationQueryAuthority.invalidate(key);
+  o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: false };
+}
+
+function retryOne2manyRelationOptions(fieldName: string, rowKey: string, column: RelationFieldColumn) {
+  void loadOne2manyRelationOptions(
+    fieldName,
+    rowKey,
+    column,
+    one2manyRelationSearchValue(fieldName, rowKey, column.name),
+  );
 }
 
 watch(() => props.field.name, (fieldName) => {
   void Promise.resolve(props.adapter.prepareOne2manyColumns(fieldName));
 }, { immediate: true });
 
-watch(() => ({
-  fieldName: props.field.name,
-  rows: props.adapter.visibleOne2manyRows(props.field.name).map((row) => `${row.key}:${JSON.stringify(row.values)}`).join('|'),
-  columns: props.adapter.one2manyColumns(props.field.name).map((column) => `${column.name}:${column.readonly}:${column.relationReadable}`).join('|'),
-}), () => {
+watch(() => {
   const fieldName = props.field.name;
-  props.adapter.visibleOne2manyRows(fieldName).forEach((row) => {
-    props.adapter.one2manyColumns(fieldName).forEach((column) => {
-      if (column.ttype === 'many2one') {
-        const key = relationCellKey(fieldName, row.key, column.name);
-        const { [key]: _discarded, ...remaining } = o2mRelationOptionMap.value;
-        o2mRelationOptionMap.value = remaining;
-      }
-      void loadOne2manyRelationOptions(fieldName, row.key, column);
-    });
+  return props.adapter.visibleOne2manyRows(fieldName).flatMap((row) => (
+    props.adapter.one2manyColumns(fieldName)
+      .filter((column) => column.ttype === 'many2one')
+      .map((column) => ({
+        fieldName,
+        rowKey: row.key,
+        columnName: column.name,
+        scope: props.adapter.one2manyColumnQueryScope(fieldName, row.key, column),
+      }))
+  ));
+}, (current, previous = []) => {
+  const previousScopes = new Map(previous.map((entry) => [
+    relationCellKey(entry.fieldName, entry.rowKey, entry.columnName),
+    entry.scope,
+  ]));
+  const currentKeys = new Set(current.map((entry) => relationCellKey(entry.fieldName, entry.rowKey, entry.columnName)));
+  previousScopes.forEach((_scope, key) => {
+    if (currentKeys.has(key)) return;
+    clearRelationQueryTimer(key);
+    relationQueryAuthority.invalidate(key);
+  });
+  current.forEach((entry) => {
+    const key = relationCellKey(entry.fieldName, entry.rowKey, entry.columnName);
+    if (previousScopes.get(key) === entry.scope) return;
+    const column = props.adapter.one2manyColumns(entry.fieldName).find((item) => item.name === entry.columnName);
+    if (!column) return;
+    clearRelationQueryTimer(key);
+    relationQueryAuthority.invalidate(key);
+    const { [key]: _discarded, ...remaining } = o2mRelationOptionMap.value;
+    o2mRelationOptionMap.value = remaining;
+    o2mRelationSearchMap.value = { ...o2mRelationSearchMap.value, [key]: '' };
+    o2mRelationErrors.value = { ...o2mRelationErrors.value, [key]: '' };
+    if (relationColumnCanQuery(entry.fieldName, column)) {
+      void loadOne2manyRelationOptions(entry.fieldName, entry.rowKey, column);
+    }
   });
 }, { immediate: true });
 

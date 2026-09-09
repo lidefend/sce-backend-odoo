@@ -21,11 +21,14 @@
       :described-by="errorId"
       :disabled="column.readonly || !adapter.one2manyCanInlineEdit(fieldName) || adapter.busy"
       filterable
+      :search-value="relationSearchValue"
       :loading="relationLoading"
+      :empty-text="relationEmptyText"
       :placeholder="relationPlaceholder"
       :title="column.disabledReason"
       @update:model-value="$emit('update', $event)"
       @search="$emit('search', $event)"
+      @popup-visible-change="$emit('popup-change', $event)"
     />
     <ScSelect
       v-else-if="column.ttype === 'selection'"
@@ -53,6 +56,10 @@
       @update:model-value="$emit('update', $event)"
     />
     <span v-if="errorText" :id="errorId" class="o2m-cell-error" role="alert">{{ errorText }}</span>
+    <span v-if="relationError" class="o2m-relation-failure" role="alert" data-relation-query-state="error">
+      <span>{{ relationError }}</span>
+      <ScButton type="button" variant="ghost" size="small" @click="$emit('retry')">重试</ScButton>
+    </span>
     <span v-else-if="showReadonlyReason && (column.disabledReason || readonlyReason)" class="o2m-disabled-reason">
       {{ column.disabledReason || readonlyReason }}
     </span>
@@ -61,6 +68,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import ScButton from '../design-system/ScButton.vue';
 import ScCheckbox from '../design-system/ScCheckbox.vue';
 import ScInput from '../design-system/ScInput.vue';
 import ScSelect from '../design-system/ScSelect.vue';
@@ -79,6 +87,8 @@ const props = withDefaults(defineProps<{
   validationTarget: string;
   relationOptions?: ReadonlyArray<{ value: string | number; label: string; disabled?: boolean }>;
   relationLoading?: boolean;
+  relationSearchValue?: string;
+  relationEmptyText?: string;
   relationPlaceholder?: string;
   showReadonlyReason?: boolean;
 }>(), {
@@ -87,6 +97,8 @@ const props = withDefaults(defineProps<{
   relationError: '',
   relationOptions: () => [],
   relationLoading: false,
+  relationSearchValue: '',
+  relationEmptyText: '暂无可选内容',
   relationPlaceholder: '',
   showReadonlyReason: false,
 });
@@ -94,9 +106,11 @@ const props = withDefaults(defineProps<{
 defineEmits<{
   update: [value: unknown];
   search: [keyword: string];
+  'popup-change': [visible: boolean];
+  retry: [];
 }>();
 
-const errorText = computed(() => props.error || props.relationError);
+const errorText = computed(() => props.error);
 const relationValue = computed(() => {
   const raw = Array.isArray(props.value) ? props.value[0] : props.value;
   const parsed = Number(raw);
@@ -111,4 +125,5 @@ const readonlyReason = computed(() => props.column.readonly ? '此字段目前�
 .o2m-disabled-reason { display: block; margin-top: 4px; font-size: 12px; line-height: 1.35; }
 .o2m-cell-error { color: var(--sc-app-danger-text); }
 .o2m-disabled-reason { color: var(--sc-app-text-secondary); }
+.o2m-relation-failure { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; color: var(--sc-app-danger-text); font-size: 12px; line-height: 1.35; }
 </style>

@@ -257,17 +257,37 @@ export function relationInlineCreate(descriptor?: FieldDescriptor) {
   };
 }
 
-export function dynamicDomainDependencyFields(descriptor?: FieldDescriptor) {
+const dynamicDomainTupleSource = String.raw`\(\s*['"]([\w.]+)['"]\s*,\s*['"]([=!<>]{1,2}\??|in|not in|ilike|like)['"]\s*,\s*([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\s*\)`;
+
+export function analyzeDynamicRelationDomain(descriptor?: FieldDescriptor) {
   const raw = (descriptor as Record<string, unknown> | undefined)?.domain;
-  if (typeof raw !== 'string' || !raw.trim()) return [];
+  if (raw === undefined || raw === null || raw === '' || raw === false) {
+    return { supported: true, dependencies: [] as string[] };
+  }
+  if (typeof raw !== 'string') return { supported: false, dependencies: [] as string[] };
+  const text = raw.trim();
+  if (!text || text === '[]') return { supported: true, dependencies: [] as string[] };
   const deps = new Set<string>();
-  const tuplePattern = /\(['"]([\w.]+)['"]\s*,\s*['"]([=!<>]{1,2}\??|in|not in|ilike|like)['"]\s*,\s*([A-Za-z_]\w*)\)/g;
+  const tuplePattern = new RegExp(dynamicDomainTupleSource, 'g');
   let match: RegExpExecArray | null;
-  while ((match = tuplePattern.exec(raw.trim()))) {
+  let tupleCount = 0;
+  while ((match = tuplePattern.exec(text))) {
+    tupleCount += 1;
     const valueField = match[3];
     if (valueField) deps.add(valueField);
   }
-  return Array.from(deps);
+  const unsupportedRemainder = text
+    .replace(new RegExp(dynamicDomainTupleSource, 'g'), '')
+    .replace(/[\s,\[\]]/g, '');
+  return {
+    supported: tupleCount > 0 && unsupportedRemainder.length === 0,
+    dependencies: Array.from(deps),
+  };
+}
+
+export function dynamicDomainDependencyFields(descriptor?: FieldDescriptor) {
+  const analysis = analyzeDynamicRelationDomain(descriptor);
+  return analysis.supported ? analysis.dependencies : [];
 }
 
 export function dynamicRelationDomainFromDescriptor(params: {
@@ -277,10 +297,12 @@ export function dynamicRelationDomainFromDescriptor(params: {
   currentFieldValue: (fieldName: string) => unknown;
 }) {
   const raw = (params.descriptor as Record<string, unknown> | undefined)?.domain;
+  const analysis = analyzeDynamicRelationDomain(params.descriptor);
+  if (!analysis.supported) return [['id', '=', -1]];
   if (typeof raw !== 'string' || !raw.trim()) return [];
   const out: unknown[] = [];
   const text = raw.trim();
-  const tuplePattern = /\(['"]([\w.]+)['"]\s*,\s*['"]([=!<>]{1,2}\??|in|not in|ilike|like)['"]\s*,\s*([A-Za-z_]\w*)\)/g;
+  const tuplePattern = new RegExp(dynamicDomainTupleSource, 'g');
   let match: RegExpExecArray | null;
   let hasDynamicDependency = false;
   let hasUnresolvedDependency = false;
