@@ -385,9 +385,11 @@ const o2mRelationErrors = ref<Record<string, string>>({});
 const o2mRelationSearchMap = ref<Record<string, string>>({});
 const relationQueryAuthority = createOne2manyRelationRequestAuthority();
 const relationQueryTimers: Record<string, ReturnType<typeof setTimeout>> = {};
+const relationActiveRequestRevisions: Record<string, number> = {};
 
 onBeforeUnmount(() => {
   Object.keys(relationQueryTimers).forEach(clearRelationQueryTimer);
+  Object.keys(relationActiveRequestRevisions).forEach((key) => delete relationActiveRequestRevisions[key]);
   relationQueryAuthority.clear();
 });
 
@@ -446,6 +448,7 @@ function clearRelationQueryTimer(key: string) {
 function invalidateOne2manyRelationQuery(key: string) {
   clearRelationQueryTimer(key);
   relationQueryAuthority.invalidate(key);
+  delete relationActiveRequestRevisions[key];
   o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: false };
 }
 
@@ -463,12 +466,12 @@ async function runOne2manyRelationOptionsQuery(
     }
     return;
   }
+  relationActiveRequestRevisions[key] = revision;
   o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: true };
   o2mRelationErrors.value = { ...o2mRelationErrors.value, [key]: '' };
   try {
     const options = await props.adapter.queryOne2manyColumnOptions(fieldName, rowKey, column, keyword);
     if (!relationQueryAuthority.isCurrent(key, revision)) return;
-    o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: false };
     o2mRelationOptionMap.value = {
       ...o2mRelationOptionMap.value,
       [key]: preserveSelectedOne2manyRelationOption({
@@ -479,7 +482,6 @@ async function runOne2manyRelationOptionsQuery(
     };
   } catch {
     if (!relationQueryAuthority.isCurrent(key, revision)) return;
-    o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: false };
     o2mRelationOptionMap.value = {
       ...o2mRelationOptionMap.value,
       [key]: preserveSelectedOne2manyRelationOption({
@@ -489,6 +491,10 @@ async function runOne2manyRelationOptionsQuery(
       }),
     };
     o2mRelationErrors.value = { ...o2mRelationErrors.value, [key]: '可选内容加载失败，请重试' };
+  } finally {
+    if (relationActiveRequestRevisions[key] !== revision) return;
+    delete relationActiveRequestRevisions[key];
+    o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: false };
   }
 }
 
@@ -510,7 +516,6 @@ function scheduleOne2manyRelationSearch(fieldName: string, rowKey: string, colum
   o2mRelationSearchMap.value = { ...o2mRelationSearchMap.value, [key]: normalizedKeyword };
   clearRelationQueryTimer(key);
   const revision = relationQueryAuthority.begin(key);
-  o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: true };
   o2mRelationErrors.value = { ...o2mRelationErrors.value, [key]: '' };
   relationQueryTimers[key] = setTimeout(() => {
     delete relationQueryTimers[key];
