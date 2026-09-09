@@ -19,8 +19,10 @@ class TestContractPaymentAllocationFact(TransactionCase):
         cls.project = cls.env["project.project"].create(
             {
                 "name": "Allocation Test Project",
+                "code": "ALLOC-TEST",
                 "company_id": cls.company.id,
                 "privacy_visibility": "followers",
+                "funding_enabled": True,
             }
         )
         cls.tax = cls.env["account.tax"].search(
@@ -504,6 +506,105 @@ class TestContractPaymentAllocationFact(TransactionCase):
         self.assertEqual(allocation.normalization_state, "legacy_unresolved_identity")
         self.assertEqual(allocation.allocation_state, "unresolved_global")
         self.assertEqual(allocation.reason_code, "historical_backfill_unresolved")
+
+    def test_quarantine_recomputes_stored_contract_and_funding_parents(self):
+        baseline = self.env["project.funding.baseline"].create(
+            {
+                "project_id": self.project.id,
+                "total_amount": 19.0,
+                "period_start": "2026-01-01",
+                "period_end": "2026-12-31",
+                "line_ids": [
+                    (0, 0, {"name": "Migration allocation", "planned_amount": 19.0})
+                ],
+            }
+        )
+        baseline.action_activate()
+        request = self._request(
+            "Allocation Parent Recompute",
+            19.0,
+            contract=self.contract_a,
+            settlement=self.settlement_a,
+        )
+        self.env.cr.execute(
+            "UPDATE payment_request SET funding_baseline_id=%s WHERE id=%s",
+            (baseline.id, request.id),
+        )
+        request.invalidate_recordset(["funding_baseline_id"])
+        ledger = request.sudo()._ensure_payment_ledger(amount=19.0)
+        funding_allocation = ledger.action_allocate_funding(
+            [{"plan_line_id": baseline.line_ids.id, "amount": 19.0}],
+            "migration-parent-recompute",
+        )
+        self.assertEqual(ledger.contract_allocation_status, "complete")
+        self.assertEqual(ledger.fund_plan_allocated_amount, 19.0)
+        self.assertEqual(baseline.allocated_amount, 19.0)
+        self.assertEqual(baseline.line_ids.allocated_amount, 19.0)
+
+        self.env.flush_all()
+        self.env.cr.execute(
+            "ALTER TABLE payment_ledger "
+            "DROP CONSTRAINT IF EXISTS payment_ledger_canonical_identity_complete"
+        )
+        self.env.cr.execute(
+            "UPDATE payment_ledger SET company_id=NULL WHERE id=%s", (ledger.id,)
+        )
+        migration_163 = runpy.run_path(
+            str(
+                Path(__file__).resolve().parents[1]
+                / "migrations"
+                / "17.0.0.163"
+                / "pre-migration.py"
+            )
+        )["migrate"]
+        migration_164 = runpy.run_path(
+            str(
+                Path(__file__).resolve().parents[1]
+                / "migrations"
+                / "17.0.0.164"
+                / "post-migration.py"
+            )
+        )["migrate"]
+        migration_163(self.env.cr, "17.0.0.162")
+        migration_164(self.env.cr, "17.0.0.163")
+
+        ledger.invalidate_recordset(flush=False)
+        baseline.invalidate_recordset(flush=False)
+        baseline.line_ids.invalidate_recordset(flush=False)
+        funding_allocation.invalidate_recordset(flush=False)
+        self.assertEqual(ledger.contract_allocation_status, "review_required")
+        self.assertEqual(ledger.contract_allocated_amount, 19.0)
+        self.assertEqual(ledger.contract_unallocated_amount, 0.0)
+        self.assertEqual(ledger.fund_plan_allocated_amount, 0.0)
+        self.assertEqual(ledger.fund_plan_unallocated_amount, 19.0)
+        self.assertEqual(baseline.allocated_amount, 0.0)
+        self.assertEqual(baseline.remaining_amount, 19.0)
+        self.assertEqual(baseline.line_ids.allocated_amount, 0.0)
+        self.assertEqual(baseline.line_ids.remaining_amount, 19.0)
+        self.assertEqual(
+            funding_allocation.normalization_state, "legacy_unresolved_relation"
+        )
+
+        locations = {}
+        for table, record_id in (
+            ("payment_ledger", ledger.id),
+            ("project_funding_baseline", baseline.id),
+            ("project_funding_baseline_line", baseline.line_ids.id),
+        ):
+            self.env.cr.execute(
+                "SELECT ctid::text FROM %s WHERE id=%%s" % table, (record_id,)
+            )
+            locations[table] = self.env.cr.fetchone()[0]
+        migration_164(self.env.cr, "17.0.0.163")
+        for table, record_id in (
+            ("payment_ledger", ledger.id),
+            ("project_funding_baseline", baseline.id),
+            ("project_funding_baseline_line", baseline.line_ids.id),
+        ):
+            self.env.cr.execute(
+                "SELECT ctid::text FROM %s WHERE id=%%s" % table, (record_id,)
+            )
+            self.assertEqual(self.env.cr.fetchone()[0], locations[table])
 
     def test_allocation_visibility_is_project_and_company_scoped(self):
         def create_user(login, groups, company=None):
