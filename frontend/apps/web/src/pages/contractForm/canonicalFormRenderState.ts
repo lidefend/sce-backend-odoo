@@ -1,17 +1,49 @@
 import type { ContractV2Dictionary, ContractV2NormalizedStore } from '../../app/contracts/v2/types';
-import type { CanonicalFormRenderMode } from '../../app/presentation/canonicalFormRenderModel';
+import type {
+  CanonicalFormNode,
+  CanonicalFormRenderMode,
+  CanonicalFormRenderModel,
+} from '../../app/presentation/canonicalFormRenderModel';
 import { presentContractV2Form } from '../../app/presentation/contractFormPresenter';
+
+export function applyCanonicalFormValidation(
+  model: CanonicalFormRenderModel,
+  validationErrors: string[] = [],
+): CanonicalFormRenderModel {
+  const errors = validationErrors.map((message) => String(message || '').trim()).filter(Boolean);
+  const decorateNode = (node: CanonicalFormNode): CanonicalFormNode => ({
+    ...node,
+    fields: node.fields.map((field) => {
+      const errorText = field.label
+        ? errors.find((message) => message.includes(field.label)) || ''
+        : '';
+      return { ...field, invalid: Boolean(errorText), errorText };
+    }),
+    children: node.children.map(decorateNode),
+  });
+  return {
+    ...model,
+    zones: {
+      primary: model.zones.primary.map(decorateNode),
+      subordinate: model.zones.subordinate.map(decorateNode),
+    },
+  };
+}
 
 export function resolveCanonicalFormRenderState(
   store: ContractV2NormalizedStore | null,
   decodeError: string,
   mode: CanonicalFormRenderMode,
   runtimeValues?: ContractV2Dictionary,
+  validationErrors: string[] = [],
 ) {
   if (decodeError) return { model: null, error: decodeError };
   if (!store) return { model: null, error: 'NORMALIZED_FORM_CONTRACT_MISSING' };
   try {
-    return { model: presentContractV2Form(store, mode, runtimeValues), error: '' };
+    return {
+      model: applyCanonicalFormValidation(presentContractV2Form(store, mode, runtimeValues), validationErrors),
+      error: '',
+    };
   } catch (error) {
     return {
       model: null,

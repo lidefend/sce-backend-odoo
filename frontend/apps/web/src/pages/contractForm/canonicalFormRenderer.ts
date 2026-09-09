@@ -62,6 +62,8 @@ function fieldDescriptor(field: CanonicalFormField): FieldDescriptor {
     type: field.fieldType,
     ttype: field.fieldType,
     required: field.required,
+    invalid: field.invalid,
+    errorText: field.errorText || undefined,
     readonly: field.readonly || field.disabled,
     ...(selection.length ? { selection } : {}),
     ...(text(config.relation || config.relationModel || config.relation_model)

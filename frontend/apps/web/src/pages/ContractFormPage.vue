@@ -791,6 +791,7 @@ const canonicalFormRenderState = computed(() => resolveCanonicalFormRenderState(
   v2ContractDecodeError.value,
   renderProfile.value,
   formData,
+  validationErrors.value,
 ));
 const canonicalProductFloorplan = computed(() => canonicalFormRenderState.value.model
   ? composeCanonicalFormFloorplan(canonicalFormRenderState.value.model)

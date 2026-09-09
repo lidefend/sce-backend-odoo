@@ -37,6 +37,10 @@ REQUIREMENTS = {
         "@media (max-width: 480px)",
         ".canonical-form-node--container:not(.canonical-form-node--readonly-fact)",
     ),
+    "frontend/apps/web/src/pages/contractForm/canonicalFormRenderState.ts": (
+        "applyCanonicalFormValidation",
+        "message.includes(field.label)",
+    ),
     "frontend/apps/web/src/pages/ContractFormPage.vue": (
         "const suppressPageHeaderTitle = computed(() => false)",
         ':title="pageDisplayTitle"',

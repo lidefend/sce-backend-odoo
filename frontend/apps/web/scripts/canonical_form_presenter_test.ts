@@ -12,6 +12,7 @@ import {
 } from '../src/app/contracts/v2/formStructureRoles';
 import { presentContractV2Form } from '../src/app/presentation/contractFormPresenter';
 import { composeCanonicalFormFloorplan } from '../src/app/presentation/canonicalFormFloorplan';
+import { applyCanonicalFormValidation } from '../src/pages/contractForm/canonicalFormRenderState';
 import {
   canonicalFieldToFormSection,
   canonicalFieldHasPresentableValue,
@@ -2658,4 +2659,11 @@ assert.deepEqual(
   'an executable body-node action without an adapter must fail closed',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=142');
+const validationProjection = applyCanonicalFormValidation(model, ['Name 为必填项']);
+const validationField = collectFields(validationProjection.zones.primary).find((field) => field.fieldCode === 'name');
+assert.equal(validationField?.invalid, true, 'canonical validation must mark the matching field invalid');
+assert.equal(validationField?.errorText, 'Name 为必填项', 'canonical validation must retain the authoritative error text');
+const unrelatedValidationField = collectFields(validationProjection.zones.primary).find((field) => field.fieldCode === 'state');
+assert.equal(unrelatedValidationField?.invalid, false, 'canonical validation must not mark unrelated fields invalid');
+
+console.log('[canonical_form_presenter_test] PASS cases=143');
