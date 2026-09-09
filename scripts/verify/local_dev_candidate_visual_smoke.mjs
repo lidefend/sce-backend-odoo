@@ -678,6 +678,7 @@ try {
         );
         const mouseSelectValue = await selectInput.inputValue();
         await selectInput.focus();
+        await selectRoot.click();
         await selectInput.press('ArrowUp');
         await selectInput.press('Enter');
         await page.waitForFunction(
