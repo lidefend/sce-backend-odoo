@@ -155,6 +155,9 @@ export type One2ManyColumn = {
   modifiers?: Record<string, unknown>;
   relationActiveActions?: Record<string, unknown>;
   selection?: Array<[string, string]>;
+  relation?: string;
+  relationReadable?: boolean;
+  disabledReason?: string;
 };
 
 export type One2ManyRowColumnBehavior = {

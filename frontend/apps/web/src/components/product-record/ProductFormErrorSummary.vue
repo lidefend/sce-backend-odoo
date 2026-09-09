@@ -1,7 +1,8 @@
 <template>
   <ScErrorSummary
     v-if="errors.length || conflict"
-    :errors="errors"
+    :errors="displayErrors"
+    :targets="errorTargets"
     :title="conflict ? '记录已被其他操作更新' : '请检查以下内容'"
     data-semantic-component="ProductFormErrorSummary"
     :data-state="conflict ? 'conflict' : 'error'"
@@ -13,8 +14,18 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import ScErrorSummary from '../design-system/ScErrorSummary.vue';
 import ScButton from '../design-system/ScButton.vue';
-defineProps<{ errors: string[]; conflict?: boolean }>();
-defineEmits<{ 'focus-error': [message: string]; 'reload-latest': [] }>();
+const props = withDefaults(defineProps<{ errors: string[]; fieldErrors?: Record<string, string>; conflict?: boolean }>(), {
+  fieldErrors: () => ({}),
+});
+defineEmits<{ 'focus-error': [fieldName: string]; 'reload-latest': [] }>();
+const fieldErrorEntries = computed(() => Object.entries(props.fieldErrors).filter(([name, message]) => Boolean(name && String(message || '').trim())));
+const displayErrors = computed(() => fieldErrorEntries.value.length
+  ? fieldErrorEntries.value.map(([, message]) => message)
+  : props.errors);
+const errorTargets = computed(() => fieldErrorEntries.value.length
+  ? fieldErrorEntries.value.map(([name]) => name)
+  : props.errors.map(() => ''));
 </script>

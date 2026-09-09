@@ -39,7 +39,7 @@ REQUIREMENTS = {
     ),
     "frontend/apps/web/src/pages/contractForm/canonicalFormRenderState.ts": (
         "applyCanonicalFormValidation",
-        "message.includes(field.label)",
+        "validationFieldErrors[field.fieldCode]",
     ),
     "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts": (
         "invalid: field.invalid",
@@ -82,6 +82,9 @@ REQUIREMENTS = {
     ),
 }
 FORBIDDEN_BY_SOURCE = {
+    "frontend/apps/web/src/pages/contractForm/canonicalFormRenderState.ts": (
+        "message.includes(field.label)",
+    ),
     "frontend/apps/web/src/pages/ListPage.vue": (
         "ScPageHeader",
         "ProductPageHeader",

@@ -78,6 +78,7 @@
         />
         <ProductFormErrorSummary
           :errors="nonSceneValidationErrors"
+          :field-errors="validationFieldErrors"
           :conflict="formConflict"
           @focus-error="focusValidationError"
           @reload-latest="reloadLatestRecord"
@@ -716,7 +717,7 @@ const {
 const designerRouteQueryText = (key: string) => readRouteQueryText(route.query as Record<string, unknown>, key);
 const {
   status, isComponentActive, instanceRouteIdentity, retainedRouteIdentity, renderErrorMessage,
-  recordMissing, errorMessage, loadError, validationErrors, submissionFeedback, formConflict,
+  recordMissing, errorMessage, loadError, validationErrors, validationFieldErrors, submissionFeedback, formConflict,
   showOne2manyErrors, busyKind, activeContractMode, formSettingsActiveTab, contractModeFeedback,
   contract, contractMeta,
 } = useContractFormPageState();
@@ -791,7 +792,7 @@ const canonicalFormRenderState = computed(() => resolveCanonicalFormRenderState(
   v2ContractDecodeError.value,
   renderProfile.value,
   formData,
-  validationErrors.value,
+  validationFieldErrors.value,
 ));
 const canonicalProductFloorplan = computed(() => canonicalFormRenderState.value.model
   ? composeCanonicalFormFloorplan(canonicalFormRenderState.value.model)
@@ -1526,7 +1527,7 @@ const {
   one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor,
   nativeFieldSubview, one2manyColumns, one2manyPolicies, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink, one2manyRowRecordId,
   one2manyCreateLabel, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows,
-  prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows, isOne2manyHydrating, one2manyRowErrors, setRelationKeyword, filteredRelationOptions, relationModel,
+  prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows, isOne2manyHydrating, one2manyRowErrors, one2manyCellError, queryOne2manyColumnOptions, setRelationKeyword, filteredRelationOptions, relationModel,
   formUiLabels, formUiLabel, dynamicDomainFromDescriptor, resolveDynamicDomainDependencyValue, clearDynamicRelationDependents,
   relationDomain, runtimeRelationDomain, mergedRelationDomain, queryRelationOptions, fetchRelationOptions,
   loadRelationSearchColumns, fetchRelationSearchRows, onRelationDialogDocumentKeydown, openRelationSearchDialog, runRelationSearch,
@@ -1621,7 +1622,8 @@ const {
   onNativeAttachmentSelected, onchangeModifiersPatch, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink,
   one2manyRowRecordId, canOpenRelationRecord, openRelationRecord, effectiveFieldDescriptor,
   one2manyColumnDisplayValue, one2manyColumnInputType, one2manyColumns,
-  one2manyCreateLabel, one2manyRowErrors, one2manyRowHints,
+  one2manyCreateLabel, one2manyRowErrors, one2manyCellError, queryOne2manyColumnOptions, one2manyRowHints,
+  ensureRelationFieldDescriptors,
   one2manyRowLabel, one2manyRowStateLabel, one2manySummary, isOne2manyHydrating,
   openNativeAttachment, deleteNativeAttachment: confirmAndDeleteNativeAttachment, deleteNativeMessage: confirmAndDeleteNativeMessage, openNativeChatterAction, replyNativeChatter, openRelationCreateForm,
   parseMaybeJsonRecord, pendingNativeAttachments, policyContext,
@@ -1644,7 +1646,7 @@ const {
   toDateInputValue, toDatetimeInputValue, toPositiveInt,
   updateNativeActivity: confirmAndUpdateNativeActivity, useRecordCollaborationPresentation, useRecordContractSemantics,
   useRecordFormFieldSchemas, useRecordFormLayout, v2ContractStore,
-  validationErrors, visibleOne2manyRows,
+  validationErrors, validationFieldErrors, visibleOne2manyRows,
 });
 // Cutover is allowed only when every executable canonical action has one exact
 // adapter into the existing unified executor. Disabled actions remain visible
@@ -1713,7 +1715,7 @@ function canonicalFieldWritable(name: string): boolean | undefined {
 recordFormStateRuntime = useRecordFormState({
   formFields: canonicalFormFields, model, recordId, rights, formData, originalValues, submissionFeedback, relationKeywords,
   invalidatedRelationKeywords, clearedDynamicRelationFields, relationQueryTimers, relationOptions,
-  validationErrors, onchangeModifiersPatch, onchangeWarnings, onchangeLinePatches, applyingOnchangePatch,
+  validationErrors, validationFieldErrors, onchangeModifiersPatch, onchangeWarnings, onchangeLinePatches, applyingOnchangePatch,
   changedFieldSet, dirtyFieldSet, getOnchangeTimer: () => onchangeTimer,
   setOnchangeTimer: (timer) => { onchangeTimer = timer; }, contractV2ActionRules, layoutNodes,
   nativeStatusbar, route, isNativeFavoriteField, clearDynamicRelationDependents,
@@ -1818,7 +1820,7 @@ const {
   selectedFormSettingsFieldRow, session, setInlineFieldPolicy,
   showOne2manyErrors, status, submissionFeedback,
   uploadPendingNativeAttachments, useFormPageLifecycleRuntime, v2ContractStore,
-  validateBeforeSaveRecord, validationErrors,
+  validateBeforeSaveRecord, validationErrors, validationFieldErrors,
   writeContractFormRecord,
 });
 const unsavedFormGuard = useUnsavedFormGuard({ dirty: () => hasChanges.value, busy,

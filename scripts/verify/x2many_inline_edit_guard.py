@@ -18,6 +18,7 @@ FORM_PATHS = [
 ]
 ENGINE = ROOT / 'frontend/apps/web/src/app/x2manyCommands.ts'
 RELATION_RENDERER = ROOT / 'frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue'
+RELATION_CELL_EDITOR = ROOT / 'frontend/apps/web/src/components/template/One2ManyCellEditor.vue'
 RELATION_ADAPTER = ROOT / 'frontend/apps/web/src/components/template/relationField.types.ts'
 
 
@@ -33,6 +34,7 @@ def main() -> int:
         form = '\n'.join(_read(path) for path in FORM_PATHS)
         engine = _read(ENGINE)
         relation_renderer = _read(RELATION_RENDERER)
+        relation_cell_editor = _read(RELATION_CELL_EDITOR)
         relation_adapter = _read(RELATION_ADAPTER)
     except FileNotFoundError as exc:
         print('[FAIL] x2many_inline_edit_guard')
@@ -76,7 +78,7 @@ def main() -> int:
     renderer_markers = [
         "v-else-if=\"field.type === 'one2many'\"",
         "adapter.one2manyCanCreate(field.name)",
-        "adapter.one2manyCanInlineEdit(field.name)",
+        "<One2ManyCellEditor",
         "adapter.addOne2manyRow(field.name)",
         "adapter.one2manyCreateLabel(field.name, field.label)",
         "adapter.one2manyColumns(field.name)",
@@ -88,6 +90,11 @@ def main() -> int:
     for marker in renderer_markers:
         if marker not in relation_renderer:
             errors.append(f'relation_renderer missing marker: {marker}')
+
+    if relation_renderer.count('<One2ManyCellEditor') != 2:
+        errors.append('relation_renderer must reuse one cell editor for desktop and mobile')
+    if relation_cell_editor.count('!adapter.one2manyCanInlineEdit(fieldName)') != 4:
+        errors.append('relation_cell_editor does not apply inline-edit authority to every editable control')
 
     adapter_markers = [
         "one2manyCanCreate: (name: string) => boolean;",
@@ -112,6 +119,7 @@ def main() -> int:
     print(f'- form modules: {len(FORM_PATHS)}')
     print(f'- engine: {ENGINE}')
     print(f'- relation_renderer: {RELATION_RENDERER}')
+    print(f'- relation_cell_editor: {RELATION_CELL_EDITOR}')
     print(f'- relation_adapter: {RELATION_ADAPTER}')
     return 0
 

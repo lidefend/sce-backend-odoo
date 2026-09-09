@@ -114,12 +114,30 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
     def test_input_without_inline_edit_authority_fails(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
-            if path.endswith("X2ManyRelationRenderer.vue"):
-                return value.replace(" || !adapter.one2manyCanInlineEdit(field.name)", "", 1)
+            if path.endswith("One2ManyCellEditor.vue"):
+                return value.replace(" || !adapter.one2manyCanInlineEdit(fieldName)", "", 1)
             return value
 
         failures = validate(read_text)
         self.assertTrue(any("inputs do not consistently" in item for item in failures))
+
+    def test_desktop_and_mobile_cell_logic_cannot_diverge(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace("<One2ManyCellEditor", "<RemovedCellEditor", 1)
+            return value
+
+        self.assertTrue(any("same cell editor" in item for item in validate(read_text)))
+
+    def test_missing_column_label_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace("title: column.label", "title: ''")
+            return value
+
+        self.assertTrue(any("authoritative labels" in item for item in validate(read_text)))
 
     def test_unguarded_inline_update_handler_fails(self):
         def read_text(path):
@@ -150,6 +168,19 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
 
         failures = validate(read_text)
         self.assertTrue(any("row creation handler" in item for item in failures))
+
+    def test_row_creation_cannot_wait_for_optional_column_hydration(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordActionPresentation.ts"):
+                return value.replace(
+                    "addOne2manyRow(fieldName);",
+                    "Promise.resolve(dependencies.ensureRelationFieldDescriptors?.(fieldName)).then(() => addOne2manyRow(fieldName));",
+                    1,
+                )
+            return value
+
+        self.assertTrue(any("optional column hydration" in item for item in validate(read_text)))
 
     def test_missing_row_open_authority_fails(self):
         def read_text(path):

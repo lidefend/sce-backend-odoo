@@ -17,6 +17,8 @@
     :status="invalid ? 'error' : status"
     :disabled="disabled"
     :readonly="readonly"
+    :filterable="filterable"
+    :loading="loading"
     :placeholder="placeholder"
     :aria-disabled="disabled || undefined"
     :aria-readonly="readonly || undefined"
@@ -24,6 +26,7 @@
     :aria-invalid="invalid || status === 'error' || undefined"
     :aria-describedby="describedBy"
     @change="onChange"
+    @search="emit('search', String($event || ''))"
   />
 </template>
 
@@ -50,6 +53,8 @@ const props = withDefaults(defineProps<{
   required?: boolean;
   invalid?: boolean;
   describedBy?: string;
+  filterable?: boolean;
+  loading?: boolean;
   appearance?: 'default' | 'form-field';
 }>(), {
   options: () => [],
@@ -58,8 +63,10 @@ const props = withDefaults(defineProps<{
   status: 'default',
   describedBy: undefined,
   appearance: 'default',
+  filterable: false,
+  loading: false,
 });
-const emit = defineEmits<{ 'update:modelValue': [value: string]; change: [value: string] }>();
+const emit = defineEmits<{ 'update:modelValue': [value: string]; change: [value: string]; search: [value: string] }>();
 const selectRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null);
 const vNativeControlProjection = nativeControlProjection;
 const tdesignOptions = computed(() => props.options.map((option) => ({

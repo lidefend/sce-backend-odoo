@@ -8,15 +8,12 @@ import { presentContractV2Form } from '../../app/presentation/contractFormPresen
 
 export function applyCanonicalFormValidation(
   model: CanonicalFormRenderModel,
-  validationErrors: string[] = [],
+  validationFieldErrors: Record<string, string> = {},
 ): CanonicalFormRenderModel {
-  const errors = validationErrors.map((message) => String(message || '').trim()).filter(Boolean);
   const decorateNode = (node: CanonicalFormNode): CanonicalFormNode => ({
     ...node,
     fields: node.fields.map((field) => {
-      const errorText = field.label
-        ? errors.find((message) => message.includes(field.label)) || ''
-        : '';
+      const errorText = String(validationFieldErrors[field.fieldCode] || '').trim();
       return { ...field, invalid: Boolean(errorText), errorText };
     }),
     children: node.children.map(decorateNode),
@@ -35,13 +32,13 @@ export function resolveCanonicalFormRenderState(
   decodeError: string,
   mode: CanonicalFormRenderMode,
   runtimeValues?: ContractV2Dictionary,
-  validationErrors: string[] = [],
+  validationFieldErrors: Record<string, string> = {},
 ) {
   if (decodeError) return { model: null, error: decodeError };
   if (!store) return { model: null, error: 'NORMALIZED_FORM_CONTRACT_MISSING' };
   try {
     return {
-      model: applyCanonicalFormValidation(presentContractV2Form(store, mode, runtimeValues), validationErrors),
+      model: applyCanonicalFormValidation(presentContractV2Form(store, mode, runtimeValues), validationFieldErrors),
       error: '',
     };
   } catch (error) {

@@ -10,8 +10,10 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     model = read_text("frontend/apps/web/src/components/professional-fields/professionalDetailCollectionModel.ts")
     section = read_text("frontend/apps/web/src/components/template/FormSection.vue")
     renderer = read_text("frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue")
+    cell_editor = read_text("frontend/apps/web/src/components/template/One2ManyCellEditor.vue")
     relation_types = read_text("frontend/apps/web/src/components/template/relationField.types.ts")
     relation_utils = read_text("frontend/apps/web/src/pages/contractForm/one2manyUtils.ts")
+    relation_runtime = read_text("frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts")
     action_presentation = read_text("frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts")
     registry = read_text("frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts")
     assembler = read_text("addons/smart_core/core/unified_page_contract_v2_assembler.py")
@@ -75,19 +77,31 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection adapter omits backend inline-edit authority")
     if "return policies.inline_edit === true;" not in relation_utils:
         failures.append("detail collection inline-edit authority does not fail closed")
-    if renderer.count("!adapter.one2manyCanInlineEdit(field.name)") != 3:
+    if cell_editor.count("!adapter.one2manyCanInlineEdit(fieldName)") != 4:
         failures.append("detail collection inputs do not consistently consume inline-edit authority")
+    if "queryOne2manyColumnOptions" not in relation_types or "column.relationReadable !== true" not in renderer:
+        failures.append("detail collection relation columns do not consume authoritative relation access")
+    if "rowKey: string" not in relation_types or "rowValues[normalized] ?? formData[normalized]" not in relation_runtime:
+        failures.append("detail collection relation domain is not bound to the current row and parent form")
+    if "one2manyCellError" not in relation_types or 'role="alert"' not in cell_editor:
+        failures.append("detail collection cell validation is not associated with its control")
+    if renderer.count("<One2ManyCellEditor") != 2:
+        failures.append("desktop and mobile detail layouts do not share the same cell editor")
+    if "title: column.label" not in renderer:
+        failures.append("detail collection columns do not expose authoritative labels")
     if "if (!one2manyCanInlineEdit(fieldName)) return;" not in action_presentation:
         failures.append("detail collection field update handler does not fail closed")
     if "if (!one2manyCanCreate(fieldName)) return;" not in action_presentation:
         failures.append("detail collection row creation handler does not fail closed")
+    if "Promise.resolve(dependencies.ensureRelationFieldDescriptors" in action_presentation:
+        failures.append("detail collection row creation incorrectly waits for optional column hydration")
     if "one2manyCanOpenRow: (name: string, row: RelationFieldRow) => boolean;" not in relation_types:
         failures.append("detail collection adapter omits governed row-open authority")
     if 'v-if="adapter.one2manyCanOpenRow(field.name, row._row)"' not in renderer:
         failures.append("detail collection does not hide row-open without authority")
     if "recordId <= 0 || !dependencies.canOpenRelationRecord(" not in action_presentation:
         failures.append("detail collection row-open handler does not fail closed")
-    if "<ScInput" not in renderer or "<ScSelect" not in renderer:
+    if "<ScInput" not in cell_editor or "<ScSelect" not in cell_editor:
         failures.append("editable detail rows bypass the governed input/select primitives")
     if "--sc-component-relation-dropdown-z-index" not in renderer or "--sc-component-relation-dropdown-shadow" not in renderer:
         failures.append("relation dropdown stacking and elevation are not token governed")

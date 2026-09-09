@@ -1,0 +1,114 @@
+<template>
+  <div
+    class="o2m-cell-editor"
+    data-semantic-component="One2ManyCellEditor"
+    :data-validation-target="validationTarget"
+  >
+    <ScCheckbox
+      v-if="column.ttype === 'boolean'"
+      class="input-checkbox"
+      :disabled="column.readonly || !adapter.one2manyCanInlineEdit(fieldName) || adapter.busy"
+      :checked="Boolean(value)"
+      :label="column.label"
+      @change="$emit('update', $event)"
+    />
+    <ScSelect
+      v-else-if="column.ttype === 'many2one'"
+      :model-value="relationValue"
+      :options="relationOptions"
+      :required="column.required"
+      :invalid="Boolean(errorText)"
+      :described-by="errorId"
+      :disabled="column.readonly || !adapter.one2manyCanInlineEdit(fieldName) || adapter.busy"
+      filterable
+      :loading="relationLoading"
+      :placeholder="relationPlaceholder"
+      :title="column.disabledReason"
+      @update:model-value="$emit('update', $event)"
+      @search="$emit('search', $event)"
+    />
+    <ScSelect
+      v-else-if="column.ttype === 'selection'"
+      :disabled="column.readonly || !adapter.one2manyCanInlineEdit(fieldName) || adapter.busy"
+      :required="column.required"
+      :invalid="Boolean(errorText)"
+      :described-by="errorId"
+      :model-value="String(value ?? '')"
+      :placeholder="adapter.selectPlaceholder(column.label)"
+      :options="(column.selection || []).map((option) => ({ value: String(option[0]), label: String(option[1]) }))"
+      @update:model-value="$emit('update', $event)"
+    />
+    <ScInput
+      v-else
+      :appearance="amount ? 'numeric-entry' : 'default'"
+      :align="amount ? 'right' : 'left'"
+      :type="adapter.one2manyColumnInputType(column)"
+      :disabled="column.readonly || !adapter.one2manyCanInlineEdit(fieldName) || adapter.busy"
+      :required="column.required"
+      :status="errorText ? 'error' : 'default'"
+      :described-by="errorId"
+      :title="column.disabledReason || readonlyReason"
+      :model-value="adapter.one2manyColumnDisplayValue(column, value)"
+      :placeholder="column.label"
+      @update:model-value="$emit('update', $event)"
+    />
+    <span v-if="errorText" :id="errorId" class="o2m-cell-error" role="alert">{{ errorText }}</span>
+    <span v-else-if="showReadonlyReason && (column.disabledReason || readonlyReason)" class="o2m-disabled-reason">
+      {{ column.disabledReason || readonlyReason }}
+    </span>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue';
+import ScCheckbox from '../design-system/ScCheckbox.vue';
+import ScInput from '../design-system/ScInput.vue';
+import ScSelect from '../design-system/ScSelect.vue';
+import type { RelationFieldAdapter, RelationFieldColumn } from './relationField.types';
+
+const props = withDefaults(defineProps<{
+  adapter: RelationFieldAdapter;
+  fieldName: string;
+  rowKey: string;
+  column: RelationFieldColumn;
+  value: unknown;
+  amount?: boolean;
+  error?: string;
+  relationError?: string;
+  errorId: string;
+  validationTarget: string;
+  relationOptions?: ReadonlyArray<{ value: string | number; label: string; disabled?: boolean }>;
+  relationLoading?: boolean;
+  relationPlaceholder?: string;
+  showReadonlyReason?: boolean;
+}>(), {
+  amount: false,
+  error: '',
+  relationError: '',
+  relationOptions: () => [],
+  relationLoading: false,
+  relationPlaceholder: '',
+  showReadonlyReason: false,
+});
+
+defineEmits<{
+  update: [value: unknown];
+  search: [keyword: string];
+}>();
+
+const errorText = computed(() => props.error || props.relationError);
+const relationValue = computed(() => {
+  const raw = Array.isArray(props.value) ? props.value[0] : props.value;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : '';
+});
+const readonlyReason = computed(() => props.column.readonly ? '此字段目前仅供查看' : '');
+</script>
+
+<style scoped>
+.o2m-cell-editor { min-width: 0; }
+.o2m-cell-error,
+.o2m-disabled-reason { display: block; margin-top: 4px; font-size: 12px; line-height: 1.35; }
+.o2m-cell-error { color: var(--sc-app-danger-text); }
+.o2m-disabled-reason { color: var(--sc-app-text-secondary); }
+</style>

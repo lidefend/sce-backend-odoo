@@ -1381,6 +1381,99 @@ try {
             ))),
         };
       }
+      let detailCollectionEvidence = null;
+      if (target.exerciseDetailCollection === true) {
+        if (formValidationEvidence) {
+          await page.goto(`${baseUrl}${target.path}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+          await page.locator('[data-semantic-component="ContractFormPage"][data-state="ok"]:visible').waitFor({ state: 'visible', timeout: 45000 });
+          await waitForStableProductSurface(page);
+        }
+        const form = page.locator('[data-product-page-mode="form"]:visible');
+        const addRow = form.locator('.o2m-create:visible').first();
+        const saveAction = page.locator('button[data-action-ref="form.save"]:visible').first();
+        if (await form.count() !== 1 || await addRow.count() !== 1 || await saveAction.count() !== 1) {
+          throw new Error(`${target.name}: editable detail collection entry is missing ${JSON.stringify({
+            url: page.url(),
+            forms: await form.count(),
+            addActions: await addRow.count(),
+            saveActions: await saveAction.count(),
+          })}`);
+        }
+        const mutationCountBefore = report.mutationCount;
+        await addRow.click();
+        const cellEditor = form.locator('[data-semantic-component="One2ManyCellEditor"]:visible').first();
+        try {
+          await cellEditor.waitFor({ state: 'visible', timeout: 15000 });
+        } catch (error) {
+          const detailState = await form.locator('.o2m-card:visible').evaluateAll((cards) => cards.map((card) => ({
+            title: card.querySelector('.o2m-title')?.textContent?.trim() || '',
+            count: card.querySelector('.o2m-count')?.textContent?.trim() || '',
+            empty: card.querySelector('.o2m-empty')?.textContent?.replace(/\s+/g, ' ').trim() || '',
+            desktopRows: card.querySelectorAll('.o2m-table-scroll tbody tr').length,
+            mobileRows: card.querySelectorAll('[data-o2m-row]').length,
+            editors: card.querySelectorAll('[data-semantic-component="One2ManyCellEditor"]').length,
+            text: card.textContent?.replace(/\s+/g, ' ').trim().slice(0, 500) || '',
+          })));
+          throw new Error(`${target.name}: detail row did not expose shared cell editors ${JSON.stringify({ detailState, browserErrors: errors, mutationCount: report.mutationCount })}`, { cause: error });
+        }
+        const row = viewport.name === 'mobile'
+          ? cellEditor.locator('xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " o2m-mobile-row ")][1]')
+          : cellEditor.locator('xpath=ancestor::tr[1]');
+        await row.waitFor({ state: 'visible', timeout: 15000 });
+        const labels = viewport.name === 'mobile'
+          ? await row.locator('.o2m-mobile-label:visible').allTextContents()
+          : await form.locator('.o2m-table-scroll:visible thead th:visible').allTextContents();
+        const readableLabels = labels.map((label) => label.replace(/\s+/g, ' ').replace(/\*$/, '').trim()).filter(Boolean);
+        const disabledReasons = (await row.locator('.o2m-disabled-reason:visible').allTextContents())
+          .map((label) => label.replace(/\s+/g, ' ').trim()).filter(Boolean);
+        await saveAction.click();
+        const cellError = row.locator('.o2m-cell-error[role="alert"]:visible').first();
+        await cellError.waitFor({ state: 'visible', timeout: 15000 });
+        const errorCell = cellError.locator('xpath=ancestor::*[@data-validation-target][1]');
+        const errorTarget = String(await errorCell.getAttribute('data-validation-target') || '');
+        const activeTarget = await page.evaluate(() => document.activeElement?.closest('[data-validation-target]')?.getAttribute('data-validation-target') || '');
+        const invalidControlCount = await errorCell.locator('[aria-invalid="true"]:visible').count();
+        const boundaryOwner = viewport.name === 'mobile' ? row : form.locator('.o2m-table-scroll:visible').first();
+        const rowBoundary = await boundaryOwner.evaluate((node) => {
+          const rect = node.getBoundingClientRect();
+          const documentRoot = document.documentElement;
+          return {
+            left: Math.round(rect.left),
+            right: Math.round(rect.right),
+            viewportWidth: window.innerWidth,
+            documentClientWidth: documentRoot.clientWidth,
+            documentScrollWidth: documentRoot.scrollWidth,
+            pass: rect.left >= -1
+              && rect.right <= window.innerWidth + 1
+              && documentRoot.scrollWidth <= documentRoot.clientWidth + 1,
+          };
+        });
+        detailCollectionEvidence = {
+          layout: viewport.name === 'mobile' ? 'mobile-card' : 'desktop-table',
+          readableLabels,
+          disabledReasons,
+          errorTarget,
+          activeTarget,
+          invalidControlCount,
+          rowBoundary,
+          mutationCountBefore,
+          mutationCountAfter: report.mutationCount,
+          pass: readableLabels.length > 2
+            && disabledReasons.every((label) => !label.includes('契约'))
+            && Boolean(errorTarget)
+            && activeTarget === errorTarget
+            && invalidControlCount > 0
+            && rowBoundary.pass
+            && mutationCountBefore === report.mutationCount,
+        };
+        await page.screenshot({
+          path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-detail-validation.png`),
+          fullPage: false,
+        });
+        const removeRow = row.locator('.o2m-row-remove:visible, button[aria-label^="移除"]:visible').first();
+        if (await removeRow.count() !== 1) throw new Error(`${target.name}: temporary detail row cannot be removed`);
+        await removeRow.click();
+      }
       let relationSearchDialogEvidence = null;
       if (target.captureRelationSearchDialog === true) {
         const relations = page.locator('.many2one-combobox:visible');
@@ -2216,7 +2309,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, safeReturnEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, safeReturnEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -2310,6 +2403,7 @@ for (const item of report.routes) {
   if (item.collectionKanbanEvidence && !item.collectionKanbanEvidence.pass) failures.push({ name: item.name, collectionKanbanEvidence: item.collectionKanbanEvidence });
   if (item.relationSearchDialogEvidence && !item.relationSearchDialogEvidence.pass) failures.push({ name: item.name, relationSearchDialogEvidence: item.relationSearchDialogEvidence });
   if (item.formValidationEvidence && !item.formValidationEvidence.pass) failures.push({ name: item.name, formValidationEvidence: item.formValidationEvidence });
+  if (item.detailCollectionEvidence && !item.detailCollectionEvidence.pass) failures.push({ name: item.name, detailCollectionEvidence: item.detailCollectionEvidence });
   if (item.collectionAggregateEvidence && !item.collectionAggregateEvidence.pass) failures.push({ name: item.name, collectionAggregateEvidence: item.collectionAggregateEvidence });
   if (item.collectionGroupHeaderEvidence && !item.collectionGroupHeaderEvidence.pass) failures.push({ name: item.name, collectionGroupHeaderEvidence: item.collectionGroupHeaderEvidence });
   if (item.dialogLifecycleEvidence && !item.dialogLifecycleEvidence.pass) failures.push({ name: item.name, dialogLifecycleEvidence: item.dialogLifecycleEvidence });

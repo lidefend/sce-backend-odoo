@@ -276,6 +276,17 @@ def validate(root: Path = ROOT) -> list[str]:
     if "<TDesignSelect" not in select_text or ':options="tdesignOptions"' not in select_text or "v-native-control-projection" not in select_text:
         errors.append("ScSelect must use the TDesign option driver and native accessibility projection")
 
+    relation_text = (design / "ScRelationField.vue").read_text(encoding="utf-8") if (design / "ScRelationField.vue").is_file() else ""
+    for marker in (
+        "<TDesignAutoComplete",
+        'v-native-control-projection="nativeProjection"',
+        "'aria-required': props.required || undefined",
+        "'aria-invalid': props.invalid || undefined",
+        "'aria-describedby': props.describedBy",
+    ):
+        if marker not in relation_text:
+            errors.append(f"ScRelationField missing native accessibility projection marker: {marker}")
+
     disclosure_text = (design / "ScDisclosure.vue").read_text(encoding="utf-8") if (design / "ScDisclosure.vue").is_file() else ""
     for marker in (
         '<TDesignCollapse',

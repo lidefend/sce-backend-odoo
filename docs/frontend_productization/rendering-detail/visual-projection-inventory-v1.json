@@ -605,6 +605,20 @@
       "scComponents": []
     },
     {
+      "category": "states",
+      "digest": "6b2639419bd4dfd43b34699c09e04ecb94c3cab340defbd455ea595ead9afaa9",
+      "nativeStyleSelectors": [
+        ".sc-alert button"
+      ],
+      "path": "components/design-system/ScErrorSummary.vue",
+      "referenceNativeStyleSelectors": [
+        ".sc-alert button"
+      ],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
       "category": "form-fields",
       "digest": "a03d36ed83c27d05bf48df68ddff6487a06629964ed930f8feda9563785b751e",
       "nativeStyleSelectors": [],
@@ -850,7 +864,7 @@
     },
     {
       "category": "relations-x2many",
-      "digest": "1353c70c5d8621c9b246337cdd7b5800e0c23bebb7ce23228778447a0271ceed",
+      "digest": "0b4b17b92ff026044e52939b4ed2a5d3cb12d0b8d47b75c3e17d40ee9f6dfbaa",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScRelationField.vue",
       "referenceNativeStyleSelectors": [],
@@ -860,7 +874,7 @@
     },
     {
       "category": "other",
-      "digest": "9bba3fbc75e80f0cfc2261e9c862d5767d7955ec863d9163be26ef5444f330e1",
+      "digest": "40e1c4dce1d90fe41d06903adba354a2b8abbb530abf5c2ba61704a9e8bb0ced",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScSelect.vue",
       "referenceNativeStyleSelectors": [],
@@ -1471,7 +1485,7 @@
     },
     {
       "category": "states",
-      "digest": "587960835a0cfc0d42693be50d9450eb9c4cc3efe61eda45e766c7adc3bc7913",
+      "digest": "08c97a1d4ab2b643c8263dd9b474fb9a166741c063eca49b2b202d53512b3b24",
       "nativeStyleSelectors": [],
       "path": "components/product-record/ProductFormErrorSummary.vue",
       "referenceNativeStyleSelectors": [],
@@ -1820,6 +1834,20 @@
     },
     {
       "category": "other",
+      "digest": "40100fb4b50051da50d87fe79532efe84796eb796a59d8285b2d55537960b935",
+      "nativeStyleSelectors": [],
+      "path": "components/template/One2ManyCellEditor.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScCheckbox",
+        "ScInput",
+        "ScSelect"
+      ]
+    },
+    {
+      "category": "other",
       "digest": "27747ea933cc8494afabb9f7345a5f1c59a657e1235f82ebf1561ce42345919c",
       "nativeStyleSelectors": [],
       "path": "components/template/PageHeader.vue",
@@ -1830,7 +1858,7 @@
     },
     {
       "category": "relations-x2many",
-      "digest": "e21e0dc7b409b6b9d707de51dbfccf2b3b5c9d2aa60ddf4b8f24f0ca214679a0",
+      "digest": "d859e4ff45000d39e356e0fa5c8b7abd256b9909979240979872214cd6fa62ed",
       "nativeStyleSelectors": [],
       "path": "components/template/X2ManyRelationRenderer.vue",
       "referenceNativeStyleSelectors": [
@@ -1842,12 +1870,10 @@
       ],
       "scComponents": [
         "ScButton",
-        "ScCheckbox",
         "ScFileField",
         "ScIcon",
         "ScInlineState",
         "ScInput",
-        "ScSelect",
         "ScTable"
       ]
     },
@@ -1958,7 +1984,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "d834e2b29f125e9ddce5a4230a66403cc30e39d50f25b6f6b7bb83fd014f73ae",
+      "digest": "bf44997d405be62a0769e962577708de592c7630616972d0e12ffbeabc5ccbd6",
       "nativeStyleSelectors": [],
       "path": "pages/ContractFormPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2763,7 +2789,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "4703e8775d865b9a46638ffdf418708486ec010978c2979a3560edd96a5b1db5",
+  "currentInputDigest": "36f344318e82e54671630207c0535b7b577281de9c32155d1d76d89bb1a119bb",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
@@ -2995,9 +3021,9 @@
   "scope": "repository formal P0/P1 frontend source projection",
   "summary": {
     "adapterCount": 18,
-    "changedSourceCount": 194,
+    "changedSourceCount": 196,
     "consumerPrimitiveVisualChromeCount": 0,
-    "currentSourceCount": 216,
+    "currentSourceCount": 217,
     "invalidFormalVisualEvidenceBindingCount": 0,
     "projectedAdapterCount": 18,
     "referenceSourceCount": 132,

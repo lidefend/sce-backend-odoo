@@ -2659,7 +2659,7 @@ assert.deepEqual(
   'an executable body-node action without an adapter must fail closed',
 );
 
-const validationProjection = applyCanonicalFormValidation(model, ['Name 为必填项']);
+const validationProjection = applyCanonicalFormValidation(model, { name: 'Name 为必填项' });
 const validationField = collectFields(validationProjection.zones.primary).find((field) => field.fieldCode === 'name');
 assert.equal(validationField?.invalid, true, 'canonical validation must mark the matching field invalid');
 assert.equal(validationField?.errorText, 'Name 为必填项', 'canonical validation must retain the authoritative error text');
@@ -2668,5 +2668,16 @@ assert.equal(renderedValidationField.invalid, true, 'canonical field validation 
 assert.equal(renderedValidationField.errorText, 'Name 为必填项', 'rendered validation must retain its accessible description');
 const unrelatedValidationField = collectFields(validationProjection.zones.primary).find((field) => field.fieldCode === 'state');
 assert.equal(unrelatedValidationField?.invalid, false, 'canonical validation must not mark unrelated fields invalid');
+const labelCollisionProjection = applyCanonicalFormValidation(model, { state: 'Name 与 State 的组合提示' });
+assert.equal(
+  collectFields(labelCollisionProjection.zones.primary).find((field) => field.fieldCode === 'name')?.invalid,
+  false,
+  'canonical validation must never infer field identity from a label substring',
+);
+assert.equal(
+  collectFields(labelCollisionProjection.zones.primary).find((field) => field.fieldCode === 'state')?.invalid,
+  true,
+  'canonical validation must project an explicit field identity even when labels overlap',
+);
 
 console.log('[canonical_form_presenter_test] PASS cases=143');

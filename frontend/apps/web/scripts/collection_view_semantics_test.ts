@@ -118,6 +118,18 @@ const many2oneColumn = { name: 'partner_id', label: '往来单位', ttype: 'many
 assert.equal(one2manyColumnDisplayValue(many2oneColumn, [10, '德阳市某产业发展有限公司']), '德阳市某产业发展有限公司');
 assert.equal(one2manyColumnDisplayValue(many2oneColumn, { id: 10, display_name: '德阳市某产业发展有限公司' }), '德阳市某产业发展有限公司');
 assert.equal(one2manyColumnDisplayValue(many2oneColumn, 10), '', 'bare many2one ids must fail closed instead of leaking into product text');
+const writableMany2oneColumns = one2manyColumnsFromSubview({ tree: { columns: [{
+  name: 'partner_id', label: '往来单位', ttype: 'many2one', required: true, readonly: false,
+}] } }, () => ({
+  type: 'many2one', relation: 'res.partner', required: true,
+  relation_entry: { model: 'res.partner', can_read: true },
+}));
+assert.equal(writableMany2oneColumns[0]?.readonly, false, 'readable relation columns may only become writable through the child field contract');
+assert.equal(writableMany2oneColumns[0]?.relationReadable, true);
+const blockedMany2oneColumns = one2manyColumnsFromSubview({ tree: { columns: [{
+  name: 'partner_id', label: '往来单位', ttype: 'many2one', required: true, readonly: false,
+}] } }, () => ({ type: 'many2one', relation: 'res.partner', required: true }));
+assert.equal(blockedMany2oneColumns[0]?.readonly, true, 'missing relation-entry authority must remain read-only');
 const many2manyColumn = { name: 'tag_ids', label: '标签', ttype: 'many2many', required: false };
 assert.equal(one2manyColumnDisplayValue(many2manyColumn, [[2, '重点'], { id: 3, name: '在建' }]), '重点、在建');
 assert.equal(one2manyColumnDisplayValue(many2manyColumn, [2, 3]), '', 'bare many2many ids must fail closed instead of leaking into product text');
@@ -190,7 +202,7 @@ assert.equal(setOne2manyDraftRowField({
 assert.equal(hiddenRows.line_ids[0].dirty, false);
 assert.deepEqual(collectOne2manyDraftValidationFromRows({
   rowsByField: hiddenRows, recordId: 1, resolvePrimaryColumn: () => 'state', resolveColumns: () => [hiddenRequiredColumn],
-}), { issues: [], rowErrors: {} });
+}), { issues: [], rowErrors: {}, cellErrors: {} });
 const dynamicRows = { line_ids: [{
   key: 'done', id: 7, isNew: false, removed: false, dirty: false, dirtyFields: [],
   values: { state: 'done', note: 'locked' },
@@ -212,6 +224,21 @@ assert.deepEqual(collectOne2manyDraftValidationFromRows({
 }), {
   issues: [],
   rowErrors: {},
+  cellErrors: {},
+});
+const requiredRows = { line_ids: [{
+  key: 'new-required', id: 0, isNew: true, removed: false, dirty: true, dirtyFields: [],
+  values: { partner_id: false },
+}] };
+assert.deepEqual(collectOne2manyDraftValidationFromRows({
+  rowsByField: requiredRows,
+  recordId: null,
+  resolvePrimaryColumn: () => 'partner_id',
+  resolveColumns: () => [{ ...many2oneColumn, required: true }],
+}), {
+  issues: ['line_ids 第1行往来单位不能为空'],
+  rowErrors: { 'line_ids:new-required': ['往来单位不能为空'] },
+  cellErrors: { 'line_ids:new-required:partner_id': '往来单位不能为空' },
 });
 const inlineActions = one2manyRowActionsFromSubview({ tree: { row_actions: [
   {

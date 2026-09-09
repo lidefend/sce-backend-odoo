@@ -71,6 +71,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 "ScInputGroup": '<TDesignInputAdornment data-primitive-driver="tdesign" />',
                 "ScTextarea": '<TDesignTextarea v-native-control-projection :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" />',
                 "ScSelect": '<TDesignSelect v-native-control-projection :options="tdesignOptions" :data-readonly="readonly || undefined" :aria-readonly="readonly || undefined" />',
+                "ScRelationField": '<TDesignAutoComplete v-native-control-projection="nativeProjection" /><!-- \'aria-required\': props.required || undefined \'aria-invalid\': props.invalid || undefined \'aria-describedby\': props.describedBy -->',
                 "ScTabs": "<TDesignTabs :list=\"items.length ? tdesignItems : undefined\" />\nlabel: tabLabel(item)\nreturn (render: typeof h) => render('span', {}, item.label)",
                 "ScStatusBadge": "<div :data-semantic-status=\"semantic\" />\n<style>.sc-status-badge[data-semantic-status='info'] { color: var(--sc-app-info-text); background-color: var(--sc-app-info-bg); }</style>",
                 "ScLoading": '<div data-state="loading" aria-busy="true" />',
@@ -84,6 +85,13 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 f'<template><div data-semantic-component="{name}" data-semantic-layer="primitive">{state_contract}</div></template>{modal_contract}\n',
                 encoding="utf-8",
             )
+        (design / "ScRelationField.vue").write_text(
+            '<template><TDesignAutoComplete v-native-control-projection="nativeProjection" /></template>\n'
+            "<script>const nativeProjection = { selector: 'input' as const, attributes: { "
+            "'aria-required': props.required || undefined, 'aria-invalid': props.invalid || undefined, "
+            "'aria-describedby': props.describedBy } };</script>\n",
+            encoding="utf-8",
+        )
         (design / "ScDateField.vue").write_text(
             '<template><TDesignDatePicker v-native-control-projection="nativeProjection" /></template>\n'
             "<script>const nativeProjection = { selector: 'input' as const, attributes: { required: props.required, "
