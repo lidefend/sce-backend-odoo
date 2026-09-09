@@ -1597,7 +1597,28 @@ try {
           await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
           await relationInput.fill(failureKeyword);
           const failureState = relationEditor.locator('[data-relation-query-state="error"]:visible');
-          await failureState.waitFor({ state: 'visible', timeout: 15000 });
+          try {
+            await failureState.waitFor({ state: 'visible', timeout: 15000 });
+          } catch (error) {
+            const failureDiagnostic = {
+              inputValue: await relationInput.inputValue(),
+              failureInjected,
+              relationQueryCount,
+              relationQueryEvents,
+              loading: await relationSelect.locator('.t-loading:visible, [aria-busy="true"]:visible').count(),
+              visibleOptionCount: await visibleOptions.count(),
+            };
+            await page.screenshot({
+              path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-relation-failure-missing.png`),
+              fullPage: false,
+            });
+            fs.writeFileSync(
+              path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-relation-failure-missing.json`),
+              `${JSON.stringify(failureDiagnostic, null, 2)}\n`,
+              'utf8',
+            );
+            throw new Error(`${target.name}: relation failure state missing: ${JSON.stringify(failureDiagnostic)}`, { cause: error });
+          }
           const failureText = String(await failureState.textContent() || '').replace(/\s+/g, ' ').trim();
           await page.screenshot({
             path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-relation-failure.png`),
