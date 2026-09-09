@@ -3,6 +3,28 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-09-09 — FRONTEND-PAYMENT-DECISION-EXPRESSION-B3-B4-01
+
+- Branch / anchor: `feature/frontend-page-experience-iteration-v1` product
+  candidate `c3ab688b`; the batch remains local and is not a release claim.
+- Formal Product Layer / Layer Target / Module: P0 contract-driven presentation /
+  task floorplan, work items, and mobile collection facts / existing Web
+  renderer and product-pattern chain; P4 only for the governed browser evidence.
+- Root cause and product result: the payment amount already carried authoritative
+  summary/monetary semantics, but editable summary fields were excluded from the
+  early floorplan and mobile cards used a fixed first-three slice. The generic
+  renderer now presents editable decision money between summary and current task,
+  mobile cards prioritize the formal money role, and work cards keep one key fact
+  while preserving all auxiliary facts in disclosure. No title parsing, currency
+  inference, P1 contract change, or workflow mutation was introduced.
+- Acceptance evidence: quick gate and readonly payment floorplan pass. Frozen
+  1440/390 light and 1440/320 dark journeys bind record 15, retain four fully
+  visible desktop work items, make every inspected mobile money fact primary,
+  preserve menu/order/offset after record return, recover 70→0→70 search and a
+  controlled 503 through one retry, and report zero business mutations, browser
+  errors, failures, or mobile root overflow. Formal release and independent review
+  remain unexecuted.
+
 ## 2026-09-02 — READONLY-EMPTY-RELATION-INFORMATION-EFFICIENCY-CLOSURE-01
 
 - Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
