@@ -519,6 +519,8 @@ async function selectDomainTab(tabKey: string): Promise<void> {
 function worksheetRowAttributes({ row }: { row: VisibleEntry }) {
   return {
     tabindex: 0,
+    'data-record-id': row.record ? String(row.record.id || '') : undefined,
+    'aria-selected': row.record ? selectedRecord.value?.id === row.record.id : undefined,
     onKeyup: (event: KeyboardEvent) => openRecordFromKeyboard(event, row.record),
   };
 }

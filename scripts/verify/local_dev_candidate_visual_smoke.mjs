@@ -881,6 +881,159 @@ try {
         };
         if (!nativeActionPresentationEvidence.pass) throw new Error(`${target.name}: native action disclosure semantics failed`);
       }
+      let hierarchicalWorkspaceEvidence = null;
+      if (target.exerciseHierarchicalWorkspace === true) {
+        const worksheet = page.locator('[data-semantic-component="HierarchicalWorksheet"][data-state="ready"]:visible');
+        await worksheet.waitFor({ state: 'visible', timeout: 45000 });
+        const search = worksheet.locator('[data-semantic-component="ProductListHeader"] input[type="search"]');
+        const scopeTrigger = worksheet.locator('.worksheet-scope-trigger:visible');
+        let mobileScopeEvidence = null;
+        if (viewport.name === 'mobile') {
+          await scopeTrigger.click();
+          const drawer = page.getByRole('dialog', { name: /收入合同履约结构|选择范围/ });
+          await drawer.waitFor({ state: 'visible', timeout: 15000 });
+          const initialDescription = String(await drawer.getAttribute('aria-describedby') || '');
+          const firstScope = drawer.locator('.tree-node').first();
+          const chosenScope = String(await firstScope.textContent() || '').replace(/\s+/g, ' ').trim();
+          await firstScope.click();
+          await drawer.waitFor({ state: 'hidden', timeout: 15000 });
+          const selectedScope = String(await scopeTrigger.textContent() || '').replace(/\s+/g, ' ').trim();
+          await scopeTrigger.click();
+          await drawer.waitFor({ state: 'visible', timeout: 15000 });
+          await drawer.locator('.navigation-all').click();
+          await drawer.waitFor({ state: 'hidden', timeout: 15000 });
+          const clearedScope = String(await scopeTrigger.textContent() || '').replace(/\s+/g, ' ').trim();
+          await scopeTrigger.click();
+          await drawer.waitFor({ state: 'visible', timeout: 15000 });
+          await drawer.locator('.tree-node').first().click();
+          await drawer.waitFor({ state: 'hidden', timeout: 15000 });
+          mobileScopeEvidence = {
+            initialDescription,
+            chosenScope,
+            selectedScope,
+            clearedScope,
+            touchHeight: Math.round((await scopeTrigger.boundingBox())?.height || 0),
+          };
+        } else {
+          await worksheet.locator('.worksheet-navigation .tree-node').first().click();
+        }
+        await page.waitForFunction(() => document.querySelectorAll('.worksheet-table-scroll tbody tr[data-record-id]').length > 0);
+        const scopedTitle = String(await worksheet.locator('.worksheet-grid-title strong').textContent() || '').trim();
+        const initialCountText = String(await worksheet.locator('.worksheet-grid-title span').first().textContent() || '').trim();
+        const initialSelectedId = String(await worksheet.locator('tbody tr[aria-selected="true"]').first().getAttribute('data-record-id') || '');
+        await search.fill('__c1_no_match__');
+        await page.waitForFunction(() => document.querySelectorAll('.worksheet-table-scroll tbody tr[data-record-id]').length === 0
+          && !document.querySelector('.worksheet-open-record'));
+        const zeroState = {
+          countText: String(await worksheet.locator('.worksheet-grid-title span').first().textContent() || '').trim(),
+          selectedRows: await worksheet.locator('tbody tr[aria-selected="true"]').count(),
+          openActions: await worksheet.locator('.worksheet-open-record').count(),
+          emptyStates: await worksheet.locator('[data-semantic-component="ScEmptyState"]:visible').count(),
+          detailHint: String(await worksheet.locator('.worksheet-detail-empty').textContent() || '').trim(),
+        };
+        await worksheet.locator('[data-semantic-component="ProductListHeader"]').getByRole('button', { name: '清除', exact: true }).click();
+        await page.waitForFunction(() => document.querySelectorAll('.worksheet-table-scroll tbody tr[data-record-id]').length > 0
+          && Boolean(document.querySelector('.worksheet-open-record')));
+        const restoredCountText = String(await worksheet.locator('.worksheet-grid-title span').first().textContent() || '').trim();
+        const restoredSelectedId = String(await worksheet.locator('tbody tr[aria-selected="true"]').first().getAttribute('data-record-id') || '');
+        const selectedRow = worksheet.locator('tbody tr[aria-selected="true"]').first();
+        const searchableText = await selectedRow.locator('td').evaluateAll((cells) => cells
+          .map((cell) => String(cell.textContent || '').replace(/\s+/g, ' ').trim())
+          .find((value) => value.length >= 2) || '');
+        if (!searchableText) throw new Error(`${target.name}: selected hierarchical row has no searchable text`);
+        await search.fill(searchableText);
+        await page.waitForFunction(() => document.querySelectorAll('.worksheet-table-scroll tbody tr[data-record-id]').length > 0);
+        const retainedQuery = await search.inputValue();
+        const retainedSelectedId = String(await worksheet.locator('tbody tr[aria-selected="true"]').first().getAttribute('data-record-id') || '');
+        const monetaryValues = await worksheet.locator('[data-detail-field][data-field-type="monetary"]:visible').allTextContents();
+        const tableScroll = worksheet.locator('.worksheet-table-scroll');
+        const scrollBefore = await tableScroll.evaluate((node) => {
+          node.scrollLeft = Math.min(96, Math.max(0, node.scrollWidth - node.clientWidth));
+          return { left: Math.round(node.scrollLeft), max: Math.round(node.scrollWidth - node.clientWidth) };
+        });
+        let separatorEvidence = null;
+        if (viewport.name === 'desktop') {
+          const navigationSeparator = worksheet.locator('.worksheet-resizer-navigation');
+          const detailSeparator = worksheet.locator('.worksheet-resizer-detail');
+          const navigationBefore = Number(await navigationSeparator.getAttribute('aria-valuenow'));
+          await navigationSeparator.focus();
+          await navigationSeparator.press('ArrowRight');
+          const navigationAfter = Number(await navigationSeparator.getAttribute('aria-valuenow'));
+          await navigationSeparator.press('Home');
+          const navigationMinimum = Number(await navigationSeparator.getAttribute('aria-valuenow'));
+          const detailBefore = Number(await detailSeparator.getAttribute('aria-valuenow'));
+          await detailSeparator.focus();
+          await detailSeparator.press('ArrowUp');
+          const detailAfter = Number(await detailSeparator.getAttribute('aria-valuenow'));
+          await detailSeparator.press('End');
+          const detailMaximum = Number(await detailSeparator.getAttribute('aria-valuenow'));
+          separatorEvidence = {
+            navigationBefore, navigationAfter, navigationMinimum,
+            detailBefore, detailAfter, detailMaximum,
+            navigationFocused: await navigationSeparator.evaluate((node) => node === document.activeElement),
+            detailFocused: await detailSeparator.evaluate((node) => node === document.activeElement),
+          };
+        }
+        const beforeOpenUrl = page.url();
+        const detailResponse = page.waitForResponse(isContractV2Response, { timeout: 45000 });
+        await worksheet.locator('.worksheet-open-record').click();
+        await page.waitForURL((url) => url.href !== beforeOpenUrl, { timeout: 15000 });
+        await detailResponse;
+        await waitForStableProductSurface(page);
+        const detailRecordId = String(await page.locator('[data-semantic-component="ContractFormPage"]').getAttribute('data-form-record') || '');
+        const returnAction = page.locator('[data-form-secondary-action="return-list"]:visible');
+        if (await returnAction.count() === 1) {
+          await returnAction.click();
+        } else {
+          const mobileActionTrigger = page.locator('[data-semantic-component="ScButton"][aria-label="打开更多页面操作"]:visible');
+          await mobileActionTrigger.click();
+          const mobileReturn = page.locator('.t-dropdown__item:visible').filter({ hasText: '返回' });
+          await mobileReturn.click();
+        }
+        await page.waitForURL((url) => url.pathname === new URL(beforeOpenUrl).pathname, { timeout: 15000 });
+        await waitForStableProductSurface(page);
+        const restoredWorksheet = page.locator('[data-semantic-component="HierarchicalWorksheet"][data-state="ready"]:visible');
+        const returnState = {
+          query: await restoredWorksheet.locator('[data-semantic-component="ProductListHeader"] input[type="search"]').inputValue(),
+          scope: String(await restoredWorksheet.locator('.worksheet-grid-title strong').textContent() || '').trim(),
+          selectedId: String(await restoredWorksheet.locator('tbody tr[aria-selected="true"]').first().getAttribute('data-record-id') || ''),
+          scrollLeft: Math.round(await restoredWorksheet.locator('.worksheet-table-scroll').evaluate((node) => node.scrollLeft)),
+        };
+        hierarchicalWorkspaceEvidence = {
+          initialCountText, scopedTitle, initialSelectedId, zeroState, restoredCountText, restoredSelectedId,
+          retainedQuery, retainedSelectedId, monetaryValues, scrollBefore, separatorEvidence, mobileScopeEvidence,
+          detailRecordId, returnState,
+          pass: /46/.test(initialCountText)
+            && initialSelectedId.length > 0
+            && /0/.test(zeroState.countText)
+            && zeroState.selectedRows === 0
+            && zeroState.openActions === 0
+            && zeroState.emptyStates === 1
+            && zeroState.detailHint.length > 0
+            && restoredSelectedId.length > 0
+            && monetaryValues.length > 0
+            && monetaryValues.every((value) => /¥|CNY/.test(value) && /\.\d{2}/.test(value))
+            && detailRecordId === retainedSelectedId
+            && returnState.query === retainedQuery
+            && returnState.scope === scopedTitle
+            && returnState.selectedId === retainedSelectedId
+            && returnState.scrollLeft === scrollBefore.left
+            && (viewport.name !== 'desktop' || (
+              separatorEvidence.navigationAfter > separatorEvidence.navigationBefore
+              && separatorEvidence.navigationMinimum === 200
+              && separatorEvidence.detailAfter > separatorEvidence.detailBefore
+              && separatorEvidence.detailMaximum === 420
+              && separatorEvidence.detailFocused
+            ))
+            && (viewport.name !== 'mobile' || (
+              mobileScopeEvidence.chosenScope.length > 0
+              && mobileScopeEvidence.selectedScope.includes(mobileScopeEvidence.chosenScope)
+              && mobileScopeEvidence.clearedScope.includes('全部收入合同')
+              && mobileScopeEvidence.touchHeight >= 44
+            )),
+        };
+        if (!hierarchicalWorkspaceEvidence.pass) throw new Error(`${target.name}: hierarchical workspace journey failed ${JSON.stringify(hierarchicalWorkspaceEvidence)}`);
+      }
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
       let relationSearchDialogEvidence = null;
       if (target.captureRelationSearchDialog === true) {
@@ -1710,7 +1863,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -1814,6 +1967,7 @@ for (const item of report.routes) {
   if (item.readFailureEvidence && !item.readFailureEvidence.pass) failures.push({ name: item.name, readFailureEvidence: item.readFailureEvidence });
   if (item.factDisclosureEvidence && !item.factDisclosureEvidence.pass) failures.push({ name: item.name, factDisclosureEvidence: item.factDisclosureEvidence });
   if (item.monetaryExpressionEvidence && !item.monetaryExpressionEvidence.pass) failures.push({ name: item.name, monetaryExpressionEvidence: item.monetaryExpressionEvidence });
+  if (item.hierarchicalWorkspaceEvidence && !item.hierarchicalWorkspaceEvidence.pass) failures.push({ name: item.name, hierarchicalWorkspaceEvidence: item.hierarchicalWorkspaceEvidence });
 }
 for (const viewport of ['desktop', 'mobile']) {
   const groups = [...new Set(routes.map((target) => String(target.equivalentGroup || '')).filter(Boolean))];
