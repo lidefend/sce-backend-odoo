@@ -35,7 +35,7 @@
    - Select：我的工作排序或通用列表筛选的鼠标选择、键盘选择与单次变化；
    - Card：正文 class 与操作插槽在真实卡片中的可见结构；
    - Alert：真实错误恢复表面的 description、operation slot、焦点恢复与单次重试；
-   - structured Button：首页快捷入口/我的工作指标的鼠标与键盘触发、焦点、disabled/loading 原生阻断与单次触发。
+   - structured Button：正式页面验证首页快捷入口/我的工作指标的鼠标与键盘触发、焦点与单次触发；正式页面没有可控 loading 状态，因此 disabled/loading 通过既有组件浏览器机制向真实 `ScButton` 传入响应式 props 验证，并与正式页面结论分列。
 2. 记录 light/dark、1440×960/390×844 下的无溢出与焦点可见性。
 3. 若暴露产品缺陷，仅修改对应 P0 共享组件；若只是验证脚本误判，仅修改 P4 断言，不改变产品语义。
 
@@ -96,19 +96,29 @@
 - default_route：不变。
 - public intent：不变。
 - 产品候选 HEAD：`df3227c38e908b883ed45553e9511b03b59a3348`。
-- 状态：本地候选完成；发布资格仍为 `verification_pending`。
+- 最终证据候选 HEAD：`c755e5515b9f876565080f4c0ced1c87d5f12cf0`（产品代码仍冻结在 `df3227c38e908b883ed45553e9511b03b59a3348`）。
+- 状态：前端表达阶段的本地验收与证据已冻结；发布资格仍为 `verification_pending`。
 
 ## Step A 结果：官方组件行为
 
 - Input：我的工作真实搜索输入获得焦点，4 张工作卡筛到空态后通过公开清除能力恢复为 4 张，输入值为空。
 - Select：真实 `ScSelect` 通过鼠标从“最近更新”切到“金额从低到高”，再通过键盘切回其他选项；焦点保留，选项数量非零。
 - Card：4 张真实工作卡均通过公开 `bodyClassName` 投影正文 class；付款只读详情没有 Card actions slot，因此未将不存在的插槽当作通过条件。
-- Alert：受控只读失败显示官方 Alert driver、description 和 1 个 operation；重试按钮先获得焦点，键盘单次触发后恢复。
-- 结构化按钮：真实工作指标按钮的鼠标、Enter 各只触发 1 次并更新 `aria-pressed`；disabled/loading 原生属性投影为 `disabled`、`aria-disabled`、`aria-busy`、`data-loading`，点击增量为 0。
+- Alert：受控只读失败显示官方 Alert driver、description 和 1 个 operation；在激活前安装 `my.work.summary` 请求监听，重试按钮先获得焦点，键盘触发后页面恢复且请求精确为 1 次。恢复成功与 exactly-once 使用同一轮证据，不再由“等待一个成功响应”推断。
+- 结构化按钮（正式页面）：真实工作指标按钮的鼠标、Enter 各只触发 1 次并更新 `aria-pressed`，焦点保持正确；这里不再声称覆盖 disabled/loading。
+- `ScButton` disabled/loading（组件浏览器测试）：父组件响应式状态通过真实 `ScButton` props 依次设置 disabled、loading 和恢复态；目标 DOM 由组件投影出 `disabled`、`aria-disabled`、`aria-busy`、`data-loading` 及 loading label，两个阻断态点击计数均不增加，恢复后仅增加 1。验证脚本禁止直接给被测 DOM 写这些属性。证据由 `make verify.frontend.overlay_lifecycle.browser` 生成，明确属于组件测试，不冒充正式页面验收。
 - 表单错误：材料入库只作为组件样本；空项目触发错误摘要并把焦点移到 `project_id`，未保存数据。
 - light/dark × 1440×960/390×844 全部通过；两份摘要的 `mutationCount=0`，`errors=[]`，`failures=[]`：
   - `artifacts/playwright/frontend-official-component-behavior-light-df3227c3/summary.json`
   - `artifacts/playwright/frontend-official-component-behavior-dark-df3227c3/summary.json`
+
+### 最终证明修正
+
+- 组件 props 证据：`make verify.frontend.overlay_lifecycle.browser` PASS，共 10 项非零场景；`structuredButtonProps.initialStructuredActivations=1`，disabled/loading 两态均保持为 1，恢复后为 2。
+- 正式页面 exactly-once 证据：
+  - `artifacts/playwright/frontend-final-component-behavior-light-1440-390-c755e551/summary.json`
+  - `artifacts/playwright/frontend-final-component-behavior-dark-1088-320-c755e551/summary.json`
+- 两轮均为 `pass=true`、`mutationCount=0`、`errors=[]`、`failures=[]`；桌面和移动的 Alert 均记录 `operationCount=1`、`retryRequestCount=1`、焦点正确并恢复成功。
 
 ## Step B 结果：全局表达
 
@@ -121,9 +131,20 @@
   - `artifacts/playwright/frontend-global-expression-after-dark-df3227c3/summary.json`
 - 同视口 before 基线保留在 `frontend-global-expression-before-{light,dark}-af9df37b`，after 保留在 `frontend-global-expression-after-{light,dark}-df3227c3`。
 
+### 最终视觉复核与冻结
+
+- 最终证据候选在 light 1440/390 与 dark 1088/320 下覆盖首页、我的工作、付款列表、付款详情、收入合同层级工作区，共 20 个 route/viewport 样本。
+- 自动结果全部 `pass=true`、根横向溢出为 0、浮层残留通过、页头操作通过、可见操作数量非零，且 `mutationCount=0`、`errors=[]`、`failures=[]`。
+- 对 20 张候选截图完成人工复核：标题、正文、状态、主要操作、滚动与窄屏横向访问未发现阻断；没有因留白或个人审美继续修改产品。
+- 冻结证据：
+  - `artifacts/playwright/frontend-final-expression-light-1440-390-c755e551/summary.json`
+  - `artifacts/playwright/frontend-final-expression-dark-1088-320-c755e551/summary.json`
+
 ## 门禁与结论边界
 
 - `make verify.frontend.quick.gate`：PASS；严格类型、构建、组件适配、页面身份、表单页头、工作台、主题及生成库存均通过。
+- 最终 P4 修正的受影响门禁：`python3 -m unittest scripts.verify.test_local_dev_candidate_frontend`（9 tests）、`make verify.frontend.overlay_lifecycle.unit`（10 tests）、`make verify.frontend.primitive_adapter.unit`（27 Python tests，另含 46 个 JS component scenarios）及 `make verify.frontend.overlay_lifecycle.browser`（10 browser scenarios）均 PASS；没有以零测试命令满足门禁。
 - 官方设计库存保持四项零缺口：内部 vendor selector、视觉字面量、未知项目 token、孤立 appearance variant 均为 0。
 - 本批结论是“官方组件能力在本轮影响面正确使用，且代表页面的全局表达已改善”。它不是全业务流程、全角色、业务写入、release 或生产环境验收完成。
+- 契约依赖仍为既有 `login → system.init → ui.contract` 消费链；本轮没有改变 schema、public intent、启动链或 default route。disabled/loading 结论来自真实组件 props 的浏览器测试，Alert exactly-once 来自正式页面的请求计数，两者不互相替代。
 - 未升级模块、未 reset fixture、未保存业务数据，未执行 push、PR、merge 或 release。

@@ -9101,3 +9101,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 首页入口恢复完整宽度，“我的工作”去除外层套卡，通用任务/工作区页头与 ContractForm 命令栏改为单一下边界；付款详情桌面/移动均只保留主体工作表面。五个代表页面共 20 个最终视觉样本无根横向溢出。
 - Full Frontend Quick 与四项官方设计零缺口库存 PASS。结论限定为官方组件接入与代表页面表达收口，不宣称全业务交互、业务写入、全角色、release 或生产验收；未执行数据库/fixture/module lifecycle、push、PR、merge 或 release。
 - 完整记录：`frontend_component_behavior_global_expression_20260909.md`。
+
+## 2026-09-10 — 前端表达阶段最终验收与冻结
+
+- Formal Product Layer P4；Layer Target 为既有组件浏览器机制、local.dev candidate 只读证据与冻结记录。产品代码保持在 `df3227c38e908b883ed45553e9511b03b59a3348`，最终证据候选为 `c755e5515b9f876565080f4c0ced1c87d5f12cf0`；未修改 P0-P3 产品、契约、路由、权限或业务语义。
+- disabled/loading 改由父组件响应式状态向真实 `ScButton` 传 props，验证组件生成的 disabled/ARIA/loading 投影与点击阻断；验证脚本不再直接改被测 DOM。该结论登记为组件浏览器测试，不冒充正式页面状态。
+- Alert 正式页面恢复旅程对 `my.work.summary` 请求精确计数：light 1440/390 与 dark 1088/320 的桌面、移动结果均为 `operationCount=1`、`retryRequestCount=1`、焦点正确、恢复成功，mutation 0 且 errors/failures empty。
+- 最终视觉矩阵覆盖首页、我的工作、付款列表/详情及收入合同工作区的 1440/1088/390/320，共 20 个样本；自动溢出/浮层/页头/可见操作检查与人工截图复核均未发现阅读或操作阻断。没有继续做常规美化。
+- 本地前端表达基线已冻结；真实业务写入、全角色、acceptance/release/production 仍明确不在本轮证明范围。未升级模块、reset fixture、写业务数据或执行 push/PR/merge/release。
