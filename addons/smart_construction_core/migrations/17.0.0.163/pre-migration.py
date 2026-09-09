@@ -15,6 +15,21 @@ def migrate(cr, installed_version):
     funding_allocation_exists = _table_exists(
         cr, "project_funding_actual_event_allocation"
     )
+    # Restored tenants may predate the allocation table.  Earlier migrations
+    # intentionally returned before adding ledger identity columns in that
+    # case, so establish the current model columns before inspecting them.
+    cr.execute(
+        """
+        ALTER TABLE payment_ledger
+          ADD COLUMN IF NOT EXISTS project_id integer,
+          ADD COLUMN IF NOT EXISTS company_id integer,
+          ADD COLUMN IF NOT EXISTS partner_id integer,
+          ADD COLUMN IF NOT EXISTS currency_id integer,
+          ADD COLUMN IF NOT EXISTS operation_strategy varchar,
+          ADD COLUMN IF NOT EXISTS normalization_state varchar
+        """
+    )
+
     locked_tables = ["payment_ledger"]
     if allocation_exists:
         locked_tables.append("payment_ledger_allocation")
