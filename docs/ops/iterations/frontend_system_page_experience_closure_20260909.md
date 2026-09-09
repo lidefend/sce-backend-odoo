@@ -2,19 +2,19 @@
 
 日期：2026-09-09
 
-状态：三个本地批次已收口，产品候选通过；正式发布状态仍为 `verification_pending`
+状态：三个本地批次已收口；实现方报告通过，独立审查与正式发布结论另行记录
 
 迭代原始基线：`3d3975b3d45c1462677df0abcbb5708e4b53e0b1`
 
-冻结产品候选：`de1c04cd6191acafada58746cddcedf7416676fa`
+本报告原冻结产品候选：`de1c04cd6191acafada58746cddcedf7416676fa`；独立审查修正候选见后续交付包
 
 ## 1. 交付结论与边界
 
 本阶段以页面体系而非单个缺陷作为交付单位，完成工作区连续交互、配置工作台状态表达、异常恢复以及跨页面类型的响应式与主题验收。付款申请样板保持冻结，仅作为共享组件回归面；没有扩展审批、支付或其他业务能力。
 
-- Formal Product Layer：P0 承担通用页面 renderer、状态表达、共享浮层和响应式行为；P4 承担受管验证器、测试载体、生成清单和本报告。
+- Formal Product Layer：P0 承担通用页面 renderer、共享状态/浮层和响应式机制；P3 承担配置工作台 `BusinessConfigSurfaceView` 及 `businessConfigSurface/*` 的管理产品表达；P4 承担受管验证器、测试载体、生成清单和报告。
 - Layer Target：Web `HierarchicalWorksheet`、`ScDrawer`、`ScErrorState`、`BusinessConfigSurfaceView` 及其既有子组件；`smart_core` 仅调整一个平台通用失败文案。没有新增 renderer 主链、UI kit 或 token authority。
-- Standard vs User-Specific：平台通用页面机制。收入合同、付款申请和配置目录仅作为现有真实样板，不承载新的 P1 行业默认、P2 客户偏好或 P3 管理员配置。
+- Standard vs User-Specific：收入合同与付款申请只消费既有事实，未新增 P1/P2 语义；共享交互属于平台机制；配置工作台代码属于 P3 管理产品表面，但本轮没有写入任何管理员运行时配置。
 - Why Here：缺口发生在既有契约和页面输入进入通用页面后的选择一致性、状态投影、恢复动作、浮层边界和布局消费。
 - Why Not Elsewhere：不在前端拆标题、猜币种或业务状态；不修改业务模型、工作流、原生视图或运行时配置；不以 P4 脚本承载产品行为。
 - Blast Radius：层级工作区、配置工作台、共享 drawer/error state，以及浏览器矩阵涉及的首页、工作列表、标准集合、只读详情和异常页。定向单元门禁、完整 frontend Quick 和只读真实页面矩阵共同证明约束。
@@ -57,7 +57,7 @@
 - presentation model 明确区分 loading、empty、draft、failed、published 以及 publishing；请求失败优先于缓存内容，失败不会被空态掩盖。
 - 页面目录查询 `60 → 0 → 60`，零结果提供清除筛选，恢复后可以选择真实对象且展示范围与选中对象一致。
 - 真实读取请求被受控返回 503 时，页面显示读取失败和“重试读取”；一次重试恢复到真实空 changeset。该证据走真实页面请求链，不以模拟异常路由代替。
-- 403 与未知路由分别说明原因，并通过唯一安全动作返回首页。
+- 直接访问 `/access-denied` 只证明异常页渲染与安全返回，不证明受保护资源确实被拒绝。独立审查修正候选另以当前会话访问未授权 action，并核对 `from` 与 `NAVIGATION_AUTHORITY_DENIED`，作为路由 authority 拒绝证据；它不扩张为后端 HTTP 403 或多角色授权证明。未知路由另行证明 404 安全返回。
 
 响应式修正覆盖组件自身边界：320/390 下已选对象概览、元数据、配置类型入口和异常恢复动作纵向展开，主入口 44px；1088 下配置三列转为顺序堆叠，避免根文档无 overflow 但中间窄列自我裁切；1440 保留高效三列布局。规则位于既有 scoped 样式和 ScErrorState 内，没有覆盖 TDesign 内部私有 selector。
 
@@ -102,18 +102,18 @@
 - `make verify.frontend.page_identity`：PASS；23 + 12 assertions，identity guard writers=1、integrations=6。
 - `make verify.frontend.theme_profile.unit`：PASS；runtime assertions=9、profiles=3。
 
-配置测试 harness 的变更只让已有受管非零测试在缺少 lxml 的隔离环境中使用 stdlib XML stub，并补齐现有 mock lifecycle API；没有改变产品运行时契约。平台失败文案调整保留原错误码和动作执行行为。
+配置测试 harness 在宿主机缺少 lxml 时注入 stdlib XML stub，只能视为隔离单元测试的导入载体，不能证明真实 lxml、Odoo ORM 或发布生命周期。它没有覆盖产品中真实 XML parser 的全部语义。真实依赖证明、替身失败路径修正及非零 tagged Odoo 测试结果在独立审查交付包中单列。平台失败文案调整保留原错误码和动作执行行为。
 
 ## 6. 候选提交与回滚
 
-本阶段增量提交按责任边界保留：
+本阶段增量提交按责任边界保留。以下旧分组中的配置工作台文件应按 P3 文件级归属审查；`96d54078`、`2baad868` 同时触及 P0/P3，不能把整提交当作单层回退单位：
 
 - P0 产品：`377ce708`、`213711d3`、`96d54078`、`2baad868`、`9115908d`。
 - P4 测试与载体：`7c7d8cab`、`1b4ead47`、`5aa43ba2`、`d02db6b3`、`fcd2568b`、`bc7e6156`。
 - P4 生成清单：`a2c0d4a4`、`de1c04cd`。
 - 批次 1 的工作区及 drawer 提交保留在对应 C1 报告中，可独立回退。
 
-产品变化可按上述 P0 提交边界回退；验证器和清单可按 P4 边界回退。没有把 P0/P4 拆成相互争用的 worktree 或运行环境。
+准确回退应使用后续全量 scope manifest 的逐路径 commit 列：混合提交按文件级路径回退，验证器和清单按 P4 边界回退。没有把责任层拆成相互争用的 worktree 或运行环境。
 
 ## 7. 剩余问题及退出判断
 
@@ -125,4 +125,4 @@
 - 仅 system administrator 角色；其他角色、认证旅程、独立移动端、fallback calendar/gantt/dashboard 和配置业务写操作不在本阶段。
 - 构建大 chunk 警告没有性能定量证据，不在本阶段扩展为性能重构。
 
-因此，本阶段结论为：**页面体系本地产品候选完成，可作为下一阶段依赖；正式发布仍待独立审查与 release gate。**
+因此，本报告只形成实现方结论：**页面体系本地产品候选完成，可提交独立审查；它本身不构成独立验收或发布门禁通过。**
