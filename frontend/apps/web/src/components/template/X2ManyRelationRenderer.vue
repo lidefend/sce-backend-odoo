@@ -313,6 +313,7 @@ import One2ManyCellEditor from './One2ManyCellEditor.vue';
 import {
   createOne2manyRelationPopupAuthority,
   createOne2manyRelationRequestAuthority,
+  isExplicitOne2manyRelationPopupClose,
   preserveSelectedOne2manyRelationOption,
 } from './one2manyRelationQuery';
 import { downloadFile, fileToBase64, uploadFile } from '../../api/files';
@@ -387,13 +388,16 @@ const relationQueryAuthority = createOne2manyRelationRequestAuthority();
 const relationQueryTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 const relationCloseTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 const relationActiveRequestRevisions: Record<string, number> = {};
-const RELATION_POPUP_OWNER_HANDOFF_MS = 80;
+const relationStartedSessions = new Set<string>();
+const relationClosedSessions = new Set<string>();
 
 onBeforeUnmount(() => {
   Object.keys(relationQueryTimers).forEach(clearRelationQueryTimer);
   Object.values(relationCloseTimers).forEach(clearTimeout);
   Object.keys(relationActiveRequestRevisions).forEach((key) => delete relationActiveRequestRevisions[key]);
   relationPopupAuthority.clear();
+  relationStartedSessions.clear();
+  relationClosedSessions.clear();
   relationQueryAuthority.clear();
 });
 
@@ -542,7 +546,7 @@ function handleOne2manyRelationPopup(
   fieldName: string,
   rowKey: string,
   column: RelationFieldColumn,
-  event: { visible: boolean; ownerId: string },
+  event: { visible: boolean; ownerId: string; trigger: string },
 ) {
   const key = relationCellKey(fieldName, rowKey, column.name);
   const transition = relationPopupAuthority.update(key, event.ownerId, event.visible);
@@ -553,6 +557,9 @@ function handleOne2manyRelationPopup(
       delete relationCloseTimers[key];
       return;
     }
+    if (relationStartedSessions.has(key) && !relationClosedSessions.has(key)) return;
+    relationStartedSessions.add(key);
+    relationClosedSessions.delete(key);
     invalidateOne2manyRelationQuery(key);
     o2mRelationSearchMap.value = { ...o2mRelationSearchMap.value, [key]: '' };
     void loadOne2manyRelationOptions(fieldName, rowKey, column, '');
@@ -562,7 +569,10 @@ function handleOne2manyRelationPopup(
     delete relationCloseTimers[key];
     if (relationPopupAuthority.isOpen(key)) return;
     closeOne2manyRelationQuery(key);
-  }, RELATION_POPUP_OWNER_HANDOFF_MS);
+    if (isExplicitOne2manyRelationPopupClose(event.trigger)) {
+      relationClosedSessions.add(key);
+    }
+  }, 0);
 }
 
 function retryOne2manyRelationOptions(fieldName: string, rowKey: string, column: RelationFieldColumn) {

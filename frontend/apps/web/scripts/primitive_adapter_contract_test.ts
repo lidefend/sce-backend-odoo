@@ -4,6 +4,7 @@ import {
   normalizePrimitiveSize,
   normalizePrimitiveStatus,
   resolvePrimitiveControlUpdate,
+  selectPopupVisibilityEvent,
   semanticPrimitiveIdentity,
   tdesignButtonPresentation,
   tdesignDropdownOptions,
@@ -28,6 +29,11 @@ assert.equal(resolvePrimitiveControlUpdate({ value: 7 }), '7');
 assert.equal(resolvePrimitiveControlUpdate({ value: 'blocked', disabled: true }), null);
 assert.equal(resolvePrimitiveControlUpdate({ value: 'blocked', readonly: true }), null);
 assert.equal(resolvePrimitiveControlUpdate({ value: 'blocked', loading: true }), null);
+assert.deepEqual(selectPopupVisibilityEvent(true, 'trigger-element-click'), {
+  visible: true,
+  trigger: 'trigger-element-click',
+});
+assert.deepEqual(selectPopupVisibilityEvent(false), { visible: false, trigger: 'component-sync' });
 assert.equal(tdesignTabsSize('small'), 'medium');
 assert.equal(tdesignTabsSize('medium'), 'medium');
 assert.equal(tdesignTabsSize('large'), 'large');

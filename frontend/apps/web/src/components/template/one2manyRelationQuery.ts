@@ -51,6 +51,10 @@ export function createOne2manyRelationPopupAuthority() {
   };
 }
 
+export function isExplicitOne2manyRelationPopupClose(trigger: string): boolean {
+  return ['document', 'keydown-esc', 'trigger-element-click', 'trigger-element-blur'].includes(trigger);
+}
+
 export function preserveSelectedOne2manyRelationOption(params: {
   incoming: One2manyRelationOption[];
   previous: One2manyRelationOption[];

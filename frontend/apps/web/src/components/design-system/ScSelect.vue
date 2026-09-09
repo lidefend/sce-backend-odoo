@@ -30,7 +30,7 @@
     :aria-describedby="describedBy"
     @change="onChange"
     @search="onSearch"
-    @popup-visible-change="emit('popup-visible-change', Boolean($event))"
+    @popup-visible-change="onPopupVisibleChange"
   />
 </template>
 
@@ -38,7 +38,12 @@
 import { computed, ref } from 'vue';
 import { TDesignSelect } from './tdesignPrimitiveBridge';
 import { nativeControlProjection } from './nativeControlProjection';
-import { resolvePrimitiveControlUpdate, type ScPrimitiveSize, type ScPrimitiveStatus } from './primitiveAdapter';
+import {
+  resolvePrimitiveControlUpdate,
+  selectPopupVisibilityEvent,
+  type ScPrimitiveSize,
+  type ScPrimitiveStatus,
+} from './primitiveAdapter';
 
 export interface ScSelectOption {
   value: string | number;
@@ -76,7 +81,7 @@ const emit = defineEmits<{
   'update:modelValue': [value: string];
   change: [value: string];
   search: [value: string];
-  'popup-visible-change': [visible: boolean];
+  'popup-visible-change': [event: { visible: boolean; trigger: string }];
 }>();
 const selectRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null);
 let lastSearchValue: string | undefined;
@@ -113,6 +118,10 @@ function emitSearchValue(value: unknown) {
 
 function onSearch(value: unknown) {
   emitSearchValue(value);
+}
+
+function onPopupVisibleChange(visible: unknown, context?: { trigger?: string }) {
+  emit('popup-visible-change', selectPopupVisibilityEvent(visible, context?.trigger));
 }
 
 defineExpose({ focus: () => selectRef.value?.focus?.() ?? selectRef.value?.$el?.querySelector('input')?.focus() });
