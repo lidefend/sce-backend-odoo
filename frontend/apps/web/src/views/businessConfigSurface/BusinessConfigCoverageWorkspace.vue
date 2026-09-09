@@ -102,10 +102,12 @@
           </div>
         </div>
       </div>
-      <div v-else class="empty-state">当前没有匹配的业务页面，可调整搜索条件或取消“只看需处理”。</div>
+      <ScEmptyState v-else title="当前没有匹配的业务页面" description="可清除页面搜索、类型和配置状态筛选后恢复目录。" density="compact" :heading-level="3">
+        <template #actions><ScButton variant="secondary" @click="clearCoverageFilters">清除筛选</ScButton></template>
+      </ScEmptyState>
     </aside>
 
-    <ScCard v-if="(!loading || surface) && (currentModel || visibleConfigSections.length)" appearance="main-surface" class="page-config-panel" aria-label="已选页面配置">
+    <ScCard v-if="(!loading || surface) && selectedCoverageRow" appearance="main-surface" class="page-config-panel" aria-label="已选页面配置">
       <div class="selected-page-overview">
         <div>
           <span>正在配置</span>
@@ -224,6 +226,9 @@
         </ScCard>
       </div>
     </ScCard>
+    <ScCard v-else appearance="main-surface" class="page-config-selection-empty" aria-label="尚未选择业务页面">
+      <ScEmptyState title="选择一个业务页面" description="从左侧业务页面目录选择后，再查看该页面的配置状态和可用操作。" :heading-level="2" />
+    </ScCard>
     <aside v-if="surface" class="workbench-status-rail" aria-label="交付状态" data-lowcode-delivery-readiness="low_code_delivery_readiness.v1">
       <div class="delivery-readiness-head">
         <div>
@@ -272,6 +277,7 @@ import ScStatusBadge from '../../components/design-system/ScStatusBadge.vue';
 import ScSelect from '../../components/design-system/ScSelect.vue';
 import ScInput from '../../components/design-system/ScInput.vue';
 import ScCheckbox from '../../components/design-system/ScCheckbox.vue';
+import ScEmptyState from '../../components/design-system/ScEmptyState.vue';
 
 type SurfaceSection = BusinessConfigSurfacePayload['sections'][number];
 type DeliveryItem = NonNullable<BusinessConfigSurfacePayload['delivery_readiness']>['items'][number];
@@ -363,6 +369,13 @@ const emit = defineEmits<{
   openApprovalConfig: [section: SurfaceSection];
   runDeliveryReadinessAction: [item: DeliveryItem];
 }>();
+
+function clearCoverageFilters() {
+  emit('update:pageSearch', '');
+  emit('update:pageTypeFilter', 'all');
+  emit('update:configStatusFilter', 'all');
+  emit('update:showOnlyIssues', false);
+}
 
 async function movePageSelection(index: number, offset: -1 | 1, event: KeyboardEvent) {
   const targetIndex = Math.max(0, Math.min(props.visibleCoverageRows.length - 1, index + offset));

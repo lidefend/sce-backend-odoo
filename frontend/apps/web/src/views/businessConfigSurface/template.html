@@ -34,14 +34,17 @@
       </template>
     </BusinessConfigContextBar>
 
-    <div v-if="error" class="status error">{{ error }}</div>
+    <ScErrorState v-if="surfaceError" data-business-config-surface-error="true" title="配置工作台读取失败" :description="surfaceError">
+      <template #actions><ScButton variant="secondary" :disabled="loading" @click="retryBusinessConfigSurface">{{ loading ? '重试中...' : '重试读取' }}</ScButton></template>
+    </ScErrorState>
+    <div v-else-if="error" class="status error">{{ error }}</div>
     <div v-else-if="message.text" class="status ok">
       <span>{{ message.text }}</span>
       <small v-if="advancedPanelOpen && message.detail">{{ message.detail }}</small>
     </div>
 
     <BusinessConfigStartPanel
-      v-if="!coverageScan"
+      v-if="!surfaceError && !coverageScan"
       :selected-page-label="selectedPageLabel"
       :current-model="currentModel"
       :start-scope-summary="startScopeSummary"
@@ -102,7 +105,7 @@
 
     <section v-if="loading" class="loading-state">正在读取配置能力...</section>
     <BusinessConfigCoverageWorkspace
-      v-if="coverageScan"
+      v-if="!surfaceError && coverageScan"
       v-model:page-search="pageSearch"
       v-model:page-type-filter="pageTypeFilter"
       v-model:config-status-filter="configStatusFilter"
@@ -339,9 +342,13 @@
     />
 
     <BusinessConfigChangeSetPanel
+      v-if="!surfaceError"
       :change-set="changeSet"
+      :loading="changeSetLoading"
       :busy="changeSetLoading || changeSetPreviewing || changeSetPublishing"
       :publishing="changeSetPublishing"
+      :error="changeSetError"
+      @retry="loadChangeSetSafely"
       @validate="validateUnifiedDraft"
       @preview="previewUnifiedDraft"
       @publish="publishUnifiedDraft"

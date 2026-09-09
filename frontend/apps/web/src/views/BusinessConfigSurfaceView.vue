@@ -1,7 +1,7 @@
 <template src="./businessConfigSurface/template.html"></template>
 <script setup lang="ts">
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { computed, nextTick, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import BusinessConfigAdvancedAuditPanels from './businessConfigSurface/BusinessConfigAdvancedAuditPanels.vue';
 import BusinessConfigApprovalPanel from './businessConfigSurface/BusinessConfigApprovalPanel.vue';
@@ -13,6 +13,7 @@ import BusinessConfigImpactDialog from './businessConfigSurface/BusinessConfigIm
 import BusinessConfigStartPanel from './businessConfigSurface/BusinessConfigStartPanel.vue';
 import BusinessConfigVersionPanel from './businessConfigSurface/BusinessConfigVersionPanel.vue';
 import ScButton from '../components/design-system/ScButton.vue';
+import ScErrorState from '../components/design-system/ScErrorState.vue';
 import {
   auditBusinessAnalysisConfig,
   auditBusinessListSearchConfig,
@@ -75,6 +76,7 @@ import { useBusinessConfigNavigation } from './businessConfigSurface/useBusiness
 import { useBusinessConfigImpactDialog } from './businessConfigSurface/useBusinessConfigImpactDialog';
 import { useBusinessConfigDraftSession } from './businessConfigSurface/useBusinessConfigDraftSession';
 import { useBusinessConfigScopeLifecycle } from './businessConfigSurface/useBusinessConfigScopeLifecycle';
+import { useBusinessConfigWorkbenchBootstrap } from './businessConfigSurface/useBusinessConfigWorkbenchBootstrap';
 import { useBusinessConfigPublishLifecycle } from './businessConfigSurface/useBusinessConfigPublishLifecycle';
 import { useBusinessConfigRemediationLifecycle } from './businessConfigSurface/useBusinessConfigRemediationLifecycle';
 import { analysisContractPayload, contractTargetKey, listContractPayload, searchContractPayload } from './businessConfigSurface/changeSetPayloads';
@@ -126,6 +128,7 @@ const scanLoading = ref(false);
 const listSearchBusy = ref(false);
 const listSearchSaving = ref(false);
 const error = ref('');
+const surfaceError = ref('');
 const message = ref({ text: '', detail: '' });
 const { impactDialog, openImpactDialog, resolveImpactDialog, rollbackConfirm } = useBusinessConfigImpactDialog();
 const surface = ref<BusinessConfigSurfacePayload | null>(null);
@@ -201,6 +204,7 @@ const approvalSection = computed(() => visibleConfigSections.value.find((section
 const {
   changeSet,
   loading: changeSetLoading,
+  error: changeSetError,
   publishing: changeSetPublishing,
   previewing: changeSetPreviewing,
   stageItem: stageUnifiedDraftItem,
@@ -213,6 +217,9 @@ const {
   hasUnifiedDraft,
   resetScope: resetUnifiedDraftScope,
 } = useBusinessConfigDraftSession(() => scopeRole.value || '');
+async function loadChangeSetSafely() {
+  try { await ensureChangeSet(); } catch { /* rendered by the change-set panel */ }
+}
 function resetEditorPanels() {
   listSearchPanelOpen.value = false; listSearchAudit.value = null;
   analysisPanelOpen.value = false; analysisAudit.value = null;
@@ -223,7 +230,14 @@ const {
   coverageRowKey, coverageRowMatchesScope, coverageRowActionId, coverageRowViewId,
   clearMessage, setMessage, loadSurface, scanCoverage, scanSystemRootCoverage, scanCurrentModel,
   rescanCoverageAfterBootstrap, applyScopeAndLoad, focusScanRow, hydrateSelectedCoverageRowFromScan, openRuntimeRoute,
-} = useBusinessConfigScopeLifecycle({ scopeAction, currentModel, scopeView, message, surfaceLoadSeq, loading, error, withSurfaceLoadTimeout, loadBusinessConfigSurface, SURFACE_LOAD_TIMEOUT_MS, scopeRole, session, router, route, surface, scanLoading, coverageScan, scanBusinessConfigCoverage, rootMenuXmlid, selectedPageLabel, scopeModel, scopeActionId, scopeViewId, selectedRuntimeRoute, replaceWorkbenchQuerySilently, focusSelectedConfigPanelOnMobile, resetEditorPanels, runtimeReturnQuery });
+} = useBusinessConfigScopeLifecycle({ scopeAction, currentModel, scopeView, message, surfaceLoadSeq, loading, error, surfaceError, withSurfaceLoadTimeout, loadBusinessConfigSurface, SURFACE_LOAD_TIMEOUT_MS, scopeRole, session, router, route, surface, scanLoading, coverageScan, scanBusinessConfigCoverage, rootMenuXmlid, selectedPageLabel, scopeModel, scopeActionId, scopeViewId, selectedRuntimeRoute, replaceWorkbenchQuerySilently, focusSelectedConfigPanelOnMobile, resetEditorPanels, runtimeReturnQuery });
+
+async function retryBusinessConfigSurface() {
+  await loadSurface();
+  if (!surface.value) return;
+  await loadChangeSetSafely();
+  if (!coverageScan.value) await scanSystemRootCoverage();
+}
 const {
   approvalLoading,
   approvalAudit,
@@ -560,41 +574,11 @@ const {
 });
 const { runRemediationAction, openVersionsForRuntimeGaps, bootstrapMissingContracts, bootstrapCoverageMissing, confirmAndSaveApprovalConfig } = useBusinessConfigRemediationLifecycle({ focusScanRow, loadAnalysisConfig, loadVersions, setMessage, openMenuConfig, loadListSearchConfig, rowBootstrapMissingViewTypes, listSearchSaving, error, clearMessage, bootstrapBusinessFormConfig, coverageRowActionId, coverageRowViewId, scopeRole, bootstrapBusinessListSearchConfig, bootstrapBusinessAnalysisConfig, loadSurface, scanCurrentModel, openFormConfig, coverageBatchBootstrapRows, openImpactDialog, bootstrapCoverageMissingConfig, currentModel, scopeView, rootMenuXmlid, coverageScan, rescanCoverageAfterBootstrap, approvalImpactSummaryText, saveApprovalConfig });
 
-onMounted(() => {
-  void (async () => {
-    const openPageListOnMount = shouldOpenPageList.value;
-    const openFormConfigOnMount = shouldOpenFormConfig.value;
-    const openListSearchOnMount = shouldOpenListSearch.value;
-    const openAnalysisOnMount = shouldOpenAnalysis.value;
-    await loadSurface();
-    if (!surface.value || route.path !== '/admin/business-config') return;
-    await ensureChangeSet();
-    if (openPageListOnMount || !coverageScan.value) {
-      await scanSystemRootCoverage();
-    }
-    if (openFormConfigOnMount && currentModel.value && scopeAction.value) {
-      await clearConsumedOpenIntent(['open_form_config']);
-      const matched = (coverageScan.value?.items || []).find(coverageRowMatchesScope);
-      if (matched) {
-        await focusScanRow(matched);
-      } else {
-        await loadSurface();
-      }
-    }
-    if (openListSearchOnMount && currentModel.value) {
-      await clearConsumedOpenIntent(['open_list_search']);
-      await loadListSearchConfig();
-    }
-    if (openAnalysisOnMount && currentModel.value) {
-      await clearConsumedOpenIntent(['open_analysis']);
-      await loadAnalysisConfig();
-    }
-    const returnScroll = Number(route.query.workbench_scroll || 0);
-    if (Number.isFinite(returnScroll) && returnScroll > 0) {
-      await nextTick();
-      window.scrollTo({ top: returnScroll, behavior: 'auto' });
-    }
-  })();
+useBusinessConfigWorkbenchBootstrap({
+  shouldOpenPageList, shouldOpenFormConfig, shouldOpenListSearch, shouldOpenAnalysis,
+  loadSurface, surface, route, loadChangeSetSafely, coverageScan, scanSystemRootCoverage,
+  currentModel, scopeAction, clearConsumedOpenIntent, coverageRowMatchesScope, focusScanRow,
+  loadListSearchConfig, loadAnalysisConfig,
 });
 </script>
 
