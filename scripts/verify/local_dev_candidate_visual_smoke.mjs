@@ -1705,6 +1705,7 @@ try {
             failureText,
             failureOwnerTarget,
             failureRecovered,
+            relationQueryEvents,
             pass: initialCount > 0
               && (noResultCount === 0 || noResultText.includes('未找到匹配'))
               && restoredCount > 0
@@ -1714,6 +1715,7 @@ try {
               && (selectedNoResultCount === 0 || selectedNoResultLabels.includes(selectedLabel))
               && (selectedDisplayAfterSearch === selectedLabel || selectedDisplaysAfterSearch.includes(selectedLabel) || selectedOptionAfterReopen === selectedLabel)
               && reopenedCount > 0
+              && relationQueryEvents.filter((event) => event.kind === 'request' && event.searchTerm === noMatchKeyword).length === 2
               && relationQueriesAfterNote === relationQueriesBeforeNote
               && failureText.includes('加载失败')
               && failureOwnerTarget.endsWith(':material_catalog_id')

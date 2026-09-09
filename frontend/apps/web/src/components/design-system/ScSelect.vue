@@ -30,7 +30,6 @@
     :aria-describedby="describedBy"
     @change="onChange"
     @input-change="onInputChange"
-    @search="onSearch"
     @popup-visible-change="emit('popup-visible-change', Boolean($event))"
   />
 </template>
@@ -120,10 +119,6 @@ function emitSearchValue(value: unknown) {
 
 function onInputChange(value: unknown, context?: InputChangeContext) {
   if (!isUserSelectSearchInput(context?.trigger)) return;
-  emitSearchValue(value);
-}
-
-function onSearch(value: unknown) {
   emitSearchValue(value);
 }
 
