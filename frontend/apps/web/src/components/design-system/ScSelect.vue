@@ -7,6 +7,7 @@
     data-semantic-layer="primitive"
     data-focus-ring-owner="component"
     data-primitive-driver="tdesign"
+    :data-option-count="tdesignOptions.length"
     :data-size="size"
     :data-status="status"
     :data-readonly="readonly || undefined"

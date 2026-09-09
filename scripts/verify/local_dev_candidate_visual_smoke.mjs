@@ -1554,6 +1554,7 @@ try {
           await noMatchResponse;
           await page.waitForTimeout(100);
           const noResultCount = await visibleOptions.count();
+          const noResultControlOptionCount = Number(await relationSelect.getAttribute('data-option-count') || -1);
           const noResultText = String(await visibleDropdown.textContent().catch(() => '') || '').replace(/\s+/g, ' ').trim();
           const clearResponse = waitForMaterialCatalogQuery('');
           await relationSearchInput.fill('');
@@ -1685,6 +1686,7 @@ try {
           detailRelationSearchEvidence = {
             initialCount,
             noResultCount,
+            noResultControlOptionCount,
             noResultText,
             restoredCount,
             selectedLabel,
