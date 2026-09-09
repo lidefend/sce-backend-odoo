@@ -2,7 +2,7 @@
 
 日期：2026-09-09
 
-状态：独立复审与 `verify.frontend.release.local` 待最终文档候选冻结后执行
+状态：页面独立复审已通过；acceptance 基线修复已完成，最终候选独立复审与 `verify.frontend.release.local` 待执行
 
 原始基线：`3d3975b3d45c1462677df0abcbb5708e4b53e0b1`
 
@@ -19,7 +19,9 @@
 - P4：回滚失败 fake 调用真实 production seam；浏览器报告记录完整输入、加载完成选择器、顶栏子动作边界及实际路由 authority 拒绝。
 - P4：补充全量 scope manifest、artifact SHA-256 清单和 PR 草稿。
 
-没有 P1/P2 修改，没有新增页面、业务流程、合同语义、数据库、fixture、端口、volume 或验证入口。产品候选相对原始基线为 82 路径；加入 4 个最终交付文档后，交付 HEAD 的完整范围为 86 路径，归属及逐路径回退见 `frontend_system_page_baseline_scope_manifest_20260909.csv`。
+页面修正本身没有 P1/P2 修改，也没有新增页面、业务流程或合同语义。首次正式 release gate 随后在既有 acceptance 数据库的 `smart_construction_core` 增量升级中发现历史付款台账身份不满足当前约束；经用户单独授权，追加一个 P1 历史迁移兼容批次，以及一个 P4 acceptance fixture 幂等兼容批次。两者不改变审批、支付或前端契约语义，不新建数据库、端口、volume、credential file 或验证入口。
+
+最终候选相对原始基线为 95 路径，归属及逐路径回退见 `frontend_system_page_baseline_scope_manifest_20260909.csv`。
 
 ## 2. 验证可信度
 
@@ -58,7 +60,18 @@ stdlib XML stub 仅用于宿主机缺少 lxml 时加载隔离单元测试，不�
 
 ## 4. 门禁与交付判定
 
-修正前置静态门禁均已通过：`verify.business_config.unit`、`verify.frontend.page_identity`、`verify.frontend.style_system.guard`、候选脚本 9 个单测、Node 语法和 `git diff --check`。本文件冻结后由独立审查者对同一交付候选复审；只有复审无 S0-S2，才运行受管 `verify.frontend.release.local`。
+修正前置静态门禁均已通过：`verify.business_config.unit`、`verify.frontend.page_identity`、`verify.frontend.style_system.guard`、候选脚本 9 个单测、Node 语法和 `git diff --check`。
+
+首次 release gate 在 frontend 静态、单元和构建通过后，于真实 acceptance 增量升级失败。修复及恢复证据为：
+
+- `make local.dev.test MODULE=smart_construction_core TEST_TAGS=p1_contract_payment_allocation`：15 post-tests，统计 17 tests，0 failed / 0 errors；覆盖 NULL/不完整历史身份隔离及 unresolved allocation 一致性。
+- `CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core make acceptance.module.upgrade MODULE=smart_construction_core`：PASS；`17.0.0.163` 在既有 `sc_frontend_acceptance` 上完成增量迁移及 registry 加载。
+- `python3 -m unittest scripts.verify.test_frontend_productization_fixture_upsert`：3 tests，PASS。
+- `make local.dev.test MODULE=smart_construction_acceptance_fixture TEST_TAGS=acceptance_fixture_gate`：5 post-tests，统计 9 tests，0 failed / 0 errors；覆盖 guard 及已生效资金基线通过正式修订生命周期对齐。此前一次同命令因模块未安装产生 0 tests，已明确判为无效证据；后续受管安装测试中暴露的同进程 XMLID cache 测试假设也未计入 PASS。
+- `make acceptance.frontend.fixture`：PASS，包含 `acceptance.frontend.fixture.auth`；没有放宽已生效资金基线不可修改规则。
+- `make acceptance.frontend.release_snapshot`：PASS，snapshot 56，source revision `d27b0270e4f507b8298d92753f7179c7cb75d819`。
+
+最终文档候选冻结后由独立审查者复核新增 P1/P4 范围；只有复审无 S0-S2，才重新运行受管 `verify.frontend.release.local`。
 
 本文件不预写 release PASS。最终命令结果必须绑定运行时的完整 HEAD，且执行后工作区保持干净；远程推送、PR 创建、合并和发布不在授权内。
 
@@ -69,5 +82,6 @@ stdlib XML stub 仅用于宿主机缺少 lxml 时加载隔离单元测试，不�
 - 受控 503 沿用原产品候选证据；本次修正未触及读取恢复逻辑。
 - 性能、独立移动端及 fallback 页面能力不在本阶段。
 - build large chunk warning 仍存在，没有性能量化结论。
+- acceptance 历史付款身份被保留为 `legacy_unresolved_identity`，没有伪造项目、公司、往来单位、币种或操作策略；这些隔离事实不构成业务可执行记录。
 
-回退先按 formal layer 和文件执行：P0 顶栏修正可回退 `5d9e994b`；P4 fake 与验证器可分别回退 `e3e134c0`、`dc6e81d6`；历史混合提交依全量 manifest 的路径与 commit 列回退。不得用回退测试载体掩盖产品缺陷。
+回退先按 formal layer 和文件执行：P0 顶栏修正可回退 `5d9e994b`；P4 fake 与验证器可分别回退 `e3e134c0`、`dc6e81d6`；P1 迁移提交为 `34adf9e5` 至 `132951d0`，P4 fixture 兼容提交为 `d27b0270`。数据库已执行版本迁移，代码回退前必须按数据库架构政策评估兼容性，不能直接逆向改写已隔离历史事实；历史混合提交依全量 manifest 的路径与 commit 列回退。
