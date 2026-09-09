@@ -381,7 +381,7 @@ class ExecuteButtonHandler(BaseIntentHandler):
                     model=model,
                     res_id=res_ids[0],
                     reason_code=REASON_UNSUPPORTED_BUTTON_TYPE,
-                    message="后端无法加载当前契约授权的窗口动作",
+                    message="系统无法打开此操作对应的页面",
                     trace_id=self.context.get("trace_id") if isinstance(self.context, dict) else "",
                     status_code=400,
                 )
