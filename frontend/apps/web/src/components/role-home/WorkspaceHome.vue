@@ -163,14 +163,14 @@ const {
 .role-home-surface__access { grid-column: 1 / -1; }
 
 @media (min-width: 961px) {
-  .role-home-surface__tasks { grid-row: 1 / span 2; }
-  .role-home-surface__overview,
-  .role-home-surface__access { grid-column: 2; }
-  .role-home-surface__access-grid { grid-template-columns: 1fr; }
+  .role-home-surface__overview { grid-column: 2; }
+  .role-home-surface__access { grid-column: 1 / -1; }
+  .role-home-surface__access-grid { grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr); }
   .role-home-surface__access-grid > div + div {
-    padding-top: var(--sc-space-3, 12px);
-    border-top: 1px solid var(--sc-app-border);
+    padding-left: var(--sc-space-4, 16px);
+    border-left: 1px solid var(--sc-app-border);
   }
+  .role-home-surface__link-list--quick { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 .role-home-surface__section-heading {

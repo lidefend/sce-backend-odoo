@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "1aea395bebcccfbab26d9a6da1cfc2162191b38f73d091cef01e220295039fb3",
+  "inputDigest": "a77e8493655c41c0b411301b83450d37006b00798a202cbd6337d2f71f82c262",
   "internalVendorSelectorGaps": [],
   "productAppearanceVariants": [
     {
@@ -618,6 +618,7 @@
         "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
         "frontend/apps/web/src/components/design-system/ScDialog.vue",
         "frontend/apps/web/src/components/design-system/ScDrawer.vue",
+        "frontend/apps/web/src/components/design-system/ScPanel.vue",
         "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue",
         "frontend/apps/web/src/components/product-page-patterns/WorkspaceFormPattern.vue",
         "frontend/apps/web/src/components/template/PageHeader.vue",

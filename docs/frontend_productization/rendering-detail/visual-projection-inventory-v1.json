@@ -359,7 +359,7 @@
     },
     {
       "category": "other",
-      "digest": "1f09194f5d483fb187124cf265dd2917d67230be50b8a8c1d984f386e74efa21",
+      "digest": "440601c69abfdd13e92248ae0e49e67ed4d662d0374cc2b1dc41597e2ce221ff",
       "nativeStyleSelectors": [],
       "path": "components/business/MyWorkApprovalWorkspace.vue",
       "referenceNativeStyleSelectors": [
@@ -804,7 +804,7 @@
     },
     {
       "category": "other",
-      "digest": "cdb85f46af827a0dee2f837722f92e330734b827f8c743ad8241893cc92dc1eb",
+      "digest": "ad19f578f520e1d46bcd73147a79e8d9060c9d8634d7d7374f35eb099760dc46",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScPanel.vue",
       "referenceNativeStyleSelectors": [],
@@ -1435,7 +1435,7 @@
     },
     {
       "category": "other",
-      "digest": "5e4f83fae4753a0196845201cbd98c947c20ccdb67c90fdb5f1a9bf2461c51d8",
+      "digest": "6809a4aed9a63263745cc053c39687464ef5bee6edf84cebb6ce03a5e92c92ab",
       "nativeStyleSelectors": [],
       "path": "components/product-page-header/ProductPageHeader.vue",
       "referenceNativeStyleSelectors": [],
@@ -1720,7 +1720,7 @@
     },
     {
       "category": "dashboard",
-      "digest": "f4b32a523c138e11faa219db245a6261e502185222d1b904cf5b2e59e3728059",
+      "digest": "8e1bf1fa967017b2ac45413f225491e6504a456eced9f32c0865dc00e7a83432",
       "nativeStyleSelectors": [],
       "path": "components/role-home/WorkspaceHome.vue",
       "referenceNativeStyleSelectors": [
@@ -2790,7 +2790,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "ef64c971f3760eba28d3f8e1aaee2f3bd017db0d679c0b32ea18b137cfd92d19",
+  "currentInputDigest": "c7e9523bebfe73083066cd48487da6132ce657c465925b8e1b0f066c175760c5",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

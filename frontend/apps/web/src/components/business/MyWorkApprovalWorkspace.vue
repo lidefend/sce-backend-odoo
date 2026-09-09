@@ -1,5 +1,5 @@
 <template>
-  <ScPanel class="product-work" aria-label="我的工作事项" data-semantic-component="MyWorkApprovalWorkspace" :data-state="busy ? 'loading' : 'ready'" :aria-busy="busy || undefined">
+  <ScPanel tone="workspace" class="product-work" aria-label="我的工作事项" data-semantic-component="MyWorkApprovalWorkspace" :data-state="busy ? 'loading' : 'ready'" :aria-busy="busy || undefined">
     <div class="product-work__counts" aria-label="工作项汇总">
       <ScButton
         v-for="section in workspace.sections"
@@ -278,9 +278,9 @@ async function confirmAction() {
 </script>
 
 <style scoped>
-.product-work { display: grid; align-content: start; gap: 18px; }
+.product-work { display: grid; align-content: start; gap: var(--sc-space-4, 16px); }
 .product-work__counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
-.product-work__filters { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(180px, auto) auto; gap: 12px; align-items: end; padding: var(--sc-product-space-2); border: 1px solid var(--sc-app-border); border-radius: var(--sc-product-radius-panel); background: var(--sc-app-panel); }
+.product-work__filters { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(180px, auto) auto; gap: 12px; align-items: end; padding: var(--sc-product-space-2); border: 0; border-radius: var(--sc-product-radius-panel); background: var(--sc-app-subtle-bg); }
 .product-work__filters label { display: grid; gap: 6px; color: var(--sc-app-text-secondary); font-size: var(--sc-product-text-sm); }
 .product-work__filters :deep(.sc-input), .product-work__filters :deep(.sc-select) { width: 100%; min-height: var(--sc-product-control-height); }
 .work-section { display: grid; gap: 12px; }
