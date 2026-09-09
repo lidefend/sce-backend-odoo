@@ -1657,6 +1657,9 @@ try {
           await page.route(failureRoutePattern, failureRouteHandler);
           await relationInput.click();
           await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
+          let failureSearchInput = page.locator('input:focus').first();
+          if (await failureSearchInput.count() !== 1) failureSearchInput = relationInput;
+          await failureSearchInput.fill('__shared_relation_failure__');
           const failureState = page.locator('[data-relation-query-state="error"]:visible').filter({ hasText: '可选内容加载失败' }).first();
           try {
             await failureState.waitFor({ state: 'visible', timeout: 15000 });
