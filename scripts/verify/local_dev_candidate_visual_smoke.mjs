@@ -1480,15 +1480,34 @@ try {
             throw new Error(`${target.name}: editable detail relation selector is missing`);
           }
           let relationQueryCount = 0;
+          const relationQueryEvents = [];
           const countRelationQuery = (request) => {
             if (request.method() !== 'POST') return;
             let body = {};
             try { body = JSON.parse(request.postData() || '{}'); } catch {}
             if (body.intent === 'api.data' && body?.params?.op === 'list' && body?.params?.model === 'sc.material.catalog') {
               relationQueryCount += 1;
+              relationQueryEvents.push({
+                kind: 'request',
+                searchTerm: String(body?.params?.search_term || ''),
+              });
+            }
+          };
+          const countRelationResponse = async (response) => {
+            const request = response.request();
+            if (request.method() !== 'POST') return;
+            let body = {};
+            try { body = JSON.parse(request.postData() || '{}'); } catch {}
+            if (body.intent === 'api.data' && body?.params?.op === 'list' && body?.params?.model === 'sc.material.catalog') {
+              relationQueryEvents.push({
+                kind: 'response',
+                searchTerm: String(body?.params?.search_term || ''),
+                status: response.status(),
+              });
             }
           };
           page.on('request', countRelationQuery);
+          page.on('response', countRelationResponse);
           const visibleDropdown = page.locator('.t-select__dropdown:visible').last();
           const visibleOptions = visibleDropdown.locator('[role="option"]:visible, .t-select-option:visible');
           await relationInput.click();
@@ -1507,6 +1526,7 @@ try {
             const recoveryDiagnostic = {
               inputValue: await relationInput.inputValue(),
               relationQueryCount,
+              relationQueryEvents,
               visibleDropdownCount: await page.locator('.t-select__dropdown:visible').count(),
               visibleOptionCount: await visibleOptions.count(),
               loading: await relationSelect.locator('.t-loading:visible, [aria-busy="true"]:visible').count(),
@@ -1589,6 +1609,7 @@ try {
           await page.unroute(failureRoutePattern, failureRouteHandler);
           await page.keyboard.press('Escape');
           page.off('request', countRelationQuery);
+          page.off('response', countRelationResponse);
           detailRelationSearchEvidence = {
             initialCount,
             noResultCount,
