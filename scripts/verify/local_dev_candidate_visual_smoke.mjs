@@ -1464,7 +1464,9 @@ try {
             const mobileActionTrigger = page.locator('[data-semantic-component="ScButton"][aria-label="打开更多页面操作"]:visible');
             if (await mobileActionTrigger.count() !== 1) throw new Error(`${target.name}: mobile return action trigger is missing`);
             await mobileActionTrigger.click();
-            const mobileReturn = page.locator('.t-dropdown__item:visible').filter({ hasText: /^返回$/ });
+            const mobileItems = page.locator('.t-dropdown__item:visible');
+            await mobileItems.first().waitFor({ state: 'visible', timeout: 15000 });
+            const mobileReturn = mobileItems.filter({ hasText: '返回' });
             if (await mobileReturn.count() !== 1) throw new Error(`${target.name}: expected exactly one mobile return-to-list action`);
             await mobileReturn.click();
           } else {
