@@ -40,7 +40,7 @@
               v-if="compactViewport"
               class="worksheet-scope-trigger"
               variant="secondary"
-              size="small"
+              size="large"
               :aria-expanded="mobileNavigationOpen"
               aria-haspopup="dialog"
               @click="mobileNavigationOpen = true"

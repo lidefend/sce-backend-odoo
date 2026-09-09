@@ -895,7 +895,7 @@ try {
           await drawer.waitFor({ state: 'visible', timeout: 15000 });
           const initialDescription = String(await drawer.getAttribute('aria-describedby') || '');
           const firstScope = drawer.locator('.tree-node').first();
-          const chosenScope = String(await firstScope.textContent() || '').replace(/\s+/g, ' ').trim();
+          const chosenScope = String(await firstScope.textContent() || '').replace(/\s+/g, ' ').trim().replace(/^[▾▸]\s*/, '');
           await firstScope.click();
           await drawer.waitFor({ state: 'hidden', timeout: 15000 });
           const selectedScope = String(await scopeTrigger.textContent() || '').replace(/\s+/g, ' ').trim();
