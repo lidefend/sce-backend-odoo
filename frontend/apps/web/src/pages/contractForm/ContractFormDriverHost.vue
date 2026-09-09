@@ -81,6 +81,18 @@
       </TaskFormPattern>
       <WorkspaceFormPattern v-else :render-profile="renderModel.identity.mode">
       <article class="sc-native-contract-page" data-native-contract-structure>
+        <nav v-if="workspaceSectionLinks.length > 1" class="sc-native-contract-section-nav" aria-label="表单章节" data-form-section-navigation>
+          <ScButton
+            v-for="item in workspaceSectionLinks"
+            :key="item.role"
+            type="button"
+            variant="ghost"
+            size="small"
+            appearance="context-action"
+            :data-section-link="item.role"
+            @click="scrollToWorkspaceSection(item.role)"
+          >{{ item.label }}</ScButton>
+        </nav>
         <main class="sc-native-contract-tree" data-canonical-zone="primary">
           <NativeFormTreeRenderer
             v-if="nativeBridge"
@@ -135,6 +147,7 @@ import { composeCanonicalFormFloorplan, type CanonicalFormFloorplan } from '../.
 import NativeFormTreeRenderer from '../../components/template/NativeFormTreeRenderer.vue';
 import ScErrorState from '../../components/design-system/ScErrorState.vue';
 import ScInlineState from '../../components/design-system/ScInlineState.vue';
+import ScButton from '../../components/design-system/ScButton.vue';
 import type { FormSectionFieldActionPayload, FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import { buildCanonicalNativeFormBridge } from './canonicalNativeFormBridge';
@@ -242,6 +255,24 @@ const nativeBridge = computed(() => nativeBridgeModel.value ? buildCanonicalNati
 const floorplanSubordinateNodes = computed(() => floorplan.value.subordinateNodes
   .filter((node) => !collaborationKind(node.kind))
   .filter(canonicalNodeHasContent));
+const workspaceSectionLinks = computed(() => {
+  const roles = new Set<string>();
+  const visit = (nodes: CanonicalFormNode[]) => nodes.forEach((node) => {
+    if (node.visible && node.semanticRole) roles.add(node.semanticRole);
+    visit(node.children);
+  });
+  if (props.renderModel) visit([...props.renderModel.zones.primary, ...props.renderModel.zones.subordinate]);
+  const labels: Record<string, string> = {
+    summary: '概览', task: '办理信息', context: '基本资料', risk: '风险与提示',
+    relation: '关系明细', activity: '协作记录', audit: '历史审计',
+  };
+  return [...roles].filter((role) => labels[role]).map((role) => ({ role, label: labels[role] }));
+});
+
+function scrollToWorkspaceSection(role: string) {
+  const target = document.querySelector<HTMLElement>(`[data-native-contract-structure] [data-form-semantic-role="${role}"]`);
+  target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
 function collaborationKind(kind: string) {
   return ['chatter', 'activity'].includes(String(kind || '').trim().toLowerCase());
@@ -257,6 +288,23 @@ function runNativeCanonicalAction(payload: Record<string, unknown>) {
 <style scoped>
 .sc-form-driver-error {
   margin: var(--sc-product-space-4);
+}
+.sc-native-contract-section-nav {
+  position: sticky;
+  z-index: 18;
+  top: var(--sc-form-command-bar-height, 72px);
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+  padding: 6px 0;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--sc-app-border);
+  background: var(--sc-app-panel);
+  scrollbar-width: thin;
+}
+.sc-native-contract-section-nav :deep(.sc-btn) { flex: 0 0 auto; }
+.sc-native-contract-page :deep([data-form-semantic-role]) {
+  scroll-margin-top: calc(var(--sc-form-command-bar-height, 72px) + 52px);
 }
 .canonical-product-edit-actions {
   display: flex;

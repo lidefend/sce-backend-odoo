@@ -52,7 +52,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection bypasses the governed x2many runtime")
     if "data-detail-collection-pagination" not in renderer or "one2manyPageSize = 20" not in renderer:
         failures.append("detail collection pagination is not bounded and explicit")
-    if "ellipsis: false" not in renderer:
+    if "ellipsis: false" not in renderer or "ellipsis: true" in renderer:
         failures.append("detail collection editable controls are wrapped by TDesign text ellipsis")
     if "return one2manyRows.value.reduce" not in renderer:
         failures.append("detail collection amount total is not authoritative across every visible row")

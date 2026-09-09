@@ -548,8 +548,9 @@
   padding: var(--sc-space-xs) 0 var(--sc-space-sm);
   border-width: 0 0 1px;
   border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  background: var(--sc-app-panel);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--sc-app-shadow) 10%, transparent);
+  isolation: isolate;
 }
 
 .contract-form-native-shell :deep(.template-page-header--title-hidden:not(:has(.template-page-header-status > *))) {

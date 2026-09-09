@@ -7,11 +7,12 @@
         :class="containerClass(node)"
         :data-group-title="containerPolicyTitle(node, index)"
         :data-section-navigation-role="nativeSectionNavigationRole(node)"
+        :data-form-semantic-role="semanticFormRole(node) || undefined"
         @dragover.prevent
         @drop.prevent.stop="emitGroupFieldOrderDrop(node, $event, index)"
         @mouseup.self="emitGroupFieldOrderPointerDrop(node, index)"
       >
-        <header v-if="containerTitle(node)" class="native-container-head">
+        <header v-if="semanticSectionTitle(node) || containerTitle(node)" class="native-container-head">
           <ScInput
             v-if="fieldConfigEditable && isEditableGroupNode(node)"
             class="native-container-title-editor"
@@ -22,7 +23,7 @@
             @change="emitGroupRename(node, $event)"
             @keydown.enter.prevent="emitGroupRename(node, ($event.target as HTMLInputElement).value)"
           />
-          <h3 v-else>{{ containerTitle(node) }}</h3>
+          <h3 v-else>{{ semanticSectionTitle(node) || containerTitle(node) }}</h3>
         </header>
         <div
           v-else-if="fieldOrderEditable && nodeType(node) === 'group'"
@@ -550,6 +551,23 @@ function containerTitle(node: NativeFormLayoutNode) {
   const lowered = raw.toLowerCase();
   if (structural.has(lowered) || lowered === type) return '';
   return raw;
+}
+
+function semanticFormRole(node: NativeFormLayoutNode) {
+  return String(node?.attributes?.semanticFormRole || '').trim().toLowerCase();
+}
+
+function semanticSectionTitle(node: NativeFormLayoutNode) {
+  if (props.fieldConfigEditable) return '';
+  return ({
+    summary: '概览',
+    task: '办理信息',
+    context: '基本资料',
+    risk: '风险与提示',
+    relation: '关系明细',
+    activity: '协作记录',
+    audit: '历史审计',
+  } as Record<string, string>)[semanticFormRole(node)] || '';
 }
 
 function isReadablePolicyTitle(value: unknown) {

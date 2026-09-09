@@ -46,7 +46,7 @@
           @mouseup="emitFieldOrderPointerDrop(field, $event)"
         >
           <div class="field-label-row">
-            <label v-if="!fieldConfigEditable && !field.hideLabel && !detailCollectionOwnsVisibleTitle(field)" class="label" :for="fieldControlId(field)">
+            <label v-if="!fieldConfigEditable && !field.hideLabel && !detailCollectionOwnsVisibleTitle(field) && !attachmentControlOwnsVisibleTitle(field)" class="label" :for="fieldControlId(field)">
               {{ field.label }}
               <span v-if="field.required && !field.readonly" class="field-state field-state--required"><span aria-hidden="true">*</span><span class="sr-only">必填</span></span>
               <span v-else-if="field.readonly && !allFieldsReadonly" class="field-state">只读</span>
@@ -447,6 +447,11 @@ function usesPaymentSettlementDetailCollection(field: FormSectionFieldSchema) {
 function detailCollectionOwnsVisibleTitle(field: FormSectionFieldSchema) {
   if (field.readonly || !props.relationAdapter) return false;
   return usesProfessionalOne2many(field) || usesPaymentSettlementDetailCollection(field);
+}
+
+function attachmentControlOwnsVisibleTitle(field: FormSectionFieldSchema) {
+  const relation = (field as { descriptor?: { relation?: string } }).descriptor?.relation;
+  return usesProfessionalMany2many(field) && String(relation || '').trim().toLowerCase() === 'ir.attachment';
 }
 
 function usesSceneFieldControl(field: FormSectionFieldSchema) {

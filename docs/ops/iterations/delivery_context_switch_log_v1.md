@@ -9118,3 +9118,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - `make pr.status` 只读确认当前分支无 PR。完整差异经现有分类器判定 HIGH_RISK、frontend/professional full、backend changed；四项 required checks 及 release candidate gate 均保持 not_run，未执行 push、PR 创建/更新、acceptance 重建或远端 mutation。
 - 本地交付状态为 `READY_FOR_PR_AUTHORIZATION`，不是 merge-ready 或 release-ready。唯一下一步是在明确授权后冻结最终 clean HEAD，并通过受管入口进入 draft PR。
 - 审查澄清：当前版本 acceptance 环境恢复与旧版本升级兼容是两个独立 P4 任务。前者只恢复当前候选的可信验收载体；后者必须先冻结明确源版本样本及预期迁移结果，不能由重建替代。
+
+## 2026-09-10 — 共享表单结构与阅读层次收口
+
+- Batch `FORM-STRUCTURE-A`；Formal Product Layer P0，P4 仅承载只读浏览器证据。Layer Target 为 `frontend/apps/web` 通用契约表单渲染与布局层。
+- 基线 `3c3c7bdef2dac3dfdfa06488c7e731ce1e565ce9`，完整指纹 `7e851d79b087fe43e4d5306608ed4fd4ef6ef373cd8970d4668d8c2aa7529f50`（7350 paths）。唯一产品结果是基于现有 floorplan 语义角色统一查看态、录入态、关系明细、辅助信息与协作记录的结构层次。
+- 后台/契约原始分组标题继续按既有设计隐藏；不恢复 `node.title`，不按模型名、字段名推断重要性。付款、材料入库和收入合同只作为共享能力样本。
+- 材料单据字段附件与协作时间线附件是不同载体，均保留并只做通用命名澄清。收入合同“未收款金额/未收款”差异仅登记为后续口径问题，本批不改值、不补契约。
+- 不修改 login/system.init/ui.contract、schema、权限、字段、动作和默认路由；不写数据库、不运行 fixture、不重建 acceptance、不执行发布。

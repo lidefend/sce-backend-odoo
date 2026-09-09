@@ -21,6 +21,9 @@ form_css = read("pages/contractForm/ContractFormPage.css")
 section = read("components/template/FormSection.vue")
 mapper = read("components/template/fieldSpan.mapper.ts")
 schema_builder = read("pages/contractForm/useRecordFormFieldSchemas.ts")
+object_task = read("pages/contractForm/ObjectTaskPage.vue")
+canonical_renderer = read("pages/contractForm/CanonicalFormNodeRenderer.vue")
+relations = read("components/template/X2ManyRelationRenderer.vue")
 
 combined = "\n".join((tokens, patterns, form_css))
 for forbidden in ("--sc-content-focused-form-max", "--sc-form-field-content-max"):
@@ -49,5 +52,25 @@ if "resolveFieldSpanClass({fieldType:" not in schema_builder:
 for forbidden in ("model ===", "role ===", "overflow-x: hidden", "overflow-x: clip"):
     if forbidden in section or forbidden in form_css:
         fail(f"forbidden form-layout inference or overflow masking: {forbidden}")
+
+for required in (
+    'data-form-section-navigation',
+    'data-section-title="基本信息"',
+    'data-section-title="关系明细"',
+    "presentableRelationNodes.value.length ? { region: 'relation'",
+    "props.supplementaryInputNodes.length ? { region: 'supplementary-input'",
+    "target?.scrollIntoView({ behavior: 'smooth', block: 'start' })",
+):
+    if required not in object_task:
+        fail(f"semantic form structure missing: {required}")
+if object_task.index('data-floorplan-region="relation"') > object_task.index('data-floorplan-region="supplementary-input"'):
+    fail("relationship details are still placed after auxiliary disclosures")
+if "const sectionTitle = computed(() => '');" not in canonical_renderer or "const groupHeadingVisible = computed(() => false);" not in canonical_renderer:
+    fail("intentionally hidden backend group titles were restored")
+for required in ("readonlyO2mTableColumns", 'class="o2m-readonly-table"', 'class="o2m-readonly-list"'):
+    if required not in relations:
+        fail(f"responsive readonly detail structure missing: {required}")
+if "background: var(--sc-app-panel);" not in form_css or "isolation: isolate;" not in form_css:
+    fail("sticky form header is not an opaque isolated surface")
 
 print("[frontend_form_canvas_wide_grid_guard] PASS")
