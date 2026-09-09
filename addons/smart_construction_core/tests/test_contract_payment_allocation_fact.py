@@ -455,6 +455,7 @@ class TestContractPaymentAllocationFact(TransactionCase):
         self.assertEqual(len(allocation), 1)
         self.assertEqual(allocation.allocation_state, "unresolved_global")
         self.assertEqual(allocation.reason_code, "historical_backfill_unresolved")
+        self.assertEqual(allocation.normalization_state, "legacy_unresolved_identity")
         self.assertFalse(allocation.contract_id)
 
     def test_current_migration_quarantines_incomplete_ledger_before_backfill(self):
@@ -474,10 +475,13 @@ class TestContractPaymentAllocationFact(TransactionCase):
             "DROP CONSTRAINT IF EXISTS payment_ledger_canonical_identity_complete"
         )
         self.env.cr.execute(
+            "ALTER TABLE payment_ledger ALTER COLUMN normalization_state DROP NOT NULL"
+        )
+        self.env.cr.execute(
             """
             UPDATE payment_ledger
                SET company_id=NULL,
-                   normalization_state='normalized'
+                   normalization_state=NULL
              WHERE id=%s
             """,
             (ledger.id,),
