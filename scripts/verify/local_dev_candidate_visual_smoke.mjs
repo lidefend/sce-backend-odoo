@@ -1574,7 +1574,7 @@ try {
 
           const failureKeyword = '__shared_relation_failure__';
           let failureInjected = false;
-          const failureRoutePattern = '**/api/v1/intent';
+          const failureRoutePattern = '**/api/v1/**';
           const failureRouteHandler = async (route) => {
             const request = route.request();
             let body = {};
