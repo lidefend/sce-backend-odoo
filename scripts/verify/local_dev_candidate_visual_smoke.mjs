@@ -1555,7 +1555,8 @@ try {
           await visibleOptions.first().click();
           await visibleDropdown.waitFor({ state: 'hidden', timeout: 15000 });
           const selectedDisplay = await relationInput.inputValue();
-          const selectedDisplays = await row.locator('[data-validation-target$=":material_catalog_id"] input:visible').allInputValues();
+          const selectedDisplays = await row.locator('[data-validation-target$=":material_catalog_id"] input:visible')
+            .evaluateAll((inputs) => inputs.map((input) => input.value));
           await relationInput.click();
           await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
           await relationInput.fill(noMatchKeyword);
@@ -1564,7 +1565,8 @@ try {
           await page.keyboard.press('Escape');
           await visibleDropdown.waitFor({ state: 'hidden', timeout: 15000 });
           const selectedDisplayAfterSearch = await relationInput.inputValue();
-          const selectedDisplaysAfterSearch = await row.locator('[data-validation-target$=":material_catalog_id"] input:visible').allInputValues();
+          const selectedDisplaysAfterSearch = await row.locator('[data-validation-target$=":material_catalog_id"] input:visible')
+            .evaluateAll((inputs) => inputs.map((input) => input.value));
           await relationInput.click();
           await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
           await visibleOptions.first().waitFor({ state: 'visible', timeout: 15000 });
