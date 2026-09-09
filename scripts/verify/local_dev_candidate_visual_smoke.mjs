@@ -1566,6 +1566,7 @@ try {
           await visibleOptions.first().waitFor({ state: 'visible', timeout: 15000 });
           const reopenedCount = await visibleOptions.count();
           await page.keyboard.press('Escape');
+          await visibleDropdown.waitFor({ state: 'hidden', timeout: 15000 });
           const noteInput = row.locator('[data-validation-target$=":note"] input:visible').first();
           const relationQueriesBeforeNote = relationQueryCount;
           if (await noteInput.count() === 1) await noteInput.fill('未提交的关系查询验证');
