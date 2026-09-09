@@ -1335,12 +1335,16 @@ try {
         }
         const mutationCountBefore = report.mutationCount;
         await saveAction.click();
+        const validationAlert = form.locator('[role="alert"]:visible').first();
+        await validationAlert.waitFor({ state: 'visible', timeout: 15000 });
         const invalidControl = form.locator('[aria-invalid="true"]:visible').first();
-        await invalidControl.waitFor({ state: 'visible', timeout: 15000 });
-        const invalidField = invalidControl.locator('xpath=ancestor::*[@data-field-name][1]');
+        const invalidControlCount = await invalidControl.count();
+        const invalidField = invalidControlCount === 1
+          ? invalidControl.locator('xpath=ancestor::*[@data-field-name][1]')
+          : null;
         const activeFieldName = await page.evaluate(() => document.activeElement?.closest('[data-field-name]')?.getAttribute('data-field-name') || '');
-        const invalidFieldName = String(await invalidField.getAttribute('data-field-name') || '');
-        const alertText = String(await form.locator('[role="alert"]:visible').first().textContent() || '').replace(/\s+/g, ' ').trim();
+        const invalidFieldName = String(await invalidField?.getAttribute('data-field-name') || '');
+        const alertText = String(await validationAlert.textContent() || '').replace(/\s+/g, ' ').trim();
         const fieldGeometry = await form.locator('[data-field-name]:visible').evaluateAll((nodes) => nodes
           .filter((node) => node.querySelector('input:not([disabled]), textarea:not([disabled]), button:not([disabled])'))
           .slice(0, 12)
@@ -1358,6 +1362,7 @@ try {
           : 0;
         formValidationEvidence = {
           invalidFieldName,
+          invalidControlCount,
           activeFieldName,
           alertText,
           mutationCountBefore,
