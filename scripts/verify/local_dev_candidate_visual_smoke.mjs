@@ -1532,17 +1532,30 @@ try {
           page.on('response', countRelationResponse);
           const visibleDropdown = page.locator('.t-select__dropdown:visible').last();
           const visibleOptions = visibleDropdown.locator('[role="option"]:visible, .t-select-option:visible');
+          const waitForMaterialCatalogQuery = (searchTerm) => page.waitForResponse((response) => {
+            if (response.request().method() !== 'POST') return false;
+            let body = {};
+            try { body = JSON.parse(response.request().postData() || '{}'); } catch {}
+            return body.intent === 'api.data'
+              && body?.params?.op === 'list'
+              && body?.params?.model === 'sc.material.catalog'
+              && String(body?.params?.search_term || '') === searchTerm;
+          }, { timeout: 15000 });
           await relationInput.click();
           await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
           await visibleOptions.first().waitFor({ state: 'visible', timeout: 15000 });
           const initialCount = await visibleOptions.count();
           const noMatchKeyword = '__shared_relation_no_match__';
+          const noMatchResponse = waitForMaterialCatalogQuery(noMatchKeyword);
           await relationInput.fill('S');
           await relationInput.fill(noMatchKeyword);
-          await page.waitForTimeout(800);
+          await noMatchResponse;
+          await page.waitForTimeout(100);
           const noResultCount = await visibleOptions.count();
           const noResultText = String(await visibleDropdown.textContent().catch(() => '') || '').replace(/\s+/g, ' ').trim();
+          const clearResponse = waitForMaterialCatalogQuery('');
           await relationInput.fill('');
+          await clearResponse;
           try {
             await visibleOptions.first().waitFor({ state: 'visible', timeout: 15000 });
           } catch (error) {
@@ -1576,8 +1589,10 @@ try {
             .evaluateAll((inputs) => inputs.map((input) => input.value));
           await relationInput.click();
           await visibleDropdown.waitFor({ state: 'visible', timeout: 15000 });
+          const selectedNoMatchResponse = waitForMaterialCatalogQuery(noMatchKeyword);
           await relationInput.fill(noMatchKeyword);
-          await page.waitForTimeout(800);
+          await selectedNoMatchResponse;
+          await page.waitForTimeout(100);
           const selectedNoResultCount = await visibleOptions.count();
           await page.keyboard.press('Escape');
           await visibleDropdown.waitFor({ state: 'hidden', timeout: 15000 });
