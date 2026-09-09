@@ -74,6 +74,7 @@
               :selected-field-key="selectedFieldKey"
               :prefer-readonly-facts="preferReadonlyFacts"
               :columns="nodeColumns(node)"
+              :inherited-semantic-role="semanticFormRole(node)"
               @field-change="emit('field-change', $event)"
               @field-action="emit('field-action', $event)"
               @field-order-move="emit('field-order-move', $event)"
@@ -147,6 +148,7 @@
             :selected-field-key="selectedFieldKey"
             :prefer-readonly-facts="preferReadonlyFacts"
             :columns="nodeColumns(node)"
+            :inherited-semantic-role="semanticFormRole(node)"
             @field-change="emit('field-change', $event)"
             @field-action="emit('field-action', $event)"
             @field-order-move="emit('field-order-move', $event)"
@@ -177,6 +179,7 @@
             v-if="fieldSchemasForNodes(fieldChildren(node)).length"
             :title="fieldSectionTitle(node)"
             :columns="nodeColumns(node)"
+            :inherited-semantic-role="semanticFormRole(node)"
             :fields="fieldSchemasForNodes(fieldChildren(node))"
             :relation-adapter="relationAdapter"
             :field-actions="fieldActions"
@@ -459,6 +462,7 @@ const props = withDefaults(defineProps<{
   fieldSelectionMode?: boolean;
   selectedFieldKey?: string;
   preferReadonlyFacts?: boolean;
+  inheritedSemanticRole?: string;
   columns?: 1 | 2 | 3;
 }>(), {
   columns: 2,
@@ -562,6 +566,7 @@ function semanticFormRole(node: NativeFormLayoutNode) {
 
 function semanticSectionTitle(node: NativeFormLayoutNode) {
   if (props.fieldConfigEditable) return '';
+  if (semanticFormRole(node) === String(props.inheritedSemanticRole || '').trim().toLowerCase()) return '';
   return ({
     summary: '概览',
     task: '办理信息',
