@@ -20,7 +20,21 @@ if (!Array.isArray(routes) || routes.length === 0 || routes.some((item) => !item
 }
 
 fs.mkdirSync(outputDir, { recursive: true });
-const report = { head, baseUrl, database, login, mutationCount: 0, startup: {}, routes: [] };
+const report = {
+  head,
+  baseUrl,
+  database,
+  login,
+  mutationCount: 0,
+  inputs: {
+    desktop: { width: desktopWidth, height: desktopHeight },
+    mobile: { width: mobileWidth, height: 844 },
+    theme,
+    routes,
+  },
+  startup: {},
+  routes: [],
+};
 const browser = await launchChromium({ headless: true });
 
 async function loginPage(page) {
@@ -423,6 +437,7 @@ try {
       let businessConfigExperienceEvidence = null;
       let businessConfigReadFailureEvidence = null;
       let safeReturnEvidence = null;
+      let expectedLoadedSelectorEvidence = null;
       const exerciseReadFailure = target.exerciseReadFailureRecovery === true
         && (target.readFailureDesktopOnly !== true || viewport.name === 'desktop');
       let readFailureInjected = false;
@@ -554,7 +569,14 @@ try {
         };
       }
       if (target.expectedLoadedSelector) {
-        await page.locator(String(target.expectedLoadedSelector)).filter({ visible: true }).first().waitFor({ timeout: 45000 });
+        const expectedLoadedSelector = String(target.expectedLoadedSelector);
+        const loadedSurface = page.locator(expectedLoadedSelector).filter({ visible: true });
+        await loadedSurface.first().waitFor({ state: 'visible', timeout: 45000 });
+        expectedLoadedSelectorEvidence = {
+          selector: expectedLoadedSelector,
+          visibleCount: await loadedSurface.count(),
+          pass: await loadedSurface.count() > 0,
+        };
       }
       if (bootSummaryFixtureTarget === target) {
         while (bootSummaryRoutesInFlight > 0) await new Promise((resolve) => setTimeout(resolve, 10));
@@ -702,9 +724,30 @@ try {
         const navigationTree = document.querySelector('#primary-sidebar .product-side-navigation__tree');
         const navigationMenu = navigationTree?.querySelector('.sc-navigation-menu');
         const topbar = document.querySelector('.topbar');
+        const topbarActions = topbar?.querySelector('.topbar-actions');
         const pageFrame = document.querySelector('.router-host > [data-product-page-mode]');
         const topbarRect = topbar?.getBoundingClientRect();
+        const topbarActionsRect = topbarActions?.getBoundingClientRect();
         const pageFrameRect = pageFrame?.getBoundingClientRect();
+        const topbarActionItems = topbarActions instanceof HTMLElement
+          ? [...topbarActions.children]
+            .filter((node) => {
+              if (!(node instanceof HTMLElement)) return false;
+              const rect = node.getBoundingClientRect();
+              const nodeStyle = getComputedStyle(node);
+              return nodeStyle.display !== 'none' && nodeStyle.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+            })
+            .map((node) => {
+              const rect = node.getBoundingClientRect();
+              const action = node.matches('button') ? node : node.querySelector('button');
+              return {
+                label: String(action?.getAttribute('aria-label') || action?.getAttribute('title') || action?.textContent || '').replace(/\s+/g, ' ').trim(),
+                rect: [Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom)],
+                withinViewport: rect.left >= -1 && rect.right <= window.innerWidth + 1,
+                withinActions: Boolean(topbarActionsRect) && rect.left >= topbarActionsRect.left - 1 && rect.right <= topbarActionsRect.right + 1,
+              };
+            })
+          : [];
         const workItemCards = [...document.querySelectorAll('[data-work-item-key]')]
           .filter((node) => node instanceof HTMLElement && node.offsetParent !== null)
           .map((node) => {
@@ -757,6 +800,19 @@ try {
             contentStart: Math.round(pageFrameRect?.top || 0),
             minimal: Boolean(topbar?.classList.contains('topbar--minimal')),
           },
+          topbarActionEvidence: topbar instanceof HTMLElement && topbarActions instanceof HTMLElement && topbarRect && topbarActionsRect ? {
+            topbarRect: [Math.round(topbarRect.left), Math.round(topbarRect.top), Math.round(topbarRect.right), Math.round(topbarRect.bottom)],
+            actionsRect: [Math.round(topbarActionsRect.left), Math.round(topbarActionsRect.top), Math.round(topbarActionsRect.right), Math.round(topbarActionsRect.bottom)],
+            actionItems: topbarActionItems,
+            horizontalClipped: topbarActions.scrollWidth > topbarActions.clientWidth + 1,
+            pass: topbarActionsRect.left >= topbarRect.left - 1
+              && topbarActionsRect.right <= topbarRect.right + 1
+              && topbarActionsRect.left >= -1
+              && topbarActionsRect.right <= window.innerWidth + 1
+              && topbarActions.scrollWidth <= topbarActions.clientWidth + 1
+              && topbarActionItems.length > 0
+              && topbarActionItems.every((item) => item.label && item.withinViewport && item.withinActions),
+          } : null,
           homePresentationEvidence: homeRoot ? {
             quickEntryCount: homeQuickEntries.length,
             quickEntries: homeQuickEntries,
@@ -1230,7 +1286,17 @@ try {
       }
       if (target.exerciseSafeReturn === true) {
         const errorState = page.locator('[data-semantic-component="ScErrorState"]:visible');
-        const beforePath = new URL(page.url()).pathname;
+        const deniedUrl = new URL(page.url());
+        const beforePath = deniedUrl.pathname;
+        const authorityDeniedEvidence = target.expectAuthorityDenied === true ? {
+          from: deniedUrl.searchParams.get('from') || '',
+          reason: deniedUrl.searchParams.get('reason') || '',
+        } : null;
+        if (authorityDeniedEvidence) {
+          authorityDeniedEvidence.pass = beforePath === '/access-denied'
+            && authorityDeniedEvidence.from === target.path
+            && authorityDeniedEvidence.reason === 'NAVIGATION_AUTHORITY_DENIED';
+        }
         const errorText = String(await errorState.textContent() || '').replace(/\s+/g, ' ').trim();
         const returnAction = errorState.getByRole('button', { name: '返回安全页面' });
         const actionCount = await returnAction.count();
@@ -1253,8 +1319,12 @@ try {
         });
         await returnAction.click();
         await page.waitForURL((url) => url.pathname === '/', { timeout: 15000 });
-        safeReturnEvidence = { beforePath, errorText, actionCount, responsiveEvidence, afterPath: new URL(page.url()).pathname };
-        safeReturnEvidence.pass = errorText.length > 0 && actionCount === 1 && responsiveEvidence.pass && safeReturnEvidence.afterPath === '/';
+        safeReturnEvidence = { beforePath, authorityDeniedEvidence, errorText, actionCount, responsiveEvidence, afterPath: new URL(page.url()).pathname };
+        safeReturnEvidence.pass = errorText.length > 0
+          && actionCount === 1
+          && responsiveEvidence.pass
+          && (authorityDeniedEvidence?.pass ?? true)
+          && safeReturnEvidence.afterPath === '/';
       }
       let relationSearchDialogEvidence = null;
       if (target.captureRelationSearchDialog === true) {
@@ -2084,7 +2154,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, safeReturnEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, safeReturnEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -2142,9 +2212,8 @@ for (const item of report.routes) {
     failures.push({ name: item.name, expectedRelationTagsReady: true, relationTagEvidence: item.relationTagEvidence || null });
   }
   if (item.path && configuredTarget?.expectedLoadedSelector) {
-    const states = item.loadedSurfaceEvidence || {};
-    if (Object.values(states).some((state) => state === 'loading')) {
-      failures.push({ name: item.name, expectedLoadedSelector: configuredTarget.expectedLoadedSelector, loadedSurfaceEvidence: states });
+    if (!item.expectedLoadedSelectorEvidence?.pass) {
+      failures.push({ name: item.name, expectedLoadedSelector: configuredTarget.expectedLoadedSelector, expectedLoadedSelectorEvidence: item.expectedLoadedSelectorEvidence || null });
     }
   }
   if (item.path && configuredTarget?.expectedWorkRecordId) {
@@ -2189,6 +2258,7 @@ for (const item of report.routes) {
   if (item.businessConfigExperienceEvidence && !item.businessConfigExperienceEvidence.pass) failures.push({ name: item.name, businessConfigExperienceEvidence: item.businessConfigExperienceEvidence });
   if (item.businessConfigReadFailureEvidence && !item.businessConfigReadFailureEvidence.pass) failures.push({ name: item.name, businessConfigReadFailureEvidence: item.businessConfigReadFailureEvidence });
   if (item.safeReturnEvidence && !item.safeReturnEvidence.pass) failures.push({ name: item.name, safeReturnEvidence: item.safeReturnEvidence });
+  if (item.topbarActionEvidence && !item.topbarActionEvidence.pass) failures.push({ name: item.name, topbarActionEvidence: item.topbarActionEvidence });
   if (item.factDisclosureEvidence && !item.factDisclosureEvidence.pass) failures.push({ name: item.name, factDisclosureEvidence: item.factDisclosureEvidence });
   if (item.monetaryExpressionEvidence && !item.monetaryExpressionEvidence.pass) failures.push({ name: item.name, monetaryExpressionEvidence: item.monetaryExpressionEvidence });
   if (item.hierarchicalWorkspaceEvidence && !item.hierarchicalWorkspaceEvidence.pass) failures.push({ name: item.name, hierarchicalWorkspaceEvidence: item.hierarchicalWorkspaceEvidence });
