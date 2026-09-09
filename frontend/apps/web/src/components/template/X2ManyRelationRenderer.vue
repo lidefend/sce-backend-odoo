@@ -456,8 +456,13 @@ async function runOne2manyRelationOptionsQuery(
   keyword: string,
   revision: number,
 ) {
-  if (!relationColumnCanQuery(fieldName, column)) return;
   const key = relationCellKey(fieldName, rowKey, column.name);
+  if (!relationColumnCanQuery(fieldName, column)) {
+    if (relationQueryAuthority.isCurrent(key, revision)) {
+      o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: false };
+    }
+    return;
+  }
   o2mRelationLoading.value = { ...o2mRelationLoading.value, [key]: true };
   o2mRelationErrors.value = { ...o2mRelationErrors.value, [key]: '' };
   try {
@@ -490,6 +495,10 @@ async function runOne2manyRelationOptionsQuery(
 function loadOne2manyRelationOptions(fieldName: string, rowKey: string, column: RelationFieldColumn, keyword = '') {
   const key = relationCellKey(fieldName, rowKey, column.name);
   clearRelationQueryTimer(key);
+  if (!relationColumnCanQuery(fieldName, column)) {
+    invalidateOne2manyRelationQuery(key);
+    return Promise.resolve();
+  }
   const revision = relationQueryAuthority.begin(key);
   return runOne2manyRelationOptionsQuery(fieldName, rowKey, column, keyword, revision);
 }

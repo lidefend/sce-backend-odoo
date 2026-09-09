@@ -85,7 +85,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection relation columns do not consume authoritative relation access")
     if "one2manyColumnQueryScope" not in relation_types or "relationDependencies" not in relation_types:
         failures.append("detail collection relation query scope omits authoritative dependencies")
-    if "createOne2manyRelationRequestAuthority" not in renderer or renderer.count("isCurrent(key, revision)") < 2:
+    if "createOne2manyRelationRequestAuthority" not in renderer or renderer.count("isCurrent(key, revision)") < 3:
         failures.append("detail collection relation requests are not latest-condition authoritative")
     if "JSON.stringify(row.values)" in renderer:
         failures.append("detail collection relation queries still depend on unrelated row values")
