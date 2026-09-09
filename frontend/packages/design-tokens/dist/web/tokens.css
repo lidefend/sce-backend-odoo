@@ -110,6 +110,7 @@
   --sc-component-button-account-height: 32px;
   --sc-component-button-account-line-height: 20px;
   --sc-component-button-account-padding-x: 10px;
+  --sc-component-button-activity-page-title-height: 35px;
   --sc-component-button-activity-tab-close-focus-offset: 1px;
   --sc-component-button-activity-tab-close-size: 22px;
   --sc-component-button-dashboard-grid-gap: 10px;
@@ -131,9 +132,11 @@
   --sc-component-button-menu-gap: 2px;
   --sc-component-button-menu-padding-x: 8px;
   --sc-component-button-menu-padding-y: 7px;
+  --sc-component-button-metric-min-height: 68px;
   --sc-component-button-overflow-z-index: 1000;
   --sc-component-button-padding-x: 16;
   --sc-component-button-padding-y: 8;
+  --sc-component-button-primary-cell-underline-offset: 3px;
   --sc-component-button-radius: 8px;
   --sc-component-button-scope-caption-size: 11px;
   --sc-component-button-scope-gap: 2px;

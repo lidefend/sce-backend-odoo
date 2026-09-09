@@ -22,12 +22,16 @@ def validate(sources: dict[str, str] | None = None) -> list[str]:
         ':data-density="density"',
         ":role=\"state === 'error' ? 'alert' : 'status'\"",
         ":aria-busy=\"state === 'loading' || undefined\"",
-        ".sc-inline-state.t-alert--info :deep(.t-alert__description)",
+        '<span class="sc-inline-state__description"><slot>{{ label }}</slot></span>',
+        ".sc-inline-state[data-state='info'] .sc-inline-state__description",
         "color: var(--sc-app-info-text)",
         "prefers-reduced-motion: reduce",
     ):
         if marker not in inline:
             failures.append(f"inline state missing {marker}")
+    for forbidden in (":deep(.t-alert__description)", ':message="label"'):
+        if forbidden in inline:
+            failures.append(f"inline state bypasses the official Alert slot boundary with {forbidden}")
     for forbidden in ("project.project", "payment.request", "action_id", "menu_id", "付款", "项目"):
         if forbidden in inline:
             failures.append(f"inline state contains forbidden business identity {forbidden}")

@@ -26,6 +26,11 @@ class FrontendInlineStateGuardTest(unittest.TestCase):
     def test_info_description_uses_semantic_contrast_token(self) -> None:
         self.assertTrue(any("info-text" in error for error in validate(self.altered("inline", "color: var(--sc-app-info-text)"))))
 
+    def test_info_description_cannot_target_tdesign_internal_dom(self) -> None:
+        values = dict(self.sources)
+        values["inline"] += "<style>.sc-inline-state :deep(.t-alert__description) { color: red; }</style>"
+        self.assertTrue(any("official Alert slot boundary" in error for error in validate(values)))
+
     def test_error_heading_must_not_be_fixed(self) -> None:
         values = dict(self.sources)
         values["error"] = values["error"].replace('<component :is="titleTag"', '<h2').replace('</component>', '</h2>')

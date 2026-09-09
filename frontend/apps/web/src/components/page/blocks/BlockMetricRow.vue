@@ -13,6 +13,7 @@
         :class="`tone-${item.tone || 'neutral'}`"
         :type="item.actionKey ? 'button' : undefined"
         :variant="item.actionKey ? 'ghost' : undefined"
+        :appearance="item.actionKey ? 'structured-content' : undefined"
         :data-metric-key="item.key"
         :data-metric-tone="item.tone"
         :data-interactive="Boolean(item.actionKey)"

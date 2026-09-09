@@ -15,6 +15,7 @@
     :data-appearance="appearance"
     data-primitive-driver="tdesign"
     :model-value="modelValue"
+    :input-class="['sc-input__control', `sc-input__control--${appearance}`]"
     :type="tdesignType"
     :align="align"
     :size="normalizePrimitiveSize(size)"

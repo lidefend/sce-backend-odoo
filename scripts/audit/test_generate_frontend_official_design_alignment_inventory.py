@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import importlib.util
+import json
+import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 
@@ -38,6 +41,17 @@ class OfficialDesignAlignmentInventoryTest(unittest.TestCase):
         self.assertGreater(report["summary"]["formalStyleSourceCount"], 100)
         for gap in report["internalVendorSelectorGaps"]:
             self.assertIn("file", gap)
+
+    def test_check_fails_closed_when_completion_rule_has_gaps(self) -> None:
+        report = MODULE.build_inventory()
+        report["summary"]["internalVendorSelectorGapCount"] = 1
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "inventory.json"
+            output.write_text(MODULE.encode(report), encoding="utf-8")
+            with patch.object(MODULE, "build_inventory", return_value=report), patch(
+                "sys.argv", ["inventory", "--check", "--output", str(output)]
+            ):
+                self.assertEqual(MODULE.main(), 1)
 
 
 if __name__ == "__main__":

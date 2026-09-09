@@ -359,7 +359,7 @@
     },
     {
       "category": "other",
-      "digest": "bc7faa79c11e69fdf6368db630d1ff3b47e403bd005b8c20642781cf3b4f45c4",
+      "digest": "1f09194f5d483fb187124cf265dd2917d67230be50b8a8c1d984f386e74efa21",
       "nativeStyleSelectors": [],
       "path": "components/business/MyWorkApprovalWorkspace.vue",
       "referenceNativeStyleSelectors": [
@@ -450,7 +450,7 @@
     },
     {
       "category": "other",
-      "digest": "041492de50108f9b6b5099da778182200bff1fe761e6139e46dce4d96466f3c0",
+      "digest": "81c1f849d1084f0487efd0470afb9f36e4cdcea30c1c6f5e84e3983a34a9af08",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScButton.vue",
       "referenceNativeStyleSelectors": [],
@@ -462,7 +462,7 @@
     },
     {
       "category": "other",
-      "digest": "bf7eb47523535f05dddbf2975a9d7ba55e09a2d955067bf7505383211a06e43b",
+      "digest": "acab060425c610d4961135af89e88f49c49c4f3254ee675c8bbb1bf2b39eb9a3",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScCard.vue",
       "referenceNativeStyleSelectors": [],
@@ -704,7 +704,7 @@
     },
     {
       "category": "states",
-      "digest": "a7e444f23a67b675865fc1ce13ee34a734dc7e469bdfa758e41f2bd49e48198d",
+      "digest": "ec57ac62880c041b0fd44a387497f7b3ab4cf84463f4e0af70a70c18fb78a32d",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScInlineState.vue",
       "referenceNativeStyleSelectors": [],
@@ -714,7 +714,7 @@
     },
     {
       "category": "other",
-      "digest": "0d9cdf857103aeff358efdd196a0139e55df6ff940645642bf316126f5a5eb3f",
+      "digest": "e749531663bbfdaa734365bfb0bea750bbf9fbe313ea72beca9f6aeed2e6b60c",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScInput.vue",
       "referenceNativeStyleSelectors": [],
@@ -874,7 +874,7 @@
     },
     {
       "category": "other",
-      "digest": "c1ff94d7d9a3049e0aeb67157f0932f41b18d838cfc6d41592df4a50eecbf4b6",
+      "digest": "ddb2bda2969ca1703ba1501eebfde586eb20e8351ddd94bfd2dd2b65a9b43f48",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScSelect.vue",
       "referenceNativeStyleSelectors": [],
@@ -1127,7 +1127,7 @@
     },
     {
       "category": "dashboard",
-      "digest": "024d4ea4aeaf0fde0ceb170ee5c595e73666173f73560a884a2fcb589618d382",
+      "digest": "956eb812b8e3fb496cf1d09bdd13525050961f4a3b81de71ef5bfd74b1db76c2",
       "nativeStyleSelectors": [],
       "path": "components/page/blocks/BlockMetricRow.vue",
       "referenceNativeStyleSelectors": [
@@ -1834,7 +1834,7 @@
     },
     {
       "category": "other",
-      "digest": "563c9023653a0ab6dc450765ca5b62bf97727123ac008785bb721faa3b28d4ca",
+      "digest": "3961fad2d8993fc5773be8020343261bb9744583085d1222c66f80a6ac4686c8",
       "nativeStyleSelectors": [],
       "path": "components/template/One2ManyCellEditor.vue",
       "referenceNativeStyleSelectors": [],
@@ -1859,7 +1859,7 @@
     },
     {
       "category": "relations-x2many",
-      "digest": "a87669c9827d1a98244d5ab2934a40c1763f86946151b6d058a1ac903519e32f",
+      "digest": "36a8e8f7399201771d38b613ff9ef77dc319a6be6dcda1b16088a069f8c6ed08",
       "nativeStyleSelectors": [],
       "path": "components/template/X2ManyRelationRenderer.vue",
       "referenceNativeStyleSelectors": [
@@ -2790,7 +2790,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "7861975d1636be6d6b0906ba404588f74645c0af4888f4ec5453d8cc12d1f884",
+  "currentInputDigest": "ef64c971f3760eba28d3f8e1aaee2f3bd017db0d679c0b32ea18b137cfd92d19",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

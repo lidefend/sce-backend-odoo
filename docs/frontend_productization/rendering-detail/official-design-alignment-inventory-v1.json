@@ -14,93 +14,8 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "c6770a9880f7806e82fafe53baf423b8d7ead170edff07b944f9fba44bccdc00",
-  "internalVendorSelectorGaps": [
-    {
-      "file": "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
-      "line": 294,
-      "selector": ".work-card :deep(.t-card__body)",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
-      "line": 322,
-      "selector": ".work-card :deep(.t-card__body)",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/components/design-system/ScInlineState.vue",
-      "line": 18,
-      "selector": ".sc-inline-state.t-alert--info :deep(.t-alert__description)",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/packages/ui/src/kits/tdesign/theme.css",
-      "line": 176,
-      "selector": ".sc-input[data-appearance='navigation-search']:not([data-primitive-driver='tdesign']), .sc-input[data-appearance='navigation-search'][data-primitive-driver='tdesign'] .t-input",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/packages/ui/src/kits/tdesign/theme.css",
-      "line": 187,
-      "selector": ".sc-input[data-appearance='navigation-search']:not([data-primitive-driver='tdesign']):hover, .sc-input[data-appearance='navigation-search'][data-primitive-driver='tdesign'] .t-input:hover",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/packages/ui/src/kits/tdesign/theme.css",
-      "line": 190,
-      "selector": ".sc-input[data-appearance='navigation-search']:not([data-primitive-driver='tdesign']):focus-within, .sc-input[data-appearance='navigation-search'][data-primitive-driver='tdesign'] .t-input:focus-within",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/packages/ui/src/kits/tdesign/theme.css",
-      "line": 384,
-      "selector": ".sc-btn[data-semantic-cell-kind='primary'] > .t-button__text, .sc-btn[data-semantic-cell-kind='primary'] .sc-btn__content",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/packages/ui/src/kits/tdesign/theme.css",
-      "line": 450,
-      "selector": ".sc-input[data-appearance='form-field'][data-primitive-driver='tdesign'] .t-input, .sc-select[data-appearance='form-field'][data-primitive-driver='tdesign'] .t-input",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/packages/ui/src/kits/tdesign/theme.css",
-      "line": 456,
-      "selector": ".sc-input[data-appearance='collection-search'] .t-input",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/packages/ui/src/kits/tdesign/theme.css",
-      "line": 500,
-      "selector": ".sc-btn[data-navigation-control='activity-page-title'] :is(.t-button__text, .sc-btn__content)",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/packages/ui/src/kits/tdesign/theme.css",
-      "line": 579,
-      "selector": ".sc-btn[data-appearance='dashboard-quick-link'] > .t-button__text",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/packages/ui/src/kits/tdesign/theme.css",
-      "line": 584,
-      "selector": ".sc-btn[data-appearance='dashboard-quick-link'] > .t-button__text > .sc-btn__content > .sc-icon:first-child",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/packages/ui/src/kits/tdesign/theme.css",
-      "line": 587,
-      "selector": ".sc-btn[data-appearance='dashboard-quick-link'] > .t-button__text > .sc-btn__content > span",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/packages/ui/src/kits/tdesign/theme.css",
-      "line": 639,
-      "selector": ".sc-btn[data-appearance='metric'] .t-button__text, .sc-btn[data-appearance='metric'] .sc-btn__content",
-      "status": "legacy_override_gap"
-    }
-  ],
+  "inputDigest": "1aea395bebcccfbab26d9a6da1cfc2162191b38f73d091cef01e220295039fb3",
+  "internalVendorSelectorGaps": [],
   "productAppearanceVariants": [
     {
       "appearance": "account-context",
@@ -219,8 +134,7 @@
         "frontend/apps/web/src/components/product-list/ProductListHeader.vue"
       ],
       "selectors": [
-        ".sc-input[data-appearance='collection-search']",
-        ".sc-input[data-appearance='collection-search'] .t-input"
+        ".sc-input[data-appearance='collection-search']"
       ],
       "status": "registered_product_variance"
     },
@@ -275,9 +189,9 @@
       ],
       "selectors": [
         ".sc-btn[data-appearance='dashboard-quick-link']",
-        ".sc-btn[data-appearance='dashboard-quick-link'] > .t-button__text",
-        ".sc-btn[data-appearance='dashboard-quick-link'] > .t-button__text > .sc-btn__content > .sc-icon:first-child",
-        ".sc-btn[data-appearance='dashboard-quick-link'] > .t-button__text > .sc-btn__content > span",
+        ".sc-btn[data-appearance='dashboard-quick-link'] .sc-btn__content",
+        ".sc-btn[data-appearance='dashboard-quick-link'] .sc-btn__content > .sc-icon:first-child",
+        ".sc-btn[data-appearance='dashboard-quick-link'] .sc-btn__content > span",
         ".sc-btn[data-appearance='dashboard-quick-link'] small, .sc-btn[data-appearance='dashboard-recent-link'] small",
         ".sc-btn[data-appearance='dashboard-quick-link']:hover"
       ],
@@ -347,7 +261,6 @@
       ],
       "selectors": [
         ".sc-input[data-appearance='form-field'], .sc-select[data-appearance='form-field'], [data-semantic-component='ScRelationField'][data-appearance='form-field'], [data-semantic-component='ScDateField'][data-appearance='form-field']",
-        ".sc-input[data-appearance='form-field'][data-primitive-driver='tdesign'] .t-input, .sc-select[data-appearance='form-field'][data-primitive-driver='tdesign'] .t-input",
         ".sc-textarea[data-appearance='form-field']"
       ],
       "status": "registered_product_variance"
@@ -411,7 +324,6 @@
       "selectors": [
         ".sc-btn[data-appearance='metric']",
         ".sc-btn[data-appearance='metric'] .sc-btn__content",
-        ".sc-btn[data-appearance='metric'] .t-button__text, .sc-btn[data-appearance='metric'] .sc-btn__content",
         ".sc-btn[data-appearance='metric'] strong",
         ".sc-btn[data-appearance='metric']:focus-visible",
         ".sc-btn[data-appearance='metric'][aria-pressed='true']"
@@ -426,9 +338,9 @@
         "frontend/apps/web/src/layouts/AppShell.vue"
       ],
       "selectors": [
-        ".sc-input[data-appearance='navigation-search']:not([data-primitive-driver='tdesign']), .sc-input[data-appearance='navigation-search'][data-primitive-driver='tdesign'] .t-input",
-        ".sc-input[data-appearance='navigation-search']:not([data-primitive-driver='tdesign']):focus-within, .sc-input[data-appearance='navigation-search'][data-primitive-driver='tdesign'] .t-input:focus-within",
-        ".sc-input[data-appearance='navigation-search']:not([data-primitive-driver='tdesign']):hover, .sc-input[data-appearance='navigation-search'][data-primitive-driver='tdesign'] .t-input:hover",
+        ".sc-input[data-appearance='navigation-search']:not([data-primitive-driver='tdesign']), .sc-input__control--navigation-search",
+        ".sc-input[data-appearance='navigation-search']:not([data-primitive-driver='tdesign']):focus-within, .sc-input__control--navigation-search:focus-within",
+        ".sc-input[data-appearance='navigation-search']:not([data-primitive-driver='tdesign']):hover, .sc-input__control--navigation-search:hover",
         "/* Navigation search has one visible control surface, owned by the driver. */ .sc-input[data-appearance='navigation-search'][data-primitive-driver='tdesign']"
       ],
       "status": "registered_product_variance"
@@ -731,13 +643,13 @@
   "scope": "formal P0/P1 frontend TDesign driver and product adapter styling",
   "summary": {
     "formalStyleSourceCount": 209,
-    "internalVendorSelectorGapCount": 14,
+    "internalVendorSelectorGapCount": 0,
     "officialPublicTokenCount": 240,
     "orphanedProductAppearanceVariantCount": 0,
     "productAppearanceVariantCount": 40,
     "projectPublicTokenOverrideCount": 38,
     "unknownProjectTokenOverrideCount": 0,
-    "visualLiteralGapCount": 16
+    "visualLiteralGapCount": 0
   },
   "themeTokens": {
     "inheritedOfficialTokenCount": 202,
@@ -1025,141 +937,5 @@
     ],
     "unknownProjectTokenOverrides": []
   },
-  "visualLiteralGaps": [
-    {
-      "line": 349,
-      "literals": [
-        "-2px",
-        "2px"
-      ],
-      "selector": ".sc-icon-button[data-appearance='column-handle']:focus-visible",
-      "status": "legacy_override_gap"
-    },
-    {
-      "line": 457,
-      "literals": [
-        "36px"
-      ],
-      "selector": ".collection-search-control .sc-icon-button[data-appearance='toolbar-menu-toggle']",
-      "status": "legacy_override_gap"
-    },
-    {
-      "line": 464,
-      "literals": [
-        "36px"
-      ],
-      "selector": ".product-list-header__search .sc-btn",
-      "status": "legacy_override_gap"
-    },
-    {
-      "line": 474,
-      "literals": [
-        "-2px",
-        "2px"
-      ],
-      "selector": "[data-table-scroll-region]:focus-visible",
-      "status": "legacy_override_gap"
-    },
-    {
-      "line": 488,
-      "literals": [
-        "44px"
-      ],
-      "selector": ".sc-state-panel .sc-btn",
-      "status": "legacy_override_gap"
-    },
-    {
-      "line": 490,
-      "literals": [
-        "35px"
-      ],
-      "selector": ".sc-btn[data-navigation-control='activity-page-title']",
-      "status": "legacy_override_gap"
-    },
-    {
-      "line": 507,
-      "literals": [
-        "36px"
-      ],
-      "selector": ".product-page-header--collection [data-workspace-action-bar] .sc-btn",
-      "status": "legacy_override_gap"
-    },
-    {
-      "line": 515,
-      "literals": [
-        "3px"
-      ],
-      "selector": ".sc-btn[data-semantic-cell-kind='primary']:is(:hover, :focus-visible)",
-      "status": "legacy_override_gap"
-    },
-    {
-      "line": 520,
-      "literals": [
-        "44px"
-      ],
-      "selector": ".list-empty-surface .sc-btn",
-      "status": "legacy_override_gap"
-    },
-    {
-      "line": 524,
-      "literals": [
-        "44px"
-      ],
-      "selector": ".product-page-header--collection [data-workspace-action-bar] .sc-btn",
-      "status": "legacy_override_gap"
-    },
-    {
-      "line": 611,
-      "literals": [
-        "12px",
-        "4px",
-        "8px"
-      ],
-      "selector": ".sc-table-scroll-tools",
-      "status": "legacy_override_gap"
-    },
-    {
-      "line": 623,
-      "literals": [
-        "44px"
-      ],
-      "selector": ".sc-table-scroll-tools .sc-icon-button",
-      "status": "legacy_override_gap"
-    },
-    {
-      "line": 628,
-      "literals": [
-        "12px",
-        "16px",
-        "1px",
-        "68px"
-      ],
-      "selector": ".sc-btn[data-appearance='metric']",
-      "status": "legacy_override_gap"
-    },
-    {
-      "line": 641,
-      "literals": [
-        "8px"
-      ],
-      "selector": ".sc-btn[data-appearance='metric'] .sc-btn__content",
-      "status": "legacy_override_gap"
-    },
-    {
-      "line": 647,
-      "literals": [
-        "24px"
-      ],
-      "selector": ".sc-btn[data-appearance='metric'] strong",
-      "status": "legacy_override_gap"
-    },
-    {
-      "line": 653,
-      "literals": [
-        "2px"
-      ],
-      "selector": ".sc-btn[data-appearance='metric']:focus-visible",
-      "status": "legacy_override_gap"
-    }
-  ]
+  "visualLiteralGaps": []
 }

@@ -14,6 +14,7 @@
     :data-appearance="appearance"
     :model-value="modelValue"
     :options="tdesignOptions"
+    :input-props="{ inputClass: `sc-select__control sc-select__control--${appearance}` }"
     :size="size"
     :status="invalid ? 'error' : status"
     :disabled="disabled"

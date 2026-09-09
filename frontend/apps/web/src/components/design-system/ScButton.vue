@@ -1,6 +1,27 @@
 <template>
   <ScTooltip :content="hint" :disabled="!hint">
+  <button
+    v-if="usesStructuredDriver"
+    v-bind="attrs"
+    ref="nativeButtonRef"
+    data-semantic-component="ScButton"
+    data-semantic-layer="primitive"
+    data-primitive-driver="browser-structured"
+    :data-size="size"
+    :data-status="status"
+    :data-loading="loading || undefined"
+    :data-appearance="appearance"
+    :type="type"
+    :class="['sc-btn', `sc-btn-${variant}`]"
+    :disabled="disabled || loading"
+    :aria-disabled="disabled || loading || undefined"
+    :aria-busy="loading || undefined"
+  >
+    <span class="sc-btn__content"><slot /></span>
+    <span v-if="loading" class="sc-visually-hidden">{{ loadingLabel }}</span>
+  </button>
   <TDesignButton
+    v-else
     v-bind="attrs"
     ref="buttonRef"
     data-semantic-component="ScButton"
@@ -41,7 +62,7 @@ const props = withDefaults(defineProps<{
   disabled?: boolean;
   loading?: boolean;
   loadingLabel?: string;
-  appearance?: 'default' | 'metric' | 'section-tab' | 'menu-item' | 'tree-item' | 'toolbar-chip' | 'toolbar-menu-toggle' | 'status-chip' | 'info-action' | 'favorite-toggle' | 'smart-action' | 'relation-tag' | 'surface-tile' | 'outline-action' | 'summary-chip' | 'breadcrumb-item' | 'context-action' | 'auth-link' | 'primary-submit' | 'dashboard-action' | 'dashboard-quick-link' | 'dashboard-recent-link' | 'scope-option' | 'scope-segment' | 'account-context' | 'account-context-compact';
+  appearance?: 'default' | 'structured-content' | 'metric' | 'section-tab' | 'menu-item' | 'tree-item' | 'toolbar-chip' | 'toolbar-menu-toggle' | 'status-chip' | 'info-action' | 'favorite-toggle' | 'smart-action' | 'relation-tag' | 'surface-tile' | 'outline-action' | 'summary-chip' | 'breadcrumb-item' | 'context-action' | 'auth-link' | 'primary-submit' | 'dashboard-action' | 'dashboard-quick-link' | 'dashboard-recent-link' | 'scope-option' | 'scope-segment' | 'account-context' | 'account-context-compact';
 }>(), {
   type: 'button',
   variant: 'secondary',
@@ -55,9 +76,12 @@ const presentation = computed(() => tdesignButtonPresentation(props.variant, pro
 const attrs = useAttrs();
 const hint = computed(() => typeof attrs.title === 'string' ? attrs.title : '');
 const buttonRef = ref<{ $el?: HTMLElement } | null>(null);
+const nativeButtonRef = ref<HTMLButtonElement | null>(null);
+const usesStructuredDriver = computed(() => ['structured-content', 'metric', 'dashboard-quick-link'].includes(props.appearance));
 
 defineExpose({
   focus: () => {
+    if (usesStructuredDriver.value) return nativeButtonRef.value?.focus();
     const root = buttonRef.value?.$el;
     const target = root instanceof HTMLButtonElement ? root : root?.querySelector<HTMLButtonElement>('button');
     target?.focus();

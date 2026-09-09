@@ -180,6 +180,19 @@ def main() -> int:
             print(f"[frontend_official_design_alignment_inventory] FAIL stale={output}")
             return 1
         report = json.loads(payload)
+        incomplete = {
+            key: report["summary"][key]
+            for key in (
+                "unknownProjectTokenOverrideCount",
+                "internalVendorSelectorGapCount",
+                "visualLiteralGapCount",
+                "orphanedProductAppearanceVariantCount",
+            )
+            if report["summary"][key] != 0
+        }
+        if incomplete:
+            print(f"[frontend_official_design_alignment_inventory] FAIL incomplete={incomplete}")
+            return 1
         print(f"[frontend_official_design_alignment_inventory] PASS summary={report['summary']}")
         return 0
     output.parent.mkdir(parents=True, exist_ok=True)

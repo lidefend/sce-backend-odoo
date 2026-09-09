@@ -4,6 +4,7 @@
     :title="title"
     :subtitle="subtitle"
     :bordered="bordered"
+    :body-class-name="bodyClassName"
     :body-style="cardBodyStyle"
     :header-style="cardHeaderStyle"
     :data-appearance="appearance"
@@ -23,11 +24,13 @@ const props = withDefaults(defineProps<{
   title?: string;
   subtitle?: string;
   bordered?: boolean;
+  bodyClassName?: string;
   appearance?: 'default' | 'summary' | 'task' | 'section' | 'task-section' | 'context' | 'relation' | 'form-section' | 'fact' | 'auth' | 'account' | 'main-surface' | 'flow' | 'kanban-record' | 'metric' | 'table' | 'record' | 'config';
 }>(), {
   title: undefined,
   subtitle: undefined,
   bordered: true,
+  bodyClassName: undefined,
   appearance: 'default',
 });
 

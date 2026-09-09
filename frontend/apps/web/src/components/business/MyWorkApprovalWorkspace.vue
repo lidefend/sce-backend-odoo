@@ -32,7 +32,7 @@
 
     <ScSection v-for="section in visibleSections" :key="section.key" class="work-section" :title="`${section.label} ${section.count}`" :data-section-key="section.key">
       <ScEmptyState v-if="!section.items.length" :title="searchText ? '没有符合当前查找条件的事项。' : `当前范围内没有${section.label}事项。`" />
-      <ScCard v-for="item in section.items" :key="item.key" appearance="record" class="work-card" :data-work-item-key="item.key" :data-record-id="item.target.record_id" :data-work-item-state="item.state.key">
+      <ScCard v-for="item in section.items" :key="item.key" appearance="record" body-class-name="work-card__body" class="work-card" :data-work-item-key="item.key" :data-record-id="item.target.record_id" :data-work-item-state="item.state.key">
         <div class="work-card__main">
           <div class="work-card__identity">
             <span class="business-type">{{ item.business_type }}</span>
@@ -292,7 +292,7 @@ async function confirmAction() {
 .business-type, .status-badge { display: inline-flex; padding: 3px 8px; border-radius: var(--sc-component-tag-radius); background: var(--sc-app-info-bg); color: var(--sc-app-info-text); font-size: var(--sc-product-text-sm); }
 .status-badge { background: var(--sc-app-subtle-bg); color: var(--sc-app-text-primary); }
 .work-card h3 { grid-area: title; min-width: 0; margin: 2px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.work-card :deep(.t-card__body) { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+.work-card :deep(.work-card__body) { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
 .work-card dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 20px; margin: 0; }
 .work-card__summary { grid-area: summary; }
 .work-card dl div { min-width: 0; }
@@ -320,7 +320,7 @@ async function confirmAction() {
   .work-card__main { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'identity' 'title' 'summary' 'disclosure'; gap: 8px; }
   .work-card h3 { display: -webkit-box; margin: 9px 0 12px; overflow: hidden; font-size: 17px; line-height: 1.3; white-space: normal; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
   .work-card dl { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; }
-  .work-card :deep(.t-card__body) { grid-template-columns: minmax(0, 1fr); }
+  .work-card :deep(.work-card__body) { grid-template-columns: minmax(0, 1fr); }
   .work-card dt { font-size: 11px; }
   .work-card dd { font-size: 13px; }
   .work-card__actions { width: 100%; }

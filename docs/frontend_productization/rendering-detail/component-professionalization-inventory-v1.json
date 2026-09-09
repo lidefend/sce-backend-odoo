@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "5cb12e821b47943fcc0d7428fcdb9da26319cad95382fd339c1df26c1727536c",
+  "sourceIdentity": "4c69b27d1007673119144132ac9d04158dd2f4019e7e729ec24bd24adf1fa051",
   "generatorDigest": "ba7b31dffe73ee4fb08dd70311cc1d5ca1cbc4b0cd4d74ee4dcb23f5bb60c07b",
   "ownershipDigest": "26fdbff1d3b56069a878c04d0612a9b75426afe07bf0db12edf34dc55f8ef873",
-  "inputDigest": "b3e69d6c5880fe84e2f65903be21a1265cd9bcbcbf4819097f0040d2e78c473d",
+  "inputDigest": "b0cdae6be0a6c0dc565d3bd9bfcdfa07ac0eed67f194c1a0c5aff1935a77d26c",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -300,7 +300,9 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {},
+      "rawControls": {
+        "button": 1
+      },
       "governedStatePrimitives": [],
       "targetBatch": null
     },
