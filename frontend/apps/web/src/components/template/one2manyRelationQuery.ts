@@ -52,7 +52,11 @@ export function createOne2manyRelationPopupAuthority() {
 }
 
 export function isExplicitOne2manyRelationPopupClose(trigger: string): boolean {
-  return ['document', 'keydown-esc', 'trigger-element-click', 'trigger-element-blur'].includes(trigger);
+  return ['document', 'keydown-esc', 'trigger-element-click'].includes(trigger);
+}
+
+export function isExplicitOne2manyRelationPopupOpen(trigger: string): boolean {
+  return trigger === 'trigger-element-click';
 }
 
 export function preserveSelectedOne2manyRelationOption(params: {

@@ -7,6 +7,7 @@ import {
   createOne2manyRelationPopupAuthority,
   createOne2manyRelationRequestAuthority,
   isExplicitOne2manyRelationPopupClose,
+  isExplicitOne2manyRelationPopupOpen,
   one2manyRelationDependencyKey,
   preserveSelectedOne2manyRelationOption,
 } from '../src/components/template/one2manyRelationQuery';
@@ -76,8 +77,11 @@ assert.equal(popupAuthority.update('line:1:partner_id', 'desktop-replacement', t
 assert.equal(popupAuthority.isOpen('line:1:partner_id'), true);
 assert.equal(isExplicitOne2manyRelationPopupClose('keydown-esc'), true);
 assert.equal(isExplicitOne2manyRelationPopupClose('document'), true);
+assert.equal(isExplicitOne2manyRelationPopupClose('trigger-element-blur'), false);
 assert.equal(isExplicitOne2manyRelationPopupClose('owner-unmount'), false);
 assert.equal(isExplicitOne2manyRelationPopupClose('component-sync'), false);
+assert.equal(isExplicitOne2manyRelationPopupOpen('trigger-element-click'), true);
+assert.equal(isExplicitOne2manyRelationPopupOpen('component-sync'), false);
 popupAuthority.clear();
 assert.equal(popupAuthority.update('line:1:partner_id', 'mobile', true), 'opened');
 assert.equal(popupAuthority.isOpen('line:1:partner_id'), true);

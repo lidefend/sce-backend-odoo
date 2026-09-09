@@ -316,6 +316,7 @@ import {
   createOne2manyRelationPopupAuthority,
   createOne2manyRelationRequestAuthority,
   isExplicitOne2manyRelationPopupClose,
+  isExplicitOne2manyRelationPopupOpen,
   preserveSelectedOne2manyRelationOption,
 } from './one2manyRelationQuery';
 import { downloadFile, fileToBase64, uploadFile } from '../../api/files';
@@ -582,6 +583,7 @@ function handleOne2manyRelationPopup(
       return;
     }
     if (relationStartedSessions.has(key) && !relationClosedSessions.has(key)) return;
+    if (relationStartedSessions.has(key) && !isExplicitOne2manyRelationPopupOpen(event.trigger)) return;
     relationStartedSessions.add(key);
     relationClosedSessions.delete(key);
     invalidateOne2manyRelationQuery(key);
