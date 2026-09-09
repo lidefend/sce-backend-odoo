@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "d83ca7d3395cdbd60f2eb3c5647ea80dbd3c577284f52a3f32ec524cbed3e97a",
+  "inputDigest": "54a947d50172fcfd28cba8fb8866fe19baa73bf834a320ae093e1e9cbdac1a02",
   "internalVendorSelectorGaps": [],
   "productAppearanceVariants": [
     {
@@ -162,7 +162,9 @@
         "frontend/apps/web/src/layouts/AppShell.vue",
         "frontend/apps/web/src/pages/ActivityPage.vue",
         "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
-        "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue"
+        "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue",
+        "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+        "frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue"
       ],
       "selectors": [
         ".sc-btn[data-appearance='context-action']",
@@ -643,7 +645,7 @@
   "schemaVersion": "frontend.official-design-alignment.inventory.v1",
   "scope": "formal P0/P1 frontend TDesign driver and product adapter styling",
   "summary": {
-    "formalStyleSourceCount": 209,
+    "formalStyleSourceCount": 210,
     "internalVendorSelectorGapCount": 0,
     "officialPublicTokenCount": 240,
     "orphanedProductAppearanceVariantCount": 0,
