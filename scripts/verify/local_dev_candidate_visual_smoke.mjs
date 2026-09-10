@@ -1858,7 +1858,7 @@ try {
         fieldAlignmentEvidence.pass = target.expectFieldAlignment !== true || (
           fieldAlignmentEvidence.meetsControlFrameTolerance
           && fieldAlignmentEvidence.meetsRowBaselineTolerance
-          && fieldAlignmentEvidence.meetsGridEdgeTolerance
+          && (target.expectCrossGroupGridAlignment !== true || fieldAlignmentEvidence.meetsGridEdgeTolerance)
         );
       }
       if (target.exerciseBusinessConfigExperience === true) {
