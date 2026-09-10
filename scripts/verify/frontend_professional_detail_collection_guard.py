@@ -35,11 +35,14 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     if '"componentKey": "sc.relation.table"' not in example or '"sc.relation.table": {' not in example:
         failures.append("nested form relation example does not document formal sc.relation.table authority")
     for marker in (
-        'data-professional-field-family="detail-collection"', ':data-row-count', ':data-column-count',
+        'data-semantic-component="ProfessionalDetailCollectionControl"', 'data-professional-field-family="detail-collection"', ':data-row-count', ':data-column-count',
         ':data-can-create', ':data-can-inline-edit', ':data-removed-row-count', ':data-validation-visible', ':data-summary-present',
     ):
         if marker not in component:
             failures.append(f"professional detail collection missing marker {marker}")
+    for marker in ("data-detail-collection-heading", "data-detail-collection-title", "data-detail-collection-count", "data-detail-collection-actions", "data-detail-collection-content"):
+        if marker not in renderer:
+            failures.append(f"detail collection hierarchy missing {marker}")
     if "usesProfessionalOne2many(field) && relationAdapter" not in section:
         failures.append("FormSection does not route one2many through the detail collection adapter")
     if '!detailCollectionOwnsVisibleTitle(field)' not in section:

@@ -61,3 +61,20 @@
 - task/workspace 页头的吸顶、背景、边界、阴影、内部排列与无状态动作归 `ProductPageHeader`；模板页头不再额外制造底部 margin。合同状态、HUD 和 intake 文案留在 `ContractFormProductHeader` 自身 scoped style。
 - `ContractFormPage` 明确消费 `.sc-product-workspace-stack`。页面框架继续负责 gutter，content-layout pattern 继续负责既有阅读宽度决策，正文 `.form-grid` 统一消费 `--sc-product-panel-gap`；没有改变上一批字段槽位或控件尺寸。
 - 定向门禁：product page header 28 cases、product page pattern 12 cases、3 个 header adapter guard 及严格类型全部通过；浏览器吸顶/首中底复核留在最终冻结候选统一执行。
+
+## C 批结果
+
+- 明细集合统一暴露 heading、title、count、summary、actions 和 desktop-table/mobile-cards/empty 内容身份；查看态与录入态继续共用同一标题/数量层次，桌面表格边界仍只服务横向比较，移动端继续使用有标题卡片。
+- 协作区根从“额外 muted 卡片”改为正文同级章节：只保留有分隔用途的顶部边界与章节标题。动作区不再另套无用途背景/边框；上传拖放区和逐条时间线仍保留有交互/记录分隔用途的边界。加载更多布局移出内联 style。
+- 未改变附件归属：关系明细的“单据附件”和协作区的“协作附件”继续分别存在并保留原语义说明。
+- 组件接管 inventory 新增五类受影响能力的结构化评估，并绑定 TDesign `1.20.5` 与完整生产源摘要：
+
+| 组件 | 官方公开能力 | 当前接管结论 | 理由与验证 |
+|---|---|---|---|
+| Dialog | visible、esc/overlay close、scroll-through、destroy | 保留共享生命周期接管 | 嵌套关闭、busy、焦点栈和深度滚动锁必须单一归口；overlay unit + 受影响浏览器旅程 |
+| Drawer | visible、esc/overlay close、scroll-through、destroy、size | 保留共享生命周期接管 | 与 Dialog 共用嵌套 exact-once/focus/scroll 权威；overlay unit + 嵌套浏览器旅程 |
+| Select | value/options/filter/loading/empty/search/popup | 保留 ARIA 与请求竞态接管 | 原生控件语义需投影，旧响应失效属于关系消费者而非官方组件；primitive/relation/browser 验证 |
+| DatePicker | value/disabled/readonly/time/change | 无行为接管 | 官方组件拥有弹层与键盘，适配层仅归一契约值和共享宽度；类型/守卫/表单旅程 |
+| Table | data/columns/row/size/loading/scroll/width/attributes | 保留横向浏览接管 | 1.20.5 无公开 scroll-region element/ref 可提供边界状态、焦点语义与步进滚动；inventory + 表格边界/键盘验证 |
+
+- 定向门禁：明细模型/守卫 31 项、协作模型/守卫 73 项、接管 inventory 6 项、overlay lifecycle 10 项及严格类型全部通过。没有修改契约、权限、动作、隐藏章节或业务数据。

@@ -41,6 +41,18 @@ class ComponentDriverTakeoverInventoryTest(unittest.TestCase):
             self.assertFalse(rows[component]["requiredForCurrentProduct"])
             self.assertNotEqual(rows[component]["requirementDecision"], "not required by current formal product semantics")
 
+    def test_affected_public_capabilities_and_takeovers_are_explicitly_assessed(self) -> None:
+        report = MODULE.build_inventory()
+        assessments = {row["officialComponent"]: row for row in report["capabilityAssessments"]}
+        self.assertEqual(set(assessments), {"dialog", "drawer", "select", "date-picker", "table"})
+        self.assertEqual(assessments["date-picker"]["takeover"], "none")
+        for component in ("dialog", "drawer", "select", "table"):
+            self.assertEqual(assessments[component]["takeover"], "retained_required")
+            self.assertTrue(assessments[component]["reason"])
+            self.assertTrue(assessments[component]["verification"])
+        self.assertEqual(report["summary"]["unassessedRequiredTakeovers"], 0)
+        self.assertIn("unassessedRequiredTakeovers=0", report["completionRule"])
+
 
 if __name__ == "__main__":
     unittest.main()

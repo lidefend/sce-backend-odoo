@@ -61,11 +61,11 @@
   <div v-else-if="field.type === 'one2many'" class="relation-editor">
     <div v-if="field.readonly" class="o2m-readonly" data-readonly-relation>
       <div v-if="one2manyRows.length" class="o2m-readonly-table">
-        <div class="o2m-toolbar o2m-toolbar--readonly">
-          <span class="o2m-title">{{ field.label }}</span>
-          <span class="o2m-count">共 {{ one2manyRows.length }} 条</span>
-        </div>
-        <div class="o2m-table-scroll">
+        <header class="o2m-toolbar o2m-toolbar--readonly" data-detail-collection-heading>
+          <span class="o2m-title" data-detail-collection-title>{{ field.label }}</span>
+          <span class="o2m-count" data-detail-collection-count>共 {{ one2manyRows.length }} 条</span>
+        </header>
+        <div class="o2m-table-scroll" data-detail-collection-content="desktop-table">
           <ScTable
             :data="o2mTableData"
             :columns="readonlyO2mTableColumns"
@@ -78,7 +78,7 @@
           />
         </div>
       </div>
-      <div v-if="one2manyRows.length" class="o2m-readonly-list">
+      <div v-if="one2manyRows.length" class="o2m-readonly-list" data-detail-collection-content="mobile-cards">
         <article
           v-for="(row, rowIndex) in paginatedOne2manyRows"
           :key="row.key"
@@ -110,12 +110,12 @@
     </div>
         <template v-else>
     <div class="o2m-card">
-      <div class="o2m-toolbar">
-        <span class="o2m-title">{{ field.label }}</span>
-        <span v-if="adapter.visibleOne2manyRows(field.name).length" class="o2m-count">共 {{ adapter.visibleOne2manyRows(field.name).length }} 条</span>
-        <span v-if="adapter.one2manySummary(field.name)" class="o2m-summary">{{ adapter.one2manySummary(field.name) }}</span>
+      <header class="o2m-toolbar" data-detail-collection-heading>
+        <span class="o2m-title" data-detail-collection-title>{{ field.label }}</span>
+        <span v-if="adapter.visibleOne2manyRows(field.name).length" class="o2m-count" data-detail-collection-count>共 {{ adapter.visibleOne2manyRows(field.name).length }} 条</span>
+        <span v-if="adapter.one2manySummary(field.name)" class="o2m-summary" data-detail-collection-summary>{{ adapter.one2manySummary(field.name) }}</span>
         <span class="o2m-spacer" />
-        <slot name="collection-actions" />
+        <span class="o2m-actions" data-detail-collection-actions><slot name="collection-actions" /></span>
         <ScButton
           v-if="adapter.one2manyCanCreate(field.name)"
           class="o2m-create"
@@ -127,11 +127,12 @@
         >
           {{ adapter.one2manyCreateLabel(field.name, field.label) }}
         </ScButton>
-      </div>
+      </header>
 
       <div
         v-if="adapter.one2manyColumns(field.name).length && adapter.visibleOne2manyRows(field.name).length"
         class="o2m-table-scroll"
+        data-detail-collection-content="desktop-table"
       >
         <ScTable
           :data="o2mTableData"
@@ -211,6 +212,7 @@
       <div
         v-if="adapter.one2manyColumns(field.name).length && adapter.visibleOne2manyRows(field.name).length"
         class="o2m-mobile-list"
+        data-detail-collection-content="mobile-cards"
       >
         <article
           v-for="row in paginatedOne2manyRows"
@@ -283,6 +285,7 @@
         state="empty"
         :label="`暂无明细，点击「${adapter.one2manyCreateLabel(field.name, field.label)}」新增`"
         data-o2m-empty
+        data-detail-collection-content="empty"
       />
 
       <div v-if="adapter.removedOne2manyRows(field.name).length" class="o2m-removed">
@@ -1211,6 +1214,7 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
 .o2m-spacer {
   flex: 1;
 }
+.o2m-actions:empty { display: none; }
 
 .o2m-count {
   font-size: 12px;

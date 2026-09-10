@@ -49,7 +49,7 @@ goal:
     - id: B
       title: header_and_body_layout_responsibility
       status: completed
-      commit: pending_local_commit
+      commit: 39f075b5
       evidence:
         - product_page_header_unit_pass_28
         - product_page_pattern_unit_pass_12
@@ -61,7 +61,14 @@ goal:
         - stale_or_deep_page_header_patches_are_removed
     - id: C
       title: detail_collaboration_and_component_takeover_closure
-      status: pending
+      status: completed
+      commit: pending_local_commit
+      evidence:
+        - professional_detail_collection_model_and_guard_pass_31
+        - professional_collaboration_model_and_guard_pass_73
+        - component_driver_takeover_inventory_tests_pass_6
+        - overlay_lifecycle_guard_pass_10
+        - strict_typecheck_pass
       exit:
         - detail_and_collaboration_hierarchy_is_consistent
         - official_capability_audit_records_each_retained_takeover

@@ -4,7 +4,86 @@
     "lockedVersion": "1.20.5",
     "publicEntrypoint": "tdesign-vue-next/es/<component>"
   },
-  "completionRule": "missing=0, bridge_only=0, adapter_unconsumed=0, directLibraryImportBypasses=0, unassessedRawBehaviorSurfaces=0",
+  "capabilityAssessments": [
+    {
+      "currentCoverage": "ScDatePicker and ScDateField are public-prop adapters with contract value normalization only.",
+      "officialComponent": "date-picker",
+      "officialPublicApi": [
+        "value",
+        "disabled",
+        "readonly",
+        "enableTimePicker",
+        "change"
+      ],
+      "reason": "The official picker owns popup and keyboard behavior; the adapter only preserves schema value shape and shared field width.",
+      "takeover": "none",
+      "verification": "strict typecheck + primitive adapter guard + representative form journey"
+    },
+    {
+      "currentCoverage": "ScDialog projects official visibility and dismissal props; useModalLifecycle owns the nested overlay focus stack and depth-aware body lock.",
+      "officialComponent": "dialog",
+      "officialPublicApi": [
+        "visible",
+        "closeOnEscKeydown",
+        "closeOnOverlayClick",
+        "preventScrollThrough",
+        "destroyOnClose"
+      ],
+      "reason": "One owner must coordinate nested close, busy dismissal, focus restoration and body-scroll restoration without double handling.",
+      "takeover": "retained_required",
+      "verification": "verify.frontend.overlay_lifecycle.unit + affected browser overlay journey"
+    },
+    {
+      "currentCoverage": "ScDrawer projects official visibility, dismissal and sizing props; useModalLifecycle shares the dialog focus and scroll authority.",
+      "officialComponent": "drawer",
+      "officialPublicApi": [
+        "visible",
+        "closeOnEscKeydown",
+        "closeOnOverlayClick",
+        "preventScrollThrough",
+        "destroyOnClose",
+        "size"
+      ],
+      "reason": "Nested dialog/drawer stacks require the same exact-once close and depth-aware restoration authority.",
+      "takeover": "retained_required",
+      "verification": "verify.frontend.overlay_lifecycle.unit + nested drawer/dialog browser journey"
+    },
+    {
+      "currentCoverage": "ScSelect uses official props and events; its adapter projects missing native ARIA and suppresses duplicate search emissions.",
+      "officialComponent": "select",
+      "officialPublicApi": [
+        "modelValue",
+        "options",
+        "filterable",
+        "loading",
+        "empty",
+        "reserveKeyword",
+        "search",
+        "popupVisibleChange"
+      ],
+      "reason": "Request cancellation and stale-response authority belong to the relation consumer, while native control semantics require explicit projection.",
+      "takeover": "retained_required",
+      "verification": "primitive adapter tests + relation lifecycle tests + search clear/stale response browser journey"
+    },
+    {
+      "currentCoverage": "ScTable uses official data, column and scroll props; the adapter locates the rendered scroll region to add keyboard reachability and explicit column browsing controls.",
+      "officialComponent": "table",
+      "officialPublicApi": [
+        "data",
+        "columns",
+        "rowKey",
+        "size",
+        "loading",
+        "scroll",
+        "tableContentWidth",
+        "rowAttributes"
+      ],
+      "reason": "TDesign 1.20.5 exposes horizontal sizing but no public scroll-region element/ref needed for edge state, focus semantics and step scrolling.",
+      "takeover": "retained_required",
+      "verification": "official design inventory + table overflow boundary and keyboard browser checks"
+    }
+  ],
+  "completionRule": "missing=0, bridge_only=0, adapter_unconsumed=0, unassessedRequiredTakeovers=0, directLibraryImportBypasses=0, unassessedRawBehaviorSurfaces=0",
   "components": [
     {
       "adapterKeys": [],
@@ -1305,19 +1384,21 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "1b0dc143e5ddb12ab795b7fe737cabccd1dba7128af48fa5386f432d635ba80a",
+  "inputDigest": "358f8bbee156f3fea21b85c780ad59a4dd4d2549ef25664a570d18b5441b441b",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",
   "summary": {
     "adapter_present": 34,
     "adapter_unconsumed": 1,
+    "auditedCapabilityCount": 5,
     "bridge_only": 0,
     "directLibraryImportBypasses": 0,
     "missing": 0,
     "not_required": 36,
     "officialComponents": 71,
     "requiredDrivers": 35,
-    "unassessedRawBehaviorSurfaces": 0
+    "unassessedRawBehaviorSurfaces": 0,
+    "unassessedRequiredTakeovers": 0
   }
 }

@@ -1687,7 +1687,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "6f8ddb0e3af9074fa70c57e7804a17b012a134ef2e30ab96a7ee2cea6e299b98",
+      "digest": "3012969ccef154a70a3df6ee04830808bd808537054392a44aadcabf6c160c79",
       "nativeStyleSelectors": [],
       "path": "components/professional-fields/ProfessionalDetailCollectionControl.vue",
       "referenceNativeStyleSelectors": [],
@@ -1869,7 +1869,7 @@
     },
     {
       "category": "relations-x2many",
-      "digest": "2f17ed1d6321052bcc9ce8509c54002159153d9dbfb4620bdf135d46b941a5d6",
+      "digest": "124e81d9573848e6354360e49c9d46725b327fc95a68b824f4828d19418113cf",
       "nativeStyleSelectors": [],
       "path": "components/template/X2ManyRelationRenderer.vue",
       "referenceNativeStyleSelectors": [
@@ -2219,7 +2219,7 @@
     },
     {
       "category": "collaboration",
-      "digest": "85d7136d02f7fc0a9a6e69a14c17180ec3f1cf3b02f4ec64b039ec54d0219917",
+      "digest": "67f46cc84f283a2ede535e2acf4ad52d94d1e62880f3b1482d683ef84e84df1b",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/NativeCollaborationPanel.vue",
       "referenceNativeStyleSelectors": [],
@@ -2298,7 +2298,7 @@
     },
     {
       "category": "collaboration",
-      "digest": "5ae814afcae707d6d77f2df94386629462f93e06040217af6223f51105586d6e",
+      "digest": "b4d9e49ed23b56d1650a2ec8672f7ace60dbd254f3d745a4b4df9a9b5d456b21",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ProfessionalCollaborationTimeline.vue",
       "referenceNativeStyleSelectors": [],
@@ -2812,7 +2812,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "76b87af142c6c9365eae78aef3fd00b203e8a034717411687354f8f5ac75003e",
+  "currentInputDigest": "bc4c837c0a16a3bf52b4ef278ae3a83aeb560a9688b5eb0c1b269eca28b45617",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
