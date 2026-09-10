@@ -126,6 +126,15 @@ function activate(item: SectionNavigationItem) {
   target.setAttribute('tabindex', '-1');
   target.focus({ preventScroll: true });
   target.scrollIntoView({ behavior: 'auto', block: 'start' });
+  const obstructionBottom = Math.max(
+    navRef.value?.getBoundingClientRect().bottom || 0,
+    document.querySelector<HTMLElement>('.template-page-header')?.getBoundingClientRect().bottom || 0,
+  );
+  const correction = target.getBoundingClientRect().top - obstructionBottom - 12;
+  if (correction < 0) {
+    if (scrollOwner instanceof HTMLElement) scrollOwner.scrollBy({ top: correction, behavior: 'auto' });
+    else window.scrollBy({ top: correction, behavior: 'auto' });
+  }
   centerActiveLink();
   activationReleaseTimer = window.setTimeout(() => {
     activatedKey = '';

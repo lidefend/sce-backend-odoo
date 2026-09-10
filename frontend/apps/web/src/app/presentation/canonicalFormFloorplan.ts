@@ -280,7 +280,9 @@ function fieldHasAttachmentCapability(field: CanonicalFormNode['fields'][number]
     config.widget, config.widgetType, config.widget_type,
     descriptor.widget, descriptor.widgetType, descriptor.widget_type,
   ].map((value) => String(value || '').trim().toLowerCase());
+  const relation = String(descriptor.relation || '').trim().toLowerCase();
   return field.semanticRole === 'activity'
+    || relation === 'ir.attachment'
     || tokens.some((value) => value === 'many2many_binary' || value.includes('attachment'));
 }
 
