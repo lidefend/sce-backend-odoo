@@ -3086,7 +3086,9 @@ try {
           await firstHeader.hover();
           const hovered = await headerState(firstHeader);
           const firstDrag = firstHeader.locator('.column-drag-handle');
-          await firstDrag.focus();
+          await firstHeader.locator('.column-sort-btn').focus();
+          await page.keyboard.press('Shift+Tab');
+          const tabReachedDrag = await firstDrag.evaluate((node) => node === document.activeElement);
           const focused = await headerState(firstHeader);
 
           let shadowPreference = null;
@@ -3194,7 +3196,7 @@ try {
             && idle.drag.right <= idle.resize.left + 1;
           const expectedReordered = [targetField, sourceField, ...originalOrder.slice(2)];
           columnHeaderBehavior = {
-            mode: 'desktop-real-interaction', idle, hovered, focused,
+            mode: 'desktop-real-interaction', idle, hovered, focused, tabReachedDrag,
             originalOrder, reordered, returnedOrder, restoredOrder,
             widthBefore, widthAfter, returnedWidth, restoredWidth,
             recordId, listRequestsAfterSort, listRequestsAfterControls, listRequestsAfterRestore,
@@ -3208,6 +3210,7 @@ try {
               && hovered.dragPointerEvents !== 'none'
               && focused.dragOpacity === '1'
               && focused.dragPointerEvents !== 'none'
+              && tabReachedDrag
               && sameTitleGeometry
               && controlsDoNotOverlapTitle
               && JSON.stringify(reordered) === JSON.stringify(expectedReordered)
