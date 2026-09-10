@@ -438,6 +438,7 @@ try {
       let businessConfigReadFailureEvidence = null;
       let safeReturnEvidence = null;
       let formStructureEvidence = null;
+      let fieldAlignmentEvidence = null;
       let officialComponentBehaviorEvidence = null;
       let officialAlertOperationEvidence = null;
       let expectedLoadedSelectorEvidence = null;
@@ -1412,6 +1413,13 @@ try {
         const expectedDetail = viewport.name === 'desktop' ? '.o2m-readonly-table:visible' : '.o2m-readonly-list:visible';
         await page.locator(expectedDetail).first().waitFor({ state: 'visible', timeout: 15000 });
       }
+      if (target.captureFieldAlignment === true && target.expandFormDisclosures === true) {
+        const collapsedDisclosures = page.locator('[data-semantic-component="ScDisclosure"] [data-disclosure-trigger][data-state="collapsed"]:visible');
+        for (let index = await collapsedDisclosures.count() - 1; index >= 0; index -= 1) {
+          await collapsedDisclosures.nth(index).click();
+        }
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      }
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
       if (target.captureFormStructure === true) {
         const screenshotStem = `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
@@ -1701,6 +1709,158 @@ try {
             && (target.expectReadonlyDetailComparison !== true || (viewport.name === 'desktop' ? top.readonlyTableVisible : top.readonlyCardsVisible))
           ),
         };
+      }
+      if (target.captureFieldAlignment === true) {
+        fieldAlignmentEvidence = await page.evaluate(() => {
+          const visible = (node) => node instanceof HTMLElement
+            && node.offsetParent !== null
+            && node.getBoundingClientRect().width > 0
+            && node.getBoundingClientRect().height > 0;
+          const roundedRect = (node) => {
+            if (!(node instanceof HTMLElement)) return null;
+            const rect = node.getBoundingClientRect();
+            return {
+              left: Number(rect.left.toFixed(2)),
+              top: Number(rect.top.toFixed(2)),
+              right: Number(rect.right.toFixed(2)),
+              bottom: Number(rect.bottom.toFixed(2)),
+              width: Number(rect.width.toFixed(2)),
+              height: Number(rect.height.toFixed(2)),
+            };
+          };
+          const borderWidth = (node) => {
+            if (!(node instanceof HTMLElement)) return 0;
+            const style = getComputedStyle(node);
+            return ['borderLeftWidth', 'borderRightWidth', 'borderTopWidth', 'borderBottomWidth']
+              .map((key) => Number.parseFloat(style[key] || '0'))
+              .reduce((sum, value) => sum + (Number.isFinite(value) ? value : 0), 0);
+          };
+          const visualFrame = (semanticRoot) => {
+            if (!(semanticRoot instanceof HTMLElement)) return null;
+            const candidates = [semanticRoot, ...semanticRoot.querySelectorAll('.t-input, .t-input-number, .t-textarea, input, textarea, select')]
+              .filter(visible);
+            return candidates.find((node) => borderWidth(node) > 0) || candidates[0] || semanticRoot;
+          };
+          const controlSelector = [
+            '[data-semantic-component="ScInput"]',
+            '[data-semantic-component="ScRelationField"]',
+            '[data-semantic-component="ScSelect"]',
+            '[data-semantic-component="ScDateField"]',
+            '[data-semantic-component="ScNumberInput"]',
+            '[data-semantic-component="ScTextarea"]',
+          ].join(',');
+          const excludedTypes = new Set(['boolean', 'binary', 'one2many', 'many2many']);
+          const fields = [...document.querySelectorAll('[data-product-page-mode="form"] .template-form-section-grid > .field[data-field-name]')]
+            .filter(visible)
+            .map((field) => {
+              const slot = field.querySelector(':scope > .field-control-row .field-control-main');
+              const semanticRoot = slot instanceof HTMLElement
+                ? [...slot.querySelectorAll(controlSelector)].find(visible) || null
+                : null;
+              const frame = visualFrame(semanticRoot);
+              const label = field.querySelector(':scope > .field-label-row .label');
+              const slotRect = roundedRect(slot);
+              const frameRect = roundedRect(frame);
+              const labelRect = roundedRect(label);
+              const type = String(field.getAttribute('data-field-type') || '');
+              const eligible = !excludedTypes.has(type) && slotRect !== null && frameRect !== null;
+              return {
+                name: String(field.getAttribute('data-field-name') || ''),
+                type,
+                state: String(field.getAttribute('data-field-state') || ''),
+                semanticComponent: semanticRoot instanceof HTMLElement ? String(semanticRoot.dataset.semanticComponent || '') : '',
+                groupDepth: field.closest('.native-form-tree')
+                  ? [...field.closest('.native-form-tree').querySelectorAll('.native-container--group')]
+                    .filter((group) => group.contains(field) && group !== field).length
+                  : 0,
+                fieldRect: roundedRect(field),
+                slotRect,
+                frameRect,
+                labelRect,
+                eligible,
+                insetLeft: eligible ? Number((frameRect.left - slotRect.left).toFixed(2)) : null,
+                insetRight: eligible ? Number((slotRect.right - frameRect.right).toFixed(2)) : null,
+              };
+            });
+          const grids = [...document.querySelectorAll('[data-product-page-mode="form"] .template-form-section-grid')]
+            .filter(visible)
+            .map((grid, index) => ({
+              index,
+              rect: roundedRect(grid),
+              fieldCount: [...grid.children].filter((child) => child instanceof HTMLElement && child.matches('.field') && visible(child)).length,
+              groupDepth: grid.closest('.native-form-tree')
+                ? [...grid.closest('.native-form-tree').querySelectorAll('.native-container--group')]
+                  .filter((group) => group.contains(grid)).length
+                : 0,
+            }))
+            .filter((grid) => grid.fieldCount > 0 && grid.rect);
+          const eligible = fields.filter((field) => field.eligible);
+          const frameFailures = eligible.filter((field) => Math.abs(field.insetLeft) > 1 || Math.abs(field.insetRight) > 1);
+          const rowGroups = [];
+          for (const field of eligible) {
+            if (!field.fieldRect || !field.frameRect || !field.labelRect) continue;
+            const row = rowGroups.find((candidate) => Math.abs(candidate.fieldTop - field.fieldRect.top) <= 1
+              && Math.abs(candidate.labelHeight - field.labelRect.height) <= 1);
+            if (row) row.fields.push(field);
+            else rowGroups.push({ fieldTop: field.fieldRect.top, labelHeight: field.labelRect.height, fields: [field] });
+          }
+          const rowBaselineFailures = rowGroups
+            .filter((row) => row.fields.length > 1)
+            .map((row) => ({
+              names: row.fields.map((field) => field.name),
+              controlTops: row.fields.map((field) => field.frameRect.top),
+              delta: Number((Math.max(...row.fields.map((field) => field.frameRect.top)) - Math.min(...row.fields.map((field) => field.frameRect.top))).toFixed(2)),
+            }))
+            .filter((row) => row.delta > 1);
+          const gridEdges = grids.map((grid) => ({ left: grid.rect.left, right: grid.rect.right, depth: grid.groupDepth }));
+          const gridEdgeSpread = gridEdges.length > 1 ? {
+            left: Number((Math.max(...gridEdges.map((edge) => edge.left)) - Math.min(...gridEdges.map((edge) => edge.left))).toFixed(2)),
+            right: Number((Math.max(...gridEdges.map((edge) => edge.right)) - Math.min(...gridEdges.map((edge) => edge.right))).toFixed(2)),
+          } : { left: 0, right: 0 };
+          return {
+            tolerance: 1,
+            fields,
+            grids,
+            eligibleControlCount: eligible.length,
+            frameFailures,
+            rowBaselineFailures,
+            gridEdgeSpread,
+            meetsControlFrameTolerance: eligible.length > 0 && frameFailures.length === 0,
+            meetsRowBaselineTolerance: rowBaselineFailures.length === 0,
+            meetsGridEdgeTolerance: gridEdges.length > 0 && gridEdgeSpread.left <= 1 && gridEdgeSpread.right <= 1,
+          };
+        });
+        const guideLines = await page.evaluate((evidence) => {
+          document.querySelector('[data-field-alignment-guide-overlay]')?.remove();
+          const overlay = document.createElement('div');
+          overlay.dataset.fieldAlignmentGuideOverlay = 'true';
+          overlay.setAttribute('aria-hidden', 'true');
+          overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483647;pointer-events:none;overflow:hidden';
+          const lines = [];
+          const addLine = (x, color, label) => {
+            if (!Number.isFinite(x) || x < 0 || x > window.innerWidth) return;
+            const line = document.createElement('i');
+            line.style.cssText = `position:absolute;left:${x}px;top:0;bottom:0;width:1px;background:${color};opacity:.88`;
+            line.title = label;
+            overlay.appendChild(line);
+            lines.push({ x, color, label });
+          };
+          const distinct = (values) => [...new Set(values.map((value) => Number(value.toFixed(1))))];
+          distinct(evidence.fields.filter((field) => field.eligible && field.slotRect).flatMap((field) => [field.slotRect.left, field.slotRect.right]))
+            .forEach((x) => addLine(x, '#1677ff', 'field-slot'));
+          distinct(evidence.fields.filter((field) => field.eligible && field.frameRect).flatMap((field) => [field.frameRect.left, field.frameRect.right]))
+            .forEach((x) => addLine(x, '#ef4444', 'visible-control-frame'));
+          document.body.appendChild(overlay);
+          return lines;
+        }, fieldAlignmentEvidence);
+        await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-alignment-guides.png`), fullPage: false });
+        await page.evaluate(() => document.querySelector('[data-field-alignment-guide-overlay]')?.remove());
+        fieldAlignmentEvidence.guideLines = guideLines;
+        fieldAlignmentEvidence.pass = target.expectFieldAlignment !== true || (
+          fieldAlignmentEvidence.meetsControlFrameTolerance
+          && fieldAlignmentEvidence.meetsRowBaselineTolerance
+          && fieldAlignmentEvidence.meetsGridEdgeTolerance
+        );
       }
       if (target.exerciseBusinessConfigExperience === true) {
         const changeSetPanel = page.locator('[data-business-config-change-set="v1"]:visible');
@@ -3096,7 +3256,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, safeReturnEvidence, formStructureEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, safeReturnEvidence, formStructureEvidence, fieldAlignmentEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -3121,6 +3281,9 @@ for (const item of report.routes) {
   }
   if (item.path && configuredTarget?.captureFormStructure === true && !item.formStructureEvidence?.pass) {
     failures.push({ name: item.name, formStructureEvidence: item.formStructureEvidence || null });
+  }
+  if (item.path && configuredTarget?.captureFieldAlignment === true && !item.fieldAlignmentEvidence?.pass) {
+    failures.push({ name: item.name, fieldAlignmentEvidence: item.fieldAlignmentEvidence || null });
   }
   if (item.path && item.homePresentationEvidence && !item.homePresentationEvidence.pass) {
     failures.push({ name: item.name, homePresentationEvidence: item.homePresentationEvidence });
