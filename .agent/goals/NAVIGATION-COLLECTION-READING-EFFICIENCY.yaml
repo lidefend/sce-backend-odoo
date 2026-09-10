@@ -1,0 +1,66 @@
+schema_version: 1
+goal:
+  id: NAVIGATION-COLLECTION-READING-EFFICIENCY
+  title: navigation_and_collection_reading_efficiency
+  status: active
+  formal_product_layer: P0
+  layer_target: shared_frontend_navigation_shell_and_collection_renderer
+  module: frontend
+  objective: >-
+    Improve shared navigation label recognition and collection information density
+    without changing business menus, contracts, routes, permissions or data.
+  baseline:
+    branch: feature/p0-navigation-collection-reading-efficiency-v1
+    full_sha: 10a69c92e1158c5445aff1054fa7fa5c9acdc14b
+    source: clean_main_after_official_icon_merge
+    fingerprint: 703b8246e72743da44fe586b6be74c9078476d49d4178b55d75042f61f0c2718
+    fingerprint_path: artifacts/fingerprints/navigation_collection_reading_efficiency_baseline_10a69c92.json
+    path_count: 7377
+  product_boundary:
+    standard_vs_user_specific: platform_standard
+    why_here: >-
+      Navigation indentation, label discoverability, generic column sizing and
+      header controls are shared cross-model presentation responsibilities.
+    why_not_elsewhere:
+      - no_project_payment_or_contract_business_semantics
+      - no_contract_schema_permission_menu_route_or_action_change
+      - no_customer_preference_or_low_code_configuration_change
+      - no_database_fixture_acceptance_upgrade_or_release_work
+    blast_radius:
+      - shared_application_navigation
+      - shared_collection_desktop_table_and_mobile_cards
+      - column_preference_sort_resize_and_reorder_interactions
+      - project_payment_and_income_contract_read_only_samples
+  batches:
+    - id: A
+      title: governed_baseline_reproduction
+      status: completed
+      evidence:
+        - verify.frontend.quick.gate_pass
+        - local.dev.verify_authority_pass
+        - light_1440_390_four_route_samples_zero_mutations
+        - dark_1088_320_four_route_samples_zero_mutations
+        - before_screenshots_and_reproduction_report
+    - id: B
+      title: shared_navigation_reading_hierarchy
+      status: planned
+    - id: C
+      title: shared_collection_information_density
+      status: planned
+    - id: D
+      title: governed_cross_sample_validation
+      status: planned
+  acceptance:
+    - current_navigation_entry_is_distinguishable_and_full_label_is_accessible_by_mouse_keyboard_and_touch
+    - primary_identity_and_key_facts_are_readable_without_model_specific_width_rules
+    - long_text_has_a_complete_view_path
+    - sort_resize_reorder_search_pagination_return_and_column_preferences_remain_available
+    - light_dark_and_1440_1088_390_320_are_registered_with_zero_business_writes
+    - form_alignment_global_provider_and_official_icon_mapping_do_not_regress
+  exclusions:
+    - menu_tree_names_routes_or_permissions
+    - business_contracts_actions_amounts_or_data
+    - wider_sidebar_hidden_columns_or_smaller_type_as_local_workarounds
+    - acceptance_rebuild_upgrade_compatibility_release_or_unrelated_visual_polish
+  rollback:
+    - revert_documentation_then_collection_then_navigation_commits_without_database_or_contract_rollback

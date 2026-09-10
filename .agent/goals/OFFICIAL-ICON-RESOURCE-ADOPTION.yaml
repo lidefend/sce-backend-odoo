@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: OFFICIAL-ICON-RESOURCE-ADOPTION
   title: Official icon resource adoption
-  status: review_pending
+  status: completed
   formal_product_layer: P0
   layer_target: frontend design-system icon adapter
   module: frontend
@@ -52,8 +52,11 @@ goal:
       - verify.frontend.build
       - verify.frontend.quick.gate
       - local.dev.candidate.frontend.visual-smoke
-    pending:
-      - pr_and_exact_head_ci
+    delivery:
+      pull_request: 457
+      status: merged
+      main_sha: 10a69c92e1158c5445aff1054fa7fa5c9acdc14b
+      release_status: not_claimed
   delivery_support_changes:
     formal_product_layer: P4
     scope:
