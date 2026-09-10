@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: SYSTEM-STATE-RECOVERY-CONSISTENCY
   title: system_state_expression_and_recovery_path_consistency
-  status: active
+  status: completed
   formal_product_layer: P0
   layer_target: shared_frontend_state_expression_and_session_recovery
   module: frontend
@@ -34,13 +34,26 @@ goal:
   batches:
     - id: A
       title: governed_baseline_and_state_inventory
-      status: active
+      status: completed
+      commit: 98797d3c
     - id: B
       title: confirmed_shared_recovery_gaps
-      status: pending
+      status: completed
+      commits:
+        - 472dcd9f
+        - 48fc398d
+        - 2656ad65
     - id: C
       title: targeted_and_governed_browser_validation
-      status: pending
+      status: completed
+      product_candidate:
+        full_sha: 2656ad65a8542448938907394cc68482ee65d24c
+      evidence:
+        - verify.frontend.system_state_recovery.unit_pass_assertions_20_guard_tests_4
+        - verify.frontend.quick.gate_pass
+        - light_1440_390_session_expiry_recovery_pass_zero_mutations
+        - dark_1088_320_session_expiry_recovery_pass_zero_mutations
+        - manual_four_screenshot_contrast_and_layout_review_pass
   exclusions:
     - authentication_permission_or_token_policy
     - automatic_replay_of_save_approval_payment_or_other_writes
