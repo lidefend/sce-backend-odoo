@@ -11,7 +11,8 @@ const routes = JSON.parse(process.env.CANDIDATE_VISUAL_ROUTES_JSON || '[]');
 const desktopWidth = Math.max(960, Math.min(1920, Math.trunc(Number(process.env.CANDIDATE_VISUAL_DESKTOP_WIDTH || 1440)) || 1440));
 const desktopHeight = Math.max(720, Math.trunc(Number(process.env.CANDIDATE_VISUAL_DESKTOP_HEIGHT || 960)) || 960);
 const mobileWidth = Math.max(320, Math.min(560, Math.trunc(Number(process.env.CANDIDATE_VISUAL_MOBILE_WIDTH || 390)) || 390));
-const theme = String(process.env.CANDIDATE_VISUAL_THEME || 'light') === 'dark' ? 'dark' : 'light';
+const requestedTheme = String(process.env.CANDIDATE_VISUAL_THEME || 'light');
+const theme = requestedTheme === 'dark' || requestedTheme === 'system' ? requestedTheme : 'light';
 const outputDir = path.resolve(process.env.CANDIDATE_VISUAL_OUTPUT_DIR || 'artifacts/playwright/local-dev-candidate-visual-smoke');
 
 if (!baseUrl || !database || !login || !password || !/^[0-9a-f]{40}$/.test(head)) throw new Error('candidate visual identity is incomplete');
@@ -40,6 +41,8 @@ const browser = await launchChromium({ headless: true });
 async function loginPage(page) {
   await page.goto(`${baseUrl}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
   const inputs = page.locator('input');
+  await inputs.first().waitFor({ state: 'visible', timeout: 45000 });
+  const loginThemeEvidence = await captureThemeRuntimeState(page);
   await inputs.nth(0).fill(login);
   await inputs.nth(1).fill(password);
   if (await inputs.nth(2).count() && !(await inputs.nth(2).isDisabled())) await inputs.nth(2).fill(database);
@@ -50,7 +53,40 @@ async function loginPage(page) {
   const payload = await response.json();
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
   await page.locator('.layout-shell').waitFor({ timeout: 45000 });
-  return summarizeSystemInit(payload);
+  return { ...summarizeSystemInit(payload), loginThemeEvidence };
+}
+
+async function captureThemeRuntimeState(page) {
+  return page.evaluate(() => ({
+    mode: document.documentElement.getAttribute('data-sc-theme-mode') || '',
+    resolved: document.documentElement.getAttribute('data-sc-theme-resolved') || '',
+    reducedMotion: document.documentElement.getAttribute('data-sc-reduced-motion') || '',
+    colorScheme: document.documentElement.style.colorScheme || '',
+  }));
+}
+
+async function exerciseSystemThemeRuntime(page) {
+  const initial = await captureThemeRuntimeState(page);
+  await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'no-preference' });
+  await page.waitForFunction(() => document.documentElement.getAttribute('data-sc-theme-resolved') === 'light'
+    && document.documentElement.getAttribute('data-sc-reduced-motion') === 'no-preference');
+  const ordinary = await captureThemeRuntimeState(page);
+  await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+  await page.waitForFunction(() => document.documentElement.getAttribute('data-sc-theme-resolved') === 'dark'
+    && document.documentElement.getAttribute('data-sc-reduced-motion') === 'reduce');
+  const reduced = await captureThemeRuntimeState(page);
+  return {
+    initial,
+    ordinary,
+    reduced,
+    pass: initial.mode === 'system'
+      && ordinary.mode === 'system'
+      && ordinary.resolved === 'light'
+      && ordinary.reducedMotion === 'no-preference'
+      && reduced.mode === 'system'
+      && reduced.resolved === 'dark'
+      && reduced.reducedMotion === 'reduce',
+  };
 }
 
 async function waitForStableProductSurface(page) {
@@ -324,6 +360,16 @@ function isApiDataListResponse(response) {
   }
 }
 
+function summarizeApiDataListResponse(payload) {
+  const data = payload?.data && typeof payload.data === 'object' ? payload.data : payload;
+  const records = Array.isArray(data?.records) ? data.records : [];
+  return {
+    recordCount: records.length,
+    total: Number.isFinite(Number(data?.total)) ? Number(data.total) : null,
+    hasError: Boolean(payload?.error),
+  };
+}
+
 try {
   for (const viewport of [{ name: 'desktop', width: desktopWidth, height: desktopHeight }, { name: 'mobile', width: mobileWidth, height: 844 }]) {
     const context = await browser.newContext({
@@ -333,6 +379,7 @@ try {
     });
     await context.addInitScript((requestedTheme) => localStorage.setItem('sc_theme', requestedTheme), theme);
     const page = await context.newPage();
+    if (theme === 'system') await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
     const errors = [];
     let expectedReadFailureResponses = 0;
     let expectedReadFailureConsoleErrors = 0;
@@ -437,6 +484,8 @@ try {
       let businessConfigExperienceEvidence = null;
       let businessConfigReadFailureEvidence = null;
       let safeReturnEvidence = null;
+      let formStructureEvidence = null;
+      let fieldAlignmentEvidence = null;
       let officialComponentBehaviorEvidence = null;
       let officialAlertOperationEvidence = null;
       let expectedLoadedSelectorEvidence = null;
@@ -534,9 +583,16 @@ try {
         if (!response.ok()) throw new Error(`list data request failed: ${response.status()} ${target.path}`);
         listAggregates = summarizeListAggregates(await response.json());
       }
-      await page.locator('.layout-shell').waitFor({ timeout: 45000 });
+      if (target.expectEmbeddedRoot === true) {
+        await page.locator('.layout-shell').waitFor({ state: 'detached', timeout: 45000 });
+      } else {
+        await page.locator('.layout-shell').waitFor({ timeout: 45000 });
+      }
       await page.locator('[data-product-page-mode], main').filter({ visible: true }).first().waitFor({ timeout: 45000 });
       await waitForStableProductSurface(page);
+      const systemThemeRuntimeEvidence = target.exerciseSystemThemeRuntime === true
+        ? await exerciseSystemThemeRuntime(page)
+        : null;
       if (exerciseOfficialAlertOperation) {
         const alert = page.locator('[data-semantic-component="ScInlineState"][data-semantic-driver="tdesign-alert"][data-state="error"]:visible');
         await alert.waitFor({ state: 'visible', timeout: 15000 });
@@ -1285,13 +1341,14 @@ try {
         } else {
           await worksheet.locator('.worksheet-navigation .tree-node').first().click();
         }
-        await page.waitForFunction(() => document.querySelectorAll('.worksheet-table-scroll tbody tr[data-record-id]').length > 0);
+        const worksheetRoot = await worksheet.elementHandle();
+        await page.waitForFunction((root) => root.querySelectorAll('.worksheet-table-scroll tbody tr[data-record-id]').length > 0, worksheetRoot);
         const scopedTitle = String(await worksheet.locator('.worksheet-grid-title strong').textContent() || '').trim();
         const scopedCountText = String(await worksheet.locator('.worksheet-grid-title span').first().textContent() || '').trim();
         const initialSelectedId = String(await worksheet.locator('tbody tr[aria-selected="true"]').first().getAttribute('data-record-id') || '');
         await search.fill('__c1_no_match__');
-        await page.waitForFunction(() => document.querySelectorAll('.worksheet-table-scroll tbody tr[data-record-id]').length === 0
-          && !document.querySelector('.worksheet-open-record'));
+        await page.waitForFunction((root) => root.querySelectorAll('.worksheet-table-scroll tbody tr[data-record-id]').length === 0
+          && !root.querySelector('.worksheet-open-record'), worksheetRoot);
         const zeroState = {
           countText: String(await worksheet.locator('.worksheet-grid-title span').first().textContent() || '').trim(),
           selectedRows: await worksheet.locator('tbody tr[aria-selected="true"]').count(),
@@ -1300,8 +1357,8 @@ try {
           detailHint: String(await worksheet.locator('.worksheet-detail-empty').textContent() || '').trim(),
         };
         await worksheet.locator('[data-semantic-component="ProductListHeader"]').getByRole('button', { name: '清除', exact: true }).click();
-        await page.waitForFunction(() => document.querySelectorAll('.worksheet-table-scroll tbody tr[data-record-id]').length > 0
-          && Boolean(document.querySelector('.worksheet-open-record')));
+        await page.waitForFunction((root) => root.querySelectorAll('.worksheet-table-scroll tbody tr[data-record-id]').length > 0
+          && Boolean(root.querySelector('.worksheet-open-record')), worksheetRoot);
         const restoredCountText = String(await worksheet.locator('.worksheet-grid-title span').first().textContent() || '').trim();
         const restoredSelectedId = String(await worksheet.locator('tbody tr[aria-selected="true"]').first().getAttribute('data-record-id') || '');
         const selectedRow = worksheet.locator('tbody tr[aria-selected="true"]').first();
@@ -1310,7 +1367,7 @@ try {
           .find((value) => value.length >= 2) || '');
         if (!searchableText) throw new Error(`${target.name}: selected hierarchical row has no searchable text`);
         await search.fill(searchableText);
-        await page.waitForFunction(() => document.querySelectorAll('.worksheet-table-scroll tbody tr[data-record-id]').length > 0);
+        await page.waitForFunction((root) => root.querySelectorAll('.worksheet-table-scroll tbody tr[data-record-id]').length > 0, worksheetRoot);
         const retainedQuery = await search.inputValue();
         const retainedSelectedId = String(await worksheet.locator('tbody tr[aria-selected="true"]').first().getAttribute('data-record-id') || '');
         const monetaryValues = await worksheet.locator('[data-detail-field][data-field-type="monetary"]:visible').allTextContents();
@@ -1407,7 +1464,466 @@ try {
         };
         if (!hierarchicalWorkspaceEvidence.pass) throw new Error(`${target.name}: hierarchical workspace journey failed ${JSON.stringify(hierarchicalWorkspaceEvidence)}`);
       }
+      if (target.captureFormStructure === true && target.expectReadonlyDetailComparison === true) {
+        const expectedDetail = viewport.name === 'desktop' ? '.o2m-readonly-table:visible' : '.o2m-readonly-list:visible';
+        await page.locator(expectedDetail).first().waitFor({ state: 'visible', timeout: 15000 });
+      }
+      if (target.captureFieldAlignment === true && target.expandFormDisclosures === true) {
+        const collapsedDisclosures = page.locator('[data-semantic-component="ScDisclosure"] [data-disclosure-trigger][data-state="collapsed"]:visible');
+        for (let index = await collapsedDisclosures.count() - 1; index >= 0; index -= 1) {
+          await collapsedDisclosures.nth(index).click();
+        }
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      }
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
+      if (target.captureFormStructure === true) {
+        const screenshotStem = `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+        let popupBoundaryEvidence = { checked: false, reason: 'no enabled visible select', pass: true };
+        const formSelects = page.locator('.field [data-semantic-component="ScSelect"]:visible, .field [role="combobox"]:visible');
+        for (let index = 0; index < await formSelects.count(); index += 1) {
+          const select = formSelects.nth(index);
+          const enabled = await select.evaluate((node) => {
+            const input = node.querySelector('input');
+            return node.getAttribute('aria-disabled') !== 'true' && !(input instanceof HTMLInputElement && input.disabled);
+          });
+          if (!enabled) continue;
+          await select.click();
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          popupBoundaryEvidence = await page.evaluate(() => {
+            const visible = (node) => node instanceof HTMLElement && node.offsetParent !== null;
+            const select = [...document.querySelectorAll('.field [data-semantic-component="ScSelect"], .field [role="combobox"]')]
+              .find((node) => visible(node) && (node === document.activeElement || node.contains(document.activeElement)))
+              || null;
+            const popup = [...document.querySelectorAll('[role="listbox"]')]
+              .find((node) => visible(node) && node.getBoundingClientRect().width > 0);
+            const selectOwner = select instanceof HTMLElement
+              ? select.closest('[data-semantic-component="ScSelect"], [data-semantic-component="ScRelationField"]')
+              : null;
+            const pack = (node) => {
+              if (!(node instanceof HTMLElement)) return null;
+              const rect = node.getBoundingClientRect();
+              return [Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom)];
+            };
+            const popupRect = popup instanceof HTMLElement ? popup.getBoundingClientRect() : null;
+            return {
+              checked: true,
+              selectRect: pack(select),
+              popupFound: popup instanceof HTMLElement,
+              popupKind: popup instanceof HTMLElement && popup.matches('.many2one-option-panel')
+                ? 'business-relation-panel'
+                : 'official-component-popup',
+              requestedPlacement: selectOwner instanceof HTMLElement ? selectOwner.dataset.popupPlacement || '' : '',
+              placementLocked: selectOwner instanceof HTMLElement && selectOwner.dataset.popupPlacementLocked === 'true',
+              popupRect: pack(popup),
+              viewport: [window.innerWidth, window.innerHeight],
+              pass: popupRect instanceof DOMRect
+                && popupRect.left >= -1
+                && popupRect.right <= window.innerWidth + 1
+                && popupRect.top >= -1
+                && popupRect.bottom <= window.innerHeight + 1,
+            };
+          });
+          await page.keyboard.press('Escape');
+          break;
+        }
+        const top = await page.evaluate(() => {
+          const visible = (node) => node instanceof HTMLElement && node.offsetParent !== null;
+          const box = (node) => {
+            if (!(node instanceof HTMLElement)) return null;
+            const rect = node.getBoundingClientRect();
+            const style = getComputedStyle(node);
+            return {
+              selector: node.getAttribute('data-semantic-component') || node.className || node.tagName,
+              rect: [Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom)],
+              size: [Math.round(rect.width), Math.round(rect.height)],
+              clientWidth: node.clientWidth,
+              scrollWidth: node.scrollWidth,
+              minWidth: style.minWidth,
+              width: style.width,
+              maxWidth: style.maxWidth,
+              paddingInline: [style.paddingLeft, style.paddingRight],
+              boxSizing: style.boxSizing,
+              overflowX: style.overflowX,
+            };
+          };
+          const boundary = (node, owner) => {
+            if (!(node instanceof HTMLElement) || !(owner instanceof HTMLElement)) return null;
+            const rect = node.getBoundingClientRect();
+            const ownerRect = owner.getBoundingClientRect();
+            const ownerStyle = getComputedStyle(owner);
+            const ownerLeft = ownerRect.left + parseFloat(ownerStyle.borderLeftWidth || '0') + parseFloat(ownerStyle.paddingLeft || '0');
+            const ownerRight = ownerRect.right - parseFloat(ownerStyle.borderRightWidth || '0') - parseFloat(ownerStyle.paddingRight || '0');
+            return {
+              node: box(node),
+              owner: box(owner),
+              overflowLeft: Math.max(0, Math.round(ownerLeft - rect.left)),
+              overflowRight: Math.max(0, Math.round(rect.right - ownerRight)),
+              pass: rect.left >= ownerLeft - 1 && rect.right <= ownerRight + 1,
+            };
+          };
+          const boundarySet = (selector, ownerSelector) => [...document.querySelectorAll(selector)]
+            .filter(visible)
+            .map((node) => boundary(node, node.parentElement?.closest(ownerSelector)))
+            .filter(Boolean);
+          const firstVisible = (selector) => [...document.querySelectorAll(selector)].find(visible) || null;
+          const header = [...document.querySelectorAll('.template-page-header')].find(visible);
+          const relation = [...document.querySelectorAll('[data-floorplan-region="relation"]')].find(visible);
+          const addAction = [...document.querySelectorAll('button')].find((node) => visible(node) && /添加.*明细/.test(String(node.textContent || '')));
+          const sectionNavigation = [...document.querySelectorAll('[data-form-section-navigation]')].find(visible);
+          const summaryFields = [...document.querySelectorAll('[data-floorplan-region="summary"] .canonical-form-node')].filter(visible);
+          const monetarySummary = summaryFields.find((node) => node instanceof HTMLElement && node.dataset.valueEmphasis === 'monetary');
+          const visualSummaryFields = [...summaryFields].sort((left, right) => {
+            const leftRect = left.getBoundingClientRect();
+            const rightRect = right.getBoundingClientRect();
+            return Math.abs(leftRect.top - rightRect.top) > 2 ? leftRect.top - rightRect.top : leftRect.left - rightRect.left;
+          });
+          const relationFrameDepth = relation instanceof HTMLElement
+            ? [...relation.querySelectorAll('*')].filter((node) => {
+                if (!(node instanceof HTMLElement) || !visible(node)) return false;
+                const style = getComputedStyle(node);
+                return parseFloat(style.borderLeftWidth) > 0 && parseFloat(style.borderRightWidth) > 0
+                  && parseFloat(style.borderTopWidth) > 0 && parseFloat(style.borderBottomWidth) > 0;
+              }).length
+            : 0;
+          const pattern = firstVisible('[data-product-page-pattern]');
+          const driver = firstVisible('.sc-form-driver-host');
+          const nativePage = firstVisible('[data-native-contract-structure]');
+          const navigation = firstVisible('[data-form-section-navigation]');
+          const navigationTrack = firstVisible('.form-section-navigation__track');
+          const tree = firstVisible('.sc-native-contract-tree');
+          const authorizedScrollers = [...document.querySelectorAll('.form-section-navigation__track, .o2m-table-scroll, [data-table-scroll-region="true"]')]
+            .filter(visible)
+            .map((node) => {
+              const style = getComputedStyle(node);
+              const rect = node.getBoundingClientRect();
+              return {
+                node: box(node),
+                scrollable: node.scrollWidth > node.clientWidth,
+                overflowPermitted: ['auto', 'scroll'].includes(style.overflowX),
+                withinViewport: rect.left >= -1 && rect.right <= window.innerWidth + 1,
+                pass: ['auto', 'scroll'].includes(style.overflowX) && rect.left >= -1 && rect.right <= window.innerWidth + 1,
+              };
+            });
+          const nestedBoundaries = [
+            ...boundarySet('.native-form-tree', '.sc-native-contract-tree, [data-native-contract-structure]'),
+            ...boundarySet('.native-container--group', '.native-container--group, .native-form-tree, .sc-native-contract-tree'),
+            ...boundarySet('.template-form-section', '.native-container--group, .native-form-tree, .sc-native-contract-tree, [data-native-contract-structure]'),
+            ...boundarySet('.template-form-section-grid', '.template-form-section'),
+            ...boundarySet('.template-form-section-grid > .field', '.template-form-section-grid'),
+            ...boundarySet('.template-form-section-grid > .field input, .template-form-section-grid > .field textarea, .template-form-section-grid > .field select, .template-form-section-grid > .field [role="combobox"]', '.field'),
+          ];
+          const responsiveBoundaryEvidence = {
+            patternInDriver: boundary(pattern, driver),
+            nativePageInPattern: boundary(nativePage, pattern),
+            navigationInNativePage: boundary(navigation, nativePage),
+            navigationTrackInNavigation: boundary(navigationTrack, navigation),
+            treeInNativePage: boundary(tree, nativePage),
+            nestedBoundaries,
+            checkedNestedBoundaryCount: nestedBoundaries.length,
+            authorizedScrollers,
+          };
+          responsiveBoundaryEvidence.pass = [
+            responsiveBoundaryEvidence.patternInDriver,
+            responsiveBoundaryEvidence.nativePageInPattern,
+            responsiveBoundaryEvidence.navigationInNativePage,
+            responsiveBoundaryEvidence.navigationTrackInNavigation,
+            responsiveBoundaryEvidence.treeInNativePage,
+            ...responsiveBoundaryEvidence.nestedBoundaries,
+          ].filter(Boolean).every((item) => item.pass)
+            && responsiveBoundaryEvidence.checkedNestedBoundaryCount > 0
+            && responsiveBoundaryEvidence.authorizedScrollers.every((item) => item.pass);
+          const background = header instanceof HTMLElement ? getComputedStyle(header).backgroundColor : '';
+          const alpha = background.match(/rgba?\([^)]*(?:,|\/)\s*([\d.]+)\s*\)$/)?.[1];
+          return {
+            sectionLinks: [...document.querySelectorAll('[data-form-section-navigation] [data-section-link]')]
+              .filter(visible).map((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim()),
+            currentSectionCount: [...document.querySelectorAll('[data-form-section-navigation] [aria-current="location"]')].filter(visible).length,
+            navigationOverflowDiscoverable: sectionNavigation instanceof HTMLElement
+              && (sectionNavigation.dataset.overflowAfter !== 'true'
+                || [...sectionNavigation.querySelectorAll('.form-section-navigation__cue--after')].some(visible)),
+            sectionTitles: [...document.querySelectorAll('[data-section-title], [data-form-semantic-role] .native-container-head h3')]
+              .filter(visible).map((node) => String(node instanceof HTMLElement ? node.dataset.sectionTitle || node.textContent || '' : '').replace(/\s+/g, ' ').trim()).filter(Boolean),
+            relationInFirstViewport: relation instanceof HTMLElement && relation.getBoundingClientRect().top < window.innerHeight,
+            addActionInFirstViewport: addAction instanceof HTMLElement && addAction.getBoundingClientRect().bottom <= window.innerHeight,
+            relationFrameDepth,
+            mobileMonetarySummaryFirst: !monetarySummary || visualSummaryFields[0] === monetarySummary,
+            stickyHeaderBackground: background,
+            stickyHeaderOpaque: Boolean(background) && background !== 'transparent' && background !== 'rgba(0, 0, 0, 0)' && alpha !== '0',
+            readonlyTableVisible: [...document.querySelectorAll('.o2m-readonly-table')].some(visible),
+            readonlyCardsVisible: [...document.querySelectorAll('.o2m-readonly-list')].some(visible),
+            attachmentHeadings: [...document.querySelectorAll('.relation-attachment-heading, .professional-attachment-heading')]
+              .filter(visible).map((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim()),
+            responsiveBoundaryEvidence,
+          };
+        });
+        const navigationJourney = [];
+        const sectionLinkCount = await page.locator('[data-form-section-navigation] [data-section-link]').count();
+        for (let index = 0; index < sectionLinkCount; index += 1) {
+          const link = page.locator('[data-form-section-navigation] [data-section-link]').nth(index);
+          await link.evaluate((node) => {
+            const track = node.parentElement;
+            if (!(node instanceof HTMLElement) || !(track instanceof HTMLElement)) return;
+            track.scrollTo({ left: Math.max(0, node.offsetLeft - (track.clientWidth - node.offsetWidth) / 2), behavior: 'auto' });
+          });
+          await link.click();
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          navigationJourney.push(await link.evaluate((node) => {
+            const selector = node instanceof HTMLElement ? String(node.dataset.sectionTarget || '') : '';
+            const expectedLabel = String(node.textContent || '').replace(/\s+/g, ' ').trim();
+            const expectedContentKind = node instanceof HTMLElement ? String(node.dataset.sectionContentKind || '') : '';
+            const expectedSourceIdentity = node instanceof HTMLElement ? String(node.dataset.sectionSourceIdentity || '') : '';
+            const nav = node.closest('[data-form-section-navigation]');
+            const root = nav?.closest('[data-native-contract-structure], .object-task-page');
+            const matches = selector && root ? [...root.querySelectorAll(selector)] : [];
+            const target = matches.length === 1 ? matches[0] : null;
+            const header = [...document.querySelectorAll('.template-page-header')]
+              .find((candidate) => candidate instanceof HTMLElement && candidate.offsetParent !== null);
+            const targetRect = target instanceof HTMLElement ? target.getBoundingClientRect() : null;
+            const navRect = nav instanceof HTMLElement ? nav.getBoundingClientRect() : null;
+            const track = node.parentElement;
+            const trackRect = track instanceof HTMLElement ? track.getBoundingClientRect() : null;
+            const linkRect = node instanceof HTMLElement ? node.getBoundingClientRect() : null;
+            const headerRect = header instanceof HTMLElement ? header.getBoundingClientRect() : null;
+            const obstructionBottom = Math.max(navRect?.bottom || 0, headerRect?.bottom || 0);
+            const targetText = String(target?.textContent || '').replace(/\s+/g, ' ').trim();
+            const targetLabels = target instanceof HTMLElement
+              ? [targetText, target.getAttribute('aria-label'), target.dataset.sectionTitle]
+                .map((value) => String(value || '').replace(/\s+/g, ' ').trim())
+                .filter(Boolean)
+              : [];
+            return {
+              key: node instanceof HTMLElement ? String(node.dataset.sectionLink || '') : '',
+              current: node.getAttribute('aria-current') === 'location',
+              targetMatchCount: matches.length,
+              targetFound: target instanceof HTMLElement,
+              expectedLabel,
+              expectedContentKind,
+              targetContentKind: target instanceof HTMLElement ? String(target.dataset.sectionContentKind || '') : '',
+              expectedSourceIdentity,
+              targetSourceIdentity: target instanceof HTMLElement ? String(target.dataset.sectionSourceIdentity || '') : '',
+              targetIdentityMatches: target instanceof HTMLElement
+                && Boolean(expectedSourceIdentity)
+                && target.dataset.sectionSourceIdentity === expectedSourceIdentity,
+              targetContentMatches: target instanceof HTMLElement
+                && Boolean(expectedContentKind)
+                && target.dataset.sectionContentKind === expectedContentKind
+                && Boolean(expectedLabel)
+                && targetLabels.some((label) => label.includes(expectedLabel)),
+              targetTop: targetRect ? Math.round(targetRect.top) : null,
+              obstructionBottom: Math.round(obstructionBottom),
+              targetVisibleBelowSticky: Boolean(targetRect && targetRect.bottom > obstructionBottom && targetRect.top >= obstructionBottom - 2),
+              linkFullyVisibleInTrack: Boolean(linkRect && trackRect && linkRect.left >= trackRect.left - 1 && linkRect.right <= trackRect.right + 1),
+            };
+          }));
+        }
+        const scrollMetrics = await page.evaluate(() => {
+          const owner = document.querySelector('.router-host');
+          if (owner instanceof HTMLElement) return { scrollHeight: owner.scrollHeight, viewportHeight: owner.clientHeight };
+          const fallback = document.scrollingElement || document.documentElement;
+          return { scrollHeight: fallback.scrollHeight, viewportHeight: fallback.clientHeight };
+        });
+        const captures = [];
+        for (const [position, topOffset] of [['middle', Math.max(0, Math.floor((scrollMetrics.scrollHeight - scrollMetrics.viewportHeight) / 2))], ['bottom', Math.max(0, scrollMetrics.scrollHeight - scrollMetrics.viewportHeight)]]) {
+          await page.evaluate((top) => {
+            const owner = document.querySelector('.router-host');
+            if (owner instanceof HTMLElement) owner.scrollTo({ top, behavior: 'auto' });
+            else window.scrollTo({ top, behavior: 'auto' });
+          }, topOffset);
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          const sticky = await page.evaluate(() => {
+            const header = [...document.querySelectorAll('.template-page-header')]
+              .find((node) => node instanceof HTMLElement && node.offsetParent !== null);
+            const rect = header instanceof HTMLElement ? header.getBoundingClientRect() : null;
+            const background = header instanceof HTMLElement ? getComputedStyle(header).backgroundColor : '';
+            const owner = document.querySelector('.router-host');
+            const scrollTop = owner instanceof HTMLElement ? owner.scrollTop : window.scrollY;
+            return { scrollY: Math.round(scrollTop), headerRect: rect ? [Math.round(rect.top), Math.round(rect.bottom)] : null, background };
+          });
+          await page.screenshot({ path: path.join(outputDir, `${screenshotStem}-${position}.png`), fullPage: false });
+          captures.push({ position, ...sticky });
+        }
+        await page.evaluate(() => {
+          const owner = document.querySelector('.router-host');
+          if (owner instanceof HTMLElement) owner.scrollTo({ top: 0, behavior: 'auto' });
+          else window.scrollTo({ top: 0, behavior: 'auto' });
+        });
+        formStructureEvidence = {
+          ...top,
+          popupBoundaryEvidence,
+          navigationJourney,
+          captures,
+          pass: target.expectFormStructure !== true || (
+            top.sectionLinks.length > 1
+            && top.currentSectionCount === 1
+            && top.navigationOverflowDiscoverable
+            && top.stickyHeaderOpaque
+            && top.responsiveBoundaryEvidence.pass
+            && popupBoundaryEvidence.pass
+            && navigationJourney.length === top.sectionLinks.length
+            && navigationJourney.every((item) => item.current
+              && item.targetMatchCount === 1
+              && item.targetFound
+              && item.targetIdentityMatches
+              && item.targetContentMatches
+              && item.targetVisibleBelowSticky
+              && item.linkFullyVisibleInTrack)
+            && (viewport.name !== 'mobile' || top.mobileMonetarySummaryFirst)
+            && (target.expectRelationFirstViewport !== true || viewport.name !== 'desktop' || (top.relationInFirstViewport && top.addActionInFirstViewport))
+            && (target.expectReadonlyDetailComparison !== true || (viewport.name === 'desktop' ? top.readonlyTableVisible : top.readonlyCardsVisible))
+          ),
+        };
+      }
+      if (target.captureFieldAlignment === true) {
+        fieldAlignmentEvidence = await page.evaluate(() => {
+          const visible = (node) => node instanceof HTMLElement
+            && node.offsetParent !== null
+            && node.getBoundingClientRect().width > 0
+            && node.getBoundingClientRect().height > 0;
+          const roundedRect = (node) => {
+            if (!(node instanceof HTMLElement)) return null;
+            const rect = node.getBoundingClientRect();
+            return {
+              left: Number(rect.left.toFixed(2)),
+              top: Number(rect.top.toFixed(2)),
+              right: Number(rect.right.toFixed(2)),
+              bottom: Number(rect.bottom.toFixed(2)),
+              width: Number(rect.width.toFixed(2)),
+              height: Number(rect.height.toFixed(2)),
+            };
+          };
+          const visualFrame = (semanticRoot) => {
+            if (!(semanticRoot instanceof HTMLElement) || !visible(semanticRoot)) return null;
+            return semanticRoot;
+          };
+          const controlSelector = [
+            '[data-semantic-component="ScInput"]',
+            '[data-semantic-component="ScRelationField"]',
+            '[data-semantic-component="ScSelect"]',
+            '[data-semantic-component="ScDateField"]',
+            '[data-semantic-component="ScNumberInput"]',
+            '[data-semantic-component="ScTextarea"]',
+          ].join(',');
+          const excludedTypes = new Set(['boolean', 'binary', 'one2many', 'many2many']);
+          const fields = [...document.querySelectorAll('[data-product-page-mode="form"] .template-form-section-grid > .field[data-field-name]')]
+            .filter(visible)
+            .map((field) => {
+              const slot = field.querySelector(':scope > .field-control-row .field-control-main');
+              const semanticRoot = slot instanceof HTMLElement
+                ? [...slot.querySelectorAll(controlSelector)].find(visible) || null
+                : null;
+              const frame = visualFrame(semanticRoot);
+              const label = field.querySelector(':scope > .field-label-row .label');
+              const slotRect = roundedRect(slot);
+              const frameRect = roundedRect(frame);
+              const labelRect = roundedRect(label);
+              const type = String(field.getAttribute('data-field-type') || '');
+              const eligible = !excludedTypes.has(type) && slotRect !== null && frameRect !== null;
+              return {
+                name: String(field.getAttribute('data-field-name') || ''),
+                type,
+                state: String(field.getAttribute('data-field-state') || ''),
+                semanticComponent: semanticRoot instanceof HTMLElement ? String(semanticRoot.dataset.semanticComponent || '') : '',
+                groupDepth: field.closest('.native-form-tree')
+                  ? [...field.closest('.native-form-tree').querySelectorAll('.native-container--group')]
+                    .filter((group) => group.contains(field) && group !== field).length
+                  : 0,
+                fieldRect: roundedRect(field),
+                slotRect,
+                frameRect,
+                labelRect,
+                eligible,
+                insetLeft: eligible ? Number((frameRect.left - slotRect.left).toFixed(2)) : null,
+                insetRight: eligible ? Number((slotRect.right - frameRect.right).toFixed(2)) : null,
+              };
+            });
+          const grids = [...document.querySelectorAll('[data-product-page-mode="form"] .template-form-section-grid')]
+            .filter(visible)
+            .map((grid, index) => ({
+              index,
+              rect: roundedRect(grid),
+              fieldCount: [...grid.children].filter((child) => child instanceof HTMLElement && child.matches('.field') && visible(child)).length,
+              ordinaryFieldCount: [...grid.children].filter((child) => child instanceof HTMLElement
+                && child.matches('.field[data-field-type]')
+                && visible(child)
+                && !excludedTypes.has(String(child.getAttribute('data-field-type') || ''))).length,
+              groupDepth: grid.closest('.native-form-tree')
+                ? [...grid.closest('.native-form-tree').querySelectorAll('.native-container--group')]
+                  .filter((group) => group.contains(grid)).length
+                : 0,
+            }))
+            .filter((grid) => grid.ordinaryFieldCount > 0 && grid.rect);
+          const eligible = fields.filter((field) => field.eligible);
+          const ordinarySlots = fields.filter((field) => !excludedTypes.has(field.type) && field.slotRect);
+          const frameFailures = eligible.filter((field) => Math.abs(field.insetLeft) > 1 || Math.abs(field.insetRight) > 1);
+          const rowGroups = [];
+          for (const field of ordinarySlots) {
+            const controlRect = field.frameRect || field.slotRect;
+            if (!field.fieldRect || !controlRect || !field.labelRect) continue;
+            const row = rowGroups.find((candidate) => Math.abs(candidate.fieldTop - field.fieldRect.top) <= 1
+              && Math.abs(candidate.labelHeight - field.labelRect.height) <= 1);
+            const measuredField = { ...field, measuredControlTop: controlRect.top };
+            if (row) row.fields.push(measuredField);
+            else rowGroups.push({ fieldTop: field.fieldRect.top, labelHeight: field.labelRect.height, fields: [measuredField] });
+          }
+          const rowBaselineFailures = rowGroups
+            .filter((row) => row.fields.length > 1)
+            .map((row) => ({
+              names: row.fields.map((field) => field.name),
+              controlTops: row.fields.map((field) => field.measuredControlTop),
+              delta: Number((Math.max(...row.fields.map((field) => field.measuredControlTop)) - Math.min(...row.fields.map((field) => field.measuredControlTop))).toFixed(2)),
+            }))
+            .filter((row) => row.delta > 1);
+          const gridEdges = grids.map((grid) => ({ left: grid.rect.left, right: grid.rect.right, depth: grid.groupDepth }));
+          const gridEdgeSpread = gridEdges.length > 1 ? {
+            left: Number((Math.max(...gridEdges.map((edge) => edge.left)) - Math.min(...gridEdges.map((edge) => edge.left))).toFixed(2)),
+            right: Number((Math.max(...gridEdges.map((edge) => edge.right)) - Math.min(...gridEdges.map((edge) => edge.right))).toFixed(2)),
+          } : { left: 0, right: 0 };
+          return {
+            tolerance: 1,
+            fields,
+            grids,
+            eligibleControlCount: eligible.length,
+            ordinarySlotCount: ordinarySlots.length,
+            frameFailures,
+            rowBaselineFailures,
+            gridEdgeSpread,
+            meetsControlFrameTolerance: ordinarySlots.length > 0 && frameFailures.length === 0,
+            meetsRowBaselineTolerance: rowBaselineFailures.length === 0,
+            meetsGridEdgeTolerance: gridEdges.length > 0 && gridEdgeSpread.left <= 1 && gridEdgeSpread.right <= 1,
+          };
+        });
+        const guideLines = await page.evaluate((evidence) => {
+          document.querySelector('[data-field-alignment-guide-overlay]')?.remove();
+          const overlay = document.createElement('div');
+          overlay.dataset.fieldAlignmentGuideOverlay = 'true';
+          overlay.setAttribute('aria-hidden', 'true');
+          overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483647;pointer-events:none;overflow:hidden';
+          const lines = [];
+          const addLine = (x, color, label) => {
+            if (!Number.isFinite(x) || x < 0 || x > window.innerWidth) return;
+            const line = document.createElement('i');
+            line.style.cssText = `position:absolute;left:${x}px;top:0;bottom:0;width:1px;background:${color};opacity:.88`;
+            line.title = label;
+            overlay.appendChild(line);
+            lines.push({ x, color, label });
+          };
+          const distinct = (values) => [...new Set(values.map((value) => Number(value.toFixed(1))))];
+          distinct(evidence.fields.filter((field) => field.eligible && field.slotRect).flatMap((field) => [field.slotRect.left, field.slotRect.right]))
+            .forEach((x) => addLine(x, '#1677ff', 'field-slot'));
+          distinct(evidence.fields.filter((field) => field.eligible && field.frameRect).flatMap((field) => [field.frameRect.left, field.frameRect.right]))
+            .forEach((x) => addLine(x, '#ef4444', 'visible-control-frame'));
+          document.body.appendChild(overlay);
+          return lines;
+        }, fieldAlignmentEvidence);
+        await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-alignment-guides.png`), fullPage: false });
+        await page.evaluate(() => document.querySelector('[data-field-alignment-guide-overlay]')?.remove());
+        fieldAlignmentEvidence.guideLines = guideLines;
+        fieldAlignmentEvidence.pass = target.expectFieldAlignment !== true || (
+          fieldAlignmentEvidence.meetsControlFrameTolerance
+          && fieldAlignmentEvidence.meetsRowBaselineTolerance
+          && (target.expectCrossGroupGridAlignment !== true || fieldAlignmentEvidence.meetsGridEdgeTolerance)
+        );
+      }
       if (target.exerciseBusinessConfigExperience === true) {
         const changeSetPanel = page.locator('[data-business-config-change-set="v1"]:visible');
         const initialChangeSetState = String(await changeSetPanel.getAttribute('data-change-set-state') || '');
@@ -1982,7 +2498,12 @@ try {
           }
         }
         if (!searchMore) throw new Error(`${target.name}: no visible relation field declares search-more capability`);
+        const relationListResponsePromise = page.waitForResponse(isApiDataListResponse, { timeout: 45000 });
         await searchMore.click();
+        const relationListResponse = await relationListResponsePromise;
+        const relationListRequestBody = JSON.parse(relationListResponse.request().postData() || '{}');
+        const relationListPayload = await relationListResponse.json();
+        const relationListSummary = summarizeApiDataListResponse(relationListPayload);
         const dialog = page.locator('[data-professional-relation-lifecycle="search"]:visible');
         await dialog.waitFor({ state: 'visible', timeout: 15000 });
         const panel = page.locator('.relation-dialog:visible');
@@ -2009,17 +2530,41 @@ try {
         const listboxCount = await dialog.locator('[role="listbox"]:visible').count();
         const searchInputCount = await dialog.locator('[data-semantic-component="ScInput"] input[type="search"]:visible').count();
         const primaryCount = await dialog.locator('.relation-dialog-footer .sc-btn-primary:visible:not(:disabled)').count();
+        const primaryDisabledCount = await dialog.locator('.relation-dialog-footer .sc-btn-primary:visible:disabled').count();
+        const emptyStateCount = await dialog.locator('[data-semantic-component="ScEmptyState"]:visible').count();
         const footerActionLabels = await dialog.locator('.relation-dialog-footer-actions button:visible').allTextContents();
+        const expectEmptyDataPrerequisite = target.expectRelationSearchEmptyDataPrerequisite === true;
+        const relationRequest = {
+          intent: String(relationListRequestBody.intent || ''),
+          op: String(relationListRequestBody?.params?.op || ''),
+          model: String(relationListRequestBody?.params?.model || ''),
+          domain: Array.isArray(relationListRequestBody?.params?.domain) ? relationListRequestBody.params.domain : [],
+          searchTerm: String(relationListRequestBody?.params?.search_term || ''),
+          fields: Array.isArray(relationListRequestBody?.params?.fields) ? relationListRequestBody.params.fields : [],
+          limit: Number(relationListRequestBody?.params?.limit || 0),
+        };
+        const populatedPass = resultCount > 0
+          && resultLayouts.every((item) => item.recordId && item.role === 'option' && item.tabIndex === '0')
+          && keyboardSelected === 'true'
+          && primaryCount === 1;
+        const emptyPrerequisitePass = resultCount === 0
+          && relationListSummary.recordCount === 0
+          && emptyStateCount > 0
+          && primaryCount === 0
+          && primaryDisabledCount === 1;
         relationSearchDialogEvidence = {
-          resultCount, resultLayouts, keyboardSelected, listboxCount, searchInputCount, primaryCount,
+          resultCount, resultLayouts, keyboardSelected, listboxCount, searchInputCount, primaryCount, primaryDisabledCount,
+          emptyStateCount, expectEmptyDataPrerequisite, relationRequest,
+          relationResponse: { status: relationListResponse.status(), ok: relationListResponse.ok(), ...relationListSummary },
           footerActionLabels: footerActionLabels.map((label) => label.replace(/\s+/g, ' ').trim()),
           width: Math.round(dialogBox?.width || 0),
-          pass: resultCount > 0
-            && resultLayouts.every((item) => item.recordId && item.role === 'option' && item.tabIndex === '0')
-            && keyboardSelected === 'true'
+          pass: relationListResponse.ok()
+            && relationRequest.intent === 'api.data'
+            && relationRequest.op === 'list'
+            && relationRequest.model.length > 0
             && listboxCount === 1
             && searchInputCount === 1
-            && primaryCount === 1
+            && (expectEmptyDataPrerequisite ? emptyPrerequisitePass : populatedPass)
             && (viewport.name !== 'desktop' || Number(dialogBox?.width || 0) >= 800)
             && Number(dialogBox?.width || 0) <= viewport.width,
         };
@@ -2602,11 +3147,14 @@ try {
       }
       let collectionSearchEvidence = null;
       if (target.exerciseCollectionSearchCycle === true && (target.collectionSearchDesktopOnly !== true || viewport.name === 'desktop')) {
-        const queryBar = page.locator('[data-semantic-component="ProductListHeader"]:visible, [data-semantic-component="CollectionActionToolbar"]:visible').first();
-        const searchForm = queryBar.locator('form[role="search"]');
-        const searchOwner = await searchForm.count() === 1 ? searchForm : queryBar;
-        const searchInput = searchOwner.locator('input[type="search"]');
-        if (await queryBar.count() !== 1 || await searchInput.count() !== 1) throw new Error(`${target.name}: collection search control is missing`);
+        const queryBars = page.locator('[data-semantic-component="ProductListHeader"]:visible, [data-semantic-component="CollectionActionToolbar"]:visible');
+        const searchInputs = queryBars.locator('input[type="search"]:visible');
+        const queryBarCount = await queryBars.count();
+        const searchInputCount = await searchInputs.count();
+        if (searchInputCount !== 1) throw new Error(`${target.name}: collection search control identity mismatch ${JSON.stringify({ queryBarCount, searchInputCount })}`);
+        const searchInput = searchInputs.first();
+        const searchOwner = searchInput.locator("xpath=ancestor::*[@data-semantic-component='CollectionActionToolbar' or @data-semantic-component='ProductListHeader'][1]");
+        if (await searchOwner.count() !== 1) throw new Error(`${target.name}: collection search owner is missing`);
         const footer = page.locator('[data-semantic-component="CollectionPaginationFooter"]:visible').last();
         const totalBefore = String(await footer.textContent() || '').replace(/\s+/g, ' ').trim();
         const noMatchQuery = String(target.noMatchQuery || '__codex_no_matching_record__');
@@ -2802,7 +3350,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, safeReturnEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, systemThemeRuntimeEvidence, safeReturnEvidence, formStructureEvidence, fieldAlignmentEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -2824,6 +3372,12 @@ for (const item of report.routes) {
   }
   if (item.path && item.overlayResidueEvidence && !item.overlayResidueEvidence.pass) {
     failures.push({ name: item.name, overlayResidueEvidence: item.overlayResidueEvidence });
+  }
+  if (item.path && configuredTarget?.captureFormStructure === true && !item.formStructureEvidence?.pass) {
+    failures.push({ name: item.name, formStructureEvidence: item.formStructureEvidence || null });
+  }
+  if (item.path && configuredTarget?.captureFieldAlignment === true && !item.fieldAlignmentEvidence?.pass) {
+    failures.push({ name: item.name, fieldAlignmentEvidence: item.fieldAlignmentEvidence || null });
   }
   if (item.path && item.homePresentationEvidence && !item.homePresentationEvidence.pass) {
     failures.push({ name: item.name, homePresentationEvidence: item.homePresentationEvidence });
@@ -2895,6 +3449,7 @@ for (const item of report.routes) {
   if (item.collectionMobileRecordEvidence && !item.collectionMobileRecordEvidence.pass) failures.push({ name: item.name, collectionMobileRecordEvidence: item.collectionMobileRecordEvidence });
   if (item.collectionKanbanEvidence && !item.collectionKanbanEvidence.pass) failures.push({ name: item.name, collectionKanbanEvidence: item.collectionKanbanEvidence });
   if (item.relationSearchDialogEvidence && !item.relationSearchDialogEvidence.pass) failures.push({ name: item.name, relationSearchDialogEvidence: item.relationSearchDialogEvidence });
+  if (item.systemThemeRuntimeEvidence && !item.systemThemeRuntimeEvidence.pass) failures.push({ name: item.name, systemThemeRuntimeEvidence: item.systemThemeRuntimeEvidence });
   if (item.formValidationEvidence && !item.formValidationEvidence.pass) failures.push({ name: item.name, formValidationEvidence: item.formValidationEvidence });
   if (item.detailCollectionEvidence && !item.detailCollectionEvidence.pass) failures.push({ name: item.name, detailCollectionEvidence: item.detailCollectionEvidence });
   if (item.collectionAggregateEvidence && !item.collectionAggregateEvidence.pass) failures.push({ name: item.name, collectionAggregateEvidence: item.collectionAggregateEvidence });

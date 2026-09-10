@@ -274,16 +274,25 @@ function fieldHasAttachmentCapability(field: CanonicalFormNode['fields'][number]
   const config = field.componentConfig;
   const descriptor = field.fieldDescriptor;
   const tokens = [
-    field.componentKey,
+    field.componentResolution.componentKey,
+    field.componentResolution.renderer,
+    field.componentResolution.contractAdapter,
     config.widget, config.widgetType, config.widget_type,
     descriptor.widget, descriptor.widgetType, descriptor.widget_type,
   ].map((value) => String(value || '').trim().toLowerCase());
+  const relation = String(descriptor.relation || '').trim().toLowerCase();
   return field.semanticRole === 'activity'
-    || tokens.some((value) => value === 'many2many_binary' || value === 'attachment');
+    || relation === 'ir.attachment'
+    || tokens.some((value) => value === 'many2many_binary' || value.includes('attachment'));
 }
 
 function fieldHasBusinessRelationCapability(field: CanonicalFormNode['fields'][number]): boolean {
   return fieldHasRelationCapability(field) && !fieldHasAttachmentCapability(field);
+}
+
+export function fieldIsBusinessRelationCollection(field: CanonicalFormNode['fields'][number]): boolean {
+  return ['one2many', 'many2many'].includes(field.fieldType.trim().toLowerCase())
+    && !fieldHasAttachmentCapability(field);
 }
 
 function fieldIsDecisionMoney(field: CanonicalFormNode['fields'][number]): boolean {

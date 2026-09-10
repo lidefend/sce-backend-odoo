@@ -39,6 +39,10 @@ export type FormSectionFieldSchema = {
   componentFallback?: string | null;
   presentationMode?: CanonicalFormPresentationMode;
   renderProfile?: CanonicalFormRenderMode;
+  semanticRole?: string;
+  sectionNavigationTarget?: string;
+  sectionContentKind?: string;
+  sectionSourceIdentity?: string;
   required: boolean;
   readonly: boolean;
   auth?: string;

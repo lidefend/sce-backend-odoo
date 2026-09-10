@@ -2,7 +2,7 @@
 <template>
   <LayoutShell
     :content-layout="recordContentLayoutMode"
-    :class="['sc-page', { 'contract-form-native-shell': useNativeFormTree }]"
+    :class="['sc-page', 'sc-product-workspace-stack', { 'contract-form-native-shell': useNativeFormTree }]"
     data-product-page-mode="form" data-semantic-component="ContractFormPage"
     :data-state="status"
     :data-form-model="model"

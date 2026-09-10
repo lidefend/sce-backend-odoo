@@ -14,7 +14,10 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     sc_select = read_text("frontend/apps/web/src/components/design-system/ScSelect.vue")
     relation_types = read_text("frontend/apps/web/src/components/template/relationField.types.ts")
     relation_utils = read_text("frontend/apps/web/src/pages/contractForm/one2manyUtils.ts")
-    relation_runtime = read_text("frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts")
+    relation_runtime = "\n".join((
+        read_text("frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts"),
+        read_text("frontend/apps/web/src/pages/contractForm/one2manyColumnOptionsRuntime.ts"),
+    ))
     relation_query = read_text("frontend/apps/web/src/components/template/one2manyRelationQuery.ts")
     relation_descriptor = read_text("frontend/apps/web/src/pages/contractForm/relationDescriptor.ts")
     action_presentation = read_text("frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts")
@@ -35,11 +38,14 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     if '"componentKey": "sc.relation.table"' not in example or '"sc.relation.table": {' not in example:
         failures.append("nested form relation example does not document formal sc.relation.table authority")
     for marker in (
-        'data-professional-field-family="detail-collection"', ':data-row-count', ':data-column-count',
+        'data-semantic-component="ProfessionalDetailCollectionControl"', 'data-professional-field-family="detail-collection"', ':data-row-count', ':data-column-count',
         ':data-can-create', ':data-can-inline-edit', ':data-removed-row-count', ':data-validation-visible', ':data-summary-present',
     ):
         if marker not in component:
             failures.append(f"professional detail collection missing marker {marker}")
+    for marker in ("data-detail-collection-heading", "data-detail-collection-title", "data-detail-collection-count", "data-detail-collection-actions", "data-detail-collection-content"):
+        if marker not in renderer:
+            failures.append(f"detail collection hierarchy missing {marker}")
     if "usesProfessionalOne2many(field) && relationAdapter" not in section:
         failures.append("FormSection does not route one2many through the detail collection adapter")
     if '!detailCollectionOwnsVisibleTitle(field)' not in section:
@@ -52,7 +58,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection bypasses the governed x2many runtime")
     if "data-detail-collection-pagination" not in renderer or "one2manyPageSize = 20" not in renderer:
         failures.append("detail collection pagination is not bounded and explicit")
-    if "ellipsis: false" not in renderer:
+    if "ellipsis: false" not in renderer or "ellipsis: true" in renderer:
         failures.append("detail collection editable controls are wrapped by TDesign text ellipsis")
     if "return one2manyRows.value.reduce" not in renderer:
         failures.append("detail collection amount total is not authoritative across every visible row")

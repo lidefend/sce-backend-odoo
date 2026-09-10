@@ -3,6 +3,7 @@ export {
   TDesignBadge,
   TDesignButton,
   TDesignCheckbox,
+  TDesignConfigProvider,
   TDesignRadioGroup,
   TDesignRadio,
   TDesignDropdown,
@@ -52,4 +53,4 @@ export {
   TDesignTooltip,
   TDesignUpload,
 } from '@sc/ui/primitives';
-export type { TDesignTableRowAttributes, TDesignTableRowData } from '@sc/ui/primitives';
+export type { TDesignGlobalConfigProvider, TDesignTableRowAttributes, TDesignTableRowData } from '@sc/ui/primitives';

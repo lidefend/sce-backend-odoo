@@ -291,6 +291,9 @@ function canonicalButtonVariant(action: CanonicalFormAction): 'primary' | 'ghost
 </script>
 
 <style scoped>
+.meta { margin: 1px 0; color: var(--sc-semantic-text-muted); font-size: 12px; }
+.header-status-item { margin: 0; color: var(--sc-semantic-text-muted); font-size: 12px; line-height: 1.3; }
+.header-status-item--danger { color: var(--sc-app-warning-text); }
 .record-header-status { display: flex; align-items: center; justify-content: flex-end; gap: 10px; min-width: 0; }
 .record-header-context { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-height: 30px; color: var(--sc-app-text-secondary); font-size: 12px; white-space: nowrap; }
 .record-header-context strong { padding: 4px 8px; border: 1px solid var(--sc-app-border); border-radius: 999px; background: var(--sc-app-panel-muted); color: var(--sc-app-text-primary); font-size: 12px; }

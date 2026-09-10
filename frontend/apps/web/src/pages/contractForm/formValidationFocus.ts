@@ -5,6 +5,10 @@ function isVisible(element: HTMLElement) {
   return style.display !== 'none' && style.visibility !== 'hidden' && element.getClientRects().length > 0;
 }
 
+function isNativeDisabled(element: HTMLElement) {
+  return 'disabled' in element && Boolean((element as HTMLInputElement).disabled);
+}
+
 function revealDisclosureAncestors(element: HTMLElement) {
   let parent = element.parentElement;
   while (parent) {
@@ -31,9 +35,11 @@ export function focusProductFormValidationError(fieldName: string, fields: Valid
     const controls = container.matches('input, select, textarea, button, [tabindex]')
       ? [container]
       : Array.from(container.querySelectorAll<HTMLElement>('input, select, textarea, button, [tabindex]'));
-    const control = controls.find(isVisible);
-    if (!control || !isVisible(container)) continue;
-    control.focus({ preventScroll: true });
+    if (!isVisible(container)) continue;
+    const control = controls.find((candidate) => isVisible(candidate) && !isNativeDisabled(candidate));
+    const focusTarget = control || container;
+    if (focusTarget === container && !container.hasAttribute('tabindex')) container.setAttribute('tabindex', '-1');
+    focusTarget.focus({ preventScroll: true });
     container.scrollIntoView({ block: 'nearest', behavior: 'auto' });
     return;
   }

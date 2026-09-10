@@ -7,11 +7,15 @@
         :class="containerClass(node)"
         :data-group-title="containerPolicyTitle(node, index)"
         :data-section-navigation-role="nativeSectionNavigationRole(node)"
+        :data-form-semantic-role="semanticFormRole(node) || undefined"
+        :data-form-section-target="sectionNavigationTarget(node) || undefined"
+        :data-section-content-kind="sectionContentKind(node) || undefined"
+        :data-section-source-identity="sectionSourceIdentity(node) || undefined"
         @dragover.prevent
         @drop.prevent.stop="emitGroupFieldOrderDrop(node, $event, index)"
         @mouseup.self="emitGroupFieldOrderPointerDrop(node, index)"
       >
-        <header v-if="containerTitle(node)" class="native-container-head">
+        <header v-if="semanticSectionTitle(node) || containerTitle(node)" class="native-container-head">
           <ScInput
             v-if="fieldConfigEditable && isEditableGroupNode(node)"
             class="native-container-title-editor"
@@ -22,7 +26,7 @@
             @change="emitGroupRename(node, $event)"
             @keydown.enter.prevent="emitGroupRename(node, ($event.target as HTMLInputElement).value)"
           />
-          <h3 v-else>{{ containerTitle(node) }}</h3>
+          <h3 v-else>{{ semanticSectionTitle(node) || containerTitle(node) }}</h3>
         </header>
         <div
           v-else-if="fieldOrderEditable && nodeType(node) === 'group'"
@@ -73,6 +77,7 @@
               :selected-field-key="selectedFieldKey"
               :prefer-readonly-facts="preferReadonlyFacts"
               :columns="nodeColumns(node)"
+              :inherited-semantic-role="semanticFormRole(node)"
               @field-change="emit('field-change', $event)"
               @field-action="emit('field-action', $event)"
               @field-order-move="emit('field-order-move', $event)"
@@ -146,6 +151,7 @@
             :selected-field-key="selectedFieldKey"
             :prefer-readonly-facts="preferReadonlyFacts"
             :columns="nodeColumns(node)"
+            :inherited-semantic-role="semanticFormRole(node)"
             @field-change="emit('field-change', $event)"
             @field-action="emit('field-action', $event)"
             @field-order-move="emit('field-order-move', $event)"
@@ -176,6 +182,7 @@
             v-if="fieldSchemasForNodes(fieldChildren(node)).length"
             :title="fieldSectionTitle(node)"
             :columns="nodeColumns(node)"
+            :inherited-semantic-role="semanticFormRole(node)"
             :fields="fieldSchemasForNodes(fieldChildren(node))"
             :relation-adapter="relationAdapter"
             :field-actions="fieldActions"
@@ -189,6 +196,7 @@
             :field-selection-mode="fieldSelectionMode"
             :selected-field-key="selectedFieldKey"
             :prefer-readonly-facts="preferReadonlyFacts"
+            :fill-orphan-rows="false"
             :field-group-title="containerPolicyTitle(node, index)"
             tone="core"
             @field-change="emit('field-change', $event)"
@@ -316,6 +324,7 @@
         :field-selection-mode="fieldSelectionMode"
         :selected-field-key="selectedFieldKey"
         :prefer-readonly-facts="preferReadonlyFacts"
+        :fill-orphan-rows="false"
         tone="core"
         @field-change="emit('field-change', $event)"
         @field-action="emit('field-action', $event)"
@@ -458,6 +467,7 @@ const props = withDefaults(defineProps<{
   fieldSelectionMode?: boolean;
   selectedFieldKey?: string;
   preferReadonlyFacts?: boolean;
+  inheritedSemanticRole?: string;
   columns?: 1 | 2 | 3;
 }>(), {
   columns: 2,
@@ -550,6 +560,39 @@ function containerTitle(node: NativeFormLayoutNode) {
   const lowered = raw.toLowerCase();
   if (structural.has(lowered) || lowered === type) return '';
   return raw;
+}
+
+function semanticFormRole(node: NativeFormLayoutNode) {
+  const direct = String(node?.attributes?.semanticFormRole || '').trim().toLowerCase();
+  if (direct) return direct;
+  const descendantRoles = [...new Set(rawChildren(node).map(semanticFormRole).filter(Boolean))];
+  return descendantRoles.length === 1 ? descendantRoles[0] : '';
+}
+
+function sectionNavigationTarget(node: NativeFormLayoutNode) {
+  return String(node?.attributes?.sectionNavigationTarget || '').trim();
+}
+
+function sectionContentKind(node: NativeFormLayoutNode) {
+  return String(node?.attributes?.sectionContentKind || '').trim();
+}
+
+function sectionSourceIdentity(node: NativeFormLayoutNode) {
+  return String(node?.attributes?.sectionSourceIdentity || '').trim();
+}
+
+function semanticSectionTitle(node: NativeFormLayoutNode) {
+  if (props.fieldConfigEditable) return '';
+  if (semanticFormRole(node) === String(props.inheritedSemanticRole || '').trim().toLowerCase()) return '';
+  return ({
+    summary: '概览',
+    task: '办理信息',
+    context: '基本资料',
+    risk: '风险与提示',
+    relation: '关系明细',
+    activity: '协作记录',
+    audit: '历史审计',
+  } as Record<string, string>)[semanticFormRole(node)] || '';
 }
 
 function isReadablePolicyTitle(value: unknown) {

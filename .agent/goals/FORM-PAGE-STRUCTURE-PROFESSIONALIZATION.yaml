@@ -1,0 +1,59 @@
+goal:
+  id: FORM-PAGE-STRUCTURE-PROFESSIONALIZATION
+  title: shared_form_structure_and_reading_hierarchy_closure
+  status: verified
+  objective: professionalize_shared_contract_form_structure_without_business_semantic_inference
+  baseline:
+    branch: feature/form-page-structure-professionalization-v1
+    full_sha: 3c3c7bdef2dac3dfdfa06488c7e731ce1e565ce9
+    source: origin/main
+    fingerprint: 7e851d79b087fe43e4d5306608ed4fd4ef6ef373cd8970d4668d8c2aa7529f50
+  product_boundary:
+    formal_product_layer: P0
+    supporting_layer: P4
+    layer_target: frontend_generic_form_renderer
+    module: frontend/apps/web
+    standard_vs_user_specific: platform_mechanism
+    why_here: form_floorplan_roles_and_responsive_rendering_are_shared_frontend_capabilities
+    why_not_elsewhere:
+      - no_construction_or_customer_business_semantics
+      - no_contract_or_permission_change
+      - no_model_or_field_name_importance_inference
+      - no_runtime_configuration_or_ops_authority
+    blast_radius:
+      - contract_driven_task_forms
+      - readonly_and_editable_relation_details
+      - sticky_form_header
+      - attachment_presentation_labels_only
+  scope:
+    include:
+      - role_based_form_sections_and_navigation
+      - readonly_desktop_detail_comparison
+      - mobile_titled_detail_cards
+      - lightweight_auxiliary_disclosures
+      - sticky_header_occlusion_fix
+      - record_and_collaboration_attachment_clarity
+    exclude:
+      - original_backend_group_title_restoration
+      - field_contract_permission_or_action_changes
+      - business_value_or_amount_definition_changes
+      - database_fixture_acceptance_or_release_mutation
+  acceptance:
+    - non_zero_targeted_static_and_component_tests
+    - governed_local_dev_readonly_browser_matrix
+    - widths_1440_1088_390_320
+    - material_create_detail_entry_visible_on_desktop_first_view
+    - no_header_content_overlap
+    - zero_business_writes
+  rollback:
+    - shared_renderer_commit_can_be_reverted_without_contract_or_database_rollback
+  result:
+    final_head: f1943462e6640224c4bac867edf0b5e167495be3
+    product_head: 383aaaa2
+    quick_gate: passed
+    browser_matrix:
+      - artifacts/playwright/form-structure-final-exact-f1943462-1440-390/summary.json
+      - artifacts/playwright/form-structure-final-exact-f1943462-1088-320/summary.json
+    business_mutation_count: 0
+    hidden_backend_chapter_titles_preserved: true
+    contract_schema_route_or_public_intent_changed: false

@@ -6,6 +6,10 @@
     :data-state="uploading ? 'loading' : enabled ? 'ready' : 'fail-closed'"
     :data-attachment-readiness="enabled ? 'ready' : 'fail_closed'"
   >
+    <header class="professional-attachment-heading">
+      <strong>协作附件</strong>
+      <span>随沟通与协作记录上传的资料</span>
+    </header>
     <section
       v-if="editable && enabled"
       class="native-attachment-tools"
@@ -100,3 +104,8 @@ function formatFileSize(bytes: number): string {
 </script>
 
 <style scoped src="./NativeCollaborationPanel.css"></style>
+<style scoped>
+.professional-attachment-heading { display: grid; gap: 2px; margin-top: 10px; }
+.professional-attachment-heading strong { color: var(--sc-app-text-primary); font-size: 13px; }
+.professional-attachment-heading span { color: var(--sc-app-text-secondary); font-size: 12px; }
+</style>

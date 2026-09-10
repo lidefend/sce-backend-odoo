@@ -9,11 +9,20 @@
     data-object-task-page
     data-canonical-form-zones
   >
+    <FormSectionNavigation
+      v-if="sectionLinks.length > 1"
+      :items="sectionLinks"
+      root-selector="[data-object-task-page]"
+    />
     <ScCard
       v-if="summaryNodes.length"
       class="object-task-page__summary"
       aria-label="关键业务摘要"
       data-floorplan-region="summary"
+      data-form-section-target="floorplan:summary"
+      data-section-content-kind="semantic-section"
+      data-section-source-identity="floorplan:summary"
+      data-section-title="概览"
       data-canonical-zone="primary"
       :bordered="true"
       appearance="summary"
@@ -35,6 +44,11 @@
       class="object-task-page__decision-input"
       aria-label="关键办理金额"
       data-floorplan-region="decision-input"
+      data-form-section-target="floorplan:decision-input"
+      data-section-content-kind="semantic-section"
+      data-section-source-identity="floorplan:decision-input"
+      data-section-title="关键金额"
+      title="关键金额"
       data-canonical-zone="primary"
       :bordered="true"
       appearance="task-section"
@@ -52,11 +66,16 @@
     <ScCard
       v-if="decisionMode && (taskNodes.length || riskNodes.length || $slots.actions || $slots.blocking)"
       class="object-task-page__current-task"
-      aria-label="当前任务"
+      aria-label="办理提示"
       data-floorplan-region="current-task"
-      title="当前任务"
+      data-form-section-target="floorplan:current-task"
+      data-section-content-kind="semantic-section"
+      data-section-source-identity="floorplan:current-task"
+      data-section-title="办理提示"
+      title="办理提示"
       :bordered="true"
       appearance="task"
+      body-class-name="object-task-page__current-task-body"
     >
       <div class="object-task-page__current-task-copy">
         <slot name="blocking" />
@@ -92,8 +111,13 @@
     <ScCard
       v-if="coreInputNodes.length"
       class="object-task-page__core-input"
-      aria-label="核心申请信息"
+      aria-label="基本信息"
       data-floorplan-region="core-input"
+      data-form-section-target="floorplan:core-input"
+      data-section-content-kind="semantic-section"
+      data-section-source-identity="floorplan:core-input"
+      data-section-title="基本信息"
+      title="基本信息"
       data-canonical-zone="primary"
       :bordered="true"
       appearance="task-section"
@@ -113,6 +137,7 @@
       class="object-task-page__condition-input"
       aria-label="当前办理条件"
       data-floorplan-region="condition-input"
+      data-section-title="办理条件"
       data-canonical-zone="primary"
       title="当前办理条件"
       :bordered="true"
@@ -133,6 +158,7 @@
       class="object-task-page__pre-execution-input"
       :aria-label="preExecutionInputTitle"
       data-floorplan-region="pre-execution-input"
+      :data-section-title="preExecutionInputTitle"
       data-canonical-zone="primary"
       :title="preExecutionInputTitle"
       :bordered="true"
@@ -148,22 +174,6 @@
           @field-action="emit('field-action', $event)"
       />
     </ScCard>
-    <ScDisclosure
-      v-if="supplementaryInputNodes.length"
-      class="object-task-page__supplementary-input"
-      data-floorplan-region="supplementary-input"
-      title="补充信息"
-    >
-      <CanonicalFormNodeRenderer
-        v-for="node in supplementaryInputNodes"
-        :key="node.nodeId"
-        :node="node"
-        :relation-adapter="relationAdapter"
-        prefer-readonly-facts
-        @field-change="emit('field-change', $event)"
-          @field-action="emit('field-action', $event)"
-      />
-    </ScDisclosure>
     <slot v-if="!decisionMode" name="blocking" />
     <section
       v-if="!decisionMode && riskNodes.length"
@@ -201,6 +211,11 @@
         class="object-task-page__context"
         aria-label="业务上下文"
         data-floorplan-region="business-context"
+        data-form-section-target="floorplan:business-context"
+        data-section-content-kind="semantic-section"
+        data-section-source-identity="floorplan:business-context"
+        data-section-title="基本资料"
+        title="基本资料"
         data-canonical-zone="primary"
         :bordered="true"
         appearance="context"
@@ -216,31 +231,14 @@
         />
       </ScCard>
     </div>
-    <ScDisclosure
-      v-if="overflowContextNodes.length"
-      class="object-task-page__overflow-context"
-      data-floorplan-region="overflow-context"
-      title="更多业务信息"
-    >
-      <CanonicalFormNodeRenderer
-        v-for="node in overflowContextNodes"
-        :key="node.nodeId"
-        :node="node"
-        :relation-adapter="relationAdapter"
-        prefer-readonly-facts
-        @field-change="emit('field-change', $event)"
-          @field-action="emit('field-action', $event)"
-      />
-    </ScDisclosure>
-    <ScCard
+    <section
       v-if="presentableRelationNodes.length"
       class="object-task-page__relation"
       role="region"
       aria-label="关系明细"
       data-floorplan-region="relation"
+      data-section-title="关系明细"
       data-canonical-zone="primary"
-      :bordered="true"
-      appearance="relation"
     >
       <CanonicalFormNodeRenderer
         v-for="node in presentableRelationNodes"
@@ -251,12 +249,56 @@
         @field-change="emit('field-change', $event)"
           @field-action="emit('field-action', $event)"
       />
-    </ScCard>
+    </section>
+    <ScDisclosure
+      v-if="supplementaryInputNodes.length"
+      class="object-task-page__supplementary-input"
+      data-floorplan-region="supplementary-input"
+      data-form-section-target="floorplan:supplementary-input"
+      data-section-content-kind="semantic-section"
+      data-section-source-identity="floorplan:supplementary-input"
+      data-section-title="补充信息"
+      title="补充信息"
+    >
+      <CanonicalFormNodeRenderer
+        v-for="node in supplementaryInputNodes"
+        :key="node.nodeId"
+        :node="node"
+        :relation-adapter="relationAdapter"
+        prefer-readonly-facts
+        @field-change="emit('field-change', $event)"
+        @field-action="emit('field-action', $event)"
+      />
+    </ScDisclosure>
+    <ScDisclosure
+      v-if="overflowContextNodes.length"
+      class="object-task-page__overflow-context"
+      data-floorplan-region="overflow-context"
+      data-form-section-target="floorplan:overflow-context"
+      data-section-content-kind="semantic-section"
+      data-section-source-identity="floorplan:overflow-context"
+      data-section-title="更多信息"
+      title="更多业务信息"
+    >
+      <CanonicalFormNodeRenderer
+        v-for="node in overflowContextNodes"
+        :key="node.nodeId"
+        :node="node"
+        :relation-adapter="relationAdapter"
+        prefer-readonly-facts
+        @field-change="emit('field-change', $event)"
+        @field-action="emit('field-action', $event)"
+      />
+    </ScDisclosure>
     <section
       v-if="subordinateNodes.length"
       class="object-task-page__subordinate"
       aria-label="附件与从属信息"
       data-floorplan-region="subordinate"
+      data-form-section-target="floorplan:subordinate"
+      data-section-content-kind="semantic-section"
+      data-section-source-identity="floorplan:subordinate"
+      data-section-title="附件与辅助信息"
       data-canonical-zone="subordinate"
     >
       <CanonicalFormNodeRenderer
@@ -274,6 +316,10 @@
       class="object-task-page__activity"
       aria-label="活动"
       data-floorplan-region="activity"
+      data-form-section-target="surface:activity"
+      data-section-content-kind="collaboration-panel"
+      data-section-source-identity="collaboration-panel"
+      data-section-title="协作记录"
       data-canonical-zone="subordinate"
     ><slot name="collaboration" /></section>
     <section v-if="hasAudit || auditNodes.length || auditEvents.length" class="object-task-page__audit" data-floorplan-region="audit">
@@ -304,9 +350,14 @@ import type { FormSectionFieldActionPayload, FormSectionFieldChange } from '../.
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import CanonicalFormNodeRenderer from './CanonicalFormNodeRenderer.vue';
 import ProfessionalAuditTimeline from './ProfessionalAuditTimeline.vue';
+import FormSectionNavigation from './FormSectionNavigation.vue';
 import ScCard from '../../components/design-system/ScCard.vue';
 import ScDisclosure from '../../components/design-system/ScDisclosure.vue';
-import { canonicalNodeHasPresentableContent } from './canonicalFormRenderer';
+import { canonicalFieldHasPresentableValue, canonicalNodeHasPresentableContent } from './canonicalFormRenderer';
+import {
+  relationshipCollectionNavigationItems,
+  type WorkspaceSectionNavigationItem,
+} from './nativeSectionNavigation';
 
 const props = defineProps<{
   summaryNodes: CanonicalFormNode[];
@@ -333,6 +384,44 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange]; 'f
 const presentableRelationNodes = computed(() => props.relationNodes.filter((node) => (
   canonicalNodeHasPresentableContent(node, props.relationAdapter)
 )));
+function floorplanSection(
+  key: string,
+  label: string,
+  role: WorkspaceSectionNavigationItem['role'],
+): WorkspaceSectionNavigationItem {
+  const sourceIdentity = `floorplan:${key}`;
+  return {
+    key: sourceIdentity,
+    label,
+    selector: `[data-form-section-target="${sourceIdentity}"]`,
+    role,
+    contentKind: 'semantic-section',
+    sourceType: 'surface',
+    sourceIdentity,
+  };
+}
+const sectionLinks = computed(() => [
+  props.summaryNodes.length ? floorplanSection('summary', '概览', 'summary') : null,
+  props.decisionInputNodes.length ? floorplanSection('decision-input', '关键金额', 'summary') : null,
+  props.decisionMode && (props.taskNodes.length || props.riskNodes.length) ? floorplanSection('current-task', '办理提示', 'task') : null,
+  props.coreInputNodes.length ? floorplanSection('core-input', '基本信息', 'task') : null,
+  props.contextNodes.length ? floorplanSection('business-context', '基本资料', 'context') : null,
+  ...relationshipCollectionNavigationItems(
+    presentableRelationNodes.value,
+    (field) => canonicalFieldHasPresentableValue(field, props.relationAdapter),
+  ),
+  props.supplementaryInputNodes.length ? floorplanSection('supplementary-input', '补充信息', 'context') : null,
+  props.overflowContextNodes.length ? floorplanSection('overflow-context', '更多信息', 'context') : null,
+  props.subordinateNodes.length ? floorplanSection('subordinate', '附件与辅助信息', 'context') : null,
+  props.hasCollaboration ? {
+    key: 'surface:activity', label: '协作记录', selector: '[data-form-section-target="surface:activity"]', role: 'activity',
+    contentKind: 'collaboration-panel', sourceType: 'surface', sourceIdentity: 'collaboration-panel',
+  } satisfies WorkspaceSectionNavigationItem : null,
+  props.auditEvents.length ? {
+    key: 'surface:audit', label: '历史审计', selector: '[data-form-section-target="surface:audit"]', role: 'audit',
+    contentKind: 'audit-timeline', sourceType: 'surface', sourceIdentity: 'professional-audit-timeline',
+  } satisfies WorkspaceSectionNavigationItem : null,
+].filter((item): item is WorkspaceSectionNavigationItem => Boolean(item)));
 
 </script>
 
@@ -343,6 +432,10 @@ const presentableRelationNodes = computed(() => props.relationNodes.filter((node
   align-content: start;
   gap: 12px;
   min-width: 0;
+}
+.object-task-page [data-section-title],
+.object-task-page [data-form-section-target] {
+  scroll-margin-top: calc(var(--sc-form-command-bar-height, 72px) + 52px);
 }
 .object-task-page__body {
   display: grid;
@@ -394,6 +487,10 @@ const presentableRelationNodes = computed(() => props.relationNodes.filter((node
   border: 0;
   background: var(--sc-app-subtle-bg);
 }
+.object-task-page__relation {
+  padding-top: 10px;
+  border-top: 1px solid var(--sc-app-border);
+}
 .object-task-page__current-task,
 .object-task-page__context {
   border: 0;
@@ -411,12 +508,23 @@ const presentableRelationNodes = computed(() => props.relationNodes.filter((node
   border-radius: 0;
   background: transparent;
 }
+.object-task-page__summary-grid :deep([data-value-emphasis='monetary']) {
+  grid-column: span 2 !important;
+  background: var(--sc-app-panel);
+}
+.object-task-page__summary-grid :deep([data-value-emphasis='monetary'] .readonly-value),
+.object-task-page__summary-grid :deep([data-value-emphasis='monetary'] .contract-readonly-value) {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
 .object-task-page__summary-grid :deep(.canonical-form-node:last-child) { border-right:0; }
 .object-task-page__summary-grid > :deep(.canonical-form-node:nth-child(4n)) { border-right: 0; }
 .object-task-page__summary-grid > :deep(.canonical-form-node:nth-child(n + 5)) { border-top: 1px solid var(--sc-app-border); }
 .object-task-page__current-task {
   min-width: 0;
 }
+.object-task-page__current-task :deep(.object-task-page__current-task-body) { padding-block: 4px 10px; }
 .object-task-page__current-task-copy {
   display: grid;
   grid-auto-rows: max-content;
@@ -447,10 +555,9 @@ const presentableRelationNodes = computed(() => props.relationNodes.filter((node
   border-color: var(--sc-app-info-border);
 }
 .object-task-page__supplementary-input {
-  padding: 12px 16px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-product-radius-panel);
-  background: var(--sc-app-panel);
+  padding: 2px 0;
+  border-block: 1px solid var(--sc-app-border);
+  background: transparent;
 }
 .object-task-page__audit {
   padding: 12px 16px;
@@ -459,10 +566,9 @@ const presentableRelationNodes = computed(() => props.relationNodes.filter((node
   background: var(--sc-app-panel);
 }
 .object-task-page__overflow-context {
-  padding: 12px 16px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-product-radius-panel);
-  background: var(--sc-app-panel);
+  padding: 2px 0;
+  border-bottom: 1px solid var(--sc-app-border);
+  background: transparent;
 }
 .object-task-page__audit > summary { cursor: pointer; font-weight: 600; }
 .object-task-page__audit:not([open]) [data-audit-content] { display: none; }
@@ -527,8 +633,13 @@ const presentableRelationNodes = computed(() => props.relationNodes.filter((node
     padding: 10px;
   }
   .object-task-page__summary-grid :deep(.canonical-form-node) {
+    order: 1;
     padding: 10px;
     overflow-wrap: anywhere;
+  }
+  .object-task-page__summary-grid :deep([data-value-emphasis='monetary']) {
+    order: -1;
+    grid-column: 1 / -1 !important;
   }
   .object-task-page__current-task-actions {
     position: fixed;

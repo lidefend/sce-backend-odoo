@@ -31,6 +31,10 @@
           :data-contract-adapter="field.contractAdapter || undefined"
           :data-contract-component-version="field.contractVersion || undefined"
           :data-component-fallback="field.componentFallback || undefined"
+          :data-form-semantic-role="field.semanticRole || undefined"
+          :data-form-section-target="field.sectionNavigationTarget || undefined"
+          :data-section-content-kind="field.sectionContentKind || undefined"
+          :data-section-source-identity="field.sectionSourceIdentity || undefined"
           :tabindex="fieldSelectionMode ? 0 : undefined"
           :role="fieldSelectionMode ? 'button' : undefined"
           :aria-pressed="fieldSelectionMode ? selectedFieldKey === fieldIdentity(field) : undefined"
@@ -46,7 +50,7 @@
           @mouseup="emitFieldOrderPointerDrop(field, $event)"
         >
           <div class="field-label-row">
-            <label v-if="!fieldConfigEditable && !field.hideLabel && !detailCollectionOwnsVisibleTitle(field)" class="label" :for="fieldControlId(field)">
+            <label v-if="!fieldConfigEditable && !field.hideLabel && !detailCollectionOwnsVisibleTitle(field) && !attachmentControlOwnsVisibleTitle(field)" class="label" :for="fieldControlId(field)">
               {{ field.label }}
               <span v-if="field.required && !field.readonly" class="field-state field-state--required"><span aria-hidden="true">*</span><span class="sr-only">必填</span></span>
               <span v-else-if="field.readonly && !allFieldsReadonly" class="field-state">只读</span>
@@ -236,8 +240,11 @@
                     :step="monetaryInputStep(field.digits, field.currencyLabel)"
                     :placeholder="field.inputPlaceholder || inputPlaceholderText(field)"
                     @update:model-value="emitFieldChange(field, $event)"
-                  />
-                  <span v-if="field.currencyLabel" class="field-currency-label">{{ field.currencyLabel }}</span>
+                  >
+                    <template v-if="field.currencyLabel" #suffix>
+                      <span class="field-currency-label">{{ field.currencyLabel }}</span>
+                    </template>
+                  </ScInput>
                 </div>
               </template>
               <template v-else>
@@ -332,6 +339,7 @@ const props = withDefaults(defineProps<{
   selectPlaceholder?: (label: string) => string;
   inputPlaceholder?: (label: string) => string;
   preferReadonlyFacts?: boolean;
+  fillOrphanRows?: boolean;
 }>(), {
   hint: '',
   columns: 2,
@@ -352,6 +360,7 @@ const props = withDefaults(defineProps<{
   selectPlaceholder: (label: string) => resolveSelectPlaceholder(label),
   inputPlaceholder: (label: string) => resolveInputPlaceholder(label),
   preferReadonlyFacts: false,
+  fillOrphanRows: true,
 });
 
 const sceneUiKit = useOptionalSceneUiKit();
@@ -449,6 +458,11 @@ function detailCollectionOwnsVisibleTitle(field: FormSectionFieldSchema) {
   return usesProfessionalOne2many(field) || usesPaymentSettlementDetailCollection(field);
 }
 
+function attachmentControlOwnsVisibleTitle(field: FormSectionFieldSchema) {
+  const relation = (field as { descriptor?: { relation?: string } }).descriptor?.relation;
+  return usesProfessionalMany2many(field) && String(relation || '').trim().toLowerCase() === 'ir.attachment';
+}
+
 function usesSceneFieldControl(field: FormSectionFieldSchema) {
   if (isProfessionalRelationField(field) || isProfessionalDetailCollectionField(field) || isPaymentSettlementDetailCollectionField(field)) return false;
   return usesContractFormDriverField(field, sceneUiKit?.kit.value || 'sc-native');
@@ -519,6 +533,7 @@ function fieldSpanClass(field: FormSectionFieldSchema, index: number) {
     ? 'field--full'
     : 'field--normal');
   if (base === 'field--full') return base;
+  if (!props.fillOrphanRows) return base;
 
   // Orphan-column fill (TDesign 24 栅格系统): a normal/half-width field that
   // starts a new row alone leaves blank cells when its row has no pairing fields —
@@ -1151,6 +1166,10 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   column-gap: var(--sc-pattern-task-form-readonly-column-gap, 26px);
 }
 
+.template-form-section--readonly .field-control-row {
+  align-items: flex-start;
+}
+
 .template-form-section--readonly .field--readonly-empty-relation {
   grid-template-columns: minmax(150px, 220px) minmax(0, 1fr);
   align-items: center;
@@ -1238,9 +1257,9 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 .field-monetary-control {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
+  min-width: 0;
 }
 
 .field-currency-label {

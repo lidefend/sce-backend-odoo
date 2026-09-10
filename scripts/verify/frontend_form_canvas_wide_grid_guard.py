@@ -18,9 +18,16 @@ def fail(message: str) -> None:
 tokens = read("styles/design-system.css")
 patterns = read("styles/product-patterns.css")
 form_css = read("pages/contractForm/ContractFormPage.css")
+product_header = read("components/product-page-header/ProductPageHeader.vue")
 section = read("components/template/FormSection.vue")
 mapper = read("components/template/fieldSpan.mapper.ts")
 schema_builder = read("pages/contractForm/useRecordFormFieldSchemas.ts")
+object_task = read("pages/contractForm/ObjectTaskPage.vue")
+section_navigation = read("pages/contractForm/FormSectionNavigation.vue")
+native_driver = read("pages/contractForm/ContractFormDriverHost.vue")
+native_navigation_model = read("pages/contractForm/nativeSectionNavigation.ts")
+canonical_renderer = read("pages/contractForm/CanonicalFormNodeRenderer.vue")
+relations = read("components/template/X2ManyRelationRenderer.vue")
 
 combined = "\n".join((tokens, patterns, form_css))
 for forbidden in ("--sc-content-focused-form-max", "--sc-form-field-content-max"):
@@ -49,5 +56,85 @@ if "resolveFieldSpanClass({fieldType:" not in schema_builder:
 for forbidden in ("model ===", "role ===", "overflow-x: hidden", "overflow-x: clip"):
     if forbidden in section or forbidden in form_css:
         fail(f"forbidden form-layout inference or overflow masking: {forbidden}")
+
+for required in (
+    'data-form-section-navigation',
+    ":aria-current=\"activeKey === item.key ? 'location' : undefined\"",
+    '章节入口可横向滚动',
+    'target.scrollIntoView({ behavior: \'auto\', block: \'start\' })',
+):
+    if required not in section_navigation:
+        fail(f"shared semantic navigation missing: {required}")
+for required in (
+    'data-section-title="基本信息"',
+    'data-section-title="关系明细"',
+    "relationshipCollectionNavigationItems(",
+    "props.supplementaryInputNodes.length ? floorplanSection('supplementary-input'",
+    'data-form-section-target="surface:activity"',
+    "props.auditEvents.length ? {",
+    '<section\n      v-if="presentableRelationNodes.length"',
+):
+    if required not in object_task:
+        fail(f"semantic form structure missing: {required}")
+if 'FormSectionNavigation' not in object_task or 'FormSectionNavigation' not in native_driver:
+    fail("task and workspace forms do not share section navigation")
+if "field.semanticRole).forEach((field) => roles.add" in native_driver:
+    fail("workspace navigation still promotes field semantic roles to section identity")
+if "inferredSectionRole" in native_navigation_model:
+    fail("workspace navigation still infers section identity from descendant field roles")
+for required in (
+    "nativeBridge.value?.sectionLinks",
+    "workspaceSurfaceNavigationItems",
+    "auditAvailable: props.showCollaborationPanel === true && auditEvents.value.length > 0",
+    'data-form-section-target="surface:activity"',
+    'data-section-source-identity="collaboration-panel"',
+):
+    if required not in native_driver:
+        fail(f"workspace section identity projection missing: {required}")
+for required in (
+    'data-form-section-target="surface:audit"',
+    'data-section-source-identity="professional-audit-timeline"',
+):
+    if required not in read("pages/contractForm/ProfessionalAuditTimeline.vue"):
+        fail(f"audit section identity missing: {required}")
+for required in (
+    ":data-form-section-target=\"field.sectionNavigationTarget || undefined\"",
+    ":data-section-source-identity=\"field.sectionSourceIdentity || undefined\"",
+):
+    if required not in section:
+        fail(f"relation collection target projection missing: {required}")
+for required in (
+    ".sc-native-contract-page",
+    ".sc-form-driver-host,",
+    ".sc-native-contract-tree,",
+    "width: 100%;",
+    "max-width: 100%;",
+    "min-width: 0;",
+    "box-sizing: border-box;",
+):
+    if required not in native_driver:
+        fail(f"native form shrink chain missing: {required}")
+for required in (
+    ".form-section-navigation",
+    ".form-section-navigation__track",
+    "overflow-x: auto;",
+):
+    if required not in section_navigation:
+        fail(f"section navigation width ownership missing: {required}")
+if "overflow: hidden;" in section_navigation or "overflow-x: hidden;" in section_navigation:
+    fail("section navigation outer shell masks horizontal overflow")
+if ':fill-orphan-rows="false"' not in read("components/template/NativeFormTreeRenderer.vue"):
+    fail("native forms still stretch ordinary orphan fields across a full row")
+if object_task.index('data-floorplan-region="relation"') > object_task.index('data-floorplan-region="supplementary-input"'):
+    fail("relationship details are still placed after auxiliary disclosures")
+if "const sectionTitle = computed(() => '');" not in canonical_renderer or "const groupHeadingVisible = computed(() => false);" not in canonical_renderer:
+    fail("intentionally hidden backend group titles were restored")
+for required in ("readonlyO2mTableColumns", 'class="o2m-readonly-table"', 'class="o2m-readonly-list"'):
+    if required not in relations:
+        fail(f"responsive readonly detail structure missing: {required}")
+if "background: var(--sc-app-panel);" not in product_header or "isolation: isolate;" not in product_header:
+    fail("sticky form header is not an opaque isolated surface")
+if ":deep(.template-page-header" in form_css:
+    fail("form page bypasses shared header layout ownership")
 
 print("[frontend_form_canvas_wide_grid_guard] PASS")

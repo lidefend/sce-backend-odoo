@@ -19,9 +19,12 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     for marker in (
         'data-professional-field-family="base"', ":data-professional-field-type", ":data-control-kind",
         ":data-presentation-mode", ":data-render-profile", ":data-control-state", 'name="readonly"', "hasReadonlyOverride",
+        ":deep([data-semantic-component='ScDateField'])", "width: 100%;",
     ):
         if marker not in component:
             failures.append(f"professional base field missing marker {marker}")
+    if "padding-inline: calc(var(--sc-component-input-padding-x) * 1px);" in component:
+        failures.append("professional base field must not duplicate primitive inline padding on ScInput")
     if "<ProfessionalBaseFieldControl" not in section or "isProfessionalBaseFieldCandidate" not in section:
         failures.append("FormSection does not route through the professional base field family")
     if "ProfessionalBaseFieldControl" not in registry or "rendererByFieldType[fieldType]" not in registry:

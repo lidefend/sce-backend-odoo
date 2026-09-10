@@ -13,6 +13,7 @@
     :style="{ '--canonical-node-grid-span': nodeGridSpan, '--canonical-layout-columns': layoutColumns }"
     :data-section-navigation-role="node.zoneRole"
     :data-group-title="node.title || undefined"
+    :data-value-emphasis="valueEmphasis"
   >
     <span v-if="presentableNodeText" class="canonical-form-native-text">{{ presentableNodeText }}</span>
     <ScButton
@@ -94,6 +95,9 @@ const readonlyFactLayout = computed(() => Boolean(
   props.preferReadonlyFacts
   && fields.value.length
   && fields.value.every((field) => field.readonly),
+));
+const valueEmphasis = computed(() => (
+  readonlyFactLayout.value && fields.value.some((field) => field.type === 'monetary') ? 'monetary' : undefined
 ));
 const children = computed(() => visibleCanonicalChildren(props.node));
 
@@ -232,7 +236,10 @@ function fieldChildOrphanClass(child: CanonicalFormNode): string {
 .canonical-form-node--readonly-fact :deep(.template-form-section-grid),
 .canonical-form-node--readonly-fact :deep(.field) { display: grid; }
 .canonical-form-node--readonly-fact :deep(.field-control-row),
-.canonical-form-node--readonly-fact :deep(.field-control-main) { display: inline; }
+.canonical-form-node--readonly-fact :deep(.field-control-main) {
+  display: inline-block;
+  line-height: 22px;
+}
 .canonical-form-node--readonly-fact :deep(.readonly-value),
 .canonical-form-node--readonly-fact :deep(.contract-readonly-value) {
   min-height: 0;

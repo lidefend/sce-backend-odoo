@@ -135,19 +135,15 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     if (!hasChanges.value || busy.value) return;
     await reload();
   }
-
   onErrorCaptured((err) => {
     const message = err instanceof Error ? err.message : String(err || '系统处理问题');
     renderErrorMessage.value = `表单页面打开失败：${message}`;
     return false;
   });
-
   async function confirmActionSafety(action: ContractAction) {
     const prompt = contractActionConfirmationPrompt(action);
     if (!prompt) return true;
-    return (
-      intentConfirmationRef.value?.confirm(prompt) ?? false
-    );
+    return intentConfirmationRef.value?.confirm(prompt) ?? false;
   }
 
   async function ensureSavedBeforeRecordAction() {

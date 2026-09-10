@@ -2,6 +2,8 @@ import 'tdesign-vue-next/es/style/index.css';
 import './kits/tdesign/theme.css';
 
 export { Input as TDesignInput } from 'tdesign-vue-next/es/input';
+export { ConfigProvider as TDesignConfigProvider } from 'tdesign-vue-next/es/config-provider';
+export type { GlobalConfigProvider as TDesignGlobalConfigProvider } from 'tdesign-vue-next/es/config-provider';
 export { InputAdornment as TDesignInputAdornment } from 'tdesign-vue-next/es/input-adornment';
 export { Button as TDesignButton } from 'tdesign-vue-next/es/button';
 export { Checkbox as TDesignCheckbox } from 'tdesign-vue-next/es/checkbox';

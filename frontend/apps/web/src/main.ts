@@ -7,6 +7,7 @@ import App from './App.vue';
 import './styles/design-system.css';
 import './styles/product-patterns.css';
 import { bootTheme, bootThemeProfile } from './styles/theme';
+import { startThemeApplicationRuntime, stopThemeApplicationRuntime } from './styles/themeApplicationRuntime';
 import { installStaleAssetRecovery } from './app/staleAssetRecovery';
 
 installStaleAssetRecovery();
@@ -19,6 +20,9 @@ app.use(router);
 
 bootTheme();
 bootThemeProfile();
+startThemeApplicationRuntime();
+
+if (import.meta.hot) import.meta.hot.dispose(stopThemeApplicationRuntime);
 
 // Synchronously restore session (token, user, etc.) before mounting.
 // Without this, the router guard sees token=null on first paint and

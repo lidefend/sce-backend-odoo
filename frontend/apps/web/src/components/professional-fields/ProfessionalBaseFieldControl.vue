@@ -177,7 +177,13 @@ function emitValue(value: string | number | boolean | null) {
   box-sizing: border-box;
   height: calc(var(--sc-component-input-height-md) * 1px);
   min-height: calc(var(--sc-component-input-height-md) * 1px);
-  padding-inline: calc(var(--sc-component-input-padding-x) * 1px);
+}
+
+.professional-base-field-control :deep([data-semantic-component='ScDateField']),
+.professional-base-field-control :deep([data-semantic-component='ScSelect']),
+.professional-base-field-control :deep([data-semantic-component='ScNumberInput']),
+.professional-base-field-control :deep([data-semantic-component='ScTextarea']) {
+  width: 100%;
 }
 
 .professional-base-field-control__textarea {

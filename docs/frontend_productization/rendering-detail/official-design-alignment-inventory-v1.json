@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "d83ca7d3395cdbd60f2eb3c5647ea80dbd3c577284f52a3f32ec524cbed3e97a",
+  "inputDigest": "0bf2a7eb4671c6d53313c77ea666c2cc936b86094d3dcda90af650e4b4b7b580",
   "internalVendorSelectorGaps": [],
   "productAppearanceVariants": [
     {
@@ -477,7 +477,8 @@
       "consumers": [
         "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
         "frontend/apps/web/src/components/design-system/ScButton.vue",
-        "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue"
+        "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue",
+        "frontend/apps/web/src/pages/contractForm/FormSectionNavigation.vue"
       ],
       "selectors": [
         ".sc-btn[data-appearance='section-tab']",
@@ -643,7 +644,7 @@
   "schemaVersion": "frontend.official-design-alignment.inventory.v1",
   "scope": "formal P0/P1 frontend TDesign driver and product adapter styling",
   "summary": {
-    "formalStyleSourceCount": 209,
+    "formalStyleSourceCount": 212,
     "internalVendorSelectorGapCount": 0,
     "officialPublicTokenCount": 240,
     "orphanedProductAppearanceVariantCount": 0,

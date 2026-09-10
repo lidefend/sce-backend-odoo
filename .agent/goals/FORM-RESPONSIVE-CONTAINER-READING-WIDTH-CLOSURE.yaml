@@ -1,0 +1,72 @@
+goal:
+  id: FORM-RESPONSIVE-CONTAINER-READING-WIDTH-CLOSURE
+  title: shared_form_responsive_container_and_reading_width_closure
+  status: verification_pending
+  objective: close_internal_mobile_form_overflow_without_masking_or_business_semantic_changes
+  baseline:
+    branch: feature/form-page-structure-professionalization-v1
+    full_sha: 7be995af2b87c4d384464decc3db23571859feba
+    source: product_review_of_form_visual_hierarchy_candidate
+    fingerprint: 0debfd8efd778e42269d0a21061ec9bf458eab9bd9b7755c9853e0b347bc50f5
+    fingerprint_path: artifacts/fingerprints/form_responsive_width_baseline_7be995af.json
+  product_boundary:
+    formal_product_layer: P0
+    supporting_layer: P4
+    layer_target: frontend_generic_form_responsive_container_chain
+    module: frontend/apps/web
+    standard_vs_user_specific: platform_mechanism
+    why_here: parent_shrinkage_grid_minimums_control_bounds_and_navigation_ownership_are_shared_renderer_responsibilities
+    why_not_elsewhere:
+      - no_business_field_order_or_amount_semantics
+      - no_contract_schema_permission_action_or_hidden_section_change
+      - no_customer_preference_or_runtime_configuration
+      - no_database_fixture_acceptance_release_or_ops_repair
+    blast_radius:
+      - native_workspace_form_container_chain
+      - form_section_field_grid_and_controls
+      - shared_form_section_navigation_shell_and_track
+      - form_browser_boundary_evidence
+  scope:
+    include:
+      - shrink_native_form_and_nested_groups_to_parent_inline_size
+      - keep_navigation_shell_within_content_and_track_as_only_horizontal_scroller
+      - align_mobile_status_fields_relations_and_controls
+      - measure_document_body_navigation_controls_and_popovers_against_owning_boundaries
+      - separately_allow_governed_relation_table_horizontal_scroll
+    exclude:
+      - overflow_hidden_as_a_mask
+      - hidden_backend_chapter_title_restoration
+      - contract_or_business_amount_reordering
+      - smart_construction_demo_catalog_repair
+      - keyboard_query_general_beautification_or_new_features
+      - database_fixture_acceptance_release_or_remote_writes
+  acceptance:
+    - native_form_navigation_groups_and_controls_fit_their_parent_at_320_and_390
+    - navigation_shell_fits_content_and_only_track_scrolls_horizontally
+    - final_navigation_item_is_fully_reachable
+    - mobile_field_content_edges_are_consistent
+    - controls_are_complete_visible_and_operable
+    - relation_table_overflow_is_explicitly_scoped_and_independently_verified
+    - four_samples_light_dark_1440_1088_390_320_top_middle_bottom
+    - zero_business_writes
+  rollback:
+    - revert_this_batch_after_7be995af_without_contract_or_database_rollback
+  result:
+    product_commit: e5085e42
+    candidate_sha: 04c774035e241eb82343f37ceac951fcd8c79d97
+    candidate_fingerprint: 67bd65ed22559dfcdccf0b2c8e779463f8e7916a547a210b700f70db1a879089
+    candidate_fingerprint_path: artifacts/fingerprints/form_responsive_width_candidate_04c77403.json
+    final_light_summary: artifacts/playwright/form-responsive-width-final-light-1440-390-04c77403/summary.json
+    final_dark_summary: artifacts/playwright/form-responsive-width-final-dark-1088-320-04c77403/summary.json
+    route_viewport_samples: 16
+    screenshots: 48
+    nested_boundary_checks: 756
+    popup_boundary_checks: 8
+    navigation_journeys: 76
+    mutation_count: 0
+    browser_errors: 0
+    browser_failures: 0
+    frontend_quick: pass
+    candidate_service: stopped
+    release_state: not_run
+    next: await_product_review_before_form_expression_freeze

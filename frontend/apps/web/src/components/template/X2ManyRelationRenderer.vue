@@ -6,6 +6,10 @@
       data-semantic-component="RelationAttachmentEditor"
       :data-control-state="field.readonly ? 'readonly' : 'editable'"
     >
+      <header class="relation-attachment-heading">
+        <strong>单据附件</strong>
+        <span>随当前单据保存的资料</span>
+      </header>
       <div v-if="adapter.selectedRelationOptions(field.name).length" class="attachment-list">
         <div
           v-for="att in adapter.selectedRelationOptions(field.name)"
@@ -56,14 +60,32 @@
   </div>
   <div v-else-if="field.type === 'one2many'" class="relation-editor">
     <div v-if="field.readonly" class="o2m-readonly" data-readonly-relation>
-      <div v-if="one2manyRows.length" class="o2m-readonly-list">
+      <div v-if="one2manyRows.length" class="o2m-readonly-table">
+        <header class="o2m-toolbar o2m-toolbar--readonly" data-detail-collection-heading>
+          <span class="o2m-title" data-detail-collection-title>{{ field.label }}</span>
+          <span class="o2m-count" data-detail-collection-count>共 {{ one2manyRows.length }} 条</span>
+        </header>
+        <div class="o2m-table-scroll" data-detail-collection-content="desktop-table">
+          <ScTable
+            :data="o2mTableData"
+            :columns="readonlyO2mTableColumns"
+            row-key="id"
+            size="small"
+            :hover="true"
+            :stripe="false"
+            appearance="relation-detail"
+            :label="`${field.label}明细列表`"
+          />
+        </div>
+      </div>
+      <div v-if="one2manyRows.length" class="o2m-readonly-list" data-detail-collection-content="mobile-cards">
         <article
-          v-for="row in paginatedOne2manyRows"
+          v-for="(row, rowIndex) in paginatedOne2manyRows"
           :key="row.key"
           class="o2m-readonly-row"
         >
-          <p v-if="adapter.one2manyRowStateLabel(row)" class="o2m-readonly-state">
-            {{ adapter.one2manyRowStateLabel(row) }}
+          <p class="o2m-readonly-state">
+            {{ adapter.one2manyRowStateLabel(row) || `第 ${(one2manyPage - 1) * one2manyPageSize + rowIndex + 1} 条` }}
           </p>
           <dl class="o2m-readonly-facts">
             <div
@@ -88,12 +110,12 @@
     </div>
         <template v-else>
     <div class="o2m-card">
-      <div class="o2m-toolbar">
-        <span class="o2m-title">{{ field.label }}</span>
-        <span v-if="adapter.visibleOne2manyRows(field.name).length" class="o2m-count">共 {{ adapter.visibleOne2manyRows(field.name).length }} 条</span>
-        <span v-if="adapter.one2manySummary(field.name)" class="o2m-summary">{{ adapter.one2manySummary(field.name) }}</span>
+      <header class="o2m-toolbar" data-detail-collection-heading>
+        <span class="o2m-title" data-detail-collection-title>{{ field.label }}</span>
+        <span v-if="adapter.visibleOne2manyRows(field.name).length" class="o2m-count" data-detail-collection-count>共 {{ adapter.visibleOne2manyRows(field.name).length }} 条</span>
+        <span v-if="adapter.one2manySummary(field.name)" class="o2m-summary" data-detail-collection-summary>{{ adapter.one2manySummary(field.name) }}</span>
         <span class="o2m-spacer" />
-        <slot name="collection-actions" />
+        <span class="o2m-actions" data-detail-collection-actions><slot name="collection-actions" /></span>
         <ScButton
           v-if="adapter.one2manyCanCreate(field.name)"
           class="o2m-create"
@@ -105,11 +127,12 @@
         >
           {{ adapter.one2manyCreateLabel(field.name, field.label) }}
         </ScButton>
-      </div>
+      </header>
 
       <div
         v-if="adapter.one2manyColumns(field.name).length && adapter.visibleOne2manyRows(field.name).length"
         class="o2m-table-scroll"
+        data-detail-collection-content="desktop-table"
       >
         <ScTable
           :data="o2mTableData"
@@ -189,6 +212,7 @@
       <div
         v-if="adapter.one2manyColumns(field.name).length && adapter.visibleOne2manyRows(field.name).length"
         class="o2m-mobile-list"
+        data-detail-collection-content="mobile-cards"
       >
         <article
           v-for="row in paginatedOne2manyRows"
@@ -261,6 +285,7 @@
         state="empty"
         :label="`暂无明细，点击「${adapter.one2manyCreateLabel(field.name, field.label)}」新增`"
         data-o2m-empty
+        data-detail-collection-content="empty"
       />
 
       <div v-if="adapter.removedOne2manyRows(field.name).length" class="o2m-removed">
@@ -362,6 +387,21 @@ const o2mTableColumns = computed(() => {
     { colKey: '_state', title: '状态', width: 90, fixed: 'left' },
     ...fieldColumns,
     { colKey: '_action', title: '操作', width: 80, fixed: 'right' },
+  ];
+});
+const readonlyO2mTableColumns = computed(() => {
+  const stateColumn = paginatedOne2manyRows.value.some((row) => props.adapter.one2manyRowStateLabel(row))
+    ? [{ colKey: '_stateLabel', title: '状态', width: 90, fixed: 'left' }]
+    : [];
+  return [
+    ...stateColumn,
+    ...props.adapter.one2manyColumns(props.field.name).map((column) => ({
+      colKey: column.name,
+      title: column.label,
+      width: isO2mAmountColumn(column) ? 140 : undefined,
+      align: isO2mAmountColumn(column) ? 'right' : 'left',
+      ellipsis: false,
+    })),
   ];
 });
 
@@ -856,6 +896,10 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
 }
 
 .o2m-readonly-list {
+  display: none;
+}
+
+.o2m-readonly-table {
   display: grid;
   gap: 0;
   border: 1px solid var(--sc-app-border);
@@ -914,6 +958,8 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
 }
 
 @media (max-width: 760px) {
+  .o2m-readonly-table { display: none; }
+  .o2m-readonly-list { display: grid; }
   .o2m-readonly-row { grid-template-columns: 1fr; gap: 6px; }
   .o2m-readonly-facts { grid-template-columns: 1fr; }
   .o2m-readonly-fact dd { white-space: normal; overflow-wrap: anywhere; }
@@ -937,6 +983,9 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
   display: grid;
   gap: 8px;
 }
+.relation-attachment-heading { display: grid; gap: 2px; }
+.relation-attachment-heading strong { color: var(--sc-app-text-primary); font-size: 14px; }
+.relation-attachment-heading span { color: var(--sc-app-text-secondary); font-size: 12px; }
 
 .attachment-list {
   display: grid;
@@ -1165,6 +1214,7 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
 .o2m-spacer {
   flex: 1;
 }
+.o2m-actions:empty { display: none; }
 
 .o2m-count {
   font-size: 12px;

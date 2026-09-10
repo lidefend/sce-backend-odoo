@@ -166,6 +166,10 @@ def scan(root: Path) -> list[Finding]:
             test_routing_requirements = (
                 'module_test_tags="sc_smoke/${module},sc_gate/${module}"',
                 'module_status="${PIPESTATUS[0]}"',
+                'for module_attempt in 1 2; do',
+                'attempt_db="${module_db}_retry1"',
+                '[[ ! "${module_status}" =~ ^(137|139)$ ]]',
+                'retrying once with isolated database',
                 "0 failed, 0 error\\(s\\) of [1-9][0-9]* tests when loading database",
                 "backend suite collected zero tests for module ${module}",
             )

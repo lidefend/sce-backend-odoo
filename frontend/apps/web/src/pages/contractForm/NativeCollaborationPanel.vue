@@ -1,6 +1,6 @@
 <template>
   <section
-    class="block native-chatter-block"
+    class="native-chatter-block"
     data-professional-collaboration-component="panel"
     :data-comment-readiness="capabilityReadiness.comment"
     :data-attachment-readiness="capabilityReadiness.attachment"
@@ -8,7 +8,9 @@
     :data-follower-readiness="capabilityReadiness.follower"
     :data-user-search-readiness="userSearchEnabled ? 'ready' : 'fail_closed'"
   >
-    <h3>{{ title }}</h3>
+    <header class="native-chatter-heading" data-collaboration-section-heading>
+      <h3>{{ title }}</h3>
+    </header>
     <ScInlineState v-if="unavailableMessage" class="native-chatter-empty" state="empty" :label="unavailableMessage" />
     <div v-else-if="!readonly" class="chips">
       <ScButton

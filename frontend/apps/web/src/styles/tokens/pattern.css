@@ -22,6 +22,9 @@
   --sc-content-reading-max: 72ch;
   --sc-content-record-max: var(--sc-pattern-workspace-form-content-max-width);
   --sc-content-form-max: var(--sc-pattern-task-form-content-max-width);
+  --sc-pattern-task-form-field-gap: 8;
+  --sc-pattern-task-form-label-row-margin-bottom: 2px;
+  --sc-pattern-task-form-readonly-column-gap: 24px;
   --sc-page-padding-wide: var(--sc-space-lg);
   --sc-page-padding-compact: var(--sc-space-md);
   --sc-page-padding-mobile: var(--sc-space-sm);

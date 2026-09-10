@@ -1,0 +1,132 @@
+goal:
+  id: GLOBAL-COMPONENT-PAGE-EXPRESSION-CLOSURE
+  title: global_component_capability_and_page_expression_closure
+  status: completed
+  objective: unify_root_component_capabilities_and_shared_page_expression_without_contract_or_business_changes
+  baseline:
+    branch: feature/form-page-structure-professionalization-v1
+    full_sha: fe22402edad0c8d72445f07e5af61e5ce67b2884
+    source: frozen_form_field_alignment_candidate
+    fingerprint: 9efb3b6bf6e5b13ca56715f61a8d9341ae93c5df141d40465ee77bd6ad8fb69e
+    fingerprint_path: artifacts/fingerprints/global_component_expression_baseline_fe22402e.json
+    path_count: 7361
+  product_boundary:
+    formal_product_layer: P0
+    supporting_layer: P4
+    layer_target: frontend_root_configuration_shared_page_composition_and_component_adapters
+    module:
+      - frontend/apps/web
+      - frontend/packages/ui
+      - scripts/verify
+      - docs/ops/iterations
+    standard_vs_user_specific: platform_mechanism
+    why_here: root_configuration_theme_runtime_page_layout_and_component_hierarchy_are_generic_frontend_responsibilities
+    why_not_elsewhere:
+      - no_backend_contract_schema_permission_action_or_business_semantic_change
+      - no_construction_or_customer_specific_default
+      - no_low_code_runtime_configuration_or_database_write
+      - no_acceptance_upgrade_release_or_remote_write
+    blast_radius:
+      - login_business_and_embedded_route_roots
+      - shared_product_page_headers_and_form_page_patterns
+      - detail_collection_and_native_collaboration_surfaces
+      - dialog_drawer_select_date_picker_and_table_adapters
+      - isolated_component_and_local_dev_browser_evidence
+  batches:
+    - id: A
+      title: baseline_and_official_global_capability
+      status: completed
+      commit: c752482e
+      evidence:
+        - verify.frontend.global_component_capability.unit_pass_16
+        - strict_typecheck_pass
+        - production_build_pass
+        - primitive_adapter_and_official_design_alignment_guards_pass
+      exit:
+        - root_config_provider_uses_only_required_public_configuration
+        - system_theme_and_reduced_motion_watchers_cover_all_routes_once
+        - regular_lazy_and_overlay_components_consume_configuration
+    - id: B
+      title: header_and_body_layout_responsibility
+      status: completed
+      commit: 39f075b5
+      evidence:
+        - product_page_header_unit_pass_28
+        - product_page_pattern_unit_pass_12
+        - product_page_header_guard_pass_adapters_3
+        - strict_typecheck_pass
+      exit:
+        - shared_header_owns_internal_layout_and_size
+        - frame_pattern_and_body_spacing_owners_are_explicit
+        - stale_or_deep_page_header_patches_are_removed
+    - id: C
+      title: detail_collaboration_and_component_takeover_closure
+      status: completed
+      commit: 2ac68f66
+      evidence:
+        - professional_detail_collection_model_and_guard_pass_31
+        - professional_collaboration_model_and_guard_pass_73
+        - component_driver_takeover_inventory_tests_pass_6
+        - overlay_lifecycle_guard_pass_10
+        - strict_typecheck_pass
+      exit:
+        - detail_and_collaboration_hierarchy_is_consistent
+        - official_capability_audit_records_each_retained_takeover
+        - unnecessary_takeovers_only_are_removed
+  sequence: A_then_B_then_C_then_joint_review
+  commits: one_local_commit_per_batch
+  acceptance:
+    - frozen_field_alignment_baseline_does_not_regress
+    - quick_strict_type_official_component_guards_and_nonzero_targeted_tests_pass
+    - affected_overlay_behaviors_pass_without_business_writes
+    - representative_pages_and_all_requested_viewports_themes_are_explicitly_registered
+    - final_evidence_binds_one_frozen_full_fingerprint
+  joint_review:
+    status: independent_review_passed_pr_pending
+    candidate:
+      full_sha: 07758bd72c11e41157b3125b4d314ba7874c606b
+      fingerprint: 64220630eaa650bc0f39b04686a310306de892c85976bf8c4d3b3377bf7f972c
+      fingerprint_path: artifacts/fingerprints/global_component_expression_candidate_07758bd7.json
+      path_count: 7365
+    evidence:
+      - verify.frontend.quick.gate_pass
+      - global_component_capability_unit_pass_31_public_provider_dynamic_and_wired_to_quick_pr_release
+      - theme_runtime_guard_pass_12
+      - strict_typecheck_and_production_build_pass
+      - official_component_inventories_refreshed_and_zero_gap
+      - light_1440_390_browser_pass_18_samples_zero_mutations
+      - dark_1088_320_browser_pass_18_samples_zero_mutations
+      - manual_top_middle_bottom_screenshot_review_pass
+    exit_evidence:
+      candidate:
+        full_sha: c442f731adb6cd23e3adc77811c1c895f137a5fe
+        fingerprint: 93bca159a932f41910a5eb3525a4c781b91a684d85af1362269605a4263571dd
+        fingerprint_path: artifacts/fingerprints/global_component_capability_exit_candidate_c442f731.json
+        path_count: 7366
+      evidence:
+        - verify.frontend.quick.gate_pass
+        - public_config_provider_normal_reduce_normal_consumers_pass_31
+        - app_unmount_hmr_release_and_route_singleton_pass
+        - system_theme_login_and_embedded_runtime_pass_1088_320
+        - material_relation_api_data_zero_result_classified_data_prerequisite
+        - material_collection_query_cycle_pass_selector_assumption_corrected
+        - hierarchy_query_cycle_pass_wait_scope_corrected
+        - targeted_browser_pass_8_samples_zero_mutations
+      limitations:
+        - material_relation_selection_with_nonempty_authoritative_dataset_not_covered
+        - multi_role_real_write_acceptance_upgrade_release_and_pr_ci_not_run
+    independent_review:
+      status: passed
+      method: source_and_retained_evidence_only_no_browser_restart_or_test_rerun
+      conclusion: development_expression_closure_complete_pr_pending
+      exclusions:
+        - merge_readiness
+        - release_readiness
+        - full_system_business_acceptance
+  exclude:
+    - contract_permission_action_amount_or_hidden_section_changes
+    - business_flow_expansion
+    - acceptance_rebuild_upgrade_compatibility_or_release
+    - unrelated_visual_polish
+  rollback:
+    - revert_batches_in_C_B_A_order_without_database_container_or_contract_rollback

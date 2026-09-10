@@ -378,10 +378,22 @@ entries:
   date: '2026-08-11'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_frontend_acceptance_baseline_rebuild.py
+  status: orphan
+  owner: platform-team
+  date: '2026-09-10'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_frontend_acceptance_runtime_profile.py
   status: orphan
   owner: platform-team
   date: '2026-08-14'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_frontend_chart_engine_guard.py
+  status: orphan
+  owner: platform-team
+  date: '2026-09-10'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_frontend_dev_incremental.py

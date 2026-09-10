@@ -9118,3 +9118,88 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - `make pr.status` 只读确认当前分支无 PR。完整差异经现有分类器判定 HIGH_RISK、frontend/professional full、backend changed；四项 required checks 及 release candidate gate 均保持 not_run，未执行 push、PR 创建/更新、acceptance 重建或远端 mutation。
 - 本地交付状态为 `READY_FOR_PR_AUTHORIZATION`，不是 merge-ready 或 release-ready。唯一下一步是在明确授权后冻结最终 clean HEAD，并通过受管入口进入 draft PR。
 - 审查澄清：当前版本 acceptance 环境恢复与旧版本升级兼容是两个独立 P4 任务。前者只恢复当前候选的可信验收载体；后者必须先冻结明确源版本样本及预期迁移结果，不能由重建替代。
+
+## 2026-09-10 — 共享表单结构与阅读层次收口
+
+- Batch `FORM-STRUCTURE-A`；Formal Product Layer P0，P4 仅承载只读浏览器证据。Layer Target 为 `frontend/apps/web` 通用契约表单渲染与布局层。
+- 基线 `3c3c7bdef2dac3dfdfa06488c7e731ce1e565ce9`，完整指纹 `7e851d79b087fe43e4d5306608ed4fd4ef6ef373cd8970d4668d8c2aa7529f50`（7350 paths）。唯一产品结果是基于现有 floorplan 语义角色统一查看态、录入态、关系明细、辅助信息与协作记录的结构层次。
+- 后台/契约原始分组标题继续按既有设计隐藏；不恢复 `node.title`，不按模型名、字段名推断重要性。付款、材料入库和收入合同只作为共享能力样本。
+- 材料单据字段附件与协作时间线附件是不同载体，均保留并只做通用命名澄清。收入合同“未收款金额/未收款”差异仅登记为后续口径问题，本批不改值、不补契约。
+- 不修改 login/system.init/ui.contract、schema、权限、字段、动作和默认路由；不写数据库、不运行 fixture、不重建 acceptance、不执行发布。
+
+## 2026-09-10 — 共享表单响应式容器与阅读宽度收口
+
+- Batch `FORM-RESPONSIVE-WIDTH`；Formal Product Layer P0，P4 仅承载边界测量和候选证据。Layer Target 为 `frontend/apps/web` 通用 native 表单收缩链、字段网格、控件与共享章节导航。
+- 基线 `7be995af2b87c4d384464decc3db23571859feba`，完整指纹 `0debfd8efd778e42269d0a21061ec9bf458eab9bd9b7755c9853e0b347bc50f5`（7355 paths）。复用唯一已注册 worktree 与 `local.dev`（`sc-local-dev` / `sc_dev_demo` / 18081 / 5176）。
+- 唯一目标：关闭 320/390 下根文档宽度检查遗漏的表单内部超宽，证明正文、章节栏、字段控件和浮层都在各自边界内；允许滚动的关系明细表格单独分类。
+- 隐藏章节、合同金额语义、字段/权限/动作、`smart_construction_demo` 目录缺口、键盘/查询、数据库、fixture、acceptance、release 与远程写入均不在本批范围。
+
+### 完成记录
+
+- 旧候选 `d0ede53f…` 在 320px 精确测得正文 255px、native page 312px、右溢出 57px；根文档仍为 320px，确认原指标盲区。
+- P0 修复提交 `e5085e42` 统一 native page/driver/tree 的收缩链，章节外壳不再裁切且仅内部 track 可横向滚动；移动嵌套 group 不再逐层缩进。
+- 最终候选 `04c774035e241eb82343f37ceac951fcd8c79d97`，完整指纹 `67bd65ed22559dfcdccf0b2c8e779463f8e7916a547a210b700f70db1a879089`（7356 paths）。320px 下 native page 与 owner 同为 255px，公开关系控件及 `role=listbox` 弹层完整落在视口内。
+- light 1440/390 与 dark 1088/320 共 16 个路由视口、756 个内部边界、8 次弹层检查、76 次章节定位全部 PASS；48 张首屏/中段/底部截图人工复核无阻断，mutation/errors/failures 均为 0。最终 Frontend Quick PASS，候选已停止。
+- 完整记录：`frontend_form_responsive_container_reading_width_closure_20260910.md`。状态为 `verification_pending`，等待产品复核是否冻结表单表达成果；未启动键盘/查询、acceptance 或 release。
+
+## 2026-09-10 — 表单章节导航内容一致性收口
+
+- Batch `FORM-SECTION-NAV-CONTENT`；Formal Product Layer P0，P4 仅承载守卫与只读浏览器证据。Layer Target 为 `frontend/apps/web` 通用 native 表单章节身份、导航目标与内容级验证。
+- 基线 `2d5870009f08e6850e03e79a2fae2823bb152813`，完整指纹 `8ee8a7d2a5140a6330b8d920f15ee9cdd20f1449173283b4a3f82b4eada493d9`（7357 paths）。复用唯一已注册 worktree 与 local.dev 候选载体。
+- 唯一目标：分离字段 semantic role 与章节身份，使名称只绑定实际可见章节；关系明细不得落到 many2one 字段，历史审计不得落到录入人字段，多关系集合使用已有标题与节点身份分别定位。
+- 不修改契约、字段、权限、动作、隐藏章节或上一批响应式容器；不按模型名/字段名推断，不追加美化，不写数据库，不运行 fixture/acceptance/release，不执行远程写入。
+
+### 完成记录
+
+- P0 产品路径已分离字段语义和章节身份；workspace 与 task 两种表单都将导航绑定到唯一可见目标。many2one 字段不再生成关系明细入口，O2M/M2M 集合使用契约现有标签和 widget 身份分别定位。
+- 附件按既有组件解析与正式 relation descriptor 分类，不作为业务明细入口；没有实际审计事件的创建页不显示“历史审计”，录入人字段不会被当作时间线。
+- 最终候选 `dd98a5f0caf7fb052ffee012cccf73eed9d66475`，完整指纹 `933a4bc22371bb4647fe1615f2b6ba04d7fb265da3c0484a8a011997b2cb072f`（7358 paths）。Frontend Quick PASS。
+- light 1440/390 与 dark 1088/320 覆盖付款详情、材料入库新建、收入合同详情/新建，共 16 个页面视口、64 次导航内容断言和 48 张首屏/中段/底部截图全部 PASS；mutation/errors/failures 均为 0。候选已停止。
+- 完整记录：`frontend_form_section_navigation_content_consistency_closure_20260910.md`。表单阶段已具备退出条件，状态保持 `verification_pending` 等待独立复核；未执行 push/PR/merge/release。
+
+## 2026-09-10 — 共享表单字段网格与对齐收口
+
+- Batch `FORM-FIELD-GRID-ALIGNMENT`；Formal Product Layer P0，P4 仅承载几何测量与截图证据。Layer Target 为 `frontend/apps/web` 通用字段槽位、控件外框、跨组网格与行基线。
+- 基线 `464c155dbeba77a4624256480d3fe469d8bc5bb3`，完整指纹 `5a97b540cbeeb5b7afe24fbe768f68576e3388eef787b440248d70e67f2823a4`（7359 paths）。复用唯一已注册 worktree 与 local.dev 候选载体。
+- 唯一目标：关闭同列文本与关系控件左右各 8px 的边界差、嵌套字段组 32px 的无意缩进，并证明同排同标签行数控件顶部对齐；复选框与短数字仅允许共享规则定义的例外。
+- 保留已通过的章节导航、响应式容器和隐藏章节策略；不修改契约、字段、权限、动作、业务值，不写数据库，不运行 fixture/acceptance/release，不执行远程写入。
+
+### 完成记录
+
+- 上一条“表单阶段已具备退出条件”结论已按现场复核撤回；本批只关闭共享字段槽位、可见控件外框和查看态行盒基线，不恢复故意隐藏的章节。
+- P0 修复去除 `ScInput` 宿主的重复横向 padding，使 text/relation/date/money/textarea 共同占满字段槽位；日期根组件、金额 suffix、native group 列线与紧凑只读行盒统一由共享组件和渲染层负责，没有逐字段 margin。
+- 浏览器产品候选 `d43e9e75d70535c2093ec9ae0ce10f82fe5324bc`。light 1440/390 与 dark 1088/320 覆盖付款详情、材料入库新建、收入合同详情/新建，共 16 个页面视口、64 张首屏/中段/底部/参考线截图；mutation/errors/failures 均为 0。
+- 收入合同新建 24 个可编辑控件在桌面与移动端均为 0 个外框偏差、0 个同行顶部偏差，跨组左右边界 spread 为 0px。付款查看态同行顶部偏差也为 0。
+- 文档清单刷新后的已验证 HEAD `32b94b8cc9dac4a9d0656b0bfe4e97e43caef8dd`，完整指纹 `233948900bef0804ee7b9f35c876b04c015043d186f3686f9916310aea2c44ee`（7360 paths）；相对浏览器候选仅有四份派生 inventory JSON。最终 Frontend Quick PASS，候选已停止。
+- 完整记录：`frontend_form_field_grid_alignment_closure_20260910.md`。状态保持 `verification_pending`，等待独立复核后再决定是否退出表单表达阶段；未执行 push/PR/merge/release。
+## 2026-09-10 — 全局组件能力与页面表达统一收口启动
+
+- 冻结基线：`fe22402edad0c8d72445f07e5af61e5ce67b2884`；完整指纹 `9efb3b6bf6e5b13ca56715f61a8d9341ae93c5df141d40465ee77bd6ad8fb69e`（7361 paths）。
+- 边界：P0 通用前端机制，P4 仅验证；不改契约、权限、业务动作、金额口径、隐藏章节或数据库。
+- 顺序：A 根级官方能力 → B 页头/正文职责 → C 明细/协作与接管审计 → 单一冻结候选联合复核；每批独立本地提交。
+- 上一批字段对齐保持 `verification_pending`，复用本地证据但不替代独立复核。
+
+### 完成记录
+
+- A/B/C 产品提交为 `c752482e`、`39f075b5`、`2ac68f66`：根级 TDesign 1.20.5 ConfigProvider 与单例主题/减少动画运行时、共享页头/正文责任、明细/协作层次及五类官方能力接管审计均已落地；最终 P4 门禁接线提交为 `07758bd7`。
+- 冻结候选 `07758bd72c11e41157b3125b4d314ba7874c606b`，完整指纹 `64220630eaa650bc0f39b04686a310306de892c85976bf8c4d3b3377bf7f972c`（7365 paths）。Frontend Quick、严格类型、production build、官方组件零缺口清单和 16 项非零配置传播测试 PASS。
+- light 1440/390 与 dark 1088/320 覆盖 9 类页面共 36 个路由视口；最终摘要均为 `pass=true`、mutation/errors/failures empty。收入合同新建 24 控件、跨组列线、付款只读行基线均未退化；人工复核首屏/中段/底部未发现遮挡、裁切或无用途新增套框。
+- 当前数据未提供材料“搜索更多”可选结果；集合无唯一查询栏，层级工作区无匹配诊断未进入零行，因此这些附加旅程明确不计为通过，也未触发产品扩展或门禁降低。候选服务已停止。
+- 完整记录：`frontend_global_component_page_expression_closure_20260910.md`。状态为 `verification_pending`，等待独立复核；未执行多角色、真实写入、acceptance、升级、push、PR、merge 或 release。
+
+## 2026-09-10 — 表单表达阶段交付收口
+
+- 当前分支 `feature/form-page-structure-professionalization-v1`，交付整理前 HEAD `fc7433b6284d539d9486a551ca635771f00071af`。Formal Product Layer P4；Layer Target 为阶段结论、完整 PR 差异审计、证据链和本地 draft PR 文本。
+- `git fetch --prune origin` 后确认 `origin/main`、本地 `main` 与共同基线均为 `3c3c7bdef2dac3dfdfa06488c7e731ce1e565ce9`。整理前完整差异 73 commits / 72 paths：产品前端 36、验证工具 18、生成清单 5、治理文档 13，未分类 0。
+- 全差异没有 addons、contracts、数据库/fixture、acceptance 环境恢复、发布脚本或图标资源。风险分类保持 `HIGH_RISK`；分类器的 `backend_changed=true` 按 fail-closed 原样登记，不据此声称存在后端产品改动。
+- 独立源码与留存证据复核通过；原 `07758bd7` 的 36 个页面样本与 `c442f731` 的 8 个补证样本分别登记，不合称同一最终候选重跑 44 个样本。
+- 本地交付状态为 `READY_FOR_DRAFT_PR_AUTHORIZATION`，不是 merge-ready 或 release-ready。未执行 push、create、ready、merge、release，也未重启浏览器或重跑产品门禁。
+
+## 2026-09-10 — PR #456 exact-head 复核缺口关闭
+
+- 起始锚点 `eaed4d2c9d872e17e8155c75f27232f80a1a77c7`，分支 `feature/form-page-structure-professionalization-v1`。Formal Product Layer P0，P4 仅承载 exact-head 浏览器证据、CI 诊断和 PR 状态更新。
+- 唯一目标：关闭独立审查指出的候选后共享样式变动、夜间后端工作流实际运行与 PR 描述身份缺口；不改契约、业务语义、权限、数据库、fixture、acceptance、发布或合并状态。
+- 受管 5176 首轮及一次复跑均稳定发现材料新建移动明细在必填关系控件 disabled 时无法恢复焦点；边界完整且业务 mutation 为 0。归因为 P0 通用校验焦点回退缺失，不修改关系权限或可选数据前提。
+- 修复限定为：优先聚焦可见且非原生 disabled 的控件；没有可聚焦子控件时，将实际错误单元作为程序化焦点目标。后续以非零定向测试、四宽度明暗候选复核和 exact-head CI 验证。
+- 修复后明色 1440/390 定向矩阵通过；后续 exact-head 复核在合同新建移动端和付款编辑桌面端识别出关系选项面板向下超出视口。诊断确认 TDesign AutoComplete 只承担输入，实际 listbox 是承载维护/搜索/新建业务动作的 `ProfessionalMany2oneFieldControl` 面板；修复让长表单中的该业务面板统一向上展开，不修改页面尺寸或降低边界断言。
+- 经单独授权补充 P4 `ci.backend_test_suite.dispatch` 受管入口：只允许 clean、local/remote/PR exact-head 一致的合规分支触发完整隔离套件，不开放 modules/test-tags 缩减参数；用于验证本 PR 对 137/139 进程退出的一次隔离数据库重试。

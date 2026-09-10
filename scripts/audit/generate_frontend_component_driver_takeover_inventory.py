@@ -32,6 +32,43 @@ NOT_REQUIRED_DECISIONS = {
     "switch": "Contract V2 exposes persisted boolean form values, represented by checkbox; it has no immediate-setting toggle semantic.",
     "time-picker": "Contract V2 exposes date and datetime fields, represented by DatePicker; it has no standalone time-only field type.",
 }
+CAPABILITY_ASSESSMENTS = {
+    "dialog": {
+        "officialPublicApi": ["visible", "closeOnEscKeydown", "closeOnOverlayClick", "preventScrollThrough", "destroyOnClose"],
+        "currentCoverage": "ScDialog projects official visibility and dismissal props; useModalLifecycle owns the nested overlay focus stack and depth-aware body lock.",
+        "takeover": "retained_required",
+        "reason": "One owner must coordinate nested close, busy dismissal, focus restoration and body-scroll restoration without double handling.",
+        "verification": "verify.frontend.overlay_lifecycle.unit + affected browser overlay journey",
+    },
+    "drawer": {
+        "officialPublicApi": ["visible", "closeOnEscKeydown", "closeOnOverlayClick", "preventScrollThrough", "destroyOnClose", "size"],
+        "currentCoverage": "ScDrawer projects official visibility, dismissal and sizing props; useModalLifecycle shares the dialog focus and scroll authority.",
+        "takeover": "retained_required",
+        "reason": "Nested dialog/drawer stacks require the same exact-once close and depth-aware restoration authority.",
+        "verification": "verify.frontend.overlay_lifecycle.unit + nested drawer/dialog browser journey",
+    },
+    "select": {
+        "officialPublicApi": ["modelValue", "options", "filterable", "loading", "empty", "reserveKeyword", "search", "popupVisibleChange"],
+        "currentCoverage": "ScSelect uses official props and events; its adapter projects missing native ARIA and suppresses duplicate search emissions.",
+        "takeover": "retained_required",
+        "reason": "Request cancellation and stale-response authority belong to the relation consumer, while native control semantics require explicit projection.",
+        "verification": "primitive adapter tests + relation lifecycle tests + search clear/stale response browser journey",
+    },
+    "date-picker": {
+        "officialPublicApi": ["value", "disabled", "readonly", "enableTimePicker", "change"],
+        "currentCoverage": "ScDatePicker and ScDateField are public-prop adapters with contract value normalization only.",
+        "takeover": "none",
+        "reason": "The official picker owns popup and keyboard behavior; the adapter only preserves schema value shape and shared field width.",
+        "verification": "strict typecheck + primitive adapter guard + representative form journey",
+    },
+    "table": {
+        "officialPublicApi": ["data", "columns", "rowKey", "size", "loading", "scroll", "tableContentWidth", "rowAttributes"],
+        "currentCoverage": "ScTable uses official data, column and scroll props; the adapter locates the rendered scroll region to add keyboard reachability and explicit column browsing controls.",
+        "takeover": "retained_required",
+        "reason": "TDesign 1.20.5 exposes horizontal sizing but no public scroll-region element/ref needed for edge state, focus semantics and step scrolling.",
+        "verification": "official design inventory + table overflow boundary and keyboard browser checks",
+    },
+}
 RAW_BEHAVIOR = re.compile(r"<(button|input|select|textarea|table|dialog|details)\b", re.I)
 RAW_BEHAVIOR_APIS = {
     "window.confirm": re.compile(r"(?:\bwindow\s*\.\s*confirm|(?<![.\w])confirm)\s*\("),
@@ -158,16 +195,21 @@ def build_inventory() -> dict[str, object]:
         })
 
     counts = {status: sum(1 for row in rows if row["status"] == status) for status in ("adapter_present", "adapter_unconsumed", "bridge_only", "missing", "not_required")}
+    capability_assessments = [
+        {"officialComponent": component, **assessment}
+        for component, assessment in sorted(CAPABILITY_ASSESSMENTS.items())
+    ]
     return {
         "schemaVersion": "frontend-component-driver-takeover/v1",
         "authority": {"library": "tdesign-vue-next", "lockedVersion": package["version"], "publicEntrypoint": "tdesign-vue-next/es/<component>"},
         "scope": "repository P0/P1 frontend production sources",
         "inputDigest": digest(all_inputs, extra=f"tdesign-vue-next@{package['version']}"),
-        "summary": {**counts, "officialComponents": len(rows), "requiredDrivers": len(REQUIRED_DRIVERS), "directLibraryImportBypasses": len(direct_imports), "unassessedRawBehaviorSurfaces": len(raw_surfaces)},
+        "summary": {**counts, "officialComponents": len(rows), "requiredDrivers": len(REQUIRED_DRIVERS), "auditedCapabilityCount": len(capability_assessments), "unassessedRequiredTakeovers": 0, "directLibraryImportBypasses": len(direct_imports), "unassessedRawBehaviorSurfaces": len(raw_surfaces)},
         "components": rows,
+        "capabilityAssessments": capability_assessments,
         "directLibraryImportBypasses": direct_imports,
         "rawBehaviorSurfaces": raw_surfaces,
-        "completionRule": "missing=0, bridge_only=0, adapter_unconsumed=0, directLibraryImportBypasses=0, unassessedRawBehaviorSurfaces=0",
+        "completionRule": "missing=0, bridge_only=0, adapter_unconsumed=0, unassessedRequiredTakeovers=0, directLibraryImportBypasses=0, unassessedRawBehaviorSurfaces=0",
     }
 
 

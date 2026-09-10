@@ -130,6 +130,16 @@
   "changedSourceProjection": [
     {
       "category": "other",
+      "digest": "d2972d150463afea0f33c76228fe9f53854257db42f45b5e00542883d1528d3f",
+      "nativeStyleSelectors": [],
+      "path": "App.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
       "digest": "540b3b726ddeaae0d3e96f01fadd3120e55931a0cae98b70eab25423756ae2a0",
       "nativeStyleSelectors": [],
       "path": "components/DevContextPanel.vue",
@@ -450,7 +460,7 @@
     },
     {
       "category": "other",
-      "digest": "81c1f849d1084f0487efd0470afb9f36e4cdcea30c1c6f5e84e3983a34a9af08",
+      "digest": "f4fce569bd8710d20e4a211080ba067833405e5fe3ff630e5b23b0dc92a3407d",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScButton.vue",
       "referenceNativeStyleSelectors": [],
@@ -502,7 +512,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "99a666fbd45e973e6a3f7fef854311d141400971b6672f7e16541247071d13c8",
+      "digest": "cce0f671a96d79fa8843fee438c424656e836171d749d2e72aed6fd77e6ba0cb",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScDateField.vue",
       "referenceNativeStyleSelectors": [],
@@ -1435,7 +1445,7 @@
     },
     {
       "category": "other",
-      "digest": "6809a4aed9a63263745cc053c39687464ef5bee6edf84cebb6ce03a5e92c92ab",
+      "digest": "9ccffec410e1867405313b7bf90ab0c2f1763a204de72a30e542932cec88d4f2",
       "nativeStyleSelectors": [],
       "path": "components/product-page-header/ProductPageHeader.vue",
       "referenceNativeStyleSelectors": [],
@@ -1645,7 +1655,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "f5b8f33e71fc6fd3d3fa6125aa2c0416bda91d3ae52dd4009eae3e9d9fc0fc51",
+      "digest": "3e7dc66fd2aebc8e1227a8e88de500eac58b49ae8e34e814f61c3097c8fc9a72",
       "nativeStyleSelectors": [],
       "path": "components/professional-fields/ProfessionalBaseFieldControl.vue",
       "referenceNativeStyleSelectors": [],
@@ -1662,7 +1672,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "71f8497f70bec9972dd34f11bd3dc7296ee5e19b0de0dfe2734a078ff915bd5c",
+      "digest": "b24a12edd917fad5f7f125fe7db5341fe03fce6a4d6fb2818549142ae84dcc3a",
       "nativeStyleSelectors": [],
       "path": "components/professional-fields/ProfessionalBusinessValueControl.vue",
       "referenceNativeStyleSelectors": [],
@@ -1677,7 +1687,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "6f8ddb0e3af9074fa70c57e7804a17b012a134ef2e30ab96a7ee2cea6e299b98",
+      "digest": "3012969ccef154a70a3df6ee04830808bd808537054392a44aadcabf6c160c79",
       "nativeStyleSelectors": [],
       "path": "components/professional-fields/ProfessionalDetailCollectionControl.vue",
       "referenceNativeStyleSelectors": [],
@@ -1687,7 +1697,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "f031834e9e5f5a11cd0c34ab270bbfa21dfc6fd215707657fb3edf1ac1ee93d3",
+      "digest": "2d417371553ed9d4346fdc0cf065acdecc1b207d8332962e6aa8d75d15a40720",
       "nativeStyleSelectors": [],
       "path": "components/professional-fields/ProfessionalMany2oneFieldControl.vue",
       "referenceNativeStyleSelectors": [],
@@ -1761,7 +1771,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "349615748b194ff64501bc7a34b230129cfc59f288527a6eb166860438dcab48",
+      "digest": "a6a83880653519d47c8d3dbf27361a4fdc58759c4b45cce6f579567a4e35bc1a",
       "nativeStyleSelectors": [],
       "path": "components/template/FormSection.vue",
       "referenceNativeStyleSelectors": [
@@ -1804,7 +1814,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "9f228ae15ec9911b49a85e918224e040e2aed7b522223ffa8d68f5b45f5c25b6",
+      "digest": "eb153c2834b36faa561a68d893f2c8b7a38cb20d76b836e5028683ba7fd59ac0",
       "nativeStyleSelectors": [],
       "path": "components/template/NativeFormTreeRenderer.vue",
       "referenceNativeStyleSelectors": [],
@@ -1849,7 +1859,7 @@
     },
     {
       "category": "other",
-      "digest": "27747ea933cc8494afabb9f7345a5f1c59a657e1235f82ebf1561ce42345919c",
+      "digest": "df9b703c7404a8fae09e9f3993e524ce86a81b40f0df979d177058fdea0ba830",
       "nativeStyleSelectors": [],
       "path": "components/template/PageHeader.vue",
       "referenceNativeStyleSelectors": [],
@@ -1859,7 +1869,7 @@
     },
     {
       "category": "relations-x2many",
-      "digest": "36a8e8f7399201771d38b613ff9ef77dc319a6be6dcda1b16088a069f8c6ed08",
+      "digest": "124e81d9573848e6354360e49c9d46725b327fc95a68b824f4828d19418113cf",
       "nativeStyleSelectors": [],
       "path": "components/template/X2ManyRelationRenderer.vue",
       "referenceNativeStyleSelectors": [
@@ -1921,7 +1931,7 @@
     },
     {
       "category": "shell",
-      "digest": "a4f0c264035f593eeb616460e8c166525ccad8baed4b24f3cc3a977bce8456b9",
+      "digest": "d1200bb7571d68e3b4af51b08c3d85f0cecd2210d6a321fbeaee6b87818d509e",
       "nativeStyleSelectors": [],
       "path": "layouts/AppShell.vue",
       "referenceNativeStyleSelectors": [],
@@ -1985,7 +1995,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "094fcd886c27f8078932d73fad810f40a3c74455a1392b7b9934406fbc796477",
+      "digest": "30785f4a02fa49ca4fd48ea3dbe18871f769cf76df2aea7448d23c0fb5b80b98",
       "nativeStyleSelectors": [],
       "path": "pages/ContractFormPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2058,7 +2068,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "0f2e06f309a5011d867044c75a602e90f74e339729e74ce889d84f29041ff752",
+      "digest": "4fe77d70a55f8618151b3faa6bf4b0a43062f1c5ece332085b495f19baf993e2",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/CanonicalFormNodeRenderer.vue",
       "referenceNativeStyleSelectors": [],
@@ -2082,7 +2092,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "ee451deb9da31b064115872df175f72880e2bae0b967efdd9dc402518e847ba8",
+      "digest": "3f249fc612572896f9f728676632bbe846c9f12db954102e91e15033c5f0bba2",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormDriverHost.vue",
       "referenceNativeStyleSelectors": [
@@ -2099,7 +2109,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "2d19329b8f652470467a5a83356ebb47901dc7f2dc06fa0cc49667439382e255",
+      "digest": "8f763819ebc03ca40dace2eed680f6765586ec6cfe10763d4ebb80601ad170ba",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormNativeCanvas.vue",
       "referenceNativeStyleSelectors": [
@@ -2118,7 +2128,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "30cf1cef6360b61eba1a6560e0da73081d6eda28ca1b5a6b4890f550e67bdd9e",
+      "digest": "5e239297fb848f53572444722268e85ce0ba3c2a577115b23f0a1d0abc0c3f6f",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormProductHeader.vue",
       "referenceNativeStyleSelectors": [],
@@ -2178,6 +2188,18 @@
       ]
     },
     {
+      "category": "form-fields",
+      "digest": "aeb2f8cb5911cdaf072621ffceeca285d4563426b222ba355e2660c967027193",
+      "nativeStyleSelectors": [],
+      "path": "pages/contractForm/FormSectionNavigation.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton"
+      ]
+    },
+    {
       "category": "overlay",
       "digest": "b5a4029f9d80a47746441f6240ff64c0a7d1c82bf8691b391818f51661af1c1c",
       "nativeStyleSelectors": [],
@@ -2197,7 +2219,7 @@
     },
     {
       "category": "collaboration",
-      "digest": "85d7136d02f7fc0a9a6e69a14c17180ec3f1cf3b02f4ec64b039ec54d0219917",
+      "digest": "67f46cc84f283a2ede535e2acf4ad52d94d1e62880f3b1482d683ef84e84df1b",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/NativeCollaborationPanel.vue",
       "referenceNativeStyleSelectors": [],
@@ -2210,7 +2232,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "1a1249b7ec5ae8d23661cf1db13361375e67529ada807324bb73ffbc955db2c3",
+      "digest": "8b017011d9dd3dd3efc136cf71c653919d21e4d8408146bcc6600c853361fcce",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ObjectTaskPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2223,7 +2245,7 @@
     },
     {
       "category": "collaboration",
-      "digest": "ff89745a16af5c684de280d9d1dc3d2f497a6efd274c8ac195ad40fc7bebd849",
+      "digest": "118c58428fb33deeae2fc1ad3425494fcc3ae8d599c9264ef8222d6ad8d2768b",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ProfessionalAttachmentManager.vue",
       "referenceNativeStyleSelectors": [],
@@ -2247,7 +2269,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "85867e2f53ca7c775dde8bd7ec881ece5677ffc581486ef3798bd940760a7447",
+      "digest": "d91fcc5a648bfe5ebc003d06bdda9b714c2a050ea94ad0007043e5b0ef158134",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ProfessionalAuditTimeline.vue",
       "referenceNativeStyleSelectors": [],
@@ -2276,7 +2298,7 @@
     },
     {
       "category": "collaboration",
-      "digest": "5ae814afcae707d6d77f2df94386629462f93e06040217af6223f51105586d6e",
+      "digest": "b4d9e49ed23b56d1650a2ec8672f7ace60dbd254f3d745a4b4df9a9b5d456b21",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ProfessionalCollaborationTimeline.vue",
       "referenceNativeStyleSelectors": [],
@@ -2790,7 +2812,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "c7e9523bebfe73083066cd48487da6132ce657c465925b8e1b0f066c175760c5",
+  "currentInputDigest": "ce8f2ea96cfc1cb65ffe06557d9504f885a0bf5262cbc7d1745a243155d05788",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
@@ -3022,9 +3044,9 @@
   "scope": "repository formal P0/P1 frontend source projection",
   "summary": {
     "adapterCount": 18,
-    "changedSourceCount": 196,
+    "changedSourceCount": 198,
     "consumerPrimitiveVisualChromeCount": 0,
-    "currentSourceCount": 217,
+    "currentSourceCount": 218,
     "invalidFormalVisualEvidenceBindingCount": 0,
     "projectedAdapterCount": 18,
     "referenceSourceCount": 132,

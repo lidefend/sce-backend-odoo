@@ -48,8 +48,12 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("attachment input bypasses the governed file primitive")
     if "<ScButton" not in timeline or ':loading="timelineLoading"' not in timeline:
         failures.append("collaboration timeline does not expose governed loading actions")
-    for marker in ('data-professional-collaboration-component="panel"', ":data-follower-readiness"):
+    for marker in ('data-professional-collaboration-component="panel"', "data-collaboration-section-heading", ":data-follower-readiness"):
         if marker not in panel: failures.append(f"collaboration panel missing {marker}")
+    if 'class="block native-chatter-block"' in panel:
+        failures.append("collaboration panel retains the obsolete nested card container")
+    if 'style="margin-top:' in timeline:
+        failures.append("collaboration timeline retains inline layout ownership")
     if "<ProfessionalFollowerManager" not in panel or 'data-professional-collaboration-component="followers"' not in followers:
         failures.append("native collaboration panel bypasses shared follower manager")
     if "<ScButton" not in followers or "<ScList" not in followers or "<ScInlineState" not in followers:

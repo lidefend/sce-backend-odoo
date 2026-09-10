@@ -15,6 +15,8 @@
     :data-dirty-state="model.dirtyState"
     :data-header-variant="model.variant"
     :data-title-visibility="hideTitle ? 'semantic-only' : 'visible'"
+    :data-has-status="String(Boolean(slots.status))"
+    :data-has-actions="String(Boolean(slots.actions))"
   >
     <div class="product-page-header__identity">
       <p v-if="eyebrow" class="product-page-header__eyebrow">{{ eyebrow }}</p>
@@ -41,6 +43,7 @@ import {
   type ProductPageRenderProfile,
 } from '../../app/presentation/productPageHeader';
 
+const slots = useSlots();
 const props = withDefaults(defineProps<{
   title: string;
   subtitle?: string;
@@ -67,7 +70,7 @@ const model = computed(() => resolveProductPageHeaderModel({
   presentationMode: props.presentationMode,
   renderProfile: props.renderProfile,
   dirtyState: props.dirtyState,
-  statusbar: Boolean(useSlots().status),
+  statusbar: Boolean(slots.status),
   primaryActions: props.primaryActions,
   overflowActions: props.overflowActions,
   exitAction: props.exitAction,
@@ -118,13 +121,18 @@ const model = computed(() => resolveProductPageHeaderModel({
 .product-page-header--dashboard h1 { font-size:22px; letter-spacing:-.01em; }
 .product-page-header--task,
 .product-page-header--workspace {
+  position: sticky;
+  z-index: var(--sc-component-sticky-header-z-index);
+  top: 0;
   border-width: 0 0 1px;
   border-radius: 0;
   border-color: var(--sc-app-border-strong);
-  background: transparent;
-  box-shadow: none;
+  background: var(--sc-app-panel);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--sc-app-shadow) 10%, transparent);
   padding: var(--sc-space-xs) 0 var(--sc-space-sm);
+  isolation: isolate;
 }
+.product-page-header--title-hidden:not([data-has-status='true']) .product-page-header__actions { margin-left:auto; }
 .product-page-header--dialog { box-shadow:none; border-width:0 0 1px; border-radius:0; }
 @media(max-width:860px){.product-page-header{align-items:stretch;flex-direction:column}.product-page-header--title-hidden{align-items:stretch}.product-page-header__status{width:100%;margin-left:0;text-align:left}.product-page-header__actions{width:100%}.product-page-header h1{font-size:20px}}
 @media (max-width: 860px) {

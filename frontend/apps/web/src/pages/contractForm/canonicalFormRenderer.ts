@@ -2,6 +2,7 @@ import type { FieldDescriptor } from '@sc/schema';
 import type { CanonicalFormField, CanonicalFormNode, CanonicalRelationValue } from '../../app/presentation/canonicalFormRenderModel';
 import type { FormSectionFieldSchema, TemplateSelectOption } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
+import { fieldIsBusinessRelationCollection } from '../../app/presentation/canonicalFormFloorplan';
 import {
   normalizeMonetaryDigits,
   projectMany2oneCapabilities,
@@ -101,6 +102,7 @@ export function canonicalFieldToFormSection(
   const config = asRecord(field.componentConfig);
   const type = text(field.fieldType || config.fieldType || config.field_type || 'char').toLowerCase() || 'char';
   const descriptor = fieldDescriptor(field);
+  const relationshipCollection = fieldIsBusinessRelationCollection(field);
   const relation = type === 'many2one' ? relationValue(field.value) : null;
   const runtimeRelationOptions = type === 'many2one' && relationProjection
     ? relationProjection.filteredRelationOptions(field.fieldCode)
@@ -164,6 +166,10 @@ export function canonicalFieldToFormSection(
     componentFallback: field.componentResolution.fallback,
     presentationMode: field.presentationMode,
     renderProfile: field.renderProfile,
+    semanticRole: field.semanticRole || undefined,
+    sectionNavigationTarget: relationshipCollection ? `field:${field.widgetId}:relation` : undefined,
+    sectionContentKind: relationshipCollection ? 'relation-collection' : undefined,
+    sectionSourceIdentity: relationshipCollection ? field.widgetId : undefined,
     digits,
     currencyField: currencyField || undefined,
     currencyLabel: currencyLabel || undefined,

@@ -1,6 +1,7 @@
 <template>
   <div
     class="professional-detail-collection"
+    data-semantic-component="ProfessionalDetailCollectionControl"
     data-professional-field-family="detail-collection"
     :data-relation-model="authority.relationModel"
     :data-row-count="authority.rowCount"

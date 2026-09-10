@@ -27,6 +27,10 @@ ROOT = Path(__file__).resolve().parents[2]
 TOKENS_TS = ROOT / "frontend/packages/ui/src/kits/tokens.ts"
 PROFILE_CSS = ROOT / "frontend/apps/web/src/styles/tokens/profile.css"
 THEME_TS = ROOT / "frontend/apps/web/src/styles/theme.ts"
+APP_VUE = ROOT / "frontend/apps/web/src/App.vue"
+MAIN_TS = ROOT / "frontend/apps/web/src/main.ts"
+TDESIGN_CONFIG_TS = ROOT / "frontend/apps/web/src/styles/tdesignGlobalConfig.ts"
+APPLICATION_RUNTIME_TS = ROOT / "frontend/apps/web/src/styles/themeApplicationRuntime.ts"
 
 PROFILE_IDS = ("enterprise-neutral", "business-soft", "accessible-contrast")
 SURFACE_OWNED = {"--sc-semantic-surface-page", "--sc-semantic-surface-panel"}
@@ -142,6 +146,10 @@ def main() -> int:
     tokens_text = read(TOKENS_TS)
     css_text = read(PROFILE_CSS)
     theme_text = read(THEME_TS)
+    app_text = read(APP_VUE)
+    main_text = read(MAIN_TS)
+    tdesign_config_text = read(TDESIGN_CONFIG_TS)
+    application_runtime_text = read(APPLICATION_RUNTIME_TS)
 
     if not tokens_text or not css_text or not theme_text:
         print(f"[theme_profile_guard] FAIL missing source: {rel(TOKENS_TS)} / {rel(PROFILE_CSS)} / {rel(THEME_TS)}")
@@ -156,6 +164,15 @@ def main() -> int:
     errors += check_token_consistency(tokens_profiles, css_profiles)
     errors += check_theme_model(theme)
     errors += check_orthogonality(css_profiles)
+    for label, source, markers in (
+        ("App.vue", app_text, ("useThemeApplicationRuntime();",)),
+        ("main.ts", main_text, ("startThemeApplicationRuntime();", "import.meta.hot.dispose(stopThemeApplicationRuntime)")),
+        ("tdesignGlobalConfig.ts", tdesign_config_text, ("startTdesignGlobalConfigRuntime", "stopTdesignGlobalConfigRuntime", "exclude: []")),
+        ("themeApplicationRuntime.ts", application_runtime_text, ("onMounted(startThemeApplicationRuntime)", "onBeforeUnmount(stopThemeApplicationRuntime)")),
+    ):
+        for marker in markers:
+            if marker not in source:
+                errors.append(f"{label} missing application theme lifecycle marker: {marker}")
 
     if errors:
         print(f"[theme_profile_guard] FAIL")
@@ -172,34 +189,39 @@ const ts = require('./frontend/apps/web/node_modules/typescript');
 const source = fs.readFileSync('./frontend/apps/web/src/styles/theme.ts', 'utf8');
 const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
 const attrs = new Map();
-const listeners = new Set();
-const media = { matches: false,
+const darkListeners = new Set();
+const motionListeners = new Set();
+const media = (listeners) => ({ matches: false,
   addEventListener: (name, handler) => { assert.equal(name, 'change'); listeners.add(handler); },
-  removeEventListener: (name, handler) => { assert.equal(name, 'change'); listeners.delete(handler); } };
+  removeEventListener: (name, handler) => { assert.equal(name, 'change'); listeners.delete(handler); } });
+const darkMedia = media(darkListeners);
+const motionMedia = media(motionListeners);
 const root = { style: {}, setAttribute: (name, value) => attrs.set(name, value), getAttribute: name => attrs.get(name) };
 const moduleObject = { exports: {} };
 vm.runInNewContext(code, { exports: moduleObject.exports, module: moduleObject,
-  window: { matchMedia: () => media }, document: { documentElement: root } });
+  window: { matchMedia: query => query.includes('color-scheme') ? darkMedia : motionMedia }, document: { documentElement: root } });
 const theme = moduleObject.exports;
 const resolved = () => attrs.get('data-sc-theme-resolved');
 theme.applyThemeProfile('business-soft');
 theme.applyTheme('system');
-const stop = theme.watchSystemTheme();
-assert.equal(listeners.size, 1);
+const stop = theme.ensureThemeRuntimeWatch();
+theme.ensureThemeRuntimeWatch();
+assert.equal(darkListeners.size, 1);
+assert.equal(motionListeners.size, 1);
 assert.equal(resolved(), 'light');
-media.matches = true; listeners.forEach(handler => handler());
+darkMedia.matches = true; darkListeners.forEach(handler => handler());
 assert.equal(resolved(), 'dark');
-theme.applyTheme('light'); listeners.forEach(handler => handler());
+theme.applyTheme('light'); darkListeners.forEach(handler => handler());
 assert.equal(resolved(), 'light', 'explicit light mode ignores system dark');
-theme.applyTheme('dark'); media.matches = false; listeners.forEach(handler => handler());
+theme.applyTheme('dark'); darkMedia.matches = false; darkListeners.forEach(handler => handler());
 assert.equal(resolved(), 'dark', 'explicit dark mode ignores system light');
 theme.applyTheme('system');
 assert.equal(resolved(), 'light');
 assert.equal(attrs.get('data-sc-theme-profile'), 'business-soft', 'mode changes preserve style profile');
-stop(); assert.equal(listeners.size, 0);
-media.matches = true; listeners.forEach(handler => handler());
+stop(); assert.equal(darkListeners.size, 0); assert.equal(motionListeners.size, 0);
+darkMedia.matches = true; darkListeners.forEach(handler => handler());
 assert.equal(resolved(), 'light', 'disposed listener cannot update theme');
-console.log('[theme_system_runtime] PASS assertions=9');
+console.log('[theme_system_runtime] PASS assertions=12');
 """], cwd=ROOT, check=False)
     if runtime.returncode:
         return runtime.returncode

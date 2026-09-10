@@ -81,6 +81,11 @@
       </TaskFormPattern>
       <WorkspaceFormPattern v-else :render-profile="renderModel.identity.mode">
       <article class="sc-native-contract-page" data-native-contract-structure>
+        <FormSectionNavigation
+          v-if="workspaceSectionLinks.length > 1"
+          :items="workspaceSectionLinks"
+          root-selector="[data-native-contract-structure]"
+        />
         <main class="sc-native-contract-tree" data-canonical-zone="primary">
           <NativeFormTreeRenderer
             v-if="nativeBridge"
@@ -106,7 +111,14 @@
             @field-change="emit('field-change', $event)"
           />
         </section>
-        <section v-if="showCollaborationPanel" class="sc-native-contract-collaboration">
+        <section
+          v-if="showCollaborationPanel"
+          class="sc-native-contract-collaboration"
+          data-form-semantic-role="activity"
+          data-form-section-target="surface:activity"
+          data-section-content-kind="collaboration-panel"
+          data-section-source-identity="collaboration-panel"
+        >
           <NativeCollaborationPanel
             v-bind="collaborationPanelProps"
             :show-audit-timeline="true"
@@ -145,9 +157,11 @@ import NativeCollaborationPanel, {
 } from './NativeCollaborationPanel.vue';
 import { resolveProfessionalAuditEvents } from './professionalAuditModel';
 import ObjectTaskPage from './ObjectTaskPage.vue';
+import FormSectionNavigation from './FormSectionNavigation.vue';
 import TaskFormPattern from '../../components/product-page-patterns/TaskFormPattern.vue';
 import WorkspaceFormPattern from '../../components/product-page-patterns/WorkspaceFormPattern.vue';
 import { canonicalNodeHasContent, type CanonicalRelationProjection } from './canonicalFormRenderer';
+import { workspaceSurfaceNavigationItems } from './nativeSectionNavigation';
 
 const props = defineProps<{
   renderModel: CanonicalFormRenderModel | null;
@@ -242,6 +256,13 @@ const nativeBridge = computed(() => nativeBridgeModel.value ? buildCanonicalNati
 const floorplanSubordinateNodes = computed(() => floorplan.value.subordinateNodes
   .filter((node) => !collaborationKind(node.kind))
   .filter(canonicalNodeHasContent));
+const workspaceSectionLinks = computed(() => [
+  ...(nativeBridge.value?.sectionLinks || []),
+  ...workspaceSurfaceNavigationItems({
+    collaborationAvailable: props.showCollaborationPanel === true,
+    auditAvailable: props.showCollaborationPanel === true && auditEvents.value.length > 0,
+  }),
+]);
 
 function collaborationKind(kind: string) {
   return ['chatter', 'activity'].includes(String(kind || '').trim().toLowerCase());
@@ -258,6 +279,15 @@ function runNativeCanonicalAction(payload: Record<string, unknown>) {
 .sc-form-driver-error {
   margin: var(--sc-product-space-4);
 }
+.sc-native-contract-page :deep([data-form-section-target]) {
+  scroll-margin-top: calc(var(--sc-form-command-bar-height, 72px) + 52px);
+}
+.sc-native-contract-page {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
 .canonical-product-edit-actions {
   display: flex;
   flex-wrap: wrap;
@@ -269,7 +299,15 @@ function runNativeCanonicalAction(payload: Record<string, unknown>) {
   .canonical-product-edit-actions { flex-wrap: nowrap; width: 100%; }
   .canonical-product-edit-actions :deep(button[data-action-tier='primary']) { flex: 1 1 auto; }
 }
-.sc-form-driver-host { min-width: 0; }
+.sc-form-driver-host,
+.sc-native-contract-tree,
+.sc-native-contract-subordinate,
+.sc-native-contract-collaboration {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
 .canonical-form-action-icon { inline-size: 1em; text-align: center; }
 .canonical-form-blocking-notice {
   padding: 12px 16px;
