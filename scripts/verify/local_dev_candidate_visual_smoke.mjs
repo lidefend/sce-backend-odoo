@@ -3037,6 +3037,36 @@ try {
         const groupingToolbarCount = await page.locator('[data-semantic-component="CollectionGroupingToolbar"]').count();
         const groupPageControlsCount = await page.locator('[data-semantic-component="CollectionGroupPageControls"]').count();
         const collectionState = String(await page.locator('[data-semantic-component="ActionView"]').getAttribute('data-collection-state') || '');
+        let paginationCycle = null;
+        if (target.exercisePaginationCycle === true
+          && paginationMode === 'paged'
+          && (target.paginationCycleDesktopOnly !== true || viewport.name === 'desktop')) {
+          const pagination = footer.locator('[data-semantic-component="ScPagination"]');
+          const pageTwo = pagination.getByRole('button', { name: /^2$/ });
+          if (await pageTwo.count() !== 1) throw new Error(`${target.name}: expected one accessible page 2 control`);
+          const beforeUrl = new URL(page.url());
+          await pageTwo.click();
+          await waitForStableProductSurface(page);
+          const pageTwoUrl = new URL(page.url());
+          const pageOne = pagination.getByRole('button', { name: /^1$/ });
+          if (await pageOne.count() !== 1) throw new Error(`${target.name}: expected one accessible page 1 control after paging`);
+          await pageOne.click();
+          await waitForStableProductSurface(page);
+          const restoredUrl = new URL(page.url());
+          const offset = (url) => Number(url.searchParams.get('list_offset') || 0);
+          paginationCycle = {
+            beforeUrl: beforeUrl.href,
+            pageTwoUrl: pageTwoUrl.href,
+            restoredUrl: restoredUrl.href,
+            beforeOffset: offset(beforeUrl),
+            pageTwoOffset: offset(pageTwoUrl),
+            restoredOffset: offset(restoredUrl),
+            pass: pageTwoUrl.pathname === beforeUrl.pathname
+              && offset(pageTwoUrl) > offset(beforeUrl)
+              && restoredUrl.pathname === beforeUrl.pathname
+              && offset(restoredUrl) === offset(beforeUrl),
+          };
+        }
         collectionNavigationEvidence = {
           footerCount,
           paginationMode,
@@ -3047,18 +3077,25 @@ try {
           missingResizeLabels,
           groupingToolbarCount,
           groupPageControlsCount,
+          paginationCycle,
           pass: footerCount === 1
             && ['count', 'grouped', 'paged'].includes(paginationMode)
             && (collectionState === 'empty' || columnHeaderCount > 0)
             && invalidColumnRoots === 0
             && missingDragLabels === 0
-            && missingResizeLabels === 0,
+            && missingResizeLabels === 0
+            && (target.exercisePaginationCycle !== true
+              || (target.paginationCycleDesktopOnly === true && viewport.name !== 'desktop')
+              || paginationCycle?.pass === true),
         };
       }
       let recordEntryEvidence = null;
       if (target.exerciseRecordEntry === true) {
-        const recordId = String(target.recordId || '').trim();
-        if (!recordId) throw new Error(`${target.name}: record entry requires recordId`);
+        let recordId = String(target.recordId || '').trim();
+        if (!recordId) {
+          recordId = String(await page.locator('[data-record-key]:visible').first().getAttribute('data-record-key') || '').trim();
+        }
+        if (!recordId) throw new Error(`${target.name}: record entry requires one visible record identity`);
         const recordOwner = page.locator(`[data-record-key="${recordId}"]:visible`);
         if (await recordOwner.count() !== 1) throw new Error(`${target.name}: expected exactly one visible record ${recordId}`);
         const opener = recordOwner.locator('.cell-primary-link, .collection-mobile-record-row__open-action, [data-semantic-action="open-record"]');
