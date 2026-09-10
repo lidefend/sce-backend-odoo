@@ -194,6 +194,18 @@ class ContractFormCacheOwnershipTest(unittest.TestCase):
             source,
         )
 
+    def test_company_isolation_probe_waits_for_scoped_final_company_item(self):
+        source = (ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("const initiatedSection = page.locator", source)
+        self.assertIn("filter({ hasText: 'FE-C-PR-001' }).waitFor", source)
+        self.assertIn("initiatedSection.locator('.work-card').filter({ hasText: journeyName })", source)
+        self.assertIn("FINAL_COMPANY_MY_WORK J11", source)
+        self.assertIn("final My Work request did not use company B context", source)
+        self.assertIn("final My Work response did not use company B scope", source)
+
 
 if __name__ == "__main__":
     unittest.main()

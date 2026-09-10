@@ -429,6 +429,8 @@ async function open(page, route) {
   await waitBusiness(page);
 }
 async function selectCompany(page, label) {
+  const expectedCompanyId = Number(label === 'FE Company A' ? TARGETS.companies?.a : label === 'FE Company B' ? TARGETS.companies?.b : 0);
+  check(expectedCompanyId > 0, `missing governed company identity for ${label}`);
   const contextIndicator = page.locator('[data-semantic-component="WorkspaceContextIndicator"]:visible');
   await contextIndicator.waitFor({ state: 'visible', timeout: 30000 });
   check(await contextIndicator.count() === 1, 'workspace context indicator identity is not unique');
@@ -448,12 +450,17 @@ async function selectCompany(page, label) {
   }
   const initialized = page.waitForResponse((response) => {
     if (!response.url().includes('/api/v1/intent')) return false;
-    try { return JSON.parse(response.request().postData() || '{}').intent === 'system.init'; } catch { return false; }
+    try {
+      const body = JSON.parse(response.request().postData() || '{}');
+      const requestCompanyId = Number(body.context?.company_id || body.params?.context?.company_id || body.params?.company_id || 0);
+      return body.intent === 'system.init' && requestCompanyId === expectedCompanyId;
+    } catch { return false; }
   }, { timeout: 45000 });
   await companyOption.click();
   const initializedResponse = await initialized;
   check(initializedResponse.ok(), `company switch system.init failed: HTTP ${initializedResponse.status()}`);
   await companyPanel.waitFor({ state: 'hidden', timeout: 45000 });
+  await contextIndicator.getByRole('button', { name: `切换公司：${label}`, exact: true }).waitFor({ state: 'visible', timeout: 45000 });
   return true;
 }
 async function navigateSpa(page, route, readySelector = '.sc-product-main-surface, .financial-workspace, .product-work, .sc-state-panel') {
@@ -746,13 +753,37 @@ async function main() {
     await selectCompany(page, 'FE Company A');
     await selectCompany(page, 'FE Company B');
     await page.waitForTimeout(1800);
+    const finalMyWorkResponse = page.waitForResponse((response) => {
+      if (!response.url().includes('/api/v1/intent')) return false;
+      try { return JSON.parse(response.request().postData() || '{}').intent === 'my.work.summary'; } catch { return false; }
+    }, { timeout: 45000 });
     await page.goto(`${BASE_URL}/my-work`, { waitUntil: 'domcontentloaded' });
+    const myWorkResponse = await finalMyWorkResponse;
+    const myWorkRequest = JSON.parse(myWorkResponse.request().postData() || '{}');
+    const myWorkEnvelope = await myWorkResponse.json();
+    const myWorkData = myWorkEnvelope?.data?.data || myWorkEnvelope?.data || myWorkEnvelope?.result?.data || myWorkEnvelope?.result || {};
+    const myWorkWorkspace = myWorkData?.product_workspace || {};
+    const myWorkLabels = (Array.isArray(myWorkWorkspace.sections) ? myWorkWorkspace.sections : [])
+      .flatMap((section) => Array.isArray(section?.items) ? section.items : [])
+      .map((item) => String(item?.record?.label || ''))
+      .filter(Boolean);
+    report.action_diagnostics.final_company_my_work = {
+      request_company_id: Number(myWorkRequest.context?.company_id || myWorkRequest.params?.context?.company_id || myWorkRequest.params?.company_id || 0),
+      response_company_ids: Array.isArray(myWorkWorkspace.query_scope?.company_ids) ? myWorkWorkspace.query_scope.company_ids.map(Number) : [],
+      item_labels: myWorkLabels,
+    };
+    console.log(`[frontend_delivery_hardening] FINAL_COMPANY_MY_WORK J11 ${JSON.stringify(report.action_diagnostics.final_company_my_work)}`);
+    check(report.action_diagnostics.final_company_my_work.request_company_id === Number(TARGETS.companies.b), 'final My Work request did not use company B context');
+    check(report.action_diagnostics.final_company_my_work.response_company_ids.includes(Number(TARGETS.companies.b)), 'final My Work response did not use company B scope');
     await page.locator('.product-work').waitFor({ timeout: 45000 });
-    check((await page.locator('body').innerText()).includes('FE Company B'), 'final company B context label missing');
+    await page.locator('[data-semantic-component="WorkspaceContextIndicator"]:visible')
+      .getByRole('button', { name: '切换公司：FE Company B', exact: true })
+      .waitFor({ state: 'visible', timeout: 45000 });
     await page.locator('.count-card[data-section-key="initiated"]').click();
-    await page.locator('.work-section[data-section-key="initiated"]').waitFor({ timeout: 15000 });
-    const workText = await page.locator('body').innerText();
-    check(workText.includes('FE-C-PR-001') && !workText.includes(journeyName), 'stale company response polluted final B context');
+    const initiatedSection = page.locator('.work-section[data-section-key="initiated"]');
+    await initiatedSection.waitFor({ timeout: 15000 });
+    await initiatedSection.locator('.work-card').filter({ hasText: 'FE-C-PR-001' }).waitFor({ timeout: 45000 });
+    check(await initiatedSection.locator('.work-card').filter({ hasText: journeyName }).count() === 0, 'stale company response polluted final B context');
     await page.unroute('**/api/v1/intent**', reorder);
     await logout(page); await login(page, PROJECT_MEMBER_LOGIN);
     await page.goto(`${BASE_URL}/my-work`); await page.locator('.product-work').waitFor({ timeout: 45000 });

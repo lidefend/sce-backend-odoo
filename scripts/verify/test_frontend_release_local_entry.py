@@ -196,6 +196,8 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
         self.assertIn("workspace context indicator identity is not unique", helper)
         self.assertIn("name: /^切换公司：/", helper)
         self.assertIn("company switch trigger identity is not unique", helper)
+        self.assertIn("requestCompanyId === expectedCompanyId", helper)
+        self.assertIn("name: `切换公司：${label}`, exact: true", helper)
 
     def test_release_probes_fixture_and_http_credentials_before_frontend(self) -> None:
         fixture = (ROOT / "scripts/test/frontend_productization_fixture.sh").read_text(
@@ -256,6 +258,21 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
             )[0]
             self.assertIn("frontend_delivery_hardening_runtime_ids.py", operation)
             self.assertIn("ODOO_SHELL_RUN_ISOLATED=1", operation)
+
+    def test_release_delivery_browser_uses_governed_acceptance_identity_only(self) -> None:
+        runtime_make = (ROOT / "make/runtime_ops.mk").read_text(encoding="utf-8")
+        target = runtime_make.split(
+            "verify.frontend.delivery_hardening.release.browser:", 1
+        )[1].split("\n\n", 1)[0]
+
+        self.assertIn(
+            "frontend_acceptance_operation_entry.sh delivery-hardening-runtime-ids",
+            target,
+        )
+        runtime_id_line = next(
+            line for line in target.splitlines() if "target_output=" in line
+        )
+        self.assertNotIn("$(RUN_ENV)", runtime_id_line)
 
         for relative_path in (
             "scripts/dev/frontend_acceptance_runtime.sh",
