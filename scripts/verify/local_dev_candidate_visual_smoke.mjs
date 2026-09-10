@@ -1412,7 +1412,7 @@ try {
       if (target.captureFormStructure === true) {
         const screenshotStem = `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
         let popupBoundaryEvidence = { checked: false, reason: 'no enabled visible select', pass: true };
-        const formSelects = page.locator('.field [data-semantic-component="ScSelect"]:visible');
+        const formSelects = page.locator('.field [data-semantic-component="ScSelect"]:visible, .field [role="combobox"]:visible');
         for (let index = 0; index < await formSelects.count(); index += 1) {
           const select = formSelects.nth(index);
           const enabled = await select.evaluate((node) => {
@@ -1424,7 +1424,9 @@ try {
           await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
           popupBoundaryEvidence = await page.evaluate(() => {
             const visible = (node) => node instanceof HTMLElement && node.offsetParent !== null;
-            const select = [...document.querySelectorAll('.field [data-semantic-component="ScSelect"]')].find(visible);
+            const select = [...document.querySelectorAll('.field [data-semantic-component="ScSelect"], .field [role="combobox"]')]
+              .find((node) => visible(node) && (node === document.activeElement || node.contains(document.activeElement)))
+              || null;
             const popup = [...document.querySelectorAll('[role="listbox"]')]
               .find((node) => visible(node) && node.getBoundingClientRect().width > 0);
             const pack = (node) => {
