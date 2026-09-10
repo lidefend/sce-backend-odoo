@@ -254,14 +254,15 @@ async function onSubmit() {
   try {
     await session.login(username.value, password.value, dbName.value);
     await session.loadAppInit();
+    const recoveringExpiredSession = sessionExpired.value;
     const queryRedirect = typeof route.query.redirect === 'string' ? route.query.redirect : '';
-    const rawRedirect = queryRedirect || (sessionExpired.value ? readSessionExpiredReturnPath() : '');
+    const rawRedirect = queryRedirect || (recoveringExpiredSession ? readSessionExpiredReturnPath() : '');
     const normalizedRedirect = normalizeSafeLoginReturnPath(normalizeLegacyWorkbenchPath(rawRedirect));
     const redirect = normalizedRedirect
       ? normalizedRedirect
       : isPlatformAdminEntryRuntime() ? '/?platform_admin=1' : session.resolveLandingPath('/');
     await router.push(redirect);
-    if (sessionExpired.value) clearSessionExpiredReturnPath();
+    if (recoveringExpiredSession) clearSessionExpiredReturnPath();
   } catch (err) {
     error.value = normalizeLoginError(err);
   } finally {

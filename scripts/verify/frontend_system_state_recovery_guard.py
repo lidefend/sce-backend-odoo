@@ -35,6 +35,8 @@ def validate() -> list[str]:
         "route.query.reason === 'session_expired'",
         "readSessionExpiredReturnPath()",
         "clearSessionExpiredReturnPath()",
+        "const recoveringExpiredSession = sessionExpired.value",
+        "if (recoveringExpiredSession) clearSessionExpiredReturnPath()",
         "normalizeSafeLoginReturnPath",
     ):
         if marker not in login:
