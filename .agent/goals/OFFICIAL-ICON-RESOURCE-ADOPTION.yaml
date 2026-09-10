@@ -29,9 +29,17 @@ goal:
     - database and fixtures
     - release
   validation:
+    candidate_sha: 6c003ea4cb4e90f6c1913960ec63dc1932eced66
+    candidate_fingerprint: e6739c01a96f0489ba35be0ba62674722075dcda7e0097633fb9953b12f49a86
+    local_result: passed
+    browser_evidence: artifacts/playwright/official-icon-resource-adoption-6c003ea4/summary.json
     required:
       - verify.frontend.official_icon.unit
       - verify.frontend.typecheck.strict
       - verify.frontend.lint.src
       - verify.frontend.build
       - verify.frontend.quick.gate
+      - local.dev.candidate.frontend.visual-smoke
+    pending:
+      - independent_review
+      - pr_and_exact_head_ci
