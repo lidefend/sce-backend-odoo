@@ -236,7 +236,10 @@ function fieldChildOrphanClass(child: CanonicalFormNode): string {
 .canonical-form-node--readonly-fact :deep(.template-form-section-grid),
 .canonical-form-node--readonly-fact :deep(.field) { display: grid; }
 .canonical-form-node--readonly-fact :deep(.field-control-row),
-.canonical-form-node--readonly-fact :deep(.field-control-main) { display: inline; }
+.canonical-form-node--readonly-fact :deep(.field-control-main) {
+  display: inline;
+  line-height: 22px;
+}
 .canonical-form-node--readonly-fact :deep(.readonly-value),
 .canonical-form-node--readonly-fact :deep(.contract-readonly-value) {
   min-height: 0;
