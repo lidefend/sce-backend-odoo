@@ -1,7 +1,7 @@
 goal:
   id: FORM-VISUAL-HIERARCHY-FIRST-VIEW-CLOSURE
   title: form_visual_hierarchy_and_first_view_efficiency_closure
-  status: active
+  status: verification_pending
   objective: close_shared_form_container_density_and_mobile_navigation_gaps_without_business_semantic_inference
   baseline:
     branch: feature/form-page-structure-professionalization-v1
@@ -49,5 +49,18 @@ goal:
     - navigation_target_not_occluded_by_sticky_surfaces
     - light_and_dark_1440_1088_390_320_readonly_browser_matrix
     - zero_business_writes
+  result:
+    product_and_evidence_head: 121f63540a982eb35a36655fc2847e4a73e93fa3
+    fingerprint: 779479790a59bbc3035e0ca4a9de57aec836def94a92a602ca79fc3c742bad03
+    fingerprint_path: artifacts/fingerprints/form_visual_hierarchy_candidate_121f6354.json
+    browser_evidence:
+      - artifacts/playwright/form-visual-hierarchy-light-1440-390-121f6354/summary.json
+      - artifacts/playwright/form-visual-hierarchy-dark-1088-320-121f6354/summary.json
+    local_result: passed_awaiting_product_review
+    mutation_count: 0
+    notes:
+      - hidden_backend_chapter_titles_remain_hidden_by_design
+      - keyboard_and_query_topic_remains_deferred
+      - contract_database_acceptance_and_release_are_out_of_scope
   rollback:
     - revert_this_batch_after_067cf58c_without_contract_or_database_rollback
