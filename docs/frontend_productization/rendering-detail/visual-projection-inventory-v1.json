@@ -1243,7 +1243,7 @@
     },
     {
       "category": "collection",
-      "digest": "383e1063e3c606eefce771f02a3c5e80359a5b6f1d053e2c13f7cde9739e774b",
+      "digest": "a61aadbc60eda675924da855fd6f507e28c0cdaf8c4f447eaa57eaaa254e3957",
       "nativeStyleSelectors": [],
       "path": "components/product-list/CollectionColumnHeaderControl.vue",
       "referenceNativeStyleSelectors": [],
@@ -1538,7 +1538,7 @@
     },
     {
       "category": "shell",
-      "digest": "01635c06bf70481b228d2b7834c8213f933be7d68db22d544daedbb70c85e473",
+      "digest": "8592f3ada52ee9b2fd447182133114ebe0aa31888416477a9d0dbd8ddeb00cef",
       "nativeStyleSelectors": [],
       "path": "components/product-shell/CanonicalNavigationMenuNode.vue",
       "referenceNativeStyleSelectors": [],
@@ -2022,7 +2022,7 @@
     },
     {
       "category": "collection",
-      "digest": "cc9b2a219de2f8b4dd18608cdabc56948b4c124ce2f1c331566191737daa892f",
+      "digest": "152bf7103ce320179df650b7f25cf6f553584cd3174ecb9ae720de5adc5ba98e",
       "nativeStyleSelectors": [],
       "path": "pages/ListPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2820,7 +2820,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "859e1d9c915d6f0e1029c46a0b11d10cce2410db894ea2f107e2504aab7edb53",
+  "currentInputDigest": "f5bf84404fe6ffdd93dc80ec71dd54f9b2a5d21009ff5a1df74f11a462152995",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
