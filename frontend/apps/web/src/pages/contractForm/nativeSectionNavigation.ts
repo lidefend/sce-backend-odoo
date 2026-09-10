@@ -85,13 +85,18 @@ export function workspaceSectionNavigationItems(nodes: CanonicalFormNode[]): Wor
   return [...items, ...relationshipCollectionNavigationItems(nodes)];
 }
 
-export function relationshipCollectionNavigationItems(nodes: CanonicalFormNode[]): WorkspaceSectionNavigationItem[] {
+export function relationshipCollectionNavigationItems(
+  nodes: CanonicalFormNode[],
+  presentable: (field: CanonicalFormNode['fields'][number]) => boolean = () => true,
+): WorkspaceSectionNavigationItem[] {
   const items: WorkspaceSectionNavigationItem[] = [];
   const emittedFields = new Set<string>();
 
   function visit(node: CanonicalFormNode) {
     if (!node.visible) return;
-    node.fields.filter((field) => field.visible && fieldIsBusinessRelationCollection(field)).forEach((field) => {
+    node.fields.filter((field) => (
+      field.visible && fieldIsBusinessRelationCollection(field) && presentable(field)
+    )).forEach((field) => {
       if (emittedFields.has(field.widgetId)) return;
       const key = `field:${field.widgetId}:relation`;
       items.push({

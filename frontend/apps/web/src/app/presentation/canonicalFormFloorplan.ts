@@ -274,12 +274,14 @@ function fieldHasAttachmentCapability(field: CanonicalFormNode['fields'][number]
   const config = field.componentConfig;
   const descriptor = field.fieldDescriptor;
   const tokens = [
-    field.componentKey,
+    field.componentResolution.componentKey,
+    field.componentResolution.renderer,
+    field.componentResolution.contractAdapter,
     config.widget, config.widgetType, config.widget_type,
     descriptor.widget, descriptor.widgetType, descriptor.widget_type,
   ].map((value) => String(value || '').trim().toLowerCase());
   return field.semanticRole === 'activity'
-    || tokens.some((value) => value === 'many2many_binary' || value === 'attachment');
+    || tokens.some((value) => value === 'many2many_binary' || value.includes('attachment'));
 }
 
 function fieldHasBusinessRelationCapability(field: CanonicalFormNode['fields'][number]): boolean {

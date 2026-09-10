@@ -353,7 +353,7 @@ import ProfessionalAuditTimeline from './ProfessionalAuditTimeline.vue';
 import FormSectionNavigation from './FormSectionNavigation.vue';
 import ScCard from '../../components/design-system/ScCard.vue';
 import ScDisclosure from '../../components/design-system/ScDisclosure.vue';
-import { canonicalNodeHasPresentableContent } from './canonicalFormRenderer';
+import { canonicalFieldHasPresentableValue, canonicalNodeHasPresentableContent } from './canonicalFormRenderer';
 import {
   relationshipCollectionNavigationItems,
   type WorkspaceSectionNavigationItem,
@@ -406,7 +406,10 @@ const sectionLinks = computed(() => [
   props.decisionMode && (props.taskNodes.length || props.riskNodes.length) ? floorplanSection('current-task', '办理提示', 'task') : null,
   props.coreInputNodes.length ? floorplanSection('core-input', '基本信息', 'task') : null,
   props.contextNodes.length ? floorplanSection('business-context', '基本资料', 'context') : null,
-  ...relationshipCollectionNavigationItems(presentableRelationNodes.value),
+  ...relationshipCollectionNavigationItems(
+    presentableRelationNodes.value,
+    (field) => canonicalFieldHasPresentableValue(field, props.relationAdapter),
+  ),
   props.supplementaryInputNodes.length ? floorplanSection('supplementary-input', '补充信息', 'context') : null,
   props.overflowContextNodes.length ? floorplanSection('overflow-context', '更多信息', 'context') : null,
   props.subordinateNodes.length ? floorplanSection('subordinate', '附件与辅助信息', 'context') : null,
@@ -430,7 +433,10 @@ const sectionLinks = computed(() => [
   gap: 12px;
   min-width: 0;
 }
-.object-task-page [data-section-title] { scroll-margin-top: calc(var(--sc-form-command-bar-height, 72px) + 52px); }
+.object-task-page [data-section-title],
+.object-task-page [data-form-section-target] {
+  scroll-margin-top: calc(var(--sc-form-command-bar-height, 72px) + 52px);
+}
 .object-task-page__body {
   display: grid;
   grid-auto-rows: max-content;
