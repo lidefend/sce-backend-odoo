@@ -36,6 +36,7 @@ function field(overrides: Record<string, unknown>) {
   return {
     widgetId: 'field.default', fieldCode: 'field_default', widgetType: '', label: '普通字段',
     visible: true, fieldType: 'char', semanticRole: '', componentKey: '', componentConfig: {}, fieldDescriptor: {},
+    componentResolution: { componentKey: '', renderer: '', contractAdapter: '' },
     ...overrides,
   } as unknown as CanonicalFormNode['fields'][number];
 }
@@ -77,6 +78,7 @@ const relationSections = workspaceSectionNavigationItems([node({
     field({ widgetId: 'lines.income', fieldType: 'one2many', semanticRole: 'relation', label: '合同明细' }),
     field({ widgetId: 'lines.settlement', fieldType: 'many2many', semanticRole: 'relation', label: '结算明细' }),
     field({ widgetId: 'attachments', fieldType: 'many2many', semanticRole: 'relation', label: '附件', componentConfig: { widget: 'many2many_binary' } }),
+    field({ widgetId: 'resolved.attachments', fieldType: 'many2many', semanticRole: 'relation', label: '其他附件', componentResolution: { componentKey: 'ProfessionalAttachmentCollection', renderer: '', contractAdapter: '' } }),
   ],
 })]);
 assert.deepEqual(relationSections.map(({ label, contentKind, sourceIdentity }) => ({ label, contentKind, sourceIdentity })), [

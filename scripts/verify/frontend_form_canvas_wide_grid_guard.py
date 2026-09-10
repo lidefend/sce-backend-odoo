@@ -67,7 +67,7 @@ for required in (
 for required in (
     'data-section-title="基本信息"',
     'data-section-title="关系明细"',
-    "relationshipCollectionNavigationItems(presentableRelationNodes.value)",
+    "relationshipCollectionNavigationItems(",
     "props.supplementaryInputNodes.length ? floorplanSection('supplementary-input'",
     'data-form-section-target="surface:activity"',
     "props.auditEvents.length ? {",

@@ -1615,6 +1615,11 @@ try {
             const headerRect = header instanceof HTMLElement ? header.getBoundingClientRect() : null;
             const obstructionBottom = Math.max(navRect?.bottom || 0, headerRect?.bottom || 0);
             const targetText = String(target?.textContent || '').replace(/\s+/g, ' ').trim();
+            const targetLabels = target instanceof HTMLElement
+              ? [targetText, target.getAttribute('aria-label'), target.dataset.sectionTitle]
+                .map((value) => String(value || '').replace(/\s+/g, ' ').trim())
+                .filter(Boolean)
+              : [];
             return {
               key: node instanceof HTMLElement ? String(node.dataset.sectionLink || '') : '',
               current: node.getAttribute('aria-current') === 'location',
@@ -1632,7 +1637,7 @@ try {
                 && Boolean(expectedContentKind)
                 && target.dataset.sectionContentKind === expectedContentKind
                 && Boolean(expectedLabel)
-                && targetText.includes(expectedLabel),
+                && targetLabels.some((label) => label.includes(expectedLabel)),
               targetTop: targetRect ? Math.round(targetRect.top) : null,
               obstructionBottom: Math.round(obstructionBottom),
               targetVisibleBelowSticky: Boolean(targetRect && targetRect.bottom > obstructionBottom && targetRect.top >= obstructionBottom - 2),
