@@ -1,0 +1,51 @@
+goal:
+  id: FORM-FIELD-GRID-ALIGNMENT-CLOSURE
+  title: shared_form_field_grid_and_alignment_closure
+  status: in_progress
+  objective: align_shared_form_field_slots_control_frames_and_row_baselines_without_business_or_contract_changes
+  baseline:
+    branch: feature/form-page-structure-professionalization-v1
+    full_sha: 464c155dbeba77a4624256480d3fe469d8bc5bb3
+    source: product_review_of_section_navigation_candidate
+    fingerprint: 5a97b540cbeeb5b7afe24fbe768f68576e3388eef787b440248d70e67f2823a4
+    fingerprint_path: artifacts/fingerprints/form_field_grid_alignment_baseline_464c155d.json
+  product_boundary:
+    formal_product_layer: P0
+    supporting_layer: P4
+    layer_target: frontend_generic_form_field_slot_grid_and_control_frame
+    module: frontend/apps/web
+    standard_vs_user_specific: platform_mechanism
+    why_here: field_slot_geometry_control_frame_sizing_and_nested_grid_indentation_are_shared_renderer_responsibilities
+    why_not_elsewhere:
+      - no_contract_field_permission_action_or_business_semantic_change
+      - no_model_or_field_name_inference
+      - no_hidden_backend_chapter_restoration
+      - no_customer_preference_runtime_configuration_or_database_change
+      - no_acceptance_release_or_remote_write
+    blast_radius:
+      - shared_form_field_control_wrappers
+      - native_form_group_grid_alignment
+      - readonly_and_editable_form_geometry
+      - field_alignment_browser_evidence
+  scope:
+    include:
+      - align_text_relation_date_amount_and_textarea_outer_frames_to_their_field_slots
+      - remove_accidental_nested_group_inline_indentation
+      - align_labels_and_control_tops_for_same_row_and_label_line_count
+      - preserve_governed_checkbox_and_compact_number_exceptions
+      - measure_control_borders_and_capture_alignment_guides
+    exclude:
+      - contract_schema_permission_action_or_business_value_changes
+      - field_hiding_or_reordering
+      - hidden_backend_chapter_title_restoration
+      - section_navigation_or_responsive_container_rework
+      - database_fixture_acceptance_release_or_remote_writes
+  acceptance:
+    - same_column_and_span_control_outer_edges_differ_by_at_most_one_pixel
+    - same_row_same_label_line_count_control_tops_differ_by_at_most_one_pixel
+    - readonly_editable_and_expanded_disclosure_states_are_covered
+    - desktop_two_column_and_mobile_single_column_are_covered
+    - before_after_same_viewport_measurements_and_alignment_guide_screenshots_exist
+    - four_form_samples_light_dark_with_zero_business_writes
+  rollback:
+    - revert_this_batch_after_464c155d_without_contract_database_or_container_rollback

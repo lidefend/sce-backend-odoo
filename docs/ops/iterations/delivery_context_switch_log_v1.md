@@ -9156,3 +9156,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 最终候选 `dd98a5f0caf7fb052ffee012cccf73eed9d66475`，完整指纹 `933a4bc22371bb4647fe1615f2b6ba04d7fb265da3c0484a8a011997b2cb072f`（7358 paths）。Frontend Quick PASS。
 - light 1440/390 与 dark 1088/320 覆盖付款详情、材料入库新建、收入合同详情/新建，共 16 个页面视口、64 次导航内容断言和 48 张首屏/中段/底部截图全部 PASS；mutation/errors/failures 均为 0。候选已停止。
 - 完整记录：`frontend_form_section_navigation_content_consistency_closure_20260910.md`。表单阶段已具备退出条件，状态保持 `verification_pending` 等待独立复核；未执行 push/PR/merge/release。
+
+## 2026-09-10 — 共享表单字段网格与对齐收口
+
+- Batch `FORM-FIELD-GRID-ALIGNMENT`；Formal Product Layer P0，P4 仅承载几何测量与截图证据。Layer Target 为 `frontend/apps/web` 通用字段槽位、控件外框、跨组网格与行基线。
+- 基线 `464c155dbeba77a4624256480d3fe469d8bc5bb3`，完整指纹 `5a97b540cbeeb5b7afe24fbe768f68576e3388eef787b440248d70e67f2823a4`（7359 paths）。复用唯一已注册 worktree 与 local.dev 候选载体。
+- 唯一目标：关闭同列文本与关系控件左右各 8px 的边界差、嵌套字段组 32px 的无意缩进，并证明同排同标签行数控件顶部对齐；复选框与短数字仅允许共享规则定义的例外。
+- 保留已通过的章节导航、响应式容器和隐藏章节策略；不修改契约、字段、权限、动作、业务值，不写数据库，不运行 fixture/acceptance/release，不执行远程写入。
