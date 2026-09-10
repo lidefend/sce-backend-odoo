@@ -74,6 +74,26 @@ for required in (
         fail(f"semantic form structure missing: {required}")
 if 'FormSectionNavigation' not in object_task or 'FormSectionNavigation' not in native_driver:
     fail("task and workspace forms do not share section navigation")
+for required in (
+    ".sc-native-contract-page",
+    ".sc-form-driver-host,",
+    ".sc-native-contract-tree,",
+    "width: 100%;",
+    "max-width: 100%;",
+    "min-width: 0;",
+    "box-sizing: border-box;",
+):
+    if required not in native_driver:
+        fail(f"native form shrink chain missing: {required}")
+for required in (
+    ".form-section-navigation",
+    ".form-section-navigation__track",
+    "overflow-x: auto;",
+):
+    if required not in section_navigation:
+        fail(f"section navigation width ownership missing: {required}")
+if "overflow: hidden;" in section_navigation or "overflow-x: hidden;" in section_navigation:
+    fail("section navigation outer shell masks horizontal overflow")
 if ':fill-orphan-rows="false"' not in read("components/template/NativeFormTreeRenderer.vue"):
     fail("native forms still stretch ordinary orphan fields across a full row")
 if object_task.index('data-floorplan-region="relation"') > object_task.index('data-floorplan-region="supplementary-input"'):

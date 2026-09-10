@@ -1411,6 +1411,44 @@ try {
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
       if (target.captureFormStructure === true) {
         const screenshotStem = `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+        let popupBoundaryEvidence = { checked: false, reason: 'no enabled visible select', pass: true };
+        const formSelects = page.locator('.field [data-semantic-component="ScSelect"]:visible');
+        for (let index = 0; index < await formSelects.count(); index += 1) {
+          const select = formSelects.nth(index);
+          const enabled = await select.evaluate((node) => {
+            const input = node.querySelector('input');
+            return node.getAttribute('aria-disabled') !== 'true' && !(input instanceof HTMLInputElement && input.disabled);
+          });
+          if (!enabled) continue;
+          await select.click();
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          popupBoundaryEvidence = await page.evaluate(() => {
+            const visible = (node) => node instanceof HTMLElement && node.offsetParent !== null;
+            const select = [...document.querySelectorAll('.field [data-semantic-component="ScSelect"]')].find(visible);
+            const popup = [...document.querySelectorAll('[role="listbox"], .t-select__dropdown, .t-popup__content')]
+              .find((node) => visible(node) && node.getBoundingClientRect().width > 0);
+            const pack = (node) => {
+              if (!(node instanceof HTMLElement)) return null;
+              const rect = node.getBoundingClientRect();
+              return [Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom)];
+            };
+            const popupRect = popup instanceof HTMLElement ? popup.getBoundingClientRect() : null;
+            return {
+              checked: true,
+              selectRect: pack(select),
+              popupFound: popup instanceof HTMLElement,
+              popupRect: pack(popup),
+              viewport: [window.innerWidth, window.innerHeight],
+              pass: popupRect instanceof DOMRect
+                && popupRect.left >= -1
+                && popupRect.right <= window.innerWidth + 1
+                && popupRect.top >= -1
+                && popupRect.bottom <= window.innerHeight + 1,
+            };
+          });
+          await page.keyboard.press('Escape');
+          break;
+        }
         const top = await page.evaluate(() => {
           const visible = (node) => node instanceof HTMLElement && node.offsetParent !== null;
           const box = (node) => {
@@ -1446,6 +1484,10 @@ try {
               pass: rect.left >= ownerLeft - 1 && rect.right <= ownerRight + 1,
             };
           };
+          const boundarySet = (selector, ownerSelector) => [...document.querySelectorAll(selector)]
+            .filter(visible)
+            .map((node) => boundary(node, node.parentElement?.closest(ownerSelector)))
+            .filter(Boolean);
           const firstVisible = (selector) => [...document.querySelectorAll(selector)].find(visible) || null;
           const header = [...document.querySelectorAll('.template-page-header')].find(visible);
           const relation = [...document.querySelectorAll('[data-floorplan-region="relation"]')].find(visible);
@@ -1472,25 +1514,47 @@ try {
           const navigation = firstVisible('[data-form-section-navigation]');
           const navigationTrack = firstVisible('.form-section-navigation__track');
           const tree = firstVisible('.sc-native-contract-tree');
-          const nativeFormTree = firstVisible('.native-form-tree');
-          const nativeGroup = firstVisible('.native-container--group');
-          const formSection = firstVisible('.template-form-section');
-          const formGrid = firstVisible('.template-form-section-grid');
-          const field = firstVisible('.template-form-section-grid > .field');
-          const control = firstVisible('.template-form-section-grid > .field input, .template-form-section-grid > .field textarea, .template-form-section-grid > .field select, .template-form-section-grid > .field [role="combobox"]');
+          const authorizedScrollers = [...document.querySelectorAll('.form-section-navigation__track, .o2m-table-scroll, [data-table-scroll-region="true"]')]
+            .filter(visible)
+            .map((node) => {
+              const style = getComputedStyle(node);
+              const rect = node.getBoundingClientRect();
+              return {
+                node: box(node),
+                scrollable: node.scrollWidth > node.clientWidth,
+                overflowPermitted: ['auto', 'scroll'].includes(style.overflowX),
+                withinViewport: rect.left >= -1 && rect.right <= window.innerWidth + 1,
+                pass: ['auto', 'scroll'].includes(style.overflowX) && rect.left >= -1 && rect.right <= window.innerWidth + 1,
+              };
+            });
+          const nestedBoundaries = [
+            ...boundarySet('.native-form-tree', '.sc-native-contract-tree, [data-native-contract-structure]'),
+            ...boundarySet('.native-container--group', '.native-container--group, .native-form-tree, .sc-native-contract-tree'),
+            ...boundarySet('.template-form-section', '.native-container--group, .native-form-tree, .sc-native-contract-tree, [data-native-contract-structure]'),
+            ...boundarySet('.template-form-section-grid', '.template-form-section'),
+            ...boundarySet('.template-form-section-grid > .field', '.template-form-section-grid'),
+            ...boundarySet('.template-form-section-grid > .field input, .template-form-section-grid > .field textarea, .template-form-section-grid > .field select, .template-form-section-grid > .field [role="combobox"]', '.field'),
+          ];
           const responsiveBoundaryEvidence = {
             patternInDriver: boundary(pattern, driver),
             nativePageInPattern: boundary(nativePage, pattern),
             navigationInNativePage: boundary(navigation, nativePage),
             navigationTrackInNavigation: boundary(navigationTrack, navigation),
             treeInNativePage: boundary(tree, nativePage),
-            nativeFormTreeInTree: boundary(nativeFormTree, tree),
-            nativeGroupInFormTree: boundary(nativeGroup, nativeFormTree),
-            formSectionInGroup: boundary(formSection, nativeGroup),
-            formGridInSection: boundary(formGrid, formSection),
-            fieldInGrid: boundary(field, formGrid),
-            controlInField: boundary(control, field),
+            nestedBoundaries,
+            checkedNestedBoundaryCount: nestedBoundaries.length,
+            authorizedScrollers,
           };
+          responsiveBoundaryEvidence.pass = [
+            responsiveBoundaryEvidence.patternInDriver,
+            responsiveBoundaryEvidence.nativePageInPattern,
+            responsiveBoundaryEvidence.navigationInNativePage,
+            responsiveBoundaryEvidence.navigationTrackInNavigation,
+            responsiveBoundaryEvidence.treeInNativePage,
+            ...responsiveBoundaryEvidence.nestedBoundaries,
+          ].filter(Boolean).every((item) => item.pass)
+            && responsiveBoundaryEvidence.checkedNestedBoundaryCount > 0
+            && responsiveBoundaryEvidence.authorizedScrollers.every((item) => item.pass);
           const background = header instanceof HTMLElement ? getComputedStyle(header).backgroundColor : '';
           const alpha = background.match(/rgba?\([^)]*(?:,|\/)\s*([\d.]+)\s*\)$/)?.[1];
           return {
@@ -1536,6 +1600,9 @@ try {
               .find((candidate) => candidate instanceof HTMLElement && candidate.offsetParent !== null);
             const targetRect = target instanceof HTMLElement ? target.getBoundingClientRect() : null;
             const navRect = nav instanceof HTMLElement ? nav.getBoundingClientRect() : null;
+            const track = node.parentElement;
+            const trackRect = track instanceof HTMLElement ? track.getBoundingClientRect() : null;
+            const linkRect = node instanceof HTMLElement ? node.getBoundingClientRect() : null;
             const headerRect = header instanceof HTMLElement ? header.getBoundingClientRect() : null;
             const obstructionBottom = Math.max(navRect?.bottom || 0, headerRect?.bottom || 0);
             return {
@@ -1545,6 +1612,7 @@ try {
               targetTop: targetRect ? Math.round(targetRect.top) : null,
               obstructionBottom: Math.round(obstructionBottom),
               targetVisibleBelowSticky: Boolean(targetRect && targetRect.bottom > obstructionBottom && targetRect.top >= obstructionBottom - 2),
+              linkFullyVisibleInTrack: Boolean(linkRect && trackRect && linkRect.left >= trackRect.left - 1 && linkRect.right <= trackRect.right + 1),
             };
           }));
         }
@@ -1581,6 +1649,7 @@ try {
         });
         formStructureEvidence = {
           ...top,
+          popupBoundaryEvidence,
           navigationJourney,
           captures,
           pass: target.expectFormStructure !== true || (
@@ -1588,8 +1657,10 @@ try {
             && top.currentSectionCount === 1
             && top.navigationOverflowDiscoverable
             && top.stickyHeaderOpaque
+            && top.responsiveBoundaryEvidence.pass
+            && popupBoundaryEvidence.pass
             && navigationJourney.length === top.sectionLinks.length
-            && navigationJourney.every((item) => item.current && item.targetFound && item.targetVisibleBelowSticky)
+            && navigationJourney.every((item) => item.current && item.targetFound && item.targetVisibleBelowSticky && item.linkFullyVisibleInTrack)
             && (viewport.name !== 'mobile' || top.mobileMonetarySummaryFirst)
             && (target.expectRelationFirstViewport !== true || viewport.name !== 'desktop' || (top.relationInFirstViewport && top.addActionInFirstViewport))
             && (target.expectReadonlyDetailComparison !== true || (viewport.name === 'desktop' ? top.readonlyTableVisible : top.readonlyCardsVisible))
