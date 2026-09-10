@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: OFFICIAL-ICON-RESOURCE-ADOPTION
   title: Official icon resource adoption
-  status: verification_pending
+  status: review_pending
   formal_product_layer: P0
   layer_target: frontend design-system icon adapter
   module: frontend
@@ -26,13 +26,25 @@ goal:
     - routes
     - business actions
     - form geometry
-    - database and fixtures
     - release
   validation:
     candidate_sha: 6c003ea4cb4e90f6c1913960ec63dc1932eced66
     candidate_fingerprint: e6739c01a96f0489ba35be0ba62674722075dcda7e0097633fb9953b12f49a86
-    local_result: passed
+    reviewed_product_sha: bc86a5f34e1d1a4133eab8b1961e561471131636
+    delivery_support_sha: b214aba61e9b48b5e6bf510188c451ac013cb163
+    local_result: passed_with_independent_release_blocker
     browser_evidence: artifacts/playwright/official-icon-resource-adoption-6c003ea4/summary.json
+    independent_review: passed_no_s0_s1_s2
+    release_audit:
+      result: partial
+      passed:
+        - static_and_navigation_guards
+        - performance_probe
+        - dialog_focus_j10
+      blocked:
+        check: multi_company_my_work_j11
+        classification: existing_p1_service_follow_up
+        evidence: request and response query scope both used company_id 9, while the response item list was empty
     required:
       - verify.frontend.official_icon.unit
       - verify.frontend.typecheck.strict
@@ -41,5 +53,11 @@ goal:
       - verify.frontend.quick.gate
       - local.dev.candidate.frontend.visual-smoke
     pending:
-      - independent_review
       - pr_and_exact_head_ci
+  delivery_support_changes:
+    formal_product_layer: P4
+    scope:
+      - dedicated payment hardening fixture target
+      - execution fixture company ownership alignment
+      - safe dialog autofocus assertion
+      - governed delivery runtime identity entry and diagnostics
