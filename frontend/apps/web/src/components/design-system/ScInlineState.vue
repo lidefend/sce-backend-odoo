@@ -16,6 +16,11 @@ withDefaults(defineProps<{state?:'info'|'loading'|'empty'|'error';density?:'regu
 </script>
 <style scoped>
 .sc-inline-state{width:100%}.sc-inline-state[data-density='compact']{padding-block:0}
+.sc-inline-state[data-state='info'] {
+  border-color: var(--sc-app-info-border);
+  background: var(--sc-app-info-bg);
+  color: var(--sc-app-info-text);
+}
 .sc-inline-state[data-state='info'] .sc-inline-state__description {
   color: var(--sc-app-info-text);
 }
