@@ -9163,3 +9163,12 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 基线 `464c155dbeba77a4624256480d3fe469d8bc5bb3`，完整指纹 `5a97b540cbeeb5b7afe24fbe768f68576e3388eef787b440248d70e67f2823a4`（7359 paths）。复用唯一已注册 worktree 与 local.dev 候选载体。
 - 唯一目标：关闭同列文本与关系控件左右各 8px 的边界差、嵌套字段组 32px 的无意缩进，并证明同排同标签行数控件顶部对齐；复选框与短数字仅允许共享规则定义的例外。
 - 保留已通过的章节导航、响应式容器和隐藏章节策略；不修改契约、字段、权限、动作、业务值，不写数据库，不运行 fixture/acceptance/release，不执行远程写入。
+
+### 完成记录
+
+- 上一条“表单阶段已具备退出条件”结论已按现场复核撤回；本批只关闭共享字段槽位、可见控件外框和查看态行盒基线，不恢复故意隐藏的章节。
+- P0 修复去除 `ScInput` 宿主的重复横向 padding，使 text/relation/date/money/textarea 共同占满字段槽位；日期根组件、金额 suffix、native group 列线与紧凑只读行盒统一由共享组件和渲染层负责，没有逐字段 margin。
+- 浏览器产品候选 `d43e9e75d70535c2093ec9ae0ce10f82fe5324bc`。light 1440/390 与 dark 1088/320 覆盖付款详情、材料入库新建、收入合同详情/新建，共 16 个页面视口、64 张首屏/中段/底部/参考线截图；mutation/errors/failures 均为 0。
+- 收入合同新建 24 个可编辑控件在桌面与移动端均为 0 个外框偏差、0 个同行顶部偏差，跨组左右边界 spread 为 0px。付款查看态同行顶部偏差也为 0。
+- 文档清单刷新后的已验证 HEAD `32b94b8cc9dac4a9d0656b0bfe4e97e43caef8dd`，完整指纹 `233948900bef0804ee7b9f35c876b04c015043d186f3686f9916310aea2c44ee`（7360 paths）；相对浏览器候选仅有四份派生 inventory JSON。最终 Frontend Quick PASS，候选已停止。
+- 完整记录：`frontend_form_field_grid_alignment_closure_20260910.md`。状态保持 `verification_pending`，等待独立复核后再决定是否退出表单表达阶段；未执行 push/PR/merge/release。

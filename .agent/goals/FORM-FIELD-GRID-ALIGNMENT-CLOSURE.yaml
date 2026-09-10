@@ -1,7 +1,7 @@
 goal:
   id: FORM-FIELD-GRID-ALIGNMENT-CLOSURE
   title: shared_form_field_grid_and_alignment_closure
-  status: in_progress
+  status: verification_pending
   objective: align_shared_form_field_slots_control_frames_and_row_baselines_without_business_or_contract_changes
   baseline:
     branch: feature/form-page-structure-professionalization-v1
@@ -49,3 +49,16 @@ goal:
     - four_form_samples_light_dark_with_zero_business_writes
   rollback:
     - revert_this_batch_after_464c155d_without_contract_database_or_container_rollback
+  result:
+    browser_candidate_sha: d43e9e75d70535c2093ec9ae0ce10f82fe5324bc
+    validated_head_sha: 32b94b8cc9dac4a9d0656b0bfe4e97e43caef8dd
+    validated_fingerprint: 233948900bef0804ee7b9f35c876b04c015043d186f3686f9916310aea2c44ee
+    validated_fingerprint_path: artifacts/fingerprints/form_field_grid_alignment_delivery_32b94b8c.json
+    light_summary: artifacts/local_dev_candidate/form_field_grid_alignment/final_pass_light_1440_390/summary.json
+    dark_summary: artifacts/local_dev_candidate/form_field_grid_alignment/final_pass_dark_1088_320/summary.json
+    route_viewports: 16
+    screenshots: 64
+    mutation_count: 0
+    frontend_quick: pass
+    candidate_service: stopped
+    independent_review: pending
