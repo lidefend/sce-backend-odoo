@@ -81,18 +81,11 @@
       </TaskFormPattern>
       <WorkspaceFormPattern v-else :render-profile="renderModel.identity.mode">
       <article class="sc-native-contract-page" data-native-contract-structure>
-        <nav v-if="workspaceSectionLinks.length > 1" class="sc-native-contract-section-nav" aria-label="表单章节" data-form-section-navigation>
-          <ScButton
-            v-for="item in workspaceSectionLinks"
-            :key="item.role"
-            type="button"
-            variant="ghost"
-            size="small"
-            appearance="context-action"
-            :data-section-link="item.role"
-            @click="scrollToWorkspaceSection(item.role)"
-          >{{ item.label }}</ScButton>
-        </nav>
+        <FormSectionNavigation
+          v-if="workspaceSectionLinks.length > 1"
+          :items="workspaceSectionLinks"
+          root-selector="[data-native-contract-structure]"
+        />
         <main class="sc-native-contract-tree" data-canonical-zone="primary">
           <NativeFormTreeRenderer
             v-if="nativeBridge"
@@ -147,7 +140,6 @@ import { composeCanonicalFormFloorplan, type CanonicalFormFloorplan } from '../.
 import NativeFormTreeRenderer from '../../components/template/NativeFormTreeRenderer.vue';
 import ScErrorState from '../../components/design-system/ScErrorState.vue';
 import ScInlineState from '../../components/design-system/ScInlineState.vue';
-import ScButton from '../../components/design-system/ScButton.vue';
 import type { FormSectionFieldActionPayload, FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import { buildCanonicalNativeFormBridge } from './canonicalNativeFormBridge';
@@ -158,6 +150,7 @@ import NativeCollaborationPanel, {
 } from './NativeCollaborationPanel.vue';
 import { resolveProfessionalAuditEvents } from './professionalAuditModel';
 import ObjectTaskPage from './ObjectTaskPage.vue';
+import FormSectionNavigation from './FormSectionNavigation.vue';
 import TaskFormPattern from '../../components/product-page-patterns/TaskFormPattern.vue';
 import WorkspaceFormPattern from '../../components/product-page-patterns/WorkspaceFormPattern.vue';
 import { canonicalNodeHasContent, type CanonicalRelationProjection } from './canonicalFormRenderer';
@@ -267,13 +260,12 @@ const workspaceSectionLinks = computed(() => {
     summary: '概览', task: '办理信息', context: '基本资料', risk: '风险与提示',
     relation: '关系明细', activity: '协作记录', audit: '历史审计',
   };
-  return [...roles].filter((role) => labels[role]).map((role) => ({ role, label: labels[role] }));
+  return [...roles].filter((role) => labels[role]).map((role) => ({
+    key: role,
+    label: labels[role],
+    selector: `[data-form-semantic-role="${role}"]`,
+  }));
 });
-
-function scrollToWorkspaceSection(role: string) {
-  const target = document.querySelector<HTMLElement>(`[data-native-contract-structure] [data-form-semantic-role="${role}"]`);
-  target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
 
 function collaborationKind(kind: string) {
   return ['chatter', 'activity'].includes(String(kind || '').trim().toLowerCase());
@@ -290,22 +282,13 @@ function runNativeCanonicalAction(payload: Record<string, unknown>) {
 .sc-form-driver-error {
   margin: var(--sc-product-space-4);
 }
-.sc-native-contract-section-nav {
-  position: sticky;
-  z-index: 18;
-  top: var(--sc-form-command-bar-height, 72px);
-  display: flex;
-  gap: 4px;
-  min-width: 0;
-  padding: 6px 0;
-  overflow-x: auto;
-  border-bottom: 1px solid var(--sc-app-border);
-  background: var(--sc-app-panel);
-  scrollbar-width: thin;
-}
-.sc-native-contract-section-nav :deep(.sc-btn) { flex: 0 0 auto; }
 .sc-native-contract-page :deep([data-form-semantic-role]) {
   scroll-margin-top: calc(var(--sc-form-command-bar-height, 72px) + 52px);
+}
+.sc-native-contract-page {
+  --sc-pattern-task-form-field-gap: 8;
+  --sc-pattern-task-form-label-row-margin-bottom: 2px;
+  --sc-pattern-task-form-readonly-column-gap: 24px;
 }
 .canonical-product-edit-actions {
   display: flex;

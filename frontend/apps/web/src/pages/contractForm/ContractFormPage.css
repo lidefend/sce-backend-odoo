@@ -774,13 +774,17 @@
 }
 
 .contract-form-native-shell :deep(.native-container--group) {
-  gap: var(--sc-field-row-gap);
-  padding: var(--sc-surface-padding);
+  gap: 8px;
+  padding: 10px var(--sc-surface-padding) 12px;
   border: 0;
   border-bottom: 1px solid var(--sc-app-border);
   border-radius: 0;
   background: var(--sc-app-panel);
   box-shadow: none;
+}
+
+.contract-form-native-shell :deep(.native-container--group + .native-container--group) {
+  padding-top: 8px;
 }
 
 .contract-form-native-shell :deep(.native-container--group > .native-container-head) {

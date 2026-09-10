@@ -9,18 +9,11 @@
     data-object-task-page
     data-canonical-form-zones
   >
-    <nav v-if="sectionLinks.length > 1" class="object-task-page__section-nav" aria-label="表单章节" data-form-section-navigation>
-      <ScButton
-        v-for="item in sectionLinks"
-        :key="item.region"
-        type="button"
-        variant="ghost"
-        size="small"
-        appearance="context-action"
-        :data-section-link="item.region"
-        @click="scrollToRegion(item.region)"
-      >{{ item.label }}</ScButton>
-    </nav>
+    <FormSectionNavigation
+      v-if="sectionLinks.length > 1"
+      :items="sectionLinks"
+      root-selector="[data-object-task-page]"
+    />
     <ScCard
       v-if="summaryNodes.length"
       class="object-task-page__summary"
@@ -223,7 +216,7 @@
         />
       </ScCard>
     </div>
-    <ScCard
+    <section
       v-if="presentableRelationNodes.length"
       class="object-task-page__relation"
       role="region"
@@ -231,9 +224,6 @@
       data-floorplan-region="relation"
       data-section-title="关系明细"
       data-canonical-zone="primary"
-      title="关系明细"
-      :bordered="true"
-      appearance="relation"
     >
       <CanonicalFormNodeRenderer
         v-for="node in presentableRelationNodes"
@@ -244,7 +234,7 @@
         @field-change="emit('field-change', $event)"
           @field-action="emit('field-action', $event)"
       />
-    </ScCard>
+    </section>
     <ScDisclosure
       v-if="supplementaryInputNodes.length"
       class="object-task-page__supplementary-input"
@@ -333,9 +323,9 @@ import type { FormSectionFieldActionPayload, FormSectionFieldChange } from '../.
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import CanonicalFormNodeRenderer from './CanonicalFormNodeRenderer.vue';
 import ProfessionalAuditTimeline from './ProfessionalAuditTimeline.vue';
+import FormSectionNavigation from './FormSectionNavigation.vue';
 import ScCard from '../../components/design-system/ScCard.vue';
 import ScDisclosure from '../../components/design-system/ScDisclosure.vue';
-import ScButton from '../../components/design-system/ScButton.vue';
 import { canonicalNodeHasPresentableContent } from './canonicalFormRenderer';
 
 const props = defineProps<{
@@ -364,22 +354,17 @@ const presentableRelationNodes = computed(() => props.relationNodes.filter((node
   canonicalNodeHasPresentableContent(node, props.relationAdapter)
 )));
 const sectionLinks = computed(() => [
-  props.summaryNodes.length ? { region: 'summary', label: '概览' } : null,
-  props.decisionInputNodes.length ? { region: 'decision-input', label: '关键金额' } : null,
-  props.decisionMode && (props.taskNodes.length || props.riskNodes.length) ? { region: 'current-task', label: '办理提示' } : null,
-  props.coreInputNodes.length ? { region: 'core-input', label: '基本信息' } : null,
-  props.contextNodes.length ? { region: 'business-context', label: '基本资料' } : null,
-  presentableRelationNodes.value.length ? { region: 'relation', label: '关系明细' } : null,
-  props.supplementaryInputNodes.length ? { region: 'supplementary-input', label: '补充信息' } : null,
-  props.overflowContextNodes.length ? { region: 'overflow-context', label: '更多信息' } : null,
-  props.subordinateNodes.length ? { region: 'subordinate', label: '附件与辅助信息' } : null,
-  props.hasCollaboration ? { region: 'activity', label: '协作记录' } : null,
-].filter((item): item is { region: string; label: string } => Boolean(item)));
-
-function scrollToRegion(region: string) {
-  const target = document.querySelector<HTMLElement>(`[data-object-task-page] [data-floorplan-region="${region}"]`);
-  target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
+  props.summaryNodes.length ? { key: 'summary', label: '概览', selector: '[data-floorplan-region="summary"]' } : null,
+  props.decisionInputNodes.length ? { key: 'decision-input', label: '关键金额', selector: '[data-floorplan-region="decision-input"]' } : null,
+  props.decisionMode && (props.taskNodes.length || props.riskNodes.length) ? { key: 'current-task', label: '办理提示', selector: '[data-floorplan-region="current-task"]' } : null,
+  props.coreInputNodes.length ? { key: 'core-input', label: '基本信息', selector: '[data-floorplan-region="core-input"]' } : null,
+  props.contextNodes.length ? { key: 'business-context', label: '基本资料', selector: '[data-floorplan-region="business-context"]' } : null,
+  presentableRelationNodes.value.length ? { key: 'relation', label: '关系明细', selector: '[data-floorplan-region="relation"]' } : null,
+  props.supplementaryInputNodes.length ? { key: 'supplementary-input', label: '补充信息', selector: '[data-floorplan-region="supplementary-input"]' } : null,
+  props.overflowContextNodes.length ? { key: 'overflow-context', label: '更多信息', selector: '[data-floorplan-region="overflow-context"]' } : null,
+  props.subordinateNodes.length ? { key: 'subordinate', label: '附件与辅助信息', selector: '[data-floorplan-region="subordinate"]' } : null,
+  props.hasCollaboration ? { key: 'activity', label: '协作记录', selector: '[data-floorplan-region="activity"]' } : null,
+].filter((item): item is { key: string; label: string; selector: string } => Boolean(item)));
 
 </script>
 
@@ -391,20 +376,6 @@ function scrollToRegion(region: string) {
   gap: 12px;
   min-width: 0;
 }
-.object-task-page__section-nav {
-  position: sticky;
-  z-index: 18;
-  top: var(--sc-form-command-bar-height, 72px);
-  display: flex;
-  gap: 4px;
-  min-width: 0;
-  padding: 6px 0;
-  overflow-x: auto;
-  border-bottom: 1px solid var(--sc-app-border);
-  background: var(--sc-app-panel);
-  scrollbar-width: thin;
-}
-.object-task-page__section-nav :deep(.sc-btn) { flex: 0 0 auto; }
 .object-task-page [data-section-title] { scroll-margin-top: calc(var(--sc-form-command-bar-height, 72px) + 52px); }
 .object-task-page__body {
   display: grid;
@@ -455,6 +426,10 @@ function scrollToRegion(region: string) {
 .object-task-page__summary {
   border: 0;
   background: var(--sc-app-subtle-bg);
+}
+.object-task-page__relation {
+  padding-top: 10px;
+  border-top: 1px solid var(--sc-app-border);
 }
 .object-task-page__current-task,
 .object-task-page__context {
@@ -598,8 +573,13 @@ function scrollToRegion(region: string) {
     padding: 10px;
   }
   .object-task-page__summary-grid :deep(.canonical-form-node) {
+    order: 1;
     padding: 10px;
     overflow-wrap: anywhere;
+  }
+  .object-task-page__summary-grid :deep([data-value-emphasis='monetary']) {
+    order: -1;
+    grid-column: 1 / -1 !important;
   }
   .object-task-page__current-task-actions {
     position: fixed;

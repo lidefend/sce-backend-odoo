@@ -332,6 +332,7 @@ const props = withDefaults(defineProps<{
   selectPlaceholder?: (label: string) => string;
   inputPlaceholder?: (label: string) => string;
   preferReadonlyFacts?: boolean;
+  fillOrphanRows?: boolean;
 }>(), {
   hint: '',
   columns: 2,
@@ -352,6 +353,7 @@ const props = withDefaults(defineProps<{
   selectPlaceholder: (label: string) => resolveSelectPlaceholder(label),
   inputPlaceholder: (label: string) => resolveInputPlaceholder(label),
   preferReadonlyFacts: false,
+  fillOrphanRows: true,
 });
 
 const sceneUiKit = useOptionalSceneUiKit();
@@ -524,6 +526,7 @@ function fieldSpanClass(field: FormSectionFieldSchema, index: number) {
     ? 'field--full'
     : 'field--normal');
   if (base === 'field--full') return base;
+  if (!props.fillOrphanRows) return base;
 
   // Orphan-column fill (TDesign 24 栅格系统): a normal/half-width field that
   // starts a new row alone leaves blank cells when its row has no pairing fields —
