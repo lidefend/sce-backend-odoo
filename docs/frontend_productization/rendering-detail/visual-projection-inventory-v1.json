@@ -1761,7 +1761,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "8355c7993fd2d3e925818e6000e59f9bd53087fd77ab0bcb529499c7f682202c",
+      "digest": "6c90f77e68853dd213443eb075469f41d3bacfbc9c392cd6cabc9bfeefc771ac",
       "nativeStyleSelectors": [],
       "path": "components/template/FormSection.vue",
       "referenceNativeStyleSelectors": [
@@ -2082,7 +2082,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "a7de90c4c5a564a2a783299eafd8575f770a49733831d39af553e17b15abf5a6",
+      "digest": "07fe0a1f11d5f97e8191878f2d5c51dc453ba6e8ba1c64c9fd2b7ee058c4e3c1",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormDriverHost.vue",
       "referenceNativeStyleSelectors": [
@@ -2179,7 +2179,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "f156b168c2a21478b54db7614df2f48f9a650094300fca8ba4c947f992801de8",
+      "digest": "637e1353d101a949220fcfe592ba46e49cdb78a6fd6f3332ef99a9281d3537c7",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/FormSectionNavigation.vue",
       "referenceNativeStyleSelectors": [],
@@ -2259,7 +2259,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "85867e2f53ca7c775dde8bd7ec881ece5677ffc581486ef3798bd940760a7447",
+      "digest": "f67a8dd0f2905f83580cf71ae8af1bf6824489219c6322ac22c87261504ef016",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ProfessionalAuditTimeline.vue",
       "referenceNativeStyleSelectors": [],
@@ -2802,7 +2802,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "f19864fdca4e8c422912ae7a5a5ca0ba168da780c5ffde6c7504a97ce5b0927f",
+  "currentInputDigest": "7a8d9de7c411b6061d3c9d67831412f9af5e75d8acc668d3e65f2c1f675b8d44",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
