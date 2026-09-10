@@ -1408,6 +1408,10 @@ try {
         };
         if (!hierarchicalWorkspaceEvidence.pass) throw new Error(`${target.name}: hierarchical workspace journey failed ${JSON.stringify(hierarchicalWorkspaceEvidence)}`);
       }
+      if (target.captureFormStructure === true && target.expectReadonlyDetailComparison === true) {
+        const expectedDetail = viewport.name === 'desktop' ? '.o2m-readonly-table:visible' : '.o2m-readonly-list:visible';
+        await page.locator(expectedDetail).first().waitFor({ state: 'visible', timeout: 15000 });
+      }
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
       if (target.captureFormStructure === true) {
         const screenshotStem = `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
