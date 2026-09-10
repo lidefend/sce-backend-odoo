@@ -289,6 +289,10 @@ function runNativeCanonicalAction(payload: Record<string, unknown>) {
   --sc-pattern-task-form-field-gap: 8;
   --sc-pattern-task-form-label-row-margin-bottom: 2px;
   --sc-pattern-task-form-readonly-column-gap: 24px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 .canonical-product-edit-actions {
   display: flex;
@@ -301,7 +305,15 @@ function runNativeCanonicalAction(payload: Record<string, unknown>) {
   .canonical-product-edit-actions { flex-wrap: nowrap; width: 100%; }
   .canonical-product-edit-actions :deep(button[data-action-tier='primary']) { flex: 1 1 auto; }
 }
-.sc-form-driver-host { min-width: 0; }
+.sc-form-driver-host,
+.sc-native-contract-tree,
+.sc-native-contract-subordinate,
+.sc-native-contract-collaboration {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
 .canonical-form-action-icon { inline-size: 1em; text-align: center; }
 .canonical-form-blocking-notice {
   padding: 12px 16px;

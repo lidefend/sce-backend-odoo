@@ -155,8 +155,10 @@ onBeforeUnmount(() => {
   position: sticky;
   z-index: 18;
   top: var(--sc-form-command-bar-height, 72px);
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
-  overflow: hidden;
+  box-sizing: border-box;
   border-bottom: 1px solid var(--sc-app-border);
   background: var(--sc-app-panel);
   isolation: isolate;
@@ -164,7 +166,10 @@ onBeforeUnmount(() => {
 .form-section-navigation__track {
   display: flex;
   gap: 4px;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
+  box-sizing: border-box;
   padding: 6px 52px 6px 0;
   overflow-x: auto;
   scrollbar-width: thin;

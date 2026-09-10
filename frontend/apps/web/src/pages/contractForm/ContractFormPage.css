@@ -1018,6 +1018,19 @@
     padding: var(--sc-space-sm);
   }
 
+  .contract-form-native-shell :deep(.native-container--header) {
+    padding-inline: var(--sc-space-sm);
+  }
+
+  .contract-form-native-shell :deep(.native-container--group .native-container--group) {
+    padding-inline: 0;
+  }
+
+  .contract-form-native-shell :deep(.native-container--group .native-container--group > .native-container-head) {
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+
   .contract-form-native-shell :deep(.native-container--group > .native-container-head) {
     margin: calc(-1 * var(--sc-space-sm)) calc(-1 * var(--sc-space-sm)) 0;
     padding: 0 var(--sc-space-sm);
