@@ -3078,12 +3078,14 @@ try {
               dragPointerEvents: style(drag)?.pointerEvents || '',
               resizeOpacity: style(resize)?.opacity || '',
               resizePointerEvents: style(resize)?.pointerEvents || '',
+              declaredWidth: Number.parseFloat(node.style.width || '0') || 0,
             };
           });
           await page.mouse.move(1, 1);
           await page.locator('body').focus();
           const idle = await headerState(firstHeader);
           await firstHeader.hover();
+          await page.waitForFunction((node) => getComputedStyle(node.querySelector('.column-resize-handle')).opacity === '1', await firstHeader.elementHandle());
           const hovered = await headerState(firstHeader);
           await firstHeader.locator('.column-sort-btn').focus();
           const dragHandleCount = await visibleHeaders.locator('.column-drag-handle').count();
@@ -3095,11 +3097,12 @@ try {
             tag: document.activeElement?.tagName || '',
           }));
           const tabReachedControl = dragHandleCount > 0 ? tabFocus.reachedDrag : tabFocus.reachedResize;
+          await page.waitForFunction((node) => getComputedStyle(node.querySelector('.column-resize-handle')).opacity === '1', await firstHeader.elementHandle());
           const focused = await headerState(firstHeader);
 
           let shadowPreference = null;
           let preferenceSetCount = 0;
-          const preferencePattern = '**/api/v1/intent';
+          const preferencePattern = '**/api/v1/**';
           const preferenceHandler = async (route) => {
             const request = route.request();
             let body = {};
@@ -3157,11 +3160,13 @@ try {
           const reordered = await visibleHeaders.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-column') || ''));
           const resizedHeader = page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${sourceField}"]:visible`);
           const widthBefore = Number((await resizedHeader.boundingBox())?.width || 0);
+          const declaredWidthBefore = (await headerState(resizedHeader)).declaredWidth;
           const resizeHandle = resizedHeader.locator('.column-resize-handle');
           await resizeHandle.focus();
           await resizeHandle.press('ArrowRight');
           await page.locator('.list-surface-save-badge.is-saved:visible').waitFor({ state: 'visible', timeout: 15000 });
           const widthAfter = Number((await resizedHeader.boundingBox())?.width || 0);
+          const declaredWidthAfter = (await headerState(resizedHeader)).declaredWidth;
           const listRequestsAfterControls = listRequestCount;
 
           const recordOwner = page.locator('[data-record-key]:visible').first();
@@ -3177,6 +3182,7 @@ try {
           const returnedHeaders = page.locator('[data-semantic-component="CollectionColumnHeaderControl"]:visible');
           const returnedOrder = await returnedHeaders.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-column') || ''));
           const returnedWidth = Number((await page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${sourceField}"]:visible`).boundingBox())?.width || 0);
+          const returnedDeclaredWidth = (await headerState(page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${sourceField}"]:visible`))).declaredWidth;
 
           if (dragHandleCount > 0) {
             const restoreSource = page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${sourceField}"]:visible`);
@@ -3191,6 +3197,7 @@ try {
           await page.locator('.list-surface-save-badge.is-saved:visible').waitFor({ state: 'visible', timeout: 15000 });
           const restoredOrder = await visibleHeaders.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-column') || ''));
           const restoredWidth = Number((await page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${sourceField}"]:visible`).boundingBox())?.width || 0);
+          const restoredDeclaredWidth = (await headerState(page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${sourceField}"]:visible`))).declaredWidth;
           const listRequestsAfterRestore = listRequestCount;
           await page.goto(originalUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
           await waitForStableProductSurface(page);
@@ -3217,6 +3224,7 @@ try {
             dragCapability: dragHandleCount > 0 ? 'enabled-and-exercised' : 'contract-disabled-not-applicable',
             originalOrder, reordered, returnedOrder, restoredOrder,
             widthBefore, widthAfter, returnedWidth, restoredWidth,
+            declaredWidthBefore, declaredWidthAfter, returnedDeclaredWidth, restoredDeclaredWidth,
             recordId, listRequestsAfterSort, listRequestsAfterControls, listRequestsAfterRestore,
             preferenceSetCount, preferencePersistenceMode: 'browser-shadow-no-database-write',
             sameTitleGeometry, controlsDoNotOverlapTitle,
@@ -3231,9 +3239,12 @@ try {
               && sameTitleGeometry
               && controlsDoNotOverlapTitle
               && dragBehaviorPass
-              && widthAfter >= widthBefore + 9
+              && widthAfter >= widthBefore + 1
+              && declaredWidthAfter >= declaredWidthBefore + 9
               && Math.abs(returnedWidth - widthAfter) <= 1
+              && Math.abs(returnedDeclaredWidth - declaredWidthAfter) <= 1
               && Math.abs(restoredWidth - widthBefore) <= 1
+              && Math.abs(restoredDeclaredWidth - declaredWidthBefore) <= 1
               && listRequestsAfterSort === 1
               && listRequestsAfterControls === 1
               && listRequestsAfterRestore >= 2
