@@ -3037,6 +3037,191 @@ try {
         const groupingToolbarCount = await page.locator('[data-semantic-component="CollectionGroupingToolbar"]').count();
         const groupPageControlsCount = await page.locator('[data-semantic-component="CollectionGroupPageControls"]').count();
         const collectionState = String(await page.locator('[data-semantic-component="ActionView"]').getAttribute('data-collection-state') || '');
+        let columnHeaderBehavior = null;
+        if (target.exerciseColumnHeaderBehavior === true && viewport.name === 'mobile') {
+          const settings = page.locator('[data-list-surface-header] .list-surface-column-button:visible').first();
+          const settingsBox = await settings.boundingBox();
+          await settings.tap();
+          const panel = page.locator('.list-surface-column-panel:visible');
+          await panel.waitFor({ state: 'visible', timeout: 15000 });
+          const panelLabel = String(await panel.getAttribute('aria-label') || '');
+          await panel.getByRole('button', { name: '关闭列设置' }).tap();
+          await panel.waitFor({ state: 'hidden', timeout: 15000 });
+          columnHeaderBehavior = {
+            mode: 'touch-column-settings',
+            settingsBox,
+            panelLabel,
+            pass: Number(settingsBox?.width || 0) >= 44
+              && Number(settingsBox?.height || 0) >= 44
+              && panelLabel === '列设置',
+          };
+        }
+        if (target.exerciseColumnHeaderBehavior === true && viewport.name === 'desktop') {
+          const visibleHeaders = page.locator('[data-semantic-component="CollectionColumnHeaderControl"]:visible');
+          if (await visibleHeaders.count() < 2) throw new Error(`${target.name}: column behavior requires two visible headers`);
+          const firstHeader = visibleHeaders.first();
+          const headerState = async (header) => header.evaluate((node) => {
+            const title = node.querySelector('.column-sort-btn > span:first-child');
+            const drag = node.querySelector('.column-drag-handle');
+            const resize = node.querySelector('.column-resize-handle');
+            const rect = (element) => {
+              const box = element?.getBoundingClientRect();
+              return box ? { left: box.left, right: box.right, top: box.top, bottom: box.bottom, width: box.width } : null;
+            };
+            const style = (element) => element ? getComputedStyle(element) : null;
+            return {
+              field: node.getAttribute('data-column') || '',
+              title: rect(title),
+              drag: rect(drag),
+              resize: rect(resize),
+              dragOpacity: style(drag)?.opacity || '',
+              dragPointerEvents: style(drag)?.pointerEvents || '',
+              resizeOpacity: style(resize)?.opacity || '',
+              resizePointerEvents: style(resize)?.pointerEvents || '',
+            };
+          });
+          await page.mouse.move(1, 1);
+          await page.locator('body').focus();
+          const idle = await headerState(firstHeader);
+          await firstHeader.hover();
+          const hovered = await headerState(firstHeader);
+          const firstDrag = firstHeader.locator('.column-drag-handle');
+          await firstDrag.focus();
+          const focused = await headerState(firstHeader);
+
+          let shadowPreference = null;
+          let preferenceSetCount = 0;
+          const preferencePattern = '**/api/v1/intent';
+          const preferenceHandler = async (route) => {
+            const request = route.request();
+            let body = {};
+            try { body = JSON.parse(request.postData() || '{}'); } catch {}
+            if (request.method() !== 'POST' || !['user.view.preference.get', 'user.view.preference.set'].includes(body.intent)) {
+              await route.continue();
+              return;
+            }
+            if (body.intent === 'user.view.preference.set') {
+              shadowPreference = body?.params?.preference || {};
+              preferenceSetCount += 1;
+              await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({ ok: true, data: { preference: shadowPreference }, meta: { trace_id: `column-shadow-set-${preferenceSetCount}` } }),
+              });
+              return;
+            }
+            if (shadowPreference) {
+              await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({ ok: true, data: { preference: shadowPreference }, meta: { trace_id: 'column-shadow-get' } }),
+              });
+              return;
+            }
+            await route.continue();
+          };
+          await page.route(preferencePattern, preferenceHandler);
+          let listRequestCount = 0;
+          const countListRequest = (request) => {
+            if (request.method() !== 'POST') return;
+            try {
+              const body = JSON.parse(request.postData() || '{}');
+              if (body.intent === 'api.data' && body?.params?.op === 'list') listRequestCount += 1;
+            } catch {}
+          };
+          page.on('request', countListRequest);
+          const originalUrl = page.url();
+          const originalOrder = await visibleHeaders.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-column') || ''));
+          const sourceField = originalOrder[0];
+          const targetField = originalOrder[1];
+          const sortButton = firstHeader.locator('.column-sort-btn');
+          await sortButton.click();
+          await waitForStableProductSurface(page);
+          const listRequestsAfterSort = listRequestCount;
+
+          const sourceHeader = page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${sourceField}"]:visible`);
+          const targetHeader = page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${targetField}"]:visible`);
+          await sourceHeader.hover();
+          await sourceHeader.locator('.column-drag-handle').dragTo(targetHeader);
+          await page.locator('.list-surface-save-badge.is-saved:visible').waitFor({ state: 'visible', timeout: 15000 });
+          const reordered = await visibleHeaders.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-column') || ''));
+          const resizedHeader = page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${sourceField}"]:visible`);
+          const widthBefore = Number((await resizedHeader.boundingBox())?.width || 0);
+          const resizeHandle = resizedHeader.locator('.column-resize-handle');
+          await resizeHandle.focus();
+          await resizeHandle.press('ArrowRight');
+          await page.locator('.list-surface-save-badge.is-saved:visible').waitFor({ state: 'visible', timeout: 15000 });
+          const widthAfter = Number((await resizedHeader.boundingBox())?.width || 0);
+          const listRequestsAfterControls = listRequestCount;
+
+          const recordOwner = page.locator('[data-record-key]:visible').first();
+          const recordId = String(await recordOwner.getAttribute('data-record-key') || '');
+          const opener = recordOwner.locator('.cell-primary-link, [data-semantic-action="open-record"]').first();
+          await opener.click();
+          await page.locator('[data-semantic-component="ContractFormPage"][data-state="ok"]').waitFor({ state: 'visible', timeout: 45000 });
+          const returnAction = page.locator('[data-form-secondary-action="return-list"]:visible');
+          if (await returnAction.count() !== 1) throw new Error(`${target.name}: column preference return action is missing`);
+          await returnAction.click();
+          await page.waitForURL((url) => url.pathname === new URL(originalUrl).pathname, { timeout: 15000 });
+          await waitForStableProductSurface(page);
+          const returnedHeaders = page.locator('[data-semantic-component="CollectionColumnHeaderControl"]:visible');
+          const returnedOrder = await returnedHeaders.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-column') || ''));
+          const returnedWidth = Number((await page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${sourceField}"]:visible`).boundingBox())?.width || 0);
+
+          const restoreSource = page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${sourceField}"]:visible`);
+          const restoreTarget = page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${targetField}"]:visible`);
+          await restoreSource.hover();
+          await restoreSource.locator('.column-drag-handle').dragTo(restoreTarget);
+          await page.locator('.list-surface-save-badge.is-saved:visible').waitFor({ state: 'visible', timeout: 15000 });
+          const restoreResize = page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${sourceField}"]:visible .column-resize-handle`);
+          await restoreResize.focus();
+          await restoreResize.press('ArrowLeft');
+          await page.locator('.list-surface-save-badge.is-saved:visible').waitFor({ state: 'visible', timeout: 15000 });
+          const restoredOrder = await visibleHeaders.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-column') || ''));
+          const restoredWidth = Number((await page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${sourceField}"]:visible`).boundingBox())?.width || 0);
+          const listRequestsAfterRestore = listRequestCount;
+          await page.goto(originalUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
+          await waitForStableProductSurface(page);
+          page.off('request', countListRequest);
+          await page.unroute(preferencePattern, preferenceHandler);
+          const sameTitleGeometry = idle.title && hovered.title && focused.title
+            && Math.abs(idle.title.left - hovered.title.left) <= 1
+            && Math.abs(idle.title.right - hovered.title.right) <= 1
+            && Math.abs(idle.title.left - focused.title.left) <= 1
+            && Math.abs(idle.title.right - focused.title.right) <= 1;
+          const controlsDoNotOverlapTitle = idle.title && idle.drag && idle.resize
+            && idle.title.right <= idle.drag.left + 1
+            && idle.drag.right <= idle.resize.left + 1;
+          const expectedReordered = [targetField, sourceField, ...originalOrder.slice(2)];
+          columnHeaderBehavior = {
+            mode: 'desktop-real-interaction', idle, hovered, focused,
+            originalOrder, reordered, returnedOrder, restoredOrder,
+            widthBefore, widthAfter, returnedWidth, restoredWidth,
+            recordId, listRequestsAfterSort, listRequestsAfterControls, listRequestsAfterRestore,
+            preferenceSetCount, preferencePersistenceMode: 'browser-shadow-no-database-write',
+            sameTitleGeometry, controlsDoNotOverlapTitle,
+            pass: idle.dragOpacity === '0'
+              && idle.dragPointerEvents === 'none'
+              && idle.resizeOpacity === '0'
+              && idle.resizePointerEvents === 'none'
+              && hovered.dragOpacity === '1'
+              && hovered.dragPointerEvents !== 'none'
+              && focused.dragOpacity === '1'
+              && focused.dragPointerEvents !== 'none'
+              && sameTitleGeometry
+              && controlsDoNotOverlapTitle
+              && JSON.stringify(reordered) === JSON.stringify(expectedReordered)
+              && JSON.stringify(returnedOrder) === JSON.stringify(expectedReordered)
+              && JSON.stringify(restoredOrder) === JSON.stringify(originalOrder)
+              && widthAfter >= widthBefore + 9
+              && Math.abs(returnedWidth - widthAfter) <= 1
+              && Math.abs(restoredWidth - widthBefore) <= 1
+              && listRequestsAfterSort === 1
+              && listRequestsAfterControls === 1
+              && listRequestsAfterRestore >= 2
+              && preferenceSetCount >= 4,
+          };
+        }
         let paginationCycle = null;
         if (target.exercisePaginationCycle === true
           && paginationMode === 'paged'
@@ -3077,6 +3262,7 @@ try {
           missingResizeLabels,
           groupingToolbarCount,
           groupPageControlsCount,
+          columnHeaderBehavior,
           paginationCycle,
           pass: footerCount === 1
             && ['count', 'grouped', 'paged'].includes(paginationMode)
@@ -3084,6 +3270,7 @@ try {
             && invalidColumnRoots === 0
             && missingDragLabels === 0
             && missingResizeLabels === 0
+            && (target.exerciseColumnHeaderBehavior !== true || columnHeaderBehavior?.pass === true)
             && (target.exercisePaginationCycle !== true
               || (target.paginationCycleDesktopOnly === true && viewport.name !== 'desktop')
               || paginationCycle?.pass === true),

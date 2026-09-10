@@ -68,7 +68,39 @@ class CollectionNavigationControlsGuardTest(unittest.TestCase):
         altered = self.column_style.replace(".cell-sortable:focus-within .column-drag-handle", ".removed-focus-rule")
         self.assertTrue(
             any(
-                "defer secondary controls" in item
+                "isolate and expose" in item
+                for item in validate(
+                    self.component,
+                    self.list_page,
+                    self.grouping,
+                    self.column,
+                    self.group_page,
+                    altered,
+                )
+            )
+        )
+
+    def test_hidden_column_controls_must_not_intercept_pointer_input(self):
+        altered = self.column_style.replace("pointer-events: none", "pointer-events: auto")
+        self.assertTrue(
+            any(
+                "isolate and expose" in item
+                for item in validate(
+                    self.component,
+                    self.list_page,
+                    self.grouping,
+                    self.column,
+                    self.group_page,
+                    altered,
+                )
+            )
+        )
+
+    def test_touch_column_controls_must_not_depend_on_hover(self):
+        altered = self.column_style.replace("@media (hover: none), (pointer: coarse)", "@media (hover: hover)")
+        self.assertTrue(
+            any(
+                "isolate and expose" in item
                 for item in validate(
                     self.component,
                     self.list_page,

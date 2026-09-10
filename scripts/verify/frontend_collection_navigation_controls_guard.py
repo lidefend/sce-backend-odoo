@@ -91,9 +91,19 @@ def validate(
         ".cell-sortable:hover .column-resize-handle",
         ".cell-sortable:focus-within .column-resize-handle",
         "padding-left: 10px",
+        "--sc-column-header-control-space: 34px",
+        "padding-right: var(--sc-column-header-control-space)",
+        "inset: 0 8px 0 auto",
+        "pointer-events: none",
+        "pointer-events: auto",
+        "@media (hover: none), (pointer: coarse)",
     ):
         if marker not in column_style:
-            failures.append(f"collection column header must defer secondary controls without hiding capability: {marker}")
+            failures.append(f"collection column header must isolate and expose secondary controls safely: {marker}")
+    if column_style.count("pointer-events: none") < 2:
+        failures.append("collection column header hidden drag and resize controls must both reject pointer input")
+    if column_style.count("pointer-events: auto") < 3:
+        failures.append("collection column header hover, focus and no-hover paths must restore pointer input")
     if 'role="columnheader"' in column or 'aria-sort' in column:
         failures.append("collection column header must not duplicate the native th semantics")
     if any(marker in column for marker in ("<button", "<input", "<select", "<textarea")):
