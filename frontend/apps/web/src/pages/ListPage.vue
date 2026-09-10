@@ -1378,6 +1378,7 @@ function derivedColumnWidth(field: string) {
   const option = columnOption(field);
   return deriveListColumnWidth({
     label: columnLabel(field), type: option?.type, role: columnLayoutRole(field),
+    primary: field === rowPrimary.value,
     values: props.records.map((row) => columnValue(row, field)),
     selectionLabels: option?.selection?.map((item) => item.label),
   });
@@ -1543,6 +1544,7 @@ function collectionHeader(field: string) {
     label: columnLabel(field),
     sortable: isColumnSortable(field),
     reorderable: props.listProfile?.preference_policy?.allow_order !== false,
+    primary: field === rowPrimary.value,
     sorted: isSortedColumn(field),
     dragging: draggingColumn.value === field,
     sortIcon: columnSortIcon(field),

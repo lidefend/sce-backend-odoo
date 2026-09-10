@@ -14,6 +14,7 @@ type ColumnWidthInput = {
   label: string;
   type?: string;
   role: ListColumnLayoutRole;
+  primary?: boolean;
   values?: unknown[];
   selectionLabels?: string[];
 };
@@ -92,8 +93,10 @@ function percentile(values: number[], ratio: number) {
 
 export function deriveListColumnWidth(input: ColumnWidthInput) {
   const type = String(input.type || '').trim().toLowerCase();
-  const [minimum, maximum] = limits[input.role];
-  const headerWidth = textWidth(input.label) + 52;
+  const [roleMinimum, roleMaximum] = limits[input.role];
+  const minimum = input.primary ? Math.max(roleMinimum, 208) : roleMinimum;
+  const maximum = input.primary ? Math.max(roleMaximum, 300) : roleMaximum;
+  const headerWidth = textWidth(input.label) + 32;
   if (input.role === 'date') {
     return Math.min(maximum, Math.max(minimum, type === 'datetime' ? 140 : 112, headerWidth));
   }
@@ -105,7 +108,7 @@ export function deriveListColumnWidth(input: ColumnWidthInput) {
     .filter((value) => value !== null && value !== undefined && value !== '' && value !== '--')
     .map((value) => textWidth(value) + 24);
   const sampledWidth = percentile(candidates, 0.8);
-  const contentWidth = ['identity', 'description', 'relation'].includes(input.role)
+  const contentWidth = !input.primary && ['identity', 'description', 'relation'].includes(input.role)
     ? Math.ceil(sampledWidth * 0.88)
     : sampledWidth;
   return Math.min(maximum, Math.max(minimum, headerWidth, contentWidth));

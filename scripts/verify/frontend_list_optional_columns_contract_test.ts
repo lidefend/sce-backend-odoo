@@ -61,6 +61,16 @@ assert.equal(
   'derived money width must not shrink below the readable amount floor',
 );
 assert.equal(
+  deriveListColumnWidth({ label: '项目名称', role: 'identity', primary: true, values: ['S69 支付台账演示项目'] }),
+  208,
+  'the authoritative row identity must receive a shared readable floor without model-specific width rules',
+);
+assert.equal(
+  deriveListColumnWidth({ label: '项目名称', role: 'identity', values: ['S69 支付台账演示项目'] }),
+  168,
+  'non-primary identity columns retain the ordinary adaptive floor',
+);
+assert.equal(
   resolveListColumnBudgetWidth({ customWidth: 0, derivedWidth: 184, role: 'text' }),
   184,
   'responsive selection must budget the same content-derived width used by the rendered column',

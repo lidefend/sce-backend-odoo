@@ -5,6 +5,7 @@ ROOT = Path(__file__).resolve().parents[2]
 COMPONENT = ROOT / "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.vue"
 GROUPING_COMPONENT = ROOT / "frontend/apps/web/src/components/product-list/CollectionGroupingToolbar.vue"
 COLUMN_COMPONENT = ROOT / "frontend/apps/web/src/components/product-list/CollectionColumnHeaderControl.vue"
+COLUMN_STYLE = ROOT / "frontend/apps/web/src/components/product-list/CollectionColumnHeaderControl.css"
 GROUP_PAGE_COMPONENT = ROOT / "frontend/apps/web/src/components/product-list/CollectionGroupPageControls.vue"
 LIST_PAGE = ROOT / "frontend/apps/web/src/pages/ListPage.vue"
 LIST_STYLE = ROOT / "frontend/apps/web/src/pages/ListPage.css"
@@ -16,11 +17,13 @@ def validate(
     grouping_source: str | None = None,
     column_source: str | None = None,
     group_page_source: str | None = None,
+    column_style_source: str | None = None,
 ) -> list[str]:
     component = component_source if component_source is not None else COMPONENT.read_text(encoding="utf-8")
     list_page = list_source if list_source is not None else LIST_PAGE.read_text(encoding="utf-8")
     grouping = grouping_source if grouping_source is not None else GROUPING_COMPONENT.read_text(encoding="utf-8")
     column = column_source if column_source is not None else COLUMN_COMPONENT.read_text(encoding="utf-8")
+    column_style = column_style_source if column_style_source is not None else COLUMN_STYLE.read_text(encoding="utf-8")
     group_page = group_page_source if group_page_source is not None else GROUP_PAGE_COMPONENT.read_text(encoding="utf-8")
     failures: list[str] = []
     required = (
@@ -77,16 +80,28 @@ def validate(
         ':label="`${label}：${resizeLabel}`"',
         "@dragstart.stop=\"$emit('drag-start', $event)\"",
         "@mousedown.stop.prevent=\"$emit('resize-start', $event)\"",
+        ':data-primary="primary || undefined"',
     )
     for marker in column_required:
         if marker not in column:
             failures.append(f"collection column header missing {marker}")
+    for marker in (
+        ".cell-sortable:hover .column-drag-handle",
+        ".cell-sortable:focus-within .column-drag-handle",
+        ".cell-sortable:hover .column-resize-handle",
+        ".cell-sortable:focus-within .column-resize-handle",
+        "padding-left: 10px",
+    ):
+        if marker not in column_style:
+            failures.append(f"collection column header must defer secondary controls without hiding capability: {marker}")
     if 'role="columnheader"' in column or 'aria-sort' in column:
         failures.append("collection column header must not duplicate the native th semantics")
     if any(marker in column for marker in ("<button", "<input", "<select", "<textarea")):
         failures.append("collection column header retains a raw control outside primitive adapters")
     if list_page.count('h(CollectionColumnHeaderControl') != 1 or 'title: () => collectionHeader(field)' not in list_page:
         failures.append("list page must use one shared TDesign column-header adapter for flat and grouped tables")
+    if "primary: field === rowPrimary.value" not in list_page:
+        failures.append("list page must project authoritative row identity to shared header and width rules")
     for marker in ("attrs: ({ type }", "type === 'th'", "{ 'aria-sort': columnAriaSort(field) }"):
         if marker not in list_page:
             failures.append(f"list page must project sort semantics to the native th: {marker}")

@@ -1,6 +1,6 @@
 import unittest
 
-from scripts.verify.frontend_collection_navigation_controls_guard import COLUMN_COMPONENT, COMPONENT, GROUPING_COMPONENT, GROUP_PAGE_COMPONENT, LIST_PAGE, validate
+from scripts.verify.frontend_collection_navigation_controls_guard import COLUMN_COMPONENT, COLUMN_STYLE, COMPONENT, GROUPING_COMPONENT, GROUP_PAGE_COMPONENT, LIST_PAGE, validate
 
 
 class CollectionNavigationControlsGuardTest(unittest.TestCase):
@@ -10,6 +10,7 @@ class CollectionNavigationControlsGuardTest(unittest.TestCase):
         cls.list_page = LIST_PAGE.read_text(encoding="utf-8")
         cls.grouping = GROUPING_COMPONENT.read_text(encoding="utf-8")
         cls.column = COLUMN_COMPONENT.read_text(encoding="utf-8")
+        cls.column_style = COLUMN_STYLE.read_text(encoding="utf-8")
         cls.group_page = GROUP_PAGE_COMPONENT.read_text(encoding="utf-8")
 
     def test_repository_contract_passes(self):
@@ -60,6 +61,22 @@ class CollectionNavigationControlsGuardTest(unittest.TestCase):
             any(
                 "project sort semantics to the native th" in item
                 for item in validate(self.component, altered, self.grouping, self.column)
+            )
+        )
+
+    def test_secondary_column_controls_must_remain_discoverable_on_hover_and_focus(self):
+        altered = self.column_style.replace(".cell-sortable:focus-within .column-drag-handle", ".removed-focus-rule")
+        self.assertTrue(
+            any(
+                "defer secondary controls" in item
+                for item in validate(
+                    self.component,
+                    self.list_page,
+                    self.grouping,
+                    self.column,
+                    self.group_page,
+                    altered,
+                )
             )
         )
 
