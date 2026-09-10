@@ -33,6 +33,8 @@ equal(normalizeSafeLoginReturnPath('/r/payment.request/7'), '', 'unbound record 
 equal(normalizeSafeLoginReturnPath('https://outside.invalid/a/42'), '');
 equal(normalizeSafeLoginReturnPath('//outside.invalid/a/42'), '');
 equal(normalizeSafeLoginReturnPath('/%2foutside.invalid'), '');
+equal(normalizeSafeLoginReturnPath(`/a/42${String.fromCharCode(0)}`), '', 'raw control characters must be rejected');
+equal(normalizeSafeLoginReturnPath('/a/42%0a'), '', 'encoded control characters must be rejected');
 equal(normalizeSafeLoginReturnPath('/login?redirect=/a/42'), '');
 equal(normalizeSafeLoginReturnPath('/platform-admin/login'), '');
 equal(normalizeSafeLoginReturnPath(`/${'x'.repeat(4096)}`), '');

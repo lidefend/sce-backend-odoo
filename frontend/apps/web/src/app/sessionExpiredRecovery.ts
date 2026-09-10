@@ -31,11 +31,19 @@ function browserRuntime(): SessionExpiredNavigationRuntime | null {
   };
 }
 
+function containsControlCharacter(value: string): boolean {
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    if (code <= 0x1f || code === 0x7f) return true;
+  }
+  return false;
+}
+
 function containsUnsafeEncoding(path: string): boolean {
-  if (path.includes('\\') || /[\u0000-\u001f\u007f]/.test(path)) return true;
+  if (path.includes('\\') || containsControlCharacter(path)) return true;
   try {
     const decoded = decodeURIComponent(path);
-    return decoded.startsWith('//') || decoded.includes('\\') || /[\u0000-\u001f\u007f]/.test(decoded);
+    return decoded.startsWith('//') || decoded.includes('\\') || containsControlCharacter(decoded);
   } catch {
     return true;
   }
