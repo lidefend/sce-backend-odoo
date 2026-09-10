@@ -150,6 +150,36 @@ class ContractFormCacheOwnershipTest(unittest.TestCase):
             source,
         )
 
+    def test_browser_payment_target_uses_role_owned_hardening_fixture(self):
+        source = (ROOT / "scripts/verify/frontend_delivery_hardening_runtime_ids.py").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn(
+            '"smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a"',
+            source,
+        )
+        self.assertNotIn(
+            '"payment_request": target("smart_construction_core.menu_sc_user_payment_apply", '
+            '"smart_construction_acceptance_fixture.fe_request_a_001")',
+            source,
+        )
+
+    def test_acceptance_payment_execution_uses_its_project_company(self):
+        source = (
+            ROOT
+            / "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py"
+        ).read_text(encoding="utf-8")
+
+        self.assertRegex(
+            source,
+            re.compile(
+                r'def _execution\(.*?"project_id": project\.id,\s*'
+                r'"company_id": project\.company_id\.id,',
+                re.DOTALL,
+            ),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
