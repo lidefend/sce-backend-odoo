@@ -16,10 +16,10 @@ Generated from repository source files. This report is informational during the 
 | 4571 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4312 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4221 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
+| 3785 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 3774 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3769 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3667 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
-| 3520 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 3390 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3367 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3272 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
@@ -35,7 +35,7 @@ Generated from repository source files. This report is informational during the 
 | 2335 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2304 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 2205 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
-| 2116 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
+| 2118 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2045 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2001 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
@@ -163,10 +163,10 @@ Generated from repository source files. This report is informational during the 
 | 4571 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4312 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4221 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
+| 3785 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 3774 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3769 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3667 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
-| 3520 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 3390 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3367 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3272 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
@@ -182,7 +182,7 @@ Generated from repository source files. This report is informational during the 
 | 2335 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2304 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 2205 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
-| 2116 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
+| 2118 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2045 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2001 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
