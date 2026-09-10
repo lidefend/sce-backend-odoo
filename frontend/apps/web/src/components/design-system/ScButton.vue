@@ -88,3 +88,11 @@ defineExpose({
   },
 });
 </script>
+
+<style scoped>
+[data-appearance='section-tab'][aria-current='location'] {
+  background: var(--sc-app-info-bg);
+  color: var(--sc-app-accent);
+  box-shadow: inset 0 -2px 0 var(--sc-app-accent);
+}
+</style>

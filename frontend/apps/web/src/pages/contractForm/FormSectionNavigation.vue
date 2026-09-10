@@ -16,7 +16,7 @@
         type="button"
         variant="ghost"
         size="small"
-        appearance="context-action"
+        appearance="section-tab"
         :aria-current="activeKey === item.key ? 'location' : undefined"
         :data-section-link="item.key"
         :data-section-target="item.selector"
@@ -158,11 +158,6 @@ onBeforeUnmount(() => {
   scrollbar-width: thin;
 }
 .form-section-navigation__track :deep(.sc-btn) { flex: 0 0 auto; }
-.form-section-navigation__track :deep(.sc-btn[aria-current='location']) {
-  background: var(--sc-app-info-bg);
-  color: var(--sc-app-accent);
-  box-shadow: inset 0 -2px 0 var(--sc-app-accent);
-}
 .form-section-navigation__cue {
   position: absolute;
   z-index: 2;
