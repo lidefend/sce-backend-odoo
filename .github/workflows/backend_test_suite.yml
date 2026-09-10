@@ -235,15 +235,34 @@ jobs:
                 "${demo_password}" >> "${demo_env}"
               module_env_file="${demo_env}"
             fi
-            module_log="${RUNNER_TEMP}/backend-suite-odoo-${module}-${GITHUB_RUN_ID}.log"
-            if [ -n "${module_env_file}" ]; then
-              ENV_FILE="${module_env_file}" make test MODULE="${module}" \
-                TEST_TAGS="${module_test_tags}" DB_NAME="${module_db}" 2>&1 | tee "${module_log}"
-            else
-              make test MODULE="${module}" TEST_TAGS="${module_test_tags}" \
-                DB_NAME="${module_db}" 2>&1 | tee "${module_log}"
-            fi
-            module_status="${PIPESTATUS[0]}"
+            module_status=1
+            module_log=""
+            for module_attempt in 1 2; do
+              attempt_db="${module_db}"
+              attempt_env_file="${module_env_file}"
+              if [ "${module_attempt}" -eq 2 ]; then
+                attempt_db="${module_db}_retry1"
+                if [ -n "${module_env_file}" ]; then
+                  attempt_env_file="${module_env_file}.retry1"
+                  sed -e "s/^DB_NAME=.*/DB_NAME=${attempt_db}/" \
+                      -e "s|^ODOO_DBFILTER=.*|ODOO_DBFILTER=^${attempt_db}$|" \
+                      "${module_env_file}" > "${attempt_env_file}"
+                fi
+              fi
+              module_log="${RUNNER_TEMP}/backend-suite-odoo-${module}-${GITHUB_RUN_ID}-attempt${module_attempt}.log"
+              if [ -n "${attempt_env_file}" ]; then
+                ENV_FILE="${attempt_env_file}" make test MODULE="${module}" \
+                  TEST_TAGS="${module_test_tags}" DB_NAME="${attempt_db}" 2>&1 | tee "${module_log}"
+              else
+                make test MODULE="${module}" TEST_TAGS="${module_test_tags}" \
+                  DB_NAME="${attempt_db}" 2>&1 | tee "${module_log}"
+              fi
+              module_status="${PIPESTATUS[0]}"
+              if [[ ! "${module_status}" =~ ^(137|139)$ ]] || [ "${module_attempt}" -eq 2 ]; then
+                break
+              fi
+              echo "::warning::backend suite process exited ${module_status} for ${module}; retrying once with isolated database"
+            done
             if [ "${module_status}" -ne 0 ]; then
               echo "::error::backend suite failed for module ${module}"
               failed=1

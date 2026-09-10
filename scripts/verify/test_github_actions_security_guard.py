@@ -270,6 +270,13 @@ jobs:
             self.assertIn("BACKEND_SUITE_TEST_ROUTING_NOT_FAIL_CLOSED", classes)
 
             workflow.write_text(
+                source.replace('for module_attempt in 1 2; do\n', 'for module_attempt in 1; do\n', 1),
+                encoding="utf-8",
+            )
+            classes = {item.classification for item in guard.scan(root)}
+            self.assertIn("BACKEND_SUITE_TEST_ROUTING_NOT_FAIL_CLOSED", classes)
+
+            workflow.write_text(
                 source.replace(
                     "elif ! grep -Eq '0 failed, 0 error\\(s\\) of [1-9][0-9]* tests when loading database' \"${module_log}\"; then\n",
                     "elif false; then\n",
