@@ -388,6 +388,12 @@ const emit = defineEmits<{
   vertical-align: 1px;
 }
 
+.form-readonly-value {
+  min-width: 0;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+
 .form-readonly-value--empty {
   color: var(--sc-app-text-muted);
   font-weight: 400;
