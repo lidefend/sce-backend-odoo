@@ -82,7 +82,7 @@ goal:
     - representative_pages_and_all_requested_viewports_themes_are_explicitly_registered
     - final_evidence_binds_one_frozen_full_fingerprint
   joint_review:
-    status: local_verification_completed_independent_review_pending
+    status: exit_evidence_completed_independent_review_ready
     candidate:
       full_sha: 07758bd72c11e41157b3125b4d314ba7874c606b
       fingerprint: 64220630eaa650bc0f39b04686a310306de892c85976bf8c4d3b3377bf7f972c
@@ -90,17 +90,32 @@ goal:
       path_count: 7365
     evidence:
       - verify.frontend.quick.gate_pass
-      - global_component_capability_unit_pass_16_and_wired_to_quick_pr_release
+      - global_component_capability_unit_pass_31_public_provider_dynamic_and_wired_to_quick_pr_release
       - theme_runtime_guard_pass_12
       - strict_typecheck_and_production_build_pass
       - official_component_inventories_refreshed_and_zero_gap
       - light_1440_390_browser_pass_18_samples_zero_mutations
       - dark_1088_320_browser_pass_18_samples_zero_mutations
       - manual_top_middle_bottom_screenshot_review_pass
-    limitations:
-      - independent_review_not_run
-      - current_material_relation_search_more_dataset_had_zero_selectable_results
-      - hierarchical_workspace_no_match_search_diagnostic_did_not_reach_zero_rows
+    exit_evidence:
+      candidate:
+        full_sha: c442f731adb6cd23e3adc77811c1c895f137a5fe
+        fingerprint: 93bca159a932f41910a5eb3525a4c781b91a684d85af1362269605a4263571dd
+        fingerprint_path: artifacts/fingerprints/global_component_capability_exit_candidate_c442f731.json
+        path_count: 7366
+      evidence:
+        - verify.frontend.quick.gate_pass
+        - public_config_provider_normal_reduce_normal_consumers_pass_31
+        - app_unmount_hmr_release_and_route_singleton_pass
+        - system_theme_login_and_embedded_runtime_pass_1088_320
+        - material_relation_api_data_zero_result_classified_data_prerequisite
+        - material_collection_query_cycle_pass_selector_assumption_corrected
+        - hierarchy_query_cycle_pass_wait_scope_corrected
+        - targeted_browser_pass_8_samples_zero_mutations
+      limitations:
+        - independent_review_not_run
+        - material_relation_selection_with_nonempty_authoritative_dataset_not_covered
+        - multi_role_real_write_acceptance_upgrade_release_and_pr_ci_not_run
   exclude:
     - contract_permission_action_amount_or_hidden_section_changes
     - business_flow_expansion

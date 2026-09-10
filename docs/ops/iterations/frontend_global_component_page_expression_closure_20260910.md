@@ -1,7 +1,7 @@
 # 全局组件能力与页面表达统一收口
 
 日期：2026-09-10
-状态：`verification_pending`（本地实现与联合验证完成，等待独立复核）
+状态：`independent_review_ready`（全局能力补证与诊断归因完成，等待独立复核）
 
 ## 基线与边界
 
@@ -38,6 +38,20 @@
 | Table 渲染与横向比较 | 公开 API；必要的滚动边界由适配层接管 | 明细表需在窄屏保留受控横向比较，不能用裁切隐藏；登记具体 DOM 依赖并用边界/滚动测试证明必要性 |
 | 页面布局、字段对齐、自定义组件层次 | 项目共享组件与 token 自行负责 | ConfigProvider 不负责项目布局；用结构测试、边界测量和同视口截图验证，不归因于官方全局配置 |
 
+## 配置边界表
+
+| 能力 | 是否可配置 | 允许值 | 权威来源 | 校验层 | 非法或缺失配置处理 |
+|---|---|---|---|---|---|
+| 主题模式 | 可由用户本地偏好配置 | `light`、`dark`、`system` | `sc_theme` 本地偏好与系统 `prefers-color-scheme` | `theme.ts` 联合浏览器运行证明 | 未知值回落 `system`，不写业务数据 |
+| 减少动画 | 不提供业务配置；只消费系统偏好 | `reduce`、`no-preference` | `prefers-reduced-motion` | 应用生命周期测试、浏览器根属性 | 缺失时按 `no-preference`；不从路由或业务契约推导 |
+| TDesign 动画投影 | 不提供运行时任意配置 | 普通态显式 include `ripple/expand/fade`；减少态显式 exclude 同集合 | 安装锁定的 TDesign 1.20.5 公开 `ConfigProvider.globalConfig.animation` | 真实 Provider 动态组件测试与严格类型 | 编译/测试失败即阻断；不复制 locale、尺寸等其他官方默认值 |
+| 章节身份、顺序与显隐 | 本专题不可配置 | 仅消费实际可见、稳定章节节点 | `ui.contract`/native view 的既有结构与隐藏规则 | section navigation 非零测试和内容级浏览器证据 | 缺失章节不生成入口；不按模型名、字段名或字段语义猜测，隐藏章节保持隐藏 |
+| 字段跨度与列数 | 仅消费已有结构表达，不新增配置入口 | 契约已声明的结构/跨度；共享响应式规则在窄屏收敛为单列 | native form contract 与现有 renderer | canonical presenter、field alignment 边界测量 | 非法结构由既有 normalizer/renderer 安全回落并由守卫暴露；不得逐字段补 margin |
+| 共享几何规范 | 不可由业务或低代码任意配置 | 已登记的 page/frame/content/spacing token | design-system token、page pattern 和共享组件 | token/official design inventory、页面结构与边界测试 | 未知 token、视觉 literal 或内部 vendor 选择器作为工程缺口阻断 |
+| 明细表列 | 可由现有契约声明 | 契约提供的可见列、标题、顺序与类型 | 关系 subview/contract | detail collection model/guard 与桌面/移动浏览器检查 | 缺失时只使用既有受控回落；不由字段名猜测业务重要性 |
+
+章节/列数配置决定“有什么、按何种契约顺序呈现”；共享几何只决定这些内容在已批准视口中的对齐、收缩和阅读宽度。二者不能互相替代，本批没有创建新配置系统。
+
 ## 执行批次
 
 1. A：根级 ConfigProvider、单例主题/减少动画监听、公共出口及隔离传播测试；定向验证后本地提交。
@@ -50,9 +64,9 @@
 ## A 批结果
 
 - `App.vue` 以 TDesign 1.20.5 公开 `ConfigProvider.globalConfig` 包住完整路由树，登录、业务壳和嵌入关系页面拥有同一配置祖先；公共出口只新增 ConfigProvider 及其公开类型。
-- 全局配置在普通偏好下为空，继续继承官方 locale、`classPrefix`、尺寸和动画默认；仅当系统要求减少动画时通过公开 API 排除 `ripple`、`expand`、`fade`。
-- 系统深浅色与减少动画监听由 `bootTheme()` 在应用生命周期幂等注册，`AppShell` 不再随业务壳挂载/卸载注册主题监听。根节点同时记录解析主题和减少动画状态，已有 CSS reduced-motion floor 保持有效。
-- 隔离测试共 16 项断言：单例注册/释放、系统主题响应、减少动画响应，以及普通、异步、Teleport 弹层和嵌套局部配置的传播/覆盖全部通过。
+- 全局配置不复制 locale、`classPrefix` 或控件尺寸。动画只声明经 1.20.5 审计的 `ripple`、`expand`、`fade`：减少态显式排除，普通态显式恢复。真实 Provider 动态测试证明，挂载后从减少态改为空对象不能可靠清除既有嵌套排除值，因此普通态的显式恢复是必要兼容边界，不是全量复制官方默认配置。
+- 系统深浅色与减少动画监听由应用根运行时幂等拥有：`main.ts` 负责启动及 HMR dispose，`App.vue` 的 mounted/unmount 生命周期负责正常挂载释放；路由组件不注册或释放。根节点同时记录解析主题和减少动画状态，已有 CSS reduced-motion floor 保持有效。
+- 隔离测试升级为 31 项断言：通过生产公共出口挂载真实 ConfigProvider 与 TDesign Tag；普通、异步、Teleport 消费者完成普通→减少→普通动态更新，嵌套局部配置保持；路由子树切换不重复注册，应用卸载实际释放，重新挂载只恢复一次并同步当前系统偏好。
 - 定向门禁：`verify.frontend.global_component_capability.unit`、严格类型、production build、primitive adapter、rendering detail 与 official design alignment 均通过；未运行浏览器全矩阵或写业务数据。
 
 ## B 批结果
@@ -82,7 +96,7 @@
 ## 联合静态复核
 
 - A/B/C 本地提交分别为 `c752482e`、`39f075b5`、`2ac68f66`；三批产品实现边界保持独立。
-- `verify.frontend.quick.gate` 全量通过，包含严格类型、production build、官方组件守卫和本专题 16 项非零隔离组件测试；该隔离测试已接入 Quick、PR unit 与 release unit。
+- `verify.frontend.quick.gate` 在补证候选上全量通过，包含严格类型、production build、官方组件守卫和本专题 31 项非零真实 Provider 组件测试；该隔离测试已接入 Quick、PR unit 与 release unit。
 - 主题运行时守卫共 12 项断言，覆盖两类系统 media query、幂等注册、显式主题优先及成对释放。守卫读取无框架依赖的主题运行时；Vue 响应式 ConfigProvider 配置由独立模块消费，避免验证脚本伪造框架运行时。
 - 页头/表单守卫已跟随责任迁移：吸顶不透明表面检查 `ProductPageHeader`，并明确禁止页面 CSS 重新深穿共享页头；未重新调整字段几何。
 - 三份组件/表达 inventory 已按当前生产源摘要刷新，官方组件内部选择器、literal、未知 token 与 orphan 缺口均为 0。
@@ -97,18 +111,21 @@
 - 两份最终摘要均为 `pass=true`、`mutationCount=0`、errors/failures empty；每份含桌面/移动各 9 个路由样本，合计 36 个样本：主页、我的工作、付款只读、付款编辑、合同只读、合同新建、材料新建、材料集合和合同层级工作区。
 - 五类表单在四种宽度均通过正文/导航/字段/控件/允许滚动区边界检查。原收入合同新建每个视口仍测得 24 个 eligible 控件，frame failure、row baseline failure 和强制跨组 grid spread 均为 0；付款只读 row baseline failure 为 0。没有裁切、隐藏字段或缩字号。
 - 所有已生成的章节入口均完成名称、稳定目标身份、内容类型、当前态、完整可见和吸顶无遮挡校验。材料临时明细在桌面表格与移动卡片中完成必填聚焦后删除，浏览器请求计数保持 0 次业务 mutation。
-- 我的工作真实 Input/Select/Card/结构按钮在鼠标和键盘路径均通过，清除后恢复原记录数，单次触发为 1；首页 Alert 每个视口记录 `retryRequestCount=1`。ConfigProvider 普通、异步和 Teleport 传播及局部覆盖由 16 项隔离组件测试证明。
-- 主题在 36 个业务页面样本中分别解析为 light/dark。登录和嵌入页面共享同一个 `App.vue` Provider/主题根，不依赖业务壳挂载；系统主题、减少动画及监听幂等/释放由 12 项运行时断言证明。这里是根结构与隔离运行时证据，不冒充登录/嵌入业务旅程验收。
+- 我的工作真实 Input/Select/Card/结构按钮在鼠标和键盘路径均通过，清除后恢复原记录数，单次触发为 1；首页 Alert 每个视口记录 `retryRequestCount=1`。原候选的 16 项初始传播测试已由补证候选的 31 项真实 Provider 动态测试取代。
+- 主题在原 36 个业务页面样本中分别解析为 light/dark。补证候选又在登录页与无 `AppShell` 的嵌入表单实际记录 `system→dark/reduce`，嵌入页挂载后完成 dark/reduce→light/no-preference→dark/reduce；因此登录、业务壳和嵌入路由都已取得运行证据。
 - overlay lifecycle 10 项定向测试覆盖嵌套关闭、busy、焦点栈、深度滚动锁与单次触发；关系请求旧响应失效继续由既有 professional relation lifecycle 非零门禁负责。本专题未改变这些业务保护。
 - 人工抽查最终截图的首屏、中段和底部：吸顶页头保持不透明且未覆盖标题/字段/动作；320px 控件与章节栏完整；明细横向滚动仅发生在已声明的表格区域；协作区保留的章节、关注者交互、附件拖放和逐条记录边界均有明确用途。
 
-### 诊断与未覆盖项
+### 补证候选与三项诊断归因
 
-- 一次集合附加搜索旅程因当前材料集合没有脚本要求的唯一查询栏而停止；最终矩阵只验证该页面实际存在的加载、toolbar、navigation、移动卡片和布局能力，不将该搜索旅程计为通过。
-- 一次层级工作区“无匹配搜索”诊断没有进入脚本预期的零行状态；最终矩阵保留其页面加载、主题、320px 明确横向表格浏览及主要操作覆盖，不声明该既有搜索旅程通过。
-- 材料“搜索更多”弹层在当前数据下正常打开且无残留，但返回 0 个可选结果，因此没有把“选中已有结果”计为本候选通过；最终通过摘要不包含这一数据前提断言。
+- 最终补证候选：`c442f731adb6cd23e3adc77811c1c895f137a5fe`；完整指纹 `93bca159a932f41910a5eb3525a4c781b91a684d85af1362269605a4263571dd`，7366 paths；`artifacts/fingerprints/global_component_capability_exit_candidate_c442f731.json`。
+- 定向浏览器摘要：`artifacts/playwright/global-capability-exit-system-1088-320-c442f731/summary.json`；1088/320、系统主题、桌面/移动各 4 个样本，`pass=true`、`mutationCount=0`、errors/failures empty。候选服务已停止。
+- 材料关系弹层：触发“搜索更多”后实际请求为 `intent=api.data`、`op=list`、`model=project.project`、空搜索词、limit 80，权威 domain 为 `[(id, =, -1)]`；响应 HTTP 200、0 records、无 error。界面同步显示空态、选择按钮禁用。分类为**数据前提不足/权威 domain 排除全部记录**，归属既有契约/数据前提，不是弹层请求或渲染故障；本专题不改 domain、契约或数据。
+- 材料集合查询栏：页面实际具有一个可见搜索输入，旧脚本把两个可能的语义容器合并后要求容器唯一，错误地把容器身份歧义归为控件缺失。脚本改为先锁定唯一可见 `input[type=search]`，再反查最近语义 owner。桌面/移动均完成 1 record→无匹配空态→清除→1 record，URL 搜索参数同步恢复。分类为**P4 脚本选择器假设**，页面能力存在，无产品修改。
+- 合同层级搜索：生产实现对当前已加载 `visibleRows` 做客户端过滤，不发搜索请求。旧脚本用全局 document 选择器等待零行，可能命中页面其他表格；改为绑定当前 `HierarchicalWorksheet` 根。桌面/移动均完成 46 records→项目范围 1 record→无匹配 0 records/无打开动作→清除恢复 1 record，并保留选中记录。分类为**P4 等待作用域错误**，不是数据、过滤或渲染问题。
+- 首次补证运行在页面请求前因把 `emulateMedia` 调在 BrowserContext 而停止；改用当前 Playwright 支持的 Page API 后重新冻结并通过。该历史失败不计入候选通过证据。
 - 未运行多角色、真实写入、acceptance、升级兼容、发布或 PR/CI；独立复核尚未执行。以上诊断未引发契约、数据、业务流程或门禁降级。
 
 ## 本地结论
 
-共享表达规则、官方能力接管记录、代表页面一致性和字段对齐基线均已落到冻结候选并完成本地联合验证。A/B/C 产品提交与最终 P4 验证提交可以保留；本专题进入独立复核准备状态，不再追加零散美化。只有独立复核通过后，才能整理并授权 PR 交付，当前不宣称已合并、已发布或整个系统交互已验收。
+共享表达规则、官方能力接管记录、代表页面一致性、字段对齐基线、动态 Provider 传播、生命周期释放和三项诊断归因均已落到冻结候选并完成本地联合验证。A/B/C 产品提交与补证提交可以保留；本专题已满足“进入独立复核”的本地退出条件，不再追加零散美化。只有独立复核通过后，才能整理并授权 PR 交付，当前不宣称已合并、已发布或整个系统交互已验收。
