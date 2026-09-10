@@ -1799,21 +1799,24 @@ try {
             }))
             .filter((grid) => grid.ordinaryFieldCount > 0 && grid.rect);
           const eligible = fields.filter((field) => field.eligible);
+          const ordinarySlots = fields.filter((field) => !excludedTypes.has(field.type) && field.slotRect);
           const frameFailures = eligible.filter((field) => Math.abs(field.insetLeft) > 1 || Math.abs(field.insetRight) > 1);
           const rowGroups = [];
-          for (const field of eligible) {
-            if (!field.fieldRect || !field.frameRect || !field.labelRect) continue;
+          for (const field of ordinarySlots) {
+            const controlRect = field.frameRect || field.slotRect;
+            if (!field.fieldRect || !controlRect || !field.labelRect) continue;
             const row = rowGroups.find((candidate) => Math.abs(candidate.fieldTop - field.fieldRect.top) <= 1
               && Math.abs(candidate.labelHeight - field.labelRect.height) <= 1);
-            if (row) row.fields.push(field);
-            else rowGroups.push({ fieldTop: field.fieldRect.top, labelHeight: field.labelRect.height, fields: [field] });
+            const measuredField = { ...field, measuredControlTop: controlRect.top };
+            if (row) row.fields.push(measuredField);
+            else rowGroups.push({ fieldTop: field.fieldRect.top, labelHeight: field.labelRect.height, fields: [measuredField] });
           }
           const rowBaselineFailures = rowGroups
             .filter((row) => row.fields.length > 1)
             .map((row) => ({
               names: row.fields.map((field) => field.name),
-              controlTops: row.fields.map((field) => field.frameRect.top),
-              delta: Number((Math.max(...row.fields.map((field) => field.frameRect.top)) - Math.min(...row.fields.map((field) => field.frameRect.top))).toFixed(2)),
+              controlTops: row.fields.map((field) => field.measuredControlTop),
+              delta: Number((Math.max(...row.fields.map((field) => field.measuredControlTop)) - Math.min(...row.fields.map((field) => field.measuredControlTop))).toFixed(2)),
             }))
             .filter((row) => row.delta > 1);
           const gridEdges = grids.map((grid) => ({ left: grid.rect.left, right: grid.rect.right, depth: grid.groupDepth }));
@@ -1826,10 +1829,11 @@ try {
             fields,
             grids,
             eligibleControlCount: eligible.length,
+            ordinarySlotCount: ordinarySlots.length,
             frameFailures,
             rowBaselineFailures,
             gridEdgeSpread,
-            meetsControlFrameTolerance: eligible.length > 0 && frameFailures.length === 0,
+            meetsControlFrameTolerance: ordinarySlots.length > 0 && frameFailures.length === 0,
             meetsRowBaselineTolerance: rowBaselineFailures.length === 0,
             meetsGridEdgeTolerance: gridEdges.length > 0 && gridEdgeSpread.left <= 1 && gridEdgeSpread.right <= 1,
           };
