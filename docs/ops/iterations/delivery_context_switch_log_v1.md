@@ -9194,3 +9194,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 全差异没有 addons、contracts、数据库/fixture、acceptance 环境恢复、发布脚本或图标资源。风险分类保持 `HIGH_RISK`；分类器的 `backend_changed=true` 按 fail-closed 原样登记，不据此声称存在后端产品改动。
 - 独立源码与留存证据复核通过；原 `07758bd7` 的 36 个页面样本与 `c442f731` 的 8 个补证样本分别登记，不合称同一最终候选重跑 44 个样本。
 - 本地交付状态为 `READY_FOR_DRAFT_PR_AUTHORIZATION`，不是 merge-ready 或 release-ready。未执行 push、create、ready、merge、release，也未重启浏览器或重跑产品门禁。
+
+## 2026-09-10 — PR #456 exact-head 复核缺口关闭
+
+- 起始锚点 `eaed4d2c9d872e17e8155c75f27232f80a1a77c7`，分支 `feature/form-page-structure-professionalization-v1`。Formal Product Layer P0，P4 仅承载 exact-head 浏览器证据、CI 诊断和 PR 状态更新。
+- 唯一目标：关闭独立审查指出的候选后共享样式变动、夜间后端工作流实际运行与 PR 描述身份缺口；不改契约、业务语义、权限、数据库、fixture、acceptance、发布或合并状态。
+- 受管 5176 首轮及一次复跑均稳定发现材料新建移动明细在必填关系控件 disabled 时无法恢复焦点；边界完整且业务 mutation 为 0。归因为 P0 通用校验焦点回退缺失，不修改关系权限或可选数据前提。
+- 修复限定为：优先聚焦可见且非原生 disabled 的控件；没有可聚焦子控件时，将实际错误单元作为程序化焦点目标。后续以非零定向测试、四宽度明暗候选复核和 exact-head CI 验证。
