@@ -9126,3 +9126,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 后台/契约原始分组标题继续按既有设计隐藏；不恢复 `node.title`，不按模型名、字段名推断重要性。付款、材料入库和收入合同只作为共享能力样本。
 - 材料单据字段附件与协作时间线附件是不同载体，均保留并只做通用命名澄清。收入合同“未收款金额/未收款”差异仅登记为后续口径问题，本批不改值、不补契约。
 - 不修改 login/system.init/ui.contract、schema、权限、字段、动作和默认路由；不写数据库、不运行 fixture、不重建 acceptance、不执行发布。
+
+## 2026-09-10 — 共享表单响应式容器与阅读宽度收口
+
+- Batch `FORM-RESPONSIVE-WIDTH`；Formal Product Layer P0，P4 仅承载边界测量和候选证据。Layer Target 为 `frontend/apps/web` 通用 native 表单收缩链、字段网格、控件与共享章节导航。
+- 基线 `7be995af2b87c4d384464decc3db23571859feba`，完整指纹 `0debfd8efd778e42269d0a21061ec9bf458eab9bd9b7755c9853e0b347bc50f5`（7355 paths）。复用唯一已注册 worktree 与 `local.dev`（`sc-local-dev` / `sc_dev_demo` / 18081 / 5176）。
+- 唯一目标：关闭 320/390 下根文档宽度检查遗漏的表单内部超宽，证明正文、章节栏、字段控件和浮层都在各自边界内；允许滚动的关系明细表格单独分类。
+- 隐藏章节、合同金额语义、字段/权限/动作、`smart_construction_demo` 目录缺口、键盘/查询、数据库、fixture、acceptance、release 与远程写入均不在本批范围。
