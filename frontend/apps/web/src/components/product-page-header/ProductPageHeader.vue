@@ -122,7 +122,7 @@ const model = computed(() => resolveProductPageHeaderModel({
 .product-page-header--task,
 .product-page-header--workspace {
   position: sticky;
-  z-index: 20;
+  z-index: var(--sc-component-sticky-header-z-index);
   top: 0;
   border-width: 0 0 1px;
   border-radius: 0;

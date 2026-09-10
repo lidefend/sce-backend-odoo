@@ -283,9 +283,6 @@ function runNativeCanonicalAction(payload: Record<string, unknown>) {
   scroll-margin-top: calc(var(--sc-form-command-bar-height, 72px) + 52px);
 }
 .sc-native-contract-page {
-  --sc-pattern-task-form-field-gap: 8;
-  --sc-pattern-task-form-label-row-margin-bottom: 2px;
-  --sc-pattern-task-form-readonly-column-gap: 24px;
   width: 100%;
   max-width: 100%;
   min-width: 0;

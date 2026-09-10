@@ -174,7 +174,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .form-section-navigation {
   position: sticky;
-  z-index: 18;
+  z-index: var(--sc-component-sticky-header-z-index);
   top: var(--sc-form-command-bar-height, 72px);
   width: 100%;
   max-width: 100%;
@@ -198,7 +198,7 @@ onBeforeUnmount(() => {
 .form-section-navigation__track :deep(.sc-btn) { flex: 0 0 auto; }
 .form-section-navigation__cue {
   position: absolute;
-  z-index: 2;
+  z-index: var(--sc-component-overlay-dropdown-z-index);
   top: 50%;
   transform: translateY(-50%);
   color: var(--sc-app-text-secondary);

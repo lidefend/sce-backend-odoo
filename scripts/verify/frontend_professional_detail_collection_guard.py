@@ -14,7 +14,10 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     sc_select = read_text("frontend/apps/web/src/components/design-system/ScSelect.vue")
     relation_types = read_text("frontend/apps/web/src/components/template/relationField.types.ts")
     relation_utils = read_text("frontend/apps/web/src/pages/contractForm/one2manyUtils.ts")
-    relation_runtime = read_text("frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts")
+    relation_runtime = "\n".join((
+        read_text("frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts"),
+        read_text("frontend/apps/web/src/pages/contractForm/one2manyColumnOptionsRuntime.ts"),
+    ))
     relation_query = read_text("frontend/apps/web/src/components/template/one2manyRelationQuery.ts")
     relation_descriptor = read_text("frontend/apps/web/src/pages/contractForm/relationDescriptor.ts")
     action_presentation = read_text("frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts")
