@@ -18,6 +18,7 @@ def fail(message: str) -> None:
 tokens = read("styles/design-system.css")
 patterns = read("styles/product-patterns.css")
 form_css = read("pages/contractForm/ContractFormPage.css")
+product_header = read("components/product-page-header/ProductPageHeader.vue")
 section = read("components/template/FormSection.vue")
 mapper = read("components/template/fieldSpan.mapper.ts")
 schema_builder = read("pages/contractForm/useRecordFormFieldSchemas.ts")
@@ -131,7 +132,9 @@ if "const sectionTitle = computed(() => '');" not in canonical_renderer or "cons
 for required in ("readonlyO2mTableColumns", 'class="o2m-readonly-table"', 'class="o2m-readonly-list"'):
     if required not in relations:
         fail(f"responsive readonly detail structure missing: {required}")
-if "background: var(--sc-app-panel);" not in form_css or "isolation: isolate;" not in form_css:
+if "background: var(--sc-app-panel);" not in product_header or "isolation: isolate;" not in product_header:
     fail("sticky form header is not an opaque isolated surface")
+if ":deep(.template-page-header" in form_css:
+    fail("form page bypasses shared header layout ownership")
 
 print("[frontend_form_canvas_wide_grid_guard] PASS")

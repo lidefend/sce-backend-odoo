@@ -28,7 +28,7 @@ import { usePageIdentityRuntime } from './app/pageIdentityRuntime';
 import { TDesignConfigProvider } from './components/design-system/tdesignPrimitiveBridge';
 import AppShell from './layouts/AppShell.vue';
 import { useSessionStore } from './stores/session';
-import { tdesignGlobalConfig } from './styles/theme';
+import { tdesignGlobalConfig } from './styles/tdesignGlobalConfig';
 
 const session = useSessionStore();
 const pageIdentity = usePageIdentityRuntime();

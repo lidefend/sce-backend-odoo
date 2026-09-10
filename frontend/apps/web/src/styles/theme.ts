@@ -1,19 +1,11 @@
-import { computed, readonly, ref } from 'vue';
-import type { TDesignGlobalConfigProvider } from '../components/design-system/tdesignPrimitiveBridge';
-
 const THEME_KEY = 'sc_theme';
 const THEME_PROFILE_KEY = 'sc_theme_profile';
 const SYSTEM_DARK_QUERY = '(prefers-color-scheme: dark)';
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
-const TD_ANIMATIONS = ['ripple', 'expand', 'fade'] as const;
 
-const reducedMotionState = ref(false);
+let reducedMotionState = false;
+const reducedMotionListeners = new Set<(reduced: boolean) => void>();
 let stopThemeRuntimeWatch: (() => void) | null = null;
-
-export const reducedMotion = readonly(reducedMotionState);
-export const tdesignGlobalConfig = computed<TDesignGlobalConfigProvider>(() => reducedMotionState.value
-  ? { animation: { include: [], exclude: [...TD_ANIMATIONS] } }
-  : {});
 
 export type ScTheme = 'light' | 'dark' | 'system';
 
@@ -46,8 +38,19 @@ export function applyTheme(theme: ScTheme): void {
 }
 
 function applyReducedMotion(reduced: boolean): void {
-  reducedMotionState.value = reduced;
+  const changed = reducedMotionState !== reduced;
+  reducedMotionState = reduced;
   document.documentElement.setAttribute('data-sc-reduced-motion', reduced ? 'reduce' : 'no-preference');
+  if (changed) reducedMotionListeners.forEach((listener) => listener(reduced));
+}
+
+export function reducedMotionPreference(): boolean {
+  return reducedMotionState;
+}
+
+export function onReducedMotionPreferenceChange(listener: (reduced: boolean) => void): () => void {
+  reducedMotionListeners.add(listener);
+  return () => reducedMotionListeners.delete(listener);
 }
 
 /** Register the application-lifetime media listeners exactly once.

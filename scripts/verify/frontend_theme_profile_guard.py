@@ -172,34 +172,39 @@ const ts = require('./frontend/apps/web/node_modules/typescript');
 const source = fs.readFileSync('./frontend/apps/web/src/styles/theme.ts', 'utf8');
 const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
 const attrs = new Map();
-const listeners = new Set();
-const media = { matches: false,
+const darkListeners = new Set();
+const motionListeners = new Set();
+const media = (listeners) => ({ matches: false,
   addEventListener: (name, handler) => { assert.equal(name, 'change'); listeners.add(handler); },
-  removeEventListener: (name, handler) => { assert.equal(name, 'change'); listeners.delete(handler); } };
+  removeEventListener: (name, handler) => { assert.equal(name, 'change'); listeners.delete(handler); } });
+const darkMedia = media(darkListeners);
+const motionMedia = media(motionListeners);
 const root = { style: {}, setAttribute: (name, value) => attrs.set(name, value), getAttribute: name => attrs.get(name) };
 const moduleObject = { exports: {} };
 vm.runInNewContext(code, { exports: moduleObject.exports, module: moduleObject,
-  window: { matchMedia: () => media }, document: { documentElement: root } });
+  window: { matchMedia: query => query.includes('color-scheme') ? darkMedia : motionMedia }, document: { documentElement: root } });
 const theme = moduleObject.exports;
 const resolved = () => attrs.get('data-sc-theme-resolved');
 theme.applyThemeProfile('business-soft');
 theme.applyTheme('system');
-const stop = theme.watchSystemTheme();
-assert.equal(listeners.size, 1);
+const stop = theme.ensureThemeRuntimeWatch();
+theme.ensureThemeRuntimeWatch();
+assert.equal(darkListeners.size, 1);
+assert.equal(motionListeners.size, 1);
 assert.equal(resolved(), 'light');
-media.matches = true; listeners.forEach(handler => handler());
+darkMedia.matches = true; darkListeners.forEach(handler => handler());
 assert.equal(resolved(), 'dark');
-theme.applyTheme('light'); listeners.forEach(handler => handler());
+theme.applyTheme('light'); darkListeners.forEach(handler => handler());
 assert.equal(resolved(), 'light', 'explicit light mode ignores system dark');
-theme.applyTheme('dark'); media.matches = false; listeners.forEach(handler => handler());
+theme.applyTheme('dark'); darkMedia.matches = false; darkListeners.forEach(handler => handler());
 assert.equal(resolved(), 'dark', 'explicit dark mode ignores system light');
 theme.applyTheme('system');
 assert.equal(resolved(), 'light');
 assert.equal(attrs.get('data-sc-theme-profile'), 'business-soft', 'mode changes preserve style profile');
-stop(); assert.equal(listeners.size, 0);
-media.matches = true; listeners.forEach(handler => handler());
+stop(); assert.equal(darkListeners.size, 0); assert.equal(motionListeners.size, 0);
+darkMedia.matches = true; darkListeners.forEach(handler => handler());
 assert.equal(resolved(), 'light', 'disposed listener cannot update theme');
-console.log('[theme_system_runtime] PASS assertions=9');
+console.log('[theme_system_runtime] PASS assertions=12');
 """], cwd=ROOT, check=False)
     if runtime.returncode:
         return runtime.returncode

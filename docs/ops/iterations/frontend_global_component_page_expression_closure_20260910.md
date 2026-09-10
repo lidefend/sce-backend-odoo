@@ -78,3 +78,12 @@
 | Table | data/columns/row/size/loading/scroll/width/attributes | 保留横向浏览接管 | 1.20.5 无公开 scroll-region element/ref 可提供边界状态、焦点语义与步进滚动；inventory + 表格边界/键盘验证 |
 
 - 定向门禁：明细模型/守卫 31 项、协作模型/守卫 73 项、接管 inventory 6 项、overlay lifecycle 10 项及严格类型全部通过。没有修改契约、权限、动作、隐藏章节或业务数据。
+
+## 联合静态复核
+
+- A/B/C 本地提交分别为 `c752482e`、`39f075b5`、`2ac68f66`；三批产品实现边界保持独立。
+- `verify.frontend.quick.gate` 全量通过，包含严格类型、production build、官方组件守卫和本专题 16 项非零隔离组件测试；该隔离测试已接入 Quick、PR unit 与 release unit。
+- 主题运行时守卫共 12 项断言，覆盖两类系统 media query、幂等注册、显式主题优先及成对释放。守卫读取无框架依赖的主题运行时；Vue 响应式 ConfigProvider 配置由独立模块消费，避免验证脚本伪造框架运行时。
+- 页头/表单守卫已跟随责任迁移：吸顶不透明表面检查 `ProductPageHeader`，并明确禁止页面 CSS 重新深穿共享页头；未重新调整字段几何。
+- 三份组件/表达 inventory 已按当前生产源摘要刷新，官方组件内部选择器、literal、未知 token 与 orphan 缺口均为 0。
+- 当前状态仍为 `active`：以上只证明联合静态门禁通过；受管 local.dev 页面矩阵、人工首屏/中段/底部复核与最终完整指纹尚待绑定，不能据此宣布阶段结束或独立复核通过。

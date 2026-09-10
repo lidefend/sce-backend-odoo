@@ -33,6 +33,7 @@ const darkMedia = new FakeMediaQueryList();
 const motionMedia = new FakeMediaQueryList();
 const storage = new Map<string, string>([['sc_theme', 'system']]);
 const theme = await import('../src/styles/theme.ts');
+const componentConfig = await import('../src/styles/tdesignGlobalConfig.ts');
 
 Object.assign(globalThis, {
   document: {
@@ -57,13 +58,13 @@ assert.equal(darkMedia.addCount, 1, 'system theme listener must be application-s
 assert.equal(motionMedia.addCount, 1, 'reduced motion listener must be application-singleton');
 assert.equal(attributes.get('data-sc-theme'), 'light');
 assert.equal(attributes.get('data-sc-reduced-motion'), 'no-preference');
-assert.deepEqual(theme.tdesignGlobalConfig.value, {}, 'normal motion must inherit official defaults');
+assert.deepEqual(componentConfig.tdesignGlobalConfig.value, {}, 'normal motion must inherit official defaults');
 
 darkMedia.dispatch(true);
 assert.equal(attributes.get('data-sc-theme'), 'dark', 'system theme changes must update the shared root');
 motionMedia.dispatch(true);
 assert.equal(attributes.get('data-sc-reduced-motion'), 'reduce');
-assert.deepEqual(theme.tdesignGlobalConfig.value, {
+assert.deepEqual(componentConfig.tdesignGlobalConfig.value, {
   animation: { include: [], exclude: ['ripple', 'expand', 'fade'] },
 });
 
@@ -131,7 +132,7 @@ const LocalProviderProbe = defineComponent({
 });
 const RootProbe = defineComponent({
   setup() {
-    provideConfig({ globalConfig: theme.tdesignGlobalConfig.value });
+    provideConfig({ globalConfig: componentConfig.tdesignGlobalConfig.value });
     return () => [
       h(RegularProbe),
       h(LazyProbe),

@@ -62,7 +62,7 @@ goal:
     - id: C
       title: detail_collaboration_and_component_takeover_closure
       status: completed
-      commit: pending_local_commit
+      commit: 2ac68f66
       evidence:
         - professional_detail_collection_model_and_guard_pass_31
         - professional_collaboration_model_and_guard_pass_73
@@ -81,6 +81,14 @@ goal:
     - affected_overlay_behaviors_pass_without_business_writes
     - representative_pages_and_all_requested_viewports_themes_are_explicitly_registered
     - final_evidence_binds_one_frozen_full_fingerprint
+  joint_review:
+    status: static_pass_browser_pending
+    evidence:
+      - verify.frontend.quick.gate_pass
+      - global_component_capability_unit_pass_16_and_wired_to_quick_pr_release
+      - theme_runtime_guard_pass_12
+      - strict_typecheck_and_production_build_pass
+      - official_component_inventories_refreshed_and_zero_gap
   exclude:
     - contract_permission_action_amount_or_hidden_section_changes
     - business_flow_expansion
