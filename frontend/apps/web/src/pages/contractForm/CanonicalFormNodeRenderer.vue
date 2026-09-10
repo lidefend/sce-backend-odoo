@@ -237,7 +237,7 @@ function fieldChildOrphanClass(child: CanonicalFormNode): string {
 .canonical-form-node--readonly-fact :deep(.field) { display: grid; }
 .canonical-form-node--readonly-fact :deep(.field-control-row),
 .canonical-form-node--readonly-fact :deep(.field-control-main) {
-  display: inline;
+  display: inline-block;
   line-height: 22px;
 }
 .canonical-form-node--readonly-fact :deep(.readonly-value),
