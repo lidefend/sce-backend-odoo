@@ -48,23 +48,24 @@
 - Batch B / 恢复实现：`472dcd9f`。新增同源内部路径校验、当前标签页会话级暂存、并发 401 单次跳转，以及登录页独立说明。401 不重放原请求，原路径不进入登录 URL。
 - 浏览器修正：`48fc398d`。首次候选实测发现成功返回后响应式路由状态已变化，导致暂存值未清理；改为在导航前冻结恢复身份，成功导航后清理。
 - 表达修正：`2656ad65`。人工审看发现官方 Alert 默认信息色与项目主题映射组合后对比不足；由既有 `ScInlineState` 适配层消费 `info` 背景、边框和文字 token，未使用页面深层选择器。
-- 产品冻结候选：`2656ad65a8542448938907394cc68482ee65d24c`。
+- 认证入口边界：`830fb7e3`。普通登录、平台管理员登录、账号激活和密码恢复入口统一拒绝递归会话过期跳转；平台管理员入口不会被降级到普通登录。
+- 产品冻结候选：`830fb7e36c30df5c11aae521156f8327771fd04b`。
 
 ## 验证证据
 
 | 证据 | 候选 / 条件 | 结果 |
 |---|---|---|
-| 非零定向模型与守卫 | `make verify.frontend.system_state_recovery.unit` | PASS；安全路径、暂存、非法输入、递归阻止和并发去重共 20 条断言，守卫 4 tests |
-| Quick、严格类型与生成清单 | `make verify.frontend.quick.gate`，产品候选 `2656ad65…` | PASS；受管组件接管、视觉投影和官方设计清单已刷新并通过 |
+| 非零定向模型与守卫 | `make verify.frontend.system_state_recovery.unit` | PASS；安全路径、暂存、非法输入、全部认证入口递归阻止和并发去重共 21 条断言，守卫 4 tests |
+| Quick、严格类型与生成清单 | `make verify.frontend.quick.gate`，产品候选 `830fb7e3…` | PASS；受管组件接管、视觉投影和官方设计清单已刷新并通过 |
 | 首次浏览器诊断 | `472dcd9f…`，light 1440/390 | FAIL；返回原页成功，但 `storedAfterLogin=/my-work`，归因并修复；不计最终通过样本 |
-| 最终明色浏览器 | `2656ad65…`，5176，light 1440/390 | PASS；2 个样本，单次注入请求、唯一说明、安全返回、清理完成、0 写入 |
-| 最终暗色浏览器 | `2656ad65…`，5176，dark 1088/320 | PASS；2 个样本，单次注入请求、唯一说明、安全返回、清理完成、0 写入 |
+| 最终明色浏览器 | `830fb7e3…`，5176，light 1440/390 | PASS；2 个样本，单次注入请求、唯一说明、安全返回、清理完成、0 写入 |
+| 最终暗色浏览器 | `830fb7e3…`，5176，dark 1088/320 | PASS；2 个样本，单次注入请求、唯一说明、安全返回、清理完成、0 写入 |
 | 人工截图复核 | 四张 `*-session-expired.png` | PASS；说明、输入与主操作完整可见，明暗主题对比清楚，320px 无裁切 |
 
 最终摘要：
 
-- `artifacts/playwright/system-state-recovery/2656ad65/light/summary.json`
-- `artifacts/playwright/system-state-recovery/2656ad65/dark/summary.json`
+- `artifacts/playwright/system-state-recovery/830fb7e3/light/summary.json`
+- `artifacts/playwright/system-state-recovery/830fb7e3/dark/summary.json`
 
 两份摘要均绑定同一冻结候选；不能合称为全系统业务验收。浏览器仅使用 `sc_dev_demo` 既有只读页面与受控 401 注入，`mutationCount=0`。
 

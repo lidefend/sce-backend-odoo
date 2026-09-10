@@ -43,13 +43,14 @@ goal:
         - 472dcd9f
         - 48fc398d
         - 2656ad65
+        - 830fb7e3
     - id: C
       title: targeted_and_governed_browser_validation
       status: completed
       product_candidate:
-        full_sha: 2656ad65a8542448938907394cc68482ee65d24c
+        full_sha: 830fb7e36c30df5c11aae521156f8327771fd04b
       evidence:
-        - verify.frontend.system_state_recovery.unit_pass_assertions_20_guard_tests_4
+        - verify.frontend.system_state_recovery.unit_pass_assertions_21_guard_tests_4
         - verify.frontend.quick.gate_pass
         - light_1440_390_session_expiry_recovery_pass_zero_mutations
         - dark_1088_320_session_expiry_recovery_pass_zero_mutations
