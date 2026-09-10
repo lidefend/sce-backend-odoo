@@ -9141,3 +9141,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 最终候选 `04c774035e241eb82343f37ceac951fcd8c79d97`，完整指纹 `67bd65ed22559dfcdccf0b2c8e779463f8e7916a547a210b700f70db1a879089`（7356 paths）。320px 下 native page 与 owner 同为 255px，公开关系控件及 `role=listbox` 弹层完整落在视口内。
 - light 1440/390 与 dark 1088/320 共 16 个路由视口、756 个内部边界、8 次弹层检查、76 次章节定位全部 PASS；48 张首屏/中段/底部截图人工复核无阻断，mutation/errors/failures 均为 0。最终 Frontend Quick PASS，候选已停止。
 - 完整记录：`frontend_form_responsive_container_reading_width_closure_20260910.md`。状态为 `verification_pending`，等待产品复核是否冻结表单表达成果；未启动键盘/查询、acceptance 或 release。
+
+## 2026-09-10 — 表单章节导航内容一致性收口
+
+- Batch `FORM-SECTION-NAV-CONTENT`；Formal Product Layer P0，P4 仅承载守卫与只读浏览器证据。Layer Target 为 `frontend/apps/web` 通用 native 表单章节身份、导航目标与内容级验证。
+- 基线 `2d5870009f08e6850e03e79a2fae2823bb152813`，完整指纹 `8ee8a7d2a5140a6330b8d920f15ee9cdd20f1449173283b4a3f82b4eada493d9`（7357 paths）。复用唯一已注册 worktree 与 local.dev 候选载体。
+- 唯一目标：分离字段 semantic role 与章节身份，使名称只绑定实际可见章节；关系明细不得落到 many2one 字段，历史审计不得落到录入人字段，多关系集合使用已有标题与节点身份分别定位。
+- 不修改契约、字段、权限、动作、隐藏章节或上一批响应式容器；不按模型名/字段名推断，不追加美化，不写数据库，不运行 fixture/acceptance/release，不执行远程写入。

@@ -1,0 +1,49 @@
+goal:
+  id: FORM-SECTION-NAVIGATION-CONTENT-CONSISTENCY
+  title: form_section_navigation_content_consistency_closure
+  status: active
+  objective: bind_navigation_labels_to_visible_section_identity_and_content_instead_of_arbitrary_field_roles
+  baseline:
+    branch: feature/form-page-structure-professionalization-v1
+    full_sha: 2d5870009f08e6850e03e79a2fae2823bb152813
+    source: product_review_of_responsive_form_candidate
+    fingerprint: 8ee8a7d2a5140a6330b8d920f15ee9cdd20f1449173283b4a3f82b4eada493d9
+    fingerprint_path: artifacts/fingerprints/form_section_navigation_content_baseline_2d587000.json
+  product_boundary:
+    formal_product_layer: P0
+    supporting_layer: P4
+    layer_target: frontend_generic_form_section_navigation_identity
+    module: frontend/apps/web
+    standard_vs_user_specific: platform_mechanism
+    why_here: stable_section_identity_and_navigation_target_projection_are_shared_renderer_responsibilities
+    why_not_elsewhere:
+      - no_field_or_model_name_inference
+      - no_contract_schema_permission_action_or_hidden_section_change
+      - no_customer_preference_or_runtime_configuration
+      - no_container_beautification_database_fixture_acceptance_or_release
+    blast_radius:
+      - native_workspace_form_section_link_generation
+      - native_section_target_projection
+      - shared_navigation_content_level_browser_evidence
+  scope:
+    include:
+      - separate_field_semantics_from_section_navigation_identity
+      - bind_each_link_to_one_visible_stable_section_target
+      - emit_audit_link_only_for_actual_audit_region
+      - keep_multiple_relation_collections_distinct_by_existing_title_and_node_identity
+      - verify_target_identity_content_current_state_and_sticky_visibility
+    exclude:
+      - contract_field_permission_or_business_action_changes
+      - model_or_field_name_guesses
+      - hidden_backend_chapter_restoration
+      - responsive_container_rework_or_general_beautification
+      - database_fixture_acceptance_release_or_remote_writes
+  acceptance:
+    - relation_link_targets_relation_collection_not_many2one_field
+    - audit_link_targets_visible_audit_region_and_is_absent_without_one
+    - multiple_relation_collections_keep_distinct_existing_titles_and_node_targets
+    - hidden_sections_and_field_only_roles_do_not_create_links
+    - click_evidence_checks_identity_content_current_state_and_sticky_visibility
+    - four_form_samples_readonly_browser_evidence_with_zero_business_writes
+  rollback:
+    - revert_this_batch_after_2d587000_without_contract_database_or_container_rollback
