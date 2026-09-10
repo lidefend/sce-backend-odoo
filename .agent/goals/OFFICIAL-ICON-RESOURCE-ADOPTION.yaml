@@ -1,0 +1,37 @@
+schema_version: 1
+goal:
+  id: OFFICIAL-ICON-RESOURCE-ADOPTION
+  title: Official icon resource adoption
+  status: verification_pending
+  formal_product_layer: P0
+  layer_target: frontend design-system icon adapter
+  module: frontend
+  objective: >-
+    Replace handwritten SVG paths, emoji and static character icons with the
+    installed TDesign official icon package through one public ScIcon adapter.
+  baseline_sha: 040a7b87536e9d7cfa4e17c766c57be0c7d4576a
+  branch: feature/p0-official-icon-resource-adoption-v1
+  standard_vs_user_specific: platform_standard
+  why_here: Icon semantics and vendor integration are shared presentation mechanisms.
+  why_not_elsewhere: No construction, customer, low-code or delivery-runtime semantics are introduced.
+  blast_radius:
+    - ScIcon semantic names
+    - collaboration visual glyphs
+    - hierarchy disclosure glyphs
+    - restricted rich-text toolbar glyphs
+    - recognized native action icons
+  exclusions:
+    - contracts
+    - permissions
+    - routes
+    - business actions
+    - form geometry
+    - database and fixtures
+    - release
+  validation:
+    required:
+      - verify.frontend.official_icon.unit
+      - verify.frontend.typecheck.strict
+      - verify.frontend.lint.src
+      - verify.frontend.build
+      - verify.frontend.quick.gate
