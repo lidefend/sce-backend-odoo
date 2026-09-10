@@ -1788,12 +1788,16 @@ try {
               index,
               rect: roundedRect(grid),
               fieldCount: [...grid.children].filter((child) => child instanceof HTMLElement && child.matches('.field') && visible(child)).length,
+              ordinaryFieldCount: [...grid.children].filter((child) => child instanceof HTMLElement
+                && child.matches('.field[data-field-type]')
+                && visible(child)
+                && !excludedTypes.has(String(child.getAttribute('data-field-type') || ''))).length,
               groupDepth: grid.closest('.native-form-tree')
                 ? [...grid.closest('.native-form-tree').querySelectorAll('.native-container--group')]
                   .filter((group) => group.contains(grid)).length
                 : 0,
             }))
-            .filter((grid) => grid.fieldCount > 0 && grid.rect);
+            .filter((grid) => grid.ordinaryFieldCount > 0 && grid.rect);
           const eligible = fields.filter((field) => field.eligible);
           const frameFailures = eligible.filter((field) => Math.abs(field.insetLeft) > 1 || Math.abs(field.insetRight) > 1);
           const rowGroups = [];
