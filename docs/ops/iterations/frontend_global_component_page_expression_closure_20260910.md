@@ -54,3 +54,10 @@
 - 系统深浅色与减少动画监听由 `bootTheme()` 在应用生命周期幂等注册，`AppShell` 不再随业务壳挂载/卸载注册主题监听。根节点同时记录解析主题和减少动画状态，已有 CSS reduced-motion floor 保持有效。
 - 隔离测试共 16 项断言：单例注册/释放、系统主题响应、减少动画响应，以及普通、异步、Teleport 弹层和嵌套局部配置的传播/覆盖全部通过。
 - 定向门禁：`verify.frontend.global_component_capability.unit`、严格类型、production build、primitive adapter、rendering detail 与 official design alignment 均通过；未运行浏览器全矩阵或写业务数据。
+
+## B 批结果
+
+- 核对实际 DOM 后确认 `ContractFormPage.css` 中 `.template-page-header-main/-status/-actions` 等选择器没有对应节点；全部删除，并用 guard 禁止页面重新通过 `:deep(.template-page-header…)` 修补共享页头内部。
+- task/workspace 页头的吸顶、背景、边界、阴影、内部排列与无状态动作归 `ProductPageHeader`；模板页头不再额外制造底部 margin。合同状态、HUD 和 intake 文案留在 `ContractFormProductHeader` 自身 scoped style。
+- `ContractFormPage` 明确消费 `.sc-product-workspace-stack`。页面框架继续负责 gutter，content-layout pattern 继续负责既有阅读宽度决策，正文 `.form-grid` 统一消费 `--sc-product-panel-gap`；没有改变上一批字段槽位或控件尺寸。
+- 定向门禁：product page header 28 cases、product page pattern 12 cases、3 个 header adapter guard 及严格类型全部通过；浏览器吸顶/首中底复核留在最终冻结候选统一执行。

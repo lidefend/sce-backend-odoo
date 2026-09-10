@@ -36,5 +36,3 @@ withDefaults(defineProps<{
   primaryActions: () => [], overflowActions: () => [], exitAction: null,
 });
 </script>
-
-<style scoped>.template-page-header { margin-bottom:var(--sc-space-sm); }</style>

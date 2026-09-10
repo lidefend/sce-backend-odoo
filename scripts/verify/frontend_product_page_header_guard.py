@@ -60,11 +60,20 @@ def validate() -> list[str]:
     if "<ProductPageHeader" not in action_view or '<h1 class="sc-visually-hidden">{{ vm.page.title }}</h1>' in action_view:
         failures.append("ActionView does not delegate collection/scene identity to ProductPageHeader")
     contract_page = source("frontend/apps/web/src/pages/ContractFormPage.vue")
+    contract_page_style = source("frontend/apps/web/src/pages/contractForm/ContractFormPage.css")
     if '<h1 v-if="initialFormLoading"' not in contract_page:
         failures.append("ContractForm loading identity may duplicate the stable page header h1")
     for marker in ('actions-in-header', '@canonical-save="saveRecord()"'):
         if marker not in contract_page:
             failures.append(f"ContractForm does not project direct edit actions into header: {marker}")
+    if ":deep(.template-page-header" in contract_page_style:
+        failures.append("ContractForm page must not patch shared header internals through deep selectors")
+    for stale_selector in ("template-page-header-main", "template-page-header-status", "template-page-header-actions"):
+        if stale_selector in contract_page_style:
+            failures.append(f"ContractForm page retains stale header DOM selector: {stale_selector}")
+    for marker in ("position: sticky", "data-has-status", "product-page-header__actions"):
+        if marker not in component:
+            failures.append(f"ProductPageHeader does not own shared internal header layout: {marker}")
     canonical_actions = source("frontend/apps/web/src/pages/contractForm/contractFormHeaderCanonicalActions.ts")
     for marker in ("input.floorplan?.decisionMode", "input.floorplan.directActions", "input.floorplan.overflowActions", "['primary', 'secondary'].includes(action.tier)", "['overflow', 'configuration'].includes(action.tier)"):
         if marker not in canonical_actions:

@@ -36,7 +36,7 @@ goal:
     - id: A
       title: baseline_and_official_global_capability
       status: completed
-      commit: pending_local_commit
+      commit: c752482e
       evidence:
         - verify.frontend.global_component_capability.unit_pass_16
         - strict_typecheck_pass
@@ -48,7 +48,13 @@ goal:
         - regular_lazy_and_overlay_components_consume_configuration
     - id: B
       title: header_and_body_layout_responsibility
-      status: pending
+      status: completed
+      commit: pending_local_commit
+      evidence:
+        - product_page_header_unit_pass_28
+        - product_page_pattern_unit_pass_12
+        - product_page_header_guard_pass_adapters_3
+        - strict_typecheck_pass
       exit:
         - shared_header_owns_internal_layout_and_size
         - frame_pattern_and_body_spacing_owners_are_explicit
