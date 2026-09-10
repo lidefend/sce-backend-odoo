@@ -148,6 +148,7 @@
 
 <script setup lang="ts">
 import { computed, h, nextTick, onActivated, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue';
+import ScIcon from '../design-system/ScIcon.vue';
 import { formatDisplayValue } from '../../utils/display';
 import { formatMonetaryDisplayValue, normalizeMonetaryDigits, resolveCurrencyDisplayLabel } from '../template/formSection.mapper';
 import {
@@ -350,7 +351,7 @@ function worksheetCell(entry: VisibleEntry, column: Column) {
       class: 'row-toggle',
       'aria-label': entry.node.label,
       onClick: (event: MouseEvent) => { event.stopPropagation(); toggleSheet(entry.node); },
-    }, sheetExpandedKeys.value.has(entry.node.key) ? '▾' : '▸')
+    }, [h(ScIcon, { name: sheetExpandedKeys.value.has(entry.node.key) ? 'chevron-down' : 'chevron-right', size: 14 })])
     : h('span', { class: 'row-toggle-spacer' });
   return h('div', { class: 'tree-cell', style: { paddingLeft: `${entry.node.depth * 18}px` } }, [
     toggle,

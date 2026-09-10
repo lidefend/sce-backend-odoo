@@ -11,7 +11,7 @@
         <!-- 附件类型：专门的显示模板 -->
         <template v-if="entry.type === 'attachment'">
           <div class="native-chatter-attachment-item">
-            <span class="native-chatter-attachment-icon">{{ attachmentInfo(entry).icon }}</span>
+            <ScIcon class="native-chatter-attachment-icon" :name="attachmentInfo(entry).icon" :size="20" />
             <div class="native-chatter-attachment-content">
               <span class="native-chatter-attachment-name" :title="attachmentInfo(entry).name">{{ attachmentInfo(entry).name }}</span>
               <span class="native-chatter-attachment-meta">
@@ -41,7 +41,7 @@
         <!-- 消息类型：专门的显示模板 -->
         <template v-else-if="entry.type === 'message'">
           <div class="native-chatter-message-item">
-            <span class="native-chatter-message-icon">{{ messageInfo(entry).icon }}</span>
+            <ScIcon class="native-chatter-message-icon" :name="messageInfo(entry).icon" :size="18" />
             <div class="native-chatter-message-content">
               <div class="native-chatter-message-header">
                 <span class="native-chatter-message-author">{{ messageInfo(entry).author }}</span>
@@ -64,7 +64,7 @@
         <!-- 活动类型：专门的显示模板 -->
         <template v-else-if="entry.type === 'activity'">
           <div class="native-chatter-activity-item" :data-activity-status="activityInfo(entry).status">
-            <span class="native-chatter-activity-icon">{{ activityInfo(entry).icon }}</span>
+            <ScIcon class="native-chatter-activity-icon" :name="activityInfo(entry).icon" :size="18" />
             <div class="native-chatter-activity-content">
               <div class="native-chatter-activity-header">
                 <span class="native-chatter-activity-title">{{ activityInfo(entry).title }}</span>
@@ -108,6 +108,7 @@
 <script setup lang="ts">
 import type { ChatterTimelineEntry } from '../../api/chatter';
 import ScButton from '../../components/design-system/ScButton.vue';
+import ScIcon from '../../components/design-system/ScIcon.vue';
 import ScInlineState from '../../components/design-system/ScInlineState.vue';
 import ScList, { type ScListItem } from '../../components/design-system/ScList.vue';
 import { canDeleteCollaborationAttachment, canDeleteCollaborationMessage, canDownloadCollaborationAttachment, canReplyCollaborationMessage, formatCollaborationTimelineMeta, parseAttachmentEntry, parseMessageEntry, parseActivityEntry, type ParsedAttachmentInfo, type ParsedMessageInfo, type ParsedActivityInfo } from './professionalCollaborationModel';

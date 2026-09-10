@@ -9203,3 +9203,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 修复限定为：优先聚焦可见且非原生 disabled 的控件；没有可聚焦子控件时，将实际错误单元作为程序化焦点目标。后续以非零定向测试、四宽度明暗候选复核和 exact-head CI 验证。
 - 修复后明色 1440/390 定向矩阵通过；后续 exact-head 复核在合同新建移动端和付款编辑桌面端识别出关系选项面板向下超出视口。诊断确认 TDesign AutoComplete 只承担输入，实际 listbox 是承载维护/搜索/新建业务动作的 `ProfessionalMany2oneFieldControl` 面板；修复让长表单中的该业务面板统一向上展开，不修改页面尺寸或降低边界断言。
 - 经单独授权补充 P4 `ci.backend_test_suite.dispatch` 受管入口：只允许 clean、local/remote/PR exact-head 一致的合规分支触发完整隔离套件，不开放 modules/test-tags 缩减参数；用于验证本 PR 对 137/139 进程退出的一次隔离数据库重试。
+
+## 2026-09-10 — 官方图标资源采用本地收口
+
+- 分支 `feature/p0-official-icon-resource-adoption-v1`，基线 `main@040a7b87536e9d7cfa4e17c766c57be0c7d4576a`。Formal Product Layer P0；Layer Target 为 `ScIcon`、`@sc/ui/icons` 和静态图标消费者，P4 仅承载守卫与浏览器证据。
+- `tdesign-icons-vue-next@0.4.9` 通过包根级公开 named exports 接入，49 个平台语义名由单一 `ScIcon` 映射；手写 SVG/path、emoji、字符三角形及已知 class 图标绕行守卫均为 0。未知 Odoo 图标 dialect fail-closed，并保留外层可访问文字。
+- 最终 Quick、严格类型、lint、production build、协作、层级工作表、presenter 及非零图标定向测试全部 PASS。production 主入口相对基线 gzip 增量约 7.2 KB，未引入 CDN 或 vendor 内部路径。
+- 冻结候选 `6c003ea4cb4e90f6c1913960ec63dc1932eced66`，完整指纹 `e6739c01a96f0489ba35be0ba62674722075dcda7e0097633fb9953b12f49a86`（7377 paths）。受管 `local.dev` 的 light 1440/390 覆盖首页、我的工作和收入合同层级工作区，共 6 个路由视口；官方图标证据均 PASS，旧 ScIcon SVG 为 0，mutation/errors/failures 均为 0，候选已停止。
+- 本地实现与受影响范围验证完成，状态保持 `verification_pending` 等待独立复核及 PR 交付授权；不改契约、权限、路由、业务动作、表单几何、数据库或 fixture，未执行 push/PR/merge/release。

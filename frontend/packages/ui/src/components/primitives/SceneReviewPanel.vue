@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { TDesignCheckIcon, TDesignCloseIcon } from '../../icons';
 import type { SceneReviewPanel } from '../../contracts/sceneObjectPage';
 import { useSceneUiKit } from '../../kits/context';
 import SceneButton from './SceneButton.vue';
@@ -44,7 +45,7 @@ function setOpen(next: boolean): void {
         </div>
         <ul class="scene-review-checklist">
           <li v-for="fact in panel.checklist" :key="fact.id" :data-tone="fact.tone || 'Neutral'">
-            <span aria-hidden="true">✓</span><strong>{{ fact.label }}</strong><small>{{ fact.value }}</small>
+            <TDesignCheckIcon aria-hidden="true" /><strong>{{ fact.label }}</strong><small>{{ fact.value }}</small>
           </li>
         </ul>
       </div>
@@ -53,7 +54,7 @@ function setOpen(next: boolean): void {
     <div v-else-if="open" class="scene-native-overlay" data-review-panel role="dialog" aria-modal="true" :aria-label="panel.title">
       <button type="button" class="scene-native-overlay__backdrop" aria-label="关闭核对面板" @click="setOpen(false)"></button>
       <aside>
-        <header><h2>{{ panel.title }}</h2><button type="button" @click="setOpen(false)">×</button></header>
+        <header><h2>{{ panel.title }}</h2><button type="button" aria-label="关闭核对面板" @click="setOpen(false)"><TDesignCloseIcon aria-hidden="true" /></button></header>
         <div class="scene-review-body">
           <p>{{ panel.description }}</p>
           <div v-for="group in panel.groups" :key="group.id" class="scene-review-group">
@@ -66,7 +67,7 @@ function setOpen(next: boolean): void {
           </div>
           <ul class="scene-review-checklist">
             <li v-for="fact in panel.checklist" :key="fact.id" :data-tone="fact.tone || 'Neutral'">
-              <span aria-hidden="true">✓</span><strong>{{ fact.label }}</strong><small>{{ fact.value }}</small>
+              <TDesignCheckIcon aria-hidden="true" /><strong>{{ fact.label }}</strong><small>{{ fact.value }}</small>
             </li>
           </ul>
         </div>
@@ -146,11 +147,11 @@ function setOpen(next: boolean): void {
   font-size: 12px;
 }
 
-.scene-review-checklist li > span {
+.scene-review-checklist li > svg {
   color: var(--sc-scene-success);
 }
 
-.scene-review-checklist li[data-tone='Critical'] > span {
+.scene-review-checklist li[data-tone='Critical'] > svg {
   color: var(--sc-scene-warning);
 }
 
@@ -196,9 +197,14 @@ function setOpen(next: boolean): void {
 }
 
 .scene-native-overlay header button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
   border: 0;
   background: transparent;
-  font-size: 24px;
+  color: inherit;
+  font-size: 20px;
 }
 
 @media (max-width: 640px) {

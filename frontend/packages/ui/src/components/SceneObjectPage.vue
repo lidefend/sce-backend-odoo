@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { TDesignCloseIcon } from '../icons';
 import type { SceneField, SceneObjectPageContract } from '../contracts/sceneObjectPage';
 import SceneActivityTabs from './primitives/SceneActivityTabs.vue';
 import SceneButton from './primitives/SceneButton.vue';
@@ -60,7 +61,7 @@ function fieldValue(field: SceneField): string {
         :aria-current="tab.active ? 'page' : undefined"
       >
         <span>{{ tab.label }}</span>
-        <span v-if="tab.active" class="scene-worktab__close" aria-hidden="true">×</span>
+        <TDesignCloseIcon v-if="tab.active" class="scene-worktab__close" aria-hidden="true" />
       </button>
     </nav>
 

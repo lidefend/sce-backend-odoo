@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { TDesignChevronDownIcon, TDesignChevronRightIcon, TDesignFileIcon } from '../icons';
 import type { SceneHierarchyContract, SceneHierarchyNode } from '../contracts/sceneCollection';
 import SceneButton from './primitives/SceneButton.vue';
 import SceneWorkspaceHeader from './primitives/SceneWorkspaceHeader.vue';
@@ -74,9 +75,10 @@ const visibleNodes = computed<VisibleNode[]>(() => {
                 :aria-label="`${expanded.has(item.node.id) ? '折叠' : '展开'}${item.node.label}`"
                 @click="emit('toggleNode', item.node.id)"
               >
-                {{ expanded.has(item.node.id) ? '−' : '+' }}
+                <TDesignChevronDownIcon v-if="expanded.has(item.node.id)" aria-hidden="true" />
+                <TDesignChevronRightIcon v-else aria-hidden="true" />
               </button>
-              <span v-else class="scene-hierarchy-leaf" aria-hidden="true">•</span>
+              <TDesignFileIcon v-else class="scene-hierarchy-leaf" aria-hidden="true" />
               <div class="scene-hierarchy-node-copy">
                 <strong>{{ item.node.label }}</strong>
                 <small v-if="item.node.meta">{{ item.node.meta }}</small>
@@ -107,8 +109,10 @@ const visibleNodes = computed<VisibleNode[]>(() => {
 .scene-hierarchy-tree { overflow: hidden; border: 1px solid var(--sc-scene-border); border-radius: 9px; }
 .scene-hierarchy-tree article { display: grid; grid-template-columns: 28px minmax(0, 1fr) 150px 110px; gap: 8px; align-items: center; min-height: 50px; padding-top: 8px; padding-right: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--sc-scene-border); }
 .scene-hierarchy-tree article:last-child { border-bottom: 0; }
-.scene-hierarchy-toggle { width: 24px; height: 24px; border: 1px solid var(--sc-scene-border); border-radius: 5px; background: white; color: var(--sc-scene-brand); font-weight: 700; }
-.scene-hierarchy-leaf { display: grid; width: 24px; place-items: center; color: #9aa8b6; }
+.scene-hierarchy-toggle { display: grid; width: 24px; height: 24px; place-items: center; border: 1px solid var(--sc-scene-border); border-radius: 5px; background: white; color: var(--sc-scene-brand); }
+.scene-hierarchy-toggle svg,
+.scene-hierarchy-leaf { width: 16px; height: 16px; }
+.scene-hierarchy-leaf { margin: 4px; color: #9aa8b6; }
 .scene-hierarchy-node-copy { display: grid; min-width: 0; gap: 2px; }
 .scene-hierarchy-node-copy strong,
 .scene-hierarchy-node-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

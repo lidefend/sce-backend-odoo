@@ -1,7 +1,7 @@
 <template>
   <div class="tree-branch" data-semantic-component="HierarchyTreeNode" :data-state="node.children.length ? 'branch' : 'leaf'">
     <ScButton class="tree-node" appearance="tree-item" variant="ghost" size="small" :class="{ active: selectedKey === node.key }" @click="$emit('select', node)">
-      <span v-if="node.children.length" class="tree-arrow" @click.stop="$emit('toggle', node)">{{ expandedKeys.has(node.key) ? '▾' : '▸' }}</span>
+      <span v-if="node.children.length" class="tree-arrow" @click.stop="$emit('toggle', node)"><ScIcon :name="expandedKeys.has(node.key) ? 'chevron-down' : 'chevron-right'" :size="14" /></span>
       <span v-else class="tree-arrow" />
       <strong v-if="node.code">{{ node.code }}</strong><span>{{ node.label }}</span>
     </ScButton>
@@ -12,6 +12,7 @@
 </template>
 <script setup lang="ts">
 import ScButton from '../design-system/ScButton.vue';
+import ScIcon from '../design-system/ScIcon.vue';
 defineOptions({ name: 'HierarchyTreeNode' });
 type TreeNode = { key: string; id: number; levelKey?: string; code: string; label: string; children: TreeNode[] };
 defineProps<{ node: TreeNode; selectedKey: string; expandedKeys: Set<string>; emptyChildrenLabel: string }>();

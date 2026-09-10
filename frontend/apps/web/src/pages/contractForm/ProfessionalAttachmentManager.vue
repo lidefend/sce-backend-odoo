@@ -20,7 +20,7 @@
       @drop.prevent="onDrop"
     >
       <div v-if="isDragOver" class="native-attachment-drag-hint">
-        <span class="native-attachment-drag-icon">📁</span>
+        <ScIcon class="native-attachment-drag-icon" name="upload" :size="24" />
         <span>释放文件以上传</span>
       </div>
       <ScFileField
@@ -35,7 +35,7 @@
     </section>
     <ul v-if="pending.length" class="native-pending-attachments">
       <li v-for="item in pending" :key="item.key" class="native-chatter-attachment-item native-pending-attachment-item">
-        <span class="native-chatter-attachment-icon">📄</span>
+        <ScIcon class="native-chatter-attachment-icon" name="file-text" :size="20" />
         <div class="native-chatter-attachment-content">
           <span class="native-chatter-attachment-name">{{ item.name }}</span>
           <div class="native-chatter-attachment-meta">
@@ -52,6 +52,7 @@
 <script setup lang="ts">
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScFileField from '../../components/design-system/ScFileField.vue';
+import ScIcon from '../../components/design-system/ScIcon.vue';
 import ScInlineState from '../../components/design-system/ScInlineState.vue';
 export type PendingProfessionalAttachment = { key: string; name: string; size: number; file: File };
 defineProps<{ editable: boolean; enabled: boolean; uploading: boolean; uploadLabel: string; uploadingLabel: string; error: string; pending: PendingProfessionalAttachment[] }>();

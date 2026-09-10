@@ -1,5 +1,6 @@
 import { defineComponent, h, type PropType } from 'vue';
 import type { MenuConfigMenu } from '../../api/menuConfig';
+import ScIcon from '../../components/design-system/ScIcon.vue';
 
 export type MenuConfigDropPosition = 'before' | 'after' | 'inside';
 
@@ -109,7 +110,7 @@ export function createMenuConfigTree(options: {
                 event.stopPropagation();
                 emit('toggle-collapse', node.id);
               },
-            }, collapsed ? '▸' : '▾')
+            }, [h(ScIcon, { name: collapsed ? 'chevron-right' : 'chevron-down', size: 14 })])
             : h('span', { class: 'branch-marker' }, ''),
           h('span', { title: options.menuPathLabel(node) }, options.menuDisplayLabel(node)),
           h('span', {

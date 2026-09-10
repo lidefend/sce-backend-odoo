@@ -150,6 +150,62 @@ class ContractFormCacheOwnershipTest(unittest.TestCase):
             source,
         )
 
+    def test_browser_payment_target_uses_role_owned_hardening_fixture(self):
+        source = (ROOT / "scripts/verify/frontend_delivery_hardening_runtime_ids.py").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn(
+            '"smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a"',
+            source,
+        )
+        self.assertNotIn(
+            '"payment_request": target("smart_construction_core.menu_sc_user_payment_apply", '
+            '"smart_construction_acceptance_fixture.fe_request_a_001")',
+            source,
+        )
+
+    def test_acceptance_payment_execution_uses_its_project_company(self):
+        source = (
+            ROOT
+            / "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py"
+        ).read_text(encoding="utf-8")
+
+        self.assertRegex(
+            source,
+            re.compile(
+                r'def _execution\(.*?"project_id": project\.id,\s*'
+                r'"company_id": project\.company_id\.id,',
+                re.DOTALL,
+            ),
+        )
+
+    def test_confirmation_dialog_probe_tracks_safe_cancel_autofocus(self):
+        source = (ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn(
+            "dialog.getByRole('button', { name: '取消', exact: true })",
+            source,
+        )
+        self.assertNotIn(
+            "dialog.getByRole('button', { name: '确认提交' }).evaluate",
+            source,
+        )
+
+    def test_company_isolation_probe_waits_for_scoped_final_company_item(self):
+        source = (ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("const initiatedSection = page.locator", source)
+        self.assertIn("filter({ hasText: 'FE-C-PR-001' }).waitFor", source)
+        self.assertIn("initiatedSection.locator('.work-card').filter({ hasText: journeyName })", source)
+        self.assertIn("FINAL_COMPANY_MY_WORK J11", source)
+        self.assertIn("final My Work request did not use company B context", source)
+        self.assertIn("final My Work response did not use company B scope", source)
+
 
 if __name__ == "__main__":
     unittest.main()

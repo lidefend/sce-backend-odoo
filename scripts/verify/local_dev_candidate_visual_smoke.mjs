@@ -486,6 +486,7 @@ try {
       let safeReturnEvidence = null;
       let formStructureEvidence = null;
       let fieldAlignmentEvidence = null;
+      let officialIconResourceEvidence = null;
       let officialComponentBehaviorEvidence = null;
       let officialAlertOperationEvidence = null;
       let expectedLoadedSelectorEvidence = null;
@@ -590,6 +591,29 @@ try {
       }
       await page.locator('[data-product-page-mode], main').filter({ visible: true }).first().waitFor({ timeout: 45000 });
       await waitForStableProductSurface(page);
+      if (target.captureOfficialIconResource === true) {
+        officialIconResourceEvidence = await page.evaluate(() => {
+          const visible = (node) => {
+            if (!(node instanceof SVGElement)) return false;
+            const rect = node.getBoundingClientRect();
+            const style = getComputedStyle(node);
+            return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden';
+          };
+          const official = [...document.querySelectorAll('svg.sc-icon[data-icon-source="tdesign"]')];
+          const legacy = [...document.querySelectorAll('svg.sc-icon:not([data-icon-source="tdesign"])')];
+          const visibleOfficial = official.filter(visible);
+          return {
+            officialCount: official.length,
+            visibleOfficialCount: visibleOfficial.length,
+            legacyCount: legacy.length,
+            names: [...new Set(visibleOfficial.map((node) => node.getAttribute('data-icon-name') || '').filter(Boolean))].sort(),
+          };
+        });
+        const expectedMinimum = Math.max(1, Number(target.expectedOfficialIconMinimum || 1));
+        officialIconResourceEvidence.expectedMinimum = expectedMinimum;
+        officialIconResourceEvidence.pass = officialIconResourceEvidence.visibleOfficialCount >= expectedMinimum
+          && officialIconResourceEvidence.legacyCount === 0;
+      }
       const systemThemeRuntimeEvidence = target.exerciseSystemThemeRuntime === true
         ? await exerciseSystemThemeRuntime(page)
         : null;
@@ -3350,7 +3374,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, systemThemeRuntimeEvidence, safeReturnEvidence, formStructureEvidence, fieldAlignmentEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialIconResourceEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, systemThemeRuntimeEvidence, safeReturnEvidence, formStructureEvidence, fieldAlignmentEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -3450,6 +3474,7 @@ for (const item of report.routes) {
   if (item.collectionKanbanEvidence && !item.collectionKanbanEvidence.pass) failures.push({ name: item.name, collectionKanbanEvidence: item.collectionKanbanEvidence });
   if (item.relationSearchDialogEvidence && !item.relationSearchDialogEvidence.pass) failures.push({ name: item.name, relationSearchDialogEvidence: item.relationSearchDialogEvidence });
   if (item.systemThemeRuntimeEvidence && !item.systemThemeRuntimeEvidence.pass) failures.push({ name: item.name, systemThemeRuntimeEvidence: item.systemThemeRuntimeEvidence });
+  if (item.officialIconResourceEvidence && !item.officialIconResourceEvidence.pass) failures.push({ name: item.name, officialIconResourceEvidence: item.officialIconResourceEvidence });
   if (item.formValidationEvidence && !item.formValidationEvidence.pass) failures.push({ name: item.name, formValidationEvidence: item.formValidationEvidence });
   if (item.detailCollectionEvidence && !item.detailCollectionEvidence.pass) failures.push({ name: item.name, detailCollectionEvidence: item.detailCollectionEvidence });
   if (item.collectionAggregateEvidence && !item.collectionAggregateEvidence.pass) failures.push({ name: item.name, collectionAggregateEvidence: item.collectionAggregateEvidence });

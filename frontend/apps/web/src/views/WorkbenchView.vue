@@ -53,7 +53,10 @@
         type="button"
         @click="handleTileClick(tile)"
       >
-        <div class="tile-icon">{{ tile.icon || '•' }}</div>
+        <div class="tile-icon">
+          <span v-if="tile.icon">{{ tile.icon }}</span>
+          <ScIcon v-else name="apps" :size="18" />
+        </div>
         <div class="tile-body">
           <div class="tile-title">{{ tile.title || tile.key }}</div>
           <div class="tile-subtitle">{{ tile.subtitle || '' }}</div>
@@ -125,6 +128,7 @@ import { computed, onMounted } from 'vue';
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router';
 import StatusPanel from '../components/StatusPanel.vue';
 import ScButton from '../components/design-system/ScButton.vue';
+import ScIcon from '../components/design-system/ScIcon.vue';
 import { ErrorCodes } from '../app/error_codes';
 import { useSessionStore } from '../stores/session';
 import { isHudEnabled } from '../config/debug';

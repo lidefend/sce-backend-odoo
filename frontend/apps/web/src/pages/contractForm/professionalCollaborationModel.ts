@@ -1,4 +1,5 @@
 import type { ChatterTimelineEntry } from '../../api/chatter';
+import type { ScIconName } from '../../components/design-system/scIcon';
 import type { NativeChatterAction } from './types';
 
 export type ProfessionalCollaborationCapability = 'comment' | 'attachment' | 'activity' | 'follower';
@@ -134,29 +135,28 @@ export function formatMimeType(mimetype?: string): string {
   return MIMETYPE_LABELS[mimetype] || mimetype.split('/')[1]?.toUpperCase() || '文件';
 }
 
-// 文件类型图标（使用 emoji 作为简单图标）
-const MIMETYPE_ICONS: Record<string, string> = {
-  'text/plain': '📄',
-  'text/csv': '📊',
-  'application/pdf': '📕',
-  'application/msword': '📘',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '📘',
-  'application/vnd.ms-excel': '📗',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '📗',
-  'application/vnd.ms-powerpoint': '📙',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation': '📙',
-  'application/zip': '🗜️',
-  'application/x-rar-compressed': '🗜️',
-  'image/png': '🖼️',
-  'image/jpeg': '🖼️',
-  'image/gif': '🖼️',
-  'audio/mpeg': '🎵',
-  'video/mp4': '🎬',
+const MIMETYPE_ICONS: Record<string, ScIconName> = {
+  'text/plain': 'file-text',
+  'text/csv': 'file-csv',
+  'application/pdf': 'file-pdf',
+  'application/msword': 'file-word',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'file-word',
+  'application/vnd.ms-excel': 'file-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'file-excel',
+  'application/vnd.ms-powerpoint': 'file-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'file-powerpoint',
+  'application/zip': 'file-zip',
+  'application/x-rar-compressed': 'file-zip',
+  'image/png': 'file-image',
+  'image/jpeg': 'file-image',
+  'image/gif': 'file-image',
+  'audio/mpeg': 'music',
+  'video/mp4': 'video',
 };
 
-export function getFileIcon(mimetype?: string): string {
-  if (!mimetype) return '📎';
-  return MIMETYPE_ICONS[mimetype] || '📎';
+export function getFileIcon(mimetype?: string): ScIconName {
+  if (!mimetype) return 'attach';
+  return MIMETYPE_ICONS[mimetype] || 'attach';
 }
 
 // 解析附件条目信息（从 body/title 中提取文件名、类型、大小）
@@ -166,7 +166,7 @@ export interface ParsedAttachmentInfo {
   size?: number;
   sizeLabel?: string;
   typeLabel?: string;
-  icon?: string;
+  icon: ScIconName;
 }
 
 export function parseAttachmentEntry(entry: ChatterTimelineEntry): ParsedAttachmentInfo {
@@ -205,7 +205,7 @@ export interface ParsedMessageInfo {
   body: string;
   at?: string;
   atLabel?: string;
-  icon: string;
+  icon: ScIconName;
 }
 
 export function parseMessageEntry(entry: ChatterTimelineEntry): ParsedMessageInfo {
@@ -225,7 +225,7 @@ export function parseMessageEntry(entry: ChatterTimelineEntry): ParsedMessageInf
     body: content,
     at: entry.at,
     atLabel: entry.at ? formatCollaborationTimelineMeta(entry.at) : undefined,
-    icon: '💬',
+    icon: 'chat',
   };
 }
 
@@ -240,7 +240,7 @@ export interface ParsedActivityInfo {
   canCancel: boolean;
   at?: string;
   atLabel?: string;
-  icon: string;
+  icon: ScIconName;
   status: 'pending' | 'overdue' | 'unknown';
   statusLabel: string;
 }
@@ -264,7 +264,7 @@ export function parseActivityEntry(entry: ChatterTimelineEntry): ParsedActivityI
     canCancel: Boolean(activity.can_cancel),
     at: entry.at,
     atLabel: entry.at ? formatCollaborationTimelineMeta(entry.at) : undefined,
-    icon: '📋',
+    icon: 'calendar',
     status,
     statusLabel,
   };

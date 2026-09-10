@@ -456,6 +456,7 @@ def _execution(env, suffix, project, contract, request, partner, finance, state,
         {
             "name": name,
             "project_id": project.id,
+            "company_id": project.company_id.id,
             "contract_id": contract.id,
             "payment_request_id": request.id,
             "partner_id": partner.id,

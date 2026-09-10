@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { TDesignCloseIcon } from '../../icons';
 import type { SceneWorkspaceIdentity } from '../../contracts/sceneCollection';
 
 defineProps<{ identity: SceneWorkspaceIdentity }>();
@@ -28,7 +29,7 @@ defineProps<{ identity: SceneWorkspaceIdentity }>();
       :aria-current="tab.active ? 'page' : undefined"
     >
       <span>{{ tab.label }}</span>
-      <span v-if="tab.active" class="scene-surface-worktab__close" aria-hidden="true">×</span>
+      <TDesignCloseIcon v-if="tab.active" class="scene-surface-worktab__close" aria-hidden="true" />
     </button>
   </nav>
 

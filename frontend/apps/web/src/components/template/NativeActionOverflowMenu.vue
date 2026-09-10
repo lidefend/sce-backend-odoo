@@ -39,7 +39,7 @@
         :title="titleResolver(action)"
         @click.stop.prevent="select(action)"
       >
-        <span v-if="iconResolver(action)" :class="['native-action-overflow__icon', iconResolver(action)]" aria-hidden="true" />
+        <ScIcon v-if="iconResolver(action)" class="native-action-overflow__icon" :name="iconResolver(action)" :size="18" />
         <span class="native-action-overflow__label">{{ labelResolver(action) }}</span>
       </ScButton>
     </div>
@@ -49,6 +49,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId } from 'vue';
 import ScButton from '../design-system/ScButton.vue';
+import ScIcon from '../design-system/ScIcon.vue';
+import type { ScIconName } from '../design-system/scIcon';
 
 type OverflowAction = Record<string, unknown>;
 
@@ -59,7 +61,7 @@ const props = withDefaults(defineProps<{
   keyResolver: (action: OverflowAction, index: number) => string;
   evidenceResolver: (action: OverflowAction) => Record<string, string | undefined>;
   labelResolver: (action: OverflowAction) => string;
-  iconResolver: (action: OverflowAction) => string;
+  iconResolver: (action: OverflowAction) => ScIconName | '';
   disabledResolver: (action: OverflowAction) => boolean;
   titleResolver: (action: OverflowAction) => string;
 }>(), { label: '更多' });

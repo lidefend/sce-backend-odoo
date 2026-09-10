@@ -2005,8 +2005,11 @@ verify.frontend.delivery_hardening.release.browser: guard.prod.forbid check-comp
 	$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
 	$(MAKE) --no-print-directory acceptance.frontend.release_snapshot DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
 	$(MAKE) --no-print-directory frontend.acceptance.release.build DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
-	target_output="$$( $(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 bash scripts/ops/odoo_shell_exec.sh < scripts/verify/frontend_delivery_hardening_runtime_ids.py 2>&1 )"; \
-	targets_line="$$(echo "$$target_output" | grep '^FRONTEND_DELIVERY_HARDENING_TARGETS_JSON=' | tail -1)"; test -n "$$targets_line"; export "$$targets_line"; \
+	target_status=0; \
+	target_output="$$( SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$${SC_ACCEPTANCE_RUNTIME_PROFILE:-local}" bash scripts/dev/frontend_acceptance_operation_entry.sh delivery-hardening-runtime-ids 2>&1 )" || target_status=$$?; \
+	targets_line="$$(echo "$$target_output" | grep '^FRONTEND_DELIVERY_HARDENING_TARGETS_JSON=' | tail -1)"; \
+	test "$$target_status" -eq 0 && test -n "$$targets_line" || { printf '%s\n' "$$target_output"; exit 2; }; \
+	export "$$targets_line"; \
 	test -n "$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}"; \
 	trap '$(MAKE) --no-print-directory frontend.acceptance.down; $(MAKE) --no-print-directory backend.acceptance.down' EXIT; \
 	$(MAKE) --no-print-directory backend.acceptance.up; \
