@@ -9211,3 +9211,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 最终 Quick、严格类型、lint、production build、协作、层级工作表、presenter 及非零图标定向测试全部 PASS。production 主入口相对基线 gzip 增量约 7.2 KB，未引入 CDN 或 vendor 内部路径。
 - 冻结候选 `6c003ea4cb4e90f6c1913960ec63dc1932eced66`，完整指纹 `e6739c01a96f0489ba35be0ba62674722075dcda7e0097633fb9953b12f49a86`（7377 paths）。受管 `local.dev` 的 light 1440/390 覆盖首页、我的工作和收入合同层级工作区，共 6 个路由视口；官方图标证据均 PASS，旧 ScIcon SVG 为 0，mutation/errors/failures 均为 0，候选已停止。
 - 本地实现与受影响范围验证完成，状态保持 `verification_pending` 等待独立复核及 PR 交付授权；不改契约、权限、路由、业务动作、表单几何、数据库或 fixture，未执行 push/PR/merge/release。
+
+## 2026-09-11 — 导航与集合列头交互补项收口
+
+- 分支 `feature/p0-navigation-collection-reading-efficiency-v1`，基线 `main@10a69c92e1158c5445aff1054fa7fa5c9acdc14b`。Formal Product Layer P0；Layer Target 为共享集合列头和 `ScButton` 触屏尺寸，P4 仅补既有候选证据。
+- 列头辅助控件移入右侧固定控制带；隐藏态不再命中指针，hover、键盘焦点和无悬停设备可发现且标题不跳动。移动列设置入口由 `column-settings` appearance 保证 44px 触控尺寸。
+- 冻结候选 `d4cecd1cdadbaf343f98915ac19bb23d2e34436d`，完整指纹 `43decc3a68e985386f97536edf086eec12230338985bacc398a3a5c1ad554b7a`（7379 paths）。Frontend Quick、严格类型、构建、14 项定向测试和官方设计零缺口清单 PASS。
+- light 1440/390 与 dark 1088/320 各覆盖项目、付款、收入合同 6 个桌面/移动样本，均 pass、零业务 mutation、零 error/failure。付款完成单次排序请求、真实 Tab、方向键调宽及影子偏好刷新恢复；移动列设置 44×44px。
+- 正式项目/付款契约禁用列顺序，运行态 0 个拖动句柄；未篡改契约制造拖动通过。收入合同只作既有横向工作区回归。本批未改导航、208px 主身份、契约、权限、字段、业务动作或业务数据。

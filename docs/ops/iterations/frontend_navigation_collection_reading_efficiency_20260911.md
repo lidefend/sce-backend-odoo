@@ -100,3 +100,28 @@ bridge_only 0、raw 0；官方设计对齐清单 internal vendor selector gap、
 
 本专题本地实现与验证完成，候选服务已停止；结论限于共享前端表达和上述只读样本，不表示已完成
 全系统业务验收、远端 CI、合并或发布。下一步可进入独立复核与 PR 交付包整理，不再追加零散美化。
+
+## 独立复核补项：列头阅读与操作隔离
+
+- 独立复核指出隐形列头按钮仍可命中、标题与左侧拖动区可能重叠、无悬停触屏入口及真实行为证明不足。
+  P0 修复将辅助控件放入标题右侧固定控制带；静止态同时使用 `opacity: 0` 与
+  `pointer-events: none`，hover、`focus-within` 和无悬停/粗指针分别恢复公开交互。标题占位恒定，显隐
+  不改变文字几何。移动“列设置”触控尺寸由 `ScButton` 的 `column-settings` appearance 统一负责，
+  不使用页面深层选择器。
+- 最终候选 `d4cecd1cdadbaf343f98915ac19bb23d2e34436d`，完整指纹
+  `43decc3a68e985386f97536edf086eec12230338985bacc398a3a5c1ad554b7a`（7379 paths）。最终
+  `make verify.frontend.quick.gate`、严格类型、构建、14 项集合导航控件测试及官方设计清单均通过；
+  internal vendor selector、未知 token、visual literal 缺口均为 0。
+- 浅色 1440/390 摘要：
+  `artifacts/playwright/navigation-collection-header-light-d4cecd1c/summary.json`；暗色 1088/320 摘要：
+  `artifacts/playwright/navigation-collection-header-dark-d4cecd1c/summary.json`。每份覆盖项目、付款和收入
+  合同的桌面/移动 6 个样本，均 `pass=true`、`mutationCount=0`、errors/failures empty。
+- 付款桌面实测静止、hover、真实 Tab 焦点三态：隐藏 resize 不命中，显现后可操作，标题边界不移动且
+  与控制带不重叠；一次排序仅产生 1 个 `api.data list` 请求，方向键将声明/实际列宽从 80px 调到
+  90px，详情返回并刷新后仍为 90px，恢复后回到 80px。偏好 set/get 由浏览器影子响应承载，未写数据库。
+  付款移动“列设置”为 44×44px，面板可通过触屏打开和关闭。
+- 项目与付款的正式 `preference_policy.allow_order=false`，运行态正确提供 0 个拖动句柄。因此代表页面的
+  “实际拖动”不适用，未通过篡改契约或 DOM 制造通过；固定顺序保持不变，允许顺序时的通用算法仍由
+  既有非零定向测试覆盖。收入合同继续验证既有横向工作区、范围抽屉和滚动恢复，不把它冒充共享列头。
+- 人工复核最终付款桌面、付款/项目移动和收入合同横向工作区截图，未见标题遮挡、触屏入口裁切或新的
+  横向退化。本补项不改导航、208px 主身份策略、契约、字段、权限、业务动作或业务数据。

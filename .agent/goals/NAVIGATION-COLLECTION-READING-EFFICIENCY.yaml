@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: NAVIGATION-COLLECTION-READING-EFFICIENCY
   title: navigation_and_collection_reading_efficiency
-  status: active
+  status: completed
   formal_product_layer: P0
   layer_target: shared_frontend_navigation_shell_and_collection_renderer
   module: frontend
@@ -70,7 +70,17 @@ goal:
         - manual_before_after_review_pass
     - id: E
       title: column_header_reading_and_operation_isolation
-      status: active
+      status: completed
+      exit_candidate:
+        full_sha: d4cecd1cdadbaf343f98915ac19bb23d2e34436d
+        fingerprint: 43decc3a68e985386f97536edf086eec12230338985bacc398a3a5c1ad554b7a
+      evidence:
+        - hidden_controls_reject_pointer_input
+        - hover_and_keyboard_focus_reveal_without_title_shift
+        - payment_sort_exactly_one_request_and_keyboard_resize_restore_pass
+        - fixed_order_policy_records_drag_as_not_applicable_without_contract_override
+        - mobile_column_settings_touch_target_44px
+        - light_1440_390_and_dark_1088_320_six_samples_each_pass_zero_business_mutations
   acceptance:
     - current_navigation_entry_is_distinguishable_and_full_label_is_accessible_by_mouse_keyboard_and_touch
     - primary_identity_and_key_facts_are_readable_without_model_specific_width_rules
