@@ -99,7 +99,7 @@ bridge_only 0、raw 0；官方设计对齐清单 internal vendor selector gap、
 编号允许按角色省略。移动卡片、收入合同横向集合、表单对齐、根级 Provider 和官方图标未见退化。
 
 本专题本地实现与验证完成，候选服务已停止；结论限于共享前端表达和上述只读样本，不表示已完成
-全系统业务验收、远端 CI、合并或发布。下一步可进入独立复核与 PR 交付包整理，不再追加零散美化。
+全系统业务验收、远端 CI、合并或发布。独立复核补项和本地 PR 交付包见下文，不再追加零散美化。
 
 ## 独立复核补项：列头阅读与操作隔离
 
@@ -125,3 +125,121 @@ bridge_only 0、raw 0；官方设计对齐清单 internal vendor selector gap、
   既有非零定向测试覆盖。收入合同继续验证既有横向工作区、范围抽屉和滚动恢复，不把它冒充共享列头。
 - 人工复核最终付款桌面、付款/项目移动和收入合同横向工作区截图，未见标题遮挡、触屏入口裁切或新的
   横向退化。本补项不改导航、208px 主身份策略、契约、字段、权限、业务动作或业务数据。
+
+## PR 交付包
+
+状态：`LOCAL_PR_PACKAGE_READY`。本节只整理已冻结候选和整分支差异，没有修改产品代码、重新运行
+浏览器矩阵、推送分支或创建 PR。
+
+### 完整身份与范围审计
+
+| 身份 | 值 | 说明 |
+|---|---|---|
+| 权威远端 | `origin=https://github.com/lidefend/sce-backend-odoo.git` | 只读刷新并核对 |
+| 目标主线 | `origin/main@10a69c92e1158c5445aff1054fa7fa5c9acdc14b` | 与专题登记基线一致 |
+| 共同基线 | `10a69c92e1158c5445aff1054fa7fa5c9acdc14b` | `merge-base(origin/main, HEAD)` |
+| 产品冻结候选 | `d4cecd1cdadbaf343f98915ac19bb23d2e34436d` | 后续只允许交付文档变化 |
+| 交付整理源 HEAD | `d81453e77e9c573bcf8ef69db7d6e0dcb1f1c2e4` | 相对产品候选仅 3 个治理文档 |
+
+交付整理前的完整分支差异为 23 commits、22 paths、672 additions、39 deletions。路径全部归类，
+没有 `addons/`、`contracts/`、数据库、fixture、Compose/profile、acceptance 恢复或发布实现。
+
+| 分类 | 路径数 | 完整路径与审阅重点 |
+|---|---:|---|
+| P0 产品前端 | 7 | `ScButton.vue`；`CollectionColumnHeaderControl.css/.vue`；`ListSurfaceHeader.vue`；`CanonicalNavigationMenuNode.vue`；`ListPage.vue`；`listColumnWidth.ts`。审阅导航名称、208px 主身份、列头稳定控制带、触屏尺寸和显式列宽优先级。 |
+| P4 验证工具 | 6 | `frontend_collection_navigation_controls_guard.py`、`frontend_list_optional_columns_contract_test.ts`、`frontend_navigation_shell_guard.py`、`local_dev_candidate_visual_smoke.mjs`、`test_frontend_collection_navigation_controls_guard.py`、`test_local_dev_candidate_frontend.py`。审阅非零断言、请求计数、键盘路径和影子偏好边界。 |
+| 生成清单 | 4 | `component-driver-takeover-inventory-v1.json`、`component-professionalization-inventory-v1.json`、`official-design-alignment-inventory-v1.json`、`visual-projection-inventory-v1.json`。均由受管刷新入口生成。 |
+| 治理文档 | 5 | 本目标、本报告、上下文日志，以及既有官方图标目标和报告。后两者只把 PR #457/main 落地状态从“待草稿 PR”更新为“已合并、未发布”，不包含图标产品差异。 |
+| 未分类 | 0 | 无。 |
+
+产品代码集中在 6 个提交：`8eb4d5aa`、`af2e14b4`、`92ad5dbb`、`b3ce2174`、
+`68783987`、`cf4e30fc`；其余提交均为 P4 基线、清单、验证或治理记录。完整产品回滚边界为共同基线
+`10a69c92…`；交付文档可单独回退，不需要数据库、契约或运行环境回滚。
+
+### 行为边界
+
+- **按字段排序**由列的 `sortable` 能力和排序请求控制。付款桌面实际点击一次只产生一次
+  `api.data list` 请求，该能力已验证。
+- **调整列顺序**由 `preference_policy.allow_order` 控制。项目与付款的正式契约均为 `false`，因此运行态
+  正确不渲染拖动句柄；这不等于禁止按字段排序，也不应通过篡改契约制造拖动通过。
+- **调整列宽**继续允许，并保持显式用户列宽优先。浏览器中的影子 preference set/get 只证明前端
+  “调宽 → 详情返回 → 刷新恢复”链路，不证明后端已持久化列宽；后端持久化验收保持未覆盖。
+- 收入合同是层级工作区，仅用于范围抽屉、横向滚动和返回恢复回归，不冒充共享列表列头样本。
+
+### 候选证据索引
+
+不同候选的结果分别登记，不相加为一次“全量最终重跑”：
+
+| 候选 | 证据 | 结论边界 |
+|---|---|---|
+| 基线 `10a69c92…` | `navigation-collection-before-light-10a69c92/summary.json`；`navigation-collection-before-dark-10a69c92/summary.json` | 复现导航截断和集合阅读问题；不是修复后证据。 |
+| 首轮产品候选 `506d371f…` | 指纹 `b35b2eb1…` | 导航与集合产品实现冻结点；浏览器退出证据在后续仅含 P4 探针的 `dc3ca8bd…` 上取得。 |
+| 首轮退出候选 `dc3ca8bd…` | `navigation-collection-exit-light-dc3ca8bd/summary.json`；`navigation-collection-exit-dark-dc3ca8bd/summary.json` | 项目编辑/启停、付款、收入合同，light 1440/390 与 dark 1088/320；每份 8 个桌面/移动样本，零业务写入。 |
+| 列头补项候选 `d4cecd1c…` | `navigation-collection-header-light-d4cecd1c/summary.json`；`navigation-collection-header-dark-d4cecd1c/summary.json` | 项目、付款、收入合同，light 1440/390 与 dark 1088/320；每份 6 个样本，验证列头三态、排序一次、键盘调宽/恢复及 44px 触屏入口。 |
+| 交付文档 HEAD | 产品候选之后仅目标和报告 | 没有重新运行无变化的浏览器矩阵。 |
+
+产品候选 `d4cecd1c…` 的完整指纹为
+`43decc3a68e985386f97536edf086eec12230338985bacc398a3a5c1ad554b7a`（7379 paths）。
+
+### PR 草稿
+
+建议标题：
+
+`refactor(frontend): improve navigation and collection readability`
+
+建议正文：
+
+#### Summary
+
+- 在不扩大侧栏的前提下减少深层导航的重复图标占位，使当前入口完整名称可由鼠标、键盘和触屏访问。
+- 为共享集合建立通用 208px 主身份宽度下限，同时保持显式用户列宽优先，不按业务模型写特殊宽度。
+- 将列头辅助操作收进稳定的右侧控制带；隐藏态不响应指针，hover、键盘焦点和无悬停设备均可发现，标题几何不随显隐变化。
+- 通过 `ScButton` 公共 appearance 提供移动列设置 44×44px 触控尺寸，并补齐共享守卫和受管浏览器证据。
+
+#### Scope and architecture
+
+- Formal Product Layer：P0 通用前端表达；P4 只承载守卫、浏览器证据、生成清单和交付文档。
+- 不修改菜单树、名称、路由、权限、contract/schema、业务动作、字段、数据或个人偏好事实来源。
+- `allow_order=false` 只禁止列顺序拖动；按字段排序仍由 `sortable` 与排序请求独立控制。
+- 表单对齐、根级 ConfigProvider 和官方图标映射保持冻结。
+
+#### Verification
+
+- `make verify.frontend.collection_navigation_controls.unit`：PASS，14 项 Python 守卫及 12 个集合分页用例非零通过。
+- `make verify.frontend.quick.gate`：PASS，包含严格类型、lint、production build 和官方组件清单。
+- `make local.dev.verify_authority`：PASS。
+- 首轮退出候选 `dc3ca8bd…` 的两份 8 样本矩阵，以及列头补项候选 `d4cecd1c…` 的两份 6 样本矩阵，均分别 PASS、零业务写入、errors/failures empty；未合称同一候选全量重跑。
+- 列宽影子响应只证明前端恢复链路，后端偏好持久化未验收。
+
+#### Risk and rollback
+
+- 整分支属于 `HIGH_RISK` fail-closed 路由，应按产品前端、验证工具、生成清单和治理文档四组审阅。
+- 共享导航、列宽推导和列头交互影响跨模型列表；回滚可按列头 → 集合 → 导航的提交边界逆序执行，或整体回退到 `10a69c92…`。
+- 不包含数据库或契约变更，回滚不需要模块升级、fixture 或数据操作。
+
+#### Not included
+
+- 后端列偏好持久化、多角色、真实业务写入、acceptance、旧版本升级兼容和发布验收。
+- 项目/付款正式契约禁止的列顺序拖动不计为已通过的页面能力；允许顺序时的通用算法仅由定向测试覆盖。
+- 图标专题的两处文档变化只登记 PR #457 已合入主线，不重新打开图标迁移。
+
+### PR/CI 状态与未执行项
+
+本地分类器绑定 `10a69c92…d81453e7` 得到：`lane=HIGH_RISK`、`frontend_mode=standard`、
+`professional_mode=full`、`frontend_changed=true`、`backend_changed=true`、
+`frontend_full_required=false`，原因为 `unknown_path_fail_closed`。净差异没有后端产品文件；
+`backend_changed=true` 是分类器的 fail-closed 路由结果，不能手工降级。
+
+| 项目 | 状态 | 说明 |
+|---|---|---|
+| `public_guard` | `not_run` | 尚未推送或创建 PR。 |
+| `professional_quality_gate` | `not_run` | HIGH_RISK 要求 full。 |
+| `frontend_release_gate` | `not_run` | exact-head PR 检查。 |
+| `merge_policy_gate` | `not_run` | exact-head 聚合/合并门禁。 |
+| `release_candidate_gate` | `not_run` | 后续显式候选发布资格，不能冒充 draft PR 或合并检查。 |
+| `make pr.push` / `make pr.create` | `not_run` | 本轮明确禁止远端写入。 |
+| 后端偏好持久化、acceptance、发布验收 | `not_run` | 不在本专题授权范围。 |
+
+`make pr.status` 只读确认当前分支没有关联 PR。下一步仅在单独授权后，重新核对 clean worktree、
+`origin/main` 和最终 HEAD，再通过 `make pr.push` 与 `make pr.create` 发布草稿；ready、merge 和 release
+继续分别授权。
