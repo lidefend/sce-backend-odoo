@@ -24,6 +24,7 @@ schema_builder = read("pages/contractForm/useRecordFormFieldSchemas.ts")
 object_task = read("pages/contractForm/ObjectTaskPage.vue")
 section_navigation = read("pages/contractForm/FormSectionNavigation.vue")
 native_driver = read("pages/contractForm/ContractFormDriverHost.vue")
+native_navigation_model = read("pages/contractForm/nativeSectionNavigation.ts")
 canonical_renderer = read("pages/contractForm/CanonicalFormNodeRenderer.vue")
 relations = read("components/template/X2ManyRelationRenderer.vue")
 
@@ -74,6 +75,31 @@ for required in (
         fail(f"semantic form structure missing: {required}")
 if 'FormSectionNavigation' not in object_task or 'FormSectionNavigation' not in native_driver:
     fail("task and workspace forms do not share section navigation")
+if "field.semanticRole).forEach((field) => roles.add" in native_driver:
+    fail("workspace navigation still promotes field semantic roles to section identity")
+if "inferredSectionRole" in native_navigation_model:
+    fail("workspace navigation still infers section identity from descendant field roles")
+for required in (
+    "nativeBridge.value?.sectionLinks",
+    "workspaceSurfaceNavigationItems",
+    "auditAvailable: props.showCollaborationPanel === true && auditEvents.value.length > 0",
+    'data-form-section-target="surface:activity"',
+    'data-section-source-identity="collaboration-panel"',
+):
+    if required not in native_driver:
+        fail(f"workspace section identity projection missing: {required}")
+for required in (
+    'data-form-section-target="surface:audit"',
+    'data-section-source-identity="professional-audit-timeline"',
+):
+    if required not in read("pages/contractForm/ProfessionalAuditTimeline.vue"):
+        fail(f"audit section identity missing: {required}")
+for required in (
+    ":data-form-section-target=\"field.sectionNavigationTarget || undefined\"",
+    ":data-section-source-identity=\"field.sectionSourceIdentity || undefined\"",
+):
+    if required not in section:
+        fail(f"relation collection target projection missing: {required}")
 for required in (
     ".sc-native-contract-page",
     ".sc-form-driver-host,",

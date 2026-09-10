@@ -1598,10 +1598,13 @@ try {
           await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
           navigationJourney.push(await link.evaluate((node) => {
             const selector = node instanceof HTMLElement ? String(node.dataset.sectionTarget || '') : '';
+            const expectedLabel = String(node.textContent || '').replace(/\s+/g, ' ').trim();
+            const expectedContentKind = node instanceof HTMLElement ? String(node.dataset.sectionContentKind || '') : '';
+            const expectedSourceIdentity = node instanceof HTMLElement ? String(node.dataset.sectionSourceIdentity || '') : '';
             const nav = node.closest('[data-form-section-navigation]');
             const root = nav?.closest('[data-native-contract-structure], .object-task-page');
             const matches = selector && root ? [...root.querySelectorAll(selector)] : [];
-            const target = matches.find((candidate) => !matches.some((other) => other !== candidate && candidate.contains(other))) || matches[0] || null;
+            const target = matches.length === 1 ? matches[0] : null;
             const header = [...document.querySelectorAll('.template-page-header')]
               .find((candidate) => candidate instanceof HTMLElement && candidate.offsetParent !== null);
             const targetRect = target instanceof HTMLElement ? target.getBoundingClientRect() : null;
@@ -1611,10 +1614,25 @@ try {
             const linkRect = node instanceof HTMLElement ? node.getBoundingClientRect() : null;
             const headerRect = header instanceof HTMLElement ? header.getBoundingClientRect() : null;
             const obstructionBottom = Math.max(navRect?.bottom || 0, headerRect?.bottom || 0);
+            const targetText = String(target?.textContent || '').replace(/\s+/g, ' ').trim();
             return {
               key: node instanceof HTMLElement ? String(node.dataset.sectionLink || '') : '',
               current: node.getAttribute('aria-current') === 'location',
+              targetMatchCount: matches.length,
               targetFound: target instanceof HTMLElement,
+              expectedLabel,
+              expectedContentKind,
+              targetContentKind: target instanceof HTMLElement ? String(target.dataset.sectionContentKind || '') : '',
+              expectedSourceIdentity,
+              targetSourceIdentity: target instanceof HTMLElement ? String(target.dataset.sectionSourceIdentity || '') : '',
+              targetIdentityMatches: target instanceof HTMLElement
+                && Boolean(expectedSourceIdentity)
+                && target.dataset.sectionSourceIdentity === expectedSourceIdentity,
+              targetContentMatches: target instanceof HTMLElement
+                && Boolean(expectedContentKind)
+                && target.dataset.sectionContentKind === expectedContentKind
+                && Boolean(expectedLabel)
+                && targetText.includes(expectedLabel),
               targetTop: targetRect ? Math.round(targetRect.top) : null,
               obstructionBottom: Math.round(obstructionBottom),
               targetVisibleBelowSticky: Boolean(targetRect && targetRect.bottom > obstructionBottom && targetRect.top >= obstructionBottom - 2),
@@ -1666,7 +1684,13 @@ try {
             && top.responsiveBoundaryEvidence.pass
             && popupBoundaryEvidence.pass
             && navigationJourney.length === top.sectionLinks.length
-            && navigationJourney.every((item) => item.current && item.targetFound && item.targetVisibleBelowSticky && item.linkFullyVisibleInTrack)
+            && navigationJourney.every((item) => item.current
+              && item.targetMatchCount === 1
+              && item.targetFound
+              && item.targetIdentityMatches
+              && item.targetContentMatches
+              && item.targetVisibleBelowSticky
+              && item.linkFullyVisibleInTrack)
             && (viewport.name !== 'mobile' || top.mobileMonetarySummaryFirst)
             && (target.expectRelationFirstViewport !== true || viewport.name !== 'desktop' || (top.relationInFirstViewport && top.addActionInFirstViewport))
             && (target.expectReadonlyDetailComparison !== true || (viewport.name === 'desktop' ? top.readonlyTableVisible : top.readonlyCardsVisible))
