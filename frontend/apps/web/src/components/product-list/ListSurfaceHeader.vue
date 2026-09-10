@@ -161,6 +161,6 @@ function emitVisibility(name: string, checked: boolean) {
 .list-surface-contextual-toolbar { min-height: 44px; display: flex; align-items: center; width: 100%; }
 @media (max-width: 520px) {
   .list-surface-column-label { display: none; }
-  .list-surface-column-button { width: 44px; padding-inline: 0; }
+  .list-surface-column-button { width: 44px; min-height: 44px; padding-inline: 0; }
 }
 </style>
