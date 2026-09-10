@@ -774,6 +774,45 @@ ci.tenant.pro03.demo.dispatch: guard.prod.forbid
 	@branch="$$(git rev-parse --abbrev-ref HEAD)"; \
 	gh workflow run demo-ci.yml --ref "$$branch"
 
+.PHONY: ci.backend_test_suite.dispatch
+ci.backend_test_suite.dispatch: guard.prod.forbid
+	@bash -lc '\
+	set -euo pipefail; \
+	branch="$$(git branch --show-current)"; \
+	if ! echo "$$branch" | grep -Eq "$(CODEX_ALLOWED_WRITE_BRANCH_REGEX)"; then \
+	  echo "[DENY] ci.backend_test_suite.dispatch: branch not allowed: $$branch"; exit 2; \
+	fi; \
+	if [ "$${ENV:-dev}" = "prod" ] || [ -n "$${PROD_DANGER:-}" ]; then \
+	  echo "[DENY] ci.backend_test_suite.dispatch: production context is forbidden"; exit 3; \
+	fi; \
+	expected="$${EXPECTED_HEAD:-}"; \
+	if ! [[ "$$expected" =~ ^[0-9a-f]{40}$$ ]]; then \
+	  echo "[DENY] ci.backend_test_suite.dispatch: EXPECTED_HEAD must be a full 40-character lowercase commit SHA"; exit 4; \
+	fi; \
+	if [ -n "$$(git status --porcelain)" ]; then \
+	  echo "[DENY] ci.backend_test_suite.dispatch: worktree must be clean"; exit 5; \
+	fi; \
+	local_head="$$(git rev-parse HEAD)"; \
+	if [ "$$local_head" != "$$expected" ]; then \
+	  echo "[DENY] ci.backend_test_suite.dispatch: local HEAD $$local_head does not match EXPECTED_HEAD $$expected"; exit 6; \
+	fi; \
+	repo="$$(gh repo view --json nameWithOwner --jq .nameWithOwner)"; \
+	if [ "$$repo" != "lidefend/sce-backend-odoo" ]; then \
+	  echo "[DENY] ci.backend_test_suite.dispatch: unexpected GitHub repository $$repo"; exit 7; \
+	fi; \
+	remote_head="$$(git ls-remote --heads origin "refs/heads/$$branch" | cut -f1)"; \
+	if [ "$$remote_head" != "$$expected" ]; then \
+	  echo "[DENY] ci.backend_test_suite.dispatch: remote branch HEAD $$remote_head does not match EXPECTED_HEAD $$expected"; exit 8; \
+	fi; \
+	pr_head="$$(gh pr view --json headRefOid --jq .headRefOid)"; \
+	if [ "$$pr_head" != "$$expected" ]; then \
+	  echo "[DENY] ci.backend_test_suite.dispatch: open PR HEAD $$pr_head does not match EXPECTED_HEAD $$expected"; exit 9; \
+	fi; \
+	echo "[ci.backend_test_suite.dispatch] repo=$$repo branch=$$branch exact_head=$$expected"; \
+	gh workflow run backend_test_suite.yml --ref "$$branch" -f "head_ref=$$branch"; \
+	echo "[ci.backend_test_suite.dispatch] dispatched full backend suite for exact_head=$$expected"; \
+	'
+
 .PHONY: verify.visualization.chart.capability
 verify.visualization.chart.capability: guard.prod.forbid
 	@python3 -m py_compile addons/smart_construction_core/services/visualization_chart_registry.py addons/smart_construction_core/services/visualization_chart_definitions.py addons/smart_construction_core/services/project_dashboard_builders/project_chart_builder.py addons/smart_construction_core/services/project_dashboard_builders/project_payment_chart_builder.py addons/smart_construction_core/handlers/visualization_chart_fetch.py addons/smart_construction_core/tests/test_visualization_chart_capability.py addons/smart_construction_core/tests/test_project_chart_builder.py

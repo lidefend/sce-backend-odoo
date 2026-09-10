@@ -9202,3 +9202,4 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 受管 5176 首轮及一次复跑均稳定发现材料新建移动明细在必填关系控件 disabled 时无法恢复焦点；边界完整且业务 mutation 为 0。归因为 P0 通用校验焦点回退缺失，不修改关系权限或可选数据前提。
 - 修复限定为：优先聚焦可见且非原生 disabled 的控件；没有可聚焦子控件时，将实际错误单元作为程序化焦点目标。后续以非零定向测试、四宽度明暗候选复核和 exact-head CI 验证。
 - 修复后明色 1440/390 定向矩阵通过；后续 exact-head 复核在合同新建移动端和付款编辑桌面端识别出关系选项面板向下超出视口。诊断确认 TDesign AutoComplete 只承担输入，实际 listbox 是承载维护/搜索/新建业务动作的 `ProfessionalMany2oneFieldControl` 面板；修复让长表单中的该业务面板统一向上展开，不修改页面尺寸或降低边界断言。
+- 经单独授权补充 P4 `ci.backend_test_suite.dispatch` 受管入口：只允许 clean、local/remote/PR exact-head 一致的合规分支触发完整隔离套件，不开放 modules/test-tags 缩减参数；用于验证本 PR 对 137/139 进程退出的一次隔离数据库重试。

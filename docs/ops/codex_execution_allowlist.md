@@ -200,6 +200,13 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
   * 该入口服务“可发布”判定，不替代 `merge_policy_gate` 的“可合并”判定；
   * 新 head 在该入口成功完成前没有候选发布资格，因此不能被当作可发布头。
 
+* `make ci.backend_test_suite.dispatch EXPECTED_HEAD=<full-40-char-sha>`
+
+  * 只用于显式触发 `.github/workflows/backend_test_suite.yml` 的完整隔离后端套件；
+  * 写入前必须验证合规分支、clean worktree、本地 HEAD、GitHub 远端分支 HEAD 和开放 PR HEAD 均与 `EXPECTED_HEAD` 完全一致；
+  * 不提供模块或 test-tags 缩减参数，不得用局部测试冒充完整套件；
+  * 工作流创建的 Compose project、数据库和卷由工作流按 run id 隔离并在结束时清理，不得复用 local.dev、acceptance 或生产环境。
+
 > 说明：
 > **PR 内容更新属于远端状态变更**，必须统一走 Makefile 封装流程，
 > 以保证分支校验、环境校验与审计能力。
