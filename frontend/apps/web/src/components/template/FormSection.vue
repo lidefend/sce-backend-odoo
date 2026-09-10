@@ -1166,6 +1166,10 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   column-gap: var(--sc-pattern-task-form-readonly-column-gap, 26px);
 }
 
+.template-form-section--readonly .field-control-row {
+  align-items: flex-start;
+}
+
 .template-form-section--readonly .field--readonly-empty-relation {
   grid-template-columns: minmax(150px, 220px) minmax(0, 1fr);
   align-items: center;
