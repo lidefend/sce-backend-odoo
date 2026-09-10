@@ -79,6 +79,7 @@ const relationSections = workspaceSectionNavigationItems([node({
     field({ widgetId: 'lines.settlement', fieldType: 'many2many', semanticRole: 'relation', label: '结算明细' }),
     field({ widgetId: 'attachments', fieldType: 'many2many', semanticRole: 'relation', label: '附件', componentConfig: { widget: 'many2many_binary' } }),
     field({ widgetId: 'resolved.attachments', fieldType: 'many2many', semanticRole: 'relation', label: '其他附件', componentResolution: { componentKey: 'ProfessionalAttachmentCollection', renderer: '', contractAdapter: '' } }),
+    field({ widgetId: 'descriptor.attachments', fieldType: 'many2many', semanticRole: 'relation', label: '原生附件', fieldDescriptor: { relation: 'ir.attachment' } }),
   ],
 })]);
 assert.deepEqual(relationSections.map(({ label, contentKind, sourceIdentity }) => ({ label, contentKind, sourceIdentity })), [
