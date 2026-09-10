@@ -2222,7 +2222,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "9906321cd2a6b659e11b35ad9895cd2f434c7b50e3eb19a704fab16e492b5bdd",
+      "digest": "49940605503598cd706201b8f857f565c622b2937e5288a4cfd83cafc0ee06cd",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ObjectTaskPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2802,7 +2802,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "ac4f19fd7ba324482a0ab7f4a87754102368883a601fe1675c656aefeccd4bf4",
+  "currentInputDigest": "e56ef30790a6795177693c5f753318ecc4315c61af7ba0a091800eb9b8c71238",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
