@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "f5334b855cc28adf3c7b8355ed043118e410f3f26db7bc8d71cbf8758b76f732",
+  "sourceIdentity": "a87954acb23333e21ec225acaa4f2023e798bb3246eb644cbec94c42dbe1929e",
   "generatorDigest": "ca226c62f58e545f8d63682e5ef46d9b9c32e4f1d1388d910c9e62d4ac1a0d5f",
   "ownershipDigest": "42882e5cd8ea9892f553cce4fe1441afecc2d66c8ee01e526953d116f170e013",
-  "inputDigest": "1b61cc233aa37f2eb347aff889abb5e0874b2dc69628e04e961273e456f48168",
+  "inputDigest": "a4d797ff93a1d7ec22d45d5ea29453bd35e2336bd8d2542bb330910659f97112",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",

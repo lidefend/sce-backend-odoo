@@ -29,10 +29,13 @@ import { TDesignConfigProvider } from './components/design-system/tdesignPrimiti
 import AppShell from './layouts/AppShell.vue';
 import { useSessionStore } from './stores/session';
 import { tdesignGlobalConfig } from './styles/tdesignGlobalConfig';
+import { useThemeApplicationRuntime } from './styles/themeApplicationRuntime';
 
 const session = useSessionStore();
 const pageIdentity = usePageIdentityRuntime();
 const retainedActivityActorId = ref(0);
+
+useThemeApplicationRuntime();
 
 watch(
   () => positiveInteger(session.user?.id),

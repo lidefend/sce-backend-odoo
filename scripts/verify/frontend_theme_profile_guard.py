@@ -27,6 +27,10 @@ ROOT = Path(__file__).resolve().parents[2]
 TOKENS_TS = ROOT / "frontend/packages/ui/src/kits/tokens.ts"
 PROFILE_CSS = ROOT / "frontend/apps/web/src/styles/tokens/profile.css"
 THEME_TS = ROOT / "frontend/apps/web/src/styles/theme.ts"
+APP_VUE = ROOT / "frontend/apps/web/src/App.vue"
+MAIN_TS = ROOT / "frontend/apps/web/src/main.ts"
+TDESIGN_CONFIG_TS = ROOT / "frontend/apps/web/src/styles/tdesignGlobalConfig.ts"
+APPLICATION_RUNTIME_TS = ROOT / "frontend/apps/web/src/styles/themeApplicationRuntime.ts"
 
 PROFILE_IDS = ("enterprise-neutral", "business-soft", "accessible-contrast")
 SURFACE_OWNED = {"--sc-semantic-surface-page", "--sc-semantic-surface-panel"}
@@ -142,6 +146,10 @@ def main() -> int:
     tokens_text = read(TOKENS_TS)
     css_text = read(PROFILE_CSS)
     theme_text = read(THEME_TS)
+    app_text = read(APP_VUE)
+    main_text = read(MAIN_TS)
+    tdesign_config_text = read(TDESIGN_CONFIG_TS)
+    application_runtime_text = read(APPLICATION_RUNTIME_TS)
 
     if not tokens_text or not css_text or not theme_text:
         print(f"[theme_profile_guard] FAIL missing source: {rel(TOKENS_TS)} / {rel(PROFILE_CSS)} / {rel(THEME_TS)}")
@@ -156,6 +164,15 @@ def main() -> int:
     errors += check_token_consistency(tokens_profiles, css_profiles)
     errors += check_theme_model(theme)
     errors += check_orthogonality(css_profiles)
+    for label, source, markers in (
+        ("App.vue", app_text, ("useThemeApplicationRuntime();",)),
+        ("main.ts", main_text, ("startThemeApplicationRuntime();", "import.meta.hot.dispose(stopThemeApplicationRuntime)")),
+        ("tdesignGlobalConfig.ts", tdesign_config_text, ("startTdesignGlobalConfigRuntime", "stopTdesignGlobalConfigRuntime", "exclude: []")),
+        ("themeApplicationRuntime.ts", application_runtime_text, ("onMounted(startThemeApplicationRuntime)", "onBeforeUnmount(stopThemeApplicationRuntime)")),
+    ):
+        for marker in markers:
+            if marker not in source:
+                errors.append(f"{label} missing application theme lifecycle marker: {marker}")
 
     if errors:
         print(f"[theme_profile_guard] FAIL")

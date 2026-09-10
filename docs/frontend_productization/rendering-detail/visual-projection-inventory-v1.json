@@ -130,7 +130,7 @@
   "changedSourceProjection": [
     {
       "category": "other",
-      "digest": "5e9ee0b01cc3bb2d1e1026a29d5a632f25a8d504030507d90ec5a3d0fe889d93",
+      "digest": "d2972d150463afea0f33c76228fe9f53854257db42f45b5e00542883d1528d3f",
       "nativeStyleSelectors": [],
       "path": "App.vue",
       "referenceNativeStyleSelectors": [],
@@ -2812,7 +2812,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "b14abc2da5b21a603e45c07ff4a17e36eb69a864429cdf3fcb40b2635609ec40",
+  "currentInputDigest": "0b4b92a17e1c8ab82f2f6a8a5c2f8e24e56b6d0efd18c4e8afd5480604501e40",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

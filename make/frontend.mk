@@ -100,7 +100,7 @@ verify.frontend.primitive_adapter.unit: guard.prod.forbid
 
 .PHONY: verify.frontend.global_component_capability.unit
 verify.frontend.global_component_capability.unit: guard.prod.forbid
-	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/global_component_capability_test.ts --bundle --platform=node --format=esm --alias:vue=./frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/global-component-capability-test.mjs >/dev/null
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/global_component_capability_test.ts --bundle --platform=node --format=esm --loader:.css=empty --resolve-extensions=.tsx,.ts,.jsx,.js,.css,.json,.mjs --alias:vue=./frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --alias:tdesign-vue-next=$(ROOT_DIR)/frontend/packages/ui/node_modules/tdesign-vue-next --outfile=/tmp/global-component-capability-test.mjs >/dev/null
 	@node /tmp/global-component-capability-test.mjs
 
 .PHONY: verify.frontend.navigation_shell.unit
