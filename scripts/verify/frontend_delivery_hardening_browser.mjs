@@ -722,7 +722,7 @@ async function main() {
     await submit.focus(); await submit.press('Enter');
     const dialog = page.getByRole('dialog');
     await dialog.waitFor({ timeout: 15000 });
-    check(await dialog.getByRole('button', { name: '确认提交' }).evaluate((node) => node === document.activeElement), 'dialog initial focus missing');
+    check(await dialog.getByRole('button', { name: '取消', exact: true }).evaluate((node) => node === document.activeElement), 'dialog safe initial focus missing');
     await page.keyboard.press('Tab'); await page.keyboard.press('Tab');
     check(await dialog.evaluate((node) => node.contains(document.activeElement)), 'dialog focus escaped');
     await page.keyboard.press('Escape');

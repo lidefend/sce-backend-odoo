@@ -180,6 +180,20 @@ class ContractFormCacheOwnershipTest(unittest.TestCase):
             ),
         )
 
+    def test_confirmation_dialog_probe_tracks_safe_cancel_autofocus(self):
+        source = (ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn(
+            "dialog.getByRole('button', { name: '取消', exact: true })",
+            source,
+        )
+        self.assertNotIn(
+            "dialog.getByRole('button', { name: '确认提交' }).evaluate",
+            source,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
