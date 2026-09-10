@@ -5,6 +5,7 @@
     aria-label="表单章节"
     :aria-describedby="hintId"
     data-form-section-navigation
+    data-semantic-component="FormSectionNavigation"
     :data-overflow-before="hasMoreBefore || undefined"
     :data-overflow-after="hasMoreAfter || undefined"
   >
