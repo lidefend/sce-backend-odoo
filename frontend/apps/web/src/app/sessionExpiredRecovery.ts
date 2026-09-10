@@ -12,16 +12,22 @@ const AUTH_ENTRY_PATHS = new Set([
 type SessionStorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 type SessionExpiredNavigationRuntime = {
   location: Pick<Location, 'pathname' | 'search' | 'hash'> & { assign: (url: string) => void };
-  sessionStorage: SessionStorageLike;
+  sessionStorage: SessionStorageLike | null;
 };
 
 let sessionExpiredRedirectScheduled = false;
 
 function browserRuntime(): SessionExpiredNavigationRuntime | null {
   if (typeof window === 'undefined') return null;
+  let sessionStorage: SessionStorageLike | null = null;
+  try {
+    sessionStorage = window.sessionStorage;
+  } catch {
+    // Storage access can be denied before any method is called. Navigation must continue.
+  }
   return {
     location: window.location,
-    sessionStorage: window.sessionStorage,
+    sessionStorage,
   };
 }
 

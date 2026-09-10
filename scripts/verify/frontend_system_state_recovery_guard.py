@@ -43,6 +43,11 @@ def validate() -> list[str]:
             failures.append(f"LoginView missing session recovery marker: {marker}")
     if "账号或密码错误" not in login or "登录状态已过期" not in login:
         failures.append("credential failure and expired-session explanations must remain distinct")
+    for marker in ("显示原因", "安全返回入口"):
+        if marker not in login:
+            failures.append(f"expired-session notice missing route-outcome wording: {marker}")
+    if "将进入安全首页" in login:
+        failures.append("expired-session notice must not promise a homepage when the route guard may deny access")
     return failures
 
 

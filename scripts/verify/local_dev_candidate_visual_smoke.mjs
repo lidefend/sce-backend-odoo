@@ -53,7 +53,7 @@ async function loginPage(page) {
   const payload = await response.json();
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
   await page.locator('.layout-shell').waitFor({ timeout: 45000 });
-  return { ...summarizeSystemInit(payload), loginThemeEvidence };
+  return { ...summarizeSystemInit(payload), loginThemeEvidence, landingUrl: page.url() };
 }
 
 async function captureThemeRuntimeState(page) {
@@ -569,6 +569,7 @@ try {
       };
       if (exerciseOfficialAlertOperation) await page.route(readFailurePattern, officialAlertFailureHandler);
       const exerciseSessionExpiredRecovery = target.exerciseSessionExpiredRecovery === true;
+      const sessionExpiredRecoveryScenario = String(target.sessionExpiredRecoveryScenario || 'authorized');
       let sessionExpiredInjected = false;
       let sessionExpiredRequestCount = 0;
       const sessionExpiredIntent = String(target.sessionExpiredIntent || 'my.work.summary');
@@ -599,8 +600,8 @@ try {
         : null;
       await page.goto(`${baseUrl}${target.path}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
       if (exerciseSessionExpiredRecovery) {
-        const expectedReturnUrl = `${baseUrl}${target.path}`;
-        const expectedReturnPath = `${new URL(expectedReturnUrl).pathname}${new URL(expectedReturnUrl).search}${new URL(expectedReturnUrl).hash}`;
+        const originalReturnUrl = `${baseUrl}${target.path}`;
+        const originalReturnPath = `${new URL(originalReturnUrl).pathname}${new URL(originalReturnUrl).search}${new URL(originalReturnUrl).hash}`;
         await page.waitForURL((url) => url.pathname === '/login' && url.searchParams.get('reason') === 'session_expired', { timeout: 45000 });
         const notice = page.locator('[data-session-expired-notice]:visible');
         await notice.waitFor({ state: 'visible', timeout: 15000 });
@@ -608,6 +609,12 @@ try {
         const noticeText = String(await notice.textContent() || '').replace(/\s+/g, ' ').trim();
         const credentialErrorCount = await page.locator('#login-error').count();
         const loginUrl = page.url();
+        const originalStoredReturnPath = await page.evaluate(() => window.sessionStorage.getItem('sc.session_expired.return_path.v1'));
+        if (sessionExpiredRecoveryScenario === 'missing') {
+          await page.evaluate(() => window.sessionStorage.removeItem('sc.session_expired.return_path.v1'));
+        } else if (sessionExpiredRecoveryScenario === 'unauthorized') {
+          await page.evaluate(() => window.sessionStorage.setItem('sc.session_expired.return_path.v1', '/a/999999?menu_id=999999'));
+        }
         const storedBeforeLogin = await page.evaluate(() => window.sessionStorage.getItem('sc.session_expired.return_path.v1'));
         const loginTheme = await captureThemeRuntimeState(page);
         await page.screenshot({
@@ -622,7 +629,30 @@ try {
         await page.getByRole('button', { name: /^登录$/ }).click();
         const loginResponse = await systemInitResponse;
         if (!loginResponse.ok()) throw new Error(`${target.name}: session recovery login failed with ${loginResponse.status()}`);
-        await page.waitForURL((url) => url.pathname === new URL(expectedReturnUrl).pathname, { timeout: 45000 });
+        let expectedReturnUrl = originalReturnUrl;
+        let accessDeniedEvidence = null;
+        if (sessionExpiredRecoveryScenario === 'missing') {
+          expectedReturnUrl = String(report.startup[viewport.name]?.landingUrl || `${baseUrl}/`);
+          await page.waitForURL((url) => url.href === expectedReturnUrl, { timeout: 45000 });
+        } else if (sessionExpiredRecoveryScenario === 'unauthorized') {
+          await page.waitForURL((url) => url.pathname === '/access-denied', { timeout: 45000 });
+          const deniedUrl = new URL(page.url());
+          const deniedTitle = page.getByText('访问受限', { exact: true });
+          const safeReturn = page.getByRole('button', { name: '返回安全页面', exact: true });
+          await deniedTitle.waitFor({ state: 'visible', timeout: 15000 });
+          await safeReturn.waitFor({ state: 'visible', timeout: 15000 });
+          accessDeniedEvidence = {
+            deniedUrl: deniedUrl.href,
+            reason: deniedUrl.searchParams.get('reason'),
+            titleCount: await deniedTitle.count(),
+            safeReturnCount: await safeReturn.count(),
+          };
+          await safeReturn.click();
+          await page.waitForURL((url) => url.pathname === '/', { timeout: 45000 });
+          accessDeniedEvidence.safeReturnUrl = page.url();
+        } else {
+          await page.waitForURL((url) => url.href === expectedReturnUrl, { timeout: 45000 });
+        }
         await page.locator('.layout-shell').waitFor({ timeout: 45000 });
         await waitForStableProductSurface(page);
         const storedAfterLogin = await page.evaluate(() => window.sessionStorage.getItem('sc.session_expired.return_path.v1'));
@@ -631,14 +661,17 @@ try {
           injected: sessionExpiredInjected,
           requestCount: sessionExpiredRequestCount,
           loginUrl,
-          loginUrlContainsReturnPath: loginUrl.includes('redirect=') || loginUrl.includes(encodeURIComponent(expectedReturnPath)),
+          loginUrlContainsReturnPath: loginUrl.includes('redirect=') || loginUrl.includes(encodeURIComponent(originalReturnPath)),
           noticeCount,
           noticeText,
           credentialErrorCount,
           storedBeforeLogin,
           storedAfterLogin,
-          expectedReturnPath,
+          originalStoredReturnPath,
+          expectedReturnPath: new URL(expectedReturnUrl).pathname + new URL(expectedReturnUrl).search + new URL(expectedReturnUrl).hash,
           recoveredUrl,
+          scenario: sessionExpiredRecoveryScenario,
+          accessDeniedEvidence,
           loginTheme,
           pass: sessionExpiredInjected
             && sessionExpiredRequestCount === 1
@@ -646,10 +679,21 @@ try {
             && noticeCount === 1
             && credentialErrorCount === 0
             && noticeText.includes('登录状态已过期')
-            && noticeText.includes('安全首页')
-            && storedBeforeLogin === expectedReturnPath
+            && noticeText.includes('显示原因')
+            && noticeText.includes('安全返回入口')
+            && originalStoredReturnPath === originalReturnPath
             && storedAfterLogin === null
-            && recoveredUrl === expectedReturnUrl,
+            && (sessionExpiredRecoveryScenario === 'authorized'
+              ? storedBeforeLogin === originalReturnPath && recoveredUrl === expectedReturnUrl
+              : sessionExpiredRecoveryScenario === 'missing'
+                ? storedBeforeLogin === null && recoveredUrl === expectedReturnUrl
+                : sessionExpiredRecoveryScenario === 'unauthorized'
+                  ? storedBeforeLogin === '/a/999999?menu_id=999999'
+                    && accessDeniedEvidence?.reason === 'NAVIGATION_AUTHORITY_DENIED'
+                    && accessDeniedEvidence?.titleCount === 1
+                    && accessDeniedEvidence?.safeReturnCount === 1
+                    && new URL(accessDeniedEvidence?.safeReturnUrl || baseUrl).pathname === '/'
+                  : false),
         };
         await page.unroute(readFailurePattern, sessionExpiredHandler);
       }

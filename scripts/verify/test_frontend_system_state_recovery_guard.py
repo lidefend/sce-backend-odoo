@@ -45,6 +45,20 @@ class FrontendSystemStateRecoveryGuardTest(unittest.TestCase):
         with patch("pathlib.Path.read_text", altered):
             self.assertTrue(any("sessionExpiredRedirectScheduled" in item for item in validate()))
 
+    def test_misleading_safe_home_copy_fails(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "LoginView.vue":
+                return value.replace("无法访问时显示原因，并提供安全返回入口", "如该页面已不可访问，将进入安全首页")
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            failures = validate()
+            self.assertTrue(any("route-outcome wording" in item for item in failures))
+            self.assertTrue(any("must not promise" in item for item in failures))
+
 
 if __name__ == "__main__":
     unittest.main()

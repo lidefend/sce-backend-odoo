@@ -9219,3 +9219,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 冻结候选 `d4cecd1cdadbaf343f98915ac19bb23d2e34436d`，完整指纹 `43decc3a68e985386f97536edf086eec12230338985bacc398a3a5c1ad554b7a`（7379 paths）。Frontend Quick、严格类型、构建、14 项定向测试和官方设计零缺口清单 PASS。
 - light 1440/390 与 dark 1088/320 各覆盖项目、付款、收入合同 6 个桌面/移动样本，均 pass、零业务 mutation、零 error/failure。付款完成单次排序请求、真实 Tab、方向键调宽及影子偏好刷新恢复；移动列设置 44×44px。
 - 正式项目/付款契约禁用列顺序，运行态 0 个拖动句柄；未篡改契约制造拖动通过。收入合同只作既有横向工作区回归。本批未改导航、208px 主身份、契约、权限、字段、业务动作或业务数据。
+
+## 2026-09-11 — 系统状态恢复定向补证
+
+- 分支 `feature/p0-system-state-recovery-consistency-v1`，起始 HEAD `306b3159eab0c0debbbb947bde1141e3b1225f94`。Formal Product Layer P0；Layer Target 为会话过期恢复助手、登录状态说明与既有只读验证工具。
+- 唯一产品修正是把 `window.sessionStorage` 属性访问失败降级为“无恢复目标”，同时保持登录跳转；路由权限规则保持不变，登录说明改为准确表达既有 `access-denied` 原因和安全返回入口。
+- 验证限定为存储属性/方法失败、四个认证入口递归阻止，以及授权、缺失、失权三类登录后路径；不重放请求，不修改认证、权限、业务契约、数据、页面视觉或发布环境。

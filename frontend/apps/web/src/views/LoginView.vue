@@ -80,7 +80,7 @@
             v-if="sessionExpired"
             data-session-expired-notice
             state="info"
-            :label="pageText('session_expired_notice', '登录状态已过期，请重新登录。验证成功后将尝试返回刚才的页面；如该页面已不可访问，将进入安全首页。')"
+            :label="pageText('session_expired_notice', '登录状态已过期，请重新登录。验证成功后将尝试返回原页面；无法访问时显示原因，并提供安全返回入口。')"
           />
 
           <form

@@ -21,6 +21,11 @@ function equal(actual: unknown, expected: unknown, message?: string) {
   assert.equal(actual, expected, message);
 }
 
+function doesNotThrow(callback: () => void, message?: string) {
+  assertions += 1;
+  assert.doesNotThrow(callback, message);
+}
+
 equal(normalizeSafeLoginReturnPath('/a/42?menu_id=9&search=abc#details'), '/a/42?menu_id=9&search=abc#details');
 equal(normalizeSafeLoginReturnPath('/workbench?scene=workspace.home&tab=todo'), '/s/workspace.home?tab=todo');
 equal(normalizeSafeLoginReturnPath('/r/payment.request/7?action_id=42'), '/r/payment.request/7?action_id=42');
@@ -62,5 +67,56 @@ equal(redirectForExpiredSession(runtime), false, 'login requests must not redire
 resetSessionExpiredRedirectForTest();
 runtime.location.pathname = '/platform-admin/login';
 equal(redirectForExpiredSession(runtime), false, 'platform administrator login must not redirect to the regular login');
+
+for (const authEntry of ['/activate-account', '/password-recovery']) {
+  resetSessionExpiredRedirectForTest();
+  runtime.location.pathname = authEntry;
+  equal(redirectForExpiredSession(runtime), false, `${authEntry} must not redirect recursively`);
+}
+
+const deniedStorage = {
+  getItem: () => { throw new Error('storage read denied'); },
+  setItem: () => { throw new Error('storage write denied'); },
+  removeItem: () => { throw new Error('storage removal denied'); },
+};
+equal(rememberSessionExpiredReturnPath('/my-work', deniedStorage), false, 'storage write denial must degrade safely');
+equal(readSessionExpiredReturnPath(deniedStorage), '', 'storage read denial must produce no recovery target');
+doesNotThrow(() => clearSessionExpiredReturnPath(deniedStorage), 'storage removal denial must not block login completion');
+
+const deniedStorageAssigned: string[] = [];
+resetSessionExpiredRedirectForTest();
+equal(redirectForExpiredSession({
+  location: {
+    pathname: '/my-work',
+    search: '',
+    hash: '',
+    assign: (url: string) => deniedStorageAssigned.push(url),
+  },
+  sessionStorage: deniedStorage,
+}), true, 'storage method denial must not block login navigation');
+equal(deniedStorageAssigned[0], '/login?reason=session_expired');
+
+const originalWindowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
+const deniedPropertyAssigned: string[] = [];
+Object.defineProperty(globalThis, 'window', {
+  configurable: true,
+  value: {
+    location: {
+      pathname: '/my-work',
+      search: '?tab=todo',
+      hash: '',
+      assign: (url: string) => deniedPropertyAssigned.push(url),
+    },
+    get sessionStorage() { throw new Error('storage property denied'); },
+  },
+});
+try {
+  resetSessionExpiredRedirectForTest();
+  equal(redirectForExpiredSession(), true, 'sessionStorage property denial must not block login navigation');
+  equal(deniedPropertyAssigned[0], '/login?reason=session_expired');
+} finally {
+  if (originalWindowDescriptor) Object.defineProperty(globalThis, 'window', originalWindowDescriptor);
+  else delete (globalThis as { window?: unknown }).window;
+}
 
 console.log(`[session-expired-recovery] PASS assertions=${assertions}`);
