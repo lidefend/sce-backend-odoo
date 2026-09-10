@@ -53,7 +53,8 @@ function rootElement() {
 }
 
 function targetFor(item: SectionNavigationItem) {
-  return rootElement()?.querySelector<HTMLElement>(item.selector) || null;
+  const matches = [...(rootElement()?.querySelectorAll<HTMLElement>(item.selector) || [])];
+  return matches.find((candidate) => !matches.some((other) => other !== candidate && candidate.contains(other))) || matches[0] || null;
 }
 
 function visibleTarget(item: SectionNavigationItem) {
