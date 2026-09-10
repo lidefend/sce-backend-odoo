@@ -1234,6 +1234,7 @@ assert.deepEqual(model.actionBar[0]?.actionRef, source.actionContract.actionRule
 assert.equal(model.actionBar[0]?.enabled, true);
 assert.equal(model.actionBar[0]?.icon, 'fa-check');
 assert.equal(canonicalFormActionIconClass(model.actionBar[0]?.icon || ''), 'check');
+assert.equal(canonicalFormActionIconClass('fa fa-check'), 'check');
 assert.equal(canonicalFormActionIconClass('fa-check injected-class'), '');
 assert.equal(canonicalFormActionIconClass('oi-check'), '');
 assert.deepEqual(presentContractV2Form(store, 'create').actionBar, []);

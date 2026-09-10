@@ -32,7 +32,7 @@
     </template>
     <template v-else>
       <div v-if="replyTarget" class="native-chatter-reply-target">
-        <span class="native-chatter-reply-icon">↩</span>
+        <ScIcon class="native-chatter-reply-icon" name="reply" :size="18" />
         <div class="native-chatter-reply-content">
           <span class="native-chatter-reply-author">回复 {{ replyTarget.author }}</span>
           <span class="native-chatter-reply-body">{{ replyTarget.body }}</span>
@@ -65,6 +65,7 @@
 import type { CollaborationUserOption } from '../../api/chatter';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScInput from '../../components/design-system/ScInput.vue';
+import ScIcon from '../../components/design-system/ScIcon.vue';
 import ScSelect from '../../components/design-system/ScSelect.vue';
 import ScTextarea from '../../components/design-system/ScTextarea.vue';
 

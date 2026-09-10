@@ -8,9 +8,11 @@
     "./bridge": "./src/bridge.ts",
     "./collection": "./src/collection.ts",
     "./form": "./src/form.ts",
+    "./icons": "./src/icons.ts",
     "./primitives": "./src/primitives.ts"
   },
   "dependencies": {
+    "tdesign-icons-vue-next": "0.4.9",
     "tdesign-vue-next": "1.20.5"
   },
   "peerDependencies": {

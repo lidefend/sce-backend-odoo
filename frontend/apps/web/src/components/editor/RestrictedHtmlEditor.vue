@@ -17,7 +17,8 @@
         @mousedown.prevent
         @click="execCommand(item)"
       >
-        <span :class="item.iconClass">{{ item.label }}</span>
+        <ScIcon v-if="item.icon" :name="item.icon" :size="16" />
+        <span v-else>{{ item.label }}</span>
       </ScButton>
       <span
         class="restricted-html-editor__counter"
@@ -80,7 +81,9 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScDialog from '../design-system/ScDialog.vue';
+import ScIcon from '../design-system/ScIcon.vue';
 import ScInput from '../design-system/ScInput.vue';
+import type { ScIconName } from '../design-system/scIcon';
 
 const props = defineProps<{
   modelValue: string;
@@ -111,20 +114,20 @@ type ToolbarItem = {
   command: string;
   value?: string;
   label: string;
+  icon?: ScIconName;
   title: string;
-  iconClass?: string;
 };
 
 const toolbarItems: ToolbarItem[] = [
-  { command: 'bold', label: 'B', title: '加粗', iconClass: 'is-bold' },
-  { command: 'italic', label: 'I', title: '斜体', iconClass: 'is-italic' },
+  { command: 'bold', label: 'B', icon: 'format-bold', title: '加粗' },
+  { command: 'italic', label: 'I', icon: 'format-italic', title: '斜体' },
   { command: 'formatBlock', value: 'h1', label: 'H1', title: '一级标题' },
   { command: 'formatBlock', value: 'h2', label: 'H2', title: '二级标题' },
   { command: 'formatBlock', value: 'h3', label: 'H3', title: '三级标题' },
   { command: 'formatBlock', value: 'p', label: '正文', title: '正文段落' },
-  { command: 'insertUnorderedList', label: '•', title: '无序列表' },
-  { command: 'insertOrderedList', label: '1.', title: '有序列表' },
-  { command: 'createLink', label: '🔗', title: '插入链接' },
+  { command: 'insertUnorderedList', label: '无序列表', icon: 'list-unordered', title: '无序列表' },
+  { command: 'insertOrderedList', label: '有序列表', icon: 'list-numbered', title: '有序列表' },
+  { command: 'createLink', label: '链接', icon: 'link', title: '插入链接' },
 ];
 
 const currentLength = computed(() => String(props.modelValue ?? '').length);
@@ -240,14 +243,6 @@ function execCommand(item: ToolbarItem) {
 
 /* 悬停/禁用视觉由 ScButton ghost 变体自带（根类不拥有视觉铬，
    frontend_primitive_adapter_guard 纪律） */
-
-.restricted-html-editor__tool .is-bold {
-  font-weight: 700;
-}
-
-.restricted-html-editor__tool .is-italic {
-  font-style: italic;
-}
 
 .restricted-html-editor__counter {
   margin-left: auto;

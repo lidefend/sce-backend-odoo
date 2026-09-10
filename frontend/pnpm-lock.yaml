@@ -117,6 +117,9 @@ importers:
 
   packages/ui:
     dependencies:
+      tdesign-icons-vue-next:
+        specifier: 0.4.9
+        version: 0.4.9(vue@3.5.27(typescript@5.9.3))
       tdesign-vue-next:
         specifier: 1.20.5
         version: 1.20.5(vue@3.5.27(typescript@5.9.3))

@@ -229,7 +229,7 @@
                 :title="nativeActionTitle(buttonNode)"
                 @click.stop.prevent="emitNativeAction(buttonNode)"
               >
-                <span v-if="buttonIcon(buttonNode)" :class="['native-action-icon', buttonIcon(buttonNode)]" aria-hidden="true" />
+                <ScIcon v-if="buttonIcon(buttonNode)" class="native-action-icon" :name="buttonIcon(buttonNode)" :size="18" />
                 <span class="native-action-label">{{ buttonLabel(buttonNode) }}</span>
               </ScButton>
               <NativeSmartAction
@@ -356,7 +356,7 @@
           :title="nativeActionTitle(node)"
           @click.stop.prevent="emitNativeAction(node)"
         >
-          <span v-if="buttonIcon(node)" :class="['native-action-icon', buttonIcon(node)]" aria-hidden="true" />
+          <ScIcon v-if="buttonIcon(node)" class="native-action-icon" :name="buttonIcon(node)" :size="18" />
           <span class="native-action-label">{{ buttonLabel(node) }}</span>
         </ScButton>
         <NativeSmartAction
@@ -389,6 +389,7 @@ import ScIcon from '../design-system/ScIcon.vue';
 import ScIconButton from '../design-system/ScIconButton.vue';
 import ScInput from '../design-system/ScInput.vue';
 import ScTabs, { type ScTabItem } from '../design-system/ScTabs.vue';
+import { canonicalFormActionIconClass } from '../../pages/contractForm/canonicalFormActionIcon';
 import { nativeSectionNavigationRole } from '../../pages/contractForm/nativeSectionNavigation';
 import { resolveNativeTextPresentation } from './nativeTextPresentation';
 import type {
@@ -878,8 +879,7 @@ function buttonIcon(node: NativeFormLayoutNode) {
   const actionIcon = String(nodeAction(node).icon || '').trim();
   const attrIcon = String(nodeAttributes(node).icon || '').trim();
   const raw = actionIcon || attrIcon;
-  if (!raw) return '';
-  return raw.startsWith('fa-') ? `fa ${raw}` : raw;
+  return canonicalFormActionIconClass(raw);
 }
 
 function emitNativeAction(node: NativeFormLayoutNode) {

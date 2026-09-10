@@ -9,17 +9,19 @@
     :disabled="disabled"
     :title="title"
   >
-    <span v-if="icon" :class="['native-smart-action__icon', icon]" aria-hidden="true" />
+    <ScIcon v-if="icon" class="native-smart-action__icon" :name="icon" :size="18" />
     <span class="native-smart-action__label">{{ label }}</span>
   </ScButton>
 </template>
 
 <script setup lang="ts">
 import ScButton from '../design-system/ScButton.vue';
+import ScIcon from '../design-system/ScIcon.vue';
+import type { ScIconName } from '../design-system/scIcon';
 
 defineProps<{
   label: string;
-  icon?: string;
+  icon?: ScIconName | '';
   disabled?: boolean;
   title?: string;
 }>();
