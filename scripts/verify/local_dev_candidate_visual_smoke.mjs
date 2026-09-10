@@ -1413,6 +1413,40 @@ try {
         const screenshotStem = `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
         const top = await page.evaluate(() => {
           const visible = (node) => node instanceof HTMLElement && node.offsetParent !== null;
+          const box = (node) => {
+            if (!(node instanceof HTMLElement)) return null;
+            const rect = node.getBoundingClientRect();
+            const style = getComputedStyle(node);
+            return {
+              selector: node.getAttribute('data-semantic-component') || node.className || node.tagName,
+              rect: [Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom)],
+              size: [Math.round(rect.width), Math.round(rect.height)],
+              clientWidth: node.clientWidth,
+              scrollWidth: node.scrollWidth,
+              minWidth: style.minWidth,
+              width: style.width,
+              maxWidth: style.maxWidth,
+              paddingInline: [style.paddingLeft, style.paddingRight],
+              boxSizing: style.boxSizing,
+              overflowX: style.overflowX,
+            };
+          };
+          const boundary = (node, owner) => {
+            if (!(node instanceof HTMLElement) || !(owner instanceof HTMLElement)) return null;
+            const rect = node.getBoundingClientRect();
+            const ownerRect = owner.getBoundingClientRect();
+            const ownerStyle = getComputedStyle(owner);
+            const ownerLeft = ownerRect.left + parseFloat(ownerStyle.borderLeftWidth || '0') + parseFloat(ownerStyle.paddingLeft || '0');
+            const ownerRight = ownerRect.right - parseFloat(ownerStyle.borderRightWidth || '0') - parseFloat(ownerStyle.paddingRight || '0');
+            return {
+              node: box(node),
+              owner: box(owner),
+              overflowLeft: Math.max(0, Math.round(ownerLeft - rect.left)),
+              overflowRight: Math.max(0, Math.round(rect.right - ownerRight)),
+              pass: rect.left >= ownerLeft - 1 && rect.right <= ownerRight + 1,
+            };
+          };
+          const firstVisible = (selector) => [...document.querySelectorAll(selector)].find(visible) || null;
           const header = [...document.querySelectorAll('.template-page-header')].find(visible);
           const relation = [...document.querySelectorAll('[data-floorplan-region="relation"]')].find(visible);
           const addAction = [...document.querySelectorAll('button')].find((node) => visible(node) && /添加.*明细/.test(String(node.textContent || '')));
@@ -1432,6 +1466,31 @@ try {
                   && parseFloat(style.borderTopWidth) > 0 && parseFloat(style.borderBottomWidth) > 0;
               }).length
             : 0;
+          const pattern = firstVisible('[data-product-page-pattern]');
+          const driver = firstVisible('.sc-form-driver-host');
+          const nativePage = firstVisible('[data-native-contract-structure]');
+          const navigation = firstVisible('[data-form-section-navigation]');
+          const navigationTrack = firstVisible('.form-section-navigation__track');
+          const tree = firstVisible('.sc-native-contract-tree');
+          const nativeFormTree = firstVisible('.native-form-tree');
+          const nativeGroup = firstVisible('.native-container--group');
+          const formSection = firstVisible('.template-form-section');
+          const formGrid = firstVisible('.template-form-section-grid');
+          const field = firstVisible('.template-form-section-grid > .field');
+          const control = firstVisible('.template-form-section-grid > .field input, .template-form-section-grid > .field textarea, .template-form-section-grid > .field select, .template-form-section-grid > .field [role="combobox"]');
+          const responsiveBoundaryEvidence = {
+            patternInDriver: boundary(pattern, driver),
+            nativePageInPattern: boundary(nativePage, pattern),
+            navigationInNativePage: boundary(navigation, nativePage),
+            navigationTrackInNavigation: boundary(navigationTrack, navigation),
+            treeInNativePage: boundary(tree, nativePage),
+            nativeFormTreeInTree: boundary(nativeFormTree, tree),
+            nativeGroupInFormTree: boundary(nativeGroup, nativeFormTree),
+            formSectionInGroup: boundary(formSection, nativeGroup),
+            formGridInSection: boundary(formGrid, formSection),
+            fieldInGrid: boundary(field, formGrid),
+            controlInField: boundary(control, field),
+          };
           const background = header instanceof HTMLElement ? getComputedStyle(header).backgroundColor : '';
           const alpha = background.match(/rgba?\([^)]*(?:,|\/)\s*([\d.]+)\s*\)$/)?.[1];
           return {
@@ -1453,6 +1512,7 @@ try {
             readonlyCardsVisible: [...document.querySelectorAll('.o2m-readonly-list')].some(visible),
             attachmentHeadings: [...document.querySelectorAll('.relation-attachment-heading, .professional-attachment-heading')]
               .filter(visible).map((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim()),
+            responsiveBoundaryEvidence,
           };
         });
         const navigationJourney = [];
