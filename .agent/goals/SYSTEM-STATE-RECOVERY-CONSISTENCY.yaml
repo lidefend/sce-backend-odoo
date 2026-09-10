@@ -68,10 +68,28 @@ goal:
         fingerprint: a5394b784767e82e23bdcd2e2e1c685950b88ce7af91dd4a319bfa2fdfdb103b
         path_count: 7385
       evidence:
-        - verify.frontend.system_state_recovery.unit_pass_assertions_32_guard_tests_5
+        - verify.frontend.system_state_recovery.unit_pass_assertions_30_guard_tests_5
         - verify.frontend.quick.gate_pass
         - light_1440_390_three_recovery_outcomes_pass_zero_mutations
         - dark_1088_320_three_recovery_outcomes_pass_zero_mutations
+      test_evidence_supplement:
+        commit: adb7ae7a
+        evidence:
+          - verify.frontend.system_state_recovery.unit_pass_assertions_32_guard_tests_5
+          - storage_property_denial_read_and_cleanup_assertions
+    - id: E
+      title: frontend_release_lint_closure
+      status: completed
+      commit: 94cd42a0
+      scope:
+        - replace_control_character_regex_with_equivalent_character_code_check
+        - preserve_safe_path_rejection_semantics
+        - close_branch_owned_frontend_release_lint_failure
+      evidence:
+        - verify.frontend.system_state_recovery.unit_pass_assertions_34_guard_tests_5
+        - verify.frontend.lint_src_pass_zero_errors
+        - verify.frontend.quick.gate_pass
+        - browser_matrix_not_rerun_behavior_preserving_lint_fix_only
   exclusions:
     - authentication_permission_or_token_policy
     - automatic_replay_of_save_approval_payment_or_other_writes

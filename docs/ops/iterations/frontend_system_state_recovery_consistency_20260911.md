@@ -80,7 +80,9 @@
 
 | 补项证据 | 候选 / 条件 | 结果与边界 |
 |---|---|---|
-| 非零定向测试 | `make verify.frontend.system_state_recovery.unit` | PASS；32 assertions、5 guard tests。隔离覆盖存储属性访问失败时仍跳转且恢复目标为空、读/写/删除失败，以及登录、平台管理员登录、激活、密码恢复四个入口的递归阻止 |
+| 产品候选定向测试 | `efab86fe…`，`make verify.frontend.system_state_recovery.unit` | PASS；30 assertions、5 guard tests。覆盖存储属性/方法失败、四个认证入口和既有安全路径 |
+| 测试补证 | `adb7ae7a…` | PASS；新增存储属性拒绝时“读取为空”和“清理不抛错”两条隔离断言，合计 32 assertions；无产品代码变化 |
+| CI lint 修复 | `94cd42a0…` | 用等价字符码判断替代触发 `no-control-regex` 的两处正则；新增原始/编码控制字符拒绝用例。`lint:src` 为 0 errors，定向测试为 34 assertions、5 guard tests，Quick PASS |
 | Quick / strict / build / 官方组件守卫 | `make verify.frontend.quick.gate` | PASS；生成清单同步，无新增组件接管缺口 |
 | 明色恢复结果 | `artifacts/playwright/system-state-recovery/efab86fe/light/summary.json`；1440/390 | 6 个路由视口 PASS；授权目标返回 `/my-work`，目标缺失使用既有 `/s/workspace.home`，失权目标进入 `access-denied` 后安全返回；0 写入、errors/failures empty |
 | 暗色恢复结果 | `artifacts/playwright/system-state-recovery/efab86fe/dark/summary.json`；1088/320 | 同三类结果共 6 个路由视口 PASS；0 写入、errors/failures empty |
@@ -106,7 +108,13 @@
 
 `fix(frontend): align expired-session recovery outcomes`
 
-PR 正文已整理到 `artifacts/pr_body.md`，内容包括用户可见改善、P0/P4 边界、分候选证据、风险和回滚。`public_guard`、`professional_quality_gate`、`frontend_release_gate`、`merge_policy_gate` 当前均为 `not_run`；push、PR 创建、合并、发布、acceptance、多角色和真实业务写入均未执行，不能预填通过。
+PR 正文已整理到 `artifacts/pr_body.md`，内容包括用户可见改善、P0/P4 边界、分候选证据、风险和回滚。初次本地整理时 `public_guard`、`professional_quality_gate`、`frontend_release_gate`、`merge_policy_gate` 均为 `not_run`；后续 Draft PR 实际状态另见下节，不以预填结果替代远端证据。
+
+### Draft PR 与 CI 修复记录
+
+- Draft [PR #459](https://github.com/lidefend/sce-backend-odoo/pull/459) 已创建。首个 exact head `e7793580…` 的 `public_guard`、`professional_quality_gate`、`merge_policy_gate` 通过；`frontend_release_gate` 因 `sessionExpiredRecovery.ts` 两处 `no-control-regex` 失败。
+- 失败归属本分支，修复提交为 `94cd42a0…`：仅将控制字符识别改为等价字符码判断并补两条拒绝用例，不改变登录、权限或恢复结果，不重跑浏览器矩阵。
+- 修复后本地 `make verify.frontend.lint.src` 为 0 errors（32 个既有 warning），`make verify.frontend.system_state_recovery.unit` 为 34 assertions / 5 guard tests，`make verify.frontend.quick.gate` PASS。最终 exact-head 四项 CI 以更新 Draft PR 后的远端结果为准。
 
 交付文档检查中，inventory、links、temp guard 和 contract sync 均 PASS；`verify.docs.product_boundary` 因 `smart_construction_demo` 已在实时 `origin/main` 文档登记但 `addons/` 不存在而 FAIL。完整分支差异不包含该模块或产品边界文档，因此登记为既有独立治理问题，不在本专题删除声明、补建模块或降低断言；`verify.docs.all` 不计通过。
 
