@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: SYSTEM-STATE-RECOVERY-CONSISTENCY
   title: system_state_expression_and_recovery_path_consistency
-  status: active
+  status: completed
   formal_product_layer: P0
   layer_target: shared_frontend_state_expression_and_session_recovery
   module: frontend
@@ -57,11 +57,21 @@ goal:
         - manual_four_screenshot_contrast_and_layout_review_pass
     - id: D
       title: storage_unavailable_and_route_outcome_alignment
-      status: active
+      status: completed
+      commit: efab86fe
       scope:
         - fail_safe_session_storage_property_and_method_access
         - align_expired_session_notice_with_existing_access_denied_route
         - targeted_behavior_evidence_for_four_recovery_outcomes
+      product_candidate:
+        full_sha: efab86fee1a00822907c5f4a68131fceebf7382b
+        fingerprint: a5394b784767e82e23bdcd2e2e1c685950b88ce7af91dd4a319bfa2fdfdb103b
+        path_count: 7385
+      evidence:
+        - verify.frontend.system_state_recovery.unit_pass_assertions_30_guard_tests_5
+        - verify.frontend.quick.gate_pass
+        - light_1440_390_three_recovery_outcomes_pass_zero_mutations
+        - dark_1088_320_three_recovery_outcomes_pass_zero_mutations
   exclusions:
     - authentication_permission_or_token_policy
     - automatic_replay_of_save_approval_payment_or_other_writes

@@ -33,7 +33,7 @@
 1. 会话过期说明使用登录页既有状态表达，与凭据错误分别呈现，不重复提示技术错误。
 2. 原页面不进入登录 URL；仅在当前标签页会话级暂存同源内部路径，并在登录成功后再次经过既有路由权限校验。
 3. 多个并发 401 只安排一次登录跳转；不重放导致 401 的请求，更不重放保存、审批或支付。
-4. 暂存路径缺失、非法或权限校验失败时回到既有安全落点。硬跳转不承诺恢复未保存草稿。
+4. 暂存路径缺失或非法时使用既有安全落点；合法但已失权的路径继续由既有权限守卫显示原因和安全返回入口。硬跳转不承诺恢复未保存草稿。
 
 ## 验证计划
 
@@ -55,7 +55,7 @@
 
 | 证据 | 候选 / 条件 | 结果 |
 |---|---|---|
-| 非零定向模型与守卫 | `make verify.frontend.system_state_recovery.unit` | PASS；安全路径、暂存、非法输入、全部认证入口递归阻止和并发去重共 21 条断言，守卫 4 tests |
+| 非零定向模型与守卫 | `make verify.frontend.system_state_recovery.unit` | 历史候选 PASS；安全路径、暂存、非法输入、普通登录与平台管理员登录递归阻止、并发去重共 21 条断言，守卫 4 tests；激活与密码恢复当时仅有静态集合声明，后续补项另见下表 |
 | Quick、严格类型与生成清单 | `make verify.frontend.quick.gate`，产品候选 `830fb7e3…` | PASS；受管组件接管、视觉投影和官方设计清单已刷新并通过 |
 | 首次浏览器诊断 | `472dcd9f…`，light 1440/390 | FAIL；返回原页成功，但 `storedAfterLogin=/my-work`，归因并修复；不计最终通过样本 |
 | 最终明色浏览器 | `830fb7e3…`，5176，light 1440/390 | PASS；2 个样本，单次注入请求、唯一说明、安全返回、清理完成、0 写入 |
@@ -69,8 +69,49 @@
 
 两份摘要均绑定同一冻结候选；不能合称为全系统业务验收。浏览器仅使用 `sc_dev_demo` 既有只读页面与受控 401 注入，`mutationCount=0`。
 
+## 独立复核补项与最终候选
+
+独立复核指出两处实现/证据不一致：浏览器访问 `window.sessionStorage` 属性本身可能抛错；原说明还把合法但已失权的地址误写成必然进入首页。补项提交 `efab86fe` 只关闭这两处，不修改认证、权限、业务契约、页面布局或业务数据。
+
+- `browserRuntime()` 在受保护区内取得存储；属性访问失败时以 `null` 表示“无恢复目标”，401 仍只安排一次 `/login?reason=session_expired` 跳转。
+- `getItem`、`setItem`、`removeItem` 失败继续分别降级为空目标、写入失败和无阻断清理；不重放原请求。
+- 登录说明改为“重新登录后将尝试返回原页面；无法访问时显示原因，并提供安全返回入口”，与现有 `access-denied` 路由守卫一致。
+- 账号激活与密码恢复入口已补行为测试，不再只以静态集合声明声称覆盖。
+
+| 补项证据 | 候选 / 条件 | 结果与边界 |
+|---|---|---|
+| 非零定向测试 | `make verify.frontend.system_state_recovery.unit` | PASS；30 assertions、5 guard tests。隔离覆盖存储属性访问失败、读/写/删除失败，以及登录、平台管理员登录、激活、密码恢复四个入口的递归阻止 |
+| Quick / strict / build / 官方组件守卫 | `make verify.frontend.quick.gate` | PASS；生成清单同步，无新增组件接管缺口 |
+| 明色恢复结果 | `artifacts/playwright/system-state-recovery/efab86fe/light/summary.json`；1440/390 | 6 个路由视口 PASS；授权目标返回 `/my-work`，目标缺失使用既有 `/s/workspace.home`，失权目标进入 `access-denied` 后安全返回；0 写入、errors/failures empty |
+| 暗色恢复结果 | `artifacts/playwright/system-state-recovery/efab86fe/dark/summary.json`；1088/320 | 同三类结果共 6 个路由视口 PASS；0 写入、errors/failures empty |
+| 候选指纹 | `artifacts/fingerprints/system_state_recovery_candidate_efab86fe.json` | `a5394b784767e82e23bdcd2e2e1c685950b88ce7af91dd4a319bfa2fdfdb103b`，7385 paths |
+
+浏览器证据中的每次受控 401 均计数为 1，登录 URL 不携带原地址，成功登录后暂存均已清除。失权样本实际记录 `reason=NAVIGATION_AUTHORITY_DENIED`，并验证“访问受限”和“返回安全页面”入口；没有修改权限规则。存储不可用属于隔离运行时测试，不冒充真实浏览器环境限制证据。候选服务已停止。
+
+## PR 交付包
+
+状态：`LOCAL_PR_PACKAGE_READY`。`git fetch --prune origin` 后，实时 `origin/main` 与共同基线均为 `2f246f12ff03b1a69c80b9b5321ff72ed1cf5b51`。交付整理源 HEAD `efab86fee1a00822907c5f4a68131fceebf7382b` 相对共同基线为 8 commits、20 paths、729 insertions、23 deletions；全部路径已归类：
+
+| 分类 | 路径数 | 内容与审阅重点 |
+|---|---:|---|
+| P0 产品前端 | 4 | `api/client.ts`、`sessionExpiredRecovery.ts`、`ScInlineState.vue`、`LoginView.vue`；审阅单次跳转、安全地址、登录说明和共享信息态对比 |
+| P4 验证与入口 | 9 | 2 个前端脚本、6 个 Python/浏览器守卫及 `make/frontend.mk`；审阅非零断言、失败注入、路由结果和零写入边界 |
+| 生成清单 | 4 | rendering-detail 下四份既有受管清单 |
+| 治理文档 | 3 | 目标、阶段报告、上下文日志；本报告同时承载 PR 草稿，不新增重复阶段报告 |
+| 未分类 | 0 | 无 `addons/`、contract/schema、数据库、fixture、Compose/profile、acceptance 或发布实现 |
+
+风险分类绑定 `2f246f12…efab86fe`：`lane=HIGH_RISK`、`frontend_mode=full`、`professional_mode=full`、`frontend_full_required=true`、`backend_changed=true`，原因为 `high_risk_path` 与 `unknown_path_fail_closed`。净差异没有后端产品文件；`backend_changed=true` 保留为 fail-closed 结果，不手工降低。
+
+建议 PR 标题：
+
+`fix(frontend): align expired-session recovery outcomes`
+
+PR 正文已整理到 `artifacts/pr_body.md`，内容包括用户可见改善、P0/P4 边界、分候选证据、风险和回滚。`public_guard`、`professional_quality_gate`、`frontend_release_gate`、`merge_policy_gate` 当前均为 `not_run`；push、PR 创建、合并、发布、acceptance、多角色和真实业务写入均未执行，不能预填通过。
+
+交付文档检查中，inventory、links、temp guard 和 contract sync 均 PASS；`verify.docs.product_boundary` 因 `smart_construction_demo` 已在实时 `origin/main` 文档登记但 `addons/` 不存在而 FAIL。完整分支差异不包含该模块或产品边界文档，因此登记为既有独立治理问题，不在本专题删除声明、补建模块或降低断言；`verify.docs.all` 不计通过。
+
 ## 结论与遗留边界
 
-本专题的开发阶段目标完成：会话过期原因可见且不与凭据错误混淆，安全返回目标不暴露在 URL，成功登录后回到既有授权页面并清理暂存；非法、缺失或失权目标继续由既有安全落点和路由权限守卫处理。集合、表单、无权限、记录不存在与工作区状态盘点未发现需在本批修改的共享缺口。
+本专题的开发阶段目标及独立复核补项完成，交付包已可审查：会话过期原因可见且不与凭据错误混淆，安全返回目标不暴露在 URL；合法且仍有权限时返回原页面，缺失/非法目标使用既有安全落点，合法但失权目标由既有权限守卫显示原因和安全返回入口；存储不可用不阻断登录跳转。集合、表单、无权限、记录不存在与工作区状态盘点未发现需在本批修改的共享缺口。
 
 以下仍是明确未交付项：未保存草稿恢复、写请求自动重放、跨标签页恢复、真实多角色业务验收、发布与 acceptance 环境工作。它们不由本轮结果推导为通过。
