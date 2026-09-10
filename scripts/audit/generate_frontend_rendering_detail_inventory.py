@@ -135,6 +135,7 @@ BATCH_BINDINGS = {
         "frontend/apps/web/src/pages/contractForm/ContractFormActionBlocks.vue": {"scbutton": {"import": "ScButton", "minimum": 3}},
         "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue": {"section": {"attrs": {"data-semantic-component": "ContractFormNativeCanvas", ":data-state": "mode"}}},
         "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue": {"pageheadertemplate": {"attrs": {"data-semantic-component": "ContractFormProductHeader"}}},
+        "frontend/apps/web/src/pages/contractForm/FormSectionNavigation.vue": {"nav": {"attrs": {"data-semantic-component": "FormSectionNavigation"}}, "scbutton": {"attrs": {"appearance": "section-tab"}, "minimum": 1}},
         "frontend/apps/web/src/pages/contractForm/ContractModeSupportPanel.vue": {"scbutton": {"import": "ScButton", "minimum": 2}},
         "frontend/apps/web/src/pages/contractForm/ContractPromptActionForm.vue": {"form": {"attrs": {"data-semantic-component": "ContractPromptActionForm"}}},
         "frontend/apps/web/src/pages/contractForm/ProfessionalAttachmentManager.vue": {"section": {"attrs": {"data-semantic-component": "ProfessionalAttachmentManager"}}},

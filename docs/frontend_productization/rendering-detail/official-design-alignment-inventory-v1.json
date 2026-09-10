@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "54a947d50172fcfd28cba8fb8866fe19baa73bf834a320ae093e1e9cbdac1a02",
+  "inputDigest": "12b904f28f3e5895105733634f8e41306e480d77930f40c0b6c941b29bd0dc1e",
   "internalVendorSelectorGaps": [],
   "productAppearanceVariants": [
     {
@@ -162,9 +162,7 @@
         "frontend/apps/web/src/layouts/AppShell.vue",
         "frontend/apps/web/src/pages/ActivityPage.vue",
         "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
-        "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue",
-        "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
-        "frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue"
+        "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue"
       ],
       "selectors": [
         ".sc-btn[data-appearance='context-action']",
@@ -479,7 +477,8 @@
       "consumers": [
         "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
         "frontend/apps/web/src/components/design-system/ScButton.vue",
-        "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue"
+        "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue",
+        "frontend/apps/web/src/pages/contractForm/FormSectionNavigation.vue"
       ],
       "selectors": [
         ".sc-btn[data-appearance='section-tab']",
@@ -645,7 +644,7 @@
   "schemaVersion": "frontend.official-design-alignment.inventory.v1",
   "scope": "formal P0/P1 frontend TDesign driver and product adapter styling",
   "summary": {
-    "formalStyleSourceCount": 210,
+    "formalStyleSourceCount": 212,
     "internalVendorSelectorGapCount": 0,
     "officialPublicTokenCount": 240,
     "orphanedProductAppearanceVariantCount": 0,

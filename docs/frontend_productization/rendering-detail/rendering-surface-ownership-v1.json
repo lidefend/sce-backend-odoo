@@ -78,6 +78,7 @@
         "frontend/apps/web/src/pages/contractForm/ContractFormActionBlocks.vue",
         "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue",
         "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+        "frontend/apps/web/src/pages/contractForm/FormSectionNavigation.vue",
         "frontend/apps/web/src/pages/contractForm/ContractModeSupportPanel.vue",
         "frontend/apps/web/src/pages/contractForm/ContractPromptActionForm.vue",
         "frontend/apps/web/src/pages/contractForm/ProfessionalAttachmentManager.vue",

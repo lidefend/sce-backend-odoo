@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "22e6c003c3441ce46e3f7a6bf5a17871fd8b0c88160125e8a5e659180ba36fe4",
-  "generatorDigest": "ba7b31dffe73ee4fb08dd70311cc1d5ca1cbc4b0cd4d74ee4dcb23f5bb60c07b",
-  "ownershipDigest": "26fdbff1d3b56069a878c04d0612a9b75426afe07bf0db12edf34dc55f8ef873",
-  "inputDigest": "7220d08b0d8be3b02fd74db6381326d7c58c522581047ce87740550e9dc2dbcc",
+  "sourceIdentity": "5e5a706054cfa5cc697a067bcbe9f4537a17d1c3e0bc4a5a02087fb8456676a2",
+  "generatorDigest": "ca226c62f58e545f8d63682e5ef46d9b9c32e4f1d1388d910c9e62d4ac1a0d5f",
+  "ownershipDigest": "42882e5cd8ea9892f553cce4fe1441afecc2d66c8ee01e526953d116f170e013",
+  "inputDigest": "2533949da941785ea4a320b8a15b5616a5940ea44d49bbba17985f3da498fbe8",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -20,12 +20,12 @@
     "permission and route authority changes"
   ],
   "summary": {
-    "surfaceCount": 165,
+    "surfaceCount": 166,
     "p0P1RawControlBypassSurfaceCount": 0,
     "p0P1RawControlBypassControlCount": 0,
     "deliberate_native_composite": 0,
     "gap": 0,
-    "governed_composite": 107,
+    "governed_composite": 108,
     "governed_primitive": 40,
     "p3_out_of_scope": 18
   },
@@ -1750,6 +1750,18 @@
       "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/pages/contractForm/FormSectionNavigation.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "focus"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/pages/contractForm/LowCodeFieldCreateDialog.vue",

@@ -450,7 +450,7 @@
     },
     {
       "category": "other",
-      "digest": "81c1f849d1084f0487efd0470afb9f36e4cdcea30c1c6f5e84e3983a34a9af08",
+      "digest": "f4fce569bd8710d20e4a211080ba067833405e5fe3ff630e5b23b0dc92a3407d",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScButton.vue",
       "referenceNativeStyleSelectors": [],
@@ -1761,7 +1761,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "8c53c9982f7156fcc26881fbb84635f71e23619ee5e6ec02913a98cd3163d7ad",
+      "digest": "8355c7993fd2d3e925818e6000e59f9bd53087fd77ab0bcb529499c7f682202c",
       "nativeStyleSelectors": [],
       "path": "components/template/FormSection.vue",
       "referenceNativeStyleSelectors": [
@@ -1804,7 +1804,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "1d697686c52672eb82f62bd0b9d9a2a3c41cae0c27732854075e3f5aba4627b2",
+      "digest": "90155af4ad4c0940962a430d425c47b88acb42cf219517ec497b50b2fae5727e",
       "nativeStyleSelectors": [],
       "path": "components/template/NativeFormTreeRenderer.vue",
       "referenceNativeStyleSelectors": [],
@@ -2082,7 +2082,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "356ba377ed693acbb9aef7ad58517fd71d4df9b2a235c52cfede67400ce8bbe3",
+      "digest": "a7de90c4c5a564a2a783299eafd8575f770a49733831d39af553e17b15abf5a6",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormDriverHost.vue",
       "referenceNativeStyleSelectors": [
@@ -2093,7 +2093,6 @@
         "ScIcon"
       ],
       "scComponents": [
-        "ScButton",
         "ScErrorState",
         "ScInlineState"
       ]
@@ -2179,6 +2178,18 @@
       ]
     },
     {
+      "category": "form-fields",
+      "digest": "f156b168c2a21478b54db7614df2f48f9a650094300fca8ba4c947f992801de8",
+      "nativeStyleSelectors": [],
+      "path": "pages/contractForm/FormSectionNavigation.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton"
+      ]
+    },
+    {
       "category": "overlay",
       "digest": "b5a4029f9d80a47746441f6240ff64c0a7d1c82bf8691b391818f51661af1c1c",
       "nativeStyleSelectors": [],
@@ -2211,14 +2222,13 @@
     },
     {
       "category": "form-fields",
-      "digest": "7e56150cc9909daf754517f3aba4f41481006bc4ff94c7b50b1f424d68a14348",
+      "digest": "9906321cd2a6b659e11b35ad9895cd2f434c7b50e3eb19a704fab16e492b5bdd",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ObjectTaskPage.vue",
       "referenceNativeStyleSelectors": [],
       "referencePresent": true,
       "referenceScComponents": [],
       "scComponents": [
-        "ScButton",
         "ScCard",
         "ScDisclosure"
       ]
@@ -2792,7 +2802,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "ecb0851eea10bf7f6529b609174e1fadc26fb7d28f7eb2546072bb7e5937aa87",
+  "currentInputDigest": "f19864fdca4e8c422912ae7a5a5ca0ba168da780c5ffde6c7504a97ce5b0927f",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
@@ -3024,9 +3034,9 @@
   "scope": "repository formal P0/P1 frontend source projection",
   "summary": {
     "adapterCount": 18,
-    "changedSourceCount": 196,
+    "changedSourceCount": 197,
     "consumerPrimitiveVisualChromeCount": 0,
-    "currentSourceCount": 217,
+    "currentSourceCount": 218,
     "invalidFormalVisualEvidenceBindingCount": 0,
     "projectedAdapterCount": 18,
     "referenceSourceCount": 132,
