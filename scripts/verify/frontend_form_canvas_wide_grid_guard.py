@@ -22,6 +22,8 @@ section = read("components/template/FormSection.vue")
 mapper = read("components/template/fieldSpan.mapper.ts")
 schema_builder = read("pages/contractForm/useRecordFormFieldSchemas.ts")
 object_task = read("pages/contractForm/ObjectTaskPage.vue")
+section_navigation = read("pages/contractForm/FormSectionNavigation.vue")
+native_driver = read("pages/contractForm/ContractFormDriverHost.vue")
 canonical_renderer = read("pages/contractForm/CanonicalFormNodeRenderer.vue")
 relations = read("components/template/X2ManyRelationRenderer.vue")
 
@@ -55,14 +57,25 @@ for forbidden in ("model ===", "role ===", "overflow-x: hidden", "overflow-x: cl
 
 for required in (
     'data-form-section-navigation',
+    ":aria-current=\"activeKey === item.key ? 'location' : undefined\"",
+    '章节入口可横向滚动',
+    'target.scrollIntoView({ behavior: \'auto\', block: \'start\' })',
+):
+    if required not in section_navigation:
+        fail(f"shared semantic navigation missing: {required}")
+for required in (
     'data-section-title="基本信息"',
     'data-section-title="关系明细"',
-    "presentableRelationNodes.value.length ? { region: 'relation'",
-    "props.supplementaryInputNodes.length ? { region: 'supplementary-input'",
-    "target?.scrollIntoView({ behavior: 'smooth', block: 'start' })",
+    "presentableRelationNodes.value.length ? { key: 'relation'",
+    "props.supplementaryInputNodes.length ? { key: 'supplementary-input'",
+    '<section\n      v-if="presentableRelationNodes.length"',
 ):
     if required not in object_task:
         fail(f"semantic form structure missing: {required}")
+if 'FormSectionNavigation' not in object_task or 'FormSectionNavigation' not in native_driver:
+    fail("task and workspace forms do not share section navigation")
+if ':fill-orphan-rows="false"' not in read("components/template/NativeFormTreeRenderer.vue"):
+    fail("native forms still stretch ordinary orphan fields across a full row")
 if object_task.index('data-floorplan-region="relation"') > object_task.index('data-floorplan-region="supplementary-input"'):
     fail("relationship details are still placed after auxiliary disclosures")
 if "const sectionTitle = computed(() => '');" not in canonical_renderer or "const groupHeadingVisible = computed(() => false);" not in canonical_renderer:

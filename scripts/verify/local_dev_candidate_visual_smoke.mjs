@@ -1416,15 +1416,32 @@ try {
           const header = [...document.querySelectorAll('.template-page-header')].find(visible);
           const relation = [...document.querySelectorAll('[data-floorplan-region="relation"]')].find(visible);
           const addAction = [...document.querySelectorAll('button')].find((node) => visible(node) && /添加.*明细/.test(String(node.textContent || '')));
+          const sectionNavigation = [...document.querySelectorAll('[data-form-section-navigation]')].find(visible);
+          const summaryFields = [...document.querySelectorAll('[data-floorplan-region="summary"] .canonical-form-node')].filter(visible);
+          const monetarySummary = summaryFields.find((node) => node instanceof HTMLElement && node.dataset.valueEmphasis === 'monetary');
+          const relationFrameDepth = relation instanceof HTMLElement
+            ? [...relation.querySelectorAll('*')].filter((node) => {
+                if (!(node instanceof HTMLElement) || !visible(node)) return false;
+                const style = getComputedStyle(node);
+                return parseFloat(style.borderLeftWidth) > 0 && parseFloat(style.borderRightWidth) > 0
+                  && parseFloat(style.borderTopWidth) > 0 && parseFloat(style.borderBottomWidth) > 0;
+              }).length
+            : 0;
           const background = header instanceof HTMLElement ? getComputedStyle(header).backgroundColor : '';
           const alpha = background.match(/rgba?\([^)]*(?:,|\/)\s*([\d.]+)\s*\)$/)?.[1];
           return {
             sectionLinks: [...document.querySelectorAll('[data-form-section-navigation] [data-section-link]')]
               .filter(visible).map((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim()),
+            currentSectionCount: [...document.querySelectorAll('[data-form-section-navigation] [aria-current="location"]')].filter(visible).length,
+            navigationOverflowDiscoverable: sectionNavigation instanceof HTMLElement
+              && (sectionNavigation.dataset.overflowAfter !== 'true'
+                || [...sectionNavigation.querySelectorAll('.form-section-navigation__cue--after')].some(visible)),
             sectionTitles: [...document.querySelectorAll('[data-section-title], [data-form-semantic-role] .native-container-head h3')]
               .filter(visible).map((node) => String(node instanceof HTMLElement ? node.dataset.sectionTitle || node.textContent || '' : '').replace(/\s+/g, ' ').trim()).filter(Boolean),
             relationInFirstViewport: relation instanceof HTMLElement && relation.getBoundingClientRect().top < window.innerHeight,
             addActionInFirstViewport: addAction instanceof HTMLElement && addAction.getBoundingClientRect().bottom <= window.innerHeight,
+            relationFrameDepth,
+            mobileMonetarySummaryFirst: !monetarySummary || summaryFields[0] === monetarySummary,
             stickyHeaderBackground: background,
             stickyHeaderOpaque: Boolean(background) && background !== 'transparent' && background !== 'rgba(0, 0, 0, 0)' && alpha !== '0',
             readonlyTableVisible: [...document.querySelectorAll('.o2m-readonly-table')].some(visible),
@@ -1433,6 +1450,37 @@ try {
               .filter(visible).map((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim()),
           };
         });
+        const navigationJourney = [];
+        const sectionLinkCount = await page.locator('[data-form-section-navigation] [data-section-link]').count();
+        for (let index = 0; index < sectionLinkCount; index += 1) {
+          const link = page.locator('[data-form-section-navigation] [data-section-link]').nth(index);
+          await link.evaluate((node) => {
+            const track = node.parentElement;
+            if (!(node instanceof HTMLElement) || !(track instanceof HTMLElement)) return;
+            track.scrollTo({ left: Math.max(0, node.offsetLeft - (track.clientWidth - node.offsetWidth) / 2), behavior: 'auto' });
+          });
+          await link.click();
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          navigationJourney.push(await link.evaluate((node) => {
+            const selector = node instanceof HTMLElement ? String(node.dataset.sectionTarget || '') : '';
+            const target = selector ? document.querySelector(selector) : null;
+            const nav = node.closest('[data-form-section-navigation]');
+            const header = [...document.querySelectorAll('.template-page-header')]
+              .find((candidate) => candidate instanceof HTMLElement && candidate.offsetParent !== null);
+            const targetRect = target instanceof HTMLElement ? target.getBoundingClientRect() : null;
+            const navRect = nav instanceof HTMLElement ? nav.getBoundingClientRect() : null;
+            const headerRect = header instanceof HTMLElement ? header.getBoundingClientRect() : null;
+            const obstructionBottom = Math.max(navRect?.bottom || 0, headerRect?.bottom || 0);
+            return {
+              key: node instanceof HTMLElement ? String(node.dataset.sectionLink || '') : '',
+              current: node.getAttribute('aria-current') === 'location',
+              targetFound: target instanceof HTMLElement,
+              targetTop: targetRect ? Math.round(targetRect.top) : null,
+              obstructionBottom: Math.round(obstructionBottom),
+              targetVisibleBelowSticky: Boolean(targetRect && targetRect.bottom > obstructionBottom && targetRect.top >= obstructionBottom - 2),
+            };
+          }));
+        }
         const scrollMetrics = await page.evaluate(() => {
           const owner = document.querySelector('.router-host');
           if (owner instanceof HTMLElement) return { scrollHeight: owner.scrollHeight, viewportHeight: owner.clientHeight };
@@ -1466,10 +1514,16 @@ try {
         });
         formStructureEvidence = {
           ...top,
+          navigationJourney,
           captures,
           pass: target.expectFormStructure !== true || (
             top.sectionLinks.length > 1
+            && top.currentSectionCount === 1
+            && top.navigationOverflowDiscoverable
             && top.stickyHeaderOpaque
+            && navigationJourney.length === top.sectionLinks.length
+            && navigationJourney.every((item) => item.current && item.targetFound && item.targetVisibleBelowSticky)
+            && (viewport.name !== 'mobile' || top.mobileMonetarySummaryFirst)
             && (target.expectRelationFirstViewport !== true || (top.relationInFirstViewport && top.addActionInFirstViewport))
             && (target.expectReadonlyDetailComparison !== true || (viewport.name === 'desktop' ? top.readonlyTableVisible : top.readonlyCardsVisible))
           ),
