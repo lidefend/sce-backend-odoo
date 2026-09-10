@@ -3102,6 +3102,7 @@ try {
 
           let shadowPreference = null;
           let preferenceSetCount = 0;
+          let preferenceShadowGetCount = 0;
           const preferencePattern = '**/api/v1/**';
           const preferenceHandler = async (route) => {
             const request = route.request();
@@ -3122,6 +3123,7 @@ try {
               return;
             }
             if (shadowPreference) {
+              preferenceShadowGetCount += 1;
               await route.fulfill({
                 status: 200,
                 contentType: 'application/json',
@@ -3179,6 +3181,8 @@ try {
           await returnAction.click();
           await page.waitForURL((url) => url.pathname === new URL(originalUrl).pathname, { timeout: 15000 });
           await waitForStableProductSurface(page);
+          await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
+          await waitForStableProductSurface(page);
           await page.waitForFunction(({ field, width }) => {
             const node = document.querySelector(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${field}"]`);
             return node instanceof HTMLElement && Math.abs((Number.parseFloat(node.style.width || '0') || 0) - width) <= 1;
@@ -3233,7 +3237,7 @@ try {
             widthBefore, widthAfter, returnedWidth, restoredWidth,
             declaredWidthBefore, declaredWidthAfter, returnedDeclaredWidth, restoredDeclaredWidth,
             recordId, listRequestsAfterSort, listRequestsAfterControls, listRequestsAfterRestore,
-            preferenceSetCount, preferencePersistenceMode: 'browser-shadow-no-database-write',
+            preferenceSetCount, preferenceShadowGetCount, preferencePersistenceMode: 'browser-shadow-no-database-write',
             sameTitleGeometry, controlsDoNotOverlapTitle,
             pass: (!idle.drag || (idle.dragOpacity === '0' && idle.dragPointerEvents === 'none'))
               && idle.resizeOpacity === '0'
@@ -3255,6 +3259,7 @@ try {
               && listRequestsAfterSort === 1
               && listRequestsAfterControls === 1
               && listRequestsAfterRestore >= 2
+              && preferenceShadowGetCount >= 1
               && preferenceSetCount >= (dragHandleCount > 0 ? 4 : 2),
           };
         }
