@@ -59,5 +59,8 @@ equal(readSessionExpiredReturnPath(storage), '/a/42?menu_id=9&search=abc#details
 resetSessionExpiredRedirectForTest();
 runtime.location.pathname = '/login';
 equal(redirectForExpiredSession(runtime), false, 'login requests must not redirect recursively');
+resetSessionExpiredRedirectForTest();
+runtime.location.pathname = '/platform-admin/login';
+equal(redirectForExpiredSession(runtime), false, 'platform administrator login must not redirect to the regular login');
 
 console.log(`[session-expired-recovery] PASS assertions=${assertions}`);
