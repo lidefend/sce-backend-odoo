@@ -1,0 +1,77 @@
+goal:
+  id: GLOBAL-COMPONENT-PAGE-EXPRESSION-CLOSURE
+  title: global_component_capability_and_page_expression_closure
+  status: active
+  objective: unify_root_component_capabilities_and_shared_page_expression_without_contract_or_business_changes
+  baseline:
+    branch: feature/form-page-structure-professionalization-v1
+    full_sha: fe22402edad0c8d72445f07e5af61e5ce67b2884
+    source: frozen_form_field_alignment_candidate
+    fingerprint: 9efb3b6bf6e5b13ca56715f61a8d9341ae93c5df141d40465ee77bd6ad8fb69e
+    fingerprint_path: artifacts/fingerprints/global_component_expression_baseline_fe22402e.json
+    path_count: 7361
+  product_boundary:
+    formal_product_layer: P0
+    supporting_layer: P4
+    layer_target: frontend_root_configuration_shared_page_composition_and_component_adapters
+    module:
+      - frontend/apps/web
+      - frontend/packages/ui
+      - scripts/verify
+      - docs/ops/iterations
+    standard_vs_user_specific: platform_mechanism
+    why_here: root_configuration_theme_runtime_page_layout_and_component_hierarchy_are_generic_frontend_responsibilities
+    why_not_elsewhere:
+      - no_backend_contract_schema_permission_action_or_business_semantic_change
+      - no_construction_or_customer_specific_default
+      - no_low_code_runtime_configuration_or_database_write
+      - no_acceptance_upgrade_release_or_remote_write
+    blast_radius:
+      - login_business_and_embedded_route_roots
+      - shared_product_page_headers_and_form_page_patterns
+      - detail_collection_and_native_collaboration_surfaces
+      - dialog_drawer_select_date_picker_and_table_adapters
+      - isolated_component_and_local_dev_browser_evidence
+  batches:
+    - id: A
+      title: baseline_and_official_global_capability
+      status: completed
+      commit: pending_local_commit
+      evidence:
+        - verify.frontend.global_component_capability.unit_pass_16
+        - strict_typecheck_pass
+        - production_build_pass
+        - primitive_adapter_and_official_design_alignment_guards_pass
+      exit:
+        - root_config_provider_uses_only_required_public_configuration
+        - system_theme_and_reduced_motion_watchers_cover_all_routes_once
+        - regular_lazy_and_overlay_components_consume_configuration
+    - id: B
+      title: header_and_body_layout_responsibility
+      status: pending
+      exit:
+        - shared_header_owns_internal_layout_and_size
+        - frame_pattern_and_body_spacing_owners_are_explicit
+        - stale_or_deep_page_header_patches_are_removed
+    - id: C
+      title: detail_collaboration_and_component_takeover_closure
+      status: pending
+      exit:
+        - detail_and_collaboration_hierarchy_is_consistent
+        - official_capability_audit_records_each_retained_takeover
+        - unnecessary_takeovers_only_are_removed
+  sequence: A_then_B_then_C_then_joint_review
+  commits: one_local_commit_per_batch
+  acceptance:
+    - frozen_field_alignment_baseline_does_not_regress
+    - quick_strict_type_official_component_guards_and_nonzero_targeted_tests_pass
+    - affected_overlay_behaviors_pass_without_business_writes
+    - representative_pages_and_all_requested_viewports_themes_are_explicitly_registered
+    - final_evidence_binds_one_frozen_full_fingerprint
+  exclude:
+    - contract_permission_action_amount_or_hidden_section_changes
+    - business_flow_expansion
+    - acceptance_rebuild_upgrade_compatibility_or_release
+    - unrelated_visual_polish
+  rollback:
+    - revert_batches_in_C_B_A_order_without_database_container_or_contract_rollback

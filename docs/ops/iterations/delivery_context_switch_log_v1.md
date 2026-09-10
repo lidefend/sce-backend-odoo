@@ -9172,3 +9172,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 收入合同新建 24 个可编辑控件在桌面与移动端均为 0 个外框偏差、0 个同行顶部偏差，跨组左右边界 spread 为 0px。付款查看态同行顶部偏差也为 0。
 - 文档清单刷新后的已验证 HEAD `32b94b8cc9dac4a9d0656b0bfe4e97e43caef8dd`，完整指纹 `233948900bef0804ee7b9f35c876b04c015043d186f3686f9916310aea2c44ee`（7360 paths）；相对浏览器候选仅有四份派生 inventory JSON。最终 Frontend Quick PASS，候选已停止。
 - 完整记录：`frontend_form_field_grid_alignment_closure_20260910.md`。状态保持 `verification_pending`，等待独立复核后再决定是否退出表单表达阶段；未执行 push/PR/merge/release。
+## 2026-09-10 — 全局组件能力与页面表达统一收口启动
+
+- 冻结基线：`fe22402edad0c8d72445f07e5af61e5ce67b2884`；完整指纹 `9efb3b6bf6e5b13ca56715f61a8d9341ae93c5df141d40465ee77bd6ad8fb69e`（7361 paths）。
+- 边界：P0 通用前端机制，P4 仅验证；不改契约、权限、业务动作、金额口径、隐藏章节或数据库。
+- 顺序：A 根级官方能力 → B 页头/正文职责 → C 明细/协作与接管审计 → 单一冻结候选联合复核；每批独立本地提交。
+- 上一批字段对齐保持 `verification_pending`，复用本地证据但不替代独立复核。

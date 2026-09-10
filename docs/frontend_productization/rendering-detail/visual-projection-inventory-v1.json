@@ -130,6 +130,16 @@
   "changedSourceProjection": [
     {
       "category": "other",
+      "digest": "1ffb8e0353fe95f986afb8d2f96180bda08cce817b266fffc03f4f9ef6c13778",
+      "nativeStyleSelectors": [],
+      "path": "App.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
       "digest": "540b3b726ddeaae0d3e96f01fadd3120e55931a0cae98b70eab25423756ae2a0",
       "nativeStyleSelectors": [],
       "path": "components/DevContextPanel.vue",
@@ -1921,7 +1931,7 @@
     },
     {
       "category": "shell",
-      "digest": "a4f0c264035f593eeb616460e8c166525ccad8baed4b24f3cc3a977bce8456b9",
+      "digest": "d1200bb7571d68e3b4af51b08c3d85f0cecd2210d6a321fbeaee6b87818d509e",
       "nativeStyleSelectors": [],
       "path": "layouts/AppShell.vue",
       "referenceNativeStyleSelectors": [],
@@ -2802,7 +2812,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "2f5b77d209c31c8d51be31a05ea98c4cb4c2b547c585581b8fbae0c74ac468cd",
+  "currentInputDigest": "3f45af574bd2bc09c954f189c2bd15d941ea8db29eba9cc1918702d4e1b4673d",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
@@ -3034,7 +3044,7 @@
   "scope": "repository formal P0/P1 frontend source projection",
   "summary": {
     "adapterCount": 18,
-    "changedSourceCount": 197,
+    "changedSourceCount": 198,
     "consumerPrimitiveVisualChromeCount": 0,
     "currentSourceCount": 218,
     "invalidFormalVisualEvidenceBindingCount": 0,

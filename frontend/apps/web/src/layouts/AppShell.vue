@@ -412,7 +412,6 @@ import { buildBusinessEntryNavQuery } from '../app/navigationContext';
 import { clearPageIdentity, usePageIdentityRuntime } from '../app/pageIdentityRuntime';
 import {
   applyTheme,
-  watchSystemTheme,
   nextTheme,
   persistTheme,
   type ScTheme,
@@ -503,7 +502,6 @@ const openingAppId = ref('');
 let recordContextSearchTimer: ReturnType<typeof setTimeout> | null = null;
 let scopeRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 let mobileMediaQuery: MediaQueryList | null = null;
-let stopSystemThemeWatch: (() => void) | null = null;
 let recordContextSearchRequestSequence = 0;
 let appCatalogRequestSequence = 0;
 
@@ -1325,7 +1323,6 @@ onMounted(() => {
   themeMode.value = loadThemeMode();
   sidebarHidden.value = loadSidebarHidden();
   applyTheme(themeMode.value);
-  stopSystemThemeWatch = watchSystemTheme();
   profileMode.value = loadThemeProfile();
   applyThemeProfile(profileMode.value);
   showExtractionStats.value = String(route.query.hud_stats || '').trim() === '1';
@@ -1348,8 +1345,6 @@ watch(
 );
 
 onUnmounted(() => {
-  stopSystemThemeWatch?.();
-  stopSystemThemeWatch = null;
   if (typeof window === 'undefined') return;
   mobileMediaQuery?.removeEventListener('change', syncMobileViewport);
   mobileMediaQuery = null;

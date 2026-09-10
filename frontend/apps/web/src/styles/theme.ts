@@ -1,5 +1,19 @@
+import { computed, readonly, ref } from 'vue';
+import type { TDesignGlobalConfigProvider } from '../components/design-system/tdesignPrimitiveBridge';
+
 const THEME_KEY = 'sc_theme';
 const THEME_PROFILE_KEY = 'sc_theme_profile';
+const SYSTEM_DARK_QUERY = '(prefers-color-scheme: dark)';
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+const TD_ANIMATIONS = ['ripple', 'expand', 'fade'] as const;
+
+const reducedMotionState = ref(false);
+let stopThemeRuntimeWatch: (() => void) | null = null;
+
+export const reducedMotion = readonly(reducedMotionState);
+export const tdesignGlobalConfig = computed<TDesignGlobalConfigProvider>(() => reducedMotionState.value
+  ? { animation: { include: [], exclude: [...TD_ANIMATIONS] } }
+  : {});
 
 export type ScTheme = 'light' | 'dark' | 'system';
 
@@ -19,7 +33,7 @@ export function isSceneThemeProfile(value: string | null | undefined): value is 
 
 function resolveSystemTheme(): 'light' | 'dark' {
   if (typeof window === 'undefined' || !window.matchMedia) return 'light';
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return window.matchMedia(SYSTEM_DARK_QUERY).matches ? 'dark' : 'light';
 }
 
 export function applyTheme(theme: ScTheme): void {
@@ -31,14 +45,36 @@ export function applyTheme(theme: ScTheme): void {
   root.style.colorScheme = resolved;
 }
 
-export function watchSystemTheme(): () => void {
+function applyReducedMotion(reduced: boolean): void {
+  reducedMotionState.value = reduced;
+  document.documentElement.setAttribute('data-sc-reduced-motion', reduced ? 'reduce' : 'no-preference');
+}
+
+/** Register the application-lifetime media listeners exactly once.
+ * App.vue is the common root for login, shell and embedded routes, so route
+ * changes must never own or duplicate these listeners. */
+export function ensureThemeRuntimeWatch(): () => void {
+  if (stopThemeRuntimeWatch) return stopThemeRuntimeWatch;
   if (typeof window === 'undefined' || !window.matchMedia) return () => {};
-  const media = window.matchMedia('(prefers-color-scheme: dark)');
-  const sync = () => {
+  const darkMedia = window.matchMedia(SYSTEM_DARK_QUERY);
+  const motionMedia = window.matchMedia(REDUCED_MOTION_QUERY);
+  const syncTheme = () => {
     if (document.documentElement.getAttribute('data-sc-theme-mode') === 'system') applyTheme('system');
   };
-  media.addEventListener('change', sync);
-  return () => media.removeEventListener('change', sync);
+  const syncMotion = () => applyReducedMotion(motionMedia.matches);
+  darkMedia.addEventListener('change', syncTheme);
+  motionMedia.addEventListener('change', syncMotion);
+  syncMotion();
+  stopThemeRuntimeWatch = () => {
+    darkMedia.removeEventListener('change', syncTheme);
+    motionMedia.removeEventListener('change', syncMotion);
+    stopThemeRuntimeWatch = null;
+  };
+  return stopThemeRuntimeWatch;
+}
+
+export function stopThemeRuntime(): void {
+  stopThemeRuntimeWatch?.();
 }
 
 export function bootTheme(): void {
@@ -50,6 +86,7 @@ export function bootTheme(): void {
     theme = 'system';
   }
   applyTheme(theme);
+  ensureThemeRuntimeWatch();
 }
 
 export function nextTheme(current: ScTheme): ScTheme {

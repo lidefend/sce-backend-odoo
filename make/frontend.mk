@@ -98,6 +98,11 @@ verify.frontend.primitive_adapter.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_frontend_primitive_adapter_guard
 	@python3 scripts/verify/frontend_primitive_adapter_guard.py
 
+.PHONY: verify.frontend.global_component_capability.unit
+verify.frontend.global_component_capability.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/global_component_capability_test.ts --bundle --platform=node --format=esm --alias:vue=./frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/global-component-capability-test.mjs >/dev/null
+	@node /tmp/global-component-capability-test.mjs
+
 .PHONY: verify.frontend.navigation_shell.unit
 verify.frontend.navigation_shell.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/canonical_navigation_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/canonical-navigation-model-test.mjs >/dev/null

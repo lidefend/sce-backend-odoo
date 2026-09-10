@@ -1,21 +1,23 @@
 <template>
-  <RouterView v-slot="{ Component, route }">
-    <AppShell v-if="route.meta?.layout === 'shell' && !isEmbeddedRelationDialog(route)">
-      <KeepAlive :max="6">
+  <TDesignConfigProvider :global-config="tdesignGlobalConfig">
+    <RouterView v-slot="{ Component, route }">
+      <AppShell v-if="route.meta?.layout === 'shell' && !isEmbeddedRelationDialog(route)">
+        <KeepAlive :max="6">
+          <component
+            :is="Component"
+            v-if="activityCacheKey(route)"
+            :key="activityCacheKey(route)"
+          />
+        </KeepAlive>
         <component
           :is="Component"
-          v-if="activityCacheKey(route)"
-          :key="activityCacheKey(route)"
+          v-if="!activityCacheKey(route)"
+          :key="route.fullPath"
         />
-      </KeepAlive>
-      <component
-        :is="Component"
-        v-if="!activityCacheKey(route)"
-        :key="route.fullPath"
-      />
-    </AppShell>
-    <component :is="Component" v-else />
-  </RouterView>
+      </AppShell>
+      <component :is="Component" v-else />
+    </RouterView>
+  </TDesignConfigProvider>
 </template>
 
 <script setup lang="ts">
@@ -23,8 +25,10 @@ import { ref, watch } from 'vue';
 import type { RouteLocationNormalizedLoaded } from 'vue-router';
 import { PRODUCT_APP_TITLE } from './app/pageIdentity';
 import { usePageIdentityRuntime } from './app/pageIdentityRuntime';
+import { TDesignConfigProvider } from './components/design-system/tdesignPrimitiveBridge';
 import AppShell from './layouts/AppShell.vue';
 import { useSessionStore } from './stores/session';
+import { tdesignGlobalConfig } from './styles/theme';
 
 const session = useSessionStore();
 const pageIdentity = usePageIdentityRuntime();
