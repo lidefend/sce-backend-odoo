@@ -377,9 +377,9 @@ try {
       locale: 'zh-CN',
       hasTouch: viewport.name === 'mobile',
     });
-    if (theme === 'system') await context.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
     await context.addInitScript((requestedTheme) => localStorage.setItem('sc_theme', requestedTheme), theme);
     const page = await context.newPage();
+    if (theme === 'system') await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
     const errors = [];
     let expectedReadFailureResponses = 0;
     let expectedReadFailureConsoleErrors = 0;
