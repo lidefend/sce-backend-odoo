@@ -111,6 +111,7 @@ function numericValue(value: string | number): number | null {
 
 <style scoped>
 .professional-business-value { align-items: center; display: flex; min-width: 0; min-height: calc(var(--sc-component-input-height-md) * .6875px); width: 100%; }
+.professional-business-value[data-control-state='readonly'] { align-items: flex-start; }
 .professional-business-value :deep(.sc-input) { width: 100%; }
 .professional-business-value__readonly { color: var(--sc-app-text-primary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .professional-business-value__suffix { color: var(--sc-app-text-secondary); flex: 0 0 auto; font-size: var(--sc-product-text-sm); }
