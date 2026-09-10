@@ -80,7 +80,7 @@
 
 | 补项证据 | 候选 / 条件 | 结果与边界 |
 |---|---|---|
-| 非零定向测试 | `make verify.frontend.system_state_recovery.unit` | PASS；30 assertions、5 guard tests。隔离覆盖存储属性访问失败、读/写/删除失败，以及登录、平台管理员登录、激活、密码恢复四个入口的递归阻止 |
+| 非零定向测试 | `make verify.frontend.system_state_recovery.unit` | PASS；32 assertions、5 guard tests。隔离覆盖存储属性访问失败时仍跳转且恢复目标为空、读/写/删除失败，以及登录、平台管理员登录、激活、密码恢复四个入口的递归阻止 |
 | Quick / strict / build / 官方组件守卫 | `make verify.frontend.quick.gate` | PASS；生成清单同步，无新增组件接管缺口 |
 | 明色恢复结果 | `artifacts/playwright/system-state-recovery/efab86fe/light/summary.json`；1440/390 | 6 个路由视口 PASS；授权目标返回 `/my-work`，目标缺失使用既有 `/s/workspace.home`，失权目标进入 `access-denied` 后安全返回；0 写入、errors/failures empty |
 | 暗色恢复结果 | `artifacts/playwright/system-state-recovery/efab86fe/dark/summary.json`；1088/320 | 同三类结果共 6 个路由视口 PASS；0 写入、errors/failures empty |

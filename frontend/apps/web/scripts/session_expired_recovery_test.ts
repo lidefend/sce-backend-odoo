@@ -114,6 +114,8 @@ try {
   resetSessionExpiredRedirectForTest();
   equal(redirectForExpiredSession(), true, 'sessionStorage property denial must not block login navigation');
   equal(deniedPropertyAssigned[0], '/login?reason=session_expired');
+  equal(readSessionExpiredReturnPath(), '', 'sessionStorage property denial must produce no recovery target');
+  doesNotThrow(() => clearSessionExpiredReturnPath(), 'sessionStorage property denial must not block recovery cleanup');
 } finally {
   if (originalWindowDescriptor) Object.defineProperty(globalThis, 'window', originalWindowDescriptor);
   else delete (globalThis as { window?: unknown }).window;

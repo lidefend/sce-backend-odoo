@@ -68,7 +68,7 @@ goal:
         fingerprint: a5394b784767e82e23bdcd2e2e1c685950b88ce7af91dd4a319bfa2fdfdb103b
         path_count: 7385
       evidence:
-        - verify.frontend.system_state_recovery.unit_pass_assertions_30_guard_tests_5
+        - verify.frontend.system_state_recovery.unit_pass_assertions_32_guard_tests_5
         - verify.frontend.quick.gate_pass
         - light_1440_390_three_recovery_outcomes_pass_zero_mutations
         - dark_1088_320_three_recovery_outcomes_pass_zero_mutations
