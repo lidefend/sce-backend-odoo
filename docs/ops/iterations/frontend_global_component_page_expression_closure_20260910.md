@@ -1,7 +1,7 @@
 # 全局组件能力与页面表达统一收口
 
 日期：2026-09-10
-状态：`independent_review_ready`（全局能力补证与诊断归因完成，等待独立复核）
+状态：`development_complete_pr_pending`（独立源码与留存证据复核通过，待 PR）
 
 ## 基线与边界
 
@@ -45,7 +45,7 @@
 | 主题模式 | 可由用户本地偏好配置 | `light`、`dark`、`system` | `sc_theme` 本地偏好与系统 `prefers-color-scheme` | `theme.ts` 联合浏览器运行证明 | 未知值回落 `system`，不写业务数据 |
 | 减少动画 | 不提供业务配置；只消费系统偏好 | `reduce`、`no-preference` | `prefers-reduced-motion` | 应用生命周期测试、浏览器根属性 | 缺失时按 `no-preference`；不从路由或业务契约推导 |
 | TDesign 动画投影 | 不提供运行时任意配置 | 普通态显式 include `ripple/expand/fade`；减少态显式 exclude 同集合 | 安装锁定的 TDesign 1.20.5 公开 `ConfigProvider.globalConfig.animation` | 真实 Provider 动态组件测试与严格类型 | 编译/测试失败即阻断；不复制 locale、尺寸等其他官方默认值 |
-| 章节身份、顺序与显隐 | 本专题不可配置 | 仅消费实际可见、稳定章节节点 | `ui.contract`/native view 的既有结构与隐藏规则 | section navigation 非零测试和内容级浏览器证据 | 缺失章节不生成入口；不按模型名、字段名或字段语义猜测，隐藏章节保持隐藏 |
+| 章节身份、顺序与显隐 | 沿用既有契约配置，本专题不新增配置入口 | 仅消费实际可见、稳定章节节点 | `ui.contract`/native view 的既有结构与隐藏规则 | section navigation 非零测试和内容级浏览器证据 | 缺失章节不生成入口；不按模型名、字段名或字段语义猜测，隐藏章节保持隐藏 |
 | 字段跨度与列数 | 仅消费已有结构表达，不新增配置入口 | 契约已声明的结构/跨度；共享响应式规则在窄屏收敛为单列 | native form contract 与现有 renderer | canonical presenter、field alignment 边界测量 | 非法结构由既有 normalizer/renderer 安全回落并由守卫暴露；不得逐字段补 margin |
 | 共享几何规范 | 不可由业务或低代码任意配置 | 已登记的 page/frame/content/spacing token | design-system token、page pattern 和共享组件 | token/official design inventory、页面结构与边界测试 | 未知 token、视觉 literal 或内部 vendor 选择器作为工程缺口阻断 |
 | 明细表列 | 可由现有契约声明 | 契约提供的可见列、标题、顺序与类型 | 关系 subview/contract | detail collection model/guard 与桌面/移动浏览器检查 | 缺失时只使用既有受控回落；不由字段名猜测业务重要性 |
@@ -124,8 +124,15 @@
 - 材料集合查询栏：页面实际具有一个可见搜索输入，旧脚本把两个可能的语义容器合并后要求容器唯一，错误地把容器身份歧义归为控件缺失。脚本改为先锁定唯一可见 `input[type=search]`，再反查最近语义 owner。桌面/移动均完成 1 record→无匹配空态→清除→1 record，URL 搜索参数同步恢复。分类为**P4 脚本选择器假设**，页面能力存在，无产品修改。
 - 合同层级搜索：生产实现对当前已加载 `visibleRows` 做客户端过滤，不发搜索请求。旧脚本用全局 document 选择器等待零行，可能命中页面其他表格；改为绑定当前 `HierarchicalWorksheet` 根。桌面/移动均完成 46 records→项目范围 1 record→无匹配 0 records/无打开动作→清除恢复 1 record，并保留选中记录。分类为**P4 等待作用域错误**，不是数据、过滤或渲染问题。
 - 首次补证运行在页面请求前因把 `emulateMedia` 调在 BrowserContext 而停止；改用当前 Playwright 支持的 Page API 后重新冻结并通过。该历史失败不计入候选通过证据。
-- 未运行多角色、真实写入、acceptance、升级兼容、发布或 PR/CI；独立复核尚未执行。以上诊断未引发契约、数据、业务流程或门禁降级。
+- 未运行多角色、真实写入、acceptance、升级兼容、发布或 PR/CI。以上诊断未引发契约、数据、业务流程或门禁降级。
+
+### 独立复核结论
+
+- 复核方式：只读核对源码差异、目标记录、阶段报告以及绑定 `c442f731…` 的既有浏览器摘要；没有重新启动候选或重跑测试。
+- 结论：真实公开 ConfigProvider 动态恢复、应用卸载/重新挂载/HMR 释放、登录与嵌入页主题证据、三项查询诊断归因均与实现一致；此前四项补证问题关闭。
+- 范围限定：这是开发阶段的表达收口和已有证据独立复核，不是全系统业务验收、merge-ready 或 release-ready 结论。
+- 未覆盖：多角色、真实保存/审批、非空权威材料关系数据集选择、acceptance、升级兼容、PR exact-head CI 与发布验收。
 
 ## 本地结论
 
-共享表达规则、官方能力接管记录、代表页面一致性、字段对齐基线、动态 Provider 传播、生命周期释放和三项诊断归因均已落到冻结候选并完成本地联合验证。A/B/C 产品提交与补证提交可以保留；本专题已满足“进入独立复核”的本地退出条件，不再追加零散美化。只有独立复核通过后，才能整理并授权 PR 交付，当前不宣称已合并、已发布或整个系统交互已验收。
+共享表达规则、官方能力接管记录、代表页面一致性、字段对齐基线、动态 Provider 传播、生命周期释放和三项诊断归因均已完成本地验证并通过独立源码/留存证据复核。开发阶段表单表达收口完成，下一状态为待 PR；不再追加页面美化。当前仍不宣称 merge-ready、release-ready、已发布或全系统业务交互已验收。

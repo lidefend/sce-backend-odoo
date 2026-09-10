@@ -1,7 +1,7 @@
 goal:
   id: GLOBAL-COMPONENT-PAGE-EXPRESSION-CLOSURE
   title: global_component_capability_and_page_expression_closure
-  status: active
+  status: completed
   objective: unify_root_component_capabilities_and_shared_page_expression_without_contract_or_business_changes
   baseline:
     branch: feature/form-page-structure-professionalization-v1
@@ -82,7 +82,7 @@ goal:
     - representative_pages_and_all_requested_viewports_themes_are_explicitly_registered
     - final_evidence_binds_one_frozen_full_fingerprint
   joint_review:
-    status: exit_evidence_completed_independent_review_ready
+    status: independent_review_passed_pr_pending
     candidate:
       full_sha: 07758bd72c11e41157b3125b4d314ba7874c606b
       fingerprint: 64220630eaa650bc0f39b04686a310306de892c85976bf8c4d3b3377bf7f972c
@@ -113,9 +113,16 @@ goal:
         - hierarchy_query_cycle_pass_wait_scope_corrected
         - targeted_browser_pass_8_samples_zero_mutations
       limitations:
-        - independent_review_not_run
         - material_relation_selection_with_nonempty_authoritative_dataset_not_covered
         - multi_role_real_write_acceptance_upgrade_release_and_pr_ci_not_run
+    independent_review:
+      status: passed
+      method: source_and_retained_evidence_only_no_browser_restart_or_test_rerun
+      conclusion: development_expression_closure_complete_pr_pending
+      exclusions:
+        - merge_readiness
+        - release_readiness
+        - full_system_business_acceptance
   exclude:
     - contract_permission_action_amount_or_hidden_section_changes
     - business_flow_expansion
