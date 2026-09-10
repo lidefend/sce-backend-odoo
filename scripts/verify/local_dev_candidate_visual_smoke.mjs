@@ -1728,18 +1728,9 @@ try {
               height: Number(rect.height.toFixed(2)),
             };
           };
-          const borderWidth = (node) => {
-            if (!(node instanceof HTMLElement)) return 0;
-            const style = getComputedStyle(node);
-            return ['borderLeftWidth', 'borderRightWidth', 'borderTopWidth', 'borderBottomWidth']
-              .map((key) => Number.parseFloat(style[key] || '0'))
-              .reduce((sum, value) => sum + (Number.isFinite(value) ? value : 0), 0);
-          };
           const visualFrame = (semanticRoot) => {
-            if (!(semanticRoot instanceof HTMLElement)) return null;
-            const candidates = [semanticRoot, ...semanticRoot.querySelectorAll('.t-input, .t-input-number, .t-textarea, input, textarea, select')]
-              .filter(visible);
-            return candidates.find((node) => borderWidth(node) > 0) || candidates[0] || semanticRoot;
+            if (!(semanticRoot instanceof HTMLElement) || !visible(semanticRoot)) return null;
+            return semanticRoot;
           };
           const controlSelector = [
             '[data-semantic-component="ScInput"]',
