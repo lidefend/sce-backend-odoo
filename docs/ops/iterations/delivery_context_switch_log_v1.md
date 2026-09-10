@@ -9148,3 +9148,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 基线 `2d5870009f08e6850e03e79a2fae2823bb152813`，完整指纹 `8ee8a7d2a5140a6330b8d920f15ee9cdd20f1449173283b4a3f82b4eada493d9`（7357 paths）。复用唯一已注册 worktree 与 local.dev 候选载体。
 - 唯一目标：分离字段 semantic role 与章节身份，使名称只绑定实际可见章节；关系明细不得落到 many2one 字段，历史审计不得落到录入人字段，多关系集合使用已有标题与节点身份分别定位。
 - 不修改契约、字段、权限、动作、隐藏章节或上一批响应式容器；不按模型名/字段名推断，不追加美化，不写数据库，不运行 fixture/acceptance/release，不执行远程写入。
+
+### 完成记录
+
+- P0 产品路径已分离字段语义和章节身份；workspace 与 task 两种表单都将导航绑定到唯一可见目标。many2one 字段不再生成关系明细入口，O2M/M2M 集合使用契约现有标签和 widget 身份分别定位。
+- 附件按既有组件解析与正式 relation descriptor 分类，不作为业务明细入口；没有实际审计事件的创建页不显示“历史审计”，录入人字段不会被当作时间线。
+- 最终候选 `dd98a5f0caf7fb052ffee012cccf73eed9d66475`，完整指纹 `933a4bc22371bb4647fe1615f2b6ba04d7fb265da3c0484a8a011997b2cb072f`（7358 paths）。Frontend Quick PASS。
+- light 1440/390 与 dark 1088/320 覆盖付款详情、材料入库新建、收入合同详情/新建，共 16 个页面视口、64 次导航内容断言和 48 张首屏/中段/底部截图全部 PASS；mutation/errors/failures 均为 0。候选已停止。
+- 完整记录：`frontend_form_section_navigation_content_consistency_closure_20260910.md`。表单阶段已具备退出条件，状态保持 `verification_pending` 等待独立复核；未执行 push/PR/merge/release。
