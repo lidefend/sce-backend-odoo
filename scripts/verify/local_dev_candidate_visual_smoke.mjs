@@ -3194,7 +3194,10 @@ try {
           const restoreResize = page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${sourceField}"]:visible .column-resize-handle`);
           await restoreResize.focus();
           await restoreResize.press('ArrowLeft');
-          await page.locator('.list-surface-save-badge.is-saved:visible').waitFor({ state: 'visible', timeout: 15000 });
+          await page.waitForFunction(({ field, width }) => {
+            const node = document.querySelector(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${field}"]`);
+            return node instanceof HTMLElement && Math.abs((Number.parseFloat(node.style.width || '0') || 0) - width) <= 1;
+          }, { field: sourceField, width: declaredWidthBefore }, { timeout: 15000 });
           const restoredOrder = await visibleHeaders.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-column') || ''));
           const restoredWidth = Number((await page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${sourceField}"]:visible`).boundingBox())?.width || 0);
           const restoredDeclaredWidth = (await headerState(page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${sourceField}"]:visible`))).declaredWidth;
