@@ -247,7 +247,7 @@
     },
     {
       "category": "other",
-      "digest": "92543b53f72dd454522a712de3be6f07abe7563453bc5fa6a2eb098737e16c62",
+      "digest": "484e69c6bfa9a47ab7a715c64955ae24189eb1b1a26eaa3baf99ab0daeb0db73",
       "nativeStyleSelectors": [],
       "path": "components/action/HierarchicalWorksheet.vue",
       "referenceNativeStyleSelectors": [
@@ -307,14 +307,15 @@
     },
     {
       "category": "other",
-      "digest": "2d3319aaa3372a8f86229a4cce44f0ede107534a010a748efcde33d98e592875",
+      "digest": "5f4881ba1324c21b03da71580a2cd87857dddde443884814357fb640387d1a3f",
       "nativeStyleSelectors": [],
       "path": "components/action/HierarchyTreeNode.vue",
       "referenceNativeStyleSelectors": [],
       "referencePresent": true,
       "referenceScComponents": [],
       "scComponents": [
-        "ScButton"
+        "ScButton",
+        "ScIcon"
       ]
     },
     {
@@ -694,7 +695,7 @@
     },
     {
       "category": "other",
-      "digest": "9556c556182563c4d2a76174b53c28b61eef7c45ffbd79b6bf3c60a15cbb5678",
+      "digest": "bd10d30938e0e89febe69cdcb81e4258db28b5b982ce076ececa2fcdae276c78",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScIcon.vue",
       "referenceNativeStyleSelectors": [],
@@ -1007,7 +1008,7 @@
     },
     {
       "category": "other",
-      "digest": "61fdfe4c7806d94138e02dc11be4459d2649eee02a67861cfdc6a8ad4b54fc25",
+      "digest": "612b4d82e7534f5f8a14edf5ad08fd75420479b464a5159d80bd850f5d030421",
       "nativeStyleSelectors": [],
       "path": "components/editor/RestrictedHtmlEditor.vue",
       "referenceNativeStyleSelectors": [],
@@ -1016,6 +1017,7 @@
       "scComponents": [
         "ScButton",
         "ScDialog",
+        "ScIcon",
         "ScInput"
       ]
     },
@@ -1802,19 +1804,20 @@
     },
     {
       "category": "other",
-      "digest": "cc58f252220cb1f285037d5c97bc1fb4b0c9463dca38697d7102a05d5c157a14",
+      "digest": "3f301d4571a7a21569353947331dbb58d4f121bd47f0bdf20bcf50fec70f95fd",
       "nativeStyleSelectors": [],
       "path": "components/template/NativeActionOverflowMenu.vue",
       "referenceNativeStyleSelectors": [],
       "referencePresent": false,
       "referenceScComponents": [],
       "scComponents": [
-        "ScButton"
+        "ScButton",
+        "ScIcon"
       ]
     },
     {
       "category": "form-fields",
-      "digest": "eb153c2834b36faa561a68d893f2c8b7a38cb20d76b836e5028683ba7fd59ac0",
+      "digest": "a8f8b8d7313f14f8cd6369af5fd45b9126e24f06ad4b89a065318b5e3fb79fe9",
       "nativeStyleSelectors": [],
       "path": "components/template/NativeFormTreeRenderer.vue",
       "referenceNativeStyleSelectors": [],
@@ -1832,14 +1835,15 @@
     },
     {
       "category": "other",
-      "digest": "237498ac5d7191f9461585b4e759dac3bc3c413b28793ce897142ecc3040f426",
+      "digest": "4f7157f194deded2fdb28be15f9f1eeee42c8ad1d0b8a943c093b8695f778534",
       "nativeStyleSelectors": [],
       "path": "components/template/NativeSmartAction.vue",
       "referenceNativeStyleSelectors": [],
       "referencePresent": false,
       "referenceScComponents": [],
       "scComponents": [
-        "ScButton"
+        "ScButton",
+        "ScIcon"
       ]
     },
     {
@@ -2245,7 +2249,7 @@
     },
     {
       "category": "collaboration",
-      "digest": "118c58428fb33deeae2fc1ad3425494fcc3ae8d599c9264ef8222d6ad8d2768b",
+      "digest": "8fe8179cfe3b2278cb1c5789f45c99974910b855bc275867e8b98bde126e4a94",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ProfessionalAttachmentManager.vue",
       "referenceNativeStyleSelectors": [],
@@ -2254,6 +2258,7 @@
       "scComponents": [
         "ScButton",
         "ScFileField",
+        "ScIcon",
         "ScInlineState"
       ]
     },
@@ -2283,7 +2288,7 @@
     },
     {
       "category": "collaboration",
-      "digest": "a2616b3fffac5a98a9880361a44f2204721224b83c38b18062eef12d5935ffb8",
+      "digest": "f8d99c87d189308e6b1add1b2ee3aac5ca20bb0043f9539be312c9129536664f",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ProfessionalCollaborationComposer.vue",
       "referenceNativeStyleSelectors": [],
@@ -2291,6 +2296,7 @@
       "referenceScComponents": [],
       "scComponents": [
         "ScButton",
+        "ScIcon",
         "ScInput",
         "ScSelect",
         "ScTextarea"
@@ -2298,7 +2304,7 @@
     },
     {
       "category": "collaboration",
-      "digest": "b4d9e49ed23b56d1650a2ec8672f7ace60dbd254f3d745a4b4df9a9b5d456b21",
+      "digest": "d3004d81a75c02d1c179a0d9ccac0004f45ef48c9d53aacab80cbf6269a70ba0",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ProfessionalCollaborationTimeline.vue",
       "referenceNativeStyleSelectors": [],
@@ -2306,6 +2312,7 @@
       "referenceScComponents": [],
       "scComponents": [
         "ScButton",
+        "ScIcon",
         "ScInlineState",
         "ScList"
       ]
@@ -2812,7 +2819,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "ce8f2ea96cfc1cb65ffe06557d9504f885a0bf5262cbc7d1745a243155d05788",
+  "currentInputDigest": "86668ca226b0014fb53670e063ef656fc08b2da35c1e4a35582f35ad4dcd2da9",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
