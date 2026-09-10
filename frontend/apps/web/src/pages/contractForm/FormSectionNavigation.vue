@@ -45,6 +45,8 @@ const hintId = `form-section-navigation-${useId()}`;
 let scrollOwner: HTMLElement | Window | null = null;
 let resizeObserver: ResizeObserver | null = null;
 let activeFrame = 0;
+let activationReleaseTimer = 0;
+let activatedKey = '';
 
 function rootElement() {
   return navRef.value?.closest<HTMLElement>(props.rootSelector) || null;
@@ -97,6 +99,7 @@ function updateActiveSection() {
 }
 
 function queueActiveSection() {
+  if (activatedKey) return;
   if (activeFrame) return;
   activeFrame = window.requestAnimationFrame(updateActiveSection);
 }
@@ -104,12 +107,18 @@ function queueActiveSection() {
 function activate(item: SectionNavigationItem) {
   const target = visibleTarget(item);
   if (!target) return;
+  activatedKey = item.key;
+  if (activationReleaseTimer) window.clearTimeout(activationReleaseTimer);
   activeKey.value = item.key;
   target.setAttribute('tabindex', '-1');
   target.focus({ preventScroll: true });
   target.scrollIntoView({ behavior: 'auto', block: 'start' });
   centerActiveLink();
-  queueActiveSection();
+  activationReleaseTimer = window.setTimeout(() => {
+    activatedKey = '';
+    activationReleaseTimer = 0;
+    queueActiveSection();
+  }, 350);
 }
 
 function bindNavigation() {
@@ -135,6 +144,7 @@ watch(() => props.items.map((item) => `${item.key}:${item.selector}`).join('|'),
 onBeforeUnmount(() => {
   if (scrollOwner) scrollOwner.removeEventListener('scroll', queueActiveSection);
   if (activeFrame) window.cancelAnimationFrame(activeFrame);
+  if (activationReleaseTimer) window.clearTimeout(activationReleaseTimer);
   resizeObserver?.disconnect();
 });
 </script>

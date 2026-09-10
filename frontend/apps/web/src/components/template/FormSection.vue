@@ -31,6 +31,7 @@
           :data-contract-adapter="field.contractAdapter || undefined"
           :data-contract-component-version="field.contractVersion || undefined"
           :data-component-fallback="field.componentFallback || undefined"
+          :data-form-semantic-role="field.semanticRole || undefined"
           :tabindex="fieldSelectionMode ? 0 : undefined"
           :role="fieldSelectionMode ? 'button' : undefined"
           :aria-pressed="fieldSelectionMode ? selectedFieldKey === fieldIdentity(field) : undefined"

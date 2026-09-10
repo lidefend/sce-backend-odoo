@@ -39,6 +39,7 @@ export type FormSectionFieldSchema = {
   componentFallback?: string | null;
   presentationMode?: CanonicalFormPresentationMode;
   renderProfile?: CanonicalFormRenderMode;
+  semanticRole?: string;
   required: boolean;
   readonly: boolean;
   auth?: string;

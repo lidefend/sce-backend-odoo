@@ -164,6 +164,7 @@ export function canonicalFieldToFormSection(
     componentFallback: field.componentResolution.fallback,
     presentationMode: field.presentationMode,
     renderProfile: field.renderProfile,
+    semanticRole: field.semanticRole || undefined,
     digits,
     currencyField: currencyField || undefined,
     currencyLabel: currencyLabel || undefined,

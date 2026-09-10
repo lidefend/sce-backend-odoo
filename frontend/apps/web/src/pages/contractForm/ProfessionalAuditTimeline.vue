@@ -4,6 +4,7 @@
     class="professional-audit-timeline"
     data-professional-audit-timeline
     data-floorplan-region="audit"
+    data-form-semantic-role="audit"
     :data-audit-event-count="events.length"
     :title="summary"
   >
