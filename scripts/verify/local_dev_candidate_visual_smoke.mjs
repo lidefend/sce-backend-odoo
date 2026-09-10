@@ -3179,6 +3179,10 @@ try {
           await returnAction.click();
           await page.waitForURL((url) => url.pathname === new URL(originalUrl).pathname, { timeout: 15000 });
           await waitForStableProductSurface(page);
+          await page.waitForFunction(({ field, width }) => {
+            const node = document.querySelector(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${field}"]`);
+            return node instanceof HTMLElement && Math.abs((Number.parseFloat(node.style.width || '0') || 0) - width) <= 1;
+          }, { field: sourceField, width: declaredWidthAfter }, { timeout: 15000 });
           const returnedHeaders = page.locator('[data-semantic-component="CollectionColumnHeaderControl"]:visible');
           const returnedOrder = await returnedHeaders.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-column') || ''));
           const returnedWidth = Number((await page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${sourceField}"]:visible`).boundingBox())?.width || 0);
