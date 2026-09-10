@@ -1419,6 +1419,11 @@ try {
           const sectionNavigation = [...document.querySelectorAll('[data-form-section-navigation]')].find(visible);
           const summaryFields = [...document.querySelectorAll('[data-floorplan-region="summary"] .canonical-form-node')].filter(visible);
           const monetarySummary = summaryFields.find((node) => node instanceof HTMLElement && node.dataset.valueEmphasis === 'monetary');
+          const visualSummaryFields = [...summaryFields].sort((left, right) => {
+            const leftRect = left.getBoundingClientRect();
+            const rightRect = right.getBoundingClientRect();
+            return Math.abs(leftRect.top - rightRect.top) > 2 ? leftRect.top - rightRect.top : leftRect.left - rightRect.left;
+          });
           const relationFrameDepth = relation instanceof HTMLElement
             ? [...relation.querySelectorAll('*')].filter((node) => {
                 if (!(node instanceof HTMLElement) || !visible(node)) return false;
@@ -1441,7 +1446,7 @@ try {
             relationInFirstViewport: relation instanceof HTMLElement && relation.getBoundingClientRect().top < window.innerHeight,
             addActionInFirstViewport: addAction instanceof HTMLElement && addAction.getBoundingClientRect().bottom <= window.innerHeight,
             relationFrameDepth,
-            mobileMonetarySummaryFirst: !monetarySummary || summaryFields[0] === monetarySummary,
+            mobileMonetarySummaryFirst: !monetarySummary || visualSummaryFields[0] === monetarySummary,
             stickyHeaderBackground: background,
             stickyHeaderOpaque: Boolean(background) && background !== 'transparent' && background !== 'rgba(0, 0, 0, 0)' && alpha !== '0',
             readonlyTableVisible: [...document.querySelectorAll('.o2m-readonly-table')].some(visible),
@@ -1463,8 +1468,9 @@ try {
           await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
           navigationJourney.push(await link.evaluate((node) => {
             const selector = node instanceof HTMLElement ? String(node.dataset.sectionTarget || '') : '';
-            const target = selector ? document.querySelector(selector) : null;
             const nav = node.closest('[data-form-section-navigation]');
+            const root = nav?.closest('[data-native-contract-structure], .object-task-page');
+            const target = selector && root ? root.querySelector(selector) : null;
             const header = [...document.querySelectorAll('.template-page-header')]
               .find((candidate) => candidate instanceof HTMLElement && candidate.offsetParent !== null);
             const targetRect = target instanceof HTMLElement ? target.getBoundingClientRect() : null;
