@@ -19,6 +19,9 @@
       class="object-task-page__summary"
       aria-label="关键业务摘要"
       data-floorplan-region="summary"
+      data-form-section-target="floorplan:summary"
+      data-section-content-kind="semantic-section"
+      data-section-source-identity="floorplan:summary"
       data-section-title="概览"
       data-canonical-zone="primary"
       :bordered="true"
@@ -41,6 +44,9 @@
       class="object-task-page__decision-input"
       aria-label="关键办理金额"
       data-floorplan-region="decision-input"
+      data-form-section-target="floorplan:decision-input"
+      data-section-content-kind="semantic-section"
+      data-section-source-identity="floorplan:decision-input"
       data-section-title="关键金额"
       title="关键金额"
       data-canonical-zone="primary"
@@ -62,6 +68,9 @@
       class="object-task-page__current-task"
       aria-label="办理提示"
       data-floorplan-region="current-task"
+      data-form-section-target="floorplan:current-task"
+      data-section-content-kind="semantic-section"
+      data-section-source-identity="floorplan:current-task"
       data-section-title="办理提示"
       title="办理提示"
       :bordered="true"
@@ -104,6 +113,9 @@
       class="object-task-page__core-input"
       aria-label="基本信息"
       data-floorplan-region="core-input"
+      data-form-section-target="floorplan:core-input"
+      data-section-content-kind="semantic-section"
+      data-section-source-identity="floorplan:core-input"
       data-section-title="基本信息"
       title="基本信息"
       data-canonical-zone="primary"
@@ -199,6 +211,9 @@
         class="object-task-page__context"
         aria-label="业务上下文"
         data-floorplan-region="business-context"
+        data-form-section-target="floorplan:business-context"
+        data-section-content-kind="semantic-section"
+        data-section-source-identity="floorplan:business-context"
         data-section-title="基本资料"
         title="基本资料"
         data-canonical-zone="primary"
@@ -239,6 +254,9 @@
       v-if="supplementaryInputNodes.length"
       class="object-task-page__supplementary-input"
       data-floorplan-region="supplementary-input"
+      data-form-section-target="floorplan:supplementary-input"
+      data-section-content-kind="semantic-section"
+      data-section-source-identity="floorplan:supplementary-input"
       data-section-title="补充信息"
       title="补充信息"
     >
@@ -256,6 +274,9 @@
       v-if="overflowContextNodes.length"
       class="object-task-page__overflow-context"
       data-floorplan-region="overflow-context"
+      data-form-section-target="floorplan:overflow-context"
+      data-section-content-kind="semantic-section"
+      data-section-source-identity="floorplan:overflow-context"
       data-section-title="更多信息"
       title="更多业务信息"
     >
@@ -274,6 +295,9 @@
       class="object-task-page__subordinate"
       aria-label="附件与从属信息"
       data-floorplan-region="subordinate"
+      data-form-section-target="floorplan:subordinate"
+      data-section-content-kind="semantic-section"
+      data-section-source-identity="floorplan:subordinate"
       data-section-title="附件与辅助信息"
       data-canonical-zone="subordinate"
     >
@@ -292,6 +316,9 @@
       class="object-task-page__activity"
       aria-label="活动"
       data-floorplan-region="activity"
+      data-form-section-target="surface:activity"
+      data-section-content-kind="collaboration-panel"
+      data-section-source-identity="collaboration-panel"
       data-section-title="协作记录"
       data-canonical-zone="subordinate"
     ><slot name="collaboration" /></section>
@@ -327,6 +354,10 @@ import FormSectionNavigation from './FormSectionNavigation.vue';
 import ScCard from '../../components/design-system/ScCard.vue';
 import ScDisclosure from '../../components/design-system/ScDisclosure.vue';
 import { canonicalNodeHasPresentableContent } from './canonicalFormRenderer';
+import {
+  relationshipCollectionNavigationItems,
+  type WorkspaceSectionNavigationItem,
+} from './nativeSectionNavigation';
 
 const props = defineProps<{
   summaryNodes: CanonicalFormNode[];
@@ -353,18 +384,41 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange]; 'f
 const presentableRelationNodes = computed(() => props.relationNodes.filter((node) => (
   canonicalNodeHasPresentableContent(node, props.relationAdapter)
 )));
+function floorplanSection(
+  key: string,
+  label: string,
+  role: WorkspaceSectionNavigationItem['role'],
+): WorkspaceSectionNavigationItem {
+  const sourceIdentity = `floorplan:${key}`;
+  return {
+    key: sourceIdentity,
+    label,
+    selector: `[data-form-section-target="${sourceIdentity}"]`,
+    role,
+    contentKind: 'semantic-section',
+    sourceType: 'surface',
+    sourceIdentity,
+  };
+}
 const sectionLinks = computed(() => [
-  props.summaryNodes.length ? { key: 'summary', label: '概览', selector: '[data-floorplan-region="summary"]' } : null,
-  props.decisionInputNodes.length ? { key: 'decision-input', label: '关键金额', selector: '[data-floorplan-region="decision-input"]' } : null,
-  props.decisionMode && (props.taskNodes.length || props.riskNodes.length) ? { key: 'current-task', label: '办理提示', selector: '[data-floorplan-region="current-task"]' } : null,
-  props.coreInputNodes.length ? { key: 'core-input', label: '基本信息', selector: '[data-floorplan-region="core-input"]' } : null,
-  props.contextNodes.length ? { key: 'business-context', label: '基本资料', selector: '[data-floorplan-region="business-context"]' } : null,
-  presentableRelationNodes.value.length ? { key: 'relation', label: '关系明细', selector: '[data-floorplan-region="relation"]' } : null,
-  props.supplementaryInputNodes.length ? { key: 'supplementary-input', label: '补充信息', selector: '[data-floorplan-region="supplementary-input"]' } : null,
-  props.overflowContextNodes.length ? { key: 'overflow-context', label: '更多信息', selector: '[data-floorplan-region="overflow-context"]' } : null,
-  props.subordinateNodes.length ? { key: 'subordinate', label: '附件与辅助信息', selector: '[data-floorplan-region="subordinate"]' } : null,
-  props.hasCollaboration ? { key: 'activity', label: '协作记录', selector: '[data-floorplan-region="activity"]' } : null,
-].filter((item): item is { key: string; label: string; selector: string } => Boolean(item)));
+  props.summaryNodes.length ? floorplanSection('summary', '概览', 'summary') : null,
+  props.decisionInputNodes.length ? floorplanSection('decision-input', '关键金额', 'summary') : null,
+  props.decisionMode && (props.taskNodes.length || props.riskNodes.length) ? floorplanSection('current-task', '办理提示', 'task') : null,
+  props.coreInputNodes.length ? floorplanSection('core-input', '基本信息', 'task') : null,
+  props.contextNodes.length ? floorplanSection('business-context', '基本资料', 'context') : null,
+  ...relationshipCollectionNavigationItems(presentableRelationNodes.value),
+  props.supplementaryInputNodes.length ? floorplanSection('supplementary-input', '补充信息', 'context') : null,
+  props.overflowContextNodes.length ? floorplanSection('overflow-context', '更多信息', 'context') : null,
+  props.subordinateNodes.length ? floorplanSection('subordinate', '附件与辅助信息', 'context') : null,
+  props.hasCollaboration ? {
+    key: 'surface:activity', label: '协作记录', selector: '[data-form-section-target="surface:activity"]', role: 'activity',
+    contentKind: 'collaboration-panel', sourceType: 'surface', sourceIdentity: 'collaboration-panel',
+  } satisfies WorkspaceSectionNavigationItem : null,
+  props.auditEvents.length ? {
+    key: 'surface:audit', label: '历史审计', selector: '[data-form-section-target="surface:audit"]', role: 'audit',
+    contentKind: 'audit-timeline', sourceType: 'surface', sourceIdentity: 'professional-audit-timeline',
+  } satisfies WorkspaceSectionNavigationItem : null,
+].filter((item): item is WorkspaceSectionNavigationItem => Boolean(item)));
 
 </script>
 

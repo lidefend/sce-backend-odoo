@@ -59,7 +59,6 @@ function selectorFor(key: string): string {
 export function workspaceSectionNavigationItems(nodes: CanonicalFormNode[]): WorkspaceSectionNavigationItem[] {
   const items: WorkspaceSectionNavigationItem[] = [];
   const emittedRoles = new Set<CanonicalFormSemanticRole>();
-  const emittedFields = new Set<string>();
 
   function visit(node: CanonicalFormNode, inheritedRole: CanonicalFormSemanticRole | '' = '') {
     if (!node.visible) return;
@@ -79,6 +78,19 @@ export function workspaceSectionNavigationItems(nodes: CanonicalFormNode[]): Wor
       });
       emittedRoles.add(role);
     }
+    node.children.forEach((child) => visit(child, role || inheritedRole));
+  }
+
+  nodes.forEach((node) => visit(node));
+  return [...items, ...relationshipCollectionNavigationItems(nodes)];
+}
+
+export function relationshipCollectionNavigationItems(nodes: CanonicalFormNode[]): WorkspaceSectionNavigationItem[] {
+  const items: WorkspaceSectionNavigationItem[] = [];
+  const emittedFields = new Set<string>();
+
+  function visit(node: CanonicalFormNode) {
+    if (!node.visible) return;
     node.fields.filter((field) => field.visible && fieldIsBusinessRelationCollection(field)).forEach((field) => {
       if (emittedFields.has(field.widgetId)) return;
       const key = `field:${field.widgetId}:relation`;
@@ -93,10 +105,10 @@ export function workspaceSectionNavigationItems(nodes: CanonicalFormNode[]): Wor
       });
       emittedFields.add(field.widgetId);
     });
-    node.children.forEach((child) => visit(child, role || inheritedRole));
+    node.children.forEach(visit);
   }
 
-  nodes.forEach((node) => visit(node));
+  nodes.forEach(visit);
   return items;
 }
 
