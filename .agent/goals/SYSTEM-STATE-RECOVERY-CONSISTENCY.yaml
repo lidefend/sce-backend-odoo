@@ -1,0 +1,51 @@
+schema_version: 1
+goal:
+  id: SYSTEM-STATE-RECOVERY-CONSISTENCY
+  title: system_state_expression_and_recovery_path_consistency
+  status: active
+  formal_product_layer: P0
+  layer_target: shared_frontend_state_expression_and_session_recovery
+  module: frontend
+  objective: >-
+    Inventory existing login, collection, form and workspace states, then close
+    only confirmed shared recovery gaps without changing authentication,
+    permissions, business contracts or write behavior.
+  baseline:
+    branch: feature/p0-system-state-recovery-consistency-v1
+    full_sha: 2f246f12ff03b1a69c80b9b5321ff72ed1cf5b51
+    source: clean_main_after_navigation_collection_merge
+    fingerprint: a2d44794dcb0d230b66ecdae366565253c297b37ce3893657c9710c3c3c78714
+    path_count: 7379
+  product_boundary:
+    standard_vs_user_specific: platform_standard
+    why_here: >-
+      Cross-page state explanation and safe session recovery are shared frontend
+      mechanisms consumed by all product pages.
+    why_not_elsewhere:
+      - no_authentication_permission_or_token_lifetime_change
+      - no_business_contract_or_business_action_change
+      - no_customer_specific_preference_or_runtime_configuration_change
+      - no_database_fixture_acceptance_upgrade_or_release_work
+    blast_radius:
+      - request_401_handling
+      - login_state_expression_and_post_login_navigation
+      - existing_collection_form_and_workspace_recovery_surfaces
+      - governed_read_only_browser_evidence
+  batches:
+    - id: A
+      title: governed_baseline_and_state_inventory
+      status: active
+    - id: B
+      title: confirmed_shared_recovery_gaps
+      status: pending
+    - id: C
+      title: targeted_and_governed_browser_validation
+      status: pending
+  exclusions:
+    - authentication_permission_or_token_policy
+    - automatic_replay_of_save_approval_payment_or_other_writes
+    - unsaved_draft_recovery_guarantee
+    - new_state_framework_or_business_contract_fields
+    - acceptance_rebuild_upgrade_compatibility_or_release
+  rollback:
+    - revert_evidence_then_shared_recovery_then_inventory_commits_without_database_rollback
