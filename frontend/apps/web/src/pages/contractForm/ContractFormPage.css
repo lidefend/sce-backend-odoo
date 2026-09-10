@@ -1020,7 +1020,6 @@
   .contract-form-native-shell :deep(.native-container--group) {
     gap: var(--sc-field-row-gap);
     padding: var(--sc-space-sm);
-    padding-inline: 0;
   }
 
   .contract-form-native-shell :deep(.native-container--header) {
