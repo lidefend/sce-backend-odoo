@@ -7,6 +7,10 @@ import type {
 } from '../../app/presentation/canonicalFormRenderModel';
 import type { FormSectionFieldSchema } from '../../components/template/formSection.types';
 import { canonicalFieldToFormSection, type CanonicalRelationProjection } from './canonicalFormRenderer';
+import {
+  workspaceSectionNavigationItems,
+  type WorkspaceSectionNavigationItem,
+} from './nativeSectionNavigation';
 
 export type CanonicalNativeLayoutNode = {
   type: string;
@@ -45,6 +49,7 @@ export type CanonicalNativeLayoutNode = {
 export type CanonicalNativeFormBridge = {
   primaryNodes: CanonicalNativeLayoutNode[];
   subordinateNodes: CanonicalNativeLayoutNode[];
+  sectionLinks: WorkspaceSectionNavigationItem[];
   fieldSchemasForNodes: (nodes: CanonicalNativeLayoutNode[]) => FormSectionFieldSchema[];
   actionForPayload: (payload: Record<string, unknown>) => ContractV2ActionRule | null;
   actionStateForNode: (payload: Record<string, unknown>) => { disabled: boolean; title: string };
@@ -109,6 +114,7 @@ function fieldNode(
   fieldSchemas: WeakMap<CanonicalNativeLayoutNode, FormSectionFieldSchema>,
   sourceNode?: CanonicalFormNode,
   relationProjection?: CanonicalRelationProjection,
+  sectionTarget?: WorkspaceSectionNavigationItem,
 ): CanonicalNativeLayoutNode {
   const node: CanonicalNativeLayoutNode = {
     ...(sourceNode?.nativePresentation || {}),
@@ -136,10 +142,18 @@ function fieldNode(
       contractStyleToken: sourceNode?.styleToken,
       surfaceRole: text((field.componentConfig as Record<string, unknown>)?.surfaceRole),
       technical: (field.componentConfig as Record<string, unknown>)?.technical === true,
+      sectionNavigationTarget: sectionTarget?.key,
+      sectionContentKind: sectionTarget?.contentKind,
+      sectionSourceIdentity: sectionTarget?.sourceIdentity,
     },
     children: [],
   };
-  fieldSchemas.set(node, canonicalFieldToFormSection(field, relationProjection));
+  fieldSchemas.set(node, {
+    ...canonicalFieldToFormSection(field, relationProjection),
+    sectionNavigationTarget: sectionTarget?.key,
+    sectionContentKind: sectionTarget?.contentKind,
+    sectionSourceIdentity: sectionTarget?.sourceIdentity,
+  });
   return node;
 }
 
@@ -153,10 +167,23 @@ export function buildCanonicalNativeFormBridge(
     renderModel.actionBar.map((action) => action.actionRef.backendIdentity).filter(Boolean),
   );
   const renderedBodyActionIdentities = new Set<string>();
+  const sectionLinks = workspaceSectionNavigationItems([
+    ...renderModel.zones.primary,
+    ...renderModel.zones.subordinate,
+  ]);
+  const nodeSectionTargets = new Map(sectionLinks
+    .filter((item) => item.sourceType === 'node')
+    .map((item) => [item.sourceIdentity, item]));
+  const fieldSectionTargets = new Map(sectionLinks
+    .filter((item) => item.sourceType === 'field')
+    .map((item) => [item.sourceIdentity, item]));
 
   function mapNode(node: CanonicalFormNode): CanonicalNativeLayoutNode {
     if (text(node.kind).toLowerCase() === 'field' && node.fields.length === 1) {
-      return fieldNode(node.fields[0], fieldSchemas, node, relationProjection);
+      return fieldNode(
+        node.fields[0], fieldSchemas, node, relationProjection,
+        fieldSectionTargets.get(node.fields[0].widgetId),
+      );
     }
     const rawKind = text(node.kind).toLowerCase() || 'container';
     const action = node.action;
@@ -174,7 +201,9 @@ export function buildCanonicalNativeFormBridge(
       renderedBodyActionIdentities.add(actionIdentity);
     }
     const mappedChildren = [
-      ...node.fields.map((field) => fieldNode(field, fieldSchemas)),
+      ...node.fields.map((field) => fieldNode(
+        field, fieldSchemas, undefined, relationProjection, fieldSectionTargets.get(field.widgetId),
+      )),
       ...node.children.filter((child) => !isCollaborationNode(child)).map(mapNode),
     ];
     const children = kind === 'notebook' && !mappedChildren.some((child) => child.type === 'page')
@@ -202,6 +231,9 @@ export function buildCanonicalNativeFormBridge(
         canonicalNodeKind: rawKind,
         sectionNavigationRole: node.zoneRole,
         semanticFormRole: node.semanticRole,
+        sectionNavigationTarget: nodeSectionTargets.get(node.nodeId)?.key,
+        sectionContentKind: nodeSectionTargets.get(node.nodeId)?.contentKind,
+        sectionSourceIdentity: nodeSectionTargets.get(node.nodeId)?.sourceIdentity,
         contractStyleToken: node.styleToken,
       },
       action: action ? canonicalActionRecord(action) : null,
@@ -223,6 +255,7 @@ export function buildCanonicalNativeFormBridge(
   return {
     primaryNodes: renderModel.zones.primary.map(mapNode),
     subordinateNodes: renderModel.zones.subordinate.filter((node) => !isCollaborationNode(node)).map(mapNode),
+    sectionLinks,
     fieldSchemasForNodes(nodes) {
       return resolveCanonicalNativeFieldSchemas(nodes.flatMap((node) => {
         const field = fieldSchemas.get(node);

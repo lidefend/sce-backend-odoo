@@ -5,6 +5,9 @@
     data-professional-audit-timeline
     data-floorplan-region="audit"
     data-form-semantic-role="audit"
+    data-form-section-target="surface:audit"
+    data-section-content-kind="audit-timeline"
+    data-section-source-identity="professional-audit-timeline"
     :data-audit-event-count="events.length"
     :title="summary"
   >

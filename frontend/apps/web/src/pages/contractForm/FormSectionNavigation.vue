@@ -21,6 +21,10 @@
         :aria-current="activeKey === item.key ? 'location' : undefined"
         :data-section-link="item.key"
         :data-section-target="item.selector"
+        :data-section-role="item.role || undefined"
+        :data-section-content-kind="item.contentKind || undefined"
+        :data-section-source-type="item.sourceType || undefined"
+        :data-section-source-identity="item.sourceIdentity || undefined"
         @click="activate(item)"
       >{{ item.label }}</ScButton>
     </div>
@@ -33,7 +37,15 @@
 import { nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue';
 import ScButton from '../../components/design-system/ScButton.vue';
 
-type SectionNavigationItem = { key: string; label: string; selector: string };
+type SectionNavigationItem = {
+  key: string;
+  label: string;
+  selector: string;
+  role?: string;
+  contentKind?: string;
+  sourceType?: string;
+  sourceIdentity?: string;
+};
 
 const props = defineProps<{ items: SectionNavigationItem[]; rootSelector: string }>();
 const navRef = ref<HTMLElement | null>(null);

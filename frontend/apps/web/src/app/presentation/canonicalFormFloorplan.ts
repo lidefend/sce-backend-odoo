@@ -286,6 +286,11 @@ function fieldHasBusinessRelationCapability(field: CanonicalFormNode['fields'][n
   return fieldHasRelationCapability(field) && !fieldHasAttachmentCapability(field);
 }
 
+export function fieldIsBusinessRelationCollection(field: CanonicalFormNode['fields'][number]): boolean {
+  return ['one2many', 'many2many'].includes(field.fieldType.trim().toLowerCase())
+    && !fieldHasAttachmentCapability(field);
+}
+
 function fieldIsDecisionMoney(field: CanonicalFormNode['fields'][number]): boolean {
   return field.semanticRole === 'summary'
     && field.fieldType.trim().toLowerCase() === 'monetary'

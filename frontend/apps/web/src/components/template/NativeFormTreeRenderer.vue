@@ -8,6 +8,9 @@
         :data-group-title="containerPolicyTitle(node, index)"
         :data-section-navigation-role="nativeSectionNavigationRole(node)"
         :data-form-semantic-role="semanticFormRole(node) || undefined"
+        :data-form-section-target="sectionNavigationTarget(node) || undefined"
+        :data-section-content-kind="sectionContentKind(node) || undefined"
+        :data-section-source-identity="sectionSourceIdentity(node) || undefined"
         @dragover.prevent
         @drop.prevent.stop="emitGroupFieldOrderDrop(node, $event, index)"
         @mouseup.self="emitGroupFieldOrderPointerDrop(node, index)"
@@ -564,6 +567,18 @@ function semanticFormRole(node: NativeFormLayoutNode) {
   if (direct) return direct;
   const descendantRoles = [...new Set(rawChildren(node).map(semanticFormRole).filter(Boolean))];
   return descendantRoles.length === 1 ? descendantRoles[0] : '';
+}
+
+function sectionNavigationTarget(node: NativeFormLayoutNode) {
+  return String(node?.attributes?.sectionNavigationTarget || '').trim();
+}
+
+function sectionContentKind(node: NativeFormLayoutNode) {
+  return String(node?.attributes?.sectionContentKind || '').trim();
+}
+
+function sectionSourceIdentity(node: NativeFormLayoutNode) {
+  return String(node?.attributes?.sectionSourceIdentity || '').trim();
 }
 
 function semanticSectionTitle(node: NativeFormLayoutNode) {

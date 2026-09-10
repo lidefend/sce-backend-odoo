@@ -111,7 +111,14 @@
             @field-change="emit('field-change', $event)"
           />
         </section>
-        <section v-if="showCollaborationPanel" class="sc-native-contract-collaboration" data-form-semantic-role="activity">
+        <section
+          v-if="showCollaborationPanel"
+          class="sc-native-contract-collaboration"
+          data-form-semantic-role="activity"
+          data-form-section-target="surface:activity"
+          data-section-content-kind="collaboration-panel"
+          data-section-source-identity="collaboration-panel"
+        >
           <NativeCollaborationPanel
             v-bind="collaborationPanelProps"
             :show-audit-timeline="true"
@@ -154,6 +161,7 @@ import FormSectionNavigation from './FormSectionNavigation.vue';
 import TaskFormPattern from '../../components/product-page-patterns/TaskFormPattern.vue';
 import WorkspaceFormPattern from '../../components/product-page-patterns/WorkspaceFormPattern.vue';
 import { canonicalNodeHasContent, type CanonicalRelationProjection } from './canonicalFormRenderer';
+import { workspaceSurfaceNavigationItems } from './nativeSectionNavigation';
 
 const props = defineProps<{
   renderModel: CanonicalFormRenderModel | null;
@@ -248,24 +256,13 @@ const nativeBridge = computed(() => nativeBridgeModel.value ? buildCanonicalNati
 const floorplanSubordinateNodes = computed(() => floorplan.value.subordinateNodes
   .filter((node) => !collaborationKind(node.kind))
   .filter(canonicalNodeHasContent));
-const workspaceSectionLinks = computed(() => {
-  const roles = new Set<string>();
-  const visit = (nodes: CanonicalFormNode[]) => nodes.forEach((node) => {
-    if (node.visible && node.semanticRole) roles.add(node.semanticRole);
-    node.fields.filter((field) => field.visible && field.semanticRole).forEach((field) => roles.add(field.semanticRole));
-    visit(node.children);
-  });
-  if (props.renderModel) visit([...props.renderModel.zones.primary, ...props.renderModel.zones.subordinate]);
-  const labels: Record<string, string> = {
-    summary: '概览', task: '办理信息', context: '基本资料', risk: '风险与提示',
-    relation: '关系明细', activity: '协作记录', audit: '历史审计',
-  };
-  return [...roles].filter((role) => labels[role]).map((role) => ({
-    key: role,
-    label: labels[role],
-    selector: `[data-form-semantic-role="${role}"]`,
-  }));
-});
+const workspaceSectionLinks = computed(() => [
+  ...(nativeBridge.value?.sectionLinks || []),
+  ...workspaceSurfaceNavigationItems({
+    collaborationAvailable: props.showCollaborationPanel === true,
+    auditAvailable: props.showCollaborationPanel === true && auditEvents.value.length > 0,
+  }),
+]);
 
 function collaborationKind(kind: string) {
   return ['chatter', 'activity'].includes(String(kind || '').trim().toLowerCase());
@@ -282,7 +279,7 @@ function runNativeCanonicalAction(payload: Record<string, unknown>) {
 .sc-form-driver-error {
   margin: var(--sc-product-space-4);
 }
-.sc-native-contract-page :deep([data-form-semantic-role]) {
+.sc-native-contract-page :deep([data-form-section-target]) {
   scroll-margin-top: calc(var(--sc-form-command-bar-height, 72px) + 52px);
 }
 .sc-native-contract-page {
