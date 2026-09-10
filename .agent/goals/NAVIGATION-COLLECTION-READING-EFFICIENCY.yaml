@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: NAVIGATION-COLLECTION-READING-EFFICIENCY
   title: navigation_and_collection_reading_efficiency
-  status: active
+  status: completed
   formal_product_layer: P0
   layer_target: shared_frontend_navigation_shell_and_collection_renderer
   module: frontend
@@ -43,13 +43,31 @@ goal:
         - before_screenshots_and_reproduction_report
     - id: B
       title: shared_navigation_reading_hierarchy
-      status: planned
+      status: completed
+      commit: 8eb4d5aa
     - id: C
       title: shared_collection_information_density
-      status: planned
+      status: completed
+      commits:
+        - af2e14b4
+        - 92ad5dbb
     - id: D
       title: governed_cross_sample_validation
-      status: planned
+      status: completed
+      product_candidate:
+        full_sha: 506d371f2129a8e30942ffa54959331c7f80cd90
+        fingerprint: b35b2eb1d0a7668623abb5c5a4330a8dbd4bbcabfaadb3ef0d99fffd56f937fb
+      exit_candidate:
+        full_sha: dc3ca8bd601f0943aefecf01d144b12ec0b4c2f5
+        fingerprint: fd7fea7a52702f1c3e54e3451898e36fb08037c5c611ccc43750bedbb228c1a1
+      evidence:
+        - verify.frontend.quick.gate_pass
+        - navigation_collection_and_strict_type_targeted_tests_pass
+        - light_1440_390_four_routes_eight_samples_pass_zero_mutations
+        - dark_1088_320_four_routes_eight_samples_pass_zero_mutations
+        - project_and_payment_search_pagination_and_record_return_pass
+        - income_contract_hierarchy_search_record_return_and_scroll_restore_pass
+        - manual_before_after_review_pass
   acceptance:
     - current_navigation_entry_is_distinguishable_and_full_label_is_accessible_by_mouse_keyboard_and_touch
     - primary_identity_and_key_facts_are_readable_without_model_specific_width_rules
