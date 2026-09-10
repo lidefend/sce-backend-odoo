@@ -1445,7 +1445,7 @@
     },
     {
       "category": "other",
-      "digest": "8e68208db3e27a3447ff18c578da280a5ac27ed72d113ca997c4ca31394b9de0",
+      "digest": "9ccffec410e1867405313b7bf90ab0c2f1763a204de72a30e542932cec88d4f2",
       "nativeStyleSelectors": [],
       "path": "components/product-page-header/ProductPageHeader.vue",
       "referenceNativeStyleSelectors": [],
@@ -1697,7 +1697,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "f031834e9e5f5a11cd0c34ab270bbfa21dfc6fd215707657fb3edf1ac1ee93d3",
+      "digest": "2d417371553ed9d4346fdc0cf065acdecc1b207d8332962e6aa8d75d15a40720",
       "nativeStyleSelectors": [],
       "path": "components/professional-fields/ProfessionalMany2oneFieldControl.vue",
       "referenceNativeStyleSelectors": [],
@@ -2092,7 +2092,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "f3a611119f2a22bc9601ad780bb580784461ab1107002641424607ee017a5643",
+      "digest": "3f249fc612572896f9f728676632bbe846c9f12db954102e91e15033c5f0bba2",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormDriverHost.vue",
       "referenceNativeStyleSelectors": [
@@ -2189,7 +2189,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "860553ad4455d6e298ec0faf1266b5b312b36518f6e86f3613bdf3c606ec5cb5",
+      "digest": "aeb2f8cb5911cdaf072621ffceeca285d4563426b222ba355e2660c967027193",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/FormSectionNavigation.vue",
       "referenceNativeStyleSelectors": [],
@@ -2812,7 +2812,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "0b4b92a17e1c8ab82f2f6a8a5c2f8e24e56b6d0efd18c4e8afd5480604501e40",
+  "currentInputDigest": "ce8f2ea96cfc1cb65ffe06557d9504f885a0bf5262cbc7d1745a243155d05788",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

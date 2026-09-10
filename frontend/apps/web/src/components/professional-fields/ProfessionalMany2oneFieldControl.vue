@@ -269,7 +269,7 @@ function emitInlineCreate(event: Event) {
   position: absolute;
   z-index: var(--sc-component-relation-dropdown-z-index, 40);
   inset-inline: 0;
-  margin-top: 6px;
+  bottom: calc(100% + 6px);
   display: grid;
   gap: 6px;
   padding: 8px;

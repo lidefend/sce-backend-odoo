@@ -1496,6 +1496,9 @@ try {
               || null;
             const popup = [...document.querySelectorAll('[role="listbox"]')]
               .find((node) => visible(node) && node.getBoundingClientRect().width > 0);
+            const selectOwner = select instanceof HTMLElement
+              ? select.closest('[data-semantic-component="ScSelect"], [data-semantic-component="ScRelationField"]')
+              : null;
             const pack = (node) => {
               if (!(node instanceof HTMLElement)) return null;
               const rect = node.getBoundingClientRect();
@@ -1506,6 +1509,11 @@ try {
               checked: true,
               selectRect: pack(select),
               popupFound: popup instanceof HTMLElement,
+              popupKind: popup instanceof HTMLElement && popup.matches('.many2one-option-panel')
+                ? 'business-relation-panel'
+                : 'official-component-popup',
+              requestedPlacement: selectOwner instanceof HTMLElement ? selectOwner.dataset.popupPlacement || '' : '',
+              placementLocked: selectOwner instanceof HTMLElement && selectOwner.dataset.popupPlacementLocked === 'true',
               popupRect: pack(popup),
               viewport: [window.innerWidth, window.innerHeight],
               pass: popupRect instanceof DOMRect
