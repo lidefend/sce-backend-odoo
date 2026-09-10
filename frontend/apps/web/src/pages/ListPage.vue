@@ -1371,7 +1371,7 @@ const enabledColumns = computed(() => {
 });
 
 function adaptiveColumnFloor(field: string) {
-  return listColumnAdaptiveFloor(columnLayoutRole(field));
+  return listColumnAdaptiveFloor(columnLayoutRole(field), field === rowPrimary.value);
 }
 
 function derivedColumnWidth(field: string) {

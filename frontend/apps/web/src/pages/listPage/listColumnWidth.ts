@@ -38,12 +38,12 @@ const limits: Record<ListColumnLayoutRole, [number, number]> = {
   actions: [80, 112],
 };
 
-export function listColumnAdaptiveFloor(role: ListColumnLayoutRole) {
+export function listColumnAdaptiveFloor(role: ListColumnLayoutRole, primary = false) {
   const floors: Record<ListColumnLayoutRole, number> = {
     identity: 168, description: 192, relation: 144, text: 96,
     status: 80, money: 128, date: 108, actions: 80,
   };
-  return floors[role];
+  return primary ? Math.max(floors[role], 208) : floors[role];
 }
 
 export function resolveListColumnBudgetWidth(input: {

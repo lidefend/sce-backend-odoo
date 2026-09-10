@@ -53,6 +53,7 @@ assert.match(selectionExportSource, /columnLabels:/, 'selected-record export mus
 
 assert.equal(listColumnAdaptiveFloor('money'), 128, 'money columns must reserve enough width for business amounts and footer totals');
 assert.equal(listColumnAdaptiveFloor('identity'), 168, 'business identifiers must retain a scannable desktop floor');
+assert.equal(listColumnAdaptiveFloor('identity', true), 208, 'the primary identity floor must survive adaptive table distribution');
 assert.equal(listColumnAdaptiveFloor('description'), 192, 'business names must retain a readable non-truncating floor');
 assert.equal(listColumnAdaptiveFloor('relation'), 144, 'counterparty and relation labels must not collapse to token-sized columns');
 assert.equal(
