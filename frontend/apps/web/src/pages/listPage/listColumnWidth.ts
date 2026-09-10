@@ -14,6 +14,7 @@ type ColumnWidthInput = {
   label: string;
   type?: string;
   role: ListColumnLayoutRole;
+  primary?: boolean;
   values?: unknown[];
   selectionLabels?: string[];
 };
@@ -37,12 +38,12 @@ const limits: Record<ListColumnLayoutRole, [number, number]> = {
   actions: [80, 112],
 };
 
-export function listColumnAdaptiveFloor(role: ListColumnLayoutRole) {
+export function listColumnAdaptiveFloor(role: ListColumnLayoutRole, primary = false) {
   const floors: Record<ListColumnLayoutRole, number> = {
     identity: 168, description: 192, relation: 144, text: 96,
     status: 80, money: 128, date: 108, actions: 80,
   };
-  return floors[role];
+  return primary ? Math.max(floors[role], 208) : floors[role];
 }
 
 export function resolveListColumnBudgetWidth(input: {
@@ -92,8 +93,10 @@ function percentile(values: number[], ratio: number) {
 
 export function deriveListColumnWidth(input: ColumnWidthInput) {
   const type = String(input.type || '').trim().toLowerCase();
-  const [minimum, maximum] = limits[input.role];
-  const headerWidth = textWidth(input.label) + 52;
+  const [roleMinimum, roleMaximum] = limits[input.role];
+  const minimum = input.primary ? Math.max(roleMinimum, 208) : roleMinimum;
+  const maximum = input.primary ? Math.max(roleMaximum, 300) : roleMaximum;
+  const headerWidth = textWidth(input.label) + 32;
   if (input.role === 'date') {
     return Math.min(maximum, Math.max(minimum, type === 'datetime' ? 140 : 112, headerWidth));
   }
@@ -105,7 +108,7 @@ export function deriveListColumnWidth(input: ColumnWidthInput) {
     .filter((value) => value !== null && value !== undefined && value !== '' && value !== '--')
     .map((value) => textWidth(value) + 24);
   const sampledWidth = percentile(candidates, 0.8);
-  const contentWidth = ['identity', 'description', 'relation'].includes(input.role)
+  const contentWidth = !input.primary && ['identity', 'description', 'relation'].includes(input.role)
     ? Math.ceil(sampledWidth * 0.88)
     : sampledWidth;
   return Math.min(maximum, Math.max(minimum, headerWidth, contentWidth));

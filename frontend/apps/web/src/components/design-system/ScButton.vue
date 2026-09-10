@@ -62,7 +62,7 @@ const props = withDefaults(defineProps<{
   disabled?: boolean;
   loading?: boolean;
   loadingLabel?: string;
-  appearance?: 'default' | 'structured-content' | 'metric' | 'section-tab' | 'menu-item' | 'tree-item' | 'toolbar-chip' | 'toolbar-menu-toggle' | 'status-chip' | 'info-action' | 'favorite-toggle' | 'smart-action' | 'relation-tag' | 'surface-tile' | 'outline-action' | 'summary-chip' | 'breadcrumb-item' | 'context-action' | 'auth-link' | 'primary-submit' | 'dashboard-action' | 'dashboard-quick-link' | 'dashboard-recent-link' | 'scope-option' | 'scope-segment' | 'account-context' | 'account-context-compact';
+  appearance?: 'default' | 'structured-content' | 'metric' | 'section-tab' | 'menu-item' | 'tree-item' | 'toolbar-chip' | 'toolbar-menu-toggle' | 'status-chip' | 'info-action' | 'favorite-toggle' | 'smart-action' | 'relation-tag' | 'surface-tile' | 'outline-action' | 'column-settings' | 'summary-chip' | 'breadcrumb-item' | 'context-action' | 'auth-link' | 'primary-submit' | 'dashboard-action' | 'dashboard-quick-link' | 'dashboard-recent-link' | 'scope-option' | 'scope-segment' | 'account-context' | 'account-context-compact';
 }>(), {
   type: 'button',
   variant: 'secondary',
@@ -94,5 +94,8 @@ defineExpose({
   background: var(--sc-app-info-bg);
   color: var(--sc-app-accent);
   box-shadow: inset 0 -2px 0 var(--sc-app-accent);
+}
+@media (max-width: 520px) {
+  [data-appearance='column-settings'] { min-width: 44px; min-height: 44px; padding-inline: 0; }
 }
 </style>

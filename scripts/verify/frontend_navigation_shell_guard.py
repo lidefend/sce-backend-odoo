@@ -89,6 +89,16 @@ def validate(root: Path = ROOT) -> list[str]:
     ):
         if marker not in tree:
             errors.append(f"canonical menu must override the vendor fixed width: {marker}")
+    for marker in (
+        ':data-navigation-label="node.label"',
+        ':aria-label="node.label"',
+        'const showIcon = computed(() => props.depth < 2)',
+        'v-if="showIcon" #icon',
+        '-webkit-line-clamp: 2',
+        'overflow-wrap: anywhere',
+    ):
+        if marker not in menu_node:
+            errors.append(f"canonical menu must retain readable deep-label projection: {marker}")
     if not re.search(r"\.menu\s*\{[^}]*min-width:\s*0;[^}]*overflow:\s*hidden", shell_style, re.DOTALL):
         errors.append("navigation shell menu host must contain width while the tree owns vertical scrolling")
     for marker in (

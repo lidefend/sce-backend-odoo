@@ -2,8 +2,9 @@
   <div
     class="cell-sortable"
     data-semantic-component="CollectionColumnHeaderControl"
-    :class="[densityClass, { 'is-sorted': sorted, 'is-dragging': dragging, 'is-sort-disabled': !sortable }]"
+    :class="[densityClass, { 'is-primary': primary, 'is-sorted': sorted, 'is-dragging': dragging, 'is-sort-disabled': !sortable }]"
     :data-column="field"
+    :data-primary="primary || undefined"
     :data-reorderable="reorderable !== false"
     :style="columnStyle"
     :title="sortTitle"
@@ -33,6 +34,7 @@ defineProps<{
   label: string;
   sortable: boolean;
   reorderable?: boolean;
+  primary?: boolean;
   sorted: boolean;
   dragging: boolean;
   sortIcon: 'chevron-down' | 'chevron-up';

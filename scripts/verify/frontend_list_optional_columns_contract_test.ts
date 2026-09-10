@@ -53,12 +53,23 @@ assert.match(selectionExportSource, /columnLabels:/, 'selected-record export mus
 
 assert.equal(listColumnAdaptiveFloor('money'), 128, 'money columns must reserve enough width for business amounts and footer totals');
 assert.equal(listColumnAdaptiveFloor('identity'), 168, 'business identifiers must retain a scannable desktop floor');
+assert.equal(listColumnAdaptiveFloor('identity', true), 208, 'the primary identity floor must survive adaptive table distribution');
 assert.equal(listColumnAdaptiveFloor('description'), 192, 'business names must retain a readable non-truncating floor');
 assert.equal(listColumnAdaptiveFloor('relation'), 144, 'counterparty and relation labels must not collapse to token-sized columns');
 assert.equal(
   deriveListColumnWidth({ label: '合同金额', type: 'monetary', role: 'money', values: [3665000] }),
   128,
   'derived money width must not shrink below the readable amount floor',
+);
+assert.equal(
+  deriveListColumnWidth({ label: '项目名称', role: 'identity', primary: true, values: ['S69 支付台账演示项目'] }),
+  208,
+  'the authoritative row identity must receive a shared readable floor without model-specific width rules',
+);
+assert.equal(
+  deriveListColumnWidth({ label: '项目名称', role: 'identity', values: ['S69 支付台账演示项目'] }),
+  168,
+  'non-primary identity columns retain the ordinary adaptive floor',
 );
 assert.equal(
   resolveListColumnBudgetWidth({ customWidth: 0, derivedWidth: 184, role: 'text' }),

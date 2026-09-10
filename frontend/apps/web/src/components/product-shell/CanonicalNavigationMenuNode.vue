@@ -9,9 +9,11 @@
     :data-navigation-action-id="node.actionId ?? ''"
     :data-navigation-state="node.state"
     :data-navigation-depth="depth"
+    :data-navigation-label="node.label"
     :title="blockedTitle"
+    :aria-label="node.label"
   >
-    <template #icon><ScIcon :name="icon" :size="depth === 0 ? 16 : 14" /></template>
+    <template v-if="showIcon" #icon><ScIcon :name="icon" :size="depth === 0 ? 16 : 14" /></template>
     <template #title>
       <span class="navigation-node__label" :title="blockedTitle || node.label">{{ node.label }}</span>
       <span v-if="badge" class="navigation-node__badge">{{ badge }}</span>
@@ -33,10 +35,12 @@
     :data-navigation-action-id="node.actionId ?? ''"
     :data-navigation-state="node.state"
     :data-navigation-depth="depth"
+    :data-navigation-label="node.label"
     :title="blockedTitle || node.label"
+    :aria-label="node.label"
     :aria-current="active ? 'page' : undefined"
   >
-    <template #icon><ScIcon :name="icon" :size="depth === 0 ? 16 : 14" /></template>
+    <template v-if="showIcon" #icon><ScIcon :name="icon" :size="depth === 0 ? 16 : 14" /></template>
     <span class="navigation-node__label">{{ node.label }}</span>
     <span v-if="badge" class="navigation-node__badge">{{ badge }}</span>
   </TDesignMenuItem>
@@ -60,6 +64,7 @@ const blocked = computed(() => props.node.state === 'disabled');
 const blockedTitle = computed(() => props.node.disabledReason || undefined);
 const badge = computed(() => String(props.node.source.meta?.badge_label || '').trim());
 const active = computed(() => activeKey?.value === props.node.key);
+const showIcon = computed(() => props.depth < 2);
 const icon = computed<NavigationIconName>(() => {
   const requested = String(props.node.icon || '').trim() as NavigationIconName;
   return knownIcons.has(requested) ? requested : props.node.children.length ? 'folder' : 'file-text';
@@ -68,10 +73,15 @@ const icon = computed<NavigationIconName>(() => {
 
 <style scoped>
 .navigation-node__label {
+  display: -webkit-box;
   min-width: 0;
   overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 18px;
+  overflow-wrap: anywhere;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .navigation-node__badge {

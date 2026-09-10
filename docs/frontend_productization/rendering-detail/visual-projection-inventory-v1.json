@@ -461,7 +461,7 @@
     },
     {
       "category": "other",
-      "digest": "f4fce569bd8710d20e4a211080ba067833405e5fe3ff630e5b23b0dc92a3407d",
+      "digest": "1907ec960a06fd7d19fbc80abed655675526ac482b027bf62bd055f1d03a4145",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScButton.vue",
       "referenceNativeStyleSelectors": [],
@@ -1243,7 +1243,7 @@
     },
     {
       "category": "collection",
-      "digest": "383e1063e3c606eefce771f02a3c5e80359a5b6f1d053e2c13f7cde9739e774b",
+      "digest": "a61aadbc60eda675924da855fd6f507e28c0cdaf8c4f447eaa57eaaa254e3957",
       "nativeStyleSelectors": [],
       "path": "components/product-list/CollectionColumnHeaderControl.vue",
       "referenceNativeStyleSelectors": [],
@@ -1397,7 +1397,7 @@
     },
     {
       "category": "collection",
-      "digest": "59cab8ac8626d1be028dfbd2f120c02b9773ccf29e7d1e0810e8a081f358373d",
+      "digest": "117a139cd1fc78f3b5c43a2507f27abf5238498b6ffb515a2935e4520c35a3ce",
       "nativeStyleSelectors": [],
       "path": "components/product-list/ListSurfaceHeader.vue",
       "referenceNativeStyleSelectors": [],
@@ -1538,7 +1538,7 @@
     },
     {
       "category": "shell",
-      "digest": "01635c06bf70481b228d2b7834c8213f933be7d68db22d544daedbb70c85e473",
+      "digest": "8592f3ada52ee9b2fd447182133114ebe0aa31888416477a9d0dbd8ddeb00cef",
       "nativeStyleSelectors": [],
       "path": "components/product-shell/CanonicalNavigationMenuNode.vue",
       "referenceNativeStyleSelectors": [],
@@ -2022,7 +2022,7 @@
     },
     {
       "category": "collection",
-      "digest": "cc9b2a219de2f8b4dd18608cdabc56948b4c124ce2f1c331566191737daa892f",
+      "digest": "a856533cec732cf204ba98b51859fb9329b486e255441417ca34ff56a090c38d",
       "nativeStyleSelectors": [],
       "path": "pages/ListPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2820,7 +2820,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "859e1d9c915d6f0e1029c46a0b11d10cce2410db894ea2f107e2504aab7edb53",
+  "currentInputDigest": "20020d96c5d2e35851890b687e69cb410316759ce404fc1af0f88a5e6f03e6fd",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

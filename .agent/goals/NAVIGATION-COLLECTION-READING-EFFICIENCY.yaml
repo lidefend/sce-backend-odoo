@@ -1,0 +1,97 @@
+schema_version: 1
+goal:
+  id: NAVIGATION-COLLECTION-READING-EFFICIENCY
+  title: navigation_and_collection_reading_efficiency
+  status: completed
+  formal_product_layer: P0
+  layer_target: shared_frontend_navigation_shell_and_collection_renderer
+  module: frontend
+  objective: >-
+    Improve shared navigation label recognition and collection information density
+    without changing business menus, contracts, routes, permissions or data.
+  baseline:
+    branch: feature/p0-navigation-collection-reading-efficiency-v1
+    full_sha: 10a69c92e1158c5445aff1054fa7fa5c9acdc14b
+    source: clean_main_after_official_icon_merge
+    fingerprint: 703b8246e72743da44fe586b6be74c9078476d49d4178b55d75042f61f0c2718
+    fingerprint_path: artifacts/fingerprints/navigation_collection_reading_efficiency_baseline_10a69c92.json
+    path_count: 7377
+  product_boundary:
+    standard_vs_user_specific: platform_standard
+    why_here: >-
+      Navigation indentation, label discoverability, generic column sizing and
+      header controls are shared cross-model presentation responsibilities.
+    why_not_elsewhere:
+      - no_project_payment_or_contract_business_semantics
+      - no_contract_schema_permission_menu_route_or_action_change
+      - no_customer_preference_or_low_code_configuration_change
+      - no_database_fixture_acceptance_upgrade_or_release_work
+    blast_radius:
+      - shared_application_navigation
+      - shared_collection_desktop_table_and_mobile_cards
+      - column_preference_sort_resize_and_reorder_interactions
+      - project_payment_and_income_contract_read_only_samples
+  batches:
+    - id: A
+      title: governed_baseline_reproduction
+      status: completed
+      evidence:
+        - verify.frontend.quick.gate_pass
+        - local.dev.verify_authority_pass
+        - light_1440_390_four_route_samples_zero_mutations
+        - dark_1088_320_four_route_samples_zero_mutations
+        - before_screenshots_and_reproduction_report
+    - id: B
+      title: shared_navigation_reading_hierarchy
+      status: completed
+      commit: 8eb4d5aa
+    - id: C
+      title: shared_collection_information_density
+      status: completed
+      commits:
+        - af2e14b4
+        - 92ad5dbb
+    - id: D
+      title: governed_cross_sample_validation
+      status: completed
+      product_candidate:
+        full_sha: 506d371f2129a8e30942ffa54959331c7f80cd90
+        fingerprint: b35b2eb1d0a7668623abb5c5a4330a8dbd4bbcabfaadb3ef0d99fffd56f937fb
+      exit_candidate:
+        full_sha: dc3ca8bd601f0943aefecf01d144b12ec0b4c2f5
+        fingerprint: fd7fea7a52702f1c3e54e3451898e36fb08037c5c611ccc43750bedbb228c1a1
+      evidence:
+        - verify.frontend.quick.gate_pass
+        - navigation_collection_and_strict_type_targeted_tests_pass
+        - light_1440_390_four_routes_eight_samples_pass_zero_mutations
+        - dark_1088_320_four_routes_eight_samples_pass_zero_mutations
+        - project_and_payment_search_pagination_and_record_return_pass
+        - income_contract_hierarchy_search_record_return_and_scroll_restore_pass
+        - manual_before_after_review_pass
+    - id: E
+      title: column_header_reading_and_operation_isolation
+      status: completed
+      exit_candidate:
+        full_sha: d4cecd1cdadbaf343f98915ac19bb23d2e34436d
+        fingerprint: 43decc3a68e985386f97536edf086eec12230338985bacc398a3a5c1ad554b7a
+      evidence:
+        - hidden_controls_reject_pointer_input
+        - hover_and_keyboard_focus_reveal_without_title_shift
+        - payment_sort_exactly_one_request_and_keyboard_resize_restore_pass
+        - fixed_order_policy_records_drag_as_not_applicable_without_contract_override
+        - mobile_column_settings_touch_target_44px
+        - light_1440_390_and_dark_1088_320_six_samples_each_pass_zero_business_mutations
+  acceptance:
+    - current_navigation_entry_is_distinguishable_and_full_label_is_accessible_by_mouse_keyboard_and_touch
+    - primary_identity_and_key_facts_are_readable_without_model_specific_width_rules
+    - long_text_has_a_complete_view_path
+    - sort_resize_reorder_search_pagination_return_and_column_preferences_remain_available
+    - light_dark_and_1440_1088_390_320_are_registered_with_zero_business_writes
+    - form_alignment_global_provider_and_official_icon_mapping_do_not_regress
+  exclusions:
+    - menu_tree_names_routes_or_permissions
+    - business_contracts_actions_amounts_or_data
+    - wider_sidebar_hidden_columns_or_smaller_type_as_local_workarounds
+    - acceptance_rebuild_upgrade_compatibility_release_or_unrelated_visual_polish
+  rollback:
+    - revert_documentation_then_collection_then_navigation_commits_without_database_or_contract_rollback
