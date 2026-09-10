@@ -1425,7 +1425,7 @@ try {
           popupBoundaryEvidence = await page.evaluate(() => {
             const visible = (node) => node instanceof HTMLElement && node.offsetParent !== null;
             const select = [...document.querySelectorAll('.field [data-semantic-component="ScSelect"]')].find(visible);
-            const popup = [...document.querySelectorAll('[role="listbox"], .t-select__dropdown, .t-popup__content')]
+            const popup = [...document.querySelectorAll('[role="listbox"]')]
               .find((node) => visible(node) && node.getBoundingClientRect().width > 0);
             const pack = (node) => {
               if (!(node instanceof HTMLElement)) return null;
