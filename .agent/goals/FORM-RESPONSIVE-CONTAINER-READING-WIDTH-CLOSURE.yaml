@@ -1,7 +1,7 @@
 goal:
   id: FORM-RESPONSIVE-CONTAINER-READING-WIDTH-CLOSURE
   title: shared_form_responsive_container_and_reading_width_closure
-  status: active
+  status: verification_pending
   objective: close_internal_mobile_form_overflow_without_masking_or_business_semantic_changes
   baseline:
     branch: feature/form-page-structure-professionalization-v1
@@ -51,3 +51,22 @@ goal:
     - zero_business_writes
   rollback:
     - revert_this_batch_after_7be995af_without_contract_or_database_rollback
+  result:
+    product_commit: e5085e42
+    candidate_sha: 04c774035e241eb82343f37ceac951fcd8c79d97
+    candidate_fingerprint: 67bd65ed22559dfcdccf0b2c8e779463f8e7916a547a210b700f70db1a879089
+    candidate_fingerprint_path: artifacts/fingerprints/form_responsive_width_candidate_04c77403.json
+    final_light_summary: artifacts/playwright/form-responsive-width-final-light-1440-390-04c77403/summary.json
+    final_dark_summary: artifacts/playwright/form-responsive-width-final-dark-1088-320-04c77403/summary.json
+    route_viewport_samples: 16
+    screenshots: 48
+    nested_boundary_checks: 756
+    popup_boundary_checks: 8
+    navigation_journeys: 76
+    mutation_count: 0
+    browser_errors: 0
+    browser_failures: 0
+    frontend_quick: pass
+    candidate_service: stopped
+    release_state: not_run
+    next: await_product_review_before_form_expression_freeze

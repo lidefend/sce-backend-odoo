@@ -9133,3 +9133,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 基线 `7be995af2b87c4d384464decc3db23571859feba`，完整指纹 `0debfd8efd778e42269d0a21061ec9bf458eab9bd9b7755c9853e0b347bc50f5`（7355 paths）。复用唯一已注册 worktree 与 `local.dev`（`sc-local-dev` / `sc_dev_demo` / 18081 / 5176）。
 - 唯一目标：关闭 320/390 下根文档宽度检查遗漏的表单内部超宽，证明正文、章节栏、字段控件和浮层都在各自边界内；允许滚动的关系明细表格单独分类。
 - 隐藏章节、合同金额语义、字段/权限/动作、`smart_construction_demo` 目录缺口、键盘/查询、数据库、fixture、acceptance、release 与远程写入均不在本批范围。
+
+### 完成记录
+
+- 旧候选 `d0ede53f…` 在 320px 精确测得正文 255px、native page 312px、右溢出 57px；根文档仍为 320px，确认原指标盲区。
+- P0 修复提交 `e5085e42` 统一 native page/driver/tree 的收缩链，章节外壳不再裁切且仅内部 track 可横向滚动；移动嵌套 group 不再逐层缩进。
+- 最终候选 `04c774035e241eb82343f37ceac951fcd8c79d97`，完整指纹 `67bd65ed22559dfcdccf0b2c8e779463f8e7916a547a210b700f70db1a879089`（7356 paths）。320px 下 native page 与 owner 同为 255px，公开关系控件及 `role=listbox` 弹层完整落在视口内。
+- light 1440/390 与 dark 1088/320 共 16 个路由视口、756 个内部边界、8 次弹层检查、76 次章节定位全部 PASS；48 张首屏/中段/底部截图人工复核无阻断，mutation/errors/failures 均为 0。最终 Frontend Quick PASS，候选已停止。
+- 完整记录：`frontend_form_responsive_container_reading_width_closure_20260910.md`。状态为 `verification_pending`，等待产品复核是否冻结表单表达成果；未启动键盘/查询、acceptance 或 release。
