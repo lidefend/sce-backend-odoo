@@ -9178,3 +9178,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 边界：P0 通用前端机制，P4 仅验证；不改契约、权限、业务动作、金额口径、隐藏章节或数据库。
 - 顺序：A 根级官方能力 → B 页头/正文职责 → C 明细/协作与接管审计 → 单一冻结候选联合复核；每批独立本地提交。
 - 上一批字段对齐保持 `verification_pending`，复用本地证据但不替代独立复核。
+
+### 完成记录
+
+- A/B/C 产品提交为 `c752482e`、`39f075b5`、`2ac68f66`：根级 TDesign 1.20.5 ConfigProvider 与单例主题/减少动画运行时、共享页头/正文责任、明细/协作层次及五类官方能力接管审计均已落地；最终 P4 门禁接线提交为 `07758bd7`。
+- 冻结候选 `07758bd72c11e41157b3125b4d314ba7874c606b`，完整指纹 `64220630eaa650bc0f39b04686a310306de892c85976bf8c4d3b3377bf7f972c`（7365 paths）。Frontend Quick、严格类型、production build、官方组件零缺口清单和 16 项非零配置传播测试 PASS。
+- light 1440/390 与 dark 1088/320 覆盖 9 类页面共 36 个路由视口；最终摘要均为 `pass=true`、mutation/errors/failures empty。收入合同新建 24 控件、跨组列线、付款只读行基线均未退化；人工复核首屏/中段/底部未发现遮挡、裁切或无用途新增套框。
+- 当前数据未提供材料“搜索更多”可选结果；集合无唯一查询栏，层级工作区无匹配诊断未进入零行，因此这些附加旅程明确不计为通过，也未触发产品扩展或门禁降低。候选服务已停止。
+- 完整记录：`frontend_global_component_page_expression_closure_20260910.md`。状态为 `verification_pending`，等待独立复核；未执行多角色、真实写入、acceptance、升级、push、PR、merge 或 release。
