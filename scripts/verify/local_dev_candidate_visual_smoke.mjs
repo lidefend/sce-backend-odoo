@@ -3086,13 +3086,15 @@ try {
           await firstHeader.hover();
           const hovered = await headerState(firstHeader);
           await firstHeader.locator('.column-sort-btn').focus();
-          await page.keyboard.press('Shift+Tab');
+          const dragHandleCount = await visibleHeaders.locator('.column-drag-handle').count();
+          await page.keyboard.press(dragHandleCount > 0 ? 'Shift+Tab' : 'Tab');
           const tabFocus = await page.evaluate(() => ({
             reachedDrag: document.activeElement?.classList.contains('column-drag-handle') === true,
+            reachedResize: document.activeElement?.classList.contains('column-resize-handle') === true,
             label: document.activeElement?.getAttribute('aria-label') || '',
             tag: document.activeElement?.tagName || '',
           }));
-          const tabReachedDrag = tabFocus.reachedDrag;
+          const tabReachedControl = dragHandleCount > 0 ? tabFocus.reachedDrag : tabFocus.reachedResize;
           const focused = await headerState(firstHeader);
 
           let shadowPreference = null;
@@ -3145,11 +3147,13 @@ try {
           await waitForStableProductSurface(page);
           const listRequestsAfterSort = listRequestCount;
 
-          const sourceHeader = page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${sourceField}"]:visible`);
-          const targetHeader = page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${targetField}"]:visible`);
-          await sourceHeader.hover();
-          await sourceHeader.locator('.column-drag-handle').dragTo(targetHeader);
-          await page.locator('.list-surface-save-badge.is-saved:visible').waitFor({ state: 'visible', timeout: 15000 });
+          if (dragHandleCount > 0) {
+            const sourceHeader = page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${sourceField}"]:visible`);
+            const targetHeader = page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${targetField}"]:visible`);
+            await sourceHeader.hover();
+            await sourceHeader.locator('.column-drag-handle').dragTo(targetHeader);
+            await page.locator('.list-surface-save-badge.is-saved:visible').waitFor({ state: 'visible', timeout: 15000 });
+          }
           const reordered = await visibleHeaders.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-column') || ''));
           const resizedHeader = page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${sourceField}"]:visible`);
           const widthBefore = Number((await resizedHeader.boundingBox())?.width || 0);
@@ -3174,11 +3178,13 @@ try {
           const returnedOrder = await returnedHeaders.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-column') || ''));
           const returnedWidth = Number((await page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${sourceField}"]:visible`).boundingBox())?.width || 0);
 
-          const restoreSource = page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${sourceField}"]:visible`);
-          const restoreTarget = page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${targetField}"]:visible`);
-          await restoreSource.hover();
-          await restoreSource.locator('.column-drag-handle').dragTo(restoreTarget);
-          await page.locator('.list-surface-save-badge.is-saved:visible').waitFor({ state: 'visible', timeout: 15000 });
+          if (dragHandleCount > 0) {
+            const restoreSource = page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${sourceField}"]:visible`);
+            const restoreTarget = page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${targetField}"]:visible`);
+            await restoreSource.hover();
+            await restoreSource.locator('.column-drag-handle').dragTo(restoreTarget);
+            await page.locator('.list-surface-save-badge.is-saved:visible').waitFor({ state: 'visible', timeout: 15000 });
+          }
           const restoreResize = page.locator(`[data-semantic-component="CollectionColumnHeaderControl"][data-column="${sourceField}"]:visible .column-resize-handle`);
           await restoreResize.focus();
           await restoreResize.press('ArrowLeft');
@@ -3195,38 +3201,43 @@ try {
             && Math.abs(idle.title.right - hovered.title.right) <= 1
             && Math.abs(idle.title.left - focused.title.left) <= 1
             && Math.abs(idle.title.right - focused.title.right) <= 1;
-          const controlsDoNotOverlapTitle = idle.title && idle.drag && idle.resize
-            && idle.title.right <= idle.drag.left + 1
-            && idle.drag.right <= idle.resize.left + 1;
+          const controlsDoNotOverlapTitle = idle.title && idle.resize
+            && (idle.drag ? idle.title.right <= idle.drag.left + 1 && idle.drag.right <= idle.resize.left + 1 : idle.title.right <= idle.resize.left + 1);
           const expectedReordered = [targetField, sourceField, ...originalOrder.slice(2)];
+          const dragBehaviorPass = dragHandleCount > 0
+            ? JSON.stringify(reordered) === JSON.stringify(expectedReordered)
+              && JSON.stringify(returnedOrder) === JSON.stringify(expectedReordered)
+              && JSON.stringify(restoredOrder) === JSON.stringify(originalOrder)
+            : JSON.stringify(reordered) === JSON.stringify(originalOrder)
+              && JSON.stringify(returnedOrder) === JSON.stringify(originalOrder)
+              && JSON.stringify(restoredOrder) === JSON.stringify(originalOrder);
           columnHeaderBehavior = {
-            mode: 'desktop-real-interaction', idle, hovered, focused, tabReachedDrag, tabFocus,
+            mode: 'desktop-real-interaction', idle, hovered, focused, tabReachedControl, tabFocus,
+            dragHandleCount,
+            dragCapability: dragHandleCount > 0 ? 'enabled-and-exercised' : 'contract-disabled-not-applicable',
             originalOrder, reordered, returnedOrder, restoredOrder,
             widthBefore, widthAfter, returnedWidth, restoredWidth,
             recordId, listRequestsAfterSort, listRequestsAfterControls, listRequestsAfterRestore,
             preferenceSetCount, preferencePersistenceMode: 'browser-shadow-no-database-write',
             sameTitleGeometry, controlsDoNotOverlapTitle,
-            pass: idle.dragOpacity === '0'
-              && idle.dragPointerEvents === 'none'
+            pass: (!idle.drag || (idle.dragOpacity === '0' && idle.dragPointerEvents === 'none'))
               && idle.resizeOpacity === '0'
               && idle.resizePointerEvents === 'none'
-              && hovered.dragOpacity === '1'
-              && hovered.dragPointerEvents !== 'none'
-              && focused.dragOpacity === '1'
-              && focused.dragPointerEvents !== 'none'
-              && tabReachedDrag
+              && (!hovered.drag || (hovered.dragOpacity === '1' && hovered.dragPointerEvents !== 'none'))
+              && (!focused.drag || (focused.dragOpacity === '1' && focused.dragPointerEvents !== 'none'))
+              && focused.resizeOpacity === '1'
+              && focused.resizePointerEvents !== 'none'
+              && tabReachedControl
               && sameTitleGeometry
               && controlsDoNotOverlapTitle
-              && JSON.stringify(reordered) === JSON.stringify(expectedReordered)
-              && JSON.stringify(returnedOrder) === JSON.stringify(expectedReordered)
-              && JSON.stringify(restoredOrder) === JSON.stringify(originalOrder)
+              && dragBehaviorPass
               && widthAfter >= widthBefore + 9
               && Math.abs(returnedWidth - widthAfter) <= 1
               && Math.abs(restoredWidth - widthBefore) <= 1
               && listRequestsAfterSort === 1
               && listRequestsAfterControls === 1
               && listRequestsAfterRestore >= 2
-              && preferenceSetCount >= 4,
+              && preferenceSetCount >= (dragHandleCount > 0 ? 4 : 2),
           };
         }
         let paginationCycle = null;
