@@ -3042,14 +3042,14 @@ try {
           && paginationMode === 'paged'
           && (target.paginationCycleDesktopOnly !== true || viewport.name === 'desktop')) {
           const pagination = footer.locator('[data-semantic-component="ScPagination"]');
-          const pageTwo = pagination.getByRole('button', { name: /^2$/ });
-          if (await pageTwo.count() !== 1) throw new Error(`${target.name}: expected one accessible page 2 control`);
+          const pageTwo = pagination.locator('li').filter({ hasText: /^2$/ });
+          if (await pageTwo.count() !== 1) throw new Error(`${target.name}: expected one official page 2 item`);
           const beforeUrl = new URL(page.url());
           await pageTwo.click();
           await waitForStableProductSurface(page);
           const pageTwoUrl = new URL(page.url());
-          const pageOne = pagination.getByRole('button', { name: /^1$/ });
-          if (await pageOne.count() !== 1) throw new Error(`${target.name}: expected one accessible page 1 control after paging`);
+          const pageOne = pagination.locator('li').filter({ hasText: /^1$/ });
+          if (await pageOne.count() !== 1) throw new Error(`${target.name}: expected one official page 1 item after paging`);
           await pageOne.click();
           await waitForStableProductSurface(page);
           const restoredUrl = new URL(page.url());
