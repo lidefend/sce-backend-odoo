@@ -29,6 +29,28 @@ class FrontendOfficialIconResourceGuardTest(unittest.TestCase):
         with patch("pathlib.Path.read_text", altered):
             self.assertTrue(any("manual visual glyph" in item for item in validate()))
 
+    def test_manual_visual_glyph_in_ui_package_fails(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "SceneHierarchySurface.vue":
+                return value + "\n<span aria-hidden=\"true\">•</span>"
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertTrue(any("frontend/packages/ui/src" in item and "manual character icon" in item for item in validate()))
+
+    def test_quoted_plus_visual_glyph_fails(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            return value + "\n<span>{{ expanded ? '−' : '+' }}</span>" if path.name == "scIcon.ts" else value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertTrue(any("manual character icon" in item for item in validate()))
+
     def test_public_package_root_is_required(self):
         real = Path.read_text
 

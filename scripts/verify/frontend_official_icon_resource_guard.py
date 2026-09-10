@@ -1,16 +1,24 @@
 #!/usr/bin/env python3
 """Fail closed when product UI bypasses the official icon adapter."""
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE_ROOT = ROOT / "frontend/apps/web/src"
+SOURCE_ROOTS = (
+    ROOT / "frontend/apps/web/src",
+    ROOT / "frontend/packages/ui/src",
+)
+SOURCE_ROOT = SOURCE_ROOTS[0]
 SC_ICON = SOURCE_ROOT / "components/design-system/ScIcon.vue"
 SC_ICON_MODEL = SOURCE_ROOT / "components/design-system/scIcon.ts"
 UI_PACKAGE = ROOT / "frontend/packages/ui/package.json"
 UI_ICONS = ROOT / "frontend/packages/ui/src/icons.ts"
 
 FORBIDDEN_VISUAL_GLYPHS = ("📁", "📄", "📊", "📕", "📘", "📗", "📙", "🗜", "🖼", "🎵", "🎬", "📎", "💬", "📋", "🔗", "↩", "▾", "▸")
+CHARACTER_ICON_PATTERN = re.compile(
+    r">\s*[✓×−+•]\s*<|\{\{[^}\n]*['\"][✓×−+•]['\"][^}\n]*\}\}|content\s*:\s*['\"][✓×−+•]['\"]"
+)
 FORBIDDEN_CLASS_DRIVERS = (
     "['native-action-icon',",
     "['native-smart-action__icon',",
@@ -41,16 +49,19 @@ def validate() -> list[str]:
     if "from 'tdesign-icons-vue-next'" not in bridge or "from 'tdesign-icons-vue-next/" in bridge:
         failures.append("official icon bridge must consume the package public root API")
 
-    for path in sorted(SOURCE_ROOT.rglob("*")):
-        if path.suffix not in {".ts", ".vue"}:
-            continue
-        text = read(path)
-        for glyph in FORBIDDEN_VISUAL_GLYPHS:
-            if glyph in text:
-                failures.append(f"manual visual glyph {glyph!r} remains in {path.relative_to(ROOT)}")
-        for marker in FORBIDDEN_CLASS_DRIVERS:
-            if marker in text:
-                failures.append(f"class-driven icon bypass remains in {path.relative_to(ROOT)}: {marker}")
+    for source_root in SOURCE_ROOTS:
+        for path in sorted(source_root.rglob("*")):
+            if path.suffix not in {".css", ".ts", ".vue"}:
+                continue
+            text = read(path)
+            for glyph in FORBIDDEN_VISUAL_GLYPHS:
+                if glyph in text:
+                    failures.append(f"manual visual glyph {glyph!r} remains in {path.relative_to(ROOT)}")
+            if CHARACTER_ICON_PATTERN.search(text):
+                failures.append(f"manual character icon remains in {path.relative_to(ROOT)}")
+            for marker in FORBIDDEN_CLASS_DRIVERS:
+                if marker in text:
+                    failures.append(f"class-driven icon bypass remains in {path.relative_to(ROOT)}: {marker}")
     return failures
 
 
