@@ -1662,7 +1662,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "da6cc671613df32ea931f7ed1d2a9ebefa95a314358375c4c9d6cc1e89099a6b",
+      "digest": "b24a12edd917fad5f7f125fe7db5341fe03fce6a4d6fb2818549142ae84dcc3a",
       "nativeStyleSelectors": [],
       "path": "components/professional-fields/ProfessionalBusinessValueControl.vue",
       "referenceNativeStyleSelectors": [],
@@ -1761,7 +1761,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "0e57ee421498f37af0b1c2beae73e8173a2e6a8365aafc94c414d9139d119f57",
+      "digest": "a6a83880653519d47c8d3dbf27361a4fdc58759c4b45cce6f579567a4e35bc1a",
       "nativeStyleSelectors": [],
       "path": "components/template/FormSection.vue",
       "referenceNativeStyleSelectors": [
@@ -2058,7 +2058,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "07f6cf3d4f95bd572e13fb4665e0079f40c45655cce095a8e1d0a27b141621fb",
+      "digest": "4fe77d70a55f8618151b3faa6bf4b0a43062f1c5ece332085b495f19baf993e2",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/CanonicalFormNodeRenderer.vue",
       "referenceNativeStyleSelectors": [],
@@ -2099,7 +2099,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "2d19329b8f652470467a5a83356ebb47901dc7f2dc06fa0cc49667439382e255",
+      "digest": "8f763819ebc03ca40dace2eed680f6765586ec6cfe10763d4ebb80601ad170ba",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormNativeCanvas.vue",
       "referenceNativeStyleSelectors": [
@@ -2802,7 +2802,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "a1fe7592a945e290ab81abd018b39221e04f0dbcd1bbb149f333a27f8a97fbec",
+  "currentInputDigest": "2f5b77d209c31c8d51be31a05ea98c4cb4c2b547c585581b8fbae0c74ac468cd",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
