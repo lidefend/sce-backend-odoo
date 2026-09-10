@@ -1531,7 +1531,7 @@ try {
             && navigationJourney.length === top.sectionLinks.length
             && navigationJourney.every((item) => item.current && item.targetFound && item.targetVisibleBelowSticky)
             && (viewport.name !== 'mobile' || top.mobileMonetarySummaryFirst)
-            && (target.expectRelationFirstViewport !== true || (top.relationInFirstViewport && top.addActionInFirstViewport))
+            && (target.expectRelationFirstViewport !== true || viewport.name !== 'desktop' || (top.relationInFirstViewport && top.addActionInFirstViewport))
             && (target.expectReadonlyDetailComparison !== true || (viewport.name === 'desktop' ? top.readonlyTableVisible : top.readonlyCardsVisible))
           ),
         };
