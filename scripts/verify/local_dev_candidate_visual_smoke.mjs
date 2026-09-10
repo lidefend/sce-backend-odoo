@@ -1470,7 +1470,8 @@ try {
             const selector = node instanceof HTMLElement ? String(node.dataset.sectionTarget || '') : '';
             const nav = node.closest('[data-form-section-navigation]');
             const root = nav?.closest('[data-native-contract-structure], .object-task-page');
-            const target = selector && root ? root.querySelector(selector) : null;
+            const matches = selector && root ? [...root.querySelectorAll(selector)] : [];
+            const target = matches.find((candidate) => !matches.some((other) => other !== candidate && candidate.contains(other))) || matches[0] || null;
             const header = [...document.querySelectorAll('.template-page-header')]
               .find((candidate) => candidate instanceof HTMLElement && candidate.offsetParent !== null);
             const targetRect = target instanceof HTMLElement ? target.getBoundingClientRect() : null;
