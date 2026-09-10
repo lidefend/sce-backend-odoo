@@ -67,8 +67,10 @@ for required in (
 for required in (
     'data-section-title="基本信息"',
     'data-section-title="关系明细"',
-    "presentableRelationNodes.value.length ? { key: 'relation'",
-    "props.supplementaryInputNodes.length ? { key: 'supplementary-input'",
+    "relationshipCollectionNavigationItems(presentableRelationNodes.value)",
+    "props.supplementaryInputNodes.length ? floorplanSection('supplementary-input'",
+    'data-form-section-target="surface:activity"',
+    "props.auditEvents.length ? {",
     '<section\n      v-if="presentableRelationNodes.length"',
 ):
     if required not in object_task:
