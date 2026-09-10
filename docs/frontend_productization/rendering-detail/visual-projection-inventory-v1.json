@@ -2082,7 +2082,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "07fe0a1f11d5f97e8191878f2d5c51dc453ba6e8ba1c64c9fd2b7ee058c4e3c1",
+      "digest": "4ad094123c1f15d0ffb732da8489816559670579c7336bd0c4e066617d75c39c",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormDriverHost.vue",
       "referenceNativeStyleSelectors": [
@@ -2179,7 +2179,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "637e1353d101a949220fcfe592ba46e49cdb78a6fd6f3332ef99a9281d3537c7",
+      "digest": "0b9e0dc191b29d658ba136c71c1cc79b5f65bf43c64f132bf4fec2b49e41e330",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/FormSectionNavigation.vue",
       "referenceNativeStyleSelectors": [],
@@ -2802,7 +2802,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "7a8d9de7c411b6061d3c9d67831412f9af5e75d8acc668d3e65f2c1f675b8d44",
+  "currentInputDigest": "589ee2fe01d33c0d9c50f537742bc2b1a3c4a0b58de279bc6b6c3bf1b9de9a74",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
