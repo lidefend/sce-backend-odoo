@@ -2,6 +2,7 @@ import { config } from '../config';
 import { useSessionStore } from '../stores/session';
 import { resolveConfiguredDb, resolveLoginRoutingDb } from '../services/dbContext';
 import { currentContextEpoch, currentContextSignal } from '../app/contextEpoch';
+import { redirectForExpiredSession } from '../app/sessionExpiredRecovery';
 
 type UnknownObject = Record<string, unknown>;
 
@@ -234,9 +235,7 @@ async function apiRequestRawUncoalesced<T>(path: string, options: RequestInit = 
 
   if (response.status === 401) {
     session.clearSession();
-    if (!window.location.pathname.startsWith('/login')) {
-      window.location.href = '/login?reason=session_expired';
-    }
+    redirectForExpiredSession();
     throw new ApiError('unauthorized', 401, traceId, {
       reasonCode: 'AUTH_401',
       hint: 'Login session expired. Please sign in again.',

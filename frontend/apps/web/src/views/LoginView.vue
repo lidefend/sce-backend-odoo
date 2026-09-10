@@ -76,6 +76,13 @@
             </ScButton>
           </p>
 
+          <ScInlineState
+            v-if="sessionExpired"
+            data-session-expired-notice
+            state="info"
+            :label="pageText('session_expired_notice', '登录状态已过期，请重新登录。验证成功后将尝试返回刚才的页面；如该页面已不可访问，将进入安全首页。')"
+          />
+
           <form
             v-if="pageSectionEnabled('form', true) && pageSectionTagIs('form', 'section')"
             class="sc-form"
@@ -171,10 +178,16 @@ import { executePageContractAction } from '../app/pageContractActionRuntime';
 import { isConfiguredDbPinned, isPlatformAdminEntryRuntime, resolveConfiguredDb } from '../services/dbContext';
 import { config } from '../config';
 import { normalizeLegacyWorkbenchPath } from '../app/routeQuery';
+import {
+  clearSessionExpiredReturnPath,
+  normalizeSafeLoginReturnPath,
+  readSessionExpiredReturnPath,
+} from '../app/sessionExpiredRecovery';
 import ScButton from '../components/design-system/ScButton.vue';
 import ScCard from '../components/design-system/ScCard.vue';
 import ScInput from '../components/design-system/ScInput.vue';
 import ScIcon from '../components/design-system/ScIcon.vue';
+import ScInlineState from '../components/design-system/ScInlineState.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -195,6 +208,7 @@ const dbName = ref(
 );
 const loading = ref(false);
 const error = ref('');
+const sessionExpired = computed(() => route.query.reason === 'session_expired');
 const authActionKeys = new Set(['open_account_activation', 'open_password_recovery']);
 const authEntryActions = computed(() => pageGlobalActions.value.filter((action) => authActionKeys.has(action.key)));
 const activationAction = computed(() => authEntryActions.value.find((action) => action.key === 'open_account_activation'));
@@ -240,15 +254,14 @@ async function onSubmit() {
   try {
     await session.login(username.value, password.value, dbName.value);
     await session.loadAppInit();
-    const rawRedirect = typeof route.query.redirect === 'string' ? route.query.redirect : '';
-    const isLikelyUnboundActionRoute =
-      /^\/(f|a|r)\//.test(rawRedirect)
-      && !/[?&](action_id|menu_id|scene_key|scene)=/.test(rawRedirect);
-    const normalizedRedirect = normalizeLegacyWorkbenchPath(rawRedirect);
-    const redirect = (normalizedRedirect && !isLikelyUnboundActionRoute)
+    const queryRedirect = typeof route.query.redirect === 'string' ? route.query.redirect : '';
+    const rawRedirect = queryRedirect || (sessionExpired.value ? readSessionExpiredReturnPath() : '');
+    const normalizedRedirect = normalizeSafeLoginReturnPath(normalizeLegacyWorkbenchPath(rawRedirect));
+    const redirect = normalizedRedirect
       ? normalizedRedirect
       : isPlatformAdminEntryRuntime() ? '/?platform_admin=1' : session.resolveLandingPath('/');
     await router.push(redirect);
+    if (sessionExpired.value) clearSessionExpiredReturnPath();
   } catch (err) {
     error.value = normalizeLoginError(err);
   } finally {

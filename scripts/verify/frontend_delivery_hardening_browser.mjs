@@ -382,8 +382,8 @@ async function gotoLogin(page) {
   await page.waitForURL((url) => url.pathname.includes('/login'), { timeout: 45000 });
   await page.locator('#login-username, input[autocomplete="username"]').first().waitFor({ state: 'visible', timeout: 45000 });
 }
-async function login(page, user, keyboard = false) {
-  await gotoLogin(page);
+async function login(page, user, keyboard = false, preserveCurrentLoginRoute = false) {
+  if (!preserveCurrentLoginRoute) await gotoLogin(page);
   const username = page.locator('#login-username, input[autocomplete="username"]').first();
   const password = page.locator('#login-password, input[autocomplete="current-password"]').first();
   await username.fill(user);
@@ -672,11 +672,26 @@ async function main() {
     await page.locator(FORM_SURFACE_SELECTOR).waitFor({ timeout: 45000 });
     errorRecovery.conflict_refresh = 'PASS';
 
+    const expiredReturnUrl = page.url();
+    const expiredReturnPath = `${new URL(expiredReturnUrl).pathname}${new URL(expiredReturnUrl).search}${new URL(expiredReturnUrl).hash}`;
     remove = await interceptNextBusiness(page, (route) => fulfillError(route, 401, 'SESSION_EXPIRED', 'expired'), TARGETS.payment_request);
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForURL(/\/login\?reason=session_expired/, { timeout: 30000 });
     check(!page.url().includes('redirect=') && new URL(page.url()).pathname === '/login', 'expired session retained sensitive route');
+    await page.locator('[data-session-expired-notice]').waitFor({ state: 'visible', timeout: 30000 });
+    check(
+      await page.locator('[data-session-expired-notice]').getByText('登录状态已过期', { exact: false }).count() === 1,
+      'expired session explanation must be visible exactly once',
+    );
+    const retainedReturnPath = await page.evaluate(() => window.sessionStorage.getItem('sc.session_expired.return_path.v1'));
+    check(retainedReturnPath === expiredReturnPath, `expired session return path mismatch actual=${retainedReturnPath} expected=${expiredReturnPath}`);
     await remove();
+    await login(page, FINANCE_LOGIN, false, true);
+    check(page.url() === expiredReturnUrl, `expired session did not restore the authorized page actual=${page.url()} expected=${expiredReturnUrl}`);
+    check(
+      await page.evaluate(() => window.sessionStorage.getItem('sc.session_expired.return_path.v1')) === null,
+      'expired session return path was not cleared after successful login',
+    );
     errorRecovery.session_expired = 'PASS';
     report.journeys.J09 = 'PASS';
     await page.waitForTimeout(300);
