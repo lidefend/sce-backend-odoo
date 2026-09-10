@@ -41,3 +41,7 @@ const nativeProjection = computed(() => ({
 }));
 const emit=defineEmits<{ 'update:modelValue':[value:string] }>();
 </script>
+
+<style scoped>
+[data-semantic-component='ScDateField'] { width: 100%; }
+</style>

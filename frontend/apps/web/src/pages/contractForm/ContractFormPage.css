@@ -776,6 +776,7 @@
 .contract-form-native-shell :deep(.native-container--group) {
   gap: 8px;
   padding: 10px var(--sc-surface-padding) 12px;
+  padding-inline: 0;
   border: 0;
   border-bottom: 1px solid var(--sc-app-border);
   border-radius: 0;
@@ -791,6 +792,8 @@
   min-height: 34px;
   margin: calc(-1 * var(--sc-surface-padding)) calc(-1 * var(--sc-surface-padding)) 0;
   padding: 0 var(--sc-surface-padding);
+  margin-inline: 0;
+  padding-inline: 0;
   border-bottom: 1px solid var(--sc-app-border);
   background: color-mix(in srgb, var(--sc-app-info-bg) 24%, var(--sc-app-panel));
 }
@@ -811,6 +814,7 @@
 
 .contract-form-native-shell :deep(.native-container--group > .template-form-section > .template-form-section-head) {
   margin: calc(-1 * var(--sc-surface-padding)) calc(-1 * var(--sc-surface-padding)) var(--sc-field-row-gap);
+  margin-inline: 0;
   border-radius: 0;
 }
 
@@ -1016,6 +1020,7 @@
   .contract-form-native-shell :deep(.native-container--group) {
     gap: var(--sc-field-row-gap);
     padding: var(--sc-space-sm);
+    padding-inline: 0;
   }
 
   .contract-form-native-shell :deep(.native-container--header) {

@@ -240,8 +240,11 @@
                     :step="monetaryInputStep(field.digits, field.currencyLabel)"
                     :placeholder="field.inputPlaceholder || inputPlaceholderText(field)"
                     @update:model-value="emitFieldChange(field, $event)"
-                  />
-                  <span v-if="field.currencyLabel" class="field-currency-label">{{ field.currencyLabel }}</span>
+                  >
+                    <template v-if="field.currencyLabel" #suffix>
+                      <span class="field-currency-label">{{ field.currencyLabel }}</span>
+                    </template>
+                  </ScInput>
                 </div>
               </template>
               <template v-else>
@@ -1250,9 +1253,9 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 .field-monetary-control {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
+  min-width: 0;
 }
 
 .field-currency-label {

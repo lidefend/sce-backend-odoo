@@ -33,6 +33,19 @@ class ProfessionalBaseFieldGuardTest(unittest.TestCase):
 
         self.assertTrue(any("does not fail closed" in failure for failure in validate(source)))
 
+    def test_duplicate_primitive_inline_padding_fails(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalBaseFieldControl.vue"):
+                return value.replace(
+                    "min-height: calc(var(--sc-component-input-height-md) * 1px);",
+                    "min-height: calc(var(--sc-component-input-height-md) * 1px);\n  padding-inline: calc(var(--sc-component-input-padding-x) * 1px);",
+                    1,
+                )
+            return value
+
+        self.assertTrue(any("duplicate primitive inline padding" in failure for failure in validate(source)))
+
     def test_filename_companion_using_public_text_handler_fails(self):
         def source(path):
             value = (ROOT / path).read_text(encoding="utf-8")

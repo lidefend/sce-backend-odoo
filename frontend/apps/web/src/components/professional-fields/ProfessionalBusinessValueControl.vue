@@ -39,8 +39,11 @@
       :disabled="field.readonly"
       :status="field.invalid ? 'error' : 'default'"
       @update:model-value="$emit('update:value', numeric ? numericValue($event) : $event)"
-    />
-    <span v-if="!field.readonly && suffix" class="professional-business-value__suffix">{{ suffix }}</span>
+    >
+      <template v-if="suffix" #suffix>
+        <span class="professional-business-value__suffix">{{ suffix }}</span>
+      </template>
+    </ScInput>
   </div>
 </template>
 
@@ -107,7 +110,8 @@ function numericValue(value: string | number): number | null {
 </script>
 
 <style scoped>
-.professional-business-value { align-items: center; display: flex; gap: var(--sc-space-2); min-width: 0; width: 100%; }
+.professional-business-value { align-items: center; display: flex; min-width: 0; width: 100%; }
+.professional-business-value :deep(.sc-input) { width: 100%; }
 .professional-business-value__readonly { color: var(--sc-app-text-primary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .professional-business-value__suffix { color: var(--sc-app-text-secondary); flex: 0 0 auto; font-size: var(--sc-product-text-sm); }
 </style>
