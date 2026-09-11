@@ -2061,10 +2061,45 @@ try {
             .locator(`.sc-native-contract-tree [data-field-name="${target.expectedStatusFieldName}"]`)
             .count();
         }
+        const captureStableNavigationState = async (link) => link.evaluate((node) => {
+          const selector = node instanceof HTMLElement ? String(node.dataset.sectionTarget || '') : '';
+          const nav = node.closest('[data-form-section-navigation]');
+          const root = nav?.closest('[data-native-contract-structure], .object-task-page');
+          const matches = selector && root ? [...root.querySelectorAll(selector)] : [];
+          const targetNode = matches.length === 1 ? matches[0] : null;
+          const header = [...document.querySelectorAll('.template-page-header')]
+            .find((candidate) => candidate instanceof HTMLElement && candidate.offsetParent !== null);
+          const targetRect = targetNode instanceof HTMLElement ? targetNode.getBoundingClientRect() : null;
+          const navRect = nav instanceof HTMLElement ? nav.getBoundingClientRect() : null;
+          const headerRect = header instanceof HTMLElement ? header.getBoundingClientRect() : null;
+          const obstructionBottom = Math.max(navRect?.bottom || 0, headerRect?.bottom || 0);
+          const label = String(node.textContent || '').replace(/\s+/g, ' ').trim();
+          const targetLabels = targetNode instanceof HTMLElement
+            ? [targetNode.textContent, targetNode.getAttribute('aria-label'), targetNode.dataset.sectionTitle]
+              .map((value) => String(value || '').replace(/\s+/g, ' ').trim())
+              .filter(Boolean)
+            : [];
+          return {
+            label,
+            current: node.getAttribute('aria-current') === 'location',
+            targetFound: targetNode instanceof HTMLElement,
+            targetLabelMatches: Boolean(label) && targetLabels.some((value) => value.includes(label)),
+            targetTop: targetRect ? Math.round(targetRect.top) : null,
+            obstructionBottom: Math.round(obstructionBottom),
+            targetVisibleBelowSticky: Boolean(targetRect && targetRect.bottom > obstructionBottom && targetRect.top >= obstructionBottom - 2),
+          };
+        });
         const navigationJourney = [];
-        const sectionLinkCount = await page.locator('[data-form-section-navigation] [data-section-link]').count();
+        const sectionLinks = page.locator('[data-form-section-navigation] [data-section-link]');
+        const sectionLinkCount = await sectionLinks.count();
+        const exactSectionLink = async (label) => {
+          const labels = (await sectionLinks.allTextContents()).map((value) => String(value || '').replace(/\s+/g, ' ').trim());
+          const matches = labels.map((value, index) => (value === String(label) ? index : -1)).filter((index) => index >= 0);
+          if (matches.length !== 1) throw new Error(`${target.name}: expected one section link ${label}`);
+          return sectionLinks.nth(matches[0]);
+        };
         for (let index = 0; index < sectionLinkCount; index += 1) {
-          const link = page.locator('[data-form-section-navigation] [data-section-link]').nth(index);
+          const link = sectionLinks.nth(index);
           await link.evaluate((node) => {
             const track = node.parentElement;
             if (!(node instanceof HTMLElement) || !(track instanceof HTMLElement)) return;
@@ -2072,7 +2107,7 @@ try {
           });
           await link.click();
           await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-          navigationJourney.push(await link.evaluate((node) => {
+          const immediate = await link.evaluate((node) => {
             const selector = node instanceof HTMLElement ? String(node.dataset.sectionTarget || '') : '';
             const expectedLabel = String(node.textContent || '').replace(/\s+/g, ' ').trim();
             const expectedContentKind = node instanceof HTMLElement ? String(node.dataset.sectionContentKind || '') : '';
@@ -2119,7 +2154,76 @@ try {
               targetVisibleBelowSticky: Boolean(targetRect && targetRect.bottom > obstructionBottom && targetRect.top >= obstructionBottom - 2),
               linkFullyVisibleInTrack: Boolean(linkRect && trackRect && linkRect.left >= trackRect.left - 1 && linkRect.right <= trackRect.right + 1),
             };
-          }));
+          });
+          await page.waitForFunction(() => {
+            const navigation = document.querySelector('[data-form-section-navigation]');
+            return navigation instanceof HTMLElement && !navigation.dataset.sectionActivationPending;
+          }, null, { timeout: 15000 });
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          const stable = await captureStableNavigationState(link);
+          navigationJourney.push({ ...immediate, immediate: { current: immediate.current }, stable });
+        }
+        const reverseNavigationJourney = [];
+        for (const label of (Array.isArray(target.sectionNavigationReturnLabels) ? target.sectionNavigationReturnLabels : [])) {
+          const link = await exactSectionLink(label);
+          await link.click();
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          const immediate = await captureStableNavigationState(link);
+          await page.waitForFunction(() => {
+            const navigation = document.querySelector('[data-form-section-navigation]');
+            return navigation instanceof HTMLElement && !navigation.dataset.sectionActivationPending;
+          }, null, { timeout: 15000 });
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          const stable = await captureStableNavigationState(link);
+          reverseNavigationJourney.push({
+            label,
+            immediate,
+            stable,
+            pass: immediate.current
+              && immediate.targetFound
+              && immediate.targetLabelMatches
+              && stable.current
+              && stable.targetFound
+              && stable.targetLabelMatches
+              && stable.targetVisibleBelowSticky,
+          });
+        }
+        const manualNavigationJourney = [];
+        for (const label of (Array.isArray(target.sectionManualJourneyLabels) ? target.sectionManualJourneyLabels : [])) {
+          const link = await exactSectionLink(label);
+          await link.evaluate((node) => {
+            const selector = node instanceof HTMLElement ? String(node.dataset.sectionTarget || '') : '';
+            const nav = node.closest('[data-form-section-navigation]');
+            const root = nav?.closest('[data-native-contract-structure], .object-task-page');
+            const targetNode = selector && root ? [...root.querySelectorAll(selector)][0] : null;
+            if (!(targetNode instanceof HTMLElement)) return;
+            const header = [...document.querySelectorAll('.template-page-header')]
+              .find((candidate) => candidate instanceof HTMLElement && candidate.offsetParent !== null);
+            const owner = document.querySelector('.router-host');
+            const ownerTop = owner instanceof HTMLElement ? owner.getBoundingClientRect().top : 0;
+            const anchor = Math.max(
+              nav instanceof HTMLElement ? nav.getBoundingClientRect().bottom : 0,
+              header instanceof HTMLElement ? header.getBoundingClientRect().bottom : 0,
+              ownerTop,
+            ) + 12;
+            const delta = targetNode.getBoundingClientRect().top - anchor;
+            if (owner instanceof HTMLElement) owner.scrollBy({ top: delta, behavior: 'auto' });
+            else window.scrollBy({ top: delta, behavior: 'auto' });
+          });
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          await page.waitForFunction((expectedLabel) => [...document.querySelectorAll(
+            '[data-form-section-navigation] [data-section-link]',
+          )].some((node) => (
+            String(node.textContent || '').replace(/\s+/g, ' ').trim() === expectedLabel
+              && node.getAttribute('aria-current') === 'location'
+          )), String(label), { timeout: 15000 });
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          const stable = await captureStableNavigationState(link);
+          manualNavigationJourney.push({
+            label,
+            ...stable,
+            pass: stable.current && stable.targetFound && stable.targetLabelMatches && stable.targetVisibleBelowSticky,
+          });
         }
         const scrollMetrics = await page.evaluate(() => {
           const owner = document.querySelector('.router-host');
@@ -2157,6 +2261,8 @@ try {
           popupBoundaryEvidence,
           statusInteractionEvidence,
           navigationJourney,
+          reverseNavigationJourney,
+          manualNavigationJourney,
           captures,
           pass: target.expectFormStructure !== true || (
             top.sectionLinks.length > 1
@@ -2202,12 +2308,19 @@ try {
               || JSON.stringify(top.sectionTitles) === JSON.stringify(target.expectedSectionTitles))
             && navigationJourney.length === top.sectionLinks.length
             && navigationJourney.every((item) => item.current
+              && item.immediate.current
+              && item.stable.current
+              && item.stable.targetVisibleBelowSticky
               && item.targetMatchCount === 1
               && item.targetFound
               && item.targetIdentityMatches
               && item.targetContentMatches
               && item.targetVisibleBelowSticky
               && item.linkFullyVisibleInTrack)
+            && (target.sectionNavigationReturnLabels === undefined
+              || reverseNavigationJourney.every((item) => item.pass))
+            && (target.sectionManualJourneyLabels === undefined
+              || manualNavigationJourney.every((item) => item.pass))
             && (viewport.name !== 'mobile' || top.mobileMonetarySummaryFirst)
             && (target.expectRelationFirstViewport !== true || viewport.name !== 'desktop' || (top.relationInFirstViewport && top.addActionInFirstViewport))
             && (target.expectReadonlyDetailComparison !== true || (viewport.name === 'desktop' ? top.readonlyTableVisible : top.readonlyCardsVisible))
