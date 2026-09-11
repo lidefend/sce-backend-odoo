@@ -9306,3 +9306,4 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 后续使用规范 `.env.dev` 中已有凭据重试；`local.dev.ready` 通过，但 runner 在项目页加载阶段超时，未产生写请求，`summary.json` 已落盘。只读核查确认 366 未变更且无外部引用，随后受管 cleanup 删除项目 366 及责任明细 `[3,4]`；真实保存、失败恢复、重复触发及角色差异仍未覆盖，Batch-1 不得宣称通过。
 - 修正 runner 预检后，在只读可读项目 8 上验证：登录、`system.init` 契约及 `api.data read` 均 HTTP 200/业务成功，路由为 `/r/project.project/8?menu_id=681&action_id=861`；但页面正文为空、字段数为 0，截图与 `failure.png`/`summary.json` 已留存，预检按新门禁失败。结论为前端表单未渲染/空白页，非内部布局选择器误判；未发出写请求，未准备新 fixture。
 - 改为等待异步页面状态并补齐控制台、资源失败及请求参数诊断（登录密码脱敏）。项目 8 在经理与只读同一路由均被导航授权层重定向 `/access-denied?reason=NAVIGATION_AUTHORITY_DENIED`，因此没有表单契约请求；`login/system.init/api.data read` 成功不能替代入口授权。未修改产品权限或页面，保存验收继续暂停。
+- 进一步验证确认：异步等待前的“空白”属于过早采样；等待后经理与只读均明确进入 `access-denied`。正式菜单可见性与系统生成路径尚未取得有效证据，不能用手拼 `/r` 结果替代；当前不修改产品授权或 renderer，保存验收与 fixture 准备继续暂停。
