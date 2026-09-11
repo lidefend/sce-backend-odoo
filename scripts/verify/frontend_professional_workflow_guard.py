@@ -14,7 +14,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         if marker not in action_bar: failures.append(f"workflow action bar missing {marker}")
     if driver.count("<CanonicalActionBar") < 2: failures.append("task and workspace do not share CanonicalActionBar")
     if 'data-professional-workflow-component="statusbar"' not in header: failures.append("workflow statusbar lacks semantic identity")
-    for marker in ('<ScSelect', 'aria-label="编辑业务状态"', ':disabled="busy"', ':readonly="statusbar.readonly"', '@change="activateStatus(String($event))"'):
+    for marker in ('<ScSelect', 'aria-label="编辑业务状态"', ':disabled="busy"', ':readonly="statusbar.readonly"', '@change="activateStatus(String($event))"', '<ScSteps', 'nowrap'):
         if marker not in header: failures.append(f"mobile workflow status control bypasses canonical field state {marker}")
     for marker in (":data-professional-workflow-component", "canonicalWorkflowAuthority", "workflowDisabledReason(action)"):
         if marker not in header: failures.append(f"header workflow actions bypass shared authority {marker}")

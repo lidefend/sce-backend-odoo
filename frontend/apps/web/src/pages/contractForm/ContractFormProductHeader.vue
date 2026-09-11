@@ -52,6 +52,7 @@
             class="native-statusbar-track native-statusbar-track--desktop"
             :current="statusbar.current"
             :readonly="busy || statusbar.readonly"
+            nowrap
             :items="statusbar.states.map((item) => ({ value: String(item.value), label: item.label, disabled: busy || statusbar.readonly }))"
             @select="activateStatus(String($event))"
           />
