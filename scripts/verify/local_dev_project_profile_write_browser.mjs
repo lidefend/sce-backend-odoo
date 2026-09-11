@@ -1,0 +1,141 @@
+#!/usr/bin/env node
+import fs from 'node:fs';
+import path from 'node:path';
+import { createRequire } from 'node:module';
+
+const requireBase = path.join(process.cwd(), 'frontend/apps/web/package.json');
+const { chromium } = createRequire(requireBase)('playwright');
+
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://127.0.0.1:5176';
+const DB_NAME = process.env.DB_NAME || 'sc_dev_demo';
+const PASSWORD = process.env.E2E_PASSWORD || process.env.SC_DEMO_USER_PASSWORD || '';
+const PROJECT_ID = Number(process.env.PROJECT_ID || 366);
+const ACTION_ID = Number(process.env.ACTION_ID || 861);
+const MENU_ID = Number(process.env.MENU_ID || 681);
+const PM_LOGIN = process.env.PM_LOGIN || 'demo_role_project_manager';
+const MEMBER_LOGIN = process.env.MEMBER_LOGIN || 'demo_role_project_a_member';
+const READ_LOGIN = process.env.READ_LOGIN || 'demo_role_project_read';
+const OUT = path.resolve(process.env.ARTIFACT_DIR || `artifacts/p4-project-profile-write/${Date.now()}`);
+const originalName = `Codex P4 项目资料写入验收 profile-save-20260911`;
+
+if (!PASSWORD) throw new Error('E2E_PASSWORD or SC_DEMO_USER_PASSWORD is required');
+fs.mkdirSync(OUT, { recursive: true });
+
+function normalize(value) { return String(value ?? '').replace(/\s+/g, ' ').trim(); }
+function recordWriteRequests(page) {
+  const writes = [];
+  page.on('request', (request) => {
+    if (request.method() !== 'POST' || !request.url().includes('/api/v1/intent')) return;
+    let body = {};
+    try { body = JSON.parse(request.postData() || '{}'); } catch { return; }
+    if (body?.intent === 'api.data' && body?.params?.op === 'write') writes.push({ body, at: Date.now() });
+  });
+  return writes;
+}
+async function login(page, login) {
+  await page.goto(`${FRONTEND_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  const inputs = page.locator('input');
+  await inputs.nth(0).fill(login);
+  await inputs.nth(1).fill(PASSWORD);
+  if (await inputs.nth(2).isEnabled().catch(() => false)) await inputs.nth(2).fill(DB_NAME);
+  await page.getByRole('button', { name: /^登录$/ }).click();
+  await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30000 });
+}
+async function token(page) { return page.evaluate((db) => sessionStorage.getItem(`sc_auth_token:${db}`) || '', DB_NAME); }
+async function intent(page, name, params, allowError = false) {
+  const bearer = await token(page);
+  return page.evaluate(async ({ db, bearer, name, params, allowError }) => {
+    const response = await fetch(`/api/v1/intent?db=${encodeURIComponent(db)}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: bearer ? `Bearer ${bearer}` : '' },
+      body: JSON.stringify({ intent: name, params }),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!allowError && (!response.ok || body.ok === false)) throw new Error(JSON.stringify(body.error || body));
+    return { status: response.status, ok: body.ok === true, data: body.data || {}, error: body.error || {} };
+  }, { db: DB_NAME, bearer, name, params, allowError });
+}
+async function readProject(page) {
+  const result = await intent(page, 'api.data', {
+    op: 'read', model: 'project.project', ids: [PROJECT_ID],
+    fields: ['id', 'name', 'date_start', 'date', 'description', 'lifecycle_state', 'responsibility_ids'], context: {},
+  });
+  return result.data.records?.[0] || null;
+}
+async function openProject(page) {
+  await page.goto(`${FRONTEND_URL}/r/project.project/${PROJECT_ID}?menu_id=${MENU_ID}&action_id=${ACTION_ID}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.locator('.template-layout-shell').waitFor({ timeout: 30000 });
+  await page.waitForFunction(() => !/正在加载页面|正在加载表单/.test(document.body.innerText || ''), null, { timeout: 30000 });
+}
+function field(page, name) { return page.locator(`[data-field-name="${name}"]`).first(); }
+async function fillField(page, name, value) {
+  const root = field(page, name);
+  const control = root.locator('input, textarea, [contenteditable="true"]').first();
+  await control.waitFor({ timeout: 12000 });
+  if (await control.getAttribute('contenteditable') === 'true') await control.fill(value);
+  else await control.fill(value);
+}
+async function save(page) {
+  const button = page.locator('.template-page-header-actions button').filter({ hasText: /^保存(?:修改)?$/ }).first();
+  await button.waitFor({ timeout: 12000 });
+  await button.click();
+  await page.getByText(/保存成功/).waitFor({ timeout: 20000 });
+}
+async function dirty(page) { return /未保存|已修改\s*\d+\s*项/.test(normalize(await page.locator('.record-header-context:visible').innerText().catch(() => ''))); }
+async function main() {
+  const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' });
+  const report = { database: DB_NAME, project_id: PROJECT_ID, action_id: ACTION_ID, menu_id: MENU_ID, scenarios: [], roles: {}, writes: [], errors: [] };
+  try {
+    await login(page, PM_LOGIN);
+    await openProject(page);
+    const before = await readProject(page);
+    if (!before || before.id !== PROJECT_ID) throw new Error('project 366 authoritative read failed');
+    const marker = `${originalName} · 真实保存 ${Date.now()}`;
+    await fillField(page, 'name', marker);
+    const dateRoot = field(page, 'date_start');
+    const dateInputs = dateRoot.locator('input');
+    if (await dateInputs.count() >= 2) {
+      await dateInputs.nth(0).fill('2026-09-15');
+      await dateInputs.nth(1).fill('2026-10-15');
+    } else {
+      await dateInputs.first().fill('2026-09-15');
+      const end = field(page, 'date').locator('input').first();
+      if (await end.count()) await end.fill('2026-10-15');
+    }
+    await fillField(page, 'description', 'P4 真实保存验收说明');
+    const responsibility = field(page, 'responsibility_ids');
+    const rows = responsibility.locator('tbody tr');
+    const initialRows = await rows.count();
+    if (initialRows < 2) throw new Error(`expected two responsibility rows, got ${initialRows}`);
+    const firstNote = rows.nth(0).locator('input').last();
+    if (await firstNote.count()) await firstNote.fill('P4 责任修改');
+    await rows.nth(1).locator('.o2m-row-remove').click();
+    await responsibility.locator('.o2m-create').click();
+    const createdRow = responsibility.locator('tbody tr').last();
+    const roleSelect = createdRow.locator('select').first();
+    if (await roleSelect.count()) await roleSelect.selectOption('finance');
+    const rowInputs = createdRow.locator('input');
+    if (await rowInputs.count()) await rowInputs.last().fill('P4 责任新增');
+    if (!await dirty(page)) throw new Error('draft did not become dirty');
+    const writes = recordWriteRequests(page);
+    await save(page);
+    await page.waitForTimeout(400);
+    const after = await readProject(page);
+    report.writes = writes;
+    report.scenarios.push({ name: 'normal_save', status: after?.name === marker && after?.date_start === '2026-09-15' && after?.date === '2026-10-15' && writes.length === 1 ? 'PASS' : 'FAIL', before, after, write_count: writes.length, responsibility_rows_before: initialRows });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.locator('.template-layout-shell').waitFor({ timeout: 30000 });
+    const refreshed = await readProject(page);
+    report.scenarios.push({ name: 'authoritative_refresh', status: refreshed?.name === marker && refreshed?.date_start === '2026-09-15' && refreshed?.date === '2026-10-15' ? 'PASS' : 'FAIL', refreshed });
+    await page.screenshot({ path: path.join(OUT, 'normal-save.png'), fullPage: true });
+  } catch (error) {
+    report.errors.push(error instanceof Error ? error.stack || error.message : String(error));
+  } finally {
+    report.status = !report.errors.length && report.scenarios.every((row) => row.status === 'PASS') ? 'PASS' : 'FAIL';
+    fs.writeFileSync(path.join(OUT, 'summary.json'), `${JSON.stringify(report, null, 2)}\n`);
+    await browser.close();
+  }
+  console.log(JSON.stringify({ status: report.status, output: OUT, scenarios: report.scenarios, errors: report.errors }, null, 2));
+  if (report.status !== 'PASS') process.exit(1);
+}
+await main();

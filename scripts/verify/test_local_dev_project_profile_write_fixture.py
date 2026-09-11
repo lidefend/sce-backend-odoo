@@ -7,6 +7,7 @@ PY = (ROOT / "scripts/verify/local_dev_project_profile_write_fixture.py").read_t
 SH = (ROOT / "scripts/verify/local_dev_project_profile_write_fixture.sh").read_text()
 MK = (ROOT / "make/dev.mk").read_text()
 ODOO_SHELL = (ROOT / "scripts/ops/odoo_shell_exec.sh").read_text()
+BROWSER_SH = (ROOT / "scripts/verify/local_dev_project_profile_write_browser.sh").read_text()
 
 
 class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
@@ -49,6 +50,11 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
     def test_governed_shell_forwards_only_p4_identity_inputs(self):
         self.assertIn("P4_PROJECT_PROFILE_*", ODOO_SHELL)
         self.assertIn("CANDIDATE_GIT_HEAD", ODOO_SHELL)
+
+    def test_browser_runner_binds_product_candidate_and_dedicated_record(self):
+        self.assertIn("PRODUCT_CANDIDATE_SHA", BROWSER_SH)
+        self.assertIn("127.0.0.1:5176", BROWSER_SH)
+        self.assertIn("PROJECT_ID=366", BROWSER_SH)
 
     def test_write_scope_is_explicit(self):
         for field in ("name", "date_start", "date", "description", "responsibility_ids"):

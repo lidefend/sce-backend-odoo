@@ -140,6 +140,13 @@ local.dev.project_profile_write_fixture: guard.prod.forbid local.dev.ready
 	  CANDIDATE_GIT_HEAD="$(shell git -C $(ROOT_DIR) rev-parse HEAD)" \
 	  bash scripts/verify/local_dev_project_profile_write_fixture.sh
 
+local.dev.project_profile_write_browser: guard.prod.forbid local.dev.ready
+	@test -n "$(PRODUCT_CANDIDATE_SHA)" || (echo "PRODUCT_CANDIDATE_SHA is required" >&2; exit 2)
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  PRODUCT_CANDIDATE_SHA="$(PRODUCT_CANDIDATE_SHA)" \
+	  FRONTEND_URL="$(FRONTEND_URL)" \
+	  bash scripts/verify/local_dev_project_profile_write_browser.sh
+
 local.dev.rebuild_demo: guard.prod.forbid local.dev.demo_credentials.prepare
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  CONFIRM_LOCAL_DEV_DEMO_REBUILD="$${CONFIRM_LOCAL_DEV_DEMO_REBUILD:-}" \
