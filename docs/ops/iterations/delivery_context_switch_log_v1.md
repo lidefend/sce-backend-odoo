@@ -9286,3 +9286,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - #463 首个 HEAD 暴露覆盖断层：通用生成报告组没有包含 `component-driver-takeover-inventory-v1.json`，本地 Quick 也没有消费其守卫，导致摘要陈旧只能由远端 `frontend_release_gate` 发现。
 - 最小修复复用现有清单刷新和验证入口：Quick 前移非零守卫；push 在首次远端访问前刷新，若产生差异则零 push 停止，干净路径再次校验后才允许远端探测。
 - 隔离 push 自测新增陈旧清单场景，生成器测试新增源文件摘要反例；本批不新增环境、凭据、fixture、数据库或发布动作。
+
+## 2026-09-11 — 高效分层验证红线
+
+- 分支 `codex/business-entry-surface-normalization-v1`，起始 HEAD `e8c573e3927b459d59d3bc8bbad81fa38a962567`。Formal Product Layer P4；Layer Target 为 Codex 迭代执行策略及其基线策略守卫；Module 为 `AGENTS.md`、`docs/ops` 与 `scripts/verify`。
+- 唯一目标：把 L0 身份、L1 静态、L2 非零定向、L3 受管运行态、L4 冻结产品候选、L5 交付发布固化为失败短路的验证状态机，并规定证据复用、向下游失效和最早失效层恢复。
+- 规则属于平台交付治理，不修改 P0/P1 产品语义、前后端契约、业务模块、数据库、fixture、runtime profile 或远端状态；验证只运行现有策略 guard 的纯 Python 非零单元和静态入口。
+- `make verify.baseline.iteration.execution.policy` 最终 PASS：4 个单元测试非零通过，真实 guard 覆盖 3 份权威文档和 8 个 Make authority。中间一次真实 guard 因锁定短语被 Markdown 换行拆分而失败，归类 `validation_tool_defect`；缩小为语义不变的连续短语后从 L2 恢复通过，未扩大范围。
+- 通过证据源完整指纹为 `071804f62e9387ed8c5597c980109b16279bf410487398bcae6c02c55acb8476`（7404 paths）。此后仅追加本完成记录，不改变 guard、测试或权威规则输入，L2 结果按确定性影响分析承接；L3 模块/运行态、L4 fixture/snapshot/browser、L5 release/PR 均因不适用明确 `not_run`。
