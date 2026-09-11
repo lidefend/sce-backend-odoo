@@ -9249,3 +9249,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 最终产品候选 `20f21091700d0c265fac2238f8cfd6f66533f20d`，完整指纹 `bb5afe1b2a2a23b913be37023d611be0a92f82bda8db8dc89d1b2eb54a7540db`（7389 paths）。Frontend Quick 与非零导航测试通过。
 - light 1082/390、dark 1082/320 的项目正反向点击和手动滚动通过；light 1082/390 的驾驶舱 fallback、启停专用表单、付款只读回归通过。所有最终摘要均零业务写入、零 error/failure。
 - 本地交付包已按 P0/P1/P4、生成清单和文档分类；HIGH_RISK/full gates 保持。未执行 push、PR、CI、merge、release，旧结算快照仍为独立 P4 前提。
+
+## 2026-09-11 — 项目资料维护 PR #460 主线落地收口
+
+- Formal Product Layer P4；Layer Target 为既有目标、实施报告与交付日志的主线状态对齐，不修改 P0/P1 产品代码、运行配置、数据库、fixture 或发布环境。
+- PR #460 最终 HEAD `4801bf215b320d95e7133c855f852408b1814c6c` 经独立审查通过；`frontend_release_gate`、`merge_policy_gate`、`professional_quality_gate`、`public_guard` 四项 exact-head 必需检查均为 `SUCCESS`。
+- 按明确授权 squash 合并为 `main@69cd7e3d0f28523560760a8be360598d459d0f1f`；本地 `main` 与 `origin/main` 已对齐，产品工作树、同名本地及远端专题分支已通过受管入口清理，5176 候选服务已停止。
+- 项目资料维护页面产品化开发与交付阶段完成。旧结算快照、真实保存与流程动作、多角色、完整业务和发布验收继续独立登记；系统未发布。
