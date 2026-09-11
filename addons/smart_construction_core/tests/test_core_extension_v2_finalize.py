@@ -40,7 +40,7 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         self.assertEqual(
             direct_groups[0].xpath(".//field/@name"),
             [
-                "name", "project_code", "partner_id", "project_type_id", "project_category_id",
+                "project_code", "partner_id", "project_type_id", "project_category_id",
                 "operation_strategy", "location", "owner_contact", "contract_no", "phase_key",
             ],
         )
@@ -51,11 +51,6 @@ class TestCoreExtensionV2Finalize(TransactionCase):
                 "manager_id", "cost_manager_id", "doc_manager_id",
             ],
         )
-        date_range = direct_groups[1].xpath("./field[@name='date_start']")
-        self.assertEqual(len(date_range), 1)
-        self.assertEqual(date_range[0].get("string"), "项目周期")
-        self.assertEqual(date_range[0].get("widget"), "daterange")
-        self.assertIn("end_date_field", date_range[0].get("options") or "")
         self.assertEqual(direct_groups[2].xpath("./field/@name"), ["responsibility_ids"])
         self.assertEqual(direct_groups[2].get("col"), "1")
         self.assertEqual(direct_groups[2].xpath("./field/@nolabel"), ["1"])
@@ -270,7 +265,7 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         self.assertEqual(
             direct_groups[0].xpath(".//field/@name"),
             [
-                "project_code", "partner_id", "project_type_id", "project_category_id",
+                "name", "project_code", "partner_id", "project_type_id", "project_category_id",
                 "operation_strategy", "location", "owner_contact", "contract_no",
                 "company_id", "phase_key",
             ],
@@ -282,6 +277,11 @@ class TestCoreExtensionV2Finalize(TransactionCase):
                 "user_id", "manager_id", "cost_manager_id", "doc_manager_id",
             ],
         )
+        date_range = direct_groups[1].xpath("./field[@name='date_start']")
+        self.assertEqual(len(date_range), 1)
+        self.assertEqual(date_range[0].get("string"), "项目周期")
+        self.assertEqual(date_range[0].get("widget"), "daterange")
+        self.assertIn("end_date_field", date_range[0].get("options") or "")
         responsibility = direct_groups[2].xpath("./field[@name='responsibility_ids']")
         self.assertEqual(len(responsibility), 1)
         self.assertEqual(responsibility[0].get("nolabel"), "1")
