@@ -15,6 +15,7 @@ const MENU_ID = Number(process.env.MENU_ID || 681);
 const PM_LOGIN = process.env.PM_LOGIN || 'demo_role_project_manager';
 const MEMBER_LOGIN = process.env.MEMBER_LOGIN || 'demo_role_project_a_member';
 const READ_LOGIN = process.env.READ_LOGIN || 'demo_role_project_read';
+const READ_ONLY = process.env.READ_ONLY === '1';
 const OUT = path.resolve(process.env.ARTIFACT_DIR || `artifacts/p4-project-profile-write/${Date.now()}`);
 const originalName = `Codex P4 项目资料写入验收 profile-save-20260911`;
 
@@ -31,6 +32,24 @@ function recordWriteRequests(page) {
     if (body?.intent === 'api.data' && body?.params?.op === 'write') writes.push({ body, at: Date.now() });
   });
   return writes;
+}
+function recordDiagnostics(page) {
+  const requests = [];
+  page.on('response', async (response) => {
+    if (!response.url().includes('/api/v1/intent')) return;
+    const entry = { url: response.url(), status: response.status(), ok: response.ok() };
+    try {
+      const body = await response.json();
+      entry.intent = body?.intent || body?.meta?.intent;
+      entry.business_ok = body?.ok;
+      entry.error = body?.error || undefined;
+      entry.data_keys = body?.data && typeof body.data === 'object' ? Object.keys(body.data) : [];
+      if (body?.data?.records) entry.record_count = body.data.records.length;
+    } catch { /* non-json response */ }
+    requests.push(entry);
+  });
+  page.on('pageerror', (error) => requests.push({ type: 'pageerror', message: String(error.message || error) }));
+  return requests;
 }
 async function login(page, login) {
   await page.goto(`${FRONTEND_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -63,8 +82,12 @@ async function readProject(page) {
 }
 async function openProject(page) {
   await page.goto(`${FRONTEND_URL}/r/project.project/${PROJECT_ID}?menu_id=${MENU_ID}&action_id=${ACTION_ID}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  await page.locator('.template-layout-shell').waitFor({ timeout: 30000 });
-  await page.waitForFunction(() => !/正在加载页面|正在加载表单/.test(document.body.innerText || ''), null, { timeout: 30000 });
+  await page.waitForFunction(() => document.readyState === 'complete' || /错误|无权限|不存在|登录/.test(document.body.innerText || ''), null, { timeout: 30000 });
+  const state = await page.evaluate(() => ({ url: location.href, title: document.title, text: (document.body.innerText || '').slice(0, 1200), fields: [...document.querySelectorAll('[data-field-name]')].map((el) => el.getAttribute('data-field-name')).slice(0, 80) }));
+  if (!state.url.includes(`/r/project.project/${PROJECT_ID}`)) throw new Error(`route_mismatch:${JSON.stringify(state)}`);
+  if (/登录/.test(state.text)) throw new Error(`login_redirect:${JSON.stringify(state)}`);
+  if (/403|404|无权限|不存在|错误/.test(state.text)) throw new Error(`page_error:${JSON.stringify(state)}`);
+  return state;
 }
 function field(page, name) { return page.locator(`[data-field-name="${name}"]`).first(); }
 async function fillField(page, name, value) {
@@ -84,12 +107,25 @@ async function dirty(page) { return /未保存|已修改\s*\d+\s*项/.test(norma
 async function main() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' });
-  const report = { database: DB_NAME, project_id: PROJECT_ID, action_id: ACTION_ID, menu_id: MENU_ID, scenarios: [], roles: {}, writes: [], errors: [] };
+  const diagnostics = recordDiagnostics(page);
+  const report = { database: DB_NAME, project_id: PROJECT_ID, action_id: ACTION_ID, menu_id: MENU_ID, read_only: READ_ONLY, scenarios: [], roles: {}, writes: [], diagnostics, errors: [] };
   try {
-    await login(page, PM_LOGIN);
-    await openProject(page);
+    const loginName = READ_ONLY ? READ_LOGIN : PM_LOGIN;
+    await login(page, loginName);
+    report.session_login = loginName;
+    const pageState = await openProject(page);
     const before = await readProject(page);
     if (!before || before.id !== PROJECT_ID) throw new Error('project 366 authoritative read failed');
+    report.preflight = { page_state: pageState, authoritative_read: { id: before.id, lifecycle_state: before.lifecycle_state, responsibility_ids: before.responsibility_ids } };
+    if (READ_ONLY) {
+      const editable = await page.locator('input:not([disabled]), textarea:not([disabled]), [contenteditable="true"]').count();
+      const visibleFields = pageState.fields.length;
+      const renderedText = normalize(pageState.text).length;
+      report.scenarios.push({ name: 'readonly_preflight', status: visibleFields > 0 && renderedText > 0 && editable === 0 ? 'PASS' : 'FAIL', visible_fields: visibleFields, rendered_text_length: renderedText, editable_controls: editable });
+      if (visibleFields === 0 || renderedText === 0) throw new Error(`form_not_rendered:${JSON.stringify({ visible_fields: visibleFields, rendered_text_length: renderedText })}`);
+      await page.screenshot({ path: path.join(OUT, 'readonly-preflight.png'), fullPage: true });
+      return;
+    }
     const marker = `${originalName} · 真实保存 ${Date.now()}`;
     await fillField(page, 'name', marker);
     const dateRoot = field(page, 'date_start');
@@ -129,6 +165,8 @@ async function main() {
     report.scenarios.push({ name: 'authoritative_refresh', status: refreshed?.name === marker && refreshed?.date_start === '2026-09-15' && refreshed?.date === '2026-10-15' ? 'PASS' : 'FAIL', refreshed });
     await page.screenshot({ path: path.join(OUT, 'normal-save.png'), fullPage: true });
   } catch (error) {
+    report.failure_context = await page.evaluate(() => ({ url: location.href, title: document.title, text: (document.body.innerText || '').slice(0, 1200), fields: [...document.querySelectorAll('[data-field-name]')].map((el) => el.getAttribute('data-field-name')).slice(0, 80) })).catch(() => ({ url: page.url() }));
+    await page.screenshot({ path: path.join(OUT, 'failure.png'), fullPage: true }).catch(() => {});
     report.errors.push(error instanceof Error ? error.stack || error.message : String(error));
   } finally {
     report.status = !report.errors.length && report.scenarios.every((row) => row.status === 'PASS') ? 'PASS' : 'FAIL';

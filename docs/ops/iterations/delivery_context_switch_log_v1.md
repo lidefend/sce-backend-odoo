@@ -9304,3 +9304,4 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 真实 `prepare`、浏览器保存、清理及最终 Quick 均 `not_run`：等待本 P4 工具提交冻结后再按显式前提执行；产品代码、项目 2/8、acceptance 数据库均未修改。
 - 工具提交后完成一次真实身份核对：5176 产品服务绑定 `4c88167f…`，P4 工具 HEAD 为 `97b0eabb…`，项目 366 XMLID/批次/公司/责任明细匹配，实际 `record_read/record_write` 结果已按用户绑定核对。聚焦浏览器 runner 在登录前因 `SC_DEMO_USER_PASSWORD` 未注入而停止，未发出保存请求；不自行生成或轮换开发凭据，保存与清理保持 `not_run`，专用对象仍为已知可恢复状态。
 - 后续使用规范 `.env.dev` 中已有凭据重试；`local.dev.ready` 通过，但 runner 在项目页加载阶段超时，未产生写请求，`summary.json` 已落盘。只读核查确认 366 未变更且无外部引用，随后受管 cleanup 删除项目 366 及责任明细 `[3,4]`；真实保存、失败恢复、重复触发及角色差异仍未覆盖，Batch-1 不得宣称通过。
+- 修正 runner 预检后，在只读可读项目 8 上验证：登录、`system.init` 契约及 `api.data read` 均 HTTP 200/业务成功，路由为 `/r/project.project/8?menu_id=681&action_id=861`；但页面正文为空、字段数为 0，截图与 `failure.png`/`summary.json` 已留存，预检按新门禁失败。结论为前端表单未渲染/空白页，非内部布局选择器误判；未发出写请求，未准备新 fixture。
