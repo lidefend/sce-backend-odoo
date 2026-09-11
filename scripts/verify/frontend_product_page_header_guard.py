@@ -74,6 +74,8 @@ def validate() -> list[str]:
     for marker in ("position: sticky", "data-has-status", "product-page-header__actions"):
         if marker not in component:
             failures.append(f"ProductPageHeader does not own shared internal header layout: {marker}")
+    if ".product-page-header__identity{flex:0 1 auto;min-width:0}" not in component:
+        failures.append("ProductPageHeader mobile identity retains a desktop flex basis")
     canonical_actions = source("frontend/apps/web/src/pages/contractForm/contractFormHeaderCanonicalActions.ts")
     for marker in ("input.floorplan?.decisionMode", "input.floorplan.directActions", "input.floorplan.overflowActions", "['primary', 'secondary'].includes(action.tier)", "['overflow', 'configuration'].includes(action.tier)"):
         if marker not in canonical_actions:

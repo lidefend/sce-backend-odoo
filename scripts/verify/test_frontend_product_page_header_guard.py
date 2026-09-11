@@ -33,6 +33,24 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
                 validate(),
             )
 
+    def test_mobile_identity_cannot_retain_desktop_flex_basis(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "ProductPageHeader.vue":
+                return value.replace(
+                    ".product-page-header__identity{flex:0 1 auto;min-width:0}",
+                    ".product-page-header__identity{min-width:0}",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertIn(
+                "ProductPageHeader mobile identity retains a desktop flex basis",
+                validate(),
+            )
+
     def test_mobile_exit_action_cannot_be_inverted(self):
         real = Path.read_text
 
