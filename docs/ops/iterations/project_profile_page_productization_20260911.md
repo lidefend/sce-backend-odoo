@@ -3,14 +3,16 @@
 日期：2026-09-11<br>
 基线：`origin/main@8f709938ca312e0ecea928945a31f39830c8ec24`<br>
 交付分支：`feature/p1-project-profile-page-productization-v1`<br>
-产品与测试候选：`3a3df40054661ae6542f820125dbe5454b82a2f6`<br>
+产品与测试候选：`12395fffb1d4dc3faa9917222a12e8d4c9661c02`<br>
 文档交付身份：本文件所在提交（仅目标与本报告）
 
 ## 结论
 
 项目资料维护的产品实现与受影响范围定向验证已完成：默认正文由“基本信息、计划与责任、责任矩阵”三个真实业务分区组织，日期、权限、动作及手动保存语义保持；共享前端只显示可见、非 notebook 且带稳定锚点的显式业务分区，既有隐藏章节策略不变。页面级章节模式由同一结果驱动标题和导航，拆分渲染不会重新推导或产生重复通用标题。
 
-最终候选已补齐移动状态编辑、精确状态节点承接和中等宽度页头分层。绑定 `3a3df400…` 的项目编辑、驾驶舱 fallback、启停专用表单与付款只读定向诊断在 1440/1088/390/320、明暗主题下通过，零业务写入、错误和失败。受管 Quick 在此前 `264da59d…` 通过；之后仅修改受影响页头、状态适配与验证脚本，并从最早失效门禁补跑定向测试、严格类型、官方组件接管清单、候选 build 和浏览器矩阵，不冒充最终 HEAD 全量重跑 Quick。
+`3a3df400…` 的现场复核证明移动状态修改、放弃与重新读取链路可用，但同时确认原生 selection 不具备顺序流程拓扑，不能继续默认投影为 Steps。最终候选 `12395fff…` 因此统一采用“当前状态标签 + 官方 Select + 独立业务动作”：桌面、窄桌面和手机消费同一 selection、readonly、busy 与草稿链路；只有契约未来明确提供顺序流程时才允许另行使用 Steps。绑定最终候选的项目编辑、驾驶舱 fallback、启停专用表单与付款只读定向诊断在 1082/390/320、明暗主题下通过，零业务写入、错误和失败。
+
+受管 Frontend Quick 在 `a65c29ff…` 完整通过；最终候选随后只修正纵向 flex 下状态槽误把桌面 basis 当作高度的问题，并补充对应守卫与截图时序，严格类型、定向守卫、官方组件接管清单和候选 build 均重新通过，不冒充最终 HEAD 全量重跑 Quick。
 
 当前仍不能冻结为 fixture reset 后的正式浏览器验收候选：受管 `make local.dev.sync_demo` 精确归因到 `sc_dev_demo` 中一个旧的已审批结算快照，与当前不可变事实基线不兼容。当前实现正确拒绝覆盖已审批事实；修复该环境前提需要独立授权的 P4 重建或修复／重放，本产品分支不处理。
 
@@ -41,7 +43,9 @@
 
 项目身份、唯一可交互状态、保存和流程动作集中在页头；“保存修改”与“提交立项”同时可见但职责分开，正文不再重复原生 header。动作呈现保留后端权威 occurrence 去重，但不会因动作在 primary 解析中被降级就删除独立的次级 header 动作。草稿提示明确说明手动保存和提交立项的不同效果，不承诺自动保存。
 
-最终截图人工复核显示：390px 明色与 320px 暗色首屏均能辨识项目身份、草稿状态、保存和提交入口，并到达项目名称及客户等首个关键可编辑字段；未删除状态编辑、字段或缩小字号。移动端用真实 `ScSelect` 消费同一 `lifecycle_state`、同一 selection、readonly 和 busy 状态；只修改本地草稿，切换后还原并刷新，未产生写请求。桌面七段状态在 1440/1088 下保持完整标签，页头身份、状态与动作分层，不再挤碎标题。
+最终截图人工复核显示：390px 与 320px 首屏均能辨识项目身份、草稿状态、保存和提交入口，并完整显示项目名称；390px 能继续到达客户控件，320px 的客户控件未完整进入首屏，因此不计为“关键字段全部首屏可见”。未删除状态编辑、字段或缩小字号。
+
+1082/390/320 均用真实 `ScSelect` 消费同一 `lifecycle_state`、同一 selection、readonly 和 busy 状态；每个视口实际打开选择器，七个原 selection 标签完整可读，切换后显示“已修改 1 项”，随后还原并刷新，未产生写请求。当前状态由 `ScStatusBadge` 独立表达，保存与提交立项仍是独立动作；状态字段区域内 `ScSteps` 数量为 0。状态槽按实际容器宽度组织，移动纵向布局使用内容高度，不再依赖扩大桌面断点或禁止 TDesign 内部标题换行。
 
 桥接层只隐藏页头实际承接的同一 canonical 节点身份，不再按 `widget=statusbar` 批量隐藏。149 项 canonical presenter 用例覆盖两个不同状态字段、页头未承接和只读承接反例；启停专用表单的状态按既有 readonly 表达，仍由原有动作推进，未扩大状态写权限。
 
@@ -65,13 +69,16 @@
 |---|---|
 | P1 后端 | `make local.dev.upgrade MODULE=smart_construction_core` 通过；`TestCoreExtensionV2Finalize` 18 个方法、Odoo 统计 20 tests，零失败 |
 | P0 定向 | `make verify.frontend.native_section_navigation.unit` 通过（7 项章节边界）；canonical presenter 149 项通过；professional workflow 10 个模型用例与 4 个 guard 用例通过；ProductPageHeader 28 个模型用例与 8 个 guard 用例通过 |
-| 前端工程 | `3a3df400…` 的 strict typecheck、候选 build、官方组件接管清单及生成清单检查通过；ScSteps 通过公开 wrapper 属性选择不换行标题，未绕过 TDesign 组件 |
+| 前端工程 | `a65c29ff…` 的受管 Frontend Quick 完整通过；`12395fff…` 的 strict typecheck、候选 build、定向守卫、官方组件接管清单及生成清单检查通过。`ScSteps` 不再提供内部 DOM 样式入口；专门反例会对 `:deep(.t-steps-item__title)`、原生控件绕行和 selection 重新接入 Steps fail closed |
 | Quick | `make verify.local.dev.frontend.quick.gate` 在 `264da59d…` 按受管入口完整通过。其后的页头、状态适配和验证脚本改动只补跑受影响门禁，不写成最终 HEAD 全量 Quick |
 | 基线截图 | `project-profile-before-light-8f709938` 与 `project-profile-before-dark-8f709938`，绑定基线、零写入 |
 | 早期诊断 | `b45e52d9` 暴露重复通用标题和提交动作仍在正文；`d755f33d`/`6b66d99d` 的动作权威证据确认提交立项是独立次级 header 动作。这些失败结果用于定向修复，不计为最终通过 |
 | 既有结构诊断 | `project-profile-closure-light-83d6c5a5`（1440/390）与 `project-profile-closure-dark-83d6c5a5`（1088/320）继续证明当时的章节、首屏、表格和关系弹层；`project-profile-consumers-diagnostic-light-190ea8d9` 仅证明当时的三个项目消费者，不用于覆盖最终状态交互 |
-| 最终消费者诊断 | `project-profile-status-consumers-light-3a3df400`（1440/390）与 `project-profile-status-consumers-dark-3a3df400`（1088/320），覆盖项目编辑、驾驶舱 fallback、启停专用表单和付款只读；均通过、零写入、零错误、零失败。项目编辑移动状态记录 `draft → in_progress → draft`，刷新仍为 `draft`；正文同名状态节点为 0；动作 key 无重复 |
-| 最终候选指纹 | `3a3df40054661ae6542f820125dbe5454b82a2f6`，7388 paths，digest `f9c01718914923b41e3a3c9e39e980f249cf203da69fb9a6442030e695af86b5`；候选已通过受管入口停止 |
+| 状态回归历史证据 | `3a3df400…` 的两份消费者摘要保留为先前 Steps/移动 Select 实现的历史证据，不覆盖最终状态选型；人工现场复核另记录 1082/390/320 的修改、放弃与 320 首屏限制 |
+| 最终项目编辑诊断 | `project-profile-status-edit-light-12395fff-retry`（1082/390）与 `project-profile-status-edit-dark-12395fff`（1082/320），状态记录 `draft → in_progress → draft`，刷新仍为 `draft`；每个视口 1 个 Select、1 个状态标签、0 个 Steps，七个标签完整，控件在视口内，章节落点无遮挡，零写入/错误/失败 |
+| 最终消费者诊断 | `project-profile-status-consumers-light-12395fff`（1082/390）与 `project-profile-status-consumers-dark-12395fff`（1082/320），覆盖驾驶舱 fallback、启停专用表单和付款只读；均通过、零写入、零错误、零失败。可写 fallback 为 1 个 Select + 1 个标签；两个只读消费者为 0 个 Select + 1 个标签；均为 0 个 Steps |
+| 环境失败记录 | `project-profile-status-edit-light-12395fff` 首次运行因 Chromium 两次 `ERR_NETWORK_CHANGED` 失败；候选和 local.dev health 随后均通过，独立 retry 成功。该失败不删除、不计入产品通过样本 |
+| 最终候选指纹 | `12395fffb1d4dc3faa9917222a12e8d4c9661c02`，7388 paths，digest `33892b88b9c750bdeabed30cd020300bb1a9400053b17dbd7bd177dcdfba7b7b`；候选已通过受管入口停止 |
 
 ## fixture 失败诊断
 

@@ -58,6 +58,11 @@ goal:
         - exact_claimed_statusbar_node_only_hidden_with_multiple_unclaimed_and_readonly_counterexamples
         - mobile_status_draft_changed_restored_and_reloaded_without_mutation
         - final_affected_consumers_light_dark_1440_1088_390_320_passed_at_3a3df400
+        - native_selection_status_uses_badge_and_official_select_without_implied_steps_topology
+        - vendor_internal_steps_selector_guard_fails_closed
+        - final_status_container_and_affected_consumers_passed_at_12395fff_for_1082_390_320
+        - exact_header_and_section_navigation_heights_keep_targets_unobscured
+        - width_320_customer_control_not_claimed_as_fully_inside_first_viewport
         - table_outer_boundary_inner_reachability_and_popup_boundaries_verified
         - settlement_snapshot_failure_attributed_to_stale_approved_local_dev_fact
       blocker: >-
