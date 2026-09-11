@@ -1673,6 +1673,70 @@ try {
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
       if (target.captureFormStructure === true) {
         const screenshotStem = `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+        let statusInteractionEvidence = { checked: false, reason: 'not requested', pass: true };
+        if (target.exerciseMobileStatusDraft === true && viewport.name === 'mobile') {
+          const mutationCountBefore = report.mutationCount;
+          const statusbar = page.locator('[data-professional-workflow-component="statusbar"]:visible').first();
+          const control = statusbar.locator('[data-semantic-component="ScSelect"].native-statusbar-mobile-control:visible').first();
+          await statusbar.waitFor({ state: 'visible', timeout: 15000 });
+          await control.waitFor({ state: 'visible', timeout: 15000 });
+          const initialCurrent = String(await statusbar.getAttribute('data-workflow-current') || '');
+          const initialLabel = String(await control.locator('input').inputValue() || '');
+          const initialDisabled = await control.getAttribute('aria-disabled') === 'true'
+            || await control.locator('input').isDisabled();
+          await control.click();
+          const optionLocator = page.locator('[role="option"]:visible, .t-select-option:visible');
+          await optionLocator.first().waitFor({ state: 'visible', timeout: 15000 });
+          const optionLabels = (await optionLocator.allTextContents()).map((label) => label.replace(/\s+/g, ' ').trim());
+          const alternateIndex = optionLabels.findIndex((label) => label && label !== initialLabel);
+          if (alternateIndex < 0) throw new Error(`${target.name}: mobile status control lacks an alternate state`);
+          await optionLocator.nth(alternateIndex).click();
+          await page.waitForFunction((current) => {
+            const node = document.querySelector('[data-professional-workflow-component="statusbar"]');
+            return node instanceof HTMLElement && node.dataset.workflowCurrent && node.dataset.workflowCurrent !== current;
+          }, initialCurrent);
+          const changedCurrent = String(await statusbar.getAttribute('data-workflow-current') || '');
+          await control.click();
+          const restoreOptions = page.locator('[role="option"]:visible, .t-select-option:visible');
+          await restoreOptions.first().waitFor({ state: 'visible', timeout: 15000 });
+          const restoreLabels = (await restoreOptions.allTextContents()).map((label) => label.replace(/\s+/g, ' ').trim());
+          const restoreIndex = restoreLabels.findIndex((label) => label === initialLabel);
+          if (restoreIndex < 0) throw new Error(`${target.name}: mobile status control cannot restore its original state`);
+          await restoreOptions.nth(restoreIndex).click();
+          await page.waitForFunction((current) => {
+            const node = document.querySelector('[data-professional-workflow-component="statusbar"]');
+            return node instanceof HTMLElement && node.dataset.workflowCurrent === current;
+          }, initialCurrent);
+          const restoredCurrent = String(await statusbar.getAttribute('data-workflow-current') || '');
+          const mutationCountAfterDraft = report.mutationCount;
+          await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
+          await waitForStableProductSurface(page);
+          const reloadedStatusbar = page.locator('[data-professional-workflow-component="statusbar"]:visible').first();
+          await reloadedStatusbar.waitFor({ state: 'visible', timeout: 15000 });
+          const reloadedCurrent = String(await reloadedStatusbar.getAttribute('data-workflow-current') || '');
+          statusInteractionEvidence = {
+            checked: true,
+            initialCurrent,
+            initialLabel,
+            initialDisabled,
+            optionCount: optionLabels.length,
+            changedCurrent,
+            restoredCurrent,
+            reloadedCurrent,
+            mutationCountBefore,
+            mutationCountAfterDraft,
+            mutationCountAfterReload: report.mutationCount,
+            pass: Boolean(initialCurrent)
+              && Boolean(initialLabel)
+              && !initialDisabled
+              && optionLabels.length > 1
+              && changedCurrent !== initialCurrent
+              && restoredCurrent === initialCurrent
+              && reloadedCurrent === initialCurrent
+              && mutationCountBefore === mutationCountAfterDraft
+              && mutationCountBefore === report.mutationCount,
+          };
+        }
         let popupBoundaryEvidence = { checked: false, reason: 'no enabled visible select', pass: true };
         const formSelects = page.locator('.field [data-semantic-component="ScSelect"]:visible, .field [role="combobox"]:visible');
         for (let index = 0; index < await formSelects.count(); index += 1) {
@@ -1835,8 +1899,26 @@ try {
             ? [...commandBar.querySelectorAll('[data-action-key]')].filter(visible)
               .map((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim()).filter(Boolean)
             : [];
+          const headerActions = commandBar instanceof HTMLElement
+            ? [...commandBar.querySelectorAll('[data-action-key]')].filter(visible).map((node) => ({
+              key: String(node.getAttribute('data-action-key') || ''),
+              label: String(node.textContent || '').replace(/\s+/g, ' ').trim(),
+              enabled: node.getAttribute('data-action-enabled') !== 'false'
+                && node.getAttribute('aria-disabled') !== 'true'
+                && !(node instanceof HTMLButtonElement && node.disabled),
+            }))
+            : [];
           const bodyHeaderInteractiveControlCount = [...document.querySelectorAll('.sc-native-contract-tree .native-container--header input, .sc-native-contract-tree .native-container--header textarea, .sc-native-contract-tree .native-container--header select, .sc-native-contract-tree .native-container--header button, .sc-native-contract-tree .native-container--header [role="combobox"]')]
             .filter(visible).length;
+          const mobileStatusControls = commandBar instanceof HTMLElement
+            ? [...commandBar.querySelectorAll('.native-statusbar-mobile-control')].filter(visible)
+            : [];
+          const desktopStatusTracks = commandBar instanceof HTMLElement
+            ? [...commandBar.querySelectorAll('.native-statusbar-track--desktop')].filter(visible)
+            : [];
+          const title = commandBar instanceof HTMLElement ? commandBar.querySelector('h1') : null;
+          const titleRect = title instanceof HTMLElement ? title.getBoundingClientRect() : null;
+          const titleLineHeight = title instanceof HTMLElement ? parseFloat(getComputedStyle(title).lineHeight || '0') : 0;
           const firstViewportEditableFields = [...document.querySelectorAll('[data-product-page-mode="form"] .field[data-field-name], [data-product-page-mode="form"] .native-title-row[data-field-name]')]
             .filter(visible)
             .flatMap((field) => {
@@ -1908,13 +1990,29 @@ try {
               headerStatusCount: headerStatus.length,
               headerStatusInteractive: headerStatus.length === 1
                 && headerStatus[0].getAttribute('data-workflow-readonly') === 'false',
+              headerStatusReadonly: headerStatus.length === 1
+                && headerStatus[0].getAttribute('data-workflow-readonly') === 'true',
+              mobileStatusControlCount: mobileStatusControls.length,
+              mobileStatusControlDisabled: mobileStatusControls.length === 1
+                && (mobileStatusControls[0].getAttribute('aria-disabled') === 'true'
+                  || mobileStatusControls[0].querySelector('input')?.hasAttribute('disabled') === true),
+              desktopStatusTrackCount: desktopStatusTracks.length,
+              titleWidth: titleRect ? Math.round(titleRect.width) : null,
+              titleLineCount: titleRect && titleLineHeight > 0 ? Number((titleRect.height / titleLineHeight).toFixed(2)) : null,
               headerActionLabels,
+              headerActions,
+              headerActionKeysUnique: new Set(headerActions.map((action) => action.key)).size === headerActions.length,
               bodyHeaderInteractiveControlCount,
               firstViewportEditableFields,
             },
             responsiveBoundaryEvidence,
           };
         });
+        if (typeof target.expectedStatusFieldName === 'string' && target.expectedStatusFieldName) {
+          top.headerConsolidationEvidence.bodyClaimedStatusFieldCount = await page
+            .locator(`.sc-native-contract-tree [data-field-name="${target.expectedStatusFieldName}"]`)
+            .count();
+        }
         const navigationJourney = [];
         const sectionLinkCount = await page.locator('[data-form-section-navigation] [data-section-link]').count();
         for (let index = 0; index < sectionLinkCount; index += 1) {
@@ -2009,6 +2107,7 @@ try {
         formStructureEvidence = {
           ...top,
           popupBoundaryEvidence,
+          statusInteractionEvidence,
           navigationJourney,
           captures,
           pass: target.expectFormStructure !== true || (
@@ -2034,6 +2133,15 @@ try {
                   target.expectedFirstViewportFieldNames.includes(field.name) && field.fullyVisible
                 )))
             ))
+            && (target.exerciseMobileStatusDraft !== true || viewport.name !== 'mobile' || statusInteractionEvidence.pass)
+            && (target.expectedStatusReadonly !== true || (
+              top.headerConsolidationEvidence.headerStatusReadonly
+              && top.headerConsolidationEvidence.mobileStatusControlCount === 0
+            ))
+            && (typeof target.expectedStatusFieldName !== 'string'
+              || top.headerConsolidationEvidence.bodyClaimedStatusFieldCount === 0)
+            && (target.expectUniqueHeaderActions !== true
+              || top.headerConsolidationEvidence.headerActionKeysUnique)
             && (!Array.isArray(target.expectedSectionLinks)
               || JSON.stringify(top.sectionLinks) === JSON.stringify(target.expectedSectionLinks))
             && (!Array.isArray(target.expectedSectionTitles)
