@@ -100,19 +100,27 @@ function sectionAnchor() {
   return Math.max(navBottom, headerBottom, ownerTop) + 12;
 }
 
-function updateActiveSection() {
-  activeFrame = 0;
+function applyActiveSection(preferredKey = '') {
   const visible = props.items.map((item) => ({ item, target: visibleTarget(item) })).filter((entry) => entry.target);
   if (!visible.length) return;
   const anchor = sectionAnchor();
+  const visibleBottom = scrollOwner instanceof HTMLElement
+    ? scrollOwner.getBoundingClientRect().bottom
+    : window.innerHeight;
   const nextActiveKey = activeSectionKeyAtAnchor(
     visible.map((entry) => ({ key: entry.item.key, top: entry.target?.getBoundingClientRect().top || 0 })),
     anchor,
+    preferredKey ? { preferredKey, visibleBottom } : undefined,
   );
   if (activeKey.value !== nextActiveKey) {
     activeKey.value = nextActiveKey;
     centerActiveLink();
   }
+}
+
+function updateActiveSection() {
+  activeFrame = 0;
+  applyActiveSection();
 }
 
 function queueActiveSection() {
@@ -150,10 +158,11 @@ function activate(item: SectionNavigationItem) {
   }
   centerActiveLink();
   activationReleaseTimer = window.setTimeout(() => {
+    const releasedKey = activatedKey;
     activatedKey = '';
-    navRef.value?.removeAttribute('data-section-activation-pending');
     activationReleaseTimer = 0;
-    queueActiveSection();
+    applyActiveSection(releasedKey);
+    navRef.value?.removeAttribute('data-section-activation-pending');
   }, 350);
 }
 

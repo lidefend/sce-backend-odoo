@@ -22,15 +22,30 @@ export type VisibleSectionPosition = {
   top: number;
 };
 
+export type ActivatedSectionFallback = {
+  preferredKey: string;
+  visibleBottom: number;
+};
+
 export function activeSectionKeyAtAnchor(
   positions: VisibleSectionPosition[],
   anchor: number,
+  activatedFallback?: ActivatedSectionFallback,
 ): string {
   if (!positions.length) return '';
-  return positions.reduce(
+  const anchoredKey = positions.reduce(
     (current, position) => (position.top <= anchor ? position.key : current),
     positions[0].key,
   );
+  const preferred = activatedFallback
+    ? positions.find((position) => position.key === activatedFallback.preferredKey)
+    : undefined;
+  if (
+    preferred
+    && preferred.top > anchor
+    && preferred.top < activatedFallback!.visibleBottom
+  ) return preferred.key;
+  return anchoredKey;
 }
 
 export function sectionScrollDelta(
