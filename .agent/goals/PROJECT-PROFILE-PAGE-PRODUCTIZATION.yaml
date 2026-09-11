@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: PROJECT-PROFILE-PAGE-PRODUCTIZATION
   title: project_profile_maintenance_page_productization
-  status: verification_pending
+  status: completed
   formal_product_layer: P1
   supporting_layer: P0
   layer_target: smart_construction_core_project_view_and_generic_native_form_expression
@@ -98,8 +98,33 @@ goal:
         - zero_business_mutations_browser_errors_and_failures
       evidence_boundary: >-
         Navigation stability is proven on the final product candidate for the
-        affected representative consumers. PR and exact-head CI have not run;
+        affected representative consumers. PR #460 was independently reviewed,
+        passed all four required exact-head checks, and was squash-merged to main;
         fixture rebuild or repair remains independently governed P4 work.
+  delivery:
+    pr: 460
+    pr_url: https://github.com/lidefend/sce-backend-odoo/pull/460
+    pr_head: 4801bf215b320d95e7133c855f852408b1814c6c
+    merge_method: squash
+    merge_sha: 69cd7e3d0f28523560760a8be360598d459d0f1f
+    merged_at_utc: "2026-09-11T07:08:11Z"
+    required_ci:
+      frontend_release_gate: success
+      merge_policy_gate: success
+      professional_quality_gate: success
+      public_guard: success
+    independent_review: approved
+    local_main_sync: complete
+    topic_worktree_cleanup: complete
+    topic_branch_cleanup: complete
+    topic_cleanup_scope: project_profile_delivery_only
+    archive_branch: audit/project-profile-mainline-closure-v1
+    archive_commit: a41260d44aa8eadb1f535f320db7383add28c56e
+    workspace_global_cleanup: classified_not_applied
+    legacy_local_branch_count: 50
+    legacy_stash_count: 1
+    candidate_service: stopped
+    release_status: not_run
   acceptance:
     - default_view_begins_with_core_project_information
     - one_visible_heading_per_authoritative_business_section
