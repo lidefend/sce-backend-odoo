@@ -1690,23 +1690,23 @@ try {
           const optionLabels = (await optionLocator.allTextContents()).map((label) => label.replace(/\s+/g, ' ').trim());
           const alternateIndex = optionLabels.findIndex((label) => label && label !== initialLabel);
           if (alternateIndex < 0) throw new Error(`${target.name}: mobile status control lacks an alternate state`);
+          const alternateLabel = optionLabels[alternateIndex];
           await optionLocator.nth(alternateIndex).click();
-          await page.waitForFunction((current) => {
-            const node = document.querySelector('[data-professional-workflow-component="statusbar"]');
-            return node instanceof HTMLElement && node.dataset.workflowCurrent && node.dataset.workflowCurrent !== current;
-          }, initialCurrent);
+          await page.waitForFunction((expectedLabel) => [...document.querySelectorAll(
+            '[data-professional-workflow-component="statusbar"] .native-statusbar-mobile-control input',
+          )].some((input) => input instanceof HTMLInputElement && input.offsetParent !== null && input.value === expectedLabel), alternateLabel);
           const changedCurrent = String(await statusbar.getAttribute('data-workflow-current') || '');
+          if (!changedCurrent || changedCurrent === initialCurrent) {
+            throw new Error(`${target.name}: mobile status did not change from ${initialCurrent}`);
+          }
+          await optionLocator.first().waitFor({ state: 'hidden', timeout: 15000 });
           await control.click();
-          const restoreOptions = page.locator('[role="option"]:visible, .t-select-option:visible');
-          await restoreOptions.first().waitFor({ state: 'visible', timeout: 15000 });
-          const restoreLabels = (await restoreOptions.allTextContents()).map((label) => label.replace(/\s+/g, ' ').trim());
-          const restoreIndex = restoreLabels.findIndex((label) => label === initialLabel);
-          if (restoreIndex < 0) throw new Error(`${target.name}: mobile status control cannot restore its original state`);
-          await restoreOptions.nth(restoreIndex).click();
-          await page.waitForFunction((current) => {
-            const node = document.querySelector('[data-professional-workflow-component="statusbar"]');
-            return node instanceof HTMLElement && node.dataset.workflowCurrent === current;
-          }, initialCurrent);
+          const restoreOption = page.locator('.t-select-option:visible').filter({ hasText: initialLabel }).first();
+          await restoreOption.waitFor({ state: 'visible', timeout: 15000 });
+          await restoreOption.click();
+          await page.waitForFunction((expectedLabel) => [...document.querySelectorAll(
+            '[data-professional-workflow-component="statusbar"] .native-statusbar-mobile-control input',
+          )].some((input) => input instanceof HTMLInputElement && input.offsetParent !== null && input.value === expectedLabel), initialLabel);
           const restoredCurrent = String(await statusbar.getAttribute('data-workflow-current') || '');
           const mutationCountAfterDraft = report.mutationCount;
           await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
