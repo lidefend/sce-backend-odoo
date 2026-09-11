@@ -9303,3 +9303,4 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 纯静态安全测试 8 项通过；`dry-run` 真实受管执行通过，确认 `sc_dev_demo`、候选 SHA 和角色候选：项目经理 `demo_role_project_manager`/`pm1`，普通项目用户 `demo_role_project_a_member`，只读候选 `demo_role_project_read`；批次对象当前不存在，未写数据库。
 - 真实 `prepare`、浏览器保存、清理及最终 Quick 均 `not_run`：等待本 P4 工具提交冻结后再按显式前提执行；产品代码、项目 2/8、acceptance 数据库均未修改。
 - 工具提交后完成一次真实身份核对：5176 产品服务绑定 `4c88167f…`，P4 工具 HEAD 为 `97b0eabb…`，项目 366 XMLID/批次/公司/责任明细匹配，实际 `record_read/record_write` 结果已按用户绑定核对。聚焦浏览器 runner 在登录前因 `SC_DEMO_USER_PASSWORD` 未注入而停止，未发出保存请求；不自行生成或轮换开发凭据，保存与清理保持 `not_run`，专用对象仍为已知可恢复状态。
+- 后续使用规范 `.env.dev` 中已有凭据重试；`local.dev.ready` 通过，但 runner 在项目页加载阶段超时，未产生写请求，`summary.json` 已落盘。只读核查确认 366 未变更且无外部引用，随后受管 cleanup 删除项目 366 及责任明细 `[3,4]`；真实保存、失败恢复、重复触发及角色差异仍未覆盖，Batch-1 不得宣称通过。
