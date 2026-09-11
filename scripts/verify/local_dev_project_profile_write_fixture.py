@@ -113,7 +113,10 @@ def _owned_project(env, identity):
     project = _xmlid(env, identity["xmlid"])
     if not project:
         return None
-    if project._name != "project.project" or project.code != identity["code"]:
+    if project._name != "project.project":
+        raise RuntimeError("fixture project XMLID is not owned by this batch")
+    marker = getattr(project, "project_code", False)
+    if project.code != identity["code"] and marker != identity["code"] and project.name != identity["name"]:
         raise RuntimeError("fixture project XMLID is not owned by this batch")
     return project.sudo()
 
@@ -192,6 +195,13 @@ def prepare(env, sha, batch, mode):
         "privacy_visibility": "followers",
         "active": True,
     })
+    # Odoo may replace the native sequence ``code`` during create.  Preserve a
+    # deterministic batch marker in the optional product field when available;
+    # XMLID ownership remains the primary cleanup boundary.
+    if "project_code" in Project._fields and project.project_code != identity["code"]:
+        project.write({"project_code": identity["code"]})
+    if project.code != identity["code"] and "project_code" not in Project._fields:
+        project.write({"code": identity["code"]})
     _bind(env, identity["xmlid"], project)
     Responsibility = env["project.responsibility"].sudo()
     for xmlid, role_key, user_id, note in [
