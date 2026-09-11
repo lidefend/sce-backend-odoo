@@ -4104,7 +4104,8 @@ try {
           await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
           const panel = notebook.locator('.native-tab-panel:visible').first();
           await panel.waitFor({ state: 'visible', timeout: 15000 });
-          const evidence = await panel.evaluate((node) => {
+          const expectedIdentityHeader = String(target.expectedNotebookIdentityHeaders?.[label] || '').trim();
+          const evidence = await panel.evaluate((node, identityHeader) => {
             const visible = (candidate) => candidate instanceof HTMLElement && candidate.offsetParent !== null;
             const rect = (candidate) => {
               if (!(candidate instanceof HTMLElement)) return null;
@@ -4132,8 +4133,10 @@ try {
               const headerLabels = [...field.querySelectorAll('th')].filter(visible)
                 .map((header) => String(header.textContent || '').replace(/\s+/g, ' ').trim()).filter(Boolean);
               const firstRowCells = rows.length ? [...rows[0].querySelectorAll('td')].filter(visible) : [];
+              const identityHeaderIndex = identityHeader ? headerLabels.indexOf(identityHeader) : -1;
+              const firstBusinessHeaderIndex = headerLabels[0] === '行变更' ? 1 : 0;
               const identityNode = rows[0]?.querySelector('.o2m-mobile-row-identity')
-                || firstRowCells[headerLabels[0] === '行变更' ? 1 : 0]
+                || firstRowCells[identityHeaderIndex >= 0 ? identityHeaderIndex : firstBusinessHeaderIndex]
                 || null;
               const identityInput = identityNode?.querySelector('input, textarea');
               const identity = String(
@@ -4147,12 +4150,16 @@ try {
                 widthRatio: Number((fieldRect.width / Math.max(1, panelRect.width)).toFixed(3)),
                 rowCount: rows.length,
                 identity,
+                identityHeader,
+                identityHeaderIndex,
+                firstBusinessHeaderIndex,
                 headers: headerLabels,
                 scroll,
                 pass: fieldRect.left >= panelRect.left - 1
                   && fieldRect.right <= panelRect.right + 1
                   && fieldRect.width >= panelRect.width * 0.94
                   && (!scroll || scroll.reachable)
+                  && (!identityHeader || identityHeaderIndex === firstBusinessHeaderIndex)
                   && (rows.length === 0 || identity.length > 0),
               };
             });
@@ -4164,7 +4171,7 @@ try {
               actionLabels: [...node.querySelectorAll('button')].filter(visible).map((button) => String(button.textContent || '').replace(/\s+/g, ' ').trim()).filter(Boolean),
               pass: collections.every((collection) => collection.pass),
             };
-          });
+          }, expectedIdentityHeader);
           const draftValue = target.exerciseNotebookDraftRetention === true
             ? String(await page.locator('[data-professional-workflow-component="statusbar"] .native-statusbar-edit-control input:visible').first().inputValue() || '')
             : '';
@@ -4178,9 +4185,11 @@ try {
           });
         }
         if (initialLabel) {
-          const initialTrigger = notebook.locator('[data-section-tab]').filter({ hasText: initialLabel }).first();
-          await revealNotebookTab(initialTrigger);
-          await initialTrigger.click();
+          const activeTrigger = notebook.locator('[data-section-tab].native-tab--active').first();
+          await activeTrigger.focus();
+          await activeTrigger.press('Home');
+          await page.waitForFunction(({ label }) => [...document.querySelectorAll('[data-section-tab].native-tab--active')]
+            .some((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim() === label), { label: initialLabel });
           await waitForStableProductSurface(page);
         }
         if (target.exerciseNotebookDraftRetention === true) {
