@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4326`
+- Scanned files: `4329`
 - Files requiring split plan: `49`
 - Files above warning threshold: `88`
 
@@ -16,7 +16,7 @@ Generated from repository source files. This report is informational during the 
 | 4571 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4312 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4221 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
-| 3785 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
+| 3914 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 3774 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3769 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3667 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
@@ -93,8 +93,8 @@ Generated from repository source files. This report is informational during the 
 | 1195 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1194 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
 | 1177 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
+| 1173 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1169 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
-| 1158 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
@@ -163,7 +163,7 @@ Generated from repository source files. This report is informational during the 
 | 4571 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4312 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4221 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
-| 3785 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
+| 3914 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 3774 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3769 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3667 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
@@ -231,8 +231,8 @@ Generated from repository source files. This report is informational during the 
 | 1195 | warning | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1194 | warning | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
 | 1177 | warning | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
+| 1173 | warning | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1169 | warning | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
-| 1158 | warning | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1157 | warning | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1145 | warning | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | warning | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |

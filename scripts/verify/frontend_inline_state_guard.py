@@ -24,6 +24,8 @@ def validate(sources: dict[str, str] | None = None) -> list[str]:
         ":aria-busy=\"state === 'loading' || undefined\"",
         '<span class="sc-inline-state__description"><slot>{{ label }}</slot></span>',
         ".sc-inline-state[data-state='info'] .sc-inline-state__description",
+        "background: var(--sc-app-info-bg)",
+        "border-color: var(--sc-app-info-border)",
         "color: var(--sc-app-info-text)",
         "prefers-reduced-motion: reduce",
     ):

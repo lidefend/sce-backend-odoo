@@ -715,7 +715,7 @@
     },
     {
       "category": "states",
-      "digest": "ec57ac62880c041b0fd44a387497f7b3ab4cf84463f4e0af70a70c18fb78a32d",
+      "digest": "8ca0bab97c0a4ad6f82b25ffefe599d87b4d45105b293ad56aa107e134c73564",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScInlineState.vue",
       "referenceNativeStyleSelectors": [],
@@ -2480,7 +2480,7 @@
     },
     {
       "category": "public-entry",
-      "digest": "579e6d170d2699af0ee969ace487be66aed9145698cad0eb1ff026354196a27e",
+      "digest": "158945aeeebc94e4890715746d121693c96682dd3663e0034a42ee499d964f11",
       "nativeStyleSelectors": [],
       "path": "views/LoginView.vue",
       "referenceNativeStyleSelectors": [
@@ -2493,6 +2493,7 @@
         "ScButton",
         "ScCard",
         "ScIcon",
+        "ScInlineState",
         "ScInput"
       ]
     },
@@ -2820,7 +2821,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "20020d96c5d2e35851890b687e69cb410316759ce404fc1af0f88a5e6f03e6fd",
+  "currentInputDigest": "d36925df92ff552aedfe98854ffd2fed8928614b351ce96720e89c04dcb687a6",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

@@ -53,7 +53,7 @@ async function loginPage(page) {
   const payload = await response.json();
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
   await page.locator('.layout-shell').waitFor({ timeout: 45000 });
-  return { ...summarizeSystemInit(payload), loginThemeEvidence };
+  return { ...summarizeSystemInit(payload), loginThemeEvidence, landingUrl: page.url() };
 }
 
 async function captureThemeRuntimeState(page) {
@@ -383,10 +383,15 @@ try {
     const errors = [];
     let expectedReadFailureResponses = 0;
     let expectedReadFailureConsoleErrors = 0;
+    let expectedSessionExpiredConsoleErrors = 0;
     page.on('console', (message) => {
       if (message.type() !== 'error' || message.text().includes('favicon')) return;
       if (expectedReadFailureConsoleErrors > 0 && message.text().includes('503 (Service Unavailable)')) {
         expectedReadFailureConsoleErrors -= 1;
+        return;
+      }
+      if (expectedSessionExpiredConsoleErrors > 0 && message.text().includes('401 (Unauthorized)')) {
+        expectedSessionExpiredConsoleErrors -= 1;
         return;
       }
       errors.push(`console:${message.text()}`);
@@ -490,6 +495,7 @@ try {
       let officialComponentBehaviorEvidence = null;
       let officialAlertOperationEvidence = null;
       let expectedLoadedSelectorEvidence = null;
+      let sessionExpiredRecoveryEvidence = null;
       const exerciseReadFailure = target.exerciseReadFailureRecovery === true
         && (target.readFailureDesktopOnly !== true || viewport.name === 'desktop');
       let readFailureInjected = false;
@@ -562,6 +568,30 @@ try {
         await route.continue();
       };
       if (exerciseOfficialAlertOperation) await page.route(readFailurePattern, officialAlertFailureHandler);
+      const exerciseSessionExpiredRecovery = target.exerciseSessionExpiredRecovery === true;
+      const sessionExpiredRecoveryScenario = String(target.sessionExpiredRecoveryScenario || 'authorized');
+      let sessionExpiredInjected = false;
+      let sessionExpiredRequestCount = 0;
+      const sessionExpiredIntent = String(target.sessionExpiredIntent || 'my.work.summary');
+      const sessionExpiredHandler = async (route) => {
+        const request = route.request();
+        let body = {};
+        try { body = JSON.parse(request.postData() || '{}'); } catch {}
+        if (!sessionExpiredInjected && request.method() === 'POST' && body.intent === sessionExpiredIntent) {
+          sessionExpiredInjected = true;
+          sessionExpiredRequestCount += 1;
+          expectedReadFailureResponses += 1;
+          expectedSessionExpiredConsoleErrors += 1;
+          await route.fulfill({
+            status: 401,
+            contentType: 'application/json',
+            body: JSON.stringify({ error: { message: 'expired', reason_code: 'SESSION_EXPIRED' } }),
+          });
+          return;
+        }
+        await route.continue();
+      };
+      if (exerciseSessionExpiredRecovery) await page.route(readFailurePattern, sessionExpiredHandler);
       const contractResponse = target.expectContractResponse !== false && /^\/(?:a|r|f)\//.test(target.path)
         ? page.waitForResponse(isContractV2Response, { timeout: 45000 })
         : null;
@@ -569,6 +599,104 @@ try {
         ? page.waitForResponse(isApiDataListResponse, { timeout: 45000 })
         : null;
       await page.goto(`${baseUrl}${target.path}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      if (exerciseSessionExpiredRecovery) {
+        const originalReturnUrl = `${baseUrl}${target.path}`;
+        const originalReturnPath = `${new URL(originalReturnUrl).pathname}${new URL(originalReturnUrl).search}${new URL(originalReturnUrl).hash}`;
+        await page.waitForURL((url) => url.pathname === '/login' && url.searchParams.get('reason') === 'session_expired', { timeout: 45000 });
+        const notice = page.locator('[data-session-expired-notice]:visible');
+        await notice.waitFor({ state: 'visible', timeout: 15000 });
+        const noticeCount = await notice.count();
+        const noticeText = String(await notice.textContent() || '').replace(/\s+/g, ' ').trim();
+        const credentialErrorCount = await page.locator('#login-error').count();
+        const loginUrl = page.url();
+        const originalStoredReturnPath = await page.evaluate(() => window.sessionStorage.getItem('sc.session_expired.return_path.v1'));
+        if (sessionExpiredRecoveryScenario === 'missing') {
+          await page.evaluate(() => window.sessionStorage.removeItem('sc.session_expired.return_path.v1'));
+        } else if (sessionExpiredRecoveryScenario === 'unauthorized') {
+          await page.evaluate(() => window.sessionStorage.setItem('sc.session_expired.return_path.v1', '/a/999999?menu_id=999999'));
+        }
+        const storedBeforeLogin = await page.evaluate(() => window.sessionStorage.getItem('sc.session_expired.return_path.v1'));
+        const loginTheme = await captureThemeRuntimeState(page);
+        await page.screenshot({
+          path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-session-expired.png`),
+          fullPage: true,
+        });
+        const inputs = page.locator('input');
+        await inputs.nth(0).fill(login);
+        await inputs.nth(1).fill(password);
+        if (await inputs.nth(2).count() && !(await inputs.nth(2).isDisabled())) await inputs.nth(2).fill(database);
+        const systemInitResponse = page.waitForResponse(isSystemInitResponse, { timeout: 45000 });
+        await page.getByRole('button', { name: /^登录$/ }).click();
+        const loginResponse = await systemInitResponse;
+        if (!loginResponse.ok()) throw new Error(`${target.name}: session recovery login failed with ${loginResponse.status()}`);
+        let expectedReturnUrl = originalReturnUrl;
+        let accessDeniedEvidence = null;
+        if (sessionExpiredRecoveryScenario === 'missing') {
+          expectedReturnUrl = String(report.startup[viewport.name]?.landingUrl || `${baseUrl}/`);
+          await page.waitForURL((url) => url.href === expectedReturnUrl, { timeout: 45000 });
+        } else if (sessionExpiredRecoveryScenario === 'unauthorized') {
+          await page.waitForURL((url) => url.pathname === '/access-denied', { timeout: 45000 });
+          const deniedUrl = new URL(page.url());
+          const deniedTitle = page.getByText('访问受限', { exact: true });
+          const safeReturn = page.getByRole('button', { name: '返回安全页面', exact: true });
+          await deniedTitle.waitFor({ state: 'visible', timeout: 15000 });
+          await safeReturn.waitFor({ state: 'visible', timeout: 15000 });
+          accessDeniedEvidence = {
+            deniedUrl: deniedUrl.href,
+            reason: deniedUrl.searchParams.get('reason'),
+            titleCount: await deniedTitle.count(),
+            safeReturnCount: await safeReturn.count(),
+          };
+          await safeReturn.click();
+          await page.waitForURL((url) => url.pathname === '/', { timeout: 45000 });
+          accessDeniedEvidence.safeReturnUrl = page.url();
+        } else {
+          await page.waitForURL((url) => url.href === expectedReturnUrl, { timeout: 45000 });
+        }
+        await page.locator('.layout-shell').waitFor({ timeout: 45000 });
+        await waitForStableProductSurface(page);
+        const storedAfterLogin = await page.evaluate(() => window.sessionStorage.getItem('sc.session_expired.return_path.v1'));
+        const recoveredUrl = page.url();
+        sessionExpiredRecoveryEvidence = {
+          injected: sessionExpiredInjected,
+          requestCount: sessionExpiredRequestCount,
+          loginUrl,
+          loginUrlContainsReturnPath: loginUrl.includes('redirect=') || loginUrl.includes(encodeURIComponent(originalReturnPath)),
+          noticeCount,
+          noticeText,
+          credentialErrorCount,
+          storedBeforeLogin,
+          storedAfterLogin,
+          originalStoredReturnPath,
+          expectedReturnPath: new URL(expectedReturnUrl).pathname + new URL(expectedReturnUrl).search + new URL(expectedReturnUrl).hash,
+          recoveredUrl,
+          scenario: sessionExpiredRecoveryScenario,
+          accessDeniedEvidence,
+          loginTheme,
+          pass: sessionExpiredInjected
+            && sessionExpiredRequestCount === 1
+            && !loginUrl.includes('redirect=')
+            && noticeCount === 1
+            && credentialErrorCount === 0
+            && noticeText.includes('登录状态已过期')
+            && noticeText.includes('显示原因')
+            && noticeText.includes('安全返回入口')
+            && originalStoredReturnPath === originalReturnPath
+            && storedAfterLogin === null
+            && (sessionExpiredRecoveryScenario === 'authorized'
+              ? storedBeforeLogin === originalReturnPath && recoveredUrl === expectedReturnUrl
+              : sessionExpiredRecoveryScenario === 'missing'
+                ? storedBeforeLogin === null && recoveredUrl === expectedReturnUrl
+                : sessionExpiredRecoveryScenario === 'unauthorized'
+                  ? storedBeforeLogin === '/a/999999?menu_id=999999'
+                    && accessDeniedEvidence?.reason === 'NAVIGATION_AUTHORITY_DENIED'
+                    && accessDeniedEvidence?.titleCount === 1
+                    && accessDeniedEvidence?.safeReturnCount === 1
+                    && new URL(accessDeniedEvidence?.safeReturnUrl || baseUrl).pathname === '/'
+                  : false),
+        };
+        await page.unroute(readFailurePattern, sessionExpiredHandler);
+      }
       if (contractResponse) {
         const response = await contractResponse;
         if (!response.ok()) throw new Error(`contract request failed: ${response.status()} ${target.path}`);
@@ -3639,7 +3767,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialIconResourceEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, systemThemeRuntimeEvidence, safeReturnEvidence, formStructureEvidence, fieldAlignmentEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialIconResourceEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, sessionExpiredRecoveryEvidence, systemThemeRuntimeEvidence, safeReturnEvidence, formStructureEvidence, fieldAlignmentEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -3754,6 +3882,7 @@ for (const item of report.routes) {
   if (item.businessConfigReadFailureEvidence && !item.businessConfigReadFailureEvidence.pass) failures.push({ name: item.name, businessConfigReadFailureEvidence: item.businessConfigReadFailureEvidence });
   if (item.officialComponentBehaviorEvidence && !item.officialComponentBehaviorEvidence.pass) failures.push({ name: item.name, officialComponentBehaviorEvidence: item.officialComponentBehaviorEvidence });
   if (item.officialAlertOperationEvidence && !item.officialAlertOperationEvidence.pass) failures.push({ name: item.name, officialAlertOperationEvidence: item.officialAlertOperationEvidence });
+  if (item.sessionExpiredRecoveryEvidence && !item.sessionExpiredRecoveryEvidence.pass) failures.push({ name: item.name, sessionExpiredRecoveryEvidence: item.sessionExpiredRecoveryEvidence });
   if (item.safeReturnEvidence && !item.safeReturnEvidence.pass) failures.push({ name: item.name, safeReturnEvidence: item.safeReturnEvidence });
   if (item.topbarActionEvidence && !item.topbarActionEvidence.pass) failures.push({ name: item.name, topbarActionEvidence: item.topbarActionEvidence });
   if (item.factDisclosureEvidence && !item.factDisclosureEvidence.pass) failures.push({ name: item.name, factDisclosureEvidence: item.factDisclosureEvidence });

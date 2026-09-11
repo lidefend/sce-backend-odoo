@@ -113,10 +113,22 @@ if not toggle_match:
         "[frontend_delivery_hardening_guard] FAIL AppShell sidebar toggle must control "
         "primary-sidebar with the unified sidebarVisible state"
     )
-client = require("frontend/apps/web/src/api/client.ts", "reason=session_expired")
+client = require("frontend/apps/web/src/api/client.ts", "redirectForExpiredSession")
 require("frontend/apps/web/src/api/client.ts", "currentContextSignal()")
 if "redirect=${encodeURIComponent" in client:
     raise SystemExit("[frontend_delivery_hardening_guard] FAIL 401 may restore a sensitive route")
+require(
+    "frontend/apps/web/src/app/sessionExpiredRecovery.ts",
+    "normalizeSafeLoginReturnPath",
+    "sessionExpiredRedirectScheduled",
+    "location.assign('/login?reason=session_expired')",
+)
+require(
+    "frontend/apps/web/src/views/LoginView.vue",
+    "data-session-expired-notice",
+    "readSessionExpiredReturnPath()",
+    "clearSessionExpiredReturnPath()",
+)
 forbid("frontend/apps/web/src/stores/session.ts", "token_prefix", "token.slice(")
 require("frontend/apps/web/package.json", '"@axe-core/playwright": "4.10.2"')
 require(

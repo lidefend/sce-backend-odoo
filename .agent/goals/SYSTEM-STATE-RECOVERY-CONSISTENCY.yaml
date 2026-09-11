@@ -1,0 +1,100 @@
+schema_version: 1
+goal:
+  id: SYSTEM-STATE-RECOVERY-CONSISTENCY
+  title: system_state_expression_and_recovery_path_consistency
+  status: completed
+  formal_product_layer: P0
+  layer_target: shared_frontend_state_expression_and_session_recovery
+  module: frontend
+  objective: >-
+    Inventory existing login, collection, form and workspace states, then close
+    only confirmed shared recovery gaps without changing authentication,
+    permissions, business contracts or write behavior.
+  baseline:
+    branch: feature/p0-system-state-recovery-consistency-v1
+    full_sha: 2f246f12ff03b1a69c80b9b5321ff72ed1cf5b51
+    source: clean_main_after_navigation_collection_merge
+    fingerprint: a2d44794dcb0d230b66ecdae366565253c297b37ce3893657c9710c3c3c78714
+    path_count: 7379
+  product_boundary:
+    standard_vs_user_specific: platform_standard
+    why_here: >-
+      Cross-page state explanation and safe session recovery are shared frontend
+      mechanisms consumed by all product pages.
+    why_not_elsewhere:
+      - no_authentication_permission_or_token_lifetime_change
+      - no_business_contract_or_business_action_change
+      - no_customer_specific_preference_or_runtime_configuration_change
+      - no_database_fixture_acceptance_upgrade_or_release_work
+    blast_radius:
+      - request_401_handling
+      - login_state_expression_and_post_login_navigation
+      - existing_collection_form_and_workspace_recovery_surfaces
+      - governed_read_only_browser_evidence
+  batches:
+    - id: A
+      title: governed_baseline_and_state_inventory
+      status: completed
+      commit: 98797d3c
+    - id: B
+      title: confirmed_shared_recovery_gaps
+      status: completed
+      commits:
+        - 472dcd9f
+        - 48fc398d
+        - 2656ad65
+        - 830fb7e3
+    - id: C
+      title: targeted_and_governed_browser_validation
+      status: completed
+      product_candidate:
+        full_sha: 830fb7e36c30df5c11aae521156f8327771fd04b
+      evidence:
+        - verify.frontend.system_state_recovery.unit_pass_assertions_21_guard_tests_4
+        - verify.frontend.quick.gate_pass
+        - light_1440_390_session_expiry_recovery_pass_zero_mutations
+        - dark_1088_320_session_expiry_recovery_pass_zero_mutations
+        - manual_four_screenshot_contrast_and_layout_review_pass
+    - id: D
+      title: storage_unavailable_and_route_outcome_alignment
+      status: completed
+      commit: efab86fe
+      scope:
+        - fail_safe_session_storage_property_and_method_access
+        - align_expired_session_notice_with_existing_access_denied_route
+        - targeted_behavior_evidence_for_four_recovery_outcomes
+      product_candidate:
+        full_sha: efab86fee1a00822907c5f4a68131fceebf7382b
+        fingerprint: a5394b784767e82e23bdcd2e2e1c685950b88ce7af91dd4a319bfa2fdfdb103b
+        path_count: 7385
+      evidence:
+        - verify.frontend.system_state_recovery.unit_pass_assertions_30_guard_tests_5
+        - verify.frontend.quick.gate_pass
+        - light_1440_390_three_recovery_outcomes_pass_zero_mutations
+        - dark_1088_320_three_recovery_outcomes_pass_zero_mutations
+      test_evidence_supplement:
+        commit: adb7ae7a
+        evidence:
+          - verify.frontend.system_state_recovery.unit_pass_assertions_32_guard_tests_5
+          - storage_property_denial_read_and_cleanup_assertions
+    - id: E
+      title: frontend_release_lint_closure
+      status: completed
+      commit: 94cd42a0
+      scope:
+        - replace_control_character_regex_with_equivalent_character_code_check
+        - preserve_safe_path_rejection_semantics
+        - close_branch_owned_frontend_release_lint_failure
+      evidence:
+        - verify.frontend.system_state_recovery.unit_pass_assertions_34_guard_tests_5
+        - verify.frontend.lint_src_pass_zero_errors
+        - verify.frontend.quick.gate_pass
+        - browser_matrix_not_rerun_behavior_preserving_lint_fix_only
+  exclusions:
+    - authentication_permission_or_token_policy
+    - automatic_replay_of_save_approval_payment_or_other_writes
+    - unsaved_draft_recovery_guarantee
+    - new_state_framework_or_business_contract_fields
+    - acceptance_rebuild_upgrade_compatibility_or_release
+  rollback:
+    - revert_evidence_then_shared_recovery_then_inventory_commits_without_database_rollback

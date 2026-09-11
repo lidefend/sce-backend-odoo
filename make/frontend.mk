@@ -110,6 +110,13 @@ verify.frontend.global_component_capability.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/global_component_capability_test.ts --bundle --platform=node --format=esm --loader:.css=empty --resolve-extensions=.tsx,.ts,.jsx,.js,.css,.json,.mjs --alias:vue=./frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --alias:tdesign-vue-next=$(ROOT_DIR)/frontend/packages/ui/node_modules/tdesign-vue-next --outfile=/tmp/global-component-capability-test.mjs >/dev/null
 	@node /tmp/global-component-capability-test.mjs
 
+.PHONY: verify.frontend.system_state_recovery.unit
+verify.frontend.system_state_recovery.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/session_expired_recovery_test.ts --bundle --platform=node --format=esm --outfile=/tmp/session-expired-recovery-test.mjs >/dev/null
+	@node /tmp/session-expired-recovery-test.mjs
+	@python3 -m unittest scripts.verify.test_frontend_system_state_recovery_guard
+	@python3 scripts/verify/frontend_system_state_recovery_guard.py
+
 .PHONY: verify.frontend.navigation_shell.unit
 verify.frontend.navigation_shell.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/canonical_navigation_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/canonical-navigation-model-test.mjs >/dev/null
