@@ -49,6 +49,11 @@ class TestDemoShowcaseGate(TransactionCase):
         self.assertIn("baseline.action_activate()", source)
         self.assertIn("settlement.action_submit()", source)
         self.assertIn("payment.action_submit()", source)
+        self.assertIn('record=%s,%s(%s); state=%s;', source)
+        self.assertIn('calculation=round(%s=%s * ratio=%s, 2), currency_rounding=%s;', source)
+        self.assertIn('invoice_ref[expected=non-empty,actual=%s,match=%s]', source)
+        self.assertIn('invoice_date[expected=present,actual=%s,match=%s]', source)
+        self.assertIn('invoice_amount[expected=%s,actual=%s,match=%s]', source)
 
     def test_project_seed_does_not_forge_fact_sources_or_lifecycle(self):
         demo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))

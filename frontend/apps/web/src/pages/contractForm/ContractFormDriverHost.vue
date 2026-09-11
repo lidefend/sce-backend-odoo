@@ -96,6 +96,7 @@
             :native-action-handler="runNativeCanonicalAction"
             :native-action-state-resolver="nativeBridge.actionStateForNode"
             :prefer-readonly-facts="renderModel.identity.mode === 'readonly'"
+            :authoritative-business-section-mode="nativeBridge.authoritativeBusinessSectionMode"
             @field-change="emit('field-change', $event)"
           />
         </main>
@@ -108,6 +109,7 @@
             :native-action-handler="runNativeCanonicalAction"
             :native-action-state-resolver="nativeBridge.actionStateForNode"
             :prefer-readonly-facts="renderModel.identity.mode === 'readonly'"
+            :authoritative-business-section-mode="nativeBridge.authoritativeBusinessSectionMode"
             @field-change="emit('field-change', $event)"
           />
         </section>
@@ -180,6 +182,7 @@ const props = defineProps<{
   collaborationPanelListeners?: NativeCollaborationPanelListeners;
   busy?: boolean;
   actionsInHeader?: boolean;
+  claimedStatusbarNodeIdentity?: string;
 }>();
 const emit = defineEmits<{
   'driver-change': [kit: SceneUiKitId];
@@ -252,7 +255,13 @@ const nativeBridgeModel = computed<CanonicalFormRenderModel | null>(() => {
     },
   };
 });
-const nativeBridge = computed(() => nativeBridgeModel.value ? buildCanonicalNativeFormBridge(nativeBridgeModel.value, props.relationAdapter as CanonicalRelationProjection) : null);
+const nativeBridge = computed(() => nativeBridgeModel.value
+  ? buildCanonicalNativeFormBridge(
+    nativeBridgeModel.value,
+    props.relationAdapter as CanonicalRelationProjection,
+    props.claimedStatusbarNodeIdentity || '',
+  )
+  : null);
 const floorplanSubordinateNodes = computed(() => floorplan.value.subordinateNodes
   .filter((node) => !collaborationKind(node.kind))
   .filter(canonicalNodeHasContent));
@@ -280,7 +289,7 @@ function runNativeCanonicalAction(payload: Record<string, unknown>) {
   margin: var(--sc-product-space-4);
 }
 .sc-native-contract-page :deep([data-form-section-target]) {
-  scroll-margin-top: calc(var(--sc-form-command-bar-height, 72px) + 52px);
+  scroll-margin-top: calc(var(--sc-form-command-bar-height, 72px) + var(--sc-form-section-nav-height, 0px) + var(--sc-form-sticky-gap, 8px) * 2);
 }
 .sc-native-contract-page {
   width: 100%;

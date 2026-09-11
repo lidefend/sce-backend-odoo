@@ -3,6 +3,7 @@ import type {
   CanonicalFormSemanticRole,
 } from '../../app/presentation/canonicalFormRenderModel';
 import { fieldIsBusinessRelationCollection } from '../../app/presentation/canonicalFormFloorplan';
+import { collectNativeBusinessSections } from './nativeBusinessSection';
 
 export type NativeSectionNavigationRole = 'primary' | 'subordinate';
 
@@ -15,6 +16,46 @@ export type WorkspaceSectionNavigationItem = {
   sourceType: 'node' | 'field' | 'surface';
   sourceIdentity: string;
 };
+
+export type VisibleSectionPosition = {
+  key: string;
+  top: number;
+};
+
+export type ActivatedSectionFallback = {
+  preferredKey: string;
+  visibleBottom: number;
+};
+
+export function activeSectionKeyAtAnchor(
+  positions: VisibleSectionPosition[],
+  anchor: number,
+  activatedFallback?: ActivatedSectionFallback,
+): string {
+  if (!positions.length) return '';
+  const anchoredKey = positions.reduce(
+    (current, position) => (position.top <= anchor ? position.key : current),
+    positions[0].key,
+  );
+  const preferred = activatedFallback
+    ? positions.find((position) => position.key === activatedFallback.preferredKey)
+    : undefined;
+  if (
+    preferred
+    && preferred.top > anchor
+    && preferred.top < activatedFallback!.visibleBottom
+  ) return preferred.key;
+  return anchoredKey;
+}
+
+export function sectionScrollDelta(
+  targetTop: number,
+  anchor: number,
+  tolerance = 1,
+): number {
+  const delta = targetTop - anchor;
+  return Math.abs(delta) <= tolerance ? 0 : delta;
+}
 
 type NativeSectionAuthorityNode = {
   sourceAuthority?: Record<string, unknown>;
@@ -57,6 +98,25 @@ function selectorFor(key: string): string {
 }
 
 export function workspaceSectionNavigationItems(nodes: CanonicalFormNode[]): WorkspaceSectionNavigationItem[] {
+  const authoritativeItems: WorkspaceSectionNavigationItem[] = [];
+  const emittedAnchors = new Set<string>();
+
+  authoritativeNativeBusinessSections(nodes).forEach(({ node, identity }) => {
+    if (identity && !emittedAnchors.has(identity.anchor)) {
+      authoritativeItems.push({
+        key: `node:${node.nodeId}:business-section`,
+        label: identity.label,
+        selector: selectorFor(`node:${node.nodeId}:business-section`),
+        role: node.semanticRole || 'context',
+        contentKind: 'semantic-section',
+        sourceType: 'node',
+        sourceIdentity: node.nodeId,
+      });
+      emittedAnchors.add(identity.anchor);
+    }
+  });
+  if (authoritativeItems.length) return authoritativeItems;
+
   const items: WorkspaceSectionNavigationItem[] = [];
   const emittedRoles = new Set<CanonicalFormSemanticRole>();
 
@@ -83,6 +143,13 @@ export function workspaceSectionNavigationItems(nodes: CanonicalFormNode[]): Wor
 
   nodes.forEach((node) => visit(node));
   return [...items, ...relationshipCollectionNavigationItems(nodes)];
+}
+
+export function authoritativeNativeBusinessSections(nodes: CanonicalFormNode[]) {
+  return collectNativeBusinessSections(nodes, {
+    childrenOf: (node) => node.children,
+    isVisible: (node) => node.visible,
+  });
 }
 
 export function relationshipCollectionNavigationItems(

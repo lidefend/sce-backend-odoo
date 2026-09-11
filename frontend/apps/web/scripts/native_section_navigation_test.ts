@@ -1,11 +1,48 @@
 import assert from 'node:assert/strict';
 import type { CanonicalFormNode } from '../src/app/presentation/canonicalFormRenderModel';
 import {
+  activeSectionKeyAtAnchor,
   nextBusinessActionLabel,
   nativeSectionNavigationRole,
+  sectionScrollDelta,
   workspaceSectionNavigationItems,
   workspaceSurfaceNavigationItems,
 } from '../src/pages/contractForm/nativeSectionNavigation';
+import {
+  collectNativeBusinessSections,
+  nativeBusinessSectionIdentity,
+} from '../src/pages/contractForm/nativeBusinessSection';
+
+assert.deepEqual(nativeBusinessSectionIdentity({
+  type: 'group', string: '基本信息', attributes: { 'data-sc-anchor': 'project-basic' },
+}), { anchor: 'project-basic', label: '基本信息' });
+assert.equal(nativeBusinessSectionIdentity({
+  type: 'group', string: '普通布局组', attributes: {},
+}), null, 'a title without explicit section identity remains hidden layout metadata');
+assert.equal(nativeBusinessSectionIdentity({
+  type: 'group', string: '隐藏章节', visible: false, attributes: { 'data-sc-anchor': 'hidden' },
+}), null, 'hidden sections remain hidden even when explicitly anchored');
+assert.equal(nativeBusinessSectionIdentity({
+  type: 'page', string: '业务页签', attributes: { 'data-sc-anchor': 'tab' },
+}), null, 'tabs retain their own navigation and do not become group headings');
+
+const hiddenAncestorSections = collectNativeBusinessSections([node({
+  nodeId: 'hidden.parent', kind: 'container', visible: false, children: [node({
+    nodeId: 'hidden.child.anchor', title: '隐藏父级中的章节',
+    attributes: { 'data-sc-anchor': 'hidden-child' },
+  })],
+})], { childrenOf: (item) => item.children, isVisible: (item) => item.visible });
+assert.deepEqual(hiddenAncestorSections, [], 'a visible-looking anchor below a hidden ancestor cannot activate section mode');
+
+const notebookOnlySections = collectNativeBusinessSections([node({
+  nodeId: 'tabs.only', kind: 'notebook', children: [node({
+    nodeId: 'tab.page', kind: 'page', children: [node({
+      nodeId: 'tab.group.anchor', title: '页签内分区',
+      attributes: { 'data-sc-anchor': 'tab-group' },
+    })],
+  })],
+})], { childrenOf: (item) => item.children, isVisible: (item) => item.visible });
+assert.deepEqual(notebookOnlySections, [], 'anchors owned by notebook content cannot activate page-level section mode');
 
 assert.equal(nativeSectionNavigationRole({}), 'primary');
 assert.equal(nativeSectionNavigationRole({ sourceAuthority: { kind: 'released_product_section' } }), 'primary');
@@ -62,8 +99,42 @@ assert.deepEqual(workspaceSectionNavigationItems([node({
 
 const hiddenSection = workspaceSectionNavigationItems([node({
   nodeId: 'hidden.context', visible: false, semanticRole: 'context',
+  title: '隐藏业务章节', attributes: { 'data-sc-anchor': 'hidden-business-section' },
 })]);
 assert.deepEqual(hiddenSection, [], 'hidden sections must not create links');
+
+const authoritativeSections = workspaceSectionNavigationItems([
+  node({
+    nodeId: 'sheet', kind: 'sheet', children: [
+      node({
+        nodeId: 'section.basic', title: '基本信息', semanticRole: 'context',
+        attributes: { 'data-sc-anchor': 'project-basic' },
+      }),
+      node({
+        nodeId: 'section.layout-only', title: '布局容器', semanticRole: 'context',
+      }),
+      node({
+        nodeId: 'project.tabs', kind: 'notebook', children: [node({
+          nodeId: 'tab.wbs', kind: 'page', title: 'WBS结构',
+          attributes: { 'data-sc-anchor': 'wbs' },
+        })],
+      }),
+    ],
+    fields: [field({
+      widgetId: 'labels', fieldType: 'many2many', semanticRole: 'relation', label: '标签',
+    })],
+  }),
+]);
+assert.deepEqual(
+  authoritativeSections.map(({ label, sourceType, sourceIdentity }) => ({ label, sourceType, sourceIdentity })),
+  [{ label: '基本信息', sourceType: 'node', sourceIdentity: 'section.basic' }],
+  'explicit visible business sections replace inferred field and nested-tab navigation',
+);
+
+const unanchoredTitle = workspaceSectionNavigationItems([node({
+  nodeId: 'unanchored.title', title: '不应自动显示', semanticRole: '',
+})]);
+assert.deepEqual(unanchoredTitle, [], 'an XML title alone must not opt a group into visible navigation');
 
 const contextSection = workspaceSectionNavigationItems([node({
   nodeId: 'section.context', semanticRole: 'context', fields: [field({})],
@@ -91,4 +162,26 @@ assert.equal(new Set(relationSections.map((item) => item.selector)).size, 2, 're
 assert.deepEqual(workspaceSurfaceNavigationItems({ collaborationAvailable: true, auditAvailable: false }).map((item) => item.role), ['activity']);
 assert.deepEqual(workspaceSurfaceNavigationItems({ collaborationAvailable: true, auditAvailable: true }).map((item) => item.role), ['activity', 'audit']);
 
-console.log('[native_section_navigation_test] PASS authority=5 next_action=3 content_identity=6');
+const lowerPagePositions = [
+  { key: 'basic', top: -900 },
+  { key: 'related', top: -40 },
+  { key: 'collaboration', top: 520 },
+  { key: 'audit', top: 760 },
+];
+assert.equal(activeSectionKeyAtAnchor(lowerPagePositions, 120), 'related', 'being at the document bottom cannot make an unreached audit target active');
+assert.equal(
+  activeSectionKeyAtAnchor(lowerPagePositions, 120, { preferredKey: 'audit', visibleBottom: 900 }),
+  'audit',
+  'a just-activated target that is visible but cannot reach the anchor at scroll end must remain current after release',
+);
+assert.equal(
+  activeSectionKeyAtAnchor(lowerPagePositions, 120, { preferredKey: 'audit', visibleBottom: 700 }),
+  'related',
+  'a just-activated target outside the visible scroll owner must not override anchor tracking',
+);
+assert.equal(activeSectionKeyAtAnchor(lowerPagePositions, 800), 'audit', 'the audit entry becomes current only after its own target reaches the navigation anchor');
+assert.equal(sectionScrollDelta(132, 120), 12, 'a target below the active anchor must be advanced to the same anchor used for selection');
+assert.equal(sectionScrollDelta(104, 120), -16, 'a target hidden above the active anchor must be moved below sticky surfaces');
+assert.equal(sectionScrollDelta(120.5, 120), 0, 'sub-pixel rendering around the active anchor must not cause scroll churn');
+
+console.log('[native_section_navigation_test] PASS authority=7 next_action=3 content_identity=9 active_tracking=7');

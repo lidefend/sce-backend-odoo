@@ -1346,22 +1346,86 @@ assert.equal(
 const nativeOccurrenceActionSnapshot = structuredClone(snapshot());
 nativeOccurrenceActionSnapshot.layoutContract.containerTree[0].children.push({
   containerId: 'button.native.submit', containerType: 'button', type: 'button', title: 'Submit Native', span: 24,
-  action: { native_identity: { type: 'object', name: 'action_submit', native_locator: '/form/header/button[1]', occurrence_index: 1 } },
+  action: { native_identity: { type: 'object', name: 'action_submit', occurrence_index: 1 } },
   children: [], widgetList: [],
 });
 nativeOccurrenceActionSnapshot.actionContract.actionRuleList[0].nativeIdentity = {
-  type: 'object', name: 'action_submit', native_locator: '/form/header/button[1]', occurrence_index: 1,
+  type: 'object', name: 'action_submit', occurrence_index: 1,
+};
+nativeOccurrenceActionSnapshot.actionContract.actionRuleList[0].sourceWidgetId = 'button.native.submit';
+nativeOccurrenceActionSnapshot.actionContract.actionRuleList[0].targetScope = 'record';
+nativeOccurrenceActionSnapshot.actionContract.actionRuleList[0].backendIdentity = 'native_button:object:action_submit:/form[1]/header[1]/button[3]:1';
+nativeOccurrenceActionSnapshot.actionContract.primaryResolution = {
+  policy: 'single_effective_primary_per_record_state',
+  winner: 'native_button:action:338:/form[1]/header[1]/button[1]:1',
+  demoted: [{
+    actionId: 'action.action_sc_submit',
+    backendIdentity: 'native_button:object:action_submit:/form[1]/header[1]/button[3]:1',
+    previousTier: 'primary',
+    effectiveTier: 'secondary',
+  }],
 };
 const nativeOccurrenceModel = presentContractV2Form(createContractV2Store(nativeOccurrenceActionSnapshot), 'edit');
+assert.deepEqual(
+  nativeOccurrenceModel.actionBar.map((action) => action.key),
+  ['action_submit'],
+  'a distinct backend-demoted header button must remain in the product header as a secondary action',
+);
 assert.equal(
   nativeOccurrenceModel.zones.primary[0].children.find((node) => node.nodeId === 'button.native.submit')?.action?.actionRef.backendIdentity,
-  'button:object:action_submit',
-  'native snake-case occurrence identity must resolve to the canonical action rule',
+  'native_button:object:action_submit:/form[1]/header[1]/button[3]:1',
+  'native occurrence identity must resolve to the canonical action rule carrying the public header locator',
 );
 assert.equal(
   buildCanonicalNativeFormBridge(nativeOccurrenceModel).primaryNodes[0].children?.find((node) => node.type === 'button')?.visible,
   false,
   'an action already promoted to the canonical header must not remain visible as a duplicate native body occurrence',
+);
+const multiStatusModel = structuredClone(nativeOccurrenceModel);
+const primaryStatusNode = multiStatusModel.zones.primary[0].children.find((node) => node.nodeId === 'field.state');
+assert.ok(primaryStatusNode, 'the fixture must expose its primary state node');
+primaryStatusNode.visible = true;
+primaryStatusNode.attributes = { ...primaryStatusNode.attributes, widget: 'statusbar' };
+primaryStatusNode.fields[0].visible = true;
+const secondaryStatusNode = structuredClone(primaryStatusNode);
+secondaryStatusNode.nodeId = 'field.secondary_state';
+secondaryStatusNode.attributes = { ...secondaryStatusNode.attributes, name: 'secondary_state', widget: 'statusbar' };
+secondaryStatusNode.fields[0].fieldCode = 'secondary_state';
+secondaryStatusNode.fields[0].widgetId = 'field.secondary_state';
+multiStatusModel.zones.primary[0].children.push(secondaryStatusNode);
+
+const unclaimedStatusBridge = buildCanonicalNativeFormBridge(multiStatusModel);
+const isStatusbarNode = (node: { widget?: string; attributes?: Record<string, unknown> }) => (
+  String(node.widget || node.attributes?.widget || '') === 'statusbar'
+);
+const unclaimedStatusNodes = unclaimedStatusBridge.primaryNodes[0].children?.filter(isStatusbarNode) || [];
+assert.equal(unclaimedStatusNodes.length, 2);
+assert.ok(
+  unclaimedStatusNodes.every((node) => unclaimedStatusBridge.nodeVisible(node)),
+  'statusbar widgets must remain in the body when the product header did not claim an exact node',
+);
+
+const claimedStatusBridge = buildCanonicalNativeFormBridge(multiStatusModel, undefined, 'field.state');
+const claimedStatusNodes = claimedStatusBridge.primaryNodes[0].children?.filter(isStatusbarNode) || [];
+assert.equal(
+  claimedStatusBridge.nodeVisible(claimedStatusNodes.find((node) => node.name === 'state')!),
+  false,
+  'only the exact statusbar node claimed by the product header may be removed from the body',
+);
+assert.equal(
+  claimedStatusBridge.nodeVisible(claimedStatusNodes.find((node) => node.name === 'secondary_state')!),
+  true,
+  'a different status field must remain visible when the header claims the primary status node',
+);
+
+const readonlyStatusModel = structuredClone(multiStatusModel);
+readonlyStatusModel.identity.mode = 'readonly';
+const readonlyClaimBridge = buildCanonicalNativeFormBridge(readonlyStatusModel, undefined, 'field.state');
+const readonlyClaimedNode = readonlyClaimBridge.primaryNodes[0].children?.find((node) => node.name === 'state');
+assert.equal(
+  readonlyClaimBridge.nodeVisible(readonlyClaimedNode!),
+  false,
+  'an exact readonly status claim must also prevent one duplicate body occurrence',
 );
 assert.deepEqual(presentContractV2Form(store, 'edit'), model, 'presenter must be deterministic');
 
@@ -2681,4 +2745,4 @@ assert.equal(
   'canonical validation must project an explicit field identity even when labels overlap',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=143');
+console.log('[canonical_form_presenter_test] PASS cases=149');

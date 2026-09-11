@@ -1447,7 +1447,7 @@
     },
     {
       "category": "other",
-      "digest": "9ccffec410e1867405313b7bf90ab0c2f1763a204de72a30e542932cec88d4f2",
+      "digest": "8e1157b0091ff567caab83329143d75a75e78e1042174c48612969cab91b0076",
       "nativeStyleSelectors": [],
       "path": "components/product-page-header/ProductPageHeader.vue",
       "referenceNativeStyleSelectors": [],
@@ -1773,7 +1773,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "a6a83880653519d47c8d3dbf27361a4fdc58759c4b45cce6f579567a4e35bc1a",
+      "digest": "0f062f085d49e52786ea05db01ae296c107021c5ae2584adae982399612fe1ba",
       "nativeStyleSelectors": [],
       "path": "components/template/FormSection.vue",
       "referenceNativeStyleSelectors": [
@@ -1817,7 +1817,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "a8f8b8d7313f14f8cd6369af5fd45b9126e24f06ad4b89a065318b5e3fb79fe9",
+      "digest": "35d45abc2b0b71468a9ffc8be1d6191cdd86b5d71649ca5718cc8e8a756e12c9",
       "nativeStyleSelectors": [],
       "path": "components/template/NativeFormTreeRenderer.vue",
       "referenceNativeStyleSelectors": [],
@@ -1848,7 +1848,7 @@
     },
     {
       "category": "other",
-      "digest": "3961fad2d8993fc5773be8020343261bb9744583085d1222c66f80a6ac4686c8",
+      "digest": "b2f6629fc16c1809bbe121e78371a2a4e99c828597d9cf548be34a0d2f8e6acd",
       "nativeStyleSelectors": [],
       "path": "components/template/One2ManyCellEditor.vue",
       "referenceNativeStyleSelectors": [],
@@ -1873,7 +1873,7 @@
     },
     {
       "category": "relations-x2many",
-      "digest": "124e81d9573848e6354360e49c9d46725b327fc95a68b824f4828d19418113cf",
+      "digest": "827f856da62dc977095e96a99a481eb35c439767c765b9ae7e64d78fc8913668",
       "nativeStyleSelectors": [],
       "path": "components/template/X2ManyRelationRenderer.vue",
       "referenceNativeStyleSelectors": [
@@ -1885,6 +1885,7 @@
       ],
       "scComponents": [
         "ScButton",
+        "ScEmptyState",
         "ScFileField",
         "ScIcon",
         "ScInlineState",
@@ -1999,7 +2000,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "30785f4a02fa49ca4fd48ea3dbe18871f769cf76df2aea7448d23c0fb5b80b98",
+      "digest": "7edaaeb9e74c9ce6221372a2fd08af35a5c716c8e653df7e43c98104fc926328",
       "nativeStyleSelectors": [],
       "path": "pages/ContractFormPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2096,7 +2097,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "3f249fc612572896f9f728676632bbe846c9f12db954102e91e15033c5f0bba2",
+      "digest": "5aa6dbfd997a99cc838dfda9784aa6e801583caf7e1fad7c227596eee8777ad6",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormDriverHost.vue",
       "referenceNativeStyleSelectors": [
@@ -2132,7 +2133,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "5e239297fb848f53572444722268e85ce0ba3c2a577115b23f0a1d0abc0c3f6f",
+      "digest": "01d54d4627cda0a3529f24ba42dbc7c1260d0427bcfab9610cadc7dc3dcdf547",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormProductHeader.vue",
       "referenceNativeStyleSelectors": [],
@@ -2145,7 +2146,8 @@
         "ScDropdown",
         "ScDropdownItem",
         "ScIcon",
-        "ScSteps"
+        "ScSelect",
+        "ScStatusBadge"
       ]
     },
     {
@@ -2193,7 +2195,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "aeb2f8cb5911cdaf072621ffceeca285d4563426b222ba355e2660c967027193",
+      "digest": "846b3c47fe9935d6497cf7812f9c6f5ae045fa9959602aadc8510b151126f998",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/FormSectionNavigation.vue",
       "referenceNativeStyleSelectors": [],
@@ -2304,7 +2306,7 @@
     },
     {
       "category": "collaboration",
-      "digest": "d3004d81a75c02d1c179a0d9ccac0004f45ef48c9d53aacab80cbf6269a70ba0",
+      "digest": "2bd2aa3e8de7d3a763d264e4fbeb66ee85ad544a50a7232b66e1528a379be5ae",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ProfessionalCollaborationTimeline.vue",
       "referenceNativeStyleSelectors": [],
@@ -2319,7 +2321,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "7c79f7479daed82bf6f8394381f7ac9d23cd7ce780630aae5852f93988b2d8d0",
+      "digest": "c21d9f396a935b011fb031fa65ceaac53252b60793a45e56fd6ec33c70ca570f",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ProfessionalFollowerManager.vue",
       "referenceNativeStyleSelectors": [],
@@ -2821,7 +2823,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "d36925df92ff552aedfe98854ffd2fed8928614b351ce96720e89c04dcb687a6",
+  "currentInputDigest": "fdf3d6c0934218aae4dc43f68bbfcb4cbca9f1a92adfcd2b5825a08000d51a81",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

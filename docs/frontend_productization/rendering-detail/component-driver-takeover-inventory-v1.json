@@ -118,7 +118,7 @@
         "TDesignAlert"
       ],
       "officialComponent": "alert",
-      "productionConsumerCount": 47,
+      "productionConsumerCount": 45,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -522,7 +522,7 @@
         "TDesignEmpty"
       ],
       "officialComponent": "empty",
-      "productionConsumerCount": 22,
+      "productionConsumerCount": 24,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -760,7 +760,7 @@
         "TDesignLoading"
       ],
       "officialComponent": "loading",
-      "productionConsumerCount": 43,
+      "productionConsumerCount": 41,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -976,7 +976,7 @@
         "TDesignSelect"
       ],
       "officialComponent": "select",
-      "productionConsumerCount": 38,
+      "productionConsumerCount": 39,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1075,10 +1075,10 @@
         "TDesignSteps"
       ],
       "officialComponent": "steps",
-      "productionConsumerCount": 1,
+      "productionConsumerCount": 0,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
-      "status": "adapter_present"
+      "status": "adapter_unconsumed"
     },
     {
       "adapterKeys": [],
@@ -1196,7 +1196,7 @@
         "TDesignTag"
       ],
       "officialComponent": "tag",
-      "productionConsumerCount": 13,
+      "productionConsumerCount": 14,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1384,13 +1384,13 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "3650792b905eb10481c1f227beb0c8a4ab6a1d60df1880eefef37f94cb36acc7",
+  "inputDigest": "9e37f5129bfd0dc7bec2b0a65bdbef126c7be93150920c8366637e0c38a97f52",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",
   "summary": {
-    "adapter_present": 34,
-    "adapter_unconsumed": 1,
+    "adapter_present": 33,
+    "adapter_unconsumed": 2,
     "auditedCapabilityCount": 5,
     "bridge_only": 0,
     "directLibraryImportBypasses": 0,

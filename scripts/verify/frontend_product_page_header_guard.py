@@ -63,7 +63,7 @@ def validate() -> list[str]:
     contract_page_style = source("frontend/apps/web/src/pages/contractForm/ContractFormPage.css")
     if '<h1 v-if="initialFormLoading"' not in contract_page:
         failures.append("ContractForm loading identity may duplicate the stable page header h1")
-    for marker in ('actions-in-header', '@canonical-save="saveRecord()"'):
+    for marker in ('actions-in-header', '@canonical-save="saveRecord()"', ':status-interactive="nativeStatusbar.visible && !nativeStatusbar.readonly"'):
         if marker not in contract_page:
             failures.append(f"ContractForm does not project direct edit actions into header: {marker}")
     if ":deep(.template-page-header" in contract_page_style:
@@ -74,6 +74,15 @@ def validate() -> list[str]:
     for marker in ("position: sticky", "data-has-status", "product-page-header__actions"):
         if marker not in component:
             failures.append(f"ProductPageHeader does not own shared internal header layout: {marker}")
+    if ".product-page-header__identity{flex:0 1 auto;min-width:0}" not in component:
+        failures.append("ProductPageHeader mobile identity retains a desktop flex basis")
+    if ".product-page-header__status{flex:0 1 auto;width:100%" not in component:
+        failures.append("ProductPageHeader mobile status retains a desktop flex basis as vertical height")
+    for marker in ("flex-wrap: wrap", "container-name:page-header-status", "container-type:inline-size"):
+        if marker not in component:
+            failures.append(f"ProductPageHeader status layout does not respond to available container space: {marker}")
+    if "@media(max-width:1500px){.product-page-header--task[data-has-status='true']" in component:
+        failures.append("ProductPageHeader status layout must not use a widened viewport breakpoint as a container proxy")
     canonical_actions = source("frontend/apps/web/src/pages/contractForm/contractFormHeaderCanonicalActions.ts")
     for marker in ("input.floorplan?.decisionMode", "input.floorplan.directActions", "input.floorplan.overflowActions", "['primary', 'secondary'].includes(action.tier)", "['overflow', 'configuration'].includes(action.tier)"):
         if marker not in canonical_actions:
@@ -98,6 +107,19 @@ def validate() -> list[str]:
         if "<h1" in source(nested):
             failures.append(f"nested renderer competes with ProductPageHeader h1: {nested}")
     native_renderer = source("frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue")
+    canonical_presenter = source("frontend/apps/web/src/app/presentation/contractFormPresenter.ts")
+    canonical_bridge = source("frontend/apps/web/src/pages/contractForm/canonicalNativeFormBridge.ts")
+    canonical_driver = source("frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue")
+    if "/\\/header(?:\\[|\\/|$)/.test(nativeLocator)" not in canonical_presenter:
+        failures.append("native form-header actions are not projected into the product header action channel")
+    if "claimedStatusbarNodeIdentity && canonicalNodeIdentity === claimedStatusbarNodeIdentity" not in canonical_bridge:
+        failures.append("canonical body statusbar de-duplication is not bound to the exact header-claimed node")
+    if "text(node.widget || attrs.widget).toLowerCase() === 'statusbar'" in canonical_bridge:
+        failures.append("canonical body still hides every statusbar instead of the exact header claim")
+    if ':claimed-statusbar-node-identity="nativeStatusbarNodeIdentity"' not in contract_page:
+        failures.append("ContractForm does not pass the exact claimed statusbar node into the body bridge")
+    if canonical_driver.count(':authoritative-business-section-mode="nativeBridge.authoritativeBusinessSectionMode"') != 2:
+        failures.append("canonical primary and subordinate renderers do not share the page-level business section mode")
     if 'v-bind="nativeActionEvidenceAttributes' not in native_renderer:
         failures.append("native action controls must expose canonical action evidence attributes")
     for marker in ("data-action-key", "data-action-ref", "data-backend-identity"):

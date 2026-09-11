@@ -166,10 +166,12 @@ require(
         "filter(isFormActionBarAction)" in presenter
         or "isFormActionBarAction(action.actionRef)" in presenter
     )
-    and "demotedActionIds.has(action.actionRef.actionId)" in presenter
+    and "primaryResolution).winner" in presenter
+    and "retainAuthoritativeActionOccurrences(actionCandidates, primaryWinnerIdentity)" in presenter
+    and "demotedActionIds.has(action.actionRef.actionId)" not in presenter
     and "sourceWidgetId === 'page.root'" in presenter
     and "targetScope === 'footer'" in presenter,
-    "canonical form action collection does not honor the backend primary resolution",
+    "canonical form action collection does not retain demoted secondary actions while honoring the backend winner",
 )
 require(
     "actionsByIdentity.get(actionIdentity)" in presenter

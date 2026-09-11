@@ -9225,3 +9225,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 分支 `feature/p0-system-state-recovery-consistency-v1`，起始 HEAD `306b3159eab0c0debbbb947bde1141e3b1225f94`。Formal Product Layer P0；Layer Target 为会话过期恢复助手、登录状态说明与既有只读验证工具。
 - 唯一产品修正是把 `window.sessionStorage` 属性访问失败降级为“无恢复目标”，同时保持登录跳转；路由权限规则保持不变，登录说明改为准确表达既有 `access-denied` 原因和安全返回入口。
 - 验证限定为存储属性/方法失败、四个认证入口递归阻止，以及授权、缺失、失权三类登录后路径；不重放请求，不修改认证、权限、业务契约、数据、页面视觉或发布环境。
+
+## 2026-09-11 — 项目状态区统一表达补证
+
+- 分支 `feature/p1-project-profile-page-productization-v1`，起始 HEAD `6a2e9c3abb47ecd4c2aa46a20497da69fcc2d1ba`。Formal Product Layer P0；Layer Target 为通用 native selection 状态呈现、共享页头容器和吸顶偏移，P1 项目视图保持冻结，P4 仅承载定向证据。
+- 原生 selection 缺少流程拓扑，不再默认映射为 Steps；当前状态由 `ScStatusBadge` 表达，可写字段由官方 `ScSelect` 编辑，保存与流程动作继续消费各自既有权威。不修改契约、权限、状态值、业务动作或数据。
+- `ScSteps` 删除 `.t-steps-item__title` 内部选择器和 `nowrap` 私有扩展；守卫对内部 TDesign DOM 选择器、原生控件绕行及 selection 重新接入 Steps fail closed。页头按状态容器实际宽度自然换行，移动状态槽使用内容高度；章节锚点消费实测页头与章节栏高度。
+- 最终候选 `12395fffb1d4dc3faa9917222a12e8d4c9661c02`，完整指纹 `33892b88b9c750bdeabed30cd020300bb1a9400053b17dbd7bd177dcdfba7b7b`（7388 paths）。Frontend Quick 在前一产品提交 `a65c29ff…` 完整通过；最终 CSS/证据补正的定向守卫、严格类型、官方接管清单和候选 build 通过。
+- light 1082/390 与 dark 1082/320 定向覆盖项目编辑、驾驶舱 fallback、启停专用表单和付款只读；有效摘要均 pass、零业务 mutation、零 error/failure。项目编辑每个视口实际完成本地状态切换、1 项脏态、还原和刷新；七个标签完整，章节落点无遮挡。首次浅色运行因 `ERR_NETWORK_CHANGED` 失败，保留为环境失败历史，不计入通过。
+- 320px 首屏完整显示身份、状态、动作和项目名称，但客户控件未完整进入首屏；该限制如实保留。P4 结算快照、真实保存/提交、多角色、acceptance、PR/CI/release 均未执行或仍独立阻断。
+
+## 2026-09-11 — 项目资料维护整页开发冻结
+
+- 分支 `feature/p1-project-profile-page-productization-v1`，最终产品候选 `afec3fd304b39103b16e528aaa8353556e7990da`，完整指纹 `ef9f46a1e00b5d6446ee5b09dbde7d4adac2afc421cd9212debf95ec353a982b`（7389 paths）。P1 最终合成视图在所有 notebook 扩展之后承担项目资料布局，P0 只消费通用显式布局、章节、集合与协作语义。
+- 最终 HEAD 的受管 Frontend Quick、增量模块升级、非零后端合成视图测试及 P0 定向测试通过。light 1440/390 与 dark 1082/320 整页证据逐项覆盖 11 个 notebook 页签、章节导航、草稿保留、责任矩阵、关联集合和协作底部；mutation/errors/failures 均为 0。
+- 同候选补充 light 1082/390 与 dark 1082/320 的驾驶舱 fallback、启停专用表单、付款只读回归，均通过且零业务写入。5176 保持固定候选运行，供独立复核；未执行真实保存、流程动作、PR/CI/merge/release。
+- `sc.settlement.order(25)` 旧不可变快照仍是独立 P4 fixture-backed acceptance 前提，不由项目页面产品分支修复、重建或降低断言。项目整页开发结果进入 `verification_pending`，不再把该 P4 条件表述为页面产品未完成。
+
+## 2026-09-11 — 项目章节导航稳定态与交付收口
+
+- 独立复核在整页结构候选 `afec3fd3…` 发现“关联业务”点击锁定释放后回退；增强脚本在 `7f081856…` 进一步暴露页尾章节因不能物理到达锚点而回退，失败证据保留。
+- P0 修复统一点击定位与滚动判定锚点。只有一次点击释放时，可见但受滚动终点限制的目标获得一次性调和；没有延长定时器、永久锁定或按项目模型特判，后续手动滚动仍按普通锚点切换。
+- 最终产品候选 `20f21091700d0c265fac2238f8cfd6f66533f20d`，完整指纹 `bb5afe1b2a2a23b913be37023d611be0a92f82bda8db8dc89d1b2eb54a7540db`（7389 paths）。Frontend Quick 与非零导航测试通过。
+- light 1082/390、dark 1082/320 的项目正反向点击和手动滚动通过；light 1082/390 的驾驶舱 fallback、启停专用表单、付款只读回归通过。所有最终摘要均零业务写入、零 error/failure。
+- 本地交付包已按 P0/P1/P4、生成清单和文档分类；HIGH_RISK/full gates 保持。未执行 push、PR、CI、merge、release，旧结算快照仍为独立 P4 前提。

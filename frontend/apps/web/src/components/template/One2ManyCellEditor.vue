@@ -25,7 +25,7 @@
       :loading="relationLoading"
       :empty-text="relationEmptyText"
       :placeholder="relationPlaceholder"
-      :title="column.disabledReason"
+      :title="column.disabledReason || relationDisplayLabel"
       @update:model-value="$emit('update', $event)"
       @search="$emit('search', $event)"
       @popup-visible-change="$emit('popup-change', { ...$event, ownerId: popupOwnerId })"
@@ -39,6 +39,7 @@
       :model-value="String(value ?? '')"
       :placeholder="adapter.selectPlaceholder(column.label)"
       :options="(column.selection || []).map((option) => ({ value: String(option[0]), label: String(option[1]) }))"
+      :title="selectionDisplayLabel"
       @update:model-value="$emit('update', $event)"
     />
     <ScInput
@@ -50,7 +51,7 @@
       :required="column.required"
       :status="errorText ? 'error' : 'default'"
       :described-by="errorId"
-      :title="column.disabledReason || readonlyReason"
+      :title="column.disabledReason || readonlyReason || cellDisplayValue"
       :model-value="adapter.one2manyColumnDisplayValue(column, value)"
       :placeholder="column.label"
       @update:model-value="$emit('update', $event)"
@@ -121,6 +122,15 @@ const relationValue = computed(() => {
   return Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : '';
 });
 const readonlyReason = computed(() => props.column.readonly ? '此字段目前仅供查看' : '');
+const cellDisplayValue = computed(() => props.adapter.one2manyColumnDisplayValue(props.column, props.value));
+const relationDisplayLabel = computed(() => {
+  const selected = props.relationOptions.find((option) => String(option.value) === String(relationValue.value));
+  return String(selected?.label || cellDisplayValue.value || '');
+});
+const selectionDisplayLabel = computed(() => {
+  const selected = (props.column.selection || []).find((option) => String(option[0]) === String(props.value ?? ''));
+  return String(selected?.[1] || cellDisplayValue.value || '');
+});
 </script>
 
 <style scoped>

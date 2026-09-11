@@ -3,7 +3,7 @@
     data-professional-collaboration-component="timeline"
     :data-collaboration-entry-count="entries.length"
   >
-    <ScList v-if="entries.length" class="native-chatter-timeline" :items="entries.map((entry) => ({ ...entry, key: entry.key }))">
+    <ScList v-if="entries.length" class="native-chatter-timeline" :split="false" :items="entries.map((entry) => ({ ...entry, key: entry.key }))">
       <template #item="{ item: rawEntry }">
         <article class="native-chatter-entry" :data-collaboration-entry-type="entryFrom(rawEntry)?.type">
           <template v-if="entryFrom(rawEntry)">
@@ -17,6 +17,7 @@
               <span class="native-chatter-attachment-meta">
                 <span v-if="attachmentInfo(entry).typeLabel" class="native-chatter-attachment-type">{{ attachmentInfo(entry).typeLabel }}</span>
                 <span v-if="attachmentInfo(entry).sizeLabel" class="native-chatter-attachment-size">{{ attachmentInfo(entry).sizeLabel }}</span>
+                <span v-if="entry.at">{{ formatCollaborationTimelineMeta(entry.at) }}</span>
               </span>
             </div>
             <ScButton
@@ -36,7 +37,6 @@
               @click="emit('delete-attachment', entry)"
             >删除</ScButton>
           </div>
-          <span v-if="entry.at" class="native-chatter-meta">{{ formatCollaborationTimelineMeta(entry.at) }}</span>
         </template>
         <!-- 消息类型：专门的显示模板 -->
         <template v-else-if="entry.type === 'message'">
@@ -84,9 +84,11 @@
         </template>
         <!-- 其他类型：通用显示模板 -->
         <template v-else>
-        <span class="native-chatter-type">{{ entry.typeLabel }}</span>
-        <span class="native-chatter-body">{{ entry.body || entry.title }}</span>
-        <span class="native-chatter-meta">{{ formatCollaborationTimelineMeta(entry.meta) }}</span>
+        <div class="native-chatter-generic-item">
+          <span class="native-chatter-type">{{ entry.typeLabel }}</span>
+          <span class="native-chatter-body">{{ entry.body || entry.title }}</span>
+          <span class="native-chatter-meta">{{ formatCollaborationTimelineMeta(entry.meta) }}</span>
+        </div>
         </template>
         </template>
           </template>

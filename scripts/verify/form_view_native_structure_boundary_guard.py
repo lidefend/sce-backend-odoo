@@ -23,6 +23,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 ASSEMBLER_PATH = ROOT / "addons/smart_core/core/unified_page_contract_v2_assembler.py"
 NATIVE_RENDERER_PATH = ROOT / "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
+NATIVE_BUSINESS_SECTION_PATH = ROOT / "frontend/apps/web/src/pages/contractForm/nativeBusinessSection.ts"
+NATIVE_SECTION_NAVIGATION_PATH = ROOT / "frontend/apps/web/src/pages/contractForm/nativeSectionNavigation.ts"
 CONTRACT_FORM_PATH = ROOT / "frontend/apps/web/src/pages/ContractFormPage.vue"
 CONTRACT_MODE_SUPPORT_PATH = ROOT / "frontend/apps/web/src/pages/contractForm/ContractModeSupportPanel.vue"
 LOW_CODE_FIELD_DIALOG_PATH = ROOT / "frontend/apps/web/src/pages/contractForm/LowCodeFieldCreateDialog.vue"
@@ -141,12 +143,43 @@ def _backend_projection_checks(errors: list[str]) -> None:
 
 def _frontend_boundary_checks(errors: list[str]) -> None:
     native_renderer = NATIVE_RENDERER_PATH.read_text(encoding="utf-8")
+    native_business_section = NATIVE_BUSINESS_SECTION_PATH.read_text(encoding="utf-8")
+    native_section_navigation = NATIVE_SECTION_NAVIGATION_PATH.read_text(encoding="utf-8")
     contract_form = CONTRACT_FORM_PATH.read_text(encoding="utf-8")
     contract_mode_support = CONTRACT_MODE_SUPPORT_PATH.read_text(encoding="utf-8")
     low_code_field_dialog = LOW_CODE_FIELD_DIALOG_PATH.read_text(encoding="utf-8")
     _assert(
         "if (type === 'group') return '';" in native_renderer,
         "frontend NativeFormTreeRenderer must keep Odoo group titles hidden",
+        errors,
+    )
+    _assert(
+        "nativeBusinessSectionIdentity(node)" in native_renderer,
+        "frontend may expose only explicitly anchored visible business-section titles",
+        errors,
+    )
+    _assert(
+        "if (authoritativeBusinessSectionMode.value) return '';" in native_renderer,
+        "inferred semantic headings must stay hidden when authoritative business sections exist",
+        errors,
+    )
+    _assert(
+        "collectNativeBusinessSections(nodes" in native_renderer
+        and "collectNativeBusinessSections(nodes" in native_section_navigation,
+        "renderer mode and navigation must share the same visible non-notebook section traversal",
+        errors,
+    )
+    _assert(
+        "if (!isVisible(node)) return;" in native_business_section
+        and "insideNotebook || kind === 'notebook'" in native_business_section,
+        "section traversal must stop at hidden ancestors and exclude notebook descendants",
+        errors,
+    )
+    _assert(
+        "node.visible === false" in native_business_section
+        and "nodeKind(node) !== 'group'" in native_business_section
+        and "node.attributes?.['data-sc-anchor']" in native_business_section,
+        "authoritative headings must require a visible group with an explicit native anchor",
         errors,
     )
     _assert(

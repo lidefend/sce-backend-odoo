@@ -44,6 +44,7 @@ for required in (
     ".field--normal,\n.field--half {\n  grid-column: span 12;",
     ".field--wide {\n  grid-column: span 16;",
     ".field--full {\n  grid-column: span 24;",
+    ".template-form-section-grid--columns-1 > .field {\n  grid-column: 1 / -1;",
     ".field--wide,\n  .field--full {\n    grid-column: 1 / -1;",
 ):
     if required not in section:

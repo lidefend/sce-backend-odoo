@@ -8,6 +8,7 @@ import type {
 import type { FormSectionFieldSchema } from '../../components/template/formSection.types';
 import { canonicalFieldToFormSection, type CanonicalRelationProjection } from './canonicalFormRenderer';
 import {
+  authoritativeNativeBusinessSections,
   workspaceSectionNavigationItems,
   type WorkspaceSectionNavigationItem,
 } from './nativeSectionNavigation';
@@ -50,6 +51,7 @@ export type CanonicalNativeFormBridge = {
   primaryNodes: CanonicalNativeLayoutNode[];
   subordinateNodes: CanonicalNativeLayoutNode[];
   sectionLinks: WorkspaceSectionNavigationItem[];
+  authoritativeBusinessSectionMode: boolean;
   fieldSchemasForNodes: (nodes: CanonicalNativeLayoutNode[]) => FormSectionFieldSchema[];
   actionForPayload: (payload: Record<string, unknown>) => ContractV2ActionRule | null;
   actionStateForNode: (payload: Record<string, unknown>) => { disabled: boolean; title: string };
@@ -160,6 +162,7 @@ function fieldNode(
 export function buildCanonicalNativeFormBridge(
   renderModel: CanonicalFormRenderModel,
   relationProjection?: CanonicalRelationProjection,
+  claimedStatusbarNodeIdentity = '',
 ): CanonicalNativeFormBridge {
   const fieldSchemas = new WeakMap<CanonicalNativeLayoutNode, FormSectionFieldSchema>();
   const actionsByIdentity = new Map<string, CanonicalFormAction>();
@@ -171,6 +174,10 @@ export function buildCanonicalNativeFormBridge(
     ...renderModel.zones.primary,
     ...renderModel.zones.subordinate,
   ]);
+  const authoritativeBusinessSectionMode = authoritativeNativeBusinessSections([
+    ...renderModel.zones.primary,
+    ...renderModel.zones.subordinate,
+  ]).length > 0;
   const nodeSectionTargets = new Map(sectionLinks
     .filter((item) => item.sourceType === 'node')
     .map((item) => [item.sourceIdentity, item]));
@@ -256,6 +263,7 @@ export function buildCanonicalNativeFormBridge(
     primaryNodes: renderModel.zones.primary.map(mapNode),
     subordinateNodes: renderModel.zones.subordinate.filter((node) => !isCollaborationNode(node)).map(mapNode),
     sectionLinks,
+    authoritativeBusinessSectionMode,
     fieldSchemasForNodes(nodes) {
       return resolveCanonicalNativeFieldSchemas(nodes.flatMap((node) => {
         const field = fieldSchemas.get(node);
@@ -275,6 +283,8 @@ export function buildCanonicalNativeFormBridge(
     nodeVisible(node) {
       if (node.visible === false) return false;
       const attrs = (node.attributes || {}) as Record<string, unknown>;
+      const canonicalNodeIdentity = text(attrs.canonicalNodeId);
+      if (claimedStatusbarNodeIdentity && canonicalNodeIdentity === claimedStatusbarNodeIdentity) return false;
       const surfaceRole = text(attrs.surfaceRole);
       if (surfaceRole === 'hidden') return false;
       if (attrs.technical === true) return false;

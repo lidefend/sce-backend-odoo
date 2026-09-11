@@ -128,6 +128,7 @@
         'views/core/project_budget_views.xml',
         'views/support/tier_review_views.xml',
         'views/core/project_extend_boq_views.xml',
+        'views/core/project_profile_layout_views.xml',
         'views/core/payment_ledger_views.xml',
         'wizard/funding_authority_wizard_views.xml',
         'views/core/payment_request_line_views.xml',

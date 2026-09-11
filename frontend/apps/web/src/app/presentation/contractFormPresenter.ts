@@ -438,8 +438,11 @@ function actionTier(action: ContractV2ActionRule): CanonicalFormAction['tier'] {
 function isFormActionBarAction(action: ContractV2ActionRule): boolean {
   const sourceWidgetId = text(action.sourceWidgetId);
   const targetScope = text(action.targetScope).toLowerCase();
+  const nativeIdentity = asDict(action.nativeIdentity);
+  const nativeLocator = text(nativeIdentity.nativeLocator || nativeIdentity.native_locator || action.backendIdentity);
   return sourceWidgetId === 'page.header'
     || (sourceWidgetId === 'page.root' && ['header', 'page'].includes(targetScope))
+    || /\/header(?:\[|\/|$)/.test(nativeLocator)
     || targetScope === 'footer';
 }
 
@@ -602,19 +605,10 @@ export function presentContractV2Form(
       snapshot.layoutContract.componentRegistry, snapshot.pageInfo.clientType,
     )
   ));
-  const demotedActionIds = new Set(
-    (Array.isArray(snapshot.actionContract.primaryResolution?.demoted)
-      ? snapshot.actionContract.primaryResolution.demoted
-      : [])
-      .filter((row): row is ContractV2Dictionary => Boolean(row) && typeof row === 'object' && !Array.isArray(row))
-      .map((row) => text(row.actionId))
-      .filter(Boolean),
-  );
   const actionCandidates = allActions.filter((action) => (
     action.visible
     &&
     isFormActionBarAction(action.actionRef)
-    && !demotedActionIds.has(action.actionRef.actionId)
   ));
   const primaryWinnerIdentity = text(asDict(snapshot.actionContract.primaryResolution).winner);
   const actions = retainAuthoritativeActionOccurrences(actionCandidates, primaryWinnerIdentity);

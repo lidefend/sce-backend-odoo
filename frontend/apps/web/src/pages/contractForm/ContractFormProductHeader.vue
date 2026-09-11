@@ -37,23 +37,26 @@
         <section
           v-else-if="statusbar.visible"
           class="native-statusbar native-statusbar--header"
-          aria-label="业务状态流程"
+          aria-label="业务状态"
           data-professional-workflow-component="statusbar"
           :data-workflow-current="workflowStatusAuthority.current"
           :data-workflow-readonly="String(mode === 'readonly' || !statusInteractive || workflowStatusAuthority.readonly)"
           :data-workflow-state-count="workflowStatusAuthority.stateCount"
         >
-          <p :class="['native-statusbar-summary', { 'native-statusbar-summary--readonly': mode === 'readonly' || !statusInteractive }]">
-            <span>当前状态</span><strong>{{ currentStatusLabel }}</strong>
-            <span v-if="statusInteractive && nextActionLabel">下一步 {{ nextActionLabel }}</span>
-          </p>
-          <ScSteps
+          <div class="native-statusbar-current">
+            <span>当前状态</span>
+            <ScStatusBadge :value="statusbar.current" :label="currentStatusLabel" />
+          </div>
+          <ScSelect
             v-if="mode !== 'readonly' && statusInteractive"
-            class="native-statusbar-track"
-            :current="statusbar.current"
-            :readonly="busy || statusbar.readonly"
-            :items="statusbar.states.map((item) => ({ value: String(item.value), label: item.label, disabled: busy || statusbar.readonly }))"
-            @select="activateStatus(String($event))"
+            class="native-statusbar-edit-control"
+            aria-label="编辑业务状态"
+            :model-value="statusbar.current"
+            :options="statusbar.states.map((item) => ({ value: String(item.value), label: item.label }))"
+            :disabled="busy"
+            :readonly="statusbar.readonly"
+            size="small"
+            @change="activateStatus(String($event))"
           />
         </section>
       </div>
@@ -101,11 +104,11 @@ import PageHeaderTemplate from '../../components/template/PageHeader.vue';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScIcon from '../../components/design-system/ScIcon.vue';
 import ScDropdown, { type ScDropdownItem } from '../../components/design-system/ScDropdown.vue';
-import ScSteps from '../../components/design-system/ScSteps.vue';
+import ScSelect from '../../components/design-system/ScSelect.vue';
+import ScStatusBadge from '../../components/design-system/ScStatusBadge.vue';
 import type { ProductPageHeaderAction, ProductPagePresentationMode } from '../../app/presentation/productPageHeader';
 import type { CanonicalFormAction } from '../../app/presentation/canonicalFormRenderModel';
 import type { BusyKind, ContractAction, NativeStatusbarVm } from './types';
-import { nextBusinessActionLabel } from './nativeSectionNavigation';
 import { resolveWorkflowActionBarAuthority, resolveWorkflowStatusAuthority, workflowDisabledReason } from './professionalWorkflowModel';
 import { resolveMobileFormActionAuthority } from './mobileFormActionSettlement';
 
@@ -139,7 +142,6 @@ if (narrowViewportQuery) {
 
 const currentStatusIndex = computed(() => props.statusbar.states.findIndex((item) => String(item.value) === props.statusbar.current));
 const currentStatusLabel = computed(() => props.statusbar.states[currentStatusIndex.value]?.label || '未设置');
-const nextActionLabel = computed(() => nextBusinessActionLabel(props.primaryAction, props.directActions));
 const headerDirtyState = computed(() => props.busyKind === 'save' ? 'saving' : props.dirty ? 'dirty' : 'clean');
 const builtInPrimaryClaimed = computed(() => props.showPrimaryFormAction);
 const presentedDirectActions = computed(() => builtInPrimaryClaimed.value
@@ -294,7 +296,7 @@ function canonicalButtonVariant(action: CanonicalFormAction): 'primary' | 'ghost
 .meta { margin: 1px 0; color: var(--sc-semantic-text-muted); font-size: 12px; }
 .header-status-item { margin: 0; color: var(--sc-semantic-text-muted); font-size: 12px; line-height: 1.3; }
 .header-status-item--danger { color: var(--sc-app-warning-text); }
-.record-header-status { display: flex; align-items: center; justify-content: flex-end; gap: 10px; min-width: 0; }
+.record-header-status { display: grid; grid-template-columns: max-content minmax(12rem, 1fr); align-items: center; justify-content: end; gap: 8px 12px; min-width: 0; }
 .record-header-context { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-height: 30px; color: var(--sc-app-text-secondary); font-size: 12px; white-space: nowrap; }
 .record-header-context strong { padding: 4px 8px; border: 1px solid var(--sc-app-border); border-radius: 999px; background: var(--sc-app-panel-muted); color: var(--sc-app-text-primary); font-size: 12px; }
 .record-header-context span { font-weight: 600; }
@@ -304,86 +306,32 @@ function canonicalButtonVariant(action: CanonicalFormAction): 'primary' | 'ghost
 .form-header-primary-actions { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 .form-header-mobile-actions { display: none; }
 .native-statusbar--header {
-  position: relative;
+  display: grid;
+  grid-template-columns: max-content minmax(9rem, 14rem);
+  align-items: center;
+  justify-content: end;
+  gap: 8px;
   max-width: 100%;
   min-width: 0;
 }
-.native-statusbar-track {
+.native-statusbar-current {
   display: flex;
-  align-items: stretch;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  max-width: 100%;
-  overflow-x: auto;
-  scrollbar-width: thin;
-}
-.native-statusbar-track > li { display: flex; flex: 0 0 auto; }
-.native-statusbar-summary { display: none; }
-.native-statusbar-summary--readonly {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 6px 12px;
-  margin: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
   color: var(--sc-app-text-secondary);
   font-size: 12px;
 }
-.native-statusbar-summary--readonly strong { color: var(--sc-app-info-text); font-size: 13px; }
-.native-statusbar-step-index {
-  display: none;
-  width: 18px;
-  height: 18px;
-  place-items: center;
-  border: 1px solid currentColor;
-  border-radius: 999px;
-  font-size: 10px;
-  line-height: 1;
-}
-.native-statusbar--header .native-statusbar-step {
-  flex: 0 0 auto;
-  width: max-content;
-  min-width: 68px;
-  min-height: 30px;
-  margin: 0 0 0 -1px;
-  padding: 0 10px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 0;
-  background: var(--sc-app-subtle-bg);
-  color: var(--sc-app-text-secondary);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: default;
-  white-space: nowrap;
-}
-.native-statusbar--header .native-statusbar-step:first-child {
-  margin-left: 0;
-  border-radius: 4px 0 0 4px;
-}
-.native-statusbar--header .native-statusbar-step:last-child {
-  border-radius: 0 4px 4px 0;
-}
-.native-statusbar--header .native-statusbar-step--done {
-  background: var(--sc-app-success-bg);
-  color: var(--sc-app-success-text);
-}
-.native-statusbar--header .native-statusbar-step--active {
-  position: relative;
-  z-index: 1;
-  border-color: var(--sc-semantic-surface-interactive);
-  background: var(--sc-app-info-bg);
-  color: var(--sc-app-info-text);
-  font-weight: 600;
+.native-statusbar-edit-control { width: 100%; min-width: 0; }
+@container page-header-status (max-width: 31rem) {
+  .record-header-status { grid-template-columns: minmax(0, 1fr); justify-content: stretch; }
+  .record-header-context,
+  .native-statusbar-current { justify-content: flex-start; }
+  .native-statusbar--header { justify-content: start; }
 }
 @media (max-width: 860px) {
-  .record-header-status { align-items: flex-start; flex-direction: column; width: 100%; }
-  [data-render-profile='readonly'] .record-header-status {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-start;
-  }
-  [data-render-profile='readonly'] .native-statusbar--header { width: auto; }
+  .record-header-status { width: 100%; }
   .record-header-context { justify-content: flex-start; }
   .native-statusbar--header { width: 100%; }
 }
@@ -391,34 +339,8 @@ function canonicalButtonVariant(action: CanonicalFormAction): 'primary' | 'ghost
   .record-header-status { gap: 6px; }
   .record-header-context { min-height: 24px; }
   .record-header-context strong { padding: 3px 7px; }
-  .native-statusbar-summary {
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin: 0 0 6px;
-    color: var(--sc-app-text-secondary);
-    font-size: 11px;
-  }
-  .native-statusbar-summary strong { color: var(--sc-app-info-text); font-size: 13px; }
-  .native-statusbar-summary > span:nth-child(3) { margin-left: auto; }
-  .native-statusbar-track {
-    display: none;
-  }
-  .native-statusbar--header .native-statusbar-step,
-  .native-statusbar--header .native-statusbar-step:first-child,
-  .native-statusbar--header .native-statusbar-step:last-child {
-    width: auto;
-    min-width: 92px;
-    min-height: 32px;
-    margin: 0 0 0 -1px;
-    padding: 0 9px;
-    border-radius: 0;
-    gap: 6px;
-  }
-  .native-statusbar--header .native-statusbar-step:first-child { margin-left: 0; border-radius: 5px 0 0 5px; }
-  .native-statusbar--header .native-statusbar-step:last-child { border-radius: 0 5px 5px 0; }
-  .native-statusbar-step-index { display: grid; }
+  .native-statusbar--header { grid-template-columns: minmax(0, 1fr); }
+  .native-statusbar-current { justify-content: flex-start; }
   .form-header-navigation-actions,
   .form-header-more-actions,
   .form-header-action-separator,

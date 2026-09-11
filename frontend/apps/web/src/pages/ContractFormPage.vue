@@ -26,7 +26,7 @@
       :title="pageDisplayTitle" :subtitle="pageDisplaySubtitle" :hide-title="suppressPageHeaderTitle" :show-hud="showHud"
       :model="model" :record-id-display="recordIdDisplay" :action-id="actionId" :contract-meta-line="contractMetaLine"
       :intake-mode="isIntakeCreateMode" :intake-required-summary="intakeRequiredSummary" :intake-missing-summary="intakeMissingSummary" :statusbar="nativeStatusbar"
-      :status-interactive="!canonicalProductRendererActive"
+      :status-interactive="nativeStatusbar.visible && !nativeStatusbar.readonly"
       :presentation-mode="canonicalProductFloorplan?.decisionMode ? 'task' : 'workspace'"
       :mode="renderProfile" :mode-label="currentRenderProfileLabel" :dirty="hasChanges" :changed-field-count="changedFieldCount"
       :show-back="true"
@@ -145,7 +145,7 @@
           @selected-group-title-change="onSelectedFormSettingsGroupTitleChange"
           @selected-group-visibility-change="onSelectedFormSettingsGroupVisibilityChange"
         />
-        <ContractFormDriverHost v-if="!showCurrentFormFieldConfigScope" actions-in-header :render-model="canonicalFormRenderState.model" :error="canonicalFormDriverError" :driver-config="contractFormDriverConfig" :busy="busy" :collaboration-panel-listeners="nativeCollaborationPanelListeners" :collaboration-panel-props="nativeCollaborationPanelProps" :relation-adapter="relationFieldAdapter" :show-collaboration-panel="showNativeCollaborationPanel"
+        <ContractFormDriverHost v-if="!showCurrentFormFieldConfigScope" actions-in-header :render-model="canonicalFormRenderState.model" :error="canonicalFormDriverError" :driver-config="contractFormDriverConfig" :busy="busy" :claimed-statusbar-node-identity="nativeStatusbarNodeIdentity" :collaboration-panel-listeners="nativeCollaborationPanelListeners" :collaboration-panel-props="nativeCollaborationPanelProps" :relation-adapter="relationFieldAdapter" :show-collaboration-panel="showNativeCollaborationPanel"
           @driver-change="changeContractFormDriver"
           @field-change="onTemplateFieldChange"
           @field-action="onContractFieldAction"
@@ -1587,7 +1587,7 @@ const {
   useSceneFormAugmentations, validationRequiredFields, baseNativeFormLayoutNodes, currentNativeFieldOrder, ensureFieldOrderDraftStartsFromCurrentLayout,
   evaluateNativeActionVisibility, evaluateNativeModifierValue, fieldModifierMap, formDataFieldNames, isFieldVisible,
   isNativeFavoriteField, isNativeFieldVisible, isNativeLayoutNodeVisible, isWritableFieldVisible, nativeFormLayoutNodes,
-  nativeFormRootColumns, nativeGroupCount, nativeNotebookPageCount, nativeStatusbar, nativeVisibleFieldNames,
+  nativeFormRootColumns, nativeGroupCount, nativeNotebookPageCount, nativeStatusbar, nativeStatusbarNodeIdentity, nativeVisibleFieldNames,
   nativeVisibleSectionTitles, rawNativeFormLayoutNodes, resolveNativeButtonLabel, runtimeFieldStates, runtimeNativeFormLayoutNodes,
   runtimeState, setStatusbarValue, showNativeDefaultSectionTitle, useNativeFormTree, layoutNodes,
   nativeFieldSchemasForNodes, collectSceneValidationPrecheckErrors, onTemplateFieldChange, relationFieldAdapter,

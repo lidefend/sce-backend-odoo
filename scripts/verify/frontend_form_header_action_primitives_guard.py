@@ -7,6 +7,7 @@ from typing import Callable
 
 ROOT = Path(__file__).resolve().parents[2]
 HEADER = "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue"
+STEPS = "frontend/apps/web/src/components/design-system/ScSteps.vue"
 
 
 def _read(relative: str) -> str:
@@ -15,11 +16,23 @@ def _read(relative: str) -> str:
 
 def validate(read_text: Callable[[str], str] = _read) -> list[str]:
     source = read_text(HEADER)
+    steps = read_text(STEPS)
     errors: list[str] = []
     if "import ScButton" not in source or source.count("<ScButton") < 8:
         errors.append("form header actions must consume the shared ScButton primitive")
-    if source.count("<button") != 0 or "import ScSteps" not in source or "<ScSteps" not in source or '@select="activateStatus(String($event))"' not in source:
-        errors.append("workflow status steps must consume the shared ScSteps primitive")
+    status_projection = (
+        "import ScStatusBadge" in source
+        and "<ScStatusBadge" in source
+        and "import ScSelect" in source
+        and "<ScSelect" in source
+        and '@change="activateStatus(String($event))"' in source
+    )
+    if source.count("<button") != 0 or not status_projection:
+        errors.append("selection status must use the shared badge and select primitives")
+    if "import ScSteps" in source or "<ScSteps" in source:
+        errors.append("selection status must not imply an ordered workflow through ScSteps")
+    if ":deep(.t-" in steps or ".t-steps" in steps:
+        errors.append("ScSteps must not patch TDesign internal DOM selectors")
     if "import ScDropdown" not in source or len(re.findall(r"<ScDropdown(?:\s|>)", source)) != 2:
         errors.append("header overflow actions must consume the shared ScDropdown primitive")
     for event in (

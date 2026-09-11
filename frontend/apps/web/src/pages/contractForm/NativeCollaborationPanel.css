@@ -105,15 +105,28 @@
 }
 
 .native-chatter-entry {
+  display: block;
+  flex: 1 1 100%;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+}
+
+.native-chatter-generic-item {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: baseline;
   gap: 8px;
-  padding: 7px 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
   border: 1px solid var(--sc-app-border);
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--sc-app-panel);
-  font-size: 12px;
 }
 
 .native-chatter-type {
@@ -476,11 +489,17 @@
 }
 
 /* 时间线条目 hover 效果 */
-.native-chatter-entry {
+.native-chatter-attachment-item,
+.native-chatter-message-item,
+.native-chatter-activity-item,
+.native-chatter-generic-item {
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-.native-chatter-entry:hover {
+.native-chatter-attachment-item:hover,
+.native-chatter-message-item:hover,
+.native-chatter-activity-item:hover,
+.native-chatter-generic-item:hover {
   border-color: var(--sc-app-primary);
   box-shadow: var(--sc-app-shadow-popover);
 }
@@ -775,11 +794,10 @@
 
 .native-follower-manager {
   display: grid;
-  gap: 8px;
-  padding: 12px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 8px;
-  background: var(--sc-app-surface-subtle);
+  gap: 6px;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
 }
 
 .native-follower-header,
@@ -787,6 +805,37 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.native-follower-list {
+  flex-wrap: wrap;
+}
+
+.native-follower-name {
+  max-width: min(240px, 100%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.native-chatter-message-item:focus-within .native-chatter-message-reply,
+.native-chatter-entry:focus-within .native-chatter-entry-actions {
+  opacity: 1;
+  transform: none;
+}
+
+@media (hover: none) {
+  .native-chatter-message-reply,
+  .native-chatter-entry-actions {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .native-chatter-generic-item {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .native-follower-header {

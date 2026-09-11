@@ -44,6 +44,16 @@ export function useRecordFormLayout(context: {
   markFieldChanged: (name: string) => void;
   layoutNodes: () => Array<{kind:string;name:string}>;
 }) {
+  const nativeNodeIdentity = (node: NativeFormLayoutNode | undefined) => {
+    if (!node) return '';
+    const source = node as Record<string, unknown>;
+    const attrs = source.attributes && typeof source.attributes === 'object' && !Array.isArray(source.attributes)
+      ? source.attributes as Record<string, unknown> : {};
+    return String(
+      source.containerId || source.nodeId || source.widgetId || source.nativeLocator
+      || attrs.canonicalNodeId || attrs.nativeLocator || '',
+    ).trim();
+  };
   const formFields = computed(() => resolveContractV2FormFieldMap(context.v2ContractStore.value));
   const fieldModifierMap = computed<Record<string, Record<string, unknown>>>(() => {
     const output: Record<string, Record<string, unknown>> = {};
@@ -163,7 +173,7 @@ export function useRecordFormLayout(context: {
           : Array.isArray(fieldInfo.selection) ? fieldInfo.selection as Array<[string,string]> : [];
         const states=(visible.length?visible:selection.map(item=>String(item[0]??'')))
           .map(value=>{const match=selection.find(item=>String(item[0]??'')===value);return {value,label:String(match?.[1]??value)};});
-        return {field,states};
+        return {field,states,nodeIdentity:nativeNodeIdentity(node)};
       }
       for(const key of ['children','pages','tabs','nodes','items'] as const){
         const children=source[key];if(Array.isArray(children))queue.push(...children as NativeFormLayoutNode[]);
@@ -173,9 +183,9 @@ export function useRecordFormLayout(context: {
     if(fallback){
       const [field,descriptor]=fallback;
       const selection=Array.isArray(descriptor.selection)?descriptor.selection:[];
-      return {field,states:selection.map(item=>({value:String(item[0]??''),label:String(item[1]??item[0]??'')}))};
+      return {field,states:selection.map(item=>({value:String(item[0]??''),label:String(item[1]??item[0]??'')})),nodeIdentity:''};
     }
-    return {field:'',states:[] as Array<{value:string;label:string}>};
+    return {field:'',states:[] as Array<{value:string;label:string}>,nodeIdentity:''};
   });
   const nativeStatusbar=computed<NativeStatusbarVm>(()=>{
     const main=resolveContractV2MainData(context.v2ContractStore.value);
@@ -186,14 +196,15 @@ export function useRecordFormLayout(context: {
   });
   const setStatusbarValue=(value:string)=>{const field=nativeStatusbar.value.field;if(!field||nativeStatusbar.value.readonly)return;
     context.formData[field]=resolveStatusbarSelectionValue(formFields.value[field],value);context.markFieldChanged(field);};
+  const nativeStatusbarNodeIdentity=computed(()=>nativeStatusbar.value.visible?canonicalNativeStatusbar.value.nodeIdentity:'');
   const modifierMainData=()=>resolveContractV2MainData(context.v2ContractStore.value);
   const evaluateNativeModifierValue=(value:unknown)=>evaluateNativeModifierValueWithResolver(value,(field)=>resolveNativeModifierFieldValue(context.formData,modifierMainData(),field));
   const evaluateNativeActionVisibility=(row:Record<string,unknown>)=>isNativeActionVisible({row,currentState:String(context.formData.state||'').trim(),evaluateModifier:evaluateNativeModifierValue,resolveAction:context.contractActionFromNativeRow});
   function isNativeLayoutNodeVisible(node:NativeFormLayoutNode){const source=node as Record<string,unknown>;if(String(source.nativeLocator||'').trim()&&runtimeOccurrenceState(node).invisible===true)return false;const nodeType=String(source.type||'').trim().toLowerCase();const fieldName=String(source.name||'').trim();if(nodeType==='field'&&fieldName){const semantic=context.fieldSemanticMeta(fieldName);if((semantic.surface_role==='hidden'||semantic.technical)&&!context.showHud.value){return false;}}return isNativeLayoutNodeVisibleFromNativeLayout({node,editable:context.isContractFieldOrderEditable.value,evaluateModifier:evaluateNativeModifierValue,normalizeGroupTitle:normalizeFieldGroupTitle,isGroupVisible:context.effectiveGroupVisible,isFieldVisibleInDraft:(name)=>Object.prototype.hasOwnProperty.call(context.fieldVisibilityDraft,name)?context.fieldVisibilityDraft[name]:undefined,resolveAction:context.contractActionFromNativeRow});}
-  function isNativeFieldVisible(name:string,node?:NativeFormLayoutNode){return isNativeFieldVisibleFromNativeLayout({name,node,statusField:nativeStatusbar.value.field,showHud:context.showHud.value,renderProfile:context.renderProfile.value,isCreate:!context.recordId.value,isNodeVisible:(item)=>isNativeLayoutNodeVisible(item as NativeFormLayoutNode),resolveDescriptor:(field,item)=>item?(item as any).descriptor||formFields.value[field]:formFields.value[field],resolveFieldLabel:context.contractFieldLabel,semantic:context.fieldSemanticMeta,runtimeState:(field)=>node?runtimeOccurrenceState(node):runtimeState(field),evaluatePolicy:(_field,descriptor)=>({visible:true,required:Boolean(descriptor?.required),readonly:Boolean(descriptor?.readonly)})});}
+  function isNativeFieldVisible(name:string,node?:NativeFormLayoutNode){const claim=nativeStatusbarNodeIdentity.value;const claimed=Boolean(claim&&nativeNodeIdentity(node)===claim);return isNativeFieldVisibleFromNativeLayout({name,node,statusField:claimed||!node?nativeStatusbar.value.field:'',showHud:context.showHud.value,renderProfile:context.renderProfile.value,isCreate:!context.recordId.value,isNodeVisible:(item)=>isNativeLayoutNodeVisible(item as NativeFormLayoutNode),resolveDescriptor:(field,item)=>item?(item as any).descriptor||formFields.value[field]:formFields.value[field],resolveFieldLabel:context.contractFieldLabel,semantic:context.fieldSemanticMeta,runtimeState:(field)=>node?runtimeOccurrenceState(node):runtimeState(field),evaluatePolicy:(_field,descriptor)=>({visible:true,required:Boolean(descriptor?.required),readonly:Boolean(descriptor?.readonly)})});}
   const isWritableFieldVisible=(name:string)=>useNativeFormTree.value?nativeVisibleFieldNames.value.has(String(name||'').trim()):isFieldVisible(name);
   const currentNativeFieldOrder=()=>collectNativeVisibleFieldOrder(nativeFormLayoutNodes.value as NativeLayoutLikeNode[],(name,node)=>isNativeFieldVisible(name,node as NativeFormLayoutNode));
   const ensureFieldOrderDraftStartsFromCurrentLayout=()=>{if(!useNativeFormTree.value||context.fieldOrderPreviewActive.value)return;const current=currentNativeFieldOrder();if(!current.length)return;const known=new Set(current);context.fieldOrderDraft.value=[...current,...context.fieldOrderDraft.value.filter(name=>name&&!known.has(name))];};
   const formDataFieldNames=()=>{const main=resolveContractV2MainData(context.v2ContractStore.value);return collectFormDataFieldNames({fields:formFields.value,rawNativeLayoutNodes:rawNativeFormLayoutNodes.value as NativeLayoutLikeNode[],layoutFieldNames:context.layoutNodes().filter(node=>node.kind==='field').map(node=>node.name),visibleFields:context.contractVisibleFields.value,statusField:nativeStatusbar.value.field,mainData:main});};
-  return {baseNativeFormLayoutNodes,currentNativeFieldOrder,ensureFieldOrderDraftStartsFromCurrentLayout,evaluateNativeActionVisibility,evaluateNativeModifierValue,fieldModifierMap,formDataFieldNames,isFieldVisible,isNativeFavoriteField:(name:string)=>nativeFavoriteFieldNames.value.has(String(name||'').trim()),isNativeFieldVisible,isNativeLayoutNodeVisible,isWritableFieldVisible,nativeFormLayoutNodes,nativeFormRootColumns,nativeGroupCount,nativeNotebookPageCount,nativeStatusbar,nativeVisibleFieldNames,nativeVisibleSectionTitles,rawNativeFormLayoutNodes,resolveNativeButtonLabel,runtimeFieldStates,runtimeNativeFormLayoutNodes,runtimeOccurrenceState,runtimeState,setStatusbarValue,showNativeDefaultSectionTitle,useNativeFormTree};
+  return {baseNativeFormLayoutNodes,currentNativeFieldOrder,ensureFieldOrderDraftStartsFromCurrentLayout,evaluateNativeActionVisibility,evaluateNativeModifierValue,fieldModifierMap,formDataFieldNames,isFieldVisible,isNativeFavoriteField:(name:string)=>nativeFavoriteFieldNames.value.has(String(name||'').trim()),isNativeFieldVisible,isNativeLayoutNodeVisible,isWritableFieldVisible,nativeFormLayoutNodes,nativeFormRootColumns,nativeGroupCount,nativeNotebookPageCount,nativeStatusbar,nativeStatusbarNodeIdentity,nativeVisibleFieldNames,nativeVisibleSectionTitles,rawNativeFormLayoutNodes,resolveNativeButtonLabel,runtimeFieldStates,runtimeNativeFormLayoutNodes,runtimeOccurrenceState,runtimeState,setStatusbarValue,showNativeDefaultSectionTitle,useNativeFormTree};
 }

@@ -197,6 +197,75 @@ function summarizeContractSelections(payload) {
   return rows.slice(0, 80);
 }
 
+function summarizeContractSubviews(payload) {
+  const rows = new Map();
+  const visit = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (!value || typeof value !== 'object') return;
+    const fieldName = String(value.fieldCode || value.field_code || value.name || '').trim();
+    const sources = [value.fieldInfo, value.field_info, value.componentConfig, value.component_config, value.fieldDescriptor, value.field_descriptor];
+    for (const sourceRaw of sources) {
+      const source = sourceRaw && typeof sourceRaw === 'object' && !Array.isArray(sourceRaw) ? sourceRaw : {};
+      const subview = source.subview && typeof source.subview === 'object' && !Array.isArray(source.subview) ? source.subview : {};
+      const tree = subview.tree && typeof subview.tree === 'object' && !Array.isArray(subview.tree) ? subview.tree : {};
+      const columns = Array.isArray(tree.column_occurrences) && tree.column_occurrences.length
+        ? tree.column_occurrences
+        : (Array.isArray(tree.columns) ? tree.columns : []);
+      const names = columns.map((column) => String(
+        column && typeof column === 'object' && !Array.isArray(column) ? column.name : column,
+      ).trim()).filter(Boolean);
+      if (fieldName && names.length) rows.set(fieldName, names);
+    }
+    Object.values(value).forEach(visit);
+  };
+  visit(payload);
+  return Object.fromEntries(rows);
+}
+
+function summarizeContractActions(payload) {
+  const rows = [];
+  const resolutions = [];
+  const visit = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (!value || typeof value !== 'object') return;
+    const rules = Array.isArray(value.actionRuleList) ? value.actionRuleList
+      : (Array.isArray(value.action_rule_list) ? value.action_rule_list : []);
+    rules.forEach((rule) => {
+      if (!rule || typeof rule !== 'object') return;
+      rows.push({
+        actionId: String(rule.actionId || rule.action_id || ''),
+        actionKey: String(rule.actionKey || rule.action_key || ''),
+        label: String(rule.label || ''),
+        backendIdentity: String(rule.backendIdentity || rule.backend_identity || ''),
+        sourceWidgetId: String(rule.sourceWidgetId || rule.source_widget_id || ''),
+        targetScope: String(rule.targetScope || rule.target_scope || ''),
+        tier: String(rule.presentation?.tier || ''),
+        visible: rule.visible !== false,
+      });
+    });
+    const resolution = value.primaryResolution || value.primary_resolution;
+    if (resolution && typeof resolution === 'object' && !Array.isArray(resolution)) {
+      resolutions.push({
+        winner: String(resolution.winner || ''),
+        demoted: Array.isArray(resolution.demoted) ? resolution.demoted.map((item) => ({
+          actionId: String(item?.actionId || item?.action_id || ''),
+          backendIdentity: String(item?.backendIdentity || item?.backend_identity || ''),
+          effectiveTier: String(item?.effectiveTier || item?.effective_tier || ''),
+        })) : [],
+      });
+    }
+    Object.values(value).forEach(visit);
+  };
+  visit(payload);
+  return { rules: rows.slice(0, 80), resolutions: resolutions.slice(0, 8) };
+}
+
 function summarizeContractSummaryItems(payload) {
   const rows = [];
   const visit = (value) => {
@@ -482,6 +551,8 @@ try {
       const summaryFixture = Array.isArray(target.summaryFixture) ? target.summaryFixture : null;
       let contractH1Nodes = [];
       let contractSelections = [];
+      let contractSubviews = {};
+      let contractActions = { rules: [], resolutions: [] };
       let contractAggregates = [];
       let contractSummaryItems = [];
       let listAggregates = [];
@@ -703,6 +774,8 @@ try {
         const contractPayload = await response.json();
         contractH1Nodes = summarizeContractH1(contractPayload);
         contractSelections = summarizeContractSelections(contractPayload);
+        contractSubviews = summarizeContractSubviews(contractPayload);
+        contractActions = summarizeContractActions(contractPayload);
         contractAggregates = summarizeContractAggregates(contractPayload);
         contractSummaryItems = summarizeContractSummaryItems(contractPayload);
       }
@@ -1630,6 +1703,84 @@ try {
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
       if (target.captureFormStructure === true) {
         const screenshotStem = `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+        let statusInteractionEvidence = { checked: false, reason: 'not requested', pass: true };
+        if (target.exerciseStatusDraft === true || (target.exerciseMobileStatusDraft === true && viewport.name === 'mobile')) {
+          const mutationCountBefore = report.mutationCount;
+          const statusbar = page.locator('[data-professional-workflow-component="statusbar"]:visible').first();
+          const control = statusbar.locator('[data-semantic-component="ScSelect"].native-statusbar-edit-control:visible').first();
+          await statusbar.waitFor({ state: 'visible', timeout: 15000 });
+          await control.waitFor({ state: 'visible', timeout: 15000 });
+          const initialCurrent = String(await statusbar.getAttribute('data-workflow-current') || '');
+          const initialLabel = String(await control.locator('input').inputValue() || '');
+          const initialDisabled = await control.getAttribute('aria-disabled') === 'true'
+            || await control.locator('input').isDisabled();
+          await control.click();
+          const optionLocator = page.locator('.t-select__list:visible').last().locator('.t-select-option');
+          await optionLocator.first().waitFor({ state: 'visible', timeout: 15000 });
+          const optionLabels = (await optionLocator.allTextContents()).map((label) => label.replace(/\s+/g, ' ').trim());
+          const alternateIndex = optionLabels.findIndex((label) => label && label !== initialLabel);
+          if (alternateIndex < 0) throw new Error(`${target.name}: status control lacks an alternate state`);
+          const alternateLabel = optionLabels[alternateIndex];
+          await optionLocator.nth(alternateIndex).click();
+          await page.waitForFunction((expectedLabel) => [...document.querySelectorAll(
+            '[data-professional-workflow-component="statusbar"] .native-statusbar-edit-control input',
+          )].some((input) => input instanceof HTMLInputElement && input.offsetParent !== null && input.value === expectedLabel), alternateLabel);
+          const changedCurrent = String(await statusbar.getAttribute('data-workflow-current') || '');
+          if (!changedCurrent || changedCurrent === initialCurrent) {
+            throw new Error(`${target.name}: status did not change from ${initialCurrent}`);
+          }
+          await optionLocator.first().waitFor({ state: 'hidden', timeout: 15000 });
+          const dirtyContext = String(await page.locator('.record-header-context:visible').first().textContent() || '').replace(/\s+/g, ' ').trim();
+          const controlBoundary = await control.evaluate((node) => {
+            const rect = node.getBoundingClientRect();
+            return {
+              left: Math.round(rect.left), top: Math.round(rect.top), right: Math.round(rect.right), bottom: Math.round(rect.bottom),
+              withinViewport: rect.left >= -1 && rect.right <= window.innerWidth + 1 && rect.top >= -1 && rect.bottom <= window.innerHeight + 1,
+            };
+          });
+          await page.screenshot({ path: path.join(outputDir, `${screenshotStem}-status-dirty.png`), fullPage: false });
+          await control.click();
+          const restoreOption = page.locator('.t-select__list:visible').last().locator('.t-select-option').filter({ hasText: initialLabel }).first();
+          await restoreOption.waitFor({ state: 'visible', timeout: 15000 });
+          await restoreOption.click();
+          await page.waitForFunction((expectedLabel) => [...document.querySelectorAll(
+            '[data-professional-workflow-component="statusbar"] .native-statusbar-edit-control input',
+          )].some((input) => input instanceof HTMLInputElement && input.offsetParent !== null && input.value === expectedLabel), initialLabel);
+          const restoredCurrent = String(await statusbar.getAttribute('data-workflow-current') || '');
+          const mutationCountAfterDraft = report.mutationCount;
+          await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
+          await waitForStableProductSurface(page);
+          const reloadedStatusbar = page.locator('[data-professional-workflow-component="statusbar"]:visible').first();
+          await reloadedStatusbar.waitFor({ state: 'visible', timeout: 15000 });
+          const reloadedCurrent = String(await reloadedStatusbar.getAttribute('data-workflow-current') || '');
+          statusInteractionEvidence = {
+            checked: true,
+            initialCurrent,
+            initialLabel,
+            initialDisabled,
+            optionCount: optionLabels.length,
+            optionLabels,
+            changedCurrent,
+            dirtyContext,
+            controlBoundary,
+            restoredCurrent,
+            reloadedCurrent,
+            mutationCountBefore,
+            mutationCountAfterDraft,
+            mutationCountAfterReload: report.mutationCount,
+            pass: Boolean(initialCurrent)
+              && Boolean(initialLabel)
+              && !initialDisabled
+              && optionLabels.length > 1
+              && changedCurrent !== initialCurrent
+              && /已修改\s*1\s*项|有未保存修改/.test(dirtyContext)
+              && controlBoundary.withinViewport
+              && restoredCurrent === initialCurrent
+              && reloadedCurrent === initialCurrent
+              && mutationCountBefore === mutationCountAfterDraft
+              && mutationCountBefore === report.mutationCount,
+          };
+        }
         let popupBoundaryEvidence = { checked: false, reason: 'no enabled visible select', pass: true };
         const formSelects = page.locator('.field [data-semantic-component="ScSelect"]:visible, .field [role="combobox"]:visible');
         for (let index = 0; index < await formSelects.count(); index += 1) {
@@ -1714,7 +1865,7 @@ try {
             };
           };
           const boundarySet = (selector, ownerSelector) => [...document.querySelectorAll(selector)]
-            .filter(visible)
+            .filter((node) => visible(node) && !node.closest('.o2m-table-scroll, [data-table-scroll-region="true"]'))
             .map((node) => boundary(node, node.parentElement?.closest(ownerSelector)))
             .filter(Boolean);
           const firstVisible = (selector) => [...document.querySelectorAll(selector)].find(visible) || null;
@@ -1756,6 +1907,81 @@ try {
                 pass: ['auto', 'scroll'].includes(style.overflowX) && rect.left >= -1 && rect.right <= window.innerWidth + 1,
               };
             });
+          const tableScrollRegions = [...document.querySelectorAll('.o2m-table-scroll, [data-table-scroll-region="true"]')]
+            .filter(visible)
+            .map((node) => {
+              const style = getComputedStyle(node);
+              const rect = node.getBoundingClientRect();
+              const owner = node.parentElement?.closest('.template-form-section, .native-container--group, .sc-native-contract-tree, [data-native-contract-structure]')
+                || node.parentElement;
+              const frameBoundary = boundary(node, owner);
+              const initialScrollLeft = node.scrollLeft;
+              const maximumScrollLeft = Math.max(0, node.scrollWidth - node.clientWidth);
+              node.scrollLeft = maximumScrollLeft;
+              const reachedScrollLeft = node.scrollLeft;
+              node.scrollLeft = initialScrollLeft;
+              return {
+                frameBoundary,
+                overflowPermitted: ['auto', 'scroll'].includes(style.overflowX),
+                contentOverflows: maximumScrollLeft > 1,
+                maximumScrollLeft: Math.round(maximumScrollLeft),
+                reachedScrollLeft: Math.round(reachedScrollLeft),
+                farEdgeReachable: maximumScrollLeft <= 1 || reachedScrollLeft >= maximumScrollLeft - 1,
+                withinViewport: rect.left >= -1 && rect.right <= window.innerWidth + 1,
+                pass: Boolean(frameBoundary?.pass)
+                  && ['auto', 'scroll'].includes(style.overflowX)
+                  && rect.left >= -1
+                  && rect.right <= window.innerWidth + 1
+                  && (maximumScrollLeft <= 1 || reachedScrollLeft >= maximumScrollLeft - 1),
+              };
+            });
+          const commandBar = firstVisible('.contract-form-command-bar');
+          const headerStatus = commandBar instanceof HTMLElement
+            ? [...commandBar.querySelectorAll('[data-professional-workflow-component="statusbar"]')].filter(visible)
+            : [];
+          const headerActionLabels = commandBar instanceof HTMLElement
+            ? [...commandBar.querySelectorAll('[data-action-key]')].filter(visible)
+              .map((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim()).filter(Boolean)
+            : [];
+          const headerActions = commandBar instanceof HTMLElement
+            ? [...commandBar.querySelectorAll('[data-action-key]')].filter(visible).map((node) => ({
+              key: String(node.getAttribute('data-action-key') || ''),
+              label: String(node.textContent || '').replace(/\s+/g, ' ').trim(),
+              enabled: node.getAttribute('data-action-enabled') !== 'false'
+                && node.getAttribute('aria-disabled') !== 'true'
+                && !(node instanceof HTMLButtonElement && node.disabled),
+            }))
+            : [];
+          const bodyHeaderInteractiveControlCount = [...document.querySelectorAll('.sc-native-contract-tree .native-container--header input, .sc-native-contract-tree .native-container--header textarea, .sc-native-contract-tree .native-container--header select, .sc-native-contract-tree .native-container--header button, .sc-native-contract-tree .native-container--header [role="combobox"]')]
+            .filter(visible).length;
+          const statusEditControls = commandBar instanceof HTMLElement
+            ? [...commandBar.querySelectorAll('.native-statusbar-edit-control')].filter(visible)
+            : [];
+          const statusBadges = commandBar instanceof HTMLElement
+            ? [...commandBar.querySelectorAll('[data-professional-workflow-component="statusbar"] [data-semantic-component="ScStatusBadge"]')].filter(visible)
+            : [];
+          const statusStepControls = commandBar instanceof HTMLElement
+            ? [...commandBar.querySelectorAll('[data-professional-workflow-component="statusbar"] [data-semantic-component="ScSteps"]')].filter(visible)
+            : [];
+          const title = commandBar instanceof HTMLElement ? commandBar.querySelector('h1') : null;
+          const titleRect = title instanceof HTMLElement ? title.getBoundingClientRect() : null;
+          const titleLineHeight = title instanceof HTMLElement ? parseFloat(getComputedStyle(title).lineHeight || '0') : 0;
+          const firstViewportEditableFields = [...document.querySelectorAll('[data-product-page-mode="form"] .field[data-field-name], [data-product-page-mode="form"] .native-title-row[data-field-name]')]
+            .filter(visible)
+            .flatMap((field) => {
+              const control = [...field.querySelectorAll('input, textarea, select, [role="combobox"]')]
+                .find((candidate) => visible(candidate)
+                  && candidate.getAttribute('aria-disabled') !== 'true'
+                  && !candidate.hasAttribute('disabled')
+                  && !candidate.hasAttribute('readonly'));
+              if (!(control instanceof HTMLElement)) return [];
+              const rect = control.getBoundingClientRect();
+              return [{
+                name: String(field.getAttribute('data-field-name') || ''),
+                rect: [Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom)],
+                fullyVisible: rect.left >= -1 && rect.right <= window.innerWidth + 1 && rect.top >= 0 && rect.bottom <= window.innerHeight + 1,
+              }];
+            });
           const nestedBoundaries = [
             ...boundarySet('.native-form-tree', '.sc-native-contract-tree, [data-native-contract-structure]'),
             ...boundarySet('.native-container--group', '.native-container--group, .native-form-tree, .sc-native-contract-tree'),
@@ -1773,6 +1999,7 @@ try {
             nestedBoundaries,
             checkedNestedBoundaryCount: nestedBoundaries.length,
             authorizedScrollers,
+            tableScrollRegions,
           };
           responsiveBoundaryEvidence.pass = [
             responsiveBoundaryEvidence.patternInDriver,
@@ -1783,7 +2010,8 @@ try {
             ...responsiveBoundaryEvidence.nestedBoundaries,
           ].filter(Boolean).every((item) => item.pass)
             && responsiveBoundaryEvidence.checkedNestedBoundaryCount > 0
-            && responsiveBoundaryEvidence.authorizedScrollers.every((item) => item.pass);
+            && responsiveBoundaryEvidence.authorizedScrollers.every((item) => item.pass)
+            && responsiveBoundaryEvidence.tableScrollRegions.every((item) => item.pass);
           const background = header instanceof HTMLElement ? getComputedStyle(header).backgroundColor : '';
           const alpha = background.match(/rgba?\([^)]*(?:,|\/)\s*([\d.]+)\s*\)$/)?.[1];
           return {
@@ -1793,7 +2021,7 @@ try {
             navigationOverflowDiscoverable: sectionNavigation instanceof HTMLElement
               && (sectionNavigation.dataset.overflowAfter !== 'true'
                 || [...sectionNavigation.querySelectorAll('.form-section-navigation__cue--after')].some(visible)),
-            sectionTitles: [...document.querySelectorAll('[data-section-title], [data-form-semantic-role] .native-container-head h3')]
+            sectionTitles: [...document.querySelectorAll('[data-section-title], .native-container-head h3')]
               .filter(visible).map((node) => String(node instanceof HTMLElement ? node.dataset.sectionTitle || node.textContent || '' : '').replace(/\s+/g, ' ').trim()).filter(Boolean),
             relationInFirstViewport: relation instanceof HTMLElement && relation.getBoundingClientRect().top < window.innerHeight,
             addActionInFirstViewport: addAction instanceof HTMLElement && addAction.getBoundingClientRect().bottom <= window.innerHeight,
@@ -1805,13 +2033,73 @@ try {
             readonlyCardsVisible: [...document.querySelectorAll('.o2m-readonly-list')].some(visible),
             attachmentHeadings: [...document.querySelectorAll('.relation-attachment-heading, .professional-attachment-heading')]
               .filter(visible).map((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim()),
+            headerConsolidationEvidence: {
+              headerStatusCount: headerStatus.length,
+              headerStatusInteractive: headerStatus.length === 1
+                && headerStatus[0].getAttribute('data-workflow-readonly') === 'false',
+              headerStatusReadonly: headerStatus.length === 1
+                && headerStatus[0].getAttribute('data-workflow-readonly') === 'true',
+              statusEditControlCount: statusEditControls.length,
+              statusEditControlDisabled: statusEditControls.length === 1
+                && (statusEditControls[0].getAttribute('aria-disabled') === 'true'
+                  || statusEditControls[0].querySelector('input')?.hasAttribute('disabled') === true),
+              statusBadgeCount: statusBadges.length,
+              statusStepControlCount: statusStepControls.length,
+              titleWidth: titleRect ? Math.round(titleRect.width) : null,
+              titleLineCount: titleRect && titleLineHeight > 0 ? Number((titleRect.height / titleLineHeight).toFixed(2)) : null,
+              headerActionLabels,
+              headerActions,
+              headerActionKeysUnique: new Set(headerActions.map((action) => action.key)).size === headerActions.length,
+              bodyHeaderInteractiveControlCount,
+              firstViewportEditableFields,
+            },
             responsiveBoundaryEvidence,
           };
         });
+        if (typeof target.expectedStatusFieldName === 'string' && target.expectedStatusFieldName) {
+          top.headerConsolidationEvidence.bodyClaimedStatusFieldCount = await page
+            .locator(`.sc-native-contract-tree [data-field-name="${target.expectedStatusFieldName}"]`)
+            .count();
+        }
+        const captureStableNavigationState = async (link) => link.evaluate((node) => {
+          const selector = node instanceof HTMLElement ? String(node.dataset.sectionTarget || '') : '';
+          const nav = node.closest('[data-form-section-navigation]');
+          const root = nav?.closest('[data-native-contract-structure], .object-task-page');
+          const matches = selector && root ? [...root.querySelectorAll(selector)] : [];
+          const targetNode = matches.length === 1 ? matches[0] : null;
+          const header = [...document.querySelectorAll('.template-page-header')]
+            .find((candidate) => candidate instanceof HTMLElement && candidate.offsetParent !== null);
+          const targetRect = targetNode instanceof HTMLElement ? targetNode.getBoundingClientRect() : null;
+          const navRect = nav instanceof HTMLElement ? nav.getBoundingClientRect() : null;
+          const headerRect = header instanceof HTMLElement ? header.getBoundingClientRect() : null;
+          const obstructionBottom = Math.max(navRect?.bottom || 0, headerRect?.bottom || 0);
+          const label = String(node.textContent || '').replace(/\s+/g, ' ').trim();
+          const targetLabels = targetNode instanceof HTMLElement
+            ? [targetNode.textContent, targetNode.getAttribute('aria-label'), targetNode.dataset.sectionTitle]
+              .map((value) => String(value || '').replace(/\s+/g, ' ').trim())
+              .filter(Boolean)
+            : [];
+          return {
+            label,
+            current: node.getAttribute('aria-current') === 'location',
+            targetFound: targetNode instanceof HTMLElement,
+            targetLabelMatches: Boolean(label) && targetLabels.some((value) => value.includes(label)),
+            targetTop: targetRect ? Math.round(targetRect.top) : null,
+            obstructionBottom: Math.round(obstructionBottom),
+            targetVisibleBelowSticky: Boolean(targetRect && targetRect.bottom > obstructionBottom && targetRect.top >= obstructionBottom - 2),
+          };
+        });
         const navigationJourney = [];
-        const sectionLinkCount = await page.locator('[data-form-section-navigation] [data-section-link]').count();
+        const sectionLinks = page.locator('[data-form-section-navigation] [data-section-link]');
+        const sectionLinkCount = await sectionLinks.count();
+        const exactSectionLink = async (label) => {
+          const labels = (await sectionLinks.allTextContents()).map((value) => String(value || '').replace(/\s+/g, ' ').trim());
+          const matches = labels.map((value, index) => (value === String(label) ? index : -1)).filter((index) => index >= 0);
+          if (matches.length !== 1) throw new Error(`${target.name}: expected one section link ${label}`);
+          return sectionLinks.nth(matches[0]);
+        };
         for (let index = 0; index < sectionLinkCount; index += 1) {
-          const link = page.locator('[data-form-section-navigation] [data-section-link]').nth(index);
+          const link = sectionLinks.nth(index);
           await link.evaluate((node) => {
             const track = node.parentElement;
             if (!(node instanceof HTMLElement) || !(track instanceof HTMLElement)) return;
@@ -1819,7 +2107,7 @@ try {
           });
           await link.click();
           await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-          navigationJourney.push(await link.evaluate((node) => {
+          const immediate = await link.evaluate((node) => {
             const selector = node instanceof HTMLElement ? String(node.dataset.sectionTarget || '') : '';
             const expectedLabel = String(node.textContent || '').replace(/\s+/g, ' ').trim();
             const expectedContentKind = node instanceof HTMLElement ? String(node.dataset.sectionContentKind || '') : '';
@@ -1866,7 +2154,76 @@ try {
               targetVisibleBelowSticky: Boolean(targetRect && targetRect.bottom > obstructionBottom && targetRect.top >= obstructionBottom - 2),
               linkFullyVisibleInTrack: Boolean(linkRect && trackRect && linkRect.left >= trackRect.left - 1 && linkRect.right <= trackRect.right + 1),
             };
-          }));
+          });
+          await page.waitForFunction(() => {
+            const navigation = document.querySelector('[data-form-section-navigation]');
+            return navigation instanceof HTMLElement && !navigation.dataset.sectionActivationPending;
+          }, null, { timeout: 15000 });
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          const stable = await captureStableNavigationState(link);
+          navigationJourney.push({ ...immediate, immediate: { current: immediate.current }, stable });
+        }
+        const reverseNavigationJourney = [];
+        for (const label of (Array.isArray(target.sectionNavigationReturnLabels) ? target.sectionNavigationReturnLabels : [])) {
+          const link = await exactSectionLink(label);
+          await link.click();
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          const immediate = await captureStableNavigationState(link);
+          await page.waitForFunction(() => {
+            const navigation = document.querySelector('[data-form-section-navigation]');
+            return navigation instanceof HTMLElement && !navigation.dataset.sectionActivationPending;
+          }, null, { timeout: 15000 });
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          const stable = await captureStableNavigationState(link);
+          reverseNavigationJourney.push({
+            label,
+            immediate,
+            stable,
+            pass: immediate.current
+              && immediate.targetFound
+              && immediate.targetLabelMatches
+              && stable.current
+              && stable.targetFound
+              && stable.targetLabelMatches
+              && stable.targetVisibleBelowSticky,
+          });
+        }
+        const manualNavigationJourney = [];
+        for (const label of (Array.isArray(target.sectionManualJourneyLabels) ? target.sectionManualJourneyLabels : [])) {
+          const link = await exactSectionLink(label);
+          await link.evaluate((node) => {
+            const selector = node instanceof HTMLElement ? String(node.dataset.sectionTarget || '') : '';
+            const nav = node.closest('[data-form-section-navigation]');
+            const root = nav?.closest('[data-native-contract-structure], .object-task-page');
+            const targetNode = selector && root ? [...root.querySelectorAll(selector)][0] : null;
+            if (!(targetNode instanceof HTMLElement)) return;
+            const header = [...document.querySelectorAll('.template-page-header')]
+              .find((candidate) => candidate instanceof HTMLElement && candidate.offsetParent !== null);
+            const owner = document.querySelector('.router-host');
+            const ownerTop = owner instanceof HTMLElement ? owner.getBoundingClientRect().top : 0;
+            const anchor = Math.max(
+              nav instanceof HTMLElement ? nav.getBoundingClientRect().bottom : 0,
+              header instanceof HTMLElement ? header.getBoundingClientRect().bottom : 0,
+              ownerTop,
+            ) + 12;
+            const delta = targetNode.getBoundingClientRect().top - anchor;
+            if (owner instanceof HTMLElement) owner.scrollBy({ top: delta, behavior: 'auto' });
+            else window.scrollBy({ top: delta, behavior: 'auto' });
+          });
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          await page.waitForFunction((expectedLabel) => [...document.querySelectorAll(
+            '[data-form-section-navigation] [data-section-link]',
+          )].some((node) => (
+            String(node.textContent || '').replace(/\s+/g, ' ').trim() === expectedLabel
+              && node.getAttribute('aria-current') === 'location'
+          )), String(label), { timeout: 15000 });
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          const stable = await captureStableNavigationState(link);
+          manualNavigationJourney.push({
+            label,
+            ...stable,
+            pass: stable.current && stable.targetFound && stable.targetLabelMatches && stable.targetVisibleBelowSticky,
+          });
         }
         const scrollMetrics = await page.evaluate(() => {
           const owner = document.querySelector('.router-host');
@@ -1902,7 +2259,10 @@ try {
         formStructureEvidence = {
           ...top,
           popupBoundaryEvidence,
+          statusInteractionEvidence,
           navigationJourney,
+          reverseNavigationJourney,
+          manualNavigationJourney,
           captures,
           pass: target.expectFormStructure !== true || (
             top.sectionLinks.length > 1
@@ -1911,14 +2271,56 @@ try {
             && top.stickyHeaderOpaque
             && top.responsiveBoundaryEvidence.pass
             && popupBoundaryEvidence.pass
+            && (target.expectTableScrollBoundary !== true || viewport.name !== 'desktop' || (
+              top.responsiveBoundaryEvidence.tableScrollRegions.length > 0
+              && top.responsiveBoundaryEvidence.tableScrollRegions.every((item) => item.pass)
+              && popupBoundaryEvidence.checked
+            ))
+            && (target.expectHeaderConsolidation !== true || (
+              top.headerConsolidationEvidence.headerStatusCount === 1
+              && top.headerConsolidationEvidence.headerStatusInteractive
+              && top.headerConsolidationEvidence.statusEditControlCount === 1
+              && top.headerConsolidationEvidence.statusBadgeCount === 1
+              && top.headerConsolidationEvidence.statusStepControlCount === 0
+              && top.headerConsolidationEvidence.bodyHeaderInteractiveControlCount === 0
+              && (!Array.isArray(target.expectedHeaderActionLabels)
+                || target.expectedHeaderActionLabels.every((label) => top.headerConsolidationEvidence.headerActionLabels.includes(label)))
+              && (!Array.isArray(target.expectedFirstViewportFieldNames)
+                || top.headerConsolidationEvidence.firstViewportEditableFields.some((field) => (
+                  target.expectedFirstViewportFieldNames.includes(field.name) && field.fullyVisible
+                )))
+            ))
+            && (target.exerciseStatusDraft !== true || statusInteractionEvidence.pass)
+            && (target.exerciseMobileStatusDraft !== true || viewport.name !== 'mobile' || statusInteractionEvidence.pass)
+            && (target.expectedStatusReadonly !== true || (
+              top.headerConsolidationEvidence.headerStatusReadonly
+              && top.headerConsolidationEvidence.statusEditControlCount === 0
+              && top.headerConsolidationEvidence.statusBadgeCount === 1
+              && top.headerConsolidationEvidence.statusStepControlCount === 0
+            ))
+            && (typeof target.expectedStatusFieldName !== 'string'
+              || top.headerConsolidationEvidence.bodyClaimedStatusFieldCount === 0)
+            && (target.expectUniqueHeaderActions !== true
+              || top.headerConsolidationEvidence.headerActionKeysUnique)
+            && (!Array.isArray(target.expectedSectionLinks)
+              || JSON.stringify(top.sectionLinks) === JSON.stringify(target.expectedSectionLinks))
+            && (!Array.isArray(target.expectedSectionTitles)
+              || JSON.stringify(top.sectionTitles) === JSON.stringify(target.expectedSectionTitles))
             && navigationJourney.length === top.sectionLinks.length
             && navigationJourney.every((item) => item.current
+              && item.immediate.current
+              && item.stable.current
+              && item.stable.targetVisibleBelowSticky
               && item.targetMatchCount === 1
               && item.targetFound
               && item.targetIdentityMatches
               && item.targetContentMatches
               && item.targetVisibleBelowSticky
               && item.linkFullyVisibleInTrack)
+            && (target.sectionNavigationReturnLabels === undefined
+              || reverseNavigationJourney.every((item) => item.pass))
+            && (target.sectionManualJourneyLabels === undefined
+              || manualNavigationJourney.every((item) => item.pass))
             && (viewport.name !== 'mobile' || top.mobileMonetarySummaryFirst)
             && (target.expectRelationFirstViewport !== true || viewport.name !== 'desktop' || (top.relationInFirstViewport && top.addActionInFirstViewport))
             && (target.expectReadonlyDetailComparison !== true || (viewport.name === 'desktop' ? top.readonlyTableVisible : top.readonlyCardsVisible))
@@ -3749,6 +4151,237 @@ try {
           return { points, resizeHandles };
         })
         : null;
+      let notebookJourneyEvidence = null;
+      if (target.exerciseNotebookTabs === true) {
+        const expectedLabels = Array.isArray(target.expectedNotebookTabLabels)
+          ? target.expectedNotebookTabLabels.map((label) => String(label || '').trim()).filter(Boolean)
+          : [];
+        const expectedTabContent = target.expectedNotebookTabContent && typeof target.expectedNotebookTabContent === 'object'
+          ? target.expectedNotebookTabContent
+          : {};
+        const notebook = page.locator('[data-semantic-component="ScTabs"]')
+          .filter({ has: page.locator('[data-section-tab="投标管理"]') })
+          .first();
+        await notebook.waitFor({ state: 'visible', timeout: 15000 });
+        const tabLabels = (await notebook.locator('[data-section-tab]').allTextContents())
+          .map((label) => label.replace(/\s+/g, ' ').trim())
+          .filter(Boolean);
+        const initialLabel = String(await notebook.locator('[data-section-tab].native-tab--active').first().textContent() || '').replace(/\s+/g, ' ').trim();
+        const mutationCountBefore = report.mutationCount;
+        const revealNotebookTab = async (trigger) => trigger.evaluate((node) => {
+          const root = node.closest('[data-semantic-component="ScTabs"]');
+          let owner = node.parentElement;
+          while (owner) {
+            if (owner instanceof HTMLElement && owner.scrollWidth > owner.clientWidth + 1) {
+              const ownerRect = owner.getBoundingClientRect();
+              const nodeRect = node.getBoundingClientRect();
+              owner.scrollTo({
+                left: Math.max(0, owner.scrollLeft + nodeRect.left - ownerRect.left - (owner.clientWidth - nodeRect.width) / 2),
+                behavior: 'auto',
+              });
+              return;
+            }
+            if (owner === root) break;
+            owner = owner.parentElement;
+          }
+        });
+        let draftRetention = { checked: false, reason: 'not requested', pass: true };
+        if (target.exerciseNotebookDraftRetention === true) {
+          const statusbar = page.locator('[data-professional-workflow-component="statusbar"]:visible').first();
+          const control = statusbar.locator('[data-semantic-component="ScSelect"].native-statusbar-edit-control:visible').first();
+          await control.waitFor({ state: 'visible', timeout: 15000 });
+          const initialValue = String(await control.locator('input').inputValue() || '');
+          const initialState = String(await statusbar.getAttribute('data-workflow-current') || '');
+          await control.click();
+          const options = page.locator('.t-select__list:visible').last().locator('.t-select-option');
+          await options.first().waitFor({ state: 'visible', timeout: 15000 });
+          const optionLabels = (await options.allTextContents()).map((label) => label.replace(/\s+/g, ' ').trim());
+          const alternateIndex = optionLabels.findIndex((label) => label && label !== initialValue);
+          if (alternateIndex < 0) throw new Error(`${target.name}: notebook draft retention lacks an alternate status`);
+          const alternateValue = optionLabels[alternateIndex];
+          await options.nth(alternateIndex).click();
+          await page.waitForFunction((value) => [...document.querySelectorAll(
+            '[data-professional-workflow-component="statusbar"] .native-statusbar-edit-control input',
+          )].some((input) => input instanceof HTMLInputElement && input.offsetParent !== null && input.value === value), alternateValue);
+          draftRetention = {
+            checked: true,
+            initialValue,
+            initialState,
+            alternateValue,
+            changedState: String(await statusbar.getAttribute('data-workflow-current') || ''),
+            dirtyBeforeTabs: String(await page.locator('.record-header-context:visible').first().textContent() || '').replace(/\s+/g, ' ').trim(),
+            pass: false,
+          };
+        }
+        const tabs = [];
+        for (const label of tabLabels) {
+          const trigger = notebook.locator('[data-section-tab]').filter({ hasText: label }).first();
+          await revealNotebookTab(trigger);
+          await trigger.click();
+          await waitForStableProductSurface(page);
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          const panel = notebook.locator('.native-tab-panel:visible').first();
+          await panel.waitFor({ state: 'visible', timeout: 15000 });
+          const expectedIdentityHeader = String(target.expectedNotebookIdentityHeaders?.[label] || '').trim();
+          const contentExpectation = expectedTabContent[label] && typeof expectedTabContent[label] === 'object'
+            ? expectedTabContent[label]
+            : null;
+          const evidence = await panel.evaluate((node, { identityHeader, contentExpectation }) => {
+            const visible = (candidate) => candidate instanceof HTMLElement && candidate.offsetParent !== null;
+            const rect = (candidate) => {
+              if (!(candidate instanceof HTMLElement)) return null;
+              const box = candidate.getBoundingClientRect();
+              return [Math.round(box.left), Math.round(box.top), Math.round(box.right), Math.round(box.bottom)];
+            };
+            const panelRect = node.getBoundingClientRect();
+            const collectionFields = [...node.querySelectorAll('.field')].filter((field) => (
+              visible(field)
+              && Boolean(field.querySelector(
+                '.o2m-table-scroll, .o2m-readonly-table, .o2m-readonly-list, [data-semantic-component="ScEmptyState"]',
+              ))
+            ));
+            const collections = collectionFields.map((field) => {
+              const fieldRect = field.getBoundingClientRect();
+              const scroller = field.querySelector('.o2m-table-scroll, [data-table-scroll-region="true"]');
+              let scroll = null;
+              if (scroller instanceof HTMLElement && visible(scroller)) {
+                const initial = scroller.scrollLeft;
+                const maximum = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+                scroller.scrollLeft = maximum;
+                const reached = Math.round(scroller.scrollLeft);
+                scroller.scrollLeft = initial;
+                scroll = { maximum: Math.round(maximum), reached, reachable: Math.abs(reached - maximum) <= 1 };
+              }
+              const rows = [...field.querySelectorAll('tbody tr, .o2m-mobile-row')].filter(visible);
+              const headerLabels = [...field.querySelectorAll('th')].filter(visible)
+                .map((header) => String(header.textContent || '').replace(/\s+/g, ' ').trim()).filter(Boolean);
+              const firstRowCells = rows.length ? [...rows[0].querySelectorAll('td')].filter(visible) : [];
+              const identityHeaderIndex = identityHeader ? headerLabels.indexOf(identityHeader) : -1;
+              const firstBusinessHeaderIndex = headerLabels[0] === '行变更' ? 1 : 0;
+              const identityNode = rows[0]?.querySelector('.o2m-mobile-row-identity')
+                || firstRowCells[identityHeaderIndex >= 0 ? identityHeaderIndex : firstBusinessHeaderIndex]
+                || null;
+              const identityInput = identityNode?.querySelector('input, textarea');
+              const identity = String(
+                identityInput instanceof HTMLInputElement || identityInput instanceof HTMLTextAreaElement
+                  ? identityInput.value
+                  : identityNode?.textContent || '',
+              ).replace(/\s+/g, ' ').trim();
+              return {
+                fieldName: String(field.getAttribute('data-field-name') || ''),
+                rect: rect(field),
+                widthRatio: Number((fieldRect.width / Math.max(1, panelRect.width)).toFixed(3)),
+                rowCount: rows.length,
+                identity,
+                identityHeader,
+                identityHeaderIndex,
+                firstBusinessHeaderIndex,
+                headers: headerLabels,
+                scroll,
+                pass: fieldRect.left >= panelRect.left - 1
+                  && fieldRect.right <= panelRect.right + 1
+                  && fieldRect.width >= panelRect.width * 0.94
+                  && (!scroll || scroll.reachable)
+                  && (!identityHeader || headerLabels.length === 0 || identityHeaderIndex === firstBusinessHeaderIndex)
+                  && (rows.length === 0 || identity.length > 0),
+              };
+            });
+            const visibleFields = [...node.querySelectorAll('.field')].filter(visible);
+            const nonCollectionFieldCount = visibleFields.filter((field) => !collectionFields.includes(field)).length;
+            const expectedType = String(contentExpectation?.type || '').trim();
+            const expectedCollectionCount = Number.isInteger(contentExpectation?.collectionCount)
+              ? contentExpectation.collectionCount
+              : null;
+            const minimumFieldCount = Number.isInteger(contentExpectation?.minFieldCount)
+              ? contentExpectation.minFieldCount
+              : 1;
+            const declaredContentPass = !contentExpectation
+              ? true
+              : expectedType === 'collection'
+                ? expectedCollectionCount !== null && collections.length === expectedCollectionCount
+                : expectedType === 'fields'
+                  ? collections.length === 0 && nonCollectionFieldCount >= minimumFieldCount
+                  : expectedType === 'empty'
+                    ? collections.length === 0 && [...node.querySelectorAll('[data-semantic-component="ScEmptyState"]')].filter(visible).length > 0
+                    : false;
+            return {
+              panelRect: rect(node),
+              collectionCount: collections.length,
+              collections,
+              contentExpectation,
+              nonCollectionFieldCount,
+              declaredContentPass,
+              emptyStateCount: [...node.querySelectorAll('[data-semantic-component="ScEmptyState"]')].filter(visible).length,
+              actionLabels: [...node.querySelectorAll('button')].filter(visible).map((button) => String(button.textContent || '').replace(/\s+/g, ' ').trim()).filter(Boolean),
+              pass: declaredContentPass && collections.every((collection) => collection.pass),
+            };
+          }, { identityHeader: expectedIdentityHeader, contentExpectation });
+          const draftValue = target.exerciseNotebookDraftRetention === true
+            ? String(await page.locator('[data-professional-workflow-component="statusbar"] .native-statusbar-edit-control input:visible').first().inputValue() || '')
+            : '';
+          const dirtyContext = target.exerciseNotebookDraftRetention === true
+            ? String(await page.locator('.record-header-context:visible').first().textContent() || '').replace(/\s+/g, ' ').trim()
+            : '';
+          tabs.push({ label, draftValue, dirtyContext, ...evidence });
+          await page.screenshot({
+            path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-tab-${label.replace(/[^\p{L}\p{N}]+/gu, '-')}.png`),
+            fullPage: false,
+          });
+        }
+        if (initialLabel) {
+          const initialTrigger = notebook.locator('[data-section-tab]').filter({ hasText: initialLabel }).first();
+          await revealNotebookTab(initialTrigger);
+          await initialTrigger.evaluate((node) => {
+            if (!(node instanceof HTMLElement)) throw new Error('initial notebook tab is not interactive');
+            node.click();
+          });
+          await page.waitForFunction(({ label }) => [...document.querySelectorAll('[data-section-tab].native-tab--active')]
+            .some((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim() === label), { label: initialLabel });
+          await waitForStableProductSurface(page);
+        }
+        if (target.exerciseNotebookDraftRetention === true) {
+          const statusbar = page.locator('[data-professional-workflow-component="statusbar"]:visible').first();
+          const control = statusbar.locator('[data-semantic-component="ScSelect"].native-statusbar-edit-control:visible').first();
+          const retainedValue = String(await control.locator('input').inputValue() || '');
+          const dirtyAfterTabs = String(await page.locator('.record-header-context:visible').first().textContent() || '').replace(/\s+/g, ' ').trim();
+          await control.click();
+          const restoreOption = page.locator('.t-select__list:visible').last().locator('.t-select-option')
+            .filter({ hasText: draftRetention.initialValue }).first();
+          await restoreOption.waitFor({ state: 'visible', timeout: 15000 });
+          await restoreOption.click();
+          await page.waitForFunction((value) => [...document.querySelectorAll(
+            '[data-professional-workflow-component="statusbar"] .native-statusbar-edit-control input',
+          )].some((input) => input instanceof HTMLInputElement && input.offsetParent !== null && input.value === value), draftRetention.initialValue);
+          const restoredState = String(await statusbar.getAttribute('data-workflow-current') || '');
+          draftRetention = {
+            ...draftRetention,
+            retainedValue,
+            dirtyAfterTabs,
+            restoredState,
+            pass: draftRetention.changedState !== draftRetention.initialState
+              && tabs.every((item) => item.draftValue === draftRetention.alternateValue && /已修改|未保存/.test(item.dirtyContext))
+              && retainedValue === draftRetention.alternateValue
+              && /已修改|未保存/.test(dirtyAfterTabs)
+              && restoredState === draftRetention.initialState,
+          };
+        }
+        notebookJourneyEvidence = {
+          expectedLabels,
+          tabLabels,
+          initialLabel,
+          tabs,
+          draftRetention,
+          mutationCountBefore,
+          mutationCountAfter: report.mutationCount,
+          pass: expectedLabels.every((label) => tabLabels.includes(label))
+            && (Object.keys(expectedTabContent).length === 0
+              || tabLabels.every((label) => Object.prototype.hasOwnProperty.call(expectedTabContent, label)))
+            && tabs.length === tabLabels.length
+            && tabs.every((item) => item.pass)
+            && draftRetention.pass
+            && mutationCountBefore === report.mutationCount,
+        };
+      }
       const notebookTabEvidence = await page.locator('[data-semantic-component="ScTabs"]').evaluateAll((nodes) => nodes.map((node) => {
         const rect = node.getBoundingClientRect();
         return {
@@ -3767,7 +4400,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialIconResourceEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, sessionExpiredRecoveryEvidence, systemThemeRuntimeEvidence, safeReturnEvidence, formStructureEvidence, fieldAlignmentEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractSubviews, contractActions, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialIconResourceEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, sessionExpiredRecoveryEvidence, systemThemeRuntimeEvidence, safeReturnEvidence, formStructureEvidence, fieldAlignmentEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookJourneyEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -3792,6 +4425,9 @@ for (const item of report.routes) {
   }
   if (item.path && configuredTarget?.captureFormStructure === true && !item.formStructureEvidence?.pass) {
     failures.push({ name: item.name, formStructureEvidence: item.formStructureEvidence || null });
+  }
+  if (item.path && configuredTarget?.exerciseNotebookTabs === true && !item.notebookJourneyEvidence?.pass) {
+    failures.push({ name: item.name, notebookJourneyEvidence: item.notebookJourneyEvidence || null });
   }
   if (item.path && configuredTarget?.captureFieldAlignment === true && !item.fieldAlignmentEvidence?.pass) {
     failures.push({ name: item.name, fieldAlignmentEvidence: item.fieldAlignmentEvidence || null });
