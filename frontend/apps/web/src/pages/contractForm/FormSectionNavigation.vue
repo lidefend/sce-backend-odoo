@@ -116,6 +116,18 @@ function queueActiveSection() {
   activeFrame = window.requestAnimationFrame(updateActiveSection);
 }
 
+function resolveScrollOwner(): HTMLElement | Window {
+  let candidate = navRef.value?.parentElement || null;
+  while (candidate) {
+    const overflowY = window.getComputedStyle(candidate).overflowY;
+    if (/(auto|scroll|overlay)/.test(overflowY) && candidate.scrollHeight > candidate.clientHeight + 1) {
+      return candidate;
+    }
+    candidate = candidate.parentElement;
+  }
+  return window;
+}
+
 function activate(item: SectionNavigationItem) {
   const target = visibleTarget(item);
   if (!target) return;
@@ -144,7 +156,7 @@ function activate(item: SectionNavigationItem) {
 
 function bindNavigation() {
   if (scrollOwner) scrollOwner.removeEventListener('scroll', queueActiveSection);
-  scrollOwner = navRef.value?.closest<HTMLElement>('.router-host') || window;
+  scrollOwner = resolveScrollOwner();
   scrollOwner.addEventListener('scroll', queueActiveSection, { passive: true });
   activeKey.value = props.items.find(visibleTarget)?.key || '';
   void nextTick(() => {

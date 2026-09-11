@@ -1106,7 +1106,7 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 .native-tab-panel {
   display: grid;
   gap: 14px;
-  min-height: 260px;
+  min-height: 0;
   min-width: 0;
   align-content: start;
 }

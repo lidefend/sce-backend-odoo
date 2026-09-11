@@ -62,7 +62,7 @@
     <div v-if="field.readonly" class="o2m-readonly" data-readonly-relation>
       <div v-if="one2manyRows.length" class="o2m-readonly-table">
         <header class="o2m-toolbar o2m-toolbar--readonly" data-detail-collection-heading>
-          <span class="o2m-title" data-detail-collection-title>{{ field.label }}</span>
+          <span v-if="!field.hideLabel" class="o2m-title" data-detail-collection-title>{{ field.label }}</span>
           <span class="o2m-count" data-detail-collection-count>共 {{ one2manyRows.length }} 条</span>
         </header>
         <div class="o2m-table-scroll" data-detail-collection-content="desktop-table">
@@ -106,12 +106,12 @@
         label="正在加载关系记录"
         data-readonly-relation-loading
       />
-      <ScInlineState v-else class="relation-readonly-empty" state="empty" label="暂无可展示记录" data-readonly-relation-empty />
+      <ScEmptyState v-else class="relation-readonly-empty" density="compact" title="暂无可展示记录" heading-level="4" data-readonly-relation-empty />
     </div>
         <template v-else>
     <div class="o2m-card">
       <header class="o2m-toolbar" data-detail-collection-heading>
-        <span class="o2m-title" data-detail-collection-title>{{ field.label }}</span>
+        <span v-if="!field.hideLabel" class="o2m-title" data-detail-collection-title>{{ field.label }}</span>
         <span v-if="adapter.visibleOne2manyRows(field.name).length" class="o2m-count" data-detail-collection-count>共 {{ adapter.visibleOne2manyRows(field.name).length }} 条</span>
         <span v-if="adapter.one2manySummary(field.name)" class="o2m-summary" data-detail-collection-summary>{{ adapter.one2manySummary(field.name) }}</span>
         <span class="o2m-spacer" />
@@ -280,11 +280,12 @@
         </article>
       </div>
 
-      <ScInlineState
+      <ScEmptyState
         v-else-if="adapter.one2manyColumns(field.name).length"
         class="o2m-empty"
-        state="empty"
-        :label="`暂无明细，点击「${adapter.one2manyCreateLabel(field.name, field.label)}」新增`"
+        density="compact"
+        :title="`暂无明细，可使用「${adapter.one2manyCreateLabel(field.name, field.label)}」新增`"
+        heading-level="4"
         data-o2m-empty
         data-detail-collection-content="empty"
       />
@@ -331,6 +332,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import type { FormSectionFieldSchema } from './formSection.types';
 import ScButton from '../design-system/ScButton.vue';
+import ScEmptyState from '../design-system/ScEmptyState.vue';
 import ScFileField from '../design-system/ScFileField.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScInput from '../design-system/ScInput.vue';
@@ -377,10 +379,10 @@ function isO2mAmountColumn(column: RelationFieldColumn) {
 
 // ===== TDesign Table 列定义与行数据 =====
 const o2mTableColumns = computed(() => {
-  const fieldColumns = props.adapter.one2manyColumns(props.field.name).map((column) => ({
+  const fieldColumns = props.adapter.one2manyColumns(props.field.name).map((column, columnIndex) => ({
     colKey: column.name,
     title: column.label,
-    width: isO2mAmountColumn(column) ? 140 : undefined,
+    width: isO2mAmountColumn(column) ? 140 : (columnIndex === 0 ? 240 : undefined),
     align: isO2mAmountColumn(column) ? 'right' : 'left',
     ellipsis: false,
   }));
@@ -396,10 +398,10 @@ const readonlyO2mTableColumns = computed(() => {
     : [];
   return [
     ...stateColumn,
-    ...props.adapter.one2manyColumns(props.field.name).map((column) => ({
+    ...props.adapter.one2manyColumns(props.field.name).map((column, columnIndex) => ({
       colKey: column.name,
       title: column.label,
-      width: isO2mAmountColumn(column) ? 140 : undefined,
+      width: isO2mAmountColumn(column) ? 140 : (columnIndex === 0 ? 240 : undefined),
       align: isO2mAmountColumn(column) ? 'right' : 'left',
       ellipsis: false,
     })),
@@ -1323,7 +1325,7 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
 }
 
 .o2m-empty {
-  padding: 24px 12px;
+  padding: 12px;
   text-align: center;
   color: var(--sc-app-text-secondary);
   border-top: 1px solid var(--sc-app-border);
@@ -1407,11 +1409,9 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
 
   .o2m-mobile-row-identity {
     min-width: 0;
-    overflow: hidden;
+    overflow-wrap: anywhere;
     color: var(--sc-app-text-primary);
     font-size: 14px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .o2m-mobile-row-status {
