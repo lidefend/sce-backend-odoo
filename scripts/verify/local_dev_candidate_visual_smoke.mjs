@@ -1714,7 +1714,7 @@ try {
             };
           };
           const boundarySet = (selector, ownerSelector) => [...document.querySelectorAll(selector)]
-            .filter(visible)
+            .filter((node) => visible(node) && !node.closest('.o2m-table-scroll, [data-table-scroll-region="true"]'))
             .map((node) => boundary(node, node.parentElement?.closest(ownerSelector)))
             .filter(Boolean);
           const firstVisible = (selector) => [...document.querySelectorAll(selector)].find(visible) || null;
@@ -1793,7 +1793,7 @@ try {
             navigationOverflowDiscoverable: sectionNavigation instanceof HTMLElement
               && (sectionNavigation.dataset.overflowAfter !== 'true'
                 || [...sectionNavigation.querySelectorAll('.form-section-navigation__cue--after')].some(visible)),
-            sectionTitles: [...document.querySelectorAll('[data-section-title], [data-form-semantic-role] .native-container-head h3')]
+            sectionTitles: [...document.querySelectorAll('[data-section-title], .native-container-head h3')]
               .filter(visible).map((node) => String(node instanceof HTMLElement ? node.dataset.sectionTitle || node.textContent || '' : '').replace(/\s+/g, ' ').trim()).filter(Boolean),
             relationInFirstViewport: relation instanceof HTMLElement && relation.getBoundingClientRect().top < window.innerHeight,
             addActionInFirstViewport: addAction instanceof HTMLElement && addAction.getBoundingClientRect().bottom <= window.innerHeight,
@@ -1911,6 +1911,10 @@ try {
             && top.stickyHeaderOpaque
             && top.responsiveBoundaryEvidence.pass
             && popupBoundaryEvidence.pass
+            && (!Array.isArray(target.expectedSectionLinks)
+              || JSON.stringify(top.sectionLinks) === JSON.stringify(target.expectedSectionLinks))
+            && (!Array.isArray(target.expectedSectionTitles)
+              || JSON.stringify(top.sectionTitles) === JSON.stringify(target.expectedSectionTitles))
             && navigationJourney.length === top.sectionLinks.length
             && navigationJourney.every((item) => item.current
               && item.targetMatchCount === 1
