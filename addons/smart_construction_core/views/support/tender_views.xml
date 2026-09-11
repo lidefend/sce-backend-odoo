@@ -547,12 +547,6 @@
                     </field>
                 </page>
             </xpath>
-            <!-- Move only after every project extension has finished targeting the
-                 base notebook. Keeping the move in this last-loaded extension
-                 preserves upgrade compatibility with its own stored predecessor. -->
-            <xpath expr="//sheet/group[@name='sc_project_related_business']" position="inside">
-                <xpath expr="//sheet/notebook" position="move" />
-            </xpath>
         </field>
     </record>
 </odoo>

@@ -189,8 +189,8 @@
                     <field name="cost_manager_id" groups="smart_construction_core.group_sc_cap_project_read" />
                     <field name="doc_manager_id" groups="smart_construction_core.group_sc_cap_project_read" />
                 </group>
-                <group name="sc_project_responsibility_matrix" string="责任矩阵" data-sc-anchor="project-responsibility-matrix">
-                    <field name="responsibility_ids" groups="smart_construction_core.group_sc_cap_project_read">
+                <group name="sc_project_responsibility_matrix" string="责任矩阵" col="1" data-sc-anchor="project-responsibility-matrix">
+                    <field name="responsibility_ids" nolabel="1" groups="smart_construction_core.group_sc_cap_project_read">
                         <tree editable="bottom">
                             <field name="role_key" />
                             <field name="user_id" />
@@ -375,6 +375,13 @@
             </xpath>
             <xpath expr="//div[hasclass('o_chatter') or hasclass('oe_chatter')]" position="attributes">
                 <attribute name="groups">smart_construction_core.group_sc_cap_cost_user,smart_construction_core.group_sc_cap_cost_manager,smart_construction_core.group_sc_cap_contract_user,smart_construction_core.group_sc_cap_contract_manager,smart_construction_core.group_sc_super_admin</attribute>
+            </xpath>
+            <!-- The project profile view owns the whole-page information architecture.
+                 Move the completed notebook only after this inheritance record has
+                 finished adding and ordering every standard project page. Later
+                 feature extensions continue to target it through //sheet//notebook. -->
+            <xpath expr="//sheet/group[@name='sc_project_related_business']" position="inside">
+                <xpath expr="//sheet/notebook" position="move" />
             </xpath>
         </field>
     </record>

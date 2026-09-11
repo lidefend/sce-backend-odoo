@@ -52,6 +52,8 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             ],
         )
         self.assertEqual(direct_groups[2].xpath("./field/@name"), ["responsibility_ids"])
+        self.assertEqual(direct_groups[2].get("col"), "1")
+        self.assertEqual(direct_groups[2].xpath("./field/@nolabel"), ["1"])
         related_business = direct_groups[3]
         self.assertEqual(related_business.get("data-sc-anchor"), "project-related-business")
         self.assertEqual(
@@ -60,6 +62,16 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             "the project view, rather than a frontend widget heuristic, owns the related-business width",
         )
         self.assertEqual(len(related_business.xpath("./notebook")), 1)
+
+        profile_arch = self.env.ref(
+            "smart_construction_core.view_project_form_sc_core"
+        ).arch_db
+        tender_arch = self.env.ref(
+            "smart_construction_core.view_project_form_inherit_tender"
+        ).arch_db
+        self.assertIn("sc_project_related_business", profile_arch)
+        self.assertIn('position="move"', profile_arch)
+        self.assertNotIn('position="move"', tender_arch)
 
         expected_identity_columns = {
             "wbs_ids": ["name", "code"],
