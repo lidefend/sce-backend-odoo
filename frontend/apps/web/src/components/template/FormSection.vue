@@ -209,6 +209,7 @@
                     :model-value="formatMonetaryInputValue(field.inputValue, field.digits, field.currencyLabel)"
                     class="input"
                     appearance="form-field"
+                    clearable
                     :aria-label="field.label"
                     :required="field.required"
                     :invalid="field.invalid"
@@ -222,6 +223,7 @@
                     :model-value="String(field.dateRangeEndInputValue ?? '')"
                     class="input"
                     appearance="form-field"
+                    clearable
                     :aria-label="`${field.label}结束日期`"
                     :required="field.required"
                     :invalid="field.invalid"

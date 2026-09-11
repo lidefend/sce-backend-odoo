@@ -33,7 +33,6 @@
             variant="ghost"
             size="small"
             appearance="context-action"
-            class="native-container-disclosure"
             :aria-expanded="String(!isContainerCollapsed(node, index))"
             @click="toggleContainerCollapsed(node, index)"
           >{{ semanticSectionTitle(node) || containerTitle(node) }}</ScButton>
@@ -1006,14 +1005,6 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 
 .native-container[data-collapsed='true'] > :not(.native-container-head) {
   display: none;
-}
-
-.native-container-disclosure {
-  justify-content: flex-start;
-  padding-inline: 0;
-  color: var(--sc-app-info-text);
-  font-size: 14px;
-  font-weight: 700;
 }
 
 .native-container--field-drop-target.native-container--group,

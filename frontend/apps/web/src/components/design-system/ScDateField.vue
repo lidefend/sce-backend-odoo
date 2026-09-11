@@ -9,6 +9,7 @@
     :value="modelValue"
     :disabled="disabled"
     :readonly="readonly"
+    :clearable="clearable"
     :enable-time-picker="withTime"
     :aria-invalid="invalid || undefined"
     :aria-describedby="describedBy"
@@ -20,10 +21,11 @@ import { computed } from 'vue';
 import { TDesignDatePicker } from './tdesignPrimitiveBridge';
 import { nativeControlProjection } from './nativeControlProjection';
 
-const props = withDefaults(defineProps<{ modelValue:string; withTime?:boolean; readonly?:boolean; disabled?:boolean; required?:boolean; invalid?:boolean; describedBy?:string; appearance?:'default'|'form-field' }>(), {
+const props = withDefaults(defineProps<{ modelValue:string; withTime?:boolean; readonly?:boolean; disabled?:boolean; clearable?:boolean; required?:boolean; invalid?:boolean; describedBy?:string; appearance?:'default'|'form-field' }>(), {
   withTime: false,
   readonly: false,
   disabled: false,
+  clearable: false,
   required: false,
   invalid: false,
   describedBy: undefined,
