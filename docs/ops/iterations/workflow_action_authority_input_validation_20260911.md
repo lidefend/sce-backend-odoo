@@ -37,7 +37,7 @@
 - 修复后定向：同一命令通过，覆盖重复身份、非布尔 `enabled`、匹配畸形行、不可归属坏节点、无关坏节点、合法禁用、合法同标签不同身份及 Canonical presenter 消费。
 - 开发 Quick 首轮：`make ci.local.quick` 在新增文件后按预期阻断于 stale complexity report；已用生成器更新扫描文件数，未降低门禁。
 - 修复后开发 Quick：`make ci.local.quick` 完整通过；严格类型、开发构建、lint（0 error，32 个既有 warning）及仓库门禁均通过。因套件启动时工作区仍含本批改动，本次不签发 exact-HEAD receipt。
-- 最终受管 Quick：待本地交付提交形成 clean HEAD 后执行；结果以 exact-HEAD receipt 为准。
+- 产品与测试提交 `36d1d31bb9b28a0d2d782e7a16957035ed37dc30` 的最终受管 Quick：完整通过并签发 exact-HEAD receipt，位置为 `.git/worktrees/sce-backend-odoo-historical-branch-retirement-v1/codex/evidence/ci.local.quick/36d1d31bb9b28a0d2d782e7a16957035ed37dc30.json`。
 - 未运行：浏览器、真实保存/审批/支付、fixture、数据库、模块升级与发布验收；本批不需要这些写路径。
 
 ## 5. 风险与回滚
@@ -51,4 +51,4 @@
 - 源码：`frontend/apps/web/src/app/contracts/v2/workflowActionAvailability.ts`。
 - 定向测试：`frontend/apps/web/scripts/canonical_form_presenter_test.ts`。
 - 浏览器/e2e/contract snapshot：N/A，本批无运行态与契约形状修改。
-- 下一步：冻结 clean HEAD，取得受管 Quick 证据后进入独立复核与 PR 授权；不提前实施收入合同或 controller 专题。
+- 下一步：当前分支进入独立复核与 PR 授权；不提前实施收入合同或 controller 专题。
