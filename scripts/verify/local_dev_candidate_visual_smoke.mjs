@@ -4043,6 +4043,9 @@ try {
         const expectedLabels = Array.isArray(target.expectedNotebookTabLabels)
           ? target.expectedNotebookTabLabels.map((label) => String(label || '').trim()).filter(Boolean)
           : [];
+        const expectedTabContent = target.expectedNotebookTabContent && typeof target.expectedNotebookTabContent === 'object'
+          ? target.expectedNotebookTabContent
+          : {};
         const notebook = page.locator('[data-semantic-component="ScTabs"]')
           .filter({ has: page.locator('[data-section-tab="投标管理"]') })
           .first();
@@ -4105,7 +4108,10 @@ try {
           const panel = notebook.locator('.native-tab-panel:visible').first();
           await panel.waitFor({ state: 'visible', timeout: 15000 });
           const expectedIdentityHeader = String(target.expectedNotebookIdentityHeaders?.[label] || '').trim();
-          const evidence = await panel.evaluate((node, identityHeader) => {
+          const contentExpectation = expectedTabContent[label] && typeof expectedTabContent[label] === 'object'
+            ? expectedTabContent[label]
+            : null;
+          const evidence = await panel.evaluate((node, { identityHeader, contentExpectation }) => {
             const visible = (candidate) => candidate instanceof HTMLElement && candidate.offsetParent !== null;
             const rect = (candidate) => {
               if (!(candidate instanceof HTMLElement)) return null;
@@ -4163,15 +4169,36 @@ try {
                   && (rows.length === 0 || identity.length > 0),
               };
             });
+            const visibleFields = [...node.querySelectorAll('.field')].filter(visible);
+            const nonCollectionFieldCount = visibleFields.filter((field) => !collectionFields.includes(field)).length;
+            const expectedType = String(contentExpectation?.type || '').trim();
+            const expectedCollectionCount = Number.isInteger(contentExpectation?.collectionCount)
+              ? contentExpectation.collectionCount
+              : null;
+            const minimumFieldCount = Number.isInteger(contentExpectation?.minFieldCount)
+              ? contentExpectation.minFieldCount
+              : 1;
+            const declaredContentPass = !contentExpectation
+              ? true
+              : expectedType === 'collection'
+                ? expectedCollectionCount !== null && collections.length === expectedCollectionCount
+                : expectedType === 'fields'
+                  ? collections.length === 0 && nonCollectionFieldCount >= minimumFieldCount
+                  : expectedType === 'empty'
+                    ? collections.length === 0 && [...node.querySelectorAll('[data-semantic-component="ScEmptyState"]')].filter(visible).length > 0
+                    : false;
             return {
               panelRect: rect(node),
               collectionCount: collections.length,
               collections,
+              contentExpectation,
+              nonCollectionFieldCount,
+              declaredContentPass,
               emptyStateCount: [...node.querySelectorAll('[data-semantic-component="ScEmptyState"]')].filter(visible).length,
               actionLabels: [...node.querySelectorAll('button')].filter(visible).map((button) => String(button.textContent || '').replace(/\s+/g, ' ').trim()).filter(Boolean),
-              pass: collections.every((collection) => collection.pass),
+              pass: declaredContentPass && collections.every((collection) => collection.pass),
             };
-          }, expectedIdentityHeader);
+          }, { identityHeader: expectedIdentityHeader, contentExpectation });
           const draftValue = target.exerciseNotebookDraftRetention === true
             ? String(await page.locator('[data-professional-workflow-component="statusbar"] .native-statusbar-edit-control input:visible').first().inputValue() || '')
             : '';
@@ -4227,6 +4254,8 @@ try {
           mutationCountBefore,
           mutationCountAfter: report.mutationCount,
           pass: expectedLabels.every((label) => tabLabels.includes(label))
+            && (Object.keys(expectedTabContent).length === 0
+              || tabLabels.every((label) => Object.prototype.hasOwnProperty.call(expectedTabContent, label)))
             && tabs.length === tabLabels.length
             && tabs.every((item) => item.pass)
             && draftRetention.pass
