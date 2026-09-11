@@ -1,0 +1,59 @@
+from pathlib import Path
+import unittest
+
+
+ROOT = Path(__file__).resolve().parents[2]
+PY = (ROOT / "scripts/verify/local_dev_project_profile_write_fixture.py").read_text()
+SH = (ROOT / "scripts/verify/local_dev_project_profile_write_fixture.sh").read_text()
+MK = (ROOT / "make/dev.mk").read_text()
+ODOO_SHELL = (ROOT / "scripts/ops/odoo_shell_exec.sh").read_text()
+
+
+class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
+    def test_exact_dev_identity_is_required(self):
+        for marker in (
+            'EXPECTED_DB = "sc_dev_demo"',
+            'EXPECTED_ENV = "dev"',
+            '"^sc_dev_demo$"',
+            'CANDIDATE_GIT_HEAD',
+        ):
+            self.assertIn(marker, PY + SH)
+
+    def test_batch_is_bounded_and_namespace_is_fixed(self):
+        self.assertIn('re.fullmatch(r"[a-z0-9][a-z0-9-]{2,31}", value)', PY)
+        self.assertIn('MODULE = "codex_p4_project_profile_write"', PY)
+        self.assertIn('P4_PROJECT_PROFILE_BATCH', SH)
+
+    def test_modes_require_distinct_confirmation(self):
+        for mode, confirmation in (("inspect", "INSPECT"), ("dry-run", "DRY_RUN"), ("prepare", "PREPARE"), ("cleanup", "CLEANUP")):
+            self.assertIn(mode, SH)
+            self.assertIn('"%s"' % confirmation, SH)
+
+    def test_prepare_never_creates_users_or_changes_groups(self):
+        self.assertIn("no users are created", PY)
+        self.assertNotIn("res.users.*create", PY)
+        self.assertNotIn('"groups_id"', PY)
+
+    def test_cleanup_is_namespace_owned_and_external_reference_safe(self):
+        self.assertIn("fixture project XMLID is not owned by this batch", PY)
+        self.assertIn("external project references exist", PY)
+        self.assertIn("_external_references", PY)
+        self.assertIn("project.responsibility", PY)
+
+    def test_make_entry_is_local_dev_only(self):
+        block = MK[MK.index("local.dev.project_profile_write_fixture:"):]
+        self.assertIn("local.dev.ready", block)
+        self.assertIn("local.dev", block)
+        self.assertIn("local_dev_project_profile_write_fixture.sh", block)
+
+    def test_governed_shell_forwards_only_p4_identity_inputs(self):
+        self.assertIn("P4_PROJECT_PROFILE_*", ODOO_SHELL)
+        self.assertIn("CANDIDATE_GIT_HEAD", ODOO_SHELL)
+
+    def test_write_scope_is_explicit(self):
+        for field in ("name", "date_start", "date", "description", "responsibility_ids"):
+            self.assertIn('"%s"' % field, PY)
+
+
+if __name__ == "__main__":
+    unittest.main()

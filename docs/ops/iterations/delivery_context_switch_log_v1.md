@@ -9294,3 +9294,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 规则属于平台交付治理，不修改 P0/P1 产品语义、前后端契约、业务模块、数据库、fixture、runtime profile 或远端状态；验证只运行现有策略 guard 的纯 Python 非零单元和静态入口。
 - `make verify.baseline.iteration.execution.policy` 最终 PASS：4 个单元测试非零通过，真实 guard 覆盖 3 份权威文档和 8 个 Make authority。中间一次真实 guard 因锁定短语被 Markdown 换行拆分而失败，归类 `validation_tool_defect`；缩小为语义不变的连续短语后从 L2 恢复通过，未扩大范围。
 - 通过证据源完整指纹为 `071804f62e9387ed8c5597c980109b16279bf410487398bcae6c02c55acb8476`（7404 paths）。此后仅追加本完成记录，不改变 guard、测试或权威规则输入，L2 结果按确定性影响分析承接；L3 模块/运行态、L4 fixture/snapshot/browser、L5 release/PR 均因不适用明确 `not_run`。
+
+## 2026-09-11 — P4 项目资料开发写入验收能力（子批次）
+
+- 分支 `codex/business-entry-surface-normalization-v1`，产品候选保持 `4c88167f388ec19d2f5b51632d7ad0bae8a94af0`；Formal Product Layer P4；Layer Target 为 `local.dev/sc_dev_demo` 受控项目资料写入验证；Module 为 `scripts/verify`、`make/dev.mk` 与受管 Odoo shell 环境转发。
+- 新入口 `local.dev.project_profile_write_fixture` 只允许精确 `sc-local-dev`、`sc_dev_demo`、`^sc_dev_demo$`、`SC_ENVIRONMENT=dev`、完整候选 SHA 和显式批次确认；支持 `inspect`、`dry-run`、`prepare`、`cleanup`，不创建用户、不修改权限、不进入 acceptance。
+- 批次对象使用 `codex_p4_project_profile_write` XMLID 命名空间；写入范围限定为名称、日期、说明和责任明细。清理前扫描所有指向项目的外部 many2one 引用，发现引用或 XMLID 归属异常即停止。
+- 纯静态安全测试 8 项通过；`dry-run` 真实受管执行通过，确认 `sc_dev_demo`、候选 SHA 和角色候选：项目经理 `demo_role_project_manager`/`pm1`，普通项目用户 `demo_role_project_a_member`，只读候选 `demo_role_project_read`；批次对象当前不存在，未写数据库。
+- 真实 `prepare`、浏览器保存、清理及最终 Quick 均 `not_run`：等待本 P4 工具提交冻结后再按显式前提执行；产品代码、项目 2/8、acceptance 数据库均未修改。
