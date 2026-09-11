@@ -98,6 +98,7 @@ export type CanonicalRelationProjection = Pick<
 export function canonicalFieldToFormSection(
   field: CanonicalFormField,
   relationProjection?: CanonicalRelationProjection,
+  resolveCanonicalField?: (fieldCode: string) => CanonicalFormField | undefined,
 ): FormSectionFieldSchema {
   const config = asRecord(field.componentConfig);
   const type = text(field.fieldType || config.fieldType || config.field_type || 'char').toLowerCase() || 'char';
@@ -146,17 +147,23 @@ export function canonicalFieldToFormSection(
   const currencyLabel = type === 'monetary'
     ? resolveCurrencyDisplayLabel(config.currencyLabel || config.currency_label || config.currencyValue || config.currency_value)
     : '';
+  const widget = text(config.widget || field.widgetType).toLowerCase();
+  const widgetSemantics = asRecord(config.widgetSemantics || config.widget_semantics);
+  const dateRangeEndField = widget === 'daterange' && text(widgetSemantics.kind) === 'date_range'
+    ? text(widgetSemantics.end_field)
+    : '';
+  const dateRangeEnd = dateRangeEndField ? resolveCanonicalField?.(dateRangeEndField) : undefined;
   return {
     key: field.widgetId,
     name: field.fieldCode,
     label: field.label,
     hideLabel: field.hideLabel,
     type,
-    widget: text(config.widget || field.widgetType),
+    widget,
     nativeLocator: field.nativeLocator || undefined,
     occurrenceIndex: field.occurrenceIndex || undefined,
     sourcePosition: field.sourcePosition ?? undefined,
-    widgetSemantics: asRecord(config.widgetSemantics || config.widget_semantics),
+    widgetSemantics,
     componentConfig: config,
     componentKey: field.componentResolution.componentKey,
     componentReadiness: field.componentResolution.readiness,
@@ -183,6 +190,8 @@ export function canonicalFieldToFormSection(
     spanClass: field.fieldType === 'text' || field.span >= 24 ? 'field--full' : field.span >= 16 ? 'field--wide' : 'field--normal',
     value: relation ? relation.displayName : field.value,
     inputValue: relation ? relation.id : inputValue(field.value),
+    dateRangeEndField: dateRangeEndField || undefined,
+    dateRangeEndInputValue: dateRangeEnd ? inputValue(dateRangeEnd.value) : undefined,
     many2oneTextValue: relationKeyword || relation?.displayName || selectedRelation?.label || undefined,
     selectionOptions: selectionOptions(config.selection),
     relationOptions: runtimeRelationOptions.length

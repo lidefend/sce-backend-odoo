@@ -21,6 +21,7 @@
         <span v-else>{{ item.label }}</span>
       </ScButton>
       <span
+        v-if="hasLengthLimit"
         class="restricted-html-editor__counter"
         :class="{ 'restricted-html-editor__counter--over': overLimit }"
       >
@@ -87,7 +88,7 @@ import type { ScIconName } from '../design-system/scIcon';
 
 const props = defineProps<{
   modelValue: string;
-  maxLength: number;
+  maxLength?: number;
   disabled?: boolean;
 }>();
 
@@ -131,7 +132,8 @@ const toolbarItems: ToolbarItem[] = [
 ];
 
 const currentLength = computed(() => String(props.modelValue ?? '').length);
-const overLimit = computed(() => currentLength.value > props.maxLength);
+const hasLengthLimit = computed(() => Number.isFinite(props.maxLength) && Number(props.maxLength) > 0);
+const overLimit = computed(() => hasLengthLimit.value && currentLength.value > Number(props.maxLength));
 
 onMounted(() => {
   const el = editorRef.value;

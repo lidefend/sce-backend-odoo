@@ -139,7 +139,8 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   }
 
   function one2manyRowLabel(fieldName: string, row: One2ManyInlineRow) {
-    return one2manyRowLabelFromPrimary(one2manyPrimaryColumn(fieldName), row);
+    const columns = one2manyColumns(fieldName);
+    return one2manyRowLabelFromPrimary(one2manyPrimaryColumnFromColumns(columns), row, columns);
   }
 
   function one2manySummary(name: string) {

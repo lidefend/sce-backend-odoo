@@ -117,6 +117,7 @@ function fieldNode(
   sourceNode?: CanonicalFormNode,
   relationProjection?: CanonicalRelationProjection,
   sectionTarget?: WorkspaceSectionNavigationItem,
+  resolveCanonicalField?: (fieldCode: string) => CanonicalFormField | undefined,
 ): CanonicalNativeLayoutNode {
   const node: CanonicalNativeLayoutNode = {
     ...(sourceNode?.nativePresentation || {}),
@@ -151,7 +152,7 @@ function fieldNode(
     children: [],
   };
   fieldSchemas.set(node, {
-    ...canonicalFieldToFormSection(field, relationProjection),
+    ...canonicalFieldToFormSection(field, relationProjection, resolveCanonicalField),
     sectionNavigationTarget: sectionTarget?.key,
     sectionContentKind: sectionTarget?.contentKind,
     sectionSourceIdentity: sectionTarget?.sourceIdentity,
@@ -164,6 +165,15 @@ export function buildCanonicalNativeFormBridge(
   relationProjection?: CanonicalRelationProjection,
   claimedStatusbarNodeIdentity = '',
 ): CanonicalNativeFormBridge {
+  const canonicalFieldsByCode = new Map<string, CanonicalFormField>();
+  function indexCanonicalFields(node: CanonicalFormNode) {
+    node.fields.forEach((field) => {
+      if (!canonicalFieldsByCode.has(field.fieldCode)) canonicalFieldsByCode.set(field.fieldCode, field);
+    });
+    node.children.forEach(indexCanonicalFields);
+  }
+  [...renderModel.zones.primary, ...renderModel.zones.subordinate].forEach(indexCanonicalFields);
+  const resolveCanonicalField = (fieldCode: string) => canonicalFieldsByCode.get(fieldCode);
   const fieldSchemas = new WeakMap<CanonicalNativeLayoutNode, FormSectionFieldSchema>();
   const actionsByIdentity = new Map<string, CanonicalFormAction>();
   const headerActionIdentities = new Set(
@@ -190,6 +200,7 @@ export function buildCanonicalNativeFormBridge(
       return fieldNode(
         node.fields[0], fieldSchemas, node, relationProjection,
         fieldSectionTargets.get(node.fields[0].widgetId),
+        resolveCanonicalField,
       );
     }
     const rawKind = text(node.kind).toLowerCase() || 'container';
@@ -210,6 +221,7 @@ export function buildCanonicalNativeFormBridge(
     const mappedChildren = [
       ...node.fields.map((field) => fieldNode(
         field, fieldSchemas, undefined, relationProjection, fieldSectionTargets.get(field.widgetId),
+        resolveCanonicalField,
       )),
       ...node.children.filter((child) => !isCollaborationNode(child)).map(mapNode),
     ];

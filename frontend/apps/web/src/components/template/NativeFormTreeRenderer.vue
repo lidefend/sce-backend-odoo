@@ -7,6 +7,7 @@
         :class="containerClass(node)"
         :data-group-title="containerPolicyTitle(node, index)"
         :data-section-navigation-role="nativeSectionNavigationRole(node)"
+        :data-collapsed="isContainerCollapsed(node, index) ? 'true' : 'false'"
         :data-form-semantic-role="semanticFormRole(node) || undefined"
         :data-form-section-target="sectionNavigationTarget(node) || undefined"
         :data-section-content-kind="sectionContentKind(node) || undefined"
@@ -26,6 +27,16 @@
             @change="emitGroupRename(node, $event)"
             @keydown.enter.prevent="emitGroupRename(node, ($event.target as HTMLInputElement).value)"
           />
+          <ScButton
+            v-else-if="isCollapsibleContainer(node)"
+            type="button"
+            variant="ghost"
+            size="small"
+            appearance="context-action"
+            class="native-container-disclosure"
+            :aria-expanded="String(!isContainerCollapsed(node, index))"
+            @click="toggleContainerCollapsed(node, index)"
+          >{{ semanticSectionTitle(node) || containerTitle(node) }}</ScButton>
           <h3 v-else>{{ semanticSectionTitle(node) || containerTitle(node) }}</h3>
         </header>
         <div
@@ -524,6 +535,7 @@ const emit = defineEmits<{
 }>();
 
 const activePageIndex = ref(0);
+const collapsedContainers = ref<Record<string, boolean>>({});
 const SMART_BUTTON_DIRECT_LIMIT = 4;
 const visibleNodes = computed(() => (props.nodes || []).filter((node) => isNodeRenderable(node)));
 
@@ -565,6 +577,29 @@ function nodeType(node: NativeFormLayoutNode) {
 
 function nodeKey(node: NativeFormLayoutNode, index: number) {
   return `${nodeType(node) || 'node'}-${String(node?.name || node?.string || node?.label || index)}`;
+}
+
+function nativeBoolean(value: unknown): boolean {
+  return value === true || value === 1 || value === '1' || String(value || '').trim().toLowerCase() === 'true';
+}
+
+function isCollapsibleContainer(node: NativeFormLayoutNode) {
+  return nativeBoolean(nodeAttributes(node)['data-sc-collapsible']);
+}
+
+function isContainerCollapsed(node: NativeFormLayoutNode, index: number) {
+  const key = nodeKey(node, index);
+  if (Object.prototype.hasOwnProperty.call(collapsedContainers.value, key)) return collapsedContainers.value[key];
+  return isCollapsibleContainer(node) && nativeBoolean(nodeAttributes(node)['data-sc-collapsed-by-default']);
+}
+
+function toggleContainerCollapsed(node: NativeFormLayoutNode, index: number) {
+  if (!isCollapsibleContainer(node)) return;
+  const key = nodeKey(node, index);
+  collapsedContainers.value = {
+    ...collapsedContainers.value,
+    [key]: !isContainerCollapsed(node, index),
+  };
 }
 
 function containerTitle(node: NativeFormLayoutNode) {
@@ -967,6 +1002,18 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 .native-container--group {
   border-top: 1px solid var(--sc-app-border);
   padding-top: var(--sc-space-sm);
+}
+
+.native-container[data-collapsed='true'] > :not(.native-container-head) {
+  display: none;
+}
+
+.native-container-disclosure {
+  justify-content: flex-start;
+  padding-inline: 0;
+  color: var(--sc-app-info-text);
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .native-container--field-drop-target.native-container--group,
