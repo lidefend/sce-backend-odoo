@@ -83,6 +83,14 @@ if [[ "${1:-}" == "--self-test" ]]; then
     echo 'FAIL: ci.local.quick.run must include the component-driver inventory guard' >&2
     exit 1
   }
+  grep -Eq '^ci\.local\.quick\.run:.*verify\.overview\.rich\.text\.patch\.capability' "$repo_root/make/ci.mk" || {
+    echo 'FAIL: ci.local.quick.run must depend on the registered overview rich-text capability target' >&2
+    exit 1
+  }
+  if grep -Eq '^ci\.local\.quick\.run:.*verify\.overview\.rich_text\.patch\.capability' "$repo_root/make/ci.mk"; then
+    echo 'FAIL: ci.local.quick.run must not use the unregistered overview rich-text target spelling' >&2
+    exit 1
+  fi
   tmp_dir="$(mktemp -d)"
   trap 'rm -rf "$tmp_dir"' EXIT
   mkdir -p "$tmp_dir/bin"

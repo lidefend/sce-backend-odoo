@@ -154,7 +154,7 @@ Generated from repository source files. This report is informational during the 
 | 305 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 302 | Shell script | `scripts/deploy/prod_sim_fresh_replay.sh` |
 | 287 | Shell script | `scripts/common/frontend_release_ci_identity.sh` |
-| 266 | Shell script | `scripts/ops/git_safe_push.sh` |
+| 274 | Shell script | `scripts/ops/git_safe_push.sh` |
 
 ## Largest Files
 

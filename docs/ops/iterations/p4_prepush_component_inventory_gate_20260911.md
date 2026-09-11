@@ -3,7 +3,7 @@
 ## 1. 本轮变更
 
 - 目标：让新增前端源文件引起的组件接管清单摘要变化在远端写入前被发现，不再等待 `frontend_release_gate` 报错。
-- 完成：`ci.local.quick.run` 消费既有非零组件清单守卫；`pr.push` 在首次远端访问前同时刷新通用报告和组件接管清单，任何确定性变化都会令工作区变脏并零 push 退出；清单保持不变时继续运行生成报告守卫和组件清单守卫。
+- 完成：`ci.local.quick.run` 消费既有非零组件清单守卫；`pr.push` 在首次远端访问前同时刷新通用报告和组件接管清单，任何确定性变化都会令工作区变脏并零 push 退出；清单保持不变时继续运行生成报告守卫和组件清单守卫。最终 Quick 另发现主线既有的 rich-text capability 目标拼写断链，本批仅将依赖名对齐到已注册目标并增加静态反例。
 - 未完成：本批不改变其他清单的登记方式，不重构生成报告框架，也不处理产品、契约、数据库、fixture、acceptance 或发布。
 
 ## 2. 影响范围
@@ -21,6 +21,7 @@
 - 修复前反例：扩展 `git_safe_push.sh --self-test` 后非零失败；日志显示只调用 `refresh.generated_reports` 与 `ci.generated_reports.guard`，随后发生一次模拟 GitHub push，未调用组件清单入口。
 - 修复后：模拟组件清单刷新产生 tracked 变化时，入口在远端探测和 push 前停止；正常路径必须经过 `verify.frontend.component_driver_takeover.unit` 才允许一次模拟 push。
 - 生成器反例：临时前端源目录新增 `.ts` 文件后，`sources()` 数量增加且 `inputDigest` 必然变化，测试结束自动清理临时目录。
+- Quick 断链反例：主线定义的是 `verify.overview.rich.text.patch.capability`，但 `ci.local.quick.run` 曾依赖不存在的 `verify.overview.rich_text.patch.capability`。依赖现已对齐，自测同时要求正确目标存在于 Quick 依赖并拒绝旧拼写。
 
 ## 4. 验证
 
