@@ -55,14 +55,18 @@ goal:
         - hidden_ancestor_notebook_and_split_render_counterexamples_passed
         - exact_head_light_dark_1440_1088_390_320_read_only_browser_diagnostics_passed
         - header_identity_status_save_and_submit_roles_verified
+        - exact_claimed_statusbar_node_only_hidden_with_multiple_unclaimed_and_readonly_counterexamples
+        - mobile_status_draft_changed_restored_and_reloaded_without_mutation
+        - final_affected_consumers_light_dark_1440_1088_390_320_passed_at_3a3df400
         - table_outer_boundary_inner_reachability_and_popup_boundaries_verified
+        - settlement_snapshot_failure_attributed_to_stale_approved_local_dev_fact
       blocker: >-
-        Governed local.dev demo synchronization stops in the existing
-        smart_construction_demo settlement-invoice snapshot compound assertion. Its
-        governed output does not expose the failed record or expected/actual values,
-        so the failure is not yet attributable to fixture data, the assertion, or a
-        product condition. This branch does not own that P4 diagnosis; browser runs
-        after the failed reset remain diagnostic and cannot freeze formal acceptance.
+        Governed local.dev demo synchronization stops on sc.settlement.order(25), an
+        approved immutable fact whose invoice amount is 0.0 while the current seed
+        baseline expects 280000.0. The P4 cause is now attributable to a stale
+        persistent local.dev snapshot, but resolving it requires a separately
+        authorized governed rebuild or repair/replay choice. Browser runs after the
+        failed reset remain exact-head diagnostics and cannot freeze formal acceptance.
   acceptance:
     - default_view_begins_with_core_project_information
     - one_visible_heading_per_authoritative_business_section
