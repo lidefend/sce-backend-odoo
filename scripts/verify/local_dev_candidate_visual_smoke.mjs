@@ -1685,7 +1685,7 @@ try {
           const initialDisabled = await control.getAttribute('aria-disabled') === 'true'
             || await control.locator('input').isDisabled();
           await control.click();
-          const optionLocator = page.locator('[role="option"]:visible, .t-select-option:visible');
+          const optionLocator = page.locator('.t-select__list:visible').last().locator('.t-select-option');
           await optionLocator.first().waitFor({ state: 'visible', timeout: 15000 });
           const optionLabels = (await optionLocator.allTextContents()).map((label) => label.replace(/\s+/g, ' ').trim());
           const alternateIndex = optionLabels.findIndex((label) => label && label !== initialLabel);
@@ -1701,7 +1701,7 @@ try {
           }
           await optionLocator.first().waitFor({ state: 'hidden', timeout: 15000 });
           await control.click();
-          const restoreOption = page.locator('.t-select-option:visible').filter({ hasText: initialLabel }).first();
+          const restoreOption = page.locator('.t-select__list:visible').last().locator('.t-select-option').filter({ hasText: initialLabel }).first();
           await restoreOption.waitFor({ state: 'visible', timeout: 15000 });
           await restoreOption.click();
           await page.waitForFunction((expectedLabel) => [...document.querySelectorAll(
