@@ -54,7 +54,7 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
     def test_browser_runner_binds_product_candidate_and_dedicated_record(self):
         self.assertIn("PRODUCT_CANDIDATE_SHA", BROWSER_SH)
         self.assertIn("127.0.0.1:5176", BROWSER_SH)
-        self.assertIn("PROJECT_ID=366", BROWSER_SH)
+        self.assertIn('PROJECT_ID="${PROJECT_ID:-366}"', BROWSER_SH)
 
     def test_write_scope_is_explicit(self):
         for field in ("name", "date_start", "date", "description", "responsibility_ids"):

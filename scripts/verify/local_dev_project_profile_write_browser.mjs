@@ -16,6 +16,8 @@ const PM_LOGIN = process.env.PM_LOGIN || 'demo_role_project_manager';
 const MEMBER_LOGIN = process.env.MEMBER_LOGIN || 'demo_role_project_a_member';
 const READ_LOGIN = process.env.READ_LOGIN || 'demo_role_project_read';
 const READ_ONLY = process.env.READ_ONLY === '1';
+const PREFLIGHT_LOGIN = process.env.PREFLIGHT_LOGIN || '';
+const ROUTE_PATH = process.env.ROUTE_PATH || `/r/project.project/${PROJECT_ID}?menu_id=${MENU_ID}&action_id=${ACTION_ID}`;
 const OUT = path.resolve(process.env.ARTIFACT_DIR || `artifacts/p4-project-profile-write/${Date.now()}`);
 const originalName = `Codex P4 项目资料写入验收 profile-save-20260911`;
 
@@ -35,9 +37,19 @@ function recordWriteRequests(page) {
 }
 function recordDiagnostics(page) {
   const requests = [];
+  const pending = new Map();
+  page.on('request', (request) => {
+    if (!request.url().includes('/api/v1/intent')) return;
+    let body = {};
+    try { body = JSON.parse(request.postData() || '{}'); } catch { /* non-json request */ }
+    const params = { ...(body?.params || {}) };
+    delete params.password;
+    delete params.passwd;
+    pending.set(request, { intent: body?.intent, params });
+  });
   page.on('response', async (response) => {
     if (!response.url().includes('/api/v1/intent')) return;
-    const entry = { url: response.url(), status: response.status(), ok: response.ok() };
+    const entry = { url: response.url(), status: response.status(), ok: response.ok(), ...(pending.get(response.request()) || {}) };
     try {
       const body = await response.json();
       entry.intent = body?.intent || body?.meta?.intent;
@@ -47,8 +59,13 @@ function recordDiagnostics(page) {
       if (body?.data?.records) entry.record_count = body.data.records.length;
     } catch { /* non-json response */ }
     requests.push(entry);
+    pending.delete(response.request());
   });
   page.on('pageerror', (error) => requests.push({ type: 'pageerror', message: String(error.message || error) }));
+  page.on('console', (message) => {
+    if (message.type() === 'error' || message.type() === 'warning') requests.push({ type: 'console', level: message.type(), text: message.text().slice(0, 1000) });
+  });
+  page.on('requestfailed', (request) => requests.push({ type: 'requestfailed', url: request.url(), failure: request.failure()?.errorText || 'unknown' }));
   return requests;
 }
 async function login(page, login) {
@@ -81,10 +98,17 @@ async function readProject(page) {
   return result.data.records?.[0] || null;
 }
 async function openProject(page) {
-  await page.goto(`${FRONTEND_URL}/r/project.project/${PROJECT_ID}?menu_id=${MENU_ID}&action_id=${ACTION_ID}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  await page.waitForFunction(() => document.readyState === 'complete' || /错误|无权限|不存在|登录/.test(document.body.innerText || ''), null, { timeout: 30000 });
+  await page.goto(`${FRONTEND_URL}${ROUTE_PATH}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.waitForFunction(() => {
+    const text = document.body.innerText || '';
+    const fields = document.querySelectorAll('[data-field-name]').length;
+    const explicitError = /错误|无权限|不存在|登录|加载失败/.test(text);
+    const loading = /正在加载页面|正在加载表单|加载中/.test(text);
+    return fields > 0 || explicitError || (!loading && text.trim().length > 0);
+  }, null, { timeout: 30000 });
   const state = await page.evaluate(() => ({ url: location.href, title: document.title, text: (document.body.innerText || '').slice(0, 1200), fields: [...document.querySelectorAll('[data-field-name]')].map((el) => el.getAttribute('data-field-name')).slice(0, 80) }));
-  if (!state.url.includes(`/r/project.project/${PROJECT_ID}`)) throw new Error(`route_mismatch:${JSON.stringify(state)}`);
+  const expectedRoute = ROUTE_PATH.split('?')[0];
+  if (!new URL(state.url).pathname.startsWith(expectedRoute)) throw new Error(`route_mismatch:${JSON.stringify(state)}`);
   if (/登录/.test(state.text)) throw new Error(`login_redirect:${JSON.stringify(state)}`);
   if (/403|404|无权限|不存在|错误/.test(state.text)) throw new Error(`page_error:${JSON.stringify(state)}`);
   return state;
@@ -110,7 +134,7 @@ async function main() {
   const diagnostics = recordDiagnostics(page);
   const report = { database: DB_NAME, project_id: PROJECT_ID, action_id: ACTION_ID, menu_id: MENU_ID, read_only: READ_ONLY, scenarios: [], roles: {}, writes: [], diagnostics, errors: [] };
   try {
-    const loginName = READ_ONLY ? READ_LOGIN : PM_LOGIN;
+    const loginName = PREFLIGHT_LOGIN || (READ_ONLY ? READ_LOGIN : PM_LOGIN);
     await login(page, loginName);
     report.session_login = loginName;
     const pageState = await openProject(page);
