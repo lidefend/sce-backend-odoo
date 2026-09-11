@@ -1,0 +1,44 @@
+schema_version: 1
+goal:
+  id: WORKFLOW-ACTION-AUTHORITY-FAIL-CLOSED
+  title: workflow_action_authority_fail_closed_validation
+  status: planned
+  formal_product_layer: P0
+  layer_target: generic_frontend_workflow_contract_authority_validation
+  module: frontend
+  objective: >-
+    Prove the current behavior for duplicate identities, illegal types and
+    malformed workflow rows, then implement only the minimal generic fail-closed
+    correction if the gap is confirmed.
+  source_asset:
+    branch: feature/payment-execution-canonical-workflow-validation-v1
+    full_sha: 3f86732124b23096b847a044a2c89d1ec1283151
+    extraction_boundary: generic_workflow_authority_validation_only
+  constraints:
+    - define_the_legal_uniqueness_scope_for_duplicate_action_identities
+    - malformed_or_illegal_rows_must_not_grant_executable_authority
+    - preserve_legal_current_contract_compatibility
+    - no_payment_model_or_field_special_cases
+    - no_demo_fixture_or_payment_flow_revival
+  diagnostic:
+    source_head: 3c5b048075181e15c046fd172031413c9d6952bb
+    classification: confirmed_current_generic_p0_gap_diagnostic_not_gate
+    current_source: frontend/apps/web/src/pages/contractForm/workflowContract.ts
+    legal_uniqueness_scope: >-
+      For one executable action, the union of exact method, exact action key and
+      declared alias matches must resolve to exactly one availableActions row.
+      Multiple matching rows are ambiguous even when their enabled values agree.
+      Malformed unrelated rows must not disable a genuinely unrelated action.
+    observations:
+      legal_unique_boolean_row: remains_enabled
+      duplicate_execution_identity: remains_enabled_instead_of_failing_closed
+      malformed_available_actions_row: filtered_and_authority_remains_enabled
+      non_boolean_enabled_value: treated_as_enabled
+    old_asset_boundary: >-
+      The old workflowActionAvailability resolver and its generic counterexamples
+      are reusable design evidence; payment fixture, payment probes and demo data
+      are stale and must not be restored.
+  next_exact_step: >-
+    In a separate P0 delivery batch, add the generic resolver and non-zero targeted
+    counterexamples through the current canonical-form test entry, then preserve
+    current legal rows and unrelated non-workflow actions. Do not merge the old branch.

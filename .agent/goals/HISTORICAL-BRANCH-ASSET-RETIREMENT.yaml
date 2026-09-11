@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: HISTORICAL-BRANCH-ASSET-RETIREMENT
   title: historical_branch_asset_retirement_and_evidence_preservation
-  status: active
+  status: verification_pending
   formal_product_layer: P4
   layer_target: governed_historical_git_reference_retirement
   module:
@@ -36,13 +36,23 @@ goal:
   batches:
     - id: A
       title: manifest_bound_retirement_entry_and_recovery
-      status: active
+      status: verification_pending
+      implementation_commit: e16cbcbe45ccbb4ec2b5513b53ba5adbd511d879
+      evidence:
+        - temporary_repository_tests_8_pass
+        - real_repository_dry_run_12_eligible_0_skipped
+        - recovery_bundle_18_heads_git_bundle_verify_pass
+      remaining: exact_manifest_bound_retirement_authorization
     - id: B
       title: frontend_expression_historical_evidence_archive
-      status: active
+      status: completed
+      commit: 2207f6bfa3e82368c7de0b5f3242c5b20f0035a3
     - id: C
       title: retained_branch_value_routing
-      status: active
+      status: completed
+      evidence:
+        - workflow_authority_gap_confirmed_diagnostic_only
+        - controller_checkpoint_recovery_registered_not_implemented
   exclusions:
     - actual_reference_deletion_without_later_exact_manifest_authorization
     - restoration_or_merge_of_old_product_code
@@ -51,3 +61,7 @@ goal:
     - database_fixture_migration_acceptance_release_or_income_contract_work
   rollback:
     - revert_the_p4_tool_manifest_archive_and_goal_records
+  next_exact_step: >-
+    Obtain explicit authorization bound to manifest SHA-256
+    cac22ce59dbabf3ce9eb77dcf356d7dc55b8c545473f2562f73d854e7bb754a7,
+    then execute only the twelve assessed references through the governed target.
