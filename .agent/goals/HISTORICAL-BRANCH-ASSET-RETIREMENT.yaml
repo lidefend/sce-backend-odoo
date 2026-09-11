@@ -38,11 +38,15 @@ goal:
       title: manifest_bound_retirement_entry_and_recovery
       status: verification_pending
       implementation_commit: e16cbcbe45ccbb4ec2b5513b53ba5adbd511d879
+      fail_closed_fix_commit: 70b5054ee154dd2f482e4d6cc35d6d8696ddf43b
       evidence:
-        - temporary_repository_tests_8_pass
+        - temporary_repository_tests_11_pass
+        - report_target_real_write_preflight_before_deletion
+        - write_ahead_progress_stops_after_audit_persistence_failure
+        - zero_eligible_not_executed_without_empty_bundle
         - real_repository_dry_run_12_eligible_0_skipped
         - recovery_bundle_18_heads_git_bundle_verify_pass
-      remaining: exact_manifest_bound_retirement_authorization
+      remaining: exact_head_pr_gates_merge_main_sync_then_authorized_apply
     - id: B
       title: frontend_expression_historical_evidence_archive
       status: completed
@@ -62,6 +66,6 @@ goal:
   rollback:
     - revert_the_p4_tool_manifest_archive_and_goal_records
   next_exact_step: >-
-    Obtain explicit authorization bound to manifest SHA-256
-    cac22ce59dbabf3ce9eb77dcf356d7dc55b8c545473f2562f73d854e7bb754a7,
-    then execute only the twelve assessed references through the governed target.
+    Complete PR 462 exact-head review and required CI, merge and synchronize main,
+    then revalidate and execute only the twelve references authorized by manifest
+    SHA-256 cac22ce59dbabf3ce9eb77dcf356d7dc55b8c545473f2562f73d854e7bb754a7.
