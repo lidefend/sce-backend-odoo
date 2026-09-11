@@ -1,0 +1,38 @@
+schema_version: 1
+goal:
+  id: P4-PREPUSH-COMPONENT-INVENTORY-GATE
+  title: prepush_component_inventory_gate
+  status: verification_pending
+  formal_product_layer: P4
+  layer_target: governed_local_quick_and_pr_push_generated_evidence
+  module:
+    - make/ci.mk
+    - scripts/ops/git_safe_push.sh
+    - scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py
+  objective: >-
+    Detect and refresh the component-driver takeover inventory before any PR
+    branch push so a new frontend source file cannot defer stale evidence to
+    the remote frontend release gate.
+  boundary:
+    standard_vs_user_specific: delivery_governance_mechanism
+    why_here: >-
+      The observed failure was a gap between local Quick, pr.push generated
+      report preparation and the remote frontend gate.
+    why_not_elsewhere:
+      - no_product_runtime_or_component_behavior_change
+      - no_contract_schema_or_business_semantic_change
+      - no_database_fixture_acceptance_or_release_operation
+    blast_radius:
+      - ci.local.quick.run
+      - make_pr_push_pre_remote_checks
+      - component_driver_inventory_generator_tests
+  acceptance:
+    - new_frontend_source_changes_inventory_digest
+    - stale_inventory_refresh_makes_pr_push_stop_before_remote_access
+    - clean_inventory_runs_nonzero_guard_before_push
+    - exact_head_quick_passes
+  rollback:
+    - revert_the_single_p4_delivery_commit
+  next_exact_step: >-
+    Finish the exact-head Quick gate, freeze the local commit and request
+    independent review and PR publication authorization.

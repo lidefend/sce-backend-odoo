@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import importlib.util
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 PATH = ROOT / "scripts/audit/generate_frontend_component_driver_takeover_inventory.py"
@@ -13,6 +15,19 @@ SPEC.loader.exec_module(MODULE)
 
 
 class ComponentDriverTakeoverInventoryTest(unittest.TestCase):
+    def test_new_frontend_source_changes_inventory_input_digest(self) -> None:
+        with tempfile.TemporaryDirectory(prefix=".component-takeover-test-", dir=ROOT) as raw_root:
+            source_root = Path(raw_root)
+            (source_root / "existing.ts").write_text("export const existing = true;\n", encoding="utf-8")
+            with patch.object(MODULE, "WEB", source_root):
+                before_sources = MODULE.sources()
+                before_digest = MODULE.digest(before_sources)
+                (source_root / "new-source.ts").write_text("export const added = true;\n", encoding="utf-8")
+                after_sources = MODULE.sources()
+                after_digest = MODULE.digest(after_sources)
+        self.assertEqual(len(after_sources), len(before_sources) + 1)
+        self.assertNotEqual(before_digest, after_digest)
+
     def test_catalog_is_bound_to_installed_official_version(self) -> None:
         report = MODULE.build_inventory()
         self.assertEqual(report["authority"]["lockedVersion"], "1.20.5")

@@ -21,7 +21,10 @@ if [[ "${GIT_SAFE_PUSH_FAKE_GIT:-0}" == "1" && "$(basename "$0")" == "git" ]]; t
       [[ "${FAKE_INVALID_BRANCH:-0}" != "1" ]]
       ;;
     status)
-      if [[ "${FAKE_DIRTY:-0}" == "1" ]]; then
+      if [[ "${FAKE_DIRTY:-0}" == "1" ]] || {
+        [[ "${FAKE_COMPONENT_DRIVER_REFRESH_DIRTY:-0}" == "1" ]] &&
+          grep -q '^make --no-print-directory refresh.frontend.component_driver_takeover.inventory$' "${FAKE_GIT_LOG:?}";
+      }; then
         printf '%s\n' '?? generated-file'
       fi
       ;;
@@ -75,6 +78,11 @@ fi
 
 if [[ "${1:-}" == "--self-test" ]]; then
   self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+  repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+  grep -Eq '^ci\.local\.quick\.run:.*verify\.frontend\.component_driver_takeover\.unit' "$repo_root/make/ci.mk" || {
+    echo 'FAIL: ci.local.quick.run must include the component-driver inventory guard' >&2
+    exit 1
+  }
   tmp_dir="$(mktemp -d)"
   trap 'rm -rf "$tmp_dir"' EXIT
   mkdir -p "$tmp_dir/bin"
@@ -98,6 +106,7 @@ if [[ "${1:-}" == "--self-test" ]]; then
         FAKE_EXISTING_REMOTES="${FAKE_EXISTING_REMOTES:-origin}" \
         FAKE_PUSH_FAIL_REMOTES="${FAKE_PUSH_FAIL_REMOTES:-}" \
         FAKE_DIRTY="${FAKE_DIRTY:-0}" \
+        FAKE_COMPONENT_DRIVER_REFRESH_DIRTY="${FAKE_COMPONENT_DRIVER_REFRESH_DIRTY:-0}" \
         FAKE_INVALID_BRANCH="${FAKE_INVALID_BRANCH:-0}" \
         FAKE_GENERATED_REPORTS_STALE="${FAKE_GENERATED_REPORTS_STALE:-0}" \
         bash "$self" 2>&1
@@ -131,9 +140,16 @@ if [[ "${1:-}" == "--self-test" ]]; then
   grep -q '^make --no-print-directory refresh.generated_reports$' "$log_file" || fail 'stale generated reports: automatic refresh missing'
   grep -q '^make --no-print-directory ci.generated_reports.guard$' "$log_file" || fail 'stale generated reports: local guard missing'
 
+  FAKE_COMPONENT_DRIVER_REFRESH_DIRTY=1 run_push
+  assert_nonzero 'stale component-driver inventory'
+  assert_output 'stale component-driver inventory' 'generated reports were refreshed'
+  assert_push_count 'stale component-driver inventory' 0
+  grep -q '^make --no-print-directory refresh.frontend.component_driver_takeover.inventory$' "$log_file" || fail 'stale component-driver inventory: automatic refresh missing'
+
   FAKE_EXISTING_REMOTES=origin run_push
   assert_zero 'existing branches'; assert_push_count 'existing branches' 1
   grep -q '^push origin fix/test-branch$' "$log_file" || fail 'existing branches: GitHub update push missing'
+  grep -q '^make --no-print-directory verify.frontend.component_driver_takeover.unit$' "$log_file" || fail 'existing branches: component-driver guard missing'
 
   FAKE_EXISTING_REMOTES=none run_push
   assert_zero 'new branches'; assert_push_count 'new branches' 1
@@ -164,7 +180,7 @@ if [[ "${1:-}" == "--self-test" ]]; then
   FAKE_INVALID_BRANCH=1 run_push
   assert_nonzero 'invalid branch name'; assert_output 'invalid branch name' 'invalid local branch name'; assert_push_count 'invalid branch name' 0
 
-  printf 'PASS: git_safe_push isolated scenarios=12 (no real remotes)\n'
+  printf 'PASS: git_safe_push isolated scenarios=13 (no real remotes)\n'
   exit 0
 fi
 
@@ -197,6 +213,7 @@ fi
 
 echo "[pr.push] refreshing tracked generated reports before remote access"
 make --no-print-directory refresh.generated_reports
+make --no-print-directory refresh.frontend.component_driver_takeover.inventory
 if [[ -n "$(git status --porcelain --untracked-files=all)" ]]; then
   echo "❌ generated reports were refreshed; review and commit the deterministic changes before pushing" >&2
   exit 2
@@ -205,6 +222,10 @@ fi
 echo "[pr.push] verifying tracked generated reports before remote access"
 if ! make --no-print-directory ci.generated_reports.guard; then
   echo "❌ generated reports are stale; run 'make refresh.generated_reports', review, and commit the result before pushing" >&2
+  exit 2
+fi
+if ! make --no-print-directory verify.frontend.component_driver_takeover.unit; then
+  echo "❌ component-driver takeover inventory is stale or invalid; run 'make refresh.frontend.component_driver_takeover.inventory', review, and commit the result before pushing" >&2
   exit 2
 fi
 
