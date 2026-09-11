@@ -1447,7 +1447,7 @@
     },
     {
       "category": "other",
-      "digest": "39c1286b8d9f7f658ec33ba39432dd86a39b54d40aa3b0f218d01510e94c44f5",
+      "digest": "257d1cfaa77e12f6340abd672257eca432e174800a39702a37e8580ec57feb92",
       "nativeStyleSelectors": [],
       "path": "components/product-page-header/ProductPageHeader.vue",
       "referenceNativeStyleSelectors": [],
@@ -2096,7 +2096,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "0e8b33bb60d8ba73b7ab1ddcff1bad944ca2118bcba818b5802c9a89127349cb",
+      "digest": "5aa6dbfd997a99cc838dfda9784aa6e801583caf7e1fad7c227596eee8777ad6",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormDriverHost.vue",
       "referenceNativeStyleSelectors": [
@@ -2132,7 +2132,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "73afc0aa0d9342e3197188937d7f3294366f07bcd197d7400fda4f493499d875",
+      "digest": "01d54d4627cda0a3529f24ba42dbc7c1260d0427bcfab9610cadc7dc3dcdf547",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormProductHeader.vue",
       "referenceNativeStyleSelectors": [],
@@ -2146,7 +2146,7 @@
         "ScDropdownItem",
         "ScIcon",
         "ScSelect",
-        "ScSteps"
+        "ScStatusBadge"
       ]
     },
     {
@@ -2822,7 +2822,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "af724b66d534763965e5b2ae98a5afdd6f2a7c406c3a1a41e0a3a21f6232025d",
+  "currentInputDigest": "4993574c419e59e4bcc679ed276b95edf23ddd39872338631b59736d74addcc1",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

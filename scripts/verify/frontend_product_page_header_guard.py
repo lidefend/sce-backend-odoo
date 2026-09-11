@@ -76,8 +76,11 @@ def validate() -> list[str]:
             failures.append(f"ProductPageHeader does not own shared internal header layout: {marker}")
     if ".product-page-header__identity{flex:0 1 auto;min-width:0}" not in component:
         failures.append("ProductPageHeader mobile identity retains a desktop flex basis")
-    if "@media(max-width:1500px){.product-page-header--task[data-has-status='true'],.product-page-header--workspace[data-has-status='true']" not in component:
-        failures.append("ProductPageHeader task/workspace status cannot reclaim medium-width space")
+    for marker in ("flex-wrap: wrap", "container-name:page-header-status", "container-type:inline-size"):
+        if marker not in component:
+            failures.append(f"ProductPageHeader status layout does not respond to available container space: {marker}")
+    if "@media(max-width:1500px){.product-page-header--task[data-has-status='true']" in component:
+        failures.append("ProductPageHeader status layout must not use a widened viewport breakpoint as a container proxy")
     canonical_actions = source("frontend/apps/web/src/pages/contractForm/contractFormHeaderCanonicalActions.ts")
     for marker in ("input.floorplan?.decisionMode", "input.floorplan.directActions", "input.floorplan.overflowActions", "['primary', 'secondary'].includes(action.tier)", "['overflow', 'configuration'].includes(action.tier)"):
         if marker not in canonical_actions:

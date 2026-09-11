@@ -1674,10 +1674,10 @@ try {
       if (target.captureFormStructure === true) {
         const screenshotStem = `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
         let statusInteractionEvidence = { checked: false, reason: 'not requested', pass: true };
-        if (target.exerciseMobileStatusDraft === true && viewport.name === 'mobile') {
+        if (target.exerciseStatusDraft === true || (target.exerciseMobileStatusDraft === true && viewport.name === 'mobile')) {
           const mutationCountBefore = report.mutationCount;
           const statusbar = page.locator('[data-professional-workflow-component="statusbar"]:visible').first();
-          const control = statusbar.locator('[data-semantic-component="ScSelect"].native-statusbar-mobile-control:visible').first();
+          const control = statusbar.locator('[data-semantic-component="ScSelect"].native-statusbar-edit-control:visible').first();
           await statusbar.waitFor({ state: 'visible', timeout: 15000 });
           await control.waitFor({ state: 'visible', timeout: 15000 });
           const initialCurrent = String(await statusbar.getAttribute('data-workflow-current') || '');
@@ -1689,23 +1689,32 @@ try {
           await optionLocator.first().waitFor({ state: 'visible', timeout: 15000 });
           const optionLabels = (await optionLocator.allTextContents()).map((label) => label.replace(/\s+/g, ' ').trim());
           const alternateIndex = optionLabels.findIndex((label) => label && label !== initialLabel);
-          if (alternateIndex < 0) throw new Error(`${target.name}: mobile status control lacks an alternate state`);
+          if (alternateIndex < 0) throw new Error(`${target.name}: status control lacks an alternate state`);
           const alternateLabel = optionLabels[alternateIndex];
           await optionLocator.nth(alternateIndex).click();
           await page.waitForFunction((expectedLabel) => [...document.querySelectorAll(
-            '[data-professional-workflow-component="statusbar"] .native-statusbar-mobile-control input',
+            '[data-professional-workflow-component="statusbar"] .native-statusbar-edit-control input',
           )].some((input) => input instanceof HTMLInputElement && input.offsetParent !== null && input.value === expectedLabel), alternateLabel);
           const changedCurrent = String(await statusbar.getAttribute('data-workflow-current') || '');
           if (!changedCurrent || changedCurrent === initialCurrent) {
-            throw new Error(`${target.name}: mobile status did not change from ${initialCurrent}`);
+            throw new Error(`${target.name}: status did not change from ${initialCurrent}`);
           }
+          const dirtyContext = String(await page.locator('.record-header-context:visible').first().textContent() || '').replace(/\s+/g, ' ').trim();
+          const controlBoundary = await control.evaluate((node) => {
+            const rect = node.getBoundingClientRect();
+            return {
+              left: Math.round(rect.left), top: Math.round(rect.top), right: Math.round(rect.right), bottom: Math.round(rect.bottom),
+              withinViewport: rect.left >= -1 && rect.right <= window.innerWidth + 1 && rect.top >= -1 && rect.bottom <= window.innerHeight + 1,
+            };
+          });
+          await page.screenshot({ path: path.join(outputDir, `${screenshotStem}-status-dirty.png`), fullPage: false });
           await optionLocator.first().waitFor({ state: 'hidden', timeout: 15000 });
           await control.click();
           const restoreOption = page.locator('.t-select__list:visible').last().locator('.t-select-option').filter({ hasText: initialLabel }).first();
           await restoreOption.waitFor({ state: 'visible', timeout: 15000 });
           await restoreOption.click();
           await page.waitForFunction((expectedLabel) => [...document.querySelectorAll(
-            '[data-professional-workflow-component="statusbar"] .native-statusbar-mobile-control input',
+            '[data-professional-workflow-component="statusbar"] .native-statusbar-edit-control input',
           )].some((input) => input instanceof HTMLInputElement && input.offsetParent !== null && input.value === expectedLabel), initialLabel);
           const restoredCurrent = String(await statusbar.getAttribute('data-workflow-current') || '');
           const mutationCountAfterDraft = report.mutationCount;
@@ -1720,7 +1729,10 @@ try {
             initialLabel,
             initialDisabled,
             optionCount: optionLabels.length,
+            optionLabels,
             changedCurrent,
+            dirtyContext,
+            controlBoundary,
             restoredCurrent,
             reloadedCurrent,
             mutationCountBefore,
@@ -1731,6 +1743,8 @@ try {
               && !initialDisabled
               && optionLabels.length > 1
               && changedCurrent !== initialCurrent
+              && /已修改\s*1\s*项|有未保存修改/.test(dirtyContext)
+              && controlBoundary.withinViewport
               && restoredCurrent === initialCurrent
               && reloadedCurrent === initialCurrent
               && mutationCountBefore === mutationCountAfterDraft
@@ -1910,11 +1924,14 @@ try {
             : [];
           const bodyHeaderInteractiveControlCount = [...document.querySelectorAll('.sc-native-contract-tree .native-container--header input, .sc-native-contract-tree .native-container--header textarea, .sc-native-contract-tree .native-container--header select, .sc-native-contract-tree .native-container--header button, .sc-native-contract-tree .native-container--header [role="combobox"]')]
             .filter(visible).length;
-          const mobileStatusControls = commandBar instanceof HTMLElement
-            ? [...commandBar.querySelectorAll('.native-statusbar-mobile-control')].filter(visible)
+          const statusEditControls = commandBar instanceof HTMLElement
+            ? [...commandBar.querySelectorAll('.native-statusbar-edit-control')].filter(visible)
             : [];
-          const desktopStatusTracks = commandBar instanceof HTMLElement
-            ? [...commandBar.querySelectorAll('.native-statusbar-track--desktop')].filter(visible)
+          const statusBadges = commandBar instanceof HTMLElement
+            ? [...commandBar.querySelectorAll('[data-professional-workflow-component="statusbar"] [data-semantic-component="ScStatusBadge"]')].filter(visible)
+            : [];
+          const statusStepControls = commandBar instanceof HTMLElement
+            ? [...commandBar.querySelectorAll('[data-professional-workflow-component="statusbar"] [data-semantic-component="ScSteps"]')].filter(visible)
             : [];
           const title = commandBar instanceof HTMLElement ? commandBar.querySelector('h1') : null;
           const titleRect = title instanceof HTMLElement ? title.getBoundingClientRect() : null;
@@ -1992,11 +2009,12 @@ try {
                 && headerStatus[0].getAttribute('data-workflow-readonly') === 'false',
               headerStatusReadonly: headerStatus.length === 1
                 && headerStatus[0].getAttribute('data-workflow-readonly') === 'true',
-              mobileStatusControlCount: mobileStatusControls.length,
-              mobileStatusControlDisabled: mobileStatusControls.length === 1
-                && (mobileStatusControls[0].getAttribute('aria-disabled') === 'true'
-                  || mobileStatusControls[0].querySelector('input')?.hasAttribute('disabled') === true),
-              desktopStatusTrackCount: desktopStatusTracks.length,
+              statusEditControlCount: statusEditControls.length,
+              statusEditControlDisabled: statusEditControls.length === 1
+                && (statusEditControls[0].getAttribute('aria-disabled') === 'true'
+                  || statusEditControls[0].querySelector('input')?.hasAttribute('disabled') === true),
+              statusBadgeCount: statusBadges.length,
+              statusStepControlCount: statusStepControls.length,
               titleWidth: titleRect ? Math.round(titleRect.width) : null,
               titleLineCount: titleRect && titleLineHeight > 0 ? Number((titleRect.height / titleLineHeight).toFixed(2)) : null,
               headerActionLabels,
@@ -2125,6 +2143,9 @@ try {
             && (target.expectHeaderConsolidation !== true || (
               top.headerConsolidationEvidence.headerStatusCount === 1
               && top.headerConsolidationEvidence.headerStatusInteractive
+              && top.headerConsolidationEvidence.statusEditControlCount === 1
+              && top.headerConsolidationEvidence.statusBadgeCount === 1
+              && top.headerConsolidationEvidence.statusStepControlCount === 0
               && top.headerConsolidationEvidence.bodyHeaderInteractiveControlCount === 0
               && (!Array.isArray(target.expectedHeaderActionLabels)
                 || target.expectedHeaderActionLabels.every((label) => top.headerConsolidationEvidence.headerActionLabels.includes(label)))
@@ -2133,10 +2154,13 @@ try {
                   target.expectedFirstViewportFieldNames.includes(field.name) && field.fullyVisible
                 )))
             ))
+            && (target.exerciseStatusDraft !== true || statusInteractionEvidence.pass)
             && (target.exerciseMobileStatusDraft !== true || viewport.name !== 'mobile' || statusInteractionEvidence.pass)
             && (target.expectedStatusReadonly !== true || (
               top.headerConsolidationEvidence.headerStatusReadonly
-              && top.headerConsolidationEvidence.mobileStatusControlCount === 0
+              && top.headerConsolidationEvidence.statusEditControlCount === 0
+              && top.headerConsolidationEvidence.statusBadgeCount === 1
+              && top.headerConsolidationEvidence.statusStepControlCount === 0
             ))
             && (typeof target.expectedStatusFieldName !== 'string'
               || top.headerConsolidationEvidence.bodyClaimedStatusFieldCount === 0)

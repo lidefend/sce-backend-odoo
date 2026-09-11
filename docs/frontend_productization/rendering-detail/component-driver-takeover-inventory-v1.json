@@ -1075,10 +1075,10 @@
         "TDesignSteps"
       ],
       "officialComponent": "steps",
-      "productionConsumerCount": 1,
+      "productionConsumerCount": 0,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
-      "status": "adapter_present"
+      "status": "adapter_unconsumed"
     },
     {
       "adapterKeys": [],
@@ -1196,7 +1196,7 @@
         "TDesignTag"
       ],
       "officialComponent": "tag",
-      "productionConsumerCount": 13,
+      "productionConsumerCount": 14,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1384,13 +1384,13 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "ed1d39c6a87c2fd10b314fc936d27d91b973438a671269cb067fef8aaea2b1a9",
+  "inputDigest": "95ea2babd78bb6fad5fa9905377c60a2dc2f7338bb70e7a58dabd8ff002fd2ee",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",
   "summary": {
-    "adapter_present": 34,
-    "adapter_unconsumed": 1,
+    "adapter_present": 33,
+    "adapter_unconsumed": 2,
     "auditedCapabilityCount": 5,
     "bridge_only": 0,
     "directLibraryImportBypasses": 0,

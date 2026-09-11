@@ -289,7 +289,7 @@ function runNativeCanonicalAction(payload: Record<string, unknown>) {
   margin: var(--sc-product-space-4);
 }
 .sc-native-contract-page :deep([data-form-section-target]) {
-  scroll-margin-top: calc(var(--sc-form-command-bar-height, 72px) + 52px);
+  scroll-margin-top: calc(var(--sc-form-command-bar-height, 72px) + var(--sc-form-section-nav-height, 0px) + var(--sc-form-sticky-gap, 8px) * 2);
 }
 .sc-native-contract-page {
   width: 100%;
