@@ -4212,9 +4212,9 @@ try {
           });
         }
         if (initialLabel) {
-          const activeTrigger = notebook.locator('[data-section-tab].native-tab--active').first();
-          await activeTrigger.focus();
-          await activeTrigger.press('Home');
+          const initialTrigger = notebook.locator('[data-section-tab]').filter({ hasText: initialLabel }).first();
+          await revealNotebookTab(initialTrigger);
+          await initialTrigger.click();
           await page.waitForFunction(({ label }) => [...document.querySelectorAll('[data-section-tab].native-tab--active')]
             .some((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim() === label), { label: initialLabel });
           await waitForStableProductSurface(page);
