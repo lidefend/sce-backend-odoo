@@ -40,7 +40,7 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         self.assertEqual(
             direct_groups[0].xpath(".//field/@name"),
             [
-                "project_code", "partner_id", "project_type_id", "project_category_id",
+                "name", "project_code", "partner_id", "project_type_id", "project_category_id",
                 "operation_strategy", "location", "owner_contact", "contract_no", "phase_key",
             ],
         )
@@ -285,6 +285,17 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             responsibility[0].xpath("./tree/field/@name"),
             ["role_key", "user_id", "note"],
         )
+        self.assertEqual(
+            direct_groups[3].get("data-sc-navigation-role"), "subordinate"
+        )
+        self.assertEqual(
+            direct_groups[4].get("data-sc-navigation-role"), "subordinate"
+        )
+        self.assertEqual(
+            direct_groups[5].get("data-sc-navigation-role"), "subordinate"
+        )
+        self.assertEqual(direct_groups[5].get("data-sc-collapsible"), "1")
+        self.assertEqual(direct_groups[5].get("data-sc-collapsed-by-default"), "1")
 
         excluded_cross_business_fields = {
             "task_ids", "tender_bid_ids", "wbs_ids", "boq_line_ids", "work_ids",

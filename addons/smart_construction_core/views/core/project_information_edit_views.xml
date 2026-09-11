@@ -24,16 +24,13 @@
                     <field name="message_needaction" invisible="1"/>
                     <field name="display_name" invisible="1"/>
                     <field name="active" invisible="1"/>
-                    <div class="oe_title">
-                        <label for="name" string="项目名称"/>
-                        <h1><field name="name"/></h1>
-                    </div>
                     <div class="alert alert-info" role="status" invisible="lifecycle_state != 'draft'">
                         保存用于更新项目资料；“提交立项”用于推进项目状态并执行后端校验。
                     </div>
 
                     <group name="sc_project_information_basic" string="基本信息" col="4"
                            data-sc-anchor="project-basic">
+                        <field name="name" string="项目名称"/>
                         <field name="project_code" readonly="1" invisible="id == False"
                                groups="smart_construction_core.group_sc_cap_project_read"/>
                         <field name="partner_id" widget="res_partner_many2one"
@@ -92,20 +89,25 @@
                     </group>
 
                     <group name="sc_project_information_description" string="项目说明" col="1"
-                           data-sc-anchor="project-description">
+                           data-sc-anchor="project-description"
+                           data-sc-navigation-role="subordinate">
                         <field name="description" nolabel="1"
                                options="{'resizable': false}"/>
                     </group>
 
                     <group name="sc_project_information_collaboration" string="协作资料" col="4"
-                           data-sc-anchor="project-collaboration">
+                           data-sc-anchor="project-collaboration"
+                           data-sc-navigation-role="subordinate">
                         <field name="tag_ids" widget="many2many_tags"
                                options="{'color_field': 'color'}"/>
                         <field name="collaborator_ids"/>
                     </group>
 
                     <group name="sc_project_information_trace" string="系统追溯" col="4"
-                           data-sc-anchor="project-system-trace">
+                           data-sc-anchor="project-system-trace"
+                           data-sc-navigation-role="subordinate"
+                           data-sc-collapsible="1"
+                           data-sc-collapsed-by-default="1">
                         <field name="analytic_account_id" readonly="1"/>
                         <field name="source_created_by" readonly="1"
                                groups="smart_construction_core.group_sc_cap_project_read"/>
