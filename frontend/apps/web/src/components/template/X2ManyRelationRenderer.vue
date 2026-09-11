@@ -394,7 +394,7 @@ const o2mTableColumns = computed(() => {
 });
 const readonlyO2mTableColumns = computed(() => {
   const stateColumn = paginatedOne2manyRows.value.some((row) => props.adapter.one2manyRowStateLabel(row))
-    ? [{ colKey: '_stateLabel', title: '状态', width: 90, fixed: 'left' }]
+    ? [{ colKey: '_stateLabel', title: '行变更', width: 90, fixed: 'left' }]
     : [];
   return [
     ...stateColumn,
