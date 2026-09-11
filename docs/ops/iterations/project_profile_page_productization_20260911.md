@@ -110,7 +110,7 @@
 
 ## PR 完整差异与审查路由
 
-相对 `origin/main@8f709938ca312e0ecea928945a31f39830c8ec24`，最终产品候选包含 55 个提交、44 个路径、1960 行新增和 294 行删除。风险分类绑定最终产品 HEAD，保持 `HIGH_RISK`、full gates 与 `unknown_path_fail_closed`，不手工降级。
+相对 `origin/main@8f709938ca312e0ecea928945a31f39830c8ec24`，最终产品候选包含 55 个提交、44 个路径、1960 行新增和 294 行删除；后续交付提交仅更新下表已经计入的目标和两份既有文档，不增加路径类别。最终交付 HEAD 的分类器结果保持 `HIGH_RISK`、`frontend_mode=standard`、`professional_mode=full` 与 `unknown_path_fail_closed`，不手工改写或降级；实际必需 PR 检查仍以受管入口和远端 exact-head 结果为准。
 
 | 分类 | 路径数 | 准确范围 |
 |---|---:|---|
