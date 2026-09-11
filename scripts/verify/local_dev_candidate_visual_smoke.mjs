@@ -4056,8 +4056,9 @@ try {
         const initialLabel = String(await notebook.locator('[data-section-tab].native-tab--active').first().textContent() || '').replace(/\s+/g, ' ').trim();
         const mutationCountBefore = report.mutationCount;
         const revealNotebookTab = async (trigger) => trigger.evaluate((node) => {
+          const root = node.closest('[data-semantic-component="ScTabs"]');
           let owner = node.parentElement;
-          while (owner && owner !== node.closest('[data-semantic-component="ScTabs"]')) {
+          while (owner) {
             if (owner instanceof HTMLElement && owner.scrollWidth > owner.clientWidth + 1) {
               const ownerRect = owner.getBoundingClientRect();
               const nodeRect = node.getBoundingClientRect();
@@ -4067,6 +4068,7 @@ try {
               });
               return;
             }
+            if (owner === root) break;
             owner = owner.parentElement;
           }
         });
