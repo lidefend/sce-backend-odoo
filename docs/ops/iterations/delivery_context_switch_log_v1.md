@@ -9241,3 +9241,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 最终 HEAD 的受管 Frontend Quick、增量模块升级、非零后端合成视图测试及 P0 定向测试通过。light 1440/390 与 dark 1082/320 整页证据逐项覆盖 11 个 notebook 页签、章节导航、草稿保留、责任矩阵、关联集合和协作底部；mutation/errors/failures 均为 0。
 - 同候选补充 light 1082/390 与 dark 1082/320 的驾驶舱 fallback、启停专用表单、付款只读回归，均通过且零业务写入。5176 保持固定候选运行，供独立复核；未执行真实保存、流程动作、PR/CI/merge/release。
 - `sc.settlement.order(25)` 旧不可变快照仍是独立 P4 fixture-backed acceptance 前提，不由项目页面产品分支修复、重建或降低断言。项目整页开发结果进入 `verification_pending`，不再把该 P4 条件表述为页面产品未完成。
+
+## 2026-09-11 — 项目章节导航稳定态与交付收口
+
+- 独立复核在整页结构候选 `afec3fd3…` 发现“关联业务”点击锁定释放后回退；增强脚本在 `7f081856…` 进一步暴露页尾章节因不能物理到达锚点而回退，失败证据保留。
+- P0 修复统一点击定位与滚动判定锚点。只有一次点击释放时，可见但受滚动终点限制的目标获得一次性调和；没有延长定时器、永久锁定或按项目模型特判，后续手动滚动仍按普通锚点切换。
+- 最终产品候选 `20f21091700d0c265fac2238f8cfd6f66533f20d`，完整指纹 `bb5afe1b2a2a23b913be37023d611be0a92f82bda8db8dc89d1b2eb54a7540db`（7389 paths）。Frontend Quick 与非零导航测试通过。
+- light 1082/390、dark 1082/320 的项目正反向点击和手动滚动通过；light 1082/390 的驾驶舱 fallback、启停专用表单、付款只读回归通过。所有最终摘要均零业务写入、零 error/failure。
+- 本地交付包已按 P0/P1/P4、生成清单和文档分类；HIGH_RISK/full gates 保持。未执行 push、PR、CI、merge、release，旧结算快照仍为独立 P4 前提。

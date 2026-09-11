@@ -77,6 +77,29 @@ goal:
         still stops on stale immutable sc.settlement.order(25); that separately owned
         P4 fixture condition blocks formal fixture-backed acceptance, not the frozen
         project-page product result. No rebuild, repair, or replay was performed.
+    - id: D
+      title: stable_section_navigation_and_delivery_package
+      status: complete
+      product_candidate:
+        full_sha: 20f21091700d0c265fac2238f8cfd6f66533f20d
+        fingerprint: bb5afe1b2a2a23b913be37023d611be0a92f82bda8db8dc89d1b2eb54a7540db
+        fingerprint_path: artifacts/fingerprints/project_profile_navigation_candidate_20f21091.json
+        path_count: 7389
+      evidence:
+        - independent_afec3fd3_stable_selection_failure_retained
+        - enhanced_7f081856_consumer_end_of_scroll_failure_retained
+        - shared_anchor_used_by_click_correction_and_scroll_selection
+        - one_time_visible_activated_target_reconciliation_at_scroll_end
+        - ordinary_manual_scroll_remains_anchor_driven_without_extended_lock
+        - immediate_post_release_reverse_and_manual_navigation_passed
+        - exact_head_light_dark_1082_390_320_navigation_passed
+        - exact_head_dashboard_lifecycle_and_payment_readonly_consumers_passed
+        - exact_head_frontend_quick_gate_passed
+        - zero_business_mutations_browser_errors_and_failures
+      evidence_boundary: >-
+        Navigation stability is proven on the final product candidate for the
+        affected representative consumers. PR and exact-head CI have not run;
+        fixture rebuild or repair remains independently governed P4 work.
   acceptance:
     - default_view_begins_with_core_project_information
     - one_visible_heading_per_authoritative_business_section
