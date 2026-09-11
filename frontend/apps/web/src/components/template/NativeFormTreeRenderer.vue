@@ -78,6 +78,7 @@
               :prefer-readonly-facts="preferReadonlyFacts"
               :columns="nodeColumns(node)"
               :inherited-semantic-role="semanticFormRole(node)"
+              :authoritative-business-section-mode="authoritativeBusinessSectionMode"
               @field-change="emit('field-change', $event)"
               @field-action="emit('field-action', $event)"
               @field-order-move="emit('field-order-move', $event)"
@@ -152,6 +153,7 @@
             :prefer-readonly-facts="preferReadonlyFacts"
             :columns="nodeColumns(node)"
             :inherited-semantic-role="semanticFormRole(node)"
+            :authoritative-business-section-mode="authoritativeBusinessSectionMode"
             @field-change="emit('field-change', $event)"
             @field-action="emit('field-action', $event)"
             @field-order-move="emit('field-order-move', $event)"
@@ -280,6 +282,7 @@
             :selected-field-key="selectedFieldKey"
             :prefer-readonly-facts="preferReadonlyFacts"
             :columns="nodeColumns(node)"
+            :authoritative-business-section-mode="authoritativeBusinessSectionMode"
             @field-change="emit('field-change', $event)"
             @field-action="emit('field-action', $event)"
             @field-order-move="emit('field-order-move', $event)"
@@ -392,6 +395,7 @@ import ScTabs, { type ScTabItem } from '../design-system/ScTabs.vue';
 import { canonicalFormActionIconClass } from '../../pages/contractForm/canonicalFormActionIcon';
 import { nativeSectionNavigationRole } from '../../pages/contractForm/nativeSectionNavigation';
 import { resolveNativeTextPresentation } from './nativeTextPresentation';
+import { nativeBusinessSectionIdentity } from '../../pages/contractForm/nativeBusinessSection';
 import type {
   FormSectionFieldAction,
   FormSectionFieldActionPayload,
@@ -469,6 +473,7 @@ const props = withDefaults(defineProps<{
   selectedFieldKey?: string;
   preferReadonlyFacts?: boolean;
   inheritedSemanticRole?: string;
+  authoritativeBusinessSectionMode?: boolean;
   columns?: 1 | 2 | 3;
 }>(), {
   columns: 2,
@@ -487,7 +492,17 @@ const props = withDefaults(defineProps<{
   fieldSelectionMode: false,
   selectedFieldKey: '',
   preferReadonlyFacts: false,
+  authoritativeBusinessSectionMode: false,
 });
+
+function hasAuthoritativeBusinessSection(nodes: NativeFormLayoutNode[]): boolean {
+  return nodes.some((node) => Boolean(nativeBusinessSectionIdentity(node))
+    || hasAuthoritativeBusinessSection(rawChildren(node)));
+}
+
+const authoritativeBusinessSectionMode = computed(() => (
+  props.authoritativeBusinessSectionMode || hasAuthoritativeBusinessSection(props.nodes)
+));
 
 const emit = defineEmits<{
   (event: 'field-change', payload: FormSectionFieldChange): void;
@@ -584,6 +599,9 @@ function sectionSourceIdentity(node: NativeFormLayoutNode) {
 
 function semanticSectionTitle(node: NativeFormLayoutNode) {
   if (props.fieldConfigEditable) return '';
+  const businessSection = nativeBusinessSectionIdentity(node);
+  if (businessSection) return businessSection.label;
+  if (authoritativeBusinessSectionMode.value) return '';
   if (semanticFormRole(node) === String(props.inheritedSemanticRole || '').trim().toLowerCase()) return '';
   return ({
     summary: '概览',
@@ -731,6 +749,7 @@ function notebookTabItems(node: NativeFormLayoutNode): ScTabItem[] {
 }
 
 function fieldSectionTitle(node?: NativeFormLayoutNode) {
+  if (nativeBusinessSectionIdentity(node)) return '';
   if (node && nodeType(node) === 'group') {
     const raw = String(node.string || node.label || '').trim();
     return isReadablePolicyTitle(raw) ? raw : '';

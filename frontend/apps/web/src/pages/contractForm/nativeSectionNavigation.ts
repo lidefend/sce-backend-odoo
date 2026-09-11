@@ -3,6 +3,7 @@ import type {
   CanonicalFormSemanticRole,
 } from '../../app/presentation/canonicalFormRenderModel';
 import { fieldIsBusinessRelationCollection } from '../../app/presentation/canonicalFormFloorplan';
+import { nativeBusinessSectionIdentity } from './nativeBusinessSection';
 
 export type NativeSectionNavigationRole = 'primary' | 'subordinate';
 
@@ -57,6 +58,31 @@ function selectorFor(key: string): string {
 }
 
 export function workspaceSectionNavigationItems(nodes: CanonicalFormNode[]): WorkspaceSectionNavigationItem[] {
+  const authoritativeItems: WorkspaceSectionNavigationItem[] = [];
+  const emittedAnchors = new Set<string>();
+
+  function visitAuthoritative(node: CanonicalFormNode, insideNotebook = false) {
+    if (!node.visible) return;
+    const kind = normalizedKind(node);
+    const identity = insideNotebook ? null : nativeBusinessSectionIdentity(node);
+    if (identity && !emittedAnchors.has(identity.anchor)) {
+      authoritativeItems.push({
+        key: `node:${node.nodeId}:business-section`,
+        label: identity.label,
+        selector: selectorFor(`node:${node.nodeId}:business-section`),
+        role: node.semanticRole || 'context',
+        contentKind: 'semantic-section',
+        sourceType: 'node',
+        sourceIdentity: node.nodeId,
+      });
+      emittedAnchors.add(identity.anchor);
+    }
+    node.children.forEach((child) => visitAuthoritative(child, insideNotebook || kind === 'notebook'));
+  }
+
+  nodes.forEach((node) => visitAuthoritative(node));
+  if (authoritativeItems.length) return authoritativeItems;
+
   const items: WorkspaceSectionNavigationItem[] = [];
   const emittedRoles = new Set<CanonicalFormSemanticRole>();
 

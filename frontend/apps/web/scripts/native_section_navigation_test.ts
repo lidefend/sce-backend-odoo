@@ -6,6 +6,20 @@ import {
   workspaceSectionNavigationItems,
   workspaceSurfaceNavigationItems,
 } from '../src/pages/contractForm/nativeSectionNavigation';
+import { nativeBusinessSectionIdentity } from '../src/pages/contractForm/nativeBusinessSection';
+
+assert.deepEqual(nativeBusinessSectionIdentity({
+  type: 'group', string: '基本信息', attributes: { 'data-sc-anchor': 'project-basic' },
+}), { anchor: 'project-basic', label: '基本信息' });
+assert.equal(nativeBusinessSectionIdentity({
+  type: 'group', string: '普通布局组', attributes: {},
+}), null, 'a title without explicit section identity remains hidden layout metadata');
+assert.equal(nativeBusinessSectionIdentity({
+  type: 'group', string: '隐藏章节', visible: false, attributes: { 'data-sc-anchor': 'hidden' },
+}), null, 'hidden sections remain hidden even when explicitly anchored');
+assert.equal(nativeBusinessSectionIdentity({
+  type: 'page', string: '业务页签', attributes: { 'data-sc-anchor': 'tab' },
+}), null, 'tabs retain their own navigation and do not become group headings');
 
 assert.equal(nativeSectionNavigationRole({}), 'primary');
 assert.equal(nativeSectionNavigationRole({ sourceAuthority: { kind: 'released_product_section' } }), 'primary');
@@ -62,8 +76,42 @@ assert.deepEqual(workspaceSectionNavigationItems([node({
 
 const hiddenSection = workspaceSectionNavigationItems([node({
   nodeId: 'hidden.context', visible: false, semanticRole: 'context',
+  title: '隐藏业务章节', attributes: { 'data-sc-anchor': 'hidden-business-section' },
 })]);
 assert.deepEqual(hiddenSection, [], 'hidden sections must not create links');
+
+const authoritativeSections = workspaceSectionNavigationItems([
+  node({
+    nodeId: 'sheet', kind: 'sheet', children: [
+      node({
+        nodeId: 'section.basic', title: '基本信息', semanticRole: 'context',
+        attributes: { 'data-sc-anchor': 'project-basic' },
+      }),
+      node({
+        nodeId: 'section.layout-only', title: '布局容器', semanticRole: 'context',
+      }),
+      node({
+        nodeId: 'project.tabs', kind: 'notebook', children: [node({
+          nodeId: 'tab.wbs', kind: 'page', title: 'WBS结构',
+          attributes: { 'data-sc-anchor': 'wbs' },
+        })],
+      }),
+    ],
+    fields: [field({
+      widgetId: 'labels', fieldType: 'many2many', semanticRole: 'relation', label: '标签',
+    })],
+  }),
+]);
+assert.deepEqual(
+  authoritativeSections.map(({ label, sourceType, sourceIdentity }) => ({ label, sourceType, sourceIdentity })),
+  [{ label: '基本信息', sourceType: 'node', sourceIdentity: 'section.basic' }],
+  'explicit visible business sections replace inferred field and nested-tab navigation',
+);
+
+const unanchoredTitle = workspaceSectionNavigationItems([node({
+  nodeId: 'unanchored.title', title: '不应自动显示', semanticRole: '',
+})]);
+assert.deepEqual(unanchoredTitle, [], 'an XML title alone must not opt a group into visible navigation');
 
 const contextSection = workspaceSectionNavigationItems([node({
   nodeId: 'section.context', semanticRole: 'context', fields: [field({})],
@@ -91,4 +139,4 @@ assert.equal(new Set(relationSections.map((item) => item.selector)).size, 2, 're
 assert.deepEqual(workspaceSurfaceNavigationItems({ collaborationAvailable: true, auditAvailable: false }).map((item) => item.role), ['activity']);
 assert.deepEqual(workspaceSurfaceNavigationItems({ collaborationAvailable: true, auditAvailable: true }).map((item) => item.role), ['activity', 'audit']);
 
-console.log('[native_section_navigation_test] PASS authority=5 next_action=3 content_identity=6');
+console.log('[native_section_navigation_test] PASS authority=5 next_action=3 content_identity=9');

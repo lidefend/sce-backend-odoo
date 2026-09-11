@@ -45,7 +45,7 @@ goal:
       status: complete
     - id: B
       title: generic_authoritative_section_expression
-      status: planned
+      status: complete
     - id: C
       title: governed_upgrade_and_read_only_browser_validation
       status: planned
