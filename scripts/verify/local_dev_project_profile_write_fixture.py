@@ -144,7 +144,7 @@ def _external_references(env, project_id) -> List[Dict[str, object]]:
 def _summary(env, sha, batch, mode, project=None):
     identity = _project_identity(batch)
     candidates = _role_candidates(env)
-    return {
+    summary = {
         "mode": mode,
         "database": env.cr.dbname,
         "environment": os.environ.get("SC_ENVIRONMENT"),
@@ -163,6 +163,35 @@ def _summary(env, sha, batch, mode, project=None):
         "write_scope": ["name", "date_start", "date", "description", "responsibility_ids"],
         "recovery": "cleanup verifies XMLID/code ownership, scans external many2one references, removes only this project and its responsibility rows",
     }
+    if project:
+        effective = {}
+        for role, rows in candidates.items():
+            effective[role] = []
+            for row in rows:
+                actor = env["res.users"].sudo().browse(row["id"])
+                scoped = project.with_user(actor)
+                record_read = record_write = False
+                try:
+                    scoped.check_access_rule("read")
+                    record_read = True
+                except Exception:
+                    pass
+                try:
+                    scoped.check_access_rule("write")
+                    record_write = True
+                except Exception:
+                    pass
+                effective[role].append({
+                    "login": row["login"],
+                    "company_id": row["company_id"],
+                    "acl_read": env["project.project"].with_user(actor).check_access_rights("read", raise_exception=False),
+                    "acl_write": env["project.project"].with_user(actor).check_access_rights("write", raise_exception=False),
+                    "acl_unlink": env["project.project"].with_user(actor).check_access_rights("unlink", raise_exception=False),
+                    "record_read": record_read,
+                    "record_write": record_write,
+                })
+        summary["effective_project_access"] = effective
+    return summary
 
 
 def inspect(env, sha, batch, mode):
