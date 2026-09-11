@@ -1699,6 +1699,7 @@ try {
           if (!changedCurrent || changedCurrent === initialCurrent) {
             throw new Error(`${target.name}: status did not change from ${initialCurrent}`);
           }
+          await optionLocator.first().waitFor({ state: 'hidden', timeout: 15000 });
           const dirtyContext = String(await page.locator('.record-header-context:visible').first().textContent() || '').replace(/\s+/g, ' ').trim();
           const controlBoundary = await control.evaluate((node) => {
             const rect = node.getBoundingClientRect();
@@ -1708,7 +1709,6 @@ try {
             };
           });
           await page.screenshot({ path: path.join(outputDir, `${screenshotStem}-status-dirty.png`), fullPage: false });
-          await optionLocator.first().waitFor({ state: 'hidden', timeout: 15000 });
           await control.click();
           const restoreOption = page.locator('.t-select__list:visible').last().locator('.t-select-option').filter({ hasText: initialLabel }).first();
           await restoreOption.waitFor({ state: 'visible', timeout: 15000 });

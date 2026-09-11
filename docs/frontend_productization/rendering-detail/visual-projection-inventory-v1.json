@@ -1447,7 +1447,7 @@
     },
     {
       "category": "other",
-      "digest": "257d1cfaa77e12f6340abd672257eca432e174800a39702a37e8580ec57feb92",
+      "digest": "8e1157b0091ff567caab83329143d75a75e78e1042174c48612969cab91b0076",
       "nativeStyleSelectors": [],
       "path": "components/product-page-header/ProductPageHeader.vue",
       "referenceNativeStyleSelectors": [],
@@ -2822,7 +2822,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "4993574c419e59e4bcc679ed276b95edf23ddd39872338631b59736d74addcc1",
+  "currentInputDigest": "a9091d5d962412f2dcec546395d84f03a398b0886a74491a565ed0176e8861bf",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

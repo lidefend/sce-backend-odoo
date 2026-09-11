@@ -76,6 +76,8 @@ def validate() -> list[str]:
             failures.append(f"ProductPageHeader does not own shared internal header layout: {marker}")
     if ".product-page-header__identity{flex:0 1 auto;min-width:0}" not in component:
         failures.append("ProductPageHeader mobile identity retains a desktop flex basis")
+    if ".product-page-header__status{flex:0 1 auto;width:100%" not in component:
+        failures.append("ProductPageHeader mobile status retains a desktop flex basis as vertical height")
     for marker in ("flex-wrap: wrap", "container-name:page-header-status", "container-type:inline-size"):
         if marker not in component:
             failures.append(f"ProductPageHeader status layout does not respond to available container space: {marker}")
