@@ -4123,7 +4123,9 @@ try {
             const panelRect = node.getBoundingClientRect();
             const collectionFields = [...node.querySelectorAll('.field')].filter((field) => (
               visible(field)
-              && Boolean(field.querySelector('.o2m-table-scroll, .o2m-readonly-table, .o2m-readonly-list'))
+              && Boolean(field.querySelector(
+                '.o2m-table-scroll, .o2m-readonly-table, .o2m-readonly-list, [data-semantic-component="ScEmptyState"]',
+              ))
             ));
             const collections = collectionFields.map((field) => {
               const fieldRect = field.getBoundingClientRect();
@@ -4167,7 +4169,7 @@ try {
                   && fieldRect.right <= panelRect.right + 1
                   && fieldRect.width >= panelRect.width * 0.94
                   && (!scroll || scroll.reachable)
-                  && (!identityHeader || identityHeaderIndex === firstBusinessHeaderIndex)
+                  && (!identityHeader || headerLabels.length === 0 || identityHeaderIndex === firstBusinessHeaderIndex)
                   && (rows.length === 0 || identity.length > 0),
               };
             });
