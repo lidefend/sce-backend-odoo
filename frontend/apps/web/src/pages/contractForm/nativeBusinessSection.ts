@@ -14,6 +14,11 @@ export type NativeBusinessSectionIdentity = {
   label: string;
 };
 
+export type NativeBusinessSectionMatch<T extends NativeBusinessSectionNode> = {
+  node: T;
+  identity: NativeBusinessSectionIdentity;
+};
+
 function text(value: unknown): string {
   return String(value ?? '').trim();
 }
@@ -45,4 +50,33 @@ export function nativeBusinessSectionIdentity(
   const anchor = text(node.attributes?.['data-sc-anchor']);
   const label = readableTitle(node.title || node.string || node.label);
   return anchor && label ? { anchor, label } : null;
+}
+
+/**
+ * Collect business sections from the non-notebook, visible form body.
+ *
+ * Hidden ancestors terminate traversal and notebook descendants stay owned by
+ * tab navigation. Both the renderer mode switch and section navigation consume
+ * this function so an out-of-scope anchor cannot activate only one of them.
+ */
+export function collectNativeBusinessSections<T extends NativeBusinessSectionNode>(
+  nodes: readonly T[],
+  options: {
+    childrenOf: (node: T) => readonly T[];
+    isVisible?: (node: T) => boolean;
+  },
+): NativeBusinessSectionMatch<T>[] {
+  const matches: NativeBusinessSectionMatch<T>[] = [];
+  const isVisible = options.isVisible || ((node: T) => node.visible !== false);
+
+  function visit(node: T, insideNotebook = false) {
+    if (!isVisible(node)) return;
+    const kind = nodeKind(node);
+    const identity = insideNotebook ? null : nativeBusinessSectionIdentity(node);
+    if (identity) matches.push({ node, identity });
+    options.childrenOf(node).forEach((child) => visit(child, insideNotebook || kind === 'notebook'));
+  }
+
+  nodes.forEach((node) => visit(node));
+  return matches;
 }

@@ -395,7 +395,7 @@ import ScTabs, { type ScTabItem } from '../design-system/ScTabs.vue';
 import { canonicalFormActionIconClass } from '../../pages/contractForm/canonicalFormActionIcon';
 import { nativeSectionNavigationRole } from '../../pages/contractForm/nativeSectionNavigation';
 import { resolveNativeTextPresentation } from './nativeTextPresentation';
-import { nativeBusinessSectionIdentity } from '../../pages/contractForm/nativeBusinessSection';
+import { collectNativeBusinessSections, nativeBusinessSectionIdentity } from '../../pages/contractForm/nativeBusinessSection';
 import type {
   FormSectionFieldAction,
   FormSectionFieldActionPayload,
@@ -492,16 +492,17 @@ const props = withDefaults(defineProps<{
   fieldSelectionMode: false,
   selectedFieldKey: '',
   preferReadonlyFacts: false,
-  authoritativeBusinessSectionMode: false,
 });
 
 function hasAuthoritativeBusinessSection(nodes: NativeFormLayoutNode[]): boolean {
-  return nodes.some((node) => Boolean(nativeBusinessSectionIdentity(node))
-    || hasAuthoritativeBusinessSection(rawChildren(node)));
+  return collectNativeBusinessSections(nodes, {
+    childrenOf: rawChildren,
+    isVisible: (node) => props.isNodeVisible(node),
+  }).length > 0;
 }
 
 const authoritativeBusinessSectionMode = computed(() => (
-  props.authoritativeBusinessSectionMode || hasAuthoritativeBusinessSection(props.nodes)
+  props.authoritativeBusinessSectionMode ?? hasAuthoritativeBusinessSection(props.nodes)
 ));
 
 const emit = defineEmits<{

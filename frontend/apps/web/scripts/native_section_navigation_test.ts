@@ -6,7 +6,10 @@ import {
   workspaceSectionNavigationItems,
   workspaceSurfaceNavigationItems,
 } from '../src/pages/contractForm/nativeSectionNavigation';
-import { nativeBusinessSectionIdentity } from '../src/pages/contractForm/nativeBusinessSection';
+import {
+  collectNativeBusinessSections,
+  nativeBusinessSectionIdentity,
+} from '../src/pages/contractForm/nativeBusinessSection';
 
 assert.deepEqual(nativeBusinessSectionIdentity({
   type: 'group', string: '基本信息', attributes: { 'data-sc-anchor': 'project-basic' },
@@ -20,6 +23,24 @@ assert.equal(nativeBusinessSectionIdentity({
 assert.equal(nativeBusinessSectionIdentity({
   type: 'page', string: '业务页签', attributes: { 'data-sc-anchor': 'tab' },
 }), null, 'tabs retain their own navigation and do not become group headings');
+
+const hiddenAncestorSections = collectNativeBusinessSections([node({
+  nodeId: 'hidden.parent', kind: 'container', visible: false, children: [node({
+    nodeId: 'hidden.child.anchor', title: '隐藏父级中的章节',
+    attributes: { 'data-sc-anchor': 'hidden-child' },
+  })],
+})], { childrenOf: (item) => item.children, isVisible: (item) => item.visible });
+assert.deepEqual(hiddenAncestorSections, [], 'a visible-looking anchor below a hidden ancestor cannot activate section mode');
+
+const notebookOnlySections = collectNativeBusinessSections([node({
+  nodeId: 'tabs.only', kind: 'notebook', children: [node({
+    nodeId: 'tab.page', kind: 'page', children: [node({
+      nodeId: 'tab.group.anchor', title: '页签内分区',
+      attributes: { 'data-sc-anchor': 'tab-group' },
+    })],
+  })],
+})], { childrenOf: (item) => item.children, isVisible: (item) => item.visible });
+assert.deepEqual(notebookOnlySections, [], 'anchors owned by notebook content cannot activate page-level section mode');
 
 assert.equal(nativeSectionNavigationRole({}), 'primary');
 assert.equal(nativeSectionNavigationRole({ sourceAuthority: { kind: 'released_product_section' } }), 'primary');
@@ -139,4 +160,4 @@ assert.equal(new Set(relationSections.map((item) => item.selector)).size, 2, 're
 assert.deepEqual(workspaceSurfaceNavigationItems({ collaborationAvailable: true, auditAvailable: false }).map((item) => item.role), ['activity']);
 assert.deepEqual(workspaceSurfaceNavigationItems({ collaborationAvailable: true, auditAvailable: true }).map((item) => item.role), ['activity', 'audit']);
 
-console.log('[native_section_navigation_test] PASS authority=5 next_action=3 content_identity=9');
+console.log('[native_section_navigation_test] PASS authority=7 next_action=3 content_identity=9');
