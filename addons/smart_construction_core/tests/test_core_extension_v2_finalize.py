@@ -66,18 +66,27 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         profile_arch = self.env.ref(
             "smart_construction_core.view_project_form_sc_core"
         ).arch_db
+        profile_layout_arch = self.env.ref(
+            "smart_construction_core.view_project_form_sc_profile_layout"
+        ).arch_db
         tender_arch = self.env.ref(
             "smart_construction_core.view_project_form_inherit_tender"
         ).arch_db
+        profile_tree = etree.fromstring(profile_arch.encode())
+        profile_layout_tree = etree.fromstring(profile_layout_arch.encode())
+        tender_tree = etree.fromstring(tender_arch.encode())
+        notebook_move = ".//xpath[@expr='//sheet/notebook' and @position='move']"
         self.assertIn("sc_project_related_business", profile_arch)
-        self.assertIn('position="move"', profile_arch)
-        self.assertNotIn('position="move"', tender_arch)
+        self.assertFalse(profile_tree.xpath(notebook_move))
+        self.assertIn("sc_project_related_business", profile_layout_arch)
+        self.assertEqual(len(profile_layout_tree.xpath(notebook_move)), 1)
+        self.assertFalse(tender_tree.xpath(notebook_move))
 
         expected_identity_columns = {
             "wbs_ids": ["name", "code"],
             "boq_line_ids": ["name", "code"],
             "work_ids": ["name", "code"],
-            "contract_ids": ["name", "subject"],
+            "contract_ids": ["subject", "name"],
             "document_ids": ["name", "wbs_id"],
             "tender_bid_ids": ["tender_name", "tender_round"],
         }

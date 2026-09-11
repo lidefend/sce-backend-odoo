@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Final project-profile layout pass. This dedicated P1 project view is
+         loaded after every standard extension that targets the base notebook.
+         Feature views own their content; the project profile owns the final
+         information architecture and moves the completed notebook once. -->
+    <record id="view_project_form_sc_profile_layout" model="ir.ui.view">
+        <field name="name">project.project.form.sc.profile.layout</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project" />
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/group[@name='sc_project_related_business']" position="inside">
+                <xpath expr="//sheet/notebook" position="move" />
+            </xpath>
+        </field>
+    </record>
+</odoo>
