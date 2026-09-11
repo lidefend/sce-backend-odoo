@@ -75,6 +75,7 @@ import { useRelationRuntime } from '../src/pages/contractForm/useRelationRuntime
 import { collectUnifiedPageContractV2FieldWidgets } from '../src/app/contracts/unifiedPageContractV2';
 import { computed, reactive, ref } from 'vue';
 import { useRecordFormProgress } from '../src/pages/contractForm/useRecordFormProgress';
+import { nativeNodeWidget, nativeNodeWidgetSemantics } from '../src/pages/contractForm/nativeLayoutUtils';
 
 const relationRuntime = useRelationRuntime();
 relationRuntime.relationSearchDialog.fieldName = 'project_id';
@@ -745,9 +746,9 @@ assert.equal(nativeMonetarySchema.currencyLabel, 'CNY');
 
 const dateRangeStartField = {
   ...nativeMonetaryField!,
-  widgetId: 'field.date_start', fieldCode: 'date_start', fieldType: 'date', widgetType: 'daterange',
+  widgetId: 'field.date_start', fieldCode: 'date_start', fieldType: 'date', widgetType: 'date',
   value: '2026-09-01', label: '安排的日期',
-  componentConfig: { widget: 'daterange', widgetSemantics: { kind: 'date_range', start_field: 'date_start', end_field: 'date' } },
+  componentConfig: { nativeWidget: 'daterange', widgetSemantics: { kind: 'date_range', start_field: 'date_start', end_field: 'date' } },
 };
 const dateRangeEndField = {
   ...dateRangeStartField,
@@ -761,6 +762,22 @@ const dateRangeSchema = canonicalFieldToFormSection(
 );
 assert.equal(dateRangeSchema.dateRangeEndField, 'date');
 assert.equal(dateRangeSchema.dateRangeEndInputValue, '2026-09-30');
+const nativeDateRangeNode = {
+  type: 'field', name: 'date_start', widget: 'date',
+  componentConfig: {
+    nativeWidget: 'daterange',
+    widgetSemantics: { kind: 'date_range', start_field: 'date_start', end_field: 'date' },
+  },
+};
+assert.equal(nativeNodeWidget(nativeDateRangeNode), 'daterange');
+assert.deepEqual(nativeNodeWidgetSemantics(nativeDateRangeNode), {
+  kind: 'date_range', start_field: 'date_start', end_field: 'date',
+});
+assert.equal(nativeNodeWidget({
+  type: 'field', name: 'date_start', widget: 'date',
+  attributes: { widget: 'daterange' },
+  fieldInfo: { widget: 'date', widget_semantics: { kind: 'date_range', end_field: 'date' } },
+}), 'daterange');
 
 const nestedOne2manyRows = reactive({ responsibility_ids: [{ isNew: true, dirty: true, removed: false }] });
 const nestedProgress = useRecordFormProgress({

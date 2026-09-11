@@ -147,7 +147,7 @@ export function canonicalFieldToFormSection(
   const currencyLabel = type === 'monetary'
     ? resolveCurrencyDisplayLabel(config.currencyLabel || config.currency_label || config.currencyValue || config.currency_value)
     : '';
-  const widget = text(config.widget || field.widgetType).toLowerCase();
+  const widget = text(config.nativeWidget || config.widget || field.widgetType).toLowerCase();
   const widgetSemantics = asRecord(config.widgetSemantics || config.widget_semantics);
   const dateRangeEndField = widget === 'daterange' && text(widgetSemantics.kind) === 'date_range'
     ? text(widgetSemantics.end_field)

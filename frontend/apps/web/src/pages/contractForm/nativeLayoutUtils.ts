@@ -1013,13 +1013,29 @@ export function resolveNativeModifierFieldValue(
 
 export function nativeNodeWidget(node?: NativeLayoutLikeNode | null) {
   const fieldInfo = nativeNodeFieldInfo(node);
-  return String(node?.widget || fieldInfo.widget || '').trim().toLowerCase();
+  const attributes = node?.attributes
+    && typeof node.attributes === 'object'
+    && !Array.isArray(node.attributes)
+    ? node.attributes as Record<string, unknown>
+    : {};
+  const componentConfig = node?.componentConfig
+    && typeof node.componentConfig === 'object'
+    && !Array.isArray(node.componentConfig)
+    ? node.componentConfig as Record<string, unknown>
+    : {};
+  return String(componentConfig.nativeWidget || attributes.widget || node?.widget || fieldInfo.widget || '').trim().toLowerCase();
 }
 
 export function nativeNodeWidgetSemantics(node?: NativeLayoutLikeNode | null) {
   const fieldInfo = nativeNodeFieldInfo(node);
-  const semantics = fieldInfo.widget_semantics && typeof fieldInfo.widget_semantics === 'object'
-    ? fieldInfo.widget_semantics as Record<string, unknown>
+  const componentConfig = node?.componentConfig
+    && typeof node.componentConfig === 'object'
+    && !Array.isArray(node.componentConfig)
+    ? node.componentConfig as Record<string, unknown>
+    : {};
+  const rawSemantics = componentConfig.widgetSemantics || componentConfig.widget_semantics || fieldInfo.widget_semantics;
+  const semantics = rawSemantics && typeof rawSemantics === 'object' && !Array.isArray(rawSemantics)
+    ? rawSemantics as Record<string, unknown>
     : {};
   return semantics;
 }
