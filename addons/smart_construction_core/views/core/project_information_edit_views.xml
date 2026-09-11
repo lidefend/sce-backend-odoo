@@ -57,7 +57,7 @@
                            data-sc-anchor="project-plan-responsibility">
                         <field name="initiation_date"
                                groups="smart_construction_core.group_sc_cap_project_read"/>
-                        <field name="date_start" widget="daterange"
+                        <field name="date_start" string="项目周期" widget="daterange"
                                options="{&quot;end_date_field&quot;: &quot;date&quot;, &quot;always_range&quot;: &quot;1&quot;}"
                                required="date_start or date"/>
                         <field name="date" invisible="1" required="date_start"/>

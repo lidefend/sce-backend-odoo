@@ -51,6 +51,11 @@ class TestCoreExtensionV2Finalize(TransactionCase):
                 "manager_id", "cost_manager_id", "doc_manager_id",
             ],
         )
+        date_range = direct_groups[1].xpath("./field[@name='date_start']")
+        self.assertEqual(len(date_range), 1)
+        self.assertEqual(date_range[0].get("string"), "项目周期")
+        self.assertEqual(date_range[0].get("widget"), "daterange")
+        self.assertIn("end_date_field", date_range[0].get("options") or "")
         self.assertEqual(direct_groups[2].xpath("./field/@name"), ["responsibility_ids"])
         self.assertEqual(direct_groups[2].get("col"), "1")
         self.assertEqual(direct_groups[2].xpath("./field/@nolabel"), ["1"])
