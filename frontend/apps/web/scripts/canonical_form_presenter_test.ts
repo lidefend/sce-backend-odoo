@@ -762,6 +762,11 @@ const dateRangeSchema = canonicalFieldToFormSection(
 );
 assert.equal(dateRangeSchema.dateRangeEndField, 'date');
 assert.equal(dateRangeSchema.dateRangeEndInputValue, '2026-09-30');
+const dateRangeSchemaWithoutVisibleEndField = canonicalFieldToFormSection({
+  ...dateRangeStartField,
+  componentConfig: { ...dateRangeStartField.componentConfig, dateRangeEndValue: '2026-10-15' },
+});
+assert.equal(dateRangeSchemaWithoutVisibleEndField.dateRangeEndInputValue, '2026-10-15');
 const nativeDateRangeNode = {
   type: 'field', name: 'date_start', widget: 'date',
   componentConfig: {

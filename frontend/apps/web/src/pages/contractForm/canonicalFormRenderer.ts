@@ -191,7 +191,9 @@ export function canonicalFieldToFormSection(
     value: relation ? relation.displayName : field.value,
     inputValue: relation ? relation.id : inputValue(field.value),
     dateRangeEndField: dateRangeEndField || undefined,
-    dateRangeEndInputValue: dateRangeEnd ? inputValue(dateRangeEnd.value) : undefined,
+    dateRangeEndInputValue: dateRangeEnd
+      ? inputValue(dateRangeEnd.value)
+      : dateRangeEndField ? inputValue(config.dateRangeEndValue) : undefined,
     many2oneTextValue: relationKeyword || relation?.displayName || selectedRelation?.label || undefined,
     selectionOptions: selectionOptions(config.selection),
     relationOptions: runtimeRelationOptions.length
