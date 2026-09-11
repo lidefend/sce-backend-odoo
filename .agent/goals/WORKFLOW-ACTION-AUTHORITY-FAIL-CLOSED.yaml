@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: WORKFLOW-ACTION-AUTHORITY-FAIL-CLOSED
   title: workflow_action_authority_fail_closed_validation
-  status: planned
+  status: completed
   formal_product_layer: P0
   layer_target: generic_frontend_workflow_contract_authority_validation
   module: frontend
@@ -38,7 +38,33 @@ goal:
       The old workflowActionAvailability resolver and its generic counterexamples
       are reusable design evidence; payment fixture, payment probes and demo data
       are stale and must not be restored.
+  delivery:
+    branch: feature/p0-workflow-authority-input-validation-v1
+    baseline_sha: 3cb69dc8150de4acd9384ce734166801ceebece7
+    implementation:
+      resolver: frontend/apps/web/src/app/contracts/v2/workflowActionAvailability.ts
+      canonical_consumer: frontend/apps/web/src/app/presentation/contractFormPresenter.ts
+      legacy_bridge: frontend/apps/web/src/pages/contractForm/workflowContract.ts
+      targeted_test: frontend/apps/web/scripts/canonical_form_presenter_test.ts
+    behavior:
+      uniqueness_scope: exact_method_exact_action_key_and_declared_alias_union_per_requested_action
+      malformed_matching_row: fail_closed_for_claimed_action
+      malformed_unidentifiable_row: isolated
+      non_boolean_enabled: invalid_and_non_executable
+      unrelated_non_workflow_action: compatible_and_unmanaged
+    exclusions:
+      - backend_contract_schema_change
+      - payment_or_demo_asset_restore
+      - fixture_or_database_execution
+      - controller_checkpoint_recovery
+      - income_contract_page_changes
+    verification:
+      pre_fix_targeted: failed_on_duplicate_execution_identity
+      post_fix_targeted: pass
+      dirty_worktree_governed_quick: pass_without_receipt
+      governed_quick: pass
+      governed_quick_head: 36d1d31bb9b28a0d2d782e7a16957035ed37dc30
+      governed_quick_receipt: .git/worktrees/sce-backend-odoo-historical-branch-retirement-v1/codex/evidence/ci.local.quick/36d1d31bb9b28a0d2d782e7a16957035ed37dc30.json
   next_exact_step: >-
-    In a separate P0 delivery batch, add the generic resolver and non-zero targeted
-    counterexamples through the current canonical-form test entry, then preserve
-    current legal rows and unrelated non-workflow actions. Do not merge the old branch.
+    Request independent review and PR delivery authorization for the current
+    branch. Do not merge the old source branch.

@@ -3,3 +3,4 @@ export * from './runtime';
 export * from './schema';
 export * from './store';
 export * from './types';
+export * from './workflowActionAvailability';
