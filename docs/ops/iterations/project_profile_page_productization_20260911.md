@@ -110,7 +110,7 @@
 
 ## PR 完整差异与审查路由
 
-相对 `origin/main@8f709938ca312e0ecea928945a31f39830c8ec24`，最终产品候选包含 55 个提交、44 个路径、1960 行新增和 294 行删除；后续交付提交仅更新下表已经计入的目标和两份既有文档，不增加路径类别。最终交付 HEAD 的分类器结果保持 `HIGH_RISK`、`frontend_mode=standard`、`professional_mode=full` 与 `unknown_path_fail_closed`，不手工改写或降级；实际必需 PR 检查仍以受管入口和远端 exact-head 结果为准。
+相对 `origin/main@8f709938ca312e0ecea928945a31f39830c8ec24`，最终产品候选包含 55 个提交、44 个路径、1960 行新增和 294 行删除；交付整理及受管 push 预检又更新三份既有交付记录和两份确定性工程收敛报告，完整 PR 路径集合因此为 46。最终交付 HEAD 的分类器结果保持 `HIGH_RISK`、`frontend_mode=standard`、`professional_mode=full` 与 `unknown_path_fail_closed`，不手工改写或降级；实际必需 PR 检查仍以受管入口和远端 exact-head 结果为准。
 
 | 分类 | 路径数 | 准确范围 |
 |---|---:|---|
@@ -120,13 +120,13 @@
 | P0 定向测试 | 2 | canonical presenter 与 native section navigation 非零测试 |
 | P4 fixture 诊断 | 2 | demo 合同种子诊断及其测试；只增强既有失败的可观测性，不修复或重放数据 |
 | P4 浏览器与静态验证 | 10 | 受管候选脚本、结构/页头/布局/组件守卫及其测试 |
-| 生成清单 | 4 | component takeover、rendering detail、official design alignment、visual projection |
+| 生成清单 | 6 | component takeover、rendering detail、official design alignment、visual projection，以及 push 预检确定性刷新的 complexity budget 与 split-plan queue |
 | 交付文档 | 2 | 本报告与既有 context switch log |
 | 目标记录 | 1 | `.agent/goals/PROJECT-PROFILE-PAGE-PRODUCTIZATION.yaml` |
 
 完整差异不包含契约 schema、权限规则、金额口径、关系 domain、保存/流程实现、数据库迁移、acceptance 重建或发布配置。P0 回滚边界是通用渲染与导航提交，P1 回滚边界是项目合成视图提交；P4 诊断和生成清单可随对应实现一起回退，无需业务数据回滚。
 
-Draft PR 标题与正文已写入本地 `artifacts/pr_body.md`。必需 CI 尚未运行，不预填通过；push、PR 创建、ready、merge、release 均未执行。
+Draft PR 标题与正文已写入本地 `artifacts/pr_body.md`。本节冻结时必需 CI 尚未运行，不预填通过；后续 push 与 PR 创建状态以远端实时结果为准，ready、merge、release 不在本次授权内。
 
 ## fixture 失败诊断
 
@@ -144,6 +144,6 @@ Draft PR 标题与正文已写入本地 `artifacts/pr_body.md`。必需 CI 尚�
 - 真实保存、提交立项、状态变更和多角色业务旅程：本专题未执行，也未用只读诊断替代。
 - 全部 Odoo 原生项目入口逐一浏览器遍历：未执行；范围由共享合成视图测试和代表消费者诊断约束。
 - 文档治理：inventory、temp guard、contract sync 通过；product boundary 仍因仓库既有 `smart_construction_demo` 文档／目录不一致失败，81 个既有坏链未重跑，二者均不在本产品专题清理。
-- PR、CI、合并、发布：均未执行；当前结论是“导航稳定态缺陷已关闭，完整本地交付包待审查”，不是 merge-ready 或 release-ready。
+- 在本地交付包冻结时，PR、CI、合并、发布尚未执行；后续以远端 exact-head 状态为准。当前产品结论不是 merge-ready 或 release-ready。
 
 回滚顺序为先回退 P0 renderer 提交，再回退 P1 项目视图提交；不需要数据库业务数据回滚。
