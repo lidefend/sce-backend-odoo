@@ -234,6 +234,209 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             self.assertTrue(without_capability.xpath(selector), field_name)
             self.assertTrue(with_capability.xpath(selector), field_name)
 
+    def test_project_information_action_uses_only_its_dedicated_form(self):
+        action = self.env.ref("smart_construction_core.action_sc_product_project_edit_v1")
+        dedicated = self.env.ref(
+            "smart_construction_core.view_sc_product_project_information_edit_form_v1"
+        )
+        form_bindings = action.view_ids.filtered(lambda row: row.view_mode == "form")
+        self.assertEqual(form_bindings.mapped("view_id"), dedicated)
+
+        arch = dedicated._get_combined_arch()
+        if isinstance(arch, (str, bytes)):
+            arch = etree.fromstring(arch)
+
+        self.assertEqual(arch.get("create"), "false")
+        self.assertEqual(arch.get("delete"), "false")
+        self.assertEqual(
+            arch.xpath("//form/header/button/@name"),
+            ["action_sc_submit"],
+            "project information editing must not absorb lifecycle-management actions",
+        )
+        lifecycle = arch.xpath("//form/header/field[@name='lifecycle_state']")
+        self.assertEqual(len(lifecycle), 1)
+        self.assertEqual(lifecycle[0].get("readonly"), "1")
+
+        direct_groups = arch.xpath("//form/sheet/group[@data-sc-anchor]")
+        self.assertEqual(
+            [group.get("string") for group in direct_groups],
+            ["基本信息", "计划与责任", "责任矩阵", "项目说明", "协作资料", "系统追溯"],
+        )
+        self.assertEqual(
+            direct_groups[0].xpath(".//field/@name"),
+            [
+                "project_code", "partner_id", "project_type_id", "project_category_id",
+                "operation_strategy", "location", "owner_contact", "contract_no",
+                "company_id", "phase_key",
+            ],
+        )
+        self.assertEqual(
+            direct_groups[1].xpath(".//field/@name"),
+            [
+                "initiation_date", "date_start", "date", "start_date", "end_date",
+                "user_id", "manager_id", "cost_manager_id", "doc_manager_id",
+            ],
+        )
+        responsibility = direct_groups[2].xpath("./field[@name='responsibility_ids']")
+        self.assertEqual(len(responsibility), 1)
+        self.assertEqual(responsibility[0].get("nolabel"), "1")
+        self.assertEqual(responsibility[0].xpath("./tree/@editable"), ["bottom"])
+        self.assertEqual(
+            responsibility[0].xpath("./tree/field/@name"),
+            ["role_key", "user_id", "note"],
+        )
+
+        excluded_cross_business_fields = {
+            "task_ids", "tender_bid_ids", "wbs_ids", "boq_line_ids", "work_ids",
+            "contract_ids", "document_ids", "budget_active_id", "progress_entry_count",
+        }
+        top_level_fields = set(
+            arch.xpath("//form//field[not(ancestor::field)]/@name")
+        )
+        self.assertFalse(excluded_cross_business_fields & top_level_fields)
+        self.assertEqual(
+            arch.xpath("//field[@name='analytic_account_id']/@readonly"),
+            ["1"],
+            "the system accounting relation is visible but not newly editable",
+        )
+
+        default_arch = self.env["project.project"].get_view(view_type="form")["arch"]
+        if isinstance(default_arch, (str, bytes)):
+            default_arch = etree.fromstring(default_arch)
+        self.assertTrue(default_arch.xpath("//field[@name='tender_bid_ids']"))
+        self.assertTrue(default_arch.xpath("//field[@name='wbs_ids']"))
+        self.assertTrue(default_arch.xpath("//field[@name='contract_ids']"))
+        self.assertTrue(default_arch.xpath("//field[@name='document_ids']"))
+
+    def test_project_information_form_preserves_field_and_child_acl_boundaries(self):
+        dedicated = self.env.ref(
+            "smart_construction_core.view_sc_product_project_information_edit_form_v1"
+        )
+        dedicated_arch = dedicated._get_combined_arch()
+        if isinstance(dedicated_arch, (str, bytes)):
+            dedicated_arch = etree.fromstring(dedicated_arch)
+        default_arch = self.env["project.project"].get_view(view_type="form")["arch"]
+        if isinstance(default_arch, (str, bytes)):
+            default_arch = etree.fromstring(default_arch)
+
+        constraint_mismatches = []
+        for field_name in ("partner_id", "user_id", "date_start", "date", "tag_ids", "description"):
+            source_nodes = default_arch.xpath(
+                f"//sheet//field[@name='{field_name}' and not(ancestor::field)]"
+            )
+            target_nodes = dedicated_arch.xpath(
+                f"//sheet//field[@name='{field_name}' and not(ancestor::field)]"
+            )
+            self.assertEqual(len(source_nodes), 1, f"source field identity is ambiguous: {field_name}")
+            self.assertEqual(len(target_nodes), 1, f"dedicated field identity is ambiguous: {field_name}")
+            target_constraints = self._effective_view_constraints(target_nodes[0])
+            source_constraints = self._effective_view_constraints(source_nodes[0])
+            if target_constraints != source_constraints:
+                constraint_mismatches.append(
+                    f"{field_name}.constraints: {target_constraints!r} != {source_constraints!r}"
+                )
+            for attribute in ("domain", "context", "options", "widget"):
+                source_value = source_nodes[0].get(attribute)
+                target_value = target_nodes[0].get(attribute)
+                if source_value not in (None, "") and target_value != source_value:
+                    constraint_mismatches.append(
+                        f"{field_name}.{attribute}: {target_value!r} != {source_value!r}"
+                    )
+        self.assertFalse(
+            constraint_mismatches,
+            "dedicated form changed source field behavior:\n" + "\n".join(constraint_mismatches),
+        )
+
+        fields_meta = self.env["project.project"].fields_get(
+            [
+                "name", "project_code", "partner_id", "project_type_id",
+                "project_category_id", "operation_strategy", "date_start", "date",
+                "responsibility_ids", "analytic_account_id",
+            ],
+            attributes=["required", "readonly", "domain", "type", "relation"],
+        )
+        self.assertTrue(fields_meta["name"]["required"])
+        self.assertTrue(fields_meta["project_code"]["readonly"])
+        self.assertTrue(fields_meta["operation_strategy"]["required"])
+        self.assertEqual(fields_meta["project_type_id"]["relation"], "sc.dictionary")
+        self.assertEqual(fields_meta["responsibility_ids"]["relation"], "project.responsibility")
+
+        project_type = dedicated_arch.xpath("//field[@name='project_type_id']")[0]
+        self.assertIn("project_type", str(fields_meta["project_type_id"].get("domain")))
+        self.assertIsNotNone(project_type)
+        self.assertTrue(dedicated_arch.xpath("//field[@name='project_category_id' and @invisible='1']"))
+        self.assertTrue(dedicated_arch.xpath("//field[@name='operation_strategy']"))
+
+        company = self.env.ref("base.main_company")
+        project_user = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "project-information-user",
+            "login": "project-information-user",
+            "email": "project-information-user@example.com",
+            "company_id": company.id,
+            "company_ids": [(6, 0, [company.id])],
+            "groups_id": [(6, 0, [
+                self.env.ref("smart_construction_core.group_sc_cap_project_user").id,
+            ])],
+        })
+        project_manager = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "project-information-manager",
+            "login": "project-information-manager",
+            "email": "project-information-manager@example.com",
+            "company_id": company.id,
+            "company_ids": [(6, 0, [company.id])],
+            "groups_id": [(6, 0, [
+                self.env.ref("smart_construction_core.group_sc_cap_project_manager").id,
+            ])],
+        })
+        user_arch = etree.fromstring(
+            self.env["project.project"].with_user(project_user).get_view(
+                view_id=dedicated.id, view_type="form"
+            )["arch"].encode()
+        )
+        manager_arch = etree.fromstring(
+            self.env["project.project"].with_user(project_manager).get_view(
+                view_id=dedicated.id, view_type="form"
+            )["arch"].encode()
+        )
+        self.assertTrue(user_arch.xpath("//field[@name='responsibility_ids']"))
+        self.assertTrue(manager_arch.xpath("//field[@name='responsibility_ids']"))
+        self.assertFalse(
+            self.env["project.responsibility"].with_user(project_user).check_access_rights(
+                "write", raise_exception=False
+            )
+        )
+        self.assertTrue(
+            self.env["project.responsibility"].with_user(project_manager).check_access_rights(
+                "write", raise_exception=False
+            )
+        )
+
+    def test_project_cross_business_entries_remain_role_reachable(self):
+        expected_entries = (
+            (
+                "smart_construction_core.menu_sc_project_wbs",
+                "smart_construction_core.action_exec_structure_wbs",
+                "construction.work.breakdown",
+            ),
+            (
+                "smart_construction_core.menu_sc_project_tender",
+                "smart_construction_core.action_tender_bid",
+                "tender.bid",
+            ),
+            (
+                "smart_construction_core.menu_sc_project_documents",
+                "smart_construction_core.action_sc_project_document",
+                "sc.project.document",
+            ),
+        )
+        for menu_xmlid, action_xmlid, model_name in expected_entries:
+            menu = self.env.ref(menu_xmlid)
+            action = self.env.ref(action_xmlid)
+            self.assertTrue(menu.active, menu_xmlid)
+            self.assertEqual(menu.action, action, menu_xmlid)
+            self.assertEqual(action.res_model, model_name, action_xmlid)
+            self.assertTrue(menu.groups_id, f"{menu_xmlid} must have an explicit role boundary")
+
     def _base_project_contract(self):
         return {
             "layoutContract": {

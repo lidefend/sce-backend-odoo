@@ -4,9 +4,9 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4334`
+- Scanned files: `4335`
 - Files requiring split plan: `50`
-- Files above warning threshold: `88`
+- Files above warning threshold: `89`
 
 ## Split Plan Required
 
@@ -113,6 +113,7 @@ Generated from repository source files. This report is informational during the 
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
 | 990 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
 | 989 | Python source | `addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py` |
+| 981 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 962 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 958 | Python source | `addons/smart_construction_core/tests/test_cost_fact_model_v2.py` |
 | 955 | Python source | `scripts/release/test_release_publication.py` |

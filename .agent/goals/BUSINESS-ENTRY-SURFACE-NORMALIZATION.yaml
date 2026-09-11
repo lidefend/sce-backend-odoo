@@ -1,0 +1,50 @@
+schema_version: 1
+goal:
+  id: BUSINESS-ENTRY-SURFACE-NORMALIZATION
+  title: existing_business_entry_surface_normalization_wave_one
+  status: active
+  formal_product_layer: P1
+  layer_target: smart_construction_core_action_scoped_business_views
+  module:
+    - smart_construction_core
+  objective: >-
+    Make each existing operating entry state what users maintain and how they
+    complete it, beginning with an action-scoped project master-data form.
+  baseline:
+    branch: codex/business-entry-surface-normalization-v1
+    full_sha: 8633b1620bba39f2398f0f6c1eb70a50503a67f7
+    source: main
+  product_boundary:
+    standard_vs_user_specific: construction_industry_standard
+    why_here: >-
+      Project master-data grouping and the responsibility of the formal project
+      information entry are construction-product defaults.
+    why_not_elsewhere:
+      - no_project_model_or_field_name_hardcoding_in_the_frontend
+      - no_change_to_platform_contract_schema_or_startup_chain
+      - no_customer_specific_or_low_code_override
+      - no_database_fixture_migration_or_release_work
+    blast_radius:
+      - action_sc_product_project_edit_v1
+      - its_action_scoped_form_contract
+      - default_project_form_non_regression
+      - project_lifecycle_and_creation_form_non_regression
+  batches:
+    - id: 0
+      title: governed_topic_worktree_startup
+      status: complete
+    - id: 1
+      title: project_information_entry_sample
+      status: active
+    - id: 2
+      title: risk_grouped_remaining_business_entries
+      status: planned
+    - id: 3
+      title: entry_inventory_closure
+      status: planned
+  exclusions:
+    - comprehensive_workbench_productization
+    - arbitrary_project_lifecycle_selection
+    - permissions_state_machine_business_calculations_or_history_data
+    - forced_task_mode_or_frontend_project_special_case
+    - unapproved_menu_publication
