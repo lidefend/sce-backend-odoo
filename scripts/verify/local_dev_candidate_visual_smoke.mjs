@@ -1756,6 +1756,60 @@ try {
                 pass: ['auto', 'scroll'].includes(style.overflowX) && rect.left >= -1 && rect.right <= window.innerWidth + 1,
               };
             });
+          const tableScrollRegions = [...document.querySelectorAll('.o2m-table-scroll, [data-table-scroll-region="true"]')]
+            .filter(visible)
+            .map((node) => {
+              const style = getComputedStyle(node);
+              const rect = node.getBoundingClientRect();
+              const owner = node.parentElement?.closest('.template-form-section, .native-container--group, .sc-native-contract-tree, [data-native-contract-structure]')
+                || node.parentElement;
+              const frameBoundary = boundary(node, owner);
+              const initialScrollLeft = node.scrollLeft;
+              const maximumScrollLeft = Math.max(0, node.scrollWidth - node.clientWidth);
+              node.scrollLeft = maximumScrollLeft;
+              const reachedScrollLeft = node.scrollLeft;
+              node.scrollLeft = initialScrollLeft;
+              return {
+                frameBoundary,
+                overflowPermitted: ['auto', 'scroll'].includes(style.overflowX),
+                contentOverflows: maximumScrollLeft > 1,
+                maximumScrollLeft: Math.round(maximumScrollLeft),
+                reachedScrollLeft: Math.round(reachedScrollLeft),
+                farEdgeReachable: maximumScrollLeft <= 1 || reachedScrollLeft >= maximumScrollLeft - 1,
+                withinViewport: rect.left >= -1 && rect.right <= window.innerWidth + 1,
+                pass: Boolean(frameBoundary?.pass)
+                  && ['auto', 'scroll'].includes(style.overflowX)
+                  && rect.left >= -1
+                  && rect.right <= window.innerWidth + 1
+                  && (maximumScrollLeft <= 1 || reachedScrollLeft >= maximumScrollLeft - 1),
+              };
+            });
+          const commandBar = firstVisible('.contract-form-command-bar');
+          const headerStatus = commandBar instanceof HTMLElement
+            ? [...commandBar.querySelectorAll('[data-professional-workflow-component="statusbar"]')].filter(visible)
+            : [];
+          const headerActionLabels = commandBar instanceof HTMLElement
+            ? [...commandBar.querySelectorAll('[data-action-key]')].filter(visible)
+              .map((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim()).filter(Boolean)
+            : [];
+          const bodyHeaderInteractiveControlCount = [...document.querySelectorAll('.sc-native-contract-tree .native-container--header input, .sc-native-contract-tree .native-container--header textarea, .sc-native-contract-tree .native-container--header select, .sc-native-contract-tree .native-container--header button, .sc-native-contract-tree .native-container--header [role="combobox"]')]
+            .filter(visible).length;
+          const firstViewportEditableFields = [...document.querySelectorAll('[data-product-page-mode="form"] .field[data-field-name], [data-product-page-mode="form"] .native-title-row[data-field-name]')]
+            .filter(visible)
+            .flatMap((field) => {
+              const control = [...field.querySelectorAll('input, textarea, select, [role="combobox"]')]
+                .find((candidate) => visible(candidate)
+                  && candidate.getAttribute('aria-disabled') !== 'true'
+                  && !candidate.hasAttribute('disabled')
+                  && !candidate.hasAttribute('readonly'));
+              if (!(control instanceof HTMLElement)) return [];
+              const rect = control.getBoundingClientRect();
+              return [{
+                name: String(field.getAttribute('data-field-name') || ''),
+                rect: [Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom)],
+                fullyVisible: rect.left >= -1 && rect.right <= window.innerWidth + 1 && rect.top >= 0 && rect.bottom <= window.innerHeight + 1,
+              }];
+            });
           const nestedBoundaries = [
             ...boundarySet('.native-form-tree', '.sc-native-contract-tree, [data-native-contract-structure]'),
             ...boundarySet('.native-container--group', '.native-container--group, .native-form-tree, .sc-native-contract-tree'),
@@ -1773,6 +1827,7 @@ try {
             nestedBoundaries,
             checkedNestedBoundaryCount: nestedBoundaries.length,
             authorizedScrollers,
+            tableScrollRegions,
           };
           responsiveBoundaryEvidence.pass = [
             responsiveBoundaryEvidence.patternInDriver,
@@ -1783,7 +1838,8 @@ try {
             ...responsiveBoundaryEvidence.nestedBoundaries,
           ].filter(Boolean).every((item) => item.pass)
             && responsiveBoundaryEvidence.checkedNestedBoundaryCount > 0
-            && responsiveBoundaryEvidence.authorizedScrollers.every((item) => item.pass);
+            && responsiveBoundaryEvidence.authorizedScrollers.every((item) => item.pass)
+            && responsiveBoundaryEvidence.tableScrollRegions.every((item) => item.pass);
           const background = header instanceof HTMLElement ? getComputedStyle(header).backgroundColor : '';
           const alpha = background.match(/rgba?\([^)]*(?:,|\/)\s*([\d.]+)\s*\)$/)?.[1];
           return {
@@ -1805,6 +1861,14 @@ try {
             readonlyCardsVisible: [...document.querySelectorAll('.o2m-readonly-list')].some(visible),
             attachmentHeadings: [...document.querySelectorAll('.relation-attachment-heading, .professional-attachment-heading')]
               .filter(visible).map((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim()),
+            headerConsolidationEvidence: {
+              headerStatusCount: headerStatus.length,
+              headerStatusInteractive: headerStatus.length === 1
+                && headerStatus[0].getAttribute('data-workflow-readonly') === 'false',
+              headerActionLabels,
+              bodyHeaderInteractiveControlCount,
+              firstViewportEditableFields,
+            },
             responsiveBoundaryEvidence,
           };
         });
@@ -1911,6 +1975,22 @@ try {
             && top.stickyHeaderOpaque
             && top.responsiveBoundaryEvidence.pass
             && popupBoundaryEvidence.pass
+            && (target.expectTableScrollBoundary !== true || viewport.name !== 'desktop' || (
+              top.responsiveBoundaryEvidence.tableScrollRegions.length > 0
+              && top.responsiveBoundaryEvidence.tableScrollRegions.every((item) => item.pass)
+              && popupBoundaryEvidence.checked
+            ))
+            && (target.expectHeaderConsolidation !== true || (
+              top.headerConsolidationEvidence.headerStatusCount === 1
+              && top.headerConsolidationEvidence.headerStatusInteractive
+              && top.headerConsolidationEvidence.bodyHeaderInteractiveControlCount === 0
+              && (!Array.isArray(target.expectedHeaderActionLabels)
+                || target.expectedHeaderActionLabels.every((label) => top.headerConsolidationEvidence.headerActionLabels.includes(label)))
+              && (!Array.isArray(target.expectedFirstViewportFieldNames)
+                || top.headerConsolidationEvidence.firstViewportEditableFields.some((field) => (
+                  target.expectedFirstViewportFieldNames.includes(field.name) && field.fullyVisible
+                )))
+            ))
             && (!Array.isArray(target.expectedSectionLinks)
               || JSON.stringify(top.sectionLinks) === JSON.stringify(target.expectedSectionLinks))
             && (!Array.isArray(target.expectedSectionTitles)

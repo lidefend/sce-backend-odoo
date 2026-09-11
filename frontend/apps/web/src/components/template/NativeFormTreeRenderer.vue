@@ -108,7 +108,7 @@
         </template>
 
         <template v-else-if="nodeType(node) === 'h1' && titleFieldForNode(node)">
-          <div class="native-title-row">
+          <div class="native-title-row" :data-field-name="titleFieldForNode(node)?.name || undefined">
             <ScIconButton
               v-if="titleFieldForNode(node)?.favoriteToggle"
               class="native-title-favorite"
