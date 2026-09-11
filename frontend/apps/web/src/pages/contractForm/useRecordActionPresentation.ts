@@ -211,7 +211,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     baseNativeFormLayoutNodes, currentNativeFieldOrder, ensureFieldOrderDraftStartsFromCurrentLayout,
     evaluateNativeActionVisibility, evaluateNativeModifierValue, fieldModifierMap, formDataFieldNames, isFieldVisible,
     isNativeFavoriteField, isNativeFieldVisible, isNativeLayoutNodeVisible, isWritableFieldVisible,
-    nativeFormLayoutNodes, nativeFormRootColumns, nativeGroupCount, nativeNotebookPageCount, nativeStatusbar,
+    nativeFormLayoutNodes, nativeFormRootColumns, nativeGroupCount, nativeNotebookPageCount, nativeStatusbar, nativeStatusbarNodeIdentity,
     nativeVisibleFieldNames, nativeVisibleSectionTitles, rawNativeFormLayoutNodes, resolveNativeButtonLabel,
     runtimeFieldStates, runtimeNativeFormLayoutNodes, runtimeOccurrenceState, runtimeState, setStatusbarValue, showNativeDefaultSectionTitle, useNativeFormTree,
   } = useRecordFormLayout({
@@ -475,6 +475,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     nativeGroupCount,
     nativeNotebookPageCount,
     nativeStatusbar,
+    nativeStatusbarNodeIdentity,
     nativeVisibleFieldNames,
     nativeVisibleSectionTitles,
     rawNativeFormLayoutNodes,

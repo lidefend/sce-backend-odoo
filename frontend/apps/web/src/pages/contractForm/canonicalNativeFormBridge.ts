@@ -162,6 +162,7 @@ function fieldNode(
 export function buildCanonicalNativeFormBridge(
   renderModel: CanonicalFormRenderModel,
   relationProjection?: CanonicalRelationProjection,
+  claimedStatusbarNodeIdentity = '',
 ): CanonicalNativeFormBridge {
   const fieldSchemas = new WeakMap<CanonicalNativeLayoutNode, FormSectionFieldSchema>();
   const actionsByIdentity = new Map<string, CanonicalFormAction>();
@@ -282,7 +283,8 @@ export function buildCanonicalNativeFormBridge(
     nodeVisible(node) {
       if (node.visible === false) return false;
       const attrs = (node.attributes || {}) as Record<string, unknown>;
-      if (text(node.widget || attrs.widget).toLowerCase() === 'statusbar') return false;
+      const canonicalNodeIdentity = text(attrs.canonicalNodeId);
+      if (claimedStatusbarNodeIdentity && canonicalNodeIdentity === claimedStatusbarNodeIdentity) return false;
       const surfaceRole = text(attrs.surfaceRole);
       if (surfaceRole === 'hidden') return false;
       if (attrs.technical === true) return false;

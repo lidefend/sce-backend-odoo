@@ -49,11 +49,22 @@
           </p>
           <ScSteps
             v-if="mode !== 'readonly' && statusInteractive"
-            class="native-statusbar-track"
+            class="native-statusbar-track native-statusbar-track--desktop"
             :current="statusbar.current"
             :readonly="busy || statusbar.readonly"
             :items="statusbar.states.map((item) => ({ value: String(item.value), label: item.label, disabled: busy || statusbar.readonly }))"
             @select="activateStatus(String($event))"
+          />
+          <ScSelect
+            v-if="mode !== 'readonly' && statusInteractive"
+            class="native-statusbar-mobile-control"
+            aria-label="编辑业务状态"
+            :model-value="statusbar.current"
+            :options="statusbar.states.map((item) => ({ value: String(item.value), label: item.label }))"
+            :disabled="busy"
+            :readonly="statusbar.readonly"
+            size="small"
+            @change="activateStatus(String($event))"
           />
         </section>
       </div>
@@ -101,6 +112,7 @@ import PageHeaderTemplate from '../../components/template/PageHeader.vue';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScIcon from '../../components/design-system/ScIcon.vue';
 import ScDropdown, { type ScDropdownItem } from '../../components/design-system/ScDropdown.vue';
+import ScSelect from '../../components/design-system/ScSelect.vue';
 import ScSteps from '../../components/design-system/ScSteps.vue';
 import type { ProductPageHeaderAction, ProductPagePresentationMode } from '../../app/presentation/productPageHeader';
 import type { CanonicalFormAction } from '../../app/presentation/canonicalFormRenderModel';
@@ -319,6 +331,7 @@ function canonicalButtonVariant(action: CanonicalFormAction): 'primary' | 'ghost
   scrollbar-width: thin;
 }
 .native-statusbar-track > li { display: flex; flex: 0 0 auto; }
+.native-statusbar-mobile-control { display: none; }
 .native-statusbar-summary { display: none; }
 .native-statusbar-summary--readonly {
   display: flex;
@@ -404,6 +417,10 @@ function canonicalButtonVariant(action: CanonicalFormAction): 'primary' | 'ghost
   .native-statusbar-summary > span:nth-child(3) { margin-left: auto; }
   .native-statusbar-track {
     display: none;
+  }
+  .native-statusbar-mobile-control {
+    display: block;
+    width: min(100%, 240px);
   }
   .native-statusbar--header .native-statusbar-step,
   .native-statusbar--header .native-statusbar-step:first-child,

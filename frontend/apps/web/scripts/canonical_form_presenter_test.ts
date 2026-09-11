@@ -1381,12 +1381,51 @@ assert.equal(
   false,
   'an action already promoted to the canonical header must not remain visible as a duplicate native body occurrence',
 );
+const multiStatusModel = structuredClone(nativeOccurrenceModel);
+const primaryStatusNode = multiStatusModel.zones.primary[0].children.find((node) => node.nodeId === 'field.state');
+assert.ok(primaryStatusNode, 'the fixture must expose its primary state node');
+primaryStatusNode.visible = true;
+primaryStatusNode.attributes = { ...primaryStatusNode.attributes, widget: 'statusbar' };
+primaryStatusNode.fields[0].visible = true;
+const secondaryStatusNode = structuredClone(primaryStatusNode);
+secondaryStatusNode.nodeId = 'field.secondary_state';
+secondaryStatusNode.attributes = { ...secondaryStatusNode.attributes, name: 'secondary_state', widget: 'statusbar' };
+secondaryStatusNode.fields[0].fieldCode = 'secondary_state';
+secondaryStatusNode.fields[0].widgetId = 'field.secondary_state';
+multiStatusModel.zones.primary[0].children.push(secondaryStatusNode);
+
+const unclaimedStatusBridge = buildCanonicalNativeFormBridge(multiStatusModel);
+const isStatusbarNode = (node: { widget?: string; attributes?: Record<string, unknown> }) => (
+  String(node.widget || node.attributes?.widget || '') === 'statusbar'
+);
+const unclaimedStatusNodes = unclaimedStatusBridge.primaryNodes[0].children?.filter(isStatusbarNode) || [];
+assert.equal(unclaimedStatusNodes.length, 2);
+assert.ok(
+  unclaimedStatusNodes.every((node) => unclaimedStatusBridge.nodeVisible(node)),
+  'statusbar widgets must remain in the body when the product header did not claim an exact node',
+);
+
+const claimedStatusBridge = buildCanonicalNativeFormBridge(multiStatusModel, undefined, 'field.state');
+const claimedStatusNodes = claimedStatusBridge.primaryNodes[0].children?.filter(isStatusbarNode) || [];
 assert.equal(
-  buildCanonicalNativeFormBridge(nativeOccurrenceModel).nodeVisible({
-    type: 'field', containerType: 'field', name: 'state', widget: 'statusbar', visible: true,
-  }),
+  claimedStatusBridge.nodeVisible(claimedStatusNodes.find((node) => node.name === 'state')!),
   false,
-  'the native statusbar field must not repeat below the product header status control',
+  'only the exact statusbar node claimed by the product header may be removed from the body',
+);
+assert.equal(
+  claimedStatusBridge.nodeVisible(claimedStatusNodes.find((node) => node.name === 'secondary_state')!),
+  true,
+  'a different status field must remain visible when the header claims the primary status node',
+);
+
+const readonlyStatusModel = structuredClone(multiStatusModel);
+readonlyStatusModel.identity.mode = 'readonly';
+const readonlyClaimBridge = buildCanonicalNativeFormBridge(readonlyStatusModel, undefined, 'field.state');
+const readonlyClaimedNode = readonlyClaimBridge.primaryNodes[0].children?.find((node) => node.name === 'state');
+assert.equal(
+  readonlyClaimBridge.nodeVisible(readonlyClaimedNode!),
+  false,
+  'an exact readonly status claim must also prevent one duplicate body occurrence',
 );
 assert.deepEqual(presentContractV2Form(store, 'edit'), model, 'presenter must be deterministic');
 
@@ -2706,4 +2745,4 @@ assert.equal(
   'canonical validation must project an explicit field identity even when labels overlap',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=143');
+console.log('[canonical_form_presenter_test] PASS cases=149');

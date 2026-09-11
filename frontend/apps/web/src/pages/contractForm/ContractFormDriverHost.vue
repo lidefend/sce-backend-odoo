@@ -182,6 +182,7 @@ const props = defineProps<{
   collaborationPanelListeners?: NativeCollaborationPanelListeners;
   busy?: boolean;
   actionsInHeader?: boolean;
+  claimedStatusbarNodeIdentity?: string;
 }>();
 const emit = defineEmits<{
   'driver-change': [kit: SceneUiKitId];
@@ -254,7 +255,13 @@ const nativeBridgeModel = computed<CanonicalFormRenderModel | null>(() => {
     },
   };
 });
-const nativeBridge = computed(() => nativeBridgeModel.value ? buildCanonicalNativeFormBridge(nativeBridgeModel.value, props.relationAdapter as CanonicalRelationProjection) : null);
+const nativeBridge = computed(() => nativeBridgeModel.value
+  ? buildCanonicalNativeFormBridge(
+    nativeBridgeModel.value,
+    props.relationAdapter as CanonicalRelationProjection,
+    props.claimedStatusbarNodeIdentity || '',
+  )
+  : null);
 const floorplanSubordinateNodes = computed(() => floorplan.value.subordinateNodes
   .filter((node) => !collaborationKind(node.kind))
   .filter(canonicalNodeHasContent));
