@@ -198,6 +198,7 @@
                         </tree>
                     </field>
                 </group>
+                <group name="sc_project_related_business" string="关联业务" col="1" data-sc-anchor="project-related-business" />
             </xpath>
             <xpath expr="//sheet/group[@name='sc_project_basic']/field[@name='project_code']" position="after">
                 <xpath expr="//sheet/group[not(@name='sc_project_basic')]//field[@name='partner_id' and not(ancestor::field)]" position="move" />
@@ -212,11 +213,11 @@
                 <page string="WBS结构" name="wbs_tab" data-sc-anchor="wbs" groups="smart_construction_core.group_sc_cap_cost_user,smart_construction_core.group_sc_cap_cost_manager">
                     <field name="wbs_ids" context="{'default_project_id': id}">
                         <tree editable="bottom">
-                            <field name="sequence" />
-                            <field name="code" />
                             <field name="name" />
+                            <field name="code" />
                             <field name="parent_id" />
                             <field name="level" />
+                            <field name="sequence" />
                             <field name="active" />
                         </tree>
                     </field>
@@ -242,14 +243,14 @@
                     </group>
                     <field name="boq_line_ids" domain="[('version_id.state', '=', 'published')]" readonly="1">
                         <tree>
+                            <field name="name" />
+                            <field name="code" />
                             <field name="section_type" />
                             <field name="category" />
                             <field name="is_provisional" />
                             <field name="source_type" />
                             <field name="version_id" />
                             <field name="sequence" />
-                            <field name="code" />
-                            <field name="name" />
                             <field name="single_name" />
                             <field name="unit_name" />
                             <field name="spec" />
@@ -285,11 +286,11 @@
                 <page string="工程结构" groups="smart_construction_core.group_sc_cap_cost_user,smart_construction_core.group_sc_cap_cost_manager">
                     <field name="work_ids" context="{'default_project_id': id}" domain="[('project_id','=',id)]">
                         <tree editable="bottom">
-                            <field name="sequence" widget="handle" />
-                            <field name="level_type" />
-                            <field name="code" />
                             <field name="name" />
+                            <field name="code" />
+                            <field name="level_type" />
                             <field name="parent_id" />
+                            <field name="sequence" widget="handle" />
                             <field name="boq_quantity_total" />
                             <field name="boq_amount_total" />
                         </tree>

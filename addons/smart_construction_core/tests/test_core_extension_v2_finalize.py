@@ -32,8 +32,8 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         sheet = arch.xpath("//form/sheet")[0]
         direct_groups = sheet.xpath("./group[@data-sc-anchor]")
         self.assertEqual(
-            [group.get("string") for group in direct_groups[:3]],
-            ["基本信息", "计划与责任", "责任矩阵"],
+            [group.get("string") for group in direct_groups[:4]],
+            ["基本信息", "计划与责任", "责任矩阵", "关联业务"],
         )
         self.assertEqual(
             direct_groups[0].xpath(".//field/@name"),
@@ -50,17 +50,43 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             ],
         )
         self.assertEqual(direct_groups[2].xpath("./field/@name"), ["responsibility_ids"])
+        related_business = direct_groups[3]
+        self.assertEqual(related_business.get("data-sc-anchor"), "project-related-business")
+        self.assertEqual(
+            related_business.get("col"),
+            "1",
+            "the project view, rather than a frontend widget heuristic, owns the related-business width",
+        )
+        self.assertEqual(len(related_business.xpath("./notebook")), 1)
 
-        page_names = arch.xpath("//sheet/notebook/page/@name")
+        expected_identity_columns = {
+            "wbs_ids": ["name", "code"],
+            "boq_line_ids": ["name", "code"],
+            "work_ids": ["name", "code"],
+            "contract_ids": ["name", "subject"],
+            "document_ids": ["name", "wbs_id"],
+            "tender_bid_ids": ["tender_name", "tender_round"],
+        }
+        for field_name, expected_columns in expected_identity_columns.items():
+            field = related_business.xpath(
+                f".//field[@name='{field_name}' and not(ancestor::field)]"
+            )[0]
+            self.assertEqual(
+                field.xpath("./tree/field/@name")[:2],
+                expected_columns,
+                f"{field_name} must expose record identity before auxiliary columns",
+            )
+
+        page_names = related_business.xpath("./notebook/page/@name")
         self.assertLess(page_names.index("sc_cockpit"), page_names.index("sc_construction"))
-        operation_page = arch.xpath("//sheet/notebook/page[@name='sc_construction']")[0]
+        operation_page = related_business.xpath("./notebook/page[@name='sc_construction']")[0]
         self.assertEqual(operation_page.get("string"), "经营概况")
         self.assertEqual(
             operation_page.xpath("./group/@string"),
             ["录入来源", "成本与进度"],
         )
 
-        auxiliary_fields = arch.xpath("//sheet/notebook/page[@name='sc_system']/group/field/@name")
+        auxiliary_fields = related_business.xpath("./notebook/page[@name='sc_system']/group/field/@name")
         self.assertEqual(auxiliary_fields[:2], ["label_tasks", "tag_ids"])
         self.assertEqual(len(arch.xpath("//field[@name='responsibility_ids' and not(ancestor::field)]")), 1)
         self.assertEqual(len(arch.xpath("//field[@name='partner_id' and not(ancestor::field)]")), 1)

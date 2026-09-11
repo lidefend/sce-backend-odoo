@@ -531,7 +531,7 @@
                 </button>
             </xpath>
             <!-- 若项目视图已定义 sc_tender 页签，则复用并替换其内容，避免重复新增投标管理页 -->
-            <xpath expr="//sheet/notebook/page[@name='sc_tender']" position="replace">
+            <xpath expr="//sheet//notebook/page[@name='sc_tender']" position="replace">
                 <page string="投标管理" name="sc_tender"
                       groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager">
                     <field name="tender_bid_ids" context="{'default_project_id': id, 'default_state': 'prepare'}">
@@ -546,6 +546,12 @@
                         </tree>
                     </field>
                 </page>
+            </xpath>
+            <!-- Move only after every project extension has finished targeting the
+                 base notebook. Keeping the move in this last-loaded extension
+                 preserves upgrade compatibility with its own stored predecessor. -->
+            <xpath expr="//sheet/group[@name='sc_project_related_business']" position="inside">
+                <xpath expr="//sheet/notebook" position="move" />
             </xpath>
         </field>
     </record>
