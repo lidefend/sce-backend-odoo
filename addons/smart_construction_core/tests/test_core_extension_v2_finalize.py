@@ -24,8 +24,10 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         return constraints
 
     def test_project_maintenance_form_uses_authoritative_business_sections(self):
-        view = self.env.ref("smart_construction_core.view_project_form_sc_core")
-        arch = view._get_combined_arch()
+        # Exercise the same default project.form selection used by actions that
+        # do not pin a form view (project edit and cockpit fallback), rather
+        # than inspecting only this module's intermediate inheritance node.
+        arch = self.env["project.project"].get_view(view_type="form")["arch"]
         if isinstance(arch, (str, bytes)):
             arch = etree.fromstring(arch)
 
@@ -76,6 +78,34 @@ class TestCoreExtensionV2Finalize(TransactionCase):
                 expected_columns,
                 f"{field_name} must expose record identity before auxiliary columns",
             )
+
+        projection = self.env["app.view.config"].with_context(
+            contract_projection_readonly=True,
+        )._generate_from_fields_view_get("project.project", "form")
+        projected_subviews = (projection.arch_parsed or {}).get("subviews") or {}
+        for field_name, expected_columns in expected_identity_columns.items():
+            projected_tree = (projected_subviews.get(field_name) or {}).get("tree") or {}
+            projected_columns = projected_tree.get("columns") or []
+            projected_names = [
+                column.get("name") if isinstance(column, dict) else column
+                for column in projected_columns
+            ]
+            self.assertEqual(
+                projected_names[:2],
+                expected_columns,
+                f"{field_name} parser projection must preserve the native tree identity order",
+            )
+            projected_occurrences = projected_tree.get("column_occurrences") or []
+            occurrence_names = [
+                occurrence.get("name") if isinstance(occurrence, dict) else occurrence
+                for occurrence in projected_occurrences
+            ]
+            if occurrence_names:
+                self.assertEqual(
+                    occurrence_names[:2],
+                    expected_columns,
+                    f"{field_name} occurrence order must match the native tree",
+                )
 
         page_names = related_business.xpath("./notebook/page/@name")
         self.assertLess(page_names.index("sc_cockpit"), page_names.index("sc_construction"))

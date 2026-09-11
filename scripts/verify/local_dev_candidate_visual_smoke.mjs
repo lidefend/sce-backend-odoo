@@ -197,6 +197,34 @@ function summarizeContractSelections(payload) {
   return rows.slice(0, 80);
 }
 
+function summarizeContractSubviews(payload) {
+  const rows = new Map();
+  const visit = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (!value || typeof value !== 'object') return;
+    const fieldName = String(value.fieldCode || value.field_code || value.name || '').trim();
+    const sources = [value.fieldInfo, value.field_info, value.componentConfig, value.component_config, value.fieldDescriptor, value.field_descriptor];
+    for (const sourceRaw of sources) {
+      const source = sourceRaw && typeof sourceRaw === 'object' && !Array.isArray(sourceRaw) ? sourceRaw : {};
+      const subview = source.subview && typeof source.subview === 'object' && !Array.isArray(source.subview) ? source.subview : {};
+      const tree = subview.tree && typeof subview.tree === 'object' && !Array.isArray(subview.tree) ? subview.tree : {};
+      const columns = Array.isArray(tree.column_occurrences) && tree.column_occurrences.length
+        ? tree.column_occurrences
+        : (Array.isArray(tree.columns) ? tree.columns : []);
+      const names = columns.map((column) => String(
+        column && typeof column === 'object' && !Array.isArray(column) ? column.name : column,
+      ).trim()).filter(Boolean);
+      if (fieldName && names.length) rows.set(fieldName, names);
+    }
+    Object.values(value).forEach(visit);
+  };
+  visit(payload);
+  return Object.fromEntries(rows);
+}
+
 function summarizeContractActions(payload) {
   const rows = [];
   const resolutions = [];
@@ -523,6 +551,7 @@ try {
       const summaryFixture = Array.isArray(target.summaryFixture) ? target.summaryFixture : null;
       let contractH1Nodes = [];
       let contractSelections = [];
+      let contractSubviews = {};
       let contractActions = { rules: [], resolutions: [] };
       let contractAggregates = [];
       let contractSummaryItems = [];
@@ -745,6 +774,7 @@ try {
         const contractPayload = await response.json();
         contractH1Nodes = summarizeContractH1(contractPayload);
         contractSelections = summarizeContractSelections(contractPayload);
+        contractSubviews = summarizeContractSubviews(contractPayload);
         contractActions = summarizeContractActions(contractPayload);
         contractAggregates = summarizeContractAggregates(contractPayload);
         contractSummaryItems = summarizeContractSummaryItems(contractPayload);
@@ -4022,6 +4052,21 @@ try {
           .filter(Boolean);
         const initialLabel = String(await notebook.locator('[data-section-tab].native-tab--active').first().textContent() || '').replace(/\s+/g, ' ').trim();
         const mutationCountBefore = report.mutationCount;
+        const revealNotebookTab = async (trigger) => trigger.evaluate((node) => {
+          let owner = node.parentElement;
+          while (owner && owner !== node.closest('[data-semantic-component="ScTabs"]')) {
+            if (owner instanceof HTMLElement && owner.scrollWidth > owner.clientWidth + 1) {
+              const ownerRect = owner.getBoundingClientRect();
+              const nodeRect = node.getBoundingClientRect();
+              owner.scrollTo({
+                left: Math.max(0, owner.scrollLeft + nodeRect.left - ownerRect.left - (owner.clientWidth - nodeRect.width) / 2),
+                behavior: 'auto',
+              });
+              return;
+            }
+            owner = owner.parentElement;
+          }
+        });
         let draftRetention = { checked: false, reason: 'not requested', pass: true };
         if (target.exerciseNotebookDraftRetention === true) {
           const statusbar = page.locator('[data-professional-workflow-component="statusbar"]:visible').first();
@@ -4053,6 +4098,7 @@ try {
         const tabs = [];
         for (const label of tabLabels) {
           const trigger = notebook.locator('[data-section-tab]').filter({ hasText: label }).first();
+          await revealNotebookTab(trigger);
           await trigger.click();
           await waitForStableProductSurface(page);
           await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
@@ -4089,7 +4135,12 @@ try {
               const identityNode = rows[0]?.querySelector('.o2m-mobile-row-identity')
                 || firstRowCells[headerLabels[0] === '行变更' ? 1 : 0]
                 || null;
-              const identity = String(identityNode?.textContent || '').replace(/\s+/g, ' ').trim();
+              const identityInput = identityNode?.querySelector('input, textarea');
+              const identity = String(
+                identityInput instanceof HTMLInputElement || identityInput instanceof HTMLTextAreaElement
+                  ? identityInput.value
+                  : identityNode?.textContent || '',
+              ).replace(/\s+/g, ' ').trim();
               return {
                 fieldName: String(field.getAttribute('data-field-name') || ''),
                 rect: rect(field),
@@ -4127,7 +4178,9 @@ try {
           });
         }
         if (initialLabel) {
-          await notebook.locator('[data-section-tab]').filter({ hasText: initialLabel }).first().click();
+          const initialTrigger = notebook.locator('[data-section-tab]').filter({ hasText: initialLabel }).first();
+          await revealNotebookTab(initialTrigger);
+          await initialTrigger.click();
           await waitForStableProductSurface(page);
         }
         if (target.exerciseNotebookDraftRetention === true) {
@@ -4170,9 +4223,6 @@ try {
             && draftRetention.pass
             && mutationCountBefore === report.mutationCount,
         };
-        if (!notebookJourneyEvidence.pass) {
-          throw new Error(`${target.name}: notebook journey failed ${JSON.stringify(notebookJourneyEvidence)}`);
-        }
       }
       const notebookTabEvidence = await page.locator('[data-semantic-component="ScTabs"]').evaluateAll((nodes) => nodes.map((node) => {
         const rect = node.getBoundingClientRect();
@@ -4192,7 +4242,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractActions, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialIconResourceEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, sessionExpiredRecoveryEvidence, systemThemeRuntimeEvidence, safeReturnEvidence, formStructureEvidence, fieldAlignmentEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookJourneyEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractSubviews, contractActions, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialIconResourceEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, sessionExpiredRecoveryEvidence, systemThemeRuntimeEvidence, safeReturnEvidence, formStructureEvidence, fieldAlignmentEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookJourneyEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -4217,6 +4267,9 @@ for (const item of report.routes) {
   }
   if (item.path && configuredTarget?.captureFormStructure === true && !item.formStructureEvidence?.pass) {
     failures.push({ name: item.name, formStructureEvidence: item.formStructureEvidence || null });
+  }
+  if (item.path && configuredTarget?.exerciseNotebookTabs === true && !item.notebookJourneyEvidence?.pass) {
+    failures.push({ name: item.name, notebookJourneyEvidence: item.notebookJourneyEvidence || null });
   }
   if (item.path && configuredTarget?.captureFieldAlignment === true && !item.fieldAlignmentEvidence?.pass) {
     failures.push({ name: item.name, fieldAlignmentEvidence: item.fieldAlignmentEvidence || null });
