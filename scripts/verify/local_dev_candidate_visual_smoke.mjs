@@ -197,6 +197,47 @@ function summarizeContractSelections(payload) {
   return rows.slice(0, 80);
 }
 
+function summarizeContractActions(payload) {
+  const rows = [];
+  const resolutions = [];
+  const visit = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (!value || typeof value !== 'object') return;
+    const rules = Array.isArray(value.actionRuleList) ? value.actionRuleList
+      : (Array.isArray(value.action_rule_list) ? value.action_rule_list : []);
+    rules.forEach((rule) => {
+      if (!rule || typeof rule !== 'object') return;
+      rows.push({
+        actionId: String(rule.actionId || rule.action_id || ''),
+        actionKey: String(rule.actionKey || rule.action_key || ''),
+        label: String(rule.label || ''),
+        backendIdentity: String(rule.backendIdentity || rule.backend_identity || ''),
+        sourceWidgetId: String(rule.sourceWidgetId || rule.source_widget_id || ''),
+        targetScope: String(rule.targetScope || rule.target_scope || ''),
+        tier: String(rule.presentation?.tier || ''),
+        visible: rule.visible !== false,
+      });
+    });
+    const resolution = value.primaryResolution || value.primary_resolution;
+    if (resolution && typeof resolution === 'object' && !Array.isArray(resolution)) {
+      resolutions.push({
+        winner: String(resolution.winner || ''),
+        demoted: Array.isArray(resolution.demoted) ? resolution.demoted.map((item) => ({
+          actionId: String(item?.actionId || item?.action_id || ''),
+          backendIdentity: String(item?.backendIdentity || item?.backend_identity || ''),
+          effectiveTier: String(item?.effectiveTier || item?.effective_tier || ''),
+        })) : [],
+      });
+    }
+    Object.values(value).forEach(visit);
+  };
+  visit(payload);
+  return { rules: rows.slice(0, 80), resolutions: resolutions.slice(0, 8) };
+}
+
 function summarizeContractSummaryItems(payload) {
   const rows = [];
   const visit = (value) => {
@@ -482,6 +523,7 @@ try {
       const summaryFixture = Array.isArray(target.summaryFixture) ? target.summaryFixture : null;
       let contractH1Nodes = [];
       let contractSelections = [];
+      let contractActions = { rules: [], resolutions: [] };
       let contractAggregates = [];
       let contractSummaryItems = [];
       let listAggregates = [];
@@ -703,6 +745,7 @@ try {
         const contractPayload = await response.json();
         contractH1Nodes = summarizeContractH1(contractPayload);
         contractSelections = summarizeContractSelections(contractPayload);
+        contractActions = summarizeContractActions(contractPayload);
         contractAggregates = summarizeContractAggregates(contractPayload);
         contractSummaryItems = summarizeContractSummaryItems(contractPayload);
       }
@@ -3851,7 +3894,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialIconResourceEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, sessionExpiredRecoveryEvidence, systemThemeRuntimeEvidence, safeReturnEvidence, formStructureEvidence, fieldAlignmentEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractActions, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialIconResourceEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, sessionExpiredRecoveryEvidence, systemThemeRuntimeEvidence, safeReturnEvidence, formStructureEvidence, fieldAlignmentEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
