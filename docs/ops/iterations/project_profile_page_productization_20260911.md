@@ -4,20 +4,20 @@
 基线：`origin/main@8f709938ca312e0ecea928945a31f39830c8ec24`<br>
 交付分支：`feature/p1-project-profile-page-productization-v1`<br>
 状态区冻结候选：`12395fffb1d4dc3faa9917222a12e8d4c9661c02`<br>
-整页产品实现身份：`00de895e`（完整 SHA 由最终候选记录补齐）<br>
+整页产品冻结候选：`afec3fd304b39103b16e528aaa8353556e7990da`<br>
 文档交付身份：本文件所在提交（仅目标与本报告）
 
 ## 结论
 
-项目资料维护整页实现已进入联合候选前冻结：默认正文由“基本信息、计划与责任、责任矩阵、关联业务”四个真实业务分区组织，日期、权限、动作及手动保存语义保持；共享前端只显示可见、非 notebook 且带稳定锚点的显式业务分区，既有隐藏章节策略不变。页面级章节模式由同一结果驱动标题和导航，拆分渲染不会重新推导或产生重复通用标题。
+项目资料维护整页产品结果已在 `afec3fd3…` 完成开发阶段冻结：默认正文由“基本信息、计划与责任、责任矩阵、关联业务”四个真实业务分区组织，日期、权限、动作及手动保存语义保持；共享前端只显示可见、非 notebook 且带稳定锚点的显式业务分区，既有隐藏章节策略不变。页面级章节模式由同一结果驱动标题和导航，拆分渲染不会重新推导或产生重复通用标题。
 
-`3a3df400…` 的现场复核证明移动状态修改、放弃与重新读取链路可用，但同时确认原生 selection 不具备顺序流程拓扑，不能继续默认投影为 Steps。最终候选 `12395fff…` 因此统一采用“当前状态标签 + 官方 Select + 独立业务动作”：桌面、窄桌面和手机消费同一 selection、readonly、busy 与草稿链路；只有契约未来明确提供顺序流程时才允许另行使用 Steps。绑定最终候选的项目编辑、驾驶舱 fallback、启停专用表单与付款只读定向诊断在 1082/390/320、明暗主题下通过，零业务写入、错误和失败。
+`3a3df400…` 的现场复核证明移动状态修改、放弃与重新读取链路可用，但同时确认原生 selection 不具备顺序流程拓扑，不能继续默认投影为 Steps。状态区候选 `12395fff…` 因此统一采用“当前状态标签 + 官方 Select + 独立业务动作”：桌面、窄桌面和手机消费同一 selection、readonly、busy 与草稿链路；只有契约未来明确提供顺序流程时才允许另行使用 Steps。该历史候选的状态证据保留，整页及共享消费者的最终结论则由 `afec3fd3…` 的新证据承载。
 
-受管 Frontend Quick 在 `a65c29ff…` 完整通过；最终候选随后只修正纵向 flex 下状态槽误把桌面 basis 当作高度的问题，并补充对应守卫与截图时序，严格类型、定向守卫、官方组件接管清单和候选 build 均重新通过，不冒充最终 HEAD 全量重跑 Quick。
+受管 Frontend Quick 在历史状态区候选 `a65c29ff…` 完整通过；整页实现继续完成 P1 最终合成视图所有权、关联集合内容声明、空态、只读行变更标题和协作记录等宽表达。完整 `make verify.local.dev.frontend.quick.gate` 已在最终产品候选 `afec3fd3…` 重新通过，不再沿用旧候选结果覆盖后续产品差异。
 
 关联业务 notebook 由 P1 合成视图明确放入 `col="1"` 的业务分区；P0 只补齐通用渲染器对单列容器的消费，不按 widget、关系类型、项目模型或字段名猜测跨度。WBS、清单、工程结构、合同、资料与投标的身份列顺序也由原生子视图声明。共享协作区改为单层记录边界、紧凑关注者和完整名称入口；章节当前态不再因滚动容器到达底部而强制跳到最后章节。
 
-受管模块升级、18 个后端测试、P0 定向测试和最终产品 HEAD 的完整 Frontend Quick 已通过。整页浏览器联合复核尚待启动，故本段不提前宣称最终页面验收完成。P4 fixture 旧快照继续独立登记，不阻止只读候选复核，也不由本产品分支修复。
+受管模块升级、后端合成视图定向测试、P0 定向测试和最终产品 HEAD 的完整 Frontend Quick 已通过。最终候选的整页浏览器联合复核覆盖 1440/1082/390/320 与明暗主题，全部声明页签均按预期内容类型和数量验证；驾驶舱 fallback、启停专用表单与付款只读也在同一最终候选补齐回归。所有运行均为零业务写入、零浏览器错误、零失败。P4 fixture 旧快照继续独立登记，不由本产品分支修复，也不再混作整页产品缺陷。
 
 ## 产品层与归属
 
@@ -30,21 +30,21 @@
 
 ## 关联业务布局与能力盘点
 
-本表是后半页统一实施清单。样本状态以 `12395fff…` 已存项目 19 证据为准；该候选未实际切换到的页签不臆造数据覆盖，留待最终候选逐项补证。
+本表是后半页统一实施清单。最终样本以 `afec3fd3…` 的项目 8 为准；浏览器验证逐项切换全部声明页签，并按字段、集合、空态及不可见状态分别断言，零个集合不能再通过集合页签检查。
 
 | 页签／区域 | 内容类型与当前来源 | 期望跨度 | 权限来源 | 已知样本与实施结论 |
 |---|---|---|---|---|
-| 投标管理 | P1 XML 的可编辑 `tender_bid_ids` 表格集合 | 所在 `col="1"` 关联业务内容区全宽 | 页签 `group_sc_cap_project_user`，字段原 context/子视图不变 | 项目 19 有 2 条记录、可编辑；最终候选需证明视图列数已被渲染器消费 |
-| WBS 结构 | P1 XML 的可编辑 `wbs_ids` 表格集合 | 全宽；名称与编码优先于维护序号 | 成本用户／经理组 | 最终候选待核对数据或空态；不新增数据 |
-| 工程量清单 | P1 XML 的操作组、只读摘要和只读 `boq_line_ids` 表格 | 操作／摘要服从既有组网格，明细全宽 | 成本用户／经理组，维护动作继续限成本经理 | 最终候选待核对数据或空态；金额只消费既有事实 |
-| 工程结构 | P1 XML 的可编辑 `work_ids` 表格集合 | 全宽；名称、编码和层级先于维护序号 | 成本用户／经理组 | 最终候选待核对数据或空态；不改 domain |
-| 合同 | P1 XML 的只读计数／金额摘要和可编辑 `contract_ids` 表格 | 摘要使用既有组网格，明细全宽 | 页签合同读取组；明细继续限合同用户／经理 | 最终候选待核对数据或空态；金额口径不变 |
-| 工程资料 | P1 XML 的只读计数摘要和 `document_ids` 表格 | 摘要使用既有组网格，明细全宽 | 页签项目读取组；明细继续限超级管理员 | 最终候选待核对数据或空态；与协作附件保持独立 |
+| 投标管理 | P1 XML 的可编辑 `tender_bid_ids` 表格集合 | 所在 `col="1"` 关联业务内容区全宽 | 页签 `group_sc_cap_project_user`，字段原 context/子视图不变 | 项目 8 为空态；最终外框 width ratio 1，显示单一“添加投标记录”入口和紧凑空态，未新增数据 |
+| WBS 结构 | P1 XML 的可编辑 `wbs_ids` 表格集合 | 全宽；名称与编码优先于维护序号 | 成本用户／经理组 | 3 条记录；最终外框 width ratio 1，首个业务身份列为“WBS 名称”，示例身份可直接识别 |
+| 工程量清单 | P1 XML 的操作组、只读摘要和只读 `boq_line_ids` 表格 | 操作／摘要服从既有组网格，明细全宽 | 成本用户／经理组，维护动作继续限成本经理 | 1 条记录；最终外框 width ratio 1，首个业务身份列为“清单名称”，金额只消费既有事实 |
+| 工程结构 | P1 XML 的可编辑 `work_ids` 表格集合 | 全宽；名称、编码和层级先于维护序号 | 成本用户／经理组 | 3 条记录；最终外框 width ratio 1，首个业务身份列为“WBS 名称”，未修改 domain |
+| 合同 | P1 XML 的只读计数／金额摘要和可编辑 `contract_ids` 表格 | 摘要使用既有组网格，明细全宽 | 页签合同读取组；明细继续限合同用户／经理 | 5 条记录；最终外框 width ratio 1，“合同标题”位于平台编号之前并可直接识别，金额口径不变 |
+| 工程资料 | P1 XML 的只读计数摘要和 `document_ids` 表格 | 摘要使用既有组网格，明细全宽 | 页签项目读取组；明细继续限超级管理员 | 5 条记录；最终外框 width ratio 1，首个业务身份列为“资料名称”，与协作附件保持独立 |
 | 驾驶舱 | P1 XML 的只读经营摘要普通字段 | 既有双组网格，不按集合规则放大 | 财务读取组，财务字段原附加组不变 | 只读；不是关系集合，不受 P0 集合跨度修复影响 |
 | 经营概况 | P1 XML 的来源字段、成本进度摘要和既有对象动作 | 既有组网格 | 项目读取组；成本字段／动作维持原组约束 | 只读事实与动作混合；不改金额、动作或权限 |
 | 描述／设置 | Odoo 基础项目合成视图原生页签 | 继续服从基础视图布局 | 继承基础视图有效约束 | 当前可见但本专题不重排；最终只做共享容器回归 |
 | 协作／系统 | Odoo/P1 合成页签中的任务名称、标签、任务和协作者等辅助字段 | 既有页签宽度 | 继承各字段有效约束 | 不提升为主业务分区；不与页面级协作记录混称 |
-| 页面级协作记录 | P0 `NativeCollaborationPanel`：入口、关注者、协作附件、记录列表、独立审计 | 内容区全宽；关注者紧凑，记录单层边界且等宽 | 继续消费协作契约的 enabled/readonly/capability | 项目 19 已有空关注者及多条记录；当前存在外层 entry 与内层卡片重复边界 |
+| 页面级协作记录 | P0 `NativeCollaborationPanel`：入口、关注者、协作附件、记录列表、独立审计 | 内容区全宽；关注者紧凑，记录单层边界且等宽 | 继续消费协作契约的 enabled/readonly/capability | 项目 8 多条记录；最终截图确认时间线条目等宽、单层边界，附件与审计仍为独立职责 |
 
 跨度由视图容器和已有显式字段尺寸决定：`关联业务 col="1"` 使 notebook、page 与字段区逐层继承唯一内容列；P0 不根据 table/tree/list widget、关系模型或字段名推断宽度。原有字段类型安全默认值和 XML／低代码显式尺寸优先级保持不变。
 
@@ -90,18 +90,20 @@
 
 | 层级 | 结果 |
 |---|---|
-| P1 后端 | `make local.dev.upgrade MODULE=smart_construction_core` 通过；`TestCoreExtensionV2Finalize` 18 个方法、Odoo 统计 20 tests，零失败 |
+| P1 后端 | `make local.dev.upgrade MODULE=smart_construction_core` 通过；最终布局所有权定向 `TestCoreExtensionV2Finalize.test_project_maintenance_form_uses_authoritative_business_sections` 非零通过（1 method，Odoo 统计 3 tests），同时保留此前 18 个方法、Odoo 统计 20 tests 的完整结果 |
 | P0 定向 | `make verify.frontend.native_section_navigation.unit` 通过（7 项章节边界）；canonical presenter 149 项通过；professional workflow 10 个模型用例与 4 个 guard 用例通过；ProductPageHeader 28 个模型用例与 8 个 guard 用例通过 |
 | 前端工程 | `a65c29ff…` 的受管 Frontend Quick 完整通过；`12395fff…` 的 strict typecheck、候选 build、定向守卫、官方组件接管清单及生成清单检查通过。`ScSteps` 不再提供内部 DOM 样式入口；专门反例会对 `:deep(.t-steps-item__title)`、原生控件绕行和 selection 重新接入 Steps fail closed |
-| Quick | `make verify.local.dev.frontend.quick.gate` 在整页产品实现 `00de895e…` 按受管入口完整通过，包含 strict typecheck、build、官方组件守卫、表单布局、关系集合、协作、章节导航及生成清单门禁 |
+| Quick | `make verify.local.dev.frontend.quick.gate` 在最终产品候选 `afec3fd3…` 按受管入口完整通过，包含 strict typecheck、build、官方组件守卫、表单布局、关系集合、协作、章节导航及生成清单门禁 |
 | 基线截图 | `project-profile-before-light-8f709938` 与 `project-profile-before-dark-8f709938`，绑定基线、零写入 |
 | 早期诊断 | `b45e52d9` 暴露重复通用标题和提交动作仍在正文；`d755f33d`/`6b66d99d` 的动作权威证据确认提交立项是独立次级 header 动作。这些失败结果用于定向修复，不计为最终通过 |
 | 既有结构诊断 | `project-profile-closure-light-83d6c5a5`（1440/390）与 `project-profile-closure-dark-83d6c5a5`（1088/320）继续证明当时的章节、首屏、表格和关系弹层；`project-profile-consumers-diagnostic-light-190ea8d9` 仅证明当时的三个项目消费者，不用于覆盖最终状态交互 |
 | 状态回归历史证据 | `3a3df400…` 的两份消费者摘要保留为先前 Steps/移动 Select 实现的历史证据，不覆盖最终状态选型；人工现场复核另记录 1082/390/320 的修改、放弃与 320 首屏限制 |
 | 最终项目编辑诊断 | `project-profile-status-edit-light-12395fff-retry`（1082/390）与 `project-profile-status-edit-dark-12395fff`（1082/320），状态记录 `draft → in_progress → draft`，刷新仍为 `draft`；每个视口 1 个 Select、1 个状态标签、0 个 Steps，七个标签完整，控件在视口内，章节落点无遮挡，零写入/错误/失败 |
 | 最终消费者诊断 | `project-profile-status-consumers-light-12395fff`（1082/390）与 `project-profile-status-consumers-dark-12395fff`（1082/320），覆盖驾驶舱 fallback、启停专用表单和付款只读；均通过、零写入、零错误、零失败。可写 fallback 为 1 个 Select + 1 个标签；两个只读消费者为 0 个 Select + 1 个标签；均为 0 个 Steps |
+| 最终整页联合复核 | `project-profile-whole-page-light-afec3fd3`（1440/390）与 `project-profile-whole-page-dark-afec3fd3`（1082/320），绑定同一 `sc_dev_demo` 和产品候选。责任矩阵、投标、WBS、清单、工程结构、合同、资料集合均占满所属内容列；投标空态紧凑；合同标题作为主身份；11 个 notebook 页签逐项声明内容类型/数量并验证；章节点击、滚动当前态、定位遮挡及草稿切换恢复通过；协作记录为等宽单层边界。两份摘要均 `pass=true`、mutation/errors/failures 为 0 |
+| 最终共享消费者回归 | `project-profile-consumers-light-afec3fd3`（1082/390）与 `project-profile-consumers-dark-afec3fd3`（1082/320），在最终产品候选重新覆盖驾驶舱 fallback、启停专用表单和付款只读；两份摘要均通过、零写入、零错误、零失败，不沿用 `12395fff…` 冒充最终回归 |
 | 环境失败记录 | `project-profile-status-edit-light-12395fff` 首次运行因 Chromium 两次 `ERR_NETWORK_CHANGED` 失败；候选和 local.dev health 随后均通过，独立 retry 成功。该失败不删除、不计入产品通过样本 |
-| 最终候选指纹 | `12395fffb1d4dc3faa9917222a12e8d4c9661c02`，7388 paths，digest `33892b88b9c750bdeabed30cd020300bb1a9400053b17dbd7bd177dcdfba7b7b`；候选已通过受管入口停止 |
+| 最终候选指纹 | `afec3fd304b39103b16e528aaa8353556e7990da`，7389 paths，digest `ef9f46a1e00b5d6446ee5b09dbde7d4adac2afc421cd9212debf95ec353a982b`；受管候选固定在 5176 并保持运行，供独立复核使用 |
 
 ## fixture 失败诊断
 
@@ -115,10 +117,10 @@
 
 ## 未关闭项
 
-- 正式浏览器候选冻结：P4 归因已完成；仍需另行授权并选择受管的 local.dev 重建，或针对旧快照的修复／重放路径，然后从 fixture reset 门禁恢复。本分支未执行二者。
+- 正式 fixture-backed acceptance：P4 归因已完成；仍需另行授权并选择受管的 local.dev 重建，或针对旧快照的修复／重放路径，然后从 fixture reset 门禁恢复。本分支未执行二者。该事项不撤销 `afec3fd3…` 的开发阶段整页产品冻结与只读联合复核结论。
 - 真实保存、提交立项、状态变更和多角色业务旅程：本专题未执行，也未用只读诊断替代。
 - 全部 Odoo 原生项目入口逐一浏览器遍历：未执行；范围由共享合成视图测试和代表消费者诊断约束。
 - 文档治理：inventory、temp guard、contract sync 通过；product boundary 仍因仓库既有 `smart_construction_demo` 文档／目录不一致失败，81 个既有坏链未重跑，二者均不在本产品专题清理。
-- PR、CI、合并、发布：均未执行。
+- 独立审查、PR、CI、合并、发布：均未执行；当前结论是“整页开发结果已冻结，待独立复核”，不是 merge-ready 或 release-ready。
 
 回滚顺序为先回退 P0 renderer 提交，再回退 P1 项目视图提交；不需要数据库业务数据回滚。

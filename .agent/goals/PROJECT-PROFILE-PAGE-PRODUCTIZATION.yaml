@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: PROJECT-PROFILE-PAGE-PRODUCTIZATION
   title: project_profile_maintenance_page_productization
-  status: active
+  status: verification_pending
   formal_product_layer: P1
   supporting_layer: P0
   layer_target: smart_construction_core_project_view_and_generic_native_form_expression
@@ -48,7 +48,7 @@ goal:
       status: complete
     - id: C
       title: governed_upgrade_and_read_only_browser_validation
-      status: blocked
+      status: complete
       evidence:
         - smart_construction_core_incremental_upgrade_passed
         - final_exact_head_governed_frontend_quick_gate_passed
@@ -65,13 +65,18 @@ goal:
         - width_320_customer_control_not_claimed_as_fully_inside_first_viewport
         - table_outer_boundary_inner_reachability_and_popup_boundaries_verified
         - settlement_snapshot_failure_attributed_to_stale_approved_local_dev_fact
-      blocker: >-
-        Governed local.dev demo synchronization stops on sc.settlement.order(25), an
-        approved immutable fact whose invoice amount is 0.0 while the current seed
-        baseline expects 280000.0. The P4 cause is now attributable to a stale
-        persistent local.dev snapshot, but resolving it requires a separately
-        authorized governed rebuild or repair/replay choice. Browser runs after the
-        failed reset remain exact-head diagnostics and cannot freeze formal acceptance.
+        - authoritative_project_profile_layout_loaded_after_notebook_extensions
+        - responsibility_matrix_and_all_declared_related_tabs_use_expected_full_width_content
+        - notebook_content_expectations_fail_when_declared_collections_are_missing
+        - exact_head_whole_page_light_dark_1440_1082_390_320_passed
+        - exact_head_dashboard_lifecycle_and_payment_readonly_regressions_passed
+        - collaboration_timeline_entries_use_equal_single_layer_width
+      evidence_boundary: >-
+        The exact product candidate completed governed development validation and
+        read-only whole-page browser review. Governed local.dev demo synchronization
+        still stops on stale immutable sc.settlement.order(25); that separately owned
+        P4 fixture condition blocks formal fixture-backed acceptance, not the frozen
+        project-page product result. No rebuild, repair, or replay was performed.
   acceptance:
     - default_view_begins_with_core_project_information
     - one_visible_heading_per_authoritative_business_section
