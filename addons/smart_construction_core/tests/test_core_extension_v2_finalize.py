@@ -62,6 +62,11 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             "the project view, rather than a frontend widget heuristic, owns the related-business width",
         )
         self.assertEqual(len(related_business.xpath("./notebook")), 1)
+        collaboration_group = related_business.xpath(
+            "./notebook/page[@name='sc_system']/group"
+        )
+        self.assertEqual(len(collaboration_group), 1)
+        self.assertEqual(collaboration_group[0].get("col"), "1")
 
         profile_arch = self.env.ref(
             "smart_construction_core.view_project_form_sc_core"

@@ -356,7 +356,7 @@
             </xpath>
             <xpath expr="//sheet/notebook/page[last()]" position="after">
                 <page string="协作 / 系统" name="sc_system">
-                    <group>
+                    <group col="1">
                         <field name="task_ids" />
                         <field name="collaborator_ids" />
                         <field name="analytic_account_id" />
