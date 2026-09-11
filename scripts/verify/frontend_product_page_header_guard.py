@@ -103,8 +103,12 @@ def validate() -> list[str]:
     canonical_driver = source("frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue")
     if "/\\/header(?:\\[|\\/|$)/.test(nativeLocator)" not in canonical_presenter:
         failures.append("native form-header actions are not projected into the product header action channel")
-    if "text(node.widget || attrs.widget).toLowerCase() === 'statusbar'" not in canonical_bridge:
-        failures.append("canonical body still renders a duplicate statusbar below the product header")
+    if "claimedStatusbarNodeIdentity && canonicalNodeIdentity === claimedStatusbarNodeIdentity" not in canonical_bridge:
+        failures.append("canonical body statusbar de-duplication is not bound to the exact header-claimed node")
+    if "text(node.widget || attrs.widget).toLowerCase() === 'statusbar'" in canonical_bridge:
+        failures.append("canonical body still hides every statusbar instead of the exact header claim")
+    if ':claimed-statusbar-node-identity="nativeStatusbarNodeIdentity"' not in contract_page:
+        failures.append("ContractForm does not pass the exact claimed statusbar node into the body bridge")
     if canonical_driver.count(':authoritative-business-section-mode="nativeBridge.authoritativeBusinessSectionMode"') != 2:
         failures.append("canonical primary and subordinate renderers do not share the page-level business section mode")
     if 'v-bind="nativeActionEvidenceAttributes' not in native_renderer:
