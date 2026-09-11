@@ -479,7 +479,7 @@ pr.status:
 	@gh pr status || true
 
 # ------------------ Branch cleanup (Codex-safe) ------------------
-.PHONY: branch.cleanup branch.cleanup.feature workspace.worktree.create workspace.worktree.cleanup workspace.branch.sync-main verify.workspace.worktree.guard
+.PHONY: branch.cleanup branch.cleanup.feature branch.retire.historical verify.branch.retire.historical workspace.worktree.create workspace.worktree.cleanup workspace.branch.sync-main verify.workspace.worktree.guard
 
 CLEAN_BRANCH ?=
 CREATE_WORKTREE ?=
@@ -494,6 +494,11 @@ EXPECTED_BRANCH ?=
 EXPECTED_OLD_BASE ?=
 EXPECTED_MAIN ?=
 CONFIRM_WORKSPACE_BRANCH_SYNC ?=
+HISTORICAL_RETIREMENT_MANIFEST ?=
+HISTORICAL_RETIREMENT_REPORT ?=
+HISTORICAL_RETIREMENT_BUNDLE ?=
+HISTORICAL_RETIREMENT_MANIFEST_SHA256 ?=
+HISTORICAL_RETIREMENT_CONFIRM ?=
 
 branch.cleanup: guard.prod.forbid
 	@if [ -z "$(CLEAN_BRANCH)" ]; then echo "❌ CLEAN_BRANCH is required"; exit 2; fi
@@ -526,6 +531,18 @@ branch.cleanup: guard.prod.forbid
 
 branch.cleanup.feature: guard.prod.forbid
 	@bash scripts/ops/branch_cleanup_safe.sh "$(CLEAN_BRANCH)"
+
+branch.retire.historical: guard.prod.forbid
+	@test -n "$(HISTORICAL_RETIREMENT_MANIFEST)" || { echo "❌ HISTORICAL_RETIREMENT_MANIFEST is required"; exit 2; }
+	@python3 scripts/ops/retire_historical_branch_refs.py \
+		--manifest "$(HISTORICAL_RETIREMENT_MANIFEST)" \
+		$(if $(HISTORICAL_RETIREMENT_REPORT),--report "$(HISTORICAL_RETIREMENT_REPORT)",) \
+		$(if $(filter 1,$(PREPARE_BUNDLE)),--prepare-bundle --bundle-output "$(HISTORICAL_RETIREMENT_BUNDLE)",) \
+		$(if $(filter 1,$(APPLY)),--apply --bundle-output "$(HISTORICAL_RETIREMENT_BUNDLE)" --approved-manifest-sha256 "$(HISTORICAL_RETIREMENT_MANIFEST_SHA256)" --confirm "$(HISTORICAL_RETIREMENT_CONFIRM)",)
+
+verify.branch.retire.historical: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/retire_historical_branch_refs.py scripts/ops/test_retire_historical_branch_refs.py
+	@python3 -m unittest scripts/ops/test_retire_historical_branch_refs.py
 
 workspace.worktree.create: guard.prod.forbid
 	@test -n "$(CREATE_WORKTREE)" || { echo "❌ CREATE_WORKTREE is required"; exit 2; }

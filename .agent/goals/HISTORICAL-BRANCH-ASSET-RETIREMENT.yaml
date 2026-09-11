@@ -1,0 +1,53 @@
+schema_version: 1
+goal:
+  id: HISTORICAL-BRANCH-ASSET-RETIREMENT
+  title: historical_branch_asset_retirement_and_evidence_preservation
+  status: active
+  formal_product_layer: P4
+  layer_target: governed_historical_git_reference_retirement
+  module:
+    - scripts/ops
+    - make
+    - docs/ops
+  objective: >-
+    Preserve the reviewed historical evidence, prepare an exact manifest-bound
+    recovery bundle, and retire only separately authorized branch references
+    without restoring obsolete product code.
+  baseline:
+    branch: audit/historical-branch-asset-retirement-v1
+    full_sha: 3c5b048075181e15c046fd172031413c9d6952bb
+    source: clean_main_after_pr_461_archive_merge
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_governance
+    why_here: >-
+      Exact Git identity checks, recovery bundles and historical evidence archives
+      are delivery lifecycle controls rather than product behavior.
+    why_not_elsewhere:
+      - no_p0_frontend_or_contract_behavior
+      - no_p1_industry_product_semantics
+      - no_p2_customer_data_or_preferences
+      - no_p3_runtime_configuration
+      - no_database_fixture_migration_release_or_deployment
+    blast_radius:
+      - twelve_manifested_local_branch_references
+      - six_explicitly_present_remote_branch_references
+      - two_preserved_frontend_audit_branches
+      - historical_delivery_documentation
+  batches:
+    - id: A
+      title: manifest_bound_retirement_entry_and_recovery
+      status: active
+    - id: B
+      title: frontend_expression_historical_evidence_archive
+      status: active
+    - id: C
+      title: retained_branch_value_routing
+      status: active
+  exclusions:
+    - actual_reference_deletion_without_later_exact_manifest_authorization
+    - restoration_or_merge_of_old_product_code
+    - workflow_authority_product_fix_in_this_p4_batch
+    - controller_checkpoint_recovery_implementation
+    - database_fixture_migration_acceptance_release_or_income_contract_work
+  rollback:
+    - revert_the_p4_tool_manifest_archive_and_goal_records
