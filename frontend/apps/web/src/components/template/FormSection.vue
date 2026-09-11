@@ -223,6 +223,9 @@
                     class="input"
                     appearance="form-field"
                     :aria-label="`${field.label}结束日期`"
+                    :required="field.required"
+                    :invalid="field.invalid"
+                    :described-by="fieldDescribedBy(field)"
                     :placeholder="field.inputPlaceholder || inputPlaceholderText(field)"
                     @update:model-value="emitDateRangeEndChange(field, $event)"
                   />
