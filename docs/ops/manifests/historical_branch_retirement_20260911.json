@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "manifest_id": "historical-branch-retirement-20260911-v1",
+  "repository": {
+    "name": "sce-backend-odoo",
+    "origin_url": "https://github.com/lidefend/sce-backend-odoo.git"
+  },
+  "authorization": {
+    "actual_retirement": "pending_explicit_manifest_bound_authorization",
+    "confirmation": "RETIRE_APPROVED_HISTORICAL_REFERENCES"
+  },
+  "references": [
+    {
+      "branch": "feature/native-view-action-semantics-closure-v1",
+      "local": {"sha": "8db4e92a9648a1271751faa06b3b4bf9b5b20bf4"},
+      "remote": {"state": "present", "sha": "9de00a9b28e5d4da68badeabd7c32fcedd49486b"},
+      "reason": "The delivered native-view action semantics are represented by merged PRs #399 and #401; the local tip has no remaining product-tree delta against main.",
+      "evidence": ["PR #399 merged", "PR #401 supersedes the remaining local tip delta"]
+    },
+    {
+      "branch": "fix/scene-entry-runtime-blocks",
+      "local": {"sha": "85711cb7336aff30ebb84fbf862de7e475fde24b"},
+      "remote": {"state": "present", "sha": "a1906e3bf3a69ea0c0637489528561b60f522a97"},
+      "reason": "Its retained implementation is already present in main through PR #412; the differing remote tip is explicitly preserved in the recovery bundle.",
+      "evidence": ["PR #412 contains the retained implementation", "Changed product files match main"]
+    },
+    {
+      "branch": "fix/canonical-navigation-container-promotion",
+      "local": {"sha": "85711cb7336aff30ebb84fbf862de7e475fde24b"},
+      "remote": {"state": "present", "sha": "85711cb7336aff30ebb84fbf862de7e475fde24b"},
+      "reason": "The navigation-container promotion is covered by the later merged canonical navigation work.",
+      "evidence": ["Local and remote point to the reviewed 85711cb7 tip", "Later main implementation covers the same changed files"]
+    },
+    {
+      "branch": "fix/p4-governed-branch-sync-bootstrap-v1",
+      "local": {"sha": "e71146ed1518436e1191ef5e69b85b27adc00932"},
+      "remote": {"state": "present", "sha": "e71146ed1518436e1191ef5e69b85b27adc00932"},
+      "reason": "The bootstrap design was superseded by the governed synchronization delivered through PRs #291, #296 and #297.",
+      "evidence": ["PRs #291/#296/#297 provide the current governed sync path", "Owner-authorized direct-main integration is deprecated"]
+    },
+    {
+      "branch": "audit/form-structure-baseline-evidence-v1",
+      "local": {"sha": "59bcba6febacdca3bfd18e3445ca18922b8183ec"},
+      "remote": {"state": "absent", "sha": null},
+      "reason": "The current visual smoke evidence path retains and extends the form-structure and scroll-owner checks.",
+      "evidence": ["Current local visual smoke includes form-structure capture", "No origin branch exists"]
+    },
+    {
+      "branch": "feature/p0-official-design-system-alignment-v1",
+      "local": {"sha": "a3891a86b17500d037d02996f146043e8f6d0548"},
+      "remote": {"state": "absent", "sha": null},
+      "reason": "The v1 implementation was replaced by the v2 official design-system alignment merged in PR #373.",
+      "evidence": ["PR #373 is the accepted v2 delivery", "No origin branch exists"]
+    },
+    {
+      "branch": "feature/p0-overlay-lifecycle-convergence-v1",
+      "local": {"sha": "78bc9494fd5a7b6d7db5805ca17fb0fa7a0a2afa"},
+      "remote": {"state": "absent", "sha": null},
+      "reason": "The product implementation is represented by main commit 7271779c; remaining differences are historical generated records.",
+      "evidence": ["Product tree matches main commit 7271779c", "No origin branch exists"]
+    },
+    {
+      "branch": "fix/p0-native-inline-text-presentation-semantics-v1",
+      "local": {"sha": "47d6d053c8bb4e6cf08e7cb5182f14d302121eff"},
+      "remote": {"state": "absent", "sha": null},
+      "reason": "The branch is an ancestor of the final head merged by PR #375.",
+      "evidence": ["PR #375 contains the finalized inline-text semantics", "No origin branch exists"]
+    },
+    {
+      "branch": "feature/demo-mainline-alignment-clean",
+      "local": {"sha": "c8a8ef29a3fa50628b76a98fbf6fdc86aa4894c8"},
+      "remote": {"state": "absent", "sha": null},
+      "reason": "The old demo-default alignment conflicts with the later limited defaults and scenario-loader deliveries in PRs #432 and #435.",
+      "evidence": ["PRs #432/#435 own the current scenario-loader behavior", "No origin branch exists"]
+    },
+    {
+      "branch": "fix/p4-candidate-label-dispatch-idempotency-v1",
+      "local": {"sha": "9ebb6d81d843eb7e83f5aef536195de11210074b"},
+      "remote": {"state": "present", "sha": "9ebb6d81d843eb7e83f5aef536195de11210074b"},
+      "reason": "Main commit b128a2f0 is the explicit replacement for the closed PR #326 design.",
+      "evidence": ["Main commit b128a2f0 provides the accepted replacement", "Closed PR #326 is superseded"]
+    },
+    {
+      "branch": "fix/superseded-pr-retirement-v1",
+      "local": {"sha": "307c7ed1d2f83c6fa8d31b193b07127c1b146aed"},
+      "remote": {"state": "absent", "sha": null},
+      "reason": "The design only handled marked draft PRs and does not solve the current closed, non-draft retirement cases.",
+      "evidence": ["No open draft consumers require the old flow", "No origin branch exists"]
+    },
+    {
+      "branch": "audit/project-profile-mainline-closure-v1",
+      "local": {"sha": "9008b81514bb8d00efa2d58352a344b145f5a132"},
+      "remote": {"state": "present", "sha": "9008b81514bb8d00efa2d58352a344b145f5a132"},
+      "reason": "The project-profile closure archive was merged by PR #461 and is represented by main commit 3c5b0480.",
+      "evidence": ["PR #461 merged", "Main commit 3c5b048075181e15c046fd172031413c9d6952bb contains the archive"]
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+schema_version: 1
+goal:
+  id: AGENT-CONTROLLER-CHECKPOINT-RECOVERY
+  title: agent_controller_checkpoint_recovery_without_write_replay
+  status: planned
+  formal_product_layer: P4
+  layer_target: governed_agent_controller_failed_recoverable_restart
+  module: scripts/ops
+  objective: >-
+    Resume a failed-recoverable controller run from its recorded checkpoint
+    context without repeating already completed writes.
+  source_asset:
+    branch: feature/demo-mainline-alignment
+    full_sha: 113ad564a05df3c367b5ffa4ef9412230df6026b
+    reusable_commit_scope:
+      - checkpoint_context_prompt
+      - restart_from_checkpoint_prompt
+      - fallback_recovery_result
+    excluded_scope:
+      - stale_demo_alignment
+      - stale_browser_acceptance_changes
+  reproducible_gap: >-
+    In scripts/ops/codex_agent_controller.py, a FAILED_RECOVERABLE restart launches
+    the next session with the initial prompt instead of checkpoint context, so the
+    controller cannot prove that completed write steps will not be repeated.
+  constraints:
+    - do_not_repeat_completed_write_operations
+    - require_checkpoint_identity_and_resume_boundary
+    - fail_closed_when_checkpoint_evidence_is_missing_or_ambiguous
+    - test_only_in_isolated_controller_fixtures
+  next_exact_step: >-
+    Open a separate P4 implementation batch after the historical retirement and
+    archive delivery is complete; do not cherry-pick or merge the old branch.

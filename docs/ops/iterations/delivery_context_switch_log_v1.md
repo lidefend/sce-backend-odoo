@@ -9257,6 +9257,14 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 按明确授权 squash 合并为 `main@69cd7e3d0f28523560760a8be360598d459d0f1f`；本地 `main` 与 `origin/main` 已对齐，产品工作树、同名本地及远端专题分支已通过受管入口清理，5176 候选服务已停止。
 - 项目资料维护页面产品化开发与交付阶段完成。旧结算快照、真实保存与流程动作、多角色、完整业务和发布验收继续独立登记；系统未发布。
 
+## 2026-09-11 — 历史分支资产退役准备与价值承接
+
+- 分支 `audit/historical-branch-asset-retirement-v1`，基线 `main@3c5b048075181e15c046fd172031413c9d6952bb`。Formal Product Layer P4；Layer Target 为精确 manifest 约束的 Git 引用退役、恢复 bundle 和历史证据保存，不修改或恢复 P0/P1 产品代码。
+- 新入口默认 dry-run，分开核验本地/远端 SHA、工作树占用和开放 PR；实际 apply 额外绑定 manifest SHA-256 与确认短语，且删除前强制验证恢复 bundle。8 个临时仓库测试 PASS；真实仓库只运行 dry-run 和 bundle 准备，没有删除引用。
+- manifest `cac22ce59dbabf3ce9eb77dcf356d7dc55b8c545473f2562f73d854e7bb754a7` 的 12 项均 eligible。仓库外 bundle `d58b5e56ae423e6607efaa404663cd8676cc8275bd09fd97b5c331447d313a9c` 验证通过并覆盖 18 个本地/远端头；等待新的 manifest-bound 实际退役授权。
+- 两条 frontend audit 分支的 #455—#459 有效事实合并归档，实时确认 PR/merge/四项 CI；历史浏览器 artifacts 当前缺失，样本与哈希仅按源报告登记，不冒充重跑。两条分支在归档合入主线前继续保留。
+- workflow authority 当前实现对重复身份、畸形行和非布尔 `enabled` 仍可能授予可执行状态，诊断确认通用 P0 缺口，后续独立提取；控制器 FAILED_RECOVERABLE checkpoint 恢复仅登记 P4 待办。本批不实施这两个技术任务，不恢复付款/demo 内容。
+
 ## 2026-09-11 — 工作区归档与遗留分类
 
 - 分支 `audit/project-profile-mainline-closure-v1@a41260d44aa8eadb1f535f320db7383add28c56e`；Formal Product Layer P4。写入前完整指纹 `447123347ce07165d451e7b291362093050808472a334750f1f5e0f3f0ef4665`（7389 paths），`origin/main` 联网刷新后仍为 `69cd7e3d…`。

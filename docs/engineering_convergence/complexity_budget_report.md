@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4331`
+- Scanned files: `4333`
 - Files requiring split plan: `50`
 - Files above warning threshold: `87`
 
@@ -58,7 +58,7 @@ Generated from repository source files. This report is informational during the 
 | 1542 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 1515 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1505 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
-| 644 | YAML workflow | `scripts/verify/registry.yaml` |
+| 656 | YAML workflow | `scripts/verify/registry.yaml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
 | 525 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |

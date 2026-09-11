@@ -491,6 +491,16 @@ Codex 的责任是 **定位 → 修复 → 重试**。
 * `make pr.push`
 * `make codex.sync-main`
 * `make branch.cleanup.feature`
+* `make branch.retire.historical`
+
+  * 仅按已审查的精确 JSON manifest 处理历史本地／远端分支引用；本地和远端
+    SHA 分开核验，远端不存在必须显式声明。
+  * 默认只读预演；`PREPARE_BUNDLE=1` 仅生成并校验恢复 bundle，不删除引用。
+  * 实际退役必须同时提供 manifest 的 SHA-256、精确确认短语
+    `RETIRE_APPROVED_HISTORICAL_REFERENCES` 和 `APPLY=1`；SHA 漂移、被工作树检出、
+    存在开放 PR 或证据不完整的条目逐项跳过。
+  * 远端删除使用 manifest 中逐项声明的远端身份，不得按同名自动扩展；任何删除
+    前必须已有可读且覆盖全部本次可执行引用的恢复 bundle。
 * `make main.cutover.controlled`
 
   * 仅用于仓库所有者已明确授权的双远端 `main` 非快进历史治理；
