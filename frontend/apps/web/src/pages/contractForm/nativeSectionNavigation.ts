@@ -61,10 +61,7 @@ export function workspaceSectionNavigationItems(nodes: CanonicalFormNode[]): Wor
   const authoritativeItems: WorkspaceSectionNavigationItem[] = [];
   const emittedAnchors = new Set<string>();
 
-  collectNativeBusinessSections(nodes, {
-    childrenOf: (node) => node.children,
-    isVisible: (node) => node.visible,
-  }).forEach(({ node, identity }) => {
+  authoritativeNativeBusinessSections(nodes).forEach(({ node, identity }) => {
     if (identity && !emittedAnchors.has(identity.anchor)) {
       authoritativeItems.push({
         key: `node:${node.nodeId}:business-section`,
@@ -106,6 +103,13 @@ export function workspaceSectionNavigationItems(nodes: CanonicalFormNode[]): Wor
 
   nodes.forEach((node) => visit(node));
   return [...items, ...relationshipCollectionNavigationItems(nodes)];
+}
+
+export function authoritativeNativeBusinessSections(nodes: CanonicalFormNode[]) {
+  return collectNativeBusinessSections(nodes, {
+    childrenOf: (node) => node.children,
+    isVisible: (node) => node.visible,
+  });
 }
 
 export function relationshipCollectionNavigationItems(

@@ -1346,14 +1346,15 @@ assert.equal(
 const nativeOccurrenceActionSnapshot = structuredClone(snapshot());
 nativeOccurrenceActionSnapshot.layoutContract.containerTree[0].children.push({
   containerId: 'button.native.submit', containerType: 'button', type: 'button', title: 'Submit Native', span: 24,
-  action: { native_identity: { type: 'object', name: 'action_submit', native_locator: '/form/header/button[1]', occurrence_index: 1 } },
+  action: { native_identity: { type: 'object', name: 'action_submit', occurrence_index: 1 } },
   children: [], widgetList: [],
 });
 nativeOccurrenceActionSnapshot.actionContract.actionRuleList[0].nativeIdentity = {
-  type: 'object', name: 'action_submit', native_locator: '/form/header/button[1]', occurrence_index: 1,
+  type: 'object', name: 'action_submit', occurrence_index: 1,
 };
 nativeOccurrenceActionSnapshot.actionContract.actionRuleList[0].sourceWidgetId = 'button.native.submit';
 nativeOccurrenceActionSnapshot.actionContract.actionRuleList[0].targetScope = 'record';
+nativeOccurrenceActionSnapshot.actionContract.actionRuleList[0].backendIdentity = 'native_button:object:action_submit:/form[1]/header[1]/button[3]:1';
 const nativeOccurrenceModel = presentContractV2Form(createContractV2Store(nativeOccurrenceActionSnapshot), 'edit');
 assert.deepEqual(
   nativeOccurrenceModel.actionBar.map((action) => action.key),
@@ -1362,8 +1363,8 @@ assert.deepEqual(
 );
 assert.equal(
   nativeOccurrenceModel.zones.primary[0].children.find((node) => node.nodeId === 'button.native.submit')?.action?.actionRef.backendIdentity,
-  'button:object:action_submit',
-  'native snake-case occurrence identity must resolve to the canonical action rule',
+  'native_button:object:action_submit:/form[1]/header[1]/button[3]:1',
+  'native occurrence identity must resolve to the canonical action rule carrying the public header locator',
 );
 assert.equal(
   buildCanonicalNativeFormBridge(nativeOccurrenceModel).primaryNodes[0].children?.find((node) => node.type === 'button')?.visible,

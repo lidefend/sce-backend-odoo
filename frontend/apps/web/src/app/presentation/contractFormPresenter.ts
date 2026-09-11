@@ -439,7 +439,7 @@ function isFormActionBarAction(action: ContractV2ActionRule): boolean {
   const sourceWidgetId = text(action.sourceWidgetId);
   const targetScope = text(action.targetScope).toLowerCase();
   const nativeIdentity = asDict(action.nativeIdentity);
-  const nativeLocator = text(nativeIdentity.nativeLocator || nativeIdentity.native_locator);
+  const nativeLocator = text(nativeIdentity.nativeLocator || nativeIdentity.native_locator || action.backendIdentity);
   return sourceWidgetId === 'page.header'
     || (sourceWidgetId === 'page.root' && ['header', 'page'].includes(targetScope))
     || /\/header(?:\[|\/|$)/.test(nativeLocator)

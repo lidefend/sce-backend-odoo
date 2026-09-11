@@ -100,10 +100,13 @@ def validate() -> list[str]:
     native_renderer = source("frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue")
     canonical_presenter = source("frontend/apps/web/src/app/presentation/contractFormPresenter.ts")
     canonical_bridge = source("frontend/apps/web/src/pages/contractForm/canonicalNativeFormBridge.ts")
+    canonical_driver = source("frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue")
     if "/\\/header(?:\\[|\\/|$)/.test(nativeLocator)" not in canonical_presenter:
         failures.append("native form-header actions are not projected into the product header action channel")
     if "text(node.widget || attrs.widget).toLowerCase() === 'statusbar'" not in canonical_bridge:
         failures.append("canonical body still renders a duplicate statusbar below the product header")
+    if canonical_driver.count(':authoritative-business-section-mode="nativeBridge.authoritativeBusinessSectionMode"') != 2:
+        failures.append("canonical primary and subordinate renderers do not share the page-level business section mode")
     if 'v-bind="nativeActionEvidenceAttributes' not in native_renderer:
         failures.append("native action controls must expose canonical action evidence attributes")
     for marker in ("data-action-key", "data-action-ref", "data-backend-identity"):

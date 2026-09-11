@@ -96,6 +96,7 @@
             :native-action-handler="runNativeCanonicalAction"
             :native-action-state-resolver="nativeBridge.actionStateForNode"
             :prefer-readonly-facts="renderModel.identity.mode === 'readonly'"
+            :authoritative-business-section-mode="nativeBridge.authoritativeBusinessSectionMode"
             @field-change="emit('field-change', $event)"
           />
         </main>
@@ -108,6 +109,7 @@
             :native-action-handler="runNativeCanonicalAction"
             :native-action-state-resolver="nativeBridge.actionStateForNode"
             :prefer-readonly-facts="renderModel.identity.mode === 'readonly'"
+            :authoritative-business-section-mode="nativeBridge.authoritativeBusinessSectionMode"
             @field-change="emit('field-change', $event)"
           />
         </section>
