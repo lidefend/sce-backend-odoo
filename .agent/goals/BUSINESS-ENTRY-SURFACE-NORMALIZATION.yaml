@@ -35,7 +35,20 @@ goal:
       status: complete
     - id: 1
       title: project_information_entry_sample
-      status: active
+      status: review_ready
+      product_candidate: ea6888a191b6c278023cb1715ed349ebbb23a9dc
+      validation:
+        - canonical_form_presenter_cases_162_passed
+        - professional_business_value_matrix_24_counterexamples_8_passed
+        - strict_frontend_typecheck_passed
+        - core_extension_v2_finalize_odoo_tests_21_passed
+        - governed_incremental_upgrade_smart_construction_core_passed
+        - project_2_and_8_browser_checks_1082_390_320_passed
+        - browser_mutation_count_zero
+      pending:
+        - independent_product_browser_review
+        - multi_role_real_save_and_full_theme_matrix
+        - final_quick_after_delivery_head_freeze
     - id: 2
       title: risk_grouped_remaining_business_entries
       status: planned
