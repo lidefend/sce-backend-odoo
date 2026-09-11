@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -445,6 +446,7 @@ def build_report(
     assessments: Iterable[EntryAssessment],
     bundle: dict[str, str] | None,
     execution: dict[str, dict[str, Any]] | None = None,
+    retirement_outcome: str = "assessment_only",
 ) -> dict[str, Any]:
     return {
         "schema_version": 1,
@@ -452,6 +454,7 @@ def build_report(
         "manifest": str(manifest.resolve()),
         "manifest_sha256": digest,
         "bundle": bundle,
+        "retirement_outcome": retirement_outcome,
         "references": [
             {
                 "branch": assessment.entry.branch,
@@ -467,14 +470,75 @@ def build_report(
     }
 
 
-def write_report(report: dict[str, Any], path: Path | None) -> None:
+def persist_report(report: dict[str, Any], path: Path) -> None:
     rendered = json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    target = path.resolve(strict=False)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            prefix=f".{target.name}.",
+            suffix=".tmp",
+            dir=target.parent,
+            mode="w",
+            encoding="utf-8",
+            delete=False,
+        ) as handle:
+            temporary = Path(handle.name)
+            handle.write(rendered)
+            handle.flush()
+            os.fsync(handle.fileno())
+        temporary.replace(target)
+    finally:
+        if temporary is not None and temporary.exists():
+            temporary.unlink()
+
+
+def verify_report_target(path: Path) -> None:
+    """Exercise report-directory creation and temporary-file persistence."""
+    target = path.resolve(strict=False)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            prefix=f".{target.name}.preflight.",
+            suffix=".tmp",
+            dir=target.parent,
+            mode="wb",
+            delete=False,
+        ) as handle:
+            temporary = Path(handle.name)
+            handle.write(b"historical-retirement-report-preflight\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+    finally:
+        if temporary is not None and temporary.exists():
+            temporary.unlink()
+
+
+def write_report(report: dict[str, Any], path: Path | None) -> None:
     if path is None:
-        print(rendered, end="")
+        print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n", end="")
         return
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(rendered, encoding="utf-8")
+    persist_report(report, path)
     print(f"[historical.branch.retire] report={path}")
+
+
+def persist_apply_progress(
+    report: dict[str, Any],
+    path: Path,
+    *,
+    phase: str,
+    persistor: Callable[[dict[str, Any], Path], None],
+) -> None:
+    try:
+        persistor(report, path)
+    except OSError as exc:
+        raise RetirementError(
+            f"audit report persistence failed during {phase}; "
+            "retirement stopped and the last durable report is partial: "
+            f"{exc}"
+        ) from exc
 
 
 def execute(
@@ -485,6 +549,8 @@ def execute(
     bundle_path: Path | None,
     approved_digest: str,
     confirmation: str,
+    report_path: Path | None = None,
+    report_persistor: Callable[[dict[str, Any], Path], None] = persist_report,
     open_branch_provider: Callable[[Path], set[str]] = github_open_branches,
 ) -> dict[str, Any]:
     payload, entries = load_manifest(manifest_path)
@@ -518,6 +584,46 @@ def execute(
             )
         if confirmation != CONFIRMATION:
             raise RetirementError(f"apply requires --confirm {CONFIRMATION}")
+        if report_path is None:
+            raise RetirementError("apply requires --report for durable execution audit")
+        try:
+            verify_report_target(report_path)
+        except OSError as exc:
+            raise RetirementError(
+                f"audit report target is not writable; no references deleted: {exc}"
+            ) from exc
+
+    execution: dict[str, dict[str, Any]] = {
+        assessment.entry.branch: (
+            {
+                "status": "skipped",
+                "details": list(assessment.reasons),
+            }
+            if assessment.status != "eligible"
+            else {"status": "pending", "details": []}
+        )
+        for assessment in assessments
+    }
+
+    if not eligible and mode in {"prepare-bundle", "apply"}:
+        report = build_report(
+            mode=mode,
+            manifest=manifest_path,
+            digest=digest,
+            assessments=assessments,
+            bundle=None,
+            execution=execution if mode == "apply" else None,
+            retirement_outcome="not_executed",
+        )
+        if mode == "apply":
+            assert report_path is not None
+            persist_apply_progress(
+                report,
+                report_path,
+                phase="zero-eligible finalization",
+                persistor=report_persistor,
+            )
+        return report
 
     bundle_result: dict[str, str] | None = None
     if mode in {"prepare-bundle", "apply"}:
@@ -532,32 +638,93 @@ def execute(
             digest=digest,
             assessments=assessments,
             bundle=bundle_result,
+            retirement_outcome=(
+                "bundle_prepared" if mode == "prepare-bundle" else "assessment_only"
+            ),
         )
 
-    if any(assessment.status != "eligible" for assessment in assessments):
-        # Per-entry skip remains explicit; eligible entries may still be retired.
-        pass
-    execution: dict[str, dict[str, Any]] = {}
-    for assessment in assessments:
-        if assessment.status != "eligible":
-            execution[assessment.entry.branch] = {
-                "status": "skipped",
-                "details": list(assessment.reasons),
-            }
-            continue
-        status, details = delete_entry(root, assessment.entry)
-        execution[assessment.entry.branch] = {
-            "status": status,
-            "details": list(details),
-        }
-    return build_report(
+    assert report_path is not None
+    report = build_report(
         mode=mode,
         manifest=manifest_path,
         digest=digest,
         assessments=assessments,
         bundle=bundle_result,
         execution=execution,
+        retirement_outcome="prepared",
     )
+    persist_apply_progress(
+        report,
+        report_path,
+        phase="pre-deletion preparation",
+        persistor=report_persistor,
+    )
+
+    for assessment in assessments:
+        if assessment.status != "eligible":
+            continue
+        branch = assessment.entry.branch
+        execution[branch] = {
+            "status": "in_progress",
+            "details": [
+                "deletion started; inspect exact refs if no later durable audit update exists"
+            ],
+        }
+        report = build_report(
+            mode=mode,
+            manifest=manifest_path,
+            digest=digest,
+            assessments=assessments,
+            bundle=bundle_result,
+            execution=execution,
+            retirement_outcome="in_progress",
+        )
+        persist_apply_progress(
+            report,
+            report_path,
+            phase=f"write-ahead for {branch}",
+            persistor=report_persistor,
+        )
+        status, details = delete_entry(root, assessment.entry)
+        execution[branch] = {
+            "status": status,
+            "details": list(details),
+        }
+        report = build_report(
+            mode=mode,
+            manifest=manifest_path,
+            digest=digest,
+            assessments=assessments,
+            bundle=bundle_result,
+            execution=execution,
+            retirement_outcome="in_progress",
+        )
+        persist_apply_progress(
+            report,
+            report_path,
+            phase=f"result recording for {branch} status={status}",
+            persistor=report_persistor,
+        )
+
+    partial = any(item["status"] == "partial" for item in execution.values())
+    skipped = any(item["status"] == "skipped" for item in execution.values())
+    outcome = "partial" if partial else "completed_with_skips" if skipped else "completed"
+    report = build_report(
+        mode=mode,
+        manifest=manifest_path,
+        digest=digest,
+        assessments=assessments,
+        bundle=bundle_result,
+        execution=execution,
+        retirement_outcome=outcome,
+    )
+    persist_apply_progress(
+        report,
+        report_path,
+        phase="finalization",
+        persistor=report_persistor,
+    )
+    return report
 
 
 def main() -> int:
@@ -593,15 +760,20 @@ def main() -> int:
             bundle_path=args.bundle_output,
             approved_digest=args.approved_manifest_sha256,
             confirmation=args.confirm,
+            report_path=args.report,
         )
-        write_report(report, args.report)
+        if mode == "apply" and args.report is not None:
+            print(f"[historical.branch.retire] report={args.report}")
+        else:
+            write_report(report, args.report)
     except (RetirementError, OSError, subprocess.CalledProcessError) as exc:
         print(f"[historical.branch.retire] DENY {exc}", file=sys.stderr)
         return 2
     eligible = sum(item["assessment"] == "eligible" for item in report["references"])
     skipped = len(report["references"]) - eligible
     print(
-        f"[historical.branch.retire] {mode.upper()} eligible={eligible} skipped={skipped} "
+        f"[historical.branch.retire] {mode.upper()} outcome={report['retirement_outcome']} "
+        f"eligible={eligible} skipped={skipped} "
         f"manifest_sha256={report['manifest_sha256']}"
     )
     if mode == "apply":

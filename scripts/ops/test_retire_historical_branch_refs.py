@@ -107,8 +107,12 @@ class HistoricalBranchRetirementTest(unittest.TestCase):
         mode: str = "dry-run",
         bundle: Path | None = None,
         open_branches: set[str] | None = None,
+        report: Path | None = None,
+        report_persistor=None,
     ) -> dict[str, object]:
         digest = retirement.manifest_digest(self.manifest_path)
+        if mode == "apply" and report is None:
+            report = self.base / "retirement-report.json"
         return retirement.execute(
             self.root,
             self.manifest_path,
@@ -116,6 +120,8 @@ class HistoricalBranchRetirementTest(unittest.TestCase):
             bundle_path=bundle,
             approved_digest=digest if mode == "apply" else "",
             confirmation=retirement.CONFIRMATION if mode == "apply" else "",
+            report_path=report,
+            report_persistor=report_persistor or retirement.persist_report,
             open_branch_provider=lambda _root: set(open_branches or set()),
         )
 
@@ -173,8 +179,87 @@ class HistoricalBranchRetirementTest(unittest.TestCase):
         )
         self.assertIsNone(retirement.local_ref_sha(self.root, "fix/local-only"))
         self.assertTrue(bundle.is_file())
+        self.assertEqual(report["retirement_outcome"], "completed")
+        durable = json.loads((self.base / "retirement-report.json").read_text())
+        self.assertEqual(durable["retirement_outcome"], "completed")
         heads = git(self.root, "bundle", "list-heads", str(bundle)).stdout
         self.assertIn(sha, heads)
+
+    def test_unwritable_report_target_aborts_before_bundle_or_deletion(self) -> None:
+        sha = self.make_branch("fix/report-unwritable", push=False)
+        self.write_manifest([self.entry("fix/report-unwritable", sha, None)])
+        blocked_parent = self.base / "not-a-directory"
+        blocked_parent.write_text("occupied by a file\n", encoding="utf-8")
+        bundle = self.base / "recovery.bundle"
+
+        with self.assertRaisesRegex(
+            retirement.RetirementError,
+            "audit report target is not writable; no references deleted",
+        ):
+            self.execute(
+                mode="apply",
+                bundle=bundle,
+                report=blocked_parent / "report.json",
+            )
+
+        self.assertEqual(
+            retirement.local_ref_sha(self.root, "fix/report-unwritable"), sha
+        )
+        self.assertFalse(bundle.exists())
+
+    def test_progress_write_failure_stops_before_next_deletion(self) -> None:
+        first = self.make_branch("fix/report-first", push=False)
+        second = self.make_branch("fix/report-second", push=False)
+        self.write_manifest(
+            [
+                self.entry("fix/report-first", first, None),
+                self.entry("fix/report-second", second, None),
+            ]
+        )
+        report_path = self.base / "progress-report.json"
+        calls = 0
+
+        def fail_after_first_deletion(report, path):
+            nonlocal calls
+            calls += 1
+            if calls == 3:
+                raise OSError("injected audit sink failure")
+            retirement.persist_report(report, path)
+
+        with self.assertRaisesRegex(
+            retirement.RetirementError,
+            "result recording for fix/report-first status=retired",
+        ):
+            self.execute(
+                mode="apply",
+                bundle=self.base / "recovery.bundle",
+                report=report_path,
+                report_persistor=fail_after_first_deletion,
+            )
+
+        self.assertIsNone(retirement.local_ref_sha(self.root, "fix/report-first"))
+        self.assertEqual(retirement.local_ref_sha(self.root, "fix/report-second"), second)
+        durable = json.loads(report_path.read_text(encoding="utf-8"))
+        self.assertEqual(durable["retirement_outcome"], "in_progress")
+        executions = {item["branch"]: item["execution"] for item in durable["references"]}
+        self.assertEqual(executions["fix/report-first"]["status"], "in_progress")
+        self.assertEqual(executions["fix/report-second"]["status"], "pending")
+
+    def test_all_skipped_apply_writes_not_executed_report_without_bundle(self) -> None:
+        actual = self.make_branch("fix/all-skipped", push=False)
+        self.write_manifest([self.entry("fix/all-skipped", "0" * 40, None)])
+        bundle = self.base / "must-not-exist.bundle"
+        report_path = self.base / "all-skipped-report.json"
+
+        report = self.execute(mode="apply", bundle=bundle, report=report_path)
+
+        self.assertEqual(report["retirement_outcome"], "not_executed")
+        self.assertIsNone(report["bundle"])
+        self.assertEqual(report["references"][0]["execution"]["status"], "skipped")
+        self.assertFalse(bundle.exists())
+        self.assertEqual(retirement.local_ref_sha(self.root, "fix/all-skipped"), actual)
+        durable = json.loads(report_path.read_text(encoding="utf-8"))
+        self.assertEqual(durable["retirement_outcome"], "not_executed")
 
     def test_incomplete_bundle_aborts_before_any_deletion(self) -> None:
         first = self.make_branch("fix/first", push=False)
@@ -208,6 +293,7 @@ class HistoricalBranchRetirementTest(unittest.TestCase):
                 bundle_path=bundle,
                 approved_digest="0" * 64,
                 confirmation=retirement.CONFIRMATION,
+                report_path=self.base / "unapproved-report.json",
                 open_branch_provider=lambda _root: set(),
             )
 
