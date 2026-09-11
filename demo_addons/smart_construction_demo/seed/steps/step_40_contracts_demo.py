@@ -315,20 +315,46 @@ def _ensure_purchase_order(env, settlement, split_first_line=False):
 
 
 def _ensure_invoice_info(env, settlement, ratio):
-    total = settlement.amount_total or sum(settlement.line_ids.mapped("amount")) or 0.0
+    line_total = sum(settlement.line_ids.mapped("amount")) or 0.0
+    total_source = "amount_total" if settlement.amount_total else "line_ids.amount"
+    total = settlement.amount_total or line_total
     invoice_amount = round(total * ratio, 2)
     if settlement.state != "draft":
         rounding = settlement.currency_id.rounding or 0.01
-        if (
-            not settlement.invoice_ref
-            or not settlement.invoice_date
-            or float_compare(
-                settlement.invoice_amount or 0.0,
-                invoice_amount,
-                precision_rounding=rounding,
+        actual_invoice_amount = settlement.invoice_amount or 0.0
+        ref_matches = bool(settlement.invoice_ref)
+        date_matches = bool(settlement.invoice_date)
+        amount_matches = not float_compare(
+            actual_invoice_amount,
+            invoice_amount,
+            precision_rounding=rounding,
+        )
+        if not (ref_matches and date_matches and amount_matches):
+            raise UserError(
+                "已审批演示结算单的发票快照与标准样本不一致："
+                "record=%s,%s(%s); state=%s; "
+                "calculation=round(%s=%s * ratio=%s, 2), currency_rounding=%s; "
+                "invoice_ref[expected=non-empty,actual=%s,match=%s]; "
+                "invoice_date[expected=present,actual=%s,match=%s]; "
+                "invoice_amount[expected=%s,actual=%s,match=%s]"
+                % (
+                    settlement._name,
+                    settlement.display_name,
+                    settlement.id,
+                    settlement.state,
+                    total_source,
+                    total,
+                    ratio,
+                    rounding,
+                    settlement.invoice_ref or "<empty>",
+                    ref_matches,
+                    settlement.invoice_date or "<empty>",
+                    date_matches,
+                    invoice_amount,
+                    actual_invoice_amount,
+                    amount_matches,
+                )
             )
-        ):
-            raise UserError("已审批演示结算单的发票快照与标准样本不一致。")
         return
     settlement.write(
         {
