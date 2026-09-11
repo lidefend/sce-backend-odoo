@@ -1817,7 +1817,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "a6f677ddf11d46e6936ba61fcc06aeb1e4647a828ffd4a77de27f8ca9de3a407",
+      "digest": "35d45abc2b0b71468a9ffc8be1d6191cdd86b5d71649ca5718cc8e8a756e12c9",
       "nativeStyleSelectors": [],
       "path": "components/template/NativeFormTreeRenderer.vue",
       "referenceNativeStyleSelectors": [],
@@ -1873,7 +1873,7 @@
     },
     {
       "category": "relations-x2many",
-      "digest": "a185a8abb8622ce0b18fb58c05599b558a1b06dbe48913cff8de36b138f09e29",
+      "digest": "00aacf682c6de69ee7118be49714c45f53a6770160ed9a864896fb62ab7916f7",
       "nativeStyleSelectors": [],
       "path": "components/template/X2ManyRelationRenderer.vue",
       "referenceNativeStyleSelectors": [
@@ -1885,6 +1885,7 @@
       ],
       "scComponents": [
         "ScButton",
+        "ScEmptyState",
         "ScFileField",
         "ScIcon",
         "ScInlineState",
@@ -2194,7 +2195,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "1be4c70839753f5a3e3393ad78c2fcaa8f0e8e777fcf4a15a0ee2920b61504a8",
+      "digest": "1363804f9c9adf57378735c03935c65671302e531435634e0ebdc4e0bd16e923",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/FormSectionNavigation.vue",
       "referenceNativeStyleSelectors": [],
@@ -2822,7 +2823,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "9f695e5304f91470237930eefb7c85cf0f8c09eda965feae71ec1ad56d6da764",
+  "currentInputDigest": "9071cf6f74319f2518e14ab34be8bc722bf937a9310f0b6ac9d2c8e879264d8d",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
