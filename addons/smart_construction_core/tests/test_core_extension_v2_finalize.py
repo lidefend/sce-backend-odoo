@@ -11,6 +11,147 @@ from odoo.addons.smart_core.utils import contract_governance
 
 @tagged("core_extension_v2_finalize")
 class TestCoreExtensionV2Finalize(TransactionCase):
+    @staticmethod
+    def _effective_view_constraints(node):
+        constraints = {}
+        for attribute in ("groups", "invisible", "readonly", "required"):
+            values = [
+                current.get(attribute)
+                for current in [node, *node.iterancestors()]
+                if current.get(attribute) not in (None, "")
+            ]
+            constraints[attribute] = tuple(values)
+        return constraints
+
+    def test_project_maintenance_form_uses_authoritative_business_sections(self):
+        view = self.env.ref("smart_construction_core.view_project_form_sc_core")
+        arch = view._get_combined_arch()
+        if isinstance(arch, (str, bytes)):
+            arch = etree.fromstring(arch)
+
+        sheet = arch.xpath("//form/sheet")[0]
+        direct_groups = sheet.xpath("./group[@data-sc-anchor]")
+        self.assertEqual(
+            [group.get("string") for group in direct_groups[:3]],
+            ["基本信息", "计划与责任", "责任矩阵"],
+        )
+        self.assertEqual(
+            direct_groups[0].xpath(".//field/@name"),
+            [
+                "project_code", "partner_id", "project_type_id", "project_category_id",
+                "operation_strategy", "location", "owner_contact", "contract_no", "phase_key",
+            ],
+        )
+        self.assertEqual(
+            direct_groups[1].xpath(".//field/@name"),
+            [
+                "initiation_date", "date_start", "start_date", "end_date", "user_id",
+                "manager_id", "cost_manager_id", "doc_manager_id",
+            ],
+        )
+        self.assertEqual(direct_groups[2].xpath("./field/@name"), ["responsibility_ids"])
+
+        page_names = arch.xpath("//sheet/notebook/page/@name")
+        self.assertLess(page_names.index("sc_cockpit"), page_names.index("sc_construction"))
+        operation_page = arch.xpath("//sheet/notebook/page[@name='sc_construction']")[0]
+        self.assertEqual(operation_page.get("string"), "经营概况")
+        self.assertEqual(
+            operation_page.xpath("./group/@string"),
+            ["录入来源", "成本与进度"],
+        )
+
+        auxiliary_fields = arch.xpath("//sheet/notebook/page[@name='sc_system']/group/field/@name")
+        self.assertEqual(auxiliary_fields[:2], ["label_tasks", "tag_ids"])
+        self.assertEqual(len(arch.xpath("//field[@name='responsibility_ids' and not(ancestor::field)]")), 1)
+        self.assertEqual(len(arch.xpath("//field[@name='partner_id' and not(ancestor::field)]")), 1)
+        self.assertEqual(len(arch.xpath("//form/header//field[@name='lifecycle_state']")), 1)
+        self.assertEqual(len(arch.xpath("//sheet//field[@name='lifecycle_state']")), 0)
+
+        callout = " ".join(arch.xpath("//sheet/div[contains(@class, 'alert')]/text()"))
+        self.assertNotIn("自动保存", callout)
+        self.assertIn("保存修改", callout)
+        self.assertIn("提交立项", callout)
+
+    def test_project_maintenance_form_preserves_moved_field_constraints(self):
+        base_view = self.env.ref("project.edit_project")
+        base_arch = etree.fromstring(base_view.arch_db.encode())
+        merged_arch = self.env.ref(
+            "smart_construction_core.view_project_form_sc_core"
+        )._get_combined_arch()
+        if isinstance(merged_arch, (str, bytes)):
+            merged_arch = etree.fromstring(merged_arch)
+
+        for field_name in ("partner_id", "user_id", "date_start", "label_tasks", "tag_ids"):
+            base_nodes = base_arch.xpath(
+                f"//sheet//field[@name='{field_name}' and not(ancestor::field)]"
+            )
+            merged_nodes = merged_arch.xpath(
+                f"//sheet//field[@name='{field_name}' and not(ancestor::field)]"
+            )
+            self.assertEqual(len(base_nodes), 1, f"base field identity is ambiguous: {field_name}")
+            self.assertEqual(len(merged_nodes), 1, f"moved field identity is ambiguous: {field_name}")
+            self.assertEqual(
+                self._effective_view_constraints(merged_nodes[0]),
+                self._effective_view_constraints(base_nodes[0]),
+                f"moved field constraints changed: {field_name}",
+            )
+
+        restricted_fields = (
+            "project_code", "project_type_id", "project_category_id", "operation_strategy",
+            "location", "owner_contact", "contract_no", "phase_key", "initiation_date",
+            "start_date", "end_date", "manager_id", "cost_manager_id", "doc_manager_id",
+            "responsibility_ids",
+        )
+        for field_name in restricted_fields:
+            node = merged_arch.xpath(
+                f"//sheet//field[@name='{field_name}' and not(ancestor::field)]"
+            )[0]
+            effective_groups = ",".join(self._effective_view_constraints(node)["groups"])
+            self.assertIn(
+                "smart_construction_core.group_sc_cap_project_read",
+                effective_groups,
+                f"project-read visibility constraint was lost: {field_name}",
+            )
+
+        company = self.env.ref("base.main_company")
+        internal_user = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "project-form-without-capability",
+            "login": "project-form-without-capability",
+            "email": "project-form-without-capability@example.com",
+            "company_id": company.id,
+            "company_ids": [(6, 0, [company.id])],
+            "groups_id": [(6, 0, [self.env.ref("base.group_user").id])],
+        })
+        project_reader = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "project-form-with-capability",
+            "login": "project-form-with-capability",
+            "email": "project-form-with-capability@example.com",
+            "company_id": company.id,
+            "company_ids": [(6, 0, [company.id])],
+            "groups_id": [(6, 0, [
+                self.env.ref("smart_construction_core.group_sc_cap_project_read").id,
+            ])],
+        })
+        view_id = self.env.ref("smart_construction_core.view_project_form_sc_core").id
+        without_capability = etree.fromstring(
+            self.env["project.project"].with_user(internal_user).get_view(
+                view_id=view_id, view_type="form"
+            )["arch"].encode()
+        )
+        with_capability = etree.fromstring(
+            self.env["project.project"].with_user(project_reader).get_view(
+                view_id=view_id, view_type="form"
+            )["arch"].encode()
+        )
+        for field_name in restricted_fields:
+            selector = f"//sheet//field[@name='{field_name}' and not(ancestor::field)]"
+            self.assertFalse(without_capability.xpath(selector), field_name)
+            self.assertTrue(with_capability.xpath(selector), field_name)
+        for field_name in ("partner_id", "user_id", "date_start"):
+            selector = f"//sheet//field[@name='{field_name}' and not(ancestor::field)]"
+            self.assertTrue(without_capability.xpath(selector), field_name)
+            self.assertTrue(with_capability.xpath(selector), field_name)
+
     def _base_project_contract(self):
         return {
             "layoutContract": {

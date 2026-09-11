@@ -1,0 +1,67 @@
+schema_version: 1
+goal:
+  id: PROJECT-PROFILE-PAGE-PRODUCTIZATION
+  title: project_profile_maintenance_page_productization
+  status: active
+  formal_product_layer: P1
+  supporting_layer: P0
+  layer_target: smart_construction_core_project_view_and_generic_native_form_expression
+  module:
+    - smart_construction_core
+    - frontend
+  objective: >-
+    Reorganize the existing project maintenance form around authoritative business
+    sections while preserving fields, permissions, actions and manual-save behavior.
+  baseline:
+    branch: feature/p1-project-profile-page-productization-v1
+    full_sha: 8f709938ca312e0ecea928945a31f39830c8ec24
+    source: origin/main
+    fingerprint: dc34db8e054bd6bb1ec463221fc190fccd8a35b2688bf7b10bc4b3d1cbe0b661
+    fingerprint_path: artifacts/fingerprints/project_profile_page_productization_baseline_8f709938.json
+    path_count: 7385
+  product_boundary:
+    standard_vs_user_specific: construction_industry_standard_with_platform_renderer_support
+    why_here: >-
+      Project information grouping and order are construction-product defaults;
+      honoring authoritative native group titles and business-section navigation is
+      generic contract rendering behavior.
+    why_not_elsewhere:
+      - no_frontend_model_or_field_name_layout_hardcoding
+      - no_customer_specific_or_low_code_override
+      - no_contract_schema_permission_workflow_or_save_mechanism_change
+      - no_ops_data_repair_fixture_acceptance_upgrade_or_release_work
+    blast_radius:
+      - project_edit_project_composed_form
+      - project_information_edit_action
+      - project_lifecycle_management_action
+      - project_overview_manage_my_projects_and_ledger_actions
+      - project_dashboard_form_fallback
+      - native_odoo_project_form_consumers
+      - shared_native_group_heading_precedence
+      - shared_native_section_navigation_selection
+  batches:
+    - id: A
+      title: project_native_view_information_architecture
+      status: complete
+    - id: B
+      title: generic_authoritative_section_expression
+      status: planned
+    - id: C
+      title: governed_upgrade_and_read_only_browser_validation
+      status: planned
+  acceptance:
+    - default_view_begins_with_core_project_information
+    - one_visible_heading_per_authoritative_business_section
+    - project_responsibility_labels_do_not_degrade_to_relation_detail
+    - labels_do_not_become_primary_section_navigation
+    - all_existing_fields_related_entries_permissions_and_actions_remain_present
+    - draft_copy_describes_manual_save_and_separates_submit_initiation
+    - widths_1440_1088_390_320_light_and_dark_zero_business_writes
+    - non_zero_targeted_backend_frontend_and_static_tests
+  exclusions:
+    - amounts_permissions_workflow_or_save_implementation
+    - contract_schema_or_new_configuration_capability
+    - hidden_section_policy
+    - acceptance_rebuild_upgrade_compatibility_or_release
+  rollback:
+    - revert_p0_renderer_commit_then_p1_view_commit_without_database_data_rollback
