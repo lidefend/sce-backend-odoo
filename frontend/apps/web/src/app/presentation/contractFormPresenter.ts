@@ -438,8 +438,11 @@ function actionTier(action: ContractV2ActionRule): CanonicalFormAction['tier'] {
 function isFormActionBarAction(action: ContractV2ActionRule): boolean {
   const sourceWidgetId = text(action.sourceWidgetId);
   const targetScope = text(action.targetScope).toLowerCase();
+  const nativeIdentity = asDict(action.nativeIdentity);
+  const nativeLocator = text(nativeIdentity.nativeLocator || nativeIdentity.native_locator);
   return sourceWidgetId === 'page.header'
     || (sourceWidgetId === 'page.root' && ['header', 'page'].includes(targetScope))
+    || /\/header(?:\[|\/|$)/.test(nativeLocator)
     || targetScope === 'footer';
 }
 

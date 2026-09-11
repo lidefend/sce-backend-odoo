@@ -1352,7 +1352,14 @@ nativeOccurrenceActionSnapshot.layoutContract.containerTree[0].children.push({
 nativeOccurrenceActionSnapshot.actionContract.actionRuleList[0].nativeIdentity = {
   type: 'object', name: 'action_submit', native_locator: '/form/header/button[1]', occurrence_index: 1,
 };
+nativeOccurrenceActionSnapshot.actionContract.actionRuleList[0].sourceWidgetId = 'button.native.submit';
+nativeOccurrenceActionSnapshot.actionContract.actionRuleList[0].targetScope = 'record';
 const nativeOccurrenceModel = presentContractV2Form(createContractV2Store(nativeOccurrenceActionSnapshot), 'edit');
+assert.deepEqual(
+  nativeOccurrenceModel.actionBar.map((action) => action.key),
+  ['action_submit'],
+  'a native button located in the form header must use the existing product header action channel',
+);
 assert.equal(
   nativeOccurrenceModel.zones.primary[0].children.find((node) => node.nodeId === 'button.native.submit')?.action?.actionRef.backendIdentity,
   'button:object:action_submit',
@@ -1362,6 +1369,13 @@ assert.equal(
   buildCanonicalNativeFormBridge(nativeOccurrenceModel).primaryNodes[0].children?.find((node) => node.type === 'button')?.visible,
   false,
   'an action already promoted to the canonical header must not remain visible as a duplicate native body occurrence',
+);
+assert.equal(
+  buildCanonicalNativeFormBridge(nativeOccurrenceModel).nodeVisible({
+    type: 'field', containerType: 'field', name: 'state', widget: 'statusbar', visible: true,
+  }),
+  false,
+  'the native statusbar field must not repeat below the product header status control',
 );
 assert.deepEqual(presentContractV2Form(store, 'edit'), model, 'presenter must be deterministic');
 

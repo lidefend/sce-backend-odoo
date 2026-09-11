@@ -63,7 +63,7 @@ def validate() -> list[str]:
     contract_page_style = source("frontend/apps/web/src/pages/contractForm/ContractFormPage.css")
     if '<h1 v-if="initialFormLoading"' not in contract_page:
         failures.append("ContractForm loading identity may duplicate the stable page header h1")
-    for marker in ('actions-in-header', '@canonical-save="saveRecord()"'):
+    for marker in ('actions-in-header', '@canonical-save="saveRecord()"', ':status-interactive="nativeStatusbar.visible && !nativeStatusbar.readonly"'):
         if marker not in contract_page:
             failures.append(f"ContractForm does not project direct edit actions into header: {marker}")
     if ":deep(.template-page-header" in contract_page_style:
@@ -98,6 +98,12 @@ def validate() -> list[str]:
         if "<h1" in source(nested):
             failures.append(f"nested renderer competes with ProductPageHeader h1: {nested}")
     native_renderer = source("frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue")
+    canonical_presenter = source("frontend/apps/web/src/app/presentation/contractFormPresenter.ts")
+    canonical_bridge = source("frontend/apps/web/src/pages/contractForm/canonicalNativeFormBridge.ts")
+    if "/\\/header(?:\\[|\\/|$)/.test(nativeLocator)" not in canonical_presenter:
+        failures.append("native form-header actions are not projected into the product header action channel")
+    if "text(node.widget || attrs.widget).toLowerCase() === 'statusbar'" not in canonical_bridge:
+        failures.append("canonical body still renders a duplicate statusbar below the product header")
     if 'v-bind="nativeActionEvidenceAttributes' not in native_renderer:
         failures.append("native action controls must expose canonical action evidence attributes")
     for marker in ("data-action-key", "data-action-ref", "data-backend-identity"):
