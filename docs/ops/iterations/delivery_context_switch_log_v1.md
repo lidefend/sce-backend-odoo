@@ -9279,3 +9279,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 唯一 stash `c03b2088…` 的 7 个路径已逐项核对：内容已进入 main、被后续权威规则反向取代或属于过期生成报告；标为可退役候选，但本轮未删除。
 - 两个 payment 历史路径均为 0 文件的空目录骨架，可列入精确删除候选；5.9MB 前端快照仍被 3 份已跟踪证据引用，保留。环境文件、运行目录、数据库、卷、证据资产及其他仓库均排除。
 - “专题工作树／分支清理完成”只适用于项目资料专题，不代表全仓工作区历史已清空。本轮只更新分类记录，没有 push、PR、分支删除、stash drop 或目录删除。
+
+## 2026-09-11 — 推送前组件接管清单门禁
+
+- 分支 `fix/p4-prepush-generated-inventory-v1`，基线 `main@a23173697acf6166f466a047a779ef6ffa14fb5d`。Formal Product Layer P4；Layer Target 为本地 Quick 与 `pr.push` 的生成证据覆盖，不修改 P0/P1 产品、契约、数据库或运行环境。
+- #463 首个 HEAD 暴露覆盖断层：通用生成报告组没有包含 `component-driver-takeover-inventory-v1.json`，本地 Quick 也没有消费其守卫，导致摘要陈旧只能由远端 `frontend_release_gate` 发现。
+- 最小修复复用现有清单刷新和验证入口：Quick 前移非零守卫；push 在首次远端访问前刷新，若产生差异则零 push 停止，干净路径再次校验后才允许远端探测。
+- 隔离 push 自测新增陈旧清单场景，生成器测试新增源文件摘要反例；本批不新增环境、凭据、fixture、数据库或发布动作。
