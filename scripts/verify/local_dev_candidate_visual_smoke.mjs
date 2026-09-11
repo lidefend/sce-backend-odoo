@@ -4008,6 +4008,172 @@ try {
           return { points, resizeHandles };
         })
         : null;
+      let notebookJourneyEvidence = null;
+      if (target.exerciseNotebookTabs === true) {
+        const expectedLabels = Array.isArray(target.expectedNotebookTabLabels)
+          ? target.expectedNotebookTabLabels.map((label) => String(label || '').trim()).filter(Boolean)
+          : [];
+        const notebook = page.locator('[data-semantic-component="ScTabs"]')
+          .filter({ has: page.locator('[data-section-tab="投标管理"]') })
+          .first();
+        await notebook.waitFor({ state: 'visible', timeout: 15000 });
+        const tabLabels = (await notebook.locator('[data-section-tab]').allTextContents())
+          .map((label) => label.replace(/\s+/g, ' ').trim())
+          .filter(Boolean);
+        const initialLabel = String(await notebook.locator('[data-section-tab].native-tab--active').first().textContent() || '').replace(/\s+/g, ' ').trim();
+        const mutationCountBefore = report.mutationCount;
+        let draftRetention = { checked: false, reason: 'not requested', pass: true };
+        if (target.exerciseNotebookDraftRetention === true) {
+          const statusbar = page.locator('[data-professional-workflow-component="statusbar"]:visible').first();
+          const control = statusbar.locator('[data-semantic-component="ScSelect"].native-statusbar-edit-control:visible').first();
+          await control.waitFor({ state: 'visible', timeout: 15000 });
+          const initialValue = String(await control.locator('input').inputValue() || '');
+          const initialState = String(await statusbar.getAttribute('data-workflow-current') || '');
+          await control.click();
+          const options = page.locator('.t-select__list:visible').last().locator('.t-select-option');
+          await options.first().waitFor({ state: 'visible', timeout: 15000 });
+          const optionLabels = (await options.allTextContents()).map((label) => label.replace(/\s+/g, ' ').trim());
+          const alternateIndex = optionLabels.findIndex((label) => label && label !== initialValue);
+          if (alternateIndex < 0) throw new Error(`${target.name}: notebook draft retention lacks an alternate status`);
+          const alternateValue = optionLabels[alternateIndex];
+          await options.nth(alternateIndex).click();
+          await page.waitForFunction((value) => [...document.querySelectorAll(
+            '[data-professional-workflow-component="statusbar"] .native-statusbar-edit-control input',
+          )].some((input) => input instanceof HTMLInputElement && input.offsetParent !== null && input.value === value), alternateValue);
+          draftRetention = {
+            checked: true,
+            initialValue,
+            initialState,
+            alternateValue,
+            changedState: String(await statusbar.getAttribute('data-workflow-current') || ''),
+            dirtyBeforeTabs: String(await page.locator('.record-header-context:visible').first().textContent() || '').replace(/\s+/g, ' ').trim(),
+            pass: false,
+          };
+        }
+        const tabs = [];
+        for (const label of tabLabels) {
+          const trigger = notebook.locator('[data-section-tab]').filter({ hasText: label }).first();
+          await trigger.click();
+          await waitForStableProductSurface(page);
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          const panel = notebook.locator('.native-tab-panel:visible').first();
+          await panel.waitFor({ state: 'visible', timeout: 15000 });
+          const evidence = await panel.evaluate((node) => {
+            const visible = (candidate) => candidate instanceof HTMLElement && candidate.offsetParent !== null;
+            const rect = (candidate) => {
+              if (!(candidate instanceof HTMLElement)) return null;
+              const box = candidate.getBoundingClientRect();
+              return [Math.round(box.left), Math.round(box.top), Math.round(box.right), Math.round(box.bottom)];
+            };
+            const panelRect = node.getBoundingClientRect();
+            const collectionFields = [...node.querySelectorAll('.field')].filter((field) => (
+              visible(field)
+              && Boolean(field.querySelector('.o2m-table-scroll, .o2m-readonly-table, .o2m-readonly-list'))
+            ));
+            const collections = collectionFields.map((field) => {
+              const fieldRect = field.getBoundingClientRect();
+              const scroller = field.querySelector('.o2m-table-scroll, [data-table-scroll-region="true"]');
+              let scroll = null;
+              if (scroller instanceof HTMLElement && visible(scroller)) {
+                const initial = scroller.scrollLeft;
+                const maximum = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+                scroller.scrollLeft = maximum;
+                const reached = Math.round(scroller.scrollLeft);
+                scroller.scrollLeft = initial;
+                scroll = { maximum: Math.round(maximum), reached, reachable: Math.abs(reached - maximum) <= 1 };
+              }
+              const rows = [...field.querySelectorAll('tbody tr, .o2m-mobile-row')].filter(visible);
+              const headerLabels = [...field.querySelectorAll('th')].filter(visible)
+                .map((header) => String(header.textContent || '').replace(/\s+/g, ' ').trim()).filter(Boolean);
+              const firstRowCells = rows.length ? [...rows[0].querySelectorAll('td')].filter(visible) : [];
+              const identityNode = rows[0]?.querySelector('.o2m-mobile-row-identity')
+                || firstRowCells[headerLabels[0] === '行变更' ? 1 : 0]
+                || null;
+              const identity = String(identityNode?.textContent || '').replace(/\s+/g, ' ').trim();
+              return {
+                fieldName: String(field.getAttribute('data-field-name') || ''),
+                rect: rect(field),
+                widthRatio: Number((fieldRect.width / Math.max(1, panelRect.width)).toFixed(3)),
+                rowCount: rows.length,
+                identity,
+                headers: headerLabels,
+                scroll,
+                pass: fieldRect.left >= panelRect.left - 1
+                  && fieldRect.right <= panelRect.right + 1
+                  && fieldRect.width >= panelRect.width * 0.94
+                  && (!scroll || scroll.reachable)
+                  && (rows.length === 0 || identity.length > 0),
+              };
+            });
+            return {
+              panelRect: rect(node),
+              collectionCount: collections.length,
+              collections,
+              emptyStateCount: [...node.querySelectorAll('[data-semantic-component="ScEmptyState"]')].filter(visible).length,
+              actionLabels: [...node.querySelectorAll('button')].filter(visible).map((button) => String(button.textContent || '').replace(/\s+/g, ' ').trim()).filter(Boolean),
+              pass: collections.every((collection) => collection.pass),
+            };
+          });
+          const draftValue = target.exerciseNotebookDraftRetention === true
+            ? String(await page.locator('[data-professional-workflow-component="statusbar"] .native-statusbar-edit-control input:visible').first().inputValue() || '')
+            : '';
+          const dirtyContext = target.exerciseNotebookDraftRetention === true
+            ? String(await page.locator('.record-header-context:visible').first().textContent() || '').replace(/\s+/g, ' ').trim()
+            : '';
+          tabs.push({ label, draftValue, dirtyContext, ...evidence });
+          await page.screenshot({
+            path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-tab-${label.replace(/[^\p{L}\p{N}]+/gu, '-')}.png`),
+            fullPage: false,
+          });
+        }
+        if (initialLabel) {
+          await notebook.locator('[data-section-tab]').filter({ hasText: initialLabel }).first().click();
+          await waitForStableProductSurface(page);
+        }
+        if (target.exerciseNotebookDraftRetention === true) {
+          const statusbar = page.locator('[data-professional-workflow-component="statusbar"]:visible').first();
+          const control = statusbar.locator('[data-semantic-component="ScSelect"].native-statusbar-edit-control:visible').first();
+          const retainedValue = String(await control.locator('input').inputValue() || '');
+          const dirtyAfterTabs = String(await page.locator('.record-header-context:visible').first().textContent() || '').replace(/\s+/g, ' ').trim();
+          await control.click();
+          const restoreOption = page.locator('.t-select__list:visible').last().locator('.t-select-option')
+            .filter({ hasText: draftRetention.initialValue }).first();
+          await restoreOption.waitFor({ state: 'visible', timeout: 15000 });
+          await restoreOption.click();
+          await page.waitForFunction((value) => [...document.querySelectorAll(
+            '[data-professional-workflow-component="statusbar"] .native-statusbar-edit-control input',
+          )].some((input) => input instanceof HTMLInputElement && input.offsetParent !== null && input.value === value), draftRetention.initialValue);
+          const restoredState = String(await statusbar.getAttribute('data-workflow-current') || '');
+          draftRetention = {
+            ...draftRetention,
+            retainedValue,
+            dirtyAfterTabs,
+            restoredState,
+            pass: draftRetention.changedState !== draftRetention.initialState
+              && tabs.every((item) => item.draftValue === draftRetention.alternateValue && /已修改|未保存/.test(item.dirtyContext))
+              && retainedValue === draftRetention.alternateValue
+              && /已修改|未保存/.test(dirtyAfterTabs)
+              && restoredState === draftRetention.initialState,
+          };
+        }
+        notebookJourneyEvidence = {
+          expectedLabels,
+          tabLabels,
+          initialLabel,
+          tabs,
+          draftRetention,
+          mutationCountBefore,
+          mutationCountAfter: report.mutationCount,
+          pass: expectedLabels.every((label) => tabLabels.includes(label))
+            && tabs.length === tabLabels.length
+            && tabs.every((item) => item.pass)
+            && draftRetention.pass
+            && mutationCountBefore === report.mutationCount,
+        };
+        if (!notebookJourneyEvidence.pass) {
+          throw new Error(`${target.name}: notebook journey failed ${JSON.stringify(notebookJourneyEvidence)}`);
+        }
+      }
       const notebookTabEvidence = await page.locator('[data-semantic-component="ScTabs"]').evaluateAll((nodes) => nodes.map((node) => {
         const rect = node.getBoundingClientRect();
         return {
@@ -4026,7 +4192,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractActions, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialIconResourceEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, sessionExpiredRecoveryEvidence, systemThemeRuntimeEvidence, safeReturnEvidence, formStructureEvidence, fieldAlignmentEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractActions, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialIconResourceEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, sessionExpiredRecoveryEvidence, systemThemeRuntimeEvidence, safeReturnEvidence, formStructureEvidence, fieldAlignmentEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookJourneyEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
