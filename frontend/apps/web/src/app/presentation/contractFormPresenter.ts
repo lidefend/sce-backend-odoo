@@ -605,19 +605,10 @@ export function presentContractV2Form(
       snapshot.layoutContract.componentRegistry, snapshot.pageInfo.clientType,
     )
   ));
-  const demotedActionIds = new Set(
-    (Array.isArray(snapshot.actionContract.primaryResolution?.demoted)
-      ? snapshot.actionContract.primaryResolution.demoted
-      : [])
-      .filter((row): row is ContractV2Dictionary => Boolean(row) && typeof row === 'object' && !Array.isArray(row))
-      .map((row) => text(row.actionId))
-      .filter(Boolean),
-  );
   const actionCandidates = allActions.filter((action) => (
     action.visible
     &&
     isFormActionBarAction(action.actionRef)
-    && !demotedActionIds.has(action.actionRef.actionId)
   ));
   const primaryWinnerIdentity = text(asDict(snapshot.actionContract.primaryResolution).winner);
   const actions = retainAuthoritativeActionOccurrences(actionCandidates, primaryWinnerIdentity);

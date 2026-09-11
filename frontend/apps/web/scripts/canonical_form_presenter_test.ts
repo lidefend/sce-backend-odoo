@@ -1355,11 +1355,21 @@ nativeOccurrenceActionSnapshot.actionContract.actionRuleList[0].nativeIdentity =
 nativeOccurrenceActionSnapshot.actionContract.actionRuleList[0].sourceWidgetId = 'button.native.submit';
 nativeOccurrenceActionSnapshot.actionContract.actionRuleList[0].targetScope = 'record';
 nativeOccurrenceActionSnapshot.actionContract.actionRuleList[0].backendIdentity = 'native_button:object:action_submit:/form[1]/header[1]/button[3]:1';
+nativeOccurrenceActionSnapshot.actionContract.primaryResolution = {
+  policy: 'single_effective_primary_per_record_state',
+  winner: 'native_button:action:338:/form[1]/header[1]/button[1]:1',
+  demoted: [{
+    actionId: 'action.action_sc_submit',
+    backendIdentity: 'native_button:object:action_submit:/form[1]/header[1]/button[3]:1',
+    previousTier: 'primary',
+    effectiveTier: 'secondary',
+  }],
+};
 const nativeOccurrenceModel = presentContractV2Form(createContractV2Store(nativeOccurrenceActionSnapshot), 'edit');
 assert.deepEqual(
   nativeOccurrenceModel.actionBar.map((action) => action.key),
   ['action_submit'],
-  'a native button located in the form header must use the existing product header action channel',
+  'a distinct backend-demoted header button must remain in the product header as a secondary action',
 );
 assert.equal(
   nativeOccurrenceModel.zones.primary[0].children.find((node) => node.nodeId === 'button.native.submit')?.action?.actionRef.backendIdentity,
