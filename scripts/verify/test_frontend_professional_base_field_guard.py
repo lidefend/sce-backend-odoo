@@ -14,6 +14,15 @@ class ProfessionalBaseFieldGuardTest(unittest.TestCase):
 
         self.assertTrue(any("does not route" in failure for failure in validate(source)))
 
+    def test_date_range_accessibility_markers_are_required(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("FormSection.vue"):
+                return value.replace('aria-label="开始日期"', 'aria-label="日期"', 1)
+            return value
+
+        self.assertTrue(any("date range accessibility" in failure for failure in validate(source)))
+
     def test_missing_semantic_marker_fails(self):
         def source(path):
             value = (ROOT / path).read_text(encoding="utf-8")

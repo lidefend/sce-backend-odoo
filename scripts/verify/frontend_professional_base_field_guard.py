@@ -27,6 +27,17 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("professional base field must not duplicate primitive inline padding on ScInput")
     if "<ProfessionalBaseFieldControl" not in section or "isProfessionalBaseFieldCandidate" not in section:
         failures.append("FormSection does not route through the professional base field family")
+    for marker in (
+        'class="native-date-range__control"',
+        'class="native-date-range__label"',
+        'aria-label="开始日期"',
+        'aria-label="结束日期"',
+        'placeholder="请输入开始日期"',
+        'placeholder="请输入结束日期"',
+        "dateRangeEndControlId(field)",
+    ):
+        if marker not in section:
+            failures.append(f"date range accessibility missing marker {marker}")
     if "ProfessionalBaseFieldControl" not in registry or "rendererByFieldType[fieldType]" not in registry:
         failures.append("component registry does not authorize the professional base field renderer")
     for marker in ("presentationMode: field.presentationMode", "renderProfile: field.renderProfile"):

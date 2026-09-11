@@ -204,33 +204,39 @@
                   @change="emitMany2oneCommit(field, ($event.target as HTMLInputElement).value)"
                 />
                 <div v-else-if="isDateRangeWidget(field)" class="native-date-range">
-                  <ScDateField
-                    :id="fieldControlId(field)"
-                    :model-value="formatMonetaryInputValue(field.inputValue, field.digits, field.currencyLabel)"
-                    class="input"
-                    appearance="form-field"
-                    clearable
-                    :aria-label="field.label"
-                    :required="field.required"
-                    :invalid="field.invalid"
-                    :described-by="fieldDescribedBy(field)"
-                    :placeholder="field.inputPlaceholder || inputPlaceholderText(field)"
-                    @update:model-value="emitFieldChange(field, $event)"
-                  />
+                  <div class="native-date-range__control">
+                    <label class="native-date-range__label" :for="fieldControlId(field)">开始日期</label>
+                    <ScDateField
+                      :id="fieldControlId(field)"
+                      :model-value="formatMonetaryInputValue(field.inputValue, field.digits, field.currencyLabel)"
+                      class="input"
+                      appearance="form-field"
+                      clearable
+                      aria-label="开始日期"
+                      :required="field.required"
+                      :invalid="field.invalid"
+                      :described-by="fieldDescribedBy(field)"
+                      placeholder="请输入开始日期"
+                      @update:model-value="emitFieldChange(field, $event)"
+                    />
+                  </div>
                   <ScIcon v-if="field.dateRangeEndField" class="native-date-range-separator" name="arrow-right" :size="16" />
-                  <ScDateField
-                    v-if="field.dateRangeEndField"
-                    :model-value="String(field.dateRangeEndInputValue ?? '')"
-                    class="input"
-                    appearance="form-field"
-                    clearable
-                    :aria-label="`${field.label}结束日期`"
-                    :required="field.required"
-                    :invalid="field.invalid"
-                    :described-by="fieldDescribedBy(field)"
-                    :placeholder="field.inputPlaceholder || inputPlaceholderText(field)"
-                    @update:model-value="emitDateRangeEndChange(field, $event)"
-                  />
+                  <div v-if="field.dateRangeEndField" class="native-date-range__control">
+                    <label class="native-date-range__label" :for="dateRangeEndControlId(field)">结束日期</label>
+                    <ScDateField
+                      :id="dateRangeEndControlId(field)"
+                      :model-value="String(field.dateRangeEndInputValue ?? '')"
+                      class="input"
+                      appearance="form-field"
+                      clearable
+                      aria-label="结束日期"
+                      :required="field.required"
+                      :invalid="field.invalid"
+                      :described-by="fieldDescribedBy(field)"
+                      placeholder="请输入结束日期"
+                      @update:model-value="emitDateRangeEndChange(field, $event)"
+                    />
+                  </div>
                 </div>
                 <div v-else-if="field.type === 'monetary'" class="field-monetary-control">
                   <ScInput
@@ -612,6 +618,10 @@ function isRadioWidget(field: FormSectionFieldSchema) {
 
 function isDateRangeWidget(field: FormSectionFieldSchema) {
   return fieldWidget(field) === 'daterange';
+}
+
+function dateRangeEndControlId(field: FormSectionFieldSchema) {
+  return `${fieldControlId(field)}-end`;
 }
 
 function selectPlaceholderText(field: FormSectionFieldSchema) {
@@ -1245,6 +1255,19 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   gap: 6px;
   align-items: center;
   min-width: 0;
+}
+
+.native-date-range__control {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.native-date-range__label {
+  color: var(--sc-app-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .native-date-range-separator {
