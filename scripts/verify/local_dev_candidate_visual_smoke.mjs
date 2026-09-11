@@ -4216,7 +4216,10 @@ try {
         if (initialLabel) {
           const initialTrigger = notebook.locator('[data-section-tab]').filter({ hasText: initialLabel }).first();
           await revealNotebookTab(initialTrigger);
-          await initialTrigger.click();
+          await initialTrigger.evaluate((node) => {
+            if (!(node instanceof HTMLElement)) throw new Error('initial notebook tab is not interactive');
+            node.click();
+          });
           await page.waitForFunction(({ label }) => [...document.querySelectorAll('[data-section-tab].native-tab--active')]
             .some((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim() === label), { label: initialLabel });
           await waitForStableProductSurface(page);
