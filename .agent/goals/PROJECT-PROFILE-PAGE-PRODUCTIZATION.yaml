@@ -48,7 +48,16 @@ goal:
       status: complete
     - id: C
       title: governed_upgrade_and_read_only_browser_validation
-      status: planned
+      status: blocked
+      evidence:
+        - smart_construction_core_incremental_upgrade_passed
+        - targeted_backend_frontend_and_static_tests_passed
+        - exact_head_read_only_browser_diagnostics_passed
+      blocker: >-
+        Governed local.dev demo synchronization stops in the existing
+        smart_construction_demo settlement-invoice snapshot assertion. The product
+        branch does not own that P4 fixture inconsistency, so browser runs after the
+        failed reset remain diagnostic and cannot freeze formal acceptance.
   acceptance:
     - default_view_begins_with_core_project_information
     - one_visible_heading_per_authoritative_business_section
