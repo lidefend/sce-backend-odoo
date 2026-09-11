@@ -4,6 +4,7 @@ import {
   activeSectionKeyAtAnchor,
   nextBusinessActionLabel,
   nativeSectionNavigationRole,
+  sectionScrollDelta,
   workspaceSectionNavigationItems,
   workspaceSurfaceNavigationItems,
 } from '../src/pages/contractForm/nativeSectionNavigation';
@@ -169,5 +170,8 @@ const lowerPagePositions = [
 ];
 assert.equal(activeSectionKeyAtAnchor(lowerPagePositions, 120), 'related', 'being at the document bottom cannot make an unreached audit target active');
 assert.equal(activeSectionKeyAtAnchor(lowerPagePositions, 800), 'audit', 'the audit entry becomes current only after its own target reaches the navigation anchor');
+assert.equal(sectionScrollDelta(132, 120), 12, 'a target below the active anchor must be advanced to the same anchor used for selection');
+assert.equal(sectionScrollDelta(104, 120), -16, 'a target hidden above the active anchor must be moved below sticky surfaces');
+assert.equal(sectionScrollDelta(120.5, 120), 0, 'sub-pixel rendering around the active anchor must not cause scroll churn');
 
-console.log('[native_section_navigation_test] PASS authority=7 next_action=3 content_identity=9 active_tracking=2');
+console.log('[native_section_navigation_test] PASS authority=7 next_action=3 content_identity=9 active_tracking=5');

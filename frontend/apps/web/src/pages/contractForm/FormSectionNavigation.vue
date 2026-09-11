@@ -36,7 +36,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue';
 import ScButton from '../../components/design-system/ScButton.vue';
-import { activeSectionKeyAtAnchor } from './nativeSectionNavigation';
+import { activeSectionKeyAtAnchor, sectionScrollDelta } from './nativeSectionNavigation';
 
 type SectionNavigationItem = {
   key: string;
@@ -93,13 +93,18 @@ function centerActiveLink() {
   updateOverflow();
 }
 
+function sectionAnchor() {
+  const navBottom = navRef.value?.getBoundingClientRect().bottom || 0;
+  const headerBottom = document.querySelector<HTMLElement>('.template-page-header')?.getBoundingClientRect().bottom || 0;
+  const ownerTop = scrollOwner instanceof HTMLElement ? scrollOwner.getBoundingClientRect().top : 0;
+  return Math.max(navBottom, headerBottom, ownerTop) + 12;
+}
+
 function updateActiveSection() {
   activeFrame = 0;
   const visible = props.items.map((item) => ({ item, target: visibleTarget(item) })).filter((entry) => entry.target);
   if (!visible.length) return;
-  const navBottom = navRef.value?.getBoundingClientRect().bottom || 0;
-  const ownerTop = scrollOwner instanceof HTMLElement ? scrollOwner.getBoundingClientRect().top : 0;
-  const anchor = Math.max(navBottom, ownerTop) + 12;
+  const anchor = sectionAnchor();
   const nextActiveKey = activeSectionKeyAtAnchor(
     visible.map((entry) => ({ key: entry.item.key, top: entry.target?.getBoundingClientRect().top || 0 })),
     anchor,
@@ -132,23 +137,21 @@ function activate(item: SectionNavigationItem) {
   const target = visibleTarget(item);
   if (!target) return;
   activatedKey = item.key;
+  navRef.value?.setAttribute('data-section-activation-pending', item.key);
   if (activationReleaseTimer) window.clearTimeout(activationReleaseTimer);
   activeKey.value = item.key;
   target.setAttribute('tabindex', '-1');
   target.focus({ preventScroll: true });
   target.scrollIntoView({ behavior: 'auto', block: 'start' });
-  const obstructionBottom = Math.max(
-    navRef.value?.getBoundingClientRect().bottom || 0,
-    document.querySelector<HTMLElement>('.template-page-header')?.getBoundingClientRect().bottom || 0,
-  );
-  const correction = target.getBoundingClientRect().top - obstructionBottom - 12;
-  if (correction < 0) {
+  const correction = sectionScrollDelta(target.getBoundingClientRect().top, sectionAnchor());
+  if (correction !== 0) {
     if (scrollOwner instanceof HTMLElement) scrollOwner.scrollBy({ top: correction, behavior: 'auto' });
     else window.scrollBy({ top: correction, behavior: 'auto' });
   }
   centerActiveLink();
   activationReleaseTimer = window.setTimeout(() => {
     activatedKey = '';
+    navRef.value?.removeAttribute('data-section-activation-pending');
     activationReleaseTimer = 0;
     queueActiveSection();
   }, 350);

@@ -33,6 +33,15 @@ export function activeSectionKeyAtAnchor(
   );
 }
 
+export function sectionScrollDelta(
+  targetTop: number,
+  anchor: number,
+  tolerance = 1,
+): number {
+  const delta = targetTop - anchor;
+  return Math.abs(delta) <= tolerance ? 0 : delta;
+}
+
 type NativeSectionAuthorityNode = {
   sourceAuthority?: Record<string, unknown>;
   source_authority?: Record<string, unknown>;
