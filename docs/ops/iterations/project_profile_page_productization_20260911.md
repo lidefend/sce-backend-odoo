@@ -152,4 +152,105 @@ PR #460 已在独立审查通过后，以最终 PR HEAD `4801bf21…` 完成 exa
 - 文档治理：inventory、temp guard、contract sync 通过；product boundary 仍因仓库既有 `smart_construction_demo` 文档／目录不一致失败，81 个既有坏链未重跑，二者均不在本产品专题清理。
 - PR #460 已完成独立审查、四项 exact-head 必需 CI 和 squash 合并；本地主线同步、专题工作树与分支清理以及候选服务停止均已完成。发布未执行，本结论不是 release-ready。
 
+## 工作区归档与遗留分类
+
+本节补充的是整个仓库的本地生命周期盘点，不改变项目专题已完成的产品与合并结论。此前“工作树与分支清理完成”只指 `feature/p1-project-profile-page-productization-v1` 及其登记工作树；它从未表示所有历史本地分支、stash、ignored 缓存和仓库外证据目录均已清理。
+
+盘点绑定 `origin/main@69cd7e3d0f28523560760a8be360598d459d0f1f` 与归档提交 `audit/project-profile-mainline-closure-v1@a41260d44aa8eadb1f535f320db7383add28c56e`。写入前完整 tracked/untracked 指纹为 `447123347ce07165d451e7b291362093050808472a334750f1f5e0f3f0ef4665`（7389 paths）。远端引用已刷新，仓库仅登记当前一个工作树，当前未提交改动为零。
+
+### 分支分类
+
+本地共有 50 个分支，包含 `main`。分类不单靠 `git branch --merged`：squash 合并以 GitHub PR 的最终状态和 exact head 为主要依据，Git 祖先与 patch 等价只作辅助。
+
+| 分类 | 数量 | 处理结论 |
+|---|---:|---|
+| `main` | 1 | 权威主线，保留 |
+| 当前归档交付 | 1 | `audit/project-profile-mainline-closure-v1@a41260d4`，三份文档尚未发布，必须保留 |
+| 已交付、可退役候选 | 33 | 31 个本地 tip 与已合并 PR exact head 一致；2 个 tip 是 `main` 祖先。删除前仍须逐分支走受管 exact-head 清理 |
+| 已合并 PR 但本地 tip 身份不一致 | 2 | 不能按 PR 已合并直接删除，保留待核对 |
+| PR 已关闭但未合并 | 2 | 保留，需产品／治理所有者决定废弃或恢复 |
+| 无 PR 对应且含独有提交 | 11 | 保留，需按独有差异确认归属 |
+
+已交付、可退役候选如下；本节只形成清单，没有删除分支：
+
+| 本地分支 | 交付依据 |
+|---|---|
+| `audit/p4-merge-policy-fast-runtime-proof-v1` | PR #295 merged，local tip = PR head |
+| `audit/p4-merge-policy-gate-fast-execution-v1` | PR #294 merged，local tip = PR head |
+| `audit/p4-merge-policy-gate-fast-proof-v1` | PR #293 merged，local tip = PR head |
+| `audit/rendering-detail-ownership-baseline-20260908` | PR #452 merged，local tip = PR head |
+| `audit/worktree-bootstrap-professionalization-v1` | local tip 为 `origin/main` 祖先 |
+| `codex/ci-native-merge-orchestration` | local tip 为 `origin/main` 祖先 |
+| `codex/public-guard-incremental-main-v1` | PR #393 merged，local tip = PR head |
+| `feature/activity-page-identity-cache-closure-v1` | PR #394 merged，local tip = PR head |
+| `feature/custom-frontend-g3-boq-readonly-loop` | PR #406 merged，local tip = PR head |
+| `feature/custom-frontend-g32-preview-projection` | PR #407 merged，local tip = PR head |
+| `feature/custom-frontend-integration-g7-idempotency-infra` | PR #439 merged，local tip = PR head |
+| `feature/form-open-create-render-perf` | PR #377 merged，local tip = PR head |
+| `feature/p0-collection-state-control-completion-v1` | PR #371 merged，local tip = PR head |
+| `feature/p0-design-token-system-v1` | PR #300 merged，local tip = PR head |
+| `feature/p0-frontend-visual-projection-closure-v1` | PR #372 merged，local tip = PR head |
+| `feature/p0-native-form-action-presentation-v1` | PR #367 merged，local tip = PR head |
+| `feature/p0-page-pattern-reference-parity-v1` | PR #376 merged，local tip = PR head |
+| `feature/p0-theme-profile-switching-v1` | PR #379 merged，local tip = PR head |
+| `feature/p0-ui5-kit-removal-v2` | PR #378 merged，local tip = PR head |
+| `feature/p0-visual-density-baseline-v1` | PR #381 merged，local tip = PR head |
+| `feature/p1-contract-execution-components-v1` | PR #325 merged，local tip = PR head |
+| `feature/payment-golden-floorplan-truth-closure-v2` | PR #392 merged，local tip = PR head |
+| `fix/merge-policy-gate-status-report` | PR #380 merged，local tip = PR head |
+| `fix/p4-governed-branch-sync-append-log-v1` | PR #297 merged，local tip = PR head |
+| `fix/p4-governed-branch-sync-bootstrap-v2` | PR #296 merged，local tip = PR head |
+| `fix/p4-governed-local-branch-sync-v1` | PR #291 merged，local tip = PR head |
+| `fix/p4-local-dev-candidate-browser-binding-v1` | PR #298 merged，local tip = PR head |
+| `fix/p4-local-dev-candidate-visual-smoke-v1` | PR #299 merged，local tip = PR head |
+| `fix/p4-local-dev-frontend-quick-env-forwarding-v2` | PR #290 merged，local tip = PR head |
+| `fix/p4-merge-policy-gate-v1` | PR #292 merged，local tip = PR head |
+| `fix/project-owner-relation-label-v2` | PR #387 merged，local tip = PR head |
+| `fix/scheduled-ci-gates-v1` | PR #398 merged，local tip = PR head |
+| `refactor/p1-business-facts-professionalization-v1` | PR #400 merged，local tip = PR head |
+
+必须保留并进一步确认的分支逐项如下：
+
+| 本地分支 | PR／独有差异 | 当前结论 |
+|---|---|---|
+| `feature/native-view-action-semantics-closure-v1` | PR #399 已合并，但本地 tip `8db4e92a` 晚于 PR head，包含一次与 PR #401 主线的合并及生成清单变化 | tip 身份不一致，待确认后再退役 |
+| `fix/scene-entry-runtime-blocks` | PR #412 已合并，但本地 tip `85711cb7` 不是最终 PR head，且与已关闭 PR #411 的 head 相同 | 保留，需核对 #412 最终补提交 |
+| `fix/canonical-navigation-container-promotion` | PR #411 closed、未合并；1 commit / 2 paths | 保留，可能已由 #412 替代但尚未完成身份等价证明 |
+| `fix/p4-candidate-label-dispatch-idempotency-v1` | PR #326 closed、未合并；3 commits / 10 paths | 保留，需治理所有者决定是否废弃 |
+| `audit/form-structure-baseline-evidence-v1` | 无 PR；3 commits / 2 个浏览器证据脚本路径 | 保留独有验证差异 |
+| `audit/frontend-expression-mainline-acceptance-v1` | 无 PR；1 commit / 7 个目标与阶段报告路径 | 保留独有归档差异 |
+| `audit/frontend-mainline-landing-closure-v1` | 无 PR；1 commit / 2 个阶段报告路径 | 保留独有归档差异 |
+| `feature/demo-mainline-alignment` | 无 PR；15 commits / 74 paths，涉及 demo、前端验收与治理入口 | 高影响未交付分支，保留 |
+| `feature/demo-mainline-alignment-clean` | 无 PR；12 commits / 11 paths，涉及 demo 与受管开发入口 | 高影响未交付分支，保留；与上一分支需单独判定替代关系 |
+| `feature/p0-official-design-system-alignment-v1` | 无 PR；56 commits / 199 paths | 大范围未交付分支，保留 |
+| `feature/p0-overlay-lifecycle-convergence-v1` | 无 PR；18 commits / 49 paths | 未交付共享前端分支，保留 |
+| `feature/payment-execution-canonical-workflow-validation-v1` | 无 PR；4 commits / 15 paths | 未交付付款流程与 fixture 验证分支，保留 |
+| `fix/p0-native-inline-text-presentation-semantics-v1` | 无 PR；3 commits / 9 paths | 未交付共享渲染分支，保留 |
+| `fix/p4-governed-branch-sync-bootstrap-v1` | 无 PR；3 commits / 8 paths | 旧治理实现，可能由 v2 替代；未证明前保留 |
+| `fix/superseded-pr-retirement-v1` | 无 PR；1 commit / 4 paths | 未交付 PR 退役工具，保留 |
+
+### stash 分类
+
+唯一 stash 为 `c03b208895b005bba36d708e7a546f3c9a4e1a93`，创建于 2026-08-31，标记 `codex-temp-pr-push-2026-08-31`，包含 7 个路径、23 行新增和 24 行删除。只读逐文件比较结论：
+
+- `test_unified_page_contract_v2_kanban_action_registry.py` 的 stash 内容与当前 main blob 完全一致。
+- `professional_relation_field_model_test.ts` 中 `sc.select.remote` 关系识别已进入 main，main 还增加了后续权威文本反例。
+- `collection_view_semantics_test.ts` 的旧 stash 试图显示第 13 列；当前 main 已明确恢复 `capacity <= 12`，该旧断言不能覆盖现行规则。
+- `frontend_professional_business_value_guard.py` 的旧 stash 将守卫收缩为 4 families；当前 main 已明确恢复为 7 families，旧结果已被后续设计取代。
+- 两份复杂度报告和组件接管 inventory 是旧源码对应的生成结果，当前 main 已多次重新生成，不能恢复旧摘要或 digest。
+
+因此该 stash 没有应直接恢复的独有产品结果，分类为“内容已吸收或被后续权威实现取代的可退役候选”。本轮未 apply、pop 或 drop；删除仍需精确授权。
+
+### 仓库外目录与 ignored 文件
+
+| 路径／类别 | 只读核对 | 分类 |
+|---|---|---|
+| `sce-backend-odoo-payment-request-p1-v3-rebased-v14-baseline-da09-p0-semantic-group-reparent-v1-p1-work-summary-performance-v1` | 18 个目录、0 文件、0 symlink，约 72KB；未登记为 worktree，无源码／Make 引用，无运行进程 | 可精确删除候选 |
+| `sce-backend-odoo-payment-request-p1-v3-rebased-v20-baseline-5c37` | 3 个目录、0 文件、0 symlink，约 12KB；未登记为 worktree，无源码／Make 引用，无运行进程 | 可精确删除候选 |
+| `sce-daily-frontend-snapshot-20260826` | 613 文件，约 5.9MB；不参与运行配置，但被 3 份已跟踪的前端表达 ledger 作为只读 presentation reference 直接引用 | 保留；迁移引用或归档证据前不得删除 |
+| `.env.*`、`.runtime`、`artifacts`、前端依赖／构建目录 | 被 Git 忽略，包含环境、运行或证据资产 | 不纳入本轮清理 |
+| `17.0.0.163/.164` | 仅各有一个 `__pycache__` 字节码文件，约 12KB/16KB | ignored 缓存候选，但不与业务分支或环境资产混删 |
+
+本轮没有删除任何上述对象。下一安全顺序是：先发布并合并当前三份归档文档，再同步主目录回 main；随后可在独立授权下，先清理 33 个已交付分支与两个空目录，再单独决定 stash 和 15 个待确认分支。前端快照、环境文件、数据库、卷及其他仓库保持不动。
+
 回滚顺序为先回退 P0 renderer 提交，再回退 P1 项目视图提交；不需要数据库业务数据回滚。

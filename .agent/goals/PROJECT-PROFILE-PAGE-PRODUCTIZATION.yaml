@@ -117,6 +117,12 @@ goal:
     local_main_sync: complete
     topic_worktree_cleanup: complete
     topic_branch_cleanup: complete
+    topic_cleanup_scope: project_profile_delivery_only
+    archive_branch: audit/project-profile-mainline-closure-v1
+    archive_commit: a41260d44aa8eadb1f535f320db7383add28c56e
+    workspace_global_cleanup: classified_not_applied
+    legacy_local_branch_count: 50
+    legacy_stash_count: 1
     candidate_service: stopped
     release_status: not_run
   acceptance:

@@ -9256,3 +9256,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - PR #460 最终 HEAD `4801bf215b320d95e7133c855f852408b1814c6c` 经独立审查通过；`frontend_release_gate`、`merge_policy_gate`、`professional_quality_gate`、`public_guard` 四项 exact-head 必需检查均为 `SUCCESS`。
 - 按明确授权 squash 合并为 `main@69cd7e3d0f28523560760a8be360598d459d0f1f`；本地 `main` 与 `origin/main` 已对齐，产品工作树、同名本地及远端专题分支已通过受管入口清理，5176 候选服务已停止。
 - 项目资料维护页面产品化开发与交付阶段完成。旧结算快照、真实保存与流程动作、多角色、完整业务和发布验收继续独立登记；系统未发布。
+
+## 2026-09-11 — 工作区归档与遗留分类
+
+- 分支 `audit/project-profile-mainline-closure-v1@a41260d44aa8eadb1f535f320db7383add28c56e`；Formal Product Layer P4。写入前完整指纹 `447123347ce07165d451e7b291362093050808472a334750f1f5e0f3f0ef4665`（7389 paths），`origin/main` 联网刷新后仍为 `69cd7e3d…`。
+- 50 个本地分支分为：main 1、当前归档 1、已交付可退役候选 33、合并身份不一致 2、closed 未合并 2、无 PR 且含独有提交 11。squash 分支按 GitHub merged exact head 识别，不使用 `--merged` 单独判定。
+- 唯一 stash `c03b2088…` 的 7 个路径已逐项核对：内容已进入 main、被后续权威规则反向取代或属于过期生成报告；标为可退役候选，但本轮未删除。
+- 两个 payment 历史路径均为 0 文件的空目录骨架，可列入精确删除候选；5.9MB 前端快照仍被 3 份已跟踪证据引用，保留。环境文件、运行目录、数据库、卷、证据资产及其他仓库均排除。
+- “专题工作树／分支清理完成”只适用于项目资料专题，不代表全仓工作区历史已清空。本轮只更新分类记录，没有 push、PR、分支删除、stash drop 或目录删除。
