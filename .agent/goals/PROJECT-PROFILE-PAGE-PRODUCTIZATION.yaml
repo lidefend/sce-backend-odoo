@@ -51,13 +51,18 @@ goal:
       status: blocked
       evidence:
         - smart_construction_core_incremental_upgrade_passed
-        - targeted_backend_frontend_and_static_tests_passed
-        - exact_head_read_only_browser_diagnostics_passed
+        - final_exact_head_governed_frontend_quick_gate_passed
+        - hidden_ancestor_notebook_and_split_render_counterexamples_passed
+        - exact_head_light_dark_1440_1088_390_320_read_only_browser_diagnostics_passed
+        - header_identity_status_save_and_submit_roles_verified
+        - table_outer_boundary_inner_reachability_and_popup_boundaries_verified
       blocker: >-
         Governed local.dev demo synchronization stops in the existing
-        smart_construction_demo settlement-invoice snapshot assertion. The product
-        branch does not own that P4 fixture inconsistency, so browser runs after the
-        failed reset remain diagnostic and cannot freeze formal acceptance.
+        smart_construction_demo settlement-invoice snapshot compound assertion. Its
+        governed output does not expose the failed record or expected/actual values,
+        so the failure is not yet attributable to fixture data, the assertion, or a
+        product condition. This branch does not own that P4 diagnosis; browser runs
+        after the failed reset remain diagnostic and cannot freeze formal acceptance.
   acceptance:
     - default_view_begins_with_core_project_information
     - one_visible_heading_per_authoritative_business_section
