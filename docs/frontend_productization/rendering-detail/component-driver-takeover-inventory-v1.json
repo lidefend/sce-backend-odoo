@@ -976,7 +976,7 @@
         "TDesignSelect"
       ],
       "officialComponent": "select",
-      "productionConsumerCount": 38,
+      "productionConsumerCount": 39,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1384,7 +1384,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "535a4f19b7000debfa06b3bdf82279e04562833913625254be6e719c01df6fdc",
+  "inputDigest": "2b4c06f6c8cf99455e9f3bb1f4e1de790279c151ae31552f5a4adeaa9184eab7",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",
