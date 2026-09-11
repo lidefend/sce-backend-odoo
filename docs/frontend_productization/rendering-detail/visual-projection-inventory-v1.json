@@ -1447,7 +1447,7 @@
     },
     {
       "category": "other",
-      "digest": "9ccffec410e1867405313b7bf90ab0c2f1763a204de72a30e542932cec88d4f2",
+      "digest": "39c1286b8d9f7f658ec33ba39432dd86a39b54d40aa3b0f218d01510e94c44f5",
       "nativeStyleSelectors": [],
       "path": "components/product-page-header/ProductPageHeader.vue",
       "referenceNativeStyleSelectors": [],
@@ -1999,7 +1999,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "6cb75e8b75e5dfd850ae2eef504f32639df60c21da501ec3acaddb400ac73eb5",
+      "digest": "7edaaeb9e74c9ce6221372a2fd08af35a5c716c8e653df7e43c98104fc926328",
       "nativeStyleSelectors": [],
       "path": "pages/ContractFormPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2096,7 +2096,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "6e0ac6f7cc1c0cd58abd574be1d62be7cbd293563f7f8e57fb77b3b3e9ee718f",
+      "digest": "0e8b33bb60d8ba73b7ab1ddcff1bad944ca2118bcba818b5802c9a89127349cb",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormDriverHost.vue",
       "referenceNativeStyleSelectors": [
@@ -2132,7 +2132,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "5e239297fb848f53572444722268e85ce0ba3c2a577115b23f0a1d0abc0c3f6f",
+      "digest": "73afc0aa0d9342e3197188937d7f3294366f07bcd197d7400fda4f493499d875",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormProductHeader.vue",
       "referenceNativeStyleSelectors": [],
@@ -2145,6 +2145,7 @@
         "ScDropdown",
         "ScDropdownItem",
         "ScIcon",
+        "ScSelect",
         "ScSteps"
       ]
     },
@@ -2821,7 +2822,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "a24e5891a7b399611faa27fb4ea96839e7a15acdd3ef75cdc5ea612d4fbb7211",
+  "currentInputDigest": "af724b66d534763965e5b2ae98a5afdd6f2a7c406c3a1a41e0a3a21f6232025d",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
