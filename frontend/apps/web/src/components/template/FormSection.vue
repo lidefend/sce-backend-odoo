@@ -875,6 +875,12 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   min-width: 0;
 }
 
+/* Native group/page col="1" is authoritative: every child owns the only
+   available column even when its field descriptor has no reliable type. */
+.template-form-section-grid--columns-1 > .field {
+  grid-column: 1 / -1;
+}
+
 /* 小屏幕：1 列布局，减小间隙 */
 @container (max-width: 479px) {
   .template-form-section-grid {

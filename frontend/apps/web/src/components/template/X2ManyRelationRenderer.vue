@@ -222,7 +222,8 @@
           :data-o2m-row-key="row.key"
         >
           <header class="o2m-mobile-row-header">
-            <span class="o2m-state-badge">{{ adapter.one2manyRowStateLabel(row) }}</span>
+            <strong class="o2m-mobile-row-identity" :title="adapter.one2manyRowLabel(field.name, row)">{{ adapter.one2manyRowLabel(field.name, row) }}</strong>
+            <span class="o2m-state-badge">行变更：{{ adapter.one2manyRowStateLabel(row) }}</span>
             <span v-if="o2mRowHasMessages(row)" class="o2m-mobile-row-status">需要检查</span>
             <ScButton
               v-if="adapter.one2manyCanUnlink(field.name)"
@@ -384,7 +385,7 @@ const o2mTableColumns = computed(() => {
     ellipsis: false,
   }));
   return [
-    { colKey: '_state', title: '状态', width: 90, fixed: 'left' },
+    { colKey: '_state', title: '行变更', width: 90, fixed: 'left' },
     ...fieldColumns,
     { colKey: '_action', title: '操作', width: 80, fixed: 'right' },
   ];
@@ -1402,6 +1403,15 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
 
   .o2m-mobile-row-header > :last-child {
     margin-inline-start: auto;
+  }
+
+  .o2m-mobile-row-identity {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--sc-app-text-primary);
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .o2m-mobile-row-status {

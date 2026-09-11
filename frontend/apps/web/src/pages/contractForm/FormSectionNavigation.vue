@@ -36,6 +36,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue';
 import ScButton from '../../components/design-system/ScButton.vue';
+import { activeSectionKeyAtAnchor } from './nativeSectionNavigation';
 
 type SectionNavigationItem = {
   key: string;
@@ -99,14 +100,12 @@ function updateActiveSection() {
   const navBottom = navRef.value?.getBoundingClientRect().bottom || 0;
   const ownerTop = scrollOwner instanceof HTMLElement ? scrollOwner.getBoundingClientRect().top : 0;
   const anchor = Math.max(navBottom, ownerTop) + 12;
-  const ownerAtBottom = scrollOwner instanceof HTMLElement
-    ? scrollOwner.scrollTop + scrollOwner.clientHeight >= scrollOwner.scrollHeight - 2
-    : window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2;
-  const active = ownerAtBottom
-    ? visible[visible.length - 1]
-    : visible.reduce((current, entry) => ((entry.target?.getBoundingClientRect().top || 0) <= anchor ? entry : current), visible[0]);
-  if (activeKey.value !== active.item.key) {
-    activeKey.value = active.item.key;
+  const nextActiveKey = activeSectionKeyAtAnchor(
+    visible.map((entry) => ({ key: entry.item.key, top: entry.target?.getBoundingClientRect().top || 0 })),
+    anchor,
+  );
+  if (activeKey.value !== nextActiveKey) {
+    activeKey.value = nextActiveKey;
     centerActiveLink();
   }
 }

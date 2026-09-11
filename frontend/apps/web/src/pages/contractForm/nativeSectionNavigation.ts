@@ -17,6 +17,22 @@ export type WorkspaceSectionNavigationItem = {
   sourceIdentity: string;
 };
 
+export type VisibleSectionPosition = {
+  key: string;
+  top: number;
+};
+
+export function activeSectionKeyAtAnchor(
+  positions: VisibleSectionPosition[],
+  anchor: number,
+): string {
+  if (!positions.length) return '';
+  return positions.reduce(
+    (current, position) => (position.top <= anchor ? position.key : current),
+    positions[0].key,
+  );
+}
+
 type NativeSectionAuthorityNode = {
   sourceAuthority?: Record<string, unknown>;
   source_authority?: Record<string, unknown>;

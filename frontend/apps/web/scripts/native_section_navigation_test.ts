@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import type { CanonicalFormNode } from '../src/app/presentation/canonicalFormRenderModel';
 import {
+  activeSectionKeyAtAnchor,
   nextBusinessActionLabel,
   nativeSectionNavigationRole,
   workspaceSectionNavigationItems,
@@ -160,4 +161,13 @@ assert.equal(new Set(relationSections.map((item) => item.selector)).size, 2, 're
 assert.deepEqual(workspaceSurfaceNavigationItems({ collaborationAvailable: true, auditAvailable: false }).map((item) => item.role), ['activity']);
 assert.deepEqual(workspaceSurfaceNavigationItems({ collaborationAvailable: true, auditAvailable: true }).map((item) => item.role), ['activity', 'audit']);
 
-console.log('[native_section_navigation_test] PASS authority=7 next_action=3 content_identity=9');
+const lowerPagePositions = [
+  { key: 'basic', top: -900 },
+  { key: 'related', top: -40 },
+  { key: 'collaboration', top: 520 },
+  { key: 'audit', top: 760 },
+];
+assert.equal(activeSectionKeyAtAnchor(lowerPagePositions, 120), 'related', 'being at the document bottom cannot make an unreached audit target active');
+assert.equal(activeSectionKeyAtAnchor(lowerPagePositions, 800), 'audit', 'the audit entry becomes current only after its own target reaches the navigation anchor');
+
+console.log('[native_section_navigation_test] PASS authority=7 next_action=3 content_identity=9 active_tracking=2');

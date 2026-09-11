@@ -25,9 +25,9 @@
       >{{ unfollowLabel }}</ScButton>
     </div>
     <ScInlineState v-if="error" state="error" :label="error" />
-    <ScList v-else-if="items.length" class="native-follower-list" :items="items.map((item) => ({ ...item, key: String(item.partner_id) }))">
+    <ScList v-else-if="items.length" class="native-follower-list" :split="false" :items="items.map((item) => ({ ...item, key: String(item.partner_id) }))">
       <template #item="{ item }">
-        <span class="native-follower-name">{{ item.name }}</span>
+        <span class="native-follower-name" :title="String(item.name || '')">{{ item.name }}</span>
         <span v-if="item.is_current_user" class="native-follower-current">我</span>
       </template>
     </ScList>
