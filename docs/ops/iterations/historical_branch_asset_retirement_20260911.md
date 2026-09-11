@@ -71,3 +71,10 @@ apply 现在要求显式报告路径：首个删除动作前实际创建、写�
 ## 下一步与授权边界
 
 下一步仅是：完成 PR #462 的 exact-head 独立审查与必需 CI，合并并同步 main；随后以已授权 manifest SHA-256 `cac22ce59dbabf3ce9eb77dcf356d7dc55b8c545473f2562f73d854e7bb754a7` 重新核验身份、开放 PR、工作树和恢复 bundle，再执行清单。漂移项逐项跳过，不扩大到四个保留分支或任何未列引用。
+
+## 主线落地后的保留资产状态
+
+- PR #462 已合入 `main@3cb69dc8150de4acd9384ce734166801ceebece7`；12 个本地引用和明确列出的 6 个远端引用已按原 manifest 完成退役，恢复 bundle 继续保留。
+- `audit/frontend-mainline-landing-closure-v1@18f5ce3781834a7486c3b17f4ff76ceaffb56382` 与 `audit/frontend-expression-mainline-acceptance-v1@a87ebe893376aad5464c0aa3cf469dc9b787e374` 的有效事实已由 `frontend_expression_historical_evidence_archive_20260911.md` 随 #462 进入主线，现列为“可进入后续精确退役清单”；本轮不删除。
+- `feature/payment-execution-canonical-workflow-validation-v1@3f86732124b23096b847a044a2c89d1ec1283151` 与 `feature/demo-mainline-alignment@113ad564a05df3c367b5ffa4ef9412230df6026b` 继续保留。前者仅提取通用 workflow authority 价值，后者继续承载尚未实施的 controller checkpoint P4 待办；不整体恢复旧分支。
+- 恢复 bundle 保持在仓库外 `/home/lidefend/workspace/sce-backend-odoo-historical-recovery/historical-branch-retirement-cac22ce59dbabf3c.bundle`，SHA-256 为 `d58b5e56ae423e6607efaa404663cd8676cc8275bd09fd97b5c331447d313a9c`。

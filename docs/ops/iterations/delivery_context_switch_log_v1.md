@@ -9265,6 +9265,13 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 两条 frontend audit 分支的 #455—#459 有效事实合并归档，实时确认 PR/merge/四项 CI；历史浏览器 artifacts 当前缺失，样本与哈希仅按源报告登记，不冒充重跑。两条分支在归档合入主线前继续保留。
 - workflow authority 当前实现对重复身份、畸形行和非布尔 `enabled` 仍可能授予可执行状态，诊断确认通用 P0 缺口，后续独立提取；控制器 FAILED_RECOVERABLE checkpoint 恢复仅登记 P4 待办。本批不实施这两个技术任务，不恢复付款/demo 内容。
 
+## 2026-09-11 — Workflow authority 输入校验
+
+- 分支 `feature/p0-workflow-authority-input-validation-v1`，基线 `main@3cb69dc8150de4acd9384ce734166801ceebece7`。旧 #462 交付工作树原地切换到新合规分支复用，未创建第三个工作树；历史交付分支引用保留。
+- Formal Product Layer P0；Layer Target 为通用 Contract V2 workflow authority 输入解析；Module 为 `frontend/apps/web`。该层只消费后端 workflow 投影，不写 P1 流程语义、付款/demo、P4 controller、fixture 或数据库。
+- 修复前非零用例确认重复 method 身份会选中首行。最小修复按单一请求动作的 method/key/alias 匹配并集判唯一，非法匹配行失败关闭，不可归属或无关坏节点隔离；Canonical presenter 与旧桥接共享裁决。
+- 收入合同审查等待独立完整任务书；两个历史 audit 分支仅登记为后续可退役，workflow/controller 源分支及恢复 bundle 继续保留，本轮无删除授权。
+
 ## 2026-09-11 — 工作区归档与遗留分类
 
 - 分支 `audit/project-profile-mainline-closure-v1@a41260d44aa8eadb1f535f320db7383add28c56e`；Formal Product Layer P4。写入前完整指纹 `447123347ce07165d451e7b291362093050808472a334750f1f5e0f3f0ef4665`（7389 paths），`origin/main` 联网刷新后仍为 `69cd7e3d…`。

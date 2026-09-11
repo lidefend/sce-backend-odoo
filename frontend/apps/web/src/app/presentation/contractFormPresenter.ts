@@ -26,6 +26,7 @@ import { canonicalRoleForFormStructureRole } from '../contracts/v2/formStructure
 import { resolveContractV2SelectorStatus } from '../contracts/v2/store';
 import { evaluateNativeModifierValue } from '../modifierEngine';
 import { resolveContractProfessionalComponent } from './professionalComponentRegistry';
+import { resolveWorkflowActionAvailability } from '../contracts/v2/workflowActionAvailability';
 
 function asDict(value: unknown): ContractV2Dictionary {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as ContractV2Dictionary : {};
@@ -502,6 +503,7 @@ function presentAction(
   mode: CanonicalFormRenderMode,
   identityUnique: boolean,
   values: ContractV2Dictionary,
+  workflowContract: ContractV2Dictionary,
 ): CanonicalFormAction {
   const profiles = (action.visibleProfiles || ['create', 'edit', 'readonly'])
     .filter((profile): profile is CanonicalFormRenderMode => ['create', 'edit', 'readonly'].includes(profile));
@@ -532,7 +534,7 @@ function presentAction(
   if (!text(action.actionId) || !text(action.backendIdentity)) {
     throw new Error('CANONICAL_FORM_ACTION_REFERENCE_MISSING');
   }
-  return {
+  const presented: CanonicalFormAction = {
     key: action.actionKey || action.actionId,
     label: text(action.label || action.actionKey || action.actionId),
     icon: text(action.presentation?.icon),
@@ -547,6 +549,20 @@ function presentAction(
     visibleProfiles: profiles,
     safety: Object.freeze({ ...(action.actionSafety || {}) }),
     actionRef: action,
+  };
+  const button = asDict(action.button);
+  const availability = resolveWorkflowActionAvailability(workflowContract, {
+    actionKey: action.actionKey,
+    methodName: text(button.name || button.method),
+    backendIdentity: action.backendIdentity,
+  });
+  if (availability.kind === 'unmanaged' || (availability.kind === 'managed' && availability.enabled)) {
+    return presented;
+  }
+  return {
+    ...presented,
+    enabled: false,
+    reasonCode: availability.reasonCode || 'WORKFLOW_ACTION_NOT_AVAILABLE',
   };
 }
 
@@ -585,6 +601,7 @@ export function presentContractV2Form(
       actionIdentityCounts.get(text(action.backendIdentity)) === 1
         && actionIdCounts.get(text(action.actionId)) === 1,
       { ...contractValues, ...(runtimeValues || {}) },
+      snapshot.workflowContract || {},
     )
   ));
   const visibleActions = allActions.filter((action) => action.visible);

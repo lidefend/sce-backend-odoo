@@ -41,6 +41,11 @@ import { normalizeContractFieldValue } from '../src/pages/contractForm/valueUtil
 import { relationCreateMode } from '../src/pages/contractForm/relationDescriptor';
 import { resolveContractFormExitPresentation } from '../src/pages/contractForm/contractFormExitPresentation';
 import {
+  applyWorkflowAvailability,
+  normalizeWorkflowActionRows,
+  workflowActionRowForMethod,
+} from '../src/pages/contractForm/workflowContract';
+import {
   buildContractFormActions,
   resolveContractActionForNativeOccurrence,
 } from '../src/pages/contractForm/contractActionPresentation';
@@ -567,6 +572,146 @@ function collectTexts(nodes: ReturnType<typeof presentContractV2Form>['zones']['
 const source = snapshot();
 const before = JSON.stringify(source);
 const store = createContractV2Store(decodeContractV2Snapshot(source));
+
+const workflowAction = {
+  key: 'action_submit', label: 'Submit', kind: 'object', level: 'header', selection: 'none' as const,
+  actionId: null, methodName: 'action_submit', targetModel: 'x.document', context: {}, domainRaw: '',
+  target: '', url: '', enabled: true, hint: '', intent: 'server.object', semantic: '',
+  sourceWidgetId: 'page.header', clientMode: '', visibleProfiles: ['edit', 'readonly'] as Array<'edit' | 'readonly'>,
+  requiredParams: [], requiresReason: false,
+};
+const duplicateWorkflowRows = {
+  availableActions: [
+    { key: 'submit', method: 'action_submit', enabled: true },
+    { key: 'submit-alternate', method: 'action_submit', enabled: true },
+  ],
+};
+assert.equal(
+  workflowActionRowForMethod(duplicateWorkflowRows, 'action_submit'),
+  null,
+  'multiple rows claiming one executable method must fail closed instead of selecting the first row',
+);
+assert.equal(
+  applyWorkflowAvailability({
+    action: workflowAction,
+    workflow: { availableActions: [{ key: 'submit', method: 'action_submit', enabled: 'yes' }] },
+    recordId: 7,
+    blockingMessage: 'Workflow authority unavailable',
+  }).enabled,
+  false,
+  'a non-boolean enabled value must not grant executable authority',
+);
+assert.equal(
+  normalizeWorkflowActionRows({
+    availableActions: [{ key: 'submit', method: 'action_submit', enabled: 'yes' }],
+  }, 'x.document').length,
+  0,
+  'invalid workflow rows must not be projected into executable contract actions',
+);
+assert.equal(
+  applyWorkflowAvailability({
+    action: workflowAction,
+    workflow: { availableActions: [{ key: 'submit', target: [], enabled: true }] },
+    recordId: 7,
+    blockingMessage: 'Workflow authority unavailable',
+  }).enabled,
+  false,
+  'a malformed row that claims the requested action must fail that action closed',
+);
+assert.equal(
+  applyWorkflowAvailability({
+    action: workflowAction,
+    workflow: { availableActions: [{ key: 'submit', method: 'action_submit', enabled: false, reason_code: 'WAIT' }] },
+    recordId: 7,
+    blockingMessage: 'Workflow authority unavailable',
+  }).enabled,
+  false,
+  'a valid disabled row must retain the existing fail-closed behavior',
+);
+assert.equal(
+  applyWorkflowAvailability({
+    action: workflowAction,
+    workflow: {
+      availableActions: [
+        'isolated malformed row',
+        { key: 'submit', method: 'action_submit', enabled: true },
+      ],
+    },
+    recordId: 7,
+    blockingMessage: 'Workflow authority unavailable',
+  }).enabled,
+  true,
+  'an unidentifiable malformed row must not disable an unrelated valid action',
+);
+assert.equal(
+  applyWorkflowAvailability({
+    action: { ...workflowAction, key: 'action_preview', methodName: 'action_preview' },
+    workflow: { availableActions: ['isolated malformed row'] },
+    recordId: 7,
+    blockingMessage: 'Workflow authority unavailable',
+  }).enabled,
+  true,
+  'an unrelated non-workflow action must remain outside workflow authority',
+);
+const legalSameLabelRows = {
+  availableActions: [
+    { key: 'submit', label: 'Continue', method: 'action_submit', enabled: true },
+    { key: 'approve', label: 'Continue', method: 'action_approve', enabled: true },
+  ],
+};
+assert.equal(workflowActionRowForMethod(legalSameLabelRows, 'action_submit')?.key, 'submit');
+assert.equal(
+  workflowActionRowForMethod(legalSameLabelRows, 'action_approve')?.key,
+  'approve',
+  'the same display label on distinct action identities must remain legal',
+);
+
+const unrelatedMalformedClaim = {
+  availableActions: [
+    { key: 'approve', target: [], enabled: true },
+    { key: 'submit', method: 'action_submit', enabled: true },
+  ],
+};
+assert.equal(
+  applyWorkflowAvailability({
+    action: workflowAction,
+    workflow: unrelatedMalformedClaim,
+    recordId: 7,
+    blockingMessage: 'Workflow authority unavailable',
+  }).enabled,
+  true,
+  'a malformed row claimed by a different action must remain isolated',
+);
+
+const malformedCarrierSnapshot = snapshot();
+malformedCarrierSnapshot.actionContract.actionRuleList[0].button = {
+  type: 'object', name: 'action_submit',
+};
+malformedCarrierSnapshot.workflowContract = { availableActions: { submit: true } };
+assert.equal(
+  presentContractV2Form(
+    createContractV2Store(decodeContractV2Snapshot(malformedCarrierSnapshot)),
+    'edit',
+  ).actionBar[0].enabled,
+  false,
+  'a malformed authoritative carrier must not leave a known transition executable',
+);
+
+const canonicalDuplicateWorkflowSnapshot = snapshot();
+canonicalDuplicateWorkflowSnapshot.actionContract.actionRuleList[0].button = {
+  type: 'object', name: 'action_submit',
+};
+canonicalDuplicateWorkflowSnapshot.workflowContract = duplicateWorkflowRows;
+const canonicalDuplicateWorkflowAction = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(canonicalDuplicateWorkflowSnapshot)),
+  'edit',
+).actionBar[0];
+assert.equal(
+  canonicalDuplicateWorkflowAction.enabled,
+  false,
+  'canonical form actions must consume the workflow authority decision before becoming executable',
+);
+assert.equal(canonicalDuplicateWorkflowAction.reasonCode, 'WORKFLOW_ACTION_IDENTITY_AMBIGUOUS');
 
 const nativeMonetarySnapshot = snapshot();
 nativeMonetarySnapshot.layoutContract.componentRegistry['sc.value.money'] = {
@@ -2745,4 +2890,4 @@ assert.equal(
   'canonical validation must project an explicit field identity even when labels overlap',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=149');
+console.log('[canonical_form_presenter_test] PASS cases=162');
