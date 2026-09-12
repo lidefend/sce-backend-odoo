@@ -18,6 +18,7 @@ const MEMBER_LOGIN = process.env.MEMBER_LOGIN || 'demo_role_project_a_member';
 const READ_LOGIN = process.env.READ_LOGIN || 'demo_role_project_read';
 const READ_ONLY = process.env.READ_ONLY === '1';
 const PREFLIGHT_ONLY = process.env.PREFLIGHT_ONLY === '1';
+const NETWORK_FAILURE_RECOVERY = process.env.NETWORK_FAILURE_RECOVERY === '1';
 const PREFLIGHT_LOGIN = process.env.PREFLIGHT_LOGIN || '';
 const ROUTE_PATH = process.env.ROUTE_PATH || `/r/project.project/${PROJECT_ID}?menu_id=${MENU_ID}&action_id=${ACTION_ID}`;
 const OUT = path.resolve(process.env.ARTIFACT_DIR || `artifacts/p4-project-profile-write/${Date.now()}`);
@@ -167,6 +168,22 @@ async function save(page) {
   try { await page.getByText(/保存成功/).waitFor({ timeout: 20000 }); }
   catch (error) { const body = await page.locator('body').innerText().catch(() => ''); if (/请检查以下内容|角色不能为空|责任人不能为空/.test(body)) throw new Error('validation_rejected:responsibility_required'); throw error; }
 }
+async function saveWithFailureRecovery(page, writes, report) {
+  let blocked = false;
+  await page.route('**/api/v1/intent*', async (route) => {
+    try { const body = JSON.parse(route.request().postData() || '{}'); if (!blocked && body.intent === 'api.data' && body.params?.op === 'write' && Number(body.params?.ids?.[0]) === PROJECT_ID) { blocked = true; await route.abort('failed'); return; } } catch {}
+    await route.continue();
+  });
+  const button = page.getByRole('button', { name: /^保存(?:修改)?$/, exact: true }).first();
+  await button.click();
+  await page.waitForFunction(() => !document.body.innerText.includes('正在处理'), null, { timeout: 20000 });
+  const failedText = await page.locator('body').innerText();
+  report.failure_recovery = { blocked, failed_message: /保存失败|失败/.test(failedText), dirty_after_failure: /已修改\s*\d+\s*项/.test(failedText) };
+  await page.unroute('**/api/v1/intent*');
+  await button.click();
+  await page.getByText(/保存成功/).waitFor({ timeout: 20000 });
+  report.failure_recovery.retry_writes = writes.length;
+}
 async function dirty(page) { return /未保存|已修改\s*\d+\s*项/.test(normalize(await page.locator('.record-header-context:visible').innerText().catch(() => ''))); }
 async function main() {
   const browser = await chromium.launch({ headless: true });
@@ -231,7 +248,8 @@ async function main() {
     if (await roleSelect.count() === 0 && (!roleValue || !userValue)) throw new Error(`responsibility_selection_missing:${JSON.stringify({ role: Boolean(roleValue), user: Boolean(userValue) })}`);
     if (!await dirty(page)) throw new Error('draft did not become dirty');
     const writes = recordWriteRequests(page);
-    await save(page);
+    if (NETWORK_FAILURE_RECOVERY) await saveWithFailureRecovery(page, writes, report);
+    else await save(page);
     await page.waitForTimeout(400);
     const after = await readProject(page);
     report.writes = writes;
