@@ -179,9 +179,12 @@ async function saveWithFailureRecovery(page, writes, report) {
   await page.waitForFunction(() => !document.body.innerText.includes('正在处理'), null, { timeout: 20000 });
   const failedText = await page.locator('body').innerText();
   const failedState = await page.evaluate(() => ({ text: document.body.innerText, saveDisabled: [...document.querySelectorAll('button')].filter((b) => /保存/.test(b.textContent || '')).some((b) => b.disabled), processing: document.body.innerText.includes('正在处理') }));
+  const feedbackText = normalize(await page.locator('.submission-feedback, [data-semantic-component="ProductFormErrorSummary"]').allTextContents().then((rows) => rows.join(' ')).catch(() => ''));
   await page.screenshot({ path: path.join(OUT, 'failure-before-retry.png'), fullPage: true });
   const unchanged = await readProject(page);
-  report.scenarios.push({ name: 'failure_attempt', status: blocked && !failedState.processing && /已修改\s*\d+\s*项/.test(failedState.text) && unchanged?.name === report.preflight.authoritative_read.name ? 'PASS' : 'FAIL', blocked, failed_message: /保存失败|失败/.test(failedState.text), busy_released: !failedState.processing, draft_preserved: /已修改\s*\d+\s*项/.test(failedState.text), save_disabled: failedState.saveDisabled, authoritative_after_failure: unchanged });
+  const failedMessageVisible = /保存失败|请求失败|网络异常|操作未完成|请稍后重试/.test(`${failedState.text} ${feedbackText}`);
+  report.scenarios.push({ name: 'failure_attempt', status: blocked && failedMessageVisible && !failedState.processing && !failedState.saveDisabled && /已修改\s*\d+\s*项/.test(failedState.text) && unchanged?.name === report.preflight.authoritative_read.name ? 'PASS' : 'FAIL', blocked, failed_message: failedMessageVisible, feedback_text: feedbackText, busy_released: !failedState.processing, draft_preserved: /已修改\s*\d+\s*项/.test(failedState.text), save_disabled: failedState.saveDisabled, authoritative_after_failure: unchanged });
+  if (!failedMessageVisible || failedState.processing || failedState.saveDisabled) throw new Error(`failure_feedback_incomplete:${JSON.stringify({ failedMessageVisible, processing: failedState.processing, saveDisabled: failedState.saveDisabled })}`);
   await page.unroute('**/api/v1/intent*');
   await button.click();
   await page.getByText(/保存成功/).waitFor({ timeout: 20000 });
@@ -261,10 +264,12 @@ async function main() {
     const after = await readProject(page);
     report.writes = writes;
     if (!NETWORK_FAILURE_RECOVERY) report.scenarios.push({ name: 'normal_save', status: after?.name === marker && after?.date_start === '2026-09-15' && after?.date === '2026-10-15' && writes.length === 1 ? 'PASS' : 'FAIL', before, after, write_count: writes.length, responsibility_rows_before: initialRows });
-    await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.locator('.template-layout-shell').waitFor({ timeout: 30000 });
-    const refreshed = await readProject(page);
-    report.scenarios.push({ name: 'authoritative_refresh', status: refreshed?.name === marker && refreshed?.date_start === '2026-09-15' && refreshed?.date === '2026-10-15' ? 'PASS' : 'FAIL', refreshed });
+    if (!NETWORK_FAILURE_RECOVERY) {
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.locator('.template-layout-shell').waitFor({ timeout: 30000 });
+      const refreshed = await readProject(page);
+      report.scenarios.push({ name: 'authoritative_refresh', status: refreshed?.name === marker && refreshed?.date_start === '2026-09-15' && refreshed?.date === '2026-10-15' ? 'PASS' : 'FAIL', refreshed });
+    }
     await page.screenshot({ path: path.join(OUT, 'normal-save.png'), fullPage: true });
   } catch (error) {
     report.failure_context = await page.evaluate(() => ({ url: location.href, title: document.title, text: (document.body.innerText || '').slice(0, 1200), fields: [...document.querySelectorAll('[data-field-name]')].map((el) => el.getAttribute('data-field-name')).slice(0, 80) })).catch(() => ({ url: page.url() }));

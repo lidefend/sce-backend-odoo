@@ -8,6 +8,7 @@ SH = (ROOT / "scripts/verify/local_dev_project_profile_write_fixture.sh").read_t
 MK = (ROOT / "make/dev.mk").read_text()
 ODOO_SHELL = (ROOT / "scripts/ops/odoo_shell_exec.sh").read_text()
 BROWSER_SH = (ROOT / "scripts/verify/local_dev_project_profile_write_browser.sh").read_text()
+BROWSER_MJS = (ROOT / "scripts/verify/local_dev_project_profile_write_browser.mjs").read_text()
 
 
 class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
@@ -59,6 +60,12 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
     def test_write_scope_is_explicit(self):
         for field in ("name", "date_start", "date", "description", "responsibility_ids"):
             self.assertIn('"%s"' % field, PY)
+
+    def test_recovery_report_cannot_reuse_normal_save_or_skip_failure_feedback(self):
+        self.assertIn("if (!NETWORK_FAILURE_RECOVERY)", BROWSER_MJS)
+        self.assertIn("failedMessageVisible", BROWSER_MJS)
+        self.assertIn("failure_feedback_incomplete", BROWSER_MJS)
+        self.assertIn("name: 'retry_success'", BROWSER_MJS)
 
 
 if __name__ == "__main__":
