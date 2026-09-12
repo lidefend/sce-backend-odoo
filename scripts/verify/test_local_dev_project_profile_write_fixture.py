@@ -15,6 +15,7 @@ BROWSER_SH = (ROOT / "scripts/verify/local_dev_project_profile_write_browser.sh"
 BROWSER_MJS = (ROOT / "scripts/verify/local_dev_project_profile_write_browser.mjs").read_text()
 BROWSER_MJS_PATH = ROOT / "scripts/verify/local_dev_project_profile_write_browser.mjs"
 BROWSER_SH_PATH = ROOT / "scripts/verify/local_dev_project_profile_write_browser.sh"
+IDENTITY_MJS_PATH = ROOT / "scripts/verify/local_dev_project_profile_write_identity.mjs"
 
 
 TEST_BATCH = "scope-safe-0913"
@@ -140,6 +141,22 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0, result.stdout)
         self.assertIn(expected, result.stderr)
         self.assertFalse(artifact_created, "ownership rejection must occur before browser/write setup")
+
+    def _runtime_identity(self, identity, authority=None):
+        if authority is None:
+            authority = _authority()
+            authority["writer"] = {"id": 7, "login": "pm1", "company_id": 1, "role_code": "pm"}
+        script = "\n".join((
+            "import { assertRuntimeWriterIdentity } from %s;" % json.dumps(IDENTITY_MJS_PATH.as_uri()),
+            "const identity = %s;" % json.dumps(identity),
+            "const authority = %s;" % json.dumps(authority),
+            "assertRuntimeWriterIdentity(identity, authority);",
+            "console.log('IDENTITY_PASS');",
+        ))
+        return subprocess.run(
+            ["node", "--input-type=module", "--eval", script], cwd=ROOT,
+            text=True, capture_output=True, check=False,
+        )
 
     def test_exact_dev_identity_is_required(self):
         for marker in (
@@ -292,15 +309,33 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
         self.assertNotIn('"status":"PASS"', result.stdout)
         self.assertFalse(artifact_created)
 
-    def test_runtime_session_identity_is_rechecked_before_write(self):
-        for marker in (
-            "assertRuntimeWriterIdentity(runtimeIdentity, WRITE_AUTHORITY)",
-            "authenticated session user does not match the governed project manager",
-            "authenticated session company does not match the governed project company",
-            "authenticated session role does not match the governed project manager role",
-            "system.init principal does not match the authenticated project manager",
-        ):
-            self.assertIn(marker, BROWSER_MJS)
+    def test_runtime_session_identity_uses_real_login_and_role_surface_contracts(self):
+        identity = {
+            "login": {
+                "user": {"id": 7, "login": "pm1", "company_id": 1},
+                "entitlement": {"role_code": "internal_user", "is_internal_user": True},
+            },
+            "init": {
+                "user": {"id": 7, "company_id": 1},
+                "role_surface": {"role_code": "pm"},
+            },
+        }
+        result = self._runtime_identity(identity)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("IDENTITY_PASS", result.stdout)
+
+        identity["init"]["role_surface"]["role_code"] = "project_member"
+        result = self._runtime_identity(identity)
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn("system.init role does not match", result.stderr)
+
+        identity["init"]["role_surface"]["role_code"] = "pm"
+        identity["login"]["entitlement"] = {"role_code": "external_user", "is_internal_user": False}
+        result = self._runtime_identity(identity)
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn("not an internal user", result.stderr)
+
+        self.assertIn("assertRuntimeWriterIdentity(runtimeIdentity, WRITE_AUTHORITY)", BROWSER_MJS)
 
     def test_direct_mjs_readonly_preflight_cannot_enter_write_or_recovery(self):
         result, artifact_created = self._direct_runner(
