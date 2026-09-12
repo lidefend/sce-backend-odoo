@@ -164,7 +164,8 @@ async function save(page) {
   const button = page.getByRole('button', { name: /^保存(?:修改)?$/, exact: true }).first();
   await button.waitFor({ timeout: 12000 });
   await button.click();
-  await page.getByText(/保存成功/).waitFor({ timeout: 20000 });
+  try { await page.getByText(/保存成功/).waitFor({ timeout: 20000 }); }
+  catch (error) { const body = await page.locator('body').innerText().catch(() => ''); if (/请检查以下内容|角色不能为空|责任人不能为空/.test(body)) throw new Error('validation_rejected:responsibility_required'); throw error; }
 }
 async function dirty(page) { return /未保存|已修改\s*\d+\s*项/.test(normalize(await page.locator('.record-header-context:visible').innerText().catch(() => ''))); }
 async function main() {
@@ -225,6 +226,9 @@ async function main() {
     }
     const rowInputs = createdRow.locator('input');
     if (await rowInputs.count()) await rowInputs.last().fill('P4 责任新增');
+    const roleValue = await createdRow.locator('input[placeholder="请选择角色"]').inputValue().catch(() => '');
+    const userValue = await createdRow.locator('input[placeholder="请选择责任人"]').inputValue().catch(() => '');
+    if (await roleSelect.count() === 0 && (!roleValue || !userValue)) throw new Error(`responsibility_selection_missing:${JSON.stringify({ role: Boolean(roleValue), user: Boolean(userValue) })}`);
     if (!await dirty(page)) throw new Error('draft did not become dirty');
     const writes = recordWriteRequests(page);
     await save(page);

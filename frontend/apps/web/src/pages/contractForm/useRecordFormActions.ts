@@ -436,7 +436,6 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     validationErrors.value = [];
     validationFieldErrors.value = {};
     formConflict.value = false;
-    console.info('[save-trace] validation-enter');
     const validation = await validateBeforeSaveRecord({
       collectSceneValidationPrecheckErrors: (fieldLabels) =>
         collectSceneValidationPrecheckErrors(fieldLabels),
@@ -456,7 +455,6 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
       resolvePendingInlineRelationCreates: () => resolvePendingInlineRelationCreates(),
       resolvePendingMany2manyTagCreates: () => resolvePendingMany2manyTagCreates(),
     });
-    console.info('[save-trace] validation-complete', { ok: validation.ok });
     showOne2manyErrors.value = Boolean(validation.showOne2manyErrors);
     if (!validation.ok || !validation.editableMap) {
       validationErrors.value = validation.validationErrors || [];
@@ -467,8 +465,6 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     }
     const editableMap = validation.editableMap;
     busyKind.value = 'save';
-    const saveTrace = (stage: string) => console.info(`[save-trace] ${stage}`, { recordId: recordId.value, dirty: dirtyFieldSet.size });
-    saveTrace('busy-set');
     try {
       const values = buildSaveRecordPayload({
         comparableFieldValue: (name, value) => comparableFieldValue(name, value),
@@ -479,7 +475,6 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
         originalValues: originalValues.value,
         recordId: recordId.value,
       });
-      saveTrace(`payload-built:${Object.keys(values).length}`);
       if (recordId.value && !Object.keys(values).length) {
         busyKind.value = null;
         dirtyFieldSet.clear();
@@ -492,7 +487,6 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
           vals: values,
           ifMatch: recordVersionPolicy() ? recordVersionToken.value : undefined,
         });
-        saveTrace('write-complete');
         formConflict.value = false;
         originalValues.value = snapshotOriginalFormValues(Object.keys(formData), formData);
         dirtyFieldSet.clear();
@@ -539,7 +533,6 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
         });
       }
     } catch (err) {
-      saveTrace(`error:${err instanceof Error ? err.name : 'unknown'}`);
       const fallback = recordId.value ? '保存失败，请检查填写内容' : '创建失败，请检查填写内容';
       if (err instanceof ApiError && err.status === 401) {
         await session.logout();
