@@ -107,6 +107,20 @@ async function openProject(page) {
   await page.locator('li[data-navigation-node][data-navigation-menu-id="681"]').click();
   await page.waitForFunction(() => !/正在载入数据|正在加载列表/.test(document.body.innerText || ''), null, { timeout: 30000 });
   if (PROJECT_NAME) await page.getByRole('button', { name: PROJECT_NAME, exact: true }).waitFor({ timeout: 30000 });
+  let formContractSeen = false;
+  const formContract = new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(false), 30000);
+    page.on('response', async (response) => {
+      if (!response.url().includes('/api/v1/intent')) return;
+      try {
+        const body = await response.json();
+        const data = body?.data || {};
+        if (body?.ok === true && data?.pageInfo?.viewType === 'form' && data?.layoutContract) {
+          formContractSeen = true; clearTimeout(timer); resolve(true);
+        }
+      } catch { /* diagnostic listener only */ }
+    });
+  });
   const target = page.locator(`[data-record-id="${PROJECT_ID}"], [data-id="${PROJECT_ID}"]`).first();
   if (await target.count()) await target.click();
   else {
@@ -116,12 +130,14 @@ async function openProject(page) {
     await rows.first().click();
   }
   await page.waitForURL((url) => url.pathname.startsWith('/f/project.project/'), { timeout: 30000 });
+  if (!(await formContract)) throw new Error(`form_contract_not_ready:${JSON.stringify({ url: page.url(), formContractSeen })}`);
   await page.waitForFunction(() => {
     const text = document.body.innerText || '';
     const fields = document.querySelectorAll('[data-field-name]').length;
     const explicitError = /错误|无权限|不存在|登录|加载失败/.test(text);
     const loading = /正在加载页面|正在加载表单|加载中/.test(text);
-    return fields > 0 || explicitError || (!loading && text.trim().length > 0);
+    const save = [...document.querySelectorAll('button')].some((button) => /保存/.test(button.textContent || '') && !button.disabled);
+    return fields > 0 && save || explicitError;
   }, null, { timeout: 30000 });
   const state = await page.evaluate(() => ({ url: location.href, title: document.title, text: (document.body.innerText || '').slice(0, 1200), fields: [...document.querySelectorAll('[data-field-name]')].map((el) => el.getAttribute('data-field-name')).slice(0, 80) }));
   if (!new URL(state.url).pathname.startsWith('/f/project.project/')) throw new Error(`route_mismatch:${JSON.stringify(state)}`);
