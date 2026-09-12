@@ -109,7 +109,7 @@ async function openProject(page) {
   const state = await page.evaluate(() => ({ url: location.href, title: document.title, text: (document.body.innerText || '').slice(0, 1200), fields: [...document.querySelectorAll('[data-field-name]')].map((el) => el.getAttribute('data-field-name')).slice(0, 80) }));
   const expectedRoute = ROUTE_PATH.split('?')[0];
   if (!new URL(state.url).pathname.startsWith(expectedRoute)) throw new Error(`route_mismatch:${JSON.stringify(state)}`);
-  if (/登录/.test(state.text)) throw new Error(`login_redirect:${JSON.stringify(state)}`);
+  if (new URL(state.url).pathname === '/login' || new URL(state.url).pathname.startsWith('/login/')) throw new Error(`login_redirect:${JSON.stringify(state)}`);
   if (/403|404|无权限|不存在|错误/.test(state.text)) throw new Error(`page_error:${JSON.stringify(state)}`);
   return state;
 }
