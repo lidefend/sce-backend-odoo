@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts/release"))
 from frontend_release_evidence import (  # noqa: E402
     EvidenceBundleError,
+    authoritative_navigation_total,
     create_deterministic_zip,
     generate_bundle,
     scan_sensitive_paths,
@@ -152,6 +153,7 @@ class FrontendReleaseEvidenceBundleTests(unittest.TestCase):
 
     @classmethod
     def _write_frontend(cls, root: Path) -> None:
+        navigation_total = authoritative_navigation_total()
         sections = {
             name: {"result": "PASS"}
             for name in (
@@ -198,9 +200,9 @@ class FrontendReleaseEvidenceBundleTests(unittest.TestCase):
                 **common,
                 "total": {
                     "result": "PASS",
-                    "expected_count": 81,
-                    "actual_count": 81,
-                    "matched_count": 81,
+                    "expected_count": navigation_total,
+                    "actual_count": navigation_total,
+                    "matched_count": navigation_total,
                     "missing_leaf_keys": [],
                     "unexpected_leaf_keys": [],
                     "duplicate_leaf_keys": [],
