@@ -125,6 +125,82 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
             "sc.input.number",
         )
 
+    def test_date_range_widget_preserves_native_semantics_for_public_component_consumers(self):
+        widget = self.assembler._field_widget(
+            {
+                "name": "date_start",
+                "string": "安排的日期",
+                "type": "date",
+                "widget": "daterange",
+                "widget_options": {"end_date_field": "date"},
+                "widget_semantics": {
+                    "kind": "date_range",
+                    "start_field": "date_start",
+                    "end_field": "date",
+                },
+            },
+            layout_type="form",
+        )
+
+        self.assertEqual(widget["widgetType"], "date")
+        self.assertEqual(widget["componentConfig"]["nativeWidget"], "daterange")
+        self.assertEqual(
+            widget["componentConfig"]["widgetSemantics"],
+            {"kind": "date_range", "start_field": "date_start", "end_field": "date"},
+        )
+
+        native_node = self.assembler._native_field_node(
+            {
+                "type": "field",
+                "name": "date_start",
+                "fieldInfo": {
+                    "type": "date",
+                    "widget": "date",
+                    "widget_semantics": {
+                        "kind": "date_range",
+                        "start_field": "date_start",
+                        "end_field": "date",
+                    },
+                },
+                "widget": "daterange",
+            },
+            {
+                "name": "date_start",
+                "type": "date",
+                "widget": "daterange",
+                "widget_semantics": {
+                    "kind": "date_range",
+                    "start_field": "date_start",
+                    "end_field": "date",
+                },
+            },
+            layout_type="form",
+        )
+        self.assertEqual(native_node["fieldInfo"]["widget"], "daterange")
+        self.assertEqual(native_node["componentConfig"]["nativeWidget"], "daterange")
+
+        direct_widgets = self.assembler._direct_field_widgets_from_nodes(
+            [{
+                "type": "field",
+                "name": "date_start",
+                "widget": "date",
+                "attributes": {"widget": "daterange"},
+                "fieldInfo": {
+                    "type": "date",
+                    "widget": "date",
+                    "widget_semantics": {
+                        "kind": "date_range",
+                        "start_field": "date_start",
+                        "end_field": "date",
+                    },
+                },
+            }],
+            {"date_start": {"name": "date_start", "type": "date"}},
+            layout_type="form",
+        )
+        self.assertEqual(direct_widgets[0]["componentConfig"]["nativeWidget"], "daterange")
+        self.assertEqual(direct_widgets[0]["componentConfig"]["widgetSemantics"]["end_field"], "date")
+
     def test_native_form_header_button_is_projected_as_root_business_action(self):
         contract = self.assembler.assemble_unified_page_contract_v2(
             {

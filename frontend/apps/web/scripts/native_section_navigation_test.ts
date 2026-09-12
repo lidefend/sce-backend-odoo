@@ -45,6 +45,9 @@ const notebookOnlySections = collectNativeBusinessSections([node({
 assert.deepEqual(notebookOnlySections, [], 'anchors owned by notebook content cannot activate page-level section mode');
 
 assert.equal(nativeSectionNavigationRole({}), 'primary');
+assert.equal(nativeSectionNavigationRole({
+  attributes: { 'data-sc-navigation-role': 'subordinate' },
+}), 'subordinate', 'released native views may explicitly keep an auxiliary section out of primary navigation');
 assert.equal(nativeSectionNavigationRole({ sourceAuthority: { kind: 'released_product_section' } }), 'primary');
 assert.equal(nativeSectionNavigationRole({
   sourceAuthority: {
@@ -93,6 +96,16 @@ const fieldOnlyRoles = workspaceSectionNavigationItems([node({
   ],
 })]);
 assert.deepEqual(fieldOnlyRoles, [], 'field semantic roles must not create section links');
+assert.deepEqual(workspaceSectionNavigationItems([
+  node({
+    nodeId: 'primary.section', title: '基本信息',
+    attributes: { 'data-sc-anchor': 'basic' },
+  }),
+  node({
+    nodeId: 'auxiliary.section', title: '系统追溯',
+    attributes: { 'data-sc-anchor': 'trace', 'data-sc-navigation-role': 'subordinate' },
+  }),
+]).map((item) => item.label), ['基本信息']);
 assert.deepEqual(workspaceSectionNavigationItems([node({
   fields: [field({ widgetId: 'context.only', semanticRole: 'context', label: '普通资料字段' })],
 })]), [], 'a uniform field role is still not section identity');

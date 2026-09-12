@@ -251,6 +251,19 @@ function fieldFromWidget(
       ? runtimeCurrencyValue
       : contractValues[currencyField];
   }
+  const widgetSemantics = componentConfig.widgetSemantics
+    && typeof componentConfig.widgetSemantics === 'object'
+    && !Array.isArray(componentConfig.widgetSemantics)
+    ? componentConfig.widgetSemantics as ContractV2Dictionary
+    : {};
+  const dateRangeEndField = text(widgetSemantics.end_field);
+  if (text(componentConfig.nativeWidget).toLowerCase() === 'daterange' && dateRangeEndField) {
+    const hasRuntimeEndValue = Boolean(runtimeValues)
+      && Object.prototype.hasOwnProperty.call(runtimeValues, dateRangeEndField);
+    componentConfig.dateRangeEndValue = hasRuntimeEndValue
+      ? runtimeValues?.[dateRangeEndField]
+      : contractValues[dateRangeEndField];
+  }
   return {
     widgetId: widget.widgetId,
     fieldCode: widget.fieldCode,

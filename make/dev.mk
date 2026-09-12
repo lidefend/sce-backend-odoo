@@ -129,6 +129,26 @@ local.dev.project_create_contract_action_scope: guard.prod.forbid local.dev.read
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/verify/local_dev_project_create_contract_action_scope.sh
 
+local.dev.project_profile_write_fixture: guard.prod.forbid local.dev.ready
+	@test -n "$(P4_PROJECT_PROFILE_MODE)" || (echo "P4_PROJECT_PROFILE_MODE is required" >&2; exit 2)
+	@test -n "$(P4_PROJECT_PROFILE_BATCH)" || (echo "P4_PROJECT_PROFILE_BATCH is required" >&2; exit 2)
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_ENVIRONMENT=dev SC_ALLOW_DEMO_DATA=0 \
+	  P4_PROJECT_PROFILE_MODE="$(P4_PROJECT_PROFILE_MODE)" \
+	  P4_PROJECT_PROFILE_BATCH="$(P4_PROJECT_PROFILE_BATCH)" \
+	  P4_PROJECT_PROFILE_CONFIRM="$(P4_PROJECT_PROFILE_CONFIRM)" \
+	  CANDIDATE_GIT_HEAD="$(shell git -C $(ROOT_DIR) rev-parse HEAD)" \
+	  bash scripts/verify/local_dev_project_profile_write_fixture.sh
+
+local.dev.project_profile_write_browser: guard.prod.forbid local.dev.ready
+	@test -n "$(PRODUCT_CANDIDATE_SHA)" || (echo "PRODUCT_CANDIDATE_SHA is required" >&2; exit 2)
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_ENVIRONMENT=dev SC_ALLOW_DEMO_DATA=0 \
+	  PRODUCT_CANDIDATE_SHA="$(PRODUCT_CANDIDATE_SHA)" \
+	  P4_TOOL_CANDIDATE_SHA="$(shell git -C $(ROOT_DIR) rev-parse HEAD)" \
+	  FRONTEND_URL="$(FRONTEND_URL)" \
+	  bash scripts/verify/local_dev_project_profile_write_browser.sh
+
 local.dev.rebuild_demo: guard.prod.forbid local.dev.demo_credentials.prepare
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  CONFIRM_LOCAL_DEV_DEMO_REBUILD="$${CONFIRM_LOCAL_DEV_DEMO_REBUILD:-}" \

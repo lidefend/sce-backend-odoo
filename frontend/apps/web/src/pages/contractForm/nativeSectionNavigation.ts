@@ -58,11 +58,19 @@ export function sectionScrollDelta(
 }
 
 type NativeSectionAuthorityNode = {
+  attributes?: Record<string, unknown>;
   sourceAuthority?: Record<string, unknown>;
   source_authority?: Record<string, unknown>;
 };
 
 export function nativeSectionNavigationRole(node: NativeSectionAuthorityNode): NativeSectionNavigationRole {
+  const explicitRole = String(
+    node?.attributes?.['data-sc-navigation-role']
+    || node?.attributes?.sectionNavigationRole
+    || '',
+  ).trim().toLowerCase();
+  if (explicitRole === 'subordinate') return 'subordinate';
+  if (explicitRole === 'primary') return 'primary';
   const authority = node?.sourceAuthority || node?.source_authority || {};
   const projectionOnly = authority.projection_only === true || authority.projectionOnly === true;
   const noBusinessAuthority = authority.no_business_fact_authority === true
@@ -102,7 +110,7 @@ export function workspaceSectionNavigationItems(nodes: CanonicalFormNode[]): Wor
   const emittedAnchors = new Set<string>();
 
   authoritativeNativeBusinessSections(nodes).forEach(({ node, identity }) => {
-    if (identity && !emittedAnchors.has(identity.anchor)) {
+    if (identity && nativeSectionNavigationRole(node) === 'primary' && !emittedAnchors.has(identity.anchor)) {
       authoritativeItems.push({
         key: `node:${node.nodeId}:business-section`,
         label: identity.label,

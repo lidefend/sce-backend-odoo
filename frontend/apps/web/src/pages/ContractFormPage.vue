@@ -1710,7 +1710,11 @@ function canonicalFieldWritable(name: string): boolean | undefined {
   }
   collect([...model.zones.primary, ...model.zones.subordinate]);
   if (!matches.length) return undefined;
-  return matches.some((field) => field.visible && !field.readonly && !field.disabled);
+  // Visibility controls presentation, not whether an authoritative companion
+  // field may accept a draft value from its visible public control (for
+  // example the hidden end field of a native date range).  Dirty-field
+  // collection remains explicit and backend ACL/model rules stay authoritative.
+  return matches.some((field) => !field.readonly && !field.disabled);
 }
 recordFormStateRuntime = useRecordFormState({
   formFields: canonicalFormFields, model, recordId, rights, formData, originalValues, submissionFeedback, relationKeywords,

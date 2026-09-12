@@ -90,7 +90,11 @@ const emit = defineEmits<{
 const nodeKind = computed(() => String(props.node.kind || 'container').trim().toLowerCase());
 const fields = computed(() => canonicalSectionFields(props.node)
   .filter((field) => canonicalFieldHasPresentableValue(field, props.relationAdapter))
-  .map((field) => canonicalFieldToFormSection(field, props.relationAdapter)));
+  .map((field) => canonicalFieldToFormSection(
+    field,
+    props.relationAdapter,
+    (fieldCode) => props.node.fields.find((candidate) => candidate.fieldCode === fieldCode),
+  )));
 const readonlyFactLayout = computed(() => Boolean(
   props.preferReadonlyFacts
   && fields.value.length

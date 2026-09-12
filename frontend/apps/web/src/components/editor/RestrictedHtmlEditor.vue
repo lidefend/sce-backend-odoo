@@ -21,6 +21,7 @@
         <span v-else>{{ item.label }}</span>
       </ScButton>
       <span
+        v-if="hasLengthLimit"
         class="restricted-html-editor__counter"
         :class="{ 'restricted-html-editor__counter--over': overLimit }"
       >
@@ -30,10 +31,16 @@
 
     <div
       ref="editorRef"
+      :id="id"
       class="restricted-html-editor__surface"
       contenteditable="true"
-      :data-placeholder="copy.placeholder"
+      role="textbox"
+      aria-multiline="true"
+      :data-placeholder="placeholder || copy.placeholder"
       :aria-disabled="disabled ? 'true' : 'false'"
+      :aria-required="required ? 'true' : undefined"
+      :aria-invalid="invalid ? 'true' : undefined"
+      :aria-describedby="describedBy"
       @input="onInput"
     ></div>
 
@@ -86,9 +93,14 @@ import ScInput from '../design-system/ScInput.vue';
 import type { ScIconName } from '../design-system/scIcon';
 
 const props = defineProps<{
+  id?: string;
   modelValue: string;
-  maxLength: number;
+  maxLength?: number;
   disabled?: boolean;
+  required?: boolean;
+  invalid?: boolean;
+  describedBy?: string;
+  placeholder?: string;
 }>();
 
 const emit = defineEmits<{
@@ -131,7 +143,8 @@ const toolbarItems: ToolbarItem[] = [
 ];
 
 const currentLength = computed(() => String(props.modelValue ?? '').length);
-const overLimit = computed(() => currentLength.value > props.maxLength);
+const hasLengthLimit = computed(() => Number.isFinite(props.maxLength) && Number(props.maxLength) > 0);
+const overLimit = computed(() => hasLengthLimit.value && currentLength.value > Number(props.maxLength));
 
 onMounted(() => {
   const el = editorRef.value;

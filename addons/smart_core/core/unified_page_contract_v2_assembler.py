@@ -1577,6 +1577,9 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
     widget_options = _dict(field.get("widget_options") or field.get("options"))
     if widget_options:
         component_config["widgetOptions"] = deepcopy(widget_options)
+    widget_semantics = _dict(field.get("widget_semantics"))
+    if widget_semantics:
+        component_config["widgetSemantics"] = deepcopy(widget_semantics)
     return {
         "widgetId": widget_id,
         "widgetType": widget_type,
@@ -1620,7 +1623,7 @@ def _native_field_node(node: dict[str, Any], field: dict[str, Any], *, layout_ty
     component_config = deepcopy(widget.get("componentConfig") or {})
     field_info["name"] = field_name
     field_info["label"] = label
-    field_info["widget"] = widget["widgetType"]
+    field_info["widget"] = component_config.get("nativeWidget") or widget["widgetType"]
     for key in ("type", "ttype", "relation", "relation_entry", "widget_options", "options"):
         if key in field_source and key not in field_info:
             field_info[key] = deepcopy(field_source.get(key))
@@ -1681,8 +1684,10 @@ def _field_source_with_node_info(node: dict[str, Any], field: dict[str, Any], *,
     field_source["name"] = field_name
     field_source.setdefault("string", _text(node.get("string") or node.get("label") or field_info.get("label"), field_name))
     field_source.setdefault("label", field_source.get("string", field_name))
-    if _text(node.get("widget")):
-        field_source["widget"] = _text(node.get("widget"))
+    attributes = _dict(node.get("attributes") or node.get("attrs"))
+    native_widget = _text(attributes.get("widget") or node.get("widget"))
+    if native_widget:
+        field_source["widget"] = native_widget
     return field_source
 
 

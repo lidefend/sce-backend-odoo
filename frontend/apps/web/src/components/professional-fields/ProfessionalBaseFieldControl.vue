@@ -60,8 +60,18 @@
       :placeholder="placeholder"
       @update:model-value="emitValue"
     />
+    <RestrictedHtmlEditor
+      v-else-if="field.type === 'html'"
+      :id="controlId"
+      :model-value="String(field.inputValue ?? '')"
+      :required="field.required"
+      :invalid="field.invalid"
+      :described-by="describedBy"
+      :placeholder="placeholder"
+      @update:model-value="emitValue"
+    />
     <ScTextarea
-      v-else-if="field.type === 'text' || field.type === 'html'"
+      v-else-if="field.type === 'text'"
       :model-value="String(field.inputValue ?? '')"
       :required="field.required"
       :status="field.invalid ? 'error' : 'default'"
@@ -100,6 +110,7 @@ import ScInput from '../design-system/ScInput.vue';
 import ScNumberInput from '../design-system/ScNumberInput.vue';
 import ScSelect from '../design-system/ScSelect.vue';
 import ScTextarea from '../design-system/ScTextarea.vue';
+import RestrictedHtmlEditor from '../editor/RestrictedHtmlEditor.vue';
 import { formatDisplayValue } from '../../utils/display';
 import { sanitizeReadonlyHtml } from '../../utils/sanitizeReadonlyHtml';
 import type { FormSectionFieldSchema } from '../template/formSection.types';

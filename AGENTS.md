@@ -21,6 +21,15 @@
 - At most two active worktrees are allowed: one product-delivery worktree and one genuinely independent platform/environment worktree. Before creating a third, finish, freeze or governably clean up an existing worktree.
 - Do not rerun full browser acceptance while an earlier static, backend, identity, or normalized-contract gate is known to fail. Fix only the owning layer, refreeze, then resume from the earliest invalidated gate.
 
+### Layered Validation Efficiency (Hard Lock)
+- Before running validation, declare the changed paths, affected product layers, risk class, the earliest required validation layer, and explicit reasons for every skipped layer. Validation layers are fixed: L0 identity/fingerprint; L1 syntax, static, architecture, schema, and focused pure tests; L2 non-zero targeted module/contract/frontend tests; L3 governed module upgrade and runtime smoke; L4 frozen-candidate fixture, snapshot, build, and affected browser journeys; L5 independent review, generated reports, full delivery/release gates, and exact-head publication.
+- A required earlier layer in `failed`, `not_run`, stale, or identity-mismatched state blocks every later layer. Never run a broad gate to discover a defect that a cheaper owning-layer check can determine.
+- A passing result may be reused directly while its full candidate fingerprint is unchanged. After a mutation, an unchanged upstream result may be carried forward only through recorded deterministic impact analysis proving that its command inputs, governed environment identity, and relevant file set are unchanged; bind both the source and current full fingerprints. Do not rerun unchanged passing layers for reassurance.
+- A mutation invalidates its earliest affected layer and every downstream result, but not unchanged upstream results. Refreeze the full fingerprint and resume from the earliest invalidated layer.
+- Do not retry an unchanged failure. Retry only after the owning product/tool input changed or the exact environment prerequisite was proven recovered; record the failure classification and changed recovery fact first.
+- Browser matrices, fixture resets, release snapshots, and full release gates are frozen-candidate activities, not inner-loop debugging tools. During iteration, browser checks cover only declared affected surfaces; the full required matrix runs once at the frozen delivery head.
+- Every validation result records layer, exact command/entrypoint, current candidate fingerprint, any carried-forward source fingerprint, status (`passed`/`failed`/`not_run`), non-zero test count when applicable, failure owner, and next earliest valid step. Exit code zero alone is not proof of a passed gate.
+
 ### Local development lifecycle (Hard Lock)
 - Local feature iteration uses only `make local.dev.*`: project `sc-local-dev`, database `sc_dev_demo`, and fixed `sc_local_dev_*` volumes. It is the persistent demo-backed feature database.
 - Daily-data compatibility uses only `make local.sample.*`: project `sc-local-sample`, database `sc_dev_sample`, and fixed `sc_local_sample_*` volumes. It is technical sample data and is not feature/demo authority.

@@ -1,0 +1,75 @@
+schema_version: 1
+goal:
+  id: BUSINESS-ENTRY-SURFACE-NORMALIZATION
+  title: existing_business_entry_surface_normalization_wave_one
+  status: active
+  formal_product_layer: P1
+  layer_target: smart_construction_core_action_scoped_business_views
+  module:
+    - smart_construction_core
+  objective: >-
+    Make each existing operating entry state what users maintain and how they
+    complete it, beginning with an action-scoped project master-data form.
+  baseline:
+    branch: codex/business-entry-surface-normalization-v1
+    full_sha: 8633b1620bba39f2398f0f6c1eb70a50503a67f7
+    source: main
+  product_boundary:
+    standard_vs_user_specific: construction_industry_standard
+    why_here: >-
+      Project master-data grouping and the responsibility of the formal project
+      information entry are construction-product defaults.
+    why_not_elsewhere:
+      - no_project_model_or_field_name_hardcoding_in_the_frontend
+      - no_change_to_platform_contract_schema_or_startup_chain
+      - no_customer_specific_or_low_code_override
+      - no_database_fixture_migration_or_release_work
+    blast_radius:
+      - action_sc_product_project_edit_v1
+      - its_action_scoped_form_contract
+      - default_project_form_non_regression
+      - project_lifecycle_and_creation_form_non_regression
+  batches:
+    - id: 0
+      title: governed_topic_worktree_startup
+      status: complete
+    - id: 1
+      title: project_information_entry_sample
+      status: review_ready
+      product_candidate: daa54b6dc2519c4ba1fc40c16d87b8e77b0d7005
+      recovery_evidence_candidate: 08304b8a01ccb8d0bd315d5c666663903d76e70d
+      validation:
+        - canonical_form_presenter_cases_162_passed
+        - professional_business_value_matrix_24_counterexamples_8_passed
+        - strict_frontend_typecheck_passed
+        - core_extension_v2_finalize_odoo_tests_21_passed
+        - governed_incremental_upgrade_smart_construction_core_passed
+        - project_2_and_8_browser_checks_1082_390_320_passed
+        - browser_mutation_count_zero
+        - independent_product_browser_review_passed
+        - pm_runtime_project_information_menu_projection_restored
+        - governed_project_profile_real_save_and_authoritative_refresh_passed
+        - single_blocked_write_kept_draft_and_backend_unchanged
+        - same_session_manual_retry_and_refresh_passed
+        - actual_control_values_and_responsibility_operations_preserved_after_blocked_write
+        - authoritative_project_fields_and_responsibility_contents_unchanged_after_blocked_write
+        - visible_error_element_and_locator_bound_screenshot_captured
+        - network_save_failure_feedback_localized
+        - governed_batch_cleanup_passed
+        - recovery_report_aggregation_nonzero_tests_13_passed
+      pending:
+        - independent_delivery_candidate_review
+        - browser_denied_role_counterexample_credentials_unavailable
+        - final_quick_after_delivery_head_freeze
+    - id: 2
+      title: risk_grouped_remaining_business_entries
+      status: planned
+    - id: 3
+      title: entry_inventory_closure
+      status: planned
+  exclusions:
+    - comprehensive_workbench_productization
+    - arbitrary_project_lifecycle_selection
+    - permissions_state_machine_business_calculations_or_history_data
+    - forced_task_mode_or_frontend_project_special_case
+    - unapproved_menu_publication

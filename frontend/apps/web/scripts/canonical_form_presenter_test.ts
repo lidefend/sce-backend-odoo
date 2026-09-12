@@ -73,6 +73,9 @@ import {
 import { resolveBusinessCategoryContext } from '../src/pages/contractForm/contractRuntimeVm';
 import { useRelationRuntime } from '../src/pages/contractForm/useRelationRuntime';
 import { collectUnifiedPageContractV2FieldWidgets } from '../src/app/contracts/unifiedPageContractV2';
+import { computed, reactive, ref } from 'vue';
+import { useRecordFormProgress } from '../src/pages/contractForm/useRecordFormProgress';
+import { nativeNodeWidget, nativeNodeWidgetSemantics } from '../src/pages/contractForm/nativeLayoutUtils';
 
 const relationRuntime = useRelationRuntime();
 relationRuntime.relationSearchDialog.fieldName = 'project_id';
@@ -740,6 +743,68 @@ assert.deepEqual(nativeMonetaryField?.componentConfig.currencyValue, [6, 'CNY'])
 const nativeMonetarySchema = canonicalFieldToFormSection(nativeMonetaryField!);
 assert.equal(nativeMonetarySchema.currencyField, 'currency_id');
 assert.equal(nativeMonetarySchema.currencyLabel, 'CNY');
+
+const dateRangeStartField = {
+  ...nativeMonetaryField!,
+  widgetId: 'field.date_start', fieldCode: 'date_start', fieldType: 'date', widgetType: 'date',
+  value: '2026-09-01', label: '安排的日期',
+  componentConfig: { nativeWidget: 'daterange', widgetSemantics: { kind: 'date_range', start_field: 'date_start', end_field: 'date' } },
+};
+const dateRangeEndField = {
+  ...dateRangeStartField,
+  widgetId: 'field.date', fieldCode: 'date', widgetType: 'date', value: '2026-09-30', label: '结束日期',
+  componentConfig: { widget: 'date' },
+};
+const dateRangeSchema = canonicalFieldToFormSection(
+  dateRangeStartField,
+  undefined,
+  (fieldCode) => fieldCode === 'date' ? dateRangeEndField : undefined,
+);
+assert.equal(dateRangeSchema.dateRangeEndField, 'date');
+assert.equal(dateRangeSchema.dateRangeEndInputValue, '2026-09-30');
+const dateRangeSchemaWithoutVisibleEndField = canonicalFieldToFormSection({
+  ...dateRangeStartField,
+  componentConfig: { ...dateRangeStartField.componentConfig, dateRangeEndValue: '2026-10-15' },
+});
+assert.equal(dateRangeSchemaWithoutVisibleEndField.dateRangeEndInputValue, '2026-10-15');
+const nativeDateRangeNode = {
+  type: 'field', name: 'date_start', widget: 'date',
+  componentConfig: {
+    nativeWidget: 'daterange',
+    widgetSemantics: { kind: 'date_range', start_field: 'date_start', end_field: 'date' },
+  },
+};
+assert.equal(nativeNodeWidget(nativeDateRangeNode), 'daterange');
+assert.deepEqual(nativeNodeWidgetSemantics(nativeDateRangeNode), {
+  kind: 'date_range', start_field: 'date_start', end_field: 'date',
+});
+assert.equal(nativeNodeWidget({
+  type: 'field', name: 'date_start', widget: 'date',
+  attributes: { widget: 'daterange' },
+  fieldInfo: { widget: 'date', widget_semantics: { kind: 'date_range', end_field: 'date' } },
+}), 'daterange');
+
+const nestedOne2manyRows = reactive({ responsibility_ids: [{ isNew: true, dirty: true, removed: false }] });
+const nestedProgress = useRecordFormProgress({
+  layoutNodes: () => [],
+  canonicalFormFields: computed(() => ({ responsibility_ids: { type: 'one2many' } })),
+  formData: reactive<Record<string, unknown>>({ responsibility_ids: [] }),
+  originalValues: ref<Record<string, unknown>>({ responsibility_ids: [] }),
+  relationKeywords: reactive<Record<string, string>>({}),
+  fieldType: (descriptor) => String(descriptor?.type || ''),
+  relationInlineCreate: () => ({ enabled: false, createOnNoMatch: false }),
+  relationKeyword: () => '',
+  relationModel: () => '',
+  one2manyFieldRows: (name) => nestedOne2manyRows[name as keyof typeof nestedOne2manyRows] || [],
+  isFieldWritable: () => true,
+  isFieldVisible: () => true,
+  isIntakeCreateMode: computed(() => false),
+  nativeStatusbar: () => ({}),
+  comparableFieldValue: (_name, value) => JSON.stringify(value),
+});
+assert.equal(nestedProgress.hasChanges.value, true, 'nested one2many drafts must make the whole record form dirty');
+nestedOne2manyRows.responsibility_ids.splice(0);
+assert.equal(nestedProgress.hasChanges.value, false, 'removing a new one2many draft row must restore the clean form state');
 
 for (const legacyVersion of ['2.0.0', '2.1.0']) {
   const legacyServerSnapshot = snapshot() as ContractV2Snapshot & {

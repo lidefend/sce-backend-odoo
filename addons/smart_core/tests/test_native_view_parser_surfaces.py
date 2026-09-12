@@ -580,6 +580,15 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.assertFalse(action["action_safety"]["requires_confirm"])
         self.assertEqual(action["payload"]["confirm"], "")
 
+    def test_header_secondary_button_remains_a_direct_secondary_action(self):
+        element = _parse_test_xml(
+            '<button type="object" name="action_submit" string="Submit" class="btn-secondary"/>'
+        )
+
+        action = self.tree_form_parser._button_to_action(element, level="header")
+
+        self.assertEqual(action["presentation"]["tier"], "secondary")
+
     def test_smart_button_projects_to_authoritative_stat_region(self):
         element = _parse_test_xml(
             '<button class="oe_stat_button" type="object" name="action_open_lines" string="Lines"/>'

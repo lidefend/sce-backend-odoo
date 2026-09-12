@@ -20,6 +20,12 @@ DOCUMENT_REQUIREMENTS = {
         "one independently acceptable product result (PFL)",
         "All five conditions are mandatory",
         "At most two active worktrees are allowed",
+        "Layered Validation Efficiency (Hard Lock)",
+        "Never run a broad gate to discover a defect that a cheaper owning-layer check can determine",
+        "Do not rerun unchanged passing layers for reassurance",
+        "resume from the earliest invalidated layer",
+        "Do not retry an unchanged failure",
+        "the full required matrix runs once at the frozen delivery head",
     ),
     Path("docs/ops/codex_execution_allowlist.md"): (
         "禁止新增或派生 Compose project",
@@ -36,6 +42,13 @@ DOCUMENT_REQUIREMENTS = {
         "以产品结果组织工作树（Hard Lock）",
         "同时活跃工作树硬上限为两个",
         "同一 PFL 内的 P0/P1 修改继续留在同一产品工作树",
+        "高效分层验证红线（Hard Lock）",
+        "不得先跑昂贵门禁再回头定位便宜层缺陷",
+        "满足条件时禁止为了“更放心”机械重跑",
+        "失效只向下游传播",
+        "同因失败不得原样重试",
+        "完整发布门禁只在冻结 delivery HEAD 上集中执行一次",
+        "日志不完整或测试数未知不能判定通过",
     ),
 }
 

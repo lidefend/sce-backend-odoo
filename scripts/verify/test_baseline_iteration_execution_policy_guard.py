@@ -33,6 +33,22 @@ class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
             path.write_text(guard.MARKER, encoding="utf-8")
             self.assertTrue(any("missing locked rule" in error for error in guard.validate(root)))
 
+    def test_every_locked_document_rule_is_enforced(self) -> None:
+        for relative, fragments in guard.DOCUMENT_REQUIREMENTS.items():
+            for fragment in fragments:
+                with self.subTest(relative=str(relative), fragment=fragment):
+                    with tempfile.TemporaryDirectory() as directory:
+                        root = Path(directory)
+                        self.fixture(root)
+                        path = root / relative
+                        text = path.read_text(encoding="utf-8")
+                        path.write_text(text.replace(fragment, "", 1), encoding="utf-8")
+                        errors = guard.validate(root)
+                        self.assertIn(
+                            f"{relative}: missing locked rule {fragment!r}",
+                            errors,
+                        )
+
     def test_missing_authoritative_target_fails(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

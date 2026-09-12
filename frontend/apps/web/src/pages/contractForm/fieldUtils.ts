@@ -108,6 +108,13 @@ export function sanitizeUiErrorMessage(raw: unknown, fallback: string) {
   if (!text) return fallback;
   const lower = text.toLowerCase();
   if (
+    lower.includes('failed to fetch')
+    || lower.includes('network request failed')
+    || lower.includes('networkerror')
+  ) {
+    return '网络异常，请检查连接后重试。';
+  }
+  if (
     lower.includes('duplicate key value')
     || lower.includes('unique constraint')
     || lower.includes('already exists')

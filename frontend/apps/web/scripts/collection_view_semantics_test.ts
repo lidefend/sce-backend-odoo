@@ -6,6 +6,7 @@ import {
   mergeOne2manyHydratedRecords,
   one2manyColumnDisplayValue,
   one2manyColumnsFromSubview,
+  one2manyRowLabelFromPrimary,
   one2manyRowActionsFromSubview,
   resolveOne2manyRowColumnBehavior,
   selectOne2manySubview,
@@ -113,6 +114,14 @@ const selectionColumn = {
   selection: [['draft', '草稿'], ['won', '已中标']] as Array<[string, string]>,
 };
 assert.equal(one2manyColumnDisplayValue(selectionColumn, 'won'), '已中标');
+assert.equal(
+  one2manyRowLabelFromPrimary('state', {
+    key: 'selection-label', id: 0, isNew: true, removed: false, dirty: true, dirtyFields: [],
+    values: { state: 'won' },
+  }, [selectionColumn]),
+  '已中标',
+  'relation-card identity must use the authoritative selection label instead of leaking its storage key',
+);
 assert.equal(one2manyColumnDisplayValue(selectionColumn, 'unknown'), 'unknown');
 const many2oneColumn = { name: 'partner_id', label: '往来单位', ttype: 'many2one', required: false };
 assert.equal(one2manyColumnDisplayValue(many2oneColumn, [10, '德阳市某产业发展有限公司']), '德阳市某产业发展有限公司');

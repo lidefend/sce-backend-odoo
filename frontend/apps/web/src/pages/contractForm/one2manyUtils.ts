@@ -299,9 +299,17 @@ function authoritativeOne2manyRelationLabel(value: unknown) {
   return /^#\d+$/.test(label) ? '' : label;
 }
 
-export function one2manyRowLabelFromPrimary(primary: string, row: One2ManyInlineRow) {
+export function one2manyRowLabelFromPrimary(
+  primary: string,
+  row: One2ManyInlineRow,
+  columns: One2ManyColumn[] = [],
+) {
   const value = String(row.values?.[primary] ?? row.values?.name ?? '').trim();
-  if (value) return value;
+  if (value) {
+    const option = columns.find((column) => column.name === primary)?.selection
+      ?.find(([key]) => String(key) === value);
+    return option?.[1] || value;
+  }
   return '未命名';
 }
 

@@ -14,6 +14,15 @@ class ProfessionalBaseFieldGuardTest(unittest.TestCase):
 
         self.assertTrue(any("does not route" in failure for failure in validate(source)))
 
+    def test_date_range_accessibility_markers_are_required(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("FormSection.vue"):
+                return value.replace('aria-label="开始日期"', 'aria-label="日期"', 1)
+            return value
+
+        self.assertTrue(any("date range accessibility" in failure for failure in validate(source)))
+
     def test_missing_semantic_marker_fails(self):
         def source(path):
             value = (ROOT / path).read_text(encoding="utf-8")
@@ -45,6 +54,25 @@ class ProfessionalBaseFieldGuardTest(unittest.TestCase):
             return value
 
         self.assertTrue(any("duplicate primitive inline padding" in failure for failure in validate(source)))
+
+    def test_html_editor_control_semantics_are_required(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("RestrictedHtmlEditor.vue"):
+                return value.replace(':aria-describedby="describedBy"', ':data-missing-describedby="describedBy"', 1)
+            return value
+
+        self.assertTrue(any("restricted html editor missing control semantics" in failure for failure in validate(source)))
+
+    def test_html_field_branch_must_pass_control_identity(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalBaseFieldControl.vue"):
+                prefix, html_branch = value.split("<RestrictedHtmlEditor", 1)
+                return prefix + "<RestrictedHtmlEditor" + html_branch.replace(':id="controlId"', ':data-missing-id="controlId"', 1)
+            return value
+
+        self.assertTrue(any("professional html field does not pass through" in failure for failure in validate(source)))
 
     def test_filename_companion_using_public_text_handler_fails(self):
         def source(path):

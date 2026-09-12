@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        The product action "项目信息编辑" owns project master-data maintenance.
+        This is intentionally a standalone, action-scoped form: the complete
+        project.edit_project composition remains available to dashboard and
+        native consumers, while cross-business child records stay in their
+        dedicated operating entries.
+    -->
+    <record id="view_sc_product_project_information_edit_form_v1" model="ir.ui.view">
+        <field name="name">project.project.information.edit.form.product.v1</field>
+        <field name="model">project.project</field>
+        <field name="arch" type="xml">
+            <form string="项目信息编辑" create="false" delete="false">
+                <header>
+                    <button name="action_sc_submit" type="object" string="提交立项"
+                            class="btn-secondary"
+                            groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"
+                            invisible="lifecycle_state != 'draft'"/>
+                    <field name="lifecycle_state" widget="statusbar" readonly="1"
+                           statusbar_visible="draft,in_progress,paused,done,closing,warranty,closed"/>
+                </header>
+                <sheet>
+                    <field name="message_needaction" invisible="1"/>
+                    <field name="display_name" invisible="1"/>
+                    <field name="active" invisible="1"/>
+                    <div class="alert alert-info" role="status" invisible="lifecycle_state != 'draft'">
+                        保存用于更新项目资料；“提交立项”用于推进项目状态并执行后端校验。
+                    </div>
+
+                    <group name="sc_project_information_basic" string="基本信息" col="4"
+                           data-sc-anchor="project-basic">
+                        <field name="name" string="项目名称"/>
+                        <field name="project_code" readonly="1" invisible="id == False"
+                               groups="smart_construction_core.group_sc_cap_project_read"/>
+                        <field name="partner_id" widget="res_partner_many2one"
+                               context="{'res_partner_search_mode': 'customer'}"
+                               options="{'always_reload': True}"/>
+                        <field name="project_type_id"
+                               groups="smart_construction_core.group_sc_cap_project_read"/>
+                        <field name="project_category_id" invisible="1"
+                               groups="smart_construction_core.group_sc_cap_project_read"/>
+                        <field name="operation_strategy"
+                               groups="smart_construction_core.group_sc_cap_project_read"/>
+                        <field name="location"
+                               groups="smart_construction_core.group_sc_cap_project_read"/>
+                        <field name="owner_contact"
+                               groups="smart_construction_core.group_sc_cap_project_read"/>
+                        <field name="contract_no"
+                               groups="smart_construction_core.group_sc_cap_project_read"/>
+                        <field name="company_id" readonly="1"/>
+                        <field name="phase_key" invisible="1"
+                               groups="smart_construction_core.group_sc_cap_project_read"/>
+                    </group>
+
+                    <group name="sc_project_information_plan" string="计划与责任" col="4"
+                           data-sc-anchor="project-plan-responsibility">
+                        <field name="initiation_date"
+                               groups="smart_construction_core.group_sc_cap_project_read"/>
+                        <field name="date_start" string="项目周期" widget="daterange"
+                               options="{&quot;end_date_field&quot;: &quot;date&quot;, &quot;always_range&quot;: &quot;1&quot;}"
+                               required="date_start or date"/>
+                        <field name="date" invisible="1" required="date_start"/>
+                        <field name="start_date"
+                               groups="smart_construction_core.group_sc_cap_project_read"/>
+                        <field name="end_date"
+                               groups="smart_construction_core.group_sc_cap_project_read"/>
+                        <field name="user_id" string="项目负责人" widget="many2one_avatar_user"
+                               domain="[('share', '=', False)]" readonly="not active"
+                               options="{'no_quick_create': True}"/>
+                        <field name="manager_id"
+                               groups="smart_construction_core.group_sc_cap_project_read"/>
+                        <field name="cost_manager_id"
+                               groups="smart_construction_core.group_sc_cap_project_read"/>
+                        <field name="doc_manager_id"
+                               groups="smart_construction_core.group_sc_cap_project_read"/>
+                    </group>
+
+                    <group name="sc_project_information_responsibility" string="责任矩阵" col="1"
+                           data-sc-anchor="project-responsibility-matrix">
+                        <field name="responsibility_ids" nolabel="1"
+                               groups="smart_construction_core.group_sc_cap_project_read">
+                            <tree editable="bottom">
+                                <field name="role_key"/>
+                                <field name="user_id"/>
+                                <field name="note"/>
+                            </tree>
+                        </field>
+                    </group>
+
+                    <group name="sc_project_information_description" string="项目说明" col="1"
+                           data-sc-anchor="project-description"
+                           data-sc-navigation-role="subordinate">
+                        <field name="description" nolabel="1"
+                               options="{'resizable': false}"/>
+                    </group>
+
+                    <group name="sc_project_information_collaboration" string="协作资料" col="4"
+                           data-sc-anchor="project-collaboration"
+                           data-sc-navigation-role="subordinate">
+                        <field name="tag_ids" widget="many2many_tags"
+                               options="{'color_field': 'color'}"/>
+                        <field name="collaborator_ids"/>
+                    </group>
+
+                    <group name="sc_project_information_trace" string="系统追溯" col="4"
+                           data-sc-anchor="project-system-trace"
+                           data-sc-navigation-role="subordinate"
+                           data-sc-collapsible="1"
+                           data-sc-collapsed-by-default="1">
+                        <field name="analytic_account_id" readonly="1"/>
+                        <field name="source_created_by" readonly="1"
+                               groups="smart_construction_core.group_sc_cap_project_read"/>
+                        <field name="source_created_at" readonly="1"
+                               groups="smart_construction_core.group_sc_cap_project_read"/>
+                    </group>
+                </sheet>
+                <chatter groups="smart_construction_core.group_sc_cap_cost_user,smart_construction_core.group_sc_cap_cost_manager,smart_construction_core.group_sc_cap_contract_user,smart_construction_core.group_sc_cap_contract_manager,smart_construction_core.group_sc_super_admin"/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_sc_product_project_edit_form_v1" model="ir.actions.act_window.view">
+        <field name="sequence">20</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="smart_construction_core.view_sc_product_project_information_edit_form_v1"/>
+        <field name="act_window_id" ref="smart_construction_core.action_sc_product_project_edit_v1"/>
+    </record>
+</odoo>

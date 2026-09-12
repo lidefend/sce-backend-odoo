@@ -51,12 +51,11 @@ export function useRecordFormProgress(params: {
   }
 
   function hasOne2manyDraftChanges() {
-    return params.layoutNodes().some((node) => {
-      if (node.kind !== 'field' || node.readonly) return false;
-      const descriptor = params.canonicalFormFields.value[node.name];
-      return params.fieldType(descriptor) === 'one2many'
-        && params.one2manyFieldRows(node.name).some((row) => row.isNew || row.dirty || row.removed);
-    });
+    return Object.entries(params.canonicalFormFields.value).some(([name, descriptor]) => (
+      params.fieldType(descriptor) === 'one2many'
+      && params.isFieldWritable(name)
+      && params.one2manyFieldRows(name).some((row) => row.isNew || row.dirty || row.removed)
+    ));
   }
 
   const hasChanges = computed(() => {

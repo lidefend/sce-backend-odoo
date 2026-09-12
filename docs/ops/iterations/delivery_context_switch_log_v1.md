@@ -9286,3 +9286,39 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - #463 首个 HEAD 暴露覆盖断层：通用生成报告组没有包含 `component-driver-takeover-inventory-v1.json`，本地 Quick 也没有消费其守卫，导致摘要陈旧只能由远端 `frontend_release_gate` 发现。
 - 最小修复复用现有清单刷新和验证入口：Quick 前移非零守卫；push 在首次远端访问前刷新，若产生差异则零 push 停止，干净路径再次校验后才允许远端探测。
 - 隔离 push 自测新增陈旧清单场景，生成器测试新增源文件摘要反例；本批不新增环境、凭据、fixture、数据库或发布动作。
+
+## 2026-09-11 — 高效分层验证红线
+
+- 分支 `codex/business-entry-surface-normalization-v1`，起始 HEAD `e8c573e3927b459d59d3bc8bbad81fa38a962567`。Formal Product Layer P4；Layer Target 为 Codex 迭代执行策略及其基线策略守卫；Module 为 `AGENTS.md`、`docs/ops` 与 `scripts/verify`。
+- 唯一目标：把 L0 身份、L1 静态、L2 非零定向、L3 受管运行态、L4 冻结产品候选、L5 交付发布固化为失败短路的验证状态机，并规定证据复用、向下游失效和最早失效层恢复。
+- 规则属于平台交付治理，不修改 P0/P1 产品语义、前后端契约、业务模块、数据库、fixture、runtime profile 或远端状态；验证只运行现有策略 guard 的纯 Python 非零单元和静态入口。
+- `make verify.baseline.iteration.execution.policy` 最终 PASS：4 个单元测试非零通过，真实 guard 覆盖 3 份权威文档和 8 个 Make authority。中间一次真实 guard 因锁定短语被 Markdown 换行拆分而失败，归类 `validation_tool_defect`；缩小为语义不变的连续短语后从 L2 恢复通过，未扩大范围。
+- 通过证据源完整指纹为 `071804f62e9387ed8c5597c980109b16279bf410487398bcae6c02c55acb8476`（7404 paths）。此后仅追加本完成记录，不改变 guard、测试或权威规则输入，L2 结果按确定性影响分析承接；L3 模块/运行态、L4 fixture/snapshot/browser、L5 release/PR 均因不适用明确 `not_run`。
+
+## 2026-09-11 — P4 项目资料开发写入验收能力（子批次）
+
+- 分支 `codex/business-entry-surface-normalization-v1`，产品候选保持 `4c88167f388ec19d2f5b51632d7ad0bae8a94af0`；Formal Product Layer P4；Layer Target 为 `local.dev/sc_dev_demo` 受控项目资料写入验证；Module 为 `scripts/verify`、`make/dev.mk` 与受管 Odoo shell 环境转发。
+- 新入口 `local.dev.project_profile_write_fixture` 只允许精确 `sc-local-dev`、`sc_dev_demo`、`^sc_dev_demo$`、`SC_ENVIRONMENT=dev`、完整候选 SHA 和显式批次确认；支持 `inspect`、`dry-run`、`prepare`、`cleanup`，不创建用户、不修改权限、不进入 acceptance。
+- 批次对象使用 `codex_p4_project_profile_write` XMLID 命名空间；写入范围限定为名称、日期、说明和责任明细。清理前扫描所有指向项目的外部 many2one 引用，发现引用或 XMLID 归属异常即停止。
+- 纯静态安全测试 8 项通过；`dry-run` 真实受管执行通过，确认 `sc_dev_demo`、候选 SHA 和角色候选：项目经理 `demo_role_project_manager`/`pm1`，普通项目用户 `demo_role_project_a_member`，只读候选 `demo_role_project_read`；批次对象当前不存在，未写数据库。
+- 真实 `prepare`、浏览器保存、清理及最终 Quick 均 `not_run`：等待本 P4 工具提交冻结后再按显式前提执行；产品代码、项目 2/8、acceptance 数据库均未修改。
+- 工具提交后完成一次真实身份核对：5176 产品服务绑定 `4c88167f…`，P4 工具 HEAD 为 `97b0eabb…`，项目 366 XMLID/批次/公司/责任明细匹配，实际 `record_read/record_write` 结果已按用户绑定核对。聚焦浏览器 runner 在登录前因 `SC_DEMO_USER_PASSWORD` 未注入而停止，未发出保存请求；不自行生成或轮换开发凭据，保存与清理保持 `not_run`，专用对象仍为已知可恢复状态。
+- 后续使用规范 `.env.dev` 中已有凭据重试；`local.dev.ready` 通过，但 runner 在项目页加载阶段超时，未产生写请求，`summary.json` 已落盘。只读核查确认 366 未变更且无外部引用，随后受管 cleanup 删除项目 366 及责任明细 `[3,4]`；真实保存、失败恢复、重复触发及角色差异仍未覆盖，Batch-1 不得宣称通过。
+- 修正 runner 预检后，在只读可读项目 8 上验证：登录、`system.init` 契约及 `api.data read` 均 HTTP 200/业务成功，路由为 `/r/project.project/8?menu_id=681&action_id=861`；但页面正文为空、字段数为 0，截图与 `failure.png`/`summary.json` 已留存，预检按新门禁失败。结论为前端表单未渲染/空白页，非内部布局选择器误判；未发出写请求，未准备新 fixture。
+- 改为等待异步页面状态并补齐控制台、资源失败及请求参数诊断（登录密码脱敏）。项目 8 在经理与只读同一路由均被导航授权层重定向 `/access-denied?reason=NAVIGATION_AUTHORITY_DENIED`，因此没有表单契约请求；`login/system.init/api.data read` 成功不能替代入口授权。未修改产品权限或页面，保存验收继续暂停。
+- 进一步验证确认：异步等待前的“空白”属于过早采样；等待后经理与只读均明确进入 `access-denied`。正式菜单可见性与系统生成路径尚未取得有效证据，不能用手拼 `/r` 结果替代；当前不修改产品授权或 renderer，保存验收与 fixture 准备继续暂停。
+- 本轮完成正式首页菜单旅程：`demo_role_project_manager` 实际角色为“项目经理”、公司 My Company；首页 `/s/workspace.home` 展开“项目中心”后仅下发“施工管理”，继续展开仅有“施工日志”。“项目创建”“项目信息编辑”均不可见；系统菜单搜索“项目信息编辑”无结果。已登记的 `pm1` 同样显示项目经理角色且菜单结果一致。未点击手拼路径、未请求表单契约、未修改权限或准备 fixture；启动 `system.init` 响应包含项目角色投影但未下发目标入口。
+- 进一步沿首页“常用入口 → 项目中心”真实点击：`pm1` 首页显示角色“项目经理”、公司 My Company；系统生成 `/a/729?...&menu_id=426&action_id=729`，最终页面为“施工日志”列表（action `sc.construction.diary`），并成功请求 `ui.contract.v2 action_open` 与 `api.data list`。该“项目中心”快捷入口实际绑定施工日志，不是项目资料/项目台账入口；未修改权限、产品代码或准备 fixture。
+- 本次改走侧边栏正式菜单：`pm1` 登录后展开“业务菜单”，点击“项目台账”，系统生成 `/a/519?menu_id=382&action_id=519`，契约与列表请求成功；从列表首条记录打开 `/f/project.project/3?menu_id=382&action_id=519`，项目资料表单字段实际显示（12 个字段）。该链路证明正式入口为“业务菜单 → 项目台账”，此前直接 `/r` 与首页快捷入口均不代表项目资料正式入口；本次仅只读打开项目 3，未写入。
+- 入口授权缺口定位：同一 `sc-local-dev/sc_dev_demo` 中，数据库 menu 681/action 861 对 `pm1` 可见且组授权匹配；`system.init` 原始响应未包含该节点，原因是 `ROLE_SURFACE_OVERRIDES["pm"].primary_menu_xmlids` 漏列 `menu_sc_product_project_edit_v1`，发布导航基线亦漏列。已补齐 pm 投影与基线，`frontend_release_navigation_policy_guard` PASS；尚未升级/刷新候选，浏览器闭环待新候选验证。
+
+## 2026-09-13 — Batch-1 项目资料真实保存与失败恢复收口
+
+- 分支 `codex/business-entry-surface-normalization-v1`；Formal Product Layer 为 P1 项目资料办理面、P0 通用保存错误表达和 P4 受管写入验收工具。产品运行候选为 `daa54b6dc2519c4ba1fc40c16d87b8e77b0d7005`，环境严格限定 `sc-local-dev/sc_dev_demo`。
+- `pm1` 通过恢复后的正式菜单 `menu 681/action 861` 进入专用项目 373。首次 `api.data op=write` 在到达后端前被精确阻断，页面显示“网络异常，请检查连接后重试。”，busy 释放，普通字段、日期和责任明细草稿保留；权威读取确认主记录、生命周期和明细均未变化。
+- 同一会话解除拦截并人工式重试一次，真实后端写入业务成功；权威回读和浏览器刷新一致，生命周期保持 `draft`。口径固定为两次浏览器写入尝试：一次阻断、一次放行；不表述为两次后端成功提交。
+- runner 已拆分 `failure_attempt` 与 `retry_success`，整体 PASS 同时要求错误提示、busy 释放、草稿保留、首次后端不变、重试成功和刷新一致。10 项非零定向测试与 TypeScript 创建/保存旅程通过。
+- 证据摘要 `/tmp/p4-recovery-proof-0913-final/summary.json` 为 PASS；失败态截图与成功刷新截图均已保留。专用批次 `recovery-proof-0913` 在请求结束和证据落盘后受管清理，项目 373 与责任明细 `[21,22]` 删除，`clean=true`。
+- 浏览器无权角色拒绝反例因既有凭据不可用明确保留为未覆盖，不修改权限、不轮换凭据，也不伪报多角色验收完整。Batch-2 不启动；本批仅剩生成报告对齐、exact-head Quick 和独立交付复核。
+- 最终补证修正了两个过宽判定：失败恢复不再只用页头脏态代表草稿保留，也不再只用项目名代表后端不变。`08304b8a…` runner 在专用项目 374 上逐项保存并比对名称、双日期、说明和责任明细实际控件，核对新增/修改/删除命令，并权威读取责任明细角色、人员和备注；可见错误元素及其定位器截图单独留存。
+- 同一补证批次结果 PASS：首次写请求为 `network_blocked`，错误真实可见、busy 释放、控件草稿和全量后端事实不变；同会话第二次尝试业务成功，完整权威事实与刷新一致且生命周期保持 `draft`。请求全部终态后，受管清理项目 374 与责任明细 `[24,25]`，后续 inspect 确认批次不存在；13 项 P4 定向测试通过，历史产品/导航证据未重跑。
