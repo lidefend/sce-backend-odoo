@@ -16,6 +16,8 @@ PY
 [[ "$served_sha" == "$PRODUCT_CANDIDATE_SHA" ]] || { echo "[DENY] product candidate SHA mismatch: $served_sha" >&2; exit 2; }
 export FRONTEND_URL DB_NAME E2E_PASSWORD="${SC_DEMO_USER_PASSWORD:?SC_DEMO_USER_PASSWORD is required}"
 export PROJECT_ID="${PROJECT_ID:-366}" ACTION_ID="${ACTION_ID:-861}" MENU_ID="${MENU_ID:-681}"
+export PROJECT_NAME="${PROJECT_NAME:-}" NETWORK_FAILURE_RECOVERY="${NETWORK_FAILURE_RECOVERY:-0}"
+export ARTIFACT_DIR="${ARTIFACT_DIR:-}"
 export PM_LOGIN="${PM_LOGIN:-demo_role_project_manager}"
 export MEMBER_LOGIN="${MEMBER_LOGIN:-demo_role_project_a_member}"
 export READ_LOGIN="${READ_LOGIN:-demo_role_project_read}"
