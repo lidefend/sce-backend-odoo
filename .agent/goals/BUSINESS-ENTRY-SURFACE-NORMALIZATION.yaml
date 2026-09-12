@@ -37,6 +37,7 @@ goal:
       title: project_information_entry_sample
       status: review_ready
       product_candidate: daa54b6dc2519c4ba1fc40c16d87b8e77b0d7005
+      recovery_evidence_candidate: 08304b8a01ccb8d0bd315d5c666663903d76e70d
       validation:
         - canonical_form_presenter_cases_162_passed
         - professional_business_value_matrix_24_counterexamples_8_passed
@@ -50,9 +51,12 @@ goal:
         - governed_project_profile_real_save_and_authoritative_refresh_passed
         - single_blocked_write_kept_draft_and_backend_unchanged
         - same_session_manual_retry_and_refresh_passed
+        - actual_control_values_and_responsibility_operations_preserved_after_blocked_write
+        - authoritative_project_fields_and_responsibility_contents_unchanged_after_blocked_write
+        - visible_error_element_and_locator_bound_screenshot_captured
         - network_save_failure_feedback_localized
         - governed_batch_cleanup_passed
-        - recovery_report_aggregation_nonzero_tests_10_passed
+        - recovery_report_aggregation_nonzero_tests_13_passed
       pending:
         - independent_delivery_candidate_review
         - browser_denied_role_counterexample_credentials_unavailable
