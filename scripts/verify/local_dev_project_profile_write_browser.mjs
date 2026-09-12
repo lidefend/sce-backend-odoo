@@ -10,12 +10,14 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://127.0.0.1:5176';
 const DB_NAME = process.env.DB_NAME || 'sc_dev_demo';
 const PASSWORD = process.env.E2E_PASSWORD || process.env.SC_DEMO_USER_PASSWORD || '';
 const PROJECT_ID = Number(process.env.PROJECT_ID || 366);
+const PROJECT_NAME = process.env.PROJECT_NAME || '';
 const ACTION_ID = Number(process.env.ACTION_ID || 861);
 const MENU_ID = Number(process.env.MENU_ID || 681);
 const PM_LOGIN = process.env.PM_LOGIN || 'demo_role_project_manager';
 const MEMBER_LOGIN = process.env.MEMBER_LOGIN || 'demo_role_project_a_member';
 const READ_LOGIN = process.env.READ_LOGIN || 'demo_role_project_read';
 const READ_ONLY = process.env.READ_ONLY === '1';
+const PREFLIGHT_ONLY = process.env.PREFLIGHT_ONLY === '1';
 const PREFLIGHT_LOGIN = process.env.PREFLIGHT_LOGIN || '';
 const ROUTE_PATH = process.env.ROUTE_PATH || `/r/project.project/${PROJECT_ID}?menu_id=${MENU_ID}&action_id=${ACTION_ID}`;
 const OUT = path.resolve(process.env.ARTIFACT_DIR || `artifacts/p4-project-profile-write/${Date.now()}`);
@@ -98,7 +100,21 @@ async function readProject(page) {
   return result.data.records?.[0] || null;
 }
 async function openProject(page) {
-  await page.goto(`${FRONTEND_URL}${ROUTE_PATH}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  // Reuse the verified formal navigation chain; do not hand-splice a form route.
+  await page.goto(`${FRONTEND_URL}/s/workspace.home`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.locator('li[data-navigation-label="项目中心"] > .t-menu__item').click();
+  await page.locator('li[data-navigation-label="项目创建"] > .t-menu__item').click();
+  await page.locator('li[data-navigation-node][data-navigation-menu-id="681"]').click();
+  await page.waitForFunction(() => !/正在载入数据|正在加载列表/.test(document.body.innerText || ''), null, { timeout: 30000 });
+  if (PROJECT_NAME) await page.getByRole('button', { name: PROJECT_NAME, exact: true }).waitFor({ timeout: 30000 });
+  const target = page.locator(`[data-record-id="${PROJECT_ID}"], [data-id="${PROJECT_ID}"]`).first();
+  if (await target.count()) await target.click();
+  else {
+    const rows = PROJECT_NAME ? page.getByRole('button', { name: PROJECT_NAME, exact: true }) : page.locator('[data-semantic-component="ListPage"] button').filter({ hasText: /项目/ });
+    const count = await rows.count();
+    if (!count) throw new Error(`target_record_not_found:${PROJECT_ID}`);
+    await rows.first().click();
+  }
   await page.waitForFunction(() => {
     const text = document.body.innerText || '';
     const fields = document.querySelectorAll('[data-field-name]').length;
@@ -107,8 +123,7 @@ async function openProject(page) {
     return fields > 0 || explicitError || (!loading && text.trim().length > 0);
   }, null, { timeout: 30000 });
   const state = await page.evaluate(() => ({ url: location.href, title: document.title, text: (document.body.innerText || '').slice(0, 1200), fields: [...document.querySelectorAll('[data-field-name]')].map((el) => el.getAttribute('data-field-name')).slice(0, 80) }));
-  const expectedRoute = ROUTE_PATH.split('?')[0];
-  if (!new URL(state.url).pathname.startsWith(expectedRoute)) throw new Error(`route_mismatch:${JSON.stringify(state)}`);
+  if (!new URL(state.url).pathname.startsWith('/f/project.project/')) throw new Error(`route_mismatch:${JSON.stringify(state)}`);
   if (new URL(state.url).pathname === '/login' || new URL(state.url).pathname.startsWith('/login/')) throw new Error(`login_redirect:${JSON.stringify(state)}`);
   if (/403|404|无权限|不存在|错误/.test(state.text)) throw new Error(`page_error:${JSON.stringify(state)}`);
   return state;
@@ -141,6 +156,10 @@ async function main() {
     const before = await readProject(page);
     if (!before || before.id !== PROJECT_ID) throw new Error('project 366 authoritative read failed');
     report.preflight = { page_state: pageState, authoritative_read: { id: before.id, lifecycle_state: before.lifecycle_state, responsibility_ids: before.responsibility_ids } };
+    if (PREFLIGHT_ONLY) {
+      report.scenarios.push({ name: 'readonly_save_preflight', status: pageState.fields.length > 0 && before.id === PROJECT_ID ? 'PASS' : 'FAIL', save_controls: await page.locator('.template-page-header-actions button').allTextContents() });
+      return;
+    }
     if (READ_ONLY) {
       const editable = await page.locator('input:not([disabled]), textarea:not([disabled]), [contenteditable="true"]').count();
       const visibleFields = pageState.fields.length;
