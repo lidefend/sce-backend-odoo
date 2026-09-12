@@ -217,6 +217,12 @@ async function main() {
     const createdRow = responsibility.locator('tbody tr').last();
     const roleSelect = createdRow.locator('select').first();
     if (await roleSelect.count()) await roleSelect.selectOption('finance');
+    else {
+      const roleInput = createdRow.locator('input[placeholder="请选择角色"]').first();
+      if (await roleInput.count()) { await roleInput.click(); await page.locator('.t-select-option').filter({ hasText: '项目经理' }).first().click(); }
+      const userInput = createdRow.locator('input[placeholder="请选择责任人"]').first();
+      if (await userInput.count()) { await userInput.click(); await page.locator('.t-select-option').filter({ hasText: 'Demo-项目经理A' }).first().click(); }
+    }
     const rowInputs = createdRow.locator('input');
     if (await rowInputs.count()) await rowInputs.last().fill('P4 责任新增');
     if (!await dirty(page)) throw new Error('draft did not become dirty');
