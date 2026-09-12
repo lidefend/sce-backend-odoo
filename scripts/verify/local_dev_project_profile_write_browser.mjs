@@ -115,6 +115,7 @@ async function openProject(page) {
     if (!count) throw new Error(`target_record_not_found:${PROJECT_ID}`);
     await rows.first().click();
   }
+  await page.waitForURL((url) => url.pathname.startsWith('/f/project.project/'), { timeout: 30000 });
   await page.waitForFunction(() => {
     const text = document.body.innerText || '';
     const fields = document.querySelectorAll('[data-field-name]').length;
