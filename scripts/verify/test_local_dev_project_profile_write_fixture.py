@@ -64,8 +64,29 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
     def test_recovery_report_cannot_reuse_normal_save_or_skip_failure_feedback(self):
         self.assertIn("if (!NETWORK_FAILURE_RECOVERY)", BROWSER_MJS)
         self.assertIn("failedMessageVisible", BROWSER_MJS)
-        self.assertIn("failure_feedback_incomplete", BROWSER_MJS)
+        self.assertIn("failure_recovery_evidence_incomplete", BROWSER_MJS)
         self.assertIn("name: 'retry_success'", BROWSER_MJS)
+
+    def test_recovery_pass_compares_actual_draft_and_all_authoritative_facts(self):
+        self.assertIn("captureDraftSnapshot", BROWSER_MJS)
+        self.assertIn("draft_before_failure", BROWSER_MJS)
+        self.assertIn("draft_after_failure", BROWSER_MJS)
+        self.assertIn("backend_unchanged: backendUnchanged", BROWSER_MJS)
+        self.assertIn("fields: ['id', 'project_id', 'role_key', 'user_id', 'note']", BROWSER_MJS)
+        self.assertIn("responsibility_operations_complete", BROWSER_MJS)
+        self.assertNotIn("unchanged?.name === report.preflight.authoritative_read.name", BROWSER_MJS)
+
+    def test_recovery_error_must_be_visible_and_screenshot_before_retry(self):
+        self.assertIn("feedbackVisible = await feedback.isVisible()", BROWSER_MJS)
+        self.assertIn("failure-feedback-visible.png", BROWSER_MJS)
+        self.assertIn("element_screenshot: 'failure-feedback-visible.png'", BROWSER_MJS)
+        self.assertLess(BROWSER_MJS.index("failure-feedback-visible.png"), BROWSER_MJS.index("await page.unroute"))
+
+    def test_recovery_retry_requires_business_response_and_full_refresh_match(self):
+        self.assertIn("'business_success' : 'response_failure'", BROWSER_MJS)
+        self.assertIn("retryWrite.outcome === 'business_success'", BROWSER_MJS)
+        self.assertIn("refreshConsistent = sameJson(afterRetry, refreshed)", BROWSER_MJS)
+        self.assertIn("responsibility_operations_applied", BROWSER_MJS)
 
 
 if __name__ == "__main__":

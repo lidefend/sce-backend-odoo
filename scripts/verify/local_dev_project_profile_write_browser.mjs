@@ -28,13 +28,41 @@ if (!PASSWORD) throw new Error('E2E_PASSWORD or SC_DEMO_USER_PASSWORD is require
 fs.mkdirSync(OUT, { recursive: true });
 
 function normalize(value) { return String(value ?? '').replace(/\s+/g, ' ').trim(); }
+function sameJson(left, right) { return JSON.stringify(left) === JSON.stringify(right); }
 function recordWriteRequests(page) {
   const writes = [];
+  const pending = new Map();
   page.on('request', (request) => {
     if (request.method() !== 'POST' || !request.url().includes('/api/v1/intent')) return;
     let body = {};
     try { body = JSON.parse(request.postData() || '{}'); } catch { return; }
-    if ((body?.intent === 'api.data' && body?.params?.op === 'write') || body?.intent === 'api.data.write') writes.push({ body, at: Date.now() });
+    const isWrite = (body?.intent === 'api.data' && body?.params?.op === 'write') || body?.intent === 'api.data.write';
+    if (!isWrite || body?.params?.model !== 'project.project' || !body?.params?.ids?.map(Number).includes(PROJECT_ID)) return;
+    const entry = { body, at: Date.now(), outcome: 'pending' };
+    writes.push(entry);
+    pending.set(request, entry);
+  });
+  page.on('response', async (response) => {
+    const entry = pending.get(response.request());
+    if (!entry) return;
+    entry.http_status = response.status();
+    try {
+      const body = await response.json();
+      entry.business_ok = body?.ok === true;
+      entry.response_error = body?.error || undefined;
+    } catch {
+      entry.business_ok = false;
+      entry.response_error = 'non_json_response';
+    }
+    entry.outcome = response.ok() && entry.business_ok ? 'business_success' : 'response_failure';
+    pending.delete(response.request());
+  });
+  page.on('requestfailed', (request) => {
+    const entry = pending.get(request);
+    if (!entry) return;
+    entry.outcome = 'network_blocked';
+    entry.network_error = request.failure()?.errorText || 'unknown';
+    pending.delete(request);
   });
   return writes;
 }
@@ -99,6 +127,118 @@ async function readProject(page) {
     fields: ['id', 'name', 'date_start', 'date', 'description', 'lifecycle_state', 'responsibility_ids'], context: {},
   });
   return result.data.records?.[0] || null;
+}
+function many2oneId(value) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+async function readProjectFacts(page) {
+  const project = await readProject(page);
+  const responsibilityIds = (project?.responsibility_ids || []).map(Number).filter(Number.isFinite);
+  let responsibilities = [];
+  if (responsibilityIds.length) {
+    const result = await intent(page, 'api.data', {
+      op: 'read', model: 'project.responsibility', ids: responsibilityIds,
+      fields: ['id', 'project_id', 'role_key', 'user_id', 'note'], context: {},
+    });
+    responsibilities = (result.data.records || []).map((row) => ({
+      id: Number(row.id),
+      project_id: many2oneId(row.project_id),
+      role_key: String(row.role_key || ''),
+      user_id: many2oneId(row.user_id),
+      note: String(row.note || ''),
+    })).sort((left, right) => left.id - right.id);
+  }
+  return {
+    project: {
+      id: Number(project?.id),
+      name: String(project?.name || ''),
+      date_start: project?.date_start || false,
+      date: project?.date || false,
+      description: project?.description || false,
+      lifecycle_state: project?.lifecycle_state || false,
+      responsibility_ids: responsibilityIds.slice().sort((left, right) => left - right),
+    },
+    responsibilities,
+  };
+}
+async function captureDraftSnapshot(page) {
+  return page.evaluate(() => {
+    const normalizeText = (value) => String(value ?? '').replace(/\s+/g, ' ').trim();
+    const controls = (root) => [...(root?.querySelectorAll('input, textarea, select, [contenteditable="true"]') || [])]
+      .filter((control) => {
+        const style = window.getComputedStyle(control);
+        return style.display !== 'none' && style.visibility !== 'hidden';
+      })
+      .map((control) => ({
+        tag: control.tagName.toLowerCase(),
+        type: control.getAttribute('type') || '',
+        placeholder: control.getAttribute('placeholder') || '',
+        value: control.getAttribute('contenteditable') === 'true'
+          ? normalizeText(control.textContent || '')
+          : String(control.value ?? ''),
+      }));
+    const fieldControls = (name) => controls(document.querySelector(`[data-field-name="${name}"]`));
+    const responsibility = document.querySelector('[data-field-name="responsibility_ids"]');
+    const rows = [...(responsibility?.querySelectorAll('tbody tr') || [])].map((row, index) => ({
+      index,
+      state: normalizeText(row.querySelector('.o2m-state-badge')?.textContent || ''),
+      controls: controls(row),
+    }));
+    return {
+      fields: {
+        name: fieldControls('name'),
+        date_start: fieldControls('date_start'),
+        date: fieldControls('date'),
+        description: fieldControls('description'),
+      },
+      responsibility: {
+        summary: normalizeText(responsibility?.querySelector('[data-detail-collection-summary]')?.textContent || ''),
+        row_count: rows.length,
+        rows,
+      },
+    };
+  });
+}
+function responsibilityOperations(writes, index) {
+  return writes[index]?.body?.params?.vals?.responsibility_ids || [];
+}
+function hasCompleteResponsibilityOperations(operations) {
+  const commands = operations.map((operation) => Number(operation?.[0]));
+  return [0, 1, 2].every((command) => commands.includes(command));
+}
+function relationOperationsApplied(initialFacts, finalFacts, operations) {
+  const initialRows = new Map(initialFacts.responsibilities.map((row) => [row.id, row]));
+  const finalRows = new Map(finalFacts.responsibilities.map((row) => [row.id, row]));
+  return operations.every((operation) => {
+    const command = Number(operation?.[0]);
+    const id = Number(operation?.[1]);
+    const vals = operation?.[2] || {};
+    if (command === 2) return initialRows.has(id) && !finalRows.has(id);
+    if (command === 1) {
+      const row = finalRows.get(id);
+      return Boolean(row) && Object.entries(vals).every(([name, value]) => {
+        if (name === 'user_id') return row.user_id === Number(value);
+        return String(row[name] ?? '') === String(value ?? '');
+      });
+    }
+    if (command === 0) {
+      return finalFacts.responsibilities.some((row) => Object.entries(vals).every(([name, value]) => {
+        if (name === 'user_id') return row.user_id === Number(value);
+        return String(row[name] ?? '') === String(value ?? '');
+      }));
+    }
+    return true;
+  });
+}
+async function waitForWriteOutcome(page, writes, index, timeout = 20000) {
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    if (writes[index] && writes[index].outcome !== 'pending') return writes[index];
+    await page.waitForTimeout(50);
+  }
+  throw new Error(`write_outcome_timeout:${index}`);
 }
 async function openProject(page) {
   // Reuse the verified formal navigation chain; do not hand-splice a form route.
@@ -168,7 +308,7 @@ async function save(page) {
   try { await page.getByText(/保存成功/).waitFor({ timeout: 20000 }); }
   catch (error) { const body = await page.locator('body').innerText().catch(() => ''); if (/请检查以下内容|角色不能为空|责任人不能为空/.test(body)) throw new Error('validation_rejected:responsibility_required'); throw error; }
 }
-async function saveWithFailureRecovery(page, writes, report) {
+async function saveWithFailureRecovery(page, writes, report, draftBeforeFailure) {
   let blocked = false;
   let resolveBlocked;
   const blockedRequest = new Promise((resolve) => { resolveBlocked = resolve; });
@@ -179,24 +319,62 @@ async function saveWithFailureRecovery(page, writes, report) {
   const button = page.getByRole('button', { name: /^保存(?:修改)?$/, exact: true }).first();
   await button.click();
   await Promise.race([blockedRequest, new Promise((_, reject) => setTimeout(() => reject(new Error('save_request_not_blocked')), 20000))]);
-  await page.locator('.submission-feedback--error, [data-semantic-component="ProductFormErrorSummary"]').first().waitFor({ state: 'visible', timeout: 20000 });
+  const firstWrite = await waitForWriteOutcome(page, writes, 0);
+  const feedback = page.locator('.submission-feedback--error:visible, [data-semantic-component="ProductFormErrorSummary"]:visible').first();
+  await feedback.waitFor({ state: 'visible', timeout: 20000 });
   await page.waitForFunction(() => !document.body.innerText.includes('正在处理'), null, { timeout: 20000 });
   const failedState = await page.evaluate(() => ({ text: document.body.innerText, processing: document.body.innerText.includes('正在处理') }));
   const saveDisabled = await button.isDisabled();
-  const feedbackText = normalize(await page.locator('.submission-feedback, [data-semantic-component="ProductFormErrorSummary"]').allTextContents().then((rows) => rows.join(' ')).catch(() => ''));
+  const feedbackText = normalize(await feedback.innerText());
+  const feedbackBox = await feedback.boundingBox();
+  const feedbackVisible = await feedback.isVisible() && Boolean(feedbackBox?.width && feedbackBox?.height);
+  await feedback.screenshot({ path: path.join(OUT, 'failure-feedback-visible.png') });
   await page.screenshot({ path: path.join(OUT, 'failure-before-retry.png'), fullPage: true });
-  const unchanged = await readProject(page);
-  const failedMessageVisible = /保存失败|请求失败|网络异常|操作未完成|请稍后重试/.test(`${failedState.text} ${feedbackText}`);
-  report.scenarios.push({ name: 'failure_attempt', status: blocked && failedMessageVisible && !failedState.processing && !saveDisabled && /已修改\s*\d+\s*项/.test(failedState.text) && unchanged?.name === report.preflight.authoritative_read.name ? 'PASS' : 'FAIL', blocked, failed_message: failedMessageVisible, feedback_text: feedbackText, busy_released: !failedState.processing, draft_preserved: /已修改\s*\d+\s*项/.test(failedState.text), save_disabled: saveDisabled, authoritative_after_failure: unchanged });
-  if (!failedMessageVisible || failedState.processing || saveDisabled) throw new Error(`failure_feedback_incomplete:${JSON.stringify({ failedMessageVisible, processing: failedState.processing, saveDisabled })}`);
+  const draftAfterFailure = await captureDraftSnapshot(page);
+  const factsAfterFailure = await readProjectFacts(page);
+  const failedMessageVisible = feedbackVisible && /保存失败|请求失败|网络异常|操作未完成|请稍后重试/.test(feedbackText);
+  const draftPreserved = sameJson(draftBeforeFailure, draftAfterFailure);
+  const backendUnchanged = sameJson(report.preflight.authoritative_facts, factsAfterFailure);
+  const operations = responsibilityOperations(writes, 0);
+  const operationsComplete = hasCompleteResponsibilityOperations(operations);
+  const failurePassed = blocked && firstWrite.outcome === 'network_blocked' && failedMessageVisible
+    && !failedState.processing && !saveDisabled && draftPreserved && backendUnchanged && operationsComplete;
+  report.scenarios.push({
+    name: 'failure_attempt', status: failurePassed ? 'PASS' : 'FAIL', blocked,
+    failed_message: failedMessageVisible,
+    feedback: { visible: feedbackVisible, text: feedbackText, locator: 'ProductFormErrorSummary', element_screenshot: 'failure-feedback-visible.png', page_screenshot: 'failure-before-retry.png' },
+    busy_released: !failedState.processing, save_disabled: saveDisabled,
+    draft_preserved: draftPreserved, draft_before_failure: draftBeforeFailure, draft_after_failure: draftAfterFailure,
+    backend_unchanged: backendUnchanged, authoritative_after_failure: factsAfterFailure,
+    responsibility_operations_complete: operationsComplete, responsibility_operations: operations,
+    write_outcome: firstWrite.outcome,
+  });
+  if (!failurePassed) throw new Error(`failure_recovery_evidence_incomplete:${JSON.stringify({ blocked, writeOutcome: firstWrite.outcome, failedMessageVisible, processing: failedState.processing, saveDisabled, draftPreserved, backendUnchanged, operationsComplete })}`);
   await page.unroute('**/api/v1/intent*');
   await button.click();
   await page.getByText(/保存成功/).waitFor({ timeout: 20000 });
-  const afterRetry = await readProject(page);
+  const retryWrite = await waitForWriteOutcome(page, writes, 1);
+  await page.waitForFunction(() => !document.body.innerText.includes('正在处理'), null, { timeout: 20000 });
+  const afterRetry = await readProjectFacts(page);
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('[data-field-name]').first().waitFor({ timeout: 30000 });
-  const refreshed = await readProject(page);
-  report.scenarios.push({ name: 'retry_success', status: afterRetry?.name !== report.preflight.authoritative_read.name && refreshed?.name === afterRetry?.name ? 'PASS' : 'FAIL', write_attempts: 2, after_retry: afterRetry, refreshed });
+  const refreshed = await readProjectFacts(page);
+  const samePayload = sameJson(writes[0]?.body?.params?.vals, writes[1]?.body?.params?.vals);
+  const refreshConsistent = sameJson(afterRetry, refreshed);
+  const changedFromInitial = !sameJson(report.preflight.authoritative_facts, afterRetry);
+  const operationsApplied = relationOperationsApplied(report.preflight.authoritative_facts, afterRetry, responsibilityOperations(writes, 1));
+  const retryPassed = writes.length === 2 && retryWrite.outcome === 'business_success' && samePayload
+    && changedFromInitial && refreshConsistent && operationsApplied
+    && afterRetry.project.lifecycle_state === report.preflight.authoritative_facts.project.lifecycle_state;
+  report.scenarios.push({
+    name: 'retry_success', status: retryPassed ? 'PASS' : 'FAIL', write_attempts: writes.length,
+    browser_attempts: { blocked: 1, allowed: 1 }, backend_successful_submissions: retryWrite.business_ok === true ? 1 : 0,
+    retry_response: { outcome: retryWrite.outcome, http_status: retryWrite.http_status, business_ok: retryWrite.business_ok, error: retryWrite.response_error },
+    same_payload_retried: samePayload, responsibility_operations_applied: operationsApplied,
+    lifecycle_unchanged: afterRetry.project.lifecycle_state === report.preflight.authoritative_facts.project.lifecycle_state,
+    authoritative_after_retry: afterRetry, refreshed, refresh_consistent: refreshConsistent,
+  });
+  if (!retryPassed) throw new Error(`retry_evidence_incomplete:${JSON.stringify({ writes: writes.length, outcome: retryWrite.outcome, samePayload, changedFromInitial, refreshConsistent, operationsApplied })}`);
 }
 async function dirty(page) { return /未保存|已修改\s*\d+\s*项/.test(normalize(await page.locator('.record-header-context:visible').innerText().catch(() => ''))); }
 async function main() {
@@ -209,9 +387,10 @@ async function main() {
     await login(page, loginName);
     report.session_login = loginName;
     const pageState = await openProject(page);
-    const before = await readProject(page);
-    if (!before || before.id !== PROJECT_ID) throw new Error('project 366 authoritative read failed');
-    report.preflight = { page_state: pageState, authoritative_read: { id: before.id, name: before.name, lifecycle_state: before.lifecycle_state, responsibility_ids: before.responsibility_ids } };
+    const beforeFacts = await readProjectFacts(page);
+    const before = beforeFacts.project;
+    if (!before || before.id !== PROJECT_ID) throw new Error(`project ${PROJECT_ID} authoritative read failed`);
+    report.preflight = { page_state: pageState, authoritative_read: before, authoritative_facts: beforeFacts };
     if (PREFLIGHT_ONLY) {
       report.scenarios.push({ name: 'readonly_save_preflight', status: pageState.fields.length > 0 && before.id === PROJECT_ID ? 'PASS' : 'FAIL', save_controls: await page.locator('.template-page-header-actions button').allTextContents() });
       return;
@@ -261,20 +440,21 @@ async function main() {
     const userValue = await createdRow.locator('input[placeholder="请选择责任人"]').inputValue().catch(() => '');
     if (await roleSelect.count() === 0 && (!roleValue || !userValue)) throw new Error(`responsibility_selection_missing:${JSON.stringify({ role: Boolean(roleValue), user: Boolean(userValue) })}`);
     if (!await dirty(page)) throw new Error('draft did not become dirty');
+    const draftBeforeFailure = NETWORK_FAILURE_RECOVERY ? await captureDraftSnapshot(page) : null;
     const writes = recordWriteRequests(page);
-    if (NETWORK_FAILURE_RECOVERY) await saveWithFailureRecovery(page, writes, report);
+    if (NETWORK_FAILURE_RECOVERY) await saveWithFailureRecovery(page, writes, report, draftBeforeFailure);
     else await save(page);
-    await page.waitForTimeout(400);
-    const after = await readProject(page);
     report.writes = writes;
-    if (!NETWORK_FAILURE_RECOVERY) report.scenarios.push({ name: 'normal_save', status: after?.name === marker && after?.date_start === '2026-09-15' && after?.date === '2026-10-15' && writes.length === 1 ? 'PASS' : 'FAIL', before, after, write_count: writes.length, responsibility_rows_before: initialRows });
     if (!NETWORK_FAILURE_RECOVERY) {
+      await page.waitForTimeout(400);
+      const after = await readProject(page);
+      report.scenarios.push({ name: 'normal_save', status: after?.name === marker && after?.date_start === '2026-09-15' && after?.date === '2026-10-15' && writes.length === 1 ? 'PASS' : 'FAIL', before, after, write_count: writes.length, responsibility_rows_before: initialRows });
       await page.reload({ waitUntil: 'domcontentloaded' });
       await page.locator('.template-layout-shell').waitFor({ timeout: 30000 });
       const refreshed = await readProject(page);
       report.scenarios.push({ name: 'authoritative_refresh', status: refreshed?.name === marker && refreshed?.date_start === '2026-09-15' && refreshed?.date === '2026-10-15' ? 'PASS' : 'FAIL', refreshed });
     }
-    await page.screenshot({ path: path.join(OUT, 'normal-save.png'), fullPage: true });
+    await page.screenshot({ path: path.join(OUT, NETWORK_FAILURE_RECOVERY ? 'recovery-after-refresh.png' : 'normal-save.png'), fullPage: true });
   } catch (error) {
     report.failure_context = await page.evaluate(() => ({ url: location.href, title: document.title, text: (document.body.innerText || '').slice(0, 1200), fields: [...document.querySelectorAll('[data-field-name]')].map((el) => el.getAttribute('data-field-name')).slice(0, 80) })).catch(() => ({ url: page.url() }));
     await page.screenshot({ path: path.join(OUT, 'failure.png'), fullPage: true }).catch(() => {});
