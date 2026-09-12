@@ -9308,3 +9308,4 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 改为等待异步页面状态并补齐控制台、资源失败及请求参数诊断（登录密码脱敏）。项目 8 在经理与只读同一路由均被导航授权层重定向 `/access-denied?reason=NAVIGATION_AUTHORITY_DENIED`，因此没有表单契约请求；`login/system.init/api.data read` 成功不能替代入口授权。未修改产品权限或页面，保存验收继续暂停。
 - 进一步验证确认：异步等待前的“空白”属于过早采样；等待后经理与只读均明确进入 `access-denied`。正式菜单可见性与系统生成路径尚未取得有效证据，不能用手拼 `/r` 结果替代；当前不修改产品授权或 renderer，保存验收与 fixture 准备继续暂停。
 - 本轮完成正式首页菜单旅程：`demo_role_project_manager` 实际角色为“项目经理”、公司 My Company；首页 `/s/workspace.home` 展开“项目中心”后仅下发“施工管理”，继续展开仅有“施工日志”。“项目创建”“项目信息编辑”均不可见；系统菜单搜索“项目信息编辑”无结果。已登记的 `pm1` 同样显示项目经理角色且菜单结果一致。未点击手拼路径、未请求表单契约、未修改权限或准备 fixture；启动 `system.init` 响应包含项目角色投影但未下发目标入口。
+- 进一步沿首页“常用入口 → 项目中心”真实点击：`pm1` 首页显示角色“项目经理”、公司 My Company；系统生成 `/a/729?...&menu_id=426&action_id=729`，最终页面为“施工日志”列表（action `sc.construction.diary`），并成功请求 `ui.contract.v2 action_open` 与 `api.data list`。该“项目中心”快捷入口实际绑定施工日志，不是项目资料/项目台账入口；未修改权限、产品代码或准备 fixture。
