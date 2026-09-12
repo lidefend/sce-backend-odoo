@@ -9311,3 +9311,12 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 进一步沿首页“常用入口 → 项目中心”真实点击：`pm1` 首页显示角色“项目经理”、公司 My Company；系统生成 `/a/729?...&menu_id=426&action_id=729`，最终页面为“施工日志”列表（action `sc.construction.diary`），并成功请求 `ui.contract.v2 action_open` 与 `api.data list`。该“项目中心”快捷入口实际绑定施工日志，不是项目资料/项目台账入口；未修改权限、产品代码或准备 fixture。
 - 本次改走侧边栏正式菜单：`pm1` 登录后展开“业务菜单”，点击“项目台账”，系统生成 `/a/519?menu_id=382&action_id=519`，契约与列表请求成功；从列表首条记录打开 `/f/project.project/3?menu_id=382&action_id=519`，项目资料表单字段实际显示（12 个字段）。该链路证明正式入口为“业务菜单 → 项目台账”，此前直接 `/r` 与首页快捷入口均不代表项目资料正式入口；本次仅只读打开项目 3，未写入。
 - 入口授权缺口定位：同一 `sc-local-dev/sc_dev_demo` 中，数据库 menu 681/action 861 对 `pm1` 可见且组授权匹配；`system.init` 原始响应未包含该节点，原因是 `ROLE_SURFACE_OVERRIDES["pm"].primary_menu_xmlids` 漏列 `menu_sc_product_project_edit_v1`，发布导航基线亦漏列。已补齐 pm 投影与基线，`frontend_release_navigation_policy_guard` PASS；尚未升级/刷新候选，浏览器闭环待新候选验证。
+
+## 2026-09-13 — Batch-1 项目资料真实保存与失败恢复收口
+
+- 分支 `codex/business-entry-surface-normalization-v1`；Formal Product Layer 为 P1 项目资料办理面、P0 通用保存错误表达和 P4 受管写入验收工具。产品运行候选为 `daa54b6dc2519c4ba1fc40c16d87b8e77b0d7005`，环境严格限定 `sc-local-dev/sc_dev_demo`。
+- `pm1` 通过恢复后的正式菜单 `menu 681/action 861` 进入专用项目 373。首次 `api.data op=write` 在到达后端前被精确阻断，页面显示“网络异常，请检查连接后重试。”，busy 释放，普通字段、日期和责任明细草稿保留；权威读取确认主记录、生命周期和明细均未变化。
+- 同一会话解除拦截并人工式重试一次，真实后端写入业务成功；权威回读和浏览器刷新一致，生命周期保持 `draft`。口径固定为两次浏览器写入尝试：一次阻断、一次放行；不表述为两次后端成功提交。
+- runner 已拆分 `failure_attempt` 与 `retry_success`，整体 PASS 同时要求错误提示、busy 释放、草稿保留、首次后端不变、重试成功和刷新一致。10 项非零定向测试与 TypeScript 创建/保存旅程通过。
+- 证据摘要 `/tmp/p4-recovery-proof-0913-final/summary.json` 为 PASS；失败态截图与成功刷新截图均已保留。专用批次 `recovery-proof-0913` 在请求结束和证据落盘后受管清理，项目 373 与责任明细 `[21,22]` 删除，`clean=true`。
+- 浏览器无权角色拒绝反例因既有凭据不可用明确保留为未覆盖，不修改权限、不轮换凭据，也不伪报多角色验收完整。Batch-2 不启动；本批仅剩生成报告对齐、exact-head Quick 和独立交付复核。

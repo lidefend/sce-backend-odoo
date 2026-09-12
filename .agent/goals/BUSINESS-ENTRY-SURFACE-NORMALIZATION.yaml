@@ -36,7 +36,7 @@ goal:
     - id: 1
       title: project_information_entry_sample
       status: review_ready
-      product_candidate: ea6888a191b6c278023cb1715ed349ebbb23a9dc
+      product_candidate: daa54b6dc2519c4ba1fc40c16d87b8e77b0d7005
       validation:
         - canonical_form_presenter_cases_162_passed
         - professional_business_value_matrix_24_counterexamples_8_passed
@@ -45,9 +45,17 @@ goal:
         - governed_incremental_upgrade_smart_construction_core_passed
         - project_2_and_8_browser_checks_1082_390_320_passed
         - browser_mutation_count_zero
+        - independent_product_browser_review_passed
+        - pm_runtime_project_information_menu_projection_restored
+        - governed_project_profile_real_save_and_authoritative_refresh_passed
+        - single_blocked_write_kept_draft_and_backend_unchanged
+        - same_session_manual_retry_and_refresh_passed
+        - network_save_failure_feedback_localized
+        - governed_batch_cleanup_passed
+        - recovery_report_aggregation_nonzero_tests_10_passed
       pending:
-        - independent_product_browser_review
-        - multi_role_real_save_and_full_theme_matrix
+        - independent_delivery_candidate_review
+        - browser_denied_role_counterexample_credentials_unavailable
         - final_quick_after_delivery_head_freeze
     - id: 2
       title: risk_grouped_remaining_business_entries
