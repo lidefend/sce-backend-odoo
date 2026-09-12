@@ -170,21 +170,25 @@ async function save(page) {
 }
 async function saveWithFailureRecovery(page, writes, report) {
   let blocked = false;
+  let resolveBlocked;
+  const blockedRequest = new Promise((resolve) => { resolveBlocked = resolve; });
   await page.route('**/api/v1/intent*', async (route) => {
-    try { const body = JSON.parse(route.request().postData() || '{}'); if (!blocked && body.intent === 'api.data' && body.params?.op === 'write' && Number(body.params?.ids?.[0]) === PROJECT_ID) { blocked = true; await route.abort('failed'); return; } } catch {}
+    try { const body = JSON.parse(route.request().postData() || '{}'); if (!blocked && body.intent === 'api.data' && body.params?.op === 'write' && Number(body.params?.ids?.[0]) === PROJECT_ID) { blocked = true; resolveBlocked(true); await route.abort('failed'); return; } } catch {}
     await route.continue();
   });
   const button = page.getByRole('button', { name: /^保存(?:修改)?$/, exact: true }).first();
   await button.click();
+  await Promise.race([blockedRequest, new Promise((_, reject) => setTimeout(() => reject(new Error('save_request_not_blocked')), 20000))]);
+  await page.locator('.submission-feedback--error, [data-semantic-component="ProductFormErrorSummary"]').first().waitFor({ state: 'visible', timeout: 20000 });
   await page.waitForFunction(() => !document.body.innerText.includes('正在处理'), null, { timeout: 20000 });
-  const failedText = await page.locator('body').innerText();
-  const failedState = await page.evaluate(() => ({ text: document.body.innerText, saveDisabled: [...document.querySelectorAll('button')].filter((b) => /保存/.test(b.textContent || '')).some((b) => b.disabled), processing: document.body.innerText.includes('正在处理') }));
+  const failedState = await page.evaluate(() => ({ text: document.body.innerText, processing: document.body.innerText.includes('正在处理') }));
+  const saveDisabled = await button.isDisabled();
   const feedbackText = normalize(await page.locator('.submission-feedback, [data-semantic-component="ProductFormErrorSummary"]').allTextContents().then((rows) => rows.join(' ')).catch(() => ''));
   await page.screenshot({ path: path.join(OUT, 'failure-before-retry.png'), fullPage: true });
   const unchanged = await readProject(page);
   const failedMessageVisible = /保存失败|请求失败|网络异常|操作未完成|请稍后重试/.test(`${failedState.text} ${feedbackText}`);
-  report.scenarios.push({ name: 'failure_attempt', status: blocked && failedMessageVisible && !failedState.processing && !failedState.saveDisabled && /已修改\s*\d+\s*项/.test(failedState.text) && unchanged?.name === report.preflight.authoritative_read.name ? 'PASS' : 'FAIL', blocked, failed_message: failedMessageVisible, feedback_text: feedbackText, busy_released: !failedState.processing, draft_preserved: /已修改\s*\d+\s*项/.test(failedState.text), save_disabled: failedState.saveDisabled, authoritative_after_failure: unchanged });
-  if (!failedMessageVisible || failedState.processing || failedState.saveDisabled) throw new Error(`failure_feedback_incomplete:${JSON.stringify({ failedMessageVisible, processing: failedState.processing, saveDisabled: failedState.saveDisabled })}`);
+  report.scenarios.push({ name: 'failure_attempt', status: blocked && failedMessageVisible && !failedState.processing && !saveDisabled && /已修改\s*\d+\s*项/.test(failedState.text) && unchanged?.name === report.preflight.authoritative_read.name ? 'PASS' : 'FAIL', blocked, failed_message: failedMessageVisible, feedback_text: feedbackText, busy_released: !failedState.processing, draft_preserved: /已修改\s*\d+\s*项/.test(failedState.text), save_disabled: saveDisabled, authoritative_after_failure: unchanged });
+  if (!failedMessageVisible || failedState.processing || saveDisabled) throw new Error(`failure_feedback_incomplete:${JSON.stringify({ failedMessageVisible, processing: failedState.processing, saveDisabled })}`);
   await page.unroute('**/api/v1/intent*');
   await button.click();
   await page.getByText(/保存成功/).waitFor({ timeout: 20000 });
