@@ -161,7 +161,7 @@ async function chooseDate(page, index, day) {
   await popup.locator('td:not(.t-is-disabled) .t-date-picker__cell-inner').filter({ hasText: new RegExp(`^${day}$`) }).first().click();
 }
 async function save(page) {
-  const button = page.locator('.template-page-header-actions button').filter({ hasText: /^保存(?:修改)?$/ }).first();
+  const button = page.getByRole('button', { name: /^保存(?:修改)?$/, exact: true }).first();
   await button.waitFor({ timeout: 12000 });
   await button.click();
   await page.getByText(/保存成功/).waitFor({ timeout: 20000 });
