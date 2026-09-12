@@ -4,6 +4,7 @@ import { resolveCreateDefaults, resolveCreateRouteRelationLabels } from '../src/
 import { applyIncomingFormFieldValue } from '../src/pages/contractForm/recordHydration.ts';
 import { buildSaveRecordPayload, createSingleFlightSave } from '../src/pages/contractForm/saveRecordHelpers.ts';
 import { usePrimaryFormActionRuntime } from '../src/pages/contractForm/usePrimaryFormActionRuntime.ts';
+import { sanitizeUiErrorMessage } from '../src/pages/contractForm/fieldUtils.ts';
 
 const fieldDescriptors = {
   amount: { name: 'amount', type: 'float' },
@@ -60,6 +61,7 @@ for (const [name, label] of Object.entries(resolveCreateRouteRelationLabels(v2Co
 }
 assert.deepEqual(formData, { amount: 0, owner_id: 17, title: 'Draft A' });
 assert.equal(relationKeywords.owner_id, 'Owner A');
+assert.equal(sanitizeUiErrorMessage('Failed to fetch', '保存失败'), '网络异常，请检查连接后重试。');
 
 formData.amount = 80;
 const payload = buildSaveRecordPayload({
