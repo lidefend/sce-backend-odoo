@@ -153,6 +153,13 @@ async function fillField(page, name, value) {
   if (await control.getAttribute('contenteditable') === 'true') await control.fill(value);
   else await control.fill(value);
 }
+async function chooseDate(page, index, day) {
+  const input = page.locator('[data-field-name="date_start"] input').nth(index);
+  await input.click();
+  const popup = page.locator('.t-popup__content:visible .t-date-picker__panel').last();
+  await popup.waitFor({ state: 'visible', timeout: 12000 });
+  await popup.locator('td:not(.t-is-disabled) .t-date-picker__cell-inner').filter({ hasText: new RegExp(`^${day}$`) }).first().click();
+}
 async function save(page) {
   const button = page.locator('.template-page-header-actions button').filter({ hasText: /^保存(?:修改)?$/ }).first();
   await button.waitFor({ timeout: 12000 });
@@ -191,8 +198,8 @@ async function main() {
     const dateRoot = field(page, 'date_start');
     const dateInputs = dateRoot.locator('input');
     if (await dateInputs.count() >= 2) {
-      await dateInputs.nth(0).fill('2026-09-15');
-      await dateInputs.nth(1).fill('2026-10-15');
+      await chooseDate(page, 0, '15');
+      await chooseDate(page, 1, '15');
     } else {
       await dateInputs.first().fill('2026-09-15');
       const end = field(page, 'date').locator('input').first();
