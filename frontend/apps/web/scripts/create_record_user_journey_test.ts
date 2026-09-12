@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { ref } from 'vue';
-import { resolveCreateDefaults, resolveCreateRouteRelationLabels } from '../src/pages/contractForm/createDefaults';
-import { applyIncomingFormFieldValue } from '../src/pages/contractForm/recordHydration';
-import { buildSaveRecordPayload, createSingleFlightSave } from '../src/pages/contractForm/saveRecordHelpers';
-import { usePrimaryFormActionRuntime } from '../src/pages/contractForm/usePrimaryFormActionRuntime';
+import { resolveCreateDefaults, resolveCreateRouteRelationLabels } from '../src/pages/contractForm/createDefaults.ts';
+import { applyIncomingFormFieldValue } from '../src/pages/contractForm/recordHydration.ts';
+import { buildSaveRecordPayload, createSingleFlightSave } from '../src/pages/contractForm/saveRecordHelpers.ts';
+import { usePrimaryFormActionRuntime } from '../src/pages/contractForm/usePrimaryFormActionRuntime.ts';
 
 const fieldDescriptors = {
   amount: { name: 'amount', type: 'float' },
