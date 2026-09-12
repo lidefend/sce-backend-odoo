@@ -178,11 +178,18 @@ async function saveWithFailureRecovery(page, writes, report) {
   await button.click();
   await page.waitForFunction(() => !document.body.innerText.includes('正在处理'), null, { timeout: 20000 });
   const failedText = await page.locator('body').innerText();
-  report.failure_recovery = { blocked, failed_message: /保存失败|失败/.test(failedText), dirty_after_failure: /已修改\s*\d+\s*项/.test(failedText) };
+  const failedState = await page.evaluate(() => ({ text: document.body.innerText, saveDisabled: [...document.querySelectorAll('button')].filter((b) => /保存/.test(b.textContent || '')).some((b) => b.disabled), processing: document.body.innerText.includes('正在处理') }));
+  await page.screenshot({ path: path.join(OUT, 'failure-before-retry.png'), fullPage: true });
+  const unchanged = await readProject(page);
+  report.scenarios.push({ name: 'failure_attempt', status: blocked && !failedState.processing && /已修改\s*\d+\s*项/.test(failedState.text) && unchanged?.name === report.preflight.authoritative_read.name ? 'PASS' : 'FAIL', blocked, failed_message: /保存失败|失败/.test(failedState.text), busy_released: !failedState.processing, draft_preserved: /已修改\s*\d+\s*项/.test(failedState.text), save_disabled: failedState.saveDisabled, authoritative_after_failure: unchanged });
   await page.unroute('**/api/v1/intent*');
   await button.click();
   await page.getByText(/保存成功/).waitFor({ timeout: 20000 });
-  report.failure_recovery.retry_writes = writes.length;
+  const afterRetry = await readProject(page);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('[data-field-name]').first().waitFor({ timeout: 30000 });
+  const refreshed = await readProject(page);
+  report.scenarios.push({ name: 'retry_success', status: afterRetry?.name !== report.preflight.authoritative_read.name && refreshed?.name === afterRetry?.name ? 'PASS' : 'FAIL', write_attempts: 2, after_retry: afterRetry, refreshed });
 }
 async function dirty(page) { return /未保存|已修改\s*\d+\s*项/.test(normalize(await page.locator('.record-header-context:visible').innerText().catch(() => ''))); }
 async function main() {
@@ -197,7 +204,7 @@ async function main() {
     const pageState = await openProject(page);
     const before = await readProject(page);
     if (!before || before.id !== PROJECT_ID) throw new Error('project 366 authoritative read failed');
-    report.preflight = { page_state: pageState, authoritative_read: { id: before.id, lifecycle_state: before.lifecycle_state, responsibility_ids: before.responsibility_ids } };
+    report.preflight = { page_state: pageState, authoritative_read: { id: before.id, name: before.name, lifecycle_state: before.lifecycle_state, responsibility_ids: before.responsibility_ids } };
     if (PREFLIGHT_ONLY) {
       report.scenarios.push({ name: 'readonly_save_preflight', status: pageState.fields.length > 0 && before.id === PROJECT_ID ? 'PASS' : 'FAIL', save_controls: await page.locator('.template-page-header-actions button').allTextContents() });
       return;
@@ -253,7 +260,7 @@ async function main() {
     await page.waitForTimeout(400);
     const after = await readProject(page);
     report.writes = writes;
-    report.scenarios.push({ name: 'normal_save', status: after?.name === marker && after?.date_start === '2026-09-15' && after?.date === '2026-10-15' && writes.length === 1 ? 'PASS' : 'FAIL', before, after, write_count: writes.length, responsibility_rows_before: initialRows });
+    if (!NETWORK_FAILURE_RECOVERY) report.scenarios.push({ name: 'normal_save', status: after?.name === marker && after?.date_start === '2026-09-15' && after?.date === '2026-10-15' && writes.length === 1 ? 'PASS' : 'FAIL', before, after, write_count: writes.length, responsibility_rows_before: initialRows });
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.locator('.template-layout-shell').waitFor({ timeout: 30000 });
     const refreshed = await readProject(page);
