@@ -214,6 +214,7 @@ ROLE_SURFACE_OVERRIDES = {
         ],
         "primary_menu_xmlids": [
             "smart_construction_core.menu_sc_project_project",
+            "smart_construction_core.menu_sc_product_project_edit_v1",
             "smart_construction_core.menu_sc_boq_version",
             "smart_construction_core.menu_sc_project_boq_root",
             "smart_construction_core.menu_sc_boq_analysis",
