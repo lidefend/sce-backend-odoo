@@ -436,7 +436,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     validationErrors.value = [];
     validationFieldErrors.value = {};
     formConflict.value = false;
-    console.warn('[save-trace] validation-enter');
+    console.info('[save-trace] validation-enter');
     const validation = await validateBeforeSaveRecord({
       collectSceneValidationPrecheckErrors: (fieldLabels) =>
         collectSceneValidationPrecheckErrors(fieldLabels),
@@ -456,7 +456,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
       resolvePendingInlineRelationCreates: () => resolvePendingInlineRelationCreates(),
       resolvePendingMany2manyTagCreates: () => resolvePendingMany2manyTagCreates(),
     });
-    console.warn('[save-trace] validation-complete', { ok: validation.ok });
+    console.info('[save-trace] validation-complete', { ok: validation.ok });
     showOne2manyErrors.value = Boolean(validation.showOne2manyErrors);
     if (!validation.ok || !validation.editableMap) {
       validationErrors.value = validation.validationErrors || [];
@@ -467,7 +467,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     }
     const editableMap = validation.editableMap;
     busyKind.value = 'save';
-    const saveTrace = (stage: string) => console.warn(`[save-trace] ${stage}`, { recordId: recordId.value, dirty: dirtyFieldSet.size });
+    const saveTrace = (stage: string) => console.info(`[save-trace] ${stage}`, { recordId: recordId.value, dirty: dirtyFieldSet.size });
     saveTrace('busy-set');
     try {
       const values = buildSaveRecordPayload({

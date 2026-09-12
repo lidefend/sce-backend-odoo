@@ -65,7 +65,7 @@ function recordDiagnostics(page) {
   });
   page.on('pageerror', (error) => requests.push({ type: 'pageerror', message: String(error.message || error) }));
   page.on('console', (message) => {
-    if (message.type() === 'error' || message.type() === 'warning') requests.push({ type: 'console', level: message.type(), text: message.text().slice(0, 1000) });
+    if (message.type() === 'error' || message.type() === 'warning' || (message.type() === 'info' && message.text().startsWith('[save-trace]'))) requests.push({ type: 'console', level: message.type(), text: message.text().slice(0, 1000) });
   });
   page.on('requestfailed', (request) => requests.push({ type: 'requestfailed', url: request.url(), failure: request.failure()?.errorText || 'unknown' }));
   return requests;
