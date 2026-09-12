@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -> list[str]:
     failures: list[str] = []
     component = read_text("frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue")
+    html_editor = read_text("frontend/apps/web/src/components/editor/RestrictedHtmlEditor.vue")
     model = read_text("frontend/apps/web/src/components/professional-fields/professionalBaseFieldModel.ts")
     section = read_text("frontend/apps/web/src/components/template/FormSection.vue")
     renderer = read_text("frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts")
@@ -25,6 +26,21 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
             failures.append(f"professional base field missing marker {marker}")
     if "padding-inline: calc(var(--sc-component-input-padding-x) * 1px);" in component:
         failures.append("professional base field must not duplicate primitive inline padding on ScInput")
+    html_field_branch = component.split('<RestrictedHtmlEditor', 1)[1].split('/>', 1)[0] if '<RestrictedHtmlEditor' in component else ''
+    for marker in (
+        ':id="controlId"', ':required="field.required"', ':invalid="field.invalid"',
+        ':described-by="describedBy"', ':placeholder="placeholder"',
+    ):
+        if marker not in html_field_branch:
+            failures.append(f"professional html field does not pass through {marker}")
+    for marker in (
+        ':id="id"', 'role="textbox"', 'aria-multiline="true"',
+        ':aria-required="required ? \'true\' : undefined"',
+        ':aria-invalid="invalid ? \'true\' : undefined"',
+        ':aria-describedby="describedBy"', ':data-placeholder="placeholder || copy.placeholder"',
+    ):
+        if marker not in html_editor:
+            failures.append(f"restricted html editor missing control semantics {marker}")
     if "<ProfessionalBaseFieldControl" not in section or "isProfessionalBaseFieldCandidate" not in section:
         failures.append("FormSection does not route through the professional base field family")
     for marker in (

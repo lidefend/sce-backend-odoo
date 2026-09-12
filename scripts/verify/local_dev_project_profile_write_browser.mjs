@@ -8,15 +8,17 @@ import { fileURLToPath } from 'node:url';
 const EXPECTED_DB = 'sc_dev_demo';
 const EXPECTED_ENVIRONMENT = 'dev';
 const EXPECTED_DBFILTER = '^sc_dev_demo$';
+const EXPECTED_FRONTEND_URL = 'http://127.0.0.1:5176';
 const FIXTURE_NAMESPACE = 'codex_p4_project_profile_write';
 const BATCH_PATTERN = /^[a-z0-9][a-z0-9-]{2,31}$/;
 const SCRIPT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://127.0.0.1:5176';
+const FRONTEND_URL = process.env.FRONTEND_URL || EXPECTED_FRONTEND_URL;
 const DB_NAME = process.env.DB_NAME || EXPECTED_DB;
 const READ_ONLY = process.env.READ_ONLY === '1';
 const PREFLIGHT_ONLY = process.env.PREFLIGHT_ONLY === '1';
 const NETWORK_FAILURE_RECOVERY = process.env.NETWORK_FAILURE_RECOVERY === '1';
 const VALIDATE_ONLY = process.env.P4_RUNNER_VALIDATE_ONLY === '1';
+const PM_LOGIN = process.env.PM_LOGIN || 'demo_role_project_manager';
 
 function deny(message) { throw new Error(`[DENY] ${message}`); }
 function requiredPositiveInteger(name) {
@@ -116,6 +118,22 @@ function loadWriteAuthority(projectId) {
   if (Number(project.id) !== projectId) deny('authority target project ID mismatch');
   if (project.xmlid !== expectedProjectXmlid(batch)) deny('authority project XMLID mismatch');
   if (project.ownership_marker !== `CODEX-P4-${batch.toUpperCase()}`) deny('authority project ownership marker mismatch');
+  const projectCompanyId = Number(project.company_id);
+  if (!Number.isSafeInteger(projectCompanyId) || projectCompanyId <= 0) deny('authority project company identity is missing or invalid');
+
+  const managerCandidates = Array.isArray(authority.role_candidates?.project_manager)
+    ? authority.role_candidates.project_manager
+    : [];
+  const writer = managerCandidates.find((row) => String(row?.login || '') === PM_LOGIN);
+  if (!writer) deny('configured PM_LOGIN is not an authority project_manager candidate');
+  if (Number(writer.company_id) !== projectCompanyId) deny('configured project manager company does not own the target project');
+  const managerAccess = Array.isArray(authority.effective_project_access?.project_manager)
+    ? authority.effective_project_access.project_manager
+    : [];
+  const writerAccess = managerAccess.find((row) => String(row?.login || '') === PM_LOGIN);
+  if (!writerAccess || !['acl_read', 'acl_write', 'record_read', 'record_write'].every((key) => writerAccess[key] === true)) {
+    deny('configured project manager lacks governed read/write authority for the target project');
+  }
 
   const projectResponsibilityIds = positiveIds(project.responsibility_ids, 'authority project responsibility_ids');
   const responsibilities = Array.isArray(authority.responsibilities) ? authority.responsibilities : [];
@@ -125,7 +143,17 @@ function loadWriteAuthority(projectId) {
   if (responsibilities.some((row) => Number(row?.project_id) !== projectId)) deny('authority responsibility belongs to another project');
   const xmlids = responsibilities.map((row) => String(row?.xmlid || '')).sort();
   if (JSON.stringify(xmlids) !== JSON.stringify(expectedResponsibilityXmlids(batch))) deny('authority responsibility XMLID mismatch');
-  return { ...authority, batch, project: { ...project, responsibility_ids: responsibilityIds } };
+  return {
+    ...authority,
+    batch,
+    project: { ...project, company_id: projectCompanyId, responsibility_ids: responsibilityIds },
+    writer: {
+      id: Number(writer.id),
+      login: String(writer.login),
+      company_id: Number(writer.company_id),
+      role_code: String(writer.role_code || ''),
+    },
+  };
 }
 function assertOwnedProjectFacts(authority, facts) {
   const project = facts?.project || {};
@@ -140,6 +168,7 @@ function assertOwnedProjectFacts(authority, facts) {
 }
 
 const PROJECT_ID = requiredPositiveInteger('PROJECT_ID');
+if (FRONTEND_URL !== EXPECTED_FRONTEND_URL) deny(`FRONTEND_URL must be exactly ${EXPECTED_FRONTEND_URL}`);
 validateProductCandidate();
 if ((READ_ONLY || PREFLIGHT_ONLY) && NETWORK_FAILURE_RECOVERY) deny('read-only preflight cannot enable failure injection or retry');
 const WRITE_MODE = !READ_ONLY && !PREFLIGHT_ONLY;
@@ -155,7 +184,7 @@ if (VALIDATE_ONLY) {
     try { facts = JSON.parse(factsRaw); } catch { deny('P4_RUNNER_FACTS_JSON is not valid JSON'); }
     assertOwnedProjectFacts(WRITE_AUTHORITY, facts);
   }
-  console.log(JSON.stringify({ status: 'PASS', validated_only: true, project_id: PROJECT_ID, write_mode: WRITE_MODE }));
+  console.log(JSON.stringify({ status: 'GUARD_VALIDATION_ONLY', validated_only: true, project_id: PROJECT_ID, write_mode: WRITE_MODE }));
   process.exit(0);
 }
 
@@ -164,7 +193,6 @@ const { chromium } = createRequire(requireBase)('playwright');
 const PASSWORD = process.env.E2E_PASSWORD || process.env.SC_DEMO_USER_PASSWORD || '';
 const ACTION_ID = Number(process.env.ACTION_ID || 861);
 const MENU_ID = Number(process.env.MENU_ID || 681);
-const PM_LOGIN = process.env.PM_LOGIN || 'demo_role_project_manager';
 const MEMBER_LOGIN = process.env.MEMBER_LOGIN || 'demo_role_project_a_member';
 const READ_LOGIN = process.env.READ_LOGIN || 'demo_role_project_read';
 const PREFLIGHT_LOGIN = process.env.PREFLIGHT_LOGIN || '';
@@ -246,14 +274,54 @@ function recordDiagnostics(page) {
   page.on('requestfailed', (request) => requests.push({ type: 'requestfailed', url: request.url(), failure: request.failure()?.errorText || 'unknown' }));
   return requests;
 }
+function intentResponsePromise(page, expectedIntent) {
+  return page.waitForResponse((response) => {
+    if (!response.url().includes('/api/v1/intent')) return false;
+    try {
+      const request = JSON.parse(response.request().postData() || '{}');
+      return request?.intent === expectedIntent;
+    } catch {
+      return false;
+    }
+  }, { timeout: 30000 });
+}
+async function successfulIntentData(response, label) {
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok() || body?.ok !== true || !body?.data || typeof body.data !== 'object') {
+    throw new Error(`${label}_failed:${JSON.stringify({ http_status: response.status(), business_ok: body?.ok === true, code: body?.error?.code || body?.code || '' })}`);
+  }
+  return body.data;
+}
+function assertRuntimeWriterIdentity(identity, authority) {
+  const loginUser = identity.login?.user || {};
+  const initUser = identity.init?.user || {};
+  const loginRole = String(identity.login?.entitlement?.role_code || '');
+  const initRole = String(identity.init?.role_surface?.role_code || '');
+  if (String(loginUser.login || '') !== authority.writer.login || Number(loginUser.id) !== authority.writer.id) {
+    deny('authenticated session user does not match the governed project manager');
+  }
+  if (Number(loginUser.company_id) !== authority.project.company_id || Number(initUser.company_id) !== authority.project.company_id) {
+    deny('authenticated session company does not match the governed project company');
+  }
+  if (!authority.writer.role_code || loginRole !== authority.writer.role_code || initRole !== authority.writer.role_code) {
+    deny('authenticated session role does not match the governed project manager role');
+  }
+  if (Number(initUser.id) !== authority.writer.id) deny('system.init principal does not match the authenticated project manager');
+}
 async function login(page, login) {
   await page.goto(`${FRONTEND_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
   const inputs = page.locator('input');
   await inputs.nth(0).fill(login);
   await inputs.nth(1).fill(PASSWORD);
   if (await inputs.nth(2).isEnabled().catch(() => false)) await inputs.nth(2).fill(DB_NAME);
+  const loginResponse = intentResponsePromise(page, 'login');
+  const initResponse = intentResponsePromise(page, 'system.init');
   await page.getByRole('button', { name: /^登录$/ }).click();
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30000 });
+  return {
+    login: await successfulIntentData(await loginResponse, 'login'),
+    init: await successfulIntentData(await initResponse, 'system_init'),
+  };
 }
 async function token(page) { return page.evaluate((db) => sessionStorage.getItem(`sc_auth_token:${db}`) || '', DB_NAME); }
 async function intent(page, name, params, allowError = false) {
@@ -532,8 +600,15 @@ async function main() {
   const report = { database: DB_NAME, project_id: PROJECT_ID, action_id: ACTION_ID, menu_id: MENU_ID, read_only: READ_ONLY, scenarios: [], roles: {}, writes: [], diagnostics, errors: [] };
   try {
     const loginName = PREFLIGHT_LOGIN || (READ_ONLY ? READ_LOGIN : PM_LOGIN);
-    await login(page, loginName);
+    const runtimeIdentity = await login(page, loginName);
+    if (WRITE_MODE) assertRuntimeWriterIdentity(runtimeIdentity, WRITE_AUTHORITY);
     report.session_login = loginName;
+    report.session_identity = {
+      user_id: Number(runtimeIdentity.init?.user?.id || 0),
+      company_id: Number(runtimeIdentity.init?.user?.company_id || 0),
+      role_code: String(runtimeIdentity.init?.role_surface?.role_code || ''),
+      governed_match: WRITE_MODE ? true : undefined,
+    };
     const pageState = await openProject(page);
     const beforeFacts = await readProjectFacts(page);
     const before = beforeFacts.project;

@@ -65,6 +65,7 @@ def _role_candidates(env):
         "project_user": "smart_construction_core.group_sc_cap_business_initiator",
         "project_read_only": "smart_construction_core.group_sc_cap_project_read",
     }
+    runtime_role_codes = {"project_manager": "pm"}
     out = {}
     for role, xmlid in groups.items():
         group = env.ref(xmlid, raise_if_not_found=False)
@@ -79,6 +80,7 @@ def _role_candidates(env):
                 "name": user.name,
                 "company_id": user.company_id.id,
                 "company": user.company_id.name,
+                "role_code": runtime_role_codes.get(role),
             }
             for user in rows
             if group in user.groups_id
@@ -180,6 +182,8 @@ def _summary(env, sha, batch, mode, project=None):
             "name": project.name if project else identity["name"],
             "code": project.code if project else identity["code"],
             "ownership_marker": (getattr(project, "project_code", False) or project.code) if project else identity["code"],
+            "company_id": project.company_id.id if project else None,
+            "company": project.company_id.name if project else None,
             "responsibility_ids": project.responsibility_ids.ids if project else [],
         },
         "responsibilities": responsibilities,

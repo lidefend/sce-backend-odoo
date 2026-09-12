@@ -6,6 +6,12 @@ project_id="${PROJECT_ID-}"
 [[ "${#project_id}" -le 10 ]] && (( 10#$project_id <= 2147483647 )) \
   || { echo "[DENY] PROJECT_ID is outside the supported record ID range" >&2; exit 2; }
 PROJECT_ID="$project_id"
+for test_only_name in P4_RUNNER_VALIDATE_ONLY P4_RUNNER_SERVED_PRODUCT_SHA P4_PROJECT_PROFILE_AUTHORITY_JSON P4_RUNNER_FACTS_JSON; do
+  if [[ -n "${!test_only_name+x}" ]]; then
+    echo "[DENY] ${test_only_name} is test-only and forbidden by the governed browser entry" >&2
+    exit 2
+  fi
+done
 ROOT_DIR="${ROOT_DIR:?ROOT_DIR is required}"
 ENV_FILE="${ENV_FILE:?ENV_FILE is required}"
 PRODUCT_CANDIDATE_SHA="${PRODUCT_CANDIDATE_SHA:?PRODUCT_CANDIDATE_SHA is required}"

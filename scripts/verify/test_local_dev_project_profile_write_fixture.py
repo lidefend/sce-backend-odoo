@@ -39,6 +39,7 @@ def _authority(batch=TEST_BATCH, project_id=TEST_PROJECT_ID):
             "id": project_id,
             "name": "Codex P4 project %s" % batch,
             "ownership_marker": marker,
+            "company_id": 1,
             "responsibility_ids": [24, 25],
         },
         "responsibilities": [
@@ -53,6 +54,20 @@ def _authority(batch=TEST_BATCH, project_id=TEST_PROJECT_ID):
                 "project_id": project_id,
             },
         ],
+        "role_candidates": {
+            "project_manager": [
+                {"id": 7, "login": "pm1", "company_id": 1, "role_code": "pm"},
+            ],
+        },
+        "effective_project_access": {
+            "project_manager": [
+                {
+                    "login": "pm1", "company_id": 1,
+                    "acl_read": True, "acl_write": True,
+                    "record_read": True, "record_write": True,
+                },
+            ],
+        },
     }
 
 
@@ -83,6 +98,10 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
             "P4_TOOL_CANDIDATE_SHA",
             "P4_PROJECT_PROFILE_AUTHORITY_JSON",
             "P4_RUNNER_FACTS_JSON",
+            "P4_RUNNER_VALIDATE_ONLY",
+            "P4_RUNNER_SERVED_PRODUCT_SHA",
+            "FRONTEND_URL",
+            "PM_LOGIN",
         ):
             env.pop(name, None)
         env.update({
@@ -97,6 +116,7 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
             "P4_PROJECT_PROFILE_AUTHORITY_JSON": json.dumps(_authority()),
             "P4_RUNNER_FACTS_JSON": json.dumps(_facts()),
             "P4_RUNNER_VALIDATE_ONLY": "1",
+            "PM_LOGIN": "pm1",
         })
         env.update(overrides or {})
         for name in remove:
@@ -190,12 +210,34 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
             self.assertEqual(result.returncode, 2, value)
             self.assertIn("PROJECT_ID", result.stderr)
 
+    def test_governed_shell_rejects_test_only_injection_before_browser_setup(self):
+        for name in (
+            "P4_RUNNER_VALIDATE_ONLY",
+            "P4_RUNNER_SERVED_PRODUCT_SHA",
+            "P4_PROJECT_PROFILE_AUTHORITY_JSON",
+            "P4_RUNNER_FACTS_JSON",
+        ):
+            env = os.environ.copy()
+            env.update({"PROJECT_ID": str(TEST_PROJECT_ID), name: "1"})
+            result = subprocess.run(
+                ["bash", str(BROWSER_SH_PATH)], cwd=ROOT, env=env,
+                text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(result.returncode, 2, name)
+            self.assertIn("test-only", result.stderr)
+
     def test_direct_mjs_rejects_missing_project_id(self):
         self._assert_direct_denied("PROJECT_ID must be an explicit positive integer", remove=("PROJECT_ID",))
 
     def test_direct_mjs_rejects_invalid_project_ids(self):
         for value in ("0", "-1", "abc", "1.5", str(2**53)):
             self._assert_direct_denied("PROJECT_ID", {"PROJECT_ID": value})
+
+    def test_direct_mjs_rejects_non_candidate_frontend_origin(self):
+        self._assert_direct_denied(
+            "FRONTEND_URL must be exactly http://127.0.0.1:5176",
+            {"FRONTEND_URL": "http://127.0.0.1:4173"},
+        )
 
     def test_direct_mjs_rejects_wrong_batch(self):
         self._assert_direct_denied("authority batch or namespace mismatch", {"P4_PROJECT_PROFILE_BATCH": "wrong-batch"})
@@ -217,6 +259,18 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
         authority["database"] = "sc_dev_sample"
         self._assert_direct_denied("authority environment/database identity mismatch", {"P4_PROJECT_PROFILE_AUTHORITY_JSON": json.dumps(authority)})
 
+    def test_direct_mjs_rejects_non_manager_or_wrong_company_writer(self):
+        self._assert_direct_denied(
+            "configured PM_LOGIN is not an authority project_manager candidate",
+            {"PM_LOGIN": "demo_role_project_a_member"},
+        )
+        authority = _authority()
+        authority["role_candidates"]["project_manager"][0]["company_id"] = 2
+        self._assert_direct_denied(
+            "configured project manager company does not own the target project",
+            {"P4_PROJECT_PROFILE_AUTHORITY_JSON": json.dumps(authority)},
+        )
+
     def test_direct_mjs_rejects_product_candidate_mismatch(self):
         self._assert_direct_denied("product candidate SHA mismatch", {"P4_RUNNER_SERVED_PRODUCT_SHA": "3" * 40})
 
@@ -234,7 +288,19 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
         result, artifact_created = self._direct_runner()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('"validated_only":true', result.stdout)
+        self.assertIn('"status":"GUARD_VALIDATION_ONLY"', result.stdout)
+        self.assertNotIn('"status":"PASS"', result.stdout)
         self.assertFalse(artifact_created)
+
+    def test_runtime_session_identity_is_rechecked_before_write(self):
+        for marker in (
+            "assertRuntimeWriterIdentity(runtimeIdentity, WRITE_AUTHORITY)",
+            "authenticated session user does not match the governed project manager",
+            "authenticated session company does not match the governed project company",
+            "authenticated session role does not match the governed project manager role",
+            "system.init principal does not match the authenticated project manager",
+        ):
+            self.assertIn(marker, BROWSER_MJS)
 
     def test_direct_mjs_readonly_preflight_cannot_enter_write_or_recovery(self):
         result, artifact_created = self._direct_runner(

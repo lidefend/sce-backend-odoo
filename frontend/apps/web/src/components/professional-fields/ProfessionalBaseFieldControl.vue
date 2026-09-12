@@ -62,7 +62,12 @@
     />
     <RestrictedHtmlEditor
       v-else-if="field.type === 'html'"
+      :id="controlId"
       :model-value="String(field.inputValue ?? '')"
+      :required="field.required"
+      :invalid="field.invalid"
+      :described-by="describedBy"
+      :placeholder="placeholder"
       @update:model-value="emitValue"
     />
     <ScTextarea
