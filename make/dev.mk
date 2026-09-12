@@ -143,7 +143,9 @@ local.dev.project_profile_write_fixture: guard.prod.forbid local.dev.ready
 local.dev.project_profile_write_browser: guard.prod.forbid local.dev.ready
 	@test -n "$(PRODUCT_CANDIDATE_SHA)" || (echo "PRODUCT_CANDIDATE_SHA is required" >&2; exit 2)
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_ENVIRONMENT=dev SC_ALLOW_DEMO_DATA=0 \
 	  PRODUCT_CANDIDATE_SHA="$(PRODUCT_CANDIDATE_SHA)" \
+	  P4_TOOL_CANDIDATE_SHA="$(shell git -C $(ROOT_DIR) rev-parse HEAD)" \
 	  FRONTEND_URL="$(FRONTEND_URL)" \
 	  bash scripts/verify/local_dev_project_profile_write_browser.sh
 

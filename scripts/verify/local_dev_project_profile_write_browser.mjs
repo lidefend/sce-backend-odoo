@@ -1,28 +1,175 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
+
+const EXPECTED_DB = 'sc_dev_demo';
+const EXPECTED_ENVIRONMENT = 'dev';
+const EXPECTED_DBFILTER = '^sc_dev_demo$';
+const FIXTURE_NAMESPACE = 'codex_p4_project_profile_write';
+const BATCH_PATTERN = /^[a-z0-9][a-z0-9-]{2,31}$/;
+const SCRIPT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://127.0.0.1:5176';
+const DB_NAME = process.env.DB_NAME || EXPECTED_DB;
+const READ_ONLY = process.env.READ_ONLY === '1';
+const PREFLIGHT_ONLY = process.env.PREFLIGHT_ONLY === '1';
+const NETWORK_FAILURE_RECOVERY = process.env.NETWORK_FAILURE_RECOVERY === '1';
+const VALIDATE_ONLY = process.env.P4_RUNNER_VALIDATE_ONLY === '1';
+
+function deny(message) { throw new Error(`[DENY] ${message}`); }
+function requiredPositiveInteger(name) {
+  const raw = String(process.env[name] ?? '').trim();
+  if (!/^[1-9][0-9]*$/.test(raw)) deny(`${name} must be an explicit positive integer`);
+  const value = Number(raw);
+  if (!Number.isSafeInteger(value)) deny(`${name} exceeds the safe integer range`);
+  return value;
+}
+function requiredJson(name) {
+  const raw = String(process.env[name] ?? '').trim();
+  if (!raw) deny(`${name} is required for write mode`);
+  try { return JSON.parse(raw); }
+  catch { deny(`${name} is not valid JSON`); }
+}
+function positiveIds(values, label) {
+  if (!Array.isArray(values) || !values.length) deny(`${label} must contain owned positive IDs`);
+  const ids = values.map((value) => Number(value));
+  if (ids.some((value) => !Number.isSafeInteger(value) || value <= 0) || new Set(ids).size !== ids.length) {
+    deny(`${label} contains invalid or duplicate IDs`);
+  }
+  return ids.sort((left, right) => left - right);
+}
+function expectedProjectXmlid(batch) {
+  return `${FIXTURE_NAMESPACE}.project_${batch.replaceAll('-', '_')}`;
+}
+function expectedResponsibilityXmlids(batch) {
+  const suffix = batch.replaceAll('-', '_');
+  return [
+    `${FIXTURE_NAMESPACE}.responsibility_${suffix}_manager`,
+    `${FIXTURE_NAMESPACE}.responsibility_${suffix}_cost`,
+  ].sort();
+}
+function validateProductCandidate() {
+  const expected = String(process.env.PRODUCT_CANDIDATE_SHA ?? '').trim();
+  if (!/^[0-9a-f]{40}$/.test(expected)) deny('PRODUCT_CANDIDATE_SHA must be a full immutable SHA');
+  let served;
+  if (VALIDATE_ONLY) {
+    served = String(process.env.P4_RUNNER_SERVED_PRODUCT_SHA ?? '').trim();
+  } else {
+    try {
+      const pid = JSON.parse(fs.readFileSync('/tmp/sc-local-dev-candidate-frontend.pid', 'utf8'));
+      served = String(pid?.head ?? '').trim();
+    } catch {
+      deny('candidate pidfile is missing or invalid');
+    }
+  }
+  if (served !== expected) deny('product candidate SHA mismatch');
+}
+function readGovernedAuthority(batch, toolSha) {
+  if (VALIDATE_ONLY) return requiredJson('P4_PROJECT_PROFILE_AUTHORITY_JSON');
+  const rootDir = String(process.env.ROOT_DIR ?? '').trim();
+  const envFile = String(process.env.ENV_FILE ?? '').trim();
+  if (!path.isAbsolute(rootDir) || !path.isAbsolute(envFile)) deny('ROOT_DIR and ENV_FILE must be absolute for governed authority read');
+  if (path.resolve(rootDir) !== SCRIPT_ROOT) deny('ROOT_DIR does not match the runner worktree');
+  const fixtureEntry = path.join(rootDir, 'scripts/verify/local_dev_project_profile_write_fixture.sh');
+  const result = spawnSync('bash', [fixtureEntry], {
+    cwd: rootDir,
+    encoding: 'utf8',
+    maxBuffer: 4 * 1024 * 1024,
+    env: {
+      ...process.env,
+      P4_PROJECT_PROFILE_MODE: 'inspect',
+      P4_PROJECT_PROFILE_BATCH: batch,
+      P4_PROJECT_PROFILE_CONFIRM: 'INSPECT',
+      CANDIDATE_GIT_HEAD: toolSha,
+    },
+  });
+  if (result.error || result.status !== 0) deny(`governed authority read failed before browser startup (exit=${result.status ?? 'spawn-error'})`);
+  const prefix = 'LOCAL_DEV_PROJECT_PROFILE_WRITE_FIXTURE_JSON=';
+  const rows = String(result.stdout || '').split(/\r?\n/).filter((line) => line.startsWith(prefix));
+  if (rows.length !== 1) deny('governed authority read did not return exactly one result');
+  try { return JSON.parse(rows[0].slice(prefix.length)); }
+  catch { deny('governed authority result is not valid JSON'); }
+}
+function loadWriteAuthority(projectId) {
+  const batch = String(process.env.P4_PROJECT_PROFILE_BATCH ?? '').trim();
+  if (!BATCH_PATTERN.test(batch)) deny('P4_PROJECT_PROFILE_BATCH must be explicit and match the governed batch format');
+  const toolSha = String(process.env.P4_TOOL_CANDIDATE_SHA ?? '').trim();
+  if (!/^[0-9a-f]{40}$/.test(toolSha)) deny('P4_TOOL_CANDIDATE_SHA must be a full immutable SHA');
+  if (!VALIDATE_ONLY) {
+    const actualHead = spawnSync('git', ['-C', SCRIPT_ROOT, 'rev-parse', 'HEAD'], { encoding: 'utf8' });
+    if (actualHead.status !== 0 || String(actualHead.stdout || '').trim() !== toolSha) deny('P4 tool candidate SHA does not match the runner worktree');
+  }
+  if (DB_NAME !== EXPECTED_DB) deny(`write mode requires DB_NAME=${EXPECTED_DB}`);
+  if (String(process.env.SC_ENVIRONMENT ?? '') !== EXPECTED_ENVIRONMENT) deny(`write mode requires SC_ENVIRONMENT=${EXPECTED_ENVIRONMENT}`);
+  if (String(process.env.ODOO_DBFILTER ?? '') !== EXPECTED_DBFILTER) deny(`write mode requires ODOO_DBFILTER=${EXPECTED_DBFILTER}`);
+
+  const authority = readGovernedAuthority(batch, toolSha);
+  if (authority.mode !== 'inspect' || authority.existing_batch !== true) deny('authority must be a successful inspect of an existing batch');
+  if (authority.database !== DB_NAME || authority.environment !== EXPECTED_ENVIRONMENT || authority.dbfilter !== EXPECTED_DBFILTER) {
+    deny('authority environment/database identity mismatch');
+  }
+  if (authority.candidate_sha !== toolSha) deny('authority tool candidate SHA mismatch');
+  if (authority.batch !== batch || authority.namespace !== FIXTURE_NAMESPACE) deny('authority batch or namespace mismatch');
+  const project = authority.project || {};
+  if (Number(project.id) !== projectId) deny('authority target project ID mismatch');
+  if (project.xmlid !== expectedProjectXmlid(batch)) deny('authority project XMLID mismatch');
+  if (project.ownership_marker !== `CODEX-P4-${batch.toUpperCase()}`) deny('authority project ownership marker mismatch');
+
+  const projectResponsibilityIds = positiveIds(project.responsibility_ids, 'authority project responsibility_ids');
+  const responsibilities = Array.isArray(authority.responsibilities) ? authority.responsibilities : [];
+  if (responsibilities.length !== 2) deny('authority must resolve exactly two batch-owned responsibility rows');
+  const responsibilityIds = positiveIds(responsibilities.map((row) => row?.id), 'authority responsibility rows');
+  if (JSON.stringify(projectResponsibilityIds) !== JSON.stringify(responsibilityIds)) deny('authority responsibility scope mismatch');
+  if (responsibilities.some((row) => Number(row?.project_id) !== projectId)) deny('authority responsibility belongs to another project');
+  const xmlids = responsibilities.map((row) => String(row?.xmlid || '')).sort();
+  if (JSON.stringify(xmlids) !== JSON.stringify(expectedResponsibilityXmlids(batch))) deny('authority responsibility XMLID mismatch');
+  return { ...authority, batch, project: { ...project, responsibility_ids: responsibilityIds } };
+}
+function assertOwnedProjectFacts(authority, facts) {
+  const project = facts?.project || {};
+  if (Number(project.id) !== Number(authority.project.id)) deny('authoritative project read returned the wrong target');
+  if (String(project.project_code || '') !== String(authority.project.ownership_marker || '')) deny('authoritative project marker mismatch');
+  const factIds = positiveIds(project.responsibility_ids, 'authoritative project responsibility_ids');
+  if (JSON.stringify(factIds) !== JSON.stringify(authority.project.responsibility_ids)) deny('authoritative project has out-of-scope responsibility rows');
+  const rows = Array.isArray(facts?.responsibilities) ? facts.responsibilities : [];
+  const rowIds = positiveIds(rows.map((row) => row?.id), 'authoritative responsibility rows');
+  if (JSON.stringify(rowIds) !== JSON.stringify(authority.project.responsibility_ids)) deny('authoritative responsibility read is incomplete or out of scope');
+  if (rows.some((row) => Number(row?.project_id) !== Number(authority.project.id))) deny('authoritative responsibility row belongs to another project');
+}
+
+const PROJECT_ID = requiredPositiveInteger('PROJECT_ID');
+validateProductCandidate();
+if ((READ_ONLY || PREFLIGHT_ONLY) && NETWORK_FAILURE_RECOVERY) deny('read-only preflight cannot enable failure injection or retry');
+const WRITE_MODE = !READ_ONLY && !PREFLIGHT_ONLY;
+const WRITE_AUTHORITY = WRITE_MODE ? loadWriteAuthority(PROJECT_ID) : null;
+const configuredProjectName = String(process.env.PROJECT_NAME ?? '').trim();
+if (WRITE_MODE && configuredProjectName && configuredProjectName !== WRITE_AUTHORITY.project.name) deny('PROJECT_NAME does not match governed authority');
+const PROJECT_NAME = WRITE_MODE ? WRITE_AUTHORITY.project.name : configuredProjectName;
+
+if (VALIDATE_ONLY) {
+  const factsRaw = String(process.env.P4_RUNNER_FACTS_JSON ?? '').trim();
+  if (WRITE_MODE && factsRaw) {
+    let facts;
+    try { facts = JSON.parse(factsRaw); } catch { deny('P4_RUNNER_FACTS_JSON is not valid JSON'); }
+    assertOwnedProjectFacts(WRITE_AUTHORITY, facts);
+  }
+  console.log(JSON.stringify({ status: 'PASS', validated_only: true, project_id: PROJECT_ID, write_mode: WRITE_MODE }));
+  process.exit(0);
+}
 
 const requireBase = path.join(process.cwd(), 'frontend/apps/web/package.json');
 const { chromium } = createRequire(requireBase)('playwright');
-
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://127.0.0.1:5176';
-const DB_NAME = process.env.DB_NAME || 'sc_dev_demo';
 const PASSWORD = process.env.E2E_PASSWORD || process.env.SC_DEMO_USER_PASSWORD || '';
-const PROJECT_ID = Number(process.env.PROJECT_ID || 366);
-const PROJECT_NAME = process.env.PROJECT_NAME || '';
 const ACTION_ID = Number(process.env.ACTION_ID || 861);
 const MENU_ID = Number(process.env.MENU_ID || 681);
 const PM_LOGIN = process.env.PM_LOGIN || 'demo_role_project_manager';
 const MEMBER_LOGIN = process.env.MEMBER_LOGIN || 'demo_role_project_a_member';
 const READ_LOGIN = process.env.READ_LOGIN || 'demo_role_project_read';
-const READ_ONLY = process.env.READ_ONLY === '1';
-const PREFLIGHT_ONLY = process.env.PREFLIGHT_ONLY === '1';
-const NETWORK_FAILURE_RECOVERY = process.env.NETWORK_FAILURE_RECOVERY === '1';
 const PREFLIGHT_LOGIN = process.env.PREFLIGHT_LOGIN || '';
-const ROUTE_PATH = process.env.ROUTE_PATH || `/r/project.project/${PROJECT_ID}?menu_id=${MENU_ID}&action_id=${ACTION_ID}`;
 const OUT = path.resolve(process.env.ARTIFACT_DIR || `artifacts/p4-project-profile-write/${Date.now()}`);
-const originalName = `Codex P4 项目资料写入验收 profile-save-20260911`;
+const originalName = WRITE_AUTHORITY?.project?.name || 'Codex P4 项目资料只读预检';
 
 if (!PASSWORD) throw new Error('E2E_PASSWORD or SC_DEMO_USER_PASSWORD is required');
 fs.mkdirSync(OUT, { recursive: true });
@@ -124,7 +271,7 @@ async function intent(page, name, params, allowError = false) {
 async function readProject(page) {
   const result = await intent(page, 'api.data', {
     op: 'read', model: 'project.project', ids: [PROJECT_ID],
-    fields: ['id', 'name', 'date_start', 'date', 'description', 'lifecycle_state', 'responsibility_ids'], context: {},
+    fields: ['id', 'name', 'project_code', 'date_start', 'date', 'description', 'lifecycle_state', 'responsibility_ids'], context: {},
   });
   return result.data.records?.[0] || null;
 }
@@ -154,6 +301,7 @@ async function readProjectFacts(page) {
     project: {
       id: Number(project?.id),
       name: String(project?.name || ''),
+      project_code: String(project?.project_code || ''),
       date_start: project?.date_start || false,
       date: project?.date || false,
       description: project?.description || false,
@@ -390,6 +538,7 @@ async function main() {
     const beforeFacts = await readProjectFacts(page);
     const before = beforeFacts.project;
     if (!before || before.id !== PROJECT_ID) throw new Error(`project ${PROJECT_ID} authoritative read failed`);
+    if (WRITE_MODE) assertOwnedProjectFacts(WRITE_AUTHORITY, beforeFacts);
     report.preflight = { page_state: pageState, authoritative_read: before, authoritative_facts: beforeFacts };
     if (PREFLIGHT_ONLY) {
       report.scenarios.push({ name: 'readonly_save_preflight', status: pageState.fields.length > 0 && before.id === PROJECT_ID ? 'PASS' : 'FAIL', save_controls: await page.locator('.template-page-header-actions button').allTextContents() });

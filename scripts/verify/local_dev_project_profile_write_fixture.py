@@ -115,10 +115,31 @@ def _owned_project(env, identity):
         return None
     if project._name != "project.project":
         raise RuntimeError("fixture project XMLID is not owned by this batch")
-    marker = getattr(project, "project_code", False)
-    if project.code != identity["code"] and marker != identity["code"] and project.name != identity["name"]:
+    marker = getattr(project, "project_code", False) or project.code
+    if marker != identity["code"]:
         raise RuntimeError("fixture project XMLID is not owned by this batch")
     return project.sudo()
+
+
+def _owned_responsibilities(env, identity, project):
+    if not project:
+        return []
+    rows = []
+    for name in identity["responsibility_xmlids"]:
+        row = _xmlid(env, name)
+        if not row or row._name != "project.responsibility":
+            raise RuntimeError("fixture responsibility XMLID is missing or invalid: %s.%s" % (MODULE, name))
+        if row.project_id.id != project.id or row.id not in project.responsibility_ids.ids:
+            raise RuntimeError("fixture responsibility is outside the owned project: %s.%s" % (MODULE, name))
+        rows.append({
+            "xmlid": "%s.%s" % (MODULE, name),
+            "id": row.id,
+            "project_id": row.project_id.id,
+        })
+    expected_ids = {row["id"] for row in rows}
+    if set(project.responsibility_ids.ids) != expected_ids:
+        raise RuntimeError("fixture project contains responsibility rows outside the batch-owned scope")
+    return rows
 
 
 def _external_references(env, project_id) -> List[Dict[str, object]]:
@@ -144,6 +165,7 @@ def _external_references(env, project_id) -> List[Dict[str, object]]:
 def _summary(env, sha, batch, mode, project=None):
     identity = _project_identity(batch)
     candidates = _role_candidates(env)
+    responsibilities = _owned_responsibilities(env, identity, project)
     summary = {
         "mode": mode,
         "database": env.cr.dbname,
@@ -157,8 +179,10 @@ def _summary(env, sha, batch, mode, project=None):
             "id": project.id if project else None,
             "name": project.name if project else identity["name"],
             "code": project.code if project else identity["code"],
+            "ownership_marker": (getattr(project, "project_code", False) or project.code) if project else identity["code"],
             "responsibility_ids": project.responsibility_ids.ids if project else [],
         },
+        "responsibilities": responsibilities,
         "role_candidates": candidates,
         "write_scope": ["name", "date_start", "date", "description", "responsibility_ids"],
         "recovery": "cleanup verifies XMLID/code ownership, scans external many2one references, removes only this project and its responsibility rows",
