@@ -33,7 +33,7 @@ function recordWriteRequests(page) {
     if (request.method() !== 'POST' || !request.url().includes('/api/v1/intent')) return;
     let body = {};
     try { body = JSON.parse(request.postData() || '{}'); } catch { return; }
-    if (body?.intent === 'api.data' && body?.params?.op === 'write') writes.push({ body, at: Date.now() });
+    if ((body?.intent === 'api.data' && body?.params?.op === 'write') || body?.intent === 'api.data.write') writes.push({ body, at: Date.now() });
   });
   return writes;
 }
