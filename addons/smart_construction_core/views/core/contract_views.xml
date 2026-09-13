@@ -47,13 +47,13 @@
         <field name="model">construction.contract.income</field>
         <field name="arch" type="xml">
             <tree string="收入合同" js_class="smart_hierarchical_worksheet">
+                <field name="subject" string="合同标题" />
                 <field name="document_status" string="单据状态" />
                 <field name="date_contract" string="合同订立日期" />
                 <field name="business_category_id" string="业务分类" optional="hide" />
                 <field name="archived" string="原件是否归档" />
                 <field name="partner_id" string="发包人" />
                 <field name="project_id" string="项目名称" />
-                <field name="subject" string="合同标题" />
                 <field name="engineering_category_text" string="工程类别" />
                 <field name="visible_contract_amount" string="合同金额" sum="合同金额合计" />
                 <field name="settlement_amount" string="结算金额" sum="结算金额合计" />

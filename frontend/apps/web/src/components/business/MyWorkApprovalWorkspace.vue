@@ -283,18 +283,19 @@ async function confirmAction() {
 .product-work__filters { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(180px, auto) auto; gap: 12px; align-items: end; padding: var(--sc-product-space-2); border: 0; border-radius: var(--sc-product-radius-panel); background: var(--sc-app-subtle-bg); }
 .product-work__filters label { display: grid; gap: 6px; color: var(--sc-app-text-secondary); font-size: var(--sc-product-text-sm); }
 .product-work__filters :deep(.sc-input), .product-work__filters :deep(.sc-select) { width: 100%; min-height: var(--sc-product-control-height); }
-.work-section { display: grid; gap: 12px; }
+.work-section { display: grid; gap: 10px; }
 .work-section h2 { margin: 0; font-size: 20px; }
 .work-section h2 span { color: var(--sc-app-text-secondary); font-weight: 500; }
 .work-card { min-width: 0; }
-.work-card__main { display: grid; grid-template-columns: auto minmax(220px, 1.2fr) minmax(270px, 1fr) auto; grid-template-areas: 'identity title summary disclosure'; align-items: center; min-width: 0; flex: 1; gap: 6px 16px; }
+.work-card__main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(120px, max-content); grid-template-areas: 'identity identity' 'title summary' 'disclosure disclosure'; align-items: center; min-width: 0; flex: 1; gap: 3px 16px; }
 .work-card__identity { grid-area: identity; display: flex; gap: 8px; align-items: center; }
 .business-type, .status-badge { display: inline-flex; padding: 3px 8px; border-radius: var(--sc-component-tag-radius); background: var(--sc-app-info-bg); color: var(--sc-app-info-text); font-size: var(--sc-product-text-sm); }
+.business-type { white-space: nowrap; }
 .status-badge { background: var(--sc-app-subtle-bg); color: var(--sc-app-text-primary); }
 .work-card h3 { grid-area: title; min-width: 0; margin: 2px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.work-card :deep(.work-card__body) { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+.work-card :deep(.work-card__body) { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
 .work-card dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 20px; margin: 0; }
-.work-card__summary { grid-area: summary; }
+.work-card dl.work-card__summary { grid-area: summary; grid-template-columns: minmax(0, 1fr); }
 .work-card dl div { min-width: 0; }
 .work-card dt { color: var(--sc-app-text-secondary); font-size: var(--sc-product-text-sm); }
 .work-card dd { margin: 3px 0 0; overflow-wrap: anywhere; }
@@ -302,7 +303,7 @@ async function confirmAction() {
 .work-card__supplementary { padding-top: 8px; border-top: 1px solid var(--sc-app-border); }
 .work-card__full-identity { grid-column: 1 / -1; }
 .work-card__full-identity dd { white-space: normal; }
-.work-card__actions { display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start; }
+.work-card__actions { display: flex; max-width: 100%; flex-wrap: wrap; align-self: end; justify-self: end; gap: 8px; }
 .more-actions { position: relative; }
 .more-actions summary { cursor: pointer; min-height: var(--sc-product-control-height); display: inline-flex; align-items: center; padding: 0 12px; border: 1px solid var(--sc-app-border); border-radius: var(--sc-product-radius-control); }
 .more-actions[open] { display: grid; gap: 8px; }
@@ -313,6 +314,9 @@ async function confirmAction() {
 :deep(.intent-dialog label) { display: grid; gap: 6px; }
 :deep(.intent-dialog .sc-textarea) { width: 100%; box-sizing: border-box; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+@media (min-width: 641px) and (max-width: 1200px) {
+  .work-card :deep(.work-card__body) { gap: 12px 16px; }
+}
 @media (max-width: 640px) {
   .product-work { gap: 14px; }
   .product-work__counts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
@@ -323,7 +327,6 @@ async function confirmAction() {
   .work-card :deep(.work-card__body) { grid-template-columns: minmax(0, 1fr); }
   .work-card dt { font-size: 11px; }
   .work-card dd { font-size: 13px; }
-  .work-card__actions { width: 100%; }
-  .work-card__actions :deep(.sc-btn) { flex: 1 1 auto; }
+  .work-card__actions { justify-self: start; }
 }
 </style>
