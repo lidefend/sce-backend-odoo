@@ -143,14 +143,75 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
 
         self.assertTrue(any("row-specific modifiers" in item for item in validate(read_text)))
 
+    def test_readonly_table_cannot_restore_draft_change_column(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace(
+                    "const readonlyO2mTableColumns = computed(() => {\n  return [",
+                    "const readonlyO2mTableColumns = computed(() => {\n  const stateColumn = [{ colKey: '_stateLabel', title: '行变更' }];\n  return [...stateColumn,",
+                    1,
+                )
+            return value
+
+        self.assertTrue(any("draft row-change status as a primary column" in item for item in validate(read_text)))
+
+    def test_readonly_mobile_card_cannot_restore_draft_change_label(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace(
+                    "第 {{ (one2manyPage - 1) * one2manyPageSize + rowIndex + 1 }} 条",
+                    "{{ adapter.one2manyRowStateLabel(row) }}",
+                    1,
+                )
+            return value
+
+        self.assertTrue(any("readonly mobile detail cards expose draft" in item for item in validate(read_text)))
+
     def test_editable_controls_cannot_use_text_ellipsis(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("X2ManyRelationRenderer.vue"):
-                return value.replace("ellipsis: false", "ellipsis: true", 1)
+                return value.replace(
+                    "detailCollectionColumnPresentation(column, columnIndex, false)",
+                    "detailCollectionColumnPresentation(column, columnIndex, true)",
+                    1,
+                )
             return value
 
         self.assertTrue(any("TDesign text ellipsis" in item for item in validate(read_text)))
+
+    def test_readonly_truncation_must_preserve_complete_value(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace("<ScPopover", "<RemovedPopover", 1)
+            return value
+
+        self.assertTrue(any("complete-value" in item for item in validate(read_text)))
+
+    def test_readonly_mobile_trailing_facts_require_actionable_disclosure(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace("<ScDisclosure", "<RemovedDisclosure", 1)
+            return value
+
+        self.assertTrue(any("trailing facts" in item for item in validate(read_text)))
+
+    def test_readonly_collection_title_cannot_return_to_external_field_label(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("FormSection.vue"):
+                return value.replace(
+                    "if (!props.relationAdapter) return false;",
+                    "if (field.readonly || !props.relationAdapter) return false;",
+                    1,
+                )
+            return value
+
+        self.assertTrue(any("duplicate the collection-owned title" in item for item in validate(read_text)))
 
     def test_missing_column_label_fails(self):
         def read_text(path):

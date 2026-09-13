@@ -61,6 +61,8 @@ export type CanonicalFormField = {
   semanticRole: CanonicalFormSemanticRole | '';
   semanticSlot: string;
   semanticGroup: string;
+  /** Zero-based order of the authoritative form-structure slot, when declared. */
+  semanticOrder?: number;
   componentConfig: Readonly<Record<string, unknown>>;
   fieldDescriptor: Readonly<Record<string, unknown>>;
 };

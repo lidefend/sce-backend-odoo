@@ -232,6 +232,26 @@
       </ScCard>
     </div>
     <section
+      v-if="supplementaryInputNodes.length"
+      class="object-task-page__supplementary-input"
+      data-floorplan-region="supplementary-input"
+      data-form-section-target="floorplan:supplementary-input"
+      data-section-content-kind="semantic-section"
+      data-section-source-identity="floorplan:supplementary-input"
+      data-section-title="补充信息"
+      data-supplementary-presentation="direct"
+    >
+      <CanonicalFormNodeRenderer
+        v-for="node in supplementaryInputNodes"
+        :key="node.nodeId"
+        :node="node"
+        :relation-adapter="relationAdapter"
+        prefer-readonly-facts
+        @field-change="emit('field-change', $event)"
+        @field-action="emit('field-action', $event)"
+      />
+    </section>
+    <section
       v-if="presentableRelationNodes.length"
       class="object-task-page__relation"
       role="region"
@@ -247,21 +267,25 @@
         :relation-adapter="relationAdapter"
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
-          @field-action="emit('field-action', $event)"
+        @field-action="emit('field-action', $event)"
       />
     </section>
-    <ScDisclosure
-      v-if="supplementaryInputNodes.length"
-      class="object-task-page__supplementary-input"
-      data-floorplan-region="supplementary-input"
-      data-form-section-target="floorplan:supplementary-input"
+    <ScCard
+      v-if="postRelationInputNodes.length"
+      class="object-task-page__post-relation-input"
+      :aria-label="postRelationInputTitle || '补充信息'"
+      data-floorplan-region="post-relation-input"
+      data-form-section-target="floorplan:post-relation-input"
       data-section-content-kind="semantic-section"
-      data-section-source-identity="floorplan:supplementary-input"
-      data-section-title="补充信息"
-      title="补充信息"
+      data-section-source-identity="floorplan:post-relation-input"
+      :data-section-title="postRelationInputTitle || '补充信息'"
+      :title="postRelationInputTitle || '补充信息'"
+      data-canonical-zone="primary"
+      :bordered="true"
+      appearance="context"
     >
       <CanonicalFormNodeRenderer
-        v-for="node in supplementaryInputNodes"
+        v-for="node in postRelationInputNodes"
         :key="node.nodeId"
         :node="node"
         :relation-adapter="relationAdapter"
@@ -269,7 +293,7 @@
         @field-change="emit('field-change', $event)"
         @field-action="emit('field-action', $event)"
       />
-    </ScDisclosure>
+    </ScCard>
     <ScDisclosure
       v-if="overflowContextNodes.length"
       class="object-task-page__overflow-context"
@@ -368,6 +392,8 @@ const props = defineProps<{
   preExecutionInputNodes: CanonicalFormNode[];
   preExecutionInputTitle?: string;
   supplementaryInputNodes: CanonicalFormNode[];
+  postRelationInputNodes: CanonicalFormNode[];
+  postRelationInputTitle?: string;
   contextNodes: CanonicalFormNode[];
   overflowContextNodes: CanonicalFormNode[];
   riskNodes: CanonicalFormNode[];
@@ -410,7 +436,9 @@ const sectionLinks = computed(() => [
     presentableRelationNodes.value,
     (field) => canonicalFieldHasPresentableValue(field, props.relationAdapter),
   ),
-  props.supplementaryInputNodes.length ? floorplanSection('supplementary-input', '补充信息', 'context') : null,
+  props.postRelationInputNodes.length
+    ? floorplanSection('post-relation-input', props.postRelationInputTitle || '补充信息', 'context')
+    : null,
   props.overflowContextNodes.length ? floorplanSection('overflow-context', '更多信息', 'context') : null,
   props.subordinateNodes.length ? floorplanSection('subordinate', '附件与辅助信息', 'context') : null,
   props.hasCollaboration ? {

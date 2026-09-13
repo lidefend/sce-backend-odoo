@@ -14,6 +14,8 @@ export type CanonicalFormFloorplan = {
   preExecutionInputNodes: CanonicalFormNode[];
   preExecutionInputTitle: string;
   supplementaryInputNodes: CanonicalFormNode[];
+  postRelationInputNodes: CanonicalFormNode[];
+  postRelationInputTitle: string;
   contextNodes: CanonicalFormNode[];
   overflowContextNodes: CanonicalFormNode[];
   riskNodes: CanonicalFormNode[];
@@ -26,6 +28,13 @@ export type CanonicalFormFloorplan = {
   overflowActions: CanonicalFormAction[];
   effectivePrimaryKey: string;
   decisionMode: boolean;
+};
+
+export type CanonicalFormFloorplanOptions = {
+  /** Exact native node already rendered by the product header. */
+  claimedStatusbarNodeIdentity?: string;
+  /** Exact field whose workflow fact is already rendered by the product header. */
+  claimedStatusbarFieldCode?: string;
 };
 
 function hasEditableField(node: CanonicalFormNode): boolean {
@@ -308,17 +317,27 @@ function projectRelationNode(node: CanonicalFormNode): CanonicalFormNode {
     fieldHasBusinessRelationCapability(field) ? { ...field, hideLabel: false } : field
   );
   if (directRelation) {
-    return {
+    const projected = {
       ...node,
       fields: node.fields.map(revealRelationIdentity),
       children: node.children.map(projectRelationNode).filter(nodeHasContent),
     };
+    const relationFields = collectVisibleFields(projected).filter(fieldHasBusinessRelationCapability);
+    const onlyRelationLabel = relationFields.length === 1 ? relationFields[0].label.trim().toLocaleLowerCase() : '';
+    return projected.title.trim().toLocaleLowerCase() === onlyRelationLabel
+      ? { ...projected, title: '' }
+      : projected;
   }
-  return {
+  const projected = {
     ...node,
     fields: node.fields.filter(fieldHasBusinessRelationCapability).map(revealRelationIdentity),
     children: node.children.map(projectRelationNode).filter(nodeHasContent),
   };
+  const relationFields = collectVisibleFields(projected).filter(fieldHasBusinessRelationCapability);
+  const onlyRelationLabel = relationFields.length === 1 ? relationFields[0].label.trim().toLocaleLowerCase() : '';
+  return projected.title.trim().toLocaleLowerCase() === onlyRelationLabel
+    ? { ...projected, title: '' }
+    : projected;
 }
 
 function relationRoleNodes(nodes: CanonicalFormNode[]): CanonicalFormNode[] {
@@ -386,9 +405,17 @@ function flattenPresentableFields(nodes: CanonicalFormNode[], region: string): C
   return projected;
 }
 
-function allVisibleFieldsPresentable(node: CanonicalFormNode): boolean {
-  return node.fields.every((field) => !field.visible || hasPresentableValue(field))
-    && node.children.every(allVisibleFieldsPresentable);
+function projectContextFieldsByPresentability(
+  node: CanonicalFormNode,
+  presentable: boolean,
+): CanonicalFormNode {
+  return {
+    ...node,
+    fields: node.fields.filter((field) => (
+      !field.visible || hasPresentableValue(field) === presentable
+    )),
+    children: node.children.map((child) => projectContextFieldsByPresentability(child, presentable)),
+  };
 }
 
 function partitionContextBlocks(nodes: CanonicalFormNode[], limit: number) {
@@ -397,14 +424,17 @@ function partitionContextBlocks(nodes: CanonicalFormNode[], limit: number) {
   let count = 0;
   let overflowStarted = false;
   nodes.forEach((node) => {
-    const blockCount = visibleFieldCount(node);
-    if (!overflowStarted && blockCount > 0 && allVisibleFieldsPresentable(node) && count + blockCount <= limit) {
-      direct.push(node);
+    const presentableNode = projectContextFieldsByPresentability(node, true);
+    const emptyNode = projectContextFieldsByPresentability(node, false);
+    const blockCount = visibleFieldCount(presentableNode);
+    if (!overflowStarted && blockCount > 0 && count + blockCount <= limit) {
+      direct.push(presentableNode);
       count += blockCount;
-    } else {
+    } else if (blockCount > 0) {
       overflowStarted = true;
-      overflow.push(node);
+      overflow.push(presentableNode);
     }
+    if (nodeHasContent(emptyNode)) overflow.push(emptyNode);
   });
   return { direct, overflow };
 }
@@ -423,14 +453,65 @@ function visibleNodes(nodes: CanonicalFormNode[], mode: CanonicalFormRenderModel
     .filter((node) => node.visible && nodeHasContent(node));
 }
 
+function excludeClaimedHeaderStatus(
+  nodes: CanonicalFormNode[],
+  claimedNodeId: string,
+  claimedFieldCode: string,
+): CanonicalFormNode[] {
+  if (!claimedNodeId && !claimedFieldCode) return nodes;
+  function project(node: CanonicalFormNode): CanonicalFormNode {
+    return {
+      ...node,
+      fields: node.fields.filter((field) => (
+        !claimedFieldCode || field.fieldCode !== claimedFieldCode
+      )),
+      children: node.children.filter((child) => child.nodeId !== claimedNodeId).map(project),
+    };
+  }
+  return nodes.filter((node) => node.nodeId !== claimedNodeId).map(project);
+}
+
+function orderedVisibleFields(nodes: CanonicalFormNode[]): CanonicalFormNode['fields'] {
+  const out: CanonicalFormNode['fields'] = [];
+  function collect(node: CanonicalFormNode) {
+    out.push(...node.fields.filter((field) => field.visible));
+    node.children.forEach(collect);
+  }
+  nodes.forEach(collect);
+  return out;
+}
+
+function fieldsDeclaredAfterFirstRelation(nodes: CanonicalFormNode[]): Set<CanonicalFormNode['fields'][number]> {
+  const fields = orderedVisibleFields(nodes);
+  const relationFields = fields.filter(fieldHasBusinessRelationCapability);
+  if (!relationFields.length) return new Set();
+  const declaredRelationOrders = relationFields
+    .map((field) => field.semanticOrder)
+    .filter((order): order is number => Number.isInteger(order) && order >= 0);
+  if (declaredRelationOrders.length) {
+    const boundary = Math.min(...declaredRelationOrders);
+    return new Set(fields.filter((field) => Number.isInteger(field.semanticOrder) && field.semanticOrder! > boundary));
+  }
+  const relationIndex = fields.findIndex(fieldHasBusinessRelationCapability);
+  return new Set(fields.slice(relationIndex + 1));
+}
+
 /**
  * Pure, ephemeral floorplan projection. It groups canonical nodes without
  * changing field/action identity, visibility, authority, order, or values.
  */
 export function composeCanonicalFormFloorplan(
   renderModel: CanonicalFormRenderModel,
+  options: CanonicalFormFloorplanOptions = {},
 ): CanonicalFormFloorplan {
-  const visiblePrimaryNodes = visibleNodes(renderModel.zones.primary, renderModel.identity.mode);
+  const visiblePrimaryNodes = visibleNodes(
+    excludeClaimedHeaderStatus(
+      renderModel.zones.primary,
+      options.claimedStatusbarNodeIdentity || '',
+      options.claimedStatusbarFieldCode || '',
+    ),
+    renderModel.identity.mode,
+  );
   const createNodes = renderModel.identity.mode === 'create'
     ? deduplicateEquivalentCreateFields(visiblePrimaryNodes)
     : visiblePrimaryNodes;
@@ -473,11 +554,18 @@ export function composeCanonicalFormFloorplan(
   // contract. Contract V2 currently has no such authority, so this projection
   // intentionally stays empty instead of deriving a stage from names or values.
   const preExecutionInputNodes: CanonicalFormNode[] = [];
+  const postRelationFields = fieldsDeclaredAfterFirstRelation(primaryNodes);
+  const supplementaryInputPredicate = (field: CanonicalFormNode['fields'][number]) => (
+    !field.readonly && !field.disabled && !fieldHasBusinessRelationCapability(field)
+    && !conditionFields.has(field) && !coreFields.has(field) && !decisionInputFields.has(field)
+  );
   const supplementaryInputNodes = semanticProductMode && writeMode
     ? fieldNodes(primaryNodes, (field) => (
-      !field.readonly && !field.disabled && !fieldHasBusinessRelationCapability(field)
-      && !conditionFields.has(field) && !coreFields.has(field) && !decisionInputFields.has(field)
+      supplementaryInputPredicate(field) && !postRelationFields.has(field)
     ))
+    : [];
+  const postRelationInputNodes = semanticProductMode && writeMode
+    ? fieldNodes(primaryNodes, (field) => supplementaryInputPredicate(field) && postRelationFields.has(field))
     : [];
   const subordinateNodes = visibleNodes(renderModel.zones.subordinate, renderModel.identity.mode);
   const primaryRelationNodes = semanticProductMode ? relationRoleNodes(primaryNodes.filter(nodeHasRelationCapability)) : [];
@@ -540,6 +628,9 @@ export function composeCanonicalFormFloorplan(
     titleRegistry,
   );
   const titledRelationNodes = suppressRepeatedTitles(relationNodes, titleRegistry);
+  const postRelationInputTitle = authoritativeSectionTitle(postRelationInputNodes);
+  if (postRelationInputTitle) titleRegistry.add(postRelationInputTitle.trim().toLocaleLowerCase());
+  const titledPostRelationInputNodes = suppressRepeatedTitles(postRelationInputNodes, titleRegistry);
   const titledSubordinateNodes = suppressRepeatedTitles(
     semanticProductMode
       ? subordinateNodes.filter((node) => !nodeHasRelationCapability(node))
@@ -557,6 +648,8 @@ export function composeCanonicalFormFloorplan(
     preExecutionInputNodes: titledPreExecutionNodes,
     preExecutionInputTitle,
     supplementaryInputNodes: titledSupplementaryNodes,
+    postRelationInputNodes: titledPostRelationInputNodes,
+    postRelationInputTitle,
     contextNodes: titledContextNodes,
     overflowContextNodes: titledOverflowContextNodes,
     riskNodes: titledRiskNodes,

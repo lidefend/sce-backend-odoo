@@ -277,6 +277,71 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(data["view_id"], 1503)
         self.assertEqual(data["view_ids_by_type"], {"form": 1503})
 
+    def test_business_form_policy_groups_survive_generic_governance(self):
+        page_module = sys.modules[
+            "odoo.addons.smart_core.app_config_engine.services.assemblers.page_assembler"
+        ]
+        page_assembler = page_module.PageAssembler
+        original_policy_inject = getattr(page_assembler, "_inject_business_category_form_policy", None)
+        original_relation_inject = getattr(page_assembler, "_inject_relation_entry_contract", None)
+        original_governance = self.module.apply_contract_governance
+
+        def inject_policy(_assembler, contract, **_kwargs):
+            contract["business_form_policy"] = {
+                "fields": [{"name": "project_id"}, {"name": "line_ids"}],
+            }
+            contract["field_groups"] = [
+                {"name": "business_facts", "title": "基本资料", "fields": ["project_id"]},
+                {"name": "document_lines", "title": "办理明细", "fields": ["line_ids"]},
+            ]
+
+        def inject_relations(_assembler, _contract, _model, **_kwargs):
+            return None
+
+        page_assembler._inject_business_category_form_policy = inject_policy
+        page_assembler._inject_relation_entry_contract = inject_relations
+        self.module.apply_contract_governance = lambda contract, *_args, **_kwargs: {
+            **deepcopy(contract),
+            "field_groups": [
+                {"name": "core", "title": "核心信息", "fields": ["project_id", "line_ids"]},
+            ],
+        }
+        try:
+            handler = self.module.UiContractV2Handler(env=object(), su_env=object())
+            handler._form_field_aliases = lambda *_args, **_kwargs: {}
+            handler._inject_relation_entry_policies = lambda *_args, **_kwargs: None
+            handler._inject_business_category_form_structure = lambda *_args, **_kwargs: None
+            handler._sync_contract_original_contract_relation_to_v2_nodes = lambda *_args, **_kwargs: None
+            source_contract = {
+                "record_id": "new",
+                "fields": {"project_id": {}, "line_ids": {}},
+                "views": {"form": {"layout": []}},
+            }
+
+            handler._inject_business_category_form_policy(
+                source_contract,
+                params={"record_id": "new", "render_profile": "create"},
+                ui_params={},
+                model="x.business.document",
+                view_type="form",
+            )
+        finally:
+            self.module.apply_contract_governance = original_governance
+            if original_policy_inject is None:
+                delattr(page_assembler, "_inject_business_category_form_policy")
+            else:
+                page_assembler._inject_business_category_form_policy = original_policy_inject
+            if original_relation_inject is None:
+                delattr(page_assembler, "_inject_relation_entry_contract")
+            else:
+                page_assembler._inject_relation_entry_contract = original_relation_inject
+
+        self.assertEqual(
+            [group["name"] for group in source_contract["field_groups"]],
+            ["business_facts", "document_lines"],
+        )
+        self.assertEqual(source_contract["field_groups"][0]["title"], "基本资料")
+
     def test_final_modifier_dependency_beyond_snapshot_budget_is_hydrated(self):
         class _Field:
             type = "selection"

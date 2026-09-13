@@ -30,6 +30,8 @@
         :pre-execution-input-nodes="floorplan.preExecutionInputNodes"
         :pre-execution-input-title="floorplan.preExecutionInputTitle"
         :supplementary-input-nodes="floorplan.supplementaryInputNodes"
+        :post-relation-input-nodes="floorplan.postRelationInputNodes"
+        :post-relation-input-title="floorplan.postRelationInputTitle"
         :context-nodes="floorplan.contextNodes"
         :overflow-context-nodes="floorplan.overflowContextNodes"
         :risk-nodes="floorplan.riskNodes"
@@ -183,6 +185,7 @@ const props = defineProps<{
   busy?: boolean;
   actionsInHeader?: boolean;
   claimedStatusbarNodeIdentity?: string;
+  claimedStatusbarFieldCode?: string;
 }>();
 const emit = defineEmits<{
   'driver-change': [kit: SceneUiKitId];
@@ -210,11 +213,15 @@ const contractLayoutColumns = computed(() => Math.max(
 const activeKit = computed<SceneUiKitId>(() => props.driverConfig?.activeKit || 'tdesign-modern');
 const emptyFloorplan: CanonicalFormFloorplan = {
     summaryNodes: [], decisionInputNodes: [], taskNodes: [], coreInputNodes: [], conditionInputNodes: [], preExecutionInputNodes: [], preExecutionInputTitle: '', supplementaryInputNodes: [],
+    postRelationInputNodes: [], postRelationInputTitle: '',
     contextNodes: [], overflowContextNodes: [], riskNodes: [], auditNodes: [], auditDeclared: false,
   relationNodes: [], subordinateNodes: [], blockedActions: [], directActions: [], overflowActions: [],
   effectivePrimaryKey: '', decisionMode: false,
 };
-const floorplan = computed(() => props.renderModel ? composeCanonicalFormFloorplan(props.renderModel) : emptyFloorplan);
+const floorplan = computed(() => props.renderModel ? composeCanonicalFormFloorplan(props.renderModel, {
+  claimedStatusbarNodeIdentity: props.claimedStatusbarNodeIdentity || '',
+  claimedStatusbarFieldCode: props.claimedStatusbarFieldCode || '',
+}) : emptyFloorplan);
 const blockedActionMessage = computed(() => `当前操作暂不可用：${floorplan.value.blockedActions.map((action) => `${action.label}暂不可执行`).join('；')}`);
 const productWriteMode = computed(() => Boolean(
   floorplan.value.decisionMode && props.renderModel && props.renderModel.identity.mode !== 'readonly',

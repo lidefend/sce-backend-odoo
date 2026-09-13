@@ -10,7 +10,10 @@ import {
   CONTRACT_V2_FORM_STRUCTURE_ROLES,
   canonicalRoleForFormStructureRole,
 } from '../src/app/contracts/v2/formStructureRoles';
-import { presentContractV2Form } from '../src/app/presentation/contractFormPresenter';
+import {
+  formStructureFieldSemanticOrder,
+  presentContractV2Form,
+} from '../src/app/presentation/contractFormPresenter';
 import { composeCanonicalFormFloorplan } from '../src/app/presentation/canonicalFormFloorplan';
 import { applyCanonicalFormValidation } from '../src/pages/contractForm/canonicalFormRenderState';
 import {
@@ -78,6 +81,25 @@ import { useRecordFormProgress } from '../src/pages/contractForm/useRecordFormPr
 import { nativeNodeWidget, nativeNodeWidgetSemantics } from '../src/pages/contractForm/nativeLayoutUtils';
 
 const relationRuntime = useRelationRuntime();
+
+assert.equal(formStructureFieldSemanticOrder({
+  slots: [{
+    slot: 'configured_form', title: 'Form', role: 'task', groups: [
+      { name: 'facts', title: 'Facts', role: 'context', fieldRefs: ['project_id', 'date'] },
+      { name: 'lines', title: 'Lines', role: 'context', fieldRefs: ['line_ids'] },
+      { name: 'supplement', title: 'Supplement', role: 'context', fieldRefs: ['note', 'attachment_ids'] },
+    ],
+  }],
+} as ContractV2Snapshot['formStructureContract'], 'line_ids'), 2,
+'semantic order must preserve group and field order within one configured slot');
+assert.equal(formStructureFieldSemanticOrder({
+  slots: [{
+    slot: 'configured_form', title: 'Form', role: 'task', groups: [
+      { name: 'facts', title: 'Facts', role: 'context', fieldRefs: ['project_id'] },
+    ],
+  }],
+} as ContractV2Snapshot['formStructureContract'], 'undeclared_field'), undefined,
+'semantic order must not invent authority for undeclared fields');
 relationRuntime.relationSearchDialog.fieldName = 'project_id';
 relationRuntime.relationSearchDialog.descriptor = undefined;
 relationRuntime.relationSearchDialog.keyword = '唯一项目';
@@ -570,6 +592,10 @@ function collectFields(nodes: ReturnType<typeof presentContractV2Form>['zones'][
 
 function collectTexts(nodes: ReturnType<typeof presentContractV2Form>['zones']['primary']): string[] {
   return nodes.flatMap((node) => [node.text, ...collectTexts(node.children)]).filter(Boolean);
+}
+
+function collectTitles(nodes: ReturnType<typeof presentContractV2Form>['zones']['primary']): string[] {
+  return nodes.flatMap((node) => [node.title, ...collectTitles(node.children)]).filter(Boolean);
 }
 
 const source = snapshot();
@@ -1637,6 +1663,51 @@ assert.equal(
   false,
   'an exact readonly status claim must also prevent one duplicate body occurrence',
 );
+const claimedStatusFloorplan = composeCanonicalFormFloorplan(readonlyStatusModel, {
+  claimedStatusbarNodeIdentity: 'field.state',
+});
+assert.equal(
+  collectFields([
+    ...claimedStatusFloorplan.summaryNodes,
+    ...claimedStatusFloorplan.taskNodes,
+    ...claimedStatusFloorplan.riskNodes,
+    ...claimedStatusFloorplan.contextNodes,
+    ...claimedStatusFloorplan.overflowContextNodes,
+    ...claimedStatusFloorplan.relationNodes,
+  ]).some((field) => field.widgetId === 'field.state'),
+  false,
+  'the task Floorplan must honor the same exact statusbar claim as the native bridge',
+);
+assert.equal(
+  collectFields(claimedStatusFloorplan.taskNodes).some((field) => field.widgetId === 'field.secondary_state'),
+  true,
+  'an unclaimed status field must remain in the task Floorplan',
+);
+const repeatedStatusFactModel = structuredClone(readonlyStatusModel);
+const repeatedStateNode = structuredClone(primaryStatusNode);
+repeatedStateNode.nodeId = 'section.projected_state';
+repeatedStateNode.attributes = { ...repeatedStateNode.attributes, widget: '' };
+repeatedStateNode.fields[0].widgetId = 'field.state.projected';
+repeatedStatusFactModel.zones.primary.push(repeatedStateNode);
+const fieldClaimedStatusFloorplan = composeCanonicalFormFloorplan(repeatedStatusFactModel, {
+  claimedStatusbarNodeIdentity: 'field.state',
+  claimedStatusbarFieldCode: 'state',
+});
+assert.equal(
+  collectFields([
+    ...fieldClaimedStatusFloorplan.summaryNodes,
+    ...fieldClaimedStatusFloorplan.taskNodes,
+    ...fieldClaimedStatusFloorplan.contextNodes,
+    ...fieldClaimedStatusFloorplan.overflowContextNodes,
+  ]).some((field) => field.fieldCode === 'state'),
+  false,
+  'a header-owned workflow field must not reappear through a second business-section projection',
+);
+assert.equal(
+  collectFields(fieldClaimedStatusFloorplan.taskNodes).some((field) => field.fieldCode === 'secondary_state'),
+  true,
+  'claiming one workflow field must not hide a different status field',
+);
 assert.deepEqual(presentContractV2Form(store, 'edit'), model, 'presenter must be deterministic');
 
 const editFloorplan = composeCanonicalFormFloorplan(model);
@@ -1752,6 +1823,20 @@ semanticEditNameNode.fields.push({
 });
 semanticEditNameNode.fields.push({
   ...semanticEditNameField,
+  widgetId: 'field.line_ids.primary',
+  fieldCode: 'line_ids_primary',
+  label: 'Lines',
+  value: [],
+  fieldType: 'one2many',
+  componentKey: 'sc.relation.table',
+  required: false,
+  semanticRole: 'relation',
+  semanticSlot: 'lines',
+  semanticGroup: 'lines',
+  semanticOrder: 1,
+});
+semanticEditNameNode.fields.push({
+  ...semanticEditNameField,
   widgetId: 'field.note',
   fieldCode: 'note',
   label: 'Note',
@@ -1760,6 +1845,7 @@ semanticEditNameNode.fields.push({
   semanticRole: 'context',
   semanticSlot: 'supplement',
   semanticGroup: 'notes',
+  semanticOrder: 2,
 });
 const semanticEditFloorplan = composeCanonicalFormFloorplan(semanticEditModel);
 assert.equal(semanticEditFloorplan.decisionMode, true, 'semantic create/edit forms must enter the Product Floorplan');
@@ -1847,8 +1933,13 @@ assert.deepEqual(
 );
 assert.deepEqual(
   collectFields(semanticEditFloorplan.supplementaryInputNodes).map((field) => field.fieldCode),
+  [],
+  'optional fields declared after a relation slot must not be pulled in front of the detail collection',
+);
+assert.deepEqual(
+  collectFields(semanticEditFloorplan.postRelationInputNodes).map((field) => field.fieldCode),
   ['note'],
-  'empty optional fields must stay in supplementary input instead of being inferred as required',
+  'the authoritative slot order must keep later supplementary fields after the detail collection',
 );
 assert.deepEqual(
   collectFields([
@@ -1860,6 +1951,7 @@ assert.deepEqual(
     ...semanticEditFloorplan.conditionInputNodes,
     ...semanticEditFloorplan.preExecutionInputNodes,
     ...semanticEditFloorplan.supplementaryInputNodes,
+    ...semanticEditFloorplan.postRelationInputNodes,
     ...semanticEditFloorplan.contextNodes,
     ...semanticEditFloorplan.overflowContextNodes,
   ]).map((field) => field.fieldCode),
@@ -1958,7 +2050,21 @@ semanticContextSnapshot.layoutContract.containerTree
   .find((node) => node.containerId === 'governed.audit.section')!
   .formStructureRole = { role: 'audit' };
 const semanticContextModel = presentContractV2Form(createContractV2Store(semanticContextSnapshot), 'readonly');
+const semanticLineNode = [...semanticContextModel.zones.primary, ...semanticContextModel.zones.subordinate]
+  .flatMap(function flatten(
+    node: (typeof semanticContextModel.zones.primary)[number],
+  ): (typeof semanticContextModel.zones.primary)[number][] {
+    return [node, ...node.children.flatMap(flatten)];
+  })
+  .find((node) => node.fields.some((field) => field.fieldCode === 'line_ids'));
+assert.ok(semanticLineNode, 'semantic context fixture must expose its detail collection node');
+semanticLineNode.title = semanticLineNode.fields.find((field) => field.fieldCode === 'line_ids')?.label || '';
 const semanticContextFloorplan = composeCanonicalFormFloorplan(semanticContextModel);
+assert.equal(
+  collectTitles(semanticContextFloorplan.relationNodes).includes(semanticLineNode.title),
+  false,
+  'a relation container title identical to its sole collection label must yield to the collection heading',
+);
 assert.deepEqual(
   collectFields(semanticContextFloorplan.contextNodes).map((field) => field.fieldCode),
   Array.from({ length: 23 }, (_, index) => `context_${index + 1}`),
@@ -1968,6 +2074,26 @@ assert.deepEqual(
   collectFields(semanticContextFloorplan.overflowContextNodes).map((field) => field.fieldCode),
   ['context_24', 'context_25'],
   'overflow must retain complete blocks and all subsequent context in original order',
+);
+const partiallyPopulatedContextModel = structuredClone(semanticContextModel);
+const emptyContextField = collectFields(partiallyPopulatedContextModel.zones.primary)
+  .find((field) => field.fieldCode === 'context_1');
+assert.ok(emptyContextField, 'partial readonly context coverage requires a canonical context field');
+emptyContextField.value = '';
+const partiallyPopulatedContextFloorplan = composeCanonicalFormFloorplan(partiallyPopulatedContextModel);
+assert.deepEqual(
+  collectFields(partiallyPopulatedContextFloorplan.contextNodes).map((field) => field.fieldCode),
+  [
+    ...Array.from({ length: 22 }, (_, index) => `context_${index + 2}`),
+    'context_24',
+    'context_25',
+  ],
+  'an empty readonly context fact must not demote later populated business facts',
+);
+assert.deepEqual(
+  collectFields(partiallyPopulatedContextFloorplan.overflowContextNodes).map((field) => field.fieldCode),
+  ['context_1'],
+  'an empty readonly context fact must remain accessible in overflow without occupying first-read capacity',
 );
 assert.deepEqual(
   collectFields(semanticContextFloorplan.relationNodes).map((field) => field.fieldCode),

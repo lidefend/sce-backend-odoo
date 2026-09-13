@@ -1464,6 +1464,12 @@ class UiContractV2Handler(BaseIntentHandler):
                 model_name=model,
                 render_profile=normalized_render_profile,
             )
+            has_business_form_policy = bool(source_contract.get("business_form_policy"))
+            business_policy_groups = deepcopy(
+                source_contract.get("field_groups")
+                if has_business_form_policy and isinstance(source_contract.get("field_groups"), list)
+                else []
+            )
             policy_injected_at = time.monotonic()
             assembler._inject_relation_entry_contract(
                 source_contract,
@@ -1472,7 +1478,6 @@ class UiContractV2Handler(BaseIntentHandler):
                 relation_cache_key=relation_cache_key,
             )
             relation_contract_at = time.monotonic()
-            has_business_form_policy = bool(source_contract.get("business_form_policy"))
             source_record_id = str(source_contract.get("record_id") or "").strip().lower()
             if (
                 not has_business_form_policy
@@ -1514,11 +1519,6 @@ class UiContractV2Handler(BaseIntentHandler):
                         "category_relation_contract": int((relation_contract_at - policy_injected_at) * 1000),
                     })
                 return
-            business_policy_groups = deepcopy(
-                source_contract.get("field_groups")
-                if isinstance(source_contract.get("field_groups"), list)
-                else []
-            )
             business_policy_root = source_contract.get("business_form_policy") if isinstance(source_contract.get("business_form_policy"), dict) else {}
             business_policy_fields = deepcopy(
                 business_policy_root.get("fields")
