@@ -27,6 +27,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     ]
     contract_page = read_text("frontend/apps/web/src/pages/ContractFormPage.vue")
     driver_host = read_text("frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue")
+    canonical_surface = read_text("frontend/apps/web/src/pages/contractForm/CanonicalNativeFormSurface.vue")
     for marker in ('data-professional-collaboration-component="timeline"', "data-collaboration-entry-type", "update-activity", "open-attachment"):
         if marker not in timeline: failures.append(f"collaboration timeline missing {marker}")
     if "<ProfessionalCollaborationTimeline" not in panel or "visibleCollaborationTimeline" not in panel:
@@ -94,6 +95,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("message reply presentation must consume explicit backend authority")
     if ':readonly="renderModel.identity.mode === \'readonly\'"' not in driver_host:
         failures.append("task Floorplan collaboration must follow the canonical render mode instead of forcing readonly")
+    if ':readonly="renderMode === \'readonly\'"' not in canonical_surface:
+        failures.append("canonical native surface collaboration must preserve readonly mode")
     if "entry.message?.can_reply !== true" not in chatter_runtime or "entry.message.reply_intent !== 'chatter.post'" not in chatter_runtime or "parent_id: replyTarget.value?.id" not in chatter_runtime or "exactReplyAuthorized" not in chatter_runtime:
         failures.append("message reply handler must enforce exact backend authority and preserve the parent relation")
     if "entry.message?.can_reply === true" not in model or "entry.message.reply_intent === 'chatter.post'" not in model:

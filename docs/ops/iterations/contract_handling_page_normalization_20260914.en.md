@@ -45,7 +45,7 @@
 | L1/L2 | `make verify.frontend.native_section_navigation.unit` | PASS, including fully hidden, partially hidden, collapsed-with-content, and subordinate counterexamples |
 | L2 | `make local.dev.test MODULE=smart_construction_core TEST_TAGS=contract_handling_page_policy` | PASS, 7 methods / 9 Odoo statistics; covers isolated income/expense selection, cross/missing cases, sections, labels, and state |
 | L3 | `make local.dev.upgrade MODULE=smart_construction_core`; `make local.dev.health` | PASS using registered `sc-local-dev` / `sc_dev_demo` / 18081 only |
-| L4 light | `/home/lidefend/workspace/sce-offrepo/artifacts/playwright/contract-handling-expense-candidate-359c1ff9/` | Income and expense create/read, existing expense draft edit, 1440/1088×791/390; summaries pass with zero mutations |
+| L4 light | `/home/lidefend/workspace/sce-offrepo/artifacts/playwright/contract-handling-expense-candidate-359c1ff9/` | Expense create/read/existing-draft edit and income create across the approved 1440/1088×791/390 samples; summaries pass with zero mutations. This directory contains no income-readonly case and is not claimed as current-candidate coverage |
 | L4 sections | `section-probe/report.json` in the same directory | 1088/390 click, manual scroll, keyboard disclosure, focus retention, and natural expansion pass |
 | L4 dark | `/home/lidefend/workspace/sce-offrepo/artifacts/playwright/contract-handling-final-preflight-359c1ff9/dark-structure-1088-390-v2/summary.json` | Expense create/read at 1088×791 and 390×844 pass section navigation, middle/bottom, and responsive-boundary checks; zero mutations and errors |
 | L5 | `make ci.delivery.freeze.prepare`, one final `make ci.local.quick`, independent review | Recorded after freeze in off-repository exact-head receipts; this tracked document will not be changed afterwards |
@@ -56,6 +56,7 @@ One optional dark manual-scroll parameter timed out inside the runner’s supple
 
 - Both source lines in the readonly sample have empty BOQ name and unit values. No name or record was fabricated; non-empty business identity remains uncovered.
 - No income draft was available and an effective record’s `/f` route was not counted as edit coverage. Expense edit used one existing draft and did not save.
+- The `359c1ff9` light directory contains no income-readonly case. Any later P0 readonly-boundary claim uses focused evidence bound to the repair candidate, not a carried-forward full matrix.
 - Real save, approval, all roles, changes, settlement, payment, formal attachment authorization, and amount-definition decisions were not tested.
 - P0 risk is limited to explicit category mapping, native hidden constraints, and section navigation. Tests prove isolation, fail-closed ambiguity, preservation of valid sections, and no contract-model special case in production P0.
 - Rollback order: P0 frontend section consumption, P0 mapping/constraint propagation, then P1 expense and income view/policy commits. No business-data rollback is required.

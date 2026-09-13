@@ -44,6 +44,7 @@
     >
       <NativeCollaborationPanel
         v-bind="collaborationPanelProps"
+        :readonly="renderMode === 'readonly'"
         :show-audit-timeline="true"
         v-on="collaborationPanelListeners || {}"
       />

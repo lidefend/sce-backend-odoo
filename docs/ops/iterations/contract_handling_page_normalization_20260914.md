@@ -45,7 +45,7 @@ English: [contract_handling_page_normalization_20260914.en.md](contract_handling
 | L1/L2 | `make verify.frontend.native_section_navigation.unit` | PASS，包含全隐藏、部分隐藏、默认折叠有内容及 subordinate 反例 |
 | L2 | `make local.dev.test MODULE=smart_construction_core TEST_TAGS=contract_handling_page_policy` | PASS，7 methods / Odoo 统计 9 tests；覆盖收入/支出命中、交叉/缺失反例、章节、标签与状态 |
 | L3 | `make local.dev.upgrade MODULE=smart_construction_core`；`make local.dev.health` | PASS，复用 `sc-local-dev` / `sc_dev_demo` / 18081，不创建新环境或数据 |
-| L4 浅色 | `/home/lidefend/workspace/sce-offrepo/artifacts/playwright/contract-handling-expense-candidate-359c1ff9/` | 收入与支出新建/查看、已有支出草稿编辑、1440/1088×791/390，摘要均 pass、零写入 |
+| L4 浅色 | `/home/lidefend/workspace/sce-offrepo/artifacts/playwright/contract-handling-expense-candidate-359c1ff9/` | 支出新建/查看/已有草稿编辑及收入新建，覆盖既定 1440/1088×791/390 样本；摘要均 pass、零写入。该目录不包含收入查看态，不以旧证据冒充当前候选覆盖 |
 | L4 章节 | 同目录 `section-probe/report.json` | 1088/390 的点击、手动滚动、键盘展开/收起、焦点保留和自然增高通过 |
 | L4 深色 | `/home/lidefend/workspace/sce-offrepo/artifacts/playwright/contract-handling-final-preflight-359c1ff9/dark-structure-1088-390-v2/summary.json` | 1088×791、390×844 支出新建/查看逐章节定位、中/底部、导航和响应式边界通过；`mutationCount=0`、无错误 |
 | L5 | `make ci.delivery.freeze.prepare`、最终一次 `make ci.local.quick`、独立复核 | 最终冻结后由仓外 exact-head receipt 和复核报告记录；本文之后不再通过 tracked 总结改变候选 |
@@ -56,6 +56,7 @@ English: [contract_handling_page_normalization_20260914.en.md](contract_handling
 
 - 查看记录的两条合同明细中清单名称、计量单位为源数据空值；本批不造名称、不修记录，非空业务身份显示仍未覆盖。
 - 收入草稿编辑态不可用，未以已生效记录 `/f` 冒充；支出只读使用现有生效记录，编辑使用现有草稿且未保存。
+- `359c1ff9` 浅色目录不包含收入查看态；若需要证明后续 P0 只读边界，使用与修复候选绑定的聚焦只读证据，不做整页矩阵结转。
 - 未验收真实保存、审批、全角色、合同变更、结算、付款、正式附件授权或金额口径决策。
 - P0 风险限定为显式分类映射、原生隐藏约束和章节导航；测试证明策略不串用、缺失/歧义失败关闭、有效章节不被误删，生产 P0 无合同模型特判。
 - 回滚顺序：先回退 P0 前端章节消费，再回退 P0 契约映射/隐藏传递，最后回退 P1 支出与收入视图/策略提交；不需要数据库数据回滚。
