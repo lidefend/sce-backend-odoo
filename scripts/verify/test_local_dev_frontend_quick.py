@@ -223,6 +223,44 @@ class LocalDevFrontendQuickTest(unittest.TestCase):
         self.assertIn("local_quick_evidence.py run", ci_make)
         self.assertIn("--full-ci-local-quick", evidence_runner)
 
+    def test_full_quick_fails_fast_on_all_content_bound_generated_evidence(self):
+        ci_make = (ROOT / "make/ci.mk").read_text(encoding="utf-8")
+        quick_dependencies = ci_make.split("ci.local.quick.run:", 1)[1].split("\n", 1)[0]
+        self.assertLess(
+            quick_dependencies.index("ci.generated_evidence.preflight"),
+            quick_dependencies.index("verify.contract.page_v1_zero_residue.guard"),
+        )
+        self.assertIn(".NOTPARALLEL: ci.local.quick.run ci.generated_evidence.preflight", ci_make)
+        preflight_dependencies = ci_make.split("ci.generated_evidence.preflight:", 1)[1].split("\n", 1)[0]
+        for dependency in (
+            "ci.generated_reports.guard",
+            "verify.frontend.component_driver_takeover.unit",
+            "verify.contract_form_split_evidence",
+        ):
+            self.assertIn(dependency, preflight_dependencies)
+        self.assertIn(
+            "verify_contract_form_split_evidence.py --write",
+            ci_make.split("refresh.contract_form_split_evidence:", 1)[1].split("\n\n", 1)[0],
+        )
+
+    def test_contract_form_split_evidence_refresh_is_exact_and_fail_closed(self):
+        module_path = ROOT / "scripts/ci/verify_contract_form_split_evidence.py"
+        spec = importlib.util.spec_from_file_location("verify_contract_form_split_evidence", module_path)
+        assert spec and spec.loader
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        source = (
+            "| `frontend/apps/web/src/pages/ContractFormPage.vue` | 13762 | 1864 |\n"
+            "`ContractFormPage.vue` is line-count locked at 1864 lines.\n"
+        )
+        refreshed = module._refresh_current_line_count(source, 1866)
+        self.assertIn("| 13762 | 1866 |", refreshed)
+        self.assertIn("locked at 1866 lines", refreshed)
+        with self.assertRaisesRegex(ValueError, "refusing to rewrite"):
+            module._refresh_current_line_count("missing canonical markers", 1866)
+        with self.assertRaisesRegex(ValueError, "refusing to rewrite"):
+            module._refresh_current_line_count(source + source, 1866)
+
     def test_terminal_frontend_build_recipe_receives_the_authoritative_env_file(self):
         """The final shell recipe, not only Python's make arguments, carries authority."""
         with tempfile.TemporaryDirectory() as directory:

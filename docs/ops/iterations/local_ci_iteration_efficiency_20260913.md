@@ -36,12 +36,33 @@ clean delivery HEAD 冻结后才运行一次 `make ci.local.quick`。该入口�
 改为普通 Make 依赖。严格类型检查的唯一 Quick 链为
 `ci.local.quick.run → verify.unified_page_contract.v2 → verify.unified_page_contract.v2.frontend_static → verify.frontend.typecheck.strict → pnpm typecheck:strict`；没有删除门禁。
 
+### 生成证据冻结前预检
+
+冻结顺序固定为：完成产品与测试 → 完成交付文档 → 按依赖顺序刷新生成文件 → 运行
+`make ci.generated_evidence.preflight` → 提交并冻结 HEAD → 检查候选身份 → 一次完整 Quick。
+
+`ci.generated_evidence.preflight` 聚合三类内容绑定检查，并置于 `ci.local.quick.run` 的昂贵历史、
+类型和构建检查之前：
+
+- `ci.generated_reports.guard`：测试清单/摘要、模块依赖、复杂度及其 split queue 等既有派生报告；
+- `verify.frontend.component_driver_takeover.unit`：绑定 P0/P1 前端生产源、ownership、bridge 和锁定组件版本；
+- `verify.contract_form_split_evidence`：绑定 `ContractFormPage.vue` 当前行数。
+
+检查根据真实内容计算，不用提交类型或人工路径表猜测影响。失败只报告需要刷新的证据并非零退出；
+Quick 不自动改 tracked 文件。对应刷新入口为 `make refresh.generated_reports`、
+`make refresh.frontend.component_driver_takeover.inventory` 和
+`make refresh.contract_form_split_evidence`，其中 ContractForm 行数刷新会在规范标记缺失或重复时拒绝改写。
+预检不生成 receipt，不能冒充 Quick；Quick receipt 仍只绑定最终 clean HEAD/tree，receipt 保存在 Git
+元数据外，禁止再为记录 receipt 修改提交而形成自失效循环。
+
 ## 验收
 
 - 基线策略非零单元必须同时证明轻量入口的必需项和禁止项。
 - `make ci.local.iteration` 的 dry-run/实际运行不得出现被禁止的重型入口，并应输出 L1-only 与
   非零 L2 handoff。
 - Quick 结构检查必须保留 lint/typecheck 依赖，并禁止 recipe 中重复直接调用 typecheck。
+- 生成证据预检必须位于完整 Quick 的重型依赖之前，并覆盖三类内容绑定检查；刷新入口和 fail-closed
+  标记重写由非零行为测试约束。
 - 日常迭代只做定向测试与耗时观察；冻结候选按交付规则运行一次完整 Quick，并绑定 exact-head
   receipt，不把该成本回灌到 HMR 内循环。
 
