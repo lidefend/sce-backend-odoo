@@ -17,7 +17,24 @@ class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
         for relative, targets in guard.MAKE_TARGET_REQUIREMENTS.items():
             path = root / relative
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text("\n".join(f"{target}:" for target in targets), encoding="utf-8")
+            text = "\n".join(f"{target}:" for target in targets)
+            if relative == Path("make/ci.mk"):
+                text += "\n" + guard.ITERATION_TARGET + ": " + " ".join(
+                    item for item in guard.ITERATION_REQUIRED if " " not in item
+                )
+                text += "\n\t@git diff --check"
+                text += "\n\t@git status --porcelain=v1 --untracked-files=all"
+                text += "\n" + guard.QUICK_TARGET + ": " + " ".join(guard.QUICK_DIRECT_REQUIRED)
+                for owner, dependency in guard.TYPECHECK_CHAIN:
+                    text += f"\n{owner}: {dependency}"
+            path.write_text(text, encoding="utf-8")
+        frontend_make = root / "make/frontend.mk"
+        frontend_make.parent.mkdir(parents=True, exist_ok=True)
+        frontend_make.write_text(
+            f"{guard.TYPECHECK_TARGET}:\n"
+            f"\t@scripts/dev/{guard.TYPECHECK_COMMAND}\n",
+            encoding="utf-8",
+        )
 
     def test_complete_policy_passes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -56,6 +73,140 @@ class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
             path = root / "make/runtime_ops.mk"
             path.write_text("acceptance.module.upgrade:\n", encoding="utf-8")
             self.assertTrue(any("authoritative target missing" in error for error in guard.validate(root)))
+
+    def test_iteration_target_rejects_broad_inner_loop_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            path = root / "make/ci.mk"
+            path.write_text(
+                path.read_text(encoding="utf-8").replace(
+                    guard.ITERATION_TARGET + ":",
+                    guard.ITERATION_TARGET + ": security.personal_data_scan",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            self.assertIn(
+                "make/ci.mk: ci.local.iteration includes forbidden broad gate 'security.personal_data_scan'",
+                guard.validate(root),
+            )
+
+    def test_iteration_target_requires_dirty_scope_handoff(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            path = root / "make/ci.mk"
+            path.write_text(
+                path.read_text(encoding="utf-8").replace(
+                    "next=risk_selected_non_zero_L2_targets_required",
+                    "next=none",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            self.assertIn(
+                "make/ci.mk: ci.local.iteration missing lightweight contract "
+                "'next=risk_selected_non_zero_L2_targets_required'",
+                guard.validate(root),
+            )
+
+    def test_iteration_target_requires_untracked_path_detection(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            path = root / "make/ci.mk"
+            path.write_text(
+                path.read_text(encoding="utf-8").replace(
+                    "git status --porcelain=v1 --untracked-files=all",
+                    "git status --porcelain=v1",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            self.assertIn(
+                "make/ci.mk: ci.local.iteration missing lightweight contract "
+                "'git status --porcelain=v1 --untracked-files=all'",
+                guard.validate(root),
+            )
+
+    def test_quick_target_requires_deduplicated_frontend_prerequisites(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            path = root / "make/ci.mk"
+            path.write_text(
+                path.read_text(encoding="utf-8").replace(
+                    " " + guard.QUICK_DIRECT_REQUIRED[1],
+                    "",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            self.assertIn(
+                "make/ci.mk: ci.local.quick.run missing deduplicated prerequisite "
+                "'verify.frontend.lint.src'",
+                guard.validate(root),
+            )
+
+    def test_quick_target_rejects_direct_strict_typecheck_edge(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            path = root / "make/ci.mk"
+            path.write_text(
+                path.read_text(encoding="utf-8").replace(
+                    guard.QUICK_TARGET + ":",
+                    guard.QUICK_TARGET + ": verify.frontend.typecheck.strict",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            self.assertIn(
+                "make/ci.mk: ci.local.quick.run duplicates transitive prerequisite "
+                "'verify.frontend.typecheck.strict'",
+                guard.validate(root),
+            )
+
+    def test_quick_target_requires_complete_strict_typecheck_chain(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            path = root / "make/ci.mk"
+            owner, dependency = guard.TYPECHECK_CHAIN[-1]
+            path.write_text(
+                path.read_text(encoding="utf-8").replace(
+                    f"{owner}: {dependency}",
+                    f"{owner}:",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            self.assertIn(
+                f"make/ci.mk: strict typecheck chain broken: {owner} -> {dependency}",
+                guard.validate(root),
+            )
+
+    def test_quick_target_rejects_repeated_frontend_command(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            path = root / "make/ci.mk"
+            quick_line = guard.QUICK_TARGET + ": " + " ".join(guard.QUICK_DIRECT_REQUIRED)
+            path.write_text(
+                path.read_text(encoding="utf-8").replace(
+                    quick_line,
+                    quick_line
+                    + "\n\t@scripts/dev/pnpm_exec.sh -C frontend/apps/web typecheck:strict",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            self.assertIn(
+                "make/ci.mk: ci.local.quick.run repeats prerequisite command "
+                "'pnpm_exec.sh -C frontend/apps/web typecheck:strict'",
+                guard.validate(root),
+            )
 
 
 if __name__ == "__main__":

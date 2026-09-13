@@ -28,6 +28,7 @@
 - A mutation invalidates its earliest affected layer and every downstream result, but not unchanged upstream results. Refreeze the full fingerprint and resume from the earliest invalidated layer.
 - Do not retry an unchanged failure. Retry only after the owning product/tool input changed or the exact environment prerequisite was proven recovered; record the failure classification and changed recovery fact first.
 - Browser matrices, fixture resets, release snapshots, and full release gates are frozen-candidate activities, not inner-loop debugging tools. During iteration, browser checks cover only declared affected surfaces; the full required matrix runs once at the frozen delivery head.
+- The default inner-loop static entry is `make ci.local.iteration`, followed by the risk-selected affected non-zero L2 target or targets and, only when needed, focused `local.dev.*` runtime checks. Test count follows the declared risk and is never mechanically fixed to one. This L1 entry is not delivery evidence. `make ci.local.quick` is reserved for a clean frozen delivery HEAD and must not be used after every edit or local commit.
 - Every validation result records layer, exact command/entrypoint, current candidate fingerprint, any carried-forward source fingerprint, status (`passed`/`failed`/`not_run`), non-zero test count when applicable, failure owner, and next earliest valid step. Exit code zero alone is not proof of a passed gate.
 
 ### Local development lifecycle (Hard Lock)

@@ -3,6 +3,13 @@
   "entries": [
     {
       "rule_id": "PD002",
+      "path": "addons/smart_construction_core/tests/test_runtime_user_management.py",
+      "blob_id": "6e834cc56feb65b95d983b6bb86eb4c66bb0c59a",
+      "classification": "MOBILE_PHONE_PATTERN",
+      "reason": "verified_synthetic_profile_payload_fixture_history"
+    },
+    {
+      "rule_id": "PD002",
       "path": "addons/smart_construction_demo/seed/steps/step_formal_product_surfaces.py",
       "blob_id": "7f9dcb7a1a3300a0399628722487b1a8e2257aeb",
       "classification": "MOBILE_PHONE_PATTERN",

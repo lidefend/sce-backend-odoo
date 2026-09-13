@@ -206,6 +206,38 @@ class ContractFormCacheOwnershipTest(unittest.TestCase):
         self.assertIn("final My Work request did not use company B context", source)
         self.assertIn("final My Work response did not use company B scope", source)
 
+    def test_relation_candidate_probe_waits_for_prior_surface_quiet(self):
+        source = (ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("async function relationCandidateCountAfterQuiet(", source)
+        responsive = source.split("const noEagerCandidateSurfaces", 1)[1].split(
+            "if (SKIP_PERF)", 1
+        )[0]
+        baseline = "await relationCandidateCountAfterQuiet(page, runtime, 'construction.contract')"
+        self.assertIn(baseline, responsive)
+        self.assertLess(
+            responsive.index(baseline),
+            responsive.index("await page.goto(`${BASE_URL}${surface.route}`"),
+        )
+
+    def test_form_open_performance_starts_from_settled_list(self):
+        source = (ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn('data-collection-state="ok"', source)
+        self.assertIn('data-collection-state="empty"', source)
+        performance = source.split("const formSamples = [];", 1)[1].split(
+            "const switchSamples = [];", 1
+        )[0]
+        self.assertEqual(
+            performance.count("navigateSpa(page, listRoute(TARGETS.payment_request), READY_ACTION_LIST_SELECTOR)"),
+            2,
+        )
+        self.assertNotIn("[data-list-status]:visible", performance)
+
 
 if __name__ == "__main__":
     unittest.main()

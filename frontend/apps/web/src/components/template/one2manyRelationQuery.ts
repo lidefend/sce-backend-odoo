@@ -3,6 +3,21 @@ export type One2manyRelationOption = {
   label: string;
 };
 
+export function selectedOne2manyRelationOption(value: unknown): One2manyRelationOption | null {
+  const row = Array.isArray(value)
+    ? { id: value[0], label: value[1] }
+    : value && typeof value === 'object'
+      ? value as Record<string, unknown>
+      : null;
+  if (!row) return null;
+  const id = Number(row.id ?? row.value);
+  const label = String(
+    row.label ?? row.displayName ?? row.display_name ?? row.name ?? '',
+  ).trim();
+  if (!Number.isFinite(id) || id <= 0 || !label) return null;
+  return { value: Math.trunc(id), label };
+}
+
 export function createOne2manyRelationRequestAuthority() {
   const revisions = new Map<string, number>();
   return {

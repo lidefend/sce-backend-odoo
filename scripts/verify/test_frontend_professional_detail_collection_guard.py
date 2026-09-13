@@ -236,6 +236,19 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
 
         self.assertTrue(any("selected relation label" in item for item in validate(read_text)))
 
+    def test_relation_candidates_cannot_load_before_popup_interaction(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace(
+                    "relationPopupAuthority.isOpen(key) && relationColumnCanQuery",
+                    "relationColumnCanQuery",
+                    1,
+                )
+            return value
+
+        self.assertTrue(any("before interaction" in item for item in validate(read_text)))
+
     def test_relation_failure_without_retry_fails(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
