@@ -76,7 +76,9 @@ goal:
         - authorization_fields_remain_in_the_personnel_compatibility_tab_until_product_authorizes_a_permission_change
         - no_acl_record_rule_group_membership_or_p0_renderer_change
       validation:
-        - data_permission_surface_odoo_tests_6_passed
+        - data_permission_surface_odoo_tests_7_passed
+        - runtime_business_admin_personnel_visible_data_permission_denied
+        - runtime_industry_admin_both_entries_visible
         - runtime_user_management_odoo_tests_16_passed
         - governed_incremental_upgrade_smart_construction_core_passed
         - exact_menu_action_runtime_authority_confirmed_for_system_admin

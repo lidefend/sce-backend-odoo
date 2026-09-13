@@ -32,6 +32,13 @@ authorizes either a capability removal or wider entry access, the personnel form
 keeps a clearly labelled compatibility authorization tab. No permission is
 changed by this batch.
 
+A focused runtime menu-projection test confirms the carryover boundary directly:
+a transactional user holding only the business-configuration administrator group
+sees Personnel Profile but not Data Permission, while a user explicitly assigned
+the industry-configuration administrator group sees both through the existing
+inheritance. Data Permission therefore cannot yet replace the compatibility entry
+without a separate product authorization decision.
+
 Managed account creation still requires an explicit initial password, consistent
 main/allowed companies, and the existing internal-user seed. Because the model is
 `res.users`, this batch does not claim coverage of employees without accounts.
@@ -53,7 +60,8 @@ main/allowed companies, and the existing internal-user seed. Because the model i
 
 - Static: business-entry ownership 7 tests, administration-wave guard 1 test,
   and configuration-wave guard 1 test passed; XML/Python/diff checks passed.
-- Targeted Odoo: `data_permission_surface` passed 6 tests and
+- Targeted Odoo: `data_permission_surface` passed 7 tests, including the new runtime
+  menu-visibility counterexample, and
   `runtime_user_management` passed 16 tests. Coverage includes asymmetric group
   inheritance, identical record scope, dedicated views, read-only identity,
   compatibility controls, and profile-only safe payloads that exclude account,
