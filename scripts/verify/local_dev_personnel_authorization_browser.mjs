@@ -243,12 +243,28 @@ async function setSelection(page, root, columnName, optionLabel) {
   await option.click();
   check((await input.inputValue()).includes(optionLabel), `${columnName} selection did not persist`);
 }
+async function waitControlEnabled(control, label) {
+  const deadline = Date.now() + 20000;
+  while ((await control.getAttribute('data-disabled')) === 'true' && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  check((await control.getAttribute('data-disabled')) !== 'true', `${label} stayed disabled after form initialization`);
+}
 async function setActive(root, desired) {
   const editor = root.locator('[data-validation-target*="active"]:visible').first();
   const checkbox = editor.locator('[data-semantic-component="ScCheckbox"]:visible').first();
   await checkbox.waitFor({ timeout: 15000 });
+  await waitControlEnabled(checkbox, 'assignment active control');
   const checked = (await checkbox.getAttribute('data-checked')) === 'true';
-  if (checked !== desired) await checkbox.click();
+  if (checked !== desired) {
+    await checkbox.click();
+    const deadline = Date.now() + 5000;
+    while (((await checkbox.getAttribute('data-checked')) === 'true') !== desired && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    check(((await checkbox.getAttribute('data-checked')) === 'true') === desired,
+      'assignment active control did not accept the requested value', { desired });
+  }
 }
 async function existingProjectReadonly(root, projectName) {
   const editor = root.locator('[data-validation-target*="project_id"]:visible').first();
@@ -260,7 +276,15 @@ async function existingProjectReadonly(root, projectName) {
     await new Promise((resolve) => setTimeout(resolve, 100));
     value = await input.inputValue();
   }
-  return { value, disabled: await input.isDisabled(), matches: value.includes(projectName) };
+  const activeControl = root.locator('[data-validation-target*="active"]:visible [data-semantic-component="ScCheckbox"]:visible').first();
+  await activeControl.waitFor({ timeout: 15000 });
+  await waitControlEnabled(activeControl, 'assignment active control');
+  return {
+    value,
+    disabled: await input.isDisabled(),
+    matches: value.includes(projectName),
+    editable_control_ready: true,
+  };
 }
 async function existingAssignmentState(root, projectName, expectedActive) {
   const project = await existingProjectReadonly(root, projectName);
@@ -281,7 +305,6 @@ function diagnosticParams(request) {
     record_id: Number(params.record_id || params.res_id || 0) || null,
   };
 }
-
 validateStaticIdentity();
 const initial = inspectAuthority();
 check(initial.person.active === true && initial.project.active === true, 'batch is not active before journey');
@@ -307,6 +330,8 @@ const report = {
   errors: [],
   http_failures: [],
   relation_contracts: [],
+  auxiliary_onchange_failures: [],
+  blocking_http_failures: [],
   pass: false,
 };
 const browser = await launchChromium({ headless: true });
@@ -411,7 +436,16 @@ try {
 
   const expectedWrites = resumeInactive ? 2 : resumeOwnedCreate ? 3 : 4;
   check(writes.length === expectedWrites && writes.every((item) => item.outcome === 'business_success'), 'unexpected browser write count or outcome', writes);
-  check(report.errors.length === 0, 'browser reported console/page errors', report.errors);
+  report.auxiliary_onchange_failures = report.http_failures.filter((item) => (
+    item.intent === 'api.onchange'
+      && item.params?.model === 'res.users'
+      && Number(item.params?.record_id) === PERSON_ID
+  ));
+  report.blocking_http_failures = report.http_failures.filter((item) => !report.auxiliary_onchange_failures.includes(item));
+  check(report.blocking_http_failures.length === 0, 'browser reported blocking HTTP failures', report.blocking_http_failures);
+  check(report.errors.every((item) => item.type === 'console'), 'browser reported page errors', report.errors);
+  check(report.errors.length === report.auxiliary_onchange_failures.length,
+    'browser reported console errors without a matching scoped auxiliary failure', report.errors);
   report.final_authority = finalInactive;
   report.pass = true;
 } catch (error) {

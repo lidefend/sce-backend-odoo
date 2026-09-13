@@ -63,6 +63,8 @@ class PersonnelAuthorizationFixtureSafetyTest(unittest.TestCase):
             "final_deactivate_and_preserve",
             "const expectedWrites = resumeInactive ? 2 : resumeOwnedCreate ? 3 : 4",
             "persisted assignment project remains editable or changed",
+            "auxiliary_onchange_failures",
+            "blocking_http_failures",
             "添加项目成员授权",
         ):
             self.assertIn(token, BROWSER)
