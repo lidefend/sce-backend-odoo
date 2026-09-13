@@ -468,6 +468,12 @@ entries:
   date: '2026-08-23'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_local_dev_project_profile_write_fixture.py
+  status: orphan
+  owner: platform-team
+  date: '2026-09-13'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_local_development_lifecycle.py
   status: orphan
   owner: platform-team
