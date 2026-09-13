@@ -9,11 +9,14 @@
   人员档案、数据权限列表/表单/搜索配置，以及既有项目成员授权的受管写入适配。
 - Standard vs User-Specific：两类办理职责属于行业产品的标准入口表达，不是客户特例。
 - Why Here：人员档案与数据权限都是既有正式入口，本批只重组各入口的编辑职责。
-- Why Not Elsewhere：不改 P0 renderer，不改 ACL、record rule、组成员、运行时低代码配置，
-  不用 P4 脚本承载长期产品语义。
-- Blast Radius：仅 `action_sc_runtime_user_management/menu_sc_runtime_user_management`
+- Why Not Elsewhere：业务职责与授权规则仍留在 P1；不改 ACL、record rule、组成员、运行时低代码配置，
+  不用 P4 脚本承载长期产品语义。真实旅程暴露的两处通用契约消费缺口由 P0 最小修复：正式动作
+  授权的读取上下文传递，以及 one2many 行级 modifier 在桌面/移动编辑器中的消费；均未加入模型、
+  动作或字段特判。
+- P1 Blast Radius：仅 `action_sc_runtime_user_management/menu_sc_runtime_user_management`
   与 `action_sc_product_data_permission_v1/menu_sc_product_data_permission_v1`，及两入口共用的
-  `sc.project.member.assignment` 写入路径。
+  `sc.project.member.assignment` 写入路径。P0 Blast Radius 为共享表单的正式 action 读取上下文与
+  one2many 桌面/移动编辑器，使用通用定向测试证明非本业务特判。
   89 个正式入口只是静态盘点范围，不代表 89 个页面需要修改；名称差异也不自动构成缺陷。
 
 ## 2. 角色承接结论
@@ -52,7 +55,10 @@
   已有行的项目控件设为只读。
 - 授权命令在普通人员字段写入前完整预校验，非法授权与同批人员资料修改整体回滚；新建人员若
   携带内联授权则明确提示“先保存人员，再维护项目成员授权”，不再静默丢弃。
-- 未改 P0、ACL、record rule、组继承、菜单授权以及账号创建、启停和密码机制。
+- P0 仅修复两处通用契约消费：主记录/关系读取只使用服务端正式动作投影的上下文并保留显式
+  `active_test=false`；one2many 编辑器按当前行消费既有 modifier，使已有授权的项目只读、新行仍可选。
+  未透传 URL/任意客户端 context，未全局关闭 `active_test`，未使用 `sudo` 或业务模型特判。
+- 未改 ACL、record rule、组继承、菜单授权以及账号创建、启停和密码机制。
 
 ## 4. 分层验证
 
@@ -64,10 +70,10 @@
   账号、公司、角色或项目授权字段；另覆盖新增缺项目拒绝、A→B/清空项目拒绝且 follower 事实不变、
   同项目备注与停启、人员资料与非法授权整体回滚、新人员内联授权拒绝、跨公司项目记录规则拒绝、
   跨人员拒绝和物理删除拒绝。
-- L3 受管运行态：产品修复提交 `a890edd2f8556ce5f6e424db6039cab234aebf14`
-  对应的 `smart_construction_core 17.0.0.165` 增量升级与 authority verification 通过。
-  一次旧 P4 guard 在当前模块集引用不存在的 `sc.legacy.user.profile`，未作为本产品失败，
-  也未扩大为历史工具修复。
+- L3 受管运行态：`smart_construction_core 17.0.0.165` 通过规范
+  `local.dev` 增量升级、后端重启与 authority verification；最终装配的两个正式 action 均下发
+  `active_test=false` 和已有行 `project_id` 的 `readonly=id` modifier。产品运行候选
+  `0734524b475e9c436afe8284d9cf62e8ffb2334a` 消费这些正式投影，不依赖客户端注入上下文。
 - L4 只读浏览器：候选
   `ab8827aa50d8339d5d5c777123771b14e178de0a`，`sc-local-dev/sc_dev_demo`，
   桌面 1440 与移动 390。系统管理员 `system.init` 下发人员档案
@@ -75,6 +81,11 @@
   `res.users/39` 打开对应表单，契约 HTTP 200、真实字段显示、无页面/控制台错误。
   `demo_readonly` 未收到两项 route authority，访问均以
   `NAVIGATION_AUTHORITY_DENIED` 拒绝。所有摘要 `mutationCount=0`。
+- L4 定向写入：P4 runner `92bef311801b0a218325bbe17bfbdbe787784059` 在同一
+  `sc-local-dev/sc_dev_demo` 中复用受管批次 `batch2a-auth-20260913`，仅操作人员 445、项目 427、
+  授权 33。两个正式入口都能看到停用授权且已有行项目不可编辑；同一旅程完成重新启用、权威回读、
+  刷新及另一入口同事实确认，最后再次停用。浏览器共发出 2 次 `api.data/write`，每次仅包含授权 33
+  的 `active` 更新且业务成功；最终权威事实为授权停用、人员不再是项目 follower，项目/备注/来源不变。
 
 首条列表记录 `res.users/3` 是 `Default User Template`，不属于人员办理对象；通用 runner
 默认选择它时表单未进入 ready。改为同列表可见的真实人员 39 后通过，因此没有将模板记录
@@ -89,17 +100,23 @@
 - 无权角色反例：
   `artifacts/playwright/batch2a-personnel-auth-denied/summary.json`。
 - 浏览器产物为工作树本地、不进入 Git 的运行证据；最终文档 HEAD 的 Quick 另行绑定。
-- 浏览器证据绑定较早的只读 UI 候选；后续 `a890edd2…` 修改 P1 授权写入适配、已有行项目只读表达和定向测试，
-  未改已复核的页面结构，因此未重复菜单、主题或视口矩阵。
-- 本次 S1 修复所要求的“新增授权 → 保存回读 → 停用 → 重新启用 → 刷新”写入旅程尚未执行。
-  仓库当前只有项目资料专用写入 fixture/runner；通用候选浏览器入口明确为只读，且现有人员 39
-  不是可写验收对象。基线规则禁止业务批次临时拼装人员 fixture、数据库写入或浏览器入口，因此
-  在获得独立 P4 受管人员验收对象生命周期与写入 runner 前，不以真实账号或临时脚本绕过。
+- 只读布局证据绑定较早候选；后续产品改动限定在授权写入、正式上下文和行级 modifier 消费，
+  未改已复核的菜单、主题或页面结构，因此未重复完整矩阵。
+- 授权生命周期摘要：
+  `artifacts/p4-personnel-authorization/batch2a-auth-20260913/summary.json`。受管专用人员与项目按
+  审计策略保留，授权 33 已停用且 follower 关系已解除，未物理删除审计记录。
+- 旅程同时如实记录 3 次辅助 `res.users api.onchange` HTTP 500；根因位于主线既有 onchange
+  对虚拟/NewId 关系的序列化路径。它们没有参与本次授权写入、权威读取、follower 更新或 busy 释放，
+  runner 只对“intent/model/record”完全匹配的失败单独分类，其他 HTTP/页面错误仍阻断。本批不宣称
+  修复该历史问题，后续应独立处理。
 - 待产品决策：是否收回业务配置管理员在人员档案中的授权维护能力，或扩大数据权限入口。
   在决策前，兼容授权页签是能力无损边界，不是最终字段互斥承诺。
 - 无账号人员不在本批 `res.users` 范围内，另行登记员工档案覆盖缺口。
 
 ## 6. 回滚
 
-回退本批 P1 视图、契约表达、受管项目授权写入适配、定向测试和文档提交即可。没有 schema、权限或业务数据迁移，
-不需要数据库数据回滚；已增量升级的 XML 可由回退版本再次受管升级恢复。
+回退本批 P1 视图/授权写入适配、两处 P0 通用契约消费修复、P4 runner、定向测试和文档提交即可。
+没有 schema、权限或业务数据迁移；已增量升级的 XML 可由回退版本再次受管升级恢复。受管批次中的
+审计授权保持停用，若需处置必须继续遵守其既有留痕规则。
+
+下一步仅为冻结候选的独立代码复核与 Draft PR 准备；Batch-2B 不在本批启动。
