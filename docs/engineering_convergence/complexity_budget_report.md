@@ -12,12 +12,12 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Category | File |
 | ---: | --- | --- |
-| 4730 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
-| 4636 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
+| 4733 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 4665 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4550 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
-| 4312 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
+| 4334 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4221 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
-| 3774 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
+| 3803 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3769 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3667 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3390 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
@@ -162,12 +162,12 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Status | Category | File |
 | ---: | --- | --- | --- |
-| 4730 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
-| 4636 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
+| 4733 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 4665 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4550 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
-| 4312 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
+| 4334 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4221 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
-| 3774 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
+| 3803 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3769 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3667 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3390 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |

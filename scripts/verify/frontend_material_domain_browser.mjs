@@ -291,6 +291,9 @@ async function inspectHandlingForm(page, entryKey, entry, spec, mode, viewport, 
       : 0;
   }
   const statusFields = await form.locator('[data-field-name="state"]:visible').count();
+  const statusFieldStates = await form.locator('[data-field-name="state"]:visible').evaluateAll((nodes) => (
+    nodes.map((node) => node.getAttribute('data-field-state') || '')
+  ));
   const headerStatusbars = await form.locator(
     '[data-professional-workflow-component="statusbar"]:visible',
   ).count();
@@ -323,7 +326,7 @@ async function inspectHandlingForm(page, entryKey, entry, spec, mode, viewport, 
     )).at(-1);
   const result = {
     entryKey, mode, viewport, theme, url: page.url(), heading, factTops, relationTop, postRelationTop,
-    supplementaryOwnership, statusFields, headerStatusbars, detailTitleCount, detailHeadingCount,
+    supplementaryOwnership, statusFields, statusFieldStates, headerStatusbars, detailTitleCount, detailHeadingCount,
     relationAccessibleName,
     sectionTitles, detailHeaders, missingDetailHeaders, detailHeaderOrder,
     contract: contractSectionIdentity(contract),
@@ -342,6 +345,10 @@ async function inspectHandlingForm(page, entryKey, entry, spec, mode, viewport, 
   }
   check(!(headerStatusbars > 0 && statusFields > 0),
     'material handling state is duplicated across header and body', result);
+  if (mode === 'create' && statusFields > 0) {
+    check(statusFieldStates.every((state) => state === 'readonly'),
+      'material handling create form exposes a workflow state as editable', result);
+  }
   check(detailTitleCount <= 1, 'material handling detail title is duplicated', result);
   check(findKey(contract, 'sourceSectionTitles')?.includes(spec.detailTitle),
     'material handling detail identity is missing from the form contract', result);

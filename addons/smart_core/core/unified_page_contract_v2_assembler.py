@@ -4129,8 +4129,11 @@ def hydrate_final_layout_modifier_status(contract: dict[str, Any]) -> None:
                 _, required = _field_modifier_verdict(value, "required", record)
                 unresolved = any(item is None for item in (invisible, column_invisible, readonly, required))
                 status["visible"] = invisible is False and column_invisible is False
-                status["readonly"] = readonly is not False
-                status["required"] = required is not False
+                # Native modifiers may tighten an earlier policy projection,
+                # but this final hydration pass must never make a field more
+                # permissive than an already projected contract policy.
+                status["readonly"] = status.get("readonly") is True or readonly is not False
+                status["required"] = status.get("required") is True or required is not False
                 status["disabled"] = unresolved
                 status["auth"] = "read" if status["readonly"] else "edit"
                 if unresolved:

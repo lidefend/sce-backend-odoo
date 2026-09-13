@@ -125,7 +125,7 @@
 |---|---|---|---|
 | 出库查看 | 原生 form 与 P1 category policy 均按办理身份、基本资料、出库明细、办理说明组织；XML 明细把材料、规格、单位、数量、单价、金额置前，来源领用与备注置后 | `presentationMode=task`、`effectiveRenderProfile=readonly`；`sourceSectionTitles` 为办理身份、基本资料、出库明细、办理说明 | 关键事实先于明细；状态仅由页头承接；列头为材料档案、规格型号、单位、出库数量、出库单价、出库金额，原领用明细和备注后置。P1 负责标题/列序，P0 负责状态认领、隐藏列和明细呈现。 |
 | 出库新建 | 原生 XML 的“出库主信息 / 项目与仓库 / 出库明细 / 说明与附件”顺序明确，已有 action-scoped orchestration 仍是该创建入口的结构权威 | 运行候选保持 `business_view_orchestration` 权威；`sourceSectionTitles` 保留出库明细先于说明与附件 | 项目、日期、仓库、库位、领用单位等先于明细；说明/附件进入明细后补充区。没有把全部可编辑字段机械前置，也没有由前端猜业务字段。 |
-| 退货新建 | 新增 P1 category policy，明确办理身份、基本资料、退货明细、退货说明与附件；XML 把普通资料移出明细页，把材料/数量/金额置前、来源入库明细后置 | `presentationMode=task`、`effectiveRenderProfile=create`；`sourceSectionTitles` 为办理身份、基本资料、退货明细、退货说明与附件；状态标签为“状态” | 页面身份为“材料退货”；状态、项目、退货仓库/库位、来源入库单、供应商、日期、经办人先于明细；说明/附件在后；空态紧凑且“添加退货明细”可达。P1 修标签/分区/列序，P0 只消费显式槽位。 |
+| 退货新建 | 新增 P1 category policy，明确办理身份、基本资料、退货明细、退货说明与附件；XML 把普通资料移出明细页，把材料/数量/金额置前、来源入库明细后置，并声明 `state` 三模式只读 | `presentationMode=task`、`effectiveRenderProfile=create`；`sourceSectionTitles` 为办理身份、基本资料、退货明细、退货说明与附件；状态标签为“状态”，最终状态策略保持只读 | 页面身份为“材料退货”；项目、退货仓库/库位、来源入库单、供应商、日期、经办人先于明细；新建状态不提供可编辑正文控件；说明/附件在后；空态紧凑且“添加退货明细”可达。P1 修标签/分区/列序，P0 只消费显式槽位和只读策略。 |
 
 退货在受管 `sc_dev_demo` 中没有现有记录，因此未补造查看态数据。出库现有记录为终态查看，创建态用未提交表单验证编辑表达；未执行保存、提交、fixture reset 或业务数据修改。
 
@@ -153,7 +153,7 @@
 
 已解决：
 
-- 三页入口/页头身份、关键事实首读、明细前后顺序、状态重复、明细标题重复、隐藏技术列、只读行变更列、来源显示名、退货中文状态、空态与移动辅助事实访问。
+- 三页入口/页头身份、关键事实首读、明细前后顺序、状态重复、明细标题重复、隐藏技术列、只读行变更列、来源显示名、退货中文状态及不可直接编辑、空态与移动辅助事实访问。
 - 长关系名称保持权威值；桌面通过公开 popover/按钮访问完整值，移动通过现有 disclosure 访问后置事实。
 - P0 修复经人员档案、项目台账 workspace 反例和付款 task 页验证，没有把行业语义写入平台层。
 
@@ -181,3 +181,11 @@
 付款专题旧的 `verify.local.dev.payment_request.floorplan.readonly` 要求空 relation/audit 区域必须占位，与当前“只读空关系不占主阅读空间”的通用规则不一致，运行按旧断言停止但业务指纹未变；本专题没有修改该脚本，也不把这项旧专题全链门禁算作通过。付款相关区域改由上表的窄范围只读共享反例完成。
 
 失败分类记录：P0 两项测试首次误用 Odoo tagged runner 得到 0 tests，按硬锁判失败；随后包路径 unittest 又因宿主无 Odoo 包产生导入错误。改用源码自带的文件级 unittest runner 后各实际运行 1 项并通过，未重试未变化的失败入口。
+
+### 独立复核 S1 与补项
+
+- 首次冻结候选的独立只读复核发现 S1：退货 P1 策略已声明 `state` 在 create/edit/readonly 均只读，但最终 native occurrence modifier hydration 把已投影的 `readonly=true` 放宽为原生节点的 `readonly=false`；页面因此出现可编辑状态 selection，存在绕过既有提交/确认动作条件的风险。旧候选、指纹、截图和 Quick receipt 均降为历史证据。
+- P0 修复分两跳完成：通用 governance 前冻结并在 governance 后恢复权威 `business_form_policy`、`field_policies` 与既有业务分组；最终 modifier hydration 对只读/必填采用单调收紧合并，native modifier 仍可增加限制，但不能放宽已投影策略。实现没有材料模型或 `state` 字段名特判。
+- 新增通用契约边界测试模拟 governance 把三模式只读降为仅 readonly profile，要求恢复源策略；新增最终 hydration 纯测试证明原生 `readonly=false` 不覆盖更严格策略；材料浏览器检查新增“新建态可见流程状态必须只读”断言。
+- 第一次补项浏览器回归按新增断言准确失败，退货状态为 `data-field-state=required`；第二跳修复后同一 1440 浅色三页聚焦回归通过，退货新建正文不再暴露可编辑状态，业务指纹前后不变。受管重启后的首次 health 两次命中 `starting`，容器健康事实变化后复查均通过；未重复重启或改业务数据。
+- 完整 `test_ui_contract_v2_boundaries.py` 文件级诊断中 100 项运行、95 项通过，5 项因既有测试调用 `_build_form_structure_contract` 缺少已有必需参数 `field_label` 报错；它们不在本改动路径，按硬锁记录后不重试、不顺修。受影响策略与 hydration 子集均为非零通过。

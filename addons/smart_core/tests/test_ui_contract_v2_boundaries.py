@@ -288,9 +288,20 @@ class TestUiContractV2Boundaries(unittest.TestCase):
 
         def inject_policy(_assembler, contract, **_kwargs):
             contract["business_form_policy"] = {
-                "fields": [{"name": "project_id"}, {"name": "line_ids"}],
+                "fields": [
+                    {"name": "state", "readonly_profiles": ["create", "edit", "readonly"]},
+                    {"name": "project_id"},
+                    {"name": "line_ids"},
+                ],
+            }
+            contract["field_policies"] = {
+                "state": {
+                    "readonly_profiles": ["create", "edit", "readonly"],
+                    "source_readonly": True,
+                },
             }
             contract["field_groups"] = [
+                {"name": "business_identity", "title": "办理身份", "fields": ["state"]},
                 {"name": "business_facts", "title": "基本资料", "fields": ["project_id"]},
                 {"name": "document_lines", "title": "办理明细", "fields": ["line_ids"]},
             ]
@@ -302,8 +313,17 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         page_assembler._inject_relation_entry_contract = inject_relations
         self.module.apply_contract_governance = lambda contract, *_args, **_kwargs: {
             **deepcopy(contract),
+            "business_form_policy": {
+                "fields": [{"name": "state"}, {"name": "project_id"}, {"name": "line_ids"}],
+            },
+            "field_policies": {
+                "state": {
+                    "readonly_profiles": ["readonly"],
+                    "source_readonly": False,
+                },
+            },
             "field_groups": [
-                {"name": "core", "title": "核心信息", "fields": ["project_id", "line_ids"]},
+                {"name": "core", "title": "核心信息", "fields": ["state", "project_id", "line_ids"]},
             ],
         }
         try:
@@ -314,7 +334,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             handler._sync_contract_original_contract_relation_to_v2_nodes = lambda *_args, **_kwargs: None
             source_contract = {
                 "record_id": "new",
-                "fields": {"project_id": {}, "line_ids": {}},
+                "fields": {"state": {}, "project_id": {}, "line_ids": {}},
                 "views": {"form": {"layout": []}},
             }
 
@@ -338,9 +358,18 @@ class TestUiContractV2Boundaries(unittest.TestCase):
 
         self.assertEqual(
             [group["name"] for group in source_contract["field_groups"]],
-            ["business_facts", "document_lines"],
+            ["business_identity", "business_facts", "document_lines"],
         )
-        self.assertEqual(source_contract["field_groups"][0]["title"], "基本资料")
+        self.assertEqual(source_contract["field_groups"][1]["title"], "基本资料")
+        self.assertEqual(
+            source_contract["business_form_policy"]["fields"][0]["readonly_profiles"],
+            ["create", "edit", "readonly"],
+        )
+        self.assertEqual(
+            source_contract["field_policies"]["state"]["readonly_profiles"],
+            ["create", "edit", "readonly"],
+        )
+        self.assertTrue(source_contract["field_policies"]["state"]["source_readonly"])
 
     def test_final_modifier_dependency_beyond_snapshot_budget_is_hydrated(self):
         class _Field:

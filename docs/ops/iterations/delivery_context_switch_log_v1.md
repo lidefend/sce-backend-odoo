@@ -9389,3 +9389,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - `sc-local-dev/sc_dev_demo/18081` 的 1440、1088 浅色及 390 浅色、320 深色只读/未提交创建检查通过；退货因受管库无记录只检查创建态，不补造数据。材料、项目、人员和付款记录在浏览器前后指纹一致。
 - 共享反例确认人员档案和项目台账保持 `workspace/native_authority`，普通字段不进入 task Floorplan；付款详情保持 task 页关键事实与办理提示。workspace 的历史重复标题不在本专题治理。
 - 开发期最终共享证据绑定完整 dirty 指纹 `7a9016154d0a1157b0b59faa1d8f4a48c3d548461f662749ef51a114e08b1bc8`。tracked 内容冻结后再生成干净候选指纹、最终矩阵与一次 Quick receipt；不推送、不建 PR、不合并。
+
+## 2026-09-13 — 材料办理独立复核 S1 补项
+
+- 首次冻结候选独立复核为 `REQUEST_CHANGES`：退货 P1 已声明三模式只读的 `state` 在最终 native modifier hydration 后变回可编辑，可能绕过正式提交/确认动作。旧冻结指纹与 Quick receipt 仅保留为历史证据。
+- P0 通用链补全业务表单策略与字段策略跨 governance 的保留；最终 native modifier hydration 改为只允许收紧、不得放宽已投影的 readonly/required。新增边界、hydration 与真实 create 页面不可编辑断言，无材料模型/字段名特判。
+- 新断言首次准确复现 `data-field-state=required` 后停止，第二跳修复的 1440 三页聚焦回归通过、业务指纹不变。待刷新生成清单、提交、重冻完整指纹、重取最终矩阵、重跑一次 Quick 并对新候选独立复核；不推送、不建 PR、不合并。

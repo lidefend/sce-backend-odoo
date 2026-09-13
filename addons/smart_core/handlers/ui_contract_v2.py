@@ -1465,10 +1465,20 @@ class UiContractV2Handler(BaseIntentHandler):
                 render_profile=normalized_render_profile,
             )
             has_business_form_policy = bool(source_contract.get("business_form_policy"))
+            business_form_policy = deepcopy(
+                source_contract.get("business_form_policy")
+                if has_business_form_policy and isinstance(source_contract.get("business_form_policy"), dict)
+                else {}
+            )
             business_policy_groups = deepcopy(
                 source_contract.get("field_groups")
                 if has_business_form_policy and isinstance(source_contract.get("field_groups"), list)
                 else []
+            )
+            business_policy_field_policies = deepcopy(
+                source_contract.get("field_policies")
+                if has_business_form_policy and isinstance(source_contract.get("field_policies"), dict)
+                else {}
             )
             policy_injected_at = time.monotonic()
             assembler._inject_relation_entry_contract(
@@ -1519,6 +1529,18 @@ class UiContractV2Handler(BaseIntentHandler):
                         "category_relation_contract": int((relation_contract_at - policy_injected_at) * 1000),
                     })
                 return
+            if business_form_policy:
+                source_contract["business_form_policy"] = business_form_policy
+            if business_policy_field_policies:
+                governed_field_policies = (
+                    source_contract.get("field_policies")
+                    if isinstance(source_contract.get("field_policies"), dict)
+                    else {}
+                )
+                source_contract["field_policies"] = {
+                    **governed_field_policies,
+                    **business_policy_field_policies,
+                }
             business_policy_root = source_contract.get("business_form_policy") if isinstance(source_contract.get("business_form_policy"), dict) else {}
             business_policy_fields = deepcopy(
                 business_policy_root.get("fields")
