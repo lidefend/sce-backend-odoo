@@ -48,6 +48,16 @@
 
 ## 7. Next Step
 
-- Freeze the final HEAD including generated reports and run one exact-head Quick.
-- Prepare the independent-review and PR package without automatically pushing, creating a remote PR, or merging.
-- Schedule Batch-2 only after independent review of Batch-1.
+- Batch-1 is archived. PR #465 ended at
+  `73842d9248867599a54f9ce4647381b2ab59ea28`; after the initial delivery
+  candidate it added three review corrections: shared-field/P4 runner closure,
+  component-takeover inventory refresh, and separation of login-role and
+  business-role detection.
+- `frontend_release_gate`, `merge_policy_gate`, `professional_quality_gate`,
+  `public_guard`, and `release_candidate_gate` all succeeded on the final PR
+  HEAD. GitHub records no human review; independent code review and CI evidence
+  must not be represented as a GitHub human approval.
+- The squash merge is
+  `dbf1e171281bd920c39099be7085718c892b10f4`. The final PR HEAD and merge commit
+  both have tree `2f52649c86587c94e9dfbc1e318538eca41741e2`, proving product-content identity.
+- Batch-2 proceeds separately; the Batch-1 browser save chain is not rerun.

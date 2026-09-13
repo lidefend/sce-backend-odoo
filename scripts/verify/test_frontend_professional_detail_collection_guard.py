@@ -130,6 +130,19 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
 
         self.assertTrue(any("same cell editor" in item for item in validate(read_text)))
 
+    def test_row_specific_readonly_modifier_cannot_be_dropped(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace(
+                    "adapter.one2manyEffectiveColumn(field.name, row._row, column)",
+                    "column",
+                    1,
+                )
+            return value
+
+        self.assertTrue(any("row-specific modifiers" in item for item in validate(read_text)))
+
     def test_editable_controls_cannot_use_text_ellipsis(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")

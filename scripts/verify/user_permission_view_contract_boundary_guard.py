@@ -12,17 +12,30 @@ facts with the intended source priority:
 """
 
 EXPECTED_FIELD_LABELS = {
-    "login": "用户名",
+    "login": "登录账号",
     "name": "姓名",
-    "active": "启用",
+    "active": "账号启用",
     "password": "重置密码",
     "phone": "手机号",
     "email": "邮箱",
-    "company_id": "所属公司",
+    "company_id": "主公司",
+    "company_ids": "允许公司",
     "sc_user_role_group_ids": "业务角色组",
+    "sc_project_member_assignment_ids": "项目成员授权",
 }
 
-EXPECTED_GROUP_LABELS = ["账号信息", "联系方式", "组织归属", "业务角色"]
+EXPECTED_GROUP_LABELS = [
+    "人员资料",
+    "基本资料",
+    "组织与岗位",
+    "头像与档案",
+    "登录与账号",
+    "账号管理",
+    "主公司与允许公司",
+    "授权维护（兼容入口）",
+    "业务角色",
+    "项目成员授权",
+]
 
 FORBIDDEN_ACTION_LABELS = {
     "创建员工",

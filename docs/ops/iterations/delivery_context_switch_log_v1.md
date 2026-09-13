@@ -9332,3 +9332,38 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 收口阶段将严格类型检查进一步收敛为唯一传递链 `ci.local.quick.run → verify.unified_page_contract.v2 → verify.unified_page_contract.v2.frontend_static → verify.frontend.typecheck.strict`；轻量入口明确输出 clean/dirty 状态，dirty 一律标记 `scope=unclassified_by_design` 并要求风险驱动的非零 L2，不把未知路径静默算作覆盖，也不生成 Quick receipt。
 - 首次冻结 Quick 在个人数据历史扫描处失败关闭：扫描命中并行 Batch-2A 已确认的纯合成手机号旧 blob `6e834cc56feb65b95d983b6bb86eb4c66bb0c59a`，P4 基线缺少该分支已登记的精确豁免。按 `PD002`、单一路径、完整 blob、`MOBILE_PHONE_PATTERN` 和 synthetic fixture 原因同步同一条不可变事实；未豁免目录、分支或未来内容，后续 Quick 只能在新冻结 HEAD 恢复。
 - 最终表述按风险驱动收紧：dirty handoff 要求 `risk_selected_non_zero_L2_targets_required`，允许一项或多项受影响的非零 L2，测试数量不机械固定为一个；这不改变轻量入口只声明 L1、未知路径不自动覆盖的边界。
+
+## 2026-09-13 — Batch-1 主线归档与 Batch-2A 人员/授权边界
+
+- Batch-1 PR #465 最终 HEAD `73842d9248867599a54f9ce4647381b2ab59ea28`；相对
+  `b7527bc8…` 增加共享字段/P4 runner 修正、生成清单刷新和登录/业务角色判定分离。
+  五项最终必需检查均成功。squash merge `dbf1e171281bd920c39099be7085718c892b10f4`
+  与最终 PR HEAD 的 tree 同为 `2f52649c86587c94e9dfbc1e318538eca41741e2`，产品内容一致。
+- 新工作树 `/home/lidefend/workspace/sce-backend-odoo-batch2a-personnel-auth`，分支
+  `codex/personnel-authorization-boundary-v1`，基线 `main@dbf1e171…`。Formal Product
+  Layer P1；Layer Target 为 `smart_construction_core` 的两项 action-scoped `res.users`
+  入口；不改 P0、ACL、record rule、组成员或数据。
+- 承接核查确认行业配置管理员继承业务配置管理员、反向不成立。两入口共享同一人员、公司、
+  角色和项目授权事实，因此在产品未决定收回旧能力或扩大数据权限入口前，人员档案保留
+  “授权维护（兼容入口）”；本批不做权限变化。
+- 实现候选 `ab8827aa50d8339d5d5c777123771b14e178de0a` 把人员资料、头像档案、登录账号
+  和兼容授权分组；数据权限保留只读身份并集中主/允许公司、角色、项目范围。专用 tree/form/
+  search 视图外的共享消费者未改。
+- 非零 Odoo 定向测试 6 + 16 通过，增量升级与 authority verification 通过。受管 5176
+  的 1440/390 只读证据确认系统管理员两项 menu/action、列表到 `res.users/39` 表单和真实字段；
+  `demo_readonly` 未收到两项 route authority，访问均正确拒绝。所有浏览器摘要业务写入为 0，
+  候选服务已停止。默认首行 `res.users/3` 为模板记录造成一次无效打开，未改产品或等待条件掩盖。
+- 首次最终 Quick 在个人数据历史扫描处失败关闭：新测试曾提交手机号形态的纯合成值。当前测试已改为
+  非个人占位；旧 blob `6e834cc56feb65b95d983b6bb86eb4c66bb0c59a` 只按 `PD002`、精确文件路径、
+  `MOBILE_PHONE_PATTERN` 和 synthetic fixture 原因登记，不豁免目录、当前分支或后续 blob。
+- Batch-2A 承接补证新增单一事务级运行时菜单反例：仅持有业务配置管理员组的用户可见人员档案、不可见数据权限；行业配置管理员因既有继承可见两者。`data_permission_surface` 7 项通过，测试事务回滚且未改现有账号/权限。该结果确认数据权限当前不能无损承接全部旧维护者，人员档案兼容授权页签继续保留；未修改 ACL、record rule、组继承、菜单授权或 P0。
+- 同步主线后发现两入口共用的项目成员 one2many 命令会被受管 `res.users.write` 白名单丢弃，形成“可编辑但不保存”。P1 提交 `cd8f2b72bba7fe094541e6db62c1c490c83c836e` 将该命令从提权用户字段写入中分离，以当前管理员身份复用既有 `sc.project.member.assignment` ACL、公司记录规则和停用归档语义；不新增权限、不把命令交给 `sudo()`。
+- `runtime_user_management` 18 个方法 / 20 条 Odoo 统计通过，覆盖项目授权新增、停用更新、跨人员拒绝、批量目标拒绝和物理删除拒绝；`data_permission_surface` 5 个方法 / 7 条统计继续通过。`smart_construction_core 17.0.0.164` 在 `sc-local-dev/sc_dev_demo` 受管增量升级与 authority verification 通过。行业边界全量守卫仍命中 BOQ/showcase 等 11 个 main 基线既存项，同一 clean main 复核结果一致，本批不扩展处理。
+
+## 2026-09-13 — Batch-2A 项目授权身份不可变修复
+
+- 独立审查对 `b99cc275…` 提出 S1：已有 `sc.project.member.assignment` 同时承载项目授权审计和 follower 事实，但运行时适配允许直接改 `project_id`。本批只解冻 P1 项目授权写入边界，不改 P0、ACL、record rule、组成员或其他业务入口。
+- 修复提交 `a890edd2f8556ce5f6e424db6039cab234aebf14` 固定已有授权的人员与项目身份。更新缺省项目或显式传原项目可修改备注、停用和重新启用；更换/清空项目拒绝。更换项目只能停用旧授权后新增目标项目授权；页面已有行项目控件只读，服务端仍独立校验。
+- 授权命令改为先完整预校验、后执行人员资料与授权写入，保证普通人员字段与非法授权同批提交整体回滚。新建人员携带内联授权明确拒绝并提示先保存人员；新增授权缺少有效项目、跨公司不可读项目、跨人员修改、批量人员命令和物理删除均失败关闭。
+- L1 轻量入口 11 项通过且不生成 Quick receipt；`runtime_user_management` 23 个方法 / 25 条 Odoo 统计通过，`data_permission_surface` 5 个方法 / 7 条统计通过；`smart_construction_core 17.0.0.165` 受管增量升级及 local.dev authority verification 通过。
+- S1 要求的人员页面写入旅程仍未执行：仓库只有项目资料专用写入 fixture/runner，通用候选浏览器明确只读，现有人员 39 不是受管可写验收对象。按 baseline hard lock，业务批次不能临时创建人员 fixture、数据库命令或测试入口；需独立授权 P4 提供专用人员对象的初始化、归属核对、回读和清理生命周期后才能补证。最终 Quick 与独立复核因此尚未执行，旧 `b99cc275…` receipt 只保留为历史证据。

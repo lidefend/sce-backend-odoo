@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { permitsContractV2SnapshotReuse } from '../src/app/contracts/v2/runtime';
 import { resolveContractV2RuntimePolicy } from '../src/app/contracts/v2/store';
 import type { ContractV2RuntimeContract } from '../src/app/contracts/v2/types';
+import { resolveContractFormReadContext } from '../src/pages/contractForm/contractRuntimeVm';
 
 function runtime(cachePolicy: ContractV2RuntimeContract['cachePolicy']): ContractV2RuntimeContract {
   return {
@@ -45,4 +46,26 @@ for (const [key, value] of Object.entries(runtimePayload)) {
   assert.deepEqual(projected[key], value, `runtime policy field ${key} must survive store projection`);
 }
 
-console.log('contract v2 runtime policy: PASS cases=4 fields=23');
+const inactiveActionStore = {
+  snapshot: {
+    dataContract: {
+      dataMeta: {
+        sourceContext: {
+          context: { active_test: false, sc_runtime_user_management: true },
+        },
+      },
+    },
+  },
+} as never;
+assert.deepEqual(
+  resolveContractFormReadContext(inactiveActionStore),
+  { active_test: false, sc_runtime_user_management: true },
+  'an explicit false from the server-projected action context reaches record reads',
+);
+assert.deepEqual(
+  resolveContractFormReadContext({ snapshot: { dataContract: { dataMeta: {} } } } as never),
+  {},
+  'an action without active_test keeps the api.data default filtering behavior',
+);
+
+console.log('contract v2 runtime policy: PASS cases=6 fields=23');

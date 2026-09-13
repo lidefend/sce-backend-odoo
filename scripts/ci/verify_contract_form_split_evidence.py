@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import argparse
 import re
 import subprocess
 import sys
@@ -41,7 +42,37 @@ def _git_short_head() -> str:
         return ""
 
 
+def _refresh_current_line_count(text: str, current_lines: int) -> str:
+    expected_row = (
+        f"| `{FORM_PAGE.relative_to(ROOT).as_posix()}` | 13762 | {current_lines} |"
+    )
+    row_pattern = r"^\| `frontend/apps/web/src/pages/ContractFormPage\.vue` \| 13762 \| \d+ \|$"
+    lock_pattern = r"`ContractFormPage\.vue` is line-count locked at \d+ lines\."
+    if len(re.findall(row_pattern, text, flags=re.MULTILINE)) != 1 or len(re.findall(lock_pattern, text)) != 1:
+        raise ValueError(
+            "evidence does not contain one canonical line-count row and lock; refusing to rewrite"
+        )
+    text = re.sub(
+        row_pattern,
+        expected_row,
+        text,
+        count=1,
+        flags=re.MULTILINE,
+    )
+    line_lock = f"`ContractFormPage.vue` is line-count locked at {current_lines} lines."
+    text = re.sub(
+        lock_pattern,
+        line_lock,
+        text,
+        count=1,
+    )
+    return text
+
+
 def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--write", action="store_true")
+    args = parser.parse_args()
     errors: list[str] = []
     text = EVIDENCE.read_text(encoding="utf-8", errors="ignore") if EVIDENCE.is_file() else ""
     if not text:
@@ -51,6 +82,15 @@ def main() -> int:
     if not BASELINE.is_file():
         errors.append(f"missing complexity baseline: {BASELINE.relative_to(ROOT)}")
 
+    if args.write and not errors:
+        try:
+            text = _refresh_current_line_count(text, _line_count(FORM_PAGE))
+        except ValueError as exc:
+            errors.append(str(exc))
+        else:
+            EVIDENCE.write_text(text, encoding="utf-8")
+            print(f"[contract_form_split_evidence] wrote {EVIDENCE.relative_to(ROOT)}")
+
     if not errors:
         current_lines = _line_count(FORM_PAGE)
         expected_row = (
@@ -59,13 +99,13 @@ def main() -> int:
         if expected_row not in text:
             errors.append(
                 "ContractFormPage line-count evidence is stale: "
-                f"expected row `{expected_row}`"
+                f"expected row `{expected_row}`; run `make refresh.contract_form_split_evidence`"
             )
         line_lock = f"`ContractFormPage.vue` is line-count locked at {current_lines} lines."
         if line_lock not in text:
             errors.append(
                 "ContractFormPage line-count lock wording is stale: "
-                f"expected `{line_lock}`"
+                f"expected `{line_lock}`; run `make refresh.contract_form_split_evidence`"
             )
 
     for token in REQUIRED_TOKENS:

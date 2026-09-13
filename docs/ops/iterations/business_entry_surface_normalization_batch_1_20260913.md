@@ -48,6 +48,14 @@
 
 ## 7. 下一步
 
-- 冻结包含生成报告的最终 HEAD，执行一次 exact-head Quick。
-- 整理独立评审与 PR 准备包；不自动 push、创建远端 PR 或合并。
-- Batch-2 等 Batch-1 独立复核后另行安排。
+- Batch-1 已归档。PR #465 最终 HEAD 为
+  `73842d9248867599a54f9ce4647381b2ab59ea28`，其后于初始交付候选增加三项审查修正：
+  共享字段/P4 runner 缺口关闭、组件接管清单刷新、登录角色与业务角色判定分离。
+- 最终 PR HEAD 的 `frontend_release_gate`、`merge_policy_gate`、
+  `professional_quality_gate`、`public_guard` 与 `release_candidate_gate` 均为
+  `SUCCESS`。GitHub 没有人工 review 记录；独立代码复核与 CI 证据不得表述为
+  GitHub 人工批准。
+- squash 合并提交为
+  `dbf1e171281bd920c39099be7085718c892b10f4`；最终 PR HEAD 与合并提交的 tree
+  均为 `2f52649c86587c94e9dfbc1e318538eca41741e2`，产品内容一致。
+- Batch-2 另行实施；不再重跑 Batch-1 浏览器保存链。

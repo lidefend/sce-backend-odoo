@@ -9,6 +9,7 @@ import {
   mergeOne2manyHydratedRecords,
   one2manyRowHintsFromPatches,
   removeOne2manyDraftRow,
+  resolveOne2manyRowColumnBehavior,
   restoreOne2manyDraftRow,
   setOne2manyDraftRowField,
 } from './one2manyUtils';
@@ -67,6 +68,20 @@ export function useOne2manyRuntime(params: {
       rowsByField, fieldName, rowKey, column, value, parentValues: params.parentValues(),
     });
     if (changed) params.markFieldChanged(fieldName);
+  }
+
+  function effectiveColumn(_fieldName: string, row: One2ManyInlineRow, column: One2ManyColumn) {
+    const behavior = resolveOne2manyRowColumnBehavior(
+      column,
+      row.values || {},
+      params.parentValues(),
+      row.modifierPatches || {},
+    );
+    return {
+      ...column,
+      readonly: behavior.readonly,
+      required: behavior.required,
+    };
   }
 
   function removeRow(fieldName: string, rowKey: string) {
@@ -157,6 +172,7 @@ export function useOne2manyRuntime(params: {
     clearRows,
     addRow,
     setRowField,
+    effectiveColumn,
     removeRow,
     restoreRow,
     initRows,
