@@ -923,7 +923,7 @@ def _contract_handling_policy(title: str, *, supplement: bool = False, expense: 
             _section("system_identity", "系统信息", ["type", "state", "name"], 85, collapsed=True, visible_profiles=EDIT_READONLY),
             _section("source_trace", "来源与系统追溯", list(trace) + list(APPROVAL_FIELDS), 90, collapsed=True, visible_profiles=READONLY_ONLY),
         ]
-    return _policy(
+    policy = _policy(
         sections,
         required=tuple(required),
         readonly_all=("operation_strategy", "type", "state", "name") + SYSTEM_FIELDS,
@@ -938,6 +938,12 @@ def _contract_handling_policy(title: str, *, supplement: bool = False, expense: 
             "amount_final",
         ),
     )
+    if not expense and not supplement:
+        for field_policy in policy["fields"]:
+            if field_policy.get("name") == "attachment_text":
+                field_policy["label"] = "历史附件文本"
+                break
+    return policy
 
 
 def _material_policy(

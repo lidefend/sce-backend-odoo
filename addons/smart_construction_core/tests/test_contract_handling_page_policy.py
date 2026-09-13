@@ -120,6 +120,10 @@ class TestContractHandlingPagePolicy(TransactionCase):
         self.assertEqual(create_page["business_form_policy"]["category_code"], "contract.income")
         self.assertEqual(readonly_page["business_form_policy"]["category_code"], "contract.income")
         self.assertEqual(create_page["business_form_policy"]["source"], "sc.business.category.form_policy_json")
+        self.assertEqual(
+            create_page["business_form_policy"]["field_labels"]["attachment_text"],
+            "历史附件文本",
+        )
         state_policy = next(
             row
             for row in create_page["business_form_policy"]["fields"]
@@ -208,6 +212,7 @@ class TestContractHandlingPagePolicy(TransactionCase):
         structure = create_contract["formStructureContract"]
         self.assertEqual(structure["presentationMode"], "task")
         self.assertEqual(structure["sourceAuthority"]["governance_source"]["categoryCode"], "contract.income")
+        self.assertEqual(structure["fieldLabels"]["attachment_text"], "历史附件文本")
         self.assertEqual(
             [slot["title"] for slot in structure["slots"]],
             [
