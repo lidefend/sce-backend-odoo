@@ -9395,3 +9395,4 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 首次冻结候选独立复核为 `REQUEST_CHANGES`：退货 P1 已声明三模式只读的 `state` 在最终 native modifier hydration 后变回可编辑，可能绕过正式提交/确认动作。旧冻结指纹与 Quick receipt 仅保留为历史证据。
 - P0 通用链补全业务表单策略与字段策略跨 governance 的保留；最终 native modifier hydration 改为只允许收紧、不得放宽已投影的 readonly/required。新增边界、hydration 与真实 create 页面不可编辑断言，无材料模型/字段名特判。
 - 新断言首次准确复现 `data-field-state=required` 后停止，第二跳修复的 1440 三页聚焦回归通过、业务指纹不变。待刷新生成清单、提交、重冻完整指纹、重取最终矩阵、重跑一次 Quick 并对新候选独立复核；不推送、不建 PR、不合并。
+- S1 修复首个冻结候选的 Quick 在末段因 `ui_contract_v2.py` 行预算 `4334 > 4312` 失败，未签发 receipt。通用策略快照/恢复已下沉到既有 projection 模块，handler 回到预算内且责任映射门禁通过；这是职责拆分，不改变已通过的运行契约语义。

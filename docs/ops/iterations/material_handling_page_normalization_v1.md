@@ -189,3 +189,4 @@
 - 新增通用契约边界测试模拟 governance 把三模式只读降为仅 readonly profile，要求恢复源策略；新增最终 hydration 纯测试证明原生 `readonly=false` 不覆盖更严格策略；材料浏览器检查新增“新建态可见流程状态必须只读”断言。
 - 第一次补项浏览器回归按新增断言准确失败，退货状态为 `data-field-state=required`；第二跳修复后同一 1440 浅色三页聚焦回归通过，退货新建正文不再暴露可编辑状态，业务指纹前后不变。受管重启后的首次 health 两次命中 `starting`，容器健康事实变化后复查均通过；未重复重启或改业务数据。
 - 完整 `test_ui_contract_v2_boundaries.py` 文件级诊断中 100 项运行、95 项通过，5 项因既有测试调用 `_build_form_structure_contract` 缺少已有必需参数 `field_label` 报错；它们不在本改动路径，按硬锁记录后不重试、不顺修。受影响策略与 hydration 子集均为非零通过。
+- 第一版 S1 修复候选的完整 Quick 在末段 `ui_contract_v2_responsibility_map_guard` 按行预算失败（`4334 > 4312`），因此没有 receipt。策略快照/恢复随后下沉到既有 `ui_contract_v2_projection.py`，handler 只保留调用编排；责任映射门禁、策略保留 1 项、final hydration 5 项和 iteration 11 项均通过。该搬移不改变运行契约或前端输入，浏览器产品结果可按确定性影响分析保留，但最终 HEAD、完整指纹与 Quick 必须重新冻结。

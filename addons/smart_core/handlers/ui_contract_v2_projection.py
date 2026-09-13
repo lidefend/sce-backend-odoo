@@ -478,6 +478,34 @@ def apply_field_policies_to_v2_status(contract_v2: dict[str, Any], source_contra
     set_v2_widget_status(contract_v2, widget_status)
 
 
+def snapshot_business_form_policy(source_contract: dict[str, Any]) -> tuple[dict[str, Any], list[Any], dict[str, Any]]:
+    policy = source_contract.get("business_form_policy")
+    if not isinstance(policy, dict):
+        return {}, [], {}
+    groups = source_contract.get("field_groups")
+    field_policies = source_contract.get("field_policies")
+    return (
+        deepcopy(policy),
+        deepcopy(groups) if isinstance(groups, list) else [],
+        deepcopy(field_policies) if isinstance(field_policies, dict) else {},
+    )
+
+
+def restore_business_form_policy(
+    source_contract: dict[str, Any],
+    policy: dict[str, Any],
+    field_policies: dict[str, Any],
+) -> None:
+    if policy:
+        source_contract["business_form_policy"] = policy
+    if field_policies:
+        governed = source_contract.get("field_policies")
+        source_contract["field_policies"] = {
+            **(governed if isinstance(governed, dict) else {}),
+            **field_policies,
+        }
+
+
 def ensure_native_layout_widget_status_visible(contract_v2: dict[str, Any]) -> None:
     layout_contract = contract_v2.get("layoutContract") if isinstance(contract_v2.get("layoutContract"), dict) else {}
     container_tree = layout_contract.get("containerTree") if isinstance(layout_contract.get("containerTree"), list) else []
