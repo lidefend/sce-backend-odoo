@@ -107,6 +107,24 @@ class TestRuntimeUserManagement(TransactionCase):
                 existing_user=user,
             )
 
+    def test_profile_only_payload_does_not_touch_account_or_authorization_facts(self):
+        user = self._create_runtime_user("profile_payload_boundary", "Profile Payload Boundary")
+        Users = self.env["res.users"].with_context(sc_runtime_user_management=True)
+
+        vals = Users._sc_runtime_user_safe_vals(
+            {"name": "Profile Payload Updated", "phone": "13000000000"},
+            existing_user=user,
+        )
+
+        self.assertEqual(vals["name"], "Profile Payload Updated")
+        self.assertEqual(vals["phone"], "13000000000")
+        self.assertNotIn("active", vals)
+        self.assertNotIn("password", vals)
+        self.assertNotIn("company_id", vals)
+        self.assertNotIn("company_ids", vals)
+        self.assertNotIn("groups_id", vals)
+        self.assertNotIn("sc_project_member_assignment_ids", vals)
+
     def test_security_changes_increment_token_epoch(self):
         user = self._create_runtime_user("token_epoch_boundary", "Token Epoch Boundary")
         before = user.token_version

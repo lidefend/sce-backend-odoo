@@ -3,15 +3,17 @@
         <field name="name">res.users.sc.runtime.tree</field>
         <field name="model">res.users</field>
         <field name="arch" type="xml">
-            <tree string="用户账号" create="1" edit="1" delete="0" default_order="active desc, login asc">
-                <field name="sc_runtime_source_login" string="用户名" />
-                <field name="login" string="登录账号" />
+            <tree string="人员档案" create="1" edit="1" delete="0" default_order="active desc, name asc">
                 <field name="name" string="姓名" />
                 <field name="phone" string="手机号" />
                 <field name="email" string="邮箱" />
-                <field name="company_id" string="所属公司" />
-                <field name="sc_user_role_group_ids" string="业务角色组" widget="many2many_tags" />
-                <field name="active" string="启用" />
+                <field name="sc_personnel_department_id" string="部门" />
+                <field name="sc_personnel_job_id" string="岗位" />
+                <field name="sc_personnel_active" string="在职" />
+                <field name="login" string="登录账号" optional="show" />
+                <field name="company_id" string="主公司" optional="show" />
+                <field name="sc_user_role_group_ids" string="业务角色组" widget="many2many_tags" optional="hide" />
+                <field name="active" string="账号启用" optional="show" />
             </tree>
         </field>
     </record>
@@ -19,33 +21,20 @@
         <field name="name">res.users.sc.runtime.form</field>
         <field name="model">res.users</field>
         <field name="arch" type="xml">
-            <form string="用户账号与角色" create="1" edit="1" delete="0">
+            <form string="人员档案" create="1" edit="1" delete="0">
                 <sheet>
-                    <group>
-                        <group string="账号信息">
-                            <field name="sc_runtime_source_login" string="用户名" readonly="1" />
-                            <field name="login" string="登录账号" required="1" />
+                    <group name="sc_personnel_profile" string="人员资料">
+                        <group string="基本资料">
                             <field name="name" string="姓名" required="1" />
-                            <field name="active" string="启用" />
-                            <field name="password" string="重置密码" password="True" placeholder="新建时必须填写；编辑时为空则不调整" />
-                        </group>
-                        <group string="联系方式">
                             <field name="phone" string="手机号" />
                             <field name="email" string="邮箱" />
                         </group>
-                    </group>
-                    <group>
-                        <group string="组织归属">
-                            <field name="company_id" string="所属公司" />
-                            <field name="company_ids" string="允许公司" widget="many2many_tags" options="{'no_create': True}" />
+                        <group string="组织与岗位">
                             <field name="employee_id" string="人员档案" readonly="1" />
                             <field name="sc_personnel_department_id" />
                             <field name="sc_personnel_job_id" />
                             <field name="sc_personnel_active" />
                             <button name="action_sc_ensure_employee_profile" type="object" string="建立人员档案" class="btn-secondary" invisible="employee_id" />
-                        </group>
-                        <group string="业务角色">
-                            <field name="sc_user_role_group_ids" string="业务角色组" widget="many2many_tags" domain="[('sc_assignable_user_permission', '=', True)]" options="{'no_create': True, 'no_open': True}" />
                         </group>
                     </group>
                     <notebook>
@@ -65,16 +54,35 @@
                                 </tree>
                             </field>
                         </page>
-                        <page string="项目成员授权" name="sc_project_memberships">
-                            <field name="sc_project_member_assignment_ids" context="{'default_user_id': id}" nolabel="1">
-                                <tree editable="bottom" delete="0">
-                                    <field name="project_id" />
-                                    <field name="company_id" />
-                                    <field name="source" />
-                                    <field name="active" />
-                                    <field name="note" />
-                                </tree>
-                            </field>
+                        <page string="登录与账号" name="sc_account_access">
+                            <group>
+                                <group name="sc_account_management" string="账号管理">
+                                    <field name="sc_runtime_source_login" string="用户名" readonly="1" />
+                                    <field name="login" string="登录账号" required="1" />
+                                    <field name="active" string="账号启用" />
+                                    <field name="password" string="重置密码" password="True" placeholder="新建时必须填写；编辑时为空则不调整" />
+                                </group>
+                                <group name="sc_company_scope" string="主公司与允许公司">
+                                    <field name="company_id" string="主公司" />
+                                    <field name="company_ids" string="允许公司" widget="many2many_tags" options="{'no_create': True}" />
+                                </group>
+                            </group>
+                        </page>
+                        <page string="授权维护（兼容入口）" name="sc_compatible_authorization_maintenance">
+                            <group name="sc_business_role_assignment" string="业务角色">
+                                <field name="sc_user_role_group_ids" string="业务角色组" widget="many2many_tags" domain="[('sc_assignable_user_permission', '=', True)]" options="{'no_create': True, 'no_open': True}" />
+                            </group>
+                            <group name="sc_project_memberships" string="项目成员授权">
+                                <field name="sc_project_member_assignment_ids" string="项目成员授权" context="{'default_user_id': id}" nolabel="1">
+                                    <tree editable="bottom" delete="0">
+                                        <field name="project_id" />
+                                        <field name="company_id" />
+                                        <field name="source" />
+                                        <field name="active" />
+                                        <field name="note" />
+                                    </tree>
+                                </field>
+                            </group>
                         </page>
                     </notebook>
                 </sheet>
@@ -85,21 +93,22 @@
         <field name="name">res.users.sc.runtime.search</field>
         <field name="model">res.users</field>
         <field name="arch" type="xml">
-            <search string="用户账号">
-                <field name="sc_runtime_source_login" string="用户名" />
-                <field name="login" string="登录账号" />
+            <search string="人员档案">
                 <field name="name" string="姓名" />
                 <field name="phone" string="手机号" />
                 <field name="email" string="邮箱" />
-                <field name="company_id" string="所属公司" />
+                <field name="sc_personnel_department_id" string="部门" />
+                <field name="sc_personnel_job_id" string="岗位" />
+                <field name="login" string="登录账号" />
+                <field name="company_id" string="主公司" />
                 <field name="sc_user_role_group_ids" string="业务角色组" />
-                <filter string="启用" name="active_user" domain="[('active', '=', True)]" />
-                <filter string="停用" name="inactive_user" domain="[('active', '=', False)]" />
+                <filter string="账号启用" name="active_user" domain="[('active', '=', True)]" />
+                <filter string="账号停用" name="inactive_user" domain="[('active', '=', False)]" />
             </search>
         </field>
     </record>
     <record id="action_sc_runtime_user_management" model="ir.actions.act_window">
-        <field name="name">用户账号与权限</field>
+        <field name="name">人员档案</field>
         <field name="res_model">res.users</field>
         <field name="view_mode">tree,form</field>
         <field name="view_ids" eval="[(5, 0, 0),             (0, 0, {'view_mode': 'tree', 'view_id': ref('view_sc_runtime_user_tree')}),             (0, 0, {'view_mode': 'form', 'view_id': ref('view_sc_runtime_user_form')})]" />
@@ -110,11 +119,11 @@
     </record>
     <record id="view_sc_data_permission_user_tree" model="ir.ui.view">
         <field name="name">res.users.sc.data.permission.tree</field><field name="model">res.users</field>
-        <field name="arch" type="xml"><tree string="数据权限" create="0" delete="0"><field name="login"/><field name="name"/><field name="company_id"/><field name="company_ids" widget="many2many_tags"/><field name="sc_user_permission_group_ids" string="业务权限角色" widget="many2many_tags"/><field name="active"/></tree></field>
+        <field name="arch" type="xml"><tree string="数据权限" create="0" delete="0"><field name="name" string="姓名"/><field name="login" string="登录账号"/><field name="company_id" string="主公司"/><field name="company_ids" string="允许公司" widget="many2many_tags"/><field name="sc_user_permission_group_ids" string="业务权限角色" widget="many2many_tags"/><field name="active" string="账号启用"/></tree></field>
     </record>
     <record id="view_sc_data_permission_user_form" model="ir.ui.view">
         <field name="name">res.users.sc.data.permission.form</field><field name="model">res.users</field>
-        <field name="arch" type="xml"><form string="数据权限" create="0" delete="0"><sheet><group><group string="用户"><field name="login" readonly="1"/><field name="name" readonly="1"/><field name="active" readonly="1"/></group><group string="公司范围"><field name="company_id"/><field name="company_ids" widget="many2many_tags" options="{'no_create': True}"/></group></group><group string="业务权限角色"><field name="sc_user_permission_group_ids" nolabel="1" widget="many2many_tags" domain="[('sc_assignable_user_permission', '=', True)]" options="{'no_create': True, 'no_open': True}"/></group><group string="项目数据范围"><field name="sc_project_member_assignment_ids" nolabel="1" context="{'default_user_id': id}"><tree editable="bottom" delete="0"><field name="project_id"/><field name="company_id"/><field name="source"/><field name="active"/><field name="note"/></tree></field></group></sheet></form></field>
+        <field name="arch" type="xml"><form string="数据权限" create="0" delete="0"><sheet><group><group name="sc_permission_identity" string="人员身份"><field name="name" string="姓名" readonly="1"/><field name="login" string="登录账号" readonly="1"/><field name="active" string="账号启用" readonly="1"/></group><group name="sc_permission_company_scope" string="主公司与允许公司"><field name="company_id" string="主公司"/><field name="company_ids" string="允许公司" widget="many2many_tags" options="{'no_create': True}"/></group></group><group name="sc_permission_business_roles" string="业务权限角色"><field name="sc_user_permission_group_ids" nolabel="1" widget="many2many_tags" domain="[('sc_assignable_user_permission', '=', True)]" options="{'no_create': True, 'no_open': True}"/></group><group name="sc_permission_project_scope" string="项目数据范围"><field name="sc_project_member_assignment_ids" nolabel="1" context="{'default_user_id': id}"><tree editable="bottom" delete="0"><field name="project_id"/><field name="company_id"/><field name="source"/><field name="active"/><field name="note"/></tree></field></group></sheet></form></field>
     </record>
     <record id="view_sc_data_permission_user_search" model="ir.ui.view">
         <field name="name">res.users.sc.data.permission.search</field><field name="model">res.users</field>
