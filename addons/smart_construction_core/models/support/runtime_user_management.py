@@ -283,6 +283,73 @@ class ResUsers(models.Model):
             safe_vals["password"] = initial_password
         return safe_vals
 
+    @api.model
+    def _sc_runtime_project_assignment_vals(self, vals, target_user, existing_assignment=False):
+        if not isinstance(vals, dict):
+            raise ValidationError(_("项目成员授权内容不合法。"))
+        allowed_fields = {"project_id", "active", "source", "note"}
+        tolerated_derived_fields = {"company_id", "user_id"}
+        unexpected_fields = set(vals) - allowed_fields - tolerated_derived_fields
+        if unexpected_fields:
+            raise ValidationError(_("项目成员授权包含不允许维护的字段。"))
+
+        if vals.get("user_id") and int(vals["user_id"]) != target_user.id:
+            raise ValidationError(_("项目成员授权必须属于当前维护人员。"))
+
+        project_id = int(
+            vals.get("project_id")
+            or (existing_assignment.project_id.id if existing_assignment else 0)
+        )
+        if project_id:
+            project = self.env["project.project"].browse(project_id).exists()
+            if not project:
+                raise ValidationError(_("项目成员授权引用的项目不存在。"))
+            project.check_access_rights("read")
+            project.check_access_rule("read")
+            if vals.get("company_id") and int(vals["company_id"]) != project.company_id.id:
+                raise ValidationError(_("项目成员授权的公司必须与项目公司一致。"))
+
+        return {field_name: vals[field_name] for field_name in allowed_fields if field_name in vals}
+
+    @api.model
+    def _sc_apply_runtime_project_assignment_commands(self, target_user, commands):
+        if commands is None:
+            return
+        if not isinstance(commands, (list, tuple)):
+            raise ValidationError(_("项目成员授权命令不合法。"))
+
+        Assignment = self.env["sc.project.member.assignment"]
+        for command in commands:
+            if not isinstance(command, (list, tuple)) or len(command) < 2:
+                raise ValidationError(_("项目成员授权命令不合法。"))
+            operation = int(command[0] or 0)
+            record_id = int(command[1] or 0)
+            command_vals = command[2] if len(command) > 2 else {}
+            if operation == 0:
+                assignment_vals = self._sc_runtime_project_assignment_vals(
+                    command_vals,
+                    target_user,
+                )
+                assignment_vals["user_id"] = target_user.id
+                Assignment.create(assignment_vals)
+                continue
+            if operation == 1 and record_id > 0:
+                assignment = Assignment.search(
+                    [("id", "=", record_id), ("user_id", "=", target_user.id)],
+                    limit=1,
+                )
+                if not assignment:
+                    raise ValidationError(_("项目成员授权不存在或不属于当前维护人员。"))
+                assignment_vals = self._sc_runtime_project_assignment_vals(
+                    command_vals,
+                    target_user,
+                    existing_assignment=assignment,
+                )
+                if assignment_vals:
+                    assignment.write(assignment_vals)
+                continue
+            raise ValidationError(_("项目成员授权只能新增、修改或停用，不能删除或重新归属。"))
+
     @api.model_create_multi
     def create(self, vals_list):
         if self._sc_runtime_user_management_allowed() and not self.env.context.get("sc_runtime_user_management_sudo"):
@@ -312,10 +379,14 @@ class ResUsers(models.Model):
     def write(self, vals):
         if self._sc_runtime_user_management_allowed() and not self.env.context.get("sc_runtime_user_management_sudo"):
             self._sc_check_runtime_user_management_targets()
+            assignment_commands = vals.get("sc_project_member_assignment_ids")
+            if assignment_commands is not None and len(self) != 1:
+                raise ValidationError(_("项目成员授权必须逐个人员维护。"))
             for user in self:
                 safe_vals = self._sc_runtime_user_safe_vals(dict(vals or {}), existing_user=user)
                 user.sudo().with_context(
                     dict(self.env.context, sc_runtime_user_management_sudo=True, no_reset_password=True)
                 ).write(safe_vals)
+                self._sc_apply_runtime_project_assignment_commands(user, assignment_commands)
             return True
         return super().write(vals)

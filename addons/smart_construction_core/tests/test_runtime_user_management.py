@@ -15,6 +15,19 @@ class TestRuntimeUserManagement(TransactionCase):
             }
         )
 
+    def _create_business_config_admin(self, login):
+        internal_group = self.env.ref("base.group_user")
+        config_group = self.env.ref("smart_construction_core.group_sc_cap_business_config_admin")
+        return self.env["res.users"].with_context(no_reset_password=True).create(
+            {
+                "login": login,
+                "name": login,
+                "company_id": self.env.company.id,
+                "company_ids": [(6, 0, self.env.company.ids)],
+                "groups_id": [(6, 0, (internal_group | config_group).ids)],
+            }
+        )
+
     def test_managed_internal_login_counts_as_runtime_company_user(self):
         user = self._create_runtime_user("runtime_user_scope", "正式用户", managed=True)
 
@@ -124,6 +137,110 @@ class TestRuntimeUserManagement(TransactionCase):
         self.assertNotIn("company_ids", vals)
         self.assertNotIn("groups_id", vals)
         self.assertNotIn("sc_project_member_assignment_ids", vals)
+
+    def test_runtime_management_preserves_project_assignment_create_and_update(self):
+        admin = self._create_business_config_admin("runtime_assignment_admin")
+        user = self._create_runtime_user("runtime_assignment_user", "Runtime Assignment User")
+        project = self.env["project.project"].create(
+            {"name": "Runtime Assignment Project", "company_id": self.env.company.id}
+        )
+        managed_user = user.with_user(admin).with_context(sc_runtime_user_management=True)
+
+        managed_user.write(
+            {
+                "sc_project_member_assignment_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "project_id": project.id,
+                            "company_id": self.env.company.id,
+                            "source": "manual",
+                            "active": True,
+                            "note": "initial assignment",
+                        },
+                    )
+                ]
+            }
+        )
+        assignment = self.env["sc.project.member.assignment"].search(
+            [("project_id", "=", project.id), ("user_id", "=", user.id)]
+        )
+        self.assertEqual(len(assignment), 1)
+        self.assertEqual(assignment.note, "initial assignment")
+
+        managed_user.write(
+            {
+                "sc_project_member_assignment_ids": [
+                    (1, assignment.id, {"active": False, "note": "archived assignment"})
+                ]
+            }
+        )
+
+        self.assertFalse(assignment.active)
+        self.assertEqual(assignment.note, "archived assignment")
+
+    def test_runtime_management_rejects_cross_user_assignment_commands(self):
+        admin = self._create_business_config_admin("runtime_assignment_boundary_admin")
+        target = self._create_runtime_user("runtime_assignment_target", "Runtime Assignment Target")
+        other = self._create_runtime_user("runtime_assignment_other", "Runtime Assignment Other")
+        project = self.env["project.project"].create(
+            {"name": "Runtime Assignment Boundary Project", "company_id": self.env.company.id}
+        )
+        assignment = self.env["sc.project.member.assignment"].create(
+            {"project_id": project.id, "user_id": other.id, "note": "unchanged"}
+        )
+
+        with self.assertRaises(ValidationError):
+            target.with_user(admin).with_context(sc_runtime_user_management=True).write(
+                {
+                    "sc_project_member_assignment_ids": [
+                        (1, assignment.id, {"note": "must not change"})
+                    ]
+                }
+            )
+
+        self.assertEqual(assignment.note, "unchanged")
+
+    def test_runtime_management_rejects_project_assignment_delete_command(self):
+        admin = self._create_business_config_admin("runtime_assignment_delete_admin")
+        target = self._create_runtime_user("runtime_assignment_delete_user", "Runtime Assignment Delete")
+        project = self.env["project.project"].create(
+            {"name": "Runtime Assignment Delete Project", "company_id": self.env.company.id}
+        )
+        assignment = self.env["sc.project.member.assignment"].create(
+            {"project_id": project.id, "user_id": target.id}
+        )
+
+        with self.assertRaises(ValidationError):
+            target.with_user(admin).with_context(sc_runtime_user_management=True).write(
+                {"sc_project_member_assignment_ids": [(2, assignment.id, False)]}
+            )
+
+        self.assertTrue(assignment.exists())
+
+    def test_runtime_management_rejects_multi_user_assignment_commands(self):
+        admin = self._create_business_config_admin("runtime_assignment_multi_admin")
+        first = self._create_runtime_user("runtime_assignment_multi_first", "Runtime Assignment First")
+        second = self._create_runtime_user("runtime_assignment_multi_second", "Runtime Assignment Second")
+        project = self.env["project.project"].create(
+            {"name": "Runtime Assignment Multi Project", "company_id": self.env.company.id}
+        )
+
+        with self.assertRaises(ValidationError):
+            (first | second).with_user(admin).with_context(sc_runtime_user_management=True).write(
+                {
+                    "sc_project_member_assignment_ids": [
+                        (0, 0, {"project_id": project.id, "source": "manual"})
+                    ]
+                }
+            )
+
+        self.assertFalse(
+            self.env["sc.project.member.assignment"].search(
+                [("project_id", "=", project.id), ("user_id", "in", (first | second).ids)]
+            )
+        )
 
     def test_security_changes_increment_token_epoch(self):
         user = self._create_runtime_user("token_epoch_boundary", "Token Epoch Boundary")
