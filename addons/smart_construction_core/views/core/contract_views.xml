@@ -452,7 +452,7 @@
                         <field name="approval_info" />
                         <field name="reject_reason" readonly="1" modifiers="{&quot;invisible&quot;: [[&quot;reject_reason&quot;,&quot;=&quot;,false]]}" />
                     </group>
-                    <group name="sc_expense_contract_historical_payment" string="历史付款承接" col="1" data-sc-anchor="expense-contract-historical-payment" data-sc-collapsible="1" data-sc-collapsed-by-default="1" groups="smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager">
+                    <group name="sc_expense_contract_historical_payment" string="历史付款承接" col="1" data-sc-anchor="expense-contract-historical-payment" data-sc-navigation-role="subordinate" data-sc-collapsible="1" data-sc-collapsed-by-default="1" groups="smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager">
                         <div class="alert alert-info" role="alert">
                             历史承接，无新系统结算依据；以下记录只读且不可作为付款执行来源。
                         </div>
