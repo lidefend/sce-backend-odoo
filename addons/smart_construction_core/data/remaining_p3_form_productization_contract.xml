@@ -48,7 +48,7 @@
                     'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},
                     'views': {
                         'form': {
-                            'title': '出库单',
+                            'title': '出库办理',
                             'composition_mode': 'entry_semantic_surface',
                             'columns': 2,
                             'sections': [

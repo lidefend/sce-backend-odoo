@@ -34,7 +34,7 @@
         </record>
 
     <record id="action_sc_material_outbound" model="ir.actions.act_window">
-        <field name="name">出库单</field>
+        <field name="name">出库办理</field>
         <field name="res_model">sc.material.outbound</field>
         <field name="view_mode">tree,form</field>
         <field name="domain">[('outbound_type', '=', 'issue'), ('business_category_id.code', '=', 'material.outbound')]</field>
@@ -385,7 +385,7 @@
         <field name="name">sc.material.inbound.tree</field>
         <field name="model">sc.material.inbound</field>
         <field name="arch" type="xml">
-            <tree string="入库单" default_order="inbound_date desc">
+            <tree string="入库办理" default_order="inbound_date desc">
                 <field name="name"/>
                 <field name="project_id"/>
                 <field name="business_category_id" optional="hide"/>
@@ -413,7 +413,7 @@
         <field name="name">sc.material.inbound.form</field>
         <field name="model">sc.material.inbound</field>
         <field name="arch" type="xml">
-            <form string="入库单">
+            <form string="入库办理">
                 <header>
                     <button name="action_submit" string="提交" type="object" class="btn-primary" groups="smart_construction_core.group_sc_cap_material_user,smart_construction_core.group_sc_cap_material_manager" invisible="state != 'draft'"/>
                     <button name="action_receive" string="确认入库" type="object" class="btn-primary" groups="smart_construction_core.group_sc_cap_material_manager" invisible="state != 'submitted'"/>
@@ -452,7 +452,6 @@
                             <field name="line_ids">
                                 <tree editable="bottom">
                                     <field name="sequence" widget="handle"/>
-                                    <field name="acceptance_line_id"/>
                                     <field name="material_catalog_id" required="1"/>
                                     <field name="product_id" invisible="1"/>
                                     <field name="material_spec"/>
@@ -460,6 +459,7 @@
                                     <field name="qty"/>
                                     <field name="unit_price"/>
                                     <field name="amount" sum="金额合计"/>
+                                    <field name="acceptance_line_id"/>
                                     <field name="note"/>
                                     <field name="sc_has_system_default"/>
                                 </tree>
@@ -487,7 +487,7 @@
         <field name="name">sc.material.inbound.search</field>
         <field name="model">sc.material.inbound</field>
         <field name="arch" type="xml">
-            <search string="入库单">
+            <search string="入库办理">
                 <field name="name"/>
                 <field name="project_id"/>
                 <field name="business_category_id"/>
@@ -515,7 +515,7 @@
         <field name="name">sc.material.outbound.tree</field>
         <field name="model">sc.material.outbound</field>
         <field name="arch" type="xml">
-            <tree string="出库单" default_order="outbound_date desc">
+            <tree string="出库办理" default_order="outbound_date desc">
                 <field name="name" string="出库单号"/>
                 <field name="outbound_type"/>
                 <field name="project_id"/>
@@ -538,7 +538,7 @@
         <field name="name">sc.material.outbound.form</field>
         <field name="model">sc.material.outbound</field>
         <field name="arch" type="xml">
-            <form string="出库单">
+            <form string="出库办理">
                 <header>
                     <button name="action_submit" string="提交" type="object" class="btn-primary" groups="smart_construction_core.group_sc_cap_material_user,smart_construction_core.group_sc_cap_material_manager" invisible="state != 'draft'"/>
                     <button name="action_issue" string="确认出库" type="object" class="btn-primary" groups="smart_construction_core.group_sc_cap_material_manager" invisible="state != 'submitted'"/>
@@ -583,15 +583,15 @@
                                 <tree editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="project_id" invisible="1"/>
-                                    <field name="origin_issue_line_id" invisible="parent.outbound_type != 'return'" required="parent.outbound_type == 'return'"/>
                                     <field name="material_catalog_id" required="parent.outbound_type != 'return'" readonly="parent.outbound_type == 'return'"/>
                                     <field name="product_id" invisible="1"/>
                                     <field name="material_spec"/>
                                     <field name="product_uom_id"/>
                                     <field name="qty"/>
                                     <field name="unit_price" readonly="parent.outbound_type == 'return'"/>
-                                    <field name="returned_qty" optional="hide" readonly="1"/>
                                     <field name="amount" sum="出库金额合计"/>
+                                    <field name="origin_issue_line_id" invisible="parent.outbound_type != 'return'" required="parent.outbound_type == 'return'"/>
+                                    <field name="returned_qty" optional="hide" readonly="1"/>
                                     <field name="note"/>
                                     <field name="sc_has_system_default"/>
                                 </tree>
@@ -600,9 +600,8 @@
                         <page string="出库说明">
                             <field name="note" nolabel="1"/>
                         </page>
-                        <page string="来源追溯">
-                            <group>
-                            </group>
+                        <page string="附件">
+                            <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
                         </page>
                     </notebook>
                 </sheet>
@@ -615,7 +614,7 @@
         <field name="name">sc.material.outbound.search</field>
         <field name="model">sc.material.outbound</field>
         <field name="arch" type="xml">
-            <search string="出库单">
+            <search string="出库办理">
                 <field name="name"/>
                 <field name="outbound_type"/>
                 <field name="project_id"/>
