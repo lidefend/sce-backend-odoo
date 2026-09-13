@@ -1045,7 +1045,11 @@ def _contract_handling_policy(title: str, *, supplement: bool = False, expense: 
     if not supplement:
         for field_policy in policy["fields"]:
             field_name = field_policy.get("name")
-            if not expense and field_name == "attachment_text":
+            if not expense and field_name == "contract_type_id":
+                field_policy["visible_profiles"] = CREATE_EDIT_READONLY
+                field_policy["readonly_profiles"] = READONLY_ONLY
+                field_policy["group"] = "core"
+            elif not expense and field_name == "attachment_text":
                 field_policy["label"] = "历史附件文本"
             elif expense and field_name == "partner_id":
                 field_policy["label"] = "供应商/分包方"

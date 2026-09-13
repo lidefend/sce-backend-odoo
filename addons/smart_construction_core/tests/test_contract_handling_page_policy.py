@@ -102,6 +102,16 @@ class TestContractHandlingPagePolicy(TransactionCase):
             if section["name"] == "contract_scope"
         )
         self.assertIn("contract_type_id", contract_scope["fields"])
+        contract_type_policy = next(
+            field_policy
+            for field_policy in policy["fields"]
+            if field_policy["name"] == "contract_type_id"
+        )
+        self.assertEqual(
+            contract_type_policy["visible_profiles"],
+            ["create", "edit", "readonly"],
+        )
+        self.assertEqual(contract_type_policy["readonly_profiles"], ["readonly"])
 
         create_page, _versions = self.assembler.assemble_page_contract(
             {
@@ -241,6 +251,30 @@ class TestContractHandlingPagePolicy(TransactionCase):
         self.assertIn(
             "contract_type_id",
             collect_field_codes(create_contract["layoutContract"]["containerTree"]),
+        )
+        contract_type_widget_ids = []
+
+        def collect_contract_type_widgets(value):
+            if isinstance(value, dict):
+                if value.get("fieldCode") == "contract_type_id" and value.get("widgetId"):
+                    contract_type_widget_ids.append(value["widgetId"])
+                for nested in value.values():
+                    collect_contract_type_widgets(nested)
+            elif isinstance(value, list):
+                for nested in value:
+                    collect_contract_type_widgets(nested)
+
+        collect_contract_type_widgets(create_contract["layoutContract"]["containerTree"])
+        status_by_widget = {
+            row["widgetId"]: row
+            for row in create_contract["statusContract"]["widgetStatus"]
+        }
+        self.assertTrue(contract_type_widget_ids)
+        self.assertTrue(
+            all(status_by_widget[widget_id]["visible"] for widget_id in contract_type_widget_ids)
+        )
+        self.assertTrue(
+            all(not status_by_widget[widget_id]["readonly"] for widget_id in contract_type_widget_ids)
         )
         self.assertEqual(
             [slot["title"] for slot in structure["slots"]],
