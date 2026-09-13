@@ -12,12 +12,12 @@
 | 页面 | 源配置 | 最终契约 | 渲染消费 | 首次偏差与归属 |
 | --- | --- | --- | --- | --- |
 | 收入合同集合 | `view_construction_contract_income_tree` 将 `subject` 放在状态、日期、归档、发包人、项目之后；action 同时声明 `tree_column=subject` 与 `presentation_mode=source_order` | `PageAssembler` 按 `columns_schema` 原顺序输出 `config.sheet.columns`，并保留 `subject` 的 220px 宽度 | `HierarchicalWorksheet` 直接消费 `sheet.columns`；1088 未横向滚动时标题位于可视区之后 | P1 源列表顺序首先偏离“主身份优先”；P0 未重排业务列 |
-| 我的工作 | `PaymentRequestWorkItemService` 明确输出 `business_type`、`record.label`、money fact 和 contract-provided action tier | `ProductMyWorkWorkspace` 类型及 `productMyWorkPresentation` 保留上述身份、金额和动作层级 | `MyWorkApprovalWorkspace` 在 >640px 使用四列主区并叠加独立动作列；主摘要虽只有一个金额，仍使用三列网格；中等宽度下类型被压成逐字换行 | P0 通用工作事项布局首次改变可读性；无 P1 字段或契约缺口 |
+| 我的工作 | `PaymentRequestWorkItemService` 明确输出 `business_type`、`record.label`、money fact 和 contract-provided action tier | `ProductMyWorkWorkspace` 类型及 `productMyWorkPresentation` 保留上述身份、金额和动作层级 | `MyWorkApprovalWorkspace` 的旧四列主区会压缩类型；首轮中宽规则又把卡片正文改成单列并给操作栏 `width: 100%`，共享 Space 子项继承该宽度后逐项换行 | P0 通用工作事项布局首次改变可读性；无 P1 字段或契约缺口 |
 
 ## 实施步骤
 
 1. P1：只将收入合同 `subject` 移到 tree 第一列，并增加最终 contract 列顺序断言。
-2. P0：在中等宽度将卡片动作区移到独立行，保持类型标签不可拆字，并让唯一主事实占满摘要槽；增加静态守卫。
+2. P0：保持类型标签不可拆字、唯一主事实占满摘要槽；纠正中宽单列和操作栏全宽规则，按“类型/状态 → 标题/金额 → 展开/动作”组织三层，并让操作同行、窄屏自然换行；增加静态守卫。
 3. L1：运行 `make ci.local.iteration`、收入合同 profile 非零定向测试、My Work 静态守卫和前端严格类型检查。
 4. L3/L4：只有 P1 增量升级成功后，使用既有 `local.dev` 样本做 1088 定向页面检查；产品通过后才冻结并进入一次 Quick。
 
@@ -43,10 +43,11 @@
 | L2/L3 | 合同 profile 首次运行后识别到安装视图仍为旧 XML；随后经显式声明的 `local.dev.upgrade` 增量升级 | 升级 PASS；`sc-local-dev/sc_dev_demo` 权威身份 PASS |
 | L2 | `make local.dev.test MODULE=smart_construction_core TEST_TAGS=contract_execution_component_profile` | 升级后 PASS；5 个测试方法，Odoo 统计 7 tests，零失败 |
 | L2 | `make verify.frontend.hierarchical_worksheet.unit`、`make verify.frontend.state_dashboard.unit` | PASS；分别包含 18 个 Python tests + 15 个交互 cases，以及 24 个 Python tests + My Work 展示纯函数 cases |
-| L4 | 1088 只读产品检查 | PASS；暗色 1088×791 下覆盖 `/my-work` 与收入合同 `/a/609?menu_id=660`，`mutationCount=0`、errors/failures 为空、根页面横向溢出为 0 |
+| L4 | 首轮 1088 只读产品检查 | 部分通过；收入合同通过并冻结。My Work 虽消除了类型竖排，但折叠卡约 270px 高、动作逐行分离，产品复核未通过；该证据不再作为 My Work 验收结论 |
+| L1 | My Work 密度纠正后的 `make ci.local.iteration`、专项守卫、严格类型检查 | PASS；迭代守卫 16 tests，专项守卫及类型检查通过；Quick 未重跑 |
 
 首次合同定向运行的失败归因为升级前安装视图过期；升级改变了该环境前提，之后同一目标通过，因此不是对未变化失败的重复重试。完整 Quick、fixture reset、release snapshot 和浏览器矩阵均未在开发期运行。
 
 L4 启动前曾被 `/tmp/sc-local-dev-candidate-frontend.pid` 的旧身份阻断：它绑定已删除工作树 `/home/lidefend/workspace/sce-backend-odoo-batch2a-personnel-auth`、旧 HEAD `23225efbb8bf5bb8b0276af7ec016eb5e5614612` 和仍存活的 5176 静态服务。经单独授权后，清理前逐项核对 PID 文件权限、工作树路径、HEAD、进程命令、进程组和端口监听，仅终止该旧进程并删除对应 PID 文件；没有修改治理工具、其他前端、数据库、工作树或端口配置。
 
-清理后，同一产品 HEAD `4c806807028b3276c470d634df277f02ece90cb5` 的受管候选前端启动成功。2026-09-13 22:08:00 +08:00 生成的摘要位于 `/home/lidefend/workspace/sce-offrepo/artifacts/playwright/contract-work-reading-efficiency-4c806807-dark-1088/summary.json`；桌面截图为 `desktop-my-work.png` 与 `desktop-income-contract-workspace.png`。人工复核确认收入合同未滚动时首列为“合同标题”；“我的工作”的类型标签横排，标题、金额与“提交审批”动作均有明确阅读位置。既有工具同时生成 390×844 两页样本，但本批产品结论只依赖要求的 1088×791 场景。
+清理后，同一产品 HEAD `4c806807028b3276c470d634df277f02ece90cb5` 的受管候选前端启动成功。2026-09-13 22:08:00 +08:00 生成的摘要位于 `/home/lidefend/workspace/sce-offrepo/artifacts/playwright/contract-work-reading-efficiency-4c806807-dark-1088/summary.json`；桌面截图为 `desktop-my-work.png` 与 `desktop-income-contract-workspace.png`。人工复核确认收入合同未滚动时首列为“合同标题”，该部分冻结保留；My Work 截图则显示折叠卡约 270px 高，1088×791 首屏只能完整显示一条，因此产品结论被撤回。其原因是中宽规则把正文改为单列，并将共享 Space 操作栏设为全宽，使继承宽度的操作项各占一行。本批只解冻 My Work 的 P0 布局；旧 390 样本及旧 Quick receipt 均不冒充新布局证据。

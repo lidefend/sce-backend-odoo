@@ -37,17 +37,21 @@ goal:
     - id: B
       title: layered_product_implementation
       status: completed
+    - id: B2
+      title: my_work_card_density_correction
+      status: implemented_pending_product_review
     - id: C
       title: targeted_product_validation
-      status: completed
+      status: active
     - id: D
       title: frozen_delivery
-      status: active
+      status: planned
   acceptance:
     - income_contract_subject_is_visible_at_the_unscrolled_table_origin
     - work_item_type_does_not_stack_vertically_at_1088
     - work_item_title_and_primary_money_fact_have_coordinated_reading_space
     - primary_action_is_clear_and_reachable
+    - at_least_two_collapsed_work_items_are_fully_visible_at_1088x791
     - contract_values_actions_permissions_and_writes_are_unchanged
   stop_conditions:
     - missing_business_semantics_or_unstable_contract_shape
@@ -85,7 +89,9 @@ goal:
         status: passed
         runtime_identity: sc-local-dev/sc_dev_demo
     l4:
-      status: passed
+      status: superseded_by_product_review
+      income_contract_status: passed_and_frozen
+      my_work_status: rejected_for_card_density
       source_head: 4c806807028b3276c470d634df277f02ece90cb5
       command: local.dev.candidate.frontend.visual-smoke
       viewport: 1088x791_dark
@@ -94,6 +100,10 @@ goal:
         - /a/609?menu_id=660
       mutation_count: 0
       evidence: /home/lidefend/workspace/sce-offrepo/artifacts/playwright/contract-work-reading-efficiency-4c806807-dark-1088/summary.json
+      rejection_reason: >-
+        collapsed cards were about 270px high because the medium breakpoint
+        stacked the card body and gave the action bar full width, whose space
+        items inherited that width and wrapped one action per row
       cleared_environment_blocker: >-
         the deleted-worktree candidate process at head
         23225efbb8bf5bb8b0276af7ec016eb5e5614612 was identity-verified,
