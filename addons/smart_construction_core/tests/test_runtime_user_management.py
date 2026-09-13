@@ -112,12 +112,12 @@ class TestRuntimeUserManagement(TransactionCase):
         Users = self.env["res.users"].with_context(sc_runtime_user_management=True)
 
         vals = Users._sc_runtime_user_safe_vals(
-            {"name": "Profile Payload Updated", "phone": "13000000000"},
+            {"name": "Profile Payload Updated", "phone": "synthetic-phone"},
             existing_user=user,
         )
 
         self.assertEqual(vals["name"], "Profile Payload Updated")
-        self.assertEqual(vals["phone"], "13000000000")
+        self.assertEqual(vals["phone"], "synthetic-phone")
         self.assertNotIn("active", vals)
         self.assertNotIn("password", vals)
         self.assertNotIn("company_id", vals)
