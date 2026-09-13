@@ -193,9 +193,9 @@ async function authorizationSurface(form) {
   return root;
 }
 async function selectProject(page, root, projectName) {
-  const editor = root.locator('[data-validation-target*="project_id"]').first();
+  const editor = root.locator('[data-validation-target*="project_id"]:visible').first();
   await editor.waitFor({ timeout: 15000 });
-  const input = editor.locator('input').first();
+  const input = editor.locator('input:visible').first();
   check(!(await input.isDisabled()), 'new assignment project selector is disabled');
   await input.click();
   await input.fill(projectName);
@@ -205,20 +205,20 @@ async function selectProject(page, root, projectName) {
   check((await input.inputValue()).includes(projectName), 'project selection did not persist in the control');
 }
 async function setNote(root, note) {
-  const editor = root.locator('[data-validation-target*="note"]').first();
-  const input = editor.locator('input, textarea').first();
+  const editor = root.locator('[data-validation-target*="note"]:visible').first();
+  const input = editor.locator('input:visible, textarea:visible').first();
   await input.fill(note);
 }
 async function setActive(root, desired) {
-  const editor = root.locator('[data-validation-target*="active"]').first();
-  const checkbox = editor.locator('[data-semantic-component="ScCheckbox"]').first();
+  const editor = root.locator('[data-validation-target*="active"]:visible').first();
+  const checkbox = editor.locator('[data-semantic-component="ScCheckbox"]:visible').first();
   await checkbox.waitFor({ timeout: 15000 });
   const checked = (await checkbox.getAttribute('data-checked')) === 'true';
   if (checked !== desired) await checkbox.click();
 }
 async function existingProjectReadonly(root, projectName) {
-  const editor = root.locator('[data-validation-target*="project_id"]').first();
-  const input = editor.locator('input').first();
+  const editor = root.locator('[data-validation-target*="project_id"]:visible').first();
+  const input = editor.locator('input:visible').first();
   await input.waitFor({ timeout: 15000 });
   return { value: await input.inputValue(), disabled: await input.isDisabled(), matches: (await input.inputValue()).includes(projectName) };
 }
