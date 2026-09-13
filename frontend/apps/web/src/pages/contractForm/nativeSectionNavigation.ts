@@ -1,5 +1,6 @@
 import type {
   CanonicalFormNode,
+  CanonicalFormPresentationMode,
   CanonicalFormSemanticRole,
 } from '../../app/presentation/canonicalFormRenderModel';
 import { fieldIsBusinessRelationCollection } from '../../app/presentation/canonicalFormFloorplan';
@@ -158,6 +159,19 @@ export function authoritativeNativeBusinessSections(nodes: CanonicalFormNode[]) 
     childrenOf: (node) => node.children,
     isVisible: (node) => node.visible,
   });
+}
+
+/**
+ * A task contract still owns task actions and workflow presentation, but an
+ * explicitly anchored native business section remains the structural
+ * authority for its body. This is deliberately opt-in: unanchored layout
+ * groups continue through the ordinary task floorplan classification.
+ */
+export function shouldPreserveAuthoritativeBusinessSections(
+  presentationMode: CanonicalFormPresentationMode,
+  nodes: CanonicalFormNode[],
+): boolean {
+  return presentationMode === 'task' && authoritativeNativeBusinessSections(nodes).length > 0;
 }
 
 export function relationshipCollectionNavigationItems(

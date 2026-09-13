@@ -5,6 +5,7 @@ import {
   nextBusinessActionLabel,
   nativeSectionNavigationRole,
   sectionScrollDelta,
+  shouldPreserveAuthoritativeBusinessSections,
   workspaceSectionNavigationItems,
   workspaceSurfaceNavigationItems,
 } from '../src/pages/contractForm/nativeSectionNavigation';
@@ -142,6 +143,29 @@ assert.deepEqual(
   authoritativeSections.map(({ label, sourceType, sourceIdentity }) => ({ label, sourceType, sourceIdentity })),
   [{ label: '基本信息', sourceType: 'node', sourceIdentity: 'section.basic' }],
   'explicit visible business sections replace inferred field and nested-tab navigation',
+);
+assert.equal(
+  shouldPreserveAuthoritativeBusinessSections('task', [node({
+    nodeId: 'section.task.authoritative', title: '合同范围',
+    attributes: { 'data-sc-anchor': 'contract-scope' },
+  })]),
+  true,
+  'task workflow semantics must not discard an explicitly anchored business section body',
+);
+assert.equal(
+  shouldPreserveAuthoritativeBusinessSections('task', [node({
+    nodeId: 'section.task.layout-only', title: '普通布局容器', attributes: {},
+  })]),
+  false,
+  'an unanchored task layout group must continue through the ordinary floorplan',
+);
+assert.equal(
+  shouldPreserveAuthoritativeBusinessSections('workspace', [node({
+    nodeId: 'section.workspace.authoritative', title: '基本资料',
+    attributes: { 'data-sc-anchor': 'workspace-basic' },
+  })]),
+  false,
+  'workspace presentation already consumes native section authority directly',
 );
 
 const unanchoredTitle = workspaceSectionNavigationItems([node({

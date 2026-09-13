@@ -22,6 +22,7 @@
     <SceneUiProvider :kit="renderKit" fallback-kit="sc-native" :density="sceneDensity" :data-driver-override="allowUserOverride ? 'enabled' : 'closed'">
       <TaskFormPattern v-if="renderModel.identity.presentationMode === 'task'" :render-profile="renderModel.identity.mode">
       <ObjectTaskPage
+        v-if="!preserveAuthoritativeBusinessSections"
         :summary-nodes="floorplan.summaryNodes"
         :decision-input-nodes="floorplan.decisionInputNodes"
         :task-nodes="floorplan.taskNodes"
@@ -80,63 +81,43 @@
           </nav>
         </template>
       </ObjectTaskPage>
+      <CanonicalNativeFormSurface
+        v-else
+        :native-bridge="nativeBridge"
+        :section-links="workspaceSectionLinks"
+        :render-mode="renderModel.identity.mode"
+        :relation-adapter="relationAdapter"
+        :show-collaboration-panel="showCollaborationPanel"
+        :collaboration-panel-props="collaborationPanelProps"
+        :collaboration-panel-listeners="collaborationPanelListeners"
+        :visible-actions="visibleActions"
+        :direct-actions="directActions"
+        :overflow-actions="overflowActions"
+        :effective-primary-key="floorplan.effectivePrimaryKey"
+        :actions-in-header="actionsInHeader"
+        @field-change="emit('field-change', $event)"
+        @field-action="emit('field-action', $event)"
+        @action-ref="emit('action-ref', $event)"
+      />
       </TaskFormPattern>
       <WorkspaceFormPattern v-else :render-profile="renderModel.identity.mode">
-      <article class="sc-native-contract-page" data-native-contract-structure>
-        <FormSectionNavigation
-          v-if="workspaceSectionLinks.length > 1"
-          :items="workspaceSectionLinks"
-          root-selector="[data-native-contract-structure]"
-        />
-        <main class="sc-native-contract-tree" data-canonical-zone="primary">
-          <NativeFormTreeRenderer
-            v-if="nativeBridge"
-            :nodes="nativeBridge.primaryNodes"
-            :field-schemas-for-nodes="nativeBridge.fieldSchemasForNodes"
-            :is-node-visible="nativeBridge.nodeVisible"
-            :relation-adapter="relationAdapter"
-            :native-action-handler="runNativeCanonicalAction"
-            :native-action-state-resolver="nativeBridge.actionStateForNode"
-            :prefer-readonly-facts="renderModel.identity.mode === 'readonly'"
-            :authoritative-business-section-mode="nativeBridge.authoritativeBusinessSectionMode"
-            @field-change="emit('field-change', $event)"
-          />
-        </main>
-        <section v-if="nativeBridge?.subordinateNodes.length" class="sc-native-contract-subordinate" data-canonical-zone="subordinate">
-          <NativeFormTreeRenderer
-            :nodes="nativeBridge.subordinateNodes"
-            :field-schemas-for-nodes="nativeBridge.fieldSchemasForNodes"
-            :is-node-visible="nativeBridge.nodeVisible"
-            :relation-adapter="relationAdapter"
-            :native-action-handler="runNativeCanonicalAction"
-            :native-action-state-resolver="nativeBridge.actionStateForNode"
-            :prefer-readonly-facts="renderModel.identity.mode === 'readonly'"
-            :authoritative-business-section-mode="nativeBridge.authoritativeBusinessSectionMode"
-            @field-change="emit('field-change', $event)"
-          />
-        </section>
-        <section
-          v-if="showCollaborationPanel"
-          class="sc-native-contract-collaboration"
-          data-form-semantic-role="activity"
-          data-form-section-target="surface:activity"
-          data-section-content-kind="collaboration-panel"
-          data-section-source-identity="collaboration-panel"
-        >
-          <NativeCollaborationPanel
-            v-bind="collaborationPanelProps"
-            :show-audit-timeline="true"
-            v-on="collaborationPanelListeners"
-          />
-        </section>
-        <CanonicalActionBar
-          v-if="visibleActions.length && !actionsInHeader"
-          :direct-actions="directActions"
-          :overflow-actions="overflowActions"
-          :effective-primary-key="floorplan.effectivePrimaryKey"
-          @action-ref="emit('action-ref', $event)"
-        />
-      </article>
+      <CanonicalNativeFormSurface
+        :native-bridge="nativeBridge"
+        :section-links="workspaceSectionLinks"
+        :render-mode="renderModel.identity.mode"
+        :relation-adapter="relationAdapter"
+        :show-collaboration-panel="showCollaborationPanel"
+        :collaboration-panel-props="collaborationPanelProps"
+        :collaboration-panel-listeners="collaborationPanelListeners"
+        :visible-actions="visibleActions"
+        :direct-actions="directActions"
+        :overflow-actions="overflowActions"
+        :effective-primary-key="floorplan.effectivePrimaryKey"
+        :actions-in-header="actionsInHeader"
+        @field-change="emit('field-change', $event)"
+        @field-action="emit('field-action', $event)"
+        @action-ref="emit('action-ref', $event)"
+      />
       </WorkspaceFormPattern>
     </SceneUiProvider>
   </section>
@@ -148,24 +129,26 @@ import { SceneButton, SceneUiProvider, type SceneUiKitId } from '@sc/ui/form';
 import type { ContractV2ActionRule } from '../../app/contracts/v2/types';
 import type { CanonicalAuditEvent, CanonicalFormNode, CanonicalFormRenderModel } from '../../app/presentation/canonicalFormRenderModel';
 import { composeCanonicalFormFloorplan, type CanonicalFormFloorplan } from '../../app/presentation/canonicalFormFloorplan';
-import NativeFormTreeRenderer from '../../components/template/NativeFormTreeRenderer.vue';
 import ScErrorState from '../../components/design-system/ScErrorState.vue';
 import ScInlineState from '../../components/design-system/ScInlineState.vue';
 import type { FormSectionFieldActionPayload, FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import { buildCanonicalNativeFormBridge } from './canonicalNativeFormBridge';
 import CanonicalActionBar from './CanonicalActionBar.vue';
-import NativeCollaborationPanel, {
-  type NativeCollaborationPanelListeners,
-  type NativeCollaborationPanelProps,
+import type {
+  NativeCollaborationPanelListeners,
+  NativeCollaborationPanelProps,
 } from './NativeCollaborationPanel.vue';
 import { resolveProfessionalAuditEvents } from './professionalAuditModel';
 import ObjectTaskPage from './ObjectTaskPage.vue';
-import FormSectionNavigation from './FormSectionNavigation.vue';
+import CanonicalNativeFormSurface from './CanonicalNativeFormSurface.vue';
 import TaskFormPattern from '../../components/product-page-patterns/TaskFormPattern.vue';
 import WorkspaceFormPattern from '../../components/product-page-patterns/WorkspaceFormPattern.vue';
 import { canonicalNodeHasContent, type CanonicalRelationProjection } from './canonicalFormRenderer';
-import { workspaceSurfaceNavigationItems } from './nativeSectionNavigation';
+import {
+  shouldPreserveAuthoritativeBusinessSections,
+  workspaceSurfaceNavigationItems,
+} from './nativeSectionNavigation';
 
 const props = defineProps<{
   renderModel: CanonicalFormRenderModel | null;
@@ -222,6 +205,13 @@ const floorplan = computed(() => props.renderModel ? composeCanonicalFormFloorpl
   claimedStatusbarNodeIdentity: props.claimedStatusbarNodeIdentity || '',
   claimedStatusbarFieldCode: props.claimedStatusbarFieldCode || '',
 }) : emptyFloorplan);
+const preserveAuthoritativeBusinessSections = computed(() => Boolean(
+  props.renderModel
+  && shouldPreserveAuthoritativeBusinessSections(
+    props.renderModel.identity.presentationMode,
+    [...props.renderModel.zones.primary, ...props.renderModel.zones.subordinate],
+  ),
+));
 const blockedActionMessage = computed(() => `当前操作暂不可用：${floorplan.value.blockedActions.map((action) => `${action.label}暂不可执行`).join('；')}`);
 const productWriteMode = computed(() => Boolean(
   floorplan.value.decisionMode && props.renderModel && props.renderModel.identity.mode !== 'readonly',
@@ -253,7 +243,7 @@ const hasCollaboration = computed(() => Boolean(props.showCollaborationPanel) ||
 const auditEvents = computed<CanonicalAuditEvent[]>(() => resolveProfessionalAuditEvents(props.collaborationPanelProps?.timeline || []));
 const nativeBridgeModel = computed<CanonicalFormRenderModel | null>(() => {
   const model = props.renderModel;
-  if (!model || model.identity.mode !== 'create') return model;
+  if (!model || model.identity.mode !== 'create' || preserveAuthoritativeBusinessSections.value) return model;
   return {
     ...model,
     zones: {
@@ -284,25 +274,11 @@ function collaborationKind(kind: string) {
   return ['chatter', 'activity'].includes(String(kind || '').trim().toLowerCase());
 }
 
-function runNativeCanonicalAction(payload: Record<string, unknown>) {
-  const action = nativeBridge.value?.actionForPayload(payload);
-  if (action) emit('action-ref', action);
-}
-
 </script>
 
 <style scoped>
 .sc-form-driver-error {
   margin: var(--sc-product-space-4);
-}
-.sc-native-contract-page :deep([data-form-section-target]) {
-  scroll-margin-top: calc(var(--sc-form-command-bar-height, 72px) + var(--sc-form-section-nav-height, 0px) + var(--sc-form-sticky-gap, 8px) * 2);
-}
-.sc-native-contract-page {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
 }
 .canonical-product-edit-actions {
   display: flex;
@@ -315,10 +291,7 @@ function runNativeCanonicalAction(payload: Record<string, unknown>) {
   .canonical-product-edit-actions { flex-wrap: nowrap; width: 100%; }
   .canonical-product-edit-actions :deep(button[data-action-tier='primary']) { flex: 1 1 auto; }
 }
-.sc-form-driver-host,
-.sc-native-contract-tree,
-.sc-native-contract-subordinate,
-.sc-native-contract-collaboration {
+.sc-form-driver-host {
   width: 100%;
   max-width: 100%;
   min-width: 0;
