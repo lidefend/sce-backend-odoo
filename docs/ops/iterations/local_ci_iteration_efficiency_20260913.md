@@ -41,4 +41,12 @@ clean delivery HEAD 冻结后才运行一次 `make ci.local.quick`。该入口�
 - `make ci.local.iteration` 的 dry-run/实际运行不得出现被禁止的重型入口，并应输出 L1-only 与
   非零 L2 handoff。
 - Quick 结构检查必须保留 lint/typecheck 依赖，并禁止 recipe 中重复直接调用 typecheck。
-- 本批只做定向测试与耗时观察；不为了验证效率改造而再运行一次完整 Quick。
+- 日常迭代只做定向测试与耗时观察；冻结候选按交付规则运行一次完整 Quick，并绑定 exact-head
+  receipt，不把该成本回灌到 HMR 内循环。
+
+## PR 门禁稳定性补项
+
+- `form_open` 性能样本必须在 ActionView 列表状态达到 `ok/empty` 后开始；`loading` 可见不能作为
+  计时起点，避免把上一段列表加载误计入表单打开时间。绝对预算、相对回归比例和样本下限不变。
+- “关系候选不得预加载”的计数在进入目标表单前等待有界静默窗口，再冻结基线；目标表单出现的
+  真实候选请求仍会使断言失败，不通过固定 sleep 或忽略请求制造通过。

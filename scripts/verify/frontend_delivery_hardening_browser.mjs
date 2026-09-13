@@ -42,6 +42,10 @@ const PERF_BASELINE_PATH = process.env.DELIVERY_HARDENING_BASELINE_JSON
   || 'docs/frontend_productization/frontend_delivery_performance_baseline_v1.json';
 const PERF_RUNS = Number(process.env.DELIVERY_HARDENING_PERF_RUNS || 5);
 const FORM_SURFACE_SELECTOR = '[data-workspace-primary-content]';
+const READY_ACTION_LIST_SELECTOR = [
+  '[data-product-page-mode="list"][data-semantic-component="ActionView"][data-collection-state="ok"]:visible',
+  '[data-product-page-mode="list"][data-semantic-component="ActionView"][data-collection-state="empty"]:visible',
+].join(', ');
 const runtimeByPage = new WeakMap();
 fs.rmSync(SCREENSHOTS, { recursive: true, force: true });
 fs.rmSync(TRACES, { recursive: true, force: true });
@@ -372,6 +376,21 @@ function assertRuntimeClean(state, label, allowed = []) {
 }
 function resetRuntime(state) {
   state.console.length = 0; state.pageerror.length = 0; state.unhandled.length = 0; state.http.length = 0;
+}
+async function relationCandidateCountAfterQuiet(page, state, model, quietMs = 300, timeoutMs = 3000) {
+  let count = Number(state.relationCandidateCounts[model] || 0);
+  let stableSince = Date.now();
+  const deadline = stableSince + timeoutMs;
+  while (Date.now() < deadline) {
+    await page.waitForTimeout(50);
+    const current = Number(state.relationCandidateCounts[model] || 0);
+    if (current !== count) {
+      count = current;
+      stableSince = Date.now();
+    }
+    if (Date.now() - stableSince >= quietMs) return count;
+  }
+  throw new Error(`relation candidate requests did not become quiet model=${model} timeout_ms=${timeoutMs}`);
 }
 async function gotoLogin(page) {
   try {
@@ -832,7 +851,9 @@ async function main() {
       for (const surface of surfaces) {
         let removeFault = null;
         let faultSnapshot = null;
-        const constructionContractCandidateCount = Number(runtime.relationCandidateCounts['construction.contract'] || 0);
+        const constructionContractCandidateCount = noEagerCandidateSurfaces.has(surface.name)
+          ? await relationCandidateCountAfterQuiet(page, runtime, 'construction.contract')
+          : Number(runtime.relationCandidateCounts['construction.contract'] || 0);
         if (!surface.role) {
           await gotoLogin(page);
           currentRole = '';
@@ -997,10 +1018,10 @@ async function main() {
         performanceReport.scenarios[name] = { ...stats(samples), request_samples: requestSamples };
       }
       const formSamples = [];
-      await navigateSpa(page, listRoute(TARGETS.payment_request), '[data-product-page-mode="list"] [data-list-status]:visible');
+      await navigateSpa(page, listRoute(TARGETS.payment_request), READY_ACTION_LIST_SELECTOR);
       await openPaymentCreateFromList(page, TARGETS.payment_request, 'form_open_warmup');
       for (let i = 0; i < PERF_RUNS; i += 1) {
-        await navigateSpa(page, listRoute(TARGETS.payment_request), '[data-product-page-mode="list"] [data-list-status]:visible');
+        await navigateSpa(page, listRoute(TARGETS.payment_request), READY_ACTION_LIST_SELECTOR);
         formSamples.push(await time(async () => {
           await openPaymentCreateFromList(page, TARGETS.payment_request, `form_open_${i + 1}`);
         }));
