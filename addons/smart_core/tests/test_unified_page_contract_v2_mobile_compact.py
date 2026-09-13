@@ -2252,6 +2252,43 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertTrue(status["disabled"])
         self.assertEqual(status["reasonCode"], "NATIVE_MODIFIER_UNRESOLVED")
 
+    def test_final_layout_modifier_hydration_releases_resolved_fail_closed_status(self):
+        contract = {
+            "layoutContract": {"containerTree": [{
+                "type": "field",
+                "name": "workflow_state",
+                "widgetId": "field.workflow_state.occ.test",
+                "modifiers": {
+                    "invisible": False,
+                    "column_invisible": False,
+                    "readonly": False,
+                    "required": False,
+                },
+            }]},
+            "statusContract": {
+                "containerStatus": [],
+                "widgetStatus": [{
+                    "widgetId": "field.workflow_state.occ.test",
+                    "visible": True,
+                    "readonly": True,
+                    "required": True,
+                    "disabled": True,
+                    "auth": "read",
+                    "reasonCode": "NATIVE_MODIFIER_UNRESOLVED",
+                }],
+            },
+            "dataContract": {"mainData": {"workflow_state": "draft"}},
+        }
+
+        assembler.hydrate_final_layout_modifier_status(contract)
+
+        status = contract["statusContract"]["widgetStatus"][0]
+        self.assertFalse(status["readonly"])
+        self.assertFalse(status["required"])
+        self.assertFalse(status["disabled"])
+        self.assertEqual(status["auth"], "edit")
+        self.assertNotIn("reasonCode", status)
+
     def test_final_layout_modifier_hydration_fails_closed_for_malformed_comparisons(self):
         for modifier in (
             {"kind": "field_compare", "field": "amount", "operator": "unsupported", "value": 10},

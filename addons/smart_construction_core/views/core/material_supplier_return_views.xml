@@ -42,7 +42,7 @@
         <field name="name">sc.material.supplier.return.form</field>
         <field name="model">sc.material.supplier.return</field>
         <field name="arch" type="xml">
-            <form string="材料退货单">
+            <form string="材料退货">
                 <header>
                     <button name="action_submit" type="object" string="提交确认" class="btn-primary" invisible="state != 'draft'" groups="smart_construction_core.group_sc_cap_material_user,smart_construction_core.group_sc_cap_material_manager"/>
                     <button name="action_confirm_return" type="object" string="确认退货" class="btn-primary" invisible="state != 'submitted'" groups="smart_construction_core.group_sc_cap_material_manager"/>
@@ -68,30 +68,30 @@
                             <field name="currency_id" invisible="1"/>
                         </group>
                     </group>
-                    <group string="退货说明">
-                        <field name="reason"/>
-                        <field name="attachment_ids" widget="many2many_binary"/>
-                        <field name="stock_picking_id" readonly="1"/>
-                    </group>
                     <notebook>
                         <page string="退货明细">
                             <field name="line_ids" readonly="state != 'draft'">
                                 <tree editable="bottom">
                                     <field name="sequence" widget="handle"/>
-                                    <field name="source_inbound_line_id" domain="[('inbound_id', '=', parent.source_inbound_id)]"/>
                                     <field name="material_catalog_id"/>
-                                    <field name="product_id"/>
+                                    <field name="product_id" invisible="1"/>
                                     <field name="material_spec"/>
                                     <field name="product_uom_id"/>
                                     <field name="qty"/>
                                     <field name="unit_price"/>
                                     <field name="amount" sum="退货金额合计"/>
+                                    <field name="source_inbound_line_id" domain="[('inbound_id', '=', parent.source_inbound_id)]"/>
                                     <field name="note"/>
                                 </tree>
                             </field>
                         </page>
+                        <page string="退货说明与附件">
+                            <field name="reason" nolabel="1"/>
+                            <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
+                        </page>
                         <page string="办理提示">
                             <field name="processing_advisory" readonly="1" nolabel="1"/>
+                            <field name="stock_picking_id" readonly="1"/>
                         </page>
                     </notebook>
                 </sheet>
@@ -105,7 +105,7 @@
         <field name="res_model">sc.material.supplier.return</field>
         <field name="view_mode">tree,form</field>
         <field name="search_view_id" ref="view_sc_material_supplier_return_search"/>
-        <field name="context">{'search_default_group_project': 1}</field>
+        <field name="context">{'search_default_group_project': 1, 'default_business_category_code': 'material.supplier_return', 'current_business_category_code': 'material.supplier_return'}</field>
         <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_material_read')])]"/>
     </record>
 </odoo>

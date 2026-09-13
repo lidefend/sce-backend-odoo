@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
+from pathlib import Path
 
 from odoo.exceptions import UserError
 from odoo.addons.smart_core.delivery.delivery_engine import DeliveryEngine
@@ -57,6 +58,175 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.assertIn('name="unit_price_summary"', arch)
         self.assertIn('name="line_note_summary"', arch)
         self.assertIn('name="amount_total" sum="金额合计"', arch)
+
+    def test_material_inbound_form_uses_handling_identity_and_business_first_line_order(self):
+        arch = (
+            Path(__file__).resolve().parents[1] / "views" / "core" / "material_acceptance_views.xml"
+        ).read_text(encoding="utf-8")
+        self.assertIn('<form string="入库办理">', arch)
+        detail_arch = arch.split('<page string="入库明细">', 1)[1].split("</page>", 1)[0]
+        ordered_fields = [
+            'name="material_catalog_id"',
+            'name="material_spec"',
+            'name="product_uom_id"',
+            'name="qty"',
+            'name="unit_price"',
+            'name="amount"',
+            'name="acceptance_line_id"',
+        ]
+        positions = [detail_arch.index(field) for field in ordered_fields]
+        self.assertEqual(positions, sorted(positions))
+
+    def test_material_inbound_policy_separates_business_facts_from_lines(self):
+        from odoo.addons.smart_construction_core.models.support.business_form_policy_templates import (
+            get_business_category_form_policy_templates,
+        )
+
+        policy = get_business_category_form_policy_templates()["material.inbound"]
+        sections = {section["name"]: section for section in policy["sections"]}
+        self.assertEqual(sections["business_facts"]["title"], "基本资料")
+        self.assertEqual(
+            sections["business_facts"]["fields"],
+            [
+                "project_id",
+                "inbound_date",
+                "supplier_id",
+                "warehouse_id",
+                "dest_location_id",
+                "acceptance_id",
+                "keeper_id",
+                "amount_total",
+                "tax_included_amount",
+            ],
+        )
+        self.assertEqual(sections["document_lines"]["fields"], ["line_ids"])
+
+    def test_material_inbound_read_fact_contract_preserves_native_editability(self):
+        action_contract_xml = (
+            Path(__file__).resolve().parents[1]
+            / "data"
+            / "remaining_p3_form_productization_contract.xml"
+        ).read_text(encoding="utf-8")
+        action_contract = action_contract_xml.split(
+            'id="business_config_contract_material_inbound_productized_form_v1"', 1
+        )[1].split("</record>", 1)[0]
+        self.assertIn("{'name': 'inbound_date', 'sequence': 40}", action_contract)
+        self.assertIn("{'name': 'supplier_id', 'sequence': 60}", action_contract)
+
+        fact_contract = self.env.ref(
+            "smart_construction_core.business_config_contract_sc_material_inbound_p1_form_business_facts_v1"
+        )
+        fact_rows = {
+            row["name"]: row
+            for row in fact_contract.contract_json["view_orchestration"]["views"]["form"]["fields"]
+        }
+        self.assertNotIn("readonly", fact_rows["inbound_date"])
+        self.assertNotIn("readonly", fact_rows["supplier_id"])
+
+        action_contract = self.env.ref(
+            "smart_construction_core.business_config_contract_material_inbound_productized_form_v1"
+        )
+        action_rows = {
+            row["name"]: row
+            for row in action_contract.contract_json["view_orchestration"]["views"]["form"]["fields"]
+        }
+        self.assertEqual(
+            action_contract.action_id,
+            self.env.ref("smart_construction_core.action_sc_material_inbound_handling"),
+        )
+        self.assertGreater(action_contract.priority, fact_contract.priority)
+        self.assertNotIn("readonly", action_rows["inbound_date"])
+        self.assertNotIn("readonly", action_rows["supplier_id"])
+
+    def test_material_acceptance_line_has_authoritative_business_display_name(self):
+        acceptance = self.env["sc.material.acceptance"].create(
+            {
+                "project_id": self.project.id,
+                "supplier_id": self.partner.id,
+                "line_ids": [
+                    (0, 0, {"product_id": self.product.id, "received_qty": 2, "accepted_qty": 2}),
+                ],
+            }
+        )
+
+        display_name = acceptance.line_ids.display_name
+        self.assertIn(acceptance.name, display_name)
+        self.assertIn(self.product.display_name, display_name)
+        self.assertNotIn("sc.material.acceptance.line,", display_name)
+
+    def test_material_inbound_line_has_authoritative_business_display_name(self):
+        inbound = self.env["sc.material.inbound"].create(
+            {
+                "project_id": self.project.id,
+                "line_ids": [(0, 0, {"product_id": self.product.id, "qty": 2})],
+            }
+        )
+
+        display_name = inbound.line_ids.display_name
+        self.assertIn(inbound.name, display_name)
+        self.assertIn(self.product.display_name, display_name)
+        self.assertNotIn("sc.material.inbound.line,", display_name)
+
+    def test_material_outbound_policy_separates_business_facts_from_lines(self):
+        from odoo.addons.smart_construction_core.models.support.business_form_policy_templates import (
+            get_business_category_form_policy_templates,
+        )
+
+        policy = get_business_category_form_policy_templates()["material.outbound"]
+        sections = {section["name"]: section for section in policy["sections"]}
+        self.assertEqual(sections["business_facts"]["title"], "基本资料")
+        self.assertIn("receiver_id", sections["business_facts"]["fields"])
+        self.assertIn("outbound_date", sections["business_facts"]["fields"])
+        self.assertEqual(sections["document_lines"]["fields"], ["line_ids"])
+        self.assertEqual(sections["handling"]["fields"], ["note", "attachment_ids"])
+
+        view_arch = (
+            Path(__file__).resolve().parents[1]
+            / "views"
+            / "core"
+            / "material_acceptance_views.xml"
+        ).read_text(encoding="utf-8")
+        outbound_form = view_arch[view_arch.index('id="view_sc_material_outbound_form"') :]
+        self.assertLess(
+            outbound_form.index('name="material_catalog_id"'),
+            outbound_form.index('name="origin_issue_line_id"'),
+        )
+        self.assertLess(
+            outbound_form.index('name="amount" sum="出库金额合计"'),
+            outbound_form.index('name="origin_issue_line_id"'),
+        )
+
+    def test_material_supplier_return_policy_and_view_preserve_business_sections(self):
+        from odoo.addons.smart_construction_core.models.support.business_form_policy_templates import (
+            get_business_category_form_policy_templates,
+        )
+
+        policy = get_business_category_form_policy_templates()["material.supplier_return"]
+        sections = {section["name"]: section for section in policy["sections"]}
+        self.assertEqual(sections["business_facts"]["title"], "基本资料")
+        self.assertIn("source_inbound_id", sections["business_facts"]["fields"])
+        self.assertEqual(sections["document_lines"]["fields"], ["line_ids"])
+        self.assertEqual(
+            sections["handling"]["fields"], ["reason", "attachment_ids"]
+        )
+
+        view_arch = (
+            Path(__file__).resolve().parents[1]
+            / "views"
+            / "core"
+            / "material_supplier_return_views.xml"
+        ).read_text(encoding="utf-8")
+        self.assertLess(
+            view_arch.index('page string="退货明细"'),
+            view_arch.index('page string="退货说明与附件"'),
+        )
+        self.assertIn('name="product_id" invisible="1"', view_arch)
+        self.assertEqual(
+            self.env["sc.material.supplier.return"]._fields["state"].string,
+            "状态",
+        )
+
+        self.assertIn("'current_business_category_code': 'material.supplier_return'", view_arch)
 
     def test_material_inbound_system_defaults_do_not_block_draft_creation(self):
         inbound = self.env["sc.material.inbound"].create(

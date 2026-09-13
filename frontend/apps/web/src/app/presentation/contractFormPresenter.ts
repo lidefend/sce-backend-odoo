@@ -114,6 +114,29 @@ function structureGroup(
   return structureSlot(structure, identity)?.groups?.find((group) => group.name === identity.group);
 }
 
+export function formStructureFieldSemanticOrder(
+  structure: ContractV2FormStructureContract | undefined,
+  fieldCode: string,
+): number | undefined {
+  if (!structure || !fieldCode) return undefined;
+  const orderedFields: string[] = [];
+  const seen = new Set<string>();
+  const append = (values: string[] | undefined) => {
+    (values || []).forEach((value) => {
+      const normalized = text(value);
+      if (!normalized || seen.has(normalized)) return;
+      seen.add(normalized);
+      orderedFields.push(normalized);
+    });
+  };
+  structure.slots.forEach((slot) => {
+    append(slot.fieldRefs);
+    (slot.groups || []).forEach((group) => append(group.fieldRefs));
+  });
+  const index = orderedFields.indexOf(fieldCode);
+  return index >= 0 ? index : undefined;
+}
+
 function formStructureFieldLabels(
   structure: ContractV2NormalizedStore['snapshot']['formStructureContract'],
 ): Readonly<Record<string, string>> {
@@ -264,6 +287,7 @@ function fieldFromWidget(
       ? runtimeValues?.[dateRangeEndField]
       : contractValues[dateRangeEndField];
   }
+  const semanticOrder = formStructureFieldSemanticOrder(structure, widget.fieldCode);
   return {
     widgetId: widget.widgetId,
     fieldCode: widget.fieldCode,
@@ -301,6 +325,7 @@ function fieldFromWidget(
     semanticRole: fieldSemantics.role,
     semanticSlot: fieldSemantics.slot,
     semanticGroup: fieldSemantics.group,
+    ...(semanticOrder !== undefined ? { semanticOrder } : {}),
     componentConfig: Object.freeze(componentConfig),
     fieldDescriptor: Object.freeze({ ...(widget.fieldDescriptor || {}) }),
   };

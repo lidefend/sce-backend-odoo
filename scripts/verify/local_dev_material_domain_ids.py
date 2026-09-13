@@ -1,4 +1,4 @@
-"""Resolve one governed local.dev material-domain browser target without writes."""
+"""Resolve governed local.dev material-handling browser targets without writes."""
 
 import hashlib
 import json
@@ -17,33 +17,141 @@ if not user.has_group(
 ):
     raise RuntimeError("governed material-manager principal is unavailable")
 security_user = env.ref("smart_construction_demo.user_demo_project_read")
-menu = env.ref("smart_construction_core.menu_sc_material_inbound")
-action = env.ref("smart_construction_core.action_sc_material_inbound_handling")
-
-record_env = (
-    env["sc.material.inbound"]
-    .with_user(user)
-    .with_company(user.company_id)
-    .with_context(allowed_company_ids=user.company_ids.ids, active_test=False)
+project_users = env["res.users"].sudo().search(
+    [("login", "=", "demo_role_project_manager"), ("active", "=", True)]
 )
-record = record_env.search([], order="id desc", limit=1)
-if not record:
-    raise RuntimeError("governed local.dev material inbound is unavailable")
-record.check_access_rights("read")
-record.check_access_rule("read")
-record.check_access_rights("write")
-record.check_access_rule("write")
-if menu.action != action or action.res_model != "sc.material.inbound":
-    raise RuntimeError("material menu/action authority mismatch")
-
-fingerprint_payload = {
-    "id": int(record.id),
-    "write_date": record.write_date.isoformat() if record.write_date else "",
-    "state": str(record.state or ""),
-    "name": str(record.name or ""),
-    "line_count": len(record.line_ids),
-    "note": str(record.note or ""),
+if len(project_users) != 1:
+    raise RuntimeError("governed project-manager principal is not uniquely available")
+project_user = project_users.ensure_one()
+finance_users = env["res.users"].sudo().search(
+    [("login", "=", "demo_role_finance"), ("active", "=", True)]
+)
+if len(finance_users) != 1:
+    raise RuntimeError("governed finance principal is not uniquely available")
+finance_user = finance_users.ensure_one()
+config_group = env.ref(
+    "smart_construction_core.group_sc_cap_business_config_admin"
+)
+config_users = [
+    candidate
+    for candidate in env["res.users"].sudo().search(
+        [("share", "=", False), ("active", "=", True)], order="id"
+    )
+    if config_group in candidate.groups_id
+    and str(candidate.login or "").startswith("demo")
+]
+if not config_users:
+    raise RuntimeError("governed business-config principal is unavailable")
+config_user = config_users[0]
+entry_specs = {
+    "inbound": {
+        "menu_xmlid": "smart_construction_core.menu_sc_material_inbound",
+        "action_xmlid": "smart_construction_core.action_sc_material_inbound_handling",
+        "model": "sc.material.inbound",
+    },
+    "outbound": {
+        "menu_xmlid": "smart_construction_core.menu_sc_material_outbound",
+        "action_xmlid": "smart_construction_core.action_sc_material_outbound",
+        "model": "sc.material.outbound",
+    },
+    "supplier_return": {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_material_return_v1",
+        "action_xmlid": "smart_construction_core.action_sc_material_supplier_return",
+        "model": "sc.material.supplier.return",
+    },
 }
+shared_entry_specs = {
+    "project_profile": {
+        "menu_xmlid": "smart_construction_core.menu_sc_project_project",
+        "action_xmlid": "smart_construction_core.action_sc_project_list",
+        "model": "project.project",
+        "require_create": False,
+    },
+    "personnel_profile": {
+        "menu_xmlid": "smart_construction_core.menu_sc_runtime_user_management",
+        "action_xmlid": "smart_construction_core.action_sc_runtime_user_management",
+        "model": "res.users",
+        "require_create": False,
+    },
+    "payment_request": {
+        "menu_xmlid": "smart_construction_core.menu_sc_user_payment_apply",
+        "action_xmlid": "smart_construction_core.action_payment_request_user_payment_apply",
+        "model": "payment.request",
+        "require_create": False,
+    },
+}
+
+
+def resolve_entry(key, spec, principal=user):
+    menu = env.ref(spec["menu_xmlid"])
+    action = env.ref(spec["action_xmlid"])
+    if menu.action != action or action.res_model != spec["model"]:
+        raise RuntimeError("material %s menu/action authority mismatch" % key)
+    record_env = (
+        env[spec["model"]]
+        .with_user(principal)
+        .with_company(principal.company_id)
+        .with_context(
+            allowed_company_ids=principal.company_ids.ids, active_test=False
+        )
+    )
+    record_env.check_access_rights("read")
+    if spec.get("require_create", True):
+        record_env.check_access_rights("create")
+    record = record_env.search([], order="id desc", limit=1)
+    record_payload = None
+    fingerprint_payload = {"model": spec["model"], "record": None}
+    if record:
+        record.check_access_rule("read")
+        record_payload = {
+            "id": int(record.id),
+            "xmlid": xmlid(record),
+            "name": str(record.display_name or record.id),
+            "state": str(getattr(record, "state", "") or ""),
+        }
+        fingerprint_payload["record"] = {
+            "id": int(record.id),
+            "write_date": record.write_date.isoformat() if record.write_date else "",
+            "state": str(getattr(record, "state", "") or ""),
+            "name": str(record.display_name or record.id),
+            "line_count": len(getattr(record, "line_ids", [])),
+        }
+    return {
+        "key": key,
+        "model": spec["model"],
+        "user": {
+            "id": int(principal.id),
+            "login": principal.login,
+            "xmlid": xmlid(principal),
+        },
+        "menu": {"id": int(menu.id), "xmlid": xmlid(menu)},
+        "action": {"id": int(action.id), "xmlid": xmlid(action)},
+        "record": record_payload,
+        "business_fingerprint": hashlib.sha256(
+            json.dumps(
+                fingerprint_payload, ensure_ascii=False, sort_keys=True
+            ).encode("utf-8")
+        ).hexdigest(),
+    }
+
+
+entries = {key: resolve_entry(key, spec) for key, spec in entry_specs.items()}
+shared_entries = {
+    "project_profile": resolve_entry(
+        "project_profile", shared_entry_specs["project_profile"], project_user
+    ),
+    "personnel_profile": resolve_entry(
+        "personnel_profile",
+        shared_entry_specs["personnel_profile"],
+        config_user,
+    ),
+    "payment_request": resolve_entry(
+        "payment_request", shared_entry_specs["payment_request"], finance_user
+    ),
+}
+inbound = entries["inbound"]
+if not inbound["record"]:
+    raise RuntimeError("governed local.dev material inbound is unavailable")
 payload = {
     "database": env.cr.dbname,
     "user": {"id": int(user.id), "login": user.login, "xmlid": xmlid(user)},
@@ -52,17 +160,13 @@ payload = {
         "login": security_user.login,
         "xmlid": xmlid(security_user),
     },
-    "menu": {"id": int(menu.id), "xmlid": xmlid(menu)},
-    "action": {"id": int(action.id), "xmlid": xmlid(action)},
-    "record": {
-        "id": int(record.id),
-        "xmlid": xmlid(record),
-        "name": str(record.name or ""),
-        "state": str(record.state or ""),
-    },
-    "business_fingerprint": hashlib.sha256(
-        json.dumps(fingerprint_payload, ensure_ascii=False, sort_keys=True).encode("utf-8")
-    ).hexdigest(),
+    "entries": entries,
+    "shared_entries": shared_entries,
+    # Keep the original inbound shape for the established full-domain journey.
+    "menu": inbound["menu"],
+    "action": inbound["action"],
+    "record": inbound["record"],
+    "business_fingerprint": inbound["business_fingerprint"],
 }
 print(
     "LOCAL_DEV_MATERIAL_DOMAIN_JSON=%s"

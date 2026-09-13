@@ -145,7 +145,7 @@
           @selected-group-title-change="onSelectedFormSettingsGroupTitleChange"
           @selected-group-visibility-change="onSelectedFormSettingsGroupVisibilityChange"
         />
-        <ContractFormDriverHost v-if="!showCurrentFormFieldConfigScope" actions-in-header :render-model="canonicalFormRenderState.model" :error="canonicalFormDriverError" :driver-config="contractFormDriverConfig" :busy="busy" :claimed-statusbar-node-identity="nativeStatusbarNodeIdentity" :collaboration-panel-listeners="nativeCollaborationPanelListeners" :collaboration-panel-props="nativeCollaborationPanelProps" :relation-adapter="relationFieldAdapter" :show-collaboration-panel="showNativeCollaborationPanel"
+        <ContractFormDriverHost v-if="!showCurrentFormFieldConfigScope" actions-in-header :render-model="canonicalFormRenderState.model" :error="canonicalFormDriverError" :driver-config="contractFormDriverConfig" :busy="busy" :claimed-statusbar-node-identity="nativeStatusbarNodeIdentity" :claimed-statusbar-field-code="nativeStatusbar.visible ? nativeStatusbar.field : ''" :collaboration-panel-listeners="nativeCollaborationPanelListeners" :collaboration-panel-props="nativeCollaborationPanelProps" :relation-adapter="relationFieldAdapter" :show-collaboration-panel="showNativeCollaborationPanel"
           @driver-change="changeContractFormDriver"
           @field-change="onTemplateFieldChange"
           @field-action="onContractFieldAction"

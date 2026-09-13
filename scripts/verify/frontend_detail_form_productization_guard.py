@@ -65,7 +65,8 @@ object_task_page = read("pages/contractForm/ObjectTaskPage.vue")
 require(object_task_page, ".object-task-page--decision .object-task-page__current-task { order: -1; }", "mobile task priority")
 require(object_task_page, "grid-template-columns: repeat(2, minmax(0, 1fr));", "mobile summary density")
 require(object_task_page, "import ScDisclosure", "professional disclosure component")
-require(object_task_page, 'data-floorplan-region="supplementary-input"', "supplementary input disclosure")
+require(object_task_page, 'data-floorplan-region="supplementary-input"', "supplementary input region")
+require(object_task_page, 'data-supplementary-presentation="direct"', "supplementary inputs remain directly visible")
 require(object_task_page, 'data-floorplan-region="overflow-context"', "overflow context disclosure")
 
 if "import.meta.env.DEV ||" in debug:

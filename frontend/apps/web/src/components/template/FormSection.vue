@@ -465,7 +465,7 @@ function usesPaymentSettlementDetailCollection(field: FormSectionFieldSchema) {
 }
 
 function detailCollectionOwnsVisibleTitle(field: FormSectionFieldSchema) {
-  if (field.readonly || !props.relationAdapter) return false;
+  if (!props.relationAdapter) return false;
   return usesProfessionalOne2many(field) || usesPaymentSettlementDetailCollection(field);
 }
 

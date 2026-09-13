@@ -75,7 +75,36 @@
             :stripe="false"
             appearance="relation-detail"
             :label="`${field.label}明细列表`"
-          />
+          >
+            <template
+              v-for="column in adapter.one2manyColumns(field.name)"
+              :key="`readonly-cell-${column.name}`"
+              #[column.name]="{ row }"
+            >
+              <ScPopover
+                v-if="readonlyCellCanExpand(column, row[column.name])"
+                trigger="click"
+                placement="bottom-left"
+                :overlay-style="readonlyValueOverlayStyle"
+              >
+                <span class="o2m-readonly-full-value">{{ readonlyCellValue(row[column.name]) }}</span>
+                <template #trigger>
+                  <ScButton
+                    type="button"
+                    class="o2m-readonly-value-trigger"
+                    appearance="structured-content"
+                    variant="ghost"
+                    size="small"
+                    :title="readonlyCellValue(row[column.name])"
+                    :aria-label="`查看完整${column.label}：${readonlyCellValue(row[column.name])}`"
+                  >{{ readonlyCellValue(row[column.name]) }}</ScButton>
+                </template>
+              </ScPopover>
+              <span v-else class="o2m-readonly-cell-value">
+                {{ readonlyCellValue(row[column.name]) }}
+              </span>
+            </template>
+          </ScTable>
         </div>
       </div>
       <div v-if="one2manyRows.length" class="o2m-readonly-list" data-detail-collection-content="mobile-cards">
@@ -85,11 +114,11 @@
           class="o2m-readonly-row"
         >
           <p class="o2m-readonly-state">
-            {{ adapter.one2manyRowStateLabel(row) || `第 ${(one2manyPage - 1) * one2manyPageSize + rowIndex + 1} 条` }}
+            第 {{ (one2manyPage - 1) * one2manyPageSize + rowIndex + 1 }} 条
           </p>
           <dl class="o2m-readonly-facts">
             <div
-              v-for="column in adapter.one2manyColumns(field.name)"
+              v-for="column in readonlyMobilePrimaryColumns"
               :key="`${row.key}-readonly-${column.name}`"
               class="o2m-readonly-fact"
             >
@@ -97,6 +126,22 @@
               <dd>{{ adapter.one2manyColumnDisplayValue(column, row.values[column.name]) || '—' }}</dd>
             </div>
           </dl>
+          <ScDisclosure
+            v-if="readonlyMobileAdditionalColumns.length"
+            class="o2m-readonly-additional"
+            :title="`查看其余 ${readonlyMobileAdditionalColumns.length} 项信息`"
+          >
+            <dl class="o2m-readonly-facts o2m-readonly-facts--additional">
+              <div
+                v-for="column in readonlyMobileAdditionalColumns"
+                :key="`${row.key}-readonly-additional-${column.name}`"
+                class="o2m-readonly-fact"
+              >
+                <dt>{{ column.label }}</dt>
+                <dd>{{ adapter.one2manyColumnDisplayValue(column, row.values[column.name]) || '—' }}</dd>
+              </div>
+            </dl>
+          </ScDisclosure>
         </article>
       </div>
       <ScInlineState
@@ -332,11 +377,13 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import type { FormSectionFieldSchema } from './formSection.types';
 import ScButton from '../design-system/ScButton.vue';
+import ScDisclosure from '../design-system/ScDisclosure.vue';
 import ScEmptyState from '../design-system/ScEmptyState.vue';
 import ScFileField from '../design-system/ScFileField.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScInput from '../design-system/ScInput.vue';
 import ScInlineState from '../design-system/ScInlineState.vue';
+import ScPopover from '../design-system/ScPopover.vue';
 import ScTable from '../design-system/ScTable.vue';
 import ProfessionalManyToManySelect from '../professional-fields/ProfessionalManyToManySelect.vue';
 import One2ManyCellEditor from './One2ManyCellEditor.vue';
@@ -350,6 +397,10 @@ import {
 } from './one2manyRelationQuery';
 import { downloadFile, fileToBase64, uploadFile } from '../../api/files';
 import type { RelationFieldColumn, RelationFieldRow, X2ManyRelationRendererProps } from './relationField.types';
+import {
+  detailCollectionColumnPresentation,
+  detailCollectionMobileColumnSplit,
+} from '../professional-fields/professionalDetailCollectionModel';
 
 const props = defineProps<X2ManyRelationRendererProps>();
 const one2manyPage = ref(1);
@@ -368,6 +419,16 @@ const paginatedOne2manyRows = computed(() => {
   const start = (one2manyPage.value - 1) * one2manyPageSize;
   return one2manyRows.value.slice(start, start + one2manyPageSize);
 });
+const readonlyMobileColumns = computed(() => detailCollectionMobileColumnSplit(
+  props.adapter.one2manyColumns(props.field.name),
+));
+const readonlyMobilePrimaryColumns = computed(() => readonlyMobileColumns.value.primary);
+const readonlyMobileAdditionalColumns = computed(() => readonlyMobileColumns.value.additional);
+const readonlyValueOverlayStyle = Object.freeze({
+  maxWidth: 'min(480px, calc(100vw - 32px))',
+  whiteSpace: 'normal',
+  overflowWrap: 'anywhere',
+});
 watch(one2manyPageCount, (count) => {
   if (one2manyPage.value > count) one2manyPage.value = count;
 });
@@ -377,15 +438,24 @@ function isO2mAmountColumn(column: RelationFieldColumn) {
   return String(column.ttype).toLowerCase() === 'monetary';
 }
 
+function readonlyCellValue(value: unknown) {
+  const text = String(value ?? '').trim();
+  return text || '—';
+}
+
+function readonlyCellCanExpand(column: RelationFieldColumn, value: unknown) {
+  const type = String(column.ttype || '').trim().toLowerCase();
+  return readonlyCellValue(value) !== '—'
+    && ['char', 'text', 'many2one', 'selection'].includes(type);
+}
+
 
 // ===== TDesign Table 列定义与行数据 =====
 const o2mTableColumns = computed(() => {
   const fieldColumns = props.adapter.one2manyColumns(props.field.name).map((column, columnIndex) => ({
     colKey: column.name,
     title: column.label,
-    width: isO2mAmountColumn(column) ? 140 : (columnIndex === 0 ? 240 : undefined),
-    align: isO2mAmountColumn(column) ? 'right' : 'left',
-    ellipsis: false,
+    ...detailCollectionColumnPresentation(column, columnIndex, false),
   }));
   return [
     { colKey: '_state', title: '行变更', width: 90, fixed: 'left' },
@@ -394,17 +464,11 @@ const o2mTableColumns = computed(() => {
   ];
 });
 const readonlyO2mTableColumns = computed(() => {
-  const stateColumn = paginatedOne2manyRows.value.some((row) => props.adapter.one2manyRowStateLabel(row))
-    ? [{ colKey: '_stateLabel', title: '行变更', width: 90, fixed: 'left' }]
-    : [];
   return [
-    ...stateColumn,
     ...props.adapter.one2manyColumns(props.field.name).map((column, columnIndex) => ({
       colKey: column.name,
       title: column.label,
-      width: isO2mAmountColumn(column) ? 140 : (columnIndex === 0 ? 240 : undefined),
-      align: isO2mAmountColumn(column) ? 'right' : 'left',
-      ellipsis: false,
+      ...detailCollectionColumnPresentation(column, columnIndex, true),
     })),
   ];
 });
@@ -952,6 +1016,43 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
 .o2m-readonly-fact dt,
 .o2m-readonly-fact dd {
   margin: 0;
+}
+
+.o2m-readonly-cell-value {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.o2m-readonly-value-trigger {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  overflow: hidden;
+  font: inherit;
+  line-height: inherit;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.o2m-readonly-full-value {
+  display: block;
+  max-width: min(480px, calc(100vw - 32px));
+  color: var(--sc-app-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.o2m-readonly-additional {
+  min-width: 0;
+}
+
+.o2m-readonly-facts--additional {
+  padding-top: 4px;
 }
 
 .o2m-readonly-fact dt {

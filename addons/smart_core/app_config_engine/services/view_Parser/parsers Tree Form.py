@@ -1493,8 +1493,9 @@ class _TreeFormParserMixin:
             # 最小兜底
             if not entry.get('tree'):
                 entry['tree'] = {'columns': ['display_name']}
+            tree_contract = entry.get('tree') or {}
             business_columns = self._business_x2many_tree_columns(
-                (entry.get('tree') or {}).get('columns') or [],
+                tree_contract.get('columns_schema') or tree_contract.get('columns') or [],
                 relation_fields,
             )
             entry['tree']['columns'] = business_columns

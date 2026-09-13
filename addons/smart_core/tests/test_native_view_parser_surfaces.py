@@ -692,6 +692,43 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
             ["partner_id", "amount"],
         )
 
+    def test_x2many_business_columns_consume_native_visibility_contract(self):
+        relation_fields = {
+            "sequence": {"type": "integer", "string": "Sequence"},
+            "technical_id": {"type": "many2one", "relation": "test.technical", "string": "Technical"},
+            "source_id": {"type": "many2one", "relation": "test.source", "string": "Source"},
+            "name": {"type": "char", "string": "Name"},
+            "auxiliary": {"type": "char", "string": "Auxiliary"},
+        }
+        self.tree_form_parser._safe_relation_fields_for_subview = lambda _relation: relation_fields
+        root = _parse_test_xml(
+            """
+            <form>
+                <field name="line_ids">
+                    <tree editable="bottom">
+                        <field name="sequence" widget="handle"/>
+                        <field name="technical_id" invisible="1"/>
+                        <field name="source_id" invisible="state == 'done'"/>
+                        <field name="name"/>
+                        <field name="auxiliary" optional="hide"/>
+                    </tree>
+                </field>
+            </form>
+            """
+        )
+
+        result = self.tree_form_parser._collect_x2many_subviews_from_dom(
+            root,
+            {"line_ids": {"type": "one2many", "relation": "test.line"}},
+        )
+        tree = result["line_ids"]["tree"]
+
+        self.assertEqual([row["name"] for row in tree["columns"]], ["source_id", "name"])
+        schema = {row["name"]: row for row in tree["columns_schema"]}
+        self.assertTrue(schema["technical_id"]["invisible"])
+        self.assertEqual(schema["auxiliary"]["optional"], "hide")
+        self.assertEqual(schema["source_id"]["invisible"]["field"], "state")
+
     def test_duplicate_x2many_host_occurrence_fails_closed(self):
         self.tree_form_parser._safe_relation_fields_for_subview = lambda _relation: {
             "name": {"type": "char", "string": "Name"},

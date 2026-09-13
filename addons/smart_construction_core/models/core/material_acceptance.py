@@ -1121,6 +1121,21 @@ class ScMaterialAcceptanceLine(models.Model):
     quality_status = fields.Selection([("unknown", "未判定"), ("qualified", "合格"), ("unqualified", "不合格")], string="质量状态", default="unknown", index=True)
     issue_note = fields.Text(string="问题说明")
 
+    @api.depends(
+        "acceptance_id.name",
+        "material_catalog_id.display_name",
+        "product_id.display_name",
+        "material_spec",
+    )
+    def _compute_display_name(self):
+        for record in self:
+            document_name = record.acceptance_id.name or _("验收单")
+            material_name = record.material_catalog_id.display_name or record.product_id.display_name or _("材料")
+            parts = [document_name, material_name]
+            if record.material_spec and record.material_spec not in material_name:
+                parts.append(record.material_spec)
+            record.display_name = " / ".join(parts)
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
@@ -1602,6 +1617,21 @@ class ScMaterialInboundLine(models.Model):
     unit_price = fields.Monetary(string="单价", currency_field="currency_id")
     amount = fields.Monetary(string="金额", currency_field="currency_id", compute="_compute_amount", store=True)
     note = fields.Char(string="备注")
+
+    @api.depends(
+        "inbound_id.name",
+        "material_catalog_id.display_name",
+        "product_id.display_name",
+        "material_spec",
+    )
+    def _compute_display_name(self):
+        for record in self:
+            document_name = record.inbound_id.name or _("入库单")
+            material_name = record.material_catalog_id.display_name or record.product_id.display_name or _("材料")
+            parts = [document_name, material_name]
+            if record.material_spec and record.material_spec not in material_name:
+                parts.append(record.material_spec)
+            record.display_name = " / ".join(parts)
 
     @api.model_create_multi
     def create(self, vals_list):

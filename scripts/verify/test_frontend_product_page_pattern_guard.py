@@ -19,13 +19,17 @@ class ProductPagePatternGuardTest(unittest.TestCase):
         with patch("pathlib.Path.read_text", altered):
             self.assertTrue(any("task-form" in item for item in validate()))
 
-    def test_task_floorplan_cannot_expand_supplementary_regions_by_default(self):
+    def test_task_floorplan_cannot_fold_editable_supplementary_regions_by_default(self):
         real = Path.read_text
 
         def altered(path, *args, **kwargs):
             value = real(path, *args, **kwargs)
             if path.name == "ObjectTaskPage.vue":
-                return value.replace('\n      title="补充信息"', '\n      data-title-removed', 1)
+                return value.replace(
+                    'data-supplementary-presentation="direct"',
+                    'data-supplementary-presentation="folded"',
+                    1,
+                )
             return value
 
         with patch("pathlib.Path.read_text", altered):
@@ -42,6 +46,30 @@ class ProductPagePatternGuardTest(unittest.TestCase):
 
         with patch("pathlib.Path.read_text", altered):
             self.assertTrue(any('role="region"' in item for item in validate()))
+
+    def test_task_floorplan_keeps_editable_facts_before_relation_details(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "ObjectTaskPage.vue":
+                return value.replace(
+                    'data-floorplan-region="supplementary-input"',
+                    'data-floorplan-region="relation-placeholder"',
+                    1,
+                ).replace(
+                    'data-floorplan-region="relation"',
+                    'data-floorplan-region="supplementary-input"',
+                    1,
+                ).replace(
+                    'data-floorplan-region="relation-placeholder"',
+                    'data-floorplan-region="relation"',
+                    1,
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertTrue(any("after relation details" in item for item in validate()))
 
 
 if __name__ == "__main__":

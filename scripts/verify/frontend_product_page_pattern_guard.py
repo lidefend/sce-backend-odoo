@@ -38,13 +38,18 @@ def validate() -> list[str]:
     for marker in (
         "<ScDisclosure",
         'data-floorplan-region="supplementary-input"',
+        'data-supplementary-presentation="direct"',
         'data-floorplan-region="overflow-context"',
         'role="region"',
-        '\n      title="补充信息"',
         '\n      title="更多业务信息"',
     ):
         if marker not in task_page:
             failures.append(f"task floorplan bypasses professional disclosure: {marker}")
+    supplementary_block = task_page.split('data-floorplan-region="supplementary-input"', 1)[0].rsplit("<", 1)[-1]
+    if supplementary_block.startswith("ScDisclosure"):
+        failures.append("task floorplan hides editable supplementary inputs in a disclosure")
+    if task_page.index('data-floorplan-region="supplementary-input"') > task_page.index('data-floorplan-region="relation"'):
+        failures.append("task floorplan places editable supplementary facts after relation details")
     action_view = source("frontend/apps/web/src/views/ActionView.vue")
     if '<component :is="viewMode === \'dashboard\' ? DashboardPattern : CollectionPattern">' not in action_view:
         failures.append("ActionView does not select dashboard/collection pattern from formal view mode")

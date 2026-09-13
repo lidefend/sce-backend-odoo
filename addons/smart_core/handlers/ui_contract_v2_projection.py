@@ -374,7 +374,12 @@ def sync_v2_list_widget_status_from_profile(
     set_v2_widget_status(contract, widget_status)
 
 
-def apply_field_policies_to_v2_status(contract_v2: dict[str, Any], source_contract: dict[str, Any]) -> None:
+def apply_field_policies_to_v2_status(
+    contract_v2: dict[str, Any],
+    source_contract: dict[str, Any],
+    *,
+    tighten_only: bool = False,
+) -> None:
     field_policies = source_contract.get("field_policies") if isinstance(source_contract.get("field_policies"), dict) else {}
     if not field_policies:
         return
@@ -431,18 +436,24 @@ def apply_field_policies_to_v2_status(contract_v2: dict[str, Any], source_contra
             by_widget.setdefault(widget_id, []).append(row)
 
     def apply_policy(row: dict[str, Any], policy: dict[str, Any]) -> None:
+        def merge_flag(key: str, value: bool) -> None:
+            if not tighten_only:
+                row[key] = value
+            elif key in {"readonly", "required"} and value:
+                row[key] = True
+
         visible_profiles = policy.get("visible_profiles")
-        if isinstance(visible_profiles, list) and visible_profiles:
-            row["visible"] = render_profile in {str(item) for item in visible_profiles}
+        if not tighten_only and isinstance(visible_profiles, list) and visible_profiles:
+            merge_flag("visible", render_profile in {str(item) for item in visible_profiles})
         readonly_profiles = policy.get("readonly_profiles")
         if isinstance(readonly_profiles, list) and readonly_profiles:
-            row["readonly"] = render_profile in {str(item) for item in readonly_profiles}
+            merge_flag("readonly", render_profile in {str(item) for item in readonly_profiles})
         required_profiles = policy.get("required_profiles")
         if isinstance(required_profiles, list) and required_profiles:
-            row["required"] = render_profile in {str(item) for item in required_profiles}
+            merge_flag("required", render_profile in {str(item) for item in required_profiles})
         for key in ("visible", "readonly", "required", "disabled"):
-            if isinstance(policy.get(key), bool):
-                row[key] = bool(policy.get(key))
+            if isinstance(policy.get(key), bool) and (not tighten_only or key in {"readonly", "required"}):
+                merge_flag(key, bool(policy.get(key)))
         row["auth"] = "none" if row.get("visible") is False else "read" if row.get("readonly") else "edit"
 
     for field_name, policy in field_policies.items():
@@ -476,6 +487,34 @@ def apply_field_policies_to_v2_status(contract_v2: dict[str, Any], source_contra
         for row in rows:
             apply_policy(row, policy)
     set_v2_widget_status(contract_v2, widget_status)
+
+
+def snapshot_business_form_policy(source_contract: dict[str, Any]) -> tuple[dict[str, Any], list[Any], dict[str, Any]]:
+    policy = source_contract.get("business_form_policy")
+    if not isinstance(policy, dict):
+        return {}, [], {}
+    groups = source_contract.get("field_groups")
+    field_policies = source_contract.get("field_policies")
+    return (
+        deepcopy(policy),
+        deepcopy(groups) if isinstance(groups, list) else [],
+        deepcopy(field_policies) if isinstance(field_policies, dict) else {},
+    )
+
+
+def restore_business_form_policy(
+    source_contract: dict[str, Any],
+    policy: dict[str, Any],
+    field_policies: dict[str, Any],
+) -> None:
+    if policy:
+        source_contract["business_form_policy"] = policy
+    if field_policies:
+        governed = source_contract.get("field_policies")
+        source_contract["field_policies"] = {
+            **(governed if isinstance(governed, dict) else {}),
+            **field_policies,
+        }
 
 
 def ensure_native_layout_widget_status_visible(contract_v2: dict[str, Any]) -> None:

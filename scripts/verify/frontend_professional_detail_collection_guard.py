@@ -50,16 +50,26 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("FormSection does not route one2many through the detail collection adapter")
     if '!detailCollectionOwnsVisibleTitle(field)' not in section:
         failures.append("FormSection does not defer editable detail title ownership to the detail collection")
-    if "if (field.readonly || !props.relationAdapter) return false;" not in section:
-        failures.append("readonly detail collections do not retain their external field label")
+    if "if (!props.relationAdapter) return false;" not in section or "if (field.readonly || !props.relationAdapter)" in section:
+        failures.append("readonly detail collections duplicate the collection-owned title as an external field label")
     if "return usesProfessionalOne2many(field) || usesPaymentSettlementDetailCollection(field);" not in section:
         failures.append("detail collection title ownership is not shared across formal detail renderers")
     if "<X2ManyRelationRenderer" not in section:
         failures.append("detail collection bypasses the governed x2many runtime")
     if "data-detail-collection-pagination" not in renderer or "one2manyPageSize = 20" not in renderer:
         failures.append("detail collection pagination is not bounded and explicit")
-    if "ellipsis: false" not in renderer or "ellipsis: true" in renderer:
+    if ("detailCollectionColumnPresentation(column, columnIndex, false)" not in renderer
+            or "ellipsis: readonly &&" not in model):
         failures.append("detail collection editable controls are wrapped by TDesign text ellipsis")
+    if ('<ScPopover' not in renderer
+            or 'readonlyCellCanExpand(column, row[column.name])' not in renderer
+            or ':aria-label="`查看完整${column.label}：${readonlyCellValue(row[column.name])}`"' not in renderer):
+        failures.append("readonly detail truncation does not provide an actionable complete-value viewer")
+    if ("detailCollectionMobileColumnSplit" not in model
+            or "detailCollectionMobileColumnSplit" not in renderer
+            or '<ScDisclosure' not in renderer
+            or '查看其余 ${readonlyMobileAdditionalColumns.length} 项信息' not in renderer):
+        failures.append("readonly mobile details do not preserve trailing facts behind an actionable disclosure")
     if "return one2manyRows.value.reduce" not in renderer:
         failures.append("detail collection amount total is not authoritative across every visible row")
     if "return paginatedOne2manyRows.value.reduce" in renderer:
@@ -127,6 +137,14 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("desktop and mobile detail layouts do not share the same cell editor")
     if renderer.count("adapter.one2manyEffectiveColumn(field.name,") != 2:
         failures.append("desktop and mobile detail cells do not consume row-specific modifiers")
+    readonly_columns = renderer.split("const readonlyO2mTableColumns", 1)[-1].split("const o2mTableData", 1)[0]
+    if "title: '行变更'" in readonly_columns or "stateColumn" in readonly_columns:
+        failures.append("readonly detail collections expose draft row-change status as a primary column")
+    readonly_template = renderer.split('<div v-if="field.readonly" class="o2m-readonly"', 1)[-1].split("<template v-else>", 1)[0]
+    if "one2manyRowStateLabel(row)" in readonly_template:
+        failures.append("readonly mobile detail cards expose draft row-change status")
+    if "第 {{ (one2manyPage - 1) * one2manyPageSize + rowIndex + 1 }} 条" not in readonly_template:
+        failures.append("readonly mobile detail cards omit stable row identity")
     if "one2manyEffectiveColumn: (name: string, row: RelationFieldRow, column: RelationFieldColumn)" not in relation_types:
         failures.append("detail collection adapter omits row-specific modifier consumption")
     if "title: column.label" not in renderer:

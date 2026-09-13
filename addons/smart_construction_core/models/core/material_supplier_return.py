@@ -71,6 +71,7 @@ class ScMaterialSupplierReturn(models.Model):
             ("returned", "已退货"),
             ("cancel", "已取消"),
         ],
+        string="状态",
         default="draft",
         required=True,
         tracking=True,
