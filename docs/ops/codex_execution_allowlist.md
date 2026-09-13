@@ -166,10 +166,13 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
     * 非 prod 环境
     * 非 main / prod
     * 工作区干净（包括未跟踪文件）
+    * 内容绑定的生成证据已经通过 `make ci.generated_evidence.preflight`
+    * 推送前验证保持只读，不刷新或改写 tracked 文件
     * 选定 remote 必须精确指向 `https://github.com/lidefend/sce-backend-odoo.git`
     * 在 push 前通过只读可访问性预检；失败则零 push 退出
 
   * 禁止 `pr.push` 写入 `main`、Gitee 或其他远端；GitHub push 失败时必须以非零状态报告并给出 `make pr.push` 恢复命令
+  * 生成证据需要更新时，必须先运行 `make ci.delivery.freeze.prepare`，审阅并提交差异，再冻结 HEAD 和运行一次 Quick；不得在 `pr.push` 中自动生成新候选
   * 禁止 force push，禁止自动删除远端分支
 
 * `make pr.merge PR=<number> EXPECTED_HEAD=<full-40-char-sha>`

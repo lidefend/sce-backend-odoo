@@ -1,0 +1,43 @@
+schema_version: 1
+goal:
+  id: P4-GOVERNED-DELIVERY-FREEZE-EFFICIENCY
+  title: governed_delivery_freeze_efficiency
+  status: verification_pending
+  formal_product_layer: P4
+  layer_target: local_iteration_l2_recommendation_and_freeze_safe_publication
+  module:
+    - make/ci.mk
+    - scripts/verify/frontend_dev_incremental.py
+    - scripts/ops/git_safe_push.sh
+    - governance documentation
+  objective: >-
+    Prepare all content-bound generated evidence before the final commit, keep
+    post-freeze publication verification read-only, and recommend affected
+    registered frontend L2 targets without running them in the L1 entry.
+  boundary:
+    standard_vs_user_specific: delivery_governance_mechanism
+    why_here: >-
+      Candidate invalidation and late primitive-adapter discovery are delivery
+      orchestration defects, not product or business semantics.
+    why_not_elsewhere:
+      - no_product_runtime_or_frontend_behavior_change
+      - no_contract_schema_or_business_semantic_change
+      - no_database_fixture_acceptance_or_release_operation
+    blast_radius:
+      - ci.local.iteration_recommendation_output
+      - ci.delivery.freeze.prepare
+      - make_pr_push_pre_remote_checks
+  acceptance:
+    - template_and_ui_package_changes_recommend_primitive_adapter_l2
+    - mixed_changes_keep_manual_l2_for_each_unmapped_path
+    - recommendation_mode_runs_no_tests_and_issues_no_evidence
+    - planner_and_push_behavior_tests_use_registered_make_targets_and_quick
+    - freeze_prepare_refreshes_then_verifies_all_content_bound_evidence
+    - pr_push_never_invokes_a_tracked_evidence_refresh
+    - stale_evidence_stops_before_remote_access
+    - exact_head_quick_runs_once_only_after_clean_freeze
+  rollback:
+    - revert_the_single_p4_delivery_commit
+  next_exact_step: >-
+    Commit all reviewed source and generated evidence, freeze one clean
+    candidate, and run one exact-head Quick.

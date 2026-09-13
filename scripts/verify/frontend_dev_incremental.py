@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[2]
 WATCH_ROOTS = (
     "frontend/apps/web/src",
     "frontend/apps/web/scripts",
+    "frontend/packages/ui/src",
     "scripts/verify/frontend_",
 )
 STATE_PATH = ROOT / ".runtime/frontend-dev-validation/status.json"
@@ -47,12 +48,13 @@ RULES = (
         "verify.frontend.navigation_shell.unit",
         "verify.frontend.page_pattern_reference_parity.unit",
     )),
-    Rule(("/components/design-system/",), (
+    Rule(("/components/design-system/", "frontend/packages/ui/"), (
         "verify.frontend.primitive_adapter.unit",
         "verify.frontend.page_pattern_reference_parity.unit",
     )),
     Rule(("/pages/contractForm/", "/components/template/"), (
         "verify.frontend.canonical_form_presenter.unit",
+        "verify.frontend.primitive_adapter.unit",
         "verify.frontend.product_page_pattern.unit",
         "verify.frontend.page_pattern_reference_parity.unit",
     )),
@@ -73,7 +75,9 @@ def select_targets(paths: list[str]) -> list[str]:
     frontend_changed = False
     for path in paths:
         normalized = path.replace("\\", "/")
-        frontend_changed = frontend_changed or normalized.startswith("frontend/apps/web/")
+        frontend_changed = frontend_changed or normalized.startswith(
+            ("frontend/apps/web/", "frontend/packages/ui/")
+        )
         for rule in RULES:
             if any(fragment in normalized for fragment in rule.fragments):
                 selected.update(rule.targets)
@@ -106,6 +110,48 @@ def content_snapshot() -> dict[str, str]:
 
 def changed_paths(before: dict[str, str], after: dict[str, str]) -> list[str]:
     return sorted(path for path in before.keys() | after.keys() if before.get(path) != after.get(path))
+
+
+def _git_paths(root: Path, *args: str) -> list[str]:
+    result = subprocess.run(
+        ["git", "-C", str(root), *args],
+        check=True,
+        stdout=subprocess.PIPE,
+    )
+    return [value.decode("utf-8") for value in result.stdout.split(b"\0") if value]
+
+
+def worktree_changed_paths(root: Path = ROOT, base_ref: str = "origin/main") -> list[str]:
+    merge_base = subprocess.run(
+        ["git", "-C", str(root), "merge-base", "HEAD", base_ref],
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+    ).stdout.strip()
+    paths = set(_git_paths(root, "diff", "--name-only", "-z", f"{merge_base}..HEAD"))
+    paths.update(_git_paths(root, "diff", "--name-only", "-z"))
+    paths.update(_git_paths(root, "diff", "--cached", "--name-only", "-z"))
+    paths.update(_git_paths(root, "ls-files", "--others", "--exclude-standard", "-z"))
+    return sorted(paths)
+
+
+def print_plan(paths: list[str]) -> int:
+    targets = select_targets(paths)
+    unmapped_paths = [path for path in paths if not select_targets([path])]
+    payload = {
+        "schemaVersion": 1,
+        "mode": "development_incremental_plan",
+        "status": "recommendation_only",
+        "changedPathCount": len(paths),
+        "targets": targets,
+        "unmappedPathCount": len(unmapped_paths),
+        "unmappedPaths": unmapped_paths,
+        "candidateEvidence": False,
+        "testsRun": False,
+        "manualNonZeroL2Required": bool(unmapped_paths),
+    }
+    print(f"[frontend.dev.incremental.plan] {json.dumps(payload, sort_keys=True)}")
+    return 0
 
 
 def write_state(*, status: str, paths: list[str], targets: list[str], returncode: int | None) -> None:
@@ -141,6 +187,11 @@ def run_targets(paths: list[str]) -> int:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--watch", action="store_true", help="watch source content and validate after each settled batch")
+    parser.add_argument(
+        "--plan-worktree",
+        action="store_true",
+        help="recommend affected frontend L2 targets without running them",
+    )
     parser.add_argument("--path", action="append", default=[], help="validate an explicit repository-relative path")
     parser.add_argument("--interval", type=float, default=0.75)
     parser.add_argument("--debounce", type=float, default=0.8)
@@ -171,8 +222,14 @@ def watch(interval: float, debounce: float) -> int:
 
 def main() -> int:
     args = parse_args()
+    if args.watch and args.plan_worktree:
+        raise SystemExit("--watch and --plan-worktree are mutually exclusive")
     if args.watch:
         return watch(args.interval, args.debounce)
+    if args.plan_worktree:
+        if args.path:
+            raise SystemExit("--plan-worktree does not accept --path")
+        return print_plan(worktree_changed_paths())
     if not args.path:
         raise SystemExit("at least one --path is required outside --watch mode")
     return run_targets(args.path)
