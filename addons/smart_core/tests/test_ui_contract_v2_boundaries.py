@@ -987,6 +987,37 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(rows[first]["auth"], "read")
         self.assertEqual(rows[second]["auth"], "read")
 
+    def test_projection_tighten_only_preserves_native_restrictions_and_reapplies_policy(self):
+        contract = {
+            "statusContract": {
+                "widgetStatus": [
+                    {"widgetId": "field.state", "visible": True, "readonly": False, "required": False, "disabled": False, "auth": "edit"},
+                    {"widgetId": "field.native_readonly", "visible": True, "readonly": True, "required": False, "disabled": False, "auth": "read"},
+                    {"widgetId": "field.native_visible", "visible": True, "readonly": False, "required": False, "disabled": False, "auth": "edit"},
+                ],
+            },
+        }
+        source = {
+            "render_profile": "create",
+            "field_policies": {
+                "state": {"readonly_profiles": ["create", "edit", "readonly"]},
+                "native_readonly": {"readonly_profiles": ["readonly"]},
+                "native_visible": {"visible_profiles": ["readonly"]},
+            },
+        }
+
+        self.module._projection.apply_field_policies_to_v2_status(
+            contract, source, tighten_only=True
+        )
+
+        rows = {row["widgetId"]: row for row in contract["statusContract"]["widgetStatus"]}
+        self.assertTrue(rows["field.state"]["readonly"])
+        self.assertEqual(rows["field.state"]["auth"], "read")
+        self.assertTrue(rows["field.native_readonly"]["readonly"])
+        self.assertEqual(rows["field.native_readonly"]["auth"], "read")
+        self.assertTrue(rows["field.native_visible"]["visible"])
+        self.assertEqual(rows["field.native_visible"]["auth"], "edit")
+
     def test_projection_marks_native_visible_layout_fields_editable(self):
         handler = self.module.UiContractV2Handler(env=object())
         contract = {

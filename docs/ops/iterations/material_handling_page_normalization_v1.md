@@ -190,3 +190,5 @@
 - 第一次补项浏览器回归按新增断言准确失败，退货状态为 `data-field-state=required`；第二跳修复后同一 1440 浅色三页聚焦回归通过，退货新建正文不再暴露可编辑状态，业务指纹前后不变。受管重启后的首次 health 两次命中 `starting`，容器健康事实变化后复查均通过；未重复重启或改业务数据。
 - 完整 `test_ui_contract_v2_boundaries.py` 文件级诊断中 100 项运行、95 项通过，5 项因既有测试调用 `_build_form_structure_contract` 缺少已有必需参数 `field_label` 报错；它们不在本改动路径，按硬锁记录后不重试、不顺修。受影响策略与 hydration 子集均为非零通过。
 - 第一版 S1 修复候选的完整 Quick 在末段 `ui_contract_v2_responsibility_map_guard` 按行预算失败（`4334 > 4312`），因此没有 receipt。策略快照/恢复随后下沉到既有 `ui_contract_v2_projection.py`，handler 只保留调用编排；责任映射门禁、策略保留 1 项、final hydration 5 项和 iteration 11 项均通过。该搬移不改变运行契约或前端输入，浏览器产品结果可按确定性影响分析保留，但最终 HEAD、完整指纹与 Quick 必须重新冻结。
+- 第二轮独立复核发现新的 P0 S1：final hydration 用裸布尔 OR 保留策略时，也会把依赖缺失阶段的临时 fail-closed `readonly/required=true` 永久锁住。修复改为两阶段：先让 final hydration 用补齐依赖后的 native verdict 覆盖临时回退，再以 `tighten_only` 仅重放业务字段策略的 readonly/required；可见性和 disabled 不在该末段重放。新增反例覆盖 unresolved → resolved false，并证明 native readonly 不被放宽。
+- 第一次两阶段浏览器回归又准确发现 `tighten_only` 过度包含 visible，导致出库新建说明/附件被隐藏；业务指纹未变。收窄到 readonly/required 后，三页 1440 聚焦回归通过：出库后置补充区恢复，退货流程状态仍不提供可编辑正文控件。该失败不重试未变化输入，修复后才重新运行。

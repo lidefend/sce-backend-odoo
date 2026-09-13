@@ -921,6 +921,7 @@ class UiContractV2Handler(BaseIntentHandler):
         )
         modifier_dependencies_at = time.monotonic()
         hydrate_final_layout_modifier_status(contract_v2)
+        _projection.apply_field_policies_to_v2_status(contract_v2, source_contract, tighten_only=True)
         hydrate_final_action_modifier_status(contract_v2)
         modifier_status_at = time.monotonic()
         contract_v2 = trim_unified_page_contract_v2(

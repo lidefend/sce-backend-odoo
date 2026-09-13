@@ -2252,13 +2252,18 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertTrue(status["disabled"])
         self.assertEqual(status["reasonCode"], "NATIVE_MODIFIER_UNRESOLVED")
 
-    def test_final_layout_modifier_hydration_preserves_stricter_projected_field_policy(self):
+    def test_final_layout_modifier_hydration_releases_resolved_fail_closed_status(self):
         contract = {
             "layoutContract": {"containerTree": [{
                 "type": "field",
                 "name": "workflow_state",
                 "widgetId": "field.workflow_state.occ.test",
-                "modifiers": {"readonly": False, "required": False},
+                "modifiers": {
+                    "invisible": False,
+                    "column_invisible": False,
+                    "readonly": False,
+                    "required": False,
+                },
             }]},
             "statusContract": {
                 "containerStatus": [],
@@ -2267,8 +2272,9 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                     "visible": True,
                     "readonly": True,
                     "required": True,
-                    "disabled": False,
+                    "disabled": True,
                     "auth": "read",
+                    "reasonCode": "NATIVE_MODIFIER_UNRESOLVED",
                 }],
             },
             "dataContract": {"mainData": {"workflow_state": "draft"}},
@@ -2277,9 +2283,11 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         assembler.hydrate_final_layout_modifier_status(contract)
 
         status = contract["statusContract"]["widgetStatus"][0]
-        self.assertTrue(status["readonly"])
-        self.assertTrue(status["required"])
-        self.assertEqual(status["auth"], "read")
+        self.assertFalse(status["readonly"])
+        self.assertFalse(status["required"])
+        self.assertFalse(status["disabled"])
+        self.assertEqual(status["auth"], "edit")
+        self.assertNotIn("reasonCode", status)
 
     def test_final_layout_modifier_hydration_fails_closed_for_malformed_comparisons(self):
         for modifier in (
