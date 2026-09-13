@@ -75,6 +75,7 @@ from .core_extension import (  # noqa: F401
     smart_core_lowcode_config_recovery_parent_menu_xmlids,
     smart_core_business_root_menu_xmlid,
     smart_core_relation_entry_policy,
+    smart_core_business_category_policy_bindings,
     smart_core_model_specific_form_contract_policy,
     smart_core_form_field_aliases,
     smart_core_menu_delivery_token_policy,

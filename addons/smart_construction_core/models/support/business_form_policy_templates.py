@@ -831,8 +831,87 @@ def _contract_handling_policy(title: str, *, supplement: bool = False, expense: 
     if expense:
         basic_fields.append("expense_contract_category_id")
     basic_fields.append("engineering_address")
-    return _policy(
-        [
+    if not expense and not supplement:
+        sections = [
+            _section(
+                "contract_identity",
+                "身份与基本资料",
+                [
+                    "business_category_id",
+                    "subject",
+                    "project_id",
+                    "partner_id",
+                    "date_contract",
+                    "operation_strategy",
+                    "handler_id",
+                    "date_start",
+                    "date_end",
+                ],
+                10,
+            ),
+            _section(
+                "contract_scope",
+                "合同范围",
+                [
+                    "category_id",
+                    "engineering_category_text",
+                    "engineering_address",
+                    "affiliated_person",
+                    "engineering_content",
+                    "contract_duration_text",
+                    "contract_payment_method_text",
+                ],
+                20,
+            ),
+            _section(
+                "contract_detail_amount",
+                "合同明细与金额",
+                [
+                    "line_ids",
+                    "tax_id",
+                    "currency_id",
+                    "line_amount_total",
+                    "visible_contract_amount",
+                    "amount_untaxed",
+                    "amount_tax",
+                    "amount_total",
+                    "amount_final",
+                ],
+                30,
+            ),
+            _section(
+                "handling",
+                "说明与附件",
+                [
+                    "budget_id",
+                    "analytic_id",
+                    "archived",
+                    "note",
+                    "attachment_ids",
+                    "attachment_text",
+                ],
+                40,
+            ),
+            _section("execution", "履约信息", list(ledger), 70, collapsed=True),
+            _section(
+                "system_identity",
+                "系统信息",
+                ["type", "state", "name"],
+                85,
+                collapsed=True,
+                visible_profiles=EDIT_READONLY,
+            ),
+            _section(
+                "source_trace",
+                "来源与系统追溯",
+                list(trace) + list(APPROVAL_FIELDS),
+                90,
+                collapsed=True,
+                visible_profiles=READONLY_ONLY,
+            ),
+        ]
+    else:
+        sections = [
             _section("business_identity", "办理类型", identity_fields, 10),
             _section("business_object", "项目与往来单位", ["project_id", "partner_id", "operation_strategy"], 20),
             _section("contract_basic", title, basic_fields, 30),
@@ -843,11 +922,21 @@ def _contract_handling_policy(title: str, *, supplement: bool = False, expense: 
             _section("execution", "执行结果", list(ledger), 80, collapsed=True),
             _section("system_identity", "系统信息", ["type", "state", "name"], 85, collapsed=True, visible_profiles=EDIT_READONLY),
             _section("source_trace", "来源与系统追溯", list(trace) + list(APPROVAL_FIELDS), 90, collapsed=True, visible_profiles=READONLY_ONLY),
-        ],
+        ]
+    return _policy(
+        sections,
         required=tuple(required),
         readonly_all=("operation_strategy", "type", "state", "name") + SYSTEM_FIELDS,
+        hide_create=SYSTEM_FIELDS,
         trace=trace + APPROVAL_FIELDS,
-        ledger=ledger + ("amount_untaxed", "amount_tax", "amount_total"),
+        ledger=ledger + (
+            "line_amount_total",
+            "visible_contract_amount",
+            "amount_untaxed",
+            "amount_tax",
+            "amount_total",
+            "amount_final",
+        ),
     )
 
 

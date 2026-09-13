@@ -249,49 +249,77 @@
                 </header>
                 <sheet>
                     <field name="contract_id" invisible="1" />
-                    <group>
+                    <field name="type" readonly="1" invisible="1" />
+                    <field name="currency_id" invisible="1" />
+                    <group name="sc_income_contract_identity" string="身份与基本资料" col="4" data-sc-anchor="income-contract-identity">
                         <group>
-                            <field name="name" />
-                            <field name="document_status" />
-                            <field name="subject" />
                             <field name="business_category_id" />
-                            <field name="type" readonly="1" invisible="1" />
+                            <field name="subject" />
                             <field name="project_id" required="1" />
-                            <field name="operation_strategy" readonly="1" />
                             <field name="partner_id" string="发包人" required="1" />
+                            <field name="date_contract" />
+                        </group>
+                        <group>
+                            <field name="operation_strategy" readonly="1" />
+                            <field name="handler_id" />
+                            <field name="date_start" />
+                            <field name="date_end" />
+                        </group>
+                    </group>
+                    <group name="sc_income_contract_scope" string="合同范围" col="4" data-sc-anchor="income-contract-scope">
+                        <group>
                             <field name="category_id" />
-                            <field name="contract_type_id" />
-                            <field name="engineering_address" />
                             <field name="engineering_category_text" />
+                            <field name="engineering_address" />
                             <field name="affiliated_person" />
+                        </group>
+                        <group>
                             <field name="engineering_content" />
                             <field name="contract_duration_text" />
                             <field name="contract_payment_method_text" />
-                            <field name="attachment_text" />
-                        </group>
-                        <group>
-                            <field name="company_id" readonly="1" />
-                            <field name="reject_reason" readonly="1" modifiers="{&quot;invisible&quot;: [[&quot;reject_reason&quot;,&quot;=&quot;,false]]}" />
-                            <field name="currency_id" invisible="1" />
-                            <field name="date_contract" />
-                            <field name="date_start" />
-                            <field name="date_end" />
-                            <field name="budget_id" />
-                            <field name="analytic_id" />
-                            <field name="handler_id" />
-                            <field name="entry_user_id" />
-                            <field name="entry_user_text" />
-                            <field name="entry_time" />
-                            <field name="archived" />
                         </group>
                     </group>
-                    <group string="收入金额概览" colspan="2">
-                        <field name="tax_id" />
-                        <field name="visible_contract_amount" readonly="1" />
-                        <field name="amount_untaxed" readonly="1" />
-                        <field name="amount_tax" readonly="1" />
-                        <field name="amount_total" readonly="1" />
-                        <field name="amount_final" readonly="1" />
+                    <group name="sc_income_contract_detail_amount" string="合同明细与金额" col="1" data-sc-anchor="income-contract-detail-amount">
+                        <field name="line_ids" context="{'default_contract_id': contract_id}">
+                            <tree editable="bottom">
+                                <field name="sequence" widget="handle" />
+                                <field name="project_id" invisible="1" />
+                                <field name="boq_name" />
+                                <field name="uom_id" />
+                                <field name="qty_contract" />
+                                <field name="price_contract" />
+                                <field name="amount_contract" readonly="1" />
+                                <field name="boq_line_id" />
+                                <field name="boq_code" />
+                                <field name="delta_amount" sum="差额合计" />
+                            </tree>
+                        </field>
+                        <group col="4">
+                            <group>
+                                <field name="tax_id" />
+                                <field name="line_amount_total" readonly="1" />
+                                <field name="visible_contract_amount" readonly="1" />
+                                <field name="amount_untaxed" readonly="1" />
+                            </group>
+                            <group>
+                                <field name="amount_tax" readonly="1" />
+                                <field name="amount_total" readonly="1" />
+                                <field name="amount_final" readonly="1" />
+                            </group>
+                        </group>
+                    </group>
+                    <group name="sc_income_contract_handling" string="说明与附件" col="2" data-sc-anchor="income-contract-handling">
+                        <group>
+                            <field name="budget_id" />
+                            <field name="analytic_id" />
+                            <field name="archived" />
+                            <field name="note" />
+                        </group>
+                        <group>
+                            <field name="attachment_text" string="历史附件文本" />
+                        </group>
+                    </group>
+                    <group name="sc_income_contract_execution" string="履约信息" col="4" data-sc-anchor="income-contract-execution" data-sc-collapsible="1" data-sc-collapsed-by-default="1">
                         <field name="settlement_amount" readonly="1" />
                         <field name="invoice_amount" readonly="1" />
                         <field name="uninvoiced_amount" readonly="1" />
@@ -302,31 +330,16 @@
                         <field name="visible_unreceived_amount" />
                         <field name="visible_unreceived_rate" />
                     </group>
-                    <notebook>
-                        <page string="合同明细">
-                            <field name="line_ids" context="{'default_contract_id': contract_id}">
-                                <tree editable="bottom">
-                                    <field name="sequence" widget="handle" />
-                                    <field name="project_id" invisible="1" />
-                                    <field name="boq_line_id" />
-                                    <field name="boq_code" />
-                                    <field name="boq_name" />
-                                    <field name="uom_id" />
-                                    <field name="qty_contract" />
-                                    <field name="price_contract" />
-                                    <field name="amount_contract" readonly="1" />
-                                    <field name="delta_amount" sum="差额合计" />
-                                </tree>
-                            </field>
-                        </page>
-                        <page string="审批信息">
-                            <field name="approval_info" />
-                            <field name="attachment_text" />
-                        </page>
-                        <page string="备注">
-                            <field name="note" />
-                        </page>
-                    </notebook>
+                    <group name="sc_income_contract_source_trace" string="来源与系统追溯" col="4" data-sc-anchor="income-contract-source-trace" data-sc-collapsible="1" data-sc-collapsed-by-default="1">
+                        <field name="name" readonly="1" />
+                        <field name="document_status" readonly="1" />
+                        <field name="company_id" readonly="1" />
+                        <field name="entry_user_id" readonly="1" />
+                        <field name="entry_user_text" readonly="1" />
+                        <field name="entry_time" readonly="1" />
+                        <field name="approval_info" readonly="1" />
+                        <field name="reject_reason" readonly="1" modifiers="{&quot;invisible&quot;: [[&quot;reject_reason&quot;,&quot;=&quot;,false]]}" />
+                    </group>
                 </sheet>
             </form>
         </field>
