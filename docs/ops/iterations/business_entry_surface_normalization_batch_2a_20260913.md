@@ -6,13 +6,14 @@
 
 - Formal Product Layer：P1 建筑行业标准产品。
 - Layer Target：`smart_construction_core` 中 `res.users` 的 action-scoped
-  人员档案、数据权限列表/表单/搜索配置。
+  人员档案、数据权限列表/表单/搜索配置，以及既有项目成员授权的受管写入适配。
 - Standard vs User-Specific：两类办理职责属于行业产品的标准入口表达，不是客户特例。
 - Why Here：人员档案与数据权限都是既有正式入口，本批只重组各入口的编辑职责。
 - Why Not Elsewhere：不改 P0 renderer，不改 ACL、record rule、组成员、运行时低代码配置，
   不用 P4 脚本承载长期产品语义。
 - Blast Radius：仅 `action_sc_runtime_user_management/menu_sc_runtime_user_management`
-  与 `action_sc_product_data_permission_v1/menu_sc_product_data_permission_v1`。
+  与 `action_sc_product_data_permission_v1/menu_sc_product_data_permission_v1`，及两入口共用的
+  `sc.project.member.assignment` 写入路径。
   89 个正式入口只是静态盘点范围，不代表 89 个页面需要修改；名称差异也不自动构成缺陷。
 
 ## 2. 角色承接结论
@@ -43,17 +44,22 @@
   “主公司”，`company_ids` 保持“允许公司”，没有将主公司降级为普通标签。
 - 数据权限保留只读人员身份，并集中编辑主/允许公司、业务权限角色和项目成员授权。
 - 两个 action 都继续绑定各自专用 tree/form/search view；共享 `res.users` 公共视图未改。
-- 未改 P0、ACL、record rule、组继承、菜单授权和账号后端行为。
+- 原受管 `res.users.write` 会过滤页面提交的项目成员 one2many 命令，形成“可编辑但不保存”。
+  本批将该命令从提权的用户字段写入中剥离，以当前管理员身份调用既有
+  `sc.project.member.assignment` ACL 与公司记录规则；只允许新增、修改或停用，拒绝跨人员修改、
+  物理删除、重新归属和不可读项目。
+- 未改 P0、ACL、record rule、组继承、菜单授权以及账号创建、启停和密码机制。
 
 ## 4. 分层验证
 
 - L1 静态：业务入口 ownership guard 7 项、administration wave1 guard 1 项、
   configuration wave1 guard 1 项全部通过；XML、Python 编译与 diff check 通过。
-- L2 非零定向：`data_permission_surface` 7 项 Odoo 测试通过，其中新增运行时菜单可见性反例；
-  `runtime_user_management` 16 项 Odoo 测试通过。测试覆盖入口角色继承非对称、
+- L2 非零定向：`data_permission_surface` 5 个方法 / 7 条 Odoo 统计通过，其中新增运行时菜单可见性反例；
+  `runtime_user_management` 18 个方法 / 20 条 Odoo 统计通过。测试覆盖入口角色继承非对称、
   同模型/同范围、专用视图、只读身份、兼容授权控件，以及资料安全 payload 不携带
-  账号、公司、角色或项目授权字段。
-- L3 受管运行态：`smart_construction_core` 增量升级与 authority verification 通过。
+  账号、公司、角色或项目授权字段；另覆盖项目授权新增、停用更新、跨人员拒绝和删除拒绝。
+- L3 受管运行态：产品提交 `cd8f2b72bba7fe094541e6db62c1c490c83c836e`
+  的 `smart_construction_core 17.0.0.164` 增量升级与 authority verification 通过。
   一次旧 P4 guard 在当前模块集引用不存在的 `sc.legacy.user.profile`，未作为本产品失败，
   也未扩大为历史工具修复。
 - L4 只读浏览器：候选
@@ -77,11 +83,13 @@
 - 无权角色反例：
   `artifacts/playwright/batch2a-personnel-auth-denied/summary.json`。
 - 浏览器产物为工作树本地、不进入 Git 的运行证据；最终文档 HEAD 的 Quick 另行绑定。
+- 浏览器证据绑定较早的只读 UI 候选；后续 `cd8f2b72…` 只修改 P1 后端授权写入适配和定向测试，
+  未改已复核的页面结构，因此未重复菜单、主题或视口矩阵。
 - 待产品决策：是否收回业务配置管理员在人员档案中的授权维护能力，或扩大数据权限入口。
   在决策前，兼容授权页签是能力无损边界，不是最终字段互斥承诺。
 - 无账号人员不在本批 `res.users` 范围内，另行登记员工档案覆盖缺口。
 
 ## 6. 回滚
 
-回退本批 P1 视图、契约表达、定向测试和文档提交即可。没有 schema、权限或业务数据迁移，
+回退本批 P1 视图、契约表达、受管项目授权写入适配、定向测试和文档提交即可。没有 schema、权限或业务数据迁移，
 不需要数据库数据回滚；已增量升级的 XML 可由回退版本再次受管升级恢复。

@@ -9357,3 +9357,5 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   非个人占位；旧 blob `6e834cc56feb65b95d983b6bb86eb4c66bb0c59a` 只按 `PD002`、精确文件路径、
   `MOBILE_PHONE_PATTERN` 和 synthetic fixture 原因登记，不豁免目录、当前分支或后续 blob。
 - Batch-2A 承接补证新增单一事务级运行时菜单反例：仅持有业务配置管理员组的用户可见人员档案、不可见数据权限；行业配置管理员因既有继承可见两者。`data_permission_surface` 7 项通过，测试事务回滚且未改现有账号/权限。该结果确认数据权限当前不能无损承接全部旧维护者，人员档案兼容授权页签继续保留；未修改 ACL、record rule、组继承、菜单授权或 P0。
+- 同步主线后发现两入口共用的项目成员 one2many 命令会被受管 `res.users.write` 白名单丢弃，形成“可编辑但不保存”。P1 提交 `cd8f2b72bba7fe094541e6db62c1c490c83c836e` 将该命令从提权用户字段写入中分离，以当前管理员身份复用既有 `sc.project.member.assignment` ACL、公司记录规则和停用归档语义；不新增权限、不把命令交给 `sudo()`。
+- `runtime_user_management` 18 个方法 / 20 条 Odoo 统计通过，覆盖项目授权新增、停用更新、跨人员拒绝、批量目标拒绝和物理删除拒绝；`data_permission_surface` 5 个方法 / 7 条统计继续通过。`smart_construction_core 17.0.0.164` 在 `sc-local-dev/sc_dev_demo` 受管增量升级与 authority verification 通过。行业边界全量守卫仍命中 BOQ/showcase 等 11 个 main 基线既存项，同一 clean main 复核结果一致，本批不扩展处理。

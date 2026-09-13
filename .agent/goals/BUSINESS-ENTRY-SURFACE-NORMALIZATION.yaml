@@ -68,18 +68,20 @@ goal:
       title: personnel_profile_and_authorization_boundary
       status: review_ready
       branch: codex/personnel-authorization-boundary-v1
-      baseline: dbf1e171281bd920c39099be7085718c892b10f4
-      product_candidate: ab8827aa50d8339d5d5c777123771b14e178de0a
+      baseline: 45cd638b5764bfbcfe722be3f0f916756711ee8a
+      product_candidate: cd8f2b72bba7fe094541e6db62c1c490c83c836e
       decision:
         - personnel_and_data_permission_use_res_users_and_the_same_company_domain
         - industry_config_admin_implies_business_config_admin_but_not_the_reverse
         - authorization_fields_remain_in_the_personnel_compatibility_tab_until_product_authorizes_a_permission_change
         - no_acl_record_rule_group_membership_or_p0_renderer_change
+        - project_assignment_commands_use_existing_actor_acl_and_company_rules_without_sudo
       validation:
         - data_permission_surface_odoo_tests_7_passed
         - runtime_business_admin_personnel_visible_data_permission_denied
         - runtime_industry_admin_both_entries_visible
-        - runtime_user_management_odoo_tests_16_passed
+        - runtime_user_management_odoo_methods_18_and_statistics_20_passed
+        - project_assignment_create_deactivate_cross_user_and_delete_boundaries_passed
         - governed_incremental_upgrade_smart_construction_core_passed
         - exact_menu_action_runtime_authority_confirmed_for_system_admin
         - both_lists_and_forms_opened_for_res_users_39_on_desktop_and_mobile

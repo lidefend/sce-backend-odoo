@@ -6,13 +6,15 @@
 
 - Formal Product Layer: P1 construction-industry standard product.
 - Layer Target: action-scoped `res.users` list/form/search configuration for the
-  personnel-profile and data-permission entries in `smart_construction_core`.
+  personnel-profile and data-permission entries in `smart_construction_core`, plus
+  the governed write adapter for existing project-member authorization.
 - The batch reorganizes responsibilities of two existing formal entries. It does
   not change the P0 renderer, ACLs, record rules, group membership, or low-code
   runtime configuration.
 - Blast radius is limited to
   `action_sc_runtime_user_management/menu_sc_runtime_user_management` and
-  `action_sc_product_data_permission_v1/menu_sc_product_data_permission_v1`.
+  `action_sc_product_data_permission_v1/menu_sc_product_data_permission_v1`, plus
+  their shared `sc.project.member.assignment` write path.
   The 89-entry catalog is an inventory scope, not a list of 89 pages to change;
   wording differences alone are not defects.
 
@@ -53,21 +55,29 @@ main/allowed companies, and the existing internal-user seed. Because the model i
 - The data-permission form keeps read-only identity and concentrates editable
   main/allowed company, business-role, and project-member authorization facts.
 - Both actions retain dedicated tree/form/search views. Shared `res.users` views,
-  P0 code, ACLs, record rules, group inheritance, and backend account behavior are
-  unchanged.
+  P0 code, ACLs, record rules, and group inheritance are unchanged.
+- The managed `res.users.write` path previously filtered out the project-member
+  one2many commands submitted by both forms, leaving an editable control that did
+  not persist. The commands are now separated from the privileged user-field write
+  and executed as the current administrator through the existing assignment ACL
+  and company record rule. Only create, update, or deactivate is accepted;
+  cross-user changes, physical deletion, reassignment, and unreadable projects are
+  rejected. Account creation, activation, and password behavior are unchanged.
 
 ## 4. Layered Verification
 
 - Static: business-entry ownership 7 tests, administration-wave guard 1 test,
   and configuration-wave guard 1 test passed; XML/Python/diff checks passed.
-- Targeted Odoo: `data_permission_surface` passed 7 tests, including the new runtime
-  menu-visibility counterexample, and
-  `runtime_user_management` passed 16 tests. Coverage includes asymmetric group
+- Targeted Odoo: `data_permission_surface` passed 5 methods / 7 Odoo statistics,
+  including the runtime menu-visibility counterexample, and
+  `runtime_user_management` passed 18 methods / 20 Odoo statistics. Coverage includes asymmetric group
   inheritance, identical record scope, dedicated views, read-only identity,
   compatibility controls, and profile-only safe payloads that exclude account,
-  company, role, and project-authorization fields.
-- Governed runtime: incremental `smart_construction_core` upgrade and authority
-  verification passed. An old P4 guard referenced absent
+  company, role, and project-authorization fields, plus project-authorization
+  create/deactivate, cross-user denial, and deletion denial.
+- Governed runtime: incremental `smart_construction_core 17.0.0.164` upgrade at
+  product commit `cd8f2b72bba7fe094541e6db62c1c490c83c836e` and authority verification
+  passed. An old P4 guard referenced absent
   `sc.legacy.user.profile` in the current module set; it was not misclassified as
   a product failure or expanded into historical tooling work.
 - Read-only browser: candidate
@@ -94,12 +104,16 @@ code was changed to mask the template-record distinction.
   `artifacts/playwright/batch2a-personnel-auth-denied/summary.json`.
 - Browser artifacts are local runtime evidence and are not tracked in Git. The
   final documentation HEAD is bound separately by its final Quick.
+- The browser evidence remains bound to the earlier read-only UI candidate. The
+  later `cd8f2b72…` change only affects the P1 authorization write adapter and
+  targeted tests, so menus, themes, and viewport matrices were not repeated.
 - Product decision remains open: remove the business administrator's existing
   authorization capability, or widen access to the data-permission entry. Until
   then, the compatibility tab is the lossless boundary.
 
 ## 6. Rollback
 
-Revert the P1 view/contract expression, targeted tests, and documentation commits.
+Revert the P1 view/contract expression, governed project-authorization write
+adapter, targeted tests, and documentation commits.
 There is no schema, permission, or business-data migration. A governed module
 upgrade of the reverted version restores the prior XML assembly.
