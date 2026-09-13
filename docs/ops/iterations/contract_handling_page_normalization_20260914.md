@@ -48,6 +48,7 @@ English: [contract_handling_page_normalization_20260914.en.md](contract_handling
 | L4 浅色 | `/home/lidefend/workspace/sce-offrepo/artifacts/playwright/contract-handling-expense-candidate-359c1ff9/` | 支出新建/查看/已有草稿编辑及收入新建，覆盖既定 1440/1088×791/390 样本；摘要均 pass、零写入。该目录不包含收入查看态，不以旧证据冒充当前候选覆盖 |
 | L4 章节 | 同目录 `section-probe/report.json` | 1088/390 的点击、手动滚动、键盘展开/收起、焦点保留和自然增高通过 |
 | L4 深色 | `/home/lidefend/workspace/sce-offrepo/artifacts/playwright/contract-handling-final-preflight-359c1ff9/dark-structure-1088-390-v2/summary.json` | 1088×791、390×844 支出新建/查看逐章节定位、中/底部、导航和响应式边界通过；`mutationCount=0`、无错误 |
+| L4 只读协作反例 | `/home/lidefend/workspace/sce-offrepo/artifacts/playwright/contract-handling-readonly-collaboration-c41ece4a/` | 修复候选 `c41ece4a…` 的收入/支出查看态在 1088×791、390×844 深色样本中均不暴露记录沟通、备注、计划或上传入口；只读历史仍可见；摘要 pass、零写入，完整指纹另存同目录 |
 | L5 | `make ci.delivery.freeze.prepare`、最终一次 `make ci.local.quick`、独立复核 | 最终冻结后由仓外 exact-head receipt 和复核报告记录；本文之后不再通过 tracked 总结改变候选 |
 
 一次附加深色手动定位参数在 runner 的可选等待处超时，归类为 `validation_tool_defect`。移除冗余参数后，受管 runner 自带的逐章节点击和稳定态检查通过；没有原样重试失败输入，也没有修改产品或验证工具。
