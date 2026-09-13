@@ -283,11 +283,11 @@ async function confirmAction() {
 .product-work__filters { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(180px, auto) auto; gap: 12px; align-items: end; padding: var(--sc-product-space-2); border: 0; border-radius: var(--sc-product-radius-panel); background: var(--sc-app-subtle-bg); }
 .product-work__filters label { display: grid; gap: 6px; color: var(--sc-app-text-secondary); font-size: var(--sc-product-text-sm); }
 .product-work__filters :deep(.sc-input), .product-work__filters :deep(.sc-select) { width: 100%; min-height: var(--sc-product-control-height); }
-.work-section { display: grid; gap: 12px; }
+.work-section { display: grid; gap: 10px; }
 .work-section h2 { margin: 0; font-size: 20px; }
 .work-section h2 span { color: var(--sc-app-text-secondary); font-weight: 500; }
 .work-card { min-width: 0; }
-.work-card__main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(120px, max-content); grid-template-areas: 'identity identity' 'title summary' 'disclosure disclosure'; align-items: center; min-width: 0; flex: 1; gap: 6px 16px; }
+.work-card__main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(120px, max-content); grid-template-areas: 'identity identity' 'title summary' 'disclosure disclosure'; align-items: center; min-width: 0; flex: 1; gap: 3px 16px; }
 .work-card__identity { grid-area: identity; display: flex; gap: 8px; align-items: center; }
 .business-type, .status-badge { display: inline-flex; padding: 3px 8px; border-radius: var(--sc-component-tag-radius); background: var(--sc-app-info-bg); color: var(--sc-app-info-text); font-size: var(--sc-product-text-sm); }
 .business-type { white-space: nowrap; }
