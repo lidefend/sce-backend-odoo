@@ -21,6 +21,7 @@ const PERSON_ID = positiveId('PERSON_ID');
 const PROJECT_ID = positiveId('PROJECT_ID');
 const PASSWORD = String(process.env.E2E_PASSWORD || '');
 const OUT = path.resolve(process.env.ARTIFACT_DIR || `artifacts/p4-personnel-authorization/${BATCH}`);
+const NOTE = `P4 页面授权验收 ${BATCH}`;
 
 function deny(message) { throw new Error(`[DENY] ${message}`); }
 function check(value, message, details) {
@@ -148,7 +149,26 @@ function writeRecorder(page) {
     let body;
     try { body = JSON.parse(request.postData() || '{}'); } catch { return; }
     if (body?.intent !== 'api.data' || body?.params?.op !== 'write' || body?.params?.model !== 'res.users' || Number(body?.params?.ids?.[0]) !== PERSON_ID) return;
-    const entry = { at: new Date().toISOString(), request: { intent: body.intent, params: body.params }, outcome: 'pending' };
+    const vals = body.params?.vals && typeof body.params.vals === 'object' ? body.params.vals : {};
+    const assignmentCommands = Array.isArray(vals.sc_project_member_assignment_ids)
+      ? vals.sc_project_member_assignment_ids.map((command) => ({
+        operation: Number(command?.[0]),
+        record_id: Number(command?.[1]) || 0,
+        field_names: command?.[2] && typeof command[2] === 'object' ? Object.keys(command[2]).sort() : [],
+      }))
+      : [];
+    const entry = {
+      at: new Date().toISOString(),
+      request: {
+        intent: body.intent,
+        op: body.params.op,
+        model: body.params.model,
+        ids: body.params.ids,
+        field_names: Object.keys(vals).sort(),
+        assignment_commands: assignmentCommands,
+      },
+      outcome: 'pending',
+    };
     writes.push(entry);
     pending.set(request, entry);
   });
@@ -196,7 +216,12 @@ async function selectProject(page, root, projectName) {
   const editor = root.locator('[data-validation-target*="project_id"]:visible').first();
   await editor.waitFor({ timeout: 15000 });
   const input = editor.locator('input:visible').first();
-  check(!(await input.isDisabled()), 'new assignment project selector is disabled');
+  const enableDeadline = Date.now() + 20000;
+  while (await input.isDisabled() && Date.now() < enableDeadline) await page.waitForTimeout(100);
+  check(!(await input.isDisabled()), 'new assignment project selector is disabled', {
+    editor: (await editor.evaluate((element) => element.outerHTML)).slice(0, 3000),
+    visible_project_editors: await root.locator('[data-validation-target*="project_id"]:visible').count(),
+  });
   await input.click();
   await input.fill(projectName);
   const option = page.locator('.t-select-option:visible, [role="option"]:visible').filter({ hasText: projectName }).first();
@@ -208,6 +233,15 @@ async function setNote(root, note) {
   const editor = root.locator('[data-validation-target*="note"]:visible').first();
   const input = editor.locator('input:visible, textarea:visible').first();
   await input.fill(note);
+}
+async function setSelection(page, root, columnName, optionLabel) {
+  const editor = root.locator(`[data-validation-target*="${columnName}"]:visible`).first();
+  const input = editor.locator('input:visible').first();
+  await input.click();
+  const option = page.locator('.t-select-option:visible, [role="option"]:visible').filter({ hasText: optionLabel }).first();
+  await option.waitFor({ timeout: 15000 });
+  await option.click();
+  check((await input.inputValue()).includes(optionLabel), `${columnName} selection did not persist`);
 }
 async function setActive(root, desired) {
   const editor = root.locator('[data-validation-target*="active"]:visible').first();
@@ -222,11 +256,36 @@ async function existingProjectReadonly(root, projectName) {
   await input.waitFor({ timeout: 15000 });
   return { value: await input.inputValue(), disabled: await input.isDisabled(), matches: (await input.inputValue()).includes(projectName) };
 }
+async function existingAssignmentState(root, projectName, expectedActive) {
+  const project = await existingProjectReadonly(root, projectName);
+  const editor = root.locator('[data-validation-target*="active"]:visible').first();
+  const checkbox = editor.locator('[data-semantic-component="ScCheckbox"]:visible').first();
+  await checkbox.waitFor({ timeout: 15000 });
+  const active = (await checkbox.getAttribute('data-checked')) === 'true';
+  return { ...project, active, expected_active: expectedActive, state_matches: active === expectedActive };
+}
+function diagnosticParams(request) {
+  const params = request?.params && typeof request.params === 'object' ? request.params : {};
+  return {
+    op: String(params.op || ''),
+    model: String(params.model || params.res_model || ''),
+    ids: Array.isArray(params.ids) ? params.ids.map(Number) : [],
+    action_id: Number(params.action_id || 0) || null,
+    menu_id: Number(params.menu_id || 0) || null,
+    record_id: Number(params.record_id || params.res_id || 0) || null,
+  };
+}
 
 validateStaticIdentity();
 const initial = inspectAuthority();
 check(initial.person.active === true && initial.project.active === true, 'batch is not active before journey');
-check(!initial.assignment.id, 'journey requires a fresh batch without an assignment', initial.assignment);
+const resumeOwnedCreate = Boolean(initial.assignment.id);
+const resumeInactive = resumeOwnedCreate && initial.assignment.active === false;
+if (resumeOwnedCreate) {
+  check(initial.assignment.source === 'manual' && initial.assignment.note === NOTE
+    && initial.assignment.person_is_follower === !resumeInactive,
+  'preserved assignment is not the exact successful create state', initial.assignment);
+}
 fs.mkdirSync(OUT, { recursive: true });
 const report = {
   schema_version: 'local_dev_personnel_authorization_journey.v1',
@@ -240,6 +299,8 @@ const report = {
   stages: [],
   writes: [],
   errors: [],
+  http_failures: [],
+  relation_contracts: [],
   pass: false,
 };
 const browser = await launchChromium({ headless: true });
@@ -247,36 +308,72 @@ const context = await browser.newContext({ viewport: { width: 1440, height: 960 
 const page = await context.newPage();
 page.on('pageerror', (error) => report.errors.push({ type: 'pageerror', message: String(error.message || error) }));
 page.on('console', (message) => { if (message.type() === 'error' && !message.text().includes('favicon')) report.errors.push({ type: 'console', message: message.text().slice(0, 1000) }); });
+page.on('response', async (response) => {
+  if (!response.url().includes('/api/v1/intent')) return;
+  let request = {};
+  try { request = JSON.parse(response.request().postData() || '{}'); } catch { /* no request body */ }
+  const params = diagnosticParams(request);
+  const body = await response.json().catch(() => ({}));
+  if (request?.intent === 'ui.contract.v2' && String(params?.model || params?.res_model || '') === 'sc.project.member.assignment') {
+    const fields = body?.data?.fields || body?.data?.contract?.fields || {};
+    report.relation_contracts.push({ status: response.status(), ok: body?.ok === true, params, project_id: fields?.project_id || null, field_names: Object.keys(fields) });
+  }
+  if (response.status() >= 400) report.http_failures.push({ status: response.status(), intent: request?.intent, params, error: body?.error || body?.message || null });
+});
 const writes = writeRecorder(page);
 report.writes = writes;
 try {
   report.runtime_identity = await login(page, initial);
   const form = await openOwnedForm(page, initial.entries.personnel, initial.person.name);
-  const root = await authorizationSurface(form);
-  await root.getByRole('button', { name: /^添加项目成员授权$/ }).click();
-  await selectProject(page, root, initial.project.name);
-  const note = `P4 页面授权验收 ${BATCH}`;
-  await setNote(root, note);
-  await save(page, writes, 0);
-  const afterCreate = inspectAuthority();
-  check(afterCreate.assignment.id && afterCreate.assignment.active === true && afterCreate.assignment.note === note, 'authoritative create readback mismatch', afterCreate.assignment);
-  check(afterCreate.assignment.person_is_follower === true, 'active assignment did not establish the owned follower', afterCreate.assignment);
-  const readonlyAfterCreate = await existingProjectReadonly(await authorizationSurface(form), initial.project.name);
+  let writeIndex = 0;
+  let afterCreate = initial;
+  if (!resumeOwnedCreate) {
+    const root = await authorizationSurface(form);
+    await root.getByRole('button', { name: /^添加项目成员授权$/ }).click();
+    await selectProject(page, root, initial.project.name);
+    await setSelection(page, root, 'source', '正式维护');
+    await setActive(root, true);
+    await setNote(root, NOTE);
+    await save(page, writes, writeIndex++);
+    afterCreate = inspectAuthority();
+    check(afterCreate.assignment.id && afterCreate.assignment.active === true && afterCreate.assignment.note === NOTE, 'authoritative create readback mismatch', afterCreate.assignment);
+    check(afterCreate.assignment.person_is_follower === true, 'active assignment did not establish the owned follower', afterCreate.assignment);
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.locator(`[data-semantic-component="ContractFormPage"][data-form-record="${PERSON_ID}"]`).first().waitFor({ timeout: 45000 });
+  }
+  const readonlyAfterCreate = await existingProjectReadonly(await authorizationSurface(page.locator(`[data-semantic-component="ContractFormPage"][data-form-record="${PERSON_ID}"]`).first()), initial.project.name);
   check(readonlyAfterCreate.disabled && readonlyAfterCreate.matches, 'persisted assignment project remains editable or changed', readonlyAfterCreate);
-  report.stages.push({ name: 'create_and_readback', status: 'PASS', assignment: afterCreate.assignment, project_readonly: readonlyAfterCreate });
+  report.stages.push({ name: 'create_and_readback', status: 'PASS', evidence_source: resumeOwnedCreate ? 'preserved_owned_batch_authority' : 'current_browser_write', assignment: afterCreate.assignment, project_readonly: readonlyAfterCreate });
   await page.screenshot({ path: path.join(OUT, '01-created.png'), fullPage: true });
 
-  const createdRoot = await authorizationSurface(form);
-  await setActive(createdRoot, false);
-  await save(page, writes, 1);
-  const afterDeactivate = inspectAuthority();
-  check(afterDeactivate.assignment.active === false && afterDeactivate.assignment.person_is_follower === false, 'authoritative deactivate readback mismatch', afterDeactivate.assignment);
-  report.stages.push({ name: 'deactivate_and_readback', status: 'PASS', assignment: afterDeactivate.assignment });
+  const currentForm = page.locator(`[data-semantic-component="ContractFormPage"][data-form-record="${PERSON_ID}"]`).first();
+  let afterDeactivate = initial;
+  if (!resumeInactive) {
+    const createdRoot = await authorizationSurface(currentForm);
+    await setActive(createdRoot, false);
+    await save(page, writes, writeIndex++);
+    afterDeactivate = inspectAuthority();
+    check(afterDeactivate.assignment.active === false && afterDeactivate.assignment.person_is_follower === false, 'authoritative deactivate readback mismatch', afterDeactivate.assignment);
+  }
+  report.stages.push({ name: 'deactivate_and_readback', status: 'PASS', evidence_source: resumeInactive ? 'preserved_owned_batch_authority' : 'current_browser_write', assignment: afterDeactivate.assignment });
   await page.screenshot({ path: path.join(OUT, '02-deactivated.png'), fullPage: true });
 
-  const inactiveRoot = await authorizationSurface(form);
+  const inactivePersonnel = await existingAssignmentState(await authorizationSurface(currentForm), initial.project.name, false);
+  check(inactivePersonnel.matches && inactivePersonnel.disabled && inactivePersonnel.state_matches, 'personnel entry does not show the inactive immutable assignment', inactivePersonnel);
+  report.stages.push({ name: 'inactive_visible_personnel', status: 'PASS', assignment: inactivePersonnel });
+
+  const inactivePermissionForm = await openOwnedForm(page, initial.entries.data_permission, initial.person.name);
+  const inactivePermissionRoot = inactivePermissionForm.locator('[data-field-name="sc_project_member_assignment_ids"]').first();
+  await inactivePermissionRoot.waitFor({ timeout: 15000 });
+  const inactivePermission = await existingAssignmentState(inactivePermissionRoot, initial.project.name, false);
+  check(inactivePermission.matches && inactivePermission.disabled && inactivePermission.state_matches, 'data-permission entry does not show the inactive immutable assignment', inactivePermission);
+  report.stages.push({ name: 'inactive_visible_data_permission', status: 'PASS', assignment: inactivePermission });
+  await page.screenshot({ path: path.join(OUT, '02b-inactive-data-permission.png'), fullPage: true });
+
+  const reactivationForm = await openOwnedForm(page, initial.entries.personnel, initial.person.name);
+  const inactiveRoot = await authorizationSurface(reactivationForm);
   await setActive(inactiveRoot, true);
-  await save(page, writes, 2);
+  await save(page, writes, writeIndex++);
   const afterReactivate = inspectAuthority();
   check(afterReactivate.assignment.active === true && afterReactivate.assignment.person_is_follower === true, 'authoritative reactivate readback mismatch', afterReactivate.assignment);
   report.stages.push({ name: 'reactivate_and_readback', status: 'PASS', assignment: afterReactivate.assignment });
@@ -296,9 +393,20 @@ try {
   check(sameFact.matches && sameFact.disabled, 'data-permission entry does not show the same immutable assignment fact', sameFact);
   report.stages.push({ name: 'second_entry_same_fact', status: 'PASS', project_readonly: sameFact });
   await page.screenshot({ path: path.join(OUT, '04-data-permission-same-fact.png'), fullPage: true });
-  check(writes.length === 3 && writes.every((item) => item.outcome === 'business_success'), 'unexpected browser write count or outcome', writes);
+
+  const finalPersonnelForm = await openOwnedForm(page, initial.entries.personnel, initial.person.name);
+  const finalRoot = await authorizationSurface(finalPersonnelForm);
+  await setActive(finalRoot, false);
+  await save(page, writes, writeIndex++);
+  const finalInactive = inspectAuthority();
+  check(finalInactive.assignment.active === false && finalInactive.assignment.person_is_follower === false, 'final inactive authority or follower release mismatch', finalInactive.assignment);
+  report.stages.push({ name: 'final_deactivate_and_preserve', status: 'PASS', assignment: finalInactive.assignment });
+  await page.screenshot({ path: path.join(OUT, '05-final-inactive.png'), fullPage: true });
+
+  const expectedWrites = resumeInactive ? 2 : resumeOwnedCreate ? 3 : 4;
+  check(writes.length === expectedWrites && writes.every((item) => item.outcome === 'business_success'), 'unexpected browser write count or outcome', writes);
   check(report.errors.length === 0, 'browser reported console/page errors', report.errors);
-  report.final_authority = inspectAuthority();
+  report.final_authority = finalInactive;
   report.pass = true;
 } catch (error) {
   report.failure = String(error?.stack || error);

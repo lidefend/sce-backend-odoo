@@ -58,7 +58,10 @@ class PersonnelAuthorizationFixtureSafetyTest(unittest.TestCase):
             "reactivate_and_readback",
             "refresh_consistency",
             "second_entry_same_fact",
-            "writes.length === 3",
+            "inactive_visible_personnel",
+            "inactive_visible_data_permission",
+            "final_deactivate_and_preserve",
+            "const expectedWrites = resumeInactive ? 2 : resumeOwnedCreate ? 3 : 4",
             "persisted assignment project remains editable or changed",
             "添加项目成员授权",
         ):
@@ -67,6 +70,7 @@ class PersonnelAuthorizationFixtureSafetyTest(unittest.TestCase):
         self.assertNotIn("page.route(", BROWSER)
         self.assertNotIn("unlink", BROWSER)
         self.assertNotIn("retire", BROWSER)
+        self.assertNotIn("params: body.params", BROWSER)
 
     def test_browser_wrapper_rejects_implicit_targets(self):
         self.assertIn("PERSON_ID must be an explicit positive integer", BROWSER_SH)
