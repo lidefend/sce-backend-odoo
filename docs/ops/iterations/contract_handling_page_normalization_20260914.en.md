@@ -6,7 +6,7 @@
 
 - Single product result: the formal income- and expense-contract entries clearly identify the contract, expose core facts and editable lines, and separate notes, attachments, execution, and trace information.
 - Baseline: `origin/main@731c7e6d43f64e4f8e764c67880be6943afcee15`; branch: `codex/contract-handling-page-normalization-v1`.
-- P1: `smart_construction_core` owns explicit wrapper bindings, industry form sections, field order, and labels.
+- P1: `smart_construction_core` owns explicit wrapper bindings, industry form sections, field order, visibility/readonly policy, and labels.
 - P0: `smart_core` only resolves explicit bindings and preserves native constraints; the frontend only preserves explicit sections and omits navigation for sections with no presentable content.
 - P4: focused tests, browser evidence, delivery documents, and final gates.
 - Excluded: contract lists, changes, settlement, payment, save, approval, permissions, amount computation, attachment-authorization expansion, fixtures, business-data edits, the general workbench, and low-code features.
@@ -15,7 +15,7 @@
 
 | Formal entry | Source declaration and identity | Final contract | Page result | First divergence and owner |
 | --- | --- | --- | --- | --- |
-| Income contract | menu `660`, action `609`, wrapper `construction.contract.income`; P1 explicitly maps `contract.income` to policy model `construction.contract`; the native form declares anchored business sections | `PageAssembler` keeps direct-model lookup first, then consumes only an exact `entry_model + category_code + policy_target_model` binding and applies it only when unique. V2 preserves create-hidden and other-profile readonly policy | Identity/basic facts → scope → lines/amounts → notes/attachments; readonly additionally exposes collapsed execution and source trace | Wrapper lookup was a P0 resolver gap whose authoritative alias belongs to P1; task floorplan reclassification of explicit sections was a P0 consumer divergence; income field grouping and order belong to P1 |
+| Income contract | menu `660`, action `609`, wrapper `construction.contract.income`; P1 explicitly maps `contract.income` to policy model `construction.contract`; the native form declares anchored business sections | `PageAssembler` keeps direct-model lookup first, then consumes only an exact `entry_model + category_code + policy_target_model` binding and applies it only when unique. V2 preserves create-hidden and other-profile readonly policy; contract direction type is writable in create/edit and readonly in readonly mode | Identity/basic facts → scope → lines/amounts → notes/attachments; readonly additionally exposes collapsed execution and source trace | Wrapper lookup was a P0 resolver gap whose authoritative alias belongs to P1; task floorplan reclassification of explicit sections was a P0 consumer divergence; income grouping, order, and contract-direction policy belong to P1 |
 | Expense contract | menu `661`, action `610`, wrapper `construction.contract.expense`; P1 explicitly maps `contract.expense`, independent from income | The same generic resolver selects the expense policy and fails closed for missing or ambiguous mappings. Section identity, profile visibility, readonly, and subordinate roles survive | Basic facts lead with supplier/subcontractor, project, date, and owner; expense-specific scope is separate; lines/amounts precede notes; execution and trace are collapsed; historical payment remains accessible but outside primary navigation | Expense grouping, labels, line order, and historical-payment role are P1; a dead link for a profile-empty section was a generic P0 content-detection gap |
 | Direct-model counterexample | Action model directly matches `sc.business.category.target_model` | Direct lookup remains first and does not invoke alias inference | Existing behavior is unchanged | P0 regression protection |
 | Missing/ambiguous counterexample | P1 provides no binding or more than one target | No policy is selected; no parent traversal, suffix inference, or first-match selection | Income and expense policies cannot silently leak into one another | P0 fail-closed behavior |
@@ -24,6 +24,7 @@
 
 - The header retains existing mode, status, and action authority. Create hides platform state; readonly/edit profiles retain the declared readonly constraints without changing state values or transitions.
 - Both entries use identity/basic facts → scope → lines/amounts → notes/attachments. Execution and trace remain separate from contract maintenance.
+- The native income form's existing contract-direction type is restored inside contract scope: writable in create/edit and readonly in readonly mode, without changing its value or relation model.
 - Line identity, unit, quantity, price, and amount precede tender-source and auxiliary codes; empty names are never fabricated.
 - Unanchored layout groups remain untitled. Only explicit business sections enter primary navigation. A profile-empty section is omitted, while a partially visible or default-collapsed section with content remains reachable.
 - Historical payment stays readonly, collapsed, and accessible, while a P1 subordinate declaration keeps it outside the primary workflow navigation.
@@ -49,6 +50,7 @@
 | L4 sections | `section-probe/report.json` in the same directory | 1088/390 click, manual scroll, keyboard disclosure, focus retention, and natural expansion pass |
 | L4 dark | `/home/lidefend/workspace/sce-offrepo/artifacts/playwright/contract-handling-final-preflight-359c1ff9/dark-structure-1088-390-v2/summary.json` | Expense create/read at 1088×791 and 390×844 pass section navigation, middle/bottom, and responsive-boundary checks; zero mutations and errors |
 | L4 readonly-collaboration counterexample | `/home/lidefend/workspace/sce-offrepo/artifacts/playwright/contract-handling-readonly-collaboration-c41ece4a/` | On repair candidate `c41ece4a…`, income and expense readonly at 1088×791 and 390×844 expose no message, note, activity, or upload entry while history stays readable; the summary passes with zero mutations and its complete fingerprint is stored beside it |
+| L4 income contract-direction type | `/home/lidefend/workspace/sce-offrepo/artifacts/playwright/contract-handling-income-direction-309f1b1e-refreshed/summary.json` | After the governed runtime refresh, candidate `309f1b1e…` renders `contract_type_id` as visible and editable on income create at 1088×791 and 390×844 light; section journeys pass with zero mutations and errors |
 | L5 | `make ci.delivery.freeze.prepare`, one final `make ci.local.quick`, independent review | Recorded after freeze in off-repository exact-head receipts; this tracked document will not be changed afterwards |
 
 One optional dark manual-scroll parameter timed out inside the runner’s supplemental wait and was classified as a `validation_tool_defect`. Removing that redundant parameter left the governed runner’s built-in section-click and stable-state journey, which passed. The failed input was not retried unchanged, and neither product nor verification tooling was modified.
@@ -56,7 +58,8 @@ One optional dark manual-scroll parameter timed out inside the runner’s supple
 ## Known boundaries, risk, and rollback
 
 - Both source lines in the readonly sample have empty BOQ name and unit values. No name or record was fabricated; non-empty business identity remains uncovered.
-- No income draft was available and an effective record’s `/f` route was not counted as edit coverage. Expense edit used one existing draft and did not save.
+- No income draft was available and an effective record's `/f` route was not counted as edit coverage. Expense edit used one existing draft and did not save.
+- The income contract-direction type received focused create coverage only. Edit remains under the no-income-draft boundary; readonly behavior is covered by the non-zero contract test.
 - The `359c1ff9` light directory contains no income-readonly case. Any later P0 readonly-boundary claim uses focused evidence bound to the repair candidate, not a carried-forward full matrix.
 - Real save, approval, all roles, changes, settlement, payment, formal attachment authorization, and amount-definition decisions were not tested.
 - P0 risk is limited to explicit category mapping, native hidden constraints, and section navigation. Tests prove isolation, fail-closed ambiguity, preservation of valid sections, and no contract-model special case in production P0.

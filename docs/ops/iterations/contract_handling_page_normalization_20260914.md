@@ -6,7 +6,7 @@ English: [contract_handling_page_normalization_20260914.en.md](contract_handling
 
 - 唯一产品结果：收入、支出合同正式办理入口能够清楚识别合同、核对基本事实、维护明细，并把说明、附件、履约和追溯信息放在明确层次中。
 - 基线：`origin/main@731c7e6d43f64e4f8e764c67880be6943afcee15`；分支：`codex/contract-handling-page-normalization-v1`。
-- P1：`smart_construction_core` 提供显式包装入口映射、行业表单章节、字段顺序与标签。
+- P1：`smart_construction_core` 提供显式包装入口映射、行业表单章节、字段顺序、可见/只读策略与标签。
 - P0：`smart_core` 只做通用显式映射解析和原生约束传递；前端只做通用显式章节保留及“无可呈现内容则不生成导航”。
 - P4：定向测试、浏览器证据、交付文档与最终门禁。
 - 排除：合同列表、合同变更、结算、付款、保存、审批、权限、金额计算、附件授权扩展、fixture、业务数据修改、综合工作台和低代码。
@@ -15,7 +15,7 @@ English: [contract_handling_page_normalization_20260914.en.md](contract_handling
 
 | 正式入口 | 源声明与身份 | 最终契约 | 页面表现 | 首次偏差与修复归属 |
 | --- | --- | --- | --- | --- |
-| 收入合同 | menu `660`、action `609`、包装模型 `construction.contract.income`；P1 显式绑定 `contract.income` 到底层策略模型 `construction.contract`；原生 form 提供带 `data-sc-anchor` 的业务章节 | `PageAssembler` 先保留直接模型命中；直接未命中时只消费精确 `entry_model + category_code + policy_target_model` 映射，唯一命中才应用。V2 保留策略声明的 create 隐藏和其他模式只读 | 身份与基本资料 → 合同范围 → 合同明细与金额 → 说明与附件；查看态另有默认折叠的履约和来源追溯 | 包装模型以前无法取得底层分类策略是 P0 解析能力缺口，权威别名由 P1 提供；明确章节曾被 task floorplan 重新分类是 P0 消费偏差；收入字段分区和列序属于 P1 |
+| 收入合同 | menu `660`、action `609`、包装模型 `construction.contract.income`；P1 显式绑定 `contract.income` 到底层策略模型 `construction.contract`；原生 form 提供带 `data-sc-anchor` 的业务章节 | `PageAssembler` 先保留直接模型命中；直接未命中时只消费精确 `entry_model + category_code + policy_target_model` 映射，唯一命中才应用。V2 保留策略声明的 create 隐藏和其他模式只读；合同方向类型在 create/edit 可写、readonly 只读 | 身份与基本资料 → 合同范围 → 合同明细与金额 → 说明与附件；查看态另有默认折叠的履约和来源追溯 | 包装模型以前无法取得底层分类策略是 P0 解析能力缺口，权威别名由 P1 提供；明确章节曾被 task floorplan 重新分类是 P0 消费偏差；收入字段分区、列序及合同方向类型策略属于 P1 |
 | 支出合同 | menu `661`、action `610`、包装模型 `construction.contract.expense`；P1 显式绑定 `contract.expense`，不复用收入映射 | 同一通用解析器命中支出策略；缺失或多义映射失败关闭。章节身份、profile 可见性、只读及 subordinate 导航角色进入最终契约 | 身份与基本资料先显示供应商/分包方、项目、日期和责任人；支出分类/范围独立；明细金额在说明附件前；履约、来源追溯默认折叠；历史付款承接保留内容但不占主导航 | 支出分区、标签、明细列序和历史付款角色为 P1；空 profile 章节形成死导航为 P0 通用内容判定缺口 |
 | 直接模型入口反例 | action 模型与 `sc.business.category.target_model` 直接一致 | 继续优先直接查找，不调用别名猜测 | 原有入口行为不变 | P0 回归保护 |
 | 无关联/多义反例 | P1 未声明或声明多个不同目标 | 返回无策略，不选第一个，不遍历父模型，不按模型名后缀猜测 | 不静默串用收入或支出策略 | P0 失败关闭 |
@@ -24,6 +24,7 @@ English: [contract_handling_page_normalization_20260914.en.md](contract_handling
 
 - 页头继续消费既有模式、状态和动作能力；新建态隐藏平台状态，查看/编辑态只读约束不改变状态值或流转。
 - 收入、支出均按“身份与基本资料 → 合同范围 → 合同明细与金额 → 说明与附件”组织；履约与来源追溯与合同维护区分。
+- 收入原生表单已有的“合同方向类型”恢复到合同范围；新建/编辑可维护、查看只读，不改变字段值或关系模型。
 - 明细列以清单名称、计量单位、数量、单价、金额为先，来源中标清单和辅助编码后置；不拼造空名称。
 - 普通无锚点布局组仍不显示标题；只有显式业务章节成为主导航。profile 隐藏全部内容时不留死链接，部分字段仍可见或默认折叠但有内容时仍保留导航。
 - 历史付款承接保持只读、默认折叠和可访问，但由 P1 声明为 subordinate，不与当前合同办理章节并列。
@@ -49,6 +50,7 @@ English: [contract_handling_page_normalization_20260914.en.md](contract_handling
 | L4 章节 | 同目录 `section-probe/report.json` | 1088/390 的点击、手动滚动、键盘展开/收起、焦点保留和自然增高通过 |
 | L4 深色 | `/home/lidefend/workspace/sce-offrepo/artifacts/playwright/contract-handling-final-preflight-359c1ff9/dark-structure-1088-390-v2/summary.json` | 1088×791、390×844 支出新建/查看逐章节定位、中/底部、导航和响应式边界通过；`mutationCount=0`、无错误 |
 | L4 只读协作反例 | `/home/lidefend/workspace/sce-offrepo/artifacts/playwright/contract-handling-readonly-collaboration-c41ece4a/` | 修复候选 `c41ece4a…` 的收入/支出查看态在 1088×791、390×844 深色样本中均不暴露记录沟通、备注、计划或上传入口；只读历史仍可见；摘要 pass、零写入，完整指纹另存同目录 |
+| L4 收入合同方向类型 | `/home/lidefend/workspace/sce-offrepo/artifacts/playwright/contract-handling-income-direction-309f1b1e-refreshed/summary.json` | 候选 `309f1b1e…` 在受管运行时刷新后，1088×791、390×844 浅色收入新建均渲染 `contract_type_id`，状态为可见且可编辑；章节旅程通过，`mutationCount=0`、无错误 |
 | L5 | `make ci.delivery.freeze.prepare`、最终一次 `make ci.local.quick`、独立复核 | 最终冻结后由仓外 exact-head receipt 和复核报告记录；本文之后不再通过 tracked 总结改变候选 |
 
 一次附加深色手动定位参数在 runner 的可选等待处超时，归类为 `validation_tool_defect`。移除冗余参数后，受管 runner 自带的逐章节点击和稳定态检查通过；没有原样重试失败输入，也没有修改产品或验证工具。
@@ -57,6 +59,7 @@ English: [contract_handling_page_normalization_20260914.en.md](contract_handling
 
 - 查看记录的两条合同明细中清单名称、计量单位为源数据空值；本批不造名称、不修记录，非空业务身份显示仍未覆盖。
 - 收入草稿编辑态不可用，未以已生效记录 `/f` 冒充；支出只读使用现有生效记录，编辑使用现有草稿且未保存。
+- 收入合同方向类型只补验了新建态；编辑态仍受“无可用收入草稿”边界约束，查看态只读由非零契约测试覆盖。
 - `359c1ff9` 浅色目录不包含收入查看态；若需要证明后续 P0 只读边界，使用与修复候选绑定的聚焦只读证据，不做整页矩阵结转。
 - 未验收真实保存、审批、全角色、合同变更、结算、付款、正式附件授权或金额口径决策。
 - P0 风险限定为显式分类映射、原生隐藏约束和章节导航；测试证明策略不串用、缺失/歧义失败关闭、有效章节不被误删，生产 P0 无合同模型特判。
