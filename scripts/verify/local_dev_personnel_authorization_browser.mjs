@@ -254,7 +254,13 @@ async function existingProjectReadonly(root, projectName) {
   const editor = root.locator('[data-validation-target*="project_id"]:visible').first();
   const input = editor.locator('input:visible').first();
   await input.waitFor({ timeout: 15000 });
-  return { value: await input.inputValue(), disabled: await input.isDisabled(), matches: (await input.inputValue()).includes(projectName) };
+  const deadline = Date.now() + 20000;
+  let value = await input.inputValue();
+  while (!value.includes(projectName) && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    value = await input.inputValue();
+  }
+  return { value, disabled: await input.isDisabled(), matches: value.includes(projectName) };
 }
 async function existingAssignmentState(root, projectName, expectedActive) {
   const project = await existingProjectReadonly(root, projectName);
@@ -318,7 +324,7 @@ page.on('response', async (response) => {
     const fields = body?.data?.fields || body?.data?.contract?.fields || {};
     report.relation_contracts.push({ status: response.status(), ok: body?.ok === true, params, project_id: fields?.project_id || null, field_names: Object.keys(fields) });
   }
-  if (response.status() >= 400) report.http_failures.push({ status: response.status(), intent: request?.intent, params, error: body?.error || body?.message || null });
+  if (response.status() >= 400 || body?.ok === false) report.http_failures.push({ status: response.status(), business_ok: body?.ok === true, intent: request?.intent, params, error: body?.error || body?.message || null });
 });
 const writes = writeRecorder(page);
 report.writes = writes;
