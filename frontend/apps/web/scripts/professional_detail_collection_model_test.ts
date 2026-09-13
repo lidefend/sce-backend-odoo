@@ -10,6 +10,7 @@ import {
   isExplicitOne2manyRelationPopupOpen,
   one2manyRelationDependencyKey,
   preserveSelectedOne2manyRelationOption,
+  selectedOne2manyRelationOption,
 } from '../src/components/template/one2manyRelationQuery';
 import {
   analyzeDynamicRelationDomain,
@@ -92,6 +93,16 @@ assert.deepEqual(preserveSelectedOne2manyRelationOption({
   previous: [{ value: 7, label: '已选择记录' }],
   currentValue: 7,
 }), [{ value: 7, label: '已选择记录' }]);
+assert.deepEqual(selectedOne2manyRelationOption([7, '已选择记录']), {
+  value: 7,
+  label: '已选择记录',
+});
+assert.deepEqual(selectedOne2manyRelationOption({ id: 8, display_name: '权威名称' }), {
+  value: 8,
+  label: '权威名称',
+});
+assert.equal(selectedOne2manyRelationOption(7), null);
+assert.equal(selectedOne2manyRelationOption([7, '']), null);
 
 const values = { project_id: 9, note: '初始备注' };
 const dependencyKey = () => one2manyRelationDependencyKey({

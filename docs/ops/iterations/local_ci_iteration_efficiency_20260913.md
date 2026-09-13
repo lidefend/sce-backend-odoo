@@ -5,7 +5,8 @@
 - Formal Product Layer：P4 ops delivery tool。
 - Layer Target：`make/ci.mk` 的本地迭代与最终 Quick 编排，以及基线迭代策略守卫。
 - 目标：让日常内循环拥有明确、秒级、不会偷偷升级为全仓门禁的 L1 入口；最终交付门禁语义不降低。
-- 不改 P0/P1 产品、测试断言、数据库、runtime profile、浏览器矩阵、CI required checks 或发布流程。
+- P4 主体不改 P1、数据库、runtime profile、浏览器矩阵、CI required checks 或发布流程。最终远端
+  门禁稳定性验证暴露出的 P0 明细关系候选预加载缺陷，按下述最小共享修复单独登记。
 
 ## 两条车道
 
@@ -50,3 +51,7 @@ clean delivery HEAD 冻结后才运行一次 `make ci.local.quick`。该入口�
   计时起点，避免把上一段列表加载误计入表单打开时间。绝对预算、相对回归比例和样本下限不变。
 - “关系候选不得预加载”的计数在进入目标表单前等待有界静默窗口，再冻结基线；目标表单出现的
   真实候选请求仍会使断言失败，不通过固定 sleep 或忽略请求制造通过。
+- 远端运行证明 `X2ManyRelationRenderer` 会在可见行 scope 初始化时、未发生用户交互即枚举
+  `construction.contract` 候选。该首次失效点属于 P0 共享 renderer，而非 P4 计数误差：scope 变化
+  现在只失效旧选项，仅在对应弹层真实打开时重新查询；已选关系沿用记录携带的权威 `[id, label]`
+  本地显示。影响面限定为 one2many 中 many2one 候选加载时机，不改变权限、domain 或保存语义。

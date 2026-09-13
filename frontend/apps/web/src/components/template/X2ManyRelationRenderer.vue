@@ -346,6 +346,7 @@ import {
   isExplicitOne2manyRelationPopupClose,
   isExplicitOne2manyRelationPopupOpen,
   preserveSelectedOne2manyRelationOption,
+  selectedOne2manyRelationOption,
 } from './one2manyRelationQuery';
 import { downloadFile, fileToBase64, uploadFile } from '../../api/files';
 import type { RelationFieldColumn, RelationFieldRow, X2ManyRelationRendererProps } from './relationField.types';
@@ -453,7 +454,12 @@ function relationCellKey(fieldName: string, rowKey: string, columnName: string) 
 }
 
 function one2manyRelationOptions(fieldName: string, rowKey: string, column: RelationFieldColumn) {
-  return o2mRelationOptionMap.value[relationCellKey(fieldName, rowKey, column.name)] || [];
+  const options = o2mRelationOptionMap.value[relationCellKey(fieldName, rowKey, column.name)] || [];
+  const selected = selectedOne2manyRelationOption(
+    currentOne2manyRelationValue(fieldName, rowKey, column.name),
+  );
+  if (!selected || options.some((option) => option.value === selected.value)) return options;
+  return [selected, ...options];
 }
 
 function one2manyRelationError(fieldName: string, rowKey: string, columnName: string) {
@@ -691,7 +697,9 @@ watch(() => {
     o2mRelationOptionMap.value = remaining;
     o2mRelationSearchMap.value = { ...o2mRelationSearchMap.value, [key]: '' };
     o2mRelationErrors.value = { ...o2mRelationErrors.value, [key]: '' };
-    if (relationColumnCanQuery(entry.fieldName, column)) {
+    // Scope changes invalidate stale options, but candidate enumeration remains
+    // interaction-time work. Re-query only while the user has this cell open.
+    if (relationPopupAuthority.isOpen(key) && relationColumnCanQuery(entry.fieldName, column)) {
       void loadOne2manyRelationOptions(entry.fieldName, entry.rowKey, column);
     }
   });

@@ -105,6 +105,11 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection relation queries still depend on unrelated row values")
     if "preserveSelectedOne2manyRelationOption" not in renderer or "currentValue" not in relation_query:
         failures.append("detail collection search can discard the selected relation label")
+    if ("selectedOne2manyRelationOption" not in renderer
+            or "selectedOne2manyRelationOption" not in relation_query):
+        failures.append("detail collection cannot render a selected relation without enumerating candidates")
+    if "relationPopupAuthority.isOpen(key) && relationColumnCanQuery" not in renderer:
+        failures.append("detail collection eagerly enumerates relation candidates before interaction")
     if ("popup-change" not in renderer
             or "o2mRelationSearchMap.value[key] === normalizedKeyword" not in renderer
             or '@search="onSearch"' not in sc_select
