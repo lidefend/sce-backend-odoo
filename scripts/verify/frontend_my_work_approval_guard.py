@@ -56,6 +56,11 @@ def main() -> int:
             "executeProductMyWorkAction",
             "dialogOpen.value = true",
             "emit('refresh')",
+            ".business-type { white-space: nowrap; }",
+            ".work-card dl.work-card__summary { grid-area: summary; grid-template-columns: minmax(0, 1fr); }",
+            "@media (min-width: 641px) and (max-width: 1200px)",
+            "grid-template-areas: 'identity title summary' 'identity disclosure disclosure';",
+            ".work-card__actions { width: 100%; justify-content: flex-end; }",
         ],
         "My Work product component",
     )

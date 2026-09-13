@@ -290,11 +290,12 @@ async function confirmAction() {
 .work-card__main { display: grid; grid-template-columns: auto minmax(220px, 1.2fr) minmax(270px, 1fr) auto; grid-template-areas: 'identity title summary disclosure'; align-items: center; min-width: 0; flex: 1; gap: 6px 16px; }
 .work-card__identity { grid-area: identity; display: flex; gap: 8px; align-items: center; }
 .business-type, .status-badge { display: inline-flex; padding: 3px 8px; border-radius: var(--sc-component-tag-radius); background: var(--sc-app-info-bg); color: var(--sc-app-info-text); font-size: var(--sc-product-text-sm); }
+.business-type { white-space: nowrap; }
 .status-badge { background: var(--sc-app-subtle-bg); color: var(--sc-app-text-primary); }
 .work-card h3 { grid-area: title; min-width: 0; margin: 2px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .work-card :deep(.work-card__body) { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
 .work-card dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 20px; margin: 0; }
-.work-card__summary { grid-area: summary; }
+.work-card dl.work-card__summary { grid-area: summary; grid-template-columns: minmax(0, 1fr); }
 .work-card dl div { min-width: 0; }
 .work-card dt { color: var(--sc-app-text-secondary); font-size: var(--sc-product-text-sm); }
 .work-card dd { margin: 3px 0 0; overflow-wrap: anywhere; }
@@ -313,6 +314,15 @@ async function confirmAction() {
 :deep(.intent-dialog label) { display: grid; gap: 6px; }
 :deep(.intent-dialog .sc-textarea) { width: 100%; box-sizing: border-box; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+@media (min-width: 641px) and (max-width: 1200px) {
+  .work-card :deep(.work-card__body) { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .work-card__main {
+    grid-template-columns: max-content minmax(0, 1fr) minmax(120px, max-content);
+    grid-template-areas: 'identity title summary' 'identity disclosure disclosure';
+    gap: 8px 16px;
+  }
+  .work-card__actions { width: 100%; justify-content: flex-end; }
+}
 @media (max-width: 640px) {
   .product-work { gap: 14px; }
   .product-work__counts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
