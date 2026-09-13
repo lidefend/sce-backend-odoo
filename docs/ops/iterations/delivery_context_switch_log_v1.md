@@ -9422,3 +9422,4 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 焦点可见性继续由公共 `ScButton :focus-visible` 规则承接，补验未点击或触发“提交审批”。不运行合同旅程、保存链、fixture、模块升级或数据库写入。
 - 表单专用批量展开/字段对齐截图选项不适用于 My Work，一次尝试在证据生成前退出，归为验证工具适用范围错误；未原样重试、未修改 P4 工具，也不将该次尝试计入通过证据。下一步为生成证据预检、最终文档提交、冻结 HEAD 后一次 Quick 和同头独立复核。
 - `make ci.delivery.freeze.prepare` 通过：1366 项测试清单、7 项组件清单测试、35 个必需适配点和 1866 行表单拆分证据均为当前内容；生成差异仅为组件接管清单输入摘要。提交这些交付材料后冻结最终 HEAD，Quick 只运行一次。
+- 2026-09-14：分支 `codex/contract-handling-page-normalization-v1`，基线 `origin/main@731c7e6d43f64e4f8e764c67880be6943afcee15`。Formal Product Layer P1/P0/P4；P1 负责收入/支出合同显式策略映射、原生章节与列序，P0 只负责通用唯一映射解析、原生隐藏约束与空章节导航消费，P4 负责定向测试和交付证据。排除列表、保存、审批、权限、金额计算、附件授权扩展、fixture 与数据修改。支出样板与 1088×791/390×844 深色受影响区域通过，浏览器零写入；冻结前仅补“部分隐藏仍可达、默认折叠有内容仍保留导航”反例，最终 identity/Quick/独立复核记录在仓外 exact-head 交付包，避免冻结后修改候选。
