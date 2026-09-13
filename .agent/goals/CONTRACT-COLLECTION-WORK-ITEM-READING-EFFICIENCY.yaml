@@ -1,0 +1,89 @@
+schema_version: 1
+goal:
+  id: CONTRACT-COLLECTION-WORK-ITEM-READING-EFFICIENCY
+  title: contract_collection_and_work_item_reading_efficiency
+  status: active
+  formal_product_layer: P1_with_bounded_P0_renderer_support
+  layer_target: income_contract_native_tree_and_generic_work_item_renderer
+  module:
+    - smart_construction_core
+    - frontend
+  objective: >-
+    Keep the income-contract primary identity visible at the normal reading
+    origin and keep My Work cards readable and actionable at medium widths.
+  baseline:
+    branch: codex/contract-work-reading-efficiency-v1
+    full_sha: e9f78ff079817ebcd6154e77e872cefbaf62bf81
+    fingerprint: 3aef44591a704d588fb9fb48f12a34d8d7fa5b37dcb3e2977281d64db931871c
+    path_count: 7424
+  product_boundary:
+    standard_vs_user_specific: construction_industry_standard_with_platform_generic_renderer_support
+    why_here:
+      - income_contract_column_order_is_owned_by_the_P1_native_tree
+      - medium_width_card_geometry_is_owned_by_the_generic_P0_work_item_renderer
+    why_not_elsewhere:
+      - no_model_name_or_field_name_frontend_special_case
+      - no_contract_schema_permission_route_save_or_workflow_change
+      - no_customer_preference_or_low_code_configuration
+      - no_business_data_or_fixture_mutation
+    blast_radius:
+      - income_contract_hierarchical_collection
+      - shared_product_my_work_cards
+      - project_and_payment_collection_counterexamples_if_shared_collection_code_changes
+  batches:
+    - id: A
+      title: source_contract_renderer_mapping
+      status: completed
+    - id: B
+      title: layered_product_implementation
+      status: completed
+    - id: C
+      title: targeted_product_validation
+      status: active
+    - id: D
+      title: frozen_delivery
+      status: planned
+  acceptance:
+    - income_contract_subject_is_visible_at_the_unscrolled_table_origin
+    - work_item_type_does_not_stack_vertically_at_1088
+    - work_item_title_and_primary_money_fact_have_coordinated_reading_space
+    - primary_action_is_clear_and_reachable
+    - contract_values_actions_permissions_and_writes_are_unchanged
+  stop_conditions:
+    - missing_business_semantics_or_unstable_contract_shape
+    - requirement_for_model_specific_frontend_branching
+    - earlier_validation_layer_failure
+    - scope_expands_to_save_permission_workbench_or_low_code_behavior
+  rollback:
+    - revert_P0_renderer_commit_then_P1_view_commit_without_database_or_contract_data_rollback
+  validation:
+    l1:
+      - command: make ci.local.iteration
+        status: passed
+        test_count: 16
+      - command: make verify.frontend.my_work_approval.guard
+        status: passed
+      - command: make verify.frontend.typecheck.strict
+        status: passed
+    l2:
+      - command: make local.dev.test MODULE=smart_construction_core TEST_TAGS=my_work_backend
+        status: passed
+        test_count: 20
+      - command: make local.dev.test MODULE=smart_construction_core TEST_TAGS=contract_execution_component_profile
+        status: passed_after_governed_upgrade
+        test_method_count: 5
+        odoo_stat_count: 7
+      - command: make verify.frontend.hierarchical_worksheet.unit
+        status: passed
+        python_test_count: 18
+        typescript_case_count: 15
+      - command: make verify.frontend.state_dashboard.unit
+        status: passed
+        python_test_count: 24
+    l3:
+      - command: CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core make local.dev.upgrade MODULE=smart_construction_core
+        status: passed
+        runtime_identity: sc-local-dev/sc_dev_demo
+    l4:
+      status: not_run
+      next_step: governed_1088_read_only_visual_check
