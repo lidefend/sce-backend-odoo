@@ -98,7 +98,7 @@ goal:
         - desktop_and_mobile_relation_editors_consume_existing_row_readonly_modifiers
         - governed_personnel_authorization_reactivate_refresh_second_entry_and_final_deactivate_passed
         - final_assignment_inactive_and_project_follower_released
-        - known_auxiliary_onchange_classification_is_exact_bounded_and_behavior_tested
+        - known_auxiliary_onchange_classification_is_exact_request_correlated_and_behavior_tested
       pending:
         - final_exact_head_quick
         - independent_review_after_s1_runner_recheck

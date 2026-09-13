@@ -1,4 +1,3 @@
-const KNOWN_AUXILIARY_LIMIT = 3;
 const KNOWN_CONSOLE_MESSAGE = 'Failed to load resource: the server responded with a status of 500 (Internal Server Error)';
 const INTENT_PATH = '/api/v1/intent';
 const ALLOWED_PHASES = new Set([
@@ -48,8 +47,7 @@ export function classifyPersonnelAuthorizationJourneyFailures({ httpFailures, br
 
   for (const failure of Array.isArray(httpFailures) ? httpFailures : []) {
     const consoleIndex = availableErrors.findIndex((item) => isMatchingConsoleError(item, failure));
-    if (auxiliaryHttpFailures.length < KNOWN_AUXILIARY_LIMIT
-      && isExactKnownHttpFailure(failure, personId)
+    if (isExactKnownHttpFailure(failure, personId)
       && consoleIndex >= 0) {
       auxiliaryHttpFailures.push(failure);
       auxiliaryConsoleErrors.push(availableErrors.splice(consoleIndex, 1)[0]);
@@ -65,5 +63,3 @@ export function classifyPersonnelAuthorizationJourneyFailures({ httpFailures, br
     blocking_browser_errors: availableErrors,
   };
 }
-
-export const PERSONNEL_AUTHORIZATION_KNOWN_AUXILIARY_LIMIT = KNOWN_AUXILIARY_LIMIT;

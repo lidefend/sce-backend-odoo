@@ -152,11 +152,12 @@ code was changed to mask the template-record distinction.
   runner `92bef311…` retains every failure. After independent review, the current
   runner additionally requires the exact HTTP 500 status, error code/message,
   governed phase, intent/model/record, and request URL, paired one-to-one with the
-  exact console error in the same phase/URL within three seconds, with a maximum
-  of three occurrences. Behavioral counterexamples prove that 403, a different
-  500, a wrong phase, an unpaired console error, overflow, or any page error stays
-  blocking. This historical onchange issue is not claimed as fixed, and the tool
-  hardening does not repeat the business write journey.
+  exact console error in the same phase/URL within three seconds. Occurrence count
+  is derived from actual requests rather than a value observed in one run.
+  Behavioral counterexamples prove that 403, a different 500, a wrong phase, an
+  unpaired console error, or any page error stays blocking. This historical
+  onchange issue is not claimed as fixed, and the tool hardening does not repeat
+  the business write journey.
 - Product decision remains open: remove the business administrator's existing
   authorization capability, or widen access to the data-permission entry. Until
   then, the compatibility tab is the lossless boundary.

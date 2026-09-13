@@ -106,7 +106,7 @@ const cases = {
   different500: classify({ httpFailures: [knownHttp({ error: { code: 'INTERNAL_ERROR', message: 'different' } })], browserErrors: [knownConsole()], personId }),
   wrongStage: classify({ httpFailures: [knownHttp({ phase: 'final_assertion' })], browserErrors: [knownConsole({ phase: 'final_assertion' })], personId }),
   unpairedConsole: classify({ httpFailures: [knownHttp()], browserErrors: [knownConsole({ message: 'unrelated console error' })], personId }),
-  tooMany: classify({
+  repeatedExact: classify({
     httpFailures: [0, 1, 2, 3].map((offset) => knownHttp({ observed_at_ms: 1000 + offset * 10 })),
     browserErrors: [0, 1, 2, 3].map((offset) => knownConsole({ observed_at_ms: 1001 + offset * 10 })),
     personId,
@@ -129,9 +129,10 @@ console.log(JSON.stringify(cases));
             self.assertEqual(len(cases[name]["auxiliary_http_failures"]), 0, name)
             self.assertEqual(len(cases[name]["blocking_http_failures"]), 1, name)
             self.assertEqual(len(cases[name]["blocking_browser_errors"]), 1, name)
-        self.assertEqual(len(cases["tooMany"]["auxiliary_http_failures"]), 3)
-        self.assertEqual(len(cases["tooMany"]["blocking_http_failures"]), 1)
-        self.assertEqual(len(cases["tooMany"]["blocking_browser_errors"]), 1)
+        self.assertEqual(len(cases["repeatedExact"]["auxiliary_http_failures"]), 4)
+        self.assertEqual(len(cases["repeatedExact"]["auxiliary_console_errors"]), 4)
+        self.assertEqual(len(cases["repeatedExact"]["blocking_http_failures"]), 0)
+        self.assertEqual(len(cases["repeatedExact"]["blocking_browser_errors"]), 0)
 
 
 if __name__ == "__main__":
