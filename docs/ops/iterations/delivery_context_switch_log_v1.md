@@ -9329,3 +9329,4 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 新增 `make ci.local.iteration`，只执行写分支约束、策略自守卫和 diff whitespace 检查，再明确交给受影响的非零 L2；全仓 page-residue、legacy credential、complexity、全历史安全/仓库扫描、前端全量检查和浏览器/acceptance 均不得进入该入口。
 - 内循环实测由包含全仓静态项时的 15.18 秒降为 2.94 秒。被移出的检查没有删除，继续由受影响 L2 或冻结 delivery HEAD 的 `make ci.local.quick` 承担；内循环结果不能生成或冒充 exact-head receipt。
 - 最终 Quick 保持原门禁集合，仅把 frontend lint/typecheck 声明为 Make prerequisites，并删除 recipe 中的重复直接调用，使依赖图对同一 target 去重。8 项策略守卫单元和真实轻量入口通过；本批不修改 P0/P1、数据库、runtime profile、远端 CI 或 required checks，也不为验证效率改造额外运行完整 Quick。
+- 收口阶段将严格类型检查进一步收敛为唯一传递链 `ci.local.quick.run → verify.unified_page_contract.v2 → verify.unified_page_contract.v2.frontend_static → verify.frontend.typecheck.strict`；轻量入口明确输出 clean/dirty 状态，dirty 一律标记 `scope=unclassified_by_design` 并要求风险驱动的非零 L2，不把未知路径静默算作覆盖，也不生成 Quick receipt。

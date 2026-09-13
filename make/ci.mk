@@ -848,12 +848,16 @@ verify.overview.rich.text.patch.capability: guard.prod.forbid
 
 ci.local.iteration: guard.prod.forbid verify.baseline.iteration.execution.policy
 	@git diff --check
-	@echo "[ci.local.iteration] PASS L1-only; select and run the affected non-zero L2 target separately"
+	@if test -z "$$(git status --porcelain=v1 --untracked-files=all)"; then \
+	  echo "[ci.local.iteration] PASS change_state=clean coverage=L1_only receipt=none"; \
+	else \
+	  echo "[ci.local.iteration] PASS change_state=dirty scope=unclassified_by_design coverage=L1_only receipt=none next=affected_non_zero_L2_required"; \
+	fi
 
 ci.local.quick: guard.prod.forbid
 	@python3 scripts/ops/local_quick_evidence.py run
 
-ci.local.quick.run: guard.prod.forbid verify.contract.page_v1_zero_residue.guard security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.formal_product_field_purity verify.tenant_extension_storage ci.generated_reports.guard verify.frontend.component_driver_takeover.unit architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2 verify.menu_config_tree_editor.behavior verify.g1.acceptance.baseline verify.visualization.chart.capability verify.boq.export.capability verify.write.idempotency.capability verify.boq.dangerous.import.capability verify.boq.line.patch.capability verify.overview.rich.text.patch.capability verify.frontend.chart_engine.guard verify.frontend.chart_dataset.unit verify.frontend.boq_line_patch.unit verify.frontend.overview_rich_text.unit verify.frontend.lint.src verify.frontend.typecheck.strict
+ci.local.quick.run: guard.prod.forbid verify.contract.page_v1_zero_residue.guard security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.formal_product_field_purity verify.tenant_extension_storage ci.generated_reports.guard verify.frontend.component_driver_takeover.unit architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2 verify.menu_config_tree_editor.behavior verify.g1.acceptance.baseline verify.visualization.chart.capability verify.boq.export.capability verify.write.idempotency.capability verify.boq.dangerous.import.capability verify.boq.line.patch.capability verify.overview.rich.text.patch.capability verify.frontend.chart_engine.guard verify.frontend.chart_dataset.unit verify.frontend.boq_line_patch.unit verify.frontend.overview_rich_text.unit verify.frontend.lint.src
 	@python3 scripts/ci/verify_contract_form_split_evidence.py
 	@python3 scripts/verify/contract_form_runtime_state_protocol_guard.py
 	@scripts/verify/contract_form_runtime_state_behavior_guard.sh

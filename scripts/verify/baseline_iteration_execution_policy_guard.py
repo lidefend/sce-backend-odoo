@@ -81,8 +81,13 @@ ITERATION_REQUIRED = (
     "guard.prod.forbid",
     "verify.baseline.iteration.execution.policy",
     "git diff --check",
-    "L1-only",
-    "non-zero L2 target separately",
+    "git status --porcelain=v1 --untracked-files=all",
+    "change_state=clean",
+    "change_state=dirty",
+    "scope=unclassified_by_design",
+    "coverage=L1_only",
+    "receipt=none",
+    "next=affected_non_zero_L2_required",
 )
 ITERATION_FORBIDDEN = (
     "ci.local.quick",
@@ -99,14 +104,22 @@ ITERATION_FORBIDDEN = (
 )
 
 QUICK_TARGET = "ci.local.quick.run"
-QUICK_REQUIRED = (
+QUICK_DIRECT_REQUIRED = (
+    "verify.unified_page_contract.v2",
     "verify.frontend.lint.src",
-    "verify.frontend.typecheck.strict",
 )
+QUICK_DIRECT_FORBIDDEN = ("verify.frontend.typecheck.strict",)
 QUICK_FORBIDDEN_DIRECT_COMMANDS = (
     "pnpm_exec.sh -C frontend/apps/web lint:src",
     "pnpm_exec.sh -C frontend/apps/web typecheck:strict",
 )
+
+TYPECHECK_CHAIN = (
+    ("verify.unified_page_contract.v2", "verify.unified_page_contract.v2.frontend_static"),
+    ("verify.unified_page_contract.v2.frontend_static", "verify.frontend.typecheck.strict"),
+)
+TYPECHECK_TARGET = "verify.frontend.typecheck.strict"
+TYPECHECK_COMMAND = "pnpm_exec.sh -C frontend/apps/web typecheck:strict"
 
 
 def _target_declared(text: str, target: str) -> bool:
@@ -120,6 +133,11 @@ def _target_block(text: str, target: str) -> str:
         re.MULTILINE,
     )
     return match.group(0) if match else ""
+
+
+def _target_dependencies(text: str, target: str) -> tuple[str, ...]:
+    match = re.search(rf"^{re.escape(target)}\s*:\s*([^\n]*)", text, re.MULTILINE)
+    return tuple(match.group(1).split()) if match else ()
 
 
 def validate(root: Path) -> list[str]:
@@ -167,16 +185,39 @@ def validate(root: Path) -> list[str]:
         if not quick_block:
             errors.append(f"make/ci.mk: authoritative target missing: {QUICK_TARGET}")
         else:
-            for fragment in QUICK_REQUIRED:
-                if fragment not in quick_block:
+            quick_dependencies = _target_dependencies(ci_text, QUICK_TARGET)
+            for fragment in QUICK_DIRECT_REQUIRED:
+                if fragment not in quick_dependencies:
                     errors.append(
                         f"make/ci.mk: {QUICK_TARGET} missing deduplicated prerequisite {fragment!r}"
+                    )
+            for fragment in QUICK_DIRECT_FORBIDDEN:
+                if fragment in quick_dependencies:
+                    errors.append(
+                        f"make/ci.mk: {QUICK_TARGET} duplicates transitive prerequisite {fragment!r}"
                     )
             for fragment in QUICK_FORBIDDEN_DIRECT_COMMANDS:
                 if fragment in quick_block:
                     errors.append(
                         f"make/ci.mk: {QUICK_TARGET} repeats prerequisite command {fragment!r}"
                     )
+        for owner, dependency in TYPECHECK_CHAIN:
+            if dependency not in _target_dependencies(ci_text, owner):
+                errors.append(
+                    f"make/ci.mk: strict typecheck chain broken: {owner} -> {dependency}"
+                )
+        frontend_make = root / "make/frontend.mk"
+        if not frontend_make.is_file():
+            errors.append("make/frontend.mk: missing Make authority")
+        else:
+            typecheck_block = _target_block(
+                frontend_make.read_text(encoding="utf-8"),
+                TYPECHECK_TARGET,
+            )
+            if typecheck_block.count(TYPECHECK_COMMAND) != 1:
+                errors.append(
+                    f"make/frontend.mk: {TYPECHECK_TARGET} must invoke strict typecheck exactly once"
+                )
     return errors
 
 

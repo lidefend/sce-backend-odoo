@@ -22,12 +22,17 @@
 history、前端全量 typecheck/build、浏览器、acceptance 或 `ci.local.quick`；这些检查继续保留在冻结
 候选的 Quick 或受影响 L2 中。该入口不生成 exact-head receipt，不能冒充交付证据。
 
+入口对工作区只作两类声明：clean 输出 `change_state=clean`；任意 tracked/untracked 改动都输出
+`change_state=dirty scope=unclassified_by_design`。相关改动与未知路径都不会被它自动宣称为已覆盖，
+必须由执行者按风险选择非零 L2；检查失败直接非零退出。该入口不能替代最终 Quick 或 PR CI。
+
 ### 冻结交付
 
 clean delivery HEAD 冻结后才运行一次 `make ci.local.quick`。该入口继续包含完整历史、安全、
 契约、前端 build/typecheck 和治理门禁并生成 exact-head receipt。Quick 中原先在依赖图完成
 `verify.frontend.typecheck.strict` 后又在 recipe 直接执行一次的重复工作被移除；lint 与 typecheck
-改为普通 Make 依赖，由同一依赖图保证每项最多执行一次，没有删除门禁。
+改为普通 Make 依赖。严格类型检查的唯一 Quick 链为
+`ci.local.quick.run → verify.unified_page_contract.v2 → verify.unified_page_contract.v2.frontend_static → verify.frontend.typecheck.strict → pnpm typecheck:strict`；没有删除门禁。
 
 ## 验收
 
