@@ -9359,3 +9359,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Batch-2A 承接补证新增单一事务级运行时菜单反例：仅持有业务配置管理员组的用户可见人员档案、不可见数据权限；行业配置管理员因既有继承可见两者。`data_permission_surface` 7 项通过，测试事务回滚且未改现有账号/权限。该结果确认数据权限当前不能无损承接全部旧维护者，人员档案兼容授权页签继续保留；未修改 ACL、record rule、组继承、菜单授权或 P0。
 - 同步主线后发现两入口共用的项目成员 one2many 命令会被受管 `res.users.write` 白名单丢弃，形成“可编辑但不保存”。P1 提交 `cd8f2b72bba7fe094541e6db62c1c490c83c836e` 将该命令从提权用户字段写入中分离，以当前管理员身份复用既有 `sc.project.member.assignment` ACL、公司记录规则和停用归档语义；不新增权限、不把命令交给 `sudo()`。
 - `runtime_user_management` 18 个方法 / 20 条 Odoo 统计通过，覆盖项目授权新增、停用更新、跨人员拒绝、批量目标拒绝和物理删除拒绝；`data_permission_surface` 5 个方法 / 7 条统计继续通过。`smart_construction_core 17.0.0.164` 在 `sc-local-dev/sc_dev_demo` 受管增量升级与 authority verification 通过。行业边界全量守卫仍命中 BOQ/showcase 等 11 个 main 基线既存项，同一 clean main 复核结果一致，本批不扩展处理。
+
+## 2026-09-13 — Batch-2A 项目授权身份不可变修复
+
+- 独立审查对 `b99cc275…` 提出 S1：已有 `sc.project.member.assignment` 同时承载项目授权审计和 follower 事实，但运行时适配允许直接改 `project_id`。本批只解冻 P1 项目授权写入边界，不改 P0、ACL、record rule、组成员或其他业务入口。
+- 修复提交 `a890edd2f8556ce5f6e424db6039cab234aebf14` 固定已有授权的人员与项目身份。更新缺省项目或显式传原项目可修改备注、停用和重新启用；更换/清空项目拒绝。更换项目只能停用旧授权后新增目标项目授权；页面已有行项目控件只读，服务端仍独立校验。
+- 授权命令改为先完整预校验、后执行人员资料与授权写入，保证普通人员字段与非法授权同批提交整体回滚。新建人员携带内联授权明确拒绝并提示先保存人员；新增授权缺少有效项目、跨公司不可读项目、跨人员修改、批量人员命令和物理删除均失败关闭。
+- L1 轻量入口 11 项通过且不生成 Quick receipt；`runtime_user_management` 23 个方法 / 25 条 Odoo 统计通过，`data_permission_surface` 5 个方法 / 7 条统计通过；`smart_construction_core 17.0.0.165` 受管增量升级及 local.dev authority verification 通过。
+- S1 要求的人员页面写入旅程仍未执行：仓库只有项目资料专用写入 fixture/runner，通用候选浏览器明确只读，现有人员 39 不是受管可写验收对象。按 baseline hard lock，业务批次不能临时创建人员 fixture、数据库命令或测试入口；需独立授权 P4 提供专用人员对象的初始化、归属核对、回读和清理生命周期后才能补证。最终 Quick 与独立复核因此尚未执行，旧 `b99cc275…` receipt 只保留为历史证据。

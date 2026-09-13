@@ -60,9 +60,19 @@ main/allowed companies, and the existing internal-user seed. Because the model i
   one2many commands submitted by both forms, leaving an editable control that did
   not persist. The commands are now separated from the privileged user-field write
   and executed as the current administrator through the existing assignment ACL
-  and company record rule. Only create, update, or deactivate is accepted;
-  cross-user changes, physical deletion, reassignment, and unreadable projects are
-  rejected. Account creation, activation, and password behavior are unchanged.
+  and company record rule. A new assignment requires a valid project readable by
+  the current actor.
+- An established assignment has immutable project identity. Omitting the project
+  or supplying the existing project permits note updates, deactivation, and
+  reactivation; clearing or changing it is rejected server-side. Reassignment is
+  represented by deactivating the old assignment and creating one for the target
+  project. Both forms also render the project control read-only on existing rows.
+- All assignment commands are prevalidated before ordinary profile fields are
+  written, so a mixed invalid authorization/profile update rolls back as a unit.
+  Creating a person with inline authorization now explicitly requires saving the
+  person first instead of silently dropping the commands.
+- Cross-user changes, physical deletion, and unreadable cross-company projects
+  remain rejected. Account creation, activation, and password behavior are unchanged.
 
 ## 4. Layered Verification
 
@@ -70,13 +80,16 @@ main/allowed companies, and the existing internal-user seed. Because the model i
   and configuration-wave guard 1 test passed; XML/Python/diff checks passed.
 - Targeted Odoo: `data_permission_surface` passed 5 methods / 7 Odoo statistics,
   including the runtime menu-visibility counterexample, and
-  `runtime_user_management` passed 18 methods / 20 Odoo statistics. Coverage includes asymmetric group
+  `runtime_user_management` passed 23 methods / 25 Odoo statistics. Coverage includes asymmetric group
   inheritance, identical record scope, dedicated views, read-only identity,
   compatibility controls, and profile-only safe payloads that exclude account,
-  company, role, and project-authorization fields, plus project-authorization
-  create/deactivate, cross-user denial, and deletion denial.
-- Governed runtime: incremental `smart_construction_core 17.0.0.164` upgrade at
-  product commit `cd8f2b72bba7fe094541e6db62c1c490c83c836e` and authority verification
+  company, role, and project-authorization fields. Assignment coverage includes
+  missing-project rejection, A-to-B and clear-project rejection with unchanged
+  follower facts, same-project note/deactivate/reactivate, atomic rollback with a
+  profile change, inline authorization rejection on user creation, cross-company
+  record-rule denial, cross-user denial, and physical-deletion denial.
+- Governed runtime: incremental `smart_construction_core 17.0.0.165` upgrade for
+  product fix `a890edd2f8556ce5f6e424db6039cab234aebf14` and authority verification
   passed. An old P4 guard referenced absent
   `sc.legacy.user.profile` in the current module set; it was not misclassified as
   a product failure or expanded into historical tooling work.
@@ -105,8 +118,16 @@ code was changed to mask the template-record distinction.
 - Browser artifacts are local runtime evidence and are not tracked in Git. The
   final documentation HEAD is bound separately by its final Quick.
 - The browser evidence remains bound to the earlier read-only UI candidate. The
-  later `cd8f2b72…` change only affects the P1 authorization write adapter and
-  targeted tests, so menus, themes, and viewport matrices were not repeated.
+  later `a890edd2…` change affects the P1 authorization write adapter, existing-row
+  project read-only expression, and targeted tests; unaffected menus, themes, and
+  viewport matrices were not repeated.
+- The S1 write journey (add assignment, authoritative read, deactivate, reactivate,
+  and refresh) remains pending. The repository currently provides only a
+  project-profile-specific governed write fixture/runner; the generic candidate
+  browser is explicitly read-only, and personnel record 39 is not a writable
+  acceptance object. Baseline rules prohibit an in-topic ad hoc personnel fixture,
+  database write, or browser entry, so no real account or temporary script is used
+  to bypass the missing independently governed P4 lifecycle.
 - Product decision remains open: remove the business administrator's existing
   authorization capability, or widen access to the data-permission entry. Until
   then, the compatibility tab is the lossless boundary.

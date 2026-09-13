@@ -66,10 +66,10 @@ goal:
         - browser_denied_role_counterexample_credentials_unavailable
     - id: 2
       title: personnel_profile_and_authorization_boundary
-      status: review_ready
+      status: verification_pending
       branch: codex/personnel-authorization-boundary-v1
       baseline: 45cd638b5764bfbcfe722be3f0f916756711ee8a
-      product_candidate: cd8f2b72bba7fe094541e6db62c1c490c83c836e
+      product_candidate: a890edd2f8556ce5f6e424db6039cab234aebf14
       decision:
         - personnel_and_data_permission_use_res_users_and_the_same_company_domain
         - industry_config_admin_implies_business_config_admin_but_not_the_reverse
@@ -80,14 +80,23 @@ goal:
         - data_permission_surface_odoo_tests_7_passed
         - runtime_business_admin_personnel_visible_data_permission_denied
         - runtime_industry_admin_both_entries_visible
-        - runtime_user_management_odoo_methods_18_and_statistics_20_passed
-        - project_assignment_create_deactivate_cross_user_and_delete_boundaries_passed
+        - runtime_user_management_odoo_methods_23_and_statistics_25_passed
+        - project_assignment_requires_valid_project
+        - established_project_assignment_identity_is_immutable
+        - same_project_note_deactivate_and_reactivate_passed
+        - mixed_profile_and_invalid_assignment_roll_back_atomically
+        - inline_assignment_on_new_user_is_rejected_with_save_first_boundary
+        - cross_company_project_assignment_is_rejected_by_existing_record_rule
+        - project_assignment_create_cross_user_and_delete_boundaries_passed
         - governed_incremental_upgrade_smart_construction_core_passed
         - exact_menu_action_runtime_authority_confirmed_for_system_admin
         - both_lists_and_forms_opened_for_res_users_39_on_desktop_and_mobile
         - demo_readonly_denied_from_both_entries
         - browser_mutation_count_zero
       pending:
+        - governed_dedicated_personnel_write_fixture_and_browser_entry
+        - targeted_add_read_deactivate_reactivate_refresh_browser_evidence
+        - final_exact_head_quick
         - independent_review
         - product_decision_before_exclusive_authorization_field_migration
     - id: 3
