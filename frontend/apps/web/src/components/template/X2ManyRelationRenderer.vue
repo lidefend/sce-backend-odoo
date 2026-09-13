@@ -1033,7 +1033,6 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
   max-width: 100%;
   padding: 0;
   overflow: hidden;
-  color: inherit;
   font: inherit;
   line-height: inherit;
   text-align: left;

@@ -378,6 +378,7 @@
 .sc-btn[data-appearance='breadcrumb-item'] { border: var(--sc-component-panel-border-width) solid transparent; border-radius: var(--sc-product-radius-control); background: transparent; color: var(--sc-app-text-secondary); }
 .sc-btn[data-appearance='breadcrumb-item'].active { border-color: var(--sc-app-selected-border); background: var(--sc-app-selected-bg); color: var(--sc-app-selected-text); }
 .sc-btn[data-appearance='breadcrumb-item']:not(:last-child)::after { content: '/'; margin-left: var(--sc-component-button-scope-segment-padding-y); color: var(--sc-app-text-muted); font-weight: 400; }
+.sc-btn[data-appearance='structured-content'] { color: inherit; }
 .sc-btn[data-appearance='context-action'] { border: 0; background: transparent; color: var(--sc-app-text-secondary); }
 .sc-btn[data-appearance='context-action']:hover { color: var(--sc-app-accent); }
 .sc-btn[data-appearance='auth-link'] { border: 0; background: transparent; color: var(--sc-app-info-text); }

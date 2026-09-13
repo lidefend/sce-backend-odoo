@@ -9398,3 +9398,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - S1 修复首个冻结候选的 Quick 在末段因 `ui_contract_v2.py` 行预算 `4334 > 4312` 失败，未签发 receipt。通用策略快照/恢复已下沉到既有 projection 模块，handler 回到预算内且责任映射门禁通过；这是职责拆分，不改变已通过的运行契约语义。
 - 第二轮独立复核发现裸 OR 会把依赖缺失阶段的临时 fail-closed readonly/required 永久锁住。最终实现先完成依赖补齐后的 native modifier hydration，再只重放业务策略的 readonly/required 收紧；首次把 visible 一并收紧时，浏览器准确暴露出库说明/附件消失，收窄后 1440 三页回归通过且退货状态仍不可编辑。
 - 最终矩阵暴露 P4 取样竞态：1088 后续保存的同一明细截图已有完整表头，但检查在动态表头可见前读取为空；390/320 首轮同样早于移动事实标签。证据工具现按视口等待桌面只读表头或移动事实标签可见后再断言，1088 聚焦 5/5 场景通过；该补项不改 P0/P1 产品行为，候选需重新提交、重冻并从 L1 恢复。
+
+## 2026-09-13 — 材料办理 PR #468 前端门禁收口
+
+- 首次远端候选 `75ff4c642dfa913ecf914e9ed18dac073ff7cddf` 的 `frontend_release_gate` 在 primitive adapter guard 失败；X2Many 长名称触发器的消费者类直接拥有 `color` 视觉属性。其余两个失败检查是上游失败的连带状态，不是新的产品根因。
+- Formal Product Layer 为 P0；修复由既有 `ScButton appearance="structured-content"` 主题外观承接继承色，消费者只保留布局与截断。没有修改 P1 页面声明、运行契约、材料业务语义、数据库或写入链。
+- 该代码修复形成新候选后，从 L1 primitive adapter guard 恢复，完成受影响的明细非零测试与聚焦长名称浏览器检查；旧 HEAD 的 Quick receipt 和独立评审不可冒用，新候选需重新执行 L5 与精确 HEAD 远端检查。
