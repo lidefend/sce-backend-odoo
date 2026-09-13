@@ -189,6 +189,21 @@ assert.deepEqual(resolveOne2manyRowColumnBehavior(dynamicColumn, { state: 'done'
 assert.deepEqual(resolveOne2manyRowColumnBehavior(dynamicColumn, { state: 'hidden', note: '' }), {
   invisible: true, columnInvisible: false, readonly: false, required: false,
 });
+const immutableExistingRelationColumn = {
+  name: 'project_id', label: '项目', ttype: 'many2one', required: true,
+  readonly: false,
+  modifiers: { readonly: { kind: 'field_truthy', field: 'id' } },
+};
+assert.equal(
+  resolveOne2manyRowColumnBehavior(immutableExistingRelationColumn, { id: 33, project_id: [427, '项目'] }).readonly,
+  true,
+  'an existing relation row must consume its dynamic readonly modifier',
+);
+assert.equal(
+  resolveOne2manyRowColumnBehavior(immutableExistingRelationColumn, { id: false, project_id: false }).readonly,
+  false,
+  'a new relation row must remain editable when the dynamic readonly modifier is false',
+);
 assert.equal(resolveOne2manyRowColumnBehavior({
   ...dynamicColumn, modifiers: { column_invisible: "context.get('hide_note')" },
 }, {}, {}).columnInvisible, true);

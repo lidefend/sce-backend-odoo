@@ -384,6 +384,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     one2manyRowStateLabel,
     prepareOne2manyColumns: (fieldName: string) => dependencies.ensureRelationFieldDescriptors?.(fieldName),
     one2manyColumns,
+    one2manyEffectiveColumn: dependencies.one2manyEffectiveColumn,
     one2manyColumnQueryScope,
     queryOne2manyColumnOptions: dependencies.queryOne2manyColumnOptions,
     setOne2manyRowField: (fieldName: string, rowKey: string, column: RelationFieldColumn, value: unknown) => {

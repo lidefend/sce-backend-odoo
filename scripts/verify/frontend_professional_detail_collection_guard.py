@@ -125,6 +125,10 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection cell validation is not associated with its control")
     if renderer.count("<One2ManyCellEditor") != 2:
         failures.append("desktop and mobile detail layouts do not share the same cell editor")
+    if renderer.count("adapter.one2manyEffectiveColumn(field.name,") != 2:
+        failures.append("desktop and mobile detail cells do not consume row-specific modifiers")
+    if "one2manyEffectiveColumn: (name: string, row: RelationFieldRow, column: RelationFieldColumn)" not in relation_types:
+        failures.append("detail collection adapter omits row-specific modifier consumption")
     if "title: column.label" not in renderer:
         failures.append("detail collection columns do not expose authoritative labels")
     if "if (!one2manyCanInlineEdit(fieldName)) return;" not in action_presentation:
