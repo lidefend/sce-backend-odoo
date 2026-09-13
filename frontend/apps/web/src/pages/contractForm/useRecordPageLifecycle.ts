@@ -4,6 +4,7 @@ import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
 import type { FormRecordHydrationTarget } from './recordHydration';
 import { readonlyMainDataCoversFields } from './readonlyMainDataCoverage';
 import { contractLoadProfileOptions } from './contractRenderProfile';
+import { resolveContractFormReadContext } from './contractRuntimeVm';
 import {
   loadAuthoritativeCreateDefaults,
   resolveCreateRouteRelationLabels,
@@ -376,6 +377,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
         model: model.value,
         ids: [recordId.value],
         fields: fieldNames.length ? fieldNames : '*',
+        context: resolveContractFormReadContext(v2ContractStore.value),
       });
       row = read.records?.[0];
     }

@@ -1,4 +1,6 @@
 import type { ContractAction } from './types';
+import { resolveContractV2SourceContext } from '../../app/contracts/v2/store';
+import type { ContractV2NormalizedStore } from '../../app/contracts/v2/types';
 import { normalizeRouteDefault } from './valueUtils';
 
 export type FormContractReadiness = {
@@ -8,6 +10,17 @@ export type FormContractReadiness = {
   layoutFieldCount: number;
   visibleCandidateCount: number;
 };
+
+/**
+ * Return only the server-projected context carried by the normalized action
+ * contract. Route/query context is intentionally excluded: record reads may
+ * consume the formal action authority, but must not trust arbitrary client
+ * context as an ORM override.
+ */
+export function resolveContractFormReadContext(store: ContractV2NormalizedStore | null) {
+  const context = resolveContractV2SourceContext(store).context;
+  return context ? { ...context } : {};
+}
 
 export function buildRouteContractContext(routeQuery: Record<string, unknown>) {
   const context: Record<string, unknown> = {};

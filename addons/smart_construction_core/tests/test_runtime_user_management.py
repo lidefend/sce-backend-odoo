@@ -341,6 +341,38 @@ class TestRuntimeUserManagement(TransactionCase):
             )
         )
 
+    def test_inactive_assignment_read_keeps_active_default_and_company_rule(self):
+        admin = self._create_business_config_admin("runtime_inactive_scope_admin")
+        other_company = self.env["res.company"].create({"name": "Runtime Inactive Other Company"})
+        target = self.env["res.users"].with_context(no_reset_password=True).create(
+            {
+                "login": "runtime_inactive_scope_target",
+                "name": "Runtime Inactive Scope Target",
+                "company_id": self.env.company.id,
+                "company_ids": [(6, 0, [self.env.company.id, other_company.id])],
+            }
+        )
+        own_project = self.env["project.project"].create(
+            {"name": "Runtime Inactive Own Project", "company_id": self.env.company.id}
+        )
+        other_project = self.env["project.project"].create(
+            {"name": "Runtime Inactive Other Project", "company_id": other_company.id}
+        )
+        own_assignment = self.env["sc.project.member.assignment"].create(
+            {"project_id": own_project.id, "user_id": target.id, "active": False}
+        )
+        other_assignment = self.env["sc.project.member.assignment"].create(
+            {"project_id": other_project.id, "user_id": target.id, "active": False}
+        )
+        Assignment = self.env["sc.project.member.assignment"].with_user(admin)
+        domain = [("id", "in", [own_assignment.id, other_assignment.id])]
+
+        self.assertFalse(Assignment.search(domain), "default active_test must still hide inactive rows")
+        visible = Assignment.with_context(active_test=False).search(domain)
+
+        self.assertIn(own_assignment, visible)
+        self.assertNotIn(other_assignment, visible)
+
     def test_runtime_management_rejects_cross_user_assignment_commands(self):
         admin = self._create_business_config_admin("runtime_assignment_boundary_admin")
         target = self._create_runtime_user("runtime_assignment_target", "Runtime Assignment Target")

@@ -4,6 +4,7 @@ import { reactive } from 'vue';
 import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
 import type { NativeLayoutLikeNode } from './nativeLayoutUtils';
+import { resolveContractFormReadContext } from './contractRuntimeVm';
 import type { One2ManyColumn, One2ManyInlineRow, RelationOption } from './types';
 
 type FieldDependencies = Record<string, any>;
@@ -53,6 +54,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
           model: relation,
           ids: missingIds,
           fields: relationReadFields(descriptor),
+          context: resolveContractFormReadContext(v2ContractStore.value),
         });
         const options = relationOptionsFromRecords(response.records, descriptor);
         if (options.length) mergeRelationOptions(name, options);
@@ -169,6 +171,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
         model: relation,
         ids: rows.map((row) => Number(row.id)).filter((id) => Number.isFinite(id) && id > 0),
         fields,
+        context: resolveContractFormReadContext(v2ContractStore.value),
       });
       const records = Array.isArray(response.records) ? response.records : [];
       mergeHydratedOne2manyRecords(name, records as Array<Record<string, unknown>>);
