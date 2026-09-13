@@ -116,7 +116,12 @@ async function login(page, authority) {
   const user = initBody?.data?.user || {};
   check(Number(user.id) === Number(authority.operator.id), 'runtime operator user mismatch', user);
   check(Number(user.company_id) === Number(authority.operator.company_id), 'runtime operator company mismatch', user);
-  return { login: loginBody?.data, init: initBody?.data };
+  return {
+    login_ok: loginBody?.ok === true,
+    user_id: Number(user.id),
+    login: String(user.login || ''),
+    company_id: Number(user.company_id),
+  };
 }
 async function openOwnedForm(page, entry, personName) {
   await page.goto(`${FRONTEND_URL}/a/${entry.action_id}?menu_id=${entry.menu_id}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -248,7 +253,7 @@ try {
   report.runtime_identity = await login(page, initial);
   const form = await openOwnedForm(page, initial.entries.personnel, initial.person.name);
   const root = await authorizationSurface(form);
-  await root.getByRole('button', { name: /^新增明细$/ }).click();
+  await root.getByRole('button', { name: /^添加项目成员授权$/ }).click();
   await selectProject(page, root, initial.project.name);
   const note = `P4 页面授权验收 ${BATCH}`;
   await setNote(root, note);

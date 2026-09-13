@@ -60,8 +60,10 @@ class PersonnelAuthorizationFixtureSafetyTest(unittest.TestCase):
             "second_entry_same_fact",
             "writes.length === 3",
             "persisted assignment project remains editable or changed",
+            "添加项目成员授权",
         ):
             self.assertIn(token, BROWSER)
+        self.assertNotIn("loginBody?.data, init:", BROWSER)
         self.assertNotIn("page.route(", BROWSER)
         self.assertNotIn("unlink", BROWSER)
         self.assertNotIn("retire", BROWSER)
