@@ -306,11 +306,13 @@ async function inspectHandlingForm(page, entryKey, entry, spec, mode, viewport, 
   const heading = (await form.locator('h1:visible').first().innerText()).trim();
   const detailHeadingCount = await relation.locator('[data-detail-collection-heading]:visible').count();
   const desktopHead = relation.locator('thead:visible').first();
-  if (mode === 'readonly' && viewport.width > 390) {
-    await desktopHead.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
+  const mobileDetailLabels = relation.locator('.o2m-readonly-fact dt:visible, .o2m-mobile-label:visible');
+  if (mode === 'readonly') {
+    const detailIdentity = viewport.width <= 390 ? mobileDetailLabels.first() : desktopHead;
+    await detailIdentity.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
   }
   const detailHeaders = viewport.width <= 390
-    ? await relation.locator('.o2m-readonly-fact dt:visible, .o2m-mobile-label:visible').allInnerTexts()
+    ? await mobileDetailLabels.allInnerTexts()
     : await desktopHead.count()
       ? (await desktopHead.innerText()).split('\n').map((value) => value.trim()).filter(Boolean)
       : [];
