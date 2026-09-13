@@ -16,6 +16,7 @@ PROFILE_CASES = (
         "view": "view_construction_contract_income_tree",
         "model": "construction.contract.income",
         "tree_column": "subject",
+        "leading_columns": ["subject", "document_status", "date_contract"],
         "navigation_title": "收入合同履约结构",
     },
     {
@@ -64,6 +65,13 @@ class TestContractExecutionComponentProfile(TransactionCase):
                 root = etree.fromstring(view.arch_db.encode("utf-8"))
                 self.assertEqual(root.tag, "tree")
                 self.assertEqual(root.get("js_class"), "smart_hierarchical_worksheet")
+                if case.get("leading_columns"):
+                    self.assertEqual(
+                        [field.get("name") for field in root.xpath("./field")][
+                            : len(case["leading_columns"])
+                        ],
+                        case["leading_columns"],
+                    )
 
     def test_actions_declare_field_owned_execution_profiles(self):
         for case in PROFILE_CASES:
@@ -118,6 +126,13 @@ class TestContractExecutionComponentProfile(TransactionCase):
                     [row["field"] for row in config["hierarchy"]["navigation_groups"]],
                     ["project_id", "partner_id", "document_status"],
                 )
+                if case.get("leading_columns"):
+                    self.assertEqual(
+                        [column["field"] for column in config["sheet"]["columns"]][
+                            : len(case["leading_columns"])
+                        ],
+                        case["leading_columns"],
+                    )
                 self.assertGreater(len(config["sheet"]["columns"]), 5)
                 self.assertGreaterEqual(len(config["detail"]["tabs"]), 2)
 
