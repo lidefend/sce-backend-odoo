@@ -9397,3 +9397,4 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 新断言首次准确复现 `data-field-state=required` 后停止，第二跳修复的 1440 三页聚焦回归通过、业务指纹不变。待刷新生成清单、提交、重冻完整指纹、重取最终矩阵、重跑一次 Quick 并对新候选独立复核；不推送、不建 PR、不合并。
 - S1 修复首个冻结候选的 Quick 在末段因 `ui_contract_v2.py` 行预算 `4334 > 4312` 失败，未签发 receipt。通用策略快照/恢复已下沉到既有 projection 模块，handler 回到预算内且责任映射门禁通过；这是职责拆分，不改变已通过的运行契约语义。
 - 第二轮独立复核发现裸 OR 会把依赖缺失阶段的临时 fail-closed readonly/required 永久锁住。最终实现先完成依赖补齐后的 native modifier hydration，再只重放业务策略的 readonly/required 收紧；首次把 visible 一并收紧时，浏览器准确暴露出库说明/附件消失，收窄后 1440 三页回归通过且退货状态仍不可编辑。
+- 最终桌面证据在 1088 出库只读态暴露 P4 取样竞态：后续保存的同一明细截图已有完整表头，但检查在动态表头可见前读取为空。证据工具现等待桌面只读表头可见后再断言，1088 聚焦 5/5 场景通过；该补项不改 P0/P1 产品行为，候选需重新提交、重冻并从 L1 恢复。
