@@ -39,13 +39,13 @@ goal:
       status: completed
     - id: B2
       title: my_work_card_density_correction
-      status: implemented_pending_product_review
+      status: completed
     - id: C
       title: targeted_product_validation
-      status: active
+      status: completed
     - id: D
       title: frozen_delivery
-      status: planned
+      status: active
   acceptance:
     - income_contract_subject_is_visible_at_the_unscrolled_table_origin
     - work_item_type_does_not_stack_vertically_at_1088
@@ -109,3 +109,37 @@ goal:
         23225efbb8bf5bb8b0276af7ec016eb5e5614612 was identity-verified,
         terminated, and its pidfile removed before the candidate carrier was
         restarted
+    l4_product_candidate:
+      status: passed
+      source_head: ed36ba45d285f0bce77c2579c260dae6f5443d69
+      source_fingerprint: b7c0522328d18e6d98fce8c4735c62f78c0b8872043337b0957ed5b56e133473
+      path_count: 7427
+      command: local.dev.candidate.frontend.visual-smoke
+      runtime_identity: sc-local-dev/sc_dev_demo
+      mutation_count: 0
+      desktop_1088:
+        viewport: 1088x791_dark
+        fully_visible_collapsed_cards: 2
+        disclosure_method: keyboard_enter_space
+      desktop_1440:
+        viewport: 1440x960_light
+        disclosure_method: keyboard_enter_space
+      mobile_390:
+        viewport: 390x844_light_and_dark
+        disclosure_method: touch
+      disclosure_result:
+        full_identity_matched: true
+        expanded_then_collapsed: true
+      evidence:
+        - /home/lidefend/workspace/sce-offrepo/artifacts/playwright/contract-work-reading-efficiency-ed36ba45-dark-1088-my-work
+        - /home/lidefend/workspace/sce-offrepo/artifacts/playwright/contract-work-reading-efficiency-ed36ba45-light-1440-390-expanded-check
+        - /home/lidefend/workspace/sce-offrepo/artifacts/playwright/contract-work-reading-efficiency-ed36ba45-dark-1088-390-expanded-check
+    l5:
+      status: freeze_prepare_passed_pending_final_commit_quick_and_independent_review
+      freeze_prepare:
+        command: make ci.delivery.freeze.prepare
+        status: passed
+        test_inventory_count: 1366
+        component_inventory_test_count: 7
+        required_component_adapter_count: 35
+        contract_form_split_lines: 1866
