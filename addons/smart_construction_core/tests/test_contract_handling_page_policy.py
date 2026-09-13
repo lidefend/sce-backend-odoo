@@ -154,23 +154,27 @@ class TestContractHandlingPagePolicy(TransactionCase):
             ],
         )
 
-    def test_expense_policy_layout_is_not_reorganized_with_income_sample(self):
+    def test_expense_policy_declares_its_own_handling_sections_and_labels(self):
         policy = get_business_category_form_policy_templates()["contract.expense"]
         self.assertEqual(
             [section["title"] for section in policy["sections"]],
             [
-                "办理类型",
-                "项目与往来单位",
-                "支出合同信息",
-                "金额与税率",
-                "履约与管理",
-                "备注与附件",
-                "合同明细",
-                "执行结果",
+                "身份与基本资料",
+                "合同范围",
+                "合同明细与金额",
+                "说明与附件",
+                "履约信息",
                 "系统信息",
                 "来源与系统追溯",
+                "历史付款承接",
             ],
         )
+        field_labels = {
+            field["name"]: field.get("label")
+            for field in policy["fields"]
+        }
+        self.assertEqual(field_labels["partner_id"], "供应商/分包方")
+        self.assertEqual(field_labels["attachment_text"], "平台附件文本")
 
     def test_income_policy_reaches_final_v2_sections_and_state_status(self):
         action = self.env.ref("smart_construction_core.action_construction_contract_income")
@@ -232,6 +236,102 @@ class TestContractHandlingPagePolicy(TransactionCase):
                 "履约信息",
                 "系统信息",
                 "来源与系统追溯",
+            ],
+        )
+
+        def state_widget_status(contract):
+            state_widget_ids = []
+
+            def visit(value):
+                if isinstance(value, dict):
+                    if value.get("fieldCode") == "state" and value.get("widgetId"):
+                        state_widget_ids.append(value["widgetId"])
+                    for nested in value.values():
+                        visit(nested)
+                elif isinstance(value, list):
+                    for nested in value:
+                        visit(nested)
+
+            visit(contract["layoutContract"]["containerTree"])
+            statuses = {
+                row["widgetId"]: row
+                for row in contract["statusContract"]["widgetStatus"]
+            }
+            return [statuses[widget_id] for widget_id in state_widget_ids]
+
+        create_state_status = state_widget_status(create_contract)
+        readonly_state_status = state_widget_status(readonly_contract)
+        self.assertTrue(create_state_status)
+        self.assertTrue(readonly_state_status)
+        self.assertTrue(all(row.get("visible") is False for row in create_state_status))
+        self.assertTrue(all(row.get("visible") is True for row in readonly_state_status))
+        self.assertTrue(all(row.get("readonly") is True for row in readonly_state_status))
+
+    def test_expense_policy_reaches_final_v2_sections_labels_and_state_status(self):
+        action = self.env.ref("smart_construction_core.action_construction_contract_expense")
+        menu = self.env.ref("smart_construction_core.menu_sc_p1_expense_contract")
+        common = {
+            "model": action.res_model,
+            "view_type": "form",
+            "record_id": "new",
+            "action_id": action.id,
+            "menu_id": menu.id,
+            "client_type": "web_pc",
+        }
+        handler = UiContractV2Handler(
+            self.env,
+            su_env=self.env["ir.model"].sudo().env,
+        )
+        create_result = handler.handle({**common, "render_profile": "create"})
+        readonly_result = handler.handle(
+            {
+                **{key: value for key, value in common.items() if key != "record_id"},
+                "render_profile": "readonly",
+            }
+        )
+        create_envelope = (
+            create_result.to_legacy_dict()
+            if hasattr(create_result, "to_legacy_dict")
+            else create_result
+        )
+        readonly_envelope = (
+            readonly_result.to_legacy_dict()
+            if hasattr(readonly_result, "to_legacy_dict")
+            else readonly_result
+        )
+        self.assertTrue(create_envelope.get("ok", True), create_envelope)
+        self.assertTrue(readonly_envelope.get("ok", True), readonly_envelope)
+
+        create_contract = create_envelope["data"]
+        readonly_contract = readonly_envelope["data"]
+        structure = create_contract["formStructureContract"]
+        self.assertEqual(structure["presentationMode"], "task")
+        self.assertEqual(
+            structure["sourceAuthority"]["governance_source"]["categoryCode"],
+            "contract.expense",
+        )
+        self.assertEqual(structure["fieldLabels"]["partner_id"], "供应商/分包方")
+        self.assertEqual(structure["fieldLabels"]["attachment_text"], "平台附件文本")
+        self.assertEqual(
+            [slot["title"] for slot in structure["slots"]],
+            [
+                "身份与基本资料",
+                "合同范围",
+                "合同明细与金额",
+                "说明与附件",
+            ],
+        )
+        self.assertEqual(
+            [slot["title"] for slot in readonly_contract["formStructureContract"]["slots"]],
+            [
+                "身份与基本资料",
+                "合同范围",
+                "合同明细与金额",
+                "说明与附件",
+                "履约信息",
+                "系统信息",
+                "来源与系统追溯",
+                "历史付款承接",
             ],
         )
 
