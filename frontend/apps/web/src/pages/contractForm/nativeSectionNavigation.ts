@@ -4,6 +4,7 @@ import type {
   CanonicalFormSemanticRole,
 } from '../../app/presentation/canonicalFormRenderModel';
 import { fieldIsBusinessRelationCollection } from '../../app/presentation/canonicalFormFloorplan';
+import { canonicalNodeHasContent } from './canonicalFormRenderer';
 import { collectNativeBusinessSections } from './nativeBusinessSection';
 
 export type NativeSectionNavigationRole = 'primary' | 'subordinate';
@@ -157,7 +158,7 @@ export function workspaceSectionNavigationItems(nodes: CanonicalFormNode[]): Wor
 export function authoritativeNativeBusinessSections(nodes: CanonicalFormNode[]) {
   return collectNativeBusinessSections(nodes, {
     childrenOf: (node) => node.children,
-    isVisible: (node) => node.visible,
+    isVisible: canonicalNodeHasContent,
   });
 }
 

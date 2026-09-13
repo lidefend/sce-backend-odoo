@@ -84,8 +84,8 @@ function field(overrides: Record<string, unknown>) {
 
 function node(overrides: Record<string, unknown>): CanonicalFormNode {
   return {
-    nodeId: 'node.default', kind: 'group', title: '', visible: true, semanticRole: '',
-    fields: [], children: [],
+    nodeId: 'node.default', kind: 'group', title: '', text: '', visible: true, semanticRole: '',
+    fields: [field({})], children: [],
     ...overrides,
   } as unknown as CanonicalFormNode;
 }
@@ -116,6 +116,17 @@ const hiddenSection = workspaceSectionNavigationItems([node({
   title: '隐藏业务章节', attributes: { 'data-sc-anchor': 'hidden-business-section' },
 })]);
 assert.deepEqual(hiddenSection, [], 'hidden sections must not create links');
+
+const emptyProfileSection = workspaceSectionNavigationItems([node({
+  nodeId: 'profile.hidden.content', title: '仅只读可见',
+  attributes: { 'data-sc-anchor': 'profile-hidden-content' },
+  fields: [field({ widgetId: 'readonly.only', visible: false })],
+})]);
+assert.deepEqual(
+  emptyProfileSection,
+  [],
+  'a visible container whose profile hides all presentable content must not leave a dead navigation link',
+);
 
 const authoritativeSections = workspaceSectionNavigationItems([
   node({
