@@ -43,6 +43,8 @@
 | L2/L3 | 合同 profile 首次运行后识别到安装视图仍为旧 XML；随后经显式声明的 `local.dev.upgrade` 增量升级 | 升级 PASS；`sc-local-dev/sc_dev_demo` 权威身份 PASS |
 | L2 | `make local.dev.test MODULE=smart_construction_core TEST_TAGS=contract_execution_component_profile` | 升级后 PASS；5 个测试方法，Odoo 统计 7 tests，零失败 |
 | L2 | `make verify.frontend.hierarchical_worksheet.unit`、`make verify.frontend.state_dashboard.unit` | PASS；分别包含 18 个 Python tests + 15 个交互 cases，以及 24 个 Python tests + My Work 展示纯函数 cases |
-| L4 | 1088 只读产品检查 | 尚未运行；不以静态结果代替产品效果 |
+| L4 | 1088 只读产品检查 | `local.dev.candidate.frontend.up` 的静态构建 PASS，但候选服务启动被既有 5176 身份门禁拒绝；页面检查尚未运行，不以静态结果代替产品效果 |
 
 首次合同定向运行的失败归因为升级前安装视图过期；升级改变了该环境前提，之后同一目标通过，因此不是对未变化失败的重复重试。完整 Quick、fixture reset、release snapshot 和浏览器矩阵均未在开发期运行。
+
+L4 的具体阻断是 `/tmp/sc-local-dev-candidate-frontend.pid` 仍绑定已删除工作树 `/home/lidefend/workspace/sce-backend-odoo-batch2a-personnel-auth`、旧 HEAD `23225efbb8bf5bb8b0276af7ec016eb5e5614612` 和仍存活的 5176 静态服务。当前专题不手工终止进程、不拼接新端口，也不新增 P4 验证入口；需要先由已有运行载体的治理责任解除该占用，之后才能对本专题干净候选执行 1088 只读检查。

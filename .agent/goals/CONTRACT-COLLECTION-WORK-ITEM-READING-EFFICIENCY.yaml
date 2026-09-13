@@ -87,3 +87,8 @@ goal:
     l4:
       status: not_run
       next_step: governed_1088_read_only_visual_check
+      blocker: >-
+        local.dev.candidate.frontend.up is denied because port 5176 and its
+        governed pidfile remain bound to deleted worktree
+        sce-backend-odoo-batch2a-personnel-auth at head
+        23225efbb8bf5bb8b0276af7ec016eb5e5614612
