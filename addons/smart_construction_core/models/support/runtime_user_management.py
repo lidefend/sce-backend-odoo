@@ -296,29 +296,40 @@ class ResUsers(models.Model):
         if vals.get("user_id") and int(vals["user_id"]) != target_user.id:
             raise ValidationError(_("项目成员授权必须属于当前维护人员。"))
 
-        project_id = int(
-            vals.get("project_id")
-            or (existing_assignment.project_id.id if existing_assignment else 0)
-        )
-        if project_id:
-            project = self.env["project.project"].browse(project_id).exists()
-            if not project:
-                raise ValidationError(_("项目成员授权引用的项目不存在。"))
-            project.check_access_rights("read")
-            project.check_access_rule("read")
-            if vals.get("company_id") and int(vals["company_id"]) != project.company_id.id:
-                raise ValidationError(_("项目成员授权的公司必须与项目公司一致。"))
+        try:
+            incoming_project_id = int(vals.get("project_id") or 0) if "project_id" in vals else 0
+        except (TypeError, ValueError):
+            raise ValidationError(_("项目成员授权引用的项目不合法。"))
 
-        return {field_name: vals[field_name] for field_name in allowed_fields if field_name in vals}
+        if existing_assignment:
+            project_id = existing_assignment.project_id.id
+            if "project_id" in vals and incoming_project_id != project_id:
+                raise ValidationError(_("已建立的项目成员授权不得更换或清空项目；请停用旧授权后新增目标项目授权。"))
+        else:
+            project_id = incoming_project_id
+            if project_id <= 0:
+                raise ValidationError(_("新增项目成员授权必须指定有效项目。"))
+
+        project = self.env["project.project"].browse(project_id).exists()
+        if not project:
+            raise ValidationError(_("项目成员授权引用的项目不存在。"))
+        project.check_access_rights("read")
+        project.check_access_rule("read")
+        if vals.get("company_id") and int(vals["company_id"]) != project.company_id.id:
+            raise ValidationError(_("项目成员授权的公司必须与项目公司一致。"))
+
+        update_fields = allowed_fields - {"project_id"} if existing_assignment else allowed_fields
+        return {field_name: vals[field_name] for field_name in update_fields if field_name in vals}
 
     @api.model
-    def _sc_apply_runtime_project_assignment_commands(self, target_user, commands):
+    def _sc_prepare_runtime_project_assignment_commands(self, target_user, commands):
         if commands is None:
-            return
+            return []
         if not isinstance(commands, (list, tuple)):
             raise ValidationError(_("项目成员授权命令不合法。"))
 
         Assignment = self.env["sc.project.member.assignment"]
+        prepared = []
         for command in commands:
             if not isinstance(command, (list, tuple)) or len(command) < 2:
                 raise ValidationError(_("项目成员授权命令不合法。"))
@@ -331,10 +342,10 @@ class ResUsers(models.Model):
                     target_user,
                 )
                 assignment_vals["user_id"] = target_user.id
-                Assignment.create(assignment_vals)
+                prepared.append(("create", Assignment, assignment_vals))
                 continue
             if operation == 1 and record_id > 0:
-                assignment = Assignment.search(
+                assignment = Assignment.with_context(active_test=False).search(
                     [("id", "=", record_id), ("user_id", "=", target_user.id)],
                     limit=1,
                 )
@@ -345,14 +356,24 @@ class ResUsers(models.Model):
                     target_user,
                     existing_assignment=assignment,
                 )
-                if assignment_vals:
-                    assignment.write(assignment_vals)
+                prepared.append(("write", assignment, assignment_vals))
                 continue
             raise ValidationError(_("项目成员授权只能新增、修改或停用，不能删除或重新归属。"))
+        return prepared
+
+    @api.model
+    def _sc_apply_prepared_runtime_project_assignment_commands(self, prepared):
+        for operation, recordset, assignment_vals in prepared:
+            if operation == "create":
+                recordset.create(assignment_vals)
+            elif assignment_vals:
+                recordset.write(assignment_vals)
 
     @api.model_create_multi
     def create(self, vals_list):
         if self._sc_runtime_user_management_allowed() and not self.env.context.get("sc_runtime_user_management_sudo"):
+            if any(vals.get("sc_project_member_assignment_ids") for vals in vals_list):
+                raise ValidationError(_("请先保存人员，再维护项目成员授权。"))
             safe_vals_list = [self._sc_runtime_user_safe_vals(dict(vals or {})) for vals in vals_list]
             return self.sudo().with_context(
                 dict(self.env.context, sc_runtime_user_management_sudo=True, no_reset_password=True)
@@ -384,9 +405,13 @@ class ResUsers(models.Model):
                 raise ValidationError(_("项目成员授权必须逐个人员维护。"))
             for user in self:
                 safe_vals = self._sc_runtime_user_safe_vals(dict(vals or {}), existing_user=user)
+                prepared_assignments = self._sc_prepare_runtime_project_assignment_commands(
+                    user,
+                    assignment_commands,
+                )
                 user.sudo().with_context(
                     dict(self.env.context, sc_runtime_user_management_sudo=True, no_reset_password=True)
                 ).write(safe_vals)
-                self._sc_apply_runtime_project_assignment_commands(user, assignment_commands)
+                self._sc_apply_prepared_runtime_project_assignment_commands(prepared_assignments)
             return True
         return super().write(vals)

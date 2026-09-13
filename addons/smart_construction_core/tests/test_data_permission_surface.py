@@ -101,6 +101,13 @@ class TestDataPermissionSurface(TransactionCase):
                 "//field[@name='sc_project_member_assignment_ids']"
             )
         )
+        assignment_field = arch.xpath(
+            "//page[@name='sc_compatible_authorization_maintenance']"
+            "//field[@name='sc_project_member_assignment_ids']"
+        )[0]
+        project_field = assignment_field.xpath("./tree/field[@name='project_id']")[0]
+        self.assertEqual(assignment_field.get("readonly"), "not id")
+        self.assertEqual(project_field.get("readonly"), "id")
 
     def test_data_permission_form_keeps_identity_readonly_and_authority_editable(self):
         view = self.env.ref("smart_construction_core.view_sc_data_permission_user_form")
@@ -122,3 +129,9 @@ class TestDataPermissionSurface(TransactionCase):
         self.assertTrue(
             arch.xpath("//group[@name='sc_permission_project_scope']/field[@name='sc_project_member_assignment_ids']")
         )
+        assignment_field = arch.xpath(
+            "//group[@name='sc_permission_project_scope']/field[@name='sc_project_member_assignment_ids']"
+        )[0]
+        project_field = assignment_field.xpath("./tree/field[@name='project_id']")[0]
+        self.assertEqual(assignment_field.get("readonly"), "not id")
+        self.assertEqual(project_field.get("readonly"), "id")
