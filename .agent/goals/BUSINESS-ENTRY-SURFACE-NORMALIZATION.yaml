@@ -69,12 +69,13 @@ goal:
       status: verification_pending
       branch: codex/personnel-authorization-boundary-v1
       baseline: 45cd638b5764bfbcfe722be3f0f916756711ee8a
-      product_candidate: a890edd2f8556ce5f6e424db6039cab234aebf14
+      product_candidate: 0734524b475e9c436afe8284d9cf62e8ffb2334a
       decision:
         - personnel_and_data_permission_use_res_users_and_the_same_company_domain
         - industry_config_admin_implies_business_config_admin_but_not_the_reverse
         - authorization_fields_remain_in_the_personnel_compatibility_tab_until_product_authorizes_a_permission_change
-        - no_acl_record_rule_group_membership_or_p0_renderer_change
+        - no_acl_record_rule_or_group_membership_change
+        - p0_changes_are_generic_formal_action_context_and_row_modifier_consumption_without_business_special_cases
         - project_assignment_commands_use_existing_actor_acl_and_company_rules_without_sudo
       validation:
         - data_permission_surface_odoo_tests_7_passed
@@ -93,11 +94,14 @@ goal:
         - both_lists_and_forms_opened_for_res_users_39_on_desktop_and_mobile
         - demo_readonly_denied_from_both_entries
         - browser_mutation_count_zero
+        - formal_action_active_test_false_is_preserved_for_main_and_relation_reads
+        - desktop_and_mobile_relation_editors_consume_existing_row_readonly_modifiers
+        - governed_personnel_authorization_reactivate_refresh_second_entry_and_final_deactivate_passed
+        - final_assignment_inactive_and_project_follower_released
+        - known_auxiliary_onchange_classification_is_exact_bounded_and_behavior_tested
       pending:
-        - governed_dedicated_personnel_write_fixture_and_browser_entry
-        - targeted_add_read_deactivate_reactivate_refresh_browser_evidence
         - final_exact_head_quick
-        - independent_review
+        - independent_review_after_s1_runner_recheck
         - product_decision_before_exclusive_authorization_field_migration
     - id: 3
       title: entry_inventory_closure

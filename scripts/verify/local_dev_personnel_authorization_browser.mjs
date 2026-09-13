@@ -4,6 +4,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './playwright_runtime.mjs';
+import { classifyPersonnelAuthorizationJourneyFailures } from './local_dev_personnel_authorization_failure_policy.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const EXPECTED_FRONTEND = 'http://127.0.0.1:5176';
@@ -22,6 +23,7 @@ const PROJECT_ID = positiveId('PROJECT_ID');
 const PASSWORD = String(process.env.E2E_PASSWORD || '');
 const OUT = path.resolve(process.env.ARTIFACT_DIR || `artifacts/p4-personnel-authorization/${BATCH}`);
 const NOTE = `P4 页面授权验收 ${BATCH}`;
+let observationPhase = 'preflight';
 
 function deny(message) { throw new Error(`[DENY] ${message}`); }
 function check(value, message, details) {
@@ -331,16 +333,34 @@ const report = {
   http_failures: [],
   relation_contracts: [],
   auxiliary_onchange_failures: [],
+  auxiliary_console_errors: [],
   blocking_http_failures: [],
+  blocking_browser_errors: [],
   pass: false,
 };
 const browser = await launchChromium({ headless: true });
 const context = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: 'zh-CN' });
 const page = await context.newPage();
-page.on('pageerror', (error) => report.errors.push({ type: 'pageerror', message: String(error.message || error) }));
-page.on('console', (message) => { if (message.type() === 'error' && !message.text().includes('favicon')) report.errors.push({ type: 'console', message: message.text().slice(0, 1000) }); });
+page.on('pageerror', (error) => report.errors.push({
+  type: 'pageerror',
+  message: String(error.message || error),
+  phase: observationPhase,
+  observed_at_ms: Date.now(),
+}));
+page.on('console', (message) => {
+  if (message.type() !== 'error' || message.text().includes('favicon')) return;
+  report.errors.push({
+    type: 'console',
+    message: message.text().slice(0, 1000),
+    phase: observationPhase,
+    location_url: String(message.location()?.url || ''),
+    observed_at_ms: Date.now(),
+  });
+});
 page.on('response', async (response) => {
   if (!response.url().includes('/api/v1/intent')) return;
+  const observedPhase = observationPhase;
+  const observedAtMs = Date.now();
   let request = {};
   try { request = JSON.parse(response.request().postData() || '{}'); } catch { /* no request body */ }
   const params = diagnosticParams(request);
@@ -349,16 +369,28 @@ page.on('response', async (response) => {
     const fields = body?.data?.fields || body?.data?.contract?.fields || {};
     report.relation_contracts.push({ status: response.status(), ok: body?.ok === true, params, project_id: fields?.project_id || null, field_names: Object.keys(fields) });
   }
-  if (response.status() >= 400 || body?.ok === false) report.http_failures.push({ status: response.status(), business_ok: body?.ok === true, intent: request?.intent, params, error: body?.error || body?.message || null });
+  if (response.status() >= 400 || body?.ok === false) report.http_failures.push({
+    status: response.status(),
+    business_ok: body?.ok === true,
+    intent: request?.intent,
+    params,
+    error: body?.error || body?.message || null,
+    phase: observedPhase,
+    url: response.url(),
+    observed_at_ms: observedAtMs,
+  });
 });
 const writes = writeRecorder(page);
 report.writes = writes;
 try {
+  observationPhase = 'login';
   report.runtime_identity = await login(page, initial);
+  observationPhase = 'personnel_initial_form';
   const form = await openOwnedForm(page, initial.entries.personnel, initial.person.name);
   let writeIndex = 0;
   let afterCreate = initial;
   if (!resumeOwnedCreate) {
+    observationPhase = 'assignment_create_edit';
     const root = await authorizationSurface(form);
     await root.getByRole('button', { name: /^添加项目成员授权$/ }).click();
     await selectProject(page, root, initial.project.name);
@@ -380,6 +412,7 @@ try {
   const currentForm = page.locator(`[data-semantic-component="ContractFormPage"][data-form-record="${PERSON_ID}"]`).first();
   let afterDeactivate = initial;
   if (!resumeInactive) {
+    observationPhase = 'assignment_deactivate_edit';
     const createdRoot = await authorizationSurface(currentForm);
     await setActive(createdRoot, false);
     await save(page, writes, writeIndex++);
@@ -393,6 +426,7 @@ try {
   check(inactivePersonnel.matches && inactivePersonnel.disabled && inactivePersonnel.state_matches, 'personnel entry does not show the inactive immutable assignment', inactivePersonnel);
   report.stages.push({ name: 'inactive_visible_personnel', status: 'PASS', assignment: inactivePersonnel });
 
+  observationPhase = 'data_permission_inactive_form';
   const inactivePermissionForm = await openOwnedForm(page, initial.entries.data_permission, initial.person.name);
   const inactivePermissionRoot = inactivePermissionForm.locator('[data-field-name="sc_project_member_assignment_ids"]').first();
   await inactivePermissionRoot.waitFor({ timeout: 15000 });
@@ -401,6 +435,7 @@ try {
   report.stages.push({ name: 'inactive_visible_data_permission', status: 'PASS', assignment: inactivePermission });
   await page.screenshot({ path: path.join(OUT, '02b-inactive-data-permission.png'), fullPage: true });
 
+  observationPhase = 'personnel_reactivation_form';
   const reactivationForm = await openOwnedForm(page, initial.entries.personnel, initial.person.name);
   const inactiveRoot = await authorizationSurface(reactivationForm);
   await setActive(inactiveRoot, true);
@@ -409,6 +444,7 @@ try {
   check(afterReactivate.assignment.active === true && afterReactivate.assignment.person_is_follower === true, 'authoritative reactivate readback mismatch', afterReactivate.assignment);
   report.stages.push({ name: 'reactivate_and_readback', status: 'PASS', assignment: afterReactivate.assignment });
 
+  observationPhase = 'reactivated_refresh';
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
   const refreshedForm = page.locator(`[data-semantic-component="ContractFormPage"][data-form-record="${PERSON_ID}"]`).first();
   await refreshedForm.waitFor({ timeout: 45000 });
@@ -417,6 +453,7 @@ try {
   report.stages.push({ name: 'refresh_consistency', status: 'PASS', project_readonly: refreshedReadonly });
   await page.screenshot({ path: path.join(OUT, '03-reactivated-refreshed.png'), fullPage: true });
 
+  observationPhase = 'data_permission_same_fact_form';
   const permissionForm = await openOwnedForm(page, initial.entries.data_permission, initial.person.name);
   const permissionRoot = permissionForm.locator('[data-field-name="sc_project_member_assignment_ids"]').first();
   await permissionRoot.waitFor({ timeout: 15000 });
@@ -425,6 +462,7 @@ try {
   report.stages.push({ name: 'second_entry_same_fact', status: 'PASS', project_readonly: sameFact });
   await page.screenshot({ path: path.join(OUT, '04-data-permission-same-fact.png'), fullPage: true });
 
+  observationPhase = 'personnel_final_deactivation_form';
   const finalPersonnelForm = await openOwnedForm(page, initial.entries.personnel, initial.person.name);
   const finalRoot = await authorizationSurface(finalPersonnelForm);
   await setActive(finalRoot, false);
@@ -436,16 +474,18 @@ try {
 
   const expectedWrites = resumeInactive ? 2 : resumeOwnedCreate ? 3 : 4;
   check(writes.length === expectedWrites && writes.every((item) => item.outcome === 'business_success'), 'unexpected browser write count or outcome', writes);
-  report.auxiliary_onchange_failures = report.http_failures.filter((item) => (
-    item.intent === 'api.onchange'
-      && item.params?.model === 'res.users'
-      && Number(item.params?.record_id) === PERSON_ID
-  ));
-  report.blocking_http_failures = report.http_failures.filter((item) => !report.auxiliary_onchange_failures.includes(item));
+  observationPhase = 'final_assertion';
+  const failureClassification = classifyPersonnelAuthorizationJourneyFailures({
+    httpFailures: report.http_failures,
+    browserErrors: report.errors,
+    personId: PERSON_ID,
+  });
+  report.auxiliary_onchange_failures = failureClassification.auxiliary_http_failures;
+  report.auxiliary_console_errors = failureClassification.auxiliary_console_errors;
+  report.blocking_http_failures = failureClassification.blocking_http_failures;
+  report.blocking_browser_errors = failureClassification.blocking_browser_errors;
   check(report.blocking_http_failures.length === 0, 'browser reported blocking HTTP failures', report.blocking_http_failures);
-  check(report.errors.every((item) => item.type === 'console'), 'browser reported page errors', report.errors);
-  check(report.errors.length === report.auxiliary_onchange_failures.length,
-    'browser reported console errors without a matching scoped auxiliary failure', report.errors);
+  check(report.blocking_browser_errors.length === 0, 'browser reported blocking page or console errors', report.blocking_browser_errors);
   report.final_authority = finalInactive;
   report.pass = true;
 } catch (error) {

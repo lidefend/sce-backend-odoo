@@ -1,4 +1,6 @@
 from pathlib import Path
+import json
+import subprocess
 import unittest
 
 
@@ -9,6 +11,7 @@ BROWSER = (ROOT / "scripts/verify/local_dev_personnel_authorization_browser.mjs"
 BROWSER_SH = (ROOT / "scripts/verify/local_dev_personnel_authorization_browser.sh").read_text()
 SHELL = (ROOT / "scripts/ops/odoo_shell_exec.sh").read_text()
 MAKE = (ROOT / "make/dev.mk").read_text()
+FAILURE_POLICY = ROOT / "scripts/verify/local_dev_personnel_authorization_failure_policy.mjs"
 
 
 class PersonnelAuthorizationFixtureSafetyTest(unittest.TestCase):
@@ -79,6 +82,56 @@ class PersonnelAuthorizationFixtureSafetyTest(unittest.TestCase):
         self.assertIn("PROJECT_ID must be an explicit positive integer", BROWSER_SH)
         self.assertIn("P4_PERSONNEL_AUTH_BATCH is required", BROWSER_SH)
         self.assertIn("product/tool SHA must be full immutable SHAs", BROWSER_SH)
+
+    def test_browser_failure_policy_only_allows_the_exact_bounded_known_failure(self):
+        script = r'''
+const { classifyPersonnelAuthorizationJourneyFailures: classify } = await import(process.argv[1]);
+const personId = 445;
+const knownHttp = (overrides = {}) => ({
+  status: 500, business_ok: false, intent: 'api.onchange',
+  params: { model: 'res.users', op: '', ids: [], action_id: null, menu_id: null, record_id: personId },
+  error: { code: 'INTERNAL_ERROR', message: '内部错误' },
+  phase: 'personnel_initial_form', url: 'http://127.0.0.1:5176/api/v1/intent', observed_at_ms: 1000,
+  ...overrides,
+});
+const knownConsole = (overrides = {}) => ({
+  type: 'console',
+  message: 'Failed to load resource: the server responded with a status of 500 (Internal Server Error)',
+  phase: 'personnel_initial_form', location_url: 'http://127.0.0.1:5176/api/v1/intent', observed_at_ms: 1001,
+  ...overrides,
+});
+const cases = {
+  exact: classify({ httpFailures: [knownHttp()], browserErrors: [knownConsole()], personId }),
+  forbidden403: classify({ httpFailures: [knownHttp({ status: 403 })], browserErrors: [knownConsole({ message: '403 Forbidden' })], personId }),
+  different500: classify({ httpFailures: [knownHttp({ error: { code: 'INTERNAL_ERROR', message: 'different' } })], browserErrors: [knownConsole()], personId }),
+  wrongStage: classify({ httpFailures: [knownHttp({ phase: 'final_assertion' })], browserErrors: [knownConsole({ phase: 'final_assertion' })], personId }),
+  unpairedConsole: classify({ httpFailures: [knownHttp()], browserErrors: [knownConsole({ message: 'unrelated console error' })], personId }),
+  tooMany: classify({
+    httpFailures: [0, 1, 2, 3].map((offset) => knownHttp({ observed_at_ms: 1000 + offset * 10 })),
+    browserErrors: [0, 1, 2, 3].map((offset) => knownConsole({ observed_at_ms: 1001 + offset * 10 })),
+    personId,
+  }),
+};
+console.log(JSON.stringify(cases));
+'''
+        result = subprocess.run(
+            ["node", "--input-type=module", "-e", script, FAILURE_POLICY.as_uri()],
+            cwd=ROOT,
+            check=True,
+            text=True,
+            capture_output=True,
+        )
+        cases = json.loads(result.stdout)
+        self.assertEqual(len(cases["exact"]["auxiliary_http_failures"]), 1)
+        self.assertEqual(len(cases["exact"]["blocking_http_failures"]), 0)
+        self.assertEqual(len(cases["exact"]["blocking_browser_errors"]), 0)
+        for name in ("forbidden403", "different500", "wrongStage", "unpairedConsole"):
+            self.assertEqual(len(cases[name]["auxiliary_http_failures"]), 0, name)
+            self.assertEqual(len(cases[name]["blocking_http_failures"]), 1, name)
+            self.assertEqual(len(cases[name]["blocking_browser_errors"]), 1, name)
+        self.assertEqual(len(cases["tooMany"]["auxiliary_http_failures"]), 3)
+        self.assertEqual(len(cases["tooMany"]["blocking_http_failures"]), 1)
+        self.assertEqual(len(cases["tooMany"]["blocking_browser_errors"]), 1)
 
 
 if __name__ == "__main__":
