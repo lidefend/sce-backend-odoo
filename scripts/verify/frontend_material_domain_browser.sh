@@ -34,8 +34,21 @@ import json
 import os
 before = json.loads(os.environ["BEFORE_JSON"])
 after = json.loads(os.environ["AFTER_JSON"])
-if before["business_fingerprint"] != after["business_fingerprint"]:
-    raise SystemExit("material domain browser changed governed business data")
+before_fingerprints = {
+    scope + ":" + key: entry["business_fingerprint"]
+    for scope in ("entries", "shared_entries")
+    for key, entry in before.get(scope, {}).items()
+}
+after_fingerprints = {
+    scope + ":" + key: entry["business_fingerprint"]
+    for scope in ("entries", "shared_entries")
+    for key, entry in after.get(scope, {}).items()
+}
+if before_fingerprints != after_fingerprints:
+    raise SystemExit(
+        "material domain browser changed governed business data: "
+        f"before={before_fingerprints} after={after_fingerprints}"
+    )
 print("[frontend.material-domain.browser] business fingerprints unchanged")
 PY
 exit "$browser_status"

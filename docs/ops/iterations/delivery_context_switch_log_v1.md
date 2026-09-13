@@ -9367,3 +9367,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 授权命令改为先完整预校验、后执行人员资料与授权写入，保证普通人员字段与非法授权同批提交整体回滚。新建人员携带内联授权明确拒绝并提示先保存人员；新增授权缺少有效项目、跨公司不可读项目、跨人员修改、批量人员命令和物理删除均失败关闭。
 - L1 轻量入口 11 项通过且不生成 Quick receipt；`runtime_user_management` 23 个方法 / 25 条 Odoo 统计通过，`data_permission_surface` 5 个方法 / 7 条统计通过；`smart_construction_core 17.0.0.165` 受管增量升级及 local.dev authority verification 通过。
 - S1 要求的人员页面写入旅程仍未执行：仓库只有项目资料专用写入 fixture/runner，通用候选浏览器明确只读，现有人员 39 不是受管可写验收对象。按 baseline hard lock，业务批次不能临时创建人员 fixture、数据库命令或测试入口；需独立授权 P4 提供专用人员对象的初始化、归属核对、回读和清理生命周期后才能补证。最终 Quick 与独立复核因此尚未执行，旧 `b99cc275…` receipt 只保留为历史证据。
+
+## 2026-09-13 — 材料办理页面规范化 Batch-A 启动
+
+- 分支 `codex/material-handling-page-normalization-v1`，实际基线 `origin/main@097f0deadf800d51a8527836d4a67a946e68ea6a`，基线完整指纹 `b65a777dc2a4ce17970b4e731020285fa849de745fd34b7cc89b25c4e2a00dc8`。工作树按产品结果组织，复用既有 `local.dev/sc_dev_demo/18081`，未创建数据库、端口、卷、凭据、fixture 或 profile。
+- Formal Product Layer 以 P1 `smart_construction_core` 材料入库/出库/供应商退货页面与元数据为主；仅纳入本专题逐跳证实的 P0 `smart_core` 契约传递与通用前端关系明细消费缺陷。不得添加材料模型/字段名特判，不进入工作台、配置器、其他业务页或业务写入规则。
+- 初始 `local.dev` 实际挂载主仓库 `dbf1e171…`，不能作为候选证据；已通过受管 `local.dev.frontend/up/health` 重绑专题工作树的 addons 与 dist-dev。三个入口的源视图、运行策略、normalized contract、渲染结果和动作条件已记录于 `material_handling_page_normalization_v1.md`。
+- 当前首次偏差包括：P1 权威章节在 P0 governance 后被通用 `core/advanced` 覆盖；静态不可见一对多列在最终可见列投影中泄漏；只读明细固定插入“行变更”；入库 P1 标题/列顺序与来源显示名不足；退货状态缺中文标签。出库金额 0、退货无 demo 记录按数据事实登记，不修数、不补造。
+- Batch-A 只先交付入库样板；L1 从 `make ci.local.iteration` 开始，随后运行风险选择的非零 L2，最后才增量升级并做同记录/同视口产品对照。完整 Quick、出库/退货推广、冻结候选、独立复核、推送/PR/合并均未启动。
+
+## 2026-09-13 — 入库样板人工复核补项
+
+- 人工截图复核要求暂不推广出库/退货，只收口入库三点：关键事实与说明/附件分区、页头状态及明细标题去重、来源辅助列高度。P1 契约已明确 `business_facts → document_lines → handling`，所以字段前置归属 P0 消费，不以 required/editable 替代业务分区。
+- P0 presenter/floorplan 现传递并消费权威槽位序号；页头精确 statusbar 节点认领同时约束 task floorplan；专业明细统一拥有读写态标题；后置 many2one 列以通用宽度、单行省略和公开 slot `title` 保持完整值可访问。没有材料模型/字段名特判，也未改业务数据、动作、权限或保存规则。
+- L1 `make ci.local.iteration` 11 项通过；L2 canonical floorplan 162 项、collection semantics 42 项、product page pattern 17 项、professional detail collection 44 项及严格类型检查通过。`detail_form_productization` 的既有 statusbar 静态期望失败不属于本次路径，未扩大处理；材料 rollout 测试类的既有 workflow active_domain 陈旧失败亦只记录，新增浏览器契约方法单独通过。
+- 第一次 1440 真实复核按标题双层断言停止，业务数据指纹保持不变；定位为外部字段 label 与内部集合标题重复后修正，第二次 1440 诊断通过。正式 1440/1088 截图将绑定变更后的完整 dirty worktree fingerprint 与 UTC 起止时间；本阶段不跑完整旅程或 Quick。
+
+## 2026-09-13 — 材料出库、退货推广与共享回归
+
+- 入库样板人工复核通过后，按同一显式语义原则推广出库和供应商退货。P1 完成出库页面身份/列序、退货 category policy/中文状态/资料与明细分区；P0 继续只修精确状态认领、权威槽位顺序、隐藏列和通用明细呈现，不加入材料模型或字段名分支。
+- `sc-local-dev/sc_dev_demo/18081` 的 1440、1088 浅色及 390 浅色、320 深色只读/未提交创建检查通过；退货因受管库无记录只检查创建态，不补造数据。材料、项目、人员和付款记录在浏览器前后指纹一致。
+- 共享反例确认人员档案和项目台账保持 `workspace/native_authority`，普通字段不进入 task Floorplan；付款详情保持 task 页关键事实与办理提示。workspace 的历史重复标题不在本专题治理。
+- 开发期最终共享证据绑定完整 dirty 指纹 `7a9016154d0a1157b0b59faa1d8f4a48c3d548461f662749ef51a114e08b1bc8`。tracked 内容冻结后再生成干净候选指纹、最终矩阵与一次 Quick receipt；不推送、不建 PR、不合并。

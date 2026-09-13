@@ -237,7 +237,7 @@
         "TDesignButton"
       ],
       "officialComponent": "button",
-      "productionConsumerCount": 407,
+      "productionConsumerCount": 408,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -275,7 +275,7 @@
         "TDesignCard"
       ],
       "officialComponent": "card",
-      "productionConsumerCount": 62,
+      "productionConsumerCount": 63,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -344,7 +344,7 @@
         "TDesignCollapsePanel"
       ],
       "officialComponent": "collapse",
-      "productionConsumerCount": 395,
+      "productionConsumerCount": 396,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -878,7 +878,7 @@
         "TDesignPopup"
       ],
       "officialComponent": "popup",
-      "productionConsumerCount": 1,
+      "productionConsumerCount": 2,
       "requiredForCurrentProduct": false,
       "requirementDecision": "not required by current formal product semantics",
       "status": "not_required"
@@ -1175,7 +1175,7 @@
         "TDesignTabs"
       ],
       "officialComponent": "tabs",
-      "productionConsumerCount": 471,
+      "productionConsumerCount": 472,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1367,7 +1367,7 @@
         "TDesignUpload"
       ],
       "officialComponent": "upload",
-      "productionConsumerCount": 392,
+      "productionConsumerCount": 393,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1384,7 +1384,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "61421906697f024e039c2e2516e494bf29a0c644e57a4524c8b8679430c5f5d8",
+  "inputDigest": "6e98b0e36cadefcd402e40276ec187e71d8c9a351d48fbe9b9bec5585302d77f",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",
