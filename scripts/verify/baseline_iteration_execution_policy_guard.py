@@ -61,6 +61,7 @@ MAKE_TARGET_REQUIREMENTS = {
     Path("make/codex.mk"): (
         "workspace.worktree.create",
         "pr.push",
+        "verify.pr.push.unit",
     ),
     Path("make/runtime_ops.mk"): (
         "acceptance.module.upgrade",
@@ -88,6 +89,7 @@ ITERATION_REQUIRED = (
     "coverage=L1_only",
     "receipt=none",
     "next=risk_selected_non_zero_L2_targets_required",
+    "frontend_dev_incremental.py --plan-worktree",
 )
 ITERATION_FORBIDDEN = (
     "ci.local.quick",
@@ -107,6 +109,8 @@ QUICK_TARGET = "ci.local.quick.run"
 QUICK_DIRECT_REQUIRED = (
     "verify.unified_page_contract.v2",
     "verify.frontend.lint.src",
+    "verify.frontend.dev.incremental.unit",
+    "verify.pr.push.unit",
 )
 QUICK_DIRECT_FORBIDDEN = ("verify.frontend.typecheck.strict",)
 QUICK_FORBIDDEN_DIRECT_COMMANDS = (
@@ -120,6 +124,17 @@ TYPECHECK_CHAIN = (
 )
 TYPECHECK_TARGET = "verify.frontend.typecheck.strict"
 TYPECHECK_COMMAND = "pnpm_exec.sh -C frontend/apps/web typecheck:strict"
+FRONTEND_INCREMENTAL_TEST_TARGET = "verify.frontend.dev.incremental.unit"
+FRONTEND_INCREMENTAL_TEST_COMMAND = "python3 -m unittest scripts.verify.test_frontend_dev_incremental"
+FREEZE_PREPARE_TARGET = "ci.delivery.freeze.prepare"
+FREEZE_PREPARE_REQUIRED_ORDER = (
+    "refresh.generated_reports",
+    "refresh.frontend.component_driver_takeover.inventory",
+    "refresh.contract_form_split_evidence",
+    "ci.generated_evidence.preflight",
+)
+PR_PUSH_TEST_TARGET = "verify.pr.push.unit"
+PR_PUSH_TEST_COMMAND = "bash scripts/ops/git_safe_push.sh --self-test"
 
 
 def _target_declared(text: str, target: str) -> bool:
@@ -164,6 +179,17 @@ def validate(root: Path) -> list[str]:
             if not _target_declared(text, target):
                 errors.append(f"{relative}: authoritative target missing: {target}")
 
+    codex_make = root / "make/codex.mk"
+    if codex_make.is_file():
+        push_test_block = _target_block(
+            codex_make.read_text(encoding="utf-8"),
+            PR_PUSH_TEST_TARGET,
+        )
+        if push_test_block.count(PR_PUSH_TEST_COMMAND) != 1:
+            errors.append(
+                f"make/codex.mk: {PR_PUSH_TEST_TARGET} must invoke its self-test exactly once"
+            )
+
     ci_make = root / "make/ci.mk"
     if ci_make.is_file():
         ci_text = ci_make.read_text(encoding="utf-8")
@@ -201,6 +227,22 @@ def validate(root: Path) -> list[str]:
                     errors.append(
                         f"make/ci.mk: {QUICK_TARGET} repeats prerequisite command {fragment!r}"
                     )
+        freeze_prepare_block = _target_block(ci_text, FREEZE_PREPARE_TARGET)
+        if not freeze_prepare_block:
+            errors.append(f"make/ci.mk: authoritative target missing: {FREEZE_PREPARE_TARGET}")
+        else:
+            positions = []
+            for fragment in FREEZE_PREPARE_REQUIRED_ORDER:
+                position = freeze_prepare_block.find(fragment)
+                if position < 0:
+                    errors.append(
+                        f"make/ci.mk: {FREEZE_PREPARE_TARGET} missing ordered step {fragment!r}"
+                    )
+                positions.append(position)
+            if all(position >= 0 for position in positions) and positions != sorted(positions):
+                errors.append(
+                    f"make/ci.mk: {FREEZE_PREPARE_TARGET} generated-evidence steps are out of order"
+                )
         for owner, dependency in TYPECHECK_CHAIN:
             if dependency not in _target_dependencies(ci_text, owner):
                 errors.append(
@@ -210,13 +252,20 @@ def validate(root: Path) -> list[str]:
         if not frontend_make.is_file():
             errors.append("make/frontend.mk: missing Make authority")
         else:
-            typecheck_block = _target_block(
-                frontend_make.read_text(encoding="utf-8"),
-                TYPECHECK_TARGET,
-            )
+            frontend_text = frontend_make.read_text(encoding="utf-8")
+            typecheck_block = _target_block(frontend_text, TYPECHECK_TARGET)
             if typecheck_block.count(TYPECHECK_COMMAND) != 1:
                 errors.append(
                     f"make/frontend.mk: {TYPECHECK_TARGET} must invoke strict typecheck exactly once"
+                )
+            incremental_test_block = _target_block(
+                frontend_text,
+                FRONTEND_INCREMENTAL_TEST_TARGET,
+            )
+            if incremental_test_block.count(FRONTEND_INCREMENTAL_TEST_COMMAND) != 1:
+                errors.append(
+                    "make/frontend.mk: "
+                    f"{FRONTEND_INCREMENTAL_TEST_TARGET} must invoke its unit suite exactly once"
                 )
     return errors
 

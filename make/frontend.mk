@@ -349,7 +349,7 @@ refresh.frontend.rendering_detail.inventory: guard.prod.forbid
 verify.frontend.rendering_detail_state.browser: guard.prod.forbid
 	@node scripts/verify/frontend_rendering_detail_state_browser.mjs
 
-.PHONY: verify.frontend.dev.incremental verify.frontend.dev.watch verify.frontend.form_structure_contract_projection.unit verify.frontend.form_header_action_primitives.unit verify.frontend.action_view_page_actions.unit verify.frontend.relational_action_primitives.unit verify.frontend.native_form_action_presentation.unit verify.frontend.native_text_presentation.unit verify.frontend.native_form_action_presentation.browser verify.frontend.hierarchical_worksheet.unit verify.frontend.page_pattern_reference_parity.unit
+.PHONY: verify.frontend.dev.incremental verify.frontend.dev.incremental.unit verify.frontend.dev.watch verify.frontend.form_structure_contract_projection.unit verify.frontend.form_header_action_primitives.unit verify.frontend.action_view_page_actions.unit verify.frontend.relational_action_primitives.unit verify.frontend.native_form_action_presentation.unit verify.frontend.native_text_presentation.unit verify.frontend.native_form_action_presentation.browser verify.frontend.hierarchical_worksheet.unit verify.frontend.page_pattern_reference_parity.unit
 
 verify.frontend.form_structure_contract_projection.unit: guard.prod.forbid
 	@python3 scripts/verify/form_structure_contract_projection_matrix.py --check
@@ -365,6 +365,10 @@ verify.frontend.contract_v2_runtime_policy.unit: guard.prod.forbid
 
 # Development feedback only: these entries never build, capture browser
 # evidence, refresh reports, or freeze a candidate fingerprint.
+verify.frontend.dev.incremental.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/frontend_dev_incremental.py scripts/verify/test_frontend_dev_incremental.py
+	@python3 -m unittest scripts.verify.test_frontend_dev_incremental
+
 verify.frontend.dev.incremental: guard.prod.forbid
 	@python3 scripts/verify/frontend_dev_incremental.py $(foreach path,$(FRONTEND_DEV_CHANGED_PATHS),--path $(path))
 

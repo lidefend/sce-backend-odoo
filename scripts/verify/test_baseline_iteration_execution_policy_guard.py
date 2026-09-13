@@ -18,13 +18,23 @@ class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
             path = root / relative
             path.parent.mkdir(parents=True, exist_ok=True)
             text = "\n".join(f"{target}:" for target in targets)
+            if relative == Path("make/codex.mk"):
+                text = text.replace(
+                    f"{guard.PR_PUSH_TEST_TARGET}:",
+                    f"{guard.PR_PUSH_TEST_TARGET}:\n\t@{guard.PR_PUSH_TEST_COMMAND}",
+                    1,
+                )
             if relative == Path("make/ci.mk"):
                 text += "\n" + guard.ITERATION_TARGET + ": " + " ".join(
                     item for item in guard.ITERATION_REQUIRED if " " not in item
                 )
                 text += "\n\t@git diff --check"
+                text += "\n\t@python3 scripts/verify/frontend_dev_incremental.py --plan-worktree"
                 text += "\n\t@git status --porcelain=v1 --untracked-files=all"
                 text += "\n" + guard.QUICK_TARGET + ": " + " ".join(guard.QUICK_DIRECT_REQUIRED)
+                text += "\n" + guard.FREEZE_PREPARE_TARGET + ":"
+                for step in guard.FREEZE_PREPARE_REQUIRED_ORDER:
+                    text += f"\n\t@$(MAKE) --no-print-directory {step}"
                 for owner, dependency in guard.TYPECHECK_CHAIN:
                     text += f"\n{owner}: {dependency}"
             path.write_text(text, encoding="utf-8")
@@ -32,7 +42,9 @@ class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
         frontend_make.parent.mkdir(parents=True, exist_ok=True)
         frontend_make.write_text(
             f"{guard.TYPECHECK_TARGET}:\n"
-            f"\t@scripts/dev/{guard.TYPECHECK_COMMAND}\n",
+            f"\t@scripts/dev/{guard.TYPECHECK_COMMAND}\n"
+            f"{guard.FRONTEND_INCREMENTAL_TEST_TARGET}:\n"
+            f"\t@{guard.FRONTEND_INCREMENTAL_TEST_COMMAND}\n",
             encoding="utf-8",
         )
 
@@ -130,6 +142,25 @@ class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
                 guard.validate(root),
             )
 
+    def test_iteration_target_requires_frontend_l2_recommendation_plan(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            path = root / "make/ci.mk"
+            path.write_text(
+                path.read_text(encoding="utf-8").replace(
+                    "python3 scripts/verify/frontend_dev_incremental.py --plan-worktree",
+                    "echo no-l2-plan",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            self.assertIn(
+                "make/ci.mk: ci.local.iteration missing lightweight contract "
+                "'frontend_dev_incremental.py --plan-worktree'",
+                guard.validate(root),
+            )
+
     def test_quick_target_requires_deduplicated_frontend_prerequisites(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -146,6 +177,81 @@ class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
             self.assertIn(
                 "make/ci.mk: ci.local.quick.run missing deduplicated prerequisite "
                 "'verify.frontend.lint.src'",
+                guard.validate(root),
+            )
+
+    def test_quick_target_requires_incremental_planner_unit_suite(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            path = root / "make/ci.mk"
+            path.write_text(
+                path.read_text(encoding="utf-8").replace(
+                    " " + guard.FRONTEND_INCREMENTAL_TEST_TARGET,
+                    "",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            self.assertIn(
+                "make/ci.mk: ci.local.quick.run missing deduplicated prerequisite "
+                f"'{guard.FRONTEND_INCREMENTAL_TEST_TARGET}'",
+                guard.validate(root),
+            )
+
+    def test_freeze_prepare_requires_all_steps_in_order(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            path = root / "make/ci.mk"
+            text = path.read_text(encoding="utf-8")
+            first, second = guard.FREEZE_PREPARE_REQUIRED_ORDER[:2]
+            text = text.replace(
+                f"\t@$(MAKE) --no-print-directory {first}\n"
+                f"\t@$(MAKE) --no-print-directory {second}",
+                f"\t@$(MAKE) --no-print-directory {second}\n"
+                f"\t@$(MAKE) --no-print-directory {first}",
+                1,
+            )
+            path.write_text(text, encoding="utf-8")
+            self.assertIn(
+                "make/ci.mk: ci.delivery.freeze.prepare generated-evidence steps are out of order",
+                guard.validate(root),
+            )
+
+    def test_incremental_planner_unit_target_is_registered(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            path = root / "make/frontend.mk"
+            path.write_text(
+                path.read_text(encoding="utf-8").replace(
+                    guard.FRONTEND_INCREMENTAL_TEST_COMMAND,
+                    "echo missing-unit-suite",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            self.assertIn(
+                "make/frontend.mk: verify.frontend.dev.incremental.unit must invoke its unit suite exactly once",
+                guard.validate(root),
+            )
+
+    def test_push_self_test_target_is_registered(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            path = root / "make/codex.mk"
+            path.write_text(
+                path.read_text(encoding="utf-8").replace(
+                    guard.PR_PUSH_TEST_COMMAND,
+                    "echo missing-push-self-test",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            self.assertIn(
+                "make/codex.mk: verify.pr.push.unit must invoke its self-test exactly once",
                 guard.validate(root),
             )
 

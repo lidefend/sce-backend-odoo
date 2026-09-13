@@ -12,7 +12,12 @@ if [[ "${GIT_SAFE_PUSH_FAKE_GIT:-0}" == "1" && "$(basename "$0")" == "git" ]]; t
   case "${1:-}" in
     rev-parse)
       if [[ "${2:-}" == "HEAD" ]]; then
-        printf '%s\n' "${FAKE_HEAD_SHA:-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}"
+        if [[ "${FAKE_PREFLIGHT_HEAD_DRIFT:-0}" == "1" ]] &&
+          grep -q '^make --no-print-directory ci.generated_evidence.preflight$' "${FAKE_GIT_LOG:?}"; then
+          printf '%s\n' 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+        else
+          printf '%s\n' "${FAKE_HEAD_SHA:-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}"
+        fi
       else
         printf '%s\n' "${FAKE_BRANCH:-fix/test-branch}"
       fi
@@ -22,8 +27,8 @@ if [[ "${GIT_SAFE_PUSH_FAKE_GIT:-0}" == "1" && "$(basename "$0")" == "git" ]]; t
       ;;
     status)
       if [[ "${FAKE_DIRTY:-0}" == "1" ]] || {
-        [[ "${FAKE_COMPONENT_DRIVER_REFRESH_DIRTY:-0}" == "1" ]] &&
-          grep -q '^make --no-print-directory refresh.frontend.component_driver_takeover.inventory$' "${FAKE_GIT_LOG:?}";
+        [[ "${FAKE_PREFLIGHT_DIRTY:-0}" == "1" ]] &&
+          grep -q '^make --no-print-directory ci.generated_evidence.preflight$' "${FAKE_GIT_LOG:?}";
       }; then
         printf '%s\n' '?? generated-file'
       fi
@@ -70,8 +75,9 @@ fi
 
 if [[ "${GIT_SAFE_PUSH_FAKE_MAKE:-0}" == "1" && "$(basename "$0")" == "make" ]]; then
   printf 'make %s\n' "$*" >>"${FAKE_GIT_LOG:?}"
-  if [[ "$*" == *"ci.generated_reports.guard"* ]]; then
-    [[ "${FAKE_GENERATED_REPORTS_STALE:-0}" != "1" ]]
+  if [[ "$*" == *"ci.generated_evidence.preflight"* ]]; then
+    [[ "${FAKE_GENERATED_REPORTS_STALE:-0}" != "1" ]] &&
+      [[ "${FAKE_COMPONENT_DRIVER_STALE:-0}" != "1" ]]
   fi
   exit $?
 fi
@@ -79,8 +85,8 @@ fi
 if [[ "${1:-}" == "--self-test" ]]; then
   self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
   repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-  grep -Eq '^ci\.local\.quick\.run:.*verify\.frontend\.component_driver_takeover\.unit' "$repo_root/make/ci.mk" || {
-    echo 'FAIL: ci.local.quick.run must include the component-driver inventory guard' >&2
+  grep -Eq '^ci\.local\.quick\.run:.*ci\.generated_evidence\.preflight' "$repo_root/make/ci.mk" || {
+    echo 'FAIL: ci.local.quick.run must include the generated-evidence preflight' >&2
     exit 1
   }
   grep -Eq '^ci\.local\.quick\.run:.*verify\.overview\.rich\.text\.patch\.capability' "$repo_root/make/ci.mk" || {
@@ -114,7 +120,9 @@ if [[ "${1:-}" == "--self-test" ]]; then
         FAKE_EXISTING_REMOTES="${FAKE_EXISTING_REMOTES:-origin}" \
         FAKE_PUSH_FAIL_REMOTES="${FAKE_PUSH_FAIL_REMOTES:-}" \
         FAKE_DIRTY="${FAKE_DIRTY:-0}" \
-        FAKE_COMPONENT_DRIVER_REFRESH_DIRTY="${FAKE_COMPONENT_DRIVER_REFRESH_DIRTY:-0}" \
+        FAKE_PREFLIGHT_DIRTY="${FAKE_PREFLIGHT_DIRTY:-0}" \
+        FAKE_PREFLIGHT_HEAD_DRIFT="${FAKE_PREFLIGHT_HEAD_DRIFT:-0}" \
+        FAKE_COMPONENT_DRIVER_STALE="${FAKE_COMPONENT_DRIVER_STALE:-0}" \
         FAKE_INVALID_BRANCH="${FAKE_INVALID_BRANCH:-0}" \
         FAKE_GENERATED_REPORTS_STALE="${FAKE_GENERATED_REPORTS_STALE:-0}" \
         bash "$self" 2>&1
@@ -135,6 +143,10 @@ if [[ "${1:-}" == "--self-test" ]]; then
     count="$(awk '$1 == "push" { count++ } END { print count + 0 }' "$log_file")"
     [[ "$count" -eq "$2" ]] || fail "$1: expected $2 push calls, got $count"
   }
+  assert_remote_access_count() {
+    count="$(awk '$1 == "remote" || $1 == "ls-remote" { count++ } END { print count + 0 }' "$log_file")"
+    [[ "$count" -eq "$2" ]] || fail "$1: expected $2 remote access calls, got $count"
+  }
 
   FAKE_MISSING_REMOTES=origin run_push
   assert_nonzero 'missing origin'; assert_output 'missing origin' "required remote 'origin' not configured"; assert_push_count 'missing origin' 0
@@ -145,19 +157,34 @@ if [[ "${1:-}" == "--self-test" ]]; then
   assert_nonzero 'stale generated reports'
   assert_output 'stale generated reports' "generated reports are stale"
   assert_push_count 'stale generated reports' 0
-  grep -q '^make --no-print-directory refresh.generated_reports$' "$log_file" || fail 'stale generated reports: automatic refresh missing'
-  grep -q '^make --no-print-directory ci.generated_reports.guard$' "$log_file" || fail 'stale generated reports: local guard missing'
+  assert_remote_access_count 'stale generated reports' 0
+  grep -q '^make --no-print-directory ci.generated_evidence.preflight$' "$log_file" || fail 'stale generated reports: preflight missing'
+  ! grep -q '^make --no-print-directory refresh\.' "$log_file" || fail 'stale generated reports: push must not refresh tracked evidence'
 
-  FAKE_COMPONENT_DRIVER_REFRESH_DIRTY=1 run_push
+  FAKE_COMPONENT_DRIVER_STALE=1 run_push
   assert_nonzero 'stale component-driver inventory'
-  assert_output 'stale component-driver inventory' 'generated reports were refreshed'
+  assert_output 'stale component-driver inventory' 'generated reports are stale'
   assert_push_count 'stale component-driver inventory' 0
-  grep -q '^make --no-print-directory refresh.frontend.component_driver_takeover.inventory$' "$log_file" || fail 'stale component-driver inventory: automatic refresh missing'
+  assert_remote_access_count 'stale component-driver inventory' 0
+  ! grep -q '^make --no-print-directory refresh\.' "$log_file" || fail 'stale component-driver inventory: push must not refresh tracked evidence'
+
+  FAKE_PREFLIGHT_DIRTY=1 run_push
+  assert_nonzero 'preflight dirties worktree'
+  assert_output 'preflight dirties worktree' 'preflight changed the worktree'
+  assert_push_count 'preflight dirties worktree' 0
+  assert_remote_access_count 'preflight dirties worktree' 0
+
+  FAKE_PREFLIGHT_HEAD_DRIFT=1 run_push
+  assert_nonzero 'preflight changes HEAD'
+  assert_output 'preflight changes HEAD' 'local HEAD changed during push preflight'
+  assert_push_count 'preflight changes HEAD' 0
+  assert_remote_access_count 'preflight changes HEAD' 0
 
   FAKE_EXISTING_REMOTES=origin run_push
   assert_zero 'existing branches'; assert_push_count 'existing branches' 1
   grep -q '^push origin fix/test-branch$' "$log_file" || fail 'existing branches: GitHub update push missing'
-  grep -q '^make --no-print-directory verify.frontend.component_driver_takeover.unit$' "$log_file" || fail 'existing branches: component-driver guard missing'
+  grep -q '^make --no-print-directory ci.generated_evidence.preflight$' "$log_file" || fail 'existing branches: generated-evidence preflight missing'
+  ! grep -q '^make --no-print-directory refresh\.' "$log_file" || fail 'existing branches: push must remain verify-only'
 
   FAKE_EXISTING_REMOTES=none run_push
   assert_zero 'new branches'; assert_push_count 'new branches' 1
@@ -188,7 +215,7 @@ if [[ "${1:-}" == "--self-test" ]]; then
   FAKE_INVALID_BRANCH=1 run_push
   assert_nonzero 'invalid branch name'; assert_output 'invalid branch name' 'invalid local branch name'; assert_push_count 'invalid branch name' 0
 
-  printf 'PASS: git_safe_push isolated scenarios=13 (no real remotes)\n'
+  printf 'PASS: git_safe_push isolated scenarios=15 (no real remotes)\n'
   exit 0
 fi
 
@@ -218,22 +245,19 @@ if [[ -n "$(git status --porcelain --untracked-files=all)" ]]; then
   echo "❌ working tree dirty; commit or stash before push" >&2
   exit 2
 fi
-
-echo "[pr.push] refreshing tracked generated reports before remote access"
-make --no-print-directory refresh.generated_reports
-make --no-print-directory refresh.frontend.component_driver_takeover.inventory
-if [[ -n "$(git status --porcelain --untracked-files=all)" ]]; then
-  echo "❌ generated reports were refreshed; review and commit the deterministic changes before pushing" >&2
-  exit 2
-fi
+expected_head="$(git rev-parse HEAD)"
 
 echo "[pr.push] verifying tracked generated reports before remote access"
-if ! make --no-print-directory ci.generated_reports.guard; then
-  echo "❌ generated reports are stale; run 'make refresh.generated_reports', review, and commit the result before pushing" >&2
+if ! make --no-print-directory ci.generated_evidence.preflight; then
+  echo "❌ generated reports are stale; run 'make ci.delivery.freeze.prepare', review, commit, and run Quick once before pushing" >&2
   exit 2
 fi
-if ! make --no-print-directory verify.frontend.component_driver_takeover.unit; then
-  echo "❌ component-driver takeover inventory is stale or invalid; run 'make refresh.frontend.component_driver_takeover.inventory', review, and commit the result before pushing" >&2
+if [[ -n "$(git status --porcelain --untracked-files=all)" ]]; then
+  echo "❌ generated-evidence preflight changed the worktree; push verification must be read-only" >&2
+  exit 2
+fi
+if [[ "$(git rev-parse HEAD)" != "$expected_head" ]]; then
+  echo "❌ local HEAD changed during push preflight" >&2
   exit 2
 fi
 

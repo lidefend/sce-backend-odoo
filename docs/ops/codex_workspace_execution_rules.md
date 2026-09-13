@@ -80,11 +80,15 @@
      `validation_tool_defect` 归因，以及本次改变的恢复事实。
    - **浏览器和发布验证后置。** 内循环浏览器只覆盖声明的受影响页面、角色、状态和视口；fixture、
      release snapshot、历史全矩阵及完整发布门禁只在冻结 delivery HEAD 上集中执行一次。
-   - **本地入口分车道。** 日常改动先运行 `make ci.local.iteration`，再按声明风险运行覆盖影响面的一项
-     或多项非零 L2 定向入口；测试数量不得机械固定为一个。需要服务或页面事实时才补聚焦
+   - **本地入口分车道。** 日常改动先运行 `make ci.local.iteration`；该入口只输出映射到当前前端改动的
+     L2 建议而不执行，再由执行者按声明风险运行覆盖影响面的一项或多项非零 L2 定向入口；测试数量不得机械固定为一个。需要服务或页面事实时才补聚焦
      `local.dev.*`。该 L1 入口不执行全历史隐私/仓库扫描、
      前端全量 typecheck/build、浏览器或 acceptance，也不能生成交付收据。`make ci.local.quick` 仅在
-     clean 的冻结 delivery HEAD 上运行，不得作为每次编辑或本地提交后的默认检查。
+     clean 的冻结 delivery HEAD 上运行一次，不得作为每次编辑或本地提交后的默认检查。
+   - **冻结前准备、冻结后只读。** 产品、测试、交付文档完成后，先运行
+     `make ci.delivery.freeze.prepare` 刷新并校验内容绑定的生成证据，审阅其差异并随最终提交一起冻结。
+     冻结后的 `make pr.push` 只能验证工作树、HEAD 和生成证据，不得再刷新 tracked 文件；若验证失败，
+     返回冻结前准备入口，不允许边推送边制造新候选。
    - **候选启动必须短路健康检查。** 登录或页面等待前先验证服务健康、候选 SHA、数据库/dbfilter、
      公司、角色和凭据身份；任一前提失败立即归为 `environment_defect`，不得进入长超时。
    - **一次失败只留一次证据。** 页面加载、单交互、候选启动必须使用受管入口的明确超时；超时后停止
@@ -103,8 +107,8 @@
    - 验收先验证 normalized contract/权限/状态事实，再执行六态和真实用户任务闭环。
    - 已知静态、后端、身份或 normalized-contract 阻断未关闭时，禁止重复跑完整浏览器验收。
    - 每份报告绑定 exact HEAD、完整候选指纹、数据库、公司、角色、action/menu、URL、视口与证据哈希。
-   - 独立复核通过后，刷新并审核生成报告；发布只能走 `make pr.push`，Ready/merge 继续要求精确 SHA
-     和人工授权。
+   - 生成报告必须在最终提交与 Quick 之前刷新并审核；独立复核、Quick receipt、PR HEAD 与远端检查
+     必须绑定同一冻结候选。发布只能走 `make pr.push`，Ready/merge 继续要求精确 SHA 和人工授权。
 
 ### 以产品结果组织工作树（Hard Lock）
 

@@ -13,7 +13,7 @@
 ### 日常迭代
 
 1. HMR/源码修改后运行 `make ci.local.iteration`。
-2. 按声明风险选择覆盖影响面的一项或多项已登记非零 L2 定向测试，例如：
+2. 阅读该入口输出的前端 L2 建议；建议仅来自路径映射、不会执行测试或生成证据。按声明风险选择覆盖影响面的一项或多项已登记非零 L2 定向测试，例如：
    `make local.dev.test MODULE=smart_construction_core TEST_TAGS='<affected_tag>'`。
 3. 只有模块装配、权限、数据语义或页面运行态受影响时，才进入对应 `local.dev.*` L3/L4。
 4. 首个失败出现即停，只修责任层，只重跑该失败链和受影响项。
@@ -23,9 +23,12 @@
 history、前端全量 typecheck/build、浏览器、acceptance 或 `ci.local.quick`；这些检查继续保留在冻结
 候选的 Quick 或受影响 L2 中。该入口不生成 exact-head receipt，不能冒充交付证据。
 
-入口对工作区只作两类声明：clean 输出 `change_state=clean`；任意 tracked/untracked 改动都输出
+入口对工作区作两类状态声明：clean 输出 `change_state=clean`；任意 tracked/untracked 改动都输出
 `change_state=dirty scope=unclassified_by_design`。相关改动与未知路径都不会被它自动宣称为已覆盖，
-必须由执行者按风险选择一项或多项非零 L2，数量不机械固定；检查失败直接非零退出。该入口不能
+同时由 `frontend_dev_incremental.py --plan-worktree` 汇总相对 `origin/main` 的已提交改动和当前
+tracked/untracked 改动，输出 `recommendation_only` 的已登记前端目标。模板消费者和 UI 包主题改动均会
+建议 `verify.frontend.primitive_adapter.unit`；未知或非前端路径仍明确要求人工选择非零 L2。必须由执行者
+实际运行并记录建议中的适用目标，数量不机械固定；检查失败直接非零退出。该入口不能
 替代最终 Quick 或 PR CI。
 
 ### 冻结交付
@@ -38,8 +41,8 @@ clean delivery HEAD 冻结后才运行一次 `make ci.local.quick`。该入口�
 
 ### 生成证据冻结前预检
 
-冻结顺序固定为：完成产品与测试 → 完成交付文档 → 按依赖顺序刷新生成文件 → 运行
-`make ci.generated_evidence.preflight` → 提交并冻结 HEAD → 检查候选身份 → 一次完整 Quick。
+冻结顺序固定为：完成产品与测试 → 完成交付文档 → 运行 `make ci.delivery.freeze.prepare` →
+审阅生成差异 → 提交并冻结 HEAD → 检查候选身份 → 一次完整 Quick。
 
 `ci.generated_evidence.preflight` 聚合三类内容绑定检查，并置于 `ci.local.quick.run` 的昂贵历史、
 类型和构建检查之前：
@@ -52,17 +55,19 @@ clean delivery HEAD 冻结后才运行一次 `make ci.local.quick`。该入口�
 Quick 不自动改 tracked 文件。对应刷新入口为 `make refresh.generated_reports`、
 `make refresh.frontend.component_driver_takeover.inventory` 和
 `make refresh.contract_form_split_evidence`，其中 ContractForm 行数刷新会在规范标记缺失或重复时拒绝改写。
+`ci.delivery.freeze.prepare` 按此顺序聚合三个刷新入口并立即执行只读预检；`pr.push` 只复用该预检，
+若内容陈旧则在任何远端访问前停止并指回冻结前准备，不再自动刷新 tracked 文件。
 预检不生成 receipt，不能冒充 Quick；Quick receipt 仍只绑定最终 clean HEAD/tree，receipt 保存在 Git
 元数据外，禁止再为记录 receipt 修改提交而形成自失效循环。
 
 ## 验收
 
 - 基线策略非零单元必须同时证明轻量入口的必需项和禁止项。
-- `make ci.local.iteration` 的 dry-run/实际运行不得出现被禁止的重型入口，并应输出 L1-only 与
-  非零 L2 handoff。
+- `make ci.local.iteration` 的 dry-run/实际运行不得出现被禁止的重型入口，并应输出 L1-only、
+  非零 L2 handoff 与不执行测试的前端目标建议。
 - Quick 结构检查必须保留 lint/typecheck 依赖，并禁止 recipe 中重复直接调用 typecheck。
-- 生成证据预检必须位于完整 Quick 的重型依赖之前，并覆盖三类内容绑定检查；刷新入口和 fail-closed
-  标记重写由非零行为测试约束。
+- 生成证据预检必须位于完整 Quick 的重型依赖之前，并覆盖三类内容绑定检查；冻结前准备负责刷新，
+  `pr.push` 只读验证且不得调用刷新入口，这两条边界由非零行为测试约束。
 - 日常迭代只做定向测试与耗时观察；冻结候选按交付规则运行一次完整 Quick，并绑定 exact-head
   receipt，不把该成本回灌到 HMR 内循环。
 

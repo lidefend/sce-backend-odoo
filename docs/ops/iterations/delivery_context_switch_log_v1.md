@@ -9404,3 +9404,13 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 首次远端候选 `75ff4c642dfa913ecf914e9ed18dac073ff7cddf` 的 `frontend_release_gate` 在 primitive adapter guard 失败；X2Many 长名称触发器的消费者类直接拥有 `color` 视觉属性。其余两个失败检查是上游失败的连带状态，不是新的产品根因。
 - Formal Product Layer 为 P0；修复由既有 `ScButton appearance="structured-content"` 主题外观承接继承色，消费者只保留布局与截断。没有修改 P1 页面声明、运行契约、材料业务语义、数据库或写入链。
 - 该代码修复形成新候选后，从 L1 primitive adapter guard 恢复，完成受影响的明细非零测试与聚焦长名称浏览器检查；旧 HEAD 的 Quick receipt 和独立评审不可冒用，新候选需重新执行 L5 与精确 HEAD 远端检查。
+
+## 2026-09-13 — 受管交付冻结效率收口启动
+
+- 分支 `codex/governed-delivery-freeze-efficiency-v1`，基线 `origin/main@b643d3d283e935d93b4dabe4c1a4c5ae7524a45b`。Formal Product Layer P4；只修改本地 L1→L2 建议、冻结前生成证据准备、冻结后 `pr.push` 只读校验及对应测试/文档。
+- 材料 PR #468 的合并阶段已复用 exact-head receipt；本批不把新 HEAD 必需的新 Quick 误称为合并重复验收。已确认可避免的成本来自 `pr.push` 冻结后仍可刷新 tracked 报告，以及模板/UI 包改动没有自动获得 primitive adapter L2 建议。
+- 新流程固定为：开发期 L1 输出建议但不执行 L2 → 人工执行适用非零 L2 → `ci.delivery.freeze.prepare` 刷新并预检 → 审阅提交并冻结 → 一次 Quick → 同 HEAD 独立复核/CI/合并复用。Quick 和远端门禁集合不合并，也不删除任何门禁。
+- 基线 `git_safe_push.sh --self-test` 因仍检查旧的直接组件清单依赖而失败，归为 `validation_tool_defect`；只有修正该输入后才恢复同项验证，不用宽门禁探测。
+- L1 策略守卫 12 项通过，建议器对本批 14 个非前端路径如实输出 `testsRun=false` 和人工选择 L2；聚焦 L2 的前端映射 10 项、策略守卫 12 项、推送隔离场景 13 项通过。策略测试一次错误的模块化调用归为 `command_invocation_error`，改用既有直接入口后恢复，不重跑其余通过项。
+- 首次冻结准备因新工作树缺少 UI 包 `node_modules` 停止，归为 `environment_defect`；受管离线依赖恢复后，准备入口以 1366 条测试清单、7 项组件清单测试、35 个必需适配点和 1866 行 ContractForm 证据通过。生成差异仅同步推送脚本的复杂度行数，待单提交冻结后运行一次 Quick。
+- 首次 P4 冻结候选 `57570dfb…` 的 Quick 通过后，独立复核以 2 个 S1、1 个 S2 要求解冻：混合路径漏报人工 L2、映射器测试仍为 orphan、冻结/推送行为锁不足。修复后逐路径暴露未映射项；映射器与 push 自测均获得 Make 入口并进入 Quick；策略锁定 refresh→preflight 顺序，push 15 场景覆盖陈旧、致脏和 HEAD 漂移在零远端访问时失败。受管 L2 为 11 + 16 + 15，registry 1308 个脚本审计通过；旧 receipt 不复用。

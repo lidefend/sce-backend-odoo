@@ -250,7 +250,7 @@ codex.run: guard.prod.forbid
 	esac
 
 # ------------------ PR (Codex-safe) ------------------
-.PHONY: pr.create pr.status pr.push pr.update pr.ready pr.merge pr.merge.local_quick_gate
+.PHONY: pr.create pr.status pr.push pr.update pr.ready pr.merge pr.merge.local_quick_gate verify.pr.push.unit
 
 PR_BASE ?= main
 PR_TITLE ?=
@@ -356,6 +356,9 @@ pr.ready: guard.prod.forbid
 
 pr.push: guard.prod.forbid
 	@GITHUB_AUTH_REMOTE="$(or $(GITHUB_AUTH_REMOTE),origin)" bash scripts/ops/git_safe_push.sh
+
+verify.pr.push.unit: guard.prod.forbid
+	@bash scripts/ops/git_safe_push.sh --self-test
 
 # Exact-head local quick evidence gate before pr.merge.
 #

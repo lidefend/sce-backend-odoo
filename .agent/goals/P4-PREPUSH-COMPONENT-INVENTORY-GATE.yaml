@@ -2,7 +2,8 @@ schema_version: 1
 goal:
   id: P4-PREPUSH-COMPONENT-INVENTORY-GATE
   title: prepush_component_inventory_gate
-  status: verification_pending
+  status: superseded
+  superseded_by: P4-GOVERNED-DELIVERY-FREEZE-EFFICIENCY
   formal_product_layer: P4
   layer_target: governed_local_quick_and_pr_push_generated_evidence
   module:
