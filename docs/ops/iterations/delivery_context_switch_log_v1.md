@@ -9332,3 +9332,28 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 收口阶段将严格类型检查进一步收敛为唯一传递链 `ci.local.quick.run → verify.unified_page_contract.v2 → verify.unified_page_contract.v2.frontend_static → verify.frontend.typecheck.strict`；轻量入口明确输出 clean/dirty 状态，dirty 一律标记 `scope=unclassified_by_design` 并要求风险驱动的非零 L2，不把未知路径静默算作覆盖，也不生成 Quick receipt。
 - 首次冻结 Quick 在个人数据历史扫描处失败关闭：扫描命中并行 Batch-2A 已确认的纯合成手机号旧 blob `6e834cc56feb65b95d983b6bb86eb4c66bb0c59a`，P4 基线缺少该分支已登记的精确豁免。按 `PD002`、单一路径、完整 blob、`MOBILE_PHONE_PATTERN` 和 synthetic fixture 原因同步同一条不可变事实；未豁免目录、分支或未来内容，后续 Quick 只能在新冻结 HEAD 恢复。
 - 最终表述按风险驱动收紧：dirty handoff 要求 `risk_selected_non_zero_L2_targets_required`，允许一项或多项受影响的非零 L2，测试数量不机械固定为一个；这不改变轻量入口只声明 L1、未知路径不自动覆盖的边界。
+
+## 2026-09-13 — Batch-1 主线归档与 Batch-2A 人员/授权边界
+
+- Batch-1 PR #465 最终 HEAD `73842d9248867599a54f9ce4647381b2ab59ea28`；相对
+  `b7527bc8…` 增加共享字段/P4 runner 修正、生成清单刷新和登录/业务角色判定分离。
+  五项最终必需检查均成功。squash merge `dbf1e171281bd920c39099be7085718c892b10f4`
+  与最终 PR HEAD 的 tree 同为 `2f52649c86587c94e9dfbc1e318538eca41741e2`，产品内容一致。
+- 新工作树 `/home/lidefend/workspace/sce-backend-odoo-batch2a-personnel-auth`，分支
+  `codex/personnel-authorization-boundary-v1`，基线 `main@dbf1e171…`。Formal Product
+  Layer P1；Layer Target 为 `smart_construction_core` 的两项 action-scoped `res.users`
+  入口；不改 P0、ACL、record rule、组成员或数据。
+- 承接核查确认行业配置管理员继承业务配置管理员、反向不成立。两入口共享同一人员、公司、
+  角色和项目授权事实，因此在产品未决定收回旧能力或扩大数据权限入口前，人员档案保留
+  “授权维护（兼容入口）”；本批不做权限变化。
+- 实现候选 `ab8827aa50d8339d5d5c777123771b14e178de0a` 把人员资料、头像档案、登录账号
+  和兼容授权分组；数据权限保留只读身份并集中主/允许公司、角色、项目范围。专用 tree/form/
+  search 视图外的共享消费者未改。
+- 非零 Odoo 定向测试 6 + 16 通过，增量升级与 authority verification 通过。受管 5176
+  的 1440/390 只读证据确认系统管理员两项 menu/action、列表到 `res.users/39` 表单和真实字段；
+  `demo_readonly` 未收到两项 route authority，访问均正确拒绝。所有浏览器摘要业务写入为 0，
+  候选服务已停止。默认首行 `res.users/3` 为模板记录造成一次无效打开，未改产品或等待条件掩盖。
+- 首次最终 Quick 在个人数据历史扫描处失败关闭：新测试曾提交手机号形态的纯合成值。当前测试已改为
+  非个人占位；旧 blob `6e834cc56feb65b95d983b6bb86eb4c66bb0c59a` 只按 `PD002`、精确文件路径、
+  `MOBILE_PHONE_PATTERN` 和 synthetic fixture 原因登记，不豁免目录、当前分支或后续 blob。
+- Batch-2A 承接补证新增单一事务级运行时菜单反例：仅持有业务配置管理员组的用户可见人员档案、不可见数据权限；行业配置管理员因既有继承可见两者。`data_permission_surface` 7 项通过，测试事务回滚且未改现有账号/权限。该结果确认数据权限当前不能无损承接全部旧维护者，人员档案兼容授权页签继续保留；未修改 ACL、record rule、组继承、菜单授权或 P0。

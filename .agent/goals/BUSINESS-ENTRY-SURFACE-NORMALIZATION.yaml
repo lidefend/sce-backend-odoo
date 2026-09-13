@@ -9,7 +9,8 @@ goal:
     - smart_construction_core
   objective: >-
     Make each existing operating entry state what users maintain and how they
-    complete it, beginning with an action-scoped project master-data form.
+    complete it, beginning with an action-scoped project master-data form and
+    then separating personnel-profile work from authorization maintenance.
   baseline:
     branch: codex/business-entry-surface-normalization-v1
     full_sha: 8633b1620bba39f2398f0f6c1eb70a50503a67f7
@@ -35,9 +36,11 @@ goal:
       status: complete
     - id: 1
       title: project_information_entry_sample
-      status: review_ready
+      status: complete
       product_candidate: daa54b6dc2519c4ba1fc40c16d87b8e77b0d7005
       recovery_evidence_candidate: 08304b8a01ccb8d0bd315d5c666663903d76e70d
+      final_pr_head: 73842d9248867599a54f9ce4647381b2ab59ea28
+      merged_main_head: dbf1e171281bd920c39099be7085718c892b10f4
       validation:
         - canonical_form_presenter_cases_162_passed
         - professional_business_value_matrix_24_counterexamples_8_passed
@@ -57,13 +60,31 @@ goal:
         - network_save_failure_feedback_localized
         - governed_batch_cleanup_passed
         - recovery_report_aggregation_nonzero_tests_13_passed
-      pending:
-        - independent_delivery_candidate_review
+        - final_pr_head_required_ci_passed
+        - squash_merge_tree_matches_final_pr_head
+      uncovered:
         - browser_denied_role_counterexample_credentials_unavailable
-        - final_quick_after_delivery_head_freeze
     - id: 2
-      title: risk_grouped_remaining_business_entries
-      status: planned
+      title: personnel_profile_and_authorization_boundary
+      status: implementation_complete_verification_pending
+      branch: codex/personnel-authorization-boundary-v1
+      baseline: dbf1e171281bd920c39099be7085718c892b10f4
+      product_candidate: ab8827aa50d8339d5d5c777123771b14e178de0a
+      decision:
+        - personnel_and_data_permission_use_res_users_and_the_same_company_domain
+        - industry_config_admin_implies_business_config_admin_but_not_the_reverse
+        - authorization_fields_remain_in_the_personnel_compatibility_tab_until_product_authorizes_a_permission_change
+        - no_acl_record_rule_group_membership_or_p0_renderer_change
+      validation:
+        - data_permission_surface_odoo_tests_6_passed
+        - runtime_user_management_odoo_tests_16_passed
+        - governed_incremental_upgrade_smart_construction_core_passed
+        - exact_menu_action_runtime_authority_confirmed_for_system_admin
+        - both_lists_and_forms_opened_for_res_users_39_on_desktop_and_mobile
+        - demo_readonly_denied_from_both_entries
+        - browser_mutation_count_zero
+      pending:
+        - final_exact_head_quick
     - id: 3
       title: entry_inventory_closure
       status: planned
@@ -73,3 +94,5 @@ goal:
     - permissions_state_machine_business_calculations_or_history_data
     - forced_task_mode_or_frontend_project_special_case
     - unapproved_menu_publication
+    - claiming_res_users_as_all_employee_records
+    - treating_89_inventory_entries_as_89_required_page_changes
