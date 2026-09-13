@@ -99,7 +99,7 @@ class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
             path = root / "make/ci.mk"
             path.write_text(
                 path.read_text(encoding="utf-8").replace(
-                    "next=affected_non_zero_L2_required",
+                    "next=risk_selected_non_zero_L2_targets_required",
                     "next=none",
                     1,
                 ),
@@ -107,7 +107,7 @@ class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
             )
             self.assertIn(
                 "make/ci.mk: ci.local.iteration missing lightweight contract "
-                "'next=affected_non_zero_L2_required'",
+                "'next=risk_selected_non_zero_L2_targets_required'",
                 guard.validate(root),
             )
 

@@ -87,7 +87,7 @@ ITERATION_REQUIRED = (
     "scope=unclassified_by_design",
     "coverage=L1_only",
     "receipt=none",
-    "next=affected_non_zero_L2_required",
+    "next=risk_selected_non_zero_L2_targets_required",
 )
 ITERATION_FORBIDDEN = (
     "ci.local.quick",

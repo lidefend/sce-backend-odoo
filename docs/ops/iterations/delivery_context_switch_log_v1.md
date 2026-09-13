@@ -9331,3 +9331,4 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 最终 Quick 保持原门禁集合，仅把 frontend lint/typecheck 声明为 Make prerequisites，并删除 recipe 中的重复直接调用，使依赖图对同一 target 去重。8 项策略守卫单元和真实轻量入口通过；本批不修改 P0/P1、数据库、runtime profile、远端 CI 或 required checks，也不为验证效率改造额外运行完整 Quick。
 - 收口阶段将严格类型检查进一步收敛为唯一传递链 `ci.local.quick.run → verify.unified_page_contract.v2 → verify.unified_page_contract.v2.frontend_static → verify.frontend.typecheck.strict`；轻量入口明确输出 clean/dirty 状态，dirty 一律标记 `scope=unclassified_by_design` 并要求风险驱动的非零 L2，不把未知路径静默算作覆盖，也不生成 Quick receipt。
 - 首次冻结 Quick 在个人数据历史扫描处失败关闭：扫描命中并行 Batch-2A 已确认的纯合成手机号旧 blob `6e834cc56feb65b95d983b6bb86eb4c66bb0c59a`，P4 基线缺少该分支已登记的精确豁免。按 `PD002`、单一路径、完整 blob、`MOBILE_PHONE_PATTERN` 和 synthetic fixture 原因同步同一条不可变事实；未豁免目录、分支或未来内容，后续 Quick 只能在新冻结 HEAD 恢复。
+- 最终表述按风险驱动收紧：dirty handoff 要求 `risk_selected_non_zero_L2_targets_required`，允许一项或多项受影响的非零 L2，测试数量不机械固定为一个；这不改变轻量入口只声明 L1、未知路径不自动覆盖的边界。

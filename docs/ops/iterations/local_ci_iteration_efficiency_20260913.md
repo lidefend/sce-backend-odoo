@@ -12,7 +12,7 @@
 ### 日常迭代
 
 1. HMR/源码修改后运行 `make ci.local.iteration`。
-2. 按实际影响选择一个或少量已登记的非零 L2 定向测试，例如：
+2. 按声明风险选择覆盖影响面的一项或多项已登记非零 L2 定向测试，例如：
    `make local.dev.test MODULE=smart_construction_core TEST_TAGS='<affected_tag>'`。
 3. 只有模块装配、权限、数据语义或页面运行态受影响时，才进入对应 `local.dev.*` L3/L4。
 4. 首个失败出现即停，只修责任层，只重跑该失败链和受影响项。
@@ -24,7 +24,8 @@ history、前端全量 typecheck/build、浏览器、acceptance 或 `ci.local.qu
 
 入口对工作区只作两类声明：clean 输出 `change_state=clean`；任意 tracked/untracked 改动都输出
 `change_state=dirty scope=unclassified_by_design`。相关改动与未知路径都不会被它自动宣称为已覆盖，
-必须由执行者按风险选择非零 L2；检查失败直接非零退出。该入口不能替代最终 Quick 或 PR CI。
+必须由执行者按风险选择一项或多项非零 L2，数量不机械固定；检查失败直接非零退出。该入口不能
+替代最终 Quick 或 PR CI。
 
 ### 冻结交付
 

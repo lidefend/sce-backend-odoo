@@ -851,7 +851,7 @@ ci.local.iteration: guard.prod.forbid verify.baseline.iteration.execution.policy
 	@if test -z "$$(git status --porcelain=v1 --untracked-files=all)"; then \
 	  echo "[ci.local.iteration] PASS change_state=clean coverage=L1_only receipt=none"; \
 	else \
-	  echo "[ci.local.iteration] PASS change_state=dirty scope=unclassified_by_design coverage=L1_only receipt=none next=affected_non_zero_L2_required"; \
+	  echo "[ci.local.iteration] PASS change_state=dirty scope=unclassified_by_design coverage=L1_only receipt=none next=risk_selected_non_zero_L2_targets_required"; \
 	fi
 
 ci.local.quick: guard.prod.forbid

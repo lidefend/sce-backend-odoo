@@ -80,8 +80,9 @@
      `validation_tool_defect` 归因，以及本次改变的恢复事实。
    - **浏览器和发布验证后置。** 内循环浏览器只覆盖声明的受影响页面、角色、状态和视口；fixture、
      release snapshot、历史全矩阵及完整发布门禁只在冻结 delivery HEAD 上集中执行一次。
-   - **本地入口分车道。** 日常改动先运行 `make ci.local.iteration`，再运行恰好覆盖影响面的非零 L2
-     定向入口；需要服务或页面事实时才补聚焦 `local.dev.*`。该 L1 入口不执行全历史隐私/仓库扫描、
+   - **本地入口分车道。** 日常改动先运行 `make ci.local.iteration`，再按声明风险运行覆盖影响面的一项
+     或多项非零 L2 定向入口；测试数量不得机械固定为一个。需要服务或页面事实时才补聚焦
+     `local.dev.*`。该 L1 入口不执行全历史隐私/仓库扫描、
      前端全量 typecheck/build、浏览器或 acceptance，也不能生成交付收据。`make ci.local.quick` 仅在
      clean 的冻结 delivery HEAD 上运行，不得作为每次编辑或本地提交后的默认检查。
    - **候选启动必须短路健康检查。** 登录或页面等待前先验证服务健康、候选 SHA、数据库/dbfilter、
