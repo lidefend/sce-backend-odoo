@@ -9322,3 +9322,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 浏览器无权角色拒绝反例因既有凭据不可用明确保留为未覆盖，不修改权限、不轮换凭据，也不伪报多角色验收完整。Batch-2 不启动；本批仅剩生成报告对齐、exact-head Quick 和独立交付复核。
 - 最终补证修正了两个过宽判定：失败恢复不再只用页头脏态代表草稿保留，也不再只用项目名代表后端不变。`08304b8a…` runner 在专用项目 374 上逐项保存并比对名称、双日期、说明和责任明细实际控件，核对新增/修改/删除命令，并权威读取责任明细角色、人员和备注；可见错误元素及其定位器截图单独留存。
 - 同一补证批次结果 PASS：首次写请求为 `network_blocked`，错误真实可见、busy 释放、控件草稿和全量后端事实不变；同会话第二次尝试业务成功，完整权威事实与刷新一致且生命周期保持 `draft`。请求全部终态后，受管清理项目 374 与责任明细 `[24,25]`，后续 inspect 确认批次不存在；13 项 P4 定向测试通过，历史产品/导航证据未重跑。
+
+## 2026-09-13 — 本地 CI 迭代效率分车道
+
+- 分支 `codex/local-ci-iteration-efficiency-v1`，起始 HEAD `dbf1e171281bd920c39099be7085718c892b10f4`。Formal Product Layer P4；Layer Target 为 `make/ci.mk` 本地内循环与最终 Quick 编排、基线迭代策略守卫；Module 为 `make/ci.mk`、`scripts/verify` 与执行规则文档。
+- 新增 `make ci.local.iteration`，只执行写分支约束、策略自守卫和 diff whitespace 检查，再明确交给受影响的非零 L2；全仓 page-residue、legacy credential、complexity、全历史安全/仓库扫描、前端全量检查和浏览器/acceptance 均不得进入该入口。
+- 内循环实测由包含全仓静态项时的 15.18 秒降为 2.94 秒。被移出的检查没有删除，继续由受影响 L2 或冻结 delivery HEAD 的 `make ci.local.quick` 承担；内循环结果不能生成或冒充 exact-head receipt。
+- 最终 Quick 保持原门禁集合，仅把 frontend lint/typecheck 声明为 Make prerequisites，并删除 recipe 中的重复直接调用，使依赖图对同一 target 去重。8 项策略守卫单元和真实轻量入口通过；本批不修改 P0/P1、数据库、runtime profile、远端 CI 或 required checks，也不为验证效率改造额外运行完整 Quick。

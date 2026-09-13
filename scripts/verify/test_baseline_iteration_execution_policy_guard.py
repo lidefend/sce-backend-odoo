@@ -17,7 +17,15 @@ class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
         for relative, targets in guard.MAKE_TARGET_REQUIREMENTS.items():
             path = root / relative
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text("\n".join(f"{target}:" for target in targets), encoding="utf-8")
+            text = "\n".join(f"{target}:" for target in targets)
+            if relative == Path("make/ci.mk"):
+                text += "\n" + guard.ITERATION_TARGET + ": " + " ".join(
+                    item for item in guard.ITERATION_REQUIRED if " " not in item
+                )
+                text += "\n\t@git diff --check"
+                text += "\n\t@echo \"L1-only; non-zero L2 target separately\""
+                text += "\n" + guard.QUICK_TARGET + ": " + " ".join(guard.QUICK_REQUIRED)
+            path.write_text(text, encoding="utf-8")
 
     def test_complete_policy_passes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -56,6 +64,73 @@ class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
             path = root / "make/runtime_ops.mk"
             path.write_text("acceptance.module.upgrade:\n", encoding="utf-8")
             self.assertTrue(any("authoritative target missing" in error for error in guard.validate(root)))
+
+    def test_iteration_target_rejects_broad_inner_loop_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            path = root / "make/ci.mk"
+            path.write_text(
+                path.read_text(encoding="utf-8").replace(
+                    guard.ITERATION_TARGET + ":",
+                    guard.ITERATION_TARGET + ": security.personal_data_scan",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            self.assertIn(
+                "make/ci.mk: ci.local.iteration includes forbidden broad gate 'security.personal_data_scan'",
+                guard.validate(root),
+            )
+
+    def test_iteration_target_requires_nonzero_handoff_message(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            path = root / "make/ci.mk"
+            path.write_text(
+                path.read_text(encoding="utf-8").replace("non-zero L2 target separately", "targeted checks", 1),
+                encoding="utf-8",
+            )
+            self.assertIn(
+                "make/ci.mk: ci.local.iteration missing lightweight contract 'non-zero L2 target separately'",
+                guard.validate(root),
+            )
+
+    def test_quick_target_requires_deduplicated_frontend_prerequisites(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            path = root / "make/ci.mk"
+            path.write_text(
+                path.read_text(encoding="utf-8").replace(
+                    " " + guard.QUICK_REQUIRED[1],
+                    "",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            self.assertIn(
+                "make/ci.mk: ci.local.quick.run missing deduplicated prerequisite "
+                "'verify.frontend.typecheck.strict'",
+                guard.validate(root),
+            )
+
+    def test_quick_target_rejects_repeated_frontend_command(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            path = root / "make/ci.mk"
+            path.write_text(
+                path.read_text(encoding="utf-8")
+                + "\n\t@scripts/dev/pnpm_exec.sh -C frontend/apps/web typecheck:strict",
+                encoding="utf-8",
+            )
+            self.assertIn(
+                "make/ci.mk: ci.local.quick.run repeats prerequisite command "
+                "'pnpm_exec.sh -C frontend/apps/web typecheck:strict'",
+                guard.validate(root),
+            )
 
 
 if __name__ == "__main__":

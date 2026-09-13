@@ -26,6 +26,8 @@ DOCUMENT_REQUIREMENTS = {
         "resume from the earliest invalidated layer",
         "Do not retry an unchanged failure",
         "the full required matrix runs once at the frozen delivery head",
+        "make ci.local.iteration",
+        "make ci.local.quick` is reserved for a clean frozen delivery HEAD",
     ),
     Path("docs/ops/codex_execution_allowlist.md"): (
         "禁止新增或派生 Compose project",
@@ -49,6 +51,9 @@ DOCUMENT_REQUIREMENTS = {
         "同因失败不得原样重试",
         "完整发布门禁只在冻结 delivery HEAD 上集中执行一次",
         "日志不完整或测试数未知不能判定通过",
+        "本地入口分车道",
+        "make ci.local.iteration",
+        "make ci.local.quick` 仅在",
     ),
 }
 
@@ -71,9 +76,50 @@ MAKE_TARGET_REQUIREMENTS = {
     ),
 }
 
+ITERATION_TARGET = "ci.local.iteration"
+ITERATION_REQUIRED = (
+    "guard.prod.forbid",
+    "verify.baseline.iteration.execution.policy",
+    "git diff --check",
+    "L1-only",
+    "non-zero L2 target separately",
+)
+ITERATION_FORBIDDEN = (
+    "ci.local.quick",
+    "verify.contract.page_v1_zero_residue.guard",
+    "security.legacy_credential_guard",
+    "architecture.complexity_baseline_lock",
+    "security.secrets.scan",
+    "security.personal_data_scan",
+    "verify.repository.clean_history",
+    "verify.frontend.build",
+    "verify.frontend.typecheck.strict",
+    "acceptance",
+    "browser",
+)
+
+QUICK_TARGET = "ci.local.quick.run"
+QUICK_REQUIRED = (
+    "verify.frontend.lint.src",
+    "verify.frontend.typecheck.strict",
+)
+QUICK_FORBIDDEN_DIRECT_COMMANDS = (
+    "pnpm_exec.sh -C frontend/apps/web lint:src",
+    "pnpm_exec.sh -C frontend/apps/web typecheck:strict",
+)
+
 
 def _target_declared(text: str, target: str) -> bool:
     return bool(re.search(rf"^(?:\.PHONY:\s+.*\b{re.escape(target)}\b.*|{re.escape(target)}\s*:)", text, re.MULTILINE))
+
+
+def _target_block(text: str, target: str) -> str:
+    match = re.search(
+        rf"^{re.escape(target)}\s*:[^\n]*(?:\n\t[^\n]*)*",
+        text,
+        re.MULTILINE,
+    )
+    return match.group(0) if match else ""
 
 
 def validate(root: Path) -> list[str]:
@@ -99,6 +145,38 @@ def validate(root: Path) -> list[str]:
         for target in targets:
             if not _target_declared(text, target):
                 errors.append(f"{relative}: authoritative target missing: {target}")
+
+    ci_make = root / "make/ci.mk"
+    if ci_make.is_file():
+        ci_text = ci_make.read_text(encoding="utf-8")
+        block = _target_block(ci_text, ITERATION_TARGET)
+        if not block:
+            errors.append(f"make/ci.mk: authoritative target missing: {ITERATION_TARGET}")
+        else:
+            for fragment in ITERATION_REQUIRED:
+                if fragment not in block:
+                    errors.append(
+                        f"make/ci.mk: {ITERATION_TARGET} missing lightweight contract {fragment!r}"
+                    )
+            for fragment in ITERATION_FORBIDDEN:
+                if fragment in block:
+                    errors.append(
+                        f"make/ci.mk: {ITERATION_TARGET} includes forbidden broad gate {fragment!r}"
+                    )
+        quick_block = _target_block(ci_text, QUICK_TARGET)
+        if not quick_block:
+            errors.append(f"make/ci.mk: authoritative target missing: {QUICK_TARGET}")
+        else:
+            for fragment in QUICK_REQUIRED:
+                if fragment not in quick_block:
+                    errors.append(
+                        f"make/ci.mk: {QUICK_TARGET} missing deduplicated prerequisite {fragment!r}"
+                    )
+            for fragment in QUICK_FORBIDDEN_DIRECT_COMMANDS:
+                if fragment in quick_block:
+                    errors.append(
+                        f"make/ci.mk: {QUICK_TARGET} repeats prerequisite command {fragment!r}"
+                    )
     return errors
 
 
