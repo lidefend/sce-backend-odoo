@@ -66,7 +66,7 @@ goal:
         - browser_denied_role_counterexample_credentials_unavailable
     - id: 2
       title: personnel_profile_and_authorization_boundary
-      status: implementation_complete_verification_pending
+      status: review_ready
       branch: codex/personnel-authorization-boundary-v1
       baseline: dbf1e171281bd920c39099be7085718c892b10f4
       product_candidate: ab8827aa50d8339d5d5c777123771b14e178de0a
@@ -84,7 +84,8 @@ goal:
         - demo_readonly_denied_from_both_entries
         - browser_mutation_count_zero
       pending:
-        - final_exact_head_quick
+        - independent_review
+        - product_decision_before_exclusive_authorization_field_migration
     - id: 3
       title: entry_inventory_closure
       status: planned
