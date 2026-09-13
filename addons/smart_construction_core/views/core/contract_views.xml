@@ -269,6 +269,7 @@
                     <group name="sc_income_contract_scope" string="合同范围" col="4" data-sc-anchor="income-contract-scope">
                         <group>
                             <field name="category_id" />
+                            <field name="contract_type_id" />
                             <field name="engineering_category_text" />
                             <field name="engineering_address" />
                             <field name="affiliated_person" />

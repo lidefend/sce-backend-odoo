@@ -854,6 +854,7 @@ def _contract_handling_policy(title: str, *, supplement: bool = False, expense: 
                 "合同范围",
                 [
                     "category_id",
+                    "contract_type_id",
                     "engineering_category_text",
                     "engineering_address",
                     "affiliated_person",

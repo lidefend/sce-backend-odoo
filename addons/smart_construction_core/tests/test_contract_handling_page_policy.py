@@ -95,6 +95,13 @@ class TestContractHandlingPagePolicy(TransactionCase):
         action = self.env.ref("smart_construction_core.action_construction_contract_income")
         action_payload = action.read()[0]
         context = safe_eval(action.context or "{}", {"context": {}})
+        policy = get_business_category_form_policy_templates()["contract.income"]
+        contract_scope = next(
+            section
+            for section in policy["sections"]
+            if section["name"] == "contract_scope"
+        )
+        self.assertIn("contract_type_id", contract_scope["fields"])
 
         create_page, _versions = self.assembler.assemble_page_contract(
             {
@@ -217,6 +224,24 @@ class TestContractHandlingPagePolicy(TransactionCase):
         self.assertEqual(structure["presentationMode"], "task")
         self.assertEqual(structure["sourceAuthority"]["governance_source"]["categoryCode"], "contract.income")
         self.assertEqual(structure["fieldLabels"]["attachment_text"], "历史附件文本")
+
+        def collect_field_codes(value):
+            if isinstance(value, dict):
+                codes = [value["fieldCode"]] if value.get("fieldCode") else []
+                for nested in value.values():
+                    codes.extend(collect_field_codes(nested))
+                return codes
+            if isinstance(value, list):
+                codes = []
+                for nested in value:
+                    codes.extend(collect_field_codes(nested))
+                return codes
+            return []
+
+        self.assertIn(
+            "contract_type_id",
+            collect_field_codes(create_contract["layoutContract"]["containerTree"]),
+        )
         self.assertEqual(
             [slot["title"] for slot in structure["slots"]],
             [
