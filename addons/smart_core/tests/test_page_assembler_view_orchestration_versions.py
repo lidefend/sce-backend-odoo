@@ -208,6 +208,114 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
 
         self.assertFalse(self.assembler._has_authoritative_native_form_layout(data))
 
+    def test_business_category_policy_binding_preserves_direct_model_lookup(self):
+        direct = types.SimpleNamespace(code="direct.category", target_model="x.document")
+        self.assembler.env = self._business_category_test_env([direct])
+        module = sys.modules[self.PageAssembler.__module__]
+        calls = []
+        module.call_extension_hook_first = lambda *_args, **_kwargs: calls.append(True)
+
+        resolved = self.assembler._business_category_from_context(
+            {"context": {"default_business_category_code": "direct.category"}},
+            "x.document",
+        )
+
+        self.assertEqual(list(resolved), [direct])
+        self.assertEqual(calls, [])
+
+    def test_business_category_policy_binding_resolves_explicit_wrapper_entries(self):
+        income = types.SimpleNamespace(code="contract.income", target_model="construction.contract")
+        expense = types.SimpleNamespace(code="contract.expense", target_model="construction.contract")
+        self.assembler.env = self._business_category_test_env([income, expense])
+        module = sys.modules[self.PageAssembler.__module__]
+        module.call_extension_hook_first = lambda *_args, **_kwargs: {
+            "bindings": [
+                {
+                    "entry_model": "construction.contract.income",
+                    "category_code": "contract.income",
+                    "policy_target_model": "construction.contract",
+                },
+                {
+                    "entry_model": "construction.contract.expense",
+                    "category_code": "contract.expense",
+                    "policy_target_model": "construction.contract",
+                },
+            ]
+        }
+
+        resolved_income = self.assembler._business_category_from_context(
+            {"context": {"default_business_category_code": "contract.income"}},
+            "construction.contract.income",
+        )
+        resolved_expense = self.assembler._business_category_from_context(
+            {"context": {"default_business_category_code": "contract.expense"}},
+            "construction.contract.expense",
+        )
+
+        self.assertEqual(list(resolved_income), [income])
+        self.assertEqual(list(resolved_expense), [expense])
+
+    def test_business_category_policy_binding_rejects_missing_or_ambiguous_aliases(self):
+        income = types.SimpleNamespace(code="contract.income", target_model="construction.contract")
+        self.assembler.env = self._business_category_test_env([income])
+        module = sys.modules[self.PageAssembler.__module__]
+        payloads = iter(
+            [
+                None,
+                {
+                    "bindings": [
+                        {
+                            "entry_model": "construction.contract.income",
+                            "category_code": "contract.income",
+                            "policy_target_model": "construction.contract",
+                        },
+                        {
+                            "entry_model": "construction.contract.income",
+                            "category_code": "contract.income",
+                            "policy_target_model": "another.contract",
+                        },
+                    ]
+                },
+            ]
+        )
+        module.call_extension_hook_first = lambda *_args, **_kwargs: next(payloads)
+
+        missing = self.assembler._business_category_from_context(
+            {"context": {"default_business_category_code": "contract.income"}},
+            "construction.contract.income",
+        )
+        ambiguous = self.assembler._business_category_from_context(
+            {"context": {"default_business_category_code": "contract.income"}},
+            "construction.contract.income",
+        )
+
+        self.assertIsNone(missing)
+        self.assertIsNone(ambiguous)
+
+    @staticmethod
+    def _business_category_test_env(categories):
+        class Recordset(list):
+            pass
+
+        class CategoryModel:
+            def sudo(self):
+                return self
+
+            def search(self, domain, limit=0):
+                expected = {
+                    field: value
+                    for field, operator, value in domain
+                    if operator == "="
+                }
+                rows = [
+                    row
+                    for row in categories
+                    if all(getattr(row, field) == value for field, value in expected.items())
+                ]
+                return Recordset(rows[:limit] if limit else rows)
+
+        return {"sc.business.category": CategoryModel()}
+
     def test_append_view_version_token_adds_search_orchestration_version(self):
         versions = {"view": "12:native", "search": 4}
 

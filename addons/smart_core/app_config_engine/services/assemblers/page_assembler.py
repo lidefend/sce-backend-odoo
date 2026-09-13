@@ -1522,10 +1522,56 @@ class PageAssembler:
         if not code:
             return None
         try:
-            return self.env["sc.business.category"].sudo().search(
+            category_model = self.env["sc.business.category"].sudo()
+            direct_category = category_model.search(
                 [("code", "=", code), ("target_model", "=", model_name)],
                 limit=1,
             )
+            if direct_category:
+                return direct_category
+
+            payload = call_extension_hook_first(
+                self.env,
+                "smart_core_business_category_policy_bindings",
+                self.env,
+                {"entry_model": model_name, "category_code": code},
+            )
+            bindings = payload.get("bindings") if isinstance(payload, dict) else None
+            if not isinstance(bindings, list):
+                return None
+            target_models = {
+                str(row.get("policy_target_model") or "").strip()
+                for row in bindings
+                if isinstance(row, dict)
+                and str(row.get("entry_model") or "").strip() == model_name
+                and str(row.get("category_code") or "").strip() == code
+                and str(row.get("policy_target_model") or "").strip()
+            }
+            if len(target_models) != 1:
+                if target_models:
+                    _logger.warning(
+                        "ambiguous business category policy binding model=%s code=%s targets=%s",
+                        model_name,
+                        code,
+                        sorted(target_models),
+                    )
+                return None
+            bound_categories = category_model.search(
+                [
+                    ("code", "=", code),
+                    ("target_model", "=", next(iter(target_models))),
+                ],
+                limit=2,
+            )
+            if len(bound_categories) != 1:
+                _logger.warning(
+                    "business category policy binding did not resolve uniquely model=%s code=%s count=%s",
+                    model_name,
+                    code,
+                    len(bound_categories),
+                )
+                return None
+            return bound_categories
         except Exception:
             _logger.exception("business category form policy lookup failed model=%s code=%s", model_name, code)
             return None

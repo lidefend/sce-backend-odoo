@@ -441,10 +441,14 @@ def apply_field_policies_to_v2_status(
                 row[key] = value
             elif key in {"readonly", "required"} and value:
                 row[key] = True
+            elif key == "visible" and not value:
+                row[key] = False
 
         visible_profiles = policy.get("visible_profiles")
-        if not tighten_only and isinstance(visible_profiles, list) and visible_profiles:
-            merge_flag("visible", render_profile in {str(item) for item in visible_profiles})
+        if isinstance(visible_profiles, list) and visible_profiles:
+            visible = render_profile in {str(item) for item in visible_profiles}
+            if not tighten_only or not visible:
+                merge_flag("visible", visible)
         readonly_profiles = policy.get("readonly_profiles")
         if isinstance(readonly_profiles, list) and readonly_profiles:
             merge_flag("readonly", render_profile in {str(item) for item in readonly_profiles})
@@ -452,8 +456,13 @@ def apply_field_policies_to_v2_status(
         if isinstance(required_profiles, list) and required_profiles:
             merge_flag("required", render_profile in {str(item) for item in required_profiles})
         for key in ("visible", "readonly", "required", "disabled"):
-            if isinstance(policy.get(key), bool) and (not tighten_only or key in {"readonly", "required"}):
-                merge_flag(key, bool(policy.get(key)))
+            value = policy.get(key)
+            if isinstance(value, bool) and (
+                not tighten_only
+                or key in {"readonly", "required"}
+                or (key == "visible" and value is False)
+            ):
+                merge_flag(key, value)
         row["auth"] = "none" if row.get("visible") is False else "read" if row.get("readonly") else "edit"
 
     for field_name, policy in field_policies.items():
