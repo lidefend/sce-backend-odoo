@@ -49,6 +49,7 @@ def normalize_payment_settlement_detail_component(
                 "optionalDetails": {
                     "entryLabel": "按明细填写",
                     "populatedLabel": "付款申请明细",
+                    "directAmountMessage": "可直接填写申请金额；添加有效明细后，申请金额按明细合计生成。",
                     "linkedAmountMessage": "申请金额由有效明细的“本次申请”合计生成。",
                     "lastRowRemovalActionLabel": "取消按明细填写",
                     "lastRowRemovalMessage": (
@@ -61,6 +62,7 @@ def normalize_payment_settlement_detail_component(
                     "sourceField": "current_pay_amount",
                     "targetField": "amount",
                     "activeField": "active",
+                    "stateField": "amount_uses_details",
                     "rounding": "currency",
                     "emptyBehavior": "preserve_last_total",
                 },

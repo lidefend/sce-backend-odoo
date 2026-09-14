@@ -7,6 +7,7 @@ export const PROFESSIONAL_DETAIL_COLLECTION_COMPONENT_KEY = 'sc.relation.table' 
 export type OptionalDetailCollectionConfig = Readonly<{
   entryLabel: string;
   populatedLabel: string;
+  directAmountMessage: string;
   linkedAmountMessage: string;
   lastRowRemovalActionLabel: string;
   lastRowRemovalMessage: string;
@@ -17,6 +18,7 @@ export type DetailAmountBindingConfig = Readonly<{
   sourceField: string;
   targetField: string;
   activeField: string;
+  stateField: string;
   rounding: 'currency';
   emptyBehavior: 'preserve_last_total';
 }>;
@@ -49,6 +51,7 @@ export function optionalDetailCollectionConfig(
   return Object.freeze({
     entryLabel,
     populatedLabel,
+    directAmountMessage: text(config.directAmountMessage),
     linkedAmountMessage: text(config.linkedAmountMessage),
     lastRowRemovalActionLabel: text(config.lastRowRemovalActionLabel),
     lastRowRemovalMessage: text(config.lastRowRemovalMessage),
@@ -64,6 +67,7 @@ export function detailAmountBindingConfig(
   const sourceField = text(config.sourceField);
   const targetField = text(config.targetField);
   const activeField = text(config.activeField);
+  const stateField = text(config.stateField);
   if (
     config.mode !== 'sum_when_nonempty'
     || config.rounding !== 'currency'
@@ -71,6 +75,7 @@ export function detailAmountBindingConfig(
     || !sourceField
     || !targetField
     || !activeField
+    || !stateField
     || sourceField === targetField
   ) return null;
   return Object.freeze({
@@ -78,6 +83,7 @@ export function detailAmountBindingConfig(
     sourceField,
     targetField,
     activeField,
+    stateField,
     rounding: config.rounding,
     emptyBehavior: config.emptyBehavior,
   });
@@ -86,6 +92,7 @@ export function detailAmountBindingConfig(
 export function optionalDetailCollectionPresentation(
   field: FormSectionFieldSchema,
   rowCount: number,
+  amountUsesDetails = false,
 ): OptionalDetailCollectionPresentation | null {
   const config = optionalDetailCollectionConfig(field);
   if (!config) return null;
@@ -94,7 +101,9 @@ export function optionalDetailCollectionPresentation(
     render: field.readonly !== true || count > 0,
     open: count > 0,
     title: count > 0 ? `${config.populatedLabel}（${count} 条）` : config.entryLabel,
-    linkedAmountMessage: config.linkedAmountMessage,
+    linkedAmountMessage: amountUsesDetails
+      ? config.linkedAmountMessage
+      : config.directAmountMessage,
   });
 }
 

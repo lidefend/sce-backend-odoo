@@ -52,6 +52,7 @@ const optionalDetails = optionalDetailCollectionConfig({
     optionalDetails: {
       entryLabel: 'Use details',
       populatedLabel: 'Details',
+      directAmountMessage: 'The amount can be entered directly.',
       linkedAmountMessage: 'The total is authoritative.',
       lastRowRemovalActionLabel: 'Stop using details',
       lastRowRemovalMessage: 'The last total is preserved.',
@@ -66,20 +67,23 @@ const amountBinding = detailAmountBindingConfig({
   componentConfig: {
     amountBinding: {
       mode: 'sum_when_nonempty', sourceField: 'line_amount', targetField: 'amount',
-      activeField: 'active', rounding: 'currency', emptyBehavior: 'preserve_last_total',
+      activeField: 'active', stateField: 'amount_uses_details',
+      rounding: 'currency', emptyBehavior: 'preserve_last_total',
     },
   },
 });
 assert.deepEqual(amountBinding, {
   mode: 'sum_when_nonempty', sourceField: 'line_amount', targetField: 'amount',
-  activeField: 'active', rounding: 'currency', emptyBehavior: 'preserve_last_total',
+  activeField: 'active', stateField: 'amount_uses_details',
+  rounding: 'currency', emptyBehavior: 'preserve_last_total',
 });
 assert.equal(detailAmountBindingConfig({
   key: 'line_ids', name: 'line_ids', label: 'Lines', type: 'one2many', required: false, readonly: false,
   componentConfig: {
     amountBinding: {
       mode: 'sum_when_nonempty', sourceField: 'amount', targetField: 'amount',
-      activeField: 'active', rounding: 'currency', emptyBehavior: 'preserve_last_total',
+      activeField: 'active', stateField: 'amount_uses_details',
+      rounding: 'currency', emptyBehavior: 'preserve_last_total',
     },
   },
 }), null);
@@ -88,7 +92,8 @@ assert.equal(detailAmountBindingConfig({
   componentConfig: {
     amountBinding: {
       mode: 'sum_always', sourceField: 'line_amount', targetField: 'amount',
-      activeField: 'active', rounding: 'currency', emptyBehavior: 'zero',
+      activeField: 'active', stateField: 'amount_uses_details',
+      rounding: 'currency', emptyBehavior: 'zero',
     },
   },
 }), null);
@@ -101,17 +106,19 @@ const optionalField = {
   componentKey: 'sc.example.optional_collection',
   componentConfig: {
     optionalDetails: {
-      entryLabel: 'Use details', populatedLabel: 'Details', linkedAmountMessage: 'Linked total',
+      entryLabel: 'Use details', populatedLabel: 'Details',
+      directAmountMessage: 'Direct amount', linkedAmountMessage: 'Linked total',
       lastRowRemovalActionLabel: 'Stop using details', lastRowRemovalMessage: 'Last total is preserved',
     },
   },
 } as never;
 assert.deepEqual(optionalDetailCollectionPresentation(optionalField, 0), {
-  render: true, open: false, title: 'Use details', linkedAmountMessage: 'Linked total',
+  render: true, open: false, title: 'Use details', linkedAmountMessage: 'Direct amount',
 });
-assert.deepEqual(optionalDetailCollectionPresentation(optionalField, 2), {
+assert.deepEqual(optionalDetailCollectionPresentation(optionalField, 2, true), {
   render: true, open: true, title: 'Details（2 条）', linkedAmountMessage: 'Linked total',
 });
+assert.equal(optionalDetailCollectionPresentation(optionalField, 2, false)?.linkedAmountMessage, 'Direct amount');
 assert.equal(optionalDetailCollectionPresentation({ ...optionalField, readonly: true } as never, 0)?.render, false);
 assert.equal(optionalDetailCollectionRemovalConfirmation(optionalField, 2), null);
 assert.deepEqual(optionalDetailCollectionRemovalConfirmation(optionalField, 1), {

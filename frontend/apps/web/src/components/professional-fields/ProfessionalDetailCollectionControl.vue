@@ -17,6 +17,7 @@
     :data-amount-binding-mode="amountBinding?.mode"
     :data-amount-binding-source="amountBinding?.sourceField"
     :data-amount-binding-target="amountBinding?.targetField"
+    :data-amount-binding-active="amountUsesDetails"
     :data-amount-binding-empty-behavior="amountBinding?.emptyBehavior"
   >
     <ScDisclosure
@@ -58,8 +59,17 @@ const props = defineProps<{ field: FormSectionFieldSchema; adapter: RelationFiel
 const confirmationRef = ref<InstanceType<typeof IntentConfirmationDialog> | null>(null);
 const authority = computed(() => detailCollectionAuthority(props.field, props.adapter));
 const amountBinding = computed(() => detailAmountBindingConfig(props.field));
+const amountUsesDetails = computed(() => {
+  const stateField = amountBinding.value?.stateField;
+  if (!stateField) return false;
+  return ['true', '1'].includes(props.adapter.inputFieldValue(stateField).trim().toLowerCase());
+});
 const optionalPresentation = computed(() => (
-  optionalDetailCollectionPresentation(props.field, authority.value.rowCount)
+  optionalDetailCollectionPresentation(
+    props.field,
+    authority.value.rowCount,
+    amountUsesDetails.value,
+  )
 ));
 
 async function removeOne2manyRow(name: string, rowKey: string) {
