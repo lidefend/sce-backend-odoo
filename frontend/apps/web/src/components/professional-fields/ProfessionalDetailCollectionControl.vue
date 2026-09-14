@@ -74,9 +74,12 @@ const optionalPresentation = computed(() => (
 ));
 
 async function removeOne2manyRow(name: string, rowKey: string) {
+  const row = props.adapter.visibleOne2manyRows(name).find((item) => item.key === rowKey);
+  const persistedRow = row?.isNew !== true && Number(row?.id || 0) > 0;
   const confirmation = optionalDetailCollectionRemovalConfirmation(
     props.field,
     authority.value.rowCount,
+    persistedRow,
   );
   if (confirmation) {
     const confirmed = await confirmationRef.value?.confirm({

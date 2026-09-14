@@ -112,9 +112,10 @@ export function optionalDetailCollectionPresentation(
 export function optionalDetailCollectionRemovalConfirmation(
   field: FormSectionFieldSchema,
   rowCount: number,
+  persistedRow = true,
 ): OptionalDetailCollectionRemovalConfirmation | null {
   const config = optionalDetailCollectionConfig(field);
-  if (!config || Math.max(0, Math.trunc(Number(rowCount) || 0)) !== 1) return null;
+  if (!persistedRow || !config || Math.max(0, Math.trunc(Number(rowCount) || 0)) !== 1) return null;
   if (!config.lastRowRemovalActionLabel || !config.lastRowRemovalMessage) return null;
   return Object.freeze({
     actionLabel: config.lastRowRemovalActionLabel,

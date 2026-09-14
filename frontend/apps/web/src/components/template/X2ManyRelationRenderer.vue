@@ -247,10 +247,10 @@
               type="button"
               variant="danger"
               size="small"
-              :aria-label="`${adapter.one2manyRemovalLabels(field.name).remove}${adapter.one2manyRowLabel(field.name, row._row)}`"
+              :aria-label="`${one2manyRowRemovalLabel(row._row)}${adapter.one2manyRowLabel(field.name, row._row)}`"
               :disabled="adapter.busy"
               @click="adapter.removeOne2manyRow(field.name, row._key)"
-            >{{ adapter.one2manyRemovalLabels(field.name).remove }}</ScButton>
+            >{{ one2manyRowRemovalLabel(row._row) }}</ScButton>
           </template>
         </ScTable>
       </div>
@@ -276,10 +276,10 @@
               type="button"
               variant="danger"
               size="small"
-              :aria-label="`${adapter.one2manyRemovalLabels(field.name).remove}${adapter.one2manyRowLabel(field.name, row)}`"
+              :aria-label="`${one2manyRowRemovalLabel(row)}${adapter.one2manyRowLabel(field.name, row)}`"
               :disabled="adapter.busy"
               @click="adapter.removeOne2manyRow(field.name, row.key)"
-            >{{ adapter.one2manyRemovalLabels(field.name).remove }}</ScButton>
+            >{{ one2manyRowRemovalLabel(row) }}</ScButton>
           </header>
           <div class="o2m-mobile-fields">
             <label
@@ -443,6 +443,14 @@ watch(one2manyPageCount, (count) => {
 
 function isO2mAmountColumn(column: RelationFieldColumn) {
   return String(column.ttype).toLowerCase() === 'monetary';
+}
+
+function one2manyRowRemovalLabel(row: RelationFieldRow) {
+  const labels = props.adapter.one2manyRemovalLabels(props.field.name);
+  const recordId = Number(row.id || 0);
+  return row.isNew === true || !Number.isFinite(recordId) || recordId <= 0
+    ? labels.cancelCreate
+    : labels.remove;
 }
 
 function readonlyCellValue(value: unknown) {

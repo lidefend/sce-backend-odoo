@@ -33,6 +33,7 @@ export type RelationFieldInputType = 'text' | 'search' | 'number' | 'url' | 'tel
 
 export type RelationRemovalLabels = {
   remove: string;
+  cancelCreate: string;
   restore: string;
   removedSummary: string;
   pendingRemoval: string;

@@ -127,6 +127,11 @@ assert.equal(optionalDetailCollectionRemovalConfirmation(optionalField, 2), null
 assert.deepEqual(optionalDetailCollectionRemovalConfirmation(optionalField, 1), {
   actionLabel: 'Stop using details', message: 'Last total is preserved',
 });
+assert.equal(
+  optionalDetailCollectionRemovalConfirmation(optionalField, 1, false),
+  null,
+  'an unsaved row is cancelled locally and must not use persistent last-row removal confirmation',
+);
 assert.equal(optionalDetailCollectionSpanClass(optionalField, 'field--normal'), 'field--full');
 assert.equal(optionalDetailCollectionSpanClass({
   ...optionalField,

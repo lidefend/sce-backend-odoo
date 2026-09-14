@@ -1416,6 +1416,7 @@ class _TreeFormParserMixin:
             return {
                 'add_row': _('添加关联'),
                 'remove': _('解除关联'),
+                'cancel_create': _('取消新增'),
                 'restore': _('恢复关联'),
                 'removed_summary': _('已解除 {count} 个关联，提交前可恢复'),
                 'pending_removal': _('待解除关联'),
@@ -1423,6 +1424,7 @@ class _TreeFormParserMixin:
         return {
             'add_row': _('添加行'),
             'remove': _('删除'),
+            'cancel_create': _('取消新增'),
             'restore': _('撤销删除'),
             'removed_summary': _('已标记删除 {count} 行，提交前可撤销'),
             'pending_removal': _('待删除'),

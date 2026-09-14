@@ -303,6 +303,7 @@ export function one2manyRemovalLabelsFromPolicies(
   ).trim();
   return {
     remove: String(labels.remove || '删除').trim() || '删除',
+    cancelCreate: String(labels.cancel_create || '取消新增').trim() || '取消新增',
     restore: String(labels.restore || '撤销删除').trim() || '撤销删除',
     removedSummary: summaryTemplate.replaceAll('{count}', count),
     pendingRemoval: String(labels.pending_removal || '待删除').trim() || '待删除',

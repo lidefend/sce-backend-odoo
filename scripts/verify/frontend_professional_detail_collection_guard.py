@@ -99,8 +99,14 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection adapter omits authoritative removal labels")
     if "one2manyRemovalLabelsFromPolicies" not in relation_utils:
         failures.append("detail collection removal labels do not consume backend policy")
-    if renderer.count("adapter.one2manyRemovalLabels(field.name)") < 5:
+    if renderer.count("one2manyRowRemovalLabel(") < 5:
         failures.append("detail collection removal actions do not use authoritative labels")
+    if "labels.cancel_create || '取消新增'" not in relation_utils:
+        failures.append("detail collection removal labels omit unsaved-row cancellation semantics")
+    if "row.isNew === true" not in renderer or "labels.cancelCreate" not in renderer:
+        failures.append("detail collection presents an unsaved row as a persistent deletion")
+    if "persistedRow" not in component:
+        failures.append("optional detail removal confirmation does not distinguish persisted rows")
     if '>移除</ScButton>' in renderer:
         failures.append("detail collection hardcodes ambiguous removal wording")
     if '"解除关联" if field_meta.get("type") == "many2many" else "删除"' not in load_contract:

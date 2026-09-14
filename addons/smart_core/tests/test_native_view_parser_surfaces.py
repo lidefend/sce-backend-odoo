@@ -704,6 +704,7 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
             ["partner_id", "amount"],
         )
         self.assertEqual(result["line_ids"]["policies"]["ui_labels"]["remove"], "删除")
+        self.assertEqual(result["line_ids"]["policies"]["ui_labels"]["cancel_create"], "取消新增")
         self.assertEqual(result["line_ids"]["policies"]["ui_labels"]["restore"], "撤销删除")
 
     def test_many2many_unlink_and_explicit_deactivate_remain_distinct(self):
@@ -730,12 +731,14 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         entry = result["tag_ids"]
         self.assertFalse(entry["policies"]["can_unlink"])
         self.assertEqual(entry["policies"]["ui_labels"]["remove"], "解除关联")
+        self.assertEqual(entry["policies"]["ui_labels"]["cancel_create"], "取消新增")
         self.assertEqual(entry["tree"]["row_actions"][0]["label"], "停用")
         self.assertEqual(entry["tree"]["row_actions"][0]["payload"]["method"], "action_deactivate")
 
         explicit = {"ui_labels": {"remove": "停用", "restore": "恢复启用"}}
         self.tree_form_parser._merge_x2many_ui_labels(explicit, "one2many")
         self.assertEqual(explicit["ui_labels"]["remove"], "停用")
+        self.assertEqual(explicit["ui_labels"]["cancel_create"], "取消新增")
         self.assertEqual(explicit["ui_labels"]["restore"], "恢复启用")
         self.assertEqual(explicit["ui_labels"]["pending_removal"], "待删除")
 
