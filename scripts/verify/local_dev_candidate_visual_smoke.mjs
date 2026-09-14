@@ -2234,6 +2234,12 @@ try {
           const forward = navigation.locator('[aria-label="向后浏览表单章节"]:visible').first();
           await backward.waitFor({ state: 'visible', timeout: 15000 });
           await forward.waitFor({ state: 'visible', timeout: 15000 });
+          await navigation.locator('.form-section-navigation__track').evaluate((track) => {
+            track.scrollTo({ left: 0, behavior: 'auto' });
+          });
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          const backwardDisabledAtStart = await backward.getAttribute('aria-disabled') === 'true';
+          const forwardAvailableInitially = await forward.getAttribute('aria-disabled') !== 'true';
           await forward.focus();
           let forwardSteps = 0;
           while (await forward.getAttribute('aria-disabled') !== 'true' && forwardSteps < 20) {
@@ -2268,6 +2274,8 @@ try {
             backwardAtStart,
             backwardAvailableAtEnd,
             forwardAvailableAtStart,
+            backwardDisabledAtStart,
+            forwardAvailableInitially,
             mutationCountBefore,
             mutationCountAfter: report.mutationCount,
             pass: forwardSteps > 0
@@ -2280,6 +2288,8 @@ try {
               && backwardAtStart.connected
               && backwardAvailableAtEnd
               && forwardAvailableAtStart
+              && backwardDisabledAtStart
+              && forwardAvailableInitially
               && mutationCountBefore === report.mutationCount,
           };
         }
