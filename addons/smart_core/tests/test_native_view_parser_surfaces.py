@@ -742,6 +742,32 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.assertEqual(explicit["ui_labels"]["restore"], "恢复启用")
         self.assertEqual(explicit["ui_labels"]["pending_removal"], "待删除")
 
+    def test_x2many_policies_preserve_native_create_edit_and_delete_capabilities(self):
+        self.tree_form_parser._safe_relation_fields_for_subview = lambda _relation: {
+            "name": {"type": "char", "string": "Name"},
+        }
+        root = _parse_test_xml(
+            """
+            <form>
+                <field name="line_ids">
+                    <tree editable="bottom" create="false" delete="false">
+                        <field name="name"/>
+                    </tree>
+                </field>
+            </form>
+            """
+        )
+
+        result = self.tree_form_parser._collect_x2many_subviews_from_dom(
+            root,
+            {"line_ids": {"type": "one2many", "relation": "test.line"}},
+        )
+
+        policies = result["line_ids"]["policies"]
+        self.assertTrue(policies["inline_edit"])
+        self.assertFalse(policies["can_create"])
+        self.assertFalse(policies["can_unlink"])
+
     def test_x2many_business_columns_consume_native_visibility_contract(self):
         relation_fields = {
             "sequence": {"type": "integer", "string": "Sequence"},

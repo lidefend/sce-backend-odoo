@@ -1543,8 +1543,15 @@ class _TreeFormParserMixin:
                 {'inline_edit': True, 'can_create': True, 'can_unlink': True},
             )
             tree_capabilities = tree_contract.get('capabilities') if isinstance(tree_contract, dict) else {}
-            if isinstance(tree_capabilities, dict) and tree_capabilities.get('can_delete') is False:
-                policies['can_unlink'] = False
+            if isinstance(tree_capabilities, dict):
+                for policy_key, capability_key in (
+                    ('inline_edit', 'inline_edit'),
+                    ('can_create', 'can_create'),
+                    ('can_unlink', 'can_delete'),
+                ):
+                    capability = tree_capabilities.get(capability_key)
+                    if isinstance(capability, bool):
+                        policies[policy_key] = bool(policies.get(policy_key, capability)) and capability
             self._merge_x2many_ui_labels(policies, ftype)
             if relation_fields:
                 entry['fields'] = relation_fields
