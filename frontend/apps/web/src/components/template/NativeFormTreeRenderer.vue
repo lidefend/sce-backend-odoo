@@ -1147,14 +1147,16 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
   background: var(--sc-app-success-bg);
 }
 
-.native-form-feedback,
-.native-form-feedback__content {
+.native-form-feedback {
   width: 100%;
   min-width: 0;
 }
 
 .native-form-feedback__content {
   display: grid;
+  inline-size: max-content;
+  max-inline-size: 100%;
+  min-inline-size: 0;
   gap: var(--sc-space-xs);
 }
 

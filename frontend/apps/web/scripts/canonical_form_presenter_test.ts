@@ -2894,6 +2894,25 @@ assert.equal(
   null,
   'button help must never manufacture a confirmation prompt',
 );
+assert.deepEqual(
+  contractActionConfirmationPrompt({
+    key: 'action_submit', label: '提交审批',
+    hint: '收款账户尚未完整，付款执行前必须补齐。',
+    requiresConfirmation: true,
+  } as never),
+  {
+    actionLabel: '提交审批',
+    message: '收款账户尚未完整，付款执行前必须补齐。',
+  },
+  'an authoritative action advisory must appear when the user starts that action',
+);
+assert.equal(
+  contractActionConfirmationPrompt({
+    key: 'action_submit', label: '提交审批', hint: '', requiresConfirmation: true,
+  } as never),
+  null,
+  'an action without an advisory must not manufacture an extra confirmation',
+);
 const readonlySaveSnapshot = snapshot();
 readonlySaveSnapshot.actionContract.actionRuleList = [{
   ...readonlySaveSnapshot.actionContract.actionRuleList[0],

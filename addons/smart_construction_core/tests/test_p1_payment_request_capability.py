@@ -1666,9 +1666,15 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertFalse(payment_form_arch.xpath("/form/sheet/div[contains(concat(' ', normalize-space(@class), ' '), ' oe_title ')]"))
         self.assertFalse(payment_form_arch.xpath("/form/sheet//group//field[@name='name']"))
         self.assertFalse(payment_form_arch.xpath("/form/sheet//group//field[@name='payment_flow_label']"))
-        blocking_nodes = payment_form_arch.xpath("/form/sheet/div[contains(concat(' ', normalize-space(@class), ' '), ' alert ')]/field[@name='payment_blocking_reason_display']")
-        self.assertEqual(len(blocking_nodes), 1)
-        self.assertEqual(blocking_nodes[0].get("nolabel"), "1")
+        self.assertFalse(payment_form_arch.xpath("/form/sheet//field[@name='payment_blocking_reason_display']"))
+        self.assertNotIn("收款账户信息待补充；审批可继续", etree.tostring(payment_form_arch, encoding="unicode"))
+        current_action_alerts = payment_form_arch.xpath(
+            "/form/sheet/div[contains(concat(' ', normalize-space(@class), ' '), ' alert ')]"
+        )
+        self.assertIn(
+            "partner_transaction_eligibility != 'blocked'",
+            [node.get("invisible") for node in current_action_alerts],
+        )
         self.assertEqual(
             payment_form_arch.xpath("/form/sheet/group[1]/group[1]/field[@name='payee_account_completeness']/@widget"),
             ["badge"],

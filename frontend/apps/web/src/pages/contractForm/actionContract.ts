@@ -26,12 +26,19 @@ export function contractActionConfirmationPrompt(action: ContractAction): {
   message: string;
 } | null {
   const safety = action.actionSafety;
-  if (!safety || safety.classification !== 'danger' || !safety.requiresConfirm) return null;
+  if (safety?.classification === 'danger' && safety.requiresConfirm) {
+    return {
+      actionLabel: String(action.label || '操作'),
+      message: String(
+        safety.confirmMessage || action.hint || '该操作执行后将立即生效，请确认是否继续。',
+      ),
+    };
+  }
+  const advisory = String(action.hint || '').trim();
+  if (!action.requiresConfirmation || !advisory) return null;
   return {
     actionLabel: String(action.label || '操作'),
-    message: String(
-      safety.confirmMessage || action.hint || '该操作执行后将立即生效，请确认是否继续。',
-    ),
+    message: advisory,
   };
 }
 

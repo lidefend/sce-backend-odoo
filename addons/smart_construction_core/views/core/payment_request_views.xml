@@ -288,11 +288,10 @@
                 <xpath expr="/form/sheet/group[1]/group[1]/field[@name='name']" position="replace"/>
                 <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payment_flow_label']" position="replace"/>
                 <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payment_blocking_reason_display']" position="replace"/>
-                <xpath expr="/form/sheet/div[hasclass('oe_button_box')]" position="before">
-                    <div class="alert alert-info" role="status">
-                        <field name="payment_blocking_reason_display" readonly="1" nolabel="1"/>
-                    </div>
-                </xpath>
+                <!-- Account completeness is already projected as a submit/approve
+                     advisory.  Keep it action-scoped instead of presenting a
+                     later payment-execution condition as a page-load warning. -->
+                <xpath expr="/form/sheet/div[contains(concat(' ', normalize-space(@class), ' '), ' alert ')][@invisible=&quot;type != 'pay' or payee_account_completeness != 'incomplete'&quot;]" position="replace"/>
                 <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payee_account_completeness']" position="attributes">
                     <attribute name="widget">badge</attribute>
                 </xpath>
