@@ -287,12 +287,22 @@
                 <xpath expr="/form/sheet/div[hasclass('oe_title')]" position="replace"/>
                 <xpath expr="/form/sheet/group[1]/group[1]/field[@name='name']" position="replace"/>
                 <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payment_flow_label']" position="replace"/>
+                <!-- The page header already carries the workflow state for this
+                     entry; do not repeat it as an ordinary body fact. -->
+                <xpath expr="/form/sheet/group[1]/group[1]/field[@name='state']" position="replace"/>
                 <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payment_blocking_reason_display']" position="replace"/>
+                <!-- The action bar is the executable authority.  The derived
+                     next-step text does not account for every header modifier,
+                     so it must not be presented as an unconditional task. -->
+                <xpath expr="/form/sheet/group[1]/group[1]/field[@name='legal_next_action_display']" position="replace"/>
                 <!-- Account completeness is already projected as a submit/approve
                      advisory.  Keep it action-scoped instead of presenting a
                      later payment-execution condition as a page-load warning. -->
                 <xpath expr="/form/sheet/div[contains(concat(' ', normalize-space(@class), ' '), ' alert ')][@invisible=&quot;type != 'pay' or payee_account_completeness != 'incomplete'&quot;]" position="replace"/>
-                <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payee_account_completeness']" position="attributes">
+                <!-- Keep one account-completeness fact with the account snapshot
+                     instead of repeating it ahead of the payment identity. -->
+                <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payee_account_completeness']" position="replace"/>
+                <xpath expr="/form/sheet/group[3]/group[1]/field[@name='payee_account_completeness']" position="attributes">
                     <attribute name="widget">badge</attribute>
                 </xpath>
                 <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payment_execution_status_display']" position="attributes">
@@ -300,6 +310,15 @@
                 </xpath>
                 <xpath expr="/form/sheet/group[1]/group[2]/field[@name='partner_transaction_eligibility']" position="attributes">
                     <attribute name="widget">badge</attribute>
+                </xpath>
+                <!-- The formal payment entry starts with the party identity.
+                     Inner groups remain layout containers, not section owners. -->
+                <xpath expr="/form/sheet/group[1]/group[2]/field[@name='project_id']" position="after">
+                    <xpath expr="/form/sheet/group[1]/group[2]/field[@name='partner_id']" position="move"/>
+                    <xpath expr="/form/sheet/group[1]/group[1]/field[@name='business_category_id']" position="move"/>
+                </xpath>
+                <xpath expr="/form/sheet/group[3]/group[1]/field[@name='payee_account_completeness']" position="after">
+                    <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payee_account_source_display']" position="move"/>
                 </xpath>
                 <xpath expr="/form/sheet/group[1]" position="attributes">
                     <attribute name="name">sc_payment_request_pay_basic</attribute>
@@ -348,6 +367,7 @@
                            data-sc-collapsed-by-default="1"/>
                 </xpath>
                 <xpath expr="//group[@name='sc_payment_request_pay_trace']" position="inside">
+                    <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payment_execution_status_display']" position="move"/>
                     <xpath expr="/form/sheet/notebook" position="move"/>
                 </xpath>
             </field>

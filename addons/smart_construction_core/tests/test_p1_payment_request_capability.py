@@ -1666,6 +1666,13 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertFalse(payment_form_arch.xpath("/form/sheet/div[contains(concat(' ', normalize-space(@class), ' '), ' oe_title ')]"))
         self.assertFalse(payment_form_arch.xpath("/form/sheet//group//field[@name='name']"))
         self.assertFalse(payment_form_arch.xpath("/form/sheet//group//field[@name='payment_flow_label']"))
+        basic_state_nodes = payment_form_arch.xpath(
+            "/form/sheet/group[@name='sc_payment_request_pay_basic']//field[@name='state']"
+        )
+        self.assertFalse(
+            basic_state_nodes,
+            [(node.getparent().get("string"), dict(node.attrib)) for node in basic_state_nodes],
+        )
         self.assertFalse(payment_form_arch.xpath("/form/sheet//field[@name='payment_blocking_reason_display']"))
         self.assertNotIn("收款账户信息待补充；审批可继续", etree.tostring(payment_form_arch, encoding="unicode"))
         current_action_alerts = payment_form_arch.xpath(
@@ -1675,13 +1682,33 @@ class TestP1PaymentRequestCapability(TransactionCase):
             "partner_transaction_eligibility != 'blocked'",
             [node.get("invisible") for node in current_action_alerts],
         )
+        self.assertFalse(
+            payment_form_arch.xpath("/form/sheet/group[1]//field[@name='payee_account_completeness']")
+        )
         self.assertEqual(
-            payment_form_arch.xpath("/form/sheet/group[1]/group[1]/field[@name='payee_account_completeness']/@widget"),
+            payment_form_arch.xpath("/form/sheet/group[@name='sc_payment_request_pay_parties']//field[@name='payee_account_completeness']/@widget"),
             ["badge"],
         )
         self.assertEqual(
-            payment_form_arch.xpath("/form/sheet/group[1]/group[1]/field[@name='payment_execution_status_display']/@widget"),
+            payment_form_arch.xpath("/form/sheet/group[@name='sc_payment_request_pay_parties']//field[@name='payee_account_source_display']/@name"),
+            ["payee_account_source_display"],
+        )
+        self.assertFalse(
+            payment_form_arch.xpath("/form/sheet/group[@name='sc_payment_request_pay_basic']//field[@name='payment_execution_status_display']")
+        )
+        self.assertEqual(
+            payment_form_arch.xpath("/form/sheet/group[@name='sc_payment_request_pay_trace']/field[@name='payment_execution_status_display']/@widget"),
             ["badge"],
+        )
+        self.assertFalse(
+            payment_form_arch.xpath("/form/sheet//field[@name='legal_next_action_display']")
+        )
+        basic_identity_fields = payment_form_arch.xpath(
+            "/form/sheet/group[@name='sc_payment_request_pay_basic']/group[2]/field/@name"
+        )
+        self.assertEqual(
+            basic_identity_fields[:3],
+            ["project_id", "partner_id", "business_category_id"],
         )
         self.assertEqual(
             payment_form_arch.xpath("/form/sheet/group[1]/group[2]/field[@name='partner_transaction_eligibility']/@widget"),
