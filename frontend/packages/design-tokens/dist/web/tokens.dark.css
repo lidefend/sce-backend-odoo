@@ -179,7 +179,7 @@
   --sc-component-hierarchy-browser-tree-min-width: 180;
   --sc-component-hierarchy-browser-tree-width: 280;
   --sc-component-input-disabled-opacity: 0.55;
-  --sc-component-input-font-size: 12;
+  --sc-component-input-font-size: 14;
   --sc-component-input-form-height: 36px;
   --sc-component-input-height-lg: 40;
   --sc-component-input-height-md: 32;
@@ -252,6 +252,7 @@
   --sc-pattern-overlay-shadow: 0 18px 44px rgba(0, 0, 0, 0.34);
   --sc-pattern-page-header-section-gap: 24;
   --sc-pattern-page-header-title-size: 24;
+  --sc-pattern-page-header-title-weight: 600;
   --sc-pattern-task-form-column-gap: 24;
   --sc-pattern-task-form-content-max-width: 1200px;
   --sc-pattern-task-form-control-row-gap: 4;

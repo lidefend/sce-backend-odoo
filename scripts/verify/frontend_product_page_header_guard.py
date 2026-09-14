@@ -74,6 +74,15 @@ def validate() -> list[str]:
     for marker in ("position: sticky", "data-has-status", "product-page-header__actions"):
         if marker not in component:
             failures.append(f"ProductPageHeader does not own shared internal header layout: {marker}")
+    for marker in (
+        "font-size:var(--sc-product-text-title)",
+        "font-weight:var(--sc-pattern-page-header-title-weight)",
+        "line-height:32px",
+    ):
+        if marker not in component:
+            failures.append(f"ProductPageHeader does not consume semantic title typography: {marker}")
+    if "font-size:22px" in component or "font-weight:700" in component:
+        failures.append("ProductPageHeader restores detached title typography literals")
     if ".product-page-header__identity{flex:0 1 auto;min-width:0}" not in component:
         failures.append("ProductPageHeader mobile identity retains a desktop flex basis")
     if ".product-page-header__status{flex:0 1 auto;width:100%" not in component:
@@ -90,9 +99,11 @@ def validate() -> list[str]:
     if "localSavePrimary" in canonical_actions or "authorizedLocalSave" in canonical_actions:
         failures.append("canonical header actions must not invent local save orchestration")
     driver = source("frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue")
-    for marker in ('showProductActions && !actionsInHeader', 'visibleActions.length && !actionsInHeader'):
+    for marker in ('showProductActions && !actionsInHeader',):
         if marker not in driver:
             failures.append(f"DriverHost still owns a parallel action bar: {marker}")
+    if driver.count(':visible-actions="visibleActions"') != 2:
+        failures.append("canonical task and workspace native surfaces do not share visible action projection")
     if "action.actionRef.actionId === 'form.save' && action.enabled" not in driver:
         failures.append("DriverHost local save is not bound to authorized canonical form.save")
     if "props.renderModel?.identity.mode === 'create' || props.dirty" in driver:
@@ -118,8 +129,28 @@ def validate() -> list[str]:
         failures.append("canonical body still hides every statusbar instead of the exact header claim")
     if ':claimed-statusbar-node-identity="nativeStatusbarNodeIdentity"' not in contract_page:
         failures.append("ContractForm does not pass the exact claimed statusbar node into the body bridge")
-    if canonical_driver.count(':authoritative-business-section-mode="nativeBridge.authoritativeBusinessSectionMode"') != 2:
-        failures.append("canonical primary and subordinate renderers do not share the page-level business section mode")
+    for marker in ('v-if="!preserveAuthoritativeBusinessSections"', '<CanonicalNativeFormSurface\n        v-else'):
+        if marker not in canonical_driver:
+            failures.append(f"canonical driver does not preserve authoritative business sections: {marker}")
+    if ':authoritative-business-section-mode="nativeBridge.authoritativeBusinessSectionMode"' in canonical_driver:
+        failures.append("canonical driver restores stale per-renderer business-section projection")
+
+    component_tokens = source("frontend/packages/design-tokens/tokens/component.json")
+    product_patterns = source("frontend/apps/web/src/styles/product-patterns.css")
+    tdesign_theme = source("frontend/packages/ui/src/kits/tdesign/theme.css")
+    form_section = source("frontend/apps/web/src/components/template/FormSection.vue")
+    typography_markers = (
+        (component_tokens, '"font_size": "{font.size_md}"', "input body-size token"),
+        (product_patterns, ".sc-form-label {", "shared form label rule"),
+        (product_patterns, "font-size: var(--sc-product-text-sm);", "shared supporting-text token"),
+        (tdesign_theme, "--td-font-size-body-medium: var(--sc-product-text-body);", "TDesign body-size bridge"),
+        (tdesign_theme, "--td-font-size-body-small: var(--sc-product-text-sm);", "TDesign supporting-size bridge"),
+        (form_section, ".label {\n  font-size: var(--sc-product-text-sm);", "native field label token"),
+        (form_section, ".readonly-value {\n  font-size: var(--sc-product-text-body);", "native readonly body token"),
+    )
+    for text, marker, label in typography_markers:
+        if marker not in text:
+            failures.append(f"shared typography mapping misses {label}: {marker}")
     if 'v-bind="nativeActionEvidenceAttributes' not in native_renderer:
         failures.append("native action controls must expose canonical action evidence attributes")
     for marker in ("data-action-key", "data-action-ref", "data-backend-identity"):

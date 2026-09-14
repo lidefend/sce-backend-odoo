@@ -9431,3 +9431,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 收入、支出样板均已完成人工产品复核；a99 证据因没有运行前后完整指纹绑定，只保留为人工复核/诊断材料。最终反例覆盖父条件 false/true/value-change、同区 tag/table、相同 field semantic 跨显式锚点、无锚点不同 semantic 子区、全隐藏及折叠有内容；根遍历显式隔离 `forEach` 的 index/array 参数。
 - `e0d844cd…` 的 1088×791、390×844 支出深色新建和查看分别具有 before/after 相同的完整指纹及 summary/截图哈希 binding；新建每视口 5 个、查看桌面 11 个/移动 12 个可见导航目标均唯一且稳定避开吸顶区，`pass=true`、零写入、零错误。旧焦点探针只作人工材料，手动中段截图不冒充点击定位证据。
 - 冻结前一次性提交双语报告、PR 草案和生成证据；随后在 clean exact-head 上只运行一次 Quick，并让独立复核绑定同一 HEAD/Tree/完整指纹。支出无草稿、金额口径未决、真实保存/审批未验收继续作为边界。
+
+## 2026-09-14 — TDesign 设计体系对齐 Batch A1
+
+- 分支 `codex/tdesign-system-alignment-v1`，基线 `origin/main@6885840fe57f1e00ae8ce78bc76687e8a4a66332`，复用已交付合同结算工作树作为唯一 writer；基线 Tree `77aeb208e4acad221d41ceca28f5bfdb59e1b6d0`，未新建或删除工作树。
+- Formal Product Layer 为 P0；Layer Target 为现有 design token、TDesign 公开 CSS 变量桥、共享页头和通用字段排版。页面标题、章节、正文/控件、标签/辅助文字统一为 24/16/14/12 四级，不改契约、P1 XML、字段 widget、格式、校验、权限、动作或业务数据。
+- 本批仅执行 L0 完整工作树指纹、L1 轻量入口和 token/header/primitive/form-field 的非零 L2；无模块/schema/运行装载变化，因此不执行 L3。三页 1088×791 局部浏览器对照留到 A1/A2/A3 汇合后，Quick 与完整候选证据留到产品方向通过后的冻结 HEAD。

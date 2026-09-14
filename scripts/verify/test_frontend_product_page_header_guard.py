@@ -51,6 +51,39 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
                 validate(),
             )
 
+    def test_page_title_cannot_restore_detached_literals(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "ProductPageHeader.vue":
+                return value.replace(
+                    "font-size:var(--sc-product-text-title); font-weight:var(--sc-pattern-page-header-title-weight)",
+                    "font-size:22px; font-weight:700",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertIn(
+                "ProductPageHeader restores detached title typography literals",
+                validate(),
+            )
+
+    def test_tdesign_body_typography_bridge_is_required(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "theme.css" and path.parent.name == "tdesign":
+                return value.replace(
+                    "--td-font-size-body-medium: var(--sc-product-text-body);",
+                    "--td-font-size-body-medium: 12px;",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertTrue(any("TDesign body-size bridge" in item for item in validate()))
+
     def test_mobile_exit_action_cannot_be_inverted(self):
         real = Path.read_text
 

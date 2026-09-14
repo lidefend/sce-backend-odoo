@@ -863,14 +863,14 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 
 .template-form-section-hint {
   margin: -4px 0 10px;
-  font-size: 12px;
+  font-size: var(--sc-product-text-sm);
   color: var(--sc-app-text-primary);
 }
 
 .field-supporting-text,
 .field-error-text {
   margin: 6px 0 0;
-  font-size: 12px;
+  font-size: var(--sc-product-text-sm);
   line-height: 1.45;
 }
 
@@ -1028,7 +1028,7 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .label {
-  font-size: 13px;
+  font-size: var(--sc-product-text-sm);
   color: var(--sc-app-text-primary);
   font-weight: 600;
   margin: 0;
@@ -1120,7 +1120,7 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .readonly-value {
-  font-size: 14px;
+  font-size: var(--sc-product-text-body);
   color: var(--sc-app-text-primary);
   min-height: 32px;
   line-height: 22px;
@@ -1173,13 +1173,13 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 .template-form-section--readonly .readonly-value {
   min-height: 28px;
   color: var(--sc-app-text-primary);
-  font-size: 14px;
+  font-size: var(--sc-product-text-body);
 }
 
 .template-form-section--readonly :deep(.contract-readonly-value) {
   min-height: 28px;
   color: var(--sc-app-text-primary);
-  font-size: 14px;
+  font-size: var(--sc-product-text-body);
 }
 
 .template-form-section--readonly .template-form-section-grid {
@@ -1203,7 +1203,7 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 
 .template-form-section--readonly .label {
   color: var(--sc-app-text-secondary);
-  font-size: 12px;
+  font-size: var(--sc-product-text-sm);
   font-weight: 500;
 }
 
@@ -1211,7 +1211,7 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 .template-form-section--readonly :deep(.contract-readonly-value) {
   min-height: 24px;
   color: var(--sc-app-text-primary);
-  font-size: 14px;
+  font-size: var(--sc-product-text-body);
   font-weight: 550;
 }
 

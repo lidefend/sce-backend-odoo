@@ -23,6 +23,17 @@
 - 控件、面板和对话框分别使用固定圆角；阴影仅用于浮层和必要的层级提升。
 - 正式组件不得新增硬编码颜色、页面级 inline style、model-specific CSS 或宽范围全站补丁。
 
+### TDesign 1.20.5 共享规范映射
+
+| 官方/现有依据 | 现有 token | 本批采用值 | 共享消费者 |
+| --- | --- | --- | --- |
+| TDesign `--td-font-size-headline-small` 与既有 page-header pattern | `--sc-product-text-title` | 24px / 32px，600 | `ProductPageHeader` |
+| TDesign title/body 层级与既有基础字号 | `--sc-product-text-section` | 16px，600 | 业务章节标题、表单章节标题 |
+| TDesign `--td-font-size-body-medium` / `--td-line-height-body-medium` | `--sc-product-text-body`、`--sc-product-line-body` | 14px / 22px | 输入、关系选择、日期、金额、文本域、只读值 |
+| TDesign `--td-font-size-body-small` | `--sc-product-text-sm` | 12px / 20px | 字段标签、帮助、校验提示、面包屑和辅助文字 |
+
+TDesign 字体变量只通过公开 CSS 变量桥接；页面标题、章节、正文和辅助文字消费同一组项目语义 token，不改变控件 widget、格式、校验或契约标题内容。
+
 ## 正式组件
 
 `components/design-system` 是通用组件唯一正式目录，包含页面、分区、面板、按钮、状态、金额、字段、错误、空状态、对话框、抽屉、列表、移动记录、关系和审计组件。业务页面负责把正式契约转换为这些组件的 props，不得向组件传递模型判断逻辑。
