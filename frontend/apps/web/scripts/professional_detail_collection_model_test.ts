@@ -17,6 +17,10 @@ import {
   analyzeDynamicRelationDomain,
   dynamicRelationDomainFromDescriptor,
 } from '../src/pages/contractForm/relationDescriptor';
+import {
+  ratioSettlementApplyTotal,
+  roundSettlementCurrencyAmount,
+} from '../src/components/professional-fields/paymentSettlementIntroduceModel';
 
 const modes = ['task', 'workspace'] as const;
 const profiles = ['create', 'edit', 'readonly'] as const;
@@ -50,6 +54,15 @@ assert.equal(matrix, 6);
 assert.equal(isProfessionalDetailCollectionField({ componentKey: 'sc.relation.table', type: 'many2many' } as never), false);
 assert.throws(() => detailCollectionAuthority({ componentKey: 'sc.table.data', type: 'one2many' } as never, {} as never), /PROFESSIONAL_DETAIL_COLLECTION_UNSUPPORTED/);
 assert.equal(optionalDetailCollectionPresentation({ componentKey: 'sc.table.data', type: 'one2many' } as never, 0), null);
+
+assert.equal(roundSettlementCurrencyAmount(1.234, 0.01), 1.23);
+assert.equal(ratioSettlementApplyTotal([
+  { remaining: 0.01 },
+  { remaining: 0.01 },
+  { remaining: 0.01 },
+], 50, 0.01), 0.03);
+assert.equal(ratioSettlementApplyTotal([{ remaining: 12.34 }], 0, 0.01), 0);
+assert.equal(ratioSettlementApplyTotal([{ remaining: 12.34 }], 120, 0.01), 12.34);
 
 const requestAuthority = createOne2manyRelationRequestAuthority();
 const firstRequest = requestAuthority.begin('line:1:partner_id');

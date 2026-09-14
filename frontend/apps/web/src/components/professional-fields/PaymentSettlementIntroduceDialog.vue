@@ -197,6 +197,10 @@ import ScDialog from '../design-system/ScDialog.vue';
 import ScInlineState from '../design-system/ScInlineState.vue';
 import { intentRequest } from '../../api/intents';
 import { formatMonetaryDisplayValue } from '../template/formSection.mapper';
+import {
+  ratioSettlementApplyTotal,
+  roundSettlementCurrencyAmount,
+} from './paymentSettlementIntroduceModel';
 
 const props = defineProps<{ field: FormSectionFieldSchema; adapter: RelationFieldAdapter; open: boolean }>();
 const emit = defineEmits<{ close: []; introduced: []; 'busy-change': [busy: boolean] }>();
@@ -388,9 +392,10 @@ const currencyUnit = computed(() => previewData.value?.currency.symbol || previe
 const currencyInputStep = computed(() => String(previewData.value?.currency.rounding || 'any'));
 
 function roundPreviewAmount(value: number) {
-  const rounding = Number(previewData.value?.currency.rounding || 0);
-  if (!(rounding > 0)) return value;
-  return Math.round((value / rounding) + Number.EPSILON) * rounding;
+  return roundSettlementCurrencyAmount(
+    value,
+    Number(previewData.value?.currency.rounding || 0),
+  );
 }
 
 const selectedLinesApply = computed(() => {
@@ -399,7 +404,11 @@ const selectedLinesApply = computed(() => {
     return roundPreviewAmount(Math.min(total, selectedLinesRemaining.value));
   }
   const ratio = Math.min(Math.max(Number(applyRatio.value) || 0, 0), 100);
-  return roundPreviewAmount(selectedLinesRemaining.value * ratio / 100);
+  return ratioSettlementApplyTotal(
+    selectedLines.value,
+    ratio,
+    Number(previewData.value?.currency.rounding || 0),
+  );
 });
 
 const canConfirmIntroduce = computed(() => {
