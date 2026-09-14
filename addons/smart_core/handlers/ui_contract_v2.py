@@ -78,13 +78,6 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-governance-2026-09-02-user-search"
 
 
-def form_structure_presentation_mode(authority: Any, declared_mode: Any = "") -> str:
-    """Return the formal form-shape authority without exposing renderer details."""
-    if str(declared_mode or "").strip() == "task":
-        return "task"
-    return "task" if str(authority or "").strip() == "entry_semantic_surface" else "workspace"
-
-
 def authoritative_form_role_key(env: Any) -> str:
     """Resolve the current server session's formal role surface for form selection.
 
@@ -1557,7 +1550,10 @@ class UiContractV2Handler(BaseIntentHandler):
                         normalized_groups.append(copied)
                     business_policy_groups = normalized_groups
                 source_contract["field_groups"] = business_policy_groups
-                self._ensure_business_policy_layout_fields_visible(source_contract, business_policy_groups)
+                _projection.ensure_business_policy_layout_fields_visible(
+                    source_contract,
+                    business_policy_groups,
+                )
             aliases_projected_at = time.monotonic()
             self._inject_relation_entry_policies(source_contract, model=model)
             relation_policies_at = time.monotonic()
@@ -1666,40 +1662,6 @@ class UiContractV2Handler(BaseIntentHandler):
 
         walk(roots)
 
-    def _ensure_business_policy_layout_fields_visible(
-        self,
-        source_contract: dict[str, Any],
-        business_policy_groups: list[dict[str, Any]],
-    ) -> None:
-        business_policy = source_contract.get("business_form_policy") if isinstance(source_contract.get("business_form_policy"), dict) else {}
-        explicit_visibility_fields = set()
-        field_policies = source_contract.get("field_policies") if isinstance(source_contract.get("field_policies"), dict) else {}
-        for row in business_policy.get("fields") if isinstance(business_policy.get("fields"), list) else []:
-            if not isinstance(row, dict):
-                continue
-            name = str(row.get("name") or row.get("field") or "").strip()
-            if not name:
-                continue
-            policy = field_policies.get(name) if isinstance(field_policies.get(name), dict) else {}
-            for key in ("visible_profiles", "readonly_profiles", "required_profiles"):
-                if isinstance(row.get(key), list):
-                    policy[key] = list(row.get(key) or [])
-            if policy:
-                field_policies[name] = policy
-            if isinstance(row.get("visible_profiles"), list):
-                explicit_visibility_fields.add(name)
-        for group in business_policy_groups:
-            if not isinstance(group, dict):
-                continue
-            for raw_name in group.get("fields") if isinstance(group.get("fields"), list) else []:
-                name = str(raw_name or "").strip()
-                if not name or name in explicit_visibility_fields:
-                    continue
-                policy = field_policies.get(name) if isinstance(field_policies.get(name), dict) else {}
-                policy["visible_profiles"] = ["create", "edit", "readonly"]
-                field_policies[name] = policy
-        source_contract["field_policies"] = field_policies
-
     def _inject_business_category_form_structure(self, source_contract: dict[str, Any], *, model: str) -> None:
         policy = source_contract.get("business_form_policy") if isinstance(source_contract.get("business_form_policy"), dict) else {}
         groups = source_contract.get("field_groups") if isinstance(source_contract.get("field_groups"), list) else []
@@ -1711,15 +1673,7 @@ class UiContractV2Handler(BaseIntentHandler):
             model=model,
             view_type="form",
         )
-        structure_authority = str(
-            structure_governance.get("form_structure_authority") or ""
-        ).strip()
-        if structure_authority in {"native_authority", "entry_semantic_surface"}:
-            # Business-category policy remains the authority for defaults,
-            # requirements and field-level business semantics.  It must not
-            # publish a second root section tree when orchestration has already
-            # selected either the resolved native view or an explicit semantic
-            # replacement as the form-structure authority.
+        if _projection.has_selected_form_structure_authority(structure_governance):
             return
         field_aliases = self._form_field_aliases(model, source_contract)
         if field_aliases:
@@ -2791,7 +2745,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 group_rows.append(row)
             if group_rows:
                 form_columns = self._form_layout_columns_from_governance(governance)
-                presentation_mode = form_structure_presentation_mode(
+                presentation_mode = _projection.form_structure_presentation_mode(
                     (governance or {}).get("form_structure_authority"),
                     (governance or {}).get("form_presentation_mode"),
                 )
@@ -3016,7 +2970,7 @@ class UiContractV2Handler(BaseIntentHandler):
         structure_authority = str(
             (governance or {}).get("form_structure_authority") or ""
         ).strip()
-        presentation_mode = form_structure_presentation_mode(
+        presentation_mode = _projection.form_structure_presentation_mode(
             structure_authority,
             (governance or {}).get("form_presentation_mode"),
         )

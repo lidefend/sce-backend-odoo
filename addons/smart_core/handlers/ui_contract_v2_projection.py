@@ -10,6 +10,58 @@ from . import ui_contract_v2_adapters as _adapters
 _CONTAINER_CHILD_KEYS = ("children", "pages", "tabs", "nodes", "items")
 
 
+def form_structure_presentation_mode(authority: Any, declared_mode: Any = "") -> str:
+    """Resolve presentation without allowing the renderer to infer authority."""
+    if str(declared_mode or "").strip() == "task":
+        return "task"
+    return "task" if str(authority or "").strip() == "entry_semantic_surface" else "workspace"
+
+
+def has_selected_form_structure_authority(governance: dict[str, Any]) -> bool:
+    """Keep category policy from publishing a second selected section tree."""
+    authority = str(governance.get("form_structure_authority") or "").strip()
+    return authority in {"native_authority", "entry_semantic_surface"}
+
+
+def ensure_business_policy_layout_fields_visible(
+    source_contract: dict[str, Any],
+    business_policy_groups: list[dict[str, Any]],
+) -> None:
+    """Project policy visibility while preserving explicit field declarations."""
+    business_policy = source_contract.get("business_form_policy")
+    business_policy = business_policy if isinstance(business_policy, dict) else {}
+    field_policies = source_contract.get("field_policies")
+    field_policies = field_policies if isinstance(field_policies, dict) else {}
+    explicit_visibility_fields: set[str] = set()
+    rows = business_policy.get("fields") if isinstance(business_policy.get("fields"), list) else []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        name = str(row.get("name") or row.get("field") or "").strip()
+        if not name:
+            continue
+        policy = field_policies.get(name) if isinstance(field_policies.get(name), dict) else {}
+        for key in ("visible_profiles", "readonly_profiles", "required_profiles"):
+            if isinstance(row.get(key), list):
+                policy[key] = list(row.get(key) or [])
+        if policy:
+            field_policies[name] = policy
+        if isinstance(row.get("visible_profiles"), list):
+            explicit_visibility_fields.add(name)
+    for group in business_policy_groups:
+        if not isinstance(group, dict):
+            continue
+        group_fields = group.get("fields") if isinstance(group.get("fields"), list) else []
+        for raw_name in group_fields:
+            name = str(raw_name or "").strip()
+            if not name or name in explicit_visibility_fields:
+                continue
+            policy = field_policies.get(name) if isinstance(field_policies.get(name), dict) else {}
+            policy["visible_profiles"] = ["create", "edit", "readonly"]
+            field_policies[name] = policy
+    source_contract["field_policies"] = field_policies
+
+
 def _stable_container_id(value: Any, fallback: str) -> str:
     raw = str(value or fallback or "container").strip()
     normalized = "".join(
