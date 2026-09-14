@@ -139,6 +139,7 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
             "verify.local.dev.payment_request.native_parity.readonly",
             "verify.local.dev.payment_request.full_chain",
             "verify.local.dev.payment_request.settlement_component.journey",
+            "verify.local.dev.payment_request.attachment_m2m.journey",
             "local.sample.prepare",
             "local.sample.up",
             "local.sample.down",
@@ -434,6 +435,37 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         self.assertIn("with_user(user).with_company(user.company_id)", resolver)
         self.assertIn("selected_settlement.currency_id != request.currency_id", resolver)
         self.assertNotIn('order="id desc"', resolver)
+
+    def test_payment_attachment_m2m_journey_reuses_governed_fixture_lifecycle(self):
+        make_text = (ROOT / "make/dev.mk").read_text(encoding="utf-8")
+        journey = (
+            ROOT / "scripts/verify/local_dev_payment_attachment_m2m_journey.sh"
+        ).read_text(encoding="utf-8")
+        browser = (
+            ROOT / "scripts/verify/local_dev_payment_attachment_m2m_journey.mjs"
+        ).read_text(encoding="utf-8")
+        resolver = (
+            ROOT / "scripts/verify/local_dev_payment_attachment_m2m_ids.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn(
+            "verify.local.dev.payment_request.attachment_m2m.journey: guard.prod.forbid",
+            make_text,
+        )
+        self.assertIn('LOCAL_DEV_CANONICAL_ENV_FILE="$(readlink -f "$ENV_FILE")"', journey)
+        self.assertEqual(journey.count("local.dev.reset_payment_request_fixture"), 3)
+        self.assertIn("trap restore_on_exit EXIT", journey)
+        self.assertIn("complete_worktree_fingerprint.py", journey)
+        self.assertNotIn("local.dev.sync_demo", journey)
+        self.assertIn("relationship detached; attachment object retained", journey)
+        self.assertIn("fixture reset restored the governed baseline", journey)
+        self.assertIn("解除关联", browser)
+        self.assertIn("actualAttachmentProtocol", browser)
+        self.assertIn("保存修改", browser)
+        self.assertIn("放弃", browser)
+        self.assertIn("smart_construction_demo.payment_request_floorplan_demo_record", resolver)
+        self.assertIn("smart_construction_demo.payment_request_floorplan_demo_attachment", resolver)
+        self.assertIn('field.type != "many2many"', resolver)
+        self.assertIn("with_user(user).with_company(user.company_id)", resolver)
 
     def test_sample_prepare_creates_distinct_technical_identity(self):
         with tempfile.TemporaryDirectory() as temporary:

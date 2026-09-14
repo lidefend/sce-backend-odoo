@@ -703,6 +703,70 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
             [row["name"] for row in tree["columns"]],
             ["partner_id", "amount"],
         )
+        self.assertEqual(result["line_ids"]["policies"]["ui_labels"]["remove"], "删除")
+        self.assertEqual(result["line_ids"]["policies"]["ui_labels"]["cancel_create"], "取消新增")
+        self.assertEqual(result["line_ids"]["policies"]["ui_labels"]["restore"], "撤销删除")
+
+    def test_many2many_unlink_and_explicit_deactivate_remain_distinct(self):
+        self.tree_form_parser._safe_relation_fields_for_subview = lambda _relation: {
+            "name": {"type": "char", "string": "Name"},
+        }
+        root = _parse_test_xml(
+            """
+            <form>
+                <field name="tag_ids">
+                    <tree delete="0">
+                        <field name="name"/>
+                        <button name="action_deactivate" type="object" string="停用"/>
+                    </tree>
+                </field>
+            </form>
+            """
+        )
+
+        result = self.tree_form_parser._collect_x2many_subviews_from_dom(
+            root,
+            {"tag_ids": {"type": "many2many", "relation": "test.tag"}},
+        )
+        entry = result["tag_ids"]
+        self.assertFalse(entry["policies"]["can_unlink"])
+        self.assertEqual(entry["policies"]["ui_labels"]["remove"], "解除关联")
+        self.assertEqual(entry["policies"]["ui_labels"]["cancel_create"], "取消新增")
+        self.assertEqual(entry["tree"]["row_actions"][0]["label"], "停用")
+        self.assertEqual(entry["tree"]["row_actions"][0]["payload"]["method"], "action_deactivate")
+
+        explicit = {"ui_labels": {"remove": "停用", "restore": "恢复启用"}}
+        self.tree_form_parser._merge_x2many_ui_labels(explicit, "one2many")
+        self.assertEqual(explicit["ui_labels"]["remove"], "停用")
+        self.assertEqual(explicit["ui_labels"]["cancel_create"], "取消新增")
+        self.assertEqual(explicit["ui_labels"]["restore"], "恢复启用")
+        self.assertEqual(explicit["ui_labels"]["pending_removal"], "待删除")
+
+    def test_x2many_policies_preserve_native_create_edit_and_delete_capabilities(self):
+        self.tree_form_parser._safe_relation_fields_for_subview = lambda _relation: {
+            "name": {"type": "char", "string": "Name"},
+        }
+        root = _parse_test_xml(
+            """
+            <form>
+                <field name="line_ids">
+                    <tree editable="bottom" create="false" delete="false">
+                        <field name="name"/>
+                    </tree>
+                </field>
+            </form>
+            """
+        )
+
+        result = self.tree_form_parser._collect_x2many_subviews_from_dom(
+            root,
+            {"line_ids": {"type": "one2many", "relation": "test.line"}},
+        )
+
+        policies = result["line_ids"]["policies"]
+        self.assertTrue(policies["inline_edit"])
+        self.assertFalse(policies["can_create"])
+        self.assertFalse(policies["can_unlink"])
 
     def test_x2many_business_columns_consume_native_visibility_contract(self):
         relation_fields = {

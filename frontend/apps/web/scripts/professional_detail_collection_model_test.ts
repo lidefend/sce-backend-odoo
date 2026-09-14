@@ -22,6 +22,11 @@ import {
   ratioSettlementApplyTotal,
   roundSettlementCurrencyAmount,
 } from '../src/components/professional-fields/paymentSettlementIntroduceModel';
+import {
+  buildOne2ManyInlineCommands,
+  buildX2ManyCommands,
+} from '../src/app/x2manyCommands';
+import { one2manyRemovalLabelsFromPolicies } from '../src/pages/contractForm/one2manyUtils';
 
 const modes = ['task', 'workspace'] as const;
 const profiles = ['create', 'edit', 'readonly'] as const;
@@ -159,4 +164,43 @@ assert.deepEqual(dynamicRelationDomainFromDescriptor({
   currentFieldValue: () => false,
 }), [['id', '=', -1]]);
 
-console.log(`[professional_detail_collection_model_test] PASS matrix=${matrix} counterexamples=7`);
+assert.deepEqual(one2manyRemovalLabelsFromPolicies({}, 2), {
+  remove: '删除',
+  cancelCreate: '取消新增',
+  restore: '撤销删除',
+  removedSummary: '已标记删除 2 行，提交前可撤销',
+  pendingRemoval: '待删除',
+});
+assert.deepEqual(one2manyRemovalLabelsFromPolicies({
+  ui_labels: {
+    remove: '停用',
+    cancel_create: '取消录入',
+    restore: '恢复启用',
+    removed_summary: '已停用 {count} 项',
+    pending_removal: '待停用',
+  },
+}, 1), {
+  remove: '停用',
+  cancelCreate: '取消录入',
+  restore: '恢复启用',
+  removedSummary: '已停用 1 项',
+  pendingRemoval: '待停用',
+});
+assert.deepEqual(buildOne2ManyInlineCommands({
+  original: [41],
+  draftRows: [{ id: 41, removed: true, values: {} }],
+  mode: 'write',
+}), [[2, 41]]);
+assert.deepEqual(buildOne2ManyInlineCommands({
+  original: [],
+  draftRows: [{ id: null, isNew: true, removed: true, values: { name: '未保存新行' } }],
+  mode: 'write',
+}), [], 'cancelling an unsaved row must not emit a database delete command');
+assert.deepEqual(buildX2ManyCommands({
+  kind: 'many2many',
+  current: [7],
+  original: [7, 8],
+  mode: 'write',
+}), [[3, 8]]);
+
+console.log(`[professional_detail_collection_model_test] PASS matrix=${matrix} counterexamples=11`);

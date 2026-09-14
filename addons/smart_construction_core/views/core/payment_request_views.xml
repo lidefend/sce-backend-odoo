@@ -229,7 +229,7 @@
                             </page>
                             <page string="付款申请明细" invisible="type != 'pay'">
                                 <field name="outflow_line_ids" nolabel="1">
-                                    <tree editable="bottom" create="false" delete="false">
+                                    <tree editable="bottom" create="false" delete="true">
                                         <field name="sequence" readonly="1"/>
                                         <field name="source_line_type" readonly="1"/>
                                         <field name="source_document_no" readonly="1"/>
@@ -378,6 +378,14 @@
                     <attribute name="help">系统根据申请金额自动生成，用于金额核对，不需要人工填写。</attribute>
                 </xpath>
                 <xpath expr="/form/sheet/group[2]/group[2]/field[@name='accepted_amount_uppercase']" position="replace"/>
+                <!-- The formal payment entry has one editing authority for each
+                     settlement source.  Execution totals remain read-only facts
+                     in the trace notebook instead of being repeated beside the
+                     current application amount. -->
+                <xpath expr="/form/sheet/group[2]/group[2]/field[@name='paid_amount_total']" position="replace"/>
+                <xpath expr="/form/sheet/group[2]/group[2]/field[@name='unpaid_amount']" position="replace"/>
+                <xpath expr="/form/sheet/notebook/page[2]/group[2]/field[@name='settlement_id']" position="replace"/>
+                <xpath expr="/form/sheet/notebook/page[2]/group[2]/field[@name='material_settlement_id']" position="replace"/>
                 <xpath expr="/form/sheet/group[2]/group[1]/field[@name='cost_category_name']" position="attributes">
                     <attribute name="string">明细成本分类</attribute>
                     <attribute name="help">根据付款申请明细中的来源分类自动汇总；无明细或来源未提供分类时尚未生成。</attribute>
@@ -386,7 +394,7 @@
                 <xpath expr="/form/sheet/group[2]/group[2]" position="attributes">
                     <attribute name="name">sc_payment_request_pay_amount_facts</attribute>
                 </xpath>
-                <xpath expr="/form/sheet/group[2]/group[2]/field[@name='unpaid_amount']" position="after">
+                <xpath expr="/form/sheet/group[2]/group[2]/field[@name='amount_uppercase']" position="after">
                     <xpath expr="/form/sheet/group[2]/group[2]/field[@name='funding_baseline_id']" position="move"/>
                 </xpath>
                 <xpath expr="/form/sheet/group[2]/group[2]/field[@name='funding_baseline_id']" position="attributes">

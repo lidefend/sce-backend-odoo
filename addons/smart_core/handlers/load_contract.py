@@ -889,6 +889,10 @@ class LoadContractHandler(BaseIntentHandler):
                     inline_edit = bool(policies.get("inline_edit")) if "inline_edit" in policies else (has_tree and not bool(field_mod.get("readonly")))
                     can_create = bool(policies.get("can_create")) if "can_create" in policies else (not bool(field_mod.get("readonly")))
                     can_unlink = bool(policies.get("can_unlink")) if "can_unlink" in policies else (not bool(field_mod.get("readonly")))
+                    ui_labels = policies.get("ui_labels") if isinstance(policies.get("ui_labels"), dict) else {}
+                    removal_label = str(ui_labels.get("remove") or "").strip()
+                    if not removal_label:
+                        removal_label = "解除关联" if field_meta.get("type") == "many2many" else "删除"
                     relation_items.append({
                         "field": field_name,
                         "relation_model": field_meta.get("relation") or "",
@@ -906,7 +910,7 @@ class LoadContractHandler(BaseIntentHandler):
                         "row_actions": _with_action_gate_list([
                             {"key": "open", "label": "打开", "enabled": True, "reason_code": REASON_OK},
                             {"key": "create", "label": "新增", "enabled": can_create, "reason_code": REASON_OK if can_create else REASON_PERMISSION_DENIED},
-                            {"key": "unlink", "label": "移除", "enabled": can_unlink, "reason_code": REASON_OK if can_unlink else REASON_PERMISSION_DENIED},
+                            {"key": "unlink", "label": removal_label, "enabled": can_unlink, "reason_code": REASON_OK if can_unlink else REASON_PERMISSION_DENIED},
                         ]),
                     })
                 _add_zone("relation_zone", {

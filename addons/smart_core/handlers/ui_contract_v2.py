@@ -2572,7 +2572,7 @@ class UiContractV2Handler(BaseIntentHandler):
             "legacy_field_policy_overlay": legacy_overlay,
             "form_layout_overlay": form_layout_overlay,
             "form_structure_authority": form_structure_authority,
-            "form_presentation_mode": form_presentation_mode,
+            "form_presentation_mode": _projection.form_structure_presentation_mode(form_structure_authority, form_presentation_mode),
             "field_names": field_names,
             "field_labels": field_labels,
             "field_semantic_roles": field_semantic_roles,

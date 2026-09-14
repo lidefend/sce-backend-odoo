@@ -23,9 +23,12 @@ class TestPaymentRequestFloorplanFixtureOwnership(TransactionCase):
     def test_reset_refuses_unowned_same_name_record(self):
         name = "TEST-DEMO-PR-UNOWNED"
         xmlid = "smart_construction_demo.test_payment_request_floorplan_unowned"
+        attachment_xmlid = "%s_attachment" % xmlid
         unowned = self.env["payment.request"].sudo().create(self._values(name))
 
-        with patch.object(fixture_step, "FIXTURE_NAME", name), patch.object(fixture_step, "FIXTURE_XMLID", xmlid):
+        with patch.object(fixture_step, "FIXTURE_NAME", name), patch.object(
+            fixture_step, "FIXTURE_XMLID", xmlid
+        ), patch.object(fixture_step, "FIXTURE_ATTACHMENT_XMLID", attachment_xmlid):
             with self.assertRaisesRegex(RuntimeError, "refuses to delete or adopt unowned"):
                 fixture_step.run(self.env)
 
@@ -35,18 +38,27 @@ class TestPaymentRequestFloorplanFixtureOwnership(TransactionCase):
     def test_reset_replaces_only_xmlid_owned_record_and_rebinds_owner(self):
         name = "TEST-DEMO-PR-OWNED"
         xmlid = "smart_construction_demo.test_payment_request_floorplan_owned"
+        attachment_xmlid = "%s_attachment" % xmlid
         unrelated = self.env["payment.request"].sudo().create(self._values("TEST-DEMO-PR-UNRELATED"))
 
-        with patch.object(fixture_step, "FIXTURE_NAME", name), patch.object(fixture_step, "FIXTURE_XMLID", xmlid):
+        with patch.object(fixture_step, "FIXTURE_NAME", name), patch.object(
+            fixture_step, "FIXTURE_XMLID", xmlid
+        ), patch.object(fixture_step, "FIXTURE_ATTACHMENT_XMLID", attachment_xmlid):
             first = fixture_step.run(self.env)
             first_record = self.env.ref(xmlid)
+            first_attachment = self.env.ref(attachment_xmlid)
             self.assertEqual(first_record.id, first["payment_request_id"])
+            self.assertEqual(first_record.attachment_ids, first_attachment)
 
             second = fixture_step.run(self.env)
             second_record = self.env.ref(xmlid)
+            second_attachment = self.env.ref(attachment_xmlid)
 
         self.assertFalse(first_record.exists())
+        self.assertFalse(first_attachment.exists())
         self.assertNotEqual(first["payment_request_id"], second["payment_request_id"])
+        self.assertNotEqual(first["attachment_id"], second["attachment_id"])
+        self.assertEqual(second_record.attachment_ids, second_attachment)
         self.assertEqual(second_record.id, second["payment_request_id"])
         self.assertEqual(second_record.name, name)
         funding_baseline = self.env["project.funding.baseline"].sudo().search(
@@ -74,12 +86,16 @@ class TestPaymentRequestFloorplanFixtureOwnership(TransactionCase):
     def test_completed_financial_history_is_preserved_and_xmlid_moves_to_next_fixture(self):
         name = "TEST-DEMO-PR-HISTORY-001"
         xmlid = "smart_construction_demo.test_payment_request_floorplan_history"
+        attachment_xmlid = "%s_attachment" % xmlid
 
         with patch.object(fixture_step, "FIXTURE_NAME", name), patch.object(
             fixture_step, "FIXTURE_XMLID", xmlid
+        ), patch.object(
+            fixture_step, "FIXTURE_ATTACHMENT_XMLID", attachment_xmlid
         ):
             first = fixture_step.run(self.env)
             first_record = self.env.ref(xmlid)
+            first_attachment = self.env.ref(attachment_xmlid)
             ledger_model = type(self.env["payment.ledger"])
             with patch.object(ledger_model, "search_count", return_value=1):
                 second = fixture_step.run(self.env)
@@ -88,8 +104,23 @@ class TestPaymentRequestFloorplanFixtureOwnership(TransactionCase):
                 [("module", "=", module), ("name", "=", xmlid_name)], limit=1
             )
             second_record = self.env["payment.request"].browse(mapping.res_id)
+            attachment_module, attachment_name = attachment_xmlid.split(".", 1)
+            attachment_mapping = self.env["ir.model.data"].search(
+                [
+                    ("module", "=", attachment_module),
+                    ("name", "=", attachment_name),
+                ],
+                limit=1,
+            )
+            second_attachment = self.env["ir.attachment"].browse(
+                attachment_mapping.res_id
+            )
 
         self.assertTrue(first_record.exists())
+        self.assertTrue(first_attachment.exists())
+        self.assertIn(first_attachment, first_record.attachment_ids)
         self.assertEqual(second["preserved_history_id"], first["payment_request_id"])
         self.assertNotEqual(first_record.id, second_record.id)
         self.assertEqual(second_record.name, "TEST-DEMO-PR-HISTORY-002")
+        self.assertNotEqual(first_attachment, second_attachment)
+        self.assertEqual(second_record.attachment_ids, second_attachment)

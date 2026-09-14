@@ -173,7 +173,10 @@ async function runRemove() {
   const beforeRows = Number(await component.getAttribute('data-row-count') || 0);
   check(beforeRows === 1, 'remove phase requires exactly one dedicated fixture detail', { beforeRows });
   const amountBefore = await fieldAmount(form, 'amount');
-  const removeButton = component.getByRole('button', { name: /^移除/ }).first();
+  const removeButton = component.getByRole('button', { name: /^删除/ }).first();
+  await removeButton.waitFor({ state: 'visible', timeout: 10000 });
+  check(normalize(await removeButton.textContent()) === '删除',
+    'persisted one2many removal must present child-record deletion semantics');
   await removeButton.click();
   const confirmation = page.locator('[data-dialog-purpose="intent-confirmation"][data-state="open"]').first();
   await confirmation.waitFor({ timeout: 10000 });
@@ -181,12 +184,33 @@ async function runRemove() {
   await confirmation.waitFor({ state: 'hidden', timeout: 10000 });
   check(Number(await component.getAttribute('data-row-count') || 0) === beforeRows,
     'cancelling last-detail removal changed the draft rows');
+  check(mutations.length === 0, 'cancelling last-detail removal emitted a write', mutations);
+  await page.screenshot({ path: path.join(outputDir, 'remove-after-cancel-before-save.png'), fullPage: true });
 
   await removeButton.click();
   await confirmation.waitFor({ timeout: 10000 });
   await confirmation.getByRole('button', { name: /^确认/ }).click();
   await waitForRowCount(component, 0);
+  check(Number(await component.getAttribute('data-removed-row-count') || 0) === 1,
+    'persisted detail was not retained as a pending deletion before save');
+  check(mutations.length === 0, 'draft deletion emitted a write before save', mutations);
   await page.screenshot({ path: path.join(outputDir, 'remove-after-confirm-before-save.png'), fullPage: true });
+
+  const restoreButton = component.getByRole('button', { name: /^撤销删除/ }).first();
+  await restoreButton.waitFor({ state: 'visible', timeout: 10000 });
+  await restoreButton.click();
+  await waitForRowCount(component, beforeRows);
+  check(Number(await component.getAttribute('data-removed-row-count') || 0) === 0,
+    'undo did not restore the pending-deletion row');
+  check(mutations.length === 0, 'undo emitted a write before save', mutations);
+  await page.screenshot({ path: path.join(outputDir, 'remove-after-undo-before-save.png'), fullPage: true });
+
+  await removeButton.click();
+  await confirmation.waitFor({ timeout: 10000 });
+  await confirmation.getByRole('button', { name: /^确认/ }).click();
+  await waitForRowCount(component, 0);
+  check(Number(await component.getAttribute('data-removed-row-count') || 0) === 1,
+    'second confirmed deletion did not restore pending-save state');
 
   const writeResponse = page.waitForResponse(async (response) => {
     if (!response.url().includes('/api/v1/intent') || response.request().method() !== 'POST') return false;

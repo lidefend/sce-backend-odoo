@@ -2035,16 +2035,36 @@ class TestP1PaymentRequestCapability(TransactionCase):
             "/form/sheet/group[@name='sc_payment_request_pay_amount']"
         )[0]
         self.assertEqual(
-            amount_section.xpath("./group[1]/field/@name")[:6],
+            amount_section.xpath("./group[1]/field/@name")[:4],
             [
                 "amount",
                 "amount_uppercase",
-                "paid_amount_total",
-                "unpaid_amount",
                 "funding_baseline_id",
                 "currency_id",
             ],
         )
+        basis_section = payment_form_arch.xpath(
+            "/form/sheet/group[@name='sc_payment_request_pay_basis']"
+        )[0]
+        trace_section = payment_form_arch.xpath(
+            "/form/sheet/group[@name='sc_payment_request_pay_trace']"
+        )[0]
+        for field_name in ("settlement_id", "material_settlement_id"):
+            parent_occurrences = payment_form_arch.xpath(
+                f"/form/sheet//field[@name='{field_name}'][not(ancestor::field)]"
+            )
+            self.assertEqual(len(parent_occurrences), 1)
+            self.assertEqual(len(basis_section.xpath(f".//field[@name='{field_name}']")), 1)
+            self.assertFalse(
+                trace_section.xpath(f".//field[@name='{field_name}'][not(ancestor::field)]")
+            )
+        for field_name in ("paid_amount_total", "unpaid_amount"):
+            parent_occurrences = payment_form_arch.xpath(
+                f"/form/sheet//field[@name='{field_name}'][not(ancestor::field)]"
+            )
+            self.assertEqual(len(parent_occurrences), 1)
+            self.assertFalse(amount_section.xpath(f".//field[@name='{field_name}']"))
+            self.assertEqual(len(trace_section.xpath(f".//field[@name='{field_name}']")), 1)
         self.assertEqual(
             amount_section.xpath("./group[1]/field[@name='amount']/@readonly"),
             ["state not in ['draft', 'rejected'] or amount_uses_details"],
@@ -2077,6 +2097,18 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(
             amount_section.xpath("./group[1]/field[@name='outflow_line_ids']/@name"),
             ["outflow_line_ids"],
+        )
+        self.assertEqual(
+            amount_section.xpath("./group[1]/field[@name='outflow_line_ids']/tree/@delete"),
+            ["true"],
+        )
+        self.assertEqual(
+            payment_form_arch.xpath("//field[@name='receipt_invoice_line_ids']/tree/@delete"),
+            ["false"],
+        )
+        self.assertEqual(
+            payment_form_arch.xpath("//field[@name='ledger_line_ids']/tree/@delete"),
+            ["false"],
         )
         self.assertEqual(
             amount_section.xpath("./group[1]/field[@name='detail_amount_total']/@invisible"),

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import base64
 import re
 
 from ..registry import SeedStep, register
@@ -6,6 +7,8 @@ from ..registry import SeedStep, register
 
 FIXTURE_NAME = "DEMO-PR-FLOORPLAN-001"
 FIXTURE_XMLID = "smart_construction_demo.payment_request_floorplan_demo_record"
+FIXTURE_ATTACHMENT_NAME = "DEMO-PR-FLOORPLAN-M2M.txt"
+FIXTURE_ATTACHMENT_XMLID = "smart_construction_demo.payment_request_floorplan_demo_attachment"
 
 
 def _owned_fixture(env):
@@ -15,8 +18,34 @@ def _owned_fixture(env):
     return record
 
 
+def _owned_fixture_attachment(env):
+    record = env.ref(FIXTURE_ATTACHMENT_XMLID, raise_if_not_found=False)
+    if record and record._name != "ir.attachment":
+        raise RuntimeError("%s points to %s" % (FIXTURE_ATTACHMENT_XMLID, record._name))
+    if record and (
+        record.name != FIXTURE_ATTACHMENT_NAME
+        or record.res_model not in (False, "payment.request")
+    ):
+        raise RuntimeError(
+            "payment request fixture refuses to delete or adopt unowned attachment %s"
+            % record.display_name
+        )
+    return record
+
+
 def _bind_fixture_xmlid(env, record):
     module, name = FIXTURE_XMLID.split(".", 1)
+    model_data = env["ir.model.data"].sudo()
+    row = model_data.search([("module", "=", module), ("name", "=", name)], limit=1)
+    values = {"model": record._name, "res_id": record.id, "noupdate": True}
+    if row:
+        row.write(values)
+    else:
+        model_data.create({"module": module, "name": name, **values})
+
+
+def _bind_fixture_attachment_xmlid(env, record):
+    module, name = FIXTURE_ATTACHMENT_XMLID.split(".", 1)
     model_data = env["ir.model.data"].sudo()
     row = model_data.search([("module", "=", module), ("name", "=", name)], limit=1)
     values = {"model": record._name, "res_id": record.id, "noupdate": True}
@@ -72,6 +101,7 @@ def run(env):
     payment_model = env["payment.request"].sudo()
     ledger_model = env["payment.ledger"].sudo()
     existing = _owned_fixture(env)
+    existing_attachment = _owned_fixture_attachment(env)
     same_name = payment_model.search([("name", "=", FIXTURE_NAME)])
     if same_name and (not existing or same_name != existing):
         traced_ids = set(
@@ -95,9 +125,15 @@ def run(env):
         preserved_history_id = existing.id
         fixture_name = _next_fixture_name(payment_model)
     elif existing:
+        if existing_attachment:
+            existing_attachment.unlink()
+            existing_attachment = env["ir.attachment"]
         if existing.state not in ("draft", "cancel"):
             existing.with_context(allow_transition=True).write({"state": "cancel"})
         existing.unlink()
+    elif existing_attachment:
+        existing_attachment.unlink()
+        existing_attachment = env["ir.attachment"]
     prefix, _width, _initial = _fixture_name_series()
     if not preserved_history_id and ledger_model.search_count(
         [("payment_request_id.name", "=like", "%s%%" % prefix)]
@@ -137,11 +173,25 @@ def run(env):
             "note": "受管付款申请黄金页面提交闭环 fixture",
         }
     )
+    attachment = env["ir.attachment"].sudo().create(
+        {
+            "name": FIXTURE_ATTACHMENT_NAME,
+            "type": "binary",
+            "datas": base64.b64encode(b"Governed synthetic M2M relation fixture.\n"),
+            "mimetype": "text/plain",
+            "res_model": "payment.request",
+            "res_id": record.id,
+            "company_id": record.company_id.id,
+        }
+    )
+    record.write({"attachment_ids": [(4, attachment.id)]})
     _bind_fixture_xmlid(env, record)
+    _bind_fixture_attachment_xmlid(env, attachment)
     return {
         "ok": True,
         "created": 1,
         "payment_request_id": record.id,
+        "attachment_id": attachment.id,
         "approval_actor_ids": approval_actors.ids,
         "preserved_history_id": preserved_history_id,
     }

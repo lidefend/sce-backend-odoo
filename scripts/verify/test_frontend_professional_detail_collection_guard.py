@@ -101,6 +101,20 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
         failures = validate(read_text)
         self.assertTrue(any("handler does not fail closed" in item for item in failures))
 
+    def test_removal_labels_must_come_from_policy(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("relationField.types.ts"):
+                return value.replace(
+                    "one2manyRemovalLabels: (name: string, removedCount?: number)",
+                    "removedLabels: (name: string, removedCount?: number)",
+                    1,
+                )
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("authoritative removal labels" in item for item in failures))
+
     def test_inline_edit_policy_default_allow_fails(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")

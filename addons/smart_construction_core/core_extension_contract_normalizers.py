@@ -53,7 +53,7 @@ def normalize_payment_settlement_detail_component(
                     "linkedAmountMessage": "申请金额由有效明细的“本次申请”合计生成。",
                     "lastRowRemovalActionLabel": "取消按明细填写",
                     "lastRowRemovalMessage": (
-                        "移除最后一条明细后将切回直接填写申请金额；"
+                        "删除最后一条明细后将切回直接填写申请金额；"
                         "最后一次明细合计会保留在申请金额中，请确认后继续。"
                     ),
                 },

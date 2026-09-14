@@ -1410,6 +1410,33 @@ class _TreeFormParserMixin:
         return out
 
     # ---------------- 子视图收集（inline + 引用） ----------------
+    @staticmethod
+    def _x2many_default_ui_labels(field_type):
+        if str(field_type or '').strip().lower() == 'many2many':
+            return {
+                'add_row': _('添加关联'),
+                'remove': _('解除关联'),
+                'cancel_create': _('取消新增'),
+                'restore': _('恢复关联'),
+                'removed_summary': _('已解除 {count} 个关联，提交前可恢复'),
+                'pending_removal': _('待解除关联'),
+            }
+        return {
+            'add_row': _('添加行'),
+            'remove': _('删除'),
+            'cancel_create': _('取消新增'),
+            'restore': _('撤销删除'),
+            'removed_summary': _('已标记删除 {count} 行，提交前可撤销'),
+            'pending_removal': _('待删除'),
+        }
+
+    def _merge_x2many_ui_labels(self, policies, field_type):
+        labels = policies.get('ui_labels') if isinstance(policies.get('ui_labels'), dict) else {}
+        labels = dict(labels)
+        for key, value in self._x2many_default_ui_labels(field_type).items():
+            labels.setdefault(key, value)
+        policies['ui_labels'] = labels
+
     def _collect_x2many_subviews_from_dom(self, root, fields_info):
         sub = {}
         if root is None:
@@ -1511,12 +1538,21 @@ class _TreeFormParserMixin:
                 'source': 'backend_native_contract',
                 'front_end_filtering': False,
             }
-            entry.setdefault('policies', {'inline_edit': True, 'can_create': True, 'can_unlink': True})
-            entry['policies'].setdefault('ui_labels', {
-                'add_row': _('添加行'),
-                'remove': _('移除'),
-                'restore': _('撤销'),
-            })
+            policies = entry.setdefault(
+                'policies',
+                {'inline_edit': True, 'can_create': True, 'can_unlink': True},
+            )
+            tree_capabilities = tree_contract.get('capabilities') if isinstance(tree_contract, dict) else {}
+            if isinstance(tree_capabilities, dict):
+                for policy_key, capability_key in (
+                    ('inline_edit', 'inline_edit'),
+                    ('can_create', 'can_create'),
+                    ('can_unlink', 'can_delete'),
+                ):
+                    capability = tree_capabilities.get(capability_key)
+                    if isinstance(capability, bool):
+                        policies[policy_key] = bool(policies.get(policy_key, capability)) and capability
+            self._merge_x2many_ui_labels(policies, ftype)
             if relation_fields:
                 entry['fields'] = relation_fields
             if not business_columns:
@@ -1737,11 +1773,7 @@ class _TreeFormParserMixin:
                         'inline_edit': True,
                         'can_create': True,
                         'can_unlink': True,
-                        'ui_labels': {
-                            'add_row': _('添加行'),
-                            'remove': _('移除'),
-                            'restore': _('撤销'),
-                        },
+                        'ui_labels': self._x2many_default_ui_labels(t),
                     },
                 }
         return sub

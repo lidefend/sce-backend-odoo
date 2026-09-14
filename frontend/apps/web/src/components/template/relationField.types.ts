@@ -31,6 +31,14 @@ export type RelationFieldColumn = {
 
 export type RelationFieldInputType = 'text' | 'search' | 'number' | 'url' | 'tel' | 'password' | 'email' | 'date' | 'datetime-local' | 'time';
 
+export type RelationRemovalLabels = {
+  remove: string;
+  cancelCreate: string;
+  restore: string;
+  removedSummary: string;
+  pendingRemoval: string;
+};
+
 export type RelationFieldAdapter = {
   busy: boolean;
   showOne2manyErrors: boolean;
@@ -63,6 +71,7 @@ export type RelationFieldAdapter = {
   one2manyCanOpenRow: (name: string, row: RelationFieldRow) => boolean;
   openOne2manyRow: (name: string, row: RelationFieldRow) => void;
   one2manyCreateLabel: (name: string, fieldLabel?: string) => string;
+  one2manyRemovalLabels: (name: string, removedCount?: number) => RelationRemovalLabels;
   addOne2manyRow: (name: string) => void;
   one2manySummary: (name: string) => string;
   isOne2manyHydrating: (name: string) => boolean;
