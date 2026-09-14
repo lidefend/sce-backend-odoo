@@ -739,6 +739,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
         settlement = self.env["sc.settlement.order"].create(
             {
                 "name": "P1 Optional Detail Settlement",
+                "title": "P1 Authoritative Settlement Search Title",
                 "settlement_type": "out",
                 "project_id": self.project.id,
                 "contract_id": self.contract.id,
@@ -833,6 +834,51 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertFalse(currency_mismatch["ok"])
         self.assertEqual(currency_mismatch["error"]["code"], "CURRENCY_MISMATCH")
         self.assertFalse(foreign_request.outflow_line_ids)
+
+        with self.assertRaisesRegex(ValidationError, "币种"):
+            with self.env.cr.savepoint():
+                self.env["payment.request.line"].create(
+                    {
+                        "request_id": foreign_request.id,
+                        "settlement_line_id": settlement.line_ids.id,
+                        "legacy_line_id": "p1-cross-currency-create",
+                        "legacy_parent_id": "p1-cross-currency-parent",
+                        "amount": 10.0,
+                        "current_pay_amount": 10.0,
+                    }
+                )
+        detached_line = self.env["payment.request.line"].create(
+            {
+                "request_id": foreign_request.id,
+                "legacy_line_id": "p1-cross-currency-write",
+                "legacy_parent_id": "p1-cross-currency-parent",
+                "amount": 10.0,
+                "current_pay_amount": 10.0,
+            }
+        )
+        with self.assertRaisesRegex(ValidationError, "币种"):
+            with self.env.cr.savepoint():
+                detached_line.write({"settlement_line_id": settlement.line_ids.id})
+        self.assertFalse(detached_line.settlement_line_id)
+
+        with self.assertRaisesRegex(ValidationError, "币种"):
+            with self.env.cr.savepoint():
+                request.write({"currency_id": foreign_currency.id})
+        self.assertEqual(request.currency_id, settlement.currency_id)
+
+        authoritative_name_search = PaymentRequestSettlementSearchHandler(self.env).handle(
+            payload={
+                "params": {
+                    "payment_request_id": request.id,
+                    "keyword": "Authoritative Settlement Search Title",
+                }
+            }
+        )
+        self.assertTrue(authoritative_name_search["ok"])
+        self.assertIn(
+            settlement.id,
+            [item["id"] for item in authoritative_name_search["data"]["settlements"]],
+        )
         search = PaymentRequestSettlementSearchHandler(self.env).handle(
             payload={
                 "params": {

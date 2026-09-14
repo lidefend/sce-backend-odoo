@@ -2,6 +2,8 @@
 from odoo import api, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
 
+from ..support import operating_metrics as opm
+
 
 class PaymentRequestLine(models.Model):
     _name = "payment.request.line"
@@ -103,6 +105,16 @@ class PaymentRequestLine(models.Model):
     @api.constrains("request_id", "current_pay_amount", "active")
     def _check_positive_current_pay_amount(self):
         self.mapped("request_id")._check_payment_detail_lines_valid()
+
+    @api.constrains("request_id", "settlement_id", "settlement_line_id")
+    def _check_settlement_currency_consistency(self):
+        for line in self:
+            settlements = line.settlement_id | line.settlement_line_id.settlement_id
+            for settlement in settlements.exists():
+                opm.ensure_payment_settlement_currency_consistency(
+                    line.request_id,
+                    settlement,
+                )
 
     def action_open_attachments(self):
         self.ensure_one()

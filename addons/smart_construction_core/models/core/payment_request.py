@@ -2701,6 +2701,14 @@ class PaymentRequest(models.Model):
             # R10: overpay handled as advisory via _handle_payment_advisories
             # (previously a hard _check_settlement_remaining_amount call here)
 
+    @api.constrains("currency_id")
+    def _check_detail_settlement_currency_consistency(self):
+        for rec in self:
+            for settlement in rec.outflow_line_ids.mapped(
+                "settlement_line_id.settlement_id"
+            ) | rec.outflow_line_ids.mapped("settlement_id"):
+                opm.ensure_payment_settlement_currency_consistency(rec, settlement)
+
     @api.constrains("material_settlement_id", "type", "project_id", "partner_id", "amount", "state")
     def _check_material_settlement_consistency(self):
         for rec in self:

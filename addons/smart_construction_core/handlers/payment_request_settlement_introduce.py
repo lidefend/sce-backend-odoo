@@ -5,6 +5,7 @@ import time
 from uuid import uuid4
 
 from odoo.addons.smart_core.core.base_handler import BaseIntentHandler
+from odoo.osv import expression
 from odoo.tools.float_utils import float_compare
 
 _EDITABLE_STATES = ("draft", "rejected", "cancel")
@@ -127,9 +128,14 @@ class PaymentRequestSettlementSearchHandler(BaseIntentHandler):
                         ("contract_id", "=", request.contract_id.id),
                         ("contract_id", "=", False),
                     ]
+        settlement_model = self.env["sc.settlement.order"]
         if keyword:
-            domain = [("name", "ilike", keyword)] + domain
-        settlements = self.env["sc.settlement.order"].search(domain, limit=limit, order="id desc")
+            searchable_names = tuple(settlement_model._rec_names_search or ("name",))
+            keyword_domain = expression.OR(
+                [[(field_name, "ilike", keyword)] for field_name in searchable_names]
+            )
+            domain = expression.AND([domain, keyword_domain])
+        settlements = settlement_model.search(domain, limit=limit, order="id desc")
         items = []
         for s in settlements:
             currency = s.currency_id or self.env.company.currency_id
