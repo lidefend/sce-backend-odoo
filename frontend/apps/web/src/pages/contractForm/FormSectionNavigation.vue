@@ -11,13 +11,14 @@
   >
     <span :id="hintId" class="sc-visually-hidden">章节入口可横向滚动，也可使用前后浏览按钮；当前章节会保持选中状态。</span>
     <ScButton
-      v-if="hasMoreBefore"
+      v-if="trackOverflows"
       class="form-section-navigation__scroll-control"
       type="button"
       variant="ghost"
       size="small"
       appearance="section-tab"
       aria-label="向前浏览表单章节"
+      :aria-disabled="!hasMoreBefore"
       @click="scrollTrack(-1)"
     ><ScIcon name="arrow-left" :size="16" /></ScButton>
     <div ref="trackRef" class="form-section-navigation__track" @scroll.passive="updateOverflow">
@@ -39,13 +40,14 @@
       >{{ item.label }}</ScButton>
     </div>
     <ScButton
-      v-if="hasMoreAfter"
+      v-if="trackOverflows"
       class="form-section-navigation__scroll-control"
       type="button"
       variant="ghost"
       size="small"
       appearance="section-tab"
       aria-label="向后浏览表单章节"
+      :aria-disabled="!hasMoreAfter"
       @click="scrollTrack(1)"
     ><ScIcon name="arrow-right" :size="16" /></ScButton>
   </nav>
@@ -71,6 +73,7 @@ const props = defineProps<{ items: SectionNavigationItem[]; rootSelector: string
 const navRef = ref<HTMLElement | null>(null);
 const trackRef = ref<HTMLElement | null>(null);
 const activeKey = ref('');
+const trackOverflows = ref(false);
 const hasMoreBefore = ref(false);
 const hasMoreAfter = ref(false);
 const hintId = `form-section-navigation-${useId()}`;
@@ -97,6 +100,7 @@ function visibleTarget(item: SectionNavigationItem) {
 function updateOverflow() {
   const track = trackRef.value;
   if (!track) return;
+  trackOverflows.value = track.scrollWidth > track.clientWidth + 2;
   hasMoreBefore.value = track.scrollLeft > 2;
   hasMoreAfter.value = track.scrollLeft + track.clientWidth < track.scrollWidth - 2;
 }
@@ -104,6 +108,8 @@ function updateOverflow() {
 function scrollTrack(direction: -1 | 1) {
   const track = trackRef.value;
   if (!track) return;
+  if (direction === -1 && !hasMoreBefore.value) return;
+  if (direction === 1 && !hasMoreAfter.value) return;
   const distance = Math.max(160, Math.round(track.clientWidth * 0.6));
   track.scrollBy({ left: direction * distance, behavior: 'auto' });
   updateOverflow();
@@ -256,6 +262,10 @@ onBeforeUnmount(() => {
   min-width: calc(var(--sc-component-button-section-tab-height) * 1px);
   margin: var(--sc-space-2xs) 0;
   padding-inline: var(--sc-space-2xs);
+}
+.form-section-navigation :deep(.form-section-navigation__scroll-control[aria-disabled='true']) {
+  cursor: default;
+  opacity: 0.45;
 }
 @media (max-width: 560px) {
   .form-section-navigation :deep(.form-section-navigation__scroll-control) {

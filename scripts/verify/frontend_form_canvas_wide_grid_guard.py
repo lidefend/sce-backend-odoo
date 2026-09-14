@@ -70,8 +70,13 @@ for required in (
     'target.scrollIntoView({ behavior: \'auto\', block: \'start\' })',
     'aria-label="向前浏览表单章节"',
     'aria-label="向后浏览表单章节"',
+    'v-if="trackOverflows"',
+    ':aria-disabled="!hasMoreBefore"',
+    ':aria-disabled="!hasMoreAfter"',
     '@click="scrollTrack(-1)"',
     '@click="scrollTrack(1)"',
+    "if (direction === -1 && !hasMoreBefore.value) return;",
+    "if (direction === 1 && !hasMoreAfter.value) return;",
     '<ScIcon name="arrow-left"',
     '<ScIcon name="arrow-right"',
     'flex: 1 1 auto;',
@@ -79,7 +84,13 @@ for required in (
 ):
     if required not in section_navigation:
         fail(f"shared semantic navigation missing: {required}")
-for forbidden in ('form-section-navigation__cue', '滑动 ›', 'linear-gradient('):
+for forbidden in (
+    'form-section-navigation__cue',
+    '滑动 ›',
+    'linear-gradient(',
+    'v-if="hasMoreBefore"',
+    'v-if="hasMoreAfter"',
+):
     if forbidden in section_navigation:
         fail(f"section navigation still overlays its terminal labels: {forbidden}")
 if "--sc-form-section-nav-height: 0px" in form_css:
