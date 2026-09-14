@@ -9457,3 +9457,5 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 支出新建每个样本 5 个导航目标均唯一、完整可见并稳定避开吸顶区；只读详情逐项检查实际可见目标。收入合同移动表格保留局部横向浏览入口而没有根级溢出。复合表单的日期、关系选择和文本域共 8 个适用控件在桌面/移动均无字段槽位或基线失败，全程未保存。
 - 首次浅色矩阵因 `ERR_NETWORK_CHANGED` 和动态组件加载失败归为 `environment_defect` 并保留失败摘要；证明受管 health 与同 HEAD 候选服务恢复后只重试一次。下一步仅运行冻结前生成证据入口、提交 P4 材料并形成 clean HEAD；随后一次 Quick 与同指纹独立复核。
 - 冻结前聚焦自检发现 page-header 守卫对 `.readonly-value` 属性顺序的旧文本断言无法接受已批准的可收缩槽位属性，归为 `validation_tool_defect`。P4 断言改为同时锁定正文 token 与 `max-width/min-width` 槽位，新增负向反例后 11 项单测及直接 guard 通过；没有再次修改产品源。
+- 首次独立复核发现导航按钮到达边界时因 `v-if` 移除而带走键盘焦点；P0 保留节点并用 `aria-disabled` 表达边界，共享 `ScButton` 通过公开 prop 保留调用方状态。1088×791 与 390×844 的正反向探针均证明边界控制仍聚焦、仍连接且正确禁用，零业务写入。
+- `85b05110…` 原矩阵缺少运行前后完整指纹绑定，只保留为人工产品证据；在 `b7f167b8…` 上重新生成 1440×960/390×844 明暗矩阵，两轮 before/after 指纹均逐字节一致且截图/summary 具有 SHA-256 binding。`37ccabc6…` 的历史 Quick 因后续 P0 修复失效，最终冻结后必须对新 HEAD 运行一次有效 Quick。

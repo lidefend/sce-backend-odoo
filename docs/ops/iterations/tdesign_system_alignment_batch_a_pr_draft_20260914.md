@@ -13,6 +13,7 @@ English: [tdesign_system_alignment_batch_a_pr_draft_20260914.en.md](tdesign_syst
 - 列表、办理表单和只读详情共享清晰的页面标题、章节、正文和辅助文字层级。
 - 长表单使用连续工作面，减少父卡/章节/子卡连续边框与阴影，同时保留表格、明细和浮层的功能边界。
 - 章节导航的前后浏览按钮不覆盖末端标签，桌面、触屏和键盘均沿用公开按钮能力。
+- 浏览到首尾时按钮不会因节点移除而丢失键盘焦点，并以公开 `aria-disabled` 状态表达边界。
 - 合同长名称、无空格编号和关系名称在本字段内自然换行，不与相邻字段混叠。
 - 日期、关系选择和文本域在复合表单中保持同一正文尺度、控件基线和字段边界。
 
@@ -28,7 +29,8 @@ English: [tdesign_system_alignment_batch_a_pr_draft_20260914.en.md](tdesign_syst
 - `make ci.local.iteration`：PASS，16 tests。
 - form canvas、product page header、professional base field、canonical presenter、native section navigation、primitive/page-pattern 和严格类型检查：非零 PASS。
 - 1088×791 产品样板及长值修复已完成用户截图复核。
-- 产品源候选 `85b051104f29934e84ffaf81aff4ec8827290e51` 的 1440×960、390×844 明暗矩阵各 8 个样本均 `pass=true`、零写入、零错误、root overflow=0、h1=1。
+- 候选 `b7f167b8873b0578850aee4e5b37fa3f082df7cd` 的 1440×960、390×844 明暗矩阵各 8 个样本均 `pass=true`、零写入、零错误；运行前后完整指纹逐字节一致。
+- 1088×791、390×844 的正反向溢出浏览均验证首尾控制保持聚焦、连接且正确禁用；共享按钮状态由公开 prop 承接。
 - 支出新建导航每组 5 个目标均唯一、完整可见且稳定避开吸顶区；只读详情逐个检查实际可见目标。
 - 材料入库复合表单的日期、关系选择和文本域共 8 个适用控件在桌面/移动均无槽位或基线失败；未保存。
 - 冻结准备、最终一次 Quick 与独立复核由最终 clean HEAD 的仓外 exact-head 证据记录，本草案不回填结果而改变候选。
@@ -36,8 +38,9 @@ English: [tdesign_system_alignment_batch_a_pr_draft_20260914.en.md](tdesign_syst
 ## Evidence
 
 - 报告：`docs/ops/iterations/tdesign_system_alignment_batch_a_20260914.md`
-- 浅色矩阵：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/tdesign-alignment-final-light-1440-390-85b05110-retry1/summary.json`
-- 深色矩阵：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/tdesign-alignment-final-dark-1440-390-85b05110/summary.json`
+- 浅色矩阵：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/tdesign-alignment-final-bound-light-b7f167b8/evidence-binding.json`
+- 深色矩阵：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/tdesign-alignment-final-bound-dark-b7f167b8/evidence-binding.json`
+- 1088/390 焦点探针：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/tdesign-section-browse-focus-b66f1640/summary.json`
 - 首次浅色环境失败：`tdesign-alignment-final-light-1440-390-85b05110`，只作环境诊断，不冒充通过证据。
 
 ## Not included
