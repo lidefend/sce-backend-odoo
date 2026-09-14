@@ -94,7 +94,7 @@ export function optionalDetailCollectionPresentation(
     render: field.readonly !== true || count > 0,
     open: count > 0,
     title: count > 0 ? `${config.populatedLabel}（${count} 条）` : config.entryLabel,
-    linkedAmountMessage: count > 0 ? config.linkedAmountMessage : '',
+    linkedAmountMessage: config.linkedAmountMessage,
   });
 }
 

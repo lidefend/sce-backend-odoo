@@ -107,7 +107,7 @@ const optionalField = {
   },
 } as never;
 assert.deepEqual(optionalDetailCollectionPresentation(optionalField, 0), {
-  render: true, open: false, title: 'Use details', linkedAmountMessage: '',
+  render: true, open: false, title: 'Use details', linkedAmountMessage: 'Linked total',
 });
 assert.deepEqual(optionalDetailCollectionPresentation(optionalField, 2), {
   render: true, open: true, title: 'Details（2 条）', linkedAmountMessage: 'Linked total',
