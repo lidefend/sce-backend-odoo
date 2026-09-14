@@ -9449,3 +9449,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Formal Product Layer 为 P0；Layer Target 为既有 `FormSectionNavigation` 溢出表达。保留 anchor、当前章节判定、点击定位和滚动修正算法，只将覆盖末端标签的绝对定位提示替换为 TDesign 按钮公开 API 驱动的前后浏览控制。
 - 溢出控制在 flex 布局中占有独立空间，桌面沿用 section-tab 高度，移动端沿用 44px touch target；导航实际高度进入既有 scroll-margin 计算。未改为 TabPanel，未改变契约章节、业务动作、路由或页面专属样式。
 - 本批验证从 L0 开始，运行 native-section-navigation、form-canvas、primitive、canonical-form 和严格类型检查。三页 1088×791 局部 L4 只读对照绑定 A1—A3 汇合指纹；完整矩阵、Quick 与独立复核仍留在产品方向通过后的冻结阶段。
+
+## 2026-09-14 — TDesign 设计体系对齐 Batch A 最终视口补验
+
+- 用户已通过 `85b05110…` 的只读长值槽位修复：合同长名称在左侧字段内换行，无空格编号完整可读，与右侧来源名称不混叠；新建页未发现重复 section/card padding。A1—A3 产品方向冻结，不再调整外壳、色板或章节结构。
+- 同一产品源候选在 1440×960、390×844 的浅色与深色矩阵各覆盖收入合同层级列表、支出结算新建、支出结算查看和材料入库复合表单；两组均 `pass=true`、零业务写入、零错误、全部 root overflow=0、h1=1、token loaded。
+- 支出新建每个样本 5 个导航目标均唯一、完整可见并稳定避开吸顶区；只读详情逐项检查实际可见目标。收入合同移动表格保留局部横向浏览入口而没有根级溢出。复合表单的日期、关系选择和文本域共 8 个适用控件在桌面/移动均无字段槽位或基线失败，全程未保存。
+- 首次浅色矩阵因 `ERR_NETWORK_CHANGED` 和动态组件加载失败归为 `environment_defect` 并保留失败摘要；证明受管 health 与同 HEAD 候选服务恢复后只重试一次。下一步仅运行冻结前生成证据入口、提交 P4 材料并形成 clean HEAD；随后一次 Quick 与同指纹独立复核。
+- 冻结前聚焦自检发现 page-header 守卫对 `.readonly-value` 属性顺序的旧文本断言无法接受已批准的可收缩槽位属性，归为 `validation_tool_defect`。P4 断言改为同时锁定正文 token 与 `max-width/min-width` 槽位，新增负向反例后 11 项单测及直接 guard 通过；没有再次修改产品源。

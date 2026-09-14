@@ -146,7 +146,11 @@ def validate() -> list[str]:
         (tdesign_theme, "--td-font-size-body-medium: var(--sc-product-text-body);", "TDesign body-size bridge"),
         (tdesign_theme, "--td-font-size-body-small: var(--sc-product-text-sm);", "TDesign supporting-size bridge"),
         (form_section, ".label {\n  font-size: var(--sc-product-text-sm);", "native field label token"),
-        (form_section, ".readonly-value {\n  font-size: var(--sc-product-text-body);", "native readonly body token"),
+        (
+            form_section,
+            ".readonly-value {\n  box-sizing: border-box;\n  display: grid;\n  align-items: center;\n  width: 100%;\n  max-width: 100%;\n  min-width: 0;\n  font-size: var(--sc-product-text-body);",
+            "native readonly body token and shrinkable slot",
+        ),
     )
     for text, marker, label in typography_markers:
         if marker not in text:
