@@ -313,7 +313,10 @@ import ProfessionalRelationFieldControl from '../professional-fields/Professiona
 import PaymentSettlementDetailCollectionControl from '../professional-fields/PaymentSettlementDetailCollectionControl.vue';
 import { isProfessionalBaseFieldCandidate } from '../professional-fields/professionalBaseFieldModel';
 import { isProfessionalBusinessValueField } from '../professional-fields/professionalBusinessValueModel';
-import { isProfessionalDetailCollectionField } from '../professional-fields/professionalDetailCollectionModel';
+import {
+  isProfessionalDetailCollectionField,
+  optionalDetailCollectionSpanClass,
+} from '../professional-fields/professionalDetailCollectionModel';
 import { isProfessionalRelationField } from '../professional-fields/professionalRelationFieldModel';
 import { isPaymentSettlementDetailCollectionField } from '../professional-fields/paymentSettlementDetailCollectionModel';
 import X2ManyRelationRenderer from './X2ManyRelationRenderer.vue';
@@ -551,9 +554,10 @@ function fieldSpanUnits(spanClass: string): number {
 
 function fieldSpanClass(field: FormSectionFieldSchema, index: number) {
   const explicitSpan = field.spanClass || '';
-  const base = explicitSpan || (defaultSpanClass(field.type) === 'field--full' || fieldWidget(field) === 'textarea'
+  const configuredBase = explicitSpan || (defaultSpanClass(field.type) === 'field--full' || fieldWidget(field) === 'textarea'
     ? 'field--full'
     : 'field--normal');
+  const base = optionalDetailCollectionSpanClass(field, configuredBase);
   if (base === 'field--full') return base;
   if (!props.fillOrphanRows) return base;
 

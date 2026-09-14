@@ -24,6 +24,7 @@
       class="professional-detail-collection__optional"
       :title="optionalPresentation.title"
       :open="optionalPresentation.open"
+      destroy-on-collapse
     >
       <ScInlineState
         v-if="optionalPresentation.linkedAmountMessage"

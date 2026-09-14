@@ -111,6 +111,13 @@ export function optionalDetailCollectionRemovalConfirmation(
   });
 }
 
+export function optionalDetailCollectionSpanClass(
+  field: FormSectionFieldSchema,
+  configuredSpanClass: string,
+): string {
+  return optionalDetailCollectionConfig(field) ? 'field--full' : configuredSpanClass;
+}
+
 export function detailCollectionColumnPresentation(
   column: RelationFieldColumn,
   columnIndex: number,

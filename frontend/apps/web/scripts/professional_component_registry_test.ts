@@ -11,6 +11,7 @@ import {
   optionalDetailCollectionConfig,
   optionalDetailCollectionPresentation,
   optionalDetailCollectionRemovalConfirmation,
+  optionalDetailCollectionSpanClass,
 } from '../src/components/professional-fields/professionalDetailCollectionModel';
 
 const ready = resolveProfessionalComponent({
@@ -116,6 +117,11 @@ assert.equal(optionalDetailCollectionRemovalConfirmation(optionalField, 2), null
 assert.deepEqual(optionalDetailCollectionRemovalConfirmation(optionalField, 1), {
   actionLabel: 'Stop using details', message: 'Last total is preserved',
 });
+assert.equal(optionalDetailCollectionSpanClass(optionalField, 'field--normal'), 'field--full');
+assert.equal(optionalDetailCollectionSpanClass({
+  ...optionalField,
+  componentConfig: {},
+} as never, 'field--normal'), 'field--normal');
 for (const [componentKey, fieldType] of [
   ['sc.value.money', 'monetary'], ['sc.value.percentage', 'float'],
   ['sc.display.status', 'selection'], ['sc.value.duration', 'float'],
