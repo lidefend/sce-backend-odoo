@@ -1689,6 +1689,30 @@ repeatedStateNode.nodeId = 'section.projected_state';
 repeatedStateNode.attributes = { ...repeatedStateNode.attributes, widget: '' };
 repeatedStateNode.fields[0].widgetId = 'field.state.projected';
 repeatedStatusFactModel.zones.primary.push(repeatedStateNode);
+const fieldClaimedStatusBridge = buildCanonicalNativeFormBridge(
+  repeatedStatusFactModel,
+  undefined,
+  'field.state',
+  'state',
+);
+const fieldClaimedStatusNodes = [
+  ...fieldClaimedStatusBridge.primaryNodes,
+  ...fieldClaimedStatusBridge.primaryNodes.flatMap((node) => node.children || []),
+];
+assert.equal(
+  fieldClaimedStatusNodes
+    .filter((node) => node.name === 'state')
+    .every((node) => !fieldClaimedStatusBridge.nodeVisible(node)),
+  true,
+  'a product-header workflow status claim must suppress every body occurrence of that same field',
+);
+assert.equal(
+  fieldClaimedStatusNodes
+    .filter((node) => node.name === 'secondary_state')
+    .every((node) => fieldClaimedStatusBridge.nodeVisible(node)),
+  true,
+  'a product-header workflow status claim must not suppress another status field',
+);
 const fieldClaimedStatusFloorplan = composeCanonicalFormFloorplan(repeatedStatusFactModel, {
   claimedStatusbarNodeIdentity: 'field.state',
   claimedStatusbarFieldCode: 'state',

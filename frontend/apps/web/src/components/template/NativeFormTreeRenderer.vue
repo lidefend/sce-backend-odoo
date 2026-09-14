@@ -49,8 +49,34 @@
         >
           <span v-if="fieldOrderDraggingKey">拖到这里加入此分组</span>
         </div>
+        <ScInlineState
+          v-if="isNativeFeedbackContainer(node)"
+          class="native-form-feedback"
+          :state="nativeFeedbackState(node)"
+          density="compact"
+          :data-feedback-tone="nativeTextPresentation(node).tone"
+        >
+          <div class="native-form-feedback__content">
+            <p v-if="nodeText(node)" class="native-form-feedback__copy">{{ nodeText(node) }}</p>
+            <FormSection
+              v-if="fieldSchemasForNodes(fieldChildren(node)).length"
+              title=""
+              :columns="1"
+              :fields="fieldSchemasForNodes(fieldChildren(node))"
+              :relation-adapter="relationAdapter"
+              :prefer-readonly-facts="true"
+              :fill-orphan-rows="false"
+              @field-change="emit('field-change', $event)"
+              @field-action="emit('field-action', $event)"
+            >
+              <template v-if="$slots.readonly" #readonly="{ field }">
+                <slot name="readonly" :field="field" />
+              </template>
+            </FormSection>
+          </div>
+        </ScInlineState>
         <p
-          v-if="nodeText(node)"
+          v-else-if="nodeText(node)"
           class="native-static-text"
           :class="nativeTextPresentationClass(node)"
           :data-native-text-presentation="nativeTextPresentation(node).kind"
@@ -191,7 +217,7 @@
 
         <template v-else>
           <FormSection
-            v-if="fieldSchemasForNodes(fieldChildren(node)).length"
+            v-if="!isNativeFeedbackContainer(node) && fieldSchemasForNodes(fieldChildren(node)).length"
             :title="fieldSectionTitle(node)"
             :columns="nodeColumns(node)"
             :inherited-semantic-role="semanticFormRole(node)"
@@ -401,6 +427,7 @@ import ScButton from '../design-system/ScButton.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScIconButton from '../design-system/ScIconButton.vue';
 import ScInput from '../design-system/ScInput.vue';
+import ScInlineState from '../design-system/ScInlineState.vue';
 import ScTabs, { type ScTabItem } from '../design-system/ScTabs.vue';
 import { canonicalFormActionIconClass } from '../../pages/contractForm/canonicalFormActionIcon';
 import { nativeSectionNavigationRole } from '../../pages/contractForm/nativeSectionNavigation';
@@ -678,6 +705,14 @@ function nativeTextPresentationClass(node: NativeFormLayoutNode) {
     `native-static-text--${presentation.kind}`,
     `native-static-text--${presentation.tone}`,
   ];
+}
+
+function isNativeFeedbackContainer(node: NativeFormLayoutNode) {
+  return resolveNativeTextPresentation(node).kind === 'callout';
+}
+
+function nativeFeedbackState(node: NativeFormLayoutNode): 'info' | 'error' {
+  return resolveNativeTextPresentation(node).tone === 'danger' ? 'error' : 'info';
 }
 
 function isContainerNode(node: NativeFormLayoutNode) {
@@ -1110,6 +1145,22 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 .native-static-text--callout.native-static-text--success {
   border-color: var(--sc-app-success-border);
   background: var(--sc-app-success-bg);
+}
+
+.native-form-feedback,
+.native-form-feedback__content {
+  width: 100%;
+  min-width: 0;
+}
+
+.native-form-feedback__content {
+  display: grid;
+  gap: var(--sc-space-xs);
+}
+
+.native-form-feedback__copy {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .native-ribbon {

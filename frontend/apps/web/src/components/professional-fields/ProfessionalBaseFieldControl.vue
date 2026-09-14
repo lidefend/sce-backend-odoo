@@ -27,6 +27,11 @@
           @click="taskActionRun(props.field)"
           @keydown.enter.prevent="taskActionRun(props.field)"
         >{{ taskActionLabel(props.field) }}</div>
+        <time
+          v-else-if="normalizedType === 'date' || normalizedType === 'datetime'"
+          class="professional-base-field-control__readonly"
+          :datetime="readonlyDateTimeValue"
+        >{{ readonlyText }}</time>
         <span v-else class="professional-base-field-control__readonly">{{ readonlyText }}</span>
       </template>
     </template>
@@ -174,6 +179,10 @@ const readonlyText = computed(() => formatDisplayValue(
   { emptyText: '-' },
 ));
 const readonlyHtml = computed(() => sanitizeReadonlyHtml(props.field.value));
+const readonlyDateTimeValue = computed(() => {
+  const value = normalizedReadonlyValue.value;
+  return value === null || typeof value === 'undefined' ? '' : String(value);
+});
 const numericValue = computed(() => {
   if (props.field.inputValue === '' || props.field.inputValue === null || typeof props.field.inputValue === 'undefined') return undefined;
   const value = Number(props.field.inputValue);

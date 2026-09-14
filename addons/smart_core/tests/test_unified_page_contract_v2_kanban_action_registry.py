@@ -101,6 +101,7 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
             ({"type": "many2one", "relation": "res.currency"}, "select", "sc.relation.many2one"),
             ({"type": "float"}, "percentage", "sc.value.percentage"),
             ({"type": "selection"}, "statusbar", "sc.display.status"),
+            ({"type": "selection"}, "badge", "sc.display.status"),
             ({"type": "float"}, "float_time", "sc.value.duration"),
             ({"type": "many2one", "relation": "res.users"}, "select", "sc.relation.many2one"),
             ({"type": "many2one", "relation": "res.company"}, "select", "sc.relation.many2one"),

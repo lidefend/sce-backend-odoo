@@ -53,7 +53,7 @@
             <label v-if="!fieldConfigEditable && !field.hideLabel && !detailCollectionOwnsVisibleTitle(field) && !attachmentControlOwnsVisibleTitle(field)" class="label" :for="fieldControlId(field)">
               {{ field.label }}
               <span v-if="field.required && !field.readonly" class="field-state field-state--required"><span aria-hidden="true">*</span><span class="sr-only">必填</span></span>
-              <span v-else-if="field.readonly && !allFieldsReadonly" class="field-state">只读</span>
+              <span v-else-if="field.readonly && !preferReadonlyFacts && !allFieldsReadonly" class="field-state">只读</span>
             </label>
             <ScInput
               v-else-if="fieldConfigEditable"
@@ -149,7 +149,16 @@
               </ProfessionalDetailCollectionControl>
               <ProfessionalRelationFieldControl v-else-if="usesProfessionalMany2one(field) && field.readonly" :field="field">
                 <slot name="readonly" :field="field">
-                  <span class="readonly-value">{{ readonlyText(field) }}</span>
+                  <ScButton
+                    v-if="field.many2oneOpenToken && readonlyText(field) !== '-'"
+                    type="button"
+                    appearance="auth-link"
+                    variant="ghost"
+                    :title="readonlyText(field)"
+                    :aria-label="field.many2oneOpenLabel || `打开${field.label}`"
+                    @click="emitFieldChange(field, field.many2oneOpenToken)"
+                  ><span class="readonly-relation-label">{{ readonlyText(field) }}</span></ScButton>
+                  <span v-else class="readonly-value">{{ readonlyText(field) }}</span>
                 </slot>
               </ProfessionalRelationFieldControl>
               <template v-else-if="field.readonly">
@@ -287,6 +296,7 @@
 import { computed, inject, useId, useSlots } from 'vue';
 import { SceneFieldControl, useOptionalSceneUiKit } from '@sc/ui/form';
 import ScCard from '../design-system/ScCard.vue';
+import ScButton from '../design-system/ScButton.vue';
 import ScDateField from '../design-system/ScDateField.vue';
 import ScFileField from '../design-system/ScFileField.vue';
 import ScIcon from '../design-system/ScIcon.vue';
@@ -1160,6 +1170,14 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   outline: 2px solid var(--sc-app-accent);
   outline-offset: 2px;
   border-radius: 2px;
+}
+
+.readonly-relation-label {
+  display: block;
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+  overflow-wrap: anywhere;
 }
 
 .readonly-value--html {

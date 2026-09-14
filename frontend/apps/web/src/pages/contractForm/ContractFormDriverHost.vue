@@ -255,6 +255,7 @@ const nativeBridge = computed(() => nativeBridgeModel.value
     nativeBridgeModel.value,
     props.relationAdapter as CanonicalRelationProjection,
     props.claimedStatusbarNodeIdentity || '',
+    props.claimedStatusbarFieldCode || '',
   )
   : null);
 const floorplanSubordinateNodes = computed(() => floorplan.value.subordinateNodes

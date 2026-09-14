@@ -240,7 +240,10 @@ def _component_key(widget_type: str, field: dict[str, Any] | None = None) -> str
         return "sc.value.percentage"
     if normalized == "float_time":
         return "sc.value.duration"
-    if normalized == "statusbar":
+    # Odoo's public widget declaration is the presentation authority here.
+    # Both workflow statusbars and ordinary badges keep status semantics; do
+    # not infer status from a model or field name.
+    if normalized in {"statusbar", "badge"}:
         return "sc.display.status"
     # many2one字段统一使用专业关系组件，与前端usesProfessionalBusinessValue的设计意图一致
     # 前端明确排除many2one类型使用业务值组件，避免控件不渲染
@@ -1540,7 +1543,7 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
     explicit_widget = _text(field.get("widget"))
     widget_type = "table" if layout_type == "table" else _canonical_widget_type(explicit_widget, field)
     component_widget_type = explicit_widget if explicit_widget in {
-        "monetary", "percentage", "percentpie", "float_time", "statusbar",
+        "monetary", "percentage", "percentpie", "float_time", "statusbar", "badge",
     } else widget_type
     component_key = _component_key(component_widget_type, field)
     capabilities = ["sortable", "filterable"] if layout_type == "table" else []
