@@ -872,8 +872,7 @@ class PaymentRequest(models.Model):
                 continue
             labels = [
                 line.source_document_no
-                or line.legacy_line_id
-                or _("未命名明细")
+                or _("第 %(sequence)s 行") % {"sequence": line.sequence or 0}
                 for line in invalid_lines[:3]
             ]
             raise ValidationError(
