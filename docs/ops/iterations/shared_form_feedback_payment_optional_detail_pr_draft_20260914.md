@@ -39,14 +39,14 @@
 - 迭代报告：[shared_form_feedback_payment_optional_detail_20260914.md](shared_form_feedback_payment_optional_detail_20260914.md)
 - 结构权威决策：[native_first_form_structure_authority_v1.md](../../architecture/native_first_form_structure_authority_v1.md)
 - 布局：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/shared-form-payment-621-optional-detail-states-1f96aac5/summary.json`
-- 真实闭环：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/payment-optional-detail-real-closure-d6bdf364/introduce-summary.json`、`remove-summary.json`
+- 真实闭环：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/payment-optional-detail-real-closure-084f5762/introduce-summary.json`、`remove-summary.json`（均绑定完整候选 `084f576239bff5f56831e68863b6f0abaeae0682`）
 
 ## Boundaries
 
 - 621 仅用于只读/未提交布局证据；真实写入仅使用登记的 demo fixture。
 - 未执行付款审批、付款登记、会计写入、全角色、生产数据或完整读屏器体验。
 - 历史金额差异只显示并阻止提交，不自动修数。
-- 既有批准结算发票快照不一致不属于本 PR；完整 journey 包装入口因此退出 2，但 introduce/remove 产品阶段和专用 cleanup 分别通过，报告没有把它写成整体验收通过。
+- 既有批准结算发票快照不一致不属于本 PR；最终专用付款旅程不依赖该历史快照，完整受管入口已通过并恢复登记 fixture。
 
 ## Risk and rollback
 

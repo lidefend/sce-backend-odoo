@@ -7,7 +7,7 @@
 1. 共享表单的标签、帮助、错误和无效状态通过既有 TDesign 桥接组件投射到真实可操作控件；页面级反馈、动作阻断、字段错误和普通业务资料不再由同一兜底章节混排。
 2. 付款申请可以直接填写申请金额，也可以选择“按明细填写”。使用有效明细后，后端以明细合计作为申请金额权威；不使用明细时仍保留直接填写能力。
 
-独立复核前检查点为 `08325c1ea75dcf16c8e718b031df814f61c4963e`，Tree `a8d05b90d56d016776b10f13b7d0d18f4bf18307`，完整工作树指纹 `b8c1c807236979ff6d843d26c80573a880cc7f5891656c8e89c12ded5f8b9082`（7440 paths）。复核随后要求把跨币种约束下沉到模型层、恢复权威名称搜索、按逐行舍入计算前端比例预览，并为专用旅程补齐中断清理；这些修复已经进入 `09d03d3f…`。交付文档和生成证据提交后另行冻结最终 HEAD；不会回填本文件而再次改变候选。
+独立复核前检查点为 `08325c1ea75dcf16c8e718b031df814f61c4963e`，Tree `a8d05b90d56d016776b10f13b7d0d18f4bf18307`，完整工作树指纹 `b8c1c807236979ff6d843d26c80573a880cc7f5891656c8e89c12ded5f8b9082`（7440 paths）。复核随后要求把跨币种约束下沉到模型层、恢复权威名称搜索、按逐行舍入计算前端比例预览，并为专用旅程补齐中断清理；这些修复均已进入候选。最终真实闭环在 `084f576239bff5f56831e68863b6f0abaeae0682` 上重新执行并整体通过；交付文档和生成证据提交后另行冻结最终 HEAD。
 
 ## 产品与架构边界
 
@@ -62,19 +62,17 @@ Changed paths 涉及 P0 契约合成及共享前端、P1 付款视图/模型/han
 | L2 后端 | 选择 4 个方法，实际执行 4 个方法，框架统计 6 tests，失败/错误 0；后续受影响 2 方法与 1 方法分别非零 PASS；最终跨币种/搜索方法再次实际执行 1 个方法，框架统计 3 tests，失败/错误 0 | 无明细、有明细、零金额、历史不一致、引入同步、handler/模型跨币种拒绝、权威名称搜索和币种元数据 |
 | L3 | 受管 `local.dev` 增量升级 `smart_construction_core`、重启和 authority health PASS | 仅 `sc-local-dev/sc_dev_demo`；没有手工拼接 Compose/DB/profile |
 | L4 只读布局 | 621，1088×791 与 390×844；初始折叠、展开稳定态、再次收起均 PASS，`mutationCount=0` | 展开 grid/field 宽度比均为 1；收起 contentCount=0，ownerHeight=54 |
-| L4 写入闭环 | 登记 XMLID `smart_construction_demo.payment_request_floorplan_demo_record`，finance demo user | 引入并保存/权威回读金额 2400；取消删除保留行；确认删除后回读 0 行且金额仍为 2400；随后专用 reset PASS |
+| L4 写入闭环 | 候选 `084f576239bff5f56831e68863b6f0abaeae0682`；登记 XMLID `smart_construction_demo.payment_request_floorplan_demo_record`，finance demo user | 受管完整旅程 PASS：引入并保存/权威回读金额 2400；取消删除保留行；确认删除后回读 0 行且金额仍为 2400；随后专用 reset PASS |
 
 后端测试统计统一解释为：选择目标是测试方法；Odoo 统计行还包含框架阶段计数，不能把 `6 tests` 宣称为 6 个独立业务用例。浏览器 DOM 断言只证明语义关联，未实际使用读屏器，因此不宣称完整读屏体验通过。
 
 ## 证据与结转
 
 - 可选明细布局：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/shared-form-payment-621-optional-detail-states-1f96aac5/summary.json`。
-- 专用真实闭环：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/payment-optional-detail-real-closure-d6bdf364/introduce-summary.json` 与 `remove-summary.json`。
+- 专用真实闭环：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/payment-optional-detail-real-closure-084f5762/introduce-summary.json` 与 `remove-summary.json`，两份摘要均绑定完整候选 `084f576239bff5f56831e68863b6f0abaeae0682` 且 `pass=true`。
 - 621 全程只读；真实写入仅作用于受管付款 fixture。最终专用 reset 后，权威回读为草稿、金额 10000、0 行、`amount_uses_details=false`。
 - 布局证据源候选 `1f96aac5…` 到产品源检查点的后续变更只涉及后端金额/币种规则、引入对话框币种表达和 P4 工具，不改变已验收的 Disclosure 全宽/销毁内容实现。
-- 真实闭环源候选 `d6bdf364…` 到 `08325c1e…` 只改变 P4 fixture 清理入口及对应测试；产品代码未变，因此不重复业务旅程。
-- 完整旅程包装入口最后因既有批准结算的发票快照不一致退出 2。业务 introduce/remove 两阶段均 `pass=true`，随后登记的专用付款 fixture reset 独立 PASS；不能把包装入口写成整体 PASS，也不处理该历史快照问题。
-- 最终 P4 旅程绑定明确的 S69 settlement/line XMLID，并以浏览器财务用户、公司、币种、项目和合同验证来源；`EXIT` trap 在任何已进入可变阶段的中断路径执行专用 reset，正常结束则显式解除 trap。
+- 最终 P4 旅程绑定明确的 S69 settlement/line XMLID，并以浏览器财务用户、公司、币种、项目和合同验证来源；`EXIT` trap 在任何已进入可变阶段的中断路径执行专用 reset，正常结束则显式解除 trap。该最终实现已在 `084f5762…` 上由完整受管入口验证，未沿用旧候选结果。
 
 ## 风险、边界与回滚
 
