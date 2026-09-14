@@ -31,6 +31,9 @@
 | TDesign title/body 层级与既有基础字号 | `--sc-product-text-section` | 16px，600 | 业务章节标题、表单章节标题 |
 | TDesign `--td-font-size-body-medium` / `--td-line-height-body-medium` | `--sc-product-text-body`、`--sc-product-line-body` | 14px / 22px | 输入、关系选择、日期、金额、文本域、只读值 |
 | TDesign `--td-font-size-body-small` | `--sc-product-text-sm` | 12px / 20px | 字段标签、帮助、校验提示、面包屑和辅助文字 |
+| TDesign Card `bordered` 与现有 panel surface | `--sc-app-panel`、`--sc-app-border`、`--sc-space-lg` | 主工作面保留一个边界；正文 16px 内距 | 列表、表单与只读详情主表面 |
+| TDesign 连续内容面与既有 section appearance | `--sc-product-text-section`、`--sc-space-md`、`--sc-app-border` | 章节透明；相邻章节只保留一条分隔线 | 原生表单业务章节、嵌套明细区 |
+| TDesign Popup/Modal 层级 | 既有 overlay z-index 与 shadow token | 保留浮层阴影和特殊状态边界 | Dialog、Drawer、Popover；本批不改变生命周期 |
 
 TDesign 字体变量只通过公开 CSS 变量桥接；页面标题、章节、正文和辅助文字消费同一组项目语义 token，不改变控件 widget、格式、校验或契约标题内容。
 

@@ -9437,3 +9437,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 分支 `codex/tdesign-system-alignment-v1`，基线 `origin/main@6885840fe57f1e00ae8ce78bc76687e8a4a66332`，复用已交付合同结算工作树作为唯一 writer；基线 Tree `77aeb208e4acad221d41ceca28f5bfdb59e1b6d0`，未新建或删除工作树。
 - Formal Product Layer 为 P0；Layer Target 为现有 design token、TDesign 公开 CSS 变量桥、共享页头和通用字段排版。页面标题、章节、正文/控件、标签/辅助文字统一为 24/16/14/12 四级，不改契约、P1 XML、字段 widget、格式、校验、权限、动作或业务数据。
 - 本批仅执行 L0 完整工作树指纹、L1 轻量入口和 token/header/primitive/form-field 的非零 L2；无模块/schema/运行装载变化，因此不执行 L3。三页 1088×791 局部浏览器对照留到 A1/A2/A3 汇合后，Quick 与完整候选证据留到产品方向通过后的冻结 HEAD。
+
+## 2026-09-14 — TDesign 设计体系对齐 Batch A2
+
+- Formal Product Layer 为 P0；Layer Target 为既有 `ScCard` appearance 与通用合同表单页面类型样式。主工作面保留单一 Card 边界，业务章节改为连续透明表面，相邻章节只保留一条分隔线；表格、浮层及特殊状态继续保留自身功能边界。
+- `ScCard` 中分散的 padding/gap 收敛到既有 spacing token，没有新增变量体系；章节标题统一消费 A1 的 16px/600 语义层级。未修改 P1 XML、契约章节、字段顺序、权限、动作、Dialog/Drawer 生命周期或业务数据。
+- 本批从 L0/L1 开始，运行 primitive/page-pattern/canonical-form 受影响非零测试与严格类型检查；L3 无模块或契约装载变化而跳过，局部 L4 与 A3 合并后只覆盖三张代表页面。
