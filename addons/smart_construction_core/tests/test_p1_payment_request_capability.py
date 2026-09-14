@@ -15,6 +15,8 @@ from odoo.addons.smart_construction_core.services.financial_workspace_contract i
 )
 from odoo.addons.smart_construction_core.handlers.payment_request_settlement_introduce import (
     PaymentRequestAddSettlementLinesHandler,
+    PaymentRequestSettlementPreviewHandler,
+    PaymentRequestSettlementSearchHandler,
 )
 from odoo.addons.smart_construction_core.core_extension_policy_maps import (
     BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL,
@@ -685,6 +687,8 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(request.detail_amount_total, 50.0)
         detail.write({"amount": 101.0, "note": "只更新来源事实，不应重算申请金额"})
         self.assertEqual(request.amount, 75.0)
+        detail.write({"current_pay_amount": 50.0, "note": "全量回写未变化的权威值也不应修数"})
+        self.assertEqual(request.amount, 75.0)
         request._onchange_outflow_line_amount()
         self.assertEqual(request.amount, 75.0)
         with self.assertRaisesRegex(ValidationError, "必须与付款申请明细合计"):
@@ -755,6 +759,16 @@ class TestP1PaymentRequestCapability(TransactionCase):
             }
         )
         request = self._request(amount=9.0)
+        preview = PaymentRequestSettlementPreviewHandler(self.env).handle(
+            payload={"params": {"settlement_id": settlement.id}}
+        )
+        self.assertTrue(preview["ok"])
+        self.assertEqual(preview["data"]["currency"]["id"], settlement.currency_id.id)
+        self.assertEqual(preview["data"]["currency"]["name"], settlement.currency_id.name)
+        self.assertEqual(
+            preview["data"]["currency"]["decimal_places"],
+            settlement.currency_id.decimal_places,
+        )
         result = PaymentRequestAddSettlementLinesHandler(self.env).handle(
             payload={
                 "params": {
@@ -794,6 +808,44 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(invalid["error"]["code"], "INVALID_AMOUNT")
         self.assertIn("必须大于 0", invalid["error"]["message"])
         self.assertEqual(len(request.outflow_line_ids), 1)
+
+        foreign_currency = self.env.ref("base.USD")
+        if foreign_currency == settlement.currency_id:
+            foreign_currency = self.env.ref("base.EUR")
+        foreign_request = self._request(
+            amount=9.0,
+            contract_id=False,
+            project_id=self.project.id,
+            partner_id=self.partner.id,
+            currency_id=foreign_currency.id,
+        )
+        currency_mismatch = PaymentRequestAddSettlementLinesHandler(self.env).handle(
+            payload={
+                "params": {
+                    "payment_request_id": foreign_request.id,
+                    "settlement_id": settlement.id,
+                    "settlement_line_ids": settlement.line_ids.ids,
+                    "apply_mode": "amount",
+                    "total_amount": 10.0,
+                }
+            }
+        )
+        self.assertFalse(currency_mismatch["ok"])
+        self.assertEqual(currency_mismatch["error"]["code"], "CURRENCY_MISMATCH")
+        self.assertFalse(foreign_request.outflow_line_ids)
+        search = PaymentRequestSettlementSearchHandler(self.env).handle(
+            payload={
+                "params": {
+                    "payment_request_id": foreign_request.id,
+                    "keyword": settlement.name,
+                }
+            }
+        )
+        self.assertTrue(search["ok"])
+        self.assertNotIn(
+            settlement.id,
+            [item["id"] for item in search["data"]["settlements"]],
+        )
 
     def test_submit_only_accepts_draft_or_rejected_requests(self):
         request = self._set_request_state(self._request(), "approved")

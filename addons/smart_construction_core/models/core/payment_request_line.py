@@ -214,11 +214,19 @@ class PaymentRequestLine(models.Model):
         amount_authority_fields = {"request_id", "active", "current_pay_amount"}
         requests = self.mapped("request_id")
         fallback_totals = {}
+        authority_before = {}
         if amount_authority_fields & set(vals):
             fallback_totals = {
                 request.id: request._payment_detail_amount_total()
                 for request in requests
                 if request._active_payment_detail_lines()
+            }
+            authority_before = {
+                request.id: (
+                    len(request._active_payment_detail_lines()),
+                    request._payment_detail_amount_total(),
+                )
+                for request in requests
             }
         if allocation_basis_fields & set(vals):
             request_ids = set(requests.ids)
@@ -240,7 +248,14 @@ class PaymentRequestLine(models.Model):
         result = super().write(vals)
         if amount_authority_fields & set(vals):
             requests |= self.mapped("request_id")
-            requests._sync_amount_from_detail_lines(fallback_totals=fallback_totals)
+            changed_requests = requests.filtered(
+                lambda request: authority_before.get(request.id)
+                != (
+                    len(request._active_payment_detail_lines()),
+                    request._payment_detail_amount_total(),
+                )
+            )
+            changed_requests._sync_amount_from_detail_lines(fallback_totals=fallback_totals)
         return result
 
     def unlink(self):

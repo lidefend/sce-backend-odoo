@@ -23,6 +23,16 @@ def _pay_amount_compare(left, right, currency=None):
     )
 
 
+def _currency_identity(currency):
+    return {
+        "id": int(currency.id),
+        "name": str(currency.name or ""),
+        "symbol": str(currency.symbol or ""),
+        "decimal_places": int(currency.decimal_places),
+        "rounding": float(currency.rounding or 0.01),
+    }
+
+
 def _settlement_line_applied(env, settlement_line):
     """结算行已申请金额 = 关联付款申请明细 current_pay_amount 汇总（实时计算，动态一致）。"""
     lines = env["payment.request.line"].search(
@@ -101,6 +111,7 @@ class PaymentRequestSettlementSearchHandler(BaseIntentHandler):
             if request.exists() and request.project_id:
                 domain = [
                     ("active", "=", True),
+                    ("currency_id", "=", request.currency_id.id),
                     "|",
                     ("project_id", "=", request.project_id.id),
                     ("project_id", "=", False),
@@ -108,6 +119,7 @@ class PaymentRequestSettlementSearchHandler(BaseIntentHandler):
                 if request.contract_id:
                     domain = [
                         ("active", "=", True),
+                        ("currency_id", "=", request.currency_id.id),
                         "|",
                         ("project_id", "=", request.project_id.id),
                         ("project_id", "=", False),
@@ -116,16 +128,18 @@ class PaymentRequestSettlementSearchHandler(BaseIntentHandler):
                         ("contract_id", "=", False),
                     ]
         if keyword:
-            domain = ["|", ("name", "ilike", keyword), ("display_name", "ilike", keyword)] + domain
+            domain = [("name", "ilike", keyword)] + domain
         settlements = self.env["sc.settlement.order"].search(domain, limit=limit, order="id desc")
         items = []
         for s in settlements:
+            currency = s.currency_id or self.env.company.currency_id
             items.append(
                 {
                     "id": s.id,
                     "name": s.name,
                     "display_name": s.display_name,
                     "amount_total": _pay_amount_currency(s.amount_total, s.currency_id),
+                    "currency": _currency_identity(currency),
                     "contract_id": s.contract_id.id,
                     "contract_name": s.contract_id.display_name or "",
                     "partner_name": s.partner_id.display_name or "",
@@ -232,6 +246,7 @@ class PaymentRequestSettlementPreviewHandler(BaseIntentHandler):
             )
 
         data = {
+            "currency": _currency_identity(currency),
             "settlement": {
                 "id": settlement.id,
                 "name": settlement.name,
@@ -340,6 +355,12 @@ class PaymentRequestAddSettlementLinesHandler(BaseIntentHandler):
         settlement = self.env["sc.settlement.order"].browse(settlement_id)
         if not settlement.exists():
             return _err("SETTLEMENT_NOT_FOUND", "结算单不存在")
+        if request.currency_id != settlement.currency_id:
+            return _err(
+                "CURRENCY_MISMATCH",
+                "结算单币种与付款申请币种不一致，不能直接引入；请使用同币种单据",
+                "fix_input",
+            )
 
         # 项目一致性校验：结算单项目与付款申请项目必须一致（或结算单未绑定项目）
         if (
