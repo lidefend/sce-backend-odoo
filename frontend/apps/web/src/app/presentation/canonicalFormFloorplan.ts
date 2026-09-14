@@ -258,11 +258,6 @@ function roleNodes(
     .filter(nodeHasContent);
 }
 
-function visibleFieldCount(node: CanonicalFormNode): number {
-  return node.fields.filter((field) => field.visible).length
-    + node.children.reduce((total, child) => total + visibleFieldCount(child), 0);
-}
-
 function nodeHasRelationCapability(node: CanonicalFormNode): boolean {
   const kind = node.kind.trim().toLowerCase();
   return ['notebook', 'relation'].includes(kind)
