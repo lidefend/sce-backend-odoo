@@ -270,6 +270,72 @@
             </field>
         </record>
 
+        <!--
+            The formal payment-application entry owns a payment-specific
+            business sequence while inheriting every header action and
+            modifier from the shared payment/receipt form.  Only the stable
+            data-sc-anchor groups below are first-level business sections;
+            their inner groups remain layout containers.
+        -->
+        <record id="view_payment_request_pay_form" model="ir.ui.view">
+            <field name="name">payment.request.pay.form</field>
+            <field name="model">payment.request</field>
+            <field name="inherit_id" ref="view_payment_request_form"/>
+            <field name="mode">primary</field>
+            <field name="priority">30</field>
+            <field name="arch" type="xml">
+                <xpath expr="/form/sheet/group[1]" position="attributes">
+                    <attribute name="name">sc_payment_request_pay_basic</attribute>
+                    <attribute name="string">基本信息</attribute>
+                    <attribute name="data-sc-anchor">payment-request-pay-basic</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[1]/group[1]" position="attributes">
+                    <attribute name="string">申请信息</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[2]" position="attributes">
+                    <attribute name="name">sc_payment_request_pay_basis</attribute>
+                    <attribute name="string">付款依据</attribute>
+                    <attribute name="data-sc-anchor">payment-request-pay-basis</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[2]/group[1]" position="attributes">
+                    <attribute name="string">合同与结算依据</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[3]" position="attributes">
+                    <attribute name="name">sc_payment_request_pay_parties</attribute>
+                    <attribute name="string">收付款信息</attribute>
+                    <attribute name="data-sc-anchor">payment-request-pay-parties</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[4]" position="attributes">
+                    <attribute name="name">sc_payment_request_pay_notes</attribute>
+                    <attribute name="string">说明与附件</attribute>
+                    <attribute name="data-sc-anchor">payment-request-pay-notes</attribute>
+                </xpath>
+                <xpath expr="//group[@name='sc_payment_request_pay_notes']" position="before">
+                    <group name="sc_payment_request_pay_detail"
+                           string="付款明细"
+                           col="1"
+                           data-sc-anchor="payment-request-pay-detail"/>
+                </xpath>
+                <xpath expr="//group[@name='sc_payment_request_pay_detail']" position="inside">
+                    <xpath expr="/form/sheet/group[2]/group[2]" position="move"/>
+                    <xpath expr="/form/sheet/notebook/page[3]/field[@name='outflow_line_ids']" position="move"/>
+                </xpath>
+                <xpath expr="/form/sheet/notebook/page[3]" position="replace"/>
+                <xpath expr="/form/sheet/notebook" position="before">
+                    <group name="sc_payment_request_pay_trace"
+                           string="履约与追溯"
+                           col="1"
+                           data-sc-anchor="payment-request-pay-trace"
+                           data-sc-navigation-role="subordinate"
+                           data-sc-collapsible="1"
+                           data-sc-collapsed-by-default="1"/>
+                </xpath>
+                <xpath expr="//group[@name='sc_payment_request_pay_trace']" position="inside">
+                    <xpath expr="/form/sheet/notebook" position="move"/>
+                </xpath>
+            </field>
+        </record>
+
         <record id="view_payment_request_search" model="ir.ui.view">
             <field name="name">payment.request.search</field>
             <field name="model">payment.request</field>

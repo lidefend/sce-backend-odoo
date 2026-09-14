@@ -10,114 +10,19 @@
             <field name="company_id" eval="False"/>
             <field name="active" eval="True"/>
             <field name="status">published</field>
-            <field name="version_no">10</field>
+            <field name="version_no">11</field>
             <field name="contract_json" eval="{
                 'view_orchestration': {
                     'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},
                     'views': {
                         'form': {
                             'title': '付款申请',
-                            'composition_mode': 'entry_semantic_surface',
-                            'columns': 2,
+                            'composition_mode': 'native_semantic_surface',
                             'semantic_anchors': [
                                 {'role': 'summary', 'fields': ['name', 'state', 'project_id', 'actual_payee_unit', 'payment_basis_type', 'amount', 'payee_account_completeness', 'payment_execution_status_display']},
                                 {'role': 'task', 'fields': ['legal_next_action_display']},
                                 {'role': 'risk', 'fields': ['payment_blocking_reason_display', 'partner_transaction_eligibility_reason', 'settlement_compliance_message']},
                                 {'role': 'audit', 'fields': ['validation_status', 'reject_reason']}
-                            ],
-                            'sections': [
-                                {'title': '申请识别与状态', 'sequence': 10, 'columns': 2, 'fields': ['state', 'validation_status', 'name', 'type', 'payment_flow_label', 'payee_account_completeness', 'payee_account_source_display', 'payment_execution_status_display', 'payment_blocking_reason_display', 'legal_next_action_display', 'reject_reason', 'date_request', 'amount', 'unpaid_amount', 'business_category_id']},
-                                {'title': '项目与收款对象', 'sequence': 20, 'columns': 2, 'fields': ['project_id', 'company_id', 'operation_strategy', 'partner_id', 'partner_transaction_eligibility', 'partner_transaction_eligibility_reason']},
-                                {'title': '结算与合同依据', 'sequence': 30, 'columns': 2, 'fields': ['contract_id', 'contract_payment_terms', 'contract_change_amount', 'contract_final_amount', 'contract_settlement_amount', 'contract_invoice_amount', 'contract_paid_amount', 'contract_unpaid_amount', 'settlement_id', 'settlement_period_start', 'settlement_period_end', 'settlement_submitted_amount', 'settlement_approved_amount', 'settlement_deduction_amount', 'material_settlement_id', 'payment_basis_type', 'cost_category_name', 'settlement_compliance_state', 'settlement_compliance_message']},
-                                {'title': '本次付款事实', 'sequence': 40, 'columns': 2, 'fields': ['amount_uppercase', 'accepted_amount_uppercase', 'request_amount_display', 'settlement_amount_total', 'settlement_paid_amount', 'settlement_remaining_amount', 'settlement_amount_payable', 'paid_amount_total', 'currency_id']},
-                                {'title': '账户与开票信息', 'sequence': 50, 'columns': 2, 'fields': ['payer_unit', 'actual_payee_unit', 'payment_account_name', 'payment_bank_name', 'payment_account_no', 'partner_account_name', 'partner_bank_name', 'partner_bank_account']},
-                                {'title': '说明与附件', 'sequence': 60, 'columns': 2, 'fields': ['note', 'attachment_ids', 'payment_request_attachment_text_display']},
-                                {'key': 'approval_audit', 'title': '审批与审计', 'sequence': 70, 'columns': 2, 'semantic_role': 'audit', 'fields': ['creator_name', 'created_time', 'source_created_by', 'source_created_at', 'active']}
-                            ],
-                            'fields': [
-                                {'name': 'state', 'sequence': 10, 'readonly': True},
-                                {'name': 'validation_status', 'sequence': 20, 'readonly': True},
-                                {'name': 'name', 'sequence': 30},
-                                {'name': 'type', 'sequence': 40},
-                                {'name': 'payment_flow_label', 'sequence': 50, 'readonly': True},
-                                {'name': 'business_category_id', 'sequence': 60},
-                                {'name': 'date_request', 'sequence': 70},
-                                {'name': 'project_id', 'sequence': 80},
-                                {'name': 'company_id', 'sequence': 90, 'readonly': True},
-                                {'name': 'operation_strategy', 'sequence': 95, 'readonly': True},
-                                {'name': 'partner_id', 'sequence': 100},
-                                {'name': 'partner_transaction_eligibility', 'sequence': 101, 'readonly': True},
-                                {'name': 'partner_transaction_eligibility_reason', 'sequence': 102, 'readonly': True},
-                                {'name': 'contract_id', 'sequence': 110},
-                                {'name': 'contract_payment_terms', 'sequence': 111, 'readonly': True},
-                                {'name': 'contract_change_amount', 'sequence': 112, 'readonly': True},
-                                {'name': 'contract_final_amount', 'sequence': 113, 'readonly': True},
-                                {'name': 'contract_currency_id', 'sequence': 114, 'readonly': True, 'visible': False},
-                                {'name': 'contract_settlement_amount', 'sequence': 115, 'readonly': True},
-                                {'name': 'contract_invoice_amount', 'sequence': 116, 'readonly': True},
-                                {'name': 'contract_paid_amount', 'sequence': 117, 'readonly': True},
-                                {'name': 'contract_unpaid_amount', 'sequence': 118, 'readonly': True},
-                                {'name': 'settlement_id', 'sequence': 120},
-                                {'name': 'settlement_period_start', 'sequence': 121, 'readonly': True},
-                                {'name': 'settlement_period_end', 'sequence': 122, 'readonly': True},
-                                {'name': 'settlement_submitted_amount', 'sequence': 123, 'readonly': True},
-                                {'name': 'settlement_approved_amount', 'sequence': 124, 'readonly': True},
-                                {'name': 'settlement_deduction_amount', 'sequence': 125, 'readonly': True},
-                                {'name': 'material_settlement_id', 'sequence': 130},
-                                {'name': 'cost_category_name', 'sequence': 135, 'readonly': True},
-                                {'name': 'amount', 'sequence': 140},
-                                {'name': 'amount_uppercase', 'sequence': 150, 'readonly': True},
-                                {'name': 'accepted_amount_uppercase', 'sequence': 155},
-                                {'name': 'request_amount_display', 'sequence': 160, 'readonly': True},
-                                {'name': 'paid_amount_total', 'sequence': 170, 'readonly': True},
-                                {'name': 'unpaid_amount', 'sequence': 180, 'readonly': True},
-                                {'name': 'currency_id', 'sequence': 190},
-                                {'name': 'payer_unit', 'sequence': 200},
-                                {'name': 'actual_payee_unit', 'sequence': 210},
-                                {'name': 'payment_account_name', 'sequence': 220},
-                                {'name': 'payment_bank_name', 'sequence': 230},
-                                {'name': 'payment_account_no', 'sequence': 240},
-                                {'name': 'partner_account_name', 'sequence': 250, 'readonly': True},
-                                {'name': 'partner_bank_name', 'sequence': 260, 'readonly': True},
-                                {'name': 'partner_bank_account', 'sequence': 270, 'readonly': True},
-                                {'name': 'payee_account_completeness', 'sequence': 271, 'readonly': True},
-                                {'name': 'payee_account_source_display', 'sequence': 272, 'readonly': True},
-                                {'name': 'payment_execution_status_display', 'sequence': 273, 'readonly': True},
-                                {'name': 'legal_next_action_display', 'sequence': 274, 'readonly': True},
-                                {'name': 'payment_blocking_reason_display', 'sequence': 275, 'readonly': True},
-                                {'name': 'reject_reason', 'sequence': 276, 'readonly': True},
-                                {'name': 'settlement_compliance_state', 'sequence': 280, 'readonly': True},
-                                {'name': 'settlement_compliance_message', 'sequence': 290, 'readonly': True},
-                                {'name': 'settlement_amount_total', 'sequence': 300, 'readonly': True},
-                                {'name': 'settlement_paid_amount', 'sequence': 310, 'readonly': True},
-                                {'name': 'settlement_remaining_amount', 'sequence': 320, 'readonly': True},
-                                {'name': 'settlement_amount_payable', 'sequence': 330, 'readonly': True},
-                                {'name': 'related_document_text', 'sequence': 340, 'readonly': True},
-                                {'name': 'note', 'sequence': 350},
-                                {'name': 'attachment_ids', 'sequence': 360},
-                                {'name': 'payment_request_attachment_text_display', 'sequence': 370, 'readonly': True},
-                                {'name': 'creator_name', 'sequence': 410, 'readonly': True},
-                                {'name': 'created_time', 'sequence': 420, 'readonly': True},
-                                {'name': 'source_created_by', 'sequence': 430, 'readonly': True},
-                                {'name': 'source_created_at', 'sequence': 440, 'readonly': True},
-                                {'name': 'active', 'sequence': 450}
-                            ],
-                            'actions': [
-                                {
-                                    'name': 'action_create_payment_execution',
-                                    'label': '生成付款登记',
-                                    'type': 'object',
-                                    'style': 'primary',
-                                    'visible_profiles': ['edit', 'readonly'],
-                                    'visible': {'attrs': {'invisible': {
-                                        'kind': 'any',
-                                        'exprs': [
-                                            {'kind': 'field_compare', 'field': 'type', 'operator': '!=', 'value': 'pay'},
-                                            {'kind': 'field_compare', 'field': 'state', 'operator': '!=', 'value': 'approved'},
-                                            {'kind': 'field_truthy', 'field': 'has_active_payment_execution'}
-                                        ]
-                                    }}}
-                                }
                             ]
                         }
                     }

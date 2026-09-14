@@ -1611,9 +1611,9 @@ class TestP1PaymentRequestCapability(TransactionCase):
             "smart_construction_core.business_config_contract_payment_request_pay_productized_form_v1"
         )
         product_payload = product_contract.contract_json["view_orchestration"]["views"]["form"]
-        self.assertEqual(len(product_payload["sections"]), 7)
-        self.assertIn("legal_next_action_display", product_payload["sections"][0]["fields"])
-        self.assertIn("payment_blocking_reason_display", product_payload["sections"][0]["fields"])
+        self.assertEqual(product_payload["composition_mode"], "native_semantic_surface")
+        for structural_key in ("layout", "sections", "fields", "field_slots", "columns", "actions", "header_buttons"):
+            self.assertNotIn(structural_key, product_payload)
         anchors = {
             row["role"]: row["fields"]
             for row in product_payload["semantic_anchors"]
@@ -1633,26 +1633,42 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(sum(len(fields) for role, fields in anchors.items() if role != "audit"), 12)
         self.assertEqual(sum(len(fields) for fields in anchors.values()), 14)
         self.assertNotIn("selection_labels", str(product_payload))
-        audit_sections = [
-            section for section in product_payload["sections"]
-            if section.get("semantic_role") == "audit"
-        ]
-        self.assertEqual(len(audit_sections), 1)
-        self.assertEqual(audit_sections[0]["key"], "approval_audit")
-        self.assertEqual(audit_sections[0]["title"], "审批与审计")
         legacy_product_fields = {
             "legacy_source_model", "legacy_source_table", "legacy_record_id",
             "legacy_document_no", "legacy_document_state",
         }
         self.assertTrue(legacy_product_fields.isdisjoint(str(product_payload)))
-        self.assertIn("validation_status", product_payload["sections"][0]["fields"])
-        self.assertIn("reject_reason", product_payload["sections"][0]["fields"])
-        self.assertEqual(product_payload["actions"][0]["name"], "action_create_payment_execution")
-        self.assertEqual(product_payload["actions"][0]["style"], "primary")
-        self.assertEqual(
-            product_payload["actions"][0]["visible_profiles"],
-            ["edit", "readonly"],
+
+        payment_form = self.env.ref("smart_construction_core.view_payment_request_pay_form")
+        self.assertEqual(payment_form.mode, "primary")
+        self.assertEqual(payment_form.inherit_id, form)
+        payment_form_arch = payment_form._get_combined_arch()
+        if isinstance(payment_form_arch, (str, bytes)):
+            payment_form_arch = etree.fromstring(payment_form_arch)
+        payment_section_nodes = payment_form_arch.xpath(
+            "/form/sheet/group[@data-sc-anchor]"
         )
+        self.assertEqual(
+            [node.get("data-sc-anchor") for node in payment_section_nodes],
+            [
+                "payment-request-pay-basic",
+                "payment-request-pay-basis",
+                "payment-request-pay-parties",
+                "payment-request-pay-detail",
+                "payment-request-pay-notes",
+                "payment-request-pay-trace",
+            ],
+        )
+        self.assertEqual(
+            [node.get("string") for node in payment_section_nodes],
+            ["基本信息", "付款依据", "收付款信息", "付款明细", "说明与附件", "履约与追溯"],
+        )
+        payment_action = self.env.ref("smart_construction_core.action_payment_request_user_payment_apply")
+        action_form_views = payment_action.view_ids.filtered(lambda row: row.view_mode == "form").mapped("view_id")
+        self.assertEqual(action_form_views, payment_form)
+        receive_action = self.env.ref("smart_construction_core.action_payment_request_receive")
+        receive_form_views = receive_action.view_ids.filtered(lambda row: row.view_mode == "form").mapped("view_id")
+        self.assertEqual(receive_form_views, form)
 
         execution_contract = self.env.ref(
             "smart_construction_core.business_config_contract_payment_execution_from_request_productized_form_v1"
