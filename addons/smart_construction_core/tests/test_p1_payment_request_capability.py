@@ -1666,12 +1666,11 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertFalse(payment_form_arch.xpath("/form/sheet/div[contains(concat(' ', normalize-space(@class), ' '), ' oe_title ')]"))
         self.assertFalse(payment_form_arch.xpath("/form/sheet//group//field[@name='name']"))
         self.assertFalse(payment_form_arch.xpath("/form/sheet//group//field[@name='payment_flow_label']"))
-        basic_state_nodes = payment_form_arch.xpath(
-            "/form/sheet/group[@name='sc_payment_request_pay_basic']//field[@name='state']"
-        )
-        self.assertFalse(
-            basic_state_nodes,
-            [(node.getparent().get("string"), dict(node.attrib)) for node in basic_state_nodes],
+        self.assertEqual(
+            payment_form_arch.xpath(
+                "/form/sheet/group[@name='sc_payment_request_pay_basic']//field[@name='state']/@invisible"
+            ),
+            ["1"],
         )
         self.assertFalse(payment_form_arch.xpath("/form/sheet//field[@name='payment_blocking_reason_display']"))
         self.assertNotIn("收款账户信息待补充；审批可继续", etree.tostring(payment_form_arch, encoding="unicode"))
@@ -1713,6 +1712,11 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(
             payment_form_arch.xpath("/form/sheet/group[1]/group[2]/field[@name='partner_transaction_eligibility']/@widget"),
             ["badge"],
+        )
+        self.assertFalse(
+            payment_form_arch.xpath(
+                "/form/sheet/group[@name='sc_payment_request_pay_basic']//field[@name='partner_transaction_eligibility_reason']"
+            )
         )
         payment_action = self.env.ref("smart_construction_core.action_payment_request_user_payment_apply")
         action_form_views = payment_action.view_ids.filtered(lambda row: row.view_mode == "form").mapped("view_id")

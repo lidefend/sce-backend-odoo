@@ -288,8 +288,11 @@
                 <xpath expr="/form/sheet/group[1]/group[1]/field[@name='name']" position="replace"/>
                 <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payment_flow_label']" position="replace"/>
                 <!-- The page header already carries the workflow state for this
-                     entry; do not repeat it as an ordinary body fact. -->
-                <xpath expr="/form/sheet/group[1]/group[1]/field[@name='state']" position="replace"/>
+                     entry.  Retain the technical occurrence used by the native
+                     status contract, but do not repeat it as a body fact. -->
+                <xpath expr="/form/sheet/group[1]/group[1]/field[@name='state']" position="attributes">
+                    <attribute name="invisible">1</attribute>
+                </xpath>
                 <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payment_blocking_reason_display']" position="replace"/>
                 <!-- The action bar is the executable authority.  The derived
                      next-step text does not account for every header modifier,
@@ -311,6 +314,10 @@
                 <xpath expr="/form/sheet/group[1]/group[2]/field[@name='partner_transaction_eligibility']" position="attributes">
                     <attribute name="widget">badge</attribute>
                 </xpath>
+                <!-- Non-normal eligibility states are already rendered by the
+                     action-scoped alerts above; the normal explanation is not a
+                     separate business fact. -->
+                <xpath expr="/form/sheet/group[1]/group[2]/field[@name='partner_transaction_eligibility_reason']" position="replace"/>
                 <!-- The formal payment entry starts with the party identity.
                      Inner groups remain layout containers, not section owners. -->
                 <xpath expr="/form/sheet/group[1]/group[2]/field[@name='project_id']" position="after">
