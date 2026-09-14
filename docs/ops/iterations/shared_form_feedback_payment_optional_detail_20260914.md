@@ -85,7 +85,7 @@ Formal Product Layer：P0 + P1 + P4。Standard vs User-Specific：平台通用�
 
 `accepted_amount_uppercase` 的源码消费者仅发现历史展示回退、API/列表字段和迁移延续；未发现当前页面的确认动作、相等校验或金额计算依赖。因此本批没有删除字段、改变 ORM 写入兼容或迁移规则，而是由付款申请入口专用原生视图移除当前金额区的编辑 occurrence，并在既有历史追溯 notebook 中提供唯一只读 occurrence。当前办理不再要求用户维护历史值。
 
-`payee_account_source_display` 与 `payee_account_completeness` 的含义已经拆开：来源只回答“当前账户字段从哪里来”，任一申请快照字段存在即为“本次申请账户快照”，否则任一往来单位默认账户字段存在即为“往来单位默认结算账户”，均不存在时返回空值并由原生声明显示“尚无账户来源”；完整度仍独立回答有效账户信息是否齐全。两者不再相互复述。
+`payee_account_source_display` 与 `payee_account_completeness` 的含义已经拆开：来源只回答“当前账户字段从哪里来”。账户全部来自申请快照时显示“本次申请账户快照”，全部回退到往来单位默认账户时显示“往来单位默认结算账户”，部分申请快照、部分默认账户时明确显示混合来源；均不存在时返回空值并由原生声明显示“尚无账户来源”。完整度仍独立回答有效账户信息是否齐全，两者不再相互复述。
 
 ### 原生字段表达的最终断点
 
@@ -111,7 +111,7 @@ Changed paths 涉及 P0 契约合成及共享前端、P1 付款视图/模型/han
 | L0 | 源检查点 HEAD/Tree/完整指纹一致，工作树 clean | 7440 paths；最终冻结后重新生成 exact-head 身份 |
 | L1 | `make ci.local.iteration` PASS，16 tests；严格类型、语法和 `git diff --check` PASS | 不把 L1 当作交付 receipt |
 | L2 前端 | professional component registry 43 cases + 3 guards；X2Many guard 4 个反例；相关 presenter/navigation/detail collection 测试均非零 PASS | `props.adapter.one2manyColumns(props.field.name)` 与等价局部 adapter 调用均通过；缺失调用和错误参数均失败 |
-| L2 后端 | 选择 4 个方法，实际执行 4 个方法，框架统计 6 tests，失败/错误 0；后续受影响 2 方法与 1 方法分别非零 PASS；最终历史金额/账户来源补项选择并实际执行 3 个方法，框架统计 5 tests，失败/错误 0 | 无明细、有明细、零金额、历史不一致、引入同步、handler/模型跨币种拒绝、权威名称搜索、币种元数据、来源/完整度独立和历史字段唯一只读 occurrence |
+| L2 后端 | 选择 4 个方法，实际执行 4 个方法，框架统计 6 tests，失败/错误 0；后续受影响 2 方法与 1 方法分别非零 PASS；历史金额/账户来源补项选择并实际执行 3 个方法，框架统计 5 tests，失败/错误 0；混合账户来源修复选择并实际执行 1 个方法，框架统计 3 tests，失败/错误 0 | 无明细、有明细、零金额、历史不一致、引入同步、handler/模型跨币种拒绝、权威名称搜索、币种元数据、纯快照/纯默认/混合/无来源、完整度独立和历史字段唯一只读 occurrence |
 | L3 | 受管 `local.dev` 增量升级 `smart_construction_core`、重启和 authority health PASS | 仅 `sc-local-dev/sc_dev_demo`；没有手工拼接 Compose/DB/profile |
 | L4 只读布局 | 621，1088×791 与 390×844；初始折叠、展开稳定态、再次收起均 PASS，`mutationCount=0` | 展开 grid/field 宽度比均为 1；收起 contentCount=0，ownerHeight=54 |
 | L4 字段表达样板 | `16b68142af22be2811e59a3e1e5087e4f3383501`，621、收入合同 15、收入结算 2，1088×791 与 390×844，light，`mutationCount=0` | 621 来源与完整度分离、历史值退出当前金额区；合同覆盖有值只读和未声明空值，结算覆盖编辑控件与只读值；显式只读空值不覆盖真实值或进入编辑控件 |
@@ -122,8 +122,9 @@ Changed paths 涉及 P0 契约合成及共享前端、P1 付款视图/模型/han
 ## 证据与结转
 
 - 可选明细布局：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/shared-form-payment-621-optional-detail-states-1f96aac5/summary.json`。
-- 最终字段语义与共享反例：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/shared-form-semantic-fields-16b68142/summary.json`，绑定完整候选 `16b68142af22be2811e59a3e1e5087e4f3383501`，`pass=true`、`mutationCount=0`、零错误。付款样本为 621；收入合同 15 和收入结算 2 分别覆盖只读与编辑反例。
-- 专用真实闭环：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/payment-optional-detail-real-closure-16b68142/introduce-summary.json` 与 `remove-summary.json`，两份摘要均绑定完整候选 `16b68142af22be2811e59a3e1e5087e4f3383501` 且 `pass=true`。
+- 字段语义与共享反例的前置证据：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/shared-form-semantic-fields-16b68142/summary.json`，候选 `16b68142af22be2811e59a3e1e5087e4f3383501`，`pass=true`、`mutationCount=0`、零错误。付款样本为 621；收入合同 15 和收入结算 2 分别覆盖只读与编辑反例。该目录名和摘要只包含 HEAD，不单独充当完整工作树身份门禁。
+- 专用真实闭环的前置证据：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/payment-optional-detail-real-closure-16b68142/introduce-summary.json` 与 `remove-summary.json`，两份摘要均绑定候选 `16b68142af22be2811e59a3e1e5087e4f3383501` 且 `pass=true`，但同样不单独充当完整工作树身份门禁。
+- 初次独立复核据此提出两个阻断：混合账户字段被笼统标为申请快照，以及 L4 摘要缺少完整工作树指纹绑定。前者已由 P1 模型和反例测试修复；后者不冒用旧证据，将在最终 clean HEAD 上为浏览器样板和专用写入闭环分别记录运行前后完整指纹，并与摘要共同组成 exact-candidate 证据。
 - 621 全程只读；真实写入仅作用于受管付款 fixture。最终专用 reset 后，权威回读为草稿、金额 10000、0 行、`amount_uses_details=false`。
 - 布局证据源候选 `1f96aac5…` 到产品源检查点的后续变更只涉及后端金额/币种规则、引入对话框币种表达和 P4 工具，不改变已验收的 Disclosure 全宽/销毁内容实现。
 - 最终 P4 旅程绑定明确的 S69 settlement/line XMLID，并以浏览器财务用户、公司、币种、项目和合同验证来源；`EXIT` trap 在任何已进入可变阶段的中断路径执行专用 reset，正常结束则显式解除 trap。该最终实现已在 `084f5762…` 上由完整受管入口验证，未沿用旧候选结果。
@@ -141,4 +142,4 @@ Changed paths 涉及 P0 契约合成及共享前端、P1 付款视图/模型/han
 
 ## 下一步
 
-621 的历史金额与账户来源语义补项、收入合同/结算共享反例，以及有明细金额同步和删除最后一行的受管真实闭环均已绑定当前产品候选 `16b68142…` 通过。下一步只整理生成证据并预检，随后冻结最终 clean HEAD、运行一次 Quick 与独立复核；不追加页面美化、审批流程或新的金额口径专题。
+历史金额归属、账户来源语义、收入合同/结算共享反例，以及有明细金额同步和删除最后一行的前置验证均已完成。最终冻结将重新绑定完整工作树指纹、浏览器样板与专用闭环，然后仅运行一次 exact-head Quick 并复核上述两个阻断；不追加页面美化、审批流程或新的金额口径专题。
