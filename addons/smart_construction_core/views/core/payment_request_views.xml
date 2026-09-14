@@ -341,7 +341,8 @@
                     <attribute name="help">可从往来单位默认账号带入；草稿中允许修改，且不会覆盖往来单位主数据。</attribute>
                 </xpath>
                 <xpath expr="/form/sheet/group[3]/group[1]/field[@name='payee_account_source_display']" position="attributes">
-                    <attribute name="help">说明当前完整账户取自本次申请快照、往来单位默认账户，或仍待补充。</attribute>
+                    <attribute name="help">说明当前账户信息取自本次申请快照或往来单位默认结算账户；账户是否完整由左侧状态单独表达。</attribute>
+                    <attribute name="options">{'sc_readonly_empty_text': '尚无账户来源'}</attribute>
                 </xpath>
                 <xpath expr="/form/sheet/group[3]/group[2]/field[@name='partner_account_name']" position="attributes">
                     <attribute name="options">{'sc_readonly_empty_text': '往来单位未配置'}</attribute>
@@ -378,7 +379,9 @@
                 </xpath>
                 <xpath expr="/form/sheet/group[2]/group[2]/field[@name='accepted_amount_uppercase']" position="attributes">
                     <attribute name="string">历史确认金额大写</attribute>
-                    <attribute name="help">用于延续历史验收口径；不参与当前申请金额计算或付款明细合计校验。</attribute>
+                    <attribute name="readonly">1</attribute>
+                    <attribute name="help">历史验收数据延续，仅供追溯；不参与当前申请金额计算或付款明细合计校验。</attribute>
+                    <attribute name="options">{'sc_readonly_empty_text': '无历史确认记录'}</attribute>
                 </xpath>
                 <xpath expr="/form/sheet/group[2]/group[1]/field[@name='cost_category_name']" position="attributes">
                     <attribute name="string">明细成本分类</attribute>
@@ -445,6 +448,7 @@
                 </xpath>
                 <xpath expr="//group[@name='sc_payment_request_pay_trace']" position="inside">
                     <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payment_execution_status_display']" position="move"/>
+                    <xpath expr="//group[@name='sc_payment_request_pay_amount_facts']/field[@name='accepted_amount_uppercase']" position="move"/>
                     <xpath expr="/form/sheet/notebook" position="move"/>
                 </xpath>
             </field>

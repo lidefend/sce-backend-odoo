@@ -1728,6 +1728,34 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(request.legal_next_action_display, "查看付款登记")
         self.assertEqual(execution.payment_request_id, request)
 
+    def test_account_source_is_independent_from_account_completeness(self):
+        partner = self.env["res.partner"].create(
+            {"name": "P1 Payment Counterparty Without Account", "supplier_rank": 1}
+        )
+        contract = self.env["construction.contract"].create(
+            {
+                "subject": "P1 Payment Contract Without Account",
+                "type": "in",
+                "project_id": self.project.id,
+                "partner_id": partner.id,
+            }
+        )
+        request = self.env["payment.request"].create(
+            {"type": "pay", "contract_id": contract.id, "amount": 100}
+        )
+
+        self.assertEqual(request.payee_account_completeness, "incomplete")
+        self.assertFalse(request.payee_account_source_display)
+
+        request.payment_account_name = "Partial application snapshot"
+        self.assertEqual(request.payee_account_completeness, "incomplete")
+        self.assertEqual(request.payee_account_source_display, "本次申请账户快照")
+
+        request.payment_account_name = False
+        partner.sc_account_name = "Partial partner default"
+        self.assertEqual(request.payee_account_completeness, "incomplete")
+        self.assertEqual(request.payee_account_source_display, "往来单位默认结算账户")
+
     def test_draft_request_cannot_generate_or_anchor_execution(self):
         request = self._request()
         with self.assertRaisesRegex(UserError, "必须处于已批准状态"):
@@ -2002,10 +2030,10 @@ class TestP1PaymentRequestCapability(TransactionCase):
             [
                 "amount",
                 "amount_uppercase",
-                "accepted_amount_uppercase",
                 "paid_amount_total",
                 "unpaid_amount",
                 "funding_baseline_id",
+                "currency_id",
             ],
         )
         self.assertEqual(
@@ -2016,9 +2044,18 @@ class TestP1PaymentRequestCapability(TransactionCase):
             amount_section.xpath("./group[1]/field[@name='amount_uppercase']/@string"),
             ["系统生成金额大写"],
         )
+        historical_uppercase = payment_form_arch.xpath(
+            "/form/sheet/group[@name='sc_payment_request_pay_trace']/field[@name='accepted_amount_uppercase']"
+        )
+        self.assertEqual(len(historical_uppercase), 1)
+        self.assertEqual(historical_uppercase[0].get("string"), "历史确认金额大写")
+        self.assertEqual(historical_uppercase[0].get("readonly"), "1")
         self.assertEqual(
-            amount_section.xpath("./group[1]/field[@name='accepted_amount_uppercase']/@string"),
-            ["历史确认金额大写"],
+            historical_uppercase[0].get("options"),
+            "{'sc_readonly_empty_text': '无历史确认记录'}",
+        )
+        self.assertFalse(
+            amount_section.xpath(".//field[@name='accepted_amount_uppercase']")
         )
         self.assertEqual(
             amount_section.xpath("./group[1]/field[@name='funding_baseline_id']/@options"),
@@ -2284,6 +2321,8 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(readonly_empty_texts.get("cost_category_name"), {"尚未生成"})
         self.assertEqual(readonly_empty_texts.get("funding_baseline_id"), {"提交审批时生成"})
         self.assertEqual(readonly_empty_texts.get("partner_account_name"), {"往来单位未配置"})
+        self.assertEqual(readonly_empty_texts.get("accepted_amount_uppercase"), {"无历史确认记录"})
+        self.assertEqual(readonly_empty_texts.get("payee_account_source_display"), {"尚无账户来源"})
 
         container_tree = contract["layoutContract"]["containerTree"]
 

@@ -1280,7 +1280,6 @@ class PaymentRequest(models.Model):
         "partner_account_name",
         "partner_bank_name",
         "partner_bank_account",
-        "payee_account_completeness",
         "payment_execution_ids.state",
         "payment_execution_ids.active",
         "is_fully_paid",
@@ -1288,12 +1287,24 @@ class PaymentRequest(models.Model):
     def _compute_payment_handling_summary(self):
         execution_state_labels = dict(self.env["sc.payment.execution"]._fields["state"].selection)
         for record in self:
-            if record.payment_account_name and record.payment_bank_name and record.payment_account_no:
+            if any(
+                (
+                    record.payment_account_name,
+                    record.payment_bank_name,
+                    record.payment_account_no,
+                )
+            ):
                 record.payee_account_source_display = _("本次申请账户快照")
-            elif record.partner_account_name and record.partner_bank_name and record.partner_bank_account:
+            elif any(
+                (
+                    record.partner_account_name,
+                    record.partner_bank_name,
+                    record.partner_bank_account,
+                )
+            ):
                 record.payee_account_source_display = _("往来单位默认结算账户")
             else:
-                record.payee_account_source_display = _("未配置完整收款账户")
+                record.payee_account_source_display = False
 
             execution_history = record.payment_execution_ids.filtered(
                 lambda execution: execution.active and execution.state != "cancel"
