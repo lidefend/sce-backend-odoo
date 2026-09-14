@@ -30,6 +30,7 @@ native_navigation_model = read("pages/contractForm/nativeSectionNavigation.ts")
 canonical_renderer = read("pages/contractForm/CanonicalFormNodeRenderer.vue")
 professional_base_field = read("components/professional-fields/ProfessionalBaseFieldControl.vue")
 relations = read("components/template/X2ManyRelationRenderer.vue")
+visual_smoke = (ROOT / "scripts/verify/local_dev_candidate_visual_smoke.mjs").read_text(encoding="utf-8")
 
 combined = "\n".join((tokens, patterns, form_css))
 for forbidden in ("--sc-content-focused-form-max", "--sc-form-field-content-max"):
@@ -81,8 +82,18 @@ for required in (
     '<ScIcon name="arrow-right"',
     'flex: 1 1 auto;',
     ':deep(.form-section-navigation__scroll-control)',
+    'target.exerciseSectionBrowseFocus === true',
+    'forwardAtEnd.focused',
+    'backwardAtStart.focused',
+    'mutationCountBefore === report.mutationCount',
 ):
-    if required not in section_navigation:
+    source = section_navigation if required not in (
+        'target.exerciseSectionBrowseFocus === true',
+        'forwardAtEnd.focused',
+        'backwardAtStart.focused',
+        'mutationCountBefore === report.mutationCount',
+    ) else visual_smoke
+    if required not in source:
         fail(f"shared semantic navigation missing: {required}")
 for forbidden in (
     'form-section-navigation__cue',
