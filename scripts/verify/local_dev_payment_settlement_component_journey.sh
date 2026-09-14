@@ -89,7 +89,7 @@ PY
 
 reset_status=0
 ENV_FILE="$LOCAL_DEV_CANONICAL_ENV_FILE" \
-  make -C "$ROOT_DIR" --no-print-directory local.dev.sync_demo || reset_status=$?
+  make -C "$ROOT_DIR" --no-print-directory local.dev.reset_payment_request_fixture || reset_status=$?
 reset="$(resolve_target)"
 BEFORE_JSON="$before" RESET_JSON="$reset" python3 - <<'PY' || reset_status=$?
 import json
