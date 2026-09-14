@@ -377,12 +377,7 @@
                     <attribute name="string">系统生成金额大写</attribute>
                     <attribute name="help">系统根据申请金额自动生成，用于金额核对，不需要人工填写。</attribute>
                 </xpath>
-                <xpath expr="/form/sheet/group[2]/group[2]/field[@name='accepted_amount_uppercase']" position="attributes">
-                    <attribute name="string">历史确认金额大写</attribute>
-                    <attribute name="readonly">1</attribute>
-                    <attribute name="help">历史验收数据延续，仅供追溯；不参与当前申请金额计算或付款明细合计校验。</attribute>
-                    <attribute name="options">{'sc_readonly_empty_text': '无历史确认记录'}</attribute>
-                </xpath>
+                <xpath expr="/form/sheet/group[2]/group[2]/field[@name='accepted_amount_uppercase']" position="replace"/>
                 <xpath expr="/form/sheet/group[2]/group[1]/field[@name='cost_category_name']" position="attributes">
                     <attribute name="string">明细成本分类</attribute>
                     <attribute name="help">根据付款申请明细中的来源分类自动汇总；无明细或来源未提供分类时尚未生成。</attribute>
@@ -448,8 +443,16 @@
                 </xpath>
                 <xpath expr="//group[@name='sc_payment_request_pay_trace']" position="inside">
                     <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payment_execution_status_display']" position="move"/>
-                    <xpath expr="//group[@name='sc_payment_request_pay_amount_facts']/field[@name='accepted_amount_uppercase']" position="move"/>
                     <xpath expr="/form/sheet/notebook" position="move"/>
+                </xpath>
+                <xpath expr="//group[@name='sc_payment_request_pay_trace']/notebook" position="inside">
+                    <page name="sc_payment_request_historical_amount" string="历史金额确认">
+                        <field name="accepted_amount_uppercase"
+                               string="历史确认金额大写"
+                               readonly="1"
+                               help="历史验收数据延续，仅供追溯；不参与当前申请金额计算或付款明细合计校验。"
+                               options="{'sc_readonly_empty_text': '无历史确认记录'}"/>
+                    </page>
                 </xpath>
             </field>
         </record>

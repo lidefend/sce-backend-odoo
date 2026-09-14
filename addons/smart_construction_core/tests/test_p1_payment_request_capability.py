@@ -2045,7 +2045,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
             ["系统生成金额大写"],
         )
         historical_uppercase = payment_form_arch.xpath(
-            "/form/sheet/group[@name='sc_payment_request_pay_trace']/field[@name='accepted_amount_uppercase']"
+            "/form/sheet/group[@name='sc_payment_request_pay_trace']/notebook/page[@name='sc_payment_request_historical_amount']/field[@name='accepted_amount_uppercase']"
         )
         self.assertEqual(len(historical_uppercase), 1)
         self.assertEqual(historical_uppercase[0].get("string"), "历史确认金额大写")
@@ -2347,6 +2347,43 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(
             {row.get("label") for row in widgets_by_field["accepted_amount_uppercase"]},
             {"历史确认金额大写"},
+        )
+        accepted_widget_ids = {
+            row.get("widgetId")
+            for row in widgets_by_field["accepted_amount_uppercase"]
+            if row.get("widgetId")
+        }
+        resolved_widget_ids = {
+            row.get("widgetId")
+            for row in contract["statusContract"].get("widgetStatus") or []
+            if row.get("widgetId")
+        }
+        self.assertTrue(
+            accepted_widget_ids <= resolved_widget_ids,
+            (accepted_widget_ids, resolved_widget_ids),
+        )
+        accepted_status_rows = [
+            row
+            for row in contract["statusContract"].get("widgetStatus") or []
+            if row.get("widgetId") in accepted_widget_ids
+        ]
+        self.assertTrue(
+            all(
+                row.get("visible") is True and row.get("readonly") is True
+                for row in accepted_status_rows
+            ),
+            accepted_status_rows,
+        )
+        accepted_selector_rows = [
+            row
+            for row in contract["statusContract"].get("selectorStatus") or []
+            if row.get("selector")
+            in accepted_widget_ids
+            | {"accepted_amount_uppercase", "field.accepted_amount_uppercase"}
+        ]
+        self.assertTrue(
+            all(row.get("visible") is not False for row in accepted_selector_rows),
+            accepted_selector_rows,
         )
         self.assertEqual(
             {
