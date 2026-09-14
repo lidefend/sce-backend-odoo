@@ -1665,6 +1665,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
         )
         self.assertFalse(payment_form_arch.xpath("/form/sheet/div[contains(concat(' ', normalize-space(@class), ' '), ' oe_title ')]"))
         self.assertFalse(payment_form_arch.xpath("/form/sheet//group//field[@name='name']"))
+        self.assertFalse(payment_form_arch.xpath("/form/sheet//group//field[@name='payment_flow_label']"))
         blocking_nodes = payment_form_arch.xpath("/form/sheet/div[contains(concat(' ', normalize-space(@class), ' '), ' alert ')]/field[@name='payment_blocking_reason_display']")
         self.assertEqual(len(blocking_nodes), 1)
         self.assertEqual(blocking_nodes[0].get("nolabel"), "1")
