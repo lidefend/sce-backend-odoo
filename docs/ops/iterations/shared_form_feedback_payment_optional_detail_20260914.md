@@ -87,7 +87,7 @@ Formal Product Layer：P0 + P1 + P4。Standard vs User-Specific：平台通用�
 
 ### 原生字段表达的最终断点
 
-付款原生视图已经声明新的字段标签、帮助与只读空值语义，但最终页面仍一度显示模型级旧标签。逐层核对确认了两个通用断点：
+付款原生视图已经声明新的字段标签、帮助与只读空值语义，但最终页面仍一度显示模型级旧标签或通用 `-`。逐层核对确认了三个通用断点：
 
 1. 严格布局字段源使用 `setdefault` 合并 `fields_get()`，导致模型级标签可能压过最终合成视图的显式 occurrence 标签；现改为最终原生 occurrence 明确覆盖模型回退。
 2. 业务分类表单策略在已经选中 `native_authority` 后仍发布 `category_sections_as_task_tabs`，使“任务式呈现”再次变成结构权威。现在业务分类仍提供默认值、必填和字段级语义，但只有在没有原生或显式语义结构权威时才保留旧分类章节回退；普通业务结构构建随后从最终原生视图生成唯一结构。
@@ -97,6 +97,8 @@ Formal Product Layer：P0 + P1 + P4。Standard vs User-Specific：平台通用�
 首次以该原生权威结构进入浏览器时，客户端按正式词汇表 fail-closed：后端治理来源已输出 `formPresentationMode`，但 JSON Schema、TypeScript 类型和解码器尚未共同接纳它。现已将该字段约束为 `task | workspace`，补齐合法保真与非法值拒绝测试；没有通过丢弃治理信息绕开校验。
 
 契约恢复加载后，浏览器又证明只读空值语义停在严格 widget：字段布局 schema 只读取布局节点本身，未在节点缺失时按同一 `widgetId` 使用严格 widget 的 `componentConfig.widgetSemantics`。现采用“occurrence 节点声明优先、同身份严格 widget 仅补缺”的通用规则，避免覆盖合法局部语义。
+
+上述补缺首先修复了设计器/原生画布路径，但 621 的正式页面实际通过 canonical driver 渲染；`canonicalFieldToFormSection` 当时只传递完整 `widgetSemantics`，没有把其中的 `readonly_empty_text` 投射到 `FormSectionFieldSchema.readonlyEmptyText`。因此最终 DOM 仍使用通用 `-`。现由 canonical 字段适配器使用同一语义键完成通用投射，并增加正式渲染路径断言；没有按付款模型或 `funding_baseline_id` 字段名分支。
 
 ## 验证分层与结果
 
@@ -110,6 +112,7 @@ Changed paths 涉及 P0 契约合成及共享前端、P1 付款视图/模型/han
 | L2 后端 | 选择 4 个方法，实际执行 4 个方法，框架统计 6 tests，失败/错误 0；后续受影响 2 方法与 1 方法分别非零 PASS；最终跨币种/搜索方法再次实际执行 1 个方法，框架统计 3 tests，失败/错误 0 | 无明细、有明细、零金额、历史不一致、引入同步、handler/模型跨币种拒绝、权威名称搜索和币种元数据 |
 | L3 | 受管 `local.dev` 增量升级 `smart_construction_core`、重启和 authority health PASS | 仅 `sc-local-dev/sc_dev_demo`；没有手工拼接 Compose/DB/profile |
 | L4 只读布局 | 621，1088×791 与 390×844；初始折叠、展开稳定态、再次收起均 PASS，`mutationCount=0` | 展开 grid/field 宽度比均为 1；收起 contentCount=0，ownerHeight=54 |
+| L4 字段表达样板 | `bf9dc95f8078638b39c2e485abcaebe195ee56ef`，621，1088×791 与 390×844，light，`mutationCount=0` | 基本信息、申请金额、收付款信息保持连续；资金基线空值显示“提交审批时生成”，金额/状态/可填写账户仍使用各自组件；没有业务写入 |
 | L4 写入闭环 | 候选 `084f576239bff5f56831e68863b6f0abaeae0682`；登记 XMLID `smart_construction_demo.payment_request_floorplan_demo_record`，finance demo user | 受管完整旅程 PASS：引入并保存/权威回读金额 2400；取消删除保留行；确认删除后回读 0 行且金额仍为 2400；随后专用 reset PASS |
 
 后端测试统计统一解释为：选择目标是测试方法；Odoo 统计行还包含框架阶段计数，不能把 `6 tests` 宣称为 6 个独立业务用例。浏览器 DOM 断言只证明语义关联，未实际使用读屏器，因此不宣称完整读屏体验通过。
@@ -121,6 +124,7 @@ Changed paths 涉及 P0 契约合成及共享前端、P1 付款视图/模型/han
 - 621 全程只读；真实写入仅作用于受管付款 fixture。最终专用 reset 后，权威回读为草稿、金额 10000、0 行、`amount_uses_details=false`。
 - 布局证据源候选 `1f96aac5…` 到产品源检查点的后续变更只涉及后端金额/币种规则、引入对话框币种表达和 P4 工具，不改变已验收的 Disclosure 全宽/销毁内容实现。
 - 最终 P4 旅程绑定明确的 S69 settlement/line XMLID，并以浏览器财务用户、公司、币种、项目和合同验证来源；`EXIT` trap 在任何已进入可变阶段的中断路径执行专用 reset，正常结束则显式解除 trap。该最终实现已在 `084f5762…` 上由完整受管入口验证，未沿用旧候选结果。
+- 字段表达样板：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/shared-form-payment-621-field-expression-bf9dc95f/summary.json`，绑定 HEAD `bf9dc95f8078638b39c2e485abcaebe195ee56ef`、Tree `85c768fe3e6aadf1dea2a6848343ecfe5e1be3d1` 和完整指纹 `d3064c7d1e33fc201415a2c0f7847710068e49acd7528c7daf5218831d5b0a99`（7443 paths）；`pass=true`，零写入、零错误。对应截图覆盖 1088 基本信息、申请金额与收付款信息，以及 390 申请金额/收付款信息。
 - 第一次冻结 Quick 在 `tenant_product_legacy_boundary` 发现无效明细错误标签仍以历史行 ID 作回退，立即失败且未签发 receipt。P1 随后改为“来源单号，否则业务行序号”；该守卫与对应零金额/历史不一致方法均非零通过，并重新完成模块升级。下一次 Quick 越过该守卫后，在 lint 发现结构收敛后遗留的未使用 `visibleFieldCount`，同样未签发 receipt；P0 仅删除已无消费者的 helper，lint 与严格类型检查通过。两项恢复都不改变最终真实闭环使用的有效明细、金额同步、删除确认、resolver 和 reset 输入，因此 L4 结果按确定性影响分析结转，不重复写入 fixture。
 
 ## 风险、边界与回滚
@@ -133,4 +137,4 @@ Changed paths 涉及 P0 契约合成及共享前端、P1 付款视图/模型/han
 
 ## 下一步
 
-当前先完成 621 的“基本信息—申请金额—收付款信息”连续区域样板。样板通过后再补合同、结算各一个共享反例，随后才进入生成证据预检、最终冻结、一次 Quick 与独立复核；不追加页面美化、审批流程或新的金额口径专题。
+621 的“基本信息—申请金额—收付款信息”连续区域样板已经绑定 `bf9dc95f…` 交回复核；`accepted_amount_uppercase` 是否继续要求新单人工维护仍是独立业务决策，本批未擅自删除或收紧。样板通过后再补合同、结算各一个共享反例，随后才进入生成证据预检、最终冻结、一次 Quick 与独立复核；不追加页面美化、审批流程或新的金额口径专题。
