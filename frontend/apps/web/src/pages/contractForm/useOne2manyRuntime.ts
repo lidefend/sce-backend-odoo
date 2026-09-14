@@ -79,6 +79,8 @@ export function useOne2manyRuntime(params: {
     );
     return {
       ...column,
+      invisible: behavior.invisible,
+      columnInvisible: behavior.columnInvisible,
       readonly: behavior.readonly,
       required: behavior.required,
     };

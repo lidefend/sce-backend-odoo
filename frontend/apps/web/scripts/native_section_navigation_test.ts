@@ -4,6 +4,7 @@ import {
   activeSectionKeyAtAnchor,
   nextBusinessActionLabel,
   nativeSectionNavigationRole,
+  relationshipCollectionNavigationItems,
   sectionScrollDelta,
   shouldPreserveAuthoritativeBusinessSections,
   workspaceSectionNavigationItems,
@@ -223,11 +224,11 @@ assert.deepEqual(contextSection.map(({ label, role, sourceType, sourceIdentity }
 const relationSections = workspaceSectionNavigationItems([node({
   nodeId: 'section.relations',
   fields: [
-    field({ widgetId: 'lines.income', fieldType: 'one2many', semanticRole: 'relation', label: '合同明细' }),
-    field({ widgetId: 'lines.settlement', fieldType: 'many2many', semanticRole: 'relation', label: '结算明细' }),
-    field({ widgetId: 'attachments', fieldType: 'many2many', semanticRole: 'relation', label: '附件', componentConfig: { widget: 'many2many_binary' } }),
-    field({ widgetId: 'resolved.attachments', fieldType: 'many2many', semanticRole: 'relation', label: '其他附件', componentResolution: { componentKey: 'ProfessionalAttachmentCollection', renderer: '', contractAdapter: '' } }),
-    field({ widgetId: 'descriptor.attachments', fieldType: 'many2many', semanticRole: 'relation', label: '原生附件', fieldDescriptor: { relation: 'ir.attachment' } }),
+    field({ widgetId: 'lines.income', fieldCode: 'income_line_ids', fieldType: 'one2many', semanticRole: 'relation', label: '合同明细' }),
+    field({ widgetId: 'lines.settlement', fieldCode: 'settlement_line_ids', fieldType: 'many2many', semanticRole: 'relation', label: '结算明细' }),
+    field({ widgetId: 'attachments', fieldCode: 'attachment_ids', fieldType: 'many2many', semanticRole: 'relation', label: '附件', componentConfig: { widget: 'many2many_binary' } }),
+    field({ widgetId: 'resolved.attachments', fieldCode: 'other_attachment_ids', fieldType: 'many2many', semanticRole: 'relation', label: '其他附件', componentResolution: { componentKey: 'ProfessionalAttachmentCollection', renderer: '', contractAdapter: '' } }),
+    field({ widgetId: 'descriptor.attachments', fieldCode: 'native_attachment_ids', fieldType: 'many2many', semanticRole: 'relation', label: '原生附件', fieldDescriptor: { relation: 'ir.attachment' } }),
   ],
 })]);
 assert.deepEqual(relationSections.map(({ label, contentKind, sourceIdentity }) => ({ label, contentKind, sourceIdentity })), [
@@ -235,6 +236,93 @@ assert.deepEqual(relationSections.map(({ label, contentKind, sourceIdentity }) =
   { label: '结算明细', contentKind: 'relation-collection', sourceIdentity: 'lines.settlement' },
 ]);
 assert.equal(new Set(relationSections.map((item) => item.selector)).size, 2, 'relation targets must remain distinct');
+
+const repeatedRelationOccurrences = workspaceSectionNavigationItems([node({
+  nodeId: 'section.repeated.relation',
+  fields: [
+    field({
+      widgetId: 'purchase.tags', fieldCode: 'purchase_order_ids', fieldType: 'many2many',
+      semanticRole: 'relation', label: '采购订单', componentConfig: { nativeWidget: 'many2many_tags' },
+    }),
+    field({
+      widgetId: 'purchase.table', fieldCode: 'purchase_order_ids', fieldType: 'many2many',
+      semanticRole: 'relation', label: '采购订单', fieldDescriptor: { subview: { tree: { columns: ['name'] } } },
+    }),
+  ],
+})]);
+assert.deepEqual(
+  repeatedRelationOccurrences.map(({ label, sourceIdentity }) => ({ label, sourceIdentity })),
+  [{ label: '采购订单', sourceIdentity: 'purchase.table' }],
+  'tag and table occurrences of one field must yield one navigation target owned by the richer visible occurrence',
+);
+const repeatedFieldAcrossBusinessSections = relationshipCollectionNavigationItems([
+  node({
+    nodeId: 'section.procurement.source', title: '采购来源',
+    attributes: { 'data-sc-anchor': 'procurement-source' },
+    fields: [field({
+      widgetId: 'purchase.source.table', fieldCode: 'purchase_order_ids', fieldType: 'many2many',
+      semanticRole: 'relation', semanticSlot: 'source_trace', semanticGroup: 'purchase_orders',
+      label: '来源采购订单',
+    })],
+  }),
+  node({
+    nodeId: 'section.procurement.audit', title: '采购追溯',
+    attributes: { 'data-sc-anchor': 'procurement-audit' },
+    fields: [field({
+      widgetId: 'purchase.audit.table', fieldCode: 'purchase_order_ids', fieldType: 'many2many',
+      semanticRole: 'relation', semanticSlot: 'source_trace', semanticGroup: 'purchase_orders',
+      label: '追溯采购订单',
+    })],
+  }),
+]);
+assert.deepEqual(
+  repeatedFieldAcrossBusinessSections.map(({ label, sourceIdentity }) => ({ label, sourceIdentity })),
+  [
+    { label: '来源采购订单', sourceIdentity: 'purchase.source.table' },
+    { label: '追溯采购订单', sourceIdentity: 'purchase.audit.table' },
+  ],
+  'explicit business anchors must keep the same canonical field in two regions distinct even when both occurrences carry the same semantic slot/group',
+);
+const repeatedFieldAcrossUnanchoredSemanticRegions = relationshipCollectionNavigationItems([
+  node({ nodeId: 'unrelated.leading.root', fields: [] }),
+  node({
+    nodeId: 'unanchored.semantic.wrapper', fields: [], children: [
+      node({
+        nodeId: 'semantic.procurement.source', semanticSlot: 'source_trace', semanticGroup: 'purchase_source',
+        fields: [field({
+          widgetId: 'semantic.purchase.source.table', fieldCode: 'purchase_order_ids', fieldType: 'many2many',
+          semanticRole: 'relation', label: '语义来源采购订单',
+        })],
+      }),
+      node({
+        nodeId: 'semantic.procurement.audit', semanticSlot: 'source_trace', semanticGroup: 'purchase_audit',
+        fields: [field({
+          widgetId: 'semantic.purchase.audit.table', fieldCode: 'purchase_order_ids', fieldType: 'many2many',
+          semanticRole: 'relation', label: '语义追溯采购订单',
+        })],
+      }),
+    ],
+  }),
+]);
+assert.deepEqual(
+  repeatedFieldAcrossUnanchoredSemanticRegions.map(({ label, sourceIdentity }) => ({ label, sourceIdentity })),
+  [
+    { label: '语义来源采购订单', sourceIdentity: 'semantic.purchase.source.table' },
+    { label: '语义追溯采购订单', sourceIdentity: 'semantic.purchase.audit.table' },
+  ],
+  'root-array iteration metadata must not leak into region inheritance or merge distinct unanchored semantic regions',
+);
+assert.deepEqual(
+  workspaceSectionNavigationItems([node({
+    nodeId: 'section.hidden.relation.occurrences',
+    fields: [
+      field({ widgetId: 'purchase.tags.hidden', fieldCode: 'purchase_order_ids', fieldType: 'many2many', visible: false }),
+      field({ widgetId: 'purchase.table.hidden', fieldCode: 'purchase_order_ids', fieldType: 'many2many', visible: false }),
+    ],
+  })]),
+  [],
+  'a relation whose occurrences are all hidden must not produce a dead navigation target',
+);
 
 assert.deepEqual(workspaceSurfaceNavigationItems({ collaborationAvailable: true, auditAvailable: false }).map((item) => item.role), ['activity']);
 assert.deepEqual(workspaceSurfaceNavigationItems({ collaborationAvailable: true, auditAvailable: true }).map((item) => item.role), ['activity', 'audit']);

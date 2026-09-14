@@ -3131,8 +3131,18 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                                 {
                                     "type": "group",
                                     "name": "native_group",
+                                    "attributes": {
+                                        "data-sc-anchor": "contract-identity",
+                                        "data-sc-form-structure-group": "identity",
+                                    },
                                     "children": [{"type": "field", "name": "name"}],
-                                }
+                                },
+                                {
+                                    "type": "group",
+                                    "name": "native_unbound_group",
+                                    "attributes": {"data-sc-anchor": "contract-unbound"},
+                                    "children": [{"type": "field", "name": "subject"}],
+                                },
                             ],
                         },
                         {
@@ -3208,9 +3218,15 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         native_name = tree[1]["children"][0]["children"][0]
         self.assertEqual(native_name["name"], "name")
         self.assertEqual(native_name["formStructureRole"]["role"], "context")
+        self.assertEqual(
+            tree[1]["children"][0]["formStructureRole"],
+            {"role": "context", "slot": "primary_facts", "group": "identity"},
+        )
+        self.assertNotIn("formStructureRole", tree[1]["children"][1])
         self.assertEqual(tree[2]["name"], "hidden_native_group")
+        self.assertNotIn("formStructureRole", tree[2])
         self.assertEqual(tree[2]["children"][0]["name"], "hidden_internal_note")
-        self.assertNotIn("subject", str(tree))
+        self.assertNotIn("visible_contract_amount", str(tree))
         self.assertNotIn("line_ids", str(tree))
         self.assertNotIn("business_orchestrated_sheet", str(tree))
 

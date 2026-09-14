@@ -77,7 +77,7 @@
             :label="`${field.label}明细列表`"
           >
             <template
-              v-for="column in adapter.one2manyColumns(field.name)"
+              v-for="column in displayOne2manyColumns"
               :key="`readonly-cell-${column.name}`"
               #[column.name]="{ row }"
             >
@@ -175,7 +175,7 @@
       </header>
 
       <div
-        v-if="adapter.one2manyColumns(field.name).length && adapter.visibleOne2manyRows(field.name).length"
+        v-if="displayOne2manyColumns.length && adapter.visibleOne2manyRows(field.name).length"
         class="o2m-table-scroll"
         data-detail-collection-content="desktop-table"
       >
@@ -203,7 +203,7 @@
             </div>
           </template>
           <template
-            v-for="column in adapter.one2manyColumns(field.name)"
+            v-for="column in displayOne2manyColumns"
             :key="`cell-${column.name}`"
             #[column.name]="{ row }"
           >
@@ -255,7 +255,7 @@
       </div>
 
       <div
-        v-if="adapter.one2manyColumns(field.name).length && adapter.visibleOne2manyRows(field.name).length"
+        v-if="displayOne2manyColumns.length && adapter.visibleOne2manyRows(field.name).length"
         class="o2m-mobile-list"
         data-detail-collection-content="mobile-cards"
       >
@@ -282,7 +282,7 @@
           </header>
           <div class="o2m-mobile-fields">
             <label
-              v-for="column in adapter.one2manyColumns(field.name)"
+              v-for="column in displayOne2manyColumns"
               :key="`${row.key}-mobile-${column.name}`"
               class="o2m-mobile-field"
               :data-validation-target="one2manyValidationTarget(field.name, row.key, column.name)"
@@ -326,7 +326,7 @@
       </div>
 
       <ScEmptyState
-        v-else-if="adapter.one2manyColumns(field.name).length"
+        v-else-if="displayOne2manyColumns.length"
         class="o2m-empty"
         density="compact"
         :title="`暂无明细，可使用「${adapter.one2manyCreateLabel(field.name, field.label)}」新增`"
@@ -405,11 +405,15 @@ import {
 const props = defineProps<X2ManyRelationRendererProps>();
 const one2manyPage = ref(1);
 const one2manyPageSize = 20;
+const displayOne2manyColumns = computed(() => (
+  props.adapter.one2manyVisibleColumns?.(props.field.name)
+  || props.adapter.one2manyColumns(props.field.name)
+));
 const one2manyRows = computed(() => {
   if (props.field.type !== 'one2many') return [];
   const rows = props.adapter.visibleOne2manyRows(props.field.name);
   if (!props.field.readonly) return rows;
-  const columns = props.adapter.one2manyColumns(props.field.name);
+  const columns = displayOne2manyColumns.value;
   return rows.filter((row) => columns.some((column) => (
     Boolean(props.adapter.one2manyColumnDisplayValue(column, row.values[column.name]))
   )));
@@ -420,7 +424,7 @@ const paginatedOne2manyRows = computed(() => {
   return one2manyRows.value.slice(start, start + one2manyPageSize);
 });
 const readonlyMobileColumns = computed(() => detailCollectionMobileColumnSplit(
-  props.adapter.one2manyColumns(props.field.name),
+  displayOne2manyColumns.value,
 ));
 const readonlyMobilePrimaryColumns = computed(() => readonlyMobileColumns.value.primary);
 const readonlyMobileAdditionalColumns = computed(() => readonlyMobileColumns.value.additional);
@@ -452,7 +456,7 @@ function readonlyCellCanExpand(column: RelationFieldColumn, value: unknown) {
 
 // ===== TDesign Table 列定义与行数据 =====
 const o2mTableColumns = computed(() => {
-  const fieldColumns = props.adapter.one2manyColumns(props.field.name).map((column, columnIndex) => ({
+  const fieldColumns = displayOne2manyColumns.value.map((column, columnIndex) => ({
     colKey: column.name,
     title: column.label,
     ...detailCollectionColumnPresentation(column, columnIndex, false),
@@ -465,7 +469,7 @@ const o2mTableColumns = computed(() => {
 });
 const readonlyO2mTableColumns = computed(() => {
   return [
-    ...props.adapter.one2manyColumns(props.field.name).map((column, columnIndex) => ({
+    ...displayOne2manyColumns.value.map((column, columnIndex) => ({
       colKey: column.name,
       title: column.label,
       ...detailCollectionColumnPresentation(column, columnIndex, true),
@@ -483,7 +487,7 @@ const o2mTableData = computed(() => paginatedOne2manyRows.value.map((row) => {
     _messages: o2mRowMessages(row),
   };
   // 展开字段值到行对象，供 TDesign Table 普通列渲染
-  const columns = props.adapter.one2manyColumns(props.field.name);
+  const columns = displayOne2manyColumns.value;
   columns.forEach((column) => {
     rowData[column.name] = props.adapter.one2manyColumnDisplayValue(column, row.values[column.name]);
   });
@@ -807,7 +811,7 @@ function o2mAmountTotal(column: RelationFieldColumn) {
 }
 
 const aggregateAmountColumns = computed(() => (
-  props.adapter.one2manyColumns(props.field.name).filter(isO2mAmountColumn)
+  displayOne2manyColumns.value.filter(isO2mAmountColumn)
 ));
 
 function o2mRowHasMessages(row: RelationFieldRow) {

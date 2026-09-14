@@ -384,6 +384,14 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     one2manyRowStateLabel,
     prepareOne2manyColumns: (fieldName: string) => dependencies.ensureRelationFieldDescriptors?.(fieldName),
     one2manyColumns,
+    one2manyVisibleColumns: (fieldName: string) => {
+      const rows = visibleOne2manyRows(fieldName);
+      const probes = rows.length ? rows : [{ key: '__empty__', values: {} } as RelationFieldRow];
+      return one2manyColumns(fieldName).filter((column: RelationFieldColumn) => probes.some((row: RelationFieldRow) => {
+        const effective = dependencies.one2manyEffectiveColumn(fieldName, row, column);
+        return effective.invisible !== true && effective.columnInvisible !== true;
+      }));
+    },
     one2manyEffectiveColumn: dependencies.one2manyEffectiveColumn,
     one2manyColumnQueryScope,
     queryOne2manyColumnOptions: dependencies.queryOne2manyColumnOptions,

@@ -107,21 +107,15 @@
                         <field name="state" widget="statusbar" statusbar_visible="draft,submit,approve,done,cancel"/>
                     </header>
                     <sheet>
-                        <notebook>
-                            <page string="系统办理信息" invisible="not id">
-                                <group>
-                                <field name="name" readonly="1"/>
-                                <field name="settlement_flow_label" readonly="1"/>
-                                <field name="business_category_id" options="{'no_create': True}" readonly="1"/>
-                                    <field name="settlement_type" string="收支类型" required="1" readonly="1"/>
-                                    <field name="state" readonly="1"/>
-                                </group>
-                            </page>
-                            <page string="项目与合同">
-                                <group>
+                        <field name="currency_id" required="1" invisible="1"/>
+                        <field name="settlement_stage" invisible="1"/>
+                        <field name="compliance_state" invisible="1"/>
+                        <group name="sc_settlement_business_object" string="项目与合同相对方" col="4"
+                               data-sc-anchor="settlement-business-object"
+                               data-sc-form-structure-group="business_object">
+                            <group>
                                     <field name="project_id" options="{'no_create': True}" required="1"
                                            readonly="state in ['approve', 'done', 'cancel']"/>
-                                    <field name="operation_strategy" readonly="1"/>
                                     <field name="contract_source_kind" readonly="1"/>
                                     <field name="contract_id"
                                            domain="[('project_id','=',project_id),('company_id','=',company_id)]"
@@ -134,52 +128,64 @@
                                            readonly="state in ['approve', 'done', 'cancel']"/>
                                     <field name="source_contract_name" readonly="1"/>
                                     <field name="source_contract_no" readonly="1"/>
+                            </group>
+                            <group>
                                     <field name="partner_id" options="{'no_create_edit': True}" required="1"
                                            readonly="state in ['approve', 'done', 'cancel']"/>
                                     <field name="settlement_unit_id" options="{'no_create_edit': True}" invisible="1"/>
+                                    <field name="operation_strategy" readonly="1"/>
                                     <field name="company_id" readonly="1"/>
-                                    <field name="currency_id" required="1" invisible="1"/>
-                                </group>
-                            </page>
-                            <page string="结算依据">
-                                <group>
+                            </group>
+                        </group>
+                        <group name="sc_settlement_basis" string="结算依据" col="4"
+                               data-sc-anchor="settlement-basis"
+                               data-sc-form-structure-group="settlement_basis">
+                            <group>
                                     <field name="title" readonly="state in ['approve', 'done', 'cancel']"/>
-                                <field name="settlement_category_id" string="结算分类"
+                                    <field name="settlement_category_id" string="结算分类"
                                        readonly="state in ['approve', 'done', 'cancel']"/>
-                                <field name="settlement_stage_id" options="{'no_create_edit': False}"
+                                    <field name="settlement_stage_id" options="{'no_create_edit': False}"
                                        readonly="state in ['approve', 'done', 'cancel']"/>
-                                <field name="settlement_stage" invisible="1"/>
-                                <field name="document_date" readonly="state in ['approve', 'done', 'cancel']"/>
-                                <field name="date_settlement" readonly="state in ['approve', 'done', 'cancel']"/>
-                                <field name="settlement_period_start" readonly="1"/>
-                                <field name="settlement_period_end" readonly="1"/>
-                                <field name="planned_settlement_date" readonly="state in ['approve', 'done', 'cancel']"/>
-                                <field name="declared_date" readonly="state in ['approve', 'done', 'cancel']"/>
-                                <field name="final_approved_date" readonly="state in ['approve', 'done', 'cancel']"/>
-                                <field name="approved_date" readonly="state in ['approve', 'done', 'cancel']"/>
-                                </group>
-                            </page>
-                            <page string="结算金额">
-                                <group>
-                            <field name="settlement_amount" readonly="state in ['approve', 'done', 'cancel']"/>
-                            <field name="amount_total" readonly="1"/>
-                            <field name="submitted_amount" readonly="state in ['approve', 'done', 'cancel']"/>
-                            <field name="approved_amount" readonly="state in ['approve', 'done', 'cancel']"/>
-                            <field name="deduction_amount" readonly="1"/>
-                            <field name="adjustment_total" readonly="1"/>
-                            <field name="amount_after_adjustment" readonly="1"/>
-                            <field name="amount_paid" readonly="1"/>
-                            <field name="unpaid_amount" readonly="1"/>
-                            <field name="amount_payable" readonly="1"
-                                   modifiers="{'invisible': [['amount_payable','&lt;',0.0]]}"/>
-                            <field name="amount_payable" readonly="1" string="可付余额（风险）"
-                                   class="text-danger"
-                                   modifiers="{'invisible': [['amount_payable','&gt;=',0.0]]}"/>
-                                </group>
-                                <field name="line_ids"
-                                       readonly="state in ['approve', 'done', 'cancel']"
-                                       context="{'default_contract_id': contract_id, 'default_general_contract_id': general_contract_id}">
-                                    <tree editable="bottom">
+                            </group>
+                            <group>
+                                    <field name="document_date" readonly="state in ['approve', 'done', 'cancel']"/>
+                                    <field name="date_settlement" readonly="state in ['approve', 'done', 'cancel']"/>
+                                    <field name="settlement_period_start" readonly="1"/>
+                                    <field name="settlement_period_end" readonly="1"/>
+                                    <field name="planned_settlement_date" readonly="state in ['approve', 'done', 'cancel']"/>
+                                    <field name="declared_date" readonly="state in ['approve', 'done', 'cancel']"/>
+                                    <field name="final_approved_date" readonly="state in ['approve', 'done', 'cancel']"/>
+                                    <field name="approved_date" readonly="state in ['approve', 'done', 'cancel']"/>
+                            </group>
+                        </group>
+                        <group name="sc_settlement_detail_amount" string="结算明细与金额" col="1"
+                               data-sc-anchor="settlement-detail-amount"
+                               data-sc-form-structure-group="amount">
+                            <field name="line_ids"
+                                   readonly="state in ['approve', 'done', 'cancel']"
+                                   context="{'default_contract_id': contract_id, 'default_general_contract_id': general_contract_id}">
+                                <tree editable="bottom">
+                                    <field name="name"/>
+                                    <field name="qty"/>
+                                    <field name="price_unit"/>
+                                    <field name="amount" readonly="1"/>
+                                    <field name="applied_amount" readonly="1" string="已申请"/>
+                                    <field name="remaining_amount" readonly="1" string="剩余可申请"/>
+                                    <field name="contract_id"
+                                           domain="[('project_id','=',parent.project_id),('company_id','=',parent.company_id)]"
+                                           options="{'no_create': True}"
+                                           invisible="parent.contract_source_kind == 'general_contract'"/>
+                                    <field name="general_contract_id"
+                                           options="{'no_create': True}"
+                                           invisible="parent.contract_source_kind != 'general_contract'"/>
+                                    <field name="currency_id" invisible="1"/>
+                                </tree>
+                                <form>
+                                    <group>
+                                        <field name="name"/>
+                                        <field name="qty"/>
+                                        <field name="price_unit"/>
+                                        <field name="amount" readonly="1"/>
                                         <field name="contract_id"
                                                domain="[('project_id','=',parent.project_id),('company_id','=',parent.company_id)]"
                                                options="{'no_create': True}"
@@ -187,81 +193,71 @@
                                         <field name="general_contract_id"
                                                options="{'no_create': True}"
                                                invisible="parent.contract_source_kind != 'general_contract'"/>
-                                        <field name="name"/>
-                                        <field name="qty"/>
-                                        <field name="price_unit"/>
-                                        <field name="amount" readonly="1"/>
-                                        <field name="applied_amount" readonly="1" string="已申请"/>
-                                        <field name="remaining_amount" readonly="1" string="剩余可申请"/>
-                                        <field name="currency_id" invisible="1"/>
-                                    </tree>
-                                    <form>
-                                        <group>
-                                            <field name="contract_id"
-                                                   domain="[('project_id','=',parent.project_id),('company_id','=',parent.company_id)]"
-                                                   options="{'no_create': True}"
-                                                   invisible="parent.contract_source_kind == 'general_contract'"/>
-                                            <field name="general_contract_id"
-                                                   options="{'no_create': True}"
-                                                   invisible="parent.contract_source_kind != 'general_contract'"/>
-                                            <field name="name"/>
-                                            <field name="qty"/>
-                                            <field name="price_unit"/>
-                                            <field name="amount" readonly="1"/>
-                                        </group>
-                                    </form>
-                                </field>
-                            </page>
-                            <page string="办理说明">
+                                    </group>
+                                </form>
+                            </field>
+                            <group col="4">
                                 <group>
-                                    <field name="settlement_description" readonly="state in ['approve', 'done', 'cancel']"/>
-                                    <field name="note"/>
-                                    <field name="attachment_ids" widget="many2many_binary"/>
+                                    <field name="settlement_amount" readonly="state in ['approve', 'done', 'cancel']"/>
+                                    <field name="amount_total" readonly="1"/>
+                                    <field name="submitted_amount" readonly="state in ['approve', 'done', 'cancel']"/>
                                 </group>
-                            </page>
-                            <page string="执行与匹配" invisible="not id">
                                 <group>
-                                    <field name="compliance_message"
-                                           nolabel="1"
-                                           readonly="1"
-                                           class="text-danger"
-                                           modifiers="{'invisible': [['compliance_state', '!=', 'block']]}"/>
-                                    <field name="compliance_message"
-                                           nolabel="1"
-                                           readonly="1"
-                                           class="text-warning"
-                                           modifiers="{'invisible': [['compliance_state', '!=', 'warn']]}"/>
-                                    <field name="compliance_message"
-                                           nolabel="1"
-                                           readonly="1"
-                                           modifiers="{'invisible': [['compliance_state', '!=', 'ok']]}"/>
-                                    <field name="requested_fund_amount" readonly="state in ['approve', 'done', 'cancel']"/>
-                                    <field name="amount_paid" readonly="1"/>
-                                    <field name="unpaid_amount" readonly="1"/>
-                                    <field name="invoice_amount" readonly="state in ['approve', 'done', 'cancel']"/>
-                                    <field name="adjustment_total" readonly="1"/>
-                                    <field name="amount_after_adjustment" readonly="1"/>
+                                    <field name="approved_amount" readonly="state in ['approve', 'done', 'cancel']"/>
+                                    <field name="deduction_amount" readonly="1"/>
                                 </group>
-                            </page>
-                            <page string="发票信息" invisible="not id">
-                                <group>
-                                    <field name="invoice_ref" readonly="state in ['approve', 'done', 'cancel']"/>
-                                    <field name="invoice_date" readonly="state in ['approve', 'done', 'cancel']"/>
-                                    <field name="invoice_amount" readonly="state in ['approve', 'done', 'cancel']"/>
-                                </group>
-                            </page>
-                            <page string="付款申请" invisible="not id">
-                                <field name="payment_request_ids" readonly="1" context="{'create': False, 'edit': False}">
+                            </group>
+                        </group>
+                        <group name="sc_settlement_handling" string="办理说明" col="2"
+                               data-sc-anchor="settlement-handling"
+                               data-sc-form-structure-group="handling">
+                            <group>
+                                <field name="settlement_description" readonly="state in ['approve', 'done', 'cancel']"/>
+                                <field name="note"/>
+                            </group>
+                            <group>
+                                <field name="attachment_ids" widget="many2many_binary"/>
+                            </group>
+                        </group>
+                        <group name="sc_settlement_execution" string="执行与匹配" col="4" invisible="not id"
+                               data-sc-anchor="settlement-execution" data-sc-form-structure-group="execution"
+                               data-sc-collapsible="1" data-sc-collapsed-by-default="1">
+                            <field name="compliance_message" nolabel="1" readonly="1" class="text-danger"
+                                   modifiers="{'invisible': [['compliance_state', '!=', 'block']]}"/>
+                            <field name="compliance_message" nolabel="1" readonly="1" class="text-warning"
+                                   modifiers="{'invisible': [['compliance_state', '!=', 'warn']]}"/>
+                            <field name="compliance_message" nolabel="1" readonly="1"
+                                   modifiers="{'invisible': [['compliance_state', '!=', 'ok']]}"/>
+                            <field name="requested_fund_amount" readonly="state in ['approve', 'done', 'cancel']"/>
+                            <field name="amount_paid" readonly="1"/>
+                            <field name="unpaid_amount" readonly="1"/>
+                            <field name="amount_payable" readonly="1"
+                                   modifiers="{'invisible': [['amount_payable','&lt;',0.0]]}"/>
+                            <field name="amount_payable" readonly="1" string="可付余额（风险）" class="text-danger"
+                                   modifiers="{'invisible': [['amount_payable','&gt;=',0.0]]}"/>
+                            <field name="invoice_amount" readonly="state in ['approve', 'done', 'cancel']"/>
+                            <field name="adjustment_total" readonly="1"/>
+                            <field name="amount_after_adjustment" readonly="1"/>
+                        </group>
+                        <group name="sc_settlement_invoice" string="发票信息" col="3" invisible="not id"
+                               data-sc-anchor="settlement-invoice" data-sc-collapsible="1" data-sc-collapsed-by-default="1">
+                            <field name="invoice_ref" readonly="state in ['approve', 'done', 'cancel']"/>
+                            <field name="invoice_date" readonly="state in ['approve', 'done', 'cancel']"/>
+                            <field name="invoice_amount" readonly="state in ['approve', 'done', 'cancel']"/>
+                        </group>
+                        <group name="sc_settlement_payment_requests" string="付款申请" col="1" invisible="not id"
+                               data-sc-anchor="settlement-payment-requests" data-sc-collapsible="1" data-sc-collapsed-by-default="1">
+                            <field name="payment_request_ids" readonly="1" context="{'create': False, 'edit': False}">
                                     <tree>
                                         <field name="name"/>
                                         <field name="project_id"/>
-                    <field name="partner_id"/>
+                                        <field name="partner_id"/>
                                         <field name="amount"/>
                                         <field name="date_request"/>
                                         <field name="state"/>
                                     </tree>
-                                </field>
-                                <field name="payment_request_line_ids" readonly="1" context="{'create': False, 'edit': False}">
+                            </field>
+                            <field name="payment_request_line_ids" readonly="1" context="{'create': False, 'edit': False}">
                                     <tree>
                                         <field name="request_id"/>
                                         <field name="project_id"/>
@@ -271,41 +267,53 @@
                                         <field name="current_pay_amount"/>
                                         <field name="amount"/>
                                     </tree>
-                                </field>
-                            </page>
-                            <page string="扣款调整" invisible="not id">
-                                <field name="adjustment_ids"
+                            </field>
+                        </group>
+                        <group name="sc_settlement_adjustments" string="扣款调整" col="1" invisible="not id"
+                               data-sc-anchor="settlement-adjustments" data-sc-collapsible="1" data-sc-collapsed-by-default="1">
+                            <field name="adjustment_ids"
+                                   readonly="state in ['approve', 'done', 'cancel']"
+                                   context="{'default_project_id': project_id, 'default_settlement_id': id, 'default_contract_id': contract_id, 'default_partner_id': partner_id, 'default_currency_id': currency_id}">
+                                <tree editable="bottom">
+                                    <field name="date_adjustment"/>
+                                    <field name="adjustment_type"/>
+                                    <field name="item_name"/>
+                                    <field name="account_name"/>
+                                    <field name="amount"/>
+                                    <field name="signed_amount" readonly="1"/>
+                                    <field name="state" readonly="1"/>
+                                </tree>
+                            </field>
+                        </group>
+                        <group name="sc_settlement_purchase_orders" string="采购订单" col="1" invisible="not id"
+                               data-sc-anchor="settlement-purchase-orders" data-sc-collapsible="1" data-sc-collapsed-by-default="1">
+                            <group>
+                                <field name="purchase_order_ids"
+                                       widget="many2many_tags"
+                                       invisible="id and state != 'draft'"
                                        readonly="state in ['approve', 'done', 'cancel']"
-                                       context="{'default_project_id': project_id, 'default_settlement_id': id, 'default_contract_id': contract_id, 'default_partner_id': partner_id, 'default_currency_id': currency_id}">
-                                    <tree editable="bottom">
-                                        <field name="date_adjustment"/>
-                                        <field name="adjustment_type"/>
-                                        <field name="item_name"/>
-                                        <field name="account_name"/>
-                                        <field name="amount"/>
-                                        <field name="signed_amount" readonly="1"/>
-                                        <field name="state" readonly="1"/>
-                                    </tree>
-                                </field>
-                            </page>
-                            <page string="采购订单" invisible="not id">
-                                <group>
-                                    <field name="purchase_order_ids"
-                                           widget="many2many_tags"
-                                           readonly="state in ['approve', 'done', 'cancel']"
-                                           options="{'no_create': True}"/>
-                                </group>
-                                <field name="purchase_order_ids" nolabel="1" readonly="1">
-                                    <tree>
-                                        <field name="name"/>
-                                        <field name="date_order"/>
-                                        <field name="partner_id"/>
-                                        <field name="amount_total"/>
-                                        <field name="state"/>
-                                    </tree>
-                                </field>
-                            </page>
-                        </notebook>
+                                       options="{'no_create': True}"/>
+                            </group>
+                            <field name="purchase_order_ids" nolabel="1" readonly="1"
+                                   invisible="not id or state == 'draft'">
+                                <tree>
+                                    <field name="name"/>
+                                    <field name="date_order"/>
+                                    <field name="partner_id"/>
+                                    <field name="amount_total"/>
+                                    <field name="state"/>
+                                </tree>
+                            </field>
+                        </group>
+                        <group name="sc_settlement_system_identity" string="系统办理信息" col="4" invisible="not id"
+                               data-sc-anchor="settlement-system-identity" data-sc-form-structure-group="system_identity"
+                               data-sc-collapsible="1" data-sc-collapsed-by-default="1">
+                            <field name="name" readonly="1"/>
+                            <field name="settlement_flow_label" readonly="1"/>
+                            <field name="business_category_id" options="{'no_create': True}" readonly="1"/>
+                            <field name="settlement_type" string="收支类型" required="1" readonly="1"/>
+                            <field name="state" readonly="1"/>
+                        </group>
                     </sheet>
                 </form>
             </field>
