@@ -23,14 +23,21 @@
 import { computed } from 'vue';
 import { TDesignAutoComplete } from './tdesignPrimitiveBridge';
 import { nativeControlProjection } from './nativeControlProjection';
-const props = withDefaults(defineProps<{ modelValue:string; readonly?:boolean; disabled?:boolean; required?:boolean; invalid?:boolean; describedBy?:string; appearance?:'default'|'form-field' }>(), { appearance:'default' });
+const props = withDefaults(defineProps<{ id?:string; modelValue:string; readonly?:boolean; disabled?:boolean; required?:boolean; invalid?:boolean; describedBy?:string; ariaLabel?:string; appearance?:'default'|'form-field' }>(), {
+  id: undefined,
+  describedBy: undefined,
+  ariaLabel: undefined,
+  appearance: 'default',
+});
 const vNativeControlProjection = nativeControlProjection;
 const nativeProjection = computed(() => ({
   selector: 'input' as const,
   attributes: {
+    id: props.id,
     'aria-required': props.required || undefined,
     'aria-invalid': props.invalid || undefined,
     'aria-describedby': props.describedBy,
+    'aria-label': props.ariaLabel,
   },
 }));
 const emit = defineEmits<{

@@ -7,19 +7,24 @@
   >
     <ScCheckbox
       v-if="column.ttype === 'boolean'"
+      :id="controlId"
       class="input-checkbox"
       :disabled="column.readonly || !adapter.one2manyCanInlineEdit(fieldName) || adapter.busy"
       :checked="Boolean(value)"
+      :invalid="invalid"
+      :described-by="describedBy"
       :label="column.label"
       @change="$emit('update', $event)"
     />
     <ScSelect
       v-else-if="column.ttype === 'many2one'"
+      :id="controlId"
+      :aria-label="column.label"
       :model-value="relationValue"
       :options="relationOptions"
       :required="column.required"
-      :invalid="Boolean(errorText)"
-      :described-by="errorId"
+      :invalid="invalid"
+      :described-by="describedBy"
       :disabled="column.readonly || !adapter.one2manyCanInlineEdit(fieldName) || adapter.busy"
       filterable
       :loading="relationLoading"
@@ -32,10 +37,12 @@
     />
     <ScSelect
       v-else-if="column.ttype === 'selection'"
+      :id="controlId"
+      :aria-label="column.label"
       :disabled="column.readonly || !adapter.one2manyCanInlineEdit(fieldName) || adapter.busy"
       :required="column.required"
-      :invalid="Boolean(errorText)"
-      :described-by="errorId"
+      :invalid="invalid"
+      :described-by="describedBy"
       :model-value="String(value ?? '')"
       :placeholder="adapter.selectPlaceholder(column.label)"
       :options="(column.selection || []).map((option) => ({ value: String(option[0]), label: String(option[1]) }))"
@@ -44,20 +51,22 @@
     />
     <ScInput
       v-else
+      :id="controlId"
+      :aria-label="column.label"
       :appearance="amount ? 'numeric-entry' : 'default'"
       :align="amount ? 'right' : 'left'"
       :type="adapter.one2manyColumnInputType(column)"
       :disabled="column.readonly || !adapter.one2manyCanInlineEdit(fieldName) || adapter.busy"
       :required="column.required"
-      :status="errorText ? 'error' : 'default'"
-      :described-by="errorId"
+      :status="invalid ? 'error' : 'default'"
+      :described-by="describedBy"
       :title="column.disabledReason || readonlyReason || cellDisplayValue"
       :model-value="adapter.one2manyColumnDisplayValue(column, value)"
       :placeholder="column.label"
       @update:model-value="$emit('update', $event)"
     />
     <span v-if="errorText" :id="errorId" class="o2m-cell-error" role="alert">{{ errorText }}</span>
-    <span v-if="relationError" class="o2m-relation-failure" role="alert" data-relation-query-state="error">
+    <span v-if="relationError" :id="relationErrorId" class="o2m-relation-failure" role="alert" data-relation-query-state="error">
       <span>{{ relationError }}</span>
       <ScButton type="button" variant="ghost" size="small" @click="$emit('retry')">重试</ScButton>
     </span>
@@ -84,6 +93,7 @@ const props = withDefaults(defineProps<{
   amount?: boolean;
   error?: string;
   relationError?: string;
+  controlId: string;
   errorId: string;
   validationTarget: string;
   relationOptions?: ReadonlyArray<{ value: string | number; label: string; disabled?: boolean }>;
@@ -116,6 +126,12 @@ const popupOwnerId = `o2m-editor-${getCurrentInstance()?.uid ?? 'unknown'}`;
 onBeforeUnmount(() => emit('popup-change', { visible: false, ownerId: popupOwnerId, trigger: 'owner-unmount' }));
 
 const errorText = computed(() => props.error);
+const relationErrorId = computed(() => `${props.errorId}-relation`);
+const describedBy = computed(() => [
+  errorText.value ? props.errorId : '',
+  props.relationError ? relationErrorId.value : '',
+].filter(Boolean).join(' ') || undefined);
+const invalid = computed(() => Boolean(errorText.value || props.relationError));
 const relationValue = computed(() => {
   const raw = Array.isArray(props.value) ? props.value[0] : props.value;
   const parsed = Number(raw);

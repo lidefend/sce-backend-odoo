@@ -10,6 +10,7 @@ import {
   tdesignDropdownOptions,
   tdesignTabsSize,
 } from '../src/components/design-system/primitiveAdapter.ts';
+import { nativeControlAttributeValue } from '../src/components/design-system/nativeControlProjection.ts';
 import { resolveModalKeyboardAction } from '../src/composables/modalKeyboard.ts';
 
 const expected = [
@@ -34,6 +35,10 @@ assert.deepEqual(selectPopupVisibilityEvent(true, 'trigger-element-click'), {
   trigger: 'trigger-element-click',
 });
 assert.deepEqual(selectPopupVisibilityEvent(false), { visible: false, trigger: 'component-sync' });
+assert.equal(nativeControlAttributeValue('required', true), '');
+assert.equal(nativeControlAttributeValue('aria-invalid', true), 'true');
+assert.equal(nativeControlAttributeValue('aria-invalid', false), null);
+assert.equal(nativeControlAttributeValue('aria-describedby', 'field-error'), 'field-error');
 assert.equal(tdesignTabsSize('small'), 'medium');
 assert.equal(tdesignTabsSize('medium'), 'medium');
 assert.equal(tdesignTabsSize('large'), 'large');

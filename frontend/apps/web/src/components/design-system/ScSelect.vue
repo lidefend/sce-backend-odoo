@@ -53,6 +53,7 @@ export interface ScSelectOption {
 }
 
 const props = withDefaults(defineProps<{
+  id?: string;
   modelValue: string | number;
   options?: readonly ScSelectOption[];
   placeholder?: string;
@@ -63,16 +64,19 @@ const props = withDefaults(defineProps<{
   required?: boolean;
   invalid?: boolean;
   describedBy?: string;
+  ariaLabel?: string;
   filterable?: boolean;
   loading?: boolean;
   emptyText?: string;
   appearance?: 'default' | 'form-field';
 }>(), {
+  id: undefined,
   options: () => [],
   placeholder: undefined,
   size: 'medium',
   status: 'default',
   describedBy: undefined,
+  ariaLabel: undefined,
   appearance: 'default',
   filterable: false,
   loading: false,
@@ -95,11 +99,13 @@ const tdesignOptions = computed(() => props.options.map((option) => ({
 const nativeProjection = computed(() => ({
   selector: 'input' as const,
   attributes: {
+    id: props.id,
     required: props.required,
     'aria-readonly': props.readonly || undefined,
     'aria-required': props.required || undefined,
     'aria-invalid': props.invalid || props.status === 'error' || undefined,
     'aria-describedby': props.describedBy,
+    'aria-label': props.ariaLabel,
   },
 }));
 

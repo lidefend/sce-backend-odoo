@@ -32,8 +32,10 @@
     </template>
     <ScCheckbox
       v-else-if="field.type === 'boolean'"
+      :id="controlId"
       :checked="Boolean(field.value)"
       :required="field.required"
+      :invalid="field.invalid"
       :described-by="describedBy"
       :label="field.label || field.name"
       @change="emitValue($event)"
@@ -72,6 +74,7 @@
     />
     <ScTextarea
       v-else-if="field.type === 'text'"
+      :id="controlId"
       :model-value="String(field.inputValue ?? '')"
       :required="field.required"
       :status="field.invalid ? 'error' : 'default'"
@@ -82,9 +85,13 @@
     />
     <ScNumberInput
       v-else-if="field.type === 'integer' || field.type === 'float'"
+      :id="controlId"
       :model-value="numericValue"
       :decimal-places="field.type === 'integer' ? 0 : undefined"
       :status="field.invalid ? 'error' : 'default'"
+      :required="field.required"
+      :invalid="field.invalid"
+      :described-by="describedBy"
       :placeholder="placeholder"
       @update:model-value="emitValue($event ?? null)"
     />

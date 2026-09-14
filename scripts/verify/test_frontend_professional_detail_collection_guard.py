@@ -130,6 +130,41 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
 
         self.assertTrue(any("same cell editor" in item for item in validate(read_text)))
 
+    def test_cell_feedback_cannot_reference_absent_error(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("One2ManyCellEditor.vue"):
+                return value.replace("errorText.value ? props.errorId", "props.errorId", 1)
+            return value
+
+        self.assertTrue(any("cell feedback association" in item for item in validate(read_text)))
+
+    def test_responsive_cell_controls_require_unique_identities(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace(
+                    ":control-id=\"one2manyCellControlId(field.name, row.key, column.name, 'mobile')\"",
+                    ':control-id="one2manyCellControlId(field.name, row.key, column.name)"',
+                    1,
+                )
+            return value
+
+        self.assertTrue(any("layout-scoped identities" in item for item in validate(read_text)))
+
+    def test_mobile_cell_label_must_target_visible_control(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace(
+                    ":for=\"one2manyCellControlId(field.name, row.key, column.name, 'mobile')\"",
+                    '',
+                    1,
+                )
+            return value
+
+        self.assertTrue(any("mobile detail labels" in item for item in validate(read_text)))
+
     def test_row_specific_readonly_modifier_cannot_be_dropped(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")

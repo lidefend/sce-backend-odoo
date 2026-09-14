@@ -36,6 +36,7 @@ const textareaRef = ref<{ focus?: () => void } | null>(null);
 const vNativeControlProjection = nativeControlProjection;
 
 const props = withDefaults(defineProps<{
+  id?: string;
   modelValue?: string;
   rows?: number;
   size?: ScPrimitiveSize;
@@ -46,14 +47,17 @@ const props = withDefaults(defineProps<{
   loading?: boolean;
   placeholder?: string;
   describedBy?: string;
+  ariaLabel?: string;
   appearance?: 'default' | 'form-field';
 }>(), {
+  id: undefined,
   modelValue: '',
   rows: 3,
   size: 'medium',
   status: 'default',
   placeholder: undefined,
   describedBy: undefined,
+  ariaLabel: undefined,
   appearance: 'default',
 });
 
@@ -68,10 +72,12 @@ const emit = defineEmits<{
 const nativeProjection = computed(() => ({
   selector: 'textarea' as const,
   attributes: {
+    id: props.id,
     required: props.required,
     'aria-busy': props.loading || undefined,
     'aria-describedby': props.describedBy,
     'aria-invalid': props.status === 'error' || undefined,
+    'aria-label': props.ariaLabel,
   },
 }));
 

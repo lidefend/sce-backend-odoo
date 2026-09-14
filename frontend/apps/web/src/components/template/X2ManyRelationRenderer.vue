@@ -216,6 +216,7 @@
               :amount="isO2mAmountColumn(column)"
               :error="one2manyCellError(field.name, row._key, column.name)"
               :relation-error="one2manyRelationError(field.name, row._key, column.name)"
+              :control-id="one2manyCellControlId(field.name, row._key, column.name)"
               :error-id="one2manyCellErrorId(field.name, row._key, column.name)"
               :validation-target="one2manyValidationTarget(field.name, row._key, column.name)"
               :relation-options="one2manyRelationOptions(field.name, row._key, column)"
@@ -285,6 +286,7 @@
               v-for="column in displayOne2manyColumns"
               :key="`${row.key}-mobile-${column.name}`"
               class="o2m-mobile-field"
+              :for="one2manyCellControlId(field.name, row.key, column.name, 'mobile')"
               :data-validation-target="one2manyValidationTarget(field.name, row.key, column.name)"
             >
               <span class="o2m-mobile-label">
@@ -299,6 +301,7 @@
                 :amount="isO2mAmountColumn(column)"
                 :error="one2manyCellError(field.name, row.key, column.name)"
                 :relation-error="one2manyRelationError(field.name, row.key, column.name)"
+                :control-id="one2manyCellControlId(field.name, row.key, column.name, 'mobile')"
                 :error-id="one2manyCellErrorId(field.name, row.key, column.name, 'mobile')"
                 :validation-target="one2manyValidationTarget(field.name, row.key, column.name)"
                 :relation-options="one2manyRelationOptions(field.name, row.key, column)"
@@ -781,6 +784,10 @@ function one2manyCellError(fieldName: string, rowKey: string, columnName: string
 
 function one2manyCellErrorId(fieldName: string, rowKey: string, columnName: string, suffix = 'desktop') {
   return `o2m-error-${[fieldName, rowKey, columnName, suffix].join('-').replace(/[^A-Za-z0-9_-]/g, '-')}`;
+}
+
+function one2manyCellControlId(fieldName: string, rowKey: string, columnName: string, suffix = 'desktop') {
+  return `o2m-control-${[fieldName, rowKey, columnName, suffix].join('-').replace(/[^A-Za-z0-9_-]/g, '-')}`;
 }
 
 function one2manyValidationTarget(fieldName: string, rowKey: string, columnName: string) {

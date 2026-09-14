@@ -45,6 +45,7 @@
   </TDesignInput>
   <input
     v-else
+    :id="id"
     ref="inputRef"
     class="sc-input"
     data-semantic-component="ScInput"
@@ -71,6 +72,7 @@
     :aria-busy="loading || undefined"
     :aria-describedby="describedBy"
     :aria-invalid="status === 'error' || undefined"
+    :aria-label="ariaLabel"
     @input="onInput"
     @change="onChange"
     @focus="onFocus"
@@ -89,6 +91,7 @@ const tdesignInputRef = ref<{ $el?: HTMLElement } | null>(null);
 const vNativeControlProjection = nativeControlProjection;
 
 const props = withDefaults(defineProps<{
+  id?: string;
   modelValue?: string | number;
   size?: ScPrimitiveSize;
   status?: ScPrimitiveStatus;
@@ -99,6 +102,7 @@ const props = withDefaults(defineProps<{
   type?: 'text' | 'search' | 'number' | 'url' | 'tel' | 'password' | 'email' | 'date' | 'datetime-local' | 'time';
   placeholder?: string;
   describedBy?: string;
+  ariaLabel?: string;
   autocomplete?: string;
   min?: string | number;
   max?: string | number;
@@ -109,12 +113,14 @@ const props = withDefaults(defineProps<{
   align?: 'left' | 'center' | 'right';
   appearance?: 'default' | 'navigation-search' | 'form-field' | 'record-title' | 'relation-tag-entry' | 'collection-search' | 'numeric-entry';
 }>(), {
+  id: undefined,
   modelValue: '',
   size: 'medium',
   status: 'default',
   type: 'text',
   placeholder: undefined,
   describedBy: undefined,
+  ariaLabel: undefined,
   autocomplete: undefined,
   min: undefined,
   max: undefined,
@@ -141,10 +147,12 @@ const tdesignType = computed(() => usesTDesignDriver.value ? props.type as 'text
 const nativeProjection = computed(() => ({
   selector: 'input' as const,
   attributes: {
+    id: props.id,
     required: props.required,
     'aria-busy': props.loading || undefined,
     'aria-describedby': props.describedBy,
     'aria-invalid': props.status === 'error' || undefined,
+    'aria-label': props.ariaLabel,
     min: props.min,
     max: props.max,
     step: props.step,
