@@ -9466,3 +9466,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Layer Target / Module: `smart_core` view orchestration and `ui.contract.v2`; `smart_construction_core` payment action-specific native form; shared contract form renderer.
 - Reason: remove competing field/section order authorities while preserving semantic enhancements and native security/action behavior.
 - Excluded: payment calculation, approval/save protocol, permissions, database records, payment execution/receipt-request redesign, full low-code layout replacement.
+
+### 2026-09-14 · shared form field expression normalization
+
+- Branch / starting HEAD: `codex/shared-form-help-error-consistency-v1` / `3560a5849de37976dfb93b791ef9ad1bef774e87`; the existing six dirty files are the preserved optional-detail amount-source message checkpoint, not a second writer.
+- Formal Product Layer: P0 generic native-field semantic projection and shared readonly consumers; P1 payment-request field source, editability help and explicit empty-state meaning; P4 focused contract and browser evidence only.
+- Layer Target / Module: `smart_core` native field parser; shared form field schema/renderers; `smart_construction_core` action-specific payment form. P0 must not infer payment fields or empty reasons; P1 must not implement shared rendering.
+- Blast radius: explicit `sc_readonly_empty_text` consumers plus the payment application sample. Undeclared forms preserve their existing fallback; contract and settlement counterexamples are deferred until the three-region payment sample passes.
+- Validation order: L1 iteration/static/pure component tests → non-zero L2 final-view and normalized-contract tests → governed module upgrade/runtime sample. Quick, full matrices and independent review remain not run while product expression is still under review.
