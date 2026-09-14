@@ -21,6 +21,18 @@ set +a
 EVIDENCE_DIR="${EVIDENCE_DIR:-$ROOT_DIR/artifacts/playwright/local-dev-payment-settlement-component-journey}"
 mkdir -p "$EVIDENCE_DIR"
 
+restore_needed=0
+restore_on_exit() {
+  local status=$?
+  if (( restore_needed == 1 )); then
+    echo "[local.dev.payment.settlement-component] restoring governed fixture after interrupted journey" >&2
+    ENV_FILE="$LOCAL_DEV_CANONICAL_ENV_FILE" \
+      make -C "$ROOT_DIR" --no-print-directory local.dev.reset_payment_request_fixture || true
+  fi
+  exit "$status"
+}
+trap restore_on_exit EXIT
+
 resolve_target() {
   DB_NAME="$DB_NAME" bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" \
     < "$ROOT_DIR/scripts/verify/local_dev_payment_settlement_component_ids.py" \
@@ -32,6 +44,7 @@ ENV_FILE="$LOCAL_DEV_CANONICAL_ENV_FILE" \
 
 before="$(resolve_target)"
 [[ -n "$before" ]] || { echo "payment settlement component target resolution failed" >&2; exit 1; }
+restore_needed=1
 
 introduce_status=0
 LOCAL_DEV_PAYMENT_SETTLEMENT_COMPONENT_JSON="$before" \
@@ -105,4 +118,9 @@ if round(reset["request"]["amount"], 2) != round(before["request"]["amount"], 2)
 print("[local.dev.payment.settlement-component] fixture reset restored baseline")
 PY
 
-(( introduce_status == 0 && remove_status == 0 && mutation_status == 0 && reset_status == 0 ))
+if (( introduce_status == 0 && remove_status == 0 && mutation_status == 0 && reset_status == 0 )); then
+  restore_needed=0
+  trap - EXIT
+  exit 0
+fi
+exit 1
