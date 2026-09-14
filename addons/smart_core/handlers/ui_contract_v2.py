@@ -2433,7 +2433,6 @@ class UiContractV2Handler(BaseIntentHandler):
                 and form_spec.get("sections")
             ):
                 form_structure_authority = "entry_semantic_surface"
-                form_presentation_mode = "task"
             form_columns = normalize_columns(form_spec.get("columns")) or normalize_columns(form_spec.get("cols")) or form_columns
             if isinstance(form_spec.get("layout"), list) and form_spec.get("layout"):
                 form_layout_overlay = True
@@ -2566,10 +2565,6 @@ class UiContractV2Handler(BaseIntentHandler):
                 "group_columns": {},
                 "group_visibility": {},
             }
-        form_presentation_mode = _projection.form_structure_presentation_mode(
-            form_structure_authority,
-            form_presentation_mode,
-        )
         return {
             "source": "business_view_orchestration",
             "owner_layer": str(view_trace.get("owner_layer") or view_governance.get("owner_layer") or "business_view_orchestration"),
@@ -2577,7 +2572,7 @@ class UiContractV2Handler(BaseIntentHandler):
             "legacy_field_policy_overlay": legacy_overlay,
             "form_layout_overlay": form_layout_overlay,
             "form_structure_authority": form_structure_authority,
-            "form_presentation_mode": form_presentation_mode,
+            "form_presentation_mode": _projection.form_structure_presentation_mode(form_structure_authority, form_presentation_mode),
             "field_names": field_names,
             "field_labels": field_labels,
             "field_semantic_roles": field_semantic_roles,
