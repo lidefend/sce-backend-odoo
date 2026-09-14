@@ -1756,11 +1756,15 @@ assert.deepEqual(
 );
 assert.deepEqual(
   collectFields(semanticReadonlyFloorplan.riskNodes).map((field) => [field.fieldCode, field.semanticRole]),
-  [['state', 'risk']],
-  'readonly risk facts must not fall back into the task canvas',
+  [],
+  'a risk role without feedback scope or action authority must not manufacture an alert',
 );
 assert.deepEqual(semanticReadonlyFloorplan.taskNodes, []);
-assert.deepEqual(semanticReadonlyFloorplan.contextNodes, []);
+assert.deepEqual(
+  collectFields(semanticReadonlyFloorplan.contextNodes).map((field) => [field.fieldCode, field.semanticRole]),
+  [['state', 'risk']],
+  'an unscoped risk fact remains in its declared business section',
+);
 const semanticEditModel = presentContractV2Form(createContractV2Store(semanticReadonlySnapshot), 'edit');
 const semanticEditNameNode = semanticEditModel.zones.primary[0].children.find((node) => (
   node.fields.some((field) => field.fieldCode === 'name')
@@ -1923,18 +1927,18 @@ assert.deepEqual(
 );
 assert.deepEqual(
   collectFields(semanticEditFloorplan.riskNodes).map((field) => field.fieldCode),
-  ['state'],
-  'readonly risk authority must remain factual in create/edit mode',
+  [],
+  'readonly risk authority needs explicit feedback scope before entering an alert',
 );
 assert.deepEqual(
   collectFields(semanticEditFloorplan.coreInputNodes).map((field) => field.fieldCode),
-  ['name'],
-  'required editable fields must be directly reachable in the core-input region',
+  [],
+  'declared business placement must not be overridden merely because a field is required',
 );
 assert.deepEqual(
   collectFields(semanticEditFloorplan.supplementaryInputNodes).map((field) => field.fieldCode),
-  [],
-  'optional fields declared after a relation slot must not be pulled in front of the detail collection',
+  ['name'],
+  'declared editable fields before the relation keep their contract position without a required/optional split',
 );
 assert.deepEqual(
   collectFields(semanticEditFloorplan.postRelationInputNodes).map((field) => field.fieldCode),
@@ -1955,7 +1959,7 @@ assert.deepEqual(
     ...semanticEditFloorplan.contextNodes,
     ...semanticEditFloorplan.overflowContextNodes,
   ]).map((field) => field.fieldCode),
-  ['amount', 'state', 'name', 'note'],
+  ['amount', 'name', 'note', 'state'],
   'create/edit Product Floorplan regions must not duplicate a field identity',
 );
 
@@ -2067,13 +2071,13 @@ assert.equal(
 );
 assert.deepEqual(
   collectFields(semanticContextFloorplan.contextNodes).map((field) => field.fieldCode),
-  Array.from({ length: 23 }, (_, index) => `context_${index + 1}`),
-  'default context must stop before a whole block would exceed the 24-fact limit',
+  ['state', ...Array.from({ length: 25 }, (_, index) => `context_${index + 1}`)],
+  'declared business context must not be demoted by an arbitrary fact-count threshold',
 );
 assert.deepEqual(
   collectFields(semanticContextFloorplan.overflowContextNodes).map((field) => field.fieldCode),
-  ['context_24', 'context_25'],
-  'overflow must retain complete blocks and all subsequent context in original order',
+  [],
+  'the task floorplan must not manufacture a generic overflow business section',
 );
 const partiallyPopulatedContextModel = structuredClone(semanticContextModel);
 const emptyContextField = collectFields(partiallyPopulatedContextModel.zones.primary)
@@ -2083,17 +2087,13 @@ emptyContextField.value = '';
 const partiallyPopulatedContextFloorplan = composeCanonicalFormFloorplan(partiallyPopulatedContextModel);
 assert.deepEqual(
   collectFields(partiallyPopulatedContextFloorplan.contextNodes).map((field) => field.fieldCode),
-  [
-    ...Array.from({ length: 22 }, (_, index) => `context_${index + 2}`),
-    'context_24',
-    'context_25',
-  ],
-  'an empty readonly context fact must not demote later populated business facts',
+  ['state', ...Array.from({ length: 25 }, (_, index) => `context_${index + 1}`)],
+  'empty readonly values keep their declared group identity without demoting later facts',
 );
 assert.deepEqual(
   collectFields(partiallyPopulatedContextFloorplan.overflowContextNodes).map((field) => field.fieldCode),
-  ['context_1'],
-  'an empty readonly context fact must remain accessible in overflow without occupying first-read capacity',
+  [],
+  'empty readonly values must not create a generic overflow section',
 );
 assert.deepEqual(
   collectFields(semanticContextFloorplan.relationNodes).map((field) => field.fieldCode),

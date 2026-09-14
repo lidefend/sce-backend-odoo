@@ -7,6 +7,7 @@ import { fieldIsBusinessRelationCollection } from '../../app/presentation/canoni
 import { canonicalNodeHasContent } from './canonicalFormRenderer';
 import {
   collectNativeBusinessSections,
+  governedFormStructureSectionIdentity,
   nativeBusinessSectionIdentity,
 } from './nativeBusinessSection';
 
@@ -163,6 +164,35 @@ export function authoritativeNativeBusinessSections(nodes: CanonicalFormNode[]) 
     childrenOf: (node) => node.children,
     isVisible: canonicalNodeHasContent,
   });
+}
+
+export function governedFormStructureSectionNavigationItems(
+  nodes: CanonicalFormNode[],
+): WorkspaceSectionNavigationItem[] {
+  const items: WorkspaceSectionNavigationItem[] = [];
+  const emitted = new Set<string>();
+
+  function visit(node: CanonicalFormNode) {
+    if (!node.visible) return;
+    const identity = governedFormStructureSectionIdentity(node);
+    if (identity && !emitted.has(identity.anchor)) {
+      items.push({
+        key: identity.anchor,
+        label: identity.label,
+        selector: selectorFor(identity.anchor),
+        role: node.semanticRole || 'context',
+        contentKind: 'semantic-section',
+        sourceType: 'node',
+        sourceIdentity: node.nodeId,
+      });
+      emitted.add(identity.anchor);
+      return;
+    }
+    node.children.forEach(visit);
+  }
+
+  nodes.forEach(visit);
+  return items;
 }
 
 /**

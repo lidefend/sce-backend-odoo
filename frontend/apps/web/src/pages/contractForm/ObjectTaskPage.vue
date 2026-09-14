@@ -63,51 +63,34 @@
         @field-action="emit('field-action', $event)"
       />
     </ScCard>
-    <ScCard
-      v-if="decisionMode && (taskNodes.length || riskNodes.length || $slots.actions || $slots.blocking)"
+    <div
+      v-if="decisionMode && (blockedActionMessage || taskNodes.length || $slots.actions)"
       class="object-task-page__current-task"
-      aria-label="办理提示"
       data-floorplan-region="current-task"
-      data-form-section-target="floorplan:current-task"
-      data-section-content-kind="semantic-section"
-      data-section-source-identity="floorplan:current-task"
-      data-section-title="办理提示"
-      title="办理提示"
-      :bordered="true"
-      appearance="task"
-      body-class-name="object-task-page__current-task-body"
+      data-form-feedback-scope="page"
     >
-      <div class="object-task-page__current-task-copy">
-        <slot name="blocking" />
-        <CanonicalFormNodeRenderer
-          v-for="node in taskNodes"
-          :key="node.nodeId"
-          :node="node"
-          :relation-adapter="relationAdapter"
-          prefer-readonly-facts
-          density="compact-task"
-          @field-change="emit('field-change', $event)"
-          @field-action="emit('field-action', $event)"
-        />
-        <div v-if="riskNodes.length" class="object-task-page__current-task-facts" data-floorplan-region="risk">
+      <ScInlineState v-if="blockedActionMessage || taskNodes.length" class="object-task-page__feedback" state="info" density="compact" :data-feedback-kind="blockedActionMessage ? 'current-action-blocker' : 'page-guidance'">
+        <div class="object-task-page__current-task-copy">
+          <strong v-if="blockedActionMessage" class="object-task-page__blocked-action">{{ blockedActionMessage }}</strong>
           <CanonicalFormNodeRenderer
-            v-for="node in riskNodes"
+            v-for="node in blockedActionMessage ? [] : taskNodes"
             :key="node.nodeId"
             :node="node"
             :relation-adapter="relationAdapter"
             prefer-readonly-facts
             density="compact-task"
+            hide-governed-section-heading
             @field-change="emit('field-change', $event)"
-          @field-action="emit('field-action', $event)"
+            @field-action="emit('field-action', $event)"
           />
         </div>
-      </div>
-      <template v-if="$slots.actions" #actions>
+      </ScInlineState>
+      <template v-if="$slots.actions">
         <div class="object-task-page__current-task-actions" data-floorplan-region="action-bar" data-mobile-action-surface>
           <slot name="actions" />
         </div>
       </template>
-    </ScCard>
+    </div>
     <ScCard
       v-if="coreInputNodes.length"
       class="object-task-page__core-input"
@@ -128,6 +111,7 @@
         :node="node"
         :relation-adapter="relationAdapter"
         prefer-readonly-facts
+        hide-governed-section-heading
         @field-change="emit('field-change', $event)"
           @field-action="emit('field-action', $event)"
       />
@@ -211,11 +195,12 @@
         class="object-task-page__context"
         aria-label="业务上下文"
         data-floorplan-region="business-context"
-        data-form-section-target="floorplan:business-context"
-        data-section-content-kind="semantic-section"
-        data-section-source-identity="floorplan:business-context"
-        data-section-title="基本资料"
-        title="基本资料"
+        :data-form-section-target="contextSectionLinks.length ? undefined : 'floorplan:business-context'"
+        :data-section-content-kind="contextSectionLinks.length ? undefined : 'semantic-section'"
+        :data-section-source-identity="contextSectionLinks.length ? undefined : 'floorplan:business-context'"
+        :data-section-title="contextSectionLinks.length ? undefined : '基本资料'"
+        :title="contextSectionLinks.length ? '' : '基本资料'"
+        :data-contract-classification-gap="contextHasUnclassifiedFields ? 'unclassified-readonly-fields' : undefined"
         data-canonical-zone="primary"
         :bordered="true"
         appearance="context"
@@ -235,11 +220,8 @@
       v-if="supplementaryInputNodes.length"
       class="object-task-page__supplementary-input"
       data-floorplan-region="supplementary-input"
-      data-form-section-target="floorplan:supplementary-input"
-      data-section-content-kind="semantic-section"
-      data-section-source-identity="floorplan:supplementary-input"
-      data-section-title="补充信息"
       data-supplementary-presentation="direct"
+      :data-contract-classification-gap="supplementaryHasUnclassifiedFields ? 'unclassified-editable-fields' : undefined"
     >
       <CanonicalFormNodeRenderer
         v-for="node in supplementaryInputNodes"
@@ -273,13 +255,13 @@
     <ScCard
       v-if="postRelationInputNodes.length"
       class="object-task-page__post-relation-input"
-      :aria-label="postRelationInputTitle || '补充信息'"
+      :aria-label="postRelationInputTitle || '未分类业务信息'"
       data-floorplan-region="post-relation-input"
-      data-form-section-target="floorplan:post-relation-input"
-      data-section-content-kind="semantic-section"
-      data-section-source-identity="floorplan:post-relation-input"
-      :data-section-title="postRelationInputTitle || '补充信息'"
-      :title="postRelationInputTitle || '补充信息'"
+      :data-form-section-target="postRelationSectionLinks.length ? undefined : (postRelationInputTitle ? 'floorplan:post-relation-input' : undefined)"
+      :data-section-content-kind="postRelationSectionLinks.length || !postRelationInputTitle ? undefined : 'semantic-section'"
+      :data-section-source-identity="postRelationSectionLinks.length || !postRelationInputTitle ? undefined : 'floorplan:post-relation-input'"
+      :data-section-title="postRelationSectionLinks.length ? undefined : (postRelationInputTitle || undefined)"
+      :title="postRelationSectionLinks.length ? '' : postRelationInputTitle"
       data-canonical-zone="primary"
       :bordered="true"
       appearance="context"
@@ -294,15 +276,11 @@
         @field-action="emit('field-action', $event)"
       />
     </ScCard>
-    <ScDisclosure
+    <section
       v-if="overflowContextNodes.length"
       class="object-task-page__overflow-context"
       data-floorplan-region="overflow-context"
-      data-form-section-target="floorplan:overflow-context"
-      data-section-content-kind="semantic-section"
-      data-section-source-identity="floorplan:overflow-context"
-      data-section-title="更多信息"
-      title="更多业务信息"
+      data-contract-classification-gap="unclassified-readonly-fields"
     >
       <CanonicalFormNodeRenderer
         v-for="node in overflowContextNodes"
@@ -313,7 +291,7 @@
         @field-change="emit('field-change', $event)"
         @field-action="emit('field-action', $event)"
       />
-    </ScDisclosure>
+    </section>
     <section
       v-if="subordinateNodes.length"
       class="object-task-page__subordinate"
@@ -376,10 +354,11 @@ import CanonicalFormNodeRenderer from './CanonicalFormNodeRenderer.vue';
 import ProfessionalAuditTimeline from './ProfessionalAuditTimeline.vue';
 import FormSectionNavigation from './FormSectionNavigation.vue';
 import ScCard from '../../components/design-system/ScCard.vue';
-import ScDisclosure from '../../components/design-system/ScDisclosure.vue';
+import ScInlineState from '../../components/design-system/ScInlineState.vue';
 import { canonicalFieldHasPresentableValue, canonicalNodeHasPresentableContent } from './canonicalFormRenderer';
 import {
   relationshipCollectionNavigationItems,
+  governedFormStructureSectionNavigationItems,
   type WorkspaceSectionNavigationItem,
 } from './nativeSectionNavigation';
 
@@ -405,11 +384,35 @@ const props = defineProps<{
   hasCollaboration?: boolean;
   hasAudit?: boolean;
   decisionMode?: boolean;
+  blockedActionMessage?: string;
 }>();
 const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange]; 'field-action': [payload: FormSectionFieldActionPayload] }>();
 const presentableRelationNodes = computed(() => props.relationNodes.filter((node) => (
   canonicalNodeHasPresentableContent(node, props.relationAdapter)
 )));
+const coreSectionLinks = computed(() => governedFormStructureSectionNavigationItems(props.coreInputNodes));
+const supplementarySectionLinks = computed(() => governedFormStructureSectionNavigationItems(props.supplementaryInputNodes));
+const contextSectionLinks = computed(() => governedFormStructureSectionNavigationItems(props.contextNodes));
+const relationSectionLinks = computed(() => governedFormStructureSectionNavigationItems(presentableRelationNodes.value));
+const postRelationSectionLinks = computed(() => governedFormStructureSectionNavigationItems(props.postRelationInputNodes));
+
+function hasUnclassifiedFields(nodes: CanonicalFormNode[]): boolean {
+  return nodes.some(function visit(node): boolean {
+    return node.fields.some((field) => field.visible && (!field.semanticSlot || !field.semanticGroup))
+      || node.children.some(visit);
+  });
+}
+const contextHasUnclassifiedFields = computed(() => hasUnclassifiedFields(props.contextNodes));
+const supplementaryHasUnclassifiedFields = computed(() => hasUnclassifiedFields(props.supplementaryInputNodes));
+
+function uniqueSectionLinks(items: WorkspaceSectionNavigationItem[]): WorkspaceSectionNavigationItem[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.key)) return false;
+    seen.add(item.key);
+    return true;
+  });
+}
 function floorplanSection(
   key: string,
   label: string,
@@ -426,20 +429,23 @@ function floorplanSection(
     sourceIdentity,
   };
 }
-const sectionLinks = computed(() => [
+const sectionLinks = computed(() => uniqueSectionLinks([
   props.summaryNodes.length ? floorplanSection('summary', '概览', 'summary') : null,
   props.decisionInputNodes.length ? floorplanSection('decision-input', '关键金额', 'summary') : null,
-  props.decisionMode && (props.taskNodes.length || props.riskNodes.length) ? floorplanSection('current-task', '办理提示', 'task') : null,
-  props.coreInputNodes.length ? floorplanSection('core-input', '基本信息', 'task') : null,
-  props.contextNodes.length ? floorplanSection('business-context', '基本资料', 'context') : null,
+  ...coreSectionLinks.value,
+  props.coreInputNodes.length && !coreSectionLinks.value.length ? floorplanSection('core-input', '基本信息', 'task') : null,
+  ...contextSectionLinks.value,
+  props.contextNodes.length && !contextSectionLinks.value.length ? floorplanSection('business-context', '基本资料', 'context') : null,
+  ...supplementarySectionLinks.value,
+  ...relationSectionLinks.value,
   ...relationshipCollectionNavigationItems(
     presentableRelationNodes.value,
     (field) => canonicalFieldHasPresentableValue(field, props.relationAdapter),
   ),
-  props.postRelationInputNodes.length
+  ...postRelationSectionLinks.value,
+  props.postRelationInputNodes.length && !postRelationSectionLinks.value.length && props.postRelationInputTitle
     ? floorplanSection('post-relation-input', props.postRelationInputTitle || '补充信息', 'context')
     : null,
-  props.overflowContextNodes.length ? floorplanSection('overflow-context', '更多信息', 'context') : null,
   props.subordinateNodes.length ? floorplanSection('subordinate', '附件与辅助信息', 'context') : null,
   props.hasCollaboration ? {
     key: 'surface:activity', label: '协作记录', selector: '[data-form-section-target="surface:activity"]', role: 'activity',
@@ -449,7 +455,7 @@ const sectionLinks = computed(() => [
     key: 'surface:audit', label: '历史审计', selector: '[data-form-section-target="surface:audit"]', role: 'audit',
     contentKind: 'audit-timeline', sourceType: 'surface', sourceIdentity: 'professional-audit-timeline',
   } satisfies WorkspaceSectionNavigationItem : null,
-].filter((item): item is WorkspaceSectionNavigationItem => Boolean(item)));
+].filter((item): item is WorkspaceSectionNavigationItem => Boolean(item))));
 
 </script>
 
@@ -519,7 +525,6 @@ const sectionLinks = computed(() => [
   padding-top: 10px;
   border-top: 1px solid var(--sc-app-border);
 }
-.object-task-page__current-task,
 .object-task-page__context {
   border: 0;
   border-top: 1px solid var(--sc-app-border);
@@ -551,19 +556,16 @@ const sectionLinks = computed(() => [
 .object-task-page__summary-grid > :deep(.canonical-form-node:nth-child(n + 5)) { border-top: 1px solid var(--sc-app-border); }
 .object-task-page__current-task {
   min-width: 0;
+  display: grid;
+  gap: 8px;
 }
-.object-task-page__current-task :deep(.object-task-page__current-task-body) { padding-block: 4px 10px; }
 .object-task-page__current-task-copy {
   display: grid;
   grid-auto-rows: max-content;
   align-content: start;
   gap: 6px;
 }
-.object-task-page__current-task-facts {
-  padding-top: 8px;
-  border-top: 1px solid var(--sc-app-warning-border);
-  color: var(--sc-app-text-secondary);
-}
+.object-task-page__blocked-action { font-weight: 500; }
 .object-task-page__current-task-actions { min-width: max-content; }
 .object-task-page__risk {
   padding: 12px 14px;

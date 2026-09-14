@@ -19,6 +19,13 @@ export type NativeBusinessSectionMatch<T extends NativeBusinessSectionNode> = {
   identity: NativeBusinessSectionIdentity;
 };
 
+export type GovernedFormStructureSectionNode = NativeBusinessSectionNode & {
+  nodeId?: unknown;
+  nativePresentation?: Readonly<Record<string, unknown>>;
+  fields?: ReadonlyArray<Record<string, unknown>>;
+  children?: ReadonlyArray<GovernedFormStructureSectionNode>;
+};
+
 function text(value: unknown): string {
   return String(value ?? '').trim();
 }
@@ -50,6 +57,43 @@ export function nativeBusinessSectionIdentity(
   const anchor = text(node.attributes?.['data-sc-anchor']);
   const label = readableTitle(node.title || node.string || node.label);
   return anchor && label ? { anchor, label } : null;
+}
+
+/**
+ * A group rebuilt from the governed form-structure contract carries an
+ * explicit business title even though it is not an anchored native XML
+ * section.  This identity lets the task floorplan consume that existing
+ * authority without promoting ordinary layout groups into navigation.
+ */
+export function governedFormStructureSectionIdentity(
+  node: GovernedFormStructureSectionNode | null | undefined,
+): NativeBusinessSectionIdentity | null {
+  if (!node || node.visible === false || nodeKind(node) !== 'group') return null;
+  const presentation = node.nativePresentation || {};
+  const authority = (
+    presentation.sourceAuthority && typeof presentation.sourceAuthority === 'object'
+      ? presentation.sourceAuthority
+      : {}
+  ) as Record<string, unknown>;
+  const carrier = text(authority.runtime_carrier || authority.runtimeCarrier).toLowerCase();
+  const governed = authority.no_business_fact_authority === true
+    || authority.noBusinessFactAuthority === true;
+  const label = readableTitle(node.title || node.string || node.label);
+  const nodeId = text(node.nodeId);
+  const placements = new Set<string>();
+  function collectPlacements(current: GovernedFormStructureSectionNode) {
+    (current.fields || []).forEach((field) => {
+      const slot = text(field.semanticSlot);
+      const group = text(field.semanticGroup);
+      if (slot && group) placements.add(`${slot}\u0000${group}`);
+    });
+    (current.children || []).forEach(collectPlacements);
+  }
+  collectPlacements(node);
+  const declaredPlacement = placements.size === 1;
+  return (governed && carrier.endsWith('form_structure_contract') || declaredPlacement) && label && nodeId
+    ? { anchor: `form-structure:${nodeId}`, label }
+    : null;
 }
 
 /**

@@ -33,7 +33,7 @@ class ProductPagePatternGuardTest(unittest.TestCase):
             return value
 
         with patch("pathlib.Path.read_text", altered):
-            self.assertTrue(any("professional disclosure" in item for item in validate()))
+            self.assertTrue(any("governed information organization" in item for item in validate()))
 
     def test_relation_floorplan_requires_named_region_semantics(self):
         real = Path.read_text
