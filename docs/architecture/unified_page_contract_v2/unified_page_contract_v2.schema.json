@@ -926,6 +926,7 @@
         "legacyFieldPolicyOverlay": {"type": "boolean"},
         "formLayoutOverlay": {"type": "boolean"},
         "formStructureAuthority": {"type": "string"},
+        "formPresentationMode": {"enum": ["task", "workspace"]},
         "fieldNames": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
         "fieldLabels": {"type": "object", "additionalProperties": {"type": "string"}},
         "fieldSemanticRoles": {

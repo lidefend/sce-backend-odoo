@@ -921,6 +921,34 @@ for (const role of CONTRACT_V2_FORM_STRUCTURE_ROLES) {
   );
 }
 
+const governancePresentationSnapshot = snapshot();
+governancePresentationSnapshot.formStructureContract = {
+  ...governedFormStructure('context'),
+  sourceAuthority: {
+    ...governedFormStructure('context').sourceAuthority,
+    governance_source: {
+      ...governedFormStructure('context').sourceAuthority.governance_source,
+      formStructureAuthority: 'native_authority',
+      formPresentationMode: 'task',
+    },
+  },
+};
+assert.equal(
+  decodeContractV2Snapshot(governancePresentationSnapshot)
+    .formStructureContract?.sourceAuthority.governance_source.formPresentationMode,
+  'task',
+  'governance presentation mode must survive the formal decoder',
+);
+const invalidGovernancePresentationSnapshot = structuredClone(governancePresentationSnapshot) as ContractV2Snapshot;
+if (invalidGovernancePresentationSnapshot.formStructureContract) {
+  (invalidGovernancePresentationSnapshot.formStructureContract.sourceAuthority.governance_source as unknown as Record<string, unknown>)
+    .formPresentationMode = 'dialog';
+}
+assert.throws(
+  () => decodeContractV2Snapshot(invalidGovernancePresentationSnapshot),
+  /formPresentationMode.*must equal task or workspace/,
+);
+
 const schemaFormStructureRoles = (
   contractV2Schema.$defs.formStructureRoleName.enum as string[]
 );

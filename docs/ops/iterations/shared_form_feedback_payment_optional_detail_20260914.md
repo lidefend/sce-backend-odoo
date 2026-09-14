@@ -94,6 +94,8 @@ Formal Product Layer：P0 + P1 + P4。Standard vs User-Specific：平台通用�
 
 原生权威结构的名称级 `fieldLabels` 只接受唯一的最终 occurrence 标签；同一字段存在多个合法 occurrence 标签时不制造名称级覆盖，各 occurrence 保留自己的原生标签。显式配置替换结构继续保留其授权标签。定向验证选择 1 个付款规范化契约方法，实际执行 1 个方法；Odoo 框架统计 3 tests，失败/错误 0。该结果只证明契约结构、标签和显式空值语义，没有替代浏览器产品复核。
 
+首次以该原生权威结构进入浏览器时，客户端按正式词汇表 fail-closed：后端治理来源已输出 `formPresentationMode`，但 JSON Schema、TypeScript 类型和解码器尚未共同接纳它。现已将该字段约束为 `task | workspace`，补齐合法保真与非法值拒绝测试；没有通过丢弃治理信息绕开校验。
+
 ## 验证分层与结果
 
 Changed paths 涉及 P0 契约合成及共享前端、P1 付款视图/模型/handler、P4 guard/受管旅程和本报告。风险等级为高：金额权威与共享表单消费。最早有效层为 L1；完成非零 L2、受管 L3 和聚焦 L4。完整 Quick 仅在最终 clean HEAD 运行一次。

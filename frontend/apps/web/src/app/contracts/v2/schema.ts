@@ -1176,7 +1176,7 @@ function decodeFormStructureGovernanceSource(
   }
   rejectUnknownKeys(raw, [
     'source', 'ownerLayer', 'businessConfigContracts', 'legacyFieldPolicyOverlay',
-    'formLayoutOverlay', 'formStructureAuthority', 'fieldNames', 'fieldLabels',
+    'formLayoutOverlay', 'formStructureAuthority', 'formPresentationMode', 'fieldNames', 'fieldLabels',
     'fieldSemanticRoles', 'sectionSemanticRoles', 'configuredSections', 'sectionTitles',
     'fieldGroups', 'hiddenFieldNames', 'formColumns', 'groupColumns', 'groupVisibility',
     'categoryId', 'categoryCode', 'targetModel',
@@ -1244,6 +1244,17 @@ function decodeFormStructureGovernanceSource(
   )) issues.push({ path: `${path}.categoryId`, message: 'must be a positive integer' });
   const legacyFieldPolicyOverlay = optionalBooleanField('legacyFieldPolicyOverlay');
   const formLayoutOverlay = optionalBooleanField('formLayoutOverlay');
+  const formPresentationMode = raw.formPresentationMode;
+  if (
+    formPresentationMode !== undefined
+    && formPresentationMode !== 'task'
+    && formPresentationMode !== 'workspace'
+  ) {
+    issues.push({
+      path: `${path}.formPresentationMode`,
+      message: 'must equal task or workspace',
+    });
+  }
   const fieldSemanticRoles = semanticRoleMap(raw.fieldSemanticRoles, `${path}.fieldSemanticRoles`);
   const sectionSemanticRoles = semanticRoleMap(raw.sectionSemanticRoles, `${path}.sectionSemanticRoles`);
   return {
@@ -1258,6 +1269,9 @@ function decodeFormStructureGovernanceSource(
       : {}),
     ...(optionalString(raw, 'formStructureAuthority')
       ? { formStructureAuthority: optionalString(raw, 'formStructureAuthority') }
+      : {}),
+    ...(formPresentationMode === 'task' || formPresentationMode === 'workspace'
+      ? { formPresentationMode }
       : {}),
     ...(raw.fieldNames !== undefined
       ? { fieldNames: decodeUniqueStringArray(raw.fieldNames, `${path}.fieldNames`, issues) }
