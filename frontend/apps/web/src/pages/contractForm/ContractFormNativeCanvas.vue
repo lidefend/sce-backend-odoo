@@ -97,7 +97,7 @@
     >
       <template #readonly="{ field }">
         <div class="form-readonly-value" :class="{ 'form-readonly-value--empty': isEmptyValue(field.value, field.type) }">
-          <span v-if="isEmptyValue(field.value, field.type)">未填写</span>
+          <span v-if="isEmptyValue(field.value, field.type)">{{ resolveReadonlyEmptyText(field, '未填写') }}</span>
           <div
             v-else-if="field.type === 'html'"
             class="form-readonly-html"
@@ -131,6 +131,7 @@ import type {
 } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import { sanitizeReadonlyHtml } from '../../utils/sanitizeReadonlyHtml';
+import { resolveReadonlyEmptyText } from '../../components/professional-fields/professionalBaseFieldModel';
 import NativeCollaborationPanel, {
   type NativeCollaborationPanelListeners,
   type NativeCollaborationPanelProps,

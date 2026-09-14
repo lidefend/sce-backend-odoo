@@ -130,7 +130,7 @@ import {
   ScTaskActionResolverKey,
   type ScTaskActionDescriptor,
 } from '../template/taskActionResolver';
-import { resolveProfessionalBaseFieldModel } from './professionalBaseFieldModel';
+import { resolveProfessionalBaseFieldModel, resolveReadonlyEmptyText } from './professionalBaseFieldModel';
 
 const props = defineProps<{
   field: FormSectionFieldSchema;
@@ -176,7 +176,7 @@ const normalizedReadonlyValue = computed(() => (
 const readonlyText = computed(() => formatDisplayValue(
   normalizedReadonlyValue.value,
   { ...(props.field.descriptor || {}), type: normalizedType.value || props.field.descriptor?.type },
-  { emptyText: '-' },
+  { emptyText: resolveReadonlyEmptyText(props.field, '-') },
 ));
 const readonlyHtml = computed(() => sanitizeReadonlyHtml(props.field.value));
 const readonlyDateTimeValue = computed(() => {

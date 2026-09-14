@@ -163,6 +163,7 @@ assert.equal(formatMonetaryDisplayValue(1234.5, [16, 2], 'USD', 'en-US'), '$1,23
 assert.equal(formatMonetaryDisplayValue(50, undefined, 'CNY'), '¥50.00');
 assert.equal(formatMonetaryDisplayValue(1234.5, [16, 1], '元', 'en-US'), '1,234.5 元');
 assert.equal(formatMonetaryDisplayValue('', [16, 2], 'USD', 'en-US'), '-');
+assert.equal(formatMonetaryDisplayValue('', [16, 2], 'USD', 'en-US', '尚未生成'), '尚未生成');
 assert.equal(normalizeContractFieldValue({
   name: 'amount', value: '12.345', descriptor: { type: 'monetary', digits: [16, 2] } as never,
   originalValue: 0, buildOne2manyValue: () => [],

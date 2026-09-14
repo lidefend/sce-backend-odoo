@@ -149,10 +149,11 @@ export function formatMonetaryDisplayValue(
   digits?: [number, number],
   currencyLabel = '',
   locale = 'zh-CN',
+  emptyText = '-',
 ): string {
-  if (value === null || value === undefined || value === false || value === '') return '-';
+  if (value === null || value === undefined || value === false || value === '') return emptyText;
   const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return '-';
+  if (!Number.isFinite(numeric)) return emptyText;
   const scale = resolveMonetaryScale(digits, currencyLabel);
   const options: Intl.NumberFormatOptions = Number.isInteger(scale)
     ? { minimumFractionDigits: scale, maximumFractionDigits: scale }
@@ -182,6 +183,9 @@ export function buildFormSectionFieldSchemas(
       : '';
     const widget = String(field.widget || descriptorWidget || '').trim().toLowerCase();
     const semantics = field.widgetSemantics && typeof field.widgetSemantics === 'object' ? field.widgetSemantics : {};
+    const readonlyEmptyText = typeof semantics.readonly_empty_text === 'string'
+      ? semantics.readonly_empty_text.trim()
+      : '';
     const dateRangeEndField = widget === 'daterange' && String(semantics.kind || '').trim() === 'date_range'
       ? String(semantics.end_field || '').trim()
       : '';
@@ -224,6 +228,7 @@ export function buildFormSectionFieldSchemas(
       type,
       widget: effectiveWidget,
       widgetSemantics: semantics,
+      readonlyEmptyText: readonlyEmptyText || undefined,
       digits,
       currencyField: currencyField || undefined,
       currencyLabel: currencyLabel || undefined,

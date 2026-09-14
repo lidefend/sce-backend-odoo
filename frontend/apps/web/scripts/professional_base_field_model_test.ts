@@ -3,6 +3,7 @@ import {
   PROFESSIONAL_BASE_FIELD_TYPES,
   isProfessionalBaseFieldCandidate,
   resolveProfessionalBaseFieldModel,
+  resolveReadonlyEmptyText,
 } from '../src/components/professional-fields/professionalBaseFieldModel';
 
 const modes = ['task', 'workspace'] as const;
@@ -28,6 +29,8 @@ assert.equal(resolveProfessionalBaseFieldModel({
 assert.equal(isProfessionalBaseFieldCandidate('selection', 'radio'), false);
 assert.equal(isProfessionalBaseFieldCandidate('date', 'daterange'), false);
 assert.equal(isProfessionalBaseFieldCandidate('many2one'), false);
+assert.equal(resolveReadonlyEmptyText({ readonlyEmptyText: '尚未生成' }), '尚未生成');
+assert.equal(resolveReadonlyEmptyText({ readonlyEmptyText: '   ' }, '-'), '-');
 assert.equal(resolveProfessionalBaseFieldModel({
   fieldType: 'char', presentationMode: 'unscoped', renderProfile: 'unscoped',
 }).controlState, 'editable');

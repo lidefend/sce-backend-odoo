@@ -217,6 +217,13 @@ class _TreeFormParserMixin:
         ).strip()
         if semantic_feature:
             semantics['feature'] = semantic_feature
+        if 'sc_readonly_empty_text' in options:
+            empty_text = options.get('sc_readonly_empty_text')
+            if not isinstance(empty_text, str) or not empty_text.strip() or len(empty_text.strip()) > 80:
+                raise ValueError(
+                    'sc_readonly_empty_text must be a non-empty string of at most 80 characters'
+                )
+            semantics['readonly_empty_text'] = empty_text.strip()
         return semantics
 
     def _resolve_action_label(self, btn_node, name_raw):

@@ -151,7 +151,7 @@
               <ProfessionalRelationFieldControl v-else-if="usesProfessionalMany2one(field) && field.readonly" :field="field">
                 <slot name="readonly" :field="field">
                   <ScButton
-                    v-if="field.many2oneOpenToken && readonlyText(field) !== '-'"
+                    v-if="field.many2oneOpenToken && !fieldHasEmptyValue(field)"
                     type="button"
                     appearance="auth-link"
                     variant="ghost"
@@ -311,7 +311,7 @@ import ProfessionalDetailCollectionControl from '../professional-fields/Professi
 import ProfessionalMany2oneFieldControl from '../professional-fields/ProfessionalMany2oneFieldControl.vue';
 import ProfessionalRelationFieldControl from '../professional-fields/ProfessionalRelationFieldControl.vue';
 import PaymentSettlementDetailCollectionControl from '../professional-fields/PaymentSettlementDetailCollectionControl.vue';
-import { isProfessionalBaseFieldCandidate } from '../professional-fields/professionalBaseFieldModel';
+import { isProfessionalBaseFieldCandidate, resolveReadonlyEmptyText } from '../professional-fields/professionalBaseFieldModel';
 import { isProfessionalBusinessValueField } from '../professional-fields/professionalBusinessValueModel';
 import {
   isProfessionalDetailCollectionField,
@@ -650,7 +650,13 @@ function inputPlaceholderText(field: FormSectionFieldSchema) {
 function readonlyText(field: FormSectionFieldSchema) {
   const fieldType = String(field.type || field.descriptor?.ttype || field.descriptor?.type || '').trim().toLowerCase();
   if (fieldType === 'monetary') {
-    return formatMonetaryDisplayValue(field.value, field.digits, field.currencyLabel);
+    return formatMonetaryDisplayValue(
+      field.value,
+      field.digits,
+      field.currencyLabel,
+      'zh-CN',
+      resolveReadonlyEmptyText(field, '-'),
+    );
   }
   const normalizedValue = ['date', 'datetime', 'many2one'].includes(fieldType)
     && String(field.value).trim().toLowerCase() === 'false'
@@ -659,7 +665,7 @@ function readonlyText(field: FormSectionFieldSchema) {
   return formatDisplayValue(
     normalizedValue,
     { ...(field.descriptor || {}), type: fieldType || field.descriptor?.type },
-    { emptyText: '-' },
+    { emptyText: resolveReadonlyEmptyText(field, '-') },
   );
 }
 
