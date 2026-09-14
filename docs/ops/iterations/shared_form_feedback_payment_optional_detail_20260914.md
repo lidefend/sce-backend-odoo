@@ -70,20 +70,22 @@ Formal Product Layer：P0 + P1 + P4。Standard vs User-Specific：平台通用�
 | 付款依据 | `cost_category_name` | 从有效付款明细的来源分类汇总 | 只读；无明细或无来源分类为“尚未生成” | 标签“明细成本分类”＋显式空值“尚未生成” |
 | 申请金额 | `amount` | 无明细时人工填写；有有效明细时由明细合计同步 | 草稿可填；有明细时只读；0 是有效数值而非空值 | 标准金额控件/金额只读组件，帮助随权威规则 |
 | 申请金额 | `amount_uppercase` | 系统按申请金额自动计算 | 永远只读；不需要人工输入 | 标签“系统生成金额大写”＋紧邻帮助 |
-| 申请金额 | `accepted_amount_uppercase` | 历史验收口径延续，并供历史展示回退 | 现有规则允许草稿维护；不参与当前金额或明细校验 | 标签“历史确认金额大写”；保留控件与权限，登记是否继续保留人工输入为待决 |
+| 履约与追溯 | `accepted_amount_uppercase` | 历史验收口径延续，并供历史展示回退 | 不参与当前金额或明细校验；模型/API/导入兼容仍保留 | 从当前申请金额区移出，在历史追溯页签按只读事实展示；空值为“无历史确认记录” |
 | 申请金额 | `paid_amount_total`、`unpaid_amount` | 已付累计与未付对照 | 系统计算只读；0 是事实 | 金额只读组件 |
 | 申请金额 | `funding_baseline_id` | 首次提交审批时绑定的资金基线快照 | 只读；草稿空值为“提交审批时生成” | 关系只读组件＋显式空值 |
 | 申请金额 | `outflow_line_ids`、`detail_amount_total` | 可选付款拆分明细及其合计 | 无行可直接填主金额；有行时明细成为金额权威 | 现有 Disclosure；状态提示由 `amount_uses_details` 决定，不由展开状态决定 |
 | 收付款信息 | `actual_payee_unit`、`payment_account_name`、`payment_bank_name`、`payment_account_no` | 选择依据/往来单位时可带入的本次申请账户快照 | 草稿允许覆盖；空控件表示当前申请待补，不覆盖往来单位主数据 | 标准输入控件＋每项紧邻来源/可改帮助，不堆独立 Alert |
 | 收付款信息 | `payee_account_completeness` | 本次快照或默认账户是否完整 | 系统计算且始终有状态 | 统一状态组件；颜色仅表达完整/待补充 |
-| 收付款信息 | `payee_account_source_display` | 当前完整账户来自申请快照、默认账户或仍待补 | 系统计算且始终有说明 | 普通来源文本，不冒充状态或风险 |
+| 收付款信息 | `payee_account_source_display` | 当前账户字段来自本次申请快照或往来单位默认账户 | 系统计算；没有任何来源字段时为空 | 普通来源文本；显式空值“尚无账户来源”，不复述账户完整度 |
 | 收付款信息 | `payer_unit` | 本次申请确认的付款单位 | 草稿允许填写；空值是待填写 | 标准输入控件 |
 | 收付款信息 | `partner_account_name`、`partner_bank_name`、`partner_bank_account` | 往来单位主数据中的默认结算账户 | 系统只读；空值明确为“往来单位未配置” | 普通只读文本＋显式空值；不显示成可填写控件 |
 | 说明与附件 | `note`、`attachment_ids` | 本次申请说明与既有授权附件 | 草稿/驳回按原规则可维护 | 文本域与附件桥接，位于明细之后 |
 | 履约与追溯 | `payment_execution_status_display`、责任余额、来源匹配、`ledger_line_ids` | 后续付款登记状态、责任/来源风险与付款记录 | 系统只读、按原条件出现，默认折叠 | 状态、反馈与关系明细各归对应组件；不混入基本信息 |
 | 隐藏技术状态 | `type`、`currency_id`、`amount_uses_details`、匹配布尔量 | modifiers、格式与金额权威的驱动值 | 不供用户直接维护 | 保持隐藏，仅供通用消费者求值 |
 
-`accepted_amount_uppercase` 的源码消费者仅发现历史展示回退、API/列表字段和迁移延续；未发现当前页面的确认动作、相等校验或金额计算依赖。因此本批只澄清其历史身份，不删除字段、不收紧可编辑权限；是否继续要求新单人工填写需另有业务决策。
+`accepted_amount_uppercase` 的源码消费者仅发现历史展示回退、API/列表字段和迁移延续；未发现当前页面的确认动作、相等校验或金额计算依赖。因此本批没有删除字段、改变 ORM 写入兼容或迁移规则，而是由付款申请入口专用原生视图移除当前金额区的编辑 occurrence，并在既有历史追溯 notebook 中提供唯一只读 occurrence。当前办理不再要求用户维护历史值。
+
+`payee_account_source_display` 与 `payee_account_completeness` 的含义已经拆开：来源只回答“当前账户字段从哪里来”，任一申请快照字段存在即为“本次申请账户快照”，否则任一往来单位默认账户字段存在即为“往来单位默认结算账户”，均不存在时返回空值并由原生声明显示“尚无账户来源”；完整度仍独立回答有效账户信息是否齐全。两者不再相互复述。
 
 ### 原生字段表达的最终断点
 
@@ -109,22 +111,23 @@ Changed paths 涉及 P0 契约合成及共享前端、P1 付款视图/模型/han
 | L0 | 源检查点 HEAD/Tree/完整指纹一致，工作树 clean | 7440 paths；最终冻结后重新生成 exact-head 身份 |
 | L1 | `make ci.local.iteration` PASS，16 tests；严格类型、语法和 `git diff --check` PASS | 不把 L1 当作交付 receipt |
 | L2 前端 | professional component registry 43 cases + 3 guards；X2Many guard 4 个反例；相关 presenter/navigation/detail collection 测试均非零 PASS | `props.adapter.one2manyColumns(props.field.name)` 与等价局部 adapter 调用均通过；缺失调用和错误参数均失败 |
-| L2 后端 | 选择 4 个方法，实际执行 4 个方法，框架统计 6 tests，失败/错误 0；后续受影响 2 方法与 1 方法分别非零 PASS；最终跨币种/搜索方法再次实际执行 1 个方法，框架统计 3 tests，失败/错误 0 | 无明细、有明细、零金额、历史不一致、引入同步、handler/模型跨币种拒绝、权威名称搜索和币种元数据 |
+| L2 后端 | 选择 4 个方法，实际执行 4 个方法，框架统计 6 tests，失败/错误 0；后续受影响 2 方法与 1 方法分别非零 PASS；最终历史金额/账户来源补项选择并实际执行 3 个方法，框架统计 5 tests，失败/错误 0 | 无明细、有明细、零金额、历史不一致、引入同步、handler/模型跨币种拒绝、权威名称搜索、币种元数据、来源/完整度独立和历史字段唯一只读 occurrence |
 | L3 | 受管 `local.dev` 增量升级 `smart_construction_core`、重启和 authority health PASS | 仅 `sc-local-dev/sc_dev_demo`；没有手工拼接 Compose/DB/profile |
 | L4 只读布局 | 621，1088×791 与 390×844；初始折叠、展开稳定态、再次收起均 PASS，`mutationCount=0` | 展开 grid/field 宽度比均为 1；收起 contentCount=0，ownerHeight=54 |
-| L4 字段表达样板 | `bf9dc95f8078638b39c2e485abcaebe195ee56ef`，621，1088×791 与 390×844，light，`mutationCount=0` | 基本信息、申请金额、收付款信息保持连续；资金基线空值显示“提交审批时生成”，金额/状态/可填写账户仍使用各自组件；没有业务写入 |
-| L4 写入闭环 | 候选 `084f576239bff5f56831e68863b6f0abaeae0682`；登记 XMLID `smart_construction_demo.payment_request_floorplan_demo_record`，finance demo user | 受管完整旅程 PASS：引入并保存/权威回读金额 2400；取消删除保留行；确认删除后回读 0 行且金额仍为 2400；随后专用 reset PASS |
+| L4 字段表达样板 | `16b68142af22be2811e59a3e1e5087e4f3383501`，621、收入合同 15、收入结算 2，1088×791 与 390×844，light，`mutationCount=0` | 621 来源与完整度分离、历史值退出当前金额区；合同覆盖有值只读和未声明空值，结算覆盖编辑控件与只读值；显式只读空值不覆盖真实值或进入编辑控件 |
+| L4 写入闭环 | 候选 `16b68142af22be2811e59a3e1e5087e4f3383501`；登记 XMLID `smart_construction_demo.payment_request_floorplan_demo_record`，finance demo user | 受管完整旅程 PASS：专用记录 975 引入并保存/权威回读金额 2400；取消删除保留行；确认删除后回读 0 行且金额仍为 2400；随后专用 reset 恢复金额 10000、0 行、`amount_uses_details=false` |
 
 后端测试统计统一解释为：选择目标是测试方法；Odoo 统计行还包含框架阶段计数，不能把 `6 tests` 宣称为 6 个独立业务用例。浏览器 DOM 断言只证明语义关联，未实际使用读屏器，因此不宣称完整读屏体验通过。
 
 ## 证据与结转
 
 - 可选明细布局：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/shared-form-payment-621-optional-detail-states-1f96aac5/summary.json`。
-- 专用真实闭环：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/payment-optional-detail-real-closure-084f5762/introduce-summary.json` 与 `remove-summary.json`，两份摘要均绑定完整候选 `084f576239bff5f56831e68863b6f0abaeae0682` 且 `pass=true`。
+- 最终字段语义与共享反例：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/shared-form-semantic-fields-16b68142/summary.json`，绑定完整候选 `16b68142af22be2811e59a3e1e5087e4f3383501`，`pass=true`、`mutationCount=0`、零错误。付款样本为 621；收入合同 15 和收入结算 2 分别覆盖只读与编辑反例。
+- 专用真实闭环：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/payment-optional-detail-real-closure-16b68142/introduce-summary.json` 与 `remove-summary.json`，两份摘要均绑定完整候选 `16b68142af22be2811e59a3e1e5087e4f3383501` 且 `pass=true`。
 - 621 全程只读；真实写入仅作用于受管付款 fixture。最终专用 reset 后，权威回读为草稿、金额 10000、0 行、`amount_uses_details=false`。
 - 布局证据源候选 `1f96aac5…` 到产品源检查点的后续变更只涉及后端金额/币种规则、引入对话框币种表达和 P4 工具，不改变已验收的 Disclosure 全宽/销毁内容实现。
 - 最终 P4 旅程绑定明确的 S69 settlement/line XMLID，并以浏览器财务用户、公司、币种、项目和合同验证来源；`EXIT` trap 在任何已进入可变阶段的中断路径执行专用 reset，正常结束则显式解除 trap。该最终实现已在 `084f5762…` 上由完整受管入口验证，未沿用旧候选结果。
-- 字段表达样板：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/shared-form-payment-621-field-expression-bf9dc95f/summary.json`，绑定 HEAD `bf9dc95f8078638b39c2e485abcaebe195ee56ef`、Tree `85c768fe3e6aadf1dea2a6848343ecfe5e1be3d1` 和完整指纹 `d3064c7d1e33fc201415a2c0f7847710068e49acd7528c7daf5218831d5b0a99`（7443 paths）；`pass=true`，零写入、零错误。对应截图覆盖 1088 基本信息、申请金额与收付款信息，以及 390 申请金额/收付款信息。
+- 早期字段表达样板 `bf9dc95f…` 仅保留为历史前置证据；最终来源/完整度、历史字段归属及共享反例以 `shared-form-semantic-fields-16b68142` 为准。
 - 第一次冻结 Quick 在 `tenant_product_legacy_boundary` 发现无效明细错误标签仍以历史行 ID 作回退，立即失败且未签发 receipt。P1 随后改为“来源单号，否则业务行序号”；该守卫与对应零金额/历史不一致方法均非零通过，并重新完成模块升级。下一次 Quick 越过该守卫后，在 lint 发现结构收敛后遗留的未使用 `visibleFieldCount`，同样未签发 receipt；P0 仅删除已无消费者的 helper，lint 与严格类型检查通过。两项恢复都不改变最终真实闭环使用的有效明细、金额同步、删除确认、resolver 和 reset 输入，因此 L4 结果按确定性影响分析结转，不重复写入 fixture。
 
 ## 风险、边界与回滚
@@ -137,4 +140,4 @@ Changed paths 涉及 P0 契约合成及共享前端、P1 付款视图/模型/han
 
 ## 下一步
 
-621 的“基本信息—申请金额—收付款信息”连续区域样板已经绑定 `bf9dc95f…` 交回复核；`accepted_amount_uppercase` 是否继续要求新单人工维护仍是独立业务决策，本批未擅自删除或收紧。样板通过后再补合同、结算各一个共享反例，随后才进入生成证据预检、最终冻结、一次 Quick 与独立复核；不追加页面美化、审批流程或新的金额口径专题。
+621 的历史金额与账户来源语义补项、收入合同/结算共享反例，以及有明细金额同步和删除最后一行的受管真实闭环均已绑定当前产品候选 `16b68142…` 通过。下一步只整理生成证据并预检，随后冻结最终 clean HEAD、运行一次 Quick 与独立复核；不追加页面美化、审批流程或新的金额口径专题。

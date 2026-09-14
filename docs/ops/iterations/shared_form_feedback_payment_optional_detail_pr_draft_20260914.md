@@ -15,6 +15,7 @@
 - 申请金额位于可选明细之前；“按明细填写”默认折叠，展开后表格跨满业务区域，收起后不留边框或空白。
 - 明细生效后申请金额随合计同步。空白/零金额行显式无效；历史不一致不会在打开、onchange 或无关保存时被静默修复。
 - 删除最后一行有取消/确认，确认后保留最后合计；从结算单引入执行同币种校验并使用契约币种格式。
+- 历史确认金额退出当前申请金额编辑区，在历史追溯中只读呈现；账户来源与账户完整度分别表达来源事实和完整状态。
 
 ## Architecture impact
 
@@ -31,7 +32,8 @@
 - 后端金额规则：选择 4 个方法并实际执行 4 个方法，Odoo 统计 6 tests，失败/错误 0；币种及 onchange 修复另有非零 2 方法、1 方法 PASS；最终模型跨币种/权威名称搜索方法再次实际执行 1 个方法，框架统计 3 tests，失败/错误 0。统计次数不冒充独立业务用例数。
 - `smart_construction_core` 受管增量升级、local.dev restart/health：PASS。
 - 621 的 1088×791、390×844 初始折叠/展开/再次收起：PASS，零写入；展开宽度比 1，收起无内容节点。
-- 现有专用付款 fixture：引入明细后保存、权威回读和刷新 PASS；取消删除保持行，确认删除后回读 0 行且金额保留；专用 reset PASS。来源绑定 S69 settlement/line XMLID，resolver 使用实际财务用户、公司、币种、项目和合同约束；中断路径由 `EXIT` trap 执行专用 reset。
+- 当前候选 `16b68142af22be2811e59a3e1e5087e4f3383501` 上，现有专用付款 fixture：引入明细后保存、权威回读和刷新 PASS；取消删除保持行，确认删除后回读 0 行且金额保留；专用 reset PASS。来源绑定 S69 settlement/line XMLID，resolver 使用实际财务用户、公司、币种、项目和合同约束；中断路径由 `EXIT` trap 执行专用 reset。
+- 621 与收入合同/结算共享反例在 1088×791、390×844 下 `pass=true`、零写入：显式只读空值不覆盖真实值，不进入编辑控件；未声明空值保持既有回退。
 - 冻结准备、唯一一次 Quick 和独立复核由最终 clean HEAD 的仓外 exact-head 证据记录；不为回填结果修改候选。
 
 ## Evidence
@@ -39,7 +41,8 @@
 - 迭代报告：[shared_form_feedback_payment_optional_detail_20260914.md](shared_form_feedback_payment_optional_detail_20260914.md)
 - 结构权威决策：[native_first_form_structure_authority_v1.md](../../architecture/native_first_form_structure_authority_v1.md)
 - 布局：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/shared-form-payment-621-optional-detail-states-1f96aac5/summary.json`
-- 真实闭环：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/payment-optional-detail-real-closure-084f5762/introduce-summary.json`、`remove-summary.json`（均绑定完整候选 `084f576239bff5f56831e68863b6f0abaeae0682`）
+- 字段语义与共享反例：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/shared-form-semantic-fields-16b68142/summary.json`（绑定完整候选 `16b68142af22be2811e59a3e1e5087e4f3383501`）
+- 真实闭环：`/home/lidefend/workspace/sce-offrepo/artifacts/playwright/payment-optional-detail-real-closure-16b68142/introduce-summary.json`、`remove-summary.json`（均绑定完整候选 `16b68142af22be2811e59a3e1e5087e4f3383501`）
 
 ## Boundaries
 
