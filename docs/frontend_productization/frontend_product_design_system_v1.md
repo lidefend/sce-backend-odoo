@@ -23,6 +23,21 @@
 - 控件、面板和对话框分别使用固定圆角；阴影仅用于浮层和必要的层级提升。
 - 正式组件不得新增硬编码颜色、页面级 inline style、model-specific CSS 或宽范围全站补丁。
 
+### TDesign 1.20.5 共享规范映射
+
+| 官方/现有依据 | 现有 token | 本批采用值 | 共享消费者 |
+| --- | --- | --- | --- |
+| TDesign `--td-font-size-headline-small` 与既有 page-header pattern | `--sc-product-text-title` | 24px / 32px，600 | `ProductPageHeader` |
+| TDesign title/body 层级与既有基础字号 | `--sc-product-text-section` | 16px，600 | 业务章节标题、表单章节标题 |
+| TDesign `--td-font-size-body-medium` / `--td-line-height-body-medium` | `--sc-product-text-body`、`--sc-product-line-body` | 14px / 22px | 输入、关系选择、日期、金额、文本域、只读值 |
+| TDesign `--td-font-size-body-small` | `--sc-product-text-sm` | 12px / 20px | 字段标签、帮助、校验提示、面包屑和辅助文字 |
+| TDesign Card `bordered` 与现有 panel surface | `--sc-app-panel`、`--sc-app-border`、`--sc-space-lg` | 主工作面保留一个边界；正文 16px 内距 | 列表、表单与只读详情主表面 |
+| TDesign 连续内容面与既有 section appearance | `--sc-product-text-section`、`--sc-space-md`、`--sc-app-border` | 章节透明；相邻章节只保留一条分隔线 | 原生表单业务章节、嵌套明细区 |
+| TDesign Popup/Modal 层级 | 既有 overlay z-index 与 shadow token | 保留浮层阴影和特殊状态边界 | Dialog、Drawer、Popover；本批不改变生命周期 |
+| TDesign Button 公开 API 与横向滚动容器 | 既有 section-tab、touch-target、sticky token | 控制独立占位；桌面 28px、移动 44px 触达；导航实际高度参与锚点偏移 | `FormSectionNavigation` 溢出浏览与章节定位 |
+
+TDesign 字体变量只通过公开 CSS 变量桥接；页面标题、章节、正文和辅助文字消费同一组项目语义 token，不改变控件 widget、格式、校验或契约标题内容。
+
 ## 正式组件
 
 `components/design-system` 是通用组件唯一正式目录，包含页面、分区、面板、按钮、状态、金额、字段、错误、空状态、对话框、抽屉、列表、移动记录、关系和审计组件。业务页面负责把正式契约转换为这些组件的 props，不得向组件传递模型判断逻辑。

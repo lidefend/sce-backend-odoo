@@ -42,6 +42,10 @@
   --td-radius-medium: var(--sc-component-panel-radius);
   --td-font-family: var(--sc-semantic-font-family-sans);
   --td-font-family-medium: var(--sc-semantic-font-family-sans);
+  --td-font-size-body-small: var(--sc-product-text-sm);
+  --td-font-size-body-medium: var(--sc-product-text-body);
+  --td-line-height-body-small: 20px;
+  --td-line-height-body-medium: var(--sc-product-line-body);
 }
 
 .sc-btn.t-button {

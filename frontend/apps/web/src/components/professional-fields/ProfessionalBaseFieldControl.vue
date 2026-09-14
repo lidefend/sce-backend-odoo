@@ -211,11 +211,19 @@ function emitValue(value: string | number | boolean | null) {
 }
 
 .professional-base-field-control__readonly {
+  box-sizing: border-box;
+  display: grid;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: calc(var(--sc-component-input-height-md) * 1px);
   color: var(--sc-app-text-primary);
   font-size: calc(var(--sc-component-input-font-size) * 1px);
+  line-height: var(--sc-product-line-body);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* A readonly fact that is actually the next business action (下一步办理).

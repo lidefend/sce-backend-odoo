@@ -14,7 +14,7 @@ Generated from repository source files. This report is informational during the 
 | ---: | --- | --- |
 | 4758 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 4700 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
-| 4550 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
+| 4622 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4312 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4267 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 3827 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
@@ -81,7 +81,7 @@ Generated from repository source files. This report is informational during the 
 | 1380 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1320 | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
-| 1305 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
+| 1312 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1263 | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
 | 1256 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1249 | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
@@ -164,7 +164,7 @@ Generated from repository source files. This report is informational during the 
 | ---: | --- | --- | --- |
 | 4758 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 4700 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
-| 4550 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
+| 4622 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4312 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4267 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 3827 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
@@ -222,7 +222,7 @@ Generated from repository source files. This report is informational during the 
 | 1380 | warning | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1339 | warning | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1320 | warning | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
-| 1305 | warning | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
+| 1312 | warning | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1263 | warning | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
 | 1256 | warning | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1249 | warning | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |

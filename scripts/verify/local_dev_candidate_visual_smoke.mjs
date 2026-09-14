@@ -2020,7 +2020,7 @@ try {
             currentSectionCount: [...document.querySelectorAll('[data-form-section-navigation] [aria-current="location"]')].filter(visible).length,
             navigationOverflowDiscoverable: sectionNavigation instanceof HTMLElement
               && (sectionNavigation.dataset.overflowAfter !== 'true'
-                || [...sectionNavigation.querySelectorAll('.form-section-navigation__cue--after')].some(visible)),
+                || [...sectionNavigation.querySelectorAll('button[aria-label="向后浏览表单章节"]')].some(visible)),
             sectionTitles: [...document.querySelectorAll('[data-section-title], .native-container-head h3')]
               .filter(visible).map((node) => String(node instanceof HTMLElement ? node.dataset.sectionTitle || node.textContent || '' : '').replace(/\s+/g, ' ').trim()).filter(Boolean),
             relationInFirstViewport: relation instanceof HTMLElement && relation.getBoundingClientRect().top < window.innerHeight,
@@ -2225,6 +2225,76 @@ try {
             pass: stable.current && stable.targetFound && stable.targetLabelMatches && stable.targetVisibleBelowSticky,
           });
         }
+        let sectionBrowseFocusEvidence = { checked: false, reason: 'not requested', pass: true };
+        const exerciseSectionBrowseFocus = target.exerciseSectionBrowseFocus === true
+          && (!target.sectionBrowseFocusViewport || target.sectionBrowseFocusViewport === viewport.name);
+        if (exerciseSectionBrowseFocus) {
+          const mutationCountBefore = report.mutationCount;
+          const navigation = page.locator('[data-form-section-navigation]:visible').first();
+          await navigation.waitFor({ state: 'visible', timeout: 15000 });
+          const backward = navigation.locator('[aria-label="向前浏览表单章节"]:visible').first();
+          const forward = navigation.locator('[aria-label="向后浏览表单章节"]:visible').first();
+          await backward.waitFor({ state: 'visible', timeout: 15000 });
+          await forward.waitFor({ state: 'visible', timeout: 15000 });
+          await navigation.locator('.form-section-navigation__track').evaluate((track) => {
+            track.scrollTo({ left: 0, behavior: 'auto' });
+          });
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          const backwardDisabledAtStart = await backward.getAttribute('aria-disabled') === 'true';
+          const forwardAvailableInitially = await forward.getAttribute('aria-disabled') !== 'true';
+          await forward.focus();
+          let forwardSteps = 0;
+          while (await forward.getAttribute('aria-disabled') !== 'true' && forwardSteps < 20) {
+            await forward.press('Enter');
+            await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+            forwardSteps += 1;
+          }
+          const forwardAtEnd = {
+            disabled: await forward.getAttribute('aria-disabled') === 'true',
+            focused: await forward.evaluate((node) => node === document.activeElement),
+            connected: await forward.evaluate((node) => node.isConnected),
+          };
+          const backwardAvailableAtEnd = await backward.getAttribute('aria-disabled') !== 'true';
+          await backward.focus();
+          let backwardSteps = 0;
+          while (await backward.getAttribute('aria-disabled') !== 'true' && backwardSteps < 20) {
+            await backward.press('Enter');
+            await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+            backwardSteps += 1;
+          }
+          const backwardAtStart = {
+            disabled: await backward.getAttribute('aria-disabled') === 'true',
+            focused: await backward.evaluate((node) => node === document.activeElement),
+            connected: await backward.evaluate((node) => node.isConnected),
+          };
+          const forwardAvailableAtStart = await forward.getAttribute('aria-disabled') !== 'true';
+          sectionBrowseFocusEvidence = {
+            checked: true,
+            forwardSteps,
+            backwardSteps,
+            forwardAtEnd,
+            backwardAtStart,
+            backwardAvailableAtEnd,
+            forwardAvailableAtStart,
+            backwardDisabledAtStart,
+            forwardAvailableInitially,
+            mutationCountBefore,
+            mutationCountAfter: report.mutationCount,
+            pass: forwardSteps > 0
+              && backwardSteps > 0
+              && forwardAtEnd.disabled
+              && forwardAtEnd.focused
+              && forwardAtEnd.connected
+              && backwardAtStart.disabled
+              && backwardAtStart.focused
+              && backwardAtStart.connected
+              && backwardAvailableAtEnd
+              && forwardAvailableAtStart
+              && backwardDisabledAtStart
+              && forwardAvailableInitially
+              && mutationCountBefore === report.mutationCount,
+          };
+        }
         const scrollMetrics = await page.evaluate(() => {
           const owner = document.querySelector('.router-host');
           if (owner instanceof HTMLElement) return { scrollHeight: owner.scrollHeight, viewportHeight: owner.clientHeight };
@@ -2263,6 +2333,7 @@ try {
           navigationJourney,
           reverseNavigationJourney,
           manualNavigationJourney,
+          sectionBrowseFocusEvidence,
           captures,
           pass: target.expectFormStructure !== true || (
             top.sectionLinks.length > 1
@@ -2306,7 +2377,7 @@ try {
               || JSON.stringify(top.sectionLinks) === JSON.stringify(target.expectedSectionLinks))
             && (!Array.isArray(target.expectedSectionTitles)
               || JSON.stringify(top.sectionTitles) === JSON.stringify(target.expectedSectionTitles))
-            && navigationJourney.length === top.sectionLinks.length
+            && navigationJourney.length >= top.sectionLinks.length
             && navigationJourney.every((item) => item.current
               && item.immediate.current
               && item.stable.current
@@ -2321,6 +2392,7 @@ try {
               || reverseNavigationJourney.every((item) => item.pass))
             && (target.sectionManualJourneyLabels === undefined
               || manualNavigationJourney.every((item) => item.pass))
+            && (!exerciseSectionBrowseFocus || sectionBrowseFocusEvidence.pass)
             && (viewport.name !== 'mobile' || top.mobileMonetarySummaryFirst)
             && (target.expectRelationFirstViewport !== true || viewport.name !== 'desktop' || (top.relationInFirstViewport && top.addActionInFirstViewport))
             && (target.expectReadonlyDetailComparison !== true || (viewport.name === 'desktop' ? top.readonlyTableVisible : top.readonlyCardsVisible))

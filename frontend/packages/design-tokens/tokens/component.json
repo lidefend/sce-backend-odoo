@@ -90,7 +90,7 @@
     "disabled_opacity": "{opacity.disabled}",
     "radius": "{radius.md}",
     "padding_x": "{space.xs}",
-    "font_size": "{font.size_sm}",
+    "font_size": "{font.size_md}",
     "form_height": "36px",
     "record_title_font_size": "27px"
   },

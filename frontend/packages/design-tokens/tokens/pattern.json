@@ -7,7 +7,11 @@
   },
   "page_header": {
     "title_size": "{font.size_2xl}",
+    "title_weight": "{font.weight_semibold}",
     "section_gap": "{space.lg}"
+  },
+  "business_section": {
+    "title_weight": "{font.weight_semibold}"
   },
   "task_form": {
     "content_max_width": "1200px",

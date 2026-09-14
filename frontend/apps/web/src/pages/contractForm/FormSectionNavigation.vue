@@ -9,7 +9,18 @@
     :data-overflow-before="hasMoreBefore || undefined"
     :data-overflow-after="hasMoreAfter || undefined"
   >
-    <span :id="hintId" class="sc-visually-hidden">章节入口可横向滚动；当前章节会保持选中状态。</span>
+    <span :id="hintId" class="sc-visually-hidden">章节入口可横向滚动，也可使用前后浏览按钮；当前章节会保持选中状态。</span>
+    <ScButton
+      v-if="trackOverflows"
+      class="form-section-navigation__scroll-control"
+      type="button"
+      variant="ghost"
+      size="small"
+      appearance="section-tab"
+      aria-label="向前浏览表单章节"
+      :aria-disabled="!hasMoreBefore"
+      @click="scrollTrack(-1)"
+    ><ScIcon name="arrow-left" :size="16" /></ScButton>
     <div ref="trackRef" class="form-section-navigation__track" @scroll.passive="updateOverflow">
       <ScButton
         v-for="item in items"
@@ -28,14 +39,24 @@
         @click="activate(item)"
       >{{ item.label }}</ScButton>
     </div>
-    <span v-if="hasMoreBefore" class="form-section-navigation__cue form-section-navigation__cue--before" aria-hidden="true">‹</span>
-    <span v-if="hasMoreAfter" class="form-section-navigation__cue form-section-navigation__cue--after" aria-hidden="true">滑动 ›</span>
+    <ScButton
+      v-if="trackOverflows"
+      class="form-section-navigation__scroll-control"
+      type="button"
+      variant="ghost"
+      size="small"
+      appearance="section-tab"
+      aria-label="向后浏览表单章节"
+      :aria-disabled="!hasMoreAfter"
+      @click="scrollTrack(1)"
+    ><ScIcon name="arrow-right" :size="16" /></ScButton>
   </nav>
 </template>
 
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue';
 import ScButton from '../../components/design-system/ScButton.vue';
+import ScIcon from '../../components/design-system/ScIcon.vue';
 import { activeSectionKeyAtAnchor, sectionScrollDelta } from './nativeSectionNavigation';
 
 type SectionNavigationItem = {
@@ -52,6 +73,7 @@ const props = defineProps<{ items: SectionNavigationItem[]; rootSelector: string
 const navRef = ref<HTMLElement | null>(null);
 const trackRef = ref<HTMLElement | null>(null);
 const activeKey = ref('');
+const trackOverflows = ref(false);
 const hasMoreBefore = ref(false);
 const hasMoreAfter = ref(false);
 const hintId = `form-section-navigation-${useId()}`;
@@ -78,8 +100,19 @@ function visibleTarget(item: SectionNavigationItem) {
 function updateOverflow() {
   const track = trackRef.value;
   if (!track) return;
+  trackOverflows.value = track.scrollWidth > track.clientWidth + 2;
   hasMoreBefore.value = track.scrollLeft > 2;
   hasMoreAfter.value = track.scrollLeft + track.clientWidth < track.scrollWidth - 2;
+}
+
+function scrollTrack(direction: -1 | 1) {
+  const track = trackRef.value;
+  if (!track) return;
+  if (direction === -1 && !hasMoreBefore.value) return;
+  if (direction === 1 && !hasMoreAfter.value) return;
+  const distance = Math.max(160, Math.round(track.clientWidth * 0.6));
+  track.scrollBy({ left: direction * distance, behavior: 'auto' });
+  updateOverflow();
 }
 
 function centerActiveLink() {
@@ -202,6 +235,8 @@ onBeforeUnmount(() => {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  display: flex;
+  align-items: stretch;
   box-sizing: border-box;
   border-bottom: 1px solid var(--sc-app-border);
   background: var(--sc-app-panel);
@@ -209,39 +244,35 @@ onBeforeUnmount(() => {
 }
 .form-section-navigation__track {
   display: flex;
-  gap: 4px;
-  width: 100%;
+  flex: 1 1 auto;
+  gap: var(--sc-space-2xs);
+  width: auto;
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  padding: 6px 52px 6px 0;
+  padding: var(--sc-space-2xs) 0;
   overflow-x: auto;
   scrollbar-width: thin;
 }
 .form-section-navigation__track :deep(.sc-btn) { flex: 0 0 auto; }
-.form-section-navigation__cue {
-  position: absolute;
-  z-index: var(--sc-component-overlay-dropdown-z-index);
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--sc-app-text-secondary);
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 28px;
-  pointer-events: none;
+.form-section-navigation :deep(.form-section-navigation__scroll-control) {
+  align-self: center;
+  flex: 0 0 calc(var(--sc-component-button-section-tab-height) * 1px);
+  width: calc(var(--sc-component-button-section-tab-height) * 1px);
+  min-width: calc(var(--sc-component-button-section-tab-height) * 1px);
+  margin: var(--sc-space-2xs) 0;
+  padding-inline: var(--sc-space-2xs);
 }
-.form-section-navigation__cue--before {
-  left: 0;
-  padding: 0 12px 0 5px;
-  background: linear-gradient(90deg, var(--sc-app-panel) 58%, transparent);
-}
-.form-section-navigation__cue--after {
-  right: 0;
-  padding: 0 5px 0 18px;
-  background: linear-gradient(90deg, transparent, var(--sc-app-panel) 28%);
-  white-space: nowrap;
+.form-section-navigation :deep(.form-section-navigation__scroll-control[aria-disabled='true']) {
+  cursor: default;
+  opacity: 0.45;
 }
 @media (max-width: 560px) {
-  .form-section-navigation__track { padding-block: 5px; }
+  .form-section-navigation :deep(.form-section-navigation__scroll-control) {
+    flex-basis: var(--sc-touch-target-min);
+    width: var(--sc-touch-target-min);
+    min-width: var(--sc-touch-target-min);
+    min-height: var(--sc-touch-target-min);
+  }
 }
 </style>

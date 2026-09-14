@@ -9431,3 +9431,31 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 收入、支出样板均已完成人工产品复核；a99 证据因没有运行前后完整指纹绑定，只保留为人工复核/诊断材料。最终反例覆盖父条件 false/true/value-change、同区 tag/table、相同 field semantic 跨显式锚点、无锚点不同 semantic 子区、全隐藏及折叠有内容；根遍历显式隔离 `forEach` 的 index/array 参数。
 - `e0d844cd…` 的 1088×791、390×844 支出深色新建和查看分别具有 before/after 相同的完整指纹及 summary/截图哈希 binding；新建每视口 5 个、查看桌面 11 个/移动 12 个可见导航目标均唯一且稳定避开吸顶区，`pass=true`、零写入、零错误。旧焦点探针只作人工材料，手动中段截图不冒充点击定位证据。
 - 冻结前一次性提交双语报告、PR 草案和生成证据；随后在 clean exact-head 上只运行一次 Quick，并让独立复核绑定同一 HEAD/Tree/完整指纹。支出无草稿、金额口径未决、真实保存/审批未验收继续作为边界。
+
+## 2026-09-14 — TDesign 设计体系对齐 Batch A1
+
+- 分支 `codex/tdesign-system-alignment-v1`，基线 `origin/main@6885840fe57f1e00ae8ce78bc76687e8a4a66332`，复用已交付合同结算工作树作为唯一 writer；基线 Tree `77aeb208e4acad221d41ceca28f5bfdb59e1b6d0`，未新建或删除工作树。
+- Formal Product Layer 为 P0；Layer Target 为现有 design token、TDesign 公开 CSS 变量桥、共享页头和通用字段排版。页面标题、章节、正文/控件、标签/辅助文字统一为 24/16/14/12 四级，不改契约、P1 XML、字段 widget、格式、校验、权限、动作或业务数据。
+- 本批仅执行 L0 完整工作树指纹、L1 轻量入口和 token/header/primitive/form-field 的非零 L2；无模块/schema/运行装载变化，因此不执行 L3。三页 1088×791 局部浏览器对照留到 A1/A2/A3 汇合后，Quick 与完整候选证据留到产品方向通过后的冻结 HEAD。
+
+## 2026-09-14 — TDesign 设计体系对齐 Batch A2
+
+- Formal Product Layer 为 P0；Layer Target 为既有 `ScCard` appearance 与通用合同表单页面类型样式。主工作面保留单一 Card 边界，业务章节改为连续透明表面，相邻章节只保留一条分隔线；表格、浮层及特殊状态继续保留自身功能边界。
+- `ScCard` 中分散的 padding/gap 收敛到既有 spacing token，没有新增变量体系；章节标题统一消费 A1 的 16px/600 语义层级。未修改 P1 XML、契约章节、字段顺序、权限、动作、Dialog/Drawer 生命周期或业务数据。
+- 本批从 L0/L1 开始，运行 primitive/page-pattern/canonical-form 受影响非零测试与严格类型检查；L3 无模块或契约装载变化而跳过，局部 L4 与 A3 合并后只覆盖三张代表页面。
+
+## 2026-09-14 — TDesign 设计体系对齐 Batch A3
+
+- Formal Product Layer 为 P0；Layer Target 为既有 `FormSectionNavigation` 溢出表达。保留 anchor、当前章节判定、点击定位和滚动修正算法，只将覆盖末端标签的绝对定位提示替换为 TDesign 按钮公开 API 驱动的前后浏览控制。
+- 溢出控制在 flex 布局中占有独立空间，桌面沿用 section-tab 高度，移动端沿用 44px touch target；导航实际高度进入既有 scroll-margin 计算。未改为 TabPanel，未改变契约章节、业务动作、路由或页面专属样式。
+- 本批验证从 L0 开始，运行 native-section-navigation、form-canvas、primitive、canonical-form 和严格类型检查。三页 1088×791 局部 L4 只读对照绑定 A1—A3 汇合指纹；完整矩阵、Quick 与独立复核仍留在产品方向通过后的冻结阶段。
+
+## 2026-09-14 — TDesign 设计体系对齐 Batch A 最终视口补验
+
+- 用户已通过 `85b05110…` 的只读长值槽位修复：合同长名称在左侧字段内换行，无空格编号完整可读，与右侧来源名称不混叠；新建页未发现重复 section/card padding。A1—A3 产品方向冻结，不再调整外壳、色板或章节结构。
+- 同一产品源候选在 1440×960、390×844 的浅色与深色矩阵各覆盖收入合同层级列表、支出结算新建、支出结算查看和材料入库复合表单；两组均 `pass=true`、零业务写入、零错误、全部 root overflow=0、h1=1、token loaded。
+- 支出新建每个样本 5 个导航目标均唯一、完整可见并稳定避开吸顶区；只读详情逐项检查实际可见目标。收入合同移动表格保留局部横向浏览入口而没有根级溢出。复合表单的日期、关系选择和文本域共 8 个适用控件在桌面/移动均无字段槽位或基线失败，全程未保存。
+- 首次浅色矩阵因 `ERR_NETWORK_CHANGED` 和动态组件加载失败归为 `environment_defect` 并保留失败摘要；证明受管 health 与同 HEAD 候选服务恢复后只重试一次。下一步仅运行冻结前生成证据入口、提交 P4 材料并形成 clean HEAD；随后一次 Quick 与同指纹独立复核。
+- 冻结前聚焦自检发现 page-header 守卫对 `.readonly-value` 属性顺序的旧文本断言无法接受已批准的可收缩槽位属性，归为 `validation_tool_defect`。P4 断言改为同时锁定正文 token 与 `max-width/min-width` 槽位，新增负向反例后 11 项单测及直接 guard 通过；没有再次修改产品源。
+- 首次独立复核发现导航按钮到达边界时因 `v-if` 移除而带走键盘焦点；P0 保留节点并用 `aria-disabled` 表达边界，共享 `ScButton` 通过公开 prop 保留调用方状态。1088×791 与 390×844 的正反向探针均证明边界控制仍聚焦、仍连接且正确禁用，零业务写入。
+- `85b05110…` 原矩阵缺少运行前后完整指纹绑定，只保留为人工产品证据；在 `b7f167b8…` 上重新生成 1440×960/390×844 明暗矩阵，两轮 before/after 指纹均逐字节一致且截图/summary 具有 SHA-256 binding。`37ccabc6…` 的历史 Quick 因后续 P0 修复失效，最终冻结后必须对新 HEAD 运行一次有效 Quick。

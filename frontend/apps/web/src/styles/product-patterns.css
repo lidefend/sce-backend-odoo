@@ -209,7 +209,7 @@
   display: grid;
   gap: 6px;
   color: var(--sc-app-text-secondary);
-  font-size: calc(var(--sc-component-input-font-size) * 1px);
+  font-size: var(--sc-product-text-sm);
   font-weight: 600;
 }
 
@@ -472,32 +472,24 @@
   height: var(--sc-component-input-form-height, 36px);
 }
 
-/* Read-only value typography consistency (form surface)
- * Within a readonly form section, two render paths coexist: the template's
- * .readonly-value (14px, no explicit weight -> inherits regular 400 per
- * .template-form-section--readonly) and the professional field control's
- * .professional-base-field-control__readonly which falls back to
- * --sc-component-input-font-size (12px). Adjacent fields in the same readonly
- * section rendered at 12px and 14px side by side (e.g. status vs request
- * number). Align the professional readonly to the section's declared readonly
- * typography so values render uniformly (14px / 400). */
+/* Read-only value typography consistency (form surface). Both renderer paths
+ * consume the body-text token used by editable controls. */
 [data-product-page-mode='form'] .template-form-section--readonly .professional-base-field-control__readonly {
-  font-size: 14px;
+  font-size: var(--sc-product-text-body);
   font-weight: 400;
 }
 
 /* Unify the template render path's .readonly-value with the professional
- * render path: same size/weight/color/height so adjacent fields in one
- * readonly section never look mixed. The template path is inline-flex, so
- * min-height alone is ignored (reported 0px / content-height 22px vs the
- * professional path's 32px block) - pin line-height too so both read at the
- * same control height. Scope to the whole form surface (the readonly grid is
+ * render path: same size/weight/color/minimum height so adjacent fields in one
+ * readonly section never look mixed. Keep the body line-height independent
+ * from the minimum control height so wrapped facts remain readable and compact.
+ * Scope to the whole form surface (the readonly grid is
  * .template-form-section-grid, not .template-form-section--readonly). */
 [data-product-page-mode='form'] .readonly-value {
-  font-size: 14px;
+  font-size: var(--sc-product-text-body);
   font-weight: 400;
   color: var(--sc-app-text-primary);
-  line-height: calc(var(--sc-component-input-height-md) * 1px);
+  line-height: var(--sc-product-line-body);
   min-height: calc(var(--sc-component-input-height-md) * 1px);
 }
 

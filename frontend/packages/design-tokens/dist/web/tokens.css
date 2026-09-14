@@ -179,7 +179,7 @@
   --sc-component-hierarchy-browser-tree-min-width: 180;
   --sc-component-hierarchy-browser-tree-width: 280;
   --sc-component-input-disabled-opacity: 0.55;
-  --sc-component-input-font-size: 12;
+  --sc-component-input-font-size: 14;
   --sc-component-input-form-height: 36px;
   --sc-component-input-height-lg: 40;
   --sc-component-input-height-md: 32;
@@ -246,12 +246,14 @@
   --sc-pattern-app-shell-sidebar-collapsed-width: 56;
   --sc-pattern-app-shell-sidebar-width: 232;
   --sc-pattern-app-shell-topbar-height: 48;
+  --sc-pattern-business-section-title-weight: 600;
   --sc-pattern-collection-table-row-height: 44;
   --sc-pattern-collection-toolbar-height: 52px;
   --sc-pattern-overlay-dialog-padding: 16;
   --sc-pattern-overlay-shadow: 0 14px 28px rgba(15, 23, 42, 0.16);
   --sc-pattern-page-header-section-gap: 24;
   --sc-pattern-page-header-title-size: 24;
+  --sc-pattern-page-header-title-weight: 600;
   --sc-pattern-task-form-column-gap: 24;
   --sc-pattern-task-form-content-max-width: 1200px;
   --sc-pattern-task-form-control-row-gap: 4;
