@@ -328,6 +328,30 @@
                 <xpath expr="/form/sheet/group[3]/group[1]/field[@name='payee_account_completeness']" position="after">
                     <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payee_account_source_display']" position="move"/>
                 </xpath>
+                <xpath expr="/form/sheet/group[3]/group[1]/field[@name='actual_payee_unit']" position="attributes">
+                    <attribute name="help">选择合同、结算单或往来单位时可从往来单位带入；草稿中允许修改，保存后形成本次申请快照。</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[3]/group[1]/field[@name='payment_account_name']" position="attributes">
+                    <attribute name="help">可从往来单位默认结算户名带入；草稿中允许修改，且不会覆盖往来单位主数据。</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[3]/group[1]/field[@name='payment_bank_name']" position="attributes">
+                    <attribute name="help">可从往来单位默认开户行带入；草稿中允许修改，且不会覆盖往来单位主数据。</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[3]/group[1]/field[@name='payment_account_no']" position="attributes">
+                    <attribute name="help">可从往来单位默认账号带入；草稿中允许修改，且不会覆盖往来单位主数据。</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[3]/group[1]/field[@name='payee_account_source_display']" position="attributes">
+                    <attribute name="help">说明当前完整账户取自本次申请快照、往来单位默认账户，或仍待补充。</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[3]/group[2]/field[@name='partner_account_name']" position="attributes">
+                    <attribute name="options">{'sc_readonly_empty_text': '往来单位未配置'}</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[3]/group[2]/field[@name='partner_bank_name']" position="attributes">
+                    <attribute name="options">{'sc_readonly_empty_text': '往来单位未配置'}</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[3]/group[2]/field[@name='partner_bank_account']" position="attributes">
+                    <attribute name="options">{'sc_readonly_empty_text': '往来单位未配置'}</attribute>
+                </xpath>
                 <xpath expr="/form/sheet/group[1]" position="attributes">
                     <attribute name="name">sc_payment_request_pay_basic</attribute>
                     <attribute name="string">基本信息</attribute>
@@ -348,11 +372,27 @@
                     <attribute name="readonly">state not in ['draft', 'rejected'] or amount_uses_details</attribute>
                     <attribute name="help">未使用付款申请明细时可直接填写；存在明细时由有效明细的“本次申请”合计生成。</attribute>
                 </xpath>
+                <xpath expr="/form/sheet/group[2]/group[2]/field[@name='amount_uppercase']" position="attributes">
+                    <attribute name="string">系统生成金额大写</attribute>
+                    <attribute name="help">系统根据申请金额自动生成，用于金额核对，不需要人工填写。</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[2]/group[2]/field[@name='accepted_amount_uppercase']" position="attributes">
+                    <attribute name="string">历史确认金额大写</attribute>
+                    <attribute name="help">用于延续历史验收口径；不参与当前申请金额计算或付款明细合计校验。</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[2]/group[1]/field[@name='cost_category_name']" position="attributes">
+                    <attribute name="string">明细成本分类</attribute>
+                    <attribute name="help">根据付款申请明细中的来源分类自动汇总；无明细或来源未提供分类时尚未生成。</attribute>
+                    <attribute name="options">{'sc_readonly_empty_text': '尚未生成'}</attribute>
+                </xpath>
                 <xpath expr="/form/sheet/group[2]/group[2]" position="attributes">
                     <attribute name="name">sc_payment_request_pay_amount_facts</attribute>
                 </xpath>
                 <xpath expr="/form/sheet/group[2]/group[2]/field[@name='unpaid_amount']" position="after">
                     <xpath expr="/form/sheet/group[2]/group[2]/field[@name='funding_baseline_id']" position="move"/>
+                </xpath>
+                <xpath expr="/form/sheet/group[2]/group[2]/field[@name='funding_baseline_id']" position="attributes">
+                    <attribute name="options">{'sc_readonly_empty_text': '提交审批时生成'}</attribute>
                 </xpath>
                 <xpath expr="/form/sheet/group[2]/group[2]/field[@name='currency_id']" position="after">
                     <field name="amount_uses_details" invisible="1"/>

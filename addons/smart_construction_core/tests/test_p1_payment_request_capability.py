@@ -2013,6 +2013,22 @@ class TestP1PaymentRequestCapability(TransactionCase):
             ["state not in ['draft', 'rejected'] or amount_uses_details"],
         )
         self.assertEqual(
+            amount_section.xpath("./group[1]/field[@name='amount_uppercase']/@string"),
+            ["系统生成金额大写"],
+        )
+        self.assertEqual(
+            amount_section.xpath("./group[1]/field[@name='accepted_amount_uppercase']/@string"),
+            ["历史确认金额大写"],
+        )
+        self.assertEqual(
+            amount_section.xpath("./group[1]/field[@name='funding_baseline_id']/@options"),
+            ["{'sc_readonly_empty_text': '提交审批时生成'}"],
+        )
+        self.assertEqual(
+            payment_form_arch.xpath("/form/sheet/group[@name='sc_payment_request_pay_basis']//field[@name='cost_category_name']/@options"),
+            ["{'sc_readonly_empty_text': '尚未生成'}"],
+        )
+        self.assertEqual(
             amount_section.xpath("./group[1]/field[@name='outflow_line_ids']/@name"),
             ["outflow_line_ids"],
         )
@@ -2025,6 +2041,10 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(
             payment_form_arch.xpath("/form/sheet/group[1]/group[2]/field[@name='partner_transaction_eligibility']/@widget"),
             ["badge"],
+        )
+        self.assertEqual(
+            payment_form_arch.xpath("/form/sheet/group[@name='sc_payment_request_pay_parties']//field[@name='partner_account_name']/@options"),
+            ["{'sc_readonly_empty_text': '往来单位未配置'}"],
         )
         self.assertFalse(
             payment_form_arch.xpath(
@@ -2238,6 +2258,33 @@ class TestP1PaymentRequestCapability(TransactionCase):
             project_relation_entries,
         )
 
+        readonly_empty_texts = {}
+
+        def collect_readonly_empty_texts(value):
+            if isinstance(value, dict):
+                field_name = value.get("fieldCode") or value.get("name") or value.get("field")
+                semantics_candidates = (
+                    value.get("widgetSemantics"),
+                    value.get("widget_semantics"),
+                    (value.get("fieldInfo") or {}).get("widget_semantics"),
+                    (value.get("componentConfig") or {}).get("widgetSemantics"),
+                )
+                for semantics in semantics_candidates:
+                    if isinstance(semantics, dict) and semantics.get("readonly_empty_text"):
+                        readonly_empty_texts.setdefault(field_name, set()).add(
+                            semantics["readonly_empty_text"]
+                        )
+                for nested in value.values():
+                    collect_readonly_empty_texts(nested)
+            elif isinstance(value, list):
+                for nested in value:
+                    collect_readonly_empty_texts(nested)
+
+        collect_readonly_empty_texts(contract)
+        self.assertEqual(readonly_empty_texts.get("cost_category_name"), {"尚未生成"})
+        self.assertEqual(readonly_empty_texts.get("funding_baseline_id"), {"提交审批时生成"})
+        self.assertEqual(readonly_empty_texts.get("partner_account_name"), {"往来单位未配置"})
+
         container_tree = contract["layoutContract"]["containerTree"]
 
         def collect_group_titles(value, titles=None):
@@ -2287,15 +2334,15 @@ class TestP1PaymentRequestCapability(TransactionCase):
             "readonly layout must retain native occurrence identity",
         )
         group_titles = collect_group_titles(container_tree)
-        for native_anchor in (
-            "申请识别与状态",
-            "项目与收款对象",
-            "结算与合同依据",
-            "本次付款事实",
-            "本次收款账户快照",
-            "付款单位与默认账户",
-            "办理说明与附件",
-        ):
+        expected_business_sections = {
+            "基本信息",
+            "付款依据",
+            "申请金额",
+            "收付款信息",
+            "说明与附件",
+            "履约与追溯",
+        }
+        for native_anchor in expected_business_sections:
             self.assertIn(native_anchor, group_titles)
 
         normalized_fields = set()
@@ -2368,7 +2415,16 @@ class TestP1PaymentRequestCapability(TransactionCase):
             "readonly normalized payload fields missing: %s"
             % sorted(required_fields - declared_fields),
         )
-        always_applicable_layout_fields = required_fields - {"reject_reason", "attachment_ids"}
+        semantic_enhancement_fields = {
+            "payment_flow_label",
+            "legal_next_action_display",
+            "payment_blocking_reason_display",
+        }
+        always_applicable_layout_fields = required_fields - {
+            "reject_reason",
+            "attachment_ids",
+            *semantic_enhancement_fields,
+        }
         self.assertFalse(
             always_applicable_layout_fields - normalized_fields,
             "readonly applicable layout fields missing: %s"
@@ -2552,16 +2608,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
         )
         edit_group_titles = collect_group_titles(edit_container_tree)
         self.assertTrue(
-            {
-                "申请识别与状态",
-                "项目与收款对象",
-                "结算与合同依据",
-                "本次付款事实",
-                "本次收款账户快照",
-                "付款单位与默认账户",
-                "办理说明与附件",
-            }
-            <= set(edit_group_titles),
+            expected_business_sections <= set(edit_group_titles),
             "edit contract must preserve current native section anchors",
         )
 
@@ -2584,8 +2631,8 @@ class TestP1PaymentRequestCapability(TransactionCase):
         # Native occurrences remain structurally complete; draft visibility
         # is carried by the normalized modifier/status authority rather than
         # by deleting the rejected-only field from the layout tree.
-        expected_edit_layout_fields = required_fields
-        self.assertEqual(len(expected_edit_layout_fields), 42)
+        expected_edit_layout_fields = required_fields - semantic_enhancement_fields
+        self.assertEqual(len(expected_edit_layout_fields), 39)
         self.assertEqual(
             edit_layout_fields & required_fields,
             expected_edit_layout_fields,
