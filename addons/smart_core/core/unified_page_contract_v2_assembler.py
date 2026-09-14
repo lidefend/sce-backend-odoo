@@ -1685,8 +1685,16 @@ def _field_source_with_node_info(node: dict[str, Any], field: dict[str, Any], *,
         if canonical_key in node:
             field_source[producer_key] = deepcopy(node.get(canonical_key))
     field_source["name"] = field_name
-    field_source.setdefault("string", _text(node.get("string") or node.get("label") or field_info.get("label"), field_name))
-    field_source.setdefault("label", field_source.get("string", field_name))
+    native_label = _text(node.get("string") or node.get("label") or field_info.get("label"))
+    if native_label:
+        # The final native occurrence owns its control label.  fields_get()
+        # supplies a model fallback, but must not overwrite an explicit
+        # occurrence label carried by the resolved view.
+        field_source["string"] = native_label
+        field_source["label"] = native_label
+    else:
+        field_source.setdefault("string", field_name)
+        field_source.setdefault("label", field_source.get("string", field_name))
     attributes = _dict(node.get("attributes") or node.get("attrs"))
     native_widget = _text(attributes.get("widget") or node.get("widget"))
     if native_widget:
@@ -2517,6 +2525,8 @@ def _project_form_structure_to_layout(
 ) -> dict[str, Any]:
     """Bind the semantic structure to fields owned by the final native tree."""
     projected_fields: set[str] = set()
+    native_field_labels: dict[str, set[str]] = {}
+    native_widget_labels: dict[str, set[str]] = {}
 
     def collect(nodes: Any) -> None:
         for node in _list(nodes):
@@ -2526,6 +2536,20 @@ def _project_form_structure_to_layout(
                 field_name = _text(node.get("name") or node.get("fieldCode"))
                 if field_name:
                     projected_fields.add(field_name)
+                    label = _text(
+                        node.get("string")
+                        or node.get("label")
+                        or _dict(node.get("fieldInfo")).get("label")
+                    )
+                    if label:
+                        native_field_labels.setdefault(field_name, set()).add(label)
+            for widget in _list(node.get("widgetList")):
+                if not isinstance(widget, dict):
+                    continue
+                field_name = _text(widget.get("fieldCode") or widget.get("name"))
+                label = _text(widget.get("label"))
+                if field_name and label:
+                    native_widget_labels.setdefault(field_name, set()).add(label)
             collect(node.get("children"))
 
     collect(container_tree)
@@ -2560,6 +2584,40 @@ def _project_form_structure_to_layout(
         for field_name, role in field_roles.items()
         if field_name in projected_fields
     }
+    if _text(out.get("layoutPolicy")) == "native_authority":
+        def bind_native_labels(raw_labels: Any, field_refs: Any) -> dict[str, str]:
+            labels = {
+                _text(name): _text(label)
+                for name, label in _dict(raw_labels).items()
+                if _text(name) and _text(label)
+            }
+            for field_name in project_refs(field_refs, "formStructureContract.fieldLabels"):
+                candidates = native_widget_labels.get(field_name) or native_field_labels.get(field_name, set())
+                if len(candidates) == 1:
+                    labels[field_name] = next(iter(candidates))
+                elif len(candidates) > 1:
+                    # A name-level label cannot represent distinct native
+                    # occurrences.  Leave the name-level override absent so
+                    # each widget keeps its own resolved-view label.
+                    labels.pop(field_name, None)
+            return labels
+
+        all_refs: list[str] = []
+        for slot in _list(out.get("slots")):
+            if not isinstance(slot, dict):
+                continue
+            for field_name in _list(slot.get("fieldRefs")):
+                if _text(field_name) and _text(field_name) not in all_refs:
+                    all_refs.append(_text(field_name))
+            for group in _list(slot.get("groups")):
+                if not isinstance(group, dict):
+                    continue
+                refs = _list(group.get("fieldRefs"))
+                group["fieldLabels"] = bind_native_labels(group.get("fieldLabels"), refs)
+                for field_name in refs:
+                    if _text(field_name) and _text(field_name) not in all_refs:
+                        all_refs.append(_text(field_name))
+        out["fieldLabels"] = bind_native_labels(out.get("fieldLabels"), all_refs)
     return out
 
 

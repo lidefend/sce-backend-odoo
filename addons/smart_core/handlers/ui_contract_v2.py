@@ -1706,6 +1706,21 @@ class UiContractV2Handler(BaseIntentHandler):
         field_map = source_contract.get("fields") if isinstance(source_contract.get("fields"), dict) else {}
         if not policy or not groups or not field_map:
             return
+        structure_governance = self._form_structure_governance(
+            source_contract,
+            model=model,
+            view_type="form",
+        )
+        structure_authority = str(
+            structure_governance.get("form_structure_authority") or ""
+        ).strip()
+        if structure_authority in {"native_authority", "entry_semantic_surface"}:
+            # Business-category policy remains the authority for defaults,
+            # requirements and field-level business semantics.  It must not
+            # publish a second root section tree when orchestration has already
+            # selected either the resolved native view or an explicit semantic
+            # replacement as the form-structure authority.
+            return
         field_aliases = self._form_field_aliases(model, source_contract)
         if field_aliases:
             normalized_groups = []
@@ -1848,7 +1863,16 @@ class UiContractV2Handler(BaseIntentHandler):
         }
 
     def _inject_business_operation_contract(self, source_contract: dict[str, Any], *, model: str, view_type: str) -> None:
-        if view_type == "form" and isinstance(source_contract.get("business_form_policy"), dict):
+        if (
+            view_type == "form"
+            and isinstance(source_contract.get("business_form_policy"), dict)
+            and isinstance(source_contract.get("form_structure_contract"), dict)
+        ):
+            # A legacy category-only page may still publish the fallback
+            # structure above.  When a selected native/semantic authority
+            # prevented that fallback, continue through the ordinary form
+            # structure builder so the authoritative source is not left with
+            # no normalized structure at all.
             return
         try:
             has_model = bool(model and model in self.env)

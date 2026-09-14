@@ -443,6 +443,95 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertEqual(structure["slots"][0]["fieldRefs"], ["name"])
         self.assertEqual(set(structure["fieldRoles"]), {"name"})
 
+    def test_native_authority_projects_explicit_occurrence_label(self):
+        source = {
+            "model": "x.document",
+            "view_type": "form",
+            "fields": {
+                "name": {"name": "name", "type": "char", "string": "模型名称"},
+            },
+            "views": {"form": {"layout": [{
+                "type": "sheet",
+                "children": [{"type": "field", "name": "name", "label": "单据名称"}],
+            }]}},
+            "form_structure_contract": {
+                "source": "ui.contract.v2.form_structure_contract",
+                "structureVersion": "1.0",
+                "model": "x.document",
+                "viewType": "form",
+                "mode": "native_structured_form",
+                "layoutPolicy": "native_authority",
+                "objectProfile": {"titleField": "name", "stateField": "", "factAuthority": "orm"},
+                "navigation": {"title": "Document"},
+                "slots": [{
+                    "slot": "body",
+                    "title": "Body",
+                    "role": "context",
+                    "fieldRefs": ["name"],
+                    "groups": [{
+                        "name": "identity",
+                        "title": "Identity",
+                        "role": "context",
+                        "fieldRefs": ["name"],
+                        "fieldLabels": {"name": "旧结构标签"},
+                    }],
+                }],
+                "fieldLabels": {"name": "旧结构标签"},
+                "fieldRoles": {
+                    "name": {"role": "context", "slot": "body", "group": "identity"},
+                },
+            },
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            request_id="test.form.structure.native.label.authority",
+        )
+
+        structure = full["formStructureContract"]
+        self.assertEqual(structure["fieldLabels"]["name"], "单据名称")
+        self.assertEqual(
+            structure["slots"][0]["groups"][0]["fieldLabels"]["name"],
+            "单据名称",
+        )
+        sheet = full["layoutContract"]["containerTree"][0]
+        self.assertEqual(sheet["widgetList"][0]["label"], "单据名称")
+
+    def test_configured_structure_keeps_explicit_field_label(self):
+        structure = {
+            "layoutPolicy": "business_config_sections",
+            "slots": [{
+                "slot": "body",
+                "fieldRefs": ["name"],
+                "groups": [{
+                    "name": "identity",
+                    "fieldRefs": ["name"],
+                    "fieldLabels": {"name": "配置名称"},
+                }],
+            }],
+            "fieldLabels": {"name": "配置名称"},
+            "fieldRoles": {
+                "name": {"role": "context", "slot": "body", "group": "identity"},
+            },
+        }
+
+        projected = assembler._project_form_structure_to_layout(
+            structure,
+            [{"type": "field", "name": "name", "label": "原生名称", "children": []}],
+            {"name"},
+        )
+
+        self.assertEqual(projected["fieldLabels"]["name"], "配置名称")
+        self.assertEqual(
+            projected["slots"][0]["groups"][0]["fieldLabels"]["name"],
+            "配置名称",
+        )
+        self.assertEqual(
+            projected["fieldLabels"]["name"],
+            "配置名称",
+        )
+
     def test_form_structure_rejects_unknown_field_reference(self):
         structure = {
             "slots": [{"slot": "body", "fieldRefs": ["missing"], "groups": []}],

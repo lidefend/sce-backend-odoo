@@ -2287,6 +2287,50 @@ class TestP1PaymentRequestCapability(TransactionCase):
 
         container_tree = contract["layoutContract"]["containerTree"]
 
+        widgets_by_field = {}
+
+        def collect_widgets(value):
+            if isinstance(value, dict):
+                field_name = value.get("fieldCode")
+                if isinstance(field_name, str) and field_name:
+                    widgets_by_field.setdefault(field_name, []).append(value)
+                for nested in value.values():
+                    collect_widgets(nested)
+            elif isinstance(value, list):
+                for nested in value:
+                    collect_widgets(nested)
+
+        collect_widgets(container_tree)
+        self.assertEqual(
+            {row.get("label") for row in widgets_by_field["amount_uppercase"]},
+            {"系统生成金额大写"},
+        )
+        self.assertEqual(
+            {row.get("label") for row in widgets_by_field["accepted_amount_uppercase"]},
+            {"历史确认金额大写"},
+        )
+        self.assertEqual(
+            {
+                ((row.get("componentConfig") or {}).get("widgetSemantics") or {}).get(
+                    "readonly_empty_text"
+                )
+                for row in widgets_by_field["funding_baseline_id"]
+            },
+            {"提交审批时生成"},
+        )
+        form_structure = contract["formStructureContract"]
+        self.assertEqual(form_structure.get("layoutPolicy"), "native_authority")
+        field_labels = dict(form_structure.get("fieldLabels") or {})
+        for slot in form_structure.get("slots") or []:
+            for group in slot.get("groups") or []:
+                field_labels.update(group.get("fieldLabels") or {})
+        self.assertEqual(field_labels.get("amount_uppercase"), "系统生成金额大写")
+        self.assertEqual(
+            field_labels.get("accepted_amount_uppercase"),
+            "历史确认金额大写",
+        )
+        self.assertEqual(field_labels.get("cost_category_name"), "明细成本分类")
+
         def collect_group_titles(value, titles=None):
             if titles is None:
                 titles = []
