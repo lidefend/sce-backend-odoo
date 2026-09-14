@@ -2454,25 +2454,53 @@ def _apply_form_structure_roles_to_tree(
     container_tree: list[dict[str, Any]],
     structure_contract: dict[str, Any],
 ) -> None:
-    """Annotate native nodes without changing their structure or membership."""
+    """Annotate native nodes without changing their structure or membership.
+
+    An explicitly anchored native group may bind itself to an existing
+    form-structure group through ``data-sc-form-structure-group``.  When every
+    governed field below that anchor belongs to the declared group, carry the
+    same identity onto the container so the existing native-section renderer
+    can consume the authoritative title.  Anchors without that association and
+    unanchored layout groups deliberately remain layout-only.
+    """
     field_roles = _dict(structure_contract.get("fieldRoles") or structure_contract.get("field_roles"))
     if not field_roles:
         return
 
-    def apply(node: dict[str, Any]) -> None:
+    def apply(node: dict[str, Any]) -> set[tuple[str, str, str]]:
         node_type = _text(node.get("type") or node.get("kind") or node.get("containerType")).lower()
+        identities: set[tuple[str, str, str]] = set()
         if node_type == "field":
             field_name = _text(node.get("name") or node.get("field") or node.get("fieldCode"))
             role = _dict(field_roles.get(field_name))
             if role:
                 node["formStructureRole"] = deepcopy(role)
+                identity = (
+                    _text(role.get("role")),
+                    _text(role.get("slot")),
+                    _text(role.get("group")),
+                )
+                if all(identity):
+                    identities.add(identity)
                 for widget in _list(node.get("widgetList")):
                     if isinstance(widget, dict):
                         widget["formStructureRole"] = deepcopy(role)
         for key in ("children", "pages", "tabs", "nodes", "items"):
             for child in _list(node.get(key)):
                 if isinstance(child, dict):
-                    apply(child)
+                    identities.update(apply(child))
+        attributes = _dict(node.get("attributes") or node.get("attrs"))
+        explicit_anchor = _text(attributes.get("data-sc-anchor"))
+        declared_group = _text(attributes.get("data-sc-form-structure-group"))
+        if node_type == "group" and explicit_anchor and declared_group and len(identities) == 1:
+            role_name, slot_name, group_name = next(iter(identities))
+            if declared_group in {slot_name, group_name}:
+                node["formStructureRole"] = {
+                    "role": role_name,
+                    "slot": slot_name,
+                    "group": group_name,
+                }
+        return identities
 
     for row in container_tree:
         if isinstance(row, dict):

@@ -9423,3 +9423,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 表单专用批量展开/字段对齐截图选项不适用于 My Work，一次尝试在证据生成前退出，归为验证工具适用范围错误；未原样重试、未修改 P4 工具，也不将该次尝试计入通过证据。下一步为生成证据预检、最终文档提交、冻结 HEAD 后一次 Quick 和同头独立复核。
 - `make ci.delivery.freeze.prepare` 通过：1366 项测试清单、7 项组件清单测试、35 个必需适配点和 1866 行表单拆分证据均为当前内容；生成差异仅为组件接管清单输入摘要。提交这些交付材料后冻结最终 HEAD，Quick 只运行一次。
 - 2026-09-14：分支 `codex/contract-handling-page-normalization-v1`，基线 `origin/main@731c7e6d43f64e4f8e764c67880be6943afcee15`。Formal Product Layer P1/P0/P4；P1 负责收入/支出合同显式策略映射、原生章节与列序，P0 只负责通用唯一映射解析、原生隐藏约束与空章节导航消费，P4 负责定向测试和交付证据。排除列表、保存、审批、权限、金额计算、附件授权扩展、fixture 与数据修改。支出样板与 1088×791/390×844 深色受影响区域通过，浏览器零写入；冻结前仅补“部分隐藏仍可达、默认折叠有内容仍保留导航”反例，最终 identity/Quick/独立复核记录在仓外 exact-head 交付包，避免冻结后修改候选。
+
+## 2026-09-14 — 合同结算办理页面规范化最终收口
+
+- 分支 `codex/contract-settlement-page-normalization-v1`，基线 `origin/main@c616b652fa2b7364a5f6629c56750874c5dd6113`，最终产品源候选 `e0d844cdd5e44426583604338e9fd47d2c76c675`。当前工作树是本专题唯一 writer，不新增第五个工作树，也不清理其他既有工作树。
+- Formal Product Layer 为 P1/P0/P4：P1 只声明收入/支出结算权威章节、字段归属和明细列序；P0 只修显式且唯一的容器结构身份、父记录 modifier 动态列投影及按业务区域选择关系 occurrence；P4 承载只读/未提交证据和交付门禁。无结算模型/字段特判，不改计算、金额、保存、审批、权限、历史快照、fixture 或业务数据。
+- 收入、支出样板均已完成人工产品复核；a99 证据因没有运行前后完整指纹绑定，只保留为人工复核/诊断材料。最终反例覆盖父条件 false/true/value-change、同区 tag/table、相同 field semantic 跨显式锚点、无锚点不同 semantic 子区、全隐藏及折叠有内容；根遍历显式隔离 `forEach` 的 index/array 参数。
+- `e0d844cd…` 的 1088×791、390×844 支出深色新建和查看分别具有 before/after 相同的完整指纹及 summary/截图哈希 binding；新建每视口 5 个、查看桌面 11 个/移动 12 个可见导航目标均唯一且稳定避开吸顶区，`pass=true`、零写入、零错误。旧焦点探针只作人工材料，手动中段截图不冒充点击定位证据。
+- 冻结前一次性提交双语报告、PR 草案和生成证据；随后在 clean exact-head 上只运行一次 Quick，并让独立复核绑定同一 HEAD/Tree/完整指纹。支出无草稿、金额口径未决、真实保存/审批未验收继续作为边界。

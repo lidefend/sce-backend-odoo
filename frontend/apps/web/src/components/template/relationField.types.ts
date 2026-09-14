@@ -19,6 +19,8 @@ export type RelationFieldColumn = {
   ttype: string;
   required: boolean;
   readonly?: boolean;
+  invisible?: boolean;
+  columnInvisible?: boolean;
   selection?: Array<[string, string]>;
   relation?: string;
   relationReadable?: boolean;
@@ -68,6 +70,7 @@ export type RelationFieldAdapter = {
   one2manyRowStateLabel: (row: RelationFieldRow) => string;
   prepareOne2manyColumns: (name: string) => Promise<void> | void;
   one2manyColumns: (name: string) => RelationFieldColumn[];
+  one2manyVisibleColumns?: (name: string) => RelationFieldColumn[];
   one2manyEffectiveColumn: (name: string, row: RelationFieldRow, column: RelationFieldColumn) => RelationFieldColumn;
   one2manyColumnQueryScope: (name: string, rowKey: string, column: RelationFieldColumn) => string;
   queryOne2manyColumnOptions: (name: string, rowKey: string, column: RelationFieldColumn, keyword?: string) => Promise<RelationFieldOption[]>;

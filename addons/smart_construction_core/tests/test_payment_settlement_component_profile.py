@@ -45,6 +45,79 @@ PROFILE_CASES = (
 
 @tagged("payment_settlement_component_profile", "post_install", "-at_install")
 class TestPaymentSettlementComponentProfile(TransactionCase):
+    def test_income_settlement_form_preserves_policy_sections_and_detail_semantics(self):
+        self.env["sc.business.category"]._sync_seed_form_policies()
+        action = self.env.ref("smart_construction_core.action_sc_settlement_order_income")
+        menu = self.env.ref("smart_construction_core.menu_sc_p1_income_settlement")
+        result = UiContractV2Handler(
+            self.env,
+            su_env=self.env["ir.model"].sudo().env,
+        ).handle(
+            {
+                "model": action.res_model,
+                "view_type": "form",
+                "record_id": "new",
+                "action_id": action.id,
+                "menu_id": menu.id,
+                "client_type": "web_pc",
+                "render_profile": "create",
+            }
+        )
+        envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+        self.assertTrue(envelope.get("ok", True), envelope)
+        contract = envelope["data"]
+        structure = contract["formStructureContract"]
+        self.assertEqual(
+            structure["sourceAuthority"]["governance_source"]["categoryCode"],
+            "settlement.income",
+        )
+        self.assertEqual(
+            [slot["title"] for slot in structure["slots"][:5]],
+            ["办理类型", "项目与发包人", "结算依据", "结算明细与金额", "办理说明"],
+        )
+        self.assertEqual(structure["fieldRoles"]["attachment_ids"]["slot"], "handling")
+
+        def walk(value):
+            if isinstance(value, dict):
+                yield value
+                for nested in value.values():
+                    yield from walk(nested)
+            elif isinstance(value, list):
+                for nested in value:
+                    yield from walk(nested)
+
+        nodes = list(walk(contract["layoutContract"]["containerTree"]))
+        identity = next(
+            node
+            for node in nodes
+            if (node.get("attributes") or {}).get("data-sc-anchor") == "settlement-business-object"
+        )
+        self.assertEqual(identity["formStructureRole"]["slot"], "business_object")
+        invoice = next(
+            node
+            for node in nodes
+            if (node.get("attributes") or {}).get("data-sc-anchor") == "settlement-invoice"
+        )
+        self.assertNotIn("formStructureRole", invoice)
+        line = next(node for node in nodes if node.get("fieldCode") == "line_ids")
+        subview = (line.get("fieldDescriptor") or line.get("fieldInfo") or {}).get("subview") or {}
+        occurrences = ((subview.get("tree") or {}).get("column_occurrences") or [])
+        self.assertEqual(
+            [row.get("name") for row in occurrences[:8]],
+            [
+                "name",
+                "qty",
+                "price_unit",
+                "amount",
+                "applied_amount",
+                "remaining_amount",
+                "contract_id",
+                "general_contract_id",
+            ],
+        )
+        self.assertIn("parent.contract_source_kind", str(occurrences[6].get("modifiers")))
+        self.assertIn("parent.contract_source_kind", str(occurrences[7].get("modifiers")))
+
     def test_finance_reader_can_read_settlement_lines_with_project_boundary(self):
         finance_read = self.env.ref(
             "smart_construction_core.group_sc_cap_finance_read"

@@ -236,6 +236,23 @@ assert.equal(resolveOne2manyRowColumnBehavior({
   ...dynamicColumn,
   modifiers: { column_invisible: { kind: 'field_truthy', field: 'parent.hide_note' } },
 }, {}, { hide_note: false }).columnInvisible, false);
+assert.equal(resolveOne2manyRowColumnBehavior({
+  ...dynamicColumn,
+  modifiers: {
+    invisible: {
+      kind: 'field_compare', field: 'parent.contract_source_kind', operator: '!=', value: 'general_contract',
+    },
+  },
+}, {}, { contract_source_kind: 'contract' }).invisible, true);
+assert.equal(resolveOne2manyRowColumnBehavior({
+  ...dynamicColumn,
+  modifiers: {
+    invisible: {
+      kind: 'field_compare', field: 'parent.contract_source_kind', operator: '!=', value: 'general_contract',
+    },
+  },
+}, {}, { contract_source_kind: 'general_contract' }).invisible, false,
+'a parent-field change must immediately reverse the same column modifier without rebuilding its descriptor');
 const hiddenRequiredColumn = {
   ...dynamicColumn,
   required: true,

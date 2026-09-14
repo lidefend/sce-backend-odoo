@@ -12,12 +12,12 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Category | File |
 | ---: | --- | --- |
-| 4730 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 4758 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 4700 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4550 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4312 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4267 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
-| 3811 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
+| 3827 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3769 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3667 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3390 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
@@ -52,8 +52,8 @@ Generated from repository source files. This report is informational during the 
 | 1708 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1648 | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1635 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
+| 1618 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
-| 1614 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1592 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1553 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1542 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
@@ -78,7 +78,7 @@ Generated from repository source files. This report is informational during the 
 | 1400 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1395 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1385 | Python source | `addons/smart_core/utils/contract_governance.py` |
-| 1348 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
+| 1380 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1320 | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1305 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
@@ -162,12 +162,12 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Status | Category | File |
 | ---: | --- | --- | --- |
-| 4730 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 4758 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 4700 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4550 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4312 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4267 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
-| 3811 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
+| 3827 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3769 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3667 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3390 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
@@ -203,8 +203,8 @@ Generated from repository source files. This report is informational during the 
 | 1708 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1648 | split_plan_required | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1635 | split_plan_required | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
+| 1618 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
-| 1614 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1592 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1557 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1553 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
@@ -219,7 +219,7 @@ Generated from repository source files. This report is informational during the 
 | 1400 | warning | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1395 | warning | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1385 | warning | Python source | `addons/smart_core/utils/contract_governance.py` |
-| 1348 | warning | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
+| 1380 | warning | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1339 | warning | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1320 | warning | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1305 | warning | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |

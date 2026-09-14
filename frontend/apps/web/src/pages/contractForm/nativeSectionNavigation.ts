@@ -5,7 +5,10 @@ import type {
 } from '../../app/presentation/canonicalFormRenderModel';
 import { fieldIsBusinessRelationCollection } from '../../app/presentation/canonicalFormFloorplan';
 import { canonicalNodeHasContent } from './canonicalFormRenderer';
-import { collectNativeBusinessSections } from './nativeBusinessSection';
+import {
+  collectNativeBusinessSections,
+  nativeBusinessSectionIdentity,
+} from './nativeBusinessSection';
 
 export type NativeSectionNavigationRole = 'primary' | 'subordinate';
 
@@ -180,30 +183,70 @@ export function relationshipCollectionNavigationItems(
   presentable: (field: CanonicalFormNode['fields'][number]) => boolean = () => true,
 ): WorkspaceSectionNavigationItem[] {
   const items: WorkspaceSectionNavigationItem[] = [];
-  const emittedFields = new Set<string>();
+  const candidates = new Map<string, CanonicalFormNode['fields'][number]>();
 
-  function visit(node: CanonicalFormNode) {
+  function semanticRegion(slot: unknown, group: unknown): string {
+    const normalizedSlot = String(slot || '').trim();
+    const normalizedGroup = String(group || '').trim();
+    return normalizedSlot && normalizedGroup ? `structure:${normalizedSlot}:${normalizedGroup}` : '';
+  }
+
+  function occurrenceScore(field: CanonicalFormNode['fields'][number]) {
+    const descriptor = field.fieldDescriptor && typeof field.fieldDescriptor === 'object'
+      ? field.fieldDescriptor as Record<string, unknown>
+      : {};
+    const config = field.componentConfig && typeof field.componentConfig === 'object'
+      ? field.componentConfig as Record<string, unknown>
+      : {};
+    const subview = descriptor.subview || config.subview;
+    const hasStructuredSubview = Boolean(subview && typeof subview === 'object' && !Array.isArray(subview));
+    const widget = String(config.nativeWidget || config.widget || field.widgetType || '').trim().toLowerCase();
+    return (hasStructuredSubview ? 20 : 0)
+      + (field.fieldType.trim().toLowerCase() === 'one2many' ? 10 : 0)
+      + (widget === 'many2many_tags' ? -1 : 0);
+  }
+
+  function visit(
+    node: CanonicalFormNode,
+    inheritedRegion = '',
+    inheritedBusinessRegion = '',
+  ) {
     if (!node.visible) return;
+    const businessSection = nativeBusinessSectionIdentity(node);
+    const businessRegion = businessSection
+      ? `business:${businessSection.anchor}`
+      : inheritedBusinessRegion;
+    const nodeRegion = businessRegion
+      || semanticRegion(node.semanticSlot, node.semanticGroup)
+      || inheritedRegion;
     node.fields.filter((field) => (
       field.visible && fieldIsBusinessRelationCollection(field) && presentable(field)
     )).forEach((field) => {
-      if (emittedFields.has(field.widgetId)) return;
-      const key = `field:${field.widgetId}:relation`;
-      items.push({
-        key,
-        label: String(field.label || node.title || '关系明细').trim() || '关系明细',
-        selector: selectorFor(key),
-        role: 'relation',
-        contentKind: 'relation-collection',
-        sourceType: 'field',
-        sourceIdentity: field.widgetId,
-      });
-      emittedFields.add(field.widgetId);
+      const fieldRegion = businessRegion
+        || semanticRegion(field.semanticSlot, field.semanticGroup)
+        || nodeRegion
+        || 'page';
+      const fieldIdentity = String(field.fieldCode || field.widgetId).trim() || field.widgetId;
+      const identity = `${fieldRegion}\u0000${fieldIdentity}`;
+      const current = candidates.get(identity);
+      if (!current || occurrenceScore(field) > occurrenceScore(current)) candidates.set(identity, field);
     });
-    node.children.forEach(visit);
+    node.children.forEach((child) => visit(child, nodeRegion, businessRegion));
   }
 
-  nodes.forEach(visit);
+  nodes.forEach((node) => visit(node));
+  candidates.forEach((field) => {
+    const key = `field:${field.widgetId}:relation`;
+    items.push({
+      key,
+      label: String(field.label || '关系明细').trim() || '关系明细',
+      selector: selectorFor(key),
+      role: 'relation',
+      contentKind: 'relation-collection',
+      sourceType: 'field',
+      sourceIdentity: field.widgetId,
+    });
+  });
   return items;
 }
 
