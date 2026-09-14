@@ -480,17 +480,16 @@
 }
 
 /* Unify the template render path's .readonly-value with the professional
- * render path: same size/weight/color/height so adjacent fields in one
- * readonly section never look mixed. The template path is inline-flex, so
- * min-height alone is ignored (reported 0px / content-height 22px vs the
- * professional path's 32px block) - pin line-height too so both read at the
- * same control height. Scope to the whole form surface (the readonly grid is
+ * render path: same size/weight/color/minimum height so adjacent fields in one
+ * readonly section never look mixed. Keep the body line-height independent
+ * from the minimum control height so wrapped facts remain readable and compact.
+ * Scope to the whole form surface (the readonly grid is
  * .template-form-section-grid, not .template-form-section--readonly). */
 [data-product-page-mode='form'] .readonly-value {
   font-size: var(--sc-product-text-body);
   font-weight: 400;
   color: var(--sc-app-text-primary);
-  line-height: calc(var(--sc-component-input-height-md) * 1px);
+  line-height: var(--sc-product-line-body);
   min-height: calc(var(--sc-component-input-height-md) * 1px);
 }
 

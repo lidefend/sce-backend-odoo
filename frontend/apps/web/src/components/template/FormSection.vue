@@ -1116,18 +1116,25 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 .field-control-main {
   flex: 1 1 auto;
   display: grid;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
 }
 
 .readonly-value {
+  box-sizing: border-box;
+  display: grid;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   font-size: var(--sc-product-text-body);
   color: var(--sc-app-text-primary);
   min-height: 32px;
   line-height: 22px;
-  display: inline-flex;
-  align-items: center;
-  min-width: 0;
+  white-space: pre-wrap;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* A readonly fact that is actually the next business action (下一步办理).

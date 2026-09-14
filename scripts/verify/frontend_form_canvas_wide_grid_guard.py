@@ -28,6 +28,7 @@ native_driver = read("pages/contractForm/ContractFormDriverHost.vue")
 native_surface = read("pages/contractForm/CanonicalNativeFormSurface.vue")
 native_navigation_model = read("pages/contractForm/nativeSectionNavigation.ts")
 canonical_renderer = read("pages/contractForm/CanonicalFormNodeRenderer.vue")
+professional_base_field = read("components/professional-fields/ProfessionalBaseFieldControl.vue")
 relations = read("components/template/X2ManyRelationRenderer.vue")
 
 combined = "\n".join((tokens, patterns, form_css))
@@ -47,6 +48,9 @@ for required in (
     ".field--full {\n  grid-column: span 24;",
     ".template-form-section-grid--columns-1 > .field {\n  grid-column: 1 / -1;",
     ".field--wide,\n  .field--full {\n    grid-column: 1 / -1;",
+    ".field-control-main {\n  flex: 1 1 auto;\n  display: grid;\n  width: 100%;\n  max-width: 100%;\n  min-width: 0;",
+    ".readonly-value {\n  box-sizing: border-box;\n  display: grid;\n  align-items: center;\n  width: 100%;\n  max-width: 100%;\n  min-width: 0;",
+    "white-space: pre-wrap;\n  overflow-wrap: anywhere;\n  word-break: break-word;",
 ):
     if required not in section:
         fail(f"responsive field grid contract missing: {required}")
@@ -156,6 +160,22 @@ if object_task.index('data-floorplan-region="relation"') > object_task.index('da
     fail("relationship details are still placed after post-relation disclosures")
 if "const sectionTitle = computed(() => '');" not in canonical_renderer or "const groupHeadingVisible = computed(() => false);" not in canonical_renderer:
     fail("intentionally hidden backend group titles were restored")
+for required in (
+    ".canonical-form-node--readonly-fact :deep(.field-control-row),\n.canonical-form-node--readonly-fact :deep(.field-control-main) {\n  display: block;\n  width: 100%;\n  max-width: 100%;\n  min-width: 0;",
+    "white-space: pre-wrap;\n  overflow-wrap: anywhere;\n  word-break: break-word;",
+):
+    if required not in canonical_renderer:
+        fail(f"canonical readonly fact boundary missing: {required}")
+for required in (
+    ".professional-base-field-control__readonly {",
+    "display: grid;",
+    "max-width: 100%;",
+    "white-space: pre-wrap;",
+    "overflow-wrap: anywhere;",
+    "word-break: break-word;",
+):
+    if required not in professional_base_field:
+        fail(f"professional readonly value wrapping missing: {required}")
 for required in ("readonlyO2mTableColumns", 'class="o2m-readonly-table"', 'class="o2m-readonly-list"'):
     if required not in relations:
         fail(f"responsive readonly detail structure missing: {required}")

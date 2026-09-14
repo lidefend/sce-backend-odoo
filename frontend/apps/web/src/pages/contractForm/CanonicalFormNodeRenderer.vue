@@ -241,15 +241,24 @@ function fieldChildOrphanClass(child: CanonicalFormNode): string {
 .canonical-form-node--readonly-fact :deep(.field) { display: grid; }
 .canonical-form-node--readonly-fact :deep(.field-control-row),
 .canonical-form-node--readonly-fact :deep(.field-control-main) {
-  display: inline-block;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   line-height: 22px;
 }
 .canonical-form-node--readonly-fact :deep(.readonly-value),
 .canonical-form-node--readonly-fact :deep(.contract-readonly-value) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 0;
   line-height: 22px;
   font: inherit;
   color: var(--sc-app-text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 /* Section heading parity with TDesign card titles (t-card__title 16px/600).
  * canonical sections (e.g. 申请识别与状态) previously rendered at 15px with
