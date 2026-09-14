@@ -805,6 +805,26 @@ assert.equal(nativeNodeWidget(nativeDateRangeNode), 'daterange');
 assert.deepEqual(nativeNodeWidgetSemantics(nativeDateRangeNode), {
   kind: 'date_range', start_field: 'date_start', end_field: 'date',
 });
+assert.deepEqual(
+  nativeNodeWidgetSemantics(
+    { type: 'field', name: 'funding_baseline_id' },
+    { widgetSemantics: { readonly_empty_text: '提交审批时生成' } },
+  ),
+  { readonly_empty_text: '提交审批时生成' },
+  'a native field node must inherit missing semantics from its same-identity strict widget',
+);
+assert.deepEqual(
+  nativeNodeWidgetSemantics(
+    {
+      type: 'field',
+      name: 'funding_baseline_id',
+      componentConfig: { widgetSemantics: { readonly_empty_text: '节点声明' } },
+    },
+    { widgetSemantics: { readonly_empty_text: '严格组件回退' } },
+  ),
+  { readonly_empty_text: '节点声明' },
+  'an occurrence-level node declaration must win over the strict-widget fallback',
+);
 assert.equal(nativeNodeWidget({
   type: 'field', name: 'date_start', widget: 'date',
   attributes: { widget: 'daterange' },

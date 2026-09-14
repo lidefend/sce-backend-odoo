@@ -96,6 +96,8 @@ Formal Product Layer：P0 + P1 + P4。Standard vs User-Specific：平台通用�
 
 首次以该原生权威结构进入浏览器时，客户端按正式词汇表 fail-closed：后端治理来源已输出 `formPresentationMode`，但 JSON Schema、TypeScript 类型和解码器尚未共同接纳它。现已将该字段约束为 `task | workspace`，补齐合法保真与非法值拒绝测试；没有通过丢弃治理信息绕开校验。
 
+契约恢复加载后，浏览器又证明只读空值语义停在严格 widget：字段布局 schema 只读取布局节点本身，未在节点缺失时按同一 `widgetId` 使用严格 widget 的 `componentConfig.widgetSemantics`。现采用“occurrence 节点声明优先、同身份严格 widget 仅补缺”的通用规则，避免覆盖合法局部语义。
+
 ## 验证分层与结果
 
 Changed paths 涉及 P0 契约合成及共享前端、P1 付款视图/模型/handler、P4 guard/受管旅程和本报告。风险等级为高：金额权威与共享表单消费。最早有效层为 L1；完成非零 L2、受管 L3 和聚焦 L4。完整 Quick 仅在最终 clean HEAD 运行一次。
