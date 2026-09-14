@@ -1695,6 +1695,24 @@ def smart_core_model_specific_form_contract_policy(env, payload):
     return _contract_normalizers.model_specific_form_contract_policy(payload)
 
 
+def smart_core_business_category_policy_bindings(env, payload):
+    del env, payload
+    return {
+        "bindings": [
+            {
+                "entry_model": "construction.contract.income",
+                "category_code": "contract.income",
+                "policy_target_model": "construction.contract",
+            },
+            {
+                "entry_model": "construction.contract.expense",
+                "category_code": "contract.expense",
+                "policy_target_model": "construction.contract",
+            },
+        ]
+    }
+
+
 def smart_core_form_field_aliases(env, payload):
     del env
     return _contract_normalizers.form_field_aliases(payload)

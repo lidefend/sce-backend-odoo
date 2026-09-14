@@ -5,6 +5,7 @@ import {
   nextBusinessActionLabel,
   nativeSectionNavigationRole,
   sectionScrollDelta,
+  shouldPreserveAuthoritativeBusinessSections,
   workspaceSectionNavigationItems,
   workspaceSurfaceNavigationItems,
 } from '../src/pages/contractForm/nativeSectionNavigation';
@@ -83,8 +84,8 @@ function field(overrides: Record<string, unknown>) {
 
 function node(overrides: Record<string, unknown>): CanonicalFormNode {
   return {
-    nodeId: 'node.default', kind: 'group', title: '', visible: true, semanticRole: '',
-    fields: [], children: [],
+    nodeId: 'node.default', kind: 'group', title: '', text: '', visible: true, semanticRole: '',
+    fields: [field({})], children: [],
     ...overrides,
   } as unknown as CanonicalFormNode;
 }
@@ -116,6 +117,46 @@ const hiddenSection = workspaceSectionNavigationItems([node({
 })]);
 assert.deepEqual(hiddenSection, [], 'hidden sections must not create links');
 
+const emptyProfileSection = workspaceSectionNavigationItems([node({
+  nodeId: 'profile.hidden.content', title: '仅只读可见',
+  attributes: { 'data-sc-anchor': 'profile-hidden-content' },
+  fields: [field({ widgetId: 'readonly.only', visible: false })],
+})]);
+assert.deepEqual(
+  emptyProfileSection,
+  [],
+  'a visible container whose profile hides all presentable content must not leave a dead navigation link',
+);
+
+const partiallyVisibleProfileSection = workspaceSectionNavigationItems([node({
+  nodeId: 'profile.partially.visible', title: '部分资料可见',
+  attributes: { 'data-sc-anchor': 'profile-partially-visible' },
+  fields: [
+    field({ widgetId: 'restricted.fact', visible: false }),
+    field({ widgetId: 'available.fact', visible: true }),
+  ],
+})]);
+assert.deepEqual(
+  partiallyVisibleProfileSection.map(({ label, sourceIdentity }) => ({ label, sourceIdentity })),
+  [{ label: '部分资料可见', sourceIdentity: 'profile.partially.visible' }],
+  'a section with at least one presentable field must remain reachable when sibling fields are hidden',
+);
+
+const collapsedContentSection = workspaceSectionNavigationItems([node({
+  nodeId: 'section.collapsed.with.content', title: '默认折叠资料',
+  attributes: {
+    'data-sc-anchor': 'collapsed-with-content',
+    'data-sc-collapsible': '1',
+    'data-sc-collapsed-by-default': '1',
+  },
+  fields: [field({ widgetId: 'collapsed.available.fact', visible: true })],
+})]);
+assert.deepEqual(
+  collapsedContentSection.map(({ label, sourceIdentity }) => ({ label, sourceIdentity })),
+  [{ label: '默认折叠资料', sourceIdentity: 'section.collapsed.with.content' }],
+  'default-collapsed presentation must not remove a section that still contains presentable content',
+);
+
 const authoritativeSections = workspaceSectionNavigationItems([
   node({
     nodeId: 'sheet', kind: 'sheet', children: [
@@ -142,6 +183,29 @@ assert.deepEqual(
   authoritativeSections.map(({ label, sourceType, sourceIdentity }) => ({ label, sourceType, sourceIdentity })),
   [{ label: '基本信息', sourceType: 'node', sourceIdentity: 'section.basic' }],
   'explicit visible business sections replace inferred field and nested-tab navigation',
+);
+assert.equal(
+  shouldPreserveAuthoritativeBusinessSections('task', [node({
+    nodeId: 'section.task.authoritative', title: '合同范围',
+    attributes: { 'data-sc-anchor': 'contract-scope' },
+  })]),
+  true,
+  'task workflow semantics must not discard an explicitly anchored business section body',
+);
+assert.equal(
+  shouldPreserveAuthoritativeBusinessSections('task', [node({
+    nodeId: 'section.task.layout-only', title: '普通布局容器', attributes: {},
+  })]),
+  false,
+  'an unanchored task layout group must continue through the ordinary floorplan',
+);
+assert.equal(
+  shouldPreserveAuthoritativeBusinessSections('workspace', [node({
+    nodeId: 'section.workspace.authoritative', title: '基本资料',
+    attributes: { 'data-sc-anchor': 'workspace-basic' },
+  })]),
+  false,
+  'workspace presentation already consumes native section authority directly',
 );
 
 const unanchoredTitle = workspaceSectionNavigationItems([node({
@@ -197,4 +261,4 @@ assert.equal(sectionScrollDelta(132, 120), 12, 'a target below the active anchor
 assert.equal(sectionScrollDelta(104, 120), -16, 'a target hidden above the active anchor must be moved below sticky surfaces');
 assert.equal(sectionScrollDelta(120.5, 120), 0, 'sub-pixel rendering around the active anchor must not cause scroll churn');
 
-console.log('[native_section_navigation_test] PASS authority=7 next_action=3 content_identity=9 active_tracking=7');
+console.log('[native_section_navigation_test] PASS authority=7 next_action=3 content_identity=11 active_tracking=7');

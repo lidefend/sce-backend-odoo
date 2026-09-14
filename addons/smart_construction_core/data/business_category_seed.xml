@@ -139,7 +139,7 @@
                 {"name": "partner_id", "label": "发包人", "required_profiles": ["create", "edit"], "group": "core"},
                 {"name": "tax_id", "label": "税率", "required_profiles": ["create", "edit"], "group": "core"},
                 {"name": "operation_strategy", "label": "经营方式", "readonly_profiles": ["create", "edit", "readonly"], "group": "core"},
-                {"name": "contract_type_id", "visible_profiles": [], "readonly_profiles": ["create", "edit", "readonly"], "group": "advanced"},
+                {"name": "contract_type_id", "visible_profiles": ["create", "edit", "readonly"], "readonly_profiles": ["readonly"], "group": "core"},
                 {"name": "line_amount_total", "visible_profiles": ["edit", "readonly"], "readonly_profiles": ["create", "edit", "readonly"], "group": "summary"},
                 {"name": "amount_untaxed", "visible_profiles": ["edit", "readonly"], "readonly_profiles": ["create", "edit", "readonly"], "group": "summary"},
                 {"name": "amount_tax", "visible_profiles": ["edit", "readonly"], "readonly_profiles": ["create", "edit", "readonly"], "group": "summary"},

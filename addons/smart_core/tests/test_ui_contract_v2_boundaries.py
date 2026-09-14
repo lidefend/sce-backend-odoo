@@ -994,6 +994,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                     {"widgetId": "field.state", "visible": True, "readonly": False, "required": False, "disabled": False, "auth": "edit"},
                     {"widgetId": "field.native_readonly", "visible": True, "readonly": True, "required": False, "disabled": False, "auth": "read"},
                     {"widgetId": "field.native_visible", "visible": True, "readonly": False, "required": False, "disabled": False, "auth": "edit"},
+                    {"widgetId": "field.native_hidden", "visible": False, "readonly": False, "required": False, "disabled": False, "auth": "none"},
                 ],
             },
         }
@@ -1003,6 +1004,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                 "state": {"readonly_profiles": ["create", "edit", "readonly"]},
                 "native_readonly": {"readonly_profiles": ["readonly"]},
                 "native_visible": {"visible_profiles": ["readonly"]},
+                "native_hidden": {"visible_profiles": ["create"]},
             },
         }
 
@@ -1015,8 +1017,10 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(rows["field.state"]["auth"], "read")
         self.assertTrue(rows["field.native_readonly"]["readonly"])
         self.assertEqual(rows["field.native_readonly"]["auth"], "read")
-        self.assertTrue(rows["field.native_visible"]["visible"])
-        self.assertEqual(rows["field.native_visible"]["auth"], "edit")
+        self.assertFalse(rows["field.native_visible"]["visible"])
+        self.assertEqual(rows["field.native_visible"]["auth"], "none")
+        self.assertFalse(rows["field.native_hidden"]["visible"])
+        self.assertEqual(rows["field.native_hidden"]["auth"], "none")
 
     def test_projection_marks_native_visible_layout_fields_editable(self):
         handler = self.module.UiContractV2Handler(env=object())
