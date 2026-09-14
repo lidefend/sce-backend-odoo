@@ -348,6 +348,9 @@
                     <attribute name="readonly">state not in ['draft', 'rejected'] or amount_uses_details</attribute>
                     <attribute name="help">未使用付款申请明细时可直接填写；存在明细时由有效明细的“本次申请”合计生成。</attribute>
                 </xpath>
+                <xpath expr="/form/sheet/group[2]/group[2]" position="attributes">
+                    <attribute name="name">sc_payment_request_pay_amount_facts</attribute>
+                </xpath>
                 <xpath expr="/form/sheet/group[2]/group[2]/field[@name='unpaid_amount']" position="after">
                     <xpath expr="/form/sheet/group[2]/group[2]/field[@name='funding_baseline_id']" position="move"/>
                 </xpath>
@@ -369,6 +372,12 @@
                 </xpath>
                 <xpath expr="//group[@name='sc_payment_request_pay_amount']" position="inside">
                     <xpath expr="/form/sheet/group[2]/group[2]" position="move"/>
+                </xpath>
+                <!-- Keep the amount facts and their optional breakdown in one
+                     native field sequence.  A mixed field/container parent is
+                     rendered in separate passes, which would otherwise place
+                     the relation field before the amount container. -->
+                <xpath expr="//group[@name='sc_payment_request_pay_amount_facts']" position="inside">
                     <xpath expr="/form/sheet/notebook/page[3]/field[@name='outflow_line_ids']" position="move"/>
                     <field name="detail_amount_total"
                            readonly="1"

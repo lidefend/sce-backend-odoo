@@ -1842,13 +1842,15 @@ class TestP1PaymentRequestCapability(TransactionCase):
             ["state not in ['draft', 'rejected'] or amount_uses_details"],
         )
         self.assertEqual(
-            amount_section.xpath("./field[@name='outflow_line_ids']/@name"),
+            amount_section.xpath("./group[1]/field[@name='outflow_line_ids']/@name"),
             ["outflow_line_ids"],
         )
         self.assertEqual(
-            amount_section.xpath("./field[@name='detail_amount_total']/@invisible"),
+            amount_section.xpath("./group[1]/field[@name='detail_amount_total']/@invisible"),
             ["not amount_uses_details"],
         )
+        amount_fields = amount_section.xpath("./group[1]/field/@name")
+        self.assertLess(amount_fields.index("amount"), amount_fields.index("outflow_line_ids"))
         self.assertEqual(
             payment_form_arch.xpath("/form/sheet/group[1]/group[2]/field[@name='partner_transaction_eligibility']/@widget"),
             ["badge"],
