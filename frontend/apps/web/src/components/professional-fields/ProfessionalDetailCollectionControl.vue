@@ -69,6 +69,7 @@ const optionalPresentation = computed(() => (
     props.field,
     authority.value.rowCount,
     amountUsesDetails.value,
+    authority.value.removedRowCount,
   )
 ));
 

@@ -118,6 +118,9 @@ assert.deepEqual(optionalDetailCollectionPresentation(optionalField, 0), {
 assert.deepEqual(optionalDetailCollectionPresentation(optionalField, 2, true), {
   render: true, open: true, title: 'Details（2 条）', linkedAmountMessage: 'Linked total',
 });
+assert.deepEqual(optionalDetailCollectionPresentation(optionalField, 0, false, 1), {
+  render: true, open: true, title: 'Use details', linkedAmountMessage: 'Direct amount',
+}, 'pending removal must keep the optional detail disclosure open so undo remains reachable');
 assert.equal(optionalDetailCollectionPresentation(optionalField, 2, false)?.linkedAmountMessage, 'Direct amount');
 assert.equal(optionalDetailCollectionPresentation({ ...optionalField, readonly: true } as never, 0)?.render, false);
 assert.equal(optionalDetailCollectionRemovalConfirmation(optionalField, 2), null);

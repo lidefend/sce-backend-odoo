@@ -93,13 +93,15 @@ export function optionalDetailCollectionPresentation(
   field: FormSectionFieldSchema,
   rowCount: number,
   amountUsesDetails = false,
+  removedRowCount = 0,
 ): OptionalDetailCollectionPresentation | null {
   const config = optionalDetailCollectionConfig(field);
   if (!config) return null;
   const count = Math.max(0, Math.trunc(Number(rowCount) || 0));
+  const pendingRemovalCount = Math.max(0, Math.trunc(Number(removedRowCount) || 0));
   return Object.freeze({
-    render: field.readonly !== true || count > 0,
-    open: count > 0,
+    render: field.readonly !== true || count > 0 || pendingRemovalCount > 0,
+    open: count > 0 || pendingRemovalCount > 0,
     title: count > 0 ? `${config.populatedLabel}（${count} 条）` : config.entryLabel,
     linkedAmountMessage: amountUsesDetails
       ? config.linkedAmountMessage
