@@ -416,7 +416,11 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         self.assertIn('LOCAL_DEV_CANONICAL_ENV_FILE="$(readlink -f "$ENV_FILE")"', journey)
         self.assertIn('ENV_FILE="$LOCAL_DEV_CANONICAL_ENV_FILE"', journey)
         self.assertIn('make -C "$ROOT_DIR" --no-print-directory local.dev.sync_demo', journey)
-        self.assertIn("authoritative line relationship created", journey)
+        self.assertIn("local.dev.reset_payment_request_fixture", journey)
+        self.assertIn("authoritative line and amount relationship created", journey)
+        self.assertIn("confirmation removed it and preserved amount", journey)
+        self.assertIn('FRONTEND_URL="http://127.0.0.1:5176"', journey)
+        self.assertIn('[[ "$(git -C "$ROOT_DIR" rev-parse HEAD)" == "$CANDIDATE_GIT_HEAD" ]]', journey)
 
     def test_sample_prepare_creates_distinct_technical_identity(self):
         with tempfile.TemporaryDirectory() as temporary:

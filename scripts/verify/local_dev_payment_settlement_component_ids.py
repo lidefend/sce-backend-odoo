@@ -61,8 +61,12 @@ payload = {
         "id": int(request.id),
         "name": str(request.name or ""),
         "state": str(request.state or ""),
+        "amount": float(request.amount or 0.0),
+        "detail_amount_total": float(request.detail_amount_total or 0.0),
+        "amount_uses_details": bool(request.amount_uses_details),
         "line_count": len(request.outflow_line_ids),
         "settlement_line_count": len(introduced_lines),
+        "active_line_ids": [int(line.id) for line in request.outflow_line_ids.filtered("active")],
     },
     "settlement": {
         "id": int(selected_settlement.id),
