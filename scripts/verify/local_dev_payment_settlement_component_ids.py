@@ -14,8 +14,13 @@ payment_env = env["payment.request"].with_user(user).with_company(user.company_i
     allowed_company_ids=user.company_ids.ids,
     active_test=False,
 )
-request = payment_env.search([("name", "=", "DEMO-PR-FLOORPLAN-001")], limit=1)
-if not request or request.state != "draft":
+request = env.ref(
+    "smart_construction_demo.payment_request_floorplan_demo_record",
+    raise_if_not_found=False,
+)
+if request:
+    request = payment_env.browse(request.id).exists()
+if not request or not str(request.name or "").startswith("DEMO-PR-FLOORPLAN-") or request.state != "draft":
     raise RuntimeError("governed settlement-introduction payment fixture is missing or not draft")
 request.check_access_rights("read")
 request.check_access_rule("read")
