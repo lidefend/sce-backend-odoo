@@ -193,7 +193,9 @@ class PaymentRequestLine(models.Model):
             requests,
             "付款申请进入审批或执行后，不允许新增合同分摊依据明细；请撤回到允许状态后处理。",
         )
-        return super().create(vals_list)
+        lines = super().create(vals_list)
+        lines.mapped("request_id")._sync_amount_from_detail_lines()
+        return lines
 
     def write(self, vals):
         allocation_basis_fields = {
@@ -205,8 +207,14 @@ class PaymentRequestLine(models.Model):
             "amount",
             "current_pay_amount",
         }
+        requests = self.mapped("request_id")
+        fallback_totals = {
+            request.id: request._payment_detail_amount_total()
+            for request in requests
+            if request._active_payment_detail_lines()
+        }
         if allocation_basis_fields & set(vals):
-            request_ids = set(self.mapped("request_id").ids)
+            request_ids = set(requests.ids)
             if "request_id" in vals and vals.get("request_id"):
                 request_ids.add(vals["request_id"])
             requests = self._lock_allocation_basis_requests(request_ids)
@@ -222,13 +230,24 @@ class PaymentRequestLine(models.Model):
                 for line in self.filtered("settlement_line_id"):
                     if vals.get("settlement_id") != line.settlement_line_id.settlement_id.id:
                         raise ValidationError("付款申请明细的结算单与结算行不一致。")
-        return super().write(vals)
+        result = super().write(vals)
+        if allocation_basis_fields & set(vals):
+            requests |= self.mapped("request_id")
+            requests._sync_amount_from_detail_lines(fallback_totals=fallback_totals)
+        return result
 
     def unlink(self):
         requests = self._lock_allocation_basis_requests(self.mapped("request_id").ids)
+        fallback_totals = {
+            request.id: request._payment_detail_amount_total()
+            for request in requests
+            if request._active_payment_detail_lines()
+        }
         self._assert_allocation_basis_requests_mutable(
             requests,
             "仅草稿、已驳回或已取消付款申请的明细允许删除。",
         )
         self._sc_raise_delete_blockers(action_label="删除付款申请明细")
-        return super().unlink()
+        result = super().unlink()
+        requests._sync_amount_from_detail_lines(fallback_totals=fallback_totals)
+        return result

@@ -13,6 +13,9 @@ from lxml import etree
 from odoo.addons.smart_construction_core.services.financial_workspace_contract import (
     build_financial_form_business_actions,
 )
+from odoo.addons.smart_construction_core.handlers.payment_request_settlement_introduce import (
+    PaymentRequestAddSettlementLinesHandler,
+)
 from odoo.addons.smart_construction_core.core_extension_policy_maps import (
     BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL,
 )
@@ -612,6 +615,117 @@ class TestP1PaymentRequestCapability(TransactionCase):
         with self.assertRaisesRegex(UserError, "业务事实不可直接修改"):
             request.write({"amount": 200})
         self.assertEqual(request.amount, 100)
+
+    def test_optional_payment_details_authoritatively_sync_request_amount(self):
+        request = self._request(amount=123.45)
+        self.assertFalse(request.amount_uses_details)
+        self.assertEqual(request.amount, 123.45)
+
+        first = self.env["payment.request.line"].create(
+            {
+                "request_id": request.id,
+                "legacy_line_id": "p1-detail-sync-1",
+                "legacy_parent_id": "p1-detail-sync-parent",
+                "amount": 100.0,
+                "current_pay_amount": 10.004,
+            }
+        )
+        self.assertTrue(request.amount_uses_details)
+        self.assertAlmostEqual(request.amount, 10.0, places=2)
+
+        second = self.env["payment.request.line"].create(
+            {
+                "request_id": request.id,
+                "legacy_line_id": "p1-detail-sync-2",
+                "legacy_parent_id": "p1-detail-sync-parent",
+                "amount": 100.0,
+                "current_pay_amount": 2.006,
+            }
+        )
+        self.assertAlmostEqual(request.amount, 12.01, places=2)
+        self.assertAlmostEqual(request.detail_amount_total, 12.01, places=2)
+
+        first.write({"current_pay_amount": 20.004})
+        self.assertAlmostEqual(request.amount, 22.01, places=2)
+        with self.assertRaisesRegex(ValidationError, "由明细合计生成"):
+            request.write({"amount": 99.0})
+
+        first.unlink()
+        self.assertAlmostEqual(request.amount, 2.01, places=2)
+        second.unlink()
+        self.assertFalse(request.amount_uses_details)
+        self.assertAlmostEqual(request.amount, 2.01, places=2)
+        request.write({"amount": 7.0})
+        self.assertEqual(request.amount, 7.0)
+
+    def test_historical_detail_amount_mismatch_is_visible_and_blocks_submit(self):
+        request = self._request(amount=50.0)
+        self.env["payment.request.line"].create(
+            {
+                "request_id": request.id,
+                "legacy_line_id": "p1-detail-mismatch",
+                "legacy_parent_id": "p1-detail-mismatch-parent",
+                "amount": 100.0,
+                "current_pay_amount": 50.0,
+            }
+        )
+        self.env.cr.execute(
+            "UPDATE payment_request SET amount = %s WHERE id = %s",
+            (75.0, request.id),
+        )
+        request.invalidate_recordset(
+            ["amount", "amount_uses_details", "detail_amount_total", "detail_amount_consistency_message"]
+        )
+
+        self.assertEqual(request.amount, 75.0)
+        self.assertEqual(request.detail_amount_total, 50.0)
+        self.assertIn("历史记录不会自动改数", request.detail_amount_consistency_message)
+        with self.assertRaisesRegex(ValidationError, "必须与付款申请明细合计"):
+            request.with_context(payment_soft_gate=True).action_submit()
+        self.assertEqual(request.state, "draft")
+
+    def test_settlement_line_introduction_syncs_request_amount_from_created_details(self):
+        settlement = self.env["sc.settlement.order"].create(
+            {
+                "name": "P1 Optional Detail Settlement",
+                "settlement_type": "out",
+                "project_id": self.project.id,
+                "contract_id": self.contract.id,
+                "partner_id": self.partner.id,
+                "settlement_amount": 100.0,
+                "line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "name": "P1 Optional Detail Line",
+                            "contract_id": self.contract.id,
+                            "qty": 1.0,
+                            "price_unit": 100.0,
+                        },
+                    )
+                ],
+            }
+        )
+        request = self._request(amount=9.0)
+        result = PaymentRequestAddSettlementLinesHandler(self.env).handle(
+            payload={
+                "params": {
+                    "payment_request_id": request.id,
+                    "settlement_id": settlement.id,
+                    "settlement_line_ids": settlement.line_ids.ids,
+                    "apply_mode": "amount",
+                    "total_amount": 33.335,
+                }
+            }
+        )
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["data"]["created_count"], 1)
+        self.assertAlmostEqual(result["data"]["total_applied"], 33.34, places=2)
+        self.assertAlmostEqual(request.amount, 33.34, places=2)
+        self.assertAlmostEqual(request.detail_amount_total, 33.34, places=2)
+        self.assertTrue(request.amount_uses_details)
 
     def test_submit_only_accepts_draft_or_rejected_requests(self):
         request = self._set_request_state(self._request(), "approved")
@@ -1653,15 +1767,15 @@ class TestP1PaymentRequestCapability(TransactionCase):
             [
                 "payment-request-pay-basic",
                 "payment-request-pay-basis",
+                "payment-request-pay-amount",
                 "payment-request-pay-parties",
-                "payment-request-pay-detail",
                 "payment-request-pay-notes",
                 "payment-request-pay-trace",
             ],
         )
         self.assertEqual(
             [node.get("string") for node in payment_section_nodes],
-            ["基本信息", "付款依据", "收付款信息", "付款明细", "说明与附件", "履约与追溯"],
+            ["基本信息", "付款依据", "申请金额", "收付款信息", "说明与附件", "履约与追溯"],
         )
         self.assertFalse(payment_form_arch.xpath("/form/sheet/div[contains(concat(' ', normalize-space(@class), ' '), ' oe_title ')]"))
         self.assertFalse(payment_form_arch.xpath("/form/sheet//group//field[@name='name']"))
@@ -1706,8 +1820,34 @@ class TestP1PaymentRequestCapability(TransactionCase):
             "/form/sheet/group[@name='sc_payment_request_pay_basic']/group[2]/field/@name"
         )
         self.assertEqual(
-            basic_identity_fields[:3],
-            ["project_id", "partner_id", "business_category_id"],
+            basic_identity_fields[:4],
+            ["project_id", "partner_id", "business_category_id", "date_request"],
+        )
+        amount_section = payment_form_arch.xpath(
+            "/form/sheet/group[@name='sc_payment_request_pay_amount']"
+        )[0]
+        self.assertEqual(
+            amount_section.xpath("./group[1]/field/@name")[:6],
+            [
+                "amount",
+                "amount_uppercase",
+                "accepted_amount_uppercase",
+                "paid_amount_total",
+                "unpaid_amount",
+                "funding_baseline_id",
+            ],
+        )
+        self.assertEqual(
+            amount_section.xpath("./group[1]/field[@name='amount']/@readonly"),
+            ["state not in ['draft', 'rejected'] or amount_uses_details"],
+        )
+        self.assertEqual(
+            amount_section.xpath("./field[@name='outflow_line_ids']/@name"),
+            ["outflow_line_ids"],
+        )
+        self.assertEqual(
+            amount_section.xpath("./field[@name='detail_amount_total']/@invisible"),
+            ["not amount_uses_details"],
         )
         self.assertEqual(
             payment_form_arch.xpath("/form/sheet/group[1]/group[2]/field[@name='partner_transaction_eligibility']/@widget"),

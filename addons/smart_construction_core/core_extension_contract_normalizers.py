@@ -46,6 +46,24 @@ def normalize_payment_settlement_detail_component(
             config.update({
                 "fieldType": "one2many",
                 "introduceLabel": "从结算单引入",
+                "optionalDetails": {
+                    "entryLabel": "按明细填写",
+                    "populatedLabel": "付款申请明细",
+                    "linkedAmountMessage": "申请金额由有效明细的“本次申请”合计生成。",
+                    "lastRowRemovalActionLabel": "取消按明细填写",
+                    "lastRowRemovalMessage": (
+                        "移除最后一条明细后将切回直接填写申请金额；"
+                        "最后一次明细合计会保留在申请金额中，请确认后继续。"
+                    ),
+                },
+                "amountBinding": {
+                    "mode": "sum_when_nonempty",
+                    "sourceField": "current_pay_amount",
+                    "targetField": "amount",
+                    "activeField": "active",
+                    "rounding": "currency",
+                    "emptyBehavior": "preserve_last_total",
+                },
                 "actionRefs": {
                     "search": "payment.request.settlement.search",
                     "preview": "payment.request.settlement.preview",

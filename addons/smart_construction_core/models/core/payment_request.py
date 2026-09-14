@@ -14,6 +14,7 @@ from ..support.state_machine import ScStateMachine
 _logger = logging.getLogger(__name__)
 _FUNDING_BINDING_TOKEN = object()
 _TERMINAL_CASH_SOURCE_CLAIM_TOKEN = object()
+_DETAIL_AMOUNT_SYNC_TOKEN = object()
 
 PAYMENT_REQUEST_DOCUMENT_STATE_LABELS = {
     "-1": "已作废",
@@ -698,6 +699,22 @@ class PaymentRequest(models.Model):
         "request_id",
         string="付款申请明细",
     )
+    detail_amount_total = fields.Monetary(
+        string="明细申请合计",
+        currency_field="currency_id",
+        compute="_compute_detail_amount_consistency",
+        readonly=True,
+    )
+    amount_uses_details = fields.Boolean(
+        string="按明细填写",
+        compute="_compute_detail_amount_consistency",
+        readonly=True,
+    )
+    detail_amount_consistency_message = fields.Char(
+        string="明细金额一致性提示",
+        compute="_compute_detail_amount_consistency",
+        readonly=True,
+    )
     receipt_invoice_line_ids = fields.One2many(
         "sc.receipt.invoice.line",
         "request_id",
@@ -824,6 +841,125 @@ class PaymentRequest(models.Model):
     def _compute_amount_uppercase(self):
         for record in self:
             record.amount_uppercase = _amount_to_chinese_upper(record.amount)
+
+    def _active_payment_detail_lines(self):
+        self.ensure_one()
+        return self.with_context(active_test=False).outflow_line_ids.filtered("active")
+
+    def _payment_detail_amount_total(self):
+        self.ensure_one()
+        total = sum(self._active_payment_detail_lines().mapped("current_pay_amount"))
+        currency = self.currency_id or self.env.company.currency_id
+        return currency.round(total) if currency else total
+
+    def _format_detail_amount(self, amount):
+        self.ensure_one()
+        currency = self.currency_id or self.env.company.currency_id
+        decimals = int(currency.decimal_places if currency else 2)
+        symbol = (currency.symbol or "").strip() if currency else ""
+        return "%s%s" % (symbol, ("{:,.%df}" % decimals).format(amount or 0.0))
+
+    @api.depends(
+        "amount",
+        "currency_id.rounding",
+        "outflow_line_ids.active",
+        "outflow_line_ids.current_pay_amount",
+    )
+    def _compute_detail_amount_consistency(self):
+        for record in self:
+            lines = record._active_payment_detail_lines()
+            total = record._payment_detail_amount_total() if lines else 0.0
+            record.amount_uses_details = bool(lines)
+            record.detail_amount_total = total
+            currency = record.currency_id or record.env.company.currency_id
+            rounding = currency.rounding if currency else 0.01
+            mismatch = bool(lines) and float_compare(
+                record.amount or 0.0,
+                total,
+                precision_rounding=rounding,
+            ) != 0
+            record.detail_amount_consistency_message = (
+                _(
+                    "申请金额 %(amount)s 与付款申请明细合计 %(detail)s 不一致；"
+                    "历史记录不会自动改数，请核对后再提交。"
+                )
+                % {
+                    "amount": record._format_detail_amount(record.amount),
+                    "detail": record._format_detail_amount(total),
+                }
+                if mismatch
+                else False
+            )
+
+    @api.onchange("outflow_line_ids")
+    def _onchange_outflow_line_amount(self):
+        warning = False
+        for record in self.filtered(lambda row: row.type == "pay"):
+            if record._active_payment_detail_lines():
+                record.amount = record._payment_detail_amount_total()
+                continue
+            warning = {
+                "title": _("已切回直接填写"),
+                "message": _(
+                    "已取消全部付款申请明细；最后一次明细合计保留为申请金额，"
+                    "请确认金额后再继续。"
+                ),
+            }
+        return {"warning": warning} if warning else None
+
+    def _check_detail_amount_consistency(self):
+        for record in self.filtered(lambda row: row.type == "pay"):
+            lines = record._active_payment_detail_lines()
+            if not lines:
+                continue
+            total = record._payment_detail_amount_total()
+            currency = record.currency_id or record.env.company.currency_id
+            rounding = currency.rounding if currency else 0.01
+            if float_compare(record.amount or 0.0, total, precision_rounding=rounding) != 0:
+                raise ValidationError(
+                    _(
+                        "申请金额 %(amount)s 必须与付款申请明细合计 %(detail)s 一致；"
+                        "请调整明细后再继续。"
+                    )
+                    % {
+                        "amount": record._format_detail_amount(record.amount),
+                        "detail": record._format_detail_amount(total),
+                    }
+                )
+
+    def _check_proposed_detail_amount(self, amount):
+        for record in self.filtered(lambda row: row.type == "pay"):
+            if not record._active_payment_detail_lines():
+                continue
+            total = record._payment_detail_amount_total()
+            currency = record.currency_id or record.env.company.currency_id
+            rounding = currency.rounding if currency else 0.01
+            if float_compare(amount or 0.0, total, precision_rounding=rounding) != 0:
+                raise ValidationError(
+                    _(
+                        "存在付款申请明细时，申请金额由明细合计生成，"
+                        "不能独立改为 %(amount)s。"
+                    )
+                    % {"amount": record._format_detail_amount(amount)}
+                )
+
+    def _sync_amount_from_detail_lines(self, fallback_totals=None):
+        fallback_totals = fallback_totals or {}
+        for record in self.filtered(lambda row: row.type == "pay"):
+            lines = record._active_payment_detail_lines()
+            if lines:
+                total = record._payment_detail_amount_total()
+            elif record.id in fallback_totals:
+                total = fallback_totals[record.id]
+            else:
+                continue
+            currency = record.currency_id or record.env.company.currency_id
+            rounding = currency.rounding if currency else 0.01
+            if float_compare(record.amount or 0.0, total, precision_rounding=rounding) == 0:
+                continue
+            record.with_context(
+                _sc_detail_amount_sync_token=_DETAIL_AMOUNT_SYNC_TOKEN,
+            ).write({"amount": total})
 
     @api.depends(
         "legacy_document_state",
@@ -1769,6 +1905,7 @@ class PaymentRequest(models.Model):
             records.filtered(
                 lambda r: r.type == "pay" and r.state in ("submit", "approve", "approved")
             )._enforce_funding_gate()
+        records._check_detail_amount_consistency()
         return records
 
     @api.model
@@ -1817,6 +1954,13 @@ class PaymentRequest(models.Model):
             raise AccessError(_("付款申请的资金基线快照只能在首次提交时绑定。"))
         if "funding_baseline_id" in vals and self.filtered("funding_baseline_id"):
             raise AccessError(_("付款申请的资金基线快照一经绑定不可变更。"))
+        detail_sync_authorized = (
+            self.env.context.get("_sc_detail_amount_sync_token") is _DETAIL_AMOUNT_SYNC_TOKEN
+        )
+        if "amount" in vals and "outflow_line_ids" not in vals and not detail_sync_authorized:
+            self._check_proposed_detail_amount(vals.get("amount"))
+        if vals.get("state") in ("submit", "approve", "approved", "done"):
+            self._check_detail_amount_consistency()
         locked = self.filtered(lambda rec: rec.state not in ("draft", "rejected", "cancel"))
         if changed_business_facts and locked and not self.env.context.get("allow_payment_business_fact_write"):
             raise UserError(
@@ -1844,6 +1988,11 @@ class PaymentRequest(models.Model):
                         hints=["请先完成审批后再进入已批准/已完成状态"],
                     )
         res = super().write(vals)
+        if (
+            "amount" in vals
+            and not detail_sync_authorized
+        ):
+            self._check_detail_amount_consistency()
         if any(key in vals for key in ("state", "type", "project_id", "amount")):
             self._enforce_funding_gate(vals)
         return res
@@ -2741,6 +2890,7 @@ class PaymentRequest(models.Model):
         advisory_result = {}
         funding_evaluation_cache = {}
         for rec in self:
+            rec._check_detail_amount_consistency()
             if rec.state not in ("draft", "rejected"):
                 raise UserError(
                     _("只有草稿或已驳回的付款/收款申请可以提交审批。")
@@ -2811,6 +2961,7 @@ class PaymentRequest(models.Model):
         for rec in self:
             if rec.state != "submit":
                 continue
+            rec._check_detail_amount_consistency()
             if rec.validation_status != "validated" and not rec.env.context.get("tier_validation_callback"):
                 raise_guard(
                     "PAYMENT_TIER_INCOMPLETE",
@@ -2842,6 +2993,7 @@ class PaymentRequest(models.Model):
         for rec in self:
             if rec.state != "submit":
                 continue
+            rec._check_detail_amount_consistency()
             if rec.validation_status in ("waiting", "pending"):
                 # R10: overpay handled as advisory via _handle_payment_advisories
                 rec._check_material_settlement_remaining_amount()
@@ -2881,6 +3033,7 @@ class PaymentRequest(models.Model):
         advisory_result = {}
         result = None
         for rec in self:
+            rec._check_detail_amount_consistency()
             # R10: overpay handled as advisory via _handle_payment_advisories
             rec._check_material_settlement_remaining_amount()
             advisory_result[rec.id] = rec._handle_payment_advisories(
@@ -3188,6 +3341,7 @@ class PaymentRequest(models.Model):
         for rec in self:
             if rec.state != "submit":
                 continue
+            rec._check_detail_amount_consistency()
             if self.env.context.get("server_action_tier") and rec.validation_status != "validated":
                 # OCA base_tier_validation_server_action fires this callback
                 # after every approved level of a multi-level linear chain;
