@@ -21,6 +21,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     relation_query = read_text("frontend/apps/web/src/components/template/one2manyRelationQuery.ts")
     relation_descriptor = read_text("frontend/apps/web/src/pages/contractForm/relationDescriptor.ts")
     action_presentation = read_text("frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts")
+    load_contract = read_text("addons/smart_core/handlers/load_contract.py")
     registry = read_text("frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts")
     assembler = read_text("addons/smart_core/core/unified_page_contract_v2_assembler.py")
     project_layout = read_text("addons/smart_construction_core/core_extension_project_layout.py")
@@ -94,6 +95,16 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection exposes row removal without unlink authority")
     if "if (!one2manyCanUnlink(fieldName)) return;" not in action_presentation:
         failures.append("detail collection row removal handler does not fail closed")
+    if "one2manyRemovalLabels: (name: string, removedCount?: number)" not in relation_types:
+        failures.append("detail collection adapter omits authoritative removal labels")
+    if "one2manyRemovalLabelsFromPolicies" not in relation_utils:
+        failures.append("detail collection removal labels do not consume backend policy")
+    if renderer.count("adapter.one2manyRemovalLabels(field.name)") < 5:
+        failures.append("detail collection removal actions do not use authoritative labels")
+    if '>移除</ScButton>' in renderer:
+        failures.append("detail collection hardcodes ambiguous removal wording")
+    if '"解除关联" if field_meta.get("type") == "many2many" else "删除"' not in load_contract:
+        failures.append("legacy relation actions do not distinguish unlink from child deletion")
     if "one2manyCanInlineEdit: (name: string) => boolean;" not in relation_types:
         failures.append("detail collection adapter omits backend inline-edit authority")
     if "return policies.inline_edit === true;" not in relation_utils:

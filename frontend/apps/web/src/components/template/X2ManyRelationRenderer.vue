@@ -24,9 +24,9 @@
             variant="ghost"
             size="small"
             :disabled="adapter.busy"
-            :aria-label="`移除${att.label}`"
+            :aria-label="`解除关联${att.label}`"
             @click="toggleRelationId(field.name, att.id, false)"
-          >移除</ScButton>
+          >解除关联</ScButton>
         </div>
       </div>
       <ScInlineState
@@ -247,10 +247,10 @@
               type="button"
               variant="danger"
               size="small"
-              :aria-label="`移除${adapter.one2manyRowLabel(field.name, row._row)}`"
+              :aria-label="`${adapter.one2manyRemovalLabels(field.name).remove}${adapter.one2manyRowLabel(field.name, row._row)}`"
               :disabled="adapter.busy"
               @click="adapter.removeOne2manyRow(field.name, row._key)"
-            >移除</ScButton>
+            >{{ adapter.one2manyRemovalLabels(field.name).remove }}</ScButton>
           </template>
         </ScTable>
       </div>
@@ -276,10 +276,10 @@
               type="button"
               variant="danger"
               size="small"
-              :aria-label="`移除${adapter.one2manyRowLabel(field.name, row)}`"
+              :aria-label="`${adapter.one2manyRemovalLabels(field.name).remove}${adapter.one2manyRowLabel(field.name, row)}`"
               :disabled="adapter.busy"
               @click="adapter.removeOne2manyRow(field.name, row.key)"
-            >移除</ScButton>
+            >{{ adapter.one2manyRemovalLabels(field.name).remove }}</ScButton>
           </header>
           <div class="o2m-mobile-fields">
             <label
@@ -342,7 +342,7 @@
         <ScInlineState
           class="meta"
           state="info"
-          :label="`已移除 ${adapter.removedOne2manyRows(field.name).length} 行，提交前可撤销`"
+          :label="adapter.one2manyRemovalLabels(field.name, adapter.removedOne2manyRows(field.name).length).removedSummary"
         />
         <div class="chips">
           <ScButton
@@ -355,7 +355,7 @@
             :disabled="adapter.busy"
             @click="adapter.restoreOne2manyRow(field.name, row.key)"
           >
-            撤销移除 · {{ adapter.one2manyRowLabel(field.name, row) }} · 待删除
+            {{ adapter.one2manyRemovalLabels(field.name).restore }} · {{ adapter.one2manyRowLabel(field.name, row) }} · {{ adapter.one2manyRemovalLabels(field.name).pendingRemoval }}
           </ScButton>
         </div>
       </div>

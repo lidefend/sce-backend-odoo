@@ -290,6 +290,25 @@ export function one2manyCreateLabelFromPolicies(
   return label ? `添加${label}` : (explicit || '添加行');
 }
 
+export function one2manyRemovalLabelsFromPolicies(
+  policies: Record<string, unknown>,
+  removedCount = 0,
+) {
+  const labels = policies.ui_labels && typeof policies.ui_labels === 'object' && !Array.isArray(policies.ui_labels)
+    ? policies.ui_labels as Record<string, unknown>
+    : {};
+  const count = String(Math.max(0, Math.trunc(Number(removedCount) || 0)));
+  const summaryTemplate = String(
+    labels.removed_summary || '已标记删除 {count} 行，提交前可撤销',
+  ).trim();
+  return {
+    remove: String(labels.remove || '删除').trim() || '删除',
+    restore: String(labels.restore || '撤销删除').trim() || '撤销删除',
+    removedSummary: summaryTemplate.replaceAll('{count}', count),
+    pendingRemoval: String(labels.pending_removal || '待删除').trim() || '待删除',
+  };
+}
+
 export function one2manyPrimaryColumnFromColumns(columns: One2ManyColumn[]) {
   return columns.length ? columns[0].name : 'name';
 }
@@ -681,7 +700,7 @@ export function formRuntimeRowStateLabel(state: unknown): string {
   const mapping: Record<string, string> = {
     create: '新增明细',
     update: '已更新明细',
-    remove: '已移除明细',
+    remove: '已删除明细',
     keep: '保持当前明细',
   };
   return mapping[raw] || '已同步明细变化';
