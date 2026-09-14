@@ -168,7 +168,11 @@ try {
     disabled: node.getAttribute('aria-disabled'),
     busy: node.getAttribute('aria-busy'),
   })));
-  const collectionDisabledReasons = await page.locator('[data-appearance="kanban-record"], [data-semantic-component="CollectionSelectionControl"]').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('title')).filter(Boolean));
+  const collectionDisabledReasons = await page.locator('[data-appearance="kanban-record"], [data-semantic-component="CollectionSelectionControl"]').evaluateAll((nodes) => nodes.map((node) => (
+    node.getAttribute('title')
+    || node.querySelector('.t-card__title')?.textContent?.trim()
+    || ''
+  )).filter(Boolean));
   const formStates = await page.locator('[data-semantic-component="ProductFormLoadingSkeleton"], [data-semantic-component="ProductFormErrorSummary"]').evaluateAll((nodes) => nodes.map((node) => ({
     component: node.getAttribute('data-semantic-component'),
     state: node.getAttribute('data-state'),
