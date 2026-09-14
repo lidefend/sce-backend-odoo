@@ -9443,3 +9443,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Formal Product Layer 为 P0；Layer Target 为既有 `ScCard` appearance 与通用合同表单页面类型样式。主工作面保留单一 Card 边界，业务章节改为连续透明表面，相邻章节只保留一条分隔线；表格、浮层及特殊状态继续保留自身功能边界。
 - `ScCard` 中分散的 padding/gap 收敛到既有 spacing token，没有新增变量体系；章节标题统一消费 A1 的 16px/600 语义层级。未修改 P1 XML、契约章节、字段顺序、权限、动作、Dialog/Drawer 生命周期或业务数据。
 - 本批从 L0/L1 开始，运行 primitive/page-pattern/canonical-form 受影响非零测试与严格类型检查；L3 无模块或契约装载变化而跳过，局部 L4 与 A3 合并后只覆盖三张代表页面。
+
+## 2026-09-14 — TDesign 设计体系对齐 Batch A3
+
+- Formal Product Layer 为 P0；Layer Target 为既有 `FormSectionNavigation` 溢出表达。保留 anchor、当前章节判定、点击定位和滚动修正算法，只将覆盖末端标签的绝对定位提示替换为 TDesign 按钮公开 API 驱动的前后浏览控制。
+- 溢出控制在 flex 布局中占有独立空间，桌面沿用 section-tab 高度，移动端沿用 44px touch target；导航实际高度进入既有 scroll-margin 计算。未改为 TabPanel，未改变契约章节、业务动作、路由或页面专属样式。
+- 本批验证从 L0 开始，运行 native-section-navigation、form-canvas、primitive、canonical-form 和严格类型检查。三页 1088×791 局部 L4 只读对照绑定 A1—A3 汇合指纹；完整矩阵、Quick 与独立复核仍留在产品方向通过后的冻结阶段。

@@ -34,6 +34,7 @@
 | TDesign Card `bordered` 与现有 panel surface | `--sc-app-panel`、`--sc-app-border`、`--sc-space-lg` | 主工作面保留一个边界；正文 16px 内距 | 列表、表单与只读详情主表面 |
 | TDesign 连续内容面与既有 section appearance | `--sc-product-text-section`、`--sc-space-md`、`--sc-app-border` | 章节透明；相邻章节只保留一条分隔线 | 原生表单业务章节、嵌套明细区 |
 | TDesign Popup/Modal 层级 | 既有 overlay z-index 与 shadow token | 保留浮层阴影和特殊状态边界 | Dialog、Drawer、Popover；本批不改变生命周期 |
+| TDesign Button 公开 API 与横向滚动容器 | 既有 section-tab、touch-target、sticky token | 控制独立占位；桌面 28px、移动 44px 触达；导航实际高度参与锚点偏移 | `FormSectionNavigation` 溢出浏览与章节定位 |
 
 TDesign 字体变量只通过公开 CSS 变量桥接；页面标题、章节、正文和辅助文字消费同一组项目语义 token，不改变控件 widget、格式、校验或契约标题内容。
 

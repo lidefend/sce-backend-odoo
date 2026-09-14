@@ -8,9 +8,15 @@
 /* TDesign-aligned form canvas: one work surface with restrained business sections. */
 .contract-form-native-shell[data-product-page-mode='form'] {
   --sc-form-command-bar-height: 72px;
-  --sc-form-section-nav-height: 0px;
+  --sc-form-section-nav-height: calc(var(--sc-component-button-section-tab-height) * 1px + var(--sc-space-xs) + 1px);
   --sc-form-sticky-gap: 8px;
   row-gap: var(--sc-product-workspace-stack-gap);
+}
+
+@media (max-width: 560px) {
+  .contract-form-native-shell[data-product-page-mode='form'] {
+    --sc-form-section-nav-height: calc(var(--sc-touch-target-min) + var(--sc-space-xs) + 1px);
+  }
 }
 
 .contract-form-native-shell :deep([data-group-title]) {

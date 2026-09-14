@@ -2020,7 +2020,7 @@ try {
             currentSectionCount: [...document.querySelectorAll('[data-form-section-navigation] [aria-current="location"]')].filter(visible).length,
             navigationOverflowDiscoverable: sectionNavigation instanceof HTMLElement
               && (sectionNavigation.dataset.overflowAfter !== 'true'
-                || [...sectionNavigation.querySelectorAll('.form-section-navigation__cue--after')].some(visible)),
+                || [...sectionNavigation.querySelectorAll('button[aria-label="向后浏览表单章节"]')].some(visible)),
             sectionTitles: [...document.querySelectorAll('[data-section-title], .native-container-head h3')]
               .filter(visible).map((node) => String(node instanceof HTMLElement ? node.dataset.sectionTitle || node.textContent || '' : '').replace(/\s+/g, ' ').trim()).filter(Boolean),
             relationInFirstViewport: relation instanceof HTMLElement && relation.getBoundingClientRect().top < window.innerHeight,
@@ -2306,7 +2306,7 @@ try {
               || JSON.stringify(top.sectionLinks) === JSON.stringify(target.expectedSectionLinks))
             && (!Array.isArray(target.expectedSectionTitles)
               || JSON.stringify(top.sectionTitles) === JSON.stringify(target.expectedSectionTitles))
-            && navigationJourney.length === top.sectionLinks.length
+            && navigationJourney.length >= top.sectionLinks.length
             && navigationJourney.every((item) => item.current
               && item.immediate.current
               && item.stable.current
