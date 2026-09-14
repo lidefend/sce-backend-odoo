@@ -9459,3 +9459,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 冻结前聚焦自检发现 page-header 守卫对 `.readonly-value` 属性顺序的旧文本断言无法接受已批准的可收缩槽位属性，归为 `validation_tool_defect`。P4 断言改为同时锁定正文 token 与 `max-width/min-width` 槽位，新增负向反例后 11 项单测及直接 guard 通过；没有再次修改产品源。
 - 首次独立复核发现导航按钮到达边界时因 `v-if` 移除而带走键盘焦点；P0 保留节点并用 `aria-disabled` 表达边界，共享 `ScButton` 通过公开 prop 保留调用方状态。1088×791 与 390×844 的正反向探针均证明边界控制仍聚焦、仍连接且正确禁用，零业务写入。
 - `85b05110…` 原矩阵缺少运行前后完整指纹绑定，只保留为人工产品证据；在 `b7f167b8…` 上重新生成 1440×960/390×844 明暗矩阵，两轮 before/after 指纹均逐字节一致且截图/summary 具有 SHA-256 binding。`37ccabc6…` 的历史 Quick 因后续 P0 修复失效，最终冻结后必须对新 HEAD 运行一次有效 Quick。
+### 2026-09-14 · shared form structure authority convergence
+
+- Branch / starting HEAD: `codex/shared-form-help-error-consistency-v1` / `8ab235aaed357cdd48adc32796bafcec173cb320`
+- Formal Product Layer: P0 generic contract composition and frontend consumption; P1 construction payment entry native view; P4 focused verification evidence.
+- Layer Target / Module: `smart_core` view orchestration and `ui.contract.v2`; `smart_construction_core` payment action-specific native form; shared contract form renderer.
+- Reason: remove competing field/section order authorities while preserving semantic enhancements and native security/action behavior.
+- Excluded: payment calculation, approval/save protocol, permissions, database records, payment execution/receipt-request redesign, full low-code layout replacement.
