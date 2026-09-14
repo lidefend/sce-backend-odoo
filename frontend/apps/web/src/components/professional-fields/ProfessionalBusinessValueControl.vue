@@ -62,6 +62,7 @@ import {
   normalizeBusinessValueChoiceOptions,
   statusSemantic,
 } from './professionalBusinessValueModel';
+import { resolveReadonlyEmptyText } from './professionalBaseFieldModel';
 
 const props = defineProps<{
   field: FormSectionFieldSchema;
@@ -90,16 +91,23 @@ const suffix = computed(() => {
   if (kind.value === 'sc.value.duration') return '小时';
   return '';
 });
-const moneyDisplay = computed(() => formatMonetaryDisplayValue(props.field.value, props.field.digits, props.field.currencyLabel));
+const emptyDisplayText = computed(() => resolveReadonlyEmptyText(props.field));
+const moneyDisplay = computed(() => formatMonetaryDisplayValue(
+  props.field.value,
+  props.field.digits,
+  props.field.currencyLabel,
+  'zh-CN',
+  emptyDisplayText.value,
+));
 const displayText = computed(() => {
   const value = props.field.value;
   if (kind.value === 'sc.value.percentage') return formatPercentage(value);
   if (kind.value === 'sc.value.duration') return formatDuration(value);
   if (kind.value === 'sc.display.status') {
     const selected = props.field.selectionOptions?.find((option) => String(option.value) === String(props.field.inputValue ?? value));
-    return selected?.label || String(value ?? '—');
+    return selected?.label || String(value ?? emptyDisplayText.value) || emptyDisplayText.value;
   }
-  return String(value ?? '—') || '—';
+  return String(value ?? emptyDisplayText.value) || emptyDisplayText.value;
 });
 
 function numericValue(value: string | number): number | null {

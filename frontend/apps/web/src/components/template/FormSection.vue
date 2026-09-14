@@ -53,7 +53,6 @@
             <label v-if="!fieldConfigEditable && !field.hideLabel && !detailCollectionOwnsVisibleTitle(field) && !attachmentControlOwnsVisibleTitle(field)" class="label" :for="fieldControlId(field)">
               {{ field.label }}
               <span v-if="field.required && !field.readonly" class="field-state field-state--required"><span aria-hidden="true">*</span><span class="sr-only">必填</span></span>
-              <span v-else-if="field.readonly && !allFieldsReadonly" class="field-state">只读</span>
             </label>
             <ScInput
               v-else-if="fieldConfigEditable"
@@ -145,11 +144,22 @@
                 :field="field"
                 :adapter="relationAdapter"
               >
-                <X2ManyRelationRenderer :field="field" :adapter="relationAdapter" @reload-requested="emitFieldAction(field, { key: 'reload-requested', label: '刷新', value: 'reload-requested' })" />
+                <template #default="{ adapter: detailAdapter }">
+                  <X2ManyRelationRenderer :field="field" :adapter="detailAdapter" @reload-requested="emitFieldAction(field, { key: 'reload-requested', label: '刷新', value: 'reload-requested' })" />
+                </template>
               </ProfessionalDetailCollectionControl>
               <ProfessionalRelationFieldControl v-else-if="usesProfessionalMany2one(field) && field.readonly" :field="field">
                 <slot name="readonly" :field="field">
-                  <span class="readonly-value">{{ readonlyText(field) }}</span>
+                  <ScButton
+                    v-if="field.many2oneOpenToken && !fieldHasEmptyValue(field)"
+                    type="button"
+                    appearance="auth-link"
+                    variant="ghost"
+                    :title="readonlyText(field)"
+                    :aria-label="field.many2oneOpenLabel || `打开${field.label}`"
+                    @click="emitFieldChange(field, field.many2oneOpenToken)"
+                  ><span class="readonly-relation-label">{{ readonlyText(field) }}</span></ScButton>
+                  <span v-else class="readonly-value">{{ readonlyText(field) }}</span>
                 </slot>
               </ProfessionalRelationFieldControl>
               <template v-else-if="field.readonly">
@@ -287,6 +297,7 @@
 import { computed, inject, useId, useSlots } from 'vue';
 import { SceneFieldControl, useOptionalSceneUiKit } from '@sc/ui/form';
 import ScCard from '../design-system/ScCard.vue';
+import ScButton from '../design-system/ScButton.vue';
 import ScDateField from '../design-system/ScDateField.vue';
 import ScFileField from '../design-system/ScFileField.vue';
 import ScIcon from '../design-system/ScIcon.vue';
@@ -300,9 +311,12 @@ import ProfessionalDetailCollectionControl from '../professional-fields/Professi
 import ProfessionalMany2oneFieldControl from '../professional-fields/ProfessionalMany2oneFieldControl.vue';
 import ProfessionalRelationFieldControl from '../professional-fields/ProfessionalRelationFieldControl.vue';
 import PaymentSettlementDetailCollectionControl from '../professional-fields/PaymentSettlementDetailCollectionControl.vue';
-import { isProfessionalBaseFieldCandidate } from '../professional-fields/professionalBaseFieldModel';
+import { isProfessionalBaseFieldCandidate, resolveReadonlyEmptyText } from '../professional-fields/professionalBaseFieldModel';
 import { isProfessionalBusinessValueField } from '../professional-fields/professionalBusinessValueModel';
-import { isProfessionalDetailCollectionField } from '../professional-fields/professionalDetailCollectionModel';
+import {
+  isProfessionalDetailCollectionField,
+  optionalDetailCollectionSpanClass,
+} from '../professional-fields/professionalDetailCollectionModel';
 import { isProfessionalRelationField } from '../professional-fields/professionalRelationFieldModel';
 import { isPaymentSettlementDetailCollectionField } from '../professional-fields/paymentSettlementDetailCollectionModel';
 import X2ManyRelationRenderer from './X2ManyRelationRenderer.vue';
@@ -540,9 +554,10 @@ function fieldSpanUnits(spanClass: string): number {
 
 function fieldSpanClass(field: FormSectionFieldSchema, index: number) {
   const explicitSpan = field.spanClass || '';
-  const base = explicitSpan || (defaultSpanClass(field.type) === 'field--full' || fieldWidget(field) === 'textarea'
+  const configuredBase = explicitSpan || (defaultSpanClass(field.type) === 'field--full' || fieldWidget(field) === 'textarea'
     ? 'field--full'
     : 'field--normal');
+  const base = optionalDetailCollectionSpanClass(field, configuredBase);
   if (base === 'field--full') return base;
   if (!props.fillOrphanRows) return base;
 
@@ -635,7 +650,13 @@ function inputPlaceholderText(field: FormSectionFieldSchema) {
 function readonlyText(field: FormSectionFieldSchema) {
   const fieldType = String(field.type || field.descriptor?.ttype || field.descriptor?.type || '').trim().toLowerCase();
   if (fieldType === 'monetary') {
-    return formatMonetaryDisplayValue(field.value, field.digits, field.currencyLabel);
+    return formatMonetaryDisplayValue(
+      field.value,
+      field.digits,
+      field.currencyLabel,
+      'zh-CN',
+      resolveReadonlyEmptyText(field, '-'),
+    );
   }
   const normalizedValue = ['date', 'datetime', 'many2one'].includes(fieldType)
     && String(field.value).trim().toLowerCase() === 'false'
@@ -644,7 +665,7 @@ function readonlyText(field: FormSectionFieldSchema) {
   return formatDisplayValue(
     normalizedValue,
     { ...(field.descriptor || {}), type: fieldType || field.descriptor?.type },
-    { emptyText: '-' },
+    { emptyText: resolveReadonlyEmptyText(field, '-') },
   );
 }
 
@@ -1160,6 +1181,14 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   outline: 2px solid var(--sc-app-accent);
   outline-offset: 2px;
   border-radius: 2px;
+}
+
+.readonly-relation-label {
+  display: block;
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+  overflow-wrap: anywhere;
 }
 
 .readonly-value--html {

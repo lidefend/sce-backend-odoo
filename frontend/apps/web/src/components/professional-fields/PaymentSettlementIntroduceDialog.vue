@@ -44,7 +44,7 @@
           <span class="settle-option-name">{{ s.display_name || s.name }}</span>
           <span class="settle-option-meta">
             <span v-if="s.contract_name">合同：{{ s.contract_name }}</span>
-            <span v-if="s.amount_total">金额：{{ fmtMoney(s.amount_total) }}</span>
+            <span v-if="s.amount_total">金额：{{ fmtMoney(s.amount_total, s.currency) }}</span>
             <span>明细 {{ s.line_count }} 行</span>
           </span>
         </div>
@@ -162,10 +162,11 @@
                 :model-value="String(applyTotal)"
                 type="number"
                 min="0"
+                :step="currencyInputStep"
                 placeholder="总申请金额"
                 @update:model-value="applyTotal = Number($event)"
               />
-              <span class="settle-apply-suffix">元</span>
+              <span class="settle-apply-suffix">{{ currencyUnit }}</span>
               <span class="settle-apply-hint">按各结算行可申请占比分配</span>
             </template>
             <span class="settle-apply-total">本次申请合计：<strong>{{ fmtMoney(selectedLinesApply) }}</strong></span>
@@ -195,6 +196,12 @@ import ScInput from '../design-system/ScInput.vue';
 import ScDialog from '../design-system/ScDialog.vue';
 import ScInlineState from '../design-system/ScInlineState.vue';
 import { intentRequest } from '../../api/intents';
+import { formatMonetaryDisplayValue } from '../template/formSection.mapper';
+import {
+  ratioSettlementApplyAmounts,
+  ratioSettlementApplyTotal,
+  roundSettlementCurrencyAmount,
+} from './paymentSettlementIntroduceModel';
 
 const props = defineProps<{ field: FormSectionFieldSchema; adapter: RelationFieldAdapter; open: boolean }>();
 const emit = defineEmits<{ close: []; introduced: []; 'busy-change': [busy: boolean] }>();
@@ -240,6 +247,7 @@ type SettleRelatedPaymentRequest = {
 };
 
 type SettlePreviewData = {
+  currency: SettleCurrencyIdentity;
   settlement: {
     id: number;
     name: string;
@@ -255,9 +263,17 @@ type SettlePreviewData = {
   totals: { settlement_amount: number; line_amount_total: number; applied_total: number; remaining_total: number };
 };
 
+type SettleCurrencyIdentity = {
+  id: number;
+  name: string;
+  symbol: string;
+  decimal_places: number;
+  rounding: number;
+};
+
 const settleKeyword = ref('');
 const settleSearching = ref(false);
-const settleResults = ref<Array<{ id: number; name: string; display_name: string; amount_total: number; contract_name: string; partner_name: string; line_count: number }>>([]);
+const settleResults = ref<Array<{ id: number; name: string; display_name: string; amount_total: number; currency: SettleCurrencyIdentity; contract_name: string; partner_name: string; line_count: number }>>([]);
 const selectedSettlementId = ref<number | null>(null);
 const previewData = ref<SettlePreviewData | null>(null);
 const historyExpanded = ref(false);
@@ -269,10 +285,15 @@ const applyTotal = ref(0);
 const introduceBusy = ref(false);
 const introduceError = ref('');
 
-function fmtMoney(value: number | string | undefined | null) {
-  const num = Number(value);
-  if (!Number.isFinite(num)) return '¥ 0.00';
-  return `¥ ${num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+function fmtMoney(
+  value: number | string | undefined | null,
+  currency: SettleCurrencyIdentity | undefined = previewData.value?.currency,
+) {
+  return formatMonetaryDisplayValue(
+    Number(value || 0),
+    currency ? [20, currency.decimal_places] as [number, number] : undefined,
+    currency?.name || currency?.symbol || '',
+  );
 }
 
 watch(() => props.open, (opened) => {
@@ -293,7 +314,7 @@ async function searchSettlements() {
   introduceError.value = '';
   settleSearching.value = true;
   try {
-    const res = await intentRequest<{ settlements: Array<{ id: number; name: string; display_name: string; amount_total: number; contract_name: string; partner_name: string; line_count: number }> }>({
+    const res = await intentRequest<{ settlements: Array<{ id: number; name: string; display_name: string; amount_total: number; currency: SettleCurrencyIdentity; contract_name: string; partner_name: string; line_count: number }> }>({
       intent: requiredActionRef('search'),
       params: {
         keyword: settleKeyword.value || '',
@@ -368,20 +389,38 @@ const selectedLines = computed(() => (previewData.value?.lines || []).filter((li
 
 const selectedLinesAmount = computed(() => selectedLines.value.reduce((sum, line) => sum + (Number(line.amount) || 0), 0));
 const selectedLinesRemaining = computed(() => selectedLines.value.reduce((sum, line) => sum + (Number(line.remaining) || 0), 0));
+const currencyUnit = computed(() => previewData.value?.currency.symbol || previewData.value?.currency.name || '金额');
+const currencyInputStep = computed(() => String(previewData.value?.currency.rounding || 'any'));
+
+function roundPreviewAmount(value: number) {
+  return roundSettlementCurrencyAmount(
+    value,
+    Number(previewData.value?.currency.rounding || 0),
+  );
+}
 
 const selectedLinesApply = computed(() => {
   if (applyMode.value === 'amount') {
     const total = Number(applyTotal.value) || 0;
-    return Math.min(total, selectedLinesRemaining.value);
+    return roundPreviewAmount(Math.min(total, selectedLinesRemaining.value));
   }
   const ratio = Math.min(Math.max(Number(applyRatio.value) || 0, 0), 100);
-  return selectedLinesRemaining.value * ratio / 100;
+  return ratioSettlementApplyTotal(
+    selectedLines.value,
+    ratio,
+    Number(previewData.value?.currency.rounding || 0),
+  );
 });
 
 const canConfirmIntroduce = computed(() => {
   if (!selectedSettlementId.value || selectedLineIds.value.size === 0) return false;
   if (applyMode.value === 'amount' && (!(Number(applyTotal.value) > 0))) return false;
   if (applyMode.value === 'ratio' && (!(Number(applyRatio.value) > 0))) return false;
+  if (applyMode.value === 'ratio' && ratioSettlementApplyAmounts(
+    selectedLines.value,
+    applyRatio.value,
+    Number(previewData.value?.currency.rounding || 0),
+  ).some((amount) => !(amount > 0))) return false;
   return selectedLinesApply.value > 0;
 });
 

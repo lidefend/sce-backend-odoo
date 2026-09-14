@@ -14,6 +14,10 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         root = Path(temp.name)
         design = root / "frontend/apps/web/src/components/design-system"
         design.mkdir(parents=True)
+        (design / "nativeControlProjection.ts").write_text(
+            "export function nativeControlAttributeValue(name, value) { return value === true ? (name.startsWith('aria-') ? 'true' : '') : String(value); }\n",
+            encoding="utf-8",
+        )
         ui = root / "frontend/packages/ui/src"
         ui.mkdir(parents=True)
         theme = ui / "kits/tdesign/theme.css"
@@ -23,7 +27,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             encoding="utf-8",
         )
         (design / "tdesignPrimitiveBridge.ts").write_text(
-            "export { TDesignAlert, TDesignButton, TDesignCheckbox, TDesignRadioGroup, TDesignRadio, TDesignDialog, TDesignDrawer, TDesignEmpty, TDesignInput, TDesignInputAdornment, TDesignSelect, TDesignTextarea } from '@sc/ui/primitives';\n", encoding="utf-8"
+            "export { TDesignAlert, TDesignButton, TDesignCheckbox, TDesignRadioGroup, TDesignRadio, TDesignDialog, TDesignDrawer, TDesignEmpty, TDesignInput, TDesignInputAdornment, TDesignInputNumber, TDesignSelect, TDesignTextarea } from '@sc/ui/primitives';\n", encoding="utf-8"
         )
         (ui / "primitives.ts").write_text(
             "export { Alert as TDesignAlert } from 'tdesign-vue-next/es/alert';\n"
@@ -33,6 +37,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             "export { Radio as TDesignRadio } from 'tdesign-vue-next/es/radio';\n"
             "export { Input as TDesignInput } from 'tdesign-vue-next/es/input';\n"
             "export { InputAdornment as TDesignInputAdornment } from 'tdesign-vue-next/es/input-adornment';\n"
+            "export { InputNumber as TDesignInputNumber } from 'tdesign-vue-next/es/input-number';\n"
             "export { Select as TDesignSelect } from 'tdesign-vue-next/es/select';\n"
             "export { Textarea as TDesignTextarea } from 'tdesign-vue-next/es/textarea';\n"
             "export { Dialog as TDesignDialog } from 'tdesign-vue-next/es/dialog';\n"
@@ -64,14 +69,14 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             state_contract = {
                 "ScButton": '<button data-primitive-driver="browser-structured" /><TDesignButton v-bind="attrs" :data-appearance="appearance" :data-loading="loading || undefined" :aria-disabled="ariaDisabled || disabled || loading || undefined" :loading="loading" /><!-- ariaDisabled?: boolean; tdesignButtonPresentation inheritAttrs: false [\'structured-content\', \'metric\', \'dashboard-quick-link\'] -->',
                 "ScIconButton": '<TDesignButton :data-appearance="appearance" />',
-                "ScCheckbox": '<TDesignCheckbox v-native-control-projection :data-checked="checked || undefined" :data-indeterminate="indeterminate || undefined" :data-disabled="disabled || undefined" /><!-- \'aria-checked\': props.indeterminate ? \'mixed\' : String(props.checked) \'aria-label\': props.label -->',
+                "ScCheckbox": '<TDesignCheckbox v-native-control-projection :data-checked="checked || undefined" :data-indeterminate="indeterminate || undefined" :data-disabled="disabled || undefined" /><!-- id: props.id \'aria-checked\': props.indeterminate ? \'mixed\' : String(props.checked) \'aria-label\': props.label \'aria-invalid\': props.invalid || undefined -->',
                 "ScRadioGroup": '<TDesignRadioGroup :options="options" :aria-required="required || undefined" /><!-- semanticPrimitiveIdentity(\'ScRadioGroup\') -->',
                 "ScRadio": '<TDesignRadio :checked="checked" :aria-required="required || undefined" /><!-- semanticPrimitiveIdentity(\'ScRadio\') -->',
-                "ScInput": '<TDesignInput v-native-control-projection :input-class="\'sc-input__control\'" :size="normalizePrimitiveSize(size)" :status="status" :data-appearance="appearance" :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" /><input :data-appearance="appearance" data-primitive-driver="browser-specialized" />',
+                "ScInput": '<TDesignInput v-native-control-projection :input-class="\'sc-input__control\'" :size="normalizePrimitiveSize(size)" :status="status" :data-appearance="appearance" :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" /><input :data-appearance="appearance" data-primitive-driver="browser-specialized" /><!-- id: props.id \'aria-label\': props.ariaLabel -->',
                 "ScInputGroup": '<TDesignInputAdornment data-primitive-driver="tdesign" />',
-                "ScTextarea": '<TDesignTextarea v-native-control-projection :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" />',
-                "ScSelect": '<TDesignSelect v-native-control-projection :input-props="{ inputClass: \'sc-select__control\' }" :options="tdesignOptions" :data-readonly="readonly || undefined" :aria-readonly="readonly || undefined" />',
-                "ScRelationField": '<TDesignAutoComplete v-native-control-projection="nativeProjection" /><!-- \'aria-required\': props.required || undefined \'aria-invalid\': props.invalid || undefined \'aria-describedby\': props.describedBy -->',
+                "ScTextarea": '<TDesignTextarea v-native-control-projection :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" /><!-- id: props.id \'aria-label\': props.ariaLabel -->',
+                "ScSelect": '<TDesignSelect v-native-control-projection :input-props="{ inputClass: \'sc-select__control\' }" :options="tdesignOptions" :data-readonly="readonly || undefined" :aria-readonly="readonly || undefined" /><!-- id: props.id \'aria-describedby\': props.describedBy \'aria-invalid\': props.invalid \'aria-label\': props.ariaLabel -->',
+                "ScRelationField": '<TDesignAutoComplete v-native-control-projection="nativeProjection" /><!-- id: props.id \'aria-required\': props.required || undefined \'aria-invalid\': props.invalid || undefined \'aria-describedby\': props.describedBy \'aria-label\': props.ariaLabel -->',
                 "ScTabs": "<TDesignTabs :list=\"items.length ? tdesignItems : undefined\" />\nlabel: tabLabel(item)\nreturn (render: typeof h) => render('span', {}, item.label)",
                 "ScStatusBadge": "<div :data-semantic-status=\"semantic\" />\n<style>.sc-status-badge[data-semantic-status='info'] { color: var(--sc-app-info-text); background-color: var(--sc-app-info-bg); }</style>",
                 "ScLoading": '<div data-state="loading" aria-busy="true" />',
@@ -79,7 +84,8 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 "ScCard": '<TDesignCard :body-class-name="bodyClassName" /><!-- bodyClassName?: string -->',
                 "ScEmptyState": '<TDesignEmpty data-state="empty" role="status" />',
                 "ScErrorState": '<TDesignAlert data-state="error" role="alert" />',
-                "ScFormField": '<label :data-state="state" :data-required="required" />',
+                "ScFormField": '<TDesignFormItem :data-state="state" :data-required="required" :for="controlId"><template #help><span :id="helpId" /></template><template #tips><span :id="errorId" role="alert" /></template></TDesignFormItem><!-- props.help ? helpId.value props.error ? errorId.value -->',
+                "ScNumberInput": '<TDesignInputNumber v-native-control-projection="nativeProjection" /><!-- selector: \'input\' as const id: props.id \'aria-required\': props.required || undefined \'aria-invalid\': props.invalid || props.status === \'error\' || undefined \'aria-describedby\': props.describedBy -->',
                 "ScDisclosure": '<TDesignCollapse><ScButton appearance="context-action" data-disclosure-trigger :aria-expanded="String(localOpen)" :aria-controls="contentId" @click.stop="toggle" /></TDesignCollapse>\n<script>import ScButton from \'./ScButton.vue\'</script>',
             }.get(name, "")
             (design / f"{name}.vue").write_text(
@@ -90,14 +96,14 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             '<template><TDesignAutoComplete v-native-control-projection="nativeProjection" /></template>\n'
             "<script>const nativeProjection = { selector: 'input' as const, attributes: { "
             "'aria-required': props.required || undefined, 'aria-invalid': props.invalid || undefined, "
-            "'aria-describedby': props.describedBy } };</script>\n",
+            "'aria-describedby': props.describedBy, id: props.id, 'aria-label': props.ariaLabel } };</script>\n",
             encoding="utf-8",
         )
         (design / "ScDateField.vue").write_text(
             '<template><TDesignDatePicker v-native-control-projection="nativeProjection" /></template>\n'
             "<script>const nativeProjection = { selector: 'input' as const, attributes: { required: props.required, "
             "'aria-required': props.required ? 'true' : undefined, 'aria-invalid': props.invalid ? 'true' : undefined, "
-            "'aria-describedby': props.describedBy } };</script>\n",
+            "'aria-describedby': props.describedBy, id: props.id, 'aria-label': props.ariaLabel } };</script>\n",
             encoding="utf-8",
         )
         return root
@@ -151,6 +157,30 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             encoding="utf-8",
         )
         self.assertTrue(any("ScDateField missing native accessibility projection" in error for error in validate(root)))
+
+    def test_form_field_without_describedby_composition_fails(self) -> None:
+        root = self.make_root()
+        source = root / "frontend/apps/web/src/components/design-system/ScFormField.vue"
+        source.write_text(source.read_text(encoding="utf-8").replace("props.error ? errorId.value", "''"), encoding="utf-8")
+        self.assertTrue(any("help/error control association" in error for error in validate(root)))
+
+    def test_input_without_native_control_identity_fails(self) -> None:
+        root = self.make_root()
+        source = root / "frontend/apps/web/src/components/design-system/ScInput.vue"
+        source.write_text(source.read_text(encoding="utf-8").replace("id: props.id", "id: undefined"), encoding="utf-8")
+        self.assertTrue(any("identity and accessible naming" in error for error in validate(root)))
+
+    def test_native_projection_cannot_emit_empty_boolean_aria_value(self) -> None:
+        root = self.make_root()
+        source = root / "frontend/apps/web/src/components/design-system/nativeControlProjection.ts"
+        source.write_text(source.read_text(encoding="utf-8").replace("name.startsWith('aria-') ? 'true' : ''", "''"), encoding="utf-8")
+        self.assertTrue(any("serialize boolean ARIA" in error for error in validate(root)))
+
+    def test_number_input_without_native_error_association_fails(self) -> None:
+        root = self.make_root()
+        source = root / "frontend/apps/web/src/components/design-system/ScNumberInput.vue"
+        source.write_text(source.read_text(encoding="utf-8").replace("'aria-describedby': props.describedBy", "'aria-describedby': undefined"), encoding="utf-8")
+        self.assertTrue(any("ScNumberInput missing native field association" in error for error in validate(root)))
 
     def test_business_identity_fails(self) -> None:
         root = self.make_root()

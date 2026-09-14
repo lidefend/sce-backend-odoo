@@ -270,6 +270,193 @@
             </field>
         </record>
 
+        <!--
+            The formal payment-application entry owns a payment-specific
+            business sequence while inheriting every header action and
+            modifier from the shared payment/receipt form.  Only the stable
+            data-sc-anchor groups below are first-level business sections;
+            their inner groups remain layout containers.
+        -->
+        <record id="view_payment_request_pay_form" model="ir.ui.view">
+            <field name="name">payment.request.pay.form</field>
+            <field name="model">payment.request</field>
+            <field name="inherit_id" ref="view_payment_request_form"/>
+            <field name="mode">primary</field>
+            <field name="priority">30</field>
+            <field name="arch" type="xml">
+                <xpath expr="/form/sheet/div[hasclass('oe_title')]" position="replace"/>
+                <xpath expr="/form/sheet/group[1]/group[1]/field[@name='name']" position="replace"/>
+                <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payment_flow_label']" position="replace"/>
+                <!-- The page header already carries the workflow state for this
+                     entry.  Retain the technical occurrence used by the native
+                     status contract, but do not repeat it as a body fact. -->
+                <xpath expr="/form/sheet/group[1]/group[1]/field[@name='state']" position="attributes">
+                    <attribute name="invisible">1</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payment_blocking_reason_display']" position="replace"/>
+                <!-- The action bar is the executable authority.  The derived
+                     next-step text does not account for every header modifier,
+                     so it must not be presented as an unconditional task. -->
+                <xpath expr="/form/sheet/group[1]/group[1]/field[@name='legal_next_action_display']" position="replace"/>
+                <!-- Account completeness is already projected as a submit/approve
+                     advisory.  Keep it action-scoped instead of presenting a
+                     later payment-execution condition as a page-load warning. -->
+                <xpath expr="/form/sheet/div[contains(concat(' ', normalize-space(@class), ' '), ' alert ')][@invisible=&quot;type != 'pay' or payee_account_completeness != 'incomplete'&quot;]" position="replace"/>
+                <!-- Keep one account-completeness fact with the account snapshot
+                     instead of repeating it ahead of the payment identity. -->
+                <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payee_account_completeness']" position="replace"/>
+                <xpath expr="/form/sheet/group[3]/group[1]/field[@name='payee_account_completeness']" position="attributes">
+                    <attribute name="widget">badge</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payment_execution_status_display']" position="attributes">
+                    <attribute name="widget">badge</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[1]/group[2]/field[@name='partner_transaction_eligibility']" position="attributes">
+                    <attribute name="widget">badge</attribute>
+                </xpath>
+                <!-- Non-normal eligibility states are already rendered by the
+                     action-scoped alerts above; the normal explanation is not a
+                     separate business fact. -->
+                <xpath expr="/form/sheet/group[1]/group[2]/field[@name='partner_transaction_eligibility_reason']" position="replace"/>
+                <!-- The formal payment entry starts with the party identity.
+                     Inner groups remain layout containers, not section owners. -->
+                <xpath expr="/form/sheet/group[1]/group[2]/field[@name='project_id']" position="after">
+                    <xpath expr="/form/sheet/group[1]/group[2]/field[@name='partner_id']" position="move"/>
+                    <xpath expr="/form/sheet/group[1]/group[1]/field[@name='business_category_id']" position="move"/>
+                    <xpath expr="/form/sheet/group[2]/group[2]/field[@name='date_request']" position="move"/>
+                </xpath>
+                <xpath expr="/form/sheet/group[3]/group[1]/field[@name='payee_account_completeness']" position="after">
+                    <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payee_account_source_display']" position="move"/>
+                </xpath>
+                <xpath expr="/form/sheet/group[3]/group[1]/field[@name='actual_payee_unit']" position="attributes">
+                    <attribute name="help">选择合同、结算单或往来单位时可从往来单位带入；草稿中允许修改，保存后形成本次申请快照。</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[3]/group[1]/field[@name='payment_account_name']" position="attributes">
+                    <attribute name="help">可从往来单位默认结算户名带入；草稿中允许修改，且不会覆盖往来单位主数据。</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[3]/group[1]/field[@name='payment_bank_name']" position="attributes">
+                    <attribute name="help">可从往来单位默认开户行带入；草稿中允许修改，且不会覆盖往来单位主数据。</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[3]/group[1]/field[@name='payment_account_no']" position="attributes">
+                    <attribute name="help">可从往来单位默认账号带入；草稿中允许修改，且不会覆盖往来单位主数据。</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[3]/group[1]/field[@name='payee_account_source_display']" position="attributes">
+                    <attribute name="help">说明当前账户信息取自本次申请快照或往来单位默认结算账户；账户是否完整由左侧状态单独表达。</attribute>
+                    <attribute name="options">{'sc_readonly_empty_text': '尚无账户来源'}</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[3]/group[2]/field[@name='partner_account_name']" position="attributes">
+                    <attribute name="options">{'sc_readonly_empty_text': '往来单位未配置'}</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[3]/group[2]/field[@name='partner_bank_name']" position="attributes">
+                    <attribute name="options">{'sc_readonly_empty_text': '往来单位未配置'}</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[3]/group[2]/field[@name='partner_bank_account']" position="attributes">
+                    <attribute name="options">{'sc_readonly_empty_text': '往来单位未配置'}</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[1]" position="attributes">
+                    <attribute name="name">sc_payment_request_pay_basic</attribute>
+                    <attribute name="string">基本信息</attribute>
+                    <attribute name="data-sc-anchor">payment-request-pay-basic</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[1]/group[1]" position="attributes">
+                    <attribute name="string">申请信息</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[2]" position="attributes">
+                    <attribute name="name">sc_payment_request_pay_basis</attribute>
+                    <attribute name="string">付款依据</attribute>
+                    <attribute name="data-sc-anchor">payment-request-pay-basis</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[2]/group[1]" position="attributes">
+                    <attribute name="string">合同与结算依据</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[2]/group[2]/field[@name='amount']" position="attributes">
+                    <attribute name="readonly">state not in ['draft', 'rejected'] or amount_uses_details</attribute>
+                    <attribute name="help">未使用付款申请明细时可直接填写；存在明细时由有效明细的“本次申请”合计生成。</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[2]/group[2]/field[@name='amount_uppercase']" position="attributes">
+                    <attribute name="string">系统生成金额大写</attribute>
+                    <attribute name="help">系统根据申请金额自动生成，用于金额核对，不需要人工填写。</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[2]/group[2]/field[@name='accepted_amount_uppercase']" position="replace"/>
+                <xpath expr="/form/sheet/group[2]/group[1]/field[@name='cost_category_name']" position="attributes">
+                    <attribute name="string">明细成本分类</attribute>
+                    <attribute name="help">根据付款申请明细中的来源分类自动汇总；无明细或来源未提供分类时尚未生成。</attribute>
+                    <attribute name="options">{'sc_readonly_empty_text': '尚未生成'}</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[2]/group[2]" position="attributes">
+                    <attribute name="name">sc_payment_request_pay_amount_facts</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[2]/group[2]/field[@name='unpaid_amount']" position="after">
+                    <xpath expr="/form/sheet/group[2]/group[2]/field[@name='funding_baseline_id']" position="move"/>
+                </xpath>
+                <xpath expr="/form/sheet/group[2]/group[2]/field[@name='funding_baseline_id']" position="attributes">
+                    <attribute name="options">{'sc_readonly_empty_text': '提交审批时生成'}</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[2]/group[2]/field[@name='currency_id']" position="after">
+                    <field name="amount_uses_details" invisible="1"/>
+                    <div class="alert alert-warning"
+                         role="alert"
+                         invisible="not detail_amount_consistency_message">
+                        <field name="detail_amount_consistency_message"
+                               nolabel="1"
+                               readonly="1"/>
+                    </div>
+                </xpath>
+                <xpath expr="/form/sheet/group[2]" position="after">
+                    <group name="sc_payment_request_pay_amount"
+                           string="申请金额"
+                           col="1"
+                           data-sc-anchor="payment-request-pay-amount"/>
+                </xpath>
+                <xpath expr="//group[@name='sc_payment_request_pay_amount']" position="inside">
+                    <xpath expr="/form/sheet/group[2]/group[2]" position="move"/>
+                </xpath>
+                <!-- Keep the amount facts and their optional breakdown in one
+                     native field sequence.  A mixed field/container parent is
+                     rendered in separate passes, which would otherwise place
+                     the relation field before the amount container. -->
+                <xpath expr="//group[@name='sc_payment_request_pay_amount_facts']" position="inside">
+                    <xpath expr="/form/sheet/notebook/page[3]/field[@name='outflow_line_ids']" position="move"/>
+                    <field name="detail_amount_total"
+                           readonly="1"
+                           invisible="not amount_uses_details"/>
+                </xpath>
+                <xpath expr="/form/sheet/group[4]" position="attributes">
+                    <attribute name="name">sc_payment_request_pay_parties</attribute>
+                    <attribute name="string">收付款信息</attribute>
+                    <attribute name="data-sc-anchor">payment-request-pay-parties</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[5]" position="attributes">
+                    <attribute name="name">sc_payment_request_pay_notes</attribute>
+                    <attribute name="string">说明与附件</attribute>
+                    <attribute name="data-sc-anchor">payment-request-pay-notes</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/notebook/page[3]" position="replace"/>
+                <xpath expr="/form/sheet/notebook" position="before">
+                    <group name="sc_payment_request_pay_trace"
+                           string="履约与追溯"
+                           col="1"
+                           data-sc-anchor="payment-request-pay-trace"
+                           data-sc-navigation-role="subordinate"
+                           data-sc-collapsible="1"
+                           data-sc-collapsed-by-default="1"/>
+                </xpath>
+                <xpath expr="//group[@name='sc_payment_request_pay_trace']" position="inside">
+                    <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payment_execution_status_display']" position="move"/>
+                    <xpath expr="/form/sheet/notebook" position="move"/>
+                </xpath>
+                <xpath expr="//group[@name='sc_payment_request_pay_trace']/notebook" position="inside">
+                    <page name="sc_payment_request_historical_amount" string="历史金额确认">
+                        <field name="accepted_amount_uppercase"
+                               string="历史确认金额大写"
+                               readonly="1"
+                               help="历史验收数据延续，仅供追溯；不参与当前申请金额计算或付款明细合计校验。"
+                               options="{'sc_readonly_empty_text': '无历史确认记录'}"/>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+
         <record id="view_payment_request_search" model="ir.ui.view">
             <field name="name">payment.request.search</field>
             <field name="model">payment.request</field>

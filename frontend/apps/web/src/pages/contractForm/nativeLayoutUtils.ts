@@ -1026,14 +1026,26 @@ export function nativeNodeWidget(node?: NativeLayoutLikeNode | null) {
   return String(componentConfig.nativeWidget || attributes.widget || node?.widget || fieldInfo.widget || '').trim().toLowerCase();
 }
 
-export function nativeNodeWidgetSemantics(node?: NativeLayoutLikeNode | null) {
+export function nativeNodeWidgetSemantics(
+  node?: NativeLayoutLikeNode | null,
+  fallbackComponentConfig?: unknown,
+) {
   const fieldInfo = nativeNodeFieldInfo(node);
   const componentConfig = node?.componentConfig
     && typeof node.componentConfig === 'object'
     && !Array.isArray(node.componentConfig)
     ? node.componentConfig as Record<string, unknown>
     : {};
-  const rawSemantics = componentConfig.widgetSemantics || componentConfig.widget_semantics || fieldInfo.widget_semantics;
+  const fallbackConfig = fallbackComponentConfig
+    && typeof fallbackComponentConfig === 'object'
+    && !Array.isArray(fallbackComponentConfig)
+    ? fallbackComponentConfig as Record<string, unknown>
+    : {};
+  const rawSemantics = componentConfig.widgetSemantics
+    || componentConfig.widget_semantics
+    || fieldInfo.widget_semantics
+    || fallbackConfig.widgetSemantics
+    || fallbackConfig.widget_semantics;
   const semantics = rawSemantics && typeof rawSemantics === 'object' && !Array.isArray(rawSemantics)
     ? rawSemantics as Record<string, unknown>
     : {};

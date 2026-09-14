@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {
   detailCollectionAuthority,
   isProfessionalDetailCollectionField,
+  optionalDetailCollectionPresentation,
 } from '../src/components/professional-fields/professionalDetailCollectionModel';
 import {
   createOne2manyRelationPopupAuthority,
@@ -16,6 +17,11 @@ import {
   analyzeDynamicRelationDomain,
   dynamicRelationDomainFromDescriptor,
 } from '../src/pages/contractForm/relationDescriptor';
+import {
+  ratioSettlementApplyAmounts,
+  ratioSettlementApplyTotal,
+  roundSettlementCurrencyAmount,
+} from '../src/components/professional-fields/paymentSettlementIntroduceModel';
 
 const modes = ['task', 'workspace'] as const;
 const profiles = ['create', 'edit', 'readonly'] as const;
@@ -48,6 +54,27 @@ for (const presentationMode of modes) {
 assert.equal(matrix, 6);
 assert.equal(isProfessionalDetailCollectionField({ componentKey: 'sc.relation.table', type: 'many2many' } as never), false);
 assert.throws(() => detailCollectionAuthority({ componentKey: 'sc.table.data', type: 'one2many' } as never, {} as never), /PROFESSIONAL_DETAIL_COLLECTION_UNSUPPORTED/);
+assert.equal(optionalDetailCollectionPresentation({ componentKey: 'sc.table.data', type: 'one2many' } as never, 0), null);
+
+assert.equal(roundSettlementCurrencyAmount(1.234, 0.01), 1.23);
+assert.equal(roundSettlementCurrencyAmount(1.005, 0.01), 1.01);
+assert.equal(roundSettlementCurrencyAmount(2.675, 0.01), 2.68);
+assert.equal(roundSettlementCurrencyAmount(-1.005, 0.01), -1.01);
+assert.equal(ratioSettlementApplyTotal([
+  { remaining: 0.01 },
+  { remaining: 0.01 },
+  { remaining: 0.01 },
+], 50, 0.01), 0.03);
+assert.equal(ratioSettlementApplyTotal([{ remaining: 12.34 }], 0, 0.01), 0);
+assert.equal(ratioSettlementApplyTotal([{ remaining: 12.34 }], 120, 0.01), 12.34);
+assert.deepEqual(
+  ratioSettlementApplyAmounts([{ remaining: 0.004 }, { remaining: 1 }], 50, 0.01),
+  [0, 0.5],
+);
+assert.deepEqual(
+  ratioSettlementApplyAmounts([{ remaining: 0.04 }, { remaining: 0.04 }], 50, 0.05),
+  [0, 0],
+);
 
 const requestAuthority = createOne2manyRelationRequestAuthority();
 const firstRequest = requestAuthority.begin('line:1:partner_id');

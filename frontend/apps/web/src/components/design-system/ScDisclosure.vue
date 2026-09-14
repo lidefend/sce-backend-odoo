@@ -1,6 +1,10 @@
 <template>
   <TDesignCollapse v-bind="semanticPrimitiveIdentity('ScDisclosure')" :value="expanded" :borderless="borderless" @change="onChange">
-    <TDesignCollapsePanel value="content" :disabled="disabled">
+    <TDesignCollapsePanel
+      value="content"
+      :disabled="disabled"
+      :destroy-on-collapse="destroyOnCollapse"
+    >
       <template #header>
         <ScButton
           type="button"
@@ -24,7 +28,18 @@ import { computed, ref, useId, watch } from 'vue';
 import { TDesignCollapse, TDesignCollapsePanel } from './tdesignPrimitiveBridge';
 import { semanticPrimitiveIdentity } from './primitiveAdapter';
 import ScButton from './ScButton.vue';
-const props=withDefaults(defineProps<{title:string;open?:boolean;disabled?:boolean;borderless?:boolean}>(),{open:false,disabled:false,borderless:true});
+const props=withDefaults(defineProps<{
+  title:string;
+  open?:boolean;
+  disabled?:boolean;
+  borderless?:boolean;
+  destroyOnCollapse?:boolean;
+}>(),{
+  open:false,
+  disabled:false,
+  borderless:true,
+  destroyOnCollapse:false,
+});
 const emit=defineEmits<{ 'update:open':[value:boolean] }>();
 const contentId=`sc-disclosure-${useId()}`;
 const localOpen=ref(props.open); watch(()=>props.open,(value)=>{localOpen.value=value;});

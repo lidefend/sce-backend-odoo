@@ -133,6 +133,27 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection relation domain is not bound to the current row and parent form")
     if "one2manyCellError" not in relation_types or 'role="alert"' not in cell_editor:
         failures.append("detail collection cell validation is not associated with its control")
+    for marker in (
+        ':id="controlId"',
+        ':aria-label="column.label"',
+        ':described-by="describedBy"',
+        ':invalid="invalid"',
+        "errorText.value ? props.errorId",
+        "props.relationError ? relationErrorId.value",
+        ':id="relationErrorId"',
+    ):
+        if marker not in cell_editor:
+            failures.append(f"detail collection cell feedback association missing {marker}")
+    if cell_editor.count(':id="controlId"') != 4 or cell_editor.count(':described-by="describedBy"') != 4:
+        failures.append("detail collection controls do not consistently receive unique identity and active feedback references")
+    if (renderer.count(':control-id="one2manyCellControlId(') != 2
+            or ':control-id="one2manyCellControlId(field.name, row._key, column.name)"' not in renderer
+            or ':control-id="one2manyCellControlId(field.name, row.key, column.name, \'mobile\')"' not in renderer):
+        failures.append("desktop and mobile detail controls do not receive layout-scoped identities")
+    if ':for="one2manyCellControlId(field.name, row.key, column.name, \'mobile\')"' not in renderer:
+        failures.append("mobile detail labels are not associated with their visible controls")
+    if "function one2manyCellControlId" not in renderer or "suffix = 'desktop'" not in renderer:
+        failures.append("detail collection control identities are not stable and responsive-layout scoped")
     if renderer.count("<One2ManyCellEditor") != 2:
         failures.append("desktop and mobile detail layouts do not share the same cell editor")
     if renderer.count("adapter.one2manyEffectiveColumn(field.name,") != 2:

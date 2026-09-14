@@ -105,6 +105,29 @@ class FrontendNavigationShellGuardTest(unittest.TestCase):
         path.write_text(source, encoding="utf-8")
         self.assertTrue(any("single-column" in error for error in validate(root)))
 
+    def test_desktop_sidebar_must_not_shrink_below_its_public_width(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        path = root / "frontend/apps/web/src/layouts/AppShell.css"
+        path.write_text(
+            path.read_text().replace(
+                "    flex: 0 0 var(--sc-shell-sidebar-width);\n",
+                "",
+            ),
+            encoding="utf-8",
+        )
+        self.assertTrue(any("public width contract" in error for error in validate(root)))
+
+    def test_navigation_labels_must_remain_single_line(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        path = root / "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue"
+        path.write_text(
+            path.read_text().replace("  white-space: nowrap;\n", "  white-space: normal;\n"),
+            encoding="utf-8",
+        )
+        self.assertTrue(any("readable deep-label projection" in error for error in validate(root)))
+
     def test_company_context_must_remain_visible_after_activity_rail_retirement(self):
         temporary, root = self.fixture()
         self.addCleanup(temporary.cleanup)

@@ -14,40 +14,61 @@ payment_env = env["payment.request"].with_user(user).with_company(user.company_i
     allowed_company_ids=user.company_ids.ids,
     active_test=False,
 )
-request = payment_env.search([("name", "=", "DEMO-PR-FLOORPLAN-001")], limit=1)
-if not request or request.state != "draft":
+request = env.ref(
+    "smart_construction_demo.payment_request_floorplan_demo_record",
+    raise_if_not_found=False,
+)
+if request:
+    request = payment_env.browse(request.id).exists()
+if not request or not str(request.name or "").startswith("DEMO-PR-FLOORPLAN-") or request.state != "draft":
     raise RuntimeError("governed settlement-introduction payment fixture is missing or not draft")
 request.check_access_rights("read")
 request.check_access_rule("read")
 
-settlement_env = env["sc.settlement.order"].with_company(user.company_id).with_context(
+settlement_env = env["sc.settlement.order"].with_user(user).with_company(user.company_id).with_context(
     allowed_company_ids=user.company_ids.ids,
     active_test=False,
 )
-domain = [("active", "=", True)]
-if request.project_id:
-    domain += ["|", ("project_id", "=", request.project_id.id), ("project_id", "=", False)]
-if request.contract_id:
-    domain += ["|", ("contract_id", "=", request.contract_id.id), ("contract_id", "=", False)]
+selected_settlement = env.ref(
+    "smart_construction_demo.sc_demo_settlement_069_payment",
+    raise_if_not_found=False,
+)
+selected_line = env.ref(
+    "smart_construction_demo.sc_demo_settlement_line_069_payment",
+    raise_if_not_found=False,
+)
+selected_settlement = settlement_env.browse(selected_settlement.id).exists() if selected_settlement else settlement_env.browse()
+settlement_line_env = env["sc.settlement.order.line"].with_user(user).with_company(user.company_id).with_context(
+    allowed_company_ids=user.company_ids.ids,
+    active_test=False,
+)
+selected_line = settlement_line_env.browse(selected_line.id).exists() if selected_line else settlement_line_env.browse()
+if not selected_settlement or not selected_line or selected_line.settlement_id != selected_settlement:
+    raise RuntimeError("governed settlement-introduction source fixture is missing or inconsistent")
+selected_settlement.check_access_rights("read")
+selected_settlement.check_access_rule("read")
+selected_line.check_access_rights("read")
+selected_line.check_access_rule("read")
+if not selected_settlement.active or selected_settlement.currency_id != request.currency_id:
+    raise RuntimeError("governed settlement source is inactive or uses a different currency")
+if selected_settlement.project_id and selected_settlement.project_id != request.project_id:
+    raise RuntimeError("governed settlement source belongs to a different project")
+if selected_settlement.contract_id and selected_settlement.contract_id != request.contract_id:
+    raise RuntimeError("governed settlement source belongs to a different contract")
 
-selected_settlement = settlement_env.browse()
-selected_line = env["sc.settlement.order.line"].browse()
-for settlement in settlement_env.search(domain, order="id desc"):
-    for line in settlement.line_ids.sorted(key=lambda row: row.id):
-        applied = sum(
-            env["payment.request.line"].search([
-                ("settlement_line_id", "=", line.id),
-                ("active", "=", True),
-            ]).mapped("current_pay_amount")
-        )
-        if float(line.amount or 0.0) - float(applied or 0.0) > 0.01:
-            selected_settlement = settlement
-            selected_line = line
-            break
-    if selected_line:
-        break
-if not selected_settlement or not selected_line:
-    raise RuntimeError("no compatible settlement line with remaining amount is available")
+payment_line_env = env["payment.request.line"].with_user(user).with_company(user.company_id).with_context(
+    allowed_company_ids=user.company_ids.ids,
+    active_test=False,
+)
+applied = sum(
+    payment_line_env.search([
+        ("settlement_line_id", "=", selected_line.id),
+        ("active", "=", True),
+    ]).mapped("current_pay_amount")
+)
+remaining = float(selected_line.amount or 0.0) - float(applied or 0.0)
+if selected_settlement.currency_id.compare_amounts(remaining, 0.0) <= 0:
+    raise RuntimeError("governed settlement source line has no remaining amount")
 
 introduced_lines = request.outflow_line_ids.filtered(
     lambda row: row.settlement_id == selected_settlement
@@ -61,8 +82,12 @@ payload = {
         "id": int(request.id),
         "name": str(request.name or ""),
         "state": str(request.state or ""),
+        "amount": float(request.amount or 0.0),
+        "detail_amount_total": float(request.detail_amount_total or 0.0),
+        "amount_uses_details": bool(request.amount_uses_details),
         "line_count": len(request.outflow_line_ids),
         "settlement_line_count": len(introduced_lines),
+        "active_line_ids": [int(line.id) for line in request.outflow_line_ids.filtered("active")],
     },
     "settlement": {
         "id": int(selected_settlement.id),

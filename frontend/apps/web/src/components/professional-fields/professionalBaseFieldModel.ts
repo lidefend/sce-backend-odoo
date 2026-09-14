@@ -1,4 +1,5 @@
 import type { CanonicalFormPresentationMode, CanonicalFormRenderMode } from '../../app/presentation/canonicalFormRenderModel';
+import type { FormSectionFieldSchema } from '../template/formSection.types';
 
 export const PROFESSIONAL_BASE_FIELD_TYPES = Object.freeze([
   'char', 'text', 'html', 'integer', 'float', 'date', 'datetime', 'boolean', 'selection',
@@ -10,6 +11,13 @@ export type ProfessionalFieldPresentationContext = CanonicalFormPresentationMode
 export type ProfessionalFieldRenderContext = CanonicalFormRenderMode | 'unscoped';
 
 const SPECIAL_WIDGETS = new Set(['radio', 'daterange']);
+
+export function resolveReadonlyEmptyText(
+  field: Pick<FormSectionFieldSchema, 'readonlyEmptyText'>,
+  fallback = '—',
+): string {
+  return String(field.readonlyEmptyText || '').trim() || fallback;
+}
 
 export function isProfessionalBaseFieldCandidate(fieldType: string, widget = ''): boolean {
   return PROFESSIONAL_BASE_FIELD_TYPES.includes(fieldType.trim().toLowerCase() as ProfessionalBaseFieldType)

@@ -6,6 +6,13 @@ import {
   resolveProfessionalComponentRegistration,
   type ProfessionalComponentRegistration,
 } from '../src/app/presentation/professionalComponentRegistry';
+import {
+  detailAmountBindingConfig,
+  optionalDetailCollectionConfig,
+  optionalDetailCollectionPresentation,
+  optionalDetailCollectionRemovalConfirmation,
+  optionalDetailCollectionSpanClass,
+} from '../src/components/professional-fields/professionalDetailCollectionModel';
 
 const ready = resolveProfessionalComponent({
   componentKey: 'sc.input.text', fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
@@ -39,6 +46,89 @@ assert.equal(resolveProfessionalComponent({
 assert.equal(resolveProfessionalComponent({
   componentKey: 'sc.payment.settlement_detail_collection', fieldType: 'one2many', presentationMode: 'task', renderProfile: 'edit',
 }).renderer, 'PaymentSettlementDetailCollectionControl');
+const optionalDetails = optionalDetailCollectionConfig({
+  key: 'line_ids', name: 'line_ids', label: 'Lines', type: 'one2many', required: false, readonly: false,
+  componentConfig: {
+    optionalDetails: {
+      entryLabel: 'Use details',
+      populatedLabel: 'Details',
+      directAmountMessage: 'The amount can be entered directly.',
+      linkedAmountMessage: 'The total is authoritative.',
+      lastRowRemovalActionLabel: 'Stop using details',
+      lastRowRemovalMessage: 'The last total is preserved.',
+    },
+  },
+});
+assert.equal(optionalDetails?.entryLabel, 'Use details');
+assert.equal(optionalDetails?.populatedLabel, 'Details');
+assert.equal(optionalDetails?.lastRowRemovalMessage, 'The last total is preserved.');
+const amountBinding = detailAmountBindingConfig({
+  key: 'line_ids', name: 'line_ids', label: 'Lines', type: 'one2many', required: false, readonly: false,
+  componentConfig: {
+    amountBinding: {
+      mode: 'sum_when_nonempty', sourceField: 'line_amount', targetField: 'amount',
+      activeField: 'active', stateField: 'amount_uses_details',
+      rounding: 'currency', emptyBehavior: 'preserve_last_total',
+    },
+  },
+});
+assert.deepEqual(amountBinding, {
+  mode: 'sum_when_nonempty', sourceField: 'line_amount', targetField: 'amount',
+  activeField: 'active', stateField: 'amount_uses_details',
+  rounding: 'currency', emptyBehavior: 'preserve_last_total',
+});
+assert.equal(detailAmountBindingConfig({
+  key: 'line_ids', name: 'line_ids', label: 'Lines', type: 'one2many', required: false, readonly: false,
+  componentConfig: {
+    amountBinding: {
+      mode: 'sum_when_nonempty', sourceField: 'amount', targetField: 'amount',
+      activeField: 'active', stateField: 'amount_uses_details',
+      rounding: 'currency', emptyBehavior: 'preserve_last_total',
+    },
+  },
+}), null);
+assert.equal(detailAmountBindingConfig({
+  key: 'line_ids', name: 'line_ids', label: 'Lines', type: 'one2many', required: false, readonly: false,
+  componentConfig: {
+    amountBinding: {
+      mode: 'sum_always', sourceField: 'line_amount', targetField: 'amount',
+      activeField: 'active', stateField: 'amount_uses_details',
+      rounding: 'currency', emptyBehavior: 'zero',
+    },
+  },
+}), null);
+assert.equal(optionalDetailCollectionConfig({
+  key: 'line_ids', name: 'line_ids', label: 'Lines', type: 'one2many', required: false, readonly: false,
+  componentConfig: { optionalDetails: { entryLabel: '', populatedLabel: 'Details' } },
+}), null);
+const optionalField = {
+  key: 'line_ids', name: 'line_ids', label: 'Lines', type: 'one2many', required: false, readonly: false,
+  componentKey: 'sc.example.optional_collection',
+  componentConfig: {
+    optionalDetails: {
+      entryLabel: 'Use details', populatedLabel: 'Details',
+      directAmountMessage: 'Direct amount', linkedAmountMessage: 'Linked total',
+      lastRowRemovalActionLabel: 'Stop using details', lastRowRemovalMessage: 'Last total is preserved',
+    },
+  },
+} as never;
+assert.deepEqual(optionalDetailCollectionPresentation(optionalField, 0), {
+  render: true, open: false, title: 'Use details', linkedAmountMessage: 'Direct amount',
+});
+assert.deepEqual(optionalDetailCollectionPresentation(optionalField, 2, true), {
+  render: true, open: true, title: 'Details（2 条）', linkedAmountMessage: 'Linked total',
+});
+assert.equal(optionalDetailCollectionPresentation(optionalField, 2, false)?.linkedAmountMessage, 'Direct amount');
+assert.equal(optionalDetailCollectionPresentation({ ...optionalField, readonly: true } as never, 0)?.render, false);
+assert.equal(optionalDetailCollectionRemovalConfirmation(optionalField, 2), null);
+assert.deepEqual(optionalDetailCollectionRemovalConfirmation(optionalField, 1), {
+  actionLabel: 'Stop using details', message: 'Last total is preserved',
+});
+assert.equal(optionalDetailCollectionSpanClass(optionalField, 'field--normal'), 'field--full');
+assert.equal(optionalDetailCollectionSpanClass({
+  ...optionalField,
+  componentConfig: {},
+} as never, 'field--normal'), 'field--normal');
 for (const [componentKey, fieldType] of [
   ['sc.value.money', 'monetary'], ['sc.value.percentage', 'float'],
   ['sc.display.status', 'selection'], ['sc.value.duration', 'float'],
@@ -107,4 +197,4 @@ for (const componentKey of [
 }
 
 assert.equal(professionalComponentRegistrations.length, 26);
-console.log('[professional_component_registry_test] PASS cases=31');
+console.log('[professional_component_registry_test] PASS cases=43');

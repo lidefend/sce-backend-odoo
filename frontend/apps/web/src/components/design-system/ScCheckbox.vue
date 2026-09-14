@@ -27,6 +27,7 @@ import { nativeControlProjection } from './nativeControlProjection';
 import type { ScPrimitiveSize } from './primitiveAdapter';
 
 const props = withDefaults(defineProps<{
+  id?: string;
   checked?: boolean;
   indeterminate?: boolean;
   disabled?: boolean;
@@ -34,9 +35,11 @@ const props = withDefaults(defineProps<{
   label?: string;
   hideLabel?: boolean;
   describedBy?: string;
+  invalid?: boolean;
   size?: ScPrimitiveSize;
   appearance?: 'default' | 'menu-choice';
 }>(), {
+  id: undefined,
   checked: false,
   indeterminate: false,
   disabled: false,
@@ -44,6 +47,7 @@ const props = withDefaults(defineProps<{
   label: '',
   hideLabel: false,
   describedBy: undefined,
+  invalid: false,
   size: 'medium',
   appearance: 'default',
 });
@@ -57,10 +61,12 @@ const vNativeControlProjection = nativeControlProjection;
 const nativeProjection = computed(() => ({
   selector: 'input' as const,
   attributes: {
+    id: props.id,
     required: props.required,
     'aria-checked': props.indeterminate ? 'mixed' : String(props.checked),
     'aria-label': props.label,
     'aria-describedby': props.describedBy,
+    'aria-invalid': props.invalid || undefined,
   },
 }));
 

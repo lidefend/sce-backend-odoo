@@ -36,15 +36,20 @@ def validate() -> list[str]:
             failures.append(f"form driver bypasses formal pattern: {marker}")
     task_page = source("frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue")
     for marker in (
-        "<ScDisclosure",
         'data-floorplan-region="supplementary-input"',
         'data-supplementary-presentation="direct"',
         'data-floorplan-region="overflow-context"',
         'role="region"',
-        '\n      title="更多业务信息"',
+        'data-contract-classification-gap="unclassified-readonly-fields"',
+        'data-form-feedback-scope="page"',
+        'governedFormStructureSectionNavigationItems',
     ):
         if marker not in task_page:
-            failures.append(f"task floorplan bypasses professional disclosure: {marker}")
+            failures.append(f"task floorplan bypasses governed information organization: {marker}")
+    if 'data-form-section-target="floorplan:current-task"' in task_page:
+        failures.append("task floorplan exposes page feedback as a business section target")
+    if "floorplanSection('current-task'" in task_page:
+        failures.append("task floorplan exposes page feedback in section navigation")
     supplementary_block = task_page.split('data-floorplan-region="supplementary-input"', 1)[0].rsplit("<", 1)[-1]
     if supplementary_block.startswith("ScDisclosure"):
         failures.append("task floorplan hides editable supplementary inputs in a disclosure")

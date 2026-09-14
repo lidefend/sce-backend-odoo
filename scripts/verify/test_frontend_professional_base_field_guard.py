@@ -74,6 +74,36 @@ class ProfessionalBaseFieldGuardTest(unittest.TestCase):
 
         self.assertTrue(any("professional html field does not pass through" in failure for failure in validate(source)))
 
+    def test_text_field_branch_must_pass_control_identity(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalBaseFieldControl.vue"):
+                prefix, branch = value.split("<ScTextarea", 1)
+                return prefix + "<ScTextarea" + branch.replace(':id="controlId"', ':data-missing-id="controlId"', 1)
+            return value
+
+        self.assertTrue(any("professional text field does not pass through" in failure for failure in validate(source)))
+
+    def test_number_field_branch_must_pass_error_association(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalBaseFieldControl.vue"):
+                prefix, branch = value.split("<ScNumberInput", 1)
+                return prefix + "<ScNumberInput" + branch.replace(':described-by="describedBy"', '', 1)
+            return value
+
+        self.assertTrue(any("professional number field does not pass through" in failure for failure in validate(source)))
+
+    def test_boolean_field_branch_must_pass_invalid_state(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalBaseFieldControl.vue"):
+                prefix, branch = value.split("<ScCheckbox", 1)
+                return prefix + "<ScCheckbox" + branch.replace(':invalid="field.invalid"', '', 1)
+            return value
+
+        self.assertTrue(any("professional boolean field does not pass through" in failure for failure in validate(source)))
+
     def test_filename_companion_using_public_text_handler_fails(self):
         def source(path):
             value = (ROOT / path).read_text(encoding="utf-8")

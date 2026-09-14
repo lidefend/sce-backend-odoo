@@ -47,7 +47,8 @@ export function useRecordFormFieldSchemas(context: {
   const nativeLayoutNodeToFieldNode=(node:NativeFormLayoutNode,index:number):LayoutNode|null=>{
     const name=String(node?.name||'').trim(); if(!name||!context.isNativeFieldVisible(name,node))return null;
     const source=node as Record<string,unknown>; const widgetId=String(source.widgetId||'').trim();
-    const strictDescriptor=context.v2ContractStore.value?.widgetsById.get(widgetId)?.fieldDescriptor as FieldDescriptor|undefined;
+    const strictWidget=context.v2ContractStore.value?.widgetsById.get(widgetId);
+    const strictDescriptor=strictWidget?.fieldDescriptor as FieldDescriptor|undefined;
     const nativeLocator=String(source.nativeLocator||'').trim();
     const occurrenceIndex=Number(source.occurrenceIndex||0);
     const isOccurrence=Boolean(nativeLocator&&Number.isInteger(occurrenceIndex)&&occurrenceIndex>0);
@@ -65,7 +66,7 @@ export function useRecordFormFieldSchemas(context: {
     return {key:widgetId||`native_field_${name}_${index}`,kind:'field',name,label:presentation.label,
       readonly:Boolean(nativeReadonly||descriptor.readonly||state.readonly||(context.recordId.value?!context.rights.value.write:!context.rights.value.create)),
       required:Boolean(nativeRequired||state.required||descriptor.required),widget:nativeNodeWidget(source),
-      widgetSemantics:nativeNodeWidgetSemantics(source),spanClass:presentation.spanClass,descriptor};
+      widgetSemantics:nativeNodeWidgetSemantics(source,strictWidget?.componentConfig),spanClass:presentation.spanClass,descriptor};
   };
   const v2FieldValue=(name:string)=>{const key=String(name||'').trim();if(!key||!context.v2ContractStore.value?.widgetsByFieldCode.has(key))return{found:false,value:undefined};
     const source=resolveContractV2ValueSource(context.v2ContractStore.value).values;if(!Object.prototype.hasOwnProperty.call(source,key))return{found:false,value:undefined};return{found:true,value:source[key]};};

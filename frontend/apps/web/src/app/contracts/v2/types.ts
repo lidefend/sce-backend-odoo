@@ -76,6 +76,7 @@ export interface ContractV2FormStructureGovernanceSource {
   legacyFieldPolicyOverlay?: boolean;
   formLayoutOverlay?: boolean;
   formStructureAuthority?: string;
+  formPresentationMode?: ContractV2FormPresentationMode;
   fieldNames?: string[];
   fieldLabels?: Record<string, string>;
   fieldSemanticRoles?: Record<string, ContractV2CanonicalFormSemanticRole>;

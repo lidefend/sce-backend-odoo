@@ -149,6 +149,7 @@ export function canonicalFieldToFormSection(
     : '';
   const widget = text(config.nativeWidget || config.widget || field.widgetType).toLowerCase();
   const widgetSemantics = asRecord(config.widgetSemantics || config.widget_semantics);
+  const readonlyEmptyText = text(widgetSemantics.readonly_empty_text);
   const dateRangeEndField = widget === 'daterange' && text(widgetSemantics.kind) === 'date_range'
     ? text(widgetSemantics.end_field)
     : '';
@@ -164,6 +165,7 @@ export function canonicalFieldToFormSection(
     occurrenceIndex: field.occurrenceIndex || undefined,
     sourcePosition: field.sourcePosition ?? undefined,
     widgetSemantics,
+    readonlyEmptyText: readonlyEmptyText || undefined,
     componentConfig: config,
     componentKey: field.componentResolution.componentKey,
     componentReadiness: field.componentResolution.readiness,

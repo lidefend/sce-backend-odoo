@@ -27,13 +27,20 @@
           @click="taskActionRun(props.field)"
           @keydown.enter.prevent="taskActionRun(props.field)"
         >{{ taskActionLabel(props.field) }}</div>
+        <time
+          v-else-if="normalizedType === 'date' || normalizedType === 'datetime'"
+          class="professional-base-field-control__readonly"
+          :datetime="readonlyDateTimeValue"
+        >{{ readonlyText }}</time>
         <span v-else class="professional-base-field-control__readonly">{{ readonlyText }}</span>
       </template>
     </template>
     <ScCheckbox
       v-else-if="field.type === 'boolean'"
+      :id="controlId"
       :checked="Boolean(field.value)"
       :required="field.required"
+      :invalid="field.invalid"
       :described-by="describedBy"
       :label="field.label || field.name"
       @change="emitValue($event)"
@@ -72,6 +79,7 @@
     />
     <ScTextarea
       v-else-if="field.type === 'text'"
+      :id="controlId"
       :model-value="String(field.inputValue ?? '')"
       :required="field.required"
       :status="field.invalid ? 'error' : 'default'"
@@ -82,9 +90,13 @@
     />
     <ScNumberInput
       v-else-if="field.type === 'integer' || field.type === 'float'"
+      :id="controlId"
       :model-value="numericValue"
       :decimal-places="field.type === 'integer' ? 0 : undefined"
       :status="field.invalid ? 'error' : 'default'"
+      :required="field.required"
+      :invalid="field.invalid"
+      :described-by="describedBy"
       :placeholder="placeholder"
       @update:model-value="emitValue($event ?? null)"
     />
@@ -118,7 +130,7 @@ import {
   ScTaskActionResolverKey,
   type ScTaskActionDescriptor,
 } from '../template/taskActionResolver';
-import { resolveProfessionalBaseFieldModel } from './professionalBaseFieldModel';
+import { resolveProfessionalBaseFieldModel, resolveReadonlyEmptyText } from './professionalBaseFieldModel';
 
 const props = defineProps<{
   field: FormSectionFieldSchema;
@@ -164,9 +176,13 @@ const normalizedReadonlyValue = computed(() => (
 const readonlyText = computed(() => formatDisplayValue(
   normalizedReadonlyValue.value,
   { ...(props.field.descriptor || {}), type: normalizedType.value || props.field.descriptor?.type },
-  { emptyText: '-' },
+  { emptyText: resolveReadonlyEmptyText(props.field, '-') },
 ));
 const readonlyHtml = computed(() => sanitizeReadonlyHtml(props.field.value));
+const readonlyDateTimeValue = computed(() => {
+  const value = normalizedReadonlyValue.value;
+  return value === null || typeof value === 'undefined' ? '' : String(value);
+});
 const numericValue = computed(() => {
   if (props.field.inputValue === '' || props.field.inputValue === null || typeof props.field.inputValue === 'undefined') return undefined;
   const value = Number(props.field.inputValue);

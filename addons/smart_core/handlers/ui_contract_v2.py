@@ -78,11 +78,6 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-governance-2026-09-02-user-search"
 
 
-def form_structure_presentation_mode(authority: Any) -> str:
-    """Return the formal form-shape authority without exposing renderer details."""
-    return "task" if str(authority or "").strip() == "entry_semantic_surface" else "workspace"
-
-
 def authoritative_form_role_key(env: Any) -> str:
     """Resolve the current server session's formal role surface for form selection.
 
@@ -1555,7 +1550,10 @@ class UiContractV2Handler(BaseIntentHandler):
                         normalized_groups.append(copied)
                     business_policy_groups = normalized_groups
                 source_contract["field_groups"] = business_policy_groups
-                self._ensure_business_policy_layout_fields_visible(source_contract, business_policy_groups)
+                _projection.ensure_business_policy_layout_fields_visible(
+                    source_contract,
+                    business_policy_groups,
+                )
             aliases_projected_at = time.monotonic()
             self._inject_relation_entry_policies(source_contract, model=model)
             relation_policies_at = time.monotonic()
@@ -1664,45 +1662,18 @@ class UiContractV2Handler(BaseIntentHandler):
 
         walk(roots)
 
-    def _ensure_business_policy_layout_fields_visible(
-        self,
-        source_contract: dict[str, Any],
-        business_policy_groups: list[dict[str, Any]],
-    ) -> None:
-        business_policy = source_contract.get("business_form_policy") if isinstance(source_contract.get("business_form_policy"), dict) else {}
-        explicit_visibility_fields = set()
-        field_policies = source_contract.get("field_policies") if isinstance(source_contract.get("field_policies"), dict) else {}
-        for row in business_policy.get("fields") if isinstance(business_policy.get("fields"), list) else []:
-            if not isinstance(row, dict):
-                continue
-            name = str(row.get("name") or row.get("field") or "").strip()
-            if not name:
-                continue
-            policy = field_policies.get(name) if isinstance(field_policies.get(name), dict) else {}
-            for key in ("visible_profiles", "readonly_profiles", "required_profiles"):
-                if isinstance(row.get(key), list):
-                    policy[key] = list(row.get(key) or [])
-            if policy:
-                field_policies[name] = policy
-            if isinstance(row.get("visible_profiles"), list):
-                explicit_visibility_fields.add(name)
-        for group in business_policy_groups:
-            if not isinstance(group, dict):
-                continue
-            for raw_name in group.get("fields") if isinstance(group.get("fields"), list) else []:
-                name = str(raw_name or "").strip()
-                if not name or name in explicit_visibility_fields:
-                    continue
-                policy = field_policies.get(name) if isinstance(field_policies.get(name), dict) else {}
-                policy["visible_profiles"] = ["create", "edit", "readonly"]
-                field_policies[name] = policy
-        source_contract["field_policies"] = field_policies
-
     def _inject_business_category_form_structure(self, source_contract: dict[str, Any], *, model: str) -> None:
         policy = source_contract.get("business_form_policy") if isinstance(source_contract.get("business_form_policy"), dict) else {}
         groups = source_contract.get("field_groups") if isinstance(source_contract.get("field_groups"), list) else []
         field_map = source_contract.get("fields") if isinstance(source_contract.get("fields"), dict) else {}
         if not policy or not groups or not field_map:
+            return
+        structure_governance = self._form_structure_governance(
+            source_contract,
+            model=model,
+            view_type="form",
+        )
+        if _projection.has_selected_form_structure_authority(structure_governance):
             return
         field_aliases = self._form_field_aliases(model, source_contract)
         if field_aliases:
@@ -1846,7 +1817,16 @@ class UiContractV2Handler(BaseIntentHandler):
         }
 
     def _inject_business_operation_contract(self, source_contract: dict[str, Any], *, model: str, view_type: str) -> None:
-        if view_type == "form" and isinstance(source_contract.get("business_form_policy"), dict):
+        if (
+            view_type == "form"
+            and isinstance(source_contract.get("business_form_policy"), dict)
+            and isinstance(source_contract.get("form_structure_contract"), dict)
+        ):
+            # A legacy category-only page may still publish the fallback
+            # structure above.  When a selected native/semantic authority
+            # prevented that fallback, continue through the ordinary form
+            # structure builder so the authoritative source is not left with
+            # no normalized structure at all.
             return
         try:
             has_model = bool(model and model in self.env)
@@ -2363,6 +2343,11 @@ class UiContractV2Handler(BaseIntentHandler):
             or view_governance.get("form_structure_authority")
             or ""
         ).strip()
+        form_presentation_mode = str(
+            view_trace.get("form_presentation_mode")
+            or view_governance.get("form_presentation_mode")
+            or ""
+        ).strip()
         field_names: list[str] = []
         field_labels: dict[str, str] = {}
         field_semantic_roles: dict[str, str] = {}
@@ -2439,6 +2424,9 @@ class UiContractV2Handler(BaseIntentHandler):
                 or form_spec.get("compositionMode")
                 or ""
             ).strip()
+            if composition_mode in {"native_semantic_surface", "semantic_native_surface"}:
+                form_structure_authority = "native_authority"
+                form_presentation_mode = "task"
             if (
                 composition_mode in {"entry_semantic_surface", "semantic_entry_surface"}
                 and isinstance(form_spec.get("sections"), list)
@@ -2537,7 +2525,14 @@ class UiContractV2Handler(BaseIntentHandler):
                         for name in fields:
                             if name not in existing_section["fields"]:
                                 existing_section["fields"].append(name)
-        applied = bool(view_governance.get("applied") or business_contracts or legacy_overlay or field_names)
+        applied = bool(
+            view_governance.get("applied")
+            or business_contracts
+            or config_summaries
+            or legacy_overlay
+            or field_names
+            or field_semantic_roles
+        )
         if not applied:
             # A resolved native form layout is itself the formal authority for a
             # structured workspace.  Do not require an optional business
@@ -2557,6 +2552,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 "legacy_field_policy_overlay": False,
                 "form_layout_overlay": False,
                 "form_structure_authority": "native_authority",
+                "form_presentation_mode": "workspace",
                 "field_names": [],
                 "field_labels": {},
                 "field_semantic_roles": {},
@@ -2576,6 +2572,7 @@ class UiContractV2Handler(BaseIntentHandler):
             "legacy_field_policy_overlay": legacy_overlay,
             "form_layout_overlay": form_layout_overlay,
             "form_structure_authority": form_structure_authority,
+            "form_presentation_mode": form_presentation_mode,
             "field_names": field_names,
             "field_labels": field_labels,
             "field_semantic_roles": field_semantic_roles,
@@ -2678,6 +2675,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 "legacy_field_policy_overlay": "legacyFieldPolicyOverlay",
                 "form_layout_overlay": "formLayoutOverlay",
                 "form_structure_authority": "formStructureAuthority",
+                "form_presentation_mode": "formPresentationMode",
                 "field_names": "fieldNames",
                 "field_labels": "fieldLabels",
                 "field_semantic_roles": "fieldSemanticRoles",
@@ -2710,7 +2708,6 @@ class UiContractV2Handler(BaseIntentHandler):
             group_rows: list[dict[str, Any]] = []
             configured_roles: dict[str, dict[str, Any]] = {}
             assigned_configured_fields: set[str] = set()
-
             for index, (raw_title, raw_fields) in enumerate(configured_field_groups.items(), start=1):
                 title = str(raw_title or "").strip() or "业务配置字段"
                 if not self._form_layout_group_visible_from_governance(governance, title):
@@ -2748,8 +2745,9 @@ class UiContractV2Handler(BaseIntentHandler):
                 group_rows.append(row)
             if group_rows:
                 form_columns = self._form_layout_columns_from_governance(governance)
-                presentation_mode = form_structure_presentation_mode(
-                    (governance or {}).get("form_structure_authority")
+                presentation_mode = _projection.form_structure_presentation_mode(
+                    (governance or {}).get("form_structure_authority"),
+                    (governance or {}).get("form_presentation_mode"),
                 )
                 return {
                     "source": "ui.contract.v2.form_structure_contract",
@@ -2969,12 +2967,14 @@ class UiContractV2Handler(BaseIntentHandler):
             if item.get("fieldRefs") or item.get("groups")
         ]
 
-        semantic_surface = str(
+        structure_authority = str(
             (governance or {}).get("form_structure_authority") or ""
-        ).strip() == "entry_semantic_surface"
-        presentation_mode = form_structure_presentation_mode(
-            (governance or {}).get("form_structure_authority")
+        ).strip()
+        presentation_mode = _projection.form_structure_presentation_mode(
+            structure_authority,
+            (governance or {}).get("form_presentation_mode"),
         )
+        semantic_surface = presentation_mode == "task"
         return {
             "source": "ui.contract.v2.form_structure_contract",
             "structureVersion": "1.1",
@@ -2982,7 +2982,7 @@ class UiContractV2Handler(BaseIntentHandler):
             "viewType": "form",
             "mode": "business_task_form" if semantic_surface else "native_structured_form",
             "presentationMode": presentation_mode,
-            "layoutPolicy": "overview_then_task_slots" if semantic_surface else "native_authority",
+            "layoutPolicy": "overview_then_task_slots" if structure_authority == "entry_semantic_surface" else "native_authority",
             "objectProfile": {
                 "model": model,
                 "kind": "business_form",

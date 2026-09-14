@@ -122,6 +122,7 @@ def component_style_text(path: Path, source_text: str) -> str:
 
 def validate(root: Path = ROOT) -> list[str]:
     design = root / "frontend/apps/web/src/components/design-system"
+    native_projection = (design / "nativeControlProjection.ts").read_text(encoding="utf-8") if (design / "nativeControlProjection.ts").is_file() else ""
     index = (design / "index.ts").read_text(encoding="utf-8") if (design / "index.ts").is_file() else ""
     bridge = (design / "tdesignPrimitiveBridge.ts").read_text(encoding="utf-8") if (design / "tdesignPrimitiveBridge.ts").is_file() else ""
     ui_primitives_path = root / "frontend/packages/ui/src/primitives.ts"
@@ -211,6 +212,9 @@ def validate(root: Path = ROOT) -> list[str]:
             errors.append(f"{modal} must consume its registered overlay stacking token")
 
     input_text = (design / "ScInput.vue").read_text(encoding="utf-8") if (design / "ScInput.vue").is_file() else ""
+    if ("nativeControlAttributeValue" not in native_projection
+            or "name.startsWith('aria-') ? 'true' : ''" not in native_projection):
+        errors.append("native control projection must serialize boolean ARIA values explicitly")
     if "<TDesignInput" not in input_text or "v-native-control-projection" not in input_text or 'data-primitive-driver="browser-specialized"' not in input_text:
         errors.append("ScInput must use the TDesign driver with an explicit browser-specialized fallback")
     if ':aria-describedby="describedBy"' not in input_text or ':aria-invalid=' not in input_text:
@@ -223,6 +227,8 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("ScInput must delegate size and status to the official TDesign API")
     if ':input-class="' not in input_text or "sc-input__control" not in input_text:
         errors.append("ScInput must style the official input surface through the public inputClass API")
+    if "id: props.id" not in input_text or "'aria-label': props.ariaLabel" not in input_text:
+        errors.append("ScInput must project identity and accessible naming to the native input")
     input_group_text = (design / "ScInputGroup.vue").read_text(encoding="utf-8") if (design / "ScInputGroup.vue").is_file() else ""
     if "<TDesignInputAdornment" not in input_group_text or 'data-primitive-driver="tdesign"' not in input_group_text:
         errors.append("ScInputGroup must delegate grouped input chrome to TDesign InputAdornment")
@@ -252,6 +258,8 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("ScTextarea must preserve accessible state through the adapter")
     if ':data-loading="loading || undefined"' not in textarea_text or ':aria-busy="loading || undefined"' not in textarea_text:
         errors.append("ScTextarea must expose loading state on the native textarea control")
+    if "id: props.id" not in textarea_text or "'aria-label': props.ariaLabel" not in textarea_text:
+        errors.append("ScTextarea must project identity and accessible naming to the native textarea")
 
     date_field_text = (design / "ScDateField.vue").read_text(encoding="utf-8") if (design / "ScDateField.vue").is_file() else ""
     for marker in (
@@ -262,6 +270,8 @@ def validate(root: Path = ROOT) -> list[str]:
         "'aria-required': props.required ? 'true' : undefined",
         "'aria-invalid': props.invalid ? 'true' : undefined",
         "'aria-describedby': props.describedBy",
+        "id: props.id",
+        "'aria-label': props.ariaLabel",
     ):
         if marker not in date_field_text:
             errors.append(f"ScDateField missing native accessibility projection: {marker}")
@@ -300,6 +310,8 @@ def validate(root: Path = ROOT) -> list[str]:
         ':data-disabled="disabled || undefined"',
         "'aria-checked': props.indeterminate ? 'mixed' : String(props.checked)",
         "'aria-label': props.label",
+        "id: props.id",
+        "'aria-invalid': props.invalid || undefined",
     ):
         if marker not in checkbox_text:
             errors.append(f"ScCheckbox missing governed selection marker: {marker}")
@@ -321,6 +333,9 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("ScSelect must use the TDesign option driver and native accessibility projection")
     if ':input-props="' not in select_text or "sc-select__control" not in select_text:
         errors.append("ScSelect must style the official input surface through the public inputProps API")
+    for marker in ("id: props.id", "'aria-describedby': props.describedBy", "'aria-invalid': props.invalid", "'aria-label': props.ariaLabel"):
+        if marker not in select_text:
+            errors.append(f"ScSelect missing native field association marker: {marker}")
 
     card_text = (design / "ScCard.vue").read_text(encoding="utf-8") if (design / "ScCard.vue").is_file() else ""
     if ':body-class-name="bodyClassName"' not in card_text or "bodyClassName?: string" not in card_text:
@@ -339,9 +354,39 @@ def validate(root: Path = ROOT) -> list[str]:
         "'aria-required': props.required || undefined",
         "'aria-invalid': props.invalid || undefined",
         "'aria-describedby': props.describedBy",
+        "id: props.id",
+        "'aria-label': props.ariaLabel",
     ):
         if marker not in relation_text:
             errors.append(f"ScRelationField missing native accessibility projection marker: {marker}")
+
+    number_text = (design / "ScNumberInput.vue").read_text(encoding="utf-8") if (design / "ScNumberInput.vue").is_file() else ""
+    for marker in (
+        "<TDesignInputNumber",
+        'v-native-control-projection="nativeProjection"',
+        "selector: 'input' as const",
+        "id: props.id",
+        "'aria-required': props.required || undefined",
+        "'aria-invalid': props.invalid || props.status === 'error' || undefined",
+        "'aria-describedby': props.describedBy",
+    ):
+        if marker not in number_text:
+            errors.append(f"ScNumberInput missing native field association marker: {marker}")
+
+    form_field_text = (design / "ScFormField.vue").read_text(encoding="utf-8") if (design / "ScFormField.vue").is_file() else ""
+    for marker in (
+        "<TDesignFormItem",
+        ':for="controlId"',
+        ':id="helpId"',
+        ':id="errorId"',
+        '#help',
+        '#tips',
+        'role="alert"',
+        "props.help ? helpId.value",
+        "props.error ? errorId.value",
+    ):
+        if marker not in form_field_text:
+            errors.append(f"ScFormField missing help/error control association marker: {marker}")
 
     disclosure_text = (design / "ScDisclosure.vue").read_text(encoding="utf-8") if (design / "ScDisclosure.vue").is_file() else ""
     for marker in (

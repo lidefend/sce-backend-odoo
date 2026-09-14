@@ -496,6 +496,7 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
             {
                 "end_field": "date_end",
                 "sc_semantic_feature": "settlement_line_introduce",
+                "sc_readonly_empty_text": "尚未生成",
             },
         )
 
@@ -506,8 +507,19 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
                 "start_field": "date_start",
                 "end_field": "date_end",
                 "feature": "settlement_line_introduce",
+                "readonly_empty_text": "尚未生成",
             },
         )
+
+    def test_field_widget_semantics_rejects_invalid_readonly_empty_text(self):
+        for value in ("", " " * 4, 42, "x" * 81):
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(ValueError, "sc_readonly_empty_text"):
+                    self.tree_form_parser._field_widget_semantics(
+                        "reference",
+                        "",
+                        {"sc_readonly_empty_text": value},
+                    )
 
     def test_monetary_occurrences_preserve_currency_field_and_digits(self):
         fields_info = {

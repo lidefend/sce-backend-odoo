@@ -415,8 +415,25 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn('LOCAL_DEV_CANONICAL_ENV_FILE="$(readlink -f "$ENV_FILE")"', journey)
         self.assertIn('ENV_FILE="$LOCAL_DEV_CANONICAL_ENV_FILE"', journey)
-        self.assertIn('make -C "$ROOT_DIR" --no-print-directory local.dev.sync_demo', journey)
-        self.assertIn("authoritative line relationship created", journey)
+        self.assertNotIn('make -C "$ROOT_DIR" --no-print-directory local.dev.sync_demo', journey)
+        self.assertEqual(journey.count("local.dev.reset_payment_request_fixture"), 3)
+        self.assertIn("local.dev.reset_payment_request_fixture", journey)
+        self.assertIn("trap restore_on_exit EXIT", journey)
+        self.assertIn("restore_needed=1", journey)
+        self.assertIn("trap - EXIT", journey)
+        self.assertIn("restoring governed fixture after interrupted journey", journey)
+        self.assertIn("authoritative line and amount relationship created", journey)
+        self.assertIn("confirmation removed it and preserved amount", journey)
+        self.assertIn('FRONTEND_URL="http://127.0.0.1:5176"', journey)
+        self.assertIn('[[ "$(git -C "$ROOT_DIR" rev-parse HEAD)" == "$CANDIDATE_GIT_HEAD" ]]', journey)
+        resolver = (
+            ROOT / "scripts/verify/local_dev_payment_settlement_component_ids.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("smart_construction_demo.sc_demo_settlement_069_payment", resolver)
+        self.assertIn("smart_construction_demo.sc_demo_settlement_line_069_payment", resolver)
+        self.assertIn("with_user(user).with_company(user.company_id)", resolver)
+        self.assertIn("selected_settlement.currency_id != request.currency_id", resolver)
+        self.assertNotIn('order="id desc"', resolver)
 
     def test_sample_prepare_creates_distinct_technical_identity(self):
         with tempfile.TemporaryDirectory() as temporary:

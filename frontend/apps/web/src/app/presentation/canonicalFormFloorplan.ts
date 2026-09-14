@@ -258,11 +258,6 @@ function roleNodes(
     .filter(nodeHasContent);
 }
 
-function visibleFieldCount(node: CanonicalFormNode): number {
-  return node.fields.filter((field) => field.visible).length
-    + node.children.reduce((total, child) => total + visibleFieldCount(child), 0);
-}
-
 function nodeHasRelationCapability(node: CanonicalFormNode): boolean {
   const kind = node.kind.trim().toLowerCase();
   return ['notebook', 'relation'].includes(kind)
@@ -365,14 +360,14 @@ function authoritativeSectionTitle(nodes: CanonicalFormNode[]): string {
 
 function projectContextNode(node: CanonicalFormNode): CanonicalFormNode {
   const nodeKind = node.kind.trim().toLowerCase();
-  if ((node.semanticRole && !['context', 'activity'].includes(node.semanticRole)) || nodeKind === 'relation') {
+  if ((node.semanticRole && !['context', 'risk', 'activity'].includes(node.semanticRole)) || nodeKind === 'relation') {
     return { ...node, fields: [], children: [] };
   }
   return {
     ...node,
     fields: node.fields.filter((field) => (
       !fieldHasRelationCapability(field)
-      && (!field.semanticRole || ['context', 'activity'].includes(field.semanticRole))
+      && (!field.semanticRole || ['context', 'risk', 'activity'].includes(field.semanticRole))
     )),
     children: node.children.map(projectContextNode),
   };
@@ -403,48 +398,6 @@ function flattenPresentableFields(nodes: CanonicalFormNode[], region: string): C
   }
   nodes.forEach(visit);
   return projected;
-}
-
-function projectContextFieldsByPresentability(
-  node: CanonicalFormNode,
-  presentable: boolean,
-): CanonicalFormNode {
-  return {
-    ...node,
-    fields: node.fields.filter((field) => (
-      !field.visible || hasPresentableValue(field) === presentable
-    )),
-    children: node.children.map((child) => projectContextFieldsByPresentability(child, presentable)),
-  };
-}
-
-function partitionContextBlocks(nodes: CanonicalFormNode[], limit: number) {
-  const direct: CanonicalFormNode[] = [];
-  const overflow: CanonicalFormNode[] = [];
-  let count = 0;
-  let overflowStarted = false;
-  nodes.forEach((node) => {
-    const presentableNode = projectContextFieldsByPresentability(node, true);
-    const emptyNode = projectContextFieldsByPresentability(node, false);
-    const blockCount = visibleFieldCount(presentableNode);
-    if (!overflowStarted && blockCount > 0 && count + blockCount <= limit) {
-      direct.push(presentableNode);
-      count += blockCount;
-    } else if (blockCount > 0) {
-      overflowStarted = true;
-      overflow.push(presentableNode);
-    }
-    if (nodeHasContent(emptyNode)) overflow.push(emptyNode);
-  });
-  return { direct, overflow };
-}
-
-function splitOversizedContextBlocks(nodes: CanonicalFormNode[], limit: number): CanonicalFormNode[] {
-  return nodes.flatMap((node) => {
-    const ownVisibleFields = node.fields.some((field) => field.visible);
-    if (visibleFieldCount(node) <= limit || ownVisibleFields || !node.children.length) return [node];
-    return splitOversizedContextBlocks(node.children.filter(nodeHasContent), limit);
-  });
 }
 
 function visibleNodes(nodes: CanonicalFormNode[], mode: CanonicalFormRenderModel['identity']['mode']): CanonicalFormNode[] {
@@ -528,9 +481,10 @@ export function composeCanonicalFormFloorplan(
     ? fieldNodes(primaryNodes, fieldIsDecisionMoney, true)
     : [];
   const decisionInputFields = new Set(decisionInputNodes.flatMap((node) => collectVisibleFields(node)));
-  const riskNodes = semanticProductMode
-    ? fieldNodes(primaryNodes, (field) => field.semanticRole === 'risk' && field.readonly && hasPresentableValue(field), true)
-    : [];
+  // A generic `risk` role identifies a business fact, not its feedback scope,
+  // severity, stage, or related action. Until those authorities are declared,
+  // keep the field in its business section instead of manufacturing an alert.
+  const riskNodes: CanonicalFormNode[] = [];
   const auditNodes = semanticProductMode ? roleNodes(primaryNodes, ['audit'], false, false, true) : [];
   const auditDeclared = semanticProductMode && primaryNodes.some((node) => nodeDeclaresRole(node, 'audit'));
   const taskNodes = semanticProductMode
@@ -546,7 +500,8 @@ export function composeCanonicalFormFloorplan(
   const coreInputNodes = semanticProductMode && writeMode
     ? fieldNodes(primaryNodes, (field) => (
       !field.readonly && !field.disabled && !fieldHasBusinessRelationCapability(field)
-      && field.required && !conditionFields.has(field) && !decisionInputFields.has(field)
+      && field.required && !field.semanticSlot && !field.semanticGroup
+      && !conditionFields.has(field) && !decisionInputFields.has(field)
     ))
     : [];
   const coreFields = new Set(coreInputNodes.flatMap((node) => collectVisibleFields(node)));
@@ -576,11 +531,11 @@ export function composeCanonicalFormFloorplan(
     : primaryNodes.filter((node) => !taskNodes.includes(node));
   const readonlyContextNodes = semanticProductMode && writeMode
     ? fieldNodes(primaryNodes, (field) => (
-      field.readonly && field.semanticRole === 'context' && hasPresentableValue(field)
+      field.readonly && ['context', 'risk'].includes(field.semanticRole) && hasPresentableValue(field)
     ))
     : [];
   const emptySemanticNodes = semanticProductMode && !writeMode
-    ? roleNodes(primaryNodes, ['summary', 'task', 'risk'], false, false, true)
+    ? roleNodes(primaryNodes, ['summary', 'task'], false, false, true)
       .map((node) => ({
         ...node,
         fields: node.fields.filter((field) => !hasPresentableValue(field)),
@@ -594,9 +549,12 @@ export function composeCanonicalFormFloorplan(
       }))
       .filter(nodeHasContent)
     : [];
+  // Contract-declared business groups are already the information authority.
+  // Readonly status and field count must not silently demote a whole business
+  // group into an invented "more information" bucket.
   const contextPartition = semanticProductMode
-    ? partitionContextBlocks(splitOversizedContextBlocks(allContextNodes, 24), 24)
-    : { direct: allContextNodes, overflow: [] };
+    ? { direct: [...allContextNodes, ...readonlyContextNodes, ...emptySemanticNodes], overflow: [] as CanonicalFormNode[] }
+    : { direct: allContextNodes, overflow: [] as CanonicalFormNode[] };
   const visibleActions = renderModel.actionBar.filter((action) => action.visible);
   const canonicalPrimary = visibleActions.find((action) => action.tier === 'primary');
   const createSave = renderModel.identity.mode === 'create' && !canonicalPrimary
@@ -615,8 +573,8 @@ export function composeCanonicalFormFloorplan(
   const titleRegistry = new Set<string>();
   const titledSummaryNodes = suppressRepeatedTitles(summaryNodes, titleRegistry);
   const titledDecisionInputNodes = suppressRepeatedTitles(decisionInputNodes, titleRegistry);
-  const titledTaskNodes = suppressRepeatedTitles(taskNodes, titleRegistry);
-  const titledRiskNodes = suppressRepeatedTitles(riskNodes, titleRegistry);
+  const titledTaskNodes = suppressRepeatedTitles(taskNodes, new Set<string>());
+  const titledRiskNodes = suppressRepeatedTitles(riskNodes, new Set<string>());
   const titledCoreNodes = suppressRepeatedTitles(coreInputNodes, titleRegistry);
   const titledConditionNodes = suppressRepeatedTitles(conditionInputNodes, titleRegistry);
   const titledPreExecutionNodes = suppressRepeatedTitles(preExecutionInputNodes, titleRegistry);
@@ -624,7 +582,7 @@ export function composeCanonicalFormFloorplan(
   const titledSupplementaryNodes = suppressRepeatedTitles(supplementaryInputNodes, titleRegistry);
   const titledContextNodes = suppressRepeatedTitles(contextPartition.direct, titleRegistry);
   const titledOverflowContextNodes = suppressRepeatedTitles(
-    [...contextPartition.overflow, ...readonlyContextNodes, ...emptySemanticNodes],
+    contextPartition.overflow,
     titleRegistry,
   );
   const titledRelationNodes = suppressRepeatedTitles(relationNodes, titleRegistry);

@@ -21,7 +21,8 @@ import { computed } from 'vue';
 import { TDesignDatePicker } from './tdesignPrimitiveBridge';
 import { nativeControlProjection } from './nativeControlProjection';
 
-const props = withDefaults(defineProps<{ modelValue:string; withTime?:boolean; readonly?:boolean; disabled?:boolean; clearable?:boolean; required?:boolean; invalid?:boolean; describedBy?:string; appearance?:'default'|'form-field' }>(), {
+const props = withDefaults(defineProps<{ id?:string; modelValue:string; withTime?:boolean; readonly?:boolean; disabled?:boolean; clearable?:boolean; required?:boolean; invalid?:boolean; describedBy?:string; ariaLabel?:string; appearance?:'default'|'form-field' }>(), {
+  id: undefined,
   withTime: false,
   readonly: false,
   disabled: false,
@@ -29,16 +30,19 @@ const props = withDefaults(defineProps<{ modelValue:string; withTime?:boolean; r
   required: false,
   invalid: false,
   describedBy: undefined,
+  ariaLabel: undefined,
   appearance:'default',
 });
 const vNativeControlProjection = nativeControlProjection;
 const nativeProjection = computed(() => ({
   selector: 'input' as const,
   attributes: {
+    id: props.id,
     required: props.required,
     'aria-required': props.required ? 'true' : undefined,
     'aria-invalid': props.invalid ? 'true' : undefined,
     'aria-describedby': props.describedBy,
+    'aria-label': props.ariaLabel,
   },
 }));
 const emit=defineEmits<{ 'update:modelValue':[value:string] }>();

@@ -2817,6 +2817,40 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(default_structure["presentationMode"], "workspace")
         self.assertEqual(default_structure["layoutPolicy"], "native_authority")
 
+    def test_native_authority_can_publish_task_presentation_without_configured_sections(self):
+        handler = self.module.UiContractV2Handler(env=object())
+        fields = {"name": "char", "state": "selection"}
+
+        structure = handler._build_form_structure_contract(
+            model="demo.payment",
+            profile={
+                "common_fields": list(fields),
+                "detail_fields": [],
+                "amount_fields": [],
+                "date_fields": [],
+                "status_field": "state",
+            },
+            field_type=lambda name: fields[name],
+            field_label=lambda name: name,
+            unique=lambda items: list(dict.fromkeys(item for item in items if item in fields)),
+            governance={
+                "form_structure_authority": "native_authority",
+                "form_presentation_mode": "task",
+            },
+        )
+
+        self.assertEqual(structure["presentationMode"], "task")
+        self.assertEqual(structure["mode"], "business_task_form")
+        self.assertEqual(structure["layoutPolicy"], "native_authority")
+        self.assertEqual(
+            structure["sourceAuthority"]["governance_source"]["formStructureAuthority"],
+            "native_authority",
+        )
+        self.assertEqual(
+            structure["sourceAuthority"]["governance_source"]["formPresentationMode"],
+            "task",
+        )
+
     def test_form_contract_scope_drives_task_and_workspace_presentation_modes(self):
         class _Field:
             def __init__(self, field_type, label):
@@ -4458,6 +4492,79 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(governance_without_key["section_semantic_roles"], {})
         self.assertEqual(governance_without_key["configured_sections"][0]["key"], "")
 
+    def test_business_category_does_not_replace_selected_native_structure(self):
+        class _Config:
+            id = 92
+            name = "Native semantic form"
+            priority = 700
+            view_type = "form"
+            contract_json = {
+                "view_orchestration": {
+                    "views": {
+                        "form": {
+                            "composition_mode": "native_semantic_surface",
+                            "semantic_anchors": [{"role": "summary", "fields": ["name"]}],
+                        },
+                    },
+                },
+            }
+
+        class _ConfigModel:
+            def _effective_view_orchestration_contracts(self, *args, **kwargs):
+                return [_Config()]
+
+        class _Env:
+            def __getitem__(self, model):
+                if model == "ui.business.config.contract":
+                    return _ConfigModel()
+                raise KeyError(model)
+
+        native_structure = {
+            "layoutPolicy": "native_authority",
+            "slots": [{"slot": "native", "fieldRefs": ["name"], "groups": []}],
+        }
+        source = {
+            "model": "demo.payment",
+            "view_type": "form",
+            "fields": {"name": {"name": "name", "type": "char", "string": "单据名称"}},
+            "views": {"form": {"layout": [{"type": "field", "name": "name"}]}},
+            "business_form_policy": {
+                "category_name": "业务分类",
+                "source": "sc.business.category.form_policy_json",
+            },
+            "field_groups": [{"name": "category", "label": "分类结构", "fields": ["name"]}],
+            "form_structure_contract": deepcopy(native_structure),
+        }
+
+        handler = self.module.UiContractV2Handler(env=_Env())
+        handler._inject_business_category_form_structure(source, model="demo.payment")
+
+        self.assertEqual(source["form_structure_contract"], native_structure)
+
+    def test_business_category_keeps_legacy_fallback_without_structure_authority(self):
+        class _Env:
+            def __getitem__(self, model):
+                raise KeyError(model)
+
+        source = {
+            "model": "legacy.payment",
+            "view_type": "form",
+            "fields": {"name": {"name": "name", "type": "char", "string": "单据名称"}},
+            "business_form_policy": {
+                "category_name": "业务分类",
+                "source": "sc.business.category.form_policy_json",
+            },
+            "field_groups": [{"name": "category", "label": "分类结构", "fields": ["name"]}],
+        }
+
+        handler = self.module.UiContractV2Handler(env=_Env())
+        handler._inject_business_category_form_structure(source, model="legacy.payment")
+
+        self.assertEqual(
+            source["form_structure_contract"]["layoutPolicy"],
+            "category_sections_as_task_tabs",
+        )
+
     def test_real_payment_contract_only_annotates_existing_native_fields(self):
         repository = Path(__file__).resolve().parents[3]
         product_xml = repository / "addons/smart_construction_core/data/payment_request_form_productization_contract.xml"
@@ -4491,8 +4598,8 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                 raise KeyError(model)
 
         fields = []
-        for section in form_spec["sections"]:
-            for name in section["fields"]:
+        for anchor in form_spec["semantic_anchors"]:
+            for name in anchor["fields"]:
                 if name not in fields:
                     fields.append(name)
         field_nodes = [{
@@ -4539,7 +4646,9 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         governance = handler._form_structure_governance(
             source_contract, model="payment.request", view_type="form",
         )
-        governance["semantic_surface_authority"] = True
+        self.assertEqual(governance["form_structure_authority"], "native_authority")
+        self.assertEqual(governance["form_presentation_mode"], "task")
+        self.assertEqual(governance["configured_sections"], [])
         semantic_roles = governance.get("field_semantic_roles") or {}
         for node in field_nodes:
             name = node["name"]
@@ -4554,15 +4663,6 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.module._projection.apply_business_config_form_groups(
             candidate, governance, source_contract=source_contract,
         )
-        renamed_governance = deepcopy(governance)
-        for section in renamed_governance["configured_sections"]:
-            if section.get("key") == "approval_audit":
-                section["title"] = "Approval & Audit"
-        renamed_candidate = deepcopy(base_contract)
-        self.module._projection.apply_business_config_form_groups(
-            renamed_candidate, renamed_governance, source_contract=source_contract,
-        )
-
         def strip_semantic_roles(value):
             if isinstance(value, list):
                 return [strip_semantic_roles(item) for item in value]
@@ -4611,7 +4711,6 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             self.assertEqual(field["formStructureRole"]["role"], "audit")
 
         self.assertEqual(strip_semantic_roles(candidate), strip_semantic_roles(baseline))
-        self.assertEqual(candidate, renamed_candidate)
         first = deepcopy(candidate)
         self.module._projection.apply_business_config_form_groups(
             candidate, governance, source_contract=source_contract,

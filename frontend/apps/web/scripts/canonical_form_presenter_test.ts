@@ -163,6 +163,7 @@ assert.equal(formatMonetaryDisplayValue(1234.5, [16, 2], 'USD', 'en-US'), '$1,23
 assert.equal(formatMonetaryDisplayValue(50, undefined, 'CNY'), '¥50.00');
 assert.equal(formatMonetaryDisplayValue(1234.5, [16, 1], '元', 'en-US'), '1,234.5 元');
 assert.equal(formatMonetaryDisplayValue('', [16, 2], 'USD', 'en-US'), '-');
+assert.equal(formatMonetaryDisplayValue('', [16, 2], 'USD', 'en-US', '尚未生成'), '尚未生成');
 assert.equal(normalizeContractFieldValue({
   name: 'amount', value: '12.345', descriptor: { type: 'monetary', digits: [16, 2] } as never,
   originalValue: 0, buildOne2manyValue: () => [],
@@ -793,6 +794,23 @@ const dateRangeSchemaWithoutVisibleEndField = canonicalFieldToFormSection({
   componentConfig: { ...dateRangeStartField.componentConfig, dateRangeEndValue: '2026-10-15' },
 });
 assert.equal(dateRangeSchemaWithoutVisibleEndField.dateRangeEndInputValue, '2026-10-15');
+const readonlyEmptySchema = canonicalFieldToFormSection({
+  ...dateRangeStartField,
+  widgetId: 'field.funding_baseline_id',
+  fieldCode: 'funding_baseline_id',
+  fieldType: 'many2one',
+  widgetType: 'many2one',
+  value: null,
+  readonly: true,
+  componentConfig: {
+    widgetSemantics: { readonly_empty_text: '提交审批时生成' },
+  },
+});
+assert.equal(
+  readonlyEmptySchema.readonlyEmptyText,
+  '提交审批时生成',
+  'canonical field projection must preserve authoritative readonly empty semantics',
+);
 const nativeDateRangeNode = {
   type: 'field', name: 'date_start', widget: 'date',
   componentConfig: {
@@ -804,6 +822,26 @@ assert.equal(nativeNodeWidget(nativeDateRangeNode), 'daterange');
 assert.deepEqual(nativeNodeWidgetSemantics(nativeDateRangeNode), {
   kind: 'date_range', start_field: 'date_start', end_field: 'date',
 });
+assert.deepEqual(
+  nativeNodeWidgetSemantics(
+    { type: 'field', name: 'funding_baseline_id' },
+    { widgetSemantics: { readonly_empty_text: '提交审批时生成' } },
+  ),
+  { readonly_empty_text: '提交审批时生成' },
+  'a native field node must inherit missing semantics from its same-identity strict widget',
+);
+assert.deepEqual(
+  nativeNodeWidgetSemantics(
+    {
+      type: 'field',
+      name: 'funding_baseline_id',
+      componentConfig: { widgetSemantics: { readonly_empty_text: '节点声明' } },
+    },
+    { widgetSemantics: { readonly_empty_text: '严格组件回退' } },
+  ),
+  { readonly_empty_text: '节点声明' },
+  'an occurrence-level node declaration must win over the strict-widget fallback',
+);
 assert.equal(nativeNodeWidget({
   type: 'field', name: 'date_start', widget: 'date',
   attributes: { widget: 'daterange' },
@@ -919,6 +957,34 @@ for (const role of CONTRACT_V2_FORM_STRUCTURE_ROLES) {
     `form structure role ${role} must survive decoder/store/presenter projection`,
   );
 }
+
+const governancePresentationSnapshot = snapshot();
+governancePresentationSnapshot.formStructureContract = {
+  ...governedFormStructure('context'),
+  sourceAuthority: {
+    ...governedFormStructure('context').sourceAuthority,
+    governance_source: {
+      ...governedFormStructure('context').sourceAuthority.governance_source,
+      formStructureAuthority: 'native_authority',
+      formPresentationMode: 'task',
+    },
+  },
+};
+assert.equal(
+  decodeContractV2Snapshot(governancePresentationSnapshot)
+    .formStructureContract?.sourceAuthority.governance_source.formPresentationMode,
+  'task',
+  'governance presentation mode must survive the formal decoder',
+);
+const invalidGovernancePresentationSnapshot = structuredClone(governancePresentationSnapshot) as ContractV2Snapshot;
+if (invalidGovernancePresentationSnapshot.formStructureContract) {
+  (invalidGovernancePresentationSnapshot.formStructureContract.sourceAuthority.governance_source as unknown as Record<string, unknown>)
+    .formPresentationMode = 'dialog';
+}
+assert.throws(
+  () => decodeContractV2Snapshot(invalidGovernancePresentationSnapshot),
+  /formPresentationMode.*must equal task or workspace/,
+);
 
 const schemaFormStructureRoles = (
   contractV2Schema.$defs.formStructureRoleName.enum as string[]
@@ -1689,6 +1755,30 @@ repeatedStateNode.nodeId = 'section.projected_state';
 repeatedStateNode.attributes = { ...repeatedStateNode.attributes, widget: '' };
 repeatedStateNode.fields[0].widgetId = 'field.state.projected';
 repeatedStatusFactModel.zones.primary.push(repeatedStateNode);
+const fieldClaimedStatusBridge = buildCanonicalNativeFormBridge(
+  repeatedStatusFactModel,
+  undefined,
+  'field.state',
+  'state',
+);
+const fieldClaimedStatusNodes = [
+  ...fieldClaimedStatusBridge.primaryNodes,
+  ...fieldClaimedStatusBridge.primaryNodes.flatMap((node) => node.children || []),
+];
+assert.equal(
+  fieldClaimedStatusNodes
+    .filter((node) => node.name === 'state')
+    .every((node) => !fieldClaimedStatusBridge.nodeVisible(node)),
+  true,
+  'a product-header workflow status claim must suppress every body occurrence of that same field',
+);
+assert.equal(
+  fieldClaimedStatusNodes
+    .filter((node) => node.name === 'secondary_state')
+    .every((node) => fieldClaimedStatusBridge.nodeVisible(node)),
+  true,
+  'a product-header workflow status claim must not suppress another status field',
+);
 const fieldClaimedStatusFloorplan = composeCanonicalFormFloorplan(repeatedStatusFactModel, {
   claimedStatusbarNodeIdentity: 'field.state',
   claimedStatusbarFieldCode: 'state',
@@ -1756,11 +1846,15 @@ assert.deepEqual(
 );
 assert.deepEqual(
   collectFields(semanticReadonlyFloorplan.riskNodes).map((field) => [field.fieldCode, field.semanticRole]),
-  [['state', 'risk']],
-  'readonly risk facts must not fall back into the task canvas',
+  [],
+  'a risk role without feedback scope or action authority must not manufacture an alert',
 );
 assert.deepEqual(semanticReadonlyFloorplan.taskNodes, []);
-assert.deepEqual(semanticReadonlyFloorplan.contextNodes, []);
+assert.deepEqual(
+  collectFields(semanticReadonlyFloorplan.contextNodes).map((field) => [field.fieldCode, field.semanticRole]),
+  [['state', 'risk']],
+  'an unscoped risk fact remains in its declared business section',
+);
 const semanticEditModel = presentContractV2Form(createContractV2Store(semanticReadonlySnapshot), 'edit');
 const semanticEditNameNode = semanticEditModel.zones.primary[0].children.find((node) => (
   node.fields.some((field) => field.fieldCode === 'name')
@@ -1923,18 +2017,18 @@ assert.deepEqual(
 );
 assert.deepEqual(
   collectFields(semanticEditFloorplan.riskNodes).map((field) => field.fieldCode),
-  ['state'],
-  'readonly risk authority must remain factual in create/edit mode',
+  [],
+  'readonly risk authority needs explicit feedback scope before entering an alert',
 );
 assert.deepEqual(
   collectFields(semanticEditFloorplan.coreInputNodes).map((field) => field.fieldCode),
-  ['name'],
-  'required editable fields must be directly reachable in the core-input region',
+  [],
+  'declared business placement must not be overridden merely because a field is required',
 );
 assert.deepEqual(
   collectFields(semanticEditFloorplan.supplementaryInputNodes).map((field) => field.fieldCode),
-  [],
-  'optional fields declared after a relation slot must not be pulled in front of the detail collection',
+  ['name'],
+  'declared editable fields before the relation keep their contract position without a required/optional split',
 );
 assert.deepEqual(
   collectFields(semanticEditFloorplan.postRelationInputNodes).map((field) => field.fieldCode),
@@ -1955,7 +2049,7 @@ assert.deepEqual(
     ...semanticEditFloorplan.contextNodes,
     ...semanticEditFloorplan.overflowContextNodes,
   ]).map((field) => field.fieldCode),
-  ['amount', 'state', 'name', 'note'],
+  ['amount', 'name', 'note', 'state'],
   'create/edit Product Floorplan regions must not duplicate a field identity',
 );
 
@@ -2067,13 +2161,13 @@ assert.equal(
 );
 assert.deepEqual(
   collectFields(semanticContextFloorplan.contextNodes).map((field) => field.fieldCode),
-  Array.from({ length: 23 }, (_, index) => `context_${index + 1}`),
-  'default context must stop before a whole block would exceed the 24-fact limit',
+  ['state', ...Array.from({ length: 25 }, (_, index) => `context_${index + 1}`)],
+  'declared business context must not be demoted by an arbitrary fact-count threshold',
 );
 assert.deepEqual(
   collectFields(semanticContextFloorplan.overflowContextNodes).map((field) => field.fieldCode),
-  ['context_24', 'context_25'],
-  'overflow must retain complete blocks and all subsequent context in original order',
+  [],
+  'the task floorplan must not manufacture a generic overflow business section',
 );
 const partiallyPopulatedContextModel = structuredClone(semanticContextModel);
 const emptyContextField = collectFields(partiallyPopulatedContextModel.zones.primary)
@@ -2083,17 +2177,13 @@ emptyContextField.value = '';
 const partiallyPopulatedContextFloorplan = composeCanonicalFormFloorplan(partiallyPopulatedContextModel);
 assert.deepEqual(
   collectFields(partiallyPopulatedContextFloorplan.contextNodes).map((field) => field.fieldCode),
-  [
-    ...Array.from({ length: 22 }, (_, index) => `context_${index + 2}`),
-    'context_24',
-    'context_25',
-  ],
-  'an empty readonly context fact must not demote later populated business facts',
+  ['state', ...Array.from({ length: 25 }, (_, index) => `context_${index + 1}`)],
+  'empty readonly values keep their declared group identity without demoting later facts',
 );
 assert.deepEqual(
   collectFields(partiallyPopulatedContextFloorplan.overflowContextNodes).map((field) => field.fieldCode),
-  ['context_1'],
-  'an empty readonly context fact must remain accessible in overflow without occupying first-read capacity',
+  [],
+  'empty readonly values must not create a generic overflow section',
 );
 assert.deepEqual(
   collectFields(semanticContextFloorplan.relationNodes).map((field) => field.fieldCode),
@@ -2869,6 +2959,25 @@ assert.equal(
   } as never),
   null,
   'button help must never manufacture a confirmation prompt',
+);
+assert.deepEqual(
+  contractActionConfirmationPrompt({
+    key: 'action_submit', label: '提交审批',
+    hint: '收款账户尚未完整，付款执行前必须补齐。',
+    requiresConfirmation: true,
+  } as never),
+  {
+    actionLabel: '提交审批',
+    message: '收款账户尚未完整，付款执行前必须补齐。',
+  },
+  'an authoritative action advisory must appear when the user starts that action',
+);
+assert.equal(
+  contractActionConfirmationPrompt({
+    key: 'action_submit', label: '提交审批', hint: '', requiresConfirmation: true,
+  } as never),
+  null,
+  'an action without an advisory must not manufacture an extra confirmation',
 );
 const readonlySaveSnapshot = snapshot();
 readonlySaveSnapshot.actionContract.actionRuleList = [{

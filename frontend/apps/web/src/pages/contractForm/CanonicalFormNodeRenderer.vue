@@ -14,6 +14,9 @@
     :data-section-navigation-role="node.zoneRole"
     :data-group-title="node.title || undefined"
     :data-value-emphasis="valueEmphasis"
+    :data-form-section-target="governedSection?.anchor || undefined"
+    :data-section-title="governedSection?.label || undefined"
+    :aria-label="governedSection?.label || undefined"
   >
     <span v-if="presentableNodeText" class="canonical-form-native-text">{{ presentableNodeText }}</span>
     <ScButton
@@ -32,6 +35,7 @@
     <div v-else-if="node.nativeWidget" class="canonical-form-native-widget" :data-native-widget="node.nativeWidget" role="status">
       {{ node.title || node.nativeWidget }}
     </div>
+    <h3 v-if="groupHeadingVisible" class="canonical-form-node-title">{{ governedSection?.label }}</h3>
     <FormSection
       v-if="fields.length"
       :title="sectionTitle"
@@ -43,7 +47,6 @@
       @field-action="emit('field-action', $event)"
       @action-ref="emit('action-ref', $event)"
     />
-    <h3 v-else-if="node.title && children.length && groupHeadingVisible" class="canonical-form-node-title">{{ node.title }}</h3>
     <CanonicalFormNodeRenderer
       v-for="child in children"
       :key="child.nodeId"
@@ -52,6 +55,7 @@
       :relation-adapter="relationAdapter"
       :prefer-readonly-facts="preferReadonlyFacts"
       :density="density"
+      :hide-governed-section-heading="hideGovernedSectionHeading"
       @field-change="emit('field-change', $event)"
       @field-action="emit('field-action', $event)"
       @action-ref="emit('action-ref', $event)"
@@ -74,12 +78,14 @@ import {
   canonicalFieldHasPresentableValue,
   visibleCanonicalChildren,
 } from './canonicalFormRenderer';
+import { governedFormStructureSectionIdentity } from './nativeBusinessSection';
 
 const props = defineProps<{
   node: CanonicalFormNode;
   relationAdapter?: RelationFieldAdapter;
   preferReadonlyFacts?: boolean;
   density?: 'default' | 'compact-task';
+  hideGovernedSectionHeading?: boolean;
 }>();
 const emit = defineEmits<{
   'field-change': [payload: FormSectionFieldChange];
@@ -106,21 +112,21 @@ const valueEmphasis = computed(() => (
 const children = computed(() => visibleCanonicalChildren(props.node));
 
 /**
- * Section heading for the field form.
- * 后台逻辑分组（核心申请信息 / 申请识别与状态 / 本次付款事实 / 业务上下文 /
- * 结算与来源匹配 …）是开发侧的分组命名，对填单/查看用户都没有帮助。一律隐藏，
- * 字段直接平铺成连续表单（分组逻辑保留在 canonical 契约中，不动）。
- * 办理引导区（当前任务等）由 ObjectTaskPage 的卡片结构承载，不经由此处渲染。
+ * Ordinary native layout groups remain hidden. A released form-structure
+ * group is different: its title is explicit contract authority and is shared
+ * by the body heading and navigation target.
  */
 const sectionTitle = computed(() => '');
 
 /**
- * Group/container headings for structural nodes (no direct fields).
- * 同样隐藏后台逻辑分组标题（含 notebook/page 包装容器的来源匹配等）。
- * 当前 notebook 仅作包装容器（无 tab 切换 UI），隐藏标题安全；若未来 notebook
- * 升级为真实 tab 结构，需在此恢复 page 标题以承载切换标签。
+ * Feedback projections deliberately suppress the source group heading. Their
+ * fields keep their labels inside the generic feedback surface instead of
+ * becoming a second business section occurrence.
  */
-const groupHeadingVisible = computed(() => false);
+const governedSection = computed(() => (
+  props.hideGovernedSectionHeading ? null : governedFormStructureSectionIdentity(props.node)
+));
+const groupHeadingVisible = computed(() => Boolean(governedSection.value));
 
 const columns = computed<1 | 2 | 3>(() => Math.max(1, Math.min(3, Number(props.node.columns || 1))) as 1 | 2 | 3);
 const layoutColumns = computed<1 | 2 | 3>(() => {

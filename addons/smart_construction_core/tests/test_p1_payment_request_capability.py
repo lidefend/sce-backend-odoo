@@ -13,6 +13,11 @@ from lxml import etree
 from odoo.addons.smart_construction_core.services.financial_workspace_contract import (
     build_financial_form_business_actions,
 )
+from odoo.addons.smart_construction_core.handlers.payment_request_settlement_introduce import (
+    PaymentRequestAddSettlementLinesHandler,
+    PaymentRequestSettlementPreviewHandler,
+    PaymentRequestSettlementSearchHandler,
+)
 from odoo.addons.smart_construction_core.core_extension_policy_maps import (
     BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL,
 )
@@ -612,6 +617,286 @@ class TestP1PaymentRequestCapability(TransactionCase):
         with self.assertRaisesRegex(UserError, "业务事实不可直接修改"):
             request.write({"amount": 200})
         self.assertEqual(request.amount, 100)
+
+    def test_optional_payment_details_authoritatively_sync_request_amount(self):
+        request = self._request(amount=123.45)
+        self.assertFalse(request.amount_uses_details)
+        self.assertEqual(request.amount, 123.45)
+
+        first = self.env["payment.request.line"].create(
+            {
+                "request_id": request.id,
+                "legacy_line_id": "p1-detail-sync-1",
+                "legacy_parent_id": "p1-detail-sync-parent",
+                "amount": 100.0,
+                "current_pay_amount": 10.004,
+            }
+        )
+        self.assertTrue(request.amount_uses_details)
+        self.assertAlmostEqual(request.amount, 10.0, places=2)
+
+        second = self.env["payment.request.line"].create(
+            {
+                "request_id": request.id,
+                "legacy_line_id": "p1-detail-sync-2",
+                "legacy_parent_id": "p1-detail-sync-parent",
+                "amount": 100.0,
+                "current_pay_amount": 2.006,
+            }
+        )
+        self.assertAlmostEqual(request.amount, 12.01, places=2)
+        self.assertAlmostEqual(request.detail_amount_total, 12.01, places=2)
+
+        first.write({"current_pay_amount": 20.004})
+        self.assertAlmostEqual(request.amount, 22.01, places=2)
+        with self.assertRaisesRegex(ValidationError, "由明细合计生成"):
+            request.write({"amount": 99.0})
+
+        first.unlink()
+        self.assertAlmostEqual(request.amount, 2.01, places=2)
+        second.unlink()
+        self.assertFalse(request.amount_uses_details)
+        self.assertAlmostEqual(request.amount, 2.01, places=2)
+        request.write({"amount": 7.0})
+        self.assertEqual(request.amount, 7.0)
+
+    def test_historical_detail_amount_mismatch_is_visible_and_blocks_submit(self):
+        request = self._request(amount=50.0)
+        detail = self.env["payment.request.line"].create(
+            {
+                "request_id": request.id,
+                "legacy_line_id": "p1-detail-mismatch",
+                "legacy_parent_id": "p1-detail-mismatch-parent",
+                "amount": 100.0,
+                "current_pay_amount": 50.0,
+            }
+        )
+        self.env.cr.execute(
+            "UPDATE payment_request SET amount = %s WHERE id = %s",
+            (75.0, request.id),
+        )
+        request.invalidate_recordset(
+            ["amount", "amount_uses_details", "detail_amount_total", "detail_amount_consistency_message"]
+        )
+
+        self.assertEqual(request.amount, 75.0)
+        self.assertEqual(request.detail_amount_total, 50.0)
+        self.assertIn("历史记录不会自动改数", request.detail_amount_consistency_message)
+        request.write({"note": "只更新办理说明，不应改写历史金额"})
+        self.assertEqual(request.amount, 75.0)
+        self.assertEqual(request.detail_amount_total, 50.0)
+        detail.write({"amount": 101.0, "note": "只更新来源事实，不应重算申请金额"})
+        self.assertEqual(request.amount, 75.0)
+        detail.write({"current_pay_amount": 50.0, "note": "全量回写未变化的权威值也不应修数"})
+        self.assertEqual(request.amount, 75.0)
+        request._onchange_outflow_line_amount()
+        self.assertEqual(request.amount, 75.0)
+        with self.assertRaisesRegex(ValidationError, "必须与付款申请明细合计"):
+            request.with_context(payment_soft_gate=True).action_submit()
+        self.assertEqual(request.state, "draft")
+
+    def test_zero_detail_is_explicitly_invalid_and_historical_row_is_not_repaired(self):
+        request = self._request(amount=50.0)
+        with self.assertRaisesRegex(ValidationError, "本次申请金额必须大于 0"):
+            with self.env.cr.savepoint():
+                self.env["payment.request.line"].create(
+                    {
+                        "request_id": request.id,
+                        "legacy_line_id": "p1-zero-detail",
+                        "legacy_parent_id": "p1-zero-detail-parent",
+                        "amount": 100.0,
+                        "current_pay_amount": 0.0,
+                    }
+                )
+
+        line = self.env["payment.request.line"].create(
+            {
+                "request_id": request.id,
+                "legacy_line_id": "p1-historical-zero-detail",
+                "legacy_parent_id": "p1-historical-zero-detail-parent",
+                "amount": 100.0,
+                "current_pay_amount": 50.0,
+            }
+        )
+        self.env.cr.execute(
+            "UPDATE payment_request_line SET current_pay_amount = 0 WHERE id = %s",
+            (line.id,),
+        )
+        line.invalidate_recordset(["current_pay_amount"])
+        request.invalidate_recordset(
+            ["amount", "amount_uses_details", "detail_amount_total", "detail_amount_consistency_message"]
+        )
+
+        request.write({"note": "无关字段更新不得自动修复历史无效明细"})
+        self.assertEqual(request.amount, 50.0)
+        self.assertEqual(request.detail_amount_total, 0.0)
+        with self.assertRaisesRegex(ValidationError, "本次申请金额必须大于 0"):
+            request.with_context(payment_soft_gate=True).action_submit()
+        self.assertEqual(request.amount, 50.0)
+        self.assertEqual(line.current_pay_amount, 0.0)
+
+    def test_settlement_line_introduction_syncs_request_amount_from_created_details(self):
+        settlement = self.env["sc.settlement.order"].create(
+            {
+                "name": "P1 Optional Detail Settlement",
+                "title": "P1 Authoritative Settlement Search Title",
+                "settlement_type": "out",
+                "project_id": self.project.id,
+                "contract_id": self.contract.id,
+                "partner_id": self.partner.id,
+                "settlement_amount": 100.0,
+                "line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "name": "P1 Optional Detail Line",
+                            "contract_id": self.contract.id,
+                            "qty": 1.0,
+                            "price_unit": 100.0,
+                        },
+                    )
+                ],
+            }
+        )
+        request = self._request(amount=9.0)
+        preview = PaymentRequestSettlementPreviewHandler(self.env).handle(
+            payload={"params": {"settlement_id": settlement.id}}
+        )
+        self.assertTrue(preview["ok"])
+        self.assertEqual(preview["data"]["currency"]["id"], settlement.currency_id.id)
+        self.assertEqual(preview["data"]["currency"]["name"], settlement.currency_id.name)
+        self.assertEqual(
+            preview["data"]["currency"]["decimal_places"],
+            settlement.currency_id.decimal_places,
+        )
+        result = PaymentRequestAddSettlementLinesHandler(self.env).handle(
+            payload={
+                "params": {
+                    "payment_request_id": request.id,
+                    "settlement_id": settlement.id,
+                    "settlement_line_ids": settlement.line_ids.ids,
+                    "apply_mode": "amount",
+                    "total_amount": 33.335,
+                }
+            }
+        )
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["data"]["created_count"], 1)
+        self.assertAlmostEqual(result["data"]["total_applied"], 33.34, places=2)
+        self.assertAlmostEqual(request.amount, 33.34, places=2)
+        self.assertAlmostEqual(request.detail_amount_total, 33.34, places=2)
+        self.assertTrue(request.amount_uses_details)
+
+        invalid = PaymentRequestAddSettlementLinesHandler(self.env).handle(
+            payload={
+                "params": {
+                    "payment_request_id": request.id,
+                    "settlement_id": settlement.id,
+                    "settlement_line_ids": settlement.line_ids.ids,
+                    "apply_mode": "lines",
+                    "lines": [
+                        {
+                            "settlement_line_id": settlement.line_ids.id,
+                            "amount": 0.0,
+                        }
+                    ],
+                }
+            }
+        )
+        self.assertFalse(invalid["ok"])
+        self.assertEqual(invalid["error"]["code"], "INVALID_AMOUNT")
+        self.assertIn("必须大于 0", invalid["error"]["message"])
+        self.assertEqual(len(request.outflow_line_ids), 1)
+
+        foreign_currency = self.env.ref("base.USD")
+        if foreign_currency == settlement.currency_id:
+            foreign_currency = self.env.ref("base.EUR")
+        foreign_request = self._request(
+            amount=9.0,
+            contract_id=False,
+            project_id=self.project.id,
+            partner_id=self.partner.id,
+            currency_id=foreign_currency.id,
+        )
+        currency_mismatch = PaymentRequestAddSettlementLinesHandler(self.env).handle(
+            payload={
+                "params": {
+                    "payment_request_id": foreign_request.id,
+                    "settlement_id": settlement.id,
+                    "settlement_line_ids": settlement.line_ids.ids,
+                    "apply_mode": "amount",
+                    "total_amount": 10.0,
+                }
+            }
+        )
+        self.assertFalse(currency_mismatch["ok"])
+        self.assertEqual(currency_mismatch["error"]["code"], "CURRENCY_MISMATCH")
+        self.assertFalse(foreign_request.outflow_line_ids)
+
+        with self.assertRaisesRegex(ValidationError, "币种"):
+            with self.env.cr.savepoint():
+                self.env["payment.request.line"].create(
+                    {
+                        "request_id": foreign_request.id,
+                        "settlement_line_id": settlement.line_ids.id,
+                        "legacy_line_id": "p1-cross-currency-create",
+                        "legacy_parent_id": "p1-cross-currency-parent",
+                        "amount": 10.0,
+                        "current_pay_amount": 10.0,
+                    }
+                )
+        detached_line = self.env["payment.request.line"].create(
+            {
+                "request_id": foreign_request.id,
+                "legacy_line_id": "p1-cross-currency-write",
+                "legacy_parent_id": "p1-cross-currency-parent",
+                "amount": 10.0,
+                "current_pay_amount": 10.0,
+            }
+        )
+        with self.assertRaisesRegex(ValidationError, "币种"):
+            with self.env.cr.savepoint():
+                detached_line.write({"settlement_line_id": settlement.line_ids.id})
+        self.assertFalse(detached_line.settlement_line_id)
+
+        request.outflow_line_ids.write({"active": False})
+        self.assertTrue(
+            request.with_context(active_test=False).outflow_line_ids,
+            "archived settlement detail must remain available to currency authority checks",
+        )
+        with self.assertRaisesRegex(ValidationError, "币种"):
+            with self.env.cr.savepoint():
+                request.write({"currency_id": foreign_currency.id})
+        self.assertEqual(request.currency_id, settlement.currency_id)
+
+        authoritative_name_search = PaymentRequestSettlementSearchHandler(self.env).handle(
+            payload={
+                "params": {
+                    "payment_request_id": request.id,
+                    "keyword": "Authoritative Settlement Search Title",
+                }
+            }
+        )
+        self.assertTrue(authoritative_name_search["ok"])
+        self.assertIn(
+            settlement.id,
+            [item["id"] for item in authoritative_name_search["data"]["settlements"]],
+        )
+        search = PaymentRequestSettlementSearchHandler(self.env).handle(
+            payload={
+                "params": {
+                    "payment_request_id": foreign_request.id,
+                    "keyword": settlement.name,
+                }
+            }
+        )
+        self.assertTrue(search["ok"])
+        self.assertNotIn(
+            settlement.id,
+            [item["id"] for item in search["data"]["settlements"]],
+        )
 
     def test_submit_only_accepts_draft_or_rejected_requests(self):
         request = self._set_request_state(self._request(), "approved")
@@ -1443,6 +1728,43 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(request.legal_next_action_display, "查看付款登记")
         self.assertEqual(execution.payment_request_id, request)
 
+    def test_account_source_is_independent_from_account_completeness(self):
+        partner = self.env["res.partner"].create(
+            {"name": "P1 Payment Counterparty Without Account", "supplier_rank": 1}
+        )
+        contract = self.env["construction.contract"].create(
+            {
+                "subject": "P1 Payment Contract Without Account",
+                "type": "in",
+                "project_id": self.project.id,
+                "partner_id": partner.id,
+            }
+        )
+        request = self.env["payment.request"].create(
+            {"type": "pay", "contract_id": contract.id, "amount": 100}
+        )
+
+        self.assertEqual(request.payee_account_completeness, "incomplete")
+        self.assertFalse(request.payee_account_source_display)
+
+        request.payment_account_name = "Partial application snapshot"
+        self.assertEqual(request.payee_account_completeness, "incomplete")
+        self.assertEqual(request.payee_account_source_display, "本次申请账户快照")
+
+        request.payment_account_name = False
+        partner.sc_account_name = "Partial partner default"
+        self.assertEqual(request.payee_account_completeness, "incomplete")
+        self.assertEqual(request.payee_account_source_display, "往来单位默认结算账户")
+
+        request.payment_account_name = "Application snapshot name"
+        partner.sc_bank_name = "Partner fallback bank"
+        partner.sc_bank_account = "Partner fallback account"
+        self.assertEqual(request.payee_account_completeness, "complete")
+        self.assertEqual(
+            request.payee_account_source_display,
+            "本次申请快照（部分沿用往来单位默认账户）",
+        )
+
     def test_draft_request_cannot_generate_or_anchor_execution(self):
         request = self._request()
         with self.assertRaisesRegex(UserError, "必须处于已批准状态"):
@@ -1611,9 +1933,9 @@ class TestP1PaymentRequestCapability(TransactionCase):
             "smart_construction_core.business_config_contract_payment_request_pay_productized_form_v1"
         )
         product_payload = product_contract.contract_json["view_orchestration"]["views"]["form"]
-        self.assertEqual(len(product_payload["sections"]), 7)
-        self.assertIn("legal_next_action_display", product_payload["sections"][0]["fields"])
-        self.assertIn("payment_blocking_reason_display", product_payload["sections"][0]["fields"])
+        self.assertEqual(product_payload["composition_mode"], "native_semantic_surface")
+        for structural_key in ("layout", "sections", "fields", "field_slots", "columns", "actions", "header_buttons"):
+            self.assertNotIn(structural_key, product_payload)
         anchors = {
             row["role"]: row["fields"]
             for row in product_payload["semantic_anchors"]
@@ -1633,26 +1955,154 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(sum(len(fields) for role, fields in anchors.items() if role != "audit"), 12)
         self.assertEqual(sum(len(fields) for fields in anchors.values()), 14)
         self.assertNotIn("selection_labels", str(product_payload))
-        audit_sections = [
-            section for section in product_payload["sections"]
-            if section.get("semantic_role") == "audit"
-        ]
-        self.assertEqual(len(audit_sections), 1)
-        self.assertEqual(audit_sections[0]["key"], "approval_audit")
-        self.assertEqual(audit_sections[0]["title"], "审批与审计")
         legacy_product_fields = {
             "legacy_source_model", "legacy_source_table", "legacy_record_id",
             "legacy_document_no", "legacy_document_state",
         }
         self.assertTrue(legacy_product_fields.isdisjoint(str(product_payload)))
-        self.assertIn("validation_status", product_payload["sections"][0]["fields"])
-        self.assertIn("reject_reason", product_payload["sections"][0]["fields"])
-        self.assertEqual(product_payload["actions"][0]["name"], "action_create_payment_execution")
-        self.assertEqual(product_payload["actions"][0]["style"], "primary")
-        self.assertEqual(
-            product_payload["actions"][0]["visible_profiles"],
-            ["edit", "readonly"],
+
+        payment_form = self.env.ref("smart_construction_core.view_payment_request_pay_form")
+        self.assertEqual(payment_form.mode, "primary")
+        self.assertEqual(payment_form.inherit_id, form)
+        payment_form_arch = payment_form._get_combined_arch()
+        if isinstance(payment_form_arch, (str, bytes)):
+            payment_form_arch = etree.fromstring(payment_form_arch)
+        payment_section_nodes = payment_form_arch.xpath(
+            "/form/sheet/group[@data-sc-anchor]"
         )
+        self.assertEqual(
+            [node.get("data-sc-anchor") for node in payment_section_nodes],
+            [
+                "payment-request-pay-basic",
+                "payment-request-pay-basis",
+                "payment-request-pay-amount",
+                "payment-request-pay-parties",
+                "payment-request-pay-notes",
+                "payment-request-pay-trace",
+            ],
+        )
+        self.assertEqual(
+            [node.get("string") for node in payment_section_nodes],
+            ["基本信息", "付款依据", "申请金额", "收付款信息", "说明与附件", "履约与追溯"],
+        )
+        self.assertFalse(payment_form_arch.xpath("/form/sheet/div[contains(concat(' ', normalize-space(@class), ' '), ' oe_title ')]"))
+        self.assertFalse(payment_form_arch.xpath("/form/sheet//group//field[@name='name']"))
+        self.assertFalse(payment_form_arch.xpath("/form/sheet//group//field[@name='payment_flow_label']"))
+        self.assertEqual(
+            payment_form_arch.xpath(
+                "/form/sheet/group[@name='sc_payment_request_pay_basic']//field[@name='state']/@invisible"
+            ),
+            ["1"],
+        )
+        self.assertFalse(payment_form_arch.xpath("/form/sheet//field[@name='payment_blocking_reason_display']"))
+        self.assertNotIn("收款账户信息待补充；审批可继续", etree.tostring(payment_form_arch, encoding="unicode"))
+        current_action_alerts = payment_form_arch.xpath(
+            "/form/sheet/div[contains(concat(' ', normalize-space(@class), ' '), ' alert ')]"
+        )
+        self.assertIn(
+            "partner_transaction_eligibility != 'blocked'",
+            [node.get("invisible") for node in current_action_alerts],
+        )
+        self.assertFalse(
+            payment_form_arch.xpath("/form/sheet/group[1]//field[@name='payee_account_completeness']")
+        )
+        self.assertEqual(
+            payment_form_arch.xpath("/form/sheet/group[@name='sc_payment_request_pay_parties']//field[@name='payee_account_completeness']/@widget"),
+            ["badge"],
+        )
+        self.assertEqual(
+            payment_form_arch.xpath("/form/sheet/group[@name='sc_payment_request_pay_parties']//field[@name='payee_account_source_display']/@name"),
+            ["payee_account_source_display"],
+        )
+        self.assertFalse(
+            payment_form_arch.xpath("/form/sheet/group[@name='sc_payment_request_pay_basic']//field[@name='payment_execution_status_display']")
+        )
+        self.assertEqual(
+            payment_form_arch.xpath("/form/sheet/group[@name='sc_payment_request_pay_trace']/field[@name='payment_execution_status_display']/@widget"),
+            ["badge"],
+        )
+        self.assertFalse(
+            payment_form_arch.xpath("/form/sheet//field[@name='legal_next_action_display']")
+        )
+        basic_identity_fields = payment_form_arch.xpath(
+            "/form/sheet/group[@name='sc_payment_request_pay_basic']/group[2]/field/@name"
+        )
+        self.assertEqual(
+            basic_identity_fields[:4],
+            ["project_id", "partner_id", "business_category_id", "date_request"],
+        )
+        amount_section = payment_form_arch.xpath(
+            "/form/sheet/group[@name='sc_payment_request_pay_amount']"
+        )[0]
+        self.assertEqual(
+            amount_section.xpath("./group[1]/field/@name")[:6],
+            [
+                "amount",
+                "amount_uppercase",
+                "paid_amount_total",
+                "unpaid_amount",
+                "funding_baseline_id",
+                "currency_id",
+            ],
+        )
+        self.assertEqual(
+            amount_section.xpath("./group[1]/field[@name='amount']/@readonly"),
+            ["state not in ['draft', 'rejected'] or amount_uses_details"],
+        )
+        self.assertEqual(
+            amount_section.xpath("./group[1]/field[@name='amount_uppercase']/@string"),
+            ["系统生成金额大写"],
+        )
+        historical_uppercase = payment_form_arch.xpath(
+            "/form/sheet/group[@name='sc_payment_request_pay_trace']/notebook/page[@name='sc_payment_request_historical_amount']/field[@name='accepted_amount_uppercase']"
+        )
+        self.assertEqual(len(historical_uppercase), 1)
+        self.assertEqual(historical_uppercase[0].get("string"), "历史确认金额大写")
+        self.assertEqual(historical_uppercase[0].get("readonly"), "1")
+        self.assertEqual(
+            historical_uppercase[0].get("options"),
+            "{'sc_readonly_empty_text': '无历史确认记录'}",
+        )
+        self.assertFalse(
+            amount_section.xpath(".//field[@name='accepted_amount_uppercase']")
+        )
+        self.assertEqual(
+            amount_section.xpath("./group[1]/field[@name='funding_baseline_id']/@options"),
+            ["{'sc_readonly_empty_text': '提交审批时生成'}"],
+        )
+        self.assertEqual(
+            payment_form_arch.xpath("/form/sheet/group[@name='sc_payment_request_pay_basis']//field[@name='cost_category_name']/@options"),
+            ["{'sc_readonly_empty_text': '尚未生成'}"],
+        )
+        self.assertEqual(
+            amount_section.xpath("./group[1]/field[@name='outflow_line_ids']/@name"),
+            ["outflow_line_ids"],
+        )
+        self.assertEqual(
+            amount_section.xpath("./group[1]/field[@name='detail_amount_total']/@invisible"),
+            ["not amount_uses_details"],
+        )
+        amount_fields = amount_section.xpath("./group[1]/field/@name")
+        self.assertLess(amount_fields.index("amount"), amount_fields.index("outflow_line_ids"))
+        self.assertEqual(
+            payment_form_arch.xpath("/form/sheet/group[1]/group[2]/field[@name='partner_transaction_eligibility']/@widget"),
+            ["badge"],
+        )
+        self.assertEqual(
+            payment_form_arch.xpath("/form/sheet/group[@name='sc_payment_request_pay_parties']//field[@name='partner_account_name']/@options"),
+            ["{'sc_readonly_empty_text': '往来单位未配置'}"],
+        )
+        self.assertFalse(
+            payment_form_arch.xpath(
+                "/form/sheet/group[@name='sc_payment_request_pay_basic']//field[@name='partner_transaction_eligibility_reason']"
+            )
+        )
+        payment_action = self.env.ref("smart_construction_core.action_payment_request_user_payment_apply")
+        action_form_views = payment_action.view_ids.filtered(lambda row: row.view_mode == "form").mapped("view_id")
+        self.assertEqual(action_form_views, payment_form)
+        receive_action = self.env.ref("smart_construction_core.action_payment_request_receive")
+        receive_form_views = receive_action.view_ids.filtered(lambda row: row.view_mode == "form").mapped("view_id")
+        self.assertEqual(receive_form_views, form)
 
         execution_contract = self.env.ref(
             "smart_construction_core.business_config_contract_payment_execution_from_request_productized_form_v1"
@@ -1854,7 +2304,145 @@ class TestP1PaymentRequestCapability(TransactionCase):
             project_relation_entries,
         )
 
+        readonly_empty_texts = {}
+
+        def collect_readonly_empty_texts(value):
+            if isinstance(value, dict):
+                field_name = value.get("fieldCode") or value.get("name") or value.get("field")
+                semantics_candidates = (
+                    value.get("widgetSemantics"),
+                    value.get("widget_semantics"),
+                    (value.get("fieldInfo") or {}).get("widget_semantics"),
+                    (value.get("componentConfig") or {}).get("widgetSemantics"),
+                )
+                for semantics in semantics_candidates:
+                    if isinstance(semantics, dict) and semantics.get("readonly_empty_text"):
+                        readonly_empty_texts.setdefault(field_name, set()).add(
+                            semantics["readonly_empty_text"]
+                        )
+                for nested in value.values():
+                    collect_readonly_empty_texts(nested)
+            elif isinstance(value, list):
+                for nested in value:
+                    collect_readonly_empty_texts(nested)
+
+        collect_readonly_empty_texts(contract)
+        self.assertEqual(readonly_empty_texts.get("cost_category_name"), {"尚未生成"})
+        self.assertEqual(readonly_empty_texts.get("funding_baseline_id"), {"提交审批时生成"})
+        self.assertEqual(readonly_empty_texts.get("partner_account_name"), {"往来单位未配置"})
+        self.assertEqual(readonly_empty_texts.get("accepted_amount_uppercase"), {"无历史确认记录"})
+        self.assertEqual(readonly_empty_texts.get("payee_account_source_display"), {"尚无账户来源"})
+
         container_tree = contract["layoutContract"]["containerTree"]
+
+        widgets_by_field = {}
+
+        def collect_widgets(value):
+            if isinstance(value, dict):
+                field_name = value.get("fieldCode")
+                if isinstance(field_name, str) and field_name:
+                    widgets_by_field.setdefault(field_name, []).append(value)
+                for nested in value.values():
+                    collect_widgets(nested)
+            elif isinstance(value, list):
+                for nested in value:
+                    collect_widgets(nested)
+
+        collect_widgets(container_tree)
+        self.assertEqual(
+            {row.get("label") for row in widgets_by_field["amount_uppercase"]},
+            {"系统生成金额大写"},
+        )
+        self.assertEqual(
+            {row.get("label") for row in widgets_by_field["accepted_amount_uppercase"]},
+            {"历史确认金额大写"},
+        )
+        accepted_widget_ids = {
+            row.get("widgetId")
+            for row in widgets_by_field["accepted_amount_uppercase"]
+            if row.get("widgetId")
+        }
+        resolved_widget_ids = {
+            row.get("widgetId")
+            for row in contract["statusContract"].get("widgetStatus") or []
+            if row.get("widgetId")
+        }
+        self.assertTrue(
+            accepted_widget_ids <= resolved_widget_ids,
+            (accepted_widget_ids, resolved_widget_ids),
+        )
+        accepted_status_rows = [
+            row
+            for row in contract["statusContract"].get("widgetStatus") or []
+            if row.get("widgetId") in accepted_widget_ids
+        ]
+        self.assertTrue(
+            all(
+                row.get("visible") is True and row.get("readonly") is True
+                for row in accepted_status_rows
+            ),
+            accepted_status_rows,
+        )
+        accepted_selector_rows = [
+            row
+            for row in contract["statusContract"].get("selectorStatus") or []
+            if row.get("selector")
+            in accepted_widget_ids
+            | {"accepted_amount_uppercase", "field.accepted_amount_uppercase"}
+        ]
+        self.assertTrue(
+            all(row.get("visible") is not False for row in accepted_selector_rows),
+            accepted_selector_rows,
+        )
+        self.assertEqual(
+            {
+                ((row.get("componentConfig") or {}).get("widgetSemantics") or {}).get(
+                    "readonly_empty_text"
+                )
+                for row in widgets_by_field["funding_baseline_id"]
+            },
+            {"提交审批时生成"},
+        )
+        native_field_nodes = {}
+
+        def collect_native_fields(value):
+            if isinstance(value, dict):
+                if value.get("type") == "field" and value.get("name"):
+                    native_field_nodes.setdefault(value["name"], []).append(value)
+                for nested in value.get("children") or []:
+                    collect_native_fields(nested)
+            elif isinstance(value, list):
+                for nested in value:
+                    collect_native_fields(nested)
+
+        collect_native_fields(container_tree)
+        funding_nodes = native_field_nodes["funding_baseline_id"]
+        self.assertTrue(all(node.get("widgetId") for node in funding_nodes))
+        self.assertEqual(
+            {node.get("widgetId") for node in funding_nodes},
+            {row.get("widgetId") for row in widgets_by_field["funding_baseline_id"]},
+        )
+        self.assertEqual(
+            {
+                (((node.get("componentConfig") or {}).get("widgetSemantics") or {}).get(
+                    "readonly_empty_text"
+                ))
+                for node in funding_nodes
+            },
+            {"提交审批时生成"},
+        )
+        form_structure = contract["formStructureContract"]
+        self.assertEqual(form_structure.get("layoutPolicy"), "native_authority")
+        field_labels = dict(form_structure.get("fieldLabels") or {})
+        for slot in form_structure.get("slots") or []:
+            for group in slot.get("groups") or []:
+                field_labels.update(group.get("fieldLabels") or {})
+        self.assertEqual(field_labels.get("amount_uppercase"), "系统生成金额大写")
+        self.assertEqual(
+            field_labels.get("accepted_amount_uppercase"),
+            "历史确认金额大写",
+        )
+        self.assertEqual(field_labels.get("cost_category_name"), "明细成本分类")
 
         def collect_group_titles(value, titles=None):
             if titles is None:
@@ -1903,15 +2491,15 @@ class TestP1PaymentRequestCapability(TransactionCase):
             "readonly layout must retain native occurrence identity",
         )
         group_titles = collect_group_titles(container_tree)
-        for native_anchor in (
-            "申请识别与状态",
-            "项目与收款对象",
-            "结算与合同依据",
-            "本次付款事实",
-            "本次收款账户快照",
-            "付款单位与默认账户",
-            "办理说明与附件",
-        ):
+        expected_business_sections = {
+            "基本信息",
+            "付款依据",
+            "申请金额",
+            "收付款信息",
+            "说明与附件",
+            "履约与追溯",
+        }
+        for native_anchor in expected_business_sections:
             self.assertIn(native_anchor, group_titles)
 
         normalized_fields = set()
@@ -1984,7 +2572,16 @@ class TestP1PaymentRequestCapability(TransactionCase):
             "readonly normalized payload fields missing: %s"
             % sorted(required_fields - declared_fields),
         )
-        always_applicable_layout_fields = required_fields - {"reject_reason", "attachment_ids"}
+        semantic_enhancement_fields = {
+            "payment_flow_label",
+            "legal_next_action_display",
+            "payment_blocking_reason_display",
+        }
+        always_applicable_layout_fields = required_fields - {
+            "reject_reason",
+            "attachment_ids",
+            *semantic_enhancement_fields,
+        }
         self.assertFalse(
             always_applicable_layout_fields - normalized_fields,
             "readonly applicable layout fields missing: %s"
@@ -2168,16 +2765,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
         )
         edit_group_titles = collect_group_titles(edit_container_tree)
         self.assertTrue(
-            {
-                "申请识别与状态",
-                "项目与收款对象",
-                "结算与合同依据",
-                "本次付款事实",
-                "本次收款账户快照",
-                "付款单位与默认账户",
-                "办理说明与附件",
-            }
-            <= set(edit_group_titles),
+            expected_business_sections <= set(edit_group_titles),
             "edit contract must preserve current native section anchors",
         )
 
@@ -2200,8 +2788,8 @@ class TestP1PaymentRequestCapability(TransactionCase):
         # Native occurrences remain structurally complete; draft visibility
         # is carried by the normalized modifier/status authority rather than
         # by deleting the rejected-only field from the layout tree.
-        expected_edit_layout_fields = required_fields
-        self.assertEqual(len(expected_edit_layout_fields), 42)
+        expected_edit_layout_fields = required_fields - semantic_enhancement_fields
+        self.assertEqual(len(expected_edit_layout_fields), 39)
         self.assertEqual(
             edit_layout_fields & required_fields,
             expected_edit_layout_fields,

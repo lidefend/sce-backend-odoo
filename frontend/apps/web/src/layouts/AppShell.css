@@ -1044,6 +1044,9 @@
   }
 
   .shell :deep(.sidebar) {
+    inline-size: var(--sc-shell-sidebar-width);
+    min-inline-size: var(--sc-shell-sidebar-width);
+    flex: 0 0 var(--sc-shell-sidebar-width);
     block-size: 100%;
     min-block-size: 0;
     max-block-size: 100%;

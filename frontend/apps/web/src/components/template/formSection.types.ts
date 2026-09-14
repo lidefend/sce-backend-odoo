@@ -30,6 +30,7 @@ export type FormSectionFieldSchema = {
   occurrenceIndex?: number;
   sourcePosition?: number;
   widgetSemantics?: Record<string, unknown>;
+  readonlyEmptyText?: string;
   componentConfig?: Record<string, unknown>;
   componentKey?: string;
   componentReadiness?: 'ready' | 'readable_fallback' | 'fail_closed';

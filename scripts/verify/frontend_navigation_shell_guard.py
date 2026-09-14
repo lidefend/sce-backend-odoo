@@ -94,8 +94,8 @@ def validate(root: Path = ROOT) -> list[str]:
         ':aria-label="node.label"',
         'const showIcon = computed(() => props.depth < 2)',
         'v-if="showIcon" #icon',
-        '-webkit-line-clamp: 2',
-        'overflow-wrap: anywhere',
+        'text-overflow: ellipsis',
+        'white-space: nowrap',
     ):
         if marker not in menu_node:
             errors.append(f"canonical menu must retain readable deep-label projection: {marker}")
@@ -119,6 +119,13 @@ def validate(root: Path = ROOT) -> list[str]:
     if re.search(r"(?m)^\.sidebar\s*\{", shell_style):
         errors.append("navigation drawer root styling bypasses the child-component deep boundary")
     desktop_shell = shell_style[shell_style.find("@media (min-width: 961px)") :]
+    for marker in (
+        "inline-size: var(--sc-shell-sidebar-width)",
+        "min-inline-size: var(--sc-shell-sidebar-width)",
+        "flex: 0 0 var(--sc-shell-sidebar-width)",
+    ):
+        if marker not in desktop_shell:
+            errors.append(f"desktop sidebar must retain its public width contract: {marker}")
     if "grid-template-columns: 48px minmax(0, 1fr)" in desktop_shell or not re.search(
         r"\.workspace-activity-rail\s*\{[^}]*display:\s*none\s*!important", desktop_shell, re.DOTALL
     ):

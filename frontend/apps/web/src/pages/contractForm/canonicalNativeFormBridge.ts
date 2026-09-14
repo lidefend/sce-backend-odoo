@@ -164,6 +164,7 @@ export function buildCanonicalNativeFormBridge(
   renderModel: CanonicalFormRenderModel,
   relationProjection?: CanonicalRelationProjection,
   claimedStatusbarNodeIdentity = '',
+  claimedStatusbarFieldCode = '',
 ): CanonicalNativeFormBridge {
   const canonicalFieldsByCode = new Map<string, CanonicalFormField>();
   function indexCanonicalFields(node: CanonicalFormNode) {
@@ -297,6 +298,11 @@ export function buildCanonicalNativeFormBridge(
       const attrs = (node.attributes || {}) as Record<string, unknown>;
       const canonicalNodeIdentity = text(attrs.canonicalNodeId);
       if (claimedStatusbarNodeIdentity && canonicalNodeIdentity === claimedStatusbarNodeIdentity) return false;
+      if (
+        claimedStatusbarFieldCode
+        && node.type === 'field'
+        && text(node.name) === claimedStatusbarFieldCode
+      ) return false;
       const surfaceRole = text(attrs.surfaceRole);
       if (surfaceRole === 'hidden') return false;
       if (attrs.technical === true) return false;

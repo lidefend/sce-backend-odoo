@@ -666,6 +666,30 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             },
         )
         self.assertEqual(
+            nodes[0]["componentConfig"]["amountBinding"],
+            {
+                "mode": "sum_when_nonempty",
+                "sourceField": "current_pay_amount",
+                "targetField": "amount",
+                "activeField": "active",
+                "stateField": "amount_uses_details",
+                "rounding": "currency",
+                "emptyBehavior": "preserve_last_total",
+            },
+        )
+        self.assertEqual(
+            nodes[0]["componentConfig"]["optionalDetails"]["entryLabel"],
+            "按明细填写",
+        )
+        self.assertIn(
+            "可直接填写申请金额",
+            nodes[0]["componentConfig"]["optionalDetails"]["directAmountMessage"],
+        )
+        self.assertIn(
+            "最后一次明细合计会保留",
+            nodes[0]["componentConfig"]["optionalDetails"]["lastRowRemovalMessage"],
+        )
+        self.assertEqual(
             projected["layoutContract"]["componentRegistry"]["sc.payment.settlement_detail_collection"]["adapter"]["web_pc"],
             "PaymentSettlementDetailCollectionControl",
         )

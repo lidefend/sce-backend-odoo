@@ -33,6 +33,19 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     ):
         if marker not in html_field_branch:
             failures.append(f"professional html field does not pass through {marker}")
+    field_branches = {
+        "boolean": component.split('<ScCheckbox', 1)[1].split('/>', 1)[0] if '<ScCheckbox' in component else '',
+        "text": component.split('<ScTextarea', 1)[1].split('/>', 1)[0] if '<ScTextarea' in component else '',
+        "number": component.split('<ScNumberInput', 1)[1].split('/>', 1)[0] if '<ScNumberInput' in component else '',
+    }
+    for field_type, markers in {
+        "boolean": (':id="controlId"', ':required="field.required"', ':invalid="field.invalid"', ':described-by="describedBy"'),
+        "text": (':id="controlId"', ':required="field.required"', ':status="field.invalid ? \'error\' : \'default\'"', ':described-by="describedBy"'),
+        "number": (':id="controlId"', ':required="field.required"', ':invalid="field.invalid"', ':described-by="describedBy"'),
+    }.items():
+        for marker in markers:
+            if marker not in field_branches[field_type]:
+                failures.append(f"professional {field_type} field does not pass through {marker}")
     for marker in (
         ':id="id"', 'role="textbox"', 'aria-multiline="true"',
         ':aria-required="required ? \'true\' : undefined"',

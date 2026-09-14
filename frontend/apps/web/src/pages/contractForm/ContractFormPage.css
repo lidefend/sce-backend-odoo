@@ -19,7 +19,9 @@
   }
 }
 
-.contract-form-native-shell :deep([data-group-title]) {
+.contract-form-native-shell :deep([data-group-title]),
+.contract-form-native-shell :deep([data-field-name]),
+.contract-form-native-shell :deep([data-validation-target]) {
   scroll-margin-top: calc(var(--sc-form-command-bar-height) + var(--sc-form-section-nav-height) + var(--sc-form-sticky-gap) * 2);
 }
 

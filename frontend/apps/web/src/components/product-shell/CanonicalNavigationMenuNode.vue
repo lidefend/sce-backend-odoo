@@ -73,15 +73,12 @@ const icon = computed<NavigationIconName>(() => {
 
 <style scoped>
 .navigation-node__label {
-  display: -webkit-box;
+  display: block;
   min-width: 0;
   overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
   line-height: 18px;
-  overflow-wrap: anywhere;
   text-overflow: ellipsis;
-  white-space: normal;
+  white-space: nowrap;
 }
 
 .navigation-node__badge {

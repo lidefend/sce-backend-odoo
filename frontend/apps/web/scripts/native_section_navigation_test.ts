@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import type { CanonicalFormNode } from '../src/app/presentation/canonicalFormRenderModel';
 import {
   activeSectionKeyAtAnchor,
+  governedFormStructureSectionNavigationItems,
   nextBusinessActionLabel,
   nativeSectionNavigationRole,
   relationshipCollectionNavigationItems,
@@ -12,6 +13,7 @@ import {
 } from '../src/pages/contractForm/nativeSectionNavigation';
 import {
   collectNativeBusinessSections,
+  governedFormStructureSectionIdentity,
   nativeBusinessSectionIdentity,
 } from '../src/pages/contractForm/nativeBusinessSection';
 
@@ -27,6 +29,49 @@ assert.equal(nativeBusinessSectionIdentity({
 assert.equal(nativeBusinessSectionIdentity({
   type: 'page', string: '业务页签', attributes: { 'data-sc-anchor': 'tab' },
 }), null, 'tabs retain their own navigation and do not become group headings');
+
+const governedProjection = node({
+  nodeId: 'payment.contract-basis',
+  title: '结算与合同依据',
+  semanticSlot: 'configured_form',
+  semanticGroup: 'configured_group_2',
+  nativePresentation: {
+    sourceAuthority: {
+      kind: 'unified_page_contract_v2',
+      runtime_carrier: 'form_structure_contract',
+      no_business_fact_authority: true,
+    },
+  },
+});
+assert.deepEqual(governedFormStructureSectionIdentity(governedProjection), {
+  anchor: 'form-structure:payment.contract-basis',
+  label: '结算与合同依据',
+});
+assert.deepEqual(governedFormStructureSectionNavigationItems([governedProjection]).map((item) => ({
+  key: item.key, label: item.label, selector: item.selector,
+})), [{
+  key: 'form-structure:payment.contract-basis',
+  label: '结算与合同依据',
+  selector: '[data-form-section-target="form-structure:payment.contract-basis"]',
+}]);
+assert.equal(governedFormStructureSectionIdentity(node({
+  nodeId: 'plain.layout', title: '普通布局组', nativePresentation: {},
+})), null, 'an ordinary titled group must not become a governed business section');
+assert.equal(governedFormStructureSectionIdentity(node({
+  nodeId: 'projected.contract-basis', title: '合同依据', nativePresentation: {},
+  fields: [],
+  children: [node({
+    nodeId: 'projected.contract-basis.contract', kind: 'field', title: '', nativePresentation: {},
+    fields: [field({ semanticSlot: 'handling', semanticGroup: 'contract-basis' })], children: [],
+  })],
+})), null, 'descendant field placement must not promote an internal layout group into a business section');
+assert.equal(governedFormStructureSectionIdentity(node({
+  nodeId: 'mixed.layout', title: '普通混合布局', nativePresentation: {}, fields: [],
+  children: [
+    node({ nodeId: 'mixed.a', kind: 'field', title: '', fields: [field({ semanticSlot: 'a', semanticGroup: 'a' })], children: [] }),
+    node({ nodeId: 'mixed.b', kind: 'field', title: '', fields: [field({ semanticSlot: 'b', semanticGroup: 'b' })], children: [] }),
+  ],
+})), null, 'mixed semantic placements must not promote a layout container by title alone');
 
 const hiddenAncestorSections = collectNativeBusinessSections([node({
   nodeId: 'hidden.parent', kind: 'container', visible: false, children: [node({

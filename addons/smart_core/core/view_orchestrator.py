@@ -71,6 +71,10 @@ class ViewOrchestrator:
             or prior_view_trace.get("form_structure_authority")
             or ""
         ).strip() == "entry_semantic_surface"
+        native_semantic_surface_applied = bool(
+            prior_view_governance.get("native_semantic_surface")
+            or prior_view_trace.get("native_semantic_surface")
+        )
         business_config_form_fields: set[str] = {
             str(item).strip()
             for item in (
@@ -98,6 +102,10 @@ class ViewOrchestrator:
                     normalized_view_type == "form"
                     and self._config_declares_semantic_entry_surface(config, normalized_view_type, model_name)
                 )
+                declares_native_semantic_surface = (
+                    normalized_view_type == "form"
+                    and self._config_declares_native_semantic_surface(config, normalized_view_type, model_name)
+                )
                 if normalized_view_type == "form":
                     business_config_form_fields.update(self._config_declared_field_names(config, normalized_view_type, model_name))
                 out = self._apply_business_config_contract(
@@ -107,7 +115,7 @@ class ViewOrchestrator:
                     model_name,
                     preserve_native_members=bool(view_id),
                 )
-                if out != before or declares_form_layout_overlay or declares_semantic_entry_surface:
+                if out != before or declares_form_layout_overlay or declares_semantic_entry_surface or declares_native_semantic_surface:
                     applied_row = {
                         "id": int(config.id),
                         "name": config.name,
@@ -122,6 +130,7 @@ class ViewOrchestrator:
                     applied_contracts.append(applied_row)
                 form_layout_overlay_applied = form_layout_overlay_applied or declares_form_layout_overlay
                 semantic_entry_surface_applied = semantic_entry_surface_applied or declares_semantic_entry_surface
+                native_semantic_surface_applied = native_semantic_surface_applied or declares_native_semantic_surface
 
         # Compatibility: legacy form field policy remains an orchestration input
         # until low-code writes into ui.business.config.contract directly.
@@ -144,6 +153,7 @@ class ViewOrchestrator:
                 # native locator/occurrence identity.
                 allow_layout_append=(
                     not semantic_entry_surface_applied
+                    and not native_semantic_surface_applied
                     and not bool(view_id)
                 ),
             )
@@ -180,7 +190,13 @@ class ViewOrchestrator:
             "business_config_contracts": applied_contracts,
             "legacy_field_policy_overlay": bool(legacy_policy_applied),
             "form_layout_overlay": bool(form_layout_overlay_applied),
-            "form_structure_authority": "entry_semantic_surface" if semantic_entry_surface_applied else "",
+            "form_structure_authority": (
+                "entry_semantic_surface" if semantic_entry_surface_applied
+                else "native_authority" if native_semantic_surface_applied
+                else ""
+            ),
+            "form_presentation_mode": "task" if semantic_entry_surface_applied or native_semantic_surface_applied else "",
+            "native_semantic_surface": bool(native_semantic_surface_applied),
             "business_config_form_fields": sorted(business_config_form_fields),
             "tenant_extension_field_count": len(tenant_extension_fields),
             "tenant_extension_source": (
@@ -198,7 +214,13 @@ class ViewOrchestrator:
             "business_config_contracts": applied_contracts,
             "legacy_field_policy_overlay": bool(legacy_policy_applied),
             "form_layout_overlay": bool(form_layout_overlay_applied),
-            "form_structure_authority": "entry_semantic_surface" if semantic_entry_surface_applied else "",
+            "form_structure_authority": (
+                "entry_semantic_surface" if semantic_entry_surface_applied
+                else "native_authority" if native_semantic_surface_applied
+                else ""
+            ),
+            "form_presentation_mode": "task" if semantic_entry_surface_applied or native_semantic_surface_applied else "",
+            "native_semantic_surface": bool(native_semantic_surface_applied),
             "business_config_form_fields": sorted(business_config_form_fields),
             "tenant_extension_field_count": len(tenant_extension_fields),
         }
@@ -252,6 +274,34 @@ class ViewOrchestrator:
             return False
         spec = self._sanitize_spec_field_refs(spec, model_name)
         return self._is_entry_semantic_surface(spec) and bool(spec.get("sections"))
+
+    def _config_declares_native_semantic_surface(self, config, view_type: str, model_name: str) -> bool:
+        payload = config.contract_json if isinstance(config.contract_json, dict) else {}
+        spec = self._view_spec(payload, view_type)
+        if not isinstance(spec, dict) or not self._is_native_semantic_surface(spec):
+            return False
+        conflicts = [
+            key for key in ("layout", "sections", "fields", "field_slots", "actions", "header_buttons", "columns", "cols")
+            if spec.get(key) not in (None, [], {}, "")
+        ]
+        if conflicts:
+            raise ValueError(
+                "NATIVE_SEMANTIC_SURFACE_STRUCTURE_CONFLICT: %s" % ",".join(sorted(conflicts))
+            )
+        if model_name in self.env:
+            model_fields = set(getattr(self.env[model_name], "_fields", {}) or {})
+            unknown = sorted({
+                str(name or "").strip()
+                for anchor in (spec.get("semantic_anchors") if isinstance(spec.get("semantic_anchors"), list) else [])
+                if isinstance(anchor, dict)
+                for name in (anchor.get("fields") if isinstance(anchor.get("fields"), list) else [])
+                if str(name or "").strip() and str(name or "").strip() not in model_fields
+            })
+            if unknown:
+                raise ValueError(
+                    "NATIVE_SEMANTIC_SURFACE_UNKNOWN_FIELD: %s" % ",".join(unknown)
+                )
+        return True
 
     def _config_declared_field_names(self, config, view_type: str, model_name: str) -> set[str]:
         payload = config.contract_json if isinstance(config.contract_json, dict) else {}
@@ -418,7 +468,7 @@ class ViewOrchestrator:
     ) -> dict:
         native_layout = deepcopy(contract.get("layout"))
         self._apply_view_options(contract, spec, scalar_keys=("title",), dict_keys=("defaults", "context", "domain"))
-        semantic_surface = self._is_entry_semantic_surface(spec)
+        semantic_surface = self._is_entry_semantic_surface(spec) or self._is_native_semantic_surface(spec)
         if (
             isinstance(spec.get("layout"), list)
             and not semantic_surface
@@ -591,6 +641,10 @@ class ViewOrchestrator:
     def _is_entry_semantic_surface(self, spec: dict) -> bool:
         mode = str(spec.get("composition_mode") or spec.get("compositionMode") or "").strip()
         return mode in {"entry_semantic_surface", "semantic_entry_surface"}
+
+    def _is_native_semantic_surface(self, spec: dict) -> bool:
+        mode = str(spec.get("composition_mode") or spec.get("compositionMode") or "").strip()
+        return mode in {"native_semantic_surface", "semantic_native_surface"}
 
     def _entry_semantic_surface_layout(self, effective: dict[str, dict[str, Any]], spec: dict, fields_meta: dict) -> list:
         sections = spec.get("sections") if isinstance(spec.get("sections"), list) else []

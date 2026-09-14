@@ -42,14 +42,12 @@
         :relation-nodes="floorplan.relationNodes"
         :subordinate-nodes="floorplanSubordinateNodes"
         :decision-mode="true"
+        :blocked-action-message="floorplan.blockedActions.length ? blockedActionMessage : ''"
         :relation-adapter="relationAdapter"
         :has-collaboration="hasCollaboration"
         @field-change="emit('field-change', $event)"
         @field-action="emit('field-action', $event)"
       >
-        <template v-if="floorplan.blockedActions.length" #blocking>
-          <ScInlineState class="canonical-form-blocking-notice" state="info" :label="blockedActionMessage" data-canonical-blocking-notice />
-        </template>
         <template v-if="hasCollaboration" #collaboration>
           <NativeCollaborationPanel
             v-if="showCollaborationPanel"
@@ -257,6 +255,7 @@ const nativeBridge = computed(() => nativeBridgeModel.value
     nativeBridgeModel.value,
     props.relationAdapter as CanonicalRelationProjection,
     props.claimedStatusbarNodeIdentity || '',
+    props.claimedStatusbarFieldCode || '',
   )
   : null);
 const floorplanSubordinateNodes = computed(() => floorplan.value.subordinateNodes
