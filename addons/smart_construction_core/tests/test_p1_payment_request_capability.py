@@ -1756,6 +1756,15 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(request.payee_account_completeness, "incomplete")
         self.assertEqual(request.payee_account_source_display, "往来单位默认结算账户")
 
+        request.payment_account_name = "Application snapshot name"
+        partner.sc_bank_name = "Partner fallback bank"
+        partner.sc_bank_account = "Partner fallback account"
+        self.assertEqual(request.payee_account_completeness, "complete")
+        self.assertEqual(
+            request.payee_account_source_display,
+            "本次申请快照（部分沿用往来单位默认账户）",
+        )
+
     def test_draft_request_cannot_generate_or_anchor_execution(self):
         request = self._request()
         with self.assertRaisesRegex(UserError, "必须处于已批准状态"):

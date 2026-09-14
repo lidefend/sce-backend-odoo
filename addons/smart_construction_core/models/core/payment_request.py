@@ -1287,21 +1287,28 @@ class PaymentRequest(models.Model):
     def _compute_payment_handling_summary(self):
         execution_state_labels = dict(self.env["sc.payment.execution"]._fields["state"].selection)
         for record in self:
-            if any(
-                (
-                    record.payment_account_name,
-                    record.payment_bank_name,
-                    record.payment_account_no,
+            snapshot_values = (
+                record.payment_account_name,
+                record.payment_bank_name,
+                record.payment_account_no,
+            )
+            partner_values = (
+                record.partner_account_name,
+                record.partner_bank_name,
+                record.partner_bank_account,
+            )
+            uses_snapshot = any(snapshot_values)
+            uses_partner_fallback = any(
+                not snapshot_value and partner_value
+                for snapshot_value, partner_value in zip(snapshot_values, partner_values)
+            )
+            if uses_snapshot and uses_partner_fallback:
+                record.payee_account_source_display = _(
+                    "本次申请快照（部分沿用往来单位默认账户）"
                 )
-            ):
+            elif uses_snapshot:
                 record.payee_account_source_display = _("本次申请账户快照")
-            elif any(
-                (
-                    record.partner_account_name,
-                    record.partner_bank_name,
-                    record.partner_bank_account,
-                )
-            ):
+            elif any(partner_values):
                 record.payee_account_source_display = _("往来单位默认结算账户")
             else:
                 record.payee_account_source_display = False
