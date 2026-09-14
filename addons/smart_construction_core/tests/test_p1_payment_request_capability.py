@@ -861,6 +861,11 @@ class TestP1PaymentRequestCapability(TransactionCase):
                 detached_line.write({"settlement_line_id": settlement.line_ids.id})
         self.assertFalse(detached_line.settlement_line_id)
 
+        request.outflow_line_ids.write({"active": False})
+        self.assertTrue(
+            request.with_context(active_test=False).outflow_line_ids,
+            "archived settlement detail must remain available to currency authority checks",
+        )
         with self.assertRaisesRegex(ValidationError, "币种"):
             with self.env.cr.savepoint():
                 request.write({"currency_id": foreign_currency.id})

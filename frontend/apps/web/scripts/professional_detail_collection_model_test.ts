@@ -57,6 +57,9 @@ assert.throws(() => detailCollectionAuthority({ componentKey: 'sc.table.data', t
 assert.equal(optionalDetailCollectionPresentation({ componentKey: 'sc.table.data', type: 'one2many' } as never, 0), null);
 
 assert.equal(roundSettlementCurrencyAmount(1.234, 0.01), 1.23);
+assert.equal(roundSettlementCurrencyAmount(1.005, 0.01), 1.01);
+assert.equal(roundSettlementCurrencyAmount(2.675, 0.01), 2.68);
+assert.equal(roundSettlementCurrencyAmount(-1.005, 0.01), -1.01);
 assert.equal(ratioSettlementApplyTotal([
   { remaining: 0.01 },
   { remaining: 0.01 },
@@ -67,6 +70,10 @@ assert.equal(ratioSettlementApplyTotal([{ remaining: 12.34 }], 120, 0.01), 12.34
 assert.deepEqual(
   ratioSettlementApplyAmounts([{ remaining: 0.004 }, { remaining: 1 }], 50, 0.01),
   [0, 0.5],
+);
+assert.deepEqual(
+  ratioSettlementApplyAmounts([{ remaining: 0.04 }, { remaining: 0.04 }], 50, 0.05),
+  [0, 0],
 );
 
 const requestAuthority = createOne2manyRelationRequestAuthority();

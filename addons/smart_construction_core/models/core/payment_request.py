@@ -2704,9 +2704,10 @@ class PaymentRequest(models.Model):
     @api.constrains("currency_id")
     def _check_detail_settlement_currency_consistency(self):
         for rec in self:
-            for settlement in rec.outflow_line_ids.mapped(
+            all_detail_lines = rec.with_context(active_test=False).outflow_line_ids
+            for settlement in all_detail_lines.mapped(
                 "settlement_line_id.settlement_id"
-            ) | rec.outflow_line_ids.mapped("settlement_id"):
+            ) | all_detail_lines.mapped("settlement_id"):
                 opm.ensure_payment_settlement_currency_consistency(rec, settlement)
 
     @api.constrains("material_settlement_id", "type", "project_id", "partner_id", "amount", "state")

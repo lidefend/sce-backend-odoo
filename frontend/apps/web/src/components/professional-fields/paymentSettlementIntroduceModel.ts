@@ -5,7 +5,12 @@ export type SettlementApplyPreviewLine = Readonly<{
 export function roundSettlementCurrencyAmount(value: number, rounding: number): number {
   const normalizedRounding = Number(rounding || 0);
   if (!(normalizedRounding > 0)) return value;
-  return Math.round((value / normalizedRounding) + Number.EPSILON) * normalizedRounding;
+  const normalizedValue = Number(value || 0) / normalizedRounding;
+  if (!Number.isFinite(normalizedValue) || normalizedValue === 0) return normalizedValue;
+  const epsilon = 2 ** (Math.log2(Math.abs(normalizedValue)) - 52);
+  const roundedUnits = Math.sign(normalizedValue)
+    * Math.floor(Math.abs(normalizedValue) + epsilon + 0.5);
+  return roundedUnits * normalizedRounding;
 }
 
 export function ratioSettlementApplyTotal(
