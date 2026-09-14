@@ -1663,6 +1663,23 @@ class TestP1PaymentRequestCapability(TransactionCase):
             [node.get("string") for node in payment_section_nodes],
             ["基本信息", "付款依据", "收付款信息", "付款明细", "说明与附件", "履约与追溯"],
         )
+        self.assertFalse(payment_form_arch.xpath("/form/sheet/div[contains(concat(' ', normalize-space(@class), ' '), ' oe_title ')]"))
+        self.assertFalse(payment_form_arch.xpath("/form/sheet//group//field[@name='name']"))
+        blocking_nodes = payment_form_arch.xpath("/form/sheet/div[contains(concat(' ', normalize-space(@class), ' '), ' alert ')]/field[@name='payment_blocking_reason_display']")
+        self.assertEqual(len(blocking_nodes), 1)
+        self.assertEqual(blocking_nodes[0].get("nolabel"), "1")
+        self.assertEqual(
+            payment_form_arch.xpath("/form/sheet/group[1]/group[1]/field[@name='payee_account_completeness']/@widget"),
+            ["badge"],
+        )
+        self.assertEqual(
+            payment_form_arch.xpath("/form/sheet/group[1]/group[1]/field[@name='payment_execution_status_display']/@widget"),
+            ["badge"],
+        )
+        self.assertEqual(
+            payment_form_arch.xpath("/form/sheet/group[1]/group[2]/field[@name='partner_transaction_eligibility']/@widget"),
+            ["badge"],
+        )
         payment_action = self.env.ref("smart_construction_core.action_payment_request_user_payment_apply")
         action_form_views = payment_action.view_ids.filtered(lambda row: row.view_mode == "form").mapped("view_id")
         self.assertEqual(action_form_views, payment_form)

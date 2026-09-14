@@ -284,6 +284,23 @@
             <field name="mode">primary</field>
             <field name="priority">30</field>
             <field name="arch" type="xml">
+                <xpath expr="/form/sheet/div[hasclass('oe_title')]" position="replace"/>
+                <xpath expr="/form/sheet/group[1]/group[1]/field[@name='name']" position="replace"/>
+                <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payment_blocking_reason_display']" position="replace"/>
+                <xpath expr="/form/sheet/div[hasclass('oe_button_box')]" position="before">
+                    <div class="alert alert-info" role="status">
+                        <field name="payment_blocking_reason_display" readonly="1" nolabel="1"/>
+                    </div>
+                </xpath>
+                <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payee_account_completeness']" position="attributes">
+                    <attribute name="widget">badge</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[1]/group[1]/field[@name='payment_execution_status_display']" position="attributes">
+                    <attribute name="widget">badge</attribute>
+                </xpath>
+                <xpath expr="/form/sheet/group[1]/group[2]/field[@name='partner_transaction_eligibility']" position="attributes">
+                    <attribute name="widget">badge</attribute>
+                </xpath>
                 <xpath expr="/form/sheet/group[1]" position="attributes">
                     <attribute name="name">sc_payment_request_pay_basic</attribute>
                     <attribute name="string">基本信息</attribute>
