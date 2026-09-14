@@ -53,7 +53,6 @@
             <label v-if="!fieldConfigEditable && !field.hideLabel && !detailCollectionOwnsVisibleTitle(field) && !attachmentControlOwnsVisibleTitle(field)" class="label" :for="fieldControlId(field)">
               {{ field.label }}
               <span v-if="field.required && !field.readonly" class="field-state field-state--required"><span aria-hidden="true">*</span><span class="sr-only">必填</span></span>
-              <span v-else-if="field.readonly && !preferReadonlyFacts && !allFieldsReadonly" class="field-state">只读</span>
             </label>
             <ScInput
               v-else-if="fieldConfigEditable"
