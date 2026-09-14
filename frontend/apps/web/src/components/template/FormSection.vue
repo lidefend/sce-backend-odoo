@@ -144,7 +144,9 @@
                 :field="field"
                 :adapter="relationAdapter"
               >
-                <X2ManyRelationRenderer :field="field" :adapter="relationAdapter" @reload-requested="emitFieldAction(field, { key: 'reload-requested', label: '刷新', value: 'reload-requested' })" />
+                <template #default="{ adapter: detailAdapter }">
+                  <X2ManyRelationRenderer :field="field" :adapter="detailAdapter" @reload-requested="emitFieldAction(field, { key: 'reload-requested', label: '刷新', value: 'reload-requested' })" />
+                </template>
               </ProfessionalDetailCollectionControl>
               <ProfessionalRelationFieldControl v-else-if="usesProfessionalMany2one(field) && field.readonly" :field="field">
                 <slot name="readonly" :field="field">

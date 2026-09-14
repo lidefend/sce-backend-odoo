@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {
   detailCollectionAuthority,
   isProfessionalDetailCollectionField,
+  optionalDetailCollectionPresentation,
 } from '../src/components/professional-fields/professionalDetailCollectionModel';
 import {
   createOne2manyRelationPopupAuthority,
@@ -48,6 +49,7 @@ for (const presentationMode of modes) {
 assert.equal(matrix, 6);
 assert.equal(isProfessionalDetailCollectionField({ componentKey: 'sc.relation.table', type: 'many2many' } as never), false);
 assert.throws(() => detailCollectionAuthority({ componentKey: 'sc.table.data', type: 'one2many' } as never, {} as never), /PROFESSIONAL_DETAIL_COLLECTION_UNSUPPORTED/);
+assert.equal(optionalDetailCollectionPresentation({ componentKey: 'sc.table.data', type: 'one2many' } as never, 0), null);
 
 const requestAuthority = createOne2manyRelationRequestAuthority();
 const firstRequest = requestAuthority.begin('line:1:partner_id');
