@@ -2226,7 +2226,9 @@ try {
           });
         }
         let sectionBrowseFocusEvidence = { checked: false, reason: 'not requested', pass: true };
-        if (target.exerciseSectionBrowseFocus === true) {
+        const exerciseSectionBrowseFocus = target.exerciseSectionBrowseFocus === true
+          && (!target.sectionBrowseFocusViewport || target.sectionBrowseFocusViewport === viewport.name);
+        if (exerciseSectionBrowseFocus) {
           const mutationCountBefore = report.mutationCount;
           const navigation = page.locator('[data-form-section-navigation]:visible').first();
           await navigation.waitFor({ state: 'visible', timeout: 15000 });
@@ -2390,7 +2392,7 @@ try {
               || reverseNavigationJourney.every((item) => item.pass))
             && (target.sectionManualJourneyLabels === undefined
               || manualNavigationJourney.every((item) => item.pass))
-            && (target.exerciseSectionBrowseFocus !== true || sectionBrowseFocusEvidence.pass)
+            && (!exerciseSectionBrowseFocus || sectionBrowseFocusEvidence.pass)
             && (viewport.name !== 'mobile' || top.mobileMonetarySummaryFirst)
             && (target.expectRelationFirstViewport !== true || viewport.name !== 'desktop' || (top.relationInFirstViewport && top.addActionInFirstViewport))
             && (target.expectReadonlyDetailComparison !== true || (viewport.name === 'desktop' ? top.readonlyTableVisible : top.readonlyCardsVisible))
