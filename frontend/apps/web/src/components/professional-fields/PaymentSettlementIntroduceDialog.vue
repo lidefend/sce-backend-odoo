@@ -198,6 +198,7 @@ import ScInlineState from '../design-system/ScInlineState.vue';
 import { intentRequest } from '../../api/intents';
 import { formatMonetaryDisplayValue } from '../template/formSection.mapper';
 import {
+  ratioSettlementApplyAmounts,
   ratioSettlementApplyTotal,
   roundSettlementCurrencyAmount,
 } from './paymentSettlementIntroduceModel';
@@ -415,6 +416,11 @@ const canConfirmIntroduce = computed(() => {
   if (!selectedSettlementId.value || selectedLineIds.value.size === 0) return false;
   if (applyMode.value === 'amount' && (!(Number(applyTotal.value) > 0))) return false;
   if (applyMode.value === 'ratio' && (!(Number(applyRatio.value) > 0))) return false;
+  if (applyMode.value === 'ratio' && ratioSettlementApplyAmounts(
+    selectedLines.value,
+    applyRatio.value,
+    Number(previewData.value?.currency.rounding || 0),
+  ).some((amount) => !(amount > 0))) return false;
   return selectedLinesApply.value > 0;
 });
 

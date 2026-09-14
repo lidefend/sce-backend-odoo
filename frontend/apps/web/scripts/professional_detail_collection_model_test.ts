@@ -18,6 +18,7 @@ import {
   dynamicRelationDomainFromDescriptor,
 } from '../src/pages/contractForm/relationDescriptor';
 import {
+  ratioSettlementApplyAmounts,
   ratioSettlementApplyTotal,
   roundSettlementCurrencyAmount,
 } from '../src/components/professional-fields/paymentSettlementIntroduceModel';
@@ -63,6 +64,10 @@ assert.equal(ratioSettlementApplyTotal([
 ], 50, 0.01), 0.03);
 assert.equal(ratioSettlementApplyTotal([{ remaining: 12.34 }], 0, 0.01), 0);
 assert.equal(ratioSettlementApplyTotal([{ remaining: 12.34 }], 120, 0.01), 12.34);
+assert.deepEqual(
+  ratioSettlementApplyAmounts([{ remaining: 0.004 }, { remaining: 1 }], 50, 0.01),
+  [0, 0.5],
+);
 
 const requestAuthority = createOne2manyRelationRequestAuthority();
 const firstRequest = requestAuthority.begin('line:1:partner_id');

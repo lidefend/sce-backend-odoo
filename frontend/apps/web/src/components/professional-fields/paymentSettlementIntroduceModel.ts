@@ -13,12 +13,23 @@ export function ratioSettlementApplyTotal(
   ratio: number,
   rounding: number,
 ): number {
+  const amounts = ratioSettlementApplyAmounts(lines, ratio, rounding);
+  return roundSettlementCurrencyAmount(
+    amounts.reduce((sum, amount) => sum + amount, 0),
+    rounding,
+  );
+}
+
+export function ratioSettlementApplyAmounts(
+  lines: readonly SettlementApplyPreviewLine[],
+  ratio: number,
+  rounding: number,
+): readonly number[] {
   const normalizedRatio = Math.min(Math.max(Number(ratio) || 0, 0), 100);
-  const total = lines.reduce((sum, line) => (
-    sum + roundSettlementCurrencyAmount(
+  return Object.freeze(lines.map((line) => (
+    roundSettlementCurrencyAmount(
       (Number(line.remaining) || 0) * normalizedRatio / 100,
       rounding,
     )
-  ), 0);
-  return roundSettlementCurrencyAmount(total, rounding);
+  )));
 }
