@@ -660,7 +660,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
 
     def test_historical_detail_amount_mismatch_is_visible_and_blocks_submit(self):
         request = self._request(amount=50.0)
-        self.env["payment.request.line"].create(
+        detail = self.env["payment.request.line"].create(
             {
                 "request_id": request.id,
                 "legacy_line_id": "p1-detail-mismatch",
@@ -683,6 +683,10 @@ class TestP1PaymentRequestCapability(TransactionCase):
         request.write({"note": "只更新办理说明，不应改写历史金额"})
         self.assertEqual(request.amount, 75.0)
         self.assertEqual(request.detail_amount_total, 50.0)
+        detail.write({"amount": 101.0, "note": "只更新来源事实，不应重算申请金额"})
+        self.assertEqual(request.amount, 75.0)
+        request._onchange_outflow_line_amount()
+        self.assertEqual(request.amount, 75.0)
         with self.assertRaisesRegex(ValidationError, "必须与付款申请明细合计"):
             request.with_context(payment_soft_gate=True).action_submit()
         self.assertEqual(request.state, "draft")

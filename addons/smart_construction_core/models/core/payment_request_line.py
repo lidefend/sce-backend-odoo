@@ -211,12 +211,15 @@ class PaymentRequestLine(models.Model):
             "amount",
             "current_pay_amount",
         }
+        amount_authority_fields = {"request_id", "active", "current_pay_amount"}
         requests = self.mapped("request_id")
-        fallback_totals = {
-            request.id: request._payment_detail_amount_total()
-            for request in requests
-            if request._active_payment_detail_lines()
-        }
+        fallback_totals = {}
+        if amount_authority_fields & set(vals):
+            fallback_totals = {
+                request.id: request._payment_detail_amount_total()
+                for request in requests
+                if request._active_payment_detail_lines()
+            }
         if allocation_basis_fields & set(vals):
             request_ids = set(requests.ids)
             if "request_id" in vals and vals.get("request_id"):
@@ -235,7 +238,7 @@ class PaymentRequestLine(models.Model):
                     if vals.get("settlement_id") != line.settlement_line_id.settlement_id.id:
                         raise ValidationError("付款申请明细的结算单与结算行不一致。")
         result = super().write(vals)
-        if allocation_basis_fields & set(vals):
+        if amount_authority_fields & set(vals):
             requests |= self.mapped("request_id")
             requests._sync_amount_from_detail_lines(fallback_totals=fallback_totals)
         return result

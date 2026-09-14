@@ -927,8 +927,21 @@ class PaymentRequest(models.Model):
     def _onchange_outflow_line_amount(self):
         warning = False
         for record in self.filtered(lambda row: row.type == "pay"):
-            if record._active_payment_detail_lines():
-                record.amount = record._payment_detail_amount_total()
+            lines = record._active_payment_detail_lines()
+            origin = record._origin if record._origin and record._origin.id else self.env[record._name]
+            origin_lines = origin._active_payment_detail_lines() if origin else self.env["payment.request.line"]
+            total = record._payment_detail_amount_total() if lines else 0.0
+            origin_total = origin._payment_detail_amount_total() if origin_lines else 0.0
+            currency = record.currency_id or record.env.company.currency_id
+            rounding = currency.rounding if currency else 0.01
+            authority_changed = (
+                len(lines) != len(origin_lines)
+                or float_compare(total, origin_total, precision_rounding=rounding) != 0
+            )
+            if not authority_changed:
+                continue
+            if lines:
+                record.amount = total
                 continue
             warning = {
                 "title": _("已切回直接填写"),
