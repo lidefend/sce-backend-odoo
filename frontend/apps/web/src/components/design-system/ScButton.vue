@@ -14,7 +14,7 @@
     :type="type"
     :class="['sc-btn', `sc-btn-${variant}`]"
     :disabled="disabled || loading"
-    :aria-disabled="disabled || loading || undefined"
+    :aria-disabled="ariaDisabled || disabled || loading || undefined"
     :aria-busy="loading || undefined"
   >
     <span class="sc-btn__content"><slot /></span>
@@ -37,7 +37,7 @@
     :size="size"
     :loading="loading"
     :disabled="disabled || loading"
-    :aria-disabled="disabled || loading || undefined"
+    :aria-disabled="ariaDisabled || disabled || loading || undefined"
     :aria-busy="loading || undefined"
   >
     <span class="sc-btn__content"><slot /></span>
@@ -60,6 +60,7 @@ const props = withDefaults(defineProps<{
   size?: ScPrimitiveSize;
   status?: ScPrimitiveStatus;
   disabled?: boolean;
+  ariaDisabled?: boolean;
   loading?: boolean;
   loadingLabel?: string;
   appearance?: 'default' | 'structured-content' | 'metric' | 'section-tab' | 'menu-item' | 'tree-item' | 'toolbar-chip' | 'toolbar-menu-toggle' | 'status-chip' | 'info-action' | 'favorite-toggle' | 'smart-action' | 'relation-tag' | 'surface-tile' | 'outline-action' | 'column-settings' | 'summary-chip' | 'breadcrumb-item' | 'context-action' | 'auth-link' | 'primary-submit' | 'dashboard-action' | 'dashboard-quick-link' | 'dashboard-recent-link' | 'scope-option' | 'scope-segment' | 'account-context' | 'account-context-compact';
