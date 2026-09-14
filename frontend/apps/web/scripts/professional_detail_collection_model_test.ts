@@ -188,6 +188,11 @@ assert.deepEqual(buildOne2ManyInlineCommands({
   draftRows: [{ id: 41, removed: true, values: {} }],
   mode: 'write',
 }), [[2, 41]]);
+assert.deepEqual(buildOne2ManyInlineCommands({
+  original: [],
+  draftRows: [{ id: null, isNew: true, removed: true, values: { name: '未保存新行' } }],
+  mode: 'write',
+}), [], 'cancelling an unsaved row must not emit a database delete command');
 assert.deepEqual(buildX2ManyCommands({
   kind: 'many2many',
   current: [7],
