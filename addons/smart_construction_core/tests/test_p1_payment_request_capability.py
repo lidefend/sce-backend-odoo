@@ -2099,6 +2099,18 @@ class TestP1PaymentRequestCapability(TransactionCase):
             ["outflow_line_ids"],
         )
         self.assertEqual(
+            amount_section.xpath("./group[1]/field[@name='outflow_line_ids']/tree/@delete"),
+            ["true"],
+        )
+        self.assertEqual(
+            payment_form_arch.xpath("//field[@name='receipt_invoice_line_ids']/tree/@delete"),
+            ["false"],
+        )
+        self.assertEqual(
+            payment_form_arch.xpath("//field[@name='ledger_line_ids']/tree/@delete"),
+            ["false"],
+        )
+        self.assertEqual(
             amount_section.xpath("./group[1]/field[@name='detail_amount_total']/@invisible"),
             ["not amount_uses_details"],
         )

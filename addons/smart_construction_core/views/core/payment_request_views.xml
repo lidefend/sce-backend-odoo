@@ -229,7 +229,7 @@
                             </page>
                             <page string="付款申请明细" invisible="type != 'pay'">
                                 <field name="outflow_line_ids" nolabel="1">
-                                    <tree editable="bottom" create="false" delete="false">
+                                    <tree editable="bottom" create="false" delete="true">
                                         <field name="sequence" readonly="1"/>
                                         <field name="source_line_type" readonly="1"/>
                                         <field name="source_document_no" readonly="1"/>
