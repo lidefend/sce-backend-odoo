@@ -2318,6 +2318,34 @@ class TestP1PaymentRequestCapability(TransactionCase):
             },
             {"提交审批时生成"},
         )
+        native_field_nodes = {}
+
+        def collect_native_fields(value):
+            if isinstance(value, dict):
+                if value.get("type") == "field" and value.get("name"):
+                    native_field_nodes.setdefault(value["name"], []).append(value)
+                for nested in value.get("children") or []:
+                    collect_native_fields(nested)
+            elif isinstance(value, list):
+                for nested in value:
+                    collect_native_fields(nested)
+
+        collect_native_fields(container_tree)
+        funding_nodes = native_field_nodes["funding_baseline_id"]
+        self.assertTrue(all(node.get("widgetId") for node in funding_nodes))
+        self.assertEqual(
+            {node.get("widgetId") for node in funding_nodes},
+            {row.get("widgetId") for row in widgets_by_field["funding_baseline_id"]},
+        )
+        self.assertEqual(
+            {
+                (((node.get("componentConfig") or {}).get("widgetSemantics") or {}).get(
+                    "readonly_empty_text"
+                ))
+                for node in funding_nodes
+            },
+            {"提交审批时生成"},
+        )
         form_structure = contract["formStructureContract"]
         self.assertEqual(form_structure.get("layoutPolicy"), "native_authority")
         field_labels = dict(form_structure.get("fieldLabels") or {})

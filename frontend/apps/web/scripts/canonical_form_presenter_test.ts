@@ -794,6 +794,23 @@ const dateRangeSchemaWithoutVisibleEndField = canonicalFieldToFormSection({
   componentConfig: { ...dateRangeStartField.componentConfig, dateRangeEndValue: '2026-10-15' },
 });
 assert.equal(dateRangeSchemaWithoutVisibleEndField.dateRangeEndInputValue, '2026-10-15');
+const readonlyEmptySchema = canonicalFieldToFormSection({
+  ...dateRangeStartField,
+  widgetId: 'field.funding_baseline_id',
+  fieldCode: 'funding_baseline_id',
+  fieldType: 'many2one',
+  widgetType: 'many2one',
+  value: null,
+  readonly: true,
+  componentConfig: {
+    widgetSemantics: { readonly_empty_text: '提交审批时生成' },
+  },
+});
+assert.equal(
+  readonlyEmptySchema.readonlyEmptyText,
+  '提交审批时生成',
+  'canonical field projection must preserve authoritative readonly empty semantics',
+);
 const nativeDateRangeNode = {
   type: 'field', name: 'date_start', widget: 'date',
   componentConfig: {
