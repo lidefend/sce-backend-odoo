@@ -78,8 +78,10 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-governance-2026-09-02-user-search"
 
 
-def form_structure_presentation_mode(authority: Any) -> str:
+def form_structure_presentation_mode(authority: Any, declared_mode: Any = "") -> str:
     """Return the formal form-shape authority without exposing renderer details."""
+    if str(declared_mode or "").strip() == "task":
+        return "task"
     return "task" if str(authority or "").strip() == "entry_semantic_surface" else "workspace"
 
 
@@ -2363,6 +2365,11 @@ class UiContractV2Handler(BaseIntentHandler):
             or view_governance.get("form_structure_authority")
             or ""
         ).strip()
+        form_presentation_mode = str(
+            view_trace.get("form_presentation_mode")
+            or view_governance.get("form_presentation_mode")
+            or ""
+        ).strip()
         field_names: list[str] = []
         field_labels: dict[str, str] = {}
         field_semantic_roles: dict[str, str] = {}
@@ -2439,6 +2446,9 @@ class UiContractV2Handler(BaseIntentHandler):
                 or form_spec.get("compositionMode")
                 or ""
             ).strip()
+            if composition_mode in {"native_semantic_surface", "semantic_native_surface"}:
+                form_structure_authority = "native_authority"
+                form_presentation_mode = "task"
             if (
                 composition_mode in {"entry_semantic_surface", "semantic_entry_surface"}
                 and isinstance(form_spec.get("sections"), list)
@@ -2537,7 +2547,14 @@ class UiContractV2Handler(BaseIntentHandler):
                         for name in fields:
                             if name not in existing_section["fields"]:
                                 existing_section["fields"].append(name)
-        applied = bool(view_governance.get("applied") or business_contracts or legacy_overlay or field_names)
+        applied = bool(
+            view_governance.get("applied")
+            or business_contracts
+            or config_summaries
+            or legacy_overlay
+            or field_names
+            or field_semantic_roles
+        )
         if not applied:
             # A resolved native form layout is itself the formal authority for a
             # structured workspace.  Do not require an optional business
@@ -2557,6 +2574,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 "legacy_field_policy_overlay": False,
                 "form_layout_overlay": False,
                 "form_structure_authority": "native_authority",
+                "form_presentation_mode": "workspace",
                 "field_names": [],
                 "field_labels": {},
                 "field_semantic_roles": {},
@@ -2576,6 +2594,7 @@ class UiContractV2Handler(BaseIntentHandler):
             "legacy_field_policy_overlay": legacy_overlay,
             "form_layout_overlay": form_layout_overlay,
             "form_structure_authority": form_structure_authority,
+            "form_presentation_mode": form_presentation_mode,
             "field_names": field_names,
             "field_labels": field_labels,
             "field_semantic_roles": field_semantic_roles,
@@ -2678,6 +2697,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 "legacy_field_policy_overlay": "legacyFieldPolicyOverlay",
                 "form_layout_overlay": "formLayoutOverlay",
                 "form_structure_authority": "formStructureAuthority",
+                "form_presentation_mode": "formPresentationMode",
                 "field_names": "fieldNames",
                 "field_labels": "fieldLabels",
                 "field_semantic_roles": "fieldSemanticRoles",
@@ -2710,7 +2730,6 @@ class UiContractV2Handler(BaseIntentHandler):
             group_rows: list[dict[str, Any]] = []
             configured_roles: dict[str, dict[str, Any]] = {}
             assigned_configured_fields: set[str] = set()
-
             for index, (raw_title, raw_fields) in enumerate(configured_field_groups.items(), start=1):
                 title = str(raw_title or "").strip() or "业务配置字段"
                 if not self._form_layout_group_visible_from_governance(governance, title):
@@ -2749,7 +2768,8 @@ class UiContractV2Handler(BaseIntentHandler):
             if group_rows:
                 form_columns = self._form_layout_columns_from_governance(governance)
                 presentation_mode = form_structure_presentation_mode(
-                    (governance or {}).get("form_structure_authority")
+                    (governance or {}).get("form_structure_authority"),
+                    (governance or {}).get("form_presentation_mode"),
                 )
                 return {
                     "source": "ui.contract.v2.form_structure_contract",
@@ -2969,12 +2989,14 @@ class UiContractV2Handler(BaseIntentHandler):
             if item.get("fieldRefs") or item.get("groups")
         ]
 
-        semantic_surface = str(
+        structure_authority = str(
             (governance or {}).get("form_structure_authority") or ""
-        ).strip() == "entry_semantic_surface"
+        ).strip()
         presentation_mode = form_structure_presentation_mode(
-            (governance or {}).get("form_structure_authority")
+            structure_authority,
+            (governance or {}).get("form_presentation_mode"),
         )
+        semantic_surface = presentation_mode == "task"
         return {
             "source": "ui.contract.v2.form_structure_contract",
             "structureVersion": "1.1",
@@ -2982,7 +3004,7 @@ class UiContractV2Handler(BaseIntentHandler):
             "viewType": "form",
             "mode": "business_task_form" if semantic_surface else "native_structured_form",
             "presentationMode": presentation_mode,
-            "layoutPolicy": "overview_then_task_slots" if semantic_surface else "native_authority",
+            "layoutPolicy": "overview_then_task_slots" if structure_authority == "entry_semantic_surface" else "native_authority",
             "objectProfile": {
                 "model": model,
                 "kind": "business_form",

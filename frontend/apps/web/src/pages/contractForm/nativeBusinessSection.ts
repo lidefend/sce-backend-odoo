@@ -21,6 +21,8 @@ export type NativeBusinessSectionMatch<T extends NativeBusinessSectionNode> = {
 
 export type GovernedFormStructureSectionNode = NativeBusinessSectionNode & {
   nodeId?: unknown;
+  semanticSlot?: unknown;
+  semanticGroup?: unknown;
   nativePresentation?: Readonly<Record<string, unknown>>;
   fields?: ReadonlyArray<Record<string, unknown>>;
   children?: ReadonlyArray<GovernedFormStructureSectionNode>;
@@ -80,18 +82,8 @@ export function governedFormStructureSectionIdentity(
     || authority.noBusinessFactAuthority === true;
   const label = readableTitle(node.title || node.string || node.label);
   const nodeId = text(node.nodeId);
-  const placements = new Set<string>();
-  function collectPlacements(current: GovernedFormStructureSectionNode) {
-    (current.fields || []).forEach((field) => {
-      const slot = text(field.semanticSlot);
-      const group = text(field.semanticGroup);
-      if (slot && group) placements.add(`${slot}\u0000${group}`);
-    });
-    (current.children || []).forEach(collectPlacements);
-  }
-  collectPlacements(node);
-  const declaredPlacement = placements.size === 1;
-  return (governed && carrier.endsWith('form_structure_contract') || declaredPlacement) && label && nodeId
+  const declaredPlacement = Boolean(text(node.semanticSlot) && text(node.semanticGroup));
+  return governed && carrier.endsWith('form_structure_contract') && declaredPlacement && label && nodeId
     ? { anchor: `form-structure:${nodeId}`, label }
     : null;
 }

@@ -192,6 +192,79 @@ class TestViewOrchestrator(unittest.TestCase):
         self.assertIn("one2many_list", str(result["layout"]))
         self.assertEqual(env["ui.form.field.policy"].calls, [{"allow_layout_append": False}])
 
+    def test_native_semantic_surface_keeps_native_tree_as_task_structure_authority(self):
+        payload = {
+            "view_orchestration": {
+                "views": {
+                    "form": {
+                        "title": "Payment application",
+                        "composition_mode": "native_semantic_surface",
+                        "semantic_anchors": [
+                            {"role": "summary", "fields": ["name", "state"]},
+                        ],
+                    },
+                },
+            },
+        }
+        source_layout = [{
+            "type": "sheet",
+            "children": [{
+                "type": "group",
+                "string": "Basic",
+                "attributes": {"data-sc-anchor": "payment-basic"},
+                "children": [
+                    {"type": "field", "name": "name"},
+                    {"type": "field", "name": "state", "readonly": True},
+                ],
+            }],
+        }]
+
+        result, _calls = self._compose(
+            payload,
+            {"layout": source_layout},
+            "form",
+            legacy_policy=True,
+            view_id=None,
+        )
+
+        self.assertEqual(result["layout"], source_layout)
+        governance = result["governance"]["view_orchestration"]
+        self.assertEqual(governance["form_structure_authority"], "native_authority")
+        self.assertEqual(governance["form_presentation_mode"], "task")
+        self.assertTrue(governance["native_semantic_surface"])
+        self.assertFalse(governance["form_layout_overlay"])
+        self.assertNotIn("Legacy Contact", str(result["layout"]))
+
+    def test_native_semantic_surface_reports_structure_conflict(self):
+        payload = {
+            "view_orchestration": {
+                "views": {
+                    "form": {
+                        "composition_mode": "native_semantic_surface",
+                        "sections": [{"title": "Competing section", "fields": ["name"]}],
+                    },
+                },
+            },
+        }
+
+        with self.assertRaisesRegex(ValueError, "NATIVE_SEMANTIC_SURFACE_STRUCTURE_CONFLICT: sections"):
+            self._compose(payload, {"layout": []}, "form", view_id=1701)
+
+    def test_native_semantic_surface_reports_unknown_anchor_field(self):
+        payload = {
+            "view_orchestration": {
+                "views": {
+                    "form": {
+                        "composition_mode": "native_semantic_surface",
+                        "semantic_anchors": [{"role": "summary", "fields": ["missing_field"]}],
+                    },
+                },
+            },
+        }
+
+        with self.assertRaisesRegex(ValueError, "NATIVE_SEMANTIC_SURFACE_UNKNOWN_FIELD: missing_field"):
+            self._compose(payload, {"layout": []}, "form", view_id=1701)
+
     def test_explicit_native_form_view_blocks_legacy_layout_append(self):
         env = _Env({
             "ui.business.config.contract": _ConfigModel({}),

@@ -33,6 +33,8 @@ assert.equal(nativeBusinessSectionIdentity({
 const governedProjection = node({
   nodeId: 'payment.contract-basis',
   title: '结算与合同依据',
+  semanticSlot: 'configured_form',
+  semanticGroup: 'configured_group_2',
   nativePresentation: {
     sourceAuthority: {
       kind: 'unified_page_contract_v2',
@@ -55,17 +57,14 @@ assert.deepEqual(governedFormStructureSectionNavigationItems([governedProjection
 assert.equal(governedFormStructureSectionIdentity(node({
   nodeId: 'plain.layout', title: '普通布局组', nativePresentation: {},
 })), null, 'an ordinary titled group must not become a governed business section');
-assert.deepEqual(governedFormStructureSectionIdentity(node({
+assert.equal(governedFormStructureSectionIdentity(node({
   nodeId: 'projected.contract-basis', title: '合同依据', nativePresentation: {},
   fields: [],
   children: [node({
     nodeId: 'projected.contract-basis.contract', kind: 'field', title: '', nativePresentation: {},
     fields: [field({ semanticSlot: 'handling', semanticGroup: 'contract-basis' })], children: [],
   })],
-})), {
-  anchor: 'form-structure:projected.contract-basis',
-  label: '合同依据',
-}, 'a common explicit slot/group remains section authority when the transport drops the carrier marker');
+})), null, 'descendant field placement must not promote an internal layout group into a business section');
 assert.equal(governedFormStructureSectionIdentity(node({
   nodeId: 'mixed.layout', title: '普通混合布局', nativePresentation: {}, fields: [],
   children: [
