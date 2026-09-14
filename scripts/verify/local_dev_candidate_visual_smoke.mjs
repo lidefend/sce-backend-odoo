@@ -562,6 +562,7 @@ try {
       let safeReturnEvidence = null;
       let formStructureEvidence = null;
       let fieldAlignmentEvidence = null;
+      let optionalDetailDisclosureEvidence = null;
       let officialIconResourceEvidence = null;
       let officialComponentBehaviorEvidence = null;
       let officialAlertOperationEvidence = null;
@@ -1699,6 +1700,76 @@ try {
           await collapsedDisclosures.nth(index).click();
         }
         await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      }
+      if (target.exerciseOptionalDetailDisclosure === true) {
+        if (target.expandFormDisclosures === true) {
+          throw new Error(`${target.name}: optional detail disclosure evidence must begin from the unforced initial state`);
+        }
+        const sectionLabel = String(target.optionalDetailSectionLabel || '').trim();
+        if (sectionLabel) {
+          const sectionLinks = page.locator('[data-form-section-navigation] [data-section-link]');
+          const labels = (await sectionLinks.allTextContents()).map((value) => String(value || '').replace(/\s+/g, ' ').trim());
+          const matchingIndexes = labels.map((value, index) => (value === sectionLabel ? index : -1)).filter((index) => index >= 0);
+          if (matchingIndexes.length !== 1) throw new Error(`${target.name}: expected one optional detail section ${sectionLabel}`);
+          await sectionLinks.nth(matchingIndexes[0]).click();
+          await page.waitForFunction(() => {
+            const navigation = document.querySelector('[data-form-section-navigation]');
+            return navigation instanceof HTMLElement && !navigation.dataset.sectionActivationPending;
+          }, null, { timeout: 15000 });
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        }
+        const owner = page.locator('[data-amount-binding-mode="sum_when_nonempty"]:visible').first();
+        await owner.waitFor({ state: 'visible', timeout: 15000 });
+        const trigger = owner.locator('[data-disclosure-trigger]:visible').first();
+        await trigger.waitFor({ state: 'visible', timeout: 15000 });
+        const content = owner.locator('[data-detail-collection-content]');
+        const stem = `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-optional-detail`;
+        const initial = {
+          expanded: await trigger.getAttribute('aria-expanded'),
+          contentCount: await content.count(),
+        };
+        await page.screenshot({ path: path.join(outputDir, `${stem}-initial.png`), fullPage: false });
+        await trigger.click();
+        await page.waitForFunction((node) => node?.getAttribute('aria-expanded') === 'true', await trigger.elementHandle(), { timeout: 5000 });
+        await content.first().waitFor({ state: 'visible', timeout: 15000 });
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        const expanded = await owner.evaluate((node) => {
+          const field = node.closest('.field');
+          const grid = field?.parentElement;
+          const fieldRect = field?.getBoundingClientRect();
+          const gridRect = grid?.getBoundingClientRect();
+          return {
+            fieldFullWidthClass: field?.classList.contains('field--full') === true,
+            fieldWidth: Math.round(fieldRect?.width || 0),
+            gridWidth: Math.round(gridRect?.width || 0),
+            widthRatio: fieldRect && gridRect && gridRect.width > 0
+              ? Number((fieldRect.width / gridRect.width).toFixed(3))
+              : 0,
+          };
+        });
+        await page.screenshot({ path: path.join(outputDir, `${stem}-expanded.png`), fullPage: false });
+        await trigger.click();
+        await page.waitForFunction((node) => node?.getAttribute('aria-expanded') === 'false', await trigger.elementHandle(), { timeout: 5000 });
+        await page.waitForFunction((node) => node?.querySelectorAll('[data-detail-collection-content]').length === 0, await owner.elementHandle(), { timeout: 5000 });
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        const collapsed = {
+          expanded: await trigger.getAttribute('aria-expanded'),
+          contentCount: await content.count(),
+          ownerHeight: Math.round(await owner.evaluate((node) => node.getBoundingClientRect().height)),
+        };
+        await page.screenshot({ path: path.join(outputDir, `${stem}-collapsed.png`), fullPage: false });
+        optionalDetailDisclosureEvidence = {
+          sectionLabel,
+          initial,
+          expanded,
+          collapsed,
+          pass: initial.expanded === 'false'
+            && initial.contentCount === 0
+            && expanded.fieldFullWidthClass
+            && expanded.widthRatio >= 0.95
+            && collapsed.expanded === 'false'
+            && collapsed.contentCount === 0,
+        };
       }
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
       if (target.captureFormStructure === true) {
@@ -4472,7 +4543,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractSubviews, contractActions, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialIconResourceEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, sessionExpiredRecoveryEvidence, systemThemeRuntimeEvidence, safeReturnEvidence, formStructureEvidence, fieldAlignmentEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookJourneyEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractSubviews, contractActions, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialIconResourceEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, sessionExpiredRecoveryEvidence, systemThemeRuntimeEvidence, safeReturnEvidence, formStructureEvidence, fieldAlignmentEvidence, optionalDetailDisclosureEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookJourneyEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -4594,6 +4665,7 @@ for (const item of report.routes) {
   if (item.safeReturnEvidence && !item.safeReturnEvidence.pass) failures.push({ name: item.name, safeReturnEvidence: item.safeReturnEvidence });
   if (item.topbarActionEvidence && !item.topbarActionEvidence.pass) failures.push({ name: item.name, topbarActionEvidence: item.topbarActionEvidence });
   if (item.factDisclosureEvidence && !item.factDisclosureEvidence.pass) failures.push({ name: item.name, factDisclosureEvidence: item.factDisclosureEvidence });
+  if (item.optionalDetailDisclosureEvidence && !item.optionalDetailDisclosureEvidence.pass) failures.push({ name: item.name, optionalDetailDisclosureEvidence: item.optionalDetailDisclosureEvidence });
   if (item.monetaryExpressionEvidence && !item.monetaryExpressionEvidence.pass) failures.push({ name: item.name, monetaryExpressionEvidence: item.monetaryExpressionEvidence });
   if (item.hierarchicalWorkspaceEvidence && !item.hierarchicalWorkspaceEvidence.pass) failures.push({ name: item.name, hierarchicalWorkspaceEvidence: item.hierarchicalWorkspaceEvidence });
 }

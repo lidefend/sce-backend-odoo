@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[2]
 FORM_PATHS = [
@@ -21,6 +22,10 @@ RELATION_RENDERER = ROOT / 'frontend/apps/web/src/components/template/X2ManyRela
 RELATION_CELL_EDITOR = ROOT / 'frontend/apps/web/src/components/template/One2ManyCellEditor.vue'
 RELATION_ADAPTER = ROOT / 'frontend/apps/web/src/components/template/relationField.types.ts'
 
+ONE2MANY_COLUMNS_CALL = re.compile(
+    r'\b(?:props\.)?adapter\.one2manyColumns\(\s*(?:props\.)?field\.name\s*\)'
+)
+
 
 def _read(path: Path) -> str:
     if not path.exists():
@@ -28,8 +33,29 @@ def _read(path: Path) -> str:
     return path.read_text(encoding='utf-8')
 
 
-def main() -> int:
+def _has_one2many_columns_call(source: str) -> bool:
+    return bool(ONE2MANY_COLUMNS_CALL.search(source))
+
+
+def _detector_counterexample_errors() -> list[str]:
     errors: list[str] = []
+    passing = [
+        'adapter.one2manyColumns(field.name)',
+        'props.adapter.one2manyColumns(props.field.name)',
+    ]
+    failing = [
+        'adapter.visibleOne2manyRows(field.name)',
+        'adapter.one2manyColumns(otherField.name)',
+    ]
+    if not all(_has_one2many_columns_call(source) for source in passing):
+        errors.append('one2manyColumns detector rejects a supported invocation')
+    if any(_has_one2many_columns_call(source) for source in failing):
+        errors.append('one2manyColumns detector accepts a missing or mismatched invocation')
+    return errors
+
+
+def main() -> int:
+    errors = _detector_counterexample_errors()
     try:
         form = '\n'.join(_read(path) for path in FORM_PATHS)
         engine = _read(ENGINE)
@@ -81,7 +107,6 @@ def main() -> int:
         "<One2ManyCellEditor",
         "adapter.addOne2manyRow(field.name)",
         "adapter.one2manyCreateLabel(field.name, field.label)",
-        "adapter.one2manyColumns(field.name)",
         "adapter.setOne2manyRowField(field.name, row._key, column",
         "adapter.removeOne2manyRow(field.name, row._key)",
         "props.adapter.one2manyRowErrors(name, row.key)",
@@ -90,6 +115,8 @@ def main() -> int:
     for marker in renderer_markers:
         if marker not in relation_renderer:
             errors.append(f'relation_renderer missing marker: {marker}')
+    if not _has_one2many_columns_call(relation_renderer):
+        errors.append('relation_renderer missing one2manyColumns(field.name) invocation')
 
     if relation_renderer.count('<One2ManyCellEditor') != 2:
         errors.append('relation_renderer must reuse one cell editor for desktop and mobile')
@@ -121,6 +148,7 @@ def main() -> int:
     print(f'- relation_renderer: {RELATION_RENDERER}')
     print(f'- relation_cell_editor: {RELATION_CELL_EDITOR}')
     print(f'- relation_adapter: {RELATION_ADAPTER}')
+    print('- one2manyColumns detector counterexamples: 4')
     return 0
 
 
