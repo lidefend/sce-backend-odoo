@@ -468,11 +468,15 @@ class PaymentRequestAddSettlementLinesHandler(BaseIntentHandler):
                     currency,
                 )
 
-        # ---- 校验 + 创建 ----
-        created = []
+        # ---- 完整校验后再创建，避免无效行被静默忽略或部分落库 ----
         for item in items:
             if _pay_amount_compare(item["apply"], 0.0, currency) <= 0:
-                continue
+                return _err(
+                    "INVALID_AMOUNT",
+                    "结算行「%s」的本次申请金额必须大于 0；请调整金额或取消选择该行"
+                    % item["line"].name,
+                    "fix_input",
+                )
             if _pay_amount_compare(item["apply"], item["remaining"], currency) > 0:
                 return _err(
                     "AMOUNT_EXCEEDS_REMAINING",
@@ -483,6 +487,9 @@ class PaymentRequestAddSettlementLinesHandler(BaseIntentHandler):
                     ),
                     "fix_input",
                 )
+
+        created = []
+        for item in items:
             line_vals = {
                 "request_id": request.id,
                 "settlement_id": settlement.id,

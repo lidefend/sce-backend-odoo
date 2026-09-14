@@ -680,9 +680,52 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(request.amount, 75.0)
         self.assertEqual(request.detail_amount_total, 50.0)
         self.assertIn("历史记录不会自动改数", request.detail_amount_consistency_message)
+        request.write({"note": "只更新办理说明，不应改写历史金额"})
+        self.assertEqual(request.amount, 75.0)
+        self.assertEqual(request.detail_amount_total, 50.0)
         with self.assertRaisesRegex(ValidationError, "必须与付款申请明细合计"):
             request.with_context(payment_soft_gate=True).action_submit()
         self.assertEqual(request.state, "draft")
+
+    def test_zero_detail_is_explicitly_invalid_and_historical_row_is_not_repaired(self):
+        request = self._request(amount=50.0)
+        with self.assertRaisesRegex(ValidationError, "本次申请金额必须大于 0"):
+            with self.env.cr.savepoint():
+                self.env["payment.request.line"].create(
+                    {
+                        "request_id": request.id,
+                        "legacy_line_id": "p1-zero-detail",
+                        "legacy_parent_id": "p1-zero-detail-parent",
+                        "amount": 100.0,
+                        "current_pay_amount": 0.0,
+                    }
+                )
+
+        line = self.env["payment.request.line"].create(
+            {
+                "request_id": request.id,
+                "legacy_line_id": "p1-historical-zero-detail",
+                "legacy_parent_id": "p1-historical-zero-detail-parent",
+                "amount": 100.0,
+                "current_pay_amount": 50.0,
+            }
+        )
+        self.env.cr.execute(
+            "UPDATE payment_request_line SET current_pay_amount = 0 WHERE id = %s",
+            (line.id,),
+        )
+        line.invalidate_recordset(["current_pay_amount"])
+        request.invalidate_recordset(
+            ["amount", "amount_uses_details", "detail_amount_total", "detail_amount_consistency_message"]
+        )
+
+        request.write({"note": "无关字段更新不得自动修复历史无效明细"})
+        self.assertEqual(request.amount, 50.0)
+        self.assertEqual(request.detail_amount_total, 0.0)
+        with self.assertRaisesRegex(ValidationError, "本次申请金额必须大于 0"):
+            request.with_context(payment_soft_gate=True).action_submit()
+        self.assertEqual(request.amount, 50.0)
+        self.assertEqual(line.current_pay_amount, 0.0)
 
     def test_settlement_line_introduction_syncs_request_amount_from_created_details(self):
         settlement = self.env["sc.settlement.order"].create(
@@ -726,6 +769,27 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertAlmostEqual(request.amount, 33.34, places=2)
         self.assertAlmostEqual(request.detail_amount_total, 33.34, places=2)
         self.assertTrue(request.amount_uses_details)
+
+        invalid = PaymentRequestAddSettlementLinesHandler(self.env).handle(
+            payload={
+                "params": {
+                    "payment_request_id": request.id,
+                    "settlement_id": settlement.id,
+                    "settlement_line_ids": settlement.line_ids.ids,
+                    "apply_mode": "lines",
+                    "lines": [
+                        {
+                            "settlement_line_id": settlement.line_ids.id,
+                            "amount": 0.0,
+                        }
+                    ],
+                }
+            }
+        )
+        self.assertFalse(invalid["ok"])
+        self.assertEqual(invalid["error"]["code"], "INVALID_AMOUNT")
+        self.assertIn("必须大于 0", invalid["error"]["message"])
+        self.assertEqual(len(request.outflow_line_ids), 1)
 
     def test_submit_only_accepts_draft_or_rejected_requests(self):
         request = self._set_request_state(self._request(), "approved")

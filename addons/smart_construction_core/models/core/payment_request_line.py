@@ -100,6 +100,10 @@ class PaymentRequestLine(models.Model):
             for execution in executions:
                 execution._normalize_payment_relation_values({}, current=execution)
 
+    @api.constrains("request_id", "current_pay_amount", "active")
+    def _check_positive_current_pay_amount(self):
+        self.mapped("request_id")._check_payment_detail_lines_valid()
+
     def action_open_attachments(self):
         self.ensure_one()
         return {

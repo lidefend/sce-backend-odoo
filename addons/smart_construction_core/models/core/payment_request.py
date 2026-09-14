@@ -852,6 +852,38 @@ class PaymentRequest(models.Model):
         currency = self.currency_id or self.env.company.currency_id
         return currency.round(total) if currency else total
 
+    def _invalid_payment_detail_lines(self):
+        self.ensure_one()
+        currency = self.currency_id or self.env.company.currency_id
+        rounding = currency.rounding if currency else 0.01
+        return self._active_payment_detail_lines().filtered(
+            lambda line: float_compare(
+                line.current_pay_amount or 0.0,
+                0.0,
+                precision_rounding=rounding,
+            )
+            <= 0
+        )
+
+    def _check_payment_detail_lines_valid(self):
+        for record in self.filtered(lambda row: row.type == "pay"):
+            invalid_lines = record._invalid_payment_detail_lines()
+            if not invalid_lines:
+                continue
+            labels = [
+                line.source_document_no
+                or line.legacy_line_id
+                or _("未命名明细")
+                for line in invalid_lines[:3]
+            ]
+            raise ValidationError(
+                _(
+                    "付款申请明细的本次申请金额必须大于 0；"
+                    "请补全或删除无效明细：%(lines)s"
+                )
+                % {"lines": "、".join(labels)}
+            )
+
     def _format_detail_amount(self, amount):
         self.ensure_one()
         currency = self.currency_id or self.env.company.currency_id
@@ -912,6 +944,7 @@ class PaymentRequest(models.Model):
             lines = record._active_payment_detail_lines()
             if not lines:
                 continue
+            record._check_payment_detail_lines_valid()
             total = record._payment_detail_amount_total()
             currency = record.currency_id or record.env.company.currency_id
             rounding = currency.rounding if currency else 0.01
