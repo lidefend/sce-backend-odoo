@@ -297,6 +297,17 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
   开放 PR、身份漂移和 Git writer；冲突时自动 abort 并恢复原 HEAD。该入口
   不执行 push 或 force push，并会核对责任 patch、变更路径和提交数量。
 
+* `make workspace.branch.sync-main.extended`
+
+  仅用于仓库所有者已明确批准、尚未发布且已经冻结的 13—64 提交候选。除普通
+  `sync-main` 的全部精确身份、clean、无远端分支/PR、恢复 bundle 与冲突回滚
+  门禁外，还必须具有当前工作树的有效 exact-head Quick receipt，并提供准确的
+  `EXPECTED_COMMIT_COUNT` 和独立确认短语
+  `REBASE_APPROVED_FROZEN_BRANCH_ON_EXACT_MAIN`。该入口仅可把已登记的生成证据
+  冲突复位到新 main 版本，并在结果中明确标记证据失效；调用方必须随后执行生成
+  证据刷新、重新冻结和新 HEAD 验证。其他冲突仍自动 abort，禁止借该入口放宽
+  产品冲突处理。
+
 ---
 
 ### 1.4.2 明确禁止的 Git 命令（Hard Ban）

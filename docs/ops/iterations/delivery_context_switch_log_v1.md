@@ -9491,3 +9491,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 首次契约偏差位于 `UiContractV2Handler._apply_extension_projected_contract_normalizers`：无业务表单策略且已有记录的快速返回发生在原生表单能力治理之前，使 `create/edit/delete/duplicate="0"` 未进入最终 `effectiveRenderProfile`、`pageAuth` 与动作列表。P0 将已有 `apply_form_view_capabilities` 提前到该通用返回边界，不增加项目或模型特判。
 - 投标现状只读取证：投标报价 1200、清单合计 1000、两条开标结果 1100/900 的隔离 `TransactionCase` 中，现有中标动作采用 `bid_amount or amount_total or 0`，未选择 `win_price`；生成合同在创建、重新计算、缓存失效回读及原始 SQL 回读后，未税额、税额、含税额、变更额及最终金额均为 0。该证据随事务回滚，不构成业务规则修改。
 - 迭代验证限定 action 视图绑定、原生能力保真、三组集合保留及项目信息专用入口反例；模块升级后仅复核 action 605 桌面/移动和专用入口未受影响。Quick、全量浏览器矩阵、付款旅程、投标规则修改、持久业务写入及远端操作均不在本批执行。
+
+## 2026-09-15 — 已冻结长分支受管同步能力
+
+- 分支 `fix/p4-governed-frozen-branch-sync-v1`，基线 `origin/main@5545e5b3801ea5158852faa30bce278fd1827fe3`，复用既有工作树；基线完整指纹 `a32af62b7f51be30c6e6c00a4e47d00948ddf733b0b35543ee96d286c5def05e`，7448 个路径。
+- Formal Product Layer 为 P4；Layer Target 为 `workspace.branch.sync-main` 的冻结候选历史重放边界。普通 1—12 提交入口保持不变；新 extended 入口只接受仓库所有者明确批准、未发布、无 PR、clean、具备当前工作树 exact-head Quick receipt 且精确绑定 branch/head/old-base/main/commit-count 的 13—64 提交候选，并使用独立确认短语。
+- extended 入口继续创建并验证 recovery bundle，拒绝 merge commit、远端同名分支、开放 PR、Git writer 和任何未登记产品冲突。正式交付日志只允许纯追加合成；登记的可重新生成证据冲突采用新 main 版本并显式报告失效，要求随后刷新生成证据、重新冻结及对新 HEAD 验证，旧 receipt 不得复用。
+- 本批不修改产品、业务契约、数据库、运行环境或远端分支。L1 使用 `make ci.local.iteration`；L2 使用新登记的 `make verify.workspace.branch.sync-main`，覆盖默认上限、精确提交数、独立确认、生成证据冲突、产品冲突自动回滚、路径和 patch 身份保真。
