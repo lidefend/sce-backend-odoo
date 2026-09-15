@@ -1,11 +1,47 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
+from html.parser import HTMLParser
 
 ROOT = Path(__file__).resolve().parents[2]
 RENDERER = ROOT / "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
 SMART_ACTION = ROOT / "frontend/apps/web/src/components/template/NativeSmartAction.vue"
 OVERFLOW_MENU = ROOT / "frontend/apps/web/src/components/template/NativeActionOverflowMenu.vue"
 VISUAL_SMOKE = ROOT / "scripts/verify/local_dev_candidate_visual_smoke.mjs"
+
+
+def native_button_ownership_errors(source: str) -> list[str]:
+    template = re.sub(r"<!--[\s\S]*?-->", "", source.split("<script", 1)[0])
+    class Buttons(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.calls = []
+
+        def handle_starttag(self, tag, attrs):
+            if tag == "scbutton":
+                self.calls.append(dict(attrs))
+
+    parser = Buttons()
+    parser.feed(template)
+    attrs = parser.calls
+    actions = [item for item in attrs if item.get("class") == "native-action-btn"]
+    toggles = [item for item in attrs if item.get("v-else-if") == "isCollapsibleContainer(node)"]
+    failures = []
+    if len(attrs) != 3 or len(actions) != 2:
+        failures.append("native form expected two ordinary action branches and one container disclosure")
+    for node in ("buttonNode", "node"):
+        expected = {"v-if": f"!isSmartButtonNode({node})", "v-bind": f"nativeActionEvidenceAttributes({node})",
+                    "type": "button", ":disabled": f"nativeActionDisabled({node})", ":title": f"nativeActionTitle({node})",
+                    "@click.stop.prevent": f"emitNativeAction({node})"}
+        if sum(all(item.get(key) == value for key, value in expected.items()) for item in actions) != 1:
+            failures.append(f"native ordinary action must retain disabled and event authority: {node}")
+    expected = {"type": "button", "variant": "ghost", "appearance": "context-action",
+                ":aria-expanded": "String(!isContainerCollapsed(node, index))",
+                "@click": "toggleContainerCollapsed(node, index)"}
+    if (len(toggles) != 1 or any(toggles[0].get(key) != value for key, value in expected.items())
+            or set(toggles[0]) - {*expected, "v-else-if", "size"}):
+        failures.append("container disclosure must only toggle local collapsed state")
+    return failures
 
 
 def validate(source: str | None = None, smart_action: str | None = None, overflow_menu: str | None = None, visual_smoke: str | None = None) -> list[str]:
@@ -46,8 +82,7 @@ def validate(source: str | None = None, smart_action: str | None = None, overflo
     )
     if any(marker in text for marker in private_appearance):
         failures.append("native ordinary actions must not override ScButton appearance or states")
-    if text.count("<ScButton") != 2:
-        failures.append(f"native form expected two ordinary action primitive branches, found {text.count('<ScButton')}")
+    failures.extend(native_button_ownership_errors(text))
     for event in ('@click.stop.prevent="emitNativeAction(buttonNode)"', '@click.stop.prevent="emitNativeAction(node)"'):
         if text.count(event) != 2:
             failures.append(f"native form changed action event authority: {event}")
@@ -131,4 +166,4 @@ if __name__ == "__main__":
         for error in errors:
             print(f"- {error}")
         raise SystemExit(1)
-    print("[frontend_native_form_action_presentation_guard] PASS ordinary_sc_buttons=2")
+    print("[frontend_native_form_action_presentation_guard] PASS ordinary_sc_buttons=2 container_disclosures=1")
