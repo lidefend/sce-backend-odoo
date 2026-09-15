@@ -13,10 +13,16 @@
     "formStructureGovernanceContract",
     "formStructureConfiguredSection"
   ],
+  "nativeStructureAuthority": {
+    "carrier": "layoutContract.containerTree",
+    "selection": "formStructureContract.layoutPolicy=container_tree_authority",
+    "bodyAndNavigation": "same canonical native nodes; no field-type or editability regrouping",
+    "legacyRetirement": "remove compatibility structure consumers after formal menu ledger reaches zero"
+  },
   "summary": {
-    "schemaFieldCount": 69,
+    "schemaFieldCount": 74,
     "renderedAuthorityCount": 22,
-    "validatedNonVisualAuthorityCount": 47,
+    "validatedNonVisualAuthorityCount": 52,
     "unclassifiedCount": 0
   },
   "rows": [
@@ -47,8 +53,8 @@
     {
       "path": "formStructureContract.columns",
       "classification": "rendered_authority",
-      "semantic": "geometry",
-      "consumer": "presentNode.columns"
+      "semantic": "compatibility-only geometry",
+      "consumer": "presentNode.columns; forbidden for container_tree_authority"
     },
     {
       "path": "formStructureContract.fieldLabels",
@@ -59,8 +65,8 @@
     {
       "path": "formStructureContract.fieldRoles",
       "classification": "rendered_authority",
-      "semantic": "semantic-identity",
-      "consumer": "fieldSemanticIdentity"
+      "semantic": "compatibility-only membership",
+      "consumer": "fieldSemanticIdentity; native roles derive from tree nodes"
     },
     {
       "path": "formStructureContract.layoutPolicy",
@@ -101,8 +107,8 @@
     {
       "path": "formStructureContract.slots",
       "classification": "rendered_authority",
-      "semantic": "structure",
-      "consumer": "structureSlot"
+      "semantic": "compatibility-only structure",
+      "consumer": "structureSlot; empty for container_tree_authority"
     },
     {
       "path": "formStructureContract.source",
@@ -183,6 +189,12 @@
       "consumer": "decodeFormStructureContract"
     },
     {
+      "path": "formStructureGovernanceSource.compatibilityDependencies",
+      "classification": "validated_non_visual_authority",
+      "reason": "explicit consumer retirement dependencies",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
       "path": "formStructureGovernanceSource.configuredSections",
       "classification": "validated_non_visual_authority",
       "reason": "server projection trace; slots/groups carry render facts",
@@ -225,6 +237,12 @@
       "consumer": "decodeFormStructureContract"
     },
     {
+      "path": "formStructureGovernanceSource.formPresentationMode",
+      "classification": "validated_non_visual_authority",
+      "reason": "server presentation selection trace",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
       "path": "formStructureGovernanceSource.formStructureAuthority",
       "classification": "validated_non_visual_authority",
       "reason": "server selection trace",
@@ -261,6 +279,18 @@
       "consumer": "decodeFormStructureContract"
     },
     {
+      "path": "formStructureGovernanceSource.resolvedActionId",
+      "classification": "validated_non_visual_authority",
+      "reason": "exact entry action identity",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceSource.resolvedViewId",
+      "classification": "validated_non_visual_authority",
+      "reason": "exact resolved native form view identity",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
       "path": "formStructureGovernanceSource.sectionSemanticRoles",
       "classification": "validated_non_visual_authority",
       "reason": "server projection trace; slots/groups carry render facts",
@@ -276,6 +306,12 @@
       "path": "formStructureGovernanceSource.source",
       "classification": "validated_non_visual_authority",
       "reason": "server provenance trace",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceSource.structureDiagnostics",
+      "classification": "validated_non_visual_authority",
+      "reason": "configuration/key/node conflict and suppression diagnostics",
       "consumer": "decodeFormStructureContract"
     },
     {

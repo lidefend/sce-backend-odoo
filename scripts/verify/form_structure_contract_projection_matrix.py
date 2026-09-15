@@ -26,11 +26,11 @@ DEFINITIONS = (
 
 RENDERED = {
     "formStructureContract.presentationMode": ("presentation", "presentContractV2Form.identity.presentationMode"),
-    "formStructureContract.columns": ("geometry", "presentNode.columns"),
+    "formStructureContract.columns": ("compatibility-only geometry", "presentNode.columns; forbidden for container_tree_authority"),
     "formStructureContract.navigation": ("shell", "presentContractV2Form.shell"),
     "formStructureContract.fieldLabels": ("field-label", "formStructureFieldLabels"),
-    "formStructureContract.slots": ("structure", "structureSlot"),
-    "formStructureContract.fieldRoles": ("semantic-identity", "fieldSemanticIdentity"),
+    "formStructureContract.slots": ("compatibility-only structure", "structureSlot; empty for container_tree_authority"),
+    "formStructureContract.fieldRoles": ("compatibility-only membership", "fieldSemanticIdentity; native roles derive from tree nodes"),
     "formStructureNavigation.title": ("shell-title", "presentContractV2Form.shell.title"),
     "formStructureSlot.slot": ("semantic-identity", "structureSlot"),
     "formStructureSlot.title": ("section-title", "presentNode.title"),
@@ -50,6 +50,10 @@ RENDERED = {
 }
 
 NON_VISUAL = {
+    "formStructureGovernanceSource.resolvedViewId": "exact resolved native form view identity",
+    "formStructureGovernanceSource.resolvedActionId": "exact entry action identity",
+    "formStructureGovernanceSource.structureDiagnostics": "configuration/key/node conflict and suppression diagnostics",
+    "formStructureGovernanceSource.compatibilityDependencies": "explicit consumer retirement dependencies",
     "formStructureContract.source": "runtime carrier identity",
     "formStructureContract.structureVersion": "decoder compatibility boundary",
     "formStructureContract.model": "model identity invariant",
@@ -73,6 +77,7 @@ NON_VISUAL = {
     "formStructureGovernanceSource.businessConfigContracts": "server selection trace",
     "formStructureGovernanceSource.legacyFieldPolicyOverlay": "server selection trace",
     "formStructureGovernanceSource.formLayoutOverlay": "server selection trace",
+    "formStructureGovernanceSource.formPresentationMode": "server presentation selection trace",
     "formStructureGovernanceSource.formStructureAuthority": "server selection trace",
     "formStructureGovernanceSource.fieldNames": "server projection trace",
     "formStructureGovernanceSource.fieldLabels": "server projection trace; selected fieldLabels carry render facts",
@@ -138,6 +143,12 @@ def build() -> dict:
         "schemaVersion": "form-structure-contract-projection-matrix/v1",
         "schemaAuthority": str(SCHEMA.relative_to(ROOT)),
         "scope": list(DEFINITIONS),
+        "nativeStructureAuthority": {
+            "carrier": "layoutContract.containerTree",
+            "selection": "formStructureContract.layoutPolicy=container_tree_authority",
+            "bodyAndNavigation": "same canonical native nodes; no field-type or editability regrouping",
+            "legacyRetirement": "remove compatibility structure consumers after formal menu ledger reaches zero",
+        },
         "summary": {
             "schemaFieldCount": len(rows),
             "renderedAuthorityCount": sum(row["classification"] == "rendered_authority" for row in rows),

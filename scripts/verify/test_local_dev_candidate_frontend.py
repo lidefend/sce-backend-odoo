@@ -18,6 +18,31 @@ SPEC.loader.exec_module(MODULE_UNDER_TEST)
 
 
 class CandidateFrontendContractTest(unittest.TestCase):
+    def test_backend_identity_binds_source_revision_database_and_filestore(self):
+        import json
+        from types import SimpleNamespace
+        row = {
+            "Id": "runtime", "State": {"StartedAt": "2026-09-15T00:00:00Z"},
+            "Config": {"Env": ["SC_SOURCE_REVISION=" + "a" * 40, "DB_NAME=sc_dev_demo", "ODOO_DBFILTER=^sc_dev_demo$"]},
+            "Mounts": [{"Destination": "/mnt/source-addons", "Source": str(ROOT / "addons")},
+                       {"Destination": "/var/lib/odoo", "Name": "sc_local_dev_odoo_data"}],
+        }
+        def inspect(_command, **_kwargs):
+            return SimpleNamespace(stdout="runtime" if _command[1] == "ps" else json.dumps([row]))
+        with mock.patch.object(MODULE_UNDER_TEST.subprocess, "run", side_effect=inspect), mock.patch.object(
+            MODULE_UNDER_TEST, "_git_output", return_value="module-tree"
+        ):
+            result = MODULE_UNDER_TEST._backend_identity(ROOT, "a" * 40)
+            self.assertEqual(result["moduleTrees"]["smart_core"], "module-tree")
+            self.assertEqual(result["database"], "sc_dev_demo")
+            row["Mounts"][0]["Source"] = "/some/other/worktree/addons"
+            with self.assertRaisesRegex(MODULE_UNDER_TEST.CandidateFrontendError, "source mount"):
+                MODULE_UNDER_TEST._backend_identity(ROOT, "a" * 40)
+            row["Mounts"][0]["Source"] = str(ROOT / "addons")
+            row["Config"]["Env"][0] = "SC_SOURCE_REVISION=" + "b" * 40
+            with self.assertRaisesRegex(MODULE_UNDER_TEST.CandidateFrontendError, "source revision"):
+                MODULE_UNDER_TEST._backend_identity(ROOT, "a" * 40)
+
     def test_topic_branch_and_exact_sha_are_required(self):
         with mock.patch.object(MODULE_UNDER_TEST, "_git_output", side_effect=[str(ROOT), "feature/token", "a" * 40, ""]), mock.patch.dict(
             os.environ,

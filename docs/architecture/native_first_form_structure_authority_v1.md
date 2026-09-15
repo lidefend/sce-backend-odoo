@@ -10,7 +10,7 @@
 - `ui.business.config.contract` 可在 `native_semantic_surface` 模式提供标题、摘要、帮助、风险、动作说明等增强语义；可引用原生视图中的有效字段，但不得声明 `layout`、`sections`、`fields/field_slots`、`columns` 或 `actions/header_buttons` 来重写基础结构。
 - 后端输出可同时保留 `layoutContract` 与 `formStructureContract`：前者承载唯一有效原生结构；后者仅承载展示模式和语义投影，不得成为第二棵正文结构。`form_structure_authority=native_authority` 与 `form_presentation_mode=task` 分别表达结构权威和办理呈现，二者不再混为一个开关。
 - `native_semantic_surface` 若携带结构键或引用未知模型字段，合成必须显式失败并报告冲突；不得静默选一棵结构，也不得由 P0 按字段名、标题或模型猜测归属。
-- 没有显式原生业务锚点的页面继续走既有兼容路径。完整低代码替换布局需要另行定义显式替换模式、权限和冲突校验，不属于本决策。
+- 已解析 native 结构统一以 `layoutPolicy=container_tree_authority` 声明权威，不因缺少锚点而按字段类型制造章节；锚点仅决定正文中的章节导航。仍由旧结构配置驱动的 entry/default 页面按消费者台账保留兼容路径，逐批迁移。完整低代码替换布局需要另行定义显式替换模式、权限和冲突校验，不属于本决策。
 
 ## 兼容路径退役条件
 

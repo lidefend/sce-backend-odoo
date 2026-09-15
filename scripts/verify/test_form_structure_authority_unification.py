@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+import importlib.util
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -68,6 +69,22 @@ class FormStructureAuthorityUnificationTest(unittest.TestCase):
         self.assertIn("正式 89 菜单范围的兼容消费者归零后", text)
         self.assertIn("删除后端二次结构解释", text)
         self.assertIn("禁止无明确退役日期地新增", text)
+
+
+def load_tests(loader, tests, pattern):
+    # Existing owning-layer suites, reused under this registered focused entry.
+    for name in ("test_view_orchestrator", "test_ui_contract_v2_boundaries"):
+        path = ROOT / "addons/smart_core/tests" / (name + ".py")
+        spec = importlib.util.spec_from_file_location(name, path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        tests.addTests(loader.loadTestsFromModule(module))
+    path = ROOT / "scripts/verify/test_local_dev_candidate_frontend.py"
+    spec = importlib.util.spec_from_file_location("candidate_frontend_tests", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    tests.addTests(loader.loadTestsFromModule(module))
+    return tests
 
 
 if __name__ == "__main__":

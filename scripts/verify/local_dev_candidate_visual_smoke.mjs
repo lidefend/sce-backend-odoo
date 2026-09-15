@@ -25,6 +25,7 @@ const report = {
   head,
   baseUrl,
   database,
+  backendIdentity: JSON.parse(process.env.CANDIDATE_BACKEND_IDENTITY || '{}'),
   login,
   mutationCount: 0,
   inputs: {
@@ -131,6 +132,16 @@ function isSystemInitResponse(response) {
   }
 }
 
+function findNormalizedContract(value) {
+  if (!value || typeof value !== 'object') return null;
+  if (value.layoutContract?.containerTree) return value;
+  for (const child of Object.values(value)) {
+    const found = findNormalizedContract(child);
+    if (found) return found;
+  }
+  return null;
+}
+
 function summarizeSystemInit(payload) {
   const data = payload?.data && typeof payload.data === 'object' ? payload.data : payload;
   const navigation = data?.navigation && typeof data.navigation === 'object' ? data.navigation : {};
@@ -145,7 +156,21 @@ function summarizeSystemInit(payload) {
       menuXmlid: String(entry?.menu_xmlid || ''),
       actionXmlid: String(entry?.action_xmlid || ''),
     })) : []);
+  const menuEntries = [];
+  const visitMenu = (node) => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) { node.forEach(visitMenu); return; }
+    const meta = node.meta || node;
+    if (meta.menu_xmlid && Number(meta.action_id || meta.action?.id)) {
+      menuEntries.push({ menuXmlid: meta.menu_xmlid, menuId: Number(meta.menu_id || node.id),
+        actionId: Number(meta.action_id || meta.action?.id), model: meta.model || meta.action?.res_model,
+        viewModes: meta.view_modes, actionType: meta.action_type, views: meta.views });
+    }
+    if (node.children) visitMenu(node.children);
+  };
+  visitMenu(data.nav || []);
   return {
+    menuEntries,
     roleCode: String(data?.role_surface?.role_code || ''),
     userId: Number(authority?.principal_scope?.user_id || 0),
     companyId: Number(authority?.principal_scope?.company_id || 0),
@@ -529,6 +554,14 @@ try {
     };
     if (bootSummaryFixtureTarget) await page.route(bootContractRoutePattern, bootContractRouteHandler);
     report.startup[viewport.name] = await loginPage(page);
+    for (const target of routes.filter((item) => item.menuXmlid)) {
+      const entry = report.startup[viewport.name].menuEntries.find((item) => item.menuXmlid === target.menuXmlid);
+      if (!entry) throw new Error(`menu identity unavailable: ${target.menuXmlid}`);
+      const resolved = new URL(target.path, baseUrl);
+      resolved.searchParams.set('action_id', String(entry.actionId));
+      resolved.searchParams.set('menu_id', String(entry.menuId));
+      target.path = resolved.pathname + resolved.search;
+    }
     if (viewport.name === 'desktop') {
       const revealSidebar = page.getByRole('button', { name: '显示侧边栏', exact: true });
       if (await revealSidebar.count() === 1) {
@@ -773,6 +806,62 @@ try {
         const response = await contractResponse;
         if (!response.ok()) throw new Error(`contract request failed: ${response.status()} ${target.path}`);
         const contractPayload = await response.json();
+        if (target.captureFormStructure === true) {
+          const normalized = findNormalizedContract(contractPayload);
+          if (!normalized) throw new Error(`${target.name}: normalized container tree missing`);
+          // Save structure and identity only, without customer record values.
+          fs.writeFileSync(path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-structure.json`), JSON.stringify({
+            head, backendIdentity: report.backendIdentity,
+            pageInfo: normalized.pageInfo, layoutContract: normalized.layoutContract,
+            formStructureContract: normalized.formStructureContract,
+          }, null, 2));
+          if (target.expectedStructurePolicy && normalized.formStructureContract?.layoutPolicy !== target.expectedStructurePolicy) {
+            throw new Error(`${target.name}: unexpected structure policy ${normalized.formStructureContract?.layoutPolicy}`);
+          }
+        }
+        if (target.captureCompatibilityInventory === true && viewport.name === 'desktop') {
+          const policy = JSON.parse(fs.readFileSync(new URL('./baselines/formal_business_product_menu_policy_v1.json', import.meta.url), 'utf8'));
+          const formal = [...new Map(policy.products.flatMap((product) => product.capabilities)
+            .map((item) => [item.menu_xmlid, item])).values()];
+          const entries = report.startup[viewport.name].menuEntries;
+          const sourceHeaders = await response.request().allHeaders();
+          const headers = Object.fromEntries(['authorization', 'x-openerp-session-id', 'content-type']
+            .filter((key) => sourceHeaders[key]).map((key) => [key, sourceHeaders[key]]));
+          const inventory = { head, backendIdentity: report.backendIdentity, role: report.startup[viewport.name].roleCode,
+            companyId: report.startup[viewport.name].companyId, evidenceKind: 'runtime_contract_resolution_only', renderProfile: 'create', retirementComplete: false, entries: [] };
+          for (const item of formal) {
+            const entry = entries.find((row) => row.menuXmlid === item.menu_xmlid);
+            const row = { menuXmlid: item.menu_xmlid, label: item.label, model: item.res_model,
+              actionId: entry?.actionId || null, menuId: entry?.menuId || null,
+              batch: item.menu_xmlid === target.menuXmlid ? 'U-A/customer' : 'U-B/U-C',
+              browserAcceptance: item.menu_xmlid === target.menuXmlid ? 'current-route-only' : 'not_run' };
+            inventory.entries.push(row);
+            if (!entry) { row.path = 'unresolved_not_visible'; continue; }
+            const modes = Array.isArray(entry.viewModes) ? entry.viewModes : String(entry.viewModes || '').split(',');
+            if (modes.length && modes[0] && !modes.includes('form')) { row.path = 'no_form_entry'; continue; }
+            try {
+              const result = await context.request.post(response.url(), { headers, timeout: 45000,
+                data: { intent: 'ui.contract.v2', params: { op: 'action', model: item.res_model, action_id: entry.actionId,
+                  menu_id: entry.menuId, view_type: 'form', render_profile: 'create', source_type: 'ui.contract' } } });
+              const payload = await result.json();
+              const contract = findNormalizedContract(payload);
+              if (!result.ok() || !contract) { row.path = 'unresolved_contract_error'; row.httpStatus = result.status(); continue; }
+              const structure = contract.formStructureContract || {};
+              row.path = structure.layoutPolicy === 'container_tree_authority' ? 'container_tree_authority' : 'compatibility';
+              row.layoutPolicy = structure.layoutPolicy || null;
+              row.actualView = { model: contract.pageInfo?.model,
+                viewId: structure.sourceAuthority?.governance_source?.resolvedViewId || null };
+              if (!row.actualView.viewId) row.path = 'unresolved_view_identity';
+              row.configuration = structure.sourceAuthority?.governance_source || {};
+              row.compatibilityLogic = [...(structure.sourceAuthority?.governance_source?.compatibilityDependencies || []),
+                ...(row.path === 'compatibility' ? ['legacy structure slots', 'frontend compatibility floorplan'] : [])];
+              row.compatibilityConsumer = row.compatibilityLogic.length > 0;
+            } catch (error) { row.path = 'unresolved_request_error'; row.error = String(error.message || error); }
+          }
+          inventory.counts = inventory.entries.reduce((out, row) => ({ ...out, [row.path]: (out[row.path] || 0) + 1 }), {});
+          fs.writeFileSync(path.join(outputDir, 'compatibility-consumers.json'), JSON.stringify(inventory, null, 2));
+          report.compatibilityInventory = { count: inventory.entries.length, ...inventory.counts };
+        }
         contractH1Nodes = summarizeContractH1(contractPayload);
         contractSelections = summarizeContractSelections(contractPayload);
         contractSubviews = summarizeContractSubviews(contractPayload);
@@ -2397,7 +2486,33 @@ try {
           if (owner instanceof HTMLElement) owner.scrollTo({ top: 0, behavior: 'auto' });
           else window.scrollTo({ top: 0, behavior: 'auto' });
         });
+        let fullPageCapture = null;
+        if (target.captureFullPage === true) {
+          const savedStyles = await page.evaluate(() => {
+            const owner = document.querySelector('.router-host');
+            const saved = [];
+            for (let node = owner; node instanceof HTMLElement; node = node.parentElement) {
+              saved.push({ selector: node === owner ? '.router-host' : null, style: node.getAttribute('style') });
+              node.style.setProperty('height', 'auto', 'important');
+              node.style.setProperty('max-height', 'none', 'important');
+              node.style.setProperty('overflow', 'visible', 'important');
+            }
+            return saved;
+          });
+          const filename = `${screenshotStem}-full-page.png`;
+          await page.screenshot({ path: path.join(outputDir, filename), fullPage: true });
+          await page.evaluate((saved) => {
+            let node = document.querySelector('.router-host');
+            for (const row of saved) {
+              if (!(node instanceof HTMLElement)) break;
+              if (row.style === null) node.removeAttribute('style'); else node.setAttribute('style', row.style);
+              node = node.parentElement;
+            }
+          }, savedStyles);
+          fullPageCapture = { filename, expandedScrollContainer: true, width: viewport.width };
+        }
         formStructureEvidence = {
+          fullPageCapture,
           ...top,
           popupBoundaryEvidence,
           statusInteractionEvidence,
