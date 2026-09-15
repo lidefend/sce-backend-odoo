@@ -15,6 +15,8 @@
     :data-group-title="node.title || undefined"
     :data-value-emphasis="valueEmphasis"
     :data-form-section-target="governedSection?.anchor || undefined"
+    :data-section-content-kind="governedSection ? 'semantic-section' : undefined"
+    :data-section-source-identity="governedSection ? node.nodeId : undefined"
     :data-section-title="governedSection?.label || undefined"
     :aria-label="governedSection?.label || undefined"
   >
@@ -78,7 +80,10 @@ import {
   canonicalFieldHasPresentableValue,
   visibleCanonicalChildren,
 } from './canonicalFormRenderer';
-import { governedFormStructureSectionIdentity } from './nativeBusinessSection';
+import {
+  governedFormStructureSectionIdentity,
+  nativeBusinessSectionIdentity,
+} from './nativeBusinessSection';
 
 const props = defineProps<{
   node: CanonicalFormNode;
@@ -124,7 +129,9 @@ const sectionTitle = computed(() => '');
  * becoming a second business section occurrence.
  */
 const governedSection = computed(() => (
-  props.hideGovernedSectionHeading ? null : governedFormStructureSectionIdentity(props.node)
+  props.hideGovernedSectionHeading
+    ? null
+    : governedFormStructureSectionIdentity(props.node) || nativeBusinessSectionIdentity(props.node)
 ));
 const groupHeadingVisible = computed(() => Boolean(governedSection.value));
 
