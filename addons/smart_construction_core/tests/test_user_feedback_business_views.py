@@ -287,6 +287,18 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         )
 
     def test_material_outbound_and_return_contracts_use_native_structure_without_compatibility(self):
+        for data_file in (
+            "views/menu_product_project_wave1.xml",
+            "views/support/user_confirmed_formal_list_alignment_views.xml",
+        ):
+            convert_file(
+                self.env,
+                "smart_construction_core",
+                data_file,
+                {},
+                mode="update",
+                noupdate=False,
+            )
         convert_file(
             self.env,
             "smart_construction_core",
@@ -306,6 +318,13 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
 
         view = self.env.ref("smart_construction_core.view_sc_material_outbound_form")
+        material_center = self.env.ref("smart_construction_core.menu_sc_material_center")
+        return_menu = self.env.ref("smart_construction_core.menu_sc_material_return")
+        outbound_action = self.env.ref("smart_construction_core.action_sc_material_outbound")
+        self.assertTrue(return_menu.active)
+        self.assertEqual(return_menu.parent_id, material_center)
+        self.assertIn("('outbound_type', '=', 'issue')", outbound_action.domain)
+        self.assertIn("'current_business_category_code': 'material.outbound'", outbound_action.context)
         entry_specs = (
             (
                 "material.outbound",
