@@ -436,6 +436,108 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         )
         self.assertTrue(source_contract["field_policies"]["state"]["source_readonly"])
 
+    def _create_modifier_fixture(self, *, lines=None, deny=None, broken=None):
+        class Field:
+            def __init__(self, kind):
+                self.type = kind
+
+            def convert_to_read(self, value, record, use_display_name=True):
+                self_test.assertFalse(use_display_name)
+                return value
+
+        self_test = self
+
+        class Model:
+            _fields = {"has_lines": Field("boolean"), "lines": Field("one2many"),
+                       "partner_id": Field("many2one"), "state": Field("selection"),
+                       "display_only": Field("char")}
+
+            def __init__(self):
+                self.calls = []
+
+            def with_context(self, **context):
+                self.context = context
+                return self
+
+            def check_access_rights(self, operation):
+                self.calls.append(operation)
+                if deny == operation:
+                    raise PermissionError(operation)
+
+            def check_field_access_rights(self, operation, names):
+                return [name for name in self._fields if not (deny == "field" and name == "has_lines")]
+
+            def default_get(self, names):
+                self.calls.append("default_get")
+                if broken == "defaults":
+                    raise RuntimeError("defaults unavailable")
+                return {"state": "draft", "lines": self.context.get("default_lines", []), "partner_id": 7}
+
+            def new(self, values):
+                self.calls.append("new")
+                self.values = values
+                return self
+
+            def __getitem__(self, name):
+                if name != "has_lines" or broken == "compute":
+                    raise RuntimeError("compute unavailable")
+                return bool(self.values["lines"])
+
+        contract = {
+            "statusContract": {"globalStatus": {"effectiveRenderProfile": "create", "effectiveRecordCapabilities": {"create": True}}},
+            "layoutContract": {"containerTree": [{"type": "field", "name": "amount", "modifiers": {
+                "readonly": {"kind": "field_truthy", "field": "has_lines"}}}]},
+            "dataContract": {"mainData": {"state": "draft", "partner_id": [7, "Partner"]},
+                             "dataMeta": {"sourceContext": {"context": {"allowed_company_ids": [3], "active_id": 9, "default_lines": lines or []}}}},
+        }
+        return Model(), contract
+
+    def test_create_modifier_dependencies_use_native_draft_and_source_context(self):
+        for lines in ([], [(0, 0, {"quantity": 2})]):
+            with self.subTest(lines=bool(lines)):
+                model, contract = self._create_modifier_fixture(lines=lines)
+                self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract, model="x.document", record_id=None, view_type="form")
+                self.assertIs(contract["dataContract"]["mainData"]["has_lines"], bool(lines))
+                self.assertEqual(model.calls, ["create", "read", "default_get", "new"])
+                self.assertEqual(model.context["allowed_company_ids"], [3])
+                self.assertEqual(model.context["active_id"], 9)
+                self.assertEqual(model.values["partner_id"], 7)
+                self.assertEqual(model.values["lines"], lines)
+                self.assertNotIn("display_only", contract["dataContract"]["mainData"])
+
+    def test_create_modifier_dependencies_fail_closed_on_permission_or_compute(self):
+        for deny, broken in [("create", None), ("read", None), ("field", None), (None, "defaults"), (None, "compute")]:
+            with self.subTest(deny=deny, broken=broken):
+                model, contract = self._create_modifier_fixture(deny=deny, broken=broken)
+                self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract, model="x.document", record_id=None, view_type="form")
+                self.assertNotIn("has_lines", contract["dataContract"]["mainData"])
+                if deny:
+                    self.assertNotIn("new", model.calls)
+
+    def test_create_modifier_dependencies_preserve_existing_false_and_zero(self):
+        for value in (False, 0, ""):
+            model, contract = self._create_modifier_fixture(lines=[(0, 0, {"quantity": 2})])
+            contract["dataContract"]["mainData"]["has_lines"] = value
+            self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract, model="x.document", record_id=None, view_type="form")
+            self.assertIs(contract["dataContract"]["mainData"]["has_lines"], value)
+            self.assertEqual(model.calls, [])
+
+    def test_create_modifier_dependencies_reject_noncreate_or_denied_entry(self):
+        for profile, allowed, record_id in [("readonly", True, None), ("edit", True, None), ("create", False, None), ("create", True, "invalid")]:
+            model, contract = self._create_modifier_fixture()
+            contract["statusContract"]["globalStatus"].update(effectiveRenderProfile=profile, effectiveRecordCapabilities={"create": allowed})
+            self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract, model="x.document", record_id=record_id, view_type="form")
+            self.assertNotIn("has_lines", contract["dataContract"]["mainData"])
+            self.assertEqual(model.calls, [])
+
+    def test_create_modifier_dependencies_reject_invalid_or_divergent_relation_seed(self):
+        for name, value in [("partner_id", {"display_name": "unresolved"}), ("partner_id", ["bad", "Partner"]), ("lines", [{"id": 4}])]:
+            model, contract = self._create_modifier_fixture()
+            contract["dataContract"]["mainData"][name] = value
+            self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract, model="x.document", record_id=None, view_type="form")
+            self.assertNotIn("has_lines", contract["dataContract"]["mainData"])
+            self.assertNotIn("new", model.calls)
+
     def test_final_modifier_dependency_beyond_snapshot_budget_is_hydrated(self):
         class _Field:
             type = "selection"
