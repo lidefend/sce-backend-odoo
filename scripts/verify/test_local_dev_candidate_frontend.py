@@ -18,6 +18,33 @@ SPEC.loader.exec_module(MODULE_UNDER_TEST)
 
 
 class CandidateFrontendContractTest(unittest.TestCase):
+    def test_visual_inventory_uses_authorized_canonical_navigation(self):
+        import json
+        import subprocess
+        source = (ROOT / "scripts/verify/local_dev_candidate_visual_smoke.mjs").read_text()
+        function = source.split("function summarizeSystemInit(payload) {", 1)[1].split(
+            "\nfunction summarizeContractH1", 1
+        )[0]
+        fixture = {"data": {
+            "nav": [{"id": 99, "menu_xmlid": "stale.root", "action_id": 99}],
+            "navigation": {
+                "route_authority": {"primary_actions": [
+                    {"menu_id": 1, "action_id": 2, "menu_xmlid": "customer"},
+                    {"menu_id": 3, "action_id": 4, "menu_xmlid": "payment"}]},
+                "nav": [{"id": 50, "children": [
+                    {"id": 1, "meta": {"model": "res.partner", "view_modes": ["form"]},
+                     "canonical_navigation": {"menu_id": 1, "action_id": 2}},
+                    {"id": 3, "action_id": 4, "model": "payment", "meta": {}},
+                    {"id": 5, "action_id": 6, "menu_xmlid": "unauthorized"}]}]}}}
+        result = subprocess.run(["node", "--input-type=module", "-e",
+            "function summarizeSystemInit(payload) {" + function +
+            "\nprocess.stdout.write(JSON.stringify(summarizeSystemInit(" + json.dumps(fixture) + ")));"],
+            check=True, capture_output=True, text=True)
+        entries = json.loads(result.stdout)["menuEntries"]
+        self.assertEqual([item["menuXmlid"] for item in entries], ["customer", "payment"])
+        self.assertEqual(entries[0]["model"], "res.partner")
+        self.assertEqual(entries[1]["model"], "payment")
+
     def test_backend_identity_binds_source_revision_database_and_filestore(self):
         import json
         from types import SimpleNamespace

@@ -160,15 +160,19 @@ function summarizeSystemInit(payload) {
   const visitMenu = (node) => {
     if (!node || typeof node !== 'object') return;
     if (Array.isArray(node)) { node.forEach(visitMenu); return; }
-    const meta = node.meta || node;
-    if (meta.menu_xmlid && Number(meta.action_id || meta.action?.id)) {
-      menuEntries.push({ menuXmlid: meta.menu_xmlid, menuId: Number(meta.menu_id || node.id),
-        actionId: Number(meta.action_id || meta.action?.id), model: meta.model || meta.action?.res_model,
+    const meta = { ...node, ...node.meta };
+    const canonical = node.canonical_navigation || {};
+    const menuId = Number(canonical.menu_id || meta.menu_id || node.id || 0);
+    const actionId = Number(canonical.action_id || meta.action_id || meta.action?.id || 0);
+    const authorized = routeEntries.find((entry) => entry.menuId === menuId && entry.actionId === actionId);
+    const menuXmlid = authorized?.menuXmlid || meta.menu_xmlid || node.xmlid || node.xml_id;
+    if (menuXmlid && actionId && authorized) {
+      menuEntries.push({ menuXmlid, menuId, actionId, model: meta.model || meta.action?.res_model,
         viewModes: meta.view_modes, actionType: meta.action_type, views: meta.views });
     }
     if (node.children) visitMenu(node.children);
   };
-  visitMenu(data.nav || []);
+  visitMenu(navigation.nav || []);
   return {
     menuEntries,
     roleCode: String(data?.role_surface?.role_code || ''),
@@ -825,7 +829,7 @@ try {
             .map((item) => [item.menu_xmlid, item])).values()];
           const entries = report.startup[viewport.name].menuEntries;
           const sourceHeaders = await response.request().allHeaders();
-          const headers = Object.fromEntries(['authorization', 'x-openerp-session-id', 'content-type']
+          const headers = Object.fromEntries(['authorization', 'x-openerp-session-id', 'x-odoo-db', 'content-type']
             .filter((key) => sourceHeaders[key]).map((key) => [key, sourceHeaders[key]]));
           const inventory = { head, backendIdentity: report.backendIdentity, role: report.startup[viewport.name].roleCode,
             companyId: report.startup[viewport.name].companyId, evidenceKind: 'runtime_contract_resolution_only', renderProfile: 'create', retirementComplete: false, entries: [] };
