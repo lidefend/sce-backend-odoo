@@ -140,3 +140,11 @@ f84a667c449fd180626361fb136d41f0d7f7219e 的本地 Quick 已通过且 receipt �
 - L3／L4按与f84a667c逐文件比对证明产品源码未变，承接其影响分析与既有浏览器证据；本轮不触及数据库、容器或fixture。L5重新生成预检、独立审查、冻结新HEAD后取得新的Quick及远端检查；f84a667c receipt仅保留为旧候选证据。
 
 本条在新候选冻结前记录，最终远端状态以新HEAD对应运行及归档为准。release_candidate_gate的下游失败不增加独立修复范围；professional_quality_gate最终结果另行核对。
+
+### 9.2 审计时间线所有权守卫恢复
+
+303ee222a25581e619b38256715059f4b4aaa695 的本地Quick通过后，远端 run34969767432 于2026-09-15T12:36:59Z 首次失败于 `make verify.frontend.professional_audit.unit`，断言为 `task and workspace do not prevent duplicate audit timelines`。守卫版本 `d05dbab95d5d8a1c443d760bc408e4cb214700b6` 与基线相同；它仍要求show-audit-timeline的true／false都位于宿主。实际旧任务路径由ObjectTaskPage显示审计、协作面板设false；原生共享面由协作面板设true显示审计，结构提取未改变该权威。
+
+P4／scripts/verify仅修两份守卫及既有测试文件，检查真实NativeCollaborationPanel调用的时间线所有权与权威props；不更改P0组件或P1视图来满足旧源码位置。L1迭代通过；L2审计9个模型案例、4个Python测试（新增5种断链反例）通过；同一提取影响的协作调用边界45个模型案例、29个测试通过。其他引用ContractFormDriverHost的守卫已只读核对，无需产品修改。上轮f84a667c专业质量最终通过；303ee222的专业质量单独收齐，不由前端下游失败推断。
+
+本轮所有产品源码相对303ee222保持不变，L3／L4承接既有确定性影响分析，不重复升级、fixture或浏览器矩阵；action777未通过、53→50不变。新增P4修复独立提交、生成预检和独立复核后冻结新HEAD，运行其最终Quick及远端门禁。各旧候选receipt仅用于历史证据。
