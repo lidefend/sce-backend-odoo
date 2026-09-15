@@ -1303,7 +1303,7 @@ BUSINESS_CATEGORY_FORM_POLICY_TEMPLATES = {
         trace=FACT_TRACE_FIELDS,
         ledger=("stock_picking_id", "source_transfer_outbound_id"),
     )),
-    "material.outbound": _policy(
+    "material.outbound": _native_structure_policy(_policy(
         [
             _section("business_identity", "办理身份", ["business_category_id", "state", "name", "outbound_type"], 10),
             _section(
@@ -1338,13 +1338,13 @@ BUSINESS_CATEGORY_FORM_POLICY_TEMPLATES = {
         readonly_all=("business_category_id", "state", "name", "amount_total", "stock_picking_id", "transfer_inbound_id"),
         trace=FACT_TRACE_FIELDS,
         ledger=("stock_picking_id", "transfer_inbound_id"),
-    ),
-    "material.return": _material_policy(
+    )),
+    "material.return": _native_structure_policy(_material_policy(
         "退库明细",
         ["outbound_date", "outbound_type", "warehouse_id", "receiver_id", "receiver_user_id", "purpose", "line_ids"],
         handling_fields=["note", "attachment_ids"],
         ledger_fields=["amount_total", "stock_picking_id"],
-    ),
+    )),
     "material.transfer": _material_policy(
         "调拨明细",
         ["outbound_date", "outbound_type", "source_location_id", "dest_location_id", "warehouse_id", "dest_warehouse_id", "line_ids"],

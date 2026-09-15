@@ -297,6 +297,7 @@
         'data/settlement_adjustment_form_productization_contract.xml',
         'data/remaining_p3_form_productization_contract.xml',
         'data/material_inbound_native_form_retirement.xml',
+        'data/material_outbound_native_form_retirement.xml',
         'data/product_policy_menu_sync.xml',
         'security/action_groups_patch.xml',
     ],

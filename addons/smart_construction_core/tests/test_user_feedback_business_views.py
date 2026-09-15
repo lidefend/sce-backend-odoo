@@ -254,18 +254,18 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.assertIn(self.product.display_name, display_name)
         self.assertNotIn("sc.material.inbound.line,", display_name)
 
-    def test_material_outbound_policy_separates_business_facts_from_lines(self):
+    def test_material_outbound_and_return_policies_keep_semantics_without_structure(self):
         from odoo.addons.smart_construction_core.models.support.business_form_policy_templates import (
             get_business_category_form_policy_templates,
         )
 
-        policy = get_business_category_form_policy_templates()["material.outbound"]
-        sections = {section["name"]: section for section in policy["sections"]}
-        self.assertEqual(sections["business_facts"]["title"], "基本资料")
-        self.assertIn("receiver_id", sections["business_facts"]["fields"])
-        self.assertIn("outbound_date", sections["business_facts"]["fields"])
-        self.assertEqual(sections["document_lines"]["fields"], ["line_ids"])
-        self.assertEqual(sections["handling"]["fields"], ["note", "attachment_ids"])
+        policies = get_business_category_form_policy_templates()
+        for category_code in ("material.outbound", "material.return"):
+            policy = policies[category_code]
+            self.assertNotIn("sections", policy)
+            fields = {row["name"]: row for row in policy["fields"]}
+            for name in ("outbound_type", "outbound_date", "warehouse_id", "line_ids"):
+                self.assertIn(name, fields, (category_code, name))
 
         view_arch = (
             Path(__file__).resolve().parents[1]
@@ -274,6 +274,8 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             / "material_acceptance_views.xml"
         ).read_text(encoding="utf-8")
         outbound_form = view_arch[view_arch.index('id="view_sc_material_outbound_form"') :]
+        for title in ("出退库主信息", "材料明细", "说明与附件", "来源追溯"):
+            self.assertIn('string="%s"' % title, outbound_form)
         self.assertLess(
             outbound_form.index('name="material_catalog_id"'),
             outbound_form.index('name="origin_issue_line_id"'),
@@ -283,6 +285,68 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             outbound_form.index('name="origin_issue_line_id"'),
         )
 
+    def test_material_outbound_and_return_contracts_use_native_structure_without_compatibility(self):
+        convert_file(
+            self.env,
+            "smart_construction_core",
+            "data/material_outbound_native_form_retirement.xml",
+            {},
+            mode="update",
+            noupdate=False,
+        )
+        self.env["sc.business.category"]._sync_seed_form_policies()
+
+        for xmlid in (
+            "business_config_contract_sc_material_outbound_form_structure_generated",
+            "business_config_contract_material_outbound_productized_form_v1",
+        ):
+            self.assertFalse(self.env.ref("smart_construction_core.%s" % xmlid).active, xmlid)
+
+        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+
+        view = self.env.ref("smart_construction_core.view_sc_material_outbound_form")
+        entry_specs = (
+            (
+                "material.outbound",
+                "action_sc_material_outbound",
+                "menu_sc_material_outbound",
+                "business_config_contract_material_outbound_native_form_v1",
+            ),
+            (
+                "material.return",
+                "action_sc_material_return",
+                "menu_sc_material_return",
+                "business_config_contract_material_return_native_form_v1",
+            ),
+        )
+        for category_code, action_xmlid, menu_xmlid, contract_xmlid in entry_specs:
+            action = self.env.ref("smart_construction_core.%s" % action_xmlid)
+            menu = self.env.ref("smart_construction_core.%s" % menu_xmlid)
+            native_contract = self.env.ref("smart_construction_core.%s" % contract_xmlid)
+            self.assertTrue(native_contract.active)
+            self.assertEqual(native_contract.action_id, action)
+            result = UiContractV2Handler(
+                self.env, su_env=self.env["ir.model"].sudo().env
+            ).handle({
+                "op": "model",
+                "model": "sc.material.outbound",
+                "action_id": action.id,
+                "menu_id": menu.id,
+                "view_type": "form",
+                "render_profile": "create",
+                "context": {"current_business_category_code": category_code},
+            })
+            envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+            self.assertTrue(envelope.get("ok", True), envelope.get("error"))
+            structure = envelope["data"]["formStructureContract"]
+            self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
+            provenance = structure["sourceAuthority"]["governance_source"]
+            self.assertEqual(provenance["resolvedActionId"], action.id)
+            self.assertEqual(provenance["resolvedViewId"], view.id)
+            self.assertEqual(provenance.get("configuredSections", []), [])
+            self.assertEqual(provenance.get("compatibilityDependencies", []), [])
+            self.assertFalse(provenance["legacyFieldPolicyOverlay"])
+            self.assertFalse(provenance["formLayoutOverlay"])
     def test_material_supplier_return_policy_and_view_preserve_business_sections(self):
         from odoo.addons.smart_construction_core.models.support.business_form_policy_templates import (
             get_business_category_form_policy_templates,

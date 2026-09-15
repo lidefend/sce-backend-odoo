@@ -581,7 +581,7 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,issued"/>
                 </header>
                 <sheet>
-                    <group>
+                    <group string="出退库主信息">
                         <group>
                             <field name="name"/>
                             <field name="outbound_type" readonly="state != 'draft'"/>
@@ -598,11 +598,9 @@
                             <field name="source_location_id"/>
                             <field name="dest_warehouse_id" invisible="outbound_type != 'transfer'"/>
                             <field name="dest_location_id" invisible="outbound_type != 'transfer'"/>
-                            <field name="transfer_inbound_id" readonly="1" invisible="outbound_type != 'transfer'"/>
                             <field name="receiver_id" readonly="state != 'draft'"/>
                             <field name="receiver_user_id"/>
                             <field name="keeper_id"/>
-                            <field name="stock_picking_id"/>
                         </group>
                     </group>
                     <group string="系统默认提示" invisible="not sc_has_system_default">
@@ -611,7 +609,7 @@
                         <field name="sc_system_default_note" readonly="1"/>
                     </group>
                     <notebook>
-                        <page string="出库明细">
+                        <page string="材料明细">
                             <field name="line_ids" readonly="state != 'draft'">
                                 <tree editable="bottom">
                                     <field name="sequence" widget="handle"/>
@@ -630,11 +628,26 @@
                                 </tree>
                             </field>
                         </page>
-                        <page string="出库说明">
-                            <field name="note" nolabel="1"/>
+                        <page string="说明与附件">
+                            <group>
+                                <field name="note" nolabel="1"/>
+                                <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
+                            </group>
                         </page>
-                        <page string="附件">
-                            <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
+                        <page string="来源追溯">
+                            <group>
+                                <group string="执行结果">
+                                    <field name="stock_picking_id" readonly="1"/>
+                                    <field name="transfer_inbound_id" readonly="1" invisible="outbound_type != 'transfer'"/>
+                                </group>
+                                <group string="来源记录">
+                                    <field name="legacy_fact_model" readonly="1"/>
+                                    <field name="legacy_fact_id" readonly="1"/>
+                                    <field name="legacy_fact_type" readonly="1"/>
+                                    <field name="source_created_by" readonly="1"/>
+                                    <field name="source_created_at" readonly="1"/>
+                                </group>
+                            </group>
                         </page>
                     </notebook>
                 </sheet>
