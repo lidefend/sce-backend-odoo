@@ -1,6 +1,6 @@
 # U-C2：材料入库／出库原生结构迁移
 
-状态：入库代表面已完成源码迁移，并通过 L1、定向 L2、受管增量升级和桌面／移动 L4 只读浏览器样板；兼容消费者台账已由 46 扣减为 45。
+状态：入库代表面已完成源码迁移，并通过 L1、定向 L2、受管增量升级和桌面／移动 L4 只读浏览器验证；当前为“本地迁移已验证、产品复核待完成”。兼容消费者本地验证口径由 46 扣减为 45，发布口径仍为 46。
 
 ## 边界与基线
 
@@ -17,8 +17,8 @@
 
 | 台账消费者 | 正式入口 | 台账身份 | 原生表单 | 本批处理 |
 |---|---|---|---|---|
-| 材料入库 | `menu_sc_material_inbound` → `action_sc_material_inbound_handling` | action 546 / menu 494 | `view_sc_material_inbound_form`，view 1428 | 已迁移并从台账退出 |
-| 材料出库 | `menu_sc_material_outbound` → `action_sc_material_outbound` | action 547 / menu 495 | `view_sc_material_outbound_form`，view 1431 | 当前 45 项中的后续入口 |
+| 材料入库 | `menu_sc_material_inbound` → `action_sc_material_inbound_handling` | action 546 / menu 494 | `view_sc_material_inbound_form`，view 1428 | 本地迁移验证完成；产品复核待完成 |
+| 材料出库 | `menu_sc_material_outbound` → `action_sc_material_outbound` | action 547 / menu 495 | `view_sc_material_outbound_form`，view 1431 | 等待入库产品复核后启动 |
 
 `menu_sc_material_return` 通过 `action_sc_material_return` 打开同一
 `sc.material.outbound` / `view_sc_material_outbound_form`，仅以
@@ -44,13 +44,26 @@
 | L3 | `CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core make local.dev.upgrade MODULE=smart_construction_core` | passed | `sc-local-dev` / `sc_dev_demo` / `^sc_dev_demo$` / `sc_local_dev_odoo_data` | 只读候选运行态 |
 | L4 错误前置诊断 | `make local.dev.sync_demo` | failed | 该入口调用 `demo.load.full`，会写入并对账全量演示数据；既有已审批结算样本发票金额期望 280000、实际 0 | 单列 demo settlement fixture 问题，不作为只读样板门禁 |
 | L4 只读前置 | `local.dev.candidate.frontend.up/health/visual-smoke` 调用链审计 | passed | 保留允许分支、干净精确 HEAD、源码挂载、数据库/dbfilter/filestore、有效账号和目标路由身份检查；不调用 demo reset | action 546 创建态与已有查看态 |
-| L4 浏览器 | `FRONTEND_MATERIAL_SAMPLE_REVIEW=1 ... make verify.frontend.professionalization.material_domain.browser` | passed | `e10da352a5d5b300b6d3071befe4ed3d807de3f9` / 指纹 `5d333882...`；action 546、menu 494、view 1428；1440×960 与 390×844；已有 `S80-MIN-001` 和新建零保存；12 张截图；零写请求且前后业务指纹一致 | 入库扣减为 45，出库继续 |
+| L4 业务验证 | `FRONTEND_MATERIAL_SAMPLE_REVIEW=1 ... make verify.frontend.professionalization.material_domain.browser` | passed（承接） | `e10da352a5d5b300b6d3071befe4ed3d807de3f9` / 指纹 `5d333882...`；action 546、menu 494、view 1428；已有 `S80-MIN-001` 和新建零保存；零写请求且前后业务指纹一致 | 本地验证口径 45；产品复核待完成 |
+| L4 补充取证 | `FRONTEND_MATERIAL_EVIDENCE_CAPTURE=1 ... make verify.frontend.professionalization.material_domain.browser` | capture passed | `21322956c21f08b92ddf3f2a62f24b457779b006` / 指纹 `cec4efeb...`；1440×960 与 390×844；新建／查看真实顶部、明细和来源选中态共 12 张完整视口图；零写请求且前后业务指纹一致 | 交回产品浏览器复核，不启动出库 |
 
 曾运行一次过宽的 `TestUserFeedbackBusinessViews`，71 个方法中出现 13 failed / 16 errors；入库新增契约测试通过，新增静态断言的作用域错误已修复。其余失败属于既有发票、费用归属、历史模型和列表基线，不作为本批测试入口，也未通过重复宽测掩盖。
 
-## 计数规则
+## 候选承接与计数规则
 
-入库的实际契约与浏览器效果均已通过，action 546 从台账退出，发布计数由 46 更新为 45。台账变更只触及本迭代记录和消费者 JSON，不改变 e10da352 浏览器命令输入、后端模块、前端源码或运行环境，因此按确定性影响分析承接该 L4 结果，不重复已通过样板。出库／退库共享表单只有在两个正式入口的实际契约与浏览器效果均通过后，才处理对应的单个出库消费者并由 45 更新为 44。
+`e10da352→76741309` 只有一个提交 `docs: retire inbound compatibility consumer`，变更路径仅为本迭代记录和消费者 JSON；P1 视图、后端模块、前端源码、候选载体、账号、数据库和运行配置均未变化。因此承接 `e10da352` 的实际契约、零保存、零写请求和业务指纹结果，不重复业务旅程。
+
+`76741309→21322956` 只增加 P4 的只读补充取证模式及其静态定向测试，不修改产品或运行输入。补充模式重新渲染既有查看态和空白新建态，只切换页签和截图，并由受管 shell 在前后比较业务指纹；它不执行保存、对象动作、fixture reset 或 demo 对账。
+
+action 546 已从剩余兼容消费者数组移除，所以 `count` 与 `localVerifiedCount` 保持 45；用户尚未完成产品复核，`publishedCount` 保持 46。该 45 不能表述为已发布。出库／退库共享表单只有在入库产品复核通过，且两个正式入口的实际契约与浏览器效果均通过后，才处理对应的单个出库消费者并由本地 45 更新为 44。
+
+## 补充浏览器证据与两层导航
+
+- 受管候选服务在 `21322956c21f08b92ddf3f2a62f24b457779b006` 恢复，前端静态服务、后端源码挂载、`sc_dev_demo`、`^sc_dev_demo$` 和 `sc_local_dev_odoo_data` 身份一致；没有执行 `sync_demo`。
+- 新建和查看顶部图都同时将实际滚动容器 `.router-host.scrollTop` 与文档滚动位置置为 0。记录值均为 0，页头与首段真实可见。
+- 明细／来源图使用完整浏览器视口：桌面 1440×960、移动 390×844。实际 `.router-host.scrollTop` 为：查看态 566（桌面）／1183（移动），新建态 602（桌面）／1237（移动）。文件名不作为位置证明，数值记录在 `capture-summary.json`。
+- 顶部 `FormSectionNavigation` 的“入库明细”指向 `line_ids` 关系锚点；正文三个入口是 notebook 页签。现场从“来源追溯”点击顶部“入库明细”时，该关系锚点不在可见 DOM，正文仍停留“来源追溯”，滚动位置不变。当前两者不是可互换入口；先由产品复核确认预期，本批不据此修改渲染器。
+- 补充证据位于 `tmp/uc2/material-inbound-capture-21322956`，摘要为其中的 `capture-summary.json`。12 张 PNG 均已验证为声明的完整视口尺寸并记录 SHA256。
 
 ## 清理前证据归档
 
@@ -73,6 +86,6 @@
 
 第五次探测的桌面视口通过此前检查，移动视口的来源定位器选中隐藏的桌面表格副本并超时；日志确认相同 `S80-MA-001` 节点存在。选择器限定为当前视口可见节点后重试，该次不记通过。
 
-第六次探测在候选 `e10da352a5d5b300b6d3071befe4ed3d807de3f9` 通过。两个视口均确认 view 1428 / action 546 同一原生来源、`container_tree_authority`、`native_authority`、零 `compatibilityDependencies`、入库明细／说明与附件／来源追溯三个页签、全部来源契约字段、来源值 `S80-MA-001`、唯一状态拥有者、保存能力和契约内带入验收操作；新建态未保存。证据位于 `tmp/uc2/material-inbound-sample-e10da352`，清理前必须纳入外部归档。
+第六次探测在候选 `e10da352a5d5b300b6d3071befe4ed3d807de3f9` 通过本地业务验证。两个视口均确认 view 1428 / action 546 同一原生来源、`container_tree_authority`、`native_authority`、零 `compatibilityDependencies`、入库明细／说明与附件／来源追溯三个页签、全部来源契约字段、来源值 `S80-MA-001`、唯一状态拥有者、保存能力和契约内带入验收操作；新建态未保存。该结果不等于产品复核或发布通过。证据位于 `tmp/uc2/material-inbound-sample-e10da352`，清理前必须纳入外部归档。
 
 action 777 保持原“环境阻断、未通过”状态，本批没有探测或改写。

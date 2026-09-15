@@ -11520,7 +11520,8 @@
     "countCorrection": 4,
     "migrationReduction": 3
   },
-  "publishedCount": 45,
+  "publishedCount": 46,
+  "localVerifiedCount": 45,
   "uc1PublishedAudit": {
     "auditedAt": "2026-09-16",
     "auditedReleaseHead": "28b7695dc9f1cebbbe9bd5d715e951c6dec8a4da",
@@ -11552,10 +11553,11 @@
       "acceptanceRerun": false
     }
   },
-  "uc2PublishedAudit": {
+  "uc2LocalMigrationAudit": {
     "auditedAt": "2026-09-16",
-    "candidateHead": "e10da352a5d5b300b6d3071befe4ed3d807de3f9",
-    "candidateFingerprint": "5d3338828f19b3968ac9ef5cd7e4be00989fb99c9ed4cf709795f74f3837a185",
+    "status": "local_migration_verified_product_review_pending",
+    "productCandidateHead": "e10da352a5d5b300b6d3071befe4ed3d807de3f9",
+    "productCandidateFingerprint": "5d3338828f19b3968ac9ef5cd7e4be00989fb99c9ed4cf709795f74f3837a185",
     "iterationRecord": "docs/ops/iterations/uc2_material_native_migration_20260916.md",
     "reduction": {
       "before": 46,
@@ -11575,7 +11577,7 @@
       "compatibilityDependenciesEmpty": true
     },
     "browserEvidence": {
-      "status": "passed",
+      "status": "local_business_acceptance_passed_product_review_pending",
       "viewports": [
         "1440x960",
         "390x844"
@@ -11588,12 +11590,47 @@
       "sourceFact": "S80-MA-001",
       "mutationRequests": 0,
       "businessFingerprintsUnchanged": true,
-      "evidenceRoot": "tmp/uc2/material-inbound-sample-e10da352"
+      "evidenceRoot": "tmp/uc2/material-inbound-sample-e10da352",
+      "candidateCarry": {
+        "from": "e10da352a5d5b300b6d3071befe4ed3d807de3f9",
+        "through": "76741309dba5e4abf176d513b8d63d6fd92142ff",
+        "changedPaths": [
+          "docs/ops/iterations/form_structure_compatibility_consumers_v1.json",
+          "docs/ops/iterations/uc2_material_native_migration_20260916.md"
+        ],
+        "productOrRuntimeInputsChanged": false
+      },
+      "captureSupplement": {
+        "candidateHead": "21322956c21f08b92ddf3f2a62f24b457779b006",
+        "candidateFingerprint": "cec4efebbdf46a8a89d714a6587e608fdc74cd31f26f7cf682e6985396ce1e25",
+        "evidenceRoot": "tmp/uc2/material-inbound-capture-21322956",
+        "summary": "tmp/uc2/material-inbound-capture-21322956/capture-summary.json",
+        "captureComplete": true,
+        "fullViewportScreenshots": 12,
+        "mutationRequests": 0,
+        "businessFingerprintsUnchanged": true,
+        "actualScrollOwner": ".router-host"
+      },
+      "navigationReview": {
+        "status": "product_review_pending",
+        "topEntry": "入库明细",
+        "bodyTabs": [
+          "入库明细",
+          "说明与附件",
+          "来源追溯"
+        ],
+        "observedFromBodyTab": "来源追溯",
+        "topTargetVisible": false,
+        "topClickActivatedBodyTab": false,
+        "topClickChangedScrollPosition": false,
+        "conclusion": "top section navigation does not activate a hidden notebook page; validate product intent before any renderer change"
+      }
     }
   },
   "runtimeEvidenceRoot": "artifacts/form-structure-unification/ub-tender-hierarchy-identities",
   "nextBatch": {
     "name": "U-C2",
+    "status": "pending_inbound_product_review",
     "priorityActions": [
       547
     ],
@@ -11609,7 +11646,8 @@
         ]
       }
     ],
-    "scopeNote": "material.return shares the sc.material.outbound native form; supplier return uses a separate native model and is outside this 45-entry ledger"
+    "scopeNote": "material.return shares the sc.material.outbound native form; supplier return uses a separate native model and is outside this 45-entry ledger",
+    "promotionCondition": "start action 547 only after inbound product browser review accepts the supplemented screenshots and two-level navigation behavior"
   },
   "retirementCondition": "Only after every formal consumer of a compatibility regrouping path is zero and other roles/companies/states are covered, remove that regrouping logic and its test exemptions."
 }
