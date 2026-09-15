@@ -50,7 +50,7 @@ Tender PR #479 的 squash `9f7bb560917a98b638a6d2a516fe2542634fdff8` 已按主�
 - L3：`make local.dev.upgrade MODULE=smart_core,smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_core,smart_construction_core` 通过；记录 `module-upgrade.log`。
 - L3：客户业务字段、迁移字段隔离两项 `local.dev.test`；首次失败见 `customer-module-tests.log`；恢复后 2/2 通过见 `customer-module-tests-recovery.log`。
 - L3：真实客户 model/create → normalized 契约测试 1/1 通过；核对四章、关键集合/业务字段可见、原生标签与实际 view。
-- L4：客户 1088/390 浏览器、正文契约树和整页截图由冻结后 runner 生成，结果以 `artifacts/form-structure-unification/customer-browser-final/summary.json` 为准。
+- L4：客户 1088/390 浏览器、正文契约树和整页截图由冻结后 runner 生成，结果以 `artifacts/form-structure-unification/customer-browser-complete/summary.json` 为准。
 - L5：本批次尚未进入完整发布流程；四代表面与全系统统一均未登记通过。
 
 初轮后端测试失败归因：旧 handler 重查/原生 slots 断言与新边界不符；已有测试缺失 field_label 参数。
@@ -91,3 +91,11 @@ company_type 不再被平台强制改名为“主体类型”，正文使用本�
 证据采集绑定实际新建页的 model 请求，保存请求身份、结构与 widget/container 状态；
 台账按相同 model/create 路径采集。早期 action 口径的 49 个依赖只保留为诊断证据，
 不作为最终创建路径数量。P4 首轮导航解析失败与客户章节失败保留原日志。
+
+原生 bridge 的可见性也统一为 normalized status：旧 technical/hidden 语义不再二次隐藏原生 view
+明确可见的负责人、国家/地区；node.visible=false、readonly 和已移交 header 的状态栏去重仍保持。
+兼容分支维持原行为，等待正式消费者归零。对应 presenter/bridge 定向 169 项、navigation 28 项通过。
+
+浏览器 P4 手动滚动现在会在吸顶栏位置变化后重新测量 anchor 并补滚，
+不会点击导航或改写选中状态。TDesign 下拉检查使用其实际官方面板容器；
+角色 listbox 选择器仍覆盖关系面板。早期失败报告不删除、不冒充通过。

@@ -1968,12 +1968,14 @@ try {
           if (!enabled) continue;
           await select.click();
           await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          await page.locator('[role="listbox"]:visible, .t-select__dropdown:visible').first()
+            .waitFor({ state: 'visible', timeout: 10000 });
           popupBoundaryEvidence = await page.evaluate(() => {
             const visible = (node) => node instanceof HTMLElement && node.offsetParent !== null;
             const select = [...document.querySelectorAll('.field [data-semantic-component="ScSelect"], .field [role="combobox"]')]
               .find((node) => visible(node) && (node === document.activeElement || node.contains(document.activeElement)))
               || null;
-            const popup = [...document.querySelectorAll('[role="listbox"]')]
+            const popup = [...document.querySelectorAll('[role="listbox"], .t-select__dropdown')]
               .find((node) => visible(node) && node.getBoundingClientRect().width > 0);
             const selectOwner = select instanceof HTMLElement
               ? select.closest('[data-semantic-component="ScSelect"], [data-semantic-component="ScRelationField"]')
@@ -2191,6 +2193,8 @@ try {
           const background = header instanceof HTMLElement ? getComputedStyle(header).backgroundColor : '';
           const alpha = background.match(/rgba?\([^)]*(?:,|\/)\s*([\d.]+)\s*\)$/)?.[1];
           return {
+            visibleFieldNames: [...new Set([...document.querySelectorAll('[data-native-contract-structure] [data-field-name]')]
+              .filter(visible).map((node) => node.getAttribute('data-field-name')).filter(Boolean))],
             sectionLinks: [...document.querySelectorAll('[data-form-section-navigation] [data-section-link]')]
               .filter(visible).map((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim()),
             currentSectionCount: [...document.querySelectorAll('[data-form-section-navigation] [aria-current="location"]')].filter(visible).length,
@@ -2555,6 +2559,8 @@ try {
           captures,
           pass: target.expectFormStructure !== true || (
             top.sectionLinks.length > 1
+            && (!Array.isArray(target.expectedVisibleFields)
+              || target.expectedVisibleFields.every((name) => top.visibleFieldNames.includes(name)))
             && top.currentSectionCount === 1
             && top.navigationOverflowDiscoverable
             && top.stickyHeaderOpaque
