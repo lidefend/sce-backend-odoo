@@ -1115,7 +1115,8 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         ):
             self.assertIn('name="%s"' % button_name, bid_form)
 
-    def test_tender_registration_business_workflow_reaches_won_contract(self):
+    def test_tender_registration_business_workflow_confirms_award_without_contract(self):
+        self.project.company_id = self.env.company
         bid = self.env["tender.bid"].create(
             {
                 "tender_name": "Feedback Tender Workflow",
@@ -1131,13 +1132,26 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.assertEqual(bid.state, "submitted")
         bid.action_to_waiting()
         self.assertEqual(bid.state, "waiting")
+        opening = self.env["tender.opening"].create(
+            {
+                "bid_id": bid.id,
+                "result": "won",
+                "win_price": 900.0,
+            }
+        )
+        bid.write(
+            {
+                "award_opening_id": opening.id,
+                "award_tax_basis": "unknown",
+                "award_source_kind": "award_notice",
+                "award_source_reference": "中标通知-Feedback-001",
+            }
+        )
         bid.action_mark_won()
 
         self.assertEqual(bid.state, "won")
-        self.assertTrue(bid.contract_id)
-        self.assertEqual(bid.contract_id.project_id, self.project)
-        self.assertEqual(bid.contract_id.partner_id, self.partner)
-        self.assertEqual(bid.contract_id.subject, "Feedback Tender Workflow")
+        self.assertEqual(bid.award_amount, 900.0)
+        self.assertFalse(bid.contract_id)
 
     def test_construction_diary_list_exposes_projected_site_fields(self):
         tree = self.env.ref("smart_construction_core.view_sc_construction_diary_tree").arch_db

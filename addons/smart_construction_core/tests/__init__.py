@@ -21,6 +21,7 @@ from . import test_project_progress_read_boundary
 from . import test_partner_blacklist_capability
 from . import test_p1_payment_request_capability
 from . import test_tender_document_advisory
+from . import test_tender_award_fact
 from . import test_quality_acceptance_capability
 from . import test_labor_product_capability
 from . import test_variation_change_chain
