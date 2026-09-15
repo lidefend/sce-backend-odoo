@@ -276,6 +276,7 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         outbound_form = view_arch[view_arch.index('id="view_sc_material_outbound_form"') :]
         for title in ("出退库主信息", "材料明细", "说明与附件", "来源追溯"):
             self.assertIn('string="%s"' % title, outbound_form)
+        self.assertIn('name="line_ids" string="材料明细"', outbound_form)
         self.assertLess(
             outbound_form.index('name="material_catalog_id"'),
             outbound_form.index('name="origin_issue_line_id"'),

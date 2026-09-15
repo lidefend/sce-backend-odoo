@@ -610,7 +610,7 @@
                     </group>
                     <notebook>
                         <page string="材料明细">
-                            <field name="line_ids" readonly="state != 'draft'">
+                            <field name="line_ids" string="材料明细" readonly="state != 'draft'">
                                 <tree editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="project_id" invisible="1"/>
