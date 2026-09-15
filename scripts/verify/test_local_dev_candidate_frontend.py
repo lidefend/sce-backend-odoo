@@ -41,6 +41,36 @@ class CandidateFrontendContractTest(unittest.TestCase):
           if (saved[0].traceId !== 'trace' || saved[0].companyId !== 1) throw Error('identity lost');
           """], check=True, capture_output=True, text=True)
 
+    def test_native_disclosure_requires_a_real_manual_expansion(self):
+        import subprocess
+        source = (ROOT / "scripts/verify/local_dev_candidate_visual_smoke.mjs").read_text()
+        function = source.split("async function expandNativeFormDisclosures(page, titles) {", 1)[1].split(
+            "\nfunction isContractV2Response", 1
+        )[0]
+        subprocess.run(["node", "--input-type=module", "-e",
+            "async function expandNativeFormDisclosures(page, titles) {" + function + """
+            function pageFor(mode) {
+              let expanded = mode === 'already-open' ? 'true' : 'false';
+              return {evaluate: async () => {}, locator: () => ({getByRole: (role, options) => {
+                if (role !== 'button' || !options.exact) throw Error('ambiguous selector');
+                return {count: async () => mode === 'missing' ? 0 : 1,
+                  getAttribute: async () => expanded,
+                  click: async () => {if (mode !== 'broken-click') expanded = 'true';},
+                  evaluate: async () => ({collapsed: mode === 'broken-owner' ? 'true' : 'false',
+                    visibleFields: ['amount']})};
+              }})};
+            }
+            const valid = await expandNativeFormDisclosures(pageFor('valid'), ['Details']);
+            if (valid[0].before !== 'false' || valid[0].after !== 'true'
+              || valid[0].method !== 'manual-title-click') throw Error('manual transition not recorded');
+            for (const mode of ['missing', 'already-open', 'broken-click', 'broken-owner']) {
+              let rejected = false;
+              try {await expandNativeFormDisclosures(pageFor(mode), ['Details']);}
+              catch {rejected = true;}
+              if (!rejected) throw Error('false expansion accepted: ' + mode);
+            }
+            """], check=True, capture_output=True, text=True)
+
     def test_customer_capture_selects_model_response_instead_of_action_prefetch(self):
         import subprocess
         source = (ROOT / "scripts/verify/local_dev_candidate_visual_smoke.mjs").read_text()
