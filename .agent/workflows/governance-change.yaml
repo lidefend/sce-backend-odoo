@@ -19,7 +19,11 @@ workflow:
     - create_or_resume_run_record
     - implement_only_within_frozen_scope
     - record_commands_and_evidence_truthfully
-    - run_governed_quick_and_targeted_guards
+    - run_lightweight_iteration_and_affected_registered_targeted_guards
+    - collect_independent_same_layer_failures_and_resolve_delivery_blockers
+    - update_one_result_index_with_original_evidence_references
+    - only_when_delivery_ready_prepare_generated_evidence_commit_and_freeze
+    - only_for_final_delivery_run_exact_head_quick_then_governed_publication
     - document_risk_rollback_and_next_step
     - close_run_only_after_required_evidence_passes
 

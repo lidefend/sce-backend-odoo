@@ -36,8 +36,15 @@ goal:
     - pr_push_never_invokes_a_tracked_evidence_refresh
     - stale_evidence_stops_before_remote_access
     - exact_head_quick_runs_once_only_after_clean_freeze
+    - known_delivery_blockers_are_resolved_before_finalization
+    - diagnostic_only_changes_do_not_trigger_final_quick_or_candidate_dispatch
+    - independent_same_layer_failures_are_collected_before_refreezing
+    - one_result_index_references_original_evidence_without_duplicate_reports
   rollback:
     - revert_the_single_p4_delivery_commit
   next_exact_step: >-
-    Commit all reviewed source and generated evidence, freeze one clean
-    candidate, and run one exact-head Quick.
+    Resolve the current PR 480 payment-create amount-input blocker through
+    bounded diagnosis and affected targeted validation. Keep finalization
+    pending until delivery blockers are closed; then prepare generated
+    evidence once, freeze and run final Quick. Reuse successful unaffected
+    evidence under the repository fingerprint and impact-analysis rules.
