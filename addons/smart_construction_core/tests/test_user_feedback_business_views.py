@@ -427,8 +427,6 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             self.assertIn('name="category_id"', arch)
             self.assertIn('name="user_id"', arch)
             self.assertIn('name="property_account_position_id"', arch)
-            self.assertIn('string="业务信息"', arch)
-            self.assertIn('string="关联业务明细"', arch)
             self.assertIn('name="action_open_source_record"', arch)
             self.assertIn('name="sc_source_fact_count" string="关联业务数" readonly="1"', arch)
             self.assertIn('name="sc_source_fact_source"', arch)
@@ -441,6 +439,23 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             self.assertIn('name="sc_business_term"', arch)
             self.assertIn('name="sc_legal_representative"', arch)
             self.assertIn('name="sc_contact_name"', arch)
+        self.assertNotIn('string="业务信息"', customer_form.arch_db)
+        self.assertNotIn('string="关联业务明细"', customer_form.arch_db)
+        self.assertIn('string="业务信息"', supplier_form.arch_db)
+        self.assertIn('string="关联业务明细"', supplier_form.arch_db)
+        for anchor, label in (
+            ("customer-basic", "基本资料"),
+            ("customer-contacts", "联系人"),
+            ("customer-bank-accounts", "账户明细"),
+            ("customer-notes", "附件与备注"),
+        ):
+            self.assertIn('data-sc-anchor="%s"' % anchor, customer_form.arch_db)
+            anchor_pos = customer_form.arch_db.index('data-sc-anchor="%s"' % anchor)
+            group_pos = customer_form.arch_db.rfind("<group", 0, anchor_pos)
+            group_close = customer_form.arch_db.index(">", anchor_pos)
+            group_node = customer_form.arch_db[group_pos:group_close]
+            self.assertIn('string="%s"' % label, group_node)
+            self.assertIn('col="1"', group_node)
         self.assertIn('name="company_type" string="客户类型"', customer_tree.arch_db)
         for arch in (customer_tree.arch_db, supplier_tree.arch_db):
             for field_name, label in (

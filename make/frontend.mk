@@ -762,6 +762,10 @@ verify.frontend.native_collaboration_presentation.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/native_collaboration_presentation_test.ts --bundle --platform=node --format=esm --outfile=/tmp/native-collaboration-presentation-test.mjs >/dev/null
 	@node /tmp/native-collaboration-presentation-test.mjs
 
+.PHONY: verify.form_structure_authority_unification.unit
+verify.form_structure_authority_unification.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_form_structure_authority_unification
+
 .PHONY: verify.frontend.cross_model_action_navigation.unit
 verify.frontend.cross_model_action_navigation.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/cross_model_action_navigation_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/cross-model-action-navigation-test.mjs >/dev/null
