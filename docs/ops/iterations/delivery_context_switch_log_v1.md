@@ -9636,3 +9636,5 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 
 - dc6aa930远端静态／构建／26导航及professional/public/merge通过；运行首败为finance付款创建809/559的amount输入45秒未可见，字段存在不代表控件可用。
 - P4补控件状态诊断和受管失败截图／JSON上传，保留原输入断言。25测试含2新增证据测试通过，CI/security守卫通过。未改产品、不宣称修复；待新现场定位owner。777未通过、53→50及U-C1仅准备保持。
+
+- 2026-09-15｜PR480付款创建态收口：P0 a45f80d6补齐原生计算条件依赖，167纯测试、真实Odoo单方法双分支及付款创建桌面通过；独立增量复核无代码阻断。集中生成准备后才冻结/Quick/受管更新，action777未通过与53→50保持。详情见form_structure_ua_ub_limited_closeout_20260915.md §9.5；后续状态仅维护既有RESULT.json和PR文本。

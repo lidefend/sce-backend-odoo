@@ -102,7 +102,7 @@ Quick 即使通过，也不改变上述未通过状态和裁决。环境定位�
 
 `make verify.unified_page_contract.v2.stable_projection` 已恢复通过；既有测试入口新增1个非零回归，正式值通过而 `raw.container_tree` 和 `root.form_structure_contract` 均被拒绝。独立审查认可此最小P4范围。生成证据随新候选重新准备。
 
-原始Quick失败保留在 `ua-ub-limited-closeout/quick.log`；定向恢复在 `guard-recovery.log`、`guard-recovery-test.log`。**定向恢复不等于Quick通过。** 用户要求本轮一次Quick，因此新候选不自动追加第二次；追加执行需用户确认。action777裁决、fixture清理和53→50不变。
+原始Quick失败保留在 `ua-ub-limited-closeout/quick.log`；定向恢复在 `guard-recovery.log`、`guard-recovery-test.log`。**定向恢复不等于Quick通过。** 后续已按用户澄清执行：未变候选成功证据复用，有明确修复依据时定向验证后可以重验，不再次申请授权。action777裁决、fixture清理和53→50不变。
 
 ## 8. 下一批
 
@@ -173,4 +173,19 @@ dc6aa93040cfe6f546025236cd586c9cfc937482 本地Quick通过；远端run3497340530
 
 旧CI只上传汇总JSON，未上传runner已通过受管capture尝试保存的失败截图。P4／scripts/verify与CI上传清单仅补充失败证据：精确控件可见性、readonly及禁用状态、source SHA／时间／入口，并上传指定failure截图与JSON。不读取字段值，不扩大原始网络trace上传，不放宽金额输入断言或权限，不改产品。
 
-25个既有定向测试通过，新增测试实际在Node执行诊断函数，区分readonly无input、隐藏input和可编辑input；输入value访问器设为抛错以防诊断读取值。CI入口及安全守卫通过。该批属于证据工具补齐，尚非付款问题修复；新候选门禁若再失败，以新增现场定位首个实际失效层，禁止凭“字段存在”放宽验收。原成功浏览器证据继续承接，action777与53→50不变。
+25个既有定向测试通过，新增测试实际在Node执行诊断函数，区分readonly无input、隐藏input和可编辑input；输入value访问器设为抛错以防诊断读取值。CI入口及安全守卫通过。当时只完成证据工具补齐；其诊断候选44407294的Quick随后取消，未签发receipt、未推送。付款修复见下节，不能凭“字段存在”放宽验收。action777与53→50不变。
+
+### 9.5 创建态条件依赖补齐与最终交付恢复
+
+本地只读对照在ddb9db599941a9fab340e1cdbb8944a0ebdadc1f确认首个失效层：付款创建契约action809/menu559已声明state=draft和create允许，但缺少非存储计算字段amount_uses_details；金额节点因此为NATIVE_MODIFIER_UNRESOLVED、readonly=true、disabled=true。原生金额声明可写，条件依赖未求值。该证据与CI金额输入缺失相符，CI环境的恢复仍必须由新候选远端检查证明。
+
+P0修复a45f80d6cbdf193a4bc42852224b6058ae49e38a仅扩展smart_core最终modifier依赖补齐：有效创建态先检查当前用户模型create/read和字段权限，沿原生sourceContext以default_get和未保存Model.new求缺失标量依赖；保留已有False/0，拒绝非法关系ID或与默认关系不一致的种子。异常保持missing，不sudo、不保存、不执行onchange，不调整原生结构、金额规则或已有记录read分支。原生默认值初始化覆盖可读字段以保留计算依赖，输出仅补条件所需字段；不扩展创建态的整页展示补齐。
+
+- L1：既有轻量入口及语法/差异检查通过。P4规则已固定到AGENTS、工作区规则及workflow：同层失败先收齐、诊断不触发发布、一个结果索引、收敛后集中生成，保留最终门禁。
+- L2：既有verify.form_structure_authority_unification.unit通过167测试。真实Odoo仅运行TestP1PaymentRequestCapability.test_create_modifier_dependencies_compute_native_payment_detail_state，普通非sudo财务角色下空/非空明细两分支通过；付款create/write被禁止，付款及明细数量前后不变。最初真实用例暴露旧参数use_name_get，按运行Odoo17接口改为use_display_name=False后定向重验通过；原失败日志保留。
+- L3：无schema、XML、模块注册变化，不重复升级。通过local.dev.up重载Python并将当前专题服务绑定a45；固定sc-local-dev/sc_dev_demo、^sc_dev_demo$、sc_local_dev_odoo_data，不操作历史UAT。
+- L4：只补付款创建桌面，sc_test_admin/company1，金额契约amount_uses_details=false、readonly=false、disabled=false；可见未禁用input恰为1，业务写入0。trace752f1754-5388-46ab-b1b0-d33e791cab0f与服务端日志匹配。该结果不替代CI fixture_role_finance验收。其余查看/编辑证据按已有记录分支未变承接；不宣称覆盖所有创建入口。
+- 独立只读审查重新计算7464项完整指纹677bbfa3f78f38aa1207df173f77191f2b9669b54c5979cd1ee9a289052d9d4e，确认dc6aa930..a45的14文件增量无S0–S2代码阻断，允许进入最终准备。旧审查会话额度中断后由新会话完成；这不等于新HEAD已获合并资格。
+- L5：本次集中更新交付文档、运行ci.delivery.freeze.prepare、审阅生成差异后冻结最终HEAD，再执行一次最终Quick及受管PR更新。receipt与远端结果进入现有RESULT.json和PR文本，不在冻结后追加跟踪文档。旧receipt不作为新HEAD证据。
+
+原始证据统一引用ua-ub-limited-closeout/RESULT.json：payment-create-fix-revalidated-targeted.log、payment-create-orm-revalidated.log、payment-create-local-diagnostic/与payment-create-local-fixed/，保留失败/恢复事实。回滚此修复需恢复对应P0提交并受管重载服务，无业务数据回滚。本批仍为“唯一结构机制及首批代表面迁移”；action777环境阻断、未通过，兼容53→50，U-C1仅任务书。

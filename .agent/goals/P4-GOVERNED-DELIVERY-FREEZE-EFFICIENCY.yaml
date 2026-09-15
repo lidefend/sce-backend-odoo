@@ -43,8 +43,9 @@ goal:
   rollback:
     - revert_the_single_p4_delivery_commit
   next_exact_step: >-
-    Resolve the current PR 480 payment-create amount-input blocker through
-    bounded diagnosis and affected targeted validation. Keep finalization
-    pending until delivery blockers are closed; then prepare generated
-    evidence once, freeze and run final Quick. Reuse successful unaffected
-    evidence under the repository fingerprint and impact-analysis rules.
+    The payment-create dependency fix at a45f80d6 has passed targeted and
+    local browser validation and independent code review. Prepare generated
+    evidence once, freeze the final delivery head, run its Quick and update
+    PR 480 through governed publication. Collect required exact-head remote
+    results before any merge decision; keep action777 not passed and the
+    compatibility ledger at 53 to 50.

@@ -12,8 +12,8 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Category | File |
 | ---: | --- | --- |
+| 5001 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4941 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
-| 4899 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4819 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 4267 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4103 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
@@ -26,7 +26,7 @@ Generated from repository source files. This report is informational during the 
 | 3302 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3180 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3021 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
-| 2964 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
+| 3009 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2875 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2762 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2547 | Python source | `addons/smart_core/handlers/api_data.py` |
@@ -163,8 +163,8 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Status | Category | File |
 | ---: | --- | --- | --- |
+| 5001 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4941 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
-| 4899 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4819 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 4267 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4103 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
@@ -177,7 +177,7 @@ Generated from repository source files. This report is informational during the 
 | 3302 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3180 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3021 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
-| 2964 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
+| 3009 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2875 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2762 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2547 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
