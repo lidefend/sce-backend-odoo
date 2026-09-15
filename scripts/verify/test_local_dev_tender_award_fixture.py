@@ -22,6 +22,7 @@ class TestLocalDevTenderAwardFixture(unittest.TestCase):
             'MODULE = "codex_p4_tender_award"',
             'P4_TENDER_AWARD_BATCH',
             'CANDIDATE_GIT_HEAD',
+            'WRITER_XMLID = "smart_construction_demo.sc_demo_user_test_admin"',
         ):
             self.assertIn(value, FIXTURE)
         self.assertIn('[[ "${COMPOSE_PROJECT_NAME:-}" == "sc-local-dev" ]]', FIXTURE_SH)
@@ -35,6 +36,8 @@ class TestLocalDevTenderAwardFixture(unittest.TestCase):
         self.assertNotIn('env["res.users"].sudo().create', FIXTURE)
         self.assertNotIn('env["project.project"].sudo().create', FIXTURE)
         self.assertNotIn('env["res.partner"].sudo().create', FIXTURE)
+        self.assertIn('group_smart_core_admin', FIXTURE)
+        self.assertIn('group_sc_super_admin', FIXTURE)
 
     def test_cleanup_is_xmlid_scoped_and_stops_on_contract_handoff(self):
         self.assertIn('if bid.contract_id:', FIXTURE)

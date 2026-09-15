@@ -17,7 +17,7 @@ EXPECTED_DB = "sc_dev_demo"
 EXPECTED_ENV = "dev"
 EXPECTED_DBFILTER = "^sc_dev_demo$"
 MODULE = "codex_p4_tender_award"
-WRITER_LOGIN = "demo_role_project_manager"
+WRITER_XMLID = "smart_construction_demo.sc_demo_user_test_admin"
 EXPECTED = {
     "bid_amount": 1200.0,
     "line_total": 1000.0,
@@ -93,17 +93,20 @@ def _bind(env, name, record):
 
 
 def _writer(env):
-    user = env["res.users"].sudo().search(
-        [("login", "=", WRITER_LOGIN), ("active", "=", True)], limit=1
+    user = env.ref(WRITER_XMLID, raise_if_not_found=False)
+    if not user or user._name != "res.users" or not user.active:
+        raise RuntimeError("existing governed system-administrator demo user is missing")
+    platform_admin = env.ref("smart_core.group_smart_core_admin", raise_if_not_found=False)
+    industry_admin = env.ref(
+        "smart_construction_core.group_sc_super_admin", raise_if_not_found=False
     )
-    if not user:
-        raise RuntimeError("existing governed project-manager demo user is missing")
-    group = env.ref(
-        "smart_construction_core.group_sc_cap_project_manager",
-        raise_if_not_found=False,
-    )
-    if not group or group not in user.groups_id:
-        raise RuntimeError("governed writer is not a project manager")
+    if (
+        not platform_admin
+        or not industry_admin
+        or platform_admin not in user.groups_id
+        or industry_admin not in user.groups_id
+    ):
+        raise RuntimeError("governed writer no longer has system-administrator authority")
     return user
 
 
