@@ -261,7 +261,7 @@ async function inspectInboundSampleViewport(viewport) {
     const disclosure = readonlyRelation.locator('[data-disclosure-trigger]:visible').first();
     if (await disclosure.count()) await disclosure.click();
   }
-  const sourceValue = readonlyRelation.getByText('S80-MA-001', { exact: false }).first();
+  const sourceValue = readonlyRelation.getByText('S80-MA-001', { exact: false }).filter({ visible: true }).first();
   await sourceValue.waitFor({ timeout: 45000 });
   const sourceRow = sourceValue.locator(viewport.width <= 390 ? 'xpath=ancestor::article[1]' : 'xpath=ancestor::tr[1]');
   const readonlyStatusFields = await readonlyForm.locator('[data-field-name="state"]:visible').count();

@@ -71,6 +71,7 @@ class TestFrontendMaterialDomainRollout(unittest.TestCase):
         self.assertIn("createBodyStatusFields + createHeaderStatusbars === 1", source)
         self.assertIn("material inbound source field is missing", source)
         self.assertIn("readonly sample exposes no populated source trace fact", source)
+        self.assertIn("getByText('S80-MA-001', { exact: false }).filter({ visible: true })", source)
         self.assertIn("['入库明细', '说明与附件', '来源追溯']", source)
         self.assertIn("findKey(listContract, 'modelRights')?.write === true", source)
         self.assertIn("effectiveRecordCapabilities')?.write === false", source)
