@@ -110,6 +110,7 @@ const report = {
   relation_requests: [],
   contract_requests: [],
   award_opening_descriptors: [],
+  expected_errors: [],
   errors: [],
   output_dir: outputDir,
 };
@@ -334,6 +335,17 @@ try {
     status: repeat.status,
     outcome: repeatDenied ? 'rejected_by_action_contract' : 'idempotent_success',
   });
+  if (repeatDenied) {
+    const consoleError = 'Failed to load resource: the server responded with a status of 403 (Forbidden)';
+    const consoleErrorIndex = report.errors.indexOf(consoleError);
+    check(consoleErrorIndex >= 0, 'contract-rejected repeat did not produce the expected browser response evidence', report.errors);
+    report.expected_errors.push({
+      intent: 'execute_button',
+      method: 'action_mark_won',
+      status: repeat.status,
+      console: report.errors.splice(consoleErrorIndex, 1)[0],
+    });
+  }
   const repeated = await readBid(page);
   check(repeated.award_confirmed_at === confirmed.award_confirmed_at, 'repeat request changed confirmation time', { confirmed, repeated });
   check(Number(repeated.award_amount) === 900 && !repeated.contract_id, 'repeat request changed snapshot or created contract', repeated);
