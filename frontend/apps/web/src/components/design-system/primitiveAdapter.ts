@@ -109,6 +109,13 @@ export function selectPopupVisibilityEvent(visible: unknown, trigger?: string) {
   };
 }
 
+/** Component drivers may wrap native focus/keyboard events in a context. */
+export function resolvePrimitiveNativeEvent(context: unknown): Event | undefined {
+  if (context instanceof Event) return context;
+  const event = (context as { e?: unknown } | null)?.e;
+  return event instanceof Event ? event : undefined;
+}
+
 export function tdesignTabsSize(size?: ScPrimitiveSize): 'medium' | 'large' {
   return normalizePrimitiveSize(size) === 'large' ? 'large' : 'medium';
 }

@@ -599,6 +599,8 @@ function fieldClass(field: FormSectionFieldSchema, index: number) {
       'field--config-hidden': props.fieldSelectionMode && isFieldMarkedHidden(field),
       'field--empty': fieldHasEmptyValue(field),
       'field--readonly-empty-relation': isReadonlyEmptyRelation(field),
+      'field--label-free': !props.fieldConfigEditable && !fieldActionsFor(field).length
+        && (field.hideLabel || detailCollectionOwnsVisibleTitle(field) || attachmentControlOwnsVisibleTitle(field)),
     },
   ];
 }
@@ -1235,6 +1237,16 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 
 .template-form-section--readonly .field--readonly-empty-relation :deep(.relation-readonly-empty) {
   padding: 6px 10px;
+}
+
+@media (min-width: 761px) {
+  .template-form-section--readonly .field--readonly-empty-relation.field--label-free {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .template-form-section--readonly .field--readonly-empty-relation.field--label-free > .field-label-row {
+    display: none;
+  }
 }
 
 .template-form-section--readonly .label {

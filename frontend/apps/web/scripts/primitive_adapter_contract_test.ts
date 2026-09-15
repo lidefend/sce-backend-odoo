@@ -4,6 +4,7 @@ import {
   normalizePrimitiveSize,
   normalizePrimitiveStatus,
   resolvePrimitiveControlUpdate,
+  resolvePrimitiveNativeEvent,
   selectPopupVisibilityEvent,
   semanticPrimitiveIdentity,
   tdesignButtonPresentation,
@@ -70,4 +71,16 @@ assert.equal(resolveModalKeyboardAction({ key: 'Tab', shiftKey: true, focusableC
 assert.equal(resolveModalKeyboardAction({ key: 'Tab', shiftKey: false, focusableCount: 2, activeIndex: 1, surfaceActive: false }), 'focus-first');
 assert.equal(resolveModalKeyboardAction({ key: 'Enter', shiftKey: false, focusableCount: 2, activeIndex: 1, surfaceActive: false }), 'none');
 
-console.log(`[primitive_adapter_contract_test] PASS components=${SC_PRIMITIVE_KEYS.length}`);
+const eventCases = ['focus', 'blur', 'keydown', 'keyup'];
+for (const type of eventCases) {
+  const native = new Event(type);
+  Object.defineProperty(native, 'target', { value: { value: 'Selected relation', id: 'relation-control' } });
+  const normalized = resolvePrimitiveNativeEvent({ e: native, value: 'Selected relation' });
+  assert.equal(normalized, native, `${type} must preserve the driver native event identity`);
+  assert.equal((normalized?.target as unknown as { value: string }).value, 'Selected relation');
+  assert.equal(resolvePrimitiveNativeEvent(native), native);
+}
+for (const invalid of [undefined, null, {}, { value: 'Selected relation' }, { e: null }]) {
+  assert.equal(resolvePrimitiveNativeEvent(invalid), undefined, 'invalid context must not fabricate an empty field event');
+}
+console.log(`[primitive_adapter_contract_test] PASS components=${SC_PRIMITIVE_KEYS.length} eventCases=${eventCases.length + 5}`);
