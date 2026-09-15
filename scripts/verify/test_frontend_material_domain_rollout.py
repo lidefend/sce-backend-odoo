@@ -68,6 +68,8 @@ class TestFrontendMaterialDomainRollout(unittest.TestCase):
         self.assertIn("resolvedViewId === 1428", source)
         self.assertIn("readonly and create chapters do not share one native source authority", source)
         self.assertIn("material load-acceptance operation is unavailable", source)
+        self.assertIn("material inbound source field is missing", source)
+        self.assertIn("readonly sample exposes no populated source trace fact", source)
         self.assertIn("['入库明细', '说明与附件', '来源追溯']", source)
         self.assertIn("findKey(listContract, 'modelRights')?.write === true", source)
         self.assertIn("effectiveRecordCapabilities')?.write === false", source)

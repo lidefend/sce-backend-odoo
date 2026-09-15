@@ -175,6 +175,7 @@ function inboundNativeContract(contract) {
   const structure = findKey(contract, 'formStructureContract') || {};
   const governance = structure?.sourceAuthority?.governance_source || {};
   const titles = [];
+  const fieldNames = [];
   const walk = (value) => {
     if (Array.isArray(value)) return value.forEach(walk);
     if (!value || typeof value !== 'object') return;
@@ -182,6 +183,7 @@ function inboundNativeContract(contract) {
       const title = String(value.label || value.title || value.attributes?.string || '').trim();
       if (title) titles.push(title);
     }
+    if (String(value.type || '') === 'field' && String(value.name || '')) fieldNames.push(String(value.name));
     Object.values(value).forEach(walk);
   };
   walk(findKey(contract, 'containerTree') || []);
@@ -198,6 +200,7 @@ function inboundNativeContract(contract) {
       compatibilityDependencies: governance.compatibilityDependencies || [],
     },
     titles,
+    fieldNames: [...new Set(fieldNames)],
   };
 }
 
@@ -215,6 +218,9 @@ function requireInboundNativeContract(contract, actionId, profile) {
     'material inbound render profile drifted', identity);
   for (const title of ['入库主信息', '项目与供应商', '入库明细', '说明与附件', '来源追溯']) {
     check(identity.titles.includes(title), `material inbound native chapter is missing: ${title}`, identity);
+  }
+  for (const fieldName of ['stock_picking_id', 'source_transfer_outbound_id', 'legacy_fact_model', 'source_created_by', 'source_created_at']) {
+    check(identity.fieldNames.includes(fieldName), `material inbound source field is missing: ${fieldName}`, identity);
   }
   return identity;
 }
@@ -285,7 +291,7 @@ async function inspectInboundSampleViewport(viewport) {
   check(Boolean(sourceTitle?.includes('S80-MA-001')), 'readonly source name is not fully accessible', readonlyResult);
   check(viewport.width <= 390 || (sourceRowHeight !== null && sourceRowHeight <= 96),
     'readonly source column still expands a detail row excessively', readonlyResult);
-  check(readonlySourceFields >= 5, 'readonly source trace chapter is incomplete', readonlyResult);
+  check(readonlySourceFields >= 1, 'readonly sample exposes no populated source trace fact', readonlyResult);
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: path.join(outputDir, `material-inbound-refinement-${suffix}-readonly-top.png`) });
   await selectNativeMaterialTab(readonlyForm, '入库明细');
@@ -339,7 +345,6 @@ async function inspectInboundSampleViewport(viewport) {
     'create key facts are not all before the detail collection', createResult);
   check(noteInPost === 1 && attachmentsInPost === 1,
     'create supplementary section does not own note and attachments', createResult);
-  check(sourceFieldCount >= 5, 'create source trace chapter is incomplete', createResult);
   check(createStatusFields === 0, 'header-owned status remains duplicated in the create body', createResult);
   check(createSaveActions === 1 && createNative.effectiveRecordCapabilities?.create === true,
     'material create operation capability is unavailable', createResult);
