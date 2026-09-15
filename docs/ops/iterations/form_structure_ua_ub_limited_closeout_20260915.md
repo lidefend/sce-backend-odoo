@@ -148,3 +148,21 @@ f84a667c449fd180626361fb136d41f0d7f7219e 的本地 Quick 已通过且 receipt �
 P4／scripts/verify仅修两份守卫及既有测试文件，检查真实NativeCollaborationPanel调用的时间线所有权与权威props；不更改P0组件或P1视图来满足旧源码位置。L1迭代通过；L2审计9个模型案例、4个Python测试（新增5种断链反例）通过；同一提取影响的协作调用边界45个模型案例、29个测试通过。其他引用ContractFormDriverHost的守卫已只读核对，无需产品修改。上轮f84a667c专业质量最终通过；303ee222的专业质量单独收齐，不由前端下游失败推断。
 
 本轮所有产品源码相对303ee222保持不变，L3／L4承接既有确定性影响分析，不重复升级、fixture或浏览器矩阵；action777未通过、53→50不变。新增P4修复独立提交、生成预检和独立复核后冻结新HEAD，运行其最终Quick及远端门禁。各旧候选receipt仅用于历史证据。
+
+### 9.3 命令与展示控件的精确归属、静态链尾部收口
+
+799b1ab944f92718add17d0ebdf4ad699818def5 的Quick通过后，远端run34971235949于2026-09-15T12:52:16Z首败于 `make verify.frontend.relational_action_primitives.unit`：X2Many期望9个ScButton但实际10个。守卫blob `2e1a3075daab016b7b1e40b17e8bd10409c7536c` 与基线相同；第10个来自基线b643d3d28的只读完整值popover触发器。P4改为分别验证9个既有命令和1个只读展示控件，后者必须绑定原单元格值、位于受管popover且没有写事件或submit行为；15测试通过，新增10反例。
+
+为避免逐条发布后才暴露被短路的检查，只补执行发布链尚未运行的静态单元尾部，已通过项不重复。发现并在冻结前处理：
+
+- P4原生动作守卫：旧ScButton总数2把新增的本地章节折叠按钮也当作业务动作。守卫blob `2dac58ea8876c5517412686cded34727cf250f8e` 与基线相同。现在精确核验2条业务动作的disabled／事件权威及1个本地折叠控件；16测试、其中7新增反例通过。旧“换成原生button”反例不再因总数碰巧相等而漏检。
+- P4渲染归属：主机已退役的info占位不再要求保留；错误入口及实际empty状态仍严格绑定。ProfessionalDetailCollectionControl补入现有表单关系批次，验证可选明细展开、金额提示、readonly状态和guardedAdapter，批次正式来源28→29。这是组件归属登记，不改变兼容消费者53→50。
+- 归属测试新增5种断链反例；状态入口55测试通过。初次布尔v-else绑定使用None，与既有解析器输出空字符串不符，改为正确空字符串后通过。测试中的预期拒绝会打印FAIL，不作为生产检查失败；生产清单最终为0缺口。
+- P0样式唯一等价调整：从UI driver的theme.css移除重复 `--td-line-height-body-small: 20px`。锁定TDesign1.20.5官方样式本身即为20px，正式入口先导入官方CSS再导入driver；不改变最终计算值，不添加视觉字面量豁免或行业特判。
+- 尾部原生文本、overlay、状态／仪表、层级工作表、页面模式、主题静态及非零单元测试通过；professional.extensions的targets=0表示没有声明扩展，仅记为静态适用性结果，不当作非零测试证据。
+
+Formal Product Layer／Layer Target：P4验证工具及精确归属、P0通用UI driver等值声明去重。业务声明属于P1但本次未变；不把守卫缺陷补进业务配置。L1迭代、L2上述定向结果与确定性影响分析归档；L3无模块/数据变化；L4模板、事件、权限及最终行高未变，承接既有浏览器证据。三份渲染清单通过受管refresh.frontend.rendering_detail.inventory刷新，随后各check通过。再执行生成预检、独立复核、冻结、新HEAD最终Quick和远端门禁，所有旧receipt保留。
+
+独立复核发现初稿守卫漏计自闭合按钮并允许Vue事件属性；修复使用HTMLParser统计所有开始标签，为两个展示控件限定精确属性集合。追加自闭合、:onClick／:onDblclick和动态属性反例后，两入口15／16测试再次通过，审查意见待最终确认关闭。
+
+原始证据位于同一closeout目录，包含各失败日志、静态尾部续跑与生成检查；本条不预先宣布新候选门禁通过。本批仍为有限U-A/U-B交付；action777未通过、兼容53→50和U-C1未实施均保持。

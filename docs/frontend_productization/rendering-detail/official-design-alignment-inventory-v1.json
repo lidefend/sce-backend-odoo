@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "0108e561715fbf42d679553c03199d2adef5b2e92daf5a8dfa42cd1330d20191",
+  "inputDigest": "4c79bb29c41c7301597e7ae8fa2a6f8bb7376afe020c912291230bd36d532d9e",
   "internalVendorSelectorGaps": [],
   "productAppearanceVariants": [
     {
@@ -74,6 +74,7 @@
         "frontend/apps/web/src/components/product-list/CollectionMobileRecordRow.vue",
         "frontend/apps/web/src/components/product-list/CollectionRowCell.vue",
         "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
+        "frontend/apps/web/src/components/template/FormSection.vue",
         "frontend/apps/web/src/views/AccountActivationView.vue",
         "frontend/apps/web/src/views/LoginView.vue",
         "frontend/apps/web/src/views/PasswordRecoveryView.vue"
@@ -159,6 +160,7 @@
         "frontend/apps/web/src/components/design-system/ScDisclosure.vue",
         "frontend/apps/web/src/components/product-list/CollectionColumnHeaderControl.vue",
         "frontend/apps/web/src/components/product-shell/WorkspaceContextIndicator.vue",
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
         "frontend/apps/web/src/layouts/AppShell.vue",
         "frontend/apps/web/src/pages/ActivityPage.vue",
         "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
@@ -513,6 +515,18 @@
       "status": "registered_product_variance"
     },
     {
+      "appearance": "structured-content",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue",
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='structured-content']"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
       "appearance": "summary-chip",
       "consumers": [
         "frontend/apps/web/src/components/GroupSummaryBar.vue",
@@ -644,17 +658,17 @@
   "schemaVersion": "frontend.official-design-alignment.inventory.v1",
   "scope": "formal P0/P1 frontend TDesign driver and product adapter styling",
   "summary": {
-    "formalStyleSourceCount": 212,
+    "formalStyleSourceCount": 213,
     "internalVendorSelectorGapCount": 0,
     "officialPublicTokenCount": 240,
     "orphanedProductAppearanceVariantCount": 0,
-    "productAppearanceVariantCount": 40,
-    "projectPublicTokenOverrideCount": 38,
+    "productAppearanceVariantCount": 41,
+    "projectPublicTokenOverrideCount": 41,
     "unknownProjectTokenOverrideCount": 0,
     "visualLiteralGapCount": 0
   },
   "themeTokens": {
-    "inheritedOfficialTokenCount": 202,
+    "inheritedOfficialTokenCount": 199,
     "officialPublicTokens": [
       "--td-bg-color-component",
       "--td-bg-color-component-active",
@@ -922,6 +936,9 @@
       "--td-error-color-focus",
       "--td-font-family",
       "--td-font-family-medium",
+      "--td-font-size-body-medium",
+      "--td-font-size-body-small",
+      "--td-line-height-body-medium",
       "--td-radius-default",
       "--td-radius-medium",
       "--td-shadow-1",
