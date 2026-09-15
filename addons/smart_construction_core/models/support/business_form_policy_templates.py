@@ -1087,6 +1087,10 @@ def _contract_handling_policy(title: str, *, supplement: bool = False, expense: 
                 field_policy["label"] = "供应商/分包方"
             elif expense and field_name == "attachment_text":
                 field_policy["label"] = "平台附件文本"
+    if not supplement:
+        # Main contract forms own their chapters in native XML. Category fields
+        # retain visibility/readonly/required profiles and semantic role labels.
+        policy.pop("sections", None)
     return policy
 
 
