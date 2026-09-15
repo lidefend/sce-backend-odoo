@@ -824,13 +824,22 @@ try {
             head, backendIdentity: report.backendIdentity,
             requestIdentity: (() => {
               const params = JSON.parse(response.request().postData() || '{}').params || {};
-              return Object.fromEntries(['op', 'model', 'action_id', 'menu_id', 'view_id', 'view_type', 'render_profile']
+              return Object.fromEntries(['op', 'model', 'action_id', 'menu_id', 'view_id', 'view_type', 'render_profile', 'record_id']
                 .filter((key) => params[key] !== undefined).map((key) => [key, params[key]]));
             })(),
             pageInfo: normalized.pageInfo, layoutContract: normalized.layoutContract,
             statusContract: normalized.statusContract, lifecycle: normalized.meta?.lifecycle,
+            selectedBusinessFacts: Object.fromEntries((target.captureBusinessFields || [])
+              .filter((key) => Object.hasOwn(normalized.dataContract?.mainData || {}, key))
+              .map((key) => [key, normalized.dataContract.mainData[key]])),
             formStructureContract: normalized.formStructureContract,
           }, null, 2));
+          if (target.expectedRenderProfile && normalized.statusContract?.globalStatus?.effectiveRenderProfile !== target.expectedRenderProfile) {
+            throw new Error(`${target.name}: unexpected effective render profile ${normalized.statusContract?.globalStatus?.effectiveRenderProfile}`);
+          }
+          if (target.expectCompatibilityFree === true && (normalized.formStructureContract?.sourceAuthority?.governance_source?.compatibilityDependencies || []).length) {
+            throw new Error(`${target.name}: compatibility structure dependency remains`);
+          }
           if (target.expectedStructurePolicy && normalized.formStructureContract?.layoutPolicy !== target.expectedStructurePolicy) {
             throw new Error(`${target.name}: unexpected structure policy ${normalized.formStructureContract?.layoutPolicy}`);
           }
@@ -845,7 +854,8 @@ try {
             .filter((key) => sourceHeaders[key]).map((key) => [key, sourceHeaders[key]]));
           const inventory = { head, backendIdentity: report.backendIdentity, role: report.startup[viewport.name].roleCode,
             companyId: report.startup[viewport.name].companyId, evidenceKind: 'runtime_contract_resolution_only', operation: 'model', renderProfile: 'create', retirementComplete: false, entries: [] };
-          for (const item of formal) {
+          for (const item of formal.filter((item) => !Array.isArray(target.compatibilityMenuXmlids)
+            || target.compatibilityMenuXmlids.includes(item.menu_xmlid))) {
             const entry = entries.find((row) => row.menuXmlid === item.menu_xmlid);
             const row = { menuXmlid: item.menu_xmlid, label: item.label, model: item.res_model,
               actionId: entry?.actionId || null, menuId: entry?.menuId || null,

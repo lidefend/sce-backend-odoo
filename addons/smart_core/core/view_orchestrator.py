@@ -11,7 +11,7 @@ from copy import deepcopy
 from typing import Any
 
 from .view_orchestration_contract import source_authority_contract
-from .form_structure_authority import resolve_form_structure_governance, diagnose_structure_ownership, authenticated_form_role_key
+from .form_structure_authority import resolve_form_structure_governance, diagnose_structure_ownership, authenticated_form_role_key, structural_form_declarations
 
 
 class ViewOrchestrator:
@@ -311,10 +311,7 @@ class ViewOrchestrator:
         spec = self._view_spec(payload, view_type)
         if not isinstance(spec, dict) or not self._is_native_semantic_surface(spec):
             return False
-        conflicts = [
-            key for key in ("layout", "sections", "fields", "field_slots", "actions", "header_buttons", "columns", "cols")
-            if spec.get(key) not in (None, [], {}, "")
-        ]
+        conflicts = list(structural_form_declarations(spec))
         if conflicts:
             raise ValueError(
                 "NATIVE_SEMANTIC_SURFACE_STRUCTURE_CONFLICT: %s" % ",".join(sorted(conflicts))

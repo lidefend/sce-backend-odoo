@@ -37,7 +37,7 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         tree = contract["layoutContract"]["containerTree"]
         sheet = next(node for node in tree if node["type"] == "sheet")
         self.assertEqual([node["label"] for node in sheet["children"]],
-                         ["基本资料", "联系人", "账户明细", "附件与备注"])
+                         ["基本资料", "工商信息", "联系方式", "账户与财务", "联系人", "账户明细", "附件与备注"])
         widgets = {}
         def collect(nodes):
             for node in nodes:
@@ -52,6 +52,31 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         # This native view explicitly exposes active; the old generic create
         # heuristic is not an access restriction and must not hide it.
         self.assertTrue(statuses[widgets["active"]["widgetId"]]["visible"])
+
+    def test_customer_field_authorities_and_record_grouping(self):
+        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+        partner = self.partner
+        company_type = partner._fields["company_type"]
+        self.assertTrue(company_type.compute)
+        self.assertTrue(company_type.inverse)
+        partner.company_type = "company"
+        self.assertTrue(partner.is_company)
+        for name in ("sc_default_tax_rate", "sc_default_tax_rate_text", "sc_account_name", "sc_bank_name", "sc_bank_account"):
+            field = partner._fields[name]
+            self.assertTrue(field.store, name)
+            self.assertFalse(field.compute, name)
+            self.assertFalse(field.related, name)
+        menu = self.env.ref("smart_construction_core.menu_sc_customer_partner")
+        for profile in ("edit", "readonly"):
+            result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({
+                "op": "model", "model": "res.partner", "action_id": menu.action.id,
+                "menu_id": menu.id, "record_id": partner.id, "view_type": "form", "render_profile": profile,
+            })
+            data = (result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result)["data"]
+            self.assertEqual(data["formStructureContract"]["layoutPolicy"], "container_tree_authority")
+            sheet = next(node for node in data["layoutContract"]["containerTree"] if node["type"] == "sheet")
+            self.assertEqual([node["label"] for node in sheet["children"]],
+                             ["基本资料", "工商信息", "联系方式", "账户与财务", "联系人", "账户明细", "附件与备注"])
 
     def test_material_inbound_can_be_created_with_business_amounts(self):
         inbound = self.env["sc.material.inbound"].create(
@@ -469,6 +494,9 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.assertIn('string="关联业务明细"', supplier_form.arch_db)
         for anchor, label in (
             ("customer-basic", "基本资料"),
+            ("customer-registration", "工商信息"),
+            ("customer-contact-details", "联系方式"),
+            ("customer-finance", "账户与财务"),
             ("customer-contacts", "联系人"),
             ("customer-bank-accounts", "账户明细"),
             ("customer-notes", "附件与备注"),
@@ -479,7 +507,8 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             group_close = customer_form.arch_db.index(">", anchor_pos)
             group_node = customer_form.arch_db[group_pos:group_close]
             self.assertIn('string="%s"' % label, group_node)
-            self.assertIn('col="1"', group_node)
+            columns = "1" if anchor in {"customer-contacts", "customer-bank-accounts", "customer-notes"} else "3"
+            self.assertIn('col="%s"' % columns, group_node)
         self.assertIn('name="company_type" string="客户类型"', customer_tree.arch_db)
         for arch in (customer_tree.arch_db, supplier_tree.arch_db):
             for field_name, label in (
@@ -494,7 +523,7 @@ class TestUserFeedbackBusinessViews(TransactionCase):
                 field_node = arch[field_pos:close_pos]
                 self.assertIn('string="%s"' % label, field_node)
                 self.assertNotIn('optional="hide"', field_node)
-        for label in ("客户身份", "企业资质与联系", "账户与业务画像", "账户明细", "附件与备注"):
+        for label in ("基本资料", "工商信息", "联系方式", "账户与财务", "账户明细", "附件与备注"):
             self.assertIn('string="%s"' % label, customer_form.arch_db)
         for label in ("供应商身份", "企业资质与联系", "账户与业务画像", "账户明细", "附件与备注"):
             self.assertIn('string="%s"' % label, supplier_form.arch_db)

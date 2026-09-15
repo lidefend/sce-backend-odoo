@@ -59,49 +59,47 @@
         <field name="arch" type="xml">
             <form string="客户">
                 <sheet>
-                    <group string="基本资料" col="1" data-sc-anchor="customer-basic">
-                        <group col="3">
-                            <group string="客户身份" col="3">
-                                <field name="name" string="客户名称" />
-                                <field name="company_type" string="客户类型" />
-                                <field name="is_company" string="企业/组织" />
-                                <field name="active" string="启用" />
-                                <field name="user_id" string="负责人" />
-                                <field name="category_id" string="业务分类" />
-                            </group>
-                            <group string="企业资质与联系" col="3">
-                                <field name="vat" string="统一社会信用代码" />
-                                <field name="company_registry" string="工商注册号" />
-                                <field name="industry_id" string="行业" />
-                                <field name="sc_region" />
-                                <field name="sc_registered_capital" />
-                                <field name="sc_establishment_date" />
-                                <field name="sc_business_term" />
-                                <field name="sc_legal_representative" />
-                                <field name="sc_contact_name" />
-                                <field name="phone" string="电话" />
-                                <field name="mobile" string="手机" />
-                                <field name="email" string="电子邮件" />
-                                <field name="website" string="网站" />
-                                <field name="street" string="街道地址" />
-                                <field name="street2" string="详细地址" />
-                                <field name="city" string="城市" />
-                                <field name="state_id" string="省/州" />
-                                <field name="zip" string="邮编" />
-                                <field name="country_id" string="国家/地区" />
-                                <field name="sc_business_scope" />
-                            </group>
-                            <group string="账户与业务画像" col="3">
-                                <field name="sc_account_name" string="账户名称" />
-                                <field name="sc_bank_name" string="开户银行" />
-                                <field name="sc_bank_account" string="银行账号" />
-                                <field name="property_payment_term_id" string="客户付款条件" />
-                                <field name="property_account_position_id" string="财政状况" />
-                                <field name="property_account_receivable_id" string="应收账款科目" />
-                                <field name="sc_default_tax_rate" />
-                                <field name="sc_default_tax_rate_text" string="主税率" />
-                            </group>
-                        </group>
+                    <group string="基本资料" col="3" data-sc-anchor="customer-basic">
+                        <field name="name" string="客户名称" />
+                        <field name="company_type" string="客户类型" help="客户主体类型；与企业/组织标记表示同一事实。" />
+                        <field name="is_company" string="企业/组织" help="客户类型为企业/组织时启用，与客户类型同步。" />
+                        <field name="active" string="启用" />
+                        <field name="user_id" string="负责人" />
+                        <field name="category_id" string="业务分类" />
+                    </group>
+                    <group string="工商信息" col="3" data-sc-anchor="customer-registration">
+                        <field name="vat" string="统一社会信用代码" />
+                        <field name="company_registry" string="工商注册号" />
+                        <field name="industry_id" string="行业" />
+                        <field name="sc_registered_capital" />
+                        <field name="sc_establishment_date" />
+                        <field name="sc_business_term" />
+                        <field name="sc_legal_representative" />
+                        <field name="sc_business_scope" />
+                    </group>
+                    <group string="联系方式" col="3" data-sc-anchor="customer-contact-details">
+                        <field name="sc_contact_name" />
+                        <field name="phone" string="电话" />
+                        <field name="mobile" string="手机" />
+                        <field name="email" string="电子邮件" />
+                        <field name="website" string="网站" />
+                        <field name="sc_region" />
+                        <field name="street" string="街道地址" />
+                        <field name="street2" string="详细地址" />
+                        <field name="city" string="城市" />
+                        <field name="state_id" string="省/州" />
+                        <field name="zip" string="邮编" />
+                        <field name="country_id" string="国家/地区" />
+                    </group>
+                    <group string="账户与财务" col="3" data-sc-anchor="customer-finance">
+                        <field name="sc_account_name" string="账户名称" help="默认结算账户户名，供付款、投标等业务带入；不与账户明细自动同步。" />
+                        <field name="sc_bank_name" string="开户银行" help="默认结算账户开户银行，供业务单据带入。" />
+                        <field name="sc_bank_account" string="银行账号" help="默认结算银行账号，供业务单据带入；账户明细维护其他银行账户。" />
+                        <field name="property_payment_term_id" string="客户付款条件" />
+                        <field name="property_account_position_id" string="财政状况" />
+                        <field name="property_account_receivable_id" string="应收账款科目" />
+                        <field name="sc_default_tax_rate" help="数值形式的默认税率资料（百分比）；实际业务计税以单据税项为准。" />
+                        <field name="sc_default_tax_rate_text" string="主税率" help="独立保存的税率文字说明，不由默认税率自动计算。" />
                     </group>
                     <group string="联系人" col="1" data-sc-anchor="customer-contacts">
                         <field name="child_ids" mode="tree,form" context="{'default_parent_id': id}" nolabel="1">
@@ -128,7 +126,7 @@
                         </field>
                     </group>
                     <group string="账户明细" col="1" data-sc-anchor="customer-bank-accounts">
-                        <field name="bank_ids" nolabel="1">
+                        <field name="bank_ids" nolabel="1" help="客户的多账户明细；新增或修改此处不会自动修改默认结算账户。" >
                             <tree editable="bottom">
                                 <field name="acc_number" />
                                 <field name="bank_id" />

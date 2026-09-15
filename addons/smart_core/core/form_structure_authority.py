@@ -259,6 +259,23 @@ def resolve_form_structure_governance(source_contract: dict[str, Any], configs, 
 
 
 
+def structural_form_declarations(spec: dict) -> dict:
+    """Sparse field policies annotate native nodes; order/membership owns structure."""
+    declarations = {}
+    semantic_keys = {"readonly", "required", "visible", "help", "widget", "class", "string", "label"}
+    for key in ("layout", "sections", "fields", "field_slots", "columns", "cols", "actions", "header_buttons"):
+        value = spec.get(key)
+        if key == "fields" and isinstance(value, list):
+            value = [row for row in value if not (
+                isinstance(row, dict)
+                and bool(semantic_keys.intersection(row))
+                and set(row).issubset(semantic_keys | {"name", "field", "field_name"})
+            )]
+        if value not in (None, [], {}, ""):
+            declarations[key] = value
+    return declarations
+
+
 def diagnose_structure_ownership(configs, *, model: str, action_id=None, view_id=None) -> list[dict]:
     """Compare concrete structure keys; unrelated semantic overlays can coexist.
 
@@ -279,10 +296,8 @@ def diagnose_structure_ownership(configs, *, model: str, action_id=None, view_id
         mode = spec.get("composition_mode") or spec.get("compositionMode")
         if mode in {"native_semantic_surface", "semantic_native_surface"}:
             native_owners.append(owner)
-        for key in ("layout", "sections", "fields", "field_slots", "columns", "cols", "actions", "header_buttons"):
-            value = spec.get(key)
-            if value not in (None, [], {}, ""):
-                declarations.append((key, value, owner, scoped))
+        for key, value in structural_form_declarations(spec).items():
+            declarations.append((key, value, owner, scoped))
     conflicts = []
     previous = {}
     for key, value, owner, scoped in declarations:

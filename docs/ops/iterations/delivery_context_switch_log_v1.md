@@ -9528,3 +9528,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Formal Product Layer: P0 platform structure composition and frontend consumption; P1 `smart_construction_core` customer native business sections; P4 compatibility-consumer ledger and focused evidence. Platform code cannot learn customer field semantics, and the P1 view cannot rebuild the generic contract mechanism.
 - Single objective: make `layoutContract.containerTree` drive both body and navigation and migrate the first customer profile sample. Excluded: payment, tender and project-dashboard migration; business fields, permissions, actions, save behavior, low-code full replacement and database writes.
 - Until the sibling baseline is integrated, only non-overlapping customer native structure, compatibility retirement rules and fail-first constraints may change. Browser evidence must bind frontend HEAD, backend module version, `sc-local-dev/sc_dev_demo`, menu and action; Quick remains reserved for the final frozen delivery head.
+
+## 2026-09-15 U-B 客户分组与代表面迁移
+
+- Branch: codex/form-structure-authority-unification-v1; HEAD: 8907a41f
+- Layer Target / Module: P1 native views + semantic configuration / smart_construction_core; P0 only evidenced generic defects; P4 existing evidence tools.
+- Reason: Owner approved customer grouping closure and payment/tender/dashboard migration; preserve capabilities and explicit compatibility retirement.

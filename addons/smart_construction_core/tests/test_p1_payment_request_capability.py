@@ -2464,11 +2464,20 @@ class TestP1PaymentRequestCapability(TransactionCase):
             {"提交审批时生成"},
         )
         form_structure = contract["formStructureContract"]
-        self.assertEqual(form_structure.get("layoutPolicy"), "native_authority")
-        field_labels = dict(form_structure.get("fieldLabels") or {})
-        for slot in form_structure.get("slots") or []:
-            for group in slot.get("groups") or []:
-                field_labels.update(group.get("fieldLabels") or {})
+        self.assertEqual(form_structure.get("layoutPolicy"), "container_tree_authority")
+        self.assertEqual(form_structure.get("slots"), [])
+        self.assertEqual(form_structure["sourceAuthority"]["governance_source"]["compatibilityDependencies"], [])
+        field_labels = {}
+        def collect_labels(value):
+            if isinstance(value, dict):
+                if value.get("fieldCode") and value.get("widgetId"):
+                    field_labels[value["fieldCode"]] = value.get("label")
+                for child in value.values():
+                    collect_labels(child)
+            elif isinstance(value, list):
+                for child in value:
+                    collect_labels(child)
+        collect_labels(container_tree)
         self.assertEqual(field_labels.get("amount_uppercase"), "系统生成金额大写")
         self.assertEqual(
             field_labels.get("accepted_amount_uppercase"),
@@ -2508,7 +2517,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
         # Contract-spec v0.1 (path B): the current native form remains the
         # structural authority.  Business-category annotations must not
         # replace its root with the historical synthetic sheet; product page
-        # composition remains a frontend Floorplan responsibility.
+        # composition is shared by body and navigation from this same tree.
         self.assertEqual(
             [row.get("type") for row in container_tree],
             ["header", "sheet"],

@@ -38,7 +38,10 @@ class FormStructureAuthorityUnificationTest(unittest.TestCase):
         self.assertEqual(
             actual,
             [
-                ("customer-basic", "基本资料", "1"),
+                ("customer-basic", "基本资料", "3"),
+                ("customer-registration", "工商信息", "3"),
+                ("customer-contact-details", "联系方式", "3"),
+                ("customer-finance", "账户与财务", "3"),
                 ("customer-contacts", "联系人", "1"),
                 ("customer-bank-accounts", "账户明细", "1"),
                 ("customer-notes", "附件与备注", "1"),
@@ -63,6 +66,16 @@ class FormStructureAuthorityUnificationTest(unittest.TestCase):
             )
             self.assertEqual(owning_group.get("col"), "1")
             self.assertIn(field, list(owning_group))
+
+    def test_customer_business_groups_preserve_distinct_authorities(self) -> None:
+        form = _form("view_sc_customer_partner_form")
+        groups = {g.get("data-sc-anchor"): {f.get("name") for f in g.findall("field")}
+                  for g in form.find("sheet").findall("group")}
+        self.assertEqual(groups["customer-basic"], {"name", "company_type", "is_company", "active", "user_id", "category_id"})
+        self.assertIn("vat", groups["customer-registration"])
+        self.assertIn("phone", groups["customer-contact-details"])
+        self.assertTrue({"sc_bank_account", "sc_default_tax_rate", "sc_default_tax_rate_text"}.issubset(groups["customer-finance"]))
+        self.assertEqual(groups["customer-bank-accounts"], {"bank_ids"})
 
     def test_compatibility_retirement_has_a_measurable_terminal_condition(self) -> None:
         text = DECISION.read_text(encoding="utf-8")

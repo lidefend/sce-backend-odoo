@@ -1099,6 +1099,27 @@ class TestSingleStructureResolution(unittest.TestCase):
         second = _Config({"view_orchestration": {"views": {"form": {"semantic_anchors": [{"role": "audit", "fields": ["state"]}]}}}})
         self.assertEqual(helper.diagnose_structure_ownership([first, second], model="demo.business"), [])
 
+    def test_native_sparse_field_policies_do_not_own_structure(self):
+        cls = _load_orchestrator()
+        helper = sys.modules["odoo.addons.smart_core.core.form_structure_authority"]
+        spec = {"composition_mode": "native_semantic_surface", "fields": [
+            {"name": "name", "help": "Field guidance", "readonly": True},
+        ]}
+        config = _Config({"view_orchestration": {"views": {"form": spec}}})
+        self.assertEqual(helper.diagnose_structure_ownership([config], model="demo.business"), [])
+        env = _Env({"ui.business.config.contract": _ConfigModel(config.contract_json), "demo.business": _Model()})
+        layout = [{"type": "group", "string": "Native chapter", "children": [
+            {"type": "field", "name": "name"}, {"type": "field", "name": "state"}]}]
+        result = cls(env).compose({"layout": layout}, model_name="demo.business", view_type="form", view_id=34)
+        nodes = result["layout"][0]["children"]
+        self.assertEqual([node["name"] for node in nodes], ["name", "state"])
+        self.assertEqual(nodes[0]["help"], "Field guidance")
+        self.assertTrue(nodes[0]["readonly"])
+        self.assertEqual(result["governance"]["view_orchestration"]["form_structure_projection"]["compatibility_dependencies"], [])
+        spec["fields"][0]["sequence"] = 1
+        with self.assertRaisesRegex(ValueError, "STRUCTURE_CONFLICT"):
+            helper.diagnose_structure_ownership([config], model="demo.business")
+
     def test_native_structure_conflict_names_entry_config_key_and_node(self):
         _load_orchestrator()
         helper = sys.modules["odoo.addons.smart_core.core.form_structure_authority"]

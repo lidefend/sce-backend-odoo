@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <data noupdate="0">
+        <!-- Retired order owners: exact P1 declarations apply on install and upgrade. -->
+        <function model="ui.business.config.contract" name="write">
+            <value eval="[ref('smart_construction_core.business_config_contract_payment_request_form_structure_generated'), ref('smart_construction_core.business_config_contract_tender_bid_form_structure_generated')]"/>
+            <value eval="{'active': False}"/>
+        </function>
         <record id="business_config_contract_project_project_form_structure_v1" model="ui.business.config.contract">
             <field name="name">project_project_form_structure_v1</field>
             <field name="model">project.project</field>
@@ -105,51 +110,20 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval="{
-                'view_orchestration': {
-                    'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},
-                    'views': {
-                        'form': {'composition_mode': 'entry_semantic_surface',
-                            'sections': [
-                                {'title': '报名信息'},
-                                {'title': '投标金额与时间'},
-                                {'title': '投标清单'},
-                                {'title': '结果与来源'}
-                            ],
-                            'fields': [
-                                {'name': 'state', 'sequence': 10},
-                                {'name': 'name', 'sequence': 20, 'readonly': True},
-                                {'name': 'project_id', 'sequence': 30},
-                                {'name': 'tender_name', 'sequence': 40},
-                                {'name': 'owner_id', 'sequence': 50},
-                                {'name': 'tender_round', 'sequence': 60},
-                                {'name': 'operation_strategy', 'sequence': 70, 'readonly': True},
-                                {'name': 'deadline', 'sequence': 80},
-                                {'name': 'open_date', 'sequence': 90},
-                                {'name': 'bid_amount', 'sequence': 100},
-                                {'name': 'amount_total', 'sequence': 110, 'readonly': True},
-                                {'name': 'line_ids', 'sequence': 120},
-                                {'name': 'guarantee_total', 'sequence': 130, 'readonly': True},
-                                {'name': 'guarantee_outstanding', 'sequence': 140, 'readonly': True},
-                                {'name': 'contract_id', 'sequence': 980, 'visible': False},
-                                {'name': 'currency_id', 'sequence': 981, 'visible': False},
-                                {'name': 'tech_attachment_ids', 'sequence': 982, 'visible': False},
-                                {'name': 'biz_attachment_ids', 'sequence': 983, 'visible': False},
-                                {'name': 'doc_purchase_ids', 'sequence': 984, 'visible': False},
-                                {'name': 'survey_ids', 'sequence': 985, 'visible': False},
-                                {'name': 'review_ids', 'sequence': 986, 'visible': False},
-                                {'name': 'opening_ids', 'sequence': 987, 'visible': False},
-                                {'name': 'guarantee_ids', 'sequence': 988, 'visible': False},
-                                {'name': 'business_scope_key', 'sequence': 993, 'visible': False},
-                                {'name': 'business_direction', 'sequence': 994, 'visible': False},
-                                {'name': 'carrier_type', 'sequence': 995, 'visible': False},
-                                {'name': 'carrier_model', 'sequence': 996, 'visible': False},
-                                {'name': 'carrier_res_id', 'sequence': 997, 'visible': False}
-                            ]
-                        }
-                    }
-                }
-            }"/>
+            <field name="contract_json" eval="{&#x27;view_orchestration&#x27;: {&#x27;context&#x27;: {&#x27;source&#x27;: &#x27;smart_construction_core.product_release&#x27;,
+                                    &#x27;source_status&#x27;: &#x27;product_release&#x27;},
+                        &#x27;views&#x27;: {&#x27;form&#x27;: {&#x27;fields&#x27;: [{&#x27;name&#x27;: &#x27;name&#x27;, &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;operation_strategy&#x27;, &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;amount_total&#x27;, &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;guarantee_total&#x27;, &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;guarantee_outstanding&#x27;, &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;currency_id&#x27;, &#x27;visible&#x27;: False},
+                                                      {&#x27;name&#x27;: &#x27;business_scope_key&#x27;, &#x27;visible&#x27;: False},
+                                                      {&#x27;name&#x27;: &#x27;business_direction&#x27;, &#x27;visible&#x27;: False},
+                                                      {&#x27;name&#x27;: &#x27;carrier_type&#x27;, &#x27;visible&#x27;: False},
+                                                      {&#x27;name&#x27;: &#x27;carrier_model&#x27;, &#x27;visible&#x27;: False},
+                                                      {&#x27;name&#x27;: &#x27;carrier_res_id&#x27;, &#x27;visible&#x27;: False}],
+                                           &#x27;composition_mode&#x27;: &#x27;native_semantic_surface&#x27;}}}}"/>
         </record>
 
         <record id="business_config_contract_tender_doc_purchase_form_structure_v1" model="ui.business.config.contract">
@@ -238,7 +212,9 @@
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "办理类型"}, {"title": "项目与往来单位"}, {"title": "申请依据"}, {"title": "申请金额"}, {"title": "收款账户"}, {"title": "付款单位"}, {"title": "办理说明与附件"}, {"title": "申请明细"}, {"title": "执行与额度"}, {"title": "往来单位默认账户"}, {"title": "迁移来源"}]}}}}'/>
+            <field name="contract_json" eval="{&#x27;view_orchestration&#x27;: {&#x27;context&#x27;: {&#x27;source&#x27;: &#x27;smart_construction_core.product_release&#x27;,
+                                    &#x27;source_status&#x27;: &#x27;product_release&#x27;},
+                        &#x27;views&#x27;: {&#x27;form&#x27;: {}}}}"/>
         </record>
         <record id="business_config_contract_sc_fund_account_operation_form_sections_v1" model="ui.business.config.contract">
             <field name="name">sc_fund_account_operation_form_sections_v1</field>
