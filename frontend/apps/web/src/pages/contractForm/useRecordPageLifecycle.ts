@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { computed } from 'vue';
+import { dispatchSceneBlockAction } from './sceneBlockAction';
 import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
 import type { FormRecordHydrationTarget } from './recordHydration';
 import { readonlyMainDataCoversFields } from './readonlyMainDataCoverage';
@@ -407,27 +408,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     nativeLayoutVisibilityRevision.value += 1;
   }
   function handleSceneBlockAction(payload: { action?: { target?: Record<string, unknown> } }) {
-    const target =
-      payload?.action?.target && typeof payload.action.target === 'object'
-        ? payload.action.target
-        : {};
-    const targetKind = String(target.kind || '').trim();
-    if (targetKind === 'statusbar_value') {
-      const value = String(target.value || '').trim();
-      if (value) {
-        setStatusbarValue(value);
-        return;
-      }
-    }
-    const route = String(target.route || '').trim();
-    if (route) {
-      void router.push(route);
-      return;
-    }
-    const sceneKey = String(target.scene_key || '').trim();
-    if (sceneKey) {
-      void router.push({ name: 'scene', params: { sceneKey } });
-    }
+    dispatchSceneBlockAction(payload, { router, setStatusbarValue });
   }
   async function reload() {
     const reloadIdentity = formRouteIdentity();
