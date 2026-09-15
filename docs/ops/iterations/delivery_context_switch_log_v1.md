@@ -9504,3 +9504,12 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 分支 `fix/p4-governed-frozen-sync-generated-drop-v1`，基线 `origin/main@bc4e102ebe986c926bd62a72f65c446a821a53d8`；继续复用既有 P4 工作树。Formal Product Layer 与 Layer Target 均保持 P4 受管分支同步工具，不修改产品、契约、运行环境或数据库。
 - 首次用 extended 入口同步中标冻结候选时，最后一个仅修改已登记复杂度报告的提交在冲突采用新 main 权威版本后正确变为空提交；旧的“重放后提交数绝对不变”校验将这一受控失效误判为责任丢失，并按设计恢复原 HEAD 和 clean 状态。
 - 修复后仅允许提交数减少不超过“完整变更集属于本次已确认生成证据冲突”的责任提交数；稳定路径集合和排除失效证据后的 patch identity 仍必须精确相同，产品提交、未登记生成文件和其他冲突不能借此消失。定向测试新增真实生成证据-only 冲突反例。
+
+### 2026-09-15 · tender award fact confirmation
+
+- Branch / baseline: `codex/tender-award-fact-confirmation-v1` / `main@0eb4776391a31779898d4d17f0317e132b6c4f7a`; the existing governed product worktree remains the sole writer.
+- Formal Product Layer: P1 owns explicit award fact fields, confirmation invariants and the native tender section; P0 owns generic native relation-domain preservation and reload entry identity; P4 owns the `sc-local-dev/sc_dev_demo` batch fixture, browser journey and cleanup.
+- Product result: confirmation snapshots the explicitly selected winning opening, amount/currency/tax basis/source/confirmer/time without creating a contract. Quote 1200, BOQ 1000 and award 900 remain distinct facts. Historical won records are not backfilled.
+- Runtime closure: batch `award-20260915h` passed through menu 387/action 594, repeat was rejected by the updated action contract without changing the snapshot, refresh showed readonly facts, and final cleanup removed only the batch-owned tender/line/opening. Product candidate `63fd6df8…` and P4 tool candidate `945f0b27…` are recorded separately.
+- Review closure: the first independent review found that confirmation-owned snapshot fields could be injected through ordinary create/pre-confirmation write. Candidate `e98d29a1…` now rejects that path, 11 selected P1 methods pass, and exact-head batch `award-20260915i` repeats the governed confirmation/readback/replay/cleanup journey with product and P4 tool bound to the same candidate.
+- Remaining boundary: contract handoff is a later independent batch; this change does not alter contract pricing, approval, payment, invoicing, production data or unknown-tax interpretation.
