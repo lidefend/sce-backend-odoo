@@ -320,6 +320,10 @@ class TenderBid(models.Model):
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
+        # ORM create fills missing values after our explicit-vals guard. Neither
+        # context defaults nor saved user defaults may manufacture a snapshot.
+        for field_name in _TENDER_AWARD_CONFIRMATION_OWNED_FIELDS:
+            res.pop(field_name, None)
         project_id = res.get("project_id") or self._context_project_id()
         if project_id and "project_id" in fields_list:
             res["project_id"] = project_id

@@ -150,6 +150,38 @@ class TestTenderAwardFact(TransactionCase):
                 with self.assertRaisesRegex(UserError, "只能由.*确认中标事实.*动作生成"):
                     self._bid("禁止创建注入-%s" % field_name, **{field_name: value})
 
+    def test_context_defaults_cannot_manufacture_a_confirmed_snapshot(self):
+        Bid = self.env["tender.bid"].with_context(
+            default_project_id=self.project.id,
+            default_award_amount=900.0,
+            default_award_currency_id=self.env.company.currency_id.id,
+            default_award_confirmed_by_id=self.env.user.id,
+            default_award_confirmed_at="2026-09-15 00:00:00",
+        )
+        bid = Bid.create({"tender_name": "上下文默认值不能确认中标", "state": "won"})
+        self.assertEqual(bid.project_id, self.project)
+        self.assertEqual(bid.award_confirmation_state, "legacy_unverified")
+        for field_name in (
+            "award_amount", "award_currency_id", "award_confirmed_by_id", "award_confirmed_at"
+        ):
+            self.assertFalse(bid[field_name], field_name)
+        with self.assertRaisesRegex(UserError, "明确选择"):
+            bid.action_mark_won()
+
+    def test_saved_defaults_cannot_manufacture_a_confirmed_snapshot(self):
+        protected_values = {
+            "award_amount": 900.0,
+            "award_currency_id": self.env.company.currency_id.id,
+            "award_confirmed_by_id": self.env.user.id,
+            "award_confirmed_at": "2026-09-15 00:00:00",
+        }
+        for field_name, value in protected_values.items():
+            self.env["ir.default"].set("tender.bid", field_name, value)
+        bid = self._bid("已保存默认值不能确认中标", state="won")
+        self.assertEqual(bid.award_confirmation_state, "legacy_unverified")
+        for field_name in protected_values:
+            self.assertFalse(bid[field_name], field_name)
+
     def test_confirmation_owned_snapshot_fields_cannot_be_injected_before_confirmation(self):
         bid = self._bid("禁止确认前注入")
         protected_values = {
