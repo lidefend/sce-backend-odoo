@@ -21,6 +21,11 @@ function loadTs(moduleName, importerDir = APP_DIR) {
   const module = { exports: {} };
   cache.set(sourcePath, module);
   const localRequire = (request) => {
+    // The form adapter re-exports the route adapter, whose browser bootstrap is
+    // outside this pure identity test. Fail if the tested path invokes it.
+    if (request === './pageIdentityRoute') {
+      return { resolveRoutePageIdentity: () => { throw new Error('unexpected route resolution'); } };
+    }
     if (request.startsWith('.')) return loadTs(request, path.dirname(sourcePath));
     if (!request.startsWith('@')) return require(request);
     throw new Error(`unsupported lifecycle smoke import: ${request}`);
@@ -36,6 +41,27 @@ function equal(actual, expected, label) {
 }
 
 function main() {
+  const { buildContractFormPageIdentity } = loadTs('pageIdentityAdapters');
+  const { resolveProductPageIdentity } = loadTs('pageIdentity');
+  const sourceRecord = { id: 17, name: 'DOC-017', display_name: 'Document / Project / DOC-017' };
+  const draft = { amount: 20, display_name: sourceRecord.display_name };
+  const input = {
+    action: { name: 'Document' }, contract: {}, formData: draft, recordData: sourceRecord,
+    isCreate: false, isEdit: false, recordMissing: false, renderError: false, status: 'ok',
+  };
+  const identity = (overrides = {}) => resolveProductPageIdentity(buildContractFormPageIdentity({ ...input, ...overrides }));
+  equal(identity().title, 'DOC-017', 'body-omitted identity uses authorized contract data');
+  equal(identity().documentTitle.startsWith('DOC-017 - '), true, 'document title shares contract identity');
+  equal(identity().breadcrumbs.slice(-1)[0].label, 'DOC-017', 'breadcrumb shares contract identity');
+  equal(identity({ isEdit: true }).title, 'DOC-017', 'edit keeps body-omitted contract identity');
+  equal(identity({ formData: { ...draft, name: 'DRAFT-017' } }).title, 'DRAFT-017', 'current draft identity outranks source snapshot');
+  equal(identity({ formData: { ...draft, name: '' } }).title, sourceRecord.display_name, 'explicitly cleared draft identity is not restored');
+  equal(identity({ recordData: { display_name: sourceRecord.display_name } }).title, sourceRecord.display_name, 'missing authorized identity retains display fallback');
+  equal(identity({ recordData: { code: 'CODE-017' }, contract: { views: { form: { profile: { title_field: 'code' } } } } }).title, 'CODE-017', 'declared non-name identity remains authoritative');
+  equal(identity({ isCreate: true }).title, '新建Document', 'create ignores prior record identity');
+  equal(identity({ recordMissing: true }).title, '记录不存在', 'missing record suppresses snapshot identity');
+  equal(draft, { amount: 20, display_name: sourceRecord.display_name }, 'identity does not add fields to writable draft');
+  equal(sourceRecord.name, 'DOC-017', 'identity does not mutate authorized source');
   const { createPageIdentityCoordinator } = loadTs('pageIdentityCoordinator');
   const coordinator = createPageIdentityCoordinator();
 
@@ -52,7 +78,7 @@ function main() {
   equal(coordinator.clear().title, '工作台', 'logout clears business identity');
   equal(coordinator.currentKey(), '', 'logout clears active route key');
 
-  console.log('[frontend_page_identity_lifecycle_smoke] PASS assertions=12');
+  console.log('[frontend_page_identity_lifecycle_smoke] PASS assertions=24');
 }
 
 main();
