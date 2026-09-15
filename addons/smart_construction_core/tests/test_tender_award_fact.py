@@ -213,3 +213,43 @@ class TestTenderAwardFact(TransactionCase):
             "award_contract_handoff_message",
         ):
             self.assertIn(field_name, field_codes)
+
+    def test_formal_entry_contract_keeps_confirmation_action_available(self):
+        bid = self._bid("正式入口动作投标", state="submitted")
+        self._opening(bid)
+        action = self.env.ref("smart_construction_core.action_tender_bid")
+        menu = self.env.ref("smart_construction_core.menu_sc_project_tender")
+        result = UiContractV2Handler(
+            self.env,
+            su_env=self.env["ir.model"].sudo().env,
+        ).handle(
+            {
+                "model": "tender.bid",
+                "view_type": "form",
+                "record_id": bid.id,
+                "action_id": action.id,
+                "menu_id": menu.id,
+                "client_type": "web_pc",
+                "render_profile": "edit",
+            }
+        )
+        envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+        self.assertTrue(envelope.get("ok", True), envelope)
+        contract = envelope["data"]
+        rules = [
+            row
+            for row in contract["actionContract"]["actionRuleList"]
+            if (row.get("button") or {}).get("name") == "action_mark_won"
+        ]
+        self.assertEqual(len(rules), 1, rules)
+        rule = rules[0]
+        self.assertEqual(rule["label"], "确认中标事实")
+        self.assertTrue(rule["allowed"], rule)
+        self.assertTrue(rule["enabled"], rule)
+        status = next(
+            row
+            for row in contract["statusContract"]["buttonStatus"]
+            if row.get("backendIdentity") == rule["backendIdentity"]
+        )
+        self.assertTrue(status["visible"], status)
+        self.assertFalse(status["disabled"], status)
