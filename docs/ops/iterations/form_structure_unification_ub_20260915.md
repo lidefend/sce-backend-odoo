@@ -1,6 +1,6 @@
 # U-B：客户业务分组收尾与三个代表面迁移
 
-状态：active；前一候选 8907a41ff08b7ceca25acef8378ca0df40a3d84f；统一基线 9f7bb560917a98b638a6d2a516fe2542634fdff8。
+状态：U-A／U-B 有限收口，当前结论见 [唯一结构机制及首批代表面迁移](form_structure_ua_ub_limited_closeout_20260915.md)；以下为历史执行记录。前一候选 8907a41ff08b7ceca25acef8378ca0df40a3d84f；统一基线 9f7bb560917a98b638a6d2a516fe2542634fdff8。
 
 ## 边界与顺序
 

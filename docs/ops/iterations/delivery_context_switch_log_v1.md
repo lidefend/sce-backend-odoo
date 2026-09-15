@@ -9587,3 +9587,14 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `artifacts/form-structure-unification/ub-tender-hierarchy-identities/`.
   No final delivery freeze, independent review, Quick or publication this batch;
   owner requested actual page review first.
+
+
+## 2026-09-15 — U-A/U-B 有限交付收尾
+
+- 用户桌面复核投标层级通过；交付名限定“唯一结构机制及首批代表面迁移”。
+- P4 only：交付文档、50消费者台账、生成证据和受管fixture生命周期；P0/P1源码不变。
+- 独立审查产品HEAD 967ff6f425436c5e8792fddbde0fc3a58060e30b、指纹9816cfadeac5fa870c0380f033c1155910671d3cd455f76e006ae3c745f116a8，无S0–S2代码阻断。
+- action777仍environment_blocked；审查裁决不阻断有限代码交付，不允许宣称入口通过，Quick不替代裁决。不得循环重试或停启历史容器。
+- 受管清理codex_p4_tender_award/ub-structure-20260915：bid149/line47/opening119已移除，existing_batch=false；既有业务记录保留。
+- 53→50计数保留，四合同/结算仍兼容；U-C仅登记优先分组，不开工。
+- 最终生成预检、clean HEAD一次Quick及独立delta/receipt记录在artifacts/form-structure-unification/ua-ub-limited-closeout/，在最终提交前备齐文档，之后不补tracked文档。
