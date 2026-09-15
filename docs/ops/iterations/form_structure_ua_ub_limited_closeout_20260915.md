@@ -107,3 +107,23 @@ Quick 即使通过，也不改变上述未通过状态和裁决。环境定位�
 ## 8. 下一批
 
 U-C 优先上述四项合同/结算，复用当前唯一机制。先按共享 view1764 处理收入/支出结算，再处理 view1569/1570 的合同入口及其明确 category 来源。保留帮助、字段策略与权限；按批次减少消费者。本批仅登记优先顺序，不追加功能或开始迁移。
+
+## 9. PR #480 远端门禁恢复
+
+远端候选 d0c438f360e661b4ecab4506d9550f2f26887d8d 的 frontend_release_gate（run34965981252）首个失败命令为 `make verify.frontend.scene_component_bridge.guard`，断言仍要求宿主包含 NativeFormTreeRenderer 和 data-native-contract-structure。检查版本为 scripts/verify/frontend_scene_component_bridge_guard.py blob `20a71ee6e40ad1dda4e1e23bc9c2f85e8dc293bb`；基线9f7bb560与该候选均缺这两个宿主标记，守卫版本相同。
+
+实际行为没有丢失：宿主两个任务／工作区分支均使用 CanonicalNativeFormSurface，后者仍将 primary／subordinate、字段 schema、可见性、动作状态、只读事实和事件传给 NativeFormTreeRenderer。正文与导航的绑定、动作权威及权限边界继续存在。P4 修正改为检查这条公开组件接口链，不恢复废弃源码位置、不删除检查。
+
+- Formal Product Layer／Layer Target：P4 验证及测试登记；Module：scripts/verify。新增2个测试实际运行守卫，正例通过，8种断链反例全部拒绝，包括模式、导航、字段可见性、动作转发／状态和从属区节点被替换。
+- 第二项独立失败为行数门禁：useRecordActionPresentation.ts=505>500，useRecordPageLifecycle.ts=546>544。相关文件及守卫都来自基线。采取 P0 通用前端等价提取：两个既有提交判定原样移至 contractActionPresentation.ts，场景目标分派原样移至 sceneBlockAction.ts；原接口／函数体／优先级不变，文件分别降至493／527行。保留原上限，未加豁免、压缩空行或改行业页面。
+- P0 Why Here：只拆分通用动作呈现与分派职责；Why Not Elsewhere：不把此职责放进P1业务配置或P4脚本，不改字段、章节、权限或存储。Blast Radius：两个通用运行模块的调用边界；定向验证6个提交方法和8个分派场景，包含状态栏优先、空状态回落、route优先、空目标和异常传播。
+- professional_quality_gate（run34965981245）最终失败于 `make verify.guard.registry`：统一结构测试的模块式调用未登记，已有candidate前端测试仍误标orphan。精确修正两项生命周期记录；不改变扫描规则，不添加目录级豁免。登记的模块式调用继续由既有Make测试入口执行。
+- release_candidate_gate只因前端失败而失败，不另开根因。public_guard和merge_policy_gate在旧候选通过，但新HEAD仍须取得自己的远端结果。
+
+验证节奏：L0绑定完整指纹；L1 `make ci.local.iteration`；L2桥接守卫、2个实际守卫测试／8断链反例、既有contract_header_action单元入口、style_system及guard.registry均通过。初次L1发现新增EOF空行，修正后才继续。P0提取函数体按归一化空白逐字相等证明承接；L3无模块／数据库变化，不重复升级；L4模板和结构不变，复用已批准浏览器证据。L5先生成预检、独立复核、按P4／P0提交边界形成新冻结HEAD，再运行必要的最终Quick和受管PR更新，不能用d0c438旧receipt替代新HEAD。
+
+原始失败、定向结果、函数体等价证明和新指纹归档在 artifacts/form-structure-unification/ua-ub-limited-closeout/。当前文档在新候选冻结前编制，最终Quick与远端结论由对应HEAD receipt和PR检查决定，不预先宣称通过。
+
+用户已澄清最终验证规则：日常轻量验证→修复后定向验证→最终候选Quick→成功证据复用。有明确修复依据时重验不需再次申请授权。本条替代第7节此前对“一次Quick”的解释。
+
+action777继续环境阻断、未通过，兼容台账保持53→50；U-C1四入口任务书已准备，迁移未启动。任何合并仍需必需检查通过、审查意见关闭和最终HEAD证据一致；本轮不执行合并。

@@ -9605,3 +9605,12 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 首轮唯一Quick在18ee479cf61b941f586f23d04bd55e157d4649ea失败，无receipt。失效层为frontend_v2_policy_projection_guard正式枚举白名单漏列container_tree_authority。
 - 独立审查认可仅P4精确登记及反例测试；产品/页面不改。stable_projection恢复通过，新增1测试证明正式值允许、两个旧payload别名仍拒绝。
 - 失败和恢复均保留；新候选重新生成预检、冻结。用户限定本轮一次Quick，不擅自追加第二次；追加门禁执行待确认。不能把定向恢复写为Quick通过。
+
+
+### 2026-09-15 — PR #480 远端静态门禁恢复
+
+- 产品结果仍为“唯一结构机制及首批代表面迁移”；源候选 d0c438f360e661b4ecab4506d9550f2f26887d8d。
+- P4：桥接守卫从过期宿主标记迁到实际 CanonicalNativeFormSurface 接口绑定；2测试／8断链反例；修正2条测试登记。
+- P0：提交判定与场景动作分派等价提取，运行文件493／527行，原500／544上限不变；6提交方法／8分派场景通过。
+- 独立失败为前端旧标记／行数及professional测试登记；发布门禁属下游失败。先定向验证，再生成预检、独立复核、冻结新HEAD、最终Quick及受管更新PR，不复用旧receipt冒充新候选。
+- 不改业务页面、不停启环境、不开始U-C1；action777未通过及53→50边界保持。详见form_structure_ua_ub_limited_closeout_20260915.md第9节及本批原始证据。
