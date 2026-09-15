@@ -143,12 +143,27 @@ async function login(page) {
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30_000 });
 }
 async function waitForForm(page) {
+  await page.waitForFunction(
+    () => !/加载中/.test(document.title) && !/正在加载页面|正在加载表单/.test(document.body.innerText || ''),
+    null,
+    { timeout: 45_000 },
+  );
   const surface = page.locator(
     `[data-form-model="tender.bid"][data-form-record="${authority.fixture.bid_id}"]`,
   ).first();
   await surface.waitFor({ state: 'visible', timeout: 45_000 });
-  await page.waitForFunction(() => !/正在加载页面|正在加载表单/.test(document.body.innerText || ''), null, { timeout: 30_000 });
   return surface;
+}
+function waitForCurrentRecordContract(page) {
+  return page.waitForResponse((candidate) => {
+    if (!candidate.url().includes('/api/v1/intent')) return false;
+    try {
+      const body = candidate.request().postDataJSON();
+      return body?.intent === 'ui.contract'
+        && body?.params?.op === 'action_open'
+        && Number(body?.params?.record_id) === Number(authority.fixture.bid_id);
+    } catch { return false; }
+  }, { timeout: 45_000 });
 }
 async function chooseRelation(page, fieldName, rowText) {
   const root = page.locator(`[data-field-name="${fieldName}"]:visible`).first();
@@ -324,7 +339,15 @@ try {
   check(Number(repeated.award_amount) === 900 && !repeated.contract_id, 'repeat request changed snapshot or created contract', repeated);
   report.authoritative_after_repeat = repeated;
 
+  const refreshedContractPromise = waitForCurrentRecordContract(page);
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 45_000 });
+  const refreshedContractResponse = await refreshedContractPromise;
+  const refreshedContractBody = await refreshedContractResponse.json().catch(() => ({}));
+  check(
+    refreshedContractResponse.status() === 200 && refreshedContractBody?.ok === true,
+    'refreshed contract request failed',
+    refreshedContractBody,
+  );
   await waitForForm(page);
   const readonly = await page.evaluate(() => {
     const text = (value) => String(value ?? '').replace(/\s+/g, ' ').trim();

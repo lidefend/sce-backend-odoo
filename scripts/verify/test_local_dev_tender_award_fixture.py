@@ -57,6 +57,8 @@ class TestLocalDevTenderAwardFixture(unittest.TestCase):
         self.assertIn("requestBody?.meta?.menu_id", BROWSER)
         self.assertIn("ACTION_CONTRACT_NOT_AUTHORIZED", BROWSER)
         self.assertIn("rejected_by_action_contract", BROWSER)
+        self.assertIn("waitForCurrentRecordContract", BROWSER)
+        self.assertIn("refreshed contract request failed", BROWSER)
         self.assertIn("confirmed action request authority is missing", BROWSER)
         self.assertIn("failure_page", BROWSER)
         self.assertIn("failure.png", BROWSER)
