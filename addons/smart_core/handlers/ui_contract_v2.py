@@ -34,11 +34,10 @@ from ..core.ui_base_contract_asset_repository import (
 )
 from ..core.request_params import parse_positive_int
 from ..utils.contract_governance import (
-    apply_contract_governance,
+    _apply_form_view_capabilities, apply_contract_governance,
     resolve_contract_mode,
     resolve_contract_surface,
 )
-from ..utils.contract_governance_form_render import apply_form_view_capabilities
 from ..utils.extension_hooks import call_extension_hook_first
 from ..utils.load_contract_response_cache import (
     CONTRACT_PROJECTION_HOT_CACHE,
@@ -1462,8 +1461,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 render_profile=normalized_render_profile,
             )
             business_form_policy, business_policy_groups, business_policy_field_policies = (
-                _projection.snapshot_business_form_policy(source_contract)
-            )
+                _projection.snapshot_business_form_policy(source_contract))
             has_business_form_policy = bool(business_form_policy)
             policy_injected_at = time.monotonic()
             assembler._inject_relation_entry_contract(
@@ -1473,11 +1471,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 relation_cache_key=relation_cache_key,
             )
             relation_contract_at = time.monotonic()
-            # Native form root capabilities are authoritative even when an
-            # entry has no business-form policy.  Apply them before the
-            # no-policy fast path so create/edit/delete="0" cannot be lost
-            # between the parsed view contract and the final V2 status.
-            apply_form_view_capabilities(source_contract)
+            _apply_form_view_capabilities(source_contract)
             source_record_id = str(source_contract.get("record_id") or "").strip().lower()
             if (
                 not has_business_form_policy
