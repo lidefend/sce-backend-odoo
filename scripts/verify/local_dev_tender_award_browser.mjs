@@ -85,6 +85,7 @@ const report = {
   formal_entry: authority.formal_entry,
   fixture_before: authority.fixture,
   mutations: [],
+  relation_requests: [],
   errors: [],
   output_dir: outputDir,
 };
@@ -214,6 +215,20 @@ async function readBid(page) {
 
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1088, height: 791 }, locale: 'zh-CN' });
+page.on('request', (request) => {
+  if (!request.url().includes('/api/v1/intent')) return;
+  try {
+    const body = request.postDataJSON();
+    if (body?.intent === 'api.data' && body?.params?.model === 'tender.opening') {
+      report.relation_requests.push({
+        op: body.params.op,
+        domain: body.params.domain,
+        context: body.params.context,
+        search_term: body.params.search_term,
+      });
+    }
+  } catch { /* failure evidence must not change the journey */ }
+});
 page.on('console', (message) => { if (message.type() === 'error' && !message.text().includes('favicon')) report.errors.push(message.text()); });
 page.on('pageerror', (error) => report.errors.push(String(error.message || error)));
 
