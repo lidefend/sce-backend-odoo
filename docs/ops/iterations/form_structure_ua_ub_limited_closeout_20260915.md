@@ -7,7 +7,7 @@
 - 统一基线：`9f7bb560917a98b638a6d2a516fe2542634fdff8`。
 - 产品审查／最后页面候选：`967ff6f425436c5e8792fddbde0fc3a58060e30b`。
 - 产品完整指纹：`9816cfadeac5fa870c0380f033c1155910671d3cd455f76e006ae3c745f116a8`，7461 路径。
-- 本次收尾 Formal Product Layer：P4；Layer Target：交付证据、台账及既有 fixture 生命周期；Module：docs、contracts/generated、既有生成报告与受管证据工具。没有新增 P0/P1/P2/P3 产品修改。
+- 本次收尾 Formal Product Layer：P4；Layer Target：交付证据、台账及既有 fixture 生命周期；Module：docs、contracts/generated、既有生成报告与受管证据工具。没有新增 P0/P1/P2/P3 产品修改。首轮 Quick 发现的 P4 白名单遗漏仅在守卫和既有测试中恢复。
 - Why Here：归档验收结论、生成内容绑定证据和清理本批合成数据属于交付治理；不得在前端、行业模型或运行配置中补偿传输错误。
 - Blast Radius：文档与派生报告；数据库只清理精确归属的本批合成投标及其两条子记录。不改页面、字段、存储、金额规则、权限、启动链或 public intent。
 - 最终文档/生成证据提交的 HEAD 和完整指纹由 `artifacts/form-structure-unification/ua-ub-limited-closeout/` 的冻结记录与 exact-head Quick receipt 绑定。本文在最终提交前编制，不预先声称未来 Quick 成功。
@@ -75,7 +75,7 @@ Quick 即使通过，也不改变上述未通过状态和裁决。环境定位�
 
 **记录149及其两条子记录现已清理，不再作为在线复核地址。** 已确认事实、网络失败现场、截图和 trace 以归档证据保留，不反向改写确认事实；客户/付款/项目既有记录与历史环境未清理。今后如需业务 fixture，应重新走已登记生命周期，不能假设旧ID可复用。
 
-客户宽度、中标确认与既有移动证据绑定产品候选/前后端模块/数据库身份。最终提交只加入文档及生成证据；通过源码树与完整指纹差异证明承接，不能仅按端口识别版本，也不把旧浏览器缓存当新候选。
+客户宽度、中标确认与既有移动证据绑定产品候选/前后端模块/数据库身份。首轮冻结18ee479c只加入文档及生成证据；随后P4守卫恢复仅改白名单和既有测试，产品源码不变。通过源码树与完整指纹差异证明承接，不能仅按端口识别版本，也不把旧浏览器缓存当新候选。
 
 ## 6. 门禁、证据与回滚
 
@@ -94,6 +94,16 @@ Quick 即使通过，也不改变上述未通过状态和裁决。环境定位�
 
 回滚：按现有受管交付恢复相应 P0/P1 代码提交及成对前后端候选，必要时使用受管模块升级；不改真实业务数据。fixture清理不通过反向篡改已确认事实回滚，重建必须走其受管prepare且使用新实际ID。
 
-## 7. 下一批
+## 7. 首轮 Quick 失败与定向恢复
+
+首轮唯一一次 `make ci.local.quick` 运行在 clean HEAD `18ee479cf61b941f586f23d04bd55e157d4649ea`，在 `frontend_v2_policy_projection_guard` 失败，未产生 receipt。生成预检、密钥/个人数据扫描、历史检查、复杂度和契约结构锁此前通过；后续门禁不能因先前通过而推定完成。
+
+首个失效层为P4守卫登记：`_snake_case_tokens` 同时扫描字段标识符和字符串枚举值，白名单漏列后端Schema及前端decoder已正式声明的 `container_tree_authority`。恢复仅在正式枚举值列表加入该值，保留所有禁止payload别名规则，不改产品Schema、页面或契约行为。
+
+`make verify.unified_page_contract.v2.stable_projection` 已恢复通过；既有测试入口新增1个非零回归，正式值通过而 `raw.container_tree` 和 `root.form_structure_contract` 均被拒绝。独立审查认可此最小P4范围。生成证据随新候选重新准备。
+
+原始Quick失败保留在 `ua-ub-limited-closeout/quick.log`；定向恢复在 `guard-recovery.log`、`guard-recovery-test.log`。**定向恢复不等于Quick通过。** 用户要求本轮一次Quick，因此新候选不自动追加第二次；追加执行需用户确认。action777裁决、fixture清理和53→50不变。
+
+## 8. 下一批
 
 U-C 优先上述四项合同/结算，复用当前唯一机制。先按共享 view1764 处理收入/支出结算，再处理 view1569/1570 的合同入口及其明确 category 来源。保留帮助、字段策略与权限；按批次减少消费者。本批仅登记优先顺序，不追加功能或开始迁移。

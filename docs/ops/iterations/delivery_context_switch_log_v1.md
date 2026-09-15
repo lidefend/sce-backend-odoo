@@ -9598,3 +9598,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 受管清理codex_p4_tender_award/ub-structure-20260915：bid149/line47/opening119已移除，existing_batch=false；既有业务记录保留。
 - 53→50计数保留，四合同/结算仍兼容；U-C仅登记优先分组，不开工。
 - 最终生成预检、clean HEAD一次Quick及独立delta/receipt记录在artifacts/form-structure-unification/ua-ub-limited-closeout/，在最终提交前备齐文档，之后不补tracked文档。
+
+
+## 2026-09-15 — 有限交付 Quick 的 P4 定向恢复
+
+- 首轮唯一Quick在18ee479cf61b941f586f23d04bd55e157d4649ea失败，无receipt。失效层为frontend_v2_policy_projection_guard正式枚举白名单漏列container_tree_authority。
+- 独立审查认可仅P4精确登记及反例测试；产品/页面不改。stable_projection恢复通过，新增1测试证明正式值允许、两个旧payload别名仍拒绝。
+- 失败和恢复均保留；新候选重新生成预检、冻结。用户限定本轮一次Quick，不擅自追加第二次；追加门禁执行待确认。不能把定向恢复写为Quick通过。

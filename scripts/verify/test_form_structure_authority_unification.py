@@ -26,6 +26,21 @@ def _form(record_id: str) -> ET.Element:
 
 
 class FormStructureAuthorityUnificationTest(unittest.TestCase):
+    def test_structure_policy_guard_accepts_formal_enum_but_rejects_legacy_aliases(self):
+        import contextlib
+        import io
+        from unittest import mock
+        from scripts.verify import frontend_v2_policy_projection_guard as guard
+
+        source = guard.STRICT_SCHEMA.read_text(encoding="utf-8")
+        self.assertIn('"const": "container_tree_authority"', guard.BACKEND_SCHEMA.read_text(encoding="utf-8"))
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(guard.main(), 0)
+            for forbidden in ("raw.container_tree", "root.form_structure_contract"):
+                with self.subTest(forbidden=forbidden), mock.patch.object(guard, "STRICT_SCHEMA", wraps=guard.STRICT_SCHEMA) as schema:
+                    schema.read_text.return_value = source + "\nconst invalid = " + forbidden + ";\n"
+                    self.assertEqual(guard.main(), 1)
+
     def test_tender_groups_preserve_contents_without_promoting_internal_titles(self):
         root = ET.parse(ROOT / "addons/smart_construction_core/views/support/tender_views.xml")
         form = root.find(".//record[@id='view_tender_bid_form']/field[@name='arch']/form")
