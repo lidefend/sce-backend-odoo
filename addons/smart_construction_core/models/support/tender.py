@@ -7,6 +7,14 @@ from odoo.exceptions import UserError, ValidationError
 _TENDER_GUARANTEE_AUTHORITY_TOKEN = object()
 _TENDER_AWARD_AUTHORITY_TOKEN = object()
 
+_TENDER_AWARD_CONFIRMATION_OWNED_FIELDS = frozenset(
+    {
+        "award_amount",
+        "award_currency_id",
+        "award_confirmed_by_id",
+        "award_confirmed_at",
+    }
+)
 _TENDER_AWARD_SNAPSHOT_FIELDS = frozenset(
     {
         "award_opening_id",
@@ -473,6 +481,8 @@ class TenderBid(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
+            if _TENDER_AWARD_CONFIRMATION_OWNED_FIELDS.intersection(vals):
+                raise UserError(_("中标事实系统快照只能由“确认中标事实”动作生成。"))
             project_id = vals.get("project_id") or self._context_project_id()
             if project_id:
                 vals.setdefault("project_id", project_id)
@@ -496,6 +506,8 @@ class TenderBid(models.Model):
                 bid.award_confirmed_at for bid in self
             ):
                 raise UserError(_("中标事实快照已确认，不能直接改写。"))
+            if _TENDER_AWARD_CONFIRMATION_OWNED_FIELDS.intersection(vals):
+                raise UserError(_("中标事实系统快照只能由“确认中标事实”动作生成。"))
             if "state" in vals and vals.get("state") != "won" and any(
                 bid.award_confirmed_at for bid in self
             ):

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from odoo import fields
 from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase, tagged
 
@@ -136,6 +137,33 @@ class TestTenderAwardFact(TransactionCase):
 
         with self.assertRaisesRegex(UserError, "确认中标事实"):
             bid.write({"state": "won"})
+
+    def test_confirmation_owned_snapshot_fields_cannot_be_injected_on_create(self):
+        protected_values = {
+            "award_amount": 900.0,
+            "award_currency_id": self.env.company.currency_id.id,
+            "award_confirmed_by_id": self.env.user.id,
+            "award_confirmed_at": fields.Datetime.now(),
+        }
+        for field_name, value in protected_values.items():
+            with self.subTest(field_name=field_name):
+                with self.assertRaisesRegex(UserError, "只能由.*确认中标事实.*动作生成"):
+                    self._bid("禁止创建注入-%s" % field_name, **{field_name: value})
+
+    def test_confirmation_owned_snapshot_fields_cannot_be_injected_before_confirmation(self):
+        bid = self._bid("禁止确认前注入")
+        protected_values = {
+            "award_amount": 900.0,
+            "award_currency_id": self.env.company.currency_id.id,
+            "award_confirmed_by_id": self.env.user.id,
+            "award_confirmed_at": fields.Datetime.now(),
+        }
+        for field_name, value in protected_values.items():
+            with self.subTest(field_name=field_name):
+                with self.assertRaisesRegex(UserError, "只能由.*确认中标事实.*动作生成"):
+                    bid.write({field_name: value})
+        self.assertFalse(bid.award_confirmed_at)
+        self.assertFalse(bid.award_amount)
 
     def test_form_declares_explicit_award_source_and_non_clickable_status(self):
         arch = self.env.ref("smart_construction_core.view_tender_bid_form").arch_db
