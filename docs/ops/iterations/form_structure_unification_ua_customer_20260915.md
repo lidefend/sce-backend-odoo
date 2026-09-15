@@ -49,8 +49,8 @@ Tender PR #479 的 squash `9f7bb560917a98b638a6d2a516fe2542634fdff8` 已按主�
 - L2：`make verify.form_structure_authority_unification.unit`、正文 presenter 与 native navigation 非零定向套件。
 - L3：`make local.dev.upgrade MODULE=smart_core,smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_core,smart_construction_core` 通过；记录 `module-upgrade.log`。
 - L3：客户业务字段、迁移字段隔离两项 `local.dev.test`；首次失败见 `customer-module-tests.log`；恢复后 2/2 通过见 `customer-module-tests-recovery.log`。
-- L3：客户业务字段与迁移隔离测试恢复后 2/2 通过；旧测试错误要求基线 6fcc04f3 已移除的来源字段，已修正为现有业务能力与隔离断言。
-- L4：客户 1088/390 浏览器、正文契约树和整页截图由冻结后 runner 生成，结果以 `artifacts/form-structure-unification/customer-browser/report.json` 为准。
+- L3：真实客户 model/create → normalized 契约测试 1/1 通过；核对四章、关键集合/业务字段可见、原生标签与实际 view。
+- L4：客户 1088/390 浏览器、正文契约树和整页截图由冻结后 runner 生成，结果以 `artifacts/form-structure-unification/customer-browser-final/summary.json` 为准。
 - L5：本批次尚未进入完整发布流程；四代表面与全系统统一均未登记通过。
 
 初轮后端测试失败归因：旧 handler 重查/原生 slots 断言与新边界不符；已有测试缺失 field_label 参数。
@@ -78,3 +78,16 @@ U-B 四面及共享反例后，U-C 按消费者清单分组递减；每批合入
 4. normalized provenance 输出 resolvedViewId、resolvedActionId、structureDiagnostics、compatibilityDependencies。菜单清单仅代表指定角色/公司/create 投影；全部角色与 read/edit 尚未验证，禁止据此宣布最终退役。
 
 原生 invisible 数据库反例 1/1 通过（`native-invisible-test.log`）；作用域诊断已覆盖实际整数 action/view carrier 与旧 record proxy。
+
+## 创建态实测收口
+
+浏览器揭示的第二结构路径：handler 创建态再次调用通用 governance，
+由 core/advanced 推导字段可见性，造成原生章节存在而字段隐藏。
+native authority 现跳过这次通用治理，继续保留显式分类策略、关系能力、原生权限相交，
+以及独立的记录依赖按钮保护（wizard 例外）；不恢复字段类型或名称推导的章节。
+原生 XML 明确可见的 active 保持可见；它的旧隐藏来自通用名称规则，不是原生权限。
+company_type 不再被平台强制改名为“主体类型”，正文使用本次原生 view 的“客户类型”。
+
+证据采集绑定实际新建页的 model 请求，保存请求身份、结构与 widget/container 状态；
+台账按相同 model/create 路径采集。早期 action 口径的 49 个依赖只保留为诊断证据，
+不作为最终创建路径数量。P4 首轮导航解析失败与客户章节失败保留原日志。

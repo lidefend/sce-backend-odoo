@@ -19,6 +19,40 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         if not self.env["stock.warehouse"].search([], limit=1):
             self.env["stock.warehouse"].create({"name": "Feedback Warehouse", "code": "UFB"})
 
+    def test_customer_native_create_keeps_chapters_and_business_field_visibility(self):
+        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+        menu = self.env.ref("smart_construction_core.menu_sc_customer_partner")
+        view = self.env.ref("smart_construction_core.view_sc_customer_partner_form")
+        result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({
+            "op": "model", "model": "res.partner", "action_id": menu.action.id,
+            "menu_id": menu.id, "view_type": "form", "render_profile": "create",
+        })
+        envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+        self.assertTrue(envelope.get("ok", True), envelope.get("error"))
+        contract = envelope["data"]
+        structure = contract["formStructureContract"]
+        self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
+        self.assertEqual(structure["slots"], [])
+        self.assertEqual(structure["sourceAuthority"]["governance_source"]["resolvedViewId"], view.id)
+        tree = contract["layoutContract"]["containerTree"]
+        sheet = next(node for node in tree if node["type"] == "sheet")
+        self.assertEqual([node["label"] for node in sheet["children"]],
+                         ["基本资料", "联系人", "账户明细", "附件与备注"])
+        widgets = {}
+        def collect(nodes):
+            for node in nodes:
+                for widget in node.get("widgetList", []):
+                    widgets[widget["fieldCode"]] = widget
+                collect(node.get("children", []))
+        collect(tree)
+        statuses = {row["widgetId"]: row for row in contract["statusContract"]["widgetStatus"]}
+        for name in ("name", "phone", "sc_contact_name", "child_ids", "bank_ids", "sc_attachment_ids", "comment"):
+            self.assertTrue(statuses[widgets[name]["widgetId"]]["visible"], name)
+        self.assertEqual(widgets["company_type"]["label"], "客户类型")
+        # This native view explicitly exposes active; the old generic create
+        # heuristic is not an access restriction and must not hide it.
+        self.assertTrue(statuses[widgets["active"]["widgetId"]]["visible"])
+
     def test_material_inbound_can_be_created_with_business_amounts(self):
         inbound = self.env["sc.material.inbound"].create(
             {
