@@ -31,20 +31,20 @@
                 <header>
                     <button name="action_to_estimating" type="object" string="进入造价测算"
                             class="oe_highlight"
-                            modifiers="{'invisible': [['state','!=','prepare']]}"/>
+                            invisible="state != 'prepare'"/>
                     <button name="action_to_submitted" type="object" string="提交投标"
                             class="oe_highlight"
-                            modifiers="{'invisible': [['state','not in',['prepare','estimating']]]}"/>
+                            invisible="state not in ['prepare', 'estimating']"/>
                     <button name="action_to_waiting" type="object" string="等待开标"
                             class="oe_highlight"
-                            modifiers="{'invisible': [['state','!=','submitted']]}"/>
+                            invisible="state != 'submitted'"/>
                     <button name="action_mark_won" type="object" string="确认中标事实"
                             class="oe_highlight"
-                            modifiers="{'invisible': ['|', ['state','not in',['submitted','waiting','won']], ['award_confirmed_at','!=',False]]}"/>
+                            invisible="state not in ['submitted', 'waiting', 'won'] or award_confirmed_at"/>
                     <button name="action_mark_lost" type="object" string="未中标"
-                            modifiers="{'invisible': [['state','not in',['submitted','waiting']]]}"/>
+                            invisible="state not in ['submitted', 'waiting']"/>
                     <button name="action_to_prepare" type="object" string="重回准备"
-                            modifiers="{'invisible': ['|', ['state','=','prepare'], ['award_confirmed_at','!=',False]]}"/>
+                            invisible="state == 'prepare' or award_confirmed_at"/>
                     <!-- 状态变化由领域动作承接；中标不得绕过事实确认。 -->
                     <field name="state" widget="statusbar"
                            statusbar_visible="prepare,estimating,submitted,waiting,won,lost"

@@ -246,10 +246,30 @@ class TestTenderAwardFact(TransactionCase):
         self.assertEqual(rule["label"], "确认中标事实")
         self.assertTrue(rule["allowed"], rule)
         self.assertTrue(rule["enabled"], rule)
-        status = next(
+        self.assertTrue(rule["entitlementEvaluated"], rule)
+        self.assertIn("edit", rule["visibleProfiles"])
+        self.assertEqual(
+            sum(
+                candidate.get("actionId") == rule["actionId"]
+                for candidate in contract["actionContract"]["actionRuleList"]
+            ),
+            1,
+        )
+        self.assertEqual(
+            sum(
+                candidate.get("backendIdentity") == rule["backendIdentity"]
+                for candidate in contract["actionContract"]["actionRuleList"]
+            ),
+            1,
+        )
+        statuses = [
             row
             for row in contract["statusContract"]["buttonStatus"]
             if row.get("backendIdentity") == rule["backendIdentity"]
-        )
+        ]
+        self.assertEqual(len(statuses), 1, statuses)
+        status = statuses[0]
         self.assertTrue(status["visible"], status)
         self.assertFalse(status["disabled"], status)
+        self.assertIn("award_confirmed_at", contract["dataContract"]["mainData"])
+        self.assertFalse(contract["dataContract"]["mainData"]["award_confirmed_at"])
