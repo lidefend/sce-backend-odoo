@@ -789,14 +789,21 @@ async function inspectNonMaterialNavigationCounterexample() {
     await link.click();
     check(Boolean(selector) && await form.locator(`${selector}:visible`).count() === 1,
       'non-material navigation target is not visible after activation', { entryKey, selector });
-    check(await link.getAttribute('aria-current') === 'location',
-      'non-material navigation highlight did not follow the selected content', { entryKey, selector });
+    const activeLink = form.locator(
+      '[data-form-section-navigation]:visible [data-section-link][aria-current="location"]',
+    );
+    check(await activeLink.count() === 1,
+      'non-material navigation does not have one active location', { entryKey, selector });
+    const activeSelector = await activeLink.first().getAttribute('data-section-target');
+    check(Boolean(activeSelector) && await form.locator(`${activeSelector}:visible`).count() === 1,
+      'non-material navigation highlight does not point to visible content',
+      { entryKey, selector, activeSelector });
     await page.screenshot({
       path: path.join(outputDir, `uc2-non-material-${entryKey}-navigation-1440x960.png`),
       fullPage: false,
       animations: 'disabled',
     });
-    const result = { entry: entryKey, selector, active: true, attempts };
+    const result = { entry: entryKey, selector, activeSelector, active: true, attempts };
     await context.close();
     return result;
   }
