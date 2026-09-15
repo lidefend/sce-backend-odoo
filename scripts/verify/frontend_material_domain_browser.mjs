@@ -9,6 +9,7 @@ const database = process.env.DB_NAME || '';
 const password = process.env.E2E_PASSWORD || '';
 const outputDir = path.resolve(process.env.FRONTEND_MATERIAL_DOMAIN_OUTPUT_DIR || 'artifacts/playwright/phase10-material-domain');
 const sampleReview = process.env.FRONTEND_MATERIAL_SAMPLE_REVIEW === '1';
+const evidenceCaptureReview = process.env.FRONTEND_MATERIAL_EVIDENCE_CAPTURE === '1';
 const handlingReview = process.env.FRONTEND_MATERIAL_HANDLING_REVIEW === '1';
 const sharedRegressionReview = process.env.FRONTEND_MATERIAL_SHARED_REGRESSION === '1';
 const sampleViewports = (process.env.FRONTEND_MATERIAL_SAMPLE_VIEWPORTS || '1440x960,1088x960')
@@ -153,6 +154,8 @@ const report = {
     ? 'material_shared_renderer_regression'
     : handlingReview
     ? 'material_handling_affected_regions'
+    : evidenceCaptureReview
+    ? 'inbound_evidence_capture_only'
     : sampleReview ? 'inbound_sample_affected_regions' : 'full_material_domain',
   target: { user: target.user, securityUser: target.security_user, action: target.action, menu: target.menu, record: target.record },
   primary: { errors: [], mutations: [], contracts: [] },
@@ -169,6 +172,161 @@ async function selectNativeMaterialTab(form, label) {
   await trigger.waitFor({ timeout: 15000 });
   await trigger.click();
   await form.locator('.native-tab-panel:visible').first().waitFor({ timeout: 15000 });
+}
+
+async function selectedNativeMaterialTab(form) {
+  return (await form.locator('[data-section-tab].native-tab--active:visible').first().innerText()).trim();
+}
+
+async function scrollPosition(page, form) {
+  return page.evaluate((formElement) => {
+    const routerHost = formElement.closest('.router-host') || document.querySelector('.router-host');
+    const scrollingElement = document.scrollingElement;
+    return {
+      owner: routerHost instanceof HTMLElement ? '.router-host' : 'window',
+      routerHost: routerHost instanceof HTMLElement ? {
+        scrollTop: routerHost.scrollTop,
+        clientHeight: routerHost.clientHeight,
+        scrollHeight: routerHost.scrollHeight,
+      } : null,
+      document: {
+        scrollTop: scrollingElement?.scrollTop || 0,
+        clientHeight: scrollingElement?.clientHeight || 0,
+        scrollHeight: scrollingElement?.scrollHeight || 0,
+      },
+      formTop: formElement.getBoundingClientRect().top,
+      headingTop: formElement.querySelector('h1')?.getBoundingClientRect().top ?? null,
+    };
+  }, await form.elementHandle());
+}
+
+async function resetActualScrollTop(page, form) {
+  await page.evaluate((formElement) => {
+    const routerHost = formElement.closest('.router-host') || document.querySelector('.router-host');
+    if (routerHost instanceof HTMLElement) routerHost.scrollTop = 0;
+    window.scrollTo(0, 0);
+  }, await form.elementHandle());
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const position = await scrollPosition(page, form);
+  check(position.routerHost?.scrollTop === 0 && position.document.scrollTop === 0,
+    'material evidence top capture did not reset the actual scroll owners', position);
+  return position;
+}
+
+async function captureInboundEvidencePage(page, mode, viewport) {
+  const actionId = Number(target.action.id);
+  const menuId = Number(target.menu.id);
+  const recordId = Number(target.record.id);
+  const route = mode === 'readonly'
+    ? `/f/sc.material.inbound/${recordId}?menu_id=${menuId}&action_id=${actionId}`
+    : `/f/sc.material.inbound/new?menu_id=${menuId}&action_id=${actionId}`;
+  const contractStart = report.primary.contracts.length;
+  await page.goto(`${frontendUrl}${route}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  const form = page.locator('[data-product-page-mode="form"]:visible').first();
+  await form.locator('[data-contract-form-driver]:visible').first().waitFor({ timeout: 45000 });
+  const contract = report.primary.contracts.slice(contractStart)
+    .find((body) => findKey(body, 'model') === 'sc.material.inbound' && findKey(body, 'viewType') === 'form');
+  const nativeContract = requireInboundNativeContract(contract, actionId, mode);
+  const suffix = `${viewport.width}x${viewport.height}-${mode}`;
+
+  const top = await resetActualScrollTop(page, form);
+  const topSelectedTab = await selectedNativeMaterialTab(form);
+  await page.screenshot({
+    path: path.join(outputDir, `material-inbound-${suffix}-actual-top.png`),
+    fullPage: false,
+    animations: 'disabled',
+  });
+
+  await selectNativeMaterialTab(form, '入库明细');
+  const detailTab = form.locator('[data-section-tab="入库明细"]:visible').first();
+  await detailTab.scrollIntoViewIfNeeded();
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+  const detail = {
+    selectedTab: await selectedNativeMaterialTab(form),
+    scroll: await scrollPosition(page, form),
+    relationVisible: await form.locator('[data-field-name="line_ids"]:visible').count() === 1,
+  };
+  check(detail.selectedTab === '入库明细' && detail.relationVisible,
+    'material detail tab was not stably selected for evidence capture', detail);
+  await page.screenshot({
+    path: path.join(outputDir, `material-inbound-${suffix}-detail-selected.png`),
+    fullPage: false,
+    animations: 'disabled',
+  });
+
+  await selectNativeMaterialTab(form, '来源追溯');
+  const sourceTab = form.locator('[data-section-tab="来源追溯"]:visible').first();
+  await sourceTab.scrollIntoViewIfNeeded();
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+  const source = {
+    selectedTab: await selectedNativeMaterialTab(form),
+    scroll: await scrollPosition(page, form),
+    sourceFieldsVisible: await form.locator([
+      '[data-field-name="stock_picking_id"]:visible',
+      '[data-field-name="source_transfer_outbound_id"]:visible',
+      '[data-field-name="legacy_fact_model"]:visible',
+      '[data-field-name="source_created_by"]:visible',
+      '[data-field-name="source_created_at"]:visible',
+    ].join(', ')).count(),
+  };
+  check(source.selectedTab === '来源追溯',
+    'material source tab was not stably selected for evidence capture', source);
+  await page.screenshot({
+    path: path.join(outputDir, `material-inbound-${suffix}-source-selected.png`),
+    fullPage: false,
+    animations: 'disabled',
+  });
+
+  const topNavigation = form.locator('[data-form-section-navigation]:visible').first();
+  const topDetailLink = topNavigation.getByRole('button', { name: '入库明细', exact: true });
+  const topDetailLinkAvailable = await topDetailLink.count() === 1;
+  const navigationBehavior = {
+    available: topDetailLinkAvailable,
+    beforeSelectedTab: await selectedNativeMaterialTab(form),
+    beforeScroll: await scrollPosition(page, form),
+    targetSelector: topDetailLinkAvailable ? await topDetailLink.getAttribute('data-section-target') : null,
+    targetVisibleBefore: 0,
+    afterSelectedTab: '',
+    afterScroll: null,
+    activatedNotebookTab: false,
+  };
+  if (navigationBehavior.available && navigationBehavior.targetSelector) {
+    navigationBehavior.targetVisibleBefore = await form.locator(`${navigationBehavior.targetSelector}:visible`).count();
+    await topDetailLink.click();
+    await page.waitForTimeout(450);
+    navigationBehavior.afterSelectedTab = await selectedNativeMaterialTab(form);
+    navigationBehavior.afterScroll = await scrollPosition(page, form);
+    navigationBehavior.activatedNotebookTab = navigationBehavior.afterSelectedTab === '入库明细';
+  }
+
+  return {
+    mode,
+    viewport,
+    route,
+    nativeContract,
+    top: { ...top, selectedTab: topSelectedTab },
+    detail,
+    source,
+    navigationBehavior,
+  };
+}
+
+async function inspectInboundEvidenceCapture() {
+  check(sampleViewports.length > 0, 'material evidence capture viewport list is empty');
+  report.primary.evidenceCaptures = [];
+  for (const viewport of sampleViewports) {
+    const context = await browser.newContext({ viewport, locale: 'zh-CN', hasTouch: viewport.width <= 390 });
+    const page = await context.newPage();
+    observe(page, report.primary);
+    await login(page, target.user.login);
+    report.primary.evidenceCaptures.push(await captureInboundEvidencePage(page, 'readonly', viewport));
+    report.primary.evidenceCaptures.push(await captureInboundEvidencePage(page, 'create', viewport));
+    await context.close();
+  }
+  check(report.primary.errors.length === 0, 'material evidence capture has browser errors', report.primary.errors);
+  check(report.primary.mutations.length === 0, 'material evidence capture mutated business data', report.primary.mutations);
+  report.primary.contracts = report.primary.contracts.map(inboundNativeContract);
+  report.security.result = { skipped: true, reason: 'capture_only_reuses_prior_business_acceptance' };
 }
 
 function inboundNativeContract(contract) {
@@ -665,6 +823,20 @@ if (handlingReview) {
     await browser.close();
   }
   console.log(JSON.stringify({ pass: report.pass, handlingReviews: report.primary.handlingReviews }));
+  process.exit(0);
+}
+
+if (evidenceCaptureReview) {
+  try {
+    await inspectInboundEvidenceCapture();
+    report.pass = true;
+  } finally {
+    report.completedAt = new Date().toISOString();
+    report.screenshots = screenshotEvidence();
+    fs.writeFileSync(path.join(outputDir, 'capture-summary.json'), `${JSON.stringify(report, null, 2)}\n`);
+    await browser.close();
+  }
+  console.log(JSON.stringify({ pass: report.pass, evidenceCaptures: report.primary.evidenceCaptures }));
   process.exit(0);
 }
 
