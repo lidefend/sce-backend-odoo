@@ -164,6 +164,27 @@ assert.deepEqual(dynamicRelationDomainFromDescriptor({
   normalizeDependencyValue: (_field, value) => value,
   currentFieldValue: () => false,
 }), [['id', '=', -1]]);
+const mixedDomain = {
+  name: 'award_opening_id',
+  type: 'many2one',
+  domain: "[('bid_id', '=', id), ('result', '=', 'won')]",
+} as never;
+assert.deepEqual(analyzeDynamicRelationDomain(mixedDomain), {
+  supported: true,
+  dependencies: ['id'],
+});
+assert.deepEqual(dynamicRelationDomainFromDescriptor({
+  descriptor: mixedDomain,
+  resolveDependencyValue: (field) => field === 'id' ? 98 : undefined,
+  normalizeDependencyValue: (_field, value) => value,
+  currentFieldValue: () => false,
+}), [['bid_id', '=', 98], ['result', '=', 'won']]);
+assert.deepEqual(dynamicRelationDomainFromDescriptor({
+  descriptor: mixedDomain,
+  resolveDependencyValue: () => undefined,
+  normalizeDependencyValue: (_field, value) => value,
+  currentFieldValue: () => false,
+}), [['id', '=', -1]], 'an unresolved parent record identity remains fail-closed');
 assert.equal(resolveRelationDomainDependencyValue({
   dependency: 'id',
   recordId: 98,
@@ -222,4 +243,4 @@ assert.deepEqual(buildX2ManyCommands({
   mode: 'write',
 }), [[3, 8]]);
 
-console.log(`[professional_detail_collection_model_test] PASS matrix=${matrix} counterexamples=13`);
+console.log(`[professional_detail_collection_model_test] PASS matrix=${matrix} relation_domain_cases=6`);

@@ -258,6 +258,15 @@ export function relationInlineCreate(descriptor?: FieldDescriptor) {
 }
 
 const dynamicDomainTupleSource = String.raw`\(\s*['"]([\w.]+)['"]\s*,\s*['"]([=!<>]{1,2}\??|in|not in|ilike|like)['"]\s*,\s*([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\s*\)`;
+const literalDomainTupleSource = String.raw`\(\s*['"]([\w.]+)['"]\s*,\s*['"]([=!<>]{1,2}\??|in|not in|ilike|like)['"]\s*,\s*(?:(['"])([^'"]*)\3|(-?\d+(?:\.\d+)?)|(True|False|None))\s*\)`;
+
+function literalRelationDomainValue(match: RegExpExecArray) {
+  if (match[3]) return match[4] || '';
+  if (match[5] !== undefined) return Number(match[5]);
+  if (match[6] === 'True') return true;
+  if (match[6] === 'False') return false;
+  return null;
+}
 
 export function analyzeDynamicRelationDomain(descriptor?: FieldDescriptor) {
   const raw = (descriptor as Record<string, unknown> | undefined)?.domain;
@@ -272,12 +281,16 @@ export function analyzeDynamicRelationDomain(descriptor?: FieldDescriptor) {
   let match: RegExpExecArray | null;
   let tupleCount = 0;
   while ((match = tuplePattern.exec(text))) {
+    if (['True', 'False', 'None'].includes(match[3] || '')) continue;
     tupleCount += 1;
     const valueField = match[3];
     if (valueField) deps.add(valueField);
   }
+  const literalTuplePattern = new RegExp(literalDomainTupleSource, 'g');
+  while (literalTuplePattern.exec(text)) tupleCount += 1;
   const unsupportedRemainder = text
     .replace(new RegExp(dynamicDomainTupleSource, 'g'), '')
+    .replace(new RegExp(literalDomainTupleSource, 'g'), '')
     .replace(/\s|,|\[|\]/g, '');
   return {
     supported: tupleCount > 0 && unsupportedRemainder.length === 0,
@@ -330,6 +343,7 @@ export function dynamicRelationDomainFromDescriptor(params: {
   while ((match = tuplePattern.exec(text))) {
     const [, fieldName, operator, valueField] = match;
     if (!fieldName || !operator || !valueField) continue;
+    if (['True', 'False', 'None'].includes(valueField)) continue;
     hasDynamicDependency = true;
     const value = params.resolveDependencyValue(valueField);
     if (value === undefined || value === null || value === '' || value === false) {
@@ -343,6 +357,16 @@ export function dynamicRelationDomainFromDescriptor(params: {
     }
     const effectiveOperator = operator === '=?' ? '=' : operator;
     out.push([fieldName, effectiveOperator, normalizedValue]);
+  }
+  const literalTuplePattern = new RegExp(literalDomainTupleSource, 'g');
+  while ((match = literalTuplePattern.exec(text))) {
+    const [, fieldName, operator] = match;
+    if (!fieldName || !operator) continue;
+    out.push([
+      fieldName,
+      operator === '=?' ? '=' : operator,
+      literalRelationDomainValue(match),
+    ]);
   }
   if (hasDynamicDependency && hasUnresolvedDependency) {
     const descriptorRecord = params.descriptor as Record<string, unknown> | undefined;
