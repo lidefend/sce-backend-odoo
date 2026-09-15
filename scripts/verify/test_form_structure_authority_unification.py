@@ -162,6 +162,44 @@ class FormStructureAuthorityUnificationTest(unittest.TestCase):
         self.assertTrue({"sc_bank_account", "sc_default_tax_rate", "sc_default_tax_rate_text"}.issubset(groups["customer-finance"]))
         self.assertEqual(groups["customer-bank-accounts"], {"bank_ids"})
 
+    def test_uc1_contract_native_declarations_and_semantic_opt_in(self):
+        import ast
+        data = ROOT / "addons/smart_construction_core/data"
+        declarations = ET.parse(data / "view_orchestration_contract_data.xml")
+        views = ET.parse(ROOT / "addons/smart_construction_core/views/core/contract_views.xml")
+        for direction, xmlid in (("income", "business_config_contract_income_contract_form_structure"),
+                                 ("expense", "business_config_contract_expense_contract_native_form")):
+            record = declarations.find(f".//record[@id='{xmlid}']")
+            payload = ast.literal_eval(record.find("field[@name='contract_json']").get("eval"))
+            self.assertEqual(payload["view_orchestration"]["views"]["form"],
+                             {"composition_mode": "native_semantic_surface"})
+            form = views.find(f".//record[@id='view_construction_contract_{direction}_form']/field[@name='arch']/form")
+            groups = form.find("sheet").findall("group")
+            primary = [g for g in groups if g.get("data-sc-navigation-role") != "subordinate"]
+            self.assertEqual([g.get("string") for g in primary],
+                             ["身份与基本资料", "合同范围", "合同明细与金额", "说明与附件", "履约信息", "来源与系统追溯"])
+            detail = next(g for g in groups if g.get("data-sc-anchor") == direction + "-contract-detail-amount")
+            self.assertEqual(detail.get("col"), "1")
+            self.assertIsNotNone(detail.find("field[@name='line_ids']/tree[@editable='bottom']"))
+            self.assertTrue(form.find("header/button[@name='action_confirm']").get("groups"))
+
+    def test_uc1_contract_category_seed_and_templates_have_no_structure(self):
+        import json
+        path = ROOT / "addons/smart_construction_core/models/support/business_form_policy_templates.py"
+        spec = importlib.util.spec_from_file_location("uc1_templates", path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        policies = module.get_business_category_form_policy_templates()
+        seeds = ET.parse(ROOT / "addons/smart_construction_core/data/business_category_seed.xml")
+        for direction in ("income", "expense"):
+            seed = seeds.find(f".//record[@id='business_category_contract_{direction}']/field[@name='form_policy_json']")
+            for policy in (json.loads(seed.text), policies["contract." + direction]):
+                self.assertNotIn("sections", policy)
+                fields = {f["name"]: f for f in policy["fields"]}
+                self.assertEqual(fields["tax_id"]["required_profiles"], ["create", "edit"])
+                self.assertEqual(fields["operation_strategy"]["readonly_profiles"], ["create", "edit", "readonly"])
+            self.assertTrue(policies["contract." + direction + ".supplement"]["sections"])
+
     def test_compatibility_retirement_has_a_measurable_terminal_condition(self) -> None:
         text = DECISION.read_text(encoding="utf-8")
         self.assertIn("正式 89 菜单范围的兼容消费者归零后", text)

@@ -113,6 +113,7 @@
                         <group name="sc_settlement_business_object" string="项目与合同相对方" col="4"
                                data-sc-anchor="settlement-business-object"
                                data-sc-form-structure-group="business_object">
+                            <field name="business_category_id" options="{'no_create': True}" readonly="1"/>
                             <group>
                                     <field name="project_id" options="{'no_create': True}" required="1"
                                            readonly="state in ['approve', 'done', 'cancel']"/>
@@ -310,7 +311,6 @@
                                data-sc-collapsible="1" data-sc-collapsed-by-default="1">
                             <field name="name" readonly="1"/>
                             <field name="settlement_flow_label" readonly="1"/>
-                            <field name="business_category_id" options="{'no_create': True}" readonly="1"/>
                             <field name="settlement_type" string="收支类型" required="1" readonly="1"/>
                             <field name="state" readonly="1"/>
                         </group>

@@ -185,7 +185,7 @@ def _settlement_policy(title: str, counterparty_title: str) -> dict:
         "compliance_message",
         "compliance_contract_ok",
     )
-    return _policy(
+    policy = _policy(
         [
             _section("business_identity", "办理类型", ["business_category_id"], 5, visible_profiles=["create"]),
             _section(
@@ -233,6 +233,9 @@ def _settlement_policy(title: str, counterparty_title: str) -> dict:
         trace=trace + APPROVAL_FIELDS,
         ledger=ledger + ("amount_total", "deduction_amount"),
     )
+    # Shared native form owns structure; preserve all category field semantics.
+    policy.pop("sections")
+    return policy
 
 
 def _payment_request_policy(title: str, counterparty_title: str) -> dict:
@@ -1087,6 +1090,25 @@ def _contract_handling_policy(title: str, *, supplement: bool = False, expense: 
                 field_policy["label"] = "供应商/分包方"
             elif expense and field_name == "attachment_text":
                 field_policy["label"] = "平台附件文本"
+    if not supplement:
+        # Main contract forms own their chapters in native XML. Category fields
+        # retain visibility/readonly/required profiles and semantic role labels.
+        policy.pop("sections", None)
+        # These native fields were outside the old task sections. Preserve the
+        # resulting create/edit exclusion explicitly as semantics, not grouping.
+        source_only = ["document_status", "company_id", "approval_info"]
+        if not expense:
+            source_only += ["entry_user_text", "entry_time", "visible_invoice_amount",
+                            "visible_received_amount", "visible_unreceived_amount", "visible_unreceived_rate"]
+        by_name = {row["name"]: row for row in policy["fields"]}
+        for name in source_only:
+            row = by_name.get(name)
+            if row is None:
+                row = _field(name, group="source_trace" if name not in {
+                    "visible_invoice_amount", "visible_received_amount", "visible_unreceived_amount", "visible_unreceived_rate"
+                } else "ledger")
+                policy["fields"].append(row)
+            row["visible_profiles"] = READONLY_ONLY
     return policy
 
 

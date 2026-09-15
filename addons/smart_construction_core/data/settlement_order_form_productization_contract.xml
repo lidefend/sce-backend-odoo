@@ -103,5 +103,39 @@
                 }
             }"/>
         </record>
+    <record id="business_config_contract_settlement_income_native_form" model="ui.business.config.contract">
+        <field name="name">settlement_income_native_form_v1</field>
+        <field name="model">sc.settlement.order</field>
+        <field name="view_type">form</field>
+        <field name="action_id" ref="smart_construction_core.action_sc_settlement_order_income"/>
+        <field name="priority">20</field>
+        <field name="company_id" eval="False"/>
+        <field name="active" eval="True"/>
+        <field name="status">published</field>
+        <field name="version_no">1</field>
+        <field name="contract_json" eval="{
+            'view_orchestration': {
+                'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},
+                'views': {'form': {'composition_mode': 'native_semantic_surface'}}
+            }
+        }"/>
+    </record>
+    <record id="business_config_contract_settlement_expense_native_form" model="ui.business.config.contract">
+        <field name="name">settlement_expense_native_form_v1</field>
+        <field name="model">sc.settlement.order</field>
+        <field name="view_type">form</field>
+        <field name="action_id" ref="smart_construction_core.action_sc_settlement_order_expense"/>
+        <field name="priority">20</field>
+        <field name="company_id" eval="False"/>
+        <field name="active" eval="True"/>
+        <field name="status">published</field>
+        <field name="version_no">1</field>
+        <field name="contract_json" eval="{
+            'view_orchestration': {
+                'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},
+                'views': {'form': {'composition_mode': 'native_semantic_surface'}}
+            }
+        }"/>
+    </record>
     </data>
 </odoo>

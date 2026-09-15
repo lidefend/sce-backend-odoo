@@ -152,6 +152,33 @@ async function waitForStableProductSurface(page) {
   }));
 }
 
+async function expandNativeFormDisclosures(page, titles) {
+  if (!Array.isArray(titles) || !titles.length) throw new Error('native disclosure titles required');
+  const evidence = [];
+  for (const title of titles) {
+    const button = page.locator('.native-container > .native-container-head')
+      .getByRole('button', { name: title, exact: true });
+    if (await button.count() !== 1) throw new Error(`native disclosure missing or ambiguous: ${title}`);
+    const before = await button.getAttribute('aria-expanded');
+    if (before !== 'false') throw new Error(`native disclosure did not start collapsed: ${title}`);
+    await button.click();
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const after = await button.getAttribute('aria-expanded');
+    const content = await button.evaluate((node) => {
+      const owner = node.closest('.native-container');
+      return {
+        collapsed: owner?.getAttribute('data-collapsed'),
+        visibleFields: [...(owner?.querySelectorAll('[data-field-name]') || [])]
+          .filter((field) => field instanceof HTMLElement && field.offsetParent !== null)
+          .map((field) => field.getAttribute('data-field-name')),
+      };
+    });
+    if (after !== 'true' || content.collapsed !== 'false') throw new Error(`native disclosure did not expand: ${title}`);
+    evidence.push({ title, before, after, ...content, method: 'manual-title-click', pass: true });
+  }
+  return evidence;
+}
+
 function isContractV2Response(response) {
   if (!response.url().includes('/api/v1/intent') || response.request().method() !== 'POST') return false;
   try {
@@ -164,7 +191,8 @@ function isContractV2Response(response) {
 function isTargetContractResponse(response, target) {
   if (!isContractV2Response(response)) return false;
   const params = JSON.parse(response.request().postData() || '{}').params || {};
-  return !target.expectedContractOp || params.op === target.expectedContractOp;
+  return (!target.expectedContractOp || params.op === target.expectedContractOp)
+    && (!target.expectedContractModel || params.model === target.expectedContractModel);
 }
 
 function isSystemInitResponse(response) {
@@ -644,6 +672,7 @@ try {
       let businessConfigReadFailureEvidence = null;
       let safeReturnEvidence = null;
       let formStructureEvidence = null;
+      let nativeDisclosureEvidence = null;
       let collectionWidthEvidence = null;
       let fieldAlignmentEvidence = null;
       let optionalDetailDisclosureEvidence = null;
@@ -1863,6 +1892,9 @@ try {
         }
         await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       }
+      if (Array.isArray(target.nativeDisclosureTitles)) {
+        nativeDisclosureEvidence = await expandNativeFormDisclosures(page, target.nativeDisclosureTitles);
+      }
       if (target.exerciseOptionalDetailDisclosure === true) {
         if (target.expandFormDisclosures === true) {
           throw new Error(`${target.name}: optional detail disclosure evidence must begin from the unforced initial state`);
@@ -2635,6 +2667,7 @@ try {
           fullPageCapture = { filename, expandedScrollContainer: true, width: viewport.width };
         }
         formStructureEvidence = {
+          nativeDisclosureEvidence,
           fullPageCapture,
           ...top,
           popupBoundaryEvidence,
