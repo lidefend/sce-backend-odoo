@@ -26,6 +26,49 @@ def _form(record_id: str) -> ET.Element:
 
 
 class FormStructureAuthorityUnificationTest(unittest.TestCase):
+    def _run_bridge_guard(self, changed_path=None, replacement=None):
+        import contextlib
+        import io
+        import runpy
+        import sys
+        from unittest import mock
+
+        original_read = Path.read_text
+
+        def read(path, *args, **kwargs):
+            if path == changed_path:
+                return replacement
+            return original_read(path, *args, **kwargs)
+
+        with mock.patch.object(Path, "read_text", read), mock.patch.object(sys, "path", [str(ROOT / "scripts/verify"), *sys.path]), contextlib.redirect_stdout(io.StringIO()):
+            runpy.run_path(str(ROOT / "scripts/verify/frontend_scene_component_bridge_guard.py"), run_name="__main__")
+
+    def test_native_surface_guard_accepts_current_extracted_bridge(self):
+        self._run_bridge_guard()
+
+    def test_native_surface_guard_rejects_broken_bridge_bindings(self):
+        folder = ROOT / "frontend/apps/web/src/pages/contractForm"
+        for file, original, broken in (
+            ("ContractFormDriverHost.vue", ':native-bridge="nativeBridge"', ':native-bridge="null"'),
+            ("ContractFormDriverHost.vue", ':render-mode="renderModel.identity.mode"', ':render-mode="\'edit\'"'),
+            ("ContractFormDriverHost.vue", ':section-links="workspaceSectionLinks"', ':section-links="[]"'),
+            ("ContractFormDriverHost.vue", '@action-ref="emit(\'action-ref\', $event)"', '@action-ref="undefined"'),
+            ("CanonicalNativeFormSurface.vue", ':nodes="nativeBridge.subordinateNodes"', ':nodes="nativeBridge.primaryNodes"'),
+            ("CanonicalNativeFormSurface.vue", ':is-node-visible="nativeBridge.nodeVisible"', ':is-node-visible="() => true"'),
+            ("CanonicalNativeFormSurface.vue", ':native-action-state-resolver="nativeBridge.actionStateForNode"', ':native-action-state-resolver="undefined"'),
+            ("CanonicalNativeFormSurface.vue", "if (action) emit('action-ref', action)", "emit('action-ref', payload)"),
+        ):
+            with self.subTest(file=file, binding=original):
+                path = folder / file
+                source = path.read_text()
+                # For host action forwarding, mutate only the extracted surface call.
+                start = source.index("<CanonicalNativeFormSurface") if file == "ContractFormDriverHost.vue" else 0
+                prefix, tail = source[:start], source[start:]
+                self.assertIn(original, tail)
+                changed = prefix + tail.replace(original, broken, 1)
+                with self.assertRaisesRegex(SystemExit, "governed native surface bridge"):
+                    self._run_bridge_guard(path, changed)
+
     def test_structure_policy_guard_accepts_formal_enum_but_rejects_legacy_aliases(self):
         import contextlib
         import io

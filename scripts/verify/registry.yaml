@@ -444,6 +444,12 @@ entries:
   date: '2026-09-01'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_form_structure_authority_unification.py
+  status: orphan
+  owner: platform-team
+  date: '2026-09-15'
+  review_by: '2026-09-30'
+  reason: invoked by the existing form structure Make target using python -m unittest module notation; filename-based registry scan cannot resolve this invocation
 - script: test_legacy_custom_column_retirement.py
   status: orphan
   owner: platform-team
@@ -451,11 +457,11 @@ entries:
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_local_dev_candidate_frontend.py
-  status: orphan
+  status: active
   owner: platform-team
   date: '2026-08-24'
   review_by: '2026-09-30'
-  reason: candidate frontend binding regression suite is run as a targeted P4 check
+  reason: referenced by the governed candidate frontend target and form structure regression suite
 - script: test_local_dev_frontend_quick.py
   status: orphan
   owner: platform-team
