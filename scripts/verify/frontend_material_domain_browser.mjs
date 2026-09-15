@@ -31,6 +31,7 @@ const handlingEntryKeys = (process.env.FRONTEND_MATERIAL_HANDLING_ENTRIES || 'in
   .map((value) => value.trim())
   .filter(Boolean);
 const skipHandlingCounterexample = process.env.FRONTEND_MATERIAL_HANDLING_SKIP_COUNTEREXAMPLE === '1';
+const handlingCounterexampleOnly = process.env.FRONTEND_MATERIAL_HANDLING_COUNTEREXAMPLE_ONLY === '1';
 
 const handlingEntrySpecs = Object.freeze({
   inbound: {
@@ -763,68 +764,79 @@ async function inspectHandlingForm(page, entryKey, entry, spec, mode, viewport, 
 }
 
 async function inspectNonMaterialNavigationCounterexample() {
-  const entry = target.shared_entries.project_profile;
-  const context = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: 'zh-CN' });
-  const page = await context.newPage();
-  observe(page, report.primary);
-  await login(page, entry.user.login);
-  await page.goto(
-    `${frontendUrl}/f/${entry.model}/${entry.record.id}?menu_id=${entry.menu.id}&action_id=${entry.action.id}`,
-    { waitUntil: 'domcontentloaded', timeout: 45000 },
-  );
-  const form = page.locator('[data-product-page-mode="form"]:visible').first();
-  await form.locator('[data-contract-form-driver]:visible').first().waitFor({ timeout: 45000 });
-  const links = form.locator('[data-form-section-navigation]:visible [data-section-link]');
-  check(await links.count() > 0, 'non-material counterexample has no native section navigation');
-  const link = links.last();
-  const selector = await link.getAttribute('data-section-target');
-  await link.click();
-  check(Boolean(selector) && await form.locator(`${selector}:visible`).count() === 1,
-    'non-material navigation target is not visible after activation', { selector });
-  check(await link.getAttribute('aria-current') === 'location',
-    'non-material navigation highlight did not follow the selected content', { selector });
-  await page.screenshot({
-    path: path.join(outputDir, 'uc2-non-material-project-navigation-1440x960.png'),
-    fullPage: false,
-    animations: 'disabled',
-  });
-  const result = { entry: 'project_profile', selector, active: true };
-  await context.close();
-  return result;
+  const attempts = [];
+  for (const entryKey of Object.keys(sharedEntrySpecs)) {
+    const entry = target.shared_entries[entryKey];
+    const context = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: 'zh-CN' });
+    const page = await context.newPage();
+    observe(page, report.primary);
+    await login(page, entry.user.login);
+    await page.goto(
+      `${frontendUrl}/f/${entry.model}/${entry.record.id}?menu_id=${entry.menu.id}&action_id=${entry.action.id}`,
+      { waitUntil: 'domcontentloaded', timeout: 45000 },
+    );
+    const form = page.locator('[data-product-page-mode="form"]:visible').first();
+    await form.locator('[data-contract-form-driver]:visible').first().waitFor({ timeout: 45000 });
+    const links = form.locator('[data-form-section-navigation]:visible [data-section-link]');
+    const linkCount = await links.count();
+    attempts.push({ entry: entryKey, linkCount });
+    if (linkCount === 0) {
+      await context.close();
+      continue;
+    }
+    const link = links.last();
+    const selector = await link.getAttribute('data-section-target');
+    await link.click();
+    check(Boolean(selector) && await form.locator(`${selector}:visible`).count() === 1,
+      'non-material navigation target is not visible after activation', { entryKey, selector });
+    check(await link.getAttribute('aria-current') === 'location',
+      'non-material navigation highlight did not follow the selected content', { entryKey, selector });
+    await page.screenshot({
+      path: path.join(outputDir, `uc2-non-material-${entryKey}-navigation-1440x960.png`),
+      fullPage: false,
+      animations: 'disabled',
+    });
+    const result = { entry: entryKey, selector, active: true, attempts };
+    await context.close();
+    return result;
+  }
+  check(false, 'governed non-material samples have no native section navigation', attempts);
 }
 
 async function inspectMaterialHandlingReview() {
   check(handlingViewports.length > 0, 'material handling review viewport list is empty');
   check(handlingThemes.length > 0, 'material handling review theme list is empty');
   report.primary.handlingReviews = [];
-  for (const theme of handlingThemes) {
-    for (const viewport of handlingViewports) {
-      for (const entryKey of handlingEntryKeys) {
-        const spec = handlingEntrySpecs[entryKey];
-        const entry = target.entries[entryKey];
-        const context = await browser.newContext({
-          viewport,
-          locale: 'zh-CN',
-          hasTouch: viewport.width <= 390,
-        });
-        await applyReviewTheme(context, theme);
-        const page = await context.newPage();
-        observe(page, report.primary);
-        await login(page, target.user.login);
-        if (entry.record) {
+  if (!handlingCounterexampleOnly) {
+    for (const theme of handlingThemes) {
+      for (const viewport of handlingViewports) {
+        for (const entryKey of handlingEntryKeys) {
+          const spec = handlingEntrySpecs[entryKey];
+          const entry = target.entries[entryKey];
+          const context = await browser.newContext({
+            viewport,
+            locale: 'zh-CN',
+            hasTouch: viewport.width <= 390,
+          });
+          await applyReviewTheme(context, theme);
+          const page = await context.newPage();
+          observe(page, report.primary);
+          await login(page, target.user.login);
+          if (entry.record) {
+            report.primary.handlingReviews.push(
+              await inspectHandlingForm(page, entryKey, entry, spec, 'existing', viewport, theme),
+            );
+          }
           report.primary.handlingReviews.push(
-            await inspectHandlingForm(page, entryKey, entry, spec, 'existing', viewport, theme),
+            await inspectHandlingForm(page, entryKey, entry, spec, 'create', viewport, theme),
           );
+          if (entry.editable_record && viewport.width > 390) {
+            report.primary.handlingReviews.push(
+              await inspectHandlingForm(page, entryKey, entry, spec, 'edit', viewport, theme),
+            );
+          }
+          await context.close();
         }
-        report.primary.handlingReviews.push(
-          await inspectHandlingForm(page, entryKey, entry, spec, 'create', viewport, theme),
-        );
-        if (entry.editable_record && viewport.width > 390) {
-          report.primary.handlingReviews.push(
-            await inspectHandlingForm(page, entryKey, entry, spec, 'edit', viewport, theme),
-          );
-        }
-        await context.close();
       }
     }
   }
