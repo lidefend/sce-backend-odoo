@@ -353,6 +353,20 @@ make workspace.worktree.create \
   CREATE_WORKTREE_CONFIRM=CREATE_GOVERNED_WORKTREE
 ```
 
+清理交付工作树前，先归档清单中四类证据并验证归档副本可读：
+
+```bash
+make workspace.evidence.archive \
+  CANDIDATE_WORKTREE=/absolute/linked/path \
+  EVIDENCE_ARCHIVE_MANIFEST=/absolute/linked/path/artifacts/topic/archive-manifest.json \
+  APPLY=1 \
+  EVIDENCE_ARCHIVE_CONFIRM=ARCHIVE_DELIVERY_EVIDENCE
+```
+
+清单使用 `schemaVersion=1`，绑定精确 `candidateHead`，并分别列出 `summary`、
+`identity`、`screenshot`、`review` 四种角色的工作树内相对文件。归档 receipt 必须位于
+工作树之外，并通过 `CLEAN_WORKTREE_EVIDENCE_RECEIPT` 传给清理入口。
+
 目标必须是主仓库同级且以 `<repository-name>-` 开头的新目录；目标分支必须符合
 自治写入分支规则且尚不存在；基线必须是本地或 `origin` 分支可达的既有提交。
 

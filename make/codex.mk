@@ -482,16 +482,21 @@ pr.status:
 	@gh pr status || true
 
 # ------------------ Branch cleanup (Codex-safe) ------------------
-.PHONY: branch.cleanup branch.cleanup.feature branch.retire.historical verify.branch.retire.historical workspace.worktree.create workspace.worktree.cleanup workspace.branch.sync-main workspace.branch.sync-main.extended verify.workspace.branch.sync-main verify.workspace.worktree.guard
+.PHONY: branch.cleanup branch.cleanup.feature branch.retire.historical verify.branch.retire.historical workspace.worktree.create workspace.evidence.archive workspace.worktree.cleanup workspace.branch.sync-main workspace.branch.sync-main.extended verify.workspace.branch.sync-main verify.workspace.worktree.guard
 
 CLEAN_BRANCH ?=
 CREATE_WORKTREE ?=
 CREATE_WORKTREE_BRANCH ?=
 CREATE_WORKTREE_BASE ?=
 CREATE_WORKTREE_CONFIRM ?=
+CANDIDATE_WORKTREE ?= $(ROOT_DIR)
+EVIDENCE_ARCHIVE_MANIFEST ?=
+EVIDENCE_ARCHIVE_ROOT ?=
+EVIDENCE_ARCHIVE_CONFIRM ?=
 CLEAN_WORKTREE_KEEP_BRANCH ?=
 CLEAN_WORKTREE_EXPECTED_HEAD ?=
 CLEAN_WORKTREE_CONFIRM ?=
+CLEAN_WORKTREE_EVIDENCE_RECEIPT ?=
 WORKSPACE_BRANCH_SYNC_ROOT ?= $(ROOT_DIR)
 EXPECTED_BRANCH ?=
 EXPECTED_OLD_BASE ?=
@@ -557,10 +562,19 @@ workspace.worktree.create: guard.prod.forbid
 		--base "$(CREATE_WORKTREE_BASE)" \
 		$(if $(filter 1,$(APPLY)),--apply --confirm "$(CREATE_WORKTREE_CONFIRM)",)
 
+workspace.evidence.archive: guard.prod.forbid
+	@test -n "$(EVIDENCE_ARCHIVE_MANIFEST)" || { echo "❌ EVIDENCE_ARCHIVE_MANIFEST is required"; exit 2; }
+	@python3 scripts/ops/archive_worktree_delivery_evidence.py \
+		--worktree "$(CANDIDATE_WORKTREE)" \
+		--manifest "$(EVIDENCE_ARCHIVE_MANIFEST)" \
+		$(if $(EVIDENCE_ARCHIVE_ROOT),--archive-root "$(EVIDENCE_ARCHIVE_ROOT)",) \
+		$(if $(filter 1,$(APPLY)),--apply --confirm "$(EVIDENCE_ARCHIVE_CONFIRM)",)
+
 workspace.worktree.cleanup: guard.prod.forbid
 	@if [ -z "$(CLEAN_WORKTREE)" ]; then echo "❌ CLEAN_WORKTREE is required"; exit 2; fi
 	@python3 scripts/ops/safe_worktree_cleanup.py \
 		--path "$(CLEAN_WORKTREE)" \
+		$(if $(CLEAN_WORKTREE_EVIDENCE_RECEIPT),--evidence-receipt "$(CLEAN_WORKTREE_EVIDENCE_RECEIPT)",) \
 		$(if $(filter 1,$(APPLY)),--apply,) \
 		$(if $(filter 1,$(CLEAN_WORKTREE_KEEP_BRANCH)),--detach-keep-branch --expected-head "$(CLEAN_WORKTREE_EXPECTED_HEAD)" --confirm "$(CLEAN_WORKTREE_CONFIRM)",)
 
