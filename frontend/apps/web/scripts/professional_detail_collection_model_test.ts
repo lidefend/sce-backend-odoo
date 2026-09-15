@@ -28,6 +28,7 @@ import {
   buildX2ManyCommands,
 } from '../src/app/x2manyCommands';
 import { one2manyRemovalLabelsFromPolicies } from '../src/pages/contractForm/one2manyUtils';
+import { nativeNodeFieldDescriptor } from '../src/pages/contractForm/nativeLayoutUtils';
 
 const modes = ['task', 'workspace'] as const;
 const profiles = ['create', 'edit', 'readonly'] as const;
@@ -185,6 +186,13 @@ assert.deepEqual(dynamicRelationDomainFromDescriptor({
   normalizeDependencyValue: (_field, value) => value,
   currentFieldValue: () => false,
 }), [['id', '=', -1]], 'an unresolved parent record identity remains fail-closed');
+assert.equal((nativeNodeFieldDescriptor({
+  name: 'award_opening_id',
+  attributes: { domain: "[('bid_id','=',id),('result','=','won')]" },
+  fieldInfo: { name: 'award_opening_id', type: 'many2one', domain: [] },
+} as never, undefined, (name) => name) as Record<string, unknown>).domain,
+"[('bid_id','=',id),('result','=','won')]",
+'the native field occurrence domain must override an empty model-level domain');
 assert.equal(resolveRelationDomainDependencyValue({
   dependency: 'id',
   recordId: 98,
@@ -243,4 +251,4 @@ assert.deepEqual(buildX2ManyCommands({
   mode: 'write',
 }), [[3, 8]]);
 
-console.log(`[professional_detail_collection_model_test] PASS matrix=${matrix} relation_domain_cases=6`);
+console.log(`[professional_detail_collection_model_test] PASS matrix=${matrix} relation_domain_cases=7`);
