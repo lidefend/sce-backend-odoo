@@ -164,7 +164,8 @@ function isContractV2Response(response) {
 function isTargetContractResponse(response, target) {
   if (!isContractV2Response(response)) return false;
   const params = JSON.parse(response.request().postData() || '{}').params || {};
-  return !target.expectedContractOp || params.op === target.expectedContractOp;
+  return (!target.expectedContractOp || params.op === target.expectedContractOp)
+    && (!target.expectedContractModel || params.model === target.expectedContractModel);
 }
 
 function isSystemInitResponse(response) {

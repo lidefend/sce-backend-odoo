@@ -49,13 +49,20 @@ class CandidateFrontendContractTest(unittest.TestCase):
         )[0]
         subprocess.run(["node", "--input-type=module", "-e",
             "function isContractV2Response(response) {" + functions + """
-            const response = (op) => ({url: () => '/api/v1/intent',
+            const response = (op, model) => ({url: () => '/api/v1/intent',
               request: () => ({method: () => 'POST',
-                postData: () => JSON.stringify({intent: 'ui.contract.v2', params: {op}})})});
+                postData: () => JSON.stringify({intent: 'ui.contract.v2', params: {op, model}})})});
             if (isTargetContractResponse(response('action_open'), {expectedContractOp: 'model'}))
               throw new Error('prefetch accepted as rendered model');
             if (!isTargetContractResponse(response('model'), {expectedContractOp: 'model'}))
               throw new Error('model response rejected');
+            const target = {expectedContractOp: 'model', expectedContractModel: 'parent.model'};
+            if (isTargetContractResponse(response('model', 'child.model'), target))
+              throw new Error('child contract accepted as main form');
+            if (isTargetContractResponse(response('model'), target))
+              throw new Error('missing model identity accepted');
+            if (!isTargetContractResponse(response('model', 'parent.model'), target))
+              throw new Error('main form contract rejected');
             """], check=True, capture_output=True, text=True)
 
     def test_visual_inventory_uses_authorized_canonical_navigation(self):
