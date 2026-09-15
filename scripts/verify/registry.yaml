@@ -474,6 +474,12 @@ entries:
   date: '2026-09-13'
   review_by: '2026-09-30'
   reason: targeted P4 safety suite for the one Batch-2A personnel-authorization write journey
+- script: test_local_dev_tender_award_fixture.py
+  status: orphan
+  owner: platform-team
+  date: '2026-09-15'
+  review_by: '2026-09-30'
+  reason: invoked by make/dev.mk through Python unittest module notation; registry static scan does not recognize that invocation form
 - script: test_local_development_lifecycle.py
   status: orphan
   owner: platform-team
