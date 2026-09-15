@@ -52,6 +52,8 @@ class TestLocalDevTenderAwardFixture(unittest.TestCase):
         self.assertIn("action_mark_won", BROWSER)
         self.assertIn("award_confirmed_at", BROWSER)
         self.assertIn("contract was created unexpectedly", BROWSER)
+        self.assertIn("repeatAuthority", BROWSER)
+        self.assertIn("confirmed action request authority is missing", BROWSER)
         self.assertIn("failure_page", BROWSER)
         self.assertIn("failure.png", BROWSER)
         self.assertIn("relation_requests", BROWSER)

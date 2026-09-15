@@ -186,6 +186,18 @@ class TestNavigationEntryTarget(unittest.TestCase):
         self.assertEqual(action["entry_target"]["compatibility_refs"]["action_id"], 77)
         self.assertEqual(action["params"]["next"]["entry_target"], action["entry_target"])
 
+    def test_plain_client_reload_does_not_invent_navigation_authority(self):
+        action = navigation_entry_target.normalize_odoo_action_result(
+            None,
+            {"type": "ir.actions.client", "tag": "reload"},
+            source_model="tender.bid",
+            source_record_id=98,
+        )
+
+        self.assertEqual(action, {"type": "ir.actions.client", "tag": "reload"})
+        self.assertNotIn("entry_target", action)
+        self.assertNotIn("action_id", action)
+
     def test_modal_form_action_opens_create_form_without_source_record_leakage(self):
         action = navigation_entry_target.normalize_odoo_action_result(
             None,

@@ -223,6 +223,9 @@ async function executeFromPage(page) {
   const body = await result.json().catch(() => ({}));
   check(result.status() === 200 && body?.ok === true, 'award confirmation failed', body);
   report.mutations.push({ intent: 'execute_button', method: 'action_mark_won', status: result.status() });
+  const requestBody = result.request().postDataJSON();
+  check(requestBody?.intent === 'execute_button' && requestBody?.params?.meta?.menu_id, 'confirmed action request authority is missing', requestBody);
+  return requestBody.params;
 }
 async function readBid(page) {
   const response = await intent(page, 'api.data', {
@@ -290,7 +293,7 @@ try {
   check(prepared.award_source_kind === 'final_quote' && prepared.award_tax_basis === 'unknown', 'saved source/tax facts mismatch', prepared);
   check(prepared.award_source_reference === authority.expected.source_reference, 'saved source reference mismatch', prepared);
 
-  await executeFromPage(page);
+  const repeatAuthority = await executeFromPage(page);
   const confirmed = await readBid(page);
   check(confirmed.state === 'won', 'award state was not confirmed', confirmed);
   check(Number(confirmed.bid_amount) === 1200 && Number(confirmed.amount_total) === 1000 && Number(confirmed.award_amount) === 900, '1200/1000/900 facts mismatch', confirmed);
@@ -298,11 +301,7 @@ try {
   check(!confirmed.contract_id, 'contract was created unexpectedly', confirmed);
   report.authoritative_after_confirm = confirmed;
 
-  const repeat = await intent(page, 'execute_button', {
-    model: 'tender.bid',
-    res_id: authority.fixture.bid_id,
-    button: { name: 'action_mark_won', type: 'object' },
-  });
+  const repeat = await intent(page, 'execute_button', repeatAuthority);
   report.mutations.push({ intent: 'execute_button', method: 'action_mark_won', repeat: true, status: repeat.status });
   const repeated = await readBid(page);
   check(repeated.award_confirmed_at === confirmed.award_confirmed_at, 'repeat request changed confirmation time', { confirmed, repeated });
