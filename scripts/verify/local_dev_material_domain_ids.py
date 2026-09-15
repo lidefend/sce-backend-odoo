@@ -53,6 +53,13 @@ entry_specs = {
         "menu_xmlid": "smart_construction_core.menu_sc_material_outbound",
         "action_xmlid": "smart_construction_core.action_sc_material_outbound",
         "model": "sc.material.outbound",
+        "domain": [("outbound_type", "=", "issue")],
+    },
+    "return": {
+        "menu_xmlid": "smart_construction_core.menu_sc_material_return",
+        "action_xmlid": "smart_construction_core.action_sc_material_return",
+        "model": "sc.material.outbound",
+        "domain": [("outbound_type", "=", "return")],
     },
     "supplier_return": {
         "menu_xmlid": "smart_construction_core.menu_sc_product_material_return_v1",
@@ -98,7 +105,9 @@ def resolve_entry(key, spec, principal=user):
     record_env.check_access_rights("read")
     if spec.get("require_create", True):
         record_env.check_access_rights("create")
-    record = record_env.search([], order="id desc", limit=1)
+    domain = list(spec.get("domain", []))
+    record = record_env.search(domain, order="id desc", limit=1)
+    editable_record = record_env.search(domain + [("state", "=", "draft")], order="id desc", limit=1)
     record_payload = None
     fingerprint_payload = {"model": spec["model"], "record": None}
     if record:
@@ -116,6 +125,24 @@ def resolve_entry(key, spec, principal=user):
             "name": str(record.display_name or record.id),
             "line_count": len(getattr(record, "line_ids", [])),
         }
+    editable_payload = None
+    if editable_record:
+        editable_record.check_access_rule("read")
+        editable_record.check_access_rights("write")
+        editable_record.check_access_rule("write")
+        editable_payload = {
+            "id": int(editable_record.id),
+            "xmlid": xmlid(editable_record),
+            "name": str(editable_record.display_name or editable_record.id),
+            "state": str(getattr(editable_record, "state", "") or ""),
+        }
+        fingerprint_payload["editable_record"] = {
+            "id": int(editable_record.id),
+            "write_date": editable_record.write_date.isoformat() if editable_record.write_date else "",
+            "state": str(getattr(editable_record, "state", "") or ""),
+            "name": str(editable_record.display_name or editable_record.id),
+            "line_count": len(getattr(editable_record, "line_ids", [])),
+        }
     return {
         "key": key,
         "model": spec["model"],
@@ -127,6 +154,7 @@ def resolve_entry(key, spec, principal=user):
         "menu": {"id": int(menu.id), "xmlid": xmlid(menu)},
         "action": {"id": int(action.id), "xmlid": xmlid(action)},
         "record": record_payload,
+        "editable_record": editable_payload,
         "business_fingerprint": hashlib.sha256(
             json.dumps(
                 fingerprint_payload, ensure_ascii=False, sort_keys=True

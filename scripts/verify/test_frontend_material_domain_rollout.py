@@ -27,7 +27,7 @@ reporter = load_module(
 
 
 class TestFrontendMaterialDomainRollout(unittest.TestCase):
-    def test_workflow_advances_from_material_to_quality_safety(self):
+    def test_workflow_records_completed_material_domain(self):
         workflow = yaml.safe_load(
             (ROOT / ".agent/workflows/frontend-professionalization.yaml").read_text(
                 encoding="utf-8"
@@ -35,9 +35,10 @@ class TestFrontendMaterialDomainRollout(unittest.TestCase):
         )["workflow"]
         phase_10 = workflow["phases"]["phase_10"]
         self.assertIn("material", phase_10["delivered"])
-        self.assertEqual(phase_10["active_domain"], "quality_safety")
+        self.assertEqual(phase_10["active_domain"], "none")
         self.assertEqual(
-            workflow["next_action"]["task"], "quality_safety_domain_rollout"
+            workflow["next_action"]["task"],
+            "hand_off_completed_systemwide_frontend_product",
         )
 
     def test_browser_verifier_requires_task_and_terminal_record_downgrade(self):
@@ -62,7 +63,13 @@ class TestFrontendMaterialDomainRollout(unittest.TestCase):
         self.assertIn("screenshotEvidence()", source)
         self.assertIn("createHash('sha256')", source)
         self.assertIn("inbound_sample_affected_regions", source)
-        self.assertIn("post-relation-input", source)
+        self.assertIn("const handlingEntrySpecs", source)
+        self.assertIn("return: {", source)
+        self.assertNotIn("supplier_return: {", source)
+        self.assertIn("draftNoteRetention", source)
+        self.assertIn("top navigation did not reveal, locate, and highlight", source)
+        self.assertIn("inspectNonMaterialNavigationCounterexample", source)
+        self.assertIn("uc2-material-", source)
         self.assertIn("readonly source name is not fully accessible", source)
         self.assertIn("header-owned status remains duplicated", source)
         self.assertIn("material inbound still depends on compatibility structure", source)

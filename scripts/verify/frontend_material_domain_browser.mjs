@@ -17,7 +17,7 @@ const sampleViewports = (process.env.FRONTEND_MATERIAL_SAMPLE_VIEWPORTS || '1440
   .map((value) => value.trim().match(/^(\d+)x(\d+)$/))
   .filter(Boolean)
   .map((match) => ({ width: Number(match[1]), height: Number(match[2]) }));
-const handlingViewports = (process.env.FRONTEND_MATERIAL_HANDLING_VIEWPORTS || '1440x960,1088x791')
+const handlingViewports = (process.env.FRONTEND_MATERIAL_HANDLING_VIEWPORTS || '1440x960,390x844')
   .split(',')
   .map((value) => value.trim().match(/^(\d+)x(\d+)$/))
   .filter(Boolean)
@@ -29,19 +29,28 @@ const handlingThemes = (process.env.FRONTEND_MATERIAL_HANDLING_THEMES || 'light'
 
 const handlingEntrySpecs = Object.freeze({
   inbound: {
-    identityToken: '入库', detailTitle: '入库明细', supplementaryFields: ['note', 'attachment_ids'],
+    identityToken: '入库', detailTitle: '入库明细', tabs: ['入库明细', '说明与附件', '来源追溯'],
+    nativeTitles: ['入库主信息', '项目与供应商', '入库明细', '说明与附件', '来源追溯'],
+    sourceFields: ['stock_picking_id', 'source_transfer_outbound_id', 'legacy_fact_model', 'source_created_by', 'source_created_at'],
+    buttons: ['action_submit', 'action_receive', 'action_reset_draft', 'action_cancel', 'action_load_acceptance_lines'],
     facts: ['project_id', 'inbound_date', 'supplier_id', 'warehouse_id', 'dest_location_id'],
-    detailHeaders: ['材料档案', '规格型号', '单位', '入库数量', '单价', '金额', '来源验收明细'],
+    viewId: 1428,
   },
   outbound: {
-    identityToken: '出库', detailTitle: '出库明细', supplementaryFields: ['note', 'attachment_ids'],
+    identityToken: '出库', detailTitle: '材料明细', tabs: ['材料明细', '说明与附件', '来源追溯'],
+    nativeTitles: ['出退库主信息', '材料明细', '说明与附件', '来源追溯'],
+    sourceFields: ['stock_picking_id', 'transfer_inbound_id', 'legacy_fact_model', 'source_created_by', 'source_created_at'],
+    buttons: ['action_submit', 'action_issue', 'action_reset_draft', 'action_cancel'],
     facts: ['project_id', 'outbound_date', 'warehouse_id', 'source_location_id', 'receiver_id'],
-    detailHeaders: ['材料档案', '规格型号', '单位', '出库数量', '出库单价', '出库金额'],
+    viewId: 1431,
   },
-  supplier_return: {
-    identityToken: '退货', detailTitle: '退货明细', supplementaryFields: ['reason', 'attachment_ids'],
-    facts: ['project_id', 'source_inbound_id', 'supplier_id', 'return_date', 'warehouse_id'],
-    detailHeaders: ['材料档案', '规格型号', '单位', '退货数量', '单价', '金额', '来源入库明细'],
+  return: {
+    identityToken: '退库', detailTitle: '材料明细', tabs: ['材料明细', '说明与附件', '来源追溯'],
+    nativeTitles: ['出退库主信息', '材料明细', '说明与附件', '来源追溯'],
+    sourceFields: ['stock_picking_id', 'transfer_inbound_id', 'legacy_fact_model', 'source_created_by', 'source_created_at'],
+    buttons: ['action_submit', 'action_issue', 'action_reset_draft', 'action_cancel'],
+    facts: ['project_id', 'outbound_date', 'warehouse_id', 'source_location_id', 'receiver_id'],
+    viewId: 1431,
   },
 });
 const sharedEntrySpecs = Object.freeze({
@@ -544,149 +553,223 @@ async function applyReviewTheme(context, theme) {
   }, theme);
 }
 
+function requireHandlingNativeContract(contract, entryKey, spec, actionId, profile) {
+  const identity = inboundNativeContract(contract);
+  const expectedModel = entryKey === 'inbound' ? 'sc.material.inbound' : 'sc.material.outbound';
+  check(identity.model === expectedModel && identity.viewType === 'form',
+    `material handling form contract is missing: ${entryKey}`, identity);
+  check(identity.layoutPolicy === 'container_tree_authority'
+    && identity.authority.formStructureAuthority === 'native_authority'
+    && identity.authority.compatibilityDependencies.length === 0,
+  `material handling entry still depends on compatibility structure: ${entryKey}`, identity);
+  check(identity.authority.resolvedActionId === actionId
+    && identity.authority.resolvedViewId === spec.viewId,
+  `material handling native source identity drifted: ${entryKey}`, identity);
+  check(identity.effectiveRenderProfile === profile,
+    `material handling render profile drifted: ${entryKey}`, identity);
+  for (const title of spec.nativeTitles) {
+    check(identity.titles.includes(title), `material native chapter is missing: ${entryKey}/${title}`, identity);
+  }
+  for (const fieldName of [...spec.facts, ...spec.sourceFields, 'line_ids', 'note', 'attachment_ids']) {
+    check(identity.fieldNames.includes(fieldName), `material native field is missing: ${entryKey}/${fieldName}`, identity);
+  }
+  for (const buttonName of spec.buttons) {
+    check(identity.buttonNames.includes(buttonName), `material native operation is missing: ${entryKey}/${buttonName}`, identity);
+  }
+  return identity;
+}
+
+async function draftNoteRetention(form, spec, entryKey, mode) {
+  if (!['create', 'edit'].includes(mode)) return { skipped: true, reason: 'readonly_existing_state' };
+  await selectNativeMaterialTab(form, '说明与附件');
+  const note = form.locator('[data-field-name="note"]:visible textarea, [data-field-name="note"]:visible input').first();
+  await note.waitFor({ timeout: 15000 });
+  const original = await note.inputValue();
+  const probe = `UC2-${entryKey}-${mode}-unsaved`;
+  await note.fill(probe);
+  await selectNativeMaterialTab(form, '来源追溯');
+  await selectNativeMaterialTab(form, '说明与附件');
+  const retained = await note.inputValue();
+  check(retained === probe, 'material draft value was lost while switching native tabs',
+    { entryKey, mode, original, retained });
+  return { original, probe, retained, saved: false };
+}
+
 async function inspectHandlingForm(page, entryKey, entry, spec, mode, viewport, theme) {
+  const record = mode === 'edit' ? entry.editable_record : entry.record;
+  const recordPath = mode === 'create' ? 'new' : String(record.id);
   const contractStart = report.primary.contracts.length;
-  const recordPath = mode === 'readonly' ? String(entry.record.id) : 'new';
   await page.goto(
     `${frontendUrl}/f/${entry.model}/${recordPath}?menu_id=${entry.menu.id}&action_id=${entry.action.id}`,
     { waitUntil: 'domcontentloaded', timeout: 45000 },
   );
   const form = page.locator('[data-product-page-mode="form"]:visible').first();
   await form.locator('[data-contract-form-driver]:visible').first().waitFor({ timeout: 45000 });
-  const relation = form.locator('[data-floorplan-region="relation"]:visible').first();
-  await relation.waitFor({ timeout: 45000 });
-  const postRelation = form.locator('[data-floorplan-region="post-relation-input"]:visible').first();
-  if (mode === 'create') await postRelation.waitFor({ timeout: 45000 });
-  const factTops = {};
-  for (const fieldName of spec.facts) {
-    const field = form.locator(`[data-field-name="${fieldName}"]:visible`).first();
-    await field.waitFor({ timeout: 45000 });
-    factTops[fieldName] = await absoluteTop(field);
-  }
-  const relationTop = await absoluteTop(relation);
-  const postRelationTop = await postRelation.count() ? await absoluteTop(postRelation) : null;
-  const supplementaryOwnership = {};
-  for (const fieldName of spec.supplementaryFields) {
-    supplementaryOwnership[fieldName] = await postRelation.count()
-      ? await postRelation.locator(`[data-field-name="${fieldName}"]:visible`).count()
-      : 0;
-  }
-  const statusFields = await form.locator('[data-field-name="state"]:visible').count();
-  const statusFieldStates = await form.locator('[data-field-name="state"]:visible').evaluateAll((nodes) => (
-    nodes.map((node) => node.getAttribute('data-field-state') || '')
-  ));
-  const headerStatusbars = await form.locator(
-    '[data-professional-workflow-component="statusbar"]:visible',
-  ).count();
-  const detailTitleCount = await relation.getByText(spec.detailTitle, { exact: true }).count();
-  const relationAccessibleName = (await relation.getAttribute('aria-label') || '').trim();
-  const sectionTitles = await form.locator('[data-floorplan-region]:visible').evaluateAll((nodes) => nodes.map((node) => ({
-    region: node.getAttribute('data-floorplan-region') || '',
-    title: node.getAttribute('data-section-title') || '',
-  })));
-  const heading = (await form.locator('h1:visible').first().innerText()).trim();
-  const detailHeadingCount = await relation.locator('[data-detail-collection-heading]:visible').count();
-  const desktopHead = relation.locator('thead:visible').first();
-  const mobileDetailLabels = relation.locator('.o2m-readonly-fact dt:visible, .o2m-mobile-label:visible');
-  if (mode === 'readonly') {
-    const detailIdentity = viewport.width <= 390 ? mobileDetailLabels.first() : desktopHead;
-    await detailIdentity.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
-  }
-  const detailHeaders = viewport.width <= 390
-    ? await mobileDetailLabels.allInnerTexts()
-    : await desktopHead.count()
-      ? (await desktopHead.innerText()).split('\n').map((value) => value.trim()).filter(Boolean)
-      : [];
-  const immediatelyVisibleDetailHeaders = viewport.width <= 390
-    ? spec.detailHeaders.slice(0, 6)
-    : spec.detailHeaders;
-  const missingDetailHeaders = mode === 'readonly'
-    ? immediatelyVisibleDetailHeaders.filter((label) => !detailHeaders.includes(label))
-    : [];
-  const detailHeaderOrder = mode === 'readonly'
-    ? immediatelyVisibleDetailHeaders.map((label) => detailHeaders.indexOf(label))
-    : [];
   const contract = report.primary.contracts.slice(contractStart)
-    .filter((body) => (
-      findKey(body, 'viewType') === 'form' && findKey(body, 'model') === entry.model
-    )).at(-1);
-  const result = {
-    entryKey, mode, viewport, theme, url: page.url(), heading, factTops, relationTop, postRelationTop,
-    supplementaryOwnership, statusFields, statusFieldStates, headerStatusbars, detailTitleCount, detailHeadingCount,
-    relationAccessibleName,
-    sectionTitles, detailHeaders, missingDetailHeaders, detailHeaderOrder,
-    contract: contractSectionIdentity(contract),
-  };
-  check(heading.includes(spec.identityToken), 'material handling page identity is inconsistent', result);
-  check(Object.values(factTops).every((top) => top < relationTop),
-    'material handling key facts are not before details', result);
-  if (mode === 'create') {
-    check(postRelationTop !== null && postRelationTop > relationTop,
-      'material handling supplementary section is not after details', result);
-    check(Object.values(supplementaryOwnership).every((count) => count === 1),
-      'material handling supplementary fields are not owned after details', result);
-  } else if (postRelationTop !== null) {
-    check(postRelationTop > relationTop,
-      'visible readonly supplementary section is not after details', result);
+    .filter((body) => findKey(body, 'viewType') === 'form' && findKey(body, 'model') === entry.model)
+    .at(-1);
+  const observedProfile = String(findKey(contract, 'effectiveRenderProfile') || '');
+  const expectedProfile = mode === 'create' ? 'create' : mode === 'edit' ? 'edit' : observedProfile;
+  const nativeContract = requireHandlingNativeContract(
+    contract, entryKey, spec, Number(entry.action.id), expectedProfile,
+  );
+  if (mode === 'edit') {
+    check(observedProfile === 'edit' && nativeContract.effectiveRecordCapabilities?.write === true,
+      `governed draft sample is not editable: ${entryKey}`, nativeContract);
   }
-  check(!(headerStatusbars > 0 && statusFields > 0),
-    'material handling state is duplicated across header and body', result);
-  if (mode === 'create' && statusFields > 0) {
-    check(statusFieldStates.every((state) => state === 'readonly'),
-      'material handling create form exposes a workflow state as editable', result);
-  }
-  check(detailTitleCount <= 1, 'material handling detail title is duplicated', result);
-  check(findKey(contract, 'sourceSectionTitles')?.includes(spec.detailTitle),
-    'material handling detail identity is missing from the form contract', result);
-  check(detailTitleCount === 1 || relationAccessibleName.length > 0,
-    'responsive material handling detail region has no accessible identity', result);
-  check(!sectionTitles.some((section) => section.title === '关系明细' && section.region !== 'relation'),
-    'ordinary material facts are categorized as relation details', result);
-  check(missingDetailHeaders.length === 0, 'material handling detail order is incomplete', result);
-  check(detailHeaderOrder.every((position, index) => position >= 0 && (index === 0 || position > detailHeaderOrder[index - 1])),
-    'material handling detail columns are not in business-first order', result);
-
-  if (mode === 'readonly' && viewport.width > 390) {
-    const triggers = relation.locator('.o2m-readonly-value-trigger:visible');
-    const triggerTexts = await triggers.allInnerTexts();
-    const triggerIndex = triggerTexts.findIndex((value) => value.trim().length >= 12);
-    const trigger = triggerIndex >= 0 ? triggers.nth(triggerIndex) : triggers.first();
-    if (await trigger.count()) {
-      const fullValue = (await trigger.innerText()).trim();
-      await trigger.focus();
-      await trigger.click();
-      const overlay = page.locator('.o2m-readonly-full-value:visible').filter({ hasText: fullValue }).first();
-      await overlay.waitFor({ timeout: 10000 });
-      result.fullValueAccess = { method: 'keyboard-focus-and-click', value: fullValue, visible: true };
-      await page.keyboard.press('Escape');
-    } else {
-      result.fullValueAccess = { skipped: true, reason: 'no readonly textual detail value' };
-    }
-  }
-  if (mode === 'readonly' && viewport.width <= 390) {
-    const disclosure = relation.locator('[data-disclosure-trigger]:visible').first();
-    if (await disclosure.count()) {
-      const beforeState = await disclosure.getAttribute('aria-expanded');
-      await disclosure.tap();
-      const afterState = await disclosure.getAttribute('aria-expanded');
-      const additionalFacts = await relation.locator('.o2m-readonly-facts--additional:visible dt').allInnerTexts();
-      result.mobileAdditionalAccess = { beforeState, afterState, additionalFacts };
-      check(beforeState === 'false' && afterState === 'true' && additionalFacts.length > 0,
-        'mobile material detail supplementary facts are not reachable', result.mobileAdditionalAccess);
-      check(spec.detailHeaders.slice(6).every((label) => additionalFacts.includes(label)),
-        'mobile material detail auxiliary facts are incomplete', result.mobileAdditionalAccess);
-    } else {
-      result.mobileAdditionalAccess = { skipped: true, reason: 'no populated readonly detail row' };
-    }
+  if (mode === 'existing' && record.state !== 'draft') {
+    check(observedProfile === 'readonly' && nativeContract.effectiveRecordCapabilities?.write === false,
+      `non-draft material sample is not readonly: ${entryKey}`, { record, nativeContract });
   }
 
-  await page.evaluate(() => window.scrollTo(0, 0));
+  const heading = (await form.locator('h1:visible').first().innerText()).trim();
+  check(heading.includes(spec.identityToken), 'material handling page identity is inconsistent',
+    { entryKey, heading, expected: spec.identityToken });
+  const tabs = (await form.locator('[data-section-tab]:visible').allInnerTexts()).map((value) => value.trim());
+  check(JSON.stringify(tabs) === JSON.stringify(spec.tabs),
+    `material handling native tabs drifted: ${entryKey}`, tabs);
+
+  for (const fieldName of spec.facts) {
+    if (mode === 'existing') continue;
+    await form.locator(`[data-field-name="${fieldName}"]:visible`).first().waitFor({ timeout: 15000 });
+  }
+  if (entryKey !== 'inbound') {
+    const typeText = (await form.locator('[data-field-name="outbound_type"]:visible').first().innerText()).trim();
+    const expectedType = entryKey === 'return' ? '退库' : '领用出库';
+    check(typeText.includes(expectedType), 'material action category/default identity drifted',
+      { entryKey, typeText, expectedType });
+  }
+
+  const top = await resetActualScrollTop(page, form);
   const suffix = `${entryKey}-${mode}-${viewport.width}x${viewport.height}-${theme}`;
-  await page.screenshot({ path: path.join(outputDir, `material-handling-${suffix}-top.png`) });
-  await relation.screenshot({ path: path.join(outputDir, `material-handling-${suffix}-detail.png`) });
-  if (await postRelation.count()) await postRelation.scrollIntoViewIfNeeded();
-  else await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-  await page.screenshot({ path: path.join(outputDir, `material-handling-${suffix}-bottom.png`) });
+  await page.screenshot({
+    path: path.join(outputDir, `uc2-material-${suffix}-actual-top.png`),
+    fullPage: false,
+    animations: 'disabled',
+  });
+
+  await selectNativeMaterialTab(form, spec.detailTitle);
+  const relation = form.locator('[data-field-name="line_ids"]:visible').first();
+  await relation.waitFor({ timeout: 15000 });
+  const detailOperations = {
+    addButtons: await relation.getByRole('button', { name: /添加|新增/ }).count(),
+    readonly: await relation.getAttribute('data-field-state'),
+  };
+  await relation.scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: path.join(outputDir, `uc2-material-${suffix}-detail.png`),
+    fullPage: false,
+    animations: 'disabled',
+  });
+
+  const draftRetention = await draftNoteRetention(form, spec, entryKey, mode);
+  await selectNativeMaterialTab(form, '来源追溯');
+  const visibleSourceFields = await form.locator(
+    spec.sourceFields.map((name) => `[data-field-name="${name}"]:visible`).join(', '),
+  ).count();
+  await page.screenshot({
+    path: path.join(outputDir, `uc2-material-${suffix}-source.png`),
+    fullPage: false,
+    animations: 'disabled',
+  });
+
+  const navigation = form.locator('[data-form-section-navigation]:visible').first();
+  const detailLink = navigation.getByRole('button', { name: spec.detailTitle, exact: true });
+  await detailLink.waitFor({ timeout: 15000 });
+  const targetSelector = await detailLink.getAttribute('data-section-target');
+  const beforeSelectedTab = await selectedNativeMaterialTab(form);
+  const targetVisibleBefore = targetSelector
+    ? await form.locator(`${targetSelector}:visible`).count()
+    : 0;
+  await detailLink.click();
+  await form.locator(`[data-section-tab="${spec.detailTitle}"].native-tab--active:visible`).first()
+    .waitFor({ timeout: 15000 });
+  const targetVisibleAfter = targetSelector
+    ? await form.locator(`${targetSelector}:visible`).count()
+    : 0;
+  const afterSelectedTab = await selectedNativeMaterialTab(form);
+  const activeNavigation = await detailLink.getAttribute('aria-current');
+  check(beforeSelectedTab === '来源追溯'
+    && targetVisibleBefore === 0
+    && afterSelectedTab === spec.detailTitle
+    && targetVisibleAfter === 1
+    && activeNavigation === 'location',
+  'top navigation did not reveal, locate, and highlight the notebook-owned target', {
+    entryKey, beforeSelectedTab, targetVisibleBefore, afterSelectedTab, targetVisibleAfter, activeNavigation,
+  });
+
+  const deadNavigationLinks = await navigation.locator('[data-section-link]').evaluateAll((links, root) => {
+    const formRoot = root;
+    return links.map((link) => {
+      const selector = link.getAttribute('data-section-target') || '';
+      const key = link.getAttribute('data-section-link') || '';
+      const target = selector ? formRoot.querySelector(selector) : null;
+      const reveal = [...formRoot.querySelectorAll('[data-section-reveal-targets]')].some((control) => {
+        try {
+          return JSON.parse(control.getAttribute('data-section-reveal-targets') || '[]').includes(key);
+        } catch {
+          return false;
+        }
+      });
+      return { key, reachable: Boolean(target || reveal) };
+    }).filter((item) => !item.reachable);
+  }, await form.elementHandle());
+  check(deadNavigationLinks.length === 0,
+    'hidden or absent material targets leaked into section navigation', deadNavigationLinks);
+
+  return {
+    entryKey,
+    mode,
+    viewport,
+    theme,
+    route: new URL(page.url()).pathname,
+    record: mode === 'create' ? null : record,
+    heading,
+    tabs,
+    nativeContract,
+    top,
+    detailOperations,
+    visibleSourceFields,
+    draftRetention,
+    navigationBehavior: {
+      targetSelector,
+      beforeSelectedTab,
+      targetVisibleBefore,
+      afterSelectedTab,
+      targetVisibleAfter,
+      activeNavigation,
+    },
+  };
+}
+
+async function inspectNonMaterialNavigationCounterexample() {
+  const entry = target.shared_entries.project_profile;
+  const context = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: 'zh-CN' });
+  const page = await context.newPage();
+  observe(page, report.primary);
+  await login(page, entry.user.login);
+  await page.goto(
+    `${frontendUrl}/f/${entry.model}/${entry.record.id}?menu_id=${entry.menu.id}&action_id=${entry.action.id}`,
+    { waitUntil: 'domcontentloaded', timeout: 45000 },
+  );
+  const form = page.locator('[data-product-page-mode="form"]:visible').first();
+  await form.locator('[data-contract-form-driver]:visible').first().waitFor({ timeout: 45000 });
+  const links = form.locator('[data-form-section-navigation]:visible [data-section-link]');
+  check(await links.count() > 0, 'non-material counterexample has no native section navigation');
+  const link = links.last();
+  const selector = await link.getAttribute('data-section-target');
+  await link.click();
+  check(Boolean(selector) && await form.locator(`${selector}:visible`).count() === 1,
+    'non-material navigation target is not visible after activation', { selector });
+  check(await link.getAttribute('aria-current') === 'location',
+    'non-material navigation highlight did not follow the selected content', { selector });
+  await page.screenshot({
+    path: path.join(outputDir, 'uc2-non-material-project-navigation-1440x960.png'),
+    fullPage: false,
+    animations: 'disabled',
+  });
+  const result = { entry: 'project_profile', selector, active: true };
+  await context.close();
   return result;
 }
 
@@ -709,19 +792,25 @@ async function inspectMaterialHandlingReview() {
         await login(page, target.user.login);
         if (entry.record) {
           report.primary.handlingReviews.push(
-            await inspectHandlingForm(page, entryKey, entry, spec, 'readonly', viewport, theme),
+            await inspectHandlingForm(page, entryKey, entry, spec, 'existing', viewport, theme),
           );
         }
         report.primary.handlingReviews.push(
           await inspectHandlingForm(page, entryKey, entry, spec, 'create', viewport, theme),
         );
+        if (entry.editable_record && viewport.width > 390) {
+          report.primary.handlingReviews.push(
+            await inspectHandlingForm(page, entryKey, entry, spec, 'edit', viewport, theme),
+          );
+        }
         await context.close();
       }
     }
   }
+  report.primary.nonMaterialNavigationCounterexample = await inspectNonMaterialNavigationCounterexample();
   check(report.primary.errors.length === 0, 'material handling review has browser errors', report.primary.errors);
   check(report.primary.mutations.length === 0, 'material handling review mutated business data', report.primary.mutations);
-  report.security.result = { skipped: true, reason: 'material_handling_readonly_and_uncommitted_create_review' };
+  report.security.result = { skipped: true, reason: 'uc2_readonly_existing_and_uncommitted_create_edit_review' };
 }
 
 async function inspectSharedRendererRegression() {
