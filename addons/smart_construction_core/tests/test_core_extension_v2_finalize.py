@@ -6,6 +6,7 @@ from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
 from odoo.addons.smart_construction_core import core_extension
+from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
 from odoo.addons.smart_core.utils import contract_governance
 
 
@@ -24,8 +25,8 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         return constraints
 
     def test_project_maintenance_form_uses_authoritative_business_sections(self):
-        # Exercise the same default project.form selection used by actions that
-        # do not pin a form view (project edit and cockpit fallback), rather
+        # Exercise the default project.form selection used by native consumers
+        # that do not pin an action-specific form, rather
         # than inspecting only this module's intermediate inheritance node.
         arch = self.env["project.project"].get_view(view_type="form")["arch"]
         if isinstance(arch, (str, bytes)):
@@ -323,6 +324,112 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         self.assertTrue(default_arch.xpath("//field[@name='wbs_ids']"))
         self.assertTrue(default_arch.xpath("//field[@name='contract_ids']"))
         self.assertTrue(default_arch.xpath("//field[@name='document_ids']"))
+
+    def test_project_dashboard_keeps_aggregates_under_readonly_form_capabilities(self):
+        action = self.env.ref("smart_construction_core.action_project_dashboard")
+        dashboard_kanban = self.env.ref(
+            "smart_construction_core.view_project_project_kanban_dashboard"
+        )
+        dashboard_form = self.env.ref(
+            "smart_construction_core.view_project_dashboard_readonly_form"
+        )
+        bindings = action.view_ids.sorted("sequence")
+
+        self.assertEqual(
+            [(row.view_mode, row.view_id.id or False) for row in bindings],
+            [
+                ("kanban", dashboard_kanban.id),
+                ("tree", False),
+                ("form", dashboard_form.id),
+            ],
+        )
+
+        arch = dashboard_form._get_combined_arch()
+        if isinstance(arch, (str, bytes)):
+            arch = etree.fromstring(arch)
+        self.assertEqual(arch.get("create"), "0")
+        self.assertEqual(arch.get("edit"), "0")
+        self.assertEqual(arch.get("delete"), "0")
+        for field_name in ("tender_bid_ids", "contract_ids", "document_ids"):
+            fields = arch.xpath(
+                "//field[@name=$name and not(ancestor::field)]",
+                name=field_name,
+            )
+            self.assertTrue(fields, field_name)
+
+        project = self.env["project.project"].search([], limit=1)
+        self.assertTrue(project, "the dashboard contract check requires an existing project")
+        menu = self.env.ref("smart_construction_core.menu_sc_project_kanban")
+        handler = UiContractV2Handler(
+            self.env,
+            su_env=self.env["ir.model"].sudo().env,
+        )
+        params = {
+            "model": "project.project",
+            "view_type": "form",
+            "record_id": project.id,
+            "action_id": action.id,
+            "menu_id": menu.id,
+            "render_profile": "edit",
+            "client_type": "web_pc",
+        }
+        source, _meta = handler._dispatch_native_form_source(
+            self.env,
+            self.env["ir.model"].sudo().env,
+            {**params, "subject": "action"},
+        )
+        self.assertEqual(source["view_id"], dashboard_form.id, source.get("view_ids_by_type"))
+        self.assertEqual(
+            {
+                key: source["views"]["form"]["capabilities"][key]
+                for key in ("can_create", "can_write", "can_delete", "can_duplicate")
+            },
+            {
+                "can_create": False,
+                "can_write": False,
+                "can_delete": False,
+                "can_duplicate": False,
+            },
+        )
+        result = handler.handle(params)
+        envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+        self.assertTrue(envelope.get("ok", True), envelope)
+        contract = envelope["data"]
+        global_status = contract["statusContract"]["globalStatus"]
+        self.assertEqual(global_status["effectiveRenderProfile"], "readonly", global_status)
+        self.assertEqual(global_status["pageAuth"], "read", global_status)
+
+        projected_subviews = set()
+
+        def collect_projected_subviews(value):
+            if isinstance(value, list):
+                for item in value:
+                    collect_projected_subviews(item)
+                return
+            if not isinstance(value, dict):
+                return
+            field_name = value.get("fieldCode")
+            for source_key in ("fieldInfo", "fieldDescriptor", "componentConfig"):
+                field_info = value.get(source_key) or {}
+                if field_name and (field_info.get("subview") or {}).get("tree"):
+                    projected_subviews.add(field_name)
+            for item in value.values():
+                collect_projected_subviews(item)
+
+        collect_projected_subviews(contract["layoutContract"]["containerTree"])
+        self.assertTrue(
+            {"tender_bid_ids", "contract_ids", "document_ids"}
+            <= projected_subviews,
+            projected_subviews,
+        )
+        self.assertNotIn(
+            "form.save",
+            {
+                row.get("actionId")
+                for row in contract["actionContract"]["actionRuleList"]
+                if row.get("visible", True)
+            },
+        )
 
     def test_project_information_form_preserves_field_and_child_acl_boundaries(self):
         dedicated = self.env.ref(

@@ -100,6 +100,7 @@ Generated from repository source files. This report is informational during the 
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
+| 1128 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1121 | Python source | `scripts/release/production_backup_restore.py` |
 | 1102 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1094 | JavaScript source | `scripts/verify/list_search_group_usability_audit.js` |
@@ -109,7 +110,6 @@ Generated from repository source files. This report is informational during the 
 | 1060 | Python source | `addons/smart_construction_core/models/core/payment_ledger.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
 | 1040 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
-| 1021 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1016 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
 | 990 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
@@ -242,7 +242,7 @@ Generated from repository source files. This report is informational during the 
 | 1157 | warning | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1145 | warning | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | warning | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
-| 1121 | warning | Python source | `scripts/release/production_backup_restore.py` |
+| 1128 | warning | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 
 ## Interpretation
 
