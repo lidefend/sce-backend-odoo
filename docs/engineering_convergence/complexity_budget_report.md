@@ -15,7 +15,7 @@ Generated from repository source files. This report is informational during the 
 | 4819 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 4811 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4694 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
-| 4312 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
+| 4318 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4267 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 3916 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3769 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
@@ -100,6 +100,7 @@ Generated from repository source files. This report is informational during the 
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
+| 1128 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1121 | Python source | `scripts/release/production_backup_restore.py` |
 | 1102 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1094 | JavaScript source | `scripts/verify/list_search_group_usability_audit.js` |
@@ -109,7 +110,6 @@ Generated from repository source files. This report is informational during the 
 | 1060 | Python source | `addons/smart_construction_core/models/core/payment_ledger.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
 | 1040 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
-| 1021 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1016 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
 | 990 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
@@ -166,7 +166,7 @@ Generated from repository source files. This report is informational during the 
 | 4819 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 4811 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4694 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
-| 4312 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
+| 4318 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4267 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 3916 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3769 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
@@ -242,7 +242,7 @@ Generated from repository source files. This report is informational during the 
 | 1157 | warning | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1145 | warning | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | warning | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
-| 1121 | warning | Python source | `scripts/release/production_backup_restore.py` |
+| 1128 | warning | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 
 ## Interpretation
 
