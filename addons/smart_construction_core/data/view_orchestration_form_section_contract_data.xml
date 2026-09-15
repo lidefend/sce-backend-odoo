@@ -3,7 +3,7 @@
     <data noupdate="0">
         <!-- Retired order owners: exact P1 declarations apply on install and upgrade. -->
         <function model="ui.business.config.contract" name="write">
-            <value eval="[ref('smart_construction_core.business_config_contract_payment_request_form_structure_generated'), ref('smart_construction_core.business_config_contract_tender_bid_form_structure_generated'), ref('smart_construction_core.business_config_contract_construction_contract_expense_form_structure_generated')]"/>
+            <value eval="[ref('smart_construction_core.business_config_contract_payment_request_form_structure_generated'), ref('smart_construction_core.business_config_contract_tender_bid_form_structure_generated'), ref('smart_construction_core.business_config_contract_construction_contract_expense_form_structure_generated'), ref('smart_construction_core.business_config_contract_sc_settlement_order_form_structure_generated')]"/>
             <value eval="{'active': False}"/>
         </function>
         <record id="business_config_contract_project_project_form_structure_v1" model="ui.business.config.contract">

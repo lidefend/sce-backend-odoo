@@ -186,3 +186,105 @@ class TestContractHandlingPagePolicy(TransactionCase):
             self.assertTrue(record.active)
             spec = record.contract_json["view_orchestration"]["views"]["form"]
             self.assertEqual(spec, {"composition_mode": "native_semantic_surface"})
+
+
+@tagged("settlement_native_structure", "post_install", "-at_install")
+class TestSettlementNativeStructure(TransactionCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        for filename in ("views/core/settlement_views.xml", "data/settlement_order_form_productization_contract.xml",
+                         "data/view_orchestration_form_section_contract_data.xml"):
+            convert_file(cls.env, "smart_construction_core", filename, {}, mode="update", noupdate=False)
+        cls.env["sc.business.category"]._sync_seed_form_policies()
+
+    def test_actions_keep_direction_domain_category_and_shared_form(self):
+        for direction, flow in (("income", "in"), ("expense", "out")):
+            action = self.env.ref("smart_construction_core.action_sc_settlement_order_" + direction)
+            context = safe_eval(action.context or "{}", {"context": {}})
+            self.assertEqual(context["default_settlement_type"], flow)
+            self.assertEqual(context["default_business_category_code"], "settlement." + direction)
+            self.assertIn(("business_category_id.code", "=", "settlement." + direction), safe_eval(action.domain))
+            self.assertIn(("contract_source_kind", "!=", "general_contract"), safe_eval(action.domain))
+            defaults = self.env["sc.settlement.order"].with_context(**context).default_get(["settlement_type"])
+            self.assertEqual(defaults["settlement_type"], flow)
+            self.assertIn((self.env.ref("smart_construction_core.view_sc_settlement_order_form").id, "form"), action.views)
+
+    def test_category_retains_field_policies_without_structure(self):
+        policies = get_business_category_form_policy_templates()
+        for code in ("settlement.income", "settlement.expense"):
+            policy = policies[code]
+            self.assertNotIn("sections", policy)
+            fields = {f["name"]: f for f in policy["fields"]}
+            self.assertEqual(fields["project_id"]["required_profiles"], ["create", "edit"])
+            self.assertEqual(fields["line_ids"]["required_profiles"], ["create", "edit"])
+            for name in ("settlement_type", "settlement_flow_label", "state"):
+                self.assertEqual(fields[name]["readonly_profiles"], ["create", "edit", "readonly"])
+            for name in ("amount_paid", "amount_payable", "invoice_amount", "legacy_fact_id"):
+                self.assertEqual(fields[name]["visible_profiles"], ["readonly"])
+            self.assertIn("attachment_ids", fields)
+
+    def test_native_contract_requires_explicit_empty_compatibility_and_keeps_controls(self):
+        handler = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env)
+        for direction in ("income", "expense"):
+            action = self.env.ref("smart_construction_core.action_sc_settlement_order_" + direction)
+            context = safe_eval(action.context or "{}", {"context": {}})
+            for profile in ("create", "readonly"):
+                params = {"op": "model", "model": "sc.settlement.order", "view_type": "form",
+                          "action_id": action.id, "context": context, "render_profile": profile}
+                if profile == "create":
+                    params["record_id"] = "new"
+                result = handler.handle(params)
+                contract = (result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result)["data"]
+                structure = contract["formStructureContract"]
+                self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
+                provenance = structure["sourceAuthority"]["governance_source"]
+                self.assertIn("compatibilityDependencies", provenance)
+                self.assertEqual(provenance["compatibilityDependencies"], [])
+                self.assertEqual(provenance["configuredSections"], [])
+                self.assertFalse(provenance["legacyFieldPolicyOverlay"])
+                self.assertFalse(provenance["formLayoutOverlay"])
+                nodes = list(TestContractHandlingPagePolicy._nodes(contract["layoutContract"]["containerTree"]))
+                widgets = [n for n in nodes if n.get("fieldCode") and n.get("widgetId")]
+                self.assertTrue({"line_ids", "amount_total", "settlement_amount", "attachment_ids", "settlement_type"}
+                                <= {n["fieldCode"] for n in widgets})
+                statuses = {s["widgetId"]: s for s in contract["statusContract"]["widgetStatus"]}
+                for widget in widgets:
+                    if widget["fieldCode"] in ("amount_total", "settlement_type", "business_category_id", "deduction_amount"):
+                        self.assertTrue(statuses[widget["widgetId"]]["readonly"])
+                if profile == "readonly":
+                    self.assertEqual(contract["statusContract"]["globalStatus"]["pageAuth"], "read")
+                detail = next(n for n in nodes if n.get("containerId") == "sc_settlement_detail_amount")
+                self.assertEqual(detail["span"], 24)
+
+    def test_retirement_is_explicit_and_native_optins_are_action_scoped(self):
+        retired = self.env.ref("smart_construction_core.business_config_contract_sc_settlement_order_form_structure_generated")
+        self.assertFalse(retired.active)
+        for direction in ("income", "expense"):
+            action = self.env.ref("smart_construction_core.action_sc_settlement_order_" + direction)
+            native = self.env.ref("smart_construction_core.business_config_contract_settlement_" + direction + "_native_form")
+            self.assertEqual(native.action_id, action)
+            self.assertEqual(native.contract_json["view_orchestration"]["views"]["form"],
+                             {"composition_mode": "native_semantic_surface"})
+        # Other same-model entries retain their own compatibility ownership.
+        for xmlid in ("business_config_contract_daily_contract_settlement_form_v1",
+                      "business_config_contract_settlement_order_productized_form_v1"):
+            other = self.env.ref("smart_construction_core." + xmlid)
+            self.assertTrue(other.active)
+            self.assertTrue(other.contract_json["view_orchestration"]["views"]["form"]["sections"])
+
+    def test_shared_native_form_keeps_conditional_contract_columns_and_attachment_ownership(self):
+        from lxml import etree
+        view = self.env.ref("smart_construction_core.view_sc_settlement_order_form")
+        arch = etree.fromstring(view.arch_db.encode())
+        detail = arch.xpath(".//group[@name='sc_settlement_detail_amount']/field[@name='line_ids']")[0]
+        for nested in ("tree", "form/group"):
+            self.assertEqual(detail.find(nested + "/field[@name='contract_id']").get("invisible"),
+                             "parent.contract_source_kind == 'general_contract'")
+            self.assertEqual(detail.find(nested + "/field[@name='general_contract_id']").get("invisible"),
+                             "parent.contract_source_kind != 'general_contract'")
+        self.assertTrue(arch.xpath(".//group[@name='sc_settlement_handling']//field[@name='attachment_ids']"))
+        category = arch.xpath(".//group[@name='sc_settlement_business_object']/field[@name='business_category_id']")[0]
+        self.assertEqual(category.get("readonly"), "1")
+        for group in arch.xpath(".//group[@data-sc-collapsed-by-default='1']"):
+            self.assertEqual(group.get("data-sc-collapsible"), "1")

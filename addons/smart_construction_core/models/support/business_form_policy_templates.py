@@ -185,7 +185,7 @@ def _settlement_policy(title: str, counterparty_title: str) -> dict:
         "compliance_message",
         "compliance_contract_ok",
     )
-    return _policy(
+    policy = _policy(
         [
             _section("business_identity", "办理类型", ["business_category_id"], 5, visible_profiles=["create"]),
             _section(
@@ -233,6 +233,9 @@ def _settlement_policy(title: str, counterparty_title: str) -> dict:
         trace=trace + APPROVAL_FIELDS,
         ledger=ledger + ("amount_total", "deduction_amount"),
     )
+    # Shared native form owns structure; preserve all category field semantics.
+    policy.pop("sections")
+    return policy
 
 
 def _payment_request_policy(title: str, counterparty_title: str) -> dict:
