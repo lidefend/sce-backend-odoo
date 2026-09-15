@@ -760,7 +760,6 @@
         },
         "slots": {
           "type": "array",
-          "minItems": 1,
           "items": {
             "$ref": "#/$defs/formStructureSlot"
           }
@@ -776,6 +775,14 @@
         }
       },
       "allOf": [
+        {
+          "if": {"properties": {"layoutPolicy": {"const": "container_tree_authority"}}},
+          "then": {
+            "properties": {"slots": {"maxItems": 0}, "fieldRoles": {"maxProperties": 0}},
+            "not": {"required": ["columns"]}
+          },
+          "else": {"properties": {"slots": {"minItems": 1}}}
+        },
         {
           "if": {"properties": {"structureVersion": {"const": "1.1"}}},
           "then": {"required": ["presentationMode"]}
@@ -917,6 +924,10 @@
       "additionalProperties": false,
       "required": ["source"],
       "properties": {
+        "resolvedViewId": {"type": "integer", "minimum": 0},
+        "resolvedActionId": {"type": "integer", "minimum": 0},
+        "structureDiagnostics": {"type": "array", "items": {"type": "object"}},
+        "compatibilityDependencies": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
         "source": {"type": "string", "minLength": 1},
         "ownerLayer": {"type": "string", "minLength": 1},
         "businessConfigContracts": {

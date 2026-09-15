@@ -677,6 +677,7 @@ export function presentContractV2Form(
       viewType: snapshot.pageInfo.viewType,
       mode,
       presentationMode,
+      structureAuthority: structure?.layoutPolicy === 'container_tree_authority' ? 'containerTree' : 'compatibility',
       sourceContractSha256: snapshot.meta.lifecycle.integrity.contractSha256,
     },
     shell: {

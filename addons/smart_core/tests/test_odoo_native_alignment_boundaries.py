@@ -1211,6 +1211,22 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertEqual([node.get("string") for node in appended], ["联系字段", "扩展字段"])
         self.assertEqual([[child.get("name") for child in node.get("children", [])] for node in appended], [["phone"], ["email"]])
 
+    def test_native_field_policy_preserves_invisible_occurrence_and_modifier(self):
+        from copy import deepcopy
+        policy = self.env["ui.form.field.policy"].sudo()
+        policy.create({"model": "res.partner", "field_name": "phone", "visible": True,
+                       "group_title": "Semantic enhancement", "sequence": 10})
+        for invisible in (True, [["is_company", "=", False]]):
+            node = {"type": "field", "name": "phone", "invisible": invisible,
+                    "attributes": {"invisible": invisible}, "modifiers": {"invisible": invisible}}
+            contract = {"layout": [{"type": "group", "children": [node]}],
+                        "field_modifiers": {"phone": {"invisible": invisible}}}
+            result = policy.apply_to_view_contract(deepcopy(contract), model_name="res.partner", view_type="form",
+                allow_layout_append=False, preserve_native_restrictions=True)
+            self.assertEqual(result["layout"][0]["children"][0]["invisible"], invisible)
+            self.assertEqual(result["layout"][0]["children"][0]["modifiers"], node["modifiers"])
+            self.assertEqual(result["field_modifiers"], contract["field_modifiers"])
+
     def test_form_field_policy_does_not_append_under_semantic_structure_authority(self):
         Policy = self.env["ui.form.field.policy"].sudo()
         Policy.create({

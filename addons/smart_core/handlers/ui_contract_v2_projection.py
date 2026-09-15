@@ -760,7 +760,7 @@ def apply_business_config_form_groups(
             return ""
         return str(node.get("name") or node.get("field") or node.get("fieldCode") or "").strip()
 
-    def apply_product_field_roles(nodes: Any) -> None:
+    def apply_product_field_roles(nodes: Any, parent_id: str = "native") -> None:
         for node in nodes if isinstance(nodes, list) else []:
             if not isinstance(node, dict):
                 continue
@@ -776,7 +776,10 @@ def apply_business_config_form_groups(
                 if isinstance(contract_field_roles.get(name), dict)
                 else {}
             )
-            if role and authority_role:
+            if role and structure.get("layoutPolicy") == "container_tree_authority":
+                # Membership is derived from the existing tree occurrence.
+                node["formStructureRole"] = {"role": role, "slot": parent_id, "group": parent_id}
+            elif role and authority_role:
                 # Slot/group remain the normalized structure authority, while
                 # the governed semantic anchor owns the canonical product
                 # role. Persist their merge in both carriers so the final wire
@@ -786,7 +789,7 @@ def apply_business_config_form_groups(
                 if existing_role:
                     node["formStructureRole"] = deepcopy(merged_role)
             for key in (*_CONTAINER_CHILD_KEYS, "widgetList"):
-                apply_product_field_roles(node.get(key))
+                apply_product_field_roles(node.get(key), str(node.get("containerId") or parent_id))
 
     apply_product_field_roles(container_tree)
     # Product intent may annotate native nodes, but it must not use field lists
