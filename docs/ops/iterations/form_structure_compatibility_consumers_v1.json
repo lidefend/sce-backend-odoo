@@ -6,7 +6,7 @@
     "operation": "model",
     "renderProfile": "create"
   },
-  "count": 45,
+  "count": 44,
   "fullRescan": false,
   "sourceInventory": "artifacts/form-structure-unification/customer-browser-final/compatibility-consumers.json",
   "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
@@ -1451,237 +1451,6 @@
         "hiddenFieldNames": [],
         "groupColumns": {},
         "groupVisibility": {}
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_material_outbound",
-      "label": "材料出库",
-      "model": "sc.material.outbound",
-      "actionId": 547,
-      "menuId": 495,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.material.outbound",
-        "viewId": 1431
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 259,
-            "name": "material_outbound_productized_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1431,
-        "resolvedActionId": 547,
-        "structureDiagnostics": [
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.material.outbound",
-              "action_id": 547,
-              "view_id": 1431
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "state",
-              "validation_status",
-              "can_review",
-              "name",
-              "outbound_type",
-              "business_category_id",
-              "outbound_date",
-              "project_id",
-              "company_id",
-              "warehouse_id",
-              "line_ids",
-              "currency_id",
-              "note",
-              "attachment_ids",
-              "reject_reason",
-              "legacy_fact_model",
-              "legacy_fact_id",
-              "legacy_fact_type",
-              "source_created_by",
-              "source_created_at",
-              "active"
-            ],
-            "configuration": {
-              "id": 259,
-              "name": "material_outbound_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 91,
-                "name": "sc_material_outbound_form_structure_generated_v1"
-              }
-            ]
-          }
-        ],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "state",
-          "sc_has_system_default",
-          "sc_system_default_fields",
-          "sc_system_default_note",
-          "name",
-          "project_id",
-          "outbound_date",
-          "purpose",
-          "warehouse_id",
-          "source_location_id",
-          "receiver_id",
-          "receiver_user_id",
-          "keeper_id",
-          "stock_picking_id",
-          "line_ids",
-          "note",
-          "validation_status",
-          "can_review",
-          "outbound_type",
-          "business_category_id",
-          "company_id",
-          "currency_id",
-          "attachment_ids",
-          "reject_reason",
-          "legacy_fact_model",
-          "legacy_fact_id",
-          "legacy_fact_type",
-          "source_created_by",
-          "source_created_at",
-          "active"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:出库主信息",
-            "key": "",
-            "title": "出库主信息",
-            "fields": [
-              "state",
-              "validation_status",
-              "can_review",
-              "name",
-              "outbound_type",
-              "business_category_id",
-              "outbound_date"
-            ]
-          },
-          {
-            "identity": "title:项目与仓库",
-            "key": "",
-            "title": "项目与仓库",
-            "fields": [
-              "project_id",
-              "company_id",
-              "warehouse_id"
-            ]
-          },
-          {
-            "identity": "title:出库明细",
-            "key": "",
-            "title": "出库明细",
-            "fields": [
-              "line_ids",
-              "currency_id"
-            ]
-          },
-          {
-            "identity": "title:说明与附件",
-            "key": "",
-            "title": "说明与附件",
-            "fields": [
-              "note",
-              "attachment_ids",
-              "reject_reason"
-            ]
-          },
-          {
-            "identity": "title:来源追溯",
-            "key": "",
-            "title": "来源追溯",
-            "fields": [
-              "legacy_fact_model",
-              "legacy_fact_id",
-              "legacy_fact_type",
-              "source_created_by",
-              "source_created_at",
-              "active"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "出库主信息",
-          "项目与仓库",
-          "出库明细",
-          "说明与附件",
-          "来源追溯"
-        ],
-        "fieldGroups": {
-          "出库主信息": [
-            "state",
-            "validation_status",
-            "can_review",
-            "name",
-            "outbound_type",
-            "business_category_id",
-            "outbound_date"
-          ],
-          "项目与仓库": [
-            "project_id",
-            "company_id",
-            "warehouse_id"
-          ],
-          "出库明细": [
-            "line_ids",
-            "currency_id"
-          ],
-          "说明与附件": [
-            "note",
-            "attachment_ids",
-            "reject_reason"
-          ],
-          "来源追溯": [
-            "legacy_fact_model",
-            "legacy_fact_id",
-            "legacy_fact_type",
-            "source_created_by",
-            "source_created_at",
-            "active"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "出库主信息": 2,
-          "项目与仓库": 2,
-          "出库明细": 1,
-          "说明与附件": 1,
-          "来源追溯": 2
-        },
-        "groupVisibility": {},
-        "formColumns": 2
       },
       "compatibilityLogic": [
         "legacy structure slots",
@@ -11521,7 +11290,7 @@
     "migrationReduction": 3
   },
   "publishedCount": 46,
-  "localVerifiedCount": 45,
+  "localVerifiedCount": 44,
   "uc1PublishedAudit": {
     "auditedAt": "2026-09-16",
     "auditedReleaseHead": "28b7695dc9f1cebbbe9bd5d715e951c6dec8a4da",
@@ -11555,29 +11324,52 @@
   },
   "uc2LocalMigrationAudit": {
     "auditedAt": "2026-09-16",
-    "status": "local_migration_verified_product_review_pending",
-    "productCandidateHead": "e10da352a5d5b300b6d3071befe4ed3d807de3f9",
-    "productCandidateFingerprint": "5d3338828f19b3968ac9ef5cd7e4be00989fb99c9ed4cf709795f74f3837a185",
+    "status": "local_whole_batch_candidate_verified_product_review_pending",
+    "productCandidateHead": "36ddc22de8df5a453be8052c8ad0eeb234e23923",
+    "productCandidateFingerprint": "517584ecec9591f81f330c0ed271a2cf35b4544b6538776e019b815e88be259e",
     "iterationRecord": "docs/ops/iterations/uc2_material_native_migration_20260916.md",
     "reduction": {
       "before": 46,
-      "after": 45,
+      "after": 44,
       "retiredActions": [
-        546
+        546,
+        547
       ],
       "retiredViews": [
-        1428
-      ]
+        1428,
+        1431
+      ],
+      "nonCountingValidatedAction": 548
     },
     "sourceVerification": {
       "layoutPolicy": "container_tree_authority",
       "formStructureAuthority": "native_authority",
-      "resolvedActionId": 546,
-      "resolvedViewId": 1428,
-      "compatibilityDependenciesEmpty": true
+      "compatibilityDependenciesEmpty": true,
+      "entries": [
+        {
+          "key": "inbound",
+          "actionId": 546,
+          "menuId": 494,
+          "viewId": 1428
+        },
+        {
+          "key": "outbound",
+          "actionId": 547,
+          "menuId": 495,
+          "viewId": 1431
+        },
+        {
+          "key": "return",
+          "actionId": 548,
+          "menuId": 496,
+          "viewId": 1431
+        }
+      ],
+      "formalPrimaryMenuCountUnchanged": 89,
+      "returnAuthority": "contextual_menu_authority_filtered_by_existing_odoo_visibility"
     },
     "browserEvidence": {
-      "status": "local_business_acceptance_passed_product_review_pending",
+      "status": "whole_batch_self_validation_passed_product_review_pending",
       "viewports": [
         "1440x960",
         "390x844"
@@ -11586,59 +11378,68 @@
         "readonly_existing_record",
         "create_zero_save"
       ],
-      "sample": "S80-MIN-001",
-      "sourceFact": "S80-MA-001",
+      "samples": {
+        "inbound": "S80-MIN-001 / received",
+        "outbound": "S80-MOUT-001 / issued",
+        "return": "no governed existing record"
+      },
+      "legalDraftSamples": {
+        "inbound": false,
+        "outbound": false,
+        "return": false
+      },
       "mutationRequests": 0,
       "businessFingerprintsUnchanged": true,
-      "evidenceRoot": "tmp/uc2/material-inbound-sample-e10da352",
-      "candidateCarry": {
-        "from": "e10da352a5d5b300b6d3071befe4ed3d807de3f9",
-        "through": "76741309dba5e4abf176d513b8d63d6fd92142ff",
-        "changedPaths": [
-          "docs/ops/iterations/form_structure_compatibility_consumers_v1.json",
-          "docs/ops/iterations/uc2_material_native_migration_20260916.md"
-        ],
-        "productOrRuntimeInputsChanged": false
+      "evidenceRoots": {
+        "inboundDesktop": "tmp/uc2/material-batch-69b9606b/browser-candidate",
+        "outboundDesktop": "tmp/uc2/material-batch-7ed5c258/browser-desktop-out-return",
+        "returnDesktop": "tmp/uc2/material-batch-c1b5369a/browser-desktop-return",
+        "mobileBatch": "tmp/uc2/material-batch-36ddc22d/browser-mobile",
+        "nonMaterialCounterexample": "tmp/uc2/material-batch-36ddc22d/browser-nonmaterial-counterexample"
       },
-      "captureSupplement": {
-        "candidateHead": "21322956c21f08b92ddf3f2a62f24b457779b006",
-        "candidateFingerprint": "cec4efebbdf46a8a89d714a6587e608fdc74cd31f26f7cf682e6985396ce1e25",
-        "evidenceRoot": "tmp/uc2/material-inbound-capture-21322956",
-        "summary": "tmp/uc2/material-inbound-capture-21322956/capture-summary.json",
-        "captureComplete": true,
-        "fullViewportScreenshots": 12,
-        "mutationRequests": 0,
-        "businessFingerprintsUnchanged": true,
-        "actualScrollOwner": ".router-host"
+      "candidateCarry": {
+        "current": "36ddc22de8df5a453be8052c8ad0eeb234e23923",
+        "sources": [
+          "69b9606bd2d5bf34aea80ac62076623c09f9f4cb",
+          "7ed5c25825e1906fbb2698606707d435df317d19",
+          "c1b5369a81f1ef801a053fdfb9009fc64d1ad844"
+        ],
+        "impact": "completed desktop entry results carried only where later changes did not touch that entry product contract or runtime inputs; mobile and non-material counterexample ran at current candidate"
       },
       "navigationReview": {
-        "status": "product_review_pending",
-        "topEntry": "入库明细",
+        "status": "self_validation_passed_product_review_pending",
         "bodyTabs": [
-          "入库明细",
+          "材料明细/入库明细",
           "说明与附件",
           "来源追溯"
         ],
-        "observedFromBodyTab": "来源追溯",
-        "topTargetVisible": false,
-        "topClickActivatedBodyTab": false,
-        "topClickChangedScrollPosition": false,
-        "conclusion": "top section navigation does not activate a hidden notebook page; validate product intent before any renderer change"
+        "hiddenTargetVisibleBefore": 0,
+        "targetVisibleAfterTopNavigation": 1,
+        "activeNavigation": "location",
+        "draftRetention": "create notes retained across tab changes without save"
       }
     }
   },
   "runtimeEvidenceRoot": "artifacts/form-structure-unification/ub-tender-hierarchy-identities",
   "nextBatch": {
     "name": "U-C2",
-    "status": "pending_inbound_product_review",
-    "priorityActions": [
-      547
-    ],
+    "status": "whole_batch_product_review_pending",
+    "priorityActions": [],
     "groups": [
+      {
+        "viewId": 1428,
+        "actions": [
+          546
+        ],
+        "sourceCategories": [
+          "material.inbound"
+        ]
+      },
       {
         "viewId": 1431,
         "actions": [
-          547
+          547,
+          548
         ],
         "sourceCategories": [
           "material.outbound",
@@ -11646,8 +11447,8 @@
         ]
       }
     ],
-    "scopeNote": "material.return shares the sc.material.outbound native form; supplier return uses a separate native model and is outside this 45-entry ledger",
-    "promotionCondition": "start action 547 only after inbound product browser review accepts the supplemented screenshots and two-level navigation behavior"
+    "scopeNote": "supplier return remains outside U-C2; action 548 shares view 1431 and is validated without a second ledger reduction",
+    "promotionCondition": "after one consolidated product browser review closes batch findings, run freeze preparation, independent review, one exact-head Quick, external evidence archive verification, and remote delivery"
   },
   "retirementCondition": "Only after every formal consumer of a compatibility regrouping path is zero and other roles/companies/states are covered, remove that regrouping logic and its test exemptions."
 }
