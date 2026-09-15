@@ -176,6 +176,7 @@ function inboundNativeContract(contract) {
   const governance = structure?.sourceAuthority?.governance_source || {};
   const titles = [];
   const fieldNames = [];
+  const buttonNames = [];
   const walk = (value) => {
     if (Array.isArray(value)) return value.forEach(walk);
     if (!value || typeof value !== 'object') return;
@@ -184,6 +185,7 @@ function inboundNativeContract(contract) {
       if (title) titles.push(title);
     }
     if (String(value.type || '') === 'field' && String(value.name || '')) fieldNames.push(String(value.name));
+    if (String(value.type || '') === 'button' && String(value.name || '')) buttonNames.push(String(value.name));
     Object.values(value).forEach(walk);
   };
   walk(findKey(contract, 'containerTree') || []);
@@ -201,6 +203,7 @@ function inboundNativeContract(contract) {
     },
     titles,
     fieldNames: [...new Set(fieldNames)],
+    buttonNames: [...new Set(buttonNames)],
   };
 }
 
@@ -222,6 +225,8 @@ function requireInboundNativeContract(contract, actionId, profile) {
   for (const fieldName of ['stock_picking_id', 'source_transfer_outbound_id', 'legacy_fact_model', 'source_created_by', 'source_created_at']) {
     check(identity.fieldNames.includes(fieldName), `material inbound source field is missing: ${fieldName}`, identity);
   }
+  check(identity.buttonNames.includes('action_load_acceptance_lines'),
+    'material inbound load-acceptance operation is missing from the native contract', identity);
   return identity;
 }
 
@@ -335,20 +340,23 @@ async function inspectInboundSampleViewport(viewport) {
     '[data-field-name="source_created_at"]:visible',
   ].join(', ')).count();
   const createStatusFields = await createForm.locator('[data-field-name="state"]:visible').count();
+  const createBodyStatusFields = await createForm.locator('.sc-native-contract-tree [data-field-name="state"]:visible').count();
+  const createHeaderStatusbars = await createForm.locator('[data-professional-workflow-component="statusbar"]:visible').count();
   const createSaveActions = await createForm.locator('[data-action-ref="form.save"][data-action-enabled="true"]:visible').count();
   const loadAcceptanceActions = await createForm.getByRole('button', { name: '带入验收明细', exact: true }).count();
   const createResult = {
     url: page.url(), factTops, relationTop, noteInPost, attachmentsInPost, createStatusFields,
-    createSaveActions, loadAcceptanceActions, sourceFieldCount, tabs: createTabs, nativeContract: createNative,
+    createBodyStatusFields, createHeaderStatusbars, createSaveActions, loadAcceptanceActions,
+    sourceFieldCount, tabs: createTabs, nativeContract: createNative,
   };
   check(Object.values(factTops).every((top) => top < relationTop),
     'create key facts are not all before the detail collection', createResult);
   check(noteInPost === 1 && attachmentsInPost === 1,
     'create supplementary section does not own note and attachments', createResult);
-  check(createStatusFields === 0, 'header-owned status remains duplicated in the create body', createResult);
+  check(createBodyStatusFields === 0 && createHeaderStatusbars === 1,
+    'header-owned status remains duplicated in the create body', createResult);
   check(createSaveActions === 1 && createNative.effectiveRecordCapabilities?.create === true,
     'material create operation capability is unavailable', createResult);
-  check(loadAcceptanceActions === 1, 'material load-acceptance operation is unavailable', createResult);
   check(JSON.stringify(readonlyNative.authority) === JSON.stringify(createNative.authority),
     'readonly and create chapters do not share one native source authority', { readonlyNative, createNative });
   await page.evaluate(() => window.scrollTo(0, 0));
