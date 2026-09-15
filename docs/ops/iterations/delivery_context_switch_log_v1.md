@@ -9482,3 +9482,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - O2M removal remains the existing command `[2, id]` and is now labelled as child-record deletion; M2M command `[3, id]` is labelled as association removal. Native `delete="0"` disables removal, while an explicit P1 lifecycle button such as deactivate remains a separate action. No model-name, field-name or `active`-field inference was added.
 - Validation: L1 `make ci.local.iteration` passed 16 tests; focused detail-collection validation passed a 6-profile matrix with 11 counterexamples, 6 registry tests and 37 guard tests; native parser passed 33 tests. The governed payment form target selected and executed one test method with zero failures/errors; the other two Odoo statistics entries were setup/teardown timing rows, not additional test executions.
 - Failure handling: the first upgrade was blocked before mutation because the required upgrade declaration was absent; the declared retry used the same governed `local.dev` profile. The first XML load rejected a prohibited `string` XPath selector and rolled back; the structural selector replacement then upgraded successfully. The first payment assertion counted a nested detail column as a parent occurrence; the test scope was corrected without changing product behavior. Quick, browser matrix, publication and database fixture work remain not run.
+
+## 2026-09-15 — 项目看板聚合明细操作边界
+
+- 分支 `codex/batch2a-worktree-controller` 复用既有干净工作树；起始 HEAD `dbf1e171281bd920c39099be7085718c892b10f4`，将在唯一责任提交后通过受管 `workspace.branch.sync-main` 对齐 `main@0eb4776391a31779898d4d17f0317e132b6c4f7a`。`b55753b7…` 仅为 `HOLD_NOT_FOR_PUBLICATION` 运行对照，不进入本批差异。
+- Formal Product Layer P1；Layer Target 为 `smart_construction_core` 的 action 605 原生视图绑定。项目看板只承担汇总、只读概览与既有跳转，不再回落到包含投标、合同、工程资料可编辑集合的默认项目完整表单；默认项目表单、项目信息专用表单、业务对象专用入口、模型权限与删除协议均不改变。
+- 运行对照确认 menu 468/action 605 的旧最终页面实际承接 `tender_bid_ids`、`contract_ids`、`document_ids`，项目 2 有 2/4/4 条记录；桌面和移动仅执行页签浏览，mutation 为 0。投标金额另属只读决策材料，不进入本产品提交。
+- 迭代验证限定 action 视图绑定、只读属性、集合排除与既有跳转；模块升级后仅复核 action 605 桌面/移动和项目信息专用入口反例。Quick、全量浏览器矩阵、付款旅程、数据库业务写入及远端操作均不在本批执行。

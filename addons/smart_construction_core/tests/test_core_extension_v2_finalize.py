@@ -24,8 +24,8 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         return constraints
 
     def test_project_maintenance_form_uses_authoritative_business_sections(self):
-        # Exercise the same default project.form selection used by actions that
-        # do not pin a form view (project edit and cockpit fallback), rather
+        # Exercise the default project.form selection used by native consumers
+        # that do not pin an action-specific form, rather
         # than inspecting only this module's intermediate inheritance node.
         arch = self.env["project.project"].get_view(view_type="form")["arch"]
         if isinstance(arch, (str, bytes)):
@@ -323,6 +323,53 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         self.assertTrue(default_arch.xpath("//field[@name='wbs_ids']"))
         self.assertTrue(default_arch.xpath("//field[@name='contract_ids']"))
         self.assertTrue(default_arch.xpath("//field[@name='document_ids']"))
+
+    def test_project_dashboard_uses_readonly_overview_instead_of_editable_aggregates(self):
+        action = self.env.ref("smart_construction_core.action_project_dashboard")
+        dashboard_kanban = self.env.ref(
+            "smart_construction_core.view_project_project_kanban_dashboard"
+        )
+        overview = self.env.ref("smart_construction_core.view_project_overview_form")
+        bindings = action.view_ids.sorted("sequence")
+
+        self.assertEqual(
+            [(row.view_mode, row.view_id.id or False) for row in bindings],
+            [
+                ("kanban", dashboard_kanban.id),
+                ("tree", False),
+                ("form", overview.id),
+            ],
+        )
+
+        arch = overview._get_combined_arch()
+        if isinstance(arch, (str, bytes)):
+            arch = etree.fromstring(arch)
+        self.assertEqual(arch.get("create"), "0")
+        self.assertEqual(arch.get("edit"), "0")
+        self.assertEqual(arch.get("delete"), "0")
+        self.assertFalse(
+            set(arch.xpath("//field[not(ancestor::field)]/@name"))
+            & {"tender_bid_ids", "contract_ids", "document_ids"},
+            "the project dashboard must not become a second editor for independent business records",
+        )
+        action_button_names = set(arch.xpath("//button[@type='action']/@name"))
+        expected_action_ids = {
+            str(self.env.ref(xmlid).id)
+            for xmlid in (
+                "smart_construction_core.action_sc_project_manage",
+                "smart_construction_core.action_construction_contract_my",
+                "smart_construction_core.action_project_cost_ledger_my",
+                "smart_construction_core.action_payment_request_my",
+            )
+        }
+        self.assertTrue(
+            expected_action_ids <= action_button_names,
+            "the readonly dashboard overview must retain supported action navigation targets",
+        )
+        self.assertTrue(
+            arch.xpath("//button[@type='object' and @name='action_view_my_tasks']"),
+            "the readonly dashboard overview must retain its supported task navigation",
+        )
 
     def test_project_information_form_preserves_field_and_child_acl_boundaries(self):
         dedicated = self.env.ref(
