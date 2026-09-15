@@ -273,3 +273,61 @@ class TestTenderAwardFact(TransactionCase):
         self.assertFalse(status["disabled"], status)
         self.assertIn("award_confirmed_at", contract["dataContract"]["mainData"])
         self.assertFalse(contract["dataContract"]["mainData"]["award_confirmed_at"])
+
+        award_widget_ids = {}
+
+        def collect_award_widgets(value):
+            if isinstance(value, dict):
+                field_code = value.get("fieldCode")
+                widget_id = value.get("widgetId")
+                if field_code and widget_id and field_code.startswith("award_"):
+                    award_widget_ids.setdefault(field_code, []).append(widget_id)
+                for nested in value.values():
+                    collect_award_widgets(nested)
+            elif isinstance(value, list):
+                for nested in value:
+                    collect_award_widgets(nested)
+
+        collect_award_widgets(contract["layoutContract"]["containerTree"])
+        widget_statuses = {
+            row["widgetId"]: row
+            for row in contract["statusContract"]["widgetStatus"]
+        }
+        award_container_paths = []
+
+        def collect_award_container_paths(value, path=()):
+            if isinstance(value, dict):
+                container_id = value.get("containerId")
+                next_path = path + ((container_id,) if container_id else ())
+                if value.get("fieldCode") == "award_opening_id":
+                    award_container_paths.append(next_path)
+                for nested in value.values():
+                    collect_award_container_paths(nested, next_path)
+            elif isinstance(value, list):
+                for nested in value:
+                    collect_award_container_paths(nested, path)
+
+        collect_award_container_paths(contract["layoutContract"]["containerTree"])
+        container_statuses = {
+            row["containerId"]: row
+            for row in contract["statusContract"].get("containerStatus", [])
+        }
+        self.assertTrue(award_container_paths, contract["layoutContract"]["containerTree"])
+        for container_id in award_container_paths[0]:
+            status = container_statuses.get(container_id)
+            if status:
+                self.assertIsNot(status.get("visible"), False, status)
+        for field_name in (
+            "award_opening_id",
+            "award_source_kind",
+            "award_source_reference",
+            "award_source_attachment_id",
+            "award_tax_basis",
+        ):
+            statuses = [
+                widget_statuses[widget_id]
+                for widget_id in award_widget_ids.get(field_name, [])
+            ]
+            self.assertTrue(statuses, (field_name, award_widget_ids))
+            self.assertTrue(any(row.get("visible") is True for row in statuses), statuses)
+            self.assertTrue(any(row.get("readonly") is False for row in statuses), statuses)
