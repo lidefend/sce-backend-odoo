@@ -24,6 +24,8 @@ class TestLocalDevTenderAwardFixture(unittest.TestCase):
         ):
             self.assertIn(value, FIXTURE)
         self.assertIn('[[ "${COMPOSE_PROJECT_NAME:-}" == "sc-local-dev" ]]', FIXTURE_SH)
+        self.assertIn('P4_TENDER_AWARD_BATCH="${BATCH}"', FIXTURE_SH)
+        self.assertIn('P4_TENDER_AWARD_CONFIRM="${CONFIRM}"', FIXTURE_SH)
 
     def test_fixture_uses_required_1200_1000_900_facts_without_creating_master_data(self):
         self.assertIn('"bid_amount": 1200.0', FIXTURE)
@@ -46,6 +48,9 @@ class TestLocalDevTenderAwardFixture(unittest.TestCase):
         self.assertIn("action_mark_won", BROWSER)
         self.assertIn("award_confirmed_at", BROWSER)
         self.assertIn("contract was created unexpectedly", BROWSER)
+        browser_shell = (ROOT / "scripts/verify/local_dev_tender_award_browser.sh").read_text(encoding="utf-8")
+        self.assertIn('PRODUCT_CANDIDATE_SHA="${PRODUCT_SHA}"', browser_shell)
+        self.assertIn('P4_TOOL_CANDIDATE_SHA="${TOOL_SHA}"', browser_shell)
 
     def test_failure_retains_batch_and_success_cleans_it(self):
         self.assertIn("browser failed; batch retained for diagnosis", JOURNEY)
