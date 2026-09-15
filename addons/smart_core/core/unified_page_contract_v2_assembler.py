@@ -1587,7 +1587,7 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
         "widgetId": widget_id,
         "widgetType": widget_type,
         "fieldCode": field_name,
-        "label": _text(field.get("string") or field.get("label"), field_name) if field_name != "company_type" else "主体类型",
+        "label": _text(field.get("string") or field.get("label"), field_name),
         "span": 12 if layout_type == "table" else 6,
         "componentKey": component_key,
         "capabilities": capabilities,

@@ -290,6 +290,58 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(data["view_id"], 1503)
         self.assertEqual(data["view_ids_by_type"], {"form": 1503})
 
+    def test_native_create_keeps_all_view_fields_without_second_generic_governance(self):
+        from unittest.mock import patch
+        page_assembler = sys.modules[
+            "odoo.addons.smart_core.app_config_engine.services.assemblers.page_assembler"
+        ].PageAssembler
+        handler = self.module.UiContractV2Handler(env=object(), su_env=object())
+        handler._form_structure_governance = lambda *_a, **_k: {"form_structure_authority": "native_authority"}
+        handler._form_field_aliases = lambda *_a, **_k: {}
+        handler._inject_relation_entry_policies = lambda *_a, **_k: None
+        handler._inject_business_category_form_structure = lambda *_a, **_k: None
+        handler._sync_contract_original_contract_relation_to_v2_nodes = lambda *_a, **_k: None
+        layout = [{"type": "group", "name": "contacts", "children": [{"type": "field", "name": "child_ids"}]}]
+        for explicit_policy, wizard in ((False, False), (True, False), (False, True)):
+            with self.subTest(explicit_policy=explicit_policy, wizard=wizard):
+                button = {"type": "button", "name": "confirm", "buttonType": "object",
+                          "action": {"kind": "object", "visible_profiles": ["create", "edit", "readonly"]}}
+                source = {"record_id": "new", "model": "x.document", "view_type": "form",
+                          "head": {"interaction_mode": "wizard" if wizard else "form"},
+                          "fields": {"name": {}, "child_ids": {}, "restricted": {}},
+                          "views": {"form": {"layout": deepcopy(layout) + [{"type": "header", "children": [button]}]}},
+                          "field_policies": {"restricted": {"visible": False}}}
+                def inject_policy(_assembler, contract, **_kwargs):
+                    if explicit_policy:
+                        contract["business_form_policy"] = {
+                            "fields": [{"name": "child_ids", "readonly_profiles": ["readonly"]}],
+                            "help": "Retained business help",
+                        }
+                        contract["field_policies"]["child_ids"] = {"readonly_profiles": ["readonly"]}
+                with patch.object(page_assembler, "_inject_business_category_form_policy", inject_policy, create=True), patch.object(
+                    page_assembler, "_inject_relation_entry_contract", lambda *_a, **_k: None, create=True
+                ), patch.object(self.module, "apply_contract_governance") as generic:
+                    handler._inject_business_category_form_policy(
+                        source, params={"render_profile": "create"}, ui_params={},
+                        model="x.document", view_type="form",
+                    )
+                generic.assert_not_called()
+                self.assertEqual(source["views"]["form"]["layout"][:-1], layout)
+                if wizard:
+                    self.assertNotIn("invisible", button)
+                    self.assertIn("create", button["action"]["visible_profiles"])
+                else:
+                    self.assertTrue(button["invisible"]["value"])
+                    self.assertEqual(button["invisible"]["reason_code"], "CREATE_PROFILE_REQUIRES_RECORD")
+                    self.assertNotIn("create", button["action"]["visible_profiles"])
+                self.assertNotIn("field_groups", source)
+                self.assertEqual(source["field_policies"]["restricted"], {"visible": False})
+                if explicit_policy:
+                    self.assertEqual(source["business_form_policy"]["help"], "Retained business help")
+                    self.assertEqual(source["field_policies"]["child_ids"]["readonly_profiles"], ["readonly"])
+                else:
+                    self.assertNotIn("child_ids", source["field_policies"])
+
     def test_business_form_policy_groups_survive_generic_governance(self):
         page_module = sys.modules[
             "odoo.addons.smart_core.app_config_engine.services.assemblers.page_assembler"

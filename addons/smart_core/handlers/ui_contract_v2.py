@@ -34,7 +34,7 @@ from ..core.ui_base_contract_asset_repository import (
 )
 from ..core.request_params import parse_positive_int
 from ..utils.contract_governance import (
-    _apply_form_view_capabilities, apply_contract_governance,
+    _apply_form_view_capabilities, _mark_record_dependent_native_buttons_hidden_on_create, apply_contract_governance,
     resolve_contract_mode,
     resolve_contract_surface,
 )
@@ -1487,7 +1487,17 @@ class UiContractV2Handler(BaseIntentHandler):
                 return
             contract_mode = resolve_contract_mode(params)
             contract_surface = resolve_contract_surface(params, contract_mode)
-            governed = apply_contract_governance(
+            structure_governance = self._form_structure_governance(
+                source_contract, model=model, view_type=view_type,
+            )
+            native_structure = structure_governance.get("form_structure_authority") == "native_authority"
+            # The resolved native view already owns field placement and visibility.
+            # Generic governance derives core/advanced groups and create visibility,
+            # so running it here would silently introduce a second structure owner.
+            # Explicit category policies and relation capabilities are retained below.
+            if native_structure:
+                _mark_record_dependent_native_buttons_hidden_on_create(source_contract)
+            governed = None if native_structure else apply_contract_governance(
                 source_contract,
                 contract_mode,
                 contract_surface=contract_surface,
