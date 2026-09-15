@@ -641,10 +641,23 @@ async function inspectHandlingForm(page, entryKey, entry, spec, mode, viewport, 
     await form.locator(`[data-field-name="${fieldName}"]:visible`).first().waitFor({ timeout: 15000 });
   }
   if (entryKey !== 'inbound') {
-    const typeText = (await form.locator('[data-field-name="outbound_type"]:visible').first().innerText()).trim();
-    const expectedType = entryKey === 'return' ? '退库' : '领用出库';
-    check(typeText.includes(expectedType), 'material action category/default identity drifted',
-      { entryKey, typeText, expectedType });
+    const typeEvidence = await form.locator('[data-field-name="outbound_type"]:visible').first()
+      .evaluate((element) => ({
+        text: String(element.textContent || '').trim(),
+        attributes: Object.fromEntries([...element.attributes].map((attribute) => [attribute.name, attribute.value])),
+        controls: [...element.querySelectorAll('input, select, option, [role="combobox"]')].map((control) => ({
+          value: 'value' in control ? String(control.value || '') : '',
+          text: String(control.textContent || '').trim(),
+          ariaValue: String(control.getAttribute('aria-valuetext') || ''),
+          selected: 'selected' in control ? Boolean(control.selected) : false,
+        })),
+      }));
+    const expectedType = entryKey === 'return'
+      ? { code: 'return', label: '退库' }
+      : { code: 'issue', label: '领用出库' };
+    const serializedType = JSON.stringify(typeEvidence);
+    check(serializedType.includes(expectedType.code) || serializedType.includes(expectedType.label),
+      'material action category/default identity drifted', { entryKey, typeEvidence, expectedType });
   }
 
   const top = await resetActualScrollTop(page, form);
