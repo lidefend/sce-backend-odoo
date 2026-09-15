@@ -1066,12 +1066,17 @@ export function nativeNodeFieldDescriptor(
   const relation = String(fieldInfo.relation || fallback?.relation || '').trim();
   const relationField = String(fieldInfo.relation_field || fallback?.relation_field || '').trim();
   const widget = String(node.widget || fieldInfo.widget || (fallback as Record<string, unknown> | undefined)?.widget || '').trim();
+  const attributes = node.attributes && typeof node.attributes === 'object' && !Array.isArray(node.attributes)
+    ? node.attributes as Record<string, unknown>
+    : {};
   const selection = Array.isArray(fieldInfo.selection)
     ? fieldInfo.selection as FieldDescriptor['selection']
     : fallback?.selection;
-  const domain = fieldInfo.domain !== undefined
-    ? fieldInfo.domain
-    : (fallback as Record<string, unknown> | undefined)?.domain;
+  const domain = attributes.domain !== undefined
+    ? attributes.domain
+    : (fieldInfo.domain !== undefined
+      ? fieldInfo.domain
+      : (fallback as Record<string, unknown> | undefined)?.domain);
   const context = fieldInfo.context !== undefined
     ? fieldInfo.context
     : (fallback as Record<string, unknown> | undefined)?.context;

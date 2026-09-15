@@ -5,6 +5,29 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
 _TENDER_GUARANTEE_AUTHORITY_TOKEN = object()
+_TENDER_AWARD_AUTHORITY_TOKEN = object()
+
+_TENDER_AWARD_CONFIRMATION_OWNED_FIELDS = frozenset(
+    {
+        "award_amount",
+        "award_currency_id",
+        "award_confirmed_by_id",
+        "award_confirmed_at",
+    }
+)
+_TENDER_AWARD_SNAPSHOT_FIELDS = frozenset(
+    {
+        "award_opening_id",
+        "award_amount",
+        "award_currency_id",
+        "award_tax_basis",
+        "award_source_kind",
+        "award_source_reference",
+        "award_source_attachment_id",
+        "award_confirmed_by_id",
+        "award_confirmed_at",
+    }
+)
 
 
 class TenderBid(models.Model):
@@ -87,6 +110,86 @@ class TenderBid(models.Model):
     review_ids = fields.One2many("tender.doc.review", "bid_id", string="文件审查")
     opening_ids = fields.One2many("tender.opening", "bid_id", string="开标登记")
     guarantee_ids = fields.One2many("tender.guarantee", "bid_id", string="保证金")
+
+    award_opening_id = fields.Many2one(
+        "tender.opening",
+        string="本次采用开标记录",
+        copy=False,
+        tracking=True,
+    )
+    award_amount = fields.Monetary(
+        "正式中标金额",
+        currency_field="award_currency_id",
+        copy=False,
+        readonly=True,
+        tracking=True,
+    )
+    award_currency_id = fields.Many2one(
+        "res.currency",
+        string="中标币种",
+        copy=False,
+        readonly=True,
+    )
+    award_tax_basis = fields.Selection(
+        [
+            ("tax_included", "含税"),
+            ("tax_excluded", "未税"),
+            ("unknown", "未知"),
+        ],
+        string="中标金额税口径",
+        default="unknown",
+        copy=False,
+        tracking=True,
+        help="仅依据中标通知、最终报价等正式资料选择；资料未明确时保留“未知”。",
+    )
+    award_source_kind = fields.Selection(
+        [
+            ("award_notice", "中标通知"),
+            ("final_quote", "最终报价资料"),
+            ("other", "其他正式资料"),
+        ],
+        string="中标资料类型",
+        copy=False,
+        tracking=True,
+    )
+    award_source_reference = fields.Char(
+        "中标资料引用",
+        copy=False,
+        tracking=True,
+        help="填写中标通知、最终报价文件等权威资料的编号或可识别名称。",
+    )
+    award_source_attachment_id = fields.Many2one(
+        "ir.attachment",
+        string="中标资料附件",
+        copy=False,
+        tracking=True,
+    )
+    award_confirmed_by_id = fields.Many2one(
+        "res.users",
+        string="中标确认人",
+        copy=False,
+        readonly=True,
+    )
+    award_confirmed_at = fields.Datetime(
+        "中标确认时间",
+        copy=False,
+        readonly=True,
+    )
+    award_confirmation_state = fields.Selection(
+        [
+            ("pending", "中标事实待确认"),
+            ("confirmed", "中标事实已确认"),
+            ("legacy_unverified", "来源待核实"),
+        ],
+        string="中标事实状态",
+        compute="_compute_award_confirmation_feedback",
+        readonly=True,
+    )
+    award_contract_handoff_message = fields.Char(
+        "合同承接说明",
+        compute="_compute_award_confirmation_feedback",
+        readonly=True,
+    )
 
     guarantee_total = fields.Monetary(
         "保证金总额", currency_field="currency_id", compute="_compute_guarantee_stats", store=True
@@ -217,6 +320,10 @@ class TenderBid(models.Model):
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
+        # ORM create fills missing values after our explicit-vals guard. Neither
+        # context defaults nor saved user defaults may manufacture a snapshot.
+        for field_name in _TENDER_AWARD_CONFIRMATION_OWNED_FIELDS:
+            res.pop(field_name, None)
         project_id = res.get("project_id") or self._context_project_id()
         if project_id and "project_id" in fields_list:
             res["project_id"] = project_id
@@ -273,6 +380,28 @@ class TenderBid(models.Model):
             bid.guarantee_total = total
             bid.guarantee_outstanding = out
 
+    @api.depends("state", "award_confirmed_at", "contract_id")
+    def _compute_award_confirmation_feedback(self):
+        for bid in self:
+            if bid.award_confirmed_at:
+                bid.award_confirmation_state = "confirmed"
+                if bid.contract_id:
+                    bid.award_contract_handoff_message = _(
+                        "已关联历史合同；本次中标确认不会改写合同金额。"
+                    )
+                else:
+                    bid.award_contract_handoff_message = _(
+                        "中标事实已确认，合同尚未生成；请在后续合同承接办理中核对计价依据。"
+                    )
+            elif bid.state == "won":
+                bid.award_confirmation_state = "legacy_unverified"
+                bid.award_contract_handoff_message = _(
+                    "历史中标记录缺少事实快照，来源待核实；系统不会自动回填。"
+                )
+            else:
+                bid.award_confirmation_state = "pending"
+                bid.award_contract_handoff_message = False
+
     # ===== 状态流转 =====
     def _reload(self):
         return {"type": "ir.actions.client", "tag": "reload"}
@@ -290,42 +419,74 @@ class TenderBid(models.Model):
         return self._set_state("waiting")
 
     def action_mark_won(self):
-        return self._set_state("won")
+        self.check_access_rights("write")
+        self.check_access_rule("write")
+        for bid in self.sorted("id"):
+            self.env.cr.execute(
+                "SELECT id FROM tender_bid WHERE id = %s FOR UPDATE",
+                [bid.id],
+            )
+            bid.invalidate_recordset(
+                list(_TENDER_AWARD_SNAPSHOT_FIELDS) + ["state", "contract_id"]
+            )
+            if bid.award_confirmed_at:
+                continue
+            if bid.state not in ("submitted", "waiting", "won"):
+                raise UserError(_("只有已提交、等待开标或待核实的历史中标记录可以确认中标事实。"))
+
+            opening = bid.award_opening_id.exists()
+            if not opening:
+                raise UserError(_("请明确选择本次采用的中标开标记录。"))
+            if opening.bid_id != bid:
+                raise UserError(_("所选开标记录不属于当前投标。"))
+            if opening.result != "won":
+                raise UserError(_("所选开标记录的结果不是中标。"))
+            currency = opening.currency_id
+            if not currency or currency.round(opening.win_price or 0.0) <= 0:
+                raise UserError(_("所选开标记录必须包含大于零的正式中标金额。"))
+            if not bid.award_source_kind:
+                raise UserError(_("请选择中标金额所依据的正式资料类型。"))
+            source_reference = (bid.award_source_reference or "").strip()
+            if not source_reference:
+                raise UserError(_("请填写中标通知或最终报价资料的编号或名称。"))
+            if bid.award_source_attachment_id:
+                allowed_attachments = (
+                    opening.attachment_ids | bid.tech_attachment_ids | bid.biz_attachment_ids
+                )
+                if bid.award_source_attachment_id not in allowed_attachments:
+                    raise UserError(_("中标资料附件必须来自所选开标记录或当前投标资料。"))
+
+            bid.with_context(
+                tender_award_authority=_TENDER_AWARD_AUTHORITY_TOKEN
+            ).write(
+                {
+                    "state": "won",
+                    "award_amount": opening.win_price,
+                    "award_currency_id": currency.id,
+                    "award_tax_basis": bid.award_tax_basis or "unknown",
+                    "award_source_reference": source_reference,
+                    "award_confirmed_by_id": self.env.user.id,
+                    "award_confirmed_at": fields.Datetime.now(),
+                }
+            )
+        return self._reload()
 
     def action_mark_lost(self):
         return self._set_state("lost")
 
     def _set_state(self, target_state):
-        old_states = {rec.id: rec.state for rec in self}
-        res = self.write({"state": target_state})
-        # 如果从其他状态切到 won，自动生成合同（使用合同默认状态，避免非法 state）
         if target_state == "won":
-            for bid in self:
-                if (
-                    old_states.get(bid.id) != "won"
-                    and not bid.contract_id
-                    and "construction.contract" in self.env.registry
-                ):
-                    contract_vals = {
-                        "name": f"{bid.project_id.name}-收入合同",
-                        "subject": bid.tender_name or f"{bid.project_id.name}-收入合同",
-                        "project_id": bid.project_id.id,
-                        "partner_id": bid.owner_id.id,
-                        "amount_final": bid.bid_amount or bid.amount_total or 0.0,
-                        "type": "out",
-                        # 不传 state，使用合同模型默认值；屏蔽 context 中的 default_state 干扰
-                    }
-                    contract = (
-                        self.env["construction.contract"]
-                        .with_context(default_state=False)
-                        .create(contract_vals)
-                    )
-                    bid.contract_id = contract.id
+            raise UserError(_("请使用“确认中标事实”动作并明确选择中标开标记录。"))
+        if any(bid.award_confirmed_at for bid in self):
+            raise UserError(_("中标事实已确认，不能通过普通状态动作改写。"))
+        res = self.write({"state": target_state})
         return self._reload() if res else res
 
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
+            if _TENDER_AWARD_CONFIRMATION_OWNED_FIELDS.intersection(vals):
+                raise UserError(_("中标事实系统快照只能由“确认中标事实”动作生成。"))
             project_id = vals.get("project_id") or self._context_project_id()
             if project_id:
                 vals.setdefault("project_id", project_id)
@@ -338,7 +499,23 @@ class TenderBid(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
-        # 合同创建逻辑集中在 _set_state("won")，避免重复/非法类型
+        award_authorized = (
+            self.env.context.get("tender_award_authority")
+            is _TENDER_AWARD_AUTHORITY_TOKEN
+        )
+        if not award_authorized:
+            if vals.get("state") == "won" and any(bid.state != "won" for bid in self):
+                raise UserError(_("请使用“确认中标事实”动作登记正式中标结果。"))
+            if _TENDER_AWARD_SNAPSHOT_FIELDS.intersection(vals) and any(
+                bid.award_confirmed_at for bid in self
+            ):
+                raise UserError(_("中标事实快照已确认，不能直接改写。"))
+            if _TENDER_AWARD_CONFIRMATION_OWNED_FIELDS.intersection(vals):
+                raise UserError(_("中标事实系统快照只能由“确认中标事实”动作生成。"))
+            if "state" in vals and vals.get("state") != "won" and any(
+                bid.award_confirmed_at for bid in self
+            ):
+                raise UserError(_("中标事实已确认，不能直接更改状态。"))
         if "line_ids" in vals:
             vals = dict(vals)
             vals["line_ids"] = self._normalize_line_commands(vals.get("line_ids"))
@@ -589,6 +766,19 @@ class TenderOpening(models.Model):
     currency_id = fields.Many2one(
         "res.currency", related="bid_id.currency_id", store=True, readonly=True
     )
+
+    @api.depends("open_time", "result", "win_price", "currency_id")
+    def _compute_display_name(self):
+        result_labels = dict(self._fields["result"].selection)
+        for opening in self:
+            parts = []
+            if opening.open_time:
+                parts.append(fields.Datetime.to_string(opening.open_time))
+            parts.append(result_labels.get(opening.result, opening.result or "开标记录"))
+            if opening.win_price:
+                currency_name = opening.currency_id.name if opening.currency_id else ""
+                parts.append(f"{opening.win_price:.2f} {currency_name}".strip())
+            opening.display_name = " / ".join(parts)
 
 
 class TenderOpeningCompetitor(models.Model):

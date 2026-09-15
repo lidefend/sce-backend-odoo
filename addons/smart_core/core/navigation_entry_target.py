@@ -204,6 +204,8 @@ def normalize_odoo_action_result(env, result, *, menu_id=None, source_model: str
     action_type = _text(payload.get("type"))
     if not action_type.startswith("ir.actions."):
         return payload
+    if action_type == "ir.actions.client" and _text(payload.get("tag")).lower() == "reload":
+        return payload
     params = payload.get("params") if isinstance(payload.get("params"), dict) else {}
     next_action = params.get("next") if isinstance(params.get("next"), dict) else None
     nested_entry_target = {}

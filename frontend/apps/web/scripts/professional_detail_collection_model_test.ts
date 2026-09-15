@@ -16,6 +16,7 @@ import {
 import {
   analyzeDynamicRelationDomain,
   dynamicRelationDomainFromDescriptor,
+  resolveRelationDomainDependencyValue,
 } from '../src/pages/contractForm/relationDescriptor';
 import {
   ratioSettlementApplyAmounts,
@@ -27,6 +28,7 @@ import {
   buildX2ManyCommands,
 } from '../src/app/x2manyCommands';
 import { one2manyRemovalLabelsFromPolicies } from '../src/pages/contractForm/one2manyUtils';
+import { nativeNodeFieldDescriptor } from '../src/pages/contractForm/nativeLayoutUtils';
 
 const modes = ['task', 'workspace'] as const;
 const profiles = ['create', 'edit', 'readonly'] as const;
@@ -163,6 +165,52 @@ assert.deepEqual(dynamicRelationDomainFromDescriptor({
   normalizeDependencyValue: (_field, value) => value,
   currentFieldValue: () => false,
 }), [['id', '=', -1]]);
+const mixedDomain = {
+  name: 'award_opening_id',
+  type: 'many2one',
+  domain: "[('bid_id', '=', id), ('result', '=', 'won')]",
+} as never;
+assert.deepEqual(analyzeDynamicRelationDomain(mixedDomain), {
+  supported: true,
+  dependencies: ['id'],
+});
+assert.deepEqual(dynamicRelationDomainFromDescriptor({
+  descriptor: mixedDomain,
+  resolveDependencyValue: (field) => field === 'id' ? 98 : undefined,
+  normalizeDependencyValue: (_field, value) => value,
+  currentFieldValue: () => false,
+}), [['bid_id', '=', 98], ['result', '=', 'won']]);
+assert.deepEqual(dynamicRelationDomainFromDescriptor({
+  descriptor: mixedDomain,
+  resolveDependencyValue: () => undefined,
+  normalizeDependencyValue: (_field, value) => value,
+  currentFieldValue: () => false,
+}), [['id', '=', -1]], 'an unresolved parent record identity remains fail-closed');
+assert.equal((nativeNodeFieldDescriptor({
+  name: 'award_opening_id',
+  attributes: { domain: "[('bid_id','=',id),('result','=','won')]" },
+  fieldInfo: { name: 'award_opening_id', type: 'many2one', domain: [] },
+} as never, undefined, (name) => name) as Record<string, unknown>).domain,
+"[('bid_id','=',id),('result','=','won')]",
+'the native field occurrence domain must override an empty model-level domain');
+assert.equal(resolveRelationDomainDependencyValue({
+  dependency: 'id',
+  recordId: 98,
+  formValue: undefined,
+  routeDefaultValue: undefined,
+  routeValue: undefined,
+  keyword: '',
+  options: [],
+}), 98, 'a native form domain may bind its current record through reserved id');
+assert.equal(resolveRelationDomainDependencyValue({
+  dependency: 'project_id',
+  recordId: 98,
+  formValue: undefined,
+  routeDefaultValue: undefined,
+  routeValue: undefined,
+  keyword: '演示项目',
+  options: [{ id: 9, label: '演示项目' }],
+}), 9, 'ordinary dynamic relation dependencies keep their selected option fallback');
 
 assert.deepEqual(one2manyRemovalLabelsFromPolicies({}, 2), {
   remove: '删除',
@@ -203,4 +251,4 @@ assert.deepEqual(buildX2ManyCommands({
   mode: 'write',
 }), [[3, 8]]);
 
-console.log(`[professional_detail_collection_model_test] PASS matrix=${matrix} counterexamples=11`);
+console.log(`[professional_detail_collection_model_test] PASS matrix=${matrix} relation_domain_cases=7`);

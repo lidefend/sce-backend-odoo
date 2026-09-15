@@ -234,6 +234,22 @@
       />
     </section>
     <section
+      v-if="businessSectionNodes.length"
+      class="object-task-page__business-sections"
+      data-floorplan-region="business-sections"
+      data-canonical-zone="primary"
+    >
+      <CanonicalFormNodeRenderer
+        v-for="node in businessSectionNodes"
+        :key="node.nodeId"
+        :node="node"
+        :relation-adapter="relationAdapter"
+        prefer-readonly-facts
+        @field-change="emit('field-change', $event)"
+        @field-action="emit('field-action', $event)"
+      />
+    </section>
+    <section
       v-if="presentableRelationNodes.length"
       class="object-task-page__relation"
       role="region"
@@ -379,6 +395,7 @@ const props = defineProps<{
   auditNodes: CanonicalFormNode[];
   auditEvents: CanonicalAuditEvent[];
   relationNodes: CanonicalFormNode[];
+  businessSectionNodes: CanonicalFormNode[];
   subordinateNodes: CanonicalFormNode[];
   relationAdapter?: RelationFieldAdapter;
   hasCollaboration?: boolean;
@@ -394,6 +411,7 @@ const coreSectionLinks = computed(() => governedFormStructureSectionNavigationIt
 const supplementarySectionLinks = computed(() => governedFormStructureSectionNavigationItems(props.supplementaryInputNodes));
 const contextSectionLinks = computed(() => governedFormStructureSectionNavigationItems(props.contextNodes));
 const relationSectionLinks = computed(() => governedFormStructureSectionNavigationItems(presentableRelationNodes.value));
+const businessSectionLinks = computed(() => governedFormStructureSectionNavigationItems(props.businessSectionNodes));
 const postRelationSectionLinks = computed(() => governedFormStructureSectionNavigationItems(props.postRelationInputNodes));
 
 function hasUnclassifiedFields(nodes: CanonicalFormNode[]): boolean {
@@ -437,6 +455,7 @@ const sectionLinks = computed(() => uniqueSectionLinks([
   ...contextSectionLinks.value,
   props.contextNodes.length && !contextSectionLinks.value.length ? floorplanSection('business-context', '基本资料', 'context') : null,
   ...supplementarySectionLinks.value,
+  ...businessSectionLinks.value,
   ...relationSectionLinks.value,
   ...relationshipCollectionNavigationItems(
     presentableRelationNodes.value,
@@ -508,9 +527,14 @@ const sectionLinks = computed(() => uniqueSectionLinks([
 .object-task-page__audit,
 .object-task-page__overflow-context,
 .object-task-page__relation,
+.object-task-page__business-sections,
 .object-task-page__activity,
 .object-task-page__subordinate {
   min-width: 0;
+}
+.object-task-page__business-sections {
+  display: grid;
+  gap: 12px;
 }
 .object-task-page__summary-grid {
   display: grid;

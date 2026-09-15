@@ -240,6 +240,31 @@ assert.equal(
 );
 assert.equal(
   shouldPreserveAuthoritativeBusinessSections('task', [node({
+    nodeId: 'partial.sheet', kind: 'sheet', fields: [], children: [
+      node({
+        nodeId: 'partial.basic', title: '基本资料',
+        fields: [field({ widgetId: 'partial.project', fieldCode: 'project_id' })],
+      }),
+      node({
+        nodeId: 'partial.award', title: '中标事实确认',
+        attributes: { 'data-sc-anchor': 'award-confirmation' },
+        fields: [field({ widgetId: 'partial.award.amount', fieldCode: 'award_amount' })],
+      }),
+    ],
+  })]),
+  false,
+  'one explicit section must not replace unanchored sibling business content',
+);
+assert.deepEqual(
+  governedFormStructureSectionNavigationItems([node({
+    nodeId: 'embedded.award', title: '中标事实确认',
+    attributes: { 'data-sc-anchor': 'award-confirmation' },
+  })]).map(({ label, sourceIdentity }) => ({ label, sourceIdentity })),
+  [{ label: '中标事实确认', sourceIdentity: 'embedded.award' }],
+  'an embedded native section keeps one shared body/navigation identity inside the task floorplan',
+);
+assert.equal(
+  shouldPreserveAuthoritativeBusinessSections('task', [node({
     nodeId: 'section.task.layout-only', title: '普通布局容器', attributes: {},
   })]),
   false,

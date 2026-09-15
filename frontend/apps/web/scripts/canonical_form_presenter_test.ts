@@ -2273,6 +2273,30 @@ assert.equal(createFloorplan.effectivePrimaryKey, 'form.save', 'create save must
 assert.deepEqual(createFloorplan.directActions.map((action) => action.key), ['form.save']);
 assert.deepEqual(createFloorplan.overflowActions, []);
 
+const editWorkflowSnapshot = structuredClone(createFloorplanSnapshot);
+editWorkflowSnapshot.actionContract.actionRuleList.push({
+  ...editWorkflowSnapshot.actionContract.actionRuleList[0],
+  actionId: 'action.confirm_fact', backendIdentity: 'button:object:action_confirm_fact', actionKey: 'action.confirm_fact',
+  presentation: { tier: 'secondary' },
+});
+editWorkflowSnapshot.statusContract.buttonStatus.push({
+  btnId: 'action.confirm_fact', visible: true, disabled: false,
+});
+const editWorkflowFloorplan = composeCanonicalFormFloorplan(presentContractV2Form(
+  createContractV2Store(editWorkflowSnapshot),
+  'edit',
+));
+assert.deepEqual(
+  editWorkflowFloorplan.directActions.map((action) => action.key),
+  ['form.save'],
+  'an edit task keeps the first enabled secondary action directly available',
+);
+assert.deepEqual(
+  editWorkflowFloorplan.overflowActions.map((action) => action.key),
+  ['action.confirm_fact'],
+  'an edit task must retain additional contract-enabled business actions in overflow',
+);
+
 const unresolvedCreateIdentitySnapshot = structuredClone(createFloorplanSnapshot);
 unresolvedCreateIdentitySnapshot.dataContract.mainData.name = 'New';
 unresolvedCreateIdentitySnapshot.statusContract.widgetStatus = unresolvedCreateIdentitySnapshot.statusContract.widgetStatus

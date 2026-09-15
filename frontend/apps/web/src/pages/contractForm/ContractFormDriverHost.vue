@@ -40,6 +40,7 @@
         :audit-events="auditEvents"
         :has-audit="floorplan.auditDeclared"
         :relation-nodes="floorplan.relationNodes"
+        :business-section-nodes="embeddedBusinessSectionNodes"
         :subordinate-nodes="floorplanSubordinateNodes"
         :decision-mode="true"
         :blocked-action-message="floorplan.blockedActions.length ? blockedActionMessage : ''"
@@ -144,6 +145,7 @@ import TaskFormPattern from '../../components/product-page-patterns/TaskFormPatt
 import WorkspaceFormPattern from '../../components/product-page-patterns/WorkspaceFormPattern.vue';
 import { canonicalNodeHasContent, type CanonicalRelationProjection } from './canonicalFormRenderer';
 import {
+  authoritativeNativeBusinessSections,
   shouldPreserveAuthoritativeBusinessSections,
   workspaceSurfaceNavigationItems,
 } from './nativeSectionNavigation';
@@ -199,10 +201,6 @@ const emptyFloorplan: CanonicalFormFloorplan = {
   relationNodes: [], subordinateNodes: [], blockedActions: [], directActions: [], overflowActions: [],
   effectivePrimaryKey: '', decisionMode: false,
 };
-const floorplan = computed(() => props.renderModel ? composeCanonicalFormFloorplan(props.renderModel, {
-  claimedStatusbarNodeIdentity: props.claimedStatusbarNodeIdentity || '',
-  claimedStatusbarFieldCode: props.claimedStatusbarFieldCode || '',
-}) : emptyFloorplan);
 const preserveAuthoritativeBusinessSections = computed(() => Boolean(
   props.renderModel
   && shouldPreserveAuthoritativeBusinessSections(
@@ -210,6 +208,36 @@ const preserveAuthoritativeBusinessSections = computed(() => Boolean(
     [...props.renderModel.zones.primary, ...props.renderModel.zones.subordinate],
   ),
 ));
+const embeddedBusinessSectionNodes = computed(() => {
+  if (!props.renderModel || preserveAuthoritativeBusinessSections.value) return [];
+  return authoritativeNativeBusinessSections([
+    ...props.renderModel.zones.primary,
+    ...props.renderModel.zones.subordinate,
+  ]).map(({ node }) => node).filter(canonicalNodeHasContent);
+});
+const floorplanModel = computed<CanonicalFormRenderModel | null>(() => {
+  const model = props.renderModel;
+  if (!model || !embeddedBusinessSectionNodes.value.length) return model;
+  const embeddedIds = new Set(embeddedBusinessSectionNodes.value.map((node) => node.nodeId));
+  function withoutEmbeddedSections(nodes: CanonicalFormNode[]): CanonicalFormNode[] {
+    return nodes.flatMap((node) => {
+      if (embeddedIds.has(node.nodeId)) return [];
+      const projected = { ...node, children: withoutEmbeddedSections(node.children) };
+      return canonicalNodeHasContent(projected) ? [projected] : [];
+    });
+  }
+  return {
+    ...model,
+    zones: {
+      primary: withoutEmbeddedSections(model.zones.primary),
+      subordinate: withoutEmbeddedSections(model.zones.subordinate),
+    },
+  };
+});
+const floorplan = computed(() => floorplanModel.value ? composeCanonicalFormFloorplan(floorplanModel.value, {
+  claimedStatusbarNodeIdentity: props.claimedStatusbarNodeIdentity || '',
+  claimedStatusbarFieldCode: props.claimedStatusbarFieldCode || '',
+}) : emptyFloorplan);
 const blockedActionMessage = computed(() => `当前操作暂不可用：${floorplan.value.blockedActions.map((action) => `${action.label}暂不可执行`).join('；')}`);
 const productWriteMode = computed(() => Boolean(
   floorplan.value.decisionMode && props.renderModel && props.renderModel.identity.mode !== 'readonly',

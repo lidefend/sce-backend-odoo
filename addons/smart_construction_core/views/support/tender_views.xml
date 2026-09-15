@@ -31,23 +31,22 @@
                 <header>
                     <button name="action_to_estimating" type="object" string="进入造价测算"
                             class="oe_highlight"
-                            modifiers="{'invisible': [['state','!=','prepare']]}"/>
+                            invisible="state != 'prepare'"/>
                     <button name="action_to_submitted" type="object" string="提交投标"
                             class="oe_highlight"
-                            modifiers="{'invisible': [['state','not in',['prepare','estimating']]]}"/>
+                            invisible="state not in ['prepare', 'estimating']"/>
                     <button name="action_to_waiting" type="object" string="等待开标"
                             class="oe_highlight"
-                            modifiers="{'invisible': [['state','!=','submitted']]}"/>
-                    <button name="action_mark_won" type="object" string="中标"
+                            invisible="state != 'submitted'"/>
+                    <button name="action_mark_won" type="object" string="确认中标事实"
                             class="oe_highlight"
-                            modifiers="{'invisible': [['state','not in',['submitted','waiting']]]}"/>
+                            invisible="state not in ['submitted', 'waiting', 'won'] or award_confirmed_at"/>
                     <button name="action_mark_lost" type="object" string="未中标"
-                            modifiers="{'invisible': [['state','not in',['submitted','waiting']]]}"/>
+                            invisible="state not in ['submitted', 'waiting']"/>
                     <button name="action_to_prepare" type="object" string="重回准备"
-                            modifiers="{'invisible': [['state','=','prepare']]}"/>
-                    <!-- 单一状态条：可点击，高亮随状态自动切换 -->
+                            invisible="state == 'prepare' or award_confirmed_at"/>
+                    <!-- 状态变化由领域动作承接；中标不得绕过事实确认。 -->
                     <field name="state" widget="statusbar"
-                           options="{'clickable': '1'}"
                            statusbar_visible="prepare,estimating,submitted,waiting,won,lost"
                            statusbar_colors="{'won':'success','lost':'danger','waiting':'warning','estimating':'info'}"/>
                 </header>
@@ -81,6 +80,37 @@
                             <field name="contract_id" readonly="1"/>
                             <field name="currency_id" invisible="1"/>
                         </group>
+                    </group>
+
+                    <group name="sc_tender_award_confirmation"
+                           string="中标事实确认"
+                           data-sc-anchor="tender-award-confirmation"
+                           invisible="state not in ['submitted', 'waiting', 'won']">
+                        <group>
+                            <field name="award_opening_id"
+                                   domain="[('bid_id','=',id),('result','=','won')]"
+                                   readonly="award_confirmed_at"/>
+                            <field name="award_source_kind"
+                                   readonly="award_confirmed_at"/>
+                            <field name="award_source_reference"
+                                   readonly="award_confirmed_at"/>
+                            <field name="award_source_attachment_id"
+                                   readonly="award_confirmed_at"/>
+                        </group>
+                        <group>
+                            <field name="award_tax_basis"
+                                   readonly="award_confirmed_at"/>
+                            <field name="award_confirmation_state" readonly="1"/>
+                            <field name="award_amount" readonly="1"
+                                   invisible="not award_confirmed_at"/>
+                            <field name="award_currency_id" readonly="1"
+                                   invisible="not award_confirmed_at"/>
+                            <field name="award_confirmed_by_id" readonly="1"
+                                   invisible="not award_confirmed_at"/>
+                            <field name="award_confirmed_at" readonly="1"/>
+                        </group>
+                        <field name="award_contract_handoff_message" readonly="1" nolabel="1"
+                               invisible="not award_contract_handoff_message"/>
                     </group>
 
                     <notebook>

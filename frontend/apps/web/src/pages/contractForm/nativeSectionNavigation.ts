@@ -174,7 +174,7 @@ export function governedFormStructureSectionNavigationItems(
 
   function visit(node: CanonicalFormNode) {
     if (!node.visible) return;
-    const identity = governedFormStructureSectionIdentity(node);
+    const identity = governedFormStructureSectionIdentity(node) || nativeBusinessSectionIdentity(node);
     if (identity && !emitted.has(identity.anchor)) {
       items.push({
         key: identity.anchor,
@@ -205,7 +205,27 @@ export function shouldPreserveAuthoritativeBusinessSections(
   presentationMode: CanonicalFormPresentationMode,
   nodes: CanonicalFormNode[],
 ): boolean {
-  return presentationMode === 'task' && authoritativeNativeBusinessSections(nodes).length > 0;
+  if (presentationMode !== 'task') return false;
+  const sections = authoritativeNativeBusinessSections(nodes);
+  if (!sections.length) return false;
+
+  // A native anchor declares authority for that section, not automatically
+  // for every sibling in the form.  Only switch the whole body to the native
+  // section renderer when every visible, non-notebook business field is owned
+  // by an anchored section.  Otherwise the anchors are embedded into the task
+  // floorplan and the remaining native fields keep their existing projection.
+  function hasUnownedBusinessField(node: CanonicalFormNode, insideSection = false, insideNotebook = false): boolean {
+    if (!node.visible) return false;
+    const kind = String(node.kind || '').trim().toLowerCase();
+    const functionalContainer = ['header', 'statusbar', 'button_box', 'chatter', 'activity', 'attachment'].includes(kind);
+    if (functionalContainer || insideNotebook || kind === 'notebook') return false;
+    const ownsSection = insideSection || Boolean(nativeBusinessSectionIdentity(node));
+    if (ownsSection) return false;
+    if (node.fields.some((field) => field.visible)) return true;
+    return node.children.some((child) => hasUnownedBusinessField(child, false, false));
+  }
+
+  return !nodes.some((node) => hasUnownedBusinessField(node));
 }
 
 export function relationshipCollectionNavigationItems(

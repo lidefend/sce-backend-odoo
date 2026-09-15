@@ -617,7 +617,7 @@ export function composeCanonicalFormFloorplan(
     subordinateNodes: titledSubordinateNodes,
     blockedActions,
     directActions,
-    overflowActions: writeMode && semanticProductMode ? [] : visibleActions.filter((action) => (
+    overflowActions: visibleActions.filter((action) => (
       !directActions.includes(action) && !blockedActions.includes(action) && action.enabled
     )),
     effectivePrimaryKey: effectivePrimary?.key || '',
