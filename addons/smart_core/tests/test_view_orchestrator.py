@@ -1094,6 +1094,11 @@ class TestSingleStructureResolution(unittest.TestCase):
         resolved = result["governance"]["view_orchestration"]["form_structure_projection"]
         self.assertEqual(resolved["field_semantic_roles"], {"name": "summary"})
         self.assertEqual(resolved["form_structure_authority"], "native_authority")
+        provenance = resolved["business_config_contracts"]
+        self.assertTrue(provenance)
+        for row in provenance:
+            self.assertTrue(set(row).issubset({"id", "name", "priority", "view_type", "version_no"}), row)
+        self.assertIn("status", result["source_trace"]["view_orchestration"]["business_config_contracts"][0])
         helper = sys.modules["odoo.addons.smart_core.core.form_structure_authority"]
         first = _Config({"view_orchestration": {"views": {"form": {"composition_mode": "native_semantic_surface", "help": "help"}}}})
         second = _Config({"view_orchestration": {"views": {"form": {"semantic_anchors": [{"role": "audit", "fields": ["state"]}]}}}})

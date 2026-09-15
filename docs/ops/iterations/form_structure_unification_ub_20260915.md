@@ -30,3 +30,10 @@
 - P0 结构诊断区分字段顺序/归属和稀疏语义策略，后者不独占结构；新增测试验证可叠加帮助/只读且不变动原生节点顺序，sequence 仍触发冲突。
 - L1 静态通过；L2 156 测试通过；L3 受管 smart_core/smart_construction_core 升级通过。定向模块首轮19项中3项为旧结构断言失败，16项通过；更新断言至原生树/控件状态后仅恢复3项并全部通过。包含客户记录态分组与字段权威、付款明细金额绑定、中标事实与动作、看板只读隔离。失败及恢复保留于 artifacts/form-structure-unification/ub-module-tests*.log。
 - 浏览器和 Quick 尚未运行，不登记四面通过。
+
+
+## 浏览器发现的 P0 Schema 边界缺口
+
+06b8a8b0 投标入口实际加载失败，零写入：内部配置来源 status/source_kind 直接泄漏进公共 businessConfigContracts，而既有 JSON schema 与前端均只允许 id/name/priority/view_type/version_no。归类 product_defect(P0)，浏览器矩阵短路。修复在唯一后端结构投影边界筛选公共元数据，保留完整内部 source_trace；不放宽 Schema，也不恢复结构双轨。定向测试同时检查公共键集合与内部 status 保留。
+
+用户此前刷新恢复事件没有请求/静态资产身份，不据此认定同一原因；旧解码器不支持空 slots 的源码兼容差异另存 ub-frontend-compatibility.json。发布需绑定前后端候选、重新加载页面；本地静态入口对 HTML no-cache、哈希资产 immutable。已加载旧 JavaScript 的标签页不能仅靠后端升级获得新解析器。

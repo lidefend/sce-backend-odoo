@@ -239,7 +239,13 @@ def resolve_form_structure_governance(source_contract: dict[str, Any], configs, 
     return {
         "source": "business_view_orchestration",
         "owner_layer": str(view_trace.get("owner_layer") or view_governance.get("owner_layer") or "business_view_orchestration"),
-        "business_config_contracts": [dict(item) for item in business_contracts if isinstance(item, dict)] or config_summaries,
+        # Public provenance follows formStructureGovernanceContract; internal
+        # source_kind/status trace fields remain in source_trace only.
+        "business_config_contracts": [
+            {key: value for key, value in item.items()
+             if key in {"id", "name", "priority", "view_type", "version_no"}}
+            for item in business_contracts if isinstance(item, dict)
+        ] or config_summaries,
         "legacy_field_policy_overlay": legacy_overlay,
         "form_layout_overlay": form_layout_overlay,
         "form_structure_authority": form_structure_authority,
