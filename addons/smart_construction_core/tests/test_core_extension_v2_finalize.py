@@ -325,12 +325,14 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         self.assertTrue(default_arch.xpath("//field[@name='contract_ids']"))
         self.assertTrue(default_arch.xpath("//field[@name='document_ids']"))
 
-    def test_project_dashboard_uses_readonly_overview_instead_of_editable_aggregates(self):
+    def test_project_dashboard_keeps_aggregates_under_readonly_form_capabilities(self):
         action = self.env.ref("smart_construction_core.action_project_dashboard")
         dashboard_kanban = self.env.ref(
             "smart_construction_core.view_project_project_kanban_dashboard"
         )
-        overview = self.env.ref("smart_construction_core.view_project_overview_form")
+        dashboard_form = self.env.ref(
+            "smart_construction_core.view_project_dashboard_readonly_form"
+        )
         bindings = action.view_ids.sorted("sequence")
 
         self.assertEqual(
@@ -338,39 +340,22 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             [
                 ("kanban", dashboard_kanban.id),
                 ("tree", False),
-                ("form", overview.id),
+                ("form", dashboard_form.id),
             ],
         )
 
-        arch = overview._get_combined_arch()
+        arch = dashboard_form._get_combined_arch()
         if isinstance(arch, (str, bytes)):
             arch = etree.fromstring(arch)
         self.assertEqual(arch.get("create"), "0")
         self.assertEqual(arch.get("edit"), "0")
         self.assertEqual(arch.get("delete"), "0")
-        self.assertFalse(
-            set(arch.xpath("//field[not(ancestor::field)]/@name"))
-            & {"tender_bid_ids", "contract_ids", "document_ids"},
-            "the project dashboard must not become a second editor for independent business records",
-        )
-        action_button_names = set(arch.xpath("//button[@type='action']/@name"))
-        expected_action_ids = {
-            str(self.env.ref(xmlid).id)
-            for xmlid in (
-                "smart_construction_core.action_sc_project_manage",
-                "smart_construction_core.action_construction_contract_my",
-                "smart_construction_core.action_project_cost_ledger_my",
-                "smart_construction_core.action_payment_request_my",
+        for field_name in ("tender_bid_ids", "contract_ids", "document_ids"):
+            fields = arch.xpath(
+                "//field[@name=$name and not(ancestor::field)]",
+                name=field_name,
             )
-        }
-        self.assertTrue(
-            expected_action_ids <= action_button_names,
-            "the readonly dashboard overview must retain supported action navigation targets",
-        )
-        self.assertTrue(
-            arch.xpath("//button[@type='object' and @name='action_view_my_tasks']"),
-            "the readonly dashboard overview must retain its supported task navigation",
-        )
+            self.assertTrue(fields, field_name)
 
         project = self.env["project.project"].search([], limit=1)
         self.assertTrue(project, "the dashboard contract check requires an existing project")
@@ -393,7 +378,7 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             self.env["ir.model"].sudo().env,
             {**params, "subject": "action"},
         )
-        self.assertEqual(source["view_id"], overview.id, source.get("view_ids_by_type"))
+        self.assertEqual(source["view_id"], dashboard_form.id, source.get("view_ids_by_type"))
         self.assertEqual(
             {
                 key: source["views"]["form"]["capabilities"][key]
@@ -413,6 +398,30 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         global_status = contract["statusContract"]["globalStatus"]
         self.assertEqual(global_status["effectiveRenderProfile"], "readonly", global_status)
         self.assertEqual(global_status["pageAuth"], "read", global_status)
+
+        projected_subviews = set()
+
+        def collect_projected_subviews(value):
+            if isinstance(value, list):
+                for item in value:
+                    collect_projected_subviews(item)
+                return
+            if not isinstance(value, dict):
+                return
+            field_name = value.get("fieldCode")
+            for source_key in ("fieldInfo", "fieldDescriptor", "componentConfig"):
+                field_info = value.get(source_key) or {}
+                if field_name and (field_info.get("subview") or {}).get("tree"):
+                    projected_subviews.add(field_name)
+            for item in value.values():
+                collect_projected_subviews(item)
+
+        collect_projected_subviews(contract["layoutContract"]["containerTree"])
+        self.assertTrue(
+            {"tender_bid_ids", "contract_ids", "document_ids"}
+            <= projected_subviews,
+            projected_subviews,
+        )
         self.assertNotIn(
             "form.save",
             {

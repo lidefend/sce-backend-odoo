@@ -33,7 +33,7 @@
         <field name="view_ids" eval="[(5, 0, 0),
             (0, 0, {'view_mode': 'kanban', 'view_id': ref('smart_construction_core.view_project_project_kanban_dashboard')}),
             (0, 0, {'view_mode': 'tree'}),
-            (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_project_overview_form')})
+            (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_project_dashboard_readonly_form')})
         ]"/>
     </record>
 
