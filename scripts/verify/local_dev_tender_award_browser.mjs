@@ -25,6 +25,28 @@ function normalize(value) { return String(value ?? '').replace(/\s+/g, ' ').trim
 function check(condition, message, facts = undefined) {
   if (!condition) throw new Error(`${message}${facts ? `: ${JSON.stringify(facts)}` : ''}`);
 }
+function collectAwardOpeningDescriptors(value, pathName = '$', out = []) {
+  if (!value || typeof value !== 'object') return out;
+  if (!Array.isArray(value)) {
+    const name = String(value.name || value.field || value.field_name || '').trim();
+    if (name === 'award_opening_id') {
+      out.push({
+        path: pathName,
+        name,
+        type: value.type || value.ttype,
+        domain: value.domain,
+        modifiers: value.modifiers,
+        relation_entry: value.relation_entry,
+      });
+    }
+  }
+  for (const [key, child] of Object.entries(value)) {
+    if (child && typeof child === 'object') {
+      collectAwardOpeningDescriptors(child, `${pathName}.${key}`, out);
+    }
+  }
+  return out;
+}
 
 if (!/^[a-z0-9][a-z0-9-]{2,31}$/.test(batch)) deny('P4_TENDER_AWARD_BATCH is invalid');
 fullSha(productSha, 'PRODUCT_CANDIDATE_SHA');
@@ -86,6 +108,8 @@ const report = {
   fixture_before: authority.fixture,
   mutations: [],
   relation_requests: [],
+  contract_requests: [],
+  award_opening_descriptors: [],
   errors: [],
   output_dir: outputDir,
 };
@@ -215,6 +239,7 @@ async function readBid(page) {
 
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1088, height: 791 }, locale: 'zh-CN' });
+const contractResponseCaptures = [];
 page.on('request', (request) => {
   if (!request.url().includes('/api/v1/intent')) return;
   try {
@@ -227,7 +252,18 @@ page.on('request', (request) => {
         search_term: body.params.search_term,
       });
     }
+    if (body?.intent === 'ui.contract.v2') report.contract_requests.push(body.params);
   } catch { /* failure evidence must not change the journey */ }
+});
+page.on('response', (response) => {
+  if (!response.url().includes('/api/v1/intent')) return;
+  let requestBody;
+  try { requestBody = response.request().postDataJSON(); } catch { return; }
+  if (requestBody?.intent !== 'ui.contract.v2') return;
+  const capture = response.json().then((body) => {
+    report.award_opening_descriptors.push(...collectAwardOpeningDescriptors(body));
+  }).catch(() => {});
+  contractResponseCaptures.push(capture);
 });
 page.on('console', (message) => { if (message.type() === 'error' && !message.text().includes('favicon')) report.errors.push(message.text()); });
 page.on('pageerror', (error) => report.errors.push(String(error.message || error)));
@@ -294,6 +330,7 @@ try {
   await page.screenshot({ path: path.join(outputDir, 'after-confirmation-refresh.png'), fullPage: true });
   report.pass = report.errors.length === 0;
 } catch (error) {
+  await Promise.allSettled(contractResponseCaptures);
   report.error = error instanceof Error ? error.stack || error.message : String(error);
   report.failure_page = {
     url: page.url(),

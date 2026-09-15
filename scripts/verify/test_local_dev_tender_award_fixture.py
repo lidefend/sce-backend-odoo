@@ -55,6 +55,7 @@ class TestLocalDevTenderAwardFixture(unittest.TestCase):
         self.assertIn("failure_page", BROWSER)
         self.assertIn("failure.png", BROWSER)
         self.assertIn("relation_requests", BROWSER)
+        self.assertIn("award_opening_descriptors", BROWSER)
         browser_shell = (ROOT / "scripts/verify/local_dev_tender_award_browser.sh").read_text(encoding="utf-8")
         self.assertIn('PRODUCT_CANDIDATE_SHA="${PRODUCT_SHA}"', browser_shell)
         self.assertIn('P4_TOOL_CANDIDATE_SHA="${TOOL_SHA}"', browser_shell)
