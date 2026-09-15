@@ -107,7 +107,11 @@ def resolve_entry(key, spec, principal=user):
         record_env.check_access_rights("create")
     domain = list(spec.get("domain", []))
     record = record_env.search(domain, order="id desc", limit=1)
-    editable_record = record_env.search(domain + [("state", "=", "draft")], order="id desc", limit=1)
+    editable_record = (
+        record_env.search(domain + [("state", "=", "draft")], order="id desc", limit=1)
+        if "state" in record_env._fields
+        else record_env.browse()
+    )
     record_payload = None
     fingerprint_payload = {"model": spec["model"], "record": None}
     if record:
