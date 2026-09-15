@@ -19,6 +19,16 @@ if (!baseUrl || !database || !login || !password || !/^[0-9a-f]{40}$/.test(head)
 if (!Array.isArray(routes) || routes.length === 0 || routes.some((item) => !item || typeof item.name !== 'string' || !String(item.path || '').startsWith('/'))) {
   throw new Error('candidate visual routes must be a non-empty name/path array');
 }
+for (const target of routes) {
+  if (target.viewports !== undefined && (!Array.isArray(target.viewports) || !target.viewports.length
+    || target.viewports.some((name) => !['desktop', 'mobile'].includes(name)))) {
+    throw new Error('route viewports must select at least one supported viewport');
+  }
+  if (target.captureCollectionWidths !== undefined && (!Array.isArray(target.captureCollectionWidths)
+    || !target.captureCollectionWidths.length || target.captureCollectionWidths.some((field) => !/^[a-zA-Z0-9_]+$/.test(field.name)))) {
+    throw new Error('collection width evidence requires named fields');
+  }
+}
 
 fs.mkdirSync(outputDir, { recursive: true });
 const report = {
@@ -476,6 +486,7 @@ function summarizeApiDataListResponse(payload) {
 
 try {
   for (const viewport of [{ name: 'desktop', width: desktopWidth, height: desktopHeight }, { name: 'mobile', width: mobileWidth, height: 844 }]) {
+    if (!routes.some((target) => !target.viewports || target.viewports.includes(viewport.name))) continue;
     const context = await browser.newContext({
       viewport: { width: viewport.width, height: viewport.height },
       locale: 'zh-CN',
@@ -591,6 +602,7 @@ try {
       await navigationSearch.fill('');
     }
     for (const target of routes) {
+      if (target.viewports && !target.viewports.includes(viewport.name)) continue;
       const summaryFixture = Array.isArray(target.summaryFixture) ? target.summaryFixture : null;
       let contractH1Nodes = [];
       let contractSelections = [];
@@ -604,6 +616,7 @@ try {
       let businessConfigReadFailureEvidence = null;
       let safeReturnEvidence = null;
       let formStructureEvidence = null;
+      let collectionWidthEvidence = null;
       let fieldAlignmentEvidence = null;
       let optionalDetailDisclosureEvidence = null;
       let officialIconResourceEvidence = null;
@@ -816,7 +829,7 @@ try {
         const response = await contractResponse;
         if (!response.ok()) throw new Error(`contract request failed: ${response.status()} ${target.path}`);
         const contractPayload = await response.json();
-        if (target.captureFormStructure === true) {
+        if (target.captureFormStructure === true || Array.isArray(target.captureCollectionWidths)) {
           const normalized = findNormalizedContract(contractPayload);
           if (!normalized) throw new Error(`${target.name}: normalized container tree missing`);
           // Save structure and identity only, without customer record values.
@@ -1887,6 +1900,34 @@ try {
         };
       }
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
+      if (Array.isArray(target.captureCollectionWidths)) {
+        collectionWidthEvidence = [];
+        for (const expected of target.captureCollectionWidths) {
+          const field = page.locator(`.field[data-field-name="${expected.name}"]:visible`).first();
+          await field.scrollIntoViewIfNeeded();
+          const width = await field.evaluate((node) => {
+            const box = (el) => el?.getBoundingClientRect().width || 0;
+            const control = node.querySelector(':scope > .field-control-row');
+            const empty = node.querySelector('.relation-readonly-empty');
+            const collection = node.querySelector('[data-semantic-component="ProfessionalDetailCollectionControl"]');
+            return {
+              fieldWidth: box(node), controlWidth: box(control), contentWidth: box(empty || collection || control),
+              gridColumn: getComputedStyle(node).gridColumn, innerColumns: getComputedStyle(node).gridTemplateColumns,
+              state: node.getAttribute('data-field-state'), empty: Boolean(empty),
+              labelWidth: box(node.querySelector(':scope > .field-label-row')),
+              rowCount: node.querySelectorAll('tbody tr').length,
+              editableControls: [...node.querySelectorAll('input:not([disabled]):not([readonly]),button:not([disabled])')].filter((el) => el.getBoundingClientRect().width > 0).length,
+            };
+          });
+          const evidence = { name: expected.name, ...width, pass: width.fieldWidth > 0
+            && width.controlWidth >= width.fieldWidth * 0.98 && width.contentWidth >= width.fieldWidth * 0.98
+            && (expected.empty === undefined || width.empty === expected.empty)
+            && (expected.editable !== true || width.editableControls > 0)
+            && (expected.nonempty !== true || width.rowCount > 0) };
+          collectionWidthEvidence.push(evidence);
+          await field.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name}-${expected.name}-width.png`) });
+        }
+      }
       if (target.captureFormStructure === true) {
         const screenshotStem = `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
         let statusInteractionEvidence = { checked: false, reason: 'not requested', pass: true };
@@ -4706,7 +4747,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractSubviews, contractActions, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialIconResourceEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, sessionExpiredRecoveryEvidence, systemThemeRuntimeEvidence, safeReturnEvidence, formStructureEvidence, fieldAlignmentEvidence, optionalDetailDisclosureEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookJourneyEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractSubviews, contractActions, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialIconResourceEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, sessionExpiredRecoveryEvidence, systemThemeRuntimeEvidence, safeReturnEvidence, formStructureEvidence, collectionWidthEvidence, fieldAlignmentEvidence, optionalDetailDisclosureEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookJourneyEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -4729,6 +4770,7 @@ for (const item of report.routes) {
   if (item.path && item.overlayResidueEvidence && !item.overlayResidueEvidence.pass) {
     failures.push({ name: item.name, overlayResidueEvidence: item.overlayResidueEvidence });
   }
+  if (item.collectionWidthEvidence?.some((row) => !row.pass)) failures.push({ name: item.name, collectionWidthEvidence: item.collectionWidthEvidence });
   if (item.path && configuredTarget?.captureFormStructure === true && !item.formStructureEvidence?.pass) {
     failures.push({ name: item.name, formStructureEvidence: item.formStructureEvidence || null });
   }

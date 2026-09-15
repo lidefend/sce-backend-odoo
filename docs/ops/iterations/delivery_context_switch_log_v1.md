@@ -9534,3 +9534,30 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Branch: codex/form-structure-authority-unification-v1; HEAD: 8907a41f
 - Layer Target / Module: P1 native views + semantic configuration / smart_construction_core; P0 only evidenced generic defects; P4 existing evidence tools.
 - Reason: Owner approved customer grouping closure and payment/tender/dashboard migration; preserve capabilities and explicit compatibility retirement.
+
+## 2026-09-15 — U-B-TWO-GAPS-CLOSURE
+
+- Branch / starting anchor: `codex/form-structure-authority-unification-v1` /
+  `8874b563ff6e84e4383425d691dfb3181b84f5e7`; complete starting fingerprint
+  `cb67a4c0ce7a60043d5ec9f95ddaf51cfda536c2c0fe6b1ad38011a8658007bf`.
+- P0 / generic form renderer and primitive event bridge / Web frontend: preserve
+  full-width readonly empty collections when their label row has no content;
+  unwrap AutoComplete native events before the many2one control consumes them.
+  No model-specific CSS, native section, domain, permission or amount changes.
+- P4 / existing candidate visual smoke and tender-award runner: measure inner
+  collection width with declared viewport scope; select exact fixture option ID,
+  prove onchange draft value, reject invalid write parameters before forwarding,
+  and retain authoritative readback before confirmation and after repeat.
+- First failure evidence: old candidate selected owned opening 119 and sent 119
+  in onchange; after blur it sent false without any backend clearing patch.
+  Diagnostic stopped before saving. Native collection groups were already full
+  width; desktop empty label columns consumed 232px. Mobile rules unchanged.
+- Reuse `sc-local-dev / sc_dev_demo / ^sc_dev_demo$ / sc_local_dev_odoo_data` and
+  owned `codex_p4_tender_award / ub-structure-20260915`; no historical lifecycle
+  operation, fixture reset, business-record experiment or full browser matrix.
+- L1 iteration 16 passed; primitive event regression and affected L2 tests run.
+  Canvas guard exposed a stale pre-U-A assertion hiding every group heading;
+  align it to declared native/governed authority and feedback suppression.
+- Runtime evidence and compatibility delta live in
+  `artifacts/form-structure-unification/ub-two-gaps/`. Product verification is
+  pending; final freeze/independent review/Quick await owner browser review.

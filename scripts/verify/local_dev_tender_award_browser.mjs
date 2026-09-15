@@ -107,6 +107,7 @@ const report = {
   formal_entry: authority.formal_entry,
   fixture_before: authority.fixture,
   mutations: [],
+  selection_chain: [],
   relation_requests: [],
   contract_requests: [],
   award_opening_descriptors: [],
@@ -166,28 +167,30 @@ function waitForCurrentRecordContract(page) {
     } catch { return false; }
   }, { timeout: 45_000 });
 }
-async function chooseRelation(page, fieldName, rowText) {
+async function chooseRelation(page, fieldName, expectedId) {
   const root = page.locator(`[data-field-name="${fieldName}"]:visible`).first();
   await root.scrollIntoViewIfNeeded();
-  const input = root.locator('input:visible').first();
-  await input.click();
-  await page.waitForTimeout(300);
-  const inline = page.getByRole('option').filter({ hasText: rowText }).first();
-  if (await inline.count() && await inline.isVisible().catch(() => false)) {
-    await inline.click();
-    return 'inline';
-  }
+  await root.locator('input:visible').first().click();
   const searchMore = root.getByRole('button', { name: /搜索更多/ }).first();
   await searchMore.waitFor({ state: 'visible', timeout: 10_000 });
   await searchMore.click();
   const dialog = page.locator('.relation-dialog:visible').first();
-  await dialog.waitFor({ state: 'visible', timeout: 10_000 });
-  const row = dialog.locator('tbody tr:visible, .relation-dialog-result-card:visible').filter({ hasText: rowText }).first();
+  const row = dialog.locator(`[data-record-id="${expectedId}"]:visible`);
   await row.waitFor({ state: 'visible', timeout: 10_000 });
+  check(await row.count() === 1, 'opening option identity is ambiguous');
   await row.click();
+  check(await row.getAttribute('aria-selected') === 'true', 'opening option is not selected');
+  report.selection_chain.push({ stage: 'option_selected', at: new Date().toISOString(), id: expectedId, selected: true });
   await dialog.getByRole('button', { name: /^选择$/ }).click();
   await dialog.waitFor({ state: 'hidden', timeout: 10_000 });
-  return 'search-more';
+  return 'search-more-exact-id';
+}
+async function openingValueEvidence(page, stage) {
+  const display = await page.locator('[data-field-name="award_opening_id"] input:visible').first().inputValue();
+  const draft = report.selection_chain.filter((row) => row.stage === 'onchange_draft').at(-1);
+  const evidence = { stage, at: new Date().toISOString(), display, draftId: draft?.openingId };
+  report.selection_chain.push(evidence);
+  check(display.trim() && Number(evidence.draftId) === Number(authority.fixture.opening_id), 'opening ID not bound in control/draft; confirmation forbidden', evidence);
 }
 async function chooseSelection(page, fieldName, label) {
   const root = page.locator(`[data-field-name="${fieldName}"]:visible`).first();
@@ -214,7 +217,7 @@ async function saveDraft(page) {
   const result = await response;
   const body = await result.json().catch(() => ({}));
   check(result.status() === 200 && body?.ok === true, 'award inputs save failed', body);
-  report.mutations.push({ intent: 'api.data.write', status: result.status(), fields: ['award_opening_id', 'award_source_kind', 'award_source_reference', 'award_tax_basis'] });
+  report.mutations.push({ intent: 'api.data.write', status: result.status(), vals: result.request().postDataJSON().params.vals, traceId: result.headers()['x-trace-id'] || body.meta?.trace_id });
   await page.waitForTimeout(500);
 }
 async function executeFromPage(page) {
@@ -265,6 +268,16 @@ async function readBid(page) {
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1088, height: 791 }, locale: 'zh-CN' });
 const contractResponseCaptures = [];
+await page.route('**/api/v1/intent?**', async (route) => {
+  let body; try { body = route.request().postDataJSON(); } catch { return route.continue(); }
+  if (body?.intent === 'api.data' && body.params?.op === 'write' && body.params?.model === 'tender.bid') {
+    const valid = Number(body.params.vals?.award_opening_id) === Number(authority.fixture.opening_id)
+      && JSON.stringify((body.params.ids || []).map(Number)) === JSON.stringify([Number(authority.fixture.bid_id)]);
+    report.selection_chain.push({ stage: 'submit_parameters', at: new Date().toISOString(), ids: body.params.ids, vals: body.params.vals, forwarded: valid });
+    if (!valid) { report.errors.push('opening submit ID mismatch; write blocked'); return route.abort('blockedbyclient'); }
+  }
+  await route.continue();
+});
 page.on('request', (request) => {
   if (!request.url().includes('/api/v1/intent')) return;
   try {
@@ -278,12 +291,18 @@ page.on('request', (request) => {
       });
     }
     if (body?.intent === 'ui.contract.v2') report.contract_requests.push(body.params);
+    if (body?.intent === 'api.onchange' && body.params?.model === 'tender.bid') {
+      report.selection_chain.push({ stage: 'onchange_draft', at: new Date().toISOString(), changedFields: body.params.changed_fields, openingId: body.params.values?.award_opening_id });
+    }
   } catch { /* failure evidence must not change the journey */ }
 });
 page.on('response', (response) => {
   if (!response.url().includes('/api/v1/intent')) return;
   let requestBody;
   try { requestBody = response.request().postDataJSON(); } catch { return; }
+  if (requestBody?.intent === 'api.onchange' && requestBody.params?.model === 'tender.bid') {
+    contractResponseCaptures.push(response.json().then((body) => report.selection_chain.push({ stage: 'onchange_result', at: new Date().toISOString(), patch: body.data?.patch, traceId: response.headers()['x-trace-id'] || body.meta?.trace_id })));
+  }
   if (requestBody?.intent !== 'ui.contract.v2') return;
   const capture = response.json().then((body) => {
     report.award_opening_descriptors.push(...collectAwardOpeningDescriptors(body));
@@ -301,17 +320,29 @@ try {
   await waitForForm(page);
   check(new URL(page.url()).searchParams.get('menu_id') === String(entry.menu_id), 'formal menu identity was lost');
   check(new URL(page.url()).searchParams.get('action_id') === String(entry.action_id), 'formal action identity was lost');
-  report.opening_selection_path = await chooseRelation(page, 'award_opening_id', /900|受管中标/);
+  const openingRead = await intent(page, 'api.data', { op: 'read', model: 'tender.opening', ids: [authority.fixture.opening_id], fields: ['id', 'bid_id', 'result'], context: { company_id: authority.writer.company_id } });
+  const opening = openingRead.body?.data?.records?.[0];
+  check(Number(opening?.id) === Number(authority.fixture.opening_id) && Number(opening?.bid_id?.[0]) === Number(authority.fixture.bid_id) && opening?.result === 'won', 'opening eligibility/ownership mismatch', opening);
+  report.option_eligibility = { ...opening, companyId: authority.writer.company_id, status: openingRead.status, traceId: openingRead.body?.meta?.trace_id };
+  const selectedDraftResponse = page.waitForResponse((response) => {
+    try { const b = response.request().postDataJSON(); return b?.intent === 'api.onchange' && b.params?.model === 'tender.bid' && Number(b.params?.values?.award_opening_id) === Number(authority.fixture.opening_id); } catch { return false; }
+  }, { timeout: 15_000 });
+  report.opening_selection_path = await chooseRelation(page, 'award_opening_id', Number(authority.fixture.opening_id));
+  await selectedDraftResponse;
+  await openingValueEvidence(page, 'control_and_draft_after_selection');
   await chooseSelection(page, 'award_source_kind', '最终报价资料');
   await page.locator('[data-field-name="award_source_reference"] input:visible').first().fill(authority.expected.source_reference);
   await chooseSelection(page, 'award_tax_basis', '未知');
   await page.screenshot({ path: path.join(outputDir, 'before-confirmation.png'), fullPage: true });
+  await page.waitForTimeout(600); // Allow the existing debounced onchange to settle after focus leaves the relation.
+  await openingValueEvidence(page, 'control_and_draft_before_save');
   await saveDraft(page);
   const prepared = await readBid(page);
   check(Number(Array.isArray(prepared.award_opening_id) ? prepared.award_opening_id[0] : prepared.award_opening_id) === Number(authority.fixture.opening_id), 'saved opening selection mismatch', prepared);
   check(prepared.award_source_kind === 'final_quote' && prepared.award_tax_basis === 'unknown', 'saved source/tax facts mismatch', prepared);
   check(prepared.award_source_reference === authority.expected.source_reference, 'saved source reference mismatch', prepared);
 
+  report.authoritative_before_confirm = prepared;
   const repeatRequest = await executeFromPage(page);
   const confirmed = await readBid(page);
   check(confirmed.state === 'won', 'award state was not confirmed', confirmed);
@@ -392,6 +423,7 @@ try {
   };
   await page.screenshot({ path: path.join(outputDir, 'failure.png'), fullPage: true }).catch(() => {});
 } finally {
+  await Promise.allSettled(contractResponseCaptures);
   await browser.close().catch(() => {});
   fs.writeFileSync(path.join(outputDir, 'summary.json'), JSON.stringify(report, null, 2));
 }

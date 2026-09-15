@@ -180,8 +180,14 @@ if ':fill-orphan-rows="false"' not in read("components/template/NativeFormTreeRe
     fail("native forms still stretch ordinary orphan fields across a full row")
 if object_task.index('data-floorplan-region="relation"') > object_task.index('data-floorplan-region="post-relation-input"'):
     fail("relationship details are still placed after post-relation disclosures")
-if "const sectionTitle = computed(() => '');" not in canonical_renderer or "const groupHeadingVisible = computed(() => false);" not in canonical_renderer:
-    fail("intentionally hidden backend group titles were restored")
+for required in (
+    "const sectionTitle = computed(() => '');",
+    "props.hideGovernedSectionHeading",
+    "governedFormStructureSectionIdentity(props.node) || nativeBusinessSectionIdentity(props.node)",
+    "const groupHeadingVisible = computed(() => Boolean(governedSection.value));",
+):
+    if required not in canonical_renderer:
+        fail("group heading is not bound to declared section authority or feedback suppression")
 for required in (
     ".canonical-form-node--readonly-fact :deep(.field-control-row),\n.canonical-form-node--readonly-fact :deep(.field-control-main) {\n  display: block;\n  width: 100%;\n  max-width: 100%;\n  min-width: 0;",
     "white-space: pre-wrap;\n  overflow-wrap: anywhere;\n  word-break: break-word;",
