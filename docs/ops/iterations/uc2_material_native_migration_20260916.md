@@ -1,6 +1,6 @@
 # U-C2：材料入库／出库原生结构迁移
 
-状态：入库代表面已完成源码迁移并通过 L1、定向 L2 和受管增量升级；已确认受影响页面的只读浏览器样板不依赖全量 demo 对账，尚未完成 L4 浏览器证据和消费者扣减。
+状态：入库代表面已完成源码迁移，并通过 L1、定向 L2、受管增量升级和桌面／移动 L4 只读浏览器样板；兼容消费者台账已由 46 扣减为 45。
 
 ## 边界与基线
 
@@ -13,16 +13,16 @@
 - Why Not Elsewhere：不在 P0 前端推导材料语义，不把稳定标准留在 P3 兼容编排，也不通过 P4 脚本修改库存事实。
 - Blast Radius：本批只迁移材料入库。库存、计价、保存、审批、权限、出库和退库业务规则不变。
 
-## 46 项台账中的实际范围
+## UC1 发布后 46 项台账中的实际范围
 
 | 台账消费者 | 正式入口 | 台账身份 | 原生表单 | 本批处理 |
 |---|---|---|---|---|
-| 材料入库 | `menu_sc_material_inbound` → `action_sc_material_inbound_handling` | action 546 / menu 494 | `view_sc_material_inbound_form`，view 1428 | 代表面迁移 |
-| 材料出库 | `menu_sc_material_outbound` → `action_sc_material_outbound` | action 547 / menu 495 | `view_sc_material_outbound_form`，view 1431 | 后续同类批次 |
+| 材料入库 | `menu_sc_material_inbound` → `action_sc_material_inbound_handling` | action 546 / menu 494 | `view_sc_material_inbound_form`，view 1428 | 已迁移并从台账退出 |
+| 材料出库 | `menu_sc_material_outbound` → `action_sc_material_outbound` | action 547 / menu 495 | `view_sc_material_outbound_form`，view 1431 | 当前 45 项中的后续入口 |
 
 `menu_sc_material_return` 通过 `action_sc_material_return` 打开同一
 `sc.material.outbound` / `view_sc_material_outbound_form`，仅以
-`outbound_type=return` 和 `material.return` 分类区分。它没有独立出现在 46 项台账中，不能作为第三个消费者重复扣减。`sc.material.supplier.return` 使用独立原生模型和
+`outbound_type=return` 和 `material.return` 分类区分。它没有独立出现在原 46 项／现 45 项台账中，不能作为第三个消费者重复扣减。`sc.material.supplier.return` 使用独立原生模型和
 `view_sc_material_supplier_return_form`，同样不在本台账范围内。
 
 ## 入库代表面
@@ -44,13 +44,13 @@
 | L3 | `CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core make local.dev.upgrade MODULE=smart_construction_core` | passed | `sc-local-dev` / `sc_dev_demo` / `^sc_dev_demo$` / `sc_local_dev_odoo_data` | 只读候选运行态 |
 | L4 错误前置诊断 | `make local.dev.sync_demo` | failed | 该入口调用 `demo.load.full`，会写入并对账全量演示数据；既有已审批结算样本发票金额期望 280000、实际 0 | 单列 demo settlement fixture 问题，不作为只读样板门禁 |
 | L4 只读前置 | `local.dev.candidate.frontend.up/health/visual-smoke` 调用链审计 | passed | 保留允许分支、干净精确 HEAD、源码挂载、数据库/dbfilter/filestore、有效账号和目标路由身份检查；不调用 demo reset | action 546 创建态与已有查看态 |
-| L4 浏览器 | 未运行 | not_run | 尚无截图和浏览器扣减依据 | 保持台账 46 |
+| L4 浏览器 | `FRONTEND_MATERIAL_SAMPLE_REVIEW=1 ... make verify.frontend.professionalization.material_domain.browser` | passed | `e10da352a5d5b300b6d3071befe4ed3d807de3f9` / 指纹 `5d333882...`；action 546、menu 494、view 1428；1440×960 与 390×844；已有 `S80-MIN-001` 和新建零保存；12 张截图；零写请求且前后业务指纹一致 | 入库扣减为 45，出库继续 |
 
 曾运行一次过宽的 `TestUserFeedbackBusinessViews`，71 个方法中出现 13 failed / 16 errors；入库新增契约测试通过，新增静态断言的作用域错误已修复。其余失败属于既有发票、费用归属、历史模型和列表基线，不作为本批测试入口，也未通过重复宽测掩盖。
 
 ## 计数规则
 
-UC1 发布台账保持 46。入库虽已在实际模块升级后无兼容结构依赖，但尚缺冻结候选的受影响浏览器效果，因此本批不把 46 改为 45。出库／退库共享表单只有在其实际契约与浏览器效果均通过后才处理对应的单个出库消费者。
+入库的实际契约与浏览器效果均已通过，action 546 从台账退出，发布计数由 46 更新为 45。台账变更只触及本迭代记录和消费者 JSON，不改变 e10da352 浏览器命令输入、后端模块、前端源码或运行环境，因此按确定性影响分析承接该 L4 结果，不重复已通过样板。出库／退库共享表单只有在两个正式入口的实际契约与浏览器效果均通过后，才处理对应的单个出库消费者并由 45 更新为 44。
 
 ## 清理前证据归档
 
@@ -72,5 +72,7 @@ UC1 发布台账保持 46。入库虽已在实际模块升级后无兼容结构�
 第四次探测显示 action 546 原生新建态把 `state` 作为原生树内唯一状态事实，而非专业状态栏；此前“必须在页头”的断言仍属验收脚本布局偏好。门禁收敛为正文状态事实与页头状态栏合计恰有一个可见拥有者，只验证状态保留和不重复。该次不记通过。
 
 第五次探测的桌面视口通过此前检查，移动视口的来源定位器选中隐藏的桌面表格副本并超时；日志确认相同 `S80-MA-001` 节点存在。选择器限定为当前视口可见节点后重试，该次不记通过。
+
+第六次探测在候选 `e10da352a5d5b300b6d3071befe4ed3d807de3f9` 通过。两个视口均确认 view 1428 / action 546 同一原生来源、`container_tree_authority`、`native_authority`、零 `compatibilityDependencies`、入库明细／说明与附件／来源追溯三个页签、全部来源契约字段、来源值 `S80-MA-001`、唯一状态拥有者、保存能力和契约内带入验收操作；新建态未保存。证据位于 `tmp/uc2/material-inbound-sample-e10da352`，清理前必须纳入外部归档。
 
 action 777 保持原“环境阻断、未通过”状态，本批没有探测或改写。
