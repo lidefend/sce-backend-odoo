@@ -9498,3 +9498,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Formal Product Layer 为 P4；Layer Target 为 `workspace.branch.sync-main` 的冻结候选历史重放边界。普通 1—12 提交入口保持不变；新 extended 入口只接受仓库所有者明确批准、未发布、无 PR、clean、具备当前工作树 exact-head Quick receipt 且精确绑定 branch/head/old-base/main/commit-count 的 13—64 提交候选，并使用独立确认短语。
 - extended 入口继续创建并验证 recovery bundle，拒绝 merge commit、远端同名分支、开放 PR、Git writer 和任何未登记产品冲突。正式交付日志只允许纯追加合成；登记的可重新生成证据冲突采用新 main 版本并显式报告失效，要求随后刷新生成证据、重新冻结及对新 HEAD 验证，旧 receipt 不得复用。
 - 本批不修改产品、业务契约、数据库、运行环境或远端分支。L1 使用 `make ci.local.iteration`；L2 使用新登记的 `make verify.workspace.branch.sync-main`，18 项覆盖默认上限、精确提交数、独立确认、生成证据冲突、产品冲突自动回滚、路径和 patch 身份保真。首次独立复核发现成功 rebase 后的校验失败没有恢复旧 HEAD，且仅交付日志的普通同步会形成空稳定 patch；修复后空稳定 patch 由日志保真断言承接，rebase 中异常与全部后置校验失败均恢复原 HEAD 和 clean 状态。
+
+## 2026-09-15 — 长分支生成证据空提交兼容
+
+- 分支 `fix/p4-governed-frozen-sync-generated-drop-v1`，基线 `origin/main@bc4e102ebe986c926bd62a72f65c446a821a53d8`；继续复用既有 P4 工作树。Formal Product Layer 与 Layer Target 均保持 P4 受管分支同步工具，不修改产品、契约、运行环境或数据库。
+- 首次用 extended 入口同步中标冻结候选时，最后一个仅修改已登记复杂度报告的提交在冲突采用新 main 权威版本后正确变为空提交；旧的“重放后提交数绝对不变”校验将这一受控失效误判为责任丢失，并按设计恢复原 HEAD 和 clean 状态。
+- 修复后仅允许提交数减少不超过“完整变更集属于本次已确认生成证据冲突”的责任提交数；稳定路径集合和排除失效证据后的 patch identity 仍必须精确相同，产品提交、未登记生成文件和其他冲突不能借此消失。定向测试新增真实生成证据-only 冲突反例。

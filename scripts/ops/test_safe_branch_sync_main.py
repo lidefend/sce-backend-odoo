@@ -259,6 +259,44 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         self.assertEqual(self.generated_evidence.read_text(encoding="utf-8"), "main-generated\n")
         self.assertEqual((self.root / "generated-side.txt").read_text(encoding="utf-8"), "feature-side\n")
 
+    def test_extended_sync_allows_generated_only_commit_to_become_empty(self) -> None:
+        self.generated_evidence.write_text("feature-generated-only\n", encoding="utf-8")
+        git(self.root, "add", syncer.GENERATED_EVIDENCE_CONFLICT_PATHS[0])
+        git(self.root, "commit", "-m", "refresh generated evidence")
+        for index in range(syncer.MAX_RESPONSIBILITY_COMMITS - 1):
+            git(self.root, "commit", "--allow-empty", "-m", f"feature checkpoint {index}")
+        extended_head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        commit_count = len(
+            git(self.root, "rev-list", f"{self.old_base}..{extended_head}").stdout.splitlines()
+        )
+
+        git(self.root, "switch", "main")
+        self.generated_evidence.write_text("main-generated-authority\n", encoding="utf-8")
+        git(self.root, "add", syncer.GENERATED_EVIDENCE_CONFLICT_PATHS[0])
+        git(self.root, "commit", "-m", "main generated evidence")
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "fetch", "origin", "main")
+        extended_main = git(self.root, "rev-parse", "origin/main").stdout.strip()
+        git(self.root, "switch", "feature/local-sync")
+
+        plan = self.plan(
+            expected_head=extended_head,
+            expected_main=extended_main,
+            allow_extended_history=True,
+            expected_commit_count=commit_count,
+        )
+        result = syncer.sync(plan)
+        replayed_count = len(
+            git(self.root, "rev-list", f"{extended_main}..{result.head}").stdout.splitlines()
+        )
+        self.assertEqual(replayed_count, commit_count - 1)
+        self.assertEqual(result.generated_evidence_conflicts, syncer.GENERATED_EVIDENCE_CONFLICT_PATHS)
+        self.assertEqual(
+            self.generated_evidence.read_text(encoding="utf-8"),
+            "main-generated-authority\n",
+        )
+        self.assertTrue((self.root / "feature.txt").is_file())
+
     def test_extended_confirmation_is_distinct(self) -> None:
         with mock.patch.object(
             sys,

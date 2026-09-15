@@ -147,6 +147,46 @@ def commit_paths(root: Path, left: str, right: str) -> tuple[str, ...]:
     return tuple(sorted(filter(None, git_output(root, "diff", "--name-only", left, right).splitlines())))
 
 
+def generated_only_commit_count(plan: SyncPlan, paths: tuple[str, ...]) -> int:
+    """Count responsibility commits whose complete diff is invalidated evidence.
+
+    Rebase may legitimately drop such a commit after a registered generated
+    evidence conflict is resolved to the exact new-main version.  This count is
+    only a ceiling for commit-count shrinkage; aggregate path and patch identity
+    checks still prove that no stable responsibility change disappeared.
+    """
+    allowed = set(paths)
+    if not allowed:
+        return 0
+    commits = filter(
+        None,
+        git_output(
+            plan.root,
+            "rev-list",
+            "--reverse",
+            f"{plan.old_base}..{plan.head}",
+        ).splitlines(),
+    )
+    count = 0
+    for commit in commits:
+        changed = set(
+            filter(
+                None,
+                git_output(
+                    plan.root,
+                    "diff-tree",
+                    "--no-commit-id",
+                    "--name-only",
+                    "-r",
+                    commit,
+                ).splitlines(),
+            )
+        )
+        if changed and changed.issubset(allowed):
+            count += 1
+    return count
+
+
 def patch_id(root: Path, left: str, right: str, *, exclude: tuple[str, ...] = ()) -> str:
     args = ["diff", "--binary", left, right]
     if exclude:
@@ -390,7 +430,10 @@ def sync(plan: SyncPlan) -> SyncResult:
         new_head = git_output(plan.root, "rev-parse", "HEAD")
         require_clean(plan.root)
         new_commits = tuple(filter(None, git_output(plan.root, "rev-list", "--reverse", f"{plan.new_main}..{new_head}").splitlines()))
-        if len(new_commits) != plan.commit_count:
+        maximum_generated_drop = generated_only_commit_count(
+            plan, generated_evidence_conflicts
+        )
+        if not plan.commit_count - maximum_generated_drop <= len(new_commits) <= plan.commit_count:
             raise SyncError("responsibility commit count changed after sync")
         excluded_paths = tuple(sorted(generated_evidence_conflicts))
         old_stable_paths = tuple(path for path in plan.paths if path not in excluded_paths)
