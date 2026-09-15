@@ -2373,7 +2373,10 @@ try {
         const manualNavigationJourney = [];
         for (const label of (Array.isArray(target.sectionManualJourneyLabels) ? target.sectionManualJourneyLabels : [])) {
           const link = await exactSectionLink(label);
-          await link.evaluate((node) => {
+          // Sticky chrome changes its anchor while entering/leaving the top.
+          // Re-read it after scrolling; never activate a navigation link here.
+          for (let settlingStep = 0; settlingStep < 3; settlingStep += 1) {
+            await link.evaluate((node) => {
             const selector = node instanceof HTMLElement ? String(node.dataset.sectionTarget || '') : '';
             const nav = node.closest('[data-form-section-navigation]');
             const root = nav?.closest('[data-native-contract-structure], .object-task-page');
@@ -2388,11 +2391,12 @@ try {
               header instanceof HTMLElement ? header.getBoundingClientRect().bottom : 0,
               ownerTop,
             ) + 12;
-            const delta = targetNode.getBoundingClientRect().top - anchor;
+            const delta = targetNode.getBoundingClientRect().top - anchor + 1;
             if (owner instanceof HTMLElement) owner.scrollBy({ top: delta, behavior: 'auto' });
             else window.scrollBy({ top: delta, behavior: 'auto' });
           });
-          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+            await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          }
           let activationError = '';
           try {
             await page.waitForFunction((expectedLabel) => [...document.querySelectorAll(
