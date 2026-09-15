@@ -43,9 +43,9 @@ goal:
   rollback:
     - revert_the_single_p4_delivery_commit
   next_exact_step: >-
-    The payment-create dependency fix at a45f80d6 has passed targeted and
-    local browser validation and independent code review. Prepare generated
-    evidence once, freeze the final delivery head, run its Quick and update
-    PR 480 through governed publication. Collect required exact-head remote
-    results before any merge decision; keep action777 not passed and the
-    compatibility ledger at 53 to 50.
+    The record-identity consumption fix at e3fc8955 passed focused tests,
+    read/edit browser checks and independent code review. Prepare generated
+    evidence once and freeze the final delivery head for Quick and pr.push.
+    Use ordinary PR required checks for the authorized Squash merge, without
+    candidate dispatch or publication qualification. Keep action777 not passed,
+    the compatibility ledger at 53 to 50, and reuse unchanged evidence.

@@ -189,3 +189,16 @@ P0修复a45f80d6cbdf193a4bc42852224b6058ae49e38a仅扩展smart_core最终modifie
 - L5：本次集中更新交付文档、运行ci.delivery.freeze.prepare、审阅生成差异后冻结最终HEAD，再执行一次最终Quick及受管PR更新。receipt与远端结果进入现有RESULT.json和PR文本，不在冻结后追加跟踪文档。旧receipt不作为新HEAD证据。
 
 原始证据统一引用ua-ub-limited-closeout/RESULT.json：payment-create-fix-revalidated-targeted.log、payment-create-orm-revalidated.log、payment-create-local-diagnostic/与payment-create-local-fixed/，保留失败/恢复事实。回滚此修复需恢复对应P0提交并受管重载服务，无业务数据回滚。本批仍为“唯一结构机制及首批代表面迁移”；action777环境阻断、未通过，兼容53→50，U-C1仅任务书。
+
+
+### 9.6 记录身份消费修复与合并车道纠正
+
+a708e49dc5c7d131028e19fdb6688013958a317b 的最终 Quick 通过。远端 frontend run34979626225 首败已推进到 J10：正常进入付款记录后，页面身份使用完整 display_name，未满足短编号断言；J09 通过。同期 public、professional、merge_policy 通过。普通 PR 检查原在运行，追加 ci:candidate 将其取消并升级为完整发布验收，造成额外等待；工作区规则现明确合并只消费 required checks，发布入口不额外作为合并前置，也不掩盖已知产品失败。
+
+P0 前端修复 e3fc89556ecc1ef00cee0955dc9d65ab80065b32：同候选只读对照确认后端 mainData.name 已存在，但正文不含编号，formData 未保留该值。ContractFormPage 将现有契约 store 的授权记录数据传给身份适配器；记录身份合并快照与当前编辑值，编辑值优先，创建态忽略旧快照。未修改可提交字段、权限、原生结构、业务请求或后端规则。
+
+- L1 轻量入口通过；L2 身份 47 个断言、严格类型检查通过。新增 12 项覆盖正文外身份、页面/文档/面包屑一致性、编辑优先、显式清空、缺失、创建及无副作用；同测试替换为不可变 a708 旧适配器时，关键断言稳定失败。初次测试加载器的浏览器 import.meta 隔离问题单列工具失败，已修正，不当作产品反例。
+- L3 无后端、schema 或模块变化，免重复升级；使用既有 sc-local-dev/sc_dev_demo、公司1、sc_test_admin，前后端身份绑定 e3fc8955。L4 仅付款621的390只读态与桌面编辑态：精确标题选择器通过、零业务写入、零页面错误，两次契约 trace 匹配服务端。不是 CI finance 全旅程通过，也不重跑客户/看板/中标及其他移动证据。
+- 独立审查确认三文件修复无 S0–S2 代码阻断，提交全部内容/模式与审查指纹一致。最终文档/生成准备后冻结新 HEAD，执行一次 Quick，受管推送并核对四项 required checks；通过后按授权 Squash 合并。候选发布不在本次收口范围。
+
+原始证据继续由 ua-ub-limited-closeout/RESULT.json 引用：payment-identity-before/、payment-identity-fixed/、identity-fix-targeted.log、identity-regression-baseline.log、identity-fix-typecheck.log、identity-fix-server.log。旧 receipt 与失败 CI 保留，不冒充新 HEAD。回滚仅恢复身份适配器和调用处，无业务数据回滚。action777 仍为环境阻断、未通过；兼容消费者 53→50；U-C1 未实施。
