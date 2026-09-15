@@ -140,6 +140,8 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
             "verify.local.dev.payment_request.full_chain",
             "verify.local.dev.payment_request.settlement_component.journey",
             "verify.local.dev.payment_request.attachment_m2m.journey",
+            "verify.local.dev.tender_award.unit",
+            "verify.local.dev.tender_award.journey",
             "local.sample.prepare",
             "local.sample.up",
             "local.sample.down",

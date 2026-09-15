@@ -43,6 +43,9 @@ make verify.local.dev.frontend.quick.gate
 make verify.local.dev.payment_request.native_parity.readonly
 make verify.local.dev.payment_request.full_chain SOURCE_SHA=$(git rev-parse HEAD) CANDIDATE_FINGERPRINT=<full-fingerprint-sha256>
 make verify.local.dev.payment_request.settlement_component.journey
+make verify.local.dev.payment_request.attachment_m2m.journey
+make verify.local.dev.tender_award.unit
+make verify.local.dev.tender_award.journey PRODUCT_CANDIDATE_SHA=<approved-product-sha> P4_TENDER_AWARD_BATCH=<owned-batch>
 make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestP1PaymentRequestCapability'
 make local.dev.reset_payment_request_fixture
 make local.dev.sync_demo
@@ -72,6 +75,12 @@ fixture，按真实角色完成提交、管理层审批、付款登记审批、�
 成功后保留已付款申请、付款登记和台账作为不可变验收历史，下次运行时由已登记的
 `payment_request_floorplan_demo` seed 创建新一期受管 fixture；只清理付款前中断的可删除数据，
 不重载无关演示数据，也不绕过财务追溯规则。
+
+`verify.local.dev.tender_award.journey` 仅在 `sc_dev_demo` 中创建带显式批次 XMLID 的
+投标、单条清单和单条开标记录，复用既有项目、业主与项目经理账号。浏览器从正式投标入口
+确认中标事实，随后由 Odoo 权威回读核对报价、清单合计、中标快照、确认人、确认时间及未创建
+合同；成功后只删除该批次拥有的三条记录。旅程失败时保留批次供诊断，并要求操作者通过同一
+受管 fixture 入口显式清理，禁止手工拼接数据库或 API 命令。
 
 当持久样本库损坏或明确需要从日常开发服务器刷新时，先用日常环境的 governed paired
 backup 取得 `database.dump + filestore.tar.gz + manifest.json + SHA256SUMS`，下载到
