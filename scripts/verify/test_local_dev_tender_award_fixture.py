@@ -10,6 +10,7 @@ FIXTURE_SH = (ROOT / "scripts/verify/local_dev_tender_award_fixture.sh").read_te
 BROWSER = (ROOT / "scripts/verify/local_dev_tender_award_browser.mjs").read_text(encoding="utf-8")
 JOURNEY = (ROOT / "scripts/verify/local_dev_tender_award_journey.sh").read_text(encoding="utf-8")
 MAKE = (ROOT / "make/dev.mk").read_text(encoding="utf-8")
+ODOO_SHELL = (ROOT / "scripts/ops/odoo_shell_exec.sh").read_text(encoding="utf-8")
 
 
 class TestLocalDevTenderAwardFixture(unittest.TestCase):
@@ -61,6 +62,10 @@ class TestLocalDevTenderAwardFixture(unittest.TestCase):
         self.assertIn("local.dev.tender_award_fixture: guard.prod.forbid local.dev.ready", MAKE)
         self.assertIn("local.dev.tender_award_browser: guard.prod.forbid local.dev.ready", MAKE)
         self.assertIn("verify.local.dev.tender_award.journey: guard.prod.forbid local.dev.ready", MAKE)
+
+    def test_governed_shell_forwards_tender_award_authority_inputs(self):
+        self.assertIn("P4_TENDER_AWARD_*", ODOO_SHELL)
+        self.assertIn("CANDIDATE_GIT_HEAD", ODOO_SHELL)
 
 
 if __name__ == "__main__":
