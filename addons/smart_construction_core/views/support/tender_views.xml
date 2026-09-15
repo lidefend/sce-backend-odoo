@@ -82,7 +82,9 @@
                         </group>
                     </group>
 
-                    <group string="中标事实确认"
+                    <group name="sc_tender_award_confirmation"
+                           string="中标事实确认"
+                           data-sc-anchor="tender-award-confirmation"
                            invisible="state not in ['submitted', 'waiting', 'won']">
                         <group>
                             <field name="award_opening_id"

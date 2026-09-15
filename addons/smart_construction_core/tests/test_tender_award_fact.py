@@ -139,6 +139,8 @@ class TestTenderAwardFact(TransactionCase):
 
     def test_form_declares_explicit_award_source_and_non_clickable_status(self):
         arch = self.env.ref("smart_construction_core.view_tender_bid_form").arch_db
+        self.assertIn('name="sc_tender_award_confirmation"', arch)
+        self.assertIn('data-sc-anchor="tender-award-confirmation"', arch)
         for field_name in (
             "award_opening_id",
             "award_tax_basis",
@@ -213,6 +215,43 @@ class TestTenderAwardFact(TransactionCase):
             "award_contract_handoff_message",
         ):
             self.assertIn(field_name, field_codes)
+
+        def collect_anchored_sections(value):
+            if isinstance(value, dict):
+                sections = []
+                attributes = value.get("attributes") or {}
+                if attributes.get("data-sc-anchor"):
+                    sections.append(value)
+                for nested in value.values():
+                    sections.extend(collect_anchored_sections(nested))
+                return sections
+            if isinstance(value, list):
+                sections = []
+                for nested in value:
+                    sections.extend(collect_anchored_sections(nested))
+                return sections
+            return []
+
+        award_sections = [
+            section
+            for section in collect_anchored_sections(
+                contract["layoutContract"]["containerTree"]
+            )
+            if (section.get("attributes") or {}).get("data-sc-anchor")
+            == "tender-award-confirmation"
+        ]
+        self.assertEqual(len(award_sections), 1, award_sections)
+        award_section_fields = set(collect_field_codes(award_sections[0]))
+        for field_name in (
+            "award_opening_id",
+            "award_source_kind",
+            "award_source_reference",
+            "award_source_attachment_id",
+            "award_tax_basis",
+            "award_confirmation_state",
+            "award_contract_handoff_message",
+        ):
+            self.assertIn(field_name, award_section_fields)
 
     def test_formal_entry_contract_keeps_confirmation_action_available(self):
         bid = self._bid("正式入口动作投标", state="submitted")
