@@ -127,3 +127,16 @@ U-C 优先上述四项合同/结算，复用当前唯一机制。先按共享 vi
 用户已澄清最终验证规则：日常轻量验证→修复后定向验证→最终候选Quick→成功证据复用。有明确修复依据时重验不需再次申请授权。本条替代第7节此前对“一次Quick”的解释。
 
 action777继续环境阻断、未通过，兼容台账保持53→50；U-C1四入口任务书已准备，迁移未启动。任何合并仍需必需检查通过、审查意见关闭和最终HEAD证据一致；本轮不执行合并。
+
+### 9.1 共享动作栏守卫的后续恢复
+
+f84a667c449fd180626361fb136d41f0d7f7219e 的本地 Quick 已通过且 receipt 精确匹配，但远端 frontend_release_gate（run34968163107）在 2026-09-15T12:20:58Z 首次失败于 `make verify.frontend.professional_workflow.unit`。断言为 `task and workspace do not share CanonicalActionBar`；守卫 blob `92cc8b17029044b1a49c845fddc084c19b9ee974` 与基线9f7bb560一致。前述桥接及样式检查在这轮已通过，不重复诊断。
+
+该断言仍要求宿主源码包含两次动作栏标签；实际兼容任务路径保留直接动作栏，原生任务和工作台通过共享 CanonicalNativeFormSurface 消费同一 CanonicalActionBar。首个失效层是P4验证工具，产品动作桥接未丢失。
+
+- Formal Product Layer：P4；Layer Target／Module：scripts/verify 专业工作流静态守卫及既有测试。Standard vs User-Specific：通用验证工具。Why Here：修复组件提取后失真的检查位置；Why Not Elsewhere：不修改P0组件或P1声明来迎合旧检查。Blast Radius：只影响该守卫，不修改业务页面、权限或动作执行。
+- 最小修复逐一验证任务／工作台的共享表单面输入、兼容任务动作栏、共享面动作栏的 direct／overflow／primary 和 action-ref 转发，以及 header ownership；保留全部其他断言和原Make入口。
+- L0完整指纹绑定；L1 `make ci.local.iteration` 通过；L2 `make verify.frontend.professional_workflow.unit` 通过10个模型案例和5个Python测试。新增测试含9种断链反例，覆盖分支丢动作、动作优先级丢失、事件丢转发、绕过页头所有权和组件导入丢失，均必须被拒绝。
+- L3／L4按与f84a667c逐文件比对证明产品源码未变，承接其影响分析与既有浏览器证据；本轮不触及数据库、容器或fixture。L5重新生成预检、独立审查、冻结新HEAD后取得新的Quick及远端检查；f84a667c receipt仅保留为旧候选证据。
+
+本条在新候选冻结前记录，最终远端状态以新HEAD对应运行及归档为准。release_candidate_gate的下游失败不增加独立修复范围；professional_quality_gate最终结果另行核对。
