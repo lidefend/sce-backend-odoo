@@ -69,6 +69,8 @@ class TestFrontendMaterialDomainRollout(unittest.TestCase):
         self.assertIn("draftNoteRetention", source)
         self.assertIn("top navigation did not reveal, locate, and highlight", source)
         self.assertIn("inspectNonMaterialNavigationCounterexample", source)
+        self.assertIn("FRONTEND_MATERIAL_HANDLING_ENTRIES", source)
+        self.assertIn("FRONTEND_MATERIAL_HANDLING_SKIP_COUNTEREXAMPLE", source)
         self.assertIn("uc2-material-", source)
         self.assertIn("readonly source name is not fully accessible", source)
         self.assertIn("header-owned status remains duplicated", source)

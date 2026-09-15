@@ -26,6 +26,11 @@ const handlingThemes = (process.env.FRONTEND_MATERIAL_HANDLING_THEMES || 'light'
   .split(',')
   .map((value) => value.trim())
   .filter((value) => value === 'light' || value === 'dark');
+const handlingEntryKeys = (process.env.FRONTEND_MATERIAL_HANDLING_ENTRIES || 'inbound,outbound,return')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
+const skipHandlingCounterexample = process.env.FRONTEND_MATERIAL_HANDLING_SKIP_COUNTEREXAMPLE === '1';
 
 const handlingEntrySpecs = Object.freeze({
   inbound: {
@@ -137,7 +142,9 @@ check(target?.user?.login && target?.security_user?.login, 'material domain user
 check(Number(target?.action?.id) > 0 && Number(target?.menu?.id) > 0, 'material domain entry is missing', target);
 check(Number(target?.record?.id) > 0, 'material domain record is missing', target);
 if (handlingReview) {
-  for (const key of Object.keys(handlingEntrySpecs)) {
+  for (const key of handlingEntryKeys) {
+    check(Object.prototype.hasOwnProperty.call(handlingEntrySpecs, key),
+      `unknown material handling entry: ${key}`);
     const entry = target?.entries?.[key];
     check(entry?.model && Number(entry?.action?.id) > 0 && Number(entry?.menu?.id) > 0,
       `material handling entry is missing: ${key}`, entry);
@@ -779,7 +786,8 @@ async function inspectMaterialHandlingReview() {
   report.primary.handlingReviews = [];
   for (const theme of handlingThemes) {
     for (const viewport of handlingViewports) {
-      for (const [entryKey, spec] of Object.entries(handlingEntrySpecs)) {
+      for (const entryKey of handlingEntryKeys) {
+        const spec = handlingEntrySpecs[entryKey];
         const entry = target.entries[entryKey];
         const context = await browser.newContext({
           viewport,
@@ -807,7 +815,9 @@ async function inspectMaterialHandlingReview() {
       }
     }
   }
-  report.primary.nonMaterialNavigationCounterexample = await inspectNonMaterialNavigationCounterexample();
+  report.primary.nonMaterialNavigationCounterexample = skipHandlingCounterexample
+    ? { skipped: true, reason: 'carried_forward_from_same_candidate' }
+    : await inspectNonMaterialNavigationCounterexample();
   check(report.primary.errors.length === 0, 'material handling review has browser errors', report.primary.errors);
   check(report.primary.mutations.length === 0, 'material handling review mutated business data', report.primary.mutations);
   report.security.result = { skipped: true, reason: 'uc2_readonly_existing_and_uncommitted_create_edit_review' };
