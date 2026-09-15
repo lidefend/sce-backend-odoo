@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import safe_branch_sync_main as syncer
@@ -30,7 +31,16 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         self.delivery_log = self.root / syncer.APPEND_ONLY_CONFLICT_PATH
         self.delivery_log.parent.mkdir(parents=True, exist_ok=True)
         self.delivery_log.write_text("base-log\n", encoding="utf-8")
-        git(self.root, "add", "base.txt", syncer.APPEND_ONLY_CONFLICT_PATH)
+        self.generated_evidence = self.root / syncer.GENERATED_EVIDENCE_CONFLICT_PATHS[0]
+        self.generated_evidence.parent.mkdir(parents=True, exist_ok=True)
+        self.generated_evidence.write_text("base-generated\n", encoding="utf-8")
+        git(
+            self.root,
+            "add",
+            "base.txt",
+            syncer.APPEND_ONLY_CONFLICT_PATH,
+            syncer.GENERATED_EVIDENCE_CONFLICT_PATHS[0],
+        )
         git(self.root, "commit", "-m", "base")
         git(self.root, "push", "origin", "HEAD:main")
         git(self.root, "branch", "-M", "main")
@@ -54,19 +64,20 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         self.temp.cleanup()
 
     def plan(self, **overrides: object) -> syncer.SyncPlan:
-        values: dict[str, object] = dict(root=self.root, expected_root=self.root, governance_root=self.root, expected_branch="feature/local-sync", expected_head=self.head, expected_old_base=self.old_base, expected_main=self.new_main, pr_checker=lambda _: False, origin_checker=lambda _: True)
+        values: dict[str, object] = dict(root=self.root, expected_root=self.root, governance_root=self.root, expected_branch="feature/local-sync", expected_head=self.head, expected_old_base=self.old_base, expected_main=self.new_main, pr_checker=lambda _: False, origin_checker=lambda _: True, quick_evidence_checker=lambda *_: True)
         values.update(overrides)
         return syncer.validate(**values)  # type: ignore[arg-type]
 
     def test_clean_unpublished_branch_syncs_and_preserves_patch(self) -> None:
         plan = self.plan()
-        new_head = syncer.sync(plan)
-        self.assertNotEqual(new_head, self.head)
+        result = syncer.sync(plan)
+        self.assertNotEqual(result.head, self.head)
         self.assertEqual(git(self.root, "merge-base", "HEAD", "origin/main").stdout.strip(), self.new_main)
         self.assertTrue(plan.recovery_bundle.is_file())
         self.assertEqual(git(self.root, "bundle", "verify", str(plan.recovery_bundle)).returncode, 0)
-        self.assertEqual(git(self.root, "diff", "--name-only", f"{self.new_main}..{new_head}").stdout.splitlines(), ["feature.txt"])
-        self.assertEqual(len(git(self.root, "rev-list", f"{self.new_main}..{new_head}").stdout.splitlines()), 1)
+        self.assertEqual(git(self.root, "diff", "--name-only", f"{self.new_main}..{result.head}").stdout.splitlines(), ["feature.txt"])
+        self.assertEqual(len(git(self.root, "rev-list", f"{self.new_main}..{result.head}").stdout.splitlines()), 1)
+        self.assertEqual(result.generated_evidence_conflicts, ())
 
     def test_main_and_dirty_worktrees_are_denied(self) -> None:
         git(self.root, "switch", "main")
@@ -164,8 +175,182 @@ class SafeBranchSyncMainTest(unittest.TestCase):
             "base-log\nmain-entry\nfeature-entry\n",
         )
 
+    def test_append_only_log_is_valid_without_other_responsibility_paths(self) -> None:
+        git(self.root, "switch", "main")
+        git(self.root, "switch", "-c", "feature/log-only", self.old_base)
+        self.delivery_log.write_text("base-log\nfeature-only-entry\n", encoding="utf-8")
+        git(self.root, "add", syncer.APPEND_ONLY_CONFLICT_PATH)
+        git(self.root, "commit", "-m", "append feature-only delivery log")
+        log_only_head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+
+        git(self.root, "switch", "main")
+        self.delivery_log.write_text("base-log\nmain-only-entry\n", encoding="utf-8")
+        git(self.root, "add", syncer.APPEND_ONLY_CONFLICT_PATH)
+        git(self.root, "commit", "-m", "append main-only delivery log")
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "fetch", "origin", "main")
+        log_only_main = git(self.root, "rev-parse", "origin/main").stdout.strip()
+        git(self.root, "switch", "feature/log-only")
+
+        plan = self.plan(
+            expected_branch="feature/log-only",
+            expected_head=log_only_head,
+            expected_main=log_only_main,
+        )
+        result = syncer.sync(plan)
+        self.assertNotEqual(result.head, log_only_head)
+        self.assertEqual(
+            self.delivery_log.read_text(encoding="utf-8"),
+            "base-log\nmain-only-entry\nfeature-only-entry\n",
+        )
+
+    def test_extended_sync_requires_exact_commit_count_and_regenerable_conflicts(self) -> None:
+        self.generated_evidence.write_text("feature-generated\n", encoding="utf-8")
+        (self.root / "generated-side.txt").write_text("feature-side\n", encoding="utf-8")
+        git(
+            self.root,
+            "add",
+            syncer.GENERATED_EVIDENCE_CONFLICT_PATHS[0],
+            "generated-side.txt",
+        )
+        git(self.root, "commit", "-m", "feature generated evidence")
+        for index in range(syncer.MAX_RESPONSIBILITY_COMMITS - 1):
+            git(self.root, "commit", "--allow-empty", "-m", f"feature checkpoint {index}")
+        extended_head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        commit_count = len(
+            git(self.root, "rev-list", f"{self.old_base}..{extended_head}").stdout.splitlines()
+        )
+        self.assertGreater(commit_count, syncer.MAX_RESPONSIBILITY_COMMITS)
+
+        git(self.root, "switch", "main")
+        self.generated_evidence.write_text("main-generated\n", encoding="utf-8")
+        git(self.root, "add", syncer.GENERATED_EVIDENCE_CONFLICT_PATHS[0])
+        git(self.root, "commit", "-m", "main generated evidence")
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "fetch", "origin", "main")
+        extended_main = git(self.root, "rev-parse", "origin/main").stdout.strip()
+        git(self.root, "switch", "feature/local-sync")
+
+        with self.assertRaisesRegex(syncer.SyncError, "within 1"):
+            self.plan(expected_head=extended_head, expected_main=extended_main)
+        with self.assertRaisesRegex(syncer.SyncError, "exact matching"):
+            self.plan(
+                expected_head=extended_head,
+                expected_main=extended_main,
+                allow_extended_history=True,
+                expected_commit_count=commit_count - 1,
+            )
+        with self.assertRaisesRegex(syncer.SyncError, "Quick evidence"):
+            self.plan(
+                expected_head=extended_head,
+                expected_main=extended_main,
+                allow_extended_history=True,
+                expected_commit_count=commit_count,
+                quick_evidence_checker=lambda *_: False,
+            )
+        plan = self.plan(
+            expected_head=extended_head,
+            expected_main=extended_main,
+            allow_extended_history=True,
+            expected_commit_count=commit_count,
+        )
+        result = syncer.sync(plan)
+        self.assertEqual(result.generated_evidence_conflicts, syncer.GENERATED_EVIDENCE_CONFLICT_PATHS)
+        self.assertEqual(self.generated_evidence.read_text(encoding="utf-8"), "main-generated\n")
+        self.assertEqual((self.root / "generated-side.txt").read_text(encoding="utf-8"), "feature-side\n")
+
+    def test_extended_confirmation_is_distinct(self) -> None:
+        with mock.patch.object(
+            sys,
+            "argv",
+            [
+                "safe_branch_sync_main.py",
+                "--expected-root",
+                str(self.root),
+                "--governance-root",
+                str(self.root),
+                "--expected-branch",
+                "feature/local-sync",
+                "--expected-head",
+                self.head,
+                "--expected-old-base",
+                self.old_base,
+                "--expected-main",
+                self.new_main,
+                "--expected-commit-count",
+                "13",
+                "--allow-extended-history",
+                "--confirm",
+                syncer.CONFIRMATION,
+            ],
+        ):
+            self.assertEqual(syncer.main(), 2)
+
+    def test_extended_sync_still_aborts_on_product_conflict(self) -> None:
+        (self.root / "base.txt").write_text("feature-product-change\n", encoding="utf-8")
+        git(self.root, "add", "base.txt")
+        git(self.root, "commit", "-m", "feature product conflict")
+        for index in range(syncer.MAX_RESPONSIBILITY_COMMITS - 1):
+            git(self.root, "commit", "--allow-empty", "-m", f"feature checkpoint {index}")
+        extended_head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        commit_count = len(
+            git(self.root, "rev-list", f"{self.old_base}..{extended_head}").stdout.splitlines()
+        )
+
+        git(self.root, "switch", "main")
+        (self.root / "base.txt").write_text("main-product-change\n", encoding="utf-8")
+        git(self.root, "add", "base.txt")
+        git(self.root, "commit", "-m", "main product conflict")
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "fetch", "origin", "main")
+        extended_main = git(self.root, "rev-parse", "origin/main").stdout.strip()
+        git(self.root, "switch", "feature/local-sync")
+
+        plan = self.plan(
+            expected_head=extended_head,
+            expected_main=extended_main,
+            allow_extended_history=True,
+            expected_commit_count=commit_count,
+        )
+        with self.assertRaisesRegex(syncer.SyncError, "aborted"):
+            syncer.sync(plan)
+        self.assertEqual(git(self.root, "rev-parse", "HEAD").stdout.strip(), extended_head)
+        self.assertEqual(git(self.root, "status", "--porcelain").stdout.strip(), "")
+
+    def test_post_sync_verification_failure_restores_original_head(self) -> None:
+        plan = self.plan()
+        with mock.patch.object(syncer, "patch_id", side_effect=("before", "after")):
+            with self.assertRaisesRegex(syncer.SyncError, "original HEAD restored"):
+                syncer.sync(plan)
+        self.assertEqual(git(self.root, "rev-parse", "HEAD").stdout.strip(), self.head)
+        self.assertEqual(git(self.root, "status", "--porcelain").stdout.strip(), "")
+
+    def test_conflict_resolver_exception_aborts_and_restores_original_head(self) -> None:
+        self.delivery_log.write_text("base-log\nfeature-entry\n", encoding="utf-8")
+        git(self.root, "add", syncer.APPEND_ONLY_CONFLICT_PATH)
+        git(self.root, "commit", "-m", "append feature delivery log")
+        conflict_head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "switch", "main")
+        self.delivery_log.write_text("base-log\nmain-entry\n", encoding="utf-8")
+        git(self.root, "add", syncer.APPEND_ONLY_CONFLICT_PATH)
+        git(self.root, "commit", "-m", "append main delivery log")
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "fetch", "origin", "main")
+        conflict_main = git(self.root, "rev-parse", "origin/main").stdout.strip()
+        git(self.root, "switch", "feature/local-sync")
+        plan = self.plan(expected_head=conflict_head, expected_main=conflict_main)
+        with mock.patch.object(
+            syncer,
+            "resolve_append_only_log_conflict",
+            side_effect=RuntimeError("resolver failed"),
+        ):
+            with self.assertRaisesRegex(syncer.SyncError, "original HEAD was restored"):
+                syncer.sync(plan)
+        self.assertEqual(git(self.root, "rev-parse", "HEAD").stdout.strip(), conflict_head)
+        self.assertEqual(git(self.root, "status", "--porcelain").stdout.strip(), "")
+
     def test_rebase_outcome_distinguishes_success_from_unresolved_conflict(self) -> None:
-        self.assertFalse(syncer.run_rebase(self.plan()))
+        self.assertEqual(syncer.run_rebase(self.plan()), (False, ()))
         git(self.root, "reset", "--hard", self.head)
         (self.root / "base.txt").write_text("feature-change\n", encoding="utf-8")
         git(self.root, "add", "base.txt")
@@ -205,6 +390,11 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         )[0]
         self.assertIn('cd "$(WORKSPACE_BRANCH_SYNC_ROOT)"', target)
         self.assertIn('--governance-root "$(ROOT_DIR)"', target)
+        extended_target = makefile.split("workspace.branch.sync-main.extended:", 1)[1].split(
+            "verify.workspace.worktree.guard:", 1
+        )[0]
+        self.assertIn('--expected-commit-count "$(EXPECTED_COMMIT_COUNT)"', extended_target)
+        self.assertIn("--allow-extended-history", extended_target)
 
     def test_repository_origin_identity_is_denied(self) -> None:
         with self.assertRaisesRegex(syncer.SyncError, "repository identity"):

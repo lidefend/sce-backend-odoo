@@ -20,8 +20,13 @@ from typing import Callable
 ALLOWED_BRANCH = re.compile(r"^(feature|fix|refactor|audit|release|codex)/.+$")
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 CONFIRMATION = "REBASE_UNPUBLISHED_BRANCH_ON_EXACT_MAIN"
+EXTENDED_CONFIRMATION = "REBASE_APPROVED_FROZEN_BRANCH_ON_EXACT_MAIN"
 MAX_RESPONSIBILITY_COMMITS = 12
+MAX_EXTENDED_RESPONSIBILITY_COMMITS = 64
 APPEND_ONLY_CONFLICT_PATH = "docs/ops/iterations/delivery_context_switch_log_v1.md"
+GENERATED_EVIDENCE_CONFLICT_PATHS = (
+    "docs/engineering_convergence/complexity_budget_report.md",
+)
 CANONICAL_ORIGIN_URLS = {
     "https://github.com/lidefend/sce-backend-odoo.git",
     "git@github.com:lidefend/sce-backend-odoo.git",
@@ -42,6 +47,13 @@ class SyncPlan:
     commit_count: int
     paths: tuple[str, ...]
     recovery_bundle: Path
+    extended_history: bool = False
+
+
+@dataclass(frozen=True)
+class SyncResult:
+    head: str
+    generated_evidence_conflicts: tuple[str, ...] = ()
 
 
 def sanitized_environment() -> dict[str, str]:
@@ -83,6 +95,28 @@ def has_canonical_origin(root: Path) -> bool:
     return git_output(root, "remote", "get-url", "origin") in CANONICAL_ORIGIN_URLS
 
 
+def has_exact_quick_evidence(root: Path, governance_root: Path, head: str) -> bool:
+    verifier = governance_root / "scripts/ops/local_quick_evidence.py"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(verifier),
+            "verify",
+            "--root",
+            str(root),
+            "--expected-head",
+            head,
+        ],
+        cwd=root,
+        env=sanitized_environment(),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    return result.returncode == 0
+
+
 def require_clean(root: Path) -> None:
     if git_output(root, "status", "--porcelain=v1", "--untracked-files=all"):
         raise SyncError("worktree must be clean, including untracked files")
@@ -113,8 +147,12 @@ def commit_paths(root: Path, left: str, right: str) -> tuple[str, ...]:
     return tuple(sorted(filter(None, git_output(root, "diff", "--name-only", left, right).splitlines())))
 
 
-def patch_id(root: Path, left: str, right: str) -> str:
-    diff = run(root, "diff", "--binary", left, right).stdout
+def patch_id(root: Path, left: str, right: str, *, exclude: tuple[str, ...] = ()) -> str:
+    args = ["diff", "--binary", left, right]
+    if exclude:
+        args.extend(("--", "."))
+        args.extend(f":(exclude){path}" for path in exclude)
+    diff = run(root, *args).stdout
     result = subprocess.run(
         ["git", "patch-id", "--stable"], cwd=root, env=sanitized_environment(), input=diff,
         text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False,
@@ -133,6 +171,8 @@ def validate(
     *, root: Path, expected_root: Path, governance_root: Path, expected_branch: str, expected_head: str,
     expected_old_base: str, expected_main: str, pr_checker: Callable[[str], bool] = has_open_pr,
     origin_checker: Callable[[Path], bool] = has_canonical_origin,
+    allow_extended_history: bool = False, expected_commit_count: int | None = None,
+    quick_evidence_checker: Callable[[Path, Path, str], bool] = has_exact_quick_evidence,
 ) -> SyncPlan:
     root = root.resolve()
     expected_root = expected_root.resolve()
@@ -184,12 +224,34 @@ def validate(
     if merges:
         raise SyncError("responsibility branch contains merge commits")
     commits = tuple(filter(None, git_output(root, "rev-list", "--reverse", f"{expected_old_base}..{expected_head}").splitlines()))
-    if not 1 <= len(commits) <= MAX_RESPONSIBILITY_COMMITS:
+    if allow_extended_history:
+        if not quick_evidence_checker(root, governance_root, expected_head):
+            raise SyncError("extended sync requires valid worktree-local exact-head Quick evidence")
+        if expected_commit_count is None or expected_commit_count != len(commits):
+            raise SyncError("extended sync requires an exact matching EXPECTED_COMMIT_COUNT")
+        if not MAX_RESPONSIBILITY_COMMITS < len(commits) <= MAX_EXTENDED_RESPONSIBILITY_COMMITS:
+            raise SyncError(
+                "extended responsibility commit count must be within "
+                f"{MAX_RESPONSIBILITY_COMMITS + 1}..{MAX_EXTENDED_RESPONSIBILITY_COMMITS}"
+            )
+    elif not 1 <= len(commits) <= MAX_RESPONSIBILITY_COMMITS:
         raise SyncError(f"responsibility commit count must be within 1..{MAX_RESPONSIBILITY_COMMITS}")
     paths = commit_paths(root, expected_old_base, expected_head)
     if not paths:
         raise SyncError("responsibility branch has no changed paths")
-    return SyncPlan(root, actual_branch, actual_head, expected_old_base, expected_main, len(commits), paths, recovery_path(root, actual_branch, actual_head))
+    if allow_extended_history:
+        stable_paths = tuple(
+            path
+            for path in paths
+            if path not in {APPEND_ONLY_CONFLICT_PATH, *GENERATED_EVIDENCE_CONFLICT_PATHS}
+        )
+        if not stable_paths:
+            raise SyncError("extended sync requires at least one non-generated responsibility path")
+    return SyncPlan(
+        root, actual_branch, actual_head, expected_old_base, expected_main,
+        len(commits), paths, recovery_path(root, actual_branch, actual_head),
+        extended_history=allow_extended_history,
+    )
 
 
 def create_bundle(plan: SyncPlan) -> None:
@@ -212,22 +274,14 @@ def text_at_revision(root: Path, revision: str, path: str) -> str:
     return result.stdout
 
 
-def resolve_append_only_log_conflict(plan: SyncPlan) -> bool:
+def resolve_append_only_log_conflict(plan: SyncPlan, conflicts: tuple[str, ...]) -> bool:
     """Resolve only a pure append conflict in the formal delivery log.
 
     Both branch versions must retain the old-base text verbatim and only append
     new entries. The result keeps main's entries first, then appends the local
     branch's suffix. Any other conflict remains a fail-closed abort.
     """
-    conflicts = tuple(
-        sorted(
-            filter(
-                None,
-                git_output(plan.root, "diff", "--name-only", "--diff-filter=U").splitlines(),
-            )
-        )
-    )
-    if conflicts != (APPEND_ONLY_CONFLICT_PATH,):
+    if APPEND_ONLY_CONFLICT_PATH not in conflicts:
         return False
     base = text_at_revision(plan.root, plan.old_base, APPEND_ONLY_CONFLICT_PATH)
     main = text_at_revision(plan.root, plan.new_main, APPEND_ONLY_CONFLICT_PATH)
@@ -241,15 +295,47 @@ def resolve_append_only_log_conflict(plan: SyncPlan) -> bool:
     return True
 
 
-def run_rebase(plan: SyncPlan) -> bool | None:
+def resolve_generated_evidence_conflicts(
+    plan: SyncPlan, conflicts: tuple[str, ...]
+) -> tuple[str, ...]:
+    resolved = tuple(
+        path for path in conflicts if path in GENERATED_EVIDENCE_CONFLICT_PATHS
+    )
+    for path in resolved:
+        target = plan.root / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(text_at_revision(plan.root, plan.new_main, path), encoding="utf-8")
+        run(plan.root, "add", "--", path)
+    return resolved
+
+
+def run_rebase(plan: SyncPlan) -> tuple[bool, tuple[str, ...]] | None:
     append_only_log_resolved = False
+    generated_evidence_conflicts: set[str] = set()
     result = run(plan.root, "rebase", "--onto", plan.new_main, plan.old_base, check=False)
     while result.returncode:
-        if not resolve_append_only_log_conflict(plan):
+        conflicts = tuple(
+            sorted(
+                filter(
+                    None,
+                    git_output(plan.root, "diff", "--name-only", "--diff-filter=U").splitlines(),
+                )
+            )
+        )
+        allowed = {APPEND_ONLY_CONFLICT_PATH}
+        if plan.extended_history:
+            allowed.update(GENERATED_EVIDENCE_CONFLICT_PATHS)
+        if not conflicts or any(path not in allowed for path in conflicts):
             return None
-        append_only_log_resolved = True
+        if APPEND_ONLY_CONFLICT_PATH in conflicts:
+            if not resolve_append_only_log_conflict(plan, conflicts):
+                return None
+            append_only_log_resolved = True
+        generated_evidence_conflicts.update(
+            resolve_generated_evidence_conflicts(plan, conflicts)
+        )
         result = run(plan.root, "-c", "core.editor=true", "rebase", "--continue", check=False)
-    return append_only_log_resolved
+    return append_only_log_resolved, tuple(sorted(generated_evidence_conflicts))
 
 
 def verify_append_only_log_resolution(plan: SyncPlan) -> None:
@@ -263,28 +349,78 @@ def verify_append_only_log_resolution(plan: SyncPlan) -> None:
         raise SyncError("append-only delivery log suffix was not preserved")
 
 
-def sync(plan: SyncPlan) -> str:
-    create_bundle(plan)
-    append_only_log_resolved = run_rebase(plan)
-    if append_only_log_resolved is None:
-        aborted = run(plan.root, "rebase", "--abort", check=False)
-        restored_head = git_output(plan.root, "rev-parse", "HEAD")
-        require_clean(plan.root)
-        if aborted.returncode or restored_head != plan.head:
-            raise SyncError("rebase conflict and automatic recovery failed; use recovery bundle")
-        raise SyncError("rebase conflict; aborted and restored original HEAD")
-    new_head = git_output(plan.root, "rev-parse", "HEAD")
+def restore_original_head(plan: SyncPlan) -> None:
+    """Restore the exact pre-sync branch without using a destructive hard reset."""
+    current_head = git_output(plan.root, "rev-parse", "HEAD")
+    run(
+        plan.root,
+        "update-ref",
+        f"refs/heads/{plan.branch}",
+        plan.head,
+        current_head,
+    )
+    run(plan.root, "restore", "--source", plan.head, "--staged", "--worktree", "--", ".")
+    if git_output(plan.root, "rev-parse", "HEAD") != plan.head:
+        raise SyncError("failed to restore original HEAD; use recovery bundle")
     require_clean(plan.root)
-    new_commits = tuple(filter(None, git_output(plan.root, "rev-list", "--reverse", f"{plan.new_main}..{new_head}").splitlines()))
-    if len(new_commits) != plan.commit_count:
-        raise SyncError("responsibility commit count changed after sync")
-    if commit_paths(plan.root, plan.new_main, new_head) != plan.paths:
-        raise SyncError("responsibility path set changed after sync")
-    if append_only_log_resolved:
-        verify_append_only_log_resolution(plan)
-    elif patch_id(plan.root, plan.old_base, plan.head) != patch_id(plan.root, plan.new_main, new_head):
-        raise SyncError("responsibility patch identity changed after sync")
-    return new_head
+
+
+def abort_rebase_and_restore(plan: SyncPlan) -> None:
+    aborted = run(plan.root, "rebase", "--abort", check=False)
+    if aborted.returncode == 0:
+        if git_output(plan.root, "rev-parse", "HEAD") != plan.head:
+            raise SyncError("rebase abort did not restore original HEAD; use recovery bundle")
+        require_clean(plan.root)
+        return
+    restore_original_head(plan)
+
+
+def sync(plan: SyncPlan) -> SyncResult:
+    create_bundle(plan)
+    try:
+        rebase_result = run_rebase(plan)
+    except Exception as exc:
+        abort_rebase_and_restore(plan)
+        raise SyncError(f"rebase conflict resolution failed and original HEAD was restored: {exc}") from exc
+    if rebase_result is None:
+        abort_rebase_and_restore(plan)
+        raise SyncError("rebase conflict; aborted and restored original HEAD")
+    append_only_log_resolved, generated_evidence_conflicts = rebase_result
+    try:
+        new_head = git_output(plan.root, "rev-parse", "HEAD")
+        require_clean(plan.root)
+        new_commits = tuple(filter(None, git_output(plan.root, "rev-list", "--reverse", f"{plan.new_main}..{new_head}").splitlines()))
+        if len(new_commits) != plan.commit_count:
+            raise SyncError("responsibility commit count changed after sync")
+        excluded_paths = tuple(sorted(generated_evidence_conflicts))
+        old_stable_paths = tuple(path for path in plan.paths if path not in excluded_paths)
+        new_paths = commit_paths(plan.root, plan.new_main, new_head)
+        new_stable_paths = tuple(path for path in new_paths if path not in excluded_paths)
+        if new_stable_paths != old_stable_paths:
+            raise SyncError("responsibility path set changed after sync")
+        if append_only_log_resolved:
+            verify_append_only_log_resolution(plan)
+        patch_excludes = tuple(
+            sorted(
+                {
+                    *excluded_paths,
+                    *([APPEND_ONLY_CONFLICT_PATH] if append_only_log_resolved else []),
+                }
+            )
+        )
+        stable_identity_paths = tuple(
+            path for path in old_stable_paths if path not in patch_excludes
+        )
+        if stable_identity_paths and patch_id(
+            plan.root, plan.old_base, plan.head, exclude=patch_excludes
+        ) != patch_id(plan.root, plan.new_main, new_head, exclude=patch_excludes):
+            raise SyncError("responsibility patch identity changed after sync")
+    except Exception as exc:
+        restore_original_head(plan)
+        if isinstance(exc, SyncError):
+            raise SyncError(f"{exc}; original HEAD restored") from exc
+        raise SyncError(f"post-sync verification failed; original HEAD restored: {exc}") from exc
+    return SyncResult(new_head, generated_evidence_conflicts)
 
 
 def main() -> int:
@@ -295,10 +431,17 @@ def main() -> int:
     parser.add_argument("--expected-head", required=True)
     parser.add_argument("--expected-old-base", required=True)
     parser.add_argument("--expected-main", required=True)
+    parser.add_argument("--expected-commit-count", type=int)
+    parser.add_argument("--allow-extended-history", action="store_true")
     parser.add_argument("--confirm", required=True)
     args = parser.parse_args()
-    if args.confirm != CONFIRMATION:
-        print(f"[workspace.branch.sync-main] DENY confirmation must equal {CONFIRMATION}", file=sys.stderr)
+    expected_confirmation = EXTENDED_CONFIRMATION if args.allow_extended_history else CONFIRMATION
+    if args.confirm != expected_confirmation:
+        print(
+            "[workspace.branch.sync-main] DENY confirmation must equal "
+            f"{expected_confirmation}",
+            file=sys.stderr,
+        )
         return 2
     try:
         plan = validate(
@@ -306,12 +449,19 @@ def main() -> int:
             expected_branch=args.expected_branch,
             expected_head=args.expected_head, expected_old_base=args.expected_old_base,
             expected_main=args.expected_main,
+            allow_extended_history=args.allow_extended_history,
+            expected_commit_count=args.expected_commit_count,
         )
-        new_head = sync(plan)
+        result = sync(plan)
     except SyncError as exc:
         print(f"[workspace.branch.sync-main] DENY {exc}", file=sys.stderr)
         return 2
-    print(f"[workspace.branch.sync-main] PASS branch={plan.branch} old_head={plan.head} new_head={new_head} recovery_bundle={plan.recovery_bundle}")
+    invalidated = ",".join(result.generated_evidence_conflicts) or "none"
+    print(
+        f"[workspace.branch.sync-main] PASS branch={plan.branch} old_head={plan.head} "
+        f"new_head={result.head} recovery_bundle={plan.recovery_bundle} "
+        f"generated_evidence_invalidated={invalidated}"
+    )
     return 0
 
 

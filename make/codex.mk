@@ -482,7 +482,7 @@ pr.status:
 	@gh pr status || true
 
 # ------------------ Branch cleanup (Codex-safe) ------------------
-.PHONY: branch.cleanup branch.cleanup.feature branch.retire.historical verify.branch.retire.historical workspace.worktree.create workspace.worktree.cleanup workspace.branch.sync-main verify.workspace.worktree.guard
+.PHONY: branch.cleanup branch.cleanup.feature branch.retire.historical verify.branch.retire.historical workspace.worktree.create workspace.worktree.cleanup workspace.branch.sync-main workspace.branch.sync-main.extended verify.workspace.branch.sync-main verify.workspace.worktree.guard
 
 CLEAN_BRANCH ?=
 CREATE_WORKTREE ?=
@@ -574,6 +574,24 @@ workspace.branch.sync-main: guard.prod.forbid
 		--expected-old-base "$(EXPECTED_OLD_BASE)" \
 		--expected-main "$(EXPECTED_MAIN)" \
 		--confirm "$(CONFIRM_WORKSPACE_BRANCH_SYNC)"
+
+workspace.branch.sync-main.extended: guard.prod.forbid
+	@test -d "$(WORKSPACE_BRANCH_SYNC_ROOT)" || { echo "❌ WORKSPACE_BRANCH_SYNC_ROOT is not a directory"; exit 2; }
+	@test -n "$(EXPECTED_COMMIT_COUNT)" || { echo "❌ EXPECTED_COMMIT_COUNT is required"; exit 2; }
+	@cd "$(WORKSPACE_BRANCH_SYNC_ROOT)" && python3 "$(ROOT_DIR)/scripts/ops/safe_branch_sync_main.py" \
+		--expected-root "$(WORKSPACE_BRANCH_SYNC_ROOT)" \
+		--governance-root "$(ROOT_DIR)" \
+		--expected-branch "$(EXPECTED_BRANCH)" \
+		--expected-head "$(EXPECTED_HEAD)" \
+		--expected-old-base "$(EXPECTED_OLD_BASE)" \
+		--expected-main "$(EXPECTED_MAIN)" \
+		--expected-commit-count "$(EXPECTED_COMMIT_COUNT)" \
+		--allow-extended-history \
+		--confirm "$(CONFIRM_WORKSPACE_BRANCH_SYNC)"
+
+verify.workspace.branch.sync-main: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/safe_branch_sync_main.py scripts/ops/test_safe_branch_sync_main.py
+	@python3 -m unittest scripts/ops/test_safe_branch_sync_main.py
 
 verify.workspace.worktree.guard: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/safe_worktree_create.py scripts/ops/test_safe_worktree_create.py scripts/ops/safe_worktree_cleanup.py scripts/ops/test_safe_worktree_cleanup.py
