@@ -117,18 +117,21 @@ const report = {
 async function token(page) {
   return page.evaluate((db) => sessionStorage.getItem(`sc_auth_token:${db}`) || '', database);
 }
-async function intent(page, name, params, allowError = false) {
+async function postIntent(page, requestBody, allowError = false) {
   const bearer = await token(page);
-  return page.evaluate(async ({ database, bearer, name, params, allowError }) => {
+  return page.evaluate(async ({ database, bearer, requestBody, allowError }) => {
     const response = await fetch(`/api/v1/intent?db=${encodeURIComponent(database)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: bearer ? `Bearer ${bearer}` : '' },
-      body: JSON.stringify({ intent: name, params }),
+      body: JSON.stringify(requestBody),
     });
     const body = await response.json().catch(() => ({}));
     if (!allowError && (!response.ok || body?.ok === false)) throw new Error(JSON.stringify(body?.error || body));
     return { status: response.status, body };
-  }, { database, bearer, name, params, allowError });
+  }, { database, bearer, requestBody, allowError });
+}
+async function intent(page, name, params, allowError = false) {
+  return postIntent(page, { intent: name, params }, allowError);
 }
 async function login(page) {
   await page.goto(`${frontendUrl}/login`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
@@ -224,8 +227,8 @@ async function executeFromPage(page) {
   check(result.status() === 200 && body?.ok === true, 'award confirmation failed', body);
   report.mutations.push({ intent: 'execute_button', method: 'action_mark_won', status: result.status() });
   const requestBody = result.request().postDataJSON();
-  check(requestBody?.intent === 'execute_button' && requestBody?.params?.meta?.menu_id, 'confirmed action request authority is missing', requestBody);
-  return requestBody.params;
+  check(requestBody?.intent === 'execute_button' && requestBody?.meta?.menu_id && requestBody?.meta?.action_id, 'confirmed action request authority is missing', requestBody);
+  return requestBody;
 }
 async function readBid(page) {
   const response = await intent(page, 'api.data', {
@@ -293,7 +296,7 @@ try {
   check(prepared.award_source_kind === 'final_quote' && prepared.award_tax_basis === 'unknown', 'saved source/tax facts mismatch', prepared);
   check(prepared.award_source_reference === authority.expected.source_reference, 'saved source reference mismatch', prepared);
 
-  const repeatAuthority = await executeFromPage(page);
+  const repeatRequest = await executeFromPage(page);
   const confirmed = await readBid(page);
   check(confirmed.state === 'won', 'award state was not confirmed', confirmed);
   check(Number(confirmed.bid_amount) === 1200 && Number(confirmed.amount_total) === 1000 && Number(confirmed.award_amount) === 900, '1200/1000/900 facts mismatch', confirmed);
@@ -301,7 +304,7 @@ try {
   check(!confirmed.contract_id, 'contract was created unexpectedly', confirmed);
   report.authoritative_after_confirm = confirmed;
 
-  const repeat = await intent(page, 'execute_button', repeatAuthority);
+  const repeat = await postIntent(page, repeatRequest);
   report.mutations.push({ intent: 'execute_button', method: 'action_mark_won', repeat: true, status: repeat.status });
   const repeated = await readBid(page);
   check(repeated.award_confirmed_at === confirmed.award_confirmed_at, 'repeat request changed confirmation time', { confirmed, repeated });
