@@ -349,42 +349,77 @@ def verify_append_only_log_resolution(plan: SyncPlan) -> None:
         raise SyncError("append-only delivery log suffix was not preserved")
 
 
+def restore_original_head(plan: SyncPlan) -> None:
+    """Restore the exact pre-sync branch without using a destructive hard reset."""
+    current_head = git_output(plan.root, "rev-parse", "HEAD")
+    run(
+        plan.root,
+        "update-ref",
+        f"refs/heads/{plan.branch}",
+        plan.head,
+        current_head,
+    )
+    run(plan.root, "restore", "--source", plan.head, "--staged", "--worktree", "--", ".")
+    if git_output(plan.root, "rev-parse", "HEAD") != plan.head:
+        raise SyncError("failed to restore original HEAD; use recovery bundle")
+    require_clean(plan.root)
+
+
+def abort_rebase_and_restore(plan: SyncPlan) -> None:
+    aborted = run(plan.root, "rebase", "--abort", check=False)
+    if aborted.returncode == 0:
+        if git_output(plan.root, "rev-parse", "HEAD") != plan.head:
+            raise SyncError("rebase abort did not restore original HEAD; use recovery bundle")
+        require_clean(plan.root)
+        return
+    restore_original_head(plan)
+
+
 def sync(plan: SyncPlan) -> SyncResult:
     create_bundle(plan)
-    rebase_result = run_rebase(plan)
+    try:
+        rebase_result = run_rebase(plan)
+    except Exception as exc:
+        abort_rebase_and_restore(plan)
+        raise SyncError(f"rebase conflict resolution failed and original HEAD was restored: {exc}") from exc
     if rebase_result is None:
-        aborted = run(plan.root, "rebase", "--abort", check=False)
-        restored_head = git_output(plan.root, "rev-parse", "HEAD")
-        require_clean(plan.root)
-        if aborted.returncode or restored_head != plan.head:
-            raise SyncError("rebase conflict and automatic recovery failed; use recovery bundle")
+        abort_rebase_and_restore(plan)
         raise SyncError("rebase conflict; aborted and restored original HEAD")
     append_only_log_resolved, generated_evidence_conflicts = rebase_result
-    new_head = git_output(plan.root, "rev-parse", "HEAD")
-    require_clean(plan.root)
-    new_commits = tuple(filter(None, git_output(plan.root, "rev-list", "--reverse", f"{plan.new_main}..{new_head}").splitlines()))
-    if len(new_commits) != plan.commit_count:
-        raise SyncError("responsibility commit count changed after sync")
-    excluded_paths = tuple(sorted(generated_evidence_conflicts))
-    old_stable_paths = tuple(path for path in plan.paths if path not in excluded_paths)
-    new_paths = commit_paths(plan.root, plan.new_main, new_head)
-    new_stable_paths = tuple(path for path in new_paths if path not in excluded_paths)
-    if new_stable_paths != old_stable_paths:
-        raise SyncError("responsibility path set changed after sync")
-    if append_only_log_resolved:
-        verify_append_only_log_resolution(plan)
-    patch_excludes = tuple(
-        sorted(
-            {
-                *excluded_paths,
-                *([APPEND_ONLY_CONFLICT_PATH] if append_only_log_resolved else []),
-            }
+    try:
+        new_head = git_output(plan.root, "rev-parse", "HEAD")
+        require_clean(plan.root)
+        new_commits = tuple(filter(None, git_output(plan.root, "rev-list", "--reverse", f"{plan.new_main}..{new_head}").splitlines()))
+        if len(new_commits) != plan.commit_count:
+            raise SyncError("responsibility commit count changed after sync")
+        excluded_paths = tuple(sorted(generated_evidence_conflicts))
+        old_stable_paths = tuple(path for path in plan.paths if path not in excluded_paths)
+        new_paths = commit_paths(plan.root, plan.new_main, new_head)
+        new_stable_paths = tuple(path for path in new_paths if path not in excluded_paths)
+        if new_stable_paths != old_stable_paths:
+            raise SyncError("responsibility path set changed after sync")
+        if append_only_log_resolved:
+            verify_append_only_log_resolution(plan)
+        patch_excludes = tuple(
+            sorted(
+                {
+                    *excluded_paths,
+                    *([APPEND_ONLY_CONFLICT_PATH] if append_only_log_resolved else []),
+                }
+            )
         )
-    )
-    if patch_id(plan.root, plan.old_base, plan.head, exclude=patch_excludes) != patch_id(
-        plan.root, plan.new_main, new_head, exclude=patch_excludes
-    ):
-        raise SyncError("responsibility patch identity changed after sync")
+        stable_identity_paths = tuple(
+            path for path in old_stable_paths if path not in patch_excludes
+        )
+        if stable_identity_paths and patch_id(
+            plan.root, plan.old_base, plan.head, exclude=patch_excludes
+        ) != patch_id(plan.root, plan.new_main, new_head, exclude=patch_excludes):
+            raise SyncError("responsibility patch identity changed after sync")
+    except Exception as exc:
+        restore_original_head(plan)
+        if isinstance(exc, SyncError):
+            raise SyncError(f"{exc}; original HEAD restored") from exc
+        raise SyncError(f"post-sync verification failed; original HEAD restored: {exc}") from exc
     return SyncResult(new_head, generated_evidence_conflicts)
 
 

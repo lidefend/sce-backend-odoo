@@ -9497,4 +9497,4 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 分支 `fix/p4-governed-frozen-branch-sync-v1`，基线 `origin/main@5545e5b3801ea5158852faa30bce278fd1827fe3`，复用既有工作树；基线完整指纹 `a32af62b7f51be30c6e6c00a4e47d00948ddf733b0b35543ee96d286c5def05e`，7448 个路径。
 - Formal Product Layer 为 P4；Layer Target 为 `workspace.branch.sync-main` 的冻结候选历史重放边界。普通 1—12 提交入口保持不变；新 extended 入口只接受仓库所有者明确批准、未发布、无 PR、clean、具备当前工作树 exact-head Quick receipt 且精确绑定 branch/head/old-base/main/commit-count 的 13—64 提交候选，并使用独立确认短语。
 - extended 入口继续创建并验证 recovery bundle，拒绝 merge commit、远端同名分支、开放 PR、Git writer 和任何未登记产品冲突。正式交付日志只允许纯追加合成；登记的可重新生成证据冲突采用新 main 版本并显式报告失效，要求随后刷新生成证据、重新冻结及对新 HEAD 验证，旧 receipt 不得复用。
-- 本批不修改产品、业务契约、数据库、运行环境或远端分支。L1 使用 `make ci.local.iteration`；L2 使用新登记的 `make verify.workspace.branch.sync-main`，覆盖默认上限、精确提交数、独立确认、生成证据冲突、产品冲突自动回滚、路径和 patch 身份保真。
+- 本批不修改产品、业务契约、数据库、运行环境或远端分支。L1 使用 `make ci.local.iteration`；L2 使用新登记的 `make verify.workspace.branch.sync-main`，18 项覆盖默认上限、精确提交数、独立确认、生成证据冲突、产品冲突自动回滚、路径和 patch 身份保真。首次独立复核发现成功 rebase 后的校验失败没有恢复旧 HEAD，且仅交付日志的普通同步会形成空稳定 patch；修复后空稳定 patch 由日志保真断言承接，rebase 中异常与全部后置校验失败均恢复原 HEAD 和 clean 状态。

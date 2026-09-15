@@ -175,6 +175,35 @@ class SafeBranchSyncMainTest(unittest.TestCase):
             "base-log\nmain-entry\nfeature-entry\n",
         )
 
+    def test_append_only_log_is_valid_without_other_responsibility_paths(self) -> None:
+        git(self.root, "switch", "main")
+        git(self.root, "switch", "-c", "feature/log-only", self.old_base)
+        self.delivery_log.write_text("base-log\nfeature-only-entry\n", encoding="utf-8")
+        git(self.root, "add", syncer.APPEND_ONLY_CONFLICT_PATH)
+        git(self.root, "commit", "-m", "append feature-only delivery log")
+        log_only_head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+
+        git(self.root, "switch", "main")
+        self.delivery_log.write_text("base-log\nmain-only-entry\n", encoding="utf-8")
+        git(self.root, "add", syncer.APPEND_ONLY_CONFLICT_PATH)
+        git(self.root, "commit", "-m", "append main-only delivery log")
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "fetch", "origin", "main")
+        log_only_main = git(self.root, "rev-parse", "origin/main").stdout.strip()
+        git(self.root, "switch", "feature/log-only")
+
+        plan = self.plan(
+            expected_branch="feature/log-only",
+            expected_head=log_only_head,
+            expected_main=log_only_main,
+        )
+        result = syncer.sync(plan)
+        self.assertNotEqual(result.head, log_only_head)
+        self.assertEqual(
+            self.delivery_log.read_text(encoding="utf-8"),
+            "base-log\nmain-only-entry\nfeature-only-entry\n",
+        )
+
     def test_extended_sync_requires_exact_commit_count_and_regenerable_conflicts(self) -> None:
         self.generated_evidence.write_text("feature-generated\n", encoding="utf-8")
         (self.root / "generated-side.txt").write_text("feature-side\n", encoding="utf-8")
@@ -286,6 +315,38 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         with self.assertRaisesRegex(syncer.SyncError, "aborted"):
             syncer.sync(plan)
         self.assertEqual(git(self.root, "rev-parse", "HEAD").stdout.strip(), extended_head)
+        self.assertEqual(git(self.root, "status", "--porcelain").stdout.strip(), "")
+
+    def test_post_sync_verification_failure_restores_original_head(self) -> None:
+        plan = self.plan()
+        with mock.patch.object(syncer, "patch_id", side_effect=("before", "after")):
+            with self.assertRaisesRegex(syncer.SyncError, "original HEAD restored"):
+                syncer.sync(plan)
+        self.assertEqual(git(self.root, "rev-parse", "HEAD").stdout.strip(), self.head)
+        self.assertEqual(git(self.root, "status", "--porcelain").stdout.strip(), "")
+
+    def test_conflict_resolver_exception_aborts_and_restores_original_head(self) -> None:
+        self.delivery_log.write_text("base-log\nfeature-entry\n", encoding="utf-8")
+        git(self.root, "add", syncer.APPEND_ONLY_CONFLICT_PATH)
+        git(self.root, "commit", "-m", "append feature delivery log")
+        conflict_head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "switch", "main")
+        self.delivery_log.write_text("base-log\nmain-entry\n", encoding="utf-8")
+        git(self.root, "add", syncer.APPEND_ONLY_CONFLICT_PATH)
+        git(self.root, "commit", "-m", "append main delivery log")
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "fetch", "origin", "main")
+        conflict_main = git(self.root, "rev-parse", "origin/main").stdout.strip()
+        git(self.root, "switch", "feature/local-sync")
+        plan = self.plan(expected_head=conflict_head, expected_main=conflict_main)
+        with mock.patch.object(
+            syncer,
+            "resolve_append_only_log_conflict",
+            side_effect=RuntimeError("resolver failed"),
+        ):
+            with self.assertRaisesRegex(syncer.SyncError, "original HEAD was restored"):
+                syncer.sync(plan)
+        self.assertEqual(git(self.root, "rev-parse", "HEAD").stdout.strip(), conflict_head)
         self.assertEqual(git(self.root, "status", "--porcelain").stdout.strip(), "")
 
     def test_rebase_outcome_distinguishes_success_from_unresolved_conflict(self) -> None:
