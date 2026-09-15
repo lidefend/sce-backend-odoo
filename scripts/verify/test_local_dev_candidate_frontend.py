@@ -261,6 +261,8 @@ class CandidateFrontendContractTest(unittest.TestCase):
         foreign = ROOT / "foreign"
         identity = {"pid": 123, "head": "b" * 40, "root": str(foreign)}
         with mock.patch.object(MODULE_UNDER_TEST, "_candidate_identity", return_value=("feature/token", "a" * 40)), mock.patch.object(
+            Path, "exists", return_value=True
+        ), mock.patch.object(
             MODULE_UNDER_TEST, "_read_process_identity", return_value=identity
         ), mock.patch.object(MODULE_UNDER_TEST, "_validate_orphaned_process", return_value=123) as validate, mock.patch.object(
             MODULE_UNDER_TEST, "_wait_until_stopped"
@@ -280,6 +282,21 @@ class CandidateFrontendContractTest(unittest.TestCase):
             with self.assertRaisesRegex(MODULE_UNDER_TEST.CandidateFrontendError, "ROUTES_JSON"):
                 MODULE_UNDER_TEST.visual_smoke(ROOT)
         validate.assert_called_once_with(ROOT, "a" * 40, MODULE_UNDER_TEST.PIDFILE)
+
+    def test_candidate_dist_removes_only_empty_unwritable_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            dist = root / "frontend/apps/web/dist-dev"
+            dist.mkdir(parents=True)
+            with mock.patch.object(os, "access", return_value=False):
+                self.assertEqual(MODULE_UNDER_TEST._prepare_candidate_dist(root), dist)
+            self.assertFalse(dist.exists())
+            dist.mkdir(parents=True)
+            (dist / "owned-output").write_text("keep\n", encoding="utf-8")
+            with mock.patch.object(os, "access", return_value=False):
+                with self.assertRaisesRegex(MODULE_UNDER_TEST.CandidateFrontendError, "unwritable and non-empty"):
+                    MODULE_UNDER_TEST._prepare_candidate_dist(root)
+            self.assertTrue((dist / "owned-output").is_file())
 
     def test_visual_smoke_uses_authority_wrapper_without_credentials(self):
         source = MODULE.read_text(encoding="utf-8")

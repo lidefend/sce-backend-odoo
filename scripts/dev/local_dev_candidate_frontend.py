@@ -163,12 +163,27 @@ def _wait_until_stopped(pid: int) -> None:
     raise CandidateFrontendError("candidate process did not stop after SIGTERM")
 
 
+def _prepare_candidate_dist(root: Path) -> Path:
+    dist = root.resolve() / "frontend/apps/web/dist-dev"
+    if not dist.exists():
+        return dist
+    if dist.is_symlink() or not dist.is_dir():
+        raise CandidateFrontendError("candidate dist must be a regular directory")
+    if os.access(dist, os.W_OK):
+        return dist
+    if any(dist.iterdir()):
+        raise CandidateFrontendError("candidate dist is unwritable and non-empty")
+    dist.rmdir()
+    print(f"[local.dev.candidate.frontend] removed empty unwritable dist={dist}")
+    return dist
+
+
 def up(root: Path = ROOT) -> None:
     _branch, head = _candidate_identity(root)
     authority = resolve_authority_env(root)
     _run_make(root, authority, "local.dev.ready")
+    dist = _prepare_candidate_dist(root)
     _run_make(root, authority, "verify.frontend.build", ["FRONTEND_DIST_DIR=frontend/apps/web/dist-dev"])
-    dist = root / "frontend/apps/web/dist-dev"
     if not (dist / "index.html").is_file():
         raise CandidateFrontendError("candidate static build is missing index.html")
     pidfile = PIDFILE
