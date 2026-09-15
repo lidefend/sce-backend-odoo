@@ -159,7 +159,7 @@ function waitForCurrentRecordContract(page) {
     if (!candidate.url().includes('/api/v1/intent')) return false;
     try {
       const body = candidate.request().postDataJSON();
-      return body?.intent === 'ui.contract'
+      return body?.intent === 'ui.contract.v2'
         && body?.params?.op === 'action_open'
         && Number(body?.params?.record_id) === Number(authority.fixture.bid_id);
     } catch { return false; }
