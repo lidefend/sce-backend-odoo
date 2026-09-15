@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "fcef3f00254a59793e3486c3eadf80e46db819437428eb329616183685211188",
-  "generatorDigest": "ca226c62f58e545f8d63682e5ef46d9b9c32e4f1d1388d910c9e62d4ac1a0d5f",
-  "ownershipDigest": "42882e5cd8ea9892f553cce4fe1441afecc2d66c8ee01e526953d116f170e013",
-  "inputDigest": "98fbb20eafe5787549c4a0c6de4ee1d52c08ea6f647fd525e6d738c09de0bccd",
+  "sourceIdentity": "8224a04e9e949364958592e64ab08f6d49dc55f1cdd32fd497168b682e6f3c48",
+  "generatorDigest": "f4ce74e7c5a5898b35c6b209d07fa4e4585cc13530f01d1b04c6c323670c7ff1",
+  "ownershipDigest": "20c6d7dd0be17facc39ef46ac87c6791c490475de081ba67edecc685cd27c82e",
+  "inputDigest": "611c823587094e39ac03b198fcadbe5eb77fd47d6382eaedbc36b450e9d8620b",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -20,12 +20,12 @@
     "permission and route authority changes"
   ],
   "summary": {
-    "surfaceCount": 166,
+    "surfaceCount": 167,
     "p0P1RawControlBypassSurfaceCount": 0,
     "p0P1RawControlBypassControlCount": 0,
     "deliberate_native_composite": 0,
     "gap": 0,
-    "governed_composite": 108,
+    "governed_composite": 109,
     "governed_primitive": 40,
     "p3_out_of_scope": 18
   },
@@ -1344,8 +1344,21 @@
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
+        "empty",
         "error",
         "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
+    },
+    {
+      "source": "frontend/apps/web/src/components/professional-fields/ProfessionalDetailCollectionControl.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "empty"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -1438,6 +1451,7 @@
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "empty",
+        "error",
         "disabled",
         "focus"
       ],
@@ -1652,7 +1666,6 @@
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
-        "empty",
         "disabled"
       ],
       "rawControls": {},
@@ -1759,6 +1772,7 @@
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
+        "disabled",
         "focus"
       ],
       "rawControls": {},

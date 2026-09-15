@@ -71,6 +71,7 @@ class _LegacyPolicyModel:
         view_id=None,
         excluded_field_names=None,
         allow_layout_append=True,
+        preserve_native_restrictions=False,
     ):
         self.calls.append({"allow_layout_append": bool(allow_layout_append)})
         excluded = {str(name or "").strip() for name in (excluded_field_names or []) if str(name or "").strip()}
@@ -247,7 +248,7 @@ class TestViewOrchestrator(unittest.TestCase):
             },
         }
 
-        with self.assertRaisesRegex(ValueError, "NATIVE_SEMANTIC_SURFACE_STRUCTURE_CONFLICT: sections"):
+        with self.assertRaisesRegex(ValueError, "NATIVE_SEMANTIC_SURFACE_STRUCTURE_CONFLICT"):
             self._compose(payload, {"layout": []}, "form", view_id=1701)
 
     def test_native_semantic_surface_reports_unknown_anchor_field(self):
@@ -985,6 +986,158 @@ class TestViewOrchestrator(unittest.TestCase):
         self.assertEqual(result["row_actions"][0]["intent"], "project.dashboard.enter")
         self.assertNotIn("default_group_by", result)
 
+
+
+class TestSingleStructureResolution(unittest.TestCase):
+    def test_legacy_scoped_structure_remains_supported_until_its_migration(self):
+        from types import SimpleNamespace
+        _load_orchestrator()
+        helper = sys.modules["odoo.addons.smart_core.core.form_structure_authority"]
+        config = _Config({"view_orchestration": {"views": {"form": {"sections": [{"key": "legacy", "fields": ["name"]}]}}}})
+        config.action_id = SimpleNamespace(id=12)
+        self.assertEqual(helper.diagnose_structure_ownership([config], model="demo.business", action_id=12), [])
+        native = _Config({"view_orchestration": {"views": {"form": {"composition_mode": "native_semantic_surface"}}}})
+        native.id = 99
+        for scope in (SimpleNamespace(id=12), 12):
+            config.action_id = scope
+            with self.assertRaisesRegex(ValueError, "STRUCTURE_CONFLICT"):
+                helper.diagnose_structure_ownership([config, native], model="demo.business", action_id=12)
+        config.action_id = 0
+        config.view_id = 34
+        with self.assertRaisesRegex(ValueError, "STRUCTURE_CONFLICT"):
+            helper.diagnose_structure_ownership([config, native], model="demo.business", action_id=12, view_id=34)
+
+    def test_role_selection_uses_authenticated_identity_at_single_boundary(self):
+        from unittest import mock
+        orchestrator = _load_orchestrator()
+        configs = _ConfigModel({})
+        env = _Env({"ui.business.config.contract": configs})
+        env.user = object()
+        class Resolver:
+            def __init__(self, actual_env):
+                self.env = actual_env
+            def user_group_xmlids(self, user):
+                assert user is env.user
+                return ["verified.group"]
+            def resolve_role_code(self, groups):
+                assert groups == ["verified.group"]
+                return "finance"
+        identity = types.ModuleType("odoo.addons.smart_core.identity.identity_resolver")
+        identity.IdentityResolver = Resolver
+        with mock.patch.dict(sys.modules, {identity.__name__: identity}):
+            result = orchestrator(env).compose({"layout": [{"type": "field", "name": "name"}]},
+                model_name="res.partner", view_type="form", role_key="untrusted_source_role", view_id=34)
+        self.assertEqual(len(configs.calls), 1)
+        self.assertEqual(configs.calls[0][1]["role_key"], "finance")
+        self.assertEqual(result["source_trace"]["view_orchestration"]["authenticated_role_key"], "finance")
+
+    def test_real_payment_config_chain_retains_semantics_without_second_structure(self):
+        import ast
+        import xml.etree.ElementTree as ET
+        from types import SimpleNamespace
+        orchestrator = _load_orchestrator()
+        data = Path(__file__).resolve().parents[2] / "smart_construction_core/data"
+        configs = []
+        for filename in ("p1_daily_business_form_orchestration_contract_data.xml", "view_orchestration_contract_generated_data.xml",
+                         "view_orchestration_form_section_contract_data.xml", "payment_request_form_productization_contract.xml"):
+            for record in ET.parse(data / filename).getroot().iter("record"):
+                if record.get("model") != "ui.business.config.contract":
+                    continue
+                fields = {field.get("name"): field for field in record.findall("field")}
+                if fields.get("model") is None or fields["model"].text != "payment.request":
+                    continue
+                payload = ast.literal_eval(fields["contract_json"].get("eval"))
+                if not ((payload.get("view_orchestration") or {}).get("views") or {}).get("form"):
+                    continue
+                configs.append(SimpleNamespace(id=len(configs)+1, name=record.get("id"), version_no=1, contract_json=payload))
+        self.assertGreaterEqual(len(configs), 4)
+        config_model = _ConfigModel({})
+        config_model._effective_view_orchestration_contracts = lambda *a, **kw: configs
+        layout = [{"type": "group", "string": "Native business", "children": [{"type": "field", "name": "name"}]}]
+        result = orchestrator(_Env({"ui.business.config.contract": config_model})).compose(
+            {"layout": layout}, model_name="payment.request", view_type="form", action_id=12, view_id=34)
+        self.assertEqual(result["layout"], layout)
+        resolved = result["governance"]["view_orchestration"]["form_structure_projection"]
+        self.assertEqual(resolved["form_structure_authority"], "native_authority")
+        self.assertEqual(resolved["configured_sections"], [])
+        self.assertTrue(resolved["field_semantic_roles"])
+        self.assertEqual(resolved["resolved_view_id"], 34)
+        self.assertEqual(resolved["compatibility_dependencies"], ["legacy_configuration_structure_suppression"])
+        self.assertTrue(resolved["structure_diagnostics"])
+
+    def test_semantic_field_policy_cannot_relax_native_restrictions(self):
+        from copy import deepcopy
+        orchestrator = _load_orchestrator()(_Env())
+        for restriction in (True, [["state", "!=", "draft"]]):
+            node = {"type": "field", "name": "name", "readonly": restriction,
+                    "required": True, "modifiers": {"readonly": restriction},
+                    "fieldInfo": {"readonly": True, "required": True}}
+            before = deepcopy(node)
+            orchestrator._apply_field_display_policy(node, {"readonly": False, "required": False, "help": "Guidance"})
+            self.assertEqual(node["readonly"], before["readonly"])
+            self.assertEqual(node["required"], before["required"])
+            self.assertEqual(node["modifiers"], before["modifiers"])
+            self.assertEqual(node["fieldInfo"]["readonly"], True)
+            self.assertEqual(node["help"], "Guidance")
+
+    def test_native_layout_resolves_once_and_semantic_overlays_coexist(self):
+        orchestrator = _load_orchestrator()
+        configs = _ConfigModel({"view_orchestration": {"views": {"form": {
+            "composition_mode": "native_semantic_surface",
+            "semantic_anchors": [{"role": "summary", "fields": ["name"]}],
+        }}}})
+        env = _Env({"ui.business.config.contract": configs, "demo.business": _Model()})
+        layout = [{"type": "group", "string": "Business", "children": [{"type": "field", "name": "name"}]}]
+        result = orchestrator(env).compose({"layout": layout}, model_name="demo.business", view_type="form", action_id=12, view_id=34)
+        self.assertEqual(len(configs.calls), 1)
+        self.assertEqual(result["layout"], layout)
+        resolved = result["governance"]["view_orchestration"]["form_structure_projection"]
+        self.assertEqual(resolved["field_semantic_roles"], {"name": "summary"})
+        self.assertEqual(resolved["form_structure_authority"], "native_authority")
+        provenance = resolved["business_config_contracts"]
+        self.assertTrue(provenance)
+        for row in provenance:
+            self.assertTrue(set(row).issubset({"id", "name", "priority", "view_type", "version_no"}), row)
+        self.assertIn("status", result["source_trace"]["view_orchestration"]["business_config_contracts"][0])
+        helper = sys.modules["odoo.addons.smart_core.core.form_structure_authority"]
+        first = _Config({"view_orchestration": {"views": {"form": {"composition_mode": "native_semantic_surface", "help": "help"}}}})
+        second = _Config({"view_orchestration": {"views": {"form": {"semantic_anchors": [{"role": "audit", "fields": ["state"]}]}}}})
+        self.assertEqual(helper.diagnose_structure_ownership([first, second], model="demo.business"), [])
+
+    def test_native_sparse_field_policies_do_not_own_structure(self):
+        cls = _load_orchestrator()
+        helper = sys.modules["odoo.addons.smart_core.core.form_structure_authority"]
+        spec = {"composition_mode": "native_semantic_surface", "fields": [
+            {"name": "name", "help": "Field guidance", "readonly": True},
+        ]}
+        config = _Config({"view_orchestration": {"views": {"form": spec}}})
+        self.assertEqual(helper.diagnose_structure_ownership([config], model="demo.business"), [])
+        env = _Env({"ui.business.config.contract": _ConfigModel(config.contract_json), "demo.business": _Model()})
+        layout = [{"type": "group", "string": "Native chapter", "children": [
+            {"type": "field", "name": "name"}, {"type": "field", "name": "state"}]}]
+        result = cls(env).compose({"layout": layout}, model_name="demo.business", view_type="form", view_id=34)
+        nodes = result["layout"][0]["children"]
+        self.assertEqual([node["name"] for node in nodes], ["name", "state"])
+        self.assertEqual(nodes[0]["help"], "Field guidance")
+        self.assertTrue(nodes[0]["readonly"])
+        self.assertEqual(result["governance"]["view_orchestration"]["form_structure_projection"]["compatibility_dependencies"], [])
+        spec["fields"][0]["sequence"] = 1
+        with self.assertRaisesRegex(ValueError, "STRUCTURE_CONFLICT"):
+            helper.diagnose_structure_ownership([config], model="demo.business")
+
+    def test_native_structure_conflict_names_entry_config_key_and_node(self):
+        _load_orchestrator()
+        helper = sys.modules["odoo.addons.smart_core.core.form_structure_authority"]
+        native = _Config({"view_orchestration": {"views": {"form": {"composition_mode": "native_semantic_surface"}}}})
+        competitor = _Config({"view_orchestration": {"views": {"form": {"sections": [{"key": "competing", "fields": ["name"]}]}}}})
+        with self.assertRaises(ValueError) as raised:
+            helper.diagnose_structure_ownership([native, competitor], model="demo.business", action_id=12, view_id=34)
+        import json
+        diagnostic = json.loads(str(raised.exception))[0]
+        self.assertEqual(diagnostic["entry"], {"model": "demo.business", "action_id": 12, "view_id": 34})
+        self.assertEqual(diagnostic["configuration"]["name"], "demo")
+        self.assertEqual(diagnostic["key"], "sections")
+        self.assertEqual(diagnostic["node"], "view_orchestration.views.form.sections")
 
 if __name__ == "__main__":
     unittest.main()

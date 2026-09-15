@@ -19,12 +19,23 @@ if (!baseUrl || !database || !login || !password || !/^[0-9a-f]{40}$/.test(head)
 if (!Array.isArray(routes) || routes.length === 0 || routes.some((item) => !item || typeof item.name !== 'string' || !String(item.path || '').startsWith('/'))) {
   throw new Error('candidate visual routes must be a non-empty name/path array');
 }
+for (const target of routes) {
+  if (target.viewports !== undefined && (!Array.isArray(target.viewports) || !target.viewports.length
+    || target.viewports.some((name) => !['desktop', 'mobile'].includes(name)))) {
+    throw new Error('route viewports must select at least one supported viewport');
+  }
+  if (target.captureCollectionWidths !== undefined && (!Array.isArray(target.captureCollectionWidths)
+    || !target.captureCollectionWidths.length || target.captureCollectionWidths.some((field) => !/^[a-zA-Z0-9_]+$/.test(field.name)))) {
+    throw new Error('collection width evidence requires named fields');
+  }
+}
 
 fs.mkdirSync(outputDir, { recursive: true });
 const report = {
   head,
   baseUrl,
   database,
+  backendIdentity: JSON.parse(process.env.CANDIDATE_BACKEND_IDENTITY || '{}'),
   login,
   mutationCount: 0,
   inputs: {
@@ -37,6 +48,34 @@ const report = {
   routes: [],
 };
 const browser = await launchChromium({ headless: true });
+
+async function captureFormalEntryIdentity(response, target, viewport, stage) {
+  if (target.captureFormalEntryIdentity !== true) return;
+  const payload = await response.json();
+  const request = JSON.parse(response.request().postData() || '{}');
+  const normalized = findNormalizedContract(payload);
+  const sources = [];
+  const sourceKeys = new Set(['view_id', 'viewId', 'view_ids_by_type', 'resolvedViewId',
+    'source_view_id', 'sourceAuthority', 'form_layout_governance', 'current_form_settings']);
+  const visit = (value, location) => {
+    if (!value || typeof value !== 'object') return;
+    for (const [key, nested] of Object.entries(value)) {
+      const next = `${location}.${key}`;
+      if (sourceKeys.has(key)) sources.push({ path: next, value: nested });
+      visit(nested, next);
+    }
+  };
+  visit(payload, '$');
+  const identity = { head, backendIdentity: report.backendIdentity,
+    role: report.startup[viewport]?.roleCode, companyId: report.startup[viewport]?.companyId,
+    stage, request: { intent: request.intent, params: request.params },
+    httpStatus: response.status(), traceId: response.headers()['x-trace-id'] || payload.trace_id || payload.meta?.trace_id,
+    pageInfo: normalized?.pageInfo, statusContract: normalized?.statusContract,
+    formStructureContract: normalized?.formStructureContract, sources,
+    responseKeys: Object.keys(payload.data || payload),
+    workbench: request.intent === 'ui.business_config.surface.get' ? payload : undefined };
+  fs.writeFileSync(path.join(outputDir, `${viewport}-${target.name}-${stage}-identity.json`), JSON.stringify(identity, null, 2));
+}
 
 async function loginPage(page) {
   await page.goto(`${baseUrl}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -122,6 +161,12 @@ function isContractV2Response(response) {
   }
 }
 
+function isTargetContractResponse(response, target) {
+  if (!isContractV2Response(response)) return false;
+  const params = JSON.parse(response.request().postData() || '{}').params || {};
+  return !target.expectedContractOp || params.op === target.expectedContractOp;
+}
+
 function isSystemInitResponse(response) {
   if (!response.url().includes('/api/v1/intent') || response.request().method() !== 'POST') return false;
   try {
@@ -129,6 +174,16 @@ function isSystemInitResponse(response) {
   } catch {
     return false;
   }
+}
+
+function findNormalizedContract(value) {
+  if (!value || typeof value !== 'object') return null;
+  if (value.layoutContract?.containerTree) return value;
+  for (const child of Object.values(value)) {
+    const found = findNormalizedContract(child);
+    if (found) return found;
+  }
+  return null;
 }
 
 function summarizeSystemInit(payload) {
@@ -145,7 +200,25 @@ function summarizeSystemInit(payload) {
       menuXmlid: String(entry?.menu_xmlid || ''),
       actionXmlid: String(entry?.action_xmlid || ''),
     })) : []);
+  const menuEntries = [];
+  const visitMenu = (node) => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) { node.forEach(visitMenu); return; }
+    const meta = { ...node, ...node.meta };
+    const canonical = node.canonical_navigation || {};
+    const menuId = Number(canonical.menu_id || meta.menu_id || node.id || 0);
+    const actionId = Number(canonical.action_id || meta.action_id || meta.action?.id || 0);
+    const authorized = routeEntries.find((entry) => entry.menuId === menuId && entry.actionId === actionId);
+    const menuXmlid = authorized?.menuXmlid || meta.menu_xmlid || node.xmlid || node.xml_id;
+    if (menuXmlid && actionId && authorized) {
+      menuEntries.push({ menuXmlid, menuId, actionId, model: meta.model || meta.action?.res_model,
+        viewModes: meta.view_modes, actionType: meta.action_type, views: meta.views });
+    }
+    if (node.children) visitMenu(node.children);
+  };
+  visitMenu(navigation.nav || []);
   return {
+    menuEntries,
     roleCode: String(data?.role_surface?.role_code || ''),
     userId: Number(authority?.principal_scope?.user_id || 0),
     companyId: Number(authority?.principal_scope?.company_id || 0),
@@ -441,6 +514,7 @@ function summarizeApiDataListResponse(payload) {
 
 try {
   for (const viewport of [{ name: 'desktop', width: desktopWidth, height: desktopHeight }, { name: 'mobile', width: mobileWidth, height: 844 }]) {
+    if (!routes.some((target) => !target.viewports || target.viewports.includes(viewport.name))) continue;
     const context = await browser.newContext({
       viewport: { width: viewport.width, height: viewport.height },
       locale: 'zh-CN',
@@ -529,6 +603,14 @@ try {
     };
     if (bootSummaryFixtureTarget) await page.route(bootContractRoutePattern, bootContractRouteHandler);
     report.startup[viewport.name] = await loginPage(page);
+    for (const target of routes.filter((item) => item.menuXmlid)) {
+      const entry = report.startup[viewport.name].menuEntries.find((item) => item.menuXmlid === target.menuXmlid);
+      if (!entry) throw new Error(`menu identity unavailable: ${target.menuXmlid}`);
+      const resolved = new URL(target.path, baseUrl);
+      resolved.searchParams.set('action_id', String(entry.actionId));
+      resolved.searchParams.set('menu_id', String(entry.menuId));
+      target.path = resolved.pathname + resolved.search;
+    }
     if (viewport.name === 'desktop') {
       const revealSidebar = page.getByRole('button', { name: '显示侧边栏', exact: true });
       if (await revealSidebar.count() === 1) {
@@ -548,6 +630,7 @@ try {
       await navigationSearch.fill('');
     }
     for (const target of routes) {
+      if (target.viewports && !target.viewports.includes(viewport.name)) continue;
       const summaryFixture = Array.isArray(target.summaryFixture) ? target.summaryFixture : null;
       let contractH1Nodes = [];
       let contractSelections = [];
@@ -561,6 +644,7 @@ try {
       let businessConfigReadFailureEvidence = null;
       let safeReturnEvidence = null;
       let formStructureEvidence = null;
+      let collectionWidthEvidence = null;
       let fieldAlignmentEvidence = null;
       let optionalDetailDisclosureEvidence = null;
       let officialIconResourceEvidence = null;
@@ -665,12 +749,17 @@ try {
       };
       if (exerciseSessionExpiredRecovery) await page.route(readFailurePattern, sessionExpiredHandler);
       const contractResponse = target.expectContractResponse !== false && /^\/(?:a|r|f)\//.test(target.path)
-        ? page.waitForResponse(isContractV2Response, { timeout: 45000 })
+        ? page.waitForResponse((response) => isTargetContractResponse(response, target), { timeout: 45000 })
         : null;
       const listDataResponse = target.captureCollectionAggregate === true
         ? page.waitForResponse(isApiDataListResponse, { timeout: 45000 })
         : null;
+      const workbenchResponse = target.captureFormalEntryIdentity === true && target.path.startsWith('/admin/business-config')
+        ? page.waitForResponse((response) => {
+          try { return response.request().postDataJSON()?.intent === 'ui.business_config.surface.get'; } catch { return false; }
+        }, { timeout: 45000 }) : null;
       await page.goto(`${baseUrl}${target.path}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      if (workbenchResponse) await captureFormalEntryIdentity(await workbenchResponse, target, viewport.name, 'workbench');
       if (exerciseSessionExpiredRecovery) {
         const originalReturnUrl = `${baseUrl}${target.path}`;
         const originalReturnPath = `${new URL(originalReturnUrl).pathname}${new URL(originalReturnUrl).search}${new URL(originalReturnUrl).hash}`;
@@ -773,6 +862,79 @@ try {
         const response = await contractResponse;
         if (!response.ok()) throw new Error(`contract request failed: ${response.status()} ${target.path}`);
         const contractPayload = await response.json();
+        await captureFormalEntryIdentity(response, target, viewport.name, 'entry');
+        if (target.captureFormStructure === true || Array.isArray(target.captureCollectionWidths)) {
+          const normalized = findNormalizedContract(contractPayload);
+          if (!normalized) throw new Error(`${target.name}: normalized container tree missing`);
+          // Save structure and identity only, without customer record values.
+          fs.writeFileSync(path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-structure.json`), JSON.stringify({
+            head, backendIdentity: report.backendIdentity,
+            requestIdentity: (() => {
+              const params = JSON.parse(response.request().postData() || '{}').params || {};
+              return Object.fromEntries(['op', 'model', 'action_id', 'menu_id', 'view_id', 'view_type', 'render_profile', 'record_id']
+                .filter((key) => params[key] !== undefined).map((key) => [key, params[key]]));
+            })(),
+            pageInfo: normalized.pageInfo, layoutContract: normalized.layoutContract,
+            statusContract: normalized.statusContract, lifecycle: normalized.meta?.lifecycle,
+            selectedBusinessFacts: Object.fromEntries((target.captureBusinessFields || [])
+              .filter((key) => Object.hasOwn(normalized.dataContract?.mainData || {}, key))
+              .map((key) => [key, normalized.dataContract.mainData[key]])),
+            formStructureContract: normalized.formStructureContract,
+          }, null, 2));
+          if (target.expectedRenderProfile && normalized.statusContract?.globalStatus?.effectiveRenderProfile !== target.expectedRenderProfile) {
+            throw new Error(`${target.name}: unexpected effective render profile ${normalized.statusContract?.globalStatus?.effectiveRenderProfile}`);
+          }
+          if (target.expectCompatibilityFree === true && (normalized.formStructureContract?.sourceAuthority?.governance_source?.compatibilityDependencies || []).length) {
+            throw new Error(`${target.name}: compatibility structure dependency remains`);
+          }
+          if (target.expectedStructurePolicy && normalized.formStructureContract?.layoutPolicy !== target.expectedStructurePolicy) {
+            throw new Error(`${target.name}: unexpected structure policy ${normalized.formStructureContract?.layoutPolicy}`);
+          }
+        }
+        if (target.captureCompatibilityInventory === true && viewport.name === 'desktop') {
+          const policy = JSON.parse(fs.readFileSync(new URL('./baselines/formal_business_product_menu_policy_v1.json', import.meta.url), 'utf8'));
+          const formal = [...new Map(policy.products.flatMap((product) => product.capabilities)
+            .map((item) => [item.menu_xmlid, item])).values()];
+          const entries = report.startup[viewport.name].menuEntries;
+          const sourceHeaders = await response.request().allHeaders();
+          const headers = Object.fromEntries(['authorization', 'x-openerp-session-id', 'x-odoo-db', 'content-type']
+            .filter((key) => sourceHeaders[key]).map((key) => [key, sourceHeaders[key]]));
+          const inventory = { head, backendIdentity: report.backendIdentity, role: report.startup[viewport.name].roleCode,
+            companyId: report.startup[viewport.name].companyId, evidenceKind: 'runtime_contract_resolution_only', operation: 'model', renderProfile: 'create', retirementComplete: false, entries: [] };
+          for (const item of formal.filter((item) => !Array.isArray(target.compatibilityMenuXmlids)
+            || target.compatibilityMenuXmlids.includes(item.menu_xmlid))) {
+            const entry = entries.find((row) => row.menuXmlid === item.menu_xmlid);
+            const row = { menuXmlid: item.menu_xmlid, label: item.label, model: item.res_model,
+              actionId: entry?.actionId || null, menuId: entry?.menuId || null,
+              batch: item.menu_xmlid === target.menuXmlid ? 'U-A/customer' : 'U-B/U-C',
+              browserAcceptance: item.menu_xmlid === target.menuXmlid ? 'current-route-only' : 'not_run' };
+            inventory.entries.push(row);
+            if (!entry) { row.path = 'unresolved_not_visible'; continue; }
+            const modes = Array.isArray(entry.viewModes) ? entry.viewModes : String(entry.viewModes || '').split(',');
+            if (modes.length && modes[0] && !modes.includes('form')) { row.path = 'no_form_entry'; continue; }
+            try {
+              const result = await context.request.post(response.url(), { headers, timeout: 45000,
+                data: { intent: 'ui.contract.v2', params: { op: 'model', model: item.res_model, action_id: entry.actionId,
+                  menu_id: entry.menuId, view_type: 'form', render_profile: 'create', source_type: 'ui.contract' } } });
+              const payload = await result.json();
+              const contract = findNormalizedContract(payload);
+              if (!result.ok() || !contract) { row.path = 'unresolved_contract_error'; row.httpStatus = result.status(); continue; }
+              const structure = contract.formStructureContract || {};
+              row.path = structure.layoutPolicy === 'container_tree_authority' ? 'container_tree_authority' : 'compatibility';
+              row.layoutPolicy = structure.layoutPolicy || null;
+              row.actualView = { model: contract.pageInfo?.model,
+                viewId: structure.sourceAuthority?.governance_source?.resolvedViewId || null };
+              if (!row.actualView.viewId) row.path = 'unresolved_view_identity';
+              row.configuration = structure.sourceAuthority?.governance_source || {};
+              row.compatibilityLogic = [...(structure.sourceAuthority?.governance_source?.compatibilityDependencies || []),
+                ...(row.path === 'compatibility' ? ['legacy structure slots', 'frontend compatibility floorplan'] : [])];
+              row.compatibilityConsumer = row.compatibilityLogic.length > 0;
+            } catch (error) { row.path = 'unresolved_request_error'; row.error = String(error.message || error); }
+          }
+          inventory.counts = inventory.entries.reduce((out, row) => ({ ...out, [row.path]: (out[row.path] || 0) + 1 }), {});
+          fs.writeFileSync(path.join(outputDir, 'compatibility-consumers.json'), JSON.stringify(inventory, null, 2));
+          report.compatibilityInventory = { count: inventory.entries.length, ...inventory.counts };
+        }
         contractH1Nodes = summarizeContractH1(contractPayload);
         contractSelections = summarizeContractSelections(contractPayload);
         contractSubviews = summarizeContractSubviews(contractPayload);
@@ -1772,6 +1934,36 @@ try {
         };
       }
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
+      if (Array.isArray(target.captureCollectionWidths)) {
+        collectionWidthEvidence = [];
+        for (const expected of target.captureCollectionWidths) {
+          const field = page.locator(`.field[data-field-name="${expected.name}"]:visible`).first();
+          await field.scrollIntoViewIfNeeded();
+          const width = await field.evaluate((node) => {
+            const box = (el) => el?.getBoundingClientRect().width || 0;
+            const control = node.querySelector(':scope > .field-control-row');
+            const empty = node.querySelector('.relation-readonly-empty');
+            const collection = node.querySelector('[data-semantic-component="ProfessionalDetailCollectionControl"]');
+            return {
+              fieldWidth: box(node), controlWidth: box(control), contentWidth: box(empty || collection || control),
+              gridColumn: getComputedStyle(node).gridColumn, innerColumns: getComputedStyle(node).gridTemplateColumns,
+              state: node.getAttribute('data-field-state'), controlState: collection?.getAttribute('data-control-state'),
+              readonlyEmpty: Boolean(empty), empty: collection ? Number(collection.getAttribute('data-row-count')) === 0 : Boolean(empty),
+              labelWidth: box(node.querySelector(':scope > .field-label-row')),
+              rowCount: collection ? Number(collection.getAttribute('data-row-count')) : node.querySelectorAll('tbody tr').length,
+              editableControls: [...node.querySelectorAll('input:not([disabled]):not([readonly]),button:not([disabled])')].filter((el) => el.getBoundingClientRect().width > 0).length,
+            };
+          });
+          const evidence = { name: expected.name, ...width, pass: width.fieldWidth > 0
+            && width.controlWidth >= width.fieldWidth * 0.98 && width.contentWidth >= width.fieldWidth * 0.98
+            && (expected.empty === undefined || width.empty === expected.empty)
+            && (expected.editable !== true || (width.controlState === 'editable' && width.state !== 'readonly' && width.editableControls > 0))
+            && (expected.editable !== false || (width.controlState === 'readonly' && width.state === 'readonly'))
+            && (expected.nonempty !== true || width.rowCount > 0) };
+          collectionWidthEvidence.push(evidence);
+          await field.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name}-${expected.name}-width.png`) });
+        }
+      }
       if (target.captureFormStructure === true) {
         const screenshotStem = `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
         let statusInteractionEvidence = { checked: false, reason: 'not requested', pass: true };
@@ -1863,12 +2055,14 @@ try {
           if (!enabled) continue;
           await select.click();
           await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          await page.locator('[role="listbox"]:visible, .t-select__dropdown:visible').first()
+            .waitFor({ state: 'visible', timeout: 10000 });
           popupBoundaryEvidence = await page.evaluate(() => {
             const visible = (node) => node instanceof HTMLElement && node.offsetParent !== null;
             const select = [...document.querySelectorAll('.field [data-semantic-component="ScSelect"], .field [role="combobox"]')]
               .find((node) => visible(node) && (node === document.activeElement || node.contains(document.activeElement)))
               || null;
-            const popup = [...document.querySelectorAll('[role="listbox"]')]
+            const popup = [...document.querySelectorAll('[role="listbox"], .t-select__dropdown')]
               .find((node) => visible(node) && node.getBoundingClientRect().width > 0);
             const selectOwner = select instanceof HTMLElement
               ? select.closest('[data-semantic-component="ScSelect"], [data-semantic-component="ScRelationField"]')
@@ -2086,6 +2280,8 @@ try {
           const background = header instanceof HTMLElement ? getComputedStyle(header).backgroundColor : '';
           const alpha = background.match(/rgba?\([^)]*(?:,|\/)\s*([\d.]+)\s*\)$/)?.[1];
           return {
+            visibleFieldNames: [...new Set([...document.querySelectorAll('[data-native-contract-structure] [data-field-name]')]
+              .filter(visible).map((node) => node.getAttribute('data-field-name')).filter(Boolean))],
             sectionLinks: [...document.querySelectorAll('[data-form-section-navigation] [data-section-link]')]
               .filter(visible).map((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim()),
             currentSectionCount: [...document.querySelectorAll('[data-form-section-navigation] [aria-current="location"]')].filter(visible).length,
@@ -2156,6 +2352,12 @@ try {
             targetFound: targetNode instanceof HTMLElement,
             targetLabelMatches: Boolean(label) && targetLabels.some((value) => value.includes(label)),
             targetTop: targetRect ? Math.round(targetRect.top) : null,
+            exactTargetTop: targetRect?.top ?? null,
+            sectionAnchor: Math.max(obstructionBottom, document.querySelector('.router-host')?.getBoundingClientRect().top || 0) + 12,
+            currentLabel: String(nav?.querySelector('[aria-current="location"]')?.textContent || '').trim(),
+            scrollTop: document.querySelector('.router-host')?.scrollTop,
+            scrollHeight: document.querySelector('.router-host')?.scrollHeight,
+            clientHeight: document.querySelector('.router-host')?.clientHeight,
             obstructionBottom: Math.round(obstructionBottom),
             targetVisibleBelowSticky: Boolean(targetRect && targetRect.bottom > obstructionBottom && targetRect.top >= obstructionBottom - 2),
           };
@@ -2262,7 +2464,10 @@ try {
         const manualNavigationJourney = [];
         for (const label of (Array.isArray(target.sectionManualJourneyLabels) ? target.sectionManualJourneyLabels : [])) {
           const link = await exactSectionLink(label);
-          await link.evaluate((node) => {
+          // Sticky chrome changes its anchor while entering/leaving the top.
+          // Re-read it after scrolling; never activate a navigation link here.
+          for (let settlingStep = 0; settlingStep < 3; settlingStep += 1) {
+            await link.evaluate((node) => {
             const selector = node instanceof HTMLElement ? String(node.dataset.sectionTarget || '') : '';
             const nav = node.closest('[data-form-section-navigation]');
             const root = nav?.closest('[data-native-contract-structure], .object-task-page');
@@ -2277,23 +2482,30 @@ try {
               header instanceof HTMLElement ? header.getBoundingClientRect().bottom : 0,
               ownerTop,
             ) + 12;
-            const delta = targetNode.getBoundingClientRect().top - anchor;
+            const delta = targetNode.getBoundingClientRect().top - anchor + 1;
             if (owner instanceof HTMLElement) owner.scrollBy({ top: delta, behavior: 'auto' });
             else window.scrollBy({ top: delta, behavior: 'auto' });
           });
-          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-          await page.waitForFunction((expectedLabel) => [...document.querySelectorAll(
-            '[data-form-section-navigation] [data-section-link]',
-          )].some((node) => (
-            String(node.textContent || '').replace(/\s+/g, ' ').trim() === expectedLabel
-              && node.getAttribute('aria-current') === 'location'
-          )), String(label), { timeout: 15000 });
+            await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          }
+          let activationError = '';
+          try {
+            await page.waitForFunction((expectedLabel) => [...document.querySelectorAll(
+              '[data-form-section-navigation] [data-section-link]',
+            )].some((node) => (
+              String(node.textContent || '').replace(/\s+/g, ' ').trim() === expectedLabel
+                && node.getAttribute('aria-current') === 'location'
+            )), String(label), { timeout: 15000 });
+          } catch (error) {
+            activationError = String(error.message || error);
+          }
           await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
           const stable = await captureStableNavigationState(link);
           manualNavigationJourney.push({
             label,
             ...stable,
-            pass: stable.current && stable.targetFound && stable.targetLabelMatches && stable.targetVisibleBelowSticky,
+            activationError,
+            pass: !activationError && stable.current && stable.targetFound && stable.targetLabelMatches && stable.targetVisibleBelowSticky,
           });
         }
         let sectionBrowseFocusEvidence = { checked: false, reason: 'not requested', pass: true };
@@ -2397,7 +2609,33 @@ try {
           if (owner instanceof HTMLElement) owner.scrollTo({ top: 0, behavior: 'auto' });
           else window.scrollTo({ top: 0, behavior: 'auto' });
         });
+        let fullPageCapture = null;
+        if (target.captureFullPage === true) {
+          const savedStyles = await page.evaluate(() => {
+            const owner = document.querySelector('.router-host');
+            const saved = [];
+            for (let node = owner; node instanceof HTMLElement; node = node.parentElement) {
+              saved.push({ selector: node === owner ? '.router-host' : null, style: node.getAttribute('style') });
+              node.style.setProperty('height', 'auto', 'important');
+              node.style.setProperty('max-height', 'none', 'important');
+              node.style.setProperty('overflow', 'visible', 'important');
+            }
+            return saved;
+          });
+          const filename = `${screenshotStem}-full-page.png`;
+          await page.screenshot({ path: path.join(outputDir, filename), fullPage: true });
+          await page.evaluate((saved) => {
+            let node = document.querySelector('.router-host');
+            for (const row of saved) {
+              if (!(node instanceof HTMLElement)) break;
+              if (row.style === null) node.removeAttribute('style'); else node.setAttribute('style', row.style);
+              node = node.parentElement;
+            }
+          }, savedStyles);
+          fullPageCapture = { filename, expandedScrollContainer: true, width: viewport.width };
+        }
         formStructureEvidence = {
+          fullPageCapture,
           ...top,
           popupBoundaryEvidence,
           statusInteractionEvidence,
@@ -2408,6 +2646,8 @@ try {
           captures,
           pass: target.expectFormStructure !== true || (
             top.sectionLinks.length > 1
+            && (!Array.isArray(target.expectedVisibleFields)
+              || target.expectedVisibleFields.every((name) => top.visibleFieldNames.includes(name)))
             && top.currentSectionCount === 1
             && top.navigationOverflowDiscoverable
             && top.stickyHeaderOpaque
@@ -2789,7 +3029,12 @@ try {
       let detailCollectionEvidence = null;
       if (target.exerciseDetailCollection === true) {
         if (formValidationEvidence) {
-          await page.goto(`${baseUrl}${target.path}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+          const workbenchResponse = target.captureFormalEntryIdentity === true && target.path.startsWith('/admin/business-config')
+        ? page.waitForResponse((response) => {
+          try { return response.request().postDataJSON()?.intent === 'ui.business_config.surface.get'; } catch { return false; }
+        }, { timeout: 45000 }) : null;
+      await page.goto(`${baseUrl}${target.path}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      if (workbenchResponse) await captureFormalEntryIdentity(await workbenchResponse, target, viewport.name, 'workbench');
           await page.locator('[data-semantic-component="ContractFormPage"][data-state="ok"]:visible').waitFor({ state: 'visible', timeout: 45000 });
           await waitForStableProductSurface(page);
         }
@@ -4026,6 +4271,7 @@ try {
         await page.waitForURL((url) => url.href !== beforeUrl, { timeout: 15000 });
         const response = await detailContractResponse;
         const payload = await response.json();
+        await captureFormalEntryIdentity(response, target, viewport.name, 'record');
         const widgetTypes = [];
         const visit = (value) => {
           if (Array.isArray(value)) return value.forEach(visit);
@@ -4543,7 +4789,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractSubviews, contractActions, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialIconResourceEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, sessionExpiredRecoveryEvidence, systemThemeRuntimeEvidence, safeReturnEvidence, formStructureEvidence, fieldAlignmentEvidence, optionalDetailDisclosureEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookJourneyEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, expectedLoadedSelectorEvidence, contractH1Nodes, contractSelections, contractSubviews, contractActions, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, hierarchicalWorkspaceEvidence, formValidationEvidence, detailCollectionEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, collectionSearchEvidence, readFailureEvidence, businessConfigExperienceEvidence, businessConfigReadFailureEvidence, officialIconResourceEvidence, officialComponentBehaviorEvidence, officialAlertOperationEvidence, sessionExpiredRecoveryEvidence, systemThemeRuntimeEvidence, safeReturnEvidence, formStructureEvidence, collectionWidthEvidence, fieldAlignmentEvidence, optionalDetailDisclosureEvidence, factDisclosureEvidence, taskDensityEvidence, monetaryExpressionEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookJourneyEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -4566,6 +4812,7 @@ for (const item of report.routes) {
   if (item.path && item.overlayResidueEvidence && !item.overlayResidueEvidence.pass) {
     failures.push({ name: item.name, overlayResidueEvidence: item.overlayResidueEvidence });
   }
+  if (item.collectionWidthEvidence?.some((row) => !row.pass)) failures.push({ name: item.name, collectionWidthEvidence: item.collectionWidthEvidence });
   if (item.path && configuredTarget?.captureFormStructure === true && !item.formStructureEvidence?.pass) {
     failures.push({ name: item.name, formStructureEvidence: item.formStructureEvidence || null });
   }

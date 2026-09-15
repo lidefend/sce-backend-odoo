@@ -13,16 +13,17 @@
     :aria-describedby="describedBy"
     autocomplete="off"
     @change="emitChange"
-    @focus="emit('focus', $event)"
-    @blur="emit('blur', $event)"
-    @keydown="emit('keydown', $event)"
-    @keyup="emit('keyup', $event)"
+    @focus="emitNativeEvent('focus', $event)"
+    @blur="emitNativeEvent('blur', $event)"
+    @keydown="emitNativeEvent('keydown', $event)"
+    @keyup="emitNativeEvent('keyup', $event)"
   />
 </template>
 <script setup lang="ts">
 import { computed } from 'vue';
 import { TDesignAutoComplete } from './tdesignPrimitiveBridge';
 import { nativeControlProjection } from './nativeControlProjection';
+import { resolvePrimitiveNativeEvent } from './primitiveAdapter';
 const props = withDefaults(defineProps<{ id?:string; modelValue:string; readonly?:boolean; disabled?:boolean; required?:boolean; invalid?:boolean; describedBy?:string; ariaLabel?:string; appearance?:'default'|'form-field' }>(), {
   id: undefined,
   describedBy: undefined,
@@ -51,5 +52,9 @@ const emit = defineEmits<{
 function emitChange(value: string | number) {
   emit('update:modelValue', String(value ?? ''));
   emit('change', { target: { value: String(value ?? '') } } as unknown as Event);
+}
+function emitNativeEvent(name: 'focus' | 'blur' | 'keydown' | 'keyup', context: unknown) {
+  const event = resolvePrimitiveNativeEvent(context);
+  if (event) emit(name, event);
 }
 </script>

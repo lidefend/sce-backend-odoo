@@ -188,6 +188,7 @@ ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
     # Formal enum values.
     "act_window",
     "business_form",
+    "container_tree_authority",
     "harmony_h5",
     "native_activity_view_projection",
     "native_graph_view_projection",

@@ -45,6 +45,7 @@ export function buildContractFormPageIdentity(input: {
   entryTitle?: unknown;
   contract: BusinessMetadata;
   formData: Record<string, unknown>;
+  recordData?: Record<string, unknown>;
   isCreate: boolean;
   isEdit: boolean;
   menuName?: unknown;
@@ -61,14 +62,17 @@ export function buildContractFormPageIdentity(input: {
   const identityName = input.isCreate
     ? input.entryTitle || input.authoritativeActionName || input.businessCategoryLabel || modelLabel || businessName
     : businessName;
-  const recordName = primaryRecordName(input.contract, input.formData);
+  // Identity may be absent from body controls but present in the authorized
+  // record snapshot. Keep it out of the writable draft; current edits win.
+  const identityRecord = input.isCreate ? input.formData : { ...input.recordData, ...input.formData };
+  const recordName = primaryRecordName(input.contract, identityRecord);
   return {
     kind: input.isCreate ? 'create' : input.isEdit ? 'edit' : 'detail',
     actionName: identityName,
     menuName: input.menuName,
     modelName: input.modelName,
     modelLabel,
-    record: input.formData,
+    record: identityRecord,
     recordDisplayName: recordName,
     primaryFieldNames: formPrimaryFields(input.contract),
     subtitle: recordName ? businessName || input.menuName : '',

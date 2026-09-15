@@ -34,7 +34,7 @@ from ..core.ui_base_contract_asset_repository import (
 )
 from ..core.request_params import parse_positive_int
 from ..utils.contract_governance import (
-    _apply_form_view_capabilities, apply_contract_governance,
+    _apply_form_view_capabilities, _mark_record_dependent_native_buttons_hidden_on_create, apply_contract_governance,
     resolve_contract_mode,
     resolve_contract_surface,
 )
@@ -1487,7 +1487,17 @@ class UiContractV2Handler(BaseIntentHandler):
                 return
             contract_mode = resolve_contract_mode(params)
             contract_surface = resolve_contract_surface(params, contract_mode)
-            governed = apply_contract_governance(
+            structure_governance = self._form_structure_governance(
+                source_contract, model=model, view_type=view_type,
+            )
+            native_structure = structure_governance.get("form_structure_authority") == "native_authority"
+            # The resolved native view already owns field placement and visibility.
+            # Generic governance derives core/advanced groups and create visibility,
+            # so running it here would silently introduce a second structure owner.
+            # Explicit category policies and relation capabilities are retained below.
+            if native_structure:
+                _mark_record_dependent_native_buttons_hidden_on_create(source_contract)
+            governed = None if native_structure else apply_contract_governance(
                 source_contract,
                 contract_mode,
                 contract_surface=contract_surface,
@@ -2321,270 +2331,26 @@ class UiContractV2Handler(BaseIntentHandler):
         source_contract["list_profile"] = profile
 
     def _form_structure_governance(self, source_contract: dict[str, Any], *, model: str, view_type: str) -> dict[str, Any]:
+        """Consume the resolved view, without a second configuration lookup."""
         if view_type != "form":
             return {}
-        governance = source_contract.get("governance") if isinstance(source_contract.get("governance"), dict) else {}
-        view_governance = governance.get("view_orchestration") if isinstance(governance.get("view_orchestration"), dict) else {}
-        source_trace = source_contract.get("source_trace") if isinstance(source_contract.get("source_trace"), dict) else {}
-        if not source_trace:
-            source_contract["source_trace"] = source_trace
-        view_trace = source_trace.get("view_orchestration") if isinstance(source_trace.get("view_orchestration"), dict) else {}
-        if not view_trace:
-            source_trace["view_orchestration"] = view_trace
-        business_contracts = view_trace.get("business_config_contracts")
-        if not isinstance(business_contracts, list):
-            business_contracts = view_governance.get("business_config_contracts")
-        if not isinstance(business_contracts, list):
-            business_contracts = []
-        legacy_overlay = bool(view_trace.get("legacy_field_policy_overlay") or view_governance.get("legacy_field_policy_overlay"))
-        form_layout_overlay = bool(view_trace.get("form_layout_overlay") or view_governance.get("form_layout_overlay"))
-        form_structure_authority = str(
-            view_trace.get("form_structure_authority")
-            or view_governance.get("form_structure_authority")
-            or ""
-        ).strip()
-        form_presentation_mode = str(
-            view_trace.get("form_presentation_mode")
-            or view_governance.get("form_presentation_mode")
-            or ""
-        ).strip()
-        field_names: list[str] = []
-        field_labels: dict[str, str] = {}
-        field_semantic_roles: dict[str, str] = {}
-        section_semantic_roles: dict[str, str] = {}
-        configured_sections: list[dict[str, Any]] = []
-        allowed_semantic_roles = {"summary", "task", "context", "risk", "relation", "activity", "audit"}
-        section_titles: list[str] = []
-        field_groups: dict[str, list[str]] = {}
-        group_columns: dict[str, int] = {}
-        group_visibility: dict[str, bool] = {}
-        form_columns = 0
-        config_summaries: list[dict[str, Any]] = []
-
-        def normalize_columns(value: Any) -> int:
-            try:
-                columns = int(value)
-            except (TypeError, ValueError):
-                return 0
-            return columns if columns > 0 else 0
-
-        def collect_layout_group_columns(nodes: Any) -> None:
-            for item in nodes if isinstance(nodes, list) else []:
-                if not isinstance(item, dict):
-                    continue
-                node_type = str(item.get("type") or item.get("kind") or "").strip().lower()
-                title = str(item.get("string") or item.get("label") or item.get("title") or item.get("name") or "").strip()
-                attrs = item.get("attributes") if isinstance(item.get("attributes"), dict) else {}
-                columns = (
-                    normalize_columns(item.get("columns"))
-                    or normalize_columns(item.get("cols"))
-                    or normalize_columns(item.get("col"))
-                    or normalize_columns(attrs.get("columns"))
-                    or normalize_columns(attrs.get("cols"))
-                    or normalize_columns(attrs.get("col"))
-                )
-                if node_type == "group" and title and columns:
-                    group_columns[title] = columns
-                for child_key in ("children", "pages", "tabs", "nodes", "items"):
-                    collect_layout_group_columns(item.get(child_key))
-        configs = []
-        try:
-            business_config_contract = self.env["ui.business.config.contract"]
-        except (KeyError, TypeError):
-            business_config_contract = None
-        if business_config_contract is not None:
-            try:
-                view_ids = source_contract.get("view_ids_by_type") if isinstance(source_contract.get("view_ids_by_type"), dict) else {}
-                role_key = authoritative_form_role_key(self.env)
-                view_trace["authenticated_role_key"] = role_key
-                view_trace["role_authority"] = "identity_resolver"
-                configs = business_config_contract._effective_view_orchestration_contracts(
-                    model,
-                    view_type="form",
-                    action_id=self._source_action_id(source_contract),
-                    view_id=view_ids.get("form"),
-                    role_key=role_key or None,
-                )
-            except Exception:
-                _logger.exception("business config form preview projection failed for model=%s", model)
-        hidden_field_names: set[str] = set()
-        for config in configs:
-            config_summaries.append({
-                "id": int(config.id or 0),
-                "name": str(config.name or ""),
-                "priority": int(config.priority or 0),
-                "view_type": str(config.view_type or ""),
-            })
-            payload = config.contract_json if isinstance(config.contract_json, dict) else {}
-            orchestration = payload.get("view_orchestration") if isinstance(payload.get("view_orchestration"), dict) else {}
-            views = orchestration.get("views") if isinstance(orchestration.get("views"), dict) else {}
-            form_spec = views.get("form") if isinstance(views.get("form"), dict) else {}
-            composition_mode = str(
-                form_spec.get("composition_mode")
-                or form_spec.get("compositionMode")
-                or ""
-            ).strip()
-            if composition_mode in {"native_semantic_surface", "semantic_native_surface"}:
-                form_structure_authority = "native_authority"
-                form_presentation_mode = "task"
-            if (
-                composition_mode in {"entry_semantic_surface", "semantic_entry_surface"}
-                and isinstance(form_spec.get("sections"), list)
-                and form_spec.get("sections")
-            ):
-                form_structure_authority = "entry_semantic_surface"
-            form_columns = normalize_columns(form_spec.get("columns")) or normalize_columns(form_spec.get("cols")) or form_columns
-            if isinstance(form_spec.get("layout"), list) and form_spec.get("layout"):
-                form_layout_overlay = True
-                collect_layout_group_columns(form_spec.get("layout"))
-            rows = form_spec.get("fields") if isinstance(form_spec.get("fields"), list) else []
-            for row in rows:
-                if isinstance(row, dict):
-                    name = str(row.get("name") or row.get("field") or row.get("field_name") or "").strip()
-                    if not name:
-                        continue
-                    if row.get("visible") is False:
-                        hidden_field_names.add(name)
-                        field_names = [item for item in field_names if item != name]
-                        continue
-                else:
-                    name = str(row or "").strip()
-                if name and name in hidden_field_names:
-                    hidden_field_names.remove(name)
-                if name and name not in field_names:
-                    field_names.append(name)
-                label = str(row.get("string") or row.get("label") or "").strip() if isinstance(row, dict) else ""
-                if name and label:
-                    field_labels[name] = label
-            semantic_anchors = (
-                form_spec.get("semantic_anchors")
-                if isinstance(form_spec.get("semantic_anchors"), list)
-                else []
-            )
-            for anchor in semantic_anchors:
-                if not isinstance(anchor, dict):
-                    continue
-                role = str(anchor.get("role") or "").strip().lower()
-                if role not in allowed_semantic_roles:
-                    continue
-                for raw_name in anchor.get("fields") if isinstance(anchor.get("fields"), list) else []:
-                    name = str(raw_name or "").strip()
-                    if name:
-                        field_semantic_roles[name] = role
-            sections = form_spec.get("sections") if isinstance(form_spec.get("sections"), list) else []
-            for row in sections:
-                if isinstance(row, dict):
-                    section_key = str(row.get("key") or "").strip()
-                    title = str(row.get("title") or row.get("label") or row.get("name") or "").strip()
-                    fields = [
-                        str(item or "").strip()
-                        for item in (row.get("fields") if isinstance(row.get("fields"), list) else [])
-                        if str(item or "").strip()
-                    ]
-                else:
-                    section_key = ""
-                    title = str(row or "").strip()
-                    fields = []
-                if title and title not in section_titles:
-                    section_titles.append(title)
-                if title and isinstance(row, dict) and isinstance(row.get("visible"), bool):
-                    group_visibility[title] = bool(row.get("visible"))
-                    if row.get("visible") is False:
-                        hidden_field_names.update(fields)
-                        hidden_set = set(fields)
-                        field_names = [item for item in field_names if item not in hidden_set]
-                if title and fields:
-                    existing = field_groups.setdefault(title, [])
-                    for name in fields:
-                        if name not in existing:
-                            existing.append(name)
-                    if isinstance(row, dict):
-                        columns = normalize_columns(row.get("columns")) or normalize_columns(row.get("cols"))
-                        if columns:
-                            group_columns[title] = columns
-                semantic_role = ""
-                if isinstance(row, dict):
-                    semantic_role = str(row.get("semantic_role") or "").strip().lower()
-                if section_key and semantic_role in allowed_semantic_roles:
-                    section_semantic_roles[section_key] = semantic_role
-                if title and fields:
-                    section_identity = "key:%s" % section_key if section_key else "title:%s" % title
-                    existing_section = next(
-                        (item for item in configured_sections if item.get("identity") == section_identity),
-                        None,
-                    )
-                    if existing_section is None:
-                        configured_sections.append({
-                            "identity": section_identity,
-                            "key": section_key,
-                            "title": title,
-                            "fields": list(fields),
-                        })
-                    else:
-                        existing_section["title"] = title
-                        for name in fields:
-                            if name not in existing_section["fields"]:
-                                existing_section["fields"].append(name)
-        applied = bool(
-            view_governance.get("applied")
-            or business_contracts
-            or config_summaries
-            or legacy_overlay
-            or field_names
-            or field_semantic_roles
-        )
-        if not applied:
-            # A resolved native form layout is itself the formal authority for a
-            # structured workspace.  Do not require an optional business
-            # overlay merely to emit the presentation-mode contract: that
-            # would leave ordinary form actions with no explicit mode and
-            # force the web client to infer one.  Task mode remains opt-in
-            # through a selected entry-semantic orchestration contract.
-            views = source_contract.get("views") if isinstance(source_contract.get("views"), dict) else {}
-            form_view = views.get("form") if isinstance(views.get("form"), dict) else {}
-            native_layout = form_view.get("layout")
-            if not isinstance(native_layout, list) or not native_layout:
-                return {}
+        views = source_contract.get("views") or {}
+        form_view = views.get("form") or {}
+        for carrier in (form_view, source_contract):
+            governance = carrier.get("governance") or {}
+            orchestration = governance.get("view_orchestration") or {}
+            resolved = orchestration.get("form_structure_projection")
+            if isinstance(resolved, dict):
+                return deepcopy(resolved)
+        # Older cached native snapshots have no config-resolution carrier. Their
+        # existing parsed layout remains authoritative; never re-read config.
+        if isinstance(form_view.get("layout"), list) and form_view["layout"]:
             return {
-                "source": "native_form_layout",
-                "owner_layer": "native_form_layout",
-                "business_config_contracts": [],
-                "legacy_field_policy_overlay": False,
-                "form_layout_overlay": False,
+                "source": "native_form_layout", "owner_layer": "native_form_layout",
                 "form_structure_authority": "native_authority",
                 "form_presentation_mode": "workspace",
-                "field_names": [],
-                "field_labels": {},
-                "field_semantic_roles": {},
-                "section_semantic_roles": {},
-                "configured_sections": [],
-                "section_titles": [],
-                "field_groups": {},
-                "hidden_field_names": [],
-                "form_columns": 0,
-                "group_columns": {},
-                "group_visibility": {},
             }
-        return {
-            "source": "business_view_orchestration",
-            "owner_layer": str(view_trace.get("owner_layer") or view_governance.get("owner_layer") or "business_view_orchestration"),
-            "business_config_contracts": [dict(item) for item in business_contracts if isinstance(item, dict)] or config_summaries,
-            "legacy_field_policy_overlay": legacy_overlay,
-            "form_layout_overlay": form_layout_overlay,
-            "form_structure_authority": form_structure_authority,
-            "form_presentation_mode": _projection.form_structure_presentation_mode(form_structure_authority, form_presentation_mode),
-            "field_names": field_names,
-            "field_labels": field_labels,
-            "field_semantic_roles": field_semantic_roles,
-            "section_semantic_roles": section_semantic_roles,
-            "configured_sections": configured_sections,
-            "section_titles": section_titles,
-            "field_groups": field_groups,
-            "hidden_field_names": sorted(hidden_field_names),
-            "form_columns": form_columns,
-            "group_columns": group_columns,
-            "group_visibility": group_visibility,
-        }
+        return {}
 
     def _build_form_structure_contract(
         self,
@@ -2672,6 +2438,10 @@ class UiContractV2Handler(BaseIntentHandler):
             }
             mappings = {
                 "business_config_contracts": "businessConfigContracts",
+                "resolved_view_id": "resolvedViewId",
+                "resolved_action_id": "resolvedActionId",
+                "structure_diagnostics": "structureDiagnostics",
+                "compatibility_dependencies": "compatibilityDependencies",
                 "legacy_field_policy_overlay": "legacyFieldPolicyOverlay",
                 "form_layout_overlay": "formLayoutOverlay",
                 "form_structure_authority": "formStructureAuthority",
@@ -2697,6 +2467,27 @@ class UiContractV2Handler(BaseIntentHandler):
             if form_columns > 0:
                 out["formColumns"] = form_columns
             return out
+
+        if (governance or {}).get("form_structure_authority") == "native_authority":
+            return {
+                "source": "ui.contract.v2.form_structure_contract",
+                "structureVersion": "1.1", "model": model, "viewType": "form",
+                "mode": "native_structured_form",
+                "presentationMode": _projection.form_structure_presentation_mode(
+                    "native_authority", (governance or {}).get("form_presentation_mode")),
+                "layoutPolicy": "container_tree_authority",
+                "objectProfile": {"model": model, "kind": "business_form",
+                                  "factAuthority": "business_object_model_and_view"},
+                "navigation": {"title": navigation_title or "业务办理"},
+                "slots": [], "fieldRoles": {},
+                "sourceAuthority": {
+                    "kind": self.SOURCE_KIND,
+                    "runtime_carrier": "ui.contract.v2.form_structure_contract",
+                    "projection_only": True, "no_business_fact_authority": True,
+                    "governed_form_structure": True,
+                    "governance_source": formal_governance_source(governance),
+                },
+            }
 
         configured_field_groups = (
             governance.get("field_groups")

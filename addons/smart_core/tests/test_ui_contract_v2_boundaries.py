@@ -250,6 +250,19 @@ def _load_frozen_projection(revision="cb6e276115cf3f8a3e7605362e869bf211a7a021")
     return module
 
 
+
+def resolve_structure_fixture(source, configs):
+    """Model the already resolved orchestration boundary for handler tests."""
+    path = Path(__file__).resolve().parents[1] / "core/form_structure_authority.py"
+    spec = importlib.util.spec_from_file_location("form_structure_fixture", path)
+    resolver = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(resolver)
+    governance = source.setdefault("governance", {}).setdefault("view_orchestration", {})
+    governance["form_structure_projection"] = resolver.resolve_form_structure_governance(
+        source, configs, view_type="form",
+    )
+
+
 class TestUiContractV2Boundaries(unittest.TestCase):
     def setUp(self):
         self.module = _load_handler()
@@ -276,6 +289,58 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         )
         self.assertEqual(data["view_id"], 1503)
         self.assertEqual(data["view_ids_by_type"], {"form": 1503})
+
+    def test_native_create_keeps_all_view_fields_without_second_generic_governance(self):
+        from unittest.mock import patch
+        page_assembler = sys.modules[
+            "odoo.addons.smart_core.app_config_engine.services.assemblers.page_assembler"
+        ].PageAssembler
+        handler = self.module.UiContractV2Handler(env=object(), su_env=object())
+        handler._form_structure_governance = lambda *_a, **_k: {"form_structure_authority": "native_authority"}
+        handler._form_field_aliases = lambda *_a, **_k: {}
+        handler._inject_relation_entry_policies = lambda *_a, **_k: None
+        handler._inject_business_category_form_structure = lambda *_a, **_k: None
+        handler._sync_contract_original_contract_relation_to_v2_nodes = lambda *_a, **_k: None
+        layout = [{"type": "group", "name": "contacts", "children": [{"type": "field", "name": "child_ids"}]}]
+        for explicit_policy, wizard in ((False, False), (True, False), (False, True)):
+            with self.subTest(explicit_policy=explicit_policy, wizard=wizard):
+                button = {"type": "button", "name": "confirm", "buttonType": "object",
+                          "action": {"kind": "object", "visible_profiles": ["create", "edit", "readonly"]}}
+                source = {"record_id": "new", "model": "x.document", "view_type": "form",
+                          "head": {"interaction_mode": "wizard" if wizard else "form"},
+                          "fields": {"name": {}, "child_ids": {}, "restricted": {}},
+                          "views": {"form": {"layout": deepcopy(layout) + [{"type": "header", "children": [button]}]}},
+                          "field_policies": {"restricted": {"visible": False}}}
+                def inject_policy(_assembler, contract, **_kwargs):
+                    if explicit_policy:
+                        contract["business_form_policy"] = {
+                            "fields": [{"name": "child_ids", "readonly_profiles": ["readonly"]}],
+                            "help": "Retained business help",
+                        }
+                        contract["field_policies"]["child_ids"] = {"readonly_profiles": ["readonly"]}
+                with patch.object(page_assembler, "_inject_business_category_form_policy", inject_policy, create=True), patch.object(
+                    page_assembler, "_inject_relation_entry_contract", lambda *_a, **_k: None, create=True
+                ), patch.object(self.module, "apply_contract_governance") as generic:
+                    handler._inject_business_category_form_policy(
+                        source, params={"render_profile": "create"}, ui_params={},
+                        model="x.document", view_type="form",
+                    )
+                generic.assert_not_called()
+                self.assertEqual(source["views"]["form"]["layout"][:-1], layout)
+                if wizard:
+                    self.assertNotIn("invisible", button)
+                    self.assertIn("create", button["action"]["visible_profiles"])
+                else:
+                    self.assertTrue(button["invisible"]["value"])
+                    self.assertEqual(button["invisible"]["reason_code"], "CREATE_PROFILE_REQUIRES_RECORD")
+                    self.assertNotIn("create", button["action"]["visible_profiles"])
+                self.assertNotIn("field_groups", source)
+                self.assertEqual(source["field_policies"]["restricted"], {"visible": False})
+                if explicit_policy:
+                    self.assertEqual(source["business_form_policy"]["help"], "Retained business help")
+                    self.assertEqual(source["field_policies"]["child_ids"]["readonly_profiles"], ["readonly"])
+                else:
+                    self.assertNotIn("child_ids", source["field_policies"])
 
     def test_business_form_policy_groups_survive_generic_governance(self):
         page_module = sys.modules[
@@ -370,6 +435,108 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             ["create", "edit", "readonly"],
         )
         self.assertTrue(source_contract["field_policies"]["state"]["source_readonly"])
+
+    def _create_modifier_fixture(self, *, lines=None, deny=None, broken=None):
+        class Field:
+            def __init__(self, kind):
+                self.type = kind
+
+            def convert_to_read(self, value, record, use_display_name=True):
+                self_test.assertFalse(use_display_name)
+                return value
+
+        self_test = self
+
+        class Model:
+            _fields = {"has_lines": Field("boolean"), "lines": Field("one2many"),
+                       "partner_id": Field("many2one"), "state": Field("selection"),
+                       "display_only": Field("char")}
+
+            def __init__(self):
+                self.calls = []
+
+            def with_context(self, **context):
+                self.context = context
+                return self
+
+            def check_access_rights(self, operation):
+                self.calls.append(operation)
+                if deny == operation:
+                    raise PermissionError(operation)
+
+            def check_field_access_rights(self, operation, names):
+                return [name for name in self._fields if not (deny == "field" and name == "has_lines")]
+
+            def default_get(self, names):
+                self.calls.append("default_get")
+                if broken == "defaults":
+                    raise RuntimeError("defaults unavailable")
+                return {"state": "draft", "lines": self.context.get("default_lines", []), "partner_id": 7}
+
+            def new(self, values):
+                self.calls.append("new")
+                self.values = values
+                return self
+
+            def __getitem__(self, name):
+                if name != "has_lines" or broken == "compute":
+                    raise RuntimeError("compute unavailable")
+                return bool(self.values["lines"])
+
+        contract = {
+            "statusContract": {"globalStatus": {"effectiveRenderProfile": "create", "effectiveRecordCapabilities": {"create": True}}},
+            "layoutContract": {"containerTree": [{"type": "field", "name": "amount", "modifiers": {
+                "readonly": {"kind": "field_truthy", "field": "has_lines"}}}]},
+            "dataContract": {"mainData": {"state": "draft", "partner_id": [7, "Partner"]},
+                             "dataMeta": {"sourceContext": {"context": {"allowed_company_ids": [3], "active_id": 9, "default_lines": lines or []}}}},
+        }
+        return Model(), contract
+
+    def test_create_modifier_dependencies_use_native_draft_and_source_context(self):
+        for lines in ([], [(0, 0, {"quantity": 2})]):
+            with self.subTest(lines=bool(lines)):
+                model, contract = self._create_modifier_fixture(lines=lines)
+                self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract, model="x.document", record_id=None, view_type="form")
+                self.assertIs(contract["dataContract"]["mainData"]["has_lines"], bool(lines))
+                self.assertEqual(model.calls, ["create", "read", "default_get", "new"])
+                self.assertEqual(model.context["allowed_company_ids"], [3])
+                self.assertEqual(model.context["active_id"], 9)
+                self.assertEqual(model.values["partner_id"], 7)
+                self.assertEqual(model.values["lines"], lines)
+                self.assertNotIn("display_only", contract["dataContract"]["mainData"])
+
+    def test_create_modifier_dependencies_fail_closed_on_permission_or_compute(self):
+        for deny, broken in [("create", None), ("read", None), ("field", None), (None, "defaults"), (None, "compute")]:
+            with self.subTest(deny=deny, broken=broken):
+                model, contract = self._create_modifier_fixture(deny=deny, broken=broken)
+                self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract, model="x.document", record_id=None, view_type="form")
+                self.assertNotIn("has_lines", contract["dataContract"]["mainData"])
+                if deny:
+                    self.assertNotIn("new", model.calls)
+
+    def test_create_modifier_dependencies_preserve_existing_false_and_zero(self):
+        for value in (False, 0, ""):
+            model, contract = self._create_modifier_fixture(lines=[(0, 0, {"quantity": 2})])
+            contract["dataContract"]["mainData"]["has_lines"] = value
+            self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract, model="x.document", record_id=None, view_type="form")
+            self.assertIs(contract["dataContract"]["mainData"]["has_lines"], value)
+            self.assertEqual(model.calls, [])
+
+    def test_create_modifier_dependencies_reject_noncreate_or_denied_entry(self):
+        for profile, allowed, record_id in [("readonly", True, None), ("edit", True, None), ("create", False, None), ("create", True, "invalid")]:
+            model, contract = self._create_modifier_fixture()
+            contract["statusContract"]["globalStatus"].update(effectiveRenderProfile=profile, effectiveRecordCapabilities={"create": allowed})
+            self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract, model="x.document", record_id=record_id, view_type="form")
+            self.assertNotIn("has_lines", contract["dataContract"]["mainData"])
+            self.assertEqual(model.calls, [])
+
+    def test_create_modifier_dependencies_reject_invalid_or_divergent_relation_seed(self):
+        for name, value in [("partner_id", {"display_name": "unresolved"}), ("partner_id", ["bad", "Partner"]), ("lines", [{"id": 4}])]:
+            model, contract = self._create_modifier_fixture()
+            contract["dataContract"]["mainData"][name] = value
+            self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract, model="x.document", record_id=None, view_type="form")
+            self.assertNotIn("has_lines", contract["dataContract"]["mainData"])
+            self.assertNotIn("new", model.calls)
 
     def test_final_modifier_dependency_beyond_snapshot_budget_is_hydrated(self):
         class _Field:
@@ -2740,6 +2907,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             return out
 
         structure = handler._build_form_structure_contract(
+                        field_label=lambda name: name,
             model="construction.contract.income",
             profile={
                 "common_fields": list(field_types.keys())[:-1],
@@ -2794,7 +2962,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
 
         self.assertEqual(structure["mode"], "native_structured_form")
         self.assertEqual(structure["presentationMode"], "workspace")
-        self.assertEqual(structure["layoutPolicy"], "native_authority")
+        self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
         self.assertEqual(structure["navigation"]["title"], "项目信息编辑")
 
         default_structure = handler._build_form_structure_contract(
@@ -2840,8 +3008,8 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         )
 
         self.assertEqual(structure["presentationMode"], "task")
-        self.assertEqual(structure["mode"], "business_task_form")
-        self.assertEqual(structure["layoutPolicy"], "native_authority")
+        self.assertEqual(structure["mode"], "native_structured_form")
+        self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
         self.assertEqual(
             structure["sourceAuthority"]["governance_source"]["formStructureAuthority"],
             "native_authority",
@@ -2933,6 +3101,16 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                 },
                 "governance": {"view_orchestration": {"applied": True}},
             }
+            source["views"] = {"form": {"layout": [{"type": "field", "name": "name"}]}}
+            selected = env["ui.business.config.contract"]._effective_view_orchestration_contracts(
+                "project.project", view_type="form", action_id=action_id, view_id=view_id,
+                role_key=authoritative_role_key,
+            )
+            source["governance"]["view_orchestration"]["applied"] = bool(selected)
+            resolve_structure_fixture(source, selected)
+            source.setdefault("source_trace", {}).setdefault("view_orchestration", {}).update({
+                "authenticated_role_key": authoritative_role_key, "role_authority": "identity_resolver",
+            })
             handler._inject_business_operation_contract(source, model="project.project", view_type="form")
             return source
 
@@ -2963,7 +3141,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             "workspace",
         )
         self.assertEqual(task_source["form_structure_contract"]["layoutPolicy"], "overview_then_task_slots")
-        self.assertEqual(native_source["form_structure_contract"]["layoutPolicy"], "native_authority")
+        self.assertEqual(native_source["form_structure_contract"]["layoutPolicy"], "container_tree_authority")
         self.assertEqual(env["ui.business.config.contract"].request["role_key"], "workspace_manager")
         self.assertNotEqual(env["ui.business.config.contract"].request["role_key"], "untrusted_source_role")
         self.assertEqual(
@@ -3017,7 +3195,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(structure["structureVersion"], "1.1")
         self.assertEqual(structure["presentationMode"], "workspace")
         self.assertEqual(structure["mode"], "native_structured_form")
-        self.assertEqual(structure["layoutPolicy"], "native_authority")
+        self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
         self.assertEqual(
             structure["sourceAuthority"]["governance_source"]["source"],
             "native_form_layout",
@@ -3230,6 +3408,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
 
         def build(form_columns):
             return handler._build_form_structure_contract(
+                       field_label=lambda name: name,
                 model="demo.business",
                 profile={
                     "common_fields": ["name"],
@@ -3279,6 +3458,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             return out
 
         structure = handler._build_form_structure_contract(
+                        field_label=lambda name: name,
             model="payment.request",
             profile={
                 "common_fields": list(field_types.keys()),
@@ -3338,6 +3518,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             return out
 
         structure = handler._build_form_structure_contract(
+                        field_label=lambda name: name,
             model="project.project",
             profile={
                 "common_fields": list(field_types.keys()),
@@ -3440,6 +3621,11 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             },
         }
 
+        from types import SimpleNamespace
+        rows = source_contract["governance"]["view_orchestration"]["fields"]
+        resolve_structure_fixture(source_contract, [SimpleNamespace(
+            id=7, name="project-form", contract_json={"view_orchestration": {"views": {"form": {"fields": rows}}}},
+        )])
         handler._inject_business_operation_contract(
             source_contract,
             model="project.project",
@@ -3475,6 +3661,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             return out
 
         structure = handler._build_form_structure_contract(
+                        field_label=lambda name: name,
             model="demo.business",
             profile={
                 "common_fields": ["subject", "project_id", "company_id"],
@@ -3643,10 +3830,8 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertIn("line_ids", profile["detail_fields"])
         self.assertNotIn("create_uid", profile["common_fields"])
         roles = source_contract["form_structure_contract"]["fieldRoles"]
-        self.assertEqual(roles["employee_id"]["group"], "relations")
-        self.assertEqual(roles["business_purpose"]["group"], "other_facts")
-        self.assertEqual(roles["total_amount"]["slot"], "amount_progress")
-        self.assertEqual(roles["line_ids"]["group"], "details")
+        self.assertEqual(roles, {})
+        self.assertEqual(source_contract["form_structure_contract"]["slots"], [])
         self.assertNotIn("access_token", roles)
         self.assertNotIn("alias_id", roles)
         self.assertNotIn("dashboard_graph_data", roles)
@@ -3737,7 +3922,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(structure["structureVersion"], "1.1")
         self.assertEqual(structure["presentationMode"], "workspace")
         self.assertEqual(structure["mode"], "native_structured_form")
-        self.assertEqual(structure["layoutPolicy"], "native_authority")
+        self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
         self.assertNotIn("list_profile", source_contract)
         self.assertEqual(source_contract["visible_fields"], ["name"])
 
@@ -3831,6 +4016,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             "governance": {"view_orchestration": {"applied": True}},
         }
 
+        resolve_structure_fixture(source_contract, _ConfigModel()._effective_view_orchestration_contracts())
         handler._inject_business_operation_contract(
             source_contract,
             model="demo.business",
@@ -3927,6 +4113,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             "governance": {"view_orchestration": {"applied": True}},
         }
 
+        resolve_structure_fixture(source_contract, _ConfigModel()._effective_view_orchestration_contracts())
         handler._inject_business_operation_contract(
             source_contract,
             model="demo.business",
@@ -4437,7 +4624,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "conflicting occurrence_index/occurrenceIndex"):
             handler._normalize_final_layout_contract(conflict)
 
-    def test_published_semantic_contract_rebuilds_runtime_structure_authority(self):
+    def test_resolved_semantic_contract_is_consumed_without_config_lookup(self):
         class _Config:
             id = 91
             name = "Published semantic form"
@@ -4469,7 +4656,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         class _Env:
             def __getitem__(self, model):
                 if model == "ui.business.config.contract":
-                    return _ConfigModel()
+                    raise AssertionError("handler must not read configuration")
                 raise KeyError(model)
 
         handler = self.module.UiContractV2Handler(env=_Env())
@@ -4478,6 +4665,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             "views": {"form": {"layout": []}},
         }
 
+        resolve_structure_fixture(source, [_Config()])
         governance = handler._form_structure_governance(
             source,
             model="demo.business",
@@ -4496,6 +4684,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         without_key = deepcopy(_Config.contract_json)
         without_key["view_orchestration"]["views"]["form"]["sections"][0].pop("key")
         _Config.contract_json = without_key
+        resolve_structure_fixture(source, [_Config()])
         governance_without_key = handler._form_structure_governance(
             source,
             model="demo.business",
@@ -4655,6 +4844,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             },
         }
         handler = self.module.UiContractV2Handler(env=_Env())
+        resolve_structure_fixture(source_contract, [_Config()])
         governance = handler._form_structure_governance(
             source_contract, model="payment.request", view_type="form",
         )

@@ -6,7 +6,7 @@ import type { FormSectionFieldChange } from '../../components/template/formSecti
 import type { RelationFieldAdapter, RelationFieldColumn, RelationFieldRow } from '../../components/template/relationField.types';
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
 import type { ContractAction } from './types';
-import { resolveAuthorizedWindowActionTarget, resolveContractActionForNativeOccurrence } from './contractActionPresentation';
+import { isUnifiedSubmitAction, isUnifiedSubmitMethod, resolveAuthorizedWindowActionTarget, resolveContractActionForNativeOccurrence } from './contractActionPresentation';
 
 type PresentationDependencies = Record<string, any>;
 
@@ -112,18 +112,6 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
       disabled: busy.value || !action.enabled,
       title: action.hint || '',
     };
-  }
-
-  function isUnifiedSubmitMethod(methodName: string) {
-    const method = String(methodName || '').trim();
-    return method === 'action_submit'
-      || method === 'action_submit_progress'
-      || method === 'action_confirm'
-      || method === 'button_confirm';
-  }
-
-  function isUnifiedSubmitAction(action: ContractAction | null | undefined) {
-    return Boolean(action && isUnifiedSubmitMethod(action.methodName));
   }
 
   const primarySubmitAction = computed<ContractAction | null>(() => {

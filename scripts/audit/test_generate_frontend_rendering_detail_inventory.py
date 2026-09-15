@@ -57,7 +57,7 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
     def test_form_relation_workflow_sources_have_machine_proven_completion(self) -> None:
         batch = "p0-form-relation-workflow-completion-v1"
         sources = INVENTORY.BATCH_BINDINGS[batch]
-        self.assertEqual(len(sources), 28)
+        self.assertEqual(len(sources), 29)
         for source in sources:
             self.assertEqual(self.by_source[source]["status"], "governed_composite")
             self.assertEqual(self.by_source[source]["targetBatch"], batch)
@@ -82,6 +82,21 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
     def test_zero_gap_report_has_no_stale_next_batch(self) -> None:
         self.assertEqual(self.report["summary"]["gap"], 0)
         self.assertIsNone(self.report["nextBatch"])
+
+    def test_form_host_and_optional_collection_bindings_fail_closed(self) -> None:
+        cases = (
+            ("pages/contractForm/ContractFormDriverHost.vue", 'v-if="error || !renderModel"', 'v-if="false"'),
+            ("pages/contractForm/ContractFormDriverHost.vue", 'state="empty"', 'state="info"'),
+            ("components/professional-fields/ProfessionalDetailCollectionControl.vue", 'v-if="optionalPresentation?.render"', 'v-if="true"'),
+            ("components/professional-fields/ProfessionalDetailCollectionControl.vue", ':adapter="guardedAdapter"', ':adapter="adapter"'),
+            ("components/professional-fields/ProfessionalDetailCollectionControl.vue", ':label="optionalPresentation.linkedAmountMessage"', ':label="null"'),
+        )
+        for suffix, before, after in cases:
+            with self.subTest(source=suffix, binding=before):
+                source = "frontend/apps/web/src/" + suffix
+                text = (ROOT / source).read_text(encoding="utf-8")
+                self.assertIn(before, text)
+                self.assertEqual(INVENTORY.classify(source, text.replace(before, after))[0], "gap")
 
     def test_collection_ownership_without_semantic_binding_fails_closed(self) -> None:
         source = "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.vue"

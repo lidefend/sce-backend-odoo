@@ -288,6 +288,9 @@ jobs:
             artifacts/frontend-delivery-hardening/performance.json
             artifacts/frontend-delivery-hardening/responsive.json
             artifacts/frontend-delivery-hardening/error-recovery.json
+            artifacts/frontend-delivery-hardening/payment-create-failure.json
+            artifacts/frontend-delivery-hardening/failure.json
+            artifacts/frontend-delivery-hardening/screenshots/failure.png
 
       - name: Upload current-run risk-lane evidence
         if: always() && steps.effective_lane.outputs.frontend_mode != 'full'

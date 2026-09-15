@@ -36,8 +36,16 @@ goal:
     - pr_push_never_invokes_a_tracked_evidence_refresh
     - stale_evidence_stops_before_remote_access
     - exact_head_quick_runs_once_only_after_clean_freeze
+    - known_delivery_blockers_are_resolved_before_finalization
+    - diagnostic_only_changes_do_not_trigger_final_quick_or_candidate_dispatch
+    - independent_same_layer_failures_are_collected_before_refreezing
+    - one_result_index_references_original_evidence_without_duplicate_reports
   rollback:
     - revert_the_single_p4_delivery_commit
   next_exact_step: >-
-    Commit all reviewed source and generated evidence, freeze one clean
-    candidate, and run one exact-head Quick.
+    The record-identity consumption fix at e3fc8955 passed focused tests,
+    read/edit browser checks and independent code review. Prepare generated
+    evidence once and freeze the final delivery head for Quick and pr.push.
+    Use ordinary PR required checks for the authorized Squash merge, without
+    candidate dispatch or publication qualification. Keep action777 not passed,
+    the compatibility ledger at 53 to 50, and reuse unchanged evidence.

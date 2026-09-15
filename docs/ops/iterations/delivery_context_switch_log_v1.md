@@ -9520,3 +9520,121 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Formal Product Layer / Layer Target / Module: P1 / award snapshot source authority / `smart_construction_core`; prevent context and saved ORM defaults from manufacturing confirmation-owned facts. This belongs to industry business invariants, not generic default handling or ops repair.
 - B-line S1 is closed by stripping four system defaults; 13 targeted methods passed. Governed local.dev restart and exact-head journey `award-20260915j` passed; batch fixture removed. No schema change or module upgrade was needed; fast upgrade guard refusal was respected.
 - Remaining delivery steps: review regenerated evidence, freeze clean delivery HEAD, one Quick, exact-head independent review, governed PR push and candidate CI. Details and impact carry-forward are in `tender_award_fact_confirmation_20260915.md`.
+
+### 2026-09-15 · form structure authority unification U-A and customer sample
+
+- Branch / baseline: `codex/form-structure-authority-unification-v1` / `main@0eb4776391a31779898d4d17f0317e132b6c4f7a`; the existing HOLD worktree is reused as the sole writer. Baseline complete fingerprint: `c9f3efc2f607fb2a235215c224a213f2f8e5c88deaa5e67f621293b97abac91e`. No worktree is created or removed.
+- `b8a6edd7…` project dashboard and `c5ee2944…` tender award are sibling candidates with no remote branch or PR. Repository policy forbids bare merge/cherry-pick/rebase, so their patches are not copied into this branch. Project dashboard is prepared for delivery first; after it enters main, tender can use the governed `workspace.branch.sync-main` entry and must refreeze evidence for the changed head.
+- Formal Product Layer: P0 platform structure composition and frontend consumption; P1 `smart_construction_core` customer native business sections; P4 compatibility-consumer ledger and focused evidence. Platform code cannot learn customer field semantics, and the P1 view cannot rebuild the generic contract mechanism.
+- Single objective: make `layoutContract.containerTree` drive both body and navigation and migrate the first customer profile sample. Excluded: payment, tender and project-dashboard migration; business fields, permissions, actions, save behavior, low-code full replacement and database writes.
+- Until the sibling baseline is integrated, only non-overlapping customer native structure, compatibility retirement rules and fail-first constraints may change. Browser evidence must bind frontend HEAD, backend module version, `sc-local-dev/sc_dev_demo`, menu and action; Quick remains reserved for the final frozen delivery head.
+
+## 2026-09-15 U-B 客户分组与代表面迁移
+
+- Branch: codex/form-structure-authority-unification-v1; HEAD: 8907a41f
+- Layer Target / Module: P1 native views + semantic configuration / smart_construction_core; P0 only evidenced generic defects; P4 existing evidence tools.
+- Reason: Owner approved customer grouping closure and payment/tender/dashboard migration; preserve capabilities and explicit compatibility retirement.
+
+## 2026-09-15 — U-B-TWO-GAPS-CLOSURE
+
+- Branch / starting anchor: `codex/form-structure-authority-unification-v1` /
+  `8874b563ff6e84e4383425d691dfb3181b84f5e7`; complete starting fingerprint
+  `cb67a4c0ce7a60043d5ec9f95ddaf51cfda536c2c0fe6b1ad38011a8658007bf`.
+- P0 / generic form renderer and primitive event bridge / Web frontend: preserve
+  full-width readonly empty collections when their label row has no content;
+  unwrap AutoComplete native events before the many2one control consumes them.
+  No model-specific CSS, native section, domain, permission or amount changes.
+- P4 / existing candidate visual smoke and tender-award runner: measure inner
+  collection width with declared viewport scope; select exact fixture option ID,
+  prove onchange draft value, reject invalid write parameters before forwarding,
+  and retain authoritative readback before confirmation and after repeat.
+- First failure evidence: old candidate selected owned opening 119 and sent 119
+  in onchange; after blur it sent false without any backend clearing patch.
+  Diagnostic stopped before saving. Native collection groups were already full
+  width; desktop empty label columns consumed 232px. Mobile rules unchanged.
+- Reuse `sc-local-dev / sc_dev_demo / ^sc_dev_demo$ / sc_local_dev_odoo_data` and
+  owned `codex_p4_tender_award / ub-structure-20260915`; no historical lifecycle
+  operation, fixture reset, business-record experiment or full browser matrix.
+- L1 iteration 16 passed; primitive event regression and affected L2 tests run.
+  Canvas guard exposed a stale pre-U-A assertion hiding every group heading;
+  align it to declared native/governed authority and feedback suppression.
+- Runtime evidence and compatibility delta live in
+  `artifacts/form-structure-unification/ub-two-gaps/`. Product verification is
+  pending; final freeze/independent review/Quick await owner browser review.
+
+
+## 2026-09-15 — U-B-TENDER-HIERARCHY-IDENTITIES
+
+- Starting head: `1c04048fb7e48f68ab9aff0bb7ceb2c862ebcab6`; complete fingerprint
+  `34c2932a372efea24494bcad152a62a1c9126d6aefee7687f9896fed55336c08`.
+- P1 / smart_construction_core native tender view: five primary chapters;
+  process and materials groups explicitly own subordinate anchors. Preserve
+  all 83 field/button attribute occurrences, award domain and readonly rules.
+  Native opening result labels use 开标结果 in inline/list/search/form views.
+  P0 consumption, business storage, amount rules and actions are unchanged.
+- P4 / existing candidate visual smoke: record formal entry and existing-record
+  response identity, retaining missing provenance without manufactured defaults;
+  business configuration uses its dedicated workbench response. Scope is the
+  six diagnosed entries, tender hierarchy and one action 777 read-only check.
+- L1 iteration: 16 passed. Selected L2: native declarations 2, existing runtime
+  identity tooling 12, new provenance preservation case 1 passed. Incremental
+  view upgrade uses local.dev.upgrade with CODEX_NEED_UPGRADE=1 and explicit
+  smart_construction_core scope; initial fast-mode refusal made no upgrade.
+- Reuse accepted customer widths and award confirmation evidence. No fixture
+  reset, historical container operation or broader matrix. Compatibility remains
+  original 49→46 (-3), four undercount corrections, corrected 53→50.
+- Runtime results, exact fingerprints and screenshots:
+  `artifacts/form-structure-unification/ub-tender-hierarchy-identities/`.
+  No final delivery freeze, independent review, Quick or publication this batch;
+  owner requested actual page review first.
+
+
+## 2026-09-15 — U-A/U-B 有限交付收尾
+
+- 用户桌面复核投标层级通过；交付名限定“唯一结构机制及首批代表面迁移”。
+- P4 only：交付文档、50消费者台账、生成证据和受管fixture生命周期；P0/P1源码不变。
+- 独立审查产品HEAD 967ff6f425436c5e8792fddbde0fc3a58060e30b、指纹9816cfadeac5fa870c0380f033c1155910671d3cd455f76e006ae3c745f116a8，无S0–S2代码阻断。
+- action777仍environment_blocked；审查裁决不阻断有限代码交付，不允许宣称入口通过，Quick不替代裁决。不得循环重试或停启历史容器。
+- 受管清理codex_p4_tender_award/ub-structure-20260915：bid149/line47/opening119已移除，existing_batch=false；既有业务记录保留。
+- 53→50计数保留，四合同/结算仍兼容；U-C仅登记优先分组，不开工。
+- 最终生成预检、clean HEAD一次Quick及独立delta/receipt记录在artifacts/form-structure-unification/ua-ub-limited-closeout/，在最终提交前备齐文档，之后不补tracked文档。
+
+
+## 2026-09-15 — 有限交付 Quick 的 P4 定向恢复
+
+- 首轮唯一Quick在18ee479cf61b941f586f23d04bd55e157d4649ea失败，无receipt。失效层为frontend_v2_policy_projection_guard正式枚举白名单漏列container_tree_authority。
+- 独立审查认可仅P4精确登记及反例测试；产品/页面不改。stable_projection恢复通过，新增1测试证明正式值允许、两个旧payload别名仍拒绝。
+- 失败和恢复均保留；新候选重新生成预检、冻结。用户限定本轮一次Quick，不擅自追加第二次；追加门禁执行待确认。不能把定向恢复写为Quick通过。
+
+
+### 2026-09-15 — PR #480 远端静态门禁恢复
+
+- 产品结果仍为“唯一结构机制及首批代表面迁移”；源候选 d0c438f360e661b4ecab4506d9550f2f26887d8d。
+- P4：桥接守卫从过期宿主标记迁到实际 CanonicalNativeFormSurface 接口绑定；2测试／8断链反例；修正2条测试登记。
+- P0：提交判定与场景动作分派等价提取，运行文件493／527行，原500／544上限不变；6提交方法／8分派场景通过。
+- 独立失败为前端旧标记／行数及professional测试登记；发布门禁属下游失败。先定向验证，再生成预检、独立复核、冻结新HEAD、最终Quick及受管更新PR，不复用旧receipt冒充新候选。
+- 不改业务页面、不停启环境、不开始U-C1；action777未通过及53→50边界保持。详见form_structure_ua_ub_limited_closeout_20260915.md第9节及本批原始证据。
+
+### 2026-09-15 — PR #480 共享动作栏守卫恢复
+
+- f84a667c本地Quick通过后，远端专业工作流断言仍按宿主中两次动作栏标签计数，未识别已提取的共享原生表单面；基线守卫版本相同。
+- P4仅修守卫和既有测试，逐分支核验动作输入与事件、页头所有权；10模型案例、5Python测试及其中9断链反例通过。产品源码不变，L3/L4证据按确定性影响分析承接。
+- 重新预检、独立复核、冻结及最终Quick后受管更新原PR；保留旧receipt，不以本地Quick替代远端门禁。action777未通过、53→50和U-C1仅任务书不变。
+
+### 2026-09-15 — PR #480 审计时间线守卫恢复
+
+- 303ee222远端首败为审计时间线旧宿主位置断言。P4修复按真实协作panel核验legacy task false／native surface true及权威props，5反例拒绝重复、隐藏或丢失绑定。
+- 审计9模型／4Python测试、协作45模型／29Python测试通过；仅两脚本和交付文档变化，产品源码未改。生成预检和独立审查后冻结、最终Quick、受管更新同一PR。旧receipt保留，777未通过及53→50不变。
+
+### 2026-09-15 — PR #480 静态链尾部收口
+
+- 799b1ab9远端首败为关系控件旧总数断言；P4精确分开9业务命令与1只读popover，15测试含10反例通过。
+- 补齐此前被短路的尾部静态入口，冻结前修复原生动作计数（2动作＋1折叠、16测试含7反例）及渲染归属（55测试含5反例，主机过期info退役、可选明细组件精确登记）。尾部已有通过项直接复用。
+- P0仅移除driver中与锁定官方CSS相同的20px行高覆盖；最终计算值不变。三份生成渲染清单受管刷新后check通过，后续冻结及新HEAD门禁结果另存。组件来源28→29与兼容台账53→50是不同口径；777继续未通过，U-C1仅准备。
+
+### 2026-09-15 — PR #480 付款创建失败证据补齐
+
+- dc6aa930远端静态／构建／26导航及professional/public/merge通过；运行首败为finance付款创建809/559的amount输入45秒未可见，字段存在不代表控件可用。
+- P4补控件状态诊断和受管失败截图／JSON上传，保留原输入断言。25测试含2新增证据测试通过，CI/security守卫通过。未改产品、不宣称修复；待新现场定位owner。777未通过、53→50及U-C1仅准备保持。
+
+- 2026-09-15｜PR480付款创建态收口：P0 a45f80d6补齐原生计算条件依赖，167纯测试、真实Odoo单方法双分支及付款创建桌面通过；独立增量复核无代码阻断。集中生成准备后才冻结/Quick/受管更新，action777未通过与53→50保持。详情见form_structure_ua_ub_limited_closeout_20260915.md §9.5；后续状态仅维护既有RESULT.json和PR文本。

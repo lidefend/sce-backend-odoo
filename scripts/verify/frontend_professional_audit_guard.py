@@ -1,7 +1,23 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[2]
+
+def audit_timeline_ownership_errors(driver: str, surface: str) -> list[str]:
+    errors = []
+    for source, enabled, owner in ((driver, "false", "task compatibility"), (surface, "true", "native surface")):
+        template = re.sub(r"<!--[\s\S]*?-->", "", source.split("<script", 1)[0])
+        panels = re.findall(r"<NativeCollaborationPanel\b[\s\S]*?/>", template)
+        if len(panels) != 1:
+            errors.append(f"{owner} must retain exactly one collaboration panel")
+            continue
+        attrs = {key: value for key, _, value in re.findall(r'''([:@\w-]+)\s*=\s*(["'])(.*?)\2''', panels[0], re.S)}
+        if attrs.get(":show-audit-timeline") != enabled:
+            errors.append(f"{owner} audit timeline ownership must be {enabled}")
+        if attrs.get("v-bind") != "collaborationPanelProps":
+            errors.append(f"{owner} must forward authoritative collaboration props")
+    return errors
 
 def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -> list[str]:
     failures: list[str] = []
@@ -9,6 +25,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     timeline = read_text("frontend/apps/web/src/pages/contractForm/ProfessionalAuditTimeline.vue")
     model = read_text("frontend/apps/web/src/pages/contractForm/professionalAuditModel.ts")
     driver = read_text("frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue")
+    surface = read_text("frontend/apps/web/src/pages/contractForm/CanonicalNativeFormSurface.vue")
     task = read_text("frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue")
     collaboration = read_text("frontend/apps/web/src/pages/contractForm/NativeCollaborationPanel.vue")
     for marker in ("data-professional-audit-event", "data-audit-event-name", "data-audit-result", "data-audit-actor", "data-audit-time"):
@@ -19,8 +36,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("task audit surface bypasses professional audit authority")
     if "ProfessionalAuditTimeline" not in collaboration or "resolveProfessionalAuditEvents" not in collaboration:
         failures.append("workspace collaboration hides or bypasses professional audit events")
-    if ':show-audit-timeline="false"' not in driver or ':show-audit-timeline="true"' not in driver:
-        failures.append("task and workspace do not prevent duplicate audit timelines")
+    failures.extend(audit_timeline_ownership_errors(driver, surface))
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
         if forbidden in model or forbidden in event or forbidden in timeline:
             failures.append(f"audit components contain forbidden product special case {forbidden}")

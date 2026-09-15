@@ -19,6 +19,65 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         if not self.env["stock.warehouse"].search([], limit=1):
             self.env["stock.warehouse"].create({"name": "Feedback Warehouse", "code": "UFB"})
 
+    def test_customer_native_create_keeps_chapters_and_business_field_visibility(self):
+        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+        menu = self.env.ref("smart_construction_core.menu_sc_customer_partner")
+        view = self.env.ref("smart_construction_core.view_sc_customer_partner_form")
+        result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({
+            "op": "model", "model": "res.partner", "action_id": menu.action.id,
+            "menu_id": menu.id, "view_type": "form", "render_profile": "create",
+        })
+        envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+        self.assertTrue(envelope.get("ok", True), envelope.get("error"))
+        contract = envelope["data"]
+        structure = contract["formStructureContract"]
+        self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
+        self.assertEqual(structure["slots"], [])
+        self.assertEqual(structure["sourceAuthority"]["governance_source"]["resolvedViewId"], view.id)
+        tree = contract["layoutContract"]["containerTree"]
+        sheet = next(node for node in tree if node["type"] == "sheet")
+        self.assertEqual([node["label"] for node in sheet["children"]],
+                         ["基本资料", "工商信息", "联系方式", "账户与财务", "联系人", "账户明细", "附件与备注"])
+        widgets = {}
+        def collect(nodes):
+            for node in nodes:
+                for widget in node.get("widgetList", []):
+                    widgets[widget["fieldCode"]] = widget
+                collect(node.get("children", []))
+        collect(tree)
+        statuses = {row["widgetId"]: row for row in contract["statusContract"]["widgetStatus"]}
+        for name in ("name", "phone", "sc_contact_name", "child_ids", "bank_ids", "sc_attachment_ids", "comment"):
+            self.assertTrue(statuses[widgets[name]["widgetId"]]["visible"], name)
+        self.assertEqual(widgets["company_type"]["label"], "客户类型")
+        # This native view explicitly exposes active; the old generic create
+        # heuristic is not an access restriction and must not hide it.
+        self.assertTrue(statuses[widgets["active"]["widgetId"]]["visible"])
+
+    def test_customer_field_authorities_and_record_grouping(self):
+        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+        partner = self.partner
+        company_type = partner._fields["company_type"]
+        self.assertTrue(company_type.compute)
+        self.assertTrue(company_type.inverse)
+        partner.company_type = "company"
+        self.assertTrue(partner.is_company)
+        for name in ("sc_default_tax_rate", "sc_default_tax_rate_text", "sc_account_name", "sc_bank_name", "sc_bank_account"):
+            field = partner._fields[name]
+            self.assertTrue(field.store, name)
+            self.assertFalse(field.compute, name)
+            self.assertFalse(field.related, name)
+        menu = self.env.ref("smart_construction_core.menu_sc_customer_partner")
+        for profile in ("edit", "readonly"):
+            result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({
+                "op": "model", "model": "res.partner", "action_id": menu.action.id,
+                "menu_id": menu.id, "record_id": partner.id, "view_type": "form", "render_profile": profile,
+            })
+            data = (result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result)["data"]
+            self.assertEqual(data["formStructureContract"]["layoutPolicy"], "container_tree_authority")
+            sheet = next(node for node in data["layoutContract"]["containerTree"] if node["type"] == "sheet")
+            self.assertEqual([node["label"] for node in sheet["children"]],
+                             ["基本资料", "工商信息", "联系方式", "账户与财务", "联系人", "账户明细", "附件与备注"])
+
     def test_material_inbound_can_be_created_with_business_amounts(self):
         inbound = self.env["sc.material.inbound"].create(
             {
@@ -371,6 +430,8 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.assertNotIn("'active_test': False", customer_action.context)
         self.assertIn("'default_supplier_rank': 1", supplier_action.context)
         self.assertNotIn("'active_test': False", supplier_action.context)
+        # Formal baseline 6fcc04f3 removed source/audit facts from these entry views.
+        # Verify current business capability plus that existing isolation boundary.
         for arch in (customer_tree.arch_db, supplier_tree.arch_db):
             self.assertIn('name="active"', arch)
             self.assertIn('name="user_id"', arch)
@@ -378,37 +439,25 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             self.assertIn('name="comment"', arch)
             self.assertIn('name="sc_bank_name"', arch)
             self.assertIn('name="sc_bank_account"', arch)
-            self.assertIn('name="sc_supplier_type_label"', arch)
+            self.assertNotIn('name="sc_supplier_type_label"', arch)
             self.assertIn('name="street"', arch)
             self.assertIn('name="sc_business_scope"', arch)
-            self.assertIn('name="sc_source_document_state"', arch)
-            self.assertIn('name="sc_source_push_result"', arch)
-            self.assertIn('name="sc_source_project_name"', arch)
-            self.assertIn('name="sc_source_partner_code"', arch)
-            self.assertIn('name="sc_source_cooperation_type"', arch)
-            self.assertIn('name="sc_source_receipt_amount"', arch)
-            self.assertIn('name="sc_source_payment_amount"', arch)
+            self.assertNotIn('name="sc_source_document_state"', arch)
+            self.assertNotIn('name="sc_source_push_result"', arch)
+            self.assertNotIn('name="sc_source_project_name"', arch)
+            self.assertNotIn('name="sc_source_partner_code"', arch)
+            self.assertNotIn('name="sc_source_cooperation_type"', arch)
+            self.assertNotIn('name="sc_source_receipt_amount"', arch)
+            self.assertNotIn('name="sc_source_payment_amount"', arch)
             self.assertIn('name="sc_default_tax_rate_text"', arch)
-            self.assertIn('name="sc_source_created_by"', arch)
-            self.assertLess(arch.index('name="name"'), arch.index('name="sc_source_document_state"'))
-            self.assertIn('name="sc_source_created_at"', arch)
-            self.assertIn('name="sc_business_role_label"', arch)
-            self.assertIn('name="sc_business_fact_basis"', arch)
+            self.assertNotIn('name="sc_source_created_by"', arch)
+            self.assertNotIn('name="sc_source_created_at"', arch)
+            self.assertNotIn('name="sc_business_role_label"', arch)
+            self.assertNotIn('name="sc_business_fact_basis"', arch)
             for sparse_field in (
                 'name="sc_bank_name"',
                 'name="sc_bank_account"',
-                'name="sc_source_project_name"',
-                'name="sc_source_receipt_amount"',
-                'name="sc_source_payment_amount"',
                 'name="sc_default_tax_rate_text"',
-                'name="sc_source_document_state"',
-                'name="sc_source_push_result"',
-                'name="sc_source_partner_code"',
-                'name="sc_source_cooperation_type"',
-                'name="sc_source_created_by"',
-                'name="sc_source_created_at"',
-                'name="sc_business_role_label"',
-                'name="sc_business_fact_basis"',
             ):
                 field_pos = arch.index(sparse_field)
                 close_pos = arch.index("/>", field_pos)
@@ -420,27 +469,46 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             self.assertIn('name="child_ids"', arch)
             self.assertIn('name="bank_ids"', arch)
             self.assertIn('name="sc_attachment_ids"', arch)
-            self.assertIn('name="action_open_sc_partner_business_fact_lines"', arch)
-            self.assertIn('name="sc_business_fact_line_ids"', arch)
+            self.assertNotIn('name="action_open_sc_partner_business_fact_lines"', arch)
+            self.assertNotIn('name="sc_business_fact_line_ids"', arch)
             self.assertIn('name="comment"', arch)
             self.assertIn('name="active"', arch)
             self.assertIn('name="category_id"', arch)
             self.assertIn('name="user_id"', arch)
             self.assertIn('name="property_account_position_id"', arch)
-            self.assertIn('string="业务信息"', arch)
-            self.assertIn('string="关联业务明细"', arch)
-            self.assertIn('name="action_open_source_record"', arch)
-            self.assertIn('name="sc_source_fact_count" string="关联业务数" readonly="1"', arch)
-            self.assertIn('name="sc_source_fact_source"', arch)
-            self.assertIn('name="sc_source_receipt_amount" string="收款金额" readonly="1"', arch)
-            self.assertIn('name="sc_source_payment_amount" string="付款金额" readonly="1"', arch)
-            self.assertIn('name="sc_supplier_type_label"', arch)
+            self.assertNotIn('name="action_open_source_record"', arch)
+            self.assertNotIn('name="sc_source_fact_count" string="关联业务数" readonly="1"', arch)
+            self.assertNotIn('name="sc_source_fact_source"', arch)
+            self.assertNotIn('name="sc_source_receipt_amount" string="收款金额" readonly="1"', arch)
+            self.assertNotIn('name="sc_source_payment_amount" string="付款金额" readonly="1"', arch)
+            self.assertNotIn('name="sc_supplier_type_label"', arch)
             self.assertIn('name="vat" string="统一社会信用代码"', arch)
             self.assertIn('name="sc_registered_capital"', arch)
             self.assertIn('name="sc_establishment_date"', arch)
             self.assertIn('name="sc_business_term"', arch)
             self.assertIn('name="sc_legal_representative"', arch)
             self.assertIn('name="sc_contact_name"', arch)
+        self.assertNotIn('string="业务信息"', customer_form.arch_db)
+        self.assertNotIn('string="关联业务明细"', customer_form.arch_db)
+        self.assertIn('string="业务信息"', supplier_form.arch_db)
+        self.assertIn('string="关联业务明细"', supplier_form.arch_db)
+        for anchor, label in (
+            ("customer-basic", "基本资料"),
+            ("customer-registration", "工商信息"),
+            ("customer-contact-details", "联系方式"),
+            ("customer-finance", "账户与财务"),
+            ("customer-contacts", "联系人"),
+            ("customer-bank-accounts", "账户明细"),
+            ("customer-notes", "附件与备注"),
+        ):
+            self.assertIn('data-sc-anchor="%s"' % anchor, customer_form.arch_db)
+            anchor_pos = customer_form.arch_db.index('data-sc-anchor="%s"' % anchor)
+            group_pos = customer_form.arch_db.rfind("<group", 0, anchor_pos)
+            group_close = customer_form.arch_db.index(">", anchor_pos)
+            group_node = customer_form.arch_db[group_pos:group_close]
+            self.assertIn('string="%s"' % label, group_node)
+            columns = "1" if anchor in {"customer-contacts", "customer-bank-accounts", "customer-notes"} else "3"
+            self.assertIn('col="%s"' % columns, group_node)
         self.assertIn('name="company_type" string="客户类型"', customer_tree.arch_db)
         for arch in (customer_tree.arch_db, supplier_tree.arch_db):
             for field_name, label in (
@@ -455,7 +523,7 @@ class TestUserFeedbackBusinessViews(TransactionCase):
                 field_node = arch[field_pos:close_pos]
                 self.assertIn('string="%s"' % label, field_node)
                 self.assertNotIn('optional="hide"', field_node)
-        for label in ("客户身份", "企业资质与联系", "账户与业务画像", "账户明细", "附件与备注"):
+        for label in ("基本资料", "工商信息", "联系方式", "账户与财务", "账户明细", "附件与备注"):
             self.assertIn('string="%s"' % label, customer_form.arch_db)
         for label in ("供应商身份", "企业资质与联系", "账户与业务画像", "账户明细", "附件与备注"):
             self.assertIn('string="%s"' % label, supplier_form.arch_db)
@@ -467,17 +535,17 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             self.assertIn('name="email"', arch)
             self.assertIn('name="sc_bank_name"', arch)
             self.assertIn('name="sc_bank_account"', arch)
-            self.assertIn('name="sc_supplier_type_label"', arch)
+            self.assertNotIn('name="sc_supplier_type_label"', arch)
             self.assertIn('name="street"', arch)
             self.assertIn('name="sc_business_scope"', arch)
-            self.assertIn('name="sc_source_partner_code"', arch)
-            self.assertIn('name="sc_source_document_state"', arch)
-            self.assertIn('name="sc_source_push_result"', arch)
-            self.assertIn('name="sc_source_project_name"', arch)
-            self.assertIn('name="sc_source_cooperation_type"', arch)
-            self.assertIn('name="sc_source_created_by"', arch)
-            self.assertIn('name="sc_business_role_label"', arch)
-            self.assertIn('name="sc_business_fact_basis"', arch)
+            self.assertNotIn('name="sc_source_partner_code"', arch)
+            self.assertNotIn('name="sc_source_document_state"', arch)
+            self.assertNotIn('name="sc_source_push_result"', arch)
+            self.assertNotIn('name="sc_source_project_name"', arch)
+            self.assertNotIn('name="sc_source_cooperation_type"', arch)
+            self.assertNotIn('name="sc_source_created_by"', arch)
+            self.assertNotIn('name="sc_business_role_label"', arch)
+            self.assertNotIn('name="sc_business_fact_basis"', arch)
             self.assertIn('name="category_id"', arch)
             self.assertIn('name="user_id"', arch)
             self.assertIn('name="active"', arch)

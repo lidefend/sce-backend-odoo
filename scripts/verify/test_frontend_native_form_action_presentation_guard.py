@@ -1,4 +1,5 @@
 import unittest
+import re
 
 from scripts.verify.frontend_native_form_action_presentation_guard import OVERFLOW_MENU, RENDERER, SMART_ACTION, VISUAL_SMOKE, validate
 
@@ -13,6 +14,24 @@ class NativeFormActionPresentationGuardTest(unittest.TestCase):
 
     def test_repository_contract_passes(self):
         self.assertEqual(validate(self.source, self.smart_action, self.overflow_menu, self.visual_smoke), [])
+
+    def test_container_disclosure_cannot_bypass_action_authority(self):
+        button = next(button for button in re.findall(r"<ScButton\b[\s\S]*?</ScButton>", self.source)
+                      if 'v-else-if="isCollapsibleContainer(node)"' in button)
+        cases = (
+            (button, "", "container disclosure"),
+            (button, button + button, "container disclosure"),
+            (button, button.replace('type="button"', 'type="button" :onDblclick="writeRecord"'), "only toggle"),
+            (button, button.replace('type="button"', 'type="button" :[eventName]="writeRecord"'), "only toggle"),
+            ('@click="toggleContainerCollapsed(node, index)"', '@click="emitNativeAction(node)"', "only toggle"),
+            (':aria-expanded="String(!isContainerCollapsed(node, index))"', ':aria-expanded="true"', "only toggle"),
+            (':disabled="nativeActionDisabled(node)"', ':disabled="false"', "disabled and event authority"),
+        )
+        for before, after, reason in cases:
+            with self.subTest(binding=before):
+                self.assertIn(before, self.source)
+                altered = self.source.replace(before, after, 1)
+                self.assertTrue(any(reason in error for error in validate(altered, self.smart_action, self.overflow_menu)))
 
     def test_ordinary_action_cannot_regress_to_private_button(self):
         altered = self.source.replace("<ScButton\n                v-if=\"!isSmartButtonNode(buttonNode)\"", "<button\n                v-if=\"!isSmartButtonNode(buttonNode)\"", 1)

@@ -192,11 +192,47 @@ def down(root: Path = ROOT) -> None:
     print(f"[local.dev.candidate.frontend] PASS stopped sha={running_head} current_sha={head}")
 
 
+def _backend_identity(root: Path, head: str) -> dict:
+    """Bind browser evidence to the existing local.dev HTTP source mount."""
+    result = subprocess.run(
+        ["docker", "ps", "-q", "--filter", "label=com.docker.compose.project=sc-local-dev",
+         "--filter", "label=com.docker.compose.service=odoo"],
+        check=True, capture_output=True, text=True,
+    )
+    ids = result.stdout.split()
+    if len(ids) != 1:
+        raise CandidateFrontendError("expected one running local.dev backend")
+    row = json.loads(subprocess.run(
+        ["docker", "inspect", ids[0]], check=True, capture_output=True, text=True,
+    ).stdout)[0]
+    runtime_env = dict(item.split("=", 1) for item in row["Config"].get("Env", []) if "=" in item)
+    mounts = {item["Destination"]: item for item in row.get("Mounts", [])}
+    source = mounts.get("/mnt/source-addons", {}).get("Source", "")
+    if Path(source).resolve() != (root / "addons").resolve():
+        raise CandidateFrontendError("backend source mount differs from candidate worktree; run local.dev.up in candidate")
+    if runtime_env.get("SC_SOURCE_REVISION") != head:
+        raise CandidateFrontendError("backend source revision differs from candidate; run local.dev.up with SC_SOURCE_REVISION")
+    if runtime_env.get("DB_NAME") != "sc_dev_demo" or runtime_env.get("ODOO_DBFILTER") != "^sc_dev_demo$":
+        raise CandidateFrontendError("backend database identity mismatch")
+    filestore = mounts.get("/var/lib/odoo", {}).get("Name", "")
+    if filestore != "sc_local_dev_odoo_data":
+        raise CandidateFrontendError("backend filestore identity mismatch")
+    return {
+        "head": head, "containerId": row["Id"], "startedAt": row["State"]["StartedAt"],
+        "sourceRoot": str(root), "sourceMount": source,
+        "project": "sc-local-dev", "database": "sc_dev_demo", "dbfilter": "^sc_dev_demo$",
+        "filestoreVolume": filestore,
+        "moduleTrees": {name: _git_output(root, "rev-parse", f"{head}:addons/{name}")
+                        for name in ("smart_core", "smart_construction_core")},
+    }
+
+
 def health(root: Path = ROOT) -> None:
     _branch, head = _candidate_identity(root)
     _validate_process(root, head, PIDFILE)
     if not _health():
         raise CandidateFrontendError("candidate static service is not healthy")
+    _backend_identity(root, head)
     print(f"[local.dev.candidate.frontend] PASS healthy url=http://127.0.0.1:{PORT} sha={head}")
 
 
@@ -209,8 +245,10 @@ def visual_smoke(root: Path = ROOT) -> None:
     routes = os.environ.get("CANDIDATE_VISUAL_ROUTES_JSON", "")
     if not routes:
         raise CandidateFrontendError("CANDIDATE_VISUAL_ROUTES_JSON is required")
+    backend_identity = _backend_identity(root, head)
     environment = _isolated_environment()
     environment.update(
+        CANDIDATE_BACKEND_IDENTITY=json.dumps(backend_identity),
         ENV_FILE=str(authority),
         ROOT_DIR=str(root),
         FRONTEND_URL=f"http://127.0.0.1:{PORT}",

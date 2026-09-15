@@ -1143,6 +1143,34 @@ async function main() {
   }
 }
 
+function paymentCreateControlDiagnostic(surface) {
+  const visible = (node) => {
+    const style = window.getComputedStyle(node);
+    const rect = node.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden';
+  };
+  return {
+    formState: surface.getAttribute('data-state'),
+    headerStates: [...surface.querySelectorAll('[data-semantic-component="ContractFormProductHeader"]')]
+      .map((header) => header.getAttribute('data-state')),
+    amountFields: [...surface.querySelectorAll('[data-field-name="amount"]')].map((field) => ({
+      tag: field.tagName,
+      visible: visible(field),
+      controls: [...field.querySelectorAll('[data-control-state], [data-semantic-component]')].map((node) => ({
+        component: node.getAttribute('data-semantic-component'),
+        state: node.getAttribute('data-control-state'),
+        visible: visible(node),
+      })),
+      inputs: [...field.querySelectorAll('input')].map((node) => ({
+        type: node.getAttribute('type'),
+        disabled: node.disabled,
+        readonly: node.readOnly,
+        visible: visible(node),
+      })),
+    })),
+  };
+}
+
 async function openPaymentCreateFromList(page, target, label) {
   const listSurface = page.locator('[data-product-page-mode="list"] [data-list-status]:visible');
   await listSurface.waitFor({ state: 'visible', timeout: 45000 });
@@ -1167,6 +1195,17 @@ async function openPaymentCreateFromList(page, target, label) {
   try {
     await paymentCreateSurface.locator('[data-field-name="amount"] input').waitFor({ state: 'visible', timeout: 45000 });
   } catch (error) {
+    const controlDiagnostic = await paymentCreateSurface.evaluate(paymentCreateControlDiagnostic);
+    fs.writeFileSync(path.join(OUT, 'payment-create-failure.json'), `${JSON.stringify({
+      source_sha: process.env.GIT_SHA || '',
+      at: new Date().toISOString(),
+      label,
+      action_id: target.action_id,
+      menu_id: target.menu_id,
+      route: new URL(page.url()).pathname,
+      routeMode: new URL(page.url()).searchParams.get('mode'),
+      controlDiagnostic,
+    }, null, 2)}\n`);
     const diagnostic = await paymentCreateSurface.evaluate((surface) => ({
       shadowError: surface.getAttribute('data-v2-shadow-error') || '',
       shadowActions: surface.getAttribute('data-v2-shadow-actions') || '',
@@ -1186,6 +1225,7 @@ async function openPaymentCreateFromList(page, target, label) {
     }));
     throw new Error(
       `${label}: payment create amount field unavailable diagnostic=${JSON.stringify(diagnostic)}`
+      + ` controls=${JSON.stringify(controlDiagnostic)}`
       + ` cause=${error instanceof Error ? error.message : String(error)}`,
     );
   }

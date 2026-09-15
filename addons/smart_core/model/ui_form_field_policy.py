@@ -323,6 +323,7 @@ class UIFormFieldPolicy(models.Model):
         view_id: int | None = None,
         excluded_field_names: set[str] | list[str] | tuple[str, ...] | None = None,
         allow_layout_append: bool = True,
+        preserve_native_restrictions: bool = False,
     ) -> dict:
         if view_type != "form" or not isinstance(contract, dict) or not model_name:
             return contract or {}
@@ -375,7 +376,7 @@ class UIFormFieldPolicy(models.Model):
         hidden = set(effective) - visible
         layout = contract.get("layout")
         if isinstance(layout, list):
-            layout = self._apply_layout_policy(layout, effective)
+            layout = self._apply_layout_policy(layout, effective, preserve_native_restrictions=preserve_native_restrictions)
             if allow_layout_append:
                 self._append_visible_policy_fields(layout, visible, effective)
             contract["layout"] = layout
@@ -385,7 +386,7 @@ class UIFormFieldPolicy(models.Model):
             for field_name in hidden:
                 field_modifiers.pop(field_name, None)
             for field_name in visible:
-                if isinstance(field_modifiers.get(field_name), dict):
+                if not preserve_native_restrictions and isinstance(field_modifiers.get(field_name), dict):
                     field_modifiers[field_name].pop("invisible", None)
             contract["field_modifiers"] = field_modifiers
 
@@ -437,7 +438,7 @@ class UIFormFieldPolicy(models.Model):
 
         return sorted([rec for rec in records if applies(rec)], key=lambda rec: (*scope_weight(rec), rec.sequence or 0, rec.id))
 
-    def _apply_layout_policy(self, nodes: list, effective: dict[str, dict[str, Any]]) -> list:
+    def _apply_layout_policy(self, nodes: list, effective: dict[str, dict[str, Any]], *, preserve_native_restrictions: bool = False) -> list:
         hidden = {name for name, rule in effective.items() if not rule.get("visible")}
         result = []
         for raw in nodes:
@@ -449,7 +450,7 @@ class UIFormFieldPolicy(models.Model):
             if node_type == "field" and field_name in hidden:
                 continue
             if node_type == "field" and field_name in effective:
-                if effective[field_name].get("visible"):
+                if effective[field_name].get("visible") and not preserve_native_restrictions:
                     self._force_visible_node(node)
                 label = str(effective[field_name].get("label") or "").strip()
                 if label:
@@ -461,7 +462,7 @@ class UIFormFieldPolicy(models.Model):
             for child_key in ("children", "pages", "tabs", "nodes", "items"):
                 children = node.get(child_key)
                 if isinstance(children, list):
-                    node[child_key] = self._apply_layout_policy(children, effective)
+                    node[child_key] = self._apply_layout_policy(children, effective, preserve_native_restrictions=preserve_native_restrictions)
             result.append(node)
         return result
 

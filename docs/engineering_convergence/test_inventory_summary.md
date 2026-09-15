@@ -4,13 +4,13 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1367`
+- Total assets: `1368`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `176`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `966`
+- PR dedupe candidates: `967`
 
 ## By Layer
 
@@ -21,7 +21,7 @@ Generated from `test_inventory.csv`.
 | unit | 243 |
 | odoo_integration | 103 |
 | e2e | 46 |
-| security | 33 |
+| security | 34 |
 | frontend_acceptance | 24 |
 | gate | 2 |
 | data_migration | 2 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1185 |
+| pr_candidate | 1186 |
 | integration_candidate | 129 |
 | release_candidate | 44 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 966 |
+| deduplicate_before_required | 967 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 128 |
 | keep_release_only | 44 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1187 |
+| <5m | 1188 |
 | 10-30m | 130 |
 | 30-60m | 46 |
 | unknown | 3 |
@@ -157,7 +157,7 @@ Generated from `test_inventory.csv`.
 | test owner | 244 |
 | backend owner | 103 |
 | qa owner | 46 |
-| security owner | 33 |
+| security owner | 34 |
 | frontend owner | 25 |
 | data owner | 2 |
 
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1224 |
+| scripts/verify | 1225 |
 | scripts/ops | 69 |
 | frontend/apps/web/scripts | 29 |
 | scripts/ci | 20 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-188 | governance | `scripts/verify/business_config_user_language_guard.py` | architecture owner |
 | T-ASSET-189 | governance | `scripts/verify/business_core_journey_guard.py` | architecture owner |
 | T-ASSET-191 | unit | `scripts/verify/business_document_state_policy_switch_smoke.py` | test owner |
-| ... | ... | 886 more | ... |
+| ... | ... | 887 more | ... |
 
 ## Dedupe Hotspots
 

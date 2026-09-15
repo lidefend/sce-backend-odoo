@@ -127,6 +127,65 @@ def collect_visible_layout_hydration_fields(contract_v2: Any) -> list[str]:
     return (priority + ordinary)[:FORM_VISIBLE_LAYOUT_HYDRATION_BUDGET]
 
 
+def _hydrate_create_modifier_dependencies(Model: Any, contract: dict[str, Any], logger: Any) -> None:
+    """Materialize missing predicate inputs on an unsaved native record."""
+    status = contract.get("statusContract", {}).get("globalStatus", {})
+    if status.get("effectiveRenderProfile") != "create" or status.get("effectiveRecordCapabilities", {}).get("create") is not True:
+        return
+    data = contract.get("dataContract", {})
+    main = data.get("mainData")
+    if not isinstance(main, dict):
+        return
+    fields = Model._fields
+    scalar_types = {"boolean", "integer", "float", "monetary", "char", "text", "selection", "date", "datetime", "many2one"}
+    missing = [name for name in collect_modifier_dependency_fields(contract, known_fields=fields)
+               if name not in main and getattr(fields[name], "type", "") in scalar_types]
+    if not missing:
+        return
+    try:
+        # Use the same server-resolved create context as the primary data source.
+        context = data.get("dataMeta", {}).get("sourceContext", {}).get("context", {})
+        Model = Model.with_context(**context)
+        Model.check_access_rights("create")
+        Model.check_access_rights("read")
+        readable = set(Model.check_field_access_rights("read", None))
+        missing = [name for name in missing if name in readable]
+        if not missing:
+            return
+        # default_get supplies native relation commands; never feed display
+        # values or serialized relation rows from mainData into Model.new().
+        defaults = Model.default_get(sorted(readable - {"id", "display_name"}))
+        values = dict(defaults)
+        for name, value in main.items():
+            if name not in readable or name not in fields:
+                continue
+            kind = fields[name].type
+            if kind == "many2one":
+                if isinstance(value, (list, tuple)) and len(value) == 2:
+                    value = value[0]
+                if value is False or value is None or isinstance(value, int) and not isinstance(value, bool) and value > 0:
+                    values[name] = value or False
+                else:
+                    raise ValueError("invalid native create relation identity")
+            elif kind in {"one2many", "many2many"}:
+                if value != defaults.get(name, False):
+                    raise ValueError("create relation snapshot differs from native defaults")
+            elif kind in scalar_types and not isinstance(value, (dict, list, tuple)):
+                values[name] = value
+        draft = Model.new(values)
+    except Exception:
+        if logger is not None:
+            logger.debug("ui.contract.v2 create modifier draft unavailable", exc_info=True)
+        return
+    for name in missing:
+        try:
+            main[name] = fields[name].convert_to_read(draft[name], draft, use_display_name=False)
+        except Exception:
+            # A failed compute/access is unknown, never a manufactured False.
+            if logger is not None:
+                logger.debug("ui.contract.v2 create modifier dependency unavailable: %s", name, exc_info=True)
+
+
 def hydrate_final_modifier_dependencies(
     env: Any,
     contract_v2: dict[str, Any],
@@ -146,16 +205,19 @@ def hydrate_final_modifier_dependencies(
 
     if view_type != "form" or not model or not isinstance(contract_v2, dict):
         return
-    record_id_int, _record_id_error = parse_positive_int(record_id, allow_empty=True)
-    record_id_int = int(record_id_int or 0)
-    if record_id_int <= 0:
+    record_id_int, record_id_error = parse_positive_int(record_id, allow_empty=True)
+    if record_id_error:
         return
+    record_id_int = int(record_id_int or 0)
     try:
         Model = env[model]
     except Exception:
         return
     fields_map = getattr(Model, "_fields", {})
     if not isinstance(fields_map, dict):
+        return
+    if record_id_int <= 0:
+        _hydrate_create_modifier_dependencies(Model, contract_v2, logger)
         return
     data_contract = contract_v2.get("dataContract")
     if not isinstance(data_contract, dict):

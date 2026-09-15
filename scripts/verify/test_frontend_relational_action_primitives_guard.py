@@ -1,4 +1,5 @@
 import unittest
+import re
 
 from scripts.verify.frontend_relational_action_primitives_guard import ONE2MANY_CELL, X2MANY, VIEW_RELATION, validate
 
@@ -12,6 +13,27 @@ class RelationalActionPrimitivesGuardTest(unittest.TestCase):
 
     def test_repository_contract_passes(self):
         self.assertEqual(validate(self.x2many, self.view_relation, self.one2many_cell), [])
+
+    def test_readonly_disclosure_does_not_expand_command_authority(self):
+        button = next(button for button in re.findall(r"<ScButton\b[\s\S]*?</ScButton>", self.x2many)
+                      if 'class="o2m-readonly-value-trigger"' in button)
+        cases = (
+            (button, "", "exactly one readonly"),
+            (button, button + button, "exactly one readonly"),
+            (button, button + '<ScButton @click="writeRecord()">extra</ScButton>', "exactly 9 governed"),
+            (button, button + '<ScButton @click="writeRecord()" />', "exactly 9 governed"),
+            (button, button.replace('type="button"', 'type="button" @click="writeRecord()"'), "must only reveal"),
+            (button, button.replace('type="button"', 'type="button" :onClick="writeRecord"'), "must only reveal"),
+            (button, button.replace('type="button"', 'type="button" :[eventName]="writeRecord"'), "must only reveal"),
+            (button, button.replace('type="button"', 'type="submit"'), "must only reveal"),
+            ('v-if="readonlyCellCanExpand(column, row[column.name])"', 'v-if="true"', "must only reveal"),
+            (button, button.replace('readonlyCellValue(row[column.name])', 'otherValue'), "must only reveal"),
+        )
+        for before, after, reason in cases:
+            with self.subTest(reason=reason, replacement=after):
+                self.assertIn(before, self.x2many)
+                altered = self.x2many.replace(before, after, 1)
+                self.assertTrue(any(reason in error for error in validate(altered, self.view_relation)))
 
     def test_one2many_create_cannot_regress_to_legacy_button(self):
         altered = self.x2many.replace('<ScButton\n          v-if="adapter.one2manyCanCreate(field.name)"', '<button\n          v-if="adapter.one2manyCanCreate(field.name)"')

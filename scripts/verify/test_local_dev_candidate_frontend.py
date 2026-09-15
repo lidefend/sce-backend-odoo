@@ -18,6 +18,98 @@ SPEC.loader.exec_module(MODULE_UNDER_TEST)
 
 
 class CandidateFrontendContractTest(unittest.TestCase):
+    def test_formal_entry_identity_preserves_runtime_view_and_missing_provenance(self):
+        import subprocess
+        source = (ROOT / "scripts/verify/local_dev_candidate_visual_smoke.mjs").read_text()
+        function = source.split("async function captureFormalEntryIdentity(", 1)[1].split("\nasync function loginPage", 1)[0]
+        subprocess.run(["node", "--input-type=module", "-e", """
+          const saved = [];
+          const fs = {writeFileSync: (_path, value) => saved.push(JSON.parse(value))};
+          const path = {join: (...parts) => parts.join('/')};
+          const head = 'candidate', outputDir = 'evidence';
+          const report = {backendIdentity: {database:'sc_dev_demo'}, startup:{desktop:{roleCode:'admin',companyId:1}}};
+          const findNormalizedContract = (payload) => payload.data;
+          """ + "async function captureFormalEntryIdentity(" + function + """
+          const response = (data) => ({json:async()=>({data}),status:()=>200,headers:()=>({'x-trace-id':'trace'}),
+            request:()=>({postData:()=>JSON.stringify({intent:'ui.contract.v2',params:{op:'action_open',action_id:609}})})});
+          const target = {captureFormalEntryIdentity:true,name:'contract'};
+          await captureFormalEntryIdentity(response({formStructureContract:{layoutPolicy:'category_sections_as_task_tabs'},
+            actions:{settings:{view_id:123}}}), target, 'desktop', 'record');
+          await captureFormalEntryIdentity(response({formStructureContract:{layoutPolicy:'category_sections_as_task_tabs'}}), target, 'desktop', 'record');
+          if (saved[0].sources[0].value !== 123 || saved[0].request.params.action_id !== 609) throw Error('runtime source lost');
+          if (saved[1].sources.length !== 0 || saved[1].formStructureContract.sourceAuthority) throw Error('missing source invented');
+          if (saved[0].traceId !== 'trace' || saved[0].companyId !== 1) throw Error('identity lost');
+          """], check=True, capture_output=True, text=True)
+
+    def test_customer_capture_selects_model_response_instead_of_action_prefetch(self):
+        import subprocess
+        source = (ROOT / "scripts/verify/local_dev_candidate_visual_smoke.mjs").read_text()
+        functions = source.split("function isContractV2Response(response) {", 1)[1].split(
+            "\nfunction isSystemInitResponse", 1
+        )[0]
+        subprocess.run(["node", "--input-type=module", "-e",
+            "function isContractV2Response(response) {" + functions + """
+            const response = (op) => ({url: () => '/api/v1/intent',
+              request: () => ({method: () => 'POST',
+                postData: () => JSON.stringify({intent: 'ui.contract.v2', params: {op}})})});
+            if (isTargetContractResponse(response('action_open'), {expectedContractOp: 'model'}))
+              throw new Error('prefetch accepted as rendered model');
+            if (!isTargetContractResponse(response('model'), {expectedContractOp: 'model'}))
+              throw new Error('model response rejected');
+            """], check=True, capture_output=True, text=True)
+
+    def test_visual_inventory_uses_authorized_canonical_navigation(self):
+        import json
+        import subprocess
+        source = (ROOT / "scripts/verify/local_dev_candidate_visual_smoke.mjs").read_text()
+        function = source.split("function summarizeSystemInit(payload) {", 1)[1].split(
+            "\nfunction summarizeContractH1", 1
+        )[0]
+        fixture = {"data": {
+            "nav": [{"id": 99, "menu_xmlid": "stale.root", "action_id": 99}],
+            "navigation": {
+                "route_authority": {"primary_actions": [
+                    {"menu_id": 1, "action_id": 2, "menu_xmlid": "customer"},
+                    {"menu_id": 3, "action_id": 4, "menu_xmlid": "payment"}]},
+                "nav": [{"id": 50, "children": [
+                    {"id": 1, "meta": {"model": "res.partner", "view_modes": ["form"]},
+                     "canonical_navigation": {"menu_id": 1, "action_id": 2}},
+                    {"id": 3, "action_id": 4, "model": "payment", "meta": {}},
+                    {"id": 5, "action_id": 6, "menu_xmlid": "unauthorized"}]}]}}}
+        result = subprocess.run(["node", "--input-type=module", "-e",
+            "function summarizeSystemInit(payload) {" + function +
+            "\nprocess.stdout.write(JSON.stringify(summarizeSystemInit(" + json.dumps(fixture) + ")));"],
+            check=True, capture_output=True, text=True)
+        entries = json.loads(result.stdout)["menuEntries"]
+        self.assertEqual([item["menuXmlid"] for item in entries], ["customer", "payment"])
+        self.assertEqual(entries[0]["model"], "res.partner")
+        self.assertEqual(entries[1]["model"], "payment")
+
+    def test_backend_identity_binds_source_revision_database_and_filestore(self):
+        import json
+        from types import SimpleNamespace
+        row = {
+            "Id": "runtime", "State": {"StartedAt": "2026-09-15T00:00:00Z"},
+            "Config": {"Env": ["SC_SOURCE_REVISION=" + "a" * 40, "DB_NAME=sc_dev_demo", "ODOO_DBFILTER=^sc_dev_demo$"]},
+            "Mounts": [{"Destination": "/mnt/source-addons", "Source": str(ROOT / "addons")},
+                       {"Destination": "/var/lib/odoo", "Name": "sc_local_dev_odoo_data"}],
+        }
+        def inspect(_command, **_kwargs):
+            return SimpleNamespace(stdout="runtime" if _command[1] == "ps" else json.dumps([row]))
+        with mock.patch.object(MODULE_UNDER_TEST.subprocess, "run", side_effect=inspect), mock.patch.object(
+            MODULE_UNDER_TEST, "_git_output", return_value="module-tree"
+        ):
+            result = MODULE_UNDER_TEST._backend_identity(ROOT, "a" * 40)
+            self.assertEqual(result["moduleTrees"]["smart_core"], "module-tree")
+            self.assertEqual(result["database"], "sc_dev_demo")
+            row["Mounts"][0]["Source"] = "/some/other/worktree/addons"
+            with self.assertRaisesRegex(MODULE_UNDER_TEST.CandidateFrontendError, "source mount"):
+                MODULE_UNDER_TEST._backend_identity(ROOT, "a" * 40)
+            row["Mounts"][0]["Source"] = str(ROOT / "addons")
+            row["Config"]["Env"][0] = "SC_SOURCE_REVISION=" + "b" * 40
+            with self.assertRaisesRegex(MODULE_UNDER_TEST.CandidateFrontendError, "source revision"):
+                MODULE_UNDER_TEST._backend_identity(ROOT, "a" * 40)
+
     def test_topic_branch_and_exact_sha_are_required(self):
         with mock.patch.object(MODULE_UNDER_TEST, "_git_output", side_effect=[str(ROOT), "feature/token", "a" * 40, ""]), mock.patch.dict(
             os.environ,

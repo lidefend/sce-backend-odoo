@@ -60,6 +60,7 @@
         "frontend/apps/web/src/components/product-record/ProductFormLoadingSkeleton.vue",
       "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
       "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue",
+      "frontend/apps/web/src/components/professional-fields/ProfessionalDetailCollectionControl.vue",
       "frontend/apps/web/src/components/professional-fields/PaymentSettlementDetailCollectionControl.vue",
       "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue",
       "frontend/apps/web/src/components/professional-fields/ProfessionalMany2oneFieldControl.vue",

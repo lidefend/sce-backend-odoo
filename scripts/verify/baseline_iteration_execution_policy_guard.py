@@ -28,6 +28,13 @@ DOCUMENT_REQUIREMENTS = {
         "the full required matrix runs once at the frozen delivery head",
         "make ci.local.iteration",
         "make ci.local.quick` is reserved for a clean frozen delivery HEAD",
+        "Diagnosis Before Delivery (Hard Lock)",
+        "Close known delivery blockers before finalization",
+        "Collect independent same-layer failures before refreezing",
+        "Diagnostic-only changes must not trigger a delivery cycle",
+        "Maintain one result index and reference original evidence",
+        "Reuse a successful Quick for an unchanged candidate",
+        "Final Quick and required remote checks remain mandatory for delivery",
     ),
     Path("docs/ops/codex_execution_allowlist.md"): (
         "禁止新增或派生 Compose project",
@@ -54,6 +61,13 @@ DOCUMENT_REQUIREMENTS = {
         "本地入口分车道",
         "make ci.local.iteration",
         "make ci.local.quick` 仅在",
+        "先诊断收敛，再进入交付（Hard Lock）",
+        "已知交付阻断未关闭，不进入最终交付",
+        "同层独立失败先收齐，再统一修复",
+        "只补诊断信息不得启动交付循环",
+        "一个结果索引，原始证据只引用",
+        "收敛后一次整理，冻结后不补跟踪材料",
+        "一次是成功复用，不是禁止修复后重验",
     ),
 }
 

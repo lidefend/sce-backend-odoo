@@ -958,6 +958,30 @@ for (const role of CONTRACT_V2_FORM_STRUCTURE_ROLES) {
   );
 }
 
+// Native authority never splits customer-style collections or assigns new slots,
+// in readonly, edit, or create mode. The old empty-slots contract remains invalid.
+for (const mode of ['readonly', 'edit', 'create'] as const) {
+  const nativeSnapshot = snapshot();
+  nativeSnapshot.formStructureContract = {
+    ...governedFormStructure('context'),
+    layoutPolicy: 'container_tree_authority', slots: [], fieldRoles: {},
+  };
+  const model = presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(nativeSnapshot)), mode);
+  assert.equal(model.identity.structureAuthority, 'containerTree');
+  const original = structuredClone(model.zones);
+  const nativePlan = composeCanonicalFormFloorplan(model);
+  assert.strictEqual(nativePlan.taskNodes, model.zones.primary);
+  assert.deepEqual(nativePlan.taskNodes, original.primary);
+  assert.strictEqual(nativePlan.subordinateNodes, model.zones.subordinate);
+  assert.deepEqual(nativePlan.relationNodes, []);
+  const competing = structuredClone(nativeSnapshot);
+  competing.formStructureContract!.slots = governedFormStructure('context').slots;
+  assert.throws(() => decodeContractV2Snapshot(competing), /container tree authority/);
+  const emptyLegacy = structuredClone(nativeSnapshot);
+  emptyLegacy.formStructureContract!.layoutPolicy = 'native_authority';
+  assert.throws(() => decodeContractV2Snapshot(emptyLegacy), /at least one slot/);
+}
+
 const governancePresentationSnapshot = snapshot();
 governancePresentationSnapshot.formStructureContract = {
   ...governedFormStructure('context'),
@@ -1695,6 +1719,25 @@ secondaryStatusNode.attributes = { ...secondaryStatusNode.attributes, name: 'sec
 secondaryStatusNode.fields[0].fieldCode = 'secondary_state';
 secondaryStatusNode.fields[0].widgetId = 'field.secondary_state';
 multiStatusModel.zones.primary[0].children.push(secondaryStatusNode);
+
+const nativeVisibilityModel = structuredClone(multiStatusModel);
+nativeVisibilityModel.identity.structureAuthority = 'containerTree';
+const nativeVisibilityBridge = buildCanonicalNativeFormBridge(nativeVisibilityModel);
+const semanticHiddenNode = {
+  type: 'field', name: 'field_fixture', visible: true,
+  attributes: { surfaceRole: 'hidden', technical: true },
+};
+assert.equal(nativeVisibilityBridge.nodeVisible(semanticHiddenNode), true,
+  'native semantic metadata must not hide a field explicitly visible in normalized status');
+assert.equal(nativeVisibilityBridge.nodeVisible({ ...semanticHiddenNode, visible: false }), false,
+  'native hidden status must remain authoritative');
+const compatibilityVisibilityModel = structuredClone(nativeVisibilityModel);
+compatibilityVisibilityModel.identity.structureAuthority = 'compatibility';
+assert.equal(buildCanonicalNativeFormBridge(compatibilityVisibilityModel).nodeVisible(semanticHiddenNode), false,
+  'unmigrated compatibility consumers retain their semantic hiding behavior');
+const nativeClaimedVisibilityBridge = buildCanonicalNativeFormBridge(nativeVisibilityModel, undefined, '', 'field_fixture');
+assert.equal(nativeClaimedVisibilityBridge.nodeVisible(semanticHiddenNode), false,
+  'native statusbar ownership still prevents duplicate body rendering');
 
 const unclaimedStatusBridge = buildCanonicalNativeFormBridge(multiStatusModel);
 const isStatusbarNode = (node: { widget?: string; attributes?: Record<string, unknown> }) => (
@@ -3214,4 +3257,4 @@ assert.equal(
   'canonical validation must project an explicit field identity even when labels overlap',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=162');
+console.log('[canonical_form_presenter_test] PASS cases=169');

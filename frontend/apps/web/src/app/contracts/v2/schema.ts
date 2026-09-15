@@ -1180,6 +1180,7 @@ function decodeFormStructureGovernanceSource(
     'fieldSemanticRoles', 'sectionSemanticRoles', 'configuredSections', 'sectionTitles',
     'fieldGroups', 'hiddenFieldNames', 'formColumns', 'groupColumns', 'groupVisibility',
     'categoryId', 'categoryCode', 'targetModel',
+    'resolvedViewId', 'resolvedActionId', 'structureDiagnostics', 'compatibilityDependencies',
   ], path, issues);
   const source = requiredString(raw, 'source', path, issues);
   const businessContracts = raw.businessConfigContracts === undefined
@@ -1257,7 +1258,24 @@ function decodeFormStructureGovernanceSource(
   }
   const fieldSemanticRoles = semanticRoleMap(raw.fieldSemanticRoles, `${path}.fieldSemanticRoles`);
   const sectionSemanticRoles = semanticRoleMap(raw.sectionSemanticRoles, `${path}.sectionSemanticRoles`);
+  const resolvedIdentity: { resolvedViewId?: number; resolvedActionId?: number } = {};
+  for (const key of ['resolvedViewId', 'resolvedActionId'] as const) {
+    if (raw[key] === undefined) continue;
+    if (typeof raw[key] !== 'number' || !Number.isInteger(raw[key]) || raw[key] < 0) {
+      issues.push({ path: `${path}.${key}`, message: 'must be a nonnegative integer' });
+    } else resolvedIdentity[key] = raw[key];
+  }
+  const diagnostics = raw.structureDiagnostics === undefined ? undefined
+    : requiredArray(raw, 'structureDiagnostics', path, issues).filter((row, index) => {
+      if (isRecord(row)) return true;
+      issues.push({ path: `${path}.structureDiagnostics[${index}]`, message: 'must be an object' });
+      return false;
+    }) as ContractV2Dictionary[] | undefined;
   return {
+    ...resolvedIdentity,
+    ...(diagnostics ? { structureDiagnostics: diagnostics } : {}),
+    ...(raw.compatibilityDependencies !== undefined
+      ? { compatibilityDependencies: decodeUniqueStringArray(raw.compatibilityDependencies, `${path}.compatibilityDependencies`, issues) } : {}),
     source,
     ...(optionalString(raw, 'ownerLayer') ? { ownerLayer: optionalString(raw, 'ownerLayer') } : {}),
     ...(businessContracts ? { businessConfigContracts: businessContracts } : {}),
@@ -1467,7 +1485,13 @@ function decodeFormStructureContract(
   const slots = requiredArray(raw, 'slots', path, issues)
     .map((item, index) => decodeFormStructureSlot(item, `${path}.slots[${index}]`, issues))
     .filter((item): item is ContractV2FormStructureSlot => Boolean(item));
-  if (!slots.length) issues.push({ path: `${path}.slots`, message: 'must contain at least one slot' });
+  if (!slots.length && raw.layoutPolicy !== 'container_tree_authority') {
+    issues.push({ path: `${path}.slots`, message: 'must contain at least one slot' });
+  }
+  if (raw.layoutPolicy === 'container_tree_authority'
+    && (slots.length || raw.columns !== undefined || Object.keys(isRecord(raw.fieldRoles) ? raw.fieldRoles : {}).length)) {
+    issues.push({ path, message: 'container tree authority forbids independent structural slots, columns and field membership' });
+  }
   const slotNames = new Set<string>();
   const groupNamesBySlot = new Map<string, Set<string>>();
   const referencedFields = new Set<string>();

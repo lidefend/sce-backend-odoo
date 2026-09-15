@@ -457,6 +457,33 @@ export function composeCanonicalFormFloorplan(
   renderModel: CanonicalFormRenderModel,
   options: CanonicalFormFloorplanOptions = {},
 ): CanonicalFormFloorplan {
+  const visibleActions = renderModel.actionBar.filter((action) => action.visible);
+  const canonicalPrimary = visibleActions.find((action) => action.tier === 'primary');
+  const createSave = renderModel.identity.mode === 'create' && !canonicalPrimary
+    ? visibleActions.find((action) => action.enabled && action.actionRef.actionId === 'form.save')
+    : undefined;
+  const effectivePrimary = canonicalPrimary?.enabled ? canonicalPrimary : createSave;
+  const secondaryCandidates = visibleActions.filter((action) => (
+    action.enabled
+    && action !== effectivePrimary
+    && !['overflow', 'configuration'].includes(action.tier)
+  ));
+  const directSecondary = secondaryCandidates.slice(0, 1);
+  const directActions = [...(effectivePrimary ? [effectivePrimary] : []), ...directSecondary];
+  const blockedActions = visibleActions.filter((action) => !action.enabled && action.tier === 'primary');
+
+  if (renderModel.identity.structureAuthority === 'containerTree') {
+    return {
+      summaryNodes: [], decisionInputNodes: [], taskNodes: renderModel.zones.primary,
+      coreInputNodes: [], conditionInputNodes: [], preExecutionInputNodes: [], preExecutionInputTitle: '',
+      supplementaryInputNodes: [], postRelationInputNodes: [], postRelationInputTitle: '',
+      contextNodes: [], overflowContextNodes: [], riskNodes: [], auditNodes: [], auditDeclared: false,
+      relationNodes: [], subordinateNodes: renderModel.zones.subordinate,
+      blockedActions, directActions,
+      overflowActions: visibleActions.filter((action) => action.enabled && !directActions.includes(action)),
+      effectivePrimaryKey: effectivePrimary?.key || '', decisionMode: false,
+    };
+  }
   const visiblePrimaryNodes = visibleNodes(
     excludeClaimedHeaderStatus(
       renderModel.zones.primary,
@@ -555,20 +582,6 @@ export function composeCanonicalFormFloorplan(
   const contextPartition = semanticProductMode
     ? { direct: [...allContextNodes, ...readonlyContextNodes, ...emptySemanticNodes], overflow: [] as CanonicalFormNode[] }
     : { direct: allContextNodes, overflow: [] as CanonicalFormNode[] };
-  const visibleActions = renderModel.actionBar.filter((action) => action.visible);
-  const canonicalPrimary = visibleActions.find((action) => action.tier === 'primary');
-  const createSave = renderModel.identity.mode === 'create' && !canonicalPrimary
-    ? visibleActions.find((action) => action.enabled && action.actionRef.actionId === 'form.save')
-    : undefined;
-  const effectivePrimary = canonicalPrimary?.enabled ? canonicalPrimary : createSave;
-  const secondaryCandidates = visibleActions.filter((action) => (
-    action.enabled
-    && action !== effectivePrimary
-    && !['overflow', 'configuration'].includes(action.tier)
-  ));
-  const directSecondary = secondaryCandidates.slice(0, 1);
-  const directActions = [...(effectivePrimary ? [effectivePrimary] : []), ...directSecondary];
-  const blockedActions = visibleActions.filter((action) => !action.enabled && action.tier === 'primary');
 
   const titleRegistry = new Set<string>();
   const titledSummaryNodes = suppressRepeatedTitles(summaryNodes, titleRegistry);

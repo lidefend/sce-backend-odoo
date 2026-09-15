@@ -223,14 +223,17 @@ class TestTenderAwardFact(TransactionCase):
         self.assertEqual(contract.action_id, formal_action)
         form_contract = contract.contract_json["view_orchestration"]["views"]["form"]
         self.assertEqual(form_contract["title"], "投标项目")
-        configured_fields = {row["name"] for row in form_contract["fields"]}
+        self.assertEqual(form_contract["composition_mode"], "native_semantic_surface")
+        self.assertNotIn("sections", form_contract)
+        self.assertNotIn("<notebook", arch)
+        self.assertIn('data-sc-anchor="tender-opening"', arch)
         for field_name in (
             "award_opening_id",
             "award_amount",
             "award_tax_basis",
             "award_source_reference",
         ):
-            self.assertIn(field_name, configured_fields)
+            self.assertIn('name="%s"' % field_name, arch)
 
     def test_formal_entry_contract_exposes_award_fact_fields(self):
         action = self.env.ref("smart_construction_core.action_tender_bid")
@@ -385,20 +388,10 @@ class TestTenderAwardFact(TransactionCase):
         self.assertIn("award_confirmed_at", contract["dataContract"]["mainData"])
         self.assertFalse(contract["dataContract"]["mainData"]["award_confirmed_at"])
         structure = contract["formStructureContract"]
-        for field_name in (
-            "award_opening_id",
-            "award_source_kind",
-            "award_source_reference",
-            "award_source_attachment_id",
-            "award_tax_basis",
-        ):
-            self.assertIn(field_name, structure["fieldRoles"], structure)
-            field_role = structure["fieldRoles"][field_name]
-            slot = next(
-                row for row in structure["slots"]
-                if row["slot"] == field_role["slot"]
-            )
-            self.assertIsNot(slot.get("readonly"), True, (field_name, field_role, slot))
+        self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
+        self.assertEqual(structure["fieldRoles"], {})
+        self.assertEqual(structure["slots"], [])
+        self.assertEqual(structure["sourceAuthority"]["governance_source"]["compatibilityDependencies"], [])
 
         award_widget_ids = {}
 

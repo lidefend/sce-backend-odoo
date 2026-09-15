@@ -289,3 +289,15 @@ export function buildContractFormActions(params: {
     || a.level.localeCompare(b.level) || a.label.localeCompare(b.label, 'zh-CN'))
     .filter((item) => (!item.visibleProfiles.length || item.visibleProfiles.includes(params.renderProfile)) && item.selection === 'none' && item.level !== 'toolbar');
 }
+
+export function isUnifiedSubmitMethod(methodName: string) {
+  const method = String(methodName || '').trim();
+  return method === 'action_submit'
+    || method === 'action_submit_progress'
+    || method === 'action_confirm'
+    || method === 'button_confirm';
+}
+
+export function isUnifiedSubmitAction(action: ContractAction | null | undefined) {
+  return Boolean(action && isUnifiedSubmitMethod(action.methodName));
+}

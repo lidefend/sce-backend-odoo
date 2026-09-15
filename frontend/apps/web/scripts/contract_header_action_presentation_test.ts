@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 
-import { buildContractFormActions, resolveAuthorizedWindowActionTarget } from '../src/pages/contractForm/contractActionPresentation';
+import { buildContractFormActions, isUnifiedSubmitAction, isUnifiedSubmitMethod, resolveAuthorizedWindowActionTarget } from '../src/pages/contractForm/contractActionPresentation';
+import { dispatchSceneBlockAction } from '../src/pages/contractForm/sceneBlockAction';
 import { findRouteAuthority, type RouteAuthorityContract, type RouteAuthorityEntry } from '../src/app/routeAuthority';
 import { decodeContractV2ActionRule, decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 import { resolvePrimaryCreateFooterAction } from '../src/pages/contractForm/actionContract';
@@ -27,6 +28,39 @@ const action = (overrides: Record<string, unknown>) => ({
   presentationTier: 'secondary',
   ...overrides,
 }) as never;
+
+for (const [method, expected] of [
+  [' action_submit ', true], ['action_submit_progress', true], ['action_confirm', true],
+  ['button_confirm', true], ['', false], ['action_delete', false],
+] as const) {
+  assert.equal(isUnifiedSubmitMethod(method), expected);
+  assert.equal(isUnifiedSubmitAction(action({ methodName: method })), expected);
+}
+assert.equal(isUnifiedSubmitAction(null), false);
+assert.equal(isUnifiedSubmitAction(undefined), false);
+
+for (const [target, expected] of [
+  [{ kind: 'statusbar_value', value: ' approved ', route: '/ignored', scene_key: 'ignored' }, [['status', 'approved']]],
+  [{ kind: 'statusbar_value', value: ' ', route: ' /record ', scene_key: 'ignored' }, [['route', '/record']]],
+  [{ route: '/record', scene_key: 'ignored' }, [['route', '/record']]],
+  [{ scene_key: ' board ' }, [['route', { name: 'scene', params: { sceneKey: 'board' } }]]],
+  [{}, []],
+  [{ kind: 'statusbar_value', value: '', route: '', scene_key: '' }, []],
+] as Array<[Record<string, unknown>, unknown[]]>) {
+  const calls: unknown[] = [];
+  dispatchSceneBlockAction({ action: { target } }, {
+    router: { push: async (route) => { calls.push(['route', route]); } },
+    setStatusbarValue: (value) => { calls.push(['status', value]); },
+  });
+  assert.deepEqual(calls, expected);
+}
+for (const target of [{ route: '/record' }, { kind: 'statusbar_value', value: 'approved' }]) {
+  const fail = () => { throw new Error('dispatch failure'); };
+  assert.throws(() => dispatchSceneBlockAction({ action: { target } }, {
+    router: { push: fail }, setStatusbarValue: fail,
+  }), /dispatch failure/);
+}
+console.log('[extracted_action_helpers] PASS submit_methods=6 scene_dispatch_cases=8');
 
 const activeRelationVisibility = {
   kind: 'any',

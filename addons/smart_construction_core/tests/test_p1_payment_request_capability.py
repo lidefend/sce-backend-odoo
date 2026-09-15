@@ -618,6 +618,51 @@ class TestP1PaymentRequestCapability(TransactionCase):
             request.write({"amount": 200})
         self.assertEqual(request.amount, 100)
 
+    def test_create_modifier_dependencies_compute_native_payment_detail_state(self):
+        import traceback
+        from odoo.addons.smart_core.core.unified_page_contract_v2_modifier_dependencies import hydrate_final_modifier_dependencies
+
+        test = self
+
+        class Diagnostic:
+            def debug(self, *args, **kwargs):
+                test.fail(traceback.format_exc())
+
+        finance = self._internal_user(
+            "p1_create_modifier_finance", "smart_construction_core.group_sc_cap_finance_user"
+        )
+        runtime_env = self.env(user=finance)
+        model = runtime_env["payment.request"]
+        self.assertFalse(model.env.su)
+        widget_id = "field.amount.occ.create_dependency_test"
+        modifier = {"kind": "any", "exprs": [
+            {"kind": "field_compare", "field": "state", "operator": "not in", "value": ["draft", "rejected"]},
+            {"kind": "field_truthy", "field": "amount_uses_details"},
+        ]}
+        before = {name: self.env[name].search_count([]) for name in ("payment.request", "payment.request.line")}
+        for lines in ([], [(0, 0, {"active": True, "amount": 20, "current_pay_amount": 20})]):
+            with self.subTest(has_lines=bool(lines)):
+                contract = {
+                    "layoutContract": {"containerTree": [{"type": "field", "name": "amount", "widgetId": widget_id, "modifiers": {"readonly": modifier}}]},
+                    "statusContract": {
+                        "globalStatus": {"effectiveRenderProfile": "create", "effectiveRecordCapabilities": {"create": True}},
+                        "widgetStatus": [{"widgetId": widget_id, "visible": True, "readonly": True, "disabled": True, "reasonCode": "NATIVE_MODIFIER_UNRESOLVED"}],
+                    },
+                    "dataContract": {"mainData": {"state": "draft"}, "dataMeta": {"sourceContext": {"context": {
+                        "allowed_company_ids": [finance.company_id.id], "default_type": "pay", "default_outflow_line_ids": lines,
+                    }}}},
+                }
+                with patch.object(type(model), "create", side_effect=AssertionError("must not save create defaults")), \
+                     patch.object(type(model), "write", side_effect=AssertionError("must not persist computed defaults")):
+                    hydrate_final_modifier_dependencies(runtime_env, contract, model="payment.request", record_id=None, view_type="form", logger=Diagnostic())
+                self.assertIs(contract["dataContract"]["mainData"].get("amount_uses_details"), bool(lines))
+                contract_assembler.hydrate_final_layout_modifier_status(contract)
+                status = contract["statusContract"]["widgetStatus"][0]
+                self.assertIs(status["readonly"], bool(lines))
+                self.assertFalse(status["disabled"])
+                self.assertNotEqual(status.get("reasonCode"), "NATIVE_MODIFIER_UNRESOLVED")
+        self.assertEqual(before, {name: self.env[name].search_count([]) for name in before})
+
     def test_optional_payment_details_authoritatively_sync_request_amount(self):
         request = self._request(amount=123.45)
         self.assertFalse(request.amount_uses_details)
@@ -2464,11 +2509,20 @@ class TestP1PaymentRequestCapability(TransactionCase):
             {"提交审批时生成"},
         )
         form_structure = contract["formStructureContract"]
-        self.assertEqual(form_structure.get("layoutPolicy"), "native_authority")
-        field_labels = dict(form_structure.get("fieldLabels") or {})
-        for slot in form_structure.get("slots") or []:
-            for group in slot.get("groups") or []:
-                field_labels.update(group.get("fieldLabels") or {})
+        self.assertEqual(form_structure.get("layoutPolicy"), "container_tree_authority")
+        self.assertEqual(form_structure.get("slots"), [])
+        self.assertEqual(form_structure["sourceAuthority"]["governance_source"]["compatibilityDependencies"], [])
+        field_labels = {}
+        def collect_labels(value):
+            if isinstance(value, dict):
+                if value.get("fieldCode") and value.get("widgetId"):
+                    field_labels[value["fieldCode"]] = value.get("label")
+                for child in value.values():
+                    collect_labels(child)
+            elif isinstance(value, list):
+                for child in value:
+                    collect_labels(child)
+        collect_labels(container_tree)
         self.assertEqual(field_labels.get("amount_uppercase"), "系统生成金额大写")
         self.assertEqual(
             field_labels.get("accepted_amount_uppercase"),
@@ -2508,7 +2562,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
         # Contract-spec v0.1 (path B): the current native form remains the
         # structural authority.  Business-category annotations must not
         # replace its root with the historical synthetic sheet; product page
-        # composition remains a frontend Floorplan responsibility.
+        # composition is shared by body and navigation from this same tree.
         self.assertEqual(
             [row.get("type") for row in container_tree],
             ["header", "sheet"],

@@ -27,6 +27,48 @@ def require(condition: bool, message: str) -> None:
         raise SystemExit(f"[verify.frontend.scene_component_bridge.guard] FAIL {message}")
 
 
+def native_surface_bridge_errors(host: str, surface: str) -> list[str]:
+    """Check the extracted surface's live input/output bindings, not old host markers."""
+    def calls(source: str, tag: str) -> list[dict[str, str]]:
+        template = re.sub(r"<!--[\s\S]*?-->", "", source.split("<script", 1)[0])
+        return [
+            {name: value for name, _, value in re.findall(r'''([:@\w-]+)\s*=\s*(["'])(.*?)\2''', call, re.S)}
+            for call in re.findall(r"<" + tag + r"\b[\s\S]*?/>", template)
+        ]
+
+    errors = []
+    host_calls = calls(host, "CanonicalNativeFormSurface")
+    bindings = {
+        ":native-bridge": "nativeBridge", ":section-links": "workspaceSectionLinks",
+        ":render-mode": "renderModel.identity.mode", ":relation-adapter": "relationAdapter",
+        **{f"@{event}": f"emit('{event}', $event)" for event in ("field-change", "field-action", "action-ref")},
+    }
+    if len(host_calls) != 2 or any(any(call.get(key) != value for key, value in bindings.items()) for call in host_calls):
+        errors.append("task and workspace surfaces must forward the canonical bridge, mode and events")
+    if "from './CanonicalNativeFormSurface.vue'" not in host or "nativeBridge.value?.sectionLinks" not in host:
+        errors.append("host must import the surface and consume bridge-owned navigation")
+    renderers = calls(surface, "NativeFormTreeRenderer")
+    required = {
+        ":field-schemas-for-nodes": "nativeBridge.fieldSchemasForNodes",
+        ":is-node-visible": "nativeBridge.nodeVisible",
+        ":relation-adapter": "relationAdapter",
+        ":native-action-handler": "runNativeCanonicalAction",
+        ":native-action-state-resolver": "nativeBridge.actionStateForNode",
+        ":prefer-readonly-facts": "renderMode === 'readonly'",
+        **{f"@{event}": f"emit('{event}', $event)" for event in ("field-change", "field-action")},
+    }
+    if (len(renderers) != 2
+            or [call.get(":nodes") for call in renderers] != ["nativeBridge.primaryNodes", "nativeBridge.subordinateNodes"]
+            or any(any(call.get(key) != value for key, value in required.items()) for call in renderers)):
+        errors.append("native surface must preserve both zones, field schemas, visibility and action authority")
+    navigation = calls(surface, "FormSectionNavigation")
+    if len(navigation) != 1 or navigation[0].get(":items") != "sectionLinks":
+        errors.append("native navigation must consume the supplied section links")
+    if "props.nativeBridge?.actionForPayload(payload)" not in surface or "if (action) emit('action-ref', action)" not in surface:
+        errors.append("native actions must resolve through bridge authority before forwarding")
+    return errors
+
+
 vendor_import = re.compile(r"(?:from\s+|import\s*\()['\"](?:tdesign-vue-next)")
 web_vendor_hits = [
     str(path.relative_to(ROOT))
@@ -60,6 +102,7 @@ require(
     "component supplier chooser returned to the ordinary collection product surface",
 )
 form_host = (WEB_SRC / "pages/contractForm/ContractFormDriverHost.vue").read_text(encoding="utf-8")
+native_surface = (WEB_SRC / "pages/contractForm/CanonicalNativeFormSurface.vue").read_text(encoding="utf-8")
 contract_form_page = (WEB_SRC / "pages/ContractFormPage.vue").read_text(encoding="utf-8")
 web_index = (ROOT / "frontend/apps/web/index.html").read_text(encoding="utf-8")
 object_task_page = (WEB_SRC / "pages/contractForm/ObjectTaskPage.vue").read_text(encoding="utf-8")
@@ -76,18 +119,18 @@ require("from '@sc/ui/form'" in form_host, "form driver host must use narrow for
 require(
     "SceneUiProvider" in form_host
     and "ObjectTaskPage" in form_host
-    and "NativeFormTreeRenderer" in form_host
     and "buildCanonicalNativeFormBridge" in form_host
-    and "data-native-contract-structure" in form_host,
-    "form driver does not retain the product floorplan plus governed native compatibility renderer",
+    and not native_surface_bridge_errors(form_host, native_surface),
+    "form driver does not retain the product floorplan plus governed native surface bridge: "
+    + "; ".join(native_surface_bridge_errors(form_host, native_surface)),
 )
 require(
     "composeCanonicalFormFloorplan" in form_host
     and '<TaskFormPattern v-if="renderModel.identity.presentationMode === \'task\'"' in form_host
     and '<WorkspaceFormPattern v-else' in form_host
-    and '<article class="sc-native-contract-page"' in form_host
-    and "nativeBridge.primaryNodes" in form_host
-    and "nativeBridge.subordinateNodes" in form_host,
+    and '<article class="sc-native-contract-page" data-native-contract-structure>' in native_surface
+    and "nativeBridge.primaryNodes" in native_surface
+    and "nativeBridge.subordinateNodes" in native_surface,
     "semantic readonly forms must use the canonical floorplan while native structure remains an explicit fallback",
 )
 require("CanonicalFormNodeRenderer" in object_task_page, "object-task floorplan does not render canonical form nodes")
@@ -296,7 +339,7 @@ require(
 require(
     "preferReadonlyFacts?: boolean" in native_renderer
     and native_renderer.count(':prefer-readonly-facts="preferReadonlyFacts"') >= 5
-    and form_host.count(':prefer-readonly-facts="renderModel.identity.mode === \'readonly\'"') == 2,
+    and native_surface.count(':prefer-readonly-facts="renderMode === \'readonly\'"') == 2,
     "native workspace readonly fields still render disabled edit controls instead of business facts",
 )
 require(

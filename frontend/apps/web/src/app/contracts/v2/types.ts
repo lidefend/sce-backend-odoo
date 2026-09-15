@@ -70,6 +70,10 @@ export interface ContractV2FormStructureConfiguredSection {
 }
 
 export interface ContractV2FormStructureGovernanceSource {
+  resolvedViewId?: number;
+  resolvedActionId?: number;
+  structureDiagnostics?: ContractV2Dictionary[];
+  compatibilityDependencies?: string[];
   source: string;
   ownerLayer?: string;
   businessConfigContracts?: ContractV2FormStructureGovernanceContract[];
@@ -109,6 +113,7 @@ export interface ContractV2FormStructureContract {
   viewType: 'form';
   mode: string;
   presentationMode: ContractV2FormPresentationMode;
+  /** container_tree_authority: semantic metadata only; slots/fieldRoles are empty. */
   layoutPolicy: string;
   columns?: number;
   objectProfile: {

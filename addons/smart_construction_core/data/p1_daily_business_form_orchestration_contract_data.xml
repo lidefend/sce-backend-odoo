@@ -9,7 +9,23 @@
             <field name="active" eval="True" />
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval="{                 'view_orchestration': {                     'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},                     'views': {                         'form': {'composition_mode': 'entry_semantic_surface',                             'sections': [                                 {'title': '单据识别'},                                 {'title': '业务对象'},                                 {'title': '金额与办理'},                                 {'title': '附件与来源'}                             ],                             'fields': [{'name': 'tender_bid_status_display', 'sequence': 10, 'readonly': True}, {'name': 'tender_bid_push_result', 'sequence': 20, 'readonly': True}, {'name': 'tender_bid_document_no', 'sequence': 30, 'readonly': True}, {'name': 'tender_bid_project_name', 'sequence': 40, 'readonly': True}, {'name': 'tender_bid_registration_time', 'sequence': 50, 'readonly': True}, {'name': 'source_created_by', 'sequence': 60, 'readonly': True}, {'name': 'create_date', 'sequence': 70, 'readonly': True}, {'name': 'amount_total', 'sequence': 100, 'readonly': True}, {'name': 'legacy_note', 'sequence': 110, 'readonly': True}, {'name': 'tender_bid_attachment_text_display', 'sequence': 140, 'readonly': True}, {'name': 'tender_bid_source_created_by', 'sequence': 150, 'readonly': True}, {'name': 'source_created_at', 'sequence': 160, 'readonly': True}]                         }                     }                 }             }" />
+            <field name="contract_json" eval="{&#x27;view_orchestration&#x27;: {&#x27;context&#x27;: {&#x27;source&#x27;: &#x27;smart_construction_core.product_release&#x27;,
+                                    &#x27;source_status&#x27;: &#x27;product_release&#x27;},
+                        &#x27;views&#x27;: {&#x27;form&#x27;: {&#x27;fields&#x27;: [{&#x27;name&#x27;: &#x27;tender_bid_status_display&#x27;, &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;tender_bid_push_result&#x27;, &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;tender_bid_document_no&#x27;, &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;tender_bid_project_name&#x27;, &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;tender_bid_registration_time&#x27;,
+                                                       &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;source_created_by&#x27;, &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;create_date&#x27;, &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;amount_total&#x27;, &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;legacy_note&#x27;, &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;tender_bid_attachment_text_display&#x27;,
+                                                       &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;tender_bid_source_created_by&#x27;,
+                                                       &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;source_created_at&#x27;, &#x27;readonly&#x27;: True}]}}}}"/>
         </record>
         <record id="business_config_contract_sc_financing_loan_p1_form_business_facts_v1" model="ui.business.config.contract">
             <field name="name">sc_financing_loan_p1_form_business_facts_v1</field>
@@ -31,7 +47,35 @@
             <field name="active" eval="True" />
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval="{                 'view_orchestration': {                     'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},                     'views': {                         'form': {'composition_mode': 'entry_semantic_surface',                             'sections': [                                 {'title': '单据识别'},                                 {'title': '业务对象'},                                 {'title': '金额与办理'},                                 {'title': '附件与来源'}                             ],                             'fields': [{'name': 'document_status_display', 'sequence': 10, 'readonly': True}, {'name': 'name', 'sequence': 20, 'readonly': True}, {'name': 'project_name_display', 'sequence': 30, 'readonly': True}, {'name': 'payee_unit_display', 'sequence': 40, 'readonly': True}, {'name': 'request_amount_display', 'sequence': 50, 'readonly': True}, {'name': 'actual_paid_amount_display', 'sequence': 60, 'readonly': True}, {'name': 'settlement_remaining_amount', 'sequence': 70, 'readonly': True}, {'name': 'payment_request_cost_type_display', 'sequence': 80, 'readonly': True}, {'name': 'note_display', 'sequence': 90, 'readonly': True}, {'name': 'payment_request_has_related_document_display', 'sequence': 100, 'readonly': True}, {'name': 'payment_request_payment_account_no_display', 'sequence': 110, 'readonly': True}, {'name': 'amount_uppercase_display', 'sequence': 120, 'readonly': True}, {'name': 'payment_request_account_holder_display', 'sequence': 130, 'readonly': True}, {'name': 'payment_request_bank_name_display', 'sequence': 140, 'readonly': True}, {'name': 'payment_request_account_no_display', 'sequence': 150, 'readonly': True}, {'name': 'creator_name', 'sequence': 160, 'readonly': True}, {'name': 'payment_request_attachment_text_display', 'sequence': 170, 'readonly': True}, {'name': 'created_time', 'sequence': 180, 'readonly': True}]                         }                     }                 }             }" />
+            <field name="contract_json" eval="{&#x27;view_orchestration&#x27;: {&#x27;context&#x27;: {&#x27;source&#x27;: &#x27;smart_construction_core.product_release&#x27;,
+                                    &#x27;source_status&#x27;: &#x27;product_release&#x27;},
+                        &#x27;views&#x27;: {&#x27;form&#x27;: {&#x27;fields&#x27;: [{&#x27;name&#x27;: &#x27;document_status_display&#x27;, &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;name&#x27;, &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;project_name_display&#x27;, &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;payee_unit_display&#x27;, &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;request_amount_display&#x27;, &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;actual_paid_amount_display&#x27;,
+                                                       &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;settlement_remaining_amount&#x27;,
+                                                       &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;payment_request_cost_type_display&#x27;,
+                                                       &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;note_display&#x27;, &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;payment_request_has_related_document_display&#x27;,
+                                                       &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;payment_request_payment_account_no_display&#x27;,
+                                                       &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;amount_uppercase_display&#x27;, &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;payment_request_account_holder_display&#x27;,
+                                                       &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;payment_request_bank_name_display&#x27;,
+                                                       &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;payment_request_account_no_display&#x27;,
+                                                       &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;creator_name&#x27;, &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;payment_request_attachment_text_display&#x27;,
+                                                       &#x27;readonly&#x27;: True},
+                                                      {&#x27;name&#x27;: &#x27;created_time&#x27;, &#x27;readonly&#x27;: True}]}}}}"/>
         </record>
         <record id="business_config_contract_sc_tax_deduction_registration_p1_form_business_facts_v1" model="ui.business.config.contract">
             <field name="name">sc_tax_deduction_registration_p1_form_business_facts_v1</field>

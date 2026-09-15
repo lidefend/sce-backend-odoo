@@ -11,6 +11,7 @@ from copy import deepcopy
 from typing import Any
 
 from .view_orchestration_contract import source_authority_contract
+from .form_structure_authority import resolve_form_structure_governance, diagnose_structure_ownership, authenticated_form_role_key, structural_form_declarations
 
 
 class ViewOrchestrator:
@@ -84,6 +85,10 @@ class ViewOrchestrator:
             )
             if str(item).strip()
         }
+        if normalized_view_type == "form":
+            role_key = authenticated_form_role_key(self.env)
+        configs = []
+        structure_conflicts = []
         if "ui.business.config.contract" in self.env:
             configs = self.env["ui.business.config.contract"]._effective_view_orchestration_contracts(
                 model_name,
@@ -92,6 +97,10 @@ class ViewOrchestrator:
                 view_id=view_id,
                 role_key=role_key,
             )
+            if normalized_view_type == "form":
+                structure_conflicts = diagnose_structure_ownership(
+                    configs, model=model_name, action_id=action_id, view_id=view_id,
+                )
             for config in configs:
                 before = deepcopy(out)
                 declares_form_layout_overlay = (
@@ -147,6 +156,7 @@ class ViewOrchestrator:
                 action_id=action_id,
                 view_id=view_id,
                 excluded_field_names=business_config_form_fields,
+                preserve_native_restrictions=True,
                 # An explicit Odoo form view is the structural authority.  A
                 # legacy field policy may annotate or hide parsed occurrences,
                 # but it must not manufacture name-level nodes that have no
@@ -191,8 +201,8 @@ class ViewOrchestrator:
             "legacy_field_policy_overlay": bool(legacy_policy_applied),
             "form_layout_overlay": bool(form_layout_overlay_applied),
             "form_structure_authority": (
-                "entry_semantic_surface" if semantic_entry_surface_applied
-                else "native_authority" if native_semantic_surface_applied
+                "native_authority" if native_semantic_surface_applied
+                else "entry_semantic_surface" if semantic_entry_surface_applied
                 else ""
             ),
             "form_presentation_mode": "task" if semantic_entry_surface_applied or native_semantic_surface_applied else "",
@@ -215,8 +225,8 @@ class ViewOrchestrator:
             "legacy_field_policy_overlay": bool(legacy_policy_applied),
             "form_layout_overlay": bool(form_layout_overlay_applied),
             "form_structure_authority": (
-                "entry_semantic_surface" if semantic_entry_surface_applied
-                else "native_authority" if native_semantic_surface_applied
+                "native_authority" if native_semantic_surface_applied
+                else "entry_semantic_surface" if semantic_entry_surface_applied
                 else ""
             ),
             "form_presentation_mode": "task" if semantic_entry_surface_applied or native_semantic_surface_applied else "",
@@ -225,6 +235,27 @@ class ViewOrchestrator:
             "tenant_extension_field_count": len(tenant_extension_fields),
         }
         out["source_trace"] = source_trace
+        if normalized_view_type == "form":
+            resolved = resolve_form_structure_governance(
+                {"views": {"form": out}, "governance": governance, "source_trace": source_trace},
+                configs, view_type="form",
+            )
+            resolved["resolved_view_id"] = int(view_id or 0)
+            resolved["resolved_action_id"] = int(action_id or 0)
+            resolved["structure_diagnostics"] = structure_conflicts
+            resolved["compatibility_dependencies"] = (
+                ["legacy_configuration_structure_suppression"]
+                if any(row["code"] == "LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW" for row in structure_conflicts) else []
+            )
+            if native_semantic_surface_applied:
+                # The resolved native view is the structural owner. Keep valid
+                # semantic policies, but never export old configuration chapters
+                # as a second structural projection.
+                resolved.update(form_structure_authority="native_authority", configured_sections=[],
+                                section_titles=[], field_groups={}, group_columns={}, form_columns=0)
+            source_trace["view_orchestration"].update(authenticated_role_key=role_key, role_authority="identity_resolver")
+            governance["view_orchestration"]["form_structure_projection"] = resolved
+            governance["view_orchestration"]["structure_conflicts"] = structure_conflicts
         return out
 
     def _apply_business_config_contract(
@@ -280,10 +311,7 @@ class ViewOrchestrator:
         spec = self._view_spec(payload, view_type)
         if not isinstance(spec, dict) or not self._is_native_semantic_surface(spec):
             return False
-        conflicts = [
-            key for key in ("layout", "sections", "fields", "field_slots", "actions", "header_buttons", "columns", "cols")
-            if spec.get(key) not in (None, [], {}, "")
-        ]
+        conflicts = list(structural_form_declarations(spec))
         if conflicts:
             raise ValueError(
                 "NATIVE_SEMANTIC_SURFACE_STRUCTURE_CONFLICT: %s" % ",".join(sorted(conflicts))
@@ -1015,8 +1043,16 @@ class ViewOrchestrator:
         if label:
             node["string"] = label
             node["label"] = label
+        field_info = node.get("fieldInfo") if isinstance(node.get("fieldInfo"), dict) else {}
+        native_restrictions = {
+            key: any(carrier.get(key) not in (None, False, 0, "", "0", "false", "False", [], {})
+                     for carrier in (node, field_info,
+                                     node.get("attributes") or {}, node.get("modifiers") or {})
+                     if isinstance(carrier, dict))
+            for key in ("readonly", "required")
+        }
         for key in ("readonly", "required"):
-            if isinstance(policy.get(key), bool):
+            if isinstance(policy.get(key), bool) and (policy[key] or not native_restrictions[key]):
                 node[key] = bool(policy[key])
         for key in ("help", "widget", "class"):
             if policy.get(key):
@@ -1027,7 +1063,7 @@ class ViewOrchestrator:
                 field_info["label"] = label
                 field_info["string"] = label
             for key in ("readonly", "required"):
-                if isinstance(policy.get(key), bool):
+                if isinstance(policy.get(key), bool) and (policy[key] or not native_restrictions[key]):
                     field_info[key] = bool(policy[key])
             for key in ("help", "widget"):
                 if policy.get(key):

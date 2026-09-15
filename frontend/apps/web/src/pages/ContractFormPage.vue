@@ -1233,7 +1233,7 @@ const currentBusinessCategoryContext = computed(() => resolveBusinessCategoryCon
 const currentBusinessCategoryLabel = computed(() => currentBusinessCategoryContext.value.label);
 const currentBusinessCategoryCode = computed(() => currentBusinessCategoryContext.value.code);
 const pageIdentityInput = computed(() => buildContractFormPageIdentity({ action: currentActionMeta.value, authoritativeActionName: currentRouteAuthority.value?.action_name, breadcrumbs: resolveRoutePageIdentity(route, session.menuTree).breadcrumbs, businessCategoryLabel: currentBusinessCategoryLabel.value,
-  contract: contract.value, formData, entryTitle: route.query.entry_title, isCreate: !recordId.value, isEdit: route.name === 'model-form', menuName: currentMenuTitle.value, modelName: model.value,
+  contract: contract.value, formData, recordData: resolveContractV2MainData(v2ContractStore.value), entryTitle: route.query.entry_title, isCreate: !recordId.value, isEdit: route.name === 'model-form', menuName: currentMenuTitle.value, modelName: model.value,
   recordMissing: recordMissing.value, renderError: Boolean(renderErrorMessage.value), status: status.value }));
 function publishActivityPageTitle(title: string) {
   const activityTitle = recordId.value ? title : resolveBusinessActivityTitle({
