@@ -2,11 +2,50 @@
 from __future__ import annotations
 
 import re
+import json
+import subprocess
 import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+class PaymentCreateFailureEvidenceTest(unittest.TestCase):
+    def test_control_diagnostic_distinguishes_hidden_readonly_and_editable_without_values(self):
+        source = (ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs").read_text()
+        function = source.split("function paymentCreateControlDiagnostic(surface) {", 1)[1].split("\nasync function openPaymentCreateFromList", 1)[0]
+        program = "const diagnose = function(surface) {" + function + "\n" + r'''
+const node = (attrs = {}, shown = true) => ({
+  getAttribute: (key) => attrs[key] ?? null,
+  getBoundingClientRect: () => ({ width: shown ? 100 : 0, height: 20 }),
+});
+globalThis.window = { getComputedStyle: () => ({ display: 'block', visibility: 'visible' }) };
+const field = (state, input) => ({
+  ...node(), tagName: 'DIV',
+  querySelectorAll: (selector) => selector === 'input' ? (input ? [input] : []) : [node({ 'data-control-state': state })],
+});
+const fields = [field('readonly', null), field('editable', {...node({type:'number'}, false), disabled:false, readOnly:false}), field('editable', {...node({type:'number'}), disabled:false, readOnly:false})];
+for (const field of fields) for (const input of field.querySelectorAll('input')) Object.defineProperty(input, 'value', { get() { throw new Error('must not read input values'); } });
+const surface = { ...node({'data-state':'ready'}), querySelectorAll: (selector) => selector.includes('ContractFormProductHeader') ? [node({'data-state':'create'})] : fields };
+process.stdout.write(JSON.stringify(diagnose(surface)));
+'''
+        result = subprocess.run(["node", "-e", program], cwd=ROOT, text=True, capture_output=True, check=True)
+        diagnostic = json.loads(result.stdout)
+        self.assertEqual(diagnostic["formState"], "ready")
+        self.assertEqual(diagnostic["headerStates"], ["create"])
+        fields = diagnostic["amountFields"]
+        self.assertEqual(fields[0]["controls"][0]["state"], "readonly")
+        self.assertEqual(fields[0]["inputs"], [])
+        self.assertFalse(fields[1]["inputs"][0]["visible"])
+        self.assertTrue(fields[2]["inputs"][0]["visible"])
+
+    def test_failure_evidence_is_uploaded_and_input_requirement_is_preserved(self):
+        source = (ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs").read_text()
+        workflow = (ROOT / ".github/workflows/frontend_release_gate.yml").read_text()
+        self.assertIn('paymentCreateSurface.locator(\'[data-field-name="amount"] input\').waitFor', source)
+        for suffix in ("payment-create-failure.json", "failure.json", "screenshots/failure.png"):
+            self.assertIn("artifacts/frontend-delivery-hardening/" + suffix, workflow)
 
 
 TOGGLE_PATTERN = re.compile(
