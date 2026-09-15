@@ -174,7 +174,10 @@ async function chooseSelection(page, fieldName, label) {
   const root = page.locator(`[data-field-name="${fieldName}"]:visible`).first();
   await root.scrollIntoViewIfNeeded();
   await root.locator('input:visible').first().click();
-  const option = page.getByRole('option', { name: label, exact: true }).last();
+  const semanticOption = page.getByRole('option', { name: label, exact: true }).last();
+  const option = await semanticOption.count()
+    ? semanticOption
+    : page.getByText(label, { exact: true }).last();
   await option.waitFor({ state: 'visible', timeout: 10_000 });
   await option.click();
 }
