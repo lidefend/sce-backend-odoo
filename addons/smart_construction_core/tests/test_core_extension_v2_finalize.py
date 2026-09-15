@@ -6,6 +6,7 @@ from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
 from odoo.addons.smart_construction_core import core_extension
+from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
 from odoo.addons.smart_core.utils import contract_governance
 
 
@@ -369,6 +370,56 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         self.assertTrue(
             arch.xpath("//button[@type='object' and @name='action_view_my_tasks']"),
             "the readonly dashboard overview must retain its supported task navigation",
+        )
+
+        project = self.env["project.project"].search([], limit=1)
+        self.assertTrue(project, "the dashboard contract check requires an existing project")
+        menu = self.env.ref("smart_construction_core.menu_sc_project_kanban")
+        handler = UiContractV2Handler(
+            self.env,
+            su_env=self.env["ir.model"].sudo().env,
+        )
+        params = {
+            "model": "project.project",
+            "view_type": "form",
+            "record_id": project.id,
+            "action_id": action.id,
+            "menu_id": menu.id,
+            "render_profile": "edit",
+            "client_type": "web_pc",
+        }
+        source, _meta = handler._dispatch_native_form_source(
+            self.env,
+            self.env["ir.model"].sudo().env,
+            {**params, "subject": "action"},
+        )
+        self.assertEqual(source["view_id"], overview.id, source.get("view_ids_by_type"))
+        self.assertEqual(
+            {
+                key: source["views"]["form"]["capabilities"][key]
+                for key in ("can_create", "can_write", "can_delete", "can_duplicate")
+            },
+            {
+                "can_create": False,
+                "can_write": False,
+                "can_delete": False,
+                "can_duplicate": False,
+            },
+        )
+        result = handler.handle(params)
+        envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+        self.assertTrue(envelope.get("ok", True), envelope)
+        contract = envelope["data"]
+        global_status = contract["statusContract"]["globalStatus"]
+        self.assertEqual(global_status["effectiveRenderProfile"], "readonly", global_status)
+        self.assertEqual(global_status["pageAuth"], "read", global_status)
+        self.assertNotIn(
+            "form.save",
+            {
+                row.get("actionId")
+                for row in contract["actionContract"]["actionRuleList"]
+                if row.get("visible", True)
+            },
         )
 
     def test_project_information_form_preserves_field_and_child_acl_boundaries(self):
