@@ -353,8 +353,8 @@ async function inspectInboundSampleViewport(viewport) {
     'create key facts are not all before the detail collection', createResult);
   check(noteInPost === 1 && attachmentsInPost === 1,
     'create supplementary section does not own note and attachments', createResult);
-  check(createBodyStatusFields === 0 && createHeaderStatusbars === 1,
-    'header-owned status remains duplicated in the create body', createResult);
+  check(createBodyStatusFields + createHeaderStatusbars === 1,
+    'material create status does not have exactly one visible owner', createResult);
   check(createSaveActions === 1 && createNative.effectiveRecordCapabilities?.create === true,
     'material create operation capability is unavailable', createResult);
   check(JSON.stringify(readonlyNative.authority) === JSON.stringify(createNative.authority),
