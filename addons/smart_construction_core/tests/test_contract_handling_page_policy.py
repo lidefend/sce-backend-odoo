@@ -159,6 +159,8 @@ class TestContractHandlingPagePolicy(TransactionCase):
                     self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
                     self.assertEqual(structure["presentationMode"], "task")
                     self.assertEqual(structure["slots"], [])
+                    if profile == "readonly":
+                        self.assertEqual(contract["statusContract"]["globalStatus"]["pageAuth"], "read")
                     provenance = structure["sourceAuthority"]["governance_source"]
                     self.assertEqual(provenance.get("compatibilityDependencies", []), [])
                     self.assertEqual(provenance.get("structureDiagnostics", []), [])
@@ -171,6 +173,8 @@ class TestContractHandlingPagePolicy(TransactionCase):
                         if n["fieldCode"] == "state":
                             self.assertEqual(statuses[n["widgetId"]]["visible"], profile != "create")
                             self.assertTrue(statuses[n["widgetId"]]["readonly"])
+                        if n["fieldCode"] in ("document_status", "company_id", "approval_info", "visible_invoice_amount", "visible_received_amount"):
+                            self.assertEqual(statuses[n["widgetId"]]["visible"], profile == "readonly")
                         if n["fieldCode"] in ("amount_untaxed", "amount_tax", "amount_total"):
                             self.assertTrue(statuses[n["widgetId"]]["readonly"])
 
