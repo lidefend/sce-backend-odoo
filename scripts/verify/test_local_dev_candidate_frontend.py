@@ -18,6 +18,23 @@ SPEC.loader.exec_module(MODULE_UNDER_TEST)
 
 
 class CandidateFrontendContractTest(unittest.TestCase):
+    def test_customer_capture_selects_model_response_instead_of_action_prefetch(self):
+        import subprocess
+        source = (ROOT / "scripts/verify/local_dev_candidate_visual_smoke.mjs").read_text()
+        functions = source.split("function isContractV2Response(response) {", 1)[1].split(
+            "\nfunction isSystemInitResponse", 1
+        )[0]
+        subprocess.run(["node", "--input-type=module", "-e",
+            "function isContractV2Response(response) {" + functions + """
+            const response = (op) => ({url: () => '/api/v1/intent',
+              request: () => ({method: () => 'POST',
+                postData: () => JSON.stringify({intent: 'ui.contract.v2', params: {op}})})});
+            if (isTargetContractResponse(response('action_open'), {expectedContractOp: 'model'}))
+              throw new Error('prefetch accepted as rendered model');
+            if (!isTargetContractResponse(response('model'), {expectedContractOp: 'model'}))
+              throw new Error('model response rejected');
+            """], check=True, capture_output=True, text=True)
+
     def test_visual_inventory_uses_authorized_canonical_navigation(self):
         import json
         import subprocess

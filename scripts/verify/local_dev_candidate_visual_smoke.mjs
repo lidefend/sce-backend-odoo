@@ -123,6 +123,12 @@ function isContractV2Response(response) {
   }
 }
 
+function isTargetContractResponse(response, target) {
+  if (!isContractV2Response(response)) return false;
+  const params = JSON.parse(response.request().postData() || '{}').params || {};
+  return !target.expectedContractOp || params.op === target.expectedContractOp;
+}
+
 function isSystemInitResponse(response) {
   if (!response.url().includes('/api/v1/intent') || response.request().method() !== 'POST') return false;
   try {
@@ -702,7 +708,7 @@ try {
       };
       if (exerciseSessionExpiredRecovery) await page.route(readFailurePattern, sessionExpiredHandler);
       const contractResponse = target.expectContractResponse !== false && /^\/(?:a|r|f)\//.test(target.path)
-        ? page.waitForResponse(isContractV2Response, { timeout: 45000 })
+        ? page.waitForResponse((response) => isTargetContractResponse(response, target), { timeout: 45000 })
         : null;
       const listDataResponse = target.captureCollectionAggregate === true
         ? page.waitForResponse(isApiDataListResponse, { timeout: 45000 })
@@ -816,7 +822,13 @@ try {
           // Save structure and identity only, without customer record values.
           fs.writeFileSync(path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-structure.json`), JSON.stringify({
             head, backendIdentity: report.backendIdentity,
+            requestIdentity: (() => {
+              const params = JSON.parse(response.request().postData() || '{}').params || {};
+              return Object.fromEntries(['op', 'model', 'action_id', 'menu_id', 'view_id', 'view_type', 'render_profile']
+                .filter((key) => params[key] !== undefined).map((key) => [key, params[key]]));
+            })(),
             pageInfo: normalized.pageInfo, layoutContract: normalized.layoutContract,
+            statusContract: normalized.statusContract, lifecycle: normalized.meta?.lifecycle,
             formStructureContract: normalized.formStructureContract,
           }, null, 2));
           if (target.expectedStructurePolicy && normalized.formStructureContract?.layoutPolicy !== target.expectedStructurePolicy) {
@@ -832,7 +844,7 @@ try {
           const headers = Object.fromEntries(['authorization', 'x-openerp-session-id', 'x-odoo-db', 'content-type']
             .filter((key) => sourceHeaders[key]).map((key) => [key, sourceHeaders[key]]));
           const inventory = { head, backendIdentity: report.backendIdentity, role: report.startup[viewport.name].roleCode,
-            companyId: report.startup[viewport.name].companyId, evidenceKind: 'runtime_contract_resolution_only', renderProfile: 'create', retirementComplete: false, entries: [] };
+            companyId: report.startup[viewport.name].companyId, evidenceKind: 'runtime_contract_resolution_only', operation: 'model', renderProfile: 'create', retirementComplete: false, entries: [] };
           for (const item of formal) {
             const entry = entries.find((row) => row.menuXmlid === item.menu_xmlid);
             const row = { menuXmlid: item.menu_xmlid, label: item.label, model: item.res_model,
@@ -845,7 +857,7 @@ try {
             if (modes.length && modes[0] && !modes.includes('form')) { row.path = 'no_form_entry'; continue; }
             try {
               const result = await context.request.post(response.url(), { headers, timeout: 45000,
-                data: { intent: 'ui.contract.v2', params: { op: 'action', model: item.res_model, action_id: entry.actionId,
+                data: { intent: 'ui.contract.v2', params: { op: 'model', model: item.res_model, action_id: entry.actionId,
                   menu_id: entry.menuId, view_type: 'form', render_profile: 'create', source_type: 'ui.contract' } } });
               const payload = await result.json();
               const contract = findNormalizedContract(payload);
