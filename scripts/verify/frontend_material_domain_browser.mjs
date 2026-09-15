@@ -164,6 +164,61 @@ async function absoluteTop(locator) {
   return locator.evaluate((element) => element.getBoundingClientRect().top + window.scrollY);
 }
 
+async function selectNativeMaterialTab(form, label) {
+  const trigger = form.locator(`[data-section-tab="${label}"]:visible`).first();
+  await trigger.waitFor({ timeout: 15000 });
+  await trigger.click();
+  await form.locator('.native-tab-panel:visible').first().waitFor({ timeout: 15000 });
+}
+
+function inboundNativeContract(contract) {
+  const structure = findKey(contract, 'formStructureContract') || {};
+  const governance = structure?.sourceAuthority?.governance_source || {};
+  const titles = [];
+  const walk = (value) => {
+    if (Array.isArray(value)) return value.forEach(walk);
+    if (!value || typeof value !== 'object') return;
+    if (['group', 'page'].includes(String(value.type || ''))) {
+      const title = String(value.label || value.title || value.attributes?.string || '').trim();
+      if (title) titles.push(title);
+    }
+    Object.values(value).forEach(walk);
+  };
+  walk(findKey(contract, 'containerTree') || []);
+  return {
+    model: findKey(contract, 'model'),
+    viewType: findKey(contract, 'viewType'),
+    effectiveRenderProfile: findKey(contract, 'effectiveRenderProfile'),
+    effectiveRecordCapabilities: findKey(contract, 'effectiveRecordCapabilities'),
+    layoutPolicy: structure.layoutPolicy || '',
+    authority: {
+      resolvedActionId: Number(governance.resolvedActionId || 0),
+      resolvedViewId: Number(governance.resolvedViewId || 0),
+      formStructureAuthority: String(governance.formStructureAuthority || ''),
+      compatibilityDependencies: governance.compatibilityDependencies || [],
+    },
+    titles,
+  };
+}
+
+function requireInboundNativeContract(contract, actionId, profile) {
+  const identity = inboundNativeContract(contract);
+  check(identity.model === 'sc.material.inbound' && identity.viewType === 'form',
+    'material inbound main form contract is missing', identity);
+  check(identity.layoutPolicy === 'container_tree_authority'
+    && identity.authority.formStructureAuthority === 'native_authority'
+    && identity.authority.compatibilityDependencies.length === 0,
+  'material inbound still depends on compatibility structure', identity);
+  check(identity.authority.resolvedActionId === actionId && identity.authority.resolvedViewId === 1428,
+    'material inbound native source identity drifted', identity);
+  check(identity.effectiveRenderProfile === profile,
+    'material inbound render profile drifted', identity);
+  for (const title of ['入库主信息', '项目与供应商', '入库明细', '说明与附件', '来源追溯']) {
+    check(identity.titles.includes(title), `material inbound native chapter is missing: ${title}`, identity);
+  }
+  return identity;
+}
+
 async function inspectInboundSampleViewport(viewport) {
   const context = await browser.newContext({ viewport, locale: 'zh-CN' });
   const page = await context.newPage();
@@ -173,6 +228,8 @@ async function inspectInboundSampleViewport(viewport) {
   const menuId = Number(target.menu.id);
   const recordId = Number(target.record.id);
   const suffix = String(viewport.width);
+  const expectedTabs = ['入库明细', '说明与附件', '来源追溯'];
+  const readonlyContractStart = report.primary.contracts.length;
 
   await page.goto(
     `${frontendUrl}/f/sc.material.inbound/${recordId}?menu_id=${menuId}&action_id=${actionId}`,
@@ -180,12 +237,24 @@ async function inspectInboundSampleViewport(viewport) {
   );
   const readonlyForm = page.locator('[data-product-page-mode="form"]:visible').first();
   await readonlyForm.locator('[data-contract-form-driver]:visible').first().waitFor({ timeout: 45000 });
-  const readonlyRelation = readonlyForm.locator('[data-floorplan-region="relation"]:visible').first();
+  const readonlyContract = report.primary.contracts.slice(readonlyContractStart)
+    .find((body) => findKey(body, 'model') === 'sc.material.inbound' && findKey(body, 'viewType') === 'form');
+  const readonlyNative = requireInboundNativeContract(readonlyContract, actionId, 'readonly');
+  const readonlyTabs = (await readonlyForm.locator('[data-section-tab]').allInnerTexts()).map((value) => value.trim());
+  check(JSON.stringify(readonlyTabs) === JSON.stringify(expectedTabs),
+    'readonly native chapters differ from the source view', readonlyTabs);
+  await selectNativeMaterialTab(readonlyForm, '入库明细');
+  const readonlyRelation = readonlyForm.locator('[data-field-name="line_ids"]:visible').first();
   await readonlyRelation.waitFor({ timeout: 45000 });
-  const sourceValue = readonlyRelation.locator('.o2m-readonly-cell-value[title*="S80-MA-001"]').first();
+  if (viewport.width <= 390) {
+    const disclosure = readonlyRelation.locator('[data-disclosure-trigger]:visible').first();
+    if (await disclosure.count()) await disclosure.click();
+  }
+  const sourceValue = readonlyRelation.getByText('S80-MA-001', { exact: false }).first();
   await sourceValue.waitFor({ timeout: 45000 });
-  const sourceRow = sourceValue.locator('xpath=ancestor::tr[1]');
+  const sourceRow = sourceValue.locator(viewport.width <= 390 ? 'xpath=ancestor::article[1]' : 'xpath=ancestor::tr[1]');
   const readonlyStatusFields = await readonlyForm.locator('[data-field-name="state"]:visible').count();
+  const readonlySaveActions = await readonlyForm.locator('[data-action-ref="form.save"]:visible').count();
   const detailTitleLocator = readonlyRelation.getByText('入库明细', { exact: true });
   const detailTitleCount = await detailTitleLocator.count();
   const detailTitleOwners = await detailTitleLocator.evaluateAll((elements) => elements.map((element) => ({
@@ -194,29 +263,52 @@ async function inspectInboundSampleViewport(viewport) {
     dataFieldName: element.closest('[data-field-name]')?.getAttribute('data-field-name') || '',
     dataFloorplanRegion: element.closest('[data-floorplan-region]')?.getAttribute('data-floorplan-region') || '',
   })));
-  const sourceTitle = await sourceValue.getAttribute('title');
+  const sourceTitle = (await sourceValue.innerText()).trim();
   const sourceRowHeight = (await sourceRow.boundingBox())?.height ?? null;
+  await selectNativeMaterialTab(readonlyForm, '来源追溯');
+  const readonlySourceFields = await readonlyForm.locator([
+    '[data-field-name="stock_picking_id"]:visible',
+    '[data-field-name="source_transfer_outbound_id"]:visible',
+    '[data-field-name="legacy_fact_model"]:visible',
+    '[data-field-name="source_created_by"]:visible',
+    '[data-field-name="source_created_at"]:visible',
+  ].join(', ')).count();
   const readonlyResult = {
-    url: page.url(), readonlyStatusFields, detailTitleCount, detailTitleOwners, sourceTitle, sourceRowHeight,
+    url: page.url(), readonlyStatusFields, readonlySaveActions, detailTitleCount, detailTitleOwners,
+    sourceTitle, sourceRowHeight, tabs: readonlyTabs, sourceFieldCount: readonlySourceFields,
+    nativeContract: readonlyNative,
   };
   check(readonlyStatusFields === 0, 'header-owned status remains duplicated in the readonly body', readonlyResult);
+  check(readonlySaveActions === 0 && readonlyNative.effectiveRecordCapabilities?.write === false,
+    'terminal inbound sample exposed a write operation', readonlyResult);
   check(detailTitleCount === 1, 'readonly detail title is not owned by exactly one layer', readonlyResult);
   check(Boolean(sourceTitle?.includes('S80-MA-001')), 'readonly source name is not fully accessible', readonlyResult);
-  check(sourceRowHeight !== null && sourceRowHeight <= 96, 'readonly source column still expands a detail row excessively', readonlyResult);
+  check(viewport.width <= 390 || (sourceRowHeight !== null && sourceRowHeight <= 96),
+    'readonly source column still expands a detail row excessively', readonlyResult);
+  check(readonlySourceFields >= 5, 'readonly source trace chapter is incomplete', readonlyResult);
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: path.join(outputDir, `material-inbound-refinement-${suffix}-readonly-top.png`) });
+  await selectNativeMaterialTab(readonlyForm, '入库明细');
   await readonlyRelation.screenshot({ path: path.join(outputDir, `material-inbound-refinement-${suffix}-readonly-detail.png`) });
+  await selectNativeMaterialTab(readonlyForm, '来源追溯');
+  await page.screenshot({ path: path.join(outputDir, `material-inbound-refinement-${suffix}-readonly-source.png`) });
 
+  const createContractStart = report.primary.contracts.length;
   await page.goto(
     `${frontendUrl}/f/sc.material.inbound/new?menu_id=${menuId}&action_id=${actionId}`,
     { waitUntil: 'domcontentloaded', timeout: 45000 },
   );
   const createForm = page.locator('[data-product-page-mode="form"]:visible').first();
   await createForm.locator('[data-contract-form-driver]:visible').first().waitFor({ timeout: 45000 });
-  const createRelation = createForm.locator('[data-floorplan-region="relation"]:visible').first();
-  const postRelation = createForm.locator('[data-floorplan-region="post-relation-input"]:visible').first();
+  const createContract = report.primary.contracts.slice(createContractStart)
+    .find((body) => findKey(body, 'model') === 'sc.material.inbound' && findKey(body, 'viewType') === 'form');
+  const createNative = requireInboundNativeContract(createContract, actionId, 'create');
+  const createTabs = (await createForm.locator('[data-section-tab]').allInnerTexts()).map((value) => value.trim());
+  check(JSON.stringify(createTabs) === JSON.stringify(expectedTabs),
+    'create native chapters differ from the source view', createTabs);
+  await selectNativeMaterialTab(createForm, '入库明细');
+  const createRelation = createForm.locator('[data-field-name="line_ids"]:visible').first();
   await createRelation.waitFor({ timeout: 45000 });
-  await postRelation.waitFor({ timeout: 45000 });
   const factNames = ['project_id', 'inbound_date', 'supplier_id', 'warehouse_id', 'dest_location_id'];
   const factTops = {};
   for (const fieldName of factNames) {
@@ -225,23 +317,41 @@ async function inspectInboundSampleViewport(viewport) {
     factTops[fieldName] = await absoluteTop(field);
   }
   const relationTop = await absoluteTop(createRelation);
-  const postRelationTop = await absoluteTop(postRelation);
-  const noteInPost = await postRelation.locator('[data-field-name="note"]:visible').count();
-  const attachmentsInPost = await postRelation.locator('[data-field-name="attachment_ids"]:visible').count();
+  await selectNativeMaterialTab(createForm, '说明与附件');
+  const noteInPost = await createForm.locator('[data-field-name="note"]:visible').count();
+  const attachmentsInPost = await createForm.locator('[data-field-name="attachment_ids"]:visible').count();
+  await selectNativeMaterialTab(createForm, '来源追溯');
+  const sourceFieldCount = await createForm.locator([
+    '[data-field-name="stock_picking_id"]:visible',
+    '[data-field-name="source_transfer_outbound_id"]:visible',
+    '[data-field-name="legacy_fact_model"]:visible',
+    '[data-field-name="source_created_by"]:visible',
+    '[data-field-name="source_created_at"]:visible',
+  ].join(', ')).count();
   const createStatusFields = await createForm.locator('[data-field-name="state"]:visible').count();
+  const createSaveActions = await createForm.locator('[data-action-ref="form.save"][data-action-enabled="true"]:visible').count();
+  const loadAcceptanceActions = await createForm.getByRole('button', { name: '带入验收明细', exact: true }).count();
   const createResult = {
-    url: page.url(), factTops, relationTop, postRelationTop, noteInPost, attachmentsInPost, createStatusFields,
-    postRelationTitle: await postRelation.getAttribute('data-section-title'),
+    url: page.url(), factTops, relationTop, noteInPost, attachmentsInPost, createStatusFields,
+    createSaveActions, loadAcceptanceActions, sourceFieldCount, tabs: createTabs, nativeContract: createNative,
   };
   check(Object.values(factTops).every((top) => top < relationTop),
     'create key facts are not all before the detail collection', createResult);
-  check(postRelationTop > relationTop, 'create supplementary section is not after the detail collection', createResult);
   check(noteInPost === 1 && attachmentsInPost === 1,
     'create supplementary section does not own note and attachments', createResult);
+  check(sourceFieldCount >= 5, 'create source trace chapter is incomplete', createResult);
   check(createStatusFields === 0, 'header-owned status remains duplicated in the create body', createResult);
+  check(createSaveActions === 1 && createNative.effectiveRecordCapabilities?.create === true,
+    'material create operation capability is unavailable', createResult);
+  check(loadAcceptanceActions === 1, 'material load-acceptance operation is unavailable', createResult);
+  check(JSON.stringify(readonlyNative.authority) === JSON.stringify(createNative.authority),
+    'readonly and create chapters do not share one native source authority', { readonlyNative, createNative });
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: path.join(outputDir, `material-inbound-refinement-${suffix}-create-top.png`) });
+  await selectNativeMaterialTab(createForm, '入库明细');
   await createRelation.screenshot({ path: path.join(outputDir, `material-inbound-refinement-${suffix}-create-detail.png`) });
+  await selectNativeMaterialTab(createForm, '来源追溯');
+  await page.screenshot({ path: path.join(outputDir, `material-inbound-refinement-${suffix}-create-source.png`) });
   await context.close();
   return { viewport, readonly: readonlyResult, create: createResult };
 }
