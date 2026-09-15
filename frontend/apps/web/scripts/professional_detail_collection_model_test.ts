@@ -16,6 +16,7 @@ import {
 import {
   analyzeDynamicRelationDomain,
   dynamicRelationDomainFromDescriptor,
+  resolveRelationDomainDependencyValue,
 } from '../src/pages/contractForm/relationDescriptor';
 import {
   ratioSettlementApplyAmounts,
@@ -163,6 +164,24 @@ assert.deepEqual(dynamicRelationDomainFromDescriptor({
   normalizeDependencyValue: (_field, value) => value,
   currentFieldValue: () => false,
 }), [['id', '=', -1]]);
+assert.equal(resolveRelationDomainDependencyValue({
+  dependency: 'id',
+  recordId: 98,
+  formValue: undefined,
+  routeDefaultValue: undefined,
+  routeValue: undefined,
+  keyword: '',
+  options: [],
+}), 98, 'a native form domain may bind its current record through reserved id');
+assert.equal(resolveRelationDomainDependencyValue({
+  dependency: 'project_id',
+  recordId: 98,
+  formValue: undefined,
+  routeDefaultValue: undefined,
+  routeValue: undefined,
+  keyword: '演示项目',
+  options: [{ id: 9, label: '演示项目' }],
+}), 9, 'ordinary dynamic relation dependencies keep their selected option fallback');
 
 assert.deepEqual(one2manyRemovalLabelsFromPolicies({}, 2), {
   remove: '删除',
@@ -203,4 +222,4 @@ assert.deepEqual(buildX2ManyCommands({
   mode: 'write',
 }), [[3, 8]]);
 
-console.log(`[professional_detail_collection_model_test] PASS matrix=${matrix} counterexamples=11`);
+console.log(`[professional_detail_collection_model_test] PASS matrix=${matrix} counterexamples=13`);

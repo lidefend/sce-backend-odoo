@@ -89,6 +89,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     relationOrder,
     relationQueryTimers,
     relationReadFields,
+    resolveRelationDomainDependencyValue,
     relationSearchColumnsFromContract,
     relationSearchDialog,
     relationSearchDialogContract,
@@ -231,16 +232,15 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
   }
 
   function resolveDynamicDomainDependencyValue(valueField: string) {
-    const direct =
-      formData[valueField] ?? route.query[`default_${valueField}`] ?? route.query[valueField];
-    if (direct !== undefined && direct !== null && direct !== '') return direct;
-    const keyword = relationKeyword(valueField).trim().toLowerCase();
-    if (!keyword) return direct;
-    const option = (relationOptions.value[valueField] || []).find((item) => {
-      const label = item.label.trim().toLowerCase();
-      return label === keyword || label.includes(keyword) || keyword.includes(label);
+    return resolveRelationDomainDependencyValue({
+      dependency: valueField,
+      recordId: recordId.value,
+      formValue: formData[valueField],
+      routeDefaultValue: route.query[`default_${valueField}`],
+      routeValue: route.query[valueField],
+      keyword: relationKeyword(valueField),
+      options: relationOptions.value[valueField] || [],
     });
-    return option?.id || direct;
   }
 
   function clearDynamicRelationDependents(changedName: string) {

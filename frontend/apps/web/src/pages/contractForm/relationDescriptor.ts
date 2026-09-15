@@ -290,6 +290,27 @@ export function dynamicDomainDependencyFields(descriptor?: FieldDescriptor) {
   return analysis.supported ? analysis.dependencies : [];
 }
 
+export function resolveRelationDomainDependencyValue(params: {
+  dependency: string;
+  recordId: unknown;
+  formValue: unknown;
+  routeDefaultValue: unknown;
+  routeValue: unknown;
+  keyword: string;
+  options: RelationOption[];
+}) {
+  if (params.dependency === 'id') return params.recordId;
+  const direct = params.formValue ?? params.routeDefaultValue ?? params.routeValue;
+  if (direct !== undefined && direct !== null && direct !== '') return direct;
+  const keyword = params.keyword.trim().toLowerCase();
+  if (!keyword) return direct;
+  const option = params.options.find((item) => {
+    const label = item.label.trim().toLowerCase();
+    return label === keyword || label.includes(keyword) || keyword.includes(label);
+  });
+  return option?.id || direct;
+}
+
 export function dynamicRelationDomainFromDescriptor(params: {
   descriptor?: FieldDescriptor;
   resolveDependencyValue: (fieldName: string) => unknown;
