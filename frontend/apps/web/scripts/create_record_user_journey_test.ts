@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { ref } from 'vue';
 import { resolveCreateDefaults, resolveCreateRouteRelationLabels } from '../src/pages/contractForm/createDefaults.ts';
 import { applyIncomingFormFieldValue } from '../src/pages/contractForm/recordHydration.ts';
+import { evaluateNativeModifierValue } from '../src/app/modifierEngine.ts';
 import { buildSaveRecordPayload, createSingleFlightSave } from '../src/pages/contractForm/saveRecordHelpers.ts';
 import { usePrimaryFormActionRuntime } from '../src/pages/contractForm/usePrimaryFormActionRuntime.ts';
 import { sanitizeUiErrorMessage } from '../src/pages/contractForm/fieldUtils.ts';
@@ -62,6 +63,39 @@ for (const [name, label] of Object.entries(resolveCreateRouteRelationLabels(v2Co
 assert.deepEqual(formData, { amount: 0, owner_id: 17, title: 'Draft A' });
 assert.equal(relationKeywords.owner_id, 'Owner A');
 assert.equal(sanitizeUiErrorMessage('Failed to fetch', '保存失败'), '网络异常，请检查连接后重试。');
+
+const temporalFormData: Record<string, unknown> = {};
+for (const [name, type, incoming] of [
+  ['confirmed_on', 'date', false],
+  ['confirmed_at', 'datetime', false],
+  ['scheduled_at', 'datetime', '2026-09-15 09:30:00'],
+] as const) {
+  applyIncomingFormFieldValue({
+    fieldName: name,
+    descriptor: { name, type } as never,
+    incoming,
+    target: {
+      formData: temporalFormData,
+      relationOptions: {},
+      relationKeywords: {},
+      upsertRelationOption: () => undefined,
+      initOne2manyRows: () => undefined,
+    },
+  });
+}
+assert.deepEqual(temporalFormData, {
+  confirmed_on: '',
+  confirmed_at: '',
+  scheduled_at: '2026-09-15T09:30',
+}, 'empty Odoo temporal values stay falsey while real values remain input-compatible');
+assert.equal(
+  evaluateNativeModifierValue(
+    { kind: 'field_truthy', field: 'confirmed_at' },
+    (field) => temporalFormData[field],
+  ),
+  false,
+  'an empty confirmation datetime must not make dependent inputs readonly',
+);
 
 formData.amount = 80;
 const payload = buildSaveRecordPayload({

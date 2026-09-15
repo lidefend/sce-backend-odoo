@@ -56,15 +56,17 @@ export function fieldInputType(ttype?: string): 'text' | 'number' | 'date' | 'da
 }
 
 export function toDateInputValue(value: unknown) {
+  if (value === false || value === null || value === undefined) return '';
   const raw = String(value ?? '').trim();
-  if (!raw) return '';
+  if (!raw || raw.toLowerCase() === 'false') return '';
   if (raw.length >= 10) return raw.slice(0, 10);
   return raw;
 }
 
 export function toDatetimeInputValue(value: unknown) {
+  if (value === false || value === null || value === undefined) return '';
   const raw = String(value ?? '').trim();
-  if (!raw) return '';
+  if (!raw || raw.toLowerCase() === 'false') return '';
   const normalized = raw.replace(' ', 'T');
   return normalized.length >= 16 ? normalized.slice(0, 16) : normalized;
 }

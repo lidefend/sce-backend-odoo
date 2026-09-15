@@ -224,13 +224,25 @@ class TestTenderAwardFact(TransactionCase):
             su_env=self.env["ir.model"].sudo().env,
         ).handle(
             {
-                "model": "tender.bid",
+                "op": "action_open",
                 "view_type": "form",
                 "record_id": bid.id,
                 "action_id": action.id,
                 "menu_id": menu.id,
                 "client_type": "web_pc",
                 "render_profile": "edit",
+                "contract_surface": "user",
+                "source_mode": "governance_pipeline",
+                "delivery_profile": "full",
+                "accepted_contract_versions": ["2.0.x", "2.1.x", "2.2.x"],
+                "client_contract_capabilities": [
+                    "container_tree.v2",
+                    "data_source.v2",
+                    "action_rule.v2",
+                    "relation_entry.v2",
+                    "status_contract.v2",
+                    "form_layout.children_owner.v1",
+                ],
             }
         )
         envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
@@ -273,6 +285,21 @@ class TestTenderAwardFact(TransactionCase):
         self.assertFalse(status["disabled"], status)
         self.assertIn("award_confirmed_at", contract["dataContract"]["mainData"])
         self.assertFalse(contract["dataContract"]["mainData"]["award_confirmed_at"])
+        structure = contract["formStructureContract"]
+        for field_name in (
+            "award_opening_id",
+            "award_source_kind",
+            "award_source_reference",
+            "award_source_attachment_id",
+            "award_tax_basis",
+        ):
+            self.assertIn(field_name, structure["fieldRoles"], structure)
+            field_role = structure["fieldRoles"][field_name]
+            slot = next(
+                row for row in structure["slots"]
+                if row["slot"] == field_role["slot"]
+            )
+            self.assertIsNot(slot.get("readonly"), True, (field_name, field_role, slot))
 
         award_widget_ids = {}
 
@@ -317,6 +344,8 @@ class TestTenderAwardFact(TransactionCase):
             status = container_statuses.get(container_id)
             if status:
                 self.assertIsNot(status.get("visible"), False, status)
+                self.assertIsNot(status.get("readonly"), True, status)
+                self.assertIsNot(status.get("disabled"), True, status)
         for field_name in (
             "award_opening_id",
             "award_source_kind",
@@ -330,4 +359,32 @@ class TestTenderAwardFact(TransactionCase):
             ]
             self.assertTrue(statuses, (field_name, award_widget_ids))
             self.assertTrue(any(row.get("visible") is True for row in statuses), statuses)
-            self.assertTrue(any(row.get("readonly") is False for row in statuses), statuses)
+            self.assertTrue(
+                all(
+                    row.get("readonly") is False
+                    for row in statuses
+                    if row.get("visible") is True
+                ),
+                statuses,
+            )
+            selector_rows = [
+                row
+                for row in contract["statusContract"].get("selectorStatus", [])
+                if row.get("selector")
+                in set(award_widget_ids.get(field_name, []))
+                | {
+                    field_name,
+                    "field.%s" % field_name,
+                    structure["fieldRoles"][field_name]["slot"],
+                    structure["fieldRoles"][field_name]["group"],
+                }
+            ]
+            self.assertTrue(
+                all(
+                    row.get("visible") is not False
+                    and row.get("readonly") is not True
+                    and row.get("disabled") is not True
+                    for row in selector_rows
+                ),
+                selector_rows,
+            )
