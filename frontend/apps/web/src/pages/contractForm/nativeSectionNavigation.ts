@@ -63,6 +63,16 @@ export function sectionScrollDelta(
   return Math.abs(delta) <= tolerance ? 0 : delta;
 }
 
+export function sectionRevealTargetsContain(value: unknown, targetKey: string): boolean {
+  if (typeof value !== 'string' || !targetKey) return false;
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) && parsed.some((candidate) => candidate === targetKey);
+  } catch {
+    return false;
+  }
+}
+
 type NativeSectionAuthorityNode = {
   attributes?: Record<string, unknown>;
   sourceAuthority?: Record<string, unknown>;
