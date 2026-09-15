@@ -371,6 +371,8 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.assertNotIn("'active_test': False", customer_action.context)
         self.assertIn("'default_supplier_rank': 1", supplier_action.context)
         self.assertNotIn("'active_test': False", supplier_action.context)
+        # Formal baseline 6fcc04f3 removed source/audit facts from these entry views.
+        # Verify current business capability plus that existing isolation boundary.
         for arch in (customer_tree.arch_db, supplier_tree.arch_db):
             self.assertIn('name="active"', arch)
             self.assertIn('name="user_id"', arch)
@@ -378,37 +380,25 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             self.assertIn('name="comment"', arch)
             self.assertIn('name="sc_bank_name"', arch)
             self.assertIn('name="sc_bank_account"', arch)
-            self.assertIn('name="sc_supplier_type_label"', arch)
+            self.assertNotIn('name="sc_supplier_type_label"', arch)
             self.assertIn('name="street"', arch)
             self.assertIn('name="sc_business_scope"', arch)
-            self.assertIn('name="sc_source_document_state"', arch)
-            self.assertIn('name="sc_source_push_result"', arch)
-            self.assertIn('name="sc_source_project_name"', arch)
-            self.assertIn('name="sc_source_partner_code"', arch)
-            self.assertIn('name="sc_source_cooperation_type"', arch)
-            self.assertIn('name="sc_source_receipt_amount"', arch)
-            self.assertIn('name="sc_source_payment_amount"', arch)
+            self.assertNotIn('name="sc_source_document_state"', arch)
+            self.assertNotIn('name="sc_source_push_result"', arch)
+            self.assertNotIn('name="sc_source_project_name"', arch)
+            self.assertNotIn('name="sc_source_partner_code"', arch)
+            self.assertNotIn('name="sc_source_cooperation_type"', arch)
+            self.assertNotIn('name="sc_source_receipt_amount"', arch)
+            self.assertNotIn('name="sc_source_payment_amount"', arch)
             self.assertIn('name="sc_default_tax_rate_text"', arch)
-            self.assertIn('name="sc_source_created_by"', arch)
-            self.assertLess(arch.index('name="name"'), arch.index('name="sc_source_document_state"'))
-            self.assertIn('name="sc_source_created_at"', arch)
-            self.assertIn('name="sc_business_role_label"', arch)
-            self.assertIn('name="sc_business_fact_basis"', arch)
+            self.assertNotIn('name="sc_source_created_by"', arch)
+            self.assertNotIn('name="sc_source_created_at"', arch)
+            self.assertNotIn('name="sc_business_role_label"', arch)
+            self.assertNotIn('name="sc_business_fact_basis"', arch)
             for sparse_field in (
                 'name="sc_bank_name"',
                 'name="sc_bank_account"',
-                'name="sc_source_project_name"',
-                'name="sc_source_receipt_amount"',
-                'name="sc_source_payment_amount"',
                 'name="sc_default_tax_rate_text"',
-                'name="sc_source_document_state"',
-                'name="sc_source_push_result"',
-                'name="sc_source_partner_code"',
-                'name="sc_source_cooperation_type"',
-                'name="sc_source_created_by"',
-                'name="sc_source_created_at"',
-                'name="sc_business_role_label"',
-                'name="sc_business_fact_basis"',
             ):
                 field_pos = arch.index(sparse_field)
                 close_pos = arch.index("/>", field_pos)
@@ -420,19 +410,19 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             self.assertIn('name="child_ids"', arch)
             self.assertIn('name="bank_ids"', arch)
             self.assertIn('name="sc_attachment_ids"', arch)
-            self.assertIn('name="action_open_sc_partner_business_fact_lines"', arch)
-            self.assertIn('name="sc_business_fact_line_ids"', arch)
+            self.assertNotIn('name="action_open_sc_partner_business_fact_lines"', arch)
+            self.assertNotIn('name="sc_business_fact_line_ids"', arch)
             self.assertIn('name="comment"', arch)
             self.assertIn('name="active"', arch)
             self.assertIn('name="category_id"', arch)
             self.assertIn('name="user_id"', arch)
             self.assertIn('name="property_account_position_id"', arch)
-            self.assertIn('name="action_open_source_record"', arch)
-            self.assertIn('name="sc_source_fact_count" string="关联业务数" readonly="1"', arch)
-            self.assertIn('name="sc_source_fact_source"', arch)
-            self.assertIn('name="sc_source_receipt_amount" string="收款金额" readonly="1"', arch)
-            self.assertIn('name="sc_source_payment_amount" string="付款金额" readonly="1"', arch)
-            self.assertIn('name="sc_supplier_type_label"', arch)
+            self.assertNotIn('name="action_open_source_record"', arch)
+            self.assertNotIn('name="sc_source_fact_count" string="关联业务数" readonly="1"', arch)
+            self.assertNotIn('name="sc_source_fact_source"', arch)
+            self.assertNotIn('name="sc_source_receipt_amount" string="收款金额" readonly="1"', arch)
+            self.assertNotIn('name="sc_source_payment_amount" string="付款金额" readonly="1"', arch)
+            self.assertNotIn('name="sc_supplier_type_label"', arch)
             self.assertIn('name="vat" string="统一社会信用代码"', arch)
             self.assertIn('name="sc_registered_capital"', arch)
             self.assertIn('name="sc_establishment_date"', arch)
@@ -482,17 +472,17 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             self.assertIn('name="email"', arch)
             self.assertIn('name="sc_bank_name"', arch)
             self.assertIn('name="sc_bank_account"', arch)
-            self.assertIn('name="sc_supplier_type_label"', arch)
+            self.assertNotIn('name="sc_supplier_type_label"', arch)
             self.assertIn('name="street"', arch)
             self.assertIn('name="sc_business_scope"', arch)
-            self.assertIn('name="sc_source_partner_code"', arch)
-            self.assertIn('name="sc_source_document_state"', arch)
-            self.assertIn('name="sc_source_push_result"', arch)
-            self.assertIn('name="sc_source_project_name"', arch)
-            self.assertIn('name="sc_source_cooperation_type"', arch)
-            self.assertIn('name="sc_source_created_by"', arch)
-            self.assertIn('name="sc_business_role_label"', arch)
-            self.assertIn('name="sc_business_fact_basis"', arch)
+            self.assertNotIn('name="sc_source_partner_code"', arch)
+            self.assertNotIn('name="sc_source_document_state"', arch)
+            self.assertNotIn('name="sc_source_push_result"', arch)
+            self.assertNotIn('name="sc_source_project_name"', arch)
+            self.assertNotIn('name="sc_source_cooperation_type"', arch)
+            self.assertNotIn('name="sc_source_created_by"', arch)
+            self.assertNotIn('name="sc_business_role_label"', arch)
+            self.assertNotIn('name="sc_business_fact_basis"', arch)
             self.assertIn('name="category_id"', arch)
             self.assertIn('name="user_id"', arch)
             self.assertIn('name="active"', arch)
