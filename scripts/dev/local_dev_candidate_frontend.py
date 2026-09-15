@@ -105,6 +105,37 @@ def _validate_process(root: Path, head: str, pidfile: Path = PIDFILE) -> int:
     return pid
 
 
+def _validate_orphaned_process(identity: dict[str, object], process_root: Path | None = None) -> int:
+    """Validate a candidate carrier whose recorded worktree was already removed."""
+    pid = int(identity["pid"])
+    head = str(identity["head"])
+    recorded_root = Path(str(identity["root"])).resolve()
+    if recorded_root.exists():
+        raise CandidateFrontendError("candidate pidfile belongs to another existing worktree")
+    process_root = process_root or Path(f"/proc/{pid}")
+    if not process_root.is_dir():
+        raise ProcessLookupError(pid)
+    if process_root.stat().st_uid != os.getuid():
+        raise CandidateFrontendError("candidate process owner mismatch")
+    cwd = os.readlink(process_root / "cwd").removesuffix(" (deleted)")
+    if Path(cwd).resolve() != recorded_root:
+        raise CandidateFrontendError("orphaned candidate process cwd mismatch")
+    command = (process_root / "cmdline").read_bytes().replace(b"\0", b" ").decode("utf-8", errors="replace")
+    expected_script = str(recorded_root / "scripts/release/release_static_server.mjs")
+    if expected_script not in command or "node" not in command:
+        raise CandidateFrontendError("orphaned candidate process command mismatch")
+    environment = set((process_root / "environ").read_bytes().split(b"\0"))
+    expected_environment = {
+        f"STATIC_ROOT={recorded_root / 'frontend/apps/web/dist-dev'}".encode(),
+        f"STATIC_PORT={PORT}".encode(),
+        f"API_PROXY_TARGET={API_PROXY}".encode(),
+        f"CANDIDATE_GIT_HEAD={head}".encode(),
+    }
+    if not expected_environment.issubset(environment):
+        raise CandidateFrontendError("orphaned candidate process environment mismatch")
+    return pid
+
+
 def _run_make(root: Path, authority: Path, target: str, extra: list[str] | None = None) -> None:
     command = ["make", "--no-print-directory", "ENV=dev", f"ENV_FILE={authority}", f"LOCAL_DEV_ENV_FILE={authority}"]
     command.extend(extra or [])
@@ -181,7 +212,12 @@ def down(root: Path = ROOT) -> None:
     try:
         running_identity = _read_process_identity(pidfile)
         running_head = str(running_identity["head"])
-        pid = _validate_process(root, running_head, pidfile)
+        running_root = Path(str(running_identity["root"])).resolve()
+        pid = (
+            _validate_process(root, running_head, pidfile)
+            if running_root == root.resolve()
+            else _validate_orphaned_process(running_identity)
+        )
     except ProcessLookupError:
         pidfile.unlink(missing_ok=True)
         print(f"[local.dev.candidate.frontend] PASS removed stale pidfile sha={head}")
@@ -189,7 +225,10 @@ def down(root: Path = ROOT) -> None:
     os.killpg(pid, signal.SIGTERM)
     _wait_until_stopped(pid)
     pidfile.unlink(missing_ok=True)
-    print(f"[local.dev.candidate.frontend] PASS stopped sha={running_head} current_sha={head}")
+    print(
+        f"[local.dev.candidate.frontend] PASS stopped sha={running_head} "
+        f"root={running_root} current_sha={head}"
+    )
 
 
 def _backend_identity(root: Path, head: str) -> dict:
