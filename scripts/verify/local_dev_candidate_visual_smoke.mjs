@@ -2261,6 +2261,12 @@ try {
             targetFound: targetNode instanceof HTMLElement,
             targetLabelMatches: Boolean(label) && targetLabels.some((value) => value.includes(label)),
             targetTop: targetRect ? Math.round(targetRect.top) : null,
+            exactTargetTop: targetRect?.top ?? null,
+            sectionAnchor: Math.max(obstructionBottom, document.querySelector('.router-host')?.getBoundingClientRect().top || 0) + 12,
+            currentLabel: String(nav?.querySelector('[aria-current="location"]')?.textContent || '').trim(),
+            scrollTop: document.querySelector('.router-host')?.scrollTop,
+            scrollHeight: document.querySelector('.router-host')?.scrollHeight,
+            clientHeight: document.querySelector('.router-host')?.clientHeight,
             obstructionBottom: Math.round(obstructionBottom),
             targetVisibleBelowSticky: Boolean(targetRect && targetRect.bottom > obstructionBottom && targetRect.top >= obstructionBottom - 2),
           };
@@ -2387,18 +2393,24 @@ try {
             else window.scrollBy({ top: delta, behavior: 'auto' });
           });
           await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-          await page.waitForFunction((expectedLabel) => [...document.querySelectorAll(
-            '[data-form-section-navigation] [data-section-link]',
-          )].some((node) => (
-            String(node.textContent || '').replace(/\s+/g, ' ').trim() === expectedLabel
-              && node.getAttribute('aria-current') === 'location'
-          )), String(label), { timeout: 15000 });
+          let activationError = '';
+          try {
+            await page.waitForFunction((expectedLabel) => [...document.querySelectorAll(
+              '[data-form-section-navigation] [data-section-link]',
+            )].some((node) => (
+              String(node.textContent || '').replace(/\s+/g, ' ').trim() === expectedLabel
+                && node.getAttribute('aria-current') === 'location'
+            )), String(label), { timeout: 15000 });
+          } catch (error) {
+            activationError = String(error.message || error);
+          }
           await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
           const stable = await captureStableNavigationState(link);
           manualNavigationJourney.push({
             label,
             ...stable,
-            pass: stable.current && stable.targetFound && stable.targetLabelMatches && stable.targetVisibleBelowSticky,
+            activationError,
+            pass: !activationError && stable.current && stable.targetFound && stable.targetLabelMatches && stable.targetVisibleBelowSticky,
           });
         }
         let sectionBrowseFocusEvidence = { checked: false, reason: 'not requested', pass: true };
