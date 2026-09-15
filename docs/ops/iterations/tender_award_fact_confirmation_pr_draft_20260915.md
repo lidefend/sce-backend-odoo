@@ -26,6 +26,7 @@
 
 - `make ci.local.iteration`：16 tests，PASS。
 - `make verify.local.dev.tender_award.unit`：7 个方法，PASS。
+- 同步 `main@12f6256c…` 后，canonical form 162 cases、create journey、native section navigation、professional detail collection 与 collection view semantics 五组受影响前端 L2 均非零通过。
 - P1 中标事实：选择并实际执行 11 个定向方法（Odoo 统计 13 项，含框架阶段），覆盖快照、归属、税口径、资料、历史、防重、不可变、创建/确认前快照字段注入拒绝与正式契约；0 failed、0 errors。
 - P0 关系 domain：6-profile matrix、7 个 domain cases；对应 Python/guard 非零 PASS。
 - P0 reload：navigation entry target 12 个纯测试 PASS。
@@ -55,4 +56,4 @@
 
 ## Delivery status
 
-`READY_FOR_FINAL_FREEZE_GATES`。远端 push、PR 创建、Ready、合并、部署与发布不在当前授权范围。
+源候选 `c5ee2944…` 已通过受管 extended 入口同步为 `f7286c9c…`；只刷新失效的生成证据并形成最终冻结 HEAD。候选具备受管远端交付授权；部署、发布与数据库操作仍不在范围内。
