@@ -15,7 +15,11 @@
 - 来源记录后续变化不能静默改写已确认快照；重复请求不改变确认时间，也不创建合同。
 - 系统快照字段不能通过普通创建或确认前写入伪造，只能由确认动作在完成业务校验后生成。
 
-## Architecture impact
+## Architecture Impact
+
+Layer Target：P1 中标事实模型、P0 通用契约消费、P4 受管验证。
+
+Affected Modules：`smart_construction_core`、`smart_core`、`frontend/apps/web`、`scripts/verify`。
 
 - P1 `smart_construction_core`：中标事实模型约束、正式入口原生章节、动作与契约声明。
 - P0 frontend/smart_core：通用关系 domain 保真、父记录 id 求值、安全字面量解析及 reload 入口保持。
@@ -23,6 +27,10 @@
 - 不改合同计价、审批、权限、数据库架构政策、低代码载体或业务外壳。
 
 ## Verification
+
+- 最终补修 `cb7c10681ae4334b1df66ae19f5cd6624c928631` 封闭 context / `ir.default` 默认值注入；全部 13 个 P1 方法通过，独立 B 线确认 S1 关闭。
+- 新批次 `award-20260915j` 在上述同 HEAD 产品及工具上通过确认、回读、重复请求、刷新只读和精确清理，证据为 `artifacts/p4-tender-award/award-20260915j-cb7c1068/journey-summary.json`。
+- 此次纯 Python 补修经受管 restart 加载；前端候选载体按新 SHA 重建。以下旧批次证据仅按受测文件影响分析复用，最终 Quick / CI 以最终冻结 HEAD 为准。
 
 - `make ci.local.iteration`：16 tests，PASS。
 - `make verify.local.dev.tender_award.unit`：7 个方法，PASS。

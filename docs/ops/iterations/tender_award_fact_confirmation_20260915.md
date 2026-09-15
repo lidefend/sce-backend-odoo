@@ -83,6 +83,26 @@ Changed paths 涉及 P1 投标模型/视图/契约，P0 通用前端关系契约
 
 后端测试数量以实际方法数描述，不把 Odoo setup/teardown 统计行冒充独立业务用例。页面 DOM 与键盘/鼠标检查不等于完整读屏器体验。最终 Quick receipt、完整 HEAD/Tree/指纹和独立复核由冻结候选的仓外证据记录，避免为回填结果再次改变候选。
 
+## 最终复核补修：ORM 默认值入口
+
+PR #479 的旧 HEAD `8b806539ab0c6c626860b535c3a49f6ddce336ca` 因 fixture 测试未登记而失败；登记及生成报告已修复，`4086ec85423391decec9f186441f3710b8c9fbbc` 的 Quick receipt 核验通过。独立 B 线随后发现 S1：显式 `create` 参数检查早于 ORM 默认值填充，context `default_award_*` 和 `ir.default` 仍能注入系统快照。当前候选因该发现暂缓推送。
+
+Formal Product Layer / Layer Target / Module：P1 / 中标事实来源约束 / `smart_construction_core`。这是行业通用快照规则，不能放入 P0 默认值机制、P2 客户偏好或 P4 修复脚本。补修只在 `default_get` 剥离四个系统快照默认值，并增加两项回归；没有字段、视图、契约或迁移变化。产品提交 `cb7c10681ae4334b1df66ae19f5cd6624c928631`，完整指纹 `4cecf90112b61327f9c15dce721a662e3846d5948e592b81ddf3c1a4f5239324`；B 线确认 S1 关闭。
+
+| 层 | 精确入口与结果 |
+| --- | --- |
+| L0 | `make contract.view_structure.fingerprint`；基线 `12f6256c3fbf8c6a211d3aa80b23ea14ba3e2fd3`，dirty 修复源指纹 `e5441c7f65cf19a5ec2ca0830205e5a25a78c9f691e91b966dda1942099cfae7`，提交后指纹见上；完整清单在 `artifacts/delivery/tender-award-fact-4086ec85/` |
+| L1 | `make ci.local.iteration`：16 tests，passed |
+| L2 | `make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestTenderAwardFact'`：实际 13 个方法，0 failed、0 errors；Odoo stats 的 15 包含框架阶段 |
+| L3 | `make local.dev.upgrade MODULE=smart_construction_core` 被 fast 守卫拒绝，未升级；纯 Python 补修无 schema/view/security/data 变化，改用 `make local.dev.restart`、`make local.dev.health`，passed |
+| L4 | 旧候选前端身份失效，未进入浏览器；经 `local.dev.candidate.frontend.down/up` 重建并绑定当前 full SHA，构建及健康通过；`PRODUCT_CANDIDATE_SHA=cb7c1068… P4_TENDER_AWARD_BATCH=award-20260915j make verify.local.dev.tender_award.journey` passed |
+
+L3 首次拒绝是执行输入不适用于纯 Python 补修；前端身份失败归 `environment_defect`，恢复事实为当前 SHA 的受管载体启动。均未原样重试失败。L1/L2 执行后仅提交身份变化，模型、测试和命令输入未变，环境仍为 `sc-local-dev/sc_dev_demo/^sc_dev_demo$/sc_local_dev_odoo_data`，结果由 dirty 源指纹承接至产品指纹。原 P0/前端受测文件无变化，复用既有证据；本轮重跑全部受影响 P1 用例和写入旅程。
+
+新批次确认投标 136、开标 110、清单 45，正式金额 900 CNY、税口径 unknown；重复请求不变、刷新只读、合同为空。批次对象精确删除，最终 `existing_batch=false`。成功证据：`artifacts/p4-tender-award/award-20260915j-cb7c1068/journey-summary.json`、`browser/summary.json`、`fixture-post-inspect.json`、`fixture-final-inspect.json`。这些仍是开发验证，正式发布资格待最终 exact-head 远端 CI。
+
+最终文档及生成证据提交后重新冻结，Quick、完整指纹及最终独立复核放在 `artifacts/delivery/`，避免回填结果改变候选。回滚遵循下节既有 P4 → P0 → P1 边界；不可单独撤销默认值防护后宣称快照来源安全。
+
 ## 交付边界与后续事项
 
 - 未执行合同生成第二批；没有改变合同明细、合同金额计算、审批、付款、开票或权限体系。

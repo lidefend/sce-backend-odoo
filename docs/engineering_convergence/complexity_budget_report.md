@@ -98,7 +98,7 @@ Generated from repository source files. This report is informational during the 
 | 1190 | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 1169 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
-| 1148 | Python source | `addons/smart_construction_core/models/support/tender.py` |
+| 1152 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1128 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
@@ -240,7 +240,7 @@ Generated from repository source files. This report is informational during the 
 | 1190 | warning | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 1169 | warning | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1157 | warning | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
-| 1148 | warning | Python source | `addons/smart_construction_core/models/support/tender.py` |
+| 1152 | warning | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 1145 | warning | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | warning | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 

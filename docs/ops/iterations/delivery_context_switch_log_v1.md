@@ -9513,3 +9513,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Runtime closure: batch `award-20260915h` passed through menu 387/action 594, repeat was rejected by the updated action contract without changing the snapshot, refresh showed readonly facts, and final cleanup removed only the batch-owned tender/line/opening. Product candidate `63fd6df8…` and P4 tool candidate `945f0b27…` are recorded separately.
 - Review closure: the first independent review found that confirmation-owned snapshot fields could be injected through ordinary create/pre-confirmation write. Candidate `e98d29a1…` now rejects that path, 11 selected P1 methods pass, and exact-head batch `award-20260915i` repeats the governed confirmation/readback/replay/cleanup journey with product and P4 tool bound to the same candidate.
 - Remaining boundary: contract handoff is a later independent batch; this change does not alter contract pricing, approval, payment, invoicing, production data or unknown-tax interpretation.
+
+### 2026-09-15 · tender award defaults review closure
+
+- Branch `codex/tender-award-fact-confirmation-v1`, start `4086ec85`, product fix `cb7c1068`, baseline `12f6256c3fbf8c6a211d3aa80b23ea14ba3e2fd3`.
+- Formal Product Layer / Layer Target / Module: P1 / award snapshot source authority / `smart_construction_core`; prevent context and saved ORM defaults from manufacturing confirmation-owned facts. This belongs to industry business invariants, not generic default handling or ops repair.
+- B-line S1 is closed by stripping four system defaults; 13 targeted methods passed. Governed local.dev restart and exact-head journey `award-20260915j` passed; batch fixture removed. No schema change or module upgrade was needed; fast upgrade guard refusal was respected.
+- Remaining delivery steps: review regenerated evidence, freeze clean delivery HEAD, one Quick, exact-head independent review, governed PR push and candidate CI. Details and impact carry-forward are in `tender_award_fact_confirmation_20260915.md`.
