@@ -18,6 +18,29 @@ SPEC.loader.exec_module(MODULE_UNDER_TEST)
 
 
 class CandidateFrontendContractTest(unittest.TestCase):
+    def test_formal_entry_identity_preserves_runtime_view_and_missing_provenance(self):
+        import subprocess
+        source = (ROOT / "scripts/verify/local_dev_candidate_visual_smoke.mjs").read_text()
+        function = source.split("async function captureFormalEntryIdentity(", 1)[1].split("\nasync function loginPage", 1)[0]
+        subprocess.run(["node", "--input-type=module", "-e", """
+          const saved = [];
+          const fs = {writeFileSync: (_path, value) => saved.push(JSON.parse(value))};
+          const path = {join: (...parts) => parts.join('/')};
+          const head = 'candidate', outputDir = 'evidence';
+          const report = {backendIdentity: {database:'sc_dev_demo'}, startup:{desktop:{roleCode:'admin',companyId:1}}};
+          const findNormalizedContract = (payload) => payload.data;
+          """ + "async function captureFormalEntryIdentity(" + function + """
+          const response = (data) => ({json:async()=>({data}),status:()=>200,headers:()=>({'x-trace-id':'trace'}),
+            request:()=>({postData:()=>JSON.stringify({intent:'ui.contract.v2',params:{op:'action_open',action_id:609}})})});
+          const target = {captureFormalEntryIdentity:true,name:'contract'};
+          await captureFormalEntryIdentity(response({formStructureContract:{layoutPolicy:'category_sections_as_task_tabs'},
+            actions:{settings:{view_id:123}}}), target, 'desktop', 'record');
+          await captureFormalEntryIdentity(response({formStructureContract:{layoutPolicy:'category_sections_as_task_tabs'}}), target, 'desktop', 'record');
+          if (saved[0].sources[0].value !== 123 || saved[0].request.params.action_id !== 609) throw Error('runtime source lost');
+          if (saved[1].sources.length !== 0 || saved[1].formStructureContract.sourceAuthority) throw Error('missing source invented');
+          if (saved[0].traceId !== 'trace' || saved[0].companyId !== 1) throw Error('identity lost');
+          """], check=True, capture_output=True, text=True)
+
     def test_customer_capture_selects_model_response_instead_of_action_prefetch(self):
         import subprocess
         source = (ROOT / "scripts/verify/local_dev_candidate_visual_smoke.mjs").read_text()

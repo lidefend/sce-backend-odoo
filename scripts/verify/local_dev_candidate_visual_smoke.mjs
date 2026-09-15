@@ -49,6 +49,34 @@ const report = {
 };
 const browser = await launchChromium({ headless: true });
 
+async function captureFormalEntryIdentity(response, target, viewport, stage) {
+  if (target.captureFormalEntryIdentity !== true) return;
+  const payload = await response.json();
+  const request = JSON.parse(response.request().postData() || '{}');
+  const normalized = findNormalizedContract(payload);
+  const sources = [];
+  const sourceKeys = new Set(['view_id', 'viewId', 'view_ids_by_type', 'resolvedViewId',
+    'source_view_id', 'sourceAuthority', 'form_layout_governance', 'current_form_settings']);
+  const visit = (value, location) => {
+    if (!value || typeof value !== 'object') return;
+    for (const [key, nested] of Object.entries(value)) {
+      const next = `${location}.${key}`;
+      if (sourceKeys.has(key)) sources.push({ path: next, value: nested });
+      visit(nested, next);
+    }
+  };
+  visit(payload, '$');
+  const identity = { head, backendIdentity: report.backendIdentity,
+    role: report.startup[viewport]?.roleCode, companyId: report.startup[viewport]?.companyId,
+    stage, request: { intent: request.intent, params: request.params },
+    httpStatus: response.status(), traceId: response.headers()['x-trace-id'] || payload.trace_id || payload.meta?.trace_id,
+    pageInfo: normalized?.pageInfo, statusContract: normalized?.statusContract,
+    formStructureContract: normalized?.formStructureContract, sources,
+    responseKeys: Object.keys(payload.data || payload),
+    workbench: request.intent === 'ui.business_config.surface.get' ? payload : undefined };
+  fs.writeFileSync(path.join(outputDir, `${viewport}-${target.name}-${stage}-identity.json`), JSON.stringify(identity, null, 2));
+}
+
 async function loginPage(page) {
   await page.goto(`${baseUrl}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
   const inputs = page.locator('input');
@@ -726,7 +754,12 @@ try {
       const listDataResponse = target.captureCollectionAggregate === true
         ? page.waitForResponse(isApiDataListResponse, { timeout: 45000 })
         : null;
+      const workbenchResponse = target.captureFormalEntryIdentity === true && target.path.startsWith('/admin/business-config')
+        ? page.waitForResponse((response) => {
+          try { return response.request().postDataJSON()?.intent === 'ui.business_config.surface.get'; } catch { return false; }
+        }, { timeout: 45000 }) : null;
       await page.goto(`${baseUrl}${target.path}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      if (workbenchResponse) await captureFormalEntryIdentity(await workbenchResponse, target, viewport.name, 'workbench');
       if (exerciseSessionExpiredRecovery) {
         const originalReturnUrl = `${baseUrl}${target.path}`;
         const originalReturnPath = `${new URL(originalReturnUrl).pathname}${new URL(originalReturnUrl).search}${new URL(originalReturnUrl).hash}`;
@@ -829,6 +862,7 @@ try {
         const response = await contractResponse;
         if (!response.ok()) throw new Error(`contract request failed: ${response.status()} ${target.path}`);
         const contractPayload = await response.json();
+        await captureFormalEntryIdentity(response, target, viewport.name, 'entry');
         if (target.captureFormStructure === true || Array.isArray(target.captureCollectionWidths)) {
           const normalized = findNormalizedContract(contractPayload);
           if (!normalized) throw new Error(`${target.name}: normalized container tree missing`);
@@ -2995,7 +3029,12 @@ try {
       let detailCollectionEvidence = null;
       if (target.exerciseDetailCollection === true) {
         if (formValidationEvidence) {
-          await page.goto(`${baseUrl}${target.path}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+          const workbenchResponse = target.captureFormalEntryIdentity === true && target.path.startsWith('/admin/business-config')
+        ? page.waitForResponse((response) => {
+          try { return response.request().postDataJSON()?.intent === 'ui.business_config.surface.get'; } catch { return false; }
+        }, { timeout: 45000 }) : null;
+      await page.goto(`${baseUrl}${target.path}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      if (workbenchResponse) await captureFormalEntryIdentity(await workbenchResponse, target, viewport.name, 'workbench');
           await page.locator('[data-semantic-component="ContractFormPage"][data-state="ok"]:visible').waitFor({ state: 'visible', timeout: 45000 });
           await waitForStableProductSurface(page);
         }
@@ -4232,6 +4271,7 @@ try {
         await page.waitForURL((url) => url.href !== beforeUrl, { timeout: 15000 });
         const response = await detailContractResponse;
         const payload = await response.json();
+        await captureFormalEntryIdentity(response, target, viewport.name, 'record');
         const widgetTypes = [];
         const visit = (value) => {
           if (Array.isArray(value)) return value.forEach(visit);

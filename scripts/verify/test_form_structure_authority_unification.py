@@ -26,6 +26,33 @@ def _form(record_id: str) -> ET.Element:
 
 
 class FormStructureAuthorityUnificationTest(unittest.TestCase):
+    def test_tender_groups_preserve_contents_without_promoting_internal_titles(self):
+        root = ET.parse(ROOT / "addons/smart_construction_core/views/support/tender_views.xml")
+        form = root.find(".//record[@id='view_tender_bid_form']/field[@name='arch']/form")
+        sheet = form.find("sheet")
+        sections = [g for g in sheet.findall("group") if g.get("invisible") != "1"]
+        self.assertEqual([g.get("string") for g in sections],
+                         ["投标信息", "中标事实确认", "清单", "投标过程", "资料与备注"])
+        for anchor, fields in {
+            "tender-process": {"doc_purchase_ids", "survey_ids", "review_ids", "opening_ids", "guarantee_ids"},
+            "tender-materials": {"tech_attachment_ids", "biz_attachment_ids", "note"},
+        }.items():
+            section = next(g for g in sections if g.get("data-sc-anchor") == anchor)
+            children = section.findall("group")
+            self.assertEqual({f.get("name") for g in children for f in g.findall("field")}, fields)
+            self.assertTrue(all(g.get("data-sc-navigation-role") == "subordinate" for g in children))
+            self.assertTrue(all(g.get("data-sc-anchor") and g.get("col") == "1" for g in children))
+        source = form.find(".//field[@name='award_opening_id']")
+        self.assertEqual(source.get("domain"), "[('bid_id','=',id),('result','=','won')]")
+        self.assertEqual(source.get("readonly"), "award_confirmed_at")
+
+    def test_opening_result_label_is_native_in_inline_list_and_record_views(self):
+        root = ET.parse(ROOT / "addons/smart_construction_core/views/support/tender_views.xml")
+        for view in ("view_tender_bid_form", "view_tender_opening_tree", "view_tender_opening_form", "view_tender_opening_search"):
+            result = root.find(f".//record[@id='{view}']/field[@name='arch']/.//field[@name='result']")
+            self.assertIsNotNone(result, view)
+            self.assertEqual(result.get("string"), "开标结果", view)
+
     def test_customer_native_sections_are_the_only_page_level_business_groups(self) -> None:
         form = _form("view_sc_customer_partner_form")
         sheet = form.find("sheet")

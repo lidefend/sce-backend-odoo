@@ -9561,3 +9561,29 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Runtime evidence and compatibility delta live in
   `artifacts/form-structure-unification/ub-two-gaps/`. Product verification is
   pending; final freeze/independent review/Quick await owner browser review.
+
+
+## 2026-09-15 — U-B-TENDER-HIERARCHY-IDENTITIES
+
+- Starting head: `1c04048fb7e48f68ab9aff0bb7ceb2c862ebcab6`; complete fingerprint
+  `34c2932a372efea24494bcad152a62a1c9126d6aefee7687f9896fed55336c08`.
+- P1 / smart_construction_core native tender view: five primary chapters;
+  process and materials groups explicitly own subordinate anchors. Preserve
+  all 83 field/button attribute occurrences, award domain and readonly rules.
+  Native opening result labels use 开标结果 in inline/list/search/form views.
+  P0 consumption, business storage, amount rules and actions are unchanged.
+- P4 / existing candidate visual smoke: record formal entry and existing-record
+  response identity, retaining missing provenance without manufactured defaults;
+  business configuration uses its dedicated workbench response. Scope is the
+  six diagnosed entries, tender hierarchy and one action 777 read-only check.
+- L1 iteration: 16 passed. Selected L2: native declarations 2, existing runtime
+  identity tooling 12, new provenance preservation case 1 passed. Incremental
+  view upgrade uses local.dev.upgrade with CODEX_NEED_UPGRADE=1 and explicit
+  smart_construction_core scope; initial fast-mode refusal made no upgrade.
+- Reuse accepted customer widths and award confirmation evidence. No fixture
+  reset, historical container operation or broader matrix. Compatibility remains
+  original 49→46 (-3), four undercount corrections, corrected 53→50.
+- Runtime results, exact fingerprints and screenshots:
+  `artifacts/form-structure-unification/ub-tender-hierarchy-identities/`.
+  No final delivery freeze, independent review, Quick or publication this batch;
+  owner requested actual page review first.

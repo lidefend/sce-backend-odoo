@@ -127,29 +127,21 @@
                                 </tree>
                             </field>
                         </group>
-                        <group string="备注" col="1" data-sc-anchor="tender-notes">
-                            <field name="note"/>
-                        </group>
-                        <group string="技术标附件" col="1" data-sc-anchor="tender-technical-attachments">
-                            <field name="tech_attachment_ids" widget="many2many_binary"/>
-                        </group>
-                        <group string="商务标附件" col="1" data-sc-anchor="tender-business-attachments">
-                            <field name="biz_attachment_ids" widget="many2many_binary"/>
-                        </group>
-                        <group string="平台范围元数据" col="1" data-sc-anchor="tender-platform" name="platform_scope_metadata" invisible="1">
+                    <group string="平台范围元数据" col="1" data-sc-anchor="tender-platform" name="platform_scope_metadata" invisible="1">
+                        <group>
                             <group>
-                                <group>
-                                    <field name="business_scope_key"/>
-                                    <field name="business_direction"/>
-                                </group>
-                                <group>
-                                    <field name="carrier_type"/>
-                                    <field name="carrier_model"/>
-                                    <field name="carrier_res_id"/>
-                                </group>
+                                <field name="business_scope_key"/>
+                                <field name="business_direction"/>
+                            </group>
+                            <group>
+                                <field name="carrier_type"/>
+                                <field name="carrier_model"/>
+                                <field name="carrier_res_id"/>
                             </group>
                         </group>
-                        <group string="标书购买" col="1" data-sc-anchor="tender-purchase">
+                    </group>
+                    <group string="投标过程" col="1" data-sc-anchor="tender-process">
+                        <group string="标书购买" col="1" data-sc-anchor="tender-purchase" data-sc-navigation-role="subordinate">
                             <field name="doc_purchase_ids" context="{'default_bid_id': context.get('active_id')}">
                                 <tree editable="bottom">
                                     <field name="applicant_id"/>
@@ -163,7 +155,7 @@
                                 </tree>
                             </field>
                         </group>
-                        <group string="现场踏勘" col="1" data-sc-anchor="tender-survey">
+                        <group string="现场踏勘" col="1" data-sc-anchor="tender-survey" data-sc-navigation-role="subordinate">
                             <field name="survey_ids" context="{'default_bid_id': context.get('active_id')}">
                                 <tree editable="bottom">
                                     <field name="survey_date"/>
@@ -173,7 +165,7 @@
                                 </tree>
                             </field>
                         </group>
-                        <group string="文件审查" col="1" data-sc-anchor="tender-review">
+                        <group string="文件审查" col="1" data-sc-anchor="tender-review" data-sc-navigation-role="subordinate">
                             <field name="review_ids" context="{'default_bid_id': context.get('active_id')}">
                                 <tree editable="bottom">
                                     <field name="version"/>
@@ -183,17 +175,17 @@
                                 </tree>
                             </field>
                         </group>
-                        <group string="开标登记" col="1" data-sc-anchor="tender-opening">
+                        <group string="开标登记" col="1" data-sc-anchor="tender-opening" data-sc-navigation-role="subordinate">
                             <field name="opening_ids" context="{'default_bid_id': context.get('active_id')}">
                                 <tree editable="bottom">
                                     <field name="open_time"/>
-                                    <field name="result"/>
+                                    <field name="result" string="开标结果"/>
                                     <field name="win_price"/>
                                     <field name="remark"/>
                                 </tree>
                             </field>
                         </group>
-                        <group string="保证金" col="1" data-sc-anchor="tender-guarantee">
+                        <group string="保证金" col="1" data-sc-anchor="tender-guarantee" data-sc-navigation-role="subordinate">
                             <field name="guarantee_ids" context="{'default_bid_id': context.get('active_id')}">
                                 <tree editable="bottom">
                                     <field name="type"/>
@@ -208,6 +200,18 @@
                                 <field name="guarantee_outstanding" readonly="1"/>
                             </group>
                         </group>
+                    </group>
+                    <group string="资料与备注" col="1" data-sc-anchor="tender-materials">
+                        <group string="技术标附件" col="1" data-sc-anchor="tender-technical-attachments" data-sc-navigation-role="subordinate">
+                            <field name="tech_attachment_ids" widget="many2many_binary"/>
+                        </group>
+                        <group string="商务标附件" col="1" data-sc-anchor="tender-business-attachments" data-sc-navigation-role="subordinate">
+                            <field name="biz_attachment_ids" widget="many2many_binary"/>
+                        </group>
+                        <group string="备注" col="1" data-sc-anchor="tender-notes" data-sc-navigation-role="subordinate">
+                            <field name="note"/>
+                        </group>
+                    </group>
                 </sheet>
                 <chatter/>
             </form>
@@ -247,7 +251,7 @@
             <search string="开标记录">
                 <field name="bid_id"/>
                 <field name="project_id"/>
-                <field name="result"/>
+                <field name="result" string="开标结果"/>
                 <filter string="中标" name="result_won" domain="[('result', '=', 'won')]"/>
                 <filter string="未中标" name="result_lost" domain="[('result', '=', 'lost')]"/>
                 <filter string="按项目" name="group_project" context="{'group_by': 'project_id'}"/>
@@ -264,7 +268,7 @@
                 <field name="open_time"/>
                 <field name="project_id"/>
                 <field name="bid_id"/>
-                <field name="result"/>
+                <field name="result" string="开标结果"/>
                 <field name="win_price"/>
                 <field name="remark"/>
             </tree>
@@ -277,7 +281,7 @@
         <field name="arch" type="xml">
             <form string="开标记录">
                 <header>
-                    <field name="result" widget="statusbar" statusbar_visible="pending,won,lost,backup"/>
+                    <field name="result" string="开标结果" widget="statusbar" statusbar_visible="pending,won,lost,backup"/>
                 </header>
                 <sheet>
                     <group>
