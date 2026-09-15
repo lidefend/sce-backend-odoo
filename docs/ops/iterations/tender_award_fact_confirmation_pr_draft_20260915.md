@@ -13,6 +13,7 @@
 - 确认后只读展示正式中标金额、币种、确认人和时间，并明确“合同尚未生成”。
 - 历史缺快照记录显示“来源待核实”，不自动回填。
 - 来源记录后续变化不能静默改写已确认快照；重复请求不改变确认时间，也不创建合同。
+- 系统快照字段不能通过普通创建或确认前写入伪造，只能由确认动作在完成业务校验后生成。
 
 ## Architecture impact
 
@@ -25,20 +26,20 @@
 
 - `make ci.local.iteration`：16 tests，PASS。
 - `make verify.local.dev.tender_award.unit`：7 个方法，PASS。
-- P1 中标事实：9 个定向方法覆盖快照、归属、税口径、资料、历史、防重、不可变与正式契约。
+- P1 中标事实：选择并实际执行 11 个定向方法（Odoo 统计 13 项，含框架阶段），覆盖快照、归属、税口径、资料、历史、防重、不可变、创建/确认前快照字段注入拒绝与正式契约；0 failed、0 errors。
 - P0 关系 domain：6-profile matrix、7 个 domain cases；对应 Python/guard 非零 PASS。
 - P0 reload：navigation entry target 12 个纯测试 PASS。
 - `smart_core` 受管增量升级、local.dev authority/restart：PASS。
 - 产品样板：`tender-award-fact-2e5a0419-structure-recovery/summary.json`，桌面/移动，零写入，`pass=true`。
-- 真实闭环：批次 `award-20260915h`，1200/1000/900，确认、权威回读、重复请求防重、刷新只读、未创建合同、精确清理均 PASS。
+- 真实闭环：独立复核缺陷修复后的 exact-head 批次 `award-20260915i`，1200/1000/900，确认、权威回读、重复请求防重、刷新只读、未创建合同、精确清理均 PASS。
 - 冻结前执行 `make ci.delivery.freeze.prepare`；最终 clean HEAD 只运行一次 `make ci.local.quick`，随后绑定同一 HEAD/Tree/完整指纹独立复核。
 
 ## Evidence
 
 - 迭代报告：[tender_award_fact_confirmation_20260915.md](tender_award_fact_confirmation_20260915.md)
 - 只读样板：`artifacts/playwright/tender-award-fact-2e5a0419-structure-recovery/summary.json`
-- 最终受管闭环：`artifacts/p4-tender-award/award-20260915h-945f0b27/browser/summary.json`
-- 确认后权威回读：`artifacts/p4-tender-award/award-20260915h-945f0b27/fixture-post-inspect.json`
+- 最终受管闭环：`artifacts/p4-tender-award/award-20260915i-e98d29a1/browser/summary.json`
+- 确认后权威回读：`artifacts/p4-tender-award/award-20260915i-e98d29a1/fixture-post-inspect.json`
 - 清理及最终状态：`fixture-cleanup.json`、`fixture-final-inspect.json`（同目录）
 
 ## Boundaries

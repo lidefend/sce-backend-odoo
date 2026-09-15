@@ -4,7 +4,7 @@
 
 本批从 `main@0eb4776391a31779898d4d17f0317e132b6c4f7a` 开始，在唯一写入分支 `codex/tender-award-fact-confirmation-v1` 上完成“确认中标事实、独立办理合同”的第一批。正式投标入口不再在“确认中标”时静默选择报价金额并创建合同；用户明确选择当前投标的中标开标记录，登记资料依据与税口径后，系统冻结正式中标金额、币种、确认人和确认时间。合同仍由后续独立办理入口按既有合法计价机制承接，本批不建设合同生成动作。
 
-产品页面样板源候选为 `2e5a04195e740a0c22b94dfdcf3db48e41babbdb`；运行闭环使用的产品候选为 `63fd6df8a96721438691bc54600805da03f1c218`，在样板之上只增加通用关系 domain 保真和 `reload` 入口身份修复。受管工具候选为 `945f0b27463181825ebc94ad79f7a6602338bf13`。最终交付 HEAD 在冻结前文档与生成证据提交后另行记录，不用目录短 SHA 冒充最终身份。
+产品页面样板源候选为 `2e5a04195e740a0c22b94dfdcf3db48e41babbdb`；首次运行闭环分别绑定产品候选 `63fd6df8a96721438691bc54600805da03f1c218` 与受管工具候选 `945f0b27463181825ebc94ad79f7a6602338bf13`。独立复核随后发现确认人、确认时间等系统快照字段仍可通过普通 ORM 创建/写入注入；修复候选 `e98d29a1002ad623cca0f67ea81c8e03a449ff64` 封闭该边界，并用产品与工具同 HEAD 的新批次重新完成闭环。最终交付 HEAD 在冻结前文档与生成证据提交后另行记录，不用目录短 SHA 冒充最终身份。
 
 ## 产品与架构边界
 
@@ -24,6 +24,7 @@ Formal Product Layer：P1 + P0 + P4。Standard vs User-Specific：建设行业�
 - 税口径允许明确登记为含税、未税或未知；未知不会阻止事实确认，也不会触发静默税额计算。
 - 确认动作只冻结来源事实，不创建合同。历史已中标但缺少快照的记录显示“来源待核实”，不自动回填。
 - 快照确认后，来源开标记录变化不能静默改写正式中标金额；重复请求要么幂等返回，要么因动作已退出当前契约而明确拒绝，均不得改变确认时间或创建合同。
+- 正式中标金额、币种、确认人和确认时间只能由“确认中标事实”动作生成；普通创建或确认前写入不能伪造系统快照。
 
 ## 金额事实与承接边界
 
@@ -44,22 +45,22 @@ Formal Product Layer：P1 + P0 + P4。Standard vs User-Specific：建设行业�
 
 ## 受管真实闭环
 
-最终成功批次为 `award-20260915h`，使用正式入口 `menu=387/action=594/model=tender.bid`、`sc_test_admin`、`sc-local-dev/sc_dev_demo`。浏览器产品代码绑定 `63fd6df8a96721438691bc54600805da03f1c218`，P4 工具绑定 `945f0b27463181825ebc94ad79f7a6602338bf13`。
+独立复核缺陷修复后的最终成功批次为 `award-20260915i`，使用正式入口 `menu=387/action=594/model=tender.bid`、`sc_test_admin`、`sc-local-dev/sc_dev_demo`。浏览器产品代码与 P4 工具均绑定 `e98d29a1002ad623cca0f67ea81c8e03a449ff64`。
 
 | 阶段 | 权威结果 |
 | --- | --- |
-| 准备 | 投标 105、清单行 40、开标记录 87；1200/1000/900；状态 waiting；合同为空 |
-| 确认 | 状态 won；正式中标金额 900 CNY；税口径 unknown；资料引用 `最终报价文件-CODEX-P4-001`；确认人 51；确认时间 `2026-09-15 05:10:03` |
+| 准备 | 投标 124、清单行 43、开标记录 102；1200/1000/900；状态 waiting；合同为空 |
+| 确认 | 状态 won；正式中标金额 900 CNY；税口径 unknown；资料引用 `最终报价文件-CODEX-P4-001`；确认人 51；确认时间 `2026-09-15 05:30:34` |
 | 重复请求 | HTTP 403 `ACTION_CONTRACT_NOT_AUTHORIZED`，因为确认动作已退出当前 action contract；回读确认时间和 900 快照均不变，合同仍为空 |
 | 刷新 | 已确认状态、900、确认人、确认时间只读可见；四个确认输入无可编辑控件，确认动作不可执行 |
-| 清理 | 受管投标 105、清单行 40、开标记录 87 及批次 XMLID 删除；复用项目、往来单位不变；最终检查 `existing_batch=false` |
+| 清理 | 受管投标 124、清单行 43、开标记录 102 及批次 XMLID 删除；复用项目、往来单位不变；最终检查 `existing_batch=false` |
 
 成功证据位于：
 
-- `artifacts/p4-tender-award/award-20260915h-945f0b27/browser/summary.json`
-- `artifacts/p4-tender-award/award-20260915h-945f0b27/fixture-post-inspect.json`
-- `artifacts/p4-tender-award/award-20260915h-945f0b27/fixture-cleanup.json`
-- `artifacts/p4-tender-award/award-20260915h-945f0b27/fixture-final-inspect.json`
+- `artifacts/p4-tender-award/award-20260915i-e98d29a1/browser/summary.json`
+- `artifacts/p4-tender-award/award-20260915i-e98d29a1/fixture-post-inspect.json`
+- `artifacts/p4-tender-award/award-20260915i-e98d29a1/fixture-cleanup.json`
+- `artifacts/p4-tender-award/award-20260915i-e98d29a1/fixture-final-inspect.json`
 
 前序批次只用于定位 P4 工具或运行装载问题：关系 domain 丢失、操作人不具菜单权限、请求权威层级判断错误、重复请求被契约拒绝、后端进程未重载以及刷新取证竞态。每次失败均在首次偏差修正后使用新批次；已确认且未生成合同的诊断对象先权威回读，再由批次清理入口删除。它们不计为通过旅程。
 
@@ -70,11 +71,13 @@ Changed paths 涉及 P1 投标模型/视图/契约，P0 通用前端关系契约
 | 层 | 结果与口径 |
 | --- | --- |
 | L1 | `make ci.local.iteration`：16 tests，PASS；`make verify.local.dev.tender_award.unit`：7 个方法，PASS；均不作为 Quick receipt |
-| L2 P1 | `test_tender_award_fact.py` 覆盖 9 个方法：明确中标记录、归属/结果拒绝、防重与快照不可变、资料引用、未知税口径、历史不回填、禁止直接改状态、原生章节与正式契约动作 |
+| L2 P1 | `test_tender_award_fact.py` 选择并实际执行 11 个方法（Odoo 最终统计 13 项，含框架阶段）：除明确中标记录、归属/结果拒绝、防重与快照不可变、资料引用、未知税口径、历史不回填、禁止直接改状态、原生章节与正式契约动作外，新增创建及确认前写入系统快照字段的拒绝反例；0 failed、0 errors |
 | L2 P0 | relation-domain 定向矩阵覆盖父记录 id、安全字面量、unsupported fail-closed 与 occurrence 优先；navigation entry target 12 个纯测试覆盖普通 reload 不推断入口 |
 | L3 | `smart_core` 受管增量升级与 `local.dev` authority PASS；随后受管 restart 让常驻后端加载当前 Python 代码 |
 | L4 页面 | `artifacts/playwright/tender-award-fact-2e5a0419-structure-recovery/summary.json`：桌面/移动、记录 1/2，`pass=true`、`mutationCount=0`、零错误；产品人工复核确认完整章节、定位与清单全宽 |
-| L4 写入 | `make verify.local.dev.tender_award.journey PRODUCT_CANDIDATE_SHA=63fd6df8… P4_TENDER_AWARD_BATCH=award-20260915h`：PASS，3 个受控请求事件，最终清理并回读不存在 |
+| L4 写入 | `PRODUCT_CANDIDATE_SHA=e98d29a1… P4_TENDER_AWARD_BATCH=award-20260915i make verify.local.dev.tender_award.journey`：PASS，3 个受控请求事件，最终清理并回读不存在 |
+
+独立复核首次结论为 `REQUEST_CHANGES`：系统拥有的四个确认快照字段可通过普通 `create` 或确认前 `write` 注入，进而绕开确认动作的业务校验。修复将资料类型、资料引用和税口径保留为用户确认输入，将中标金额、币种、确认人和确认时间限定为动作内部写入；对应 11 个 P1 方法、增量模块升级及上述 exact-head 旅程均通过。最终独立复核必须重新绑定冻结后的 HEAD/Tree/完整指纹，旧结论和旧 Quick receipt 不得复用为最终批准。
 
 后端测试数量以实际方法数描述，不把 Odoo setup/teardown 统计行冒充独立业务用例。页面 DOM 与键盘/鼠标检查不等于完整读屏器体验。最终 Quick receipt、完整 HEAD/Tree/指纹和独立复核由冻结候选的仓外证据记录，避免为回填结果再次改变候选。
 
