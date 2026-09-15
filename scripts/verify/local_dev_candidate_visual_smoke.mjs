@@ -1913,16 +1913,18 @@ try {
             return {
               fieldWidth: box(node), controlWidth: box(control), contentWidth: box(empty || collection || control),
               gridColumn: getComputedStyle(node).gridColumn, innerColumns: getComputedStyle(node).gridTemplateColumns,
-              state: node.getAttribute('data-field-state'), empty: Boolean(empty),
+              state: node.getAttribute('data-field-state'), controlState: collection?.getAttribute('data-control-state'),
+              readonlyEmpty: Boolean(empty), empty: collection ? Number(collection.getAttribute('data-row-count')) === 0 : Boolean(empty),
               labelWidth: box(node.querySelector(':scope > .field-label-row')),
-              rowCount: node.querySelectorAll('tbody tr').length,
+              rowCount: collection ? Number(collection.getAttribute('data-row-count')) : node.querySelectorAll('tbody tr').length,
               editableControls: [...node.querySelectorAll('input:not([disabled]):not([readonly]),button:not([disabled])')].filter((el) => el.getBoundingClientRect().width > 0).length,
             };
           });
           const evidence = { name: expected.name, ...width, pass: width.fieldWidth > 0
             && width.controlWidth >= width.fieldWidth * 0.98 && width.contentWidth >= width.fieldWidth * 0.98
             && (expected.empty === undefined || width.empty === expected.empty)
-            && (expected.editable !== true || width.editableControls > 0)
+            && (expected.editable !== true || (width.controlState === 'editable' && width.state !== 'readonly' && width.editableControls > 0))
+            && (expected.editable !== false || (width.controlState === 'readonly' && width.state === 'readonly'))
             && (expected.nonempty !== true || width.rowCount > 0) };
           collectionWidthEvidence.push(evidence);
           await field.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name}-${expected.name}-width.png`) });

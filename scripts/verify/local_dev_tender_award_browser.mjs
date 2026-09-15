@@ -271,8 +271,10 @@ const contractResponseCaptures = [];
 await page.route('**/api/v1/intent?**', async (route) => {
   let body; try { body = route.request().postDataJSON(); } catch { return route.continue(); }
   if (body?.intent === 'api.data' && body.params?.op === 'write' && body.params?.model === 'tender.bid') {
-    const valid = Number(body.params.vals?.award_opening_id) === Number(authority.fixture.opening_id)
-      && JSON.stringify((body.params.ids || []).map(Number)) === JSON.stringify([Number(authority.fixture.bid_id)]);
+    const valid = Number.isSafeInteger(body.params.vals?.award_opening_id)
+      && body.params.vals.award_opening_id === authority.fixture.opening_id
+      && Array.isArray(body.params.ids) && body.params.ids.length === 1
+      && Number.isSafeInteger(body.params.ids[0]) && body.params.ids[0] === authority.fixture.bid_id;
     report.selection_chain.push({ stage: 'submit_parameters', at: new Date().toISOString(), ids: body.params.ids, vals: body.params.vals, forwarded: valid });
     if (!valid) { report.errors.push('opening submit ID mismatch; write blocked'); return route.abort('blockedbyclient'); }
   }
