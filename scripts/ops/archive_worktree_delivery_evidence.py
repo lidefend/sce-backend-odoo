@@ -15,6 +15,12 @@ from pathlib import Path
 
 CONFIRMATION = "ARCHIVE_DELIVERY_EVIDENCE"
 REQUIRED_ROLES = {"summary", "identity", "screenshot", "review"}
+TEXT_ROLE_SUFFIXES = {
+    "summary": {".json", ".md"},
+    "identity": {".json"},
+    "review": {".json", ".md"},
+}
+SCREENSHOT_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
 
 
 class ArchiveError(RuntimeError):
@@ -39,6 +45,34 @@ def git(root: Path, *args: str) -> str:
     return process.stdout.strip()
 
 
+def validate_evidence_file(role: str, path: Path, candidate_head: str) -> None:
+    """Reject role labels that do not carry the required candidate-bound evidence."""
+    suffix = path.suffix.lower()
+    if role in TEXT_ROLE_SUFFIXES:
+        if suffix not in TEXT_ROLE_SUFFIXES[role]:
+            raise ArchiveError(f"{role} evidence needs a supported document type: {path.name}")
+        try:
+            text = path.read_text(encoding="utf-8")
+            if suffix == ".json":
+                json.loads(text)
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ArchiveError(f"{role} evidence is unreadable: {path.name}") from exc
+        if candidate_head not in text:
+            raise ArchiveError(f"{role} evidence is not bound to candidateHead: {path.name}")
+        return
+    if role != "screenshot" or suffix not in SCREENSHOT_SUFFIXES:
+        raise ArchiveError(f"screenshot evidence needs a supported image type: {path.name}")
+    data = path.read_bytes()
+    signatures = {
+        ".png": data.startswith(b"\x89PNG\r\n\x1a\n"),
+        ".jpg": data.startswith(b"\xff\xd8\xff"),
+        ".jpeg": data.startswith(b"\xff\xd8\xff"),
+        ".webp": len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WEBP",
+    }
+    if not signatures[suffix]:
+        raise ArchiveError(f"screenshot evidence has invalid image content: {path.name}")
+
+
 def load_plan(worktree: Path, manifest_path: Path, archive_root: Path) -> dict:
     worktree = worktree.resolve()
     manifest_path = manifest_path.resolve()
@@ -47,6 +81,8 @@ def load_plan(worktree: Path, manifest_path: Path, archive_root: Path) -> dict:
         raise ArchiveError("worktree must be an existing git worktree root")
     if worktree == archive_root or worktree in archive_root.parents or archive_root in worktree.parents:
         raise ArchiveError("archive root must be outside the candidate worktree")
+    if worktree not in manifest_path.parents:
+        raise ArchiveError("evidence manifest must be inside the candidate worktree")
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -80,6 +116,7 @@ def load_plan(worktree: Path, manifest_path: Path, archive_root: Path) -> dict:
             raise ArchiveError(f"evidence file is missing or unsafe: {relative}")
         if source.stat().st_size <= 0:
             raise ArchiveError(f"evidence file is empty: {relative}")
+        validate_evidence_file(row["role"], source, head)
         if relative.as_posix() in seen:
             raise ArchiveError(f"duplicate evidence path: {relative}")
         seen.add(relative.as_posix())

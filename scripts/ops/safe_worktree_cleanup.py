@@ -16,6 +16,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+import archive_worktree_delivery_evidence as evidence_archive
+
 
 ALLOWED_BRANCH = re.compile(r"^(feature|fix|refactor|audit|codex)/.+$")
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
@@ -78,10 +80,39 @@ def verify_evidence_receipt(selected: Worktree, receipt_path: Path) -> None:
         raise CleanupError("evidence receipt worktree identity mismatch")
     if receipt.get("candidateHead") != selected.head:
         raise CleanupError("evidence receipt HEAD mismatch")
+    topic = receipt.get("topic")
+    manifest_path = Path(receipt.get("manifestPath", "")).resolve()
+    if not isinstance(topic, str) or not topic:
+        raise CleanupError("evidence receipt topic is missing")
+    if selected.path not in manifest_path.parents or not manifest_path.is_file():
+        raise CleanupError("evidence receipt manifest is missing or outside the worktree")
+    manifest_digest = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    if manifest_digest != receipt.get("manifestSha256"):
+        raise CleanupError("evidence receipt manifest hash mismatch")
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise CleanupError(f"cannot read evidence manifest: {exc}") from exc
+    if (
+        manifest.get("schemaVersion") != 1
+        or manifest.get("topic") != topic
+        or manifest.get("candidateHead") != selected.head
+    ):
+        raise CleanupError("evidence receipt does not match its batch manifest")
     rows = receipt.get("files")
     roles = {row.get("role") for row in rows or [] if isinstance(row, dict)}
     if roles != {"summary", "identity", "screenshot", "review"}:
         raise CleanupError("evidence receipt does not cover all required roles")
+    receipt_entries = sorted(
+        (row.get("role"), row.get("sourcePath")) for row in rows if isinstance(row, dict)
+    )
+    manifest_entries = sorted(
+        (row.get("role"), row.get("path"))
+        for row in manifest.get("files", [])
+        if isinstance(row, dict)
+    )
+    if receipt_entries != manifest_entries:
+        raise CleanupError("evidence receipt files do not match its batch manifest")
     for row in rows:
         archived = Path(row.get("archivePath", "")).resolve()
         if selected.path == archived or selected.path in archived.parents or not archived.is_file():
@@ -89,6 +120,10 @@ def verify_evidence_receipt(selected: Worktree, receipt_path: Path) -> None:
         digest = hashlib.sha256(archived.read_bytes()).hexdigest()
         if archived.stat().st_size <= 0 or digest != row.get("sha256"):
             raise CleanupError(f"archived evidence verification failed: {archived}")
+        try:
+            evidence_archive.validate_evidence_file(row.get("role"), archived, selected.head)
+        except evidence_archive.ArchiveError as exc:
+            raise CleanupError(f"archived evidence role validation failed: {exc}") from exc
 
 
 def plan_cleanup(root: Path, candidate: Path) -> Worktree:

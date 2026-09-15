@@ -218,8 +218,9 @@
   清理必须使用 `make workspace.worktree.cleanup`。
 - 交付工作树清理前，必须先通过 `make workspace.evidence.archive` 把交付摘要、候选身份、
   关键截图和独立复核报告复制到工作树外的既有 `.codex-evidence/workspace-archives`
-  目录。归档入口逐文件重读并校验 SHA256；清理入口只接受候选路径和精确 HEAD 都匹配的
-  外部 verified receipt。不得用重跑或补造文件替换原候选证据。
+  目录。摘要、身份、截图和复核报告必须满足各自文件类型并绑定同一候选 HEAD；归档入口逐文件
+  重读并校验 SHA256。清理入口还会重读本批清单，只接受候选路径、精确 HEAD、文件角色和哈希
+  全部匹配的外部 verified receipt。不得用任意文件、重跑或补造文件替换原候选证据。
 - 创建入口默认 dry-run；实际创建要求精确 40 位基线 SHA、仓库同级受控路径、
   未占用的合规分支和显式确认短语。
 - 创建后的工作区必须再次执行本文件规定的完整 preflight，才能开始写入。

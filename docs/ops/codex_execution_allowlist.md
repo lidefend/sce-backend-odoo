@@ -364,7 +364,9 @@ make workspace.evidence.archive \
 ```
 
 清单使用 `schemaVersion=1`，绑定精确 `candidateHead`，并分别列出 `summary`、
-`identity`、`screenshot`、`review` 四种角色的工作树内相对文件。归档 receipt 必须位于
+`identity`、`screenshot`、`review` 四种角色的工作树内相对文件。摘要、身份和复核文档必须
+包含该精确 HEAD；身份文件必须为 JSON，截图必须是内容签名有效的 PNG/JPEG/WebP，不能用任意文件
+冒充所需证据。归档 receipt 必须位于
 工作树之外，并通过 `CLEAN_WORKTREE_EVIDENCE_RECEIPT` 传给清理入口。
 
 目标必须是主仓库同级且以 `<repository-name>-` 开头的新目录；目标分支必须符合

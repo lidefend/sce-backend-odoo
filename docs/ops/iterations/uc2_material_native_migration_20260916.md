@@ -1,6 +1,6 @@
 # U-C2：材料入库／出库原生结构迁移
 
-状态：入库代表面已完成源码迁移并通过 L1、定向 L2 和受管增量升级；L4 在受管 fixture reset 被既有结算样本阻断，尚未扣减兼容消费者。
+状态：入库代表面已完成源码迁移并通过 L1、定向 L2 和受管增量升级；已确认受影响页面的只读浏览器样板不依赖全量 demo 对账，尚未完成 L4 浏览器证据和消费者扣减。
 
 ## 边界与基线
 
@@ -39,11 +39,12 @@
 | 层 | 命令 | 结果 | 测试数／事实 | 下一步 |
 |---|---|---|---|---|
 | L0 | `make codex.preflight` | passed | 基线完整指纹 `520b4856b3c958b612bcc1d3223653862c6c34f4238d6531fcff77585d84df44` | L1 |
-| L1 | `make ci.local.iteration` | passed | 16 tests；P4 归档工具另有 12 tests | L2 |
+| L1 | `make ci.local.iteration` | passed | 16 tests；P4 归档工具另有 16 tests | L2 |
 | L2 | `make local.dev.test ...` 四个入库精确方法 | passed | 4 个非零测试方法 | L3 |
-| L3 | `CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core make local.dev.upgrade MODULE=smart_construction_core` | passed | `sc-local-dev` / `sc_dev_demo` / `^sc_dev_demo$` / `sc_local_dev_odoo_data` | fixture reset |
-| L4 前置 | `make local.dev.sync_demo` | failed | 既有已审批结算样本发票金额期望 280000、实际 0；failure owner 为 demo settlement fixture | 修复独立环境前置后，从 fixture reset 恢复 |
-| L4 浏览器 | 未运行 | not_run | 早期 fixture 失败阻断；没有截图、没有浏览器扣减依据 | 保持台账 46 |
+| L3 | `CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core make local.dev.upgrade MODULE=smart_construction_core` | passed | `sc-local-dev` / `sc_dev_demo` / `^sc_dev_demo$` / `sc_local_dev_odoo_data` | 只读候选运行态 |
+| L4 错误前置诊断 | `make local.dev.sync_demo` | failed | 该入口调用 `demo.load.full`，会写入并对账全量演示数据；既有已审批结算样本发票金额期望 280000、实际 0 | 单列 demo settlement fixture 问题，不作为只读样板门禁 |
+| L4 只读前置 | `local.dev.candidate.frontend.up/health/visual-smoke` 调用链审计 | passed | 保留允许分支、干净精确 HEAD、源码挂载、数据库/dbfilter/filestore、有效账号和目标路由身份检查；不调用 demo reset | action 546 创建态与已有查看态 |
+| L4 浏览器 | 未运行 | not_run | 尚无截图和浏览器扣减依据 | 保持台账 46 |
 
 曾运行一次过宽的 `TestUserFeedbackBusinessViews`，71 个方法中出现 13 failed / 16 errors；入库新增契约测试通过，新增静态断言的作用域错误已修复。其余失败属于既有发票、费用归属、历史模型和列表基线，不作为本批测试入口，也未通过重复宽测掩盖。
 
@@ -55,6 +56,7 @@ UC1 发布台账保持 46。入库虽已在实际模块升级后无兼容结构�
 
 新增 `make workspace.evidence.archive`，使用精确候选 HEAD 清单归档摘要、身份绑定、关键截图和独立复核报告到工作树外既有
 `.codex-evidence/workspace-archives`。入口复制后逐文件重读并校验 SHA256；
-`make workspace.worktree.cleanup` 的 apply 模式要求匹配候选路径和 HEAD 的 verified receipt。U-C2 工作树当前不清理；待浏览器与独立复核完成后才生成这四类实际证据并执行归档。
+摘要、身份和复核文档必须含精确候选 HEAD，身份必须为 JSON，截图必须具备有效图片内容签名。
+`make workspace.worktree.cleanup` 的 apply 模式会重读本批 manifest，并要求路径、HEAD、角色清单和哈希均与外部 verified receipt 匹配。16 个定向单元测试已证明 receipt 缺失、HEAD 不匹配、归档文件缺失及哈希不符时均拒绝清理；任意文本冒充截图或未绑定 HEAD 的文档同样被拒绝。反例只使用临时仓库，没有清理历史工作树。U-C2 工作树当前不清理；待浏览器与独立复核完成后才生成四类实际证据并执行归档。
 
 action 777 保持原“环境阻断、未通过”状态，本批没有探测或改写。
