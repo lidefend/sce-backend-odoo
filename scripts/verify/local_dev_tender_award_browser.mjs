@@ -280,6 +280,12 @@ try {
   report.pass = report.errors.length === 0;
 } catch (error) {
   report.error = error instanceof Error ? error.stack || error.message : String(error);
+  report.failure_page = {
+    url: page.url(),
+    title: await page.title().catch(() => ''),
+    body_text: await page.locator('body').innerText().then((value) => value.replace(/\s+/g, ' ').trim().slice(0, 2000)).catch(() => ''),
+  };
+  await page.screenshot({ path: path.join(outputDir, 'failure.png'), fullPage: true }).catch(() => {});
 } finally {
   await browser.close().catch(() => {});
   fs.writeFileSync(path.join(outputDir, 'summary.json'), JSON.stringify(report, null, 2));
