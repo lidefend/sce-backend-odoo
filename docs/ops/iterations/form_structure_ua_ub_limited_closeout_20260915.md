@@ -166,3 +166,11 @@ Formal Product Layer／Layer Target：P4验证工具及精确归属、P0通用UI
 独立复核发现初稿守卫漏计自闭合按钮并允许Vue事件属性；修复使用HTMLParser统计所有开始标签，为两个展示控件限定精确属性集合。追加自闭合、:onClick／:onDblclick和动态属性反例后，两入口15／16测试再次通过，审查意见待最终确认关闭。
 
 原始证据位于同一closeout目录，包含各失败日志、静态尾部续跑与生成检查；本条不预先宣布新候选门禁通过。本批仍为有限U-A/U-B交付；action777未通过、兼容53→50和U-C1未实施均保持。
+
+### 9.4 付款创建读取失败的证据补齐
+
+dc6aa93040cfe6f546025236cd586c9cfc937482 本地Quick通过；远端run34973405306的全部静态、构建与26项导航身份均通过，专业质量／公共／合并策略最终通过。首个运行失败为2026-09-15T13:26:01Z `verify.frontend.delivery_hardening.release.browser` 内form_open_warmup：finance角色、隔离sc_frontend_acceptance、action809/menu559付款创建表单中，`[data-field-name="amount"] input`在45秒内未可见。表单身份唯一、DOM字段列表含amount、无driver错误；这不能证明输入可用，也不足以区分readonly、hidden或输入未创建。
+
+旧CI只上传汇总JSON，未上传runner已通过受管capture尝试保存的失败截图。P4／scripts/verify与CI上传清单仅补充失败证据：精确控件可见性、readonly及禁用状态、source SHA／时间／入口，并上传指定failure截图与JSON。不读取字段值，不扩大原始网络trace上传，不放宽金额输入断言或权限，不改产品。
+
+25个既有定向测试通过，新增测试实际在Node执行诊断函数，区分readonly无input、隐藏input和可编辑input；输入value访问器设为抛错以防诊断读取值。CI入口及安全守卫通过。该批属于证据工具补齐，尚非付款问题修复；新候选门禁若再失败，以新增现场定位首个实际失效层，禁止凭“字段存在”放宽验收。原成功浏览器证据继续承接，action777与53→50不变。

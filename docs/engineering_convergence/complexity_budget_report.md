@@ -89,13 +89,13 @@ Generated from repository source files. This report is informational during the 
 | 1249 | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
 | 1247 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1240 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
+| 1234 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1226 | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 1225 | Python source | `addons/smart_construction_core/tests/test_p1_funding_authority.py` |
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1195 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1194 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
-| 1194 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1169 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1152 | Python source | `addons/smart_construction_core/models/support/tender.py` |
@@ -153,8 +153,8 @@ Generated from repository source files. This report is informational during the 
 | 314 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |
 | 313 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |
 | 310 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
+| 308 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 305 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
-| 305 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 302 | Shell script | `scripts/deploy/prod_sim_fresh_replay.sh` |
 | 298 | Shell script | `scripts/ops/git_safe_push.sh` |
 | 287 | Shell script | `scripts/common/frontend_release_ci_identity.sh` |
@@ -231,13 +231,13 @@ Generated from repository source files. This report is informational during the 
 | 1249 | warning | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
 | 1247 | warning | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1240 | warning | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
+| 1234 | warning | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1226 | warning | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 1225 | warning | Python source | `addons/smart_construction_core/tests/test_p1_funding_authority.py` |
 | 1218 | warning | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1208 | warning | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1195 | warning | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1194 | warning | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
-| 1194 | warning | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1169 | warning | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1157 | warning | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1152 | warning | Python source | `addons/smart_construction_core/models/support/tender.py` |
