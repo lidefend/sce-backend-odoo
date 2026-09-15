@@ -1,12 +1,12 @@
 {
-  "head": "967ff6f425436c5e8792fddbde0fc3a58060e30b",
+  "head": "28b7695dc9f1cebbbe9bd5d715e951c6dec8a4da",
   "scope": {
     "role": "system_admin",
     "companyId": 1,
     "operation": "model",
     "renderProfile": "create"
   },
-  "count": 50,
+  "count": 46,
   "fullRescan": false,
   "sourceInventory": "artifacts/form-structure-unification/customer-browser-final/compatibility-consumers.json",
   "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
@@ -11727,78 +11727,6 @@
       "compatibilityConsumer": true,
       "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
       "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_p1_income_contract",
-      "actionId": 609,
-      "menuId": 660,
-      "model": "construction.contract.income",
-      "actualViewId": 1569,
-      "layoutPolicy": "category_sections_as_task_tabs",
-      "configuration": {
-        "source": "sc.business.category.form_policy_json",
-        "categoryId": 8,
-        "categoryCode": "contract.income",
-        "targetModel": "construction.contract.income"
-      },
-      "compatibilityConsumer": true,
-      "sourceHead": "967ff6f425436c5e8792fddbde0fc3a58060e30b",
-      "evidenceStatus": "verified_prior_undercount",
-      "runtimeEvidence": "identity-609/desktop-identity-609-entry-identity.json"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_p1_expense_contract",
-      "actionId": 610,
-      "menuId": 661,
-      "model": "construction.contract.expense",
-      "actualViewId": 1570,
-      "layoutPolicy": "category_sections_as_task_tabs",
-      "configuration": {
-        "source": "sc.business.category.form_policy_json",
-        "categoryId": 10,
-        "categoryCode": "contract.expense",
-        "targetModel": "construction.contract.expense"
-      },
-      "compatibilityConsumer": true,
-      "sourceHead": "967ff6f425436c5e8792fddbde0fc3a58060e30b",
-      "evidenceStatus": "verified_prior_undercount",
-      "runtimeEvidence": "identity-610/desktop-identity-610-entry-identity.json"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_p1_income_settlement",
-      "actionId": 781,
-      "menuId": 664,
-      "model": "sc.settlement.order",
-      "actualViewId": 1764,
-      "layoutPolicy": "category_sections_as_task_tabs",
-      "configuration": {
-        "source": "sc.business.category.form_policy_json",
-        "categoryId": 12,
-        "categoryCode": "settlement.income",
-        "targetModel": "sc.settlement.order"
-      },
-      "compatibilityConsumer": true,
-      "sourceHead": "967ff6f425436c5e8792fddbde0fc3a58060e30b",
-      "evidenceStatus": "verified_prior_undercount",
-      "runtimeEvidence": "identity-781/desktop-identity-781-entry-identity.json"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_p1_expense_settlement",
-      "actionId": 782,
-      "menuId": 665,
-      "model": "sc.settlement.order",
-      "actualViewId": 1764,
-      "layoutPolicy": "category_sections_as_task_tabs",
-      "configuration": {
-        "source": "sc.business.category.form_policy_json",
-        "categoryId": 13,
-        "categoryCode": "settlement.expense",
-        "targetModel": "sc.settlement.order"
-      },
-      "compatibilityConsumer": true,
-      "sourceHead": "967ff6f425436c5e8792fddbde0fc3a58060e30b",
-      "evidenceStatus": "verified_prior_undercount",
-      "runtimeEvidence": "identity-782/desktop-identity-782-entry-identity.json"
     }
   ],
   "otherStateConsumers": [
@@ -11943,42 +11871,67 @@
     "countCorrection": 4,
     "migrationReduction": 3
   },
+  "publishedCount": 46,
+  "uc1PublishedAudit": {
+    "auditedAt": "2026-09-16",
+    "auditedReleaseHead": "28b7695dc9f1cebbbe9bd5d715e951c6dec8a4da",
+    "iterationRecord": "docs/ops/iterations/uc1_contract_settlement_native_migration_20260915.md",
+    "reduction": {
+      "before": 50,
+      "after": 46,
+      "retiredActions": [
+        609,
+        610,
+        781,
+        782
+      ],
+      "retiredViews": [
+        1569,
+        1570,
+        1764
+      ]
+    },
+    "sourceVerification": {
+      "nativeStructureAuthority": true,
+      "configuredSectionsEmpty": true,
+      "compatibilityDependenciesEmpty": true
+    },
+    "browserEvidence": {
+      "recordedOutcome": "passed_and_user_accepted_in_merged_iteration_record",
+      "rawFiles": "deleted_unreviewable_after_worktree_cleanup",
+      "recreated": false,
+      "acceptanceRerun": false
+    }
+  },
   "runtimeEvidenceRoot": "artifacts/form-structure-unification/ub-tender-hierarchy-identities",
   "nextBatch": {
-    "name": "U-C",
+    "name": "U-C2",
     "priorityActions": [
-      781,
-      782,
-      609,
-      610
+      546,
+      547
     ],
     "groups": [
       {
-        "viewId": 1764,
+        "viewId": 1428,
         "actions": [
-          781,
-          782
+          546
         ],
         "sourceCategories": [
-          12,
-          13
+          "material.inbound"
         ]
       },
       {
-        "viewIds": [
-          1569,
-          1570
-        ],
+        "viewId": 1431,
         "actions": [
-          609,
-          610
+          547
         ],
         "sourceCategories": [
-          8,
-          10
+          "material.outbound",
+          "material.return"
         ]
       }
-    ]
+    ],
+    "scopeNote": "material.return shares the sc.material.outbound native form; supplier return uses a separate native model and is outside this 46-entry ledger"
   },
   "retirementCondition": "Only after every formal consumer of a compatibility regrouping path is zero and other roles/companies/states are covered, remove that regrouping logic and its test exemptions."
 }
