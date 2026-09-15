@@ -83,32 +83,32 @@
                     </group>
 
                     <group string="中标事实确认"
-                           modifiers="{'invisible': [['state','not in',['submitted','waiting','won']]]}">
+                           invisible="state not in ['submitted', 'waiting', 'won']">
                         <group>
                             <field name="award_opening_id"
                                    domain="[('bid_id','=',id),('result','=','won')]"
-                                   modifiers="{'readonly': [['award_confirmed_at','!=',False]]}"/>
+                                   readonly="award_confirmed_at"/>
                             <field name="award_source_kind"
-                                   modifiers="{'readonly': [['award_confirmed_at','!=',False]]}"/>
+                                   readonly="award_confirmed_at"/>
                             <field name="award_source_reference"
-                                   modifiers="{'readonly': [['award_confirmed_at','!=',False]]}"/>
+                                   readonly="award_confirmed_at"/>
                             <field name="award_source_attachment_id"
-                                   modifiers="{'readonly': [['award_confirmed_at','!=',False]]}"/>
+                                   readonly="award_confirmed_at"/>
                         </group>
                         <group>
                             <field name="award_tax_basis"
-                                   modifiers="{'readonly': [['award_confirmed_at','!=',False]]}"/>
+                                   readonly="award_confirmed_at"/>
                             <field name="award_confirmation_state" readonly="1"/>
                             <field name="award_amount" readonly="1"
-                                   modifiers="{'invisible': [['award_confirmed_at','=',False]]}"/>
+                                   invisible="not award_confirmed_at"/>
                             <field name="award_currency_id" readonly="1"
-                                   modifiers="{'invisible': [['award_confirmed_at','=',False]]}"/>
+                                   invisible="not award_confirmed_at"/>
                             <field name="award_confirmed_by_id" readonly="1"
-                                   modifiers="{'invisible': [['award_confirmed_at','=',False]]}"/>
+                                   invisible="not award_confirmed_at"/>
                             <field name="award_confirmed_at" readonly="1"/>
                         </group>
                         <field name="award_contract_handoff_message" readonly="1" nolabel="1"
-                               modifiers="{'invisible': [['award_contract_handoff_message','=',False]]}"/>
+                               invisible="not award_contract_handoff_message"/>
                     </group>
 
                     <notebook>
