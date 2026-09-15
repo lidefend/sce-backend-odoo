@@ -304,8 +304,21 @@ try {
   check(!confirmed.contract_id, 'contract was created unexpectedly', confirmed);
   report.authoritative_after_confirm = confirmed;
 
-  const repeat = await postIntent(page, repeatRequest);
-  report.mutations.push({ intent: 'execute_button', method: 'action_mark_won', repeat: true, status: repeat.status });
+  const repeat = await postIntent(page, repeatRequest, true);
+  const repeatDenied = repeat.body?.error?.code === 'PERMISSION_DENIED'
+    && repeat.body?.error?.message === 'ACTION_CONTRACT_NOT_AUTHORIZED';
+  check(
+    (repeat.status === 200 && repeat.body?.ok === true) || repeatDenied,
+    'repeat request was neither idempotent nor rejected by the updated action contract',
+    repeat,
+  );
+  report.mutations.push({
+    intent: 'execute_button',
+    method: 'action_mark_won',
+    repeat: true,
+    status: repeat.status,
+    outcome: repeatDenied ? 'rejected_by_action_contract' : 'idempotent_success',
+  });
   const repeated = await readBid(page);
   check(repeated.award_confirmed_at === confirmed.award_confirmed_at, 'repeat request changed confirmation time', { confirmed, repeated });
   check(Number(repeated.award_amount) === 900 && !repeated.contract_id, 'repeat request changed snapshot or created contract', repeated);
