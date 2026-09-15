@@ -1720,6 +1720,25 @@ secondaryStatusNode.fields[0].fieldCode = 'secondary_state';
 secondaryStatusNode.fields[0].widgetId = 'field.secondary_state';
 multiStatusModel.zones.primary[0].children.push(secondaryStatusNode);
 
+const nativeVisibilityModel = structuredClone(multiStatusModel);
+nativeVisibilityModel.identity.structureAuthority = 'containerTree';
+const nativeVisibilityBridge = buildCanonicalNativeFormBridge(nativeVisibilityModel);
+const semanticHiddenNode = {
+  type: 'field', name: 'field_fixture', visible: true,
+  attributes: { surfaceRole: 'hidden', technical: true },
+};
+assert.equal(nativeVisibilityBridge.nodeVisible(semanticHiddenNode), true,
+  'native semantic metadata must not hide a field explicitly visible in normalized status');
+assert.equal(nativeVisibilityBridge.nodeVisible({ ...semanticHiddenNode, visible: false }), false,
+  'native hidden status must remain authoritative');
+const compatibilityVisibilityModel = structuredClone(nativeVisibilityModel);
+compatibilityVisibilityModel.identity.structureAuthority = 'compatibility';
+assert.equal(buildCanonicalNativeFormBridge(compatibilityVisibilityModel).nodeVisible(semanticHiddenNode), false,
+  'unmigrated compatibility consumers retain their semantic hiding behavior');
+const nativeClaimedVisibilityBridge = buildCanonicalNativeFormBridge(nativeVisibilityModel, undefined, '', 'field_fixture');
+assert.equal(nativeClaimedVisibilityBridge.nodeVisible(semanticHiddenNode), false,
+  'native statusbar ownership still prevents duplicate body rendering');
+
 const unclaimedStatusBridge = buildCanonicalNativeFormBridge(multiStatusModel);
 const isStatusbarNode = (node: { widget?: string; attributes?: Record<string, unknown> }) => (
   String(node.widget || node.attributes?.widget || '') === 'statusbar'
@@ -3238,4 +3257,4 @@ assert.equal(
   'canonical validation must project an explicit field identity even when labels overlap',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=165');
+console.log('[canonical_form_presenter_test] PASS cases=169');
