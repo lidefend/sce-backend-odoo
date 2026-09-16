@@ -13,7 +13,10 @@ decision:
   rules:
     - select_a_goal_before_mutation
     - declare_formal_product_layer_before_mutation
-    - freeze_exact_file_scope_and_exclusions
+    - declare_exact_file_scope_and_exclusions
+    - daily_identity_is_head_plus_explicit_dirty_scope
+    - full_fingerprint_and_archive_hashes_are_final_delivery_evidence
+    - reuse_evidence_by_input_impact_not_commit_identity
     - preserve_changes_owned_by_parallel_work
     - use_only_registered_runtime_and_verification_entries
     - record_not_run_failed_and_passed_as_distinct_states

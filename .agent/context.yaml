@@ -113,7 +113,13 @@ execution:
   stop_on_unowned_new_change: true
   require_formal_layer_declaration: true
   require_single_objective_batch: true
-  require_complete_candidate_fingerprint: true
+  require_complete_candidate_fingerprint: final_delivery_only
+  daily_candidate_identity: head_and_explicit_dirty_scope
+  batch_record_policy: one_living_record
+  evidence_invalidation: changed_inputs_and_dependencies
+  completion_status_dimensions: [batch, mainline, deployment, user_acceptance]
+  pr_merge_is_product_delivery: false
+  full_product_acceptance_trigger: selected_delivery_version
   require_non_zero_targeted_tests: true
   remote_writes_via_make_only: true
 
@@ -128,7 +134,7 @@ run_statuses:
 evidence_defaults:
   - branch
   - full_baseline_sha
-  - complete_candidate_fingerprint
+  - stage_identity_head_dirty_or_final_fingerprint
   - exact_file_scope
   - excluded_preexisting_changes
   - commands_and_results
