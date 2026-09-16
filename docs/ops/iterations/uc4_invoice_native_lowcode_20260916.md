@@ -70,10 +70,23 @@ Formal Product Layer=P1；Layer Target=发票四入口原生默认结构与旧�
 - L1 `make ci.local.iteration`：16 项测试 + 全部守卫 PASS（增量计划 9 路径未映射，按规则选定非零 L2 目标）。
 - L2 `make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestInvoiceNativeLowcode'`：首轮 2 失败（①生成镜像未退役触发 `legacy_configuration_structure_suppression`——正是遗漏的第 7 条；②测试自身子串断言把原生组标题「发票金额与税额」误判为已退役章节「发票金额」），修复后 0 failed / 0 error。
 - L3 `make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1`：ready + demo.authority PASS；`local.dev.restart` + `local.dev.health` PASS（profile=persistent, dbfilter 校验通过）。
-- 运行态冒烟（odoo shell，sc_dev_demo 实库）：7 条契约状态正确（4 条 action 配置 active+native+无 sections；sections_v1(150)/P1(9)/生成镜像(81) 均 active=False）；四正式入口（785/786/787/788）governance=`native_authority`/`task`/compat=[]/configuredSections=0，9 个锚点组全部在 containerTree；两旁路（789 进项税额上报、639 发票总台账）`native_authority`/`workspace`/compat=[]/无已退役章节，同一原生树正常承载。冒烟过程中确认 admin 账号不在发票模型四个能力组（既有权限边界，非本批回归）。
+- 运行态冒烟（odoo shell，sc_dev_demo 实库）：7 条旧结构职责退役后契约状态正确（4 条 action 配置 active+native+无 sections；sections_v1(150)/P1(9)/生成镜像(81) 均 active=False）；四正式入口（785/786/787/788）governance=`native_authority`/`task`/compat=[]/configuredSections=0，9 个锚点组全部在 containerTree；两旁路（789 进项税额上报、639 发票总台账）`native_authority`/`workspace`/compat=[]/无已退役章节，同一原生树正常承载。冒烟过程中确认 admin 账号不在发票模型四个能力组（既有权限边界，非本批回归）。
+
+### 源码复核回应（用户复核 720bfb15 后，同日）
+
+用户复核结论：实施方向正确、可继续，但"全绿"证明范围偏窄，冻结前三缺口须集中补齐。本轮修齐（仅测试强化，无产品修改，未重复升级）：
+
+1. **权威断言去兜底**：旁路测试原先在 `formStructureAuthority` 缺失时默认成功值——已改为键必须存在（`assertIn`）+ 明确断言实际模式（旁路=`native_authority`/`workspace`；正式入口=`native_authority`/`task`）。键名经 ui_contract_v2.py `formal_governance_source` 映射表核实（snake→camel 精确键）。
+2. **字段有效规则断言**：新增 `test_shared_form_effective_field_rules`——关键字段断言单一 occurrence、归属组（tax_type/prepaid_tax_date/tax_certificate_no→invoice_prepaid_tax；applicant_name/expected_receipt_date→invoice_output_business）、条件组 invisible 表达式原文（预缴/销项两组）、无条件组不得携带 invisible、readonly 约束保留（company_id/note_display/legacy_*/source_created_*）、可编辑字段未被静默置只读。
+3. **低代码断言补齐**：预览态与发布态分别断言 `note_display` 在最终树上 modifiers.invisible 生效（非仅补丁在途）；回滚后显式断言恢复可见；基线前置断言可见。
+4. **tax_type 进项显隐核查（原有规则判定，非迁移回归）**：机制对照测试 `test_tax_type_input_visibility_is_preexisting_native_rule`——事务内重建 legacy 复合态（native 785 配置停用 + 三条共享层激活 + 旧 entry 配置机制等价副本，其 tax_type 声明与旧配置一致：section 成员 + 无语义键字段行），断言 legacy 态 `formStructureAuthority=entry_semantic_surface` 且 configuredSections 非空（重建确实走旧路径）后比对：**tax_type 节点 modifiers/attributes 与迁移后完全一致，预缴组 invisible 表达式逐字一致**；辅以 git diff（b80b2cde→HEAD）证明预缴组表达式未被本批改动。结论：旧进项配置将 tax_type 列入「进项税务信息」section，但正文树自始将其置于仅预缴方向可见的组，entry 配置投影从未翻转原生隐藏——**进项方向 tax_type 隐藏为原有产品歧义（配置声明与原生显隐矛盾），维持原状不擅改**；若产品决定进项需要 tax_type，属业务规则取舍，另行批次决策。
+
+措辞修正：本批准确表述为「七条旧结构职责退役」（4 条 action 配置转换为 native 稀疏契约 + 3 条共享层停用），非"七条配置全部停用"。低代码三测覆盖预览/发布/回滚后端链路与入口隔离，UI 操作闭环留待 L4 浏览器复核。
+
+定向 L2 复跑：`TestInvoiceNativeLowcode` 5 测 0 failed / 0 error（含两轮修复：walk 元组化、无产品代码改动）。
 
 未覆盖（后续阶段）：浏览器层 L4 复核（四入口新建/查看样本、窄屏、配置闭环 UI、隔离反例的浏览器证据）、整组冻结与 Quick、L5 集成门禁。台账扣减（42→38）须待主线合入后按发布核对流程执行。
 
 ## 状态
 
-本批首轮实施自验通过（L1/L2/L3+运行态冒烟），待整组浏览器复核｜本批未集成｜未部署｜89入口交付未完成。主线剩余 42 不变；本地已验证 G02 四项旧路径退出候选（含 7 条旧配置全部退役）。
+本批首轮实施+源码复核断言强化自验通过（L1/L2/L3+运行态冒烟），待整组浏览器复核（L4）｜本批未集成｜未部署｜89入口交付未完成。主线剩余 42 不变；本地已验证 G02 四项旧路径退出候选（七条旧结构职责退役：4 条转换 + 3 条停用）。冻结、Quick、独立复核须待整组浏览器结果交回后再启动，不自动连续放行。
