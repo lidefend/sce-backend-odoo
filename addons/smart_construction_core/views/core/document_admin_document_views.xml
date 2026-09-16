@@ -75,75 +75,78 @@
                         <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,done,cancel" />
                     </header>
                     <sheet>
-                        <group>
-                            <group string="申请信息">
-                                <field name="document_no" />
-                                <field name="name" />
-                                <field name="fact_type" />
-                                <field name="business_date" />
-                                <field name="requester_id" />
-                                <field name="department_id" />
-                            </group>
-                            <group string="公司资料存档" invisible="fact_type != 'company_document_archive'">
-                                <field name="document_title" required="fact_type == 'company_document_archive'" />
-                                <field name="holder_name" string="保管单位/部门" />
-                            </group>
-                            <group string="证照登记" invisible="fact_type != 'certificate_registration'">
-                                <field name="certificate_name" required="fact_type == 'certificate_registration'" />
-                                <field name="certificate_no" required="fact_type == 'certificate_registration'" />
-                                <field name="holder_name" required="fact_type == 'certificate_registration'" />
-                                <field name="issue_authority" />
-                                <field name="issue_date" />
-                                <field name="valid_until" />
-                            </group>
-                            <group string="借阅申请" invisible="fact_type != 'document_borrow'">
-                                <field name="document_title" required="fact_type == 'document_borrow'" />
-                                <field name="borrow_user_id" required="fact_type == 'document_borrow'" />
-                                <field name="borrower_name" />
-                                <field name="borrow_project_name" />
-                                <field name="borrow_department_name" />
-                                <field name="borrower_contact" />
-                                <field name="borrow_form" />
-                                <field name="borrow_date" required="fact_type == 'document_borrow'" />
-                                <field name="application_date" />
-                                <field name="responsible_person" />
-                                <field name="expected_return_date" required="fact_type == 'document_borrow'" />
-                                <field name="return_request_date" />
-                                <field name="return_apply_time" />
-                                <field name="returned_flag" />
-                                <field name="return_confirm_time" />
-                                <field name="actual_return_date" />
-                                <field name="modifier_name" />
-                                <field name="modified_at" />
-                                <field name="modify_note" />
-                                <field name="reviewer_name" />
-                                <field name="review_time" />
-                                <field name="review_opinion" />
-                            </group>
-                            <group string="制度文件" invisible="fact_type != 'policy_document'">
-                                <field name="document_title" />
-                                <field name="policy_category" />
-                                <field name="policy_version" />
-                                <field name="issuing_department" />
-                                <field name="policy_issue_date" />
-                                <field name="policy_effective_date" />
-                                <field name="policy_expiry_date" />
-                                <field name="confidentiality_level" />
-                            </group>
+                        <group data-sc-anchor="document_identity" name="document_identity" string="办理主信息">
+                            <field name="document_no" />
+                            <field name="name" />
+                            <field name="fact_type" />
+                            <field name="project_id" invisible="fact_type != 'certificate_registration'" />
+                            <field name="business_date" />
+                            <field name="requester_id" />
+                            <field name="department_id" />
                         </group>
-                        <group>
-                            <group string="办理">
-                                <field name="handler_id" />
-                                <field name="due_date" />
-                                <field name="active" />
-                            </group>
-                            <group string="历史来源">
-                            </group>
+                        <group string="公司资料存档" invisible="fact_type != 'company_document_archive'">
+                            <field name="document_title" required="fact_type == 'company_document_archive'" />
+                            <field name="holder_name" string="保管单位/部门" />
+                        </group>
+                        <group data-sc-anchor="certificate_details" name="certificate_details" string="证照信息" invisible="fact_type != 'certificate_registration'">
+                            <field name="certificate_name" required="fact_type == 'certificate_registration'" />
+                            <field name="certificate_no" required="fact_type == 'certificate_registration'" />
+                            <field name="holder_name" required="fact_type == 'certificate_registration'" />
+                            <field name="issue_authority" />
+                            <field name="issue_date" />
+                            <field name="valid_until" />
+                        </group>
+                        <group string="借阅申请" invisible="fact_type != 'document_borrow'">
+                            <field name="document_title" required="fact_type == 'document_borrow'" />
+                            <field name="borrow_user_id" required="fact_type == 'document_borrow'" />
+                            <field name="borrower_name" />
+                            <field name="borrow_project_name" />
+                            <field name="borrow_department_name" />
+                            <field name="borrower_contact" />
+                            <field name="borrow_form" />
+                            <field name="borrow_date" required="fact_type == 'document_borrow'" />
+                            <field name="application_date" />
+                            <field name="responsible_person" />
+                            <field name="expected_return_date" required="fact_type == 'document_borrow'" />
+                            <field name="return_request_date" />
+                            <field name="return_apply_time" />
+                            <field name="returned_flag" />
+                            <field name="return_confirm_time" />
+                            <field name="actual_return_date" />
+                            <field name="modifier_name" />
+                            <field name="modified_at" />
+                            <field name="modify_note" />
+                            <field name="reviewer_name" />
+                            <field name="review_time" />
+                            <field name="review_opinion" />
+                        </group>
+                        <group data-sc-anchor="policy_details" name="policy_details" string="制度文件" invisible="fact_type != 'policy_document'">
+                            <field name="document_title" string="制度名称" />
+                            <field name="policy_category" />
+                            <field name="policy_version" />
+                            <field name="issuing_department" />
+                            <field name="policy_issue_date" />
+                            <field name="policy_effective_date" />
+                            <field name="policy_expiry_date" />
+                            <field name="confidentiality_level" />
+                        </group>
+                        <group name="document_handling" data-sc-anchor="document_handling" string="办理">
+                            <field name="handler_id" />
+                            <field name="due_date" />
+                            <field name="active" />
+                        </group>
+                        <group data-sc-anchor="document_source" name="document_source" string="来源追溯" invisible="fact_type not in ['certificate_registration', 'policy_document']">
+                            <field name="legacy_document_no" readonly="1" />
+                            <field name="legacy_document_state" readonly="1" />
+                            <field name="legacy_source_table" readonly="1" />
+                            <field name="legacy_source_id" readonly="1" />
                         </group>
                         <notebook>
                             <page string="说明">
-                                <field name="description" />
-                                <field name="result_note" />
+                                <group name="document_notes" data-sc-anchor="document_notes" string="说明">
+                                    <field name="description" />
+                                    <field name="result_note" />
+                                </group>
                             </page>
                             <page string="附件">
                                 <field name="attachment_ids" widget="many2many_binary" />
