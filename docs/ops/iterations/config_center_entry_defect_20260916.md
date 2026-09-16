@@ -156,3 +156,13 @@ L0：基线HEAD与明确dirty范围；L1 `make ci.local.iteration`通过；L2 `m
 9项反例和完整相关unit入口、strict typecheck、L1通过；只补390px未应用输入门禁及离开操作，无配置发布/业务写入。对应日志review-fix-{static,targeted,typecheck,browser}.log。旧浏览器/发布回滚证据保留；变化只失效草稿异步状态及输入按钮部分，不重跑整套旅程。新的最终候选需要新Quick和变化范围独立复核，取消运行不计通过或复用。
 
 最终门禁补正：7bb16858候选Quick在frontend lint发现一个未使用解构变量replaceWorkbenchQuerySilently，门禁失败且没有receipt。仅删除该无用途绑定，不改变函数调用或页面行为。先单独运行verify.frontend.lint.src，通过后再刷新生成证据、冻结并运行新候选Quick；浏览器、延迟反例及独立复核的其余范围按无行为变化承接。此失败不是环境原因，也不称为Quick通过。
+
+### U-C3 squash 依赖同步工具修复（P4）
+
+U-C3 PR #484 已合并：源 HEAD `48151d07b61c6f42bc74008c6c5762334e8fb5a3`，main squash `640e356d90b556642c84397ce3ac2c75c636184e`，两者 Tree 均为 `aca2aad24c315a87029ecdc456f1ff90b7167b31`。配置中心冻结源仍为 `c3cb8e73d252e0dab24ab418eadebd0b26160d7c`，其后无产品代码修改。
+
+用户授权“先修复工具”。实际失效层为 P4：既有 sync-main 将共同祖先与重放边界绑定，无法承接已 squash 合入的依赖。现于原入口增加可选 DEPENDENCY_PR/HEAD/MERGE，后端查询权威 GitHub 仓库并核对已合并状态、目标 main、精确源及合并 SHA、祖先关系、单父提交及相同 Tree。共同祖先仍单独验证；只重放依赖后的责任提交。既有未发布限制、恢复 bundle、提交数、路径/补丁一致性及失败恢复保留。无新环境、凭据、产品规则或业务数据修改。
+
+验证身份为源 HEAD 加本节及四份工具/规则修改。L0 工作树及分支核对通过；L1 `make ci.local.iteration` 通过；L2 `make verify.workspace.branch.sync-main` 26 项通过（7.057s）。反例覆盖身份不符、参数缺失、非 squash、树不符、祖先不符、已发布分支、API 异常、补丁漂移、冲突恢复。首次反例预期错误已修正：根提交先被单父检查拒绝，另构造单父不同树验证树门禁。日志复用 `artifacts/config-center-entry/sync-tool-{iteration,tests}.log`。独立只读定向复核无 S0–S2；复核绑定文件哈希，最终门禁复核另按候选身份执行。
+
+本次 P4 不改变运行模块及前后端输入，L3/L4沿用既有产品证据，不升级数据库、不跑浏览器矩阵。同步会改变 HEAD；旧 Quick receipt 只属于原候选，不作为新候选通过依据。实际同步结果及恢复 bundle 路径写入已有未跟踪结果索引；本节不是冻结、远端发布或部署完成声明。配置中心本身不扣减消费者。

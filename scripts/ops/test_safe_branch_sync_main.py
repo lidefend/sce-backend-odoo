@@ -79,6 +79,110 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         self.assertEqual(len(git(self.root, "rev-list", f"{self.new_main}..{result.head}").stdout.splitlines()), 1)
         self.assertEqual(result.generated_evidence_conflicts, ())
 
+    def squash_dependency(self) -> dict:
+        dependency = self.head
+        (self.root / "topic.txt").write_text("topic\n", encoding="utf-8")
+        git(self.root, "add", "topic.txt")
+        git(self.root, "commit", "-m", "topic after dependency")
+        self.head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "switch", "main")
+        git(self.root, "reset", "--hard", self.old_base)
+        git(self.root, "merge", "--squash", dependency)
+        git(self.root, "commit", "-m", "squash dependency")
+        git(self.root, "push", "--force", "origin", "HEAD:main")
+        git(self.root, "fetch", "origin", "main")
+        self.new_main = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "switch", "feature/local-sync")
+        return dict(dependency_pr=123, dependency_head=dependency,
+                    dependency_merge=self.new_main, dependency_reader=lambda _: dict(
+                        number=123, state="MERGED", baseRefName="main", headRefOid=dependency,
+                        mergeCommit={"oid": self.new_main}))
+
+    def test_squash_dependency_replays_only_topic_and_preserves_tree(self) -> None:
+        args = self.squash_dependency()
+        plan = self.plan(**args)
+        self.assertEqual(plan.commit_count, 1)
+        self.assertEqual(plan.paths, ("topic.txt",))
+        result = syncer.sync(plan)
+        self.assertEqual(git(self.root, "rev-parse", f"{result.head}^{{tree}}").stdout,
+                         git(self.root, "rev-parse", f"{self.head}^{{tree}}").stdout)
+        self.assertEqual(len(git(self.root, "rev-list", f"{self.new_main}..HEAD").stdout.splitlines()), 1)
+        self.assertEqual(git(self.root, "bundle", "verify", str(plan.recovery_bundle)).returncode, 0)
+
+    def test_squash_dependency_rejects_incomplete_and_incorrect_pr_identity(self) -> None:
+        args = self.squash_dependency()
+        with self.assertRaisesRegex(syncer.SyncError, "supplied together"):
+            self.plan(dependency_pr=123)
+        record = args["dependency_reader"](123)
+        for key, value in (("number", 124), ("state", "OPEN"), ("baseRefName", "release"),
+                           ("headRefOid", self.head), ("mergeCommit", None),
+                           ("mergeCommit", {"oid": self.old_base})):
+            with self.subTest(key=key, value=value):
+                changed = {**record, key: value}
+                with self.assertRaisesRegex(syncer.SyncError, "identity mismatch"):
+                    self.plan(**{**args, "dependency_reader": lambda _: changed})
+
+    def test_squash_dependency_rejects_tree_mismatch_and_nonancestor(self) -> None:
+        args = self.squash_dependency()
+        record = args["dependency_reader"](123)
+        with self.assertRaisesRegex(syncer.SyncError, "single-parent"):
+            self.plan(**{**args, "dependency_merge": self.old_base,
+                         "dependency_reader": lambda _: {**record, "mergeCommit": {"oid": self.old_base}}})
+        git(self.root, "switch", "main")
+        (self.root / "unexpected.txt").write_text("different tree\n", encoding="utf-8")
+        git(self.root, "add", "unexpected.txt")
+        git(self.root, "commit", "-m", "different squash tree")
+        git(self.root, "push", "origin", "HEAD:main")
+        different = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "switch", "feature/local-sync")
+        with self.assertRaisesRegex(syncer.SyncError, "trees differ"):
+            self.plan(**{**args, "expected_main": different, "dependency_merge": different,
+                         "dependency_reader": lambda _: {**record, "mergeCommit": {"oid": different}}})
+        with self.assertRaisesRegex(syncer.SyncError, "ancestry mismatch"):
+            self.plan(**{**args, "expected_main": different, "dependency_head": self.new_main,
+                         "dependency_reader": lambda _: {**record, "headRefOid": self.new_main}})
+
+    def test_squash_dependency_does_not_bypass_publication_guards(self) -> None:
+        args = self.squash_dependency()
+        with self.assertRaisesRegex(syncer.SyncError, "open PR"):
+            self.plan(**args, pr_checker=lambda _: True)
+        git(self.root, "push", "origin", "HEAD:feature/local-sync")
+        with self.assertRaisesRegex(syncer.SyncError, "published"):
+            self.plan(**args)
+
+    def test_squash_dependency_patch_drift_restores_original_head(self) -> None:
+        args = self.squash_dependency()
+        plan = self.plan(**args)
+        with mock.patch.object(syncer, "patch_id", side_effect=["before", "after"]):
+            with self.assertRaisesRegex(syncer.SyncError, "patch identity changed.*restored"):
+                syncer.sync(plan)
+        self.assertEqual(git(self.root, "rev-parse", "HEAD").stdout.strip(), self.head)
+        self.assertEqual(git(self.root, "status", "--porcelain").stdout.strip(), "")
+
+    def test_dependency_lookup_fails_closed_and_pins_repository(self) -> None:
+        for code, output in ((1, "unavailable"), (0, "not json"), (0, "[]")):
+            with self.subTest(code=code, output=output):
+                with mock.patch.object(syncer.subprocess, "run", return_value=
+                                       subprocess.CompletedProcess([], code, output, "")) as call:
+                    with self.assertRaises(syncer.SyncError):
+                        syncer.merged_dependency(123)
+                    self.assertIn("lidefend/sce-backend-odoo", call.call_args.args[0])
+
+    def test_squash_dependency_conflict_restores_candidate(self) -> None:
+        args = self.squash_dependency()
+        git(self.root, "switch", "main")
+        (self.root / "topic.txt").write_text("conflicting main addition\n", encoding="utf-8")
+        git(self.root, "add", "topic.txt")
+        git(self.root, "commit", "-m", "main after squash")
+        main = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "switch", "feature/local-sync")
+        plan = self.plan(**args, expected_main=main)
+        with self.assertRaisesRegex(syncer.SyncError, "conflict.*restored"):
+            syncer.sync(plan)
+        self.assertEqual(git(self.root, "rev-parse", "HEAD").stdout.strip(), self.head)
+        self.assertEqual(git(self.root, "status", "--porcelain").stdout.strip(), "")
+
     def test_main_and_dirty_worktrees_are_denied(self) -> None:
         git(self.root, "switch", "main")
         with self.assertRaisesRegex(syncer.SyncError, "write-eligible"):

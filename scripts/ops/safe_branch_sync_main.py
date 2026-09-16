@@ -8,6 +8,7 @@ before replaying the branch's responsibility commits on an exact origin/main.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import subprocess
@@ -48,6 +49,11 @@ class SyncPlan:
     paths: tuple[str, ...]
     recovery_bundle: Path
     extended_history: bool = False
+    dependency_head: str | None = None
+
+    @property
+    def replay_base(self) -> str:
+        return self.dependency_head or self.old_base
 
 
 @dataclass(frozen=True)
@@ -93,6 +99,51 @@ def has_open_pr(branch: str) -> bool:
 
 def has_canonical_origin(root: Path) -> bool:
     return git_output(root, "remote", "get-url", "origin") in CANONICAL_ORIGIN_URLS
+
+
+def merged_dependency(pr: int) -> dict:
+    result = subprocess.run(
+        ["gh", "pr", "view", str(pr), "--repo", "lidefend/sce-backend-odoo",
+         "--json", "number,state,baseRefName,headRefOid,mergeCommit"],
+        env=sanitized_environment(), text=True, stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, check=False,
+    )
+    if result.returncode:
+        raise SyncError("unable to verify merged dependency PR")
+    try:
+        value = json.loads(result.stdout)
+    except (ValueError, TypeError) as exc:
+        raise SyncError("invalid merged dependency PR response") from exc
+    if not isinstance(value, dict):
+        raise SyncError("invalid merged dependency PR response")
+    return value
+
+
+def validate_dependency(root: Path, *, pr: int, head: str, merge: str,
+                        candidate: str, old_base: str, main: str,
+                        reader: Callable[[int], dict]) -> None:
+    ensure_sha("DEPENDENCY_HEAD", head)
+    ensure_sha("DEPENDENCY_MERGE", merge)
+    if pr <= 0:
+        raise SyncError("dependency PR must be positive")
+    info = reader(pr)
+    if (info.get("number") != pr or info.get("state") != "MERGED"
+            or info.get("baseRefName") != "main" or info.get("headRefOid") != head
+            or not isinstance(info.get("mergeCommit"), dict)
+            or info["mergeCommit"].get("oid") != merge):
+        raise SyncError("merged dependency PR identity mismatch")
+    for sha in (head, merge):
+        if not commit_exists(root, sha):
+            raise SyncError("dependency commit is unavailable")
+    for left, right in ((old_base, head), (head, candidate), (merge, main)):
+        if run(root, "merge-base", "--is-ancestor", left, right, check=False).returncode:
+            raise SyncError("dependency ancestry mismatch")
+    if head == old_base or head == candidate or head == merge:
+        raise SyncError("dependency must leave a distinct responsibility range")
+    if len(git_output(root, "rev-list", "--parents", "-n", "1", merge).split()) != 2:
+        raise SyncError("dependency merge must be a single-parent squash commit")
+    if git_output(root, "rev-parse", f"{head}^{{tree}}") != git_output(root, "rev-parse", f"{merge}^{{tree}}"):
+        raise SyncError("dependency source and squash trees differ")
 
 
 def has_exact_quick_evidence(root: Path, governance_root: Path, head: str) -> bool:
@@ -164,7 +215,7 @@ def generated_only_commit_count(plan: SyncPlan, paths: tuple[str, ...]) -> int:
             plan.root,
             "rev-list",
             "--reverse",
-            f"{plan.old_base}..{plan.head}",
+            f"{plan.replay_base}..{plan.head}",
         ).splitlines(),
     )
     count = 0
@@ -213,6 +264,9 @@ def validate(
     origin_checker: Callable[[Path], bool] = has_canonical_origin,
     allow_extended_history: bool = False, expected_commit_count: int | None = None,
     quick_evidence_checker: Callable[[Path, Path, str], bool] = has_exact_quick_evidence,
+    dependency_pr: int | None = None, dependency_head: str | None = None,
+    dependency_merge: str | None = None,
+    dependency_reader: Callable[[int], dict] = merged_dependency,
 ) -> SyncPlan:
     root = root.resolve()
     expected_root = expected_root.resolve()
@@ -260,10 +314,18 @@ def validate(
         raise SyncError("remote branch already exists; published history cannot be rewritten")
     if pr_checker(actual_branch):
         raise SyncError("open PR exists; published history cannot be rewritten")
-    merges = git_output(root, "rev-list", "--merges", f"{expected_old_base}..{expected_head}")
+    dependency_values = (dependency_pr, dependency_head, dependency_merge)
+    if any(value is not None for value in dependency_values):
+        if not all(value is not None for value in dependency_values):
+            raise SyncError("dependency PR, head and merge must be supplied together")
+        validate_dependency(root, pr=dependency_pr, head=dependency_head, merge=dependency_merge,
+                            candidate=expected_head, old_base=expected_old_base, main=expected_main,
+                            reader=dependency_reader)
+    replay_base = dependency_head or expected_old_base
+    merges = git_output(root, "rev-list", "--merges", f"{replay_base}..{expected_head}")
     if merges:
         raise SyncError("responsibility branch contains merge commits")
-    commits = tuple(filter(None, git_output(root, "rev-list", "--reverse", f"{expected_old_base}..{expected_head}").splitlines()))
+    commits = tuple(filter(None, git_output(root, "rev-list", "--reverse", f"{replay_base}..{expected_head}").splitlines()))
     if allow_extended_history:
         if not quick_evidence_checker(root, governance_root, expected_head):
             raise SyncError("extended sync requires valid worktree-local exact-head Quick evidence")
@@ -276,7 +338,7 @@ def validate(
             )
     elif not 1 <= len(commits) <= MAX_RESPONSIBILITY_COMMITS:
         raise SyncError(f"responsibility commit count must be within 1..{MAX_RESPONSIBILITY_COMMITS}")
-    paths = commit_paths(root, expected_old_base, expected_head)
+    paths = commit_paths(root, replay_base, expected_head)
     if not paths:
         raise SyncError("responsibility branch has no changed paths")
     if allow_extended_history:
@@ -291,6 +353,7 @@ def validate(
         root, actual_branch, actual_head, expected_old_base, expected_main,
         len(commits), paths, recovery_path(root, actual_branch, actual_head),
         extended_history=allow_extended_history,
+        dependency_head=dependency_head,
     )
 
 
@@ -323,7 +386,7 @@ def resolve_append_only_log_conflict(plan: SyncPlan, conflicts: tuple[str, ...])
     """
     if APPEND_ONLY_CONFLICT_PATH not in conflicts:
         return False
-    base = text_at_revision(plan.root, plan.old_base, APPEND_ONLY_CONFLICT_PATH)
+    base = text_at_revision(plan.root, plan.replay_base, APPEND_ONLY_CONFLICT_PATH)
     main = text_at_revision(plan.root, plan.new_main, APPEND_ONLY_CONFLICT_PATH)
     topic = text_at_revision(plan.root, plan.head, APPEND_ONLY_CONFLICT_PATH)
     if not main.startswith(base) or not topic.startswith(base):
@@ -352,7 +415,7 @@ def resolve_generated_evidence_conflicts(
 def run_rebase(plan: SyncPlan) -> tuple[bool, tuple[str, ...]] | None:
     append_only_log_resolved = False
     generated_evidence_conflicts: set[str] = set()
-    result = run(plan.root, "rebase", "--onto", plan.new_main, plan.old_base, check=False)
+    result = run(plan.root, "rebase", "--onto", plan.new_main, plan.replay_base, check=False)
     while result.returncode:
         conflicts = tuple(
             sorted(
@@ -379,7 +442,7 @@ def run_rebase(plan: SyncPlan) -> tuple[bool, tuple[str, ...]] | None:
 
 
 def verify_append_only_log_resolution(plan: SyncPlan) -> None:
-    base = text_at_revision(plan.root, plan.old_base, APPEND_ONLY_CONFLICT_PATH)
+    base = text_at_revision(plan.root, plan.replay_base, APPEND_ONLY_CONFLICT_PATH)
     main = text_at_revision(plan.root, plan.new_main, APPEND_ONLY_CONFLICT_PATH)
     topic = text_at_revision(plan.root, plan.head, APPEND_ONLY_CONFLICT_PATH)
     current = (plan.root / APPEND_ONLY_CONFLICT_PATH).read_text(encoding="utf-8")
@@ -455,7 +518,7 @@ def sync(plan: SyncPlan) -> SyncResult:
             path for path in old_stable_paths if path not in patch_excludes
         )
         if stable_identity_paths and patch_id(
-            plan.root, plan.old_base, plan.head, exclude=patch_excludes
+            plan.root, plan.replay_base, plan.head, exclude=patch_excludes
         ) != patch_id(plan.root, plan.new_main, new_head, exclude=patch_excludes):
             raise SyncError("responsibility patch identity changed after sync")
     except Exception as exc:
@@ -475,6 +538,9 @@ def main() -> int:
     parser.add_argument("--expected-old-base", required=True)
     parser.add_argument("--expected-main", required=True)
     parser.add_argument("--expected-commit-count", type=int)
+    parser.add_argument("--dependency-pr", type=int)
+    parser.add_argument("--dependency-head")
+    parser.add_argument("--dependency-merge")
     parser.add_argument("--allow-extended-history", action="store_true")
     parser.add_argument("--confirm", required=True)
     args = parser.parse_args()
@@ -494,6 +560,8 @@ def main() -> int:
             expected_main=args.expected_main,
             allow_extended_history=args.allow_extended_history,
             expected_commit_count=args.expected_commit_count,
+            dependency_pr=args.dependency_pr, dependency_head=args.dependency_head,
+            dependency_merge=args.dependency_merge,
         )
         result = sync(plan)
     except SyncError as exc:
@@ -503,6 +571,7 @@ def main() -> int:
     print(
         f"[workspace.branch.sync-main] PASS branch={plan.branch} old_head={plan.head} "
         f"new_head={result.head} recovery_bundle={plan.recovery_bundle} "
+        f"common_base={plan.old_base} replay_base={plan.replay_base} "
         f"generated_evidence_invalidated={invalidated}"
     )
     return 0
