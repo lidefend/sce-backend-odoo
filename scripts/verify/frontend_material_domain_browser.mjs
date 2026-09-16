@@ -653,11 +653,14 @@ async function inspectHandlingForm(page, entryKey, entry, spec, mode, viewport, 
 
   const businessStatusLabels = { draft: '草稿', submitted: '已提交', received: '已入库', cancel: '已取消' };
   const expectedBusinessStatusLabel = mode === 'create' ? '草稿' : businessStatusLabels[record?.state] || '';
+  const businessStatusRegions = page.locator('[aria-label="业务状态"]:visible');
+  const businessStatusRegionTexts = await businessStatusRegions.allInnerTexts();
   const informationOrganization = entryKey === 'inbound' ? {
     expectedBusinessStatusLabel,
-    businessStatusLabelOccurrences: expectedBusinessStatusLabel
-      ? await page.getByText(expectedBusinessStatusLabel, { exact: true }).count()
-      : 0,
+    businessStatusRegions: businessStatusRegionTexts.length,
+    businessStatusLabelOccurrences: businessStatusRegionTexts.reduce((count, text) => count
+      + text.split(/\r?\n/).filter((line) => line.trim() === expectedBusinessStatusLabel).length, 0),
+    bodyStatusFields: await form.locator('[data-field-name="state"]:visible').count(),
     documentStatusFields: await form.locator('[data-field-name="document_status"]:visible').count(),
     quantitySummaryFields: await form.locator('[data-field-name="quantity_summary"]:visible').count(),
     taxIncludedAmountFields: await form.locator('[data-field-name="tax_included_amount"]:visible').count(),
@@ -665,7 +668,9 @@ async function inspectHandlingForm(page, entryKey, entry, spec, mode, viewport, 
     amountTotalFields: await form.locator('[data-field-name="amount_total"]:visible').count(),
   } : null;
   if (informationOrganization) {
-    check(informationOrganization.businessStatusLabelOccurrences === (mode === 'create' ? 0 : 1)
+    check(informationOrganization.businessStatusRegions === (mode === 'create' ? 0 : 1)
+      && informationOrganization.businessStatusLabelOccurrences === (mode === 'create' ? 0 : 1)
+      && informationOrganization.bodyStatusFields === 0
       && informationOrganization.documentStatusFields === 0
       && informationOrganization.quantitySummaryFields === 0
       && informationOrganization.taxIncludedAmountFields === 0

@@ -69,6 +69,9 @@ class TestFrontendMaterialDomainRollout(unittest.TestCase):
         self.assertIn("target.formal_return_path", source)
         self.assertIn("product_decision_required", source)
         self.assertIn("informationOrganization.businessStatusLabelOccurrences === (mode === 'create' ? 0 : 1)", source)
+        self.assertIn("informationOrganization.businessStatusRegions === (mode === 'create' ? 0 : 1)", source)
+        self.assertIn("informationOrganization.bodyStatusFields === 0", source)
+        self.assertIn("line.trim() === expectedBusinessStatusLabel", source)
         self.assertIn("material inbound status, quantity, or amount has more than one visible owner", source)
         self.assertIn("no_formal_menu_or_authorized_category_path", (
             ROOT / "scripts/verify/local_dev_material_domain_ids.py"
