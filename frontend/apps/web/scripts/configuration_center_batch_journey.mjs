@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import fs from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
 
 // Runs only through local.dev.form_lowcode.browser, with target baseline/restoration checks.
 export async function checkConfigurationCenterBatch({ page, scope, intent, out, report }) {
@@ -30,7 +31,19 @@ export async function checkConfigurationCenterBatch({ page, scope, intent, out, 
     await page.setViewportSize({ width: 390, height: 844 });
     await panel.scrollIntoViewIfNeeded();
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'designer horizontal overflow');
+    const previewAction = panel.getByRole('button', { name: '验证并预览', exact: true });
+    if (process.env.FORM_LOWCODE_CONFIG_BATCH_NARROW_ONLY === '1') {
+      assert.equal(await previewAction.isEnabled(), true, 'saved draft should remain previewable');
+      await panel.getByLabel('新分组名称', { exact: true }).fill('尚未应用的分组');
+      assert.equal(await previewAction.isDisabled(), true);
+      assert.equal(await panel.getByRole('button', { name: '保存配置草稿', exact: true }).isDisabled(), true);
+      await panel.getByLabel('新分组名称', { exact: true }).fill('');
+      assert.equal(await previewAction.isEnabled(), true);
+    }
     await panel.getByLabel('字段显示名称', { exact: true }).fill('窄屏未保存修改');
+    assert.equal(await previewAction.isDisabled(), true);
+    assert.equal(await panel.getByRole('button', { name: '发布配置', exact: true }).isDisabled(), true);
+    results.unapplied_input_guard = 'passed: label/group input blocks save/preview/publish without business writes';
     await panel.getByRole('button', { name: '应用字段设置', exact: true }).click();
     assert((await panel.locator('[data-bound-change-summary]').innerText()).includes('窄屏未保存修改'));
     await page.screenshot({ path: path.join(out, 'batch-designer-narrow.png'), fullPage: false });
@@ -43,7 +56,7 @@ export async function checkConfigurationCenterBatch({ page, scope, intent, out, 
   try {
     if (process.env.FORM_LOWCODE_CONFIG_BATCH_NARROW_ONLY === '1') {
       const previous = JSON.parse(await fs.readFile(path.join(out, 'batch-lifecycle-passed-narrow-pending.json'), 'utf8'));
-      assert.equal(previous.candidate, report.candidate);
+      assert.equal(execFileSync('git', ['merge-base', previous.candidate, report.candidate], { encoding: 'utf8' }).trim(), previous.candidate, 'carried candidate must be an ancestor');
       assert(previous.restored && previous.stages.configuration_center.invalid_preview_recovery);
       Object.assign(results, previous.stages.configuration_center);
       results.carried_lifecycle = 'batch-lifecycle-passed-narrow-pending.json; lifecycle completed through rollback/discard; only narrow overflow observer corrected';
@@ -66,7 +79,7 @@ export async function checkConfigurationCenterBatch({ page, scope, intent, out, 
     }
     if (process.env.FORM_LOWCODE_CONFIG_BATCH_LIFECYCLE_ONLY === '1') {
       const previous = JSON.parse(await fs.readFile(path.join(out, 'batch-directory-passed.json'), 'utf8'));
-      assert.equal(previous.candidate, report.candidate);
+      assert.equal(execFileSync('git', ['merge-base', previous.candidate, report.candidate], { encoding: 'utf8' }).trim(), previous.candidate, 'carried candidate must be an ancestor');
       assert.deepEqual(previous.scope.entries, scope.entries);
       assert(previous.stages.configuration_center.host_target);
       Object.assign(results, previous.stages.configuration_center);

@@ -39,10 +39,10 @@
     </section>
     </div>
     <div class="bound-form-actions">
-      <ScButton :disabled="busy || !loaded || !patches.length || fieldInputChanged || published" @click="save">保存配置草稿</ScButton>
-      <ScButton :disabled="busy || !draft || dirty || published" @click="preview">验证并预览</ScButton>
+      <ScButton :disabled="busy || !loaded || !patches.length || unappliedInput || published" @click="save">保存配置草稿</ScButton>
+      <ScButton :disabled="busy || !draft || dirty || unappliedInput || published" @click="preview">验证并预览</ScButton>
       <a v-if="previewUrl" :href="previewUrl" target="_blank" rel="opener" data-bound-preview-link>打开配置预览</a>
-      <ScButton :disabled="busy || !previewUrl || dirty || published" @click="publish">发布配置</ScButton>
+      <ScButton :disabled="busy || !previewUrl || dirty || unappliedInput || published" @click="publish">发布配置</ScButton>
       <a :href="businessUrl" target="_blank" rel="opener">打开业务页面</a>
       <ScButton v-if="published" :disabled="busy" @click="editAgain">再次编辑</ScButton>
       <ScButton :disabled="busy || !published" @click="rollback">回滚本次发布</ScButton>
@@ -90,6 +90,8 @@ const loaded = ref(false), busy = ref(false), dirty = ref(false), published = re
 const error = ref(''), feedback = ref(''), label = ref(''), visibility = ref('inherit'), groupLabel = ref('');
 const selectionInputBaseline = ref('');
 const fieldInputChanged = computed(() => Boolean(selectionInputBaseline.value) && selectionInputBaseline.value !== JSON.stringify([label.value, visibility.value]));
+const unappliedInput = computed(() => fieldInputChanged.value || Boolean(groupLabel.value.trim()));
+function requireAppliedInput() { if (unappliedInput.value) throw new Error('请先应用字段设置或加入分组，再保存、预览或发布。'); }
 function selectField(value: string) {
   if (fieldInputChanged.value || groupLabel.value.trim()) { error.value = '请先应用当前字段设置或分组，再选择其他字段'; return; }
   selected.value = value;
@@ -188,6 +190,7 @@ onMounted(() => run(async () => {
   loaded.value = true; syncSelection();
 }));
 async function save() { await run(async () => {
+  requireAppliedInput();
   for (const patch of patches.value) if (!patch.expected) throw new Error('配置目标缺少稳定身份');
   if (!draft.value || ['published', 'discarded', 'superseded'].includes(draft.value.state)) {
     draft.value = await openBusinessConfigChangeSet({ role_key: scope.role_key, name: '表单设计配置', fresh: true });
@@ -199,6 +202,7 @@ async function save() { await run(async () => {
   dirty.value = false; previewUrl.value = ''; feedback.value = '配置已保存，尚未发布';
 }); }
 async function preview() { await run(async () => {
+  requireAppliedInput();
   draft.value = await previewBusinessConfigChangeSet(params());
   const preview = draft.value.preview;
   if (!preview) throw new Error('未取得有效预览');
@@ -206,6 +210,7 @@ async function preview() { await run(async () => {
   feedback.value = '最终契约核验通过；请打开预览检查页面';
 }); }
 async function publish() { await run(async () => {
+  requireAppliedInput();
   draft.value = await publishBusinessConfigChangeSet({ ...params(), request_id: crypto.randomUUID() });
   published.value = draft.value.state === 'published';
   if (draft.value.publish_result.published_content_verified !== true || draft.value.publish_result.runtime_verified !== true) throw new Error('发布或最终契约核验未通过');

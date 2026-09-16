@@ -207,7 +207,7 @@ const currentModelIsRuntimeConfig = computed(() => isBusinessConfigRuntimeModel(
 const approvalSection = computed(() => visibleConfigSections.value.find((section) => section.key === 'approval') || null);
 const {
   changeSet,
-  loading: changeSetLoading,
+  loading: changeSetLoading, busy: changeSetBusy,
   error: changeSetError,
   publishing: changeSetPublishing,
   previewing: changeSetPreviewing,
@@ -236,7 +236,7 @@ const {
   clearMessage, setMessage, loadSurface, scanCoverage, scanSystemRootCoverage, scanCurrentModel,
   rescanCoverageAfterBootstrap, applyScopeAndLoad, focusScanRow, hydrateSelectedCoverageRowFromScan, openRuntimeRoute,
 } = useBusinessConfigScopeLifecycle({ scopeRoleKey, scopeAction, currentModel, scopeView, message, surfaceLoadSeq, loading, error, surfaceError, withSurfaceLoadTimeout, loadBusinessConfigSurface, SURFACE_LOAD_TIMEOUT_MS, scopeRole, session, router, route, surface, scanLoading, coverageScan, scanBusinessConfigCoverage, rootMenuXmlid, selectedPageLabel, scopeModel, scopeActionId, scopeViewId, selectedRuntimeRoute, replaceWorkbenchQuerySilently, focusSelectedConfigPanelOnMobile, resetEditorPanels, runtimeReturnQuery,
-  scopeBusy: () => changeSetPublishing.value || changeSetPreviewing.value || listSearchSaving.value || listSearchBusy.value || approvalLoading.value,
+  scopeBusy: () => changeSetBusy.value || changeSetLoading.value || changeSetPublishing.value || changeSetPreviewing.value || listSearchSaving.value || listSearchBusy.value || approvalLoading.value,
   hasUnsavedEdits: () => hasListSearchDraftChanges.value || hasAnalysisDraftChanges.value || hasApprovalDraftChanges.value,
   confirmScopeChange: () => openImpactDialog({ summary: '切换业务页面会丢弃未保存的编辑，已保存草稿保留。', immediate: false, rollbackText: '选择取消可留在当前页面保存配置草稿。' }),
   resetScopeDrafts: () => { resetListSearchDraft(); resetAnalysisDraft(); resetApprovalDraft(); resetUnifiedDraftScope(); },

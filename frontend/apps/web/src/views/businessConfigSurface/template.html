@@ -358,7 +358,7 @@
       v-if="!surfaceError"
       :change-set="changeSet"
       :loading="changeSetLoading"
-      :busy="changeSetLoading || changeSetPreviewing || changeSetPublishing"
+      :busy="changeSetBusy || changeSetLoading || changeSetPreviewing || changeSetPublishing"
       :publishing="changeSetPublishing"
       :error="changeSetError"
       @retry="loadChangeSetSafely"
