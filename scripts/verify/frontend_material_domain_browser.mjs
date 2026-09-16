@@ -645,12 +645,34 @@ async function inspectHandlingForm(page, entryKey, entry, spec, mode, viewport, 
           selected: 'selected' in control ? Boolean(control.selected) : false,
         })),
       }));
-    const expectedType = entryKey === 'return'
-      ? { code: 'return', label: '退库' }
-      : { code: 'issue', label: '领用出库' };
+    const expectedType = { code: 'issue', label: '领用出库' };
     const serializedType = JSON.stringify(typeEvidence);
     check(serializedType.includes(expectedType.code) || serializedType.includes(expectedType.label),
       'material action category/default identity drifted', { entryKey, typeEvidence, expectedType });
+  }
+
+  const informationOrganization = entryKey === 'inbound' ? {
+    headerStatusbars: await form.locator(
+      '[data-professional-workflow-component="statusbar"]:visible',
+    ).count(),
+    bodyStateFields: await form.locator(
+      '.sc-native-contract-tree [data-field-name="state"]:visible',
+    ).count(),
+    documentStatusFields: await form.locator('[data-field-name="document_status"]:visible').count(),
+    quantitySummaryFields: await form.locator('[data-field-name="quantity_summary"]:visible').count(),
+    taxIncludedAmountFields: await form.locator('[data-field-name="tax_included_amount"]:visible').count(),
+    totalQtyFields: await form.locator('[data-field-name="total_qty"]:visible').count(),
+    amountTotalFields: await form.locator('[data-field-name="amount_total"]:visible').count(),
+  } : null;
+  if (informationOrganization) {
+    check(informationOrganization.headerStatusbars === 1
+      && informationOrganization.bodyStateFields === 0
+      && informationOrganization.documentStatusFields === 0
+      && informationOrganization.quantitySummaryFields === 0
+      && informationOrganization.taxIncludedAmountFields === 0
+      && informationOrganization.totalQtyFields === 1
+      && informationOrganization.amountTotalFields === 1,
+    'material inbound status, quantity, or amount has more than one visible owner', informationOrganization);
   }
 
   const top = await resetActualScrollTop(page, form);
@@ -740,6 +762,7 @@ async function inspectHandlingForm(page, entryKey, entry, spec, mode, viewport, 
     heading,
     tabs,
     nativeContract,
+    informationOrganization,
     top,
     detailOperations,
     visibleSourceFields,
