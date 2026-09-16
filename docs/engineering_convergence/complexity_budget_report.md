@@ -79,7 +79,7 @@ Generated from repository source files. This report is informational during the 
 | 1400 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1395 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1385 | Python source | `addons/smart_core/utils/contract_governance.py` |
-| 1353 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
+| 1347 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1320 | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1309 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
@@ -222,7 +222,7 @@ Generated from repository source files. This report is informational during the 
 | 1400 | warning | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1395 | warning | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1385 | warning | Python source | `addons/smart_core/utils/contract_governance.py` |
-| 1353 | warning | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
+| 1347 | warning | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1339 | warning | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1320 | warning | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1309 | warning | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |

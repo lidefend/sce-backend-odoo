@@ -1,11 +1,15 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 
-export async function runDesignerJourney({ page, entry, baseline, outsideBaseline, outside, contract, effective, out, report, pending, cs, drafts }) {
+export async function runDesignerJourney({ page, entry, baseline, outsideBaseline, outside, contract, effective, out, report, pending, cs, drafts, documentTopic = false }) {
+  const fieldName = documentTopic ? 'issue_authority' : 'keeper_id';
+  const hiddenName = documentTopic ? 'result_note' : 'line_note_summary';
+  const configuredLabel = documentTopic ? '配置发证单位' : '设计器保管员';
+  const groupLabel = documentTopic ? '配置发证信息' : '设计器保管信息';
   const walk = function* (nodes) { for (const node of nodes || []) { yield node; yield* walk(node.children); } };
   const nodes = [...walk(baseline.layoutContract.containerTree)];
-  const keeper = nodes.find((node) => node.type === 'field' && node.name === 'keeper_id');
-  const optional = nodes.find((node) => node.type === 'field' && node.name === 'line_note_summary');
+  const keeper = nodes.find((node) => node.type === 'field' && node.name === fieldName);
+  const optional = nodes.find((node) => node.type === 'field' && node.name === hiddenName);
   const requests = [];
   let staged;
   const saves = [];
@@ -25,11 +29,11 @@ export async function runDesignerJourney({ page, entry, baseline, outsideBaselin
   async function editSample() {
   await panel.getByLabel('选择字段', { exact: true }).click();
   await page.getByText(new RegExp(`^${keeper.label || keeper.name} ·`)).last().click();
-  await panel.getByLabel('字段显示名称', { exact: true }).fill('设计器保管员');
+  await panel.getByLabel('字段显示名称', { exact: true }).fill(configuredLabel);
   await panel.getByRole('button', { name: '应用字段设置', exact: true }).click();
   await panel.getByRole('button', { name: '上移字段', exact: true }).click();
   await panel.getByRole('button', { name: '上移字段', exact: true }).click();
-  await panel.getByLabel('新分组名称', { exact: true }).fill('设计器保管信息');
+  await panel.getByLabel('新分组名称', { exact: true }).fill(groupLabel);
   await panel.getByRole('button', { name: '加入新分组', exact: true }).click();
   await panel.getByLabel('选择字段', { exact: true }).click();
   await page.getByText(new RegExp(`^${optional.label || optional.name} ·`)).last().click();
@@ -64,8 +68,8 @@ export async function runDesignerJourney({ page, entry, baseline, outsideBaselin
   const previewPromise = page.waitForEvent('popup');
   await panel.locator('[data-bound-preview-link]').click();
   const preview = await previewPromise;
-  await preview.getByText('设计器保管员', { exact: true }).first().waitFor({ state: 'visible' });
-  await preview.getByText('设计器保管员', { exact: true }).first().scrollIntoViewIfNeeded();
+  await preview.getByText(configuredLabel, { exact: true }).first().waitFor({ state: 'visible' });
+  await preview.getByText(configuredLabel, { exact: true }).first().scrollIntoViewIfNeeded();
   await preview.screenshot({ path: path.join(out, 'designer-preview.png'), fullPage: true });
   const previewUrl = new URL(preview.url());
   const previewContract = await contract(entry, { preview_token: previewUrl.searchParams.get('preview_token'), preview_role_key: previewUrl.searchParams.get('preview_role_key') });
@@ -73,12 +77,21 @@ export async function runDesignerJourney({ page, entry, baseline, outsideBaselin
   const configuredParent = [...walk(previewContract.layoutContract.containerTree)].find((node) => node.nativeLocator === groupPatch.target);
   report.preview_structure = { parent: configuredParent.containerId,
     children: configuredParent.children.map((node) => ({ id: node.containerId, locator: node.nativeLocator, name: node.name })) };
+  if (documentTopic) {
+    await preview.locator('[data-form-section-navigation]').getByRole('button', { name: '证照信息', exact: true }).click();
+    await preview.getByText(configuredLabel, { exact: true }).first().waitFor({ state: 'visible' });
+    const boxes = await Promise.all(['certificate_name', 'issue_authority', 'certificate_no'].map((name) =>
+      preview.locator(`[data-field-name="${name}"]`).filter({ visible: true }).first().boundingBox()));
+    assert(boxes.every(Boolean) && boxes[0].y < boxes[1].y && boxes[1].y < boxes[2].y, 'configured group/field visual sequence differs');
+    report.visual_order = { status: 'passed', certificate_name_y: boxes[0].y, issue_authority_y: boxes[1].y, certificate_no_y: boxes[2].y };
+  } else {
   const configuredField = await preview.locator('[data-field-name="keeper_id"]').filter({ visible: true }).first().boundingBox();
   const followingField = await preview.locator('[data-field-name="dest_location_id"]').filter({ visible: true }).first().boundingBox();
   assert(configuredField && followingField && configuredField.y < followingField.y, 'rendered field/group sequence differs from final tree');
   const adjacentField = await preview.locator('[data-field-name="warehouse_id"]').filter({ visible: true }).first().boundingBox();
   assert(adjacentField && Math.abs(adjacentField.y - followingField.y) < 2 && adjacentField.x < followingField.x, 'adjacent fields lost their shared columns');
   report.visual_order = { keeper_y: configuredField.y, warehouse_y: adjacentField.y, location_y: followingField.y, status: 'passed' };
+  }
   await preview.close();
   const publicationResponse = page.waitForResponse((response) => response.request().postDataJSON()?.intent === 'ui.business_config.change_set.publish');
   await panel.getByRole('button', { name: '发布配置', exact: true }).click();
@@ -94,13 +107,20 @@ export async function runDesignerJourney({ page, entry, baseline, outsideBaselin
   await panel.getByRole('link', { name: '打开业务页面', exact: true }).click();
   const business = await businessPromise;
   await business.reload({ waitUntil: 'domcontentloaded' });
-  await business.getByText('设计器保管员', { exact: true }).first().waitFor({ state: 'visible' });
+  await business.getByText(configuredLabel, { exact: true }).first().waitFor({ state: 'visible' });
+  if (documentTopic) {
+    await business.locator('[data-section-tab="说明"]').last().click();
+    assert.equal(await business.locator('[data-field-name="result_note"]').filter({ visible: true }).count(), 0);
+    await business.locator('[data-section-tab="附件"]').last().click();
+    await business.locator('[data-form-section-navigation]').getByRole('button', { name: '证照信息', exact: true }).click();
+  } else {
   await business.locator('[data-section-tab="说明与附件"]').last().click();
   assert.equal(await business.getByText('备注', { exact: true }).count(), 0);
   await business.locator('[data-section-tab="来源追溯"]').last().click();
   await business.locator('[data-form-section-navigation]').getByRole('button', { name: '入库明细', exact: true }).click();
   await business.locator('[data-section-tab="入库明细"].native-tab--active').waitFor({ state: 'visible' });
-  await business.getByText('设计器保管员', { exact: true }).first().scrollIntoViewIfNeeded();
+  }
+  await business.getByText(configuredLabel, { exact: true }).first().scrollIntoViewIfNeeded();
   await business.screenshot({ path: path.join(out, 'designer-published.png'), fullPage: true });
   report.stages.publication = { published_content: 'passed', final_contract: 'passed', browser: 'passed', isolation: 'passed' };
   await panel.getByRole('button', { name: '回滚本次发布', exact: true }).click();
@@ -111,8 +131,8 @@ export async function runDesignerJourney({ page, entry, baseline, outsideBaselin
   await business.waitForLoadState('networkidle');
   report.rollback_page = { url: business.url(), text: (await business.locator('body').innerText()).slice(0, 8000) };
   await business.screenshot({ path: path.join(out, 'designer-rollback.png'), fullPage: true });
-  await business.getByText('仓管员', { exact: true }).filter({ visible: true }).first().waitFor({ state: 'visible' });
-  assert.equal(await business.getByText('设计器保管员', { exact: true }).count(), 0);
+  await business.getByText(keeper.label || keeper.name, { exact: true }).filter({ visible: true }).first().waitFor({ state: 'visible' });
+  assert.equal(await business.getByText(configuredLabel, { exact: true }).count(), 0);
   await business.close();
   // Verify same-screen reuse after rollback and leave an unpublished review
   // draft authored by the ordinary designer; the effective baseline stays put.
@@ -135,8 +155,8 @@ export async function runDesignerJourney({ page, entry, baseline, outsideBaselin
     designer_url: page.url(), preview_url: await panel.locator('[data-bound-preview-link]').getAttribute('href'),
     expires_at: reviewPreview.data.preview.expires_at, published: false, same_screen_reuse: 'passed' };
   await page.goto(`${base}/f/${outside.model}/new?menu_id=${outside.menu_id}&action_id=${outside.action_id}`, { waitUntil: 'domcontentloaded' });
-  await page.getByText('出库日期', { exact: true }).filter({ visible: true }).first().waitFor();
-  assert.equal(await page.getByText('设计器保管员', { exact: true }).count(), 0);
+  await page.getByText(documentTopic ? '制度名称' : '出库日期', { exact: true }).filter({ visible: true }).first().waitFor();
+  assert.equal(await page.getByText(configuredLabel, { exact: true }).count(), 0);
   await page.screenshot({ path: path.join(out, 'designer-outside-scope.png'), fullPage: true });
   report.stages.outside_page = { action_id: outside.action_id, status: 'passed' };
   drafts.delete(reviewOpen.data.token);

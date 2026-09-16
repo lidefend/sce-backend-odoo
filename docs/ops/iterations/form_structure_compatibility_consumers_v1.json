@@ -11289,7 +11289,7 @@
     "countCorrection": 4,
     "migrationReduction": 3
   },
-  "localVerifiedCount": 44,
+  "localVerifiedCount": 42,
   "uc1PublishedAudit": {
     "auditedAt": "2026-09-16",
     "auditedReleaseHead": "28b7695dc9f1cebbbe9bd5d715e951c6dec8a4da",
@@ -11814,5 +11814,52 @@
   },
   "retirementCondition": "Only after every formal consumer of a compatibility regrouping path is zero and other roles/companies/states are covered, remove that regrouping logic and its test exemptions.",
   "mainlineRemainingCount": 44,
-  "mainlineRemainingLabel": "主线剩余兼容消费者（不代表部署发布或89入口整体交付）"
+  "mainlineRemainingLabel": "主线剩余兼容消费者（不代表部署发布或89入口整体交付）",
+  "uc3LocalMigrationAudit": {
+    "status": "product_reviewed_empty_section_fix_verified_integration_pending",
+    "baseHead": "225a56bf9fa6ef3ff07a853450d11835ea973257",
+    "dirty": true,
+    "iterationRecord": "docs/ops/iterations/uc3_document_native_lowcode_20260916.md",
+    "reduction": {
+      "before": 44,
+      "localAfter": 42,
+      "mainlineRemaining": 44,
+      "actions": [
+        666,
+        862
+      ],
+      "viewId": 1703
+    },
+    "legacyPathExit": {
+      "status": "verified_local",
+      "layoutPolicy": "container_tree_authority",
+      "formStructureAuthority": "native_authority",
+      "compatibilityDependenciesEmpty": true,
+      "configuredSectionsEmpty": true,
+      "retiredModelMirror": "business_config_contract_sc_document_admin_document_form_structure_generated"
+    },
+    "lowcodeCompatibility": {
+      "status": "verified_representative_loop_and_isolation",
+      "configuredAction": 666,
+      "outsideAction": 862,
+      "ordinaryDesigner": true,
+      "preview": true,
+      "publication": true,
+      "finalContract": true,
+      "browser": true,
+      "rollbackReadback": true,
+      "businessFingerprintsUnchanged": true,
+      "directConfigurationLoopFor862": "not_run_by_representative_scope"
+    },
+    "evidence": "artifacts/uc3-document-lowcode/browser/designer-report.json",
+    "limits": [
+      "862 readonly: no readable sample",
+      "No legal draft edit sample",
+      "No business record saves",
+      "Custom fields and cross-region composition excluded",
+      "Lower-role browser journey not rerun; action groups and model ACL preservation verified transactionally"
+    ],
+    "deployment": "not_run",
+    "userDelivery": "not_completed"
+  }
 }
