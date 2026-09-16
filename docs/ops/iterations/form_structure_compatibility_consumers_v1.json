@@ -11324,9 +11324,9 @@
   },
   "uc2LocalMigrationAudit": {
     "auditedAt": "2026-09-16",
-    "status": "local_whole_batch_candidate_verified_product_review_pending",
-    "productCandidateHead": "36ddc22de8df5a453be8052c8ad0eeb234e23923",
-    "productCandidateFingerprint": "517584ecec9591f81f330c0ed271a2cf35b4544b6538776e019b815e88be259e",
+    "status": "local_inbound_outbound_migration_verified_return_product_decision_required",
+    "productCandidateHead": "f1dbaa9950263f735b0619a08b545f8f199f5982",
+    "productCandidateFingerprint": "f9780e4b60fb625cdaa8b73a8cdb7a5217dd1069a989b64d4c5721e7290304da",
     "iterationRecord": "docs/ops/iterations/uc2_material_native_migration_20260916.md",
     "reduction": {
       "before": 46,
@@ -11339,7 +11339,7 @@
         1428,
         1431
       ],
-      "nonCountingValidatedAction": 548
+      "countMeaning": "local compatibility migration only; whole UC2 and published count remain pending"
     },
     "sourceVerification": {
       "layoutPolicy": "container_tree_authority",
@@ -11357,19 +11357,28 @@
           "actionId": 547,
           "menuId": 495,
           "viewId": 1431
-        },
-        {
-          "key": "return",
-          "actionId": 548,
-          "menuId": 496,
-          "viewId": 1431
         }
       ],
       "formalPrimaryMenuCountUnchanged": 89,
-      "returnAuthority": "contextual_menu_authority_filtered_by_existing_odoo_visibility"
+      "returnPath": {
+        "status": "product_decision_required",
+        "formallyReachable": false,
+        "actionId": 548,
+        "menuId": 496,
+        "sharedViewId": 1431,
+        "formalBaseline": false,
+        "parentMenuActive": false,
+        "routeAuthorityRoles": [],
+        "outboundAllowedBusinessCategoryCodes": [],
+        "reason": "no_formal_menu_or_authorized_category_path",
+        "directActionAcceptedAsUserPath": false,
+        "supplierReturnExcluded": true
+      }
     },
     "browserEvidence": {
-      "status": "whole_batch_self_validation_passed_product_review_pending",
+      "status": "inbound_outbound_passed_return_blocked_product_decision",
+      "head": "f1dbaa9950263f735b0619a08b545f8f199f5982",
+      "fingerprint": "f9780e4b60fb625cdaa8b73a8cdb7a5217dd1069a989b64d4c5721e7290304da",
       "viewports": [
         "1440x960",
         "390x844"
@@ -11381,33 +11390,43 @@
       "samples": {
         "inbound": "S80-MIN-001 / received",
         "outbound": "S80-MOUT-001 / issued",
-        "return": "no governed existing record"
+        "return": "no formally reachable user path"
       },
       "legalDraftSamples": {
         "inbound": false,
         "outbound": false,
         "return": false
       },
+      "materialReviewCount": 8,
+      "nonMaterialCounterexample": "personnel_profile",
+      "screenshotCount": 25,
       "mutationRequests": 0,
+      "browserErrors": 0,
       "businessFingerprintsUnchanged": true,
-      "evidenceRoots": {
-        "inboundDesktop": "tmp/uc2/material-batch-69b9606b/browser-candidate",
-        "outboundDesktop": "tmp/uc2/material-batch-7ed5c258/browser-desktop-out-return",
-        "returnDesktop": "tmp/uc2/material-batch-c1b5369a/browser-desktop-return",
-        "mobileBatch": "tmp/uc2/material-batch-36ddc22d/browser-mobile",
-        "nonMaterialCounterexample": "tmp/uc2/material-batch-36ddc22d/browser-nonmaterial-counterexample"
-      },
-      "candidateCarry": {
-        "current": "36ddc22de8df5a453be8052c8ad0eeb234e23923",
-        "sources": [
-          "69b9606bd2d5bf34aea80ac62076623c09f9f4cb",
-          "7ed5c25825e1906fbb2698606707d435df317d19",
-          "c1b5369a81f1ef801a053fdfb9009fc64d1ad844"
-        ],
-        "impact": "completed desktop entry results carried only where later changes did not touch that entry product contract or runtime inputs; mobile and non-material counterexample ran at current candidate"
+      "evidenceRoot": "tmp/uc2/material-batch-f1dbaa99/browser-batch-review",
+      "informationOrganization": {
+        "existingInbound": {
+          "businessStatusRegions": 1,
+          "businessStatusLabelOccurrences": 1,
+          "bodyStatusFields": 0,
+          "totalQtyFields": 1,
+          "amountTotalFields": 1
+        },
+        "createInbound": {
+          "businessStatusRegions": 0,
+          "businessStatusLabelOccurrences": 0,
+          "bodyStatusFields": 0,
+          "totalQtyFields": 1,
+          "amountTotalFields": 1
+        },
+        "removedVisibleDuplicates": [
+          "document_status",
+          "quantity_summary",
+          "tax_included_amount"
+        ]
       },
       "navigationReview": {
-        "status": "self_validation_passed_product_review_pending",
+        "status": "passed",
         "bodyTabs": [
           "材料明细/入库明细",
           "说明与附件",
@@ -11423,7 +11442,7 @@
   "runtimeEvidenceRoot": "artifacts/form-structure-unification/ub-tender-hierarchy-identities",
   "nextBatch": {
     "name": "U-C2",
-    "status": "whole_batch_product_review_pending",
+    "status": "return_path_product_decision_required",
     "priorityActions": [],
     "groups": [
       {
@@ -11433,22 +11452,28 @@
         ],
         "sourceCategories": [
           "material.inbound"
-        ]
+        ],
+        "migrationStatus": "local_verified"
       },
       {
         "viewId": 1431,
         "actions": [
-          547,
-          548
+          547
         ],
         "sourceCategories": [
-          "material.outbound",
-          "material.return"
-        ]
+          "material.outbound"
+        ],
+        "migrationStatus": "local_verified"
       }
     ],
-    "scopeNote": "supplier return remains outside U-C2; action 548 shares view 1431 and is validated without a second ledger reduction",
-    "promotionCondition": "after one consolidated product browser review closes batch findings, run freeze preparation, independent review, one exact-head Quick, external evidence archive verification, and remote delivery"
+    "returnDecision": {
+      "actionId": 548,
+      "viewId": 1431,
+      "acceptedAsFormalPath": false,
+      "requiredDecision": "formal menu, outbound category, or another authorized action path"
+    },
+    "scopeNote": "supplier return remains outside U-C2; return shares view 1431 but has no accepted formal user path and does not add a ledger consumer",
+    "promotionCondition": "after the return-path product decision and consolidated product review close the batch, run freeze preparation, independent review, one exact-head Quick, external evidence archive verification, and remote delivery"
   },
   "retirementCondition": "Only after every formal consumer of a compatibility regrouping path is zero and other roles/companies/states are covered, remove that regrouping logic and its test exemptions."
 }
