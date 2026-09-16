@@ -17,6 +17,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "scripts/ci"))
+import trusted_scan_scope
 POLICY_PATH = ROOT / "config/security/repository_clean_history_policy.v1.json"
 
 CUSTOMER_MODULE_PATH = re.compile(
@@ -473,6 +475,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--policy", type=Path, default=POLICY_PATH)
     parser.add_argument("--local-hygiene", action="store_true")
     parser.add_argument("--trusted-base")
+    parser.add_argument("--auto-trusted-base", action="store_true")
     return parser.parse_args(argv)
 
 
@@ -500,7 +503,14 @@ def main(argv: list[str] | None = None) -> int:
     publication_revisions = public_revision_args()
     scan_revisions = publication_revisions
     scan_mode = "public_refs"
-    trusted_base = str(args.trusted_base or "")
+    if args.trusted_base and args.auto_trusted_base:
+        raise ValueError("explicit and automatic trusted bases are mutually exclusive")
+    scope = (trusted_scan_scope.Scope(None, "custom_policy_requires_full_scan")
+             if args.auto_trusted_base and args.policy.resolve() != POLICY_PATH.resolve()
+             else trusted_scan_scope.select_scope(root, "history") if args.auto_trusted_base else None)
+    if scope:
+        scope.report("history")
+    trusted_base = str((scope.base if scope else args.trusted_base) or "")
     if trusted_base:
         try:
             incremental_revisions = trusted_incremental_revision_args(root, trusted_base)
@@ -540,7 +550,10 @@ def main(argv: list[str] | None = None) -> int:
         if run_git(root, "cat-file", "-e", f"{commit_id}^{{commit}}", check=False).returncode == 0:
             errors.add(Finding("RH004", f"object:{commit_id[:12]}", "OLD_COMMIT_IMPORTED"))
 
-    scan_rows = object_rows(root, scan_revisions)
+    scan_rows = ([ObjectRow(oid, "blob", size, path)
+                  for oid, path, size in trusted_scan_scope.candidate_blobs(root, trusted_base)]
+                 if scope and scope.base and scan_mode == "trusted_base_incremental"
+                 else object_rows(root, scan_revisions))
     if scan_mode == "trusted_base_incremental":
         scan_rows.extend(current_changed_tree_rows(root, trusted_base))
     for row in sorted(
@@ -553,7 +566,9 @@ def main(argv: list[str] | None = None) -> int:
     # Repository identity is mutable governance state, unlike secrets and
     # customer payloads. Preserve migration/audit history while rejecting a
     # stale executable identity in the current authoritative tree.
-    for row in tree_rows(root, "HEAD"):
+    identity_rows = (current_changed_tree_rows(root, trusted_base)
+                     if scan_mode == "trusted_base_incremental" else tree_rows(root, "HEAD"))
+    for row in identity_rows:
         errors.update(blob_findings(root, row, rules, scan_repository_identity=True))
 
     oversized_exceptions = rules.get("_oversized_blob_exceptions", set())

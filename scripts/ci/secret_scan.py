@@ -16,6 +16,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+import trusted_scan_scope
+
 
 ROOT = Path(__file__).resolve().parents[2]
 LEGACY_CATALOG = ROOT / "config/security/legacy_credential_fingerprints.json"
@@ -125,7 +127,9 @@ def scan_line(line: str) -> list[Finding]:
     return findings
 
 
-def worktree_files() -> list[Path]:
+def worktree_files(base: str | None = None) -> list[Path]:
+    if base:
+        return [ROOT / path for path in trusted_scan_scope.changed_paths(ROOT, base) if is_scanned_path(path)]
     if (ROOT / ".git").exists():
         result = subprocess.run(
             ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
@@ -157,7 +161,13 @@ def is_scanned_path(path: str) -> bool:
     )
 
 
-def history_blob_paths() -> dict[str, list[str]]:
+def history_blob_paths(base: str | None = None) -> dict[str, list[str]]:
+    if base:
+        paths: dict[str, list[str]] = {}
+        for oid, path, size in trusted_scan_scope.candidate_blobs(ROOT, base):
+            if size <= 8 * 1024 * 1024 and is_scanned_path(path):
+                paths.setdefault(oid, []).append(path)
+        return paths
     if not (ROOT / ".git").exists():
         return {}
     rev_list = subprocess.run(
@@ -194,9 +204,9 @@ def history_blob_paths() -> dict[str, list[str]]:
     return paths
 
 
-def history_findings() -> list[str]:
+def history_findings(base: str | None = None) -> list[str]:
     findings: list[str] = []
-    for blob_id, paths in history_blob_paths().items():
+    for blob_id, paths in (history_blob_paths(base) if base else history_blob_paths()).items():
         data = subprocess.run(
             ["git", "cat-file", "blob", blob_id],
             cwd=ROOT,
@@ -346,6 +356,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--base", default="origin/main")
     parser.add_argument("--pr-jsonl", type=Path)
     parser.add_argument("--report", type=Path)
+    parser.add_argument("--auto-trusted-base", action="store_true")
     parser.add_argument("--scope", choices=("worktree", "history", "all"), default="worktree")
     return parser.parse_args(argv)
 
@@ -370,9 +381,11 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(f"[legacy_credential_guard] PASS files={file_count} pr_bodies={pr_count} values_recorded=false")
         return 0
+    scope = trusted_scan_scope.select_scope(ROOT, "secrets") if args.auto_trusted_base else trusted_scan_scope.Scope(None, "explicit_full")
+    scope.report("secrets")
     findings: list[str] = []
     if args.scope in {"worktree", "all"}:
-        for path in worktree_files():
+        for path in (worktree_files(scope.base) if scope.base else worktree_files()):
             text = read_text(path)
             if text is None:
                 continue
@@ -381,7 +394,7 @@ def main(argv: list[str] | None = None) -> int:
                 for finding in scan_line(line):
                     findings.append(f"{rel}:{line_no}: {finding.rule}")
     if args.scope in {"history", "all"}:
-        findings.extend(history_findings())
+        findings.extend(history_findings(scope.base) if scope.base else history_findings())
     findings = sorted(set(findings))
     if args.report:
         args.report.parent.mkdir(parents=True, exist_ok=True)
