@@ -7,16 +7,18 @@ export async function runFormalFormLoop() {
   const scope = JSON.parse(process.env.FORM_LOWCODE_SCOPE || '{}');
   assert.equal(scope.database, 'sc_dev_demo');
   const [entry, outside] = scope.entries;
-  assert.equal(entry.action_id, 546);
-  assert.equal(outside.action_id, 547);
+  const documentTopic = scope.topic === 'document';
+  assert.equal(entry.action_id, documentTopic ? 666 : 546);
+  assert.equal(outside.action_id, documentTopic ? 862 : 547);
   const base = process.env.BASE_URL;
-  const out = path.resolve('../../../artifacts/lowcode-form-loop/browser');
+  const out = path.resolve(documentTopic ? '../../../artifacts/uc3-document-lowcode/browser' : '../../../artifacts/lowcode-form-loop/browser');
   await fs.mkdir(out, { recursive: true });
   const report = { candidate: process.env.CANDIDATE_GIT_HEAD, dirty: true, scope, stages: {}, restored: false, ok: false };
   const navigationOnly = process.env.FORM_LOWCODE_NAV_ONLY === '1';
   const observeOnly = process.env.FORM_LOWCODE_PREVIEW_OBSERVE === '1';
   const closureOnly = process.env.FORM_LOWCODE_PREVIEW_CLOSURE === '1' || observeOnly;
-  const designerOnly = process.env.FORM_LOWCODE_DESIGNER === '1';
+  const emptySectionOnly = documentTopic && process.env.FORM_LOWCODE_DOCUMENT_EMPTY === '1';
+  const designerOnly = process.env.FORM_LOWCODE_DESIGNER === '1' || documentTopic;
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 960 } });
   const page = await context.newPage();
@@ -83,9 +85,13 @@ export async function runFormalFormLoop() {
     }
     baseline = await contract();
     const otherBaseline = await contract(outside);
-    await fs.writeFile(path.join(out, 'baseline.json'), JSON.stringify({ entry: baseline, outside: otherBaseline }, null, 2));
+    await fs.writeFile(path.join(out, emptySectionOnly ? 'empty-section-baseline.json' : 'baseline.json'), JSON.stringify({ entry: baseline, outside: otherBaseline }, null, 2));
     if (!navigationOnly && !designerOnly && !closureOnly) report.stages.default = await observe('default');
-    if (observeOnly) {
+    if (emptySectionOnly) {
+      const { checkEmptyDocumentSource } = await import('./formal_form_document_journey.mjs');
+      await checkEmptyDocumentSource({ page, entry, out, report });
+      report.ok = true;
+    } else if (observeOnly) {
       const previous = JSON.parse(await fs.readFile(path.join(out, 'closure-report.json'), 'utf8'));
       await page.goto(previous.review.preview_url, { waitUntil: 'domcontentloaded' });
       await page.locator('[data-configuration-preview]').waitFor();
@@ -159,8 +165,12 @@ export async function runFormalFormLoop() {
       report.stages.closure = { preview_readonly: 'passed', write_rejected: blocked, designer_components: 'passed', summary: 'passed', desktop: 'passed', narrow: 'passed', return_to_designer: 'passed' };
       report.ok = true; report.restored = true;
     } else if (designerOnly) {
+      if (documentTopic) {
+        const { checkDocumentDefaults } = await import('./formal_form_document_journey.mjs');
+        await checkDocumentDefaults({ page, entry, outside, contract, out, report });
+      }
       const { runDesignerJourney } = await import('./formal_form_designer_journey.mjs');
-      await runDesignerJourney({ page, entry, baseline, outsideBaseline: otherBaseline, outside, contract, effective, out, report, pending, cs, drafts });
+      await runDesignerJourney({ page, entry, baseline, outsideBaseline: otherBaseline, outside, contract, effective, out, report, pending, cs, drafts, documentTopic });
     } else {
     const nodes = [...walk(tree(baseline))];
     const field = nodes.find((node) => node.type === 'field' && node.name === 'keeper_id');
@@ -289,9 +299,9 @@ export async function runFormalFormLoop() {
       try { assert.deepEqual(effective(await contract()), effective(baseline)); report.restored = true; }
       catch (error) { report.recovery.push({ status: 'baseline_readback_failed', error: String(error) }); }
     }
-    if (process.env.FORM_LOWCODE_READ_FAILURE !== '1') await fs.writeFile(path.join(out, observeOnly ? 'closure-observation.json' : closureOnly ? 'closure-report.json' : designerOnly ? 'designer-report.json' : navigationOnly ? 'navigation-report.json' : 'report.json'), JSON.stringify(report, null, 2));
+    if (process.env.FORM_LOWCODE_READ_FAILURE !== '1') await fs.writeFile(path.join(out, emptySectionOnly ? 'empty-section-report.json' : observeOnly ? 'closure-observation.json' : closureOnly ? 'closure-report.json' : designerOnly ? 'designer-report.json' : navigationOnly ? 'navigation-report.json' : 'report.json'), JSON.stringify(report, null, 2));
     await browser.close();
   }
   assert(report.ok && report.restored, report.failure || 'journey/restoration incomplete');
-  console.log(closureOnly ? '[formal_form_lowcode_loop] PASS preview/designer closure; no publication' : designerOnly ? '[formal_form_lowcode_loop] PASS formal designer journey' : navigationOnly ? '[formal_form_lowcode_loop] PASS configured navigation; published baseline unchanged' : '[formal_form_lowcode_loop] PASS default -> preview -> A -> B -> A -> default');
+  console.log(emptySectionOnly ? '[formal_form_lowcode_loop] PASS empty source narrow observation; no publication or business write' : closureOnly ? '[formal_form_lowcode_loop] PASS preview/designer closure; no publication' : designerOnly ? '[formal_form_lowcode_loop] PASS formal designer journey' : navigationOnly ? '[formal_form_lowcode_loop] PASS configured navigation; published baseline unchanged' : '[formal_form_lowcode_loop] PASS default -> preview -> A -> B -> A -> default');
 }

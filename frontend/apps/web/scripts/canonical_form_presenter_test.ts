@@ -3268,3 +3268,46 @@ assert.deepEqual(normalizeNativeFormStatusbar({
 }, 'create forms must retain the native statusbar claim without rendering a business status');
 
 console.log('[canonical_form_presenter_test] PASS cases=170');
+
+// Container and navigation consume the same readonly display projection.
+const emptySectionModel = structuredClone(bodyActionModel);
+const sourceField = structuredClone(collectFields(emptySectionModel.zones.primary)[0]);
+sourceField.value = null; sourceField.readonly = true; sourceField.visible = true;
+sourceField.fieldType = 'char'; sourceField.fieldCode = 'generic_source'; sourceField.widgetId = 'generic.source';
+const sourceSection = { ...emptySectionModel.zones.primary[0], nodeId: 'generic.source.group', kind: 'group',
+  title: 'Source facts', text: '', visible: true, action: null, nativeWidget: '',
+  attributes: { 'data-sc-anchor': 'generic-source' }, fields: [sourceField], children: [] };
+const notePage = { ...sourceSection, nodeId: 'notes', kind: 'page', title: 'Notes', attributes: {}, fields: [], children: [] };
+const attachmentPage = { ...notePage, nodeId: 'attachments', title: 'Attachments' };
+emptySectionModel.zones.primary = [sourceSection, { ...notePage, nodeId: 'tabs', kind: 'notebook', children: [notePage, attachmentPage] }];
+emptySectionModel.zones.subordinate = [];
+const emptySectionBridge = buildCanonicalNativeFormBridge(emptySectionModel);
+assert.equal(emptySectionBridge.nodeVisible(emptySectionBridge.primaryNodes[0]), false, 'empty readonly section body omitted');
+assert.equal(emptySectionBridge.sectionLinks.some((item) => item.label === 'Source facts'), false, 'empty section navigation omitted with body');
+assert.equal(emptySectionBridge.nodeVisible(emptySectionBridge.primaryNodes[1]), true, 'notebook retained');
+assert.equal(emptySectionBridge.primaryNodes[1].children?.length, 2, 'notes and attachments retained');
+assert.equal(sourceSection.visible, true, 'projection does not mutate authoritative model');
+for (const value of ['SOURCE-001', 0, false]) {
+  sourceField.value = value;
+  sourceField.fieldType = typeof value === 'boolean' ? 'boolean' : typeof value === 'number' ? 'float' : 'char';
+  const populated = buildCanonicalNativeFormBridge(emptySectionModel);
+  assert.equal(populated.nodeVisible(populated.primaryNodes[0]), true, 'populated/zero/false fact retained');
+  assert.equal(populated.sectionLinks.some((item) => item.label === 'Source facts'), true);
+}
+sourceField.value = null; sourceField.fieldType = 'char';
+const actionable = buildCanonicalNativeFormBridge(emptySectionModel, undefined, '', '', () => true);
+assert.equal(actionable.nodeVisible(actionable.primaryNodes[0]), true, 'empty fact with authorized action retained');
+// Native XML emits child field nodes, not only fields attached to a group.
+sourceSection.fields = [];
+sourceSection.children = [{ ...sourceSection, nodeId: 'generic.source.field', kind: 'field', title: '', attributes: {}, fields: [sourceField], children: [] }];
+const childEmpty = buildCanonicalNativeFormBridge(emptySectionModel);
+assert.equal(childEmpty.nodeVisible(childEmpty.primaryNodes[0]), false, 'nested empty field hides its parent section');
+assert.equal(childEmpty.sectionLinks.some((item) => item.label === 'Source facts'), false);
+sourceField.value = 'NATIVE-SOURCE';
+assert.equal(buildCanonicalNativeFormBridge(emptySectionModel).nodeVisible(childEmpty.primaryNodes[0]), false, 'visibility stays bound to the originating projection');
+const childPopulated = buildCanonicalNativeFormBridge(emptySectionModel);
+assert.equal(childPopulated.nodeVisible(childPopulated.primaryNodes[0]), true, 'nested populated field retains its parent');
+assert.equal(childPopulated.sectionLinks.some((item) => item.label === 'Source facts'), true);
+emptySectionModel.identity.mode = 'create';
+assert.equal(buildCanonicalNativeFormBridge(emptySectionModel).primaryNodes[0].visible, true, 'create controls retained');
+console.log('[canonical_form_presenter] readonly empty/populated section and navigation: 10 cases passed');

@@ -123,7 +123,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, inject } from 'vue';
+import { ScTaskActionResolverKey } from '../../components/template/taskActionResolver';
 import { SceneButton, SceneUiProvider, type SceneUiKitId } from '@sc/ui/form';
 import type { ContractV2ActionRule } from '../../app/contracts/v2/types';
 import type { CanonicalAuditEvent, CanonicalFormNode, CanonicalFormRenderModel } from '../../app/presentation/canonicalFormRenderModel';
@@ -278,12 +279,14 @@ const nativeBridgeModel = computed<CanonicalFormRenderModel | null>(() => {
     },
   };
 });
+const taskActionResolver = inject(ScTaskActionResolverKey, null);
 const nativeBridge = computed(() => nativeBridgeModel.value
   ? buildCanonicalNativeFormBridge(
     nativeBridgeModel.value,
     props.relationAdapter as CanonicalRelationProjection,
     props.claimedStatusbarNodeIdentity || '',
     props.claimedStatusbarFieldCode || '',
+    (field) => Boolean(taskActionResolver?.(field)),
   )
   : null);
 const floorplanSubordinateNodes = computed(() => floorplan.value.subordinateNodes
