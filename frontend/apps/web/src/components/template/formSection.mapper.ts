@@ -273,3 +273,15 @@ export function resolveTemplateInputValue(options: ResolveTemplateInputValueOpti
   }
   return options.resolveTextInputValue(options.fieldName);
 }
+
+/** Shared readonly fact omission rule; labels alone are not display content. */
+export function fieldHasEmptyValue(field: Pick<FormSectionFieldSchema, 'type' | 'inputValue' | 'value'>): boolean {
+  const value = field.inputValue ?? field.value;
+  if (Array.isArray(value)) return value.length === 0;
+  if (field.type === 'boolean') return value === null || value === undefined;
+  return value === null || value === undefined || value === false || String(value).trim() === '';
+}
+
+export function readonlyFactIsPresentable(field: FormSectionFieldSchema, hasAction = false): boolean {
+  return !field.readonly || field.type === 'one2many' || !fieldHasEmptyValue(field) || hasAction;
+}

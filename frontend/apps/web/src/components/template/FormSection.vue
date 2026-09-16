@@ -295,6 +295,7 @@
 
 <script setup lang="ts">
 import { computed, inject, useId, useSlots } from 'vue';
+import { fieldHasEmptyValue, readonlyFactIsPresentable } from './formSection.mapper';
 import { SceneFieldControl, useOptionalSceneUiKit } from '@sc/ui/form';
 import ScCard from '../design-system/ScCard.vue';
 import ScButton from '../design-system/ScButton.vue';
@@ -614,12 +615,6 @@ function isReadonlyEmptyRelation(field: FormSectionFieldSchema) {
     && props.relationAdapter.relationIds(field.name).length === 0;
 }
 
-function fieldHasEmptyValue(field: FormSectionFieldSchema) {
-  const value = field.inputValue ?? field.value;
-  if (Array.isArray(value)) return value.length === 0;
-  if (field.type === 'boolean') return value === null || value === undefined;
-  return value === null || value === undefined || value === false || String(value).trim() === '';
-}
 
 function fieldState(field: FormSectionFieldSchema) {
   if (field.invalid) return 'invalid';
@@ -675,8 +670,7 @@ const taskActionResolver = inject(ScTaskActionResolverKey, null);
 
 const displayFields = computed(() => props.fields.filter((field) => {
   if (!props.preferReadonlyFacts || props.fieldSelectionMode || props.fieldConfigEditable) return true;
-  if (!field.readonly || field.type === 'one2many' || !fieldHasEmptyValue(field)) return true;
-  return Boolean(taskActionFor(field));
+  return readonlyFactIsPresentable(field, Boolean(taskActionFor(field)));
 }));
 
 /**
