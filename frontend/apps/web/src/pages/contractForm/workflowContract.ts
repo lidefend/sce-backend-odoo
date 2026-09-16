@@ -106,9 +106,6 @@ export function normalizeWorkflowPhaseStatusbar(workflow: Record<string, unknown
 }
 
 export function normalizeNativeFormStatusbar(input: NativeFormStatusbarInput): NativeStatusbarVm {
-  if (!input.recordId) {
-    return { visible: false, field: '', current: '', states: [], reachedValues: [], readonly: true };
-  }
   const formView = dictOrEmpty(input.formView);
   const raw = dictOrEmpty(formView.statusbar);
   const field = String(raw.field || '').trim();
@@ -124,6 +121,9 @@ export function normalizeNativeFormStatusbar(input: NativeFormStatusbarInput): N
     ? rawStates.map((item) => ({ value: item.value as string | number, label: String(item.label || item.value || '') }))
     : selectionStates)
     .filter((item) => String(item.value ?? '').trim() && String(item.label || '').trim());
+  if (!input.recordId) {
+    return { visible: false, field, current: '', states, reachedValues: [], readonly: true };
+  }
   const rawFormStatus = input.formData[field];
   const formStatusValue = rawFormStatus === false || rawFormStatus == null ? '' : String(rawFormStatus).trim();
   const current = String(
