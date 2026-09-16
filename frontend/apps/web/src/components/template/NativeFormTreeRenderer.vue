@@ -216,12 +216,13 @@
         </template>
 
         <template v-else>
+          <template v-for="(segment, segmentIndex) in childSegments(node)" :key="segmentIndex">
           <FormSection
-            v-if="!isNativeFeedbackContainer(node) && fieldSchemasForNodes(fieldChildren(node)).length"
-            :title="fieldSectionTitle(node)"
+            v-if="segment.kind === 'field' && !isNativeFeedbackContainer(node) && fieldSchemasForNodes(segment.nodes).length"
+            :title="segmentIndex === childSegments(node).findIndex((item) => item.kind === 'field') ? fieldSectionTitle(node) : ''"
             :columns="nodeColumns(node)"
             :inherited-semantic-role="semanticFormRole(node)"
-            :fields="fieldSchemasForNodes(fieldChildren(node))"
+            :fields="fieldSchemasForNodes(segment.nodes)"
             :relation-adapter="relationAdapter"
             :field-actions="fieldActions"
             :field-order-editable="fieldOrderEditable"
@@ -254,8 +255,8 @@
               <slot name="readonly" :field="field" />
             </template>
           </FormSection>
-          <div v-if="buttonChildren(node).length" :class="nativeActionsClass(node)">
-            <template v-for="(buttonNode, buttonIndex) in visibleActionButtons(node)" :key="nodeKey(buttonNode, buttonIndex)">
+          <div v-if="segment.kind === 'button' && segment.nodes.length" :class="nativeActionsClass(node)">
+            <template v-for="(buttonNode, buttonIndex) in visibleActionButtons(node).filter((button) => segment.nodes.includes(button))" :key="nodeKey(buttonNode, buttonIndex)">
               <ScButton
                 v-if="!isSmartButtonNode(buttonNode)"
                 v-bind="nativeActionEvidenceAttributes(buttonNode)"
@@ -281,7 +282,7 @@
               />
             </template>
             <NativeActionOverflowMenu
-              v-if="overflowActionButtons(node).length"
+              v-if="segment.nodes.includes(overflowActionButtons(node)[0])"
               :actions="overflowActionButtons(node)"
               :identity="nodeKey(node, index)"
               :key-resolver="overflowActionKey"
@@ -293,14 +294,14 @@
               @select="emitNativeAction"
             />
           </div>
-          <template v-for="(widgetNode, widgetIndex) in widgetChildren(node)" :key="nodeKey(widgetNode, widgetIndex)">
+          <template v-for="(widgetNode, widgetIndex) in (segment.kind === 'widget' ? segment.nodes : [])" :key="nodeKey(widgetNode, widgetIndex)">
             <div v-if="widgetName(widgetNode) === 'web_ribbon'" class="native-ribbon" :class="widgetClass(widgetNode)">
               {{ widgetTitle(widgetNode) }}
             </div>
           </template>
           <NativeFormTreeRenderer
-            v-if="containerChildren(node).length"
-            :nodes="containerChildren(node)"
+            v-if="segment.kind === 'container'"
+            :nodes="segment.nodes"
             :field-schemas-for-nodes="fieldSchemasForNodes"
             :is-node-visible="isNodeVisible"
             :button-label-resolver="buttonLabelResolver"
@@ -342,6 +343,7 @@
               <slot name="chatter" :node="chatterNode" />
             </template>
           </NativeFormTreeRenderer>
+          </template>
         </template>
       </section>
 
@@ -421,6 +423,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import FormSection from './FormSection.vue';
+import { nativeChildSegments } from './nativeChildSequence';
 import NativeActionOverflowMenu from './NativeActionOverflowMenu.vue';
 import NativeSmartAction from './NativeSmartAction.vue';
 import ScButton from '../design-system/ScButton.vue';
@@ -730,6 +733,10 @@ function rawChildren(node: NativeFormLayoutNode) {
 
 function fieldChildren(node: NativeFormLayoutNode) {
   return rawChildren(node).filter((child) => nodeType(child) === 'field' && isNodeRenderable(child));
+}
+
+function childSegments(node: NativeFormLayoutNode) {
+  return nativeChildSegments(rawChildren(node).filter(isNodeRenderable), nodeType);
 }
 
 function titleFieldForNode(node: NativeFormLayoutNode) {

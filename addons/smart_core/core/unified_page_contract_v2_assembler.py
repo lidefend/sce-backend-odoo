@@ -3393,6 +3393,8 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
             ("disabled", "disabled"),
             ("permission_constraints", "permissionConstraints"),
             ("entitlement_evaluated", "entitlementEvaluated"),
+            ("authorization_allowed", "authorizationAllowed"),
+            ("business_available", "businessAvailable"),
         ):
             if row.get(source_key) is not None:
                 action_rule[target_key] = deepcopy(row.get(source_key))

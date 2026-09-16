@@ -182,6 +182,9 @@ ALLOWED_STRICT_STORE_SNAKE_CASE_TOKENS = {
 }
 
 ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
+    # Formal configuration provenance: schema separates draft id=0 from published ids.
+    "source_kind",
+    "change_set_preview",
     # Canonical role registry symbols; not payload aliases.
     "CONTRACT_V2_FORM_STRUCTURE_ROLES",
     "FORM_STRUCTURE_ROLE_SET",

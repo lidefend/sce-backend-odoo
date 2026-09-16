@@ -107,7 +107,9 @@ export function buildContractFormActions(params: {
         backendIdentity: String(row.backendIdentity || row.backend_identity || '').trim() || undefined,
         nativeIdentity,
         label: String(row.label || key).trim() || key,
-        kind: buttonType === 'server' || buttonType === 'server_action'
+        kind: ['ui.local_mode', 'ui.mode'].includes(String(row.intent || '').trim())
+          ? 'client'
+          : buttonType === 'server' || buttonType === 'server_action'
           ? 'server'
           : buttonType === 'action'
             ? 'action'

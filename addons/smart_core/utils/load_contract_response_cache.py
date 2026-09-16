@@ -208,6 +208,18 @@ def build_projection_source_token(env, *, model_name, menu_id=None, action_id=No
             if model_code not in env:
                 continue
             model = env[model_code]
+            if model_code == "ui.business.config.contract":
+                # write_date is transaction time and can remain identical for
+                # A -> B -> A. Bind all relevant definitions, not the latest row.
+                records = model.sudo().with_context(active_test=False).search([
+                    ("model", "=", model_name), "|", ("company_id", "=", False),
+                    ("company_id", "=", env.company.id),
+                ], order="id")
+                versions.append([model_code, [
+                    [row.id, row.definition_sha256, row.version_no, row.status, row.active]
+                    for row in records
+                ]])
+                continue
             if "write_date" not in model._fields:
                 return ""
             latest = model.sudo().with_context(active_test=False).search(

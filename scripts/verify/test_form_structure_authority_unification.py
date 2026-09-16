@@ -202,9 +202,10 @@ class FormStructureAuthorityUnificationTest(unittest.TestCase):
 
     def test_compatibility_retirement_has_a_measurable_terminal_condition(self) -> None:
         text = DECISION.read_text(encoding="utf-8")
-        self.assertIn("正式 89 菜单范围的兼容消费者归零后", text)
-        self.assertIn("删除后端二次结构解释", text)
+        self.assertIn("正式89入口的旧路径有清单和终点", text)
+        self.assertIn("消费者归零后删除重复解释路径，保留合法配置的统一后端合成", text)
         self.assertIn("禁止无明确退役日期地新增", text)
+        self.assertIn("分别记录旧结构路径退出状态和低代码链路验证状态", text)
 
 
 def load_tests(loader, tests, pattern):

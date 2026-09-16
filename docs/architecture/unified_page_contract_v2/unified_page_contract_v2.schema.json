@@ -970,8 +970,13 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["id", "name"],
+      "allOf": [{
+        "if": {"required": ["source_kind"], "properties": {"source_kind": {"const": "change_set_preview"}}},
+        "else": {"properties": {"id": {"minimum": 1}}}
+      }],
       "properties": {
-        "id": {"type": "integer", "minimum": 1},
+        "id": {"type": "integer", "minimum": 0},
+        "source_kind": {"enum": ["published", "change_set_preview"]},
         "name": {"type": "string", "minLength": 1},
         "priority": {"type": "integer"},
         "view_type": {"type": "string"},

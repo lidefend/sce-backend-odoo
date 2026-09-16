@@ -75,12 +75,18 @@ class TestBusinessConfigChangeSet(TransactionCase):
 
     def test_owner_role_and_ordinary_user_isolation(self):
         env, change_set = self._open()
+        fresh = BusinessConfigChangeSetOpenHandler(env).handle(payload={"params": {
+            "role_key": "config_admin", "fresh": True, "name": "Independent designer draft",
+        }})
+        self.assertTrue(fresh["ok"], fresh)
+        self.assertNotEqual(fresh["data"]["id"], change_set["id"])
+        self.assertEqual(env["ui.business.config.change.set"].browse(change_set["id"]).state, "draft")
         with self.assertRaises(AccessError):
             BusinessConfigChangeSetGetHandler(self._env(self.ordinary)).handle(payload={"params": {"change_set_token": change_set["token"], "role_key": "config_admin"}})
         hidden = BusinessConfigChangeSetGetHandler(self._env(self.other_admin)).handle(payload={"params": {"change_set_token": change_set["token"], "role_key": "config_admin"}})
         self.assertEqual(hidden["code"], 404)
         change_set_record = env["ui.business.config.change.set"].browse(change_set["id"])
-        env["ui.business.config.change.set.item"].create({
+        env["ui.business.config.change.set.item"].sudo().create({
             "change_set_id": change_set_record.id, "config_type": "form", "target_key": "test.owner.rule",
             "model": "res.partner", "base_payload_hash": stable_payload_hash({}), "draft_payload": self._payload(),
         })
@@ -101,6 +107,40 @@ class TestBusinessConfigChangeSet(TransactionCase):
         self.assertEqual(result["code"], 409)
         self.assertEqual(result["error"]["reason_code"], "STALE_CONFIG_HASH")
 
+    def test_designer_stage_rejects_definition_changed_since_open(self):
+        env, change_set = self._open()
+        target = "test.change.set.designer.concurrency"
+        contract = env["ui.business.config.contract"].sudo().create({
+            "name": target, "model": "res.partner", "view_type": "form",
+            "company_id": env.company.id, "role_key": "config_admin", "contract_json": self._payload(),
+        })
+        opened_hash = contract.definition_sha256
+        contract.write({"priority": contract.priority + 1})
+        params = {"change_set_token": change_set["token"], "role_key": "config_admin", "config_type": "form",
+                  "target_key": target, "model": "res.partner", "view_type": "form", "draft_payload": self._payload()}
+        for expected in (opened_hash, "absent"):
+            result = BusinessConfigChangeSetStageHandler(env).handle(payload={"params": {
+                **params, "current_definition_hash": expected,
+            }})
+            self.assertEqual(result["error"]["reason_code"], "STALE_CONFIG_DEFINITION", result)
+        self.assertFalse(env["ui.business.config.change.set.item"].sudo().search([("change_set_id", "=", change_set["id"])]))
+        result = BusinessConfigChangeSetStageHandler(env).handle(payload={"params": {
+            **params, "current_definition_hash": contract.definition_sha256,
+        }})
+        self.assertTrue(result["ok"], result)
+
+        # Reopening an old draft must not silently rebase it onto a new definition.
+        original_items = result["data"]["items"]
+        contract.write({"priority": contract.priority + 1})
+        restaged = BusinessConfigChangeSetStageHandler(env).handle(payload={"params": {
+            **params, "current_definition_hash": contract.definition_sha256,
+        }})
+        self.assertEqual(restaged["error"]["reason_code"], "STALE_CONFIG_DEFINITION", restaged)
+        restored = BusinessConfigChangeSetGetHandler(env).handle(payload={"params": {
+            "change_set_token": change_set["token"], "role_key": "config_admin",
+        }})
+        self.assertEqual(restored["data"]["items"], original_items)
+
     def test_preview_has_zero_formal_contract_or_version_writes(self):
         env, change_set = self._open()
         staged = self._stage(env, change_set, "test.change.set.preview")
@@ -111,7 +151,7 @@ class TestBusinessConfigChangeSet(TransactionCase):
             ("change_set_id", "=", change_set["id"]),
         ])
         preview_item.write({
-            "role_key": False,
+            "role_key": "config_admin",
             "draft_payload": {"view_orchestration": {
                 "context": {"source": "smart_core.lowcode.business_config", "source_status": "tenant_runtime"},
                 "views": {"form": {"fields": [{"name": "email", "visible": False}]}},
@@ -247,6 +287,35 @@ class TestBusinessConfigChangeSet(TransactionCase):
         self.assertFalse(result["ok"])
         self.assertEqual(result["error"]["reason_code"], "CHANGE_SET_VERSION_CONFLICT")
 
+    def test_managed_mutation_and_definition_drift_protection(self):
+        env, change_set = self._open()
+        staged = self._stage(env, change_set, "test.change.set.definition")
+        item = env["ui.business.config.change.set.item"].sudo().browse(staged["items"][0]["id"])
+        with self.assertRaises(AccessError):
+            item.with_env(env).write({"draft_payload": self._payload("email")})
+        with self.assertRaises(AccessError):
+            item.change_set_id.with_env(env).write({"state": "published"})
+        params = {"change_set_token": change_set["token"], "role_key": "config_admin"}
+        BusinessConfigChangeSetValidateHandler(env).handle(payload={"params": params})
+        published = BusinessConfigChangeSetPublishHandler(env).handle(payload={"params": {
+            **params, "request_id": "definition-publish",
+        }})
+        self.assertTrue(published["ok"], published)
+        contract = item.target_contract_id
+        original_payload = contract.contract_json
+        contract.write({"priority": contract.priority + 1})
+        self.assertEqual(contract.contract_json, original_payload)
+        rollback = BusinessConfigChangeSetRollbackHandler(env).handle(payload={"params": {
+            **params, "request_id": "definition-rollback",
+        }})
+        self.assertEqual(rollback["error"]["reason_code"], "CHANGE_SET_ROLLBACK_CONFLICT", rollback)
+        global_config = env["ui.business.config.contract"].sudo().create({
+            "name": "test.global.delete.protection", "model": "res.partner", "company_id": False,
+            "contract_json": self._payload(),
+        })
+        with self.assertRaises(AccessError):
+            global_config.with_env(env).unlink()
+
     def test_concurrent_empty_publish_rejects_stale_base_hash(self):
         env_a, change_set_a = self._open()
         env_b = self._env(self.other_admin)
@@ -305,6 +374,18 @@ class TestBusinessConfigChangeSet(TransactionCase):
         self.assertTrue(rolled_back["ok"], rolled_back)
         self.assertNotEqual(rolled_back["data"]["id"], published["data"]["id"])
         self.assertFalse(contracts.exists().filtered("active"))
+        env, reopened = self._open()
+        target = contracts[0]
+        self._stage(env, reopened, target.name)
+        BusinessConfigChangeSetValidateHandler(env).handle(payload={"params": {
+            "change_set_token": reopened["token"], "role_key": "config_admin",
+        }})
+        republished = BusinessConfigChangeSetPublishHandler(env).handle(payload={"params": {
+            "change_set_token": reopened["token"], "role_key": "config_admin", "request_id": "republish-after-default",
+        }})
+        self.assertTrue(republished["ok"], republished)
+        self.assertTrue(target.active)
+        self.assertEqual(Contract.search_count([("name", "=", target.name)]), 1)
 
     def test_explicit_empty_list_search_payloads_publish_and_rollback(self):
         env, change_set = self._open()
@@ -321,19 +402,19 @@ class TestBusinessConfigChangeSet(TransactionCase):
         }}}}
         list_contract = Contract.create({
             "name": "test.change.set.empty.list", "model": "res.partner", "view_type": "tree",
-            "company_id": self.env.company.id, "contract_json": original_list, "status": "published",
+            "role_key": "config_admin", "company_id": self.env.company.id, "contract_json": original_list, "status": "published",
         })
         search_contract = Contract.create({
             "name": "test.change.set.empty.search", "model": "res.partner", "view_type": "search",
-            "company_id": self.env.company.id, "contract_json": original_search, "status": "published",
+            "role_key": "config_admin", "company_id": self.env.company.id, "contract_json": original_search, "status": "published",
         })
         pivot_contract = Contract.create({
             "name": "test.change.set.empty.pivot", "model": "res.partner", "view_type": "pivot",
-            "company_id": self.env.company.id, "contract_json": original_pivot, "status": "published",
+            "role_key": "config_admin", "company_id": self.env.company.id, "contract_json": original_pivot, "status": "published",
         })
         graph_contract = Contract.create({
             "name": "test.change.set.empty.graph", "model": "res.partner", "view_type": "graph",
-            "company_id": self.env.company.id, "contract_json": original_graph, "status": "published",
+            "role_key": "config_admin", "company_id": self.env.company.id, "contract_json": original_graph, "status": "published",
         })
         empty_payloads = (
             ("list", "tree", list_contract, {"view_orchestration": {"views": {"tree": {"columns": []}}}}),
@@ -559,7 +640,7 @@ class TestBusinessConfigChangeSet(TransactionCase):
         }})
         self.assertTrue(published["ok"], published)
         record = env["ui.business.config.change.set"].browse(change_set["id"])
-        record.write({"expires_at": fields.Datetime.now() - timedelta(hours=1)})
+        record.sudo().write({"expires_at": fields.Datetime.now() - timedelta(hours=1)})
         get_result = BusinessConfigChangeSetGetHandler(env).handle(payload={"params": {
             "change_set_token": change_set["token"], "role_key": "config_admin",
         }})
@@ -579,12 +660,12 @@ class TestBusinessConfigChangeSet(TransactionCase):
             "change_set_token": change_set["token"], "role_key": "config_admin", "request_id": "other-company-rollback",
         }})
         self.assertEqual(other_company_result["code"], 404)
-        record.write({"database_name": "other_database"})
+        record.sudo().write({"database_name": "other_database"})
         database_result = BusinessConfigChangeSetRollbackHandler(env).handle(payload={"params": {
             "change_set_token": change_set["token"], "role_key": "config_admin", "request_id": "other-database-rollback",
         }})
         self.assertEqual(database_result["code"], 404)
-        record.write({"database_name": self.env.cr.dbname})
+        record.sudo().write({"database_name": self.env.cr.dbname})
         params = {"change_set_token": change_set["token"], "role_key": "config_admin", "request_id": "long-term-rollback"}
         first = BusinessConfigChangeSetRollbackHandler(env).handle(payload={"params": params})
         second = BusinessConfigChangeSetRollbackHandler(env).handle(payload={"params": params})
@@ -598,15 +679,15 @@ class TestBusinessConfigChangeSet(TransactionCase):
         env, change_set = self._open()
         self._stage(env, change_set, "test.change.set.expired.preview")
         record = env["ui.business.config.change.set"].browse(change_set["id"])
-        record.write({"expires_at": fields.Datetime.now() - timedelta(minutes=1)})
+        record.sudo().write({"expires_at": fields.Datetime.now() - timedelta(minutes=1)})
         with self.assertRaises(ValidationError):
             record.assert_owner_scope(role_key="config_admin")
-        record.write({"expires_at": fields.Datetime.now() + timedelta(hours=1)})
+        record.sudo().write({"expires_at": fields.Datetime.now() + timedelta(hours=1)})
         preview = BusinessConfigChangeSetPreviewHandler(env).handle(payload={"params": {
             "change_set_token": change_set["token"], "role_key": "config_admin",
         }})
         self.assertTrue(preview["ok"], preview)
-        record.write({"preview_expires_at": fields.Datetime.now() - timedelta(minutes=1)})
+        record.sudo().write({"preview_expires_at": fields.Datetime.now() - timedelta(minutes=1)})
         preview_env = env(context={
             **env.context,
             "business_config_preview_token": preview["data"]["preview"]["token"],

@@ -6,6 +6,7 @@ import logging
 from typing import Optional, Type, Dict, Any, Tuple
 import odoo
 from .base_handler import BaseIntentHandler
+from .intent_operation_policy import preview_write_error
 from .handler_registry import HANDLER_REGISTRY  # import 时已完成注册
 from .extension_loader import load_extensions
 from .http_result_policy import result_is_success
@@ -142,6 +143,11 @@ def _dispatch(intent: str, params: dict, context: dict, meta: Optional[Dict[str,
         if not getattr(handler, "uid", None):
             handler.uid = env.uid
 
+        # Legacy handlers can override run(); enforce the same restriction at dispatch.
+        denied = preview_write_error(intent, params, context,
+                                     non_idempotent=bool(getattr(handler, "NON_IDEMPOTENT_ALLOWED", "")))
+        if denied:
+            return denied
         # 3) 统一把参数传给 run（BaseIntentHandler.run 会转调 handle(payload, ctx)）
         result = handler.run(
             payload=payload_envelope,

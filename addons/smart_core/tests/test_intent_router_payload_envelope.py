@@ -144,6 +144,22 @@ class TestIntentRouterPayloadEnvelope(unittest.TestCase):
 
         self.assertEqual(registry_calls, [])
 
+    def test_preview_blocks_legacy_run_override_before_execution(self):
+        calls = []
+        class Handler:
+            NON_IDEMPOTENT_ALLOWED = "legacy mutation"
+            def __init__(self, **kwargs):
+                pass
+            def run(self, **kwargs):
+                calls.append(kwargs)
+                return {"ok": True}
+        router = _load_router(_FakeRequest(), Handler)
+        result = router._dispatch("demo.intent", {}, {"business_config_preview_token": "preview"})
+        self.assertEqual(result["error"]["code"], "CONFIG_PREVIEW_READ_ONLY")
+        self.assertEqual(calls, [])
+        self.assertTrue(router._dispatch("demo.intent", {}, {})["ok"])
+        self.assertEqual(len(calls), 1)
+
     def test_dispatch_keeps_handler_payload_as_canonical_envelope(self):
         seen = {}
 

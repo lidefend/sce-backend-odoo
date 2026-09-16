@@ -108,6 +108,8 @@ async function apiRequestRawUncoalesced<T>(path: string, options: RequestInit = 
   const existingTrace = headers.get('x-trace-id');
   const traceId = existingTrace || generateTraceId();
 
+  const previewToken = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('preview_token') : '';
+  if (previewToken) headers.set('X-Configuration-Preview', previewToken);
   headers.set('Content-Type', 'application/json');
   headers.set('x-trace-id', traceId);
   headers.set('x-tenant', config.tenant);

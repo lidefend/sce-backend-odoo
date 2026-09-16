@@ -59,7 +59,8 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
           selectedRecordId: Number(session.recordContext?.selected?.id || 0) || null,
         },
       ),
-    });
+    }).map((action: ContractAction) => route.query.preview_token
+      ? { ...action, enabled: false, hint: '未发布配置预览不执行业务动作' } : action);
   });
 
   const headerActions = computed(() => contractActions.value.filter((item) => item.level === 'header' || item.level === 'toolbar'));
@@ -84,6 +85,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     resolveNativeAttachmentLabel,
   } = useRecordCollaborationPresentation({
     v2ContractStore, recordId, model, renderProfile, busy,
+    configurationPreview: computed(() => Boolean(route.query.preview_token)),
     activeChatterMode, activeChatterLabel, chatterDraft, replyTarget, activitySummary, activityDeadline, activityNote,
     collaborationUserQuery, collaborationUserOptions, collaborationUserChoices, collaborationUsersLoading,
     selectedMentionUsers, activityAssigneeId, chatterPosting, chatterError, chatterTimeline,

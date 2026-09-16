@@ -160,7 +160,9 @@ class _FakeEnv:
         self.context = {}
         self.cr = _FakeCursor(dbname, self)
 
-    def __call__(self, user=None):
+    def __call__(self, user=None, context=None):
+        if context is not None:
+            self.context = dict(context)
         self.uid = user
         return self
 

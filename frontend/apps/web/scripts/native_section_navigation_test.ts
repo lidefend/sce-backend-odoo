@@ -148,6 +148,13 @@ const fieldOnlyRoles = workspaceSectionNavigationItems([node({
   ],
 })]);
 assert.deepEqual(fieldOnlyRoles, [], 'field semantic roles must not create section links');
+const configuredSection = node({ nodeId: 'configured', title: 'Configured', attributes: { 'data-sc-anchor': 'configured' },
+  fields: [field({ widgetId: 'owned.lines', fieldType: 'one2many', label: 'Owned lines' })] });
+const independentLines = node({ nodeId: 'notebook', kind: 'notebook', fields: [], children: [node({
+  fields: [field({ widgetId: 'independent.lines', fieldType: 'one2many', label: 'Independent lines' })],
+})] });
+assert.deepEqual(workspaceSectionNavigationItems([configuredSection, independentLines]).map((item) => item.label),
+  ['Configured', 'Independent lines'], 'a configured section must retain unrelated native collection navigation without duplicating owned collections');
 assert.deepEqual(workspaceSectionNavigationItems([
   node({
     nodeId: 'primary.section', title: '基本信息',

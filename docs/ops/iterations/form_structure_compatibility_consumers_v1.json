@@ -1,5 +1,5 @@
 {
-  "head": "28b7695dc9f1cebbbe9bd5d715e951c6dec8a4da",
+  "head": "e802f7239bf005482a352caa64eb9da0e78a085a",
   "scope": {
     "role": "system_admin",
     "companyId": 1,
@@ -11289,7 +11289,6 @@
     "countCorrection": 4,
     "migrationReduction": 3
   },
-  "publishedCount": 46,
   "localVerifiedCount": 44,
   "uc1PublishedAudit": {
     "auditedAt": "2026-09-16",
@@ -11324,7 +11323,7 @@
   },
   "uc2LocalMigrationAudit": {
     "auditedAt": "2026-09-16",
-    "status": "local_formal_scope_546_547_verified_freeze_pending",
+    "status": "mainline_integrated",
     "productCandidateHead": "f1dbaa9950263f735b0619a08b545f8f199f5982",
     "productCandidateFingerprint": "f9780e4b60fb625cdaa8b73a8cdb7a5217dd1069a989b64d4c5721e7290304da",
     "iterationRecord": "docs/ops/iterations/uc2_material_native_migration_20260916.md",
@@ -11339,7 +11338,7 @@
         1428,
         1431
       ],
-      "countMeaning": "local UC2 formal-scope compatibility migration; published count remains pending merge"
+      "countMeaning": "mainline remaining compatibility consumers; deployment and overall user delivery are separate"
     },
     "sourceVerification": {
       "layoutPolicy": "container_tree_authority",
@@ -11444,44 +11443,376 @@
         547
       ],
       "returnEvidenceDisposition": "investigation retained; no formal path and no UC2 pass claim"
+    },
+    "mainlineIntegration": {
+      "pr": 482,
+      "head": "25cb3cd106ead9dd09b3f2b68ed152fbd413da0f",
+      "mergeCommit": "e802f7239bf005482a352caa64eb9da0e78a085a",
+      "status": "completed",
+      "versionDeployment": "not_reported",
+      "overall89EntryUserDelivery": "not_completed",
+      "rawEvidenceReused": true,
+      "worktreeAndRuntime": "retained",
+      "archiveReceipt": "/home/lidefend/workspace/.codex-evidence/workspace-archives/20260916/uc2-material-native/25cb3cd106ead9dd09b3f2b68ed152fbd413da0f/archive-receipt.json",
+      "mergeReceipt": "/home/lidefend/workspace/.codex-evidence/workspace-archives/20260916/uc2-material-native/25cb3cd106ead9dd09b3f2b68ed152fbd413da0f/merge-receipt.json"
     }
   },
   "runtimeEvidenceRoot": "artifacts/form-structure-unification/ub-tender-hierarchy-identities",
   "nextBatch": {
-    "name": "U-C2",
-    "status": "formal_scope_verified_freeze_pending",
-    "priorityActions": [],
+    "name": "U-C3",
+    "status": "first_group_scoped_not_implemented",
+    "priorityActions": [
+      666,
+      862
+    ],
+    "selectedGroup": "G01",
+    "sourceMainlineHead": "e802f7239bf005482a352caa64eb9da0e78a085a",
+    "fullRescan": false,
     "groups": [
       {
-        "viewId": 1428,
+        "id": "G01",
+        "name": "资料证照条件表单",
         "actions": [
-          546
+          666,
+          862
         ],
-        "sourceCategories": [
-          "material.inbound"
+        "viewIds": [
+          1703
         ],
-        "migrationStatus": "local_verified"
+        "risk": "medium",
+        "structureRelation": "same_native_view",
+        "legacyConfigurations": [
+          "document_admin_certificate_productized_form_v1",
+          "policy_document_form_v1"
+        ],
+        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
       },
       {
-        "viewId": 1431,
+        "id": "G02",
+        "name": "发票多分类明细",
         "actions": [
-          547
+          785,
+          786,
+          787,
+          788
         ],
-        "sourceCategories": [
-          "material.outbound"
+        "viewIds": [
+          1651
         ],
-        "migrationStatus": "local_verified"
+        "risk": "high",
+        "structureRelation": "same_native_view",
+        "legacyConfigurations": [
+          "invoice_input_productized_form_v1",
+          "invoice_output_application_productized_form_v1",
+          "invoice_output_registration_productized_form_v1",
+          "invoice_prepaid_tax_productized_form_v1",
+          "sc_invoice_registration_form_sections_v1",
+          "sc_invoice_registration_p1_form_business_facts_v1"
+        ],
+        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
+      },
+      {
+        "id": "G03",
+        "name": "收款与公司收入",
+        "actions": [
+          637,
+          806
+        ],
+        "viewIds": [
+          1644
+        ],
+        "risk": "high",
+        "structureRelation": "same_native_view",
+        "legacyConfigurations": [
+          "receipt_income_productized_form_v1",
+          "receipt_income_project_productized_form_v1",
+          "sc_receipt_income_form_sections_v1",
+          "sc_receipt_income_p1_form_business_facts_v1"
+        ],
+        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
+      },
+      {
+        "id": "G04",
+        "name": "实付与公司支出",
+        "actions": [
+          837,
+          808
+        ],
+        "viewIds": [
+          1647
+        ],
+        "risk": "high",
+        "structureRelation": "same_native_view",
+        "legacyConfigurations": [
+          "payment_execution_actual_outflow_productized_form_v1",
+          "payment_execution_company_finance_expense_productized_form_v1",
+          "payment_execution_productized_form_v2",
+          "sc_payment_execution_form_sections_v1",
+          "sc_payment_execution_p1_form_business_facts_v1"
+        ],
+        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
+      },
+      {
+        "id": "G05",
+        "name": "报销、扣款、备用金",
+        "actions": [
+          792,
+          798,
+          793
+        ],
+        "viewIds": [
+          1632,
+          1633
+        ],
+        "risk": "high",
+        "structureRelation": "same_model_two_native_views",
+        "legacyConfigurations": [
+          "expense_claim_deduction_bill_productized_form_v1",
+          "expense_claim_reimbursement_request_productized_form_v1",
+          "sc_expense_claim_form_structure_generated_v1"
+        ],
+        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
+      },
+      {
+        "id": "G06",
+        "name": "税额与专项抵扣",
+        "actions": [
+          790,
+          879
+        ],
+        "viewIds": [
+          1654
+        ],
+        "risk": "high",
+        "structureRelation": "same_native_view",
+        "legacyConfigurations": [
+          "project_special_tax_deduction_form_v1",
+          "sc_tax_deduction_registration_form_sections_v1",
+          "sc_tax_deduction_registration_p1_form_business_facts_v1",
+          "tax_deduction_registration_productized_form_v1"
+        ],
+        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
+      },
+      {
+        "id": "G07",
+        "name": "工资社保与发放",
+        "actions": [
+          873,
+          884,
+          858,
+          874
+        ],
+        "viewIds": [
+          1697,
+          1700
+        ],
+        "risk": "high",
+        "structureRelation": "payroll_shared_view_plus_payment_companion",
+        "legacyConfigurations": [
+          "project_payroll_productized_form_v1",
+          "project_salary_payment_productized_form_v1",
+          "sc_hr_payroll_document_form_structure_generated_v1",
+          "social_fund_form_v1"
+        ],
+        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
+      },
+      {
+        "id": "G08",
+        "name": "上下文办理工作台",
+        "actions": [
+          875,
+          877,
+          878
+        ],
+        "viewIds": [
+          1932,
+          1933,
+          1934
+        ],
+        "risk": "high",
+        "structureRelation": "same_configuration_shape_distinct_models",
+        "legacyConfigurations": [
+          "company_project_refund_workspace_form_v1",
+          "current_account_workspace_form_v1",
+          "team_loan_deduction_workspace_form_v1"
+        ],
+        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
+      },
+      {
+        "id": "G09",
+        "name": "用量与履约登记",
+        "actions": [
+          871,
+          570,
+          575
+        ],
+        "viewIds": [
+          1461,
+          1476,
+          1491
+        ],
+        "risk": "high",
+        "structureRelation": "same_legacy_section_and_business_facts_path",
+        "legacyConfigurations": [
+          "equipment_usage_register_productized_form_v1",
+          "sc_equipment_usage_form_sections_v1",
+          "sc_equipment_usage_p1_form_business_facts_v1",
+          "sc_labor_usage_form_sections_v1",
+          "sc_labor_usage_p1_form_business_facts_v1",
+          "sc_subcontract_register_form_sections_v1",
+          "sc_subcontract_register_p1_form_business_facts_v1",
+          "subcontract_register_productized_form_v1"
+        ],
+        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
+      },
+      {
+        "id": "G10",
+        "name": "工程过程与资料",
+        "actions": [
+          682,
+          867,
+          729,
+          597,
+          527
+        ],
+        "viewIds": [
+          1389,
+          1550,
+          1560,
+          1741,
+          1893
+        ],
+        "risk": "medium",
+        "structureRelation": "handling_and_generated_structure_subgroups",
+        "legacyConfigurations": [
+          "construction_diary_productized_form_v1",
+          "project_progress_entry_form_structure_generated_v1",
+          "sc_construction_diary_form_structure_generated_v1",
+          "sc_construction_diary_p1_form_business_facts_v1",
+          "sc_project_document_form_structure_generated_v1",
+          "sc_quality_acceptance_handling_form_v1",
+          "sc_safety_issue_handling_form_v1"
+        ],
+        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
+      },
+      {
+        "id": "G11",
+        "name": "轻表单与管理配置",
+        "actions": [
+          860,
+          883,
+          885,
+          727,
+          887,
+          888
+        ],
+        "viewIds": [
+          1887,
+          1908,
+          1910,
+          2070,
+          2072,
+          2074
+        ],
+        "risk": "mixed",
+        "structureRelation": "flat_forms_distinct_permission_boundaries",
+        "legacyConfigurations": [
+          "mail_notification_form_v1",
+          "office_asset_form_v1",
+          "product_job_form_v1",
+          "product_numbering_rule_form_v1",
+          "product_system_settings_form_v1",
+          "sc_approval_policy_form_structure_generated_v1"
+        ],
+        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
+      },
+      {
+        "id": "G12",
+        "name": "项目立项",
+        "actions": [
+          724
+        ],
+        "viewIds": [
+          1503
+        ],
+        "risk": "high",
+        "structureRelation": "project_create_view_with_inheritance_fanout",
+        "legacyConfigurations": [
+          "project_project_form_structure_v1"
+        ],
+        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
+      },
+      {
+        "id": "G13",
+        "name": "日常合同与结算",
+        "actions": [
+          687,
+          876
+        ],
+        "viewIds": [
+          1757,
+          1764
+        ],
+        "risk": "high",
+        "structureRelation": "contract_and_shared_settlement_view",
+        "legacyConfigurations": [
+          "daily_contract_settlement_form_v1",
+          "sc_general_contract_company_handling_form_v2"
+        ],
+        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
+      },
+      {
+        "id": "G14",
+        "name": "台账汇总与保证金",
+        "actions": [
+          523,
+          522,
+          646,
+          778
+        ],
+        "viewIds": [
+          1377,
+          1379,
+          1540,
+          1669
+        ],
+        "risk": "high",
+        "structureRelation": "generated_structure_distinct_readonly_and_workflow_surfaces",
+        "legacyConfigurations": [
+          "project_cost_ledger_form_structure_generated_v1",
+          "project_funding_baseline_form_structure_generated_v1",
+          "project_profit_compare_form_structure_generated_v1",
+          "tender_guarantee_form_structure_generated_v1"
+        ],
+        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
+      },
+      {
+        "id": "G15",
+        "name": "税务申报",
+        "actions": [
+          880
+        ],
+        "viewIds": [
+          1659
+        ],
+        "risk": "high",
+        "structureRelation": "tax_filing_independent_form",
+        "legacyConfigurations": [
+          "tax_filing_form_v1"
+        ],
+        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
       }
     ],
-    "returnDecision": {
-      "actionId": 548,
-      "viewId": 1431,
-      "acceptedAsFormalPath": false,
-      "scopeDisposition": "out_of_scope_non_formal_capability_followup",
-      "followUpDirection": "traceable original-outbound return capability evaluation before any formal entry decision"
-    },
-    "scopeNote": "UC2 formal scope is action 546 inbound and action 547 outbound; supplier return remains separate; return shares view 1431 but is outside the formal 89-entry baseline, has no usable formal path, and does not block or add a ledger consumer",
-    "promotionCondition": "after generated-evidence preflight and clean freeze, complete independent exact-head review, one exact-head Quick, external evidence archive verification, and governed PR delivery"
+    "scopeNote": "First group: certificate and policy document native form migration only. No new business rules or permission expansion. Grouping does not prove compatibility exit.",
+    "retirementCondition": "Each selected formal action must independently show native authority, no active structural override/dependency and representative browser acceptance before any count reduction.",
+    "executionSequence": [
+      "continuous_group_implementation_and_targeted_validation",
+      "one_consolidated_browser_review",
+      "freeze_and_PR_integration_gates"
+    ],
+    "planningRecord": "docs/ops/iterations/uc2_material_native_migration_20260916.md"
   },
-  "retirementCondition": "Only after every formal consumer of a compatibility regrouping path is zero and other roles/companies/states are covered, remove that regrouping logic and its test exemptions."
+  "retirementCondition": "Only after every formal consumer of a compatibility regrouping path is zero and other roles/companies/states are covered, remove that regrouping logic and its test exemptions.",
+  "mainlineRemainingCount": 44,
+  "mainlineRemainingLabel": "主线剩余兼容消费者（不代表部署发布或89入口整体交付）"
 }

@@ -7,7 +7,7 @@ import secrets
 from datetime import timedelta
 
 from odoo import api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 
 
 REVERSIBLE_CONFIG_TYPES = {
@@ -26,7 +26,27 @@ def stable_payload_hash(payload) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-class UIBusinessConfigChangeSet(models.Model):
+class GovernedChangeSetMutation:
+    """Lifecycle state and source identity are written by authenticated handlers."""
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        if not self.env.su:
+            raise AccessError("请通过配置变更集受管入口维护配置。")
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if not self.env.su:
+            raise AccessError("请通过配置变更集受管入口维护配置。")
+        return super().write(vals)
+
+    def unlink(self):
+        if not self.env.su:
+            raise AccessError("请通过配置变更集受管入口维护配置。")
+        return super().unlink()
+
+
+class UIBusinessConfigChangeSet(GovernedChangeSetMutation, models.Model):
     _name = "ui.business.config.change.set"
     _description = "UI Business Config Change Set"
     _order = "write_date desc, id desc"
@@ -85,7 +105,7 @@ class UIBusinessConfigChangeSet(models.Model):
         if self.state not in {"draft", "ready", "failed"}:
             raise ValidationError("CHANGE_SET_NOT_PREVIEWABLE")
         token = secrets.token_urlsafe(32)
-        self.write({
+        self.sudo().write({
             "preview_token": token,
             "preview_expires_at": fields.Datetime.now() + timedelta(minutes=20),
         })
@@ -111,7 +131,7 @@ class UIBusinessConfigChangeSet(models.Model):
         }
 
 
-class UIBusinessConfigChangeSetItem(models.Model):
+class UIBusinessConfigChangeSetItem(GovernedChangeSetMutation, models.Model):
     _name = "ui.business.config.change.set.item"
     _description = "UI Business Config Change Set Item"
     _order = "id"

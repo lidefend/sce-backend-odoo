@@ -6,7 +6,7 @@ from odoo import api, SUPERUSER_ID
 from odoo.exceptions import AccessError
 from odoo.addons.smart_core.security.platform_admin import user_is_platform_admin
 import  inspect
-from .intent_operation_policy import is_write_intent
+from .intent_operation_policy import is_write_intent, preview_write_error
 
 _logger = logging.getLogger(__name__)
 SOURCE_KIND = "intent_handler_runtime_base"
@@ -144,6 +144,13 @@ class BaseIntentHandler:
             else:
                 self.params = payload or {}
 
+        payload_context = self.payload.get("context") if isinstance(self.payload, dict) else None
+        for preview_context in (self.context, ctx, payload_context):
+            denied = preview_write_error(
+                self.payload.get("intent") or self.INTENT_TYPE, self.params, preview_context,
+                non_idempotent=bool(getattr(self, "NON_IDEMPOTENT_ALLOWED", "")))
+            if denied:
+                return denied
         # 权限（可选）
         self._check_permissions()
         if self.is_write():

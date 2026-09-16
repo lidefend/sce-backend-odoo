@@ -110,3 +110,13 @@ def is_write_intent(intent_name: str, params: Dict[str, Any] | None = None, *, n
     if not intent:
         return False
     return access_mode_for_intent(intent, params) in WRITE_MODES
+
+
+def preview_write_error(intent_name, params=None, context=None, *, non_idempotent=False):
+    """Preview context is restrictive only, including legacy handlers overriding run()."""
+    params = params if isinstance(params, dict) else {}
+    contexts = [params, params.get("context"), context]
+    preview = any(isinstance(item, dict) and (item.get("business_config_preview_token") or item.get("preview_token")) for item in contexts)
+    if preview and is_write_intent(intent_name, params, non_idempotent=non_idempotent):
+        return {"ok": False, "error": {"code": "CONFIG_PREVIEW_READ_ONLY", "reason_code": "CONFIG_PREVIEW_READ_ONLY", "message": "未发布配置预览不允许业务写入，请返回正式业务页面办理。"}}
+    return None

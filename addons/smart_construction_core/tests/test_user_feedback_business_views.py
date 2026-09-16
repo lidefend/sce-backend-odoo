@@ -2877,3 +2877,131 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.assertFalse(self.env.ref("smart_construction_core.view_audit_fields_view_sc_financing_loan_tree").active)
         self.assertFalse(self.env.ref("smart_construction_core.view_audit_fields_view_sc_receipt_income_tree").active)
         self.assertFalse(self.env.ref("smart_construction_core.view_audit_fields_view_sc_payment_execution_tree").active)
+
+
+@tagged("post_install", "-at_install", "formal_form_lowcode")
+class TestFormalFormLowcode(TransactionCase):
+    """Transactional configuration journey; material business records are read only."""
+
+    def test_material_form_configuration_publish_preview_rollback(self):
+        from odoo.addons.smart_core.handlers.business_config_change_set import (
+            BusinessConfigChangeSetOpenHandler, BusinessConfigChangeSetStageHandler,
+            BusinessConfigChangeSetPreviewHandler, BusinessConfigChangeSetPublishHandler,
+            BusinessConfigChangeSetRollbackHandler,
+        )
+        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler, authoritative_form_role_key
+        from odoo.addons.smart_core.app_config_engine.services.assemblers.page_assembler import PageAssembler
+        action = self.env.ref("smart_construction_core.action_sc_material_inbound_handling")
+        view = self.env.ref("smart_construction_core.view_sc_material_inbound_form")
+        role = authoritative_form_role_key(self.env)
+        data, _ = PageAssembler(self.env, self.env["ir.model"].sudo().env).assemble_page_contract({
+            "model": action.res_model, "action_id": action.id, "view_id": view.id, "view_types": ["form"], "view_type": "form",
+        })
+
+        def walk(rows):
+            for node in rows:
+                if not isinstance(node, dict):
+                    continue
+                yield node
+                for key in ("children", "pages", "tabs", "nodes", "items"):
+                    if isinstance(node.get(key), list):
+                        yield from walk(node[key])
+
+        layout = data["views"]["form"]["layout"]
+        field = next(node for node in walk(layout) if node.get("type") == "field" and node.get("name") == "keeper_id")
+        self.assertTrue(field.get("native_locator"), field)
+        target = "view_orchestration:formal_material_journey"
+        before_records = self.env[action.res_model].search([]).read(["write_date", "state"])
+        parent = next(node for node in walk(layout) if field in node.get("children", []))
+        hidden = next(node for node in walk(layout) if node.get("type") == "field" and node.get("name") == "line_note_summary")
+        def bind(node, **change):
+            return {"target": node["native_locator"], "expected": {key: node.get(key) for key in ("type", "name", "occurrence_index")}, **change}
+
+        def invoke(cls, **params):
+            result = cls(self.env).handle(payload={"params": {"role_key": role, **params}})
+            self.assertTrue(result.get("ok"), result)
+            return result["data"]
+
+        def contract(**extra):
+            result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({
+                "op": "model", "model": action.res_model, "action_id": action.id,
+                "view_id": view.id, "view_type": "form", "render_profile": "create", **extra,
+            })
+            result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+            self.assertTrue(result.get("ok", True), result)
+            return result["data"]
+
+        def publish(label):
+            opened = invoke(BusinessConfigChangeSetOpenHandler)
+            invoke(BusinessConfigChangeSetStageHandler, change_set_token=opened["token"], config_type="form",
+                   target_key=target, model=action.res_model, view_type="form", action_id=action.id, view_id=view.id,
+                   draft_payload={"view_orchestration": {"views": {"form": {"node_patches": [bind(field, set={"label": label}), bind(hidden, set={"visible": False}),
+                       bind(parent, order=[child["native_locator"] for child in reversed(parent["children"])],
+                            group={"key": "custody", "label": "保管信息", "members": [field["native_locator"]]})]}}}})
+            preview = invoke(BusinessConfigChangeSetPreviewHandler, change_set_token=opened["token"])
+            preview_contract = contract(preview_token=preview["preview"]["token"], preview_role_key=role)
+            published = invoke(BusinessConfigChangeSetPublishHandler, change_set_token=opened["token"], request_id="publish-" + label)
+            self.assertTrue(published["publish_result"]["published_content_verified"])
+            self.assertTrue(published["publish_result"]["runtime_verified"])
+            final = contract()
+            self.assertTrue(label in str(final["layoutContract"]), {"expected": label, "keeper": [node for node in walk(final["layoutContract"].get("containerTree", [])) if node.get("name") == "keeper_id"], "authority": final.get("formStructureContract", {}).get("sourceAuthority")})
+            self.assertEqual(preview_contract["layoutContract"], final["layoutContract"])
+            return opened, final
+
+        a, contract_a = publish("保管员 A")
+        b, contract_b = publish("保管员 B")
+        self.assertNotEqual(contract_a["layoutContract"], contract_b["layoutContract"])
+        restored = invoke(BusinessConfigChangeSetRollbackHandler, change_set_token=b["token"], request_id="rollback-B")
+        self.assertTrue(restored["publish_result"]["runtime_verified"])
+        self.assertEqual(contract()["layoutContract"], contract_a["layoutContract"])
+        self.assertEqual(self.env[action.res_model].search([]).read(["write_date", "state"]), before_records)
+        readonly = next(node for node in walk(layout) if node.get("name") == "amount_total")
+        required = next(node for node in walk(layout) if node.get("name") == "project_id")
+        invalid = [
+            (bind(readonly, set={"readonly": False}), "CONFIG_BUSINESS_CONSTRAINT_RELAXED"),
+            (bind(required, set={"visible": False}), "CONFIG_REQUIRED_FIELD_HIDDEN"),
+            ({**bind(field, set={"label": "invalid"}), "target": "/removed/node"}, "CONFIG_TARGET_STALE"),
+        ]
+        for patch, reason in invalid:
+            with self.subTest(reason=reason):
+                opened = invoke(BusinessConfigChangeSetOpenHandler)
+                invoke(BusinessConfigChangeSetStageHandler, change_set_token=opened["token"], config_type="form",
+                       target_key=target, model=action.res_model, view_type="form", action_id=action.id, view_id=view.id,
+                       draft_payload={"view_orchestration": {"views": {"form": {"node_patches": [patch]}}}})
+                rejected = BusinessConfigChangeSetPreviewHandler(self.env).handle(payload={"params": {"role_key": role, "change_set_token": opened["token"]}})
+                self.assertFalse(rejected.get("ok"), reason)
+                self.assertIn(reason, str(rejected))
+        self.assertEqual(contract()["layoutContract"], contract_a["layoutContract"])
+
+    def test_configuration_authorization_company_role_and_entry_isolation(self):
+        from odoo.exceptions import AccessError
+        from odoo.addons.smart_core.handlers.business_config_change_set import BusinessConfigChangeSetOpenHandler, BusinessConfigChangeSetStageHandler
+        action = self.env.ref("smart_construction_core.action_sc_material_inbound_handling")
+        other_action = self.env.ref("smart_construction_core.action_sc_material_outbound")
+        view = self.env.ref("smart_construction_core.view_sc_material_inbound_form")
+        Contract = self.env["ui.business.config.contract"]
+        payload = {"view_orchestration": {"context": {"source": "smart_core.lowcode.business_config"}, "views": {"form": {"title": "Scoped configuration"}}}}
+        scoped = Contract.sudo().create({"name": "view_orchestration:formal_isolation", "model": action.res_model,
+                                        "view_type": "form", "action_id": action.id, "view_id": view.id,
+                                        "role_key": "business_config_admin", "company_id": self.env.company.id,
+                                        "status": "published", "contract_json": payload})
+        def selected(environment, action_id=action.id, view_id=view.id, role="business_config_admin"):
+            return {row.id for row in environment["ui.business.config.contract"]._effective_view_orchestration_contracts(
+                action.res_model, view_type="form", action_id=action_id, view_id=view_id, role_key=role)}
+        self.assertIn(scoped.id, selected(self.env))
+        self.assertNotIn(scoped.id, selected(self.env, action_id=other_action.id))
+        self.assertNotIn(scoped.id, selected(self.env, view_id=view.id + 1))
+        self.assertNotIn(scoped.id, selected(self.env, role="ordinary"))
+        company = self.env["res.company"].create({"name": "Transactional configuration isolation"})
+        self.assertNotIn(scoped.id, selected(self.env(context={**self.env.context, "allowed_company_ids": [company.id]})))
+        with self.assertRaises(AccessError):
+            BusinessConfigChangeSetStageHandler(self.env(context={**self.env.context, "allowed_company_ids": [company.id]}))._target_contract({
+                "current_contract_id": scoped.id, "model": action.res_model, "action_id": action.id, "view_id": view.id, "role_key": "business_config_admin"})
+        ordinary = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "Transactional ordinary configuration user", "login": "formal-lowcode-isolation@example.test",
+            "groups_id": [(6, 0, [self.env.ref("base.group_user").id])],
+        })
+        with self.assertRaises(AccessError):
+            BusinessConfigChangeSetOpenHandler(self.env(user=ordinary)).handle(payload={"params": {}})
+        with self.assertRaises(AccessError):
+            Contract.with_user(ordinary).create({"name": "unauthorized-source", "model": action.res_model, "contract_json": payload})

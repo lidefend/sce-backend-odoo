@@ -1056,8 +1056,11 @@ class _TreeFormParserMixin:
         if tag in ('sheet', 'group', 'notebook', 'page', 'div', 'header', 'footer', 'separator', 'h1', 'h2', 'h3'):
             node = {
                 'type': self._layout_type(tag),
-                'attributes': _attrs(el)
+                'attributes': _attrs(el),
+                **self._native_element_identity(el),
             }
+            if el.get('name'):
+                node['name'] = el.get('name')
             text = " ".join((el.text or "").split())
             if text:
                 node['text'] = text

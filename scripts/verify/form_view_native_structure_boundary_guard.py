@@ -4,10 +4,11 @@
 
 The form chain has three responsibilities:
 
-* Backend native/contract layer may preserve Odoo layout and add semantic
-  metadata.
-* Backend policy/low-code overlays may change field visibility/order/labels.
-* Frontend must render native structure without inventing business grouping.
+* Native views provide a complete default, including managed customer extensions.
+* The backend composes authorized layouts and policies into one effective tree,
+  retaining business and security constraints independently of display priority.
+* Frontend content, navigation and preview consume that tree without inventing
+  business grouping; configuration provenance is not determined by file format.
 
 This guard keeps semantic guesses out of user-visible form structure.
 """

@@ -12,6 +12,7 @@ from typing import Any
 
 from .view_orchestration_contract import source_authority_contract
 from .form_structure_authority import resolve_form_structure_governance, diagnose_structure_ownership, authenticated_form_role_key, structural_form_declarations
+from .form_configuration_compiler import compile_form_configuration, is_configured_surface
 
 
 class ViewOrchestrator:
@@ -88,6 +89,7 @@ class ViewOrchestrator:
         if normalized_view_type == "form":
             role_key = authenticated_form_role_key(self.env)
         configs = []
+        configured_surfaces = []
         structure_conflicts = []
         if "ui.business.config.contract" in self.env:
             configs = self.env["ui.business.config.contract"]._effective_view_orchestration_contracts(
@@ -101,7 +103,20 @@ class ViewOrchestrator:
                 structure_conflicts = diagnose_structure_ownership(
                     configs, model=model_name, action_id=action_id, view_id=view_id,
                 )
+            native_surface_selected = normalized_view_type == "form" and any(
+                self._config_declares_native_semantic_surface(row, normalized_view_type, model_name)
+                for row in configs
+            )
             for config in configs:
+                if normalized_view_type == "form" and is_configured_surface(config):
+                    spec = ((config.contract_json.get("view_orchestration") or {}).get("views") or {}).get("form") or {}
+                    if spec.get("node_patches"):
+                        configured_surfaces.append(config)
+                        applied_contracts.append({"id": int(config.id), "name": config.name, "version_no": int(config.version_no or 1),
+                                                  "source_kind": str(getattr(config, "source_kind", "published"))})
+                        continue
+                    if any(key in spec for key in ("layout", "sections", "fields", "field_slots", "columns")) and native_surface_selected:
+                        raise ValueError("CONFIG_TARGET_BINDING_REQUIRED: %s" % config.name)
                 before = deepcopy(out)
                 declares_form_layout_overlay = (
                     normalized_view_type == "form"
@@ -192,6 +207,11 @@ class ViewOrchestrator:
             if tenant_extension_fields:
                 out["tenant_extension_fields"] = tenant_extension_fields
 
+        if configured_surfaces:
+            fields_meta = self.env[model_name].fields_get() if model_name in self.env else {}
+            out["layout"], out["configuration_provenance"] = compile_form_configuration(
+                out.get("layout") or [], configured_surfaces, fields_meta=fields_meta,
+            )
         governance = out.get("governance") if isinstance(out.get("governance"), dict) else {}
         governance["view_orchestration"] = {
             "applied": bool(applied_contracts or legacy_policy_applied or tenant_extension_fields),
@@ -235,6 +255,8 @@ class ViewOrchestrator:
             "tenant_extension_field_count": len(tenant_extension_fields),
         }
         out["source_trace"] = source_trace
+        if configured_surfaces:
+            source_trace["view_orchestration"]["configuration_provenance"] = out["configuration_provenance"]
         if normalized_view_type == "form":
             resolved = resolve_form_structure_governance(
                 {"views": {"form": out}, "governance": governance, "source_trace": source_trace},

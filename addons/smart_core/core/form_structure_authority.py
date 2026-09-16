@@ -240,10 +240,10 @@ def resolve_form_structure_governance(source_contract: dict[str, Any], configs, 
         "source": "business_view_orchestration",
         "owner_layer": str(view_trace.get("owner_layer") or view_governance.get("owner_layer") or "business_view_orchestration"),
         # Public provenance follows formStructureGovernanceContract; internal
-        # source_kind/status trace fields remain in source_trace only.
+        # Preview provenance has no published record ID; preserve its kind.
         "business_config_contracts": [
             {key: value for key, value in item.items()
-             if key in {"id", "name", "priority", "view_type", "version_no"}}
+             if key in {"id", "name", "priority", "view_type", "version_no", "source_kind"}}
             for item in business_contracts if isinstance(item, dict)
         ] or config_summaries,
         "legacy_field_policy_overlay": legacy_overlay,
@@ -269,7 +269,7 @@ def structural_form_declarations(spec: dict) -> dict:
     """Sparse field policies annotate native nodes; order/membership owns structure."""
     declarations = {}
     semantic_keys = {"readonly", "required", "visible", "help", "widget", "class", "string", "label"}
-    for key in ("layout", "sections", "fields", "field_slots", "columns", "cols", "actions", "header_buttons"):
+    for key in ("layout", "sections", "fields", "field_slots", "columns", "cols", "actions", "header_buttons", "node_patches"):
         value = spec.get(key)
         if key == "fields" and isinstance(value, list):
             value = [row for row in value if not (
@@ -291,6 +291,11 @@ def diagnose_structure_ownership(configs, *, model: str, action_id=None, view_id
     declarations = []
     native_owners = []
     for config in configs:
+        from .form_configuration_compiler import is_configured_surface
+        # Legitimate higher-layer configuration is validated by the one-tree
+        # compiler, not classified as a competing legacy default.
+        if is_configured_surface(config):
+            continue
         payload = config.contract_json if isinstance(config.contract_json, dict) else {}
         spec = ((payload.get("view_orchestration") or {}).get("views") or {}).get("form") or {}
         owner = {"id": int(config.id or 0), "name": str(config.name or "")}

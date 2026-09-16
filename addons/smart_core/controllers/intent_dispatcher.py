@@ -103,7 +103,7 @@ def _cors_headers() -> Dict[str, str]:
         "Access-Control-Allow-Headers": (
             "Content-Type, Authorization, X-Odoo-DB, X-DB, X-Anonymous-Intent, "
             "X-Trace-Id, X-Tenant, X-SC-Client-Type, X-SC-Delivery-Profile, "
-            "If-None-Match, If-Match, Accept, X-Requested-With"
+            "If-None-Match, If-Match, Accept, X-Requested-With, X-Configuration-Preview"
         ),
         "Access-Control-Expose-Headers": "ETag",
         "Access-Control-Max-Age": "86400",
@@ -436,6 +436,9 @@ class IntentDispatcher(http.Controller):
                 "meta": body.get("meta") or {}
             }
 
+            # A preview header only narrows request capability; it never authenticates a user.
+            if hdr.get("X-Configuration-Preview"):
+                context_in["business_config_preview_token"] = hdr.get("X-Configuration-Preview")
             # ---------- 统一上下文 ----------
             ctx = RequestContext.from_payload(payload)
             setattr(ctx, "trace_id", trace_id)

@@ -1441,6 +1441,13 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertEqual(v2_action.get("targetScope"), "page")
         self.assertEqual(v2_action.get("triggerType"), "click")
         self.assertEqual(v2_action.get("intent"), "ui.local_mode")
+        self.assertTrue(v2_action.get("entitlementEvaluated"))
+        self.assertTrue(v2_action.get("authorizationAllowed"))
+        self.assertTrue(v2_action.get("allowed"))
+        denied_data = {"buttons": [], "fields": {"name": {"type": "char"}}}
+        with patch.object(PageAssembler, "_is_business_config_admin", return_value=False):
+            assembler._inject_current_form_settings_action(denied_data, model_name="res.partner", action_id=action.id, render_profile="edit")
+        self.assertFalse(denied_data["buttons"])
         self.assertEqual((v2_action.get("target") or {}).get("mode"), "form_field_configuration")
         dependency_graph = envelope["data"]["actionContract"]["dependencyGraph"]
         self.assertIn(v2_action.get("actionId"), dependency_graph.get("page.header") or [])

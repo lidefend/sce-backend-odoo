@@ -69,11 +69,14 @@ class TestLoadContractResponseCache(unittest.TestCase):
                 return self
 
             def search(self, _domain, **_kwargs):
+                if _kwargs.get("order") == "id":
+                    return [SimpleNamespace(id=1, definition_sha256="definition-A", version_no=1, status="published", active=True)]
                 return SimpleNamespace(id=1, write_date="2026-08-21 00:00:00", latest_version="")
 
         class FakeEnv:
             def __init__(self):
                 self.user = SimpleNamespace(id=7)
+                self.company = SimpleNamespace(id=1)
                 self._model = FakeModel()
 
             def __contains__(self, _model_code):

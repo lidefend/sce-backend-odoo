@@ -810,3 +810,20 @@ const intake = groupContractHeaderActions({
 assert.deepEqual(intake, { direct: [], overflow: [], configuration: [] });
 
 console.log('[contract_header_action_presentation_test] PASS real_builder_chain=1 normalized_authority=1 full_snapshot_decode=1 danger_decode=1 submit_true=1 native_fallback=1 root_header_page_object_url=4 body_widget_row_adapters=3 primary=1 config_primary=0 denied_io=0');
+
+// A service-authorized local designer action never requires a saved business row,
+// even when its normalized provenance also carries a button name.
+const localDesigner = buildContractFormActions({
+  model: 'sample.record', recordId: 0, renderProfile: 'create', sceneReadyActions: [],
+  v2ButtonStatus: { 'btn.settings': { visible: true, disabled: false, backendIdentity: 'button:object:settings' } },
+  v2ActionRuleList: [{ actionId: 'action.settings', actionKey: 'settings', backendIdentity: 'button:object:settings',
+    sourceWidgetId: 'page.header', targetScope: 'page', triggerType: 'click', intent: 'ui.local_mode',
+    button: { type: 'object', name: 'settings' }, target: { mode: 'form_field_configuration' },
+    entitlementEvaluated: true, allowed: true, enabled: true, disabled: false }],
+});
+assert.equal(localDesigner.length, 1);
+assert.equal(localDesigner[0].enabled, true);
+assert.equal(localDesigner[0].requiresSavedRecord, false);
+assert.deepEqual(buildFormActionExecutionPlan({ action: localDesigner[0], modelName: 'sample.record', recordId: null }),
+  { kind: 'local_mode', mode: 'form_field_configuration', toggle: true });
+console.log('[contract_header_action_presentation_test] PASS unsaved_designer_entry=1');

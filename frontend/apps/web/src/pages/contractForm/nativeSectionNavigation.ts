@@ -139,7 +139,17 @@ export function workspaceSectionNavigationItems(nodes: CanonicalFormNode[]): Wor
       emittedAnchors.add(identity.anchor);
     }
   });
-  if (authoritativeItems.length) return authoritativeItems;
+  if (authoritativeItems.length) {
+    // A configured section owns its descendants, not unrelated notebooks.
+    // Retain collection navigation outside those sections without duplicating
+    // collections already reached through an authoritative section anchor.
+    const unowned = (rows: CanonicalFormNode[], insideNotebook = false): CanonicalFormNode[] => rows.flatMap((node) => {
+      if (nativeBusinessSectionIdentity(node)) return [];
+      const inNotebook = insideNotebook || node.kind === 'notebook';
+      return [{ ...node, fields: inNotebook ? node.fields : [], children: unowned(node.children, inNotebook) }];
+    });
+    return [...authoritativeItems, ...relationshipCollectionNavigationItems(unowned(nodes))];
+  }
 
   const items: WorkspaceSectionNavigationItem[] = [];
   const emittedRoles = new Set<CanonicalFormSemanticRole>();

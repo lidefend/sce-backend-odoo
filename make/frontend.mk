@@ -819,3 +819,8 @@ verify.portal.scene_observability.structure_guard.update: guard.prod.forbid
 
 verify.frontend.suggested_action.all: guard.prod.forbid verify.frontend.suggested_action.contract_guard verify.frontend.suggested_action.parser_guard verify.frontend.suggested_action.runtime_guard verify.frontend.suggested_action.import_boundary_guard verify.frontend.suggested_action.usage_guard verify.frontend.suggested_action.trace_export_guard verify.frontend.suggested_action.topk_guard verify.frontend.suggested_action.since_filter_guard verify.frontend.suggested_action.hud_export_guard verify.frontend.cross_stack_smoke verify.frontend.no_new_any_guard verify.frontend.suggested_action.catalog verify.frontend.typecheck.strict verify.frontend.build
 	@echo "[OK] verify.frontend.suggested_action.all done"
+
+.PHONY: verify.frontend.bound_form_configuration.unit
+verify.frontend.bound_form_configuration.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/bound_form_configuration_test.ts --bundle --platform=node --format=esm --outfile=/tmp/bound-form-configuration-test.mjs >/dev/null
+	@node /tmp/bound-form-configuration-test.mjs
