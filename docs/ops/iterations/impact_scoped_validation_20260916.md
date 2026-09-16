@@ -28,3 +28,9 @@ L0：以上基线及独立分支，dirty 范围明确。L1：`make ci.local.iter
 原日志保留于 `artifacts/config-center-entry/impact-scope-{static,tests,cli-tests}.log`，后续结果在 `artifacts/impact-scoped-validation/`。L3/L4 不运行：没有运行产品输入变化，不升级库、不重跑产品矩阵。扫描器本身发生变化，本批最终扫描不能继承旧扫描器结果；普通业务分支在规则未变后才进入自动增量路径。独立复核/最终门禁结果绑定最终候选，另记已有未跟踪结果区。
 
 独立复核闭环：初审识别自定义 `--policy` 未纳入自动权威集合，以及模式回退后对象集合仍走增量的 S1。现自定义策略显式全量；对象集合只在最终 scan_mode 为 trusted_base_incremental 时缩小。新增一个含两个分支的反例，确认调用完整历史集合、未调用增量集合。17+10+31受影响测试通过（个人数据6项输入未变沿用）。代码变化复核无其余S0–S2。历史guard保持已提交commit/HEAD语义，未新增未提交路径专属规则扫描；最终Quick仍绑定clean HEAD。
+
+## 远端门禁收口
+
+候选 `2a75a655dbdc2de098c6e555813a3289f50f0864` 的本地 Quick 与独立复核通过，PR #486 已创建。远端 professional/public/merge 三项通过；frontend_release_gate 暴露两项既有基线不一致：页头守卫仍要求未含 `!isConfigurationPreview` 的旧表达式；表单1902行超过1900上限。基线 main 与该候选这三个相关文件完全相同，非扫描工具引入。
+
+最小修复：P4页头守卫改为要求当前预览禁写条件并加拒绝反例；P0表单仅删除两行空白（模板及全部非空代码逐行一致），未放宽1900上限。`verify.frontend.product_page_header.unit` 28模型+12守卫、`verify.frontend.style_system.guard`通过。扫描器输入代码未变，定向扫描测试沿用；不重跑浏览器、发布回滚或数据库旅程。新候选刷新受影响生成证据后绑定最终门禁，原失败不改记通过。四层状态保持工具待集成、未部署、89入口未整体交付。

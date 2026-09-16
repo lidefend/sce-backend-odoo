@@ -8,6 +8,21 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
     def test_repository_contract_passes(self):
         self.assertEqual(validate(), [])
 
+    def test_configuration_preview_must_disable_status_writes(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "ContractFormPage.vue":
+                return value.replace(
+                    ':status-interactive="!isConfigurationPreview && nativeStatusbar.visible && !nativeStatusbar.readonly"',
+                    ':status-interactive="nativeStatusbar.visible && !nativeStatusbar.readonly"',
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertTrue(any("status-interactive" in item for item in validate()))
+
     def test_missing_semantic_marker_fails(self):
         real = Path.read_text
 

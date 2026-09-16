@@ -1055,7 +1055,6 @@ const recordId = computed(() => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 });
 const recordIdDisplay = computed(() => (recordId.value ? String(recordId.value) : 'new'));
-
 const recordContentLayoutMode = computed(() => showCurrentFormFieldConfigScope.value ? 'data-grid' : resolveContentLayoutMode({ contractContentLayout: contractContentLayoutMode(contract.value), pageKind: recordId.value ? (route.name === 'model-form' ? 'edit' : 'detail') : 'create' }));
 const showHud = computed(() => isHudEnabled(route));
 const showSceneBlocksDebug = computed(() => isSceneBlocksDebugEnabled(route));
@@ -1896,7 +1895,6 @@ const boundFormDesignerSnapshot = computed(() => {
   return snapshot?.formStructureContract?.layoutPolicy === 'container_tree_authority' ? snapshot : null;
 });
 </script><style scoped src="./contractForm/ContractFormPage.css"></style>
-
 <style scoped>
 .configuration-preview-banner { border: 2px solid var(--sc-app-info-border); }
 </style>
