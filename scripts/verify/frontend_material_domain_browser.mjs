@@ -651,8 +651,13 @@ async function inspectHandlingForm(page, entryKey, entry, spec, mode, viewport, 
       'material action category/default identity drifted', { entryKey, typeEvidence, expectedType });
   }
 
+  const businessStatusLabels = { draft: '草稿', submitted: '已提交', received: '已入库', cancel: '已取消' };
+  const expectedBusinessStatusLabel = mode === 'create' ? '草稿' : businessStatusLabels[record?.state] || '';
   const informationOrganization = entryKey === 'inbound' ? {
-    stateFields: await form.locator('[data-field-name="state"]:visible').count(),
+    expectedBusinessStatusLabel,
+    businessStatusLabelOccurrences: expectedBusinessStatusLabel
+      ? await form.getByText(expectedBusinessStatusLabel, { exact: true }).count()
+      : 0,
     documentStatusFields: await form.locator('[data-field-name="document_status"]:visible').count(),
     quantitySummaryFields: await form.locator('[data-field-name="quantity_summary"]:visible').count(),
     taxIncludedAmountFields: await form.locator('[data-field-name="tax_included_amount"]:visible').count(),
@@ -660,7 +665,7 @@ async function inspectHandlingForm(page, entryKey, entry, spec, mode, viewport, 
     amountTotalFields: await form.locator('[data-field-name="amount_total"]:visible').count(),
   } : null;
   if (informationOrganization) {
-    check(informationOrganization.stateFields === 1
+    check(informationOrganization.businessStatusLabelOccurrences === (mode === 'create' ? 0 : 1)
       && informationOrganization.documentStatusFields === 0
       && informationOrganization.quantitySummaryFields === 0
       && informationOrganization.taxIncludedAmountFields === 0
