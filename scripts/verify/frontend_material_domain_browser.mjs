@@ -656,7 +656,7 @@ async function inspectHandlingForm(page, entryKey, entry, spec, mode, viewport, 
   const informationOrganization = entryKey === 'inbound' ? {
     expectedBusinessStatusLabel,
     businessStatusLabelOccurrences: expectedBusinessStatusLabel
-      ? await form.getByText(expectedBusinessStatusLabel, { exact: true }).count()
+      ? await page.getByText(expectedBusinessStatusLabel, { exact: true }).count()
       : 0,
     documentStatusFields: await form.locator('[data-field-name="document_status"]:visible').count(),
     quantitySummaryFields: await form.locator('[data-field-name="quantity_summary"]:visible').count(),
