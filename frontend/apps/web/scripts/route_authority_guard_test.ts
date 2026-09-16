@@ -150,3 +150,29 @@ assert.equal(routeAuthorityForPrincipal(
 ), null);
 
 console.log('[route-authority-guard] PASS');
+
+// Dedicated configuration routes must retain the same authority gate on every entry.
+import { resolveAuthorizedConfigurationRoute, resolveActionWebRoute } from '../src/services/actionRoutePolicy';
+const configAuthority = { action_id: 737, menu_id: 431, model: 'ui.business.config.contract', context: { sc_web_route: '/admin/business-config', business_config_root_menu_xmlid: 'product.root' } };
+for (const routeName of ['menu', 'action', 'model-form', 'record']) {
+  const target = resolveAuthorizedConfigurationRoute({ routeName, routeModel: configAuthority.model, authority: configAuthority, authorized: true, query: { activity_page_id: 'old-instance' } });
+  assert.equal(target?.path, '/admin/business-config');
+  assert.equal(target?.query.action_id, '737');
+  assert.equal(target?.query.root_menu_xmlid, 'product.root');
+  assert.equal(target?.query.activity_page_id, undefined);
+}
+assert.equal(resolveAuthorizedConfigurationRoute({ routeName: 'action', authority: configAuthority, authorized: false, query: {} }), null);
+assert.equal(resolveAuthorizedConfigurationRoute({ routeName: 'action', authority: null, authorized: true, query: {} }), null);
+assert.equal(resolveAuthorizedConfigurationRoute({ routeName: 'business-config', authority: configAuthority, authorized: true, query: {} }), null, 'no redirect loop');
+assert.equal(resolveAuthorizedConfigurationRoute({ routeName: 'model-form', routeModel: 'sc.document.admin.document', authority: configAuthority, authorized: true, query: { config_mode: 'form_field_configuration' } }), null);
+assert.equal(resolveAuthorizedConfigurationRoute({ routeName: 'model-form', routeModel: 'sc.document.admin.document', authority: { action_id: 666, model: 'sc.document.admin.document' }, authorized: true, query: { config_mode: 'form_field_configuration' } }), null, 'business form settings remain embedded');
+assert.equal(resolveActionWebRoute({ ...configAuthority, context: "{'sc_web_route': '/admin/business-config'}" }), '/admin/business-config');
+console.log('[configuration_entry_routing] PASS cases=10');
+
+import { buildLowCodeReturnQuery } from '../src/pages/contractForm/formConfigHelpers';
+const configReturn = buildLowCodeReturnQuery({ routeQuery: { menu_id: '356', config_host_menu_id: '431', view_id: '1703' }, modelName: 'test.document', actionId: 666, openPagesFlag: 'open_pages' });
+assert.equal(configReturn.menu_id, '431');
+assert.equal(configReturn.action_id, '666');
+assert.equal(configReturn.view_id, '1703');
+assert.equal(buildLowCodeReturnQuery({ routeQuery: { menu_id: '356' }, modelName: 'test.document', actionId: 666, openPagesFlag: 'open_pages' }).menu_id, '356');
+console.log('[route_authority_guard_test] host/target return cases=2 PASS');

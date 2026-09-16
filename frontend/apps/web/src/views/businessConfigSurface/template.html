@@ -34,6 +34,18 @@
       </template>
     </BusinessConfigContextBar>
 
+    <section v-if="snapshotSummary?.source_counts" class="configuration-overview" data-configuration-overview aria-label="配置总览">
+      <h2>配置总览</h2>
+      <p>{{ snapshotSummary.overview_scope }}</p>
+      <p>草稿按配置记录状态统计；设计器未发布变更另见“待发布变更”。</p>
+      <table>
+        <thead><tr><th>来源</th><th>可见数量</th><th>草稿</th><th>已发布</th><th>已停用</th><th>已保存偏好</th></tr></thead>
+        <tbody><tr v-for="(counts, source) in snapshotSummary.source_counts" :key="source">
+          <th>{{ ({ product_default: '产品默认', enterprise_configuration: '企业配置（含共享偏好投影）', personal_preference: '个人偏好（本人）', unclassified: '来源待确认' })[source] || source }}</th>
+          <td>{{ counts.total }}</td><td>{{ counts.draft }}</td><td>{{ counts.published }}</td><td>{{ counts.disabled }}</td><td>{{ counts.saved }}</td>
+        </tr></tbody>
+      </table>
+    </section>
     <ScErrorState v-if="surfaceError" data-business-config-surface-error="true" title="配置工作台读取失败" :description="surfaceError">
       <template #actions><ScButton variant="secondary" :disabled="loading" @click="retryBusinessConfigSurface">{{ loading ? '重试中...' : '重试读取' }}</ScButton></template>
     </ScErrorState>
@@ -56,7 +68,7 @@
       :list-search-busy="listSearchBusy"
       :approval-loading="approvalLoading"
       :can-open-designer="canOpenDesigner"
-      :show-status="Boolean(surface)"
+      :show-status="Boolean(surface && currentModel)"
       :delivery-readiness-status-text="deliveryReadinessStatusText"
       :visible-delivery-readiness-progress-text="visibleDeliveryReadinessProgressText"
       :visible-delivery-readiness-items="visibleDeliveryReadinessItems"
@@ -84,21 +96,22 @@
     />
 
     <section v-if="advancedPanelOpen" class="scope-panel">
+      <p>对象身份由正式目录确定；公司和角色请使用全局切换。</p>
       <label>
         <span>业务对象</span>
-        <input v-model="scopeModel" type="text" placeholder="输入业务对象编码或名称" />
+        <ScInput :model-value="scopeModel" readonly placeholder="输入业务对象编码或名称" />
       </label>
       <label>
         <span>页面编号</span>
-        <input v-model.number="scopeActionId" type="number" min="0" />
+        <ScInput :model-value="scopeActionId" readonly type="number" />
       </label>
       <label>
         <span>视图编号</span>
-        <input v-model.number="scopeViewId" type="number" min="0" />
+        <ScInput :model-value="scopeViewId" readonly type="number" />
       </label>
       <label>
         <span>角色编码</span>
-        <input v-model="scopeRoleKey" type="text" placeholder="可选：按角色范围读取" />
+        <ScInput :model-value="scopeRoleKey" readonly placeholder="可选：按角色范围读取" />
       </label>
       <ScButton type="button" class="ghost small" :disabled="loading" @click="applyScopeAndLoad">读取配置对象</ScButton>
     </section>

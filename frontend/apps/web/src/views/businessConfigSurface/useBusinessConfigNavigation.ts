@@ -46,6 +46,7 @@ export function useBusinessConfigNavigation(options: {
     const preserveEditorContext = Boolean(runtimeOptions.preserveEditorContext);
     return {
       ...baseQuery,
+      config_host_menu_id: options.route.query.menu_id || undefined,
       root_menu_xmlid: options.route.query.root_menu_xmlid || undefined,
       page_label: runtimeOptions.pageLabel || options.selectedPageLabel.value || undefined,
       [BUSINESS_CONFIG_ROUTE_FLAGS.returnToBusinessConfig]: '1',
@@ -117,18 +118,17 @@ export function useBusinessConfigNavigation(options: {
 
   async function openFormConfig() {
     if (!options.canOpenDesigner.value) return;
-    const changeSetToken = await options.ensureChangeSetToken();
     void options.router.push({
       path: `/f/${encodeURIComponent(options.currentModel.value)}/new`,
       query: {
         action_id: options.scopeAction.value ? String(options.scopeAction.value) : undefined,
-        menu_id: options.route.query.menu_id || undefined,
+        menu_id: options.runtimeRouteTarget.value.query.menu_id || undefined,
+        config_host_menu_id: options.route.query.menu_id || undefined,
         root_menu_xmlid: options.route.query.root_menu_xmlid || undefined,
         view_id: options.scopeView.value ? String(options.scopeView.value) : undefined,
         role_key: options.scopeRole.value || undefined,
         page_label: options.selectedPageLabel.value || undefined,
         config_mode: BUSINESS_CONFIG_MODES.lowCode,
-        change_set_token: changeSetToken || undefined,
         [BUSINESS_CONFIG_ROUTE_FLAGS.returnToBusinessConfig]: '1',
         ...workbenchReturnStateQuery(),
       },

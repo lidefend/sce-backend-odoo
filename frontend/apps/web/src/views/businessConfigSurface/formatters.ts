@@ -23,7 +23,7 @@ export function boundaryLabel(boundary: unknown) {
 }
 
 export function sectionHelpLabel(sectionKey: string) {
-  if (sectionKey === 'form') return '字段显示、隐藏、必填、布局';
+  if (sectionKey === 'form') return '已有字段标签、显隐、同区域排序与分组';
   if (sectionKey === 'list_search') return '列表列、搜索条件、默认分组';
   if (sectionKey === 'analysis') return '透视、图表、日历、看板';
   if (sectionKey === 'menu') return '菜单入口、显示范围、发布状态';
@@ -41,7 +41,7 @@ export function sectionDisplayLabel(sectionKey: string, fallback: string) {
 }
 
 export function sectionPrimaryCopy(sectionKey: string) {
-  if (sectionKey === 'form') return '调整字段显示、必填、顺序和页面布局。';
+  if (sectionKey === 'form') return '调整已有字段标签、显隐、同区域顺序和分组；保留业务必填及只读约束。';
   if (sectionKey === 'list_search') return '调整列表列、搜索条件和默认分组。';
   if (sectionKey === 'analysis') return '查看透视、图表、日历和看板配置版本。';
   if (sectionKey === 'menu') return '调整这个页面在菜单中的显示方式。';
@@ -88,7 +88,6 @@ export function pageViewModeText(row: BusinessConfigCoverageScanItem) {
 
 export function pageDesignStatus(row: BusinessConfigCoverageScanItem) {
   if (!row.runtime_route?.path) return '暂不可预览';
-  if (row.runtime_missing_view_types.includes('form')) return '可生成后设计';
   if (row.target_view_types.includes('form')) return '可设计表单';
   return '可打开页面';
 }
@@ -98,7 +97,7 @@ export function rowCoverageProgressText(row: BusinessConfigCoverageScanItem) {
   const expected = targets.length || 1;
   const configured = targets.filter((viewType) => Number(row.coverage?.[viewType] || 0) > 0).length;
   const runtime = targets.filter((viewType) => Number(row.runtime_coverage?.[viewType] || 0) > 0).length;
-  return `配置 ${configured}/${expected}，生效 ${runtime}/${expected}`;
+  return `配置记录 ${configured}/${expected}，作用域匹配 ${runtime}/${expected}（非页面验收）`;
 }
 
 export function rowMissingContractViewTypes(row: BusinessConfigCoverageScanItem) {
@@ -111,7 +110,7 @@ export function rowActionHintText(row: BusinessConfigCoverageScanItem) {
   const reasons = new Set(Object.values(row.runtime_gap_reasons || {}).map((item) => String(item || '').trim()).filter(Boolean));
   if (reasons.has('missing_contract')) {
     const missingContractTypes = rowMissingContractViewTypes(row);
-    return `待配置 ${missingContractTypes.map(viewTypeLabel).join('、')}`;
+    return `${missingContractTypes.map(viewTypeLabel).join('、')}无附加配置`;
   }
   if (reasons.has('not_published')) return '需发布配置版本';
   if (reasons.has('not_runtime_applicable')) return '需检查作用域';
@@ -239,8 +238,8 @@ export function remediationActionLabel(code: string) {
 }
 
 export function deliveryReadinessItemStatusText(item: NonNullable<BusinessConfigSurfacePayload['delivery_readiness']>['items'][number]) {
-  if (item.status === 'ready') return '就绪';
-  return '待处理';
+  if (item.status === 'ready') return '已配置';
+  return '无附加配置';
 }
 
 export function namesToText(names: string[]) {

@@ -71,7 +71,7 @@
         >
           <div class="scan-row-main">
             <strong :title="row.name || row.model">{{ row.name || row.model }}</strong>
-            <span v-if="advancedPanelOpen">{{ row.model }}</span>
+            <span>{{ row.module_label || row.model }} · 入口 {{ row.action_id }}</span>
           </div>
           <div class="scan-row-meta">
             <span>{{ pageViewModeText(row) }}</span>
@@ -229,10 +229,10 @@
     <ScCard v-else appearance="main-surface" class="page-config-selection-empty" aria-label="尚未选择业务页面">
       <ScEmptyState title="选择一个业务页面" description="从左侧业务页面目录选择后，再查看该页面的配置状态和可用操作。" :heading-level="2" />
     </ScCard>
-    <aside v-if="surface" class="workbench-status-rail" aria-label="交付状态" data-lowcode-delivery-readiness="low_code_delivery_readiness.v1">
+    <aside v-if="surface && selectedCoverageRow" class="workbench-status-rail" aria-label="配置检查" data-lowcode-delivery-readiness="low_code_delivery_readiness.v1">
       <div class="delivery-readiness-head">
         <div>
-          <span>交付状态</span>
+          <span>配置检查（不代表页面验收）</span>
           <strong>{{ deliveryReadinessStatusText }}</strong>
         </div>
         <em>{{ visibleDeliveryReadinessProgressText }}</em>

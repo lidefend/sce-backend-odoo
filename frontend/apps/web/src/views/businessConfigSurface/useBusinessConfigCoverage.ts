@@ -76,8 +76,8 @@ export function useBusinessConfigCoverage(options: UseBusinessConfigCoverageOpti
       .filter((row) => {
         if (!keyword) return true;
         const searchable = options.advancedPanelOpen.value
-          ? [row.name, row.model, row.view_mode, pageViewModeText(row)]
-          : [row.name, pageViewModeText(row)];
+          ? [row.name, row.model, row.module_label, String(row.action_id), row.view_mode, pageViewModeText(row)]
+          : [row.name, row.module_label, String(row.action_id), pageViewModeText(row)];
         return searchable.some((text) => String(text || '').toLowerCase().includes(keyword));
       });
     return filtered.slice(0, 60);

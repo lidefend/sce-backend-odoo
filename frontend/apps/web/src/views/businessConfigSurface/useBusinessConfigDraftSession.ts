@@ -1,7 +1,8 @@
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import {
   discardBusinessConfigChangeSet,
   openBusinessConfigChangeSet,
+  resumeBusinessConfigChangeSet,
   previewBusinessConfigChangeSet,
   publishBusinessConfigChangeSet,
   rollbackBusinessConfigChangeSet,
@@ -27,7 +28,7 @@ function requestFailureMessage(cause: unknown) {
   return cause instanceof Error && cause.message.trim() ? cause.message : '待发布变更读取失败，请重试。';
 }
 
-export function useBusinessConfigDraftSession(roleKey: () => string) {
+export function useBusinessConfigDraftSession(roleKey: () => string, targetScope?: () => { model: string; actionId?: number; companyId?: number }) {
   const changeSet = ref<BusinessConfigChangeSet | null>(null);
   const loading = ref(false);
   const publishing = ref(false);
@@ -38,12 +39,27 @@ export function useBusinessConfigDraftSession(roleKey: () => string) {
   const changeSetItemCount = computed(() => Number(changeSet.value?.item_count || 0));
   const hasUnifiedDraft = computed(() => changeSetItemCount.value > 0 && !['published', 'discarded', 'superseded'].includes(changeSet.value?.state || ''));
 
+  let scopeRequest = 0;
+  const scopeParams = () => ({ target_model: targetScope?.().model || undefined, target_action_id: targetScope?.().actionId });
+  async function resumeScope() {
+    const request = ++scopeRequest;
+    changeSet.value = null; error.value = ''; loading.value = false;
+    if (!targetScope?.().model || !targetScope?.().actionId) return;
+    loading.value = true;
+    try {
+      const result = await resumeBusinessConfigChangeSet({ role_key: roleKey(), ...scopeParams() });
+      if (request === scopeRequest && 'token' in result) changeSet.value = result;
+    } catch (cause) { if (request === scopeRequest) error.value = requestFailureMessage(cause); }
+    finally { if (request === scopeRequest) loading.value = false; }
+  }
+  if (targetScope) watch(() => [roleKey(), targetScope().model, targetScope().actionId, targetScope().companyId], () => void resumeScope(), { immediate: true });
+
   async function ensureChangeSet() {
     if (changeSet.value && !['published', 'discarded', 'superseded'].includes(changeSet.value.state)) return changeSet.value;
     loading.value = true;
     error.value = '';
     try {
-      changeSet.value = await openBusinessConfigChangeSet({ role_key: roleKey() || undefined });
+      changeSet.value = await openBusinessConfigChangeSet({ role_key: roleKey() || undefined, ...scopeParams() });
       return changeSet.value;
     } catch (cause) {
       error.value = requestFailureMessage(cause);
@@ -123,6 +139,7 @@ export function useBusinessConfigDraftSession(roleKey: () => string) {
   }
 
   function resetScope() {
+    scopeRequest += 1;
     changeSet.value = null;
     error.value = '';
   }
@@ -137,6 +154,7 @@ export function useBusinessConfigDraftSession(roleKey: () => string) {
     previewing,
     error,
     ensureChangeSet,
+    resumeScope,
     stageItem,
     validateDraft,
     previewDraft,

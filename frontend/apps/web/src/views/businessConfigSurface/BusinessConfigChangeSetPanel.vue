@@ -12,6 +12,7 @@
       <li v-for="item in changeSet.items" :key="item.id">
         <strong>{{ typeLabel(item.config_type) }}</strong>
         <span>{{ summary(item) }}</span>
+        <small>{{ item.model }} · 入口 {{ item.action_id || '通用' }} · 视图 {{ item.view_id || '默认' }} · {{ item.role_key || '未限定角色' }}</small>
         <ScStatusBadge
           :label="item.validation_result?.ok === false ? '检查失败' : item.risk_level === 'high' ? '高影响' : '可逆'"
           :semantic="item.validation_result?.ok === false ? 'danger' : item.risk_level === 'high' ? 'warning' : 'default'"

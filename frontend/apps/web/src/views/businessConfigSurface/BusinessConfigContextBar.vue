@@ -21,10 +21,10 @@
     <dl class="business-config-context__facts">
       <div><dt>适用公司</dt><dd>{{ companyLabel || '当前公司' }}</dd></div>
       <div><dt>适用角色</dt><dd>{{ roleLabel || '当前管理员角色' }}</dd></div>
-      <div><dt>当前生效版本</dt><dd>{{ versionLabel }}</dd></div>
+      <div><dt>当前页面实际应用配置</dt><dd>{{ versionLabel }}</dd></div>
       <div>
         <dt>编辑状态</dt>
-        <dd><ScStatusBadge :label="dirty ? '有未保存修改' : '当前已保存'" :semantic="dirty ? 'warning' : 'success'" /></dd>
+        <dd><ScStatusBadge :label="!pageLabel ? '未选择页面' : dirty ? '有未保存修改' : '无未保存修改'" :semantic="dirty ? 'warning' : 'success'" /></dd>
       </div>
     </dl>
     <div v-if="$slots.actions" class="business-config-context__actions"><slot name="actions" /></div>

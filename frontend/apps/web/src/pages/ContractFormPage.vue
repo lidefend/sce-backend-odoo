@@ -47,6 +47,10 @@
     </ScInlineState>
       </template>
     </ContractFormProductHeader>
+    <ScInlineState v-if="isConfigurationPreview && (renderErrorMessage || status === 'error')" state="error" data-configuration-preview-recovery>
+      <span>预览未能打开。请返回设计器重新核验或签发预览，配置草稿未因此发布。</span>
+      <a :href="configurationDesignerUrl">返回设计器</a>
+    </ScInlineState>
     <ProductFormLoadingSkeleton v-if="initialFormLoading" :loading-label="`正在载入${pageDisplayTitle || '表单'}`" />
     <StatusPanel v-else-if="renderErrorMessage" :title="pageDisplayTitle" :message="renderErrorMessage" variant="error" :on-retry="reload" />
     <StatusPanel v-else-if="status === 'error'" :title="pageDisplayTitle" :message="errorMessage" :error-code="loadError.status" :reason-code="loadError.reason" :trace-id="loadError.trace" variant="error" :on-retry="reload" />
@@ -104,6 +108,7 @@
         />
         <BoundFormSettingsPanel
           v-if="showCurrentFormFieldConfigScope && boundFormDesignerSnapshot"
+          :key="`${boundFormDesignerSnapshot.pageInfo.model}:${boundFormDesignerSnapshot.formStructureContract?.sourceAuthority.governance_source.resolvedActionId}:${boundFormDesignerSnapshot.formStructureContract?.sourceAuthority.governance_source.resolvedViewId}:${session.recordContext?.company_id}:${session.roleSurface?.role_code}`"
           :snapshot="boundFormDesignerSnapshot"
           :role-key="String(session.roleSurface?.role_code || '')"
         />

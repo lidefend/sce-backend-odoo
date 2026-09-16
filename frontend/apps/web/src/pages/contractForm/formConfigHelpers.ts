@@ -983,6 +983,7 @@ export function buildLowCodeReturnQuery(params: {
     const value = routeQueryText(key);
     if (value) query[key] = value;
   });
+  if (routeQueryText('config_host_menu_id')) query.menu_id = routeQueryText('config_host_menu_id');
   const modelName = String(params.modelName || '').trim();
   const actionId = Number(params.actionId || 0) || 0;
   if (modelName) query.model = modelName;

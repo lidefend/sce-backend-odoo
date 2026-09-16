@@ -442,7 +442,8 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
             trace: String(err.traceId || ''),
           });
         }
-        if (err instanceof ApiError && err.status === 403) {
+        // Preview failures remain rejected, with a local route back to the owning designer.
+        if (err instanceof ApiError && err.status === 403 && !String(route.query.preview_token || '').trim()) {
           await router.replace({
             name: 'access-denied',
             query: { from: route.fullPath, reason: err.reasonCode || 'PERMISSION_DENIED' },

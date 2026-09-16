@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, onMounted, watch, type ComputedRef, type Ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, watch, ref, type ComputedRef, type Ref } from 'vue';
 import { onBeforeRouteLeave } from 'vue-router';
 import type {
   BusinessConfigAnalysisAuditPayload,
@@ -6,6 +6,8 @@ import type {
   BusinessConfigSnapshotSummaryPayload,
 } from '../../api/businessConfig';
 import type { useSessionStore } from '../../stores/session';
+import { intentRequest } from '../../api/intents';
+import { effectiveConfigurationLabel } from './effectiveConfiguration';
 import { normalizeNamesText } from './formatters';
 
 type SessionStore = ReturnType<typeof useSessionStore>;
@@ -13,6 +15,12 @@ type VersionRow = { version_no?: number };
 
 export function useBusinessConfigProductExperience(options: {
   session: SessionStore;
+  currentModel: ComputedRef<string>;
+  scopeAction: ComputedRef<number | undefined>;
+  scopeView: ComputedRef<number | undefined>;
+  selectedViewType: ComputedRef<string>;
+  surface: Ref<unknown>;
+
   versionContracts: Ref<VersionRow[]>;
   listSearchAudit: Ref<BusinessConfigListSearchAuditPayload | null>;
   analysisAudit: Ref<BusinessConfigAnalysisAuditPayload | null>;
@@ -49,19 +57,29 @@ export function useBusinessConfigProductExperience(options: {
     options.hasListSearchDraftChanges.value
     || options.hasAnalysisDraftChanges.value
     || options.hasApprovalDraftChanges.value
-    || options.hasUnifiedDraft.value
   ));
-  const currentEffectiveVersionLabel = computed(() => {
-    const versionNumbers = [
-      ...options.versionContracts.value.map((item) => Number(item.version_no || 0)),
-      ...(options.listSearchAudit.value?.business_config_list_contracts || []).map((item) => Number(item.version_no || 0)),
-      ...(options.listSearchAudit.value?.business_config_search_contracts || []).map((item) => Number(item.version_no || 0)),
-      ...(options.analysisAudit.value?.business_config_analysis_contracts || []).map((item) => Number(item.version_no || 0)),
-    ].filter((item) => Number.isFinite(item) && item > 0);
-    if (versionNumbers.length) return `版本 ${Math.max(...versionNumbers)}`;
-    const publishedCount = Number(options.snapshotSummary.value?.status_counts?.published || 0);
-    return publishedCount ? `已发布 ${publishedCount} 项配置` : '尚未配置';
-  });
+  const currentEffectiveVersionLabel = ref('请先选择业务页面');
+  let effectiveLoad = 0;
+  watch(() => [options.currentModel.value, options.scopeAction.value, options.scopeView.value,
+    options.selectedViewType.value, options.surface.value, options.session.recordContext?.company_id,
+    options.session.roleSurface?.role_code], async () => {
+    const sequence = ++effectiveLoad;
+    if (!options.currentModel.value || !options.scopeAction.value) {
+      currentEffectiveVersionLabel.value = '请先选择业务页面'; return;
+    }
+    if (!options.surface.value) { currentEffectiveVersionLabel.value = '正在核对业务对象，请等待或重试'; return; }
+    currentEffectiveVersionLabel.value = '正在核验当前页面配置';
+    try {
+      const contract = await intentRequest({ intent: 'ui.contract.v2', params: {
+        op: 'model', model: options.currentModel.value, action_id: options.scopeAction.value,
+        view_id: options.scopeView.value, view_type: options.selectedViewType.value,
+        render_profile: options.selectedViewType.value === 'form' ? 'create' : 'readonly',
+      } });
+      if (sequence === effectiveLoad) currentEffectiveVersionLabel.value = effectiveConfigurationLabel(contract, options.selectedViewType.value, options.snapshotSummary.value?.source_categories);
+    } catch {
+      if (sequence === effectiveLoad) currentEffectiveVersionLabel.value = '当前页面配置核验失败，请刷新重试';
+    }
+  }, { immediate: true });
 
   function inspectListSearchDraft() {
     if (!options.hasListSearchDraftChanges.value) {

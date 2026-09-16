@@ -75,6 +75,7 @@ def _install_odoo_stubs() -> None:
     utils_mod = types.ModuleType("odoo.addons.smart_core.utils")
     utils_mod.__path__ = [str(ROOT / "addons/smart_core/utils")]
     exceptions_mod = types.ModuleType("odoo.exceptions")
+    exceptions_mod.AccessError = type("AccessError", (Exception,), {})
     exceptions_mod.ValidationError = type("ValidationError", (Exception,), {})
     sys.modules["odoo"] = odoo_mod
     sys.modules["odoo.addons"] = addons_mod

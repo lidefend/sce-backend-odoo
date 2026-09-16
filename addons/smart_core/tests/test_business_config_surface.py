@@ -51,6 +51,7 @@ def _load_handler():
 
 
 class _User:
+    id = 7
     def has_group(self, xmlid):
         return xmlid in {
             "smart_core.group_smart_core_business_config_admin",
@@ -83,9 +84,14 @@ class _Contract:
         self.id = action_id or view_id or 1
         self.contract_json = contract_json if isinstance(contract_json, dict) else {"views": {view_type or "all": []}}
         self.version_no = version_no
+        self.active = True
+        self.company_id = False
 
 
 class _ContractModel(list):
+    def with_context(self, **context):
+        self.context = context
+        return self
     def sudo(self):
         return self
 
@@ -126,6 +132,9 @@ class _ContractModel(list):
         self.limit = limit
         self.order = order
         rows = list(self)
+        companies = next((value for field, op, value in domain if field == 'company_id' and op == 'in'), None)
+        if companies is not None:
+            rows = [row for row in rows if (getattr(row.company_id, 'id', row.company_id) or False) in companies]
         return rows[:limit] if limit else rows
 
 
@@ -382,6 +391,34 @@ class BusinessConfigSurfaceTests(unittest.TestCase):
         self.assertEqual(data["role_scope_count"], 1)
         self.assertEqual(data["action_scope_count"], 3)
 
+    def test_overview_uses_company_scope_and_record_rules_without_sudo(self):
+        class VisibleRows(_ContractModel):
+            def sudo(self):
+                raise AssertionError("overview must not bypass ORM permissions")
+        active = _Contract("res.partner", "form", contract_json={"view_orchestration": {"context": {"source": "smart_construction_core.product_release"}}})
+        disabled = _Contract("res.partner", "form", status="published")
+        disabled.active = False
+        draft = _Contract("res.partner", "tree", status="draft")
+        outside = _Contract("res.partner", "form")
+        outside.company_id = types.SimpleNamespace(id=99)
+        rows = VisibleRows([active, disabled, draft, outside])
+        result = self.module.BusinessConfigSnapshotSummaryHandler(env=_Env({"ui.business.config.contract": rows}), params={}).handle()["data"]
+        self.assertEqual(result["contract_count"], 3)
+        self.assertEqual(result["status_counts"], {"published": 1, "disabled": 1, "draft": 1})
+        self.assertEqual(rows.context, {"active_test": False})
+        self.assertEqual(result["source_counts"]["product_default"]["published"], 1)
+        self.assertEqual(result["source_counts"]["unclassified"]["disabled"], 1)
+
+    def test_personal_preferences_use_own_principal_and_saved_not_published(self):
+        class OwnPreferences:
+            def search_count(self, domain):
+                self.domain = domain
+                return 2
+        prefs = OwnPreferences()
+        result = self.module.BusinessConfigSnapshotSummaryHandler(env=_Env({"ui.business.config.contract": _ContractModel([]), "sc.user.view.preference": prefs}), params={}).handle()["data"]
+        self.assertEqual(prefs.domain, [("user_id", "=", 7)])
+        self.assertEqual(result["source_counts"]["personal_preference"], {"total": 2, "saved": 2, "draft": 0, "published": 0, "disabled": 0})
+
     def test_snapshot_export_returns_contract_rows_for_download(self):
         env = _Env({
             "ui.business.config.contract": _ContractModel([
@@ -564,6 +601,65 @@ class BusinessConfigSurfaceTests(unittest.TestCase):
         self.assertTrue(rows[11]["has_menu"])
         self.assertEqual(rows[11]["user_preference_count"], 2)
         self.assertEqual(rows[11]["user_preference_boundary"], "ui_only")
+
+    def test_business_page_selection_excludes_configuration_runtime_models(self):
+        env = _Env({
+            "ir.actions.act_window": _ActionModel([
+                _Action(11, "客户", "res.partner", "tree,form"),
+                _Action(737, "配置工作台", "ui.business.config.contract", "tree,form"),
+            ]),
+            "ir.ui.menu": _VisibleMenuModel(["ir.actions.act_window,11", "ir.actions.act_window,737"], visible_ids=[1, 2]),
+            "ui.business.config.contract": _ContractModel([]),
+        })
+        result = self.module.BusinessConfigCoverageScanHandler(env=env, params={"exclude_configuration_models": True}).handle()
+        self.assertEqual([row["action_id"] for row in result["data"]["items"]], [11])
+
+    def test_product_catalog_consumes_canonical_navigation_carrier(self):
+        from unittest.mock import patch
+        startup = types.SimpleNamespace(SystemInitHandler=lambda **kwargs: types.SimpleNamespace(handle=lambda **kw: types.SimpleNamespace(data={
+            "navigation": {"nav": [{"label": "Administration", "children": [{"label": "Certificate", "menu_id": 356, "meta": {"action_id": 666}}]}]},
+            "nav": [{"action_id": 999}],
+        })))
+        with patch.dict(sys.modules, {"odoo.addons.smart_core.handlers.system_init": startup}):
+            catalog = self.module.BusinessConfigCoverageScanHandler(env=_Env())._business_catalog()
+        self.assertEqual(set(catalog), {666})
+        self.assertEqual(catalog[666], {"menu_id": 356, "module_label": "Administration", "entry_label": "Certificate"})
+
+    def test_product_catalog_intersects_released_targets_and_read_permissions(self):
+        from unittest.mock import patch
+        env = _Env({
+            "ir.actions.act_window": _ActionModel([
+                _Action(101, "Same name", "test.allowed", "form"),
+                _Action(102, "Same name", "test.denied", "form"),
+                _Action(103, "Technical", "ui.business.config.contract", "form"),
+                _Action(104, "Unreleased", "test.allowed", "form"),
+            ]),
+            "test.allowed": types.SimpleNamespace(check_access_rights=lambda *a, **kw: True),
+            "test.denied": types.SimpleNamespace(check_access_rights=lambda *a, **kw: False),
+        })
+        catalog = {i: {"menu_id": i + 100, "module_label": "Released module"} for i in [101, 102, 103]}
+        cls = self.module.BusinessConfigCoverageScanHandler
+        with patch.object(cls, "_business_catalog", return_value=catalog):
+            data = cls(env=env, params={"business_catalog": True, "include_unreachable_actions": True}).handle()["data"]
+        self.assertEqual([row["action_id"] for row in data["items"]], [101])
+        self.assertEqual(data["items"][0]["runtime_route"]["query"]["menu_id"], "201")
+        self.assertEqual(data["items"][0]["module_label"], "Released module")
+
+    def test_empty_product_catalog_never_falls_back_to_all_actions(self):
+        from unittest.mock import patch
+        cls = self.module.BusinessConfigCoverageScanHandler
+        env = _Env({"ir.actions.act_window": _ActionModel([_Action(101, "Raw", "test.allowed", "form")])})
+        with patch.object(cls, "_business_catalog", return_value={}):
+            data = cls(env=env, params={"business_catalog": True, "include_unreachable_actions": True}).handle()["data"]
+        self.assertEqual(data["items"], [])
+
+    def test_product_scope_rejects_conflicting_model_and_unreleased_action(self):
+        from unittest.mock import patch
+        env = _Env({"ir.actions.act_window": _ActionModel([_Action(101, "A", "test.allowed", "form")])})
+        with patch.object(self.module.BusinessConfigCoverageScanHandler, "_business_catalog", return_value={101: {}}):
+            for params in ({"action_id": 101, "model": "test.other"}, {"action_id": 104, "model": "test.allowed"}):
+                with self.assertRaises(self.module.AccessError):
+                    self.module.BusinessConfigSurfaceGetHandler(env=env, params={**params, "business_catalog": True}).handle()
 
     def test_coverage_scan_honors_view_scope(self):
         action_model = _ActionModel([
