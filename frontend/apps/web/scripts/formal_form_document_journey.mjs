@@ -104,3 +104,105 @@ export async function checkEmptyDocumentSource({ page, entry, out, report }) {
   assert.deepEqual(report.browser_errors, []);
   report.stages.empty_source = { status: 'passed', record: sample.id, viewport: { width: 390, height: 844 }, navigation, retained_tabs: tabs, top_scroll: scroll, url: page.url(), business_writes: 0, configuration_writes: 0 };
 }
+
+// Bounded configuration-center diagnosis; no configuration or business writes.
+export async function checkConfigurationEntry({ page, scope, intent, out, report }) {
+  const verify = process.env.FORM_LOWCODE_CONFIG_VERIFY === '1';
+  if (process.env.FORM_LOWCODE_CONFIG_SUMMARY === '1') return checkConfigurationSummary({ page, scope, intent, out, report });
+  const requests = [];
+  page.on('request', (request) => {
+    if (!request.url().includes('/api/v1/intent')) return;
+    try { requests.push(request.postDataJSON()?.intent || ''); } catch {}
+  });
+  const entry = scope.configuration_entry;
+  assert.equal(entry.action_id, 737);
+  const result = await intent('ui.contract.v2', { op: 'model', model: entry.model, action_id: entry.action_id, menu_id: entry.menu_id, view_type: 'form', render_profile: 'create' }, false);
+  await fs.writeFile(path.join(out, 'configuration-form-contract.json'), JSON.stringify(result, null, 2));
+  report.stages.entry = { identity: entry, contract_ok: result.ok, routes: [] };
+  const routes = process.env.FORM_LOWCODE_CONFIG_RESUME === '1' ? ['/admin/business-config?menu_id=431&action_id=737'] : process.env.FORM_LOWCODE_CONFIG_NEW_ONLY === '1' ? ['/a/737?menu_id=431'] : ['/m/431', '/a/737?menu_id=431', '/f/ui.business.config.contract/new?menu_id=431&action_id=737', '/admin/business-config?menu_id=431&action_id=737'];
+  for (const route of routes) {
+    await page.goto(`${process.env.BASE_URL}${route}`, { waitUntil: 'networkidle' });
+    if (!verify && route.startsWith('/a/') && !page.url().includes('/admin/business-config')) {
+      await page.getByRole('button', { name: '新建', exact: true }).waitFor();
+      await page.getByRole('button', { name: '新建', exact: true }).click();
+      await page.waitForURL(/\/f\/ui.business.config.contract\/new/);
+      await page.getByText('页面契约无法渲染', { exact: true }).waitFor();
+    }
+    if (verify) {
+      await page.waitForURL(/\/admin\/business-config/);
+      await page.getByRole('button', { name: '返回业务办理', exact: true }).waitFor();
+    }
+    const text = await page.locator('body').innerText();
+    if (verify) assert(!text.includes('PROFESSIONAL_COMPONENT_FIELD_TYPE_MISMATCH'));
+    const name = `entry-${report.stages.entry.routes.length}`;
+    await page.screenshot({ path: path.join(out, `${name}.png`), fullPage: false });
+    report.stages.entry.routes.push({ requested: route, url: page.url(), text: text.slice(0, 14000), errors: [...report.browser_errors], screenshot: `${name}.png` });
+  }
+  if (verify) {
+    await page.getByRole('button', { name: '返回业务办理', exact: true }).click();
+    await page.waitForURL((url) => !url.pathname.startsWith('/admin/business-config'));
+    report.stages.return = { status: 'passed', url: page.url() };
+    const business = scope.entries[0];
+    await page.goto(`${process.env.BASE_URL}/f/${business.model}/new?action_id=${business.action_id}&menu_id=${business.menu_id}`, { waitUntil: 'domcontentloaded' });
+    await page.getByRole('button', { name: '更多操作', exact: true }).click();
+    await page.getByText('表单设置', { exact: true }).last().click();
+    await page.locator('[data-bound-form-designer][data-ready="true"]').waitFor();
+    assert(new URL(page.url()).pathname === `/f/${business.model}/new`);
+    await page.screenshot({ path: path.join(out, 'business-form-settings.png'), fullPage: false });
+    report.stages.form_settings = { status: 'passed', url: page.url() };
+    assert.deepEqual(report.browser_errors, []);
+    assert(!requests.some((name) => /publish|rollback|save|data\.(create|write|unlink)|change_set\.stage/.test(name)), JSON.stringify(requests));
+    report.stages.readonly_requests = [...new Set(requests)];
+  }
+  if (process.env.FORM_LOWCODE_CONFIG_RESUME === '1') {
+    const prior = JSON.parse(await fs.readFile(path.join(out, 'routes-passed-observer-rejected.json'), 'utf8'));
+    assert.equal(prior.candidate, report.candidate);
+    assert.equal(prior.scope.compiler_sha256, report.scope.compiler_sha256);
+    assert.deepEqual(prior.scope.entries, report.scope.entries);
+    assert.equal(prior.stages.entry.routes.length, 4);
+    assert(prior.stages.entry.routes.every((row) => new URL(row.url).pathname === '/admin/business-config' && !row.text.includes('FIELD_TYPE_MISMATCH')));
+    report.stages.entry.carried_routes = prior.stages.entry.routes;
+    report.stages.entry.carry_reason = 'Routing product inputs unchanged; observer now allows existing owner-scoped draft resume, governed before/after scope verifies no changes';
+  }
+  report.stages.entry.product_status = verify ? 'passed' : 'diagnostic_only';
+}
+
+async function checkConfigurationSummary({ page, scope, intent, out, report }) {
+  const responses = [];
+  const writes = [];
+  page.on('request', (request) => {
+    if (!request.url().includes('/api/v1/intent')) return;
+    try { const name = request.postDataJSON()?.intent || ''; if (/publish|rollback|save|change_set\.stage/.test(name)) writes.push(name); } catch {}
+  });
+  const surface = (await intent('ui.business_config.surface.get', {})).data;
+  assert(surface.snapshot_summary.source_counts, 'new overview contract missing');
+  await page.goto(`${process.env.BASE_URL}/m/431`, { waitUntil: 'domcontentloaded' });
+  await page.getByText('请先选择业务页面', { exact: true }).waitFor();
+  await page.locator('[data-configuration-overview]').waitFor();
+  await page.getByPlaceholder('输入页面名称').waitFor();
+  assert.equal(await page.getByRole('group', { name: '配置工作台页面', exact: true }).count(), 0);
+  await page.screenshot({ path: path.join(out, 'overview-unselected.png'), fullPage: false });
+  const cases = process.env.FORM_LOWCODE_CONFIG_SUMMARY_VISUAL === '1' ? [['证照', 191]] : [['证照', 191], ['制度', 178]];
+  for (const [search, expectedId] of cases) {
+    await page.getByPlaceholder('输入页面名称').fill(search);
+    const row = page.locator('.scan-row').first();
+    await row.waitFor();
+    await row.click();
+    const label = page.locator('.business-config-context__facts dd').nth(2);
+    await page.waitForFunction((id) => [...document.querySelectorAll('.business-config-context__facts dd')].some((node) => node.textContent.includes(`#${id} · v`)), expectedId);
+    const text = await label.innerText();
+    assert(!text.includes('258'));
+    assert(text.includes('使用默认配置'));
+    responses.push({ search, label: text, url: page.url() });
+    const scroll = await page.evaluate(async () => {
+      window.scrollTo(0, 0); for (const node of document.querySelectorAll('*')) if (node.scrollTop) node.scrollTop = 0;
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      return [...document.querySelectorAll('*')].filter((node) => node.scrollTop > 0).map((node) => ({ tag: node.tagName, top: node.scrollTop }));
+    });
+    assert.deepEqual(scroll, [], 'configuration summary must be captured at actual top');
+    await page.screenshot({ path: path.join(out, `overview-${expectedId}.png`), fullPage: false });
+  }
+  assert.deepEqual(writes, []);
+  assert.deepEqual(report.browser_errors, []);
+  report.stages.configuration_summary = { status: 'passed', overview: surface.snapshot_summary, selected_pages: responses, self_selection: 'excluded', writes };
+}

@@ -76,7 +76,7 @@ function analyzeSource(source, fileName) {
       const expression = node.getText(ast);
       if (/\.state\s*!==\s*['"]published['"]/.test(expression)) facts.publishResultChecks.add('state');
       if (/publishResult\.ok\s*!==\s*true/.test(expression)) facts.publishResultChecks.add('ok');
-      if (/publishResult\.runtime_verified\s*!==\s*true/.test(expression)) facts.publishResultChecks.add('runtime_verified');
+      if (/publishResult\.published_content_verified\s*!==\s*true/.test(expression)) facts.publishResultChecks.add('published_content_verified');
     }
     ts.forEachChild(node, (child) => walk(child, activeFunction));
   }
@@ -176,7 +176,7 @@ const negativePreview = analyzeSource('function previewDraft(){ publishBusinessC
 const negativeEmptyStage = analyzeSource("function save(){ if (columns.length) stageUnifiedDraftItem({}); }", 'views/example.ts').errors.length > 0;
 const draftSession = results[files.indexOf(unifiedPublisher)];
 const publishStateGuard = Boolean(draftSession?.facts?.publishValidationThrows)
-  && ['state', 'ok', 'runtime_verified'].every((key) => draftSession.facts.publishResultChecks.includes(key));
+  && ['state', 'ok', 'published_content_verified'].every((key) => draftSession.facts.publishResultChecks.includes(key));
 const lifecycle = results[files.indexOf('views/businessConfigSurface/useBusinessConfigPublishLifecycle.ts')];
 const changedEmptyGuard = Number(lifecycle?.facts?.changedStageConditions || 0) >= 4
   && Number(lifecycle?.facts?.lengthStageConditions || 0) === 0;
@@ -197,7 +197,7 @@ const report = {
 if (!negativePublish) report.errors.push('negative self-test accepted editor publish:true');
 if (!negativePreview) report.errors.push('negative self-test accepted preview-to-publish call');
 if (!negativeEmptyStage) report.errors.push('negative self-test accepted changed-but-empty length gate');
-if (!publishStateGuard) report.errors.push('unified publisher does not require ready/published/ok/runtime verification states');
+if (!publishStateGuard) report.errors.push('unified publisher does not require ready/published/ok/published-content verification states');
 if (!changedEmptyGuard) report.errors.push('editor staging does not preserve changed-but-empty configuration');
 process.stdout.write(`${JSON.stringify(report)}\n`);
 process.exitCode = report.errors.length ? 1 : 0;
