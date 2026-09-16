@@ -35,6 +35,8 @@
 
 定向证据（同一索引）：`preview-write-guard.log` 7项、`preview-router-test.log` 9项（含旧run覆盖拒绝）、`preview-operation-policy.log` 操作分类6项、`preview-permission-fixture-retest.log` 权限22项；`preview-summary-unit.log` 原7+5项及四类摘要断言；`preview-closure-typecheck.log`严格类型检查通过；`final-lint.log` 0 errors/36 warnings。`preview-closure-browser.log`及`browser/closure-report.json`记录桌面/窄屏、实际写拒绝、返回设计器passed及浏览器错误0；滚动与窄屏摘要补验passed（含elementFromPoint确认无遮挡），补图单列`preview-closure-observation.log`/`browser/closure-observation.json`，不冒充又跑一次业务旅程。
 
+首次冻结`6d8383dd9cdd22bddb65c8ca0495c698c3126469`的Quick失败且无receipt：严格前端协议守卫尚未登记schema已有的`source_kind`与`change_set_preview`。保留`final-quick-6d8383dd.failed.log`，P4仅精确补齐两个协议token，未放宽其他未知字段检查；`verify.unified_page_contract.v2.stable_projection`定向passed。产品源码、已认证运行环境、配置和浏览器输入未变，原定向测试与浏览器结果直接承接；仅该守卫、相关生成证据和最终集成门禁失效。新候选的Quick是此明确修复后的重新验证，不复用失败receipt。独立审查对原候选未发现S0–S2代码问题，新候选仅需增量核对这项P4修复与receipt。
+
 三份U-C3源码的原始文件、binary patch及SHA256已保存在工作树外`/home/lidefend/workspace/.codex-evidence/workspace-archives/20260916/uc3-pending/`，恢复源为`uc3-uncommitted.patch`，逐文件可读性/哈希已核对；三份改动已从本批工作区隔离，`git apply --check`确认补丁可重新应用；本批提交不包含它们。台账维持44，供应商退货、自定义字段、action777、结算demo金额问题及未覆盖业务写入继续独立登记。
 
 ### 实际失效层与修复
