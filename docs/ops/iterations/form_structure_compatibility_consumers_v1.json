@@ -11000,14 +11000,16 @@
   },
   "runtimeEvidenceRoot": "artifacts/form-structure-unification/ub-tender-hierarchy-identities",
   "nextBatch": {
-    "name": "U-C3",
-    "status": "first_group_scoped_not_implemented",
+    "name": "U-C4",
+    "status": "scope_confirmed_implementation_started",
     "priorityActions": [
-      666,
-      862
+      785,
+      786,
+      787,
+      788
     ],
-    "selectedGroup": "G01",
-    "sourceMainlineHead": "e802f7239bf005482a352caa64eb9da0e78a085a",
+    "selectedGroup": "G02",
+    "sourceMainlineHead": "3323fb49e41e6bf0851acfde0d3e9df2dafafd8f",
     "fullRescan": false,
     "groups": [
       {
@@ -11344,14 +11346,14 @@
         "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
       }
     ],
-    "scopeNote": "First group: certificate and policy document native form migration only. No new business rules or permission expansion. Grouping does not prove compatibility exit.",
+    "scopeNote": "Second group: invoice four-entry native form migration (input 785, output application 786, output registration 787, prepaid tax 788, shared model sc.invoice.registration and view 1651). Scope confirmed in uc4 record: convert four action contracts to native_semantic_surface, retire model-wide form_sections_v1 and p1 business facts layers (both listed in G02 legacyConfigurations); bypass actions (input tax report, invoice general ledger) are not ledger consumers and fall back to the rebuilt native form. No new business rules or permission expansion.",
     "retirementCondition": "Each selected formal action must independently show native authority, no active structural override/dependency and representative browser acceptance before any count reduction.",
     "executionSequence": [
       "continuous_group_implementation_and_targeted_validation",
       "one_consolidated_browser_review",
       "freeze_and_PR_integration_gates"
     ],
-    "planningRecord": "docs/ops/iterations/uc2_material_native_migration_20260916.md"
+    "planningRecord": "docs/ops/iterations/uc4_invoice_native_lowcode_20260916.md"
   },
   "retirementCondition": "Only after every formal consumer of a compatibility regrouping path is zero and other roles/companies/states are covered, remove that regrouping logic and its test exemptions.",
   "mainlineRemainingCount": 42,
