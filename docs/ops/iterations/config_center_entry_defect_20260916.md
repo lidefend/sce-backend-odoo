@@ -2,7 +2,7 @@
 
 ## 本批六包缺口表（持续更新）
 
-当前结论：六包开发自验完成，待一次集中产品复核；未冻结、未集成、未部署。最终结果索引见文末。
+当前结论：六包集中产品复核通过，独立复核的两项整改已关闭，正在完成最终集成门禁；未集成、未部署。最终冻结身份和receipt见外部收口索引。
 
 | 工作包 | 已通过、复用 | 本批修复（已实施） | 明确不支持 |
 | --- | --- | --- | --- |
@@ -154,3 +154,5 @@ L0：基线HEAD与明确dirty范围；L1 `make ci.local.iteration`通过；L2 `m
 修复只涉及既有P0草稿事务和设计器输入门禁：操作开始同步busy；捕获epoch及model/action/company/role，每次异步响应检查身份后才写入本地状态或继续发布；同步scope watch使旧请求失效。按钮与handler均拒绝未应用标签/显隐/分组输入。P4在已有verify.business_config.unit增加9项真实Vue响应式+延迟Promise反例，涵盖校验→发布、校验、预览、暂存、回滚、撤销的迟到响应，角色/公司切换，以及不切换时正常发布。既有发布ready/published/ok/内容回读守卫保持不变。
 
 9项反例和完整相关unit入口、strict typecheck、L1通过；只补390px未应用输入门禁及离开操作，无配置发布/业务写入。对应日志review-fix-{static,targeted,typecheck,browser}.log。旧浏览器/发布回滚证据保留；变化只失效草稿异步状态及输入按钮部分，不重跑整套旅程。新的最终候选需要新Quick和变化范围独立复核，取消运行不计通过或复用。
+
+最终门禁补正：7bb16858候选Quick在frontend lint发现一个未使用解构变量replaceWorkbenchQuerySilently，门禁失败且没有receipt。仅删除该无用途绑定，不改变函数调用或页面行为。先单独运行verify.frontend.lint.src，通过后再刷新生成证据、冻结并运行新候选Quick；浏览器、延迟反例及独立复核的其余范围按无行为变化承接。此失败不是环境原因，也不称为Quick通过。

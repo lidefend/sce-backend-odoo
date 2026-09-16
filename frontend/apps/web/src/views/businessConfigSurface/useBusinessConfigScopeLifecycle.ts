@@ -6,7 +6,7 @@ import { findActionMeta } from '../../app/menu';
 import { ApiError } from '../../api/client';
 
 export function useBusinessConfigScopeLifecycle(deps: Record<string, any>) {
-  const { scopeAction, currentModel, scopeView, message, surfaceLoadSeq, loading, error, surfaceError, withSurfaceLoadTimeout, loadBusinessConfigSurface, SURFACE_LOAD_TIMEOUT_MS, scopeRole, session, router, route, surface, scanLoading, coverageScan, scanBusinessConfigCoverage, rootMenuXmlid, selectedPageLabel, scopeModel, scopeActionId, scopeViewId, selectedRuntimeRoute, replaceWorkbenchQuerySilently, focusSelectedConfigPanelOnMobile, resetEditorPanels, runtimeReturnQuery, confirmScopeChange, hasUnsavedEdits, resetScopeDrafts } = deps;
+  const { scopeAction, currentModel, scopeView, message, surfaceLoadSeq, loading, error, surfaceError, withSurfaceLoadTimeout, loadBusinessConfigSurface, SURFACE_LOAD_TIMEOUT_MS, scopeRole, session, router, route, surface, scanLoading, coverageScan, scanBusinessConfigCoverage, rootMenuXmlid, selectedPageLabel, scopeModel, scopeActionId, scopeViewId, selectedRuntimeRoute, focusSelectedConfigPanelOnMobile, resetEditorPanels, runtimeReturnQuery, confirmScopeChange, hasUnsavedEdits, resetScopeDrafts } = deps;
   onBeforeRouteUpdate(async (to) => {
     const actionId = Number(to.query.action_id || 0);
     const model = String(to.query.model || findActionMeta(session.menuTree, actionId)?.model || '').trim();
