@@ -95,9 +95,9 @@ export function useBusinessConfigDraftSession(roleKey: () => string) {
       if (
         changeSet.value.state !== 'published'
         || publishResult.ok !== true
-        || publishResult.runtime_verified !== true
+        || publishResult.published_content_verified !== true
       ) {
-        error.value = changeSet.value.failure_message || '发布结果未通过运行态验证';
+        error.value = changeSet.value.failure_message || '发布内容回读未通过';
         throw new Error(error.value);
       }
       return changeSet.value;

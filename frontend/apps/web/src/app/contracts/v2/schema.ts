@@ -721,7 +721,8 @@ function decodeContainer(
     containerId,
     containerType,
     type: asString(raw.type) || containerType,
-    ...(asString(raw.name) ? { name: asString(raw.name) } : {}),
+    // Empty native names are an identity value, not a missing property.
+    ...(typeof raw.name === 'string' ? { name: raw.name } : {}),
     ...(fieldCode ? { fieldCode } : {}),
     ...(asString(raw.string) ? { string: asString(raw.string) } : {}),
     ...(asString(raw.label) ? { label: asString(raw.label) } : {}),
@@ -1127,10 +1128,14 @@ function decodeFormStructureGovernanceContract(
     issues.push({ path, message: 'must be an object' });
     return null;
   }
-  rejectUnknownKeys(raw, ['id', 'name', 'priority', 'view_type', 'version_no'], path, issues);
+  rejectUnknownKeys(raw, ['id', 'name', 'priority', 'view_type', 'version_no', 'source_kind'], path, issues);
   const id = raw.id;
-  if (typeof id !== 'number' || !Number.isInteger(id) || id < 1) {
-    issues.push({ path: `${path}.id`, message: 'must be a positive integer' });
+  const preview = raw.source_kind === 'change_set_preview';
+  if (raw.source_kind !== undefined && raw.source_kind !== 'published' && !preview) {
+    issues.push({ path: `${path}.source_kind`, message: 'must be published or change_set_preview' });
+  }
+  if (typeof id !== 'number' || !Number.isInteger(id) || id < (preview ? 0 : 1)) {
+    issues.push({ path: `${path}.id`, message: 'must be a positive published ID or a non-negative preview ID' });
   }
   const decodeOptionalInteger = (key: 'priority' | 'version_no'): number | undefined => {
     if (raw[key] === undefined) return undefined;
@@ -1141,6 +1146,8 @@ function decodeFormStructureGovernanceContract(
   return {
     id: typeof id === 'number' && Number.isInteger(id) ? id : 0,
     name: requiredString(raw, 'name', path, issues),
+    ...(preview ? { source_kind: 'change_set_preview' as const }
+      : raw.source_kind === 'published' ? { source_kind: 'published' as const } : {}),
     ...(decodeOptionalInteger('priority') !== undefined ? { priority: decodeOptionalInteger('priority') } : {}),
     ...(optionalString(raw, 'view_type') ? { view_type: optionalString(raw, 'view_type') } : {}),
     ...(decodeOptionalInteger('version_no') !== undefined ? { version_no: decodeOptionalInteger('version_no') } : {}),

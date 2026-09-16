@@ -3389,7 +3389,7 @@ class BusinessConfigContractGetHandler(BaseIntentHandler):
         invalid_field = _append_business_config_scope_domain(params, domain, include_status=True)
         if invalid_field:
             return self._err(400, "%s 必须是非负整数" % invalid_field, REASON_USER_ERROR)
-        rec = self.env["ui.business.config.contract"].search(domain, limit=1)
+        rec = self.env["ui.business.config.contract"].with_context(active_test=not bool(params.get("include_inactive"))).search(domain, limit=1)
         if not rec:
             return self._err(404, "未找到业务配置", REASON_NOT_FOUND)
         return {
@@ -3405,6 +3405,8 @@ class BusinessConfigContractGetHandler(BaseIntentHandler):
                 "status": str(rec.status or "draft"),
                 "version_no": int(rec.version_no or 1),
                 "contract_json": rec.contract_json or {},
+                "definition_sha256": str(rec.definition_sha256 or ""),
+                "active": bool(rec.active),
             },
             "meta": {"intent": self.INTENT_TYPE, "source_authority": self._source_authority_contract(), "reason_code": REASON_OK},
         }

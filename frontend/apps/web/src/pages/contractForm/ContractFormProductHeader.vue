@@ -18,6 +18,7 @@
     :data-workflow-primary-key="canonicalWorkflowAuthority.primaryKey || undefined"
   >
     <template #meta>
+      <slot name="notice" />
       <p v-if="showHud" class="meta">model={{ model }} · id={{ recordIdDisplay }} · action={{ actionId || '-' }}</p>
       <p v-if="showHud && contractMetaLine" class="meta">{{ contractMetaLine }}</p>
     </template>

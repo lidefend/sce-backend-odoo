@@ -2339,6 +2339,13 @@ class PageAssembler:
             "level": "header",
             "selection": "none",
             "allowed": True,
+            "enabled": True,
+            "disabled": False,
+            # This local-mode entry is emitted only after administrator and
+            # configuration ACL checks above. Preserve that verdict in V2.
+            "entitlement_evaluated": True,
+            "authorization_allowed": True,
+            "business_available": True,
             "semantic": "secondary_action",
             "intent": "ui.local_mode",
             "trigger": "click",

@@ -103,15 +103,79 @@ class _ChangeSetBase(BaseIntentHandler):
         return record
 
     def _target_contract(self, params: dict):
-        Contract = self.env["ui.business.config.contract"].sudo()
+        Contract = self.env["ui.business.config.contract"].sudo().with_context(active_test=False)
         target_contract_id = _integer(params.get("current_contract_id"))
         if target_contract_id:
-            return Contract.browse(target_contract_id).exists()
+            contract = Contract.browse(target_contract_id).exists()
+            if not contract or contract.company_id != self.env.company:
+                raise AccessError("配置目标不属于当前公司。")
+            self._assert_contract_scope(contract, params)
+            return contract
         domain = [
             ("name", "=", _text(params.get("contract_name") or params.get("target_key"))),
             ("company_id", "=", self.env.company.id),
         ]
-        return Contract.search(domain, limit=1)
+        contract = Contract.search(domain, limit=1)
+        if contract:
+            self._assert_contract_scope(contract, params)
+        return contract
+
+    def _assert_contract_scope(self, contract, params):
+        expected = {
+            "model": _text(params.get("model")),
+            "action_id": _integer(params.get("action_id")),
+            "view_id": _integer(params.get("view_id")),
+            "role_key": _text(params.get("role_key")),
+        }
+        actual = {"model": contract.model, "action_id": contract.action_id.id or 0,
+                  "view_id": contract.view_id.id or 0, "role_key": contract.role_key or ""}
+        if contract.company_id != self.env.company or actual != expected:
+            raise AccessError("配置目标作用域不匹配；不得通过变更集移动配置作用域。")
+
+    def _authenticate_item(self, item):
+        self._ensure_access()
+        record = item.change_set_id.with_env(self.env)
+        record.assert_owner_scope(role_key=item.role_key or "")
+        if item.target_contract_id:
+            self._assert_contract_scope(item.target_contract_id, {
+                "model": item.model, "action_id": item.action_id,
+                "view_id": item.view_id, "role_key": item.role_key,
+            })
+        if item.config_type != "menu":
+            sealed = ensure_view_orchestration_source(
+                item.draft_payload or {}, VIEW_ORCHESTRATION_SOURCE_TENANT_LOWCODING,
+                LOWCODE_SOURCE_STATUS_TENANT_RUNTIME,
+            )
+            if sealed != item.draft_payload:
+                item.sudo().write({"draft_payload": sealed})
+
+    def _compile_form_item(self, item, preview_token=None, *, rollback=False):
+        """Verify the actual final contract, never equate storage with runtime."""
+        spec = (((item.draft_payload or {}).get("view_orchestration") or {}).get("views") or {}).get("form") or {}
+        if item.config_type != "form" or not spec.get("node_patches"):
+            return {"status": "not_run"}
+        from .ui_contract_v2 import UiContractV2Handler, authoritative_form_role_key
+        if item.role_key and item.role_key != authoritative_form_role_key(self.env):
+            raise AccessError("表单预览必须使用当前已认证角色；不可用角色字符串代替目标权限身份。")
+        if not item.action_id or not item.view_id:
+            raise ValidationError("结构配置必须绑定正式action和view。")
+        params = {"op": "model", "model": item.model, "action_id": item.action_id,
+                  "view_id": item.view_id, "view_type": "form", "render_profile": "create"}
+        if preview_token:
+            params.update(preview_token=preview_token, preview_role_key=item.role_key or "")
+        result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle(params)
+        result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+        if not result.get("ok", True) or not (result.get("data") or {}).get("layoutContract"):
+            raise ValidationError("最终表单契约合成失败：%s" % str(result.get("error") or result.get("message") or "missing layoutContract"))
+        data = result["data"]
+        if not rollback:
+            governance = ((data.get("formStructureContract") or {}).get("sourceAuthority") or {}).get("governance_source") or {}
+            expected_name = "preview:%s" % item.target_key if preview_token else item.target_key
+            if not any(row.get("name") == expected_name for row in governance.get("businessConfigContracts", [])):
+                raise ValidationError("CONFIG_NOT_APPLIED: %s" % expected_name)
+        return {"status": "passed", "effective_structure_hash": stable_payload_hash({
+            key: data.get(key) for key in ("layoutContract", "statusContract", "actionContract")
+        })}
 
     def _menu_state_hash(self, draft_payload: dict, company_id: int) -> str:
         rows = draft_payload.get("rows") if isinstance(draft_payload, dict) else []
@@ -155,6 +219,8 @@ class BusinessConfigChangeSetOpenHandler(_ChangeSetBase):
             ("state", "in", list(ACTIVE_CHANGE_SET_STATES)),
             ("expires_at", ">", fields.Datetime.now()),
         ], order="id desc", limit=1)
+        if params.get("fresh") is True:
+            record = ChangeSet.browse()
         if not record:
             record = ChangeSet.create({
                 "name": _text(params.get("name")) or "未发布配置变更",
@@ -207,6 +273,10 @@ class BusinessConfigChangeSetStageHandler(_ChangeSetBase):
         if not target_key or not model:
             return self._err(400, "MISSING_SCOPE", "变更项缺少页面或配置目标。")
         contract = self._target_contract(params)
+        requested_definition = _text(params.get("current_definition_hash"))
+        actual_definition = str(contract.definition_sha256) if contract else "absent"
+        if requested_definition and requested_definition != actual_definition:
+            return self._err(409, "STALE_CONFIG_DEFINITION", "配置在打开设计器后已改变，请刷新或合并后再保存。")
         current_payload = contract.contract_json if contract else {}
         current_hash = self._menu_state_hash(draft_payload, record.company_id.id) if config_type == "menu" else stable_payload_hash(current_payload)
         requested_hash = _text(params.get("current_payload_hash"))
@@ -226,7 +296,8 @@ class BusinessConfigChangeSetStageHandler(_ChangeSetBase):
             "role_key": _text(params.get("role_key")) or False,
             "target_contract_id": contract.id if contract else False,
             "base_version_no": int(contract.version_no or 0) if contract else 0,
-            "base_payload_hash": current_hash,
+            "base_payload_hash": (stable_payload_hash({**contract._definition_payload(), "status": contract.status})
+                                  if contract and config_type != "menu" else current_hash),
             "draft_payload": draft_payload,
             "diff_summary": params.get("diff_summary") if isinstance(params.get("diff_summary"), dict) else {},
             "reversible": True,
@@ -237,6 +308,8 @@ class BusinessConfigChangeSetStageHandler(_ChangeSetBase):
         Item = self.env[ITEM_MODEL].sudo()
         item = Item.search([("change_set_id", "=", record.id), ("target_key", "=", target_key)], limit=1)
         if item:
+            if item.base_payload_hash != values["base_payload_hash"]:
+                return self._err(409, "STALE_CONFIG_DEFINITION", "草稿基线已变化，请先刷新并合并配置；不能直接覆盖保存。")
             item.write(values)
         else:
             item = Item.create(values)
@@ -249,6 +322,7 @@ class BusinessConfigChangeSetValidateHandler(_ChangeSetBase):
     NON_IDEMPOTENT_ALLOWED = "records validation results on owner-scoped draft items"
 
     def _validate_item(self, item) -> dict:
+        self._authenticate_item(item)
         errors = []
         payload = item.draft_payload if isinstance(item.draft_payload, dict) else {}
         if item.model not in self.env:
@@ -305,6 +379,11 @@ class BusinessConfigChangeSetPreviewHandler(BusinessConfigChangeSetValidateHandl
             return self._err(422, "CHANGE_SET_VALIDATION_FAILED", "草稿校验未通过，不能预览。")
         record.write({"state": "ready", "failure_message": False})
         token = record.with_env(self.env).issue_preview_token()
+        try:
+            final_contracts = [self._compile_form_item(item, token) for item in record.item_ids]
+        except (ValueError, ValidationError, AccessError) as exc:
+            record.write({"state": "failed", "failure_message": str(exc)})
+            return self._err(422, "FINAL_CONTRACT_VALIDATION_FAILED", "预览契约校验失败。", {"message": str(exc)})
         mutation_rows = self.env["ui.business.config.mutation.audit"].sudo().search([("trace_id", "=", trace_id)])
         contract_mutations = mutation_rows.filtered(lambda row: row.target_model == "ui.business.config.contract")
         version_mutations = mutation_rows.filtered(lambda row: row.target_model == "ui.business.config.contract.version")
@@ -322,6 +401,8 @@ class BusinessConfigChangeSetPreviewHandler(BusinessConfigChangeSetValidateHandl
                 "formal_config_mutation_count": len(mutation_rows),
                 "mutation_trace_id": trace_id,
                 "items": [item.serialize(include_payload=True) for item in record.item_ids],
+                "final_contract_verification": final_contracts,
+                "page_behavior_verification": "not_run",
             },
         })
 
@@ -334,12 +415,16 @@ class BusinessConfigChangeSetPublishHandler(_ChangeSetBase):
         if item.config_type == "menu":
             return self._menu_state_hash(item.draft_payload or {}, item.change_set_id.company_id.id)
         contract = item.target_contract_id.exists()
-        return stable_payload_hash(contract.contract_json if contract else {})
+        return stable_payload_hash({**contract._definition_payload(), "status": contract.status} if contract else {})
 
     def _lock_publish_scope(self, record) -> None:
         self.env.cr.execute("SELECT id FROM ui_business_config_change_set WHERE id = %s FOR UPDATE", [record.id])
         for target_key in sorted(set(record.item_ids.mapped("target_key"))):
             self.env.cr.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", ["ui.business.config:%s" % target_key])
+        contracts = record.item_ids.mapped("target_contract_id")
+        if contracts:
+            self.env.cr.execute("SELECT id FROM ui_business_config_contract WHERE id IN %s ORDER BY id FOR UPDATE", [tuple(contracts.ids)])
+            contracts.invalidate_recordset()
 
     def _snapshot(self, record) -> dict:
         contracts = []
@@ -351,6 +436,7 @@ class BusinessConfigChangeSetPublishHandler(_ChangeSetBase):
                 "contract_id": int(contract.id or 0),
                 "exists": bool(contract),
                 "values": {
+                    "definition": contract._definition_payload(),
                     "contract_json": contract.contract_json or {},
                     "status": str(contract.status or "draft"),
                     "version_no": int(contract.version_no or 1),
@@ -386,8 +472,12 @@ class BusinessConfigChangeSetPublishHandler(_ChangeSetBase):
         }
 
     def _publish_contract_item(self, item):
+        self._authenticate_item(item)
         Contract = self.env["ui.business.config.contract"].sudo()
         contract = item.target_contract_id.exists()
+        if contract:
+            self._assert_contract_scope(contract, {"model": item.model, "action_id": item.action_id,
+                                                  "view_id": item.view_id, "role_key": item.role_key})
         values = {
             "name": item.target_key,
             "model": item.model,
@@ -396,6 +486,7 @@ class BusinessConfigChangeSetPublishHandler(_ChangeSetBase):
             "view_id": item.view_id or False,
             "role_key": item.role_key or False,
             "company_id": item.change_set_id.company_id.id,
+            "active": True,
             "contract_json": item.draft_payload or {},
             "status": "draft",
         }
@@ -486,17 +577,23 @@ class BusinessConfigChangeSetPublishHandler(_ChangeSetBase):
                             if int(row.get("item_id") or 0) == item.id and not row.get("exists"):
                                 row["contract_id"] = int(result.get("contract_id") or 0)
                                 break
-                    runtime_verified = self._verify_runtime_item(item)
-                    if not runtime_verified:
+                    published_content_verified = self._verify_runtime_item(item)
+                    if not published_content_verified:
                         raise ValidationError("发布后运行态投影验证失败：%s" % item.target_key)
+                    final_contract = self._compile_form_item(item)
                     post_publish_hash = self._current_hash(item)
-                    item.write({"publish_result": {**result, "post_publish_hash": post_publish_hash, "runtime_verified": True}})
-                    results.append({"item_id": int(item.id), "config_type": item.config_type, "result": result, "post_publish_hash": post_publish_hash, "runtime_verified": True})
+                    verification = {"published_content_verified": True, "final_contract_verification": final_contract,
+                                    "page_behavior_verification": "not_run", "runtime_verified": final_contract["status"] == "passed"}
+                    item.write({"publish_result": {**result, "post_publish_hash": post_publish_hash, **verification}})
+                    results.append({"item_id": int(item.id), "config_type": item.config_type, "result": result, "post_publish_hash": post_publish_hash, **verification})
                 record.write({
                     "state": "published",
                     "published_at": fields.Datetime.now(),
                     "rollback_snapshot_json": snapshot,
-                    "publish_result_json": {"ok": True, "request_id": request_id, "items": results, "runtime_verified": True},
+                    "publish_result_json": {"ok": True, "request_id": request_id, "items": results,
+                                            "published_content_verified": True,
+                                            "runtime_verified": all(row["runtime_verified"] for row in results),
+                                            "page_behavior_verification": "not_run"},
                 })
         except Exception as exc:
             record.write({"state": "failed", "failure_message": str(exc), "publish_request_id": False})
@@ -532,6 +629,7 @@ class BusinessConfigChangeSetRollbackHandler(_ChangeSetBase):
         if record.state != "published":
             return self._err(409, "CHANGE_SET_NOT_PUBLISHED", "只有已发布变更集可以回滚。")
         publish_handler = BusinessConfigChangeSetPublishHandler(env=self.env)
+        publish_handler._lock_publish_scope(record)
         conflicts = []
         for item in record.item_ids:
             expected_hash = _text((item.publish_result or {}).get("post_publish_hash"))
@@ -548,9 +646,18 @@ class BusinessConfigChangeSetRollbackHandler(_ChangeSetBase):
                 contract = self.env["ui.business.config.contract"].sudo().browse(contract_id).exists()
                 if contract and row.get("exists"):
                     values = row.get("values") if isinstance(row.get("values"), dict) else {}
-                    contract.replace_and_publish(values.get("contract_json") or {})
+                    if contract.company_id != record.company_id:
+                        raise AccessError("回滚目标公司已改变。")
+                    definition = {key: value for key, value in (values.get("definition") or {}).items()
+                                  if key in {"name", "model", "view_type", "action_id", "view_id", "role_key", "priority", "company_id", "active"}}
+                    definition = {key: (value or False) if key in {"action_id", "view_id", "company_id", "view_type", "role_key"} else value for key, value in definition.items()}
+                    contract.replace_and_publish(values.get("contract_json") or {}, values=definition)
+                    if values.get("status") == "draft":
+                        contract.write({"status": "draft"})
                     restored.append({"contract_id": contract_id, "version_no": int(contract.version_no)})
                 elif contract and not row.get("exists"):
+                    if contract.company_id != record.company_id:
+                        raise AccessError("回滚目标公司已改变。")
                     contract.write({"active": False})
                     restored.append({"contract_id": contract_id, "deactivated": True})
             for row in snapshot.get("menu_policies") or []:
@@ -565,6 +672,7 @@ class BusinessConfigChangeSetRollbackHandler(_ChangeSetBase):
                     policy.write(row.get("values") or {})
                 elif policy and not row.get("exists"):
                     policy.unlink()
+            final_contracts = [self._compile_form_item(item, rollback=True) for item in record.item_ids]
             rollback_batch = self.env[CHANGE_SET_MODEL].sudo().create({
                 "name": "回滚：%s" % record.name,
                 "user_id": self.env.user.id,
@@ -574,7 +682,10 @@ class BusinessConfigChangeSetRollbackHandler(_ChangeSetBase):
                 "state": "published",
                 "published_at": fields.Datetime.now(),
                 "publish_request_id": request_id,
-                "publish_result_json": {"ok": True, "rollback_of_change_set_id": int(record.id), "restored": restored, "runtime_verified": True},
+                "publish_result_json": {"ok": True, "rollback_of_change_set_id": int(record.id), "restored": restored,
+                                        "published_content_verified": True, "final_contract_verification": final_contracts,
+                                        "runtime_verified": all(row["status"] == "passed" for row in final_contracts),
+                                        "page_behavior_verification": "not_run"},
             })
             record.write({"state": "superseded"})
         return self._ok(rollback_batch.with_env(self.env).serialize())

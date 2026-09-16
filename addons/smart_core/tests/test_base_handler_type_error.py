@@ -66,6 +66,32 @@ class TestBaseHandlerTypeError(unittest.TestCase):
     def setUp(self):
         self.base = _load_base_handler()
 
+    def test_preview_rejects_writes_before_handler_or_group_bypass(self):
+        for intent, params, non_idempotent in [
+            ("api.data", {"op": "create"}, ""),
+            ("api.data", {"op": "write"}, ""),
+            ("api.data", {"op": "unlink"}, ""),
+            ("file.upload", {}, ""),
+            ("action.execute", {}, ""),
+            ("custom.operation", {}, "mutation"),
+        ]:
+            with self.subTest(intent=intent, params=params):
+                class Handler(self.base.BaseIntentHandler):
+                    INTENT_TYPE = intent
+                    NON_IDEMPOTENT_ALLOWED = non_idempotent
+                    def handle(self):
+                        self.fail_if_called = True
+                        raise AssertionError("preview reached mutation")
+                result = Handler(env=_FakeEnv()).run(payload={"intent": intent, "params": params}, ctx={"business_config_preview_token": "test"})
+                self.assertEqual(result["error"]["code"], "CONFIG_PREVIEW_READ_ONLY")
+
+    def test_preview_still_allows_read_handler(self):
+        class Handler(self.base.BaseIntentHandler):
+            INTENT_TYPE = "api.data"
+            def handle(self):
+                return {"ok": True}
+        self.assertTrue(Handler(env=_FakeEnv()).run(payload={"params": {"op": "read", "preview_token": "test"}})["ok"])
+
     def test_internal_type_error_is_not_swallowed_by_signature_fallback(self):
         calls = []
         base_cls = self.base.BaseIntentHandler

@@ -8,10 +8,12 @@ from typing import Any
 from lxml import etree as ET
 
 from odoo import api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 from odoo.addons.smart_core.utils.backend_contract_boundaries import (
     classify_view_orchestration_contract,
     view_orchestration_apply_order_key,
+    ensure_view_orchestration_source,
+    VIEW_ORCHESTRATION_SOURCE_TENANT_LOWCODING,
 )
 from odoo.addons.smart_core.utils.business_config_mutation_audit import record_business_config_mutation
 from odoo.addons.smart_core.core.view_contract_presence import (
@@ -78,7 +80,7 @@ class ViewOrchestrationContractProjection:
             action_id=int(item.action_id or 0),
             view_id=int(item.view_id or 0),
             role_key=str(item.role_key or ""),
-            priority=1_000_000,
+            priority=int(item.target_contract_id.priority or 100) if item.target_contract_id else 100,
             version_no=int(item.base_version_no or 0) + 1,
             status="preview",
             source_kind="change_set_preview",
@@ -133,6 +135,10 @@ class UIBusinessConfigContract(models.Model):
         normalized_vals = []
         for values in vals_list:
             row = dict(values)
+            if not self.env.su:
+                row = self._tenant_write_values(row)
+                for key in ("source_authority_json", "published_at", "version_no", "definition_sha256"):
+                    row.pop(key, None)
             payload = row.get("contract_json") if isinstance(row.get("contract_json"), dict) else {}
             row["payload_sha256"] = payload_sha256(payload)
             row.setdefault("source_authority_json", self.source_authority_contract())
@@ -146,7 +152,11 @@ class UIBusinessConfigContract(models.Model):
         return records
 
     def write(self, vals):
-        if self.env.context.get("contract_lifecycle_internal"):
+        if not self.env.su:
+            if any(record.company_id != self.env.company for record in self):
+                raise AccessError("不能修改当前公司之外的配置或产品全局默认。")
+            vals = self._tenant_write_values(dict(vals))
+        if self.env.su and self.env.context.get("contract_lifecycle_internal"):
             return super().write(vals)
         protected = {"payload_sha256", "definition_sha256", "source_authority_json", "published_at", "version_no"}
         definition_fields = {
@@ -200,6 +210,10 @@ class UIBusinessConfigContract(models.Model):
         return result
 
     def unlink(self):
+        if not self.env.su:
+            self._tenant_write_values({})
+            if any(record.company_id != self.env.company for record in self):
+                raise AccessError("不能删除其他公司配置或产品默认配置。")
         record_business_config_mutation(self, "unlink")
         return super().unlink()
 
@@ -625,6 +639,7 @@ class UIBusinessConfigContract(models.Model):
             "kpis",
             "sections",
             "layout",
+            "node_patches",
         }
         dict_keys = {
             "defaults",
@@ -876,11 +891,29 @@ class UIBusinessConfigContract(models.Model):
             })
         return True
 
+    def _tenant_write_values(self, values):
+        if not (self.env.user.has_group("smart_core.group_smart_core_business_config_admin") or
+                self.env.user.has_group("smart_core.group_smart_core_admin")):
+            raise AccessError("只有授权配置管理员可以维护企业配置。")
+        if "company_id" in values and values["company_id"] != self.env.company.id:
+            raise AccessError("企业配置必须限定当前公司。")
+        if "contract_json" in values:
+            values["contract_json"] = ensure_view_orchestration_source(
+                values["contract_json"], VIEW_ORCHESTRATION_SOURCE_TENANT_LOWCODING,
+            )
+        return values
+
     def replace_and_publish(self, payload: dict, *, values: dict | None = None):
         if not isinstance(payload, dict):
             raise ValidationError("Contract payload must be a JSON object.")
         for record in self:
             update = dict(values or {})
+            if not self.env.su:
+                if record.company_id != self.env.company:
+                    raise AccessError("不能发布当前公司之外的配置。")
+                checked = self._tenant_write_values({**update, "contract_json": payload})
+                payload = checked.pop("contract_json")
+                update = checked
             update.update({
                 "contract_json": payload,
                 "status": "draft",
@@ -918,6 +951,10 @@ class UIBusinessConfigContract(models.Model):
         return self.replace_and_publish(version.snapshot_json or {}, values=restored_values)
 
     def action_publish(self):
+        if not self.env.su:
+            self._tenant_write_values({})
+            if any(record.company_id != self.env.company for record in self):
+                raise AccessError("不能发布当前公司之外的配置。")
         return self._append_published_version()
 
 

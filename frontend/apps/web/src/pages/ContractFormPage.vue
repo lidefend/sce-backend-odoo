@@ -23,22 +23,30 @@
     <h1 v-if="initialFormLoading" class="sc-visually-hidden">{{ pageDisplayTitle }}</h1>
     <ContractFormProductHeader
       v-if="!initialFormLoading && !recordMissing && !renderErrorMessage && status !== 'error'"
-      :title="pageDisplayTitle" :subtitle="pageDisplaySubtitle" :hide-title="suppressPageHeaderTitle" :show-hud="showHud"
+      :title="pageDisplayTitle" :subtitle="pageDisplaySubtitle" :hide-title="!isConfigurationPreview && suppressPageHeaderTitle" :show-hud="showHud"
       :model="model" :record-id-display="recordIdDisplay" :action-id="actionId" :contract-meta-line="contractMetaLine"
       :intake-mode="isIntakeCreateMode" :intake-required-summary="intakeRequiredSummary" :intake-missing-summary="intakeMissingSummary" :statusbar="nativeStatusbar"
-      :status-interactive="nativeStatusbar.visible && !nativeStatusbar.readonly"
+      :status-interactive="!isConfigurationPreview && nativeStatusbar.visible && !nativeStatusbar.readonly"
       :presentation-mode="canonicalProductFloorplan?.decisionMode ? 'task' : 'workspace'"
       :mode="renderProfile" :mode-label="currentRenderProfileLabel" :dirty="hasChanges" :changed-field-count="changedFieldCount"
       :show-back="true"
       :back-label="formExitPresentation.label"
       :back-semantic-identity="formExitPresentation.semanticIdentity"
-      :busy="busy || status === 'loading'" :busy-kind="busyKind" :show-return="showReturnToBusinessConfigAction" :show-draft-save="!canonicalProductRendererActive && showDraftSaveAction" :draft-save-disabled="draftSaveDisabled" :draft-save-label="draftSaveButtonLabel"
-      :show-primary-form-action="!canonicalProductRendererActive && showPrimaryBusinessFormAction" :primary-form-action-disabled="primaryFormActionDisabled" :primary-form-action-hint="primaryFormActionHint" :submit-label="submitButtonLabel" :primary-action="primaryBusinessFormAction"
-      :direct-actions="canonicalProductRendererActive ? [] : headerBusinessDirectActions" :overflow-actions="canonicalProductRendererActive ? [] : headerBusinessOverflowActions" :config-actions="canonicalProductRendererActive ? [] : headerConfigActionsVisible" :canonical-direct-actions="canonicalProductRendererActive ? canonicalHeaderActions.direct : []" :canonical-overflow-actions="canonicalProductRendererActive ? canonicalHeaderActions.overflow : []"
+      :busy="busy || status === 'loading'" :busy-kind="busyKind" :show-return="showReturnToBusinessConfigAction" :show-draft-save="!isConfigurationPreview && !canonicalProductRendererActive && showDraftSaveAction" :draft-save-disabled="draftSaveDisabled" :draft-save-label="draftSaveButtonLabel"
+      :show-primary-form-action="!isConfigurationPreview && !canonicalProductRendererActive && showPrimaryBusinessFormAction" :primary-form-action-disabled="primaryFormActionDisabled" :primary-form-action-hint="primaryFormActionHint" :submit-label="submitButtonLabel" :primary-action="primaryBusinessFormAction"
+      :direct-actions="isConfigurationPreview || canonicalProductRendererActive ? [] : headerBusinessDirectActions" :overflow-actions="isConfigurationPreview || canonicalProductRendererActive ? [] : headerBusinessOverflowActions" :config-actions="isConfigurationPreview || canonicalProductRendererActive ? [] : headerConfigActionsVisible" :canonical-direct-actions="!isConfigurationPreview && canonicalProductRendererActive ? canonicalHeaderActions.direct : []" :canonical-overflow-actions="!isConfigurationPreview && canonicalProductRendererActive ? canonicalHeaderActions.overflow : []"
       :show-discard="showDiscardAction" :show-debug="showDebugActionsVisible" :contract-present="Boolean(contract)" :discard-label="formUiLabel('discard')" :reload-label="formUiLabel('reload')"
       @back="returnToPreviousPage" @set-status="setStatusbarValue" @return-workbench="returnToBusinessConfigDesigner" @save-draft="saveRecord()"
       @run-primary="runPrimaryFormAction" @run-action="runAction" @canonical-action="runCanonicalFormAction($event.actionRef)" @canonical-save="saveRecord()" @discard="discardChanges" @copy="copyContractJson" @export="exportContractJson" @reload="reload"
-    />
+    >
+      <template #notice>
+    <ScInlineState v-if="isConfigurationPreview" class="configuration-preview-banner" data-configuration-preview>
+      <strong>未发布配置预览 · 不产生业务写入</strong>
+      <div>{{ pageDisplayTitle }} · 入口 {{ actionId }} · 公司 {{ session.recordContext?.company_name || session.recordContext?.selected?.company_name || session.recordContext?.company_id || '待验证' }} · 视图 {{ route.query.view_id }} · {{ route.query.preview_role_key }}</div>
+      <a :href="configurationDesignerUrl">返回设计器</a>
+    </ScInlineState>
+      </template>
+    </ContractFormProductHeader>
     <ProductFormLoadingSkeleton v-if="initialFormLoading" :loading-label="`正在载入${pageDisplayTitle || '表单'}`" />
     <StatusPanel v-else-if="renderErrorMessage" :title="pageDisplayTitle" :message="renderErrorMessage" variant="error" :on-retry="reload" />
     <StatusPanel v-else-if="status === 'error'" :title="pageDisplayTitle" :message="errorMessage" :error-code="loadError.status" :reason-code="loadError.reason" :trace-id="loadError.trace" variant="error" :on-retry="reload" />
@@ -47,7 +55,7 @@
       :appearance="isIntakeCreateMode ? 'flow' : 'main-surface'" :bordered="!isIntakeCreateMode"
       :aria-busy="status === 'loading' || undefined" data-workspace-primary-content>
       <ContractFormActionBlocks
-        v-if="!canonicalProductFloorplan?.decisionMode && ((pageSectionEnabled('next_actions', true) && pageSectionTagIs('next_actions', 'section')) || (pageSectionEnabled('stat_buttons', true) && pageSectionTagIs('stat_buttons', 'div')))"
+        v-if="!isConfigurationPreview && !canonicalProductFloorplan?.decisionMode && ((pageSectionEnabled('next_actions', true) && pageSectionTagIs('next_actions', 'section')) || (pageSectionEnabled('stat_buttons', true) && pageSectionTagIs('stat_buttons', 'div')))"
         :style="[pageSectionStyle('next_actions'), pageSectionStyle('stat_buttons')]"
         :active-filter-key="activeFilterKey"
         :body-actions="bodyActions"
@@ -94,8 +102,13 @@
           :blocks="sceneReadyFormSurface.sceneBlocks"
           @action="handleSceneBlockAction"
         />
+        <BoundFormSettingsPanel
+          v-if="showCurrentFormFieldConfigScope && boundFormDesignerSnapshot"
+          :snapshot="boundFormDesignerSnapshot"
+          :role-key="String(session.roleSurface?.role_code || '')"
+        />
         <CurrentFormFieldSettingsPanel
-          v-if="showCurrentFormFieldConfigScope"
+          v-else-if="showCurrentFormFieldConfigScope"
           v-model:field-search-text="formDesignerFieldSearchText"
           v-model:order-placement="selectedFormSettingsOrderPlacement"
           v-model:order-target-key="selectedFormSettingsOrderTargetKey"
@@ -152,7 +165,7 @@
           @action-ref="runCanonicalFormAction"
           @save="saveRecord()"
         />
-        <ContractFormNativeCanvas v-else
+        <ContractFormNativeCanvas v-else-if="!boundFormDesignerSnapshot"
           :button-label-resolver="resolveNativeButtonLabel"
           :collaboration-panel-listeners="nativeCollaborationPanelListeners"
           :collaboration-panel-props="nativeCollaborationPanelProps"
@@ -198,7 +211,7 @@
           @native-action="runNativeLayoutAction"
         />
         <ContractModeSupportPanel
-          v-if="!canonicalProductRendererActive"
+          v-if="!canonicalProductRendererActive && !boundFormDesignerSnapshot"
           :active-actions="activeContractModeActions"
           :advanced-expanded="advancedExpanded"
           :busy="busy"
@@ -262,6 +275,7 @@
   </LayoutShell>
 </template>
 <script setup lang="ts">
+import ScInlineState from '../components/design-system/ScInlineState.vue';
 import { computed, nextTick, onErrorCaptured, onMounted, provide, reactive, ref, shallowRef, watch } from 'vue';
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router';
 import StatusPanel from '../components/StatusPanel.vue';
@@ -301,6 +315,7 @@ import {
 } from './contractForm/relationCreateDialogRuntime';
 import ContractModeSupportPanel from './contractForm/ContractModeSupportPanel.vue';
 import CurrentFormFieldSettingsPanel from './contractForm/CurrentFormFieldSettingsPanel.vue';
+import BoundFormSettingsPanel from './contractForm/BoundFormSettingsPanel.vue';
 import ContractFormActionBlocks from './contractForm/ContractFormActionBlocks.vue';
 import ContractFormProductHeader from './contractForm/ContractFormProductHeader.vue';
 import { resolveCanonicalHeaderActionPresentation } from './contractForm/contractFormHeaderCanonicalActions';
@@ -1131,6 +1146,12 @@ function recordVersionPolicy() {
   if (!tokenField || requestParam !== 'if_match') return null;
   return { tokenField };
 }
+const isConfigurationPreview = computed(() => Boolean(route.query.preview_token));
+const configurationDesignerUrl = computed(() => {
+  const query = { ...route.query, config_mode: 'form_field_configuration', change_set_token: route.query.designer_token };
+  delete query.preview_token; delete query.preview_role_key; delete query.designer_token;
+  return router.resolve({ path: route.path, query }).href;
+});
 const requestedRenderProfile = computed<'create' | 'edit' | 'readonly'>(() => (
   resolveRequestedContractRenderProfile({ routeName: route.name, recordId: recordId.value })
 ));
@@ -1155,9 +1176,9 @@ const rights = computed(() => {
   return { read: false, write: false, create: false, unlink: false, duplicate: false };
 });
 const canSave = computed(() => (
-  renderProfile.value === 'edit'
+  !isConfigurationPreview.value && (renderProfile.value === 'edit'
     ? rights.value.write
-    : renderProfile.value === 'create' && rights.value.create
+    : renderProfile.value === 'create' && rights.value.create)
 ));
 const { driverConfig: contractFormDriverConfig, changeDriver: changeContractFormDriver } = useContractFormComponentDriverRuntime({
   actionId: () => actionId.value || 0, model: () => model.value, renderMode: () => renderProfile.value,
@@ -1865,4 +1886,12 @@ useFormAuxiliaryWatchersRuntime({
   router,
 });
 watch(() => route.query.config_mode, (mode) => applyRouteConfigMode(mode), { immediate: true });
+const boundFormDesignerSnapshot = computed(() => {
+  const snapshot = v2ContractStore.value?.snapshot;
+  return snapshot?.formStructureContract?.layoutPolicy === 'container_tree_authority' ? snapshot : null;
+});
 </script><style scoped src="./contractForm/ContractFormPage.css"></style>
+
+<style scoped>
+.configuration-preview-banner { border: 2px solid var(--sc-app-info-border); }
+</style>

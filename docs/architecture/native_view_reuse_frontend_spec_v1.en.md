@@ -102,3 +102,7 @@ From this spec onward:
 
 Native Odoo views define the base page structure, backend provides unified semantics, frontend renders generically, and high-value scenes receive product enhancements.
 
+
+## Effective runtime structure (2026-09-16)
+
+Native views provide the complete default baseline, not the exclusive layout authoring source. The backend composes authorized industry defaults, customer preferences and administrator configuration, validates business and security constraints, and emits one effective tree shared by content, navigation and preview. Restrictions on rewriting native structure prohibit client-side reinterpretation and duplicate defaults, not legitimate low-code layout configuration. See `native_first_form_structure_authority_v1.md` for identity, conflict and lifecycle rules.

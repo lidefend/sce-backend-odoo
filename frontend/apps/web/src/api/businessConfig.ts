@@ -65,12 +65,13 @@ export interface StageBusinessConfigChangeSetItemParams {
   role_key?: string;
   current_contract_id?: number;
   current_payload_hash?: string;
+  current_definition_hash?: string;
   draft_payload: Record<string, unknown>;
   diff_summary: Record<string, unknown>;
   risk_level?: BusinessConfigChangeSetItem['risk_level'];
 }
 
-export function openBusinessConfigChangeSet(params: { role_key?: string; name?: string } = {}) {
+export function openBusinessConfigChangeSet(params: { role_key?: string; name?: string; fresh?: boolean } = {}) {
   return intentRequest<BusinessConfigChangeSet>({ intent: BUSINESS_CONFIG_INTENTS.changeSetOpen, params });
 }
 

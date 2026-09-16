@@ -1097,7 +1097,7 @@ class TestSingleStructureResolution(unittest.TestCase):
         provenance = resolved["business_config_contracts"]
         self.assertTrue(provenance)
         for row in provenance:
-            self.assertTrue(set(row).issubset({"id", "name", "priority", "view_type", "version_no"}), row)
+            self.assertTrue(set(row).issubset({"id", "name", "priority", "view_type", "version_no", "source_kind"}), row)
         self.assertIn("status", result["source_trace"]["view_orchestration"]["business_config_contracts"][0])
         helper = sys.modules["odoo.addons.smart_core.core.form_structure_authority"]
         first = _Config({"view_orchestration": {"views": {"form": {"composition_mode": "native_semantic_surface", "help": "help"}}}})
@@ -1138,6 +1138,160 @@ class TestSingleStructureResolution(unittest.TestCase):
         self.assertEqual(diagnostic["configuration"]["name"], "demo")
         self.assertEqual(diagnostic["key"], "sections")
         self.assertEqual(diagnostic["node"], "view_orchestration.views.form.sections")
+
+class TestConfiguredNativeTree(unittest.TestCase):
+    def setUp(self):
+        _load_orchestrator()
+        from odoo.addons.smart_core.core.form_configuration_compiler import compile_form_configuration
+        self.compile = compile_form_configuration
+        self.tree = [{"type": "group", "name": "identity", "native_locator": "/form/group[1]", "occurrence_index": 1,
+                      "children": [{"type": "field", "name": name, "native_locator": "/form/group[1]/field[%s]" % i,
+                                    "occurrence_index": 1, "source_position": i} for i, name in enumerate(("name", "email"), 1)]}]
+
+    def config(self, patches, identifier=1):
+        from types import SimpleNamespace
+        return SimpleNamespace(id=identifier, name="view_orchestration:sample:%s" % identifier,
+                               contract_json={"view_orchestration": {"context": {"source": "smart_core.lowcode.business_config"},
+                                              "views": {"form": {"node_patches": patches}}}},
+                               action_id=546, view_id=1431, role_key="business_config_admin", priority=100, version_no=1)
+
+    def patch(self, field=0, **values):
+        node = self.tree[0]["children"][field]
+        return {"target": node["native_locator"], "expected": {key: node.get(key) for key in ("type", "name", "occurrence_index")}, "set": values}
+
+    def test_label_order_group_and_visibility_preserve_occurrences(self):
+        group = self.tree[0]
+        patch = {"target": group["native_locator"], "expected": {key: group.get(key) for key in ("type", "name", "occurrence_index")},
+                 "order": [node["native_locator"] for node in reversed(group["children"])],
+                 "group": {"key": "contact", "label": "Contact", "members": [group["children"][1]["native_locator"]]}}
+        out, trace = self.compile(self.tree, [self.config([self.patch(label="Configured"), self.patch(1, visible=False), patch])])
+        self.assertEqual(out[0]["children"][0]["name"], "contact")
+        self.assertEqual(out[0]["children"][1]["label"], "Configured")
+        self.assertTrue(out[0]["children"][0]["children"][0]["invisible"])
+        self.assertEqual(out[0]["children"][0]["children"][0]["native_locator"], self.tree[0]["children"][1]["native_locator"])
+        self.assertEqual(len(trace), 3)
+        self.assertNotIn("label", self.tree[0]["children"][0])
+
+    def test_readonly_cannot_be_relaxed(self):
+        self.tree[0]["children"][0]["modifiers"] = {"readonly": "state != 'draft'"}
+        with self.assertRaisesRegex(ValueError, "CONFIG_BUSINESS_CONSTRAINT_RELAXED"):
+            self.compile(self.tree, [self.config([self.patch(readonly=False)])])
+
+    def test_business_required_cannot_be_hidden(self):
+        with self.assertRaisesRegex(ValueError, "CONFIG_REQUIRED_FIELD_HIDDEN"):
+            self.compile(self.tree, [self.config([self.patch(visible=False)])], fields_meta={"name": {"required": True}})
+
+    def test_stale_identity_never_falls_back_to_same_name(self):
+        patch = self.patch(label="Changed")
+        patch["target"] = "/obsolete/name"
+        with self.assertRaisesRegex(ValueError, "CONFIG_TARGET_STALE"):
+            self.compile(self.tree, [self.config([patch])])
+
+    def test_same_priority_conflict_is_independent_of_database_id_and_order(self):
+        configs = [self.config([self.patch(label="A")], 1), self.config([self.patch(label="B")], 99)]
+        for rows in (configs, list(reversed(configs))):
+            with self.assertRaisesRegex(ValueError, "CONFIG_SAME_PRIORITY_CONFLICT"):
+                self.compile(self.tree, rows)
+
+    def test_distinct_properties_coexist(self):
+        out, _ = self.compile(self.tree, [self.config([self.patch(label="A")]), self.config([self.patch(readonly=True)], 2)])
+        self.assertTrue(out[0]["children"][0]["readonly"])
+        self.assertTrue(out[0]["children"][0]["fieldInfo"]["readonly"])
+        self.assertTrue(out[0]["children"][0]["modifiers"]["readonly"])
+        self.assertEqual(out[0]["children"][0]["label"], "A")
+
+    def test_hidden_native_field_cannot_be_revealed(self):
+        self.tree[0]["children"][0]["invisible"] = True
+        with self.assertRaisesRegex(ValueError, "CONFIG_VISIBILITY_CONSTRAINT_RELAXED"):
+            self.compile(self.tree, [self.config([self.patch(visible=True)])])
+
+    def group_patch(self, **changes):
+        group = self.tree[0]
+        return {"target": group["native_locator"], "expected": {key: group.get(key) for key in
+                ("type", "name", "occurrence_index")}, **changes}
+
+    def test_parent_hide_child_required_rejected_in_both_orders(self):
+        patches = [self.group_patch(set={"visible": False}), self.patch(required=True)]
+        errors = []
+        for order in (patches, list(reversed(patches))):
+            with self.assertRaisesRegex(ValueError, "CONFIG_REQUIRED_FIELD_HIDDEN") as error:
+                self.compile(self.tree, [self.config(order)])
+            errors.append(str(error.exception))
+        self.assertEqual(errors[0], errors[1])
+
+    def test_cross_configuration_final_constraints_are_order_independent(self):
+        configs = [self.config([self.group_patch(set={"visible": False})], 1),
+                   self.config([self.patch(required=True)], 2)]
+        for order in (configs, list(reversed(configs))):
+            with self.assertRaisesRegex(ValueError, "CONFIG_REQUIRED_FIELD_HIDDEN"):
+                self.compile(self.tree, order)
+        override = self.config([self.patch(required=False)], 3)
+        override.priority = 200
+        a, _ = self.compile(self.tree, configs + [override])
+        b, _ = self.compile(self.tree, [override] + list(reversed(configs)))
+        self.assertEqual(a, b)
+        self.assertFalse(a[0]["children"][0]["required"])
+
+    def test_hidden_override_is_checked_only_after_merge(self):
+        low = self.config([self.group_patch(set={"visible": False}), self.patch(required=True)])
+        high = self.config([self.group_patch(set={"visible": True})], 2)
+        high.priority = 200
+        result, _ = self.compile(self.tree, [high, low])
+        self.assertTrue(result[0]["visible"])
+        self.assertTrue(result[0]["children"][0]["required"])
+
+    def test_grouping_cannot_hide_required_constraints(self):
+        from itertools import permutations
+        patches = [self.group_patch(set={"visible": False}, group={"key": "new", "members": [self.tree[0]["children"][0]["native_locator"]]}),
+                   self.patch(required=True), self.patch(1, label="Unrelated")]
+        for order in permutations(patches):
+            with self.assertRaisesRegex(ValueError, "CONFIG_REQUIRED_FIELD_HIDDEN"):
+                self.compile(self.tree, [self.config(list(order))])
+
+    def test_native_hidden_required_is_preserved_but_not_tightened(self):
+        self.tree[0]["modifiers"] = {"invisible": "state != 'draft'"}
+        self.tree[0]["children"][0]["required"] = True
+        result, _ = self.compile(self.tree, [self.config([self.patch(1, label="Allowed")])])
+        self.assertEqual(result[0]["children"][1]["label"], "Allowed")
+        with self.assertRaisesRegex(ValueError, "CONFIG_REQUIRED_FIELD_HIDDEN"):
+            self.compile(self.tree, [self.config([self.group_patch(set={"visible": False})])])
+        with self.assertRaisesRegex(ValueError, "CONFIG_REQUIRED_FIELD_HIDDEN"):
+            self.compile(self.tree, [self.config([self.patch(1, required=True)])])
+
+    def test_legal_combinations_are_invariant_under_unrelated_patch_order(self):
+        from itertools import permutations
+        patches = [self.group_patch(group={"key": "new", "members": [self.tree[0]["children"][0]["native_locator"]]}),
+                   self.patch(required=True), self.patch(1, visible=False)]
+        outputs = [self.compile(self.tree, [self.config(list(order))]) for order in permutations(patches)]
+        self.assertTrue(all(result == outputs[0] for result in outputs))
+
+    def test_group_members_follow_final_order_not_selection_order(self):
+        first, second = [node["native_locator"] for node in self.tree[0]["children"]]
+        patch = self.group_patch(order=[second, first], group={"key": "new", "members": [first, second]})
+        result, _ = self.compile(self.tree, [self.config([patch])])
+        self.assertEqual([node["native_locator"] for node in result[0]["children"][0]["children"]], [second, first])
+
+    def test_equivalent_boolean_required_preserves_native_baseline(self):
+        self.tree[0]["invisible"] = "1"
+        self.tree[0]["children"][0]["required"] = "1"
+        result, _ = self.compile(self.tree, [self.config([self.patch(required=True)])])
+        self.assertTrue(result[0]["children"][0]["required"])
+
+    def test_same_group_key_in_distinct_parents_has_distinct_navigation_anchors(self):
+        from copy import deepcopy
+        other = deepcopy(self.tree[0])
+        other["native_locator"] = "/form/group[2]"
+        other["occurrence_index"] = 2
+        for child in other["children"]:
+            child["native_locator"] = child["native_locator"].replace("group[1]", "group[2]")
+        tree = self.tree + [other]
+        patches = [{"target": group["native_locator"], "expected": {key: group.get(key) for key in
+                    ("type", "name", "occurrence_index")}, "group": {"key": "designer", "members": [group["children"][0]["native_locator"]]}}
+                   for group in tree]
+        result, _ = self.compile(tree, [self.config(patches)])
+        anchors = [group["children"][0]["attributes"]["data-sc-anchor"] for group in result]
+        self.assertEqual(len(set(anchors)), 2)
+
 
 if __name__ == "__main__":
     unittest.main()
