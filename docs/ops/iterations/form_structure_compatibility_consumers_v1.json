@@ -11324,7 +11324,7 @@
   },
   "uc2LocalMigrationAudit": {
     "auditedAt": "2026-09-16",
-    "status": "local_inbound_outbound_migration_verified_return_product_decision_required",
+    "status": "local_formal_scope_546_547_verified_freeze_pending",
     "productCandidateHead": "f1dbaa9950263f735b0619a08b545f8f199f5982",
     "productCandidateFingerprint": "f9780e4b60fb625cdaa8b73a8cdb7a5217dd1069a989b64d4c5721e7290304da",
     "iterationRecord": "docs/ops/iterations/uc2_material_native_migration_20260916.md",
@@ -11339,7 +11339,7 @@
         1428,
         1431
       ],
-      "countMeaning": "local compatibility migration only; whole UC2 and published count remain pending"
+      "countMeaning": "local UC2 formal-scope compatibility migration; published count remains pending merge"
     },
     "sourceVerification": {
       "layoutPolicy": "container_tree_authority",
@@ -11361,7 +11361,7 @@
       ],
       "formalPrimaryMenuCountUnchanged": 89,
       "returnPath": {
-        "status": "product_decision_required",
+        "status": "out_of_scope_non_formal_capability_followup",
         "formallyReachable": false,
         "actionId": 548,
         "menuId": 496,
@@ -11372,11 +11372,13 @@
         "outboundAllowedBusinessCategoryCodes": [],
         "reason": "no_formal_menu_or_authorized_category_path",
         "directActionAcceptedAsUserPath": false,
-        "supplierReturnExcluded": true
+        "supplierReturnExcluded": true,
+        "scopeDisposition": "outside_uc2_formal_actions_546_547",
+        "followUpDirection": "evaluate a traceable original-outbound return capability: verify source link, returnable quantity, inventory direction, and permissions before defining a formal entry; do not open outbound classification or revive the retired menu"
       }
     },
     "browserEvidence": {
-      "status": "inbound_outbound_passed_return_blocked_product_decision",
+      "status": "uc2_formal_scope_546_547_passed",
       "head": "f1dbaa9950263f735b0619a08b545f8f199f5982",
       "fingerprint": "f9780e4b60fb625cdaa8b73a8cdb7a5217dd1069a989b64d4c5721e7290304da",
       "viewports": [
@@ -11436,13 +11438,18 @@
         "targetVisibleAfterTopNavigation": 1,
         "activeNavigation": "location",
         "draftRetention": "create notes retained across tab changes without save"
-      }
+      },
+      "scopeActions": [
+        546,
+        547
+      ],
+      "returnEvidenceDisposition": "investigation retained; no formal path and no UC2 pass claim"
     }
   },
   "runtimeEvidenceRoot": "artifacts/form-structure-unification/ub-tender-hierarchy-identities",
   "nextBatch": {
     "name": "U-C2",
-    "status": "return_path_product_decision_required",
+    "status": "formal_scope_verified_freeze_pending",
     "priorityActions": [],
     "groups": [
       {
@@ -11470,10 +11477,11 @@
       "actionId": 548,
       "viewId": 1431,
       "acceptedAsFormalPath": false,
-      "requiredDecision": "formal menu, outbound category, or another authorized action path"
+      "scopeDisposition": "out_of_scope_non_formal_capability_followup",
+      "followUpDirection": "traceable original-outbound return capability evaluation before any formal entry decision"
     },
-    "scopeNote": "supplier return remains outside U-C2; return shares view 1431 but has no accepted formal user path and does not add a ledger consumer",
-    "promotionCondition": "after the return-path product decision and consolidated product review close the batch, run freeze preparation, independent review, one exact-head Quick, external evidence archive verification, and remote delivery"
+    "scopeNote": "UC2 formal scope is action 546 inbound and action 547 outbound; supplier return remains separate; return shares view 1431 but is outside the formal 89-entry baseline, has no usable formal path, and does not block or add a ledger consumer",
+    "promotionCondition": "after generated-evidence preflight and clean freeze, complete independent exact-head review, one exact-head Quick, external evidence archive verification, and governed PR delivery"
   },
   "retirementCondition": "Only after every formal consumer of a compatibility regrouping path is zero and other roles/companies/states are covered, remove that regrouping logic and its test exemptions."
 }
