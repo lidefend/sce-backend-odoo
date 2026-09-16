@@ -1785,3 +1785,20 @@ h1 {
 .preview-item dt { color: var(--sc-app-text-secondary); }
 .preview-item dd { margin: 0; color: var(--sc-app-text-primary); }
 @media (max-width: 640px) { .preview-item dl { grid-template-columns: 1fr; } }
+
+.configuration-overview {
+  padding: var(--sc-product-space-3);
+  background: var(--sc-app-panel);
+  border: 1px solid var(--sc-app-border);
+  border-radius: var(--sc-radius-md);
+  overflow-x: auto;
+}
+.configuration-overview table { width: 100%; border-collapse: collapse; }
+.configuration-overview th, .configuration-overview td {
+  padding: var(--sc-product-space-2);
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--sc-app-border);
+}
+.configuration-overview th:first-child { text-align: left; }
+.configuration-overview thead { color: var(--sc-app-text-secondary); }

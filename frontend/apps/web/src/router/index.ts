@@ -12,6 +12,7 @@ import { beginPageIdentity } from '../app/pageIdentityRuntime';
 import { resolveRoutePageIdentity } from '../app/pageIdentityRoute';
 import type { NavMeta } from '@sc/schema';
 import { findRouteAuthority } from '../app/routeAuthority';
+import { resolveAuthorizedConfigurationRoute } from '../services/actionRoutePolicy';
 import { resolveBusinessActivityTitle, shouldDeferActivityPageTitle } from '../app/activityPageTitle';
 import { intentRequest } from '../api/intents';
 
@@ -405,6 +406,12 @@ router.beforeEach(async (to) => {
         query: { from: to.fullPath, reason: 'NAVIGATION_AUTHORITY_DENIED' },
       };
     }
+    const configurationTarget = resolveAuthorizedConfigurationRoute({
+      routeName: String(to.name || ''), routeModel: routeQueryText(to.params.model),
+      authority: routeAuthority as NavMeta | null, authorized: runtimeRouteAuthorized,
+      query: to.query,
+    });
+    if (configurationTarget) return configurationTarget as never;
   }
   if (to.name === 'form-field-config') {
     const node = findActionNodeByModel(session.menuTree, BUSINESS_CONFIG_MODELS.formFieldPolicy);

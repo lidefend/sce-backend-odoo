@@ -211,14 +211,27 @@ class BusinessConfigChangeSetOpenHandler(_ChangeSetBase):
         self._ensure_access()
         role_key = _text(params.get("role_key"))
         ChangeSet = self.env[CHANGE_SET_MODEL].sudo()
-        record = ChangeSet.search([
+        domain = [
             ("user_id", "=", self.env.user.id),
             ("company_id", "=", self.env.company.id),
             ("database_name", "=", self.env.cr.dbname),
             ("role_key", "=", role_key or False),
             ("state", "in", list(ACTIVE_CHANGE_SET_STATES)),
             ("expires_at", ">", fields.Datetime.now()),
-        ], order="id desc", limit=1)
+        ]
+        if _text(params.get("target_key")):
+            domain.append(("item_ids.target_key", "=", _text(params.get("target_key"))))
+        target_model = _text(params.get("target_model"))
+        target_action = _integer(params.get("target_action_id"))
+        if target_model and target_action:
+            domain.extend([("item_ids.model", "=", target_model), ("item_ids.action_id", "=", target_action)])
+            record = ChangeSet.search(domain, order="id desc").filtered(
+                lambda draft: all(item.model == target_model and item.action_id == target_action for item in draft.item_ids)
+            )[:1]
+        else:
+            record = ChangeSet.search(domain, order="id desc", limit=1)
+        if params.get("resume_only") and not record:
+            return self._ok({"change_set": None})
         if params.get("fresh") is True:
             record = ChangeSet.browse()
         if not record:

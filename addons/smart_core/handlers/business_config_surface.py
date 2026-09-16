@@ -8,7 +8,7 @@ from typing import Any
 from odoo.exceptions import AccessError
 
 from ..core.base_handler import BaseIntentHandler
-from ..utils.backend_contract_boundaries import BUSINESS_CONFIG_INTENTS, MENU_CONFIG_INTENTS, MENU_CONFIG_POLICY_MODEL
+from ..utils.backend_contract_boundaries import BUSINESS_CONFIG_INTENTS, MENU_CONFIG_INTENTS, MENU_CONFIG_POLICY_MODEL, is_business_config_runtime_model, classify_view_orchestration_contract
 from ..utils.extension_hooks import call_extension_hook_first
 
 
@@ -242,32 +242,49 @@ class _BusinessConfigSurfaceBase(BaseIntentHandler):
             },
         }
 
+    def _visible_configuration_rows(self):
+        # ORM ACL/record rules remain authoritative, including for administrators.
+        return self.env["ui.business.config.contract"].with_context(active_test=False).search(
+            [("company_id", "in", [False, self.env.company.id])],
+            order="model, view_type, action_id, view_id, role_key, name, id",
+        )
+
     def _snapshot_summary(self) -> dict:
         if "ui.business.config.contract" not in self.env:
             return {}
-        rows = self.env["ui.business.config.contract"].sudo().search(
-            [], order="model, view_type, action_id, view_id, role_key, name, id"
-        )
-        status_counts = {}
-        view_type_counts = {}
-        role_scope_count = 0
-        action_scope_count = 0
+        rows = self._visible_configuration_rows()
+        status_counts, view_type_counts, source_categories = {}, {}, {}
+        source_counts = {key: dict(total=0, draft=0, published=0, disabled=0, saved=0)
+                         for key in ("product_default", "enterprise_configuration", "personal_preference", "unclassified")}
+        role_scope_count = action_scope_count = 0
         for rec in rows:
-            status = _to_text(getattr(rec, "status", "")) or "unknown"
-            view_type = _to_text(getattr(rec, "view_type", "")) or "all"
+            status = "disabled" if not getattr(rec, "active", True) else (_to_text(rec.status) or "unknown")
+            view_type = _to_text(rec.view_type) or "all"
+            boundary = classify_view_orchestration_contract(rec.name, rec.contract_json)
+            if boundary["kind"] in {"tenant_lowcode_configuration", "user_preference_projection"}:
+                # Shared legacy preference projections have no individual owner.
+                category = "enterprise_configuration"
+            elif boundary.get("source") or (hasattr(rec, "get_external_id") and rec.get_external_id().get(rec.id)):
+                category = "product_default"
+            else:
+                category = "unclassified"
+            source_categories[str(rec.id)] = category
+            source_counts[category]["total"] += 1
+            source_counts[category][status] = source_counts[category].get(status, 0) + 1
             status_counts[status] = status_counts.get(status, 0) + 1
             view_type_counts[view_type] = view_type_counts.get(view_type, 0) + 1
-            if _to_text(getattr(rec, "role_key", "")):
-                role_scope_count += 1
-            if _to_int(getattr(getattr(rec, "action_id", None), "id", getattr(rec, "action_id", 0))):
-                action_scope_count += 1
+            role_scope_count += bool(_to_text(rec.role_key))
+            action_scope_count += bool(_ref_id(rec.action_id))
+        if "sc.user.view.preference" in self.env:
+            Preference = self.env["sc.user.view.preference"]
+            count = Preference.search_count([("user_id", "=", self.env.user.id)])
+            source_counts["personal_preference"].update(total=count, saved=count)
         return {
-            "database": _to_text(getattr(getattr(self.env, "cr", None), "dbname", "")),
-            "contract_count": len(rows),
-            "status_counts": dict(sorted(status_counts.items())),
-            "view_type_counts": dict(sorted(view_type_counts.items())),
-            "role_scope_count": role_scope_count,
-            "action_scope_count": action_scope_count,
+            "database": _to_text(self.env.cr.dbname), "contract_count": len(rows),
+            "status_counts": dict(sorted(status_counts.items())), "view_type_counts": dict(sorted(view_type_counts.items())),
+            "role_scope_count": role_scope_count, "action_scope_count": action_scope_count,
+            "overview_scope": "当前公司及共享配置，按当前账号读取权限；个人偏好仅本人。记录状态不代表当前页面实际应用。",
+            "source_counts": source_counts, "source_categories": source_categories,
         }
 
     def _snapshot_contract_row(self, rec) -> dict:
@@ -288,9 +305,7 @@ class _BusinessConfigSurfaceBase(BaseIntentHandler):
     def _snapshot_contract_rows(self) -> list[dict]:
         if "ui.business.config.contract" not in self.env:
             return []
-        rows = self.env["ui.business.config.contract"].sudo().search(
-            [], order="model, view_type, action_id, view_id, role_key, name, id"
-        )
+        rows = self._visible_configuration_rows()
         return sorted([self._snapshot_contract_row(rec) for rec in rows], key=_snapshot_contract_key)
 
     def _snapshot_report(self) -> dict:
@@ -431,6 +446,25 @@ class BusinessConfigSurfaceGetHandler(_BusinessConfigSurfaceBase):
         action_id = _to_int(params.get("action_id") or params.get("actionId"))
         view_id = _to_int(params.get("view_id") or params.get("viewId"))
         role_key = _to_text(params.get("role_key") or params.get("roleKey"))
+        if params.get("business_catalog") and _to_int(params.get("company_id")) not in {0, self.env.company.id}:
+            raise AccessError("CONFIG_SCOPE_CONFLICT: 请求公司与当前授权公司不一致，请切换公司后重试。")
+        if params.get("business_catalog") and role_key:
+            from .ui_contract_v2 import authoritative_form_role_key
+            if role_key != authoritative_form_role_key(self.env):
+                raise AccessError("CONFIG_SCOPE_CONFLICT: 工作台仅支持当前授权角色，请切换角色后重新选择对象。")
+        if params.get("business_catalog") and model:
+            catalog_handler = BusinessConfigCoverageScanHandler(env=self.env)
+            catalog = catalog_handler._business_catalog()
+            action = self.env["ir.actions.act_window"].browse(action_id).exists()
+            if not action or action_id not in catalog or is_business_config_runtime_model(model):
+                raise AccessError("CONFIG_TARGET_UNAVAILABLE: 请选择有权限的正式业务入口。")
+            if action.res_model != model:
+                raise AccessError("CONFIG_SCOPE_CONFLICT: 入口与模型不一致，请重新选择业务页面。")
+            if view_id:
+                view = self.env["ir.ui.view"].browse(view_id).exists()
+                if not view or view.model != model:
+                    raise AccessError("CONFIG_SCOPE_CONFLICT: 视图与业务对象不一致。")
+            self.env[model].check_access_rights("read")
         action_view_types = self._action_view_types(action_id)
         analysis_contract_count = sum(
             self._contract_count(
@@ -688,6 +722,33 @@ class BusinessConfigCoverageScanHandler(_BusinessConfigSurfaceBase):
             if action_id:
                 action_ids.add(action_id)
         return action_ids
+
+    def _business_catalog(self, **identity) -> dict[int, dict]:
+        """Reuse released, permission-filtered product navigation; never widen to raw menus."""
+        from .system_init import SystemInitHandler
+        # system.init already resolves product identity, role, company, publication
+        # and constrained menu overlays. A second DeliveryEngine invocation with
+        # empty runtime context is not the user's actual navigation authority.
+        response = SystemInitHandler(env=self.env).handle(payload={"params": {}})
+        payload = response.data if hasattr(response, "data") else response.get("data", {})
+        payload = payload.get("navigation") or {}
+        result = {}
+        def collect(node, parents):
+            if not isinstance(node, dict):
+                return
+            label = _to_text(node.get("label") or node.get("name") or node.get("title"))
+            meta = node.get("meta") or {}
+            target = meta.get("entry_target") or {}
+            refs = target.get("compatibility_refs") or {}
+            action_id = _to_int(meta.get("action_id")) or _to_int(refs.get("action_id")) or _to_int(node.get("action_id"))
+            menu_id = _to_int(node.get("menu_id")) or _to_int(meta.get("menu_id")) or _to_int(refs.get("menu_id"))
+            if action_id:
+                result.setdefault(action_id, {"menu_id": menu_id, "module_label": " / ".join(parents), "entry_label": label})
+            for child in node.get("children") or []:
+                collect(child, parents + ([label] if label else []))
+        for node in payload.get("nav") or []:
+            collect(node, [])
+        return result
 
     def _delivery_navigation_action_ids(self, *, product_key: str = "", edition_key: str = "", base_product_key: str = "") -> set[int]:
         from odoo.addons.smart_core.delivery.delivery_engine import DeliveryEngine
@@ -1011,8 +1072,10 @@ class BusinessConfigCoverageScanHandler(_BusinessConfigSurfaceBase):
         root_menu_xmlid = _to_text(params.get("root_menu_xmlid") or params.get("rootMenuXmlid"))
         raw_limit = _to_int(params.get("limit")) or 1000
         limit = max(1, min(raw_limit, 2000))
-        actions = [
-            action for action in self._action_rows(
+        catalog = self._business_catalog() if params.get("business_catalog") else None
+        available_actions = self.env["ir.actions.act_window"].search(
+            [("id", "in", list(catalog))] + ([("res_model", "=", model)] if model else []), order="name, id", limit=limit,
+        ) if catalog is not None else self._action_rows(
                 limit=limit,
                 model=model,
                 include_unreachable_actions=include_unreachable_actions,
@@ -1023,16 +1086,31 @@ class BusinessConfigCoverageScanHandler(_BusinessConfigSurfaceBase):
                 edition_key=edition_key,
                 base_product_key=base_product_key,
             )
+        actions = [
+            action for action in available_actions
             if _to_text(getattr(action, "res_model", ""))
+            and (not params.get("exclude_configuration_models") or not is_business_config_runtime_model(action.res_model))
             and (
                 not skip_unavailable_models
                 or _to_text(getattr(action, "res_model", "")) in self.env
             )
         ]
+        if catalog is not None:
+            actions = [action for action in actions
+                       if action.id in catalog and not is_business_config_runtime_model(action.res_model)
+                       and action.res_model in self.env
+                       and self.env[action.res_model].check_access_rights("read", raise_exception=False)
+                       and self._target_view_types(action)]
         rows = sorted(
             [self._action_item(action, role_key, view_id=view_id) for action in actions],
             key=lambda row: (int(row.get("sort_priority") or 9999), _to_text(row.get("model")), _to_text(row.get("name"))),
         )
+        if catalog is not None:
+            for row in rows:
+                entry = catalog[row["action_id"]]
+                row["module_label"] = entry["module_label"]
+                row["menu_ids"] = [entry["menu_id"]] if entry["menu_id"] else []
+                row["runtime_route"] = self._runtime_route_for_action(row["action_id"], row["menu_ids"])
         missing_rows = [row for row in rows if not row["is_complete"]]
         runtime_missing_rows = [row for row in rows if not row["is_runtime_complete"]]
         severity_counts = self._severity_counts(rows)

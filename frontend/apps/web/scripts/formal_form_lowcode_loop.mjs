@@ -11,7 +11,8 @@ export async function runFormalFormLoop() {
   assert.equal(entry.action_id, documentTopic ? 666 : 546);
   assert.equal(outside.action_id, documentTopic ? 862 : 547);
   const base = process.env.BASE_URL;
-  const out = path.resolve(documentTopic ? '../../../artifacts/uc3-document-lowcode/browser' : '../../../artifacts/lowcode-form-loop/browser');
+  const configurationEntryOnly = process.env.FORM_LOWCODE_CONFIG_ENTRY === '1';
+  const out = path.resolve(configurationEntryOnly ? '../../../artifacts/config-center-entry/browser' : documentTopic ? '../../../artifacts/uc3-document-lowcode/browser' : '../../../artifacts/lowcode-form-loop/browser');
   await fs.mkdir(out, { recursive: true });
   const report = { candidate: process.env.CANDIDATE_GIT_HEAD, dirty: true, scope, stages: {}, restored: false, ok: false };
   const navigationOnly = process.env.FORM_LOWCODE_NAV_ONLY === '1';
@@ -85,9 +86,18 @@ export async function runFormalFormLoop() {
     }
     baseline = await contract();
     const otherBaseline = await contract(outside);
-    await fs.writeFile(path.join(out, emptySectionOnly ? 'empty-section-baseline.json' : 'baseline.json'), JSON.stringify({ entry: baseline, outside: otherBaseline }, null, 2));
+    await fs.writeFile(path.join(out, configurationEntryOnly ? 'entry-baseline-contracts.json' : emptySectionOnly ? 'empty-section-baseline.json' : 'baseline.json'), JSON.stringify({ entry: baseline, outside: otherBaseline }, null, 2));
     if (!navigationOnly && !designerOnly && !closureOnly) report.stages.default = await observe('default');
-    if (emptySectionOnly) {
+    if (configurationEntryOnly) {
+      if (process.env.FORM_LOWCODE_CONFIG_BATCH === '1') {
+        const { checkConfigurationCenterBatch } = await import('./configuration_center_batch_journey.mjs');
+        await checkConfigurationCenterBatch({ page, scope, intent, out, report });
+      } else {
+        const { checkConfigurationEntry } = await import('./formal_form_document_journey.mjs');
+        await checkConfigurationEntry({ page, scope, intent, out, report });
+      }
+      report.ok = true;
+    } else if (emptySectionOnly) {
       const { checkEmptyDocumentSource } = await import('./formal_form_document_journey.mjs');
       await checkEmptyDocumentSource({ page, entry, out, report });
       report.ok = true;
@@ -299,9 +309,9 @@ export async function runFormalFormLoop() {
       try { assert.deepEqual(effective(await contract()), effective(baseline)); report.restored = true; }
       catch (error) { report.recovery.push({ status: 'baseline_readback_failed', error: String(error) }); }
     }
-    if (process.env.FORM_LOWCODE_READ_FAILURE !== '1') await fs.writeFile(path.join(out, emptySectionOnly ? 'empty-section-report.json' : observeOnly ? 'closure-observation.json' : closureOnly ? 'closure-report.json' : designerOnly ? 'designer-report.json' : navigationOnly ? 'navigation-report.json' : 'report.json'), JSON.stringify(report, null, 2));
+    if (process.env.FORM_LOWCODE_READ_FAILURE !== '1') await fs.writeFile(path.join(out, configurationEntryOnly ? (process.env.FORM_LOWCODE_CONFIG_BATCH === '1' ? 'batch-report.json' : process.env.FORM_LOWCODE_CONFIG_SUMMARY === '1' ? 'summary-report.json' : 'entry-report.json') : emptySectionOnly ? 'empty-section-report.json' : observeOnly ? 'closure-observation.json' : closureOnly ? 'closure-report.json' : designerOnly ? 'designer-report.json' : navigationOnly ? 'navigation-report.json' : 'report.json'), JSON.stringify(report, null, 2));
     await browser.close();
   }
   assert(report.ok && report.restored, report.failure || 'journey/restoration incomplete');
-  console.log(emptySectionOnly ? '[formal_form_lowcode_loop] PASS empty source narrow observation; no publication or business write' : closureOnly ? '[formal_form_lowcode_loop] PASS preview/designer closure; no publication' : designerOnly ? '[formal_form_lowcode_loop] PASS formal designer journey' : navigationOnly ? '[formal_form_lowcode_loop] PASS configured navigation; published baseline unchanged' : '[formal_form_lowcode_loop] PASS default -> preview -> A -> B -> A -> default');
+  console.log(configurationEntryOnly ? (process.env.FORM_LOWCODE_CONFIG_BATCH === '1' ? '[formal_form_lowcode_loop] configuration batch complete; inspect separate publication/contract/browser results and baseline restoration' : '[formal_form_lowcode_loop] configuration entry observation complete; inspect report, no publish or business save') : emptySectionOnly ? '[formal_form_lowcode_loop] PASS empty source narrow observation; no publication or business write' : closureOnly ? '[formal_form_lowcode_loop] PASS preview/designer closure; no publication' : designerOnly ? '[formal_form_lowcode_loop] PASS formal designer journey' : navigationOnly ? '[formal_form_lowcode_loop] PASS configured navigation; published baseline unchanged' : '[formal_form_lowcode_loop] PASS default -> preview -> A -> B -> A -> default');
 }

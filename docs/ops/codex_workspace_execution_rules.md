@@ -267,6 +267,12 @@
   若 rebase 唯一冲突是正式 delivery context log，且 main 与本地候选都仅在
   相同旧基线后追加内容，入口可确定性地保留 main 追加项后再追加候选项；其他
   任意冲突仍自动 abort 并恢复原 head。
+  若前置依赖已 squash 合入，可同时指定 `DEPENDENCY_PR`、完整
+  `DEPENDENCY_HEAD` 与 `DEPENDENCY_MERGE`。入口从权威仓库读取已合并 PR，
+  核对 source head、main 目标及 merge commit，并要求源树与 squash 树完全一致、
+  依赖 head 是候选祖先、merge 是目标 main 祖先。`EXPECTED_OLD_BASE` 仍表示
+  实际共同祖先；仅重放 dependency head 之后的责任提交。原有未发布限制、
+  recovery bundle、提交数、路径及 patch identity 校验与失败恢复全部保留。
 - 仓库所有者明确批准的 13—64 提交冻结候选可使用
   `make workspace.branch.sync-main.extended`。除普通同步全部门禁外，入口要求精确
   提交数、当前工作树的有效 exact-head Quick receipt 和独立确认短语；只允许正式交付日志的纯追加冲突，以及登记为可重新生成

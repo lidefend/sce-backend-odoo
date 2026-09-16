@@ -71,8 +71,14 @@ export interface StageBusinessConfigChangeSetItemParams {
   risk_level?: BusinessConfigChangeSetItem['risk_level'];
 }
 
-export function openBusinessConfigChangeSet(params: { role_key?: string; name?: string; fresh?: boolean } = {}) {
+export function openBusinessConfigChangeSet(params: { role_key?: string; name?: string; fresh?: boolean; target_key?: string; target_model?: string; target_action_id?: number } = {}) {
   return intentRequest<BusinessConfigChangeSet>({ intent: BUSINESS_CONFIG_INTENTS.changeSetOpen, params });
+}
+
+export function resumeBusinessConfigChangeSet(params: { role_key: string; target_key?: string; target_model?: string; target_action_id?: number }) {
+  return intentRequest<BusinessConfigChangeSet | { change_set: null }>({
+    intent: BUSINESS_CONFIG_INTENTS.changeSetOpen, params: { ...params, resume_only: true },
+  });
 }
 
 export function loadBusinessConfigChangeSet(params: { change_set_token: string; role_key?: string }) {
@@ -336,6 +342,9 @@ export interface BusinessConfigSnapshotSummaryPayload {
   view_type_counts: Record<string, number>;
   role_scope_count: number;
   action_scope_count: number;
+  overview_scope?: string;
+  source_categories?: Record<string, string>;
+  source_counts?: Record<string, { total: number; draft: number; published: number; disabled: number; saved: number }>;
 }
 
 export interface BusinessConfigSnapshotComparePayload {
@@ -484,6 +493,7 @@ export interface BusinessConfigCoverageBootstrapListSearchPayload {
 export type BusinessConfigCoverageBootstrapMissingPayload = BusinessConfigCoverageBootstrapListSearchPayload;
 
 export interface BusinessConfigCoverageScanItem {
+  module_label?: string;
   action_id: number;
   name: string;
   model: string;
@@ -666,6 +676,8 @@ export async function bootstrapBusinessFormConfig(params: {
 }
 
 export async function loadBusinessConfigSurface(params: {
+  business_catalog?: boolean;
+  company_id?: number;
   model?: string;
   action_id?: number;
   view_id?: number;
@@ -724,6 +736,8 @@ export async function rollbackBusinessConfigContract(params: {
 }
 
 export async function scanBusinessConfigCoverage(params: {
+  business_catalog?: boolean;
+  exclude_configuration_models?: boolean;
   model?: string;
   view_id?: number;
   role_key?: string;

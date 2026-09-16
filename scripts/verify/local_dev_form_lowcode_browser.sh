@@ -7,19 +7,23 @@ source "$ENV_FILE"
 set +a
 [[ "${COMPOSE_PROJECT_NAME:-}" == sc-local-dev && "${DB_NAME:-}" == sc_dev_demo ]] || exit 2
 [[ -n "${SC_DEMO_USER_PASSWORD:-}" ]] || exit 2
+if [[ "${FORM_LOWCODE_CONFIG_INVENTORY:-0}" == 1 && "${FORM_LOWCODE_SCOPE_ONLY:-0}" != 1 ]]; then
+  echo "configuration inventory requires read-only scope mode" >&2
+  exit 2
+fi
 resolve_scope() {
-  LOWCODE_FORM_TOPIC="${FORM_LOWCODE_TOPIC:-material}" bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" < "$ROOT_DIR/scripts/verify/local_dev_form_lowcode_scope.py" |
+  LOWCODE_CONFIG_BATCH="${FORM_LOWCODE_CONFIG_BATCH:-0}" LOWCODE_CONFIG_INVENTORY="${FORM_LOWCODE_CONFIG_INVENTORY:-0}" LOWCODE_CONFIG_ENTRY="${FORM_LOWCODE_CONFIG_ENTRY:-0}" LOWCODE_FORM_TOPIC="${FORM_LOWCODE_TOPIC:-material}" bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" < "$ROOT_DIR/scripts/verify/local_dev_form_lowcode_scope.py" |
     sed -n 's/^FORM_LOWCODE_SCOPE=//p' | tail -1
 }
 before="$(resolve_scope)"
 [[ -n "$before" ]] || exit 2
-FORM_SCOPE="$before" python3 - "$ROOT_DIR" <<'PY'
-import hashlib, json, os, pathlib, sys
-scope = json.loads(os.environ["FORM_SCOPE"])
+python3 -c '
+import hashlib, json, pathlib, sys
+scope = json.load(sys.stdin)
 source = pathlib.Path(sys.argv[1]) / "addons/smart_core/core/form_configuration_compiler.py"
 if scope["compiler_sha256"] != hashlib.sha256(source.read_bytes()).hexdigest():
     raise SystemExit("runtime compiler differs from current candidate")
-PY
+' "$ROOT_DIR" <<<"$before"
 if [[ "${FORM_LOWCODE_SCOPE_ONLY:-0}" == 1 ]]; then
   printf '%s\n' "$before"
   exit 0
@@ -35,9 +39,24 @@ set +e
 status=$?
 set -e
 after="$(resolve_scope)"
-BEFORE="$before" AFTER="$after" python3 - <<'PY'
+CONFIG_BATCH="${FORM_LOWCODE_CONFIG_BATCH:-0}" BEFORE="$before" AFTER="$after" python3 - <<'PY'
 import json, os
 a, b = [json.loads(os.environ[key]) for key in ("BEFORE", "AFTER")]
+if os.environ.get("CONFIG_BATCH") == "1":
+    old = a["configuration_entry"].pop("owner_change_sets")
+    new = b["configuration_entry"].pop("owner_change_sets")
+    by_id = {row["id"]: row for row in new}
+    if any(by_id.get(row["id"]) != row for row in old):
+        raise SystemExit("pre-existing designer draft was changed")
+    ids = {row["id"] for row in old}
+    added = [row for row in new if row["id"] not in ids]
+    managed_ids = {row["id"] for row in added if row["name"] == "受管配置中心闭环" and row["state"] in {"discarded", "superseded"}}
+    for row in added:
+        if row["id"] in managed_ids:
+            continue
+        if row["name"] == "回滚：受管配置中心闭环" and row["state"] == "published" and row["rollback_of"] in managed_ids and row["rollback_verified"]:
+            continue
+        raise SystemExit("unexpected or unrestored configuration draft")
 if a != b:
     raise SystemExit("form lowcode journey changed runtime identity or scoped business data")
 print("[local.dev.form_lowcode.browser] business fingerprints unchanged")

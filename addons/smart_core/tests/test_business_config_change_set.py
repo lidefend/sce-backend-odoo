@@ -73,6 +73,33 @@ class TestBusinessConfigChangeSet(TransactionCase):
         handler.params = params
         return handler.handle()["data"]
 
+    def test_resume_draft_is_target_scoped_and_missing_does_not_create(self):
+        env, first = self._open()
+        self._stage(env, first, "test.resume.first")
+        second = BusinessConfigChangeSetOpenHandler(env).handle(payload={"params": {"role_key": "config_admin", "fresh": True}})["data"]
+        self._stage(env, second, "test.resume.second")
+        for ident, action_id in [(first["id"], 101), (second["id"], 102)]:
+            env["ui.business.config.change.set.item"].sudo().search([("change_set_id", "=", ident)]).write({"action_id": action_id})
+        scoped = BusinessConfigChangeSetOpenHandler(env).handle(payload={"params": {
+            "role_key": "config_admin", "target_model": "res.partner", "target_action_id": 101, "resume_only": True,
+        }})
+        self.assertEqual(scoped["data"]["id"], first["id"])
+        before = env["ui.business.config.change.set"].sudo().search_count([])
+        for target, expected in [("test.resume.first", first["id"]), ("test.resume.second", second["id"])]:
+            result = BusinessConfigChangeSetOpenHandler(env).handle(payload={"params": {
+                "role_key": "config_admin", "target_key": target, "resume_only": True,
+            }})
+            self.assertEqual(result["data"]["id"], expected)
+        missing = BusinessConfigChangeSetOpenHandler(env).handle(payload={"params": {
+            "role_key": "config_admin", "target_key": "test.resume.missing", "resume_only": True,
+        }})
+        self.assertIsNone(missing["data"]["change_set"])
+        other = BusinessConfigChangeSetOpenHandler(self._env(self.other_admin)).handle(payload={"params": {
+            "role_key": "config_admin", "target_key": "test.resume.first", "resume_only": True,
+        }})
+        self.assertIsNone(other["data"]["change_set"])
+        self.assertEqual(env["ui.business.config.change.set"].sudo().search_count([]), before)
+
     def test_owner_role_and_ordinary_user_isolation(self):
         env, change_set = self._open()
         fresh = BusinessConfigChangeSetOpenHandler(env).handle(payload={"params": {

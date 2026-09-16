@@ -76,3 +76,15 @@ assert.equal(published.canRollback, true);
 assert.equal(published.canDiscard, false);
 
 console.log('[business_config_change_set_presentation_test] PASS cases=7');
+
+import { effectiveConfigurationLabel } from '../src/views/businessConfigSurface/effectiveConfiguration';
+const effective = (rows: unknown[]) => ({ formStructureContract: { sourceAuthority: { governance_source: { businessConfigContracts: rows } } } });
+assert.match(effectiveConfigurationLabel(effective([]), 'form'), /使用默认配置/);
+assert.equal(effectiveConfigurationLabel(effective([{ id: 7, version_no: 2 }, { id: 8, version_no: 15 }]), 'form'), '表单新建态：配置 #7 · v2；配置 #8 · v15');
+assert.match(effectiveConfigurationLabel({ snapshot_summary: { status_counts: { published: 258 } } }, 'form'), /尚未核验/);
+assert.match(effectiveConfigurationLabel({ runtimeContract: { governance: { view_orchestration: { views: { tree: { business_config_contracts: [] } } } } } }, 'tree'), /使用默认配置/);
+assert.match(effectiveConfigurationLabel(effective([{ id: 7, version_no: 2 }]), 'form', { '7': 'product_default' }), /使用默认配置；产品默认 #7 · v2/);
+const legacy = effective([]);
+Object.assign(legacy.formStructureContract.sourceAuthority.governance_source, { legacyFieldPolicyOverlay: true });
+assert.match(effectiveConfigurationLabel(legacy, 'form'), /字段策略覆盖/);
+console.log('[configuration_summary] PASS cases=6');
