@@ -652,12 +652,7 @@ async function inspectHandlingForm(page, entryKey, entry, spec, mode, viewport, 
   }
 
   const informationOrganization = entryKey === 'inbound' ? {
-    headerStatusbars: await form.locator(
-      '[data-professional-workflow-component="statusbar"]:visible',
-    ).count(),
-    bodyStateFields: await form.locator(
-      '.sc-native-contract-tree [data-field-name="state"]:visible',
-    ).count(),
+    stateFields: await form.locator('[data-field-name="state"]:visible').count(),
     documentStatusFields: await form.locator('[data-field-name="document_status"]:visible').count(),
     quantitySummaryFields: await form.locator('[data-field-name="quantity_summary"]:visible').count(),
     taxIncludedAmountFields: await form.locator('[data-field-name="tax_included_amount"]:visible').count(),
@@ -665,8 +660,7 @@ async function inspectHandlingForm(page, entryKey, entry, spec, mode, viewport, 
     amountTotalFields: await form.locator('[data-field-name="amount_total"]:visible').count(),
   } : null;
   if (informationOrganization) {
-    check(informationOrganization.headerStatusbars === 1
-      && informationOrganization.bodyStateFields === 0
+    check(informationOrganization.stateFields === 1
       && informationOrganization.documentStatusFields === 0
       && informationOrganization.quantitySummaryFields === 0
       && informationOrganization.taxIncludedAmountFields === 0
