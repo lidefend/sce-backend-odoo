@@ -189,7 +189,8 @@
         <field name="view_mode">tree,form</field>
         <field name="view_id" ref="smart_construction_core.view_sc_material_outbound_tree"/>
         <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_material_outbound_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_material_outbound_form')})]"/>
-        <field name="context">{'search_default_group_project': 1}</field>
+        <field name="domain">[('outbound_type', '=', 'issue'), ('business_category_id.code', '=', 'material.outbound')]</field>
+        <field name="context">{'search_default_group_project': 1, 'default_outbound_type': 'issue', 'default_business_category_code': 'material.outbound', 'current_business_category_code': 'material.outbound'}</field>
     </record>
 
     <record id="view_construction_contract_expense_execution_acceptance_aligned_tree" model="ir.ui.view">

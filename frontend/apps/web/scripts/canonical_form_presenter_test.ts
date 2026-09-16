@@ -45,6 +45,7 @@ import { relationCreateMode } from '../src/pages/contractForm/relationDescriptor
 import { resolveContractFormExitPresentation } from '../src/pages/contractForm/contractFormExitPresentation';
 import {
   applyWorkflowAvailability,
+  normalizeNativeFormStatusbar,
   normalizeWorkflowActionRows,
   workflowActionRowForMethod,
 } from '../src/pages/contractForm/workflowContract';
@@ -3257,4 +3258,13 @@ assert.equal(
   'canonical validation must project an explicit field identity even when labels overlap',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=169');
+assert.deepEqual(normalizeNativeFormStatusbar({
+  recordId: 0,
+  formView: { statusbar: { field: 'state', states: [{ value: 'draft', label: '草稿' }] } },
+  fields: {}, formData: { state: 'draft' }, mainData: {}, fieldReadonly: () => false, readonly: false,
+  fallback: { visible: false, field: '', current: '', states: [], reachedValues: [], readonly: true },
+}), {
+  visible: false, field: 'state', current: '', states: [{ value: 'draft', label: '草稿' }], reachedValues: [], readonly: true,
+}, 'create forms must retain the native statusbar claim without rendering a business status');
+
+console.log('[canonical_form_presenter_test] PASS cases=170');

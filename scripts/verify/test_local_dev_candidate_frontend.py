@@ -232,6 +232,47 @@ class CandidateFrontendContractTest(unittest.TestCase):
         wait.assert_called_once_with(123)
         unlink.assert_called_once_with(missing_ok=True)
 
+    def test_orphaned_process_requires_deleted_root_and_full_runtime_identity(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            recorded_root = base / "deleted-worktree"
+            process_root = base / "proc"
+            process_root.mkdir()
+            (process_root / "cwd").symlink_to(recorded_root)
+            expected_script = recorded_root / "scripts/release/release_static_server.mjs"
+            (process_root / "cmdline").write_bytes(f"node\0{expected_script}\0".encode())
+            head = "b" * 40
+            (process_root / "environ").write_bytes(b"\0".join([
+                f"STATIC_ROOT={recorded_root / 'frontend/apps/web/dist-dev'}".encode(),
+                f"STATIC_PORT={MODULE_UNDER_TEST.PORT}".encode(),
+                f"API_PROXY_TARGET={MODULE_UNDER_TEST.API_PROXY}".encode(),
+                f"CANDIDATE_GIT_HEAD={head}".encode(),
+            ]) + b"\0")
+            identity = {"pid": 123, "head": head, "root": str(recorded_root)}
+            self.assertEqual(
+                MODULE_UNDER_TEST._validate_orphaned_process(identity, process_root), 123
+            )
+            recorded_root.mkdir()
+            with self.assertRaisesRegex(MODULE_UNDER_TEST.CandidateFrontendError, "existing worktree"):
+                MODULE_UNDER_TEST._validate_orphaned_process(identity, process_root)
+
+    def test_down_refuses_foreign_existing_worktree_and_accepts_verified_orphan(self):
+        current = ROOT / "current"
+        foreign = ROOT / "foreign"
+        identity = {"pid": 123, "head": "b" * 40, "root": str(foreign)}
+        with mock.patch.object(MODULE_UNDER_TEST, "_candidate_identity", return_value=("feature/token", "a" * 40)), mock.patch.object(
+            Path, "exists", return_value=True
+        ), mock.patch.object(
+            MODULE_UNDER_TEST, "_read_process_identity", return_value=identity
+        ), mock.patch.object(MODULE_UNDER_TEST, "_validate_orphaned_process", return_value=123) as validate, mock.patch.object(
+            MODULE_UNDER_TEST, "_wait_until_stopped"
+        ) as wait, mock.patch.object(Path, "unlink") as unlink, mock.patch.object(os, "killpg") as killpg:
+            MODULE_UNDER_TEST.down(current)
+        validate.assert_called_once_with(identity)
+        killpg.assert_called_once_with(123, signal.SIGTERM)
+        wait.assert_called_once_with(123)
+        unlink.assert_called_once_with(missing_ok=True)
+
     def test_visual_smoke_requires_routes_and_verified_process(self):
         with mock.patch.object(MODULE_UNDER_TEST, "_candidate_identity", return_value=("feature/token", "a" * 40)), mock.patch.object(
             MODULE_UNDER_TEST, "resolve_authority_env", return_value=ROOT / ".env.dev"
@@ -241,6 +282,21 @@ class CandidateFrontendContractTest(unittest.TestCase):
             with self.assertRaisesRegex(MODULE_UNDER_TEST.CandidateFrontendError, "ROUTES_JSON"):
                 MODULE_UNDER_TEST.visual_smoke(ROOT)
         validate.assert_called_once_with(ROOT, "a" * 40, MODULE_UNDER_TEST.PIDFILE)
+
+    def test_candidate_dist_removes_only_empty_unwritable_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            dist = root / "frontend/apps/web/dist-dev"
+            dist.mkdir(parents=True)
+            with mock.patch.object(os, "access", return_value=False):
+                self.assertEqual(MODULE_UNDER_TEST._prepare_candidate_dist(root), dist)
+            self.assertFalse(dist.exists())
+            dist.mkdir(parents=True)
+            (dist / "owned-output").write_text("keep\n", encoding="utf-8")
+            with mock.patch.object(os, "access", return_value=False):
+                with self.assertRaisesRegex(MODULE_UNDER_TEST.CandidateFrontendError, "unwritable and non-empty"):
+                    MODULE_UNDER_TEST._prepare_candidate_dist(root)
+            self.assertTrue((dist / "owned-output").is_file())
 
     def test_visual_smoke_uses_authority_wrapper_without_credentials(self):
         source = MODULE.read_text(encoding="utf-8")

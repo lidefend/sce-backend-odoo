@@ -9,6 +9,7 @@ const database = process.env.DB_NAME || '';
 const password = process.env.E2E_PASSWORD || '';
 const outputDir = path.resolve(process.env.FRONTEND_MATERIAL_DOMAIN_OUTPUT_DIR || 'artifacts/playwright/phase10-material-domain');
 const sampleReview = process.env.FRONTEND_MATERIAL_SAMPLE_REVIEW === '1';
+const evidenceCaptureReview = process.env.FRONTEND_MATERIAL_EVIDENCE_CAPTURE === '1';
 const handlingReview = process.env.FRONTEND_MATERIAL_HANDLING_REVIEW === '1';
 const sharedRegressionReview = process.env.FRONTEND_MATERIAL_SHARED_REGRESSION === '1';
 const sampleViewports = (process.env.FRONTEND_MATERIAL_SAMPLE_VIEWPORTS || '1440x960,1088x960')
@@ -16,7 +17,7 @@ const sampleViewports = (process.env.FRONTEND_MATERIAL_SAMPLE_VIEWPORTS || '1440
   .map((value) => value.trim().match(/^(\d+)x(\d+)$/))
   .filter(Boolean)
   .map((match) => ({ width: Number(match[1]), height: Number(match[2]) }));
-const handlingViewports = (process.env.FRONTEND_MATERIAL_HANDLING_VIEWPORTS || '1440x960,1088x791')
+const handlingViewports = (process.env.FRONTEND_MATERIAL_HANDLING_VIEWPORTS || '1440x960,390x844')
   .split(',')
   .map((value) => value.trim().match(/^(\d+)x(\d+)$/))
   .filter(Boolean)
@@ -25,22 +26,29 @@ const handlingThemes = (process.env.FRONTEND_MATERIAL_HANDLING_THEMES || 'light'
   .split(',')
   .map((value) => value.trim())
   .filter((value) => value === 'light' || value === 'dark');
+const handlingEntryKeys = (process.env.FRONTEND_MATERIAL_HANDLING_ENTRIES || 'inbound,outbound')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
+const skipHandlingCounterexample = process.env.FRONTEND_MATERIAL_HANDLING_SKIP_COUNTEREXAMPLE === '1';
+const handlingCounterexampleOnly = process.env.FRONTEND_MATERIAL_HANDLING_COUNTEREXAMPLE_ONLY === '1';
 
 const handlingEntrySpecs = Object.freeze({
   inbound: {
-    identityToken: '入库', detailTitle: '入库明细', supplementaryFields: ['note', 'attachment_ids'],
+    identityToken: '入库', detailTitle: '入库明细', tabs: ['入库明细', '说明与附件', '来源追溯'],
+    nativeTitles: ['入库主信息', '项目与供应商', '入库明细', '说明与附件', '来源追溯'],
+    sourceFields: ['stock_picking_id', 'source_transfer_outbound_id', 'legacy_fact_model', 'source_created_by', 'source_created_at'],
+    buttons: ['action_submit', 'action_receive', 'action_reset_draft', 'action_cancel', 'action_load_acceptance_lines'],
     facts: ['project_id', 'inbound_date', 'supplier_id', 'warehouse_id', 'dest_location_id'],
-    detailHeaders: ['材料档案', '规格型号', '单位', '入库数量', '单价', '金额', '来源验收明细'],
+    viewId: 1428,
   },
   outbound: {
-    identityToken: '出库', detailTitle: '出库明细', supplementaryFields: ['note', 'attachment_ids'],
+    identityToken: '出库', detailTitle: '材料明细', tabs: ['材料明细', '说明与附件', '来源追溯'],
+    nativeTitles: ['出退库主信息', '材料明细', '说明与附件', '来源追溯'],
+    sourceFields: ['stock_picking_id', 'transfer_inbound_id', 'legacy_fact_model', 'source_created_by', 'source_created_at'],
+    buttons: ['action_submit', 'action_issue', 'action_reset_draft', 'action_cancel'],
     facts: ['project_id', 'outbound_date', 'warehouse_id', 'source_location_id', 'receiver_id'],
-    detailHeaders: ['材料档案', '规格型号', '单位', '出库数量', '出库单价', '出库金额'],
-  },
-  supplier_return: {
-    identityToken: '退货', detailTitle: '退货明细', supplementaryFields: ['reason', 'attachment_ids'],
-    facts: ['project_id', 'source_inbound_id', 'supplier_id', 'return_date', 'warehouse_id'],
-    detailHeaders: ['材料档案', '规格型号', '单位', '退货数量', '单价', '金额', '来源入库明细'],
+    viewId: 1431,
   },
 });
 const sharedEntrySpecs = Object.freeze({
@@ -127,7 +135,9 @@ check(target?.user?.login && target?.security_user?.login, 'material domain user
 check(Number(target?.action?.id) > 0 && Number(target?.menu?.id) > 0, 'material domain entry is missing', target);
 check(Number(target?.record?.id) > 0, 'material domain record is missing', target);
 if (handlingReview) {
-  for (const key of Object.keys(handlingEntrySpecs)) {
+  for (const key of handlingEntryKeys) {
+    check(Object.prototype.hasOwnProperty.call(handlingEntrySpecs, key),
+      `unknown material handling entry: ${key}`);
     const entry = target?.entries?.[key];
     check(entry?.model && Number(entry?.action?.id) > 0 && Number(entry?.menu?.id) > 0,
       `material handling entry is missing: ${key}`, entry);
@@ -153,6 +163,8 @@ const report = {
     ? 'material_shared_renderer_regression'
     : handlingReview
     ? 'material_handling_affected_regions'
+    : evidenceCaptureReview
+    ? 'inbound_evidence_capture_only'
     : sampleReview ? 'inbound_sample_affected_regions' : 'full_material_domain',
   target: { user: target.user, securityUser: target.security_user, action: target.action, menu: target.menu, record: target.record },
   primary: { errors: [], mutations: [], contracts: [] },
@@ -164,6 +176,227 @@ async function absoluteTop(locator) {
   return locator.evaluate((element) => element.getBoundingClientRect().top + window.scrollY);
 }
 
+async function selectNativeMaterialTab(form, label) {
+  const trigger = form.locator(`[data-section-tab="${label}"]:visible`).first();
+  await trigger.waitFor({ timeout: 15000 });
+  await trigger.click();
+  await form.locator('.native-tab-panel:visible').first().waitFor({ timeout: 15000 });
+}
+
+async function selectedNativeMaterialTab(form) {
+  return (await form.locator('[data-section-tab].native-tab--active:visible').first().innerText()).trim();
+}
+
+async function scrollPosition(page, form) {
+  return page.evaluate((formElement) => {
+    const routerHost = formElement.closest('.router-host') || document.querySelector('.router-host');
+    const scrollingElement = document.scrollingElement;
+    return {
+      owner: routerHost instanceof HTMLElement ? '.router-host' : 'window',
+      routerHost: routerHost instanceof HTMLElement ? {
+        scrollTop: routerHost.scrollTop,
+        clientHeight: routerHost.clientHeight,
+        scrollHeight: routerHost.scrollHeight,
+      } : null,
+      document: {
+        scrollTop: scrollingElement?.scrollTop || 0,
+        clientHeight: scrollingElement?.clientHeight || 0,
+        scrollHeight: scrollingElement?.scrollHeight || 0,
+      },
+      formTop: formElement.getBoundingClientRect().top,
+      headingTop: formElement.querySelector('h1')?.getBoundingClientRect().top ?? null,
+    };
+  }, await form.elementHandle());
+}
+
+async function resetActualScrollTop(page, form) {
+  await page.evaluate((formElement) => {
+    const routerHost = formElement.closest('.router-host') || document.querySelector('.router-host');
+    if (routerHost instanceof HTMLElement) routerHost.scrollTop = 0;
+    window.scrollTo(0, 0);
+  }, await form.elementHandle());
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const position = await scrollPosition(page, form);
+  check(position.routerHost?.scrollTop === 0 && position.document.scrollTop === 0,
+    'material evidence top capture did not reset the actual scroll owners', position);
+  return position;
+}
+
+async function captureInboundEvidencePage(page, mode, viewport) {
+  const actionId = Number(target.action.id);
+  const menuId = Number(target.menu.id);
+  const recordId = Number(target.record.id);
+  const route = mode === 'readonly'
+    ? `/f/sc.material.inbound/${recordId}?menu_id=${menuId}&action_id=${actionId}`
+    : `/f/sc.material.inbound/new?menu_id=${menuId}&action_id=${actionId}`;
+  const contractStart = report.primary.contracts.length;
+  await page.goto(`${frontendUrl}${route}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  const form = page.locator('[data-product-page-mode="form"]:visible').first();
+  await form.locator('[data-contract-form-driver]:visible').first().waitFor({ timeout: 45000 });
+  const contract = report.primary.contracts.slice(contractStart)
+    .find((body) => findKey(body, 'model') === 'sc.material.inbound' && findKey(body, 'viewType') === 'form');
+  const nativeContract = requireInboundNativeContract(contract, actionId, mode);
+  const suffix = `${viewport.width}x${viewport.height}-${mode}`;
+
+  const top = await resetActualScrollTop(page, form);
+  const topSelectedTab = await selectedNativeMaterialTab(form);
+  await page.screenshot({
+    path: path.join(outputDir, `material-inbound-${suffix}-actual-top.png`),
+    fullPage: false,
+    animations: 'disabled',
+  });
+
+  await selectNativeMaterialTab(form, '入库明细');
+  const detailTab = form.locator('[data-section-tab="入库明细"]:visible').first();
+  await detailTab.scrollIntoViewIfNeeded();
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+  const detail = {
+    selectedTab: await selectedNativeMaterialTab(form),
+    scroll: await scrollPosition(page, form),
+    relationVisible: await form.locator('[data-field-name="line_ids"]:visible').count() === 1,
+  };
+  check(detail.selectedTab === '入库明细' && detail.relationVisible,
+    'material detail tab was not stably selected for evidence capture', detail);
+  await page.screenshot({
+    path: path.join(outputDir, `material-inbound-${suffix}-detail-selected.png`),
+    fullPage: false,
+    animations: 'disabled',
+  });
+
+  await selectNativeMaterialTab(form, '来源追溯');
+  const sourceTab = form.locator('[data-section-tab="来源追溯"]:visible').first();
+  await sourceTab.scrollIntoViewIfNeeded();
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+  const source = {
+    selectedTab: await selectedNativeMaterialTab(form),
+    scroll: await scrollPosition(page, form),
+    sourceFieldsVisible: await form.locator([
+      '[data-field-name="stock_picking_id"]:visible',
+      '[data-field-name="source_transfer_outbound_id"]:visible',
+      '[data-field-name="legacy_fact_model"]:visible',
+      '[data-field-name="source_created_by"]:visible',
+      '[data-field-name="source_created_at"]:visible',
+    ].join(', ')).count(),
+  };
+  check(source.selectedTab === '来源追溯',
+    'material source tab was not stably selected for evidence capture', source);
+  await page.screenshot({
+    path: path.join(outputDir, `material-inbound-${suffix}-source-selected.png`),
+    fullPage: false,
+    animations: 'disabled',
+  });
+
+  const topNavigation = form.locator('[data-form-section-navigation]:visible').first();
+  const topDetailLink = topNavigation.getByRole('button', { name: '入库明细', exact: true });
+  const topDetailLinkAvailable = await topDetailLink.count() === 1;
+  const navigationBehavior = {
+    available: topDetailLinkAvailable,
+    beforeSelectedTab: await selectedNativeMaterialTab(form),
+    beforeScroll: await scrollPosition(page, form),
+    targetSelector: topDetailLinkAvailable ? await topDetailLink.getAttribute('data-section-target') : null,
+    targetVisibleBefore: 0,
+    afterSelectedTab: '',
+    afterScroll: null,
+    activatedNotebookTab: false,
+  };
+  if (navigationBehavior.available && navigationBehavior.targetSelector) {
+    navigationBehavior.targetVisibleBefore = await form.locator(`${navigationBehavior.targetSelector}:visible`).count();
+    await topDetailLink.click();
+    await page.waitForTimeout(450);
+    navigationBehavior.afterSelectedTab = await selectedNativeMaterialTab(form);
+    navigationBehavior.afterScroll = await scrollPosition(page, form);
+    navigationBehavior.activatedNotebookTab = navigationBehavior.afterSelectedTab === '入库明细';
+  }
+
+  return {
+    mode,
+    viewport,
+    route,
+    nativeContract,
+    top: { ...top, selectedTab: topSelectedTab },
+    detail,
+    source,
+    navigationBehavior,
+  };
+}
+
+async function inspectInboundEvidenceCapture() {
+  check(sampleViewports.length > 0, 'material evidence capture viewport list is empty');
+  report.primary.evidenceCaptures = [];
+  for (const viewport of sampleViewports) {
+    const context = await browser.newContext({ viewport, locale: 'zh-CN', hasTouch: viewport.width <= 390 });
+    const page = await context.newPage();
+    observe(page, report.primary);
+    await login(page, target.user.login);
+    report.primary.evidenceCaptures.push(await captureInboundEvidencePage(page, 'readonly', viewport));
+    report.primary.evidenceCaptures.push(await captureInboundEvidencePage(page, 'create', viewport));
+    await context.close();
+  }
+  check(report.primary.errors.length === 0, 'material evidence capture has browser errors', report.primary.errors);
+  check(report.primary.mutations.length === 0, 'material evidence capture mutated business data', report.primary.mutations);
+  report.primary.contracts = report.primary.contracts.map(inboundNativeContract);
+  report.security.result = { skipped: true, reason: 'capture_only_reuses_prior_business_acceptance' };
+}
+
+function inboundNativeContract(contract) {
+  const structure = findKey(contract, 'formStructureContract') || {};
+  const governance = structure?.sourceAuthority?.governance_source || {};
+  const titles = [];
+  const fieldNames = [];
+  const buttonNames = [];
+  const walk = (value) => {
+    if (Array.isArray(value)) return value.forEach(walk);
+    if (!value || typeof value !== 'object') return;
+    if (['group', 'page'].includes(String(value.type || ''))) {
+      const title = String(value.label || value.title || value.attributes?.string || '').trim();
+      if (title) titles.push(title);
+    }
+    if (String(value.type || '') === 'field' && String(value.name || '')) fieldNames.push(String(value.name));
+    if (String(value.type || '') === 'button' && String(value.name || '')) buttonNames.push(String(value.name));
+    Object.values(value).forEach(walk);
+  };
+  walk(findKey(contract, 'containerTree') || []);
+  return {
+    model: findKey(contract, 'model'),
+    viewType: findKey(contract, 'viewType'),
+    effectiveRenderProfile: findKey(contract, 'effectiveRenderProfile'),
+    effectiveRecordCapabilities: findKey(contract, 'effectiveRecordCapabilities'),
+    layoutPolicy: structure.layoutPolicy || '',
+    authority: {
+      resolvedActionId: Number(governance.resolvedActionId || 0),
+      resolvedViewId: Number(governance.resolvedViewId || 0),
+      formStructureAuthority: String(governance.formStructureAuthority || ''),
+      compatibilityDependencies: governance.compatibilityDependencies || [],
+    },
+    titles,
+    fieldNames: [...new Set(fieldNames)],
+    buttonNames: [...new Set(buttonNames)],
+  };
+}
+
+function requireInboundNativeContract(contract, actionId, profile) {
+  const identity = inboundNativeContract(contract);
+  check(identity.model === 'sc.material.inbound' && identity.viewType === 'form',
+    'material inbound main form contract is missing', identity);
+  check(identity.layoutPolicy === 'container_tree_authority'
+    && identity.authority.formStructureAuthority === 'native_authority'
+    && identity.authority.compatibilityDependencies.length === 0,
+  'material inbound still depends on compatibility structure', identity);
+  check(identity.authority.resolvedActionId === actionId && identity.authority.resolvedViewId === 1428,
+    'material inbound native source identity drifted', identity);
+  check(identity.effectiveRenderProfile === profile,
+    'material inbound render profile drifted', identity);
+  for (const title of ['入库主信息', '项目与供应商', '入库明细', '说明与附件', '来源追溯']) {
+    check(identity.titles.includes(title), `material inbound native chapter is missing: ${title}`, identity);
+  }
+  for (const fieldName of ['stock_picking_id', 'source_transfer_outbound_id', 'legacy_fact_model', 'source_created_by', 'source_created_at']) {
+    check(identity.fieldNames.includes(fieldName), `material inbound source field is missing: ${fieldName}`, identity);
+  }
+  check(identity.buttonNames.includes('action_load_acceptance_lines'),
+    'material inbound load-acceptance operation is missing from the native contract', identity);
+  return identity;
+}
+
 async function inspectInboundSampleViewport(viewport) {
   const context = await browser.newContext({ viewport, locale: 'zh-CN' });
   const page = await context.newPage();
@@ -173,6 +406,8 @@ async function inspectInboundSampleViewport(viewport) {
   const menuId = Number(target.menu.id);
   const recordId = Number(target.record.id);
   const suffix = String(viewport.width);
+  const expectedTabs = ['入库明细', '说明与附件', '来源追溯'];
+  const readonlyContractStart = report.primary.contracts.length;
 
   await page.goto(
     `${frontendUrl}/f/sc.material.inbound/${recordId}?menu_id=${menuId}&action_id=${actionId}`,
@@ -180,12 +415,24 @@ async function inspectInboundSampleViewport(viewport) {
   );
   const readonlyForm = page.locator('[data-product-page-mode="form"]:visible').first();
   await readonlyForm.locator('[data-contract-form-driver]:visible').first().waitFor({ timeout: 45000 });
-  const readonlyRelation = readonlyForm.locator('[data-floorplan-region="relation"]:visible').first();
+  const readonlyContract = report.primary.contracts.slice(readonlyContractStart)
+    .find((body) => findKey(body, 'model') === 'sc.material.inbound' && findKey(body, 'viewType') === 'form');
+  const readonlyNative = requireInboundNativeContract(readonlyContract, actionId, 'readonly');
+  const readonlyTabs = (await readonlyForm.locator('[data-section-tab]').allInnerTexts()).map((value) => value.trim());
+  check(JSON.stringify(readonlyTabs) === JSON.stringify(expectedTabs),
+    'readonly native chapters differ from the source view', readonlyTabs);
+  await selectNativeMaterialTab(readonlyForm, '入库明细');
+  const readonlyRelation = readonlyForm.locator('[data-field-name="line_ids"]:visible').first();
   await readonlyRelation.waitFor({ timeout: 45000 });
-  const sourceValue = readonlyRelation.locator('.o2m-readonly-cell-value[title*="S80-MA-001"]').first();
+  if (viewport.width <= 390) {
+    const disclosure = readonlyRelation.locator('[data-disclosure-trigger]:visible').first();
+    if (await disclosure.count()) await disclosure.click();
+  }
+  const sourceValue = readonlyRelation.getByText('S80-MA-001', { exact: false }).filter({ visible: true }).first();
   await sourceValue.waitFor({ timeout: 45000 });
-  const sourceRow = sourceValue.locator('xpath=ancestor::tr[1]');
+  const sourceRow = sourceValue.locator(viewport.width <= 390 ? 'xpath=ancestor::article[1]' : 'xpath=ancestor::tr[1]');
   const readonlyStatusFields = await readonlyForm.locator('[data-field-name="state"]:visible').count();
+  const readonlySaveActions = await readonlyForm.locator('[data-action-ref="form.save"]:visible').count();
   const detailTitleLocator = readonlyRelation.getByText('入库明细', { exact: true });
   const detailTitleCount = await detailTitleLocator.count();
   const detailTitleOwners = await detailTitleLocator.evaluateAll((elements) => elements.map((element) => ({
@@ -194,29 +441,52 @@ async function inspectInboundSampleViewport(viewport) {
     dataFieldName: element.closest('[data-field-name]')?.getAttribute('data-field-name') || '',
     dataFloorplanRegion: element.closest('[data-floorplan-region]')?.getAttribute('data-floorplan-region') || '',
   })));
-  const sourceTitle = await sourceValue.getAttribute('title');
+  const sourceTitle = (await sourceValue.innerText()).trim();
   const sourceRowHeight = (await sourceRow.boundingBox())?.height ?? null;
+  await selectNativeMaterialTab(readonlyForm, '来源追溯');
+  const readonlySourceFields = await readonlyForm.locator([
+    '[data-field-name="stock_picking_id"]:visible',
+    '[data-field-name="source_transfer_outbound_id"]:visible',
+    '[data-field-name="legacy_fact_model"]:visible',
+    '[data-field-name="source_created_by"]:visible',
+    '[data-field-name="source_created_at"]:visible',
+  ].join(', ')).count();
   const readonlyResult = {
-    url: page.url(), readonlyStatusFields, detailTitleCount, detailTitleOwners, sourceTitle, sourceRowHeight,
+    url: page.url(), readonlyStatusFields, readonlySaveActions, detailTitleCount, detailTitleOwners,
+    sourceTitle, sourceRowHeight, tabs: readonlyTabs, sourceFieldCount: readonlySourceFields,
+    nativeContract: readonlyNative,
   };
   check(readonlyStatusFields === 0, 'header-owned status remains duplicated in the readonly body', readonlyResult);
+  check(readonlySaveActions === 0 && readonlyNative.effectiveRecordCapabilities?.write === false,
+    'terminal inbound sample exposed a write operation', readonlyResult);
   check(detailTitleCount === 1, 'readonly detail title is not owned by exactly one layer', readonlyResult);
   check(Boolean(sourceTitle?.includes('S80-MA-001')), 'readonly source name is not fully accessible', readonlyResult);
-  check(sourceRowHeight !== null && sourceRowHeight <= 96, 'readonly source column still expands a detail row excessively', readonlyResult);
+  check(viewport.width <= 390 || (sourceRowHeight !== null && sourceRowHeight <= 96),
+    'readonly source column still expands a detail row excessively', readonlyResult);
+  check(readonlySourceFields >= 1, 'readonly sample exposes no populated source trace fact', readonlyResult);
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: path.join(outputDir, `material-inbound-refinement-${suffix}-readonly-top.png`) });
+  await selectNativeMaterialTab(readonlyForm, '入库明细');
   await readonlyRelation.screenshot({ path: path.join(outputDir, `material-inbound-refinement-${suffix}-readonly-detail.png`) });
+  await selectNativeMaterialTab(readonlyForm, '来源追溯');
+  await page.screenshot({ path: path.join(outputDir, `material-inbound-refinement-${suffix}-readonly-source.png`) });
 
+  const createContractStart = report.primary.contracts.length;
   await page.goto(
     `${frontendUrl}/f/sc.material.inbound/new?menu_id=${menuId}&action_id=${actionId}`,
     { waitUntil: 'domcontentloaded', timeout: 45000 },
   );
   const createForm = page.locator('[data-product-page-mode="form"]:visible').first();
   await createForm.locator('[data-contract-form-driver]:visible').first().waitFor({ timeout: 45000 });
-  const createRelation = createForm.locator('[data-floorplan-region="relation"]:visible').first();
-  const postRelation = createForm.locator('[data-floorplan-region="post-relation-input"]:visible').first();
+  const createContract = report.primary.contracts.slice(createContractStart)
+    .find((body) => findKey(body, 'model') === 'sc.material.inbound' && findKey(body, 'viewType') === 'form');
+  const createNative = requireInboundNativeContract(createContract, actionId, 'create');
+  const createTabs = (await createForm.locator('[data-section-tab]').allInnerTexts()).map((value) => value.trim());
+  check(JSON.stringify(createTabs) === JSON.stringify(expectedTabs),
+    'create native chapters differ from the source view', createTabs);
+  await selectNativeMaterialTab(createForm, '入库明细');
+  const createRelation = createForm.locator('[data-field-name="line_ids"]:visible').first();
   await createRelation.waitFor({ timeout: 45000 });
-  await postRelation.waitFor({ timeout: 45000 });
   const factNames = ['project_id', 'inbound_date', 'supplier_id', 'warehouse_id', 'dest_location_id'];
   const factTops = {};
   for (const fieldName of factNames) {
@@ -225,23 +495,43 @@ async function inspectInboundSampleViewport(viewport) {
     factTops[fieldName] = await absoluteTop(field);
   }
   const relationTop = await absoluteTop(createRelation);
-  const postRelationTop = await absoluteTop(postRelation);
-  const noteInPost = await postRelation.locator('[data-field-name="note"]:visible').count();
-  const attachmentsInPost = await postRelation.locator('[data-field-name="attachment_ids"]:visible').count();
+  await selectNativeMaterialTab(createForm, '说明与附件');
+  const noteInPost = await createForm.locator('[data-field-name="note"]:visible').count();
+  const attachmentsInPost = await createForm.locator('[data-field-name="attachment_ids"]:visible').count();
+  await selectNativeMaterialTab(createForm, '来源追溯');
+  const sourceFieldCount = await createForm.locator([
+    '[data-field-name="stock_picking_id"]:visible',
+    '[data-field-name="source_transfer_outbound_id"]:visible',
+    '[data-field-name="legacy_fact_model"]:visible',
+    '[data-field-name="source_created_by"]:visible',
+    '[data-field-name="source_created_at"]:visible',
+  ].join(', ')).count();
   const createStatusFields = await createForm.locator('[data-field-name="state"]:visible').count();
+  const createBodyStatusFields = await createForm.locator('.sc-native-contract-tree [data-field-name="state"]:visible').count();
+  const createHeaderStatusbars = await createForm.locator('[data-professional-workflow-component="statusbar"]:visible').count();
+  const createSaveActions = await createForm.locator('[data-action-ref="form.save"][data-action-enabled="true"]:visible').count();
+  const loadAcceptanceActions = await createForm.getByRole('button', { name: '带入验收明细', exact: true }).count();
   const createResult = {
-    url: page.url(), factTops, relationTop, postRelationTop, noteInPost, attachmentsInPost, createStatusFields,
-    postRelationTitle: await postRelation.getAttribute('data-section-title'),
+    url: page.url(), factTops, relationTop, noteInPost, attachmentsInPost, createStatusFields,
+    createBodyStatusFields, createHeaderStatusbars, createSaveActions, loadAcceptanceActions,
+    sourceFieldCount, tabs: createTabs, nativeContract: createNative,
   };
   check(Object.values(factTops).every((top) => top < relationTop),
     'create key facts are not all before the detail collection', createResult);
-  check(postRelationTop > relationTop, 'create supplementary section is not after the detail collection', createResult);
   check(noteInPost === 1 && attachmentsInPost === 1,
     'create supplementary section does not own note and attachments', createResult);
-  check(createStatusFields === 0, 'header-owned status remains duplicated in the create body', createResult);
+  check(createBodyStatusFields + createHeaderStatusbars === 1,
+    'material create status does not have exactly one visible owner', createResult);
+  check(createSaveActions === 1 && createNative.effectiveRecordCapabilities?.create === true,
+    'material create operation capability is unavailable', createResult);
+  check(JSON.stringify(readonlyNative.authority) === JSON.stringify(createNative.authority),
+    'readonly and create chapters do not share one native source authority', { readonlyNative, createNative });
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: path.join(outputDir, `material-inbound-refinement-${suffix}-create-top.png`) });
+  await selectNativeMaterialTab(createForm, '入库明细');
   await createRelation.screenshot({ path: path.join(outputDir, `material-inbound-refinement-${suffix}-create-detail.png`) });
+  await selectNativeMaterialTab(createForm, '来源追溯');
+  await page.screenshot({ path: path.join(outputDir, `material-inbound-refinement-${suffix}-create-source.png`) });
   await context.close();
   return { viewport, readonly: readonlyResult, create: createResult };
 }
@@ -263,184 +553,333 @@ async function applyReviewTheme(context, theme) {
   }, theme);
 }
 
+function requireHandlingNativeContract(contract, entryKey, spec, actionId, profile) {
+  const identity = inboundNativeContract(contract);
+  const expectedModel = entryKey === 'inbound' ? 'sc.material.inbound' : 'sc.material.outbound';
+  check(identity.model === expectedModel && identity.viewType === 'form',
+    `material handling form contract is missing: ${entryKey}`, identity);
+  check(identity.layoutPolicy === 'container_tree_authority'
+    && identity.authority.formStructureAuthority === 'native_authority'
+    && identity.authority.compatibilityDependencies.length === 0,
+  `material handling entry still depends on compatibility structure: ${entryKey}`, identity);
+  check(identity.authority.resolvedActionId === actionId
+    && identity.authority.resolvedViewId === spec.viewId,
+  `material handling native source identity drifted: ${entryKey}`, identity);
+  check(identity.effectiveRenderProfile === profile,
+    `material handling render profile drifted: ${entryKey}`, identity);
+  for (const title of spec.nativeTitles) {
+    check(identity.titles.includes(title), `material native chapter is missing: ${entryKey}/${title}`, identity);
+  }
+  for (const fieldName of [...spec.facts, ...spec.sourceFields, 'line_ids', 'note', 'attachment_ids']) {
+    check(identity.fieldNames.includes(fieldName), `material native field is missing: ${entryKey}/${fieldName}`, identity);
+  }
+  for (const buttonName of spec.buttons) {
+    check(identity.buttonNames.includes(buttonName), `material native operation is missing: ${entryKey}/${buttonName}`, identity);
+  }
+  return identity;
+}
+
+async function draftNoteRetention(form, spec, entryKey, mode) {
+  if (!['create', 'edit'].includes(mode)) return { skipped: true, reason: 'readonly_existing_state' };
+  await selectNativeMaterialTab(form, '说明与附件');
+  const note = form.locator('[data-field-name="note"]:visible textarea, [data-field-name="note"]:visible input').first();
+  await note.waitFor({ timeout: 15000 });
+  const original = await note.inputValue();
+  const probe = `UC2-${entryKey}-${mode}-unsaved`;
+  await note.fill(probe);
+  await selectNativeMaterialTab(form, '来源追溯');
+  await selectNativeMaterialTab(form, '说明与附件');
+  const retained = await note.inputValue();
+  check(retained === probe, 'material draft value was lost while switching native tabs',
+    { entryKey, mode, original, retained });
+  return { original, probe, retained, saved: false };
+}
+
 async function inspectHandlingForm(page, entryKey, entry, spec, mode, viewport, theme) {
+  const record = mode === 'edit' ? entry.editable_record : entry.record;
+  const recordPath = mode === 'create' ? 'new' : String(record.id);
   const contractStart = report.primary.contracts.length;
-  const recordPath = mode === 'readonly' ? String(entry.record.id) : 'new';
   await page.goto(
     `${frontendUrl}/f/${entry.model}/${recordPath}?menu_id=${entry.menu.id}&action_id=${entry.action.id}`,
     { waitUntil: 'domcontentloaded', timeout: 45000 },
   );
   const form = page.locator('[data-product-page-mode="form"]:visible').first();
   await form.locator('[data-contract-form-driver]:visible').first().waitFor({ timeout: 45000 });
-  const relation = form.locator('[data-floorplan-region="relation"]:visible').first();
-  await relation.waitFor({ timeout: 45000 });
-  const postRelation = form.locator('[data-floorplan-region="post-relation-input"]:visible').first();
-  if (mode === 'create') await postRelation.waitFor({ timeout: 45000 });
-  const factTops = {};
-  for (const fieldName of spec.facts) {
-    const field = form.locator(`[data-field-name="${fieldName}"]:visible`).first();
-    await field.waitFor({ timeout: 45000 });
-    factTops[fieldName] = await absoluteTop(field);
-  }
-  const relationTop = await absoluteTop(relation);
-  const postRelationTop = await postRelation.count() ? await absoluteTop(postRelation) : null;
-  const supplementaryOwnership = {};
-  for (const fieldName of spec.supplementaryFields) {
-    supplementaryOwnership[fieldName] = await postRelation.count()
-      ? await postRelation.locator(`[data-field-name="${fieldName}"]:visible`).count()
-      : 0;
-  }
-  const statusFields = await form.locator('[data-field-name="state"]:visible').count();
-  const statusFieldStates = await form.locator('[data-field-name="state"]:visible').evaluateAll((nodes) => (
-    nodes.map((node) => node.getAttribute('data-field-state') || '')
-  ));
-  const headerStatusbars = await form.locator(
-    '[data-professional-workflow-component="statusbar"]:visible',
-  ).count();
-  const detailTitleCount = await relation.getByText(spec.detailTitle, { exact: true }).count();
-  const relationAccessibleName = (await relation.getAttribute('aria-label') || '').trim();
-  const sectionTitles = await form.locator('[data-floorplan-region]:visible').evaluateAll((nodes) => nodes.map((node) => ({
-    region: node.getAttribute('data-floorplan-region') || '',
-    title: node.getAttribute('data-section-title') || '',
-  })));
-  const heading = (await form.locator('h1:visible').first().innerText()).trim();
-  const detailHeadingCount = await relation.locator('[data-detail-collection-heading]:visible').count();
-  const desktopHead = relation.locator('thead:visible').first();
-  const mobileDetailLabels = relation.locator('.o2m-readonly-fact dt:visible, .o2m-mobile-label:visible');
-  if (mode === 'readonly') {
-    const detailIdentity = viewport.width <= 390 ? mobileDetailLabels.first() : desktopHead;
-    await detailIdentity.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
-  }
-  const detailHeaders = viewport.width <= 390
-    ? await mobileDetailLabels.allInnerTexts()
-    : await desktopHead.count()
-      ? (await desktopHead.innerText()).split('\n').map((value) => value.trim()).filter(Boolean)
-      : [];
-  const immediatelyVisibleDetailHeaders = viewport.width <= 390
-    ? spec.detailHeaders.slice(0, 6)
-    : spec.detailHeaders;
-  const missingDetailHeaders = mode === 'readonly'
-    ? immediatelyVisibleDetailHeaders.filter((label) => !detailHeaders.includes(label))
-    : [];
-  const detailHeaderOrder = mode === 'readonly'
-    ? immediatelyVisibleDetailHeaders.map((label) => detailHeaders.indexOf(label))
-    : [];
   const contract = report.primary.contracts.slice(contractStart)
-    .filter((body) => (
-      findKey(body, 'viewType') === 'form' && findKey(body, 'model') === entry.model
-    )).at(-1);
-  const result = {
-    entryKey, mode, viewport, theme, url: page.url(), heading, factTops, relationTop, postRelationTop,
-    supplementaryOwnership, statusFields, statusFieldStates, headerStatusbars, detailTitleCount, detailHeadingCount,
-    relationAccessibleName,
-    sectionTitles, detailHeaders, missingDetailHeaders, detailHeaderOrder,
-    contract: contractSectionIdentity(contract),
-  };
-  check(heading.includes(spec.identityToken), 'material handling page identity is inconsistent', result);
-  check(Object.values(factTops).every((top) => top < relationTop),
-    'material handling key facts are not before details', result);
-  if (mode === 'create') {
-    check(postRelationTop !== null && postRelationTop > relationTop,
-      'material handling supplementary section is not after details', result);
-    check(Object.values(supplementaryOwnership).every((count) => count === 1),
-      'material handling supplementary fields are not owned after details', result);
-  } else if (postRelationTop !== null) {
-    check(postRelationTop > relationTop,
-      'visible readonly supplementary section is not after details', result);
+    .filter((body) => findKey(body, 'viewType') === 'form' && findKey(body, 'model') === entry.model)
+    .at(-1);
+  const observedProfile = String(findKey(contract, 'effectiveRenderProfile') || '');
+  const expectedProfile = mode === 'create' ? 'create' : mode === 'edit' ? 'edit' : observedProfile;
+  const nativeContract = requireHandlingNativeContract(
+    contract, entryKey, spec, Number(entry.action.id), expectedProfile,
+  );
+  if (mode === 'edit') {
+    check(observedProfile === 'edit' && nativeContract.effectiveRecordCapabilities?.write === true,
+      `governed draft sample is not editable: ${entryKey}`, nativeContract);
   }
-  check(!(headerStatusbars > 0 && statusFields > 0),
-    'material handling state is duplicated across header and body', result);
-  if (mode === 'create' && statusFields > 0) {
-    check(statusFieldStates.every((state) => state === 'readonly'),
-      'material handling create form exposes a workflow state as editable', result);
-  }
-  check(detailTitleCount <= 1, 'material handling detail title is duplicated', result);
-  check(findKey(contract, 'sourceSectionTitles')?.includes(spec.detailTitle),
-    'material handling detail identity is missing from the form contract', result);
-  check(detailTitleCount === 1 || relationAccessibleName.length > 0,
-    'responsive material handling detail region has no accessible identity', result);
-  check(!sectionTitles.some((section) => section.title === '关系明细' && section.region !== 'relation'),
-    'ordinary material facts are categorized as relation details', result);
-  check(missingDetailHeaders.length === 0, 'material handling detail order is incomplete', result);
-  check(detailHeaderOrder.every((position, index) => position >= 0 && (index === 0 || position > detailHeaderOrder[index - 1])),
-    'material handling detail columns are not in business-first order', result);
-
-  if (mode === 'readonly' && viewport.width > 390) {
-    const triggers = relation.locator('.o2m-readonly-value-trigger:visible');
-    const triggerTexts = await triggers.allInnerTexts();
-    const triggerIndex = triggerTexts.findIndex((value) => value.trim().length >= 12);
-    const trigger = triggerIndex >= 0 ? triggers.nth(triggerIndex) : triggers.first();
-    if (await trigger.count()) {
-      const fullValue = (await trigger.innerText()).trim();
-      await trigger.focus();
-      await trigger.click();
-      const overlay = page.locator('.o2m-readonly-full-value:visible').filter({ hasText: fullValue }).first();
-      await overlay.waitFor({ timeout: 10000 });
-      result.fullValueAccess = { method: 'keyboard-focus-and-click', value: fullValue, visible: true };
-      await page.keyboard.press('Escape');
-    } else {
-      result.fullValueAccess = { skipped: true, reason: 'no readonly textual detail value' };
-    }
-  }
-  if (mode === 'readonly' && viewport.width <= 390) {
-    const disclosure = relation.locator('[data-disclosure-trigger]:visible').first();
-    if (await disclosure.count()) {
-      const beforeState = await disclosure.getAttribute('aria-expanded');
-      await disclosure.tap();
-      const afterState = await disclosure.getAttribute('aria-expanded');
-      const additionalFacts = await relation.locator('.o2m-readonly-facts--additional:visible dt').allInnerTexts();
-      result.mobileAdditionalAccess = { beforeState, afterState, additionalFacts };
-      check(beforeState === 'false' && afterState === 'true' && additionalFacts.length > 0,
-        'mobile material detail supplementary facts are not reachable', result.mobileAdditionalAccess);
-      check(spec.detailHeaders.slice(6).every((label) => additionalFacts.includes(label)),
-        'mobile material detail auxiliary facts are incomplete', result.mobileAdditionalAccess);
-    } else {
-      result.mobileAdditionalAccess = { skipped: true, reason: 'no populated readonly detail row' };
-    }
+  if (mode === 'existing' && record.state !== 'draft') {
+    check(observedProfile === 'readonly' && nativeContract.effectiveRecordCapabilities?.write === false,
+      `non-draft material sample is not readonly: ${entryKey}`, { record, nativeContract });
   }
 
-  await page.evaluate(() => window.scrollTo(0, 0));
+  const heading = (await form.locator('h1:visible').first().innerText()).trim();
+  check(heading.includes(spec.identityToken), 'material handling page identity is inconsistent',
+    { entryKey, heading, expected: spec.identityToken });
+  const tabs = (await form.locator('[data-section-tab]:visible').allInnerTexts()).map((value) => value.trim());
+  check(JSON.stringify(tabs) === JSON.stringify(spec.tabs),
+    `material handling native tabs drifted: ${entryKey}`, tabs);
+
+  for (const fieldName of spec.facts) {
+    if (mode === 'existing') continue;
+    await form.locator(`[data-field-name="${fieldName}"]:visible`).first().waitFor({ timeout: 15000 });
+  }
+  if (entryKey !== 'inbound') {
+    const typeEvidence = await form.locator('[data-field-name="outbound_type"]:visible').first()
+      .evaluate((element) => ({
+        text: String(element.textContent || '').trim(),
+        attributes: Object.fromEntries([...element.attributes].map((attribute) => [attribute.name, attribute.value])),
+        controls: [...element.querySelectorAll('input, select, option, [role="combobox"]')].map((control) => ({
+          value: 'value' in control ? String(control.value || '') : '',
+          text: String(control.textContent || '').trim(),
+          ariaValue: String(control.getAttribute('aria-valuetext') || ''),
+          selected: 'selected' in control ? Boolean(control.selected) : false,
+        })),
+      }));
+    const expectedType = { code: 'issue', label: '领用出库' };
+    const serializedType = JSON.stringify(typeEvidence);
+    check(serializedType.includes(expectedType.code) || serializedType.includes(expectedType.label),
+      'material action category/default identity drifted', { entryKey, typeEvidence, expectedType });
+  }
+
+  const businessStatusLabels = { draft: '草稿', submitted: '已提交', received: '已入库', cancel: '已取消' };
+  const expectedBusinessStatusLabel = mode === 'create' ? '草稿' : businessStatusLabels[record?.state] || '';
+  const businessStatusRegions = page.locator('[aria-label="业务状态"]:visible');
+  const businessStatusRegionTexts = await businessStatusRegions.allInnerTexts();
+  const informationOrganization = entryKey === 'inbound' ? {
+    expectedBusinessStatusLabel,
+    businessStatusRegions: businessStatusRegionTexts.length,
+    businessStatusLabelOccurrences: businessStatusRegionTexts.reduce((count, text) => count
+      + text.split(/\r?\n/).filter((line) => line.trim() === expectedBusinessStatusLabel).length, 0),
+    bodyStatusFields: await form.locator('[data-field-name="state"]:visible').count(),
+    documentStatusFields: await form.locator('[data-field-name="document_status"]:visible').count(),
+    quantitySummaryFields: await form.locator('[data-field-name="quantity_summary"]:visible').count(),
+    taxIncludedAmountFields: await form.locator('[data-field-name="tax_included_amount"]:visible').count(),
+    totalQtyFields: await form.locator('[data-field-name="total_qty"]:visible').count(),
+    amountTotalFields: await form.locator('[data-field-name="amount_total"]:visible').count(),
+  } : null;
+  if (informationOrganization) {
+    check(informationOrganization.businessStatusRegions === (mode === 'create' ? 0 : 1)
+      && informationOrganization.businessStatusLabelOccurrences === (mode === 'create' ? 0 : 1)
+      && informationOrganization.bodyStatusFields === 0
+      && informationOrganization.documentStatusFields === 0
+      && informationOrganization.quantitySummaryFields === 0
+      && informationOrganization.taxIncludedAmountFields === 0
+      && informationOrganization.totalQtyFields === 1
+      && informationOrganization.amountTotalFields === 1,
+    'material inbound status, quantity, or amount has more than one visible owner', informationOrganization);
+  }
+
+  const top = await resetActualScrollTop(page, form);
   const suffix = `${entryKey}-${mode}-${viewport.width}x${viewport.height}-${theme}`;
-  await page.screenshot({ path: path.join(outputDir, `material-handling-${suffix}-top.png`) });
-  await relation.screenshot({ path: path.join(outputDir, `material-handling-${suffix}-detail.png`) });
-  if (await postRelation.count()) await postRelation.scrollIntoViewIfNeeded();
-  else await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-  await page.screenshot({ path: path.join(outputDir, `material-handling-${suffix}-bottom.png`) });
-  return result;
+  await page.screenshot({
+    path: path.join(outputDir, `uc2-material-${suffix}-actual-top.png`),
+    fullPage: false,
+    animations: 'disabled',
+  });
+
+  await selectNativeMaterialTab(form, spec.detailTitle);
+  const relation = form.locator('[data-field-name="line_ids"]:visible').first();
+  await relation.waitFor({ timeout: 15000 });
+  const detailOperations = {
+    addButtons: await relation.getByRole('button', { name: /添加|新增/ }).count(),
+    readonly: await relation.getAttribute('data-field-state'),
+  };
+  await relation.scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: path.join(outputDir, `uc2-material-${suffix}-detail.png`),
+    fullPage: false,
+    animations: 'disabled',
+  });
+
+  const draftRetention = await draftNoteRetention(form, spec, entryKey, mode);
+  await selectNativeMaterialTab(form, '来源追溯');
+  const visibleSourceFields = await form.locator(
+    spec.sourceFields.map((name) => `[data-field-name="${name}"]:visible`).join(', '),
+  ).count();
+  await page.screenshot({
+    path: path.join(outputDir, `uc2-material-${suffix}-source.png`),
+    fullPage: false,
+    animations: 'disabled',
+  });
+
+  const navigation = form.locator('[data-form-section-navigation]:visible').first();
+  const detailLink = navigation.getByRole('button', { name: spec.detailTitle, exact: true });
+  await detailLink.waitFor({ timeout: 15000 });
+  const targetSelector = await detailLink.getAttribute('data-section-target');
+  const beforeSelectedTab = await selectedNativeMaterialTab(form);
+  const targetVisibleBefore = targetSelector
+    ? await form.locator(`${targetSelector}:visible`).count()
+    : 0;
+  await detailLink.click();
+  await form.locator(`[data-section-tab="${spec.detailTitle}"].native-tab--active:visible`).first()
+    .waitFor({ timeout: 15000 });
+  const targetVisibleAfter = targetSelector
+    ? await form.locator(`${targetSelector}:visible`).count()
+    : 0;
+  const afterSelectedTab = await selectedNativeMaterialTab(form);
+  const activeNavigation = await detailLink.getAttribute('aria-current');
+  check(beforeSelectedTab === '来源追溯'
+    && targetVisibleBefore === 0
+    && afterSelectedTab === spec.detailTitle
+    && targetVisibleAfter === 1
+    && activeNavigation === 'location',
+  'top navigation did not reveal, locate, and highlight the notebook-owned target', {
+    entryKey, beforeSelectedTab, targetVisibleBefore, afterSelectedTab, targetVisibleAfter, activeNavigation,
+  });
+
+  const deadNavigationLinks = await navigation.locator('[data-section-link]').evaluateAll((links, root) => {
+    const formRoot = root;
+    return links.map((link) => {
+      const selector = link.getAttribute('data-section-target') || '';
+      const key = link.getAttribute('data-section-link') || '';
+      const target = selector ? formRoot.querySelector(selector) : null;
+      const reveal = [...formRoot.querySelectorAll('[data-section-reveal-targets]')].some((control) => {
+        try {
+          return JSON.parse(control.getAttribute('data-section-reveal-targets') || '[]').includes(key);
+        } catch {
+          return false;
+        }
+      });
+      return { key, reachable: Boolean(target || reveal) };
+    }).filter((item) => !item.reachable);
+  }, await form.elementHandle());
+  check(deadNavigationLinks.length === 0,
+    'hidden or absent material targets leaked into section navigation', deadNavigationLinks);
+
+  return {
+    entryKey,
+    mode,
+    viewport,
+    theme,
+    route: new URL(page.url()).pathname,
+    record: mode === 'create' ? null : record,
+    heading,
+    tabs,
+    nativeContract,
+    informationOrganization,
+    top,
+    detailOperations,
+    visibleSourceFields,
+    draftRetention,
+    navigationBehavior: {
+      targetSelector,
+      beforeSelectedTab,
+      targetVisibleBefore,
+      afterSelectedTab,
+      targetVisibleAfter,
+      activeNavigation,
+    },
+  };
+}
+
+async function inspectNonMaterialNavigationCounterexample() {
+  const attempts = [];
+  for (const entryKey of Object.keys(sharedEntrySpecs)) {
+    const entry = target.shared_entries[entryKey];
+    const context = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: 'zh-CN' });
+    const page = await context.newPage();
+    observe(page, report.primary);
+    await login(page, entry.user.login);
+    await page.goto(
+      `${frontendUrl}/f/${entry.model}/${entry.record.id}?menu_id=${entry.menu.id}&action_id=${entry.action.id}`,
+      { waitUntil: 'domcontentloaded', timeout: 45000 },
+    );
+    const form = page.locator('[data-product-page-mode="form"]:visible').first();
+    await form.locator('[data-contract-form-driver]:visible').first().waitFor({ timeout: 45000 });
+    const links = form.locator('[data-form-section-navigation]:visible [data-section-link]');
+    const linkCount = await links.count();
+    attempts.push({ entry: entryKey, linkCount });
+    if (linkCount === 0) {
+      await context.close();
+      continue;
+    }
+    const link = links.last();
+    const selector = await link.getAttribute('data-section-target');
+    await link.click();
+    check(Boolean(selector) && await form.locator(`${selector}:visible`).count() === 1,
+      'non-material navigation target is not visible after activation', { entryKey, selector });
+    const activeLink = form.locator(
+      '[data-form-section-navigation]:visible [data-section-link][aria-current="location"]',
+    );
+    check(await activeLink.count() === 1,
+      'non-material navigation does not have one active location', { entryKey, selector });
+    const activeSelector = await activeLink.first().getAttribute('data-section-target');
+    check(Boolean(activeSelector) && await form.locator(`${activeSelector}:visible`).count() === 1,
+      'non-material navigation highlight does not point to visible content',
+      { entryKey, selector, activeSelector });
+    await page.screenshot({
+      path: path.join(outputDir, `uc2-non-material-${entryKey}-navigation-1440x960.png`),
+      fullPage: false,
+      animations: 'disabled',
+    });
+    const result = { entry: entryKey, selector, activeSelector, active: true, attempts };
+    await context.close();
+    return result;
+  }
+  check(false, 'governed non-material samples have no native section navigation', attempts);
 }
 
 async function inspectMaterialHandlingReview() {
   check(handlingViewports.length > 0, 'material handling review viewport list is empty');
   check(handlingThemes.length > 0, 'material handling review theme list is empty');
   report.primary.handlingReviews = [];
-  for (const theme of handlingThemes) {
-    for (const viewport of handlingViewports) {
-      for (const [entryKey, spec] of Object.entries(handlingEntrySpecs)) {
-        const entry = target.entries[entryKey];
-        const context = await browser.newContext({
-          viewport,
-          locale: 'zh-CN',
-          hasTouch: viewport.width <= 390,
-        });
-        await applyReviewTheme(context, theme);
-        const page = await context.newPage();
-        observe(page, report.primary);
-        await login(page, target.user.login);
-        if (entry.record) {
+  if (!handlingCounterexampleOnly) {
+    for (const theme of handlingThemes) {
+      for (const viewport of handlingViewports) {
+        for (const entryKey of handlingEntryKeys) {
+          const spec = handlingEntrySpecs[entryKey];
+          const entry = target.entries[entryKey];
+          const context = await browser.newContext({
+            viewport,
+            locale: 'zh-CN',
+            hasTouch: viewport.width <= 390,
+          });
+          await applyReviewTheme(context, theme);
+          const page = await context.newPage();
+          observe(page, report.primary);
+          await login(page, target.user.login);
+          if (entry.record) {
+            report.primary.handlingReviews.push(
+              await inspectHandlingForm(page, entryKey, entry, spec, 'existing', viewport, theme),
+            );
+          }
           report.primary.handlingReviews.push(
-            await inspectHandlingForm(page, entryKey, entry, spec, 'readonly', viewport, theme),
+            await inspectHandlingForm(page, entryKey, entry, spec, 'create', viewport, theme),
           );
+          if (entry.editable_record && viewport.width > 390) {
+            report.primary.handlingReviews.push(
+              await inspectHandlingForm(page, entryKey, entry, spec, 'edit', viewport, theme),
+            );
+          }
+          await context.close();
         }
-        report.primary.handlingReviews.push(
-          await inspectHandlingForm(page, entryKey, entry, spec, 'create', viewport, theme),
-        );
-        await context.close();
       }
     }
   }
+  report.primary.nonMaterialNavigationCounterexample = skipHandlingCounterexample
+    ? { skipped: true, reason: 'carried_forward_from_same_candidate' }
+    : await inspectNonMaterialNavigationCounterexample();
+  report.primary.returnPathDecision = target.formal_return_path;
+  check(report.primary.returnPathDecision?.status === 'product_decision_required'
+    && report.primary.returnPathDecision?.formally_reachable === false
+    && report.primary.returnPathDecision?.return_menu_in_formal_baseline === false
+    && report.primary.returnPathDecision?.return_menu_parent_active === false
+    && report.primary.returnPathDecision?.route_authority_roles?.length === 0
+    && !report.primary.returnPathDecision?.outbound_allowed_business_category_codes?.includes('material.return'),
+  'material return was incorrectly treated as a formal user path', report.primary.returnPathDecision);
   check(report.primary.errors.length === 0, 'material handling review has browser errors', report.primary.errors);
   check(report.primary.mutations.length === 0, 'material handling review mutated business data', report.primary.mutations);
-  report.security.result = { skipped: true, reason: 'material_handling_readonly_and_uncommitted_create_review' };
+  report.security.result = { skipped: true, reason: 'uc2_readonly_existing_and_uncommitted_create_edit_review' };
 }
 
 async function inspectSharedRendererRegression() {
@@ -542,6 +981,20 @@ if (handlingReview) {
     await browser.close();
   }
   console.log(JSON.stringify({ pass: report.pass, handlingReviews: report.primary.handlingReviews }));
+  process.exit(0);
+}
+
+if (evidenceCaptureReview) {
+  try {
+    await inspectInboundEvidenceCapture();
+    report.pass = true;
+  } finally {
+    report.completedAt = new Date().toISOString();
+    report.screenshots = screenshotEvidence();
+    fs.writeFileSync(path.join(outputDir, 'capture-summary.json'), `${JSON.stringify(report, null, 2)}\n`);
+    await browser.close();
+  }
+  console.log(JSON.stringify({ pass: report.pass, evidenceCaptures: report.primary.evidenceCaptures }));
   process.exit(0);
 }
 

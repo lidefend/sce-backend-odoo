@@ -422,24 +422,31 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,received"/>
                 </header>
                 <sheet>
-                    <group>
+                    <group string="入库主信息">
                         <group>
                             <field name="name"/>
-                            <field name="project_id"/>
                             <field name="business_category_id" readonly="1"/>
                             <field name="operation_strategy" readonly="1"/>
                             <field name="inbound_date"/>
+                        </group>
+                        <group>
+                            <field name="total_qty" readonly="1"/>
+                            <field name="amount_total" readonly="1"/>
+                            <field name="currency_id" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="项目与供应商">
+                        <group>
+                            <field name="project_id"/>
+                            <field name="supplier_id"/>
+                            <field name="buyer_name" readonly="1"/>
                             <field name="acceptance_id"/>
                             <button name="action_load_acceptance_lines" string="带入验收明细" type="object" class="btn-secondary" groups="smart_construction_core.group_sc_cap_material_user,smart_construction_core.group_sc_cap_material_manager"/>
                         </group>
                         <group>
-                            <field name="supplier_id"/>
                             <field name="warehouse_id"/>
                             <field name="dest_location_id"/>
                             <field name="keeper_id"/>
-                            <field name="stock_picking_id"/>
-                            <field name="amount_total" readonly="1"/>
-                            <field name="tax_included_amount" readonly="1"/>
                         </group>
                     </group>
                     <group string="系统默认提示" invisible="not sc_has_system_default">
@@ -465,15 +472,31 @@
                                 </tree>
                             </field>
                         </page>
-                        <page string="入库说明">
-                            <field name="note" nolabel="1"/>
-                        </page>
-                        <page string="附件">
-                            <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
+                        <page string="说明与附件">
+                            <group>
+                                <field name="line_note_summary" readonly="1"/>
+                                <field name="note" nolabel="1"/>
+                                <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
+                            </group>
                         </page>
                         <page string="来源追溯">
                             <group>
-                                <field name="source_transfer_outbound_id" readonly="1"/>
+                                <group string="执行结果">
+                                    <field name="stock_picking_id" readonly="1"/>
+                                    <field name="source_transfer_outbound_id" readonly="1"/>
+                                    <field name="payment_status_text" readonly="1"/>
+                                    <field name="payment_paid_amount" readonly="1"/>
+                                    <field name="payment_unpaid_amount" readonly="1"/>
+                                    <field name="settlement_status_text" readonly="1"/>
+                                    <field name="settlement_settled_amount" readonly="1"/>
+                                </group>
+                                <group string="来源记录">
+                                    <field name="legacy_fact_model" readonly="1"/>
+                                    <field name="legacy_fact_id" readonly="1"/>
+                                    <field name="legacy_fact_type" readonly="1"/>
+                                    <field name="source_created_by" readonly="1"/>
+                                    <field name="source_created_at" readonly="1"/>
+                                </group>
                             </group>
                         </page>
                     </notebook>
@@ -548,7 +571,7 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,issued"/>
                 </header>
                 <sheet>
-                    <group>
+                    <group string="出退库主信息">
                         <group>
                             <field name="name"/>
                             <field name="outbound_type" readonly="state != 'draft'"/>
@@ -565,11 +588,9 @@
                             <field name="source_location_id"/>
                             <field name="dest_warehouse_id" invisible="outbound_type != 'transfer'"/>
                             <field name="dest_location_id" invisible="outbound_type != 'transfer'"/>
-                            <field name="transfer_inbound_id" readonly="1" invisible="outbound_type != 'transfer'"/>
                             <field name="receiver_id" readonly="state != 'draft'"/>
                             <field name="receiver_user_id"/>
                             <field name="keeper_id"/>
-                            <field name="stock_picking_id"/>
                         </group>
                     </group>
                     <group string="系统默认提示" invisible="not sc_has_system_default">
@@ -578,8 +599,8 @@
                         <field name="sc_system_default_note" readonly="1"/>
                     </group>
                     <notebook>
-                        <page string="出库明细">
-                            <field name="line_ids" readonly="state != 'draft'">
+                        <page string="材料明细">
+                            <field name="line_ids" string="材料明细" readonly="state != 'draft'">
                                 <tree editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="project_id" invisible="1"/>
@@ -597,11 +618,26 @@
                                 </tree>
                             </field>
                         </page>
-                        <page string="出库说明">
-                            <field name="note" nolabel="1"/>
+                        <page string="说明与附件">
+                            <group>
+                                <field name="note" nolabel="1"/>
+                                <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
+                            </group>
                         </page>
-                        <page string="附件">
-                            <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
+                        <page string="来源追溯">
+                            <group>
+                                <group string="执行结果">
+                                    <field name="stock_picking_id" readonly="1"/>
+                                    <field name="transfer_inbound_id" readonly="1" invisible="outbound_type != 'transfer'"/>
+                                </group>
+                                <group string="来源记录">
+                                    <field name="legacy_fact_model" readonly="1"/>
+                                    <field name="legacy_fact_id" readonly="1"/>
+                                    <field name="legacy_fact_type" readonly="1"/>
+                                    <field name="source_created_by" readonly="1"/>
+                                    <field name="source_created_at" readonly="1"/>
+                                </group>
+                            </group>
                         </page>
                     </notebook>
                 </sheet>

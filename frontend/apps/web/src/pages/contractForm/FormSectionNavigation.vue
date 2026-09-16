@@ -57,7 +57,11 @@
 import { nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScIcon from '../../components/design-system/ScIcon.vue';
-import { activeSectionKeyAtAnchor, sectionScrollDelta } from './nativeSectionNavigation';
+import {
+  activeSectionKeyAtAnchor,
+  sectionRevealTargetsContain,
+  sectionScrollDelta,
+} from './nativeSectionNavigation';
 
 type SectionNavigationItem = {
   key: string;
@@ -174,8 +178,36 @@ function resolveScrollOwner(): HTMLElement | Window {
   return window;
 }
 
-function activate(item: SectionNavigationItem) {
-  const target = visibleTarget(item);
+function nextPaint() {
+  return new Promise<void>((resolve) => {
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve()));
+  });
+}
+
+function revealControl(item: SectionNavigationItem) {
+  const controls = [...(rootElement()?.querySelectorAll<HTMLElement>('[data-section-reveal-targets]') || [])];
+  return controls.find((control) => (
+    control.getClientRects().length > 0
+    && !control.classList.contains('native-tab--active')
+    && sectionRevealTargetsContain(control.dataset.sectionRevealTargets, item.key)
+  )) || null;
+}
+
+async function revealTarget(item: SectionNavigationItem) {
+  let target = visibleTarget(item);
+  for (let depth = 0; !target && depth < 8; depth += 1) {
+    const control = revealControl(item);
+    if (!control) return null;
+    control.click();
+    await nextTick();
+    await nextPaint();
+    target = visibleTarget(item);
+  }
+  return target;
+}
+
+async function activate(item: SectionNavigationItem) {
+  const target = await revealTarget(item);
   if (!target) return;
   activatedKey = item.key;
   navRef.value?.setAttribute('data-section-activation-pending', item.key);

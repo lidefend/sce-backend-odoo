@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <!-- These records were originally seeded as noupdate data. Unlock only
+             the exact inbound structure owners before retiring them. -->
+        <function model="ir.model.data" name="write">
+            <function model="ir.model.data" name="search">
+                <value eval="[
+                    ('module', '=', 'smart_construction_core'),
+                    ('name', 'in', [
+                        'business_config_contract_sc_material_inbound_form_sections_v1',
+                        'business_config_contract_sc_material_inbound_form_structure_generated',
+                        'business_config_contract_sc_material_inbound_p1_form_business_facts_v1',
+                        'business_config_contract_material_inbound_productized_form_v1'
+                    ])
+                ]"/>
+            </function>
+            <value eval="{'noupdate': False}"/>
+        </function>
+
+        <function model="ui.business.config.contract" name="write">
+            <value eval="[
+                ref('smart_construction_core.business_config_contract_sc_material_inbound_form_sections_v1'),
+                ref('smart_construction_core.business_config_contract_sc_material_inbound_form_structure_generated'),
+                ref('smart_construction_core.business_config_contract_sc_material_inbound_p1_form_business_facts_v1'),
+                ref('smart_construction_core.business_config_contract_material_inbound_productized_form_v1')
+            ]"/>
+            <value eval="{'active': False}"/>
+        </function>
+
+        <record id="business_config_contract_material_inbound_native_form_v1" model="ui.business.config.contract">
+            <field name="name">material_inbound_native_form_v1</field>
+            <field name="model">sc.material.inbound</field>
+            <field name="view_type">form</field>
+            <field name="action_id" ref="smart_construction_core.action_sc_material_inbound_handling"/>
+            <field name="priority">20</field>
+            <field name="company_id" eval="False"/>
+            <field name="active" eval="True"/>
+            <field name="status">published</field>
+            <field name="version_no">1</field>
+            <field name="contract_json" eval="{
+                'view_orchestration': {
+                    'context': {
+                        'source': 'smart_construction_core.product_release',
+                        'source_status': 'product_release'
+                    },
+                    'views': {
+                        'form': {'composition_mode': 'native_semantic_surface'}
+                    }
+                }
+            }"/>
+        </record>
+    </data>
+</odoo>

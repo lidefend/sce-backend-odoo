@@ -196,7 +196,7 @@ export function useRecordFormLayout(context: {
   });
   const setStatusbarValue=(value:string)=>{const field=nativeStatusbar.value.field;if(!field||nativeStatusbar.value.readonly)return;
     context.formData[field]=resolveStatusbarSelectionValue(formFields.value[field],value);context.markFieldChanged(field);};
-  const nativeStatusbarNodeIdentity=computed(()=>nativeStatusbar.value.visible?canonicalNativeStatusbar.value.nodeIdentity:'');
+  const nativeStatusbarNodeIdentity=computed(()=>nativeStatusbar.value.field?canonicalNativeStatusbar.value.nodeIdentity:'');
   const modifierMainData=()=>resolveContractV2MainData(context.v2ContractStore.value);
   const evaluateNativeModifierValue=(value:unknown)=>evaluateNativeModifierValueWithResolver(value,(field)=>resolveNativeModifierFieldValue(context.formData,modifierMainData(),field));
   const evaluateNativeActionVisibility=(row:Record<string,unknown>)=>isNativeActionVisible({row,currentState:String(context.formData.state||'').trim(),evaluateModifier:evaluateNativeModifierValue,resolveAction:context.contractActionFromNativeRow});

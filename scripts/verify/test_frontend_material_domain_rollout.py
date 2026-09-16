@@ -27,7 +27,7 @@ reporter = load_module(
 
 
 class TestFrontendMaterialDomainRollout(unittest.TestCase):
-    def test_workflow_advances_from_material_to_quality_safety(self):
+    def test_workflow_records_completed_material_domain(self):
         workflow = yaml.safe_load(
             (ROOT / ".agent/workflows/frontend-professionalization.yaml").read_text(
                 encoding="utf-8"
@@ -35,9 +35,10 @@ class TestFrontendMaterialDomainRollout(unittest.TestCase):
         )["workflow"]
         phase_10 = workflow["phases"]["phase_10"]
         self.assertIn("material", phase_10["delivered"])
-        self.assertEqual(phase_10["active_domain"], "quality_safety")
+        self.assertEqual(phase_10["active_domain"], "none")
         self.assertEqual(
-            workflow["next_action"]["task"], "quality_safety_domain_rollout"
+            workflow["next_action"]["task"],
+            "hand_off_completed_systemwide_frontend_product",
         )
 
     def test_browser_verifier_requires_task_and_terminal_record_downgrade(self):
@@ -57,13 +58,47 @@ class TestFrontendMaterialDomainRollout(unittest.TestCase):
         self.assertIn("material create form has no reachable detail entry", source)
         self.assertIn("FRONTEND_MATERIAL_SAMPLE_REVIEW", source)
         self.assertIn("FRONTEND_MATERIAL_SAMPLE_VIEWPORTS", source)
+        self.assertIn("FRONTEND_MATERIAL_EVIDENCE_CAPTURE", source)
         self.assertIn("CANDIDATE_WORKTREE_FINGERPRINT", source)
         self.assertIn("screenshotEvidence()", source)
         self.assertIn("createHash('sha256')", source)
         self.assertIn("inbound_sample_affected_regions", source)
-        self.assertIn("post-relation-input", source)
+        self.assertIn("const handlingEntrySpecs", source)
+        self.assertNotIn("return: {", source)
+        self.assertNotIn("supplier_return: {", source)
+        self.assertIn("target.formal_return_path", source)
+        self.assertIn("product_decision_required", source)
+        self.assertIn("informationOrganization.businessStatusLabelOccurrences === (mode === 'create' ? 0 : 1)", source)
+        self.assertIn("informationOrganization.businessStatusRegions === (mode === 'create' ? 0 : 1)", source)
+        self.assertIn("informationOrganization.bodyStatusFields === 0", source)
+        self.assertIn("line.trim() === expectedBusinessStatusLabel", source)
+        self.assertIn("material inbound status, quantity, or amount has more than one visible owner", source)
+        self.assertIn("no_formal_menu_or_authorized_category_path", (
+            ROOT / "scripts/verify/local_dev_material_domain_ids.py"
+        ).read_text(encoding="utf-8"))
+        self.assertIn("draftNoteRetention", source)
+        self.assertIn("top navigation did not reveal, locate, and highlight", source)
+        self.assertIn("inspectNonMaterialNavigationCounterexample", source)
+        self.assertIn("FRONTEND_MATERIAL_HANDLING_ENTRIES", source)
+        self.assertIn("FRONTEND_MATERIAL_HANDLING_SKIP_COUNTEREXAMPLE", source)
+        self.assertIn("uc2-material-", source)
         self.assertIn("readonly source name is not fully accessible", source)
         self.assertIn("header-owned status remains duplicated", source)
+        self.assertIn("material inbound still depends on compatibility structure", source)
+        self.assertIn("resolvedViewId === 1428", source)
+        self.assertIn("readonly and create chapters do not share one native source authority", source)
+        self.assertIn("material inbound load-acceptance operation is missing from the native contract", source)
+        self.assertIn("createBodyStatusFields + createHeaderStatusbars === 1", source)
+        self.assertIn("material inbound source field is missing", source)
+        self.assertIn("readonly sample exposes no populated source trace fact", source)
+        self.assertIn("getByText('S80-MA-001', { exact: false }).filter({ visible: true })", source)
+        self.assertIn("['入库明细', '说明与附件', '来源追溯']", source)
+        self.assertIn("inbound_evidence_capture_only", source)
+        self.assertIn("resetActualScrollTop", source)
+        self.assertIn("routerHost.scrollTop = 0", source)
+        self.assertIn("fullPage: false", source)
+        self.assertIn("navigationBehavior", source)
+        self.assertIn("capture_only_reuses_prior_business_acceptance", source)
         self.assertIn("findKey(listContract, 'modelRights')?.write === true", source)
         self.assertIn("effectiveRecordCapabilities')?.write === false", source)
         self.assertIn("effectiveRenderProfile') === 'readonly'", source)

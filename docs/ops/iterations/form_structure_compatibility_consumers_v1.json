@@ -1,12 +1,12 @@
 {
-  "head": "967ff6f425436c5e8792fddbde0fc3a58060e30b",
+  "head": "28b7695dc9f1cebbbe9bd5d715e951c6dec8a4da",
   "scope": {
     "role": "system_admin",
     "companyId": 1,
     "operation": "model",
     "renderProfile": "create"
   },
-  "count": 50,
+  "count": 44,
   "fullRescan": false,
   "sourceInventory": "artifacts/form-structure-unification/customer-browser-final/compatibility-consumers.json",
   "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
@@ -1451,588 +1451,6 @@
         "hiddenFieldNames": [],
         "groupColumns": {},
         "groupVisibility": {}
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_material_inbound",
-      "label": "材料入库",
-      "model": "sc.material.inbound",
-      "actionId": 546,
-      "menuId": 494,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.material.inbound",
-        "viewId": 1428
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 152,
-            "name": "sc_material_inbound_form_sections_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          },
-          {
-            "id": 12,
-            "name": "sc_material_inbound_p1_form_business_facts_v1",
-            "version_no": 2,
-            "status": "published",
-            "source_kind": "published"
-          },
-          {
-            "id": 263,
-            "name": "material_inbound_productized_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1428,
-        "resolvedActionId": 546,
-        "structureDiagnostics": [
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.material.inbound",
-              "action_id": 546,
-              "view_id": 1428
-            },
-            "key": "sections",
-            "node": "view_orchestration.views.form.sections",
-            "nodes": [
-              "0",
-              "1",
-              "2",
-              "3"
-            ],
-            "configuration": {
-              "id": 12,
-              "name": "sc_material_inbound_p1_form_business_facts_v1"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 152,
-                "name": "sc_material_inbound_form_sections_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.material.inbound",
-              "action_id": 546,
-              "view_id": 1428
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "material_inbound_document_status_display",
-              "inbound_date",
-              "supplier_id",
-              "quantity_summary",
-              "tax_rate_text",
-              "tax_included_amount",
-              "total_qty",
-              "payment_status_text",
-              "payment_paid_amount",
-              "payment_unpaid_amount",
-              "settlement_status_text",
-              "settlement_settled_amount",
-              "project_name_display",
-              "material_inbound_attachment_text_display",
-              "buyer_name",
-              "source_created_by",
-              "source_created_at"
-            ],
-            "configuration": {
-              "id": 12,
-              "name": "sc_material_inbound_p1_form_business_facts_v1"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 90,
-                "name": "sc_material_inbound_form_structure_generated_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.material.inbound",
-              "action_id": 546,
-              "view_id": 1428
-            },
-            "key": "sections",
-            "node": "view_orchestration.views.form.sections",
-            "nodes": [
-              "0",
-              "1",
-              "2",
-              "3",
-              "4"
-            ],
-            "configuration": {
-              "id": 263,
-              "name": "material_inbound_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 12,
-                "name": "sc_material_inbound_p1_form_business_facts_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.material.inbound",
-              "action_id": 546,
-              "view_id": 1428
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "state",
-              "name",
-              "business_category_id",
-              "inbound_date",
-              "project_id",
-              "supplier_id",
-              "warehouse_id",
-              "buyer_name",
-              "line_ids",
-              "total_qty",
-              "tax_included_amount",
-              "currency_id",
-              "note",
-              "attachment_ids",
-              "legacy_fact_model",
-              "legacy_fact_id",
-              "legacy_fact_type",
-              "source_created_by",
-              "source_created_at",
-              "active"
-            ],
-            "configuration": {
-              "id": 263,
-              "name": "material_inbound_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 12,
-                "name": "sc_material_inbound_p1_form_business_facts_v1"
-              }
-            ]
-          }
-        ],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "state",
-          "sc_has_system_default",
-          "sc_system_default_fields",
-          "sc_system_default_note",
-          "name",
-          "project_id",
-          "operation_strategy",
-          "inbound_date",
-          "acceptance_id",
-          "supplier_id",
-          "warehouse_id",
-          "dest_location_id",
-          "keeper_id",
-          "stock_picking_id",
-          "amount_total",
-          "line_ids",
-          "note",
-          "material_inbound_document_status_display",
-          "quantity_summary",
-          "tax_rate_text",
-          "tax_included_amount",
-          "total_qty",
-          "payment_status_text",
-          "payment_paid_amount",
-          "payment_unpaid_amount",
-          "settlement_status_text",
-          "settlement_settled_amount",
-          "project_name_display",
-          "material_inbound_attachment_text_display",
-          "buyer_name",
-          "source_created_by",
-          "source_created_at",
-          "business_category_id",
-          "currency_id",
-          "attachment_ids",
-          "legacy_fact_model",
-          "legacy_fact_id",
-          "legacy_fact_type",
-          "active"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:入库主信息",
-            "key": "",
-            "title": "入库主信息",
-            "fields": [
-              "state",
-              "name",
-              "business_category_id",
-              "inbound_date"
-            ]
-          },
-          {
-            "identity": "title:项目与供应商",
-            "key": "",
-            "title": "项目与供应商",
-            "fields": [
-              "project_id",
-              "supplier_id",
-              "warehouse_id",
-              "buyer_name"
-            ]
-          },
-          {
-            "identity": "title:入库明细",
-            "key": "",
-            "title": "入库明细",
-            "fields": [
-              "line_ids",
-              "total_qty",
-              "tax_included_amount",
-              "currency_id"
-            ]
-          },
-          {
-            "identity": "title:说明与附件",
-            "key": "",
-            "title": "说明与附件",
-            "fields": [
-              "note",
-              "attachment_ids"
-            ]
-          },
-          {
-            "identity": "title:来源追溯",
-            "key": "",
-            "title": "来源追溯",
-            "fields": [
-              "legacy_fact_model",
-              "legacy_fact_id",
-              "legacy_fact_type",
-              "source_created_by",
-              "source_created_at",
-              "active"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "材料信息",
-          "单据识别",
-          "业务对象",
-          "金额与办理",
-          "附件与来源",
-          "入库主信息",
-          "项目与供应商",
-          "入库明细",
-          "说明与附件",
-          "来源追溯"
-        ],
-        "fieldGroups": {
-          "入库主信息": [
-            "state",
-            "name",
-            "business_category_id",
-            "inbound_date"
-          ],
-          "项目与供应商": [
-            "project_id",
-            "supplier_id",
-            "warehouse_id",
-            "buyer_name"
-          ],
-          "入库明细": [
-            "line_ids",
-            "total_qty",
-            "tax_included_amount",
-            "currency_id"
-          ],
-          "说明与附件": [
-            "note",
-            "attachment_ids"
-          ],
-          "来源追溯": [
-            "legacy_fact_model",
-            "legacy_fact_id",
-            "legacy_fact_type",
-            "source_created_by",
-            "source_created_at",
-            "active"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "入库主信息": 2,
-          "项目与供应商": 2,
-          "入库明细": 1,
-          "说明与附件": 1,
-          "来源追溯": 2
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_material_outbound",
-      "label": "材料出库",
-      "model": "sc.material.outbound",
-      "actionId": 547,
-      "menuId": 495,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.material.outbound",
-        "viewId": 1431
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 259,
-            "name": "material_outbound_productized_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1431,
-        "resolvedActionId": 547,
-        "structureDiagnostics": [
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.material.outbound",
-              "action_id": 547,
-              "view_id": 1431
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "state",
-              "validation_status",
-              "can_review",
-              "name",
-              "outbound_type",
-              "business_category_id",
-              "outbound_date",
-              "project_id",
-              "company_id",
-              "warehouse_id",
-              "line_ids",
-              "currency_id",
-              "note",
-              "attachment_ids",
-              "reject_reason",
-              "legacy_fact_model",
-              "legacy_fact_id",
-              "legacy_fact_type",
-              "source_created_by",
-              "source_created_at",
-              "active"
-            ],
-            "configuration": {
-              "id": 259,
-              "name": "material_outbound_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 91,
-                "name": "sc_material_outbound_form_structure_generated_v1"
-              }
-            ]
-          }
-        ],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "state",
-          "sc_has_system_default",
-          "sc_system_default_fields",
-          "sc_system_default_note",
-          "name",
-          "project_id",
-          "outbound_date",
-          "purpose",
-          "warehouse_id",
-          "source_location_id",
-          "receiver_id",
-          "receiver_user_id",
-          "keeper_id",
-          "stock_picking_id",
-          "line_ids",
-          "note",
-          "validation_status",
-          "can_review",
-          "outbound_type",
-          "business_category_id",
-          "company_id",
-          "currency_id",
-          "attachment_ids",
-          "reject_reason",
-          "legacy_fact_model",
-          "legacy_fact_id",
-          "legacy_fact_type",
-          "source_created_by",
-          "source_created_at",
-          "active"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:出库主信息",
-            "key": "",
-            "title": "出库主信息",
-            "fields": [
-              "state",
-              "validation_status",
-              "can_review",
-              "name",
-              "outbound_type",
-              "business_category_id",
-              "outbound_date"
-            ]
-          },
-          {
-            "identity": "title:项目与仓库",
-            "key": "",
-            "title": "项目与仓库",
-            "fields": [
-              "project_id",
-              "company_id",
-              "warehouse_id"
-            ]
-          },
-          {
-            "identity": "title:出库明细",
-            "key": "",
-            "title": "出库明细",
-            "fields": [
-              "line_ids",
-              "currency_id"
-            ]
-          },
-          {
-            "identity": "title:说明与附件",
-            "key": "",
-            "title": "说明与附件",
-            "fields": [
-              "note",
-              "attachment_ids",
-              "reject_reason"
-            ]
-          },
-          {
-            "identity": "title:来源追溯",
-            "key": "",
-            "title": "来源追溯",
-            "fields": [
-              "legacy_fact_model",
-              "legacy_fact_id",
-              "legacy_fact_type",
-              "source_created_by",
-              "source_created_at",
-              "active"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "出库主信息",
-          "项目与仓库",
-          "出库明细",
-          "说明与附件",
-          "来源追溯"
-        ],
-        "fieldGroups": {
-          "出库主信息": [
-            "state",
-            "validation_status",
-            "can_review",
-            "name",
-            "outbound_type",
-            "business_category_id",
-            "outbound_date"
-          ],
-          "项目与仓库": [
-            "project_id",
-            "company_id",
-            "warehouse_id"
-          ],
-          "出库明细": [
-            "line_ids",
-            "currency_id"
-          ],
-          "说明与附件": [
-            "note",
-            "attachment_ids",
-            "reject_reason"
-          ],
-          "来源追溯": [
-            "legacy_fact_model",
-            "legacy_fact_id",
-            "legacy_fact_type",
-            "source_created_by",
-            "source_created_at",
-            "active"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "出库主信息": 2,
-          "项目与仓库": 2,
-          "出库明细": 1,
-          "说明与附件": 1,
-          "来源追溯": 2
-        },
-        "groupVisibility": {},
-        "formColumns": 2
       },
       "compatibilityLogic": [
         "legacy structure slots",
@@ -11727,78 +11145,6 @@
       "compatibilityConsumer": true,
       "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
       "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_p1_income_contract",
-      "actionId": 609,
-      "menuId": 660,
-      "model": "construction.contract.income",
-      "actualViewId": 1569,
-      "layoutPolicy": "category_sections_as_task_tabs",
-      "configuration": {
-        "source": "sc.business.category.form_policy_json",
-        "categoryId": 8,
-        "categoryCode": "contract.income",
-        "targetModel": "construction.contract.income"
-      },
-      "compatibilityConsumer": true,
-      "sourceHead": "967ff6f425436c5e8792fddbde0fc3a58060e30b",
-      "evidenceStatus": "verified_prior_undercount",
-      "runtimeEvidence": "identity-609/desktop-identity-609-entry-identity.json"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_p1_expense_contract",
-      "actionId": 610,
-      "menuId": 661,
-      "model": "construction.contract.expense",
-      "actualViewId": 1570,
-      "layoutPolicy": "category_sections_as_task_tabs",
-      "configuration": {
-        "source": "sc.business.category.form_policy_json",
-        "categoryId": 10,
-        "categoryCode": "contract.expense",
-        "targetModel": "construction.contract.expense"
-      },
-      "compatibilityConsumer": true,
-      "sourceHead": "967ff6f425436c5e8792fddbde0fc3a58060e30b",
-      "evidenceStatus": "verified_prior_undercount",
-      "runtimeEvidence": "identity-610/desktop-identity-610-entry-identity.json"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_p1_income_settlement",
-      "actionId": 781,
-      "menuId": 664,
-      "model": "sc.settlement.order",
-      "actualViewId": 1764,
-      "layoutPolicy": "category_sections_as_task_tabs",
-      "configuration": {
-        "source": "sc.business.category.form_policy_json",
-        "categoryId": 12,
-        "categoryCode": "settlement.income",
-        "targetModel": "sc.settlement.order"
-      },
-      "compatibilityConsumer": true,
-      "sourceHead": "967ff6f425436c5e8792fddbde0fc3a58060e30b",
-      "evidenceStatus": "verified_prior_undercount",
-      "runtimeEvidence": "identity-781/desktop-identity-781-entry-identity.json"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_p1_expense_settlement",
-      "actionId": 782,
-      "menuId": 665,
-      "model": "sc.settlement.order",
-      "actualViewId": 1764,
-      "layoutPolicy": "category_sections_as_task_tabs",
-      "configuration": {
-        "source": "sc.business.category.form_policy_json",
-        "categoryId": 13,
-        "categoryCode": "settlement.expense",
-        "targetModel": "sc.settlement.order"
-      },
-      "compatibilityConsumer": true,
-      "sourceHead": "967ff6f425436c5e8792fddbde0fc3a58060e30b",
-      "evidenceStatus": "verified_prior_undercount",
-      "runtimeEvidence": "identity-782/desktop-identity-782-entry-identity.json"
     }
   ],
   "otherStateConsumers": [
@@ -11943,42 +11289,199 @@
     "countCorrection": 4,
     "migrationReduction": 3
   },
-  "runtimeEvidenceRoot": "artifacts/form-structure-unification/ub-tender-hierarchy-identities",
-  "nextBatch": {
-    "name": "U-C",
-    "priorityActions": [
-      781,
-      782,
-      609,
-      610
-    ],
-    "groups": [
-      {
-        "viewId": 1764,
-        "actions": [
-          781,
-          782
-        ],
-        "sourceCategories": [
-          12,
-          13
+  "publishedCount": 46,
+  "localVerifiedCount": 44,
+  "uc1PublishedAudit": {
+    "auditedAt": "2026-09-16",
+    "auditedReleaseHead": "28b7695dc9f1cebbbe9bd5d715e951c6dec8a4da",
+    "iterationRecord": "docs/ops/iterations/uc1_contract_settlement_native_migration_20260915.md",
+    "reduction": {
+      "before": 50,
+      "after": 46,
+      "retiredActions": [
+        609,
+        610,
+        781,
+        782
+      ],
+      "retiredViews": [
+        1569,
+        1570,
+        1764
+      ]
+    },
+    "sourceVerification": {
+      "nativeStructureAuthority": true,
+      "configuredSectionsEmpty": true,
+      "compatibilityDependenciesEmpty": true
+    },
+    "browserEvidence": {
+      "recordedOutcome": "passed_and_user_accepted_in_merged_iteration_record",
+      "rawFiles": "deleted_unreviewable_after_worktree_cleanup",
+      "recreated": false,
+      "acceptanceRerun": false
+    }
+  },
+  "uc2LocalMigrationAudit": {
+    "auditedAt": "2026-09-16",
+    "status": "local_formal_scope_546_547_verified_freeze_pending",
+    "productCandidateHead": "f1dbaa9950263f735b0619a08b545f8f199f5982",
+    "productCandidateFingerprint": "f9780e4b60fb625cdaa8b73a8cdb7a5217dd1069a989b64d4c5721e7290304da",
+    "iterationRecord": "docs/ops/iterations/uc2_material_native_migration_20260916.md",
+    "reduction": {
+      "before": 46,
+      "after": 44,
+      "retiredActions": [
+        546,
+        547
+      ],
+      "retiredViews": [
+        1428,
+        1431
+      ],
+      "countMeaning": "local UC2 formal-scope compatibility migration; published count remains pending merge"
+    },
+    "sourceVerification": {
+      "layoutPolicy": "container_tree_authority",
+      "formStructureAuthority": "native_authority",
+      "compatibilityDependenciesEmpty": true,
+      "entries": [
+        {
+          "key": "inbound",
+          "actionId": 546,
+          "menuId": 494,
+          "viewId": 1428
+        },
+        {
+          "key": "outbound",
+          "actionId": 547,
+          "menuId": 495,
+          "viewId": 1431
+        }
+      ],
+      "formalPrimaryMenuCountUnchanged": 89,
+      "returnPath": {
+        "status": "out_of_scope_non_formal_capability_followup",
+        "formallyReachable": false,
+        "actionId": 548,
+        "menuId": 496,
+        "sharedViewId": 1431,
+        "formalBaseline": false,
+        "parentMenuActive": false,
+        "routeAuthorityRoles": [],
+        "outboundAllowedBusinessCategoryCodes": [],
+        "reason": "no_formal_menu_or_authorized_category_path",
+        "directActionAcceptedAsUserPath": false,
+        "supplierReturnExcluded": true,
+        "scopeDisposition": "outside_uc2_formal_actions_546_547",
+        "followUpDirection": "evaluate a traceable original-outbound return capability: verify source link, returnable quantity, inventory direction, and permissions before defining a formal entry; do not open outbound classification or revive the retired menu"
+      }
+    },
+    "browserEvidence": {
+      "status": "uc2_formal_scope_546_547_passed",
+      "head": "f1dbaa9950263f735b0619a08b545f8f199f5982",
+      "fingerprint": "f9780e4b60fb625cdaa8b73a8cdb7a5217dd1069a989b64d4c5721e7290304da",
+      "viewports": [
+        "1440x960",
+        "390x844"
+      ],
+      "profiles": [
+        "readonly_existing_record",
+        "create_zero_save"
+      ],
+      "samples": {
+        "inbound": "S80-MIN-001 / received",
+        "outbound": "S80-MOUT-001 / issued",
+        "return": "no formally reachable user path"
+      },
+      "legalDraftSamples": {
+        "inbound": false,
+        "outbound": false,
+        "return": false
+      },
+      "materialReviewCount": 8,
+      "nonMaterialCounterexample": "personnel_profile",
+      "screenshotCount": 25,
+      "mutationRequests": 0,
+      "browserErrors": 0,
+      "businessFingerprintsUnchanged": true,
+      "evidenceRoot": "tmp/uc2/material-batch-f1dbaa99/browser-batch-review",
+      "informationOrganization": {
+        "existingInbound": {
+          "businessStatusRegions": 1,
+          "businessStatusLabelOccurrences": 1,
+          "bodyStatusFields": 0,
+          "totalQtyFields": 1,
+          "amountTotalFields": 1
+        },
+        "createInbound": {
+          "businessStatusRegions": 0,
+          "businessStatusLabelOccurrences": 0,
+          "bodyStatusFields": 0,
+          "totalQtyFields": 1,
+          "amountTotalFields": 1
+        },
+        "removedVisibleDuplicates": [
+          "document_status",
+          "quantity_summary",
+          "tax_included_amount"
         ]
       },
-      {
-        "viewIds": [
-          1569,
-          1570
+      "navigationReview": {
+        "status": "passed",
+        "bodyTabs": [
+          "材料明细/入库明细",
+          "说明与附件",
+          "来源追溯"
         ],
+        "hiddenTargetVisibleBefore": 0,
+        "targetVisibleAfterTopNavigation": 1,
+        "activeNavigation": "location",
+        "draftRetention": "create notes retained across tab changes without save"
+      },
+      "scopeActions": [
+        546,
+        547
+      ],
+      "returnEvidenceDisposition": "investigation retained; no formal path and no UC2 pass claim"
+    }
+  },
+  "runtimeEvidenceRoot": "artifacts/form-structure-unification/ub-tender-hierarchy-identities",
+  "nextBatch": {
+    "name": "U-C2",
+    "status": "formal_scope_verified_freeze_pending",
+    "priorityActions": [],
+    "groups": [
+      {
+        "viewId": 1428,
         "actions": [
-          609,
-          610
+          546
         ],
         "sourceCategories": [
-          8,
-          10
-        ]
+          "material.inbound"
+        ],
+        "migrationStatus": "local_verified"
+      },
+      {
+        "viewId": 1431,
+        "actions": [
+          547
+        ],
+        "sourceCategories": [
+          "material.outbound"
+        ],
+        "migrationStatus": "local_verified"
       }
-    ]
+    ],
+    "returnDecision": {
+      "actionId": 548,
+      "viewId": 1431,
+      "acceptedAsFormalPath": false,
+      "scopeDisposition": "out_of_scope_non_formal_capability_followup",
+      "followUpDirection": "traceable original-outbound return capability evaluation before any formal entry decision"
+    },
+    "scopeNote": "UC2 formal scope is action 546 inbound and action 547 outbound; supplier return remains separate; return shares view 1431 but is outside the formal 89-entry baseline, has no usable formal path, and does not block or add a ledger consumer",
+    "promotionCondition": "after generated-evidence preflight and clean freeze, complete independent exact-head review, one exact-head Quick, external evidence archive verification, and governed PR delivery"
   },
   "retirementCondition": "Only after every formal consumer of a compatibility regrouping path is zero and other roles/companies/states are covered, remove that regrouping logic and its test exemptions."
 }

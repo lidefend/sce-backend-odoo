@@ -6,11 +6,16 @@ import {
   nextBusinessActionLabel,
   nativeSectionNavigationRole,
   relationshipCollectionNavigationItems,
+  sectionRevealTargetsContain,
   sectionScrollDelta,
   shouldPreserveAuthoritativeBusinessSections,
   workspaceSectionNavigationItems,
   workspaceSurfaceNavigationItems,
 } from '../src/pages/contractForm/nativeSectionNavigation';
+
+assert.equal(sectionRevealTargetsContain('["field:line_ids:relation-collection"]', 'field:line_ids:relation-collection'), true);
+assert.equal(sectionRevealTargetsContain('["field:line_ids:relation-collection-extra"]', 'field:line_ids:relation-collection'), false);
+assert.equal(sectionRevealTargetsContain('not-json', 'field:line_ids:relation-collection'), false);
 import {
   collectNativeBusinessSections,
   governedFormStructureSectionIdentity,

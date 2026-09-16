@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import hashlib
+import json
+import base64
 import subprocess
 import sys
 import tempfile
@@ -32,7 +35,8 @@ class SafeWorktreeCleanupTest(unittest.TestCase):
         git(self.root, "config", "user.email", "test@example.invalid")
         git(self.root, "config", "user.name", "Test")
         (self.root / "README").write_text("base\n", encoding="utf-8")
-        git(self.root, "add", "README")
+        (self.root / ".gitignore").write_text("artifacts/\n", encoding="utf-8")
+        git(self.root, "add", "README", ".gitignore")
         git(self.root, "commit", "-m", "base")
         git(self.root, "init", "--bare", str(self.remote))
         git(self.root, "remote", "add", "origin", str(self.remote))
@@ -46,9 +50,59 @@ class SafeWorktreeCleanupTest(unittest.TestCase):
         git(self.root, "worktree", "add", "-b", branch, str(path), "main")
         return path
 
+    def evidence_receipt(self, path: Path, head: str) -> Path:
+        archive = Path(self.temp.name) / "archive" / head
+        archive.mkdir(parents=True, exist_ok=True)
+        sources = {
+            "summary": ("summary.md", f"summary {head}\n".encode()),
+            "identity": ("identity.json", json.dumps({"candidateHead": head}).encode()),
+            "screenshot": ("screenshot.png", base64.b64decode(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+            )),
+            "review": ("review.md", f"review {head}\n".encode()),
+        }
+        rows = []
+        manifest_rows = []
+        source_root = path / "artifacts" / "delivery"
+        source_root.mkdir(parents=True, exist_ok=True)
+        for role, (name, content) in sources.items():
+            source = source_root / name
+            source.write_bytes(content)
+            archived = archive / name
+            archived.write_bytes(content)
+            rows.append({
+                "role": role,
+                "sourcePath": str(source.relative_to(path)),
+                "archivePath": str(archived.resolve()),
+                "sha256": hashlib.sha256(archived.read_bytes()).hexdigest(),
+            })
+            manifest_rows.append({"role": role, "path": str(source.relative_to(path))})
+        manifest = source_root / "archive-manifest.json"
+        manifest.write_text(json.dumps({
+            "schemaVersion": 1,
+            "topic": "test-delivery",
+            "candidateHead": head,
+            "files": manifest_rows,
+        }), encoding="utf-8")
+        receipt = archive / "archive-receipt.json"
+        receipt.write_text(json.dumps({
+            "schemaVersion": 1,
+            "status": "verified",
+            "topic": "test-delivery",
+            "candidateWorktree": str(path.resolve()),
+            "candidateHead": head,
+            "manifestPath": str(manifest.resolve()),
+            "manifestSha256": hashlib.sha256(manifest.read_bytes()).hexdigest(),
+            "files": rows,
+        }), encoding="utf-8")
+        return receipt
+
     def test_clean_merged_worktree_is_removed_locally(self) -> None:
         path = self.add_worktree()
-        selected = cleanup.cleanup(self.root, path, apply=True)
+        head = git(path, "rev-parse", "HEAD")
+        selected = cleanup.cleanup(
+            self.root, path, apply=True, evidence_receipt=self.evidence_receipt(path, head)
+        )
         self.assertEqual(selected.branch, "fix/merged")
         self.assertFalse(path.exists())
         self.assertNotIn("fix/merged", git(self.root, "branch", "--format=%(refname:short)").splitlines())
@@ -91,6 +145,7 @@ class SafeWorktreeCleanupTest(unittest.TestCase):
             expected_head=expected_head,
             apply=True,
             confirmation=cleanup.DETACH_CONFIRMATION,
+            evidence_receipt=self.evidence_receipt(path, expected_head),
         )
 
         self.assertEqual(selected.head, expected_head)
@@ -106,6 +161,7 @@ class SafeWorktreeCleanupTest(unittest.TestCase):
             expected_head=expected_head,
             apply=True,
             confirmation=cleanup.DETACH_CONFIRMATION,
+            evidence_receipt=self.evidence_receipt(path, expected_head),
         )
         self.assertEqual(git(self.root, "rev-parse", "release/retained-record"), expected_head)
         with self.assertRaisesRegex(cleanup.CleanupError, "primary"):
@@ -129,7 +185,41 @@ class SafeWorktreeCleanupTest(unittest.TestCase):
                 expected_head=expected_head,
                 apply=True,
                 confirmation="wrong",
+                evidence_receipt=self.evidence_receipt(path, expected_head),
             )
+        self.assertTrue(path.is_dir())
+
+    def test_apply_without_external_evidence_receipt_is_denied(self) -> None:
+        path = self.add_worktree("fix/missing-receipt")
+        with self.assertRaisesRegex(cleanup.CleanupError, "evidence receipt"):
+            cleanup.cleanup(self.root, path, apply=True)
+        self.assertTrue(path.is_dir())
+
+    def test_receipt_head_mismatch_is_denied_without_removal(self) -> None:
+        path = self.add_worktree("fix/receipt-head-mismatch")
+        receipt = self.evidence_receipt(path, "0" * 40)
+        with self.assertRaisesRegex(cleanup.CleanupError, "HEAD mismatch"):
+            cleanup.cleanup(self.root, path, apply=True, evidence_receipt=receipt)
+        self.assertTrue(path.is_dir())
+
+    def test_missing_archived_file_is_denied_without_removal(self) -> None:
+        path = self.add_worktree("fix/missing-archived-file")
+        head = git(path, "rev-parse", "HEAD")
+        receipt = self.evidence_receipt(path, head)
+        payload = json.loads(receipt.read_text(encoding="utf-8"))
+        Path(payload["files"][0]["archivePath"]).unlink()
+        with self.assertRaisesRegex(cleanup.CleanupError, "missing or inside"):
+            cleanup.cleanup(self.root, path, apply=True, evidence_receipt=receipt)
+        self.assertTrue(path.is_dir())
+
+    def test_archived_file_hash_mismatch_is_denied_without_removal(self) -> None:
+        path = self.add_worktree("fix/archived-hash-mismatch")
+        head = git(path, "rev-parse", "HEAD")
+        receipt = self.evidence_receipt(path, head)
+        payload = json.loads(receipt.read_text(encoding="utf-8"))
+        Path(payload["files"][0]["archivePath"]).write_text("tampered\n", encoding="utf-8")
+        with self.assertRaisesRegex(cleanup.CleanupError, "verification failed"):
+            cleanup.cleanup(self.root, path, apply=True, evidence_receipt=receipt)
         self.assertTrue(path.is_dir())
 
     def test_governed_branch_cleanup_force_uses_explicit_force_delete(self) -> None:

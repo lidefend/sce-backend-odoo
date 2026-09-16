@@ -131,6 +131,23 @@ class TestProjectMemberRoleSurface(TransactionCase):
                 self.assertFalse(exposed & denied)
                 self.assertTrue(all(xmlid.startswith("smart_construction_core.menu_") for xmlid in exposed | denied))
 
+    def test_material_return_is_not_published_as_a_formal_or_contextual_entry(self):
+        return_menu = "smart_construction_core.menu_sc_material_return"
+        for role, policy in ROLE_SURFACE_OVERRIDES.items():
+            with self.subTest(role=role):
+                exposed = set(policy.get("primary_menu_xmlids") or [])
+                exposed |= set(policy.get("role_home_menu_xmlids") or [])
+                exposed |= set(policy.get("contextual_menu_xmlids") or [])
+                self.assertNotIn(return_menu, exposed)
+
+        for product in load_locked_menu_policy_contract()["products"].values():
+            locked_menus = {
+                menu.get("menu_xmlid")
+                for group in product.get("menu_groups") or []
+                for menu in group.get("menus") or []
+            }
+            self.assertNotIn(return_menu, locked_menus)
+
     def test_legacy_label_aliases_cannot_override_locked_product_labels(self):
         contract = load_locked_menu_policy_contract()
         locked_labels = {

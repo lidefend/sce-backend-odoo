@@ -7,6 +7,7 @@ from odoo.addons.smart_core.delivery.delivery_engine import DeliveryEngine
 from odoo.addons.smart_core.handlers.ui_contract import UiContractHandler
 from odoo.tests import TransactionCase
 from odoo.tests.common import tagged
+from odoo.tools.convert import convert_file
 
 
 @tagged("post_install", "-at_install", "user_feedback")
@@ -122,8 +123,18 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         arch = (
             Path(__file__).resolve().parents[1] / "views" / "core" / "material_acceptance_views.xml"
         ).read_text(encoding="utf-8")
-        self.assertIn('<form string="入库办理">', arch)
-        detail_arch = arch.split('<page string="入库明细">', 1)[1].split("</page>", 1)[0]
+        form_arch = arch.split('id="view_sc_material_inbound_form"', 1)[1].split("</record>", 1)[0]
+        self.assertIn('<form string="入库办理">', form_arch)
+        section_titles = [
+            'string="入库主信息"',
+            'string="项目与供应商"',
+            'string="入库明细"',
+            'string="说明与附件"',
+            'string="来源追溯"',
+        ]
+        section_positions = [form_arch.index(title) for title in section_titles]
+        self.assertEqual(section_positions, sorted(section_positions))
+        detail_arch = form_arch.split('<page string="入库明细">', 1)[1].split("</page>", 1)[0]
         ordered_fields = [
             'name="material_catalog_id"',
             'name="material_spec"',
@@ -135,67 +146,85 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         ]
         positions = [detail_arch.index(field) for field in ordered_fields]
         self.assertEqual(positions, sorted(positions))
+        self.assertNotIn('name="quantity_summary"', form_arch)
+        self.assertNotIn('name="document_status"', form_arch)
+        self.assertNotIn('name="tax_included_amount"', form_arch)
+        self.assertEqual(form_arch.count('name="total_qty"'), 1)
+        self.assertEqual(form_arch.count('name="amount_total"'), 1)
+        self.assertEqual(form_arch.count('name="state"'), 1)
+        self.assertNotIn('name="create_date"', form_arch)
+        self.assertIn('name="state" widget="statusbar" statusbar_visible="draft,submitted,received"', form_arch)
+        self.assertIn('name="qty"', detail_arch)
+        self.assertIn('name="amount" sum="金额合计"', detail_arch)
+        for action_name in ("action_submit", "action_receive", "action_reset_draft", "action_cancel"):
+            self.assertIn('name="%s"' % action_name, form_arch)
+        self.assertIn("group_sc_cap_material_manager", form_arch)
 
-    def test_material_inbound_policy_separates_business_facts_from_lines(self):
+    def test_material_inbound_policy_keeps_field_semantics_without_structure(self):
         from odoo.addons.smart_construction_core.models.support.business_form_policy_templates import (
             get_business_category_form_policy_templates,
         )
 
         policy = get_business_category_form_policy_templates()["material.inbound"]
-        sections = {section["name"]: section for section in policy["sections"]}
-        self.assertEqual(sections["business_facts"]["title"], "基本资料")
-        self.assertEqual(
-            sections["business_facts"]["fields"],
-            [
-                "project_id",
-                "inbound_date",
-                "supplier_id",
-                "warehouse_id",
-                "dest_location_id",
-                "acceptance_id",
-                "keeper_id",
-                "amount_total",
-                "tax_included_amount",
-            ],
-        )
-        self.assertEqual(sections["document_lines"]["fields"], ["line_ids"])
+        self.assertNotIn("sections", policy)
+        fields = {row["name"]: row for row in policy["fields"]}
+        for name in ("business_category_id", "project_id", "warehouse_id", "dest_location_id"):
+            self.assertEqual(fields[name]["required_profiles"], ["create", "edit"])
+        for name in ("business_category_id", "state", "name", "amount_total", "tax_included_amount"):
+            self.assertEqual(fields[name]["readonly_profiles"], ["create", "edit", "readonly"])
+        self.assertEqual(fields["stock_picking_id"]["visible_profiles"], ["readonly"])
+        self.assertIn("line_ids", fields)
 
-    def test_material_inbound_read_fact_contract_preserves_native_editability(self):
-        action_contract_xml = (
-            Path(__file__).resolve().parents[1]
-            / "data"
-            / "remaining_p3_form_productization_contract.xml"
-        ).read_text(encoding="utf-8")
-        action_contract = action_contract_xml.split(
-            'id="business_config_contract_material_inbound_productized_form_v1"', 1
-        )[1].split("</record>", 1)[0]
-        self.assertIn("{'name': 'inbound_date', 'sequence': 40}", action_contract)
-        self.assertIn("{'name': 'supplier_id', 'sequence': 60}", action_contract)
+    def test_material_inbound_contract_uses_native_structure_without_compatibility(self):
+        convert_file(
+            self.env,
+            "smart_construction_core",
+            "data/material_inbound_native_form_retirement.xml",
+            {},
+            mode="update",
+            noupdate=False,
+        )
+        self.env["sc.business.category"]._sync_seed_form_policies()
 
-        fact_contract = self.env.ref(
-            "smart_construction_core.business_config_contract_sc_material_inbound_p1_form_business_facts_v1"
+        retired_xmlids = (
+            "business_config_contract_sc_material_inbound_form_sections_v1",
+            "business_config_contract_sc_material_inbound_form_structure_generated",
+            "business_config_contract_sc_material_inbound_p1_form_business_facts_v1",
+            "business_config_contract_material_inbound_productized_form_v1",
         )
-        fact_rows = {
-            row["name"]: row
-            for row in fact_contract.contract_json["view_orchestration"]["views"]["form"]["fields"]
-        }
-        self.assertNotIn("readonly", fact_rows["inbound_date"])
-        self.assertNotIn("readonly", fact_rows["supplier_id"])
+        for xmlid in retired_xmlids:
+            self.assertFalse(self.env.ref("smart_construction_core.%s" % xmlid).active, xmlid)
+        native_contract = self.env.ref(
+            "smart_construction_core.business_config_contract_material_inbound_native_form_v1"
+        )
+        action = self.env.ref("smart_construction_core.action_sc_material_inbound_handling")
+        menu = self.env.ref("smart_construction_core.menu_sc_material_inbound")
+        view = self.env.ref("smart_construction_core.view_sc_material_inbound_form")
+        self.assertTrue(native_contract.active)
+        self.assertEqual(native_contract.action_id, action)
 
-        action_contract = self.env.ref(
-            "smart_construction_core.business_config_contract_material_inbound_productized_form_v1"
-        )
-        action_rows = {
-            row["name"]: row
-            for row in action_contract.contract_json["view_orchestration"]["views"]["form"]["fields"]
-        }
-        self.assertEqual(
-            action_contract.action_id,
-            self.env.ref("smart_construction_core.action_sc_material_inbound_handling"),
-        )
-        self.assertGreater(action_contract.priority, fact_contract.priority)
-        self.assertNotIn("readonly", action_rows["inbound_date"])
-        self.assertNotIn("readonly", action_rows["supplier_id"])
+        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+
+        result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({
+            "op": "model",
+            "model": "sc.material.inbound",
+            "action_id": action.id,
+            "menu_id": menu.id,
+            "view_type": "form",
+            "render_profile": "create",
+        })
+        envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+        self.assertTrue(envelope.get("ok", True), envelope.get("error"))
+        contract = envelope["data"]
+        structure = contract["formStructureContract"]
+        self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
+        provenance = structure["sourceAuthority"]["governance_source"]
+        self.assertEqual(provenance["resolvedActionId"], action.id)
+        self.assertEqual(provenance["resolvedViewId"], view.id)
+        self.assertEqual(provenance.get("configuredSections", []), [])
+        self.assertEqual(provenance.get("compatibilityDependencies", []), [])
+        self.assertFalse(provenance["legacyFieldPolicyOverlay"])
+        self.assertFalse(provenance["formLayoutOverlay"])
 
     def test_material_acceptance_line_has_authoritative_business_display_name(self):
         acceptance = self.env["sc.material.acceptance"].create(
@@ -226,18 +255,18 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.assertIn(self.product.display_name, display_name)
         self.assertNotIn("sc.material.inbound.line,", display_name)
 
-    def test_material_outbound_policy_separates_business_facts_from_lines(self):
+    def test_material_outbound_and_return_policies_keep_semantics_without_structure(self):
         from odoo.addons.smart_construction_core.models.support.business_form_policy_templates import (
             get_business_category_form_policy_templates,
         )
 
-        policy = get_business_category_form_policy_templates()["material.outbound"]
-        sections = {section["name"]: section for section in policy["sections"]}
-        self.assertEqual(sections["business_facts"]["title"], "基本资料")
-        self.assertIn("receiver_id", sections["business_facts"]["fields"])
-        self.assertIn("outbound_date", sections["business_facts"]["fields"])
-        self.assertEqual(sections["document_lines"]["fields"], ["line_ids"])
-        self.assertEqual(sections["handling"]["fields"], ["note", "attachment_ids"])
+        policies = get_business_category_form_policy_templates()
+        for category_code in ("material.outbound", "material.return"):
+            policy = policies[category_code]
+            self.assertNotIn("sections", policy)
+            fields = {row["name"]: row for row in policy["fields"]}
+            for name in ("outbound_type", "outbound_date", "warehouse_id", "line_ids"):
+                self.assertIn(name, fields, (category_code, name))
 
         view_arch = (
             Path(__file__).resolve().parents[1]
@@ -246,6 +275,9 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             / "material_acceptance_views.xml"
         ).read_text(encoding="utf-8")
         outbound_form = view_arch[view_arch.index('id="view_sc_material_outbound_form"') :]
+        for title in ("出退库主信息", "材料明细", "说明与附件", "来源追溯"):
+            self.assertIn('string="%s"' % title, outbound_form)
+        self.assertIn('name="line_ids" string="材料明细"', outbound_form)
         self.assertLess(
             outbound_form.index('name="material_catalog_id"'),
             outbound_form.index('name="origin_issue_line_id"'),
@@ -255,6 +287,91 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             outbound_form.index('name="origin_issue_line_id"'),
         )
 
+    def test_material_outbound_and_return_contracts_use_native_structure_without_compatibility(self):
+        for data_file in (
+            "views/menu_business_taxonomy.xml",
+            "views/menu_product_project_wave1.xml",
+            "views/support/user_confirmed_formal_list_alignment_views.xml",
+        ):
+            convert_file(
+                self.env,
+                "smart_construction_core",
+                data_file,
+                {},
+                mode="update",
+                noupdate=False,
+            )
+        convert_file(
+            self.env,
+            "smart_construction_core",
+            "data/material_outbound_native_form_retirement.xml",
+            {},
+            mode="update",
+            noupdate=False,
+        )
+        self.env["sc.business.category"]._sync_seed_form_policies()
+
+        for xmlid in (
+            "business_config_contract_sc_material_outbound_form_structure_generated",
+            "business_config_contract_material_outbound_productized_form_v1",
+        ):
+            self.assertFalse(self.env.ref("smart_construction_core.%s" % xmlid).active, xmlid)
+
+        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+
+        view = self.env.ref("smart_construction_core.view_sc_material_outbound_form")
+        legacy_material_group = self.env.ref("smart_construction_core.menu_sc_material_management_group")
+        return_menu = self.env.ref("smart_construction_core.menu_sc_material_return")
+        outbound_action = self.env.ref("smart_construction_core.action_sc_material_outbound")
+        return_action = self.env.ref("smart_construction_core.action_sc_material_return")
+        self.assertEqual(return_menu.parent_id, legacy_material_group)
+        self.assertFalse(legacy_material_group.active)
+        self.assertIn("('outbound_type', '=', 'issue')", outbound_action.domain)
+        self.assertIn("'current_business_category_code': 'material.outbound'", outbound_action.context)
+        self.assertIn("('outbound_type', '=', 'return')", return_action.domain)
+        self.assertIn("'current_business_category_code': 'material.return'", return_action.context)
+        entry_specs = (
+            (
+                "material.outbound",
+                "action_sc_material_outbound",
+                "menu_sc_material_outbound",
+                "business_config_contract_material_outbound_native_form_v1",
+            ),
+            (
+                "material.return",
+                "action_sc_material_return",
+                "menu_sc_material_return",
+                "business_config_contract_material_return_native_form_v1",
+            ),
+        )
+        for category_code, action_xmlid, menu_xmlid, contract_xmlid in entry_specs:
+            action = self.env.ref("smart_construction_core.%s" % action_xmlid)
+            menu = self.env.ref("smart_construction_core.%s" % menu_xmlid)
+            native_contract = self.env.ref("smart_construction_core.%s" % contract_xmlid)
+            self.assertTrue(native_contract.active)
+            self.assertEqual(native_contract.action_id, action)
+            result = UiContractV2Handler(
+                self.env, su_env=self.env["ir.model"].sudo().env
+            ).handle({
+                "op": "model",
+                "model": "sc.material.outbound",
+                "action_id": action.id,
+                "menu_id": menu.id,
+                "view_type": "form",
+                "render_profile": "create",
+                "context": {"current_business_category_code": category_code},
+            })
+            envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+            self.assertTrue(envelope.get("ok", True), envelope.get("error"))
+            structure = envelope["data"]["formStructureContract"]
+            self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
+            provenance = structure["sourceAuthority"]["governance_source"]
+            self.assertEqual(provenance["resolvedActionId"], action.id)
+            self.assertEqual(provenance["resolvedViewId"], view.id)
+            self.assertEqual(provenance.get("configuredSections", []), [])
+            self.assertEqual(provenance.get("compatibilityDependencies", []), [])
+            self.assertFalse(provenance["legacyFieldPolicyOverlay"])
+            self.assertFalse(provenance["formLayoutOverlay"])
     def test_material_supplier_return_policy_and_view_preserve_business_sections(self):
         from odoo.addons.smart_construction_core.models.support.business_form_policy_templates import (
             get_business_category_form_policy_templates,

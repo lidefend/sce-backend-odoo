@@ -806,6 +806,17 @@ function notebookPageChildren(node: NativeFormLayoutNode, pageIndex: number) {
   return page ? rawChildren(page) : [];
 }
 
+function sectionRevealTargets(node: NativeFormLayoutNode) {
+  const targets: string[] = [];
+  const visit = (candidate: NativeFormLayoutNode) => {
+    const target = String(nodeAttributes(candidate).sectionNavigationTarget || '').trim();
+    if (target && !targets.includes(target)) targets.push(target);
+    rawChildren(candidate).forEach(visit);
+  };
+  visit(node);
+  return targets;
+}
+
 function notebookTabItems(node: NativeFormLayoutNode): ScTabItem[] {
   return notebookPages(node).map((page, pageIndex) => {
     const label = containerTitle(page) || `页签 ${pageIndex + 1}`;
@@ -813,7 +824,10 @@ function notebookTabItems(node: NativeFormLayoutNode): ScTabItem[] {
       value: pageIndex,
       label,
       labelClass: `native-tab${pageIndex === activePageIndex.value ? ' native-tab--active' : ''}`,
-      labelAttributes: { 'data-section-tab': label },
+      labelAttributes: {
+        'data-section-tab': label,
+        'data-section-reveal-targets': JSON.stringify(sectionRevealTargets(page)),
+      },
     };
   });
 }

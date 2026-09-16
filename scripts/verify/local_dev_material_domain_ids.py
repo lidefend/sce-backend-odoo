@@ -3,6 +3,13 @@
 import hashlib
 import json
 
+from odoo.addons.smart_construction_core.core_extension_policy_maps import (
+    ROLE_SURFACE_OVERRIDES,
+)
+from odoo.addons.smart_construction_core.services.locked_menu_policy_contract import (
+    load_locked_menu_policy_contract,
+)
+
 
 def xmlid(record):
     return record.get_external_id().get(record.id, "")
@@ -53,6 +60,13 @@ entry_specs = {
         "menu_xmlid": "smart_construction_core.menu_sc_material_outbound",
         "action_xmlid": "smart_construction_core.action_sc_material_outbound",
         "model": "sc.material.outbound",
+        "domain": [("outbound_type", "=", "issue")],
+    },
+    "return": {
+        "menu_xmlid": "smart_construction_core.menu_sc_material_return",
+        "action_xmlid": "smart_construction_core.action_sc_material_return",
+        "model": "sc.material.outbound",
+        "domain": [("outbound_type", "=", "return")],
     },
     "supplier_return": {
         "menu_xmlid": "smart_construction_core.menu_sc_product_material_return_v1",
@@ -98,7 +112,13 @@ def resolve_entry(key, spec, principal=user):
     record_env.check_access_rights("read")
     if spec.get("require_create", True):
         record_env.check_access_rights("create")
-    record = record_env.search([], order="id desc", limit=1)
+    domain = list(spec.get("domain", []))
+    record = record_env.search(domain, order="id desc", limit=1)
+    editable_record = (
+        record_env.search(domain + [("state", "=", "draft")], order="id desc", limit=1)
+        if "state" in record_env._fields
+        else record_env.browse()
+    )
     record_payload = None
     fingerprint_payload = {"model": spec["model"], "record": None}
     if record:
@@ -116,6 +136,24 @@ def resolve_entry(key, spec, principal=user):
             "name": str(record.display_name or record.id),
             "line_count": len(getattr(record, "line_ids", [])),
         }
+    editable_payload = None
+    if editable_record:
+        editable_record.check_access_rule("read")
+        editable_record.check_access_rights("write")
+        editable_record.check_access_rule("write")
+        editable_payload = {
+            "id": int(editable_record.id),
+            "xmlid": xmlid(editable_record),
+            "name": str(editable_record.display_name or editable_record.id),
+            "state": str(getattr(editable_record, "state", "") or ""),
+        }
+        fingerprint_payload["editable_record"] = {
+            "id": int(editable_record.id),
+            "write_date": editable_record.write_date.isoformat() if editable_record.write_date else "",
+            "state": str(getattr(editable_record, "state", "") or ""),
+            "name": str(editable_record.display_name or editable_record.id),
+            "line_count": len(getattr(editable_record, "line_ids", [])),
+        }
     return {
         "key": key,
         "model": spec["model"],
@@ -127,6 +165,7 @@ def resolve_entry(key, spec, principal=user):
         "menu": {"id": int(menu.id), "xmlid": xmlid(menu)},
         "action": {"id": int(action.id), "xmlid": xmlid(action)},
         "record": record_payload,
+        "editable_record": editable_payload,
         "business_fingerprint": hashlib.sha256(
             json.dumps(
                 fingerprint_payload, ensure_ascii=False, sort_keys=True
@@ -136,6 +175,33 @@ def resolve_entry(key, spec, principal=user):
 
 
 entries = {key: resolve_entry(key, spec) for key, spec in entry_specs.items()}
+locked_menu_contract = load_locked_menu_policy_contract()
+locked_menus = {
+    menu.get("menu_xmlid"): menu
+    for product in locked_menu_contract["products"].values()
+    for group in product.get("menu_groups") or []
+    for menu in group.get("menus") or []
+}
+return_menu = env.ref("smart_construction_core.menu_sc_material_return")
+return_menu_xmlid = xmlid(return_menu)
+outbound_menu_xmlid = "smart_construction_core.menu_sc_material_outbound"
+outbound_allowed_codes = sorted(
+    {
+        str(code)
+        for product in locked_menu_contract["products"].values()
+        for group in product.get("menu_groups") or []
+        for menu in group.get("menus") or []
+        if menu.get("menu_xmlid") == outbound_menu_xmlid
+        for code in menu.get("allowed_business_category_codes") or []
+    }
+)
+return_route_roles = sorted(
+    role
+    for role, policy in ROLE_SURFACE_OVERRIDES.items()
+    if return_menu_xmlid in (policy.get("contextual_menu_xmlids") or [])
+    or return_menu_xmlid in (policy.get("primary_menu_xmlids") or [])
+    or return_menu_xmlid in (policy.get("role_home_menu_xmlids") or [])
+)
 shared_entries = {
     "project_profile": resolve_entry(
         "project_profile", shared_entry_specs["project_profile"], project_user
@@ -161,6 +227,19 @@ payload = {
         "xmlid": xmlid(security_user),
     },
     "entries": entries,
+    "formal_return_path": {
+        "status": "product_decision_required",
+        "formally_reachable": False,
+        "return_menu_xmlid": return_menu_xmlid,
+        "return_action_xmlid": xmlid(env.ref("smart_construction_core.action_sc_material_return")),
+        "return_menu_in_formal_baseline": return_menu_xmlid in locked_menus,
+        "return_menu_parent_xmlid": xmlid(return_menu.parent_id),
+        "return_menu_parent_active": bool(return_menu.parent_id.active),
+        "route_authority_roles": return_route_roles,
+        "outbound_allowed_business_category_codes": outbound_allowed_codes,
+        "supplier_return_model": "sc.material.supplier.return",
+        "reason": "no_formal_menu_or_authorized_category_path",
+    },
     "shared_entries": shared_entries,
     # Keep the original inbound shape for the established full-domain journey.
     "menu": inbound["menu"],
