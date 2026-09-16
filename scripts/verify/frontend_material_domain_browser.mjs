@@ -26,7 +26,7 @@ const handlingThemes = (process.env.FRONTEND_MATERIAL_HANDLING_THEMES || 'light'
   .split(',')
   .map((value) => value.trim())
   .filter((value) => value === 'light' || value === 'dark');
-const handlingEntryKeys = (process.env.FRONTEND_MATERIAL_HANDLING_ENTRIES || 'inbound,outbound,return')
+const handlingEntryKeys = (process.env.FRONTEND_MATERIAL_HANDLING_ENTRIES || 'inbound,outbound')
   .split(',')
   .map((value) => value.trim())
   .filter(Boolean);
@@ -44,14 +44,6 @@ const handlingEntrySpecs = Object.freeze({
   },
   outbound: {
     identityToken: '出库', detailTitle: '材料明细', tabs: ['材料明细', '说明与附件', '来源追溯'],
-    nativeTitles: ['出退库主信息', '材料明细', '说明与附件', '来源追溯'],
-    sourceFields: ['stock_picking_id', 'transfer_inbound_id', 'legacy_fact_model', 'source_created_by', 'source_created_at'],
-    buttons: ['action_submit', 'action_issue', 'action_reset_draft', 'action_cancel'],
-    facts: ['project_id', 'outbound_date', 'warehouse_id', 'source_location_id', 'receiver_id'],
-    viewId: 1431,
-  },
-  return: {
-    identityToken: '退库', detailTitle: '材料明细', tabs: ['材料明细', '说明与附件', '来源追溯'],
     nativeTitles: ['出退库主信息', '材料明细', '说明与附件', '来源追溯'],
     sourceFields: ['stock_picking_id', 'transfer_inbound_id', 'legacy_fact_model', 'source_created_by', 'source_created_at'],
     buttons: ['action_submit', 'action_issue', 'action_reset_draft', 'action_cancel'],
@@ -850,6 +842,14 @@ async function inspectMaterialHandlingReview() {
   report.primary.nonMaterialNavigationCounterexample = skipHandlingCounterexample
     ? { skipped: true, reason: 'carried_forward_from_same_candidate' }
     : await inspectNonMaterialNavigationCounterexample();
+  report.primary.returnPathDecision = target.formal_return_path;
+  check(report.primary.returnPathDecision?.status === 'product_decision_required'
+    && report.primary.returnPathDecision?.formally_reachable === false
+    && report.primary.returnPathDecision?.return_menu_in_formal_baseline === false
+    && report.primary.returnPathDecision?.return_menu_parent_active === false
+    && report.primary.returnPathDecision?.route_authority_roles?.length === 0
+    && !report.primary.returnPathDecision?.outbound_allowed_business_category_codes?.includes('material.return'),
+  'material return was incorrectly treated as a formal user path', report.primary.returnPathDecision);
   check(report.primary.errors.length === 0, 'material handling review has browser errors', report.primary.errors);
   check(report.primary.mutations.length === 0, 'material handling review mutated business data', report.primary.mutations);
   report.security.result = { skipped: true, reason: 'uc2_readonly_existing_and_uncommitted_create_edit_review' };

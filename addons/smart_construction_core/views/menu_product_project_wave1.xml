@@ -102,8 +102,5 @@
         <record id="menu_sc_material_outbound" model="ir.ui.menu">
             <field name="name">材料出库</field><field name="parent_id" ref="smart_construction_core.menu_sc_material_center"/><field name="sequence">20</field><field name="active">True</field>
         </record>
-        <record id="menu_sc_material_return" model="ir.ui.menu">
-            <field name="name">材料退库</field><field name="parent_id" ref="smart_construction_core.menu_sc_material_center"/><field name="sequence">30</field><field name="active">True</field>
-        </record>
     </data>
 </odoo>

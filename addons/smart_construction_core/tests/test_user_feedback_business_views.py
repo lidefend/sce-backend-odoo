@@ -146,15 +146,14 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         ]
         positions = [detail_arch.index(field) for field in ordered_fields]
         self.assertEqual(positions, sorted(positions))
-        for field_name in (
-            "quantity_summary",
-            "total_qty",
-            "tax_rate_text",
-            "amount_total",
-            "tax_included_amount",
-            "currency_id",
-        ):
-            self.assertIn('name="%s"' % field_name, detail_arch)
+        self.assertNotIn('name="quantity_summary"', form_arch)
+        self.assertNotIn('name="document_status"', form_arch)
+        self.assertNotIn('name="tax_included_amount"', form_arch)
+        self.assertEqual(form_arch.count('name="total_qty"'), 1)
+        self.assertEqual(form_arch.count('name="amount_total"'), 1)
+        self.assertEqual(form_arch.count('name="state"'), 1)
+        self.assertIn('name="qty"', detail_arch)
+        self.assertIn('name="amount" sum="金额合计"', detail_arch)
         for action_name in ("action_submit", "action_receive", "action_reset_draft", "action_cancel"):
             self.assertIn('name="%s"' % action_name, form_arch)
         self.assertIn("group_sc_cap_material_manager", form_arch)
@@ -288,6 +287,7 @@ class TestUserFeedbackBusinessViews(TransactionCase):
 
     def test_material_outbound_and_return_contracts_use_native_structure_without_compatibility(self):
         for data_file in (
+            "views/menu_business_taxonomy.xml",
             "views/menu_product_project_wave1.xml",
             "views/support/user_confirmed_formal_list_alignment_views.xml",
         ):
@@ -318,13 +318,16 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
 
         view = self.env.ref("smart_construction_core.view_sc_material_outbound_form")
-        material_center = self.env.ref("smart_construction_core.menu_sc_material_center")
+        legacy_material_group = self.env.ref("smart_construction_core.menu_sc_material_management_group")
         return_menu = self.env.ref("smart_construction_core.menu_sc_material_return")
         outbound_action = self.env.ref("smart_construction_core.action_sc_material_outbound")
-        self.assertTrue(return_menu.active)
-        self.assertEqual(return_menu.parent_id, material_center)
+        return_action = self.env.ref("smart_construction_core.action_sc_material_return")
+        self.assertEqual(return_menu.parent_id, legacy_material_group)
+        self.assertFalse(legacy_material_group.active)
         self.assertIn("('outbound_type', '=', 'issue')", outbound_action.domain)
         self.assertIn("'current_business_category_code': 'material.outbound'", outbound_action.context)
+        self.assertIn("('outbound_type', '=', 'return')", return_action.domain)
+        self.assertIn("'current_business_category_code': 'material.return'", return_action.context)
         entry_specs = (
             (
                 "material.outbound",

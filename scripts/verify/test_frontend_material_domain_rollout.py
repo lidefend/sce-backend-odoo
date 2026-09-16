@@ -64,8 +64,13 @@ class TestFrontendMaterialDomainRollout(unittest.TestCase):
         self.assertIn("createHash('sha256')", source)
         self.assertIn("inbound_sample_affected_regions", source)
         self.assertIn("const handlingEntrySpecs", source)
-        self.assertIn("return: {", source)
+        self.assertNotIn("return: {", source)
         self.assertNotIn("supplier_return: {", source)
+        self.assertIn("target.formal_return_path", source)
+        self.assertIn("product_decision_required", source)
+        self.assertIn("no_formal_menu_or_authorized_category_path", (
+            ROOT / "scripts/verify/local_dev_material_domain_ids.py"
+        ).read_text(encoding="utf-8"))
         self.assertIn("draftNoteRetention", source)
         self.assertIn("top navigation did not reveal, locate, and highlight", source)
         self.assertIn("inspectNonMaterialNavigationCounterexample", source)

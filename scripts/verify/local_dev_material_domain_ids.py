@@ -3,6 +3,13 @@
 import hashlib
 import json
 
+from odoo.addons.smart_construction_core.core_extension_policy_maps import (
+    ROLE_SURFACE_OVERRIDES,
+)
+from odoo.addons.smart_construction_core.services.locked_menu_policy_contract import (
+    load_locked_menu_policy_contract,
+)
+
 
 def xmlid(record):
     return record.get_external_id().get(record.id, "")
@@ -168,6 +175,33 @@ def resolve_entry(key, spec, principal=user):
 
 
 entries = {key: resolve_entry(key, spec) for key, spec in entry_specs.items()}
+locked_menu_contract = load_locked_menu_policy_contract()
+locked_menus = {
+    menu.get("menu_xmlid"): menu
+    for product in locked_menu_contract["products"].values()
+    for group in product.get("menu_groups") or []
+    for menu in group.get("menus") or []
+}
+return_menu = env.ref("smart_construction_core.menu_sc_material_return")
+return_menu_xmlid = xmlid(return_menu)
+outbound_menu_xmlid = "smart_construction_core.menu_sc_material_outbound"
+outbound_allowed_codes = sorted(
+    {
+        str(code)
+        for product in locked_menu_contract["products"].values()
+        for group in product.get("menu_groups") or []
+        for menu in group.get("menus") or []
+        if menu.get("menu_xmlid") == outbound_menu_xmlid
+        for code in menu.get("allowed_business_category_codes") or []
+    }
+)
+return_route_roles = sorted(
+    role
+    for role, policy in ROLE_SURFACE_OVERRIDES.items()
+    if return_menu_xmlid in (policy.get("contextual_menu_xmlids") or [])
+    or return_menu_xmlid in (policy.get("primary_menu_xmlids") or [])
+    or return_menu_xmlid in (policy.get("role_home_menu_xmlids") or [])
+)
 shared_entries = {
     "project_profile": resolve_entry(
         "project_profile", shared_entry_specs["project_profile"], project_user
@@ -193,6 +227,19 @@ payload = {
         "xmlid": xmlid(security_user),
     },
     "entries": entries,
+    "formal_return_path": {
+        "status": "product_decision_required",
+        "formally_reachable": False,
+        "return_menu_xmlid": return_menu_xmlid,
+        "return_action_xmlid": xmlid(env.ref("smart_construction_core.action_sc_material_return")),
+        "return_menu_in_formal_baseline": return_menu_xmlid in locked_menus,
+        "return_menu_parent_xmlid": xmlid(return_menu.parent_id),
+        "return_menu_parent_active": bool(return_menu.parent_id.active),
+        "route_authority_roles": return_route_roles,
+        "outbound_allowed_business_category_codes": outbound_allowed_codes,
+        "supplier_return_model": "sc.material.supplier.return",
+        "reason": "no_formal_menu_or_authorized_category_path",
+    },
     "shared_entries": shared_entries,
     # Keep the original inbound shape for the established full-domain journey.
     "menu": inbound["menu"],

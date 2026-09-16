@@ -29,7 +29,6 @@ ROLE_SURFACE_OVERRIDES = {
         ],
         "role_home_menu_xmlids": [],
         "contextual_menu_xmlids": [
-            "smart_construction_core.menu_sc_material_return",
             "smart_construction_core.menu_sc_site_documents",
             "smart_construction_core.menu_sc_project_wbs",
             "smart_construction_core.menu_sc_project_kanban",
@@ -84,9 +83,7 @@ ROLE_SURFACE_OVERRIDES = {
         ],
         "primary_menu_xmlids": [],
         "role_home_menu_xmlids": [],
-        "contextual_menu_xmlids": [
-            "smart_construction_core.menu_sc_material_return",
-        ],
+        "contextual_menu_xmlids": [],
         "admin_menu_xmlids": [],
         "denied_menu_xmlids": [],
         "menu_blocklist_xmlids": [],
@@ -112,9 +109,7 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_historical_payment_fact",
         ],
         "role_home_menu_xmlids": [],
-        "contextual_menu_xmlids": [
-            "smart_construction_core.menu_sc_material_return",
-        ],
+        "contextual_menu_xmlids": [],
         "contextual_action_authorities": [
             {
                 "menu_xmlid": "smart_construction_core.menu_sc_invoice_input_report_user",
@@ -154,9 +149,7 @@ ROLE_SURFACE_OVERRIDES = {
         "menu_xmlids": [],
         "primary_menu_xmlids": [],
         "role_home_menu_xmlids": [],
-        "contextual_menu_xmlids": [
-            "smart_construction_core.menu_sc_material_return",
-        ],
+        "contextual_menu_xmlids": [],
         "admin_menu_xmlids": [
             "smart_construction_core.menu_ui_menu_config_policy_business_config",
         ],
@@ -187,7 +180,6 @@ ROLE_SURFACE_OVERRIDES = {
         ],
         "role_home_menu_xmlids": [],
         "contextual_menu_xmlids": [
-            "smart_construction_core.menu_sc_material_return",
             "smart_construction_core.menu_sc_site_documents",
             "smart_construction_core.menu_sc_project_wbs",
             "smart_construction_core.menu_sc_project_documents",
@@ -249,7 +241,6 @@ ROLE_SURFACE_OVERRIDES = {
         ],
         "role_home_menu_xmlids": [],
         "contextual_menu_xmlids": [
-            "smart_construction_core.menu_sc_material_return",
             "smart_construction_core.menu_sc_project_wbs",
             "smart_construction_core.menu_sc_project_kanban",
             "smart_construction_core.menu_sc_site_documents",
@@ -369,7 +360,6 @@ ROLE_SURFACE_OVERRIDES = {
         ],
         "role_home_menu_xmlids": [],
         "contextual_menu_xmlids": [
-            "smart_construction_core.menu_sc_material_return",
             "smart_construction_core.menu_sc_invoice_output",
             "smart_construction_core.menu_sc_output_invoice_change_registration",
             "smart_construction_core.menu_sc_output_invoice_adjustment",
@@ -422,10 +412,6 @@ ROLE_SURFACE_OVERRIDES = {
         "primary_menu_xmlids": [
             "smart_construction_core.menu_sc_historical_payment_fact",
         ],
-        "role_home_menu_xmlids": [],
-        "contextual_menu_xmlids": [
-            "smart_construction_core.menu_sc_material_return",
-        ],
     },
     # 成本组角色（group_sc_cap_cost_user / group_sc_cap_cost_manager /
     # group_sc_role_cost_user）：此前成本用户经 project_member 的
@@ -455,7 +441,6 @@ ROLE_SURFACE_OVERRIDES = {
         ],
         "role_home_menu_xmlids": [],
         "contextual_menu_xmlids": [
-            "smart_construction_core.menu_sc_material_return",
             "smart_construction_core.menu_sc_site_documents",
             "smart_construction_core.menu_sc_project_wbs",
             "smart_construction_core.menu_sc_project_kanban",
