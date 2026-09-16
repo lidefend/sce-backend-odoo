@@ -11050,9 +11050,10 @@
           "invoice_output_registration_productized_form_v1",
           "invoice_prepaid_tax_productized_form_v1",
           "sc_invoice_registration_form_sections_v1",
-          "sc_invoice_registration_p1_form_business_facts_v1"
+          "sc_invoice_registration_p1_form_business_facts_v1",
+          "sc_invoice_registration_form_structure_generated_v1"
         ],
-        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
+        "evidenceStatus": "grouped_from_ledger_plus_implementation_discovery_generated_mirror"
       },
       {
         "id": "G03",

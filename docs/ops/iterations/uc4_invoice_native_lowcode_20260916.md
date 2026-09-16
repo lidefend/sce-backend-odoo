@@ -24,6 +24,7 @@ Formal Product Layer=P1；Layer Target=发票四入口原生默认结构与旧�
 1. 4 条 action 级配置（priority 700，entry_semantic_surface，9 sections + 全字段排序）：`invoice_input_productized_form_v1` / `invoice_output_application_productized_form_v1` / `invoice_output_registration_productized_form_v1` / `invoice_prepaid_tax_productized_form_v1`。
 2. 模型级 `sc_invoice_registration_form_sections_v1`（priority 20，仅 8 个章节标题，模型全域）。
 3. P1 事实 `sc_invoice_registration_p1_form_business_facts_v1`（priority 88，4 章节标题 + 全 readonly display 字段，模型全域）。
+4. 实施中发现的第 7 条（台账 G02 legacyConfigurations 原登记遗漏）：模型级生成镜像 `sc_invoice_registration_form_structure_generated`（priority 116，noupdate 起源，内容仅重复字段排序），随本批按 U-C3 精确 ORM 退役 function 定式一并退役。
 
 编排器合并语义（`view_orchestrator.py` + `form_structure_authority.py` 源码核实）：entry_semantic_surface 下正文树=原生解析树+稀疏策略注解，章节投影（section_titles/field_groups/configured_sections）由 `resolve_form_structure_governance` 输出供前端任务态分章；native_semantic_surface 下结构权威归原生视图（configured_sections/section_titles 清零、稀疏语义策略保留）。**非作用域化（模型级）结构配置与 native 共存不报错**，降级为 `LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW` 诊断；仅 action/view 级 scoped 结构配置与 native 共存才触发硬错误。据此本批处置：四 action 配置转 native；两条共享配置按台账 G02 legacyConfigurations 一并退役（旁路两 action 无独立配置层，退役后转消费重构后原生表单）。
 
@@ -31,7 +32,7 @@ Formal Product Layer=P1；Layer Target=发票四入口原生默认结构与旧�
 
 - view 1651 原生重构为四方向条件分组的唯一结构源：显式分组加 `data-sc-anchor` 锚点；补齐配置呈现而原生缺失的字段（`company_id`、`note_display`、`invoice_attachment_text`、`legacy_source_model/legacy_source_table/legacy_record_id/legacy_document_state`、`legacy_partner_id/legacy_partner_name`、`source_created_by/source_created_at`、`applicant_name`、`expected_receipt_date`、`prepaid_tax_date`、`tax_certificate_no` 等，以四配置字段并集为准）；header 按钮、statusbar、notebook（红冲关联/迁移来源）保留。
 - 4 条 action 配置转 `native_semantic_surface`：仅保留 title 与 action 作用域稀疏只读策略（U-C3 制度文件 `policy_document_form_v1` 先例），sections/字段排序退役。
-- 2 条共享配置（模型级 sections + P1 事实）`active=False` 退役；两数据文件均为 noupdate="0"，原地编辑记录即可随受管升级生效。
+- 2 条共享配置（模型级 sections + P1 事实）`active=False` 退役；两数据文件均为 noupdate="0"，原地编辑记录即可随受管升级生效。生成镜像为 noupdate 起源，走精确 ORM 退役 function（invoice_input_form_productization_contract.xml 尾部）。
 
 ### 保留能力
 
@@ -51,8 +52,28 @@ Formal Product Layer=P1；Layer Target=发票四入口原生默认结构与旧�
 
 ## 执行记录
 
-（实施中——首轮实施结果、分层验证与证据后续追加于本节。）
+### 首轮实施（2026-09-16）
+
+改动（全部在 `smart_construction_core`）：
+
+- `views/core/invoice_registration_views.xml`：form view 1651 重构——9 个具名锚点组（invoice_main / invoice_project / invoice_tax_details / invoice_prepaid_tax / invoice_amount / invoice_output_business / invoice_handling / invoice_notes / invoice_source_trace），补齐缺失字段（company_id、legacy_partner_name、note_display、invoice_attachment_text、legacy_source_model/table/record_id/document_state、legacy_partner_id、source_created_by/at），header 按钮与 statusbar、红冲关联/迁移来源 notebook 原样保留。
+- `data/invoice_input_form_productization_contract.xml`：785 配置转 `native_semantic_surface`（仅 title+mode）；文件尾部新增精确 ORM 退役 function（生成镜像 `sc_invoice_registration_form_structure_generated` → active=False）。
+- `data/invoice_output_tax_form_productization_contract.xml`：786/787/788 三条配置同构转 `native_semantic_surface`。
+- `data/view_orchestration_form_section_contract_data.xml`、`data/p1_daily_business_form_orchestration_contract_data.xml`：两条共享配置 `active=False` 退役（noupdate="0" 原地编辑）。
+- `tests/test_invoice_native_lowcode.py`（新增，三测）：①四入口结构退役与字段并集保留断言；②原生表单锚点/按钮完整性 + 两旁路 action 反例（无已退役章节标题、native workspace 态）；③作用域低代码预览→发布→回滚闭环与另一入口隔离、业务指纹不变。
+- `data/view_orchestration_contract_generated_data.xml` 未改动（noupdate 起源，退役走 function，U-C3 定式）。
+
+实施中发现：台账 G02 legacyConfigurations 原登记 6 条遗漏了生成镜像（priority 116，noupdate，内容仅重复字段排序），已补登为第 7 条（`sc_invoice_registration_form_structure_generated_v1`），evidenceStatus 更新为 grouped_from_ledger_plus_implementation_discovery_generated_mirror。
+
+分层验证：
+
+- L1 `make ci.local.iteration`：16 项测试 + 全部守卫 PASS（增量计划 9 路径未映射，按规则选定非零 L2 目标）。
+- L2 `make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestInvoiceNativeLowcode'`：首轮 2 失败（①生成镜像未退役触发 `legacy_configuration_structure_suppression`——正是遗漏的第 7 条；②测试自身子串断言把原生组标题「发票金额与税额」误判为已退役章节「发票金额」），修复后 0 failed / 0 error。
+- L3 `make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1`：ready + demo.authority PASS；`local.dev.restart` + `local.dev.health` PASS（profile=persistent, dbfilter 校验通过）。
+- 运行态冒烟（odoo shell，sc_dev_demo 实库）：7 条契约状态正确（4 条 action 配置 active+native+无 sections；sections_v1(150)/P1(9)/生成镜像(81) 均 active=False）；四正式入口（785/786/787/788）governance=`native_authority`/`task`/compat=[]/configuredSections=0，9 个锚点组全部在 containerTree；两旁路（789 进项税额上报、639 发票总台账）`native_authority`/`workspace`/compat=[]/无已退役章节，同一原生树正常承载。冒烟过程中确认 admin 账号不在发票模型四个能力组（既有权限边界，非本批回归）。
+
+未覆盖（后续阶段）：浏览器层 L4 复核（四入口新建/查看样本、窄屏、配置闭环 UI、隔离反例的浏览器证据）、整组冻结与 Quick、L5 集成门禁。台账扣减（42→38）须待主线合入后按发布核对流程执行。
 
 ## 状态
 
-本批范围确认完成，首轮实施进行中｜本批未集成｜未部署｜89入口交付未完成。主线剩余 42 不变。
+本批首轮实施自验通过（L1/L2/L3+运行态冒烟），待整组浏览器复核｜本批未集成｜未部署｜89入口交付未完成。主线剩余 42 不变；本地已验证 G02 四项旧路径退出候选（含 7 条旧配置全部退役）。
