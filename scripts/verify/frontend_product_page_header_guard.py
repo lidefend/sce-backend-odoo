@@ -63,7 +63,7 @@ def validate() -> list[str]:
     contract_page_style = source("frontend/apps/web/src/pages/contractForm/ContractFormPage.css")
     if '<h1 v-if="initialFormLoading"' not in contract_page:
         failures.append("ContractForm loading identity may duplicate the stable page header h1")
-    for marker in ('actions-in-header', '@canonical-save="saveRecord()"', ':status-interactive="nativeStatusbar.visible && !nativeStatusbar.readonly"'):
+    for marker in ('actions-in-header', '@canonical-save="saveRecord()"', ':status-interactive="!isConfigurationPreview && nativeStatusbar.visible && !nativeStatusbar.readonly"'):
         if marker not in contract_page:
             failures.append(f"ContractForm does not project direct edit actions into header: {marker}")
     if ":deep(.template-page-header" in contract_page_style:

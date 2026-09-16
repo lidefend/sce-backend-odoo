@@ -865,6 +865,7 @@ verify.overview.rich.text.patch.capability: guard.prod.forbid
 ci.local.iteration: guard.prod.forbid verify.baseline.iteration.execution.policy
 	@git diff --check
 	@python3 scripts/verify/frontend_dev_incremental.py --plan-worktree
+	@python3 scripts/ci/trusted_scan_scope.py
 	@if test -z "$$(git status --porcelain=v1 --untracked-files=all)"; then \
 	  echo "[ci.local.iteration] PASS change_state=clean coverage=L1_only receipt=none"; \
 	else \
@@ -995,18 +996,23 @@ architecture.split_plan_queue:
 github.remote_execution_plan:
 	@python3 scripts/ci/generate_github_remote_execution_plan.py
 
+.PHONY: security.online_capture.unit security.personal_data.unit verify.repository.clean_history.unit
+
 security.online_capture.unit:
+	@python3 scripts/ci/test_trusted_scan_scope.py
 	@python3 scripts/ci/test_secret_scan.py
 
 security.secrets.scan: security.online_capture.unit
-	@python3 scripts/ci/secret_scan.py --scope all
+	@python3 scripts/ci/secret_scan.py --scope all --auto-trusted-base
 
 security.secret_scan: security.secrets.scan
 
-security.personal_data_scan:
+security.personal_data.unit:
 	@python3 -m py_compile scripts/ci/personal_data_scan.py scripts/ci/test_personal_data_scan.py
 	@python3 scripts/ci/test_personal_data_scan.py
-	@python3 scripts/ci/personal_data_scan.py --scope all
+
+security.personal_data_scan: security.personal_data.unit
+	@python3 scripts/ci/personal_data_scan.py --scope all --auto-trusted-base
 
 security.legacy_credential_guard:
 	@python3 scripts/ci/secret_scan.py --legacy-only
@@ -1028,10 +1034,12 @@ verify.github_actions.security:
 	@python3 scripts/verify/test_github_actions_security_guard.py
 	@python3 scripts/verify/github_actions_security_guard.py
 
-verify.repository.clean_history: guard.prod.forbid security.secrets.scan security.personal_data_scan verify.tenant.product_payload_boundary verify.branch.governance.consistency verify.baseline.iteration.execution.policy verify.github_actions.security verify.gitee.webhook.ci
+verify.repository.clean_history: verify.repository.clean_history.unit guard.prod.forbid security.secrets.scan security.personal_data_scan verify.tenant.product_payload_boundary verify.branch.governance.consistency verify.baseline.iteration.execution.policy verify.github_actions.security verify.gitee.webhook.ci
+	@python3 scripts/verify/repository_clean_history_guard.py --auto-trusted-base
+
+verify.repository.clean_history.unit:
 	@python3 -m py_compile scripts/verify/repository_clean_history_guard.py scripts/verify/test_repository_clean_history_guard.py
 	@python3 scripts/verify/test_repository_clean_history_guard.py
-	@python3 scripts/verify/repository_clean_history_guard.py
 
 .PHONY: verify.repository.local_hygiene verify.repository.release_hygiene verify.repository.public_old_sha
 .PHONY: verify.clean_product_tree
@@ -1045,9 +1053,7 @@ verify.repository.local_hygiene:
 
 # Deliberately excluded from ci.local.quick: harmless dangling objects are a
 # release-workspace concern, not a normal development failure.
-verify.repository.release_hygiene: guard.prod.forbid
-	@python3 -m py_compile scripts/verify/repository_clean_history_guard.py scripts/verify/test_repository_clean_history_guard.py
-	@python3 scripts/verify/test_repository_clean_history_guard.py
+verify.repository.release_hygiene: guard.prod.forbid verify.repository.clean_history.unit
 	@python3 scripts/verify/repository_clean_history_guard.py --local-hygiene
 
 verify.repository.public_old_sha:

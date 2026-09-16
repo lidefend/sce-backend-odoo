@@ -16,6 +16,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+import trusted_scan_scope
+
 
 ROOT = Path(__file__).resolve().parents[2]
 TEXT_SUFFIXES = {
@@ -134,8 +136,10 @@ def scan_text(text: str, path: str, blob_id: str) -> list[Finding]:
     return findings
 
 
-def worktree_findings() -> list[Finding]:
-    if (ROOT / ".git").exists():
+def worktree_findings(base: str | None = None) -> list[Finding]:
+    if base:
+        paths = trusted_scan_scope.changed_paths(ROOT, base)
+    elif (ROOT / ".git").exists():
         paths = git("ls-files", "--cached", "--others", "--exclude-standard").splitlines()
     else:
         excluded = {".git", "node_modules", "__pycache__", "artifacts"}
@@ -159,7 +163,9 @@ def worktree_findings() -> list[Finding]:
     return findings
 
 
-def history_objects() -> list[tuple[str, str, int]]:
+def history_objects(base: str | None = None) -> list[tuple[str, str, int]]:
+    if base:
+        return trusted_scan_scope.candidate_blobs(ROOT, base)
     if not (ROOT / ".git").exists():
         return []
     rev_list = git("rev-list", "--objects", "--all", check=False)
@@ -194,9 +200,9 @@ def read_blob(blob_id: str) -> bytes:
     ).stdout
 
 
-def history_findings() -> list[Finding]:
+def history_findings(base: str | None = None) -> list[Finding]:
     by_blob: dict[str, list[str]] = {}
-    for blob_id, path, size in history_objects():
+    for blob_id, path, size in (history_objects(base) if base else history_objects()):
         if size <= MAX_TEXT_BLOB_BYTES and is_text_path(path):
             by_blob.setdefault(blob_id, []).append(path)
     findings: list[Finding] = []
@@ -213,16 +219,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--scope", choices=("worktree", "history", "all"), default="all")
     parser.add_argument("--report", type=Path)
+    parser.add_argument("--auto-trusted-base", action="store_true")
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    scope = trusted_scan_scope.select_scope(ROOT, "personal") if args.auto_trusted_base else trusted_scan_scope.Scope(None, "explicit_full")
+    scope.report("personal")
     findings: set[Finding] = set()
     if args.scope in {"worktree", "all"}:
-        findings.update(worktree_findings())
+        findings.update(worktree_findings(scope.base) if scope.base else worktree_findings())
     if args.scope in {"history", "all"}:
-        findings.update(history_findings())
+        findings.update(history_findings(scope.base) if scope.base else history_findings())
     ordered = sorted(findings)
     false_positives = load_false_positives()
     confirmed = [
