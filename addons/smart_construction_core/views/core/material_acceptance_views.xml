@@ -419,7 +419,8 @@
                     <button name="action_receive" string="确认入库" type="object" class="btn-primary" groups="smart_construction_core.group_sc_cap_material_manager" invisible="state != 'submitted'"/>
                     <button name="action_reset_draft" string="退回草稿" type="object" groups="smart_construction_core.group_sc_cap_material_manager" invisible="state != 'submitted'"/>
                     <button name="action_cancel" string="取消" type="object" groups="smart_construction_core.group_sc_cap_material_manager" invisible="state in ('received', 'cancel')"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,received" invisible="not id"/>
+                    <field name="create_date" invisible="1"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,received" invisible="not create_date"/>
                 </header>
                 <sheet>
                     <group string="入库主信息">

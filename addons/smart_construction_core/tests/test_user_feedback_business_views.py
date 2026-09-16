@@ -152,7 +152,8 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.assertEqual(form_arch.count('name="total_qty"'), 1)
         self.assertEqual(form_arch.count('name="amount_total"'), 1)
         self.assertEqual(form_arch.count('name="state"'), 1)
-        self.assertIn('name="state" widget="statusbar" statusbar_visible="draft,submitted,received" invisible="not id"', form_arch)
+        self.assertIn('name="create_date" invisible="1"', form_arch)
+        self.assertIn('name="state" widget="statusbar" statusbar_visible="draft,submitted,received" invisible="not create_date"', form_arch)
         self.assertIn('name="qty"', detail_arch)
         self.assertIn('name="amount" sum="金额合计"', detail_arch)
         for action_name in ("action_submit", "action_receive", "action_reset_draft", "action_cancel"):
