@@ -95,6 +95,11 @@ local.dev.test: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  MODULE="$(MODULE)" TEST_TAGS="$(TEST_TAGS)" test.safe
 
+.PHONY: local.dev.form_lowcode.browser
+local.dev.form_lowcode.browser: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/verify/local_dev_form_lowcode_browser.sh
+
 local.dev.upgrade: guard.prod.forbid local.dev.ready
 	@test -n "$(MODULE)" || (echo "MODULE is required" >&2; exit 2)
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \

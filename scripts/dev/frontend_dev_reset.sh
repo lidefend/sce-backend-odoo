@@ -74,8 +74,11 @@ log() { printf '[%s] %s\n' "$(date +'%H:%M:%S')" "$*"; }
 is_ready_url() {
   local url="$1"
   if command -v curl >/dev/null 2>&1; then
-    curl -fsI --max-time 2 "${url}" >/dev/null 2>&1
-    return $?
+    # Some managed shells provide a restricted curl wrapper. Fall back to
+    # the same bounded HTTP probe instead of misreporting a live server.
+    if curl -fsI --max-time 2 "${url}" >/dev/null 2>&1; then
+      return 0
+    fi
   fi
   if command -v python3 >/dev/null 2>&1; then
     python3 - "${url}" <<'PY' >/dev/null 2>&1

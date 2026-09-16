@@ -3,6 +3,12 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright';
 
+if (process.env.CHANGE_SET_FORM_LOOP === '1') {
+  const { runFormalFormLoop } = await import('./formal_form_lowcode_loop.mjs');
+  await runFormalFormLoop();
+  process.exit(0);
+}
+
 const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:18081';
 const DB_NAME = process.env.DB_NAME || 'sc_demo';
 const OUT = path.resolve(process.cwd(), '../../../artifacts/playwright/low-code-change-set');
