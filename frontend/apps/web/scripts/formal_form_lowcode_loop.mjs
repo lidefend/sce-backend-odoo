@@ -8,18 +8,22 @@ export async function runFormalFormLoop() {
   assert.equal(scope.database, 'sc_dev_demo');
   const [entry, outside] = scope.entries;
   const documentTopic = scope.topic === 'document';
-  assert.equal(entry.action_id, documentTopic ? 666 : 546);
-  assert.equal(outside.action_id, documentTopic ? 862 : 547);
+  const invoiceTopic = scope.topic === 'invoice';
+  assert.equal(entry.action_id, documentTopic ? 666 : invoiceTopic ? 785 : 546);
+  assert.equal(outside.action_id, documentTopic ? 862 : invoiceTopic ? 787 : 547);
   const base = process.env.BASE_URL;
   const configurationEntryOnly = process.env.FORM_LOWCODE_CONFIG_ENTRY === '1';
-  const out = path.resolve(configurationEntryOnly ? '../../../artifacts/config-center-entry/browser' : documentTopic ? '../../../artifacts/uc3-document-lowcode/browser' : '../../../artifacts/lowcode-form-loop/browser');
+  const out = path.resolve(configurationEntryOnly ? '../../../artifacts/config-center-entry/browser'
+    : documentTopic ? '../../../artifacts/uc3-document-lowcode/browser'
+    : invoiceTopic ? '../../../artifacts/uc4-invoice-lowcode/browser'
+    : '../../../artifacts/lowcode-form-loop/browser');
   await fs.mkdir(out, { recursive: true });
   const report = { candidate: process.env.CANDIDATE_GIT_HEAD, dirty: true, scope, stages: {}, restored: false, ok: false };
   const navigationOnly = process.env.FORM_LOWCODE_NAV_ONLY === '1';
   const observeOnly = process.env.FORM_LOWCODE_PREVIEW_OBSERVE === '1';
   const closureOnly = process.env.FORM_LOWCODE_PREVIEW_CLOSURE === '1' || observeOnly;
   const emptySectionOnly = documentTopic && process.env.FORM_LOWCODE_DOCUMENT_EMPTY === '1';
-  const designerOnly = process.env.FORM_LOWCODE_DESIGNER === '1' || documentTopic;
+  const designerOnly = process.env.FORM_LOWCODE_DESIGNER === '1' || documentTopic || invoiceTopic;
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 960 } });
   const page = await context.newPage();
@@ -179,8 +183,12 @@ export async function runFormalFormLoop() {
         const { checkDocumentDefaults } = await import('./formal_form_document_journey.mjs');
         await checkDocumentDefaults({ page, entry, outside, contract, out, report });
       }
+      if (invoiceTopic) {
+        const { checkInvoiceDefaults } = await import('./formal_form_invoice_journey.mjs');
+        await checkInvoiceDefaults({ page, scope, contract, out, report });
+      }
       const { runDesignerJourney } = await import('./formal_form_designer_journey.mjs');
-      await runDesignerJourney({ page, entry, baseline, outsideBaseline: otherBaseline, outside, contract, effective, out, report, pending, cs, drafts, documentTopic });
+      await runDesignerJourney({ page, entry, baseline, outsideBaseline: otherBaseline, outside, contract, effective, out, report, pending, cs, drafts, documentTopic, invoiceTopic });
     } else {
     const nodes = [...walk(tree(baseline))];
     const field = nodes.find((node) => node.type === 'field' && node.name === 'keeper_id');

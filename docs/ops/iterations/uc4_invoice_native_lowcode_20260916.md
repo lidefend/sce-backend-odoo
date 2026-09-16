@@ -87,6 +87,29 @@ Formal Product Layer=P1；Layer Target=发票四入口原生默认结构与旧�
 
 未覆盖（后续阶段）：浏览器层 L4 复核（四入口新建/查看样本、窄屏、配置闭环 UI、隔离反例的浏览器证据）、整组冻结与 Quick、L5 集成门禁。台账扣减（42→38）须待主线合入后按发布核对流程执行。
 
+### 整组浏览器复核（L4，同日）
+
+命令：`FORM_LOWCODE_TOPIC=invoice make local.dev.form_lowcode.browser`（env：`BASE_URL=http://127.0.0.1:5174`、`E2E_LOGIN=sc_test_admin`、`E2E_PASSWORD=$SC_DEMO_USER_PASSWORD`、`DB_NAME=sc_dev_demo`）；结果 `EXIT=0`，报告 `artifacts/uc4-invoice-lowcode/browser/designer-report.json`（`ok=true`、`restored=true`、`browser_errors=0`）。整组一次跑通：发票六入口旅程 + 设计器「表单设置→预览→发布→业务页刷新→回滚」闭环。
+
+**四正式入口（785 进项 / 786 销项申请 / 787 销项登记 / 788 预缴）**：契约层断言六面全过（authority 键必须存在、mode 精确、compat/configuredSections 为空、resolvedActionId/viewId 匹配、9 锚点组在 containerTree、条件组 invisible 原文、readonly/required 修饰符）；浏览器层 785/786/787/788 新建页桌面 1440 + 窄屏 390（`scrollWidth <= innerWidth+1`）全过、章节导航齐、退役章节零泄漏、必填与只读标记落地到渲染控件（readonly 字段无可编辑控件，`note` 可编辑）。记录页样本：785、787（含 legacy 迁移页）通过；**786、788 记 `not_run_no_sample`**——sc_dev_demo 中无该两方向可读记录，按纪律不造业务数据。
+
+**两大根因判定（均为既有产品设计，非本批迁移回归）**：
+
+1. **入口级字段面差异＝业务分类 form_policy_json 的 create profile 裁剪**。action context 的 `default_business_category_code`（786/787/788/789 有绑定，785/639 无）→ `sc.business.category.form_policy_json` 的 field_policies 按 render_profile 求值 → `apply_field_policies_to_v2_status`（ui_contract_v2_projection.py）在 widgetStatus 置 `visible:false, auth:'none'`。advanced 组字段 vis_prof 无 create（创建页被裁）、creator_name/created_time/legacy_* 仅 readonly profile、required 集来自 required_fields_json。与迁移前台账字段面口径（785=81 / 787=72）一一对应。已把该机制固化为显式守卫：`CATEGORY_BINDING` / `CREATE_HIDDEN_ADVANCED` / `CREATE_REQUIRED` / `CREATE_READONLY` 表 + `assertCreateSurfaceStatus`（策略隐藏字段必须 visible:false/auth:'none'，绑分类入口的 required 必填、identity 字段 readonly，未绑入口 name 保持可见）。787 创建页销项组整组折叠即由此产生（组内四字段全被裁），断言据此改为组级条件守卫。
+
+2. **记录页条件组隐藏＝readonly 空值投影 + 空组折叠**。`canonicalNativeFormBridge` 在 readonly 模式对每字段执行 `readonlyFactIsPresentable`（formSection.mapper.ts：`!readonly || one2many || 有值 || 有动作`），空值且无动作的字段被裁、组随之折叠。样本 #2 的销项组四字段（push_result / kingdee_document_no / expected_receipt_date / applicant_name）DB 值全空，故整组隐藏；契约三面（layoutContract 树 / statusContract widgetStatus / 前端 canonical 投影）逐面排查确认契约层字段全可见、隐藏发生在前端投影。样本断言据此改为**方向性守卫**：显示 ⇒ 条件成立（反之不成立），`tax_type` 同规则。同源问题：迁移页 `legacy_source_table`/`legacy_record_id` 为分类 readonly-profile 字段而记录页解析 edit profile 契约，断言改锚有值且不受限的 `legacy_partner_name`（报告记录 `legacy_fact`）。
+
+**旁路与入口隔离（不临时加组、不绕权限）**：
+
+- **789 进项税额上报 = 入口隔离（正向覆盖）**。以 `system.init` route_authority 重放取证：sc_test_admin（`role_code=system_admin`）route_authority 仅含 785/786/787/788（`DISCOVERED_PRIMARY_NAV`），无 789 授权 → 直连 `/a/789?menu_id=537` 被 `NAVIGATION_AUTHORITY_DENIED` 送 access-denied（报告记 `denied_for_account`，断言为「必须被隔离」而非跳过）。既有 finance 角色账号（`demo_role_finance`，亦验证 `demo_finance`/`fin1`/`fin_mgr`）持有 789 的 `CONTEXTUAL_ROUTE`（source `finance.invoice_input_report_contextual_route`），直连成功——按「使用已有授权账号」原则以该账号完成 789 的完整 DOM 断言（列表页 + 新建页 + 字段面 + 退役章节 + 窄屏），报告记 `account=demo_role_finance`、`route_kind=CONTEXTUAL_ROUTE`、`status=passed`。
+- **639 发票总台账 = 退役导航入口**。菜单 340 的父菜单 323「发票台账」(`menu_sc_invoice_management_group`) 被 `views/menu_product_finance_wave1.xml`（P1 财务中心 wave one）显式停用（active=False），子树对所有主体不可见，任何账号都不持有 `/a/639` 路由授权（已逐一探测 system_admin/finance/owner/business_full/pm/restricted 六个角色面均 denied）。处理方式：断言该入口**必须保持被拒**（反例守卫），DOM 记 `not_run_no_access` 并写明原因；契约层（workspace 权威 + create-profile 字段面）仍全量断言通过。
+- 排除的误诊：四正式入口与 789/639 的 Odoo action/menu 组要求完全一致（均含「SC 能力 - 业务发起」），且 786/787/788 对无该组的账号仍可达——说明前端路由授权不读 Odoo 组，而读 role surface 声明；「账号缺组」不是 639/789 不可达的原因。
+
+**设计器闭环**：同一轮跑通「正式 action → 设计器（字段改名/上移/新建分组/隐藏只读备注）→ 预览 → 发布 → 业务页刷新 → 回滚」。`source_patches` 三条稳定 target 全部落地（`/form[1]/sheet[1]/group[2]/field[4]` 等），发布态 `published_content_verified=true`、`runtime_verified=true`，发布前后主入口契约与预览契约一致、另一入口（787）契约与基线逐字一致（入口隔离），回滚后恢复到基线且业务页不再出现配置标签。修正了本分支新增的 invoice 视觉顺序断言：原式 `y0<y1<y2` 前提有误，实际渲染为「受管发票号码」独占一行、未动的「发票代码/发票类型」保持默认两列同排——改为断言「被移动字段在上 + 未动字段共享列」（`visual_order: invoice_no_y=325 < invoice_code_y=461 == invoice_type_y=461, untouched_columns=shared`），同时把 outside 页锚点从 787 创建页被策略裁掉的「销项业务信息」改为常驻可编辑 `note`。
+
+**未覆盖（明确登记）**：786/788 记录页（无合法样本）；639 全部 DOM 路由（退役入口）；sc_test_admin/`admin` 本身不在发票模型四个能力组（既有权限边界，非本批回归）。
+
 ## 状态
 
-本批首轮实施+源码复核断言强化自验通过（L1/L2/L3+运行态冒烟），待整组浏览器复核（L4）｜本批未集成｜未部署｜89入口交付未完成。主线剩余 42 不变；本地已验证 G02 四项旧路径退出候选（七条旧结构职责退役：4 条转换 + 3 条停用）。冻结、Quick、独立复核须待整组浏览器结果交回后再启动，不自动连续放行。
+本批首轮实施 + 源码复核断言强化 + 整组浏览器复核（L4）已完成自验：L1/L2/L3 与运行态冒烟通过，L4 六入口旅程 + 设计器发布回滚闭环 `EXIT=0`（报告 `ok=true`、`restored=true`、`browser_errors=0`）。遗留未覆盖已逐条登记。**下一步待用户决策**：整组结果交回后再冻结、Quick、独立复核，不自动连续放行。本批未集成｜未部署｜89 入口交付未完成；主线剩余 42 不变。
+

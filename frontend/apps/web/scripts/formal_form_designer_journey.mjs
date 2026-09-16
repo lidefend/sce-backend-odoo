@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 
-export async function runDesignerJourney({ page, entry, baseline, outsideBaseline, outside, contract, effective, out, report, pending, cs, drafts, documentTopic = false }) {
-  const fieldName = documentTopic ? 'issue_authority' : 'keeper_id';
-  const hiddenName = documentTopic ? 'result_note' : 'line_note_summary';
-  const configuredLabel = documentTopic ? '配置发证单位' : '设计器保管员';
-  const groupLabel = documentTopic ? '配置发证信息' : '设计器保管信息';
+export async function runDesignerJourney({ page, entry, baseline, outsideBaseline, outside, contract, effective, out, report, pending, cs, drafts, documentTopic = false, invoiceTopic = false }) {
+  const fieldName = documentTopic ? 'issue_authority' : invoiceTopic ? 'invoice_no' : 'keeper_id';
+  const hiddenName = documentTopic ? 'result_note' : invoiceTopic ? 'note_display' : 'line_note_summary';
+  const configuredLabel = documentTopic ? '配置发证单位' : invoiceTopic ? '受管发票号码' : '设计器保管员';
+  const groupLabel = documentTopic ? '配置发证信息' : invoiceTopic ? '受管开票信息' : '设计器保管信息';
   const walk = function* (nodes) { for (const node of nodes || []) { yield node; yield* walk(node.children); } };
   const nodes = [...walk(baseline.layoutContract.containerTree)];
   const keeper = nodes.find((node) => node.type === 'field' && node.name === fieldName);
@@ -84,6 +84,21 @@ export async function runDesignerJourney({ page, entry, baseline, outsideBaselin
       preview.locator(`[data-field-name="${name}"]`).filter({ visible: true }).first().boundingBox()));
     assert(boxes.every(Boolean) && boxes[0].y < boxes[1].y && boxes[1].y < boxes[2].y, 'configured group/field visual sequence differs');
     report.visual_order = { status: 'passed', certificate_name_y: boxes[0].y, issue_authority_y: boxes[1].y, certificate_no_y: boxes[2].y };
+  } else if (invoiceTopic) {
+    // The configured field moves into a new managed group above the untouched
+    // tax fields.  The authored facts to assert are: the renamed field renders
+    // inside the new managed group, it sits above the untouched fields, and
+    // those untouched neighbours keep their default shared-column row.
+    await preview.locator('[data-form-section-navigation]').getByRole('button', { name: '受管开票信息', exact: true }).click();
+    await preview.getByText(configuredLabel, { exact: true }).first().waitFor({ state: 'visible' });
+    const [noBox, codeBox, typeBox] = await Promise.all(['invoice_no', 'invoice_code', 'invoice_type'].map((name) =>
+      preview.locator(`[data-field-name="${name}"]`).filter({ visible: true }).first().boundingBox()));
+    assert(noBox && codeBox && typeBox, 'configured managed group did not render its fields');
+    assert(noBox.y < codeBox.y, 'configured field did not move above the untouched tax fields');
+    assert(Math.abs(codeBox.y - typeBox.y) < 2 && codeBox.x < typeBox.x,
+      'untouched tax fields lost their shared-column row');
+    report.visual_order = { status: 'passed', invoice_no_y: noBox.y, invoice_code_y: codeBox.y, invoice_type_y: typeBox.y,
+      untouched_columns: 'shared' };
   } else {
   const configuredField = await preview.locator('[data-field-name="keeper_id"]').filter({ visible: true }).first().boundingBox();
   const followingField = await preview.locator('[data-field-name="dest_location_id"]').filter({ visible: true }).first().boundingBox();
@@ -113,6 +128,13 @@ export async function runDesignerJourney({ page, entry, baseline, outsideBaselin
     assert.equal(await business.locator('[data-field-name="result_note"]').filter({ visible: true }).count(), 0);
     await business.locator('[data-section-tab="附件"]').last().click();
     await business.locator('[data-form-section-navigation]').getByRole('button', { name: '证照信息', exact: true }).click();
+  } else if (invoiceTopic) {
+    // The hidden field is the readonly note display inside the notes group;
+    // the editable note and the managed group must stay usable.
+    await business.locator('[data-form-section-navigation]').getByRole('button', { name: '办理说明', exact: true }).click();
+    assert.equal(await business.locator('[data-field-name="note_display"]').filter({ visible: true }).count(), 0);
+    await business.locator('[data-field-name="note"]').filter({ visible: true }).first().waitFor();
+    await business.locator('[data-form-section-navigation]').getByRole('button', { name: '受管开票信息', exact: true }).click();
   } else {
   await business.locator('[data-section-tab="说明与附件"]').last().click();
   assert.equal(await business.getByText('备注', { exact: true }).count(), 0);
@@ -155,7 +177,14 @@ export async function runDesignerJourney({ page, entry, baseline, outsideBaselin
     designer_url: page.url(), preview_url: await panel.locator('[data-bound-preview-link]').getAttribute('href'),
     expires_at: reviewPreview.data.preview.expires_at, published: false, same_screen_reuse: 'passed' };
   await page.goto(`${base}/f/${outside.model}/new?menu_id=${outside.menu_id}&action_id=${outside.action_id}`, { waitUntil: 'domcontentloaded' });
-  await page.getByText(documentTopic ? '制度名称' : '出库日期', { exact: true }).filter({ visible: true }).first().waitFor();
+  // The invoice outside scope is 787: its create-profile policy trims the
+  // output-business group, so anchor on the always-rendered editable note
+  // instead of a section title.
+  if (invoiceTopic) {
+    await page.locator('[data-field-name="note"]').filter({ visible: true }).first().waitFor();
+  } else {
+    await page.getByText(documentTopic ? '制度名称' : '出库日期', { exact: true }).filter({ visible: true }).first().waitFor();
+  }
   assert.equal(await page.getByText(configuredLabel, { exact: true }).count(), 0);
   await page.screenshot({ path: path.join(out, 'designer-outside-scope.png'), fullPage: true });
   report.stages.outside_page = { action_id: outside.action_id, status: 'passed' };

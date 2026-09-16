@@ -16,7 +16,7 @@ if not user or not user.has_group("smart_core.group_smart_core_business_config_a
 principal = env(user=user, context={**env.context, "allowed_company_ids": [user.company_id.id]})
 resolver = IdentityResolver(principal)
 topic = os.environ.get("LOWCODE_FORM_TOPIC", "material")
-if topic not in {"material", "document"}:
+if topic not in {"material", "document", "invoice"}:
     raise RuntimeError("unregistered formal form topic")
 entries = []
 identities = (
@@ -26,6 +26,21 @@ identities = (
 if topic == "document":
     identities = (("action_sc_certificate_registration", "view_sc_document_admin_document_form", "menu_sc_certificate_registration"),
                   ("action_sc_product_policy_document_v1", "view_sc_document_admin_document_form", "menu_sc_product_policy_document_v1"))
+if topic == "invoice":
+    # U-C4 G02: four formal invoice entries (785 input, 786 output application,
+    # 787 output registration, 788 prepaid tax) share model sc.invoice.registration
+    # and form view 1651; the last two identities are the shared-form bypass
+    # actions (789 input tax report, 639 invoice general ledger) which must keep
+    # working on the rebuilt native form without legacy section projections.
+    identities = (
+        ("action_sc_invoice_input", "view_sc_invoice_registration_form", "menu_sc_invoice_input"),
+        ("action_sc_invoice_registration_user", "view_sc_invoice_registration_form", "menu_sc_invoice_registration_user"),
+        ("action_sc_invoice_application_user", "view_sc_invoice_registration_form", "menu_sc_invoice_application_user"),
+        ("action_sc_invoice_prepaid_tax_user", "view_sc_invoice_registration_form", "menu_sc_invoice_prepaid_tax_user"),
+        ("action_sc_invoice_input_report_user", "view_sc_invoice_registration_form", "menu_sc_invoice_input_report_user"),
+        ("action_sc_invoice_registration", "view_sc_invoice_registration_form", "menu_sc_invoice_registration"),
+    )
+invoice_sample_fields = ["direction", "source_kind", "source_origin"] if topic == "invoice" else []
 for action_xmlid, view_xmlid, menu_xmlid in identities:
     action, view, menu = [env.ref("smart_construction_core." + key) for key in (action_xmlid, view_xmlid, menu_xmlid)]
     if menu.action != action or view.model != action.res_model:
@@ -35,7 +50,7 @@ for action_xmlid, view_xmlid, menu_xmlid in identities:
     rows = model.search([], order="id").read(["write_date", "state"])
     from odoo.tools.safe_eval import safe_eval
     domain = safe_eval(action.domain or "[]")
-    samples = model.search(domain, order="id", limit=3).read(["display_name", "state"] + (["legacy_document_no", "legacy_document_state", "legacy_source_table", "legacy_source_id"] if topic == "document" else []))
+    samples = model.search(domain, order="id", limit=3).read(["display_name", "state"] + invoice_sample_fields + (["legacy_document_no", "legacy_document_state", "legacy_source_table", "legacy_source_id"] if topic == "document" else []))
     entries.append({"samples": samples, "action_groups": action.groups_id.get_external_id(), "action_context": action.context, "domain": action.domain, "model": action.res_model, "action_id": action.id, "view_id": view.id, "menu_id": menu.id,
                     "business_fingerprint": hashlib.sha256(json.dumps(rows, default=str, sort_keys=True).encode()).hexdigest()})
 configuration_entry = None
