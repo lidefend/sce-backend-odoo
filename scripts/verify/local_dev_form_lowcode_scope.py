@@ -72,6 +72,15 @@ TOPIC_IDENTITIES = {
         ("action_sc_receipt_income_user_income", "view_sc_receipt_income_form", "menu_sc_user_income"),
         ("action_sc_receipt_income_engineering_progress", "view_sc_receipt_income_form", "menu_sc_engineering_progress_income"),
     ),
+    # U-C4 G04: 实付登记 (837 / menu 339) and 公司财务支出 (808 / menu 547) are
+    # the two formal entries; 往来单位付款 (811 / menu 561) is the shared-form
+    # bypass entry and reaches form view 1647 through its action view_ids.  All
+    # three consume the same rebuilt native form.
+    "payment_execution": (
+        ("action_sc_payment_execution_actual_outflow", "view_sc_payment_execution_form", "menu_sc_payment_execution"),
+        ("action_sc_payment_execution_company_finance_expense", "view_sc_payment_execution_form", "menu_sc_company_finance_expense"),
+        ("action_sc_payment_execution_partner_payment", "view_sc_payment_execution_form", "menu_sc_partner_payment"),
+    ),
 }
 TOPIC_SAMPLE_FIELDS = {
     "invoice": ["direction", "source_kind", "source_origin", "note"],
@@ -80,6 +89,7 @@ TOPIC_SAMPLE_FIELDS = {
     "contract": ["state"],
     "settlement": ["state"],
     "receipt_income": ["state", "source_origin", "source_kind"],
+    "payment_execution": ["state", "source_kind", "payment_family"],
 }
 # Mechanism assertions for the read-only representative pass.  Names are the
 # registered display copies / canonical sources of the same business fact; the
@@ -114,6 +124,15 @@ TOPIC_REPRESENTATIVE = {
     # on the treasury ledger) are observed as legal hiding instead of being
     # reported as a lost fact.  Read-only.
     "receipt_income": {"section_navigation": True, "record_surface": True},
+    # U-C4 G04: the payment-execution rebuild adds nine `data-sc-anchor`
+    # business sections (one of them conditional on the legacy source state) and
+    # keeps three untitled column containers as layout wrappers.  The same
+    # read-only battery is the mechanism assertion: every 章节入口 resolves and
+    # reveals its target, and the command bar / navigation / body bands stay
+    # separated at 1088 and 390.  `record_surface` replays it on the governed
+    # sample so the conditional source-trace section is observed as legal hiding
+    # instead of a lost fact.  Read-only; no change set is touched.
+    "payment_execution": {"section_navigation": True, "record_surface": True},
 }
 if topic not in TOPIC_IDENTITIES:
     raise RuntimeError("unregistered formal form topic")

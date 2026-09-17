@@ -964,3 +964,26 @@ popup 创建后立即 `reload()` 会取消首个文档的**在途模块请求**�
 
 状态：**批次验收完成（本批范围）｜主线集成完成（PR #488）｜未部署**。G03 残留缺口（637/807 受管身份授权、
 807 progress 域样本、契约字段→渲染节点逐字段归因、`name` 手工编号业务决定）继续登记在 G03 记录 §6，本批不扩。
+
+## 8.21 G04 代表面实施：实付与公司支出原生结构迁移（独立记录）
+
+本批 U-C4 的第三个代表面（`G04 实付与公司支出`）仍在**独立分支与独立记录**中实施，不改写已冻结的候选：
+分支 `feature/uc4-payment-execution-native-v1`（基于 `origin/main`=`1cf2a151cb6ac19fe45d2050b875f9b39163ad05`），
+记录 `docs/ops/iterations/uc4_payment_execution_native_lowcode_20260918.md`。
+
+要点（细节见该记录）：三个入口（837 实付登记 / 808 公司财务支出 / 811 往来单位付款）共用原生 1647；
+入口声明转 `native_semantic_surface`（208 保留 `semantic_anchors`，241/242/243 只留标题与组合模式），
+共享层 sections(144)、P1 业务事实层(6) 退役；原生 arch 加 9 个 `data-sc-anchor` 业务章节、`state` 由 statusbar
+单次呈现、补回 `creator_name`/`created_time` 独立审计事实，3 个无标题包装组按布局语义保留；
+**不登记** `sc.payment.execution` 的展示副本（未继承展示副本协议），退役的 10 个 `*_display` 投影不重复入正文、
+其列表列职责与字段存储全部保留。
+
+本轮新增一条**归因结论**（不登记为缺陷）：808/811 的业务分类（`sc.business.category`）声明
+`form_policy_json.visible_profiles=["readonly"]`，故 create 档位不呈现 `company_contractor_*` 等事实，
+随之为空的 `公司-承包人资金责任` 章节也不再出现；三入口 `containerTree` 逐字节相同，导航与正文一致，
+无孤儿入口与空容器——判定为**声明的合法隐藏**，非结构消费层的修剪误删。
+
+验证：L1 PASS（16 tests）；L2 新增 7 测 `0 failed`（首轮两处失败均为测试自身，已修并复跑）；L3 模块升级 + authority PASS；
+L4 只读代表面 837 create/record、808 create 通过（章节入口全 resolve、吸顶 0 重叠、无重复字段/空容器、业务指纹未变），
+811 为交付导航权威**拒绝访问**（记录为可达性事实，非结构结论）。
+台账保持 **36**（扣减留待合入后核对）；本批未执行 `sync_demo`／fixture reset／发布快照／工作树清理。
