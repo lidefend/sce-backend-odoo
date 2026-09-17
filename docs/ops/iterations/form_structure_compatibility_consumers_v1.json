@@ -6,7 +6,7 @@
     "operation": "model",
     "renderProfile": "create"
   },
-  "count": 36,
+  "count": 34,
   "fullRescan": false,
   "sourceInventory": "artifacts/form-structure-unification/customer-browser-final/compatibility-consumers.json",
   "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
@@ -3278,617 +3278,6 @@
       "evidenceStatus": "carried_forward_prior_inventory"
     },
     {
-      "menuXmlid": "smart_construction_core.menu_sc_payment_execution",
-      "label": "实付登记",
-      "model": "sc.payment.execution",
-      "actionId": 837,
-      "menuId": 339,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.payment.execution",
-        "viewId": 1647
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 144,
-            "name": "sc_payment_execution_form_sections_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          },
-          {
-            "id": 6,
-            "name": "sc_payment_execution_p1_form_business_facts_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          },
-          {
-            "id": 208,
-            "name": "payment_execution_productized_form_v2",
-            "version_no": 3,
-            "status": "published",
-            "source_kind": "published"
-          },
-          {
-            "id": 241,
-            "name": "payment_execution_actual_outflow_productized_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1647,
-        "resolvedActionId": 837,
-        "structureDiagnostics": [
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.payment.execution",
-              "action_id": 837,
-              "view_id": 1647
-            },
-            "key": "sections",
-            "node": "view_orchestration.views.form.sections",
-            "nodes": [
-              "0",
-              "1",
-              "2",
-              "3"
-            ],
-            "configuration": {
-              "id": 6,
-              "name": "sc_payment_execution_p1_form_business_facts_v1"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 144,
-                "name": "sc_payment_execution_form_sections_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.payment.execution",
-              "action_id": 837,
-              "view_id": 1647
-            },
-            "key": "sections",
-            "node": "view_orchestration.views.form.sections",
-            "nodes": [
-              "0",
-              "1",
-              "2",
-              "3",
-              "4",
-              "5"
-            ],
-            "configuration": {
-              "id": 208,
-              "name": "payment_execution_productized_form_v2"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 6,
-                "name": "sc_payment_execution_p1_form_business_facts_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.payment.execution",
-              "action_id": 837,
-              "view_id": 1647
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "payment_request_id",
-              "project_id",
-              "partner_id",
-              "contract_id",
-              "payment_request_partner_relation",
-              "business_category_id",
-              "state",
-              "date_payment",
-              "planned_amount",
-              "paid_amount",
-              "currency_id",
-              "invoice_amount",
-              "payment_method",
-              "receipt_account_name",
-              "receipt_bank_name",
-              "receipt_account_no",
-              "payment_account_name",
-              "payment_bank_name",
-              "payment_account_no",
-              "bank_account",
-              "document_no",
-              "kingdee_document_no",
-              "note",
-              "attachment_ids",
-              "handler_name",
-              "company_contractor_responsibility_state",
-              "company_contractor_responsibility_notice",
-              "cancellation_kind",
-              "reversal_reason",
-              "source_kind",
-              "payment_family",
-              "push_result"
-            ],
-            "configuration": {
-              "id": 208,
-              "name": "payment_execution_productized_form_v2"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 6,
-                "name": "sc_payment_execution_p1_form_business_facts_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.payment.execution",
-              "action_id": 837,
-              "view_id": 1647
-            },
-            "key": "sections",
-            "node": "view_orchestration.views.form.sections",
-            "nodes": [
-              "0",
-              "1",
-              "2",
-              "3",
-              "4"
-            ],
-            "configuration": {
-              "id": 241,
-              "name": "payment_execution_actual_outflow_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 208,
-                "name": "payment_execution_productized_form_v2"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.payment.execution",
-              "action_id": 837,
-              "view_id": 1647
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "name",
-              "state",
-              "business_category_id",
-              "project_id",
-              "partner_id",
-              "payment_request_id",
-              "contract_id",
-              "payment_request_partner_relation",
-              "date_payment",
-              "paid_amount",
-              "planned_amount",
-              "invoice_amount",
-              "payment_method",
-              "document_no",
-              "handler_name",
-              "note",
-              "receipt_account_name",
-              "receipt_bank_name",
-              "receipt_account_no",
-              "payment_account_name",
-              "payment_bank_name",
-              "payment_account_no",
-              "bank_account",
-              "company_contractor_responsibility_state",
-              "company_contractor_arrival_unprocessed_amount",
-              "company_contractor_arrival_over_processed_amount",
-              "company_contractor_self_funding_balance",
-              "company_contractor_responsibility_notice",
-              "kingdee_document_no",
-              "attachment_ids",
-              "source_kind",
-              "payment_family",
-              "push_result"
-            ],
-            "configuration": {
-              "id": 241,
-              "name": "payment_execution_actual_outflow_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 208,
-                "name": "payment_execution_productized_form_v2"
-              }
-            ]
-          }
-        ],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "payment_execution_document_status_display",
-          "payment_execution_document_no_display",
-          "company_finance_push_result",
-          "kingdee_document_no",
-          "partner_payment_project_name",
-          "payment_execution_supplier_name_display",
-          "partner_payment_date_display",
-          "receipt_account_name",
-          "partner_payment_actual_payee_unit",
-          "partner_payment_category_display",
-          "partner_payment_content_display",
-          "partner_payment_method_display",
-          "partner_payment_cost_type_display",
-          "payment_account_no",
-          "payment_execution_payment_account_name_display",
-          "payment_execution_bank_name_display",
-          "payment_execution_account_display",
-          "payment_execution_payment_amount_display",
-          "payment_execution_payment_request_no_display",
-          "partner_payment_source_text",
-          "partner_payment_voucher_no",
-          "company_finance_note_display",
-          "note",
-          "payment_execution_attachment_text_display",
-          "partner_payment_writer",
-          "payment_execution_source_created_by_display",
-          "created_time",
-          "payment_request_id",
-          "project_id",
-          "partner_id",
-          "contract_id",
-          "payment_request_partner_relation",
-          "business_category_id",
-          "state",
-          "date_payment",
-          "planned_amount",
-          "paid_amount",
-          "currency_id",
-          "invoice_amount",
-          "payment_method",
-          "receipt_bank_name",
-          "receipt_account_no",
-          "payment_account_name",
-          "payment_bank_name",
-          "bank_account",
-          "document_no",
-          "attachment_ids",
-          "handler_name",
-          "company_contractor_responsibility_state",
-          "company_contractor_responsibility_notice",
-          "cancellation_kind",
-          "reversal_reason",
-          "source_kind",
-          "payment_family",
-          "push_result",
-          "name",
-          "company_contractor_arrival_unprocessed_amount",
-          "company_contractor_arrival_over_processed_amount",
-          "company_contractor_self_funding_balance"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {
-          "payment_request_id": "summary",
-          "project_id": "summary",
-          "partner_id": "summary",
-          "state": "summary",
-          "paid_amount": "summary",
-          "currency_id": "summary",
-          "date_payment": "task",
-          "handler_name": "task",
-          "company_contractor_responsibility_state": "risk",
-          "company_contractor_responsibility_notice": "risk",
-          "reversal_reason": "risk",
-          "document_no": "audit",
-          "kingdee_document_no": "audit",
-          "push_result": "audit"
-        },
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:来源申请",
-            "key": "",
-            "title": "来源申请",
-            "fields": [
-              "payment_request_id",
-              "project_id",
-              "partner_id",
-              "contract_id",
-              "payment_request_partner_relation",
-              "business_category_id",
-              "state"
-            ]
-          },
-          {
-            "identity": "title:本次实付",
-            "key": "",
-            "title": "本次实付",
-            "fields": [
-              "date_payment",
-              "planned_amount",
-              "paid_amount",
-              "currency_id",
-              "invoice_amount",
-              "payment_method"
-            ]
-          },
-          {
-            "identity": "title:收款账户",
-            "key": "",
-            "title": "收款账户",
-            "fields": [
-              "receipt_account_name",
-              "receipt_bank_name",
-              "receipt_account_no"
-            ]
-          },
-          {
-            "identity": "title:付款账户",
-            "key": "",
-            "title": "付款账户",
-            "fields": [
-              "payment_account_name",
-              "payment_bank_name",
-              "payment_account_no",
-              "bank_account"
-            ]
-          },
-          {
-            "identity": "title:凭证与说明",
-            "key": "",
-            "title": "凭证与说明",
-            "fields": [
-              "document_no",
-              "kingdee_document_no",
-              "note",
-              "attachment_ids"
-            ]
-          },
-          {
-            "identity": "title:责任与状态",
-            "key": "",
-            "title": "责任与状态",
-            "fields": [
-              "handler_name",
-              "company_contractor_responsibility_state",
-              "company_contractor_responsibility_notice",
-              "cancellation_kind",
-              "reversal_reason",
-              "source_kind",
-              "payment_family",
-              "push_result"
-            ]
-          },
-          {
-            "identity": "title:办理主信息",
-            "key": "",
-            "title": "办理主信息",
-            "fields": [
-              "name",
-              "state",
-              "business_category_id",
-              "project_id",
-              "partner_id",
-              "payment_request_id",
-              "contract_id",
-              "payment_request_partner_relation"
-            ]
-          },
-          {
-            "identity": "title:付款结果",
-            "key": "",
-            "title": "付款结果",
-            "fields": [
-              "date_payment",
-              "paid_amount",
-              "planned_amount",
-              "invoice_amount",
-              "payment_method",
-              "document_no",
-              "handler_name",
-              "note"
-            ]
-          },
-          {
-            "identity": "title:收付款账户",
-            "key": "",
-            "title": "收付款账户",
-            "fields": [
-              "receipt_account_name",
-              "receipt_bank_name",
-              "receipt_account_no",
-              "payment_account_name",
-              "payment_bank_name",
-              "payment_account_no",
-              "bank_account"
-            ]
-          },
-          {
-            "identity": "title:责任与凭证",
-            "key": "",
-            "title": "责任与凭证",
-            "fields": [
-              "company_contractor_responsibility_state",
-              "company_contractor_arrival_unprocessed_amount",
-              "company_contractor_arrival_over_processed_amount",
-              "company_contractor_self_funding_balance",
-              "company_contractor_responsibility_notice",
-              "kingdee_document_no",
-              "attachment_ids"
-            ]
-          },
-          {
-            "identity": "title:来源状态",
-            "key": "",
-            "title": "来源状态",
-            "fields": [
-              "source_kind",
-              "payment_family",
-              "push_result"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "办理类型",
-          "付款依据",
-          "付款金额",
-          "收款账户",
-          "付款账户",
-          "办理说明",
-          "公司-承包人资金责任",
-          "来源与系统追溯",
-          "单据识别",
-          "业务对象",
-          "金额与办理",
-          "附件与来源",
-          "来源申请",
-          "本次实付",
-          "凭证与说明",
-          "责任与状态",
-          "办理主信息",
-          "付款结果",
-          "收付款账户",
-          "责任与凭证",
-          "来源状态"
-        ],
-        "fieldGroups": {
-          "来源申请": [
-            "payment_request_id",
-            "project_id",
-            "partner_id",
-            "contract_id",
-            "payment_request_partner_relation",
-            "business_category_id",
-            "state"
-          ],
-          "本次实付": [
-            "date_payment",
-            "planned_amount",
-            "paid_amount",
-            "currency_id",
-            "invoice_amount",
-            "payment_method"
-          ],
-          "收款账户": [
-            "receipt_account_name",
-            "receipt_bank_name",
-            "receipt_account_no"
-          ],
-          "付款账户": [
-            "payment_account_name",
-            "payment_bank_name",
-            "payment_account_no",
-            "bank_account"
-          ],
-          "凭证与说明": [
-            "document_no",
-            "kingdee_document_no",
-            "note",
-            "attachment_ids"
-          ],
-          "责任与状态": [
-            "handler_name",
-            "company_contractor_responsibility_state",
-            "company_contractor_responsibility_notice",
-            "cancellation_kind",
-            "reversal_reason",
-            "source_kind",
-            "payment_family",
-            "push_result"
-          ],
-          "办理主信息": [
-            "name",
-            "state",
-            "business_category_id",
-            "project_id",
-            "partner_id",
-            "payment_request_id",
-            "contract_id",
-            "payment_request_partner_relation"
-          ],
-          "付款结果": [
-            "date_payment",
-            "paid_amount",
-            "planned_amount",
-            "invoice_amount",
-            "payment_method",
-            "document_no",
-            "handler_name",
-            "note"
-          ],
-          "收付款账户": [
-            "receipt_account_name",
-            "receipt_bank_name",
-            "receipt_account_no",
-            "payment_account_name",
-            "payment_bank_name",
-            "payment_account_no",
-            "bank_account"
-          ],
-          "责任与凭证": [
-            "company_contractor_responsibility_state",
-            "company_contractor_arrival_unprocessed_amount",
-            "company_contractor_arrival_over_processed_amount",
-            "company_contractor_self_funding_balance",
-            "company_contractor_responsibility_notice",
-            "kingdee_document_no",
-            "attachment_ids"
-          ],
-          "来源状态": [
-            "source_kind",
-            "payment_family",
-            "push_result"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "来源申请": 2,
-          "本次实付": 2,
-          "收款账户": 2,
-          "付款账户": 2,
-          "凭证与说明": 2,
-          "责任与状态": 2,
-          "办理主信息": 2,
-          "付款结果": 2,
-          "收付款账户": 2,
-          "责任与凭证": 2,
-          "来源状态": 2
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
       "menuXmlid": "smart_construction_core.menu_sc_reimbursement_request",
       "label": "费用报销",
       "model": "sc.expense.claim",
@@ -4332,617 +3721,6 @@
         "groupColumns": {
           "办理上下文": 2,
           "办理说明": 1
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_company_finance_expense",
-      "label": "公司支出",
-      "model": "sc.payment.execution",
-      "actionId": 808,
-      "menuId": 547,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.payment.execution",
-        "viewId": 1647
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 144,
-            "name": "sc_payment_execution_form_sections_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          },
-          {
-            "id": 6,
-            "name": "sc_payment_execution_p1_form_business_facts_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          },
-          {
-            "id": 208,
-            "name": "payment_execution_productized_form_v2",
-            "version_no": 3,
-            "status": "published",
-            "source_kind": "published"
-          },
-          {
-            "id": 242,
-            "name": "payment_execution_company_finance_expense_productized_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1647,
-        "resolvedActionId": 808,
-        "structureDiagnostics": [
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.payment.execution",
-              "action_id": 808,
-              "view_id": 1647
-            },
-            "key": "sections",
-            "node": "view_orchestration.views.form.sections",
-            "nodes": [
-              "0",
-              "1",
-              "2",
-              "3"
-            ],
-            "configuration": {
-              "id": 6,
-              "name": "sc_payment_execution_p1_form_business_facts_v1"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 144,
-                "name": "sc_payment_execution_form_sections_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.payment.execution",
-              "action_id": 808,
-              "view_id": 1647
-            },
-            "key": "sections",
-            "node": "view_orchestration.views.form.sections",
-            "nodes": [
-              "0",
-              "1",
-              "2",
-              "3",
-              "4",
-              "5"
-            ],
-            "configuration": {
-              "id": 208,
-              "name": "payment_execution_productized_form_v2"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 6,
-                "name": "sc_payment_execution_p1_form_business_facts_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.payment.execution",
-              "action_id": 808,
-              "view_id": 1647
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "payment_request_id",
-              "project_id",
-              "partner_id",
-              "contract_id",
-              "payment_request_partner_relation",
-              "business_category_id",
-              "state",
-              "date_payment",
-              "planned_amount",
-              "paid_amount",
-              "currency_id",
-              "invoice_amount",
-              "payment_method",
-              "receipt_account_name",
-              "receipt_bank_name",
-              "receipt_account_no",
-              "payment_account_name",
-              "payment_bank_name",
-              "payment_account_no",
-              "bank_account",
-              "document_no",
-              "kingdee_document_no",
-              "note",
-              "attachment_ids",
-              "handler_name",
-              "company_contractor_responsibility_state",
-              "company_contractor_responsibility_notice",
-              "cancellation_kind",
-              "reversal_reason",
-              "source_kind",
-              "payment_family",
-              "push_result"
-            ],
-            "configuration": {
-              "id": 208,
-              "name": "payment_execution_productized_form_v2"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 6,
-                "name": "sc_payment_execution_p1_form_business_facts_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.payment.execution",
-              "action_id": 808,
-              "view_id": 1647
-            },
-            "key": "sections",
-            "node": "view_orchestration.views.form.sections",
-            "nodes": [
-              "0",
-              "1",
-              "2",
-              "3",
-              "4"
-            ],
-            "configuration": {
-              "id": 242,
-              "name": "payment_execution_company_finance_expense_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 208,
-                "name": "payment_execution_productized_form_v2"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.payment.execution",
-              "action_id": 808,
-              "view_id": 1647
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "name",
-              "state",
-              "business_category_id",
-              "project_id",
-              "partner_id",
-              "payment_request_id",
-              "contract_id",
-              "payment_request_partner_relation",
-              "date_payment",
-              "paid_amount",
-              "planned_amount",
-              "invoice_amount",
-              "payment_method",
-              "document_no",
-              "handler_name",
-              "note",
-              "receipt_account_name",
-              "receipt_bank_name",
-              "receipt_account_no",
-              "payment_account_name",
-              "payment_bank_name",
-              "payment_account_no",
-              "bank_account",
-              "company_contractor_responsibility_state",
-              "company_contractor_arrival_unprocessed_amount",
-              "company_contractor_arrival_over_processed_amount",
-              "company_contractor_self_funding_balance",
-              "company_contractor_responsibility_notice",
-              "kingdee_document_no",
-              "attachment_ids",
-              "source_kind",
-              "payment_family",
-              "push_result"
-            ],
-            "configuration": {
-              "id": 242,
-              "name": "payment_execution_company_finance_expense_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 208,
-                "name": "payment_execution_productized_form_v2"
-              }
-            ]
-          }
-        ],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "payment_execution_document_status_display",
-          "payment_execution_document_no_display",
-          "company_finance_push_result",
-          "kingdee_document_no",
-          "partner_payment_project_name",
-          "payment_execution_supplier_name_display",
-          "partner_payment_date_display",
-          "receipt_account_name",
-          "partner_payment_actual_payee_unit",
-          "partner_payment_category_display",
-          "partner_payment_content_display",
-          "partner_payment_method_display",
-          "partner_payment_cost_type_display",
-          "payment_account_no",
-          "payment_execution_payment_account_name_display",
-          "payment_execution_bank_name_display",
-          "payment_execution_account_display",
-          "payment_execution_payment_amount_display",
-          "payment_execution_payment_request_no_display",
-          "partner_payment_source_text",
-          "partner_payment_voucher_no",
-          "company_finance_note_display",
-          "note",
-          "payment_execution_attachment_text_display",
-          "partner_payment_writer",
-          "payment_execution_source_created_by_display",
-          "created_time",
-          "payment_request_id",
-          "project_id",
-          "partner_id",
-          "contract_id",
-          "payment_request_partner_relation",
-          "business_category_id",
-          "state",
-          "date_payment",
-          "planned_amount",
-          "paid_amount",
-          "currency_id",
-          "invoice_amount",
-          "payment_method",
-          "receipt_bank_name",
-          "receipt_account_no",
-          "payment_account_name",
-          "payment_bank_name",
-          "bank_account",
-          "document_no",
-          "attachment_ids",
-          "handler_name",
-          "company_contractor_responsibility_state",
-          "company_contractor_responsibility_notice",
-          "cancellation_kind",
-          "reversal_reason",
-          "source_kind",
-          "payment_family",
-          "push_result",
-          "name",
-          "company_contractor_arrival_unprocessed_amount",
-          "company_contractor_arrival_over_processed_amount",
-          "company_contractor_self_funding_balance"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {
-          "payment_request_id": "summary",
-          "project_id": "summary",
-          "partner_id": "summary",
-          "state": "summary",
-          "paid_amount": "summary",
-          "currency_id": "summary",
-          "date_payment": "task",
-          "handler_name": "task",
-          "company_contractor_responsibility_state": "risk",
-          "company_contractor_responsibility_notice": "risk",
-          "reversal_reason": "risk",
-          "document_no": "audit",
-          "kingdee_document_no": "audit",
-          "push_result": "audit"
-        },
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:来源申请",
-            "key": "",
-            "title": "来源申请",
-            "fields": [
-              "payment_request_id",
-              "project_id",
-              "partner_id",
-              "contract_id",
-              "payment_request_partner_relation",
-              "business_category_id",
-              "state"
-            ]
-          },
-          {
-            "identity": "title:本次实付",
-            "key": "",
-            "title": "本次实付",
-            "fields": [
-              "date_payment",
-              "planned_amount",
-              "paid_amount",
-              "currency_id",
-              "invoice_amount",
-              "payment_method"
-            ]
-          },
-          {
-            "identity": "title:收款账户",
-            "key": "",
-            "title": "收款账户",
-            "fields": [
-              "receipt_account_name",
-              "receipt_bank_name",
-              "receipt_account_no"
-            ]
-          },
-          {
-            "identity": "title:付款账户",
-            "key": "",
-            "title": "付款账户",
-            "fields": [
-              "payment_account_name",
-              "payment_bank_name",
-              "payment_account_no",
-              "bank_account"
-            ]
-          },
-          {
-            "identity": "title:凭证与说明",
-            "key": "",
-            "title": "凭证与说明",
-            "fields": [
-              "document_no",
-              "kingdee_document_no",
-              "note",
-              "attachment_ids"
-            ]
-          },
-          {
-            "identity": "title:责任与状态",
-            "key": "",
-            "title": "责任与状态",
-            "fields": [
-              "handler_name",
-              "company_contractor_responsibility_state",
-              "company_contractor_responsibility_notice",
-              "cancellation_kind",
-              "reversal_reason",
-              "source_kind",
-              "payment_family",
-              "push_result"
-            ]
-          },
-          {
-            "identity": "title:办理主信息",
-            "key": "",
-            "title": "办理主信息",
-            "fields": [
-              "name",
-              "state",
-              "business_category_id",
-              "project_id",
-              "partner_id",
-              "payment_request_id",
-              "contract_id",
-              "payment_request_partner_relation"
-            ]
-          },
-          {
-            "identity": "title:付款结果",
-            "key": "",
-            "title": "付款结果",
-            "fields": [
-              "date_payment",
-              "paid_amount",
-              "planned_amount",
-              "invoice_amount",
-              "payment_method",
-              "document_no",
-              "handler_name",
-              "note"
-            ]
-          },
-          {
-            "identity": "title:收付款账户",
-            "key": "",
-            "title": "收付款账户",
-            "fields": [
-              "receipt_account_name",
-              "receipt_bank_name",
-              "receipt_account_no",
-              "payment_account_name",
-              "payment_bank_name",
-              "payment_account_no",
-              "bank_account"
-            ]
-          },
-          {
-            "identity": "title:责任与凭证",
-            "key": "",
-            "title": "责任与凭证",
-            "fields": [
-              "company_contractor_responsibility_state",
-              "company_contractor_arrival_unprocessed_amount",
-              "company_contractor_arrival_over_processed_amount",
-              "company_contractor_self_funding_balance",
-              "company_contractor_responsibility_notice",
-              "kingdee_document_no",
-              "attachment_ids"
-            ]
-          },
-          {
-            "identity": "title:来源状态",
-            "key": "",
-            "title": "来源状态",
-            "fields": [
-              "source_kind",
-              "payment_family",
-              "push_result"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "办理类型",
-          "付款依据",
-          "付款金额",
-          "收款账户",
-          "付款账户",
-          "办理说明",
-          "公司-承包人资金责任",
-          "来源与系统追溯",
-          "单据识别",
-          "业务对象",
-          "金额与办理",
-          "附件与来源",
-          "来源申请",
-          "本次实付",
-          "凭证与说明",
-          "责任与状态",
-          "办理主信息",
-          "付款结果",
-          "收付款账户",
-          "责任与凭证",
-          "来源状态"
-        ],
-        "fieldGroups": {
-          "来源申请": [
-            "payment_request_id",
-            "project_id",
-            "partner_id",
-            "contract_id",
-            "payment_request_partner_relation",
-            "business_category_id",
-            "state"
-          ],
-          "本次实付": [
-            "date_payment",
-            "planned_amount",
-            "paid_amount",
-            "currency_id",
-            "invoice_amount",
-            "payment_method"
-          ],
-          "收款账户": [
-            "receipt_account_name",
-            "receipt_bank_name",
-            "receipt_account_no"
-          ],
-          "付款账户": [
-            "payment_account_name",
-            "payment_bank_name",
-            "payment_account_no",
-            "bank_account"
-          ],
-          "凭证与说明": [
-            "document_no",
-            "kingdee_document_no",
-            "note",
-            "attachment_ids"
-          ],
-          "责任与状态": [
-            "handler_name",
-            "company_contractor_responsibility_state",
-            "company_contractor_responsibility_notice",
-            "cancellation_kind",
-            "reversal_reason",
-            "source_kind",
-            "payment_family",
-            "push_result"
-          ],
-          "办理主信息": [
-            "name",
-            "state",
-            "business_category_id",
-            "project_id",
-            "partner_id",
-            "payment_request_id",
-            "contract_id",
-            "payment_request_partner_relation"
-          ],
-          "付款结果": [
-            "date_payment",
-            "paid_amount",
-            "planned_amount",
-            "invoice_amount",
-            "payment_method",
-            "document_no",
-            "handler_name",
-            "note"
-          ],
-          "收付款账户": [
-            "receipt_account_name",
-            "receipt_bank_name",
-            "receipt_account_no",
-            "payment_account_name",
-            "payment_bank_name",
-            "payment_account_no",
-            "bank_account"
-          ],
-          "责任与凭证": [
-            "company_contractor_responsibility_state",
-            "company_contractor_arrival_unprocessed_amount",
-            "company_contractor_arrival_over_processed_amount",
-            "company_contractor_self_funding_balance",
-            "company_contractor_responsibility_notice",
-            "kingdee_document_no",
-            "attachment_ids"
-          ],
-          "来源状态": [
-            "source_kind",
-            "payment_family",
-            "push_result"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "来源申请": 2,
-          "本次实付": 2,
-          "收款账户": 2,
-          "付款账户": 2,
-          "凭证与说明": 2,
-          "责任与状态": 2,
-          "办理主信息": 2,
-          "付款结果": 2,
-          "收付款账户": 2,
-          "责任与凭证": 2,
-          "来源状态": 2
         },
         "groupVisibility": {},
         "formColumns": 2
@@ -7538,7 +6316,7 @@
     "countCorrection": 4,
     "migrationReduction": 3
   },
-  "localVerifiedCount": 36,
+  "localVerifiedCount": 34,
   "uc1PublishedAudit": {
     "auditedAt": "2026-09-16",
     "auditedReleaseHead": "28b7695dc9f1cebbbe9bd5d715e951c6dec8a4da",
@@ -7711,11 +6489,12 @@
     "name": "U-C4",
     "status": "scope_confirmed_implementation_started",
     "priorityActions": [
-      837,
-      808
+      792,
+      798,
+      793
     ],
-    "selectedGroup": "G04",
-    "sourceMainlineHead": "654edf0ff09fe394080bfa2545a5061dcafdbecd",
+    "selectedGroup": "G05",
+    "sourceMainlineHead": "87b36441c8940af24ed10cffe300363fc5e3272e",
     "fullRescan": false,
     "groups": [
       {
@@ -8053,17 +6832,17 @@
         "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
       }
     ],
-    "scopeNote": "Third group: receipt and company income native form migration (company income 637, income 806, shared model sc.receipt.income and view 1644). Scope confirmed in uc4 record: convert the three released entry contracts to native_semantic_surface, retire the model-wide sections layer, the P1 business-facts layer and the generated sequence mirror (all listed in G03 legacyConfigurations); bypass entry 807 (工程进度款收入登记) shares the same native form through its action view_ids and is not a ledger consumer. No new business rules or permission expansion.",
+    "scopeNote": "Fourth group: payment execution and company expense native form migration (execution 837, company finance expense 808, shared model sc.payment.execution and view 1647). Scope confirmed in uc4 record: convert the entry contracts and the model-level contract to native_semantic_surface, retire the shared sections layer (144), the P1 business-facts layer (6) and the entry structure projections (241/242/243) (all listed in G04 legacyConfigurations); bypass entry 811 (往来单位付款) shares the same native form through its action view_ids and is not a ledger consumer. No new business rules or permission expansion.",
     "retirementCondition": "Each selected formal action must independently show native authority, no active structural override/dependency and representative browser acceptance before any count reduction.",
     "executionSequence": [
       "continuous_group_implementation_and_targeted_validation",
       "one_consolidated_browser_review",
       "freeze_and_PR_integration_gates"
     ],
-    "planningRecord": "docs/ops/iterations/uc4_receipt_income_native_lowcode_20260917.md"
+    "planningRecord": "docs/ops/iterations/uc4_payment_execution_native_lowcode_20260918.md"
   },
   "retirementCondition": "Only after every formal consumer of a compatibility regrouping path is zero and other roles/companies/states are covered, remove that regrouping logic and its test exemptions.",
-  "mainlineRemainingCount": 36,
+  "mainlineRemainingCount": 34,
   "mainlineRemainingLabel": "主线剩余兼容消费者（不代表部署发布或89入口整体交付）",
   "uc3LocalMigrationAudit": {
     "status": "mainline_integrated",
@@ -8270,6 +7049,79 @@
     ],
     "notDeducted": [
       "bypass_action_807",
+      "config_center_six_packages_pr_485",
+      "impact_scoped_validation_pr_486",
+      "borrow_archive_shared_action_scopes"
+    ]
+  },
+  "uc4G04PublishedAudit": {
+    "auditedAt": "2026-09-18",
+    "auditedReleaseHead": "87b36441c8940af24ed10cffe300363fc5e3272e",
+    "mergedPr": {
+      "number": 490,
+      "squashHead": "87b36441c8940af24ed10cffe300363fc5e3272e",
+      "sourceHead": "04701c175bcca245eb797f66148e3cf13bbf2a37",
+      "tree": "f0665b8686b53e2b08eb488282a214898938ee8c"
+    },
+    "iterationRecord": "docs/ops/iterations/uc4_payment_execution_native_lowcode_20260918.md",
+    "reduction": {
+      "before": 36,
+      "after": 34,
+      "retiredActions": [
+        837,
+        808
+      ],
+      "retiredViews": [
+        1647
+      ],
+      "countMeaning": "mainline remaining compatibility consumers; deployment and overall user delivery are separate"
+    },
+    "bypassConsumers": {
+      "scopeNote": "Action 811 (往来单位付款) reaches the same rebuilt native form 1647 through its own action view_ids. It is a shared bypass entry, not a ledger compatibility consumer, so it is recorded here instead of being counted or silently dropped.",
+      "actions": [
+        {
+          "actionId": 811,
+          "label": "往来单位付款",
+          "counted": false,
+          "whyNotCounted": "shares the delivered native authority; no released configuration of its own to retire",
+          "authorityEvidence": "L2 test proves form authority on the action view_ids (form 1647); the contract layer proves the same native form and an identical container shape (67 container nodes / 46 field nodes, no duplicates)",
+          "browserAcceptance": "NAVIGATION_AUTHORITY_DENIED for the registered governed identity; recorded as a reachability fact, not a structure conclusion"
+        }
+      ]
+    },
+    "sourceVerification": {
+      "nativeStructureAuthority": true,
+      "configuredSectionsEmpty": true,
+      "compatibilityDependenciesEmpty": true,
+      "retiredProjectionsDeactivated": true,
+      "recoveredFactsCarriedOnce": true,
+      "actionCarriersPreserved": true,
+      "exactHeadQuick": "passed"
+    },
+    "deliveredSharedMechanisms": [
+      "P0 native authority: nine business groups in the native form carry a stable name plus a data-sc-anchor as the only section opt-in, and the state field that duplicated the header statusbar inside the business-category group was removed so the status is presented once",
+      "P0 recovered facts: the two audit facts created_time and creator_name that the retired configuration declared but the native form never carried are now carried exactly once, readonly, inside the source-and-system-trace section",
+      "P1 native authority: the entry contracts and the model-level contract declare native_semantic_surface; the shared sections layer 144 and the P1 business-facts layer 6 were deactivated with contract_json retained for replay, while 208/241/242/243 are reverted through git, so the change is reversible",
+      "P0 sticky layout shared mechanism: the header action row and the section navigation use one offset calculation, so after a section jump neither overlaps the other or the body at 1088 and 390 viewports (operation-row bottom 205px against navigation start 222px at 1088)",
+      "P4 read-only representative topic registered inside the existing governed runner (same environment, credentials and identity checks; no new fixture or environment) with per-route rendered field names so an entry difference is attributable instead of guessed"
+    ],
+    "browserEvidence": {
+      "recordedOutcome": "batch_product_review_passed_for_the_837_and_808_representative_routes; 811 recorded as navigation-authority denied",
+      "routes": "837 create/record and 808 create passed: every section entry resolves and reveals its target, sticky measurements with 0 overlap, duplicated=[], empty_containers=[], business fingerprint unchanged; 837 record shows 7 of 8 section entries because 付款账户 and 公司-承包人资金责任 are absent at the render layer while the contract still reports visible=true (recorded, not attributed)",
+      "transport": "40 net::ERR_NETWORK_CHANGED Vite module requests at stage post_navigation_mount, recovered by renavigate_once; recorded as an environment transport event and explicitly not rewritten as a zero-error claim",
+      "identityBinding": "the run recorded the iteration stage identity (head 1cf2a151 + dirty) and was reused into the frozen head through the recorded evidence-invalidation analysis; no matrix was rerun to change identity",
+      "draftIsolation": "restored=true, browser_errors=[], cleanup_guard.foreign=[]; no draft was consumed and 163/190/192/194/233/267/274/276 were left untouched",
+      "archiveReceipt": "/home/lidefend/workspace/.codex-evidence/workspace-archives/20260918/uc4-g04-payment-execution-native/04701c175bcca245eb797f66148e3cf13bbf2a37/archive-receipt.json"
+    },
+    "residualGaps": [
+      "811 (往来单位付款) browser structure observation needs a governed identity that holds the payment navigation grant (separate P4 authorization; not part of this reduction)",
+      "the 808/811 create business-category visibility policy (visible_profiles=[\"readonly\"]) is a P1 data declaration; this batch attributed and recorded it but did not change it",
+      "contract-field to rendered-node attribution remains an observation",
+      "the 837 record surface shows two fewer section entries than create at the render layer while the contract keeps both groups visible=true",
+      "the hidden company_contractor_* facts on 808/811 create were checked at the declaration layer but the contract-layer visible=false was not reproduced through op=model"
+    ],
+    "notDeducted": [
+      "bypass_action_811",
       "config_center_six_packages_pr_485",
       "impact_scoped_validation_pr_486",
       "borrow_archive_shared_action_scopes"

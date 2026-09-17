@@ -149,11 +149,19 @@ L2 行为断言（非实现字符串）：三入口声明为 `native_semantic_su
 - 独立复核（轮次 1/2 均 REQUEST_CHANGES、轮次 3/4 身份确认 APPROVE，均已闭环；详 `tmp/g04-evidence/review.md`）：轮次 1 仅涉及记录陈述
   （工作树计数、"逐字节相同"断言、23 字段构成、837 record 章节数），已按只读重放结果更正并撤回不成立断言，
   并确认代码无 S0/S1/S2；轮次 2 仅涉及冻结身份卫生（记录改动后工作树不再 clean），
-  已以「提交 + 重新冻结 + exact-head Quick」消除；轮次 3/4 身份确认 **APPROVE**（工作树 clean、指纹重算一致、
+  已以「提交 + 重新冻结 + exact-head Quick」消除；轮次 3/4/5 身份确认 **APPROVE**（工作树 clean、指纹重算一致、
   回执 head/tree 一致、§8 无自引用矛盾）。另补记回滚路径与差异计数口径；全程未改产品代码。
-- 台账扣减：**36 → 34**（退役 action 837/808 与视图 1647）；旁路 action 811 不计数、如实登记在 `bypassConsumers`；`nextBatch.selectedGroup` 前进到 **G05**（报销/扣款/备用金 792/798/793，视图 1632/1633）。
-- 台账（`docs/ops/iterations/form_structure_compatibility_consumers_v1.json`）现状说明：**合入前仍为迁移前快照**——837/808 条目仍写着
-  `layoutPolicy=business_config_sections`、`formStructureAuthority=entry_semantic_surface` 并列出 144/241/242/243 等旧配置
-  （该快照绑定更早的 head）。合入提交须一并落实：条目重新快照为 `native_authority` + 退役配置、`count` 由 36 扣减为 34、
-  旁路 811 登记进 `bypassConsumers`、新增 `uc4G04PublishedAudit`、`nextBatch.selectedGroup=G05`、`sourceMainlineHead` 更新为合入后主线 head。
-  在扣减落地前，本记录的 36 应理解为**尚未扣减的台账值**，不得当作本轮已生效计数。
+- 台账扣减：**36 → 34**（退役 action 837/808 与视图 1647）；旁路 action 811 不计数、如实登记在 `uc4G04PublishedAudit.bypassConsumers`；
+  `nextBatch.selectedGroup` 前进到 **G05**（报销/扣款/备用金 792/798/793，视图 1632/1633），`sourceMainlineHead` 更新为合入后 main。
+- 合入与门禁：PR #490，exact head `04701c17…` 上 `frontend_release_gate`、`merge_policy_gate`、`public_guard`、`professional_quality_gate`
+  四个门禁全部 success；`make pr.merge.prep` PASS；`make pr.merge`（squash，`--match-head-commit`）合入，
+  合入后 main = `87b36441c8940af24ed10cffe300363fc5e3272e`。`pr.merge.local_quick_gate` 以 exact-head 回执复用，未重跑矩阵。
+- 归档：`make workspace.evidence.archive`（manifest `tmp/g04-evidence/archive-manifest.json`）8 个文件
+  （summary／pr-body／identity／worktree-fingerprint／review／3 张代表面截图），回执 `status=verified`，
+  逐文件 sha256 与大小同源文件一致、JSON 与 PNG 可读，位于
+  `/home/lidefend/workspace/.codex-evidence/workspace-archives/20260918/uc4-g04-payment-execution-native/04701c175bcca245eb797f66148e3cf13bbf2a37/`。
+- 台账现状（扣减已落地）：`count`／`localVerifiedCount`／`mainlineRemainingCount` 三者均为 **34**，837/808 条目已移除，
+  新增 `uc4G04PublishedAudit`（含 811 旁路登记、合入身份、四个 exact-head 门禁、归档回执与残留缺口）。
+  前文所记的 36 属**迁移前快照值**，合入后以本次提交的 34 为准。
+
+状态：**批次验收完成（本批范围）｜主线集成完成（PR #490）｜未部署｜89 入口用户验收未完成**。
