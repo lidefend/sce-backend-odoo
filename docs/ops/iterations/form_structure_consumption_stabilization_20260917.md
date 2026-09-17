@@ -1019,8 +1019,11 @@ L4 只读代表面 837 create/record、808 create 通过（章节入口全 resol
 ## 8.23 G05 代表面实施：报销、扣款、备用金原生结构迁移（独立记录）
 
 记录：`docs/ops/iterations/uc4_expense_claim_native_lowcode_20260918.md`。分支
-`feature/uc4-expense-claim-native-v1`，HEAD = `8e8c1ce9d4d0fbe63b141cf75475030282f9f9d9`（G04 合入后基线），
-dirty 范围 8 个路径（P0/P1/P4 + 记录），唯一写入者＝本会话执行体。
+`feature/uc4-expense-claim-native-v1`，基线 = `8e8c1ce9d4d0fbe63b141cf75475030282f9f9d9`（G04 合入后主线），
+dirty 范围 **11 个路径**（P0/P1/P4 + 记录 + 生成物，与 `git show --stat` 一致），唯一写入者＝本会话执行体。
+本批冻结候选的精确身份（commit／tree／完整 tracked+untracked 指纹／exact-head Quick 回执）按既有做法
+绑定在外部证据包与批次记录的身份节，合入时在 §8.24「G05 主线集成与台账 34 → 32」收口，避免在同一提交里
+写入自身 HEAD 造成身份漂移。
 
 本批要解决的结构消费问题：`sc.expense.claim` 的三个正式入口共享两个原生表单（1633／1632），
 其中 792／798 已按入口声明消费原生树，而 **793（备用金）没有入口级发布**，解析落到模型级
@@ -1050,5 +1053,14 @@ L3 `local.dev.upgrade` PASS（78 modules）；L4 代表面 792/798/793 create �
 
 批外候选（未登记为缺陷、未修改）：`sc.expense.claim` 的 ir.rule 组交并被合并为 `&`，导致非扣款组用户
 读域归零（即 792 记录规则事实的成因）。约六组副本候选继续留台账，不扩成全系统迁移。
+
+独立复核（只读）结论 APPROVE，无写路径／授权绕过／业务事实丢失／scope creep（`addons/smart_core/**` 零改动、
+台账零改动）。复核提出的可移植性缺陷已闭环：测试改用 xmlid 寻址视图，不再硬编码库内 id 1633／1632
+（副本库与 clean/tenant 库 id 不同会让该测试失败）。代表面 L4 的 792=36／798=29／793=35 字段差已补归因：
+三入口结构层一致（同视图 57 个 field 节点、节点级 modifier 逐项相同），差在**入口业务类别的字段策略层**
+（798 声明 `finance.deduction.bill`，其 `form_policy_json` 带来 `fieldGroups` 与 4 条额外 REQUIRED，
+并使 13 个 widget 转 `visible=false`／`auth=none`；793 无业务类别，回落通用策略），DOM 上只体现为
+`company_contractor_*`×5 ＋ `reject_reason` 这 6 个字段（批次记录 §7.1）。一处包装 `<group>` 缩进错位按
+纯 cosmetic 记录、本批不改。
 
 状态：**批次验收中（未冻结）｜未集成｜未部署｜89 入口交付未完成｜台账 34（扣减待合入后核对）**。

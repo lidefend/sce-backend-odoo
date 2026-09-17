@@ -8,10 +8,10 @@ class TestExpenseClaimNativeLowcode(TransactionCase):
 
     Formal entries 792 (报销申请 / menu 578), 798 (扣款登记 / menu 563) and 793
     (备用金 / menu 575) share model ``sc.expense.claim`` and the two native form
-    views 1633 (``view_sc_expense_claim_form``) and 1632
-    (``view_sc_expense_claim_deduction_registration_form``).  Menu 543
+    views ``view_sc_expense_claim_form`` and
+    ``view_sc_expense_claim_deduction_registration_form``.  Menu 543
     (费用与保证金) bypasses the reimbursement action and therefore consumes the
-    same 1633 surface.
+    same ``view_sc_expense_claim_form`` surface.
 
     The rebuilt native arch owns the structure: entries 792 and 798 declare
     ``native_semantic_surface`` and drop their own section/field/column bodies,
@@ -32,12 +32,16 @@ class TestExpenseClaimNativeLowcode(TransactionCase):
     model wide configuration stays untouched for its other consumers.
     """
 
-    RECLAIM_ENTRY = ("action_sc_expense_claim_reimbursement_request", 1633, "报销申请")
-    DEDUCTION_ENTRY = ("action_sc_expense_claim_deduction_bill", 1632, "扣款登记")
-    ADVANCE_FUND_ENTRY = ("action_sc_expense_claim_advance_fund", 1632, "备用金")
+    # Views are addressed by xmlid, never by a database id: a clean install or a
+    # tenant database assigns different ids to the same native form views.
+    RECLAIM_VIEW = "view_sc_expense_claim_form"
+    DEDUCTION_VIEW = "view_sc_expense_claim_deduction_registration_form"
+    RECLAIM_ENTRY = ("action_sc_expense_claim_reimbursement_request", RECLAIM_VIEW, "报销申请")
+    DEDUCTION_ENTRY = ("action_sc_expense_claim_deduction_bill", DEDUCTION_VIEW, "扣款登记")
+    ADVANCE_FUND_ENTRY = ("action_sc_expense_claim_advance_fund", DEDUCTION_VIEW, "备用金")
     SIBLING_ENTRIES = (
-        ("action_sc_expense_claim_expense", 1633, "费用报销单", 8),
-        ("action_sc_expense_claim_project", 1633, "项目费用报销单", 7),
+        ("action_sc_expense_claim_expense", RECLAIM_VIEW, "费用报销单", 8),
+        ("action_sc_expense_claim_project", RECLAIM_VIEW, "项目费用报销单", 7),
     )
     FORMAL_ENTRIES = (RECLAIM_ENTRY, DEDUCTION_ENTRY, ADVANCE_FUND_ENTRY)
     # The model wide generated configuration sc.expense.claim fell back to before

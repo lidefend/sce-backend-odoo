@@ -42,6 +42,9 @@
      `native_semantic_surface`，无 sections/fields/columns）。模型级 `sc_expense_claim_form_structure_generated_v1`(72)
      **保留原样**（`active=True`、`action_id` 为空），继续服务其其它消费者。
 3. `tests/test_expense_claim_native_lowcode.py`（新增 578 行 / 9 测）+ `tests/__init__.py` 注册。
+   独立复核指出的可移植性缺陷已修：三入口与兄弟入口的视图改用 xmlid（`view_sc_expense_claim_form` /
+   `view_sc_expense_claim_deduction_registration_form`）寻址，不再硬编码库内 id 1633／1632——副本库或
+   clean/tenant 库里同一视图的 id 不同，硬编码会让本测试在那些库上失败。
 4. `frontend/apps/web/scripts/native_section_navigation_test.ts`（162+/1-）：共享机制用例（空容器不吞按钮/关系/投放目标、
    父级仅剩隐藏子节点不产生导航项、正文与导航同源）。
 5. `frontend/apps/web/scripts/formal_form_representative_journey.mjs`（+20）、`formal_form_lowcode_loop.mjs`（+8）、
@@ -58,12 +61,15 @@
 | 2 | `addons/smart_construction_core/data/expense_claim_form_productization_contract.xml` | 接管前已有 | **接管后修改**（217/222 去结构 + 新增 793 入口声明） | P1 |
 | 3 | `addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py` | — | **本批新增**（578 行 / 9 测） | P4 |
 | 4 | `addons/smart_construction_core/tests/__init__.py` | 接管前已有 | **接管后修改**（注册测试模块） | P4 |
-| 5 | `frontend/apps/web/scripts/native_section_navigation_test.ts` | 接管前已有 | **接管后修改**（机制用例） | P0 |
+| 5 | `frontend/apps/web/scripts/native_section_navigation_test.ts` | 接管前已有 | **接管后修改**（机制用例） | P0（机制由测试锁定，未改 `smart_core` 源码） |
 | 6 | `frontend/apps/web/scripts/formal_form_representative_journey.mjs` | 接管前已有 | **接管后修改**（未覆盖登记） | P4 |
 | 7 | `frontend/apps/web/scripts/formal_form_lowcode_loop.mjs` | 接管前已有 | **接管后修改**（未覆盖/BLOCKED 打印） | P4 |
 | 8 | `scripts/verify/local_dev_form_lowcode_scope.py` | 接管前已有 | **接管后修改**（topic＋样本可用性事实） | P4 |
 | 9 | `docs/ops/iterations/uc4_expense_claim_native_lowcode_20260918.md` | — | **本批新增**（本记录） | 记录 |
 | 10 | `docs/ops/iterations/form_structure_consumption_stabilization_20260917.md` | 接管前已有 | **接管后修改**（总记录 §8.23） | 记录 |
+| 11 | `docs/engineering_convergence/complexity_budget_report.md` | 接管前已有 | **接管后修改**（既有生成入口刷新，4382→4383，非手改摘要） | P4（生成物） |
+
+合计 **11 个路径**（与候选提交 `git show --stat` 一致）；恢复前 baseline（`8e8c1ce9`）上不存在本批私有文件。
 
 **仅验证、未修改**（不得计入本批改动）：
 
@@ -92,7 +98,7 @@
 | L2（前端类型） | `make verify.frontend.typecheck.strict` | **PASS**（`vue-tsc --noEmit -p tsconfig.strict.json` 无输出即通过） |
 | L2（后端） | `make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestExpenseClaimNativeLowcode'` | **PASS**：`0 failed, 0 error(s) of 9 tests` |
 | L3 | `make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1` | **PASS**：78 modules loaded ＋ `local.dev.demo.authority` PASS |
-| L4 | `make local.dev.form_lowcode.browser FORM_LOWCODE_TOPIC=expense_claim FORM_LOWCODE_REPRESENTATIVE=1` | **PASS**：三入口 create 通过，1 项登记事实未覆盖（§6） |
+| L4 | `make local.dev.form_lowcode.browser FORM_LOWCODE_TOPIC=expense_claim FORM_LOWCODE_REPRESENTATIVE=1` | **PASS**：三入口 create 通过，**3 项**登记事实未覆盖（§6 表 3 行） |
 
 L2 覆盖的 9 个用例：入口契约单一原生结构、legacy 章节被抑制且登记 `compatibility_dependencies`、
 兄弟契约保持自身结构、声明事实恰好渲染一次、readonly 规则、锚点/包装组/条件章节、o2m 明细独立承载、
@@ -165,6 +171,33 @@ L2 覆盖的 9 个用例：入口契约单一原生结构、legacy 章节被抑�
 本次运行 **没有**传输中断，但按既有口径这只是「本次运行未观察到中断」，不构成「网络已恢复正常」的判据；
 `ERR_NETWORK_CHANGED` 仍按 Vite dev 模块传输中断记录（既非接口故障，也不得改写成零错误）。
 
+### 7.1 798=29 与 793=35 字段差的归因（同视图 1632、同 create profile）
+
+两入口消费同一原生表单视图、同一 create 渲染档，字段数却不同，必须给出依据而不是留一个数字。实测结论：
+**差在字段策略层，不在结构消费层**。
+
+1. **结构层完全一致**：`ui.contract` 编译后 798 与 793 的 `layoutContract.containerTree` 各含 **57 个 field 节点**，
+   节点级 diff（`modifiers`／`attributes`／`occurrenceIndex`）在这些字段上逐项相同；`formStructureContract` 除
+   `navigation.title` 与 `sourceAuthority.governance_source.businessConfigContracts`（222↔528 入口声明）外无实质差异。
+   即两入口的结构权威、结构来源、容器树一致。
+2. **策略层有差**：`statusContract.widgetStatus` 中 798 有 **27** 个 widget `visible=false`，793 有 **14** 个；
+   只在 798 被置为不可见／`auth=none` 的恰好 **13** 个：
+   `company_contractor_{responsibility_state,arrival_unprocessed_amount,arrival_over_processed_amount,self_funding_balance,responsibility_notice}`、
+   `reject_reason`、`creator_name`、`created_time`、
+   `legacy_{source_model,source_table,record_id,document_no,document_state}`。
+3. **成因是入口业务类别**：798 的 action context 声明 `default_business_category_code=finance.deduction.bill`
+   且 `allowed_business_category_codes=['finance.deduction.bill']`，该类别 `form_policy_json` 额外提供
+   `dataContract.dataMeta.fieldGroups`（仅 798 有，793 为 `null`）与 4 条额外 `REQUIRED` 规则
+   （`business_category_id`／`project_id`／`partner_id`／`deduction_line_ids`，source=`sc.business.category.form_policy_json`），
+   使 798 的 `runtimeContract.validationRules` 为 10 条；793 无业务类别，回落通用
+   `visible_form_required_marker` 策略，为 7 条。
+4. **与 DOM 计数对齐**：浏览器 `[data-field-name]` 包装数为 792=36／798=29／793=35；798 比 793 少的 **6 个**正好是
+   上述 13 个里的 `company_contractor_*`×5 ＋ `reject_reason`。其余 7 个（`creator_name`、`created_time`、
+   `legacy_*`×5）在 **798 与 793 的 DOM 中都不出现**（两入口一致），因此不参与该差值。
+
+含义：798=29 与 793=35 的差**不是**结构被吞或被修剪，而是同一结构在不同入口业务类别下的字段策略结果。
+本批不改业务类别 `form_policy_json`；若后续要求 798 呈现 `company_contractor_*`，责任层是业务类别策略，不是原生 arch。
+
 ## 8. 回滚与数据边界
 
 - 产品回滚：`git revert` 本批提交（纯展示层与配置声明，无模型字段、无数据迁移、无 ACL 变化）。
@@ -181,3 +214,23 @@ L2 覆盖的 9 个用例：入口契约单一原生结构、legacy 章节被抑�
 旁路 menu 543 登记 `bypassConsumers` 不计数，`nextBatch.selectedGroup=G06`）。
 
 本批不扩：约六组副本候选继续留台账；G06（税额与专项抵扣 790/879，视图 1654）另行准备，不在本批实施。
+
+## 10. 独立复核闭环与本轮记录修正
+
+独立复核（只读）结论 **APPROVE**；无写路径、无授权绕过、无丢失业务事实、无 scope creep
+（`addons/smart_core/**` 零改动、台账零改动）。复核提出的问题与本轮处置：
+
+| 复核项 | 处置 | 状态 |
+|---|---|---|
+| 测试硬编码视图 id 1633／1632，在 id 不同的库会失败（major） | 改用 xmlid 寻址（§2 第 3 条） | **已修** |
+| 总记录 §8.23 记「dirty 范围 8 个路径」与实际 11 文件不符 | 更正为 11 个路径并附候选身份 | **已修** |
+| §2.1 归属表漏 `complexity_budget_report.md`（生成物） | 补为第 11 行，注明既有生成入口刷新 | **已修** |
+| §4 L4 行「1 项登记事实未覆盖」与 §6 表 3 行不符 | 更正为 3 项 | **已修** |
+| 「P0 共享结构消费机制」易读成改了 P0 源码 | §2.1 第 5 行标注「机制由测试锁定，未改 `smart_core` 源码」 | **已修** |
+| 798=29 与 793=35 字段差无依据 | 补 §7.1 归因（结构层一致、差在业务类别字段策略层） | **已修** |
+| `views/core/expense_claim_views.xml:333-335` 包装 `<group>` 缩进错位 | 纯 cosmetic、不影响 XML 语义与渲染；本批**不改**，避免为此作废 L3／L4 页面证据，留待下次触碰该文件时一并整理 | 已知未改 |
+
+证据失效判定：本轮变更仅 `tests/test_expense_claim_native_lowcode.py`（P4 测试）与两份记录（`docs/`）；
+`addons/**` 下唯一改动落在 `tests/`，无产品运行路径改动（`git diff --name-only` 可核），
+故 L1 重跑、L2 后端定向重跑；L2 前端／L3／L4 页面证据的输入（前端源码、原生 arch、入口声明、数据文件）
+未变，按不变输入沿用并在本条登记依据。
