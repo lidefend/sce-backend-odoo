@@ -241,6 +241,14 @@ export async function runFormalFormLoop() {
       const { runRepresentativeSurface } = await import('./formal_form_representative_journey.mjs');
       await runRepresentativeSurface({ page, scope, contract, out, report });
       report.ok = true; report.restored = true;
+      // A registered fact that could not run is printed with its reason so the
+      // operator sees the coverage gap instead of reading a shorter route list.
+      for (const row of report.representative_uncovered || []) {
+        console.log(`[formal_form_lowcode_loop] UNCOVERED action=${row.action_id} fact=${row.fact} state=${row.state} domain_rows=${row.domain_rows} business_rows=${row.business_row_count}`);
+      }
+      for (const row of report.representative_blocked || []) {
+        console.log(`[formal_form_lowcode_loop] BLOCKED action=${row.action_id} reason=${row.reason}`);
+      }
     } else if (observeOnly) {
       const previous = JSON.parse(await fs.readFile(path.join(out, 'closure-report.json'), 'utf8'));
       await page.goto(previous.review.preview_url, { waitUntil: 'domcontentloaded' });

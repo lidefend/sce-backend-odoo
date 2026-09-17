@@ -81,6 +81,19 @@ TOPIC_IDENTITIES = {
         ("action_sc_payment_execution_company_finance_expense", "view_sc_payment_execution_form", "menu_sc_company_finance_expense"),
         ("action_sc_payment_execution_partner_payment", "view_sc_payment_execution_form", "menu_sc_partner_payment"),
     ),
+    # U-C4 G05: 报销申请 (792 / menu 578 / view 1633), 扣款登记 (798 / menu 563 /
+    # view 1632) and 备用金 (793 / menu 575 / default view 1632) are the three
+    # registered consumers of model sc.expense.claim.  Two of them carry a
+    # released configuration; 备用金 has none and consumes the model-wide sparse
+    # annotation over the shared native deduction form, so it is registered to
+    # keep the shared-form reachability fact instead of being assumed.  Menu 543
+    # (费用与保证金) reaches the same 1633 surface through a bypass route and is
+    # tracked as a bypass consumer in the batch ledger rather than as an entry.
+    "expense_claim": (
+        ("action_sc_expense_claim_reimbursement_request", "view_sc_expense_claim_form", "menu_sc_reimbursement_request"),
+        ("action_sc_expense_claim_deduction_bill", "view_sc_expense_claim_deduction_registration_form", "menu_sc_deduction_bill"),
+        ("action_sc_expense_claim_advance_fund", "view_sc_expense_claim_deduction_registration_form", "menu_sc_advance_fund"),
+    ),
 }
 TOPIC_SAMPLE_FIELDS = {
     "invoice": ["direction", "source_kind", "source_origin", "note"],
@@ -90,6 +103,7 @@ TOPIC_SAMPLE_FIELDS = {
     "settlement": ["state"],
     "receipt_income": ["state", "source_origin", "source_kind"],
     "payment_execution": ["state", "source_kind", "payment_family"],
+    "expense_claim": ["state", "source_origin", "claim_type", "claim_flow_label"],
 }
 # Mechanism assertions for the read-only representative pass.  Names are the
 # registered display copies / canonical sources of the same business fact; the
@@ -133,6 +147,15 @@ TOPIC_REPRESENTATIVE = {
     # sample so the conditional source-trace section is observed as legal hiding
     # instead of a lost fact.  Read-only; no change set is touched.
     "payment_execution": {"section_navigation": True, "record_surface": True},
+    # U-C4 G05: the expense-claim rebuild adds nine `data-sc-anchor` sections to
+    # the shared deduction form and ten to the claim form, recovers the declared
+    # facts the retired entry bodies owned, and keeps the two untitled column
+    # wrappers and the tab-owned sections as layout.  The same read-only battery
+    # is the mechanism assertion; `record_surface` replays it on the governed
+    # sample so the conditional source-trace page and the hidden deposit section
+    # are observed as legal hiding instead of a lost fact.  Read-only; no change
+    # set is touched.
+    "expense_claim": {"section_navigation": True, "record_surface": True},
 }
 if topic not in TOPIC_IDENTITIES:
     raise RuntimeError("unregistered formal form topic")
@@ -150,7 +173,18 @@ for action_xmlid, view_xmlid, menu_xmlid in identities:
     domain = safe_eval(action.domain or "[]")
     sample_names = ["display_name"] + topic_sample_fields + (["legacy_document_no", "legacy_document_state", "legacy_source_table", "legacy_source_id"] if topic == "document" else [])
     samples = model.search(domain, order="id", limit=3).read([name for name in dict.fromkeys(sample_names) if name in model._fields])
-    entries.append({"samples": samples, "action_groups": action.groups_id.get_external_id(), "action_context": action.context, "domain": action.domain, "model": action.res_model, "action_id": action.id, "view_id": view.id, "menu_id": menu.id,
+    # A registered record surface can only be replayed on a sample this identity is
+    # allowed to read.  Report why a sample is missing instead of letting the
+    # representative pass skip the route silently: an action domain with zero rows is
+    # a data fact, a non-empty domain the identity cannot read is a record-rule fact,
+    # and both must stay distinguishable in the report and in the remaining-gap ledger.
+    domain_rows = model.sudo().search_count(domain)
+    sample_state = {
+        "state": "available" if samples else ("record_rule_denied" if domain_rows else "empty_action_domain"),
+        "domain_rows": domain_rows,
+        "readable_samples": len(samples),
+    }
+    entries.append({"samples": samples, "sample_state": sample_state, "business_row_count": len(rows), "action_groups": action.groups_id.get_external_id(), "action_context": action.context, "domain": action.domain, "model": action.res_model, "action_id": action.id, "view_id": view.id, "menu_id": menu.id,
                     "business_fingerprint": hashlib.sha256(json.dumps(rows, default=str, sort_keys=True).encode()).hexdigest()})
 configuration_entry = None
 if os.environ.get("LOWCODE_CONFIG_ENTRY") == "1":

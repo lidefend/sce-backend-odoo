@@ -1015,3 +1015,40 @@ L4 只读代表面 837 create/record、808 create 通过（章节入口全 resol
 状态：**批次验收完成（本批范围）｜主线集成完成（PR #490）｜未部署**。G04 残留缺口（811 受管身份授权、
 808/811 业务分类可见性策略、837 record 章节入口差异、契约字段→渲染节点逐字段归因、`company_contractor_*` 契约层复现）
 继续登记在 G04 记录 §6，本批不扩。
+
+## 8.23 G05 代表面实施：报销、扣款、备用金原生结构迁移（独立记录）
+
+记录：`docs/ops/iterations/uc4_expense_claim_native_lowcode_20260918.md`。分支
+`feature/uc4-expense-claim-native-v1`，HEAD = `8e8c1ce9d4d0fbe63b141cf75475030282f9f9d9`（G04 合入后基线），
+dirty 范围 8 个路径（P0/P1/P4 + 记录），唯一写入者＝本会话执行体。
+
+本批要解决的结构消费问题：`sc.expense.claim` 的三个正式入口共享两个原生表单（1633／1632），
+其中 792／798 已按入口声明消费原生树，而 **793（备用金）没有入口级发布**，解析落到模型级
+`sc_expense_claim_form_structure_generated_v1`(72)：`layoutPolicy=native_authority` ＋ 独立 slots，
+前端因此走 compatibility 平面，create 模式把「可见且只读且无值」的字段全部修剪，页面只剩壳
+（`.native-form-tree[data-state="empty"]`、0 字段、0 导航），而操作行与协作区仍正常渲染。
+
+归因方法（可复算）：同一会话内对比三入口的 `api.data` 响应——`containerTree`（792=86／798=79／793=79 节点）
+与 `formStructureContract…formStructureAuthority`（792/798=`native_authority`／793=空），
+再对上前端 `contractFormPresenter.ts` 的 `structureAuthority` 判定，得到「结构数据完整、消费平面错误」的结论；
+没有用延长超时或改断言代替归因。
+
+修复：为 793 新增入口级发布 `expense_claim_advance_fund_productized_form_v1`（`备用金`、
+`native_semantic_surface`，无 sections/fields/columns），与同模型 792／798 一致；模型级 72 保留原样
+（另有消费者），共享 compatibility 修剪规则本批不改。
+
+验证：L1 `ci.local.iteration` PASS（16 tests）；L2 后端 `TestExpenseClaimNativeLowcode` **9 tests / 0 failed**
+（含修正后断言：793 必须解析到入口级容器树权威，模型级配置保留且不再被该入口消费），前端
+`verify.frontend.native_section_navigation.unit` PASS、`verify.frontend.typecheck.strict` PASS；
+L3 `local.dev.upgrade` PASS（78 modules）；L4 代表面 792/798/793 create 全部通过
+（36／29／35 字段，8 章节，导航 8/8，吸顶分离，`findings` 全空）。
+
+代表面工具补齐（P4，最小扩展，复用既有受管环境）：scope 探测新增 `sample_state`／`business_row_count`，
+代表面 journey 新增 `representative_uncovered`，loop 打印 `UNCOVERED`/`BLOCKED`。由此把此前**静默跳过**的
+`record_surface` 事实显式登记：792=`record_rule_denied`（域内 1 行、可读 0 行）、798/793=`empty_action_domain`。
+结论：本主题「业务指纹不变」护栏在当前受管身份下基于 0 行可读业务数据，强度有限，不得表述为「业务数据已证未被改动」。
+
+批外候选（未登记为缺陷、未修改）：`sc.expense.claim` 的 ir.rule 组交并被合并为 `&`，导致非扣款组用户
+读域归零（即 792 记录规则事实的成因）。约六组副本候选继续留台账，不扩成全系统迁移。
+
+状态：**批次验收中（未冻结）｜未集成｜未部署｜89 入口交付未完成｜台账 34（扣减待合入后核对）**。

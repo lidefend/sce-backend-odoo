@@ -188,21 +188,25 @@
                         <field name="currency_id" invisible="1"/>
                         <field name="active" invisible="1"/>
                         <group>
-                            <group string="基本信息">
+                            <group name="deduction_basic" data-sc-anchor="deduction_basic" string="基本信息">
                                 <field name="name" readonly="1"/>
+                                <field name="claim_flow_label" readonly="1"/>
                                 <field name="date_claim" string="登记日期" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
                                 <field name="fill_date" string="填写日期" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
                             </group>
-                            <group string="责任对象">
+                            <group name="deduction_responsible_party" data-sc-anchor="deduction_responsible_party" string="责任对象">
                                 <field name="project_id" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
                                 <field name="operation_strategy" readonly="1"/>
+                                <field name="company_id" readonly="1"/>
+                                <field name="company_name_text" readonly="1"/>
                                 <field name="partner_id" string="责任方" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
+                                <field name="payment_request_id"/>
                             </group>
                         </group>
-                        <group string="扣款说明">
+                        <group name="deduction_description" data-sc-anchor="deduction_description" string="扣款说明">
                             <field name="summary" string="整体说明" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
                         </group>
-                        <group string="扣款单明细">
+                        <group name="deduction_lines" data-sc-anchor="deduction_lines" string="扣款单明细">
                             <field name="deduction_line_ids"
                                    string="扣款单明细"
                                    nolabel="1"
@@ -216,18 +220,33 @@
                                 </tree>
                             </field>
                         </group>
-                        <group string="金额由扣款单明细汇总">
+                        <group name="deduction_amount_summary" data-sc-anchor="deduction_amount_summary" string="金额由扣款单明细汇总">
                             <field name="deduction_line_amount_total" string="明细合计" readonly="1"/>
                             <field name="amount" string="本次扣款金额" readonly="1"/>
                             <field name="approved_amount" string="确认金额" readonly="1"/>
+                            <field name="paid_amount" readonly="1"/>
+                            <field name="unpaid_amount" readonly="1"/>
+                            <field name="payment_state" readonly="1"/>
                         </group>
-                        <group string="办理说明与附件">
+                        <group name="deduction_note_attachment" data-sc-anchor="deduction_note_attachment" string="办理说明与附件">
                             <field name="note"/>
                             <field name="attachment_ids" widget="many2many_binary"/>
+                            <field name="reject_reason" readonly="1"/>
+                            <field name="return_reason"/>
+                        </group>
+                        <group name="deduction_payment_account" data-sc-anchor="deduction_payment_account" string="收付款账户">
+                            <field name="payee"/>
+                            <field name="receipt_account_name"/>
+                            <field name="payee_account"/>
+                            <field name="payee_bank"/>
+                            <field name="payment_account_name"/>
+                            <field name="payer_account"/>
+                            <field name="payer_bank"/>
+                            <field name="payment_method"/>
                         </group>
                         <notebook>
                             <page string="责任余额">
-                                <group string="公司-承包人责任约束">
+                                <group name="contractor_responsibility" data-sc-anchor="contractor_responsibility" string="公司-承包人责任约束">
                                     <field name="company_contractor_responsibility_summary_id" invisible="1"/>
                                     <field name="company_contractor_responsibility_state" readonly="1"/>
                                     <field name="company_contractor_arrival_unprocessed_amount" readonly="1"/>
@@ -239,6 +258,21 @@
                                             string="查看责任余额"
                                             class="btn-secondary"
                                             invisible="not company_contractor_responsibility_summary_id"/>
+                                </group>
+                            </page>
+                            <page string="迁移来源" invisible="source_origin != 'legacy'">
+                                <group name="deduction_source_trace" data-sc-anchor="deduction_source_trace" string="来源追溯">
+                                    <!-- Migrated provenance facts stay: no other presenter carries
+                                         them.  The retired entry configuration declared the same
+                                         list plus `active`, which already renders once in the
+                                         header sheet, so it is not repeated here. -->
+                                    <field name="legacy_source_model" readonly="1"/>
+                                    <field name="legacy_source_table" readonly="1"/>
+                                    <field name="legacy_record_id" readonly="1"/>
+                                    <field name="legacy_document_no" readonly="1"/>
+                                    <field name="legacy_document_state" readonly="1"/>
+                                    <field name="creator_name" readonly="1"/>
+                                    <field name="created_time" readonly="1"/>
                                 </group>
                             </page>
                         </notebook>
@@ -275,7 +309,7 @@
                     </header>
                     <sheet>
                         <group>
-                            <group string="业务方向">
+                            <group name="claim_business_direction" data-sc-anchor="claim_business_direction" string="业务方向">
                                 <field name="name" readonly="1"/>
                                 <field name="source_origin" invisible="1"/>
                                 <field name="business_category_id" readonly="state in ['legacy_confirmed']"/>
@@ -289,7 +323,7 @@
                                 <field name="date_claim" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
                                 <field name="fill_date" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
                             </group>
-                            <group string="金额与状态">
+                            <group name="claim_amount_status" data-sc-anchor="claim_amount_status" string="金额与状态">
                                 <field name="amount" string="办理金额" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
                                 <field name="approved_amount" readonly="state in ['done', 'legacy_confirmed', 'cancel']"/>
                                 <field name="paid_amount" readonly="state in ['done', 'legacy_confirmed', 'cancel']"/>
@@ -300,16 +334,17 @@
                             </group>
                         </group>
                         <group>
-                            <group string="项目与往来单位">
-                                <field name="project_id" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
-                                <field name="operation_strategy" readonly="1"/>
-                                <field name="partner_id"/>
-                                <field name="payment_request_id" invisible="payment_anchor_policy in ['noncash_no_request', 'interfund_no_request']"/>
-                                <field name="company_name_text"/>
-                                <field name="guarantee_project_name"/>
-                                <field name="guarantee_type"/>
-                            </group>
-                            <group string="申请人与收款方">
+                        <group name="claim_project_partner" data-sc-anchor="claim_project_partner" string="项目与往来单位">
+                            <field name="project_id" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
+                            <field name="operation_strategy" readonly="1"/>
+                            <field name="company_id" readonly="1"/>
+                            <field name="partner_id"/>
+                            <field name="payment_request_id" invisible="payment_anchor_policy in ['noncash_no_request', 'interfund_no_request']"/>
+                            <field name="company_name_text"/>
+                            <field name="guarantee_project_name"/>
+                            <field name="guarantee_type"/>
+                        </group>
+                            <group name="claim_applicant_payee" data-sc-anchor="claim_applicant_payee" string="申请人与收款方">
                                 <field name="applicant_name" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
                                 <field name="department_name" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
                                 <field name="payee" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
@@ -318,30 +353,31 @@
                                 <field name="payee_bank" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
                             </group>
                         </group>
-                        <group string="付款账户">
+                        <group name="claim_payment_account" data-sc-anchor="claim_payment_account" string="付款账户">
                             <group>
                                 <field name="payment_account_name" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
                                 <field name="payer_account" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
                                 <field name="payer_bank" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
                             </group>
                         </group>
-                        <group string="保证金办理" invisible="claim_type not in ['deposit_pay', 'deposit_refund', 'deposit_receive']">
+                        <group name="claim_deposit_handling" data-sc-anchor="claim_deposit_handling" string="保证金办理" invisible="claim_type not in ['deposit_pay', 'deposit_refund', 'deposit_receive']">
                             <field name="payment_method" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
                             <field name="clearing_method" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
                             <field name="is_returned" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
                             <field name="return_reason" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
                         </group>
-                        <group string="事项说明">
+                        <group name="claim_matter_note" data-sc-anchor="claim_matter_note" string="事项说明">
                             <field name="expense_type" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
                             <field name="summary" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
                         </group>
-                        <group string="办理说明与附件">
+                        <group name="claim_note_attachment" data-sc-anchor="claim_note_attachment" string="办理说明与附件">
                             <field name="note"/>
                             <field name="attachment_ids" widget="many2many_binary"/>
+                            <field name="reject_reason" readonly="1"/>
                         </group>
                         <notebook>
                             <page string="责任余额" invisible="not company_contractor_responsibility_summary_id">
-                                <group string="公司-承包人责任约束">
+                                <group name="contractor_responsibility" data-sc-anchor="contractor_responsibility" string="公司-承包人责任约束">
                                     <field name="company_contractor_responsibility_summary_id" invisible="1"/>
                                     <field name="company_contractor_responsibility_state" readonly="1"/>
                                     <field name="company_contractor_arrival_unprocessed_amount" readonly="1"/>
@@ -353,6 +389,21 @@
                                             string="查看责任余额"
                                             class="btn-secondary"
                                             invisible="not company_contractor_responsibility_summary_id"/>
+                                </group>
+                            </page>
+                            <page string="迁移来源" invisible="source_origin != 'legacy'">
+                                <group name="claim_source_trace" data-sc-anchor="claim_source_trace" string="来源追溯">
+                                    <!-- Migrated provenance facts stay: no other presenter carries
+                                         them.  The retired entry configuration declared the same
+                                         list plus `active`, which already renders once in
+                                         金额与状态, so it is not repeated here. -->
+                                    <field name="legacy_source_model" readonly="1"/>
+                                    <field name="legacy_source_table" readonly="1"/>
+                                    <field name="legacy_record_id" readonly="1"/>
+                                    <field name="legacy_document_no" readonly="1"/>
+                                    <field name="legacy_document_state" readonly="1"/>
+                                    <field name="creator_name" readonly="1"/>
+                                    <field name="created_time" readonly="1"/>
                                 </group>
                             </page>
                         </notebook>
