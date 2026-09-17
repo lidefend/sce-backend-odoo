@@ -135,21 +135,21 @@ L2 行为断言（非实现字符串）：三入口声明为 `native_semantic_su
 
 ## 8. 主线集成与台账扣减（合入后记录）
 
-- 冻结候选（**以证据文件为准，本记录不内嵌自身提交哈希**，否则记录一动身份即失效）：
-  `artifacts/fingerprints/uc4-g04-frozen.json` 的 `git_head`/`digest`（7507 路径完整 tracked+untracked 指纹）＋
-  `.git/codex/evidence/ci.local.quick/<git_head>.json` 的 exact-head Quick 回执；本节撰写前的最近一次冻结候选为
-  head `3a63db32ca9c6b496ee1f17de505f2430429a675`、tree `275b59498df4f355af59f48f2b3fca2b4fe078ae`
-  （独立复核 APPROVE），Quick 日志 `artifacts/uc4-representative/quick-g04-r4.log`。本 §8 属**冻结后文档补记**：补记提交本身会改变 HEAD，
-  故最终身份一律按上述两个证据文件回读，不回读本节文字。
-- `make ci.delivery.freeze.prepare` PASS（每轮冻结前生成证据均无未提交改动；日志 `freeze-prepare-g04-r{2,3,4}.log`）。
+- 冻结候选（**以证据文件为准，本记录不内嵌自身提交哈希、也不枚举逐轮日志序号**，否则记录一动身份即失效）：
+  `artifacts/fingerprints/uc4-g04-frozen.json` 的 `git_head`/`git_tree`/`digest`（7507 路径完整 tracked+untracked 指纹）＋
+  `.git/codex/evidence/ci.local.quick/<git_head>.json` 的 exact-head Quick 回执。
+  本 §8 属**冻结后文档补记**：补记提交本身会改变 HEAD，故最终身份一律按上述两个证据文件回读，不回读本节文字；
+  每轮的 head/tree/digest/回执/日志与复核结论另在同目录证据包（`tmp/g04-evidence/`，已外部归档）中逐轮留档。
+- `make ci.delivery.freeze.prepare` PASS（每轮冻结前生成证据均无未提交改动；日志 `artifacts/uc4-representative/freeze-prepare-g04-r*.log`；Quick 日志同目录 `quick-g04-r*.log`）。
 - 身份沿革（每轮均为**纯文档/只读证据**变更，产品代码未变，页面证据按规则沿用不受影响）：
   `0e88d252…`（L1–L4 + 首个 Quick PASS）→ `3c4346bf…`（按独立复核结论更正 4 处记录陈述）→
   `9c928dea…`（§8 入档、差异口径与可复算证据留档、台账现状说明）→ `3a63db32…`（§8 改为引用证据文件的身份形式，复核 APPROVE）→
-  `80099b7d…`（§8 去重「记录更正」段、补齐身份沿革；复核 APPROVE）。
-- 独立复核（轮次 1/2 均 REQUEST_CHANGES、轮次 3 身份确认 APPROVE，均已闭环；详 `tmp/g04-evidence/review.md`）：轮次 1 仅涉及记录陈述
+  `80099b7d…`（§8 去重「记录更正」段）→ `9fd337a8…`（补 §2.1 文件归属表）。**其后各轮同类纯文档/证据变更不再在本节逐条枚举**，
+  完整链按 `tmp/g04-evidence/identity.json` 的 `identity_history` 回读。
+- 独立复核（轮次 1/2 均 REQUEST_CHANGES、轮次 3/4 身份确认 APPROVE，均已闭环；详 `tmp/g04-evidence/review.md`）：轮次 1 仅涉及记录陈述
   （工作树计数、"逐字节相同"断言、23 字段构成、837 record 章节数），已按只读重放结果更正并撤回不成立断言，
   并确认代码无 S0/S1/S2；轮次 2 仅涉及冻结身份卫生（记录改动后工作树不再 clean），
-  已以「提交 + 重新冻结 + exact-head Quick」消除；轮次 3 身份确认 **APPROVE**（工作树 clean、指纹重算一致、
+  已以「提交 + 重新冻结 + exact-head Quick」消除；轮次 3/4 身份确认 **APPROVE**（工作树 clean、指纹重算一致、
   回执 head/tree 一致、§8 无自引用矛盾）。另补记回滚路径与差异计数口径；全程未改产品代码。
 - 台账扣减：**36 → 34**（退役 action 837/808 与视图 1647）；旁路 action 811 不计数、如实登记在 `bypassConsumers`；`nextBatch.selectedGroup` 前进到 **G05**（报销/扣款/备用金 792/798/793，视图 1632/1633）。
 - 台账（`docs/ops/iterations/form_structure_compatibility_consumers_v1.json`）现状说明：**合入前仍为迁移前快照**——837/808 条目仍写着
