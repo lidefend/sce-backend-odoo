@@ -202,6 +202,40 @@ async function assertSinglePresentation(page, label) {
   }
   assert.equal(await page.getByText('快捷筛选', { exact: true }).count(), 0,
     `${label}: record-list queries stay on the record list (action filter block leaked into the form)`);
+  await assertStructureResponsibility(page, label);
+}
+
+// Structure responsibility on the rendered page: emptied containers never
+// occupy space and layout-only groups never draw the section separator.
+async function assertStructureResponsibility(page, label) {
+  const findings = await page.evaluate(() => {
+    const out = [];
+    document.querySelectorAll('.native-container').forEach((el) => {
+      const contentChildren = Array.from(el.children).filter((child) => {
+        if (child.classList.contains('native-container-head')) return false;
+        if (window.getComputedStyle(child).display === 'none') return false;
+        return (child.textContent || '').trim().length > 0
+          || Boolean(child.querySelector('[data-field-name],button,input,textarea,canvas,svg,img,a'));
+      });
+      const hasTitle = Boolean(el.querySelector(':scope > .native-container-head'));
+      if (!hasTitle && contentChildren.length === 0) {
+        out.push(`empty-container:${el.className}|html:${(el.outerHTML || '').slice(0, 300)}`);
+      }
+    });
+    return out;
+  });
+  assert.equal(findings.length, 0, `${label}: emptied containers must not occupy space\n${findings.join('\n')}`);
+  const decoratedWrappers = await page.evaluate(() => {
+    const out = [];
+    document.querySelectorAll('.native-container--group--layout').forEach((el) => {
+      const style = window.getComputedStyle(el);
+      if (style.borderTopWidth !== '0px' || style.borderTopStyle !== 'none') {
+        out.push(el.className);
+      }
+    });
+    return out;
+  });
+  assert.deepEqual(decoratedWrappers, [], `${label}: layout-only groups must not draw the section separator`);
 }
 
 // Rendered value occurrences of one fact: editable controls carry it in their
@@ -483,6 +517,43 @@ export async function checkInvoiceDefaults({ page, scope, contract, out, report 
       const browser = page.context().browser();
       const context = await browser.newContext({ viewport: { width: 1440, height: 960 } });
       const financePage = await context.newPage();
+      // This surface runs in its own browser context, which the owning runner does not
+      // instrument and which is closed before the run-level failure capture executes.
+      // Attribute a break here from this surface's own URL, DOM, page errors and failed
+      // requests instead of inferring it from the opener page.
+      const financeSignals = { pageerrors: [], console: [], failed_requests: [] };
+      financePage.on('pageerror', (error) => financeSignals.pageerrors.push(String(error.message).slice(0, 300)));
+      financePage.on('console', (message) => {
+        if (message.type() === 'error' && financeSignals.console.length < 20) financeSignals.console.push(String(message.text()).slice(0, 300));
+      });
+      financePage.on('requestfailed', (request) => {
+        if (financeSignals.failed_requests.length < 20) financeSignals.failed_requests.push({ path: new URL(request.url()).pathname, error: request.failure()?.errorText });
+      });
+      // Two different facts can hide the anchor field: the page never finished loading
+      // (transport), or the field is legitimately not rendered / hidden for this principal.
+      // Collapsing both into one locator timeout is what made the earlier failure
+      // unattributable, so classify them explicitly and keep transport evidence separate.
+      const noteVisibility = async (pg) => {
+        const probe = await pg.evaluate(() => {
+          const nodes = [...document.querySelectorAll('[data-field-name="note"]')];
+          const app = document.querySelector('#app');
+          return {
+            app_shell_children: app ? app.children.length : 0,
+            body_text_length: (document.body?.innerText || '').length,
+            note_nodes: nodes.length,
+            note_visible_nodes: nodes.filter((node) => node.getClientRects().length > 0).length,
+            field_nodes: document.querySelectorAll('[data-field-name]').length,
+            section_nav_items: document.querySelectorAll('[data-form-section-navigation] button').length,
+          };
+        }).catch(() => null);
+        const bodyText = await pg.locator('body').innerText().catch(() => '');
+        const failed = /加载失败|无权访问|没有访问权限/.test(bodyText);
+        const loaded = Boolean(probe && probe.app_shell_children > 0 && !failed);
+        const verdict = !loaded ? 'page_not_loaded'
+          : !probe.note_nodes ? 'field_not_rendered'
+          : !probe.note_visible_nodes ? 'field_rendered_hidden' : 'field_visible';
+        return { url: pg.url(), loaded, verdict, ...(probe || {}), body_text: bodyText.slice(0, 600) };
+      };
       try {
         await financePage.goto(`${base}/login`, { waitUntil: 'domcontentloaded', timeout: 15000 });
         const inputs = financePage.locator('input');
@@ -492,9 +563,25 @@ export async function checkInvoiceDefaults({ page, scope, contract, out, report 
         await financePage.getByRole('button', { name: /^登录$/ }).click();
         await financePage.waitForURL((target) => !target.pathname.includes('/login'), { timeout: 30000 });
         await assertBypassDom(financePage);
+        // Recorded after the assertion so a passing run states the field was actually
+        // visible, instead of reporting the pre-render state as if it were the verdict.
+        report.note_visibility = { action: surface.action_id, account: contextual.account,
+          at: 'after_assertion', ...(await noteVisibility(financePage)), transport: financeSignals };
         report.stages.defaults.push({ action: surface.action_id, bypass: true, state: 'create', viewport: [1440, 390],
           account: contextual.account, route_kind: 'CONTEXTUAL_ROUTE', source, conditional: expected,
           category: policy.code || 'unbound', status: 'passed', url: financePage.url() });
+      } catch (error) {
+        report.note_visibility = { action: surface.action_id, account: contextual.account,
+          at: 'assertion_failure', ...(await noteVisibility(financePage)), transport: financeSignals };
+        const dom = await financePage.content().catch(() => '');
+        await fs.writeFile(path.join(out, `failure-${surface.action_id}-finance-dom.html`), dom).catch(() => {});
+        await financePage.screenshot({ path: path.join(out, `failure-${surface.action_id}-finance.png`), fullPage: true }).catch(() => {});
+        report.bypass_surface_failure = { action: surface.action_id, account: contextual.account,
+          url: financePage.url(), ready_state: await financePage.evaluate(() => document.readyState).catch(() => null),
+          body_text: (await financePage.locator('body').innerText().catch(() => '')).slice(0, 2000),
+          field_nodes: fields, dom_length: dom.length, signals: financeSignals,
+          assertion: String(error?.message || error).slice(0, 500) };
+        throw error;
       } finally {
         await context.close();
       }

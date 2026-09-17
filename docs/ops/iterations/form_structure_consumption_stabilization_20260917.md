@@ -1,0 +1,937 @@
+# 表单结构消费稳定化（2026-09-17，用户产品复核后机制批次）
+
+## 0. 批次定位
+
+用户在 G02 第二轮产品复核后判定：体系尚未达到「迁移一个页面，不再反复修共享渲染」的稳定程度。本批次暂停新增迁移组（台账保持 42），转为「表单结构消费稳定化」集中验收。已完成的发票工作保留，不推倒重做。
+
+四个工作包：A 结构职责统一；B 呈现与动作规则统一；C 低代码与约束兼容；D 机制回归与退出条件。
+
+三个执行边界：先归因再修改（定位唯一责任层，不靠前端猜模型/清边框修补）；复用现有机制（不加第三套章节树/展示模式/成功兜底）；一次集中收口（执行器自查代表场景 → 用户集中浏览器复核，修复后仅补验受影响部分）。
+
+## 1. 责任链（五层）
+
+```
+原生声明(P1 view arch/锚点) → 配置合成(view_orchestrator compose) → 字段适配(并集补齐/规则投影) → 渲染(前端 native tree) → 样式(NativeFormTreeRenderer CSS)
+```
+
+## 2. 归因（每项定位唯一责任层）
+
+| 问题 | 现象 | 唯一责任层 | 根因 |
+|---|---|---|---|
+| 计算副本重复（G02 已静态修复） | note 等业务事实在表单呈现 2 次 | 字段适配（并集补齐） | 「四配置字段并集」以字段保留代替业务事实正确呈现；无副本排除机制 |
+| 动作权威与承载错位（G02 已静态修复） | 快捷筛选等列表查询混入办理正文 | 渲染（动作块门控） | 用「原生结构权威」推断动作展示，但权威来源与动作承载位置不是同一概念 |
+| 空 header 占位 | 无内容 header 渲染 border-bottom + padding | 渲染（容器过滤） | filterVisibleNativeLayoutNodes 只过滤不可见节点，不修剪过滤后空容器 |
+| 嵌套 group 边框叠加 | sheet>布局包装group>业务章节group 双线 | 样式（章节装饰归属） | .native-container--group 无条件 border-top，布局包装（无锚点/无标题）也画章节分隔线 |
+| 测试只验节点不验页面 | 全绿但页面视觉结构错误 | 验收断言 | 断言停留在节点/字段/错误计数，缺空容器、装饰归属、值级重复等页面级断言 |
+
+## 3. 职责矩阵（工作包 A/B 落点）
+
+| 结构层 | 声明方 | 消费方（P0 通用规则） | 职责规则 |
+|---|---|---|---|
+| 页面外壳（form/sheet） | P1 原生 view arch | 渲染器 | 唯一正文容器；不产生标题、导航、装饰；过滤后空壳不占位（prune） |
+| 布局包装（无锚点无标题 group） | P1 原生 arch（Odoo 列布局惯例） | 渲染器 `native-container--group--layout` | 只排布列；不产生章节标题、导航项、分隔线；空壳修剪 |
+| 业务章节（data-sc-anchor group） | P1 原生声明 | 渲染器 nativeBusinessSectionIdentity | 章节标题与分隔线的唯一归属层；导航项来源；正文与导航共用同一有效树（nativeFormLayoutNodes） |
+| 页签（notebook/page） | P1 原生 arch | 渲染器 | 跨页签导航；空页签修剪 |
+| 关系明细（x2many/button_box/chatter/header 按钮与 statusbar） | P1 原生声明 | 编排器 subordinate 保留（_merge_semantic_surface_with_native_subordinates） | 关系集合与动作能力不与字段并集；保留在从属容器 |
+| 动作区 | 原生 header + 契约动作声明 | 渲染器 suppressFormActionBlocks | 动作承载位置=页面外壳动作区；承载意图（契约 formStructureAuthority=native_authority）或承载事实（useNativeFormTree）任一成立即关闭旁路动作占位块；查询筛选只存在于列表页 |
+
+字段事实规则（B）：canonical 字段是表单唯一正文呈现；存储计算展示副本按 `FORMAL_DISPLAY_COPY_SOURCES` 注册（业务层声明、共享层 duck-type 消费 `_display_copy_source_fields` 协议），合成层两处防御——`_apply_form_spec` 并集补齐排除副本、`semantic_anchors` 声明副本直接拒绝（NATIVE_SEMANTIC_SURFACE_DISPLAY_COPY）。副本的存储、API、列表列消费者全部保留。
+
+分隔线归属（B）：章节边界分隔线（border-top）只归业务章节；布局包装无线（`native-container--group--layout` 置零）；页面外壳与正文边界（header border-bottom）归外壳职责。同一章节边界无重复分隔。
+
+机制审查补充（本轮新增约束，工作包 A/B/D）：
+
+- P0 共享层只消费显式通用语义：副本识别的唯一入口是业务层 `_display_copy_source_fields` 协议；禁止按模型名、字段后缀（`*_display`）或字段形状猜测副本。
+- P1 声明必须可举证：登记副本需同时满足三条（同记录单源实时投影／在正文外保有独立职责／canonical 在同一表单 arch 共现）。承担独立历史快照、格式表达或摘要职责的同源字段不登记、不删除。
+- 同一事实允许在列表、正文、审计等不同场景各自表达；禁止的是同一上下文内的无意义重复。
+- 原生结构权威只证明正文结构归属，不能单独证明动作已有承载位置：动作占位块仅在某动作确已由原生树或渲染出的 header 动作行承载时才关闭；未承载的动作键必须继续上报（`uncarriedActionKeys`）。
+
+## 4. 修改清单
+
+> 身份：分支 `feature/uc4-invoice-native-lowcode`，HEAD `025e37d2`，工作树 dirty（15 modified + 4 untracked = 19 条路径），未提交、未冻结。
+>
+> 归属口径（同一工作树同一时刻只有一个写入者；本批次写入方 = 本会话执行体）：
+> - **接管前已有**：本会话第一次 `git status` 时已在工作树的改动，逐项复核后原样保留，未覆盖、未重做。
+> - **接管前段**：同批次在接管之前写下的新增内容（接管时已在工作树内，但属本批新增，不是历史遗留）。
+> - **接管后修改**：接管之后本轮写下的改动。
+> - **仅验证**：只执行入口、不改代码。
+>
+> 口径纠正：上一版交回写「唯一由我写入的文件是批次记录」，与「本批新增多个机制文件并执行 L1–L4」自相矛盾。准确口径是——**接管前已有改动 + 接管前段新增 4 个新文件；本会话（接管后）对代码的写入为 0，唯一写入是本文档本身**。本轮之后的新增写入会在 §4.0 按「接管后修改」追加。
+
+### 4.0 逐路径归属表（34 条）
+
+> 本表为首次接管的快照。第 3 次接管后的归属与计数以 §8.7 为准（工作树 36 条 = 29 modified + 7 untracked）。
+
+| # | 路径 | 归属 | 内容 |
+|---|---|---|---|
+| 1 | `addons/smart_core/core/view_orchestrator.py` | 接管前已有 | 协议消费 `_display_copy_source_fields` + 副本锚点拒绝 + 并集排除 |
+| 2 | `addons/smart_construction_core/models/core/formal_config_contract_fields.py` | 接管前已有 + 接管前段 | 注册表/mixin/发票 4 副本（前）；三条件注释、`payment.request` 与 `sc.material.inbound` 各 1 条登记、三模型挂载 mixin（接管前段） |
+| 3 | `addons/smart_construction_core/tests/test_invoice_native_lowcode.py` | 接管前已有 | +2 机制测试 |
+| 4 | `frontend/apps/web/scripts/formal_form_invoice_journey.mjs` | 接管前已有 | +`assertStructureResponsibility` |
+| 5 | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` | 接管前已有 + 接管前段 | 修剪/章节判定/字段 schema 判据（前）；委托共享判定（接管前段） |
+| 6 | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` | 接管前已有 + 接管前段 | `pruneEmptyContainers`（前）；导出 `isLayoutOnlyGroupContainer`（接管前段） |
+| 7 | `frontend/apps/web/src/pages/contractForm/useRecordFormLayout.ts` | 接管前已有 | 正式路径启用修剪 |
+| 8 | `docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json` | 接管前已有 + 接管前段 | `inputDigest`（经既有生成入口刷新） |
+| 9 | `frontend/apps/web/src/pages/ContractFormPage.vue` | 接管前段 | `actionPlaceholderGate` + 新 props 绑定 |
+| 10 | `frontend/apps/web/src/pages/contractForm/ContractFormActionBlocks.vue` | 接管前段 | `suppressWorkflowTransitions` / `suppressBodyActions` 细粒度门 |
+| 11 | `frontend/apps/web/src/pages/contractForm/formActionPlaceholderGate.ts`（新） | 接管前段 | 动作承载证明门控 |
+| 12 | `addons/smart_construction_core/tests/test_form_structure_consumption.py`（新） | 接管前段 | 5 例后端机制测试 |
+| 13 | `addons/smart_construction_core/tests/__init__.py` | 接管前段 | 注册新测试模块 |
+| 14 | `frontend/apps/web/scripts/native_form_structure_responsibility_test.ts`（新） | 接管前段 | 8 例前端行为测试 |
+| 15 | `make/frontend.mk` | 接管前段 | 新 target + 纳入 `verify.frontend.quick.gate` |
+| 16 | `docs/frontend_productization/rendering-detail/component-professionalization-inventory-v1.json` | 接管前段 | 生成物刷新 |
+| 17 | `docs/frontend_productization/rendering-detail/official-design-alignment-inventory-v1.json` | 接管前段 | 生成物刷新 |
+| 18 | `docs/frontend_productization/rendering-detail/visual-projection-inventory-v1.json` | 接管前段 | 生成物刷新 |
+| 19 | `docs/ops/iterations/form_structure_consumption_stabilization_20260917.md`（新） | 接管后修改 | 本批唯一活记录 |
+| 20 | `frontend/apps/web/scripts/formal_form_lowcode_loop.mjs` | 接管后修改 | L4 最小诊断（URL／截图／DOM／console／pageerror／请求结果／恢复状态，均脱敏）＋ 应用外壳挂载预检与单次传输恢复 ＋ 只读重放模式 |
+| 21 | `scripts/verify/local_dev_form_lowcode_browser.sh` | 接管后修改 | 透传 `FORM_LOWCODE_REPLAY`／`FORM_LOWCODE_REPRESENTATIVE`（仅启用只读路径，不改身份/数据库/端口/卷/凭据）；既有草稿前后比对 fail-closed（§8.2） |
+| 22 | `addons/smart_core/model/ui_business_config_change_set.py` | 接管后修改 | `_current_payload_hash()`：变更集条目序列化改为与 stage 守卫同一哈希基准（见 §6.1.2 P0 修复） |
+| 23 | `addons/smart_core/tests/test_business_config_change_set.py` | 接管后修改 | 新增 `test_resumed_draft_restages_with_served_payload_hash`（往返一致性 + 守卫仍拒绝真过期） |
+| 24 | `frontend/apps/web/scripts/designer_draft_ownership.mjs`（新） | 接管后修改 | 草稿归属判定与越权守卫纯函数（§8.2） |
+| 25 | `frontend/apps/web/scripts/formal_form_designer_journey.mjs` | 接管后修改 | 只释放本次运行打开的 change set；复用草稿改为保留并记录（§8.2） |
+| 26 | `scripts/verify/local_dev_form_lowcode_scope.py` | 接管后修改 | 只读代表路由注册（§8.4）＋ 设计器目标可复用草稿清单 `designer_drafts`（§8.2） |
+| 27 | `frontend/apps/web/scripts/formal_form_representative_journey.mjs`（新） | 接管后修改 | 代表面只读旅程（§8.4） |
+| 28 | `frontend/apps/web/src/pages/contractForm/ContractFormPage.css` | 接管后修改 | 章节分隔线归属：布局包装组不画线（唯一产品代码修复） |
+| 29 | `docs/frontend_productization/rendering-detail/form-structure-contract-projection-matrix-v1.json` | 接管后修改 | 补 `source_kind` 真实分类行（断言未删，§8.3） |
+| 30 | `docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json` | 接管后修改 | 补 `BoundFormSettingsPanel.vue` 真实归属声明（§8.3） |
+| 31 | `scripts/verify/form_structure_contract_projection_matrix.py` | 接管后修改 | 投影矩阵断言按真实分类收敛（§8.3） |
+| 32 | `scripts/verify/frontend_page_pattern_reference_parity_guard.py` | 接管后修改 | 字面量守卫改为 `_BooleanExpression` 行为模型（§8.3） |
+| 33 | `scripts/verify/test_frontend_page_pattern_reference_parity_guard.py` | 接管后修改 | 13 例行为测试（§8.3） |
+| 34 | `scripts/audit/generate_frontend_rendering_detail_inventory.py` | 接管后修改 | 生成器随归属声明调整（§8.3） |
+
+写入归属口径（单一写入者 = 本会话）：
+
+- 接管前已有：第 1–8 项；接管前段（同一批次、本会话接管动作之前）：第 9–18 项。
+- 接管后修改：第 19–34 项。其中第 20–21 项为受管 P4 测试工具的最小诊断补齐；第 22–23 项为 P0 `smart_core` 变更集哈希基准修复与其回归测试；第 24–27 项为草稿归属守卫、代表面路由与 popup 诊断（§8.2／§8.4）；第 28 项为唯一产品代码修复；第 29–34 项为三个红灯的对应层修正与生成器调整（§8.3）。此前“本轮仅写活记录”的口径自本步起不再成立。
+- 仅验证（无写入）：§6 全部 L1–L4 入口、L4 运行（R1–R4、R9、R10）、代表面五次运行、生成物一致性复核、只读探针与 `FORM_LOWCODE_SCOPE_ONLY=1` 范围读取。
+
+### 4.1 后端
+
+接管项：
+- `addons/smart_core/core/view_orchestrator.py`：新增 `_display_copy_field_names`（只消费 `_display_copy_source_fields` 协议）；`_config_declares_native_semantic_surface` 拒绝副本锚点（`NATIVE_SEMANTIC_SURFACE_DISPLAY_COPY`）；`_apply_form_spec` 并集补齐排除副本。
+- `addons/smart_construction_core/models/core/formal_config_contract_fields.py`：`FORMAL_DISPLAY_COPY_SOURCES` 注册表 + `sc.formal.display.copy.sources` AbstractModel 协议 mixin + 发票 4 副本登记（`note_display`/`invoice_attachment_text`/`source_created_by`/`source_created_at`）。
+
+本次补充：
+- `formal_config_contract_fields.py`：把登记判据写成三条硬条件注释（单源实时投影／正文外独立职责／canonical 同 arch 共现）；新增 `payment.request → payment_request_attachment_text_display`、`sc.material.inbound → material_inbound_attachment_text_display` 两条登记（canonical `attachment_ids` 已核对在各自表单 arch 共现）；三个模型由 `_inherit = '<model>'` 改为 `_name = '<model>'; _inherit = ['<model>', 'sc.formal.display.copy.sources']`。
+- 新增 `addons/smart_construction_core/tests/test_form_structure_consumption.py`（5 例）并在 `tests/__init__.py` 注册。
+
+> 归因要点：HEAD `025e37d2` 的发票整改是在 **view arch XML 里移除副本字段**（`invoice_registration_views.xml`）+ 前端 `nativeStructureAuthority` 关闭筛选；通用「注册表 + 协议 + 并集排除」机制**整批位于工作树、未提交**，其**生效前提**是本次补充把一个模型挂载改为三个模型挂载 mixin。该机制首次真正运行时点 = 本轮，因此 L4 发票失败（§6/§7）必须先在该机制上归因，不能只归因于 HEAD。
+
+### 4.2 前端（P0 共享层）
+
+接管项：
+- `pages/contractForm/nativeLayoutUtils.ts`：`filterVisibleNativeLayoutNodes` 新增 `pruneEmptyContainers`（正式渲染修剪过滤后空容器；设计器画布保留空组投放目标）。
+- `pages/contractForm/useRecordFormLayout.ts`：正式路径启用修剪（`pruneEmptyContainers: !isContractFieldOrderEditable`）；导航标题收集自修剪后同一有效树。
+- `components/template/NativeFormTreeRenderer.vue`：`isLayoutOnlyGroup` → `native-container--group--layout` 不画章节分隔线；`isNodeRenderable` 扩展到 header/sheet/footer/notebook；`hasRenderableDescendant` 对 field 增加「必须产出 schema」判据。
+- `pages/ContractFormPage.vue`（筛选门）与 `pages/contractForm/ContractFormActionBlocks.vue`（占位块门）的既有改动。
+
+本次补充：
+- `nativeLayoutUtils.ts`：抽出并导出纯函数 `isLayoutOnlyGroupContainer({nodeType, editable, sectionTitle})`（设计器保留装饰）。
+- `NativeFormTreeRenderer.vue`：`isLayoutOnlyGroup` 改为委托该共享判定，行为不变（消除渲染器与共享层两套判定）。
+- 新增 `pages/contractForm/formActionPlaceholderGate.ts`：`resolveFormActionPlaceholderGate()` —— 查询筛选只凭结构权威即可关闭；流程流转／正文动作仅当**全部动作键都已出现在渲染出的 header 动作行**时才关闭，未承载键由 `uncarriedActionKeys` 上报；原生树自身即承载（三项全关）。
+- `ContractFormActionBlocks.vue`：新增 `suppressWorkflowTransitions?` / `suppressBodyActions?` props，未传时回落 `suppressActionBlocks`（不回退既有行为）。
+- `ContractFormPage.vue`：`actionPlaceholderGate` 计算（喂入 header direct/overflow/configuration 键、主创建/提交键、流转键、正文动作键）；`suppressFormActionBlocks` 现等于 `suppressSearchFilters`；新 props 绑定。
+
+### 4.3 测试与生成物
+
+接管项：
+- `addons/smart_construction_core/tests/test_invoice_native_lowcode.py`：+2 机制测试（注册表与并集排除；副本锚点拒绝）。
+- `frontend/apps/web/scripts/formal_form_invoice_journey.mjs`：`assertSinglePresentation` 增加 `assertStructureResponsibility`（空容器不占位 + 布局包装 computed borderTop 为零）。
+
+本次补充：
+- 新增 `frontend/apps/web/scripts/native_form_structure_responsibility_test.ts`（8 例行为测试，执行生产 helper，非字符串扫描）。
+- `make/frontend.mk`：新增 `verify.frontend.native_form_structure_responsibility.unit`，并纳入 `verify.frontend.quick.gate`。
+- 生成物按既有生成入口刷新（未手改摘要）：`refresh.frontend.rendering_detail.inventory`（rendering_detail / visual_projection / official_design_alignment 三支生成器）与 `refresh.frontend.component_driver_takeover.inventory`。
+
+## 5. 代表场景（D，覆盖不同结构机制而非全量业务旅程）
+
+- 发票：空 header、嵌套 group、计算副本（785/786/787/788 + 旁路 789/639）。
+- 客户：基础资料与关系集合。
+- 合同／结算：长表单、条件章节、只读值。
+- 材料：notebook、跨页签导航、全宽明细。
+- 低代码配置样本：重排、分组、隐藏后发布与回滚（发票设计器）。
+
+原有保存、金额、审批及权限证据，相关实现未变则继续复用。
+
+## 6. 验证结果
+
+身份：HEAD `025e37d2` + 显式脏区。以下全部为迭代期证据，非冻结交付证据。本节记录当时口径（含已被 §8 取代的 L4/红灯结论），**当前有效矩阵见 §8.5**。
+
+### 6.1 L4 失败现场（两次运行，转录自本轮终端输出）
+
+入口：`FORM_LOWCODE_TOPIC=invoice make local.dev.form_lowcode.browser`
+→ `scripts/verify/local_dev_form_lowcode_browser.sh`（校验 compose/db 身份、编译期 SHA、前后业务指纹）
+→ `frontend/apps/web/scripts/low_code_change_set_acceptance.mjs`
+→ `formal_form_lowcode_loop.mjs`：先 `checkInvoiceDefaults`（发票 6 入口契约/权限/呈现断言），后 `runDesignerJourney`（设计器草稿→预览→发布→回滚）。
+
+| # | 运行前环境动作 | 失败阶段 | 观察结果 |
+|---|---|---|---|
+| R1 | 11:13 `local.dev.restart` + `local.dev.frontend.watch` 均成功 | `formal_form_designer_journey.mjs:46` —— 点击「保存配置草稿」后等待 `ui.business_config.change_set.open` 响应 | 15s 内未观察到该 intent 的响应；此前的 `checkInvoiceDefaults`（含 `note` 可见断言）已通过；崩溃发生在写报告之前，`report.json` 未落盘 |
+| R2 | 无（间隔约 6 分钟） | `formal_form_invoice_journey.mjs:181` `assertFormRendered(page,'note')`，由 `checkInvoiceDefaults:322` 对 `/f/sc.invoice.registration/new?action_id=…` 逐入口调用 | `[data-field-name="note"]` 可见性 15s 超时；阶段早于设计器 |
+| R3 | 无（诊断补齐后的一次性只读重放，`FORM_LOWCODE_REPLAY=1`） | `formal_form_lowcode_loop.mjs` 登录阶段：`/login` 等待第一个 `input` | **应用外壳未挂载**：`#app` 子节点 0、body 文本长度 0、`failure.png` 全白；`pageerror` 0；console 40 条（封顶）全为 `Failed to load resource: net::ERR_NETWORK_CHANGED`；40 条失败请求全为 Vite 模块（`/@fs/.../.vite/web/deps/chunk-*.js`、`/src/**/*.vue|.ts`）；`intents` 为空 ⇒ 前端连一次契约请求都没发出 |
+| R4 | 无（同一只读重放，修复挂载预检后） | 同上 | **通过**：6 个发票入口 11 个默认阶段全绿、`note` 可见断言通过、设计器旅程按只读模式跳过、`console`/失败请求均为 0、未产生任何草稿 |
+
+#### 6.1.1 首个真实断点与根因（R3 证据）
+
+- **分类：加载失败（传输层）**，不是字段合法隐藏、修剪误删，也不是定位器错误。四条判据互斥且完备：
+  - 字段合法隐藏：不成立——该次失败连应用外壳都没挂载（`#app` 子节点 0），与任何具体字段无关。
+  - 修剪误删：不成立——失败发生在登录页；且同一次运行 11:18 的 `/a/785` 列表页截图正常渲染，说明会话与后端均正常。
+  - 定位器错误：不成立——`intents` 为空，前端根本没运行到契约消费；DOM 内不存在任何 `[data-field-name]`。
+  - 加载失败：成立——`Failed to load resource: net::ERR_NETWORK_CHANGED` × 40（封顶），失败对象全是 Vite 开发服务器的 ES 模块请求。
+- **共同根因**：Chromium 收到宿主网络变更事件后中止在途请求。宿主存在多个 `linkdown`/DOWN 的 Docker 网桥，网桥增删即触发该事件，错误码正是 `net::ERR_NETWORK_CHANGED`。R2 的整页空白、R1 的 `change_set.open` 无响应与之一致（同一传输类故障的不同表现）；但 R1 的传输归因仍属**推断**，须由未跳过的设计器旅程运行确认。
+- **产品层结论**：本轮**不因此改动任何产品代码**。`contract-785.json`（R2 同一次运行捕获）显示后端契约健康（90 节点、69 字段、`note` 在树内、`statusContract.hidden=[]`），失败与表单结构机制无关。
+- **修复（责任层 = P4 受管测试工具）**：① 补齐最小失败诊断（§4.0 第 20 项）；② 登录阶段新增应用外壳挂载预检，未挂载时按 `environment_transport` / `app_shell_not_mounted` 分类并快速失败，附中止模块请求数与样例，不再以 15s 静默超时收场；③ 增加**一次**有界恢复（重新导航并复探挂载），恢复事实写入 `report.transport_recovery`；不延长超时、不放宽任何产品断言。
+
+共同事实与边界：
+- 服务端：`docker logs sc-local-dev-odoo-1 --since 12m` 无 error/traceback/500。
+
+#### 6.1.2 R1 归因（设计器「保存配置草稿」）与 P0 修复
+
+R1 在补诊断后于同一位置原样复现（`formal_form_designer_journey.mjs:46` 等待 `change_set.open`）。本次失败报告为新证据：
+
+- `failed_requests = 0`（无传输中断）、`intents` 中只有 9 次 `ui.contract.v2` ⇒ **不是** §6.1.1 的传输类故障。
+- 失败页 DOM（`failure-dom.html`）含 `data-state="error"` 告警：**「当前配置已被其他管理员更新。」** 该文案在 `business_config_change_set.py:297` 只由 `STALE_CONFIG_HASH` 返回 ⇒ 保存动作确实发出过请求并被服务端拒绝，且被拒的是 **stage**，不是 open。
+- 面板 `save()`（`BoundFormSettingsPanel.vue:192`）在**已有草稿**时跳过 `open` 直接 `stage`；面板 `onMounted` 用 `resumeBusinessConfigChangeSet` 续用同目标草稿 ⇒ `open` 请求根本不会发生，harness 等 `open` 必然超时。
+- 续用来源即 id=163（`ready`、目标 `view_orchestration:sc.invoice.registration:form:action:785:view:1651:role:system_admin`、1 条 item）。
+
+**根因（P0 `smart_core`）：同一字段在服务端往返中使用了两种哈希基准。**
+
+| 位置 | 计算方式 | 证据 |
+|---|---|---|
+| 条目序列化（客户端拿到的 `current_payload_hash`） | `str(self.base_payload_hash)`，而 `base_payload_hash = stable_payload_hash({**contract._definition_payload(), "status": contract.status})` | `ui_business_config_change_set.py:186`、`business_config_change_set.py:312` |
+| stage 守卫（服务端比对目标） | `stable_payload_hash(contract.contract_json)` | `business_config_change_set.py:294`、`295-300` |
+
+实测（只读，变更集 163 的 item 127 → 合同 410）：
+
+```
+base_payload_hash（= 序列化值）        = 7d1558e69fd9e15b6325102adbb3c3ad18367cdd9118dba565bd021af27609a0
+stable_payload_hash(_definition+status) = 7d1558e69fd9e15b6325102adbb3c3ad18367cdd9118dba565bd021af27609a0   ← 与 08:00 存储值一致 ⇒ 已发布配置自 08:00 起未变
+stable_payload_hash(contract_json)      = d658c12c61aff01f831017be284ec2ec29a726392814fa049fc9db9a4f4324e3   ← 守卫比对目标
+```
+
+⇒ 守卫对**未发生变化**的配置也判为过期（假阳性），且**任何**续用草稿都无法再保存：`open` 不会发、stage 必 409。这不是本批表单结构机制的问题，与模型名/字段后缀无关。
+
+**修复口径**：只修「服务端给出的值」与「服务端期望的值」不一致这一端——条目序列化改为与守卫同一基准（`stable_payload_hash(target_contract_id.contract_json)`；`menu` 类型与无合同条目保持原值）。守卫语义不变：真过期仍返回 409（新回归测试同时验证「续用可保存」与「stale 仍被拒」）。未改动前端、未改动 guard、未放宽断言。
+
+归属声明：Formal Product Layer = P0 平台内核产品；Layer Target = `smart_core` 变更集条目序列化；Standard；Why Here = 往返两端都在 `smart_core` 平台代码内；Why Not Elsewhere = 不是前端消费或客户偏好问题，客户端契约保持不变；Blast Radius = 表单/列表/搜索/分析类条目「续用草稿→再次保存」路径，由 P0 单测 + 重启后运行时 + 发票设计器旅程验证。
+
+- 配置面回读：`ui.business.config.change.set` 最新记录为 id=163（2026-09-17 00:00 UTC＝08:00 本地），**早于两次运行**；两次运行均未新增记录。
+- 「未新建 change set」**不等于**「未改动既有草稿」：既有草稿（含 id=163）在两次运行前后的内容与状态尚未比对，列为下一步必查项。
+- R1 通过、R2 失败于同一断言 ⇒ 非确定性；经 R3 归因为传输类加载失败，**不登记为产品缺陷**。
+
+| 层 | 入口 / 命令 | 状态 | 非零用例数 | 说明 |
+|---|---|---|---|---|
+| L1 | `make ci.local.iteration` | passed | 16 tests OK | `change_state=dirty`、`coverage=L1_only`、`receipt=none`、`next=risk_selected_non_zero_L2`；推荐 L2 = canonical_form_presenter / page_pattern_reference_parity / primitive_adapter / product_page_pattern |
+| L1 | `make verify.frontend.typecheck.strict` | passed | — | vue-tsc 无输出 |
+| L2 | `make verify.frontend.canonical_form_presenter.unit` | passed | cases=170 | readonly 空/有内容章节与导航 10 例 |
+| L2 | `make verify.frontend.native_form_structure_responsibility.unit` | passed | cases=8 | 空 header／无标题包装组／隐藏子节点／非空页签与明细／嵌套章节分隔／正文与导航一致／设计器与业务预览差异／动作门控承载证明 |
+| L2 | `make verify.frontend.primitive_adapter.unit` | passed | components=46 | 31 tests |
+| L2 | `make verify.frontend.product_page_pattern.unit` | passed | patterns=4 | 5 tests |
+| L2 | `make verify.frontend.native_form_action_presentation.unit` | passed | 16 tests | ordinary_sc_buttons=2 container_disclosures=1 |
+| L2 | `make verify.frontend.component_driver_takeover.unit` | passed | required=35 missing=0 | 生成物刷新后复核 |
+| L2 | `make verify.frontend.form_structure_contract_projection.unit` | **failed（先于本轮工作树）** | — | `missing=['formStructureGovernanceContract.source_kind']`；边界证据与修法口径见 §7.2 |
+| L2 | `make verify.frontend.page_pattern_reference_parity.unit` | **failed（先于本轮工作树）** | — | 要求字面量 `:hide-title="suppressPageHeaderTitle"`，当前绑定已含额外条件；边界证据与修法口径见 §7.2 |
+| L2 | `make verify.frontend.rendering_detail_state.unit` | **failed（先于本轮工作树）** | — | `BoundFormSettingsPanel.vue` 无归属声明 → `gap=1`；`git archive HEAD` 复现同一 `gap=1`，仅证明相对当前工作树已存在，不作提交级归因；边界证据见 §7.2 |
+| L3 | `make local.dev.restart` | passed | — | sc-local-dev / sc_dev_demo；odoo `Up (healthy)` |
+| L3 | `make local.dev.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestFormStructureConsumption` | passed | 5 tests, 0 failed, 0 errors | `test.safe (no upgrade)`；未触发 upgrade/reset/sync_demo |
+| L4 | `FORM_LOWCODE_TOPIC=invoice make local.dev.form_lowcode.browser` | **failed（未完成、未归因）** | — | 两次运行、两个不同失败点，详见 §6.1 |
+| L4 | 付款／客户／合同结算／低代码代表面 | not_run | — | 登记入口仅支持 `material|document|invoice`，无对应 topic |
+
+生成物刷新：`refresh.frontend.rendering_detail.inventory`、`refresh.frontend.component_driver_takeover.inventory` 均通过既有入口执行，摘要由生成器写出。
+
+未执行：`ci.delivery.freeze.prepare`、`ci.local.quick`、`pr.push`、`local.dev.sync_demo`、`local.dev.snapshot`。
+
+## 7. 剩余缺口与恢复门槛
+
+### 7.1 阻断项（必须先关闭，否则不得冻结/Quick/推送）
+
+> 状态更新（见 §8）：本节 1「发票 L4 未通过且未归因」的归因已完成——R5/R6/R7 为草稿复用与断言口径问题（P0 哈希基准已修、R8 通过），R9/R10 为宿主网络中断导致的模块传输失败（`environment_transport`，popup 级证据）。本节 2 的三个红灯已逐项修正并各自通过对应测试。保留原文以便追溯当时口径。
+
+1. **发票 L4 复核未通过且未归因**（本批自有机制的首次真实运行）。现场见 §6.1。
+   - 已确认：服务端无异常；两次运行未新建 change set；同一断言一次通过一次失败 ⇒ 非确定性。
+   - 未确认（下一步必查）：既有草稿（含 id=163）在两次运行前后的内容与状态是否被改动；`note` 的**首次丢失位置**（页面加载完成 → 最终契约 → 字段策略 → 修剪后树 → DOM）。
+   - 禁止：以延长超时或放宽断言代替归因；在所有者/批次/影响未确认前触碰 id=163。
+   - 主嫌疑（未证实，不登记为缺陷）：本批首次让「副本并集排除」真正生效（HEAD 只有 arch 层移除，通用机制整批在工作树）；以及 `NativeFormTreeRenderer.hasRenderableDescendant` 新增的「field 必须产出 schema」判据在 create 异步加载下可能让章节被修剪。
+2. **三个便宜检查红灯**：见 §7.2，按第 4 步逐项核对真实契约与行为后修正责任层。
+
+### 7.2 三个红灯的边界证据与修法口径
+
+归因方法：用相邻提交对比（绿灯提交 → 红灯提交），不单靠工作树实验。
+
+| 红灯 | 边界提交 | 边界证据 | 修法口径（第 4 步执行） |
+|---|---|---|---|
+| `verify.frontend.form_structure_contract_projection.unit`：`missing=['formStructureGovernanceContract.source_kind']` | `225a56bf` | 该提交前 `unified_page_contract_v2.schema.json` 内 `source_kind` 出现 0 次，提交后 2 次；投影矩阵最后更新 2026-09-15（`0f8b5ee6`），早于 schema 变更 | 先判断 `source_kind` 是否仍是正式契约要求（查 schema 定义与产出方）；是则给矩阵补真实分类行，不得删断言 |
+| `verify.frontend.page_pattern_reference_parity.unit`：要求字面量 `:hide-title="suppressPageHeaderTitle"` | `225a56bf` | 该提交前 `ContractFormPage.vue:26` 即为该字面量；提交后改为 `!isConfigurationPreview && suppressPageHeaderTitle`；guard 要求自 2026-08-27（`482acc47`）未变 | 先验证预览保护行为（配置预览下标题必须可见），再修守卫；尽量改为行为断言而非字面量 |
+| `verify.frontend.rendering_detail_state.unit`：`BoundFormSettingsPanel.vue` 无归属 → `gap=1` | `225a56bf` | 文件由该提交引入；该提交只刷新了 `component-driver-takeover-inventory-v1.json`，未更新 `rendering-surface-ownership-v1.json` | 核对组件职责后补真实声明；不得用排除扫描消 gap |
+
+### 7.3 工作树与草稿现状（不作违规判定）
+
+- 登记工作树 4 个：**登记 ≠ 活跃**，历史保留树本轮不动，也不据此判定预算违规；是否需要清理由后续治理决定。
+- `ui.business.config.change.set` id=163：本节原记为 `ready`，**该记录有误**。本轮快照显示它在 11:48／11:51 为 `draft` 且带 1 条 items，11:55 变为 `discarded`（`write_date` 11:53:57，落在 R6 运行窗口内）。事实链与修复见 §8.2；163 记录仍在（未删除、items 保留），不因本轮结论而回滚或删除。仍遵守原边界：在确认所有者、所属批次与实际配置影响之前，不回滚、不删除、不引用。
+- `025e37d2` 复现红灯只能证明该现象相对**当前未提交改动**已存在，不能据此把责任归因到某个已合并 PR；本轮三个红灯的边界证据见 §7.2 与其修正结果见 §8.3。
+
+### 7.4 代表面覆盖缺口
+
+> 状态更新（见 §8.4）：本节两项已关闭。代表路由已在既有受管 runner 内补齐（复用同一环境与身份校验，未新建 fixture 或环境），付款／客户／合同结算／材料五个代表面均通过；低代码「编辑目标保留、预览与发布效果一致」已有设计器真实路径证据（R8 `ok=true`）。保留原文以便追溯当时口径。
+
+- 浏览器入口 `scripts/verify/local_dev_form_lowcode_scope.py` 只登记 `material|document|invoice`。付款（`payment.request`）、客户、合同／结算、低代码设计器目标**没有**登记 topic；扩域属 P4 测试工具扩展，需单独授权后才能取得这些代表面的浏览器证据。故 §5 代表面清单本轮只覆盖发票（且未通过）。
+- 低代码「编辑目标保留、预览与发布效果一致」目前只有单元/静态证据，设计器真实路径无独立证据（L4 失败点恰好在其上）。
+
+### 7.5 机制覆盖矩阵（候选，未验证不登记）
+
+- 17 个正式配置组声明了 `x → y` 投影；目前仅登记 3 个模型（invoice 4 条、payment.request 1 条、sc.material.inbound 1 条）。
+- 证据待逐字段判定的候选：`material_purchase_*`、`settlement_order`（`settlement_flow_label`/`settlement_category_display`）、`material_settlement_*`、`payment_execution_*`（镜像 `partner_payment_*`）、`subcontract/labor/equipment` 结算组的 `source_created_by_display ← source_created_by`（其来源本身是存储快照，按规则 3 很可能**不登记**）。
+- 约束：未验证不登记为缺陷、不批量改字段；本批不扩展。
+- 另：`payment.request` 的 entry_semantic_surface 契约仍枚举 `payment_request_attachment_text_display`。并集排除已阻止其进入正文，但**已发布契约数据本身未修改**（刻意遵守「不批量改字段」）。
+
+### 7.6 执行顺序（已授权，按序执行）
+
+| 顺序 | 任务 | 完成条件 |
+|---|---|---|
+| 1 | 整理改动归属与失败现场 | 固定 HEAD＋dirty 范围；复用两次失败日志；明确各自入口、阶段与观察结果（§4.0、§6.1） |
+| 2 | 补最小诊断能力 | 异常退出也能保存 URL、截图、DOM、`pageerror`、关键请求结果与配置恢复状态；不记录密钥或 token |
+| 3 | 有界复现并修复首个真实断点 | 优先只读重放失败页面；区分加载失败／字段合法隐藏／修剪误删／定位器错误；不得以延长超时或改断言代替归因 |
+| 4 | 收敛三个便宜检查红灯 | 逐项核对真实契约／行为，修正责任层后只跑对应测试 |
+| 5 | 完成代表面复核 | 发票、付款、客户、合同／结算、材料、低代码按既定机制范围集中交回 |
+
+L4 归因边界：只有必须跨过保存阶段才能复现时，才使用已授权的受管测试草稿并保留恢复回读；不碰归属未明的 id=163。最小 P4 诊断补齐后允许一次有针对性的诊断运行；若仍失败则依新证据继续修复，禁止无变化重试。代表面工具：在既有受管 runner 内补齐只读代表路由，复用环境与身份校验，不另建 fixture 或环境。
+
+### 7.7 未执行项（保持未执行）
+
+`ci.delivery.freeze.prepare`、`ci.local.quick`、`pr.push`、`local.dev.sync_demo`、`local.dev.snapshot`、模块 upgrade、fixture reset、发布快照：本轮均未执行；也未新增/派生任何环境、数据库、端口、卷或凭据。
+
+## 8. 本轮补充：R5–R10 归因、草稿归属守卫、popup 诊断、代表面结果
+
+身份不变：分支 `feature/uc4-invoice-native-lowcode`，HEAD `025e37d2`，工作树 dirty（28 modified + 6 untracked = 34 条路径），未提交、未冻结。本节全部为迭代期证据。
+
+### 8.1 发票 L4 设计器旅程的完整运行史（R5–R10）
+
+| 运行 | 窗口（本地） | 结果 | 失败点 | 观察与分类 |
+|---|---|---|---|---|
+| R5 | 11:48–11:49 | 失败 | `checkInvoiceDefaults` 默认值阶段 `[data-field-name="name"]` 可见性超时 | 与 R2 同类；默认值阶段，未触及设计器 |
+| R6 | 11:51–11:54 | 失败 | `formal_form_designer_journey.mjs:106` 「未改动税字段丢失共享列」 | 走完保存→预览；本运行净增 0 个 change set ⇒ 复用了既有草稿 |
+| R7 | 11:55–11:58 | 失败 | 同文件 `:111` 「未改动税字段丢失原生顺序」 | 净增 1 个 change set ⇒ 已无草稿可复用，只能新开 |
+| R8 | 11:59–12:02 | **通过** | — | `ok=true`、`change_set_id=190`、`save_path=opened_new_change_set`、`restored=true`、`browser_errors=[]`、6 个发票入口 11 个阶段全绿 |
+| R9 | 13:22–13:26 | 失败 | 回滚后业务 popup `body.innerText()` 为空，随后 `发票号码` 可见性超时 | `save_path=resumed_existing_draft`、`change_set_id=192`。当时被分类为 `product_or_locator`，**分类有误**：business popup 当时没有诊断接线 |
+| R10 | 13:28–13:32 | 失败 | 预览 popup `getByText('受管发票号码')` 超时 | `save_path=opened_new_change_set`、`change_set_id=194`；`failed_requests` 中 `popup_1` 23 条、`main` 8 条，全部 `net::ERR_NETWORK_CHANGED` ⇒ `environment_transport` |
+
+R10 是补齐 popup 诊断后的第一次运行，因此它把 R9 无法归因的那一段坐实为**同一环境传输类**：宿主存在 13 个 `DOWN/UNKNOWN` 接口（含多个 `br-*`）与 33 个 docker 网络，网桥抖动会中止在途的 Vite 模块请求；本次命中的是预览 popup 的模块加载，R9 命中的是业务 popup。两次都**不是**表单结构机制缺陷。
+
+### 8.2 受管 runner 消费了并非自己打开的草稿（本轮第二个真实缺陷，已修）
+
+事实链由三条相互独立的证据闭合：
+
+1. 快照：11:48 与 11:51，`163` 为 `draft` 且是当时**唯一带 items 的可复用草稿**（`items=1`，`target_key=view_orchestration:sc.invoice.registration:form:action:785:view:1651:role:system_admin`）；11:55 已变 `discarded`，`write_date` 为 11:53:57 —— 落在 R6 运行窗口内部。
+2. 计数：R5 净增 0、**R6 净增 0 且唯一可复用草稿消失**、R7 净增 1、R8 净增 3（190 新开＋191 回滚记录＋192 复查草稿）。与「R6 复用 163 → R7 只能新开 → R8 新开并留下 192」完全吻合。
+3. 机制：`formal_form_designer_journey.mjs` 把保存返回的 token 直接 `drafts.add()`，而 loop 的 `finally` 会 discard `drafts` 中的全部 token —— 它无法区分「本次运行打开的」与「复用的既有」草稿。
+
+守卫缺口：`topic=invoice` 的 scope 中 `configuration_entry=None`（该键只在 `LOWCODE_CONFIG_ENTRY=1` 时构建），wrapper 的 `owner_change_sets` 前后比对因此**不覆盖设计器主题**，这条破坏性写入不会被发现。
+
+> ⚠️ 本节初版修复在**第 3 次接管**中被 §8.8 取代：`resolveDesignerDraftGuard` 与宽泛开关
+> `FORM_LOWCODE_ALLOW_RESUMED_DRAFT` **已删除**（后者不绑定草稿 id，且会整体跳过既有草稿的前后比对）。
+> 以下保留为当时的事实记录。
+
+修复（全部在既有受管 runner 内，未新建环境/凭据/fixture）：
+
+- 新增 `frontend/apps/web/scripts/designer_draft_ownership.mjs`：
+  - `resolveDesignerDraftOwnership`：只有 `save_path=opened_new_change_set` 的 change set 才交给清理；复用的草稿改为记录 `preserved_draft`，不释放。
+  - `resolveDesignerDraftGuard`：目标上存在可复用草稿时**先于本次运行的第一笔写入**失败关闭（`preexisting_admin_draft_present`）。
+- `formal_form_designer_journey.mjs`：按归属决定是否把 token 交给清理。
+- `formal_form_lowcode_loop.mjs`：设计器分支前置守卫，并把判定写入 `report.designer_draft_guard`。
+- `scripts/verify/local_dev_form_lowcode_scope.py`：只读输出 `designer_drafts`（属主、目标前缀、未过期、产品自身的 `ACTIVE_CHANGE_SET_STATES`）。
+- `scripts/verify/local_dev_form_lowcode_browser.sh`：运行前后比对既有草稿并 fail-closed，同时把 `designer_drafts` 从通用 dict 比较中剥离，以给出精确结论。
+
+谓词修正（初版被 R9 实证推翻）：初版按 `state == 'draft'` 判定，而 R9 报告 `save_path=resumed_existing_draft`、`change_set_id=192`（`state=ready`）—— 可复用集合实为产品常量 `ACTIVE_CHANGE_SET_STATES = {draft, validating, ready, failed}` 且未过期（`expires_at` 默认 `now + 8h`）。修正后按同一常量与过期时间判定：`192`（`expires_at` UTC 12:01:59，R9 开始时未过期）会被拦下；`158`（09-16 13:31）已过期，不会被误拦。
+
+修复效果的直接证据与边界：R9 报告 `preserved_draft = {"id": 192, "reason": "resumed_preexisting_draft_not_authored_by_run"}` ⇒ **runner 不再删除他人草稿**。但必须明确边界：R9 仍在产品自身流程里把 192 发布并回滚（192 `superseded` + 193 `published`），所以「不被删除」≠「不被消费」；真正的保护是前置守卫——按修正后的谓词，R9 会在第一次写入前被拒绝。
+
+### 8.3 三个红灯：逐项核对契约/行为后修正（各自只跑对应测试）
+
+| 红灯 | 核对结论 | 修正（责任层） | 结果 |
+|---|---|---|---|
+| `verify.frontend.form_structure_contract_projection.unit`：`missing=['formStructureGovernanceContract.source_kind']` | `source_kind` 仍是正式契约要求（schema 有定义与产出方），**不是**可删的过期断言 | 投影矩阵补真实 `NON_VISUAL` 分类行 | passed：`[form_structure_contract_projection_matrix] PASS fields=75 unclassified=0` |
+| `verify.frontend.page_pattern_reference_parity.unit`：要求字面量 `:hide-title="suppressPageHeaderTitle"` | 预览保护行为（配置预览下标题必须可见）是产品要求，字面量不是 | 守卫改为 `_BooleanExpression` 行为模型 | passed：`Ran 13 tests OK` + `PASS surfaces=15` |
+| `verify.frontend.rendering_detail_state.unit`：`BoundFormSettingsPanel.vue` 无归属 → `gap=1` | 组件职责真实存在 | 补真实归属声明（9 sources，gaps=0）；**未**用排除扫描消 gap | passed：`Ran 55 tests OK`，`rendering_detail_inventory PASS surfaces=168 gaps=0`，`official_design_alignment PASS`（`internalVendorSelectorGapCount=0`、`visualLiteralGapCount=0`） |
+
+### 8.4 代表面：在既有 runner 内扩域后全部通过
+
+P4 扩展方式：只读代表路由补在既有受管 runner 内（`local_dev_form_lowcode_scope.py` 注册 payment／customer／contract／settlement 代表面，新增 `formal_form_representative_journey.mjs`），复用同一环境、身份与身份校验，未新建 fixture 或环境；约 6 组投影候选仍留在 §7.5，未扩大本批登记范围。
+
+运行方式：`FORM_LOWCODE_TOPIC=<t> FORM_LOWCODE_REPRESENTATIVE=1 make local.dev.form_lowcode.browser`；日志 `artifacts/uc4-representative/run-<t>.log`，报告 `artifacts/lowcode-form-loop/browser/representative-report-<t>.json`。
+
+| 代表面 | 主题 | 结果 | 关键观察 |
+|---|---|---|---|
+| 付款 | payment | passed | 809：26 字段/6 章节；`payment_request_attachment_text_display` 声明于正文外且未渲染，`attachment_ids` 渲染（1 节点、2 个文件输入、2×「上传附件」）⇒ 同一事实一处呈现；`payee_account_source_display` 保留 |
+| 客户 | customer | passed | 820：38 字段/8 章节；`category_id`/`child_ids`/`bank_ids`/`sc_attachment_ids` 四个关系集合均在正文 |
+| 合同 | contract | passed | 609/610：create 24 字段/5 章节，record 25/7；`line_ids` 渲染；`operation_strategy` 只读干净；「来源与系统追溯」可展开；无重复/空壳/误装饰；610 额外渲染 `attachment_ids`，`historical_payment_fact_ids` 策略隐藏（记录为跳过） |
+| 结算 | settlement | passed | 781（create 27/5，record 38/12，6 个关系全部渲染）；782（record 26/11，只读呈现档位，见 §8.5 缺口） |
+| 材料 | material | passed | 546/547：页签「入库明细／材料明细」「说明与附件」「来源追溯」均有内容；全宽明细按承载列度量（`column_fill ≥ 0.9` + 页面级 `columns === 1` 且 `tree_ratio ≥ 0.9`）；章节入口点击后必须解析且可见；分隔线干净（两个 action 的 `decorated_layout_groups: []`） |
+
+代表面过程中定位到的真实根因（按机制，非逐点修补）：
+
+- 付款「页签不可见」= notebook 位于被声明为默认折叠的群组 `sc_payment_request_pay_trace`「履约与追溯」内，渲染器按产品语义隐藏折叠子树；用产品自身的展开开关展开，未改超时。
+- 结算「关系丢失」= 群组级 `invisible` 条件未随字段级 `widgetStatus` 携带；补容器条件与逐 occurrence 模型，条件不满足时记为 `relations_conditional` 而非缺陷。
+- 材料「全宽明细」= 542/544 位于 `--columns-2` 群组内，属正确布局；断言改为按承载列度量。
+- 导航「未在加载时解析」= `data-section-target` 是揭示目标，可能由另一页签持有；改为行为断言（每个章节入口点击后必须解析且可见）。
+- 只读值 = 最宽（可写）节点/occurrence 上各 occurrence 的交集；渲染档位由此决定，记 `presentation_mode`。
+- 空容器 = 高度 `> 2` 才算占位（记录 782 存在 0 高度布局包装）。
+- 章节分隔线归属 = 布局包装组不画线（`ContractFormPage.css`，本轮唯一产品代码修复）。
+
+### 8.5 本轮验证矩阵（更新后）
+
+| 层 | 入口 | 状态 | 非零用例 | 说明 |
+|---|---|---|---|---|
+| L1 | `make ci.local.iteration` | passed | 16 tests OK | 归属守卫改造后重跑；`coverage=L1_only`、`receipt=none` |
+| L1 | `make verify.frontend.typecheck.strict` | passed | — | vue-tsc 无输出 |
+| L2 | `make verify.frontend.native_form_structure_responsibility.unit` | passed | cases=10 | 原有 8 例 + 草稿归属/越权守卫 2 例（行为断言） |
+| L2 | 三个红灯对应入口 | passed | 13 / 55 例 | 见 §8.3；三条入口本轮实测 `exit=0` |
+| L2 | canonical_form_presenter / primitive_adapter / product_page_pattern / native_form_action_presentation / component_driver_takeover | passed（复用） | 170 / 31 / 5 / 16 / required=35 | 相关输入未变，不重跑 |
+| L3 | `make local.dev.restart` | passed（复用） | — | sc-local-dev / sc_dev_demo |
+| L4 | 发票设计器旅程 | R8 通过；R9/R10 环境传输阻断；**R11 通过** | — | 见 §8.1／§8.12；R11 为守卫改造后的一次干净运行 |
+| L2 | `make local.dev.test MODULE=smart_core TEST_TAGS=/smart_core:TestBusinessConfigChangeSet` | passed | 23 tests OK | 新增 4 例行为反例；P0 口径改动后全类无回归 |
+| L2 | `make verify.business_config.unit` | passed | 9+64+24+48+5 例 + 2 node | 含新增 `designer_draft_ownership_test.mjs`（cases=5） |
+| L4 | 发票只读传输检查（`FORM_LOWCODE_REPLAY=1`） | passed | — | `failed_requests=[]`、`browser_errors=[]`、`restored=true`；本次未复现传输中断 |
+| L4 | 代表面（付款/客户/合同/材料/结算） | passed（本轮重跑） | 5 主题 | 共用 `finally` 清理路径属本轮改动，故重跑而非纯复用 |
+| L4 | 代表面（付款/客户/合同/材料/结算） | passed | 5 主题 | 见 §8.4 |
+| L4 | 只读重放（R3/R4） | passed | — | `FORM_LOWCODE_REPLAY=1` |
+
+生成物刷新：为归属守卫补的行为测试落在 `frontend/apps/web/scripts/*.ts`，而 `official-design-alignment` 的摘要覆盖 `frontend/apps/web` 下全部 `.ts/.vue`，因此该生成物一度 `FAIL stale=`。按既有生成入口 `make refresh.frontend.rendering_detail.inventory` 重新生成三支清单（渲染明细／视觉投影／官方设计对齐），随后复核通过；**未手改任何摘要**。这条也印证了证据失效规则：测试工具改动只失效依赖它的结果，业务页面证据不受影响。
+
+未执行（保持未执行）：`ci.delivery.freeze.prepare`、`ci.local.quick`、`pr.push`、`local.dev.sync_demo`、`local.dev.snapshot`、模块 upgrade、fixture reset、发布快照。未新增或派生任何环境、数据库、端口、卷或凭据。
+
+### 8.6 剩余缺口（诚实口径）
+
+- 发票设计器旅程的绿灯只到 **R8**，且 R8 在归属守卫改造之前；改造后的 R9/R10 均被宿主网络中断打断。恢复条件：宿主 `br-*` 网桥不再抖动后的**一次干净运行**（不是重试同一失败）。
+- 只读呈现档位（`data-render-profile="readonly"`，记录 8 `state=approve`）会丢弃只写输入桶，代表面按 `presentation_mode` / `relations_not_applicable: readonly-presentation` 记录 —— 这是产品合法行为，但**目前没有通过测试覆盖**。
+- contract 办理入口（action 607）不在授权菜单内；payment 690 与 construction.contract 607 触达即 `/access-denied?reason=NAVIGATION_AUTHORITY_DENIED`。
+- §7.5 约 6 组投影候选仍未登记；**台账仍为 42**，未扩大本批登记范围。
+- 下一次设计器运行的行为：R11 留下的复查草稿 `233`（`ready`，本地 `expires_at` 13:56）是当前**唯一**未过期活跃草稿，也是运行前盘点的全部内容，因此下一次设计器运行会按设计 **fail-closed**（`preexisting_designer_draft:233`）。恢复入口不再是宽泛开关，而是按 id 与操作的授权 `FORM_LOWCODE_AUTHORIZED_DRAFT="233:stage,publish"`；也可等其过期（8h）。这是刻意行为，不是缺陷。
+- R11 前后 `designer_drafts` 从 `[]` 变为 `[233]`（本运行自建、未发布、留作复查）；`233` 之外没有任何草稿被创建、改写、暂存、发布、回滚或删除。
+
+## 8.7 第 3 次接管：本轮改动归属与唯一写入者
+
+身份不变：分支 `feature/uc4-invoice-native-lowcode`，HEAD `025e37d2`，工作树 dirty，未提交、未冻结。
+`make ci.local.iteration` 的增量计划把本分支相对已验证基线提交 `3323fb49` 的差异计为 44 条路径
+（已提交分支差异 + 工作树差异），其中工作树 36 条（29 modified + 7 untracked）。
+相对 §4.0 的 34 条基线新增两条：`make/runtime_ops.mk`（+1 行 node 接线）与
+`frontend/apps/web/scripts/designer_draft_ownership_test.mjs`（本轮新增）。
+
+| 归属 | 路径 | 说明 |
+|---|---|---|
+| 接管前已有（本轮未改） | `addons/smart_core/model/ui_business_config_change_set.py` 的 `_current_payload_hash`、`frontend/apps/web/src/pages/contractForm/ContractFormPage.css` 分隔线归属、`addons/*/tests/*`（除新增 4 例）、6 份 `docs/frontend_productization/rendering-detail/*.json`、`frontend/apps/web/scripts/formal_form_representative_journey.mjs` | 保留上一轮结论，本轮只读复核 |
+| 接管前已有 + 本轮修改 | `frontend/apps/web/scripts/designer_draft_ownership.mjs`（重写为 inventory 排除式归属 + 按 id/操作授权）、`formal_form_designer_journey.mjs`、`formal_form_lowcode_loop.mjs`、`scripts/verify/local_dev_form_lowcode_scope.py`、`scripts/verify/local_dev_form_lowcode_browser.sh`、`addons/smart_core/tests/test_business_config_change_set.py` | 见 §8.8–§8.10 |
+| 本轮新增 | `frontend/apps/web/scripts/designer_draft_ownership_test.mjs`、`make/runtime_ops.mk` 的一行接线 | 见 §8.9 |
+| 仅验证、本轮未改 | `view_orchestrator.py`、`NativeFormTreeRenderer.vue`、`contractForm/*`、`form_structure_contract_projection_matrix.py`、`frontend_page_pattern_reference_parity_guard.py`、`generate_frontend_rendering_detail_inventory.py`、生成物清单 | 只重跑对应入口，未改内容 |
+
+唯一写入者：本会话。未新建或派生任何环境、数据库、端口、卷、凭据或 fixture；未触碰草稿 `163`／`192`／`194`。
+
+## 8.8 草稿保护边界收口（用户第 3 轮四项发现）
+
+| 发现 | 原实现 | 收口 |
+|---|---|---|
+| 「发出 `open` 请求 ≠ 新建草稿」 | runner 用 `save_path=opened_new_change_set` 授权清理 | 归属改为**只由运行前盘点排除**判定（`resolveDesignerDraftOwnership`）；`open` 信号仅记为 `opened_at_save`，不再授权任何事 |
+| 前置盘点与产品复用规则不一致 | 盘点按含 view 的 `target_key` 前缀筛选 | `designer_scope`/`designer_drafts` 镜像 `BusinessConfigChangeSetOpenHandler`：同属主/公司/库、`ACTIVE_CHANGE_SET_STATES`、未过期，命中 `target_key` 前缀**或** `(model, action_id)` 对，**不**按 view/role 过滤，形成超集 |
+| 盘点→保存之间的时间窗 | 只在开跑前查一次 | 设计器第一笔写入前，用 `resume_only` **只读**探针按两条复用规则各问一次；出现未被盘点到的草稿 → `preexisting_designer_draft_appeared:<id>` 失败关闭 |
+| 授权开关范围过宽 | `FORM_LOWCODE_ALLOW_RESUMED_DRAFT=1` 全局跳过既有草稿比对 | **删除**该开关；改为按 id 与操作的授权 `FORM_LOWCODE_AUTHORIZED_DRAFT="163:stage,publish;192:discard"`；未列出的草稿**始终**全文比对 |
+| 清理边界 | `drafts` 是 token 集合，`finally` 直接 discard | `drafts` 改为 `token → change_set_id`；`resolveCleanupRelease` 若集合内含盘点内（他者）id → `foreign_draft_in_cleanup_set` **拒绝清理并把运行判为失败**（不是静默跳过） |
+| 身份不明/盘点缺失 | 无判定 | `resolveDesignerDraftPolicy` 对缺失盘点、不可解析授权、授权了不存在的 id、存在未授权既有草稿一律 **fail-closed** |
+| 运行身份 | 仅校验 `COMPOSE_PROJECT_NAME`/`DB_NAME` | 追加前置条件：基础 compose 不得固定 `container_name`，否则 profile 名无法作为运行容器的判别依据 |
+
+后端语义（本轮只读复核，未改代码）：`open` 的复用域为属主 + 公司 + 库 + `state ∈ ACTIVE_CHANGE_SET_STATES` + 未过期，
+支持 `target_key` 或 `model`+`action_id` 两条复用规则，并支持 `resume_only`（不存在时返回 `{"change_set": null}` 而**不创建**）。
+
+## 8.9 行为反例（6 组，先补测试，只跑对应入口）
+
+后端 `addons/smart_core/tests/test_business_config_change_set.py`（隔离测试草稿，未触碰 163／192／194）：
+
+| 反例 | 行为断言 |
+|---|---|
+| `open` 返回既有草稿 | `target_key`、`model`+`action_id`、各自加 `resume_only` 共 4 次调用都返回同一 id 且 `state=draft`；变更集行与 item 行前后**全等**（无新建、无改写） |
+| 同 action 不同 view | 两个 view 各自成稿；按 `target_key` 各回各稿；按 `model`+`action_id`（忽略 view）解析到最新一稿且**不新建第三稿**；两稿各自保留自己的 view item |
+| `ready` 草稿 | `ready` 可被两条规则复用；`open` **不**把 `ready` 重置回 `draft`；行内容全等 |
+| 发布版本变化后的旧草稿再编辑 | 见 §8.10 |
+| 盘点后出现草稿 | `resolvePreexistingDraftProbe` 对他者 id → `preexisting_designer_draft_appeared` 失败关闭 |
+| 异常退出 | `resolveCleanupRelease` 含他者 id → 拒绝清理（`release=[]`），即异常路径也不会删除他人草稿 |
+
+Runner `frontend/apps/web/scripts/designer_draft_ownership_test.mjs`（`cases=5`，接线进既有 `make verify.business_config.unit`）：
+
+- 归属：`openedAtSave=true` 仍**不**释放盘点内的 id；未识别 id 不释放；真正自建的 id 才释放。
+- 旧开关不可复活：`1`／`true`／`yes`／`163`／`163:`／`abc:stage`／`163:frobnicate`／`163:stage,`／` :stage` 全部判为解析失败，
+  且顺带收紧解析（尾部/连续分隔符视为笔误，不再静默放宽）。
+- 授权粒度：`163:stage` 不允许 `163` 的 `publish`，也不允许 `192` 的任何操作；授权了不在盘点中的 id → 失败关闭；
+  只授权部分草稿时其余草稿仍然阻断。
+- 盘点缺失 → `designer_draft_inventory_missing` 失败关闭。
+
+包装层比对（`local_dev_form_lowcode_browser.sh` 的后置守卫）另做了一次**反向对照**，证明它不是空断言：
+同一份合成 fixture 喂入守卫，`draft→ready`（被暂存）、`draft→superseded`（被发布）、被丢弃（消失）、
+同状态改内容、`write_date` 前移**全部判为失败**，只有「完全未变」与「显式授权 id」放行。
+
+## 8.10 唯一产品改动复核：`current_payload_hash` 口径
+
+改动本身：`ui.business.config.change_set.item.serialize()` 的 `current_payload_hash` 由 `base_payload_hash`（definition 口径）
+改为 `stable_payload_hash(contract.contract_json)`，与 `StageHandler` 的 payload 守卫同口径；否则复用草稿的往返 hash 自相矛盾，
+永远无法再次 stage。**该改动属接管前已有，本轮未再修改。**
+
+必须证明的风险：序列化值现在跟随**当前已发布**配置，读它即读到最新 hash，所以「客户端读到什么」不能成为保护发布版本的东西。
+
+证明（`test_published_version_change_blocks_stale_draft_stage_and_publish`）：
+
+1. 旧草稿按 J1 建立 item 基线并入 `ready`；另一管理员随后发布 J2（`version_no` +1、`definition_sha256` 变化）。
+2. 旧草稿读期间序列化**确实**返回 `stable_payload_hash(J2)` —— 即 served hash 已跟随新版本。
+3. 三种客户端——同时回传 definition 旧 hash + 新 served hash、只回传新 served hash、两者都不回传——
+   stage 全部 409 `STALE_CONFIG_DEFINITION`。
+4. item 的 `draft_payload`／`base_payload_hash`／`target_contract_id`／`base_version_no` 与基线**全等（未暂存）**；变更集仍 `ready`。
+5. publish 409 `CHANGE_SET_VERSION_CONFLICT`；已发布合同仍是 J2、`version_no` 不变、版本行数不变（**未发布**）。
+6. rollback 409 `CHANGE_SET_NOT_PUBLISHED`（**未回滚**）。
+
+结论：阻断陈旧覆盖的责任在 definition 与 item 基线两层，**不在**客户端回传的 payload hash。
+
+本轮另发现并修一处真实缺陷：`scripts/verify/local_dev_form_lowcode_scope.py` 使用 `user.company`（`res.users` 无此字段），
+首次执行即 `AttributeError`；已改为 `user.company_id`。该行属新 inventory 代码，说明它此前**从未被执行过** —— 也是「未执行 ≠ 通过」的直接例证。
+
+## 8.11 网络归因措辞纠正
+
+- 已证明的是**发生了传输中断**：R10 的 `failed_requests` 为 `popup_1` 23 条 + `main` 8 条 `net::ERR_NETWORK_CHANGED`。
+- 宿主 13 个 `DOWN/UNKNOWN` 接口（含 `br-*`）与 33 个 docker 网络只是**同时存在的现象**，
+  既**不能证明原因**，也**不能作为「已恢复」的判据**。
+- 因此这条不再作为代码修复的阻塞项；R11 与只读传输检查在本轮均未复现中断（`failed_requests=[]`），
+  这只说明**本次运行**没有中断，不构成网络已恢复的结论。
+
+## 8.12 R11：守卫改造后的发票设计器闭环与只读传输检查
+
+| 运行 | 入口 | 结果 | 关键事实 |
+|---|---|---|---|
+| 只读传输检查 | `FORM_LOWCODE_TOPIC=invoice FORM_LOWCODE_REPLAY=1 make local.dev.form_lowcode.browser` | passed | `ok=true`、`restored=true`、`failed_requests=[]`、`browser_errors=[]`；设计器旅程按设计跳过（`change_set_id=null`）；`designer_draft_policy=proceed`、`inventory_ids=[]` |
+| R11 设计器闭环 | `FORM_LOWCODE_TOPIC=invoice make local.dev.form_lowcode.browser` | passed | `ok=true`、`restored=true`、`change_set_id=231`、`save_path=opened_new_change_set`；探针 `proceed`（无既有可复用草稿）；归属 `authored_by_this_run`；`cleanup_guard=proceed`、`recovery_state.released=true`、`draft_tokens_held=0`；`failed_requests=[]`、`browser_errors=[]`；预览/发布/回滚/越界页/视觉顺序全绿 |
+
+运行后草稿事实（只读回读）：`231` = `superseded`（本运行自建、发布后回滚，`publish_ok=true`）；
+`233` = `ready`（本运行自建、未发布，留作集中浏览器复核）；当前唯一未过期活跃草稿 = `233`。
+历史草稿 `155`–`194` 全部为终态（`superseded`/`discarded`），其中 `158` 早已过期故不入盘点。
+
+代表面（付款/客户/合同/材料/结算）在本轮 runner 上重跑，5 主题 `exit=0`：
+`ok=true`、`restored=true`、`failed_requests=[]`、`browser_errors=[]`、`cleanup_guard=proceed`；
+材料面仍给出页签（`入库明细`/`说明与附件`/`来源追溯` 均有内容）、关系集合、
+全宽明细按承载列度量（`line_ids` `column_fill=0.998`、`columns=1`）与章节导航目标。
+
+未执行（保持未执行）：`ci.delivery.freeze.prepare`、`ci.local.quick`、`pr.push`、`local.dev.sync_demo`、
+`local.dev.snapshot`、模块 upgrade、fixture reset、发布快照。未新增或派生任何环境、数据库、端口、卷或凭据。
+
+
+## 8.13 第 4 次接管：草稿保护闭环、共享吸顶布局与代表面复核（用户第 5 轮两项工作包）
+
+身份不变：分支 `feature/uc4-invoice-native-lowcode`，HEAD `025e37d2`，工作树 dirty，未提交、未冻结。
+本轮实测工作树 = **39 条路径（32 modified + 7 untracked）**；更正上一版口径：§8.7 记的「29 modified + 7 untracked」
+与交接稿的「30 modified + 9 untracked」都不是当前实测值，以本节 32/7 为准。
+
+### 8.13.1 归属与唯一写入者
+
+| 归属 | 路径 | 本轮动作 |
+|---|---|---|
+| 接管前已有（前几轮，本轮未改） | `addons/smart_core/handlers/business_config_change_set.py`（`payload["created"]`，14:10 写入）、`addons/smart_core/model/ui_business_config_change_set.py`、`addons/smart_core/tests/test_business_config_change_set.py`（14:13 追加 2 例）、`view_orchestrator.py`、`formal_config_contract_fields.py`、`ContractFormProductHeader.vue` / `ContractFormPage.css` 吸顶载体、6 份 `rendering-detail/*.json`、`formal_form_representative_journey.mjs`、`local_dev_form_lowcode_scope.py` / `_browser.sh`、`designer_draft_ownership.mjs`、6 个新增文件 | 仅复核/仅重跑入口 |
+| 接管后修改（本轮写入） | `frontend/apps/web/scripts/formal_form_lowcode_loop.mjs`、`designer_draft_ownership_test.mjs`、`formal_form_invoice_journey.mjs`、本文档 | 见 §8.13.2 |
+| 仅验证（本轮未改） | `addons/smart_construction_core/tests/test_form_structure_consumption.py`、`formActionPlaceholderGate.ts`、`native_form_structure_responsibility_test.ts`、`make/*.mk` 既有接线 | 只跑对应入口 |
+
+唯一写入者：本会话执行体。未新建/派生环境、数据库、端口、卷、凭据或 fixture；未触碰 `163`／`192`／`194`；`233` 完整保留（见 §8.13.5）。
+
+### 8.13.2 本轮实际改动（先机制审查，再决定是否扩大登记）
+
+| 文件 | 改动 | 为什么必须改 |
+|---|---|---|
+| `formal_form_lowcode_loop.mjs` | 写入授权门从 `designerOnly` 分支**顶部**移到**写入分支内部**；只读 replay 不再被写入授权阻断，策略仍作为观察记录；新增失败关闭时的只读归因探针；成功路径也落盘有界诊断 | 机制缺陷：「拒绝**配置写入**」被实现成「拒绝一切读取」。只读 replay 不 `open`、不 `stage`，要求写入授权只会把入口面藏在别人的草稿后面，无任何安全收益。授权必须紧贴第一笔写入之前，且不得阻断只读动作（与用户第 3 轮「前置 vs 后置」发现同源） |
+| `formal_form_lowcode_loop.mjs` | 失败关闭时用 `resume_only` 只读探针记录 `would_resume` / `probe_shape`，写入 `designer_draft_refusal` | 让拒绝**可归因、不空洞**：若无盘存却无命中，说明守卫是过期而非保护 |
+| `formal_form_lowcode_loop.mjs` | 成功也写 `report.diagnostics`；replay 的成功日志改为「PASS read-only replay」 | 「本次无传输中断」此前只能由**缺失字段**推断，与「探针根本没挂上」同形；日志不得把跳过设计器旅程的运行写成「PASS formal designer journey」 |
+| `designer_draft_ownership_test.mjs` | 新增反例 9：runner 对 `designer_draft_ownership.mjs` 的具名导入必须真实导出（cases 8→9） | 实测缺陷：`node --check` 只查语法，缺失导出仍通过，直到浏览器运行登录后才炸（本轮真实发生一次）。这是最便宜的、能覆盖该缺陷类的既有登记入口 |
+| `formal_form_invoice_journey.mjs` | 财务角色 bypass 面（789）在**自己的 context 内**记录失败取证：URL／readyState／正文／`[data-field-name]` 可见性／DOM 落盘／截图／pageerror／console error／失败请求 | 该面用的是独立 `browser.newContext()`，外层 runner 既未插桩、又在失败前 `context.close()`，因此原取证只能拿到**开启者页面**（实测 `failurePage.url=/access-denied`，与真正失败的页面无关），无法归因 |
+
+未扩大登记范围：约 6 组投影候选仍留在台账，未新增缺陷条目；未批量改字段。
+
+### 8.13.3 根因：material 设计器闭环失败 = 运行进程未加载后端改动（环境层，非产品层）
+
+第一次 material 设计器闭环失败于 `resumed_designer_draft_not_probed:265`，报告事实：
+`save_path=opened_new_change_set`、`save_open={requested_fresh: true, reported_created: null}`、
+`draft_ownership={release:false, reason:'creation_not_proven_by_this_run', created:false}`。
+即保存时确实以 `fresh:true` 新建了草稿，但响应里**没有** `created` 字段，归属无法被证明，守卫据此拒绝（行为正确）。
+
+归因（只读取证）：
+
+| 事实 | 值 |
+|---|---|
+| `sc-local-dev-odoo-1` 进程 1 启动 | 2026-09-17 03:41:36 UTC（= 11:41:36 CST） |
+| `handlers/business_config_change_set.py` mtime | 2026-09-17 **14:10:20 CST**（晚于进程启动） |
+| 容器 odoo 命令行 | `python3 /usr/bin/odoo -c /var/lib/odoo/odoo.conf` —— **无 `--dev`**，Python 不热重载 |
+| 其余后端改动 mtime | 10:21–11:40:46（均早于启动，已在运行时内） |
+
+结论：长驻 dev 进程持有的是**改动前**的 handler，因此 `created` 凭据在运行时里根本不存在。这是「未执行 ≠ 通过」的同类事实——
+该凭据的端到端路径此前从未在**真实运行时**上被跑过。修复动作按受管入口加载：`make local.dev.restart`（L3，未新增环境）。
+
+### 8.13.4 本轮运行结果
+
+| 层 | 入口 | 结果 | 关键事实 |
+|---|---|---|---|
+| L1 | `make ci.local.iteration` | passed | `coverage=L1_only`、`receipt=none`、`change_state=dirty` |
+| L1 | `make verify.business_config.unit` | passed | `designer_draft_ownership cases=9`、presentation 7、summary 6、race 9；语言/边界守卫全绿 |
+| L2 | `make local.dev.test MODULE=smart_core TEST_TAGS='/smart_core:TestBusinessConfigChangeSet'` | passed | **25 tests, 0 failed, 0 error(s)**（含前轮追加的 `created` 凭据 2 例与陈旧版本阻断例） |
+| L3 | `make local.dev.restart` | passed | 仅加载已改后端，无 upgrade/fixture/发布快照 |
+| L4 | `FORM_LOWCODE_TOPIC=invoice FORM_LOWCODE_REPLAY=1` 只读传输检查 | **passed**（上轮 failed，本轮已修复） | `ok=true`、`restored=true`、`change_set_id=null`；策略以观察形式记录 `fail_closed / preexisting_designer_draft:233`；`cleanup_guard=proceed`、`draft_tokens_held=0`；包装层打印 `business fingerprints unchanged` |
+| L4 | `FORM_LOWCODE_TOPIC=invoice`（受影响设计器闭环） | **未通过（被保留草稿正确阻断，非缺陷）** | `preexisting_designer_draft:233`；`designer_draft_refusal={blocking:[233], would_resume:233, probe_shape:'serialized_change_set'}` |
+| L4 | `FORM_LOWCODE_TOPIC=material FORM_LOWCODE_DESIGNER=1 FORM_LOWCODE_AUTHORIZED_DRAFT='265:stage,preview,publish,rollback'` | **passed** | 写入路径在新归属/授权代码下闭环：`policy.allowed={265:[stage,preview,publish,rollback]}`、两条复用规则探针均命中 265、`pre_write_gate=proceed ids=[265,265]`、`resumed_authorized_draft=proceed`、`preserved_draft=creation_not_proven_by_this_run`（不释放、不删除）、`stages.publication/designer` 全绿、`review_draft_ownership={release:true, created:true, fresh_requested:true}`（**`created` 凭据已在运行时生效**）、`recovery=[]`、`browser_errors=[]` |
+
+关于 `265`：它是本会话上一条 material 运行在**陈旧运行时**下自建、因 `created` 缺失而无法证明归属的草稿（`save_path=opened_new_change_set` 有记录）。
+本轮按既有机制用**具体 id + 具体操作**授权其复用（不是恢复已删除的宽泛开关），闭环后它已进入终态；包装层前后比对证明其余既有草稿全文不变。
+运行后 material 盘存只剩 `267`（本轮自建、`ready`、留作集中浏览器复核）。
+
+### 8.13.5 发票设计器闭环：拒绝是正确结果，且证明零写入
+
+`233` 是 R11 自建、未发布、用户要求保留的复核草稿。本轮不为其放宽任何守卫，因此发票设计器写入路径按设计拒绝。
+零写入证据（同一次运行的报告 + 包装层回读）：
+
+- 意图序列仅有 `ui.contract.v2`×9 与 **1 次** `change_set.open`（我新增的只读归因探针，`resume_only`）；**没有** `stage`／`preview`／`publish`／`rollback`／`discard` 任何一次。
+- `change_set_id=null`、`save_path=null`、`draft_ownership=null`、`draft_tokens_held=0`、`recovery=[]`。
+- 拒绝不是空洞的：只读探针显示产品**确实会**复用 233（`would_resume: 233`，`serialized_change_set`），守卫只是不授权写入。
+- 运行后只读回读：`233` 仍为 `ready`，`write_date=2026-09-17 05:56:44.925326`（与运行前逐字相等），item 190 摘要 `21fe4ca032401c07` 不变；包装层 `business fingerprints unchanged`。
+
+### 8.13.6 未归因项（不得靠重试掩盖）
+
+| 现象 | 观察 | 当前归属 |
+|---|---|---|
+| 财务角色 bypass 面（action 789）create 页 `[data-field-name="note"]` 30s 未可见 | 同一代码/同一输入 4 次运行中 1 次失败（run B），前后两次均通过；失败时取证残缺（拿到的是开启者页面 `/access-denied`），**无法判定**是加载失败、字段合法隐藏、修剪误删还是定位器问题 | **未归因**。本轮已补齐该面自身 URL／DOM／字段可见性／pageerror／请求取证；在事实改变前不得重跑这一失败 |
+| 传输中断 | 本轮 invoice 只读检查记录 `net::ERR_NETWORK_CHANGED`×40；material 闭环运行记录 `net::ERR_ABORTED`×12（其中一次通过） | 只证明**发生了中断**；接口/Docker 网络数量既不能证明原因，也不能作为「已恢复」判据。中断出现在**通过**的运行里，因此不能据此推断上面那次超时的成因 |
+
+### 8.13.7 复核交接面（本轮变化）
+
+- 发票 `233` 的交接 URL 原只存在于 `artifacts/uc4-invoice-lowcode/browser/designer-report.json` 的 `review` 块，
+  被本轮同一文件名的**拒绝**报告覆盖。已在未跟踪证据存储中重新保全为 `review-handoff-233.json`（含 token，故不入跟踪文档），
+  并用只读回读校验：`change_set.token` 与记录值一致、`233` 仍 `ready`。
+  注意：其 **preview token 已于 14:16 CST 过期**，designer URL 在草稿存活期内可用；重开预览需对 `233` 授权一次 `preview`。
+- material 交接 URL 仍在 `artifacts/lowcode-form-loop/browser/designer-report.json` 的 `review` 块（本轮生成、未过期）：`draft_id=267`。
+- 台账仍为 42；未冻结、未跑 Quick、未推送、未部署。
+
+## 8.14 第 5 次接管：两个验收缺口收口（拒绝反例登记 + 789 针对性复验）
+
+身份不变：`feature/uc4-invoice-native-lowcode`、HEAD `025e37d2`、工作树 39 条（32 modified + 7 untracked）、未冻结。
+状态口径：**页面整改复核通过｜批次验收待收口｜未集成｜未部署｜台账 42**。
+用户已完成浏览器复核：1088 操作行底边 205px／导航起点 222px、390 操作按钮完整可见且正文标题不再被遮、备注视图单一、
+正式「表单设置」可打开且标签/排序/分组/显隐摘要仍在。吸收结论：吸顶布局不再作为缺口。
+
+### 8.14.1 缺口一：发票 233 保护性拦截登记为「拒绝反例通过」
+
+| 项 | 内容 |
+|---|---|
+| 入口 | `FORM_LOWCODE_TOPIC=invoice make local.dev.form_lowcode.browser`（`designer-loop-invoice-r5.log`） |
+| 结果 | 退出码 2；`preexisting_designer_draft:233`；**登记为通过** |
+| 通过依据 1（拒绝非空洞） | 只读 `resume_only` 归因探针：`would_resume=233`、`probe_shape=serialized_change_set` —— 产品确实会复用 233，守卫只是不授权写入 |
+| 通过依据 2（零越权写入） | 意图序列 = `ui.contract.v2`×9 + 1 次只读 `change_set.open`；**无** `stage`／`preview`／`publish`／`rollback`／`discard`；`change_set_id=null`、`draft_tokens_held=0`、`recovery=[]` |
+| 通过依据 3（既有草稿未变） | 包装层 `business fingerprints unchanged`；只读回读 `233` 仍 `ready`、`write_date=2026-09-17 05:56:44.925326`、item 190 摘要 `21fe4ca032401c07` 逐字不变 |
+| 它**不**证明什么 | 不证明发票**正向**闭环（stage→preview→publish→rollback）已通过。材料闭环（§8.13.4）只作为**共享机制**证据，不替代发票正向验收 |
+
+### 8.14.2 缺口一方案：保留 233 的发票正向闭环（无需改代码，已验证前提）
+
+前提对称性（本轮只读核对）：产品复用域 `BusinessConfigChangeSetOpenHandler` 的 domain 含
+`("expires_at", ">", fields.Datetime.now())`；盘点侧 `_is_expired()` 用同一条 `expires_at <= now` 规则。
+⇒ 过期后**盘点与产品同时**不再看到该草稿，不存在"盘存已剔除但产品仍复用"的不对称。
+`233.expires_at = 2026-09-17 13:56:44 UTC = 21:56:44 CST（今日）`。
+
+| 步骤 | 动作 | 判据 |
+|---|---|---|
+| P1-a（只读前置） | `FORM_LOWCODE_TOPIC=invoice FORM_LOWCODE_SCOPE_ONLY=1 make local.dev.form_lowcode.browser` | `designer_drafts` 不再含 233 |
+| P1-b（只读前置） | 同一次运行内看 `designer_draft_probe` | `probe_shapes=["resume_only_miss","resume_only_miss"]`；若 a 成立而 b 不成立 ⇒ 盘点/产品不对称，属**机制缺陷**，修责任层，**不得**放宽守卫 |
+| P1-c（正向闭环） | `FORM_LOWCODE_TOPIC=invoice make local.dev.form_lowcode.browser`，**不设** `FORM_LOWCODE_AUTHORIZED_DRAFT` | 期望形状与 R11 一致：`save_path=opened_new_change_set`、`review_draft_ownership.created=true`、`publication/preview/rollback/outside_page` 全绿、`recovery=[]`、包装层指纹不变；233 行全程未被触碰 |
+
+- 备选（仅在必须早于 21:56 收口时）：`FORM_LOWCODE_AUTHORIZED_DRAFT='233:stage,preview,publish,rollback'`。
+  这是既有的「具体 id + 具体操作」授权机制，不需要新实现；**不推荐**，因为它会消费刚复核过的现场并把 233 变为 `superseded`。
+- 可选：若需要再次打开 233 的预览，授权 `233:preview` 一次即可重发 preview token（其 preview token 已于 14:16 CST 过期）。这仍是对 233 行的一次写入。
+- **明确排除**：删除/丢弃 233（用户已指示不为运行方便删除）。
+- 固有代价（本轮实测得到，供后续批次评估，不在本批实施）：设计器旅程的 review 交接**每次都会**新建一个 `ready` 复核草稿
+  （R11 留下 233，本轮 material 留下 267）。该草稿会按同一 8 小时规则阻断下一次同目标的设计器运行，直至过期或被显式授权。
+  因此建议把发票闭环安排在集中复核之前：新产生的复核草稿即成为发票复核现场。
+
+### 8.14.3 缺口二：action 789 针对性复验（一次，只读）
+
+入口：`FORM_LOWCODE_TOPIC=invoice FORM_LOWCODE_REPLAY=1 make local.dev.form_lowcode.browser` → 通过（`transport-replay-invoice-r6.log`）。
+本轮为 `formal_form_invoice_journey.mjs` 增加**判定器**（不改断言）：在财务角色面自身 context 内分类
+「页面未加载／字段未渲染／字段已渲染但隐藏／字段可见」，并把**传输证据单独成桶**。
+
+| 判定 | 值 |
+|---|---|
+| `verdict` | **`field_visible`**（`at: after_assertion`） |
+| 页面加载 | `loaded=true`、`app_shell_children=1`、正文 590 字符、无「加载失败/无权访问」 |
+| 字段 | `note_nodes=1`、`note_visible_nodes=1`；`field_nodes=37`、`section_nav_items=9` |
+| 复现性 | **未复现**（不是「字段合法隐藏」，也不是「页面未加载」，也不是「定位失败」） |
+
+传输证据（**单独记录，不判为产品缺陷，也不声称零错误**）：该面自身 `pageerrors=[]`、`console=[]`、
+`failed_requests=[{/api/v1/intent, net::ERR_ABORTED} ×2]`；同一次运行的运行级诊断记录 `net::ERR_NETWORK_CHANGED`×40。
+即：本环境**仍有传输中断发生**，而在**中断存在**的一次运行里该字段为可见。因此传输中断既不能判定为本次 789 现象的成因，
+也不能作为「已恢复」判据；789 现象在证据改变前不再重跑——但现在若复发，判定器会直接给出类别。
+
+### 8.14.4 本轮改动与层证据
+
+本轮唯一代码改动：`frontend/apps/web/scripts/formal_form_invoice_journey.mjs`（789 判定器 + 传输分桶；既有断言未放宽）。
+层证据：L1 本轮重跑 `ci.local.iteration` passed（`l1-iteration-r6.log`），`verify.business_config.unit` passed（cases=9，被覆盖文件未改）；
+L2 沿用 §8.13.4（25 tests, 0 failed）；L4 本轮新增 `transport-replay-invoice-r6.log`（只读）。
+生成物：`artifacts/uc4-invoice-lowcode/browser/replay-report.json`（含 `note_visibility`）、`review-handoff-233.json`。
+
+未执行（保持未执行，本轮未变化）：`ci.delivery.freeze.prepare`、`ci.local.quick`、`pr.push`、`local.dev.sync_demo`、
+`local.dev.snapshot`、模块 upgrade、fixture reset、发布快照。台账保持 **42**。
+
+## 8.15 第 6 次接管：发票正向闭环通过、popup 断点归因与机制修复（用户第 6 轮两项缺口）
+
+身份：分支 `feature/uc4-invoice-native-lowcode`、HEAD `025e37d2`、工作树 41 条（32 modified + 9 untracked），未冻结。
+状态口径：**两个验收缺口均已收口｜批次验收待集中复核｜未集成｜未部署｜台账 42**。
+
+### 8.15.1 归属：接管前已有 / 接管后修改 / 仅验证
+
+| 类别 | 内容 |
+|---|---|
+| 接管前已有（本轮未改） | §8.13/§8.14 记录的 39 条改动（草稿守卫与 `created` 归属、共享吸顶布局、789 判定器、`current_payload_hash` 口径等） |
+| 接管后修改（本轮） | ① `frontend/apps/web/scripts/formal_form_designer_journey.mjs`（popup 就绪门 + 失败时 popup 自身证据；既有断言未放宽）② 新增 `frontend/apps/web/scripts/designer_popup_readiness.mjs` ③ 新增 `frontend/apps/web/scripts/designer_popup_readiness_test.mjs` ④ `make/runtime_ops.mk` 一行（把 ③ 挂进既有 `verify.business_config.unit`） |
+| 仅验证（未改代码） | 233 与草稿表只读回读、两次发票设计器运行、789 只读 replay、L1/L2 |
+| 唯一写入者 | 本会话。历史保留工作树 4 个全程未触碰，不作预算违规判定 |
+
+### 8.15.2 缺口一：保留 233 的发票正向闭环 —— 已通过
+
+| 步骤 | 入口 | 结果 |
+|---|---|---|
+| P1-a 只读前置 | `FORM_LOWCODE_TOPIC=invoice FORM_LOWCODE_SCOPE_ONLY=1 make local.dev.form_lowcode.browser` | `designer_drafts []`（233 已过期，不入盘点）→ `scope-invoice-r6.json` |
+| P1-b 对称性 | 同轮 `designer_draft_probe` | `probe_shapes=["resume_only_miss","resume_only_miss"]` —— 盘点与产品同时不再复用 233，无不对称 |
+| P1-c 正向闭环 | `FORM_LOWCODE_TOPIC=invoice make local.dev.form_lowcode.browser`（**不设授权**） | **exit 0 / `ok=true` / `restored=true`** → `designer-loop-invoice-r7b.log` |
+
+闭环事实（`artifacts/uc4-invoice-lowcode/browser/designer-report.json`）：
+`change_set_id=272`、`save_path=opened_new_change_set`、`save_open={requested_fresh:true,reported_created:true}`、
+`draft_ownership={release:true,reason:'created_by_this_run'}`、`designer_draft_probe=proceed`、`designer_pre_write_gate=proceed`、
+`cleanup_guard={decision:proceed,foreign:[]}`、`recovery=[]`、`recovery_state={draft_tokens_held:0,rollback_tokens_pending:0,released:true}`、
+`stages.publication={published_content,final_contract,browser,isolation 全 passed}`、`stages.outside_page=passed`（787 越界面）、
+`visual_order=passed`（`invoice_no_y=364`，未触碰列仍共享列）。
+
+写事实（只读回读，`now=2026-09-17 14:28:34 UTC`）：`272` superseded（本运行自建、发布后回滚，回滚记录 `273` published）、
+`274` ready（本运行自建、未发布，留作集中复核）、**`233` 全程未被触碰**（`state=ready`、`expires_at=13:56:44 UTC` 已过期、
+`write_date=2026-09-17 05:56:44.925326` 与运行前逐字一致、item 写入时间一致）。
+
+⇒ 「拒绝反例通过」（§8.14.1）与「正向闭环通过」现在**同时**成立于发票面，且未以材料面替代发票面、未删除 233。
+
+### 8.15.3 新断点归因：popup 不是产品结构缺陷，是加载未在断言窗口内完成
+
+r6 的失败是一条**不可归因的定位器超时**（`formal_form_designer_journey.mjs:214`，30s 内未见 `受管发票号码`）。本轮先补诊断能力、再复跑：
+
+| 证据 | 内容 |
+|---|---|
+| r7（补诊断后一次运行，`designer-loop-invoice-r7.log`） | popup URL 为正式入口路由（`route_matches_entry=true`）、`ready_state=complete`、`app_shell_children=1`、`field_nodes=0`、标题 `新建进项发票 · 加载中`、`pageerrors=[]`、`console=[]` |
+| popup 自身失败请求 | 仅 Vite 模块 `net::ERR_ABORTED`（`/src/App.vue`、`/src/app/init.ts` …）—— 正是**本运行自己 `business.reload()` 取消首个文档**所致，不是产品请求失败 |
+| r7b（同一 URL、同一构建、同一账号） | 通过；popup 内 `system.init` 200（2.4s）、`ui.contract.v2` 200（2.6s）、`api.data` 200，且因 reload 出现**两次 bootstrap** |
+
+结论：**同一 URL/构建/账号既能停在「加载中」也能正常渲染**，差别是加载耗时（本环境 `ERR_NETWORK_CHANGED` 间歇中断仍在发生）。
+因此该现象既不属结构消费缺陷、也不属字段合法隐藏或修剪误删；`reload()` 紧跟 popup 创建会取消首个文档的模块请求，属 runner 侧时序，
+不构成产品证据。归因对象 = **测试工具层（runner）就绪判定与证据采集**，不是 P0/P1 产品层。
+
+### 8.15.4 机制修复（只改测试工具层，断言语义不变）
+
+`formal_form_designer_journey.mjs` 的 popup 段：创建即挂 `pageerror`/`console`/`requestfailed` + **intent 生命周期**
+（started/answered/failed/pending；reload 边界把被取消的请求移入 `api_abandoned`，避免把旧文档的请求误报为挂起）
+→ 有界就绪探针（shell 挂载 **且** 页面自身 loading 标题消失，上限 15s）
+→ 判定分类 → **严格断言原样执行** → 断言失败时再把 popup 自身 URL/DOM/截图/请求结果写盘（`failure-designer-popup-dom.html`、`failure-designer-popup.png`）。
+
+判定分类抽为 `designer_popup_readiness.mjs`（`popup_unreachable` / `popup_route_denied` / `popup_shell_not_mounted` /
+`popup_still_loading` / `popup_ready_for_assertion`），并明确**只有已证实的失败态才可中断**：路由为 `/login` 或 `/access-denied`，
+或 popup 确实已被关闭；其余（慢加载、shell 未挂载、状态读不到）一律落到严格断言。因此该诊断**不可能把本可通过的运行判成失败**
+（可中断集合是 v1 的子集）。r7 那次误判（用 body 文案「无权访问」当拒绝证据，实际是菜单 chrome 对无权入口的合法文案）即在此修掉。
+
+行为反例测试 `designer_popup_readiness_test.mjs`（cases=6：已关闭 vs 仅读不到状态、两种拒绝路由、菜单 chrome 含拒绝文案仍算已挂载页、
+shell 已挂载但仍在加载、shell 未挂载、路由证据），挂进既有 `verify.business_config.unit`（只加一行，不新建入口/环境/凭据）。
+
+### 8.15.5 缺口二：action 789 判定器（同一运行再次确认）
+
+`note_visibility`（`at: after_assertion`）：`verdict=field_visible`、`loaded=true`、`app_shell_children=1`、正文 590 字符、
+`note_nodes=1`、`note_visible_nodes=1`、`field_nodes=37`、`section_nav_items=9`。入口隔离同时成立（`sc_test_admin` →
+`/access-denied?reason=NAVIGATION_AUTHORITY_DENIED`；财务 principal → 正常打开）。
+传输证据**单独成桶**：该面 `pageerrors=[]`、`console=[]`、`failed_requests=[/api/v1/intent net::ERR_ABORTED ×2]`；运行级另有 `ERR_NETWORK_CHANGED ×40`。
+⇒ 既不作产品缺陷，也不声称零错误通过；若复发，判定器直接给出类别。
+
+### 8.15.6 本轮验证矩阵
+
+| 层 | 命令 | 结果 | 非零测试数 |
+|---|---|---|---|
+| L1 | `make ci.local.iteration` | passed（`l1-iteration-r7.log`） | 16（策略守卫） |
+| L2 | `make verify.business_config.unit` | passed（`business-config-unit-r7.log`），含新 `[designer_popup_readiness] PASS cases=6` | 177（11+5+6+5+9+64+24+48+5） |
+| L4 | `FORM_LOWCODE_TOPIC=invoice make local.dev.form_lowcode.browser` | passed（`designer-loop-invoice-r7b.log`） | — |
+| L4（只读） | `FORM_LOWCODE_TOPIC=invoice FORM_LOWCODE_REPLAY=1 make local.dev.form_lowcode.browser` | passed（`transport-replay-invoice-r6.log`，输入未变故沿用） | — |
+
+未执行（保持未执行）：`ci.delivery.freeze.prepare`、`ci.local.quick`、`pr.push`、`local.dev.sync_demo`、`local.dev.snapshot`、
+模块 upgrade、fixture reset、发布快照。台账保持 **42**，约六组投影候选继续挂账、不登记。
+
+### 8.15.7 剩余缺口（诚实口径）
+
+1. **工具版本与通过结果的落差**：通过的那次闭环（r7b）跑在 popup 门第一版（shell 就绪 + body 文案判定）上；本轮随后细化的版本
+   **只收紧诊断、只对已证实状态中断、不新增失败路径、不放宽断言**（可中断集合是子集），故不改判该通过结果；
+   但「最终工具版本下的整轮发票闭环」尚未重跑。阻塞原因：本次通过自建的复核草稿 `274` 为 `ready` 且未过期，
+   按既有规则会拒绝下一次同目标设计器运行（到期 `2026-09-17 22:24:12 UTC = 06:24:12 CST 次日`），或需显式授权 `274:<具体操作>`；
+   两者都不应为跑一次而删掉/用掉交接草稿。
+2. **popup 加载耗时的成因**：已证明「同一面既可停住也可通过，且同运行存在传输中断」，未证明具体哪一跳；
+   就绪门在复现时会直接给出 `api_pending` 与断言失败时快照。
+3. **复核交接面**：发票 `274`（`ready`，未发布）与材料 `267`（`ready`，未发布）是两个未过期草稿，各自阻断同目标设计器运行；
+   `274` 的 preview token 到期 `14:44:12 UTC`，其设计器 URL（含 `change_set_token`，已与库回读校验）随草稿 `ready` 状态有效。
+   交接面已保全为 `artifacts/uc4-invoice-lowcode/browser/review-handoff-274.json`（照 §8.13.7 的 `review-handoff-233.json` 口径）。
+
+## 8.16 续推：最终工具版本下的发票正向闭环（授权续用既有草稿的正向路径）
+
+身份不变：分支 `feature/uc4-invoice-native-lowcode`、HEAD `025e37d2`、工作树 41 条（32 modified + 9 untracked），未冻结。
+状态口径：**两个验收缺口在最终工具版本下均已收口｜待集中浏览器复核｜未集成｜未部署｜台账 42**。
+
+### 8.16.1 阻塞与解法（不删、不弃、不绕过守卫）
+
+§8.15.7 的剩余落差是「通过结果跑在就绪门第一版」，而重跑被草稿 `274`（`ready`、未过期）按既有规则拒绝。
+解法使用既有机制本身：`FORM_LOWCODE_AUTHORIZED_DRAFT='274:stage,preview,publish,rollback'`——**具体 id + 具体操作**授权，
+让本次运行**续用** 274，并由运行末尾产出新的复核草稿作为交接面。
+运行前只读记录（`now=14:44:03 UTC`）：`274` `ready`、`write_date=14:24:12.279084`、item 225 digest `e09e086a26cd3776`；
+`233` `write_date=05:56:44.925326`、digest `e09e086a26cd3776`；`267` `write_date=06:51:17.975111`、digest `a516b696b45d7eca`。
+
+### 8.16.2 机制修复（工具层第二处）：不再自造 abort 风暴
+
+popup 创建后立即 `reload()` 会取消首个文档的**在途模块请求**（r7/r7b 证据：12–20 条模块 `ERR_ABORTED`）。
+改为**先有界等待首个文档 `load`（≤10s）再冷加载**：既保留「冷加载渲染新发布配置」这一证明，又不再自造 abort 风暴，
+且在中断网络上省掉一次整图重复拉取。可中断集合不变（仍只有已证实状态，见 §8.15.4）。
+
+### 8.16.3 结果（`designer-loop-invoice-r8.log`，exit 0）
+
+| 项 | 值 |
+|---|---|
+| 结论 | `ok=true`、`restored=true`、`recovery=[]`、`recovery_state={draft_tokens_held:0,rollback_tokens_pending:0,released:true}` |
+| 保存路径 | `save_path=resumed_existing_draft`；`save_open={requested_fresh:false,reported_created:null}` |
+| 归属（关键） | `draft_ownership={release:false,reason:'creation_not_proven_by_this_run'}` —— 运行**没有**把续用草稿当自己的 |
+| 授权正向路径 | `resumed_authorized_draft={id:274,operations:[stage,preview,publish,rollback],decision:proceed}`、`preserved_draft={id:274}`、`cleanup_guard={decision:proceed,foreign:[]}` |
+| 盘点/探针/前置门 | `designer_draft_policy={inventory_ids:[274],allowed:{274:[…]}}`、`probe_shapes=["serialized_change_set","serialized_change_set"]`（两条产品规则都指向 274）、`designer_pre_write_gate=proceed(ids:[274,274])` |
+| 阶段 | `publication={published_content,final_contract,browser,isolation 全 passed}`、`outside_page=passed(787)`、`visual_order=passed`（`invoice_no_y=364`，未触碰列仍共享列） |
+| popup 证据 | `verdict=popup_ready_for_assertion`、`blocking=false`、`ready_wait_ms=7791`、`field_nodes=42`、标题已脱离「加载中」、`failed_requests=1`、`api_abandoned=[system.init @reload]` —— 与 §8.15.3「加载耗时可变」一致 |
+| 789（同一次运行） | `note_visibility.verdict=field_visible`、`field_nodes=37`；传输错误仍单独成桶 |
+
+写事实（只读回读，`now=14:48:02 UTC`）：`274` → `superseded`（item 225 digest `e09e086a26cd3776` → `e79f13e7a08b6484`，
+发布后回滚记录 `275` published）；新复核草稿 `276` `ready`（item 226 digest `e09e086a26cd3776`，未发布）；
+**`233` 未被触碰**（`state=ready`、`write_date=05:56:44.925326`、digest 逐字不变）；**`267`（材料）未被触碰**（`write_date` 与 digest 不变）。
+⇒ 授权写入只落在被明确授权的 274 及其回滚记录、以及本轮自建 276；其他草稿完整比对零变化。
+
+### 8.16.4 验证矩阵（更新）
+
+| 层 | 命令 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | passed（`l1-iteration-r8.log`） |
+| L2 | `make verify.business_config.unit` | passed（`business-config-unit-r8.log`），含 `[designer_popup_readiness] PASS cases=6`（177 tests） |
+| L4 | `FORM_LOWCODE_TOPIC=invoice FORM_LOWCODE_AUTHORIZED_DRAFT='274:stage,preview,publish,rollback' make local.dev.form_lowcode.browser` | passed（`designer-loop-invoice-r8.log`，最终工具版本） |
+| L4（只读，沿用） | `FORM_LOWCODE_TOPIC=invoice FORM_LOWCODE_REPLAY=1 …` | passed（输入未变，见 §8.15.5/§8.15.6） |
+
+未执行（保持未执行）：`ci.delivery.freeze.prepare`、`ci.local.quick`、`pr.push`、`local.dev.sync_demo`、`local.dev.snapshot`、
+模块 upgrade、fixture reset、发布快照。台账保持 **42**，约六组投影候选继续挂账、不登记。
+
+### 8.16.5 剩余缺口（更新后）
+
+1. **验收缺口：已无。** 发票正向闭环（拒绝反例 + 授权续用正向路径）与 789 判定，在最终工具版本下均成立。
+2. **交付前置（待用户确认后执行）**：`ci.delivery.freeze.prepare` → 干净 HEAD 冻结 + 完整 tracked+untracked 指纹 → 一次 `ci.local.quick` → 独立复核 → `make pr.push`。
+3. **机制固有代价（观察项，不在本批实施）**：每次设计器闭环会留下一个未发布 `ready` 复核草稿，按目标阻断下一次同目标运行
+   （本轮 `276` 到期 `2026-09-17 22:47:25 UTC`；材料 `267` 到期 `14:51:17 UTC`）。建议后续批次评估复核草稿的显式生命周期。
+4. **popup 加载耗时**：已定位为「同一面加载耗时可变 + 运行自造的 abort 风暴」；本轮消除自造部分（模块 `failed_requests` 20 → 1），
+   剩余为环境传输波动；就绪门在复现时给出 `api_pending` 与断言失败快照。
+
+交接面：`artifacts/uc4-invoice-lowcode/browser/review-handoff-276.json`（draft token 已与库回读校验）；
+`review-handoff-274.json` 已标注被 274 授权运行消费（`superseded_by`）。
+
+## 8.17 代表面证据复位：付款/客户/合同/结算按最终应用源重跑（只读）
+
+### 8.17.1 发现的陈旧证据（不是新缺陷）
+
+按「输入变了才失效」核对文件 mtime：`frontend/apps/web/src/api/businessConfig.ts`（14:12:15 CST）、
+`frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue`（14:23:46）、
+`frontend/apps/web/src/pages/contractForm/ContractFormPage.css`（14:23:52）三处应用源**晚于**付款/客户/合同/结算的首次代表面运行（13:58–14:02），
+因此那四个主题的页面观察对最终应用源而言已陈旧，需按依赖补跑（发票 14:29、材料 14:30 两次晚于上述改动，仍有效）。
+
+### 8.17.2 重跑（只读，仅补受影响部分）
+
+入口：`FORM_LOWCODE_TOPIC=<topic> FORM_LOWCODE_REPRESENTATIVE=1 make local.dev.form_lowcode.browser`（四个主题各一次，`representative-<topic>-r8.log`）。
+
+| 主题 | 结果 | 非空洞观察（摘要） |
+|---|---|---|
+| payment | exit 0 | action 809 / `payment.request` / view 2096：26 字段、6 章节；`payment_request_attachment_text_display` 正文不渲染但声明在正文外、`attachment_ids` 渲染 ×1（附件原件与文本摘要同一事实单一呈现）、`payee_account_source_display` 渲染 ×1；`collapsed_sections=["履约与追溯"]`（无未解析项） |
+| customer | exit 0 | action 820 / `res.partner` / view 1590：38 字段、8 章节；关系集合 `category_id`/`child_ids`/`bank_ids`/`sc_attachment_ids` 全部 `rendered@body`，`relations_skipped=[]` |
+| contract | exit 0 | action 609 / `construction.contract.income` / view 1569：24 字段、5 章节；`line_ids:one2many:rendered@body`；`readonly_checked=["operation_strategy"]`；含既有记录路由 |
+| settlement | exit 0 | action 781 / `sc.settlement.order` / view 1764：27 字段、5 章节；`line_ids`/`attachment_ids` `rendered@body`；条件关系 `payment_request_ids`/`payment_request_line_ids` 记为 `conditional:not id`（不在正文误判为缺失） |
+
+四个主题的 `findings` 全空（`duplicated`/`empty_containers`/`decorated_layout_groups`/`titled_layout_groups`），
+即本批关心的结构消费口径（重复呈现、空容器、无标题包装组、包装组装饰）在最终应用源上无回归。
+
+### 8.17.3 只读性与有效性证据
+
+- 未新建配置草稿：只读回读（`now=14:53:31 UTC`）显示 `id>267` 的最新行为 `276`（来自 §8.16 闭环），四个代表面运行期间**没有新增任何草稿行**；
+- 每次运行自身打印 `[local.dev.form_lowcode.browser] business fingerprints unchanged`（业务配置指纹未变）；
+- 发票（14:29）与材料（14:30）的代表面证据保持有效：`find frontend/apps/web/src -newermt '2026-09-17 14:30:41'` 为空，应用源此后未再改动（本轮改动仅在 `scripts/`、`make/`、`docs/`）。
+
+### 8.17.4 代表面覆盖（更新后，全部绑定最终应用源）
+
+| 主题 | 代表面入口 | 状态 |
+|---|---|---|
+| 发票 | 设计器闭环（§8.16，含 popup/发布/回滚/越界面/视觉顺序）+ 只读代表面（14:29） | passed |
+| 付款 | 只读代表面（§8.17.2） | passed |
+| 客户 | 只读代表面（§8.17.2） | passed |
+| 合同／结算 | 只读代表面（§8.17.2） | passed |
+| 材料 | 设计器闭环（§8.13.4，`review_draft_id=267`）+ 只读代表面（14:30） | passed |
+| 低代码（设计器编辑目标、预览与发布一致） | 发票设计器闭环（编辑目标保留、预览=发布效果、回滚恢复基线） | passed |
+
+未执行（保持未执行）：`ci.delivery.freeze.prepare`、`ci.local.quick`、`pr.push`、`local.dev.sync_demo`、`local.dev.snapshot`、
+模块 upgrade、fixture reset、发布快照。台账保持 **42**；约六组投影候选继续挂账、不登记。
+
+## 8.18 第 7 次接管：冻结收口（生成证据准备、可审查提交、完整指纹、一次 Quick、独立复核、外部归档）
+
+身份：分支 `feature/uc4-invoice-native-lowcode`、HEAD `025e37d2`、工作树 **46 条（37 modified + 9 untracked）**，冻结前未提交。
+状态口径：**批次有限验收通过（用户只读浏览器复核）｜待冻结门禁｜未集成｜未部署｜89 入口交付未完成**；台账保持 **42**。
+本轮授权范围：停止扩展功能、整理可审查提交、生成证据准备与预检、冻结干净 HEAD 和完整指纹、对最终 HEAD 跑一次 Quick、独立复核、外部归档、准备 PR 正文。
+**不推送、不清理工作树、不清理复核草稿（233／267／276 保持原样）。**
+
+### 8.18.1 归属与唯一写入者（第 7 轮）
+
+| 类别 | 内容 |
+|---|---|
+| 接管前已有（接管首次 `git status` 即在树内，逐项复核后原样保留） | §4.0 标注「接管前已有／接管前段」的全部路径；本会话未覆盖、未重做 |
+| 接管后修改（本会话历次写入） | §8.7 草稿归属守卫、§8.13.2 共享吸顶偏移＋动作承载门＋代表面 runner、§8.15.4 popup 就绪门、§8.16.2 消除自造 abort；**第 7 轮唯一写入 = 本文档新增 §8.18** |
+| 仅验证（无写入） | `make ci.delivery.freeze.prepare`、`make ci.local.iteration`、`make verify.business_config.unit`、`make local.dev.form_lowcode.browser`（r8 系列）、指定只读回读 |
+
+唯一写入者：本会话执行体。**4 个登记工作树 ≠ 4 个活跃工作树**：4 个历史保留工作树本轮未触碰，不作为预算违规判定，也不清理。
+
+### 8.18.2 生成证据准备（`make ci.delivery.freeze.prepare`，23:03，exit 0）
+
+`freeze-prepare.log` 逐项：
+
+- `refresh.generated_reports` 写出并复验：test_inventory（1373 条）／test_inventory_summary／e2e_journey_matrix／module_dependency_map／complexity_budget_report／split_plan_queue／github_remote_execution_plan／contract_structure_fingerprint；
+- `refresh.frontend.component_driver_takeover.inventory` → `component-driver-takeover-inventory-v1.json`；`refresh.contract_form_split_evidence` → `p4_p0_03_contract_form_split_evidence.md`（`lines=1929`）；
+- 预检复验：`[component_driver_takeover_inventory] PASS required=35 missing=0 bridge_only=0 raw=0`、`[contract_form_split_evidence] PASS lines=1929`、`[ci.generated_evidence.preflight] PASS all content-bound generated evidence is current`、`[ci.delivery.freeze.prepare] PASS candidate=unfrozen next=review_generated_changes_commit_freeze_then_run_quick_once`。
+
+刷新带来的 tracked 生成物差异（随冻结提交一起进入）：
+
+| 生成物 | 驱动 |
+|---|---|
+| `docs/engineering_convergence/{test_inventory.csv,test_inventory_summary.md,complexity_budget_report.md,split_plan_queue.md}` | `refresh.generated_reports` |
+| `docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md` | `refresh.contract_form_split_evidence` |
+| `docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json` | `refresh.frontend.component_driver_takeover.inventory` |
+| `docs/frontend_productization/rendering-detail/{visual-projection,component-professionalization,official-design-alignment,rendering-surface-ownership,form-structure-contract-projection-matrix}-*.json` | 更早一轮 `refresh.frontend.rendering_detail.inventory`（含 `source_kind` 真实分类行与 `BoundFormSettingsPanel` 真实声明） |
+
+`contracts/generated/contract_structure_fingerprint.json` 重写后与 HEAD 逐字节一致（`git status` 无差异），即生成是幂等的。
+无刷新残留：刷新后再次执行预检仍全部 `current`。生成物按既有生成入口产出，**未手改任何摘要**。
+
+### 8.18.3 可审查提交边界（P0 机制 / P1 声明 / P4 验证工具）
+
+| 提交 | 归属 | 路径 |
+|---|---|---|
+| 1 | **P0 机制** | `addons/smart_core/core/view_orchestrator.py`、`addons/smart_core/handlers/business_config_change_set.py`、`addons/smart_core/model/ui_business_config_change_set.py`、`addons/smart_core/tests/test_business_config_change_set.py`、`frontend/apps/web/src/**`（共享渲染层 8 文件：`api/businessConfig.ts`、`components/template/NativeFormTreeRenderer.vue`、`pages/ContractFormPage.vue`、`pages/contractForm/{ContractFormActionBlocks.vue,ContractFormPage.css,ContractFormProductHeader.vue,nativeLayoutUtils.ts,useRecordFormLayout.ts,formActionPlaceholderGate.ts}`） |
+| 2 | **P1 声明** | `addons/smart_construction_core/models/core/formal_config_contract_fields.py`、`addons/smart_construction_core/tests/{__init__.py,test_form_structure_consumption.py,test_invoice_native_lowcode.py}` |
+| 3 | **P4 验证工具与生成物** | `frontend/apps/web/scripts/**`（8）、`scripts/verify/**`（4）、`scripts/audit/generate_frontend_rendering_detail_inventory.py`、`make/{frontend.mk,runtime_ops.mk}`、`docs/frontend_productization/rendering-detail/**`（6）、`docs/engineering_convergence/**`（5）、本批次记录 |
+
+拆分理由：三支 rendering-detail 生成物的差异由两类驱动合成（产品文件 digest 变化 + `generate_frontend_rendering_detail_inventory.py` 补 `BoundFormSettingsPanel` 真实声明），
+在同一文件内不可再拆，故与对应生成/校验脚本同属第 3 个提交；`P0`／`P1` 的代码归属仍在各自提交内保持可独立审查与独立回滚。
+
+### 8.18.4 冻结后产出位置（不改写 tracked 文件，不制造新 HEAD）
+
+- 完整 tracked+untracked 指纹：既有入口 `scripts/contract/complete_worktree_fingerprint.py`（`codex_complete_worktree_fingerprint/v1`，含 tracked/staged/untracked 全部路径与 worktree sha256、scope manifest 哈希、digest），落 `artifacts/fingerprints/`；
+- Quick receipt：`.git/codex/evidence/ci.local.quick/<HEAD>.json`（`local_quick_evidence.py` 自校验 exact 40 位 SHA 且 `git status` 全空才签发）；
+- 独立复核报告与外部归档 receipt：非跟踪证据位置（`artifacts/`）与工作树外既有归档目录 `.codex-evidence/workspace-archives`。
+
+按「冻结后不得再刷新 tracked 文件」，上述 receipt／归档结果不回写本文档；本记录 tracked 内容在冻结提交时定稿，receipt 与归档结论进 PR 正文与非跟踪证据。
+
+### 8.18.5 未执行项（保持未执行）
+
+`local.dev.sync_demo`、`local.dev.snapshot`、模块 upgrade、fixture reset、发布快照、`make pr.push`、工作树清理、复核草稿清理。
+本节取代此前各节「未执行」清单中关于 `ci.delivery.freeze.prepare` 的条目（已于 23:03 执行并通过）；其余条目维持原状。
+台账保持 **42**；约六组投影候选继续挂账、不登记。
