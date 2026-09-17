@@ -62,6 +62,16 @@ TOPIC_IDENTITIES = {
         ("action_sc_settlement_order_income", "view_sc_settlement_order_form", "menu_sc_p1_income_settlement"),
         ("action_sc_settlement_order_expense", "view_sc_settlement_order_form", "menu_sc_p1_expense_settlement"),
     ),
+    # U-C4 G03: 公司收入 (637 / menu 545) and 收入 (806 / menu 907) are the two
+    # formal entries; 工程进度款收入登记 (807 / menu 908) is the shared-form
+    # bypass entry and reaches form view 1644 through its action view_ids.  All
+    # three consume the same rebuilt native form, so the read-only route keeps
+    # them together.
+    "receipt_income": (
+        ("action_sc_receipt_income", "view_sc_receipt_income_form", "menu_sc_company_income"),
+        ("action_sc_receipt_income_user_income", "view_sc_receipt_income_form", "menu_sc_user_income"),
+        ("action_sc_receipt_income_engineering_progress", "view_sc_receipt_income_form", "menu_sc_engineering_progress_income"),
+    ),
 }
 TOPIC_SAMPLE_FIELDS = {
     "invoice": ["direction", "source_kind", "source_origin", "note"],
@@ -69,6 +79,7 @@ TOPIC_SAMPLE_FIELDS = {
     "customer": ["name", "active"],
     "contract": ["state"],
     "settlement": ["state"],
+    "receipt_income": ["state", "source_origin", "source_kind"],
 }
 # Mechanism assertions for the read-only representative pass.  Names are the
 # registered display copies / canonical sources of the same business fact; the
@@ -92,6 +103,17 @@ TOPIC_REPRESENTATIVE = {
     # without `contract-form-native-shell`, so the navigation must pin below the
     # measured header there too.  Read-only; no change set is touched.
     "invoice": {"section_navigation": True},
+    # U-C4 G03: the receipt/income rebuild adds `data-sc-anchor` groups and moves
+    # the source-trace facts into one section, so the same read-only battery is
+    # the mechanism assertion for this topic: every 章节入口 must resolve and
+    # reveal its target, and the command bar / navigation / body bands must stay
+    # separated at 1088 and 390.
+    # `record_surface` additionally replays the same battery on the governed
+    # sample so the container conditions that can only resolve on an existing
+    # record (责任余额 page keyed on the responsibility summary, 台账 page keyed
+    # on the treasury ledger) are observed as legal hiding instead of being
+    # reported as a lost fact.  Read-only.
+    "receipt_income": {"section_navigation": True, "record_surface": True},
 }
 if topic not in TOPIC_IDENTITIES:
     raise RuntimeError("unregistered formal form topic")

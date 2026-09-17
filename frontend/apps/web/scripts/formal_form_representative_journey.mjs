@@ -562,8 +562,16 @@ export async function runRepresentativeSurface({ page, scope, contract, out, rep
       if (checks.section_navigation) await assertSectionNavigationBehaviour(page, label, observations);
       if (checks.section_navigation) await assertStickyLayoutSeparation(page, label, observations);
       await page.screenshot({ path: path.join(out, `representative-${scope.topic}-${surface.action_id}-${route.kind}.png`), fullPage: true });
+      // Field-level evidence for the same measured surface: which facts the
+      // renderer actually promoted to nodes.  Read-only, bounded, no secrets;
+      // it turns a section-presence difference into an attributable fact
+      // instead of a guessed cause.
+      const renderedFieldNames = await page.evaluate(() => [...new Set(
+        [...document.querySelectorAll('[data-field-name]')].map((node) => node.getAttribute('data-field-name')),
+      )].filter(Boolean).sort());
       surfaceReport.routes.push({
         kind: route.kind, url: page.url(), fields: await page.locator('[data-field-name]').count(),
+        field_names: renderedFieldNames,
         sections: await page.locator('[data-form-section-navigation] button').count(), findings, observations,
       });
       surfaceReport.status = 'passed';
