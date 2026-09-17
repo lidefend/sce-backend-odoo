@@ -44,6 +44,32 @@
 
 回滚路径：144/6 只置 `active=False`，`contract_json` 原样保留 → 回播置回 `active=True` 即恢复；208/241/242/243 的 `sections/fields/columns` 未行内保留，回滚方式为 **`git revert` 对应提交**（`b4bf7df0`/`1116c1ad`）。
 
+### 2.1 文件归属（接管前已有 / 接管后修改 / 仅验证）
+
+口径：`git diff --name-status 1cf2a151..80099b7d` 共 **11 个路径**（`A`=本批新增，`M`=接管后修改）。
+**唯一写入者＝本会话执行体**；除本候选外的 3 个历史保留工作树本轮未触碰。
+
+| # | 路径 | 接管前状态 | 本批动作 | 层 | 提交 |
+|---|---|---|---|---|---|
+| 1 | `addons/smart_construction_core/views/core/payment_execution_views.xml` | 接管前已有 | **接管后修改**（9 章节加 `name`+`data-sc-anchor`、删组内重复 `state`、补 `created_time`/`creator_name`、保留 3 个无标题包装组） | P0 | `b4bf7df0` |
+| 2 | `addons/smart_construction_core/data/payment_execution_actual_outflow_form_productization_contract.xml` | 接管前已有 | **接管后修改**（241/242/243 → `native_semantic_surface`） | P1 | `1116c1ad` |
+| 3 | `addons/smart_construction_core/data/payment_request_form_productization_contract.xml` | 接管前已有 | **接管后修改**（208 → `native_semantic_surface`，保留 `semantic_anchors`） | P1 | `1116c1ad` |
+| 4 | `addons/smart_construction_core/data/view_orchestration_form_section_contract_data.xml` | 接管前已有 | **接管后修改**（144 置 `active=False`） | P1 | `1116c1ad` |
+| 5 | `addons/smart_construction_core/data/p1_daily_business_form_orchestration_contract_data.xml` | 接管前已有 | **接管后修改**（6 置 `active=False`） | P1 | `1116c1ad` |
+| 6 | `addons/smart_construction_core/tests/__init__.py` | 接管前已有 | **接管后修改**（注册新测试模块） | P4 | `0e88d252` |
+| 7 | `addons/smart_construction_core/tests/test_payment_execution_native_lowcode.py` | — | **本批新增**（336 行 / 7 测） | P4 | `0e88d252` |
+| 8 | `scripts/verify/local_dev_form_lowcode_scope.py` | 接管前已有 | **接管后修改**（新增只读代表 topic `payment_execution`） | P4 | `0e88d252` |
+| 9 | `docs/engineering_convergence/complexity_budget_report.md` | 接管前已有（生成物） | **接管后修改**（生成刷新） | P4 | `0e88d252` |
+| 10 | `docs/ops/iterations/form_structure_consumption_stabilization_20260917.md` | 接管前已有 | **接管后修改**（总记录 §8.21 入档） | 记录 | `0e88d252`／`3c4346bf`／`9c928dea` |
+| 11 | `docs/ops/iterations/uc4_payment_execution_native_lowcode_20260918.md` | — | **本批新增**（批次记录；其后仅记录更正与身份形式） | 记录 | `0e88d252` 起，`3c4346bf`／`9c928dea`／`3a63db32`／`80099b7d` 更正 |
+
+**仅验证、未修改**（不得计入本批改动）：
+
+- `addons/smart_core/**`：`git diff 1cf2a151..80099b7d -- addons/smart_core/` **为空** → 本批**消费**已有的展示副本协议与并集排除机制，未改 P0 共享层代码。
+- `docs/ops/iterations/form_structure_compatibility_consumers_v1.json`：**未改**（台账保持 36 的迁移前快照，扣减留待合入后核对）。
+- `artifacts/uc4-representative/**`：仓库外 `sce-offrepo/artifacts`（符号链接，不在 git 内）→ 只读重放脚本与原始输出，属**证据**而非代码改动。
+- 非本轮草稿（163/190/192/194/233/267/274/276）：**仅只读观察**，未消费、未修改。
+
 ## 3. 机制审查结论（先审查，再决定登记范围）
 
 | 规则 | 结论 |
@@ -118,8 +144,9 @@ L2 行为断言（非实现字符串）：三入口声明为 `native_semantic_su
 - `make ci.delivery.freeze.prepare` PASS（每轮冻结前生成证据均无未提交改动；日志 `freeze-prepare-g04-r{2,3,4}.log`）。
 - 身份沿革（每轮均为**纯文档/只读证据**变更，产品代码未变，页面证据按规则沿用不受影响）：
   `0e88d252…`（L1–L4 + 首个 Quick PASS）→ `3c4346bf…`（按独立复核结论更正 4 处记录陈述）→
-  `9c928dea…`（§8 入档、差异口径与可复算证据留档、台账现状说明）→ `3a63db32…`（§8 改为引用证据文件的身份形式，复核 APPROVE）。
-- 独立复核（两轮均 REQUEST_CHANGES，均已闭环；详 `tmp/g04-evidence/review.md`）：轮次 1 仅涉及记录陈述
+  `9c928dea…`（§8 入档、差异口径与可复算证据留档、台账现状说明）→ `3a63db32…`（§8 改为引用证据文件的身份形式，复核 APPROVE）→
+  `80099b7d…`（§8 去重「记录更正」段、补齐身份沿革；复核 APPROVE）。
+- 独立复核（轮次 1/2 均 REQUEST_CHANGES、轮次 3 身份确认 APPROVE，均已闭环；详 `tmp/g04-evidence/review.md`）：轮次 1 仅涉及记录陈述
   （工作树计数、"逐字节相同"断言、23 字段构成、837 record 章节数），已按只读重放结果更正并撤回不成立断言，
   并确认代码无 S0/S1/S2；轮次 2 仅涉及冻结身份卫生（记录改动后工作树不再 clean），
   已以「提交 + 重新冻结 + exact-head Quick」消除；轮次 3 身份确认 **APPROVE**（工作树 clean、指纹重算一致、
