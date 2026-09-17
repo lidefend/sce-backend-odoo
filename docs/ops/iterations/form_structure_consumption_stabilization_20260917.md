@@ -1058,9 +1058,36 @@ L3 `local.dev.upgrade` PASS（78 modules）；L4 代表面 792/798/793 create �
 台账零改动）。复核提出的可移植性缺陷已闭环：测试改用 xmlid 寻址视图，不再硬编码库内 id 1633／1632
 （副本库与 clean/tenant 库 id 不同会让该测试失败）。代表面 L4 的 792=36／798=29／793=35 字段差已补归因：
 三入口结构层一致（同视图 57 个 field 节点、节点级 modifier 逐项相同），差在**入口业务类别的字段策略层**
-（798 声明 `finance.deduction.bill`，其 `form_policy_json` 带来 `fieldGroups` 与 4 条额外 REQUIRED，
+（798 声明 `finance.deduction.bill`，其 `form_policy_json` 带来 `fieldGroups` 与 category-sourced REQUIRED 规则；
+规则条数是 10 比 7、**差 3 而非 4**——`project_id` 在 798 由类别规则承担、在 793 由通用标记规则承担，属同一字段换来源），
 并使 13 个 widget 转 `visible=false`／`auth=none`；793 无业务类别，回落通用策略），DOM 上只体现为
 `company_contractor_*`×5 ＋ `reject_reason` 这 6 个字段（批次记录 §7.1）。一处包装 `<group>` 缩进错位按
 纯 cosmetic 记录、本批不改。
 
-状态：**批次验收中（未冻结）｜未集成｜未部署｜89 入口交付未完成｜台账 34（扣减待合入后核对）**。
+### 8.23.1 第三轮回环：`readonly` 放宽回归（已修）与 `state` 候选缺口（未改）
+
+第二轮提交 `b2b12365` 的独立只读复核结论 **REQUEST_CHANGES**，其中一条是**真实回归**：792 的
+`company_name_text`／`paid_amount`／`payment_state` 从「退役配置声明只读」变为契约层 `auth=edit`。
+首次偏差在**原生 arch 的声明不完整**——217 去结构后原生 arch 是唯一载体，而 1633 上两个付款事实只是
+**条件**只读（`state in ['done','legacy_confirmed','cancel']`）、`company_name_text` 无条件，create 档
+（`state='draft'`）下三字段全部落到可编辑；对照 1632 同族字段本就是 `readonly="1"`。
+
+修复层：**P1 行业标准默认**（`smart_construction_core` 原生视图），3 行改动；
+测试同批把断言从「编译后的 arch 字符串」升级为「渲染器实际消费的策略层」
+（每个声明只读事实在 `statusContract.widgetStatus` 中的 `readonly` 必须为真）。
+验证：L1 PASS（16 tests）、L2 后端 9 tests / 0 failed、L3 PASS（78 modules）、只读探针 792 `LOSS=[]`、
+L4 代表面重跑 PASS（36／29／35 字段、8 章节、导航 8/8、吸顶在 1088 与 390 两个视口均分离 13px、
+`findings` 全空、`restored=true`）。本轮**观察到 1 次 Vite dev 模块传输中断**
+（`ERR_NETWORK_CHANGED`×4，`recovery_attempt=renavigate_once`、`recovered=true`）：按既有口径单独记录，
+不改写成零错误，也不作为「网络已恢复」的判据。
+
+同轮登记但**未修改**的候选缺口：793 以及另外 6 个无入口声明的入口（794／815／839／840／841／842），
+其 `state` 在契约层为 `auth=edit`——792／798 的 `state` 只读来自**业务类别** `form_policy_json`，
+而全部 14 份入口契约与 25 份类别策略一致声明 `state` 只读，故 793 是 17 个入口中唯一可编辑者。
+不修改的三条依据：① 非本批回归（基线 793 无入口契约；内存内剔除 528 的对照实验得到同一 `state` 行）；
+② 唯一可用载体是**模型默认表单视图** 1632，收紧会波及 6 个批外入口，违反「门控不得移除合法动作入口」；
+③ 入口级最小修复被机制禁止（`is_configured_surface` 只接受 tenant_lowcode／user_preference，
+`source=…product_release` 加 `node_patches` 会命中 `CONFIG_SOURCE_NOT_AUTHORIZED`）。
+详见批次记录 §11.4 与 §13。
+
+状态：**第三轮回环中（回归已修，待重走冻结链）｜未集成｜未部署｜89 入口交付未完成｜台账 34（扣减待合入后核对）**。

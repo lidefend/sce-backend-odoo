@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import re
+
 from odoo.tests.common import TransactionCase, tagged
 
 
@@ -115,6 +117,12 @@ class TestExpenseClaimNativeLowcode(TransactionCase):
     DECLARED_READONLY_CLAIM_FACTS = (
         "reject_reason", "legacy_source_model", "legacy_source_table", "legacy_record_id",
         "legacy_document_no", "legacy_document_state", "creator_name", "created_time",
+        # 217 declared these three unconditionally read-only.  The native arch already
+        # carried a *conditional* read-only for the two payment facts, so retiring the
+        # configuration body silently made them editable while the entry is still a
+        # draft; company_name_text carried no restriction at all.  The arch now states
+        # the same restriction the retired body declared.
+        "company_name_text", "paid_amount", "payment_state",
     )
     DECLARED_READONLY_DEDUCTION_FACTS = (
         "claim_flow_label", "company_id", "company_name_text", "paid_amount", "unpaid_amount",
@@ -209,6 +217,15 @@ class TestExpenseClaimNativeLowcode(TransactionCase):
         nodes = [n for n in self.tree_nodes(data) if n.get("type") == "field" and n.get("name") == name]
         self.assertEqual(len(nodes), 1, "expected single occurrence of %s" % name)
         return nodes[0]
+
+    def widget_status(self, data):
+        """Per-field policy the compiled contract hands to the renderer."""
+        rows = {}
+        for row in (data.get("statusContract") or {}).get("widgetStatus") or []:
+            match = re.match(r"^field\.([^.]+)\.occ\.", str(row.get("widgetId") or ""))
+            if match:
+                rows.setdefault(match.group(1), row)
+        return rows
 
     def group_node(self, data, container_id):
         groups = [n for n in self.tree_nodes(data)
@@ -382,9 +399,14 @@ class TestExpenseClaimNativeLowcode(TransactionCase):
             (self.DEDUCTION_ENTRY, self.DECLARED_READONLY_DEDUCTION_FACTS, self.AUTHORABLE_DEDUCTION_FACTS),
         ):
             data = self.contract(action_key, view_id)
+            status = self.widget_status(data)
             for name in readonly_facts:
                 node = self.field_node(data, name)
                 self.assertTrue((node.get("modifiers") or {}).get("readonly"), (action_key, name))
+                # the declaration must survive into the policy the renderer consumes,
+                # not only into the compiled arch string
+                self.assertTrue((status.get(name) or {}).get("readonly"),
+                                (action_key, name, "declared read-only fact is editable in the contract"))
             for name in authorable:
                 node = self.field_node(data, name)
                 self.assertFalse((node.get("modifiers") or {}).get("readonly"), (action_key, name))

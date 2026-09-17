@@ -32,23 +32,25 @@
 
 ## 2. 实际改动
 
-1. `views/core/expense_claim_views.xml`（75+/24-）：两个共享表单加 10／9 个 `data-sc-anchor` 业务章节锚点；
-   按退役配置反推的原生缺失字段全部补回（1633 补 9 个，1632 补 24 个），无任何配置声明字段仍缺失；
-   头部 6 个按钮保持不变，`action_view_company_contractor_responsibility_summary` 保持为章节内载体（非 header）。
+1. `views/core/expense_claim_views.xml`（77+/26-）：两个共享表单加 10／9 个 `data-sc-anchor` 业务章节锚点；
+  按退役配置反推的原生缺失字段全部补回（1633 补 9 个，1632 补 24 个），无任何配置声明字段仍缺失；
+  头部 6 个按钮保持不变，`action_view_company_contractor_responsibility_summary` 保持为章节内载体（非 header）。
+   **第三轮回环新增 3 行改动**（见 §11）：`paid_amount`／`payment_state` 由条件只读收紧为 `readonly="1"`，
+   `company_name_text` 补 `readonly="1"`。
 2. `data/expense_claim_form_productization_contract.xml`（85 变更行）：
    - 217（报销申请）、222（扣款登记）`contract_json` 改为 `{'title': …, 'composition_mode': 'native_semantic_surface'}`，
      删除 `sections/fields/columns`（配置侧结构副本）；其余 14 份入口级契约未改。
    - **新增** `business_config_contract_expense_claim_advance_fund_productized_form_v1`（action 793，`title=备用金`，
      `native_semantic_surface`，无 sections/fields/columns）。模型级 `sc_expense_claim_form_structure_generated_v1`(72)
      **保留原样**（`active=True`、`action_id` 为空），继续服务其其它消费者。
-3. `tests/test_expense_claim_native_lowcode.py`（新增 578 行 / 9 测）+ `tests/__init__.py` 注册。
+3. `tests/test_expense_claim_native_lowcode.py`（新增 604 行 / 9 测）+ `tests/__init__.py` 注册。
    独立复核指出的可移植性缺陷已修：三入口与兄弟入口的视图改用 xmlid（`view_sc_expense_claim_form` /
    `view_sc_expense_claim_deduction_registration_form`）寻址，不再硬编码库内 id 1633／1632——副本库或
    clean/tenant 库里同一视图的 id 不同，硬编码会让本测试在那些库上失败。
-4. `frontend/apps/web/scripts/native_section_navigation_test.ts`（162+/1-）：共享机制用例（空容器不吞按钮/关系/投放目标、
+4. `frontend/apps/web/scripts/native_section_navigation_test.ts`（161+/1-）：共享机制用例（空容器不吞按钮/关系/投放目标、
    父级仅剩隐藏子节点不产生导航项、正文与导航同源）。
 5. `frontend/apps/web/scripts/formal_form_representative_journey.mjs`（+20）、`formal_form_lowcode_loop.mjs`（+8）、
-   `scripts/verify/local_dev_form_lowcode_scope.py`（36 变更行）：代表面「未覆盖」显式登记（见 §6）。
+   `scripts/verify/local_dev_form_lowcode_scope.py`（35+/1-）：代表面「未覆盖」显式登记（见 §6）。
 
 回滚路径：217/222 与新增的 793 契约只要 `active=False`（或 `git revert`）即回到迁移前；
 模型级 72 未被修改，`git revert` 本批提交即可整体回退。原生补字段与锚点的回滚同样是 `git revert`（纯展示层，无数据迁移）。
@@ -59,7 +61,7 @@
 |---|---|---|---|---|
 | 1 | `addons/smart_construction_core/views/core/expense_claim_views.xml` | 接管前已有 | **接管后修改**（锚点＋补字段） | P1 |
 | 2 | `addons/smart_construction_core/data/expense_claim_form_productization_contract.xml` | 接管前已有 | **接管后修改**（217/222 去结构 + 新增 793 入口声明） | P1 |
-| 3 | `addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py` | — | **本批新增**（578 行 / 9 测） | P4 |
+| 3 | `addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py` | — | **本批新增**（604 行 / 9 测） | P4 |
 | 4 | `addons/smart_construction_core/tests/__init__.py` | 接管前已有 | **接管后修改**（注册测试模块） | P4 |
 | 5 | `frontend/apps/web/scripts/native_section_navigation_test.ts` | 接管前已有 | **接管后修改**（机制用例） | P0（机制由测试锁定，未改 `smart_core` 源码） |
 | 6 | `frontend/apps/web/scripts/formal_form_representative_journey.mjs` | 接管前已有 | **接管后修改**（未覆盖登记） | P4 |
@@ -91,14 +93,18 @@
 
 ## 4. 分层验证结果（实际执行）
 
-| 层 | 入口 | 结果 |
-|---|---|---|
-| L1 | `make ci.local.iteration` | **PASS**：16 tests OK；`change_state=dirty coverage=L1_only receipt=none` |
-| L1/L2（前端机制） | `make verify.frontend.native_section_navigation.unit` | **PASS**：`authority=7 next_action=3 content_identity=11 active_tracking=7 structure_consumption=7` |
-| L2（前端类型） | `make verify.frontend.typecheck.strict` | **PASS**（`vue-tsc --noEmit -p tsconfig.strict.json` 无输出即通过） |
-| L2（后端） | `make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestExpenseClaimNativeLowcode'` | **PASS**：`0 failed, 0 error(s) of 9 tests` |
-| L3 | `make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1` | **PASS**：78 modules loaded ＋ `local.dev.demo.authority` PASS |
-| L4 | `make local.dev.form_lowcode.browser FORM_LOWCODE_TOPIC=expense_claim FORM_LOWCODE_REPRESENTATIVE=1` | **PASS**：三入口 create 通过，**3 项**登记事实未覆盖（§6 表 3 行） |
+| 层 | 入口 | stage identity（HEAD ＋ dirty 范围） | 结果（含日志／证据路径） |
+|---|---|---|---|
+| L1 | `make ci.local.iteration` | `b2b12365` ＋ dirty `{views/core/expense_claim_views.xml, tests/test_expense_claim_native_lowcode.py}`（第三轮） | **PASS**：16 tests OK；`change_state=dirty coverage=L1_only receipt=none`（L1 不入交付证据） |
+| L1/L2（前端机制） | `make verify.frontend.native_section_navigation.unit` | 同上（第三轮补跑） | **PASS**：`authority=7 next_action=3 content_identity=11 active_tracking=7 structure_consumption=7` |
+| L2（前端类型） | `make verify.frontend.typecheck.strict` | 同上（第三轮补跑，因第二轮改过 `native_section_navigation_test.ts`，其输入已变） | **PASS**（`vue-tsc --noEmit -p tsconfig.strict.json` 无输出、退出 0） |
+| L2（后端） | `make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestExpenseClaimNativeLowcode'` | 同上（第三轮） | **PASS**：`0 failed, 0 error(s) of 9 tests` |
+| L3 | `make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1` | 同上（第三轮）；运行身份 `project=sc-local-dev db=sc_dev_demo` | **PASS**：78 modules loaded（58254 queries）＋ `local.dev.demo.authority` PASS（`finance_xmlid=present finance_membership=authoritative company_currency=CNY sale_tax_9=present`） |
+| L4 | `make local.dev.form_lowcode.browser FORM_LOWCODE_TOPIC=expense_claim FORM_LOWCODE_REPRESENTATIVE=1` | 同上（第三轮重跑：原生 arch 已变，页面证据按依赖作废后重取） | **PASS**：三入口 create 通过，**3 项**登记事实未覆盖（§6 表 3 行）。证据：`artifacts/lowcode-form-loop/browser/representative-report-expense_claim.json`（sha256 `c04bc2c1769524f894277d9786611695f0362c9a344bffb62898dbacafa5573c`）＋ 三张 `representative-expense_claim-{792,798,793}-create.png` |
+
+stage identity 口径：本批仍处**批次验收中（未冻结）**，按「日迭代＝HEAD＋显式 dirty 范围」记录，不写 full fingerprint、不称 frozen；
+交付阶段的干净 HEAD ＋ 完整指纹在冻结步骤单独生成（§9）。第一轮（`ba3f5da7` ＋ 首轮全量 dirty）的 L1／L2 前端／L2 类型回执
+已被第二轮的 TS 测试改动与第三轮的 arch 改动取代，不再引用。
 
 L2 覆盖的 9 个用例：入口契约单一原生结构、legacy 章节被抑制且登记 `compatibility_dependencies`、
 兄弟契约保持自身结构、声明事实恰好渲染一次、readonly 规则、锚点/包装组/条件章节、o2m 明细独立承载、
@@ -167,9 +173,18 @@ L2 覆盖的 9 个用例：入口契约单一原生结构、legacy 章节被抑�
 | 798 扣款登记 | create | 29 | 8 | 全空 | 8/8 resolved+visible | 分离（同上） |
 | 793 备用金 | create | 35 | 8 | 全空 | 8/8 resolved+visible | 分离（同上） |
 
-`failed_requests=0`、`browser_errors=[]`、`transport_recoveries=[]`、`cleanup_guard.decision=proceed`、`restored=true`。
-本次运行 **没有**传输中断，但按既有口径这只是「本次运行未观察到中断」，不构成「网络已恢复正常」的判据；
-`ERR_NETWORK_CHANGED` 仍按 Vite dev 模块传输中断记录（既非接口故障，也不得改写成零错误）。
+`browser_errors=[]`、`representative_blocked=[]`、`cleanup_guard.decision=proceed`、`recovery_state.released=true`、`restored=true`。
+吸顶分离在 1088 与 390 两个视口均为 **13px**（1088：`actions 175–205` / `nav 218–257`；390：`actions 251–281` / `nav 294–347`），
+每个章节跳转后的 `target.top` 都大于 `nav.bottom`（无重叠）。
+
+**传输口径（第三轮实况，不得改写成零错误）**：本轮 **观察到 1 次传输中断**——
+`transport_recoveries=[{stage: post_navigation_mount, classification: environment_transport, aborted_module_requests: 4,
+recovery_attempt: renavigate_once, recovered: true}]`，4 个被中断的请求全部是 Vite dev 模块
+（`/src/components/professional-fields/*.vue`），错误 `net::ERR_NETWORK_CHANGED`；同一记录也出现在
+`diagnostics.failed_requests`（4 条）。按既有口径：这是 **Vite dev 模块传输中断**，不是接口故障，
+也不是「已恢复」的判据——恰好 recover 成功只说明本次重导航后页面可用，不证明网络故障已消失。
+同一运行内 `diagnostics.intents` 的 5 条 `ui.contract.v2` 全部 `status=200, ok=true`（1327–3078ms），
+说明被中断的不是契约请求本身。
 
 ### 7.1 798=29 与 793=35 字段差的归因（同视图 1632、同 create profile）
 
@@ -180,23 +195,38 @@ L2 覆盖的 9 个用例：入口契约单一原生结构、legacy 章节被抑�
    节点级 diff（`modifiers`／`attributes`／`occurrenceIndex`）在这些字段上逐项相同；`formStructureContract` 除
    `navigation.title` 与 `sourceAuthority.governance_source.businessConfigContracts`（222↔528 入口声明）外无实质差异。
    即两入口的结构权威、结构来源、容器树一致。
-2. **策略层有差**：`statusContract.widgetStatus` 中 798 有 **27** 个 widget `visible=false`，793 有 **14** 个；
-   只在 798 被置为不可见／`auth=none` 的恰好 **13** 个：
+2. **策略层有差**：`statusContract.widgetStatus` 中 798 有 **27** 个 widget `visible=false`，793 有 **14** 个
+   （第三轮用只读探针重算并已存档口径，见下「可复现性」）；只在 798 被置为不可见／`auth=none` 的恰好 **13** 个：
    `company_contractor_{responsibility_state,arrival_unprocessed_amount,arrival_over_processed_amount,self_funding_balance,responsibility_notice}`、
    `reject_reason`、`creator_name`、`created_time`、
    `legacy_{source_model,source_table,record_id,document_no,document_state}`。
 3. **成因是入口业务类别**：798 的 action context 声明 `default_business_category_code=finance.deduction.bill`
    且 `allowed_business_category_codes=['finance.deduction.bill']`，该类别 `form_policy_json` 额外提供
-   `dataContract.dataMeta.fieldGroups`（仅 798 有，793 为 `null`）与 4 条额外 `REQUIRED` 规则
+   `dataContract.dataMeta.fieldGroups`（仅 798 有，793 为 `null`）与 **4 条** category-sourced `REQUIRED` 规则
    （`business_category_id`／`project_id`／`partner_id`／`deduction_line_ids`，source=`sc.business.category.form_policy_json`），
-   使 798 的 `runtimeContract.validationRules` 为 10 条；793 无业务类别，回落通用
-   `visible_form_required_marker` 策略，为 7 条。
+   使 798 的 `runtimeContract.validationRules` 为 **10** 条；793 无业务类别，全部 7 条都回落通用
+   `visible_form_required_marker` 策略。**规则条数差是 3 不是 4**：`project_id` 在 798 由类别规则承担、
+   在 793 由通用标记规则承担，属**同一字段换来源**而非新增规则（早前「7＋4＝10」的算术写法有误，此处更正）。
 4. **与 DOM 计数对齐**：浏览器 `[data-field-name]` 包装数为 792=36／798=29／793=35；798 比 793 少的 **6 个**正好是
    上述 13 个里的 `company_contractor_*`×5 ＋ `reject_reason`。其余 7 个（`creator_name`、`created_time`、
    `legacy_*`×5）在 **798 与 793 的 DOM 中都不出现**（两入口一致），因此不参与该差值。
 
+**可复现性（第三轮补齐）**：本节第 2／3 条的数字可由只读探针复算，命令与取值路径如下，不再依赖未存档的观察：
+`env["ui.business.category"]` → 798 解析到 `finance.deduction.bill`、793 解析到无类别；
+`statusContract.widgetStatus[].visible` 计数 → 27／14；`widgetStatus[].auth in (None,'none')` → 26／3；
+`runtimeContract.validationRules` 的 `source` 分布 → 798 = `{sc.business.category.form_policy_json: 4, visible_form_required_marker: 6}`、
+793 = `{visible_form_required_marker: 7}`；`dataContract.dataMeta.fieldGroups` → 798 为 dict、793 为 `null`。
+第 1 条的「57 个 field 节点」与第 4 条的 DOM 差集在本轮 L4 报告
+（`representative-report-expense_claim.json` 的 `stages.representative[].routes[].field_names`）中可直接复算：
+`793 − 798 = {company_contractor_*×5, reject_reason}`（6 项）、`798 − 793 = ∅`。
+**仍未存档、不作为依据**：早前写过的「58／57 节点级 diff 明细」「13 个不可见字段的逐字段来源」没有独立存档文件，
+本节只保留可由上述取值路径复算的部分。
+
 含义：798=29 与 793=35 的差**不是**结构被吞或被修剪，而是同一结构在不同入口业务类别下的字段策略结果。
 本批不改业务类别 `form_policy_json`；若后续要求 798 呈现 `company_contractor_*`，责任层是业务类别策略，不是原生 arch。
+**口径限制**：本节只证明「编译树里每个声明事实仍存在且只出现一次」与「策略层的可见性/可编辑性差异」，
+**没有**证明 798 的这 13 个字段在**真实浏览器中**逐个不可见（本轮 L4 只按 `[data-field-name]` 包装计数与
+`sections`/`navigation` 断言，未做 13 项的逐字段可见性断言）。
 
 ## 8. 回滚与数据边界
 
@@ -207,17 +237,18 @@ L2 覆盖的 9 个用例：入口契约单一原生结构、legacy 章节被抑�
 
 ## 9. 状态与下一步
 
-状态：**批次验收中（未冻结）｜未集成｜未部署｜89 入口交付未完成｜台账 34（扣减待合入后核对）**。
+状态：**第三轮回环中（`readonly` 放宽回归已修，待重走冻结链）｜未集成｜未部署｜89 入口交付未完成｜台账 34（扣减待合入后核对）**。
 
-下一步（按既有顺序）：生成证据准备与预检 → 冻结干净 HEAD 与完整指纹 → 一次 exact-head Quick →
-独立复核 → 外部归档与 PR 正文 → 合入后按 G03/G04 先例做扣减（34 → 32，退役 792/798/793 与视图 1632/1633，
-旁路 menu 543 登记 `bypassConsumers` 不计数，`nextBatch.selectedGroup=G06`）。
+下一步（按既有顺序）：记录第三轮回环（§11）→ 提交 → `ci.delivery.freeze.prepare` → 冻结干净 HEAD 与完整指纹（§12）→
+一次 exact-head Quick → 第二轮独立复核 → 外部归档与 PR 正文 → 合入后按 G03/G04 先例做扣减
+（34 → 32，退役 792/798/793 与视图 1632/1633，旁路 menu 543 登记 `bypassConsumers` 不计数，
+`nextBatch.selectedGroup=G06`）。
 
 本批不扩：约六组副本候选继续留台账；G06（税额与专项抵扣 790/879，视图 1654）另行准备，不在本批实施。
 
 ## 10. 独立复核闭环与本轮记录修正
 
-独立复核（只读）结论 **APPROVE**；无写路径、无授权绕过、无丢失业务事实、无 scope creep
+第二轮之前的独立复核（只读）结论 **APPROVE**；无写路径、无授权绕过、无丢失业务事实、无 scope creep
 （`addons/smart_core/**` 零改动、台账零改动）。复核提出的问题与本轮处置：
 
 | 复核项 | 处置 | 状态 |
@@ -230,7 +261,118 @@ L2 覆盖的 9 个用例：入口契约单一原生结构、legacy 章节被抑�
 | 798=29 与 793=35 字段差无依据 | 补 §7.1 归因（结构层一致、差在业务类别字段策略层） | **已修** |
 | `views/core/expense_claim_views.xml:333-335` 包装 `<group>` 缩进错位 | 纯 cosmetic、不影响 XML 语义与渲染；本批**不改**，避免为此作废 L3／L4 页面证据，留待下次触碰该文件时一并整理 | 已知未改 |
 
-证据失效判定：本轮变更仅 `tests/test_expense_claim_native_lowcode.py`（P4 测试）与两份记录（`docs/`）；
+证据失效判定（第二轮）：变更仅 `tests/test_expense_claim_native_lowcode.py`（P4 测试）与两份记录（`docs/`）；
 `addons/**` 下唯一改动落在 `tests/`，无产品运行路径改动（`git diff --name-only` 可核），
-故 L1 重跑、L2 后端定向重跑；L2 前端／L3／L4 页面证据的输入（前端源码、原生 arch、入口声明、数据文件）
-未变，按不变输入沿用并在本条登记依据。
+故 L1 重跑、L2 后端定向重跑；当时 L2 前端／L3／L4 页面证据的输入未变，按不变输入沿用（该沿用已被第三轮取代，见 §11）。
+
+## 11. 第三轮回环：独立复核发现并修复 `readonly` 放宽回归
+
+### 11.1 现象与首次偏差
+
+第二轮提交 `b2b12365` 的独立只读复核结论 **REQUEST_CHANGES**，其中一条为**真实回归**（major）：
+
+> 792 入口（`action_sc_expense_claim_reimbursement_request`，视图 1633）的 `company_name_text`、`paid_amount`、
+> `payment_state`，从「退役配置声明只读」变成了契约层 `auth=edit`。
+
+**首次偏差定位**：退役前 217 的配置体对这三个字段声明 `readonly`；本批把 217 改为 `native_semantic_surface`
+并删除 `sections/fields`（配置侧结构副本）后，原生 arch 是唯一剩余载体，而 1633 上
+`paid_amount`／`payment_state` 只是**条件**只读（`state in ['done','legacy_confirmed','cancel']`）、
+`company_name_text` 连条件都没有。因此 create 档（`state='draft'` 缺省）下三字段全部落到 `auth=edit`。
+对照 1632 的同族字段本就是 `readonly="1"`——**同一模型两个共享视图的声明并不一致**，而本批只核对了
+「字段是否存在」，未核对「声明是否活到策略层」。这是本批的方法缺口，不是环境问题。
+
+**归因链（每步实测）**：
+
+1. 只读探针对 792 逐字段矩阵：`LOSS = [company_name_text, paid_amount, payment_state]`，其余 16 项无丢失。
+2. 从基线 `8e8c1ce9` 的 `expense_claim_form_productization_contract.xml` 用 `ast.literal_eval` 解出 217 的
+   `contract_json`：49 个字段中 19 个 `readonly: True`，包含这三项；222 为 53 字段中 26 项。
+3. 原生 arch 对照：1633 三字段如上；1632 同族已 `readonly="1"`。
+4. 合并方向证据：`addons/smart_core/core/view_orchestrator.py:1103` `_apply_field_display_policy`——
+   policy `readonly: True` **强制**节点只读，`readonly: False` 仅在原生无限制时生效；`:975` 归一化 `readonly`。
+   因此「把声明写回原生 arch」既不与 217/222 冲突，也对其它 1633 消费者**不产生收紧**（它们本就只读或不可见）。
+
+### 11.2 修改层与改动
+
+责任层：**P1 行业标准默认**（`smart_construction_core` 原生视图），不是 P0 机制、不是运行时配置。
+`views/core/expense_claim_views.xml` 共 3 行：
+
+- `paid_amount`：`readonly="state in ['done','legacy_confirmed','cancel']"` → `readonly="1"`
+- `payment_state`：同上 → `readonly="1"`
+- `company_name_text`：补 `readonly="1"`
+
+测试同批加固（P4）：`DECLARED_READONLY_CLAIM_FACTS` 补入这三项，并新增 `widget_status()` 读取器，
+使断言从「编译后的 arch 字符串」升级为「**渲染器实际消费的策略层**」：
+每个声明只读事实在 `statusContract.widgetStatus` 中的 `readonly` 必须为真。
+
+### 11.3 验证
+
+| 项 | 结果 |
+|---|---|
+| L1 `make ci.local.iteration` | PASS（16 tests） |
+| L2 后端定向 | PASS：`0 failed, 0 error(s) of 9 tests`（含新断言） |
+| L3 `local.dev.upgrade` | PASS：78 modules ＋ demo authority |
+| 只读探针（从 DB 实际 arch 解析） | **792 `LOSS=[]`、`HARD_NONREADONLY=[]`**；三字段 `ctl_ro=true`（`company_name_text`：`model_ro=false / arch_ro="1" / ctl_ro=true`） |
+| L4 代表面重跑 | PASS（§7 表；页面证据按依赖作废后重取，报告 sha256 `c04bc2c1…`） |
+
+**793 的 `state` 不再计入本项**：探针显示 793 的 `state` 为 `auth=edit`，但 793 从未声明过该事实
+（基线无入口契约），且 `state` 在 1632 由 `widget="statusbar"` 承载、前端 `normalizeNativeFormStatusbar`
+另有 `fieldReadonly || profile=readonly || !rights.write` 门控，**create 档 `recordId` 为空时状态条 `visible=false`**。
+因此它不是「声明丢失」，而是下述候选缺口。
+
+### 11.4 登记为候选缺口（未在本批修改）：无声明入口的状态条可写
+
+**事实**（第三轮只读实测，17 个 `sc.expense.claim` 表单入口全扫）：
+
+- 792/798 的 `state` 只读来自**业务类别** `form_policy_json`
+  （`readonly_profiles: [create, edit, readonly]`），不是原生 arch；
+- 全部 14 份入口契约与 25 份类别策略**一致**声明 `state` 只读，没有任何来源声明它可编辑；
+- 结果：**793 是 17 个入口中唯一 `state` 为 `auth=edit` 的入口**（`readonly=false`），
+  另有 6 个无任何入口声明的入口（794／815／839／840／841／842）同型。
+
+**为什么不在本批修**（三条都可核）：
+
+1. **不是本批回归**：基线 793 没有入口契约，只用模型级 72 时 `state` 同样是 `readonly=false`；
+   内存内剔除 528 的对照实验（`_effective_view_orchestration_contracts` 过滤）得到同一 `state` 行。
+2. **可用载体只有共享原生 arch，而 1632 是模型默认表单视图**
+   （`sc.expense.claim.get_view(view_type='form')` → 1632），加 `readonly="1"` 会同时收紧上述 6 个**批外**入口。
+   这 6 个入口不在本批登记面内，其状态流转的合法入口尚未核验，直接收紧会违反
+   「确认合法动作不会因门控而失去入口」。
+3. **入口级最小修复在当前机制下不被允许**：`form_configuration_compiler.is_configured_surface` 只接受
+   `tenant_lowcode_configuration` / `user_preference_projection`；793 的 528 是 `source=…product_release`，
+   若在其中加 `node_patches` 会命中 `CONFIG_SOURCE_NOT_AUTHORIZED`（前缀还会命中
+   `CONFIG_TARGET_BINDING_REQUIRED`）。要在此层修复需改 P0 机制，超出本批边界。
+
+**影响面（如实登记，不夸大为越权）**：模型层未在 `write()` 中拦截状态跳转，ACL 才是写边界；
+`finance_read` 对 `sc.expense.claim` 只读，但 `finance_user`／`finance_manager` **implies** `finance_read`
+因而可达 793 且具备 create/write——他们打开**既有**备用金记录时状态条可交互。
+也就是说这是**入口间 UX 一致性缺口**与**工作流绕过面**，不是权限绕过。
+**推荐修复方向（留待下一批/机制层决定）**：在 P0 策略层为「无业务类别的入口」提供显式的 workflow-state 只读承载，
+而不是逐入口改共享 arch。
+
+## 12. 身份与冻结口径
+
+本记录按「日迭代＝HEAD＋显式 dirty 范围」书写，**不声称 frozen**；冻结值不写入本文件（写入本文件会改变候选自身的
+commit hash），只出现在冻结步骤生成的产物与外部归档中。
+
+| 阶段 | 身份 | 取值方式 |
+|---|---|---|
+| 迭代期（本记录全篇） | `HEAD=b2b1236595701afa9e7e274c3d0c417658aafac7` ＋ dirty `{views/core/expense_claim_views.xml, tests/test_expense_claim_native_lowcode.py}` | 只读复核已核：HEAD／tree `70d23ed16e5aa62d4d585c3b66300867fb85a550`、两文件为唯一 dirty；本轮进一步加了 §11 的 3 行 arch 改动 |
+| 第一轮提交 | `ba3f5da7ad54f68cb59d5553166f1d9eab6f1598`（tree `7380ca2915e20ecb4f0317d96dd6988a16123f81`） | 已被第二轮取代 |
+| 第二轮提交 | `b2b1236595701afa9e7e274c3d0c417658aafac7` | Quick 回执 `.git/codex/evidence/ci.local.quick/b2b1236595701afa9e7e274c3d0c417658aafac7.json`（PASS）；**已被第三轮取代** |
+| 第三轮提交 → 冻结 | 由本轮提交产生；冻结值见外部归档 `identity.json` / `worktree-fingerprint.json` | `python3 scripts/contract/complete_worktree_fingerprint.py --baseline 8e8c1ce9d4d0fbe63b141cf75475030282f9f9d9` ＋ `make ci.local.quick`（exact-head，一次） |
+
+**L4 报告的自身身份口径**：`representative-report-expense_claim.json` 顶部 `candidate` / `dirty` 记录的是**产生该报告时的
+运行身份**（本轮为 `b2b12365` ＋ `dirty=true`），它是「按当时 HEAD＋dirty 运行」的事实记录，**不是**冻结候选的证明。
+冻结候选身份只认「干净 HEAD ＋ 完整指纹 ＋ exact-head Quick 回执」三件套；报告与截图在归档中作为该次运行的页面证据，
+与其它角色文件一同绑定同一 `candidateHead`。
+
+## 13. 第三轮复核提出、按边界未处置项（不隐藏）
+
+| 项 | 处置 |
+|---|---|
+| 793 及 6 个无声明入口的 `state` 可写（§11.4） | 登记为候选缺口；修它需要 P0 机制或收紧模型默认表单视图，两者都超本批边界 |
+| `sc.expense.claim` ir.rule 组交并被合并为 `&`，非扣款组读域归零（§6） | 批外机制面，只登记不改 |
+| `views/core/expense_claim_views.xml` 包装 `<group>` 缩进错位（§10） | 纯排版，本批不改，避免作废 L3／L4 页面证据 |
+| compatibility 平面 create 档可把整个 primary zone 修剪空且无 fail-closed（§5） | 影响全部 compatibility 入口，超本批边界，登记不改 |
+| G04 遗留：808／811 的 5 个 `company_contractor_*` 合法隐藏未在契约层复现 | 属 G04 批次边界，本批不合并处理 |
+| 837 record 渲染层少 2 个章节入口；「契约字段→渲染节点」逐字段归因 | 未覆盖项，随 G06 准备一并处理 |

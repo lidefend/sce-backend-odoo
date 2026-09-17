@@ -326,9 +326,9 @@
                             <group name="claim_amount_status" data-sc-anchor="claim_amount_status" string="金额与状态">
                                 <field name="amount" string="办理金额" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']"/>
                                 <field name="approved_amount" readonly="state in ['done', 'legacy_confirmed', 'cancel']"/>
-                                <field name="paid_amount" readonly="state in ['done', 'legacy_confirmed', 'cancel']"/>
+                                <field name="paid_amount" readonly="1"/>
                                 <field name="unpaid_amount" readonly="1"/>
-                                <field name="payment_state" readonly="state in ['done', 'legacy_confirmed', 'cancel']"/>
+                                <field name="payment_state" readonly="1"/>
                                 <field name="currency_id" readonly="state in ['approved', 'done', 'legacy_confirmed', 'cancel']" invisible="1"/>
                                 <field name="active"/>
                             </group>
@@ -340,7 +340,7 @@
                             <field name="company_id" readonly="1"/>
                             <field name="partner_id"/>
                             <field name="payment_request_id" invisible="payment_anchor_policy in ['noncash_no_request', 'interfund_no_request']"/>
-                            <field name="company_name_text"/>
+                            <field name="company_name_text" readonly="1"/>
                             <field name="guarantee_project_name"/>
                             <field name="guarantee_type"/>
                         </group>
