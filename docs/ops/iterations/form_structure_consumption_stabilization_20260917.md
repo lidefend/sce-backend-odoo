@@ -993,3 +993,25 @@ popup 创建后立即 `reload()` 会取消首个文档的**在途模块请求**�
 L4 只读代表面 837 create/record、808 create 通过（章节入口全 resolve、吸顶 0 重叠、无重复字段/空容器、业务指纹未变），
 811 为交付导航权威**拒绝访问**（记录为可达性事实，非结构结论）。
 台账保持 **36**（扣减留待合入后核对）；本批未执行 `sync_demo`／fixture reset／发布快照／工作树清理。
+
+## 8.22 G04 主线集成与台账 36 → 34
+
+上一节记的「台账保持 36、扣减留待合入后核对」已闭合：G04 冻结候选
+`04701c175bcca245eb797f66148e3cf13bbf2a37`（tree `f0665b8686b53e2b08eb488282a214898938ee8c`，完整指纹 digest
+`c50877d0c7e1e3b26aafcfefdbd5568b348735a834cd13b5899fa1cf9cfd1bad`，7507 路径，exact-head `ci.local.quick` PASS）
+经 PR #490 合入，main = `87b36441c8940af24ed10cffe300363fc5e3272e`；四个候选门禁在该 head 全部 success，
+`make pr.merge.prep` 与 `make pr.merge`（squash + `--match-head-commit`）依次通过。
+
+台账 `docs/ops/iterations/form_structure_compatibility_consumers_v1.json` 扣减 **36 → 34**
+（退役 action 837/808 与视图 1647，并新增 `uc4G04PublishedAudit`）；共享旁路 action 811
+（往来单位付款）按其「非台账消费者」事实登记在 `bypassConsumers`，不计数、不静默丢弃；
+`nextBatch.selectedGroup` 前进到 **G05 报销/扣款/备用金（792/798/793，视图 1632/1633）**，`sourceMainlineHead` 更新为上述 main。
+
+证据归档：`make workspace.evidence.archive` 8 文件（summary／pr-body／identity／worktree-fingerprint／review／3 张代表面截图）
+回执 `verified`，位于
+`/home/lidefend/workspace/.codex-evidence/workspace-archives/20260918/uc4-g04-payment-execution-native/04701c175bcca245eb797f66148e3cf13bbf2a37/`；
+独立复核共 5 轮（轮次 1/2 REQUEST_CHANGES 仅涉记录陈述与冻结身份卫生，轮次 3/4/5 APPROVE），结论与残留风险见该归档 `review.md`。
+
+状态：**批次验收完成（本批范围）｜主线集成完成（PR #490）｜未部署**。G04 残留缺口（811 受管身份授权、
+808/811 业务分类可见性策略、837 record 章节入口差异、契约字段→渲染节点逐字段归因、`company_contractor_*` 契约层复现）
+继续登记在 G04 记录 §6，本批不扩。
