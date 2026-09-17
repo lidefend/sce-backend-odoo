@@ -109,11 +109,18 @@ L2 行为断言（非实现字符串）：三入口声明为 `native_semantic_su
 
 ## 8. 主线集成与台账扣减（合入后记录）
 
-- 冻结候选：head `3c4346bf28b93490ba117ae0a26f917e609d59cc`、tree `709b601ca05b213e819db5dbe8b99684de7680cd`；
-  完整 tracked+untracked 指纹 `dfc169622c4bd443d49912a7dd05f9d41ac303c97409e712e909cc1c386b04e5`（7507 路径，`artifacts/fingerprints/uc4-g04-frozen.json`）；
-  `make ci.local.quick` 回执 `.git/codex/evidence/ci.local.quick/3c4346bf28b93490ba117ae0a26f917e609d59cc.json`（日志 `artifacts/uc4-representative/quick-g04-r2.log`）；
-  `make ci.delivery.freeze.prepare` PASS（冻结前生成证据无未提交改动）。
-  身份沿革：上一身份 `0e88d252…`（Quick PASS）被纯文档更正提交 `3c4346bf` 取代；产品代码未变，页面证据按规则沿用不受影响。
+- 冻结候选（**以证据文件为准，本记录不内嵌自身提交哈希**，否则记录一动身份即失效）：
+  `artifacts/fingerprints/uc4-g04-frozen.json` 的 `git_head`/`digest`（7507 路径完整 tracked+untracked 指纹）＋
+  `.git/codex/evidence/ci.local.quick/<git_head>.json` 的 exact-head Quick 回执；撰写本行时的候选为
+  head `9c928dea762b9926ca41f5f2795a41cd8c518348`、tree `bcbe2b894eec71d68ef650edc15ae2c90c96a6c6`，
+  Quick 日志 `artifacts/uc4-representative/quick-g04-r3.log`。本 §8 属**冻结后文档补记**：补记提交本身会改变 HEAD，
+  故最终身份一律按上述两个证据文件回读，不回读本节文字。
+- `make ci.delivery.freeze.prepare` PASS（每轮冻结前生成证据均无未提交改动；日志 `freeze-prepare-g04-r{2,3}.log`）。
+- 身份沿革（每轮均为**纯文档/只读证据**变更，产品代码未变，页面证据按规则沿用不受影响）：
+  `0e88d252…`（L1–L4 + 首个 Quick PASS）→ `3c4346bf…`（按独立复核结论更正 4 处记录陈述）→ `9c928dea…`（§8 入档、差异口径与可复算证据留档、台账现状说明）。
+- 记录更正：独立复核 REQUEST_CHANGES 仅涉及记录陈述（工作树计数、"逐字节相同"断言、23 字段构成、837 record 章节数），
+  已按只读重放结果更正并撤回不成立断言；复核复验确认四处更正本身准确，唯一阻塞为「记录改动后工作树不再 clean」，
+  已按上文以提交＋重新冻结＋exact-head Quick 消除。另补记回滚路径与差异计数口径；未改产品代码。
 - 记录更正（本次）：独立复核 REQUEST_CHANGES 仅涉及 4 处记录陈述（工作树计数、"逐字节相同"断言、23 字段构成、837 record 章节数），
   已按只读重放结果更正并撤回不成立断言，另补记回滚路径；未改产品代码。
 - 台账扣减：**36 → 34**（退役 action 837/808 与视图 1647）；旁路 action 811 不计数、如实登记在 `bypassConsumers`；`nextBatch.selectedGroup` 前进到 **G05**（报销/扣款/备用金 792/798/793，视图 1632/1633）。
