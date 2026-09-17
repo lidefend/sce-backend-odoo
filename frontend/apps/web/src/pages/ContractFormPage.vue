@@ -70,6 +70,7 @@
         :show-search-filters="showSearchFilters"
         :strict-contract-defaults-summary="strictContractDefaultsSummary"
         :strict-contract-missing-summary="strictContractMissingSummary"
+        :suppress-action-blocks="suppressFormActionBlocks"
         :use-native-form-tree="useNativeFormTree"
         :warnings="warnings"
         :workflow-evidence-gate-rows="workflowEvidenceGateRows"
@@ -377,6 +378,7 @@ import {
   resolveContractV2MainData,
   resolveContractV2ActionRules,
   resolveContractV2FormFieldMap,
+  resolveContractV2FormStructureContract,
   resolveContractV2RuntimeContract,
   resolveContractV2SearchContract,
   resolveContractV2WorkflowContract,
@@ -1544,8 +1546,21 @@ const workflowTransitions = computed(() => buildWorkflowTransitions({
   showHud: showHud.value,
 }));
 const searchFilters = computed(() => normalizeSearchFilters(resolveContractV2SearchContract(v2ContractStore.value).filters));
+// Structure authority declared by the runtime contract.  A surface whose form
+// structure is owned natively keeps its body for form facts only, no matter
+// whether the frontend composes the tree itself or the backend serves it.
+const nativeStructureAuthority = computed(() => String(
+  resolveContractV2FormStructureContract(v2ContractStore.value)?.sourceAuthority?.governance_source?.formStructureAuthority || '',
+));
+// Record-list queries stay on the record list: when the form structure is
+// native, the outer action placeholders (search presets, transitions, body
+// actions) must not be projected into the form body.  Navigation into a
+// filtered list remains available from the list surface itself.
+const suppressFormActionBlocks = computed(() => (
+  useNativeFormTree.value || nativeStructureAuthority.value === 'native_authority'
+));
 const showSearchFilters = computed(() => {
-  if (useNativeFormTree.value) return false;
+  if (suppressFormActionBlocks.value) return false;
   if (!v2ContractStore.value) return true;
   if (renderProfile.value !== 'create') return true;
   return true;

@@ -23,7 +23,7 @@
     <p v-if="strictContractDefaultsSummary" class="contract-missing-defaults">{{ strictContractDefaultsSummary }}</p>
   </section>
 
-  <section v-if="workflowTransitions.length && !isIntakeCreateMode && !useNativeFormTree" class="block">
+  <section v-if="workflowTransitions.length && !isIntakeCreateMode && !suppressActionBlocks" class="block">
     <h3>流程操作</h3>
     <div class="chips">
       <ScButton
@@ -39,7 +39,7 @@
     </div>
   </section>
 
-  <section v-if="showSearchFilters && searchFilters.length && !isIntakeCreateMode" class="block">
+  <section v-if="showSearchFilters && searchFilters.length && !isIntakeCreateMode && !suppressActionBlocks" class="block">
     <h3>快捷筛选</h3>
     <div class="chips">
       <ScButton
@@ -55,7 +55,7 @@
     </div>
   </section>
 
-  <section v-if="bodyActions.length && !isIntakeCreateMode && !useNativeFormTree" class="block">
+  <section v-if="bodyActions.length && !isIntakeCreateMode && !suppressActionBlocks" class="block">
     <h3>可执行操作</h3>
     <div class="chips">
       <ScButton
@@ -106,6 +106,7 @@ defineProps<{
   bodyActions: ContractAction[];
   isIntakeCreateMode: boolean;
   useNativeFormTree: boolean;
+  suppressActionBlocks: boolean;
   busy: boolean;
   showHud: boolean;
 }>();

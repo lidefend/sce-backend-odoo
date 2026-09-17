@@ -3,7 +3,7 @@ import path from 'node:path';
 
 export async function runDesignerJourney({ page, entry, baseline, outsideBaseline, outside, contract, effective, out, report, pending, cs, drafts, documentTopic = false, invoiceTopic = false }) {
   const fieldName = documentTopic ? 'issue_authority' : invoiceTopic ? 'invoice_no' : 'keeper_id';
-  const hiddenName = documentTopic ? 'result_note' : invoiceTopic ? 'note_display' : 'line_note_summary';
+  const hiddenName = documentTopic ? 'result_note' : invoiceTopic ? 'invoice_flow_label' : 'line_note_summary';
   const configuredLabel = documentTopic ? '配置发证单位' : invoiceTopic ? '受管发票号码' : '设计器保管员';
   const groupLabel = documentTopic ? '配置发证信息' : invoiceTopic ? '受管开票信息' : '设计器保管信息';
   const walk = function* (nodes) { for (const node of nodes || []) { yield node; yield* walk(node.children); } };
@@ -129,11 +129,20 @@ export async function runDesignerJourney({ page, entry, baseline, outsideBaselin
     await business.locator('[data-section-tab="附件"]').last().click();
     await business.locator('[data-form-section-navigation]').getByRole('button', { name: '证照信息', exact: true }).click();
   } else if (invoiceTopic) {
-    // The hidden field is the readonly note display inside the notes group;
-    // the editable note and the managed group must stay usable.
+    // The hidden target is the readonly flow label of the first section, so the
+    // check is meaningful without switching tabs.  The notes section keeps the
+    // editable note and the attachment surface as the single presenters.
+    assert.equal(await business.locator('[data-field-name="invoice_flow_label"]').filter({ visible: true }).count(), 0,
+      'hidden readonly flow label must not render on the business page');
+    assert(await business.locator('[data-field-name="invoice_flow_label"]').count() === 0,
+      'hidden field must not remain in the business page DOM');
     await business.locator('[data-form-section-navigation]').getByRole('button', { name: '办理说明', exact: true }).click();
-    assert.equal(await business.locator('[data-field-name="note_display"]').filter({ visible: true }).count(), 0);
     await business.locator('[data-field-name="note"]').filter({ visible: true }).first().waitFor();
+    assert.equal(await business.locator('[data-field-name="note_display"]').count(), 0,
+      'note must not be presented twice in the form body');
+    assert.equal(await business.locator('[data-field-name="invoice_attachment_text"]').count(), 0,
+      'attachments must not be presented twice in the form body');
+    await business.locator('[data-field-name="attachment_ids"]').first().waitFor();
     await business.locator('[data-form-section-navigation]').getByRole('button', { name: '受管开票信息', exact: true }).click();
   } else {
   await business.locator('[data-section-tab="说明与附件"]').last().click();

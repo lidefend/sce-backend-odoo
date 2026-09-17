@@ -40,7 +40,7 @@ if topic == "invoice":
         ("action_sc_invoice_input_report_user", "view_sc_invoice_registration_form", "menu_sc_invoice_input_report_user"),
         ("action_sc_invoice_registration", "view_sc_invoice_registration_form", "menu_sc_invoice_registration"),
     )
-invoice_sample_fields = ["direction", "source_kind", "source_origin"] if topic == "invoice" else []
+invoice_sample_fields = ["direction", "source_kind", "source_origin", "note"] if topic == "invoice" else []
 for action_xmlid, view_xmlid, menu_xmlid in identities:
     action, view, menu = [env.ref("smart_construction_core." + key) for key in (action_xmlid, view_xmlid, menu_xmlid)]
     if menu.action != action or view.model != action.res_model:

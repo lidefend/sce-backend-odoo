@@ -109,7 +109,47 @@ Formal Product Layer=P1；Layer Target=发票四入口原生默认结构与旧�
 
 **未覆盖（明确登记）**：786/788 记录页（无合法样本）；639 全部 DOM 路由（退役入口）；sc_test_admin/`admin` 本身不在发票模型四个能力组（既有权限边界，非本批回归）。
 
+### 产品复核整改（用户复核 L4 后，同日第二轮）
+
+用户实际浏览器复核（进项列表、现有发票、新建表单、390px 预缴新建页）判定本轮暂不通过：①备注重复（P1，阻断收口）②筛选职责混入表单 ③附件存在类似重复表达风险；要求集中完成三项、补「同一业务事实不重复呈现」断言、复查进项查看/新建 + 预缴窄屏 + 一个销项反例，且不因纯展示调整使既有发布回滚结果失效。
+
+**问题 ①（P1）备注重复展示**
+
+- 现象：查看态同一备注显示两遍；新建态同时出现备注输入与只读「备注 —」。
+- 根因：本批按「四配置字段并集」重建原生 arch 时，把退役 shared-layer 契约（`data/invoice_*_form_productization_contract.xml`，`composition_mode=entry_semantic_surface`）「说明与附件」section 的字段一并带入表单组：`note_display`（`record.note_display = record.note or ""`，为列表列设计的存储计算副本）与 `invoice_attachment_text`。**迁移前原生 arch 该组只有 `note` + `attachment_ids`**（`git show 3323fb49:.../invoice_registration_views.xml`）。DOM 取证：新建页 `note`（输入）+ `note_display`（只读「备注 -」）并列；查看页两条 `[data-field-name]` 文本同为「S70 发票登记样例」，值级出现 2 次。
+- 修复：**唯一正文展示位置**——表单仅保留 `note`（正文）与 `attachment_ids`（附件面）；`note_display` 字段、存储、API 与列表列（`views/support/user_confirmed_formal_list_views.xml`）全部保留。
+- 同类第 4 项（同一机制带入，随本项一并修正）：`source_created_by` / `source_created_at` 是 `creator_name` / `created_time` 的纯副本（compute `= record.creator_name or ""` / `= record.created_time or False`），同样由字段并集带入「来源追溯」组。表单移除这两个副本，`creator_name`/`created_time` 成为唯一呈现；迁移来源的 `legacy_source_model/table/record_id/document_state`、`legacy_partner_id`、`legacy_partner_name` 是**独立历史事实**，保留且不改名。
+
+**问题 ②筛选职责混入表单**
+
+- 现象：新建页与查看页均出现 11 个「快捷筛选」chip（= action search contract 的 filters，如「发票登记/进项税额/…/联营项目」），390px 下占据首屏大块。
+- 通用展示条件（源码取证）：`ContractFormPage` 的 `showSearchFilters` 只在 `useNativeFormTree`（= 前端自组原生树 `nativeFormLayoutNodes.length > 0`）为真时关闭；运行时读到本批 4 条 action 的 v2 容器树只有 `header`/`sheet` 空壳（`rawNativeFormLayoutNodes` len=2、可见过滤后 0），故 `useNativeFormTree=false` → 动作占位块落入表单正文。迁移前该 action 由 entry_semantic_surface 结构驱动，不进入该分支，故这是本批结构源切换暴露的门控缺口，而非新增产品行为。
+- 既有规则依据：`docs/verify/frontend_native_business_alignment_batch_20260429.md` 已确立「native form tree 模式下关闭 `headerActions`/`workflowTransitions`/`bodyActions`/`searchFilters`，表单主体只消费 `views.form.layout`」，验收基线即「快捷筛选=0」。
+- 修复（共享层通用门控，无模型特判）：新增 `nativeStructureAuthority`（读契约 `formStructureContract.sourceAuthority.governance_source.formStructureAuthority`）与 `suppressFormActionBlocks = useNativeFormTree || nativeStructureAuthority === 'native_authority'`，作为 `ContractFormActionBlocks` 的新 `suppressActionBlocks` 门，关闭「快捷筛选 / 流程操作 / 可执行操作」三个动作占位块。
+- 列表职责仍在列表：`/a/785` 保留自身搜索输入与列设置（`openFilter` 的「跳列表并预置筛选」语义不变，跨记录入口由列表与侧栏承接，未新增发票模型特判）。
+
+**问题 ③附件重复表达**
+
+- 现象：上传区之后又出现只读「附件 —」。
+- 职责核对（逐字段）：`attachment_ids`（`many2many_binary`）是附件原件的唯一承载；`invoice_attachment_text` 是**列表摘要列**（`user_confirmed_formal_list_views.xml`），其历史引用来源 `_invoice_attachment_ref_value()` 在本模型（及其全部子类）**恒返回空**，计算值只可能是 `附件(N)` 计数或空串——不是独立历史事实，属同一事实的计数副本；真正独立的历史事实是 `legacy_*` 迁移来源字段。
+- 修复：表单移除 `invoice_attachment_text`；字段、存储、API 与列表列保留；`legacy_*` 全部保留。
+
+**断言补强：同一业务事实不重复呈现**（`formal_form_invoice_journey.mjs` + `test_invoice_native_lowcode.py`）
+
+- 契约层：新增常量 `DERIVED_DISPLAY_COPIES = [note_display, invoice_attachment_text, source_created_by, source_created_at]`，四个正式入口的 containerTree 中该四字段必须**不存在**；每个 action 契约树字段名零重复。
+- DOM 层：新增 `assertSinglePresentation(page, label)`——`[data-field-name]` 同名节点计数必须全为 1、四个副本字段计数为 0、页面不得出现「快捷筛选」块；另加值级断言 `factOccurrences(sample.note) === 1`（查看态同一备注文本只呈现一次）。应用于四正式入口新建页 + 记录页 + 789 旁路新建页；报告新增 `note_presentation: single`。
+- 模型层：新增 `test_single_presentation_of_each_business_fact`——arch 不含副本字段、`note`/`attachment_ids`/`creator_name`/`created_time` 在位、表单字段零重复、四个副本字段仍是模型字段且列表列仍引用它们（守住「保留存储/API/其他消费者」）。
+- 采样与靶点：`local_dev_form_lowcode_scope.py` 的 `invoice_sample_fields` 增 `note`（支撑值级断言）；设计器旅程的「隐藏只读备注」靶点随 `note_display` 退役改为「隐藏只读办理事项 `invoice_flow_label`」，发布/回滚断言语义不变（只读字段隐藏 + 业务页不渲染 + 回滚恢复）。
+
+**受影响页面复核（sc_test_admin 实测，本轮唯一改动面）**
+
+- 新建页 785：`快捷筛选=0`；`[data-field-name]` 零重复；四个副本字段计数 0；`note` = 1、`attachment_ids` = 1；390px 首屏直接从「办理主信息」开始（不再被 chip 板占据）。
+- 查看页 785（记录 1，进项样本）：备注文本出现次数 **2 → 1**；无只读「附件 —」；无「快捷筛选」。
+- 列表页 `/a/785`：保留自身搜索输入与列设置（列表查询留在列表）。
+- 门禁：`verify.frontend.typecheck.strict` PASS（vue-tsc 无输出）；`verify.frontend.component_driver_takeover.unit` PASS（P0/P1 组件改动后清单 `inputDigest` 已刷新）；L2 模型测试 `0 failed / 0 error`（6 tests，含新增守卫）；L3 `make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1` PASS + `local.dev.restart` / `local.dev.health` PASS。
+- 整组回归：`FORM_LOWCODE_TOPIC=invoice make local.dev.form_lowcode.browser` 一次跑通——六入口旅程（含新断言）+ 设计器「表单设置→预览→发布→业务页刷新→回滚」闭环，报告 `ok=true`、`restored=true`、`browser_errors=0`；发布回滚靶点改为 `invoice_flow_label` 后仍 `published_content_verified/runtime_verified=true`，回滚后契约与基线逐字一致。**发布回滚结果未因本次纯展示调整失效**。
+
 ## 状态
 
-本批首轮实施 + 源码复核断言强化 + 整组浏览器复核（L4）已完成自验：L1/L2/L3 与运行态冒烟通过，L4 六入口旅程 + 设计器发布回滚闭环 `EXIT=0`（报告 `ok=true`、`restored=true`、`browser_errors=0`）。遗留未覆盖已逐条登记。**下一步待用户决策**：整组结果交回后再冻结、Quick、独立复核，不自动连续放行。本批未集成｜未部署｜89 入口交付未完成；主线剩余 42 不变。
+本批首轮实施 + 源码复核断言强化 + 整组浏览器复核（L4）+ 产品复核三项整改（备注唯一正文展示 / 表单不承载列表筛选 / 附件单一表达，含同类第 4 项副本字段）均已完成自验：L1/L2/L3 与运行态冒烟通过，L4 六入口旅程 + 设计器发布回滚闭环 `EXIT=0`（报告 `ok=true`、`restored=true`、`browser_errors=0`）。遗留未覆盖已逐条登记。**下一步待用户决策**：整组结果交回后再冻结、Quick、独立复核，不自动连续放行。本批未集成｜未部署｜89 入口交付未完成；主线剩余 42 不变。
 

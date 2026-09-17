@@ -67,6 +67,12 @@ const CREATE_READONLY = ['business_category_id', 'invoice_content', 'operation_s
 // create-profile policy trims all of them the rendered section collapses.
 const OUTPUT_GROUP_FIELDS = ['push_result', 'kingdee_document_no', 'expected_receipt_date', 'applicant_name'];
 
+// Stored display copies of a fact that already has its canonical presenter on
+// the same form (note, attachment_ids, creator_name, created_time).  They keep
+// their model field, list columns and API consumers, but must never be
+// projected into the form body: one business fact, one presentation.
+const DERIVED_DISPLAY_COPIES = ['note_display', 'invoice_attachment_text', 'source_created_by', 'source_created_at'];
+
 // Bypass navigation facts (verified on sc_dev_demo 2026-09-16 via system.init
 // route_authority replay): 789 (进项税额上报) is a CONTEXTUAL_ROUTE granted to
 // finance-role principals (source finance.invoice_input_report_contextual_
@@ -178,6 +184,42 @@ async function assertFormRendered(page, anchorField) {
   return { labels, bodyText };
 }
 
+// One business fact, one presentation: no field node may render twice and the
+// stored display copies of facts already presented on the form must be absent.
+async function assertSinglePresentation(page, label) {
+  const duplicates = await page.evaluate(() => {
+    const counts = {};
+    document.querySelectorAll('[data-field-name]').forEach((el) => {
+      const name = String(el.getAttribute('data-field-name') || '').trim();
+      if (name) counts[name] = (counts[name] || 0) + 1;
+    });
+    return Object.entries(counts).filter(([, count]) => count > 1).map(([name, count]) => `${name}x${count}`);
+  });
+  assert.deepEqual(duplicates, [], `${label}: each business fact must be presented once`);
+  for (const copy of DERIVED_DISPLAY_COPIES) {
+    assert.equal(await page.locator(`[data-field-name="${copy}"]`).count(), 0,
+      `${label}: derived display copy ${copy} must not render in the form body`);
+  }
+  assert.equal(await page.getByText('快捷筛选', { exact: true }).count(), 0,
+    `${label}: record-list queries stay on the record list (action filter block leaked into the form)`);
+}
+
+// Rendered value occurrences of one fact: editable controls carry it in their
+// value, read-only presenters in their text.
+async function factOccurrences(page, text) {
+  return page.evaluate((needle) => {
+    let total = 0;
+    document.querySelectorAll('input,textarea,div,span,p,td').forEach((el) => {
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+        if ((el.value || '') === needle) total += 1;
+        return;
+      }
+      if (el.children.length === 0 && (el.textContent || '').trim() === needle) total += 1;
+    });
+    return total;
+  }, text);
+}
+
 export async function checkInvoiceDefaults({ page, scope, contract, out, report }) {
   const base = process.env.BASE_URL;
   report.stages.defaults = [];
@@ -211,7 +253,7 @@ export async function checkInvoiceDefaults({ page, scope, contract, out, report 
     assert.equal(source.resolvedActionId, surface.action_id);
     assert.equal(source.resolvedViewId, surface.view_id);
     assert(JSON.stringify(baseline.layoutContract).includes('data-sc-anchor'), 'runtime native view is stale: section anchors missing');
-    const { groups, field } = treeIndex(baseline);
+    const { groups, field, nodes } = treeIndex(baseline);
     for (const anchor of ANCHORS) assert(groups.has(anchor), `action ${surface.action_id}: anchor ${anchor} missing`);
     assert.equal(groups.get('invoice_prepaid_tax').attributes.invisible, PREPAID_INVISIBLE);
     assert.equal(groups.get('invoice_output_business').attributes.invisible, OUTPUT_INVISIBLE);
@@ -219,7 +261,11 @@ export async function checkInvoiceDefaults({ page, scope, contract, out, report 
       assert.ok(!('invisible' in (groups.get(anchor).attributes || {})), `action ${surface.action_id}: ${anchor} must stay unconditional`);
     }
     assert.equal(field('name').modifiers.readonly, true);
-    assert.equal(field('note_display').modifiers.readonly, true);
+    assert.equal(field('invoice_flow_label').modifiers.readonly, true);
+    for (const copy of DERIVED_DISPLAY_COPIES) {
+      assert.equal(nodes.filter((node) => node.type === 'field' && node.name === copy).length, 0,
+        `action ${surface.action_id}: derived display copy ${copy} must not be a form field (single presentation)`);
+    }
     assert.equal(field('document_date').modifiers.required, true);
     assert.ok(!field('note').modifiers?.readonly, 'note must stay editable');
     assert.ok(!field('partner_id').modifiers?.readonly, 'partner_id must stay editable');
@@ -263,8 +309,9 @@ export async function checkInvoiceDefaults({ page, scope, contract, out, report 
       assert(requiredSignals > 0, `action ${surface.action_id}: document_date required marker missing in DOM`);
     }
     // readonly fields carry no enabled editable control; the editable note does
-    assert.equal(await editableControls(page.locator('[data-field-name="note_display"]').filter({ visible: true }).first()).count(), 0,
-      `action ${surface.action_id}: readonly note_display exposes an editable control`);
+    assert.equal(await editableControls(page.locator('[data-field-name="invoice_flow_label"]').filter({ visible: true }).first()).count(), 0,
+      `action ${surface.action_id}: readonly invoice_flow_label exposes an editable control`);
+    await assertSinglePresentation(page, `action ${surface.action_id} create`);
     if (!policy.hidden.has('name')) {
       assert.equal(await editableControls(page.locator('[data-field-name="name"]').filter({ visible: true }).first()).count(), 0,
         `action ${surface.action_id}: readonly name exposes an editable control`);
@@ -315,6 +362,14 @@ export async function checkInvoiceDefaults({ page, scope, contract, out, report 
       }
       assert.equal(await page.locator('[data-section-tab="红冲关联"]').count(), 0,
         `action ${surface.action_id}: red-flush tab must stay hidden without red-flush data`);
+      await assertSinglePresentation(page, `action ${surface.action_id} record ${sample.id}`);
+      if (sample.note) {
+        // The record page used to render the stored copy next to the canonical
+        // field, so the same note text appeared twice.
+        assert.equal(await factOccurrences(page, sample.note), 1,
+          `action ${surface.action_id}: the same note text must render exactly once on the record page`);
+      }
+      const presentation = { note_presentation: sample.note ? 'single' : 'empty' };
       if (sample.source_origin === 'legacy') {
         const migrationTab = page.locator('[data-section-tab="迁移来源"]').filter({ visible: true }).first();
         await migrationTab.waitFor();
@@ -328,7 +383,7 @@ export async function checkInvoiceDefaults({ page, scope, contract, out, report 
         await page.screenshot({ path: path.join(out, `sample-${surface.action_id}-legacy-source.png`), fullPage: false });
         report.stages.defaults.push({ action: surface.action_id, record: sample.id, state: 'readonly',
           conditional: sampleExpected, source_origin: 'legacy', migration_tab: 'visible',
-          legacy_fact: 'legacy_partner_name', navigation: sampleRendered.labels,
+          legacy_fact: 'legacy_partner_name', navigation: sampleRendered.labels, ...presentation,
           status: 'passed', url: page.url() });
       } else {
         assert.equal(await page.locator('[data-section-tab="迁移来源"]').count(), 0,
@@ -336,7 +391,8 @@ export async function checkInvoiceDefaults({ page, scope, contract, out, report 
         await page.screenshot({ path: path.join(out, `sample-${surface.action_id}.png`), fullPage: false });
         report.stages.defaults.push({ action: surface.action_id, record: sample.id, state: 'readonly',
           conditional: sampleExpected, source_origin: sample.source_origin || 'unspecified',
-          migration_tab: 'hidden', navigation: sampleRendered.labels, status: 'passed', url: page.url() });
+          migration_tab: 'hidden', navigation: sampleRendered.labels, ...presentation,
+          status: 'passed', url: page.url() });
       }
     } else {
       report.stages.defaults.push({ action: surface.action_id, state: 'readonly', status: 'not_run_no_sample',
@@ -395,6 +451,7 @@ export async function checkInvoiceDefaults({ page, scope, contract, out, report 
         `bypass ${surface.action_id}: applicant_name DOM visibility mismatch`);
       const bodyText = await pg.locator('body').innerText();
       for (const title of RETIRED_TITLES) assert(!bodyText.includes(title), `bypass ${surface.action_id}: retired section ${title} leaked`);
+      await assertSinglePresentation(pg, `bypass ${surface.action_id} create`);
       await pg.screenshot({ path: path.join(out, `new-${surface.action_id}.png`), fullPage: true });
       await pg.setViewportSize({ width: 390, height: 844 });
       await pg.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));

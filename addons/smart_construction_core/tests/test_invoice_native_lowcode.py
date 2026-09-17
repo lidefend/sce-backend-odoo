@@ -23,10 +23,16 @@ class TestInvoiceNativeLowcode(TransactionCase):
         ("action_sc_invoice_prepaid_tax_user", ("prepaid_tax_date", "tax_certificate_no", "tax_type")),
     )
     SHARED_PRESENT_FIELDS = (
-        "company_id", "note_display", "invoice_attachment_text",
+        "company_id",
         "legacy_source_model", "legacy_source_table", "legacy_record_id",
         "legacy_document_state", "legacy_partner_id", "legacy_partner_name",
-        "source_created_by", "source_created_at", "attachment_ids", "note",
+        "creator_name", "created_time", "attachment_ids", "note",
+    )
+    # Stored display copies of another form fact.  They keep their model field,
+    # list columns and API consumers, but must never be projected into the form
+    # body a second time.
+    DERIVED_DISPLAY_COPIES = (
+        "note_display", "invoice_attachment_text", "source_created_by", "source_created_at",
     )
     PREPAID_INVISIBLE = "source_kind != 'prepaid_tax' and direction != 'prepaid'"
     OUTPUT_INVISIBLE = "source_kind not in ['output_invoice_tax'] and direction != 'output'"
@@ -152,15 +158,48 @@ class TestInvoiceNativeLowcode(TransactionCase):
                 group = self.group_node(data, container_id)
                 self.assertNotIn("invisible", group.get("attributes") or {}, (action_key, container_id))
             # readonly constraints survive on the final tree
-            for field in ("company_id", "note_display", "invoice_attachment_text",
-                          "legacy_source_model", "legacy_source_table", "legacy_record_id",
-                          "legacy_document_state", "source_created_by", "source_created_at"):
+            for field in ("company_id", "legacy_source_model", "legacy_source_table",
+                          "legacy_record_id", "legacy_document_state", "creator_name", "created_time"):
                 node = self.field_node(data, field)
                 self.assertTrue((node.get("modifiers") or {}).get("readonly"), (action_key, field))
             # editable business fields are not silently readonly
             for field in ("partner_id", "contract_id", "settlement_id", "note"):
                 node = self.field_node(data, field)
                 self.assertFalse((node.get("modifiers") or {}).get("readonly") is True, (action_key, field))
+
+    def test_single_presentation_of_each_business_fact(self):
+        """One business fact, one presenter.
+
+        The rebuilt native form merged the retired shared-layer field lists; a
+        pure union would have re-projected stored display copies of facts that
+        already have their canonical field on the same form.  Assert the form
+        body presents each fact once, while the derived copies stay available
+        to storage, list columns and other consumers.
+        """
+        from lxml import etree
+        arch = etree.fromstring(self.ref("view_sc_invoice_registration_form").arch_db.encode())
+        form_fields = [node.get("name") for node in arch.xpath(".//field")]
+        for copy in self.DERIVED_DISPLAY_COPIES:
+            self.assertNotIn(copy, form_fields, "derived display copy %s must not be a form field" % copy)
+        for canonical in ("note", "attachment_ids", "creator_name", "created_time"):
+            self.assertIn(canonical, form_fields, "canonical presenter %s missing" % canonical)
+        # no field is presented twice anywhere in the form
+        duplicates = {name for name in form_fields if form_fields.count(name) > 1}
+        self.assertEqual(duplicates, set(), "fields presented more than once: %s" % sorted(duplicates))
+        # the derived copies remain model fields and stay used as list columns
+        fields = self.env["sc.invoice.registration"].fields_get(self.DERIVED_DISPLAY_COPIES)
+        self.assertEqual(set(fields), set(self.DERIVED_DISPLAY_COPIES))
+        list_arch = "".join(
+            self.env["ir.ui.view"].search([("model", "=", "sc.invoice.registration"), ("type", "=", "tree")]).mapped("arch_db")
+        )
+        for copy in ("note_display", "invoice_attachment_text", "source_created_by", "source_created_at"):
+            self.assertIn(copy, list_arch, "list consumers of %s must be preserved" % copy)
+        # and every formal entry keeps a single contract node per field fact
+        for action_key, _required in self.FORMAL_ACTIONS:
+            data = self.contract(action_key)
+            names = [n.get("name") for n in self.tree_nodes(data) if n.get("type") == "field" and n.get("name")]
+            self.assertEqual(len(names), len(set(names)),
+                             (action_key, sorted({n for n in names if names.count(n) > 1})))
 
     def test_tax_type_input_visibility_is_preexisting_native_rule(self):
         """The retired input contract listed tax_type in its section while the
@@ -265,7 +304,7 @@ class TestInvoiceNativeLowcode(TransactionCase):
         baseline, other = self.contract(key), self.contract(outside)
         nodes = self.tree_nodes(baseline)
         field = next(n for n in nodes if n.get("name") == "invoice_no" and n["type"] == "field")
-        hidden = next(n for n in nodes if n.get("name") == "note_display" and n["type"] == "field")
+        hidden = next(n for n in nodes if n.get("name") == "invoice_flow_label" and n["type"] == "field")
 
         def bind(node, **change):
             return {"target": node["nativeLocator"], "expected": {"type": node["type"], "name": node.get("name"), "occurrence_index": node.get("occurrenceIndex")}, **change}
@@ -275,8 +314,8 @@ class TestInvoiceNativeLowcode(TransactionCase):
             self.assertTrue(result.get("ok"), result)
             return result["data"]
 
-        # baseline visibility precondition: note_display is visible (readonly)
-        self.assertFalse((self.field_node(baseline, "note_display").get("modifiers") or {}).get("invisible"))
+        # baseline visibility precondition: the readonly flow label is visible
+        self.assertFalse((self.field_node(baseline, "invoice_flow_label").get("modifiers") or {}).get("invisible"))
 
         before = self.env["sc.invoice.registration"].search([]).read(["write_date", "state"])
         opened = call(BusinessConfigChangeSetOpenHandler)
@@ -288,14 +327,14 @@ class TestInvoiceNativeLowcode(TransactionCase):
                  bind(hidden, set={"visible": False})]}}}})
         preview = call(BusinessConfigChangeSetPreviewHandler, change_set_token=opened["token"])
         configured = self.contract(key, preview_token=preview["preview"]["token"], preview_role_key=role)
-        # the previewed contract hides note_display, not merely carries the patch
-        self.assertTrue((self.field_node(configured, "note_display").get("modifiers") or {}).get("invisible"),
-                        "preview must hide note_display on the final tree")
+        # the previewed contract hides the readonly flow label, not merely carries the patch
+        self.assertTrue((self.field_node(configured, "invoice_flow_label").get("modifiers") or {}).get("invisible"),
+                        "preview must hide invoice_flow_label on the final tree")
         published = call(BusinessConfigChangeSetPublishHandler, change_set_token=opened["token"], request_id="uc4-publish")
         self.assertTrue(published["publish_result"]["published_content_verified"])
         published_contract = self.contract(key)
-        self.assertTrue((self.field_node(published_contract, "note_display").get("modifiers") or {}).get("invisible"),
-                        "published contract must hide note_display on the final tree")
+        self.assertTrue((self.field_node(published_contract, "invoice_flow_label").get("modifiers") or {}).get("invisible"),
+                        "published contract must hide invoice_flow_label on the final tree")
         for part in ("layoutContract", "statusContract", "actionContract"):
             self.assertEqual(published_contract[part], configured[part])
             self.assertEqual(self.contract(outside)[part], other[part])
@@ -303,8 +342,8 @@ class TestInvoiceNativeLowcode(TransactionCase):
         call(BusinessConfigChangeSetRollbackHandler, change_set_token=opened["token"], request_id="uc4-rollback")
         rolled_back = self.contract(key)
         # rollback restores the visible readonly state
-        self.assertFalse((self.field_node(rolled_back, "note_display").get("modifiers") or {}).get("invisible"),
-                         "rollback must restore note_display visibility")
+        self.assertFalse((self.field_node(rolled_back, "invoice_flow_label").get("modifiers") or {}).get("invisible"),
+                         "rollback must restore invoice_flow_label visibility")
         for part in ("layoutContract", "statusContract", "actionContract"):
             self.assertEqual(rolled_back[part], baseline[part])
         self.assertEqual(self.env["sc.invoice.registration"].search([]).read(["write_date", "state"]), before)
