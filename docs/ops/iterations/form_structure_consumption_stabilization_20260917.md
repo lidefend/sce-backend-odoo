@@ -935,3 +935,12 @@ popup 创建后立即 `reload()` 会取消首个文档的**在途模块请求**�
 `local.dev.sync_demo`、`local.dev.snapshot`、模块 upgrade、fixture reset、发布快照、`make pr.push`、工作树清理、复核草稿清理。
 本节取代此前各节「未执行」清单中关于 `ci.delivery.freeze.prepare` 的条目（已于 23:03 执行并通过）；其余条目维持原状。
 台账保持 **42**；约六组投影候选继续挂账、不登记。
+
+## 8.19 G03 代表面实施：收款与公司收入原生结构迁移（独立记录）
+
+本批 U-C4 的第二个代表面（`G03 收款与公司收入`）在**独立分支与独立记录**中实施，避免把已冻结的本批候选改写：
+分支 `feature/uc4-receipt-income-native-v1`（基于 `origin/main`=`1dbf63f5dd8513b71aede67c875e51b7a95e8626`），记录 `docs/ops/iterations/uc4_receipt_income_native_lowcode_20260917.md`。
+
+要点（细节见该记录）：3 个入口（637/806/807）共用原生 1644；3 个入口声明转 `native_semantic_surface`，共享层 sections(149)、P1 业务事实层(8) 与模型级生成镜像(109) 退役；原生 arch 承载退役配置声明过的事实并加 8 个 `data-sc-anchor` 业务章节；**不登记** `sc.receipt.income` 的展示副本（该模型未继承展示副本协议、附件摘要为双来源派生），改由退役重复投影保证正文单一呈现。
+验证：L1 PASS；L2 新增 6 测 `0 failed`；L3 模块升级 + authority PASS；L4 只读代表面 806 create/record 通过（章节导航全 resolve、吸顶 0 重叠、无重复字段/空容器），637/807 为交付导航权威**拒绝访问**（记录为可达性事实，非结构结论）。
+台账保持 **38**（扣减留待合入后核对）；本批未执行 `sync_demo`／fixture reset／发布快照／工作树清理。
