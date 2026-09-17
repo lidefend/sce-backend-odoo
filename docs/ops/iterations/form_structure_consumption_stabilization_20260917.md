@@ -983,7 +983,9 @@ popup 创建后立即 `reload()` 会取消首个文档的**在途模块请求**�
 `form_policy_json.visible_profiles=["readonly"]`，浏览器 create 档位确实不呈现这 5 个 `company_contractor_*` 事实，
 随之为空的 `公司-承包人资金责任` 章节也不再出现，导航与正文一致、无孤儿入口与空容器——判定为**声明的合法隐藏**，
 非结构消费层的修剪误删。契约层只读重放为**形状一致**（三入口各 67 容器节点 / 46 字段节点、字段集合相同、无重复、
-`fieldSemanticRoles` 相同），**并非逐字节相同**（837↔808 有 48 个节点在字段级属性/组 `widgetList` 上不同、808↔811 有 2 个）；
+`fieldSemanticRoles` 相同），**并非逐字节相同**（按节点键比较自身属性的口径：837↔808 有 48 个节点在字段级属性/组 `widgetList`
+上不同、808↔811 有 2 个；按位置并向上传播子节点差异则为 52/4/52，可复算证据在
+`artifacts/uc4-representative/g04-contract-tree-diff/`）；
 通过 `op=model` 重放**未复现** create 档位的契约层 `visible=false`，该可见性在入口/应用配置装配路径生效，
 本批只登记声明层证据与浏览器实测，细节见 G04 记录 §3/§5。
 

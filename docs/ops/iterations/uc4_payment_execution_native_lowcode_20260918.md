@@ -16,7 +16,7 @@
 | 台账登记配置 | `sc_payment_execution_form_sections_v1`(144)、`sc_payment_execution_p1_form_business_facts_v1`(6)、`payment_execution_productized_form_v2`(208)、`payment_execution_actual_outflow_productized_form_v1`(241)、`payment_execution_company_finance_expense_productized_form_v1`(242)、`payment_execution_partner_payment_productized_form_v1`(243) |
 | 实施中发现 | `payment_execution_form_structure_generated_v1`(100) 已是 `active=False`，无需再退役 |
 
-样本：8 条 `sc.payment.execution`（id 1/91/92/93/154 为 confirmed-draft，155/156/157 为 paid）。
+样本：8 条 `sc.payment.execution`（本轮只读核对：id 1/154 为 `confirmed`，91/92/93 为 `draft`，155/156/157 为 `paid`）。
 
 职责分层（本批实施）：
 
@@ -55,7 +55,7 @@
 | 列表消费者不得因退役而断供 | `company_finance_*_display` 仍在 `views/support/user_confirmed_formal_list_views.xml`、`user_confirmed_formal_list_alignment_views.xml`；`partner_payment_*_display` 仍在 `user_confirmed_formal_list_views.xml` 与 tree 2057；tree 2065 用 `company_finance_*` 快照。退役的 `payment_execution_*_display`（`store=False`）**唯一消费者就是被退役的配置 6**，故不入正文、也不删字段 |
 | 原生结构权威不能单独证明动作已有承载位置 | «查看责任余额» 按钮保留原 `invisible="not company_contractor_responsibility_summary_id"`，header 5 按钮与各自 `invisible`/`groups` 条件逐条保留；本批未改任何可见条件 |
 
-契约层实测（安装后只读重放 `ui_contract_v2` `op=model`、`render_profile=create`）：三入口 `formStructureAuthority=native_authority`、`configuredSections=[]`、`compatibilityDependencies=[]`、`formPresentationMode=task`、`resolvedViewId=1647`，导航标题分别为「实付登记」「公司财务支出」「往来单位付款」；最终树**形状一致**——各 **67 个容器节点 / 46 个字段节点**、字段集合相同、无重复（含 header statusbar 的 `state` 一次），`fieldSemanticRoles` 各 14 项且三入口相同。**但三入口 `layoutContract.containerTree` 并非逐字节相同**（上一版记录的该断言不成立，本次实测更正）：容器节点逐条比较，837↔808 有 48 个节点不同、808↔811 有 2 个、837↔811 有 48 个；差异全部落在字段级属性与组 `widgetList`（`fieldInfo`/`componentConfig`/`required` 档位，如 `business_category_id`/`payment_request_id`/`partner_id`/`paid_amount`/`receipt_account_*`/`payment_account_*` 在 837 create 为 `required=false`、在 808/811 create 为 `required=true`），与结构形状无关，属各入口 action context 与业务分类策略。`sourceAuthority.governance_source.businessConfigContracts` 分别解析为 837=[208,241]、808=[208,242]、811=[208,243]。
+契约层实测（安装后只读重放 `ui_contract_v2` `op=model`、`render_profile=create`）：三入口 `formStructureAuthority=native_authority`、`configuredSections=[]`、`compatibilityDependencies=[]`、`formPresentationMode=task`、`resolvedViewId=1647`，导航标题分别为「实付登记」「公司财务支出」「往来单位付款」；最终树**形状一致**——各 **67 个容器节点 / 46 个字段节点**、字段集合相同、无重复（含 header statusbar 的 `state` 一次），`fieldSemanticRoles` 各 14 项且三入口相同（位于 `formStructureContract.sourceAuthority.governance_source.fieldSemanticRoles`）。**但三入口 `layoutContract.containerTree` 并非逐字节相同**（上一版记录的该断言不成立，本次实测更正）：按节点键（`containerId`/`name`+`type`）匹配并比较**节点自身属性**（不含 `children` 传播）的口径，837↔808 有 48 个节点不同、808↔811 有 2 个、837↔811 有 48 个（= 38 个字段级属性节点 + 10 个组 `widgetList` 差异节点；808↔811 为 1+1）；若按位置逐条比较并把子节点差异传播到父容器则为 52/4/52。差异全部落在字段级属性与组 `widgetList`（`fieldInfo`/`componentConfig`/`required` 档位，如 `business_category_id`/`payment_request_id`/`partner_id`/`paid_amount`/`receipt_account_*`/`payment_account_*` 在 837 create 为 `required=false`、在 808/811 create 为 `required=true`），与结构形状无关，属各入口 action context 与业务分类策略。可复算证据：`artifacts/uc4-representative/g04-contract-tree-diff/`（只读重放脚本 + 原始输出 + 口径说明，本轮新增留档，便于第三方按同口径复算）。`sourceAuthority.governance_source.businessConfigContracts` 分别解析为 837=[208,241]、808=[208,242]、811=[208,243]。
 
 ## 4. 验证矩阵
 
@@ -78,7 +78,7 @@ L2 行为断言（非实现字符串）：三入口声明为 `native_semantic_su
 | 入口 | 路由 | 结果 |
 |---|---|---|
 | 837 实付登记 | create | **passed**：9 个章节入口全部 resolve 且可见（含 `公司-承包人资金责任`）；`duplicated=[]`、`empty_containers=[]`、无标题包装组不带标题/分隔线；渲染节点 32；吸顶 1088/390 各 10 组测量，操作行↔导航↔正文 **0 重叠** |
-| 837 实付登记 | record（样本 id=1，readonly） | **passed**：导航栏渲染 8 个按钮（含 1 个横向滚动控件），其中 7 个 `data-section-target` **章节入口全部 resolve 且可见**；相比 create 少 `付款账户` 与 `公司-承包人资金责任` 两个章节入口；渲染节点 17；吸顶 18 组测量 0 重叠。契约层只读重放（`render_profile=readonly`、`record_id=1`）中该两组的 `containerStatus` 仍为 `visible=true`、其字段 `invisible=false` → 差异位于渲染层，本批未归因，记为观察项（既非隐藏策略，也非定位失败） |
+| 837 实付登记 | record（样本 id=1，readonly） | **passed**：导航栏渲染 8 个按钮（含 1 个横向滚动控件），其中 7 个 `data-section-target` **章节入口全部 resolve 且可见**；相比 create 少 `付款账户` 与 `公司-承包人资金责任` 两个章节入口；渲染节点 17；吸顶 18 组测量 0 重叠。契约层只读重放（`render_profile=readonly`、`record_id=1`）中该两组在 `statusContract.containerStatus` 仍为 `visible=true`、其字段 `invisible=false` → 差异位于渲染层，本批未归因，记为观察项（既非隐藏策略，也非定位失败） |
 | 808 公司财务支出 | create | **passed**：8 个章节入口全部 resolve 可见；渲染节点 27；吸顶 18 组测量 0 重叠 |
 | 811 往来单位付款 | create | **拒绝访问**：`NAVIGATION_AUTHORITY_DENIED`（交付导航权威不含该入口的治理身份），非结构结果 |
 
@@ -88,7 +88,7 @@ L2 行为断言（非实现字符串）：三入口声明为 `native_semantic_su
 2. **声明层（只读核对）**：`sc.business.category`（P1 行业标准产品数据）20 `finance.payment.execution.company` 与 16 `finance.payment.execution.partner` 的 `form_policy_json` 对这 5 个字段（以及 `payment_family`/`source_kind`/`push_result`/`kingdee_document_no`/`active`）声明 `visible_profiles=["readonly"]`，并对它们声明 `readonly_profiles` 覆盖全部档位。
 3. **入口差异（只读核对）**：action 837 的 context 不带业务分类默认值；808 带 `default_business_category_code=finance.payment.execution.company`，811 带 `…partner`。
 4. **结构层（只读重放）**：三入口解析同一原生视图 1647，容器形状与字段集合一致、无重复（见 §3）→ 该差异**不来自**本轮退役配置，也**不来自**结构消费层。
-5. **未复现部分（如实记录）**：本次经 `op=model` 重放**未复现** create 档位对这 5 个字段的 `visible=false`（容器节点 `invisible=false`、`containerStatus` 为 `visible=true`）；该可见性在入口/应用配置装配路径生效。本批只登记声明层证据与浏览器实测结果，**不把契约层 `visible=false` 记为已复现结论**。
+5. **未复现部分（如实记录）**：本次经 `op=model` 重放**未复现** create 档位对这 5 个字段的 `visible=false`（容器节点 `invisible=false`；`statusContract.containerStatus` 中对应组 `payment_responsibility` 为 `visible=true`——该标志位于 `statusContract.containerStatus` 的 `{containerId, visible, disabled, reasonCode}` 行，不在树节点本身）；该可见性在入口/应用配置装配路径生效。本批只登记声明层证据与浏览器实测结果，**不把契约层 `visible=false` 记为已复现结论**。
 6. 该章节的«查看责任余额»按钮在无责任余额时本就合法隐藏（`invisible="not company_contractor_responsibility_summary_id"`，本批未改任何可见条件）。
 
 传输证据（单独记录，不判为产品缺陷，也不声称零错误）：本报告 `diagnostics.failed_requests` 含 40 条 `net::ERR_NETWORK_CHANGED`（Vite 模块请求，`stage=post_navigation_mount`，`classification=environment_transport`，`renavigate_once` 后 `recovered=true`）；`console` 仅 1 条 Vue Router `history.state` 警告与若干 Vue 属性继承/组件解析警告。以上不计入结构结论。
@@ -109,5 +109,16 @@ L2 行为断言（非实现字符串）：三入口声明为 `native_semantic_su
 
 ## 8. 主线集成与台账扣减（合入后记录）
 
-- 冻结候选：head／tree／完整指纹待本节冻结步骤填写；`make ci.local.quick` 在同一 head 上运行一次。
+- 冻结候选：head `3c4346bf28b93490ba117ae0a26f917e609d59cc`、tree `709b601ca05b213e819db5dbe8b99684de7680cd`；
+  完整 tracked+untracked 指纹 `dfc169622c4bd443d49912a7dd05f9d41ac303c97409e712e909cc1c386b04e5`（7507 路径，`artifacts/fingerprints/uc4-g04-frozen.json`）；
+  `make ci.local.quick` 回执 `.git/codex/evidence/ci.local.quick/3c4346bf28b93490ba117ae0a26f917e609d59cc.json`（日志 `artifacts/uc4-representative/quick-g04-r2.log`）；
+  `make ci.delivery.freeze.prepare` PASS（冻结前生成证据无未提交改动）。
+  身份沿革：上一身份 `0e88d252…`（Quick PASS）被纯文档更正提交 `3c4346bf` 取代；产品代码未变，页面证据按规则沿用不受影响。
+- 记录更正（本次）：独立复核 REQUEST_CHANGES 仅涉及 4 处记录陈述（工作树计数、"逐字节相同"断言、23 字段构成、837 record 章节数），
+  已按只读重放结果更正并撤回不成立断言，另补记回滚路径；未改产品代码。
 - 台账扣减：**36 → 34**（退役 action 837/808 与视图 1647）；旁路 action 811 不计数、如实登记在 `bypassConsumers`；`nextBatch.selectedGroup` 前进到 **G05**（报销/扣款/备用金 792/798/793，视图 1632/1633）。
+- 台账（`docs/ops/iterations/form_structure_compatibility_consumers_v1.json`）现状说明：**合入前仍为迁移前快照**——837/808 条目仍写着
+  `layoutPolicy=business_config_sections`、`formStructureAuthority=entry_semantic_surface` 并列出 144/241/242/243 等旧配置
+  （该快照绑定更早的 head）。合入提交须一并落实：条目重新快照为 `native_authority` + 退役配置、`count` 由 36 扣减为 34、
+  旁路 811 登记进 `bypassConsumers`、新增 `uc4G04PublishedAudit`、`nextBatch.selectedGroup=G05`、`sourceMainlineHead` 更新为合入后主线 head。
+  在扣减落地前，本记录的 36 应理解为**尚未扣减的台账值**，不得当作本轮已生效计数。
