@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import type { CanonicalFormNode } from '../src/app/presentation/canonicalFormRenderModel';
 import {
   activeSectionKeyAtAnchor,
+  authoritativeNativeBusinessSections,
   governedFormStructureSectionNavigationItems,
   nextBusinessActionLabel,
   nativeSectionNavigationRole,
@@ -431,4 +432,163 @@ assert.equal(sectionScrollDelta(132, 120), 12, 'a target below the active anchor
 assert.equal(sectionScrollDelta(104, 120), -16, 'a target hidden above the active anchor must be moved below sticky surfaces');
 assert.equal(sectionScrollDelta(120.5, 120), 0, 'sub-pixel rendering around the active anchor must not cause scroll churn');
 
-console.log('[native_section_navigation_test] PASS authority=7 next_action=3 content_identity=11 active_tracking=7');
+// --- U-C4 G05: structure-consumption cases --------------------------------
+// The retired entry configurations used to project their own section bodies.
+// These cases lock the shared mechanism the rebuilt native trees now rely on,
+// so a later consumer cannot re-introduce a second structure by accident.
+
+// 1. An empty command container (a header with no rendered child) is not a
+//    business section and must not swallow the body that follows it.
+const bodyWithEmptyHeader = workspaceSectionNavigationItems([
+  node({ nodeId: 'form.header', kind: 'header', title: '', fields: [], children: [] }),
+  node({ nodeId: 'body.basic', title: '基本信息', attributes: { 'data-sc-anchor': 'body-basic' } }),
+]);
+assert.deepEqual(
+  bodyWithEmptyHeader.map((item) => [item.label, item.sourceIdentity]),
+  [['基本信息', 'body.basic']],
+  'an empty header adds no navigation entry and does not replace the business body',
+);
+
+// 2. Untitled column wrappers arrange sections; they are never entries and
+//    must not swallow the sections they arrange.
+const untitledWrapperSections = workspaceSectionNavigationItems([node({
+  nodeId: 'sheet.wrapper', title: '', fields: [], children: [
+    node({ nodeId: 'wrapper.left', title: '左侧章节', attributes: { 'data-sc-anchor': 'wrapper-left' } }),
+    node({ nodeId: 'wrapper.right', title: '右侧章节', attributes: { 'data-sc-anchor': 'wrapper-right' } }),
+  ],
+})]);
+assert.deepEqual(
+  untitledWrapperSections.map((item) => [item.label, item.sourceIdentity]),
+  [['左侧章节', 'wrapper.left'], ['右侧章节', 'wrapper.right']],
+  'an untitled layout wrapper stays out of navigation without hiding the sections it arranges',
+);
+
+// 3. A hidden child never becomes an entry, even when it declares an anchor,
+//    and it does not remove its visible parent's section.
+const hiddenChildSections = workspaceSectionNavigationItems([node({
+  nodeId: 'visible.parent', title: '可见章节', attributes: { 'data-sc-anchor': 'visible-parent' },
+  children: [
+    node({
+      nodeId: 'hidden.child', title: '隐藏子章节', visible: false,
+      attributes: { 'data-sc-anchor': 'hidden-child' },
+    }),
+  ],
+})]);
+assert.deepEqual(
+  hiddenChildSections.map((item) => item.sourceIdentity),
+  ['visible.parent'],
+  'a hidden child keeps its anchor inert without consuming its parent section',
+);
+assert.deepEqual(
+  workspaceSectionNavigationItems([node({
+    nodeId: 'empty.parent', title: '空章节', attributes: { 'data-sc-anchor': 'empty-parent' },
+    fields: [], children: [
+      node({
+        nodeId: 'empty.hidden.child', title: '隐藏子章节', visible: false,
+        attributes: { 'data-sc-anchor': 'empty-hidden-child' },
+      }),
+    ],
+  })]),
+  [],
+  'a section whose only remaining content is hidden must not leave a dead navigation target',
+);
+
+// 4. Notebook content owns its own navigation: a section anchor inside a page
+//    is not promoted into page-level navigation, while the non-empty detail
+//    collection inside that page keeps its own relation entry.
+const notebookDetailSections = workspaceSectionNavigationItems([node({
+  nodeId: 'sheet.notebook', kind: 'notebook', fields: [], children: [node({
+    nodeId: 'notebook.page', kind: 'page', title: '责任余额', fields: [], children: [node({
+      nodeId: 'notebook.group', title: '嵌套章节', attributes: { 'data-sc-anchor': 'nested-section' },
+      fields: [field({
+        widgetId: 'lines.deduction', fieldCode: 'deduction_line_ids',
+        fieldType: 'one2many', semanticRole: 'relation', label: '扣款单明细',
+      })],
+    })],
+  })],
+})]);
+assert.deepEqual(
+  notebookDetailSections.map((item) => [item.contentKind, item.sourceIdentity]),
+  [['relation-collection', 'lines.deduction']],
+  'tab-owned sections stay under tab navigation while the non-empty detail keeps one relation entry',
+);
+
+// 5. Nested section separators each keep exactly one identity; an inner
+//    separator must not duplicate or replace its outer section.
+const nestedSectionItems = workspaceSectionNavigationItems([node({
+  nodeId: 'outer.section', title: '外层章节', attributes: { 'data-sc-anchor': 'outer' }, fields: [], children: [
+    node({ nodeId: 'inner.section', title: '内层章节', attributes: { 'data-sc-anchor': 'inner' } }),
+  ],
+})]);
+assert.deepEqual(
+  nestedSectionItems.map((item) => [item.label, item.sourceIdentity]),
+  [['外层章节', 'outer.section'], ['内层章节', 'inner.section']],
+  'nested section separators must not collapse into one entry or drop the inner section',
+);
+assert.equal(
+  new Set(nestedSectionItems.map((item) => item.key)).size,
+  nestedSectionItems.length,
+  'nested section keys must stay distinct so reveal targets cannot collide',
+);
+
+// 6. The renderer mode switch and section navigation consume one collection,
+//    so an out-of-scope anchor cannot activate only one of them.
+const sharedBodyTree = [node({
+  nodeId: 'sheet.body', title: '', fields: [], children: [
+    node({ nodeId: 'body.a', title: '基本信息', attributes: { 'data-sc-anchor': 'body-a' } }),
+    node({ nodeId: 'body.b', title: '办理说明', attributes: { 'data-sc-anchor': 'body-b' } }),
+    node({ nodeId: 'body.wrapper', title: '', fields: [], children: [
+      node({ nodeId: 'body.c', title: '收付款账户', attributes: { 'data-sc-anchor': 'body-c' } }),
+    ] }),
+    node({ nodeId: 'body.unnamed', title: '仅标题的布局组', fields: [] }),
+  ],
+})];
+const renderedSectionIdentities = authoritativeNativeBusinessSections(sharedBodyTree)
+  .map(({ node: section }) => section.nodeId).sort();
+const navigatedSectionIdentities = workspaceSectionNavigationItems(sharedBodyTree)
+  .filter((item) => item.contentKind === 'semantic-section')
+  .map((item) => item.sourceIdentity).sort();
+assert.deepEqual(
+  navigatedSectionIdentities,
+  renderedSectionIdentities,
+  'body and navigation must consume the same section identities',
+);
+assert.deepEqual(
+  renderedSectionIdentities,
+  ['body.a', 'body.b', 'body.c'],
+  'only anchored sections enter the shared collection, in body order',
+);
+
+// 7. Designer preview and business preview differ in anchor namespace, not in
+//    business section boundary: a governed projection resolves to the
+//    designer identity and never adds a second entry beside its native anchor.
+const designerSection = node({
+  nodeId: 'designer.section', title: '合同依据',
+  attributes: { 'data-sc-anchor': 'config-1a2b3c' },
+  nativePresentation: {
+    sourceAuthority: {
+      runtime_carrier: 'form_structure_contract',
+      no_business_fact_authority: true,
+    },
+  },
+  semanticSlot: 'configured_form', semanticGroup: 'configured_group_2',
+});
+assert.deepEqual(
+  governedFormStructureSectionNavigationItems([designerSection]).map((item) => [item.key, item.label]),
+  [['form-structure:designer.section', '合同依据']],
+  'a designed section yields exactly one governed identity although it also carries a native anchor',
+);
+assert.equal(
+  nativeBusinessSectionIdentity(designerSection)!.anchor,
+  'config-1a2b3c',
+  'the same node keeps its native anchor available for the released tree',
+);
+assert.deepEqual(
+  governedFormStructureSectionNavigationItems([node({
+    nodeId: 'released.section', title: '合同依据', attributes: { 'data-sc-anchor': 'claim_source_trace' },
+  })]).map((item) => [item.key, item.label]),
+  [['claim_source_trace', '合同依据']],
+  'once the entry consumes the native authority the business preview keeps the same boundary under the native anchor',
+);
+
+console.log('[native_section_navigation_test] PASS authority=7 next_action=3 content_identity=11 active_tracking=7 structure_consumption=7');

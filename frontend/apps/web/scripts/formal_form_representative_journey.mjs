@@ -506,6 +506,7 @@ export async function runRepresentativeSurface({ page, scope, contract, out, rep
     // existing record, so a registered record surface replays the same read-only
     // battery on a governed sample record of the same action.
     const recordId = surface.samples?.[0]?.id;
+    const uncovered = [];
     if (checks.record_surface && recordId) {
       routes.push({
         kind: 'record',
@@ -513,9 +514,23 @@ export async function runRepresentativeSurface({ page, scope, contract, out, rep
         record_id: recordId,
         url: `${base}/f/${surface.model}/${recordId}?action_id=${surface.action_id}&menu_id=${surface.menu_id}`,
       });
+    } else if (checks.record_surface) {
+      // The registered record surface is replayed on a governed sample of the same
+      // action; without one the route cannot run.  Record the exact reason (empty
+      // action domain versus a record rule the scope identity cannot pass) instead
+      // of reporting a shorter route list that looks complete.
+      const state = surface.sample_state || {};
+      uncovered.push({
+        fact: 'record_surface',
+        state: state.state || 'no_governed_sample',
+        domain_rows: state.domain_rows ?? null,
+        business_row_count: surface.business_row_count ?? null,
+        reason: 'a registered record surface replays on a readable governed sample of the same action; this scope identity has none',
+      });
     }
     const surfaceReport = {
       action_id: surface.action_id, model: surface.model, view_id: surface.view_id, menu_id: surface.menu_id, routes: [],
+      ...(uncovered.length ? { uncovered } : {}),
     };
     report.stages.representative.push(surfaceReport);
     for (const route of routes) {
@@ -580,6 +595,11 @@ export async function runRepresentativeSurface({ page, scope, contract, out, rep
   }
   const blocked = report.stages.representative.filter((row) => row.status === 'blocked');
   report.representative_blocked = blocked.map((row) => ({ action_id: row.action_id, reason: row.blocked_reason }));
+  // Registered facts that could not run are neither a pass nor a block: they stay
+  // machine-readable so the remaining-gap ledger can name the missing coverage.
+  report.representative_uncovered = report.stages.representative
+    .filter((row) => row.uncovered)
+    .flatMap((row) => row.uncovered.map((item) => ({ action_id: row.action_id, ...item })));
   const inspected = report.stages.representative.filter((row) => row.status === 'passed');
   // Every surface either produced structure results, or was recorded as blocked
   // by the delivered route authority.  Nothing is silently skipped and the

@@ -97,6 +97,7 @@ from . import test_policy_document_capability
 from . import test_invoice_native_lowcode
 from . import test_receipt_income_native_lowcode
 from . import test_payment_execution_native_lowcode
+from . import test_expense_claim_native_lowcode
 from . import test_social_fund_capability
 from . import test_product_system_settings
 from . import test_data_permission_surface

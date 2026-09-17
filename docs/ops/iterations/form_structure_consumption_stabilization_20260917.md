@@ -609,7 +609,7 @@ Runner `frontend/apps/web/scripts/designer_draft_ownership_test.mjs`（`cases=5`
 ## 8.14 第 5 次接管：两个验收缺口收口（拒绝反例登记 + 789 针对性复验）
 
 身份不变：`feature/uc4-invoice-native-lowcode`、HEAD `025e37d2`、工作树 39 条（32 modified + 7 untracked）、未冻结。
-状态口径：**页面整改复核通过｜批次验收待收口｜未集成｜未部署｜台账 42**。
+状态口径：**页面整改复核通过｜批次验收待收口｜未集成｜未部署｜台账 42（当时）**。
 用户已完成浏览器复核：1088 操作行底边 205px／导航起点 222px、390 操作按钮完整可见且正文标题不再被遮、备注视图单一、
 正式「表单设置」可打开且标签/排序/分组/显隐摘要仍在。吸收结论：吸顶布局不再作为缺口。
 
@@ -676,7 +676,7 @@ L2 沿用 §8.13.4（25 tests, 0 failed）；L4 本轮新增 `transport-replay-i
 ## 8.15 第 6 次接管：发票正向闭环通过、popup 断点归因与机制修复（用户第 6 轮两项缺口）
 
 身份：分支 `feature/uc4-invoice-native-lowcode`、HEAD `025e37d2`、工作树 41 条（32 modified + 9 untracked），未冻结。
-状态口径：**两个验收缺口均已收口｜批次验收待集中复核｜未集成｜未部署｜台账 42**。
+状态口径：**两个验收缺口均已收口｜批次验收待集中复核｜未集成｜未部署｜台账 42（当时）**。
 
 ### 8.15.1 归属：接管前已有 / 接管后修改 / 仅验证
 
@@ -773,7 +773,7 @@ shell 已挂载但仍在加载、shell 未挂载、路由证据），挂进既�
 ## 8.16 续推：最终工具版本下的发票正向闭环（授权续用既有草稿的正向路径）
 
 身份不变：分支 `feature/uc4-invoice-native-lowcode`、HEAD `025e37d2`、工作树 41 条（32 modified + 9 untracked），未冻结。
-状态口径：**两个验收缺口在最终工具版本下均已收口｜待集中浏览器复核｜未集成｜未部署｜台账 42**。
+状态口径：**两个验收缺口在最终工具版本下均已收口｜待集中浏览器复核｜未集成｜未部署｜台账 42（当时）**。
 
 ### 8.16.1 阻塞与解法（不删、不弃、不绕过守卫）
 
@@ -1015,3 +1015,79 @@ L4 只读代表面 837 create/record、808 create 通过（章节入口全 resol
 状态：**批次验收完成（本批范围）｜主线集成完成（PR #490）｜未部署**。G04 残留缺口（811 受管身份授权、
 808/811 业务分类可见性策略、837 record 章节入口差异、契约字段→渲染节点逐字段归因、`company_contractor_*` 契约层复现）
 继续登记在 G04 记录 §6，本批不扩。
+
+## 8.23 G05 代表面实施：报销、扣款、备用金原生结构迁移（独立记录）
+
+记录：`docs/ops/iterations/uc4_expense_claim_native_lowcode_20260918.md`。分支
+`feature/uc4-expense-claim-native-v1`，基线 = `8e8c1ce9d4d0fbe63b141cf75475030282f9f9d9`（G04 合入后主线），
+dirty 范围 **11 个路径**（P0/P1/P4 + 记录 + 生成物，与 `git show --stat` 一致），唯一写入者＝本会话执行体。
+本批冻结候选的精确身份（commit／tree／完整 tracked+untracked 指纹／exact-head Quick 回执）按既有做法
+绑定在外部证据包与批次记录的身份节，合入时在 §8.24「G05 主线集成与台账 34 → 32」收口，避免在同一提交里
+写入自身 HEAD 造成身份漂移。
+
+本批要解决的结构消费问题：`sc.expense.claim` 的三个正式入口共享两个原生表单（1633／1632），
+其中 792／798 已按入口声明消费原生树，而 **793（备用金）没有入口级发布**，解析落到模型级
+`sc_expense_claim_form_structure_generated_v1`(72)：`layoutPolicy=native_authority` ＋ 独立 slots，
+前端因此走 compatibility 平面，create 模式把「可见且只读且无值」的字段全部修剪，页面只剩壳
+（`.native-form-tree[data-state="empty"]`、0 字段、0 导航），而操作行与协作区仍正常渲染。
+
+归因方法（可复算）：同一会话内对比三入口的 `api.data` 响应——`containerTree`（792=86／798=79／793=79 节点）
+与 `formStructureContract…formStructureAuthority`（792/798=`native_authority`／793=空），
+再对上前端 `contractFormPresenter.ts` 的 `structureAuthority` 判定，得到「结构数据完整、消费平面错误」的结论；
+没有用延长超时或改断言代替归因。
+
+修复：为 793 新增入口级发布 `expense_claim_advance_fund_productized_form_v1`（`备用金`、
+`native_semantic_surface`，无 sections/fields/columns），与同模型 792／798 一致；模型级 72 保留原样
+（另有消费者），共享 compatibility 修剪规则本批不改。
+
+验证：L1 `ci.local.iteration` PASS（16 tests）；L2 后端 `TestExpenseClaimNativeLowcode` **9 tests / 0 failed**
+（含修正后断言：793 必须解析到入口级容器树权威，模型级配置保留且不再被该入口消费），前端
+`verify.frontend.native_section_navigation.unit` PASS、`verify.frontend.typecheck.strict` PASS；
+L3 `local.dev.upgrade` PASS（78 modules）；L4 代表面 792/798/793 create 全部通过
+（36／29／35 字段，8 章节，导航 8/8，吸顶分离，`findings` 全空）。
+
+代表面工具补齐（P4，最小扩展，复用既有受管环境）：scope 探测新增 `sample_state`／`business_row_count`，
+代表面 journey 新增 `representative_uncovered`，loop 打印 `UNCOVERED`/`BLOCKED`。由此把此前**静默跳过**的
+`record_surface` 事实显式登记：792=`record_rule_denied`（域内 1 行、可读 0 行）、798/793=`empty_action_domain`。
+结论：本主题「业务指纹不变」护栏在当前受管身份下基于 0 行可读业务数据，强度有限，不得表述为「业务数据已证未被改动」。
+
+批外候选（未登记为缺陷、未修改）：`sc.expense.claim` 的 ir.rule 组交并被合并为 `&`，导致非扣款组用户
+读域归零（即 792 记录规则事实的成因）。约六组副本候选继续留台账，不扩成全系统迁移。
+
+独立复核（只读，候选 `ba3f5da7`）结论 APPROVE，无写路径／授权绕过／业务事实丢失／scope creep（`addons/smart_core/**` 零改动、
+台账零改动）。复核提出的可移植性缺陷已闭环：测试改用 xmlid 寻址视图，不再硬编码库内 id 1633／1632
+（副本库与 clean/tenant 库 id 不同会让该测试失败）。代表面 L4 的 792=36／798=29／793=35 字段差已补归因：
+三入口结构层一致（同视图 57 个 field 节点、节点级 modifier 逐项相同），差在**入口业务类别的字段策略层**
+（798 声明 `finance.deduction.bill`，其 `form_policy_json` 带来 `fieldGroups` 与 category-sourced REQUIRED 规则；
+规则条数是 10 比 7、**差 3 而非 4**——`project_id` 在 798 由类别规则承担、在 793 由通用标记规则承担，属同一字段换来源），
+并使 13 个 widget 转 `visible=false`／`auth=none`；793 无业务类别，回落通用策略），DOM 上只体现为
+`company_contractor_*`×5 ＋ `reject_reason` 这 6 个字段（批次记录 §7.1）。一处包装 `<group>` 缩进错位按
+纯 cosmetic 记录、本批不改。
+
+### 8.23.1 第三轮回环：`readonly` 放宽回归（已修）与 `state` 候选缺口（未改）
+
+第二轮提交 `b2b12365` 的独立只读复核结论 **REQUEST_CHANGES**，其中一条是**真实回归**：792 的
+`company_name_text`／`paid_amount`／`payment_state` 从「退役配置声明只读」变为契约层 `auth=edit`。
+首次偏差在**原生 arch 的声明不完整**——217 去结构后原生 arch 是唯一载体，而 1633 上两个付款事实只是
+**条件**只读（`state in ['done','legacy_confirmed','cancel']`）、`company_name_text` 无条件，create 档
+（`state='draft'`）下三字段全部落到可编辑；对照 1632 同族字段本就是 `readonly="1"`。
+
+修复层：**P1 行业标准默认**（`smart_construction_core` 原生视图），3 行改动；
+测试同批把断言从「编译后的 arch 字符串」升级为「渲染器实际消费的策略层」
+（每个声明只读事实在 `statusContract.widgetStatus` 中的 `readonly` 必须为真）。
+验证：L1 PASS（16 tests）、L2 后端 9 tests / 0 failed、L3 PASS（78 modules）、只读探针 792 `LOSS=[]`、
+L4 代表面重跑 PASS（36／29／35 字段、8 章节、导航 8/8、吸顶在 1088 与 390 两个视口均分离 13px、
+`findings` 全空、`restored=true`）。本轮**观察到 1 次 Vite dev 模块传输中断**
+（`ERR_NETWORK_CHANGED`×4，`recovery_attempt=renavigate_once`、`recovered=true`）：按既有口径单独记录，
+不改写成零错误，也不作为「网络已恢复」的判据。
+
+同轮登记但**未修改**的候选缺口：793 以及另外 6 个无入口声明的入口（794／815／839／840／841／842），
+其 `state` 在契约层为 `auth=edit`——792／798 的 `state` 只读来自**业务类别** `form_policy_json`，
+而全部 14 份入口契约与 25 份类别策略一致声明 `state` 只读，故 793 是 17 个入口中唯一可编辑者。
+不修改的三条依据：① 非本批回归（基线 793 无入口契约；内存内剔除 528 的对照实验得到同一 `state` 行）；
+② 唯一可用载体是**模型默认表单视图** 1632，收紧会波及 6 个批外入口，违反「门控不得移除合法动作入口」；
+③ 入口级最小修复被机制禁止（`is_configured_surface` 只接受 tenant_lowcode／user_preference，
+`source=…product_release` 加 `node_patches` 会命中 `CONFIG_SOURCE_NOT_AUTHORIZED`）。
+详见批次记录 §11.4 与 §13。
+
+状态：**第三轮回环中（回归已修，待重走冻结链）｜未集成｜未部署｜89 入口交付未完成｜台账 34（扣减待合入后核对）**。
