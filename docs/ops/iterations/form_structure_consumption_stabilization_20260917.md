@@ -944,3 +944,23 @@ popup 创建后立即 `reload()` 会取消首个文档的**在途模块请求**�
 要点（细节见该记录）：3 个入口（637/806/807）共用原生 1644；3 个入口声明转 `native_semantic_surface`，共享层 sections(149)、P1 业务事实层(8) 与模型级生成镜像(109) 退役；原生 arch 承载退役配置声明过的事实并加 8 个 `data-sc-anchor` 业务章节；**不登记** `sc.receipt.income` 的展示副本（该模型未继承展示副本协议、附件摘要为双来源派生），改由退役重复投影保证正文单一呈现。
 验证：L1 PASS；L2 新增 6 测 `0 failed`；L3 模块升级 + authority PASS；L4 只读代表面 806 create/record 通过（章节导航全 resolve、吸顶 0 重叠、无重复字段/空容器），637/807 为交付导航权威**拒绝访问**（记录为可达性事实，非结构结论）。
 台账保持 **38**（扣减留待合入后核对）；本批未执行 `sync_demo`／fixture reset／发布快照／工作树清理。
+
+## 8.20 G03 主线集成与台账 38 → 36
+
+上一节记的「台账保持 38、扣减留待合入后核对」已闭合：G03 冻结候选
+`558626214f57f03e3bc3eb25e1acd9caa40b0d63`（tree `175da4c07dad0524bd13aaa4466202518953ba56`，完整指纹 digest
+`9b1bae26356f0a6acc4b9f2e6aa5ad02827717bf61de02a5321891f6912808cb`，exact-head `ci.local.quick` PASS）
+经 PR #488 合入，main = `654edf0ff09fe394080bfa2545a5061dcafdbecd`；四个候选门禁在该 head 全部 success，
+`make pr.merge.prep` 与 `make pr.merge`（squash + `--match-head-commit`）依次通过。
+
+台账 `docs/ops/iterations/form_structure_compatibility_consumers_v1.json` 扣减 **38 → 36**
+（退役 action 637/806 与视图 1644，并新增 `uc4G03PublishedAudit`）；共享旁路 action 807
+（工程进度款收入登记）按其「非台账消费者」事实登记在 `bypassConsumers`，不计数、不静默丢弃；
+`nextBatch.selectedGroup` 前进到 **G04 实付与公司支出（837/808，视图 1647）**，`sourceMainlineHead` 更新为上述 main。
+
+证据归档：`make workspace.evidence.archive` 5 文件（summary／identity／review／2 张代表面截图）回执 `verified`，
+位于 `/home/lidefend/workspace/.codex-evidence/workspace-archives/20260918/uc4-g03-receipt-income-native/558626214f57f03e3bc3eb25e1acd9caa40b0d63/`；
+独立复核结论 APPROVE（残留风险与非阻断跟进项见该归档 `review.md`）。
+
+状态：**批次验收完成（本批范围）｜主线集成完成（PR #488）｜未部署**。G03 残留缺口（637/807 受管身份授权、
+807 progress 域样本、契约字段→渲染节点逐字段归因、`name` 手工编号业务决定）继续登记在 G03 记录 §6，本批不扩。
