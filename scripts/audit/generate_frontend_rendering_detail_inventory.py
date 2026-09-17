@@ -78,6 +78,7 @@ BATCH_BINDINGS = {
     "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue": {"scinlinestate": {"states": {"empty", "error", "info"}, "minimum": 4}},
     "frontend/apps/web/src/pages/contractForm/NativeCollaborationPanel.vue": {"scinlinestate": {"states": {"empty", "error"}, "minimum": 2}},
     "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue": {"scinlinestate": {"states": {"loading", "empty"}, "minimum": 1}},
+    "frontend/apps/web/src/pages/contractForm/BoundFormSettingsPanel.vue": {"scinlinestate": {"states": {"error"}, "attrs": {"state": "error"}, "minimum": 5}},
     },
     "p0-collection-state-control-completion-v1": {
         "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue": {"scbutton": {"minimum": 1}, "sccheckbox": {"minimum": 1}, "scselect": {"minimum": 1}},

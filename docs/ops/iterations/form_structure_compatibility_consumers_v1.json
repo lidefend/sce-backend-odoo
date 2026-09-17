@@ -6,7 +6,7 @@
     "operation": "model",
     "renderProfile": "create"
   },
-  "count": 44,
+  "count": 42,
   "fullRescan": false,
   "sourceInventory": "artifacts/form-structure-unification/customer-browser-final/compatibility-consumers.json",
   "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
@@ -9945,230 +9945,6 @@
       "evidenceStatus": "carried_forward_prior_inventory"
     },
     {
-      "menuXmlid": "smart_construction_core.menu_sc_certificate_registration",
-      "label": "证书管理",
-      "model": "sc.document.admin.document",
-      "actionId": 666,
-      "menuId": 356,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.document.admin.document",
-        "viewId": 1703
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 191,
-            "name": "document_admin_certificate_productized_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1703,
-        "resolvedActionId": 666,
-        "structureDiagnostics": [
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.document.admin.document",
-              "action_id": 666,
-              "view_id": 1703
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "state",
-              "document_no",
-              "name",
-              "fact_type",
-              "business_date",
-              "project_id",
-              "requester_id",
-              "department_id",
-              "certificate_name",
-              "certificate_no",
-              "holder_name",
-              "issue_authority",
-              "issue_date",
-              "valid_until",
-              "handler_id",
-              "due_date",
-              "description",
-              "result_note",
-              "attachment_ids",
-              "legacy_document_no",
-              "legacy_document_state",
-              "legacy_source_table",
-              "legacy_source_id"
-            ],
-            "configuration": {
-              "id": 191,
-              "name": "document_admin_certificate_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 65,
-                "name": "sc_document_admin_document_form_structure_generated_v1"
-              }
-            ]
-          }
-        ],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "state",
-          "document_no",
-          "name",
-          "fact_type",
-          "business_date",
-          "requester_id",
-          "department_id",
-          "document_title",
-          "holder_name",
-          "certificate_name",
-          "certificate_no",
-          "issue_authority",
-          "issue_date",
-          "valid_until",
-          "borrow_user_id",
-          "borrow_date",
-          "expected_return_date",
-          "actual_return_date",
-          "handler_id",
-          "due_date",
-          "description",
-          "result_note",
-          "attachment_ids",
-          "project_id",
-          "legacy_document_no",
-          "legacy_document_state",
-          "legacy_source_table",
-          "legacy_source_id"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:办理主信息",
-            "key": "",
-            "title": "办理主信息",
-            "fields": [
-              "state",
-              "document_no",
-              "name",
-              "fact_type",
-              "business_date",
-              "project_id",
-              "requester_id",
-              "department_id"
-            ]
-          },
-          {
-            "identity": "title:证照信息",
-            "key": "",
-            "title": "证照信息",
-            "fields": [
-              "certificate_name",
-              "certificate_no",
-              "holder_name",
-              "issue_authority",
-              "issue_date",
-              "valid_until"
-            ]
-          },
-          {
-            "identity": "title:办理与附件",
-            "key": "",
-            "title": "办理与附件",
-            "fields": [
-              "handler_id",
-              "due_date",
-              "description",
-              "result_note",
-              "attachment_ids"
-            ]
-          },
-          {
-            "identity": "title:来源追溯",
-            "key": "",
-            "title": "来源追溯",
-            "fields": [
-              "legacy_document_no",
-              "legacy_document_state",
-              "legacy_source_table",
-              "legacy_source_id"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "办理主信息",
-          "证照信息",
-          "办理与附件",
-          "来源追溯"
-        ],
-        "fieldGroups": {
-          "办理主信息": [
-            "state",
-            "document_no",
-            "name",
-            "fact_type",
-            "business_date",
-            "project_id",
-            "requester_id",
-            "department_id"
-          ],
-          "证照信息": [
-            "certificate_name",
-            "certificate_no",
-            "holder_name",
-            "issue_authority",
-            "issue_date",
-            "valid_until"
-          ],
-          "办理与附件": [
-            "handler_id",
-            "due_date",
-            "description",
-            "result_note",
-            "attachment_ids"
-          ],
-          "来源追溯": [
-            "legacy_document_no",
-            "legacy_document_state",
-            "legacy_source_table",
-            "legacy_source_id"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "办理主信息": 2,
-          "证照信息": 2,
-          "办理与附件": 2,
-          "来源追溯": 2
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
       "menuXmlid": "smart_construction_core.menu_sc_product_social_fund_v1",
       "label": "社保公积",
       "model": "sc.hr.payroll.document",
@@ -10629,241 +10405,6 @@
           "使用信息": 2,
           "购置信息": 2,
           "备注与附件": 1
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_product_policy_document_v1",
-      "label": "制度文件",
-      "model": "sc.document.admin.document",
-      "actionId": 862,
-      "menuId": 708,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.document.admin.document",
-        "viewId": 1703
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 178,
-            "name": "policy_document_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1703,
-        "resolvedActionId": 862,
-        "structureDiagnostics": [
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.document.admin.document",
-              "action_id": 862,
-              "view_id": 1703
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "state",
-              "document_no",
-              "name",
-              "fact_type",
-              "document_title",
-              "policy_category",
-              "policy_version",
-              "confidentiality_level",
-              "issuing_department",
-              "policy_issue_date",
-              "policy_effective_date",
-              "policy_expiry_date",
-              "business_date",
-              "department_id",
-              "requester_id",
-              "handler_id",
-              "due_date",
-              "description",
-              "result_note",
-              "attachment_ids",
-              "legacy_document_no",
-              "legacy_document_state",
-              "legacy_source_table",
-              "legacy_source_id"
-            ],
-            "configuration": {
-              "id": 178,
-              "name": "policy_document_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 65,
-                "name": "sc_document_admin_document_form_structure_generated_v1"
-              }
-            ]
-          }
-        ],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "state",
-          "document_no",
-          "name",
-          "fact_type",
-          "business_date",
-          "requester_id",
-          "department_id",
-          "document_title",
-          "holder_name",
-          "certificate_name",
-          "certificate_no",
-          "issue_authority",
-          "issue_date",
-          "valid_until",
-          "borrow_user_id",
-          "borrow_date",
-          "expected_return_date",
-          "actual_return_date",
-          "handler_id",
-          "due_date",
-          "description",
-          "result_note",
-          "attachment_ids",
-          "policy_category",
-          "policy_version",
-          "confidentiality_level",
-          "issuing_department",
-          "policy_issue_date",
-          "policy_effective_date",
-          "policy_expiry_date",
-          "legacy_document_no",
-          "legacy_document_state",
-          "legacy_source_table",
-          "legacy_source_id"
-        ],
-        "fieldLabels": {
-          "document_title": "制度名称"
-        },
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:制度主信息",
-            "key": "",
-            "title": "制度主信息",
-            "fields": [
-              "state",
-              "document_no",
-              "name",
-              "fact_type",
-              "document_title",
-              "policy_category",
-              "policy_version",
-              "confidentiality_level"
-            ]
-          },
-          {
-            "identity": "title:发布与有效期",
-            "key": "",
-            "title": "发布与有效期",
-            "fields": [
-              "issuing_department",
-              "policy_issue_date",
-              "policy_effective_date",
-              "policy_expiry_date",
-              "business_date",
-              "department_id"
-            ]
-          },
-          {
-            "identity": "title:维护与附件",
-            "key": "",
-            "title": "维护与附件",
-            "fields": [
-              "requester_id",
-              "handler_id",
-              "due_date",
-              "description",
-              "result_note",
-              "attachment_ids"
-            ]
-          },
-          {
-            "identity": "title:来源追溯",
-            "key": "",
-            "title": "来源追溯",
-            "fields": [
-              "legacy_document_no",
-              "legacy_document_state",
-              "legacy_source_table",
-              "legacy_source_id"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "制度主信息",
-          "发布与有效期",
-          "维护与附件",
-          "来源追溯"
-        ],
-        "fieldGroups": {
-          "制度主信息": [
-            "state",
-            "document_no",
-            "name",
-            "fact_type",
-            "document_title",
-            "policy_category",
-            "policy_version",
-            "confidentiality_level"
-          ],
-          "发布与有效期": [
-            "issuing_department",
-            "policy_issue_date",
-            "policy_effective_date",
-            "policy_expiry_date",
-            "business_date",
-            "department_id"
-          ],
-          "维护与附件": [
-            "requester_id",
-            "handler_id",
-            "due_date",
-            "description",
-            "result_note",
-            "attachment_ids"
-          ],
-          "来源追溯": [
-            "legacy_document_no",
-            "legacy_document_state",
-            "legacy_source_table",
-            "legacy_source_id"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "制度主信息": 2,
-          "发布与有效期": 2,
-          "维护与附件": 2,
-          "来源追溯": 2
         },
         "groupVisibility": {},
         "formColumns": 2
@@ -11459,14 +11000,16 @@
   },
   "runtimeEvidenceRoot": "artifacts/form-structure-unification/ub-tender-hierarchy-identities",
   "nextBatch": {
-    "name": "U-C3",
-    "status": "first_group_scoped_not_implemented",
+    "name": "U-C4",
+    "status": "scope_confirmed_implementation_started",
     "priorityActions": [
-      666,
-      862
+      785,
+      786,
+      787,
+      788
     ],
-    "selectedGroup": "G01",
-    "sourceMainlineHead": "e802f7239bf005482a352caa64eb9da0e78a085a",
+    "selectedGroup": "G02",
+    "sourceMainlineHead": "3323fb49e41e6bf0851acfde0d3e9df2dafafd8f",
     "fullRescan": false,
     "groups": [
       {
@@ -11507,9 +11050,10 @@
           "invoice_output_registration_productized_form_v1",
           "invoice_prepaid_tax_productized_form_v1",
           "sc_invoice_registration_form_sections_v1",
-          "sc_invoice_registration_p1_form_business_facts_v1"
+          "sc_invoice_registration_p1_form_business_facts_v1",
+          "sc_invoice_registration_form_structure_generated_v1"
         ],
-        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
+        "evidenceStatus": "grouped_from_ledger_plus_implementation_discovery_generated_mirror"
       },
       {
         "id": "G03",
@@ -11803,27 +11347,27 @@
         "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
       }
     ],
-    "scopeNote": "First group: certificate and policy document native form migration only. No new business rules or permission expansion. Grouping does not prove compatibility exit.",
+    "scopeNote": "Second group: invoice four-entry native form migration (input 785, output application 786, output registration 787, prepaid tax 788, shared model sc.invoice.registration and view 1651). Scope confirmed in uc4 record: convert four action contracts to native_semantic_surface, retire model-wide form_sections_v1 and p1 business facts layers (both listed in G02 legacyConfigurations); bypass actions (input tax report, invoice general ledger) are not ledger consumers and fall back to the rebuilt native form. No new business rules or permission expansion.",
     "retirementCondition": "Each selected formal action must independently show native authority, no active structural override/dependency and representative browser acceptance before any count reduction.",
     "executionSequence": [
       "continuous_group_implementation_and_targeted_validation",
       "one_consolidated_browser_review",
       "freeze_and_PR_integration_gates"
     ],
-    "planningRecord": "docs/ops/iterations/uc2_material_native_migration_20260916.md"
+    "planningRecord": "docs/ops/iterations/uc4_invoice_native_lowcode_20260916.md"
   },
   "retirementCondition": "Only after every formal consumer of a compatibility regrouping path is zero and other roles/companies/states are covered, remove that regrouping logic and its test exemptions.",
-  "mainlineRemainingCount": 44,
+  "mainlineRemainingCount": 42,
   "mainlineRemainingLabel": "主线剩余兼容消费者（不代表部署发布或89入口整体交付）",
   "uc3LocalMigrationAudit": {
-    "status": "product_reviewed_empty_section_fix_verified_integration_pending",
+    "status": "mainline_integrated",
     "baseHead": "225a56bf9fa6ef3ff07a853450d11835ea973257",
     "dirty": true,
     "iterationRecord": "docs/ops/iterations/uc3_document_native_lowcode_20260916.md",
     "reduction": {
       "before": 44,
       "localAfter": 42,
-      "mainlineRemaining": 44,
+      "mainlineRemaining": 42,
       "actions": [
         666,
         862
@@ -11861,5 +11405,45 @@
     ],
     "deployment": "not_run",
     "userDelivery": "not_completed"
+  },
+  "uc3PublishedAudit": {
+    "auditedAt": "2026-09-16",
+    "auditedReleaseHead": "3323fb49e41e6bf0851acfde0d3e9df2dafafd8f",
+    "mergedPr": {
+      "number": 484,
+      "squashHead": "640e356d90b556642c84397ce3ac2c75c636184e",
+      "sourceHead": "48151d07b61c6f42bc74008c6c5762334e8fb5a3",
+      "tree": "aca2aad24c315a87029ecdc456f1ff90b7167b31"
+    },
+    "iterationRecord": "docs/ops/iterations/uc3_document_native_lowcode_20260916.md",
+    "reduction": {
+      "before": 44,
+      "after": 42,
+      "retiredActions": [
+        666,
+        862
+      ],
+      "retiredViews": [
+        1703
+      ]
+    },
+    "sourceVerification": {
+      "nativeStructureAuthority": true,
+      "configuredSectionsEmpty": true,
+      "compatibilityDependenciesEmpty": true,
+      "retiredModelMirrorDeactivated": true,
+      "sharedBorrowArchiveCounterexamplesKept": true
+    },
+    "browserEvidence": {
+      "recordedOutcome": "passed_and_user_accepted_in_merged_iteration_record",
+      "rawFiles": "preserved_under_artifacts/uc3-document-lowcode",
+      "recreated": false,
+      "acceptanceRerun": false
+    },
+    "notDeducted": [
+      "config_center_six_packages_pr_485",
+      "impact_scoped_validation_pr_486",
+      "borrow_archive_shared_action_scopes"
+    ]
   }
 }

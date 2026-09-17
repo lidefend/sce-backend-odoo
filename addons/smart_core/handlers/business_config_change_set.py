@@ -231,9 +231,10 @@ class BusinessConfigChangeSetOpenHandler(_ChangeSetBase):
         else:
             record = ChangeSet.search(domain, order="id desc", limit=1)
         if params.get("resume_only") and not record:
-            return self._ok({"change_set": None})
+            return self._ok({"change_set": None, "created": False})
         if params.get("fresh") is True:
             record = ChangeSet.browse()
+        created = False
         if not record:
             record = ChangeSet.create({
                 "name": _text(params.get("name")) or "未发布配置变更",
@@ -242,7 +243,13 @@ class BusinessConfigChangeSetOpenHandler(_ChangeSetBase):
                 "role_key": role_key or False,
                 "database_name": self.env.cr.dbname,
             })
-        return self._ok(record.with_env(self.env).serialize())
+            created = True
+        payload = record.with_env(self.env).serialize()
+        # Only this handler decides whether the call created or resumed a draft, so it is
+        # the only place that can assert it. A caller cannot recover this fact from the
+        # returned identity: excluding known ids is not proof of authorship.
+        payload["created"] = created
+        return self._ok(payload)
 
 
 class BusinessConfigChangeSetGetHandler(_ChangeSetBase):

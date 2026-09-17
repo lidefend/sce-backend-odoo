@@ -64,7 +64,37 @@ export type VisibleNativeLayoutFilterInput<T extends NativeLayoutLikeNode> = {
   groupVisibilityEditable: boolean;
   normalizeGroupTitle: (value: unknown) => string;
   isGroupVisible: (title: string) => boolean;
+  /**
+   * Prune layout containers that carry no visible content after filtering.
+   * Enabled for the formal (non-designer) rendering path so an emptied
+   * header/group/notebook shell never occupies screen space. The designer
+   * canvas keeps empty groups as drop targets.
+   */
+  pruneEmptyContainers?: boolean;
 };
+
+const EMPTY_PRUNE_CONTAINER_TYPES = new Set(['header', 'sheet', 'group', 'notebook', 'page', 'footer']);
+
+function hasNoChildRows(node: Record<string, unknown>): boolean {
+  return (['children', 'pages', 'tabs', 'nodes', 'items'] as const)
+    .every((key) => !Array.isArray(node[key]) || (node[key] as unknown[]).length === 0);
+}
+
+/**
+ * A layout wrapper is a group without a business section identity: it only
+ * arranges columns. The section separator belongs to business sections, so a
+ * wrapper must not draw it. The designer keeps every group decorated because
+ * the empty group is the editing target.
+ */
+export function isLayoutOnlyGroupContainer(params: {
+  nodeType: unknown;
+  editable: boolean;
+  sectionTitle: unknown;
+}): boolean {
+  if (params.editable) return false;
+  if (String(params.nodeType || '').trim().toLowerCase() !== 'group') return false;
+  return !String(params.sectionTitle || '').trim();
+}
 
 export type NativeFieldOrderPreviewInput<T extends NativeLayoutLikeNode> = {
   nodes: T[];
@@ -119,7 +149,8 @@ export type FieldPolicyLike = {
 export function filterVisibleNativeLayoutNodes<T extends NativeLayoutLikeNode>(
   params: VisibleNativeLayoutFilterInput<T>,
 ): T[] {
-  return params.nodes
+  const pruneEmpty = params.pruneEmptyContainers === true;
+  const mapped = params.nodes
     .filter((node) => params.isNodeVisible(node))
     .map((node) => {
       const next = { ...node } as Record<string, unknown>;
@@ -139,6 +170,13 @@ export function filterVisibleNativeLayoutNodes<T extends NativeLayoutLikeNode>(
       });
       return next as T;
     });
+  if (!pruneEmpty) return mapped;
+  return mapped.filter((node) => {
+    const raw = node as Record<string, unknown>;
+    const nodeType = String(raw.type || '').trim().toLowerCase();
+    if (!EMPTY_PRUNE_CONTAINER_TYPES.has(nodeType)) return true;
+    return !hasNoChildRows(raw);
+  });
 }
 
 export function applyNativeFieldOrderPreview<T extends NativeLayoutLikeNode>(

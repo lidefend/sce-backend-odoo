@@ -73,6 +73,241 @@ class TestBusinessConfigChangeSet(TransactionCase):
         handler.params = params
         return handler.handle()["data"]
 
+    def _designer_target(self, model, action_id, view_id, role_key="config_admin"):
+        return "view_orchestration:%s:form:action:%s:view:%s:role:%s" % (model, action_id, view_id, role_key)
+
+    def _designer_stage(self, env, change_set, target, *, model="res.partner", action_id=0, view_id=0, **extra):
+        result = BusinessConfigChangeSetStageHandler(env).handle(payload={"params": {
+            "change_set_token": change_set["token"], "role_key": "config_admin", "config_type": "form",
+            "target_key": target, "model": model, "view_type": "form", "action_id": action_id, "view_id": view_id,
+            "draft_payload": self._payload(), "diff_summary": {"summary": "测试配置"}, **extra,
+        }})
+        self.assertTrue(result["ok"], result)
+        return result["data"]
+
+    def _draft_rows(self, env):
+        return env["ui.business.config.change.set"].sudo().search_read([], ["state", "write_date", "name"], order="id")
+
+    def _item_rows(self, env, change_set_id):
+        return env["ui.business.config.change.set.item"].sudo().search_read(
+            [("change_set_id", "=", change_set_id)],
+            ["target_key", "model", "action_id", "view_id", "draft_payload", "base_payload_hash", "base_version_no"],
+            order="id",
+        )
+
+    def test_open_resumes_the_existing_designer_draft_instead_of_creating_one(self):
+        """Emitting `open` is not proof of authorship: `open` returns an existing draft."""
+        env, draft = self._open()
+        target = self._designer_target("res.partner", 785, 1651)
+        self._designer_stage(env, draft, target, action_id=785, view_id=1651)
+        drafts_before = self._draft_rows(env)
+        items_before = self._item_rows(env, draft["id"])
+        for params in (
+            {"target_key": target},
+            {"target_model": "res.partner", "target_action_id": 785},
+            {"target_key": target, "resume_only": True},
+            {"target_model": "res.partner", "target_action_id": 785, "resume_only": True},
+        ):
+            result = BusinessConfigChangeSetOpenHandler(env).handle(payload={"params": {"role_key": "config_admin", **params}})
+            self.assertTrue(result["ok"], result)
+            self.assertEqual(result["data"]["id"], draft["id"], params)
+            self.assertEqual(result["data"]["state"], "draft", params)
+        self.assertEqual(self._draft_rows(env), drafts_before, "open created a second draft or rewrote one")
+        self.assertEqual(self._item_rows(env, draft["id"]), items_before, "open rewrote the resumed draft content")
+
+    def test_open_reports_created_credential_for_authored_drafts_only(self):
+        """`created` is the only authorship credential; identity exclusion cannot recover it."""
+        env = self._env(self.admin)
+        target = self._designer_target("res.partner", 785, 1651)
+        first = BusinessConfigChangeSetOpenHandler(env).handle(payload={"params": {"role_key": "config_admin"}})["data"]
+        self.assertIs(first["created"], True, "a brand new draft must report created=True")
+        self._designer_stage(env, first, target, action_id=785, view_id=1651)
+        draft_rows_after_create = self._draft_rows(env)
+
+        resumed = BusinessConfigChangeSetOpenHandler(env).handle(payload={"params": {
+            "role_key": "config_admin", "target_key": target,
+        }})["data"]
+        self.assertEqual(resumed["id"], first["id"])
+        self.assertIs(resumed["created"], False, "resuming an existing draft must not claim authorship")
+        self.assertEqual(self._draft_rows(env), draft_rows_after_create, "resume must not create a second draft")
+
+        miss = BusinessConfigChangeSetOpenHandler(env).handle(payload={"params": {
+            "role_key": "config_admin", "target_key": self._designer_target("res.partner", 999, 999),
+            "resume_only": True,
+        }})
+        self.assertIs(miss["data"]["change_set"], None)
+        self.assertIs(miss["data"]["created"], False, "a resume_only miss must not report authorship")
+        self.assertEqual(self._draft_rows(env), draft_rows_after_create, "resume_only miss must not create a draft")
+
+        hit = BusinessConfigChangeSetOpenHandler(env).handle(payload={"params": {
+            "role_key": "config_admin", "target_key": target, "resume_only": True,
+        }})["data"]
+        self.assertEqual(hit["id"], first["id"])
+        self.assertIs(hit["created"], False)
+        self.assertEqual(self._draft_rows(env), draft_rows_after_create)
+
+    def test_fresh_open_reports_created_without_touching_the_previous_draft(self):
+        env, first = self._open()
+        target = self._designer_target("res.partner", 785, 1651)
+        self._designer_stage(env, first, target, action_id=785, view_id=1651)
+        before = self._draft_rows(env)
+        items_before = self._item_rows(env, first["id"])
+        second = BusinessConfigChangeSetOpenHandler(env).handle(payload={
+            "params": {"role_key": "config_admin", "fresh": True, "name": "Fresh authored draft"},
+        })["data"]
+        self.assertIs(second["created"], True, "fresh open must report created=True")
+        self.assertNotEqual(second["id"], first["id"])
+        after = self._draft_rows(env)
+        self.assertEqual(len(after), len(before) + 1, "fresh open must add exactly one draft")
+        self.assertEqual(
+            [row for row in after if row["id"] == first["id"]],
+            [row for row in before if row["id"] == first["id"]],
+            "fresh open must not mutate the previous draft",
+        )
+        self.assertEqual(self._item_rows(env, first["id"]), items_before, "fresh open rewrote the previous draft items")
+
+    def test_same_action_different_view_keeps_separate_designer_drafts(self):
+        env, first = self._open()
+        first_target = self._designer_target("res.partner", 785, 1651)
+        self._designer_stage(env, first, first_target, action_id=785, view_id=1651)
+        second = BusinessConfigChangeSetOpenHandler(env).handle(payload={
+            "params": {"role_key": "config_admin", "fresh": True, "name": "Independent designer draft"},
+        })["data"]
+        second_target = self._designer_target("res.partner", 785, 1652)
+        self._designer_stage(env, second, second_target, action_id=785, view_id=1652)
+        self.assertNotEqual(first["id"], second["id"])
+        drafts_before = self._draft_rows(env)
+        for target, expected in ((first_target, first["id"]), (second_target, second["id"])):
+            result = BusinessConfigChangeSetOpenHandler(env).handle(payload={
+                "params": {"role_key": "config_admin", "target_key": target, "resume_only": True},
+            })
+            self.assertEqual(result["data"]["id"], expected, target)
+        # The model+action rule ignores the view, so it must resolve to the newest matching
+        # draft instead of spawning a third one, and both drafts keep their own view item.
+        scoped = BusinessConfigChangeSetOpenHandler(env).handle(payload={"params": {
+            "role_key": "config_admin", "target_model": "res.partner", "target_action_id": 785, "resume_only": True,
+        }})
+        self.assertEqual(scoped["data"]["id"], second["id"])
+        self.assertEqual(self._draft_rows(env), drafts_before)
+        self.assertEqual([row["target_key"] for row in self._item_rows(env, first["id"])], [first_target])
+        self.assertEqual([row["target_key"] for row in self._item_rows(env, second["id"])], [second_target])
+
+    def test_ready_designer_draft_is_resumed_without_state_mutation(self):
+        env, draft = self._open()
+        target = self._designer_target("res.partner", 785, 1651)
+        self._designer_stage(env, draft, target, action_id=785, view_id=1651)
+        validated = BusinessConfigChangeSetValidateHandler(env).handle(payload={
+            "params": {"change_set_token": draft["token"], "role_key": "config_admin"},
+        })
+        self.assertTrue(validated["ok"], validated)
+        record = env["ui.business.config.change.set"].sudo().browse(draft["id"])
+        self.assertEqual(record.state, "ready")
+        drafts_before = self._draft_rows(env)
+        items_before = self._item_rows(env, draft["id"])
+        for params in (
+            {"target_key": target},
+            {"target_model": "res.partner", "target_action_id": 785, "resume_only": True},
+        ):
+            result = BusinessConfigChangeSetOpenHandler(env).handle(payload={"params": {"role_key": "config_admin", **params}})
+            self.assertEqual(result["data"]["id"], draft["id"], params)
+            self.assertEqual(result["data"]["state"], "ready", params)
+        record.invalidate_recordset(["state"])
+        self.assertEqual(record.state, "ready", "open reset a ready draft back to draft")
+        self.assertEqual(self._draft_rows(env), drafts_before)
+        self.assertEqual(self._item_rows(env, draft["id"]), items_before)
+
+    def test_published_version_change_blocks_stale_draft_stage_and_publish(self):
+        """A newer publication must block the old draft even when it echoes served hashes."""
+        env, change_set = self._open()
+        # The published target must carry the same scope the designer stages against, or
+        # the change set would be moving the configuration scope instead of editing it.
+        view = env["ir.ui.view"].sudo().create({"name": "test.change.set.stale.version.form", "model": "res.partner", "type": "form"})
+        action = env["ir.actions.act_window"].sudo().create({
+            "name": "test.change.set.stale.version", "res_model": "res.partner", "view_mode": "form",
+        })
+        target = self._designer_target("res.partner", action.id, view.id)
+        original_payload = self._payload("name")
+        contract = env["ui.business.config.contract"].sudo().create({
+            "name": target, "model": "res.partner", "view_type": "form",
+            "role_key": "config_admin", "company_id": env.company.id, "action_id": action.id, "view_id": view.id,
+            "contract_json": original_payload, "status": "published",
+        })
+        opened_definition = contract.definition_sha256
+        opened_version = contract.version_no
+        self._designer_stage(env, change_set, target, action_id=action.id, view_id=view.id,
+                             current_definition_hash=opened_definition,
+                             current_payload_hash=stable_payload_hash(original_payload))
+        item = env["ui.business.config.change.set.item"].sudo().search([("change_set_id", "=", change_set["id"])])
+        self.assertEqual(len(item), 1)
+        item_baseline = (item.draft_payload, item.base_payload_hash, item.target_contract_id.id, item.base_version_no)
+        validated = BusinessConfigChangeSetValidateHandler(env).handle(payload={
+            "params": {"change_set_token": change_set["token"], "role_key": "config_admin"},
+        })
+        self.assertTrue(validated["ok"], validated)
+        record = env["ui.business.config.change.set"].sudo().browse(change_set["id"])
+        self.assertEqual(record.state, "ready")
+
+        # Another administrator publishes a new version of the same target while this
+        # draft is open: payload, definition and version all move.
+        replacement = self._payload("email")
+        contract.write({"contract_json": replacement})
+        self.assertEqual(contract.version_no, opened_version + 1)
+        self.assertNotEqual(contract.definition_sha256, opened_definition)
+
+        # The serialized draft now serves the *live* payload hash. Reading it is exactly
+        # what a resumed client does, so it must not be what protects the published
+        # version: the definition and the stored item baseline must still refuse.
+        served = BusinessConfigChangeSetGetHandler(env).handle(payload={
+            "params": {"change_set_token": change_set["token"], "role_key": "config_admin"},
+        })["data"]
+        served_item = served["items"][0]
+        self.assertEqual(served_item["current_payload_hash"], stable_payload_hash(replacement))
+        self.assertEqual(served_item["current_version"], opened_version)
+        for extra in (
+            {"current_definition_hash": opened_definition, "current_payload_hash": served_item["current_payload_hash"]},
+            {"current_payload_hash": served_item["current_payload_hash"]},
+            {},
+        ):
+            result = BusinessConfigChangeSetStageHandler(env).handle(payload={"params": {
+                "change_set_token": change_set["token"], "role_key": "config_admin", "config_type": "form",
+                "target_key": target, "model": "res.partner", "view_type": "form",
+                "action_id": action.id, "view_id": view.id,
+                "draft_payload": self._payload("phone"), **extra,
+            }})
+            self.assertFalse(result["ok"], extra)
+            self.assertEqual(result["code"], 409, extra)
+            self.assertEqual(result["error"]["reason_code"], "STALE_CONFIG_DEFINITION", extra)
+
+        # Not staged: the stored draft item is byte-identical and the batch stays ready.
+        self.assertEqual(
+            (item.draft_payload, item.base_payload_hash, item.target_contract_id.id, item.base_version_no),
+            item_baseline,
+        )
+        self.assertEqual(record.state, "ready")
+
+        # Not published: the newer version wins and no contract version row is appended.
+        Version = env["ui.business.config.contract.version"].sudo()
+        versions_before = Version.search_count([("contract_id", "=", contract.id)])
+        published = BusinessConfigChangeSetPublishHandler(env).handle(payload={"params": {
+            "change_set_token": change_set["token"], "role_key": "config_admin", "request_id": "stale-version-request",
+        }})
+        self.assertFalse(published["ok"], published)
+        self.assertEqual(published["code"], 409)
+        self.assertEqual(published["error"]["reason_code"], "CHANGE_SET_VERSION_CONFLICT")
+        contract.invalidate_recordset(["contract_json", "version_no", "status", "definition_sha256"])
+        self.assertEqual(contract.contract_json, replacement, "the stale draft overwrote the newer published version")
+        self.assertEqual(contract.version_no, opened_version + 1)
+        self.assertEqual(Version.search_count([("contract_id", "=", contract.id)]), versions_before)
+
+        # Not rolled back and not superseded: the draft is still the owner's open work.
+        rolled = BusinessConfigChangeSetRollbackHandler(env).handle(payload={"params": {
+            "change_set_token": change_set["token"], "role_key": "config_admin", "request_id": "stale-version-rollback",
+        }})
+        self.assertFalse(rolled["ok"], rolled)
+        self.assertEqual(rolled["error"]["reason_code"], "CHANGE_SET_NOT_PUBLISHED")
+        record.invalidate_recordset(["state"])
+        self.assertEqual(record.state, "ready")
+
     def test_resume_draft_is_target_scoped_and_missing_does_not_create(self):
         env, first = self._open()
         self._stage(env, first, "test.resume.first")
@@ -133,6 +368,39 @@ class TestBusinessConfigChangeSet(TransactionCase):
         self.assertFalse(result["ok"])
         self.assertEqual(result["code"], 409)
         self.assertEqual(result["error"]["reason_code"], "STALE_CONFIG_HASH")
+
+    def test_resumed_draft_restages_with_served_payload_hash(self):
+        env, change_set = self._open()
+        payload = self._payload()
+        contract = env["ui.business.config.contract"].sudo().create({
+            "name": "test.change.set.roundtrip", "model": "res.partner", "view_type": "form",
+            "role_key": "config_admin", "company_id": env.company.id,
+            "contract_json": payload, "status": "published",
+        })
+        staged = BusinessConfigChangeSetStageHandler(env).handle(payload={"params": {
+            "change_set_token": change_set["token"], "role_key": "config_admin", "config_type": "form",
+            "target_key": contract.name, "model": "res.partner", "view_type": "form",
+            "current_contract_id": contract.id, "current_payload_hash": stable_payload_hash(payload),
+            "draft_payload": payload,
+        }})
+        self.assertTrue(staged["ok"], staged)
+        served = staged["data"]["items"][0]["current_payload_hash"]
+        self.assertEqual(served, stable_payload_hash(contract.contract_json))
+        resumed = BusinessConfigChangeSetStageHandler(env).handle(payload={"params": {
+            "change_set_token": change_set["token"], "role_key": "config_admin", "config_type": "form",
+            "target_key": contract.name, "model": "res.partner", "view_type": "form",
+            "current_contract_id": contract.id, "current_payload_hash": served,
+            "draft_payload": payload,
+        }})
+        self.assertTrue(resumed["ok"], resumed)
+        stale = BusinessConfigChangeSetStageHandler(env).handle(payload={"params": {
+            "change_set_token": change_set["token"], "role_key": "config_admin", "config_type": "form",
+            "target_key": contract.name, "model": "res.partner", "view_type": "form",
+            "current_contract_id": contract.id, "current_payload_hash": "stale",
+            "draft_payload": payload,
+        }})
+        self.assertFalse(stale["ok"], stale)
+        self.assertEqual(stale["error"]["reason_code"], "STALE_CONFIG_HASH")
 
     def test_designer_stage_rejects_definition_changed_since_open(self):
         env, change_set = self._open()

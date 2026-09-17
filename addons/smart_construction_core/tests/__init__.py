@@ -94,6 +94,7 @@ from . import test_current_account_workspace
 from . import test_company_project_refund_workspace
 from . import test_project_special_tax_deduction
 from . import test_policy_document_capability
+from . import test_invoice_native_lowcode
 from . import test_social_fund_capability
 from . import test_product_system_settings
 from . import test_data_permission_surface
@@ -106,3 +107,4 @@ from . import test_product_reports
 from . import test_payment_settlement_component_profile
 from . import test_p1_finance_projection_authority
 from . import test_settlement_fact_immutability_v1
+from . import test_form_structure_consumption

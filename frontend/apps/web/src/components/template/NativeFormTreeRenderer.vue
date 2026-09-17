@@ -435,6 +435,7 @@ import ScTabs, { type ScTabItem } from '../design-system/ScTabs.vue';
 import { canonicalFormActionIconClass } from '../../pages/contractForm/canonicalFormActionIcon';
 import { nativeSectionNavigationRole } from '../../pages/contractForm/nativeSectionNavigation';
 import { resolveNativeTextPresentation } from './nativeTextPresentation';
+import { isLayoutOnlyGroupContainer } from '../../pages/contractForm/nativeLayoutUtils';
 import { collectNativeBusinessSections, nativeBusinessSectionIdentity } from '../../pages/contractForm/nativeBusinessSection';
 import type {
   FormSectionFieldAction,
@@ -572,12 +573,17 @@ function isNodeRenderable(node: NativeFormLayoutNode): boolean {
   if (!node) return false;
   if (!props.isNodeVisible(node)) return false;
   const type = nodeType(node);
-  // Empty-container guard: a group/page/container with no title, no static
+  // Empty-container guard: a structural container with no title, no static
   // text, and no renderable descendant (field/button/widget) renders as a
-  // bare separator line — a visual artifact from backend contracts that define
-  // structural groups without fields. Skip such nodes in normal view. In
-  // field-config edit mode, keep empty groups as drop targets.
-  if (type === 'group' || type === 'page' || type === 'container' || type === 'h1' || type === 'h2' || type === 'h3' || type === 'div' || type === 'span') {
+  // bare separator line or an empty shell — a visual artifact from backend
+  // contracts that define structural nodes without effective content.  This
+  // covers page-shell wrappers (header/sheet/footer) and notebooks whose
+  // conditional pages are all hidden, besides layout groups.  In field-config
+  // edit mode, keep empty groups as drop targets.
+  if (
+    type === 'group' || type === 'page' || type === 'container' || type === 'h1' || type === 'h2' || type === 'h3'
+    || type === 'div' || type === 'span' || type === 'header' || type === 'sheet' || type === 'footer' || type === 'notebook'
+  ) {
     if (props.fieldConfigEditable) return true;
     if (containerTitle(node) || nodeText(node)) return true;
     return hasRenderableDescendant(node, new Set<object>());
@@ -592,7 +598,14 @@ function hasRenderableDescendant(node: NativeFormLayoutNode, seen: Set<object>):
     if (!child) continue;
     if (!props.isNodeVisible(child)) continue;
     const childType = nodeType(child);
-    if (['field', 'button', 'widget'].includes(childType)) return true;
+    if (childType === 'field') {
+      // Node-level visibility is not enough: a field only renders when it
+      // produces a schema (e.g. create-mode statusbar/invisible companions
+      // have a visible node but no schema).  Match the real render branch.
+      if (props.fieldSchemasForNodes([child]).length) return true;
+      continue;
+    }
+    if (childType === 'button' || childType === 'widget') return true;
     if (['group', 'page', 'container', 'notebook', 'sheet', 'header', 'footer', 'h1', 'h2', 'h3', 'div', 'span'].includes(childType)) {
       if (hasRenderableDescendant(child, seen)) return true;
     }
@@ -894,6 +907,18 @@ function emitGroupFieldOrderPointerDrop(node: NativeFormLayoutNode, index = 0) {
   emit('field-order-drag-end', { field: { name: props.fieldOrderDraggingKey } as FormSectionFieldSchema });
 }
 
+function isLayoutOnlyGroup(node: NativeFormLayoutNode) {
+  // Layout wrappers are groups without a business section identity: no
+  // data-sc-anchor section, no semantic role title. They arrange columns
+  // only and must not draw the section separator reserved for business
+  // sections, otherwise nested wrappers stack a second border line.
+  return isLayoutOnlyGroupContainer({
+    nodeType: nodeType(node),
+    editable: props.fieldConfigEditable,
+    sectionTitle: semanticSectionTitle(node),
+  });
+}
+
 function containerClass(node: NativeFormLayoutNode) {
   return [
     'native-container',
@@ -905,6 +930,7 @@ function containerClass(node: NativeFormLayoutNode) {
         && props.fieldOrderDraggingKey
         && containerPolicyTitle(node),
       ),
+      'native-container--group--layout': isLayoutOnlyGroup(node),
     },
   ];
 }
@@ -1057,6 +1083,13 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 .native-container--group {
   border-top: 1px solid var(--sc-app-border);
   padding-top: var(--sc-space-sm);
+}
+
+/* Layout wrappers arrange columns only; the section separator belongs to
+   business sections so nested wrappers never stack a duplicate border. */
+.native-container--group.native-container--group--layout {
+  border-top: none;
+  padding-top: 0;
 }
 
 .native-container[data-collapsed='true'] > :not(.native-container-head) {

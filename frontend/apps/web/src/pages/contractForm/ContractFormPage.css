@@ -5,7 +5,13 @@
   box-sizing: border-box;
 }
 
-/* TDesign-aligned form canvas: one work surface with restrained business sections. */
+/* TDesign-aligned form canvas: one work surface with restrained business
+   sections.  The sticky offsets are declared on the page root so both form
+   render paths inherit them; the native tree adds `contract-form-native-shell`
+   on the same element, while the contract-v2 driver path mounts the page root
+   alone.  JavaScript overrides the command-bar height with the measured value
+   as soon as the header is observable. */
+.sc-page[data-product-page-mode='form'],
 .contract-form-native-shell[data-product-page-mode='form'] {
   --sc-form-command-bar-height: 72px;
   --sc-form-section-nav-height: calc(var(--sc-component-button-section-tab-height) * 1px + var(--sc-space-xs) + 1px);
@@ -14,6 +20,7 @@
 }
 
 @media (max-width: 560px) {
+  .sc-page[data-product-page-mode='form'],
   .contract-form-native-shell[data-product-page-mode='form'] {
     --sc-form-section-nav-height: calc(var(--sc-touch-target-min) + var(--sc-space-xs) + 1px);
   }
@@ -483,7 +490,10 @@
   box-shadow: none;
 }
 
-.contract-form-native-shell :deep(.native-container--group + .native-container--group) {
+/* The section separator belongs to business sections only.  A layout wrapper
+   (no anchor, no title) arranges columns and must never draw one, including
+   when it is the following sibling of another group. */
+.contract-form-native-shell :deep(.native-container--group + .native-container--group:not(.native-container--group--layout)) {
   border-top: 1px solid var(--sc-app-border);
   padding-top: var(--sc-space-lg);
 }

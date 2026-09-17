@@ -77,6 +77,19 @@ class FrontendPagePatternReferenceParityGuardTest(unittest.TestCase):
         failures = validate(lambda source: values[source])
         self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))
 
+    def test_configuration_preview_must_keep_the_authoritative_title(self) -> None:
+        values = self.source_map()
+        target = "frontend/apps/web/src/pages/ContractFormPage.vue"
+        values[target] = values[target].replace(
+            ':hide-title="!isConfigurationPreview && suppressPageHeaderTitle"',
+            ':hide-title="suppressPageHeaderTitle"',
+        )
+        failures = validate(lambda source: values[source])
+        self.assertTrue(any(
+            "configuration preview must not hide its authoritative title" in failure and target in failure
+            for failure in failures
+        ), failures)
+
     def test_product_specific_hint_is_rejected(self) -> None:
         values = self.source_map()
         target = "frontend/apps/web/src/components/design-system/ScCard.vue"

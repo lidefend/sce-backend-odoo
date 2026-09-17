@@ -96,6 +96,7 @@ NON_VISUAL = {
     "formStructureGovernanceContract.id": "server selection trace",
     "formStructureGovernanceContract.name": "server selection trace",
     "formStructureGovernanceContract.priority": "server selection trace",
+    "formStructureGovernanceContract.source_kind": "server selection trace; published baseline vs change-set preview identity",
     "formStructureGovernanceContract.view_type": "server selection trace",
     "formStructureGovernanceContract.version_no": "server selection trace",
     "formStructureConfiguredSection.identity": "server projection trace",

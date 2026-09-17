@@ -20,9 +20,9 @@
     "legacyRetirement": "remove compatibility structure consumers after formal menu ledger reaches zero"
   },
   "summary": {
-    "schemaFieldCount": 74,
+    "schemaFieldCount": 75,
     "renderedAuthorityCount": 22,
-    "validatedNonVisualAuthorityCount": 52,
+    "validatedNonVisualAuthorityCount": 53,
     "unclassifiedCount": 0
   },
   "rows": [
@@ -156,6 +156,12 @@
       "path": "formStructureGovernanceContract.priority",
       "classification": "validated_non_visual_authority",
       "reason": "server selection trace",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceContract.source_kind",
+      "classification": "validated_non_visual_authority",
+      "reason": "server selection trace; published baseline vs change-set preview identity",
       "consumer": "decodeFormStructureContract"
     },
     {

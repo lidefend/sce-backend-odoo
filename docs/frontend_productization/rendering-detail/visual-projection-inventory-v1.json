@@ -1776,7 +1776,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "eff98f890f890318aaacab573f6d0e8643ad7fae8d3d7c8e35ef38b65baf3a7f",
+      "digest": "c084d56b5072b010d17206b55536d13a552f686caf578937d1b0d2ea0dc4aa25",
       "nativeStyleSelectors": [],
       "path": "components/template/FormSection.vue",
       "referenceNativeStyleSelectors": [
@@ -1821,7 +1821,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "cb919312e3d181086c29c6d2181d923bcc79e507b78ed755896b095071cc781e",
+      "digest": "361999253a4cd40e0f46140484f0e98133413a7e84aba98bb868498ec3226b7e",
       "nativeStyleSelectors": [],
       "path": "components/template/NativeFormTreeRenderer.vue",
       "referenceNativeStyleSelectors": [],
@@ -2007,7 +2007,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "6c55032e48bc29862333f332b80931eead0fd9c3d570a05e699e7191f6b7723b",
+      "digest": "53ff0b6e4cf721a4ad870750b0ca077c3af1ea546da69f87d101d431ddb293ac",
       "nativeStyleSelectors": [],
       "path": "pages/ContractFormPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2015,7 +2015,8 @@
       "referenceScComponents": [],
       "scComponents": [
         "ScButton",
-        "ScCard"
+        "ScCard",
+        "ScInlineState"
       ]
     },
     {
@@ -2063,6 +2064,24 @@
       "scComponents": []
     },
     {
+      "category": "form-fields",
+      "digest": "f6cc9ce3a78c8c6a7586e3f642e304eef07563246a86f7368e65ee31dbabfb62",
+      "nativeStyleSelectors": [],
+      "path": "pages/contractForm/BoundFormSettingsPanel.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScDialog",
+        "ScForm",
+        "ScFormField",
+        "ScInlineState",
+        "ScInput",
+        "ScSelect"
+      ]
+    },
+    {
       "category": "workflow",
       "digest": "f5fb0d230b6a9df36e99cc2ca745f6364858f83d5e624122d021a81b331ad039",
       "nativeStyleSelectors": [],
@@ -2102,7 +2121,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "9a10a0df45a2b054b41d110c308f02572794534230cc016a0400e8f4b5be4b5b",
+      "digest": "1c51f9362d455e336d38d2acb8f12611cec05eec7c3d1036e6b2e9ab78a68576",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormActionBlocks.vue",
       "referenceNativeStyleSelectors": [],
@@ -2114,7 +2133,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "6400b8535248c40d6723016b211f2498cea79953870935911500e73d405ed089",
+      "digest": "1e88fbf867912ab47cab0196ab08c8ce653186b3b11982b76b7d52756be045c2",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormDriverHost.vue",
       "referenceNativeStyleSelectors": [
@@ -2150,7 +2169,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "01d54d4627cda0a3529f24ba42dbc7c1260d0427bcfab9610cadc7dc3dcdf547",
+      "digest": "e5ee78776314f5c6bdf66a7804f4bdd593860b02ff19e5cb593c0d066d6f1af4",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormProductHeader.vue",
       "referenceNativeStyleSelectors": [],
@@ -2212,7 +2231,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "78a14790d8c2b77fd369c9b41bd819251f6e7cfa9c03ec528d31412e7139457a",
+      "digest": "68ba9870a78fb905efa6a2e365d531e585d7ef25b8a60937336e9e04d940e5cc",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/FormSectionNavigation.vue",
       "referenceNativeStyleSelectors": [],
@@ -2476,7 +2495,7 @@
     },
     {
       "category": "other",
-      "digest": "0e28e93c2f5c81a4990a05a6ca67adfbb7a51a1e92fb00eeefe2425f2afab8d3",
+      "digest": "aac6b8907975d77c57d3adacea37314791d003978c54139867632f930543a26f",
       "nativeStyleSelectors": [],
       "path": "views/BusinessConfigSurfaceView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2740,7 +2759,7 @@
     },
     {
       "category": "other",
-      "digest": "fbf92316aa23c4b6d87c08657f0d28c682fcc182f0a0bf21b99baa97dfb50133",
+      "digest": "f454969443cea37fa5e31651a160fb27724de2dbe1d07b7c026d789a28a9ef01",
       "nativeStyleSelectors": [],
       "path": "views/businessConfigSurface/BusinessConfigChangeSetPanel.vue",
       "referenceNativeStyleSelectors": [],
@@ -2758,7 +2777,27 @@
     },
     {
       "category": "other",
-      "digest": "0fe69b9e9fb75fe458ccf512ac0341660007fd4c3c99ab9a97e73838fd891aaa",
+      "digest": "ef30ad8adbdc52c7844c204fc6942577480e3e5a540d7f8e6757a9d43b89355d",
+      "nativeStyleSelectors": [],
+      "path": "views/businessConfigSurface/BusinessConfigContextBar.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScButton",
+        "ScLinkButton",
+        "ScPageHeader",
+        "ScStatusBadge"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScLinkButton",
+        "ScPageHeader",
+        "ScStatusBadge"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "0eb35d169603f4bf22f097beb8d918470905e7fb46cd0abbf62e09bd1bb441ef",
       "nativeStyleSelectors": [],
       "path": "views/businessConfigSurface/BusinessConfigCoverageWorkspace.vue",
       "referenceNativeStyleSelectors": [],
@@ -2841,7 +2880,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "67f9143ba8e9d84453bdf81e8d359eae7cd7d972d4ea4aaef7d95263aaa7c855",
+  "currentInputDigest": "daf048b56ffc40b9ab8174af02724efd94aba06d05b116b629cc9aa5ccdeb226",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
@@ -3073,9 +3112,9 @@
   "scope": "repository formal P0/P1 frontend source projection",
   "summary": {
     "adapterCount": 18,
-    "changedSourceCount": 199,
+    "changedSourceCount": 201,
     "consumerPrimitiveVisualChromeCount": 0,
-    "currentSourceCount": 219,
+    "currentSourceCount": 220,
     "invalidFormalVisualEvidenceBindingCount": 0,
     "projectedAdapterCount": 18,
     "referenceSourceCount": 132,

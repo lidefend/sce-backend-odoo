@@ -11,7 +11,8 @@
         "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue",
         "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
         "frontend/apps/web/src/pages/contractForm/NativeCollaborationPanel.vue",
-        "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue"
+        "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue",
+        "frontend/apps/web/src/pages/contractForm/BoundFormSettingsPanel.vue"
       ]
     },
     "p0-collection-state-control-completion-v1": {

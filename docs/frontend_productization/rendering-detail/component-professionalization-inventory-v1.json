@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "8224a04e9e949364958592e64ab08f6d49dc55f1cdd32fd497168b682e6f3c48",
-  "generatorDigest": "f4ce74e7c5a5898b35c6b209d07fa4e4585cc13530f01d1b04c6c323670c7ff1",
-  "ownershipDigest": "20c6d7dd0be17facc39ef46ac87c6791c490475de081ba67edecc685cd27c82e",
-  "inputDigest": "611c823587094e39ac03b198fcadbe5eb77fd47d6382eaedbc36b450e9d8620b",
+  "sourceIdentity": "2ef0c4b2e208db5853b24a0dbbf11957e5c6413c29b9eb12d3ff864032de0182",
+  "generatorDigest": "02038c38a68bb1203e0994bc8a44dc253c2c589a6f9673521d880d109d093eb8",
+  "ownershipDigest": "b5cda2658fbd3ed4ebcb9188636a3107612fccf1a243a08441b9621dbaf2b75b",
+  "inputDigest": "b9d1e98515d59d1e45cfae96032428d5d561da80bb7adccba9dbe2af9fc1839f",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -20,12 +20,12 @@
     "permission and route authority changes"
   ],
   "summary": {
-    "surfaceCount": 167,
+    "surfaceCount": 168,
     "p0P1RawControlBypassSurfaceCount": 0,
     "p0P1RawControlBypassControlCount": 0,
     "deliberate_native_composite": 0,
     "gap": 0,
-    "governed_composite": 109,
+    "governed_composite": 110,
     "governed_primitive": 40,
     "p3_out_of_scope": 18
   },
@@ -1649,6 +1649,19 @@
       "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
+      "source": "frontend/apps/web/src/pages/contractForm/BoundFormSettingsPanel.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "error",
+        "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-inline-full-state-completion-v1"
+    },
+    {
       "source": "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue",
       "formalProductLayer": "P0",
       "status": "governed_composite",
@@ -2220,6 +2233,7 @@
       "status": "p3_out_of_scope",
       "reason": "low-code or administration product surface; handled by a separate P3 batch",
       "stateTypes": [
+        "empty",
         "disabled"
       ],
       "rawControls": {},
