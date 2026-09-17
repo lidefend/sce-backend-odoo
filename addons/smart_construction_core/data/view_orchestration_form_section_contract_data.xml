@@ -198,7 +198,8 @@
             <field name="view_type">form</field>
             <field name="priority">20</field>
             <field name="company_id" eval="False"/>
-            <field name="active" eval="True"/>
+            <!-- U-C4 G04: retired; the rebuilt native form view 1647 owns structure. -->
+            <field name="active" eval="False"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
             <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "办理类型"}, {"title": "付款依据"}, {"title": "付款金额"}, {"title": "收款账户"}, {"title": "付款账户"}, {"title": "办理说明"}, {"title": "公司-承包人资金责任"}, {"title": "来源与系统追溯"}]}}}}'/>

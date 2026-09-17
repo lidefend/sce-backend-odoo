@@ -46,55 +46,12 @@
                     'views': {
                         'form': {
                             'title': '付款登记',
-                            'composition_mode': 'entry_semantic_surface',
-                            'columns': 2,
+                            'composition_mode': 'native_semantic_surface',
                             'semantic_anchors': [
                                 {'role': 'summary', 'fields': ['payment_request_id', 'project_id', 'partner_id', 'state', 'paid_amount', 'currency_id']},
                                 {'role': 'task', 'fields': ['date_payment', 'handler_name']},
                                 {'role': 'risk', 'fields': ['company_contractor_responsibility_state', 'company_contractor_responsibility_notice', 'reversal_reason']},
                                 {'role': 'audit', 'fields': ['document_no', 'kingdee_document_no', 'push_result']}
-                            ],
-                            'sections': [
-                                {'title': '来源申请', 'sequence': 10, 'columns': 2, 'fields': ['payment_request_id', 'project_id', 'partner_id', 'contract_id', 'payment_request_partner_relation', 'business_category_id', 'state']},
-                                {'title': '本次实付', 'sequence': 20, 'columns': 2, 'fields': ['date_payment', 'planned_amount', 'paid_amount', 'currency_id', 'invoice_amount', 'payment_method']},
-                                {'title': '收款账户', 'sequence': 30, 'columns': 2, 'fields': ['receipt_account_name', 'receipt_bank_name', 'receipt_account_no']},
-                                {'title': '付款账户', 'sequence': 40, 'columns': 2, 'fields': ['payment_account_name', 'payment_bank_name', 'payment_account_no', 'bank_account']},
-                                {'title': '凭证与说明', 'sequence': 50, 'columns': 2, 'fields': ['document_no', 'kingdee_document_no', 'note', 'attachment_ids']},
-                                {'title': '责任与状态', 'sequence': 60, 'columns': 2, 'fields': ['handler_name', 'company_contractor_responsibility_state', 'company_contractor_responsibility_notice', 'cancellation_kind', 'reversal_reason', 'source_kind', 'payment_family', 'push_result']}
-                            ],
-                            'fields': [
-                                {'name': 'payment_request_id', 'sequence': 10, 'readonly': True},
-                                {'name': 'project_id', 'sequence': 20, 'readonly': True},
-                                {'name': 'partner_id', 'sequence': 30, 'readonly': True},
-                                {'name': 'contract_id', 'sequence': 40, 'readonly': True},
-                                {'name': 'payment_request_partner_relation', 'sequence': 50, 'readonly': True},
-                                {'name': 'business_category_id', 'sequence': 60, 'readonly': True},
-                                {'name': 'state', 'sequence': 70, 'readonly': True},
-                                {'name': 'date_payment', 'sequence': 80},
-                                {'name': 'planned_amount', 'sequence': 90, 'readonly': True},
-                                {'name': 'paid_amount', 'sequence': 100},
-                                {'name': 'currency_id', 'sequence': 110, 'readonly': True},
-                                {'name': 'invoice_amount', 'sequence': 120},
-                                {'name': 'payment_method', 'sequence': 130},
-                                {'name': 'receipt_account_name', 'sequence': 140, 'readonly': True},
-                                {'name': 'receipt_bank_name', 'sequence': 150, 'readonly': True},
-                                {'name': 'receipt_account_no', 'sequence': 160, 'readonly': True},
-                                {'name': 'payment_account_name', 'sequence': 170},
-                                {'name': 'payment_bank_name', 'sequence': 180},
-                                {'name': 'payment_account_no', 'sequence': 190},
-                                {'name': 'bank_account', 'sequence': 200},
-                                {'name': 'document_no', 'sequence': 210, 'readonly': True},
-                                {'name': 'kingdee_document_no', 'sequence': 220, 'readonly': True},
-                                {'name': 'note', 'sequence': 230},
-                                {'name': 'attachment_ids', 'sequence': 240},
-                                {'name': 'handler_name', 'sequence': 250},
-                                {'name': 'company_contractor_responsibility_state', 'sequence': 260, 'readonly': True},
-                                {'name': 'company_contractor_responsibility_notice', 'sequence': 270, 'readonly': True},
-                                {'name': 'cancellation_kind', 'sequence': 280, 'readonly': True},
-                                {'name': 'reversal_reason', 'sequence': 290},
-                                {'name': 'source_kind', 'sequence': 300, 'readonly': True},
-                                {'name': 'payment_family', 'sequence': 310, 'readonly': True},
-                                {'name': 'push_result', 'sequence': 320, 'readonly': True}
                             ]
                         }
                     }

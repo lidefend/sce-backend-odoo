@@ -113,13 +113,12 @@
                     </header>
                     <sheet>
                         <group>
-                            <group string="办理类型">
+                            <group name="payment_main" data-sc-anchor="payment_main" string="办理类型">
                                 <field name="business_category_id" options="{'no_create': True}" readonly="state != 'draft'"/>
                                 <field name="execution_flow_label" readonly="1"/>
-                                <field name="state" readonly="1"/>
                                 <field name="name" readonly="1"/>
                             </group>
-                            <group string="付款依据">
+                            <group name="payment_basis" data-sc-anchor="payment_basis" string="付款依据">
                                 <field name="payment_request_id" domain="[('type', '=', 'pay'), ('project_id', '=', project_id)]" readonly="1"/>
                                 <field name="project_id" readonly="1"/>
                                 <field name="operation_strategy" readonly="1"/>
@@ -131,14 +130,14 @@
                             </group>
                         </group>
                         <group>
-                            <group string="付款金额">
+                            <group name="payment_amount" data-sc-anchor="payment_amount" string="付款金额">
                                 <field name="date_payment" readonly="state != 'draft'"/>
                                 <field name="paid_amount" readonly="state != 'draft'"/>
                                 <field name="planned_amount" readonly="state != 'draft'"/>
                                 <field name="invoice_amount" readonly="state != 'draft'"/>
                                 <field name="currency_id" invisible="1"/>
                             </group>
-                            <group string="办理说明">
+                            <group name="payment_note" data-sc-anchor="payment_note" string="办理说明">
                                 <field name="payment_method" readonly="state != 'draft'"/>
                                 <field name="handler_name" readonly="state != 'draft'"/>
                                 <field name="document_no" readonly="state != 'draft'"/>
@@ -151,22 +150,22 @@
                             </group>
                         </group>
                         <group>
-                            <group string="收款账户">
+                            <group name="receipt_account" data-sc-anchor="receipt_account" string="收款账户">
                                 <field name="receipt_account_name" readonly="1"/>
                                 <field name="receipt_bank_name" readonly="1"/>
                                 <field name="receipt_account_no" readonly="1"/>
                             </group>
-                            <group string="付款账户">
+                            <group name="payment_account" data-sc-anchor="payment_account" string="付款账户">
                                 <field name="payment_account_name" readonly="state != 'draft'"/>
                                 <field name="payment_bank_name" readonly="state != 'draft'"/>
                                 <field name="payment_account_no" readonly="state != 'draft'"/>
                                 <field name="bank_account" readonly="state != 'draft'"/>
                             </group>
                         </group>
-                        <group string="附件">
+                        <group name="payment_attachment" data-sc-anchor="payment_attachment" string="附件">
                             <field name="attachment_ids" widget="many2many_binary" readonly="state != 'draft'"/>
                         </group>
-                        <group string="公司-承包人资金责任">
+                        <group name="payment_responsibility" data-sc-anchor="payment_responsibility" string="公司-承包人资金责任">
                             <field name="company_contractor_responsibility_summary_id" invisible="1"/>
                             <field name="company_contractor_responsibility_state" readonly="1"/>
                             <field name="company_contractor_arrival_unprocessed_amount" readonly="1"/>
@@ -179,11 +178,13 @@
                                     class="btn-secondary"
                                     invisible="not company_contractor_responsibility_summary_id"/>
                         </group>
-                        <group string="来源与系统追溯" invisible="state != 'legacy_confirmed'">
+                        <group name="payment_source_trace" data-sc-anchor="payment_source_trace" string="来源与系统追溯" invisible="state != 'legacy_confirmed'">
                             <field name="payment_family" readonly="1"/>
                             <field name="source_kind" readonly="1"/>
                             <field name="push_result" readonly="1"/>
                             <field name="kingdee_document_no" readonly="1"/>
+                            <field name="creator_name" readonly="1"/>
+                            <field name="created_time" readonly="1"/>
                             <field name="active" readonly="1"/>
                         </group>
                     </sheet>
