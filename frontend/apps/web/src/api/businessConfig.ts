@@ -38,6 +38,9 @@ export interface BusinessConfigChangeSet {
   item_count: number;
   items: BusinessConfigChangeSetItem[];
   publish_result: Record<string, unknown>;
+  // Reported by `ui.business_config.change_set.open` only: whether this call created the
+  // draft or resumed an existing one. Callers cannot infer it from the identity.
+  created?: boolean;
   preview?: {
     token: string;
     expires_at: string;
@@ -76,7 +79,7 @@ export function openBusinessConfigChangeSet(params: { role_key?: string; name?: 
 }
 
 export function resumeBusinessConfigChangeSet(params: { role_key: string; target_key?: string; target_model?: string; target_action_id?: number }) {
-  return intentRequest<BusinessConfigChangeSet | { change_set: null }>({
+  return intentRequest<BusinessConfigChangeSet | { change_set: null; created: boolean }>({
     intent: BUSINESS_CONFIG_INTENTS.changeSetOpen, params: { ...params, resume_only: true },
   });
 }

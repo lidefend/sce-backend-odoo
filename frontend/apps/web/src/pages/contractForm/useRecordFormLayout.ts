@@ -117,6 +117,9 @@ export function useRecordFormLayout(context: {
   const filterVisibleNativeLayoutNodes = (nodes: NativeFormLayoutNode[]) => filterVisibleNativeLayoutNodesFromTree({
     nodes, isNodeVisible: isNativeLayoutNodeVisible, groupVisibilityEditable: context.isContractFieldOrderEditable.value,
     normalizeGroupTitle: normalizeFieldGroupTitle, isGroupVisible: context.effectiveGroupVisible,
+    // Formal rendering prunes emptied containers; the designer canvas keeps
+    // empty groups as drop targets, so pruning is disabled while editing.
+    pruneEmptyContainers: !context.isContractFieldOrderEditable.value,
   });
   const applyNativeFieldOrderPreview = (nodes: NativeFormLayoutNode[]) => applyNativeFieldOrderPreviewFromTree({
     nodes, fieldOrder: context.fieldOrderDraft.value, movedGroups: context.changedFieldGroupDraft(),

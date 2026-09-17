@@ -170,6 +170,21 @@ class UIBusinessConfigChangeSetItem(GovernedChangeSetMutation, models.Model):
             if rec.config_type not in REVERSIBLE_CONFIG_TYPES or not rec.reversible:
                 raise ValidationError("变更集只允许可逆合同配置。")
 
+    def _current_payload_hash(self) -> str:
+        """Hash of the published target in the basis the stage guard compares.
+
+        ``BusinessConfigChangeSetStageHandler`` validates the client supplied
+        ``current_payload_hash`` against ``stable_payload_hash(contract_json)``, so the
+        serialized item must serve that same basis. Serving the definition basis meant a
+        resumed draft could never be re-staged: the round trip returned a hash the guard
+        rejected even when the published configuration had not changed.
+        """
+        self.ensure_one()
+        contract = self.target_contract_id.exists() if self.target_contract_id else None
+        if self.config_type == "menu" or not contract:
+            return str(self.base_payload_hash or "")
+        return stable_payload_hash(contract.contract_json if isinstance(contract.contract_json, dict) else {})
+
     def serialize(self, *, include_payload: bool = True) -> dict:
         self.ensure_one()
         row = {
@@ -183,7 +198,7 @@ class UIBusinessConfigChangeSetItem(GovernedChangeSetMutation, models.Model):
             "role_key": str(self.role_key or ""),
             "current_contract_id": int(self.target_contract_id.id or 0),
             "current_version": int(self.base_version_no or 0),
-            "current_payload_hash": str(self.base_payload_hash or ""),
+            "current_payload_hash": str(self._current_payload_hash() or ""),
             "diff_summary": self.diff_summary or {},
             "reversible": bool(self.reversible),
             "risk_level": str(self.risk_level or "low"),

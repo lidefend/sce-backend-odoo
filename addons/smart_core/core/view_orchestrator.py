@@ -328,6 +328,27 @@ class ViewOrchestrator:
         spec = self._sanitize_spec_field_refs(spec, model_name)
         return self._is_entry_semantic_surface(spec) and bool(spec.get("sections"))
 
+    def _display_copy_field_names(self, model_name: str) -> set[str]:
+        """Stored display copies declared by the business layer.
+
+        A display copy is a stored computed projection of a canonical field
+        (e.g. a list-column text mirror of ``note``).  Business models expose
+        them through ``_display_copy_source_fields``; the shared layer only
+        consumes the protocol and never imports business registries.
+        """
+        if model_name not in self.env:
+            return set()
+        resolver = getattr(self.env[model_name], "_display_copy_source_fields", None)
+        if not callable(resolver):
+            return set()
+        try:
+            declared = resolver()
+        except Exception:
+            return set()
+        if not isinstance(declared, dict):
+            return set()
+        return {str(name).strip() for name in declared if str(name or "").strip()}
+
     def _config_declares_native_semantic_surface(self, config, view_type: str, model_name: str) -> bool:
         payload = config.contract_json if isinstance(config.contract_json, dict) else {}
         spec = self._view_spec(payload, view_type)
@@ -340,16 +361,26 @@ class ViewOrchestrator:
             )
         if model_name in self.env:
             model_fields = set(getattr(self.env[model_name], "_fields", {}) or {})
-            unknown = sorted({
+            anchor_fields = {
                 str(name or "").strip()
                 for anchor in (spec.get("semantic_anchors") if isinstance(spec.get("semantic_anchors"), list) else [])
                 if isinstance(anchor, dict)
                 for name in (anchor.get("fields") if isinstance(anchor.get("fields"), list) else [])
-                if str(name or "").strip() and str(name or "").strip() not in model_fields
-            })
+                if str(name or "").strip()
+            }
+            unknown = sorted(name for name in anchor_fields if name not in model_fields)
             if unknown:
                 raise ValueError(
                     "NATIVE_SEMANTIC_SURFACE_UNKNOWN_FIELD: %s" % ",".join(unknown)
+                )
+            # A stored display copy duplicates the presentation of its
+            # canonical source field.  Anchors must declare the canonical
+            # business fact, never its display mirror.
+            display_copies = self._display_copy_field_names(model_name)
+            duplicated = sorted(name for name in anchor_fields if name in display_copies)
+            if duplicated:
+                raise ValueError(
+                    "NATIVE_SEMANTIC_SURFACE_DISPLAY_COPY: %s" % ",".join(duplicated)
                 )
         return True
 
@@ -528,7 +559,16 @@ class ViewOrchestrator:
         rows = self._normalized_rows(spec.get("fields") or spec.get("field_slots"))
         if rows:
             fields_meta = self.env[model_name].fields_get() if model_name in self.env else {}
-            effective = {row["name"]: row for row in rows if row.get("name") in fields_meta}
+            # Stored display copies mirror a canonical field's presentation.
+            # They stay available to list projections and the API, but must
+            # never be appended into the form body by the union completion
+            # below, otherwise the same business fact renders twice.
+            display_copies = self._display_copy_field_names(model_name)
+            effective = {
+                row["name"]: row
+                for row in rows
+                if row.get("name") in fields_meta and row["name"] not in display_copies
+            }
             if effective:
                 hidden = {name for name, row in effective.items() if row.get("visible") is False}
                 if semantic_surface:

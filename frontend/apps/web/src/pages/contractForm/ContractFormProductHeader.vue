@@ -267,8 +267,18 @@ function activateStatus(value: string) {
 function syncCommandBarHeight() {
   const commandBar = document.querySelector<HTMLElement>('.contract-form-command-bar');
   if (!commandBar) return;
-  commandBarShell = commandBar.closest<HTMLElement>('.contract-form-native-shell');
-  commandBarShell?.style.setProperty('--sc-form-command-bar-height', `${Math.ceil(commandBar.getBoundingClientRect().height)}px`);
+  // The measured height is the shared sticky offset for every sub-surface that
+  // pins below the command bar (the section navigation and the section scroll
+  // margin).  Both form render paths mount the same page root, but only the
+  // native tree adds `contract-form-native-shell`; resolving the carrier from
+  // the native shell alone left the contract-v2 driver path with no published
+  // height, so its section navigation pinned at the static 72px fallback while
+  // the real command bar is 117px (1088) / 159px (390) tall and covered the
+  // header action row.  Resolve the carrier from the page root so the publisher
+  // is independent of which renderer owns the body.
+  commandBarShell = commandBar.closest<HTMLElement>('.contract-form-native-shell, .sc-page')
+    || document.documentElement;
+  commandBarShell.style.setProperty('--sc-form-command-bar-height', `${Math.ceil(commandBar.getBoundingClientRect().height)}px`);
 }
 
 onMounted(() => {
@@ -282,6 +292,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   commandBarResizeObserver?.disconnect();
   commandBarShell?.style.removeProperty('--sc-form-command-bar-height');
+  commandBarShell = null;
 });
 
 function buttonVariant(action: ContractAction): 'danger' | 'primary' | 'ghost' {

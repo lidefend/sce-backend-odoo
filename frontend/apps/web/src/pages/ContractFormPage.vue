@@ -71,6 +71,8 @@
         :strict-contract-defaults-summary="strictContractDefaultsSummary"
         :strict-contract-missing-summary="strictContractMissingSummary"
         :suppress-action-blocks="suppressFormActionBlocks"
+        :suppress-workflow-transitions="actionPlaceholderGate.suppressWorkflowTransitions"
+        :suppress-body-actions="actionPlaceholderGate.suppressBodyActions"
         :use-native-form-tree="useNativeFormTree"
         :warnings="warnings"
         :workflow-evidence-gate-rows="workflowEvidenceGateRows"
@@ -679,6 +681,7 @@ import { useUnsavedFormGuard } from './contractForm/useUnsavedFormGuard';
 import { buildContractFormActions } from './contractForm/contractActionPresentation';
 import { focusProductFormValidationError } from './contractForm/formValidationFocus';
 import { groupContractHeaderActions, resolvePrimaryBusinessActionState } from './contractForm/contractHeaderActionPresentation';
+import { resolveFormActionPlaceholderGate } from './contractForm/formActionPlaceholderGate';
 import { resolveContractFormFieldLabels } from './contractForm/formFieldLabels';
 import { buildSaveRecordPayload, validateBeforeSaveRecord } from './contractForm/saveRecordHelpers';
 import {
@@ -1552,13 +1555,24 @@ const searchFilters = computed(() => normalizeSearchFilters(resolveContractV2Sea
 const nativeStructureAuthority = computed(() => String(
   resolveContractV2FormStructureContract(v2ContractStore.value)?.sourceAuthority?.governance_source?.formStructureAuthority || '',
 ));
-// Record-list queries stay on the record list: when the form structure is
-// native, the outer action placeholders (search presets, transitions, body
-// actions) must not be projected into the form body.  Navigation into a
-// filtered list remains available from the list surface itself.
-const suppressFormActionBlocks = computed(() => (
-  useNativeFormTree.value || nativeStructureAuthority.value === 'native_authority'
-));
+// Record-list queries stay on the record list, and action placeholders close
+// only when their actions provably have another carrier (the native tree or
+// the rendered header action row).  Structure authority alone never closes an
+// action entry, so the unresolved keys stay reported.
+const actionPlaceholderGate = computed(() => resolveFormActionPlaceholderGate({
+  useNativeFormTree: useNativeFormTree.value,
+  nativeStructureAuthority: nativeStructureAuthority.value,
+  headerActionKeys: [
+    ...groupedHeaderActions.value.direct.map((action) => action.key),
+    ...groupedHeaderActions.value.overflow.map((action) => action.key),
+    ...groupedHeaderActions.value.configuration.map((action) => action.key),
+    primaryCreateFooterAction.value?.key,
+    primarySubmitAction.value?.key,
+  ],
+  workflowTransitionActionKeys: workflowTransitions.value.map((item) => item.action?.key),
+  bodyActionKeys: bodyActions.value.map((action) => action.key),
+}));
+const suppressFormActionBlocks = computed(() => actionPlaceholderGate.value.suppressSearchFilters);
 const showSearchFilters = computed(() => {
   if (suppressFormActionBlocks.value) return false;
   if (!v2ContractStore.value) return true;
