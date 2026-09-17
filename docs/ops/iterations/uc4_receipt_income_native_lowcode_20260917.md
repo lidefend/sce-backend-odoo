@@ -94,3 +94,20 @@ L2 断言（行为，非实现字符串）：入口声明为 `native_semantic_su
 
 `local.dev.sync_demo`、`local.dev.snapshot`、fixture reset、历史数据修复、无关模块 upgrade、发布快照、历史容器停启、Docker 网络调整、工作树清理、复核草稿清理。
 非本轮草稿（163/190/192/194/233/267/274/276）全部保留未消费；本批写入仅限 `sc.receipt.income` 的视图/配置退役与新增文件。
+
+## 8. 主线集成与台账扣减（合入后记录）
+
+- 冻结候选：head `558626214f57f03e3bc3eb25e1acd9caa40b0d63`、tree `175da4c07dad0524bd13aaa4466202518953ba56`，
+  完整指纹 `9b1bae26…2808cb`（7505 路径），`make ci.local.quick` 在该 head 上 PASS
+  （receipt `.git/codex/evidence/ci.local.quick/558626214f57f03e3bc3eb25e1acd9caa40b0d63.json`）。
+- 独立复核：同 head/base 只读复核，结论 APPROVE，无 S0/S1/S2 阻断项；残留风险与 5 条跟进项见
+  `.codex-evidence/workspace-archives/20260918/uc4-g03-receipt-income-native/558626214f57f03e3bc3eb25e1acd9caa40b0d63/` 的 `review.md`。
+- 归档：`make workspace.evidence.archive`（manifest `tmp/g03-evidence/archive-manifest.json`）共 5 个文件
+  （summary / identity / review / 2 张代表面截图），回执 `status=verified`，逐文件哈希与源文件一致、JSON 可读。
+- 远端门禁：PR #488，exact head 上 `frontend_release_gate`、`merge_policy_gate`、`public_guard`、`professional_quality_gate`
+  全部 success；`make pr.merge.prep` PASS；`make pr.merge`（squash，`--match-head-commit`）合入。
+  合入后 main = `654edf0ff09fe394080bfa2545a5061dcafdbecd`。
+- 台账扣减：**38 → 36**（退役 action 637/806 与视图 1644），新增 `uc4G03PublishedAudit`；
+  旁路 action 807 不计数、如实登记在 `bypassConsumers`；`nextBatch.selectedGroup` 前进到 **G04**（实付与公司支出 837/808）。
+
+状态：**批次验收完成（本批范围）｜主线集成完成（PR #488）｜未部署｜89 入口用户验收未完成**。

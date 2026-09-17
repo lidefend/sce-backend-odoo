@@ -6,7 +6,7 @@
     "operation": "model",
     "renderProfile": "create"
   },
-  "count": 38,
+  "count": 36,
   "fullRescan": false,
   "sourceInventory": "artifacts/form-structure-unification/customer-browser-final/compatibility-consumers.json",
   "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
@@ -3278,520 +3278,6 @@
       "evidenceStatus": "carried_forward_prior_inventory"
     },
     {
-      "menuXmlid": "smart_construction_core.menu_sc_receipt_income",
-      "label": "收款登记",
-      "model": "sc.receipt.income",
-      "actionId": 637,
-      "menuId": 338,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.receipt.income",
-        "viewId": 1644
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 149,
-            "name": "sc_receipt_income_form_sections_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          },
-          {
-            "id": 8,
-            "name": "sc_receipt_income_p1_form_business_facts_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          },
-          {
-            "id": 196,
-            "name": "receipt_income_productized_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1644,
-        "resolvedActionId": 637,
-        "structureDiagnostics": [
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.receipt.income",
-              "action_id": 637,
-              "view_id": 1644
-            },
-            "key": "sections",
-            "node": "view_orchestration.views.form.sections",
-            "nodes": [
-              "0",
-              "1",
-              "2",
-              "3"
-            ],
-            "configuration": {
-              "id": 8,
-              "name": "sc_receipt_income_p1_form_business_facts_v1"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 149,
-                "name": "sc_receipt_income_form_sections_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.receipt.income",
-              "action_id": 637,
-              "view_id": 1644
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "receipt_income_document_status_display",
-              "receipt_income_document_no_display",
-              "receipt_income_business_time_display",
-              "receipt_income_project_name_display",
-              "receipt_income_partner_name_display",
-              "receipt_income_contractor_company_display",
-              "receipt_income_construction_management_contract_display",
-              "receipt_income_current_receipt_amount_display",
-              "deducted_invoice_amount",
-              "receipt_income_current_allocated_amount_display",
-              "receipt_income_attachment_text_display",
-              "partner_id",
-              "receipt_income_contract_amount_display",
-              "creator_name",
-              "created_time"
-            ],
-            "configuration": {
-              "id": 8,
-              "name": "sc_receipt_income_p1_form_business_facts_v1"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 109,
-                "name": "sc_receipt_income_form_structure_generated_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.receipt.income",
-              "action_id": 637,
-              "view_id": 1644
-            },
-            "key": "sections",
-            "node": "view_orchestration.views.form.sections",
-            "nodes": [
-              "0",
-              "1",
-              "2",
-              "3",
-              "4",
-              "5",
-              "6",
-              "7"
-            ],
-            "configuration": {
-              "id": 196,
-              "name": "receipt_income_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 8,
-                "name": "sc_receipt_income_p1_form_business_facts_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.receipt.income",
-              "action_id": 637,
-              "view_id": 1644
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "state",
-              "validation_status",
-              "name",
-              "receipt_flow_label",
-              "source_origin",
-              "source_kind",
-              "business_category_id",
-              "date_receipt",
-              "document_no",
-              "project_id",
-              "legacy_project_name",
-              "company_id",
-              "legacy_company_name",
-              "operation_strategy",
-              "partner_id",
-              "legacy_partner_name",
-              "contract_id",
-              "legacy_contract_no",
-              "payment_request_id",
-              "legacy_receipt_type",
-              "legacy_receipt_subtype",
-              "receipt_type",
-              "income_category",
-              "payment_method",
-              "bill_no",
-              "invoice_ref",
-              "receiving_account",
-              "receiving_account_name",
-              "receiving_account_no",
-              "receiving_bank_name",
-              "treasury_ledger_id",
-              "amount",
-              "deducted_invoice_amount",
-              "deducted_tax_amount",
-              "settlement_amount",
-              "currency_id",
-              "company_contractor_responsibility_state",
-              "company_contractor_arrival_unprocessed_amount",
-              "company_contractor_arrival_over_processed_amount",
-              "company_contractor_self_funding_balance",
-              "company_contractor_responsibility_notice",
-              "note",
-              "attachment_ids",
-              "receipt_income_attachment_text_display",
-              "reject_reason",
-              "legacy_source_model",
-              "legacy_source_table",
-              "legacy_record_id",
-              "legacy_document_state",
-              "legacy_document_state_label",
-              "legacy_note",
-              "creator_name",
-              "created_time",
-              "active"
-            ],
-            "configuration": {
-              "id": 196,
-              "name": "receipt_income_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 8,
-                "name": "sc_receipt_income_p1_form_business_facts_v1"
-              }
-            ]
-          }
-        ],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "state",
-          "legacy_receipt_type",
-          "legacy_receipt_subtype",
-          "receipt_type",
-          "income_category",
-          "payment_method",
-          "receiving_account",
-          "bill_no",
-          "invoice_ref",
-          "receiving_account_name",
-          "receiving_account_no",
-          "receiving_bank_name",
-          "amount",
-          "deducted_invoice_amount",
-          "deducted_tax_amount",
-          "settlement_amount",
-          "currency_id",
-          "note",
-          "attachment_ids",
-          "creator_name",
-          "created_time",
-          "name",
-          "date_receipt",
-          "document_no",
-          "project_id",
-          "operation_strategy",
-          "partner_id",
-          "contract_id",
-          "payment_request_id",
-          "treasury_ledger_id",
-          "receipt_income_document_status_display",
-          "receipt_income_document_no_display",
-          "receipt_income_business_time_display",
-          "receipt_income_project_name_display",
-          "receipt_income_partner_name_display",
-          "receipt_income_contractor_company_display",
-          "receipt_income_construction_management_contract_display",
-          "receipt_income_current_receipt_amount_display",
-          "receipt_income_current_allocated_amount_display",
-          "receipt_income_attachment_text_display",
-          "receipt_income_contract_amount_display",
-          "validation_status",
-          "receipt_flow_label",
-          "source_origin",
-          "source_kind",
-          "business_category_id",
-          "legacy_project_name",
-          "company_id",
-          "legacy_company_name",
-          "legacy_partner_name",
-          "legacy_contract_no",
-          "company_contractor_responsibility_state",
-          "company_contractor_arrival_unprocessed_amount",
-          "company_contractor_arrival_over_processed_amount",
-          "company_contractor_self_funding_balance",
-          "company_contractor_responsibility_notice",
-          "reject_reason",
-          "legacy_source_model",
-          "legacy_source_table",
-          "legacy_record_id",
-          "legacy_document_state",
-          "legacy_document_state_label",
-          "legacy_note",
-          "active"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:办理主信息",
-            "key": "",
-            "title": "办理主信息",
-            "fields": [
-              "state",
-              "validation_status",
-              "name",
-              "receipt_flow_label",
-              "source_origin",
-              "source_kind",
-              "business_category_id",
-              "date_receipt",
-              "document_no"
-            ]
-          },
-          {
-            "identity": "title:项目与合同",
-            "key": "",
-            "title": "项目与合同",
-            "fields": [
-              "project_id",
-              "legacy_project_name",
-              "company_id",
-              "legacy_company_name",
-              "operation_strategy",
-              "partner_id",
-              "legacy_partner_name",
-              "contract_id",
-              "legacy_contract_no",
-              "payment_request_id"
-            ]
-          },
-          {
-            "identity": "title:收款事项",
-            "key": "",
-            "title": "收款事项",
-            "fields": [
-              "legacy_receipt_type",
-              "legacy_receipt_subtype",
-              "receipt_type",
-              "income_category",
-              "payment_method",
-              "bill_no",
-              "invoice_ref"
-            ]
-          },
-          {
-            "identity": "title:收款账户",
-            "key": "",
-            "title": "收款账户",
-            "fields": [
-              "receiving_account",
-              "receiving_account_name",
-              "receiving_account_no",
-              "receiving_bank_name",
-              "treasury_ledger_id"
-            ]
-          },
-          {
-            "identity": "title:金额与抵扣",
-            "key": "",
-            "title": "金额与抵扣",
-            "fields": [
-              "amount",
-              "deducted_invoice_amount",
-              "deducted_tax_amount",
-              "settlement_amount",
-              "currency_id"
-            ]
-          },
-          {
-            "identity": "title:责任余额",
-            "key": "",
-            "title": "责任余额",
-            "fields": [
-              "company_contractor_responsibility_state",
-              "company_contractor_arrival_unprocessed_amount",
-              "company_contractor_arrival_over_processed_amount",
-              "company_contractor_self_funding_balance",
-              "company_contractor_responsibility_notice"
-            ]
-          },
-          {
-            "identity": "title:说明与附件",
-            "key": "",
-            "title": "说明与附件",
-            "fields": [
-              "note",
-              "attachment_ids",
-              "receipt_income_attachment_text_display",
-              "reject_reason"
-            ]
-          },
-          {
-            "identity": "title:来源追溯",
-            "key": "",
-            "title": "来源追溯",
-            "fields": [
-              "legacy_source_model",
-              "legacy_source_table",
-              "legacy_record_id",
-              "legacy_document_state",
-              "legacy_document_state_label",
-              "legacy_note",
-              "creator_name",
-              "created_time",
-              "active"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "工程款确认",
-          "代扣代缴明细",
-          "施工队明细",
-          "单据识别",
-          "业务对象",
-          "金额与办理",
-          "附件与来源",
-          "办理主信息",
-          "项目与合同",
-          "收款事项",
-          "收款账户",
-          "金额与抵扣",
-          "责任余额",
-          "说明与附件",
-          "来源追溯"
-        ],
-        "fieldGroups": {
-          "办理主信息": [
-            "state",
-            "validation_status",
-            "name",
-            "receipt_flow_label",
-            "source_origin",
-            "source_kind",
-            "business_category_id",
-            "date_receipt",
-            "document_no"
-          ],
-          "项目与合同": [
-            "project_id",
-            "legacy_project_name",
-            "company_id",
-            "legacy_company_name",
-            "operation_strategy",
-            "partner_id",
-            "legacy_partner_name",
-            "contract_id",
-            "legacy_contract_no",
-            "payment_request_id"
-          ],
-          "收款事项": [
-            "legacy_receipt_type",
-            "legacy_receipt_subtype",
-            "receipt_type",
-            "income_category",
-            "payment_method",
-            "bill_no",
-            "invoice_ref"
-          ],
-          "收款账户": [
-            "receiving_account",
-            "receiving_account_name",
-            "receiving_account_no",
-            "receiving_bank_name",
-            "treasury_ledger_id"
-          ],
-          "金额与抵扣": [
-            "amount",
-            "deducted_invoice_amount",
-            "deducted_tax_amount",
-            "settlement_amount",
-            "currency_id"
-          ],
-          "责任余额": [
-            "company_contractor_responsibility_state",
-            "company_contractor_arrival_unprocessed_amount",
-            "company_contractor_arrival_over_processed_amount",
-            "company_contractor_self_funding_balance",
-            "company_contractor_responsibility_notice"
-          ],
-          "说明与附件": [
-            "note",
-            "attachment_ids",
-            "receipt_income_attachment_text_display",
-            "reject_reason"
-          ],
-          "来源追溯": [
-            "legacy_source_model",
-            "legacy_source_table",
-            "legacy_record_id",
-            "legacy_document_state",
-            "legacy_document_state_label",
-            "legacy_note",
-            "creator_name",
-            "created_time",
-            "active"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "办理主信息": 2,
-          "项目与合同": 2,
-          "收款事项": 2,
-          "收款账户": 2,
-          "金额与抵扣": 2,
-          "责任余额": 2,
-          "说明与附件": 2,
-          "来源追溯": 2
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
       "menuXmlid": "smart_construction_core.menu_sc_payment_execution",
       "label": "实付登记",
       "model": "sc.payment.execution",
@@ -4846,520 +4332,6 @@
         "groupColumns": {
           "办理上下文": 2,
           "办理说明": 1
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_user_income",
-      "label": "公司收入",
-      "model": "sc.receipt.income",
-      "actionId": 806,
-      "menuId": 545,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.receipt.income",
-        "viewId": 1644
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 149,
-            "name": "sc_receipt_income_form_sections_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          },
-          {
-            "id": 8,
-            "name": "sc_receipt_income_p1_form_business_facts_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          },
-          {
-            "id": 197,
-            "name": "receipt_income_project_productized_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1644,
-        "resolvedActionId": 806,
-        "structureDiagnostics": [
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.receipt.income",
-              "action_id": 806,
-              "view_id": 1644
-            },
-            "key": "sections",
-            "node": "view_orchestration.views.form.sections",
-            "nodes": [
-              "0",
-              "1",
-              "2",
-              "3"
-            ],
-            "configuration": {
-              "id": 8,
-              "name": "sc_receipt_income_p1_form_business_facts_v1"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 149,
-                "name": "sc_receipt_income_form_sections_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.receipt.income",
-              "action_id": 806,
-              "view_id": 1644
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "receipt_income_document_status_display",
-              "receipt_income_document_no_display",
-              "receipt_income_business_time_display",
-              "receipt_income_project_name_display",
-              "receipt_income_partner_name_display",
-              "receipt_income_contractor_company_display",
-              "receipt_income_construction_management_contract_display",
-              "receipt_income_current_receipt_amount_display",
-              "deducted_invoice_amount",
-              "receipt_income_current_allocated_amount_display",
-              "receipt_income_attachment_text_display",
-              "partner_id",
-              "receipt_income_contract_amount_display",
-              "creator_name",
-              "created_time"
-            ],
-            "configuration": {
-              "id": 8,
-              "name": "sc_receipt_income_p1_form_business_facts_v1"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 109,
-                "name": "sc_receipt_income_form_structure_generated_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.receipt.income",
-              "action_id": 806,
-              "view_id": 1644
-            },
-            "key": "sections",
-            "node": "view_orchestration.views.form.sections",
-            "nodes": [
-              "0",
-              "1",
-              "2",
-              "3",
-              "4",
-              "5",
-              "6",
-              "7"
-            ],
-            "configuration": {
-              "id": 197,
-              "name": "receipt_income_project_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 8,
-                "name": "sc_receipt_income_p1_form_business_facts_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.receipt.income",
-              "action_id": 806,
-              "view_id": 1644
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "state",
-              "validation_status",
-              "name",
-              "receipt_flow_label",
-              "source_origin",
-              "source_kind",
-              "business_category_id",
-              "date_receipt",
-              "document_no",
-              "project_id",
-              "legacy_project_name",
-              "company_id",
-              "legacy_company_name",
-              "operation_strategy",
-              "partner_id",
-              "legacy_partner_name",
-              "contract_id",
-              "legacy_contract_no",
-              "payment_request_id",
-              "legacy_receipt_type",
-              "legacy_receipt_subtype",
-              "receipt_type",
-              "income_category",
-              "payment_method",
-              "bill_no",
-              "invoice_ref",
-              "receiving_account",
-              "receiving_account_name",
-              "receiving_account_no",
-              "receiving_bank_name",
-              "treasury_ledger_id",
-              "amount",
-              "deducted_invoice_amount",
-              "deducted_tax_amount",
-              "settlement_amount",
-              "currency_id",
-              "company_contractor_responsibility_state",
-              "company_contractor_arrival_unprocessed_amount",
-              "company_contractor_arrival_over_processed_amount",
-              "company_contractor_self_funding_balance",
-              "company_contractor_responsibility_notice",
-              "note",
-              "attachment_ids",
-              "receipt_income_attachment_text_display",
-              "reject_reason",
-              "legacy_source_model",
-              "legacy_source_table",
-              "legacy_record_id",
-              "legacy_document_state",
-              "legacy_document_state_label",
-              "legacy_note",
-              "creator_name",
-              "created_time",
-              "active"
-            ],
-            "configuration": {
-              "id": 197,
-              "name": "receipt_income_project_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 8,
-                "name": "sc_receipt_income_p1_form_business_facts_v1"
-              }
-            ]
-          }
-        ],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "state",
-          "legacy_receipt_type",
-          "legacy_receipt_subtype",
-          "receipt_type",
-          "income_category",
-          "payment_method",
-          "receiving_account",
-          "bill_no",
-          "invoice_ref",
-          "receiving_account_name",
-          "receiving_account_no",
-          "receiving_bank_name",
-          "amount",
-          "deducted_invoice_amount",
-          "deducted_tax_amount",
-          "settlement_amount",
-          "currency_id",
-          "note",
-          "attachment_ids",
-          "creator_name",
-          "created_time",
-          "name",
-          "date_receipt",
-          "document_no",
-          "project_id",
-          "operation_strategy",
-          "partner_id",
-          "contract_id",
-          "payment_request_id",
-          "treasury_ledger_id",
-          "receipt_income_document_status_display",
-          "receipt_income_document_no_display",
-          "receipt_income_business_time_display",
-          "receipt_income_project_name_display",
-          "receipt_income_partner_name_display",
-          "receipt_income_contractor_company_display",
-          "receipt_income_construction_management_contract_display",
-          "receipt_income_current_receipt_amount_display",
-          "receipt_income_current_allocated_amount_display",
-          "receipt_income_attachment_text_display",
-          "receipt_income_contract_amount_display",
-          "validation_status",
-          "receipt_flow_label",
-          "source_origin",
-          "source_kind",
-          "business_category_id",
-          "legacy_project_name",
-          "company_id",
-          "legacy_company_name",
-          "legacy_partner_name",
-          "legacy_contract_no",
-          "company_contractor_responsibility_state",
-          "company_contractor_arrival_unprocessed_amount",
-          "company_contractor_arrival_over_processed_amount",
-          "company_contractor_self_funding_balance",
-          "company_contractor_responsibility_notice",
-          "reject_reason",
-          "legacy_source_model",
-          "legacy_source_table",
-          "legacy_record_id",
-          "legacy_document_state",
-          "legacy_document_state_label",
-          "legacy_note",
-          "active"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:办理主信息",
-            "key": "",
-            "title": "办理主信息",
-            "fields": [
-              "state",
-              "validation_status",
-              "name",
-              "receipt_flow_label",
-              "source_origin",
-              "source_kind",
-              "business_category_id",
-              "date_receipt",
-              "document_no"
-            ]
-          },
-          {
-            "identity": "title:项目与合同",
-            "key": "",
-            "title": "项目与合同",
-            "fields": [
-              "project_id",
-              "legacy_project_name",
-              "company_id",
-              "legacy_company_name",
-              "operation_strategy",
-              "partner_id",
-              "legacy_partner_name",
-              "contract_id",
-              "legacy_contract_no",
-              "payment_request_id"
-            ]
-          },
-          {
-            "identity": "title:收款事项",
-            "key": "",
-            "title": "收款事项",
-            "fields": [
-              "legacy_receipt_type",
-              "legacy_receipt_subtype",
-              "receipt_type",
-              "income_category",
-              "payment_method",
-              "bill_no",
-              "invoice_ref"
-            ]
-          },
-          {
-            "identity": "title:收款账户",
-            "key": "",
-            "title": "收款账户",
-            "fields": [
-              "receiving_account",
-              "receiving_account_name",
-              "receiving_account_no",
-              "receiving_bank_name",
-              "treasury_ledger_id"
-            ]
-          },
-          {
-            "identity": "title:金额与抵扣",
-            "key": "",
-            "title": "金额与抵扣",
-            "fields": [
-              "amount",
-              "deducted_invoice_amount",
-              "deducted_tax_amount",
-              "settlement_amount",
-              "currency_id"
-            ]
-          },
-          {
-            "identity": "title:责任余额",
-            "key": "",
-            "title": "责任余额",
-            "fields": [
-              "company_contractor_responsibility_state",
-              "company_contractor_arrival_unprocessed_amount",
-              "company_contractor_arrival_over_processed_amount",
-              "company_contractor_self_funding_balance",
-              "company_contractor_responsibility_notice"
-            ]
-          },
-          {
-            "identity": "title:说明与附件",
-            "key": "",
-            "title": "说明与附件",
-            "fields": [
-              "note",
-              "attachment_ids",
-              "receipt_income_attachment_text_display",
-              "reject_reason"
-            ]
-          },
-          {
-            "identity": "title:来源追溯",
-            "key": "",
-            "title": "来源追溯",
-            "fields": [
-              "legacy_source_model",
-              "legacy_source_table",
-              "legacy_record_id",
-              "legacy_document_state",
-              "legacy_document_state_label",
-              "legacy_note",
-              "creator_name",
-              "created_time",
-              "active"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "工程款确认",
-          "代扣代缴明细",
-          "施工队明细",
-          "单据识别",
-          "业务对象",
-          "金额与办理",
-          "附件与来源",
-          "办理主信息",
-          "项目与合同",
-          "收款事项",
-          "收款账户",
-          "金额与抵扣",
-          "责任余额",
-          "说明与附件",
-          "来源追溯"
-        ],
-        "fieldGroups": {
-          "办理主信息": [
-            "state",
-            "validation_status",
-            "name",
-            "receipt_flow_label",
-            "source_origin",
-            "source_kind",
-            "business_category_id",
-            "date_receipt",
-            "document_no"
-          ],
-          "项目与合同": [
-            "project_id",
-            "legacy_project_name",
-            "company_id",
-            "legacy_company_name",
-            "operation_strategy",
-            "partner_id",
-            "legacy_partner_name",
-            "contract_id",
-            "legacy_contract_no",
-            "payment_request_id"
-          ],
-          "收款事项": [
-            "legacy_receipt_type",
-            "legacy_receipt_subtype",
-            "receipt_type",
-            "income_category",
-            "payment_method",
-            "bill_no",
-            "invoice_ref"
-          ],
-          "收款账户": [
-            "receiving_account",
-            "receiving_account_name",
-            "receiving_account_no",
-            "receiving_bank_name",
-            "treasury_ledger_id"
-          ],
-          "金额与抵扣": [
-            "amount",
-            "deducted_invoice_amount",
-            "deducted_tax_amount",
-            "settlement_amount",
-            "currency_id"
-          ],
-          "责任余额": [
-            "company_contractor_responsibility_state",
-            "company_contractor_arrival_unprocessed_amount",
-            "company_contractor_arrival_over_processed_amount",
-            "company_contractor_self_funding_balance",
-            "company_contractor_responsibility_notice"
-          ],
-          "说明与附件": [
-            "note",
-            "attachment_ids",
-            "receipt_income_attachment_text_display",
-            "reject_reason"
-          ],
-          "来源追溯": [
-            "legacy_source_model",
-            "legacy_source_table",
-            "legacy_record_id",
-            "legacy_document_state",
-            "legacy_document_state_label",
-            "legacy_note",
-            "creator_name",
-            "created_time",
-            "active"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "办理主信息": 2,
-          "项目与合同": 2,
-          "收款事项": 2,
-          "收款账户": 2,
-          "金额与抵扣": 2,
-          "责任余额": 2,
-          "说明与附件": 2,
-          "来源追溯": 2
         },
         "groupVisibility": {},
         "formColumns": 2
@@ -6601,10 +5573,6 @@
       "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
       "evidenceStatus": "carried_forward_prior_inventory"
     },
-    
-    
-    
-    
     {
       "menuXmlid": "smart_construction_core.menu_sc_tax_deduction_registration_user",
       "label": "税额抵扣",
@@ -8570,7 +7538,7 @@
     "countCorrection": 4,
     "migrationReduction": 3
   },
-  "localVerifiedCount": 38,
+  "localVerifiedCount": 36,
   "uc1PublishedAudit": {
     "auditedAt": "2026-09-16",
     "auditedReleaseHead": "28b7695dc9f1cebbbe9bd5d715e951c6dec8a4da",
@@ -8743,11 +7711,11 @@
     "name": "U-C4",
     "status": "scope_confirmed_implementation_started",
     "priorityActions": [
-      637,
-      806
+      837,
+      808
     ],
-    "selectedGroup": "G03",
-    "sourceMainlineHead": "1dbf63f5dd8513b71aede67c875e51b7a95e8626",
+    "selectedGroup": "G04",
+    "sourceMainlineHead": "654edf0ff09fe394080bfa2545a5061dcafdbecd",
     "fullRescan": false,
     "groups": [
       {
@@ -9085,17 +8053,17 @@
         "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
       }
     ],
-    "scopeNote": "Second group: invoice four-entry native form migration (input 785, output application 786, output registration 787, prepaid tax 788, shared model sc.invoice.registration and view 1651). Scope confirmed in uc4 record: convert four action contracts to native_semantic_surface, retire model-wide form_sections_v1 and p1 business facts layers (both listed in G02 legacyConfigurations); bypass actions (input tax report, invoice general ledger) are not ledger consumers and fall back to the rebuilt native form. No new business rules or permission expansion.",
+    "scopeNote": "Third group: receipt and company income native form migration (company income 637, income 806, shared model sc.receipt.income and view 1644). Scope confirmed in uc4 record: convert the three released entry contracts to native_semantic_surface, retire the model-wide sections layer, the P1 business-facts layer and the generated sequence mirror (all listed in G03 legacyConfigurations); bypass entry 807 (工程进度款收入登记) shares the same native form through its action view_ids and is not a ledger consumer. No new business rules or permission expansion.",
     "retirementCondition": "Each selected formal action must independently show native authority, no active structural override/dependency and representative browser acceptance before any count reduction.",
     "executionSequence": [
       "continuous_group_implementation_and_targeted_validation",
       "one_consolidated_browser_review",
       "freeze_and_PR_integration_gates"
     ],
-    "planningRecord": "docs/ops/iterations/uc4_invoice_native_lowcode_20260916.md"
+    "planningRecord": "docs/ops/iterations/uc4_receipt_income_native_lowcode_20260917.md"
   },
   "retirementCondition": "Only after every formal consumer of a compatibility regrouping path is zero and other roles/companies/states are covered, remove that regrouping logic and its test exemptions.",
-  "mainlineRemainingCount": 38,
+  "mainlineRemainingCount": 36,
   "mainlineRemainingLabel": "主线剩余兼容消费者（不代表部署发布或89入口整体交付）",
   "uc3LocalMigrationAudit": {
     "status": "mainline_integrated",
@@ -9231,6 +8199,77 @@
       "reusedEvidence": "payment, customer, contract, settlement and material representative surfaces reused unchanged read-only results"
     },
     "notDeducted": [
+      "config_center_six_packages_pr_485",
+      "impact_scoped_validation_pr_486",
+      "borrow_archive_shared_action_scopes"
+    ]
+  },
+  "uc4G03PublishedAudit": {
+    "auditedAt": "2026-09-18",
+    "auditedReleaseHead": "654edf0ff09fe394080bfa2545a5061dcafdbecd",
+    "mergedPr": {
+      "number": 488,
+      "squashHead": "654edf0ff09fe394080bfa2545a5061dcafdbecd",
+      "sourceHead": "558626214f57f03e3bc3eb25e1acd9caa40b0d63",
+      "tree": "175da4c07dad0524bd13aaa4466202518953ba56"
+    },
+    "iterationRecord": "docs/ops/iterations/uc4_receipt_income_native_lowcode_20260917.md",
+    "reduction": {
+      "before": 38,
+      "after": 36,
+      "retiredActions": [
+        637,
+        806
+      ],
+      "retiredViews": [
+        1644
+      ],
+      "countMeaning": "mainline remaining compatibility consumers; deployment and overall user delivery are separate"
+    },
+    "bypassConsumers": {
+      "scopeNote": "Action 807 (工程进度款收入登记) reaches the same rebuilt native form 1644 through its own action view_ids. It is a shared bypass entry, not a ledger compatibility consumer, so it is recorded here instead of being counted or silently dropped.",
+      "actions": [
+        {
+          "actionId": 807,
+          "label": "工程进度款收入登记",
+          "counted": false,
+          "whyNotCounted": "shares the delivered native authority; no released configuration of its own to retire",
+          "authorityEvidence": "L2 test proves form authority, domain and context on the action view_ids",
+          "browserAcceptance": "NAVIGATION_AUTHORITY_DENIED for the registered governed identity; recorded as a reachability fact, not a structure conclusion"
+        }
+      ]
+    },
+    "sourceVerification": {
+      "nativeStructureAuthority": true,
+      "configuredSectionsEmpty": true,
+      "compatibilityDependenciesEmpty": true,
+      "retiredModelMirrorDeactivated": true,
+      "recoveredFactsCarriedOnce": true,
+      "actionCarriersPreserved": true,
+      "exactHeadQuick": "passed"
+    },
+    "deliveredSharedMechanisms": [
+      "P1 grounded copy decision: sc.receipt.income is not registered as a display-copy model (no protocol opt-in and the attachment summary is a dual-source derivation); the duplicate body presentation was removed by retiring the duplicated configuration projection instead of guessing by model name or *_display suffix",
+      "P1 native authority: the three released entry contracts declare native_semantic_surface with only the entry title; the model-wide sections layer, the P1 business-facts layer and the generated sequence mirror are retired with their records and contract_json retained, so the change is reversible",
+      "P1 recovered facts: the 14 facts the retired configuration declared but the native form never carried are now carried exactly once, with their real readonly rule and their owning section",
+      "P4 read-only representative topic registered inside the existing governed runner (same environment, credentials and identity checks; no new fixture or environment) with per-route rendered field names so a section difference is attributable instead of guessed"
+    ],
+    "browserEvidence": {
+      "recordedOutcome": "batch_product_review_passed_for_the_806_representative_routes; 637/807 recorded as navigation-authority denied",
+      "routes": "806 create and record passed: every section entry resolves and reveals its target, 18 sticky measurements with 0 overlap, duplicated=[], empty_containers=[]",
+      "transport": "failed_requests=0 in the archived run with one Vue Router console warning; not treated as a correctness claim",
+      "identityBinding": "the run recorded the iteration stage identity (head 7e36f65a + dirty) and was reused into the frozen head through a recorded input impact analysis (input mtimes plus frozen content hashes); no matrix was rerun to change identity",
+      "draftIsolation": "restored=true, designer_drafts=[], cleanup_guard.foreign=[]; no draft was consumed and 163/192/194/233/267/276 were left untouched",
+      "archiveReceipt": "/home/lidefend/workspace/.codex-evidence/workspace-archives/20260918/uc4-g03-receipt-income-native/558626214f57f03e3bc3eb25e1acd9caa40b0d63/archive-receipt.json"
+    },
+    "residualGaps": [
+      "637/807 browser structure observation needs a governed identity that holds the finance/business-initiation navigation grant (separate P4 authorization; not part of this reduction)",
+      "807 progress-domain record route has no sample in the governed sample database",
+      "contract-field to rendered-node attribution (create 29 / record 22 against 55 contract fields) remains an observation",
+      "the manual numbering entry point for name after it became native authority awaits a business decision"
+    ],
+    "notDeducted": [
+      "bypass_action_807",
       "config_center_six_packages_pr_485",
       "impact_scoped_validation_pr_486",
       "borrow_archive_shared_action_scopes"
