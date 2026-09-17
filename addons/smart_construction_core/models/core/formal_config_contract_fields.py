@@ -47,6 +47,54 @@ def _compute_formal_config_contract_fields(records, mapping):
             record[target] = text
 
 
+# Display copies and the canonical field each one mirrors.  These copies exist
+# for list projections, released configuration and other API consumers; the
+# shared view orchestrator reads ``_display_copy_source_fields`` to keep them
+# out of the automatic form union so one business fact is not presented twice
+# in the same context.  Registration never deletes a field and never removes
+# its configuration or list consumers.
+#
+# A field may be registered only when all three facts hold:
+#   1. it is a live single-source projection of another field on the same
+#      record (no historical snapshot, no multi-source derivation);
+#   2. it keeps its own duty outside the form body (list column, released
+#      configuration, API), so excluding it from the body loses no capability;
+#   3. the canonical source is co-present in the same context (the model's
+#      form arch), so excluding the copy cannot hide the fact.
+# Fields that mirror another record, freeze a value at a point in time, or
+# carry their own label/summary duty stay unregistered on purpose.
+FORMAL_DISPLAY_COPY_SOURCES = {
+    'sc.invoice.registration': {
+        'note_display': 'note',
+        'invoice_attachment_text': 'attachment_ids',
+        'source_created_by': 'creator_name',
+        'source_created_at': 'created_time',
+    },
+    # payment.request: attachment count text next to the attachment widget in
+    # the same "说明与附件" configuration section; canonical attachment_ids is
+    # carried by view_payment_request_form.
+    'payment.request': {
+        'payment_request_attachment_text_display': 'attachment_ids',
+    },
+    # sc.material.inbound: same attachment summary class; canonical
+    # attachment_ids is carried by view_sc_material_inbound_form.
+    'sc.material.inbound': {
+        'material_inbound_attachment_text_display': 'attachment_ids',
+    },
+}
+
+
+class FormalDisplayCopySourcesMixin(models.AbstractModel):
+    """Protocol mixin exposing the display copy registry to the shared
+    orchestration layer (protocol only, no business import)."""
+
+    _name = 'sc.formal.display.copy.sources'
+    _description = 'Formal Display Copy Sources Protocol'
+
+    def _display_copy_source_fields(self):
+        return dict(FORMAL_DISPLAY_COPY_SOURCES.get(self._name, {}))
+
+
 _PAYMENTREQUEST_FORMAL_CONFIG_FIELDS = {
     'payment_request_payment_account_no_display': ('付款账号', ('payment_account_no_display',)),
     'payment_request_bank_name_display': ('开户行', ('payee_bank_name_display',)),
@@ -58,7 +106,8 @@ _PAYMENTREQUEST_FORMAL_CONFIG_FIELDS = {
 }
 
 class PaymentRequestFormalConfigContractFields(models.Model):
-    _inherit = 'payment.request'
+    _name = 'payment.request'
+    _inherit = ['payment.request', 'sc.formal.display.copy.sources']
 
     for _field_name, (_field_label, _field_sources) in _PAYMENTREQUEST_FORMAL_CONFIG_FIELDS.items():
         locals()[_field_name] = fields.Char(
@@ -238,7 +287,8 @@ _INVOICEREGISTRATION_FORMAL_CONFIG_FIELDS = {
 }
 
 class InvoiceRegistrationFormalConfigContractFields(models.Model):
-    _inherit = 'sc.invoice.registration'
+    _name = 'sc.invoice.registration'
+    _inherit = ['sc.invoice.registration', 'sc.formal.display.copy.sources']
 
     for _field_name, (_field_label, _field_sources) in _INVOICEREGISTRATION_FORMAL_CONFIG_FIELDS.items():
         locals()[_field_name] = fields.Char(
@@ -312,7 +362,8 @@ _MATERIALINBOUND_FORMAL_CONFIG_FIELDS = {
 }
 
 class MaterialInboundFormalConfigContractFields(models.Model):
-    _inherit = 'sc.material.inbound'
+    _name = 'sc.material.inbound'
+    _inherit = ['sc.material.inbound', 'sc.formal.display.copy.sources']
 
     for _field_name, (_field_label, _field_sources) in _MATERIALINBOUND_FORMAL_CONFIG_FIELDS.items():
         locals()[_field_name] = fields.Char(

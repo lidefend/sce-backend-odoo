@@ -107,3 +107,4 @@ from . import test_product_reports
 from . import test_payment_settlement_component_profile
 from . import test_p1_finance_projection_authority
 from . import test_settlement_fact_immutability_v1
+from . import test_form_structure_consumption

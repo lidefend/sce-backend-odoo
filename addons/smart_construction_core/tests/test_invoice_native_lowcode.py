@@ -347,3 +347,59 @@ class TestInvoiceNativeLowcode(TransactionCase):
         for part in ("layoutContract", "statusContract", "actionContract"):
             self.assertEqual(rolled_back[part], baseline[part])
         self.assertEqual(self.env["sc.invoice.registration"].search([]).read(["write_date", "state"]), before)
+
+    def test_display_copy_registry_and_form_union_exclusion(self):
+        """Mechanism guard: stored display copies never enter the form body.
+
+        The registry is the business-layer declaration consumed by the shared
+        orchestrator; the union completion (``_append_missing_form_fields``)
+        and any configured field rule must ignore copies so each business
+        fact keeps exactly one presentation in the form.
+        """
+        from copy import deepcopy
+        from odoo.addons.smart_core.core.view_orchestrator import ViewOrchestrator
+
+        orchestrator = ViewOrchestrator(self.env)
+        model_name = "sc.invoice.registration"
+        self.assertEqual(
+            orchestrator._display_copy_field_names(model_name),
+            set(self.DERIVED_DISPLAY_COPIES),
+        )
+        # canonical sources stay untouched: the copies still exist as fields
+        self.assertIn("note_display", self.env[model_name]._fields)
+        contract = {"layout": [{"type": "group", "children": [{"type": "field", "name": "note"}]}]}
+        spec = {"fields": [
+            {"name": "note", "visible": True},
+            {"name": "note_display", "visible": True},
+            {"name": "source_created_by", "visible": True},
+        ]}
+        out = orchestrator._apply_form_spec(deepcopy(contract), deepcopy(spec), model_name)
+        names = {node.get("name") for node, _parent in self.walk(out.get("layout"))
+                 if node.get("type") == "field"}
+        self.assertIn("note", names)
+        self.assertNotIn("note_display", names)
+        self.assertNotIn("source_created_by", names)
+
+    def test_native_semantic_surface_rejects_display_copy_anchor(self):
+        """Anchors must declare the canonical fact, never its display mirror."""
+        from types import SimpleNamespace
+        from odoo.addons.smart_core.core.view_orchestrator import ViewOrchestrator
+
+        orchestrator = ViewOrchestrator(self.env)
+        config = SimpleNamespace(contract_json={"view_orchestration": {"views": {"form": {
+            "composition_mode": "native_semantic_surface",
+            "semantic_anchors": [{"anchor": "invoice_notes", "fields": ["note", "note_display"]}],
+        }}}})
+        with self.assertRaises(ValueError) as raised:
+            orchestrator._config_declares_native_semantic_surface(
+                config, "form", "sc.invoice.registration")
+        self.assertIn("NATIVE_SEMANTIC_SURFACE_DISPLAY_COPY", str(raised.exception))
+        self.assertIn("note_display", str(raised.exception))
+        # canonical-only anchors still pass
+        clean = SimpleNamespace(contract_json={"view_orchestration": {"views": {"form": {
+            "composition_mode": "native_semantic_surface",
+            "semantic_anchors": [{"anchor": "invoice_notes", "fields": ["note", "attachment_ids"]}],
+        }}}})
+        self.assertTrue(
+            orchestrator._config_declares_native_semantic_surface(
+                clean, "form", "sc.invoice.registration"))
