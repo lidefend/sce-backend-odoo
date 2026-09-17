@@ -237,11 +237,12 @@ recovery_attempt: renavigate_once, recovered: true}]`，4 个被中断的请求�
 
 ## 9. 状态与下一步
 
-状态：**第三轮回环中（`readonly` 放宽回归已修，待重走冻结链）｜未集成｜未部署｜89 入口交付未完成｜台账 34（扣减待合入后核对）**。
+状态：**冻结链已走完（干净 HEAD ＋ 完整指纹 ＋ exact-head Quick ＋ 独立复核 APPROVE）｜未集成｜未部署｜89 入口交付未完成｜台账 34（扣减待合入后核对）**。
 
-下一步（按既有顺序）：记录第三轮回环（§11）→ 提交 → `ci.delivery.freeze.prepare` → 冻结干净 HEAD 与完整指纹（§12）→
-一次 exact-head Quick → 第二轮独立复核 → 外部归档与 PR 正文 → 合入后按 G03/G04 先例做扣减
-（34 → 32，退役 792/798/793 与视图 1632/1633，旁路 menu 543 登记 `bypassConsumers` 不计数，
+已按顺序执行完：记录第三轮回环（§11）→ 独立复核发现 `readonly` 放宽回归 → 修复 → 提交 → `ci.delivery.freeze.prepare`
+→ 冻结干净 HEAD 与完整指纹（§12）→ 一次 exact-head Quick → 第三轮独立复核（§11.5，APPROVE）→
+复核提出的 4 项**记录措辞**问题在归档前修完（§11.5，仅 `docs/`）→ 新 head 重走冻结链 → 外部归档与 PR 正文 →
+合入后按 G03/G04 先例做扣减（34 → 32，退役 792/798/793 与视图 1632/1633，旁路 menu 543 登记 `bypassConsumers` 不计数，
 `nextBatch.selectedGroup=G06`）。
 
 本批不扩：约六组副本候选继续留台账；G06（税额与专项抵扣 790/879，视图 1654）另行准备，不在本批实施。
@@ -278,18 +279,25 @@ recovery_attempt: renavigate_once, recovered: true}]`，4 个被中断的请求�
 并删除 `sections/fields`（配置侧结构副本）后，原生 arch 是唯一剩余载体，而 1633 上
 `paid_amount`／`payment_state` 只是**条件**只读（`state in ['done','legacy_confirmed','cancel']`）、
 `company_name_text` 连条件都没有。因此 create 档（`state='draft'` 缺省）下三字段全部落到 `auth=edit`。
-对照 1632 的同族字段本就是 `readonly="1"`——**同一模型两个共享视图的声明并不一致**，而本批只核对了
-「字段是否存在」，未核对「声明是否活到策略层」。这是本批的方法缺口，不是环境问题。
+对照 1632（扣款共享视图）的同族字段**已是** `readonly="1"`——但该声明由本批 recovery 步骤 `ba3f5da7`
+补字段时新增：基线 `8e8c1ce9` 的 1632 完全没有 `company_name_text`／`paid_amount`／`payment_state` 声明
+（`git show 8e8c1ce9:…/expense_claim_views.xml` 的命中只在树视图与 1633）。即**本批只对齐了 1632、漏了对齐 1633**，
+两个共享视图的声明因此不一致；而本批只核对了「字段是否存在」，未核对「声明是否活到策略层」。
+这是本批的方法缺口，不是环境问题，也不是基线遗留缺陷。
 
 **归因链（每步实测）**：
 
 1. 只读探针对 792 逐字段矩阵：`LOSS = [company_name_text, paid_amount, payment_state]`，其余 16 项无丢失。
 2. 从基线 `8e8c1ce9` 的 `expense_claim_form_productization_contract.xml` 用 `ast.literal_eval` 解出 217 的
    `contract_json`：49 个字段中 19 个 `readonly: True`，包含这三项；222 为 53 字段中 26 项。
-3. 原生 arch 对照：1633 三字段如上；1632 同族已 `readonly="1"`。
+3. 原生 arch 对照：基线 1633 三字段如上（条件只读／无声明）；1632 的同族 `readonly="1"` 是本批 `ba3f5da7` 新增（基线无）。
 4. 合并方向证据：`addons/smart_core/core/view_orchestrator.py:1103` `_apply_field_display_policy`——
    policy `readonly: True` **强制**节点只读，`readonly: False` 仅在原生无限制时生效；`:975` 归一化 `readonly`。
-   因此「把声明写回原生 arch」既不与 217/222 冲突，也对其它 1633 消费者**不产生收紧**（它们本就只读或不可见）。
+   因此「把声明写回原生 arch」既不与 217/222 冲突，也不与其它入口的既有意图冲突：实测扫描 18 份
+   `sc.expense.claim` 表单契约，其中 **14 份入口契约全部声明这三项 `readonly: True`**（`not_readonly_true=[]`），
+   1632 亦为 `readonly="1"`，且全库 runtime 配置无任何 `node_patches`／`field_policy` 涉及这三项。
+   **边界**：对**无入口声明**、经模型级 72 解析的入口未逐入口实测（批外且无契约，受管 runner 内无法验证）；
+   该部分结论依据上述声明一致性与「`readonly` 不移除动作入口」推导，不声称已实测。
 
 ### 11.2 修改层与改动
 
@@ -349,6 +357,27 @@ recovery_attempt: renavigate_once, recovered: true}]`，4 个被中断的请求�
 **推荐修复方向（留待下一批/机制层决定）**：在 P0 策略层为「无业务类别的入口」提供显式的 workflow-state 只读承载，
 而不是逐入口改共享 arch。
 
+### 11.5 第三轮独立复核（候选 `78f7cd17`）与随之完成的记录修正
+
+只读独立复核（禁写、禁远端、未跑 Quick、仅只读读取既有回执）结论 **APPROVE**：无 S0／S1。
+复核方独立复算的关键事实与本记录一致：工作树 clean（仅 `ahead 3`）、`git diff --stat 8e8c1ce9..78f7cd17` 为 11 文件、
+`addons/smart_core/**` 零改动、`78f7cd17` 仅 4 文件且无夹带、指纹 digest／7509 路径内存复算一致、台账 34、
+`transport_recoveries` 恰 1 条、36／29／35 与 8 章节／8-8 导航／13px 吸顶可复算；并实测**修复后 792 三字段
+`(readonly=true, auth="read")`**、相邻可编辑事实未被收紧、14 份入口契约无相反声明、动作入口无损失。
+
+复核提出 4 项 **S2 记录措辞**问题（均非阻断，不涉及代码），已在归档前修正：
+
+| 项 | 修正 |
+|---|---|
+| §11.1 原写「1632 同族字段**本就是** `readonly="1"`」与基线不符 | 更正为「本批 `ba3f5da7` 补字段时新增，基线 1632 无这三项声明」——如实登记为**本批只对齐了 1632、漏了对齐 1633**（§11.1 归因链第 3 步同步更正） |
+| §11.1 归因链第 4 条「对其它 1633 消费者不产生收紧」是无条件表述 | 限定为 14 份入口契约（实测 `not_readonly_true=[]`）与 1632 消费者，并显式标注**无入口声明的入口未逐入口实测** |
+| 总记录三处历史状态行仍写「台账 42」，易与现行 34 混淆 | 改为「台账 42（当时）」，与 §8.20／§8.22 的 42→38→36→34 扣减链一致 |
+| 总记录「独立复核结论 APPROVE」未标注适用候选 | 标注为候选 `ba3f5da7`，与 §8.23.1 记录的 `b2b12365` REQUEST_CHANGES 区分 |
+
+修正只触碰两份 `docs/` 记录，无产品运行路径改动（`git diff --name-only` 可核）；按阶段证据规则，
+文档变更不作废页面证据，故 L3 升级与 L4 页面证据不因此重跑，但冻结身份按规则在新 head 上重走一次
+（完整指纹 ＋ exact-head Quick ＋ 独立复核绑定同一指纹）。
+
 ## 12. 身份与冻结口径
 
 本记录按「日迭代＝HEAD＋显式 dirty 范围」书写，**不声称 frozen**；冻结值不写入本文件（写入本文件会改变候选自身的
@@ -356,10 +385,11 @@ commit hash），只出现在冻结步骤生成的产物与外部归档中。
 
 | 阶段 | 身份 | 取值方式 |
 |---|---|---|
-| 迭代期（本记录全篇） | `HEAD=b2b1236595701afa9e7e274c3d0c417658aafac7` ＋ dirty `{views/core/expense_claim_views.xml, tests/test_expense_claim_native_lowcode.py}` | 只读复核已核：HEAD／tree `70d23ed16e5aa62d4d585c3b66300867fb85a550`、两文件为唯一 dirty；本轮进一步加了 §11 的 3 行 arch 改动 |
+| 迭代期（§1–§10 书写时） | `HEAD=b2b1236595701afa9e7e274c3d0c417658aafac7` ＋ dirty `{views/core/expense_claim_views.xml, tests/test_expense_claim_native_lowcode.py}` | 第二轮结束时的身份；§11 的 3 行 arch 改动即此 dirty（L4 报告 `dirty=true` 即此状态） |
 | 第一轮提交 | `ba3f5da7ad54f68cb59d5553166f1d9eab6f1598`（tree `7380ca2915e20ecb4f0317d96dd6988a16123f81`） | 已被第二轮取代 |
-| 第二轮提交 | `b2b1236595701afa9e7e274c3d0c417658aafac7` | Quick 回执 `.git/codex/evidence/ci.local.quick/b2b1236595701afa9e7e274c3d0c417658aafac7.json`（PASS）；**已被第三轮取代** |
-| 第三轮提交 → 冻结 | 由本轮提交产生；冻结值见外部归档 `identity.json` / `worktree-fingerprint.json` | `python3 scripts/contract/complete_worktree_fingerprint.py --baseline 8e8c1ce9d4d0fbe63b141cf75475030282f9f9d9` ＋ `make ci.local.quick`（exact-head，一次） |
+| 第二轮提交 | `b2b1236595701afa9e7e274c3d0c417658aafac7`（tree `70d23ed16e5aa62d4d585c3b66300867fb85a550`） | Quick 回执 `.git/codex/evidence/ci.local.quick/b2b1236595701afa9e7e274c3d0c417658aafac7.json`（PASS）；**已被第三轮取代** |
+| 第三轮提交 | `78f7cd17d573a720edc5093f457d758864b03b8f`（tree `6497b2c212398712cc6891c30576fe03fe71e5d4`） | Quick 回执 `.git/codex/evidence/ci.local.quick/78f7cd17d573a720edc5093f457d758864b03b8f.json`（PASS）；第三轮独立复核 APPROVE（§11.5）；**已被本轮记录修正提交取代** |
+| 记录修正提交 → 冻结 | 由本次提交产生；冻结值只出现在外部归档 `identity.json` / `worktree-fingerprint.json` | `python3 scripts/contract/complete_worktree_fingerprint.py --baseline 8e8c1ce9d4d0fbe63b141cf75475030282f9f9d9` ＋ `make ci.local.quick`（exact-head，一次）＋ 独立复核绑定同一指纹 |
 
 **L4 报告的自身身份口径**：`representative-report-expense_claim.json` 顶部 `candidate` / `dirty` 记录的是**产生该报告时的
 运行身份**（本轮为 `b2b12365` ＋ `dirty=true`），它是「按当时 HEAD＋dirty 运行」的事实记录，**不是**冻结候选的证明。
