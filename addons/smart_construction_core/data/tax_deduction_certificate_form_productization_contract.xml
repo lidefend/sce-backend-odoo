@@ -12,8 +12,7 @@
              Every fact the retired bodies presented still renders once.  The
              arch gained the facts only they declared that the native body did
              not carry (`company_id`, `partner_name`,
-             `deduction_bill_attachment_text`, `message_attachment_count`, the
-             provenance facts `legacy_source_model` / `legacy_source_table` /
+             the provenance facts `legacy_source_model` / `legacy_source_table` /
              `legacy_record_id` / `legacy_document_state`, and the mixin facts
              `source_created_by` / `source_created_at` on the 迁移来源 page) and
              now states the same read-only restrictions the retired bodies
@@ -23,12 +22,35 @@
              where the retired body had it, so retiring a body cannot double a
              fact either.
 
+             The retired bodies also declared `deduction_bill_attachment_text`
+             and `message_attachment_count`.  They are deliberately NOT
+             recovered into this body: the native arch already renders the
+             attachment fact once, through the `attachment_ids` carrier, and the
+             text summary and the chatter attachment count carry that same fact
+             inside the same context (办理说明与附件) - presenting them beside
+             the carrier would be a meaningless duplicate, not a second
+             scenario.  `deduction_bill_attachment_text` keeps its list-scope
+             summary expression on
+             `view_sc_tax_deduction_registration_formal_deduction_bill_tree`,
+             and `message_attachment_count` keeps its chatter-scope expression
+             in the collaboration panel, so each expression keeps its own
+             scenario and only the in-context duplicate is gone.
+
              The model-wide contracts
-             `sc_tax_deduction_registration_form_sections_v1`,
-             `sc_tax_deduction_registration_p1_form_business_facts_v1` and
+             `sc_tax_deduction_registration_form_sections_v1` and
              `sc_tax_deduction_registration_form_structure_generated_v1` keep
              serving their other consumers (action 852 扣款单, whose entry has no
-             release of its own) and are not modified. -->
+             release of its own) and are not modified.  The third member of that
+             trio, `sc_tax_deduction_registration_p1_form_business_facts_v1`, is
+             retired by this batch (see
+             `p1_daily_business_form_orchestration_contract_data.xml`) for the
+             same reason G02 / G03 / G04 retired the equivalent body: view 1654
+             owns its structure now, and its unconditional read-only fact
+             annotations otherwise merged onto the nodes of the released entries
+             and contradicted both this arch
+             (`readonly="state == 'legacy_confirmed'"`) and the delivered field
+             policy (`auth=edit`), so a required create fact such as 发票号码 or
+             抵扣税额 rendered without a control the user could fill. -->
         <record id="business_config_contract_tax_deduction_registration_productized_form_v1" model="ui.business.config.contract">
             <field name="name">tax_deduction_registration_productized_form_v1</field>
             <field name="model">sc.tax.deduction.registration</field>

@@ -90,7 +90,14 @@
                             <group name="deduction_business_direction" data-sc-anchor="deduction_business_direction" string="业务方向">
                                 <field name="name" readonly="1"/>
                                 <field name="source_origin" invisible="1" readonly="1"/>
-                                <field name="deduction_flow_label" readonly="1"/>
+                                <!-- 办理事项 is an auxiliary derived label, so the entry is
+                                     presented only when the backend returns a value for it.
+                                     The model returns no value before the record exists, and
+                                     the shared modifier engine consumes this native
+                                     declaration in both directions; the create surface must
+                                     not fall back to a client-side default. -->
+                                <field name="deduction_flow_label" readonly="1"
+                                       invisible="not deduction_flow_label"/>
                                 <field name="business_category_id" readonly="deduction_scope == 'project_special' or state == 'legacy_confirmed'"/>
                                 <field name="deduction_scope" readonly="1"/>
                                 <field name="document_no" readonly="state == 'legacy_confirmed'"/>
@@ -124,13 +131,11 @@
                         </group>
                         <group name="deduction_handling" data-sc-anchor="deduction_handling" string="扣款办理">
                             <field name="deduction_unit_name" readonly="state == 'legacy_confirmed'"/>
-                            <field name="deduction_reason" readonly="state == 'legacy_confirmed'" nolabel="1"/>
+                            <field name="deduction_reason" readonly="state == 'legacy_confirmed'"/>
                         </group>
                         <group name="deduction_note_attachment" data-sc-anchor="deduction_note_attachment" string="办理说明与附件">
                             <field name="note"/>
-                            <field name="deduction_bill_attachment_text" readonly="1"/>
                             <field name="attachment_ids" widget="many2many_binary" readonly="state == 'legacy_confirmed'"/>
-                            <field name="message_attachment_count" readonly="1"/>
                         </group>
                         <notebook>
                             <page string="责任余额" invisible="not company_contractor_responsibility_summary_id">

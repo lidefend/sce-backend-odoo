@@ -234,6 +234,17 @@ class ScTaxDeductionRegistration(models.Model):
         partner_id = res.get("partner_id") or self._context_partner_id()
         if partner_id and "partner_id" in fields_list:
             res["partner_id"] = partner_id
+        # An entry that declares its business category (action context
+        # ``default_business_category_code``) must present the same fact before
+        # the first save that ``create()`` will persist.  Otherwise the create
+        # form shows an empty required 业务分类 while the saved record carries
+        # the entry category, and the operator cannot tell which entry the
+        # record will belong to.  Resolve from the same authority used by
+        # create(); never let the client derive the relation from a code.
+        if "business_category_id" in fields_list and not res.get("business_category_id"):
+            category_id = self._resolve_business_category_id(res)
+            if category_id:
+                res["business_category_id"] = category_id
         return res
 
     @api.model
@@ -450,6 +461,19 @@ class ScTaxDeductionRegistration(models.Model):
     @api.depends("deduction_scope", "is_transfer_out", "withholding_amount", "deduction_tax_amount", "deduction_amount")
     def _compute_deduction_flow_label(self):
         for rec in self:
+            # 办理事项 is an auxiliary derived label, and the form presents it only
+            # when a value is returned (`invisible="not deduction_flow_label"` in the
+            # native arch).  A record that does not exist yet has no established
+            # flow: the create surface's scope/amount inputs are the entry's
+            # pre-save defaults, not a business fact of this record.  Returning
+            # the default-scope fallback here would also satisfy the presentation
+            # declaration's own predicate input (the platform materializes the
+            # inputs of a create-surface modifier), so the entry would be
+            # presented as a fact before any input exists.  The fallback stays
+            # for persisted records, where it is the record's own flow.
+            if not rec.id:
+                rec.deduction_flow_label = False
+                continue
             if rec.deduction_scope == "project_special":
                 rec.deduction_flow_label = _("项目专项抵扣")
             elif rec.is_transfer_out:

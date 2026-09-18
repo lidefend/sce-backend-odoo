@@ -83,7 +83,20 @@
             <field name="view_type">form</field>
             <field name="priority">88</field>
             <field name="company_id" eval="False" />
-            <field name="active" eval="True" />
+            <!-- U-C4 G06: retired; the rebuilt native form view 1654 owns structure.
+                 The body's `readonly` facts were annotations over the structure it
+                 used to own, and every entry that renders this model (790, 879 and
+                 the tree-only 852) now resolves view 1654 with
+                 `formStructureAuthority=native_authority` for the released entries
+                 and the same native body for 852.  Left active, the body's
+                 unconditional read-only annotations contradicted the native arch
+                 (`readonly="state == 'legacy_confirmed'"`) and the delivered field
+                 policy (auth=edit), which made required create facts unfillable.
+                 The facts it declared stay declared: the native body carries them,
+                 and the remaining model-wide contracts
+                 (`..._form_sections_v1`, `..._form_structure_generated_v1`) keep
+                 serving action 852. -->
+            <field name="active" eval="False" />
             <field name="status">published</field>
             <field name="version_no">1</field>
             <field name="contract_json" eval="{                 'view_orchestration': {                     'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},                     'views': {                         'form': {'composition_mode': 'entry_semantic_surface',                             'sections': [                                 {'title': '单据识别'},                                 {'title': '业务对象'},                                 {'title': '金额与办理'},                                 {'title': '附件与来源'}                             ],                             'fields': [{'name': 'deduction_bill_status_display', 'sequence': 10, 'readonly': True}, {'name': 'deduction_bill_document_no', 'sequence': 20, 'readonly': True}, {'name': 'tax_deduction_is_transfer_out_display', 'sequence': 30, 'readonly': True}, {'name': 'deduction_bill_project_name', 'sequence': 40, 'readonly': True}, {'name': 'partner_name', 'sequence': 50, 'readonly': True}, {'name': 'invoice_no', 'sequence': 60, 'readonly': True}, {'name': 'deduction_tax_amount', 'sequence': 70, 'readonly': True}, {'name': 'deduction_amount', 'sequence': 80, 'readonly': True}, {'name': 'deduction_surcharge_amount', 'sequence': 90, 'readonly': True}, {'name': 'note', 'sequence': 100, 'readonly': True}, {'name': 'creator_name', 'sequence': 110, 'readonly': True}, {'name': 'deduction_bill_date_display', 'sequence': 120, 'readonly': True}]                         }                     }                 }             }" />
