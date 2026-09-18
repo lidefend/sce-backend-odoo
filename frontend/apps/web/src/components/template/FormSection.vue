@@ -108,7 +108,7 @@
                 v-else-if="usesProfessionalBusinessValue(field)"
                 :field="field"
                 :control-id="fieldControlId(field)"
-                :placeholder="field.inputPlaceholder || selectPlaceholderText(field)"
+                :placeholder="field.inputPlaceholder || businessValuePlaceholderText(field)"
                 @update:value="emitFieldChange(field, $event)"
               />
               <ProfessionalBaseFieldControl
@@ -638,6 +638,13 @@ function dateRangeEndControlId(field: FormSectionFieldSchema) {
 
 function selectPlaceholderText(field: FormSectionFieldSchema) {
   return props.selectPlaceholder(field.label);
+}
+
+// A business value is typed into the field unless the field really is a choice
+// control.  A contract that carries no placeholder must not turn an amount into
+// "请选择…": that reads as a picker and misstates the control the user is on.
+function businessValuePlaceholderText(field: FormSectionFieldSchema) {
+  return field.type === 'selection' ? selectPlaceholderText(field) : inputPlaceholderText(field);
 }
 
 function inputPlaceholderText(field: FormSectionFieldSchema) {
