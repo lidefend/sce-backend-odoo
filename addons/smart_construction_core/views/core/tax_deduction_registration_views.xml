@@ -82,34 +82,36 @@
                                 invisible="state not in ('draft', 'confirmed')"/>
                         <button name="action_cancel" string="取消" type="object"
                                 invisible="state in ('cancel', 'legacy_confirmed')"/>
-                        <field name="state" widget="statusbar"
+                        <field name="state" widget="statusbar" readonly="1"
                                statusbar_visible="draft,confirmed,deducted,legacy_confirmed,cancel"/>
                     </header>
                     <sheet>
                         <group>
-                            <group string="业务方向">
+                            <group name="deduction_business_direction" data-sc-anchor="deduction_business_direction" string="业务方向">
                                 <field name="name" readonly="1"/>
-                                <field name="source_origin" invisible="1"/>
+                                <field name="source_origin" invisible="1" readonly="1"/>
                                 <field name="deduction_flow_label" readonly="1"/>
-                                <field name="business_category_id" readonly="state == 'legacy_confirmed'"/>
+                                <field name="business_category_id" readonly="deduction_scope == 'project_special' or state == 'legacy_confirmed'"/>
                                 <field name="deduction_scope" readonly="1"/>
                                 <field name="document_no" readonly="state == 'legacy_confirmed'"/>
                                 <field name="document_date" readonly="state == 'legacy_confirmed'"/>
                                 <field name="deduction_confirm_date" readonly="state == 'legacy_confirmed'"/>
                             </group>
-                            <group string="项目与往来单位">
+                            <group name="deduction_project_partner" data-sc-anchor="deduction_project_partner" string="项目与往来单位">
                                 <field name="project_id" readonly="state == 'legacy_confirmed'"/>
+                                <field name="company_id" readonly="1"/>
                                 <field name="operation_strategy" readonly="1"/>
                                 <field name="partner_id"/>
+                                <field name="partner_name" readonly="1"/>
                             </group>
                         </group>
-                        <group string="发票信息">
+                        <group name="deduction_invoice_info" data-sc-anchor="deduction_invoice_info" string="发票信息">
                             <field name="invoice_no" readonly="state == 'legacy_confirmed'"/>
                             <field name="invoice_code" readonly="state == 'legacy_confirmed'"/>
                             <field name="invoice_date" readonly="state == 'legacy_confirmed'"/>
                             <field name="tax_rate_text" readonly="1"/>
                         </group>
-                        <group string="抵扣金额与税额">
+                        <group name="deduction_amount_tax" data-sc-anchor="deduction_amount_tax" string="抵扣金额与税额">
                             <field name="invoice_amount_untaxed" readonly="state == 'legacy_confirmed'"/>
                             <field name="invoice_tax_amount" readonly="state == 'legacy_confirmed'"/>
                             <field name="invoice_amount_total" readonly="state == 'legacy_confirmed'"/>
@@ -118,20 +120,21 @@
                             <field name="deduction_surcharge_amount" readonly="state == 'legacy_confirmed'"/>
                             <field name="is_transfer_out" readonly="state == 'legacy_confirmed'"/>
                             <field name="withholding_amount" readonly="state == 'legacy_confirmed'"/>
-                            <field name="currency_id" invisible="1"/>
+                            <field name="currency_id" invisible="1" readonly="1"/>
                         </group>
-                        <group string="扣款办理">
+                        <group name="deduction_handling" data-sc-anchor="deduction_handling" string="扣款办理">
                             <field name="deduction_unit_name" readonly="state == 'legacy_confirmed'"/>
-                            <field name="withholding_amount" readonly="state == 'legacy_confirmed'"/>
                             <field name="deduction_reason" readonly="state == 'legacy_confirmed'" nolabel="1"/>
                         </group>
-                        <group string="办理说明与附件">
+                        <group name="deduction_note_attachment" data-sc-anchor="deduction_note_attachment" string="办理说明与附件">
                             <field name="note"/>
+                            <field name="deduction_bill_attachment_text" readonly="1"/>
                             <field name="attachment_ids" widget="many2many_binary" readonly="state == 'legacy_confirmed'"/>
+                            <field name="message_attachment_count" readonly="1"/>
                         </group>
                         <notebook>
                             <page string="责任余额" invisible="not company_contractor_responsibility_summary_id">
-                                <group string="公司-承包人责任约束">
+                                <group name="contractor_responsibility" data-sc-anchor="contractor_responsibility" string="公司-承包人责任约束">
                                     <field name="company_contractor_responsibility_summary_id" invisible="1"/>
                                     <field name="company_contractor_responsibility_state" readonly="1"/>
                                     <field name="company_contractor_arrival_unprocessed_amount" readonly="1"/>
@@ -146,9 +149,15 @@
                                 </group>
                             </page>
                             <page string="迁移来源" invisible="source_origin != 'legacy'">
-                                <group>
+                                <group name="deduction_source_trace" data-sc-anchor="deduction_source_trace" string="来源追溯">
+                                    <field name="legacy_source_model" readonly="1"/>
+                                    <field name="legacy_source_table" readonly="1"/>
+                                    <field name="legacy_record_id" readonly="1"/>
+                                    <field name="legacy_document_state" readonly="1"/>
                                     <field name="creator_name" readonly="1"/>
                                     <field name="created_time" readonly="1"/>
+                                    <field name="source_created_by" readonly="1"/>
+                                    <field name="source_created_at" readonly="1"/>
                                     <field name="active"/>
                                 </group>
                             </page>

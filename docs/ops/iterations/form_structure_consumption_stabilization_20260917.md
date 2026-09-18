@@ -1133,3 +1133,50 @@ G05 残留缺口（793 及 6 个无声明入口的 `state` 可写、`sc.expense.
 业务指纹护栏基于 0 行可读业务数据、compatibility 平面 create 档可把 primary zone 修剪空且无 fail-closed、
 `expense_claim_views.xml` 包装 `<group>` 缩进错位、G04 遗留 808／811 的 `company_contractor_*`）
 继续登记在批次记录 §11.4／§13 与 `uc4G05PublishedAudit.residualGaps`，本批不扩。
+
+## 8.25 G06 代表面实施：税额与专项抵扣原生结构迁移（独立记录）
+
+按 `nextBatch.selectedGroup` 推进到 **G06 税额与专项抵扣**（`action 790` 抵扣登记／menu 538、`action 879` 项目专项抵扣／menu 701，
+同模型 `sc.tax.deduction.registration`、同原生 primary form `view 1654`）。分支
+`feature/uc4-tax-deduction-native-v1`，基于 `origin/main`=`daf9a97875a15343671c00e46fd9c4e639ebeca2`；
+唯一写入者为本会话执行体，其它工作树未触碰。完整记录见
+`docs/ops/iterations/uc4_tax_deduction_native_lowcode_20260918.md`。
+
+**实际改动 6 个路径**：原生 arch 加 8 个 `data-sc-anchor` 业务章节（其中 2 个归属条件页 `责任余额`／`迁移来源`）、
+按退役配置反推的缺失字段全部补回（含 `迁移来源` 页的 6 个来源追溯事实）、把两个退役入口声明过的只读限制写回 arch
+（`state`／`source_origin`／`currency_id` 收紧，`business_category_id` 改为按 `deduction_scope` 条件只读，
+使共享表单同时满足 879 只读与 790 可编辑），并**删除原生 arch 自身的重复呈现**：`withholding_amount`
+原本在同一表单的 `抵扣金额与税额` 与 `扣款办理` 两个章节各出现一次，本批收敛为一次（登记于批次记录 §10）；
+206（790）与 177（879）的 `contract_json` 退役为 `native_semantic_surface`（只保留标题；879 保留其
+`deduction_scope_authority` 等语义上下文键）；新增 7 测并注册；在既有受管 runner 内登记只读代表 topic
+`tax_deduction`（复用同一环境与身份校验，未新建 fixture 或环境）。
+
+模型级配置 143／5／129 与旁路入口 852（扣款单：无自有菜单、只固定 tree、无自有发布）**未改动**，只读核对为
+`LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW` + `compatibilityDependencies=["legacy_configuration_structure_suppression"]`，
+即模型级结构在原生权威入口上被抑制、在旁路入口上仍生效。
+
+**分层验证**：L1 `make ci.local.iteration` PASS（16 tests，6 路径）；
+L2 `TestTaxDeductionNativeLowcode` **`0 failed, 0 error(s) of 7 tests`**；相邻 `TestProjectSpecialTaxDeduction` PASS（沿用既有回执）；
+L3 `local.dev.upgrade` PASS（78 modules loaded ＋ `local.dev.ready` ＋ `local.dev.demo.authority` PASS）；
+L4 只读代表面 `FORM_LOWCODE_TOPIC=tax_deduction FORM_LOWCODE_REPRESENTATIVE=1` **PASS**
+（790 create 30 字段／790 record 26 字段／879 create 30 字段，各 7 章节且导航 7/7 resolved+visible，
+findings 全空，吸顶操作行 `175–205` 与导航 `218–257` 分离 13px；`restored=true`、`browser_errors=[]`、
+`recovery_state.released=true`、草稿未创建未被清理）。
+
+两处已归因、不重跑：① `TestUserFeedbackBusinessViews` 在 `sc_dev_demo` 的 28/72 失败在基线态（`git checkout`
+回 `daf9a978` 后重新 upgrade）复现出**完全相同**的失败集合，判定预先存在、与本批无关；
+② 790 只读路由导航不含「扣款办理」，经只读探针确认该分组两字段在受管样本上取值为空（`deduction_unit_name=False`、
+`deduction_reason=False`），属 P1「字段合法隐藏」而非修剪误删。
+
+**未覆盖（如实登记，不伪装成覆盖）**：879 的 `record_surface` 在受管身份下 `domain_rows=0`、
+`business_row_count=1`，`state=empty_action_domain`，故该入口的只读记录态重放无从进行。
+
+**登记未改**：`smart_core/app_config_engine/services/view_Parser/base.py:102` 以 `not xml_content` 判断入参，
+而该函数同时接受 lxml Element（其他两个调用点都以 Element 传入）；当前不可观测（真实 form arch 必有子节点），
+仅对无子节点元素会静默返回 `{}` 并抛 `FutureWarning`，属潜在健壮性缺口，需 P0 单独决定，本批不扩。
+
+台账保持 **31**：本批在台账内**正好 2 条**（index 21 = 790／538／1654、index 22 = 879／701／1654），
+退役与 **31 → 29** 扣减按 G03/G04/G05 先例留待合入后由独立提交落地，本实现提交不改台账文件。
+未冻结、未跑交付 Quick、未推送、未建 PR、未部署。
+
+状态：**批次验收中（本批范围，未冻结）｜未集成｜未部署｜89 入口用户验收未完成｜台账 31**。

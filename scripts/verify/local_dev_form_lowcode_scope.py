@@ -94,6 +94,18 @@ TOPIC_IDENTITIES = {
         ("action_sc_expense_claim_deduction_bill", "view_sc_expense_claim_deduction_registration_form", "menu_sc_deduction_bill"),
         ("action_sc_expense_claim_advance_fund", "view_sc_expense_claim_deduction_registration_form", "menu_sc_advance_fund"),
     ),
+    # U-C4 G06: 抵扣登记 (790 / menu 538) and 项目专项抵扣 (879 / menu 701) are the
+    # two registered consumers of model sc.tax.deduction.registration.  Neither
+    # action fixes a form view, so both resolve the model primary form
+    # view_sc_tax_deduction_registration_form.  Action 852 (扣款单) reaches the
+    # same primary form with records but fixes only a tree view, carries no
+    # release of its own and has no menu of its own, so it is tracked as a
+    # bypass consumer in the batch ledger instead of being registered as a
+    # route that cannot be reached read-only.
+    "tax_deduction": (
+        ("action_sc_tax_deduction_registration_user", "view_sc_tax_deduction_registration_form", "menu_sc_tax_deduction_registration_user"),
+        ("action_sc_product_project_tax_deduction_v1", "view_sc_tax_deduction_registration_form", "menu_sc_product_project_tax_deduction_v1"),
+    ),
 }
 TOPIC_SAMPLE_FIELDS = {
     "invoice": ["direction", "source_kind", "source_origin", "note"],
@@ -104,6 +116,7 @@ TOPIC_SAMPLE_FIELDS = {
     "receipt_income": ["state", "source_origin", "source_kind"],
     "payment_execution": ["state", "source_kind", "payment_family"],
     "expense_claim": ["state", "source_origin", "claim_type", "claim_flow_label"],
+    "tax_deduction": ["state", "deduction_scope", "deduction_flow_label", "source_origin"],
 }
 # Mechanism assertions for the read-only representative pass.  Names are the
 # registered display copies / canonical sources of the same business fact; the
@@ -156,6 +169,19 @@ TOPIC_REPRESENTATIVE = {
     # are observed as legal hiding instead of a lost fact.  Read-only; no change
     # set is touched.
     "expense_claim": {"section_navigation": True, "record_surface": True},
+    # U-C4 G06: the tax-deduction rebuild adds eight `data-sc-anchor` business
+    # sections to the shared primary form (seven titled sections plus the source
+    # trace inside the conditional 迁移来源 page), recovers the declared facts the
+    # retired entry bodies owned, and keeps the untitled column wrapper as
+    # layout.  The same read-only battery is the mechanism assertion: every
+    # 章节入口 must resolve and reveal its target, and the command bar /
+    # navigation / body bands must stay separated.  The responsibility page and
+    # the provenance page are conditional on the record itself, so
+    # `record_surface` replays the battery on the governed sample of the same
+    # action; action 879 has an empty domain and is recorded as an uncovered
+    # record surface instead of being silently shortened.  Read-only; no change
+    # set is touched.
+    "tax_deduction": {"section_navigation": True, "record_surface": True},
 }
 if topic not in TOPIC_IDENTITIES:
     raise RuntimeError("unregistered formal form topic")
