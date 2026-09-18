@@ -1299,3 +1299,256 @@ Quick 回执 sha256 `203ae4f4…`），并独立核对：delta 恰为声明的 9
 
 台账保持 **31**（定时 CI 处置不改业务域登记；扣减仍按 G03/G04/G05 先例留待合入后由独立提交落地）。
 定时失败 5 个 workflow 已全部归因（3 真实缺陷 ＋ 1 级联 ＋ 1 本机限制），根因均已修复并在**同一 CI 入口**上复验通过。
+
+## 8.27 G06 整改回环 R1：代表面「可填事实」判据的共享机制结论（2026-09-18）
+
+身份：HEAD `7b792729` ＋ 未提交 dirty 范围（**阶段身份，未冻结**）。明细见
+`docs/ops/iterations/uc4_tax_deduction_native_lowcode_20260918.md` §12。
+
+### 8.27.1 共享机制结论（P0 呈现口径 × P4 验证工具）
+
+代表面判据 `assertRequiredFactsAreFillable` 的原意是「交付策略要求必填且可编辑的事实，必须给出用户能填的控件」。
+它此前只统计**非 `readonly` 的原生输入**（`EDITABLE_CONTROL`），因此在共享表单上出现了一个假阳性：
+
+- 可编辑的**日期事实**由 `ProfessionalBaseFieldControl` → `ScDateField` → TDesign 日期选择器渲染，
+  其触发器内层 `input` 依设计带 `readonly`（点击才**打开面板并写回值**），故被计成 0；
+- 实测（790 创建面 `invoice_date`）：节点存在、`data-field-state="required"`、`data-auth="edit"`、标签可见，
+  点击触发器出现日期面板，点选后输入框值变为 `2026-08-31`，`field--empty` 消失 → **可填，判定为口径缺陷**；
+- 同页 `document_date`／`deduction_confirm_date` 同形，佐证是口径而非单字段渲染偶发。
+
+机制结论（对全部代表面主题成立）：
+
+1. 交付面的可填形态有**两种**——原生可编辑控件，以及**宿主未禁用且 input 未禁用**的 picker 触发器；
+   前者用严格选择器，后者必须以「触发器宿主未禁用」为门，才不把 disabled／readonly 呈现算成可填。
+2. 判据不能只放在选择器字面量里：观测须**分别**保留 `editable`／`picker`／`fillable`，让「为什么算可填」可归因。
+3. 放宽方向必须配反向硬化：只读事实要求 `editable === 0 && picker === 0`（比原来更严），
+   且仅靠 picker 计数的必填事实还要断言触发器**可见且能取得焦点**，避免口径变成隐藏/惰性控件的普遍豁免。
+
+### 8.27.2 修改范围与影响面
+
+- 只改 **1 个 P4 验证工具路径**：`frontend/apps/web/scripts/formal_form_representative_journey.mjs`。
+  `addons/**`、`frontend/apps/web/src/**` **未改**，故产品运行路径与其余主题的既有证据不受影响。
+- 受影响面 = 消费该工具的只读代表面：本轮补跑 `tax_deduction`（本主题）以及注册了 `readonly_values`
+  的 `contract`／`settlement`（验证收紧后的只读守卫无回归）。**未重跑全矩阵。**
+- 同类选择器另见 `formal_form_invoice_journey.mjs`（只读事实要求 0、`note` 要求 >0，不产生日期必填假阳性）、
+  `local_dev_project_profile_write_browser.mjs`（交互填充）、`frontend_scene_component_driver_readonly_browser.mjs`
+  （只读驱动要求 0，严格口径正确）——三者**本轮未改**，若后续新增「必填日期」断言须复用新口径。
+
+### 8.27.3 结果与剩余缺口
+
+| 项 | 结果 |
+|---|---|
+| L1 `make ci.local.iteration` | **PASS**（16 tests OK，`change_state=dirty coverage=L1_only`） |
+| L4 `tax_deduction` | **PASS** exit 0；`restored=true`、`browser_errors=[]`、`cleanup_guard=proceed`、`released=true` |
+| L4 `contract`／`settlement` | **PASS** exit 0（只读面回归） |
+| 代表面明细 | 790 create／record **PASS**；879 create **PASS**；879 list 空态 **PASS**；879 record **未覆盖**（`empty_action_domain`） |
+| L2（前端映射面） | `canonical_form_presenter`／`page_pattern_reference_parity`／`primitive_adapter`／`product_page_pattern` 4/4 **PASS**（170／15／46＋31 tests／12＋5，均非零） |
+| L2（共享结构机制） | `verify.frontend.native_form_structure_responsibility.unit` **PASS** `cases=10` |
+| L2（后端结构消费） | `TestFormStructureConsumption` **PASS**（§8.27 时 `6 tests`；**§8.28 已扩到 8 tests，以 §8.28 为准**） |
+| 390 人工复核 | 操作行／导航／正文互不遮挡；点末项再点回首项后目标落在吸顶带下方；`scrollWidth - innerWidth = 0`；`单据附件` 与 `协作附件` 各自成组。**口径纠正见 §8.28**：本节早期的 `nav 347–400` 与 `nav.bottom 347` 分属静止态与吸顶态，须按阶段分读 |
+| 本批已登记候选 | ①日期触发器测量口径（跨主题，本轮只在代表面闭合）；②空值只读 `many2many` 被 `readonlyFactIsPresentable` 省略但 `FormSection.vue` 有 `field--readonly-empty-relation` 渲染支撑（两层判断不一致，**只登记不改**）；③`partner_name` 独立历史事实在创建面以空只读形态呈现（呈现取舍，**只登记不改**）；④action context 的 `default_business_category_code` **未被水合**成 `business_category_id`（**§8.28 已在 P1 声明层收口**）；⑤只读计算字段 `deduction_flow_label` 保存前渲染「-」（**§8.28 已明确生成条件**） |
+
+未执行：未冻结、未跑 Quick、未推送、未部署、未启动 G07；台账保持 **31**；
+受保护草稿 163／190／192／194／233／267／274／276 未被触碰；历史工作树未被清理。
+
+---
+
+## 8.28 G06 整改回环 R2：入口分类与默认值在 P1 声明层收口（2026-09-18）
+
+### 8.28.1 共享机制结论
+
+「入口声明了业务分类、创建面却不呈现」**不是共享默认值水合层的缺陷**，而是**该入口缺了 P1 声明**：
+同类入口（结算单收／支、付款申请、费用报销）都在自己的 `default_get` 里把 action context 的
+`default_business_category_code` 解析成关系 id，抵扣登记入口漏了这一步，而**保存侧 `create()` 一直正确**。
+因此本轮修在 P1 声明层，**不改 P0 共享解析／水合机制**，也不写抵扣模型特判、不向其他入口铺开。
+凡「声明—呈现—保存」三者对同一事实的判断不一致，先比对同类入口的声明，再决定层；
+共享层只有在多个同类入口同时错时才成立。
+
+### 8.28.2 修改范围与影响面
+
+- **接管后修改**（本轮唯一写入）：`models/core/tax_deduction_registration.py`（`default_get` 补解析）、
+  `tests/test_tax_deduction_native_lowcode.py`（＋5 例）、`tests/test_form_structure_consumption.py`（＋2 例）。
+- 共享机制用例集新增：`BUSINESS_CATEGORY_ENTRIES`——**同类入口**（结算单收入／支出、抵扣登记用户／项目专项，
+  共 4 个 action／2 个模型）必须把声明同样送到创建面；**无默认分类反例**——声明了但数据不存在的 code
+  **不得被替代**（`test_an_entry_category_that_cannot_be_resolved_is_not_substituted`）。
+- `addons/smart_core/**` 与前端 `src/**` 本轮**未改**，故其余主题证据不受影响，未重跑全矩阵。
+- 环境根因（非代码）：受管容器启动早于模块改动且无 `--dev=reload`，执行的是旧模块代码；
+  `make local.dev.restart` 后恢复，**未执行** `local.dev.upgrade`。
+
+### 8.28.3 行为验证（不只检查字符串）
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | **PASS** `change_state=dirty coverage=L1_only` |
+| L2 本主题 | `TEST_TAGS="uc4_native_lowcode"` | **PASS** `0 failed, 0 error(s) of 45 tests` |
+| L2 共享机制 | `TEST_TAGS="/smart_construction_core:TestFormStructureConsumption"` | **PASS** `0 failed, 0 error(s) of 8 tests` |
+| 只读探针 | `default_get`（790／879 context） | `business_category_id` → **50／51**（修复前为空） |
+
+浏览器（只读）：790 创建面呈现 `业务分类 抵扣登记`、879 创建面呈现 `业务分类 项目专项抵扣`；
+候选范围收窄为入口分类域（`count=1`，`codes=["tax.deduction.registration"]`，「搜索更多」仅 1 行）；
+879 该字段按视图声明为只读单值；越界分类提交被 `ValidationError` 拒绝且**零持久化**（回滚后记录数 `1 → 1`）。
+
+### 8.28.4 空值表达与导航口径（结论）
+
+- **历史往来单位**：独立存储事实，**不按重复文本删除**；由入口 context `default_partner_name` 水合，
+  非 legacy 的 manual 记录（id=1）同样带真实值 → **不能**套用进项发票的 `invisible="source_origin != 'legacy'"`。
+  790／879 创建面为空只是这两个入口没有 context 往来单位，评估结论为**保留**。
+- **空附件关系**：一层定可见性（`readonlyFactIsPresentable`，按呈现形态）、一层定已保留关系的渲染
+  （`FormSection.vue::isReadonlyEmptyRelation`），二者职责不矛盾；`one2many` 与 `many2many` 的取舍差异仍是候选②，未扩大。
+- **办理事项**：生成条件按优先级明确（`project_special` → 项目专项抵扣；`is_transfer_out` → 进项税额转出；
+  `withholding_amount` → 扣款抵扣；有抵扣金额／税额 → 进项税额抵扣；否则 抵扣登记）；
+  首次偏差是 `default_get` 不返回该非存储计算字段，前端**未拼造**；本轮不加静态默认值（会因后续录入金额而陈旧）。
+- **章节导航坐标**：`nav 347–400`（静止态）与 `nav.bottom 347`（吸顶态）是**两个阶段**，
+  已按阶段重列为同一稳定态的三个矩形（§12.5.1），790／879 在 1088 与 390 均无重叠、首尾双向可达。
+
+### 8.28.5 未执行项与状态
+
+未冻结、未跑 Quick、未推送、未建 PR、未部署、未启动 G07；未重跑全矩阵（合同／结算按输入未变复用）；
+未 `sync_demo`／fixture reset／无关 upgrade；未停启历史容器、未改 Docker 网络、未清理历史工作树；
+未触碰受保护草稿 163／190／192／194／233／267／274／276；879 记录态仍未覆盖。
+**未持久化业务或配置写入**（日期点选属未保存表单交互）。
+
+状态：**入口分类与默认值已收口（P1）｜整改中｜台账 31｜未集成｜未部署**。
+
+## 8.29 第 10 轮（R5）：章节导航「按下稳定性」断言与办理事项的通用可见性消费
+
+### 8.29.1 归属与唯一写入者（第 10 轮）
+
+- 身份：HEAD `7b792729f67c17be8d8e5e483df8b027b65d752d`，分支 `feature/uc4-tax-deduction-native-v1`，dirty＝21 个已跟踪路径 ＋ 2 个未跟踪新增。
+- **唯一写入者＝本会话执行体**。本轮**唯一写入**的路径是 `frontend/apps/web/scripts/formal_form_representative_journey.mjs`（P4 验证工具）。
+- 本记录既有的共享实现（`pages/contractForm/FormSectionNavigation.vue`、`pages/contractForm/nativeSectionNavigation.ts`、
+  `components/template/FormSection.vue`、`pages/ListPage.vue`、`views/ActionView.vue`、`components/professional-fields/ProfessionalBaseFieldControl.vue`、
+  `scripts/native_section_navigation_test.ts`、`scripts/collection_view_semantics_test.ts`、`scripts/verify/local_dev_form_lowcode_scope.py`）
+  **属「接管前已有」**，本轮未新增写入，**仅验证**。
+- 历史保留工作树本轮未触碰（登记 ≠ 活跃）；未持久化业务或配置写入。
+
+### 8.29.2 共享机制结论
+
+1. **章节导航按下稳定性（同一共享控件的回归面）**：按下期间自动跟随**不得滑动轨道**，
+   否则条目会离开手指、释放被投递给相邻条目或轨道本身。受管 runner 现以 **6 个稳定态场景 ＋ 1 个反例**覆盖，
+   并在 390×844 的 879 create、790 create、790 record 上全部通过：
+
+   | 场景 | 稳定态事实（879 create / 390×844） |
+   |---|---|
+   | 首项屏内按下 | `active=业务方向`、`target_top=359 ≥ nav.bottom=347`、`trackScrollLeft=0` |
+   | 手动滚动正文后再按下 | 同首项：`业务方向`、359、`trackScrollLeft=0` |
+   | 末项按下 | `active=协作记录`、`target_top=464`、`trackScrollLeft=329` |
+   | 末→首（首项在横向可视区外，先横滚再点） | `active=业务方向`、359、`trackScrollLeft 329→0` |
+   | 首→末（末项在屏外） | `active=协作记录`、464、`trackScrollLeft 0→329` |
+   | 按住条目时正文继续滚动 | `active=协作记录`、464、按下期间 `trackScrollLeft` 不变 |
+   | 反例：按住后释放点离开条目 | `delivered_active` 与按住期间一致（**什么都不激活**） |
+
+2. **办理事项的通用可见性消费**：该辅助只读项只在**后端返回有效值**时呈现。
+   实现是原生 `invisible="not deduction_flow_label"` ＋ 既有通用修饰符消费链，**未新增前端字段特判**；
+   新建面（后端未返回值）不渲染该行，记录面（有值）渲染。反例对见 §12.9.2（本批次另册）。
+3. **坐标口径**：`nav 347–400`（静止态）与 `nav.bottom 347`（吸顶态）分属两个阶段；
+   本轮所有坐标改由受管 runner 的同一稳定态落盘给出（操作行／导航／目标三矩形同源），不再由探针估算拼接。
+4. **反例保护（不降断言）**：新增的反例自带结论——正确记 `control`，异常记 `activation_survived_a_cancelled_press`／`control_not_armed`，
+   既不进失败清单也不计入「已投递章节」，用于证明正例不是由「按下」本身产生，而是由「落在条目上的释放」产生。
+
+### 8.29.3 本轮分层验证
+
+- **L1（本轮重跑）**：`make ci.local.iteration` → **PASS** `change_state=dirty coverage=L1_only receipt=none`（`tmp/g06-remediation/l1-iteration-r10.log`）。日志 `changedPathCount=33` 为**相对基线参考快照**的集合，与 `git status --short` 的 23 条 dirty 口径不同。
+- **L2（前端非零，本轮执行）**：`make verify.frontend.native_section_navigation.unit` → **PASS**（`authority=7 next_action=3 content_identity=11 active_tracking=11 structure_consumption=7`）；`make verify.frontend.product_page_pattern.unit` → **PASS**（`5 tests`）。
+- **L2**：本轮未改后端／前端产品代码，按输入未变**复用**既有 L2（`TestFormStructureConsumption`、`native_section_navigation` 单元）与 §8.28 证据。
+- **L4（受管代表面，仅受影响主题）**：invoice 与 tax_deduction 两主题各一次，均 **PASS**（exit 0），`business fingerprints unchanged`；导航按下稳定性在 879 create／790 create／790 record 全绿，879 record 仍为 `UNCOVERED / empty_action_domain`。详表见本批次另册 §12.9.4。
+
+### 8.29.4 一次验证工具归因（P4，结论：产品无回归）
+
+首次受管代表面 L4（invoice）exit 2，失败点在新增的「按住＋正文滚动」场景。
+归因证明**首次偏差在探针**：该场景先 `page.mouse.move()` 再 `mouse.wheel()`，在按住状态下已是**拖拽**，
+释放点离开条目 → click 不派发 → 激活被取消（高亮按设计跟随正文）。
+两变体对照（`probe_nav_step6_attribution.mjs`）：按住不移指针时，轨道 `scroll_left` 不变、条目几何不变、
+`pointerup/click` 均命中被按下条目并正确投递（目标 464 ≥ nav 347）；移动指针变体下**无任何相邻条目被误激活**。
+修复只落在断言的手势与判据（含一次判据自身错误：对条目坐标而非释放点坐标做命中测试），产品代码未动。
+完整记录见 §12.9.3。
+
+### 8.29.5 未执行项与状态
+
+未冻结、未跑 Quick、未推送、未建 PR、未部署、未启动 G07；未重跑全矩阵（合同／结算／材料／客户按输入未变复用）；
+未 `sync_demo`／fixture reset／发布快照／无关 upgrade；未停启历史容器、未改 Docker 网络、未清理历史工作树；
+未触碰受保护草稿 163／190／192／194／233／267／274／276；879 记录态仍未覆盖（`empty_action_domain`）。
+台账保持 **31**；**未持久化业务或配置写入**。受保护草稿只读回读：8 条 change set 全部存在、`write_date` 均为 2026-09-17（早于本轮运行），233／267／276 仍为 `ready`（未发布、未回滚、未删除）。
+
+状态：**窄屏导航与办理事项已收口并受管复验通过｜整改中｜台账 31｜未集成｜未部署**。
+
+## 8.30 第 11 轮（R6）：三条导航路径分离复验（正常用户／键盘／自动显露）
+
+本轮是复核反馈后的**有界诊断**：不改办理事项（口径已于 §8.29.2 收口），不重跑全矩阵，只做有界复现与归因。
+本批次另册（`uc4_tax_deduction_native_lowcode_20260918.md` §12.10）记录同一证据，口径一致。
+
+### 8.30.1 归属与唯一写入者（第 11 轮）
+
+- 身份：HEAD `7b792729f67c17be8d8e5e483df8b027b65d752d`，分支 `feature/uc4-tax-deduction-native-v1`，dirty＝21 个已跟踪路径 ＋ 2 个未跟踪新增。
+- **唯一写入者＝本会话执行体**。本轮**唯一写入**的路径是 `frontend/apps/web/scripts/formal_form_representative_journey.mjs`（P4 验证工具）。
+- **接管前已有、本轮仅验证**：`pages/contractForm/FormSectionNavigation.vue`、`pages/contractForm/nativeSectionNavigation.ts`、
+  `components/template/FormSection.vue`、`pages/ListPage.vue`、`views/ActionView.vue`、
+  `components/professional-fields/ProfessionalBaseFieldControl.vue`、`scripts/native_section_navigation_test.ts`、
+  `scripts/collection_view_semantics_test.ts`、`scripts/verify/local_dev_form_lowcode_scope.py`、以及 `addons/smart_core/*`、`addons/smart_construction_core/*` 的本批改动。
+- **接管后修改（本轮）**：仅上述 runner 的导航断言面。**无产品代码写入**。
+- 本轮探针输出（`tmp/g06-remediation/*.out`）为 gitignore 内的诊断材料，不进提交。
+- 历史保留工作树本轮未触碰（登记 ≠ 活跃）；未持久化业务或配置写入。
+
+### 8.30.2 共享机制结论：三条路径必须分开判定
+
+复核指出（879／390×844）「点『办理说明与附件』→ 用按钮定位点击屏外『业务方向』」失败：高亮停在别处、
+首标题 −1516.5px、导航底边 347px；而「先用左箭头显露再点击」通过；且第一组**没有按住／拖拽／滚轮**，
+故不能用 §8.29.4 的「拖拽取消 click」归因关闭。
+
+实测结论：**失败只出现在「坐标先于显露」这一类自动化时序上，不是章节导航缺陷**。
+
+| 路径 | 操作 | 结果 | 关键事实 |
+|---|---|---|---|
+| **正常用户路径** | 点末项 → 用「向前浏览表单章节」显露 → 在显露后的位置真实按下 | **PASS** | §8.29 的 6 个稳定态场景全绿；`last_then_first` → `active=业务方向`、`target_top=359 ≥ nav.bottom=347`、`trackScrollLeft 329→0` |
+| **键盘路径** | 聚焦已发布浏览控件 → `Tab`（1 次）→ 屏外首项获得焦点 → `Enter` | **PASS** | `focused_entry=业务方向`、`tabs_to_focus=1`、`delivered_active=业务方向`、`target_top=359`（790 record：387 ≥ 375） |
+| **自动显露路径** | 自动化自身 `scrollIntoViewIfNeeded` 显露后，在**显露之后重新取点**按下 | **PASS** | 按下前条目 `visible_width ≤ 0`（隐藏点 `x=20`／invoice `x=26`，轨道左边界 `69`）；显露后 `left=69`；投递 `业务方向`、`target_top=359`。785／786／787／788 create 同样通过 |
+
+三条路径的断言分别落在 `step=first_entry_in_view／pressed_after_body_scroll／last_then_first／first_then_last／
+pressed_while_body_scrolled`、`keyboard_activation`、`auto_reveal_press`，**不再合并成一个「导航全绿」**。
+runner 的失败过滤仍为 `!['pressed','not_applicable','control']`（未放宽断言）。
+
+### 8.30.3 失败模式的定位证据（区分滚动竞争与投递）
+
+| 实验 | 入口 | 观察 |
+|---|---|---|
+| 自动显露（正确时序）延迟矩阵 | `probe_nav_autoreveal_race_r6.mjs`：首点后有界延迟 0／60／120／250／500／900ms，再 `locator.click()` | **6/6 PASS**。每次 `pointerdown／pointerup／click` 的 target 与命中点均为 `业务方向`，之后正文滚到该章节（`ownerScrollTop 2125→57`），高亮 `业务方向`、首标题 359 |
+| 正常用户与键盘路径对照 | `probe_nav_autoreveal_r6.mjs` | **PASS**：箭头显露后真实按下 = 业务方向／359；键盘聚焦首项后 Enter = 业务方向／359 |
+| **坐标先于显露**（负向对照） | `probe_nav_stale_coords_r6.mjs`：隐藏时取点（`press_x=−229`）→ 显露 → 按**旧坐标**派发 | **FAIL（自动化侧）**：实际派发点 `(191,366)`，`pointerdown／up／click` 的 target 全部是 `办理说明与附件`（**另一个条目**），正文未移动（首标题 −1709），稳定高亮 `办理说明与附件`。显露后重新取点（`press_x=100`）则 **PASS** |
+
+- 负向对照复现的正是复核报告的症状类别（**点击落在非目标条目、正文不动、首标题远在视口上方**），
+  且事件证据显示产品把按下**正确投递给了指针下的那个条目**——「投递异常」发生在自动化的取点时序，而非产品事件错投。
+- 6 号场景按下期间的 `track.scroll_left` 始终不变（341），**不存在按下期轨道自滑**的滚动竞争；
+  正文跟随仍按设计更新高亮（`协作记录 → 办理信息`）。
+- runner 现将该风险作为**可复核事实**落盘：`hidden_point`、`under_hidden_point`、`stale_point_after_reveal`；
+  断言只在「显露后重新取点」的前提下判定投递，不以延长超时或改断言代替归因。
+
+### 8.30.4 本轮分层验证（仅受影响层，复用其余）
+
+- **L1**：本轮 runner 改动属 P4 验证工具；已按输入未变复用 §8.29.3 的 `make ci.local.iteration` PASS 结论，未重复跑。
+- **L2**：本轮未改后端／前端产品代码，复用 §8.29.3 的 `make verify.frontend.native_section_navigation.unit`（PASS）
+  与 `make verify.frontend.product_page_pattern.unit`（PASS）。
+- **L4（受管代表面，仅受影响主题）**：
+
+| 主题 | 结果 | 证据 |
+|---|---|---|
+| tax_deduction | **PASS** exit 0（`tmp/g06-remediation/l4-tax_deduction-r10.log`） | 790 create／790 record／879 create 的 `auto_reveal_press` 与 `keyboard_activation` 全为 `pressed`；879 record 仍 `UNCOVERED/empty_action_domain` |
+| invoice | **PASS** exit 0（`tmp/g06-remediation/l4-invoice-r10.log`） | 785／786／787／788 create 的同上两场景全 `pressed`；789／639 `blocked/NAVIGATION_AUTHORITY_DENIED`（管理员无权限，非零错误通过） |
+
+  两主题均 `business fingerprints unchanged`。**未重跑未受影响主题**：`section_navigation_press` 行仅存在于上述两主题的报告，
+  其余主题报告不含该断言结果，故本轮 runner 改动对其无失效影响。
+
+### 8.30.5 办理事项的当前呈现证据（未改动，仅补图）
+
+`artifacts/lowcode-form-loop/browser/representative-tax_deduction-790-record.png`（本轮 L4 生成）：
+已有记录 S70-TAX-001 的「业务方向」区**显示「办理事项 = 进项税额抵扣」**，与 `登记单号／业务分类／抵扣范围` 同列；
+新建面同批字段清单仍**不含** `deduction_flow_label`（§8.29.2）。即「新建无值即隐藏／记录有值即显示」两侧证据齐备。
+
+### 8.30.6 未执行项与状态
+
+未冻结、未跑 Quick、未推送、未建 PR、未部署、未启动 G07；未重跑全矩阵（合同／结算／材料／客户按输入未变复用）；
+未改办理事项；未 `sync_demo`／fixture reset／发布快照／无关 upgrade；未停启历史容器、未改 Docker 网络、未清理历史工作树；
+受保护草稿 163／190／192／194／233／267／274／276 未触碰（全表 `max(id)=276`，本轮无新建草稿行）；
+879 记录态仍未覆盖（`empty_action_domain`，不为补证据造数据）；**未持久化业务或配置写入**。台账保持 **31**；
+约 6 组副本候选继续留台账，不扩大本批登记范围。
+
+状态：**三条导航路径已分离复验（正常用户／键盘／自动显露均通过；失败仅复现于「坐标先于显露」的自动化时序）｜整改中｜台账 31｜未集成｜未部署**。
