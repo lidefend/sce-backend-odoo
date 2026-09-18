@@ -4,6 +4,7 @@
 - 分支：`feature/uc4-expense-claim-native-v1`（基于 `origin/main`=`8e8c1ce9d4d0fbe63b141cf75475030282f9f9d9`）
 - 唯一写入者：本会话执行体；本候选之外的其它工作树本轮未触碰
 - 状态：**批次验收中（未冻结）｜未集成｜未部署｜89 入口交付未完成**；台账（`form_structure_compatibility_consumers_v1.json`）保持 **34**，扣减留待合入后核对
+  （本行是§1–§12 书写时的迭代期口径；G05 已完成合入与扣减，最终状态见 §9 与 §14）
 
 ## 1. 范围与身份
 
@@ -76,7 +77,8 @@
 **仅验证、未修改**（不得计入本批改动）：
 
 - `addons/smart_core/**`：本批**未改**共享机制代码；793 的入口声明是配置层（`ui.business.config.contract`）声明，不是机制改动。
-- `docs/ops/iterations/form_structure_compatibility_consumers_v1.json`：**未改**（保持 34）。
+- `docs/ops/iterations/form_structure_compatibility_consumers_v1.json`：本批**实现提交未改**（保持 34）；
+  扣减在合入后由独立提交按 G03/G04 先例落地（**34 → 31**，见 §14），不属本批实现改动范围。
 - 临时只读诊断脚本（`frontend/apps/web/g05_*.local.mjs`，6 个）：已全部删除，不进入提交。
 - 未消费草稿：163/190/192/194/233/267/274/276 等历史草稿本轮**未读改写**、未删除。
 
@@ -237,13 +239,14 @@ recovery_attempt: renavigate_once, recovered: true}]`，4 个被中断的请求�
 
 ## 9. 状态与下一步
 
-状态：**冻结链已走完（干净 HEAD ＋ 完整指纹 ＋ exact-head Quick ＋ 独立复核 APPROVE）｜未集成｜未部署｜89 入口交付未完成｜台账 34（扣减待合入后核对）**。
+状态：**批次验收完成（本批范围）｜主线集成完成（PR #492）｜未部署｜89 入口交付未完成｜台账 31**。
 
 已按顺序执行完：记录第三轮回环（§11）→ 独立复核发现 `readonly` 放宽回归 → 修复 → 提交 → `ci.delivery.freeze.prepare`
 → 冻结干净 HEAD 与完整指纹（§12）→ 一次 exact-head Quick → 第三轮独立复核（§11.5，APPROVE）→
 复核提出的 4 项**记录措辞**问题在归档前修完（§11.5，仅 `docs/`）→ 新 head 重走冻结链 → 外部归档与 PR 正文 →
-合入后按 G03/G04 先例做扣减（34 → 32，退役 792/798/793 与视图 1632/1633，旁路 menu 543 登记 `bypassConsumers` 不计数，
-`nextBatch.selectedGroup=G06`）。
+合入后按 G03/G04 先例做扣减：**34 → 31**（本批在台账内正好 3 条——index 18 = 792／578／1633、index 20 = 798／563／1632、
+index 22 = 793／575／1632；退役 action 792/798/793 与视图 1632/1633，归档 menu 543 登记 `bypassConsumers` 不计数，
+`nextBatch.selectedGroup=G06`）——已在本记录 §14 落地。
 
 本批不扩：约六组副本候选继续留台账；G06（税额与专项抵扣 790/879，视图 1654）另行准备，不在本批实施。
 
@@ -335,7 +338,9 @@ recovery_attempt: renavigate_once, recovered: true}]`，4 个被中断的请求�
   （`readonly_profiles: [create, edit, readonly]`），不是原生 arch；
 - 全部 14 份入口契约与 25 份类别策略**一致**声明 `state` 只读，没有任何来源声明它可编辑；
 - 结果：**793 是 17 个入口中唯一 `state` 为 `auth=edit` 的入口**（`readonly=false`），
-  另有 6 个无任何入口声明的入口（794／815／839／840／841／842）同型。
+  另有 6 个无任何入口声明**且未固定表单视图**（走模型默认视图解析）的入口（794／815／839／840／841／842）同型。
+  （口径：该名单的判定条件是「无入口契约 **且** 其 action 未显式固定表单视图」；若某入口另行固定了表单视图，
+  其 `state` 必须按该视图单独判定，不在本名单内。）
 
 **为什么不在本批修**（三条都可核）：
 
@@ -390,6 +395,8 @@ commit hash），只出现在冻结步骤生成的产物与外部归档中。
 | 第二轮提交 | `b2b1236595701afa9e7e274c3d0c417658aafac7`（tree `70d23ed16e5aa62d4d585c3b66300867fb85a550`） | Quick 回执 `.git/codex/evidence/ci.local.quick/b2b1236595701afa9e7e274c3d0c417658aafac7.json`（PASS）；**已被第三轮取代** |
 | 第三轮提交 | `78f7cd17d573a720edc5093f457d758864b03b8f`（tree `6497b2c212398712cc6891c30576fe03fe71e5d4`） | Quick 回执 `.git/codex/evidence/ci.local.quick/78f7cd17d573a720edc5093f457d758864b03b8f.json`（PASS）；第三轮独立复核 APPROVE（§11.5）；**已被本轮记录修正提交取代** |
 | 记录修正提交 → 冻结 | 由本次提交产生；冻结值只出现在外部归档 `identity.json` / `worktree-fingerprint.json` | `python3 scripts/contract/complete_worktree_fingerprint.py --baseline 8e8c1ce9d4d0fbe63b141cf75475030282f9f9d9` ＋ `make ci.local.quick`（exact-head，一次）＋ 独立复核绑定同一指纹 |
+| 合入（PR #492） | main `4cda500408ce9feda724700699272ab5e7d2a708`（squash；source head `ae677283435f9ae3f0e5c2a504c4c3f92ff036c5`、tree `ed24b8408355055871d0994bc063bd4e65b32ccf`） | 四个候选门禁在 `ae677283…` 全 success；`pr.merge.local_quick_gate` 复用该 head 的 exact-head 回执，未重跑矩阵 |
+| 扣减提交（§14） | 合入后按 G03/G04 先例单独提交，不触碰产品运行路径 | 台账 34 → 31；本记录此前的 **34** 一律读作「扣减前快照值」，冻结候选身份只认 `ae677283…` 的三件套 |
 
 **L4 报告的自身身份口径**：`representative-report-expense_claim.json` 顶部 `candidate` / `dirty` 记录的是**产生该报告时的
 运行身份**（本轮为 `b2b12365` ＋ `dirty=true`），它是「按当时 HEAD＋dirty 运行」的事实记录，**不是**冻结候选的证明。
@@ -406,3 +413,44 @@ commit hash），只出现在冻结步骤生成的产物与外部归档中。
 | compatibility 平面 create 档可把整个 primary zone 修剪空且无 fail-closed（§5） | 影响全部 compatibility 入口，超本批边界，登记不改 |
 | G04 遗留：808／811 的 5 个 `company_contractor_*` 合法隐藏未在契约层复现 | 属 G04 批次边界，本批不合并处理 |
 | 837 record 渲染层少 2 个章节入口；「契约字段→渲染节点」逐字段归因 | 未覆盖项，随 G06 准备一并处理 |
+
+## 14. G05 主线集成与台账 34 → 31
+
+§9 记的「台账 34（扣减待合入后核对）」已闭合。G05 冻结候选 `ae677283435f9ae3f0e5c2a504c4c3f92ff036c5`
+（tree `ed24b8408355055871d0994bc063bd4e65b32ccf`，完整指纹 digest
+`0f8199b1d9faabbc23e51956a27f0689ab27dc2c51a0f55590a48f6d577334e1`，7509 路径，exact-head `ci.local.quick` PASS）
+经 **PR #492** 合入，main = `4cda500408ce9feda724700699272ab5e7d2a708`；该 head 上 `frontend_release_gate`、
+`merge_policy_gate`、`public_guard`、`professional_quality_gate` 四个候选门禁全部 success（并 `release_candidate_gate`、
+`python310_runtime_compatibility`、`professional_authorization`），`make pr.merge.prep` PASS，
+`make pr.merge`（squash ＋ `--match-head-commit`）合入；`pr.merge.local_quick_gate` 以 `ae677283…` 的 exact-head 回执复用，
+未重跑矩阵。
+
+台账扣减 **34 → 31**：本批在台账内**正好 3 条**（index 18 = action 792／menu 578／view 1633、index 20 = 798／563／1632、
+index 22 = 793／575／1632），退役 action 792／798／793 与视图 1632／1633，
+`count`／`localVerifiedCount`／`mainlineRemainingCount` 三者同步 34 → 31，并新增 `uc4G05PublishedAudit`；
+`nextBatch.selectedGroup` 前进到 **G06 税额与专项抵扣（790/879，视图 1654）**，`sourceMainlineHead` 更新为主线 head。
+
+退役的是**台账条目**，不是视图记录：只读 `browse()` 探针（`sc_dev_demo`，2026-09-18）显示 1633 仍是 **13 个 action**
+（791/792/795/796/797/799/800/801/816/817/818/819/846）的共享原生表单、1628 为其树视图，1632 同时是 798 的显式表单与
+模型级默认表单；其余 action 既不在台账内，也不因本轮扣减受影响。同一探针确认：没有第二个 action 通过 `view_ids`
+指向 1632／1633，也没有第二个**活跃**菜单指向 792/798/793。唯一共享入口是**归档**菜单 543「费用与保证金」
+（`active=false`，parent 财务中心）→ action 792，与已计数的 menu 578 共用同一 action 且自身无发布配置，
+按 G03/G04 先例登记进 `uc4G05PublishedAudit.bypassConsumers`（`counted=false`），不计数、不静默丢弃。
+
+证据归档：`make workspace.evidence.archive`（manifest `tmp/g05-evidence/archive-manifest.json`）8 个文件
+（summary／pr-body／identity／worktree-fingerprint／review／3 张代表面截图），回执 `status=verified`，
+逐文件 sha256 与大小同源文件一致、JSON 与 PNG 可读，位于
+`/home/lidefend/workspace/.codex-evidence/workspace-archives/20260918/uc4-g05-expense-claim-native/ae677283435f9ae3f0e5c2a504c4c3f92ff036c5/`。
+本批独立复核共 4 轮，按候选记为：`ba3f5da7` APPROVE（§10 之前的复核）、`b2b12365` REQUEST_CHANGES（`readonly` 放宽回归，
+真实 major，已在 §11 修复）、`78f7cd17` APPROVE（4 项记录措辞问题，§11.5）、`ae677283` APPROVE（2 项记录措辞问题，见下）。
+
+对候选 `ae677283` 的复核提出的 2 项 S2（均只涉记录陈述）在本提交闭合：① 总记录 §8.23.1 的状态行由「第三轮回环中
+（回归已修，待重走冻结链）」更新为「批次验收完成｜主线集成完成（PR #492）｜未部署」；② §11.4 的 6 个入口补口径
+「无入口声明**且未固定表单视图**（走默认视图）」。另修正阅读中发现的一处同源旧口径：总记录 §8.23.1
+「对照 1632 同族字段本就是 `readonly="1"`」与 §11.1 的更正不一致，已改为「该声明由本批 `ba3f5da7` 补字段时新增，
+基线 `8e8c1ce9` 的 1632 无这三项声明」。
+
+**本提交未触碰产品运行路径**：改动仅台账与两份记录（`git diff --name-only` 可核），`addons/**` 与 `frontend/**` 零改动；
+按阶段证据规则，文档变更不作废 L3／L4 页面证据，故未重跑浏览器矩阵。
+
+状态：**批次验收完成（本批范围）｜主线集成完成（PR #492）｜未部署｜89 入口用户验收未完成｜台账 31**。

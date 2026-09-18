@@ -6,12 +6,11 @@
     "operation": "model",
     "renderProfile": "create"
   },
-  "count": 34,
+  "count": 31,
   "fullRescan": false,
   "sourceInventory": "artifacts/form-structure-unification/customer-browser-final/compatibility-consumers.json",
   "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-  "entries": [
-    {
+  "entries": [{
       "menuXmlid": "smart_construction_core.menu_sc_product_message_notification_v1",
       "label": "消息通知",
       "model": "mail.notification",
@@ -3278,366 +3277,6 @@
       "evidenceStatus": "carried_forward_prior_inventory"
     },
     {
-      "menuXmlid": "smart_construction_core.menu_sc_reimbursement_request",
-      "label": "费用报销",
-      "model": "sc.expense.claim",
-      "actionId": 792,
-      "menuId": 578,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.expense.claim",
-        "viewId": 1633
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 217,
-            "name": "expense_claim_reimbursement_request_productized_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1633,
-        "resolvedActionId": 792,
-        "structureDiagnostics": [
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.expense.claim",
-              "action_id": 792,
-              "view_id": 1633
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "state",
-              "validation_status",
-              "name",
-              "claim_flow_label",
-              "claim_type",
-              "direction",
-              "business_category_id",
-              "source_origin",
-              "project_id",
-              "operation_strategy",
-              "company_id",
-              "company_name_text",
-              "partner_id",
-              "payment_request_id",
-              "applicant_name",
-              "department_name",
-              "expense_type",
-              "summary",
-              "date_claim",
-              "fill_date",
-              "handling_kind",
-              "business_axis",
-              "amount",
-              "approved_amount",
-              "paid_amount",
-              "unpaid_amount",
-              "currency_id",
-              "payment_state",
-              "payment_method",
-              "payment_anchor_policy",
-              "payee",
-              "receipt_account_name",
-              "payee_account",
-              "payee_bank",
-              "payment_account_name",
-              "payer_account",
-              "payer_bank",
-              "note",
-              "attachment_ids",
-              "reject_reason",
-              "return_reason",
-              "legacy_source_model",
-              "legacy_source_table",
-              "legacy_record_id",
-              "legacy_document_no",
-              "legacy_document_state",
-              "creator_name",
-              "created_time",
-              "active"
-            ],
-            "configuration": {
-              "id": 217,
-              "name": "expense_claim_reimbursement_request_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 72,
-                "name": "sc_expense_claim_form_structure_generated_v1"
-              }
-            ]
-          }
-        ],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "state",
-          "payment_method",
-          "clearing_method",
-          "is_returned",
-          "return_reason",
-          "expense_type",
-          "summary",
-          "note",
-          "creator_name",
-          "created_time",
-          "attachment_ids",
-          "name",
-          "claim_type",
-          "direction",
-          "date_claim",
-          "fill_date",
-          "amount",
-          "approved_amount",
-          "currency_id",
-          "project_id",
-          "operation_strategy",
-          "partner_id",
-          "payment_request_id",
-          "company_name_text",
-          "guarantee_project_name",
-          "guarantee_type",
-          "applicant_name",
-          "payee",
-          "receipt_account_name",
-          "payee_account",
-          "payee_bank",
-          "payment_account_name",
-          "payer_account",
-          "payer_bank",
-          "validation_status",
-          "claim_flow_label",
-          "business_category_id",
-          "source_origin",
-          "company_id",
-          "department_name",
-          "handling_kind",
-          "business_axis",
-          "paid_amount",
-          "unpaid_amount",
-          "payment_state",
-          "payment_anchor_policy",
-          "reject_reason",
-          "legacy_source_model",
-          "legacy_source_table",
-          "legacy_record_id",
-          "legacy_document_no",
-          "legacy_document_state",
-          "active"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:办理主信息",
-            "key": "",
-            "title": "办理主信息",
-            "fields": [
-              "state",
-              "validation_status",
-              "name",
-              "claim_flow_label",
-              "claim_type",
-              "direction",
-              "business_category_id",
-              "source_origin"
-            ]
-          },
-          {
-            "identity": "title:项目与申请人",
-            "key": "",
-            "title": "项目与申请人",
-            "fields": [
-              "project_id",
-              "operation_strategy",
-              "company_id",
-              "company_name_text",
-              "partner_id",
-              "payment_request_id",
-              "applicant_name",
-              "department_name"
-            ]
-          },
-          {
-            "identity": "title:报销事项",
-            "key": "",
-            "title": "报销事项",
-            "fields": [
-              "expense_type",
-              "summary",
-              "date_claim",
-              "fill_date",
-              "handling_kind",
-              "business_axis"
-            ]
-          },
-          {
-            "identity": "title:金额与付款",
-            "key": "",
-            "title": "金额与付款",
-            "fields": [
-              "amount",
-              "approved_amount",
-              "paid_amount",
-              "unpaid_amount",
-              "currency_id",
-              "payment_state",
-              "payment_method",
-              "payment_anchor_policy"
-            ]
-          },
-          {
-            "identity": "title:收付款账户",
-            "key": "",
-            "title": "收付款账户",
-            "fields": [
-              "payee",
-              "receipt_account_name",
-              "payee_account",
-              "payee_bank",
-              "payment_account_name",
-              "payer_account",
-              "payer_bank"
-            ]
-          },
-          {
-            "identity": "title:说明与附件",
-            "key": "",
-            "title": "说明与附件",
-            "fields": [
-              "note",
-              "attachment_ids",
-              "reject_reason",
-              "return_reason"
-            ]
-          },
-          {
-            "identity": "title:来源追溯",
-            "key": "",
-            "title": "来源追溯",
-            "fields": [
-              "legacy_source_model",
-              "legacy_source_table",
-              "legacy_record_id",
-              "legacy_document_no",
-              "legacy_document_state",
-              "creator_name",
-              "created_time",
-              "active"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "办理主信息",
-          "项目与申请人",
-          "报销事项",
-          "金额与付款",
-          "收付款账户",
-          "说明与附件",
-          "来源追溯"
-        ],
-        "fieldGroups": {
-          "办理主信息": [
-            "state",
-            "validation_status",
-            "name",
-            "claim_flow_label",
-            "claim_type",
-            "direction",
-            "business_category_id",
-            "source_origin"
-          ],
-          "项目与申请人": [
-            "project_id",
-            "operation_strategy",
-            "company_id",
-            "company_name_text",
-            "partner_id",
-            "payment_request_id",
-            "applicant_name",
-            "department_name"
-          ],
-          "报销事项": [
-            "expense_type",
-            "summary",
-            "date_claim",
-            "fill_date",
-            "handling_kind",
-            "business_axis"
-          ],
-          "金额与付款": [
-            "amount",
-            "approved_amount",
-            "paid_amount",
-            "unpaid_amount",
-            "currency_id",
-            "payment_state",
-            "payment_method",
-            "payment_anchor_policy"
-          ],
-          "收付款账户": [
-            "payee",
-            "receipt_account_name",
-            "payee_account",
-            "payee_bank",
-            "payment_account_name",
-            "payer_account",
-            "payer_bank"
-          ],
-          "说明与附件": [
-            "note",
-            "attachment_ids",
-            "reject_reason",
-            "return_reason"
-          ],
-          "来源追溯": [
-            "legacy_source_model",
-            "legacy_source_table",
-            "legacy_record_id",
-            "legacy_document_no",
-            "legacy_document_state",
-            "creator_name",
-            "created_time",
-            "active"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "办理主信息": 2,
-          "项目与申请人": 2,
-          "报销事项": 2,
-          "金额与付款": 2,
-          "收付款账户": 2,
-          "说明与附件": 2,
-          "来源追溯": 2
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
       "menuXmlid": "smart_construction_core.menu_sc_product_current_account_v1",
       "label": "往来款登记",
       "model": "sc.current.account.workspace",
@@ -3721,383 +3360,6 @@
         "groupColumns": {
           "办理上下文": 2,
           "办理说明": 1
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_deduction_bill",
-      "label": "公司&项目扣款",
-      "model": "sc.expense.claim",
-      "actionId": 798,
-      "menuId": 563,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.expense.claim",
-        "viewId": 1632
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 222,
-            "name": "expense_claim_deduction_bill_productized_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1632,
-        "resolvedActionId": 798,
-        "structureDiagnostics": [
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.expense.claim",
-              "action_id": 798,
-              "view_id": 1632
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "state",
-              "validation_status",
-              "name",
-              "claim_flow_label",
-              "claim_type",
-              "direction",
-              "business_category_id",
-              "source_origin",
-              "project_id",
-              "operation_strategy",
-              "company_id",
-              "company_name_text",
-              "partner_id",
-              "payment_request_id",
-              "expense_type",
-              "summary",
-              "date_claim",
-              "fill_date",
-              "handling_kind",
-              "business_axis",
-              "deduction_line_ids",
-              "deduction_line_amount_total",
-              "amount",
-              "approved_amount",
-              "paid_amount",
-              "unpaid_amount",
-              "currency_id",
-              "payment_state",
-              "company_contractor_responsibility_state",
-              "company_contractor_arrival_unprocessed_amount",
-              "company_contractor_arrival_over_processed_amount",
-              "company_contractor_self_funding_balance",
-              "company_contractor_responsibility_notice",
-              "payee",
-              "receipt_account_name",
-              "payee_account",
-              "payee_bank",
-              "payment_account_name",
-              "payer_account",
-              "payer_bank",
-              "payment_method",
-              "note",
-              "attachment_ids",
-              "reject_reason",
-              "return_reason",
-              "legacy_source_model",
-              "legacy_source_table",
-              "legacy_record_id",
-              "legacy_document_no",
-              "legacy_document_state",
-              "creator_name",
-              "created_time",
-              "active"
-            ],
-            "configuration": {
-              "id": 222,
-              "name": "expense_claim_deduction_bill_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 72,
-                "name": "sc_expense_claim_form_structure_generated_v1"
-              }
-            ]
-          }
-        ],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "state",
-          "payment_method",
-          "clearing_method",
-          "is_returned",
-          "return_reason",
-          "expense_type",
-          "summary",
-          "note",
-          "creator_name",
-          "created_time",
-          "attachment_ids",
-          "name",
-          "claim_type",
-          "direction",
-          "date_claim",
-          "fill_date",
-          "amount",
-          "approved_amount",
-          "currency_id",
-          "project_id",
-          "operation_strategy",
-          "partner_id",
-          "payment_request_id",
-          "company_name_text",
-          "guarantee_project_name",
-          "guarantee_type",
-          "applicant_name",
-          "payee",
-          "receipt_account_name",
-          "payee_account",
-          "payee_bank",
-          "payment_account_name",
-          "payer_account",
-          "payer_bank",
-          "validation_status",
-          "claim_flow_label",
-          "business_category_id",
-          "source_origin",
-          "company_id",
-          "handling_kind",
-          "business_axis",
-          "deduction_line_ids",
-          "deduction_line_amount_total",
-          "paid_amount",
-          "unpaid_amount",
-          "payment_state",
-          "company_contractor_responsibility_state",
-          "company_contractor_arrival_unprocessed_amount",
-          "company_contractor_arrival_over_processed_amount",
-          "company_contractor_self_funding_balance",
-          "company_contractor_responsibility_notice",
-          "reject_reason",
-          "legacy_source_model",
-          "legacy_source_table",
-          "legacy_record_id",
-          "legacy_document_no",
-          "legacy_document_state",
-          "active"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:办理主信息",
-            "key": "",
-            "title": "办理主信息",
-            "fields": [
-              "state",
-              "validation_status",
-              "name",
-              "claim_flow_label",
-              "claim_type",
-              "direction",
-              "business_category_id",
-              "source_origin"
-            ]
-          },
-          {
-            "identity": "title:项目与责任方",
-            "key": "",
-            "title": "项目与责任方",
-            "fields": [
-              "project_id",
-              "operation_strategy",
-              "company_id",
-              "company_name_text",
-              "partner_id",
-              "payment_request_id"
-            ]
-          },
-          {
-            "identity": "title:扣款事项",
-            "key": "",
-            "title": "扣款事项",
-            "fields": [
-              "expense_type",
-              "summary",
-              "date_claim",
-              "fill_date",
-              "handling_kind",
-              "business_axis",
-              "deduction_line_ids",
-              "deduction_line_amount_total"
-            ]
-          },
-          {
-            "identity": "title:金额与责任余额",
-            "key": "",
-            "title": "金额与责任余额",
-            "fields": [
-              "amount",
-              "approved_amount",
-              "paid_amount",
-              "unpaid_amount",
-              "currency_id",
-              "payment_state",
-              "company_contractor_responsibility_state",
-              "company_contractor_arrival_unprocessed_amount",
-              "company_contractor_arrival_over_processed_amount",
-              "company_contractor_self_funding_balance",
-              "company_contractor_responsibility_notice"
-            ]
-          },
-          {
-            "identity": "title:收付款账户",
-            "key": "",
-            "title": "收付款账户",
-            "fields": [
-              "payee",
-              "receipt_account_name",
-              "payee_account",
-              "payee_bank",
-              "payment_account_name",
-              "payer_account",
-              "payer_bank",
-              "payment_method"
-            ]
-          },
-          {
-            "identity": "title:说明与附件",
-            "key": "",
-            "title": "说明与附件",
-            "fields": [
-              "note",
-              "attachment_ids",
-              "reject_reason",
-              "return_reason"
-            ]
-          },
-          {
-            "identity": "title:来源追溯",
-            "key": "",
-            "title": "来源追溯",
-            "fields": [
-              "legacy_source_model",
-              "legacy_source_table",
-              "legacy_record_id",
-              "legacy_document_no",
-              "legacy_document_state",
-              "creator_name",
-              "created_time",
-              "active"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "办理主信息",
-          "项目与责任方",
-          "扣款事项",
-          "金额与责任余额",
-          "收付款账户",
-          "说明与附件",
-          "来源追溯"
-        ],
-        "fieldGroups": {
-          "办理主信息": [
-            "state",
-            "validation_status",
-            "name",
-            "claim_flow_label",
-            "claim_type",
-            "direction",
-            "business_category_id",
-            "source_origin"
-          ],
-          "项目与责任方": [
-            "project_id",
-            "operation_strategy",
-            "company_id",
-            "company_name_text",
-            "partner_id",
-            "payment_request_id"
-          ],
-          "扣款事项": [
-            "expense_type",
-            "summary",
-            "date_claim",
-            "fill_date",
-            "handling_kind",
-            "business_axis",
-            "deduction_line_ids",
-            "deduction_line_amount_total"
-          ],
-          "金额与责任余额": [
-            "amount",
-            "approved_amount",
-            "paid_amount",
-            "unpaid_amount",
-            "currency_id",
-            "payment_state",
-            "company_contractor_responsibility_state",
-            "company_contractor_arrival_unprocessed_amount",
-            "company_contractor_arrival_over_processed_amount",
-            "company_contractor_self_funding_balance",
-            "company_contractor_responsibility_notice"
-          ],
-          "收付款账户": [
-            "payee",
-            "receipt_account_name",
-            "payee_account",
-            "payee_bank",
-            "payment_account_name",
-            "payer_account",
-            "payer_bank",
-            "payment_method"
-          ],
-          "说明与附件": [
-            "note",
-            "attachment_ids",
-            "reject_reason",
-            "return_reason"
-          ],
-          "来源追溯": [
-            "legacy_source_model",
-            "legacy_source_table",
-            "legacy_record_id",
-            "legacy_document_no",
-            "legacy_document_state",
-            "creator_name",
-            "created_time",
-            "active"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "办理主信息": 2,
-          "项目与责任方": 2,
-          "扣款事项": 2,
-          "金额与责任余额": 2,
-          "收付款账户": 2,
-          "说明与附件": 2,
-          "来源追溯": 2
         },
         "groupVisibility": {},
         "formColumns": 2
@@ -4197,93 +3459,6 @@
         },
         "groupVisibility": {},
         "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_advance_fund",
-      "label": "备用金",
-      "model": "sc.expense.claim",
-      "actionId": 793,
-      "menuId": 575,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "native_authority",
-      "actualView": {
-        "model": "sc.expense.claim",
-        "viewId": 1632
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 72,
-            "name": "sc_expense_claim_form_structure_generated_v1",
-            "priority": 105,
-            "view_type": "form"
-          }
-        ],
-        "resolvedViewId": 1632,
-        "resolvedActionId": 793,
-        "structureDiagnostics": [],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "",
-        "formPresentationMode": "workspace",
-        "fieldNames": [
-          "state",
-          "payment_method",
-          "clearing_method",
-          "is_returned",
-          "return_reason",
-          "expense_type",
-          "summary",
-          "note",
-          "creator_name",
-          "created_time",
-          "attachment_ids",
-          "name",
-          "claim_type",
-          "direction",
-          "date_claim",
-          "fill_date",
-          "amount",
-          "approved_amount",
-          "currency_id",
-          "project_id",
-          "operation_strategy",
-          "partner_id",
-          "payment_request_id",
-          "company_name_text",
-          "guarantee_project_name",
-          "guarantee_type",
-          "applicant_name",
-          "payee",
-          "receipt_account_name",
-          "payee_account",
-          "payee_bank",
-          "payment_account_name",
-          "payer_account",
-          "payer_bank"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [],
-        "sectionTitles": [],
-        "fieldGroups": {},
-        "hiddenFieldNames": [],
-        "groupColumns": {},
-        "groupVisibility": {}
       },
       "compatibilityLogic": [
         "legacy structure slots",
@@ -6172,8 +5347,7 @@
       "compatibilityConsumer": true,
       "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
       "evidenceStatus": "carried_forward_prior_inventory"
-    }
-  ],
+    }],
   "otherStateConsumers": [
     {
       "menuXmlid": "smart_construction_core.menu_sc_product_data_permission_v1",
@@ -6316,7 +5490,7 @@
     "countCorrection": 4,
     "migrationReduction": 3
   },
-  "localVerifiedCount": 34,
+  "localVerifiedCount": 31,
   "uc1PublishedAudit": {
     "auditedAt": "2026-09-16",
     "auditedReleaseHead": "28b7695dc9f1cebbbe9bd5d715e951c6dec8a4da",
@@ -6489,12 +5663,11 @@
     "name": "U-C4",
     "status": "scope_confirmed_implementation_started",
     "priorityActions": [
-      792,
-      798,
-      793
+      790,
+      879
     ],
-    "selectedGroup": "G05",
-    "sourceMainlineHead": "87b36441c8940af24ed10cffe300363fc5e3272e",
+    "selectedGroup": "G06",
+    "sourceMainlineHead": "4cda500408ce9feda724700699272ab5e7d2a708",
     "fullRescan": false,
     "groups": [
       {
@@ -6832,17 +6005,17 @@
         "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
       }
     ],
-    "scopeNote": "Fourth group: payment execution and company expense native form migration (execution 837, company finance expense 808, shared model sc.payment.execution and view 1647). Scope confirmed in uc4 record: convert the entry contracts and the model-level contract to native_semantic_surface, retire the shared sections layer (144), the P1 business-facts layer (6) and the entry structure projections (241/242/243) (all listed in G04 legacyConfigurations); bypass entry 811 (往来单位付款) shares the same native form through its action view_ids and is not a ledger consumer. No new business rules or permission expansion.",
+    "scopeNote": "Fifth group prepared, implementation not started: tax deduction and project special deduction native form migration (deduction registration 790, project special deduction 879, shared model sc.tax.deduction.registration and its model-level primary form 1654). Read-only probes on 2026-09-18 confirmed the two entry contracts 206/177 and the two model-level layers 143/5 that the group lists in legacyConfigurations, and found no bypass menu pointing at 790/879; 879 has no readable sample, so its record surface stays uncovered. Scope is prepared in the G06 task card (external analysis location); L2/L3/L4 and the count reduction stay pending until the group is implemented and reviewed. No new business rules or permission expansion.",
     "retirementCondition": "Each selected formal action must independently show native authority, no active structural override/dependency and representative browser acceptance before any count reduction.",
     "executionSequence": [
       "continuous_group_implementation_and_targeted_validation",
       "one_consolidated_browser_review",
       "freeze_and_PR_integration_gates"
     ],
-    "planningRecord": "docs/ops/iterations/uc4_payment_execution_native_lowcode_20260918.md"
+    "planningRecord": "docs/ops/iterations/uc4_expense_claim_native_lowcode_20260918.md"
   },
   "retirementCondition": "Only after every formal consumer of a compatibility regrouping path is zero and other roles/companies/states are covered, remove that regrouping logic and its test exemptions.",
-  "mainlineRemainingCount": 34,
+  "mainlineRemainingCount": 31,
   "mainlineRemainingLabel": "主线剩余兼容消费者（不代表部署发布或89入口整体交付）",
   "uc3LocalMigrationAudit": {
     "status": "mainline_integrated",
@@ -7122,6 +6295,88 @@
     ],
     "notDeducted": [
       "bypass_action_811",
+      "config_center_six_packages_pr_485",
+      "impact_scoped_validation_pr_486",
+      "borrow_archive_shared_action_scopes"
+    ]
+  }
+,
+  "uc4G05PublishedAudit": {
+    "auditedAt": "2026-09-18",
+    "auditedReleaseHead": "4cda500408ce9feda724700699272ab5e7d2a708",
+    "mergedPr": {
+      "number": 492,
+      "squashHead": "4cda500408ce9feda724700699272ab5e7d2a708",
+      "sourceHead": "ae677283435f9ae3f0e5c2a504c4c3f92ff036c5",
+      "tree": "ed24b8408355055871d0994bc063bd4e65b32ccf"
+    },
+    "iterationRecord": "docs/ops/iterations/uc4_expense_claim_native_lowcode_20260918.md",
+    "reduction": {
+      "before": 34,
+      "after": 31,
+      "retiredActions": [
+        792,
+        798,
+        793
+      ],
+      "retiredViews": [
+        1632,
+        1633
+      ],
+      "countMeaning": "mainline remaining compatibility consumers; deployment and overall user delivery are separate",
+      "retiredViewMeaning": "the view ids label the retired ledger entries; the view records themselves stay live (see bypassConsumers.sharedNativeViews)"
+    },
+    "bypassConsumers": {
+      "scopeNote": "A read-only browse() probe of sc_dev_demo on 2026-09-18 found no second action reaching view 1632/1633 through action view_ids and no second active menu pointing at actions 792/798/793. One archived menu, 543 (费用与保证金, active=false, parent 财务中心), still targets action 792; it shares the counted entry's action and releases no configuration of its own, so it is recorded here instead of being counted or silently dropped.",
+      "actions": [
+        {
+          "actionId": 792,
+          "label": "报销申请",
+          "counted": false,
+          "whyNotCounted": "menu 543 targets the same action 792 as the counted entry's menu 578 and carries no configuration of its own; the ledger counts released compatibility consumers, not menus",
+          "authorityEvidence": "browse() of ir.ui.menu 543: name=费用与保证金, active=false, parent=财务中心, action=ir.actions.act_window,792; action 792 view_ids=[(tree,1628),(form,1633)], so both menus reach the same rebuilt native authority",
+          "browserAcceptance": "not_run for the archived menu; the representative route ran through menu 578 on the same action 792"
+        }
+      ],
+      "sharedNativeViews": "The retired view ids label ledger entries, not deleted view records: 1633 stays the shared native form of 13 actions (791/792/795/796/797/799/800/801/816/817/818/819/846) with 1628 as their tree, and 1632 is both the explicit form of 798 and the model-level primary form. Only 792/798/793 are ledger consumers, so the other actions are neither counted nor changed by this reduction."
+    },
+    "sourceVerification": {
+      "nativeStructureAuthority": true,
+      "entryContractsNativeSemanticSurface": true,
+      "modelLevelContractUntouched": true,
+      "legacyProjectionsDeactivated": true,
+      "compatibilityDependenciesRegistered": true,
+      "recoveredFactsCarriedOnce": true,
+      "readonlyRegressionClosed": true,
+      "actionCarriersPreserved": true,
+      "exactHeadQuick": "passed"
+    },
+    "deliveredSharedMechanisms": [
+      "P0 shared structure consumption: the native section navigation consumes one source for body and navigation; an empty container no longer swallows buttons, relation collections or designer drop targets, and a parent whose only children are hidden produces no navigation item (locked by frontend/apps/web/scripts/native_section_navigation_test.ts: authority 7 / content identity 11 / active tracking 7 / structure consumption 7)",
+      "P1 native authority: entry contracts 217 and 222 moved to native_semantic_surface with their configuration-side structure copies deleted, and the 793 advance-fund entry received its own declaration 528; the model-level contract 72 was left active for its other consumers, so the retirement is reversible through active=False or git revert",
+      "P1 recovered facts: every field the retired projections declared is carried exactly once in the native arch (1633 +9 fields, 1632 +24), with the three 792 payment facts tightened to readonly=\"1\" at the P1 industry-default layer after the third-round regression",
+      "P0 sticky layout shared mechanism: the header action row and the section navigation share one offset calculation, so after a section jump neither overlaps the other or the body - 1088x900 action row 175-205 against navigation 218-257, and 390 action row 251-281 against navigation 294-347, both a 13px separation",
+      "P4 read-only representative topic registered inside the existing governed runner (same environment, credentials and identity checks; no new fixture or environment), extended with a per-entry sample_state and an explicit representative_uncovered record so a registered-but-unrunnable fact becomes visible instead of silently missing"
+    ],
+    "browserEvidence": {
+      "recordedOutcome": "batch_product_review_passed_for_the_792_798_793_representative_create_routes",
+      "routes": "792 create 36 fields, 798 create 29, 793 create 35, each with 8 sections; section navigation resolved 8/8 and visible 8/8 on all three routes; findings duplicated=[] empty_containers=[] decorated_layout_groups=[] titled_layout_groups=[]; the 793 tab 责任余额 is clean; sticky measurements separate the action row from the navigation by 13px at 1088x900 and 390; the 798-versus-793 field difference is attributed to the entry business-category field policy, not to structure trimming",
+      "transport": "exactly 1 transport recovery at stage post_navigation_mount: 4 Vite dev module requests (/src/components/professional-fields/*.vue) failed with net::ERR_NETWORK_CHANGED and recovered through renavigate_once; recorded as an environment transport event, explicitly not rewritten as a zero-error claim and not used as proof that the network fault is gone",
+      "identityBinding": "the report records the iteration stage identity (head b2b12365 + dirty) and was reused into the frozen head ae677283 through the recorded evidence-invalidation analysis (docs-only changes do not invalidate page evidence); no browser matrix was rerun to change identity",
+      "draftIsolation": "restored=true, browser_errors=[], cleanup_guard.decision=proceed with foreign=[], recovery_state.released=true and draft_tokens_held=0; no draft was consumed and the protected drafts 163/190/192/194/233/267/274/276 were left untouched",
+      "archiveReceipt": "/home/lidefend/workspace/.codex-evidence/workspace-archives/20260918/uc4-g05-expense-claim-native/ae677283435f9ae3f0e5c2a504c4c3f92ff036c5/archive-receipt.json"
+    },
+    "residualGaps": [
+      "793 and the six entries with no entry declaration (794/815/839/840/841/842) still expose a writable workflow state at the contract layer; the only available carrier is the model default form 1632, which would tighten six out-of-batch entries, and an entry-level fix is refused with CONFIG_SOURCE_NOT_AUTHORIZED, so this needs a P0 mechanism decision or a separate scope",
+      "the sc.expense.claim ir.rule group intersection is merged into an &, so non-deduction groups read zero rows; that is the cause of the 792 record_rule_denied fact (recorded, not changed)",
+      "the sc.expense.claim business-fingerprint guard is computed over zero readable business rows for the registered governed identity, so it is a weak guard and must not be quoted as proof that business data was unchanged",
+      "the compatibility-plane create profile can trim the whole primary zone empty with no fail-closed; it affects all compatibility entries and is out of this batch",
+      "the wrapping <group> indentation at views/core/expense_claim_views.xml:333-335 is cosmetic and was deliberately left unchanged",
+      "G05 leaves the G04 gaps untouched (808/811 company_contractor_* visibility policy, the 837 record section-entry difference and per-field contract-to-rendered-node attribution)"
+    ],
+    "notDeducted": [
+      "bypass_menu_543_archived",
+      "shared_view_1633_other_12_actions",
       "config_center_six_packages_pr_485",
       "impact_scoped_validation_pr_486",
       "borrow_archive_shared_action_scopes"
