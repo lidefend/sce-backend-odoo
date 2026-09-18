@@ -1070,7 +1070,8 @@ L3 `local.dev.upgrade` PASS（78 modules）；L4 代表面 792/798/793 create �
 `company_name_text`／`paid_amount`／`payment_state` 从「退役配置声明只读」变为契约层 `auth=edit`。
 首次偏差在**原生 arch 的声明不完整**——217 去结构后原生 arch 是唯一载体，而 1633 上两个付款事实只是
 **条件**只读（`state in ['done','legacy_confirmed','cancel']`）、`company_name_text` 无条件，create 档
-（`state='draft'`）下三字段全部落到可编辑；对照 1632 同族字段本就是 `readonly="1"`。
+（`state='draft'`）下三字段全部落到可编辑；对照 1632 同族字段是 `readonly="1"`（该声明由本批 recovery `ba3f5da7`
+补字段时新增——基线 `8e8c1ce9` 的 1632 完全没有这三项声明，即本批只对齐了 1632、漏了对齐 1633）。
 
 修复层：**P1 行业标准默认**（`smart_construction_core` 原生视图），3 行改动；
 测试同批把断言从「编译后的 arch 字符串」升级为「渲染器实际消费的策略层」
@@ -1090,4 +1091,45 @@ L4 代表面重跑 PASS（36／29／35 字段、8 章节、导航 8/8、吸顶�
 `source=…product_release` 加 `node_patches` 会命中 `CONFIG_SOURCE_NOT_AUTHORIZED`）。
 详见批次记录 §11.4 与 §13。
 
-状态：**第三轮回环中（回归已修，待重走冻结链）｜未集成｜未部署｜89 入口交付未完成｜台账 34（扣减待合入后核对）**。
+状态：**批次验收完成（本批范围）｜主线集成完成（PR #492）｜未部署｜89 入口交付未完成｜台账 31**。
+
+## 8.24 G05 主线集成与台账 34 → 31
+
+§8.23.1 记的「台账 34（扣减待合入后核对）」已闭合：G05 冻结候选
+`ae677283435f9ae3f0e5c2a504c4c3f92ff036c5`（tree `ed24b8408355055871d0994bc063bd4e65b32ccf`，完整指纹 digest
+`0f8199b1d9faabbc23e51956a27f0689ab27dc2c51a0f55590a48f6d577334e1`，7509 路径，exact-head `ci.local.quick` PASS）
+经 **PR #492** 合入，main = `4cda500408ce9feda724700699272ab5e7d2a708`；该 head 上 `frontend_release_gate`、
+`merge_policy_gate`、`public_guard`、`professional_quality_gate` 四个候选门禁全部 success（并 `release_candidate_gate`、
+`python310_runtime_compatibility`、`professional_authorization`），`make pr.merge.prep` 与
+`make pr.merge`（squash ＋ `--match-head-commit`）依次通过；`pr.merge.local_quick_gate` 以同一 head 的 exact-head 回执复用，
+未重跑矩阵。
+
+台账 `docs/ops/iterations/form_structure_compatibility_consumers_v1.json` 扣减 **34 → 31**（本批在台账内**正好 3 条**：
+index 18 = action 792／menu 578／view 1633、index 20 = 798／563／1632、index 22 = 793／575／1632；退役 action 792／798／793
+与视图 1632／1633，`count`／`localVerifiedCount`／`mainlineRemainingCount` 同步，并新增 `uc4G05PublishedAudit`）。
+退役的是**条目**而非视图：只读 `browse()` 探针（`sc_dev_demo`，2026-09-18）显示 1633 仍是 **13 个 action**
+（791/792/795/796/797/799/800/801/816/817/818/819/846）的共享原生表单、1628 为其树视图，1632 同时是 798 的显式表单
+与模型级默认表单，其余 action 既不在台账内、也不因本轮扣减受影响。同一探针确认没有第二个 action 通过 `view_ids`
+指向 1632／1633、也没有第二个活跃菜单指向 792/798/793；唯一共享入口是**归档**菜单 543「费用与保证金」
+（`active=false`，parent 财务中心）→ action 792，与已计数的 menu 578 共用同一 action 且自身无发布配置，按 G03/G04 先例
+登记进 `uc4G05PublishedAudit.bypassConsumers`（`counted=false`），不计数、不静默丢弃。
+`nextBatch.selectedGroup` 前进到 **G06 税额与专项抵扣（790/879，视图 1654）**，`sourceMainlineHead` 更新为上述 main。
+
+证据归档：`make workspace.evidence.archive` 8 文件（summary／pr-body／identity／worktree-fingerprint／review／3 张代表面截图）
+回执 `verified`，位于
+`/home/lidefend/workspace/.codex-evidence/workspace-archives/20260918/uc4-g05-expense-claim-native/ae677283435f9ae3f0e5c2a504c4c3f92ff036c5/`；
+本批独立复核共 4 轮，按候选记为：`ba3f5da7` APPROVE（§8.23 记录的复核）、`b2b12365` REQUEST_CHANGES（`readonly` 放宽回归，
+真实 major，已在 §8.23.1 修复）、`78f7cd17` APPROVE（4 项记录措辞问题，批次记录 §11.5）、`ae677283` APPROVE
+（2 项记录措辞问题，见下）。
+
+本轮（扣减提交）闭合了两处记录口径，均不涉产品运行路径：① 本节 G05 状态行由「第三轮回环中（回归已修，待重走冻结链）」
+更新为「批次验收完成｜主线集成完成（PR #492）｜未部署」；② 批次记录 §11.4 的 6 个入口补口径
+「无入口声明**且未固定表单视图**（走默认视图）」。另修正阅读中发现的同源旧口径：本节 §8.23.1
+「对照 1632 同族字段本就是 `readonly="1"`」与批次记录 §11.1 的更正不一致，已改为「该声明由本批 `ba3f5da7`
+补字段时新增，基线 `8e8c1ce9` 的 1632 无这三项声明——本批只对齐了 1632、漏了对齐 1633」。
+
+状态：**批次验收完成（本批范围）｜主线集成完成（PR #492）｜未部署｜89 入口用户验收未完成｜台账 31**。
+G05 残留缺口（793 及 6 个无声明入口的 `state` 可写、`sc.expense.claim` 的 ir.rule 组交并被合并为 `&`、
+业务指纹护栏基于 0 行可读业务数据、compatibility 平面 create 档可把 primary zone 修剪空且无 fail-closed、
+`expense_claim_views.xml` 包装 `<group>` 缩进错位、G04 遗留 808／811 的 `company_contractor_*`）
+继续登记在批次记录 §11.4／§13 与 `uc4G05PublishedAudit.residualGaps`，本批不扩。
