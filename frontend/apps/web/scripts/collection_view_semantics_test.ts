@@ -34,6 +34,7 @@ import { extractKanbanFieldsFromContract } from '../src/app/action_runtime/useAc
 import { resolveListSemanticDependencyFields } from '../src/app/action_runtime/useActionViewLoadRequestRuntime';
 import { resolveLoadKanbanFieldApplyState } from '../src/app/runtime/actionViewLoadViewFieldStateRuntime';
 import { resolveDesktopListCandidates } from '../src/pages/listPage/listColumnVisibility';
+import { resolveCollectionEmptyStateKind } from '../src/app/presentation/collectionEmptyStatePresentation';
 import type { ContractV2NormalizedStore } from '../src/app/contracts/v2/types';
 
 function normalizedCollectionContract(
@@ -392,5 +393,19 @@ assert.equal(resolveDesktopListCandidates({
   availableWidth: 900,
   capacity: 12,
 }).length <= 12, true);
+
+// empty_state_copy_follows_the_entry_capability: the empty surface and the
+// create entry describe one capability, so a surface the user can create on
+// must not present the read-only copy the account-without-the-right case uses.
+assert.equal(resolveCollectionEmptyStateKind({ hasActiveConditions: false, canCreateRecord: true }), 'create');
+assert.equal(resolveCollectionEmptyStateKind({ hasActiveConditions: false, canCreateRecord: false }), 'readonly');
+// an active condition query explains the empty result before the capability does
+assert.equal(resolveCollectionEmptyStateKind({ hasActiveConditions: true, canCreateRecord: true }), 'filtered');
+assert.equal(resolveCollectionEmptyStateKind({ hasActiveConditions: true, canCreateRecord: false }), 'filtered');
+assert.notEqual(
+  resolveCollectionEmptyStateKind({ hasActiveConditions: false, canCreateRecord: true }),
+  resolveCollectionEmptyStateKind({ hasActiveConditions: false, canCreateRecord: false }),
+  'the empty copy must differ between a surface that can create and one that cannot',
+);
 
 console.log('[collection-view-semantics] PASS');

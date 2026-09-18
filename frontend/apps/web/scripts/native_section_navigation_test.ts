@@ -7,6 +7,7 @@ import {
   nextBusinessActionLabel,
   nativeSectionNavigationRole,
   relationshipCollectionNavigationItems,
+  sectionFollowMayMoveTrack,
   sectionRevealTargetsContain,
   sectionScrollDelta,
   shouldPreserveAuthoritativeBusinessSections,
@@ -432,6 +433,32 @@ assert.equal(sectionScrollDelta(132, 120), 12, 'a target below the active anchor
 assert.equal(sectionScrollDelta(104, 120), -16, 'a target hidden above the active anchor must be moved below sticky surfaces');
 assert.equal(sectionScrollDelta(120.5, 120), 0, 'sub-pixel rendering around the active anchor must not cause scroll churn');
 
+// A press is a promise about one entry.  The automatic follow may slide the
+// track while the body scrolls - that is how the current entry stays readable -
+// but it must not slide the track while a press is in flight, because the entry
+// would leave the finger before the release and the press would be delivered to
+// a neighbour or to the track itself.
+assert.equal(
+  sectionFollowMayMoveTrack({ pressInFlight: true, userTrackPositionHeld: false }),
+  false,
+  'a press in flight pins the track: the pressed entry must still be under the finger when it is released',
+);
+assert.equal(
+  sectionFollowMayMoveTrack({ pressInFlight: true, userTrackPositionHeld: true }),
+  false,
+  'a press inside a reader-positioned track stays pinned',
+);
+assert.equal(
+  sectionFollowMayMoveTrack({ pressInFlight: false, userTrackPositionHeld: true }),
+  false,
+  'a track the reader positioned is not moved by the automatic follow',
+);
+assert.equal(
+  sectionFollowMayMoveTrack({ pressInFlight: false, userTrackPositionHeld: false }),
+  true,
+  'with no press and no reader position the follow keeps the current entry readable',
+);
+
 // --- U-C4 G05: structure-consumption cases --------------------------------
 // The retired entry configurations used to project their own section bodies.
 // These cases lock the shared mechanism the rebuilt native trees now rely on,
@@ -591,4 +618,4 @@ assert.deepEqual(
   'once the entry consumes the native authority the business preview keeps the same boundary under the native anchor',
 );
 
-console.log('[native_section_navigation_test] PASS authority=7 next_action=3 content_identity=11 active_tracking=7 structure_consumption=7');
+console.log('[native_section_navigation_test] PASS authority=7 next_action=3 content_identity=11 active_tracking=11 structure_consumption=7');
