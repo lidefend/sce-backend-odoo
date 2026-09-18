@@ -1156,7 +1156,8 @@ G05 残留缺口（793 及 6 个无声明入口的 `state` 可写、`sc.expense.
 即模型级结构在原生权威入口上被抑制、在旁路入口上仍生效。
 
 **分层验证**：L1 `make ci.local.iteration` PASS（16 tests，6 路径）；
-L2 `TestTaxDeductionNativeLowcode` **`0 failed, 0 error(s) of 7 tests`**；相邻 `TestProjectSpecialTaxDeduction` PASS（沿用既有回执）；
+L2 `TestTaxDeductionNativeLowcode` **`0 failed, 0 error(s) of 7 tests`**（复核 nit 闭合后重跑）；
+相邻 `TestProjectSpecialTaxDeduction` **`0 failed, 0 error(s) of 2 tests`**（实跑取回执，不再沿用旧回执）；
 L3 `local.dev.upgrade` PASS（78 modules loaded ＋ `local.dev.ready` ＋ `local.dev.demo.authority` PASS）；
 L4 只读代表面 `FORM_LOWCODE_TOPIC=tax_deduction FORM_LOWCODE_REPRESENTATIVE=1` **PASS**
 （790 create 30 字段／790 record 26 字段／879 create 30 字段，各 7 章节且导航 7/7 resolved+visible，
@@ -1182,7 +1183,8 @@ findings 全空，吸顶操作行 `175–205` 与导航 `218–257` 分离 13px�
 
 **独立复核（只读、绑定冻结候选身份 `5b104106`）**：结论 **APPROVE**，无 blocker／major。复核者独立复现了
 候选 `5b104106`（tree `5fb43ba0…`）的 `HEAD`／`HEAD^{tree}`／branch／clean 工作树、完整指纹 digest
-（`f54cf06e…`，7511 路径）与 exact-head Quick 回执身份；
+（`f54cf06e…`，7511 路径）与 exact-head Quick 回执身份（该 digest 绑定**已被取代**的候选 `5b104106` 的
+干净工作树，故在当前冻结候选上**不可复现** —— 指纹按定义绑定某一具体树状态，属预期而非缺陷）；
 并逐条核对：两入口退役为 `native_semantic_surface` 且 879 的 5 个保留键位于 `context`（非第二份结构）、
 模型级 143/5/129 与旁路 852 未被改动且仍可用、`state`／`source_origin`／`currency_id`／`withholding_amount`
 在 1654 arch 中各出现**恰好 1 次**且去重保留在 `抵扣金额与税额`、条件只读经运行时实测
@@ -1193,10 +1195,18 @@ grep 无 ACL／groups／ir.rule／domain 改动。提出的 3 项 minor 与 5 �
 （`readonly=false` / `auth=edit`），并登记只读呈现层 `NATIVE_MODIFIER_UNRESOLVED` 的保守呈现事实。
 
 该复核修正落在 `4402b4aa91192852010f246a66cc339b68e85c91`（tree `781f81f18b88f50037f3cec03ff437d9256f36e5`，
-仅 2 份记录 + 1 个新增测试文件，无产品运行路径改动）。G06 的冻结身份在这之后的最后一次记录提交上重走一次
+仅 1 个 P4 新增测试文件 + 2 份记录，**不改产品运行路径**）。G06 的冻结身份在这之后的最后一次记录提交上重走一次
 冻结链（完整指纹 ＋ exact-head Quick ＋ 复核绑定同一指纹）；冻结候选身份的取值只写入外部归档
 （`identity.json`／`worktree-fingerprint.json`／`review.json`），不写入记录文件（写入会改变候选自身
 commit hash）——理由与逐阶段身份表见 `uc4_tax_deduction_native_lowcode_20260918.md` §11。
+
+**冻结候选复核（本批最后一轮，只读）**：在候选 `08cf7151`（tree `9f57d4c5…`，干净工作树）上独立复核，
+结论 **APPROVE**（0 blocker／0 major／4 minor／3 nit，**全部为记录口径**）。复核者独立复现了身份三件套
+（`HEAD`／`HEAD^{tree}`／branch／空 `git status --porcelain`、重算指纹 digest `f9f529fb…` 与 7511 路径、
+Quick 回执 sha256 `203ae4f4…`），并独立核对：delta 恰为声明的 9 路径、`smart_core` 与台账未改、
+退役声明过的 39（790）／28（879）个事实在 arch 中全部落地、只读限制全部还原、`withholding_amount` 仅 1 次、
+写／恢复边界成立（受保护 change set 163/190/192/194/233/267/274/276 未被触碰）。其 7 项记录口径问题已在
+随后一次 docs-only 提交闭合（逐条见 G06 记录 §11.1），产品与测试行为未变。
 
 台账保持 **31**：本批在台账内**正好 2 条**（index 21 = 790／538／1654、index 22 = 879／701／1654），
 退役与 **31 → 29** 扣减按 G03/G04/G05 先例留待合入后由独立提交落地，本实现提交不改台账文件。

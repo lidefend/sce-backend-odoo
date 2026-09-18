@@ -3,7 +3,7 @@
 - 批次：`U-C4` 表单结构消费稳定化 · 代表面 `G06 税额与专项抵扣`
 - 分支：`feature/uc4-tax-deduction-native-v1`（基于 `origin/main`=`daf9a97875a15343671c00e46fd9c4e639ebeca2`）
 - 唯一写入者：本会话执行体；本候选之外的其它工作树本轮未触碰
-- 状态：**批次验收中（未冻结）｜未集成｜未部署｜89 入口交付未完成**；台账（`form_structure_compatibility_consumers_v1.json`）保持 **31**，
+- 状态：**批次验收完成（本批范围，冻结链见 §11）｜未集成｜未部署｜89 入口交付未完成**；台账（`form_structure_compatibility_consumers_v1.json`）保持 **31**，
   扣减（**31 → 29**）按 G03/G04/G05 先例留待合入后由独立提交落地（§9）
 
 ## 1. 范围与身份
@@ -53,7 +53,7 @@
    `native_semantic_surface`，删除 `sections/fields/columns`；**但保留**其语义上下文键
    （`fact_authority`、`deduction_scope_authority: project_special`、`projection_authorities`）——
    该上下文说明本入口解析同一模型的 `project_special` 切片，**不是**第二份结构。
-4. `tests/test_tax_deduction_native_lowcode.py`（**新增** 486 行 / 7 测）+ `tests/__init__.py`（+1，注册模块）。
+4. `tests/test_tax_deduction_native_lowcode.py`（**新增** 492 行 / 7 测）+ `tests/__init__.py`（+1，注册模块）。
 5. `scripts/verify/local_dev_form_lowcode_scope.py`（+26）：在既有受管 runner 内登记只读代表 topic `tax_deduction`
    （`TOPIC_IDENTITIES`／`TOPIC_SAMPLE_FIELDS`／`TOPIC_REPRESENTATIVE`），复用同一环境、身份校验与数据权威，
    **未新建 fixture 或环境**。
@@ -68,7 +68,7 @@
 | 1 | `addons/smart_construction_core/views/core/tax_deduction_registration_views.xml` | 接管前已有 | **接管后修改**（锚点＋补字段＋只读收紧＋去重复呈现） | P1 |
 | 2 | `addons/smart_construction_core/data/tax_deduction_certificate_form_productization_contract.xml` | 接管前已有 | **接管后修改**（206 去结构副本） | P1 |
 | 3 | `addons/smart_construction_core/data/project_special_tax_deduction_contract.xml` | 接管前已有 | **接管后修改**（177 去结构副本，保留语义上下文） | P1 |
-| 4 | `addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py` | — | **本批新增**（486 行 / 7 测） | P4 |
+| 4 | `addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py` | — | **本批新增**（492 行 / 7 测） | P4 |
 | 5 | `addons/smart_construction_core/tests/__init__.py` | 接管前已有 | **接管后修改**（注册测试模块） | P4 |
 | 6 | `scripts/verify/local_dev_form_lowcode_scope.py` | 接管前已有 | **接管后修改**（注册只读代表 topic） | P4 |
 | 7 | `docs/ops/iterations/uc4_tax_deduction_native_lowcode_20260918.md` | — | **本批新增**（本记录） | 记录 |
@@ -113,8 +113,8 @@
 | L3 | `make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1` | 运行身份 `project=sc-local-dev db=sc_dev_demo` | **PASS**：78 modules loaded（90.6s / 58295 queries）＋ `local.dev.ready` PASS ＋ `local.dev.demo.authority` PASS（`finance_xmlid=present finance_membership=authoritative company_currency=CNY sale_tax_9=present`） |
 | L4（只读代表面） | `make local.dev.form_lowcode.browser FORM_LOWCODE_TOPIC=tax_deduction FORM_LOWCODE_REPRESENTATIVE=1` | 同上 | **PASS**：`ok=true restored=true`，3 条 create/record 路由，findings 全空，吸顶不重叠；1 项登记事实未覆盖（§6）。证据：`artifacts/lowcode-form-loop/browser/representative-report-tax_deduction.json` |
 
-stage identity 口径：本批仍处**批次验收中（未冻结）**，按「日迭代＝HEAD ＋ 显式 dirty 范围」记录，不写 full fingerprint、不称 frozen；
-交付阶段的干净 HEAD ＋ 完整指纹在冻结步骤单独生成（§9）。
+stage identity 口径：本批按「日迭代＝HEAD ＋ 显式 dirty 范围」记录；冻结候选身份的取值不写入本记录文件
+（写入会改变候选自身的 commit hash），只在冻结步骤生成的产物与外部归档中出现（§11）。
 
 L2 覆盖的 7 个用例：入口契约只花一份原生结构、legacy 结构不得在原生权威入口上二次投影、
 声明事实恰好渲染一次（且隐藏必须是消费层可见性而不是静默移除）、补回事实是真实字段而非同名副本、
@@ -221,7 +221,7 @@ L2 覆盖的 7 个用例：入口契约只花一份原生结构、legacy 结构�
 | 迭代期（§1–§8 书写时） | `HEAD=5b10410663c9c5ceac7678aaaff66379000e2226`（tree `5fb43ba0e2cc9b9c0aa99b70b773aeff2e18985f`） | 实现提交完成后的身份；L1（`changedPathCount=6`）／L2（7 用例）／L3（78 modules）／L4（只读代表面）即在此身份上执行 |
 | L2 收口（§4 口径：L2 在 dirty 收口后重跑） | 同上 ＋ dirty `{tests/test_tax_deduction_native_lowcode.py}` | L2 回执与其输入（新增测试文件）一致 |
 | 独立复核 | 同上 ＋ dirty `{tests/…, docs/…×2}` | 结论 **APPROVE**，无 blocker／major；3 项 minor 与 5 项 nit 见总记录 §8.25 与本文件 §10 |
-| 复核修正提交 | `4402b4aa91192852010f246a66cc339b68e85c91`（tree `781f81f18b88f50037f3cec03ff437d9256f36e5`） | 只含上述 3 个记录／测试路径，`git diff --name-only` 可核；无产品运行路径改动 |
+| 复核修正提交 | `4402b4aa91192852010f246a66cc339b68e85c91`（tree `781f81f18b88f50037f3cec03ff437d9256f36e5`） | 只含上述 3 个路径（1 个 P4 验证测试 + 2 份记录），`git diff --name-only` 可核；**不改产品运行路径**（测试文件属 P4 验证范围） |
 | 记录口径提交 → 冻结 | 由冻结步骤前的最后一次记录提交产生 | `make ci.delivery.freeze.prepare` → `python3 scripts/contract/complete_worktree_fingerprint.py --baseline daf9a97875a15343671c00e46fd9c4e639ebeca2` → `make ci.local.quick`（exact-head，一次）→ 独立复核绑定同一指纹与回执 |
 | 冻结候选复核 | 绑定冻结指纹 ＋ exact-head Quick 回执 | 结论与回执随归档 `review.json` 记录（本文件不含该取值） |
 
@@ -230,7 +230,35 @@ L2 覆盖的 7 个用例：入口契约只花一份原生结构、legacy 结构�
 L3／L4 页面证据不因此重跑，L2 已按上表在 dirty 收口后重跑取回执；冻结身份在最后一次记录提交上重走一次
 （完整指纹 ＋ exact-head Quick ＋ 复核绑定同一指纹）。
 
-**L4 报告身份的口径**：报告内 `candidate`／`dirty` 记录的是**产生该报告时的运行身份**（`5b104106` ＋
-`dirty=true`），它是「按当时 HEAD＋dirty 运行」的事实记录，**不是**冻结候选的证明；冻结候选身份只认
-「干净 HEAD ＋ 完整指纹 ＋ exact-head Quick 回执」三件套，报告与截图在归档中作为该次运行的页面证据
-与其它角色文件一同绑定同一 `candidateHead`。
+**L4 报告身份的口径**：报告内 `candidate=daf9a97875a15343671c00e46fd9c4e639ebeca2`（**基线 head**）＋
+`dirty=true` —— runner 记录的是「基线 head ＋ 存在未提交改动」，既不是本批实现 head，**也不是**冻结候选的
+证明；冻结候选身份只认「干净 HEAD ＋ 完整指纹 ＋ exact-head Quick 回执」三件套，报告与截图在归档中作为
+该次运行的页面证据与其它角色文件一同绑定同一 `candidateHead`。
+
+### 11.1 冻结候选独立复核（只读）
+
+| 项 | 值 |
+|---|---|
+| 复核候选 | `08cf715159bdb10265affb9aee2bb7db8ed9ff7b`（tree `9f57d4c5…`，干净工作树） |
+| 绑定身份 | 完整指纹 digest `f9f529fb923f3e592b9804d0c2112c8f969bda01bf9e88038890589d0a7536b0`（7511 路径）＋ exact-head Quick 回执 sha256 `203ae4f4ddb284d783c7e6c3c5d918349ecfdbe3e55189a4d71369be630a489d` |
+| 结论 | **APPROVE**；0 blocker、0 major、4 minor、3 nit（**全部为记录口径，无产品行为项**） |
+| 独立复现 | `HEAD`／`HEAD^{tree}`／branch／空 `git status --porcelain`；重算指纹 digest 与路径数**完全一致**；Quick 回执 `head`／`tree`／sha256 一致；delta 恰为声明的 9 路径、无未声明路径；`addons/smart_core/**` 未改、无 ACL／groups／ir.rule／domain 改动、台账仍 31 |
+| 独立核对 | 退役声明过的 39（790）／28（879）个事实在 arch 中全部存在、只读限制全部还原、`withholding_amount` 全表单仅 1 次；写／恢复边界成立（`cleanup_guard=proceed`、`foreign=[]`、`released=true`、`draft_tokens_held=0`、无发布／回滚），受保护 change set 163/190/192/194/233/267/274/276 写日期仍为 2026-09-17、当日无新建 change set |
+
+复核提出的 7 项（4 minor + 3 nit）**全部为记录口径**，已在本次记录口径提交闭合：
+① 本文件头部状态行与 §9 不一致 → 统一为「批次验收完成（本批范围，冻结链见 §11）」；
+② §11 原把 L4 报告的 `candidate` 写成实现 head → 更正为实测值「基线 `daf9a978` ＋ `dirty=true`」；
+③ 复核候选「clean 工作树 ＋ digest `f54cf06e…`」与「＋dirty」两处口径并存 → 明确 `f54cf06e…` 绑定**已被取代**的
+候选 `5b104106` 的干净工作树，在当前冻结候选上不可复现（指纹按定义绑定某一具体树状态，属预期）；
+④ 总记录 §8.25 相邻用例仍写「沿用既有回执」→ 更正为实跑 `0 failed, 0 error(s) of 2 tests`；
+⑤ 新增测试行数「486」→ 实测 **492**；
+⑥ 关于 `readonly` 条件守卫的 nit：`assertTrue(modifiers.readonly)` 确实也接受无条件 `readonly="1"`，但该情形会被
+同批 `test_recovered_facts_keep_their_declared_readonly_behaviour` 的 `policy.readonly is False`（790 创建面）
+拦下 → 行为仍被锁定；不改代码，仅记录该推理；
+⑦ 「无产品运行路径改动」表述不精确 → 更正为「3 个路径中 1 个为 P4 验证测试、2 份记录，不改产品运行路径」。
+
+复核另记 1 项 `inconclusive`：**本轮之前**（候选 `5b104106`）那轮复核的结论与其指纹 digest 无法从 tracked
+证据验证 —— 该轮只在记录文字中留痕、未归档；本轮回执随本文档同批产物 `review.json` 外部归档。
+
+本次记录口径提交为 docs-only，产品与测试行为未变，故上表结论继续适用；冻结身份在本提交上重走一次
+（完整指纹 ＋ exact-head Quick 一次），其取值仍只写入冻结产物与外部归档。
