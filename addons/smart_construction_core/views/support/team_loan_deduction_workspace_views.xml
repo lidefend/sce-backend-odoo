@@ -6,20 +6,25 @@
         <field name="arch" type="xml">
             <form string="班组借/扣款登记" edit="1" delete="0">
                 <header>
-                    <button name="action_register_loan" type="object" string="登记借款" class="btn-primary"/>
-                    <button name="action_register_deduction" type="object" string="登记扣款" class="btn-secondary"/>
-                    <button name="action_view_account" type="object" string="查看借扣款台账" class="btn-secondary"/>
+                    <button name="action_register_loan" type="object" string="登记借款" class="btn-primary" invisible="not project_id or not partner_id"/>
+                    <button name="action_register_deduction" type="object" string="登记扣款" class="btn-secondary" invisible="not project_id or not partner_id"/>
+                    <button name="action_view_account" type="object" string="查看借扣款台账" class="btn-secondary" invisible="not project_id or not partner_id"/>
                 </header>
                 <sheet>
+                    <div class="alert alert-info" role="status">
+                        先记录办理上下文，再选择办理事项。金额、账户和明细在打开的正式单据中填写；沟通、备注与附件也在正式单据中登记。
+                    </div>
                     <group name="team_loan_processing_context" data-sc-anchor="team_loan_processing_context" string="办理上下文" col="2">
                         <field name="project_id"/>
                         <field name="partner_id"/>
                         <field name="business_date"/>
-                        <field name="processing_advisory" readonly="1"/>
                     </group>
                     <group name="team_loan_processing_note" data-sc-anchor="team_loan_processing_note" string="办理说明" col="1">
                         <field name="note" placeholder="可补充本次借款或扣款的业务背景；具体金额和明细在正式单据中填写。"/>
                     </group>
+                    <div class="alert alert-info" role="status" invisible="not processing_advisory">
+                        <field name="processing_advisory" readonly="1" nolabel="1"/>
+                    </div>
                 </sheet>
             </form>
         </field>

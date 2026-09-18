@@ -164,6 +164,8 @@ const props = defineProps<{
   };
   relationAdapter?: RelationFieldAdapter;
   showCollaborationPanel?: boolean;
+  /** A dispatch context has no collaboration of its own: no panel, no titled section. */
+  suppressCollaboration?: boolean;
   collaborationPanelProps?: NativeCollaborationPanelProps;
   collaborationPanelListeners?: NativeCollaborationPanelListeners;
   busy?: boolean;
@@ -266,7 +268,10 @@ const allowUserOverride = computed(() => (
 const directActions = computed(() => visibleActions.value.filter((action) => ['primary', 'secondary'].includes(action.tier)));
 const overflowActions = computed(() => visibleActions.value.filter((action) => ['overflow', 'configuration'].includes(action.tier)));
 const hasCollaborationNode = computed(() => Boolean(props.renderModel?.zones.subordinate.some((node) => collaborationKind(node.kind))));
-const hasCollaboration = computed(() => Boolean(props.showCollaborationPanel) || hasCollaborationNode.value);
+const hasCollaboration = computed(() => (
+  Boolean(props.showCollaborationPanel)
+  || (!props.suppressCollaboration && hasCollaborationNode.value)
+));
 const auditEvents = computed<CanonicalAuditEvent[]>(() => resolveProfessionalAuditEvents(props.collaborationPanelProps?.timeline || []));
 const nativeBridgeModel = computed<CanonicalFormRenderModel | null>(() => {
   const model = props.renderModel;

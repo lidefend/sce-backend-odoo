@@ -269,12 +269,18 @@ TOPIC_REPRESENTATIVE = {
     # conditional 历史来源 section is observed as legal hiding instead of a lost
     # fact.  Read-only; no change set is touched.
     "payroll": {"section_navigation": True, "record_surface": True},
-    # U-C4 G08: the dispatch workspaces keep two anchored native groups (办理上下文
-    # / 办理说明), so the mechanism assertion is the section navigation battery:
-    # both 章节入口 must resolve and reveal their target below the pinned band at
-    # 1088 and 390.  `dispatch_only` records the structural fact the runner cannot
-    # route (a transient model has no record surface), so the reduction is read
-    # from the evidence instead of being inferred from a shorter route list.
+    # U-C4 G08: the dispatch workspaces keep two anchored native groups
+    # (办理上下文 / 办理说明), so the mechanism assertion is the section navigation
+    # battery: every 章节入口 must resolve and reveal its target below the pinned
+    # band at 1088 and 390.  The 办理提示 advisory is deliberately *not* a group:
+    # it renders as a non-section inline callout (`ScInlineState`) and only when
+    # there is something for the user to act on, so it owns no `data-sc-anchor`
+    # and can never become a section navigation item.
+    # `dispatch_only` records that no business row is
+    # created for the reduction: a dispatch context is a transient row the entry
+    # hands to a formal document, so the read-only pass must not manufacture one.
+    # It does not mean the model has no record surface -- a transient model does
+    # carry rows and has a legal edit state; the pass simply does not create one.
     "context_workspace": {"section_navigation": True, "dispatch_only": True},
 }
 if topic not in TOPIC_IDENTITIES:

@@ -34,6 +34,18 @@ class FrontendInlineStateGuardTest(unittest.TestCase):
         values["inline"] += "<style>.sc-inline-state :deep(.t-alert__description) { color: red; }</style>"
         self.assertTrue(any("official Alert slot boundary" in error for error in validate(values)))
 
+    def test_internal_alert_message_selector_is_rejected(self) -> None:
+        values = dict(self.sources)
+        values["inline"] += "<style>.sc-inline-state :deep(.t-alert__message) { min-width: 0; }</style>"
+        self.assertTrue(any("official Alert slot boundary" in error for error in validate(values)))
+
+    def test_project_owned_width_contract_is_required(self) -> None:
+        for marker in ("container-type:inline-size", "inline-size:100cqi", "grid-template-columns:minmax(0,1fr)"):
+            with self.subTest(marker=marker):
+                self.assertTrue(
+                    any("inline state missing" in error for error in validate(self.altered("inline", marker)))
+                )
+
     def test_error_heading_must_not_be_fixed(self) -> None:
         values = dict(self.sources)
         values["error"] = values["error"].replace('<component :is="titleTag"', '<h2').replace('</component>', '</h2>')

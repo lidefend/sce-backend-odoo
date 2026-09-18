@@ -1224,8 +1224,14 @@ def register_contract_domain_override(
     handler: Any,
     *,
     priority: int = 100,
+    native_authority_safe: bool = False,
 ) -> None:
-    _domain_overrides.register_contract_domain_override(name, handler, priority=priority)
+    _domain_overrides.register_contract_domain_override(
+        name,
+        handler,
+        priority=priority,
+        native_authority_safe=native_authority_safe,
+    )
 
 
 def _append_governance_diagnostic(data: dict, key: str, value: Any) -> None:
@@ -1234,6 +1240,21 @@ def _append_governance_diagnostic(data: dict, key: str, value: Any) -> None:
 
 def _apply_domain_overrides(data: dict, contract_mode: str) -> list[dict[str, Any]]:
     return _domain_overrides.apply_domain_overrides(data, contract_mode)
+
+
+def apply_native_authority_domain_overrides(data: dict, contract_mode: str) -> list[dict[str, Any]]:
+    """Apply only the declared-semantics overrides that stay valid under a native view.
+
+    When a resolved native view owns the form structure, the generic governance
+    pass is skipped so it cannot become a second structure owner. An override
+    registered as ``native_authority_safe`` only writes semantic declarations
+    (``form_governance``), so it is applied here instead of being lost.
+    """
+    return _domain_overrides.apply_domain_overrides(
+        data,
+        contract_mode,
+        native_authority_only=True,
+    )
 
 
 def apply_project_form_domain_override(data: dict, contract_mode: str) -> None:

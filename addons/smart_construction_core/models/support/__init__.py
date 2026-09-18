@@ -59,6 +59,7 @@ from . import office_asset
 from . import mail_notification_product
 from . import project_capability_roadmap
 from . import formal_list_contract_sync
+from . import context_workspace_entry_authority
 from . import team_loan_deduction_workspace
 from . import current_account_workspace
 from . import company_project_refund_workspace

@@ -237,6 +237,72 @@ def _apply_partner_form_surface_governance(data: dict, contract_mode: str) -> No
         data["views"] = views
 
 
+# U-C4 G08: the three context workspaces are `transient_dispatch_only` P1 entries
+# (docs/architecture/backend_business_model_ownership_specs_v1.json).  The workspace
+# itself must not persist any business amount or state: it collects the project /
+# counterparty context and dispatches to the canonical fact model that owns the fact.
+# Its primary action therefore records the transient handling context that unlocks the
+# dispatch carriers; it is NOT a long-lived draft, so the generic create-profile
+# "\u4fdd\u5b58\u8349\u7a3f" label would promise persistence this entry cannot make.
+# The governed label is declared per entry here instead of changing the shared
+# create-profile default, so no other transient model is affected.
+#
+# `create_flow_mode` states the flow the entry actually is.  The client reads it to
+# keep the declared label on the record surface and to leave the collaboration of
+# these entries to the formal document; the workbench usage note on the native view
+# (P1, same layer) tells the operator where the communication is recorded.
+_CONTEXT_WORKSPACE_PRIMARY_ACTION_LABELS = {
+    "sc.team.loan.deduction.workspace": "\u8bb0\u5f55\u529e\u7406\u4e0a\u4e0b\u6587",
+    "sc.current.account.workspace": "\u8bb0\u5f55\u529e\u7406\u4e0a\u4e0b\u6587",
+    "sc.company.project.refund.workspace": "\u8bb0\u5f55\u529e\u7406\u4e0a\u4e0b\u6587",
+}
+
+
+def _context_workspace_primary_action_label(data: dict) -> str:
+    """Return the governed primary-action label for a dispatch workspace.
+
+    The label describes what saving does on this entry — it records the
+    transient handling context the dispatch carriers need — so it holds for the
+    record surface as well.  A ``TransientModel`` can carry database rows and be
+    recycled, which is not the same as being a long-lived business record: the
+    context stays a context after it is written, and the generic
+    ``\u4fdd\u5b58\u4fee\u6539`` wording would describe it as a persistent document.
+    """
+    if not isinstance(data, dict):
+        return ""
+    head = _as_dict(data.get("head"))
+    model = _text(head.get("model") or data.get("model"))
+    if not model:
+        return ""
+    return _CONTEXT_WORKSPACE_PRIMARY_ACTION_LABELS.get(model, "")
+
+
+def _apply_context_workspace_form_governance(data: dict, contract_mode: str) -> None:
+    if contract_mode != "user":
+        return
+    label = _context_workspace_primary_action_label(data)
+    if not label:
+        return
+    governance = _as_dict(data.get("form_governance"))
+    governance.update(
+        {
+            "surface": "context_workspace",
+            "create_flow_mode": "transient_dispatch",
+            "primary_action_label": label,
+        }
+    )
+    data["form_governance"] = governance
+
+
+register_contract_domain_override(
+    "smart_construction_core.context_workspace_form",
+    _apply_context_workspace_form_governance,
+    priority=30,
+    # Declares the transient dispatch create flow only; it never rewrites the
+    # native view structure, so it must survive the native-authority skip.
+    native_authority_safe=True,
+)
+
 register_contract_domain_override(
     "smart_construction_core.project_form",
     apply_project_form_domain_override,
