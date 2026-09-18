@@ -13,6 +13,7 @@ from typing import Any
 from .view_orchestration_contract import source_authority_contract
 from .form_structure_authority import resolve_form_structure_governance, diagnose_structure_ownership, authenticated_form_role_key, structural_form_declarations
 from .form_configuration_compiler import compile_form_configuration, is_configured_surface
+from .lowcode_presentable_fields import LOWCODE_NON_PRESENTABLE_FIELD_NAMES
 
 
 class ViewOrchestrator:
@@ -564,10 +565,20 @@ class ViewOrchestrator:
             # never be appended into the form body by the union completion
             # below, otherwise the same business fact renders twice.
             display_copies = self._display_copy_field_names(model_name)
+            # A configuration is an editing surface, so it may still carry a
+            # field the platform already declared non-presentable (the mail
+            # counters and other tracking plumbing).  The platform declares
+            # those names once, in the core, and this union consumes that
+            # declaration instead of guessing from a model name or a field
+            # suffix.  The native structure stays authoritative for everything
+            # an arch already carries: this filter only stops the union from
+            # appending a plumbing field the business body never presented.
             effective = {
                 row["name"]: row
                 for row in rows
-                if row.get("name") in fields_meta and row["name"] not in display_copies
+                if row.get("name") in fields_meta
+                and row["name"] not in display_copies
+                and row["name"] not in LOWCODE_NON_PRESENTABLE_FIELD_NAMES
             }
             if effective:
                 hidden = {name for name, row in effective.items() if row.get("visible") is False}
