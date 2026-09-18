@@ -421,7 +421,6 @@
       :on-group-window-prev="handleGroupWindowPrev"
       :on-group-window-next="handleGroupWindowNext"
       :can-create-record="canCreateRecord"
-      :show-fallback-create="false"
       :create-label="toolbarUiLabel('create', '新建')"
       :on-open-group="handleOpenGroupedRows"
       :group-sample-limit="groupSampleLimit"
