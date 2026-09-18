@@ -2116,7 +2116,8 @@ skipped：`fast`／`classify`（候选检查变体）／`wait_for_candidate_chec
   1 条 L1/L2 注册 ＋ 1 条 P4 只读验证登记 ＋ 1 条本记录（详见 8.34.3）。L1 在提交前
   （`change_state=dirty`）实测 `changedPathCount=10`、`unmappedPathCount=10`（本批路径未在
   增量计划里映射，故 `manualNonZeroL2Required=true`，L2 按 8.34.7 的显式 tag 集合执行）。
-  **未推送、未建 PR、未冻结、未部署。**
+  **未推送、未建 PR、未冻结、未部署。** 批内交付提交相对 `26d254ad` 为 10 路径；
+  提交后工作树 `change_state=clean`、L1 复跑 PASS。
 
 ### 8.34.2 入口矩阵（L3 运行时实测，`sc_dev_demo`，action／view／menu 为库内真实值）
 
