@@ -1624,4 +1624,409 @@ runner 的失败过滤仍为 `!['pressed','not_applicable','control']`（未放�
 受保护草稿 163／190／192／194／233／267／274／276 未触碰；**未持久化业务或配置写入**；
 879 记录态仍未覆盖（`empty_action_domain`，不为补证据造数据）；台账保持 **31**。
 
-状态：**R12 复核整改中（major 已按事实闭合并重跑受影响 L2 通过）｜台账 31｜未集成｜未部署**。
+状态：**批次验收完成（本批范围）｜主线集成完成（PR #494，main=`5938d6c620952e9c4c1af9fa6c33dbda14da0374`，squash 同树）｜未部署｜台账 29**。
+
+## 8.32 G06 主线集成与台账 31 → 29（2026-09-18）
+
+§8.31 记的「台账 31｜未集成」已闭合：G06 冻结候选 `dea896d229c17628d4f770f06da21dfbe28eff6d`
+（tree `f709bccacff913fcd26aeac0b245337a4ae046d2`，完整指纹 digest
+`44e8a72ca7f5d543bd88f921a36314aaa1bc0c9823cee5907584641c9a2a503c`，7514 路径，exact-head `ci.local.quick` PASS）
+经 **PR #494** 合入，main = `5938d6c620952e9c4c1af9fa6c33dbda14da0374`（squash）。
+该 head 上 `frontend_release_gate`／`merge_policy_gate`／`public_guard`／`professional_quality_gate` 四个候选门禁全部
+success（并 `release_candidate_gate`、`python310_runtime_compatibility`、`professional_authorization`）；
+`make pr.merge.prep` 与 `make pr.merge`（squash ＋ `--match-head-commit`）依次通过；
+`pr.merge.local_quick_gate` 以同一 head 的 exact-head 回执**复用**，未重跑矩阵。squash 树
+`f709bcca…` 与冻结候选 tree 逐字节一致（`origin/main^{tree}` 比对）。
+
+台账 `docs/ops/iterations/form_structure_compatibility_consumers_v1.json` 扣减 **31 → 29**（本批在台账内**正好 2 条**：
+index 21 = action 790／menu 538／view 1654、index 22 = 879／701／1654；退役 action 790／879 与视图 1654，
+`count`／`localVerifiedCount`／`mainlineRemainingCount` 同步，并新增 `uc4G06PublishedAudit`）。
+
+**「已退出兼容路径」按已合入源码核对，不重开调查**：契约 206（`tax_deduction_registration_productized_form_v1`）
+与 177（`project_special_tax_deduction_form_v1`）的 `view_orchestration.views.form` 只剩 `title` ＋
+`composition_mode=native_semantic_surface`，`sections`／`fields`／`columns`／`field_slots`／`layout` 等结构键全部消失，
+故 `structural_form_declarations()` 无声明、`diagnose_structure_ownership()` 不可能再为这两条产出
+`LEGACY_STRUCTURE_KEY_OVERRIDE`；`TestTaxDeductionNativeLowcode::test_entry_contracts_spend_one_native_structure`
+同时断言两契约 native 且无结构体、790／879 为 `native_authority`／`configuredSections=[]`／
+`layoutPolicy=container_tree_authority`（同一 tree 上 25 测 0 失败，输入未变故复用）。
+
+**852 与派生面不额外计入退役消费者**：两者因 R12 的范围更正被纳入该模型级退役声明的作用面，
+但都不是台账消费者——852（扣款单）无自有菜单、只固定 tree 视图、记录回落同一 primary form 1654；
+派生面 `sc.tax.filing.action_open_deductions()`（税务申报 → 申报期抵扣来源）无 action／view 作用域，
+按 `entry_semantic_surface` 消费模型级契约。二者登记在 `uc4G06PublishedAudit.bypassConsumers`
+（`counted=false`），不计数、不静默丢弃；被扣减的是**条目**，primary form 1654 及其它消费者仍然存活。
+
+`nextBatch.selectedGroup` 前进到 **G07 工资社保与发放（873／884／858／874，视图 1697／1700）**，
+`priorityActions` 同步为 `[873,884,858,874]`，`sourceMainlineHead` 更新为上述 main。
+
+证据归档：`make workspace.evidence.archive` 8 文件（identity／summary／pr-body／worktree-fingerprint／review／
+3 张代表面截图）回执 `verified`，位于
+`/home/lidefend/workspace/.codex-evidence/workspace-archives/20260918/uc4-g06-tax-deduction-native/dea896d229c17628d4f770f06da21dfbe28eff6d/`；
+归档中的 `pr-body.md` 是提交前草稿，实际提交正文为其澄清版（补全 33 路径分层范围与 852 三项区分），差异见 PR #494 正文。
+代表面 3 张截图生成于 `d14020bb`、按页面输入未变复用，**不是在最终 HEAD 重拍**。
+
+## 8.33 G07 工资社保与发放整组原生结构迁移（2026-09-18）
+
+### 8.33.1 归属与唯一写入者（本批）
+
+工作树：`feature/uc4-g07-payroll-social-native-v1`，HEAD `d2997196`（`origin/main` =
+`5938d6c620952e9c4c1af9fa6c33dbda14da0374` = PR #494 squash）。**交付脏范围 9 条路径**
+（8 modified ＋ 1 untracked）；本轮另追加本记录文档 1 条，合计 10 条，故当前 dirty
+相对 `5938d6c6` 为 12 条（含 HEAD 提交 `d2997196` 自带的 3 条文档）——这是**接管阶段的身份**
+（提交 `bd3df6f7` 处实测 12 条）；本批**最终候选为 13 条**，第 13 条为
+`docs/engineering_convergence/complexity_budget_report.md`（由 `96f0c9bd` 的生成证据刷新加入）。
+一个候选工作树一个写入者：本 worktree 只交付一个 PFL
+（**G07 工资社保与发放整组迁移**），不混入 G08 或六组副本候选。
+
+| 归属 | 路径 | 层 |
+|---|---|---|
+| 接管前已有（本批前段、同一写入者） | `views/core/hr_payroll_document_views.xml`、`data/hr_payroll_form_productization_contract.xml`、`data/social_fund_contract.xml` | P0 结构／P1 声明 |
+| 接管前已有（同一写入者） | `tests/test_hr_payroll_native_lowcode.py`（新增）、`tests/test_project_salary_product.py`、`tests/__init__.py` | L1/L2 |
+| 接管前已有（同一写入者） | `scripts/verify/local_dev_form_lowcode_scope.py`、`frontend/apps/web/scripts/formal_form_lowcode_loop.mjs` | P4 验证工具 |
+| **接管后修改（本次会话）** | `frontend/apps/web/scripts/formal_form_designer_journey.mjs` | P4 验证工具 |
+| 仅验证、未改 | `docs/ops/iterations/form_structure_compatibility_consumers_v1.json` | 台账（本轮**不扣减**，合入后再独立核对） |
+
+接管后对验证工具的 4 处修改（全部为 P4，未改任何产品文件、未放松任何断言）：
+1. 新增 `payrollTopic` 身份（`requester_id`／`contact_phone`／`受管申请人`／`受管申请信息`），
+   使设计器对该 topic 依据真实字段投放补丁，而不是沿用材料页的字段猜测；
+2. 新增发布后**业务页**的 payroll 断言分支（原实现只有 material／invoice／document 三种，
+   payroll 会落进材料分支去点 `说明与附件` 页签而超时）；
+3. 把 `popupSignals`／`instrumentPopup`／`signalSnapshot` 提升到**预览 popup 创建之前**，
+   并对预览 popup 增加一次性状态与信号取证（URL／DOM／截图／pageerror／意图生命周期）；
+4. outside 入口（873）改用**本入口锚点字段的原生标签**判定隔离，替换材料页字面量。
+
+### 8.33.2 三项已知口径的收口
+
+**① 858 缺入口级发布 —— 已补，不是回落模型级平面。**
+`action 858`（工资薪酬／menu 673）是活跃正式入口，此前没有入口级 release，因此消费模型级
+`sc_hr_payroll_document_form_structure_generated_v1` 的稀疏平面，渲染的不是兄弟入口的业务任务面。
+本批在 `hr_payroll_form_productization_contract.xml` 补入
+`business_config_contract_hr_payroll_management_productized_form_v1`
+（name `hr_payroll_management_productized_form_v1`，action 858，priority 800，title「工资薪酬」）。
+升级后库内该契约 **id 662**／`act=858`／`prio=800`／`title=工资薪酬`；L2 断言 858 与 873
+消费**同一原生树、同一字段集合**（`test_the_entry_that_had_no_release_renders_the_sibling_business_surface`）。
+
+**② view 1697 由 8 个 action 共享 —— 一次原生承载、不按字段名批量去重。**
+1697 被 858／873／884／663／660／661／662／664 八个 action 共享（663 另钉 tree 2067）。
+本批把结构权威一次性交给原生 arch：按 `fact_type` 组织的业务分组（社保／工资／公积金／补助奖金）、
+只有退役体声明过的 4 个 provenance 字段（`legacy_document_no`／`legacy_document_state`／
+`legacy_source_table`／`legacy_source_id`，`readonly`）、同样只有退役体声明过的货币伴随字段
+`currency_id`（`invisible`／`readonly`，该 Monetary 事实的货币伴随项）与稳定 `data-sc-anchor` 身份。
+同名重复字段 **不是副本**：同一事实在各自的 `fact_type` 分组里各出现一次，且同一 `fact_type`
+下只有一个分组可见；按用户口径**禁止按字段名批量去重**，L2 以
+`test_repeated_fact_names_are_per_fact_type_contexts`（`REPEATED_FACTS`：`period_year`／
+`period_month`／`people_count`＝3，`payer_unit`／`company_amount`／`individual_amount`／
+`payout_unit`＝2）与 `test_the_fact_type_groups_are_mutually_exclusive` 固定该口径。
+
+**③ 旧配置清单 4 条 vs 实际 8 条 —— 清单是命名不全，不是范围不同。**
+台账 `nextBatch.groups[G07].legacyConfigurations` 只列了 4 个名字
+（`project_payroll_productized_form_v1`／`project_salary_payment_productized_form_v1`／
+`sc_hr_payroll_document_form_structure_generated_v1`／`social_fund_form_v1`），其
+`evidenceStatus` 自述为 `grouped_from_existing_44_entry_ledger_not_runtime_revalidated`：它是早期
+按 44 条清单分组时**按样本命名**的几条，不是完整枚举。按已改源码实际做法：**入口级 body 退役 8 条**
+（873／874／884／663／660／661／662／664），**新增入口级发布 1 条**（858）；
+模型级 `sc_hr_payroll_document_form_structure_generated_v1`（id 79）**不退役、不修改**——它是稀疏
+字段序注解，与 G05 的 `sc_expense_claim_form_structure_generated_v1`（id 72）同类；
+L2 `test_the_model_wide_annotation_keeps_serving_the_model` 固定 79 仍 `active`、`act=False`、27 字段、无 sections。
+**本批不修改台账文件**（扣减留合入后独立提交核对）。
+
+### 8.33.3 修改范围与影响面
+
+| 层 | 文件 | 内容 |
+|---|---|---|
+| P1 声明 | `data/hr_payroll_form_productization_contract.xml` | 8 条退役入口契约只留 `title` ＋ `composition_mode: native_semantic_surface`；新增 858 入口级发布；顶部记录决策与回滚方式（`git revert`，无数据迁移） |
+| P1 声明 | `data/social_fund_contract.xml` | 884（`social_fund_form_v1`）同样只留 `title` ＋ `native_semantic_surface`；`fact_authority`／`allowed_fact_types` **原样保留在 `view_orchestration.context`**，未连带退役 |
+| P0 结构 | `views/core/hr_payroll_document_views.xml` | 两个 form 视图共 **11 个分组**补 `name` ＋ `data-sc-anchor`（实测 1697 的 11 个分组中 8 个带锚点、1700 的 4 个分组中 3 个带锚点。该计数**必须路径限定**：`git diff -U0 5938d6c6..HEAD -- addons/smart_construction_core/views/core/hr_payroll_document_views.xml \| grep -c '^+.*data-sc-anchor'` ＝ 11；**不限定路径时的读数会被测试、契约、脚本及本记录正文中的同名字符串一并命中，且随本记录自身内容变化而不可复现，故此处不引用该读数、不得用于分组计数**），另有 **4 个无标题包装组保持未动**（1697 3 个 ＋ 1700 1 个，初始基线 5938d6c6 为 1697 3 个 ＋ 1700 3 个）。1697：「历史来源」补 `invisible="not legacy_document_no"` ＋ 4 个 provenance 字段；notebook 前补隐藏只读 `currency_id`；**从 `payroll_provident_fund` 删去 `employee_user_id`／`employee_name`**（见 8.33.6）。1700：2 个原无标题包装组补名（`salary_payment_identity`／`salary_payment_amount`），新增第三组 `salary_payment_handling`（「经办与依据」）承载 `responsible_id` |
+| L1/L2 | `tests/test_hr_payroll_native_lowcode.py`（最终候选 **15 测**，tag `uc4_native_lowcode`）、`tests/test_project_salary_product.py`、`tests/__init__.py` | 见 8.33.8 |
+| P4 | `scripts/verify/local_dev_form_lowcode_scope.py`、`formal_form_lowcode_loop.mjs`、`formal_form_designer_journey.mjs` | payroll topic 只读代表路由（复用既有 runner／环境／身份，未另建 fixture 或环境）＋设计器闭环 |
+
+**边界保持**：未触碰受保护草稿 163／190／192／194／233／267／274／276（见 8.33.9 的写入核对）；
+未执行 `sync_demo`／fixture reset／发布快照／无关 upgrade／Docker 网络调整／历史工作树清理；
+未执行任何真实工资发放或业务确认。
+
+**在范围差异内的 G06 收口（非 G07 内容）**：本批相对 `origin/main` 的 13 路径中包含提交
+`d2997196`（G06 合入后台账扣减 31→29 与发布审计），它改动的是台账
+`docs/ops/iterations/form_structure_compatibility_consumers_v1.json` 与 G06 记录
+`uc4_tax_deduction_native_lowcode_20260918.md`，属 G06 收口沿用同一分支带入，**不是 G07 的修改面**。
+
+### 8.33.4 入口矩阵（L3 运行时实测，`sc_dev_demo`，action id 为库内真实值）
+
+| 入口 | action | menu | view | 分组 | domain | 样本 | 浏览器 |
+|---|---|---|---|---|---|---|---|
+| 工资薪酬 | 858 | 673 | 1697 | 78,108 | `fact_type in [salary_registration, subsidy, bonus]` | 2 行 | 新建＋查看 ✔ |
+| 薪资核算清单 | 873 | 695 | 1697 | 84,83 | `salary_registration & project_id != False` | 1 行 | 新建＋查看 ✔ |
+| 社保公积 | 884 | 706 | 1697 | 108 | 3 类 social | 0 行 | 新建 ✔／查看 ⊘ |
+| 薪资发放登记 | 874 | 696 | 1700 | 84 | 无 | 0 行 | 新建 ✔／查看 ⊘ |
+| 项目管理人员工资登记 | 663 | 351 | 1697（＋tree 2067） | 78,108 | `salary_registration` | 1 行 | ⊘ 导航拒绝 |
+| 社保人员登记 | 660 | 349 | 1697 | 78,108 | `social_person_registration` | 0 行 | ⊘ 导航拒绝 |
+| 社保登记 | 661 | 350 | 1697 | 78,108 | `social_registration` | 0 行 | ⊘ 导航拒绝 |
+| 补助 | 662 | 352 | 1697 | 78,108 | `subsidy` | 0 行 | ⊘ 导航拒绝 |
+| 奖金 | 664 | 353 | 1697 | 78,108 | `bonus` | 1 行 | ⊘ 导航拒绝 |
+
+升级后 9 条契约 state 全部正确：858 → id 662（新增）、166＝873、179＝884、167＝874、
+168/169/170/171/172＝663/660/661/662/664；模型级 79 未动。
+四个优先入口的身份与最终契约逐个核验（`ui.contract.v2` 200 且 `action_id`／`view_id`／`menu_id` 与入口一致）。
+
+### 8.33.5 用户可见前后差异
+
+- **858 变化最大**：此前渲染通用工作台平面（模型级稀疏字段序），现在渲染与 873／884 同源的业务任务面，
+  含申请信息／人员／社保／工资／公积金／补助奖金／办理／历史来源分组的锚点导航。
+- 八个归档入口：字段与分区**不减少**——退役体的 **57 个字段并集逐条在原生 arch 中命中**
+   （`missing_from_arch: []`）。本批新增到该 arch 的字段共 **5 个**：4 个 provenance
+  ＋ 货币伴随字段 `currency_id`（该视图**记录作用域字段节点** 66 → 69，其中 **arch 内呈现字段** 63 → 66，
+  `removed: []`）。二者都只有退役体声明过，
+  **没有凭空新增的业务事实**；订正见 8.33.11。
+- 1697 新增条件性「历史来源」章节（仅 `legacy_document_no` 有值时出现），新建态默认不出现；
+  1700 新增「经办与依据」承载 `responsible_id`，原先该字段落在无标题包装组里没有章节身份。
+- **同一上下文重复被消除**：`employee_user_id`／`employee_name` 在 `provident_fund_registration`
+  下此前**可见 2 次**（无条件的「人员」组 ＋ 公积金组），8 个退役体在人员／期间章节只呈现 1 次。
+  已从 `payroll_provident_fund` 删除并加注释；L2 `test_the_person_is_presented_once_in_every_fact_type`
+  以 `SINGLE_PRESENTATION_FACTS` 固定该事实。
+
+### 8.33.6 首次偏差与修复层
+
+| # | 现象 | 首次偏差位置 | 修复层 |
+|---|---|---|---|
+| 1 | `employee_user_id`／`employee_name` 在 `provident_fund_registration` 下同一上下文可见 2 次 | 产品：1697 原生 arch 的 `payroll_provident_fund` 组同时声明了只属于「人员」组的事实 | P0 结构（删重复声明，**未**按字段名批量去重其它分组） |
+| 2 | 858 渲染通用平面而非业务任务面 | 产品：`action_sc_payroll_management` 无入口级 release，回落模型级 79 | P1 声明（补入口级发布，**未**改模型级 79） |
+| 3 | 设计器工具在该 topic 下无法投放补丁（`Cannot read properties of undefined (reading 'label')`） | 工具：`formal_form_designer_journey.mjs` 只登记 material／document／invoice 三种字段身份 | P4 验证工具（新增 payroll 身份；`/tmp/g07-evidence/l4-designer-fail1-locator.log`） |
+| 4 | 工具在发布后落到材料页签 `说明与附件` 超时 | 工具：业务页断言分支缺 payroll | P4 验证工具（新增 payroll 分支，改用产品自述的 `data-section-target` 做导航↔正文一致断言；`…fail2-preview-tab.log`） |
+| 5 | 预览 popup 标签超时，**环境传输中断**：`popup_1` 19 条 `net::ERR_NETWORK_CHANGED`（模块图 CSS／Vue 资源） | 环境：宿主网络在运行时变更；**不是产品缺陷** | P4 验证工具（把 popup 信号与状态取证提前到预览 popup 创建前，使"传输未完成"与"标签缺失"可区分；`…fail3-preview-transport.log`） |
+| 6 | outside 入口（873）等待材料页字面量 `出库日期` 超时 | 工具：隔离锚点是材料页字段 | P4 验证工具（改用本入口锚点字段的**原生标签**；`…fail4-outside-label.log`） |
+
+第 5 条按用户口径**单独记为传输失败**，不改写成"零传输错误"，也不作为"已恢复"的判据：
+重跑前只做了可恢复性核对（5174 在监听并返回页面、网络接口稳定），失败分类与恢复事实先记录。
+
+### 8.33.7 低代码闭环（预览 → 发布 → 刷新 → 回滚 → 跨入口隔离）
+
+入口：**858**（`sc.hr.payroll.document`／view 1697／menu 673）；隔离对照：**873**（同模型同 view 不同入口）。
+报告 `artifacts/lowcode-form-loop/browser/designer-report.json`（`ok=true`、`restored=true`）：
+
+- **归属**：`change_set_id=395`，`save_path=opened_new_change_set`，
+  `draft_ownership={release:true, reason:created_by_this_run, created:true, fresh_requested:true}`，
+  `save_open={requested_fresh:true, reported_created:true}` —— 以产品自身的 `fresh` 请求＋`created`
+  回执证明"本轮创建"，不是"不在盘点里"。
+- **前置授权**：`designer_draft_probe.decision=proceed`（`resume_only` 两次探测均 miss）、
+  `designer_pre_write_gate.decision=proceed` —— 检查发生在**写入之前**。
+- **投放补丁 3 条**：`requester_id` 改标签为「受管申请人」、移入新组「受管申请信息」、`contact_phone` 隐藏。
+- **预览**：`preview_structure.parent=payroll_application_info`（7 个子节点），
+  `visual_order.status=passed`（未改字段保持原生相对顺序，且至少一行保留共享列流）。
+- **发布**：`published_content_verified=true`、`runtime_verified=true`，
+  `stages.publication={published_content:passed, final_contract:passed, browser:passed, isolation:passed}`。
+- **刷新后业务页（冷加载）**：`payroll_business_surface.navigation_target`
+  ＝产品自述的 `[data-form-section-target="node:designer:business-section"]`，
+  配置章节进入视口（`configured_section_y=227`），重命名字段确实在导航指向的章节内，
+  被隐藏的 `contact_phone` 在业务页**不可见**。
+- **回滚**：`restored=true` —— 回滚后**重新读取生效契约并与基线比对相等**（不是只看按钮回执）。
+- **跨入口隔离**：`stages.outside_page={action_id:873, status:passed}` —— 873 新建页仍渲染
+  `requester_id` 的**原生标签**、且不含「受管申请人」。
+- **同屏复用复核草稿**：`review={draft_id:397, published:false, same_screen_reuse:passed}`，
+  其归属同为 `created_by_this_run`。
+- **恢复**：`recovery=[]`、`cleanup_guard={decision:proceed, foreign:[]}`、`browser_errors=[]`、
+  `transport_recoveries=[]`。
+
+### 8.33.8 分层验证结果
+
+| 层 | 入口 | 身份 | 结果 |
+|---|---|---|---|
+| L1 | `make ci.local.iteration` | 接管阶段的 HEAD＋dirty（阶段身份 12 路径，含本批 3 条文档；最终候选 13 路径见 8.33.1） | **PASS**：16 静态测 0.109s OK；`baseline_iteration_execution_policy_guard` PASS；`coverage=L1_only`；`next=risk_selected_non_zero_L2_targets_required`。复核处置后以候选 `b0e54aa6` 重跑 L1 **PASS**（16 静态测 0.155s；`changedPathCount=13`，`unmappedPathCount=11`；当次**未持久化回执**）。冻结候选 `324394cc` 再跑 L1 **PASS**（16 静态测 0.130s，`change_state=clean`，`coverage=L1_only`，`receipt=none`；日志 `tmp/g07-evidence/l1-324394cc.log`） |
+| L3 | `make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1` | `sc_dev_demo` | **PASS**：exit 0，`[local.dev.demo.authority] PASS`（`tmp/g07-evidence/l3-module-upgrade.log`） |
+| L2 | `make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestHrPayrollNativeLowcode,/smart_construction_core:TestProjectSalaryProduct,/smart_construction_core:TestSocialFundCapability,/smart_construction_core:TestTaxDeductionNativeLowcode'` | 接管阶段的 HEAD＋dirty | **PASS**：**34 测 0 failed 0 error**（`tmp/g07-evidence/l2-native-lowcode-34.log`）。过程中 13 测（2 failed）与 34 测（1 failed）两次中间失败已修后重跑，各自首次偏差见 8.33.6 |
+| L2-重跑（受影响两类） | `make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestHrPayrollNativeLowcode[,/smart_construction_core:TestProjectSalaryProduct]'` | 复核处置后的候选 | **PASS**：口径订正后 `14 测 0 failed`（`tmp/g07-evidence/l2-refresh-nativelowcode-14.log`）；S5／S10 处置后 `16 测 0 failed`（payroll 类 15 测 ＋ 项目工资 1 测，`tmp/g07-evidence/l2-round2-16.log`）。未重跑其余两类（输入未变） |
+| L4-只读 | `FORM_LOWCODE_TOPIC=payroll FORM_LOWCODE_REPRESENTATIVE=1 make local.dev.form_lowcode.browser` | 同上 | **PASS**：`ok=true`、`restored=true`、`browser_errors=[]`、`transport_recoveries=[]`、`cleanup_guard=proceed`、`recovery=[]`、业务指纹未变；报告 `artifacts/lowcode-form-loop/browser/representative-report-payroll.json` |
+| L4-设计器 | `FORM_LOWCODE_TOPIC=payroll FORM_LOWCODE_DESIGNER=1 make local.dev.form_lowcode.browser` | 同上 | **PASS**：`[formal_form_lowcode_loop] PASS formal designer journey`（`tmp/g07-evidence/l4-designer-payroll.log`） |
+
+**复用理由**：接管后只修改了 P4 验证工具 `formal_form_designer_journey.mjs`，它既不是 L1 静态扫描对象
+（L1 已重跑确认无守卫漂移），也不是 L2 Python 测试的任何输入（测试集、模块代码、原生 arch、
+契约声明均未变），因此 L2／L3 结果按"输入未变"复用，未重跑。
+
+**桌面与窄屏**：只读代表报告已含 **1088×900 与 390×844** 双视口，约 180 组几何读数
+（含首项在屏外／屏内、末→首、首→末、手动滚动后、轨道滚动后）**全部为"操作行与导航分离"**，
+例如 858 查看态 390×844：`actions.bottom=309 < nav.top=322`；章节跳转后目标标题在视口内、
+高亮与正文一致（`auto_reveal_press`、`keyboard_activation` 两条路径均 `delivered_active` 与 `pressed` 相同）。
+`390` 新建态章节轨不溢出故 `section_navigation_press=not_applicable`（非通过，非失败）。
+
+### 8.33.9 未覆盖项与剩余阻断（如实登记，不造数据）
+
+- **884／660／661／662／874 的记录态（record_surface）未覆盖**：`empty_action_domain`（domain 0 行）。
+  884／660／661／662 该 action 域内 0 行、模型内 2 行；874 域内 0 行。**未为补样本造数据。**
+- **663／660／661／662／664 未做浏览器复核**：`NAVIGATION_AUTHORITY_DENIED`，原因是运行角色的
+  `route.authority` **不含**「人事薪酬」分支（父链 349~353 ← 646 人事薪酬 ← 343 行政中心 ← 304）。
+  菜单 349~353 的分组（78／108）与该用户分组**一致**，拒绝来自角色级路由权威，不是分组缺失；
+  按 G06 对 action 789 的既有口径，**记为角色边界，不计产品缺陷、不把拒绝写成功**。
+  这 5 个入口的原生结构与契约由 L2 断言覆盖（同一 view 1697／同一原生树）。
+- **未执行项（保持未执行）**：最终 Quick、推送、建 PR、合并、部署、G08 启动、
+  六组副本候选迁移、`sync_demo`／fixture reset／发布快照、历史工作树清理。
+- **未改的既有残留（仅登记）**：本次设计器运行按工具既有设计**保留一张未发布复核草稿**
+  `change_set_id=397`（`ready`／1 item／未发布／`created_by_this_run`），供复核使用；
+  回滚以真实发布"回滚：表单设计配置"变更集（390／393／396）实现，随后按生效契约回读确认等于基线。
+- **写入核对（只读回读）**：受保护草稿 163／190／192／194／233／267／274／276 的 `write_date`
+  全部停留在 2026-09-17，本轮未被触碰；233／267／276 的 `ready` 状态维持原样。
+- **台账**：保持 **29**，本轮不扣减；852 列表域与约 6 组副本候选继续留台账，不扩范围。
+
+### 8.33.10 状态
+
+批次状态：**G07 集中产品复核完成｜批次验收待收口｜未冻结｜未集成｜未部署**。
+台账 **29**；89 入口整体交付未完成。下一步（未执行）：定向反例冻结 → 生成证据准备与预检 →
+干净 HEAD 完整指纹 → 一次 Quick → 独立复核 → 外部归档 → Draft PR。
+
+### 8.33.11 收口前自我复核的发现与修正（口径，非产品缺陷）
+
+冻结前对**整批 13 路径差异**做只读复核（不只审最后一次 P4 改动），方法：逐入口重算
+`ui.contract.v2` 最终契约、重算 1697／1700 原生 arch 的字段集合增量、并对全部差异做
+「被删除断言」扫描（`git diff origin/main...HEAD | grep '^-' | grep assert`）。
+
+**扫描结果**：全批**只删除了 4 行断言**，全部位于 `tests/test_project_salary_product.py`，
+且是**改写而非删除**——原 4 行检查「契约 `fields` 里含某字段」，替换为**更强**的一组断言
+（`composition_mode == native_semantic_surface`、`sections`／`fields`／`columns` 均不存在、
+且该事实在原生 arch 中确实由 `name="..."` 承载）。P4 工具差异**未删除任何断言**（0 行），
+新增断言行数随两轮处置变化：阶段身份（`96f0c9bd`）为 **78 行**，含复核处置的候选 `b0e54aa6`
+与冻结候选 `324394cc` 均为 **89 行**。口径为**排除本记录文件**的路径限定命令
+（本记录自身会引用 `assert` 字样，若纳入则读数自指虚增，`b0e54aa6` 91 行、`324394cc` 92 行，
+冻结前 ≠ 冻结后，不可复现，故不作为口径）：
+`git diff -U0 5938d6c6..HEAD -- . ":(exclude)docs/ops/iterations/form_structure_consumption_stabilization_20260917.md" | grep -E "^\+" | grep -c assert`；
+删除断言始终为**同一 4 行**（改写而非删除，该口径不受上述排除影响）。
+**不构成「以降低断言取得通过」。**
+
+**发现（已修）**：本批新增到 1697 原生 arch 的字段实测为 **5 个**（4 个 provenance ＋
+货币伴随字段 `currency_id`；字段节点口径见 8.33.12 的 S11 订正，`removed: []`），但
+①本记录 8.33.5 原写「其中 4 个 provenance 是本批唯一新增的字段」，
+②新增 L2 测试 `test_the_arch_only_added_what_the_retired_bodies_declared` 的原文档字符串写
+「只有 4 个是本批未承载过的事实」，二者都把 `currency_id` 漏计，且测试名承诺的
+「只新增退役体声明过的事实」当时**未被断言**。
+
+| 项 | 分类 | 首次偏差 | 修正层 | 修正 |
+|---|---|---|---|---|
+| 新增字段计数 4 vs 实测 5 | 口径 / 证据完整性（非产品缺陷，未影响任何 PASS 结论） | 记录与测试文档字符串按 provenance 记忆计数，漏计同时新增的货币伴随字段 | P4 证据与记录（`tests/test_hr_payroll_native_lowcode.py`、本记录） | 测试补 `ARCH_FACTS_ADDED_BY_THIS_BATCH`（5 项）并断言：新增集合 ⊆ 退役体声明集合、逐项在 arch 中命中、`currency_id` 恰好 1 处且 `invisible`／`readonly`；文档字符串与记录改按实测口径表述 |
+
+**修正未扩大范围**：只订正该批自身的口径与**补齐缺少的断言**（未删除、未放宽任何断言），
+未改产品代码、未改台账、未改其它主题。修正后按「输入已变」重跑受影响的 L2 与 L1，
+并**重新冻结**（新 HEAD／新 tree／新指纹），再对该 HEAD 运行**一次** Quick。
+
+**冻结回执去向（口径）**：exact-head Quick 回执与外部归档哈希按既有约定写入**外部归档件**
+（`identity.json`／`worktree-fingerprint.json`／`review.json`／`summary.md`／`pr-body.md`）与 PR 正文；
+按 8.33 既有口径，指纹与回执值**不写入本记录文件**，避免写入本身改变被冻结候选；
+正式回填与台账扣减留待合入后的独立台账提交（同 G06 的 `d2997196` 口径）。
+
+### 8.33.12 独立复核（第 1 轮，绑定候选 c4d434f9）
+
+独立只读复核者绑定候选 `c4d434f9ba7e2651ac2a05c13b9813e690e30347`（范围 `5938d6c6..c4d434f9`），
+自取数重算，未写任何文件、未重跑门禁；结论 **APPROVE_WITH_MINOR**（`noOpenBlockerOrMajor: true`）。
+
+复核者自测复现的本批核心事实（与本记录一致）：1697 字段集合 `added={currency_id, 4×legacy_*}`、`removed=[]`；
+退役体并集按 base 树独立重建为 payroll 49 ＋ payment 17（重叠 9）＝ **57**，与测试常量逐项相等；
+`provident_fund_registration` 可见事实 31 → 29（**只**少了 `employee_user_id`／`employee_name` 各 1），
+其余 `fact_type` 计数不变；`fact_type` 分组在每个合法类型下**恰有一个可见**、未设类型时**零个可见**；
+来源追溯隐藏为合法声明且 4 个 provenance 字段仍声明、`readonly`；全批**无断言被删除或跳过**；
+模型级注解未动（无 `action_id`、27 字段）；Quick 回执经受管 `verify` 通过；指纹内存复算与产物 digest 相等。
+
+开放项与处置：
+
+| 发现 | 严重度 | 复核意见 | 处置 |
+|---|---|---|---|
+| S1–S4、S13 | — | 结构消费、同上下文重复、分组互斥、条件隐藏、858 入口级发布等**均已核实闭合** | 无需处置 |
+| S5 | minor | `tests/test_project_salary_product.py` 改写后用 `assertIn('name="%s"' % fact, arch_db)` 做**子串**匹配，严谨度低于节点断言 | **已修**：改为解析 arch 并断言**字段节点**存在（`arch.xpath(".//field")` 的 `name` 集合成员），避免修饰表达式／筛选域／注释中的同名文本误判 |
+| S10 | minor | 858／884 的 action context 无 `default_fact_type`，且分组按 `fact_type` 门控 → 新建面在选定类型前**不显示任何分组**（退役体当时是无条件呈现）；该差异**无断言覆盖** | **已修**：新增 L2 `test_the_fact_type_selector_stays_the_reachable_entry_to_every_group`——断言选择器在正文中**恰好声明一次**、**不受任何门控**（无 `invisible`／`readonly`／`groups`）、模型字段 `required=True`，且未设／未知类型时**零分组可见**；即"受门控的事实不失去入口" |
+| S11 | nit | 8.33.5／8.33.11 的"字段数 66 → 69"是**记录作用域**（含记录自身的 `name`／`model`／`arch` 节点）；arch 内呈现字段为 63 → 66 | **已修**：两处均标注口径（记录作用域 66 → 69；arch 内呈现 63 → 66），增量与新增集合两种口径一致 |
+| S12 | nit | 范围内还含 `d2997196`（G06 收口：台账 31→29 与两处文档），8.33 未点明该改动归属 | **已修**：8.33.3 补"在范围差异内的 G06 收口（非 G07 内容）"说明 |
+
+**第 1 轮另有 3 项开放项**（同属记录口径，核见下）：S7 锚点分组数（8.33.3 的"12 个分组"）、
+S8 路径数（8.33.1／8.33.8 的"12"）、S9 断言行数与 L2 测数（8.33.11 的"78 行"、8.33.8 的"34 测"）。
+
+**复核者自陈局限**（保留，不代为消除）：未执行 Odoo 测试／浏览器旅程／L3／Quick，L1–L4 结论读自回执与记录；
+库内 id（action 662／166／179／167／168–172、view 1697／1700、menu、契约 79、change set 395／397／390／393／396）
+与受保护草稿 `write_date` 回读属库事实，只读复核无法复测；`empty_action_domain` 行数未复测；
+`not legacy_document_no` 为表达式求值而非渲染观测；P4 复核为静态。
+
+**第 2 轮**：处置提交产生**新候选**（新 HEAD／新 tree／新指纹），须重新冻结并重跑**一次** exact-head Quick；
+绑定新候选的复核结论与回执哈希按 8.33.11 的口径写入**外部归档** `review.json`，不写入本记录文件。
+
+#### 8.33.12.1 第 2 轮复核（绑定候选 b0e54aa6）与记录口径收口
+
+第 2 轮独立只读复核绑定候选 `b0e54aa662b76620872e546910eb454f94394c1e`，只审增量
+`c4d434f9..b0e54aa6`，结论 **APPROVE_WITH_MINOR**（`noOpenBlockerOrMajor: true`）：
+
+- **R-S5 闭合**：`test_project_salary_product.py` 已由子串匹配改为解析 arch 的字段节点断言；
+  复核者自查 arch 格式（`arch_db.encode()` 先编码再解析，避免 lxml 对含编码声明的 str 报错），
+  与既有 payroll 测试同法，未引入新的解析脆弱点。
+- **R-S10 闭合**：新增测试确实断言"受门控的事实不失去入口"（选择器声明唯一、无
+  `invisible`／`readonly`／`groups`、模型字段 `required=True`、未设／未知类型零分组可见），
+  比第 1 轮**更强**（该缺口此前无断言），且与互斥性测试输入不同、不重复。
+- **R-S11／R-S12 闭合**：字段计数两口径、范围内 `d2997196` 归属均与本记录一致。
+- **R-POS-1 闭合**：增量**只改两个测试文件与本记录**，未触碰任何产品渲染输入
+  （`addons/**/views`、`addons/**/data`、`frontend`、`scripts` 的路径过滤差异为空），
+  无断言被删除或跳过（删除断言仍为同一 4 行、`skip`／`xfail`／`.only(` 为 0）。
+- **R-NEW-1（本轮已修）**：8.33.12 原表漏列第 1 轮的 S7／S8／S9，现已补列于上。
+
+本轮同时收口第 1 轮遗留的 3 项记录口径（均为**文档数字**，非产品事实）：
+
+| 发现 | 实测（本轮自取数） | 订正 |
+|---|---|---|
+| S7 锚点分组数 | 两个 form 视图带 `data-sc-anchor` 的分组共 **11 个**（1697：11 组中 8 个；1700：4 组中 3 个）；无标题包装组保留 **4 个**（1697 3 ＋ 1700 1） | 8.33.3 由"1697：12 个分组"改为按视图分列的 8／3 与 4 个未动包装组 |
+| S8 路径数 | 最终候选相对 `5938d6c6` 为 **13 路径**；接管阶段身份（`bd3df6f7`）为 12 | 8.33.1 区分"接管阶段 12 条"与"最终候选 13 条（第 13 条为 `complexity_budget_report.md`）"；8.33.8 的 L1 行改标阶段身份并补 `b0e54aa6` 重跑 |
+| S9 断言与测数 | 新增断言行（**排除本记录文件**口径）：`96f0c9bd` 为 78、`b0e54aa6` 与 `324394cc` 均为 89；全路径口径会因本记录自身引用 `assert` 字样而虚增（`b0e54aa6` 91／`324394cc` 92），冻结前 ≠ 冻结后，故不作为口径；删除断言恒为同一 4 行；payroll 测试类 14 → **15 测** | 8.33.11 改用排除本记录文件的稳定口径并标注阶段；8.33.8 新增"L2-重跑"行（14 测／16 测），并把原 34 测行标为接管阶段身份 |
+
+**第 3 轮**：上述订正产生**新候选**，重新冻结（新 HEAD／新 tree／新指纹）并重跑**一次** exact-head Quick；
+绑定新候选的第 3 轮复核结论与回执哈希按 8.33.11 口径写入**外部归档** `review.json`，不写入本记录文件。
+
+#### 8.33.12.2 第 3 轮复核（绑定候选 324394cc）与自指计数收口
+
+第 3 轮独立只读复核绑定候选 `324394cc0302536d2bbd90ca63e3e17fae89a4e8`，只审增量
+`b0e54aa6..324394cc`，结论 **APPROVE_WITH_MINOR**（`noOpenBlockerOrMajor: true`）：
+
+- **R-G3-3 闭合**：增量只改本记录文件；对 `addons/**/views`、`addons/**/data`、`frontend`、
+  `scripts` 做路径过滤后差异为 **0 路径**，未触碰任何产品渲染输入。
+- **R-G3-4 闭合**：增量未删除／跳过任何断言（增量内删除断言 0 行；全批删除恒为同一 4 行改写）；
+  唯一的 `skip`／`xfail` 命中来自本记录正文的引用，非真实跳过。
+- **R-G3-5 闭合**：8.33.1／8.33.8 已把阶段身份（12 路径）与最终候选（13 路径）分开，
+  且 `b0e54aa6` 的 L1 重跑已标为候选绑定，未把未验证写成已验证。
+- **R-G3-1（minor，本轮已修）**：8.33.11／8.33.12.1 原把 `b0e54aa6` 称作"最终候选"并记 **91 行**；
+  该命令在冻结候选处读数为 **92**（本记录新增行自身含 `assert` 字样），属**自指偏差**，
+  冻结前 ≠ 冻结后、不可复现。
+- **R-G3-2（nit，本轮已修）**：8.33.3 引用的 `grep -c '^+.*data-sc-anchor'` 未限定路径；
+  未限定读数会把测试／契约／脚本与**本记录正文**中的同名字符串一并命中，**随本记录内容变化**，
+  因此**已从记录中移除该读数**（不再引用任何未限定值）。分组数 **11** 仅在路径限定于视图文件
+  时成立，且该值可复现。
+
+本轮收口方式（**改用不随本记录内容变化的稳定口径**）：
+
+| 指标 | 原口径（自指，不可复现） | 新口径（稳定） |
+|---|---|---|
+| 新增断言行 | `git diff -U0 5938d6c6..HEAD \| grep -E "^\+" \| grep -c assert` → `96f0c9bd` 78／`b0e54aa6` 91／`324394cc` 92 | 同命令 **加 `-- . ":(exclude)<本记录文件>"`** → `96f0c9bd` 78／`b0e54aa6` 89／`324394cc` **89**（冻结前＝冻结后） |
+| 锚点分组数 | `grep -c '^+.*data-sc-anchor'`（不限定路径）→ **不稳定，已弃用**（含测试／契约／脚本与本记录正文的命中，随本记录内容变化） | **路径限定 `-- <views/core/hr_payroll_document_views.xml>`** → 11 |
+
+两项均为**记录口径**（非产品事实、非测试削弱）：删除断言计数不受上述排除影响，恒为同一 4 行；
+产品渲染输入在本轮与上一轮增量中均未被触碰。
+
+**第 4 轮**：本轮订正产生**新候选**，重新冻结并重跑一次 exact-head Quick；第 4 轮复核只审
+本增量，结论与回执哈希写入外部归档 `review.json`，不写入本记录文件。
+
+#### 8.33.12.3 第 4 轮复核（绑定候选 4b810fa2）与自指计数类终止
+
+第 4 轮独立只读复核绑定候选 `4b810fa2785cc525fb26eb27254e3b6ae98a1c61`，只审增量
+`324394cc..4b810fa2`，结论 **APPROVE_WITH_MINOR**（`noOpenBlockerOrMajor: true`）：
+
+- **R-G4-2 闭合**：增量只改本记录文件；`addons/**/views`、`addons/**/data`、`frontend`、
+  `scripts` 路径过滤差异 **0 条**。
+- **R-G4-3 闭合**：增量未删除／跳过任何测试断言（增量内被误计的那 1 行是记录正文对
+  `grep -c assert` 的引用，非测试断言）；全批删除断言仍恒为同一 4 行。
+- **R-G4-4 闭合**：本节登记的第 3 轮结论、`reviewedRange` 与 `noOpenBlockerOrMajor` 与复核者
+  自取数一致；8.33.8 新增的 L1 行可由 `tmp/g07-evidence/l1-324394cc.log` 佐证；无"未覆盖写成通过"。
+- **R-G3-1／R-G3-2 闭合**（复核者自取数复现）：排除本记录文件的断言口径 `96f0c9bd` 78／
+  `b0e54aa6` 89／`324394cc` 89／`4b810fa2` 89，即**冻结前＝冻结后**；文档已不再把 `b0e54aa6`
+  称作"最终候选"。
+- **R-G4-1（minor，本轮已修）**：8.33.3 与 8.33.12.2 仍引用**未限定路径**的锚点读数（写作
+  21，其构成被标为"本记录 3"）；该读数会把本记录正文自身的同名字符串计入，随本记录内容变化，
+  在冻结候选处已不等于 21，属与 R-G3-1 同类别的**自指偏差**。
+
+本轮收口方式：**不再刷新该读数，而是从记录中移除任何未限定值**（R-G4-1 的处置），使该类问题
+**终止**——记录只保留可复现的路径限定值（锚点分组 **11**、断言 **89／删除 4**）。
+
+**该类问题的边界（记录、不再迭代）**：任何"描述包含本记录文件自身在内的整批差异"的计数，
+只要被写进本记录，其读数就会因写入而改变，**永远不可能在记录内自洽**。因此本记录**只允许**
+引用两类计数：①**路径限定或排除本记录文件**的命令读数；②**某个不可变提交处**测得的阶段值
+（该提交内容固定，故可复现）。其余形式的未限定总计**一律不写入本记录**。
+本轮与上一轮的实际差异均在**记录正文**内，未改动任何产品渲染输入、测试断言或契约。
+
+**第 5 轮**：本轮订正产生**新候选**，重新冻结并重跑一次 exact-head Quick；第 5 轮复核只审本
+增量，结论与回执哈希写入外部归档 `review.json`。

@@ -6,7 +6,7 @@
     "operation": "model",
     "renderProfile": "create"
   },
-  "count": 31,
+  "count": 29,
   "fullRescan": false,
   "sourceInventory": "artifacts/form-structure-unification/customer-browser-final/compatibility-consumers.json",
   "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
@@ -3527,820 +3527,6 @@
       "evidenceStatus": "carried_forward_prior_inventory"
     },
     {
-      "menuXmlid": "smart_construction_core.menu_sc_tax_deduction_registration_user",
-      "label": "税额抵扣",
-      "model": "sc.tax.deduction.registration",
-      "actionId": 790,
-      "menuId": 538,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.tax.deduction.registration",
-        "viewId": 1654
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 143,
-            "name": "sc_tax_deduction_registration_form_sections_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          },
-          {
-            "id": 5,
-            "name": "sc_tax_deduction_registration_p1_form_business_facts_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          },
-          {
-            "id": 206,
-            "name": "tax_deduction_registration_productized_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1654,
-        "resolvedActionId": 790,
-        "structureDiagnostics": [
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.tax.deduction.registration",
-              "action_id": 790,
-              "view_id": 1654
-            },
-            "key": "sections",
-            "node": "view_orchestration.views.form.sections",
-            "nodes": [
-              "0",
-              "1",
-              "2",
-              "3"
-            ],
-            "configuration": {
-              "id": 5,
-              "name": "sc_tax_deduction_registration_p1_form_business_facts_v1"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 143,
-                "name": "sc_tax_deduction_registration_form_sections_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.tax.deduction.registration",
-              "action_id": 790,
-              "view_id": 1654
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "deduction_bill_status_display",
-              "deduction_bill_document_no",
-              "tax_deduction_is_transfer_out_display",
-              "deduction_bill_project_name",
-              "partner_name",
-              "invoice_no",
-              "deduction_tax_amount",
-              "deduction_amount",
-              "deduction_surcharge_amount",
-              "note",
-              "creator_name",
-              "deduction_bill_date_display"
-            ],
-            "configuration": {
-              "id": 5,
-              "name": "sc_tax_deduction_registration_p1_form_business_facts_v1"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 129,
-                "name": "sc_tax_deduction_registration_form_structure_generated_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.tax.deduction.registration",
-              "action_id": 790,
-              "view_id": 1654
-            },
-            "key": "sections",
-            "node": "view_orchestration.views.form.sections",
-            "nodes": [
-              "0",
-              "1",
-              "2",
-              "3",
-              "4",
-              "5",
-              "6"
-            ],
-            "configuration": {
-              "id": 206,
-              "name": "tax_deduction_registration_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 5,
-                "name": "sc_tax_deduction_registration_p1_form_business_facts_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.tax.deduction.registration",
-              "action_id": 790,
-              "view_id": 1654
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "state",
-              "name",
-              "deduction_flow_label",
-              "business_category_id",
-              "source_origin",
-              "project_id",
-              "company_id",
-              "partner_id",
-              "partner_name",
-              "deduction_unit_name",
-              "document_no",
-              "document_date",
-              "invoice_no",
-              "invoice_code",
-              "invoice_date",
-              "tax_rate_text",
-              "invoice_amount_untaxed",
-              "invoice_tax_amount",
-              "invoice_amount_total",
-              "withholding_amount",
-              "deduction_amount",
-              "deduction_tax_amount",
-              "deduction_surcharge_amount",
-              "currency_id",
-              "deduction_confirm_date",
-              "deduction_reason",
-              "note",
-              "attachment_ids",
-              "deduction_bill_attachment_text",
-              "message_attachment_count",
-              "legacy_source_model",
-              "legacy_source_table",
-              "legacy_record_id",
-              "legacy_document_state",
-              "creator_name",
-              "created_time",
-              "source_created_by",
-              "source_created_at",
-              "active"
-            ],
-            "configuration": {
-              "id": 206,
-              "name": "tax_deduction_registration_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 5,
-                "name": "sc_tax_deduction_registration_p1_form_business_facts_v1"
-              }
-            ]
-          }
-        ],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "state",
-          "invoice_no",
-          "invoice_code",
-          "invoice_date",
-          "invoice_amount_untaxed",
-          "invoice_tax_amount",
-          "invoice_amount_total",
-          "deduction_amount",
-          "deduction_tax_amount",
-          "deduction_surcharge_amount",
-          "currency_id",
-          "note",
-          "name",
-          "document_no",
-          "document_date",
-          "deduction_confirm_date",
-          "project_id",
-          "operation_strategy",
-          "partner_id",
-          "partner_name",
-          "deduction_bill_status_display",
-          "deduction_bill_document_no",
-          "tax_deduction_is_transfer_out_display",
-          "deduction_bill_project_name",
-          "creator_name",
-          "deduction_bill_date_display",
-          "deduction_flow_label",
-          "business_category_id",
-          "source_origin",
-          "company_id",
-          "deduction_unit_name",
-          "tax_rate_text",
-          "withholding_amount",
-          "deduction_reason",
-          "attachment_ids",
-          "deduction_bill_attachment_text",
-          "message_attachment_count",
-          "legacy_source_model",
-          "legacy_source_table",
-          "legacy_record_id",
-          "legacy_document_state",
-          "created_time",
-          "source_created_by",
-          "source_created_at",
-          "active"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:办理主信息",
-            "key": "",
-            "title": "办理主信息",
-            "fields": [
-              "state",
-              "name",
-              "deduction_flow_label",
-              "business_category_id",
-              "source_origin"
-            ]
-          },
-          {
-            "identity": "title:项目与扣款单位",
-            "key": "",
-            "title": "项目与扣款单位",
-            "fields": [
-              "project_id",
-              "company_id",
-              "partner_id",
-              "partner_name",
-              "deduction_unit_name"
-            ]
-          },
-          {
-            "identity": "title:单据与发票",
-            "key": "",
-            "title": "单据与发票",
-            "fields": [
-              "document_no",
-              "document_date",
-              "invoice_no",
-              "invoice_code",
-              "invoice_date",
-              "tax_rate_text"
-            ]
-          },
-          {
-            "identity": "title:金额税额",
-            "key": "",
-            "title": "金额税额",
-            "fields": [
-              "invoice_amount_untaxed",
-              "invoice_tax_amount",
-              "invoice_amount_total",
-              "withholding_amount",
-              "deduction_amount",
-              "deduction_tax_amount",
-              "deduction_surcharge_amount",
-              "currency_id"
-            ]
-          },
-          {
-            "identity": "title:抵扣办理",
-            "key": "",
-            "title": "抵扣办理",
-            "fields": [
-              "deduction_confirm_date",
-              "deduction_reason"
-            ]
-          },
-          {
-            "identity": "title:说明与附件",
-            "key": "",
-            "title": "说明与附件",
-            "fields": [
-              "note",
-              "attachment_ids",
-              "deduction_bill_attachment_text",
-              "message_attachment_count"
-            ]
-          },
-          {
-            "identity": "title:来源追溯",
-            "key": "",
-            "title": "来源追溯",
-            "fields": [
-              "legacy_source_model",
-              "legacy_source_table",
-              "legacy_record_id",
-              "legacy_document_state",
-              "creator_name",
-              "created_time",
-              "source_created_by",
-              "source_created_at",
-              "active"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "扣款信息",
-          "扣款实缴信息",
-          "扣款退回信息",
-          "开票详情",
-          "预缴税款详情",
-          "抵扣登记信息",
-          "抵扣详情",
-          "发票信息",
-          "材料信息",
-          "单据识别",
-          "业务对象",
-          "金额与办理",
-          "附件与来源",
-          "办理主信息",
-          "项目与扣款单位",
-          "单据与发票",
-          "金额税额",
-          "抵扣办理",
-          "说明与附件",
-          "来源追溯"
-        ],
-        "fieldGroups": {
-          "办理主信息": [
-            "state",
-            "name",
-            "deduction_flow_label",
-            "business_category_id",
-            "source_origin"
-          ],
-          "项目与扣款单位": [
-            "project_id",
-            "company_id",
-            "partner_id",
-            "partner_name",
-            "deduction_unit_name"
-          ],
-          "单据与发票": [
-            "document_no",
-            "document_date",
-            "invoice_no",
-            "invoice_code",
-            "invoice_date",
-            "tax_rate_text"
-          ],
-          "金额税额": [
-            "invoice_amount_untaxed",
-            "invoice_tax_amount",
-            "invoice_amount_total",
-            "withholding_amount",
-            "deduction_amount",
-            "deduction_tax_amount",
-            "deduction_surcharge_amount",
-            "currency_id"
-          ],
-          "抵扣办理": [
-            "deduction_confirm_date",
-            "deduction_reason"
-          ],
-          "说明与附件": [
-            "note",
-            "attachment_ids",
-            "deduction_bill_attachment_text",
-            "message_attachment_count"
-          ],
-          "来源追溯": [
-            "legacy_source_model",
-            "legacy_source_table",
-            "legacy_record_id",
-            "legacy_document_state",
-            "creator_name",
-            "created_time",
-            "source_created_by",
-            "source_created_at",
-            "active"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "办理主信息": 2,
-          "项目与扣款单位": 2,
-          "单据与发票": 2,
-          "金额税额": 2,
-          "抵扣办理": 2,
-          "说明与附件": 2,
-          "来源追溯": 2
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_product_project_tax_deduction_v1",
-      "label": "项目专项抵扣",
-      "model": "sc.tax.deduction.registration",
-      "actionId": 879,
-      "menuId": 701,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.tax.deduction.registration",
-        "viewId": 1654
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 143,
-            "name": "sc_tax_deduction_registration_form_sections_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          },
-          {
-            "id": 5,
-            "name": "sc_tax_deduction_registration_p1_form_business_facts_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          },
-          {
-            "id": 177,
-            "name": "project_special_tax_deduction_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1654,
-        "resolvedActionId": 879,
-        "structureDiagnostics": [
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.tax.deduction.registration",
-              "action_id": 879,
-              "view_id": 1654
-            },
-            "key": "sections",
-            "node": "view_orchestration.views.form.sections",
-            "nodes": [
-              "0",
-              "1",
-              "2",
-              "3"
-            ],
-            "configuration": {
-              "id": 5,
-              "name": "sc_tax_deduction_registration_p1_form_business_facts_v1"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 143,
-                "name": "sc_tax_deduction_registration_form_sections_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.tax.deduction.registration",
-              "action_id": 879,
-              "view_id": 1654
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "deduction_bill_status_display",
-              "deduction_bill_document_no",
-              "tax_deduction_is_transfer_out_display",
-              "deduction_bill_project_name",
-              "partner_name",
-              "invoice_no",
-              "deduction_tax_amount",
-              "deduction_amount",
-              "deduction_surcharge_amount",
-              "note",
-              "creator_name",
-              "deduction_bill_date_display"
-            ],
-            "configuration": {
-              "id": 5,
-              "name": "sc_tax_deduction_registration_p1_form_business_facts_v1"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 129,
-                "name": "sc_tax_deduction_registration_form_structure_generated_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.tax.deduction.registration",
-              "action_id": 879,
-              "view_id": 1654
-            },
-            "key": "sections",
-            "node": "view_orchestration.views.form.sections",
-            "nodes": [
-              "0",
-              "1",
-              "2",
-              "3",
-              "4"
-            ],
-            "configuration": {
-              "id": 177,
-              "name": "project_special_tax_deduction_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 5,
-                "name": "sc_tax_deduction_registration_p1_form_business_facts_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.tax.deduction.registration",
-              "action_id": 879,
-              "view_id": 1654
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "state",
-              "name",
-              "deduction_flow_label",
-              "deduction_scope",
-              "business_category_id",
-              "source_origin",
-              "project_id",
-              "company_id",
-              "operation_strategy",
-              "partner_id",
-              "partner_name",
-              "document_no",
-              "document_date",
-              "invoice_no",
-              "invoice_code",
-              "invoice_date",
-              "deduction_confirm_date",
-              "tax_rate_text",
-              "invoice_amount_untaxed",
-              "invoice_tax_amount",
-              "invoice_amount_total",
-              "deduction_amount",
-              "deduction_tax_amount",
-              "deduction_surcharge_amount",
-              "currency_id",
-              "deduction_reason",
-              "note",
-              "attachment_ids"
-            ],
-            "configuration": {
-              "id": 177,
-              "name": "project_special_tax_deduction_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 5,
-                "name": "sc_tax_deduction_registration_p1_form_business_facts_v1"
-              }
-            ]
-          }
-        ],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "state",
-          "invoice_no",
-          "invoice_code",
-          "invoice_date",
-          "invoice_amount_untaxed",
-          "invoice_tax_amount",
-          "invoice_amount_total",
-          "deduction_amount",
-          "deduction_tax_amount",
-          "deduction_surcharge_amount",
-          "currency_id",
-          "note",
-          "name",
-          "document_no",
-          "document_date",
-          "deduction_confirm_date",
-          "project_id",
-          "operation_strategy",
-          "partner_id",
-          "partner_name",
-          "deduction_bill_status_display",
-          "deduction_bill_document_no",
-          "tax_deduction_is_transfer_out_display",
-          "deduction_bill_project_name",
-          "creator_name",
-          "deduction_bill_date_display",
-          "deduction_flow_label",
-          "deduction_scope",
-          "business_category_id",
-          "source_origin",
-          "company_id",
-          "tax_rate_text",
-          "deduction_reason",
-          "attachment_ids"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:办理主信息",
-            "key": "",
-            "title": "办理主信息",
-            "fields": [
-              "state",
-              "name",
-              "deduction_flow_label",
-              "deduction_scope",
-              "business_category_id",
-              "source_origin"
-            ]
-          },
-          {
-            "identity": "title:项目与往来单位",
-            "key": "",
-            "title": "项目与往来单位",
-            "fields": [
-              "project_id",
-              "company_id",
-              "operation_strategy",
-              "partner_id",
-              "partner_name"
-            ]
-          },
-          {
-            "identity": "title:发票与认证",
-            "key": "",
-            "title": "发票与认证",
-            "fields": [
-              "document_no",
-              "document_date",
-              "invoice_no",
-              "invoice_code",
-              "invoice_date",
-              "deduction_confirm_date",
-              "tax_rate_text"
-            ]
-          },
-          {
-            "identity": "title:专项抵扣金额",
-            "key": "",
-            "title": "专项抵扣金额",
-            "fields": [
-              "invoice_amount_untaxed",
-              "invoice_tax_amount",
-              "invoice_amount_total",
-              "deduction_amount",
-              "deduction_tax_amount",
-              "deduction_surcharge_amount",
-              "currency_id"
-            ]
-          },
-          {
-            "identity": "title:办理依据",
-            "key": "",
-            "title": "办理依据",
-            "fields": [
-              "deduction_reason",
-              "note",
-              "attachment_ids"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "扣款信息",
-          "扣款实缴信息",
-          "扣款退回信息",
-          "开票详情",
-          "预缴税款详情",
-          "抵扣登记信息",
-          "抵扣详情",
-          "发票信息",
-          "材料信息",
-          "单据识别",
-          "业务对象",
-          "金额与办理",
-          "附件与来源",
-          "办理主信息",
-          "项目与往来单位",
-          "发票与认证",
-          "专项抵扣金额",
-          "办理依据"
-        ],
-        "fieldGroups": {
-          "办理主信息": [
-            "state",
-            "name",
-            "deduction_flow_label",
-            "deduction_scope",
-            "business_category_id",
-            "source_origin"
-          ],
-          "项目与往来单位": [
-            "project_id",
-            "company_id",
-            "operation_strategy",
-            "partner_id",
-            "partner_name"
-          ],
-          "发票与认证": [
-            "document_no",
-            "document_date",
-            "invoice_no",
-            "invoice_code",
-            "invoice_date",
-            "deduction_confirm_date",
-            "tax_rate_text"
-          ],
-          "专项抵扣金额": [
-            "invoice_amount_untaxed",
-            "invoice_tax_amount",
-            "invoice_amount_total",
-            "deduction_amount",
-            "deduction_tax_amount",
-            "deduction_surcharge_amount",
-            "currency_id"
-          ],
-          "办理依据": [
-            "deduction_reason",
-            "note",
-            "attachment_ids"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "办理主信息": 2,
-          "项目与往来单位": 2,
-          "发票与认证": 2,
-          "专项抵扣金额": 2,
-          "办理依据": 2
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
       "menuXmlid": "smart_construction_core.menu_sc_product_tax_filing_v1",
       "label": "税务申报",
       "model": "sc.tax.filing",
@@ -5490,7 +4676,7 @@
     "countCorrection": 4,
     "migrationReduction": 3
   },
-  "localVerifiedCount": 31,
+  "localVerifiedCount": 29,
   "uc1PublishedAudit": {
     "auditedAt": "2026-09-16",
     "auditedReleaseHead": "28b7695dc9f1cebbbe9bd5d715e951c6dec8a4da",
@@ -5663,11 +4849,13 @@
     "name": "U-C4",
     "status": "scope_confirmed_implementation_started",
     "priorityActions": [
-      790,
-      879
+      873,
+      884,
+      858,
+      874
     ],
-    "selectedGroup": "G06",
-    "sourceMainlineHead": "4cda500408ce9feda724700699272ab5e7d2a708",
+    "selectedGroup": "G07",
+    "sourceMainlineHead": "5938d6c620952e9c4c1af9fa6c33dbda14da0374",
     "fullRescan": false,
     "groups": [
       {
@@ -6005,7 +5193,7 @@
         "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
       }
     ],
-    "scopeNote": "Fifth group prepared, implementation not started: tax deduction and project special deduction native form migration (deduction registration 790, project special deduction 879, shared model sc.tax.deduction.registration and its model-level primary form 1654). Read-only probes on 2026-09-18 confirmed the two entry contracts 206/177 and the two model-level layers 143/5 that the group lists in legacyConfigurations, and found no bypass menu pointing at 790/879; 879 has no readable sample, so its record surface stays uncovered. Scope is prepared in the G06 task card (external analysis location); L2/L3/L4 and the count reduction stay pending until the group is implemented and reviewed. No new business rules or permission expansion.",
+    "scopeNote": "Sixth group started from the merged mainline: payroll, social fund and salary payment native form migration (873 salary settlement list, 884 social fund, 858 payroll, 874 salary payment registration; shared model sc.hr.payroll.document and its primary form 1697, plus sc.hr.salary.payment and its form 1700). Three scope statements are resolved before implementation: 858 carries no entry-level release of its own while 873/884/874 do; view 1697 is shared by eight sc.hr.payroll.document actions (660/661/662/663/664/858/873/884) with 663 additionally pinning view 2067; the group lists four legacyConfigurations while the task-card inventory finds eight entry-level configurations plus one model-level layer. Fields repeated under different fact_type conditions belong to different business contexts and are not de-duplicated by field name. Scope is prepared in the G07 task card (external analysis location); implementation, L2/L3/L4 and the count reduction stay pending. No new business rules or permission expansion.",
     "retirementCondition": "Each selected formal action must independently show native authority, no active structural override/dependency and representative browser acceptance before any count reduction.",
     "executionSequence": [
       "continuous_group_implementation_and_targeted_validation",
@@ -6015,7 +5203,7 @@
     "planningRecord": "docs/ops/iterations/uc4_expense_claim_native_lowcode_20260918.md"
   },
   "retirementCondition": "Only after every formal consumer of a compatibility regrouping path is zero and other roles/companies/states are covered, remove that regrouping logic and its test exemptions.",
-  "mainlineRemainingCount": 31,
+  "mainlineRemainingCount": 29,
   "mainlineRemainingLabel": "主线剩余兼容消费者（不代表部署发布或89入口整体交付）",
   "uc3LocalMigrationAudit": {
     "status": "mainline_integrated",
@@ -6380,6 +5568,65 @@
       "config_center_six_packages_pr_485",
       "impact_scoped_validation_pr_486",
       "borrow_archive_shared_action_scopes"
+    ]
+  },
+  "uc4G06PublishedAudit": {
+    "auditedAt": "2026-09-18",
+    "auditedReleaseHead": "5938d6c620952e9c4c1af9fa6c33dbda14da0374",
+    "mergedPr": {
+      "number": 494,
+      "squashHead": "5938d6c620952e9c4c1af9fa6c33dbda14da0374",
+      "sourceHead": "dea896d229c17628d4f770f06da21dfbe28eff6d",
+      "tree": "f709bccacff913fcd26aeac0b245337a4ae046d2"
+    },
+    "iterationRecord": "docs/ops/iterations/uc4_tax_deduction_native_lowcode_20260918.md",
+    "requiredChecks": [
+      "frontend_release_gate=success",
+      "merge_policy_gate=success",
+      "public_guard=success",
+      "professional_quality_gate=success",
+      "release_candidate_gate=success",
+      "python310_runtime_compatibility=success",
+      "professional_authorization=success"
+    ],
+    "reduction": {
+      "before": 31,
+      "after": 29,
+      "retiredActions": [790, 879],
+      "retiredViews": [1654],
+      "countMeaning": "mainline remaining compatibility consumers; deployment and overall user delivery are separate",
+      "retiredViewMeaning": "the view id labels the retired ledger entries; view 1654 is the model primary form and the two retired entry contracts stay active as title-only native_semantic_surface releases, so the view record and its other consumers stay live"
+    },
+    "exitEvidence": {
+      "sourceCheck": "contracts 206 (tax_deduction_registration_productized_form_v1) and 177 (project_special_tax_deduction_form_v1) declare only view_orchestration.views.form.title plus composition_mode=native_semantic_surface; no sections/fields/columns/field_slots/layout remain, so structural_form_declarations() yields nothing and diagnose_structure_ownership() can no longer emit LEGACY_STRUCTURE_KEY_OVERRIDE for these entries",
+      "testCheck": "smart_construction_core TestTaxDeductionNativeLowcode::test_entry_contracts_spend_one_native_structure asserts native_semantic_surface with no sections/fields/columns for both contracts and native_authority, empty configuredSections and layoutPolicy=container_tree_authority for 790/879; the class PASSed 0 failed, 0 error(s) of 25 tests on the identical tree",
+      "scopeCheck": "the ledger counted these entries only for their config-side structure copy; the model-level contracts 143/5 and the primary form 1654 were never counted and are untouched"
+    },
+    "bypassConsumers": {
+      "scopeNote": "Two surfaces render the same model primary form 1654 without being compatibility consumers: the bypass entry action 852 (扣款单) and the derived surface sc.tax.filing.action_open_deductions() (税务申报 → 申报期抵扣来源). Both were brought inside the retired declaration's model-level scope by the G06 R12 correction, and neither is counted as an additional retired consumer.",
+      "actions": [
+        {
+          "actionId": 852,
+          "label": "扣款单",
+          "counted": false,
+          "whyNotCounted": "no menu of its own, pins only the tree view through view_ids and releases no configuration of its own; its records fall back to the same model primary form 1654 and stay served by the model-level contracts, so retiring the two entry-level structure copies retires no consumer here",
+          "authorityEvidence": "G06 iteration record §1 (旁路入口) and TestTaxDeductionNativeLowcode::test_model_wide_configurations_keep_serving_the_bypass_entry"
+        },
+        {
+          "actionId": "sc.tax.filing.action_open_deductions",
+          "label": "申报期抵扣来源",
+          "counted": false,
+          "whyNotCounted": "an action-less derived surface (no id/view_mode/context scope) resolving to the same primary form 1654 under authority entry_semantic_surface; it consumes the model-level contracts, not a retired entry structure copy",
+          "authorityEvidence": "TestTaxDeductionNativeLowcode::test_a_derived_surface_without_an_action_scope_keeps_the_declared_facts (resolvedActionId=0, resolvedViewId=1654, authority=entry_semantic_surface, retired body not applied, five preserved facts)"
+        }
+      ]
+    },
+    "notDeducted": [
+      "bypass_action_852_same_primary_form",
+      "derived_surface_action_open_deductions",
+      "shared_primary_form_1654_other_consumers",
+      "model_level_contracts_143_5_still_serving_the_model",
+      "879_record_surface_uncovered_empty_action_domain"
     ]
   }
 }
