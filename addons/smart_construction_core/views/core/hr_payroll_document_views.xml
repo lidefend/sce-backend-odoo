@@ -92,7 +92,7 @@
           </header>
           <sheet>
             <group>
-              <group string="申请信息">
+              <group name="payroll_application_info" data-sc-anchor="payroll_application_info" string="申请信息">
                 <field name="document_no"/>
                 <field name="name"/>
                 <field name="fact_type"/>
@@ -101,7 +101,7 @@
                 <field name="requester_id"/>
                 <field name="department_id"/>
               </group>
-              <group string="人员">
+              <group name="payroll_personnel" data-sc-anchor="payroll_personnel" string="人员">
                 <field name="employee_user_id"/>
                 <field name="employee_name"/>
                 <field name="employee_status"/>
@@ -111,7 +111,7 @@
               </group>
             </group>
             <group>
-              <group string="社保" invisible="fact_type not in ['social_person_registration', 'social_registration']">
+              <group name="payroll_social_security" data-sc-anchor="payroll_social_security" string="社保" invisible="fact_type not in ['social_person_registration', 'social_registration']">
                 <field name="period_year" required="fact_type in ['social_person_registration', 'social_registration']"/>
                 <field name="period_month" required="fact_type in ['social_person_registration', 'social_registration']"/>
                 <field name="payer_unit" required="fact_type in ['social_person_registration', 'social_registration']"/>
@@ -121,7 +121,7 @@
                 <field name="individual_amount" required="fact_type == 'social_registration'"/>
                 <field name="certificate_fee"/>
               </group>
-              <group string="工资" invisible="fact_type != 'salary_registration'">
+              <group name="payroll_salary" data-sc-anchor="payroll_salary" string="工资" invisible="fact_type != 'salary_registration'">
                 <field name="period_year" required="fact_type == 'salary_registration'"/>
                 <field name="period_month" required="fact_type == 'salary_registration'"/>
                 <field name="payout_unit"/>
@@ -134,12 +134,15 @@
                 <field name="paid_amount" readonly="1"/>
                 <field name="unpaid_amount" readonly="1"/>
               </group>
-              <group string="公积金" invisible="fact_type != 'provident_fund_registration'">
+              <group name="payroll_provident_fund" data-sc-anchor="payroll_provident_fund" string="公积金" invisible="fact_type != 'provident_fund_registration'">
                 <field name="period_year"/>
                 <field name="period_month"/>
                 <field name="payer_unit"/>
-                <field name="employee_user_id"/>
-                <field name="employee_name"/>
+                <!-- The person of this record is presented once, by the 人员 group
+                     above, which is visible for every `fact_type` including this
+                     one.  Repeating the name here would show the same fact twice
+                     in the same body for a 公积金 record; the retired entry body
+                     presented it once, in the person/period section. -->
                 <field name="provident_fund_account"/>
                 <field name="provident_fund_base"/>
                 <field name="company_contribution_rate"/>
@@ -147,7 +150,7 @@
                 <field name="company_amount"/>
                 <field name="individual_amount"/>
               </group>
-              <group string="补助/奖金" invisible="fact_type not in ['subsidy', 'bonus']">
+              <group name="payroll_subsidy_bonus" data-sc-anchor="payroll_subsidy_bonus" string="补助/奖金" invisible="fact_type not in ['subsidy', 'bonus']">
                 <field name="payout_unit"/>
                 <field name="people_count"/>
                 <field name="item_type" required="fact_type in ['subsidy', 'bonus']"/>
@@ -156,14 +159,28 @@
               </group>
             </group>
             <group>
-              <group string="办理">
+              <group name="payroll_handling" data-sc-anchor="payroll_handling" string="办理">
                 <field name="handler_id"/>
                 <field name="due_date"/>
                 <field name="active"/>
               </group>
-              <group string="历史来源">
+              <!-- 历史来源 is the one place the migrated predecessor facts live; a
+                   record that was not migrated has none of them, so the section is
+                   present only when there is something to read and never renders as
+                   an empty titled group. -->
+              <group name="payroll_source_trace" data-sc-anchor="payroll_source_trace" string="历史来源"
+                     invisible="not legacy_document_no">
+                <field name="legacy_document_no" readonly="1"/>
+                <field name="legacy_document_state" readonly="1"/>
+                <field name="legacy_source_table" readonly="1"/>
+                <field name="legacy_source_id" readonly="1"/>
               </group>
             </group>
+            <!-- The currency companion of this document's Monetary facts.  The money
+                 control already renders the amount with its currency, so the companion
+                 is carried as a declared, non-presented field instead of a second row
+                 that repeats the same fact (view 1700 declares it the same way). -->
+            <field name="currency_id" invisible="1" readonly="1"/>
             <notebook>
               <page string="说明">
                 <field name="description"/>
@@ -302,14 +319,14 @@
           </header>
           <sheet>
             <group>
-              <group>
+              <group name="salary_payment_identity" data-sc-anchor="salary_payment_identity" string="发放标识">
                 <field name="name" readonly="1"/>
                 <field name="payroll_document_id"/>
                 <field name="project_id" readonly="1"/>
                 <field name="employee_user_id" readonly="1"/>
                 <field name="employee_name" readonly="1"/>
               </group>
-              <group>
+              <group name="salary_payment_amount" data-sc-anchor="salary_payment_amount" string="发放金额">
                 <field name="period_year" readonly="1"/>
                 <field name="period_month" readonly="1"/>
                 <field name="payable_amount" readonly="1"/>
@@ -318,6 +335,8 @@
                 <field name="currency_id" invisible="1"/>
                 <field name="payment_method"/>
                 <field name="payment_reference"/>
+              </group>
+              <group name="salary_payment_handling" data-sc-anchor="salary_payment_handling" string="经办与依据">
                 <field name="responsible_id"/>
               </group>
             </group>
