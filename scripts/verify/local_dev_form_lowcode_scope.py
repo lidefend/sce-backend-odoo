@@ -106,6 +106,25 @@ TOPIC_IDENTITIES = {
         ("action_sc_tax_deduction_registration_user", "view_sc_tax_deduction_registration_form", "menu_sc_tax_deduction_registration_user"),
         ("action_sc_product_project_tax_deduction_v1", "view_sc_tax_deduction_registration_form", "menu_sc_product_project_tax_deduction_v1"),
     ),
+    # U-C4 G07: the 人事薪酬 group shares model sc.hr.payroll.document and the
+    # native primary form view_sc_hr_payroll_document_form; 874 consumes
+    # sc.hr.salary.payment and view_sc_hr_salary_payment_form.  Entry 858
+    # (工资薪酬 / menu 673) carried no release of its own and used to fall back
+    # to the model-wide sparse annotation while its siblings consumed the
+    # business task surface; 660/661/662/663/664 are the archived entries that
+    # reach the same shared body through their own menus.  Registered read-only
+    # so the representative pass observes every entry consuming one shared body.
+    "payroll": (
+        ("action_sc_payroll_management", "view_sc_hr_payroll_document_form", "menu_sc_payroll_management"),
+        ("action_sc_product_project_payroll_v1", "view_sc_hr_payroll_document_form", "menu_sc_product_project_payroll_v1"),
+        ("action_sc_product_social_fund_v1", "view_sc_hr_payroll_document_form", "menu_sc_product_social_fund_v1"),
+        ("action_sc_salary_registration", "view_sc_hr_payroll_document_form", "menu_sc_salary_registration"),
+        ("action_sc_social_person_registration", "view_sc_hr_payroll_document_form", "menu_sc_social_person_registration"),
+        ("action_sc_social_registration", "view_sc_hr_payroll_document_form", "menu_sc_social_registration"),
+        ("action_sc_subsidy", "view_sc_hr_payroll_document_form", "menu_sc_subsidy"),
+        ("action_sc_bonus", "view_sc_hr_payroll_document_form", "menu_sc_bonus"),
+        ("action_sc_product_project_salary_payment_v1", "view_sc_hr_salary_payment_form", "menu_sc_product_project_salary_payment_v1"),
+    ),
 }
 TOPIC_SAMPLE_FIELDS = {
     "invoice": ["direction", "source_kind", "source_origin", "note"],
@@ -117,6 +136,7 @@ TOPIC_SAMPLE_FIELDS = {
     "payment_execution": ["state", "source_kind", "payment_family"],
     "expense_claim": ["state", "source_origin", "claim_type", "claim_flow_label"],
     "tax_deduction": ["state", "deduction_scope", "deduction_flow_label", "source_origin"],
+    "payroll": ["state", "fact_type", "period_year", "period_month", "legacy_document_no"],
 }
 # Mechanism assertions for the read-only representative pass.  Names are the
 # registered display copies / canonical sources of the same business fact; the
@@ -218,6 +238,17 @@ TOPIC_REPRESENTATIVE = {
         # to expose a control the user can actually fill.
         "required_fillable": True,
     },
+    # U-C4 G07: the payroll/social-fund/shared-payment rebuild gives one shared
+    # native body `data-sc-anchor` identities for the fact_type groups (社保 /
+    # 工资 / 公积金 / 补助奖金), the personnel and handling facts, the
+    # conditionally declared provenance section and the payment form's three
+    # sections.  The same read-only battery is the mechanism assertion: every
+    # 章节入口 must resolve and reveal its target, and the command bar /
+    # navigation / body bands must stay separated at 1088 and 390.
+    # `record_surface` replays the battery on the governed sample so the
+    # conditional 历史来源 section is observed as legal hiding instead of a lost
+    # fact.  Read-only; no change set is touched.
+    "payroll": {"section_navigation": True, "record_surface": True},
 }
 if topic not in TOPIC_IDENTITIES:
     raise RuntimeError("unregistered formal form topic")

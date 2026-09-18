@@ -11,11 +11,21 @@ import {
 } from './designer_draft_ownership.mjs';
 import { resolvePopupReadiness } from './designer_popup_readiness.mjs';
 
-export async function runDesignerJourney({ page, entry, baseline, outsideBaseline, outside, contract, effective, out, report, pending, cs, drafts, draftPolicy, documentTopic = false, invoiceTopic = false }) {
-  const fieldName = documentTopic ? 'issue_authority' : invoiceTopic ? 'invoice_no' : 'keeper_id';
-  const hiddenName = documentTopic ? 'result_note' : invoiceTopic ? 'invoice_flow_label' : 'line_note_summary';
-  const configuredLabel = documentTopic ? '配置发证单位' : invoiceTopic ? '受管发票号码' : '设计器保管员';
-  const groupLabel = documentTopic ? '配置发证信息' : invoiceTopic ? '受管开票信息' : '设计器保管信息';
+export async function runDesignerJourney({ page, entry, baseline, outsideBaseline, outside, contract, effective, out, report, pending, cs, drafts, draftPolicy, documentTopic = false, invoiceTopic = false, payrollTopic = false }) {
+  // Each registered topic names the real fields of the surface it designs, so the
+  // journey authors patches against facts that exist on that entry instead of a
+  // shared guess.  A topic without an identity here has no designer evidence.
+  const identities = payrollTopic
+    ? { field: 'requester_id', hidden: 'contact_phone', label: '受管申请人', group: '受管申请信息' }
+    : documentTopic
+      ? { field: 'issue_authority', hidden: 'result_note', label: '配置发证单位', group: '配置发证信息' }
+      : invoiceTopic
+        ? { field: 'invoice_no', hidden: 'invoice_flow_label', label: '受管发票号码', group: '受管开票信息' }
+        : { field: 'keeper_id', hidden: 'line_note_summary', label: '设计器保管员', group: '设计器保管信息' };
+  const fieldName = identities.field;
+  const hiddenName = identities.hidden;
+  const configuredLabel = identities.label;
+  const groupLabel = identities.group;
   const walk = function* (nodes) { for (const node of nodes || []) { yield node; yield* walk(node.children); } };
   const nodes = [...walk(baseline.layoutContract.containerTree)];
   const keeper = nodes.find((node) => node.type === 'field' && node.name === fieldName);
@@ -139,10 +149,76 @@ export async function runDesignerJourney({ page, entry, baseline, outsideBaselin
   assert.equal(previewResult.ok, true, JSON.stringify(previewResult.error));
   await panel.locator('[data-bound-preview-link]').waitFor();
   await page.screenshot({ path: path.join(out, 'designer-draft.png'), fullPage: true });
+  // Both popups this journey opens (the designer preview and the published business
+  // page) are instrumented from creation, so a break is attributable to the page that
+  // broke. A preview popup whose module graph never loads is a transport fact, not an
+  // absent label, and the two must not collapse into one locator timeout.
+  const emptyPopupSignal = () => ({ pageerrors: [], console: [], failed_requests: [], api: [], abandoned: [], inflight: new Map() });
+  const popupSignals = new Map();
+  const instrumentPopup = (popup) => {
+    // A page stuck on its loading state is not the same fact as a page whose request
+    // failed: a hung request never reaches `requestfailed`, so failure-only capture
+    // cannot tell "transport hang" from "app never asked". Track the intent lifecycle
+    // so the break can be read from started/answered/pending instead of guessed.
+    const signal = emptyPopupSignal();
+    popupSignals.set(popup, signal);
+    popup.on('request', (request) => {
+      const path = new URL(request.url()).pathname.replace(/\/$/, '');
+      if (!path.endsWith('/api/v1/intent')) return;
+      let intent = null;
+      try { intent = request.postDataJSON()?.intent || null; } catch {}
+      signal.inflight.set(request, { intent, method: request.method(), path, started_at: Date.now() });
+    });
+    popup.on('response', (response) => {
+      const record = signal.inflight.get(response.request());
+      if (!record) return;
+      signal.inflight.delete(response.request());
+      if (signal.api.length < 40) signal.api.push({ ...record, state: 'answered', status: response.status(), elapsed_ms: Date.now() - record.started_at });
+    });
+    popup.on('pageerror', (error) => signal.pageerrors.push(String(error.message).slice(0, 300)));
+    popup.on('console', (message) => {
+      if (message.type() === 'error' && signal.console.length < 20) signal.console.push(String(message.text()).slice(0, 300));
+    });
+    popup.on('requestfailed', (request) => {
+      if (signal.failed_requests.length < 20) signal.failed_requests.push({ path: new URL(request.url()).pathname, error: request.failure()?.errorText });
+      const record = signal.inflight.get(request);
+      if (record) {
+        signal.inflight.delete(request);
+        if (signal.api.length < 40) signal.api.push({ ...record, state: 'failed', error: request.failure()?.errorText, elapsed_ms: Date.now() - record.started_at });
+      }
+    });
+  };
+  const signalSnapshot = (signal) => ({ pageerrors: signal.pageerrors, console: signal.console,
+    failed_requests: signal.failed_requests, api: signal.api, api_abandoned: signal.abandoned,
+    api_pending: [...signal.inflight.values()].map((record) => ({ ...record, elapsed_ms: Date.now() - record.started_at })) });
+  const readPopupStateOf = (popup) => popup.evaluate(() => {
+    const app = document.querySelector('#app');
+    return { ready_state: document.readyState, app_mounted: Boolean(app && app.children.length > 0),
+      app_shell_children: app ? app.children.length : 0, field_nodes: document.querySelectorAll('[data-field-name]').length,
+      loading_title: /加载中/.test(document.title) };
+  }).catch(() => null);
+  const previewContext = page.context();
+  previewContext.on('page', instrumentPopup);
   const previewPromise = page.waitForEvent('popup');
   await panel.locator('[data-bound-preview-link]').click();
   const preview = await previewPromise;
-  await preview.getByText(configuredLabel, { exact: true }).first().waitFor({ state: 'visible' });
+  previewContext.off('page', instrumentPopup);
+  const previewState = await readPopupStateOf(preview);
+  const previewEvidence = async () => ({ url: preview.url(), path: new URL(preview.url()).pathname,
+    ready_state: (await readPopupStateOf(preview))?.ready_state || null,
+    app_mounted: Boolean(previewState?.app_mounted), field_nodes: previewState?.field_nodes ?? 0,
+    loading_title: Boolean(previewState?.loading_title), page_title: await preview.title().catch(() => null),
+    signals: signalSnapshot(popupSignals.get(preview) || emptyPopupSignal()) });
+  report.designer_preview_popup = await previewEvidence();
+  try {
+    await preview.getByText(configuredLabel, { exact: true }).first().waitFor({ state: 'visible' });
+  } catch (error) {
+    report.designer_preview_popup.at_assertion_failure = await previewEvidence();
+    const dom = await preview.content().catch(() => '');
+    await fs.writeFile(path.join(out, 'failure-preview-popup-dom.html'), dom).catch(() => {});
+    await preview.screenshot({ path: path.join(out, 'failure-preview-popup.png'), fullPage: true }).catch(() => {});
+    throw error;
+  }
   await preview.getByText(configuredLabel, { exact: true }).first().scrollIntoViewIfNeeded();
   await preview.screenshot({ path: path.join(out, 'designer-preview.png'), fullPage: true });
   const previewUrl = new URL(preview.url());
@@ -189,6 +265,34 @@ export async function runDesignerJourney({ page, entry, baseline, outsideBaselin
       `untouched tax group lost its shared-column flow: ${JSON.stringify([...rows.values()])}`);
     report.visual_order = { status: 'passed', invoice_no_y: noBox.y, invoice_code_y: codeBox.y, invoice_type_y: typeBox.y,
       untouched_columns: 'shared', untouched_rows: [...rows.values()], authored_group_order: (patches.find((patch) => patch.group) || {}).order };
+  } else if (payrollTopic) {
+    // The payroll create surface lays its application facts out two per row.  The
+    // configured field is renamed and moved into its own managed group; where that
+    // group lands depends on this run's authored order, so the durable facts are
+    // asserted instead of a fixed position: the renamed field renders in its managed
+    // group, the untouched fields keep their native relative order, and at least one
+    // untouched row keeps its shared-column flow.
+    const peers = ['document_no', 'name', 'fact_type', 'business_date', 'project_id', 'department_id'];
+    const configuredBox = await preview.locator(`[data-field-name="${fieldName}"]`).filter({ visible: true }).first().boundingBox();
+    assert(configuredBox, 'configured payroll field did not render in its managed group');
+    const boxes = new Map();
+    for (const peer of peers) {
+      const box = await preview.locator(`[data-field-name="${peer}"]`).filter({ visible: true }).first().boundingBox();
+      if (box) boxes.set(peer, box);
+    }
+    const order = peers.filter((name) => boxes.has(name));
+    for (let index = 1; index < order.length; index += 1) {
+      const previous = boxes.get(order[index - 1]);
+      const current = boxes.get(order[index]);
+      assert((Math.abs(previous.y - current.y) < 2 ? previous.x < current.x : previous.y < current.y),
+        `untouched payroll fields lost their native order: ${order[index - 1]} -> ${order[index]}`);
+    }
+    const untouchedRows = new Map();
+    for (const [name, box] of boxes) untouchedRows.set(Math.round(box.y), [...(untouchedRows.get(Math.round(box.y)) || []), name]);
+    const shared = [...untouchedRows.values()].filter((names) => names.length >= 2);
+    assert(order.length >= 4 && shared.length >= 1,
+      `untouched payroll fields lost their shared-column flow: ${JSON.stringify([...untouchedRows.values()])}`);
+    report.visual_order = { status: 'passed', configured_y: configuredBox.y, untouched: order, untouched_rows: [...untouchedRows.values()] };
   } else {
   const configuredField = await preview.locator('[data-field-name="keeper_id"]').filter({ visible: true }).first().boundingBox();
   const followingField = await preview.locator('[data-field-name="dest_location_id"]').filter({ visible: true }).first().boundingBox();
@@ -216,50 +320,13 @@ export async function runDesignerJourney({ page, entry, baseline, outsideBaselin
   // Instrument this page from creation and prove the app shell mounted *before* the
   // label assertion, so a break is attributed from the popup's own URL/DOM/signals
   // instead of being inferred from the opener. The label assertion stays strict.
-  const popupSignals = new Map();
-  const instrumentPopup = (popup) => {
-    // A page stuck on its loading state is not the same fact as a page whose request
-    // failed: a hung request never reaches `requestfailed`, so failure-only capture
-    // cannot tell "transport hang" from "app never asked". Track the intent lifecycle
-    // so the break can be read from started/answered/pending instead of guessed.
-    const signal = { pageerrors: [], console: [], failed_requests: [], api: [], abandoned: [], inflight: new Map() };
-    popupSignals.set(popup, signal);
-    popup.on('request', (request) => {
-      const path = new URL(request.url()).pathname.replace(/\/$/, '');
-      if (!path.endsWith('/api/v1/intent')) return;
-      let intent = null;
-      try { intent = request.postDataJSON()?.intent || null; } catch {}
-      signal.inflight.set(request, { intent, method: request.method(), path, started_at: Date.now() });
-    });
-    popup.on('response', (response) => {
-      const record = signal.inflight.get(response.request());
-      if (!record) return;
-      signal.inflight.delete(response.request());
-      if (signal.api.length < 40) signal.api.push({ ...record, state: 'answered', status: response.status(), elapsed_ms: Date.now() - record.started_at });
-    });
-    popup.on('pageerror', (error) => signal.pageerrors.push(String(error.message).slice(0, 300)));
-    popup.on('console', (message) => {
-      if (message.type() === 'error' && signal.console.length < 20) signal.console.push(String(message.text()).slice(0, 300));
-    });
-    popup.on('requestfailed', (request) => {
-      if (signal.failed_requests.length < 20) signal.failed_requests.push({ path: new URL(request.url()).pathname, error: request.failure()?.errorText });
-      const record = signal.inflight.get(request);
-      if (record) {
-        signal.inflight.delete(request);
-        if (signal.api.length < 40) signal.api.push({ ...record, state: 'failed', error: request.failure()?.errorText, elapsed_ms: Date.now() - record.started_at });
-      }
-    });
-  };
-  const signalSnapshot = (signal) => ({ pageerrors: signal.pageerrors, console: signal.console,
-    failed_requests: signal.failed_requests, api: signal.api, api_abandoned: signal.abandoned,
-    api_pending: [...signal.inflight.values()].map((record) => ({ ...record, elapsed_ms: Date.now() - record.started_at })) });
   const popupContext = page.context();
   popupContext.on('page', instrumentPopup);
   const businessPromise = page.waitForEvent('popup');
   await panel.getByRole('link', { name: '打开业务页面', exact: true }).click();
   const business = await businessPromise;
   popupContext.off('page', instrumentPopup);
-  const businessSignals = popupSignals.get(business) || { pageerrors: [], console: [], failed_requests: [], api: [], abandoned: [], inflight: new Map() };
+  const businessSignals = popupSignals.get(business) || emptyPopupSignal();
   const readPopupState = () => business.evaluate(() => {
     const app = document.querySelector('#app');
     return { ready_state: document.readyState, app_mounted: Boolean(app && app.children.length > 0),
@@ -352,6 +419,39 @@ export async function runDesignerJourney({ page, entry, baseline, outsideBaselin
       'attachments must not be presented twice in the form body');
     await business.locator('[data-field-name="attachment_ids"]').first().waitFor();
     await business.locator('[data-form-section-navigation]').getByRole('button', { name: '受管开票信息', exact: true }).click();
+  } else if (payrollTopic) {
+    // The payroll create surface is the shared document form: its sections are the
+    // anchored groups and its navigation is the page's own section list, not a
+    // notebook.  Two durable facts are asserted instead of a fixed layout: a field
+    // this run hid must not present on the business page at all, and the navigation
+    // must address the section that actually carries the renamed field, so the body
+    // and the navigation cannot disagree.
+    assert.equal(await business.locator('[data-field-name="contact_phone"]').filter({ visible: true }).count(), 0,
+      'field hidden by configuration must not render on the business page');
+    const nav = business.locator('[data-form-section-navigation]');
+    const managedNav = nav.getByRole('button', { name: groupLabel, exact: true });
+    const targetSelector = await managedNav.getAttribute('data-section-target');
+    assert(targetSelector, 'configured section is not reachable from the page navigation');
+    await managedNav.click();
+    await business.getByText(configuredLabel, { exact: true }).first().waitFor({ state: 'visible' });
+    // Bounded settle probe rather than a longer timeout: the navigation may still be
+    // scrolling, and a section that never enters the viewport must not read as success.
+    const viewportHeight = business.viewportSize()?.height || 0;
+    let sectionBox = null;
+    const inViewport = (box) => Boolean(box) && box.y < viewportHeight && box.y + box.height > 0;
+    for (let attempt = 0; attempt < 25; attempt += 1) {
+      sectionBox = await business.locator(targetSelector).first().boundingBox();
+      if (inViewport(sectionBox)) break;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    assert(inViewport(sectionBox),
+      `navigation did not bring the configured section into the viewport: ${JSON.stringify(sectionBox)}`);
+    assert(await business.locator(targetSelector).first().locator(`[data-field-name="${fieldName}"]`).count() > 0,
+      'renamed field is not inside the section the navigation addresses');
+    await nav.getByRole('button', { name: '申请信息', exact: true }).click();
+    await business.getByText(configuredLabel, { exact: true }).first().waitFor({ state: 'visible' });
+    report.payroll_business_surface = { navigation_target: targetSelector, configured_section_y: sectionBox.y,
+      hidden_field_present: false, renamed_field_section: 'matched_navigation_target' };
   } else {
   await business.locator('[data-section-tab="说明与附件"]').last().click();
   assert.equal(await business.getByText('备注', { exact: true }).count(), 0);
@@ -412,6 +512,10 @@ export async function runDesignerJourney({ page, entry, baseline, outsideBaselin
   // instead of a section title.
   if (invoiceTopic) {
     await page.locator('[data-field-name="note"]').filter({ visible: true }).first().waitFor();
+  } else if (payrollTopic) {
+    // The outside entry shares the same native view, so the isolation fact is that its
+    // own page still renders the *native* label of the very field this run renamed.
+    await page.getByText(keeper.label || keeper.name, { exact: true }).filter({ visible: true }).first().waitFor();
   } else {
     await page.getByText(documentTopic ? '制度名称' : '出库日期', { exact: true }).filter({ visible: true }).first().waitFor();
   }

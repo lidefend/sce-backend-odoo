@@ -10,6 +10,7 @@ export async function runFormalFormLoop() {
   const [entry, outside] = scope.entries;
   const documentTopic = scope.topic === 'document';
   const invoiceTopic = scope.topic === 'invoice';
+  const payrollTopic = scope.topic === 'payroll';
   if (['material', 'document', 'invoice'].includes(scope.topic)) {
     assert.equal(entry.action_id, documentTopic ? 666 : invoiceTopic ? 785 : 546);
     assert.equal(outside.action_id, documentTopic ? 862 : invoiceTopic ? 787 : 547);
@@ -29,7 +30,7 @@ export async function runFormalFormLoop() {
   const observeOnly = process.env.FORM_LOWCODE_PREVIEW_OBSERVE === '1';
   const closureOnly = process.env.FORM_LOWCODE_PREVIEW_CLOSURE === '1' || observeOnly;
   const emptySectionOnly = documentTopic && process.env.FORM_LOWCODE_DOCUMENT_EMPTY === '1';
-  const designerOnly = process.env.FORM_LOWCODE_DESIGNER === '1' || documentTopic || invoiceTopic;
+  const designerOnly = process.env.FORM_LOWCODE_DESIGNER === '1' || documentTopic || invoiceTopic || payrollTopic;
   const replayOnly = process.env.FORM_LOWCODE_REPLAY === '1';
   const representativeOnly = process.env.FORM_LOWCODE_REPRESENTATIVE === '1';
   const browser = await chromium.launch({ headless: true });
@@ -370,7 +371,7 @@ export async function runFormalFormLoop() {
           throw new Error(draftPolicy.reason);
         }
         const { runDesignerJourney } = await import('./formal_form_designer_journey.mjs');
-        await runDesignerJourney({ page, entry, baseline, outsideBaseline: otherBaseline, outside, contract, effective, out, report, pending, cs, drafts, draftPolicy, documentTopic, invoiceTopic });
+        await runDesignerJourney({ page, entry, baseline, outsideBaseline: otherBaseline, outside, contract, effective, out, report, pending, cs, drafts, draftPolicy, documentTopic, invoiceTopic, payrollTopic });
       }
     } else {
     const nodes = [...walk(tree(baseline))];
