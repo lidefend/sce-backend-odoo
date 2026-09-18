@@ -1133,3 +1133,495 @@ G05 残留缺口（793 及 6 个无声明入口的 `state` 可写、`sc.expense.
 业务指纹护栏基于 0 行可读业务数据、compatibility 平面 create 档可把 primary zone 修剪空且无 fail-closed、
 `expense_claim_views.xml` 包装 `<group>` 缩进错位、G04 遗留 808／811 的 `company_contractor_*`）
 继续登记在批次记录 §11.4／§13 与 `uc4G05PublishedAudit.residualGaps`，本批不扩。
+
+## 8.25 G06 代表面实施：税额与专项抵扣原生结构迁移（独立记录）
+
+按 `nextBatch.selectedGroup` 推进到 **G06 税额与专项抵扣**（`action 790` 抵扣登记／menu 538、`action 879` 项目专项抵扣／menu 701，
+同模型 `sc.tax.deduction.registration`、同原生 primary form `view 1654`）。分支
+`feature/uc4-tax-deduction-native-v1`，基于 `origin/main`=`daf9a97875a15343671c00e46fd9c4e639ebeca2`；
+唯一写入者为本会话执行体，其它工作树未触碰。完整记录见
+`docs/ops/iterations/uc4_tax_deduction_native_lowcode_20260918.md`。
+
+**实际改动 6 个代码／工具路径 + 3 个记录路径（共 9 个路径）**：原生 arch 加 8 个 `data-sc-anchor` 业务章节（其中 2 个归属条件页 `责任余额`／`迁移来源`）、
+按退役配置反推的缺失字段全部补回（含 `迁移来源` 页的 6 个来源追溯事实）、把两个退役入口声明过的只读限制写回 arch
+（`state`／`source_origin`／`currency_id` 收紧，`business_category_id` 改为按 `deduction_scope` 条件只读，
+使共享表单同时满足 879 只读与 790 可编辑），并**删除原生 arch 自身的重复呈现**：`withholding_amount`
+原本在同一表单的 `抵扣金额与税额` 与 `扣款办理` 两个章节各出现一次，本批收敛为一次（登记于批次记录 §10）；
+206（790）与 177（879）的 `contract_json` 退役为 `native_semantic_surface`（只保留标题；879 保留其
+`deduction_scope_authority` 等语义上下文键）；新增 7 测并注册；在既有受管 runner 内登记只读代表 topic
+`tax_deduction`（复用同一环境与身份校验，未新建 fixture 或环境）。
+
+模型级配置 143／5／129 与旁路入口 852（扣款单：无自有菜单、只固定 tree、无自有发布）**未改动**，只读核对为
+`LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW` + `compatibilityDependencies=["legacy_configuration_structure_suppression"]`，
+即模型级结构在原生权威入口上被抑制、在旁路入口上仍生效。
+
+**分层验证**：L1 `make ci.local.iteration` PASS（16 tests，6 路径）；
+L2 `TestTaxDeductionNativeLowcode` **`0 failed, 0 error(s) of 7 tests`**（复核 nit 闭合后重跑）；
+相邻 `TestProjectSpecialTaxDeduction` **`0 failed, 0 error(s) of 2 tests`**（实跑取回执，不再沿用旧回执）；
+L3 `local.dev.upgrade` PASS（78 modules loaded ＋ `local.dev.ready` ＋ `local.dev.demo.authority` PASS）；
+L4 只读代表面 `FORM_LOWCODE_TOPIC=tax_deduction FORM_LOWCODE_REPRESENTATIVE=1` **PASS**
+（790 create 30 字段／790 record 26 字段／879 create 30 字段，各 7 章节且导航 7/7 resolved+visible，
+findings 全空，吸顶操作行 `175–205` 与导航 `218–257` 分离 13px；`restored=true`、`browser_errors=[]`、
+`recovery_state.released=true`、草稿未创建未被清理）。
+
+两处已归因、不重跑：① `TestUserFeedbackBusinessViews` 在 `sc_dev_demo` 的 28/72 失败在基线态（`git checkout`
+回 `daf9a978` 后重新 upgrade）复现出**完全相同**的失败集合，判定预先存在、与本批无关；
+② 790 只读路由导航不含「扣款办理」，经只读探针确认该分组两字段在受管样本上取值为空（`deduction_unit_name=False`、
+`deduction_reason=False`），属 P1「字段合法隐藏」而非修剪误删。
+
+**未覆盖（如实登记，不伪装成覆盖）**：879 的 `record_surface` 在受管身份下 `domain_rows=0`、
+`business_row_count=1`，`state=empty_action_domain`，故该入口的只读记录态重放无从进行。
+
+**登记未改**：`smart_core/app_config_engine/services/view_Parser/base.py:102` 以 `not xml_content` 判断入参，
+而该函数同时接受 lxml Element（其他两个调用点都以 Element 传入）；当前不可观测（真实 form arch 必有子节点），
+仅对无子节点元素会静默返回 `{}` 并抛 `FutureWarning`，属潜在健壮性缺口，需 P0 单独决定，本批不扩。
+同理登记未改：`scripts/verify/view_orchestration_product_boundary_guard.py` 的 `ALLOWED_COMPOSITION_MODES`
+不含 `native_semantic_surface`、且只在 form 带 `fields` 时才校验模式，缺一条「`native_semantic_surface`
+必须无 `sections/fields/columns`」的正向校验；该守卫实跑 `FAIL`，5 条错误全部指向本批未改的契约
+（`tender_bid`／`payment_request`／`policy_document`），守卫与其输入均不在本批 9 个路径内 → 预先存在、非本批引入，
+且该守卫未纳入 `ci.local.quick.run`／`pr.push`，不影响本候选 Quick。是否补校验属 P0/P4 单独决定。
+
+**独立复核（只读、绑定冻结候选身份 `5b104106`）**：结论 **APPROVE**，无 blocker／major。复核者独立复现了
+候选 `5b104106`（tree `5fb43ba0…`）的 `HEAD`／`HEAD^{tree}`／branch／clean 工作树、完整指纹 digest
+（`f54cf06e…`，7511 路径）与 exact-head Quick 回执身份（该 digest 绑定**已被取代**的候选 `5b104106` 的
+干净工作树，故在当前冻结候选上**不可复现** —— 指纹按定义绑定某一具体树状态，属预期而非缺陷）；
+并逐条核对：两入口退役为 `native_semantic_surface` 且 879 的 5 个保留键位于 `context`（非第二份结构）、
+模型级 143/5/129 与旁路 852 未被改动且仍可用、`state`／`source_origin`／`currency_id`／`withholding_amount`
+在 1654 arch 中各出现**恰好 1 次**且去重保留在 `抵扣金额与税额`、条件只读经运行时实测
+「790 可编辑／879 只读」、测试无硬编码库内 id 且为行为断言、`addons/smart_core/**` 与台账（保持 31）均未被改、
+grep 无 ACL／groups／ir.rule／domain 改动。提出的 3 项 minor 与 5 项 nit 已在本提交闭合：
+① 记录路径数字口径（6→「6 代码/工具 + 3 记录 = 9」）；② 相邻用例改为实跑取回执（`0 failed of 2 tests`）；
+③ 登记上述共享守卫的既有失败。另把「790 可编辑事实」的断言由**表达式形状**升级为**解析后策略行为**
+（`readonly=false` / `auth=edit`），并登记只读呈现层 `NATIVE_MODIFIER_UNRESOLVED` 的保守呈现事实。
+
+该复核修正落在 `4402b4aa91192852010f246a66cc339b68e85c91`（tree `781f81f18b88f50037f3cec03ff437d9256f36e5`，
+仅 1 个 P4 新增测试文件 + 2 份记录，**不改产品运行路径**）。G06 的冻结身份在这之后的最后一次记录提交上重走一次
+冻结链（完整指纹 ＋ exact-head Quick ＋ 复核绑定同一指纹）；冻结候选身份的取值只写入外部归档
+（`identity.json`／`worktree-fingerprint.json`／`review.json`），不写入记录文件（写入会改变候选自身
+commit hash）——理由与逐阶段身份表见 `uc4_tax_deduction_native_lowcode_20260918.md` §11。
+
+**冻结候选复核（本批最后一轮，只读）**：在候选 `08cf7151`（tree `9f57d4c5…`，干净工作树）上独立复核，
+结论 **APPROVE**（0 blocker／0 major／4 minor／3 nit，**全部为记录口径**）。复核者独立复现了身份三件套
+（`HEAD`／`HEAD^{tree}`／branch／空 `git status --porcelain`、重算指纹 digest `f9f529fb…` 与 7511 路径、
+Quick 回执 sha256 `203ae4f4…`），并独立核对：delta 恰为声明的 9 路径、`smart_core` 与台账未改、
+退役声明过的 39（790）／28（879）个事实在 arch 中全部落地、只读限制全部还原、`withholding_amount` 仅 1 次、
+写／恢复边界成立（受保护 change set 163/190/192/194/233/267/274/276 未被触碰）。其 7 项记录口径问题已在
+随后一次 docs-only 提交闭合（逐条见 G06 记录 §11.1），产品与测试行为未变。
+
+台账保持 **31**：本批在台账内**正好 2 条**（index 21 = 790／538／1654、index 22 = 879／701／1654），
+退役与 **31 → 29** 扣减按 G03/G04/G05 先例留待合入后由独立提交落地，本实现提交不改台账文件。
+未推送、未建 PR、未合并、未部署。
+
+状态：**批次验收完成（本批范围，冻结链见本批记录 §11）｜未集成｜未部署｜89 入口用户验收未完成｜台账 31**。
+
+## 8.26 定时 CI 失败处置（2026-09-18，用户指令「定时 ci 有失败先处理了」）
+
+### 8.26.1 触发身份与边界
+
+接管身份：分支 `feature/uc4-tax-deduction-native-v1`，HEAD `fad9a110642f37ff1c86feb7ca72b5dc82466dfb`
+（= `origin/main` `daf9a978` ＋ 4 个 G06 提交，**0 behind**，可 fast-forward）。生产交付树仍是唯一写入者。
+`fad9a110` 的 G06 冻结候选身份与其外部归档**未被改写**（本轮新提交叠加在其后，不移动该 commit）。
+本轮不改产品业务规则、不扩展 42 台账、不重跑全代表面矩阵、不跑 Quick（未到冻结门禁）。
+
+### 8.26.2 六个定时 workflow 的实际结果
+
+定时批次跑在 **`main` 的 `8e8c1ce9`**（2026-09-17 21:30Z ≈ 09-18 05:30 CST），非本分支 HEAD。
+判据：同一 commit 上 `push` 事件通过而 `schedule` 事件失败 → 事件相关缺陷，不是代码回归。
+
+| workflow | run id | 结果 | 归因 |
+|---|---|---|---|
+| `public_guard` | 35277725670 | failure | 步骤「Scan governed product history」（`make verify.repository.clean_history`）；`security.online_capture.unit` 6 例失败。**后续步骤被 fail-fast 跳过**（含「Run clean product boundary scan」） |
+| `professional_quality_gate` | 35277758044 | failure | 同一根因同一入口（`make/ci.mk:1002 security.online_capture.unit`，同一 6 例 `TrustedScopeTests`）；三个 shard 中仅 `shard-verify` 执行，`shard-reports`／`shard-tests` 未执行 |
+| `frontend_release_gate` | 35277183148 | failure | `pnpm test:release` → `make verify.frontend.release.audit`；**唯一失败守卫** `[frontend_style_system_guard] FAIL`（`make/frontend.mk:519`，其余 30+ 守卫全 PASS） |
+| `backend_test_suite` | 35281779057 | failure | 步骤「Run backend test suite per module」：`test_p1_payment_request_capability.py` 的 `KeyError: 'sections'` |
+| `release_candidate_gate` | 35277590281 | failure | **纯级联**：`wait_for_candidate_checks` 汇总上游失败，无独立代码原因 |
+| `merge_policy_gate` | — | success | — |
+
+### 8.26.3 三处真实缺陷与修复层
+
+| # | 缺陷（首次偏差） | 责任层 | 修复 |
+|---|---|---|---|
+| 1 | 单测继承宿主 `GITHUB_EVENT_NAME=schedule`，使 `trusted_scan_scope.resolve_scope()` 直接返回 `scheduled_full_audit`，绕过 trusted-base 分支 → 6 例断言失败（如 `'scheduled_full_audit' != 'untrusted_origin'`）。**产品语义正确，缺陷在测试未隔离环境** | P4 验证工具 | `scripts/ci/test_trusted_scan_scope.py` 的 `setUp` 内 `mock.patch.dict(os.environ)` ＋ `addCleanup` 复原 ＋ `pop('GITHUB_EVENT_NAME')`。**不改 `trusted_scan_scope.py`、不删断言** |
+| 2 | `frontend/apps/web/src/pages/ContractFormPage.vue` 真实突破文件行数预算（1929 > 1900；`#487` `1dbf63f5` 引入，limit 自 `d3bdb3aa` 未变） | P0 前端（通用渲染层） | 按既有做法**提取**而非放宽 budget：48 行纯展示格式化块 → 新增 `frontend/apps/web/src/pages/contractForm/contractFormMetaLine.ts`；页面 1929 → **1887** |
+| 3 | 已退役契约断言未随 `87b36441`（G04）同步：`business_config_contract_payment_execution_from_request_productized_form_v1` 已改为 `native_semantic_surface` 并删除 `sections`／`fields`，测试仍读 `execution_payload["sections"]` | P1 声明（施工标准） | 断言改指**原生载体**：新增类常量 `EXECUTION_FORM_BODY_FIELDS`（32 字段）＋ 从 `view_sc_payment_execution_form` arch 逐字段断言 ＋ 4 个 anchor `readonly == "1"`；并断言 `composition_mode == "native_semantic_surface"` 且 `sections`／`fields` 不在 payload。**不删断言** |
+
+原有读核对（DB 无关，静态解析 `views/core/payment_execution_views.xml`）：32 个退役字段**全部**存在于该 view arch；
+`payment_request_id`／`project_id`／`partner_id`／`contract_id` 的 `readonly="1"` 均在。故修复方向为改指原生载体而非删除断言。
+
+### 8.26.4 由本轮改动派生、必须同步刷新的生成物（全部走既有生成入口，未手改）
+
+| 生成物 | 变化 | 入口 |
+|---|---|---|
+| `docs/engineering_convergence/complexity_budget_report.md` | 扫描 4384 → 4385；`ContractFormPage.vue` 1929 → 1887；`test_p1_payment_request_capability.py` 3009 → 3030 | `python3 scripts/ci/generate_complexity_budget_report.py --write` |
+| `docs/engineering_convergence/split_plan_queue.md` | 同上两行行数 | `python3 scripts/ci/generate_split_plan_queue.py --write` |
+| `docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md` | 行数锁 **1929 → 1887**（ratchet 收紧，方向为改进） | `make refresh.contract_form_split_evidence` |
+| `docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json` | 仅 `inputDigest`（新增源文件） | `make refresh.frontend.component_driver_takeover.inventory` |
+
+前两项此前**未被任何一步发现**：`ci.generated_reports.guard` 在 `shard-reports` 内两次分别以
+`complexity report is stale`、`split plan queue is stale` 失败——即本轮修的 CI 若直接复用 `8e8c1ce9`
+的跳过状态，定时作业会在 `shard-reports` 处**再次失败**。同层还有 `verify.contract_form_split_evidence` 的
+行数锁（1929 → 1887）。四项刷新后 `make ci.generated_evidence.preflight` PASS。
+
+### 8.26.5 验证（层级／入口／身份／结果）
+
+身份：HEAD `fad9a110` ＋ 未提交 dirty 范围（阶段身份，非冻结身份；**未冻结**）。
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | **PASS** `change_state=dirty` `coverage=L1_only` |
+| L2（映射受影响面） | `verify.frontend.canonical_form_presenter.unit`／`page_pattern_reference_parity.unit`／`primitive_adapter.unit`／`product_page_pattern.unit` | 4/4 **PASS**（170 cases／13／31／5 tests，均非零） |
+| L2（后端受影响面） | `make local.dev.test MODULE=smart_construction_core TEST_TAGS='sc_gate/…,sc_smoke/…'` | **PASS** `0 failed, 0 error(s) of 460 tests`（修前为 1 error） |
+| CI 等价（public_guard 失败步） | `GITHUB_EVENT_NAME=schedule make verify.repository.clean_history` | **PASS** `reason=scheduled_full_audit` |
+| CI 等价（professional 失败入口） | `GITHUB_EVENT_NAME=schedule make security.online_capture.unit` | **PASS** 17 ＋ 10 tests OK |
+| CI 等价（professional 三 shard） | `GITHUB_EVENT_NAME=schedule make ci.professional.backend.shard-verify／shard-reports／shard-tests` | 3/3 **PASS**（shard-reports 修复前 2 次 stale） |
+| CI 等价（frontend 权威静态面） | `VITE_ODOO_DB=sc_frontend_acceptance … python3 scripts/verify/frontend_static_release_audit.py` | **PASS** 9/9 checks（`style_system`／`lint`／`strict_typecheck`／`production_build` …），build fingerprint `c718e6a3be75…` |
+| 生成证据 | `make ci.generated_evidence.preflight` | **PASS** |
+| 守卫单元 | `make verify.frontend.component_driver_takeover.unit` | **PASS** `required=35 missing=0` |
+
+### 8.26.6 未执行项与边界（保持未执行）
+
+- `verify.frontend.release.audit` 的**浏览器段**（`page_identity.browser`／`delivery_hardening.release.browser`）
+  **未执行**：需拉起 acceptance 环境（`backend.acceptance.up`／`frontend.acceptance.up`／`db.frontend.acceptance.ensure`），
+  与「不停启历史容器、不派生新环境」边界冲突。且 `8e8c1ce9` 上该段从未被执行（被 style guard 挡住），
+  非本次定时失败根因。
+- `scripts/verify/clean_product_release_scan.py` 在**本机**报 `FAIL checks=14`，唯一失败项
+  `clean_product_tree_guard` 的 `TRACKED_RUNTIME_ENV_FILES=4`。**判定：本机环境限制，不是产品缺陷。**
+  证据：该 4 个文件为 `.env.demo`／`.env.dev`／`.env.local.clean`／`.env.local.sample`，被 `.gitignore:53:.env*`
+  忽略且 `git ls-files` 中**不存在**；该守卫遍历工作树而非 `git ls-files`，故 CI 全新检出时计数为 0。
+  以 `git archive HEAD` 导出**仅 tracked** 的干净树重跑同一守卫 → **PASS files=7512**（本机 8319）。
+  该步在 `8e8c1ce9` 上处于 fail-fast 之后（状态 skipped），从未真正执行。
+- `clean_product_release_scan.py` 内 `source_head` 为**硬编码常量** `009f26e6…`（pre-existing，非本轮引入），
+  报告头颅与当前 HEAD 不一致。仅登记观察，本轮不改（避免扩大范围）。
+- 未推送、未建 PR、未合并、未部署；未 `sync_demo`／fixture reset／发布快照／模块 upgrade；
+  未触碰受保护草稿 163／190／192／194／233／267／274／276。
+
+### 8.26.7 状态
+
+台账保持 **31**（定时 CI 处置不改业务域登记；扣减仍按 G03/G04/G05 先例留待合入后由独立提交落地）。
+定时失败 5 个 workflow 已全部归因（3 真实缺陷 ＋ 1 级联 ＋ 1 本机限制），根因均已修复并在**同一 CI 入口**上复验通过。
+
+## 8.27 G06 整改回环 R1：代表面「可填事实」判据的共享机制结论（2026-09-18）
+
+身份：HEAD `7b792729` ＋ 未提交 dirty 范围（**阶段身份，未冻结**）。明细见
+`docs/ops/iterations/uc4_tax_deduction_native_lowcode_20260918.md` §12。
+
+### 8.27.1 共享机制结论（P0 呈现口径 × P4 验证工具）
+
+代表面判据 `assertRequiredFactsAreFillable` 的原意是「交付策略要求必填且可编辑的事实，必须给出用户能填的控件」。
+它此前只统计**非 `readonly` 的原生输入**（`EDITABLE_CONTROL`），因此在共享表单上出现了一个假阳性：
+
+- 可编辑的**日期事实**由 `ProfessionalBaseFieldControl` → `ScDateField` → TDesign 日期选择器渲染，
+  其触发器内层 `input` 依设计带 `readonly`（点击才**打开面板并写回值**），故被计成 0；
+- 实测（790 创建面 `invoice_date`）：节点存在、`data-field-state="required"`、`data-auth="edit"`、标签可见，
+  点击触发器出现日期面板，点选后输入框值变为 `2026-08-31`，`field--empty` 消失 → **可填，判定为口径缺陷**；
+- 同页 `document_date`／`deduction_confirm_date` 同形，佐证是口径而非单字段渲染偶发。
+
+机制结论（对全部代表面主题成立）：
+
+1. 交付面的可填形态有**两种**——原生可编辑控件，以及**宿主未禁用且 input 未禁用**的 picker 触发器；
+   前者用严格选择器，后者必须以「触发器宿主未禁用」为门，才不把 disabled／readonly 呈现算成可填。
+2. 判据不能只放在选择器字面量里：观测须**分别**保留 `editable`／`picker`／`fillable`，让「为什么算可填」可归因。
+3. 放宽方向必须配反向硬化：只读事实要求 `editable === 0 && picker === 0`（比原来更严），
+   且仅靠 picker 计数的必填事实还要断言触发器**可见且能取得焦点**，避免口径变成隐藏/惰性控件的普遍豁免。
+
+### 8.27.2 修改范围与影响面
+
+- 只改 **1 个 P4 验证工具路径**：`frontend/apps/web/scripts/formal_form_representative_journey.mjs`。
+  `addons/**`、`frontend/apps/web/src/**` **未改**，故产品运行路径与其余主题的既有证据不受影响。
+- 受影响面 = 消费该工具的只读代表面：本轮补跑 `tax_deduction`（本主题）以及注册了 `readonly_values`
+  的 `contract`／`settlement`（验证收紧后的只读守卫无回归）。**未重跑全矩阵。**
+- 同类选择器另见 `formal_form_invoice_journey.mjs`（只读事实要求 0、`note` 要求 >0，不产生日期必填假阳性）、
+  `local_dev_project_profile_write_browser.mjs`（交互填充）、`frontend_scene_component_driver_readonly_browser.mjs`
+  （只读驱动要求 0，严格口径正确）——三者**本轮未改**，若后续新增「必填日期」断言须复用新口径。
+
+### 8.27.3 结果与剩余缺口
+
+| 项 | 结果 |
+|---|---|
+| L1 `make ci.local.iteration` | **PASS**（16 tests OK，`change_state=dirty coverage=L1_only`） |
+| L4 `tax_deduction` | **PASS** exit 0；`restored=true`、`browser_errors=[]`、`cleanup_guard=proceed`、`released=true` |
+| L4 `contract`／`settlement` | **PASS** exit 0（只读面回归） |
+| 代表面明细 | 790 create／record **PASS**；879 create **PASS**；879 list 空态 **PASS**；879 record **未覆盖**（`empty_action_domain`） |
+| L2（前端映射面） | `canonical_form_presenter`／`page_pattern_reference_parity`／`primitive_adapter`／`product_page_pattern` 4/4 **PASS**（170／15／46＋31 tests／12＋5，均非零） |
+| L2（共享结构机制） | `verify.frontend.native_form_structure_responsibility.unit` **PASS** `cases=10` |
+| L2（后端结构消费） | `TestFormStructureConsumption` **PASS**（§8.27 时 `6 tests`；**§8.28 已扩到 8 tests，以 §8.28 为准**） |
+| 390 人工复核 | 操作行／导航／正文互不遮挡；点末项再点回首项后目标落在吸顶带下方；`scrollWidth - innerWidth = 0`；`单据附件` 与 `协作附件` 各自成组。**口径纠正见 §8.28**：本节早期的 `nav 347–400` 与 `nav.bottom 347` 分属静止态与吸顶态，须按阶段分读 |
+| 本批已登记候选 | ①日期触发器测量口径（跨主题，本轮只在代表面闭合）；②空值只读 `many2many` 被 `readonlyFactIsPresentable` 省略但 `FormSection.vue` 有 `field--readonly-empty-relation` 渲染支撑（两层判断不一致，**只登记不改**）；③`partner_name` 独立历史事实在创建面以空只读形态呈现（呈现取舍，**只登记不改**）；④action context 的 `default_business_category_code` **未被水合**成 `business_category_id`（**§8.28 已在 P1 声明层收口**）；⑤只读计算字段 `deduction_flow_label` 保存前渲染「-」（**§8.28 已明确生成条件**） |
+
+未执行：未冻结、未跑 Quick、未推送、未部署、未启动 G07；台账保持 **31**；
+受保护草稿 163／190／192／194／233／267／274／276 未被触碰；历史工作树未被清理。
+
+---
+
+## 8.28 G06 整改回环 R2：入口分类与默认值在 P1 声明层收口（2026-09-18）
+
+### 8.28.1 共享机制结论
+
+「入口声明了业务分类、创建面却不呈现」**不是共享默认值水合层的缺陷**，而是**该入口缺了 P1 声明**：
+同类入口（结算单收／支、付款申请、费用报销）都在自己的 `default_get` 里把 action context 的
+`default_business_category_code` 解析成关系 id，抵扣登记入口漏了这一步，而**保存侧 `create()` 一直正确**。
+因此本轮修在 P1 声明层，**不改 P0 共享解析／水合机制**，也不写抵扣模型特判、不向其他入口铺开。
+凡「声明—呈现—保存」三者对同一事实的判断不一致，先比对同类入口的声明，再决定层；
+共享层只有在多个同类入口同时错时才成立。
+
+### 8.28.2 修改范围与影响面
+
+- **接管后修改**（本轮唯一写入）：`models/core/tax_deduction_registration.py`（`default_get` 补解析）、
+  `tests/test_tax_deduction_native_lowcode.py`（＋5 例）、`tests/test_form_structure_consumption.py`（＋2 例）。
+- 共享机制用例集新增：`BUSINESS_CATEGORY_ENTRIES`——**同类入口**（结算单收入／支出、抵扣登记用户／项目专项，
+  共 4 个 action／2 个模型）必须把声明同样送到创建面；**无默认分类反例**——声明了但数据不存在的 code
+  **不得被替代**（`test_an_entry_category_that_cannot_be_resolved_is_not_substituted`）。
+- `addons/smart_core/**` 与前端 `src/**` 本轮**未改**，故其余主题证据不受影响，未重跑全矩阵。
+- 环境根因（非代码）：受管容器启动早于模块改动且无 `--dev=reload`，执行的是旧模块代码；
+  `make local.dev.restart` 后恢复，**未执行** `local.dev.upgrade`。
+
+### 8.28.3 行为验证（不只检查字符串）
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | **PASS** `change_state=dirty coverage=L1_only` |
+| L2 本主题 | `TEST_TAGS="uc4_native_lowcode"` | **PASS** `0 failed, 0 error(s) of 45 tests` |
+| L2 共享机制 | `TEST_TAGS="/smart_construction_core:TestFormStructureConsumption"` | **PASS** `0 failed, 0 error(s) of 8 tests` |
+| 只读探针 | `default_get`（790／879 context） | `business_category_id` → **50／51**（修复前为空） |
+
+浏览器（只读）：790 创建面呈现 `业务分类 抵扣登记`、879 创建面呈现 `业务分类 项目专项抵扣`；
+候选范围收窄为入口分类域（`count=1`，`codes=["tax.deduction.registration"]`，「搜索更多」仅 1 行）；
+879 该字段按视图声明为只读单值；越界分类提交被 `ValidationError` 拒绝且**零持久化**（回滚后记录数 `1 → 1`）。
+
+### 8.28.4 空值表达与导航口径（结论）
+
+- **历史往来单位**：独立存储事实，**不按重复文本删除**；由入口 context `default_partner_name` 水合，
+  非 legacy 的 manual 记录（id=1）同样带真实值 → **不能**套用进项发票的 `invisible="source_origin != 'legacy'"`。
+  790／879 创建面为空只是这两个入口没有 context 往来单位，评估结论为**保留**。
+- **空附件关系**：一层定可见性（`readonlyFactIsPresentable`，按呈现形态）、一层定已保留关系的渲染
+  （`FormSection.vue::isReadonlyEmptyRelation`），二者职责不矛盾；`one2many` 与 `many2many` 的取舍差异仍是候选②，未扩大。
+- **办理事项**：生成条件按优先级明确（`project_special` → 项目专项抵扣；`is_transfer_out` → 进项税额转出；
+  `withholding_amount` → 扣款抵扣；有抵扣金额／税额 → 进项税额抵扣；否则 抵扣登记）；
+  首次偏差是 `default_get` 不返回该非存储计算字段，前端**未拼造**；本轮不加静态默认值（会因后续录入金额而陈旧）。
+- **章节导航坐标**：`nav 347–400`（静止态）与 `nav.bottom 347`（吸顶态）是**两个阶段**，
+  已按阶段重列为同一稳定态的三个矩形（§12.5.1），790／879 在 1088 与 390 均无重叠、首尾双向可达。
+
+### 8.28.5 未执行项与状态
+
+未冻结、未跑 Quick、未推送、未建 PR、未部署、未启动 G07；未重跑全矩阵（合同／结算按输入未变复用）；
+未 `sync_demo`／fixture reset／无关 upgrade；未停启历史容器、未改 Docker 网络、未清理历史工作树；
+未触碰受保护草稿 163／190／192／194／233／267／274／276；879 记录态仍未覆盖。
+**未持久化业务或配置写入**（日期点选属未保存表单交互）。
+
+状态：**入口分类与默认值已收口（P1）｜整改中｜台账 31｜未集成｜未部署**。
+
+## 8.29 第 10 轮（R5）：章节导航「按下稳定性」断言与办理事项的通用可见性消费
+
+### 8.29.1 归属与唯一写入者（第 10 轮）
+
+- 身份：HEAD `7b792729f67c17be8d8e5e483df8b027b65d752d`，分支 `feature/uc4-tax-deduction-native-v1`，dirty＝21 个已跟踪路径 ＋ 2 个未跟踪新增。
+- **唯一写入者＝本会话执行体**。本轮**唯一写入**的路径是 `frontend/apps/web/scripts/formal_form_representative_journey.mjs`（P4 验证工具）。
+- 本记录既有的共享实现（`pages/contractForm/FormSectionNavigation.vue`、`pages/contractForm/nativeSectionNavigation.ts`、
+  `components/template/FormSection.vue`、`pages/ListPage.vue`、`views/ActionView.vue`、`components/professional-fields/ProfessionalBaseFieldControl.vue`、
+  `scripts/native_section_navigation_test.ts`、`scripts/collection_view_semantics_test.ts`、`scripts/verify/local_dev_form_lowcode_scope.py`）
+  **属「接管前已有」**，本轮未新增写入，**仅验证**。
+- 历史保留工作树本轮未触碰（登记 ≠ 活跃）；未持久化业务或配置写入。
+
+### 8.29.2 共享机制结论
+
+1. **章节导航按下稳定性（同一共享控件的回归面）**：按下期间自动跟随**不得滑动轨道**，
+   否则条目会离开手指、释放被投递给相邻条目或轨道本身。受管 runner 现以 **6 个稳定态场景 ＋ 1 个反例**覆盖，
+   并在 390×844 的 879 create、790 create、790 record 上全部通过：
+
+   | 场景 | 稳定态事实（879 create / 390×844） |
+   |---|---|
+   | 首项屏内按下 | `active=业务方向`、`target_top=359 ≥ nav.bottom=347`、`trackScrollLeft=0` |
+   | 手动滚动正文后再按下 | 同首项：`业务方向`、359、`trackScrollLeft=0` |
+   | 末项按下 | `active=协作记录`、`target_top=464`、`trackScrollLeft=329` |
+   | 末→首（首项在横向可视区外，先横滚再点） | `active=业务方向`、359、`trackScrollLeft 329→0` |
+   | 首→末（末项在屏外） | `active=协作记录`、464、`trackScrollLeft 0→329` |
+   | 按住条目时正文继续滚动 | `active=协作记录`、464、按下期间 `trackScrollLeft` 不变 |
+   | 反例：按住后释放点离开条目 | `delivered_active` 与按住期间一致（**什么都不激活**） |
+
+2. **办理事项的通用可见性消费**：该辅助只读项只在**后端返回有效值**时呈现。
+   实现是原生 `invisible="not deduction_flow_label"` ＋ 既有通用修饰符消费链，**未新增前端字段特判**；
+   新建面（后端未返回值）不渲染该行，记录面（有值）渲染。反例对见 §12.9.2（本批次另册）。
+3. **坐标口径**：`nav 347–400`（静止态）与 `nav.bottom 347`（吸顶态）分属两个阶段；
+   本轮所有坐标改由受管 runner 的同一稳定态落盘给出（操作行／导航／目标三矩形同源），不再由探针估算拼接。
+4. **反例保护（不降断言）**：新增的反例自带结论——正确记 `control`，异常记 `activation_survived_a_cancelled_press`／`control_not_armed`，
+   既不进失败清单也不计入「已投递章节」，用于证明正例不是由「按下」本身产生，而是由「落在条目上的释放」产生。
+
+### 8.29.3 本轮分层验证
+
+- **L1（本轮重跑）**：`make ci.local.iteration` → **PASS** `change_state=dirty coverage=L1_only receipt=none`（`tmp/g06-remediation/l1-iteration-r10.log`）。日志 `changedPathCount=33` 为**相对基线参考快照**的集合，与 `git status --short` 的 23 条 dirty 口径不同。
+- **L2（前端非零，本轮执行）**：`make verify.frontend.native_section_navigation.unit` → **PASS**（`authority=7 next_action=3 content_identity=11 active_tracking=11 structure_consumption=7`）；`make verify.frontend.product_page_pattern.unit` → **PASS**（`5 tests`）。
+- **L2**：本轮未改后端／前端产品代码，按输入未变**复用**既有 L2（`TestFormStructureConsumption`、`native_section_navigation` 单元）与 §8.28 证据。
+- **L4（受管代表面，仅受影响主题）**：invoice 与 tax_deduction 两主题各一次，均 **PASS**（exit 0），`business fingerprints unchanged`；导航按下稳定性在 879 create／790 create／790 record 全绿，879 record 仍为 `UNCOVERED / empty_action_domain`。详表见本批次另册 §12.9.4。
+
+### 8.29.4 一次验证工具归因（P4，结论：产品无回归）
+
+首次受管代表面 L4（invoice）exit 2，失败点在新增的「按住＋正文滚动」场景。
+归因证明**首次偏差在探针**：该场景先 `page.mouse.move()` 再 `mouse.wheel()`，在按住状态下已是**拖拽**，
+释放点离开条目 → click 不派发 → 激活被取消（高亮按设计跟随正文）。
+两变体对照（`probe_nav_step6_attribution.mjs`）：按住不移指针时，轨道 `scroll_left` 不变、条目几何不变、
+`pointerup/click` 均命中被按下条目并正确投递（目标 464 ≥ nav 347）；移动指针变体下**无任何相邻条目被误激活**。
+修复只落在断言的手势与判据（含一次判据自身错误：对条目坐标而非释放点坐标做命中测试），产品代码未动。
+完整记录见 §12.9.3。
+
+### 8.29.5 未执行项与状态
+
+未冻结、未跑 Quick、未推送、未建 PR、未部署、未启动 G07；未重跑全矩阵（合同／结算／材料／客户按输入未变复用）；
+未 `sync_demo`／fixture reset／发布快照／无关 upgrade；未停启历史容器、未改 Docker 网络、未清理历史工作树；
+未触碰受保护草稿 163／190／192／194／233／267／274／276；879 记录态仍未覆盖（`empty_action_domain`）。
+台账保持 **31**；**未持久化业务或配置写入**。受保护草稿只读回读：8 条 change set 全部存在、`write_date` 均为 2026-09-17（早于本轮运行），233／267／276 仍为 `ready`（未发布、未回滚、未删除）。
+
+状态：**窄屏导航与办理事项已收口并受管复验通过｜整改中｜台账 31｜未集成｜未部署**。
+
+## 8.30 第 11 轮（R6）：三条导航路径分离复验（正常用户／键盘／自动显露）
+
+本轮是复核反馈后的**有界诊断**：不改办理事项（口径已于 §8.29.2 收口），不重跑全矩阵，只做有界复现与归因。
+本批次另册（`uc4_tax_deduction_native_lowcode_20260918.md` §12.10）记录同一证据，口径一致。
+
+### 8.30.1 归属与唯一写入者（第 11 轮）
+
+- 身份：HEAD `7b792729f67c17be8d8e5e483df8b027b65d752d`，分支 `feature/uc4-tax-deduction-native-v1`，dirty＝21 个已跟踪路径 ＋ 2 个未跟踪新增。
+- **唯一写入者＝本会话执行体**。本轮**唯一写入**的路径是 `frontend/apps/web/scripts/formal_form_representative_journey.mjs`（P4 验证工具）。
+- **接管前已有、本轮仅验证**：`pages/contractForm/FormSectionNavigation.vue`、`pages/contractForm/nativeSectionNavigation.ts`、
+  `components/template/FormSection.vue`、`pages/ListPage.vue`、`views/ActionView.vue`、
+  `components/professional-fields/ProfessionalBaseFieldControl.vue`、`scripts/native_section_navigation_test.ts`、
+  `scripts/collection_view_semantics_test.ts`、`scripts/verify/local_dev_form_lowcode_scope.py`、以及 `addons/smart_core/*`、`addons/smart_construction_core/*` 的本批改动。
+- **接管后修改（本轮）**：仅上述 runner 的导航断言面。**无产品代码写入**。
+- 本轮探针输出（`tmp/g06-remediation/*.out`）为 gitignore 内的诊断材料，不进提交。
+- 历史保留工作树本轮未触碰（登记 ≠ 活跃）；未持久化业务或配置写入。
+
+### 8.30.2 共享机制结论：三条路径必须分开判定
+
+复核指出（879／390×844）「点『办理说明与附件』→ 用按钮定位点击屏外『业务方向』」失败：高亮停在别处、
+首标题 −1516.5px、导航底边 347px；而「先用左箭头显露再点击」通过；且第一组**没有按住／拖拽／滚轮**，
+故不能用 §8.29.4 的「拖拽取消 click」归因关闭。
+
+实测结论：**失败只出现在「坐标先于显露」这一类自动化时序上，不是章节导航缺陷**。
+
+| 路径 | 操作 | 结果 | 关键事实 |
+|---|---|---|---|
+| **正常用户路径** | 点末项 → 用「向前浏览表单章节」显露 → 在显露后的位置真实按下 | **PASS** | §8.29 的 6 个稳定态场景全绿；`last_then_first` → `active=业务方向`、`target_top=359 ≥ nav.bottom=347`、`trackScrollLeft 329→0` |
+| **键盘路径** | 聚焦已发布浏览控件 → `Tab`（1 次）→ 屏外首项获得焦点 → `Enter` | **PASS** | `focused_entry=业务方向`、`tabs_to_focus=1`、`delivered_active=业务方向`、`target_top=359`（790 record：387 ≥ 375） |
+| **自动显露路径** | 自动化自身 `scrollIntoViewIfNeeded` 显露后，在**显露之后重新取点**按下 | **PASS** | 按下前条目 `visible_width ≤ 0`（隐藏点 `x=20`／invoice `x=26`，轨道左边界 `69`）；显露后 `left=69`；投递 `业务方向`、`target_top=359`。785／786／787／788 create 同样通过 |
+
+三条路径的断言分别落在 `step=first_entry_in_view／pressed_after_body_scroll／last_then_first／first_then_last／
+pressed_while_body_scrolled`、`keyboard_activation`、`auto_reveal_press`，**不再合并成一个「导航全绿」**。
+runner 的失败过滤仍为 `!['pressed','not_applicable','control']`（未放宽断言）。
+
+### 8.30.3 失败模式的定位证据（区分滚动竞争与投递）
+
+| 实验 | 入口 | 观察 |
+|---|---|---|
+| 自动显露（正确时序）延迟矩阵 | `probe_nav_autoreveal_race_r6.mjs`：首点后有界延迟 0／60／120／250／500／900ms，再 `locator.click()` | **6/6 PASS**。每次 `pointerdown／pointerup／click` 的 target 与命中点均为 `业务方向`，之后正文滚到该章节（`ownerScrollTop 2125→57`），高亮 `业务方向`、首标题 359 |
+| 正常用户与键盘路径对照 | `probe_nav_autoreveal_r6.mjs` | **PASS**：箭头显露后真实按下 = 业务方向／359；键盘聚焦首项后 Enter = 业务方向／359 |
+| **坐标先于显露**（负向对照） | `probe_nav_stale_coords_r6.mjs`：隐藏时取点（`press_x=−229`）→ 显露 → 按**旧坐标**派发 | **FAIL（自动化侧）**：实际派发点 `(191,366)`，`pointerdown／up／click` 的 target 全部是 `办理说明与附件`（**另一个条目**），正文未移动（首标题 −1709），稳定高亮 `办理说明与附件`。显露后重新取点（`press_x=100`）则 **PASS** |
+
+- 负向对照复现的正是复核报告的症状类别（**点击落在非目标条目、正文不动、首标题远在视口上方**），
+  且事件证据显示产品把按下**正确投递给了指针下的那个条目**——「投递异常」发生在自动化的取点时序，而非产品事件错投。
+- 6 号场景按下期间的 `track.scroll_left` 始终不变（341），**不存在按下期轨道自滑**的滚动竞争；
+  正文跟随仍按设计更新高亮（`协作记录 → 办理信息`）。
+- runner 现将该风险作为**可复核事实**落盘：`hidden_point`、`under_hidden_point`、`stale_point_after_reveal`；
+  断言只在「显露后重新取点」的前提下判定投递，不以延长超时或改断言代替归因。
+
+### 8.30.4 本轮分层验证（仅受影响层，复用其余）
+
+- **L1**：本轮 runner 改动属 P4 验证工具；已按输入未变复用 §8.29.3 的 `make ci.local.iteration` PASS 结论，未重复跑。
+- **L2**：本轮未改后端／前端产品代码，复用 §8.29.3 的 `make verify.frontend.native_section_navigation.unit`（PASS）
+  与 `make verify.frontend.product_page_pattern.unit`（PASS）。
+- **L4（受管代表面，仅受影响主题）**：
+
+| 主题 | 结果 | 证据 |
+|---|---|---|
+| tax_deduction | **PASS** exit 0（`tmp/g06-remediation/l4-tax_deduction-r10.log`） | 790 create／790 record／879 create 的 `auto_reveal_press` 与 `keyboard_activation` 全为 `pressed`；879 record 仍 `UNCOVERED/empty_action_domain` |
+| invoice | **PASS** exit 0（`tmp/g06-remediation/l4-invoice-r10.log`） | 785／786／787／788 create 的同上两场景全 `pressed`；789／639 `blocked/NAVIGATION_AUTHORITY_DENIED`（管理员无权限，非零错误通过） |
+
+  两主题均 `business fingerprints unchanged`。**未重跑未受影响主题**：`section_navigation_press` 行仅存在于上述两主题的报告，
+  其余主题报告不含该断言结果，故本轮 runner 改动对其无失效影响。
+
+### 8.30.5 办理事项的当前呈现证据（未改动，仅补图）
+
+`artifacts/lowcode-form-loop/browser/representative-tax_deduction-790-record.png`（本轮 L4 生成）：
+已有记录 S70-TAX-001 的「业务方向」区**显示「办理事项 = 进项税额抵扣」**，与 `登记单号／业务分类／抵扣范围` 同列；
+新建面同批字段清单仍**不含** `deduction_flow_label`（§8.29.2）。即「新建无值即隐藏／记录有值即显示」两侧证据齐备。
+
+### 8.30.6 未执行项与状态
+
+未冻结、未跑 Quick、未推送、未建 PR、未部署、未启动 G07；未重跑全矩阵（合同／结算／材料／客户按输入未变复用）；
+未改办理事项；未 `sync_demo`／fixture reset／发布快照／无关 upgrade；未停启历史容器、未改 Docker 网络、未清理历史工作树；
+受保护草稿 163／190／192／194／233／267／274／276 未触碰（全表 `max(id)=276`，本轮无新建草稿行）；
+879 记录态仍未覆盖（`empty_action_domain`，不为补证据造数据）；**未持久化业务或配置写入**。台账保持 **31**；
+约 6 组副本候选继续留台账，不扩大本批登记范围。
+
+状态：**三条导航路径已分离复验（正常用户／键盘／自动显露均通过；失败仅复现于「坐标先于显露」的自动化时序）｜整改中｜台账 31｜未集成｜未部署**。
+
+## 8.31 第 12 轮（R12）：独立复核 REQUEST_CHANGES 的整改——退役声明的真实作用域（2026-09-18）
+
+本轮**只做复核整改**：不扩展代表面、不改产品行为、不扩大登记范围。整改对象是「退役声明的范围口径」与「证据／记录一致性」。
+本批次另册（`uc4_tax_deduction_native_lowcode_20260918.md` §12.11）记录同一证据，口径一致。
+
+### 8.31.1 复核结论与本轮归属（第 12 轮）
+
+- 独立复核（只读，绑定候选 `d14020bb`）结论：**REQUEST_CHANGES**，**无 blocker**；1 major ＋ 9 minor ＋ 4 nit。
+- 四项重点判定**通过**：分类约束、只读／空值呈现、共享机制、测试未被削弱（无放宽断言换通过）。
+- **Major（本轮闭合对象）**：被退役的 `sc_tax_deduction_registration_p1_form_business_facts_v1` 是**模型级**契约
+  （`action_id`／`view_id`／`role_key`／`company_id` 全为空，`applies()` 对 0 一律放行），因此它作用于**该模型的所有渲染面**；
+  而声明只写了「790／879／852 三个入口」。复核指出第 4 个消费者真实存在：`sc.tax.filing.action_open_deductions()`
+  （正式菜单「税务申报」→ 申报期抵扣来源）。
+- **唯一写入者＝本会话执行体**；本轮写入范围见 §8.31.4。
+
+### 8.31.2 共享机制结论：模型级声明必须按「模型全部渲染面」声明并取证
+
+| 事实 | 结论 | 依据 |
+|---|---|---|
+| 派生面是否真在该契约作用域内 | **是**。该面由代码内构造的 action dict 打开（无 `id`、`view_mode=tree,form`、`context={'create': False}`），无 action／view 作用域，模型级契约不因收窄条件被拒绝 | 契约记录四字段为空 ＋ `_effective_view_orchestration_contracts.applies()` |
+| 退役是否**改变**派生面的 authority | **不改变**。退役体自身声明 `composition_mode=entry_semantic_surface`，派生面解析出的 authority 正是它；790／879 的 `native_authority` 来自**它们各自的 action 级声明**，与退役体无关 | 实测该面 `formStructureAuthority=entry_semantic_surface` |
+| 退役在该面实际移除了什么 | 只移除该体并入的 **4 个章节标题 ＋ 其字段 `readonly` 注解**；authority 与事实集合不受影响 | 实测 `sectionTitles` 不含「单据识别／业务对象／金额与办理／附件与来源」；`businessConfigContracts` 不含退役体、含模型级 `..._form_sections_v1` |
+| 是否丢事实 | **未丢**。该面未渲染的 5 个退役体事实全部是 `compute+store+readonly` 投影，各自保留场景（扣款单列表／业务层声明的 display-copy 源） | 新增用例内 `_assert_declared_facts_survive` 对派生面通过 |
+
+**剩余观察（不登记为缺陷、不扩本批）**：派生面与 852 仍消费模型级 `entry_semantic_surface` 兜底，`sectionTitles` 为 `..._form_sections_v1` 的 9 个旧标题、`presentationMode=task`。
+这是**本批之前既有**的呈现（退役后该面标题由 13 个降为 9 个，方向为收敛，不新增回归），本批只**声明**其范围、不整改 852／派生面的任务模式；
+本批未对其做浏览器复核，故按候选问题留台账观察，不作缺陷登记、不批量改字段。
+
+### 8.31.3 本轮分层验证（仅受影响层）
+
+| 层 | 入口 | 结果 | 证据 |
+|---|---|---|---|
+| L2 后端（受影响） | `make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestFormStructureConsumption,/smart_construction_core:TestTaxDeductionNativeLowcode'` | **PASS** `0 failed, 0 error(s) of 25 tests`（含本轮新增派生面用例） | `tmp/freeze-r12/l2-sc-core-structure-consumption.log` |
+| L2 后端（定向诊断，两次） | `... TEST_TAGS='/smart_construction_core:TestTaxDeductionNativeLowcode'` | 第 1 次 FAIL（断言期望错误，见下）／第 2 次 FAIL（菜单读取口径）／第 3 次 **PASS** `of 17 tests` | `tmp/freeze-r12/l2-tax_deduction-r12{,b,c,d}.log` |
+| 前端 L2／L4／契约 | 输入未变的面按 §8.30 复验结论**复用**，未重跑 | — | 见 §8.30.4／§12.10.4 |
+
+失败归因（本轮无无变化重试）：
+
+1. 第 1 次 FAIL：`formStructureAuthority` 期望写成 `native_authority`——**期望错误，不是产品缺陷**。派生面无入口级 native 声明，解析结果本应为模型级 `entry_semantic_surface`；
+   据此**按事实改写断言**并补「退役体自身声明同一 mode、故退役不可能改变任何模型级面的 authority」的断言，未放宽任何既有断言。
+2. 第 2 次 FAIL：`ir.ui.menu.action` 的读取口径写成 `str(...)=="model,id"`，实际返回 recordset。改为按 `.action.res_model`／`.action.id` 断言（同一事实，换读取方式）。
+
+### 8.31.4 本轮修改范围（P1 声明 ＋ P4 验证工具）
+
+| 路径 | 归属 | 改动 |
+|---|---|---|
+| `addons/smart_construction_core/data/p1_daily_business_form_orchestration_contract_data.xml` | **P1 业务声明** | 退役记录的注释改为真实作用域：该模型**所有渲染面**（790／879／852／派生面）；并写明 790／879＝`native_authority`、852 与派生面＝模型级 `entry_semantic_surface` |
+| `addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py` | **P4 验证工具** | 新增 `test_a_derived_surface_without_an_action_scope_keeps_the_declared_facts`：派生面溯源（无 `id`／`view_mode`／`context`）＋正式可达性（菜单→action→form 按钮）＋无作用域请求解析结果（`resolvedActionId=0`、`resolvedViewId=view 1654`、authority＝`entry_semantic_surface`）＋退役体不在 applied／模型级兜底在 applied／退役标题不再并入＋退役体事实一条不丢 |
+
+**未改**：任何产品渲染代码、契约 payload（仅注释）、台账、代表面 runner；未重做迁移。
+
+### 8.31.5 交付前口径与归属修正（复核 minor）
+
+| # | 复核发现 | 处置 |
+|---|---|---|
+| 1 | 另册头部状态与末段状态冲突 | 已在另册头部标注取代关系（§12.11） |
+| 2 | `ActionView.vue` 已被本批提交 `d14020bb` 修改，但归属表仍记「未改」 | §8.31.4 与另册 §12.11 明确该文件为**本批 P0 产品改动**（提交 `d14020bb`），§12.9.1／§8.30.1 中「本轮未改」的时间边界同时标注 |
+| 4 | 证据摘要的 scope manifest 值写错 | 以完整指纹产物字段 `scope_manifest_sha256` 为准重生成（`/tmp/freeze-r12/**` 与外部归档件同步） |
+| 7 | `ListPage.vue` 的 `showFallbackCreate` 在提交 `d14020bb` 后成为无消费者分支 | **保留并登记**：删除共享组件分支需要其自身的受影响面验证；本轮不扩产品改动，登记为 P0 卫生项待下批处理 |
+| 9 | `views/support/user_confirmed_formal_list_alignment_views.xml` 的 852 列表域引用不存在的 `finance.tax.deduction` | **本批外观察项**：登记待办，不在本批整改（不扩面） |
+| nit 3 | `models/core/tax_deduction_registration.py` 的 `init()` 以裸 SQL 回填 general，绕过 constrains | **本批外待办**：登记，不在本批整改 |
+
+其余 minor／nit 由绑定**最终候选**的 R12 独立复核重新采集，逐条并入归档件 `review.json`；本批不在同一轮内混改产品行为。
+
+### 8.31.6 未执行项与状态
+
+未推送、未建 PR、未合并、未部署、未启动 G07；未重跑全矩阵；未改办理事项；
+未 `sync_demo`／fixture reset／发布快照／无关 upgrade；未停启历史容器、未改 Docker 网络、未清理历史工作树；
+受保护草稿 163／190／192／194／233／267／274／276 未触碰；**未持久化业务或配置写入**；
+879 记录态仍未覆盖（`empty_action_domain`，不为补证据造数据）；台账保持 **31**。
+
+状态：**R12 复核整改中（major 已按事实闭合并重跑受影响 L2 通过）｜台账 31｜未集成｜未部署**。

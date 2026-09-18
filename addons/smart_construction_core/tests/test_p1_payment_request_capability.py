@@ -28,6 +28,21 @@ from odoo.addons.smart_core.core import unified_page_contract_v2_assembler as co
 
 @tagged("post_install", "-at_install", "sc_gate", "p1_payment_request")
 class TestP1PaymentRequestCapability(TransactionCase):
+    # The released execution form keeps one structure: the native view owns the
+    # body.  This is the retired contract body (sections "来源申请 ... 责任与状态")
+    # that the native form must keep presenting, field by field.
+    EXECUTION_FORM_BODY_FIELDS = (
+        "payment_request_id", "project_id", "partner_id", "contract_id",
+        "payment_request_partner_relation", "business_category_id", "state",
+        "date_payment", "planned_amount", "paid_amount", "currency_id",
+        "invoice_amount", "payment_method", "receipt_account_name",
+        "receipt_bank_name", "receipt_account_no", "payment_account_name",
+        "payment_bank_name", "payment_account_no", "bank_account",
+        "document_no", "kingdee_document_no", "note", "attachment_ids",
+        "handler_name", "company_contractor_responsibility_state",
+        "company_contractor_responsibility_notice", "cancellation_kind",
+        "reversal_reason", "source_kind", "payment_family", "push_result",
+    )
     def test_payment_request_search_prioritizes_workflow_status_filters(self):
         search_view = self.env.ref(
             "smart_construction_core.view_payment_request_search"
@@ -2194,18 +2209,24 @@ class TestP1PaymentRequestCapability(TransactionCase):
             execution_anchors["summary"],
             ["payment_request_id", "project_id", "partner_id", "state", "paid_amount", "currency_id"],
         )
-        self.assertEqual(
-            [section["title"] for section in execution_payload["sections"]],
-            ["来源申请", "本次实付", "收款账户", "付款账户", "凭证与说明", "责任与状态"],
-        )
+        self.assertEqual(execution_payload["composition_mode"], "native_semantic_surface")
+        self.assertNotIn("sections", execution_payload)
+        self.assertNotIn("fields", execution_payload)
         self.assertTrue(legacy_product_fields.isdisjoint(str(execution_payload)))
         generated_execution_contract = self.env.ref(
             "smart_construction_core.business_config_contract_sc_payment_execution_form_structure_generated"
         )
         self.assertFalse(generated_execution_contract.active)
-        fields = {row["name"]: row for row in execution_payload["fields"]}
+        execution_form_arch = etree.fromstring(
+            self.env.ref("smart_construction_core.view_sc_payment_execution_form").arch_db.encode("utf-8")
+        )
+        native_fields = {
+            node.get("name"): node for node in execution_form_arch.xpath(".//field[@name]")
+        }
+        for field_name in self.EXECUTION_FORM_BODY_FIELDS:
+            self.assertIn(field_name, native_fields, field_name)
         for anchor in ("payment_request_id", "project_id", "partner_id", "contract_id"):
-            self.assertTrue(fields[anchor]["readonly"])
+            self.assertEqual(native_fields[anchor].get("readonly"), "1", anchor)
 
         receive_contract = self.env.ref(
             "smart_construction_core.business_config_contract_payment_request_receive_productized_form_v1"

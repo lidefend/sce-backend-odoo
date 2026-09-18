@@ -73,6 +73,21 @@ export function sectionRevealTargetsContain(value: unknown, targetKey: string): 
   }
 }
 
+export type SectionTrackOwnership = {
+  pressInFlight: boolean;
+  userTrackPositionHeld: boolean;
+};
+
+// The automatic follow keeps the highlight readable while the body scrolls, and
+// it is allowed to slide the track for that reason.  It must not move the track
+// while the reader owns the position: either they positioned it themselves, or a
+// press is still in flight.  An entry that slides between the moment it is
+// pressed and the moment it is released is not the entry that was pressed, so a
+// press in flight suspends the follow until the press completes.
+export function sectionFollowMayMoveTrack(ownership: SectionTrackOwnership): boolean {
+  return !ownership.pressInFlight && !ownership.userTrackPositionHeld;
+}
+
 type NativeSectionAuthorityNode = {
   attributes?: Record<string, unknown>;
   sourceAuthority?: Record<string, unknown>;

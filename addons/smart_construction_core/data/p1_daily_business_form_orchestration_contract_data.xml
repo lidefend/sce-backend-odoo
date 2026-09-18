@@ -83,7 +83,28 @@
             <field name="view_type">form</field>
             <field name="priority">88</field>
             <field name="company_id" eval="False" />
-            <field name="active" eval="True" />
+            <!-- U-C4 G06: retired; the rebuilt native form view 1654 owns structure.
+                 The body's `readonly` facts were annotations over the structure it
+                 used to own, and it had no action/view/role/company narrowing, so
+                 it applied to every surface of this model, not only to the two
+                 released entries (790, 879): the tree-only 852 and the derived
+                 surface 税务申报 → 申报期抵扣来源, whose unstored action dict
+                 (`sc.tax.filing.action_open_deductions()`) carries neither an
+                 action scope nor a view scope, were inside that scope as well.
+                 Those surfaces resolve `formStructureAuthority=entry_semantic_surface`
+                 because they have no entry-scoped declaration of their own; only
+                 790/879 resolve `native_authority`, from theirs.  This record
+                 declared the same `entry_semantic_surface` mode, so retiring it
+                 changes the section titles and the field annotations it merged in
+                 and never the authority of any surface.  Left active, its
+                 unconditional read-only annotations contradicted the native arch
+                 (`readonly="state == 'legacy_confirmed'"`) and the delivered field
+                 policy (auth=edit), which made required create facts unfillable.
+                 The facts it declared stay declared: the native body carries them,
+                 and the remaining model-wide contracts
+                 (`..._form_sections_v1`, `..._form_structure_generated_v1`) keep
+                 serving 852 and the derived surface. -->
+            <field name="active" eval="False" />
             <field name="status">published</field>
             <field name="version_no">1</field>
             <field name="contract_json" eval="{                 'view_orchestration': {                     'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},                     'views': {                         'form': {'composition_mode': 'entry_semantic_surface',                             'sections': [                                 {'title': '单据识别'},                                 {'title': '业务对象'},                                 {'title': '金额与办理'},                                 {'title': '附件与来源'}                             ],                             'fields': [{'name': 'deduction_bill_status_display', 'sequence': 10, 'readonly': True}, {'name': 'deduction_bill_document_no', 'sequence': 20, 'readonly': True}, {'name': 'tax_deduction_is_transfer_out_display', 'sequence': 30, 'readonly': True}, {'name': 'deduction_bill_project_name', 'sequence': 40, 'readonly': True}, {'name': 'partner_name', 'sequence': 50, 'readonly': True}, {'name': 'invoice_no', 'sequence': 60, 'readonly': True}, {'name': 'deduction_tax_amount', 'sequence': 70, 'readonly': True}, {'name': 'deduction_amount', 'sequence': 80, 'readonly': True}, {'name': 'deduction_surcharge_amount', 'sequence': 90, 'readonly': True}, {'name': 'note', 'sequence': 100, 'readonly': True}, {'name': 'creator_name', 'sequence': 110, 'readonly': True}, {'name': 'deduction_bill_date_display', 'sequence': 120, 'readonly': True}]                         }                     }                 }             }" />

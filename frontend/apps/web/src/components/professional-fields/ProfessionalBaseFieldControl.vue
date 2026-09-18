@@ -43,6 +43,7 @@
       :invalid="field.invalid"
       :described-by="describedBy"
       :label="field.label || field.name"
+      hide-label
       @change="emitValue($event)"
     />
     <ScSelect

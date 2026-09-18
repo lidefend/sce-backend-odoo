@@ -81,6 +81,17 @@ FORMAL_DISPLAY_COPY_SOURCES = {
     'sc.material.inbound': {
         'material_inbound_attachment_text_display': 'attachment_ids',
     },
+    # sc.tax.deduction.registration: the 附件 text summary the retired legacy bill
+    # bodies declared is a live single-source projection of the bill attachment
+    # carrier, and the 办理说明与附件 group carries `attachment_ids` itself, so a
+    # released configuration that still lists the summary presents one fact
+    # twice in one context.  The summary keeps its own duty as the list-column
+    # projection of the formal deduction bill tree.  It is registered rather
+    # than deleted: registration never removes the field, its configuration or
+    # its list consumers, it only keeps the copy out of the form-body union.
+    'sc.tax.deduction.registration': {
+        'deduction_bill_attachment_text': 'attachment_ids',
+    },
 }
 
 
@@ -93,6 +104,15 @@ class FormalDisplayCopySourcesMixin(models.AbstractModel):
 
     def _display_copy_source_fields(self):
         return dict(FORMAL_DISPLAY_COPY_SOURCES.get(self._name, {}))
+
+
+# The deduction registration form carries the same attachment-fact class as the
+# models above, so it opts into the protocol here: the parent class is declared
+# in this module before this subclass, exactly like the payment / invoice /
+# material entrants, so the registry always resolves the mixin.
+class TaxDeductionRegistrationFormalConfigContractFields(models.Model):
+    _name = 'sc.tax.deduction.registration'
+    _inherit = ['sc.tax.deduction.registration', 'sc.formal.display.copy.sources']
 
 
 _PAYMENTREQUEST_FORMAL_CONFIG_FIELDS = {

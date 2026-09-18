@@ -1384,7 +1384,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "38b5fd37f60b54af7c6d3e49d9ee1d58106c71a75351a63bd3ca3e68d96e9ae5",
+  "inputDigest": "828451f239fd698c5659275af56076b3c0ca09f9a142a1c935f241d503260177",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",

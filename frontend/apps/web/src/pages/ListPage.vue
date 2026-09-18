@@ -38,7 +38,7 @@
         :column-settings-message="columnVisibilityMessage"
         :save-status="columnSaveStatus"
         :save-status-text="columnSaveStatusText"
-        :show-fallback-create="canCreateRecord && !hasToolbarSlot"
+        :show-fallback-create="showFallbackCreateButton"
         :create-label="createLabelText"
         @search-input="onPlainSearchInput"
         @search-submit="submitPlainSearch"
@@ -98,7 +98,7 @@
         :save-status="columnSaveStatus"
         :save-status-text="columnSaveStatusText"
         :contextual="showBatchBar"
-        :show-fallback-create="canCreateRecord && !hasToolbarSlot"
+        :show-fallback-create="showFallbackCreateButton"
         :create-label="createLabelText"
         @search-input="onPlainSearchInput"
         @search-submit="submitPlainSearch"
@@ -312,6 +312,7 @@ import ScStatusBadge from '../components/design-system/ScStatusBadge.vue';
 import { formatMonetaryDisplayValue, resolveCurrencyDisplayLabel } from '../components/template/formSection.mapper';
 import { resolveCollectionPageJump, resolveCollectionPageLimit, resolveCollectionPageOffset, resolveCollectionPaginationMode } from '../app/presentation/collectionPaginationPresentation';
 import { resolveCollectionAggregateEntry } from '../app/presentation/collectionAggregatePresentation';
+import { resolveCollectionEmptyStateKind } from '../app/presentation/collectionEmptyStatePresentation';
 import ScTable from '../components/design-system/ScTable.vue';
 import ScEmptyState from '../components/design-system/ScEmptyState.vue';
 import { resolveEmptyCopy, resolveErrorCopy, type StatusError } from '../composables/useStatus';
@@ -466,7 +467,15 @@ const props = defineProps<{
   onGroupCollapsedChange?: (keys: string[]) => void;
   onPageChange?: (offset: number) => void;
   onPageLimitChange?: (limit: number) => void;
+  // Surface capability: whether this collection can create records at all.
+  // Consumers use it to word the empty state consistently with the entry
+  // control that actually opens the create form.
   canCreateRecord?: boolean;
+  // Whether this component should render its own inline create button.  The
+  // owning page may render the entry control elsewhere (for example in the
+  // page header), so presence of the capability must not by itself decide
+  // that the button belongs here.
+  showFallbackCreate?: boolean;
   createLabel?: string;
   onCreate?: () => void;
   showPlainSearch?: boolean;
@@ -504,23 +513,31 @@ const hasActiveConditions = computed(() =>
   || Boolean(String(props.searchTerm || '').trim())
   || Boolean(props.filterValue && props.filterValue !== 'all'),
 );
+// The empty surface and the entry control read one capability, so the copy
+// never tells the user the account cannot create while the entry control the
+// user can see still opens the create form.
+const emptyStateKind = computed(() => resolveCollectionEmptyStateKind({
+  hasActiveConditions: hasActiveConditions.value,
+  canCreateRecord: props.canCreateRecord === true,
+}));
 const emptyStateTitle = computed(() =>
-  hasActiveConditions.value
+  emptyStateKind.value === 'filtered'
     ? uiLabel('empty_filtered_title', '没有符合当前条件的记录')
-    : props.canCreateRecord
+    : emptyStateKind.value === 'create'
     ? uiLabel('empty_create_title', '当前还没有数据')
     : uiLabel('empty_readonly_title', emptyCopy.value.title),
 );
 const emptyStateMessage = computed(() =>
-  hasActiveConditions.value
+  emptyStateKind.value === 'filtered'
     ? uiLabel('empty_filtered_message', '可以调整或清除查询条件，查看其他业务记录。')
-    : props.canCreateRecord
+    : emptyStateKind.value === 'create'
     ? uiLabel('empty_create_message', '可以先新建一条业务记录，开始录入和办理。')
     : uiLabel('empty_readonly_message', emptyCopy.value.message),
 );
 const showPlainSearch = computed(() => props.showPlainSearch !== false);
 const hasToolbarSlot = computed(() => Boolean(slots.toolbar));
 const showFallbackPlainSearch = computed(() => showPlainSearch.value && !hasToolbarSlot.value);
+const showFallbackCreateButton = computed(() => props.showFallbackCreate === true && !hasToolbarSlot.value);
 const hasRetainedContent = computed(() => props.records.length > 0 && props.columns.length > 0);
 const groupedRows = computed(() =>
   Array.isArray(props.groupedRows) ? props.groupedRows : [],

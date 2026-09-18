@@ -21,7 +21,13 @@
       :aria-disabled="!hasMoreBefore"
       @click="scrollTrack(-1)"
     ><ScIcon name="arrow-left" :size="16" /></ScButton>
-    <div ref="trackRef" class="form-section-navigation__track" @scroll.passive="updateOverflow">
+    <div
+      ref="trackRef"
+      class="form-section-navigation__track"
+      @scroll.passive="onTrackScroll"
+      @pointerdown.passive="onTrackPointerDown"
+      @wheel.passive="onTrackWheel"
+    >
       <ScButton
         v-for="item in items"
         :key="item.key"
@@ -59,6 +65,7 @@ import ScButton from '../../components/design-system/ScButton.vue';
 import ScIcon from '../../components/design-system/ScIcon.vue';
 import {
   activeSectionKeyAtAnchor,
+  sectionFollowMayMoveTrack,
   sectionRevealTargetsContain,
   sectionScrollDelta,
 } from './nativeSectionNavigation';
@@ -86,6 +93,20 @@ let resizeObserver: ResizeObserver | null = null;
 let activeFrame = 0;
 let activationReleaseTimer = 0;
 let activatedKey = '';
+// A horizontal track position is owned by the reader once they move it: the
+// automatic follow that runs on every body scroll may highlight another entry
+// but must not slide the track, because an entry that moves between the moment
+// it is read and the moment it is pressed is not a pressable entry any more.
+let trackGestureStartLeft: number | null = null;
+let horizontalWheelUntil = 0;
+let userTrackPositionHeld = false;
+// A press is a promise about one entry: the entry that was pressed must still be
+// the entry that is released.  The automatic follow exists to keep the highlight
+// readable, so it is suspended for the whole press; otherwise a section change
+// caused by the body scroll slides the pressed entry out from under the finger
+// and the press is delivered to a neighbour or dropped on the track.
+let pressInFlight = false;
+const TRACK_HORIZONTAL_WHEEL_GRACE_MS = 250;
 
 function rootElement() {
   return navRef.value?.closest<HTMLElement>(props.rootSelector) || null;
@@ -109,12 +130,51 @@ function updateOverflow() {
   hasMoreAfter.value = track.scrollLeft + track.clientWidth < track.scrollWidth - 2;
 }
 
+function holdUserTrackPosition() {
+  userTrackPositionHeld = true;
+}
+
+function releaseUserTrackPosition() {
+  userTrackPositionHeld = false;
+  pressInFlight = false;
+  trackGestureStartLeft = null;
+  horizontalWheelUntil = 0;
+}
+
+function onTrackPointerDown() {
+  const track = trackRef.value;
+  if (!track || !trackOverflows.value) return;
+  pressInFlight = true;
+  trackGestureStartLeft = Math.round(track.scrollLeft);
+}
+
+function onTrackPointerUp() {
+  pressInFlight = false;
+  trackGestureStartLeft = null;
+}
+
+function onTrackWheel(event: WheelEvent) {
+  if (Math.abs(event.deltaX) <= Math.abs(event.deltaY)) return;
+  horizontalWheelUntil = performance.now() + TRACK_HORIZONTAL_WHEEL_GRACE_MS;
+}
+
+function onTrackScroll() {
+  const track = trackRef.value;
+  if (!track) return;
+  const left = Math.round(track.scrollLeft);
+  const dragMovedTrack = trackGestureStartLeft !== null && left !== trackGestureStartLeft;
+  const wheelMovedTrack = horizontalWheelUntil > 0 && performance.now() < horizontalWheelUntil;
+  if (dragMovedTrack || wheelMovedTrack) holdUserTrackPosition();
+  updateOverflow();
+}
+
 function scrollTrack(direction: -1 | 1) {
   const track = trackRef.value;
   if (!track) return;
   if (direction === -1 && !hasMoreBefore.value) return;
   if (direction === 1 && !hasMoreAfter.value) return;
   const distance = Math.max(160, Math.round(track.clientWidth * 0.6));
+  holdUserTrackPosition();
   track.scrollBy({ left: direction * distance, behavior: 'auto' });
   updateOverflow();
 }
@@ -151,7 +211,7 @@ function applyActiveSection(preferredKey = '') {
   );
   if (activeKey.value !== nextActiveKey) {
     activeKey.value = nextActiveKey;
-    centerActiveLink();
+    if (sectionFollowMayMoveTrack({ pressInFlight, userTrackPositionHeld })) centerActiveLink();
   }
 }
 
@@ -207,6 +267,7 @@ async function revealTarget(item: SectionNavigationItem) {
 }
 
 async function activate(item: SectionNavigationItem) {
+  releaseUserTrackPosition();
   const target = await revealTarget(item);
   if (!target) return;
   activatedKey = item.key;
@@ -232,6 +293,7 @@ async function activate(item: SectionNavigationItem) {
 }
 
 function bindNavigation() {
+  releaseUserTrackPosition();
   if (scrollOwner) scrollOwner.removeEventListener('scroll', queueActiveSection);
   scrollOwner = resolveScrollOwner();
   scrollOwner.addEventListener('scroll', queueActiveSection, { passive: true });
@@ -243,6 +305,8 @@ function bindNavigation() {
 }
 
 onMounted(() => {
+  window.addEventListener('pointerup', onTrackPointerUp, true);
+  window.addEventListener('pointercancel', onTrackPointerUp, true);
   resizeObserver = new ResizeObserver(() => {
     updateOverflow();
     queueActiveSection();
@@ -252,6 +316,8 @@ onMounted(() => {
 });
 watch(() => props.items.map((item) => `${item.key}:${item.selector}`).join('|'), bindNavigation);
 onBeforeUnmount(() => {
+  window.removeEventListener('pointerup', onTrackPointerUp, true);
+  window.removeEventListener('pointercancel', onTrackPointerUp, true);
   if (scrollOwner) scrollOwner.removeEventListener('scroll', queueActiveSection);
   if (activeFrame) window.cancelAnimationFrame(activeFrame);
   if (activationReleaseTimer) window.clearTimeout(activationReleaseTimer);

@@ -10,6 +10,9 @@ import xml.etree.ElementTree as ET
 from odoo.exceptions import AccessError, UserError, ValidationError
 
 from ..core.base_handler import BaseIntentHandler
+from ..core.lowcode_presentable_fields import (
+    LOWCODE_NON_PRESENTABLE_FIELD_NAMES,
+)
 from ..core.request_params import parse_non_negative_int
 from ..core.view_contract_presence import contract_contributes_view
 from ..utils.backend_contract_boundaries import (
@@ -49,58 +52,10 @@ LOWCODE_BUSINESS_FIELD_TYPES = {
     "selection",
     "text",
 }
-LOWCODE_TECHNICAL_FIELD_NAMES = {
-    "access_instruction_message",
-    "access_token",
-    "access_url",
-    "access_warning",
-    "activity_exception_decoration",
-    "activity_exception_icon",
-    "activity_ids",
-    "activity_state",
-    "activity_summary",
-    "activity_type_icon",
-    "activity_type_id",
-    "activity_user_id",
-    "activity_date_deadline",
-    "alias_bounced_content",
-    "alias_contact",
-    "alias_defaults",
-    "alias_domain",
-    "alias_domain_id",
-    "alias_email",
-    "alias_force_thread_id",
-    "alias_id",
-    "alias_name",
-    "alias_parent_model_id",
-    "alias_parent_thread_id",
-    "alias_status",
-    "alias_user_id",
-    "message_attachment_count",
-    "message_bounce",
-    "message_channel_ids",
-    "message_follower_ids",
-    "message_has_error",
-    "message_has_error_counter",
-    "message_has_sms_error",
-    "message_ids",
-    "message_is_follower",
-    "message_main_attachment_id",
-    "message_needaction",
-    "message_needaction_counter",
-    "message_partner_ids",
-    "message_unread",
-    "message_unread_counter",
-    "my_activity_date_deadline",
-    "rating_ids",
-    "rating_last_feedback",
-    "rating_last_image",
-    "rating_last_value",
-    "rating_percentage_satisfaction",
-    "rating_status",
-    "rating_status_period",
-    "website_message_ids",
-}
+# The explicit non-presentable name set is declared once in the platform core so
+# the field-availability picker here and the view-orchestration union consume
+# the same declaration.
+LOWCODE_TECHNICAL_FIELD_NAMES = LOWCODE_NON_PRESENTABLE_FIELD_NAMES
 LOWCODE_TECHNICAL_FIELD_PREFIXES = (
     "activity_",
     "alias_",

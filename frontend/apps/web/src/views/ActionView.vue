@@ -420,7 +420,7 @@
       :can-group-window-next="groupWindowNextOffset !== null"
       :on-group-window-prev="handleGroupWindowPrev"
       :on-group-window-next="handleGroupWindowNext"
-      :can-create-record="false"
+      :can-create-record="canCreateRecord"
       :create-label="toolbarUiLabel('create', '新建')"
       :on-open-group="handleOpenGroupedRows"
       :group-sample-limit="groupSampleLimit"

@@ -94,6 +94,18 @@ TOPIC_IDENTITIES = {
         ("action_sc_expense_claim_deduction_bill", "view_sc_expense_claim_deduction_registration_form", "menu_sc_deduction_bill"),
         ("action_sc_expense_claim_advance_fund", "view_sc_expense_claim_deduction_registration_form", "menu_sc_advance_fund"),
     ),
+    # U-C4 G06: 抵扣登记 (790 / menu 538) and 项目专项抵扣 (879 / menu 701) are the
+    # two registered consumers of model sc.tax.deduction.registration.  Neither
+    # action fixes a form view, so both resolve the model primary form
+    # view_sc_tax_deduction_registration_form.  Action 852 (扣款单) reaches the
+    # same primary form with records but fixes only a tree view, carries no
+    # release of its own and has no menu of its own, so it is tracked as a
+    # bypass consumer in the batch ledger instead of being registered as a
+    # route that cannot be reached read-only.
+    "tax_deduction": (
+        ("action_sc_tax_deduction_registration_user", "view_sc_tax_deduction_registration_form", "menu_sc_tax_deduction_registration_user"),
+        ("action_sc_product_project_tax_deduction_v1", "view_sc_tax_deduction_registration_form", "menu_sc_product_project_tax_deduction_v1"),
+    ),
 }
 TOPIC_SAMPLE_FIELDS = {
     "invoice": ["direction", "source_kind", "source_origin", "note"],
@@ -104,6 +116,7 @@ TOPIC_SAMPLE_FIELDS = {
     "receipt_income": ["state", "source_origin", "source_kind"],
     "payment_execution": ["state", "source_kind", "payment_family"],
     "expense_claim": ["state", "source_origin", "claim_type", "claim_flow_label"],
+    "tax_deduction": ["state", "deduction_scope", "deduction_flow_label", "source_origin"],
 }
 # Mechanism assertions for the read-only representative pass.  Names are the
 # registered display copies / canonical sources of the same business fact; the
@@ -156,6 +169,55 @@ TOPIC_REPRESENTATIVE = {
     # are observed as legal hiding instead of a lost fact.  Read-only; no change
     # set is touched.
     "expense_claim": {"section_navigation": True, "record_surface": True},
+    # U-C4 G06: the tax-deduction rebuild adds eight `data-sc-anchor` business
+    # sections to the shared primary form (seven titled sections plus the source
+    # trace inside the conditional 迁移来源 page), recovers the declared facts the
+    # retired entry bodies owned, and keeps the untitled column wrapper as
+    # layout.  The same read-only battery is the mechanism assertion: every
+    # 章节入口 must resolve and reveal its target, and the command bar /
+    # navigation / body bands must stay separated.  The responsibility page and
+    # the provenance page are conditional on the record itself, so
+    # `record_surface` replays the battery on the governed sample of the same
+    # action; action 879 has an empty domain and is recorded as an uncovered
+    # record surface instead of being silently shortened.  Read-only; no change
+    # set is touched.
+    #
+    # G06 正文整改: the two attachment expressions the retired legacy bill bodies
+    # declared repeated the attachment fact inside the same 办理说明与附件
+    # context the native carrier `attachment_ids` already presents, so they are
+    # excluded from the body while staying declared for the scenarios that own
+    # them (`deduction_bill_attachment_text` sums on the formal deduction bill
+    # tree; `message_attachment_count` is the mail counter the collaboration
+    # panel presents).  The check asserts the behaviour - the copy is neither a
+    # render-tree field node nor a rendered DOM field, the copy stays declared
+    # in the contract, and the canonical carrier keeps its single entry - so a
+    # later regression that unions either copy back into the body fails here
+    # instead of relying on a name/suffix guess.  Read-only.
+    "tax_deduction": {
+        "section_navigation": True,
+        "record_surface": True,
+        "display_copy_out_of_body": ["deduction_bill_attachment_text", "message_attachment_count"],
+        "require_render": ["attachment_ids"],
+        # G06 空态整改: the empty collection and the create entry have to
+        # describe the same capability.  Action 879 has an empty action domain,
+        # so its list route is the surface that showed a copy claiming the
+        # account had no create right while the page header still opened the
+        # create form.  The check reads the delivered list page: while a usable
+        # create entry is present the empty copy must not claim the account
+        # cannot create, and without one it must not invite the user to create.
+        # Read-only; no record is written.
+        "empty_list_state": True,
+        # G06 字段职责: the retired model-wide P1 fact declaration
+        # (`sc_tax_deduction_registration_p1_form_business_facts_v1`) marked
+        # `invoice_no`, `deduction_amount`, `deduction_tax_amount`,
+        # `deduction_surcharge_amount` and `note` unconditionally read-only,
+        # while the rebuilt native body declares them read-only only at
+        # `state == 'legacy_confirmed'`.  That body is retired now, so this is a
+        # regression guard: the browser check asks the rendered page instead of
+        # the declarations, and a fact the delivered create profile requires has
+        # to expose a control the user can actually fill.
+        "required_fillable": True,
+    },
 }
 if topic not in TOPIC_IDENTITIES:
     raise RuntimeError("unregistered formal form topic")
