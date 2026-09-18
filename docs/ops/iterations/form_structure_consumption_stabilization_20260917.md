@@ -2192,7 +2192,7 @@ fixture reset／发布快照／无关 upgrade；**未创造任何业务数据**�
 
 | 层 | 入口 | 结果 |
 |---|---|---|
-| L1 | `make ci.local.iteration` | **PASS**：16 静态测 0 failed；`change_state=dirty`、`changedPathCount` 为批内路径数 |
+| L1 | `make ci.local.iteration` | **PASS**：16 静态测 0 failed；`change_state=clean`、`changedPathCount=10`、`unmappedPathCount=10`（即本批 10 路径，无新增未映射路径） |
 | L2 | `make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestContextWorkspaceNativeLowcode,/smart_construction_core:TestTeamLoanDeductionWorkspace,/smart_construction_core:TestCurrentAccountWorkspace,/smart_construction_core:TestCompanyProjectRefundWorkspace'` | **PASS**：**19 测 0 failed 0 error**（新增类 13 测 ＋ 三个既有同类 6 测）。过程中一次中间失败为**测试书写缺陷**（Python 字面量写了 `公司&amp;项目退款`，XML 解析后实体已解码），改为 `公司&项目退款` 后复跑全绿 |
 | L3 | `make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1` | **PASS**：exit 0，`[local.dev.demo.authority] PASS`。升级后模块 `state=installed`、`latest_version=17.0.0.168`，与**磁盘 manifest 版本相同**，容器内 `/mnt/source-addons` 三视图文件 md5 与宿主**一致** |
 | L3-契约回读 | 运行中服务（HTTP `127.0.0.1:8070`，`sc_test_admin` 会话） | **PASS**：三视图 arch **含 `data-sc-anchor`**；三入口契约 `status=published`、`mode=native_semantic_surface`、`keys=['composition_mode','title']`。**不是只看服务健康**：契约与 arch 均由**运行进程**回读，排除「前端源码一致＝候选一致」的误判（另核对后端加载代码／模块升级状态，见上 L3） |
@@ -2208,21 +2208,40 @@ fixture reset／发布快照／无关 upgrade；**未创造任何业务数据**�
    **不存在**持久记录面，故本组**不登记** `record_surface`，也**不**报告 `empty_action_domain`；
    只读盘点报告中的等价事实是每入口 `sample_state=empty_action_domain`（域内 0 行）。
    **未为补样本造任何工资／发放／退款业务数据。** L2 以「模型 transient ＋ 该模型无模型级契约」固定该口径。
-2. **编辑态动作可用性未在运行态复核 —— 无合法记录**：表头对象按钮（875 的 3 个、877 的 6 个、878 的 5 个）
-   在契约中**已授予**（`actionContract.actionRuleList` 中 `allowed=true`、`enabled=true`、
-   `source=native_form_header`，edit／readonly 在位），但在 **create 档位**由平台治理规则静态隐藏
-   （`contract_governance_create_profile.py` 给出 `reason_code=CREATE_PROFILE_REQUIRES_RECORD`）。
-   该规则只在 `head.interaction_mode == 'wizard'` 时豁免，而 `interaction_mode` 仅在
-   「`action.target == 'new'` 且模型为 transient」时为 `wizard`（`page_assembler.py`）。
-   本组三条 action 的 `target` 均为 `current`（由 L2 固定），故 create 面不显示对象按钮。
+2. **编辑态动作可达性：治理函数已实测；端到端编辑面仍无合法样本**：表头对象按钮（875 的 3 个、
+   877 的 6 个、878 的 5 个）在契约中**已授予**（`actionContract.actionRuleList` 中 `allowed=true`、
+   `enabled=true`、`source=native_form_header`，edit／readonly 在位），但在 **create 档位**由平台治理
+   规则静态隐藏（`contract_governance_create_profile.py` 给出 `reason_code=CREATE_PROFILE_REQUIRES_RECORD`）。
+   该规则只在 `head.interaction_mode == 'wizard'` 时豁免；`interaction_mode` 仅在
+   「`action.target == 'new'` 且模型为 transient」时为 `wizard`（`page_assembler.py`），而本组三条
+   action 的 `target` 均为 `current`（L2 固定），故运行态取值为 **`page`**。
+   **补充执行核对（2026-09-19，受管 local.dev 只读）**：在 `sc_dev_demo`／`sc_test_admin` 下直接执行
+   生产模块内的纯治理函数 `mark_record_dependent_native_buttons_hidden_on_create`，对
+   `interaction_mode ∈ {page, form, wizard}` × `{create, edit}` 六格逐一取值：`page` 与既有测试已覆盖的
+   `form` **输出逐字节相同**（create 档位 `hidden=true`＋`reason_code=CREATE_PROFILE_REQUIRES_RECORD`＋
+   `visible_profiles` 由 `[create,edit,readonly]` 收窄为 `[edit,readonly]`＋`requires_record=true`；
+   edit 档位不改写，`visible_profiles` 保持三档）；`wizard` 两档均不隐藏。故「`page` 走隐藏分支」
+   由**代码推断**升级为**已执行观测**，且该规则**对 edit 档位整体不生效**
+   （`is_create_render_profile` 由 `record_id` 决定，`record_id=42` 时返回 `False`）。
+   同批回读：模块 `state=installed`、`latest_version=installed_version=17.0.0.168`，容器内
+   `contract_governance_create_profile.py`／`page_assembler.py` 的 md5 与宿主**一致**，
+   即被执行的正是**运行态加载的同一份代码**。
+   仍未覆盖的只剩**端到端**（浏览器／HTTP）edit 档位渲染：无合法持久记录可绑定，故**不写成通过**。
    **这是 G08 之前就存在的行为**：`interaction_mode` 与 `target` 均不由本批改动，退出体声明与
    `composition_mode` 也不在该治理规则的输入里；本批退役前后该结果一致。
-   因无合法持久记录，**编辑档位的按钮可达性未在运行态复核**，登记为未覆盖项（不写成通过）。
 3. **设计器／表单设置入口对本组按设计不注入**：`page_assembler._inject_current_form_settings_action`
    对 transient 模型直接返回（`if not model_rec or model_rec.transient: return`），与契约
    `composition_mode` 无关；因此 875／877／878 在**退役前后都没有**入口级设计器，本组也不存在
    可跑的「预览→发布→刷新→回滚」闭环。**报告为按设计边界（登记项），不记为产品缺陷，也不冒充已验证。**
    由此，`更多操作` 表头收纳（依赖同一 `buttons` 组动作）在本组同样不出现。
+   **首次偏差与影响面（只读盘点，2026-09-19）**：首次偏差点即该函数的 early-return
+   （`page_assembler.py`：`model_rec = self.su_env["ir.model"].search([("model", "=", model)], limit=1)`；
+   `if not model_rec or model_rec.transient: return`），它位于管理员与配置 ACL 检查**之后**、
+   动作注入**之前**。全量 **277** 条在册契约中目标模型为 transient 的共 **4** 条：
+   本组 **173／175／176**（875／877／878，`status=published`）＋**既有非本批 180**
+   （`sc.product.system.settings`，action **887**，`status=published`）。
+   即该缺口**不由 G08 引入**，但 G08 把受影响入口由 1 条扩到 4 条；本批**未把它混入入口迁移**，
+   对 `composition_mode`／退役体的改动不触及该 early-return 的任何输入，故偏差范围可界定。
 4. **未执行项（保持未执行）**：最终 Quick、推送、建 PR、合并、部署、冻结、G09 启动、六组副本候选迁移、
    `sync_demo`／fixture reset／发布快照、历史工作树清理。
 5. **写入核对（只读回读）**：受保护草稿 163／190／192／194／233／267／274／276 的 `write_date`
@@ -2233,6 +2252,12 @@ fixture reset／发布快照／无关 upgrade；**未创造任何业务数据**�
 
 状态：**G07 已集成（主线 `26d254ad`）｜G08 整组自验完成（未冻结、未推送、未部署）｜待集中产品复核｜
 台账 25（本批不扣减，入口退役待合入后独立核对）｜89 入口整体交付未完成**。
+
+补记（2026-09-19，仅记录文档改动，无代码／测试改动）：8.34.8-② 的「`page` 走 create 隐藏分支」
+已由代码推断升级为**在受管运行态直接执行治理函数**的观测，并同批核到后端加载代码 md5 与模块版本；
+该条**仍未覆盖的只剩端到端 edit 档位渲染**，如实保留为未覆盖项，未改写成通过。
+8.34.8-③ 补登**首次偏差点与影响面**（277 条在册契约中 transient 目标共 4 条：本组 3 条＋既有 180／887 一条）。
+补记后按批内路径集复跑 L1：**PASS**（16 静态测 0 failed、`change_state=clean`、10 路径），L2／L3／L4 输入未变故按输入不变复用。
 
 下一步（**未执行**）：集中产品复核 → 按整组页面组织、字段表达、明细操作、导航与配置效果统一列问题 →
 定向修正 → 冻结候选 → 最终 Quick → 独立复核 → 受管 PR。
