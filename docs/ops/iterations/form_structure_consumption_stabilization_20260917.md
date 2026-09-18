@@ -1142,7 +1142,7 @@ G05 残留缺口（793 及 6 个无声明入口的 `state` 可写、`sc.expense.
 唯一写入者为本会话执行体，其它工作树未触碰。完整记录见
 `docs/ops/iterations/uc4_tax_deduction_native_lowcode_20260918.md`。
 
-**实际改动 6 个路径**：原生 arch 加 8 个 `data-sc-anchor` 业务章节（其中 2 个归属条件页 `责任余额`／`迁移来源`）、
+**实际改动 6 个代码／工具路径 + 3 个记录路径（共 9 个路径）**：原生 arch 加 8 个 `data-sc-anchor` 业务章节（其中 2 个归属条件页 `责任余额`／`迁移来源`）、
 按退役配置反推的缺失字段全部补回（含 `迁移来源` 页的 6 个来源追溯事实）、把两个退役入口声明过的只读限制写回 arch
 （`state`／`source_origin`／`currency_id` 收紧，`business_category_id` 改为按 `deduction_scope` 条件只读，
 使共享表单同时满足 879 只读与 790 可编辑），并**删除原生 arch 自身的重复呈现**：`withholding_amount`
@@ -1174,6 +1174,22 @@ findings 全空，吸顶操作行 `175–205` 与导航 `218–257` 分离 13px�
 **登记未改**：`smart_core/app_config_engine/services/view_Parser/base.py:102` 以 `not xml_content` 判断入参，
 而该函数同时接受 lxml Element（其他两个调用点都以 Element 传入）；当前不可观测（真实 form arch 必有子节点），
 仅对无子节点元素会静默返回 `{}` 并抛 `FutureWarning`，属潜在健壮性缺口，需 P0 单独决定，本批不扩。
+同理登记未改：`scripts/verify/view_orchestration_product_boundary_guard.py` 的 `ALLOWED_COMPOSITION_MODES`
+不含 `native_semantic_surface`、且只在 form 带 `fields` 时才校验模式，缺一条「`native_semantic_surface`
+必须无 `sections/fields/columns`」的正向校验；该守卫实跑 `FAIL`，5 条错误全部指向本批未改的契约
+（`tender_bid`／`payment_request`／`policy_document`），守卫与其输入均不在本批 9 个路径内 → 预先存在、非本批引入，
+且该守卫未纳入 `ci.local.quick.run`／`pr.push`，不影响本候选 Quick。是否补校验属 P0/P4 单独决定。
+
+**独立复核（只读、绑定冻结身份）**：结论 **APPROVE**，无 blocker／major。复核者独立复现了
+`HEAD`／`HEAD^{tree}`／branch／clean 工作树、完整指纹 digest（`f54cf06e…`，7511 路径）与 Quick 回执身份；
+并逐条核对：两入口退役为 `native_semantic_surface` 且 879 的 5 个保留键位于 `context`（非第二份结构）、
+模型级 143/5/129 与旁路 852 未被改动且仍可用、`state`／`source_origin`／`currency_id`／`withholding_amount`
+在 1654 arch 中各出现**恰好 1 次**且去重保留在 `抵扣金额与税额`、条件只读经运行时实测
+「790 可编辑／879 只读」、测试无硬编码库内 id 且为行为断言、`addons/smart_core/**` 与台账（保持 31）均未被改、
+grep 无 ACL／groups／ir.rule／domain 改动。提出的 3 项 minor 与 5 项 nit 已在本提交闭合：
+① 记录路径数字口径（6→「6 代码/工具 + 3 记录 = 9」）；② 相邻用例改为实跑取回执（`0 failed of 2 tests`）；
+③ 登记上述共享守卫的既有失败。另把「790 可编辑事实」的断言由**表达式形状**升级为**解析后策略行为**
+（`readonly=false` / `auth=edit`），并登记只读呈现层 `NATIVE_MODIFIER_UNRESOLVED` 的保守呈现事实。
 
 台账保持 **31**：本批在台账内**正好 2 条**（index 21 = 790／538／1654、index 22 = 879／701／1654），
 退役与 **31 → 29** 扣减按 G03/G04/G05 先例留待合入后由独立提交落地，本实现提交不改台账文件。

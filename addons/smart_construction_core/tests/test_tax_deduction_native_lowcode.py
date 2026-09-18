@@ -389,12 +389,18 @@ class TestTaxDeductionNativeLowcode(TransactionCase):
         # from 抵扣登记.
         general = self.contract(*self.GENERAL_ENTRY[:2])
         for name in self.GENERAL_AUTHORABLE_FACTS:
-            readonly = (self.field_node(general, name).get("modifiers") or {}).get("readonly")
-            self.assertIsInstance(
-                readonly, dict,
-                (self.GENERAL_ENTRY[0], name, "a fact 790 declared authorable became unconditionally read-only"),
+            # the arch still has to state the scope condition ...
+            self.assertTrue(
+                (self.field_node(general, name).get("modifiers") or {}).get("readonly"),
+                (self.GENERAL_ENTRY[0], name, "the arch dropped the scope condition"),
             )
-            self.assertIn("deduction_scope", readonly.get("raw", ""), (self.GENERAL_ENTRY[0], name))
+            # ... and the renderer has to resolve it to an editable fact for the
+            # entry that declared it authorable.  Asserting the resolved policy
+            # rather than the modifier expression keeps this a behaviour check.
+            policy = self.widget_status(general).get(name) or {}
+            self.assertIs(policy.get("readonly"), False,
+                          (self.GENERAL_ENTRY[0], name, "a fact 790 declared authorable became read-only"))
+            self.assertEqual(policy.get("auth"), "edit", (self.GENERAL_ENTRY[0], name))
 
     def test_native_anchors_wrappers_and_conditional_sections(self):
         """Action carriers, layout wrappers and the conditional sections keep their place."""

@@ -31,7 +31,7 @@
 | Why Not Elsewhere | 不把结构写进共享层 sections，也不删除／改写模型级配置（另有消费者 852） | |
 | Blast Radius | `sc.tax.deduction.registration` 的 790／879 两个入口 + 同模型旁路入口 852（不改造，仅验不被误伤） | |
 
-## 2. 实际改动（6 个路径）
+## 2. 实际改动（6 个代码／工具路径 + 3 个记录路径 = 9 个路径）
 
 1. `views/core/tax_deduction_registration_views.xml`（+22/−13）：表单加 **8 个** `data-sc-anchor` 业务章节锚点
    （`deduction_business_direction`／`deduction_project_partner`／`deduction_invoice_info`／`deduction_amount_tax`／
@@ -82,6 +82,7 @@
 - 模型级配置 143／5／129 与旁路入口 852：只读核对，未改、未删、未停用。
 - `docs/ops/iterations/form_structure_compatibility_consumers_v1.json`：**实现提交未改**（保持 31），
   扣减在合入后由独立提交落地。
+- `scripts/verify/view_orchestration_product_boundary_guard.py`：**未改**（§10 登记其既有失败）。
 - `/tmp` 下本轮只读诊断脚本：全部在进程外，不进入提交。
 
 ## 3. 机制审查结论（先审查，再决定登记范围）
@@ -107,8 +108,8 @@
 | 层 | 入口 | 身份 | 结果 |
 |---|---|---|---|
 | L1 | `make ci.local.iteration` | HEAD `daf9a978` + dirty（6 路径） | **PASS**：16 tests OK；`changedPathCount=6`、`change_state=dirty coverage=L1_only receipt=none`（L1 不入交付证据） |
-| L2（后端，本批） | `make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestTaxDeductionNativeLowcode'` | 同上 | **PASS**：`0 failed, 0 error(s) of 7 tests` |
-| L2（后端，相邻） | `make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestProjectSpecialTaxDeduction'` | 同上 | **PASS**（沿用既有回执：本批其后只改过新增测试文件自身，未改产品文件与相邻测试的输入） |
+| L2（后端，本批） | `make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestTaxDeductionNativeLowcode'` | 同上 | **PASS**：`0 failed, 0 error(s) of 7 tests`（独立复核的 nit 已闭合后重跑：790 可编辑事实改为断言解析后策略 `readonly=false` / `auth=edit`） |
+| L2（后端，相邻） | `make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestProjectSpecialTaxDeduction'` | 同上 | **PASS**：`0 failed, 0 error(s) of 2 tests`（独立复核指出原「沿用回执」未留存对应回执，故本提交前实跑一次取回执） |
 | L3 | `make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1` | 运行身份 `project=sc-local-dev db=sc_dev_demo` | **PASS**：78 modules loaded（90.6s / 58295 queries）＋ `local.dev.ready` PASS ＋ `local.dev.demo.authority` PASS（`finance_xmlid=present finance_membership=authoritative company_currency=CNY sale_tax_9=present`） |
 | L4（只读代表面） | `make local.dev.form_lowcode.browser FORM_LOWCODE_TOPIC=tax_deduction FORM_LOWCODE_REPRESENTATIVE=1` | 同上 | **PASS**：`ok=true restored=true`，3 条 create/record 路由，findings 全空，吸顶不重叠；1 项登记事实未覆盖（§6）。证据：`artifacts/lowcode-form-loop/browser/representative-report-tax_deduction.json` |
 
@@ -164,6 +165,13 @@ L2 覆盖的 7 个用例：入口契约只花一份原生结构、legacy 结构�
 `recovery_state={"draft_tokens_held":0,"rollback_tokens_pending":0,"released":true}`、`cleanup_guard={"decision":"proceed","foreign":[]}`、
 `browser_errors=[]`、`transport_recoveries=[]`；runner 明确输出 `business fingerprints unchanged`，全程只读，
 未保存／发布／回滚／清理任何草稿，受保护草稿 163/190/192/194/233/267/274/276 未被触碰。
+其中草稿编号口径为 `ui.business.config.change.set`（低代码变更集）上的 id；同一编号在
+`ui.business.config.contract.version` 上是另一批对象，两者不可混用。
+
+只读呈现层另有一处已登记的呈现事实（不影响功能）：790 `record` 呈现下 `business_category_id` 的
+`widgetStatus` 报 `readonly=true`、`reasonCode=NATIVE_MODIFIER_UNRESOLVED`——条件表达式
+（`deduction_scope == 'project_special' …`）在只读**呈现**模式不求值，故按「无法解析即只读」保守呈现；
+可写面（create）解析为 `readonly=false` / `auth=edit`，即合法编辑入口未丢失。
 
 | 入口 | 路由 | 字段 | 章节 | 导航 resolved+visible | findings |
 |---|---|---|---|---|---|
@@ -200,3 +208,4 @@ L2 覆盖的 7 个用例：入口契约只花一份原生结构、legacy 结构�
 | 原生 1654 在同一表单把 `withholding_amount` 呈现两次（`抵扣金额与税额` + `扣款办理`） | P1 产品结构 | **本批已修**：保留在 `抵扣金额与税额`，`扣款办理` 不再重复；L2 用 `SINGLE_PRESENTATION_FACTS` 断言「同一表单内一次呈现」 |
 | `smart_core/app_config_engine/services/view_Parser/base.py:102` 用 `not xml_content` 判断入参，而该函数同时接受 lxml Element（第 104 行 `else xml_content`）；lxml 对 Element 的真值语义已废弃（相邻调用点 `contract_Parser.py:109`、`parsers Tree Form.py:698` 都以 Element 传入） | P0 机制 | **登记不改**（改 `smart_core` 超出本批边界）。当前不可观测：真实 form arch 必有子节点，故不会退化为 `{}`；仅对**无子节点**的元素会静默返回 `{}` 并抛 `FutureWarning`。属潜在健壮性缺口，需 P0 单独决定 |
 | 本批新增测试首版用 `arch_fields.get(name) or {}` 读 lxml 元素，触发同一条 `FutureWarning`，且对无子节点的字段会读错可见性 | P4 本批引入 | **本批已修**：改为显式 `is not None`，并把断言提升为行为断言（声明事实恰好呈现一次 + 隐藏必须是消费层可见性而非静默移除） |
+| `scripts/verify/view_orchestration_product_boundary_guard.py` 的 `ALLOWED_COMPOSITION_MODES` 不含 `native_semantic_surface`，且只在「form 带 `fields`」时才要求允许模式 —— 缺一条「`native_semantic_surface` 必须无 `sections/fields/columns`」的正向校验 | P0/P4 共享守卫 | **登记不改**。该守卫实跑 `FAIL`（exit 2），5 条错误全部指向本批**未改**的契约（`tender_bid` P1 事实、`payment_request` P1 事实、`policy_document_form_v1`、`tender_bid_registration_productized_form_v1`、`tender_bid_registration_form_structure_v1`）；守卫文件与这 5 个输入都不在本批 9 个路径内，故**预先存在、非本批引入**。本批两条退役契约因已删 `fields` 而通过该守卫。该守卫未纳入 `ci.local.quick.run` 与 `pr.push`，不影响本候选的 Quick。是否补正向校验属 P0/P4 单独决定 |
