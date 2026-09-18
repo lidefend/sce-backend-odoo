@@ -1866,9 +1866,10 @@ L2 `test_the_model_wide_annotation_keeps_serving_the_model` 固定 79 仍 `activ
 
 ### 8.33.10 状态
 
-批次状态：**G07 集中产品复核完成｜批次验收待收口｜未冻结｜未集成｜未部署**。
-台账 **29**；89 入口整体交付未完成。下一步（未执行）：定向反例冻结 → 生成证据准备与预检 →
+批次状态（**该阶段历史口径**）：**G07 集中产品复核完成｜批次验收待收口｜未冻结｜未集成｜未部署**。
+台账 **29**；89 入口整体交付未完成。下一步（**该阶段未执行**）：定向反例冻结 → 生成证据准备与预检 →
 干净 HEAD 完整指纹 → 一次 Quick → 独立复核 → 外部归档 → Draft PR。
+上述「未执行」项已在本批后续阶段执行并闭合，最终口径见 **8.33.13**。
 
 ### 8.33.11 收口前自我复核的发现与修正（口径，非产品缺陷）
 
@@ -2030,3 +2031,71 @@ S8 路径数（8.33.1／8.33.8 的"12"）、S9 断言行数与 L2 测数（8.33.
 
 **第 5 轮**：本轮订正产生**新候选**，重新冻结并重跑一次 exact-head Quick；第 5 轮复核只审本
 增量，结论与回执哈希写入外部归档 `review.json`。
+
+#### 8.33.12.4 第 5 轮复核（绑定最终候选 71546e09）与整批终止
+
+第 5 轮独立只读复核绑定**最终候选** `71546e09e67fec865579a20f7f551985178048e9`，只审增量
+`4b810fa2..71546e09`，结论 **APPROVE**（`noOpenBlockerOrMajor: true`，无 open blocker／major／minor）：
+
+- **R-G4-1 闭合**：记录按「**移除而非刷新**」处置——正文不再引用任何未限定路径的锚点读数，
+  路径限定读数 **11** 可复现，并把边界规则写入记录（只允许①路径限定／排除本记录文件的命令读数，
+  ②**不可变提交处**测得的阶段值）。
+- **G5-1（nit，已闭合）**：其余记录内数字（新增断言 89、删除断言 4、锚点分组 11、payroll 测试 15，
+  以及 8.33.1 的批内路径计数）与边界规则自洽。
+- **G5-2（nit，**open**，登记为「无需修复的残留」）**：8.33.1 的批内路径计数是整批差异总数，
+  不属于上述两类形式之一；但路径集合不随记录内容变化，故**可复现**。**按事实登记为 open，
+  不写成闭合、不作为缺陷、不触发修复。**
+
+**复核者自陈局限（保留，不代为消除）**：本轮未执行 Quick／L3／Odoo 测试／浏览器门禁，
+全部 PASS 与身份结论读自已存在的回执与本地日志；库内 id、模型级契约 79、change set 395／397
+与受保护草稿 `write_date` 属库事实，只读复核无法复测；`artifacts/` 为外链目录，
+指纹 digest 与 7515 路径未由复核者重算；`tmp/g07-evidence` 日志为未跟踪的本地产物。
+
+**第 5 轮为终止轮**：结论 APPROVE 且无 open blocker／major／minor，记录口径不再迭代。
+
+### 8.33.13 G07 主线集成与台账 29 → 25（2026-09-18）
+
+冻结候选 `71546e09e67fec865579a20f7f551985178048e9`（tree `6c0cbcd9306a61fa72aea51231cade997af7e4de`，
+7515 路径完整指纹，exact-head `ci.local.quick` PASS）经 **PR #495** 以 squash 合入 main
+`b781e3c241bf42b2ae51c6ac4064c4a1af647a65`；`origin/main^{tree}` 与候选 tree **逐字节一致**
+（`mergedAt` 2026-09-18T13:57:52Z，`mergedBy` lidefend）。PR 承载范围为 8.33.1 所列的批内路径与提交
+（**不可变提交处的阶段值**），不是单一「工资表单迁移」；其中 `d2997196` 为 G06 收口随本批带入（见 8.33.3）。
+
+该 head 上远端必检项 **9 success／3 skipped／0 fail**。success：`classify`／`frontend_release_gate`／
+`merge_policy_gate`／`professional_authorization`／`professional_quality_gate`／`public_guard`／
+`public_guard_classify`／`python310_runtime_compatibility`／`release_candidate_gate`；
+skipped：`fast`／`classify`（候选检查变体）／`wait_for_candidate_checks`。
+合入后 main 的推送运行（run `35353315462`）中 `classify` 与 `merge_policy_gate` 同为 success、`fast` skipped。
+
+台账 **29 → 25**：退役本册 **4 个正式入口条目**（**873 薪资核算清单／874 薪资发放登记／884 社保公积／
+858 工资薪酬**，视图 1697／1700），登记于 `uc4G07PublishedAudit`。按**已合入源码**逐项核对：
+
+- 四条入口契约（`project_payroll_productized_form_v1`／`project_salary_payment_productized_form_v1`／
+  `social_fund_form_v1`／本批新增的 `hr_payroll_management_productized_form_v1`）只留 `title` ＋
+  `composition_mode: native_semantic_surface`（priority 800，各自绑定本入口 action），
+  **无 sections／fields／columns**，兼容结构副本已退出；884 的 `fact_authority`／`allowed_fact_types`
+  原样保留在 `view_orchestration.context`（退役的是结构副本，不是该入口声明的业务事实范围）。
+- **858 的计数边界**：该条目原先引用**模型级** `sc_hr_payroll_document_form_structure_generated_v1`
+  （id 79）；本批为它补了**入口级发布**，模型级层不再到达该入口、但仍服务模型。因此 858 按
+  **条目退役**计数，**不是**退役模型级层；模型级 79 **未删未改**。
+- **不额外计数**：与 1697 共享的 5 个兄弟入口（660／661／662／663／664）**从未登记在本册**，
+  其入口级结构副本随本批一并退役，但**不构成额外扣减**（`uc4G07PublishedAudit.bypassConsumers`，
+  `counted=false`）；视图 1697（8 个 action 共享）／1700 为共享原生主视图，**不随扣减退役**。
+
+**保留边界（不随本批关闭）**：884／660／661／662／874 记录态 `empty_action_domain`（域内 0 行）、
+**未造数据补样本**；663／660／661／662／664 浏览器导航 `NAVIGATION_AUTHORITY_DENIED`（角色边界，
+不计产品缺陷、不写成通过）；设计器一次宿主传输中断（`net::ERR_NETWORK_CHANGED`）单独记录、
+不改写成「零传输错误」；复核草稿 397 保留；852 列表域与约 6 组副本候选继续留台账。
+`nextBatch` 前进到 **G08 上下文办理工作台**（875／877／878，视图 1932／1933／1934），
+`sourceMainlineHead` 更新为合入后 main；**G08 未启动**。
+
+本提交为**文档类单职责提交**（台账 ＋ 本记录，路径集合固定为 2）；**未触碰**任何产品代码、契约、
+测试或验证工具输入，故不改动 8.33.8 的 L1–L4 结论，也不重跑 Quick。
+
+**本提交自身验证**：L1 `make ci.local.iteration` PASS（16 静态测；变更路径映射为 2 条文档路径、
+无 L2 目标，`manualNonZeroL2Required` 因路径未映射而提示，但无产品／测试输入变化，故**无对应 L2 目标可跑**）；
+`make ci.generated_evidence.preflight` PASS（生成报告与测试清单全部为当前，含 7 测非零）。
+按阶段规则**不在本提交重跑 Quick**：Quick 绑定干净冻结候选，本提交是合入后的文档收口，
+其 Quick 回执沿用候选 `71546e09` 的 exact-head 回执；待该提交随下一批 PR 交付时按其候选重新冻结。
+
+状态：**G07 批次验收完成（本批范围）｜主线集成完成（PR #495，squash 同树）｜未部署｜89 入口交付未完成｜台账 25｜G08 未启动**。
