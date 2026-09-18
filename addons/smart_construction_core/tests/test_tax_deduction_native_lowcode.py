@@ -15,7 +15,12 @@ class TestTaxDeductionNativeLowcode(TransactionCase):
     Neither action fixes ``view_id``/``view_ids``, so both entries resolve the
     model primary form, and action 852 (扣款单) fixes only a tree view, so its
     records fall back to the same primary form as well: one body serves three
-    entries of which two are ledger consumers.
+    stored entries of which two are ledger consumers, plus one derived surface
+    (税务申报 → 申报期抵扣来源, ``sc.tax.filing.action_open_deductions()``) that
+    returns an unstored action dict, so its form resolves with no action scope at
+    all.  A model-wide contract has no action/view/role/company narrowing, which
+    is why retiring one of them changes every one of those surfaces and why the
+    derived surface is part of the declared scope instead of an afterthought.
 
     The rebuilt native arch owns the structure.  Entries 790 and 879 declare
     ``native_semantic_surface`` and drop their own section/field/column bodies,
@@ -598,6 +603,110 @@ class TestTaxDeductionNativeLowcode(TransactionCase):
         # 852 renders the same native body, so retiring a redundant second
         # structure may not cost it a single fact that body declared.
         self._assert_declared_facts_survive(self.BYPASS_ENTRY[0], data)
+
+    def test_a_derived_surface_without_an_action_scope_keeps_the_declared_facts(self):
+        """A surface opened by an unstored action consumes the model-wide floor.
+
+        税务申报 → 申报期抵扣来源 is reached from the 税务申报 form's 抵扣来源
+        stat button, which returns an action dict built in code
+        (``sc.tax.filing._source_action``) with no stored
+        ``ir.actions.act_window``.  The record page takes ``action_id`` and
+        ``view_id`` from the route query, and a derived action dict carries
+        neither, so this form resolves with no action scope and no view scope.
+
+        The retired model-wide P1 body carried the same un-narrowed scope
+        (``action_id`` / ``view_id`` / ``role_key`` / ``company_id`` all empty),
+        so it applied to this surface exactly as it applied to 790 / 879 / 852.
+        Declaring the retirement for "three entries" therefore understated it:
+        this surface is inside the changed scope too and has to be proven here
+        instead of being called an afterthought.
+        """
+        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+
+        # 1. provenance: the surface is derived from a released entry, not a
+        #    stored action of its own, and it stays reachable from that entry.
+        filing = self.env["sc.tax.filing"].new({})
+        derived = filing.action_open_deductions()
+        self.assertNotIn("id", derived, "the derived entry must not be a stored action")
+        self.assertEqual(derived["res_model"], "sc.tax.deduction.registration")
+        self.assertEqual(derived["view_mode"], "tree,form")
+        self.assertEqual(derived["context"], {"create": False})
+        filing_action = self.ref("action_sc_product_tax_filing_v1")
+        filing_menu = self.env.ref("smart_construction_core.menu_sc_product_tax_filing_v1")
+        self.assertEqual(filing_menu.action.res_model, "sc.tax.filing")
+        self.assertEqual(
+            filing_menu.action.id, filing_action.id,
+            "the entry that opens this surface must stay a formal menu entry",
+        )
+        self.assertTrue(
+            self.arch("view_sc_tax_filing_form").xpath("//button[@name='action_open_deductions']"),
+            "the 税务申报 body must keep the button that opens this surface",
+        )
+
+        # 2. the request a record page issues for it: model + form, with no
+        #    action scope and no view scope.  An unscoped form request resolves
+        #    the model primary form, which is the same rebuilt native body the
+        #    two released entries render.
+        result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({
+            "op": "model", "model": "sc.tax.deduction.registration",
+            "view_type": "form", "render_profile": "create",
+        })
+        result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+        self.assertTrue(result.get("ok", True), result.get("error"))
+        data = result["data"]
+        governance = data["formStructureContract"]["sourceAuthority"]["governance_source"]
+        self.assertEqual(governance["resolvedActionId"], 0)
+        self.assertEqual(governance["resolvedViewId"], self.view_ref_id(self.NATIVE_VIEW))
+
+        # 3. with no entry-scoped declaration applicable, this surface consumes
+        #    the model-wide floor in task mode, exactly like the tree-only 852
+        #    does.  The retired body declared that same mode, so retiring it can
+        #    drop the section titles and field annotations it merged in but can
+        #    never flip this surface into the native authority that 790 / 879
+        #    declare for themselves.
+        self.assertEqual(governance["formStructureAuthority"], "entry_semantic_surface")
+        retired_form_spec = self.ref(
+            self.RETIRED_MODEL_WIDE_CONTRACTS[0]
+        ).contract_json["view_orchestration"]["views"]["form"]
+        self.assertEqual(
+            retired_form_spec.get("composition_mode"), "entry_semantic_surface",
+            "the retired body declared the mode this surface resolves, so the "
+            "retirement cannot change the authority of any model-wide surface",
+        )
+
+        # 4. the retirement really reaches this surface: neither the retired
+        #    body nor its section projection survives here, while the model-wide
+        #    contract that still serves it is applied and keeps declaring the
+        #    facts it carries.
+        applied = [row["name"] for row in governance["businessConfigContracts"]]
+        for contract_key in self.RETIRED_MODEL_WIDE_CONTRACTS:
+            self.assertNotIn(
+                self.ref(contract_key).name, applied,
+                (contract_key, "the retired model-wide body must not reach this surface"),
+            )
+        self.assertIn(
+            self.ref(self.MODEL_WIDE_CONTRACTS[0]).name, applied,
+            "the model-wide floor must keep serving this surface",
+        )
+        retired_titles = [
+            row.get("title") for row in retired_form_spec.get("sections") or [] if row.get("title")
+        ]
+        self.assertTrue(retired_titles, "the retired body must still declare the sections it merged in")
+        for title in retired_titles:
+            self.assertNotIn(title, governance.get("sectionTitles") or [], title)
+        rendered = self.tree_field_names(data)
+        generated_form_spec = self.ref(
+            self.MODEL_WIDE_CONTRACTS[1]
+        ).contract_json["view_orchestration"]["views"]["form"]
+        for row in generated_form_spec.get("fields") or []:
+            self.assertIn(
+                row["name"], rendered,
+                (row["name"], "the model-wide floor must keep declaring this fact here"),
+            )
+
+        # 5. and losing the retired body may not cost this surface a single
+        #    fact that body declared.
+        self._assert_declared_facts_survive("sc.tax.filing.action_open_deductions", data)
 
     def _assert_declared_facts_survive(self, action_key, data):
         """Retiring a body may not cost the product a fact that body declared.
