@@ -327,6 +327,7 @@ import BoundFormSettingsPanel from './contractForm/BoundFormSettingsPanel.vue';
 import ContractFormActionBlocks from './contractForm/ContractFormActionBlocks.vue';
 import ContractFormProductHeader from './contractForm/ContractFormProductHeader.vue';
 import { resolveCanonicalHeaderActionPresentation } from './contractForm/contractFormHeaderCanonicalActions';
+import { resolveContractFormMetaLine } from './contractForm/contractFormMetaLine';
 import type { FormSectionFieldActionPayload, FormSectionFieldSchema, FormSectionFieldChange } from '../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../components/template/relationField.types';
 import { createFormSectionFieldSchemaBuilder } from '../components/template/formSection.adapter';
@@ -1475,53 +1476,10 @@ const {
 } = useIntakeAutosaveRuntime({
   key: intakeAutosaveKey, hasRecord: recordId, formData, fields: intakeAutosaveFields,
 });
-const contractMetaLine = computed(() => {
-  if (!v2ContractStore.value) return '';
-  const mode = String(contractMeta.value?.contract_mode || '-');
-  const surface = String(contractMeta.value?.contract_surface || '-');
-  const viewType = String(v2ContractStore.value.snapshot.pageInfo.viewType || '-');
-  const filters = Array.isArray(resolveContractV2SearchContract(v2ContractStore.value).filters) ? (resolveContractV2SearchContract(v2ContractStore.value).filters as unknown[]).length : 0;
-  const transitions = Array.isArray(resolveContractV2WorkflowContract(v2ContractStore.value).transitions) ? (resolveContractV2WorkflowContract(v2ContractStore.value).transitions as unknown[]).length : 0;
-  const profileLabels: Record<string, string> = {
-    create: '新建',
-    edit: '编辑',
-    readonly: '只读',
-  };
-  const permissionLabels = [
-    rights.value.read ? '可查看' : '',
-    rights.value.write ? '可编辑' : '',
-    rights.value.create ? '可新建' : '',
-    rights.value.unlink ? '可删除' : '',
-  ].filter(Boolean);
-  const valueLabel = (value: string, labels: Record<string, string>) => {
-    const normalized = String(value || '').trim().toLowerCase();
-    if (!normalized || normalized === '-') return '未配置';
-    return labels[normalized] || value;
-  };
-  const modeLabel = valueLabel(mode, {
-    native: '标准表单',
-    governed: '受控表单',
-    action: '操作页面',
-    legacy: '历史承载',
-  });
-  const surfaceLabel = valueLabel(surface, {
-    native: '标准界面',
-    governed: '受控界面',
-    business_config: '配置界面',
-    lowcode_config: '低代码配置',
-  });
-  const viewTypeLabel = valueLabel(viewType, {
-    form: '表单',
-    tree: '列表',
-    list: '列表',
-    kanban: '看板',
-    search: '搜索',
-    calendar: '日历',
-    pivot: '透视',
-    graph: '图表',
-  });
-  return `配置模式：${modeLabel} · 承载界面：${surfaceLabel} · 视图类型：${viewTypeLabel} · 页面状态：${profileLabels[renderProfile.value] || renderProfile.value} · 筛选项：${filters} · 流转项：${transitions} · 操作权限：${permissionLabels.join('、') || '无可用权限'}`;
-});
+const contractMetaLine = computed(() => resolveContractFormMetaLine({
+  store: v2ContractStore.value, contractMeta: contractMeta.value, rights: rights.value, renderProfile: renderProfile.value,
+}));
+
 const showDebugActions = computed(() => renderProfile.value !== 'create');
 const showDebugActionsVisible = computed(() => showHud.value && showDebugActions.value);
 const runtimeRoleCode = computed(() => String(session.roleSurface?.role_code || '').trim().toLowerCase());

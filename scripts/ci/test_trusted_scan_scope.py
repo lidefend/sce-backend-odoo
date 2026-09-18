@@ -22,6 +22,12 @@ import repository_clean_history_guard as history
 
 class TrustedScopeTests(unittest.TestCase):
     def setUp(self):
+        # Hosted runners export GITHUB_EVENT_NAME. Scope selection must be
+        # asserted per test instead of inheriting the runner's ambient event.
+        ambient_event = mock.patch.dict(os.environ)
+        ambient_event.start()
+        self.addCleanup(ambient_event.stop)
+        os.environ.pop('GITHUB_EVENT_NAME', None)
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)

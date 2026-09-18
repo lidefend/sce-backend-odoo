@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4384`
+- Scanned files: `4385`
 - Files requiring split plan: `50`
 - Files above warning threshold: `93`
 
@@ -25,8 +25,8 @@ Generated from repository source files. This report is informational during the 
 | 3367 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3302 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3180 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
+| 3030 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 3021 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
-| 3009 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 3007 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2875 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2547 | Python source | `addons/smart_core/handlers/api_data.py` |
@@ -41,7 +41,7 @@ Generated from repository source files. This report is informational during the 
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1949 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1933 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
-| 1929 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 1887 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1869 | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1844 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1801 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
@@ -178,8 +178,8 @@ Generated from repository source files. This report is informational during the 
 | 3367 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3302 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3180 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
+| 3030 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 3021 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
-| 3009 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 3007 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2875 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2547 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
@@ -194,7 +194,7 @@ Generated from repository source files. This report is informational during the 
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1949 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1933 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
-| 1929 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 1887 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1869 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1844 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1801 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
