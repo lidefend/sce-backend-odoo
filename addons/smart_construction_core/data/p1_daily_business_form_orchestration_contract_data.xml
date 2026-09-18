@@ -85,17 +85,25 @@
             <field name="company_id" eval="False" />
             <!-- U-C4 G06: retired; the rebuilt native form view 1654 owns structure.
                  The body's `readonly` facts were annotations over the structure it
-                 used to own, and every entry that renders this model (790, 879 and
-                 the tree-only 852) now resolves view 1654 with
-                 `formStructureAuthority=native_authority` for the released entries
-                 and the same native body for 852.  Left active, the body's
+                 used to own, and it had no action/view/role/company narrowing, so
+                 it applied to every surface of this model, not only to the two
+                 released entries (790, 879): the tree-only 852 and the derived
+                 surface 税务申报 → 申报期抵扣来源, whose unstored action dict
+                 (`sc.tax.filing.action_open_deductions()`) carries neither an
+                 action scope nor a view scope, were inside that scope as well.
+                 Those surfaces resolve `formStructureAuthority=entry_semantic_surface`
+                 because they have no entry-scoped declaration of their own; only
+                 790/879 resolve `native_authority`, from theirs.  This record
+                 declared the same `entry_semantic_surface` mode, so retiring it
+                 changes the section titles and the field annotations it merged in
+                 and never the authority of any surface.  Left active, its
                  unconditional read-only annotations contradicted the native arch
                  (`readonly="state == 'legacy_confirmed'"`) and the delivered field
                  policy (auth=edit), which made required create facts unfillable.
                  The facts it declared stay declared: the native body carries them,
                  and the remaining model-wide contracts
                  (`..._form_sections_v1`, `..._form_structure_generated_v1`) keep
-                 serving action 852. -->
+                 serving 852 and the derived surface. -->
             <field name="active" eval="False" />
             <field name="status">published</field>
             <field name="version_no">1</field>
