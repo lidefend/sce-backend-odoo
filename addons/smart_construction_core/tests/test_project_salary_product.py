@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from lxml import etree
+
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
@@ -163,13 +165,21 @@ class TestProjectSalaryProduct(TransactionCase):
             self.assertNotIn("sections", form, label)
             self.assertNotIn("fields", form, label)
             self.assertNotIn("columns", form, label)
-        calculation_arch = self.env.ref(
+        # The fact has to be carried by a real field node of the native arch.  A
+        # substring scan of the arch text would also be satisfied by a modifier,
+        # a filter domain or a comment that merely mentions the name, so the
+        # check parses the arch and asserts on the declared field nodes.
+        def arch_field_names(view_xmlid):
+            arch = etree.fromstring(self.env.ref(view_xmlid).arch_db.encode())
+            return [node.get("name") for node in arch.xpath(".//field")]
+
+        calculation_fields = arch_field_names(
             "smart_construction_core.view_sc_hr_payroll_document_form"
-        ).arch_db
-        payment_arch = self.env.ref(
+        )
+        payment_fields = arch_field_names(
             "smart_construction_core.view_sc_hr_salary_payment_form"
-        ).arch_db
+        )
         for fact in ("project_id", "payment_ids"):
-            self.assertIn('name="%s"' % fact, calculation_arch, fact)
+            self.assertIn(fact, calculation_fields, fact)
         for fact in ("payroll_document_id", "payment_amount"):
-            self.assertIn('name="%s"' % fact, payment_arch, fact)
+            self.assertIn(fact, payment_fields, fact)

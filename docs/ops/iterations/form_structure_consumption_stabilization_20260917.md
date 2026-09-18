@@ -1741,6 +1741,11 @@ L2 `test_the_model_wide_annotation_keeps_serving_the_model` 固定 79 仍 `activ
 未执行 `sync_demo`／fixture reset／发布快照／无关 upgrade／Docker 网络调整／历史工作树清理；
 未执行任何真实工资发放或业务确认。
 
+**在范围差异内的 G06 收口（非 G07 内容）**：本批相对 `origin/main` 的 13 路径中包含提交
+`d2997196`（G06 合入后台账扣减 31→29 与发布审计），它改动的是台账
+`docs/ops/iterations/form_structure_compatibility_consumers_v1.json` 与 G06 记录
+`uc4_tax_deduction_native_lowcode_20260918.md`，属 G06 收口沿用同一分支带入，**不是 G07 的修改面**。
+
 ### 8.33.4 入口矩阵（L3 运行时实测，`sc_dev_demo`，action id 为库内真实值）
 
 | 入口 | action | menu | view | 分组 | domain | 样本 | 浏览器 |
@@ -1764,8 +1769,9 @@ L2 `test_the_model_wide_annotation_keeps_serving_the_model` 固定 79 仍 `activ
 - **858 变化最大**：此前渲染通用工作台平面（模型级稀疏字段序），现在渲染与 873／884 同源的业务任务面，
   含申请信息／人员／社保／工资／公积金／补助奖金／办理／历史来源分组的锚点导航。
 - 八个归档入口：字段与分区**不减少**——退役体的 **57 个字段并集逐条在原生 arch 中命中**
-  （`missing_from_arch: []`）。本批新增到该 arch 的字段共 **5 个**：4 个 provenance
-  ＋ 货币伴随字段 `currency_id`（该视图字段数 66 → 69，`removed: []`）。二者都只有退役体声明过，
+   （`missing_from_arch: []`）。本批新增到该 arch 的字段共 **5 个**：4 个 provenance
+  ＋ 货币伴随字段 `currency_id`（该视图**记录作用域字段节点** 66 → 69，其中 **arch 内呈现字段** 63 → 66，
+  `removed: []`）。二者都只有退役体声明过，
   **没有凭空新增的业务事实**；订正见 8.33.11。
 - 1697 新增条件性「历史来源」章节（仅 `legacy_document_no` 有值时出现），新建态默认不出现；
   1700 新增「经办与依据」承载 `responsible_id`，原先该字段落在无标题包装组里没有章节身份。
@@ -1873,7 +1879,7 @@ L2 `test_the_model_wide_annotation_keeps_serving_the_model` 固定 79 仍 `activ
 新增断言 78 行。**不构成「以降低断言取得通过」。**
 
 **发现（已修）**：本批新增到 1697 原生 arch 的字段实测为 **5 个**（4 个 provenance ＋
-货币伴随字段 `currency_id`；该视图 66 → 69，`removed: []`），但
+货币伴随字段 `currency_id`；字段节点口径见 8.33.12 的 S11 订正，`removed: []`），但
 ①本记录 8.33.5 原写「其中 4 个 provenance 是本批唯一新增的字段」，
 ②新增 L2 测试 `test_the_arch_only_added_what_the_retired_bodies_declared` 的原文档字符串写
 「只有 4 个是本批未承载过的事实」，二者都把 `currency_id` 漏计，且测试名承诺的
@@ -1891,3 +1897,33 @@ L2 `test_the_model_wide_annotation_keeps_serving_the_model` 固定 79 仍 `activ
 （`identity.json`／`worktree-fingerprint.json`／`review.json`／`summary.md`／`pr-body.md`）与 PR 正文；
 按 8.33 既有口径，指纹与回执值**不写入本记录文件**，避免写入本身改变被冻结候选；
 正式回填与台账扣减留待合入后的独立台账提交（同 G06 的 `d2997196` 口径）。
+
+### 8.33.12 独立复核（第 1 轮，绑定候选 c4d434f9）
+
+独立只读复核者绑定候选 `c4d434f9ba7e2651ac2a05c13b9813e690e30347`（范围 `5938d6c6..c4d434f9`），
+自取数重算，未写任何文件、未重跑门禁；结论 **APPROVE_WITH_MINOR**（`noOpenBlockerOrMajor: true`）。
+
+复核者自测复现的本批核心事实（与本记录一致）：1697 字段集合 `added={currency_id, 4×legacy_*}`、`removed=[]`；
+退役体并集按 base 树独立重建为 payroll 49 ＋ payment 17（重叠 9）＝ **57**，与测试常量逐项相等；
+`provident_fund_registration` 可见事实 31 → 29（**只**少了 `employee_user_id`／`employee_name` 各 1），
+其余 `fact_type` 计数不变；`fact_type` 分组在每个合法类型下**恰有一个可见**、未设类型时**零个可见**；
+来源追溯隐藏为合法声明且 4 个 provenance 字段仍声明、`readonly`；全批**无断言被删除或跳过**；
+模型级注解未动（无 `action_id`、27 字段）；Quick 回执经受管 `verify` 通过；指纹内存复算与产物 digest 相等。
+
+开放项与处置：
+
+| 发现 | 严重度 | 复核意见 | 处置 |
+|---|---|---|---|
+| S1–S4、S13 | — | 结构消费、同上下文重复、分组互斥、条件隐藏、858 入口级发布等**均已核实闭合** | 无需处置 |
+| S5 | minor | `tests/test_project_salary_product.py` 改写后用 `assertIn('name="%s"' % fact, arch_db)` 做**子串**匹配，严谨度低于节点断言 | **已修**：改为解析 arch 并断言**字段节点**存在（`arch.xpath(".//field")` 的 `name` 集合成员），避免修饰表达式／筛选域／注释中的同名文本误判 |
+| S10 | minor | 858／884 的 action context 无 `default_fact_type`，且分组按 `fact_type` 门控 → 新建面在选定类型前**不显示任何分组**（退役体当时是无条件呈现）；该差异**无断言覆盖** | **已修**：新增 L2 `test_the_fact_type_selector_stays_the_reachable_entry_to_every_group`——断言选择器在正文中**恰好声明一次**、**不受任何门控**（无 `invisible`／`readonly`／`groups`）、模型字段 `required=True`，且未设／未知类型时**零分组可见**；即"受门控的事实不失去入口" |
+| S11 | nit | 8.33.5／8.33.11 的"字段数 66 → 69"是**记录作用域**（含记录自身的 `name`／`model`／`arch` 节点）；arch 内呈现字段为 63 → 66 | **已修**：两处均标注口径（记录作用域 66 → 69；arch 内呈现 63 → 66），增量与新增集合两种口径一致 |
+| S12 | nit | 范围内还含 `d2997196`（G06 收口：台账 31→29 与两处文档），8.33 未点明该改动归属 | **已修**：8.33.3 补"在范围差异内的 G06 收口（非 G07 内容）"说明 |
+
+**复核者自陈局限**（保留，不代为消除）：未执行 Odoo 测试／浏览器旅程／L3／Quick，L1–L4 结论读自回执与记录；
+库内 id（action 662／166／179／167／168–172、view 1697／1700、menu、契约 79、change set 395／397／390／393／396）
+与受保护草稿 `write_date` 回读属库事实，只读复核无法复测；`empty_action_domain` 行数未复测；
+`not legacy_document_no` 为表达式求值而非渲染观测；P4 复核为静态。
+
+**第 2 轮**：处置提交产生**新候选**（新 HEAD／新 tree／新指纹），须重新冻结并重跑**一次** exact-head Quick；
+绑定新候选的复核结论与回执哈希按 8.33.11 的口径写入**外部归档** `review.json`，不写入本记录文件。

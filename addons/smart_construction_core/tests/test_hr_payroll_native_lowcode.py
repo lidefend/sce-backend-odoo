@@ -412,6 +412,41 @@ class TestHrPayrollNativeLowcode(TransactionCase):
                 (record_fact_type, "exactly one fact_type group may be visible", visible),
             )
 
+    def test_the_fact_type_selector_stays_the_reachable_entry_to_every_group(self):
+        """A gated fact group is only legal while the operator can reveal it.
+
+        The fact_type groups are mutually exclusive, and the entries whose action
+        carries no `default_fact_type` (858 工资薪酬, 884 社保公积) therefore open
+        a create surface on which no group is visible yet - the retired bodies
+        presented their facts unconditionally instead.  That is only acceptable
+        because the selector that reveals the group stays available: `fact_type`
+        is declared exactly once in the body, is not hidden by any guarding
+        condition, is not made read-only, and stays a required model field, so
+        the surface is never a dead end and no fact is unreachable.  A regression
+        that gates or locks the selector would leave the operator with a create
+        surface that can never present a fact.
+        """
+        root = self.arch(self.PAYROLL_VIEW)
+        nodes = root.xpath(".//field[@name='fact_type']")
+        self.assertEqual(len(nodes), 1, "the selector must be declared exactly once")
+        selector = nodes[0]
+        self.assertFalse(self.guarding_condition(selector),
+                         "the selector must not be gated, or no group could appear")
+        for modifier in ("invisible", "readonly", "groups"):
+            self.assertIsNone(selector.get(modifier),
+                              (modifier, "the selector must stay present and editable"))
+        self.assertTrue(self.env["sc.hr.payroll.document"]._fields["fact_type"].required,
+                        "the operator must be made to choose a type")
+        # and the surface really does start without a group: with no type chosen,
+        # no fact_type group is visible, so the selector is the only way in
+        groups = {n.get("data-sc-anchor"): n for n in root.xpath(".//group[@data-sc-anchor]")}
+        keyed = ("payroll_social_security", "payroll_salary", "payroll_provident_fund",
+                 "payroll_subsidy_bonus")
+        for unset in (None, "unknown_type"):
+            visible = [anchor for anchor in keyed
+                       if self.is_visible(groups[anchor].get("invisible"), fact_type=unset)]
+            self.assertEqual(visible, [], (unset, "an unset type must not leak a group"))
+
     # ------------------------------------------------------------------ #
     # 5. no fact the retired bodies declared was lost
     # ------------------------------------------------------------------ #
