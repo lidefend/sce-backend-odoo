@@ -1213,3 +1213,89 @@ Quick 回执 sha256 `203ae4f4…`），并独立核对：delta 恰为声明的 9
 未推送、未建 PR、未合并、未部署。
 
 状态：**批次验收完成（本批范围，冻结链见本批记录 §11）｜未集成｜未部署｜89 入口用户验收未完成｜台账 31**。
+
+## 8.26 定时 CI 失败处置（2026-09-18，用户指令「定时 ci 有失败先处理了」）
+
+### 8.26.1 触发身份与边界
+
+接管身份：分支 `feature/uc4-tax-deduction-native-v1`，HEAD `fad9a110642f37ff1c86feb7ca72b5dc82466dfb`
+（= `origin/main` `daf9a978` ＋ 4 个 G06 提交，**0 behind**，可 fast-forward）。生产交付树仍是唯一写入者。
+`fad9a110` 的 G06 冻结候选身份与其外部归档**未被改写**（本轮新提交叠加在其后，不移动该 commit）。
+本轮不改产品业务规则、不扩展 42 台账、不重跑全代表面矩阵、不跑 Quick（未到冻结门禁）。
+
+### 8.26.2 六个定时 workflow 的实际结果
+
+定时批次跑在 **`main` 的 `8e8c1ce9`**（2026-09-17 21:30Z ≈ 09-18 05:30 CST），非本分支 HEAD。
+判据：同一 commit 上 `push` 事件通过而 `schedule` 事件失败 → 事件相关缺陷，不是代码回归。
+
+| workflow | run id | 结果 | 归因 |
+|---|---|---|---|
+| `public_guard` | 35277725670 | failure | 步骤「Scan governed product history」（`make verify.repository.clean_history`）；`security.online_capture.unit` 6 例失败。**后续步骤被 fail-fast 跳过**（含「Run clean product boundary scan」） |
+| `professional_quality_gate` | 35277758044 | failure | 同一根因同一入口（`make/ci.mk:1002 security.online_capture.unit`，同一 6 例 `TrustedScopeTests`）；三个 shard 中仅 `shard-verify` 执行，`shard-reports`／`shard-tests` 未执行 |
+| `frontend_release_gate` | 35277183148 | failure | `pnpm test:release` → `make verify.frontend.release.audit`；**唯一失败守卫** `[frontend_style_system_guard] FAIL`（`make/frontend.mk:519`，其余 30+ 守卫全 PASS） |
+| `backend_test_suite` | 35281779057 | failure | 步骤「Run backend test suite per module」：`test_p1_payment_request_capability.py` 的 `KeyError: 'sections'` |
+| `release_candidate_gate` | 35277590281 | failure | **纯级联**：`wait_for_candidate_checks` 汇总上游失败，无独立代码原因 |
+| `merge_policy_gate` | — | success | — |
+
+### 8.26.3 三处真实缺陷与修复层
+
+| # | 缺陷（首次偏差） | 责任层 | 修复 |
+|---|---|---|---|
+| 1 | 单测继承宿主 `GITHUB_EVENT_NAME=schedule`，使 `trusted_scan_scope.resolve_scope()` 直接返回 `scheduled_full_audit`，绕过 trusted-base 分支 → 6 例断言失败（如 `'scheduled_full_audit' != 'untrusted_origin'`）。**产品语义正确，缺陷在测试未隔离环境** | P4 验证工具 | `scripts/ci/test_trusted_scan_scope.py` 的 `setUp` 内 `mock.patch.dict(os.environ)` ＋ `addCleanup` 复原 ＋ `pop('GITHUB_EVENT_NAME')`。**不改 `trusted_scan_scope.py`、不删断言** |
+| 2 | `frontend/apps/web/src/pages/ContractFormPage.vue` 真实突破文件行数预算（1929 > 1900；`#487` `1dbf63f5` 引入，limit 自 `d3bdb3aa` 未变） | P0 前端（通用渲染层） | 按既有做法**提取**而非放宽 budget：48 行纯展示格式化块 → 新增 `frontend/apps/web/src/pages/contractForm/contractFormMetaLine.ts`；页面 1929 → **1887** |
+| 3 | 已退役契约断言未随 `87b36441`（G04）同步：`business_config_contract_payment_execution_from_request_productized_form_v1` 已改为 `native_semantic_surface` 并删除 `sections`／`fields`，测试仍读 `execution_payload["sections"]` | P1 声明（施工标准） | 断言改指**原生载体**：新增类常量 `EXECUTION_FORM_BODY_FIELDS`（32 字段）＋ 从 `view_sc_payment_execution_form` arch 逐字段断言 ＋ 4 个 anchor `readonly == "1"`；并断言 `composition_mode == "native_semantic_surface"` 且 `sections`／`fields` 不在 payload。**不删断言** |
+
+原有读核对（DB 无关，静态解析 `views/core/payment_execution_views.xml`）：32 个退役字段**全部**存在于该 view arch；
+`payment_request_id`／`project_id`／`partner_id`／`contract_id` 的 `readonly="1"` 均在。故修复方向为改指原生载体而非删除断言。
+
+### 8.26.4 由本轮改动派生、必须同步刷新的生成物（全部走既有生成入口，未手改）
+
+| 生成物 | 变化 | 入口 |
+|---|---|---|
+| `docs/engineering_convergence/complexity_budget_report.md` | 扫描 4384 → 4385；`ContractFormPage.vue` 1929 → 1887；`test_p1_payment_request_capability.py` 3009 → 3030 | `python3 scripts/ci/generate_complexity_budget_report.py --write` |
+| `docs/engineering_convergence/split_plan_queue.md` | 同上两行行数 | `python3 scripts/ci/generate_split_plan_queue.py --write` |
+| `docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md` | 行数锁 **1929 → 1887**（ratchet 收紧，方向为改进） | `make refresh.contract_form_split_evidence` |
+| `docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json` | 仅 `inputDigest`（新增源文件） | `make refresh.frontend.component_driver_takeover.inventory` |
+
+前两项此前**未被任何一步发现**：`ci.generated_reports.guard` 在 `shard-reports` 内两次分别以
+`complexity report is stale`、`split plan queue is stale` 失败——即本轮修的 CI 若直接复用 `8e8c1ce9`
+的跳过状态，定时作业会在 `shard-reports` 处**再次失败**。同层还有 `verify.contract_form_split_evidence` 的
+行数锁（1929 → 1887）。四项刷新后 `make ci.generated_evidence.preflight` PASS。
+
+### 8.26.5 验证（层级／入口／身份／结果）
+
+身份：HEAD `fad9a110` ＋ 未提交 dirty 范围（阶段身份，非冻结身份；**未冻结**）。
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | **PASS** `change_state=dirty` `coverage=L1_only` |
+| L2（映射受影响面） | `verify.frontend.canonical_form_presenter.unit`／`page_pattern_reference_parity.unit`／`primitive_adapter.unit`／`product_page_pattern.unit` | 4/4 **PASS**（170 cases／13／31／5 tests，均非零） |
+| L2（后端受影响面） | `make local.dev.test MODULE=smart_construction_core TEST_TAGS='sc_gate/…,sc_smoke/…'` | **PASS** `0 failed, 0 error(s) of 460 tests`（修前为 1 error） |
+| CI 等价（public_guard 失败步） | `GITHUB_EVENT_NAME=schedule make verify.repository.clean_history` | **PASS** `reason=scheduled_full_audit` |
+| CI 等价（professional 失败入口） | `GITHUB_EVENT_NAME=schedule make security.online_capture.unit` | **PASS** 17 ＋ 10 tests OK |
+| CI 等价（professional 三 shard） | `GITHUB_EVENT_NAME=schedule make ci.professional.backend.shard-verify／shard-reports／shard-tests` | 3/3 **PASS**（shard-reports 修复前 2 次 stale） |
+| CI 等价（frontend 权威静态面） | `VITE_ODOO_DB=sc_frontend_acceptance … python3 scripts/verify/frontend_static_release_audit.py` | **PASS** 9/9 checks（`style_system`／`lint`／`strict_typecheck`／`production_build` …），build fingerprint `c718e6a3be75…` |
+| 生成证据 | `make ci.generated_evidence.preflight` | **PASS** |
+| 守卫单元 | `make verify.frontend.component_driver_takeover.unit` | **PASS** `required=35 missing=0` |
+
+### 8.26.6 未执行项与边界（保持未执行）
+
+- `verify.frontend.release.audit` 的**浏览器段**（`page_identity.browser`／`delivery_hardening.release.browser`）
+  **未执行**：需拉起 acceptance 环境（`backend.acceptance.up`／`frontend.acceptance.up`／`db.frontend.acceptance.ensure`），
+  与「不停启历史容器、不派生新环境」边界冲突。且 `8e8c1ce9` 上该段从未被执行（被 style guard 挡住），
+  非本次定时失败根因。
+- `scripts/verify/clean_product_release_scan.py` 在**本机**报 `FAIL checks=14`，唯一失败项
+  `clean_product_tree_guard` 的 `TRACKED_RUNTIME_ENV_FILES=4`。**判定：本机环境限制，不是产品缺陷。**
+  证据：该 4 个文件为 `.env.demo`／`.env.dev`／`.env.local.clean`／`.env.local.sample`，被 `.gitignore:53:.env*`
+  忽略且 `git ls-files` 中**不存在**；该守卫遍历工作树而非 `git ls-files`，故 CI 全新检出时计数为 0。
+  以 `git archive HEAD` 导出**仅 tracked** 的干净树重跑同一守卫 → **PASS files=7512**（本机 8319）。
+  该步在 `8e8c1ce9` 上处于 fail-fast 之后（状态 skipped），从未真正执行。
+- `clean_product_release_scan.py` 内 `source_head` 为**硬编码常量** `009f26e6…`（pre-existing，非本轮引入），
+  报告头颅与当前 HEAD 不一致。仅登记观察，本轮不改（避免扩大范围）。
+- 未推送、未建 PR、未合并、未部署；未 `sync_demo`／fixture reset／发布快照／模块 upgrade；
+  未触碰受保护草稿 163／190／192／194／233／267／274／276。
+
+### 8.26.7 状态
+
+台账保持 **31**（定时 CI 处置不改业务域登记；扣减仍按 G03/G04/G05 先例留待合入后由独立提交落地）。
+定时失败 5 个 workflow 已全部归因（3 真实缺陷 ＋ 1 级联 ＋ 1 本机限制），根因均已修复并在**同一 CI 入口**上复验通过。
