@@ -125,6 +125,17 @@ class TestHrPayrollNativeLowcode(TransactionCase):
     # 人员 group is visible for every `fact_type`, so repeating the person inside
     # a fact_type group would present the same fact twice in one body.
     SINGLE_PRESENTATION_FACTS = ("employee_user_id", "employee_name")
+    # The facts this batch added to the shared payroll body.  Measured against
+    # the pre-migration arch: the body declared 66 fields at HEAD d2997196 and
+    # declares 69 now, and the delta is exactly these five - the four provenance
+    # facts the retired bodies used to declare, plus `currency_id`, the companion
+    # of the Monetary facts (view 1700 declares it the same way).  All five were
+    # already declared by the retired bodies, so moving the structure to the
+    # native arch invented no business fact.
+    ARCH_FACTS_ADDED_BY_THIS_BATCH = (
+        "legacy_document_no", "legacy_document_state", "legacy_source_table",
+        "legacy_source_id", "currency_id",
+    )
     # Union of the facts the retired payroll bodies declared, captured from the
     # pre-migration definitions at HEAD d2997196.  None of them may be lost.
     RETIRED_PAYROLL_FACTS = (
@@ -417,23 +428,43 @@ class TestHrPayrollNativeLowcode(TransactionCase):
                 self.assertIn(name, carried, (view_key, name, "fact lost by retiring the body"))
 
     def test_the_arch_only_added_what_the_retired_bodies_declared(self):
-        """The four provenance facts are the only facts the arch did not already carry.
+        """The five added facts are the provenance facts plus the currency companion.
 
-        They lived only in the retired bodies, so retiring the bodies without
-        them would have dropped the migrated-record history.  Carrying them
-        inside a conditionally visible section is the declared way to keep them
-        without presenting an empty titled group on every unmigrated record.
+        The body declared 66 fields before this batch and 69 after, and the
+        delta is exactly `ARCH_FACTS_ADDED_BY_THIS_BATCH`: the four provenance
+        facts, which lived only in the retired bodies, plus `currency_id`.  The
+        provenance facts have to stay, or retiring the bodies would have dropped
+        the migrated-record history; carrying them inside a conditionally
+        visible section is the declared way to keep them without presenting an
+        empty titled group on every unmigrated record.  Every one of the five
+        was already declared by the retired bodies, so the shared body gained no
+        fact the entries did not have and invented none.
         """
         carried = set(self.arch_field_names(self.PAYROLL_VIEW))
         provenance = {"legacy_document_no", "legacy_document_state", "legacy_source_table",
                       "legacy_source_id"}
-        self.assertTrue(provenance.issubset(carried))
-        # each provenance fact is read-only: the values are migrated history
+        added = set(self.ARCH_FACTS_ADDED_BY_THIS_BATCH)
+        self.assertEqual(sorted(added - provenance), ["currency_id"])
+        self.assertTrue(added.issubset(carried), sorted(added - carried))
+        # a migration of the structure may not invent a fact: whatever it adds
+        # to the body has to be something the retired bodies already declared
+        self.assertTrue(
+            added.issubset(set(self.RETIRED_PAYROLL_FACTS)),
+            sorted(added - set(self.RETIRED_PAYROLL_FACTS)),
+        )
         root = self.arch(self.PAYROLL_VIEW)
-        for name in provenance:
+        # each provenance fact is read-only: the values are migrated history
+        for name in sorted(provenance):
             nodes = root.xpath(".//field[@name=$n]", n=name)
             self.assertEqual(len(nodes), 1, name)
             self.assertEqual(nodes[0].get("readonly"), "1", name)
+        # the currency companion is declared but not presented: the money control
+        # already renders the amount together with its currency, so a second row
+        # would repeat the same fact in the same body
+        currency = root.xpath(".//field[@name='currency_id']")
+        self.assertEqual(len(currency), 1, "currency_id")
+        self.assertEqual(currency[0].get("invisible"), "1", "currency_id")
+        self.assertEqual(currency[0].get("readonly"), "1", "currency_id")
 
     # ------------------------------------------------------------------ #
     # 6. the model-wide annotation keeps serving the model

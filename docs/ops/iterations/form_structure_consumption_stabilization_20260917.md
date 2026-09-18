@@ -1707,7 +1707,8 @@ index 21 = action 790／menu 538／view 1654、index 22 = 879／701／1654；退
 1697 被 858／873／884／663／660／661／662／664 八个 action 共享（663 另钉 tree 2067）。
 本批把结构权威一次性交给原生 arch：按 `fact_type` 组织的业务分组（社保／工资／公积金／补助奖金）、
 只有退役体声明过的 4 个 provenance 字段（`legacy_document_no`／`legacy_document_state`／
-`legacy_source_table`／`legacy_source_id`，`readonly`）与稳定 `data-sc-anchor` 身份。
+`legacy_source_table`／`legacy_source_id`，`readonly`）、同样只有退役体声明过的货币伴随字段
+`currency_id`（`invisible`／`readonly`，该 Monetary 事实的货币伴随项）与稳定 `data-sc-anchor` 身份。
 同名重复字段 **不是副本**：同一事实在各自的 `fact_type` 分组里各出现一次，且同一 `fact_type`
 下只有一个分组可见；按用户口径**禁止按字段名批量去重**，L2 以
 `test_repeated_fact_names_are_per_fact_type_contexts`（`REPEATED_FACTS`：`period_year`／
@@ -1763,7 +1764,9 @@ L2 `test_the_model_wide_annotation_keeps_serving_the_model` 固定 79 仍 `activ
 - **858 变化最大**：此前渲染通用工作台平面（模型级稀疏字段序），现在渲染与 873／884 同源的业务任务面，
   含申请信息／人员／社保／工资／公积金／补助奖金／办理／历史来源分组的锚点导航。
 - 八个归档入口：字段与分区**不减少**——退役体的 **57 个字段并集逐条在原生 arch 中命中**
-  （`missing_from_arch: []`），其中 4 个 provenance 是本批**唯一新增**的字段。
+  （`missing_from_arch: []`）。本批新增到该 arch 的字段共 **5 个**：4 个 provenance
+  ＋ 货币伴随字段 `currency_id`（该视图字段数 66 → 69，`removed: []`）。二者都只有退役体声明过，
+  **没有凭空新增的业务事实**；订正见 8.33.11。
 - 1697 新增条件性「历史来源」章节（仅 `legacy_document_no` 有值时出现），新建态默认不出现；
   1700 新增「经办与依据」承载 `responsible_id`，原先该字段落在无标题包装组里没有章节身份。
 - **同一上下文重复被消除**：`employee_user_id`／`employee_name` 在 `provident_fund_registration`
@@ -1856,3 +1859,35 @@ L2 `test_the_model_wide_annotation_keeps_serving_the_model` 固定 79 仍 `activ
 批次状态：**G07 集中产品复核完成｜批次验收待收口｜未冻结｜未集成｜未部署**。
 台账 **29**；89 入口整体交付未完成。下一步（未执行）：定向反例冻结 → 生成证据准备与预检 →
 干净 HEAD 完整指纹 → 一次 Quick → 独立复核 → 外部归档 → Draft PR。
+
+### 8.33.11 收口前自我复核的发现与修正（口径，非产品缺陷）
+
+冻结前对**整批 13 路径差异**做只读复核（不只审最后一次 P4 改动），方法：逐入口重算
+`ui.contract.v2` 最终契约、重算 1697／1700 原生 arch 的字段集合增量、并对全部差异做
+「被删除断言」扫描（`git diff origin/main...HEAD | grep '^-' | grep assert`）。
+
+**扫描结果**：全批**只删除了 4 行断言**，全部位于 `tests/test_project_salary_product.py`，
+且是**改写而非删除**——原 4 行检查「契约 `fields` 里含某字段」，替换为**更强**的一组断言
+（`composition_mode == native_semantic_surface`、`sections`／`fields`／`columns` 均不存在、
+且该事实在原生 arch 中确实由 `name="..."` 承载）。P4 工具差异**未删除任何断言**（0 行），
+新增断言 78 行。**不构成「以降低断言取得通过」。**
+
+**发现（已修）**：本批新增到 1697 原生 arch 的字段实测为 **5 个**（4 个 provenance ＋
+货币伴随字段 `currency_id`；该视图 66 → 69，`removed: []`），但
+①本记录 8.33.5 原写「其中 4 个 provenance 是本批唯一新增的字段」，
+②新增 L2 测试 `test_the_arch_only_added_what_the_retired_bodies_declared` 的原文档字符串写
+「只有 4 个是本批未承载过的事实」，二者都把 `currency_id` 漏计，且测试名承诺的
+「只新增退役体声明过的事实」当时**未被断言**。
+
+| 项 | 分类 | 首次偏差 | 修正层 | 修正 |
+|---|---|---|---|---|
+| 新增字段计数 4 vs 实测 5 | 口径 / 证据完整性（非产品缺陷，未影响任何 PASS 结论） | 记录与测试文档字符串按 provenance 记忆计数，漏计同时新增的货币伴随字段 | P4 证据与记录（`tests/test_hr_payroll_native_lowcode.py`、本记录） | 测试补 `ARCH_FACTS_ADDED_BY_THIS_BATCH`（5 项）并断言：新增集合 ⊆ 退役体声明集合、逐项在 arch 中命中、`currency_id` 恰好 1 处且 `invisible`／`readonly`；文档字符串与记录改按实测口径表述 |
+
+**修正未扩大范围**：只订正该批自身的口径与**补齐缺少的断言**（未删除、未放宽任何断言），
+未改产品代码、未改台账、未改其它主题。修正后按「输入已变」重跑受影响的 L2 与 L1，
+并**重新冻结**（新 HEAD／新 tree／新指纹），再对该 HEAD 运行**一次** Quick。
+
+**冻结回执去向（口径）**：exact-head Quick 回执与外部归档哈希按既有约定写入**外部归档件**
+（`identity.json`／`worktree-fingerprint.json`／`review.json`／`summary.md`／`pr-body.md`）与 PR 正文；
+按 8.33 既有口径，指纹与回执值**不写入本记录文件**，避免写入本身改变被冻结候选；
+正式回填与台账扣减留待合入后的独立台账提交（同 G06 的 `d2997196` 口径）。
