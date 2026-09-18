@@ -181,7 +181,43 @@ TOPIC_REPRESENTATIVE = {
     # action; action 879 has an empty domain and is recorded as an uncovered
     # record surface instead of being silently shortened.  Read-only; no change
     # set is touched.
-    "tax_deduction": {"section_navigation": True, "record_surface": True},
+    #
+    # G06 正文整改: the two attachment expressions the retired legacy bill bodies
+    # declared repeated the attachment fact inside the same 办理说明与附件
+    # context the native carrier `attachment_ids` already presents, so they are
+    # excluded from the body while staying declared for the scenarios that own
+    # them (`deduction_bill_attachment_text` sums on the formal deduction bill
+    # tree; `message_attachment_count` is the mail counter the collaboration
+    # panel presents).  The check asserts the behaviour - the copy is neither a
+    # render-tree field node nor a rendered DOM field, the copy stays declared
+    # in the contract, and the canonical carrier keeps its single entry - so a
+    # later regression that unions either copy back into the body fails here
+    # instead of relying on a name/suffix guess.  Read-only.
+    "tax_deduction": {
+        "section_navigation": True,
+        "record_surface": True,
+        "display_copy_out_of_body": ["deduction_bill_attachment_text", "message_attachment_count"],
+        "require_render": ["attachment_ids"],
+        # G06 空态整改: the empty collection and the create entry have to
+        # describe the same capability.  Action 879 has an empty action domain,
+        # so its list route is the surface that showed a copy claiming the
+        # account had no create right while the page header still opened the
+        # create form.  The check reads the delivered list page: while a usable
+        # create entry is present the empty copy must not claim the account
+        # cannot create, and without one it must not invite the user to create.
+        # Read-only; no record is written.
+        "empty_list_state": True,
+        # G06 字段职责: the retired model-wide P1 fact declaration
+        # (`sc_tax_deduction_registration_p1_form_business_facts_v1`) marked
+        # `invoice_no`, `deduction_amount`, `deduction_tax_amount`,
+        # `deduction_surcharge_amount` and `note` unconditionally read-only,
+        # while the rebuilt native body declares them read-only only at
+        # `state == 'legacy_confirmed'`.  That body is retired now, so this is a
+        # regression guard: the browser check asks the rendered page instead of
+        # the declarations, and a fact the delivered create profile requires has
+        # to expose a control the user can actually fill.
+        "required_fillable": True,
+    },
 }
 if topic not in TOPIC_IDENTITIES:
     raise RuntimeError("unregistered formal form topic")
