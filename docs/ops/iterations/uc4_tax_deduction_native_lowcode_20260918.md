@@ -3,7 +3,8 @@
 - 批次：`U-C4` 表单结构消费稳定化 · 代表面 `G06 税额与专项抵扣`
 - 分支：`feature/uc4-tax-deduction-native-v1`（基于 `origin/main`=`daf9a97875a15343671c00e46fd9c4e639ebeca2`）
 - 唯一写入者：本会话执行体；本候选之外的其它工作树本轮未触碰
-- 状态：**批次验收完成（本批范围，冻结链见 §11）｜未集成｜未部署｜89 入口交付未完成**；台账（`form_structure_compatibility_consumers_v1.json`）保持 **31**，
+- 状态：**批次验收完成（本批范围，冻结链见 §11）**——⚠ 该口径已被 §12.10.6／§12.11 **取代**：R11 后进入独立复核整改，
+  当前状态为「**R12 复核整改中**」，冻结链以本文末段为准｜未集成｜未部署｜89 入口交付未完成；台账（`form_structure_compatibility_consumers_v1.json`）保持 **31**，
   扣减（**31 → 29**）按 G03/G04/G05 先例留待合入后由独立提交落地（§9）
 
 ## 1. 范围与身份
@@ -301,7 +302,7 @@ L3／L4 页面证据不因此重跑，L2 已按上表在 dirty 收口后重跑�
 | 12 | `frontend/apps/web/src/components/template/FormSection.vue` | 接管前已有 | 未改 | P0 |
 | 13 | `frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue` | 接管前已有 | 未改 | P0 |
 | 14 | `frontend/apps/web/src/pages/ListPage.vue` | 接管前已有 | 未改 | P0 |
-| 15 | `frontend/apps/web/src/views/ActionView.vue` | 接管前已有 | 未改 | P0 |
+| 15 | `frontend/apps/web/src/views/ActionView.vue` | 接管前已有 ＋ **后在提交 `d14020bb` 由本批修改**（口径见 §12.11） | 列表内建新建入口不再重复声明 | P0 |
 | 16 | `frontend/apps/web/src/app/presentation/collectionEmptyStatePresentation.ts`（新文件） | 接管前新增 | 未改 | P0 |
 | 17 | `frontend/apps/web/scripts/collection_view_semantics_test.ts` | 接管前已有 | 未改 | P4 |
 | 18 | 本文件 ＋ 总记录 §8.27 | **接管后修改** | 本节与总记录 | 记录 |
@@ -714,3 +715,62 @@ pressed_while_body_scrolled`、`keyboard_activation`、`auto_reveal_press`，**�
 **未持久化业务或配置写入**。台账保持 **31**。
 
 状态：**三条导航路径已分离复验（正常用户／键盘／自动显露均通过；失败仅复现于「坐标先于显露」的自动化时序）｜整改中｜台账 31｜未集成｜未部署**。
+
+## 12.11 第 12 轮（R12）：独立复核 REQUEST_CHANGES 的整改（2026-09-18）
+
+本轮只做复核整改，不扩展代表面、不改产品行为。共享机制结论、分层验证与未执行项同总记录 §8.31，此处只记本册专属事实。
+
+### 12.11.1 Major：退役的模型级契约作用于**本模型所有渲染面**，不止「三个入口」
+
+复核结论：**REQUEST_CHANGES**，无 blocker；1 major ＋ 9 minor ＋ 4 nit；四项重点判定（分类约束／只读与空值呈现／共享机制／测试未削弱）**通过**。
+
+Major 属实并已闭合。`sc_tax_deduction_registration_p1_form_business_facts_v1` 四字段（`action_id`／`view_id`／`role_key`／`company_id`）全空，
+故它覆盖**该模型全部渲染面**；第 4 个消费者是 `sc.tax.filing.action_open_deductions()`
+（正式菜单「税务申报」`menu_sc_product_tax_filing_v1` → 该 action → 申报期抵扣来源），其返回的 action dict 无 `id`、无视图固定，记录页也不带 `action_id`／`view_id`，因此该面**无 action 与 view 作用域**。
+
+实测（`ui.contract` v2，无作用域请求，绑定 view 1654）：
+
+| 项 | 实测值 |
+|---|---|
+| `resolvedActionId`／`resolvedViewId` | `0` ／ `1654`（`view_sc_tax_deduction_registration_form`，与 790／879 同一正文） |
+| `formStructureAuthority`／`formPresentationMode` | `entry_semantic_surface` ／ `task` |
+| `businessConfigContracts` | 含模型级 `sc_tax_deduction_registration_form_sections_v1`，**不含**退役体 |
+| `sectionTitles` | 9 个模型级旧标题，**不含**退役体的「单据识别／业务对象／金额与办理／附件与来源」 |
+| 退役体未渲染的 5 个事实 | 均为 `compute+store+readonly` 投影，保留各自场景（扣款单列表／业务层 display-copy 源），**一条未丢** |
+
+**关键判据**：退役体自身声明 `composition_mode=entry_semantic_surface`，与该面解析结果同一个 mode，因此**退役不可能改变任何模型级面的 authority**
+（790／879 的 `native_authority` 来自它们各自的 action 级 `native_semantic_surface` 声明）。原先「三个入口」的写法是**范围低报**，不是 authority 变更。
+
+**剩余观察（不登记缺陷、不扩本批）**：852 与派生面仍按模型级兜底渲染 `task` 模式 ＋ 9 个旧章节标题；
+这是本批之前既有的呈现（退役后该面标题 13→9，方向为收敛），本批只声明范围、未整改其任务模式，且未做浏览器复核，故留台账观察。
+
+### 12.11.2 本轮实际改动（P1 声明 ＋ P4 验证工具）
+
+| 路径 | 层 | 改动 |
+|---|---|---|
+| `data/p1_daily_business_form_orchestration_contract_data.xml` | P1 业务声明 | 退役注释改为真实作用域（**本模型所有渲染面**），并写明各面 authority 来源（790／879＝entry 级 native；852／派生面＝模型级 entry floor） |
+| `tests/test_tax_deduction_native_lowcode.py` | P4 验证工具 | 新增派生面用例：无 `id`／`view_mode=tree,form`／`context={'create': False}` 溯源；正式可达性（菜单→action→form 按钮）；无作用域请求解析结果；退役体不在 applied；退役标题不再并入；模型级兜底声明的字段仍在该面渲染；`_assert_declared_facts_survive` 通过 |
+
+验证：`make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestFormStructureConsumption,/smart_construction_core:TestTaxDeductionNativeLowcode'`
+→ **PASS** `0 failed, 0 error(s) of 25 tests`（`tmp/freeze-r12/l2-sc-core-structure-consumption.log`）。
+两次定向失败均为**断言期望／读取口径错误**（非产品缺陷），已按事实改写；未放宽任何既有断言、未做无变化重试（见总记录 §8.31.3）。
+
+### 12.11.3 交付前口径修正（复核 minor）
+
+| # | 发现 | 处置 |
+|---|---|---|
+| 1 | 本册头部「批次验收完成」与末段「整改中」冲突 | 头部已标注被 §12.10.6／§12.11 **取代**，冻结链以末段为准 |
+| 2 | `ActionView.vue` 已由本批 `d14020bb` 修改，归属表却记「未改」 | §12.9.1／§8.30.1 的「本轮未改」时间边界限于第 10／11 轮；**本批 P0 产品改动包含 `ActionView.vue`**（提交 `d14020bb`：列表内建新建入口不再重复声明）。§12.1 归属表第 15 行已同步更正 |
+| 4 | 证据摘要 `scope manifest` 值写错 | 以完整指纹产物 `scope_manifest_sha256` 为准重生成（新冻结身份） |
+| 7 | `ListPage.vue` 的 `showFallbackCreate` 成为无消费者分支 | 保留并登记为 P0 卫生项（删共享分支需自身受影响面验证，不在本批扩面） |
+| 9 | 852 列表域引用不存在的 `finance.tax.deduction` | 本批外观察项，登记待办 |
+| nit 3 | `tax_deduction_registration.py` `init()` 裸 SQL 回填 | 本批外待办，登记 |
+
+### 12.11.4 未执行项与状态
+
+未推送、未建 PR、未部署、未启动 G07；未重跑全矩阵；未改办理事项；未重做迁移；
+未 `sync_demo`／fixture reset／发布快照／无关 upgrade；未停启历史容器、未改 Docker 网络、未清理历史工作树；
+受保护草稿 163／190／192／194／233／267／274／276 未触碰；**未持久化业务或配置写入**；
+879 记录态仍**未覆盖**（`empty_action_domain`，不为补证据造数据）；台账保持 **31**。
+
+状态：**R12 复核整改中（major 已按事实闭合并重跑受影响 L2 通过）｜页面整改复核通过｜未集成｜未部署｜89 入口交付未完成**。

@@ -1552,3 +1552,76 @@ runner 的失败过滤仍为 `!['pressed','not_applicable','control']`（未放�
 约 6 组副本候选继续留台账，不扩大本批登记范围。
 
 状态：**三条导航路径已分离复验（正常用户／键盘／自动显露均通过；失败仅复现于「坐标先于显露」的自动化时序）｜整改中｜台账 31｜未集成｜未部署**。
+
+## 8.31 第 12 轮（R12）：独立复核 REQUEST_CHANGES 的整改——退役声明的真实作用域（2026-09-18）
+
+本轮**只做复核整改**：不扩展代表面、不改产品行为、不扩大登记范围。整改对象是「退役声明的范围口径」与「证据／记录一致性」。
+本批次另册（`uc4_tax_deduction_native_lowcode_20260918.md` §12.11）记录同一证据，口径一致。
+
+### 8.31.1 复核结论与本轮归属（第 12 轮）
+
+- 独立复核（只读，绑定候选 `d14020bb`）结论：**REQUEST_CHANGES**，**无 blocker**；1 major ＋ 9 minor ＋ 4 nit。
+- 四项重点判定**通过**：分类约束、只读／空值呈现、共享机制、测试未被削弱（无放宽断言换通过）。
+- **Major（本轮闭合对象）**：被退役的 `sc_tax_deduction_registration_p1_form_business_facts_v1` 是**模型级**契约
+  （`action_id`／`view_id`／`role_key`／`company_id` 全为空，`applies()` 对 0 一律放行），因此它作用于**该模型的所有渲染面**；
+  而声明只写了「790／879／852 三个入口」。复核指出第 4 个消费者真实存在：`sc.tax.filing.action_open_deductions()`
+  （正式菜单「税务申报」→ 申报期抵扣来源）。
+- **唯一写入者＝本会话执行体**；本轮写入范围见 §8.31.4。
+
+### 8.31.2 共享机制结论：模型级声明必须按「模型全部渲染面」声明并取证
+
+| 事实 | 结论 | 依据 |
+|---|---|---|
+| 派生面是否真在该契约作用域内 | **是**。该面由代码内构造的 action dict 打开（无 `id`、`view_mode=tree,form`、`context={'create': False}`），无 action／view 作用域，模型级契约不因收窄条件被拒绝 | 契约记录四字段为空 ＋ `_effective_view_orchestration_contracts.applies()` |
+| 退役是否**改变**派生面的 authority | **不改变**。退役体自身声明 `composition_mode=entry_semantic_surface`，派生面解析出的 authority 正是它；790／879 的 `native_authority` 来自**它们各自的 action 级声明**，与退役体无关 | 实测该面 `formStructureAuthority=entry_semantic_surface` |
+| 退役在该面实际移除了什么 | 只移除该体并入的 **4 个章节标题 ＋ 其字段 `readonly` 注解**；authority 与事实集合不受影响 | 实测 `sectionTitles` 不含「单据识别／业务对象／金额与办理／附件与来源」；`businessConfigContracts` 不含退役体、含模型级 `..._form_sections_v1` |
+| 是否丢事实 | **未丢**。该面未渲染的 5 个退役体事实全部是 `compute+store+readonly` 投影，各自保留场景（扣款单列表／业务层声明的 display-copy 源） | 新增用例内 `_assert_declared_facts_survive` 对派生面通过 |
+
+**剩余观察（不登记为缺陷、不扩本批）**：派生面与 852 仍消费模型级 `entry_semantic_surface` 兜底，`sectionTitles` 为 `..._form_sections_v1` 的 9 个旧标题、`presentationMode=task`。
+这是**本批之前既有**的呈现（退役后该面标题由 13 个降为 9 个，方向为收敛，不新增回归），本批只**声明**其范围、不整改 852／派生面的任务模式；
+本批未对其做浏览器复核，故按候选问题留台账观察，不作缺陷登记、不批量改字段。
+
+### 8.31.3 本轮分层验证（仅受影响层）
+
+| 层 | 入口 | 结果 | 证据 |
+|---|---|---|---|
+| L2 后端（受影响） | `make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestFormStructureConsumption,/smart_construction_core:TestTaxDeductionNativeLowcode'` | **PASS** `0 failed, 0 error(s) of 25 tests`（含本轮新增派生面用例） | `tmp/freeze-r12/l2-sc-core-structure-consumption.log` |
+| L2 后端（定向诊断，两次） | `... TEST_TAGS='/smart_construction_core:TestTaxDeductionNativeLowcode'` | 第 1 次 FAIL（断言期望错误，见下）／第 2 次 FAIL（菜单读取口径）／第 3 次 **PASS** `of 17 tests` | `tmp/freeze-r12/l2-tax_deduction-r12{,b,c,d}.log` |
+| 前端 L2／L4／契约 | 输入未变的面按 §8.30 复验结论**复用**，未重跑 | — | 见 §8.30.4／§12.10.4 |
+
+失败归因（本轮无无变化重试）：
+
+1. 第 1 次 FAIL：`formStructureAuthority` 期望写成 `native_authority`——**期望错误，不是产品缺陷**。派生面无入口级 native 声明，解析结果本应为模型级 `entry_semantic_surface`；
+   据此**按事实改写断言**并补「退役体自身声明同一 mode、故退役不可能改变任何模型级面的 authority」的断言，未放宽任何既有断言。
+2. 第 2 次 FAIL：`ir.ui.menu.action` 的读取口径写成 `str(...)=="model,id"`，实际返回 recordset。改为按 `.action.res_model`／`.action.id` 断言（同一事实，换读取方式）。
+
+### 8.31.4 本轮修改范围（P1 声明 ＋ P4 验证工具）
+
+| 路径 | 归属 | 改动 |
+|---|---|---|
+| `addons/smart_construction_core/data/p1_daily_business_form_orchestration_contract_data.xml` | **P1 业务声明** | 退役记录的注释改为真实作用域：该模型**所有渲染面**（790／879／852／派生面）；并写明 790／879＝`native_authority`、852 与派生面＝模型级 `entry_semantic_surface` |
+| `addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py` | **P4 验证工具** | 新增 `test_a_derived_surface_without_an_action_scope_keeps_the_declared_facts`：派生面溯源（无 `id`／`view_mode`／`context`）＋正式可达性（菜单→action→form 按钮）＋无作用域请求解析结果（`resolvedActionId=0`、`resolvedViewId=view 1654`、authority＝`entry_semantic_surface`）＋退役体不在 applied／模型级兜底在 applied／退役标题不再并入＋退役体事实一条不丢 |
+
+**未改**：任何产品渲染代码、契约 payload（仅注释）、台账、代表面 runner；未重做迁移。
+
+### 8.31.5 交付前口径与归属修正（复核 minor）
+
+| # | 复核发现 | 处置 |
+|---|---|---|
+| 1 | 另册头部状态与末段状态冲突 | 已在另册头部标注取代关系（§12.11） |
+| 2 | `ActionView.vue` 已被本批提交 `d14020bb` 修改，但归属表仍记「未改」 | §8.31.4 与另册 §12.11 明确该文件为**本批 P0 产品改动**（提交 `d14020bb`），§12.9.1／§8.30.1 中「本轮未改」的时间边界同时标注 |
+| 4 | 证据摘要的 scope manifest 值写错 | 以完整指纹产物字段 `scope_manifest_sha256` 为准重生成（`/tmp/freeze-r12/**` 与外部归档件同步） |
+| 7 | `ListPage.vue` 的 `showFallbackCreate` 在提交 `d14020bb` 后成为无消费者分支 | **保留并登记**：删除共享组件分支需要其自身的受影响面验证；本轮不扩产品改动，登记为 P0 卫生项待下批处理 |
+| 9 | `views/support/user_confirmed_formal_list_alignment_views.xml` 的 852 列表域引用不存在的 `finance.tax.deduction` | **本批外观察项**：登记待办，不在本批整改（不扩面） |
+| nit 3 | `models/core/tax_deduction_registration.py` 的 `init()` 以裸 SQL 回填 general，绕过 constrains | **本批外待办**：登记，不在本批整改 |
+
+其余 minor／nit 由绑定**最终候选**的 R12 独立复核重新采集，逐条并入归档件 `review.json`；本批不在同一轮内混改产品行为。
+
+### 8.31.6 未执行项与状态
+
+未推送、未建 PR、未合并、未部署、未启动 G07；未重跑全矩阵；未改办理事项；
+未 `sync_demo`／fixture reset／发布快照／无关 upgrade；未停启历史容器、未改 Docker 网络、未清理历史工作树；
+受保护草稿 163／190／192／194／233／267／274／276 未触碰；**未持久化业务或配置写入**；
+879 记录态仍未覆盖（`empty_action_domain`，不为补证据造数据）；台账保持 **31**。
+
+状态：**R12 复核整改中（major 已按事实闭合并重跑受影响 L2 通过）｜台账 31｜未集成｜未部署**。
