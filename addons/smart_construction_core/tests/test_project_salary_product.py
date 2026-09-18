@@ -152,7 +152,24 @@ class TestProjectSalaryProduct(TransactionCase):
         self.assertEqual(payment_contract.action_id, payment_action)
         calculation_form = calculation_contract.contract_json["view_orchestration"]["views"]["form"]
         payment_form = payment_contract.contract_json["view_orchestration"]["views"]["form"]
-        self.assertIn("project_id", [item["name"] for item in calculation_form["fields"]])
-        self.assertIn("payment_ids", [item["name"] for item in calculation_form["fields"]])
-        self.assertIn("payroll_document_id", [item["name"] for item in payment_form["fields"]])
-        self.assertIn("payment_amount", [item["name"] for item in payment_form["fields"]])
+        # U-C4 G07: both entries now consume the shared native form instead of
+        # projecting a field body of their own, so the released configuration no
+        # longer carries a ``fields`` list.  The facts it used to declare must
+        # still be carried, only now by the native arch the entry resolves, so
+        # the assertion moves from "the contract lists the fact" to "the native
+        # body presents the fact" instead of being dropped.
+        for label, form in (("calculation", calculation_form), ("payment", payment_form)):
+            self.assertEqual(form["composition_mode"], "native_semantic_surface", label)
+            self.assertNotIn("sections", form, label)
+            self.assertNotIn("fields", form, label)
+            self.assertNotIn("columns", form, label)
+        calculation_arch = self.env.ref(
+            "smart_construction_core.view_sc_hr_payroll_document_form"
+        ).arch_db
+        payment_arch = self.env.ref(
+            "smart_construction_core.view_sc_hr_salary_payment_form"
+        ).arch_db
+        for fact in ("project_id", "payment_ids"):
+            self.assertIn('name="%s"' % fact, calculation_arch, fact)
+        for fact in ("payroll_document_id", "payment_amount"):
+            self.assertIn('name="%s"' % fact, payment_arch, fact)
