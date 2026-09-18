@@ -2099,3 +2099,139 @@ skipped：`fast`／`classify`（候选检查变体）／`wait_for_candidate_chec
 其 Quick 回执沿用候选 `71546e09` 的 exact-head 回执；待该提交随下一批 PR 交付时按其候选重新冻结。
 
 状态：**G07 批次验收完成（本批范围）｜主线集成完成（PR #495，squash 同树）｜未部署｜89 入口交付未完成｜台账 25｜G08 未启动**。
+
+---
+
+## 8.34 G08 上下文办理工作台整组原生结构迁移（2026-09-18，待集中产品复核）
+
+### 8.34.1 承接与归属
+
+- **承接基线**：`origin/main` = `26d254ade3f153b466f6baa61f84695826443567`（8.33.13 的台账尾项
+  commit `e61e275f` 经 **PR #496** squash 合入，`mergedAt` 2026-09-18T14:30:52Z；合并 tree
+  `bde8dd68` 与本地提交 tree 逐字节一致）。合入后主线台账 `count=25`、`uc4G07PublishedAudit` 在册、
+  `nextBatch.selectedGroup=G08`。
+- **本批工作树**：`feature/uc4-g08-context-workspace-native-v1`（一个 worktree 一个写入者，只交付
+  **G08 一组**，不混入 G09 或六组副本候选）。
+- **相对基线的交付范围 10 条路径**：3 条 P1 契约声明 ＋ 3 条 P0 结构 ＋ 1 条新增 L2 测试 ＋
+  1 条 L1/L2 注册 ＋ 1 条 P4 只读验证登记 ＋ 1 条本记录（详见 8.34.3）。L1 在提交前
+  （`change_state=dirty`）实测 `changedPathCount=10`、`unmappedPathCount=10`（本批路径未在
+  增量计划里映射，故 `manualNonZeroL2Required=true`，L2 按 8.34.7 的显式 tag 集合执行）。
+  **未推送、未建 PR、未冻结、未部署。**
+
+### 8.34.2 入口矩阵（L3 运行时实测，`sc_dev_demo`，action／view／menu 为库内真实值）
+
+| 入口 | action | menu | view | 模型 | 分组 | 动作载体 | domain | target |
+|---|---|---|---|---|---|---|---|---|
+| 班组借/扣款登记 | 875 | 697 | 1932 | `sc.team.loan.deduction.workspace` | 83,84 | 登记借款／登记扣款／查看借扣款台账 | 无 | `current` |
+| 往来款登记 | 877 | 699 | 1933 | `sc.current.account.workspace` | 95,96 | 项目借/还公司款、承包人借/还项目款、账户间调拨、查看往来台账 | 无 | `current` |
+| 公司&项目退款 | 878 | 700 | 1934 | `sc.company.project.refund.workspace` | 95,96 | 扣款实缴退回、投标保证金退回、合同保证金退回、自筹退回、查看关联台账 | 无 | `current` |
+
+- 三个模型均为 **`TransientModel` 派发工作台**：自身不持有业务事实，表头每个按钮打开的是真正承载
+  资金的单据（借款／费用／资金调拨／退款）。三条视图均为 **唯一主视图**（`inherit_id=False`、
+  `active=True`、`type=form`、prio 16），三模型互不共享视图。
+- **无**任何 action 钉 `view_id`／`view_ids`、无 `domain`、`context={}`、`res_id=0`、`view_mode=form`；
+  一模型一 action，**没有旁路消费者**（`_action_values()` 按非模型 `res_model` 派发、`views [(False,'form')]`，
+  故本次**未触碰**任何 action 行为，存储的 view 解析保持原样）。
+- **旧配置来源**：台账 `legacyConfigurations` 列了 3 条
+  （`company_project_refund_workspace_form_v1`／`current_account_workspace_form_v1`／
+  `team_loan_deduction_workspace_form_v1`），与库内入口级契约 **id 176／175／173** 一一对应，
+  **命名完整、无漏计**（与 G07「清单是命名不全」不同：本组三条就是全部，且**没有模型级契约**）。
+  `evidenceStatus` 为 `grouped_from_existing_44_entry_ledger_not_runtime_revalidated`，本批已按运行时复核。
+
+### 8.34.3 修改范围与影响面
+
+| 层 | 文件 | 内容 |
+|---|---|---|
+| P1 声明 | `data/team_loan_deduction_workspace_contract.xml`、`data/current_account_workspace_contract.xml`、`data/company_project_refund_workspace_contract.xml` | 三条入口契约只留 `title` ＋ `composition_mode: native_semantic_surface`，退役 `entry_semantic_surface` 的 sections／fields／columns 副本；`view_orchestration.context` 的语义声明**原样保留**（`fact_authority: dispatch_only`，875 无附加键；877 保留 `fact_models`／`projection_authority`；878 同）。顶部记录决策与回滚方式（`git revert`，无数据迁移），并注明与 G06 契约 177／G07 契约 884 同一规则 |
+| P0 结构 | `views/support/team_loan_deduction_workspace_views.xml`、`views/support/current_account_workspace_views.xml`、`views/support/company_project_refund_workspace_views.xml` | 原生 form 的两个业务分组补 `name` ＋ `data-sc-anchor`（`team_loan_processing_context`／`_note`、`current_account_…`、`company_project_refund_…`）并显式声明 `col`（办理上下文 2／办理说明 1，与退役体声明一致）；**表头按钮、分组标题、字段集合、placeholder 未改动** |
+| L1/L2 | `tests/test_context_workspace_native_lowcode.py`（新增，13 测，tag `uc4_native_lowcode`）、`tests/__init__.py` | 见 8.34.7 |
+| P4 只读 | `scripts/verify/local_dev_form_lowcode_scope.py` | 新增只读 topic `context_workspace`（875/menu 697、877/menu 699、878/menu 700 三条路由）＋ 样本字段与机制断言登记；复用既有 runner／环境／身份，未另建 fixture、未加写入开关 |
+
+**边界保持**：未触碰 action／menu／ACL／security CSV／模型代码／计算字段；未执行 `sync_demo`／
+fixture reset／发布快照／无关 upgrade；**未创造任何业务数据**。
+
+### 8.34.4 用户可见前后差异
+
+- **前**：入口契约另投一层 `entry_semantic_surface` 主体（办理上下文 2 列 ＋ 办理说明 1 列 ＋ 5 字段），
+  与原生 form 已声明的同名分组**并存**；节目标识只存在于契约副本里。
+- **后**：结构权威只留原生 arch；`办理上下文`／`办理说明` 成为**可寻址的章节身份**
+  （`data-form-section-target="node:<anchor>:business-section"`），字段集合、分组标题与列数与退役体一致
+  （5 字段、2 列／1 列，运行态实测），动作载体仍在表头。**用户可感知的字段与分组无增无减**，
+  差别是同一结构不再有两份声明。
+- **回滚**：`git revert` 本批提交即可（无数据迁移、无配置写）。
+
+### 8.34.5 只读代表面（L4-只读，`FORM_LOWCODE_TOPIC=context_workspace FORM_LOWCODE_REPRESENTATIVE=1`）
+
+报告 `artifacts/lowcode-form-loop/browser/representative-report-context_workspace.json`（`ok=true`）：
+
+- `restored=true`、`browser_errors=[]`、`transport_recoveries=[]`、`cleanup_guard={decision:proceed, foreign:[]}`、
+  `recovery=[]`、`representative_uncovered=[]`、`representative_blocked=[]`。
+- 三条入口**各自**一个 create 面（875／877／878），`presentation_mode=create`；
+  实测 **5 字段**＝ `project_id`／`partner_id`／`business_date`／`processing_advisory`／`note`，
+  **3 个章节入口**＝办理上下文／办理说明／协作记录，`findings` 四类（重复字段／空容器／装饰分组／带标题布局组）**全空**；
+  章节列数实测 `template-form-section-grid--columns-2`（办理上下文）与 `--columns-1`（办理说明），
+  与退役体声明逐项一致。
+- 双视口 **1088×900 与 390×844** 的 `section_navigation_press` 均为
+  `not_applicable / track_does_not_overflow`（只有 2 个业务章节、轨道不溢出，**非通过也非失败**）。
+
+### 8.34.6 配置面与跨入口隔离
+
+- **跨入口隔离（L2 断言 + 运行态只读）**：`test_each_entry_keeps_its_own_native_authority` 固定
+  3 个不同模型／3 个不同主视图、且任一入口的生效契约集合**不含**兄弟入口的契约名；
+  `test_a_retired_body_no_longer_re_projects_over_the_native_authority` 固定无
+  `LEGACY_STRUCTURE_KEY_OVERRIDE`；`test_entry_menus_actions_and_scoping_are_unchanged` 固定 menu→action→view
+  绑定、`domain` 为空、`target=current`、分组面保持。只读代表面按入口分别编译契约，未出现跨入口字段或章节。
+- **配置面（只读盘点）**：`LOWCODE_CONFIG_INVENTORY=1` 全量 **277** 条契约在册；本组三条
+  （id 173／175／176）`status=published`、`active=true`、各自绑定本入口 action、**不钉 view**、
+  `declared_context` 与 8.34.3 逐字一致。
+- **设计器入口：对本组三入口按设计不注入**（登记项，非缺陷，见 8.34.8-③）。因此本批**未跑 G08 设计器闭环**，
+  而是沿用 G07 已证的同一套低代码机制（机制输入未变，见 8.34.7 复用理由），**不把未跑写成通过**。
+
+### 8.34.7 分层验证结果
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | **PASS**：16 静态测 0 failed；`change_state=dirty`、`changedPathCount` 为批内路径数 |
+| L2 | `make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestContextWorkspaceNativeLowcode,/smart_construction_core:TestTeamLoanDeductionWorkspace,/smart_construction_core:TestCurrentAccountWorkspace,/smart_construction_core:TestCompanyProjectRefundWorkspace'` | **PASS**：**19 测 0 failed 0 error**（新增类 13 测 ＋ 三个既有同类 6 测）。过程中一次中间失败为**测试书写缺陷**（Python 字面量写了 `公司&amp;项目退款`，XML 解析后实体已解码），改为 `公司&项目退款` 后复跑全绿 |
+| L3 | `make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1` | **PASS**：exit 0，`[local.dev.demo.authority] PASS`。升级后模块 `state=installed`、`latest_version=17.0.0.168`，与**磁盘 manifest 版本相同**，容器内 `/mnt/source-addons` 三视图文件 md5 与宿主**一致** |
+| L3-契约回读 | 运行中服务（HTTP `127.0.0.1:8070`，`sc_test_admin` 会话） | **PASS**：三视图 arch **含 `data-sc-anchor`**；三入口契约 `status=published`、`mode=native_semantic_surface`、`keys=['composition_mode','title']`。**不是只看服务健康**：契约与 arch 均由**运行进程**回读，排除「前端源码一致＝候选一致」的误判（另核对后端加载代码／模块升级状态，见上 L3） |
+| L4-只读 | `FORM_LOWCODE_TOPIC=context_workspace FORM_LOWCODE_REPRESENTATIVE=1 make local.dev.form_lowcode.browser` | **PASS**：见 8.34.5，业务指纹未变、`restored=true` |
+| L4-设计器 | `FORM_LOWCODE_TOPIC=context_workspace FORM_LOWCODE_DESIGNER=1 make local.dev.form_lowcode.browser` | **不适用（登记，不算通过）**：入口页无「表单设置」，见 8.34.8-③。该次运行在点击「更多操作」前即失败，**未产生任何配置写入**：最新变更集仍为 G07 的 397（`write=2026-09-18 11:17:57Z`），且**不存在**任何 G08 目标草稿 |
+
+**复用理由**：本批未修改任何 L1/L2 输入之外的验证机制（P4 只新增一条只读 topic 登记，未改 runner、
+未放松断言），也未修改其他组的契约／视图／测试；G07 的 L2／L3／L4 结果按其输入未变复用，未重跑。
+
+### 8.34.8 未覆盖项与剩余阻断（如实登记，不造数据）
+
+1. **记录态（record surface）未覆盖 —— 结构事实，不是样本缺失**：三个模型均为 `TransientModel`，
+   **不存在**持久记录面，故本组**不登记** `record_surface`，也**不**报告 `empty_action_domain`；
+   只读盘点报告中的等价事实是每入口 `sample_state=empty_action_domain`（域内 0 行）。
+   **未为补样本造任何工资／发放／退款业务数据。** L2 以「模型 transient ＋ 该模型无模型级契约」固定该口径。
+2. **编辑态动作可用性未在运行态复核 —— 无合法记录**：表头对象按钮（875 的 3 个、877 的 6 个、878 的 5 个）
+   在契约中**已授予**（`actionContract.actionRuleList` 中 `allowed=true`、`enabled=true`、
+   `source=native_form_header`，edit／readonly 在位），但在 **create 档位**由平台治理规则静态隐藏
+   （`contract_governance_create_profile.py` 给出 `reason_code=CREATE_PROFILE_REQUIRES_RECORD`）。
+   该规则只在 `head.interaction_mode == 'wizard'` 时豁免，而 `interaction_mode` 仅在
+   「`action.target == 'new'` 且模型为 transient」时为 `wizard`（`page_assembler.py`）。
+   本组三条 action 的 `target` 均为 `current`（由 L2 固定），故 create 面不显示对象按钮。
+   **这是 G08 之前就存在的行为**：`interaction_mode` 与 `target` 均不由本批改动，退出体声明与
+   `composition_mode` 也不在该治理规则的输入里；本批退役前后该结果一致。
+   因无合法持久记录，**编辑档位的按钮可达性未在运行态复核**，登记为未覆盖项（不写成通过）。
+3. **设计器／表单设置入口对本组按设计不注入**：`page_assembler._inject_current_form_settings_action`
+   对 transient 模型直接返回（`if not model_rec or model_rec.transient: return`），与契约
+   `composition_mode` 无关；因此 875／877／878 在**退役前后都没有**入口级设计器，本组也不存在
+   可跑的「预览→发布→刷新→回滚」闭环。**报告为按设计边界（登记项），不记为产品缺陷，也不冒充已验证。**
+   由此，`更多操作` 表头收纳（依赖同一 `buttons` 组动作）在本组同样不出现。
+4. **未执行项（保持未执行）**：最终 Quick、推送、建 PR、合并、部署、冻结、G09 启动、六组副本候选迁移、
+   `sync_demo`／fixture reset／发布快照、历史工作树清理。
+5. **写入核对（只读回读）**：受保护草稿 163／190／192／194／233／267／274／276 的 `write_date`
+   全部停留在 2026-09-17，本轮未被触碰；G07 复核草稿 **397 保留**（`ready`、未发布）；本轮设计器尝试
+   **零配置写入**（最新变更集仍为 397，无 G08 目标草稿）；运行现场（odoo 8070／vite 5174）保持可用。
+
+### 8.34.9 状态
+
+状态：**G07 已集成（主线 `26d254ad`）｜G08 整组自验完成（未冻结、未推送、未部署）｜待集中产品复核｜
+台账 25（本批不扣减，入口退役待合入后独立核对）｜89 入口整体交付未完成**。
+
+下一步（**未执行**）：集中产品复核 → 按整组页面组织、字段表达、明细操作、导航与配置效果统一列问题 →
+定向修正 → 冻结候选 → 最终 Quick → 独立复核 → 受管 PR。

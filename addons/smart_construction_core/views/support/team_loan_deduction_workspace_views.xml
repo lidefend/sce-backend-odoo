@@ -11,13 +11,13 @@
                     <button name="action_view_account" type="object" string="查看借扣款台账" class="btn-secondary"/>
                 </header>
                 <sheet>
-                    <group string="办理上下文" col="2">
+                    <group name="team_loan_processing_context" data-sc-anchor="team_loan_processing_context" string="办理上下文" col="2">
                         <field name="project_id"/>
                         <field name="partner_id"/>
                         <field name="business_date"/>
                         <field name="processing_advisory" readonly="1"/>
                     </group>
-                    <group string="办理说明">
+                    <group name="team_loan_processing_note" data-sc-anchor="team_loan_processing_note" string="办理说明" col="1">
                         <field name="note" placeholder="可补充本次借款或扣款的业务背景；具体金额和明细在正式单据中填写。"/>
                     </group>
                 </sheet>

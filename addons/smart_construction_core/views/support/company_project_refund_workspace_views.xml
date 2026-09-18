@@ -13,13 +13,13 @@
                     <button name="action_view_refund_account" type="object" string="查看关联台账" class="btn-secondary"/>
                 </header>
                 <sheet>
-                    <group string="办理上下文" col="2">
+                    <group name="company_project_refund_processing_context" data-sc-anchor="company_project_refund_processing_context" string="办理上下文" col="2">
                         <field name="project_id"/>
                         <field name="partner_id"/>
                         <field name="business_date"/>
                         <field name="processing_advisory" readonly="1"/>
                     </group>
-                    <group string="办理说明">
+                    <group name="company_project_refund_processing_note" data-sc-anchor="company_project_refund_processing_note" string="办理说明" col="1">
                         <field name="note" placeholder="可补充退款原因；金额、账户、保证金类型和附件在正式退款单据中填写。"/>
                     </group>
                 </sheet>

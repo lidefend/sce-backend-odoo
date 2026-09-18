@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- U-C4 G08: 上下文办理工作台整组迁移。  sc.company.project.refund.workspace consumes the shared-shape
+         dispatch workspace body: this entry keeps its title and its semantic
+         declaration and drops its section/field body, because the native form
+         `view_sc_company_project_refund_workspace_form` already presents the same facts (办理上下文 →
+         project_id / partner_id / business_date / processing_advisory, 办理说明 →
+         note) and the same action carriers in its header.
+
+         `fact_authority` (dispatch_only), `fact_models` and `projection_authority` are the entry's semantic declaration, not a second structure: it
+         stays verbatim in `view_orchestration.context` (same rule as G06's
+         contract 177 and G07's 884). -->
     <record id="business_config_contract_company_project_refund_workspace_form_v1" model="ui.business.config.contract">
         <field name="name">company_project_refund_workspace_form_v1</field>
         <field name="model">sc.company.project.refund.workspace</field>
@@ -12,28 +22,10 @@
         <field name="version_no">1</field>
         <field name="contract_json" eval="{
             'view_orchestration': {
-                'context': {
-                    'source': 'smart_construction_core.product_release',
-                    'source_status': 'product_release',
-                    'fact_authority': 'dispatch_only',
-                    'fact_models': ['sc.expense.claim', 'sc.self.funding.registration'],
-                    'projection_authority': 'sc.finance.project.counterparty.position'
-                },
+                'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release', 'fact_authority': 'dispatch_only', 'fact_models': ['sc.expense.claim', 'sc.self.funding.registration'], 'projection_authority': 'sc.finance.project.counterparty.position'},
                 'views': {'form': {
                     'title': '公司&amp;项目退款',
-                    'composition_mode': 'entry_semantic_surface',
-                    'columns': 2,
-                    'sections': [
-                        {'title': '办理上下文', 'sequence': 10, 'columns': 2, 'fields': ['project_id', 'partner_id', 'business_date', 'processing_advisory']},
-                        {'title': '办理说明', 'sequence': 20, 'columns': 1, 'fields': ['note']}
-                    ],
-                    'fields': [
-                        {'name': 'project_id', 'sequence': 10, 'group_title': '办理上下文'},
-                        {'name': 'partner_id', 'sequence': 20, 'group_title': '办理上下文'},
-                        {'name': 'business_date', 'sequence': 30, 'group_title': '办理上下文'},
-                        {'name': 'processing_advisory', 'sequence': 40, 'group_title': '办理上下文', 'readonly': True},
-                        {'name': 'note', 'sequence': 50, 'group_title': '办理说明'}
-                    ]
+                    'composition_mode': 'native_semantic_surface'
                 }}
             }
         }"/>
