@@ -1624,4 +1624,43 @@ runner 的失败过滤仍为 `!['pressed','not_applicable','control']`（未放�
 受保护草稿 163／190／192／194／233／267／274／276 未触碰；**未持久化业务或配置写入**；
 879 记录态仍未覆盖（`empty_action_domain`，不为补证据造数据）；台账保持 **31**。
 
-状态：**R12 复核整改中（major 已按事实闭合并重跑受影响 L2 通过）｜台账 31｜未集成｜未部署**。
+状态：**批次验收完成（本批范围）｜主线集成完成（PR #494，main=`5938d6c620952e9c4c1af9fa6c33dbda14da0374`，squash 同树）｜未部署｜台账 29**。
+
+## 8.32 G06 主线集成与台账 31 → 29（2026-09-18）
+
+§8.31 记的「台账 31｜未集成」已闭合：G06 冻结候选 `dea896d229c17628d4f770f06da21dfbe28eff6d`
+（tree `f709bccacff913fcd26aeac0b245337a4ae046d2`，完整指纹 digest
+`44e8a72ca7f5d543bd88f921a36314aaa1bc0c9823cee5907584641c9a2a503c`，7514 路径，exact-head `ci.local.quick` PASS）
+经 **PR #494** 合入，main = `5938d6c620952e9c4c1af9fa6c33dbda14da0374`（squash）。
+该 head 上 `frontend_release_gate`／`merge_policy_gate`／`public_guard`／`professional_quality_gate` 四个候选门禁全部
+success（并 `release_candidate_gate`、`python310_runtime_compatibility`、`professional_authorization`）；
+`make pr.merge.prep` 与 `make pr.merge`（squash ＋ `--match-head-commit`）依次通过；
+`pr.merge.local_quick_gate` 以同一 head 的 exact-head 回执**复用**，未重跑矩阵。squash 树
+`f709bcca…` 与冻结候选 tree 逐字节一致（`origin/main^{tree}` 比对）。
+
+台账 `docs/ops/iterations/form_structure_compatibility_consumers_v1.json` 扣减 **31 → 29**（本批在台账内**正好 2 条**：
+index 21 = action 790／menu 538／view 1654、index 22 = 879／701／1654；退役 action 790／879 与视图 1654，
+`count`／`localVerifiedCount`／`mainlineRemainingCount` 同步，并新增 `uc4G06PublishedAudit`）。
+
+**「已退出兼容路径」按已合入源码核对，不重开调查**：契约 206（`tax_deduction_registration_productized_form_v1`）
+与 177（`project_special_tax_deduction_form_v1`）的 `view_orchestration.views.form` 只剩 `title` ＋
+`composition_mode=native_semantic_surface`，`sections`／`fields`／`columns`／`field_slots`／`layout` 等结构键全部消失，
+故 `structural_form_declarations()` 无声明、`diagnose_structure_ownership()` 不可能再为这两条产出
+`LEGACY_STRUCTURE_KEY_OVERRIDE`；`TestTaxDeductionNativeLowcode::test_entry_contracts_spend_one_native_structure`
+同时断言两契约 native 且无结构体、790／879 为 `native_authority`／`configuredSections=[]`／
+`layoutPolicy=container_tree_authority`（同一 tree 上 25 测 0 失败，输入未变故复用）。
+
+**852 与派生面不额外计入退役消费者**：两者因 R12 的范围更正被纳入该模型级退役声明的作用面，
+但都不是台账消费者——852（扣款单）无自有菜单、只固定 tree 视图、记录回落同一 primary form 1654；
+派生面 `sc.tax.filing.action_open_deductions()`（税务申报 → 申报期抵扣来源）无 action／view 作用域，
+按 `entry_semantic_surface` 消费模型级契约。二者登记在 `uc4G06PublishedAudit.bypassConsumers`
+（`counted=false`），不计数、不静默丢弃；被扣减的是**条目**，primary form 1654 及其它消费者仍然存活。
+
+`nextBatch.selectedGroup` 前进到 **G07 工资社保与发放（873／884／858／874，视图 1697／1700）**，
+`priorityActions` 同步为 `[873,884,858,874]`，`sourceMainlineHead` 更新为上述 main。
+
+证据归档：`make workspace.evidence.archive` 8 文件（identity／summary／pr-body／worktree-fingerprint／review／
+3 张代表面截图）回执 `verified`，位于
+`/home/lidefend/workspace/.codex-evidence/workspace-archives/20260918/uc4-g06-tax-deduction-native/dea896d229c17628d4f770f06da21dfbe28eff6d/`；
+归档中的 `pr-body.md` 是提交前草稿，实际提交正文为其澄清版（补全 33 路径分层范围与 852 三项区分），差异见 PR #494 正文。
+代表面 3 张截图生成于 `d14020bb`、按页面输入未变复用，**不是在最终 HEAD 重拍**。

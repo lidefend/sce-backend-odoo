@@ -3,9 +3,9 @@
 - 批次：`U-C4` 表单结构消费稳定化 · 代表面 `G06 税额与专项抵扣`
 - 分支：`feature/uc4-tax-deduction-native-v1`（基于 `origin/main`=`daf9a97875a15343671c00e46fd9c4e639ebeca2`）
 - 唯一写入者：本会话执行体；本候选之外的其它工作树本轮未触碰
-- 状态：**批次验收完成（本批范围，冻结链见 §11）**——⚠ 该口径已被 §12.10.6／§12.11 **取代**：R11 后进入独立复核整改，
-  当前状态为「**R12 复核整改中**」，冻结链以本文末段为准｜未集成｜未部署｜89 入口交付未完成；台账（`form_structure_compatibility_consumers_v1.json`）保持 **31**，
-  扣减（**31 → 29**）按 G03/G04/G05 先例留待合入后由独立提交落地（§9）
+- 状态：**批次验收完成（本批范围）｜主线集成完成（PR #494，main=`5938d6c620952e9c4c1af9fa6c33dbda14da0374`，squash 同树）｜未部署｜89 入口交付未完成**；
+  台账（`form_structure_compatibility_consumers_v1.json`）已按合入后的独立提交扣减 **31 → 29**（§12.12）；
+  §12.10.6／§12.11 的「整改中」口径与冻结链作为该阶段的历史记录保留
 
 ## 1. 范围与身份
 
@@ -773,4 +773,21 @@ Major 属实并已闭合。`sc_tax_deduction_registration_p1_form_business_facts
 受保护草稿 163／190／192／194／233／267／274／276 未触碰；**未持久化业务或配置写入**；
 879 记录态仍**未覆盖**（`empty_action_domain`，不为补证据造数据）；台账保持 **31**。
 
-状态：**R12 复核整改中（major 已按事实闭合并重跑受影响 L2 通过）｜页面整改复核通过｜未集成｜未部署｜89 入口交付未完成**。
+状态：**批次验收完成（本批范围）｜主线集成完成（PR #494，squash 同树）｜未部署｜89 入口交付未完成｜台账 29**。
+
+## 12.12 G06 主线集成与台账 31 → 29（2026-09-18）
+
+§12.11.4 的「未推送、未建 PR、未合并」与「台账 31」已闭合。冻结候选
+`dea896d229c17628d4f770f06da21dfbe28eff6d`（tree `f709bccacff913fcd26aeac0b245337a4ae046d2`，
+7514 路径完整指纹，exact-head `ci.local.quick` PASS）经 **PR #494** 合入 main
+`5938d6c620952e9c4c1af9fa6c33dbda14da0374`（squash）；`origin/main^{tree}` 与候选 tree 逐字节一致。
+该 head 上远端必检项全部 success：`frontend_release_gate`／`merge_policy_gate`／`public_guard`／
+`professional_quality_gate`／`release_candidate_gate`／`python310_runtime_compatibility`／`professional_authorization`。
+本 PR 承载范围是**全 33 路径／18 提交**（P0 机制消费、共享前端、P1 声明与原生结构、P4 工具、生成证据、记录），
+不是单一「抵扣表单迁移」；正文含 852 三项区分与全部保留边界。
+
+台账 31 → 29：退役本册两个正式入口 790／879 的条目（视图 1654，`uc4G06PublishedAudit`）。
+852 与派生面按「非额外消费者」登记进该审计块的 `bypassConsumers`（`counted=false`）；
+`nextBatch` 前进到 G07。`879` 记录态仍登记**未覆盖**（`empty_action_domain`，不造数据）。
+
+状态：**批次验收完成（本批范围）｜主线集成完成（PR #494，squash 同树）｜未部署｜89 入口交付未完成｜台账 29**。
