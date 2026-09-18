@@ -1736,7 +1736,7 @@ L2 `test_the_model_wide_annotation_keeps_serving_the_model` 固定 79 仍 `activ
 |---|---|---|
 | P1 声明 | `data/hr_payroll_form_productization_contract.xml` | 8 条退役入口契约只留 `title` ＋ `composition_mode: native_semantic_surface`；新增 858 入口级发布；顶部记录决策与回滚方式（`git revert`，无数据迁移） |
 | P1 声明 | `data/social_fund_contract.xml` | 884（`social_fund_form_v1`）同样只留 `title` ＋ `native_semantic_surface`；`fact_authority`／`allowed_fact_types` **原样保留在 `view_orchestration.context`**，未连带退役 |
-| P0 结构 | `views/core/hr_payroll_document_views.xml` | 两个 form 视图共 **11 个分组**补 `name` ＋ `data-sc-anchor`（实测 1697 的 11 个分组中 8 个带锚点、1700 的 4 个分组中 3 个带锚点。该计数**必须路径限定**：`git diff -U0 5938d6c6..HEAD -- addons/smart_construction_core/views/core/hr_payroll_document_views.xml \| grep -c '^+.*data-sc-anchor'` ＝ 11；不限定路径时同一字符串在测试／契约／本记录中亦出现，读数 21，不可当作分组数），另有 **4 个无标题包装组保持未动**（1697 3 个 ＋ 1700 1 个，初始基线 5938d6c6 为 1697 3 个 ＋ 1700 3 个）。1697：「历史来源」补 `invisible="not legacy_document_no"` ＋ 4 个 provenance 字段；notebook 前补隐藏只读 `currency_id`；**从 `payroll_provident_fund` 删去 `employee_user_id`／`employee_name`**（见 8.33.6）。1700：2 个原无标题包装组补名（`salary_payment_identity`／`salary_payment_amount`），新增第三组 `salary_payment_handling`（「经办与依据」）承载 `responsible_id` |
+| P0 结构 | `views/core/hr_payroll_document_views.xml` | 两个 form 视图共 **11 个分组**补 `name` ＋ `data-sc-anchor`（实测 1697 的 11 个分组中 8 个带锚点、1700 的 4 个分组中 3 个带锚点。该计数**必须路径限定**：`git diff -U0 5938d6c6..HEAD -- addons/smart_construction_core/views/core/hr_payroll_document_views.xml \| grep -c '^+.*data-sc-anchor'` ＝ 11；**不限定路径时的读数会被测试、契约、脚本及本记录正文中的同名字符串一并命中，且随本记录自身内容变化而不可复现，故此处不引用该读数、不得用于分组计数**），另有 **4 个无标题包装组保持未动**（1697 3 个 ＋ 1700 1 个，初始基线 5938d6c6 为 1697 3 个 ＋ 1700 3 个）。1697：「历史来源」补 `invisible="not legacy_document_no"` ＋ 4 个 provenance 字段；notebook 前补隐藏只读 `currency_id`；**从 `payroll_provident_fund` 删去 `employee_user_id`／`employee_name`**（见 8.33.6）。1700：2 个原无标题包装组补名（`salary_payment_identity`／`salary_payment_amount`），新增第三组 `salary_payment_handling`（「经办与依据」）承载 `responsible_id` |
 | L1/L2 | `tests/test_hr_payroll_native_lowcode.py`（最终候选 **15 测**，tag `uc4_native_lowcode`）、`tests/test_project_salary_product.py`、`tests/__init__.py` | 见 8.33.8 |
 | P4 | `scripts/verify/local_dev_form_lowcode_scope.py`、`formal_form_lowcode_loop.mjs`、`formal_form_designer_journey.mjs` | payroll topic 只读代表路由（复用既有 runner／环境／身份，未另建 fixture 或环境）＋设计器闭环 |
 
@@ -1983,19 +1983,50 @@ S8 路径数（8.33.1／8.33.8 的"12"）、S9 断言行数与 L2 测数（8.33.
 - **R-G3-1（minor，本轮已修）**：8.33.11／8.33.12.1 原把 `b0e54aa6` 称作"最终候选"并记 **91 行**；
   该命令在冻结候选处读数为 **92**（本记录新增行自身含 `assert` 字样），属**自指偏差**，
   冻结前 ≠ 冻结后、不可复现。
-- **R-G3-2（nit，本轮已修）**：8.33.3 引用的 `grep -c '^+.*data-sc-anchor'` 未限定路径，
-  原样运行得 **21**（分组 11 ＋ 测试 5 ＋ 本记录 3 ＋ 契约 1 ＋ 脚本 1）；**11** 仅在路径限定于
-  视图文件时成立。
+- **R-G3-2（nit，本轮已修）**：8.33.3 引用的 `grep -c '^+.*data-sc-anchor'` 未限定路径；
+  未限定读数会把测试／契约／脚本与**本记录正文**中的同名字符串一并命中，**随本记录内容变化**，
+  因此**已从记录中移除该读数**（不再引用任何未限定值）。分组数 **11** 仅在路径限定于视图文件
+  时成立，且该值可复现。
 
 本轮收口方式（**改用不随本记录内容变化的稳定口径**）：
 
 | 指标 | 原口径（自指，不可复现） | 新口径（稳定） |
 |---|---|---|
 | 新增断言行 | `git diff -U0 5938d6c6..HEAD \| grep -E "^\+" \| grep -c assert` → `96f0c9bd` 78／`b0e54aa6` 91／`324394cc` 92 | 同命令 **加 `-- . ":(exclude)<本记录文件>"`** → `96f0c9bd` 78／`b0e54aa6` 89／`324394cc` **89**（冻结前＝冻结后） |
-| 锚点分组数 | `grep -c '^+.*data-sc-anchor'`（全路径）→ 21 | **同命令加 `-- <views/core/hr_payroll_document_views.xml>`** → 11 |
+| 锚点分组数 | `grep -c '^+.*data-sc-anchor'`（不限定路径）→ **不稳定，已弃用**（含测试／契约／脚本与本记录正文的命中，随本记录内容变化） | **路径限定 `-- <views/core/hr_payroll_document_views.xml>`** → 11 |
 
 两项均为**记录口径**（非产品事实、非测试削弱）：删除断言计数不受上述排除影响，恒为同一 4 行；
 产品渲染输入在本轮与上一轮增量中均未被触碰。
 
 **第 4 轮**：本轮订正产生**新候选**，重新冻结并重跑一次 exact-head Quick；第 4 轮复核只审
 本增量，结论与回执哈希写入外部归档 `review.json`，不写入本记录文件。
+
+#### 8.33.12.3 第 4 轮复核（绑定候选 4b810fa2）与自指计数类终止
+
+第 4 轮独立只读复核绑定候选 `4b810fa2785cc525fb26eb27254e3b6ae98a1c61`，只审增量
+`324394cc..4b810fa2`，结论 **APPROVE_WITH_MINOR**（`noOpenBlockerOrMajor: true`）：
+
+- **R-G4-2 闭合**：增量只改本记录文件；`addons/**/views`、`addons/**/data`、`frontend`、
+  `scripts` 路径过滤差异 **0 条**。
+- **R-G4-3 闭合**：增量未删除／跳过任何测试断言（增量内被误计的那 1 行是记录正文对
+  `grep -c assert` 的引用，非测试断言）；全批删除断言仍恒为同一 4 行。
+- **R-G4-4 闭合**：本节登记的第 3 轮结论、`reviewedRange` 与 `noOpenBlockerOrMajor` 与复核者
+  自取数一致；8.33.8 新增的 L1 行可由 `tmp/g07-evidence/l1-324394cc.log` 佐证；无"未覆盖写成通过"。
+- **R-G3-1／R-G3-2 闭合**（复核者自取数复现）：排除本记录文件的断言口径 `96f0c9bd` 78／
+  `b0e54aa6` 89／`324394cc` 89／`4b810fa2` 89，即**冻结前＝冻结后**；文档已不再把 `b0e54aa6`
+  称作"最终候选"。
+- **R-G4-1（minor，本轮已修）**：8.33.3 与 8.33.12.2 仍引用**未限定路径**的锚点读数（写作
+  21，其构成被标为"本记录 3"）；该读数会把本记录正文自身的同名字符串计入，随本记录内容变化，
+  在冻结候选处已不等于 21，属与 R-G3-1 同类别的**自指偏差**。
+
+本轮收口方式：**不再刷新该读数，而是从记录中移除任何未限定值**（R-G4-1 的处置），使该类问题
+**终止**——记录只保留可复现的路径限定值（锚点分组 **11**、断言 **89／删除 4**）。
+
+**该类问题的边界（记录、不再迭代）**：任何"描述包含本记录文件自身在内的整批差异"的计数，
+只要被写进本记录，其读数就会因写入而改变，**永远不可能在记录内自洽**。因此本记录**只允许**
+引用两类计数：①**路径限定或排除本记录文件**的命令读数；②**某个不可变提交处**测得的阶段值
+（该提交内容固定，故可复现）。其余形式的未限定总计**一律不写入本记录**。
+本轮与上一轮的实际差异均在**记录正文**内，未改动任何产品渲染输入、测试断言或契约。
+
+**第 5 轮**：本轮订正产生**新候选**，重新冻结并重跑一次 exact-head Quick；第 5 轮复核只审本
+增量，结论与回执哈希写入外部归档 `review.json`。
