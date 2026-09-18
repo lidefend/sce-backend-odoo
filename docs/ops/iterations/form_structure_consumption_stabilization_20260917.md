@@ -1180,8 +1180,9 @@ findings 全空，吸顶操作行 `175–205` 与导航 `218–257` 分离 13px�
 （`tender_bid`／`payment_request`／`policy_document`），守卫与其输入均不在本批 9 个路径内 → 预先存在、非本批引入，
 且该守卫未纳入 `ci.local.quick.run`／`pr.push`，不影响本候选 Quick。是否补校验属 P0/P4 单独决定。
 
-**独立复核（只读、绑定冻结身份）**：结论 **APPROVE**，无 blocker／major。复核者独立复现了
-`HEAD`／`HEAD^{tree}`／branch／clean 工作树、完整指纹 digest（`f54cf06e…`，7511 路径）与 Quick 回执身份；
+**独立复核（只读、绑定冻结候选身份 `5b104106`）**：结论 **APPROVE**，无 blocker／major。复核者独立复现了
+候选 `5b104106`（tree `5fb43ba0…`）的 `HEAD`／`HEAD^{tree}`／branch／clean 工作树、完整指纹 digest
+（`f54cf06e…`，7511 路径）与 exact-head Quick 回执身份；
 并逐条核对：两入口退役为 `native_semantic_surface` 且 879 的 5 个保留键位于 `context`（非第二份结构）、
 模型级 143/5/129 与旁路 852 未被改动且仍可用、`state`／`source_origin`／`currency_id`／`withholding_amount`
 在 1654 arch 中各出现**恰好 1 次**且去重保留在 `抵扣金额与税额`、条件只读经运行时实测
@@ -1191,8 +1192,14 @@ grep 无 ACL／groups／ir.rule／domain 改动。提出的 3 项 minor 与 5 �
 ③ 登记上述共享守卫的既有失败。另把「790 可编辑事实」的断言由**表达式形状**升级为**解析后策略行为**
 （`readonly=false` / `auth=edit`），并登记只读呈现层 `NATIVE_MODIFIER_UNRESOLVED` 的保守呈现事实。
 
+该复核修正落在 `4402b4aa91192852010f246a66cc339b68e85c91`（tree `781f81f18b88f50037f3cec03ff437d9256f36e5`，
+仅 2 份记录 + 1 个新增测试文件，无产品运行路径改动）。G06 的冻结身份在这之后的最后一次记录提交上重走一次
+冻结链（完整指纹 ＋ exact-head Quick ＋ 复核绑定同一指纹）；冻结候选身份的取值只写入外部归档
+（`identity.json`／`worktree-fingerprint.json`／`review.json`），不写入记录文件（写入会改变候选自身
+commit hash）——理由与逐阶段身份表见 `uc4_tax_deduction_native_lowcode_20260918.md` §11。
+
 台账保持 **31**：本批在台账内**正好 2 条**（index 21 = 790／538／1654、index 22 = 879／701／1654），
 退役与 **31 → 29** 扣减按 G03/G04/G05 先例留待合入后由独立提交落地，本实现提交不改台账文件。
-未冻结、未跑交付 Quick、未推送、未建 PR、未部署。
+未推送、未建 PR、未合并、未部署。
 
-状态：**批次验收中（本批范围，未冻结）｜未集成｜未部署｜89 入口用户验收未完成｜台账 31**。
+状态：**批次验收完成（本批范围，冻结链见本批记录 §11）｜未集成｜未部署｜89 入口用户验收未完成｜台账 31**。

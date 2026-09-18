@@ -197,9 +197,9 @@ L2 覆盖的 7 个用例：入口契约只花一份原生结构、legacy 结构�
   （index 21 = action 790／menu 538／view 1654、index 22 = 879／menu 701／view 1654），
   合入后按 G03/G04/G05 先例退役这两条并新增 `uc4G06PublishedAudit`，`count`／`localVerifiedCount`／
   `mainlineRemainingCount` 同步 **31 → 29**，`nextBatch.selectedGroup` 前进到下一组。
-- 未冻结、未跑交付 Quick、未推送、未建 PR、未部署。
+- 未推送、未建 PR、未合并、未部署；冻结候选身份的取值不写在本文件，见 §11 与外部归档。
 
-状态：**批次验收中（未冻结）｜未集成｜未部署｜89 入口交付未完成｜台账 31**。
+状态：**批次验收完成（本批范围，冻结链见 §11）｜未集成｜未部署｜89 入口交付未完成｜台账 31**。
 
 ## 10. 本批登记的产品与机制发现（不隐藏）
 
@@ -209,3 +209,28 @@ L2 覆盖的 7 个用例：入口契约只花一份原生结构、legacy 结构�
 | `smart_core/app_config_engine/services/view_Parser/base.py:102` 用 `not xml_content` 判断入参，而该函数同时接受 lxml Element（第 104 行 `else xml_content`）；lxml 对 Element 的真值语义已废弃（相邻调用点 `contract_Parser.py:109`、`parsers Tree Form.py:698` 都以 Element 传入） | P0 机制 | **登记不改**（改 `smart_core` 超出本批边界）。当前不可观测：真实 form arch 必有子节点，故不会退化为 `{}`；仅对**无子节点**的元素会静默返回 `{}` 并抛 `FutureWarning`。属潜在健壮性缺口，需 P0 单独决定 |
 | 本批新增测试首版用 `arch_fields.get(name) or {}` 读 lxml 元素，触发同一条 `FutureWarning`，且对无子节点的字段会读错可见性 | P4 本批引入 | **本批已修**：改为显式 `is not None`，并把断言提升为行为断言（声明事实恰好呈现一次 + 隐藏必须是消费层可见性而非静默移除） |
 | `scripts/verify/view_orchestration_product_boundary_guard.py` 的 `ALLOWED_COMPOSITION_MODES` 不含 `native_semantic_surface`，且只在「form 带 `fields`」时才要求允许模式 —— 缺一条「`native_semantic_surface` 必须无 `sections/fields/columns`」的正向校验 | P0/P4 共享守卫 | **登记不改**。该守卫实跑 `FAIL`（exit 2），5 条错误全部指向本批**未改**的契约（`tender_bid` P1 事实、`payment_request` P1 事实、`policy_document_form_v1`、`tender_bid_registration_productized_form_v1`、`tender_bid_registration_form_structure_v1`）；守卫文件与这 5 个输入都不在本批 9 个路径内，故**预先存在、非本批引入**。本批两条退役契约因已删 `fields` 而通过该守卫。该守卫未纳入 `ci.local.quick.run` 与 `pr.push`，不影响本候选的 Quick。是否补正向校验属 P0/P4 单独决定 |
+
+## 11. 身份与冻结口径
+
+本记录按「日迭代 ＝ HEAD ＋ 显式 dirty 范围」书写。按阶段证据规则，**冻结值不写入本文件**：本文件在冻结
+候选内，写入冻结取值会改变候选自身的 commit hash，故冻结候选身份的取值只出现在冻结步骤生成的产物与外部
+归档（`identity.json`／`worktree-fingerprint.json`／`review.json`）中。
+
+| 阶段 | 身份 | 取值方式 |
+|---|---|---|
+| 迭代期（§1–§8 书写时） | `HEAD=5b10410663c9c5ceac7678aaaff66379000e2226`（tree `5fb43ba0e2cc9b9c0aa99b70b773aeff2e18985f`） | 实现提交完成后的身份；L1（`changedPathCount=6`）／L2（7 用例）／L3（78 modules）／L4（只读代表面）即在此身份上执行 |
+| L2 收口（§4 口径：L2 在 dirty 收口后重跑） | 同上 ＋ dirty `{tests/test_tax_deduction_native_lowcode.py}` | L2 回执与其输入（新增测试文件）一致 |
+| 独立复核 | 同上 ＋ dirty `{tests/…, docs/…×2}` | 结论 **APPROVE**，无 blocker／major；3 项 minor 与 5 项 nit 见总记录 §8.25 与本文件 §10 |
+| 复核修正提交 | `4402b4aa91192852010f246a66cc339b68e85c91`（tree `781f81f18b88f50037f3cec03ff437d9256f36e5`） | 只含上述 3 个记录／测试路径，`git diff --name-only` 可核；无产品运行路径改动 |
+| 记录口径提交 → 冻结 | 由冻结步骤前的最后一次记录提交产生 | `make ci.delivery.freeze.prepare` → `python3 scripts/contract/complete_worktree_fingerprint.py --baseline daf9a97875a15343671c00e46fd9c4e639ebeca2` → `make ci.local.quick`（exact-head，一次）→ 独立复核绑定同一指纹与回执 |
+| 冻结候选复核 | 绑定冻结指纹 ＋ exact-head Quick 回执 | 结论与回执随归档 `review.json` 记录（本文件不含该取值） |
+
+**复用与被取代的口径**：L1／L2／L2 相邻／L3／L4 的输入是本批 9 个路径内的产品与工具文件，复核修正提交只动
+2 份记录与 1 个新增测试文件——按「文档变更不作废页面证据、测试工具变更只作废依赖该变更的执行」的规则，
+L3／L4 页面证据不因此重跑，L2 已按上表在 dirty 收口后重跑取回执；冻结身份在最后一次记录提交上重走一次
+（完整指纹 ＋ exact-head Quick ＋ 复核绑定同一指纹）。
+
+**L4 报告身份的口径**：报告内 `candidate`／`dirty` 记录的是**产生该报告时的运行身份**（`5b104106` ＋
+`dirty=true`），它是「按当时 HEAD＋dirty 运行」的事实记录，**不是**冻结候选的证明；冻结候选身份只认
+「干净 HEAD ＋ 完整指纹 ＋ exact-head Quick 回执」三件套，报告与截图在归档中作为该次运行的页面证据
+与其它角色文件一同绑定同一 `candidateHead`。
