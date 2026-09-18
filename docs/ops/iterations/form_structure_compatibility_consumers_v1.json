@@ -6,7 +6,7 @@
     "operation": "model",
     "renderProfile": "create"
   },
-  "count": 29,
+  "count": 25,
   "fullRescan": false,
   "sourceInventory": "artifacts/form-structure-unification/customer-browser-final/compatibility-consumers.json",
   "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
@@ -2228,421 +2228,6 @@
       "evidenceStatus": "carried_forward_prior_inventory"
     },
     {
-      "menuXmlid": "smart_construction_core.menu_sc_product_project_payroll_v1",
-      "label": "薪资核算清单",
-      "model": "sc.hr.payroll.document",
-      "actionId": 873,
-      "menuId": 695,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.hr.payroll.document",
-        "viewId": 1697
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 166,
-            "name": "project_payroll_productized_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1697,
-        "resolvedActionId": 873,
-        "structureDiagnostics": [
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.hr.payroll.document",
-              "action_id": 873,
-              "view_id": 1697
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "state",
-              "document_no",
-              "name",
-              "project_id",
-              "business_date",
-              "requester_id",
-              "department_id",
-              "employee_user_id",
-              "employee_name",
-              "period_year",
-              "period_month",
-              "payout_unit",
-              "salary_base",
-              "gross_amount",
-              "deduction_amount",
-              "net_salary",
-              "payment_state",
-              "paid_amount",
-              "unpaid_amount",
-              "description",
-              "result_note",
-              "attachment_ids",
-              "processing_advisory",
-              "payment_ids",
-              "legacy_document_no",
-              "legacy_document_state",
-              "legacy_source_table",
-              "legacy_source_id"
-            ],
-            "configuration": {
-              "id": 166,
-              "name": "project_payroll_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 79,
-                "name": "sc_hr_payroll_document_form_structure_generated_v1"
-              }
-            ]
-          }
-        ],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "state",
-          "document_no",
-          "name",
-          "fact_type",
-          "business_date",
-          "requester_id",
-          "department_id",
-          "employee_user_id",
-          "employee_name",
-          "id_number",
-          "period_year",
-          "period_month",
-          "payer_unit",
-          "social_security_base",
-          "company_amount",
-          "individual_amount",
-          "salary_base",
-          "gross_amount",
-          "deduction_amount",
-          "net_salary",
-          "item_type",
-          "amount",
-          "occurrence_date",
-          "handler_id",
-          "due_date",
-          "description",
-          "result_note",
-          "project_id",
-          "payout_unit",
-          "payment_state",
-          "paid_amount",
-          "unpaid_amount",
-          "attachment_ids",
-          "processing_advisory",
-          "payment_ids",
-          "legacy_document_no",
-          "legacy_document_state",
-          "legacy_source_table",
-          "legacy_source_id"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:核算标识",
-            "key": "",
-            "title": "核算标识",
-            "fields": [
-              "state",
-              "document_no",
-              "name",
-              "project_id",
-              "business_date",
-              "requester_id",
-              "department_id"
-            ]
-          },
-          {
-            "identity": "title:人员与期间",
-            "key": "",
-            "title": "人员与期间",
-            "fields": [
-              "employee_user_id",
-              "employee_name",
-              "period_year",
-              "period_month",
-              "payout_unit"
-            ]
-          },
-          {
-            "identity": "title:薪资核算",
-            "key": "",
-            "title": "薪资核算",
-            "fields": [
-              "salary_base",
-              "gross_amount",
-              "deduction_amount",
-              "net_salary",
-              "payment_state",
-              "paid_amount",
-              "unpaid_amount"
-            ]
-          },
-          {
-            "identity": "title:说明与附件",
-            "key": "",
-            "title": "说明与附件",
-            "fields": [
-              "description",
-              "result_note",
-              "attachment_ids",
-              "processing_advisory"
-            ]
-          },
-          {
-            "identity": "title:发放记录",
-            "key": "",
-            "title": "发放记录",
-            "fields": [
-              "payment_ids"
-            ]
-          },
-          {
-            "identity": "title:来源追溯",
-            "key": "",
-            "title": "来源追溯",
-            "fields": [
-              "legacy_document_no",
-              "legacy_document_state",
-              "legacy_source_table",
-              "legacy_source_id"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "核算标识",
-          "人员与期间",
-          "薪资核算",
-          "说明与附件",
-          "发放记录",
-          "来源追溯"
-        ],
-        "fieldGroups": {
-          "核算标识": [
-            "state",
-            "document_no",
-            "name",
-            "project_id",
-            "business_date",
-            "requester_id",
-            "department_id"
-          ],
-          "人员与期间": [
-            "employee_user_id",
-            "employee_name",
-            "period_year",
-            "period_month",
-            "payout_unit"
-          ],
-          "薪资核算": [
-            "salary_base",
-            "gross_amount",
-            "deduction_amount",
-            "net_salary",
-            "payment_state",
-            "paid_amount",
-            "unpaid_amount"
-          ],
-          "说明与附件": [
-            "description",
-            "result_note",
-            "attachment_ids",
-            "processing_advisory"
-          ],
-          "发放记录": [
-            "payment_ids"
-          ],
-          "来源追溯": [
-            "legacy_document_no",
-            "legacy_document_state",
-            "legacy_source_table",
-            "legacy_source_id"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "核算标识": 2,
-          "人员与期间": 2,
-          "薪资核算": 2,
-          "说明与附件": 2,
-          "发放记录": 1,
-          "来源追溯": 2
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_product_project_salary_payment_v1",
-      "label": "薪资发放登记",
-      "model": "sc.hr.salary.payment",
-      "actionId": 874,
-      "menuId": 696,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.hr.salary.payment",
-        "viewId": 1700
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 167,
-            "name": "project_salary_payment_productized_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1700,
-        "resolvedActionId": 874,
-        "structureDiagnostics": [],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "state",
-          "name",
-          "payroll_document_id",
-          "project_id",
-          "employee_user_id",
-          "employee_name",
-          "period_year",
-          "period_month",
-          "payable_amount",
-          "payment_date",
-          "payment_amount",
-          "payment_method",
-          "payment_reference",
-          "responsible_id",
-          "note",
-          "attachment_ids",
-          "processing_advisory"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:发放标识",
-            "key": "",
-            "title": "发放标识",
-            "fields": [
-              "state",
-              "name",
-              "payroll_document_id",
-              "project_id",
-              "employee_user_id",
-              "employee_name"
-            ]
-          },
-          {
-            "identity": "title:发放金额",
-            "key": "",
-            "title": "发放金额",
-            "fields": [
-              "period_year",
-              "period_month",
-              "payable_amount",
-              "payment_date",
-              "payment_amount",
-              "payment_method",
-              "payment_reference"
-            ]
-          },
-          {
-            "identity": "title:经办与依据",
-            "key": "",
-            "title": "经办与依据",
-            "fields": [
-              "responsible_id",
-              "note",
-              "attachment_ids",
-              "processing_advisory"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "发放标识",
-          "发放金额",
-          "经办与依据"
-        ],
-        "fieldGroups": {
-          "发放标识": [
-            "state",
-            "name",
-            "payroll_document_id",
-            "project_id",
-            "employee_user_id",
-            "employee_name"
-          ],
-          "发放金额": [
-            "period_year",
-            "period_month",
-            "payable_amount",
-            "payment_date",
-            "payment_amount",
-            "payment_method",
-            "payment_reference"
-          ],
-          "经办与依据": [
-            "responsible_id",
-            "note",
-            "attachment_ids",
-            "processing_advisory"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "发放标识": 2,
-          "发放金额": 2,
-          "经办与依据": 2
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
       "menuXmlid": "smart_construction_core.menu_sc_product_team_loan_deduction_v1",
       "label": "班组借/扣款登记",
       "model": "sc.team.loan.deduction.workspace",
@@ -3792,328 +3377,6 @@
       "evidenceStatus": "carried_forward_prior_inventory"
     },
     {
-      "menuXmlid": "smart_construction_core.menu_sc_product_social_fund_v1",
-      "label": "社保公积",
-      "model": "sc.hr.payroll.document",
-      "actionId": 884,
-      "menuId": 706,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.hr.payroll.document",
-        "viewId": 1697
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 179,
-            "name": "social_fund_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1697,
-        "resolvedActionId": 884,
-        "structureDiagnostics": [
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.hr.payroll.document",
-              "action_id": 884,
-              "view_id": 1697
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "state",
-              "document_no",
-              "name",
-              "fact_type",
-              "business_date",
-              "department_id",
-              "requester_id",
-              "employee_user_id",
-              "employee_name",
-              "id_number",
-              "period_year",
-              "period_month",
-              "payer_unit",
-              "social_security_base",
-              "provident_fund_account",
-              "provident_fund_base",
-              "company_contribution_rate",
-              "individual_contribution_rate",
-              "company_amount",
-              "individual_amount",
-              "currency_id",
-              "handler_id",
-              "due_date",
-              "processing_advisory",
-              "description",
-              "result_note",
-              "attachment_ids"
-            ],
-            "configuration": {
-              "id": 179,
-              "name": "social_fund_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 79,
-                "name": "sc_hr_payroll_document_form_structure_generated_v1"
-              }
-            ]
-          }
-        ],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "state",
-          "document_no",
-          "name",
-          "fact_type",
-          "business_date",
-          "requester_id",
-          "department_id",
-          "employee_user_id",
-          "employee_name",
-          "id_number",
-          "period_year",
-          "period_month",
-          "payer_unit",
-          "social_security_base",
-          "company_amount",
-          "individual_amount",
-          "salary_base",
-          "gross_amount",
-          "deduction_amount",
-          "net_salary",
-          "item_type",
-          "amount",
-          "occurrence_date",
-          "handler_id",
-          "due_date",
-          "description",
-          "result_note",
-          "provident_fund_account",
-          "provident_fund_base",
-          "company_contribution_rate",
-          "individual_contribution_rate",
-          "currency_id",
-          "processing_advisory",
-          "attachment_ids"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:办理主信息",
-            "key": "",
-            "title": "办理主信息",
-            "fields": [
-              "state",
-              "document_no",
-              "name",
-              "fact_type",
-              "business_date",
-              "department_id",
-              "requester_id"
-            ]
-          },
-          {
-            "identity": "title:人员与期间",
-            "key": "",
-            "title": "人员与期间",
-            "fields": [
-              "employee_user_id",
-              "employee_name",
-              "id_number",
-              "period_year",
-              "period_month",
-              "payer_unit"
-            ]
-          },
-          {
-            "identity": "title:社保公积口径",
-            "key": "",
-            "title": "社保公积口径",
-            "fields": [
-              "social_security_base",
-              "provident_fund_account",
-              "provident_fund_base",
-              "company_contribution_rate",
-              "individual_contribution_rate",
-              "company_amount",
-              "individual_amount",
-              "currency_id"
-            ]
-          },
-          {
-            "identity": "title:办理与附件",
-            "key": "",
-            "title": "办理与附件",
-            "fields": [
-              "handler_id",
-              "due_date",
-              "processing_advisory",
-              "description",
-              "result_note",
-              "attachment_ids"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "办理主信息",
-          "人员与期间",
-          "社保公积口径",
-          "办理与附件"
-        ],
-        "fieldGroups": {
-          "办理主信息": [
-            "state",
-            "document_no",
-            "name",
-            "fact_type",
-            "business_date",
-            "department_id",
-            "requester_id"
-          ],
-          "人员与期间": [
-            "employee_user_id",
-            "employee_name",
-            "id_number",
-            "period_year",
-            "period_month",
-            "payer_unit"
-          ],
-          "社保公积口径": [
-            "social_security_base",
-            "provident_fund_account",
-            "provident_fund_base",
-            "company_contribution_rate",
-            "individual_contribution_rate",
-            "company_amount",
-            "individual_amount",
-            "currency_id"
-          ],
-          "办理与附件": [
-            "handler_id",
-            "due_date",
-            "processing_advisory",
-            "description",
-            "result_note",
-            "attachment_ids"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "办理主信息": 2,
-          "人员与期间": 2,
-          "社保公积口径": 2,
-          "办理与附件": 2
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_payroll_management",
-      "label": "工资薪酬",
-      "model": "sc.hr.payroll.document",
-      "actionId": 858,
-      "menuId": 673,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "native_authority",
-      "actualView": {
-        "model": "sc.hr.payroll.document",
-        "viewId": 1697
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 79,
-            "name": "sc_hr_payroll_document_form_structure_generated_v1",
-            "priority": 114,
-            "view_type": "form"
-          }
-        ],
-        "resolvedViewId": 1697,
-        "resolvedActionId": 858,
-        "structureDiagnostics": [],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "",
-        "formPresentationMode": "workspace",
-        "fieldNames": [
-          "state",
-          "document_no",
-          "name",
-          "fact_type",
-          "business_date",
-          "requester_id",
-          "department_id",
-          "employee_user_id",
-          "employee_name",
-          "id_number",
-          "period_year",
-          "period_month",
-          "payer_unit",
-          "social_security_base",
-          "company_amount",
-          "individual_amount",
-          "salary_base",
-          "gross_amount",
-          "deduction_amount",
-          "net_salary",
-          "item_type",
-          "amount",
-          "occurrence_date",
-          "handler_id",
-          "due_date",
-          "description",
-          "result_note"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [],
-        "sectionTitles": [],
-        "fieldGroups": {},
-        "hiddenFieldNames": [],
-        "groupColumns": {},
-        "groupVisibility": {}
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
       "menuXmlid": "smart_construction_core.menu_sc_product_office_asset_v1",
       "label": "办公资产",
       "model": "sc.office.asset",
@@ -4676,7 +3939,7 @@
     "countCorrection": 4,
     "migrationReduction": 3
   },
-  "localVerifiedCount": 29,
+  "localVerifiedCount": 25,
   "uc1PublishedAudit": {
     "auditedAt": "2026-09-16",
     "auditedReleaseHead": "28b7695dc9f1cebbbe9bd5d715e951c6dec8a4da",
@@ -4849,13 +4112,12 @@
     "name": "U-C4",
     "status": "scope_confirmed_implementation_started",
     "priorityActions": [
-      873,
-      884,
-      858,
-      874
+      875,
+      877,
+      878
     ],
-    "selectedGroup": "G07",
-    "sourceMainlineHead": "5938d6c620952e9c4c1af9fa6c33dbda14da0374",
+    "selectedGroup": "G08",
+    "sourceMainlineHead": "b781e3c241bf42b2ae51c6ac4064c4a1af647a65",
     "fullRescan": false,
     "groups": [
       {
@@ -5193,17 +4455,17 @@
         "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
       }
     ],
-    "scopeNote": "Sixth group started from the merged mainline: payroll, social fund and salary payment native form migration (873 salary settlement list, 884 social fund, 858 payroll, 874 salary payment registration; shared model sc.hr.payroll.document and its primary form 1697, plus sc.hr.salary.payment and its form 1700). Three scope statements are resolved before implementation: 858 carries no entry-level release of its own while 873/884/874 do; view 1697 is shared by eight sc.hr.payroll.document actions (660/661/662/663/664/858/873/884) with 663 additionally pinning view 2067; the group lists four legacyConfigurations while the task-card inventory finds eight entry-level configurations plus one model-level layer. Fields repeated under different fact_type conditions belong to different business contexts and are not de-duplicated by field name. Scope is prepared in the G07 task card (external analysis location); implementation, L2/L3/L4 and the count reduction stay pending. No new business rules or permission expansion.",
+    "scopeNote": "Eighth group prepared from the merged mainline: context handling workspace native form migration (875 team loan deduction workspace, 877 current account workspace, 878 company project refund workspace; three distinct models sharing one configuration shape, views 1932/1933/1934). The group lists three legacyConfigurations (company_project_refund_workspace_form_v1, current_account_workspace_form_v1, team_loan_deduction_workspace_form_v1) whose entry-level structures are to be retired onto their native forms. Scope is prepared in the G08 task card (external analysis location); implementation, L2/L3/L4 and the count reduction stay pending. No new business rules or permission expansion.",
     "retirementCondition": "Each selected formal action must independently show native authority, no active structural override/dependency and representative browser acceptance before any count reduction.",
     "executionSequence": [
       "continuous_group_implementation_and_targeted_validation",
       "one_consolidated_browser_review",
       "freeze_and_PR_integration_gates"
     ],
-    "planningRecord": "docs/ops/iterations/uc4_expense_claim_native_lowcode_20260918.md"
+    "planningRecord": "docs/ops/iterations/form_structure_consumption_stabilization_20260917.md"
   },
   "retirementCondition": "Only after every formal consumer of a compatibility regrouping path is zero and other roles/companies/states are covered, remove that regrouping logic and its test exemptions.",
-  "mainlineRemainingCount": 29,
+  "mainlineRemainingCount": 25,
   "mainlineRemainingLabel": "主线剩余兼容消费者（不代表部署发布或89入口整体交付）",
   "uc3LocalMigrationAudit": {
     "status": "mainline_integrated",
@@ -5627,6 +4889,87 @@
       "shared_primary_form_1654_other_consumers",
       "model_level_contracts_143_5_still_serving_the_model",
       "879_record_surface_uncovered_empty_action_domain"
+    ]
+  },
+  "uc4G07PublishedAudit": {
+    "auditedAt": "2026-09-18",
+    "auditedReleaseHead": "b781e3c241bf42b2ae51c6ac4064c4a1af647a65",
+    "mergedPr": {
+      "number": 495,
+      "squashHead": "b781e3c241bf42b2ae51c6ac4064c4a1af647a65",
+      "sourceHead": "71546e09e67fec865579a20f7f551985178048e9",
+      "tree": "6c0cbcd9306a61fa72aea51231cade997af7e4de"
+    },
+    "iterationRecord": "docs/ops/iterations/form_structure_consumption_stabilization_20260917.md",
+    "requiredChecks": [
+      "classify=success",
+      "frontend_release_gate=success",
+      "merge_policy_gate=success",
+      "professional_authorization=success",
+      "professional_quality_gate=success",
+      "public_guard=success",
+      "public_guard_classify=success",
+      "python310_runtime_compatibility=success",
+      "release_candidate_gate=success"
+    ],
+    "skippedChecks": [
+      "classify",
+      "fast",
+      "wait_for_candidate_checks"
+    ],
+    "reduction": {
+      "before": 29,
+      "after": 25,
+      "retiredActions": [
+        873,
+        874,
+        884,
+        858
+      ],
+      "retiredViews": [
+        1697,
+        1700
+      ],
+      "countMeaning": "mainline remaining compatibility consumers; deployment and overall user delivery are separate",
+      "retiredViewMeaning": "the view ids label the retired ledger entries; 1697 (eight sc.hr.payroll.document actions) and 1700 are the shared native primary forms and stay live for every other consumer, so only the ledger entries retire"
+    },
+    "exitEvidence": {
+      "sourceCheck": "each retired entry's contract now declares only view_orchestration.views.form.title plus composition_mode=native_semantic_surface at priority 800 bound to its own action: 873 project_payroll_productized_form_v1, 874 project_salary_payment_productized_form_v1, 884 social_fund_form_v1 and the entry-level release this batch added for 858 (hr_payroll_management_productized_form_v1); no sections/fields/columns/field_slots/layout remain, so structural_form_declarations() yields nothing and diagnose_structure_ownership() can no longer emit LEGACY_STRUCTURE_KEY_OVERRIDE for these entries",
+      "semanticsKept": "884 keeps fact_authority=sc.hr.payroll.document and allowed_fact_types=[social_person_registration, social_registration, provident_fund_registration] inside view_orchestration.context; the retired copy was structural, not the entry's declared fact scope",
+      "entry858Boundary": "858 was the entry with no release of its own: its ledger entry referenced the model-level layer (id 79) and rendered the sparse model plan. This batch added an entry-level release bound to action 858 at priority 800, so the model-level layer no longer reaches that entry while it keeps serving the model. 858 is therefore counted as a retired entry, not as a retired model-level layer",
+      "testCheck": "smart_construction_core TestHrPayrollNativeLowcode (tag uc4_native_lowcode, 15 tests) asserts the entry contracts spend one native structure (composition_mode=native_semantic_surface, no sections/fields/columns), that 858 and 873 consume the same native tree and field set (test_the_entry_that_had_no_release_renders_the_sibling_business_surface), that repeated fact names stay per fact_type context with mutually exclusive fact_type groups, and that the model-wide annotation keeps serving the model; the class ran 0 failed on the frozen tree",
+      "scopeCheck": "the ledger counted these entries only for their config-side structure copy; the model-level contract and the shared primary forms 1697/1700 were never counted and are untouched"
+    },
+    "bypassConsumers": {
+      "scopeNote": "Five sibling sc.hr.payroll.document actions reach the same shared primary form 1697 without being compatibility consumers. None of them is a ledger entry (this ledger never counted 660/661/662/663/664), and their entry-level structure copies were retired in the same batch, so the four retired entries retire no counted consumer here.",
+      "actions": [
+        {
+          "actionIds": [
+            660,
+            661,
+            662,
+            663,
+            664
+          ],
+          "labels": [
+            "社保人员登记",
+            "社保登记",
+            "补助",
+            "项目管理人员工资登记",
+            "奖金"
+          ],
+          "counted": false,
+          "whyNotCounted": "never listed in this ledger; each renders view 1697 (663 additionally pins tree 2067) under its own entry-level release and consumes no retired entry structure copy of a counted entry",
+          "authorityEvidence": "G07 iteration record §8.33.4 entry matrix (menus 349/350/351/352/353 on views 1697) and TestHrPayrollNativeLowcode asserting one shared native tree, per-fact_type groups and mutually exclusive visibility"
+        }
+      ]
+    },
+    "notDeducted": [
+      "model_level_contract_79_sc_hr_payroll_document_form_structure_generated_v1_still_serving_the_model",
+      "shared_primary_form_1697_other_consumers_660_661_662_663_664",
+      "five_sibling_entries_660_661_662_663_664_never_counted_in_this_ledger",
+      "884_660_661_662_874_record_surface_uncovered_empty_action_domain",
+      "shared_views_1697_1700_not_retired_by_this_deduction"
     ]
   }
 }
