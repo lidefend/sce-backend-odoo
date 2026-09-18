@@ -1736,7 +1736,7 @@ L2 `test_the_model_wide_annotation_keeps_serving_the_model` 固定 79 仍 `activ
 |---|---|---|
 | P1 声明 | `data/hr_payroll_form_productization_contract.xml` | 8 条退役入口契约只留 `title` ＋ `composition_mode: native_semantic_surface`；新增 858 入口级发布；顶部记录决策与回滚方式（`git revert`，无数据迁移） |
 | P1 声明 | `data/social_fund_contract.xml` | 884（`social_fund_form_v1`）同样只留 `title` ＋ `native_semantic_surface`；`fact_authority`／`allowed_fact_types` **原样保留在 `view_orchestration.context`**，未连带退役 |
-| P0 结构 | `views/core/hr_payroll_document_views.xml` | 两个 form 视图共 **11 个分组**补 `name` ＋ `data-sc-anchor`（实测 1697 的 11 个分组中 8 个带锚点、1700 的 4 个分组中 3 个带锚点；`grep -c '^+.*data-sc-anchor'` ＝ 11），另有 **4 个无标题包装组保持未动**（1697 3 个 ＋ 1700 1 个，初始基线 5938d6c6 为 1697 3 个 ＋ 1700 3 个）。1697：「历史来源」补 `invisible="not legacy_document_no"` ＋ 4 个 provenance 字段；notebook 前补隐藏只读 `currency_id`；**从 `payroll_provident_fund` 删去 `employee_user_id`／`employee_name`**（见 8.33.6）。1700：2 个原无标题包装组补名（`salary_payment_identity`／`salary_payment_amount`），新增第三组 `salary_payment_handling`（「经办与依据」）承载 `responsible_id` |
+| P0 结构 | `views/core/hr_payroll_document_views.xml` | 两个 form 视图共 **11 个分组**补 `name` ＋ `data-sc-anchor`（实测 1697 的 11 个分组中 8 个带锚点、1700 的 4 个分组中 3 个带锚点。该计数**必须路径限定**：`git diff -U0 5938d6c6..HEAD -- addons/smart_construction_core/views/core/hr_payroll_document_views.xml \| grep -c '^+.*data-sc-anchor'` ＝ 11；不限定路径时同一字符串在测试／契约／本记录中亦出现，读数 21，不可当作分组数），另有 **4 个无标题包装组保持未动**（1697 3 个 ＋ 1700 1 个，初始基线 5938d6c6 为 1697 3 个 ＋ 1700 3 个）。1697：「历史来源」补 `invisible="not legacy_document_no"` ＋ 4 个 provenance 字段；notebook 前补隐藏只读 `currency_id`；**从 `payroll_provident_fund` 删去 `employee_user_id`／`employee_name`**（见 8.33.6）。1700：2 个原无标题包装组补名（`salary_payment_identity`／`salary_payment_amount`），新增第三组 `salary_payment_handling`（「经办与依据」）承载 `responsible_id` |
 | L1/L2 | `tests/test_hr_payroll_native_lowcode.py`（最终候选 **15 测**，tag `uc4_native_lowcode`）、`tests/test_project_salary_product.py`、`tests/__init__.py` | 见 8.33.8 |
 | P4 | `scripts/verify/local_dev_form_lowcode_scope.py`、`formal_form_lowcode_loop.mjs`、`formal_form_designer_journey.mjs` | payroll topic 只读代表路由（复用既有 runner／环境／身份，未另建 fixture 或环境）＋设计器闭环 |
 
@@ -1829,7 +1829,7 @@ L2 `test_the_model_wide_annotation_keeps_serving_the_model` 固定 79 仍 `activ
 
 | 层 | 入口 | 身份 | 结果 |
 |---|---|---|---|
-| L1 | `make ci.local.iteration` | 接管阶段的 HEAD＋dirty（阶段身份 12 路径，含本批 3 条文档；最终候选 13 路径见 8.33.1） | **PASS**：16 静态测 0.109s OK；`baseline_iteration_execution_policy_guard` PASS；`coverage=L1_only`；`next=risk_selected_non_zero_L2_targets_required`。复核处置后以候选 `b0e54aa6` 重跑 L1 **PASS**（16 静态测 0.155s；`changedPathCount=13`，`unmappedPathCount=11`） |
+| L1 | `make ci.local.iteration` | 接管阶段的 HEAD＋dirty（阶段身份 12 路径，含本批 3 条文档；最终候选 13 路径见 8.33.1） | **PASS**：16 静态测 0.109s OK；`baseline_iteration_execution_policy_guard` PASS；`coverage=L1_only`；`next=risk_selected_non_zero_L2_targets_required`。复核处置后以候选 `b0e54aa6` 重跑 L1 **PASS**（16 静态测 0.155s；`changedPathCount=13`，`unmappedPathCount=11`；当次**未持久化回执**）。冻结候选 `324394cc` 再跑 L1 **PASS**（16 静态测 0.130s，`change_state=clean`，`coverage=L1_only`，`receipt=none`；日志 `tmp/g07-evidence/l1-324394cc.log`） |
 | L3 | `make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1` | `sc_dev_demo` | **PASS**：exit 0，`[local.dev.demo.authority] PASS`（`tmp/g07-evidence/l3-module-upgrade.log`） |
 | L2 | `make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestHrPayrollNativeLowcode,/smart_construction_core:TestProjectSalaryProduct,/smart_construction_core:TestSocialFundCapability,/smart_construction_core:TestTaxDeductionNativeLowcode'` | 接管阶段的 HEAD＋dirty | **PASS**：**34 测 0 failed 0 error**（`tmp/g07-evidence/l2-native-lowcode-34.log`）。过程中 13 测（2 failed）与 34 测（1 failed）两次中间失败已修后重跑，各自首次偏差见 8.33.6 |
 | L2-重跑（受影响两类） | `make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestHrPayrollNativeLowcode[,/smart_construction_core:TestProjectSalaryProduct]'` | 复核处置后的候选 | **PASS**：口径订正后 `14 测 0 failed`（`tmp/g07-evidence/l2-refresh-nativelowcode-14.log`）；S5／S10 处置后 `16 测 0 failed`（payroll 类 15 测 ＋ 项目工资 1 测，`tmp/g07-evidence/l2-round2-16.log`）。未重跑其余两类（输入未变） |
@@ -1880,9 +1880,13 @@ L2 `test_the_model_wide_annotation_keeps_serving_the_model` 固定 79 仍 `activ
 且是**改写而非删除**——原 4 行检查「契约 `fields` 里含某字段」，替换为**更强**的一组断言
 （`composition_mode == native_semantic_surface`、`sections`／`fields`／`columns` 均不存在、
 且该事实在原生 arch 中确实由 `name="..."` 承载）。P4 工具差异**未删除任何断言**（0 行），
-新增断言行数随两轮处置变化：本记录阶段身份（`96f0c9bd`）为 **78 行**，含复核处置的最终候选
-`b0e54aa6` 为 **91 行**（`git diff -U0 5938d6c6..HEAD | grep -E "^\+" | grep -c assert`）；
-删除断言始终为**同一 4 行**（改写而非删除）。**不构成「以降低断言取得通过」。**
+新增断言行数随两轮处置变化：阶段身份（`96f0c9bd`）为 **78 行**，含复核处置的候选 `b0e54aa6`
+与冻结候选 `324394cc` 均为 **89 行**。口径为**排除本记录文件**的路径限定命令
+（本记录自身会引用 `assert` 字样，若纳入则读数自指虚增，`b0e54aa6` 91 行、`324394cc` 92 行，
+冻结前 ≠ 冻结后，不可复现，故不作为口径）：
+`git diff -U0 5938d6c6..HEAD -- . ":(exclude)docs/ops/iterations/form_structure_consumption_stabilization_20260917.md" | grep -E "^\+" | grep -c assert`；
+删除断言始终为**同一 4 行**（改写而非删除，该口径不受上述排除影响）。
+**不构成「以降低断言取得通过」。**
 
 **发现（已修）**：本批新增到 1697 原生 arch 的字段实测为 **5 个**（4 个 provenance ＋
 货币伴随字段 `currency_id`；字段节点口径见 8.33.12 的 S11 订正，`removed: []`），但
@@ -1960,7 +1964,38 @@ S8 路径数（8.33.1／8.33.8 的"12"）、S9 断言行数与 L2 测数（8.33.
 |---|---|---|
 | S7 锚点分组数 | 两个 form 视图带 `data-sc-anchor` 的分组共 **11 个**（1697：11 组中 8 个；1700：4 组中 3 个）；无标题包装组保留 **4 个**（1697 3 ＋ 1700 1） | 8.33.3 由"1697：12 个分组"改为按视图分列的 8／3 与 4 个未动包装组 |
 | S8 路径数 | 最终候选相对 `5938d6c6` 为 **13 路径**；接管阶段身份（`bd3df6f7`）为 12 | 8.33.1 区分"接管阶段 12 条"与"最终候选 13 条（第 13 条为 `complexity_budget_report.md`）"；8.33.8 的 L1 行改标阶段身份并补 `b0e54aa6` 重跑 |
-| S9 断言与测数 | 新增断言行：阶段身份 `96f0c9bd` 为 78、最终候选 `b0e54aa6` 为 91；删除断言恒为同一 4 行；payroll 测试类 14 → **15 测** | 8.33.11 标注两阶段计数；8.33.8 新增"L2-重跑"行（14 测／16 测），并把原 34 测行标为接管阶段身份 |
+| S9 断言与测数 | 新增断言行（**排除本记录文件**口径）：`96f0c9bd` 为 78、`b0e54aa6` 与 `324394cc` 均为 89；全路径口径会因本记录自身引用 `assert` 字样而虚增（`b0e54aa6` 91／`324394cc` 92），冻结前 ≠ 冻结后，故不作为口径；删除断言恒为同一 4 行；payroll 测试类 14 → **15 测** | 8.33.11 改用排除本记录文件的稳定口径并标注阶段；8.33.8 新增"L2-重跑"行（14 测／16 测），并把原 34 测行标为接管阶段身份 |
 
 **第 3 轮**：上述订正产生**新候选**，重新冻结（新 HEAD／新 tree／新指纹）并重跑**一次** exact-head Quick；
 绑定新候选的第 3 轮复核结论与回执哈希按 8.33.11 口径写入**外部归档** `review.json`，不写入本记录文件。
+
+#### 8.33.12.2 第 3 轮复核（绑定候选 324394cc）与自指计数收口
+
+第 3 轮独立只读复核绑定候选 `324394cc0302536d2bbd90ca63e3e17fae89a4e8`，只审增量
+`b0e54aa6..324394cc`，结论 **APPROVE_WITH_MINOR**（`noOpenBlockerOrMajor: true`）：
+
+- **R-G3-3 闭合**：增量只改本记录文件；对 `addons/**/views`、`addons/**/data`、`frontend`、
+  `scripts` 做路径过滤后差异为 **0 路径**，未触碰任何产品渲染输入。
+- **R-G3-4 闭合**：增量未删除／跳过任何断言（增量内删除断言 0 行；全批删除恒为同一 4 行改写）；
+  唯一的 `skip`／`xfail` 命中来自本记录正文的引用，非真实跳过。
+- **R-G3-5 闭合**：8.33.1／8.33.8 已把阶段身份（12 路径）与最终候选（13 路径）分开，
+  且 `b0e54aa6` 的 L1 重跑已标为候选绑定，未把未验证写成已验证。
+- **R-G3-1（minor，本轮已修）**：8.33.11／8.33.12.1 原把 `b0e54aa6` 称作"最终候选"并记 **91 行**；
+  该命令在冻结候选处读数为 **92**（本记录新增行自身含 `assert` 字样），属**自指偏差**，
+  冻结前 ≠ 冻结后、不可复现。
+- **R-G3-2（nit，本轮已修）**：8.33.3 引用的 `grep -c '^+.*data-sc-anchor'` 未限定路径，
+  原样运行得 **21**（分组 11 ＋ 测试 5 ＋ 本记录 3 ＋ 契约 1 ＋ 脚本 1）；**11** 仅在路径限定于
+  视图文件时成立。
+
+本轮收口方式（**改用不随本记录内容变化的稳定口径**）：
+
+| 指标 | 原口径（自指，不可复现） | 新口径（稳定） |
+|---|---|---|
+| 新增断言行 | `git diff -U0 5938d6c6..HEAD \| grep -E "^\+" \| grep -c assert` → `96f0c9bd` 78／`b0e54aa6` 91／`324394cc` 92 | 同命令 **加 `-- . ":(exclude)<本记录文件>"`** → `96f0c9bd` 78／`b0e54aa6` 89／`324394cc` **89**（冻结前＝冻结后） |
+| 锚点分组数 | `grep -c '^+.*data-sc-anchor'`（全路径）→ 21 | **同命令加 `-- <views/core/hr_payroll_document_views.xml>`** → 11 |
+
+两项均为**记录口径**（非产品事实、非测试削弱）：删除断言计数不受上述排除影响，恒为同一 4 行；
+产品渲染输入在本轮与上一轮增量中均未被触碰。
+
+**第 4 轮**：本轮订正产生**新候选**，重新冻结并重跑一次 exact-head Quick；第 4 轮复核只审
+本增量，结论与回执哈希写入外部归档 `review.json`，不写入本记录文件。
