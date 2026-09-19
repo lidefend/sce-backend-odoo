@@ -2599,12 +2599,17 @@ raise `unavailable`（入口面必须被解析，不能被假定）；产品已�
 | finance（财务中心） | 877 往来款登记（menu 699）、878 公司&项目退款（menu 700） | 无（11 条派发目标本就在财务导航面） |
 | project_member（项目中心） | 875 班组借/扣款登记（menu 697） | 804 承包人借项目款（menu 553）、798 扣款单（menu 563）、714 项目往来台账（menu 372） |
 
-**拒绝反例**：finance 导航面**不含** 875；project **read** principal
-（`group_sc_cap_project_read`）既拿不到 875，也拿不到载体路由；`demo_role_project_user` 在
-877／878 上被 workspace ACL 挡在**建档之前**，在 875 上三个载体均以受管角色消息 fail-closed
-（非 `NAVIGATION_AUTHORITY_DENIED`）。路由由"当前用户原生菜单可见性"门控生成，因此上述声明
-**不会**凭空造出主体原本没有的可见性。**登记为开放偏差**：finance 与 875 的持组不一致（875 菜单与
-模型 ACL 都声明项目中心），本轮不为对齐而把 875 塞进财务导航面。
+**拒绝反例（冻结轮按实际主体重测后更正，逐条标主体定义，见 8.34.14-⑤）**：finance 导航面
+**不含** 875，且 finance 主体对 875 模型的 `create` 被 ACL 拒绝；**只持项目只读、不持财务持组**
+的主体拿不到 875 入口菜单、也拿不到载体路由，877／878 建档被 ACL 拒绝；**只持
+`group_sc_cap_project_user`**（项目经办、不持财务持组）的主体在 875 上三个载体均以受管业务消息
+fail-closed（非 `NAVIGATION_AUTHORITY_DENIED`），877／878 建档即 `AccessError`。
+**同时持财务持组的项目主体不是拒绝反例**：fixture `demo_role_project_user`
+（project_user＋project_read＋finance_read＋finance_user）实测**拿到**875 的三条载体路由
+（553／563／372，`CONTEXTUAL_ROUTE`）且 877／878 建档被 ACL **允许**；其 875 载体在上轮探针中
+fail-closed 的原因是**模型侧项目经办守卫**，与路由授权无关。路由由"当前用户原生菜单可见性"
+门控生成，因此上述声明**不会**凭空造出主体原本没有的可见性。**登记为开放偏差**：finance 与 875
+的持组不一致（875 菜单与模型 ACL 都声明项目中心），本轮不为对齐而把 875 塞进财务导航面。
 测试：`test_the_finance_role_surface_grants_the_two_finance_workbenches`、
 `test_the_project_role_surface_grants_the_team_loan_workbench`、
 `test_a_principal_outside_the_role_surface_is_refused`。
@@ -3019,12 +3024,49 @@ fail-closed 停止（收据未签发）。
   `artifacts/lowcode-form-loop/browser/representative-report-context_workspace.json`。
 - 台账保持 **25**；未推送、未部署；G08 入口退役的台账核减仍按既定规则**待合入后独立核对**。
 
+#### 8.34.14-⑤ 冻结轮独立复核：授权差异与拒绝反例按**实际主体**重测（含一处记录更正）
+
+**复核方式（只读）**：`odoo shell` 探针直接调用与客户端同一份 route authority 契约
+（`IdentityResolver.build_role_surface` → `DeliveryEngine.build` → `route_authority`），
+按 `(action_id, res_model)` 统计每个载体的候选菜单数（即 `_sc_entry_menu_ids` 的判据）；
+建档能力用 `savepoint` 包裹的**真实** `create` 测量并**回滚**——本轮评审**未持久化任何记录**。
+运行态加载代码已核对：`contract_governance.py` 容器内 `sha256=51e7b21d…3ae3d`，与宿主一致；
+`DOMAIN_OVERRIDE_REGISTRY` 中 `native_authority_safe` 条目**恰好 1 条**
+（`smart_construction_core.context_workspace_form`，priority 30）。
+
+| 主体（`role_code`） | 875 入口 | 877 入口 | 878 入口 | 875 载体 | 877 载体 | 878 载体 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `project_member`（`demo_role_project_manager`／`demo_role_project_user`） | 可见 | 不可见 | 不可见 | **3／3 配对** | 553／372（无 877 入口，不可达） | 372（无 878 入口，不可达） |
+| `finance`（`demo_role_finance` 等 7 个主体） | 不可见**且建档被 ACL 拒绝** | 可见 | 可见 | 3／3 | **6／6 配对** | **5／5 配对** |
+| `system_admin`／`business_full`／`business_config_admin` | 不可见 | 不可见 | 不可见 | 0／3 | 0／6 | 0／5（均业务文案 fail-closed，非静默放行） |
+
+**结论**：**14 个派发载体在其归属角色的导航面上 14／14 全部可配对**（finance 11 ＋ project 3），
+这比第三轮只登记「目标类型覆盖」更强；且**未新增任何原生菜单可见性**——路由仍由当前用户原生菜单
+可见性门控，`create` 仍由模型 ACL 把关。
+
+**两处记录更正（原句把合成主体的行为写成 fixture 主体的行为）**：
+
+1. §8.34.11-④(c) 原写"project **read** principal 既拿不到 875，也拿不到载体路由"。实测 fixture
+   `demo_role_project_read` 同时持 `finance_read`，因此**拿到**三条载体路由
+   （553／563／372，`CONTEXTUAL_ROUTE`）；它拿不到的是 875 **入口菜单**（该菜单持组为项目经办／
+   主管），且三个 workspace 的 `create` 被 ACL 拒绝——即"进不了工作台"，不是"没有载体路由"。
+2. §8.34.11-④(c) 原写 `demo_role_project_user`"在 877／878 上被 workspace ACL 挡在建档之前"。
+   实测该主体持 `finance_user`，对 `sc.current.account.workspace`／
+   `sc.company.project.refund.workspace` 的 `create` **允许**（savepoint 内真实 create 成功并回滚）；
+   被 ACL 挡在建档之前的是**只持 `group_sc_cap_project_user`** 的合成主体（L2
+   `test_a_principal_outside_the_role_surface_is_refused` 断言）。其 875 三个载体上轮 fail-closed
+   的原因是**模型侧项目经办守卫**（`_check_project_operator`：「你不能为当前非本人负责或未关注的
+   项目办理班组借扣款。」），不是路由授权缺失——主体只要是该项目经办人，三个载体即可正常配对。
+
+**未变更的结论**：本批**未改任何 ACL**（`git diff --name-only 26d254ad..HEAD` 无 `security/`／
+`access` 路径）；扩大的是角色导航面声明，且只对"原生已可见这些菜单"的主体生效。
+
 ### 8.34.9 状态
 
 状态：**G07 已集成（主线 `26d254ad`，台账 25）｜G08 结构迁移与四轮整改已完成；第四轮集中产品
 复核判定「可见效果通过、仅余组件边界」｜第五轮已移除 TDesign 内部选择器、把宽度责任落回项目
 自有容器（真实面先复现回归、再复现第四轮通过态）｜**冻结轮首跑 Quick 在链上第 29 项守卫处
-捕获 P0 门面门禁回归，已在实现侧修复且守卫未放宽（`make/ci.mk:910`）**｜
+捕获 P0 门面门禁回归，已在实现侧修复且守卫未放宽（`make/ci.mk:910`）｜冻结轮独立复核按**实际主体**重测授权差异，更正 §8.34.11-④(c) 两处拒绝反例主体（见 8.34.14-⑤）**｜
 **已冻结（冻结 HEAD 即本记录所在提交）**｜
 未推送、未部署｜台账保持 25（本批不扣减）｜89 入口整体交付未完成**。
 
