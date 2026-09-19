@@ -1047,6 +1047,15 @@ def _assemble_ui_contract(
     record_version_policy = _dict(ui.get("record_version") or _dict(ui.get("head")).get("record_version"))
     if record_version_policy:
         contract["runtimeContract"]["recordVersionPolicy"] = deepcopy(record_version_policy)
+    declared_form_governance = _dict(ui.get("form_governance") or source.get("form_governance"))
+    if declared_form_governance:
+        runtime_contract = _dict(contract.get("runtimeContract"))
+        if not runtime_contract:
+            runtime_contract = {}
+            contract["runtimeContract"] = runtime_contract
+        runtime_governance = _dict(runtime_contract.get("governance"))
+        runtime_governance["form_governance"] = deepcopy(declared_form_governance)
+        runtime_contract["governance"] = runtime_governance
     if form_structure_contract and form_structure_applied:
         contract["formStructureContract"] = deepcopy(form_structure_contract)
     contract["dataContract"]["dataMeta"]["fieldCount"] = len(fields)
@@ -1283,8 +1292,19 @@ def _assemble_native_form_projection(
             runtime_contract = {}
             contract["runtimeContract"] = runtime_contract
         for key, value in runtime_extensions.items():
-            if value:
-                runtime_contract[key] = value
+            if not value:
+                continue
+            # The projected runtime may carry its own governance (for example
+            # view_orchestration). The declared form governance was already
+            # written onto runtimeContract.governance by the source assembly, so
+            # merge rather than replace; otherwise a projected view would drop
+            # the entry's declared create-flow semantics.
+            if key == "governance":
+                merged = _dict(runtime_contract.get("governance"))
+                merged.update(value)
+                runtime_contract[key] = merged
+                continue
+            runtime_contract[key] = value
     return contract
 
 

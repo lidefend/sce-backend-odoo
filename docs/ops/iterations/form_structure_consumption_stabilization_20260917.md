@@ -2099,3 +2099,1060 @@ skipped：`fast`／`classify`（候选检查变体）／`wait_for_candidate_chec
 其 Quick 回执沿用候选 `71546e09` 的 exact-head 回执；待该提交随下一批 PR 交付时按其候选重新冻结。
 
 状态：**G07 批次验收完成（本批范围）｜主线集成完成（PR #495，squash 同树）｜未部署｜89 入口交付未完成｜台账 25｜G08 未启动**。
+
+---
+
+## 8.34 G08 上下文办理工作台整组原生结构迁移（2026-09-18 结构迁移；2026-09-19 集中复核后二轮＋三轮＋四轮整改，待第四轮产品复核）
+
+> 本节分两轮读完：**8.34.1–8.34.8 为第一轮（结构迁移）记录，其中已被第二轮更正的口径就地标注**；
+> **8.34.10 为第二轮（集中产品复核整改 A／B／C／D 四包）**；**8.34.9 为当前状态**。
+> 第一轮结论中凡与第二轮冲突处，以 8.34.8 的更正段与 8.34.10 为准。
+
+### 8.34.1 承接与归属
+
+- **承接基线**：`origin/main` = `26d254ade3f153b466f6baa61f84695826443567`（8.33.13 的台账尾项
+  commit `e61e275f` 经 **PR #496** squash 合入，`mergedAt` 2026-09-18T14:30:52Z；合并 tree
+  `bde8dd68` 与本地提交 tree 逐字节一致）。合入后主线台账 `count=25`、`uc4G07PublishedAudit` 在册、
+  `nextBatch.selectedGroup=G08`。
+- **本批工作树**：`feature/uc4-g08-context-workspace-native-v1`（一个 worktree 一个写入者，只交付
+  **G08 一组**，不混入 G09 或六组副本候选）。
+- **相对基线的交付范围 10 条路径**：3 条 P1 入口契约声明 ＋ 3 条 P1 行业原生视图结构 ＋
+  1 条新增 L2 测试 ＋ 1 条 L1/L2 注册 ＋ 1 条 P4 只读验证登记 ＋ 1 条本记录（详见 8.34.3）。
+  L1 在提交前（`change_state=dirty`）实测 `changedPathCount=10`、`unmappedPathCount=10`：
+  这两个计数都表示**本批 10 条路径全部未命中前端增量测试推荐映射**
+  （`scripts/verify/frontend_dev_incremental.py`：`unmapped_paths = [path for path in paths if not
+  select_targets([path])]`），并按同一份回执置 `manualNonZeroL2Required=true`。它**既不表示
+  "没有未映射路径"，也不自动等于门禁失败**：含义只是增量的自动推荐为空，必须**人工选择非零 L2**，
+  本批即按 8.34.7 的显式 tag 集合执行。被覆盖的检查逐条列在 8.34.7 的路径覆盖表。
+  **未推送、未建 PR、未冻结、未部署。** 批内交付提交相对 `26d254ad` 为 10 路径；
+  提交后工作树 `change_state=clean`、L1 复跑 PASS。
+
+### 8.34.2 入口矩阵（L3 运行时实测，`sc_dev_demo`，action／view／menu 为库内真实值）
+
+| 入口 | action | menu | view | 模型 | 分组 | 动作载体 | domain | target |
+|---|---|---|---|---|---|---|---|---|
+| 班组借/扣款登记 | 875 | 697 | 1932 | `sc.team.loan.deduction.workspace` | 83,84 | 登记借款／登记扣款／查看借扣款台账 | 无 | `current` |
+| 往来款登记 | 877 | 699 | 1933 | `sc.current.account.workspace` | 95,96 | 项目借/还公司款、承包人借/还项目款、账户间调拨、查看往来台账 | 无 | `current` |
+| 公司&项目退款 | 878 | 700 | 1934 | `sc.company.project.refund.workspace` | 95,96 | 扣款实缴退回、投标保证金退回、合同保证金退回、自筹退回、查看关联台账 | 无 | `current` |
+
+- 三个模型均为 **`TransientModel` 派发工作台**：自身不持有业务事实，表头每个按钮打开的是真正承载
+  资金的单据（借款／费用／资金调拨／退款）。三条视图均为 **唯一主视图**（`inherit_id=False`、
+  `active=True`、`type=form`、prio 16），三模型互不共享视图。
+- **无**任何 action 钉 `view_id`／`view_ids`、无 `domain`、`context={}`、`res_id=0`、`view_mode=form`；
+  一模型一 action，**没有旁路消费者**（`_action_values()` 按非模型 `res_model` 派发、`views [(False,'form')]`，
+  故本次**未触碰**任何 action 行为，存储的 view 解析保持原样）。
+- **旧配置来源**：台账 `legacyConfigurations` 列了 3 条
+  （`company_project_refund_workspace_form_v1`／`current_account_workspace_form_v1`／
+  `team_loan_deduction_workspace_form_v1`），与库内入口级契约 **id 176／175／173** 一一对应，
+  **命名完整、无漏计**（与 G07「清单是命名不全」不同：本组三条就是全部，且**没有模型级契约**）。
+  `evidenceStatus` 为 `grouped_from_existing_44_entry_ledger_not_runtime_revalidated`，本批已按运行时复核。
+
+### 8.34.3 修改范围与影响面
+
+| 层 | 文件 | 内容 |
+|---|---|---|
+| P1 声明 | `data/team_loan_deduction_workspace_contract.xml`、`data/current_account_workspace_contract.xml`、`data/company_project_refund_workspace_contract.xml` | 三条入口契约只留 `title` ＋ `composition_mode: native_semantic_surface`，退役 `entry_semantic_surface` 的 sections／fields／columns 副本；`view_orchestration.context` 的语义声明**原样保留**（`fact_authority: dispatch_only`，875 无附加键；877 保留 `fact_models`／`projection_authority`；878 同）。顶部记录决策与回滚方式（`git revert`，无数据迁移），并注明与 G06 契约 177／G07 契约 884 同一规则 |
+| **P1** 结构 | `views/support/team_loan_deduction_workspace_views.xml`、`views/support/current_account_workspace_views.xml`、`views/support/company_project_refund_workspace_views.xml` | 原生 form 的业务分组补 `name` ＋ `data-sc-anchor`（`team_loan_processing_context`／`_note`、`current_account_…`、`company_project_refund_…`）并显式声明 `col`（办理上下文 2／办理说明 1，与退役体声明一致）；第二轮再把 `办理提示` 独立成组（见 8.34.10-B） |
+| L1/L2 | `tests/test_context_workspace_native_lowcode.py`（新增，13 测，tag `uc4_native_lowcode`）、`tests/__init__.py` | 见 8.34.7 |
+| P4 只读 | `scripts/verify/local_dev_form_lowcode_scope.py` | 新增只读 topic `context_workspace`（875/menu 697、877/menu 699、878/menu 700 三条路由）＋ 样本字段与机制断言登记；复用既有 runner／环境／身份，未另建 fixture、未加写入开关 |
+
+**边界保持**：未触碰 action／menu／ACL／security CSV／模型代码／计算字段；未执行 `sync_demo`／
+fixture reset／发布快照／无关 upgrade；**未创造任何业务数据**。
+
+**归属更正（第一轮记录修正）**：上面三份 `views/support/*_workspace_views.xml` 原先记作 **P0 结构**，
+是**按载体类型**（XML 视图）误判层级。它们是施工行业标准产品（P1
+`construction_industry_standard_product`）在 `smart_construction_core` 内声明的业务表单，
+不是平台内核（P0）的机制代码；P0 的判据是"平台机制由谁拥有"，不是"文件扩展名是不是 XML"。
+本批逐条更正为 **P1**，并同步更正 8.34.1 与 8.34.7 的同一措辞。第一轮已在册的层级结论其余不变。
+
+### 8.34.3.1 第二轮（集中复核整改）改动范围
+
+| 层 | 文件 | 内容 |
+|---|---|---|
+| P0 机制 | `addons/smart_core/utils/contract_governance_domain_overrides.py`、`addons/smart_core/utils/contract_governance.py`、`addons/smart_core/handlers/ui_contract_v2.py` | 新增"只声明语义、不改结构"的 override 通道 `native_authority_safe` ＋ `apply_native_authority_domain_overrides()`。原生视图拥有表单结构时通用治理整段跳过，该通道只放行语义声明，避免"迁移到原生权威就静默丢掉入口声明的表单治理"；同时让该声明在**记录面**（无业务表单策略的非 create 路径）也生效。**只有显式登记的语义 override 走这条路，改写结构的 override 仍留在门外** |
+| P0 机制 | `addons/smart_core/core/unified_page_contract_v2_assembler.py` | 把 `form_governance` 从源契约搬到 `runtimeContract.governance`，并让原生表单投影**合并** `governance` 而不是整键覆盖（原覆盖会把已声明的语义丢掉，是"标签改不动"的传输层根因） |
+| P1 声明 | `addons/smart_construction_core/services/contract_governance_overrides.py` | `context_workspace_form` 登记为 `native_authority_safe`，逐入口声明 `primary_action_label=记录办理上下文` ＋ `collaboration_unavailable_message`（"只用于本次派发，不长期保留…"）。**按模型→标签的显式声明，不是改通用 create 默认值** |
+| P1 入口 | `addons/smart_construction_core/core_extension_policy_maps.py` | 按**既有授权路径**（角色导航面 ＋ 菜单自身持组 ＋ 可见性门控的路由生成）对齐入口与派发路由：`project_member` 补 875 入口 ＋ 3 条派发目标路由，`finance` 补 877／878 入口菜单。**未新增机制、未改 ACL、未开放系统设置 887** |
+| P1 模型 | `addons/smart_construction_core/models/support/context_workspace_entry_authority.py`（新增）、三个 workspace 模型、`models/support/__init__.py` | 新增 AbstractModel `sc.context.workspace.entry.authority`：把派发返回的 window action 钉到**当前主体路由权威里确实存在**的那个 `menu_id`，并把 `date`／`datetime` 上下文转成 ISO 字符串再交给客户端。查不到路由即**业务文案 fail-closed**，不再把用户丢进导航拒绝页 |
+| P1 前端 | `ContractFormPage.vue`、`contractForm/collaborationContract.ts`、`contractForm/useRecordCollaborationPresentation.ts` | 渲染层只认契约声明：`resolveDeclaredFormGovernance()` 读 `runtimeContract.governance.form_governance`，`isDispatchContextGovernance()` 认 `create_flow_mode=transient_dispatch`，据此决定按钮文案与协作面板文案。**不硬编码任何模型名／入口名** |
+| L1/L2 | `tests/test_context_workspace_native_lowcode.py`、三个同类测试 | 见 8.34.7 |
+| P4 只读 | `scripts/verify/local_dev_form_lowcode_scope.py` | 更正 `dispatch_only` 的表述（不是"临时模型没有记录面"），见 8.34.10-B |
+
+**第二轮边界保持**：未触碰 action／menu ACL 记录／security CSV／系统设置 887；未执行 `sync_demo`／
+fixture reset／发布快照；**未创造任何业务单据**（见 8.34.10-A 的写入核对）。
+
+### 8.34.4 用户可见前后差异
+
+- **前**：入口契约另投一层 `entry_semantic_surface` 主体（办理上下文 2 列 ＋ 办理说明 1 列 ＋ 5 字段），
+  与原生 form 已声明的同名分组**并存**；节目标识只存在于契约副本里。
+- **后**：结构权威只留原生 arch；`办理上下文`／`办理说明` 成为**可寻址的章节身份**
+  （`data-form-section-target="node:<anchor>:business-section"`），字段集合、分组标题与列数与退役体一致
+  （5 字段、2 列／1 列，运行态实测），动作载体仍在表头。**用户可感知的字段与分组无增无减**，
+  差别是同一结构不再有两份声明。
+- **回滚**：`git revert` 本批提交即可（无数据迁移、无配置写）。
+
+### 8.34.5 只读代表面（L4-只读，`FORM_LOWCODE_TOPIC=context_workspace FORM_LOWCODE_REPRESENTATIVE=1`）
+
+报告 `artifacts/lowcode-form-loop/browser/representative-report-context_workspace.json`（`ok=true`）：
+
+- `restored=true`、`browser_errors=[]`、`transport_recoveries=[]`、`cleanup_guard={decision:proceed, foreign:[]}`、
+  `recovery=[]`、`representative_uncovered=[]`、`representative_blocked=[]`。
+- 三条入口**各自**一个 create 面（875／877／878），`presentation_mode=create`；
+  实测 **5 字段**＝ `project_id`／`partner_id`／`business_date`／`processing_advisory`／`note`，
+  **4 个章节入口**＝办理上下文／办理说明／办理提示／协作记录（第二轮把办理提示独立成组后的重跑值；
+  第一轮为 3 个），四个入口 `resolved=true`／`visible=true`，
+  `findings` 四类（重复字段／空容器／装饰分组／带标题布局组）**全空**；
+  章节列数实测 `template-form-section-grid--columns-2`（办理上下文）与 `--columns-1`（办理说明／办理提示），
+  与退役体声明逐项一致。
+- 双视口 **1088×900 与 390×844** 的 `section_navigation_press` 均为
+  `not_applicable / track_does_not_overflow`（业务章节不足以致轨道溢出，**非通过也非失败**）。
+- **第二轮重跑同口径**：`ok=true`、`restored=true`、`browser_errors=[]`、`transport_recoveries=[]`、
+  `representative_uncovered=[]`、`representative_blocked=[]`、`cleanup_guard={decision:proceed, foreign:[]}`；
+  报告绑定 `candidate=4c8deaf8…`、`dirty=true`（**如实标注工作树为 dirty**，不冒充冻结候选）。
+  同批 `sample_state.state=available`（875 `domain_rows=15`／877 `6`／878 `5`），
+  即**记录面确有可读样本行**——与 8.34.8-① 的更正一致。
+
+### 8.34.6 配置面与跨入口隔离
+
+- **跨入口隔离（L2 断言 + 运行态只读）**：`test_each_entry_keeps_its_own_native_authority` 固定
+  3 个不同模型／3 个不同主视图、且任一入口的生效契约集合**不含**兄弟入口的契约名；
+  `test_a_retired_body_no_longer_re_projects_over_the_native_authority` 固定无
+  `LEGACY_STRUCTURE_KEY_OVERRIDE`；`test_entry_menus_actions_and_scoping_are_unchanged` 固定 menu→action→view
+  绑定、`domain` 为空、`target=current`、分组面保持。只读代表面按入口分别编译契约，未出现跨入口字段或章节。
+- **配置面（只读盘点）**：`LOWCODE_CONFIG_INVENTORY=1` 全量 **277** 条契约在册；本组三条
+  （id 173／175／176）`status=published`、`active=true`、各自绑定本入口 action、**不钉 view**、
+  `declared_context` 与 8.34.3 逐字一致。
+- **设计器入口：对本组三入口按实现不注入**（见 8.34.8-③）。因此本批**未跑 G08 设计器闭环**，
+  而是沿用 G07 已证的同一套低代码机制（机制输入未变，见 8.34.7 复用理由），**不把未跑写成通过**。
+  **第二轮更正口径**：early-return 只证明"实现排除了临时模型"，**不等于已批准的产品边界**；
+  合法配置的授权路径与能力缺口按 8.34.10-C 独立核查，本组三入口的合法配置路径是
+  **角色导航面 ＋ 菜单持组**（已按此整改并通过运行态回执），**不是配置中心**。
+
+### 8.34.7 分层验证结果
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | **PASS**：16 静态测 0 failed；`change_state=clean`、`changedPathCount=10`、`unmappedPathCount=10`。这两个计数**同义**：本批 10 条路径全部未命中前端增量测试自动推荐映射，因此回执置 `manualNonZeroL2Required=true`，需**人工选择非零 L2**；**不等于"没有未映射路径"，也不是门禁失败**。逐路径的覆盖检查见下方"路径覆盖表" |
+| L2 | `make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestContextWorkspaceNativeLowcode,/smart_construction_core:TestTeamLoanDeductionWorkspace,/smart_construction_core:TestCurrentAccountWorkspace,/smart_construction_core:TestCompanyProjectRefundWorkspace'` | **PASS**：**31 测 0 failed 0 error**（第一轮 19 测；第二轮补入角色面／原生权威契约／记录面语义等断言后为 31 测）。过程中一次中间失败为**测试书写缺陷**（Python 字面量写了 `公司&amp;项目退款`，XML 解析后实体已解码），改为 `公司&项目退款` 后复跑全绿 |
+| L3 | `make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1` | **PASS**：exit 0，`[local.dev.demo.authority] PASS`。升级后模块 `state=installed`、`latest_version=17.0.0.168`，与**磁盘 manifest 版本相同**，容器内 `/mnt/source-addons` 三视图文件 md5 与宿主**一致** |
+| L3-契约回读 | 运行中服务（HTTP `127.0.0.1:8070`，`sc_test_admin` 会话） | **PASS**：三视图 arch **含 `data-sc-anchor`**；三入口契约 `status=published`、`mode=native_semantic_surface`、`keys=['composition_mode','title']`。**不是只看服务健康**：契约与 arch 均由**运行进程**回读，排除「前端源码一致＝候选一致」的误判（另核对后端加载代码／模块升级状态，见上 L3） |
+| L4-只读 | `FORM_LOWCODE_TOPIC=context_workspace FORM_LOWCODE_REPRESENTATIVE=1 make local.dev.form_lowcode.browser` | **PASS**：见 8.34.5，业务指纹未变、`restored=true` |
+| L4-设计器 | `FORM_LOWCODE_TOPIC=context_workspace FORM_LOWCODE_DESIGNER=1 make local.dev.form_lowcode.browser` | **不适用（登记，不算通过）**：入口页无「表单设置」，见 8.34.8-③。该次运行在点击「更多操作」前即失败，**未产生任何配置写入**：最新变更集仍为 G07 的 397（`write=2026-09-18 11:17:57Z`），且**不存在**任何 G08 目标草稿 |
+
+**复用理由**：本批未修改任何 L1/L2 输入之外的验证机制（P4 只新增一条只读 topic 登记，未改 runner、
+未放松断言），也未修改其他组的契约／视图／测试；G07 的 L2／L3／L4 结果按其输入未变复用，未重跑。
+
+#### 8.34.7.1 `unmappedPathCount=10` 的路径覆盖表（不扩规则、不凑归零）
+
+下表逐条列出本批 10 条路径**由哪一项已执行的检查覆盖**。写法刻意保守：这里只登记"已经跑过、
+输入包含该路径"的检查，不新增规则、不宣称计数应当归零。
+
+| # | 路径 | 覆盖它的已执行检查 |
+|---|---|---|
+| 1 | `data/team_loan_deduction_workspace_contract.xml` | L2 `test_the_native_authority_contract_carries_the_declared_governance`（契约声明经原生权威通道仍随包下发）；L3 契约回读（`mode=native_semantic_surface`）；L4 `configuration_inventory` |
+| 2 | `data/current_account_workspace_contract.xml` | 同上 |
+| 3 | `data/company_project_refund_workspace_contract.xml` | 同上 |
+| 4 | `tests/__init__.py` | L2 本身：模块未注册则该 tag 集合 0 测运行，而 0 测按治理规则即失败，故 L2 的 31 测通过即覆盖 |
+| 5 | `tests/test_context_workspace_native_lowcode.py` | L2 四 tag 运行（该文件即被测体） |
+| 6 | `views/support/team_loan_deduction_workspace_views.xml` | L2 `test_the_prompt_is_a_section_not_a_fact_position` ＋ `test_the_native_groups_keep_the_declared_section_titles_and_columns`；L3 运行态 `arch_db` 回读；L4 只读代表面（4 章节入口全部 resolve） |
+| 7 | `views/support/current_account_workspace_views.xml` | 同上 |
+| 8 | `views/support/company_project_refund_workspace_views.xml` | 同上 |
+| 9 | `docs/ops/iterations/form_structure_consumption_stabilization_20260917.md` | L1 `baseline_iteration_execution_policy_guard`（`documents=3`，本记录在册） |
+| 10 | `scripts/verify/local_dev_form_lowcode_scope.py` | L4 只读代表面本身（该脚本即被执行的登记体；0 测／未注册 topic 会直接抛错） |
+
+**结论口径**：`unmappedPathCount` 只说明"这些路径没有自动推荐映射"，因此本批的覆盖是由上表这些
+**已执行**的 L1／L2／L3／L4 检查承担的；**没有为该计数归零而扩造规则**。
+
+### 8.34.8 未覆盖项与剩余阻断（如实登记，不造数据）
+
+1. **记录态（record surface）——第一轮推理已更正：临时模型"可以有记录"且存在合法编辑态**。
+   第一轮把结论写成"三个模型均为 `TransientModel`，**不存在**持久记录面"，把
+   **"模型是临时模型"** 直接当成 **"记录面不可能存在"**，这一步推理是错的，本轮更正：
+   `TransientModel` 照样落库成行、照样可读可编辑，只是会被回收，**它不等于没有记录面**。
+   更正后的可核对事实：
+   - 运行态实测三个模型**确有可读样本行**（875 `domain_rows=15`、877 `6`、878 `5`，
+     只读盘点报告 `sample_state.state=available`），第一轮写的 `sample_state=empty_action_domain`
+     是当时域内恰为空时的一次快照，被误当成结构性事实；
+   - **合法编辑态同样存在并被观测到**：派发上下文保存后，页面进入
+     `/f/sc.team.loan.deduction.workspace/<id>?menu_id=697&action_id=875` 的记录面（见 8.34.10-A/-B 回执）。
+   因此本组**不再以"没有记录面"为理由**免除 `record_surface`：本组仍未跑"持久业务记录"的代表面，
+   但理由是**本组不为验收制造业务事实**（派发上下文不是业务记录，工资／发放／退款单据一律未造），
+   **不是**"模型临时所以记录面不存在"。L2 保留「模型 transient ＋ 该模型无模型级契约」这条**结构断言**，
+   但它只固定"工作台自身不持有业务事实"，**不再被用来推断记录面不存在**。
+   **未为补样本造任何工资／发放／退款业务数据。**
+2. **编辑态动作可达性：治理函数已实测；端到端编辑面仍无合法样本**：表头对象按钮（875 的 3 个、
+   877 的 6 个、878 的 5 个）在契约中**已授予**（`actionContract.actionRuleList` 中 `allowed=true`、
+   `enabled=true`、`source=native_form_header`，edit／readonly 在位），但在 **create 档位**由平台治理
+   规则静态隐藏（`contract_governance_create_profile.py` 给出 `reason_code=CREATE_PROFILE_REQUIRES_RECORD`）。
+   该规则只在 `head.interaction_mode == 'wizard'` 时豁免；`interaction_mode` 仅在
+   「`action.target == 'new'` 且模型为 transient」时为 `wizard`（`page_assembler.py`），而本组三条
+   action 的 `target` 均为 `current`（L2 固定），故运行态取值为 **`page`**。
+   **补充执行核对（2026-09-19，受管 local.dev 只读）**：在 `sc_dev_demo`／`sc_test_admin` 下直接执行
+   生产模块内的纯治理函数 `mark_record_dependent_native_buttons_hidden_on_create`，对
+   `interaction_mode ∈ {page, form, wizard}` × `{create, edit}` 六格逐一取值：`page` 与既有测试已覆盖的
+   `form` **输出逐字节相同**（create 档位 `hidden=true`＋`reason_code=CREATE_PROFILE_REQUIRES_RECORD`＋
+   `visible_profiles` 由 `[create,edit,readonly]` 收窄为 `[edit,readonly]`＋`requires_record=true`；
+   edit 档位不改写，`visible_profiles` 保持三档）；`wizard` 两档均不隐藏。故「`page` 走隐藏分支」
+   由**代码推断**升级为**已执行观测**，且该规则**对 edit 档位整体不生效**
+   （`is_create_render_profile` 由 `record_id` 决定，`record_id=42` 时返回 `False`）。
+   同批回读：模块 `state=installed`、`latest_version=installed_version=17.0.0.168`，容器内
+   `contract_governance_create_profile.py`／`page_assembler.py` 的 md5 与宿主**一致**，
+   即被执行的正是**运行态加载的同一份代码**。
+   第一轮把端到端 edit 档位渲染记为"无合法持久记录可绑定"；**该理由本轮已更正**——记录面存在，
+   而且本组自己就会产生合法的临时上下文行，端到端 edit 档位**是可观测的**。第二轮已按真实用户路径
+   观测到：保存办理上下文后进入记录面（`/f/…/<id>?menu_id=697&action_id=875`），表头 3／6／5 个
+   派发载体**全部出现**（见 8.34.10-A）。因此该条从"未覆盖"改为**已覆盖（第二轮）**。
+   **但载体在 create 档位被静态隐藏这件事本身不是本批引入的**：`interaction_mode` 与 `target` 均不由
+   本批改动，退役体声明与 `composition_mode` 也不在该治理规则的输入里；本批退役前后该结果一致。
+3. **设计器／表单设置入口对本组按设计不注入**：`page_assembler._inject_current_form_settings_action`
+   对 transient 模型直接返回（`if not model_rec or model_rec.transient: return`），与契约
+   `composition_mode` 无关；因此 875／877／878 在**退役前后都没有**入口级设计器，本组也不存在
+   可跑的「预览→发布→刷新→回滚」闭环。**报告为按设计边界（登记项），不记为产品缺陷，也不冒充已验证。**
+   由此，`更多操作` 表头收纳（依赖同一 `buttons` 组动作）在本组同样不出现。
+   **（第三轮更正，2026-09-19）以上这条"不存在配置闭环"只对"每表单字段策略编辑器"这一项能力成立，
+   不作为本组的整体结论**：产品里有两个都叫"表单配置"的能力，另一个是**租户低代码变更集**
+   （拥有页面契约的标签／显隐／排序），它在 878 上**确有**可跑闭环，并已在第三轮逐步验证
+   （stage → preview → publish → runtime → rollback，见 8.34.11-③）。两项能力必须分开读：
+   前者对本组 transient 工作台**按设计关闭**（登记为**能力限制**），后者对本组**可用且已验**。
+   因此本条的"设计器不注入"**不得**再被引用为"三个工作台没有合法表单配置路径"。
+   **首次偏差与影响面（只读盘点，2026-09-19）**：首次偏差点即该函数的 early-return
+   （`page_assembler.py`：`model_rec = self.su_env["ir.model"].search([("model", "=", model)], limit=1)`；
+   `if not model_rec or model_rec.transient: return`），它位于管理员与配置 ACL 检查**之后**、
+   动作注入**之前**。全量 **277** 条在册契约中目标模型为 transient 的共 **4** 条：
+   本组 **173／175／176**（875／877／878，`status=published`）＋**既有非本批 180**
+   （`sc.product.system.settings`，action **887**，`status=published`）。
+   **口径统一（第一轮两句话互相冲突，本轮按实际变更关系收敛）**：第一轮同时写了
+   "875／877／878 退役前后都不支持设计器"与"G08 把受影响入口由 1 条扩到 4 条"，前者说的是
+   **存量实现边界**、后者容易被读成**本批引入**，必须区分"本轮**发现／登记**"与"本轮**引入**"：
+   - **不是本轮引入**：该 early-return 在本批之前就存在，`model.transient` 的判据不由本批改动；
+   - **不是本轮扩大适用范围**：4 条 transient 目标契约（本组 173／175／176 ＋ 既有 180／887）
+     **在本批之前就都已存在**——`git show 26d254ad:addons/smart_construction_core/data/
+     team_loan_deduction_workspace_contract.xml`（及另两份）证明三条契约在基线上已注册且
+     `model` 字段已是 transient 工作台，本批只改 `composition_mode` 与退役体声明，
+     **二者都不是该 early-return 的输入**；
+   - **本轮确实变化的是"登记面"**：这 3 条入口的边界第一次被本组**明确登记并核对到运行态**，
+     于是**在册登记**从 1 条（180／887）扩到 4 条。这是**发现面的扩大，不是影响面的扩大**。
+   本批**未把它混入入口迁移**，故偏差范围可界定；结论仍保留"迁移未新增回归"，但**不得据此宣布入口可用**。
+4. **未执行项（保持未执行）**：最终 Quick、推送、建 PR、合并、部署、冻结、G09 启动、六组副本候选迁移、
+   `sync_demo`／fixture reset／发布快照、历史工作树清理。
+5. **写入核对（只读回读）**：受保护草稿 163／190／192／194／233／267／274／276 的 `write_date`
+   全部停留在 2026-09-17，本轮未被触碰；G07 复核草稿 **397 保留**（`ready`、未发布）；本轮设计器尝试
+   **零配置写入**（最新变更集仍为 397，无 G08 目标草稿）；运行现场（odoo 8070／vite 5174）保持可用。
+   第二轮复核期间同样**零配置写入、零业务单据写入**：只产生本组合法的**临时派发上下文行**
+   （875 15 行／877 6 行／878 5 行，含前几轮累积），四类业务单据 `created_last_6h=0`（见 8.34.10-A）。
+   第三轮口径统一为：**创建／修改了临时上下文记录，未持久化目标业务单据、未修改配置**；"12 小时零新增"
+   只作旁证，不替代路径前后核对。第三轮的写入核对见 8.34.11-⑤。
+
+### 8.34.10 集中产品复核整改（第二轮，2026-09-19）
+
+**复核结论（接受）**：结构迁移基本成立，但 G08 作为"办理工作台"的**用户路径尚未闭合**——
+三个桌面入口只显示"保存草稿"、看不到借款／扣款／往来／退款入口，且"办理提示"为空占位。
+复核**不放行冻结**。本轮按 **A／B／C／D** 四包连续整改，结果如下。
+
+#### 8.34.10-A 办理路径闭合（A 包）
+
+**首次偏差（本轮定位，四层叠加，缺一层都不闭合）**：
+1. **载体在 create 档位被静态隐藏**：`contract_governance_create_profile.py` 对 record-dependent 表头按钮
+   给出 `visible=false`＋`reason_code=CREATE_PROFILE_REQUIRES_RECORD`。**这是 G06／G07 就存在的既有行为，
+   不是本批引入**，但它决定了本组的正确路径只能是"先保存临时上下文，载体才出现"。
+2. **入口与派发目标分属不同角色面**：工作台入口菜单与它要派发的目标单据菜单**不在同一角色导航面**，
+   于是**没有任何主体同时拥有"打开工作台"与"打开目标单据"两类路由**——办理路径断在入口或断在派发。
+3. **治理声明走不到页面**（见 8.34.10-B 的传输根因），页面因此退回通用 create 文案。
+4. **派发返回的 window action 没和菜单配对**：客户端要求 action 与"menu↔action"配对，缺配对即
+   打不开（历史现象是 `403 PERMISSION_DENIED 用户无权访问菜单 …`）。
+
+**整改（只走既有授权路径，不放开临时模型按钮，不新增机制）**：
+- `core_extension_policy_maps.py`：`project_member` 按菜单**自身声明的持组**补 875 入口 ＋ 3 条派发目标路由
+  （`menu_sc_contractor_project_borrow`／`menu_sc_deduction_bill`／`menu_sc_finance_project_counterparty_position`）；
+  `finance` 补 877／878 入口菜单。路由仍由**当前用户原生菜单可见性**门控生成，财务中心容器依旧留在
+  `project_member` 的导航 blocklist 中。**未改 ACL、未放开系统设置 887、未对 TransientModel 按钮做通配放开。**
+- **回退记录（如实登记）**：整改过程中曾试过把 875 ＋ contextual 路由授给 `pm`，产生**客户端打不开的路由**
+  （`403 PERMISSION_DENIED 用户无权访问菜单 承包人借项目款`），已**整体回退**。原因是 `demo_pm`／
+  `sc_project_user` 原生看不到菜单 553／563／372；只有**原生同时可见 697 与三张目标单据**的项目成员主体
+  （`demo_pm`／`demo_role_project_user`／`demo_role_project_manager`）能生成成对路由。
+- 新增 `sc.context.workspace.entry.authority`：派发返回前把 window action 钉到**当前主体路由权威中确实存在**
+  的那个 `menu_id`（`_sc_route_authority()` 取自与客户端同一份 route authority 契约），并把 `date`／`datetime`
+  上下文转 ISO 字符串再交给客户端。**查不到路由即业务文案 fail-closed**，不再把用户丢进导航拒绝页。
+  角色／发布配置改变时载体随之改变，**无需改代码**。
+
+**验证（真实浏览器路径；只走到目标"未保存表单"为止，未执行任何实际借款／退款／发放）**：
+
+| 入口 | 保存上下文后出现的派发载体 | 载体落点（正式单据列表） | 点"新建"后的未保存表单与承接 |
+|---|---|---|---|
+| 875 班组借/扣款登记（`demo_role_project_manager`） | 3 个：登记借款／登记扣款／查看借扣款台账 | `/a/804?menu_id=553` | `/f/sc.financing.loan/new`：`project_id=德阳智能制造产教融合项目`、`partner_id=德阳某某周转材料租赁有限公司（示例）`、`document_date=2026-09-19`、`loan_type=借款申请`、`direction=借入资金`、`purpose=承包人借项目款`；金额空、单据号仍为"新建" |
+| 877 往来款登记（`demo_role_finance`） | 6 个：项目借/还公司款、承包人借/还项目款、账户间调拨、查看往来台账 | `/a/805?menu_id=554` | `/f/sc.financing.loan/new`：同上，`purpose=项目借公司款登记`，项目／往来单位／日期均承接 |
+| 878 公司&项目退款（`demo_role_finance`） | 5 个：扣款实缴退回／投标保证金退回／合同保证金退回／自筹退回／查看关联台账 | `/a/800?menu_id=565` | `/f/sc.expense.claim/new`：`claim_type=扣款退回`、`expense_type=扣款实缴退回`、`summary=扣款实缴退回`，项目／往来单位／日期均承接 |
+
+- **停在未保存表单**：三轮都停在 `/f/<model>/new`，单据号仍是"新建"、金额为空，**未执行任何业务动作**；
+  `toast=[]`（无拒绝提示）。
+- **纯函数六格验证不再被当作这条路径的替代**：第一轮的 `interaction_mode × render_profile` 六格只证明
+  治理函数取值，**不证明用户路径存在**；本轮以 875／877／878 三段端到端回执取代它作为闭合证据。
+- **无合法样本一律不造业务数据**：本组**不为截图创建任何工资或发放业务数据**。写入核对（只读回读，
+  UTC 近 6 小时窗口）：`sc.financing.loan` 合计 1／新增 0；`sc.expense.claim` 合计 3／新增 0；
+  `sc.fund.account.operation` 合计 2／新增 0；`sc.self.funding.registration` 合计 0／新增 0。
+  只产生本组合法的**临时上下文行**。
+
+#### 8.34.10-B 临时工作台产品语义（B 包）
+
+1. **"模型临时 ⇒ 记录面不可能存在"的推理已更正**（逐条改写见 8.34.8-①）。`TransientModel` 可以落库、
+   有合法编辑态、只是会被回收；本轮已按真实路径观测到记录面（见上表）。
+2. **"保存草稿"根因与三层整改**：根因是**原生权威路径把已声明的表单治理整段跳过**——
+   `ui_contract_v2` 在 `native_structure` 时把 `governed` 置 `None`（避免第二个结构所有者，这个判断本身是对的），
+   但**语义声明**也被一起丢了；随后 `unified_page_contract_v2_assembler` 在原生表单投影里又用
+   **整键覆盖** `governance`，把已经搬进 `runtimeContract.governance` 的声明再覆盖掉。三层修复：
+   - 机制层：新增 `native_authority_safe` 登记位与 `apply_native_authority_domain_overrides()`，
+     **只放行"只声明语义、不改结构"的 override**；改写结构的 override（如 `project_form`）仍在门外。
+   - 传输层：`_assemble_ui_contract` 把 `form_governance` 写进 `runtimeContract.governance`，
+     `_assemble_native_form_projection` 改为**合并**而不是覆盖。
+   - 记录面：无业务表单策略的非 create 路径此前**在治理前直接 return**，本轮在该路径也应用语义声明。
+   - 声明层：`context_workspace_form` 逐入口声明 `primary_action_label=记录办理上下文` ＋ 协作面板文案；
+     **不改通用 create 默认值**，不波及其他模型。
+   实测（真实契约回读，非只看健康）：create 面与记录面**都**携带
+   `runtimeContract.governance.form_governance`（`surface=context_workspace`、
+   `create_flow_mode=transient_dispatch`），页面按钮均为 **`记录办理上下文`**（不再是"保存草稿"，记录面也不再是"保存修改"）。
+3. **协作日志与保存后提示**：两个档位都显示声明文案
+   **"办理上下文只用于本次派发，不长期保留；沟通、备注与附件请在打开的正式单据中登记。"**
+   ——不再用通用 create 文案"保存草稿或提交生成单据后，可记录沟通…"，也不再在记录面暗示这份上下文会被长期保留。
+   前端只认契约声明（`isDispatchContextGovernance()` 认 `create_flow_mode=transient_dispatch`），**不硬编码模型名**。
+4. **空的办理提示不占普通事实字段位置**：`processing_advisory` 已从"办理上下文"**事实分组**移出，
+   独立为 `办理提示` 组（`name="…_processing_advisory"` ＋ `data-sc-anchor`、`col=1`、字段 `nolabel="1"`、
+   `invisible="not processing_advisory"`）；运行态 `arch_db` 三份视图均已回读到该 `invisible`。
+   **如实登记一处未实测**：该字段 compute **恒非空**（有建议则列建议，否则输出"办理上下文已完善"），
+   因此 `invisible` 是**防御性边界**，本组数据**无法**触发"空值隐藏"的真实渲染；本条不写成"空值渲染已实测"。
+5. **L4 只读代表面（重跑）**：三入口各一个 create 面、**5 字段／4 章节**
+   （办理上下文／办理说明／办理提示／协作记录），四个章节入口 `resolved=true`、`visible=true`，
+   四类 findings 全空，双视口 `section_navigation_press=not_applicable/track_does_not_overflow`。
+
+#### 8.34.10-C 低代码边界（C 包）
+
+> **（第三轮更正／取代，2026-09-19）本轮 C 包答错了问题。** 复核指出：本包结论
+> "合法配置生效路径 = 角色导航面 ＋ 菜单自身持组"描述的是**哪些角色能打开哪些入口**，
+> 属于**访问控制**；原任务问的是"**标签、显隐、排序**等合法表单配置如何生效"，属于**低代码配置能力**。
+> 两者不能互相替代。本包因此**不在第三轮被引用为 C 包已通过**；第三轮的 C 包由
+> **8.34.11-③**（租户低代码变更集在 878 的 stage → preview → publish → runtime → rollback 闭环，
+> 含三条拒绝面与授权作用域）重新回答。以下内容仅作**授权面事实**留存。
+
+- **首次偏差**：`ui_form_field_policy.py` 与 `handlers/form_field_configuration.py` 对 transient 模型直接拒绝，
+  `page_assembler._inject_current_form_settings_action` 同样 early-return。**该 early-return 只能证明
+  "实现排除了临时模型"，不能证明这是已批准的产品边界。**
+- **授权路径核查（结论：配置中心不是本组的授权路径）**：
+  `scripts/verify/baselines/formal_business_product_menu_policy_v1.json`
+  （schema `formal_business_product_menu_policy.v1` 锁定，sha256 `80b5c7d5bbfe69dc5bd26588cbea4f40dbed1a205f9831d890bb8394e8a1ad24`，
+  两个产品各 89 能力）中，三个工作台入口**在册**（`enabled=true`／`release_state=released`／
+  `access_level=public`／`entry_intent=handling`），但 **11 条派发载体菜单中只有 `menu_sc_deduction_bill`（798）在册**，
+  其余**不在册**；`release_operator.py` 的 `set_page_enabled`／`update_page_policy`／`promote`／`freeze`／
+  `sync_policy`／`approve`／`rollback` **只能对已在册页面切换 `enabled`／`release_state`／`access_level`**，
+  **不能新增页面或路由**。
+- **因此本组三个正式工作台的合法配置生效路径 = 角色导航面 ＋ 菜单自身持组**（本轮即按此整改，见 8.34.10-A），
+  **不是配置中心**。按"合法配置可生效"的原则，本组三入口现在**确实遵守**该原则：角色／发布范围一改，
+  入口与载体随路由权威改变，无需改代码（`_sc_pin_entry_authority` 即读该权威）。
+- **能力缺口登记**：对"用配置中心为这三个工作台开／关派发载体、调整发布范围"这一诉求，现状是
+  **能力缺口**（在册策略不含这 11 条载体，且发布操作符不能新增页面）。**该缺口不由 G08 引入**，
+  本组**未把它悄悄混入入口迁移**，也**未顺手开放系统设置 887**。
+- **未用 G07 闭环代替本组三入口验证**：G07 的设计器闭环只复用其**机制**，本组三入口的配置面结论
+  来自本节的独立核查与 8.34.10-A 的运行态回执。
+
+#### 8.34.10-D 验证口径修正（D 包）
+
+- `unmappedPathCount=10` 的含义与逐路径覆盖表：纠正为"10 条路径未命中增量测试推荐映射，
+  需人工选择非零 L2"，**不是"没有未映射路径"，也不自动等于门禁失败**——见 8.34.7 与 8.34.7.1。
+- **三份行业原生视图归属由 P0 更正为 P1**：不因载体是 XML 视图就归 P0 平台内核——见 8.34.3。
+- **"发现"与"引入"口径统一**：见 8.34.8-③。保留"迁移未新增回归"，但**不得据此宣布入口可用**。
+
+#### 8.34.10-E 运行态候选一致性（按更正后的证据标准核对）
+
+复核指出"Vite 应用源码一致只能证明前端这一侧"，接受该纠正。本轮按**两侧＋升级状态＋最终契约**核对：
+
+| 维度 | 证据 | 结论 |
+|---|---|---|
+| 前端 | vite dev（`5174`）直接服务工作树源码 | 只证明前端一侧，**不单独作为候选一致依据** |
+| 后端加载代码 | addons 以 bind mount（`…/sce-backend-odoo/addons → /mnt/source-addons`，rw）挂入容器；宿主与容器内逐文件 `sha256` 一致（`unified_page_contract_v2_assembler.py`、`ui_contract_v2.py`、`contract_governance_overrides.py`、`core_extension_policy_maps.py`、三份 `views/support/*_workspace_views.xml`） | 运行进程加载的**就是本工作树这份代码** |
+| 模块升级状态 | `smart_construction_core` `state=installed`、`latest_version=17.0.0.168`（`write_date` 2026-09-18 18:56:21）；三份视图 `arch_db` 含 `invisible="not processing_advisory"` | 视图改动已随升级落入库内，**不是只改了磁盘** |
+| 最终契约 | HTTP `/api/v1/intent` 的 `ui.contract.v2` **响应体**（create 面与记录面）均含 `runtimeContract.governance.form_governance`，并携带全部派发载体 | 以**最终契约**为准，**不以"服务长驻健康"认定候选一致** |
+
+### 8.34.11 集中产品复核整改（第三轮，2026-09-19）
+
+**复核结论（接受，本轮仍不放行冻结）**：办理路径有进展——"记录办理上下文"已取代"保存草稿"，
+记录 103 出现五个办理／查询按钮（编辑态确实存在），临时上下文保留期限提示已显示；但**四包不能
+全部关闭**：①「办理提示」仍作为独立正文章节与导航项出现；②记录副标题和页签仍是
+`sc.company.project.refund.workspace,103`；③上一轮 C 包答的是"哪些角色能打开哪些入口"，**没有**
+回答"标签、显隐、排序等合法表单配置如何生效"；④本批已超出纯 XML 迁移，需对新增共享机制与授权
+变化做定向复核。本轮按四项集中整改，结果如下。
+
+#### 8.34.11-① 辅助信息层级：办理提示是辅助反馈，不是业务章节
+
+**首次偏差（本轮定位）**：「办理提示」在前两轮是一个带 `data-sc-anchor` 的 native `group`，
+因此被章节导航当成本单元的**正文章节**；"协作记录"导航项本身也只指向一段"请去正式单据协作"的
+说明，既有标题又无功能。
+
+**整改（复用既有组件，不另造反馈机制）**：
+- 三份 `views/support/*_workspace_views.xml` 统一收形，`<sheet>` 现为四段：使用说明
+  （`div.alert.alert-info[role=status]`）→ `办理上下文` group（带 `data-sc-anchor`）→
+  `办理说明` group → 提交／动作区。
+- 「办理提示」**删除 group 与它的 `data-sc-anchor`**，改为非 group 的内联反馈：
+  `div.alert.alert-info[role=status] invisible="not processing_advisory"` 内含
+  `field processing_advisory readonly=1 nolabel=1`。
+- 渲染链（既有机制，未改）：`NativeFormTreeRenderer.vue` 对非 group 节点走
+  `resolveNativeTextPresentation`，`kind==='callout'` → `ScInlineState`
+  （`native-form-feedback`）；`data-sc-anchor` **只在 group 上发出**，故该提示**不可能**再成为
+  章节或导航项。
+- **空提示不占位置**：`invisible="not processing_advisory"` 使无内容时不渲染；有内容时按既有
+  通用提示规范表达，不再占用普通事实字段位。
+- **协作说明并入使用说明**：删除 `_CONTEXT_WORKSPACE_COLLABORATION_MESSAGE` 与"协作记录"章节，
+  该说明并入工作台使用说明（同一段 alert）。**正式单据的协作能力不变**：`suppressCollaboration`
+  只在派发上下文入口置位（`ContractFormDriverHost` 单点绑定），`ContractFormPage.vue` 的
+  `dispatchContextCollaboration` 只在 `transient_dispatch` 治理下生效。
+- P4 登记口径同步：`scripts/verify/local_dev_form_lowcode_scope.py` 的 `context_workspace` 注释由
+  "三个锚定 group（办理上下文／办理说明／办理提示）"改为"两个锚定 group（办理上下文／办理说明）"，
+  并写明提示是**非章节** feedback，且 transient 依旧"有记录、有合法编辑态"。
+
+**测试**：`test_the_prompt_is_feedback_not_a_section`（原 `..._a_fact_position` 已改写为
+"不得是章节"）、`test_the_workbench_usage_note_owns_the_collaboration_note`、
+`test_the_advisory_fact_stays_readonly`。
+
+#### 8.34.11-② 工作台可读身份与操作说明
+
+**首次偏差（本轮定位）**：记录副标题／页签显示 `模型,id`。根因是 Odoo 17 的 `display_name`
+由 `_rec_name` 决定，**且不经过** `name_get()`——只重写 `name_get` 改变不了页签／副标题／面包屑。
+
+**整改**：
+- **由 P1 提供可读名，前端不拼接模型特判**：`models/support/context_workspace_entry_authority.py`
+  新增 `name`（compute `_compute_sc_context_name`）、`_rec_name = "name"`、
+  `_sc_readable_context_name()`、`_sc_join_context_name(project, counterparty)`；三个工作台模型
+  各自 override `_sc_readable_context_name()` → `self._sc_join_context_name(self.project_id,
+  self.partner_id)`；`name_get()` 仅作兼容保留。页签、副标题与面包屑因此走**既有显示名称机制**。
+- **新建页操作说明**：使用说明段明确"先记录办理上下文，再选择办理事项；金额、账户和明细在目标
+  正式单据填写"，用户不再需要靠试点"记录办理上下文"猜出下一步。
+
+**测试**：`test_the_record_surface_reads_a_readable_name`。
+
+#### 8.34.11-③ 重做 C 包：表单配置与路由授权分开验收
+
+**复核意见（接受）**：上一轮 C 包的证据是"角色 → 入口"的授权面，属于**访问控制**；它没有回答原
+任务的"**标签、显隐、排序**等合法表单配置如何生效"，而后者属于**低代码配置能力**。两者不能互相
+替代。本轮按此重做。
+
+**闭环（878 `公司&项目退款`，走既有受管变更集路径，逐步读"交付页契约本身"）**：
+`stage → preview → publish → runtime → rollback`，每一步读的都是原生渲染器实际消费的那份
+`ui.contract.v2`：
+
+> **第四轮修正口径（本次补正，不重跑）**：下表五步由 `TestContextWorkspaceNativeLowcode`
+> **直接调用 handler** 完成，运行在**测试事务内**，应写「**测试事务内执行，未持久化配置变更**」。
+> 它证明的是合成、约束与回滚**机制**，**不等同**管理员在**产品界面**完成配置；产品界面路径见
+> 8.34.12-③。
+
+| 步骤 | 观测 |
+|---|---|
+| preview | 标签改写生效（`办理说明（受管表单配置）`）；可选上下文事实被合法隐藏（`visible=false`）；`办理上下文` group 的**显式 order permutation** 被遵守（子节点顺序反转后生效） |
+| 约束保持 | 必填上下文事实 `project_id` 仍 `required`；动作载体集合与基线**逐条相同**（配置不得增删派发按钮） |
+| publish | `published_content_verified=true`、`runtime_verified=true`；运行态交付契约带上已发布配置 |
+| 隔离 | 邻居 875／877 的契约身份**逐字节不变** |
+| rollback | 交付契约回到**基线身份**；邻居仍不变 |
+
+**拒绝面（同一授权路径的边界）**：隐藏必填事实 → `CONFIG_REQUIRED_FIELD_HIDDEN`；放宽 readonly
+约束 → `CONFIG_BUSINESS_CONSTRAINT_RELAXED`；指向失效目标 → `CONFIG_TARGET_STALE`。三者均被
+拒绝并 discard，说明"配置被接受"不等于"配置可以越过业务规则"。
+
+**授权与作用域**：设计权威是**变更集授权组 且 入口面本身**。仅有
+`smart_core.group_smart_core_business_config_admin` 而无入口面的 principal，解析该入口原生视图即
+raise `unavailable`（入口面必须被解析，不能被假定）；产品已有的
+`smart_construction_core.group_sc_cap_business_config_admin` 本身已含这些入口的能力组，故按作用域
+的设计者合法可达 878 页面与 preview。**未开放系统设置 887**。
+
+**未闭合能力限制（明确列名登记，不改名通过）**：产品里有两个都叫"表单配置"的能力。本轮闭合的是
+**租户低代码变更集**（拥有页面契约，见上表）；另一个是**每表单字段策略编辑器**——其"表单设置"
+入口注入到页面中，并对 transient 工作台**在设计上关闭**：入口不注入、`FormFieldPolicySetHandler`
+与 `FormCustomFieldCreateHandler` 均拒绝（"临时模型"）。本轮**只在 878 上闭合变更集配置路径**，
+另两个入口**只验证隔离**；**每表单字段策略编辑器对三个 transient 工作台不可用，登记为能力限制**，
+不写作"合法配置路径已通过"。
+
+**测试**：`test_one_workbench_closes_the_authorized_form_configuration_loop`、
+`test_the_configuration_path_refuses_to_relax_a_workbench_constraint`、
+`test_the_design_authority_is_bounded_by_the_entry_surface`、
+`test_a_transient_workbench_stays_out_of_the_per_form_field_policy_editor`。
+
+#### 8.34.11-④ 本轮新增共享机制与授权变化的定向复核
+
+**(a) `native_authority_safe` 与 governance 合并只允许预期语义**：注册表里声明
+`native_authority_safe` 的条目**恰好只有** `smart_construction_core.context_workspace_form`；
+该安全通道只允许**新增** `form_governance` 声明，结构键
+（`sections`／`fields`／`columns`／`field_slots`／`layout`／`header_buttons`／`actions`／
+`button_box`／`view_orchestration`／`containerTree`／`nodes`）与 `fields`／`views` 的输入输出
+**逐字节不变**——**不能恢复结构双权威，也不能放宽约束**。运行态另有一条：交付契约同时携带投影的
+`view_orchestration` 与声明的 `form_governance`，但 `formStructureAuthority` 仍是
+`native_authority`、`structureDiagnostics=[]`，**结构唯一属主未变**。
+测试：`test_the_native_authority_pass_runs_only_declared_semantic_overrides`、
+`test_the_runtime_governance_merge_keeps_one_structure_owner`。
+
+**(b) 派发 authority 绑定真实可访问的目标菜单**：候选只从主体**原生可见**菜单生成
+（`_sc_entry_menu_ids()`）；**多候选**时 `_sc_entry_menu_id(...)` 抛 `UserError`（"多个可打开
+入口"）fail-closed，**缺失**返 0（载体不可派发），被 `context_requirements.required_query`
+限定的路由不参与派发，**恰好一个**候选才 pin，且 pin 出的菜单必须是当前主体路由面上的那一条。
+测试：`test_a_carrier_fails_closed_when_the_authority_offers_several_routes`、
+`test_every_returned_carrier_is_pinned_to_the_operators_route_menu`。
+
+**(c) 角色导航授权差异（ACL 未改 ≠ 访问范围未扩大）**：本批**未改任何 ACL**，扩大的是**角色导航
+面声明**（`core_extension_policy_maps.py` 的 `ROLE_SURFACE_OVERRIDES`）：
+
+| 主体 | 新增可见入口 | 新增可见路由 |
+|---|---|---|
+| finance（财务中心） | 877 往来款登记（menu 699）、878 公司&项目退款（menu 700） | 无（11 条派发目标本就在财务导航面） |
+| project_member（项目中心） | 875 班组借/扣款登记（menu 697） | 804 承包人借项目款（menu 553）、798 扣款单（menu 563）、714 项目往来台账（menu 372） |
+
+**拒绝反例（冻结轮按实际主体重测后更正，逐条标主体定义，见 8.34.14-⑤）**：finance 导航面
+**不含** 875，且 finance 主体对 875 模型的 `create` 被 ACL 拒绝；**只持项目只读、不持财务持组**
+的主体拿不到 875 入口菜单、也拿不到载体路由，877／878 建档被 ACL 拒绝；**只持
+`group_sc_cap_project_user`**（项目经办、不持财务持组）的主体在 875 上三个载体均以受管业务消息
+fail-closed（非 `NAVIGATION_AUTHORITY_DENIED`），877／878 建档即 `AccessError`。
+**同时持财务持组的项目主体不是拒绝反例**：fixture `demo_role_project_user`
+（project_user＋project_read＋finance_read＋finance_user）实测**拿到**875 的三条载体路由
+（553／563／372，`CONTEXTUAL_ROUTE`）且 877／878 建档被 ACL **允许**；其 875 载体在上轮探针中
+fail-closed 的原因是**模型侧项目经办守卫**，与路由授权无关。路由由"当前用户原生菜单可见性"
+门控生成，因此上述声明**不会**凭空造出主体原本没有的可见性。**登记为开放偏差**：finance 与 875
+的持组不一致（875 菜单与模型 ACL 都声明项目中心），本轮不为对齐而把 875 塞进财务导航面。
+测试：`test_the_finance_role_surface_grants_the_two_finance_workbenches`、
+`test_the_project_role_surface_grants_the_team_loan_workbench`、
+`test_a_principal_outside_the_role_surface_is_refused`。
+
+**(d) 14 个派发载体按目标类型覆盖表**（浏览器只走三个代表跳转，其余由定向契约／权限测试覆盖，
+不逐按钮重复浏览器旅程）：
+
+| 入口 | 载体数 | fact 目标 | projection 目标 |
+|---|---|---|---|
+| 875 班组借/扣款登记 | 3（2 fact ＋ 1 projection） | `sc.financing.loan`、`sc.expense.claim` | `sc.finance.project.counterparty.position` |
+| 877 往来款登记 | 6（5 fact ＋ 1 projection） | `sc.financing.loan`、`sc.expense.claim`、`sc.fund.account.operation` | 同上 |
+| 878 公司&项目退款 | 5（4 fact ＋ 1 projection） | `sc.expense.claim`、`sc.self.funding.registration` | 同上 |
+| 合计 | **14（11 fact ＋ 3 projection）** | | |
+
+每个目标都断言：非 transient；属于该入口声明的 `ENTRY_FACT_MODELS`，或正是
+`PROJECTION_MODEL`。浏览器走过的三个代表为 875 `action_register_loan`、877
+`action_project_borrow_company`、878 `action_deduction_refund`。测试：
+`test_every_dispatch_carrier_is_covered_by_its_target_type`。
+
+#### 8.34.11-⑤ 写入口径修正
+
+本批写入口径统一改为：**创建／修改了临时上下文记录，未持久化目标业务单据、未修改配置**。
+"12 小时零新增"只能作为**旁证**，不能替代本次路径的前后核对。为此本轮在写入前后都做了核对：
+
+- 受保护草稿（163／190／192／194／233／267／274／276）与 G07 复核草稿 **397 保留**、未被触碰；
+  变更集清单在 2026-09-15／16 之前即静止，**本轮无新增配置草稿**（测试与只读代表面均在事务内或
+  只读模式下运行）。
+- 四类目标业务单据（借款／扣款／往来／退款）**零新增**；临时上下文记录在记录面以"合法编辑态"存在
+  （记录 103 的五个办理／查询按钮），但**未执行任何借款、扣款、往来或退款动作**——操作停在
+  **目标未保存表单**。
+
+#### 8.34.11-⑥ 本轮分层验证结果
+
+- **L1** `make ci.local.iteration`：**PASS**（16 静态测 0 failed、`change_state=dirty`、
+  `changedPathCount=28`、`unmappedPathCount=24`、`manualNonZeroL2Required=true`、`coverage=L1_only`、
+  `receipt=none`）；未映射路径的逐条覆盖见 8.34.11-⑥b。
+- **L2** 定向类 `TestContextWorkspaceNativeLowcode` 全类（含本轮 5 项 C 包测试）：**PASS**，
+  `0 failed, 0 error(s) of 35 tests`；四 tag 整组（`TestContextWorkspaceNativeLowcode` ＋
+  `TestTeamLoanDeductionWorkspace` ＋ `TestCurrentAccountWorkspace` ＋
+  `TestCompanyProjectRefundWorkspace`）：**PASS**，`0 failed, 0 error(s) of 41 tests`。
+- **L3** 模块 `smart_construction_core` `installed`、`latest_version=17.0.0.168`；本轮改动的视图
+  XML 经 `local.dev.upgrade` 落入库内（服务重启后加载新注册表）。
+- **L4** 只读代表面 `FORM_LOWCODE_TOPIC=context_workspace FORM_LOWCODE_REPRESENTATIVE=1`：
+  **PASS**，报告 `artifacts/lowcode-form-loop/browser/representative-report-context_workspace.json`
+  `ok=true`、`restored=true`、`browser_errors=[]`、`representative_uncovered=[]`。
+
+**运行态事实（可核对）**：`sc.team.loan.deduction.workspace`／`sc.current.account.workspace`／
+`sc.company.project.refund.workspace` 当前 `search_count=0`——临时上下文行**已被回收**，这正好印证
+8.34.11-② 与 8.34.8-① 的口径：`TransientModel` 有数据库记录、也有合法编辑态，但**会被回收**，
+"临时模型"既不等于"没有记录面"，也不等于"长期保存"。变更集清单最大 `create_date` 为
+`2026-09-18 11:17:57`（早于本轮全部执行），**本轮零新增变更集**。
+
+**首次 L4 尝试的一次偏差（如实登记）**：升级后紧接着的第一次 L4 返回 exit 1
+（`form lowcode journey changed runtime identity or scoped business data`）。同一环境下**手工重放**
+（取 scope 指纹 → 跑同一 `node` 旅程 → 再取指纹）**无任何字段差异**，紧接其后的第二次 L4 亦
+**PASS**。
+
+> **第四轮修正口径（本次补正，不重跑）**：早先写作"取 before 指纹时注册表尚未稳定"——这一归因
+> **证据不足，撤销**。首次失败后重跑成功只证明**重跑通过**；本轮没有留存首次失败的差异明细，
+> 因此**不能**断定首次差异来自注册表未稳，也不能断定环境或产品。可核对的只有：同一环境下
+> **手工重放无字段差异**、**第二次 L4 PASS**、以及**后续各轮 L4 均 PASS**。
+
+#### 8.34.11-⑥b `unmappedPathCount` 由 10 变为 24 的逐路径覆盖（不为归零扩造规则）
+
+第三轮 L1 的报告为 `changedPathCount=28`、`unmappedPathCount=24`、`manualNonZeroL2Required=true`。
+计数的**含义未变**：24 条路径**未命中增量测试的推荐映射**，需人工选择非零 L2；这**不是**"没有未映射
+路径"，也**不自动等于门禁失败**（口径见 8.34.7 与 8.34.7.1）。计数由 10 涨到 24 的原因是第三轮**新增
+了 14 条改动路径**，不是规则收紧或覆盖退化。新增的 14 条及其**已执行**的覆盖检查如下：
+
+| # | 新增路径 | 覆盖它的已执行检查 |
+|---|---|---|
+| 1 | `core_extension_policy_maps.py` | L2 `test_the_finance_role_surface_grants_the_two_finance_workbenches`／`test_the_project_role_surface_grants_the_team_loan_workbench`（角色导航差异与拒绝反例） |
+| 2 | `models/support/__init__.py` | L2 全类导入即覆盖（0 测运行按治理规则失败，故 35 测通过即覆盖） |
+| 3–5 | `models/support/{company_project_refund,current_account,team_loan_deduction}_workspace.py` | L2 `test_the_record_surface_reads_a_readable_name`；L3 运行态记录面回读 |
+| 6 | `models/support/context_workspace_entry_authority.py`（新增） | L2 `test_a_carrier_fails_closed_when_the_authority_offers_several_routes`／`test_every_returned_carrier_is_pinned_to_the_operators_route_menu`／`test_a_principal_outside_the_role_surface_is_refused`；L3 记录面可读名回读 |
+| 7 | `services/contract_governance_overrides.py` | L2 `test_the_native_authority_contract_carries_the_declared_governance`／`test_the_native_authority_path_keeps_the_declared_governance` |
+| 8–10 | `tests/test_{company_project_refund,current_account,team_loan_deduction}_workspace.py` | L2 四 tag 运行（该三文件即被测体，随 `TestContextWorkspaceNativeLowcode` 同批执行） |
+| 11 | `addons/smart_core/core/unified_page_contract_v2_assembler.py` | L2 `test_the_runtime_governance_merge_keeps_one_structure_owner`；L3 最终契约回读 |
+| 12 | `addons/smart_core/handlers/ui_contract_v2.py` | 同上（交付契约出口） |
+| 13 | `addons/smart_core/utils/contract_governance.py` | L2 `test_the_native_authority_pass_runs_only_declared_semantic_overrides` |
+| 14 | `addons/smart_core/utils/contract_governance_domain_overrides.py` | 同上（注册表 `native_authority_safe` 安全名单断言） |
+
+**结论口径**：本表只登记"**已经跑过、且输入包含该路径**"的检查，**没有为让计数归零而扩造映射规则**；
+`unmappedPathCount` 仍由人工选择非零 L2 承担。
+
+#### 8.34.11-⑦ 本轮未覆盖项（保持未执行）
+
+最终 Quick、推送、建 PR、合并、部署、冻结、G09 启动、G07 浏览器矩阵重跑、`sync_demo`／fixture
+reset、历史工作树清理，**均未执行**。台账保持 **25**（本批不扣减）。
+继续对 878 以外的两个入口验证**隔离**而非闭环；每表单字段策略编辑器对 transient 工作台不可用，
+作为**已命名的能力限制**保留，等待产品决定是否开放。
+
+### 8.34.12 集中产品复核整改（第四轮，2026-09-19）
+
+**复核结论（接受，本轮仍不放行冻结）**：第三轮的三项整改中，导航层级与可读身份的**机制**已成立，
+但复核**实际打开** 878 新建页（桌面 1440 与 390 窄屏）后提出三项：① 提示组件**排版实际失败**
+（`建议选择退款方…` 一字一行、顶部使用说明未完整展开），`sections=2、findings=[]` 没有覆盖这些
+**可见**问题；② 新建页操作说明与报告口径不一致；③ C 包只证明了**后端闭环**，未证明**用户配置
+路径**。另纠正两处证据表述（不重跑）。本轮按三项集中整改，结果如下。
+
+#### 8.34.12-① 提示组件排版阻断：根因与**共享组件**通用修复
+
+**现场（复核可见）**：桌面与 390 窄屏均出现 `建议选择退款方…` **一字一行**的浅蓝色长条；顶部
+使用说明在桌面也未完整展开。
+
+**根因（两个叠加，均在共享组件，无退款模型 CSS 特判）**：
+
+- **A．反馈带的内容轨道解析为 0**：`frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue`
+  的 `.native-form-feedback__content` 为 `display:grid; inline-size:max-content` 且**未声明显式轨道**，
+  单个隐式列因此解析为 0。带内的事实区块**宽度来自网格而非文本**，于是只有约 14px，
+  每个汉字单独成行。
+- **B．共享告警体既不生长也不占位**：`ScInlineState.vue` 渲染 `TDesignAlert`；库内
+  `.t-alert__description` 是普通块、宽度取自内容，其父 `.t-alert__message`／`.t-alert__content`
+  为 `flex: 0 1 auto`，消息轨道收缩到描述的 `max-content`。**纯文本**告警因文本有真实固有宽度
+  "看起来正常"，而内嵌网格内容时固有宽度为 0，整条被压扁——这正是顶部使用说明在桌面被排成
+  单行裁剪的原因。
+
+**修复（两条都是通用消费，非模型特判）**：
+
+- `NativeFormTreeRenderer.vue`：`.native-form-feedback__content` →
+  `grid-template-columns: minmax(0, 1fr); inline-size: 100%; max-inline-size: 100%; min-inline-size: 0;`
+- `ScInlineState.vue`：新增 `.sc-inline-state :deep(.t-alert__message){min-width:0}` 与
+  `.sc-inline-state :deep(.t-alert__description){flex:1 1 auto;min-width:0;width:100%}`。
+
+**修复后实测（三入口 ×桌面 1440／窄屏 390，逐带读宽度、行数与横向裁剪）**：
+
+| 入口 | 视口 | 使用说明带 | 办理提示带 | 文档横向溢出 |
+|---|---|---|---|---|
+| 875 班组借/扣款登记 | 1440 | 1111×22（1 行） | 1111×36（1 行） | 无（1440/1440） |
+| 877 往来款登记 | 1440 | 1111×22（1 行） | 1111×36（1 行） | 无 |
+| 878 公司&项目退款 | 1440 | 1111×22（1 行） | 1111×36（1 行） | 无 |
+| 875 | 390 | 325×88（4 行） | 325×36（1 行） | 无（390/390） |
+| 877 | 390 | 325×88（4 行） | 325×48（2 行） | 无 |
+| 878 | 390 | 325×88（4 行） | 325×70（3 行） | 无 |
+
+六个组合的反馈带内容轨道均 `clientWidth == scrollWidth`（无横向裁剪），**无**宽度小于 24px 的
+文本叶子（原先为 14px、37 行）。
+
+**为什么"数章节"漏掉它，以及现在如何不再漏**：原断言只统计
+`[data-form-section-navigation] button` 的数量与结构重复／空容器，**宽度不是它的观测面**。
+本轮在 P4 只读代表面加入机制断言
+`scripts/formal_form_representative_journey.mjs` 的 `structureFindings().collapsed_callouts`：
+对每个已渲染、宽度 ≥ 240 的 `.native-form-feedback`，带内 ≥ 4 字的文本叶子**不得**窄于 20px，
+且内容轨道**不得**横向裁剪；由 `assertStructureResponsibility` 断言为空数组，报告里随
+`findings` 输出实测宽度。
+
+**负向对照（证明该检查对本次缺陷敏感）**：在运行页注入两条已退役的声明后，同一测量立即命中
+`{"width":1111,"clipped":true,"squeezed":[{"width":14,…}]}`；撤除注入后为空。
+
+#### 8.34.12-② 新建页操作说明与可读身份（**新生成的受管临时记录**实测）
+
+**文案（本轮改写，三个入口统一）**：
+> 先记录办理上下文，再选择办理事项。金额、账户和明细在打开的正式单据中填写；沟通、备注与附件也在正式单据中登记。
+
+上一版"填写上下文后选择上方的办理按钮"描述了页面上并不存在的按钮（上方只有「记录办理上下文」），
+已删除；`tests/test_context_workspace_native_lowcode.py` 的 `USAGE_NOTE_MARKERS` 同步为这三句。
+
+**可读身份的验证对象是本轮新建的记录，不是失效历史页 103**。由工作台新建页经
+「记录办理上下文」生成受管临时记录后，页签、副标题与面包屑读到的都是同一个可读名：
+
+| 入口 | 本轮记录 | 页签／副标题／面包屑 |
+|---|---|---|
+| 878 公司&项目退款 | 147 | `公司与项目退款办理工作台 · 成本并发隔离测试项目` |
+| 877 往来款登记 | 172 | `往来款办理工作台 · 成本并发隔离测试项目` |
+| 875 班组借/扣款登记 | 188 | `班组借扣款办理工作台 · 成本并发隔离测试项目 · 演示业主 · 城市建设集团` |
+
+三页正文均**不含** `模型,id` 形态字符串（页面正则扫描 `raw_pairs=[]`）。记录面在保存后随即出现
+本入口的派发载体（878：扣款实缴退回／投标保证金退回／合同保证金退回／查看关联台账），
+确认"临时模型"确有记录面、确有合法编辑态。
+
+#### 8.34.12-③ C 包重做：管理员在**产品界面**完成配置（不调用 handler）
+
+**正式界面**：配置工作台 `/admin/business-config?root_menu_xmlid=smart_construction_core.menu_sc_root`
+（左侧「产品配置」，需 `group_smart_core_business_config_admin` ＋入口面）。
+
+**选择 878 的具体操作**：「选择业务页面」→ 搜索框占位符 `输入页面名称` → 目录行
+`公司&项目退款 系统菜单 / 财务中心 · 入口 878 页面类型 表单 配置记录 1/2，作用域匹配 1/2（非页面验收）`
+→ 该行「选择」。选中后面板显示 `正在配置 公司&项目退款`、`可设计表单`。
+
+**编辑／预览／发布／刷新／回滚**（全部走界面按钮，逐步记录实际 intent）：
+
+| 步骤 | 界面动作 | 观测 |
+|---|---|---|
+| 编辑 | 「配置表单与布局」→ `data-bound-form-designer[data-ready=true]`；控件 `选择字段／字段显示名称／字段显示／新分组名称` | 设计器就绪 |
+| 存草稿 | 「保存配置草稿」 | `ui.business_config.change_set.stage` ok，变更集 **438**，1 项 |
+| 预览 | 「验证并预览」 | `ui.business_config.change_set.preview` ok，返回 preview token |
+| 发布 | 「发布配置」 | `ui.business_config.change_set.publish` ok；`contract_id=674`、`version_no=5`、`post_publish_hash` 稳定 |
+| 刷新 | 同一标签页打开生效页（应用 token 在**按标签页** `sessionStorage`，故新开标签只会得到登录页） | 生效页读到**配置后的字段标签** |
+| 回滚 | 工作台「版本记录」→「恢复上一版本配置」→「确认继续」 | `ui.business_config.contract.versions` → `ui.business_config.contract.rollback`；界面自述 `表单新建态：使用默认配置；产品默认 #176 · v2`，横幅「配置已回滚并发布」 |
+
+**回滚后的运行态核对（本地现场已复原）**：生效页不再含配置标签、仍含基线标签；契约 674
+`active=False`（不再生效），产品默认 176 `active=True · v2`，邻居 173／175 `active=True · v2`
+且 `write_date` 停在产品默认发布时刻（21:38），**本轮未变**；三入口契约身份与本轮升级后基线
+**逐字节一致**：875 `2ee745c5106f…`、877 `29acd5e7262f…`、878 `90ab264ae272…`。
+
+**写入口径（第四轮，如实登记）**：本轮**在产品界面发布并回滚了一次表单配置**
+（变更集 437／438，契约 674），并**创建了临时上下文记录**（147／172／188），**未持久化目标业务
+单据**。变更集行的状态与契约停用是两条不同的记账：`版本记录`的回滚以**停用契约**记账（674
+`active=False`），变更集行保留为审计历史（437／438 仍记 `published`）。第二轮曾用的
+「创建／修改了临时上下文记录，未持久化目标业务单据、未修改配置」口径**不再覆盖本轮**。
+
+**875／877 的隔离反例（不重复完整闭环）**：两者只验证隔离——契约 173／175 身份、版本号与生效
+状态在本轮全程未变，未产生任何属于它们的配置记录。自定义字段保持**未覆盖**。
+
+#### 8.34.12-④ 两处证据表述修正（本次补正，不重跑）
+
+- **配置闭环写入范围**：第三轮 8.34.11-③ 的五步闭环由 `TestContextWorkspaceNativeLowcode`
+  **直接调用 handler**、在**测试事务内**执行，应写「**测试事务内执行，未持久化配置变更**」。
+  它证明合成／约束／回滚机制，**不能**替代管理员在产品界面的配置路径（后者见 8.34.12-③）。
+- **首次指纹失败归因**：8.34.11-⑥ 原写"注册表尚未稳定"，该归因**证据不足，已撤销**（详见该处
+  修正框）：首次失败后重跑成功只证明**重跑通过**。
+
+#### 8.34.12-⑤ 本轮修改范围
+
+| 层 | 文件 | 内容 |
+|---|---|---|
+| 前端共享组件 | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` | 反馈带轨道改为 `minmax(0,1fr)`；不再按内容收缩 |
+| 前端共享组件 | `frontend/apps/web/src/components/design-system/ScInlineState.vue` | 告警体声明占满告警预留宽度（**已被 8.34.13 取代**：该写法依赖 TDesign 内部选择器，已改为项目自有容器机制） |
+| P4 验证工具 | `frontend/apps/web/scripts/formal_form_representative_journey.mjs` | 新增 `collapsed_callouts` 宽度／裁剪断言 |
+| P1 视图 | `addons/smart_construction_core/views/support/{team_loan_deduction,current_account,company_project_refund}_workspace_views.xml` | 使用说明文案 |
+| 测试 | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` | `USAGE_NOTE_MARKERS` 同步 |
+
+第三轮改动（24 条路径）仍在同一分支工作区，未回退。
+
+#### 8.34.12-⑥ 本轮分层验证结果
+
+- **L2**：四 tag 整组 PASS，`0 failed, 0 error(s) of 41 tests`（`TestContextWorkspaceNativeLowcode`
+  ＋`TestTeamLoanDeductionWorkspace`＋`TestCurrentAccountWorkspace`＋`TestCompanyProjectRefundWorkspace`）。
+- **L1** `make ci.local.iteration`：**PASS**，`change_state=dirty`、`scope=unclassified_by_design`、
+  `coverage=L1_only`、`receipt=none`、`changedPathCount=31`、`unmappedPathCount=24`、
+  `manualNonZeroL2Required=true`。计数含义与逐路径覆盖见 8.34.11-⑥b：**仍是同一 24 条**，本轮新增的
+  3 条路径（两个前端共享组件 ＋ 一个 P4 脚本）**命中**了增量推荐映射，未进入未映射集合，
+  因而 `unmappedPathCount` 未变化。本轮仍未为归零扩造规则。
+- **L3**：`smart_construction_core` `installed`（`latest_version=17.0.0.168`）；本轮三份视图 XML 经
+  `make local.dev.upgrade MODULE=smart_construction_core` 重新入库、服务重启后回读确认：三视图
+  均含新使用说明文案，且办理提示为 `invisible="not processing_advisory"` 的非分组内联反馈。
+- **L4** 只读代表面 `FORM_LOWCODE_TOPIC=context_workspace FORM_LOWCODE_REPRESENTATIVE=1`：**PASS**，
+  `artifacts/lowcode-form-loop/browser/representative-report-context_workspace.json`：
+  `ok=true`、`restored=true`、`browser_errors=[]`、`representative_uncovered=[]`、
+  `representative_blocked=[]`；三个 surface（875／877／878）status `passed`，各自 create 路线的
+  `findings.collapsed_callouts=[]`——**新增的宽度／裁剪断言已进入常跑门禁**。
+- **浏览器（本轮定向，非最终 Quick）**：三入口 × 桌面 1440／窄屏 390 排版实测（8.34.12-①）、
+  三个新建受管临时记录的可读身份（8.34.12-②）、878 的管理员配置闭环
+  `选择 → 编辑 → 存草稿 → 预览 → 发布 → 刷新 → 回滚`（8.34.12-③）。
+
+#### 8.34.12-⑦ 本轮未覆盖项与未执行项
+
+- **未覆盖**：每表单字段策略编辑器对三个 transient 工作台仍不可用（**已命名的能力限制**，
+  不改名通过）；875／877 只验证隔离；自定义字段未覆盖。
+- **未执行**：最终 Quick、推送、建 PR、合并、部署、冻结、G09 启动、G07 浏览器矩阵重跑。
+  **台账保持 25**。
+- **交回重点**：用户如何从这三个工作台进入正式办理（8.34.12-②）、合法配置如何作用于页面
+  （8.34.12-③，产品界面路径）；授权差异表保留至最终独立复核。
+
+#### 8.34.13-① 复核判定：内部厂商选择器不可冻结，且**既有守卫已经捕获**
+
+第四轮可见效果通过（878 桌面／390 换行正常、新建说明文案准确、临时记录 147 可读名与办理按钮、
+配置工作台可选 878 并进入「表单字段与布局」），但源码在
+`frontend/apps/web/src/components/design-system/ScInlineState.vue` 新增两条 TDesign 内部选择器：
+
+```
+.sc-inline-state :deep(.t-alert__message){min-width:0}
+.sc-inline-state :deep(.t-alert__description){flex:1 1 auto;min-width:0;width:100%}
+```
+
+`docs/frontend_productization/rendering-detail/official-design-alignment-inventory-v1.json` 的
+authority 明确要求 `inherit official defaults; customize only through installed public CSS
+variables; internal vendor selectors require removal`，完成规则为
+`internalVendorSelectorGapCount=0`。因此该项**未通过**，不能因为视觉修好了就冻结。
+
+**既有守卫无需新造，且本轮实测已经抓到**：`scripts/verify/frontend_inline_state_guard.py` 早已把
+`:deep(.t-alert__description)` 列为禁用形态，第四轮版本在该守卫下**直接 FAIL**
+（`inline state bypasses the official Alert slot boundary with :deep(.t-alert__description)`）；
+它已挂在前端守卫链上（`make/frontend.mk` 的 `verify.frontend.rendering_detail_state.unit`）。
+本轮只做两处**收紧**，未放宽任何规则：
+
+- 禁用元组补上复核点名的另一条 `:deep(.t-alert__message)`；
+- 新增三条**正向**标记要求（`container-type:inline-size`、`inline-size:100cqi`、
+  `grid-template-columns:minmax(0,1fr)`），使"内部选择器依赖"与"项目自有宽度机制"双向都可被守卫识别；
+- `scripts/verify/test_frontend_inline_state_guard.py` 增两条用例（内部选择器识别／正向标记必需）。
+
+#### 8.34.13-② 锁定版本 Alert 的公开面核查与**合法**宽度机制
+
+核查锁定版本 `tdesign-vue-next@1.20.5`（`es/alert/alert.mjs`、`props.mjs`、`es/alert/style/index.css`）：
+
+- 公开 props：`close`／`closeBtn`／`default`／`icon`／`maxLine`／`message`／`operation`／`theme`／`title`／`onClose`／`onClosed`；
+- 公开 slots：`default`（正文）／`message`（仅在无 `default` 时兜底，落点相同）／`operation`／`title`／`icon`／`close`；
+- **公开 CSS 变量：无**。官方样式里正文体的宽度是**硬编码**的 flex 属性而非变量：
+  `.t-alert__message{width:100%;display:flex}`、`.t-alert__description{flex:0 1 auto}`；
+- `renderDescription()` 恒把 `default` 插槽包进该 flex item，因此**不存在**可用的公开
+  prop／slot／CSS 变量让正文体生长。这正是第四轮不得不 `:deep()` 的原因，也是本轮必须换机制的原因。
+
+**合法替代（宽度责任落回项目自有内容容器，全程不触碰厂商内部元素名）**：
+
+1. `.sc-inline-state{container-type:inline-size}` —— 自有根类＋仓库**既有**机制
+   （`FormSection.vue`／`ProductListHeader.vue` 等已在用容器查询与 `cq*` 单位）；
+2. `.sc-inline-state__description{display:grid;grid-template-columns:minmax(0,1fr);inline-size:100%;max-inline-size:100%;min-inline-size:0;overflow-wrap:anywhere}`；
+3. `.sc-inline-state__description::after{content:"";display:block;block-size:0;inline-size:100cqi}` ——
+   自有度量元素只声明**最大宽度**，真实宽度仍来自告警带；正文体因此既能占满预留宽度，**又可被
+   flex 收缩到恰好可用宽度**（若把 `100cqi` 直接写在正文体上，会因固有宽度变成定值而无法收缩，
+   实测溢出 30px、右侧被裁剪，故不采用）。
+
+第四轮的 `.native-form-feedback__content` 原生反馈网格修复（显式 `minmax(0,1fr)` 轨道）**原样保留**，
+未回退。
+
+#### 8.34.13-③ 定向检查：四形态 × 桌面 1440／390
+
+用 Vite 根目录临时开发页（**删除后交回，未入库**）挂载真实 `ScInlineState`，四形态实测，
+并做「当前实现」与「重新注入两条已退役声明」的 A/B，两组都必须保持不变量：
+
+| 形态 | 桌面 1440 带宽／正文宽／最小文本叶 | 窄屏 390 带宽／正文宽／最小文本叶 | 裁剪 | 操作区 |
+|---|---|---|---|---|
+| 普通文本 | 1408／1330／1330 | 358／280／280 | 无 | — |
+| 网格内容 | 1408／1330／56（事实标签列） | 358／280／56 | 无 | — |
+| 带操作区 | 1408／1272／1272 | 358／222／222 | 无 | 42px 可见可用 |
+| 错误状态 | 1408／1330／1330 | 358／280／280 | 无 | — |
+
+六组组合文档级无横向溢出（`scrollWidth==clientWidth`），无文本叶窄于 24px，无正文／网格横向裁剪。
+A/B 结果：**注入已退役声明前后，四形态的可见不变量全部成立**（差别只在正文体的 flex 占宽，
+不影响带宽、换行、操作区与裁剪）。截图：`/tmp/g08-r5-{desktop,narrow}-inline-state.png`。
+
+#### 8.34.13-④ 关键回归证据：先删不补**确实回归**，补齐合法机制后复现第四轮通过态
+
+**第一步（只删内部选择器、不补合法机制）在真实面失败**：`FORM_LOWCODE_TOPIC=context_workspace
+FORM_LOWCODE_REPRESENTATIVE=1 make local.dev.form_lowcode.browser` →
+`context_workspace action 875 create: a full-width callout must give its copy a definite track`，
+实测命中 `{"width":1111,"clipped":true,"squeezed":[{"class":"professional-base-field-control__readonly","width":14}]}`。
+⇒ 两条内部选择器在本批**是承重的**，不能只删不补；该失败先于任何"通过"结论被观测到，
+未以旧证据顶替。
+
+**第二步（补齐 8.34.13-② 的合法机制）同一门禁 PASS**：
+`artifacts/lowcode-form-loop/browser/representative-report-context_workspace.json`：
+`ok=true`、`restored=true`、`browser_errors=[]`、`representative_uncovered=[]`、
+`representative_blocked=[]`，三 surface（875／877／878）`passed`、各自 create 路线
+`findings.collapsed_callouts=[]`。
+
+真实面逐带复测（与 8.34.12-① 第四轮**通过态逐格一致**，即机制更换未改变可见几何）：
+
+| 入口 | 视口 | 使用说明带 | 办理提示带 | 文档横向溢出 |
+|---|---|---|---|---|
+| 875 | 1440 | 1111x22（1 行） | 1111x36（1 行） | 无（1440/1440） |
+| 877 | 1440 | 1111x22（1 行） | 1111x36（1 行） | 无 |
+| 878 | 1440 | 1111x22（1 行） | 1111x36（1 行） | 无 |
+| 875 | 390 | 325x88（4 行） | 325x36（1 行） | 无（390/390） |
+| 877 | 390 | 325x88（4 行） | 325x48（2 行） | 无 |
+| 878 | 390 | 325x88（4 行） | 325x70（3 行） | 无 |
+
+#### 8.34.13-⑤ 本轮最小差异
+
+| 层 | 文件 | 内容 |
+|---|---|---|
+| 前端共享组件 | `frontend/apps/web/src/components/design-system/ScInlineState.vue` | 删除两条 `:deep(.t-alert__*)`；改为自有根类 `container-type` ＋ 自有轨道 ＋ 自有度量元素（`::after`） |
+| P4 守卫 | `scripts/verify/frontend_inline_state_guard.py` | 禁用元组补 `:deep(.t-alert__message)`；新增三条正向标记要求 |
+| P4 守卫单测 | `scripts/verify/test_frontend_inline_state_guard.py` | 新增两条用例 |
+| 生成物 | `docs/frontend_productization/rendering-detail/{component-professionalization,visual-projection,official-design-alignment}-inventory-v1.json` | 随源码变更刷新指纹（**仅 digest 变化，无结构变化**） |
+| 文档 | 本文件 | 8.34.13 ＋ 状态 |
+
+#### 8.34.13-⑥ 本轮验证与未执行
+
+- 受影响门禁 `make verify.frontend.rendering_detail_state.unit`：**PASS**（56 测 0 failed；
+  `frontend_inline_state_guard` PASS；`official_design_alignment` `internalVendorSelectorGapCount=0`；
+  `rendering_detail`／`visual_projection` 生成物一致）。
+- 真实面只读代表面：**PASS**（见 8.34.13-④）。
+- **未执行（按复核指示）**：配置发布／回滚重跑、后端四 tag、整组业务矩阵、最终 Quick、推送、
+  冻结、G09 启动。
+- 组件边界结论：**内部厂商选择器依赖已移除，宽度责任落在项目自有内容容器**；本轮只补受影响路径。
+
+### 8.34.14 冻结轮：首跑 Quick 捕获的 P0 门面门禁回归与修复（2026-09-19）
+
+#### 8.34.14-① 首跑 `make ci.local.quick` **失败**（真实门禁回归，非环境／基线问题）
+
+| 项 | 事实 |
+| --- | --- |
+| 候选 | `c7cb7b75e385907a1d5a9f602ccfa7065f8bdc0b`（冻结前生成物刷新提交，工作区 clean） |
+| 失败点 | `scripts/verify/contract_governance_domain_overrides_split_guard.py` |
+| 失败输出 | `contract_governance.py missing domain override split token: _domain_overrides.register_contract_domain_override(name, handler, priority=priority)` |
+| 分类 | **实现侧（P0 门面）接口扩展**导致既有 P4 结构 token 失配；不是环境缺陷、不是基线／证据缺陷、也不是守卫误判 |
+| 首次偏差点 | `addons/smart_core/utils/contract_governance.py` 的 `register_contract_domain_override` 委派行被改写为多行并追加 `native_authority_safe=` 关键字 |
+
+守卫钉住的是结构不变量——**门面只做单行委派、注册表本体住在拆分模块**。本批新增
+`native_authority_safe` 参数时把该委派行整体重排，字面 token 因此不再命中，Quick 在链尾
+`contract_governance_domain_overrides_split_guard`（`make/ci.mk:910`，链尾第 30 条命令）处
+fail-closed 停止（收据未签发）。
+
+#### 8.34.14-② 修复归属：改实现，不改规则
+
+- 把 `native_authority_safe` 的转发拆成**独立委派调用**；默认路径保留守卫钉住的单行委派
+  `_domain_overrides.register_contract_domain_override(name, handler, priority=priority)`。
+- **未修改** `scripts/verify/contract_governance_domain_overrides_split_guard.py`：token 列表、
+  禁用项与 `MAX_GOVERNANCE_LINES=1792` 行预算全部原样保留，**没有**把规则改成迁就实现。
+- 行为等价：两种写法在 `DOMAIN_OVERRIDE_REGISTRY` 产出的行字段完全一致
+  （`name` / `priority` / `handler` / `native_authority_safe`），仅源码文本变化；因此第五轮
+  运行态证据的**行为**结论不受影响，但候选指纹随后更新，运行态报告按 8.34.14-④ 重新绑定。
+
+#### 8.34.14-③ 修复后复验（只补受影响路径）
+
+| 检查 | 结果 |
+| --- | --- |
+| `contract_governance_domain_overrides_split_guard.py` | **PASS** |
+| Quick 链尾 24 项定向守卫／smoke（`construction_core_extension_*`、`ui_contract_v2_responsibility_map`、`v1_1_convergence_status`、`action_view*`、`frontend_page_contract_*`、`frontend_contract_consumer_intrusion`、`frontend_shared_surface_semantic_boundary`、`product_client_action_boundary`、`test_frontend_release_evidence_bundle`） | **PASS**（`tail_guard_failures=0`） |
+| L2 `TEST_TAGS="uc4_native_lowcode"` | **PASS** `0 failed, 0 error(s) of 97 tests` |
+| `make ci.delivery.freeze.prepare` | **PASS**；生成物仅随行数变化（`contract_governance.py` 1406→1412），无结构变化 |
+
+#### 8.34.14-④ 冻结身份与冻结后的证据绑定口径
+
+- 分支 `feature/uc4-g08-context-workspace-native-v1`；基线 `26d254ad`；**冻结 HEAD 即本记录所在提交**
+  （`git log -1 --format=%H`）；冻结时 `git status --porcelain=v1 --untracked-files=all` 为空；
+  相对基线改动 **40 条路径**。
+- 为保证 `ci.local.quick` 的 exact-head 收据与冻结指纹**同一绑定**，冻结提交之后**不再产生仓库提交**：
+  受影响运行态复检（代表面 journey ＋ 后端加载代码／模块升级状态核对）与最终 Quick 的结果，
+  记录在**外部归档报告**（`/home/lidefend/workspace/.codex-evidence/workspace-archives/`）与
+  `artifacts/lowcode-form-loop/browser/representative-report-context_workspace.json`。
+- 台账保持 **25**；未推送、未部署；G08 入口退役的台账核减仍按既定规则**待合入后独立核对**。
+
+#### 8.34.14-⑤ 冻结轮独立复核：授权差异与拒绝反例按**实际主体**重测（含一处记录更正）
+
+**复核方式（只读）**：`odoo shell` 探针直接调用与客户端同一份 route authority 契约
+（`IdentityResolver.build_role_surface` → `DeliveryEngine.build` → `route_authority`），
+按 `(action_id, res_model)` 统计每个载体的候选菜单数（即 `_sc_entry_menu_ids` 的判据）；
+建档能力用 `savepoint` 包裹的**真实** `create` 测量并**回滚**——本轮评审**未持久化任何记录**。
+运行态加载代码已核对：`contract_governance.py` 容器内 `sha256=51e7b21d…3ae3d`，与宿主一致；
+`DOMAIN_OVERRIDE_REGISTRY` 中 `native_authority_safe` 条目**恰好 1 条**
+（`smart_construction_core.context_workspace_form`，priority 30）。
+
+| 主体（`role_code`） | 875 入口 | 877 入口 | 878 入口 | 875 载体 | 877 载体 | 878 载体 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `project_member`（`demo_role_project_manager`／`demo_role_project_user`） | 可见 | 不可见 | 不可见 | **3／3 配对** | 553／372（无 877 入口，不可达） | 372（无 878 入口，不可达） |
+| `finance`（`demo_role_finance` 等 7 个主体） | 不可见**且建档被 ACL 拒绝** | 可见 | 可见 | 3／3 | **6／6 配对** | **5／5 配对** |
+| `system_admin`／`business_full`／`business_config_admin` | 不可见 | 不可见 | 不可见 | 0／3 | 0／6 | 0／5（均业务文案 fail-closed，非静默放行） |
+
+**结论**：**14 个派发载体在其归属角色的导航面上 14／14 全部可配对**（finance 11 ＋ project 3），
+这比第三轮只登记「目标类型覆盖」更强；且**未新增任何原生菜单可见性**——路由仍由当前用户原生菜单
+可见性门控，`create` 仍由模型 ACL 把关。
+
+**两处记录更正（原句把合成主体的行为写成 fixture 主体的行为）**：
+
+1. §8.34.11-④(c) 原写"project **read** principal 既拿不到 875，也拿不到载体路由"。实测 fixture
+   `demo_role_project_read` 同时持 `finance_read`，因此**拿到**三条载体路由
+   （553／563／372，`CONTEXTUAL_ROUTE`）；它拿不到的是 875 **入口菜单**（该菜单持组为项目经办／
+   主管），且三个 workspace 的 `create` 被 ACL 拒绝——即"进不了工作台"，不是"没有载体路由"。
+2. §8.34.11-④(c) 原写 `demo_role_project_user`"在 877／878 上被 workspace ACL 挡在建档之前"。
+   实测该主体持 `finance_user`，对 `sc.current.account.workspace`／
+   `sc.company.project.refund.workspace` 的 `create` **允许**（savepoint 内真实 create 成功并回滚）；
+   被 ACL 挡在建档之前的是**只持 `group_sc_cap_project_user`** 的合成主体（L2
+   `test_a_principal_outside_the_role_surface_is_refused` 断言）。其 875 三个载体上轮 fail-closed
+   的原因是**模型侧项目经办守卫**（`_check_project_operator`：「你不能为当前非本人负责或未关注的
+   项目办理班组借扣款。」），不是路由授权缺失——主体只要是该项目经办人，三个载体即可正常配对。
+
+**未变更的结论**：本批**未改任何 ACL**（`git diff --name-only 26d254ad..HEAD` 无 `security/`／
+`access` 路径）；扩大的是角色导航面声明，且只对"原生已可见这些菜单"的主体生效。
+
+### 8.34.9 状态
+
+状态：**G07 已集成（主线 `26d254ad`，台账 25）｜G08 结构迁移与四轮整改已完成；第四轮集中产品
+复核判定「可见效果通过、仅余组件边界」｜第五轮已移除 TDesign 内部选择器、把宽度责任落回项目
+自有容器（真实面先复现回归、再复现第四轮通过态）｜**冻结轮首跑 Quick 在链上第 29 项守卫处
+捕获 P0 门面门禁回归，已在实现侧修复且守卫未放宽（`make/ci.mk:910`）｜冻结轮独立复核按**实际主体**重测授权差异，更正 §8.34.11-④(c) 两处拒绝反例主体（见 8.34.14-⑤）**｜
+**已冻结（冻结 HEAD 即本记录所在提交）**｜
+未推送、未部署｜台账保持 25（本批不扣减）｜89 入口整体交付未完成**。
+
+第五轮状态要点（与 8.34.13 配套）：
+- **工作树**：`feature/uc4-g08-context-workspace-native-v1`，基线 `26d254ad`。本轮把第二～五轮成果
+  收拢提交；三个临时探针脚本（组件探针页／A-B 脚本／真实面测量脚本）**已删除、未入库**。
+- **唯一阻断项处置**：删除 `ScInlineState.vue` 的两条 TDesign 内部选择器，改为项目自有容器机制
+  （`container-type:inline-size` ＋ `minmax(0,1fr)` 轨道 ＋ `::after` 度量元素）；守卫随之**双向收紧**
+  （禁用 `:deep(.t-alert__message)`／`:deep(.t-alert__description)`；正向要求自有机制三标记）。
+- **已跑门禁**：`make verify.frontend.rendering_detail_state.unit` **PASS**（含
+  `internalVendorSelectorGapCount=0`）；真实面只读代表面 **PASS**（三 surface
+  `collapsed_callouts=[]`，逐带几何与第四轮通过态逐格一致）。
+- **本轮写入（如实）**：仅源码／守卫／单测／生成指纹／本文件；**未发布或回滚配置、未创建业务单据、
+  未修改业务数据**（运行后输出 `[local.dev.form_lowcode.browser] business fingerprints unchanged`）。
+- **未执行**：最终 Quick、推送、建 PR、合并、部署、冻结、G09 启动；配置发布／回滚与后端四 tag
+  按复核指示未重跑。
+- **台账保持 25**：G08 入口退役核减仍按既定规则待合入后独立核对。
+- **交回重点（第五轮）**：内部选择器依赖已消除的**最小差异**、四形态定向检查（桌面／窄屏）与真实面
+  逐带复测（8.34.13-③／④），以及守卫双向收紧与"既有守卫已捕获"的事实（8.34.13-①）。
+
+第四轮状态要点（与 8.34.12 配套）：
+- **工作树**：`feature/uc4-g08-context-workspace-native-v1`，基线 `26d254ad`，已提交 HEAD `4c8deaf8`，
+  **工作区 dirty**（第三轮 24 条 ＋ 第四轮 3 条 = **27 条路径**：26 改 ＋ 1 新增
+  `models/support/context_workspace_entry_authority.py`）。第四轮临时探针脚本已全部删除，未入库。
+- **已跑门禁**：L1 `make ci.local.iteration` **PASS**（`changedPathCount=31`、`unmappedPathCount=24`、
+  `manualNonZeroL2Required=true`、`coverage=L1_only`、`receipt=none`）；L2 四 tag 整组 **PASS**
+  （`0 failed, 0 error(s) of 41 tests`）；L3 视图 XML 随 `local.dev.upgrade` 入库并回读确认；L4 只读
+  代表面 **PASS**（`ok=true`、`restored=true`、`browser_errors=[]`、`representative_uncovered=[]`、
+  `representative_blocked=[]`，三 surface 的 `collapsed_callouts=[]`）。
+- **第四轮回答的复核问题**：① 提示排版的**首次宽度丢失点**在**共享组件**（反馈带隐式网格轨道 ＋
+  共享告警体未占满预留宽度），已通用修复并加入常跑宽度断言（含负向对照）；② 新建页操作说明改为
+  「先记录办理上下文，再选择办理事项……」，可读身份改以**本轮新建**的临时记录 147／172／188 验证；
+  ③ 878 的管理员配置路径在**产品界面**打通并**已回滚**（`选择 → 编辑 → 存草稿 438 → 预览 → 发布
+  674 v5 → 刷新 → 版本记录回滚`），运行态回到基线。
+- **本轮写入（如实）**：在产品界面**发布并回滚了一次表单配置**（变更集 437／438），并**创建了
+  三个临时上下文记录**（147／172／188）；**未持久化目标业务单据**。第二轮口径
+  「未修改配置」**不再适用本轮**，见 8.34.12-③。
+- **未闭合项（明确列名，不改名通过）**：每表单字段策略编辑器对三个 transient 工作台仍不可用，
+  登记为**能力限制**；878 之外的另两个入口只验证**隔离**；自定义字段未覆盖。**未开放系统设置 887**。
+- **未执行（保持未执行）**：最终 Quick、推送、建 PR、合并、部署、冻结、G09 启动、G07 浏览器矩阵重跑。
+- **台账保持 25**：G08 入口退役的台账核减按既定规则**待合入后独立核对**，本轮不动台账。
+
+第三轮状态要点（与 8.34.11 配套）：
+- **工作树**：`feature/uc4-g08-context-workspace-native-v1`，基线 `26d254ad`，已提交 HEAD `4c8deaf8`，
+  **工作区 dirty**（第三轮 23 改 ＋ 1 新增 = 24 条路径，含 P1 新增
+  `models/support/context_workspace_entry_authority.py`）。
+- **已跑门禁**：L1 `make ci.local.iteration` **PASS**；L2 `TestContextWorkspaceNativeLowcode` 全类
+  **PASS**（四 tag 整组 `0 failed, 0 error(s) of 41 tests`；其中 `TestContextWorkspaceNativeLowcode`
+  全类 35 测，含第三轮 5 项 C 包测试）；L3 模块 `installed`／
+  `latest_version=17.0.0.168` ＋ 本轮视图 XML 随升级入库；L4 只读代表面 **PASS**（`ok=true`、
+  `restored=true`、`browser_errors=[]`、`representative_uncovered=[]`）。
+- **本轮回答的两个复核问题**：用户如何从这三个工作台进入正式办理（→ 8.34.10-A ＋ 8.34.11-② 的
+  新建页操作说明与可读身份）；合法配置如何作用于页面（→ 8.34.11-③ 的 878 变更集闭环：
+  标签／显隐／order permutation 生效，必填与动作不变，邻居逐字节不变，rollback 回基线）。
+- **未闭合项（明确列名，不改名通过）**：每表单字段策略编辑器对三个 transient 工作台在设计上关闭，
+  登记为**能力限制**；878 之外的另两个入口只验证**隔离**。**未开放系统设置 887**。
+- **未执行（保持未执行）**：最终 Quick、推送、建 PR、合并、部署、冻结、G09 启动、G07 浏览器矩阵重跑。
+- **台账保持 25**：G08 入口退役的台账核减按既定规则**待合入后独立核对**，本轮不动台账。
+
+第二轮状态要点（与 8.34.10 配套，历史留存）：
+- **工作树**：`feature/uc4-g08-context-workspace-native-v1`，基线 `26d254ad`，已提交 HEAD `4c8deaf8`，
+  **工作区 dirty**（第二轮 22 条路径：21 改 ＋ 1 新增，其中 24 条未命中增量推荐映射、3 条映射到前端单测目标）。
+- **已跑门禁**：L1 `make ci.local.iteration` **PASS**（16 静态测 0 failed、`change_state=dirty`、
+  `changedPathCount=27`、`unmappedPathCount=24`、`coverage=L1_only`、`receipt=none`）；
+  L2 四 tag **PASS**（31 测 0 failed 0 error）；L3 模块 `installed`／`latest_version=17.0.0.168` ＋
+  宿主／容器逐文件 `sha256` 一致 ＋ 最终契约回读；L4 只读代表面 **PASS**（`ok=true`、`restored=true`、
+  `browser_errors=[]`、`representative_uncovered=[]`）。
+- **未执行（保持未执行）**：最终 Quick、推送、建 PR、合并、部署、冻结、G09 启动。
+- **台账保持 25**：G08 入口退役的台账核减按既定规则**待合入后独立核对**，本轮不动台账。
+
+补记（2026-09-18，第一轮，仅文档改动）：8.34.8-② 的「`page` 走 create 隐藏分支」由代码推断升级为
+**在受管运行态直接执行治理函数**的观测；8.34.8-③ 补登首次偏差点与影响面。
+**该补记中"仍未覆盖端到端 edit 档位渲染"的结论已在第二轮被取代**：记录面经真实路径观测到，
+端到端 edit 档位已覆盖（见 8.34.8-② 与 8.34.10-A），该句不再作为当前未覆盖项。
+同时，第一轮"G08 把受影响入口由 1 条扩到 4 条"的写法已按实际变更关系收敛（见 8.34.8-③）。
+
+下一步（**未执行**）：集中产品复核（第四轮）→ 按整组页面组织、字段表达、明细操作、导航及配置效果
+统一列问题 → 定向修正 → 冻结候选 → 最终 Quick → 独立复核 → 受管 PR。
+
+**交回重点（第四轮）**：① 用户如何从这三个工作台进入正式办理——新建页操作说明（8.34.12-②）与
+**新生成的受管临时记录**上的页签／副标题／面包屑可读名（147／172／188）；② 合法配置如何作用于
+页面——**管理员在产品界面**的 878 闭环 `选择 → 编辑 → 存草稿 → 预览 → 发布 → 刷新 → 回滚`
+（8.34.12-③，含界面入口、控件清单与实际 intent），以及提示排版的共享组件修复与常跑宽度断言
+（8.34.12-①）。**不再只报结构树与函数测试通过**，也不再以"数章节"代表排版通过。
+
+**交回重点（第三轮，历史留存）**：受影响页面（8.34.11-① 的辅助信息层级、8.34.11-② 的可读身份与
+操作说明）、配置闭环（8.34.11-③ 的 878 五步闭环与三条拒绝面）与授权差异（8.34.11-④ 的两行导航
+差异表与三个拒绝反例）。其中 8.34.11-③ 的闭环口径已按 8.34.12-④ 修正为
+「测试事务内执行，未持久化配置变更」。

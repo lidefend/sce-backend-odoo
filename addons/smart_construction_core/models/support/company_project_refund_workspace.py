@@ -7,6 +7,7 @@ from odoo.exceptions import AccessError, UserError
 
 class ScCompanyProjectRefundWorkspace(models.TransientModel):
     _name = "sc.company.project.refund.workspace"
+    _inherit = ["sc.context.workspace.entry.authority"]
     _description = "公司与项目退款办理工作台"
 
     project_id = fields.Many2one("project.project", string="项目", required=True)
@@ -26,6 +27,10 @@ class ScCompanyProjectRefundWorkspace(models.TransientModel):
             if not record.note:
                 suggestions.append("建议补充退款原因或办理说明")
             record.processing_advisory = "；".join(suggestions) if suggestions else "退款办理上下文已完善"
+
+    def _sc_readable_context_name(self):
+        self.ensure_one()
+        return self._sc_join_context_name(self.project_id, self.partner_id)
 
     def _check_finance_operator(self):
         if (
@@ -83,7 +88,7 @@ class ScCompanyProjectRefundWorkspace(models.TransientModel):
                 "context": context,
             }
         )
-        return result
+        return self._sc_pin_entry_authority(result, label=label)
 
     def action_deduction_refund(self):
         return self._action_values(
@@ -131,4 +136,4 @@ class ScCompanyProjectRefundWorkspace(models.TransientModel):
                 "target": "current",
             }
         )
-        return result
+        return self._sc_pin_entry_authority(result, label="退款关联台账")

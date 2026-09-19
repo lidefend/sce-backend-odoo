@@ -26,9 +26,29 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_certificate_registration",
             "smart_construction_core.menu_sc_company_document_archive",
             "smart_construction_core.menu_sc_document_borrow",
+            # U-C4 G08：875「班组借/扣款登记」上下文办理工作台。该入口菜单自身
+            # 声明为项目中心持组（group_sc_cap_project_user/manager），项目中心
+            # 本应从这里发起班组借/扣款，但角色导航面此前没有列它，项目经办/
+            # 审批能打开单据却打不开工作台，办理路径断在入口。此处按入口自身
+            # 声明的持组对齐项目角色导航面，属于既有授权路径（角色导航面 +
+            # 菜单持组），未新增机制、未改 ACL、未开放系统设置。该条目只在当前
+            # 用户原生可见该菜单时才生成路由，所以只读项目角色看不到这个入口。
+            "smart_construction_core.menu_sc_product_team_loan_deduction_v1",
         ],
         "role_home_menu_xmlids": [],
         "contextual_menu_xmlids": [
+            # U-C4 G08：875 工作台三个派发目标单据的路由。这三张单据的创建/
+            # 读取权限本就授予项目中心经办/审批（见 sc.financing.loan /
+            # sc.expense.claim / sc.finance.project.counterparty.position 的
+            # ACL），但菜单挂在财务中心、此前既未声明进任何角色导航面，也没
+            # 生成 875 按钮所需的路由配对。此处按既有 contextual_menu_xmlids
+            # 机制补路由：只补路由、不新增导航菜单、不改 ACL。该字段同样以当前
+            # 用户原生菜单可见性生成路由（只读角色拿到的是 read 路由，写操作仍
+            # 由模型 ACL 把关），因此财务中心容器仍留在 project_member 的导航
+            # blocklist 中，不会被这条声明整块带出来。
+            "smart_construction_core.menu_sc_contractor_project_borrow",
+            "smart_construction_core.menu_sc_deduction_bill",
+            "smart_construction_core.menu_sc_finance_project_counterparty_position",
             "smart_construction_core.menu_sc_site_documents",
             "smart_construction_core.menu_sc_project_wbs",
             "smart_construction_core.menu_sc_project_kanban",
@@ -357,6 +377,17 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_bid_deposit_return",
             "smart_construction_core.menu_sc_contract_deposit_register",
             "smart_construction_core.menu_sc_contract_deposit_return",
+            # U-C4 G08：上下文办理工作台。这两条入口菜单本身已按
+            # 财务中心经办/主管持组声明并挂在「财务中心」下，但角色导航
+            # 面此前未列，导致财务角色能派发（借款/退款目标本就在其导航面）
+            # 却打不开工作台，办理路径断在入口。此处按入口自身声明的持组
+            # 对齐角色导航面，属于既有授权路径（角色导航面 + 菜单持组），
+            # 未新增机制、未改 ACL、未开放系统设置。
+            # 875「班组借/扣款登记」不在此列：其菜单与模型 ACL 均声明为
+            # 项目中心持组，财务角色既不能建单也不应看到该入口（见本批记录
+            # 的首次偏差登记）。
+            "smart_construction_core.menu_sc_product_current_account_v1",
+            "smart_construction_core.menu_sc_product_company_project_refund_v1",
         ],
         "role_home_menu_xmlids": [],
         "contextual_menu_xmlids": [

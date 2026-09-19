@@ -715,7 +715,7 @@
     },
     {
       "category": "states",
-      "digest": "be42136069216b7741a5665baef62df293525afd830521c5e20c6fe55cc2d121",
+      "digest": "e45929463201f9fcc1bb3b9a9417f75318cd9d0ce2e05d60dbb630dcefb34528",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScInlineState.vue",
       "referenceNativeStyleSelectors": [],
@@ -1657,7 +1657,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "b7c07d71715bda56f820ec64cd0e44e989f2e8643a083367f497518defb3d51b",
+      "digest": "193b9d43f3272da307a510ed3ee0d60b7a2fa36aba8793dd3aba2e9ac036e44e",
       "nativeStyleSelectors": [],
       "path": "components/professional-fields/ProfessionalBaseFieldControl.vue",
       "referenceNativeStyleSelectors": [],
@@ -1776,7 +1776,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "c084d56b5072b010d17206b55536d13a552f686caf578937d1b0d2ea0dc4aa25",
+      "digest": "c08eb69873de8461493e9d9cf2a5ac6c7c5f6f32df12192266f782cc2b76a004",
       "nativeStyleSelectors": [],
       "path": "components/template/FormSection.vue",
       "referenceNativeStyleSelectors": [
@@ -1821,7 +1821,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "361999253a4cd40e0f46140484f0e98133413a7e84aba98bb868498ec3226b7e",
+      "digest": "7b2f3b9f943e140c85f4dec2a8c0e0125387af7d634a2be02279dbd8d9fd95ca",
       "nativeStyleSelectors": [],
       "path": "components/template/NativeFormTreeRenderer.vue",
       "referenceNativeStyleSelectors": [],
@@ -2007,7 +2007,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "53ff0b6e4cf721a4ad870750b0ca077c3af1ea546da69f87d101d431ddb293ac",
+      "digest": "af60f510bfbccf733cd61d2fa38a51f64afc29460b59819fa3a8722da7ac3aaf",
       "nativeStyleSelectors": [],
       "path": "pages/ContractFormPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2031,7 +2031,7 @@
     },
     {
       "category": "collection",
-      "digest": "a856533cec732cf204ba98b51859fb9329b486e255441417ca34ff56a090c38d",
+      "digest": "f20ccbacb99cf33229875de28fdb957bdd6777e1448301ef81ca7ee2f60db236",
       "nativeStyleSelectors": [],
       "path": "pages/ListPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2133,7 +2133,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "1e88fbf867912ab47cab0196ab08c8ce653186b3b11982b76b7d52756be045c2",
+      "digest": "e8f831bbd3c497b7a28eb919c23fe8f77104e1b8ab59ba56f3f90f8500531335",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormDriverHost.vue",
       "referenceNativeStyleSelectors": [
@@ -2169,7 +2169,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "e5ee78776314f5c6bdf66a7804f4bdd593860b02ff19e5cb593c0d066d6f1af4",
+      "digest": "7f54007f3d6f6634a443bd1e594ed7ba2765b0b3728793fbfb95d026e25354cb",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormProductHeader.vue",
       "referenceNativeStyleSelectors": [],
@@ -2231,7 +2231,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "68ba9870a78fb905efa6a2e365d531e585d7ef25b8a60937336e9e04d940e5cc",
+      "digest": "1c202e44f454ce0bdc37901e7a43740d3b0a193268852121b5fca60f9366bf8d",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/FormSectionNavigation.vue",
       "referenceNativeStyleSelectors": [],
@@ -2445,7 +2445,7 @@
     },
     {
       "category": "collection",
-      "digest": "8102247482d60f71d89e2f2aa7704d6722b701d267b64cc81873dc9d8e3e84a5",
+      "digest": "12be3b794481f46b1822ab11c84c3f4d70c9472416fc0150af74b1393b135c47",
       "nativeStyleSelectors": [],
       "path": "views/ActionView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2880,7 +2880,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "daf048b56ffc40b9ab8174af02724efd94aba06d05b116b629cc9aa5ccdeb226",
+  "currentInputDigest": "e036af0154eafc61bffe7c56f5758e2525fc1fb80b128563b9fc8a5db2bed637",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

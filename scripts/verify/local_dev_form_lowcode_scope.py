@@ -125,6 +125,25 @@ TOPIC_IDENTITIES = {
         ("action_sc_bonus", "view_sc_hr_payroll_document_form", "menu_sc_bonus"),
         ("action_sc_product_project_salary_payment_v1", "view_sc_hr_salary_payment_form", "menu_sc_product_project_salary_payment_v1"),
     ),
+    # U-C4 G08: the 上下文办理工作台 group (875/877/878) keeps three dispatch
+    # workspaces, each on its own model and its own primary native form.  Every
+    # entry consumes one shared-shape body: the native arch owns the 办理上下文 /
+    # 办理说明 section identity (data-sc-anchor) and the header action carriers,
+    # while the entry contract keeps only its title and its semantic declaration
+    # (fact_authority / fact_models / projection_authority).  All three routes are
+    # registered read-only so the representative pass observes each entry on its
+    # own form and proves no entry re-projects a neighbour's body.
+    #
+    # Dispatch-only registration: all three models are TransientModel dispatch
+    # surfaces with no persisted record, so no record route is registered and no
+    # business sample is created.  The scope report carries the structural fact
+    # per entry instead (`sample_state=empty_action_domain` with
+    # `business_row_count=0`), which is the honest uncovered registration.
+    "context_workspace": (
+        ("action_sc_product_team_loan_deduction_v1", "view_sc_team_loan_deduction_workspace_form", "menu_sc_product_team_loan_deduction_v1"),
+        ("action_sc_product_current_account_v1", "view_sc_current_account_workspace_form", "menu_sc_product_current_account_v1"),
+        ("action_sc_product_company_project_refund_v1", "view_sc_company_project_refund_workspace_form", "menu_sc_product_company_project_refund_v1"),
+    ),
 }
 TOPIC_SAMPLE_FIELDS = {
     "invoice": ["direction", "source_kind", "source_origin", "note"],
@@ -137,6 +156,7 @@ TOPIC_SAMPLE_FIELDS = {
     "expense_claim": ["state", "source_origin", "claim_type", "claim_flow_label"],
     "tax_deduction": ["state", "deduction_scope", "deduction_flow_label", "source_origin"],
     "payroll": ["state", "fact_type", "period_year", "period_month", "legacy_document_no"],
+    "context_workspace": ["project_id", "partner_id", "business_date", "note"],
 }
 # Mechanism assertions for the read-only representative pass.  Names are the
 # registered display copies / canonical sources of the same business fact; the
@@ -249,6 +269,19 @@ TOPIC_REPRESENTATIVE = {
     # conditional 历史来源 section is observed as legal hiding instead of a lost
     # fact.  Read-only; no change set is touched.
     "payroll": {"section_navigation": True, "record_surface": True},
+    # U-C4 G08: the dispatch workspaces keep two anchored native groups
+    # (办理上下文 / 办理说明), so the mechanism assertion is the section navigation
+    # battery: every 章节入口 must resolve and reveal its target below the pinned
+    # band at 1088 and 390.  The 办理提示 advisory is deliberately *not* a group:
+    # it renders as a non-section inline callout (`ScInlineState`) and only when
+    # there is something for the user to act on, so it owns no `data-sc-anchor`
+    # and can never become a section navigation item.
+    # `dispatch_only` records that no business row is
+    # created for the reduction: a dispatch context is a transient row the entry
+    # hands to a formal document, so the read-only pass must not manufacture one.
+    # It does not mean the model has no record surface -- a transient model does
+    # carry rows and has a legal edit state; the pass simply does not create one.
+    "context_workspace": {"section_navigation": True, "dispatch_only": True},
 }
 if topic not in TOPIC_IDENTITIES:
     raise RuntimeError("unregistered formal form topic")

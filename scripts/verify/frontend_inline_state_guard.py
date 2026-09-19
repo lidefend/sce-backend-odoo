@@ -24,6 +24,9 @@ def validate(sources: dict[str, str] | None = None) -> list[str]:
         ":aria-busy=\"state === 'loading' || undefined\"",
         '<span class="sc-inline-state__description"><slot>{{ label }}</slot></span>',
         ".sc-inline-state[data-state='info'] .sc-inline-state__description",
+        "container-type:inline-size",
+        "inline-size:100cqi",
+        "grid-template-columns:minmax(0,1fr)",
         "background: var(--sc-app-info-bg)",
         "border-color: var(--sc-app-info-border)",
         "color: var(--sc-app-info-text)",
@@ -31,7 +34,11 @@ def validate(sources: dict[str, str] | None = None) -> list[str]:
     ):
         if marker not in inline:
             failures.append(f"inline state missing {marker}")
-    for forbidden in (":deep(.t-alert__description)", ':message="label"'):
+    for forbidden in (
+        ":deep(.t-alert__message)",
+        ":deep(.t-alert__description)",
+        ':message="label"',
+    ):
         if forbidden in inline:
             failures.append(f"inline state bypasses the official Alert slot boundary with {forbidden}")
     for forbidden in ("project.project", "payment.request", "action_id", "menu_id", "付款", "项目"):

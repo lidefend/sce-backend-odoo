@@ -167,6 +167,7 @@
           @selected-group-visibility-change="onSelectedFormSettingsGroupVisibilityChange"
         />
         <ContractFormDriverHost v-if="!showCurrentFormFieldConfigScope" actions-in-header :render-model="canonicalFormRenderState.model" :error="canonicalFormDriverError" :driver-config="contractFormDriverConfig" :busy="busy" :claimed-statusbar-node-identity="nativeStatusbarNodeIdentity" :claimed-statusbar-field-code="nativeStatusbar.field" :collaboration-panel-listeners="nativeCollaborationPanelListeners" :collaboration-panel-props="nativeCollaborationPanelProps" :relation-adapter="relationFieldAdapter" :show-collaboration-panel="showNativeCollaborationPanel"
+          :suppress-collaboration="dispatchContextCollaboration"
           @driver-change="changeContractFormDriver"
           @field-change="onTemplateFieldChange"
           @field-action="onContractFieldAction"
@@ -624,6 +625,8 @@ import {
   resolveNativeAttachmentContract,
   resolveNativeChatterContract,
   resolveNativeCollaborationUserSearchIntent,
+  resolveDeclaredFormGovernance,
+  isDispatchContextGovernance,
   resolveRuntimeCollaborationContract,
 } from './contractForm/collaborationContract';
 import {
@@ -1209,10 +1212,19 @@ const isStandardIntakeMode = computed(() => {
   return String(route.query.intake_mode || '').trim().toLowerCase() === 'standard';
 });
 const isIntakeCreateMode = computed(() => isQuickIntakeMode.value || isStandardIntakeMode.value);
+// A contract may declare what its create step actually means (for example a
+// transient dispatch workspace records a handling context instead of keeping a
+// draft). The declared label wins over the generic create-profile wording, and a
+// declared dispatch context also owns no collaboration of its own.
+const declaredFormGovernance = computed(() => resolveDeclaredFormGovernance(
+  resolveContractV2RuntimeContract(v2ContractStore.value),
+));
+const dispatchContextCollaboration = computed(() => isDispatchContextGovernance(declaredFormGovernance.value));
 const showNativeCollaborationPanel = computed(() => shouldShowNativeCollaborationPanel({
   hasChatterActions: nativeChatterActions.value.length > 0,
   hasAttachments: Boolean(nativeAttachments.value),
   isIntakeCreateMode: isIntakeCreateMode.value,
+  collaborationSuppressed: dispatchContextCollaboration.value,
 }));
 const intakeAutosaveKey = computed(() => {
   if (!isIntakeCreateMode.value) return '';
@@ -1320,6 +1332,12 @@ const showDraftSaveAction = computed(() => {
 });
 const draftSaveButtonLabel = computed(() => {
   if (busy.value && busyKind.value === 'save') return formUiLabel('saving');
+  const declaredLabel = String(declaredFormGovernance.value.primary_action_label || '').trim();
+  // A dispatch entry records a handling context, so its declared label holds for
+  // the record surface too; every other contract keeps the generic create/edit
+  // wording it has always used.
+  const dispatchContext = isDispatchContextGovernance(declaredFormGovernance.value);
+  if (declaredLabel && (!recordId.value || dispatchContext)) return declaredLabel;
   return recordId.value ? '保存修改' : '保存草稿';
 });
 const showDiscardAction = computed(() => !isIntakeCreateMode.value && Boolean(recordId.value) && hasChanges.value);

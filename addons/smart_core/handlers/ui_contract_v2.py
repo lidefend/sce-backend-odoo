@@ -34,7 +34,8 @@ from ..core.ui_base_contract_asset_repository import (
 )
 from ..core.request_params import parse_positive_int
 from ..utils.contract_governance import (
-    _apply_form_view_capabilities, _mark_record_dependent_native_buttons_hidden_on_create, apply_contract_governance,
+    _apply_form_view_capabilities, _mark_record_dependent_native_buttons_hidden_on_create,
+    apply_contract_governance, apply_native_authority_domain_overrides,
     resolve_contract_mode,
     resolve_contract_surface,
 )
@@ -1484,6 +1485,12 @@ class UiContractV2Handler(BaseIntentHandler):
                         "category_policy_inject": int((policy_injected_at - context_ready_at) * 1000),
                         "category_relation_contract": int((relation_contract_at - policy_injected_at) * 1000),
                     })
+                # The record surface still carries the entry's declared form
+                # semantics. A dispatch context declares what saving means and
+                # that the transient context is not kept, and that declaration
+                # holds after the row is written. It is not structure, so it is
+                # applied without turning the structural governance pass back on.
+                apply_native_authority_domain_overrides(source_contract, resolve_contract_mode(params))
                 return
             contract_mode = resolve_contract_mode(params)
             contract_surface = resolve_contract_surface(params, contract_mode)
@@ -1497,6 +1504,12 @@ class UiContractV2Handler(BaseIntentHandler):
             # Explicit category policies and relation capabilities are retained below.
             if native_structure:
                 _mark_record_dependent_native_buttons_hidden_on_create(source_contract)
+                # A resolved native view owns the form structure, so the generic
+                # governance pass stays off. The overrides that only declare
+                # semantics (e.g. a transient dispatch entry's create-flow label)
+                # are still applied, otherwise an entry moved onto the native
+                # authority would silently lose its declared form governance.
+                apply_native_authority_domain_overrides(source_contract, contract_mode)
             governed = None if native_structure else apply_contract_governance(
                 source_contract,
                 contract_mode,
@@ -1522,6 +1535,12 @@ class UiContractV2Handler(BaseIntentHandler):
                         "category_policy_inject": int((policy_injected_at - context_ready_at) * 1000),
                         "category_relation_contract": int((relation_contract_at - policy_injected_at) * 1000),
                     })
+                # The record surface still carries the entry's declared form
+                # semantics. A dispatch context declares what saving means and
+                # that the transient context is not kept, and that declaration
+                # holds after the row is written. It is not structure, so it is
+                # applied without turning the structural governance pass back on.
+                apply_native_authority_domain_overrides(source_contract, resolve_contract_mode(params))
                 return
             _projection.restore_business_form_policy(source_contract, business_form_policy, business_policy_field_policies)
             business_policy_root = source_contract.get("business_form_policy") if isinstance(source_contract.get("business_form_policy"), dict) else {}

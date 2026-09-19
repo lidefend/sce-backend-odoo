@@ -1206,9 +1206,17 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
   min-width: 0;
 }
 
+/* The feedback band is a full-width alert, so its body must fill the band and
+   wrap. `inline-size: max-content` shrank the band to the content's intrinsic
+   width, which is 0 for a body whose only child is a grid-typed fact: the fact
+   then received ~2px and every character wrapped onto its own line, and a long
+   copy was laid out on one clipped line instead of wrapping. A definite
+   `minmax(0, 1fr)` track keeps the copy and any nested fact section wrapping
+   inside the band at every width. */
 .native-form-feedback__content {
   display: grid;
-  inline-size: max-content;
+  grid-template-columns: minmax(0, 1fr);
+  inline-size: 100%;
   max-inline-size: 100%;
   min-inline-size: 0;
   gap: var(--sc-space-xs);

@@ -142,6 +142,29 @@ export function nativeActivityFieldLabel(
   return activityFieldLabel(action?.payload, name, fallback);
 }
 
+/**
+ * Read the create-flow declaration the contract carries under
+ * `runtimeContract.governance.form_governance`.  A page whose create step is not
+ * an ordinary draft (for example a transient dispatch workspace) declares its own
+ * primary-action label and its dispatch create-flow mode there, so the renderer
+ * does not have to hard-code product semantics per model.
+ */
+export function resolveDeclaredFormGovernance(v2RuntimeContract: unknown) {
+  const governance = dictOrEmpty(dictOrEmpty(v2RuntimeContract).governance);
+  return dictOrEmpty(governance.form_governance);
+}
+
+/**
+ * A declared create flow that dispatches to a formal document instead of keeping
+ * a draft only owns the handling context: the row is recycled and the fact lives
+ * in the document the carrier opens.  Its declared label therefore keeps applying
+ * after the context row is written, and the entry renders no collaboration of its
+ * own - the collaboration belongs to the formal document.
+ */
+export function isDispatchContextGovernance(formGovernance: unknown) {
+  return String(dictOrEmpty(formGovernance).create_flow_mode || '').trim() === 'transient_dispatch';
+}
+
 export function nativeCollaborationUnavailableMessage(params: {
   recordId: number;
   model: string;

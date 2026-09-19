@@ -67,12 +67,58 @@ function containerConditions(contract) {
   return map;
 }
 
+// The feedback bands are the surface the native renderer owns for auxiliary copy
+// (the workbench usage note and the computed 办理提示).  Counting sections and
+// duplicated facts never saw the defect this measures: the band kept the full
+// page width while its content track resolved to a zero-width grid column, so the
+// advisory inside it received ~14px and wrapped one character per line, and a
+// long note was laid out as a single clipped line.  Both are visible width facts,
+// so they are measured as width facts - at rest and at every viewport the pass
+// inspects, so a wide-only fix cannot pass.
+async function collapsedCallouts(page) {
+  return page.evaluate(() => {
+    const rows = [];
+    document.querySelectorAll('.native-form-feedback').forEach((band) => {
+      const box = band.getBoundingClientRect();
+      if (box.height <= 0 || box.width < 240) return;
+      const content = band.querySelector('.native-form-feedback__content') || band;
+      const squeezed = [];
+      Array.from(band.querySelectorAll('*')).forEach((el) => {
+        if (el.children.length) return;
+        const text = (el.textContent || '').trim();
+        if (text.length < 4) return;
+        const rect = el.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) return;
+        if (rect.width < 20) squeezed.push({ class: String(el.className).slice(0, 60), width: Math.round(rect.width), text: text.slice(0, 40) });
+      });
+      const clipped = content.scrollWidth > content.clientWidth + 1;
+      if (clipped || squeezed.length) {
+        rows.push({
+          width: Math.round(box.width), clipped, squeezed,
+          text: (band.textContent || '').trim().slice(0, 60),
+        });
+      }
+    });
+    return rows;
+  });
+}
+
+// A callout that squeezes its own copy, or clips it horizontally, is a visible
+// presentation defect the section count cannot see.  It is reported with the
+// measured width so a later regression names the band it broke.
+async function assertCalloutLayout(page, label) {
+  const rows = await collapsedCallouts(page);
+  assert.deepEqual(rows, [], `${label}: a full-width callout must give its copy a definite track`);
+  return rows;
+}
+
 // Structure responsibility on the rendered page: one presentation per business
 // fact, no emptied container occupying space, no separator owned by a layout
-// wrapper, no section title invented by a wrapper, and the section navigation
-// resolving against the same visible tree the body renders.
+// wrapper, no section title invented by a wrapper, a full-width callout that
+// keeps its copy wrapping, and the section navigation resolving against the same
+// visible tree the body renders.
 async function structureFindings(page) {
-  return page.evaluate(() => {
+  const out = await page.evaluate(() => {
     const out = { duplicated: [], empty_containers: [], decorated_layout_groups: [], titled_layout_groups: [] };
     const counts = {};
     document.querySelectorAll('[data-field-name]').forEach((el) => {
@@ -101,6 +147,8 @@ async function structureFindings(page) {
     });
     return out;
   });
+  out.collapsed_callouts = await collapsedCallouts(page);
+  return out;
 }
 
 // The delivered page declares how it presents the record.  A readonly
@@ -150,6 +198,7 @@ async function assertStructureResponsibility(page, label) {
     `${label}: emptied containers must not occupy space`);
   assert.deepEqual(findings.decorated_layout_groups, [], `${label}: layout-only wrappers must not draw the section separator`);
   assert.deepEqual(findings.titled_layout_groups, [], `${label}: layout-only wrappers must not carry a section title`);
+  await assertCalloutLayout(page, label);
   return findings;
 }
 
@@ -215,6 +264,9 @@ async function assertStickyLayoutSeparation(page, label, observations) {
   for (const viewport of STICKY_VIEWPORTS) {
     await page.setViewportSize(viewport);
     await page.waitForTimeout(350);
+    // The callout battery is re-measured at each viewport the pass inspects, so a
+    // fix that only holds a definite track on the wide layout fails here.
+    await assertCalloutLayout(page, `${label} @${viewport.width}`);
     const initial = await geometry();
     assert(initial.bar && initial.nav,
       `${label} @${viewport.width}: the sticky command bar and the 章节导航 must both render`);

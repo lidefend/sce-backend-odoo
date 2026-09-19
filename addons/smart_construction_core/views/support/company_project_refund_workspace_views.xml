@@ -6,22 +6,27 @@
         <field name="arch" type="xml">
             <form string="公司&amp;项目退款" edit="1" delete="0">
                 <header>
-                    <button name="action_deduction_refund" type="object" string="扣款实缴退回" class="btn-primary"/>
-                    <button name="action_bid_deposit_return" type="object" string="投标保证金退回" class="btn-secondary"/>
-                    <button name="action_contract_deposit_return" type="object" string="合同保证金退回" class="btn-secondary"/>
-                    <button name="action_self_funding_refund" type="object" string="自筹退回" class="btn-secondary" invisible="not partner_id"/>
-                    <button name="action_view_refund_account" type="object" string="查看关联台账" class="btn-secondary"/>
+                    <button name="action_deduction_refund" type="object" string="扣款实缴退回" class="btn-primary" invisible="not project_id"/>
+                    <button name="action_bid_deposit_return" type="object" string="投标保证金退回" class="btn-secondary" invisible="not project_id"/>
+                    <button name="action_contract_deposit_return" type="object" string="合同保证金退回" class="btn-secondary" invisible="not project_id"/>
+                    <button name="action_self_funding_refund" type="object" string="自筹退回" class="btn-secondary" invisible="not project_id or not partner_id"/>
+                    <button name="action_view_refund_account" type="object" string="查看关联台账" class="btn-secondary" invisible="not project_id"/>
                 </header>
                 <sheet>
-                    <group string="办理上下文" col="2">
+                    <div class="alert alert-info" role="status">
+                        先记录办理上下文，再选择办理事项。金额、账户和明细在打开的正式单据中填写；沟通、备注与附件也在正式单据中登记。
+                    </div>
+                    <group name="company_project_refund_processing_context" data-sc-anchor="company_project_refund_processing_context" string="办理上下文" col="2">
                         <field name="project_id"/>
                         <field name="partner_id"/>
                         <field name="business_date"/>
-                        <field name="processing_advisory" readonly="1"/>
                     </group>
-                    <group string="办理说明">
+                    <group name="company_project_refund_processing_note" data-sc-anchor="company_project_refund_processing_note" string="办理说明" col="1">
                         <field name="note" placeholder="可补充退款原因；金额、账户、保证金类型和附件在正式退款单据中填写。"/>
                     </group>
+                    <div class="alert alert-info" role="status" invisible="not processing_advisory">
+                        <field name="processing_advisory" readonly="1" nolabel="1"/>
+                    </div>
                 </sheet>
             </form>
         </field>
