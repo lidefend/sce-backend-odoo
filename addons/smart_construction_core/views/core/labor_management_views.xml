@@ -366,23 +366,28 @@
                     <!-- U-C4 G09: 原生 arch 持有本入口的章节身份。 两个概览组带稳定
                          `data-sc-anchor`，消费方按它生成本入口的业务章节与章节导航；
                          `view_sc_labor_usage_form` 同时是 871（menu 689）、562（menu 504）、
-                         563（menu 505）三条入口的原生承载。 -->
+                         563（menu 505）三条入口的原生承载。
+                         可办理性修正（2026-09-19）：模型级 p1 facts 原先对这些业务事实声明
+                         无条件只读，使新建页的必填项目／班组／工时等无合法录入路径。策略已按
+                         字段职责收口（见 p1_daily_business_form_orchestration_contract_data.xml），
+                         原生 arch 在这里承接同名口径：草稿内可录入，已提交／已确认只读；
+                         `note`／`attachment_ids` 是随时可补的依据类事实，故不设状态锁（与 570 一致）。 -->
                     <group name="labor_usage_overview">
                         <group name="labor_usage_processing_main" data-sc-anchor="labor_usage_processing_main" string="用工主信息">
                             <field name="name"/>
-                            <field name="project_id"/>
-                            <field name="usage_date"/>
-                            <field name="usage_type"/>
-                            <field name="labor_team"/>
+                            <field name="project_id" readonly="state != 'draft'"/>
+                            <field name="usage_date" readonly="state != 'draft'"/>
+                            <field name="usage_type" readonly="state != 'draft'"/>
+                            <field name="labor_team" readonly="state != 'draft'"/>
                         </group>
                         <group name="labor_usage_labor_amount" data-sc-anchor="labor_usage_labor_amount" string="用工与计价">
-                            <field name="contractor_id"/>
+                            <field name="contractor_id" readonly="state != 'draft'"/>
                             <field name="foreman_name"/>
                             <field name="recorder_id"/>
-                            <field name="worker_qty"/>
-                            <field name="work_hours"/>
-                            <field name="currency_id" groups="base.group_multi_currency"/>
-                            <field name="price_unit"/>
+                            <field name="worker_qty" readonly="state != 'draft'"/>
+                            <field name="work_hours" readonly="state != 'draft'"/>
+                            <field name="currency_id" groups="base.group_multi_currency" readonly="state != 'draft'"/>
+                            <field name="price_unit" readonly="state != 'draft'"/>
                             <field name="amount_total" readonly="1"/>
                             <field name="settlement_state"/>
                         </group>
@@ -390,20 +395,16 @@
                     <notebook>
                         <page string="作业内容">
                             <group>
-                                <field name="work_type"/>
-                                <field name="construction_part"/>
+                                <field name="work_type" readonly="state != 'draft'"/>
+                                <field name="construction_part" readonly="state != 'draft'"/>
                             </group>
-                            <field name="work_content" nolabel="1"/>
+                            <field name="work_content" nolabel="1" readonly="state != 'draft'"/>
                         </page>
                         <page string="用工说明">
                             <field name="note" nolabel="1"/>
                         </page>
                         <page string="附件">
                             <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
-                        </page>
-                        <page string="来源追溯">
-                            <group>
-                            </group>
                         </page>
                     </notebook>
                 </sheet>

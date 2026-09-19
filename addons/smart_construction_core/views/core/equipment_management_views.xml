@@ -303,10 +303,15 @@
                         <page string="附件">
                             <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
                         </page>
-                        <page string="办理提示">
-                            <field name="processing_advisory" readonly="1" nolabel="1"/>
-                        </page>
                     </notebook>
+                    <!-- U-C4 G09 表达修正：`processing_advisory` 是计算出来的辅助反馈，不是业务事实，
+                         不能占一个业务章节／页签（仓内既有约定见
+                         tests/test_context_workspace_native_lowcode.py::test_the_prompt_is_feedback_not_a_section）。
+                         改由渲染器已有的反馈面承载：不是 group／page，因此永远不会成为章节或导航项；
+                         空提示（新建态计算未跑）时整块不显示，而不是显示一个占位的 “—”。 -->
+                    <div class="alert alert-info" role="status" invisible="not processing_advisory">
+                        <field name="processing_advisory" readonly="1" nolabel="1"/>
+                    </div>
                 </sheet>
                 <chatter/>
             </form>

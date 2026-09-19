@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from lxml import etree
 
+from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase, tagged
 
 from odoo.addons.smart_core.core.form_structure_authority import (
@@ -40,8 +41,19 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
     model-wide section plane is retired, and each reachable entry resolves the SAME
     native body.  No retired declaration referenced a fact that does not exist, and
     the rendered business field set is pinned so the migration cannot silently drop
-    a fact.  This batch changes structure only: the model-wide business-fact policy
-    carriers stay active, so editability semantics are unchanged.
+    a fact.
+
+    The structure migration itself changes structure only: the model-wide
+    business-fact policy carriers stay active.  The create-state correction of
+    2026-09-19 then had to correct what those carriers declared.  They marked
+    every business fact unconditionally read-only, including `project_id`, while
+    the same declaration marked it required, so the create page offered 提交 with
+    no legal path to the project (`p1_*_form_business_facts_v1`).  The policy now
+    keeps read-only only where the model itself carries the value (a default, a
+    compute, the sequence-issued number, the workflow state, a read-only history
+    field), the native arch opens the draft window on the facts the user types,
+    the model refuses a post-submission fact write instead of only claiming it in
+    XML, and the computed 办理提示 no longer owns a business section.
     """
 
     # entry contract xmlid -> (action xmlid, model, view xmlid, title)
@@ -476,3 +488,439 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
                     self.assertEqual(primary.ids, [
                         self.env.ref("smart_construction_core.%s" % view_xmlid).id
                     ])
+    # -- create-state usability (U-C4 G09 可办理性修正, 2026-09-19) ------------
+
+    # `user` is the fact set the create surface must let the user enter, so none of
+    # it may stay read-only by policy.  A model default does not move a fact out of
+    # this set: a default only lowers the cost of entry, while the choice still
+    # belongs to the user inside the draft window - `usage_type` is the observed
+    # case (871 方单 / 562 零星用工 pick it per entry, the model guard freezes it
+    # after submit).  `carried` is the complementary set: facts a legal non-user
+    # carrier supplies (a compute, the sequence-issued document number, the
+    # workflow state, a model-level read-only history field, or a derived status
+    # the business does not let the user choose), which may therefore keep their
+    # read-only policy.
+    # `test_the_readonly_policy_keeps_only_facts_with_a_legal_carrier` asserts the
+    # split against the delivered field definition, so it is not a naming guess.
+    USER_SUPPLIED_FACTS = {
+        "sc.labor.usage": (
+            "project_id", "usage_type", "usage_date", "contractor_id", "labor_team",
+            "work_type", "construction_part", "work_content", "worker_qty",
+            "work_hours", "price_unit", "note", "attachment_ids",
+        ),
+        "sc.equipment.usage": (
+            "project_id", "usage_date", "supplier_id", "equipment_name",
+            "specification", "uom_text", "usage_qty", "usage_hours", "price_unit",
+            "note", "attachment_ids",
+        ),
+        "sc.subcontract.register": ("project_id", "note"),
+    }
+
+    # Facts a legal non-user carrier supplies, and the carrier that does.
+    FACT_CARRIERS = {
+        "sc.labor.usage": {
+            "name": "sequence", "create_date": "system",
+            "settlement_state": "default", "recorder_id": "default",
+            "amount_total": "computed", "state": "workflow",
+        },
+        "sc.equipment.usage": {
+            "name": "sequence", "create_date": "system",
+            "recorder_id": "default", "amount": "computed", "state": "workflow",
+        },
+        "sc.subcontract.register": {
+            "subcontract_register_document_no_display": "computed",
+            "subcontract_register_title_display": "computed",
+            "subcontract_register_subcontract_content_display": "computed",
+            "subcontract_register_amount_display": "computed",
+            "subcontract_register_contract_no_display": "computed",
+            "sign_date": "computed", "quantity_total": "computed",
+            "invoice_amount": "computed", "paid_amount": "computed",
+            "unpaid_amount": "computed", "uninvoiced_amount": "computed",
+            "message_attachment_count": "computed",
+            "source_created_by": "history", "source_created_at": "history",
+        },
+    }
+
+    # The retained `p1_form_business_facts_v1` carrier is the only declaration of
+    # the business-fact read-only policy on these models.  This is the exact set
+    # it still declares read-only after the create-state correction.
+    EXPECTED_READONLY_POLICY = {
+        "sc.labor.usage": (
+            "amount_total", "create_date", "name", "recorder_id",
+            "settlement_state", "state",
+        ),
+        "sc.equipment.usage": (
+            "amount", "create_date", "name", "recorder_id", "state",
+        ),
+        "sc.subcontract.register": (
+            "invoice_amount", "message_attachment_count", "paid_amount",
+            "quantity_total", "sign_date",
+            "subcontract_register_amount_display",
+            "subcontract_register_contract_no_display",
+            "subcontract_register_document_no_display",
+            "subcontract_register_subcontract_content_display",
+            "subcontract_register_title_display",
+            "source_created_at", "source_created_by",
+            "uninvoiced_amount", "unpaid_amount",
+        ),
+    }
+
+    POLICY_CARRIERS = {
+        "sc.labor.usage": "business_config_contract_sc_labor_usage_p1_form_business_facts_v1",
+        "sc.equipment.usage": "business_config_contract_sc_equipment_usage_p1_form_business_facts_v1",
+        "sc.subcontract.register": "business_config_contract_sc_subcontract_register_p1_form_business_facts_v1",
+    }
+
+    MODEL_VIEWS = {
+        "sc.labor.usage": "view_sc_labor_usage_form",
+        "sc.equipment.usage": "view_sc_equipment_usage_form",
+        "sc.subcontract.register": "view_sc_subcontract_register_form",
+    }
+
+    # The create window the native arch declares for the user-typed facts: the
+    # interaction face of the same rule the model guard enforces.  871 and 570
+    # own an explicit draft window.  575's post-registration rule is still
+    # undecided, so this batch declares no state lock there and the pin below
+    # records that absence instead of inventing a rule.
+    NATIVE_DRAFT_WINDOW = {
+        "view_sc_labor_usage_form": (
+            "project_id", "usage_date", "usage_type", "labor_team", "contractor_id",
+            "worker_qty", "work_hours", "currency_id", "price_unit", "work_type",
+            "construction_part", "work_content",
+        ),
+        "view_sc_equipment_usage_form": (
+            "project_id", "usage_date", "equipment_name", "equipment_code",
+            "specification", "uom_text", "usage_location", "operator_name",
+            "usage_qty", "usage_hours", "supplier_id", "currency_id", "price_unit",
+        ),
+    }
+
+    # Basis facts stay writable after submission on both guarded models: they are
+    # evidence the user completes while the record waits, not the measured fact.
+    DRAFT_WINDOW_EXEMPT_FACTS = ("note", "attachment_ids")
+
+    def _policy_fields(self, model):
+        return [
+            row for row in (self._form_spec(self._contract(self.POLICY_CARRIERS[model])).get("fields") or [])
+            if isinstance(row, dict) and row.get("name")
+        ]
+
+    def _policy_readonly(self, model):
+        return {row["name"] for row in self._policy_fields(model) if row.get("readonly")}
+
+    def _arch_readonly(self, view_xmlid):
+        """Direct `<field>` read-only expressions declared by the delivered arch."""
+        arch = self._arch(view_xmlid)
+        return {
+            node.get("name"): node.get("readonly")
+            for node in arch.iter("field")
+            if node.get("name") and node.get("readonly")
+        }
+
+    @staticmethod
+    def _legal_carrier(model, name):
+        """The delivered definition's own answer to "who supplies this value?".
+
+        Returns a carrier name when the model can supply the fact without the
+        user typing it, and `None` when only the user can.
+        """
+        field = model._fields[name]
+        if field.compute:
+            return "computed"
+        if name in ("create_date", "write_date", "create_uid", "write_uid"):
+            return "system"
+        if field.default is not None:
+            return "sequence" if name == "name" else "default"
+        if field.readonly:
+            return "history"
+        return None
+
+    def test_the_readonly_policy_keeps_only_facts_with_a_legal_carrier(self):
+        """The policy may only stay read-only where something else supplies the value.
+
+        The delivered create-state defect was exactly this: the same declaration
+        marked `project_id` required and unconditionally read-only, so the create
+        page offered 提交 with no legal path to the project.
+        """
+        for model, _xmlid in self.POLICY_CARRIERS.items():
+            declared = {row["name"] for row in self._policy_fields(model)}
+            user_facts = set(self.USER_SUPPLIED_FACTS[model])
+            carried = set(self.FACT_CARRIERS[model])
+            fields = self.env[model]._fields
+            with self.subTest(model=model):
+                self.assertEqual(user_facts & carried, set(), "a fact belongs to one class only")
+                self.assertEqual(user_facts | carried, declared, "every declared fact is classified")
+                for name in sorted(user_facts):
+                    self.assertFalse(fields[name].readonly, "%s must be writable on the model" % name)
+                    self.assertFalse(fields[name].compute, "%s must not be computed" % name)
+                    # The value the user must be able to enter may not be locked by the
+                    # policy carrier.  A model default is not an exemption here: `default`
+                    # makes entry cheaper, it does not replace the control, so a fact in
+                    # this set stays out of the read-only policy.
+                    self.assertNotIn(
+                        name, self._policy_readonly(model),
+                        "a fact the user must enter may not stay read-only by policy",
+                    )
+                for name in sorted(carried):
+                    self.assertIsNotNone(
+                        self._legal_carrier(self.env[model], name),
+                        "%s is declared carried but nothing in the model supplies it" % name,
+                    )
+                self.assertEqual(
+                    self._policy_readonly(model),
+                    set(self.EXPECTED_READONLY_POLICY[model]),
+                    "the retained carrier must keep exactly the justified read-only facts",
+                )
+                self.assertEqual(
+                    set(self.EXPECTED_READONLY_POLICY[model]) & user_facts, set(),
+                    "a user-supplied fact may not stay read-only",
+                )
+
+    def test_every_required_create_fact_is_obtainable_by_a_legal_path(self):
+        """`必需值是否可通过合法路径取得`, not `必填 ∩ 可填`.
+
+        A required fact is obtainable when the user can type it - the delivered
+        create policy and the native arch both leave it authorable - or when a
+        legal non-user carrier supplies it.  A required fact supplied by nobody
+        is the defect this batch repaired, whether or not it is required at all:
+        the read-only policy and the REQUIRED marker came from the same
+        declaration, so the two could not both hold.
+        """
+        for model, view_xmlid in self.MODEL_VIEWS.items():
+            arch_readonly = self._arch_readonly(view_xmlid)
+            policy_readonly = self._policy_readonly(model)
+            declared = {row["name"] for row in self._policy_fields(model)}
+            fields = self.env[model]._fields
+            # The inline detail tree renders columns owned by the detail model
+            # (`line_ids.contract_qty` and friends); only facts this form's own
+            # model owns can be judged on its create surface.
+            surface = {
+                name for name in (declared | set(self.RENDERED_FIELDS[view_xmlid]))
+                if name in fields
+            }
+            for name in sorted(surface):
+                if not fields[name].required:
+                    continue
+                with self.subTest(model=model, fact=name):
+                    carrier = self._legal_carrier(self.env[model], name)
+                    if carrier is None:
+                        self.assertNotIn(
+                            name, policy_readonly,
+                            "required {0} has no carrier and may not stay read-only by policy".format(name),
+                        )
+                        self.assertNotEqual(
+                            arch_readonly.get(name), "1",
+                            "required {0} has no carrier and may not be unconditionally read-only".format(name),
+                        )
+                    else:
+                        self.assertTrue(
+                            carrier in ("computed", "default", "sequence", "system", "workflow", "history"),
+                            "%s carries an unknown carrier %s" % (name, carrier),
+                        )
+
+    def test_the_native_arch_opens_the_draft_window_for_the_user_facts(self):
+        """Interaction face and backend guard must declare the same window."""
+        for view_xmlid, names in self.NATIVE_DRAFT_WINDOW.items():
+            arch_readonly = self._arch_readonly(view_xmlid)
+            for name in names:
+                with self.subTest(view=view_xmlid, fact=name):
+                    self.assertEqual(
+                        arch_readonly.get(name), "state != 'draft'",
+                        "%s must be editable inside the draft window" % name,
+                    )
+        for view_xmlid, names in self.NATIVE_DRAFT_WINDOW.items():
+            arch_readonly = self._arch_readonly(view_xmlid)
+            for name in self.DRAFT_WINDOW_EXEMPT_FACTS:
+                with self.subTest(view=view_xmlid, fact=name):
+                    self.assertNotIn(name, arch_readonly, "basis facts stay writable after submission")
+        # 575: `已登记` is not automatically `不可修改`; the rule is pending, so no
+        # state lock is declared here.
+        pending = self._arch_readonly("view_sc_subcontract_register_form")
+        for name in ("project_id", "note", "subcontract_scope"):
+            with self.subTest(view="view_sc_subcontract_register_form", fact=name):
+                self.assertNotIn("state", pending.get(name, ""))
+
+    def test_the_policy_never_locks_a_fact_the_model_treats_as_user_entered(self):
+        """`配置策略` may not contradict `模型约束` about who enters the fact.
+
+        The observed defect chain is 原生声明 -> 模型约束 -> 配置策略 -> 最终契约
+        -> 控件.  `_FACT_IMMUTABLE_FIELDS` is the model's own definition of the
+        facts the user enters inside the draft window and the backend then
+        freezes; the native arch declares the same window with
+        `readonly="state != 'draft'"`.  A read-only policy on a fact inside that
+        window is therefore the first divergence, and it survived because the two
+        declarations were never compared.  `usage_type` was the observed case: the
+        older p1 carrier locked it unconditionally while the model guard and the
+        arch both treated it as a draft-window fact, so the create page rendered
+        it read-only while the delivered status contract still called it
+        authorable - the internal contradiction the user measured.
+        """
+        compared = 0
+        for model, view_xmlid in self.MODEL_VIEWS.items():
+            guard = getattr(self.env[model], "_FACT_IMMUTABLE_FIELDS", None)
+            if guard is None:
+                # 575's post-registration rule is undecided, so there is no guard to
+                # contradict.  Pinned by
+                # test_the_subcontract_register_post_registration_rule_stays_pending.
+                continue
+            compared += 1
+            arch_readonly = self._arch_readonly(view_xmlid)
+            window = {name for name, expr in arch_readonly.items() if expr == "state != 'draft'"}
+            with self.subTest(model=model):
+                self.assertEqual(
+                    self._policy_readonly(model) & set(guard), set(),
+                    "a fact the model treats as user-entered may not stay read-only by policy",
+                )
+                self.assertEqual(
+                    set(guard) - window, set(),
+                    "every draft-window fact the model freezes must open on the native create surface",
+                )
+                self.assertEqual(
+                    set(self.USER_SUPPLIED_FACTS[model]) - set(guard),
+                    set(self.DRAFT_WINDOW_EXEMPT_FACTS),
+                    "only the basis facts stay outside the model's own draft window",
+                )
+        self.assertEqual(compared, 2, "871 and 570 carry the draft-window guard")
+        # Recorded, not authorized: 570's arch keeps `request_id` inside the draft
+        # window while its retained guard does not freeze it.  This batch reuses
+        # 570's guard unchanged (the registered rule for that entry), so the
+        # residual is pinned here for the follow-up schedule instead of being
+        # silently widened or silently dropped.
+        residual = {name for name, expr in self._arch_readonly("view_sc_equipment_usage_form").items()
+                    if expr == "state != 'draft'"} - set(self.env["sc.equipment.usage"]._FACT_IMMUTABLE_FIELDS)
+        self.assertEqual(residual, {"request_id"})
+
+    def test_the_prompt_is_feedback_not_a_section(self):
+        """The computed 办理提示 is auxiliary feedback, never a business section.
+
+        A `<page>`/`<group>` host promotes it to a section with its own
+        navigation entry, and an empty compute then renders as a placeholder
+        "—" inside a business section.  The feedback surface is not a group, so
+        it can never become a section, and it hides itself while the compute has
+        nothing to act on.  Convention and positive examples:
+        `test_context_workspace_native_lowcode.py::test_the_prompt_is_feedback_not_a_section`,
+        `views/support/current_account_workspace_views.xml`.
+        """
+        def assert_feedback_surface(root, label):
+            self.assertFalse(root.xpath(".//group[field[@name='processing_advisory']]"), label)
+            self.assertFalse(root.xpath(".//page[field[@name='processing_advisory']]"), label)
+            hosts = root.xpath(".//div[field[@name='processing_advisory']]")
+            self.assertEqual(len(hosts), 1, label)
+            host = hosts[0]
+            classes = set((host.get("class") or "").split())
+            self.assertIn("alert", classes, label)
+            self.assertIn("alert-info", classes, label)
+            self.assertEqual(host.get("role"), "status", label)
+            self.assertEqual(host.get("invisible"), "not processing_advisory", label)
+            node = host.xpath("./field[@name='processing_advisory']")[0]
+            self.assertEqual(node.get("readonly"), "1", label)
+            self.assertEqual(node.get("nolabel"), "1", label)
+
+        for view_xmlid in ("view_sc_equipment_usage_form", "view_sc_subcontract_register_form"):
+            with self.subTest(view=view_xmlid):
+                assert_feedback_surface(self._arch(view_xmlid), view_xmlid)
+        inherited = self.env.ref(
+            "smart_construction_core.view_sc_labor_usage_product_advisory_form"
+        )
+        with self.subTest(view="view_sc_labor_usage_product_advisory_form"):
+            assert_feedback_surface(
+                etree.fromstring(inherited.arch.encode("utf-8")),
+                "view_sc_labor_usage_product_advisory_form",
+            )
+
+    def test_no_empty_notebook_page_is_declared(self):
+        """An empty 来源追溯 page owned a navigation entry with nothing behind it."""
+        for view_xmlid in self.MODEL_VIEWS.values():
+            root = self._arch(view_xmlid)
+            empty = [
+                page.get("string") for page in root.xpath(".//page")
+                if not page.xpath(".//field")
+            ]
+            with self.subTest(view=view_xmlid):
+                self.assertEqual(empty, [])
+                self.assertFalse(root.xpath(".//page[@string='来源追溯']"))
+
+    def test_the_labor_usage_guard_matches_the_declared_draft_window(self):
+        """The read-only window is only real if the backend refuses the write."""
+        project = self.env["project.project"].search([], limit=1)
+        self.assertTrue(project, "the governed database must carry a project")
+        usage = self.env["sc.labor.usage"].create({
+            "project_id": project.id,
+            "labor_team": "G09 可办理性班组",
+            "work_content": "G09 可办理性验证",
+            "worker_qty": 2.0,
+            "work_hours": 4.0,
+        })
+        self.assertEqual(
+            usage._FACT_IMMUTABLE_FIELDS,
+            {"project_id", "usage_type", "usage_date", "labor_team", "contractor_id",
+             "work_type", "construction_part", "work_content", "worker_qty",
+             "work_hours", "price_unit", "currency_id"},
+        )
+        # The draft window is open: the record may be corrected before it is sent.
+        usage.write({"worker_qty": 3.0, "work_hours": 6.0})
+        usage.write({"note": "草稿修正说明"})
+        self.assertEqual(usage.worker_qty, 3.0)
+        usage.action_submit()
+        self.assertEqual(usage.state, "submitted")
+        with self.assertRaises(UserError):
+            usage.write({"worker_qty": 4.0})
+        with self.assertRaises(UserError):
+            usage.write({"work_content": "提交后改写"})
+        with self.assertRaises(UserError):
+            usage.unlink()
+        # Basis facts are not measured facts: the user completes them while the
+        # record waits for confirmation.
+        usage.write({"note": "提交后补充依据", "attachment_ids": [(6, 0, [])]})
+        usage.action_confirm()
+        self.assertEqual(usage.state, "confirmed")
+        with self.assertRaises(UserError):
+            usage.write({"price_unit": 12.0})
+
+    def test_the_equipment_usage_guard_is_retained(self):
+        """570's delivered guard is untouched: the correction adds no new lock."""
+        project = self.env["project.project"].search([], limit=1)
+        self.assertTrue(project, "the governed database must carry a project")
+        usage = self.env["sc.equipment.usage"].create({
+            "project_id": project.id,
+            "equipment_name": "G09 可办理性机械",
+            "usage_location": "G09 现场",
+            "operator_name": "G09 操作人员",
+            "usage_hours": 4.0,
+        })
+        self.assertEqual(
+            usage._FACT_IMMUTABLE_FIELDS,
+            {"project_id", "usage_date", "equipment_name", "equipment_code",
+             "specification", "uom_text", "usage_location", "operator_name",
+             "usage_qty", "usage_hours", "supplier_id", "currency_id", "price_unit"},
+        )
+        usage.write({"usage_hours": 5.0})
+        usage.action_submit()
+        self.assertEqual(usage.state, "submitted")
+        with self.assertRaises(UserError):
+            usage.write({"usage_hours": 9.0})
+        usage.write({"note": "提交后补充依据"})
+
+    def test_the_subcontract_register_post_registration_rule_stays_pending(self):
+        """`已登记` is not automatically `不可修改`.
+
+        The delivered `sc.subcontract.register.write()` enforces contract
+        authority, the cumulative registered amount and the settlement
+        authorization; it carries no fact-immutability guard.  The
+        `draft/active/closed` edit rule for the register and its detail lines is
+        still undecided, so this batch adds no guard and no state lock.  Pinning
+        the absence keeps a later batch from reading this file as if the rule had
+        been settled here.
+        """
+        model = self.env["sc.subcontract.register"]
+        self.assertFalse(hasattr(model, "_FACT_IMMUTABLE_FIELDS"))
+        project = self.env["project.project"].search([], limit=1)
+        self.assertTrue(project, "the governed database must carry a project")
+        register = model.create({
+            "project_id": project.id,
+            "subcontract_scope": "G09 可办理性分包范围",
+        })
+        # No unconditional lock exists: a fact write is not refused by an
+        # immutability rule on the delivered model.
+        register.write({"note": "G09 可办理性备注"})
+        self.assertEqual(register.note, "G09 可办理性备注")

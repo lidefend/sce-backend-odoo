@@ -327,6 +327,16 @@ class ScLaborUsage(models.Model):
     _description = "劳务用工"
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "usage_date desc, id desc"
+    # U-C4 G09 可办理性修正：业务事实只在草稿窗口内可录入（原生 arch 的
+    # `readonly="state != 'draft'"` 是交互面），提交之后必须由后端拒绝修改，
+    # 不能只靠 XML 只读宣称安全。口径与同组 570 `sc.equipment.usage` 一致：
+    # `note`／`attachment_ids` 是可在任何状态补充的依据类事实，不在本集内；
+    # `settlement_state` 由结算流程承接，也不在本集内。
+    _FACT_IMMUTABLE_FIELDS = {
+        "project_id", "usage_type", "usage_date", "labor_team", "contractor_id",
+        "work_type", "construction_part", "work_content", "worker_qty",
+        "work_hours", "price_unit", "currency_id",
+    }
 
     name = fields.Char(string="用工单号", required=True, default="新建", tracking=True)
     project_id = fields.Many2one("project.project", string="项目", required=True, index=True, tracking=True)
@@ -399,6 +409,17 @@ class ScLaborUsage(models.Model):
             if vals.get("name", "新建") == "新建":
                 vals["name"] = seq.next_by_code("sc.labor.usage") or _("劳务用工")
         return super().create(vals_list)
+
+    def write(self, vals):
+        if self._FACT_IMMUTABLE_FIELDS & set(vals):
+            if self.filtered(lambda record: record.state in ("submitted", "confirmed")):
+                raise UserError(_("已提交或已确认的劳务用工事实不可修改；请通过受控状态流程处理。"))
+        return super().write(vals)
+
+    def unlink(self):
+        if self.filtered(lambda record: record.state in ("submitted", "confirmed")):
+            raise UserError(_("已提交或已确认的劳务用工事实不可删除。"))
+        return super().unlink()
 
     def action_submit(self):
         for record in self:

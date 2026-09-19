@@ -211,6 +211,9 @@
             <field name="version_no">1</field>
             <field name="contract_json" eval="{                 'view_orchestration': {                     'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},                     'views': {                         'form': {'composition_mode': 'entry_semantic_surface',                             'sections': [                                 {'title': '单据识别'},                                 {'title': '业务对象'},                                 {'title': '金额与办理'},                                 {'title': '附件与来源'}                             ],                             'fields': [{'name': 'state', 'sequence': 10, 'readonly': True}, {'name': 'labor_request_document_no_display', 'sequence': 20, 'readonly': True}, {'name': 'labor_request_project_name_display', 'sequence': 30, 'readonly': True}, {'name': 'request_date', 'sequence': 40, 'readonly': True}, {'name': 'labor_request_title_display', 'sequence': 50, 'readonly': True}, {'name': 'contractor_id', 'sequence': 60, 'readonly': True}, {'name': 'owner_id', 'sequence': 70, 'readonly': True}, {'name': 'amount_total', 'sequence': 80, 'readonly': True}, {'name': 'settlement_ratio', 'sequence': 90, 'readonly': True}, {'name': 'invoice_amount', 'sequence': 100, 'readonly': True}, {'name': 'paid_amount', 'sequence': 110, 'readonly': True}, {'name': 'unpaid_amount', 'sequence': 120, 'readonly': True}, {'name': 'uninvoiced_amount', 'sequence': 130, 'readonly': True}, {'name': 'pricing_method', 'sequence': 140, 'readonly': True}, {'name': 'construction_part', 'sequence': 150, 'readonly': True}, {'name': 'labor_request_contract_no_display', 'sequence': 160, 'readonly': True}, {'name': 'message_attachment_count', 'sequence': 170, 'readonly': True}, {'name': 'note', 'sequence': 180, 'readonly': True}, {'name': 'labor_request_push_project_name_display', 'sequence': 190, 'readonly': True}, {'name': 'labor_request_source_created_by_display', 'sequence': 200, 'readonly': True}]                         }                     }                 }             }" />
         </record>
+        <!-- U-C4 G09 可办理性修正（创建态）：本载体是该模型上唯一声明业务事实只读策略的地方，而它把交付面断言为无条件只读，与同一份声明里的 REQUIRED(project_id) 自相矛盾——新建页因此给不出合法办理路径。现按字段职责逐项收口，只移除『应由用户录入』字段的无条件只读，其余保留。
+             判据不是命名猜测，而是模型自己交付的草稿窗口：`ScLaborUsage._FACT_IMMUTABLE_FIELDS` 声明了『草稿内可录入、提交后不可改』的事实集，原生 arch 用 `readonly="state != 'draft'"` 声明同一窗口。因此本策略的不变量是『只读集 ∩ 草稿窗口事实集 ＝ ∅』：落在守卫集里的事实一律不得被策略无条件锁死，其余按字段职责逐项分类。
+             逐字段分类：用户录入＝project_id／usage_type／usage_date／contractor_id／labor_team／work_type／construction_part／work_content／worker_qty／work_hours／price_unit／note／attachment_ids（移除只读，改由原生 arch 的 state != 'draft' 管辖；usage_type 带 entry/context 默认，但它是 871 方单／562 零星用工两条入口各自选定的事实，且已在本模型守卫集内，故与其它用户录入事实同口径，默认只降低录入成本、不改变归属）；默认提供＝settlement_state（默认 unsettled）／recorder_id（当前用户）；系统生成＝name（ir.sequence）／create_date；计算结果＝amount_total（compute＋store）；工作流字段＝state。契约只承载策略，结构权威仍属原生 arch（labor_usage_form_productization_contract.xml）。 -->
         <record id="business_config_contract_sc_labor_usage_p1_form_business_facts_v1" model="ui.business.config.contract">
             <field name="name">sc_labor_usage_p1_form_business_facts_v1</field>
             <field name="model">sc.labor.usage</field>
@@ -220,7 +223,42 @@
             <field name="active" eval="True" />
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval="{                 'view_orchestration': {                     'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},                     'views': {                         'form': {'composition_mode': 'entry_semantic_surface',                             'sections': [                                 {'title': '单据识别'},                                 {'title': '业务对象'},                                 {'title': '金额与办理'},                                 {'title': '附件与来源'}                             ],                             'fields': [{'name': 'state', 'sequence': 10, 'readonly': True}, {'name': 'name', 'sequence': 20, 'readonly': True}, {'name': 'usage_type', 'sequence': 30, 'readonly': True}, {'name': 'project_id', 'sequence': 40, 'readonly': True}, {'name': 'usage_date', 'sequence': 50, 'readonly': True}, {'name': 'contractor_id', 'sequence': 60, 'readonly': True}, {'name': 'labor_team', 'sequence': 70, 'readonly': True}, {'name': 'work_type', 'sequence': 80, 'readonly': True}, {'name': 'construction_part', 'sequence': 90, 'readonly': True}, {'name': 'work_content', 'sequence': 100, 'readonly': True}, {'name': 'worker_qty', 'sequence': 110, 'readonly': True}, {'name': 'work_hours', 'sequence': 120, 'readonly': True}, {'name': 'price_unit', 'sequence': 130, 'readonly': True}, {'name': 'amount_total', 'sequence': 140, 'readonly': True}, {'name': 'settlement_state', 'sequence': 150, 'readonly': True}, {'name': 'note', 'sequence': 160, 'readonly': True}, {'name': 'attachment_ids', 'sequence': 170, 'readonly': True}, {'name': 'recorder_id', 'sequence': 180, 'readonly': True}, {'name': 'create_date', 'sequence': 190, 'readonly': True}]                         }                     }                 }             }" />
+            <field name="contract_json" eval="{
+                'view_orchestration': {
+                    'context': {'source': 'smart_construction_core.product_release',
+                                'source_status': 'product_release'},
+                    'views': {
+                        'form': {
+                            'composition_mode': 'entry_semantic_surface',
+                            'sections': [
+                                {'title': '单据识别'}, {'title': '业务对象'},
+                                {'title': '金额与办理'}, {'title': '附件与来源'},
+                            ],
+                            'fields': [
+                                {'name': 'state', 'sequence': 10, 'readonly': True},
+                                {'name': 'name', 'sequence': 20, 'readonly': True},
+                                {'name': 'usage_type', 'sequence': 30},
+                                {'name': 'project_id', 'sequence': 40},
+                                {'name': 'usage_date', 'sequence': 50},
+                                {'name': 'contractor_id', 'sequence': 60},
+                                {'name': 'labor_team', 'sequence': 70},
+                                {'name': 'work_type', 'sequence': 80},
+                                {'name': 'construction_part', 'sequence': 90},
+                                {'name': 'work_content', 'sequence': 100},
+                                {'name': 'worker_qty', 'sequence': 110},
+                                {'name': 'work_hours', 'sequence': 120},
+                                {'name': 'price_unit', 'sequence': 130},
+                                {'name': 'amount_total', 'sequence': 140, 'readonly': True},
+                                {'name': 'settlement_state', 'sequence': 150, 'readonly': True},
+                                {'name': 'note', 'sequence': 160},
+                                {'name': 'attachment_ids', 'sequence': 170},
+                                {'name': 'recorder_id', 'sequence': 180, 'readonly': True},
+                                {'name': 'create_date', 'sequence': 190, 'readonly': True}
+                            ],
+                        },
+                    },
+                },
+            }" />
         </record>
         <record id="business_config_contract_sc_labor_settlement_p1_form_business_facts_v1" model="ui.business.config.contract">
             <field name="name">sc_labor_settlement_p1_form_business_facts_v1</field>
@@ -233,6 +271,7 @@
             <field name="version_no">1</field>
             <field name="contract_json" eval="{                 'view_orchestration': {                     'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},                     'views': {                         'form': {'composition_mode': 'entry_semantic_surface',                             'sections': [                                 {'title': '单据识别'},                                 {'title': '业务对象'},                                 {'title': '金额与办理'},                                 {'title': '附件与来源'}                             ],                             'fields': [{'name': 'labor_settlement_document_no_display', 'sequence': 10, 'readonly': True}, {'name': 'project_id', 'sequence': 20, 'readonly': True}, {'name': 'settlement_date', 'sequence': 30, 'readonly': True}, {'name': 'labor_settlement_title_display', 'sequence': 40, 'readonly': True}, {'name': 'contractor_id', 'sequence': 50, 'readonly': True}, {'name': 'labor_settlement_payment_status_display', 'sequence': 60, 'readonly': True}, {'name': 'payment_paid_amount', 'sequence': 70, 'readonly': True}, {'name': 'payment_unpaid_amount', 'sequence': 80, 'readonly': True}, {'name': 'labor_settlement_payment_request_status_display', 'sequence': 90, 'readonly': True}, {'name': 'payment_requested_amount', 'sequence': 100, 'readonly': True}, {'name': 'payment_unrequested_amount', 'sequence': 110, 'readonly': True}, {'name': 'note', 'sequence': 120, 'readonly': True}, {'name': 'message_attachment_count', 'sequence': 130, 'readonly': True}, {'name': 'labor_settlement_contract_no_display', 'sequence': 140, 'readonly': True}, {'name': 'labor_settlement_source_created_by_display', 'sequence': 150, 'readonly': True}, {'name': 'source_created_at', 'sequence': 160, 'readonly': True}]                         }                     }                 }             }" />
         </record>
+        <!-- U-C4 G09 可办理性修正（创建态）：本载体是该模型上唯一声明业务事实只读策略的地方，而它把交付面断言为无条件只读，与同一份声明里的 REQUIRED(project_id) 自相矛盾——新建页因此给不出合法办理路径。现按字段职责逐项收口，只移除『应由用户录入』字段的无条件只读，其余保留。 逐字段分类：用户录入＝project_id／note（移除只读；575 的状态规则尚未确定，本批不为该模型新增任何状态锁，避免把『已登记』直接判成不可修改）；计算／镜像＝registered_amount 之外的 *_display、sign_date、quantity_total、invoice_amount／paid_amount／unpaid_amount／uninvoiced_amount；历史事实＝source_created_by／source_created_at／message_attachment_count。 -->
         <record id="business_config_contract_sc_subcontract_register_p1_form_business_facts_v1" model="ui.business.config.contract">
             <field name="name">sc_subcontract_register_p1_form_business_facts_v1</field>
             <field name="model">sc.subcontract.register</field>
@@ -242,7 +281,39 @@
             <field name="active" eval="True" />
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval="{                 'view_orchestration': {                     'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},                     'views': {                         'form': {'composition_mode': 'entry_semantic_surface',                             'sections': [                                 {'title': '单据识别'},                                 {'title': '业务对象'},                                 {'title': '金额与办理'},                                 {'title': '附件与来源'}                             ],                             'fields': [{'name': 'subcontract_register_document_no_display', 'sequence': 10, 'readonly': True}, {'name': 'sign_date', 'sequence': 20, 'readonly': True}, {'name': 'subcontract_register_title_display', 'sequence': 30, 'readonly': True}, {'name': 'subcontract_register_subcontract_content_display', 'sequence': 40, 'readonly': True}, {'name': 'quantity_total', 'sequence': 50, 'readonly': True}, {'name': 'subcontract_register_amount_display', 'sequence': 60, 'readonly': True}, {'name': 'subcontract_register_contract_no_display', 'sequence': 70, 'readonly': True}, {'name': 'invoice_amount', 'sequence': 80, 'readonly': True}, {'name': 'paid_amount', 'sequence': 90, 'readonly': True}, {'name': 'unpaid_amount', 'sequence': 100, 'readonly': True}, {'name': 'uninvoiced_amount', 'sequence': 110, 'readonly': True}, {'name': 'project_id', 'sequence': 120, 'readonly': True}, {'name': 'note', 'sequence': 130, 'readonly': True}, {'name': 'message_attachment_count', 'sequence': 140, 'readonly': True}, {'name': 'source_created_by', 'sequence': 150, 'readonly': True}, {'name': 'source_created_at', 'sequence': 160, 'readonly': True}]                         }                     }                 }             }" />
+            <field name="contract_json" eval="{
+                'view_orchestration': {
+                    'context': {'source': 'smart_construction_core.product_release',
+                                'source_status': 'product_release'},
+                    'views': {
+                        'form': {
+                            'composition_mode': 'entry_semantic_surface',
+                            'sections': [
+                                {'title': '单据识别'}, {'title': '业务对象'},
+                                {'title': '金额与办理'}, {'title': '附件与来源'},
+                            ],
+                            'fields': [
+                                {'name': 'subcontract_register_document_no_display', 'sequence': 10, 'readonly': True},
+                                {'name': 'sign_date', 'sequence': 20, 'readonly': True},
+                                {'name': 'subcontract_register_title_display', 'sequence': 30, 'readonly': True},
+                                {'name': 'subcontract_register_subcontract_content_display', 'sequence': 40, 'readonly': True},
+                                {'name': 'quantity_total', 'sequence': 50, 'readonly': True},
+                                {'name': 'subcontract_register_amount_display', 'sequence': 60, 'readonly': True},
+                                {'name': 'subcontract_register_contract_no_display', 'sequence': 70, 'readonly': True},
+                                {'name': 'invoice_amount', 'sequence': 80, 'readonly': True},
+                                {'name': 'paid_amount', 'sequence': 90, 'readonly': True},
+                                {'name': 'unpaid_amount', 'sequence': 100, 'readonly': True},
+                                {'name': 'uninvoiced_amount', 'sequence': 110, 'readonly': True},
+                                {'name': 'project_id', 'sequence': 120},
+                                {'name': 'note', 'sequence': 130},
+                                {'name': 'message_attachment_count', 'sequence': 140, 'readonly': True},
+                                {'name': 'source_created_by', 'sequence': 150, 'readonly': True},
+                                {'name': 'source_created_at', 'sequence': 160, 'readonly': True}
+                            ],
+                        },
+                    },
+                },
+            }" />
         </record>
         <record id="business_config_contract_sc_subcontract_request_p1_form_business_facts_v1" model="ui.business.config.contract">
             <field name="name">sc_subcontract_request_p1_form_business_facts_v1</field>
@@ -277,6 +348,7 @@
             <field name="version_no">1</field>
             <field name="contract_json" eval="{                 'view_orchestration': {                     'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},                     'views': {                         'form': {'composition_mode': 'entry_semantic_surface',                             'sections': [                                 {'title': '单据识别'},                                 {'title': '业务对象'},                                 {'title': '金额与办理'},                                 {'title': '附件与来源'}                             ],                             'fields': [{'name': 'state', 'sequence': 10, 'readonly': True}, {'name': 'equipment_request_document_no_display', 'sequence': 20, 'readonly': True}, {'name': 'equipment_request_contract_no_display', 'sequence': 30, 'readonly': True}, {'name': 'project_id', 'sequence': 40, 'readonly': True}, {'name': 'equipment_request_contract_title_display', 'sequence': 50, 'readonly': True}, {'name': 'supplier_id', 'sequence': 60, 'readonly': True}, {'name': 'equipment_request_rental_content_display', 'sequence': 70, 'readonly': True}, {'name': 'quantity_total', 'sequence': 80, 'readonly': True}, {'name': 'invoice_amount', 'sequence': 90, 'readonly': True}, {'name': 'paid_amount', 'sequence': 100, 'readonly': True}, {'name': 'unpaid_amount', 'sequence': 110, 'readonly': True}, {'name': 'uninvoiced_amount', 'sequence': 120, 'readonly': True}, {'name': 'amount_total', 'sequence': 130, 'readonly': True}, {'name': 'request_date', 'sequence': 140, 'readonly': True}, {'name': 'source_created_by', 'sequence': 150, 'readonly': True}, {'name': 'tax_rate_text', 'sequence': 160, 'readonly': True}, {'name': 'vat_type_text', 'sequence': 170, 'readonly': True}, {'name': 'note', 'sequence': 180, 'readonly': True}, {'name': 'message_attachment_count', 'sequence': 190, 'readonly': True}, {'name': 'equipment_request_source_created_by_display', 'sequence': 200, 'readonly': True}, {'name': 'source_created_at', 'sequence': 210, 'readonly': True}]                         }                     }                 }             }" />
         </record>
+        <!-- U-C4 G09 可办理性修正（创建态）：本载体是该模型上唯一声明业务事实只读策略的地方，而它把交付面断言为无条件只读，与同一份声明里的 REQUIRED(project_id) 自相矛盾——新建页因此给不出合法办理路径。现按字段职责逐项收口，只移除『应由用户录入』字段的无条件只读，其余保留。 逐字段分类：用户录入＝project_id／usage_date／supplier_id／equipment_name／specification／uom_text／usage_qty／usage_hours／price_unit／attachment_ids／note（移除只读；原生 arch 已在这批字段上声明 state != 'draft' 并保留该口径，570 的后端写守卫 _FACT_IMMUTABLE_FIELDS 不变）；默认提供＝recorder_id（当前用户）；系统生成＝name（ir.sequence）／create_date；计算结果＝amount；工作流字段＝state。 -->
         <record id="business_config_contract_sc_equipment_usage_p1_form_business_facts_v1" model="ui.business.config.contract">
             <field name="name">sc_equipment_usage_p1_form_business_facts_v1</field>
             <field name="model">sc.equipment.usage</field>
@@ -286,7 +358,39 @@
             <field name="active" eval="True" />
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval="{                 'view_orchestration': {                     'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},                     'views': {                         'form': {'composition_mode': 'entry_semantic_surface',                             'sections': [                                 {'title': '单据识别'},                                 {'title': '业务对象'},                                 {'title': '金额与办理'},                                 {'title': '附件与来源'}                             ],                             'fields': [{'name': 'state', 'sequence': 10, 'readonly': True}, {'name': 'project_id', 'sequence': 20, 'readonly': True}, {'name': 'name', 'sequence': 30, 'readonly': True}, {'name': 'usage_date', 'sequence': 40, 'readonly': True}, {'name': 'supplier_id', 'sequence': 50, 'readonly': True}, {'name': 'equipment_name', 'sequence': 60, 'readonly': True}, {'name': 'specification', 'sequence': 70, 'readonly': True}, {'name': 'uom_text', 'sequence': 80, 'readonly': True}, {'name': 'usage_qty', 'sequence': 90, 'readonly': True}, {'name': 'usage_hours', 'sequence': 100, 'readonly': True}, {'name': 'price_unit', 'sequence': 110, 'readonly': True}, {'name': 'amount', 'sequence': 120, 'readonly': True}, {'name': 'attachment_ids', 'sequence': 130, 'readonly': True}, {'name': 'note', 'sequence': 140, 'readonly': True}, {'name': 'recorder_id', 'sequence': 150, 'readonly': True}, {'name': 'create_date', 'sequence': 160, 'readonly': True}]                         }                     }                 }             }" />
+            <field name="contract_json" eval="{
+                'view_orchestration': {
+                    'context': {'source': 'smart_construction_core.product_release',
+                                'source_status': 'product_release'},
+                    'views': {
+                        'form': {
+                            'composition_mode': 'entry_semantic_surface',
+                            'sections': [
+                                {'title': '单据识别'}, {'title': '业务对象'},
+                                {'title': '金额与办理'}, {'title': '附件与来源'},
+                            ],
+                            'fields': [
+                                {'name': 'state', 'sequence': 10, 'readonly': True},
+                                {'name': 'project_id', 'sequence': 20},
+                                {'name': 'name', 'sequence': 30, 'readonly': True},
+                                {'name': 'usage_date', 'sequence': 40},
+                                {'name': 'supplier_id', 'sequence': 50},
+                                {'name': 'equipment_name', 'sequence': 60},
+                                {'name': 'specification', 'sequence': 70},
+                                {'name': 'uom_text', 'sequence': 80},
+                                {'name': 'usage_qty', 'sequence': 90},
+                                {'name': 'usage_hours', 'sequence': 100},
+                                {'name': 'price_unit', 'sequence': 110},
+                                {'name': 'amount', 'sequence': 120, 'readonly': True},
+                                {'name': 'attachment_ids', 'sequence': 130},
+                                {'name': 'note', 'sequence': 140},
+                                {'name': 'recorder_id', 'sequence': 150, 'readonly': True},
+                                {'name': 'create_date', 'sequence': 160, 'readonly': True}
+                            ],
+                        },
+                    },
+                },
+            }" />
         </record>
         <record id="business_config_contract_sc_equipment_settlement_p1_form_business_facts_v1" model="ui.business.config.contract">
             <field name="name">sc_equipment_settlement_p1_form_business_facts_v1</field>

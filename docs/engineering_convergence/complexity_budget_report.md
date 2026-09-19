@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `4391`
 - Files requiring split plan: `51`
-- Files above warning threshold: `94`
+- Files above warning threshold: `95`
 
 ## Split Plan Required
 
@@ -124,6 +124,7 @@ Generated from repository source files. This report is informational during the 
 | 958 | Python source | `addons/smart_construction_core/tests/test_cost_fact_model_v2.py` |
 | 955 | Python source | `scripts/release/test_release_publication.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
+| 926 | Python source | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 916 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 911 | Python source | `scripts/ops/codex_agent_controller.py` |

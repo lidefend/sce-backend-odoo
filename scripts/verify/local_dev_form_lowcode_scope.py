@@ -319,7 +319,49 @@ TOPIC_REPRESENTATIVE = {
     # administrator reaches 「表单设置」 from 871／570／575 is a fact about these
     # entries.  The probe opens the header overflow menu and reads the item; it
     # never clicks through it, so it opens no change set and writes nothing.
-    "usage_performance": {"section_navigation": True, "record_surface": True, "designer_entry": True},
+    #
+    # `required_fillable` is the create-state assertion this batch adds to the
+    # group: the retained model-wide `p1_form_business_facts_v1` carriers declared
+    # every business fact unconditionally read-only, `project_id` included, while
+    # the same declaration marked it required - so the create page offered 提交
+    # with no legal path to the project.  The check asks the delivered create
+    # profile instead of the declarations: a fact the profile leaves authorable
+    # must expose a control the user can reach and fill, and a fact it marks
+    # required must be obtainable through a legal path (typed by the user, or
+    # carried by a default/compute/sequence behind the read-only presentation).
+    #
+    # `readonly_values` keeps the reverse example on the record surface: on the
+    # delivered 已确认 / 已登记 record, a fact the policy marks read-only must not
+    # expose an editable control.  `create_entry_probe` is the unsaved-entry
+    # proof - it stages values and picks a date through the delivered calendar on
+    # the create route and never submits, so no record, draft or change set is
+    # created and the wrapper's before/after fingerprint stays the guard.
+    "usage_performance": {
+        "section_navigation": True,
+        "record_surface": True,
+        "designer_entry": True,
+        "required_fillable": True,
+        "readonly_values": True,
+        "create_entry_probe": True,
+        # `create_carriers` names, per surface model, the required facts the
+        # delivered create profile keeps read-only *and* that a legal non-user
+        # carrier supplies, so the create-state battery can ask "is the required
+        # value obtainable by a legal path?" instead of the cruder "必填 ∩ 可填".
+        # `name` arrives from the document sequence and `settlement_state` from the
+        # model default; both are verified against the delivered field definition
+        # by the backend create-state test
+        # (`test_every_required_create_fact_is_obtainable_by_a_legal_path`, whose
+        # `FACT_CARRIERS` is the same classification).  The browser pass refuses a
+        # carrier declared for a fact the profile leaves authorable, so the
+        # declaration cannot mask a missing control.  575 declares none: its
+        # required facts (`project_id`, `register_date`, `subcontract_scope`,
+        # `currency_id`) are all authorable on the create surface, and its
+        # post-registration edit rule is still pending.
+        "create_carriers": {
+            "sc.labor.usage": {"name": "sequence", "settlement_state": "default"},
+            "sc.equipment.usage": {"name": "sequence"},
+        },
+    },
 }
 if topic not in TOPIC_IDENTITIES:
     raise RuntimeError("unregistered formal form topic")
