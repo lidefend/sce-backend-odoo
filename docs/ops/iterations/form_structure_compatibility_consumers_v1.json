@@ -6,7 +6,7 @@
     "operation": "model",
     "renderProfile": "create"
   },
-  "count": 25,
+  "count": 22,
   "fullRescan": false,
   "sourceInventory": "artifacts/form-structure-unification/customer-browser-final/compatibility-consumers.json",
   "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
@@ -2228,102 +2228,6 @@
       "evidenceStatus": "carried_forward_prior_inventory"
     },
     {
-      "menuXmlid": "smart_construction_core.menu_sc_product_team_loan_deduction_v1",
-      "label": "班组借/扣款登记",
-      "model": "sc.team.loan.deduction.workspace",
-      "actionId": 875,
-      "menuId": 697,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.team.loan.deduction.workspace",
-        "viewId": 1932
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 173,
-            "name": "team_loan_deduction_workspace_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1932,
-        "resolvedActionId": 875,
-        "structureDiagnostics": [],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "project_id",
-          "partner_id",
-          "business_date",
-          "processing_advisory",
-          "note"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:办理上下文",
-            "key": "",
-            "title": "办理上下文",
-            "fields": [
-              "project_id",
-              "partner_id",
-              "business_date",
-              "processing_advisory"
-            ]
-          },
-          {
-            "identity": "title:办理说明",
-            "key": "",
-            "title": "办理说明",
-            "fields": [
-              "note"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "办理上下文",
-          "办理说明"
-        ],
-        "fieldGroups": {
-          "办理上下文": [
-            "project_id",
-            "partner_id",
-            "business_date",
-            "processing_advisory"
-          ],
-          "办理说明": [
-            "note"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "办理上下文": 2,
-          "办理说明": 1
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
       "menuXmlid": "smart_construction_core.menu_sc_p1_daily_contract",
       "label": "日常合同",
       "model": "sc.general.contract",
@@ -2852,198 +2756,6 @@
         "hiddenFieldNames": [],
         "groupColumns": {},
         "groupVisibility": {}
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_product_current_account_v1",
-      "label": "往来款登记",
-      "model": "sc.current.account.workspace",
-      "actionId": 877,
-      "menuId": 699,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.current.account.workspace",
-        "viewId": 1933
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 175,
-            "name": "current_account_workspace_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1933,
-        "resolvedActionId": 877,
-        "structureDiagnostics": [],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "project_id",
-          "partner_id",
-          "business_date",
-          "processing_advisory",
-          "note"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:办理上下文",
-            "key": "",
-            "title": "办理上下文",
-            "fields": [
-              "project_id",
-              "partner_id",
-              "business_date",
-              "processing_advisory"
-            ]
-          },
-          {
-            "identity": "title:办理说明",
-            "key": "",
-            "title": "办理说明",
-            "fields": [
-              "note"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "办理上下文",
-          "办理说明"
-        ],
-        "fieldGroups": {
-          "办理上下文": [
-            "project_id",
-            "partner_id",
-            "business_date",
-            "processing_advisory"
-          ],
-          "办理说明": [
-            "note"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "办理上下文": 2,
-          "办理说明": 1
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_product_company_project_refund_v1",
-      "label": "公司&项目退款",
-      "model": "sc.company.project.refund.workspace",
-      "actionId": 878,
-      "menuId": 700,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.company.project.refund.workspace",
-        "viewId": 1934
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 176,
-            "name": "company_project_refund_workspace_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1934,
-        "resolvedActionId": 878,
-        "structureDiagnostics": [],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "project_id",
-          "partner_id",
-          "business_date",
-          "processing_advisory",
-          "note"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:办理上下文",
-            "key": "",
-            "title": "办理上下文",
-            "fields": [
-              "project_id",
-              "partner_id",
-              "business_date",
-              "processing_advisory"
-            ]
-          },
-          {
-            "identity": "title:办理说明",
-            "key": "",
-            "title": "办理说明",
-            "fields": [
-              "note"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "办理上下文",
-          "办理说明"
-        ],
-        "fieldGroups": {
-          "办理上下文": [
-            "project_id",
-            "partner_id",
-            "business_date",
-            "processing_advisory"
-          ],
-          "办理说明": [
-            "note"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "办理上下文": 2,
-          "办理说明": 1
-        },
-        "groupVisibility": {},
-        "formColumns": 2
       },
       "compatibilityLogic": [
         "legacy structure slots",
@@ -3939,7 +3651,7 @@
     "countCorrection": 4,
     "migrationReduction": 3
   },
-  "localVerifiedCount": 25,
+  "localVerifiedCount": 22,
   "uc1PublishedAudit": {
     "auditedAt": "2026-09-16",
     "auditedReleaseHead": "28b7695dc9f1cebbbe9bd5d715e951c6dec8a4da",
@@ -4112,12 +3824,12 @@
     "name": "U-C4",
     "status": "scope_confirmed_implementation_started",
     "priorityActions": [
-      875,
-      877,
-      878
+      871,
+      570,
+      575
     ],
-    "selectedGroup": "G08",
-    "sourceMainlineHead": "b781e3c241bf42b2ae51c6ac4064c4a1af647a65",
+    "selectedGroup": "G09",
+    "sourceMainlineHead": "cefeff1fa48888bc54c60b7d01d144b18a5aaea8",
     "fullRescan": false,
     "groups": [
       {
@@ -4465,7 +4177,7 @@
     "planningRecord": "docs/ops/iterations/form_structure_consumption_stabilization_20260917.md"
   },
   "retirementCondition": "Only after every formal consumer of a compatibility regrouping path is zero and other roles/companies/states are covered, remove that regrouping logic and its test exemptions.",
-  "mainlineRemainingCount": 25,
+  "mainlineRemainingCount": 22,
   "mainlineRemainingLabel": "主线剩余兼容消费者（不代表部署发布或89入口整体交付）",
   "uc3LocalMigrationAudit": {
     "status": "mainline_integrated",
@@ -4970,6 +4682,59 @@
       "five_sibling_entries_660_661_662_663_664_never_counted_in_this_ledger",
       "884_660_661_662_874_record_surface_uncovered_empty_action_domain",
       "shared_views_1697_1700_not_retired_by_this_deduction"
+    ]
+  },
+  "uc4G08PublishedAudit": {
+    "auditedAt": "2026-09-19",
+    "auditedReleaseHead": "cefeff1fa48888bc54c60b7d01d144b18a5aaea8",
+    "mergedPr": {
+      "number": 497,
+      "squashHead": "cefeff1fa48888bc54c60b7d01d144b18a5aaea8",
+      "sourceHead": "e3d4703eb38456cafb8d518f619ed332208b4867",
+      "tree": "dc46ed33b7b90d1b58ff9924c5eb4b32c45b79e2"
+    },
+    "iterationRecord": "docs/ops/iterations/form_structure_consumption_stabilization_20260917.md",
+    "requiredChecks": [
+      "classify=success",
+      "frontend_release_gate=success",
+      "merge_policy_gate=success",
+      "professional_authorization=success",
+      "professional_quality_gate=success",
+      "public_guard=success",
+      "public_guard_classify=success",
+      "python310_runtime_compatibility=success",
+      "release_candidate_gate=success"
+    ],
+    "skippedChecks": [
+      "classify",
+      "fast",
+      "wait_for_candidate_checks"
+    ],
+    "reduction": {
+      "before": 25,
+      "after": 22,
+      "retiredActions": [875, 877, 878],
+      "retiredViews": [1932, 1933, 1934],
+      "countMeaning": "mainline remaining compatibility consumers; deployment and overall user delivery are separate",
+      "retiredViewMeaning": "these ids label the three retired ledger entries: each is that entry's own single native primary form (one per model, inherit_id=False, prio 16) and stays live as the entry's rendering target, so the deduction retires three ledger entries and no view"
+    },
+    "exitEvidence": {
+      "sourceCheck": "each retired entry's contract now declares only view_orchestration.views.form.title plus composition_mode=native_semantic_surface bound to its own action: 173 team_loan_deduction_workspace_form_v1, 175 current_account_workspace_form_v1, 176 company_project_refund_workspace_form_v1; no sections/fields/columns/field_slots/layout remain, so structural_form_declarations() yields nothing and diagnose_structure_ownership() can no longer emit LEGACY_STRUCTURE_KEY_OVERRIDE for these entries",
+      "semanticsKept": "all three keep view_orchestration.context untouched: fact_authority=dispatch_only (the three workbenches hold no business fact); 877 additionally keeps fact_models and projection_authority, 878 keeps the same dispatch declaration; the retired copy was structural, not the entry's declared fact scope",
+      "nativeStructureCheck": "the three native forms keep named business groups with data-sc-anchor and explicit col, with the handling note rendered as its own group; entry authority is the native tree rather than a configured structure copy",
+      "testCheck": "smart_construction_core TestContextWorkspaceNativeLowcode plus TestTeamLoanDeductionWorkspace / TestCurrentAccountWorkspace / TestCompanyProjectRefundWorkspace (tag uc4_native_lowcode) ran 0 failed, 0 error(s) of 97 tests on the frozen tree, asserting the native-contract path and the role-surface refusals",
+      "scopeCheck": "the ledger counted these entries only for their config-side structure copy; the three models are transient dispatch workbenches holding no business fact, and no other counted entry or shared primary form consumes these configuration records, so nothing else retires",
+      "roleSurfaceCheck": "read-only re-measure at the frozen head: 14 dispatch carriers pair 14/14 inside their owning role's navigation surface (finance 11, project_member 3); this batch changed no ACL and added no native menu visibility"
+    },
+    "knownLimits": [
+      "per-form field policy editor stays unavailable for the three transient workbenches (named capability limit, not closed by G08)",
+      "875/877 verified for isolation only; custom fields not covered; system setting 887 not opened",
+      "two record-keeping corrections landed in the frozen head: the earlier refusal-counterexample wording attributed a synthetic principal's behaviour to fixture principals (see record 8.34.14-5)"
+    ],
+    "notDeducted": [
+      "native_primary_forms_1932_1933_1934_stay_live_as_the_rendering_target_of_their_own_entry",
+      "three_workspace_models_stay_live_as_transient_dispatch_carriers",
+      "role_navigation_surface_declarations_added_by_this_batch_are_not_ledger_consumers"
     ]
   }
 }
