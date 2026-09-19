@@ -3061,14 +3061,58 @@ fail-closed 停止（收据未签发）。
 **未变更的结论**：本批**未改任何 ACL**（`git diff --name-only 26d254ad..HEAD` 无 `security/`／
 `access` 路径）；扩大的是角色导航面声明，且只对"原生已可见这些菜单"的主体生效。
 
+### 8.34.15 G08 主线集成与台账 25 → 22（2026-09-19）
+
+冻结候选 `e3d4703eb38456cafb8d518f619ed332208b4867`（tree `dc46ed33b7b90d1b58ff9924c5eb4b32c45b79e2`，
+7 提交／**40 条路径**，exact-head `ci.local.quick` PASS）经 **PR #497** 以 squash 合入 main
+`cefeff1fa48888bc54c60b7d01d144b18a5aaea8`；`origin/main^{tree}` 与候选 tree **逐字节一致**，
+相对基线 `26d254ad` 的路径数同为 **40**。合入前该 head 上远端必检项 **9 success／3 skipped／0 fail**：
+success `classify`／`frontend_release_gate`／`merge_policy_gate`／`professional_authorization`／
+`professional_quality_gate`／`public_guard`／`public_guard_classify`／`python310_runtime_compatibility`／
+`release_candidate_gate`；skipped `classify`（候选检查变体）／`fast`／`wait_for_candidate_checks`。
+`make pr.merge.local_quick_gate` 以同一 head 的 exact-head 回执**复用**（未重跑矩阵），
+`make pr.merge`（squash ＋ `--match-head-commit`）通过。
+
+台账 `docs/ops/iterations/form_structure_compatibility_consumers_v1.json` 扣减 **25 → 22**
+（本批在台账内**正好 3 条**：875 班组借/扣款登记（视图 1932）／877 往来款登记（1933）／
+878 公司&项目退款（1934）），
+退役 action 875／877／878，`count`／`localVerifiedCount`／`mainlineRemainingCount` 同步为 22，
+并新增 `uc4G08PublishedAudit`。**按已合入源码逐项核对**：
+
+- 三条入口契约（`team_loan_deduction_workspace_form_v1` 173／`current_account_workspace_form_v1` 175／
+  `company_project_refund_workspace_form_v1` 176）只留 `title` ＋
+  `composition_mode: native_semantic_surface`，各自绑定本入口 action；**无 sections／fields／columns**，
+  兼容结构副本已退出，`structural_form_declarations()` 无声明、`diagnose_structure_ownership()` 不可能
+  再为这三条产出 `LEGACY_STRUCTURE_KEY_OVERRIDE`。
+- `view_orchestration.context` 的语义声明**原样保留**（三条均 `fact_authority: dispatch_only`；
+  877 另保留 `fact_models`／`projection_authority`）——退役的是**结构副本**，不是入口声明的业务事实范围。
+- **不额外计数**：三个工作台模型是 `TransientModel` 派发载体，自身不持有业务事实；三条原生主视图
+  1932／1933／1934 一模型一视图、是该条目自身的渲染目标，**不随扣减退役**（`uc4G08PublishedAudit.reduction.
+  retiredViewMeaning`）；本批新增的是**角色导航面声明**，不是台账消费者（`notDeducted`）。
+
+**保留边界（不随本批关闭）**：每表单字段策略编辑器对三个 transient 工作台不可用（**已命名的能力限制**）；
+875／877 只验证隔离、自定义字段未覆盖；系统设置 887 未开放；89 入口整体交付未完成
+（`retirementComplete=false`）。
+
+`nextBatch.selectedGroup` 前进到 **G09 用量与履约登记**（871／570／575，视图 1461／1476／1491），
+`priorityActions` 同步为 `[871,570,575]`，`sourceMainlineHead` 更新为合入后 main；**G09 未启动**。
+
+本提交为**文档类单职责提交**（台账 ＋ 本记录，路径集合固定为 2）；**未触碰**任何产品代码、契约、
+测试或验证工具输入，故不改动 8.34.7／8.34.13 的 L1–L4 结论，也不重跑 Quick：候选的 exact-head Quick
+回执属于 `e3d4703e`，本提交的收据由受管合并门禁按 fail-closed 口径产生，**不冒充同一绑定**。
+
+状态：**G08 批次验收完成（本批范围）｜主线集成完成（PR #497，squash 同树）｜未部署｜89 入口交付未完成｜台账 22｜G09 未启动**。
+
 ### 8.34.9 状态
 
-状态：**G07 已集成（主线 `26d254ad`，台账 25）｜G08 结构迁移与四轮整改已完成；第四轮集中产品
+状态（**该阶段历史口径**）：**G07 已集成（主线 `26d254ad`，台账 25）｜G08 结构迁移与四轮整改已完成；第四轮集中产品
 复核判定「可见效果通过、仅余组件边界」｜第五轮已移除 TDesign 内部选择器、把宽度责任落回项目
 自有容器（真实面先复现回归、再复现第四轮通过态）｜**冻结轮首跑 Quick 在链上第 29 项守卫处
 捕获 P0 门面门禁回归，已在实现侧修复且守卫未放宽（`make/ci.mk:910`）｜冻结轮独立复核按**实际主体**重测授权差异，更正 §8.34.11-④(c) 两处拒绝反例主体（见 8.34.14-⑤）**｜
 **已冻结（冻结 HEAD 即本记录所在提交）**｜
 未推送、未部署｜台账保持 25（本批不扣减）｜89 入口整体交付未完成**。
+
+上述「未推送／未建 PR／未部署／台账保持 25」已在本批后续阶段执行并闭合，最终口径见 **8.34.15**。
 
 第五轮状态要点（与 8.34.13 配套）：
 - **工作树**：`feature/uc4-g08-context-workspace-native-v1`，基线 `26d254ad`。本轮把第二～五轮成果
