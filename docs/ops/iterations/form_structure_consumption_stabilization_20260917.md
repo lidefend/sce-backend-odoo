@@ -2972,12 +2972,61 @@ FORM_LOWCODE_REPRESENTATIVE=1 make local.dev.form_lowcode.browser` →
   冻结、G09 启动。
 - 组件边界结论：**内部厂商选择器依赖已移除，宽度责任落在项目自有内容容器**；本轮只补受影响路径。
 
+### 8.34.14 冻结轮：首跑 Quick 捕获的 P0 门面门禁回归与修复（2026-09-19）
+
+#### 8.34.14-① 首跑 `make ci.local.quick` **失败**（真实门禁回归，非环境／基线问题）
+
+| 项 | 事实 |
+| --- | --- |
+| 候选 | `c7cb7b75e385907a1d5a9f602ccfa7065f8bdc0b`（冻结前生成物刷新提交，工作区 clean） |
+| 失败点 | `scripts/verify/contract_governance_domain_overrides_split_guard.py` |
+| 失败输出 | `contract_governance.py missing domain override split token: _domain_overrides.register_contract_domain_override(name, handler, priority=priority)` |
+| 分类 | **实现侧（P0 门面）接口扩展**导致既有 P4 结构 token 失配；不是环境缺陷、不是基线／证据缺陷、也不是守卫误判 |
+| 首次偏差点 | `addons/smart_core/utils/contract_governance.py` 的 `register_contract_domain_override` 委派行被改写为多行并追加 `native_authority_safe=` 关键字 |
+
+守卫钉住的是结构不变量——**门面只做单行委派、注册表本体住在拆分模块**。本批新增
+`native_authority_safe` 参数时把该委派行整体重排，字面 token 因此不再命中，Quick 在链尾
+`contract_governance_domain_overrides_split_guard`（`make/ci.mk:910`，链尾第 30 条命令）处
+fail-closed 停止（收据未签发）。
+
+#### 8.34.14-② 修复归属：改实现，不改规则
+
+- 把 `native_authority_safe` 的转发拆成**独立委派调用**；默认路径保留守卫钉住的单行委派
+  `_domain_overrides.register_contract_domain_override(name, handler, priority=priority)`。
+- **未修改** `scripts/verify/contract_governance_domain_overrides_split_guard.py`：token 列表、
+  禁用项与 `MAX_GOVERNANCE_LINES=1792` 行预算全部原样保留，**没有**把规则改成迁就实现。
+- 行为等价：两种写法在 `DOMAIN_OVERRIDE_REGISTRY` 产出的行字段完全一致
+  （`name` / `priority` / `handler` / `native_authority_safe`），仅源码文本变化；因此第五轮
+  运行态证据的**行为**结论不受影响，但候选指纹随后更新，运行态报告按 8.34.14-④ 重新绑定。
+
+#### 8.34.14-③ 修复后复验（只补受影响路径）
+
+| 检查 | 结果 |
+| --- | --- |
+| `contract_governance_domain_overrides_split_guard.py` | **PASS** |
+| Quick 链尾 24 项定向守卫／smoke（`construction_core_extension_*`、`ui_contract_v2_responsibility_map`、`v1_1_convergence_status`、`action_view*`、`frontend_page_contract_*`、`frontend_contract_consumer_intrusion`、`frontend_shared_surface_semantic_boundary`、`product_client_action_boundary`、`test_frontend_release_evidence_bundle`） | **PASS**（`tail_guard_failures=0`） |
+| L2 `TEST_TAGS="uc4_native_lowcode"` | **PASS** `0 failed, 0 error(s) of 97 tests` |
+| `make ci.delivery.freeze.prepare` | **PASS**；生成物仅随行数变化（`contract_governance.py` 1406→1412），无结构变化 |
+
+#### 8.34.14-④ 冻结身份与冻结后的证据绑定口径
+
+- 分支 `feature/uc4-g08-context-workspace-native-v1`；基线 `26d254ad`；**冻结 HEAD 即本记录所在提交**
+  （`git log -1 --format=%H`）；冻结时 `git status --porcelain=v1 --untracked-files=all` 为空；
+  相对基线改动 **40 条路径**。
+- 为保证 `ci.local.quick` 的 exact-head 收据与冻结指纹**同一绑定**，冻结提交之后**不再产生仓库提交**：
+  受影响运行态复检（代表面 journey ＋ 后端加载代码／模块升级状态核对）与最终 Quick 的结果，
+  记录在**外部归档报告**（`/home/lidefend/workspace/.codex-evidence/workspace-archives/`）与
+  `artifacts/lowcode-form-loop/browser/representative-report-context_workspace.json`。
+- 台账保持 **25**；未推送、未部署；G08 入口退役的台账核减仍按既定规则**待合入后独立核对**。
+
 ### 8.34.9 状态
 
-状态：**G07 已集成（主线 `26d254ad`，台账 25）｜G08 结构迁移与四轮整改已完成；第四轮集中产品复核
-判定「可见效果通过、仅余组件边界」｜第五轮已移除 TDesign 内部选择器、把宽度责任落回项目自有
-容器（真实面先复现回归、再复现第四轮通过态）｜**第五轮组件边界收口已交回，待第五轮集中复核**｜
-未冻结、未推送、未部署｜台账保持 25（本批不扣减）｜89 入口整体交付未完成**。
+状态：**G07 已集成（主线 `26d254ad`，台账 25）｜G08 结构迁移与四轮整改已完成；第四轮集中产品
+复核判定「可见效果通过、仅余组件边界」｜第五轮已移除 TDesign 内部选择器、把宽度责任落回项目
+自有容器（真实面先复现回归、再复现第四轮通过态）｜**冻结轮首跑 Quick 在链上第 29 项守卫处
+捕获 P0 门面门禁回归，已在实现侧修复且守卫未放宽（`make/ci.mk:910`）**｜
+**已冻结（冻结 HEAD 即本记录所在提交）**｜
+未推送、未部署｜台账保持 25（本批不扣减）｜89 入口整体交付未完成**。
 
 第五轮状态要点（与 8.34.13 配套）：
 - **工作树**：`feature/uc4-g08-context-workspace-native-v1`，基线 `26d254ad`。本轮把第二～五轮成果

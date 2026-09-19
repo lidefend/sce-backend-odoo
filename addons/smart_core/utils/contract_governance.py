@@ -1226,12 +1226,18 @@ def register_contract_domain_override(
     priority: int = 100,
     native_authority_safe: bool = False,
 ) -> None:
-    _domain_overrides.register_contract_domain_override(
-        name,
-        handler,
-        priority=priority,
-        native_authority_safe=native_authority_safe,
-    )
+    # The declared-semantics flag is forwarded on its own delegation call: the
+    # default registration stays the one canonical forwarding line that the
+    # architecture split guard pins for this facade.
+    if native_authority_safe:
+        _domain_overrides.register_contract_domain_override(
+            name,
+            handler,
+            priority=priority,
+            native_authority_safe=True,
+        )
+        return
+    _domain_overrides.register_contract_domain_override(name, handler, priority=priority)
 
 
 def _append_governance_diagnostic(data: dict, key: str, value: Any) -> None:
