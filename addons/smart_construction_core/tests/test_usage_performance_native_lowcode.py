@@ -872,10 +872,131 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
         # Basis facts are not measured facts: the user completes them while the
         # record waits for confirmation.
         usage.write({"note": "提交后补充依据", "attachment_ids": [(6, 0, [])]})
+        # The 退回 leg of the delivered flow: a submitted record may be cancelled,
+        # but it gives up its window with it - the arch renders `state != 'draft'`
+        # read-only and the backend must refuse the same write instead of leaving
+        # an API-only gap behind the page.
+        usage.action_cancel()
+        self.assertEqual(usage.state, "cancel")
+        with self.assertRaises(UserError):
+            usage.write({"work_content": "取消后改写"})
+        with self.assertRaises(UserError):
+            usage.unlink()
+        # The sanctioned way back to the window is the business action, not a write.
+        usage.action_reset_draft()
+        self.assertEqual(usage.state, "draft")
+        usage.write({"work_content": "退回草稿后修正"})
+        self.assertEqual(usage.work_content, "退回草稿后修正")
+        usage.action_submit()
         usage.action_confirm()
         self.assertEqual(usage.state, "confirmed")
         with self.assertRaises(UserError):
             usage.write({"price_unit": 12.0})
+        # `cancel` is only reachable from draft/submitted, so a confirmed record
+        # keeps that refusal too (the delivered flow rule, not a new lock).
+        with self.assertRaises(UserError):
+            usage.action_cancel()
+
+    def test_the_labor_usage_state_is_only_advanced_by_a_business_action(self):
+        """A fact guard with an unguarded `state` is not a guard.
+
+        `state` is not a business fact, so the fact set cannot cover it.  Without
+        a transition guard, one `write({"state": "draft"})` re-opens the window a
+        submitted or confirmed record had already left, and the fact guard becomes
+        decorative.  570 `sc.equipment.usage` refuses the same write through the
+        shared cost-source token; this entry now shares that mechanism.
+        """
+        project = self.env["project.project"].search([], limit=1)
+        self.assertTrue(project, "the governed database must carry a project")
+        usage = self.env["sc.labor.usage"].create({
+            "project_id": project.id,
+            "labor_team": "G09 状态守卫班组",
+            "work_content": "G09 状态守卫验证",
+            "worker_qty": 1.0,
+            "work_hours": 1.0,
+        })
+        # A raw state write is refused in every state, including the reopening one.
+        with self.assertRaises(UserError):
+            usage.write({"state": "submitted"})
+        usage.action_submit()
+        self.assertEqual(usage.state, "submitted")
+        with self.assertRaises(UserError):
+            usage.write({"state": "draft"})
+        self.assertEqual(usage.state, "submitted")
+        with self.assertRaises(UserError):
+            usage.write({"state": "draft", "worker_qty": 9.0})
+        usage.invalidate_recordset()
+        self.assertEqual(usage.state, "submitted")
+        self.assertEqual(usage.worker_qty, 1.0)
+        # The business actions still move the state through the sanctioned path,
+        # and they keep their own flow rules (`已确认` may not be cancelled late).
+        usage.action_confirm()
+        self.assertEqual(usage.state, "confirmed")
+        with self.assertRaises(UserError):
+            usage.action_cancel()
+        self.assertEqual(usage.state, "confirmed")
+
+    def test_the_labor_usage_guard_covers_the_record_creation_entry(self):
+        """The transition guard has to hold on `create()`, not only on `write()`.
+
+        Fact writes go through `write()`, but a record can also enter the table
+        already outside the draft window: `create({"state": "confirmed", ...})`
+        plants one without ever passing the fact guard or a business action.  570
+        `sc.equipment.usage` refuses the same values through the shared
+        cost-source token, so the two entries share the mechanism.
+
+        `copy()` is the other creation entry and is deliberately not part of the
+        hole: `state.copy` is `False` on the delivered model, so a copy of a
+        confirmed record lands as a new `draft` (facts copied, state defaulted)
+        instead of resurrecting the moved-on record.  That is platform behaviour
+        and is pinned here so a later reader does not mistake `copy()` for a
+        second bypass.
+        """
+        project = self.env["project.project"].search([], limit=1)
+        self.assertTrue(project, "the governed database must carry a project")
+        model = self.env["sc.labor.usage"]
+        self.assertFalse(model._fields["state"].copy)
+        vals = {
+            "project_id": project.id,
+            "labor_team": "G09 建单守卫班组",
+            "work_content": "G09 建单守卫验证",
+            "worker_qty": 1.0,
+            "work_hours": 1.0,
+        }
+        # No state means the declared default, and the draft window is open.
+        draft = model.create(dict(vals))
+        self.assertEqual(draft.state, "draft")
+        # Planting a moved-on record is refused at every off-default state.
+        with self.assertRaises(UserError):
+            model.create(dict(vals, state="submitted"))
+        with self.assertRaises(UserError):
+            model.create(dict(vals, state="confirmed"))
+        self.assertEqual(model.search_count([("labor_team", "=", vals["labor_team"])]), 1)
+        # `copy()` cannot land a non-draft state, and it does not touch the source.
+        draft.action_submit()
+        self.assertEqual(draft.state, "submitted")
+        copied = draft.copy()
+        self.assertEqual(copied.state, "draft")
+        self.assertEqual(copied.work_content, draft.work_content)
+        self.assertEqual(draft.state, "submitted")
+        with self.assertRaises(UserError):
+            copied.write({"state": "confirmed"})
+
+    def test_the_equipment_usage_window_stays_narrower_and_is_pinned(self):
+        """570's guard is retained unchanged, so its narrower window is recorded.
+
+        `sc.equipment.usage` refuses a post-submission fact write only in
+        `submitted`/`confirmed`, while its arch locks on the wider
+        `state != 'draft'`.  This batch is not authorized to add a lock to 570, so
+        the divergence is pinned here for the follow-up schedule instead of being
+        silently widened or silently dropped.
+        """
+        guard = self.env["sc.equipment.usage"]._FACT_IMMUTABLE_FIELDS
+        arch = self._arch_readonly("view_sc_equipment_usage_form")
+        window = {name for name, expr in arch.items() if expr == "state != 'draft'"}
+        self.assertTrue(window, "570's arch must open a draft window")
+        # 570's backend window is the narrower one and this batch does not widen it.
+        self.assertIn("request_id", window - set(guard))
 
     def test_the_equipment_usage_guard_is_retained(self):
         """570's delivered guard is untouched: the correction adds no new lock."""

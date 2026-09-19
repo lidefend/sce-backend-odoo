@@ -33,7 +33,12 @@ export async function runFormalFormLoop() {
     : invoiceTopic ? '../../../artifacts/uc4-invoice-lowcode/browser'
     : '../../../artifacts/lowcode-form-loop/browser');
   await fs.mkdir(out, { recursive: true });
-  const report = { candidate: process.env.CANDIDATE_GIT_HEAD, dirty: true, scope, stages: {}, restored: false, ok: false };
+  // `dirty` was a literal `true`, so a clean frozen candidate still produced a report
+  // that claimed an uncommitted worktree and could never be bound to the frozen SHA.
+  // The wrapper now measures it; an unset or unknown value stays `dirty` (fail-closed)
+  // rather than borrowing a cleanliness the run did not observe.
+  const reportDirty = process.env.CANDIDATE_DIRTY !== '0';
+  const report = { candidate: process.env.CANDIDATE_GIT_HEAD, dirty: reportDirty, scope, stages: {}, restored: false, ok: false };
   const navigationOnly = process.env.FORM_LOWCODE_NAV_ONLY === '1';
   const observeOnly = process.env.FORM_LOWCODE_PREVIEW_OBSERVE === '1';
   const closureOnly = process.env.FORM_LOWCODE_PREVIEW_CLOSURE === '1' || observeOnly;

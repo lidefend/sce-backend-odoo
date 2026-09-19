@@ -3383,12 +3383,13 @@ success `classify`／`frontend_release_gate`／`merge_policy_gate`／`profession
 
 ### 8.35.10 状态
 
-状态：**自验与冻结门禁通过、待集中产品复核（本批范围）｜已完成有界复核轮二（身份／角色／工具补验，见 §8.35.13）｜本轮新候选由提交后回执记录（原候选 `6511134c586320b8c07f1be8aa9d60ecb9d046d3` 已被本轮提交取代）｜未集成｜未部署｜89 入口整体交付未完成｜台账 22**。
+状态：**自验与冻结门禁通过（本批范围）｜已完成有界复核轮二（身份／角色／工具补验，见 §8.35.13）｜已完成创建态可办理性修复与定向补验（见 §8.35.14）｜独立复核 S1 已修正并已在冻结身份上重绑执行证据（见 §8.35.15／§8.35.16）｜产品复核结论以产品方登记为准｜未集成｜未部署｜89 入口整体交付未完成｜台账 22**。
 **G08 主线集成 ≠ 部署 ≠ 89 入口整体交付完成**，本批同理。
 
-**口径更正（见 8.35.12-①）**：本段原写「G09 批次验收完成」，现更正为「自验与冻结门禁通过、待集中产品复核」。
+**口径更正（历史记录，见 8.35.12-①）**：本段状态行在收口轮之前曾写「G09 批次验收完成」，**已在 §8.35.15 之前的修正中
+替换为上方现行状态行**；以本节状态行为本批唯一现行口径，上文括号内不再复述被替换文本。
 按 AGENTS.md「Completion Status Boundaries」，`批次验收完成` 只能在 scoped changes ＋ targeted tests ＋
-**batch product review** 三者都通过后使用；集中产品复核尚未完成，故不得使用该措辞。
+**batch product review** 三者都通过后使用；本批产品复核结论以产品方登记为准，本文件不代述，故不得使用该措辞。
 
 ### 8.35.11 冻结前复核补证：退役载体对**所有**消费者的 A/B 只读对比
 
@@ -3837,7 +3838,7 @@ fixture 用户与持组载体（P4／环境授权范围内），**不涉及产�
 | 层 | `usage_type` 的声明 | 结论 |
 | --- | --- | --- |
 | 原生声明 | `views/core/labor_management_views.xml`：`<field name="usage_type"/>`（本批前**从未**声明只读） | 允许录入 |
-| 模型约束 | `ScLaborUsage._FACT_IMMUTABLE_FIELDS` **含** `usage_type`（草稿内可录入、提交后冻结） | 允许录入 |
+| 模型约束 | 本批前 `ScLaborUsage` **没有**事实守卫（`_FACT_IMMUTABLE_FIELDS` 与 `write()/unlink()` 由本批新增），后端对只读策略不作任何声明 | 与原生声明一样不阻断录入 |
 | **配置策略** | `sc_labor_usage_p1_form_business_facts_v1`：`{'name':'usage_type','readonly':True}` | **无条件只读 ← 首次偏差（本批前已存在）** |
 | 最终契约 | `layoutContract` 节点 `readonly=true`，而 `statusContract.widgetStatus` 为 `readonly=false／required=true` | 契约自相矛盾 |
 | 控件 | `data-field-state="readonly"`，无 `input`／`select` 可驱动 | 新建页无法选择用工类型 |
@@ -3867,9 +3868,13 @@ fixture 用户与持组载体（P4／环境授权范围内），**不涉及产�
   `write()/unlink()` 守卫），**本批未新增任何锁**。如实登记一处残留：570 的 arch 把
   `request_id` 纳入草稿窗口，而其保留守卫**未**冻结该事实，测试以显式期望
   （`residual == {"request_id"}`）固定该差异，供后续调度，不在本批扩大范围。
-- **871**：按既有 `action_submit → action_confirm → action_reset_draft` 流程核对可编辑范围，
-  由新增的 `_FACT_IMMUTABLE_FIELDS` ＋ `write()/unlink()` 在 `state in ('submitted','confirmed')`
-  时拒绝事实写入；`note`／`attachment_ids` 为随时可补的依据类事实，**不**纳入守卫。
+- **871**：按既有 `action_submit → action_confirm → action_cancel → action_reset_draft` 流程核对
+  可编辑范围，由新增的 `_FACT_IMMUTABLE_FIELDS` ＋ `write()/unlink()` 在**离开草稿**（`state != 'draft'`）时
+  拒绝事实写入，窗口取原生 arch 的同一口径；`note`／`attachment_ids` 为随时可补的依据类事实，**不**纳入守卫。
+  `state` 本身不是业务事实，故另加与 570 同形的受控流转守卫（`_COST_SOURCE_STATE_CONTEXT_KEY` 令牌）：
+  否则一次 `write({"state": "draft"})` 就能重新打开窗口，事实守卫形同装饰（见 §8.35.15）。
+  同组 **570 的后端窗口仍更窄**（仅在 submitted／confirmed 拒绝），本批按授权不改它，差异以
+  `test_the_equipment_usage_window_stays_narrower_and_is_pinned` 固定。
 - **575**：`draft／active／closed` 及明细调整规则**仍未确定**，因此**本批不新增任何状态锁、不新增后端守卫**，
   以 `test_the_subcontract_register_post_registration_rule_stays_pending` 固定"无守卫"这一事实，
   防止后续批次把该文件误读为规则已定。**"已登记"不等于"不可修改"**。
@@ -3944,10 +3949,99 @@ fixture 用户与持组载体（P4／环境授权范围内），**不涉及产�
   草稿清理、工作树／分支清理在本轮均未做且未授权。
 - **候选身份**：本节所述产品改动与工具改动产生于**工作树（dirty）**；收口轮冻结后的候选身份、完整指纹与
   归档回执写入 `tmp/uc4-g09-evidence/`，文档不预写自身提交 SHA。
-- **证据位置**：`tmp/g09-r4/`（`upgrade.log`／`l1-iteration.log`／`l2-usage-class.log`／`l2-group.log`／
-  `l2-p0-state.log`／`txn-verify.log`／`l4-representative.log`）。
-- **收口轮顺序**：产品方实际浏览器复核（已通过）→ 形成新候选 → **一次 exact-head Quick** →
-  **独立于实施者的复核**（实施方自检继续标注为自检）→ 外部归档 → 受管更新 #499。**
+- **证据位置**：收口轮之前在 `tmp/g09-r4/`（`upgrade.log`／`l1-iteration.log`／`l2-usage-class.log`／
+  `l2-group.log`／`l2-p0-state.log`／`txn-verify.log`／`l4-representative.log`），属**历史来源、非本候选**；
+  收口轮重绑的执行证据（`bound-*.log` 与 `bound-run-receipt.json`）落在 `tmp/uc4-g09-evidence/`。
+- **收口轮顺序**：产品方放行（授权继续收口）→ 形成新候选 → **一次 exact-head Quick** →
+  **独立于实施者的复核**（实施方自检继续标注为自检）→ 外部归档 → 受管更新 #499。
+  产品验收结论以产品方登记为准，本文件不代述。
 
 > 边界重申：**自验与定向补验通过 ≠ 集中产品复核完成 ≠ 部署 ≠ 89 入口整体交付完成**；
 > **更新 PR ≠ 产品验收通过**。G09 主线集成不等于部署，也不等于 89 入口整体交付完成。
+
+### 8.35.15 收口轮：独立复核（REQUEST_CHANGES）与 S1 修正（2026-09-19）
+
+**触发**：冻结候选 `1ff5fac1` 的**独立于实施者**的只读复核（不使用实施轮结论作证据）判定
+**REQUEST_CHANGES：1×S1＋4×S2**。S1 成立，已按影响范围修正并补验；S2 逐条纠正。原实施轮自检
+仍标注为自检，**不**改名为独立复核。
+
+#### 8.35.15-① S1（已修正）：事实守卫可被一次 `state` 写入绕过
+
+- **缺陷**：871 的新事实守卫只在 `vals` 命中事实字段时才看状态，而 `state` 不是业务事实、不在
+  `_FACT_IMMUTABLE_FIELDS` 内，且 `ScLaborUsage` 当时没有任何状态流转守卫。于是
+  `write({"state": "draft"})` 可以合法地把已提交／已确认记录改回草稿，随后的
+  `write({"worker_qty": …})` 必然通过——**事实守卫形同装饰**，与实施轮注释所称「口径与 570 一致」不符
+  （570 用 `_COST_SOURCE_STATE_CONTEXT_KEY` 令牌拒绝同类写入）。本批自己的 L3 证据已把该绕过登记为
+  通过步骤（`871:state_write_unguarded`），复核据此定位，属**实施轮遗留的正确性缺陷**。
+- **修正**（P1 模型层，最小范围）：`ScLaborUsage` 增加与 570／材料验收同形的受控流转守卫——
+  `state` 写入必须携带 `_COST_SOURCE_STATE_CONTEXT_KEY` 令牌（`_write_cost_source_state()`），
+  四个业务动作（`action_submit`／`action_confirm`／`action_cancel`／`action_reset_draft`）改走该路径；
+  令牌常量从 `equipment_management` 复用（与 `material_acceptance.py` 既有做法一致），不新建机制。
+- **同批对齐的 S2**：事实窗口由 `state in ('submitted','confirmed')` 改为与原生 arch 同口径的
+  `state != 'draft'`。原窗口比 arch 更宽，`cancel` 态在页面上只读、后端却可写。**570 的后端窗口
+  仍更窄且按授权未改**，差异以 `test_the_equipment_usage_window_stays_narrower_and_is_pinned` 显式固定。
+- **新增负例**：`test_the_labor_usage_state_is_only_advanced_by_a_business_action`（原始状态写入被拒，
+  含 `{"state": "draft", "worker_qty": 9.0}` 混合写入；业务动作仍可推进；已确认不得迟取消）；
+  既有守护用例扩展「取消后事实不可写／不可删 → 退回草稿后可改」的合法路径。
+
+#### 8.35.15-② S2 逐条纠正（均已落地）
+
+| S2 | 处置 |
+| --- | --- |
+| 归档目录跨 4 个 SHA（manifest 6511134c／identity 291c6ee7／代表面报告 6511134c／指纹另一 SHA） | 归档重建：同一冻结候选的 identity／manifest／summary／代表面报告／指纹；历史 SHA 工件移入 `history/` 保留，不删除 |
+| `formal_form_lowcode_loop.mjs` 的 `dirty: true` 是硬编码字面量，运行报告无法绑定冻结身份 | P4 修正：wrapper 实测 `CANDIDATE_DIRTY`，渲染器读取之；未观测到即按 `dirty`（fail-closed），不再借用未观测的干净声明 |
+| 文档把本提交才引入的 `_FACT_IMMUTABLE_FIELDS` 当作修复前既有事实（偏差链表「模型约束」行、契约注释） | 改为如实表述：本批前**没有**事实守卫；判据是原生 arch 的草稿窗口，后端守卫由本批补齐 |
+| §8.35.10 的「待集中产品复核」与 §8.35.14-⑧ 的措辞不一致 | §8.35.10 状态行改写为指向 §8.35.14／§8.35.15 的当前事实；产品复核结论一律以产品方登记为准，文件不代述 |
+
+#### 8.35.15-③ 复核已核验为真的部分（不改动）
+
+13／11／2 项只读移除零新增；策略只读集 ∩ 守卫集 ＝ ∅；三个模型唯一只读载体仍是
+`p1_form_business_facts_v1`（无第二发散、无越权扩大）；871 守卫多记录 fail-closed、
+`note`／`attachment_ids` 豁免、`unlink` **比平台删除策略更严**（平台 `core_extension_policy_maps.py:860`
+的 `DRAFT_DELETE_ALLOWED_STATES` 含 `cancel`，模型 `unlink()` 只放行 `draft`，故页面只读窗口与后端删除
+窗口在此处并不相同，属**有意更严**而非"一致"）；P4 旧 `contradiction` 断言被新
+`unobtainable` 严格包含、`assertReadonlyValues` 反加强、测试文件仅删 2 行 docstring；
+575 保留的 14 项只读全为 compute／history；台账 22 未动；表达修正与生成报告刷新合法。
+
+#### 8.35.15-④ 状态与边界
+
+- **本轮未做且未授权**：合并 #499、部署、G10、89 入口整体交付、台账扣减／补登（保持 22）、
+  草稿发布／撤销／删除、工作树与分支清理。
+- **修正后的候选**必须重新冻结并**在**新身份上重跑一次 exact-head Quick，且独立复核必须绑定同一
+  冻结身份——修正前的复核与 Quick 因 HEAD 漂移而失效。
+- 边界重申：**独立复核通过 ≠ 产品验收通过**；**更新 PR ≠ 产品验收通过**。
+
+### 8.35.16 收口轮二：冻结身份上的执行证据重绑与 S2 纠偏（2026-09-19）
+
+**触发**：绑定 `f832feec` 的第三次独立（只读）复核判定 **REQUEST_CHANGES：1×S1＋3×S2**。S1 不涉及产品代码
+正确性，而是「验证声明未绑定本候选」；本轮按最小处置在冻结身份上重绑执行证据，并逐条纠正 S2。
+
+#### 8.35.16-① S1（已处置）：执行证据与候选身份重绑
+
+- **缺口**：提交信息声称「L2 本类／全组／P0、L3 回滚事务、模块升级 PASS」，但仓内被保留的执行日志属**修正前
+  代码**（用例数与提示文案可证），35 步验证器只有脚本、没有执行输出；唯一绑定身份的自动门禁 Quick 是**纯静态**
+  门禁，不执行 Odoo 测试。
+- **处置**：在同一冻结身份（同一 tree）上重跑 L1／L2 本类／L2 全组／L2 P0／L3 回滚事务／模块升级，逐项落盘到
+  `tmp/uc4-g09-evidence/`；`bound-run-receipt.json` 记录每项的 `head`／`tree`／`git status`／命令／结论／
+  日志 sha256。**用例数与通过数以该回执为准，本节不复述数字**。
+- **口径**：`tmp/g09-r4/` 的旧日志降为**历史来源**，不再作为本候选证据；本文件不预写自身提交 SHA。
+
+#### 8.35.16-② S2 逐条纠正
+
+| S2 | 处置 |
+| --- | --- |
+| 871 `create()` 可在非草稿态落地事实（570 有守卫、871 没有） | **已修**：`create()` 增加与 570 同形的受控令牌守卫（`_COST_SOURCE_STATE_CONTEXT_KEY`），非 `draft` 入参一律拒绝；新增 `test_the_labor_usage_guard_covers_the_record_creation_entry`（零删除行） |
+| 「对已确认记录 `copy()` 是第二条绕过路径」 | **前提部分不成立，已以运行时证据更正**：`state.copy is False`（871／570 两模型实测），`copy()` 不携带 `state`，已确认记录的副本落为**新草稿**且不改动源记录，不构成窗口绕过；该平台行为已在新断言中固定，避免后续调度误判 |
+| 归档摘要重新使用被禁用的「批次验收完成」 | 归档 `summary.md` 状态行改为「自验与冻结门禁通过（本批范围）｜产品复核结论以产品方登记为准」 |
+| 文档三处残留 | 已逐条更正：§8.35.10 口径段改为**历史记录**并以现行状态行为唯一口径；`:3955` 补平加粗配对；`unlink` 明确为**比平台删除策略更严**并给出 `core_extension_policy_maps.py:860` 依据 |
+
+#### 8.35.16-③ 状态与边界
+
+- **本轮未做且未授权**：合并 #499、部署、G10、89 入口整体交付、台账扣减／补登（保持 22）、
+  草稿发布／撤销／删除、工作树／分支清理。
+- **残留（如实登记，不缩范围）**：575 登记后修改规则待决（本批保持零守卫，「已登记」不等于不可修改）；
+  570 后端窗口窄于 arch（`cancel` 态可写）且 `request_id` 未冻结；`workflow_contract_service.py` 的
+  `reopen` 与模型不一致；562／563／851、570@509、575@518 在本角色下路由被拒**仅登记为未覆盖**，
+  未定性为「非缺陷」。
+- 边界重申：**更新 PR ≠ 产品验收通过**；**独立复核通过 ≠ 产品验收通过**；
+  **G08 主线集成 ≠ 部署 ≠ 89 入口整体交付完成**。
