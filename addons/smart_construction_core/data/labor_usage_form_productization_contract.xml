@@ -1,29 +1,69 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
+    <!-- U-C4 G09: 用量与履约登记整组原生结构迁移（sc.labor.usage）。
+
+         三个正式入口共享原生主表单 `view_sc_labor_usage_form`（库内 view 1461）：
+           871 劳务成本登记 / menu 689 / action `action_sc_product_labor_cost_v1`
+           562 方单         / menu 504 / action `action_sc_labor_usage_ticket`
+           563 零星用工     / menu 505 / action `action_sc_labor_usage_casual`
+
+         原生 arch 已经呈现这些入口的全部业务事实（基本信息两组 ＋ 作业内容／用工说明／
+         附件／来源追溯 四个 notebook 页）。本批把结构权威一次性交给原生 arch：入口契约只保留
+         `title` 与 `composition_mode: native_semantic_surface`，退役 body 副本（sections／fields／
+         columns）。`view_orchestration.context` 的语义声明原样保留（同 G06 契约 177、G07 契约 884
+         的口径），不手工递增 `version_no`（U-C3／G07 先例）。
+
+         871 此前**没有入口级发布**，消费模型级 `sc_labor_usage_form_sections_v1` 的平面，渲染的
+         不是本入口的业务任务面；本批补一条入口级发布（同 G07 为 858 补
+         `hr_payroll_management_productized_form_v1` 的做法）。
+
+         优先级：入口级发布由 `50` 提为 `800`。本组的入口发布原先排在模型级载体
+         （sections 20／p1 facts 88／生成镜像 104-165）之前，导致结构权威解析的最后一个写入者
+         是模型级 `entry_semantic_surface` 声明，与运行时实际生效的 native 权威不一致（G02 进项
+         700、G07 工资 700-800 两族即按"入口发布排最后"写成）。提为 800 后入口的 native 声明成为
+         最后一个结构写入者，两处解析口径一致；入口发布不携带结构键，因此该次序变化不改变呈现。
+
+         回滚：`git revert`（纯声明改动，无数据迁移）。
+
+         注：模型级 `sc_labor_usage_p1_form_business_facts_v1`（库内 id 15）本批**保留 active**，
+         它是这三个模型上唯一声明业务事实只读策略（`readonly`）的载体，原生 arch 未重述；
+         退役它属于策略变更而非结构变更，须先由原生 arch 承接同名策略后另行处理。 -->
     <data noupdate="0">
+        <record id="business_config_contract_labor_usage_register_productized_form_v1" model="ui.business.config.contract">
+            <field name="name">labor_usage_register_productized_form_v1</field>
+            <field name="model">sc.labor.usage</field>
+            <field name="view_type">form</field>
+            <field name="action_id" ref="smart_construction_core.action_sc_product_labor_cost_v1"/>
+            <field name="priority">800</field>
+            <field name="company_id" eval="False"/>
+            <field name="active" eval="True"/>
+            <field name="status">published</field>
+            <field name="version_no">1</field>
+            <field name="contract_json" eval="{'view_orchestration': {'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'}, 'views': {'form': {'title': '劳务成本登记', 'composition_mode': 'native_semantic_surface'}}}}"/>
+        </record>
         <record id="business_config_contract_labor_usage_ticket_productized_form_v1" model="ui.business.config.contract">
             <field name="name">labor_usage_ticket_productized_form_v1</field>
             <field name="model">sc.labor.usage</field>
             <field name="view_type">form</field>
             <field name="action_id" ref="smart_construction_core.action_sc_labor_usage_ticket"/>
-            <field name="priority">50</field>
+            <field name="priority">800</field>
             <field name="company_id" eval="False"/>
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval="{'view_orchestration': {'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'}, 'views': {'form': {'title': '方单', 'composition_mode': 'entry_semantic_surface', 'fields': [{'name': 'state', 'sequence': 10, 'readonly': True}, {'name': 'name', 'sequence': 20}, {'name': 'usage_type', 'sequence': 30, 'readonly': True}, {'name': 'usage_date', 'sequence': 40}, {'name': 'project_id', 'sequence': 50}, {'name': 'contractor_id', 'sequence': 60}, {'name': 'labor_team', 'sequence': 70}, {'name': 'foreman_name', 'sequence': 80}, {'name': 'construction_part', 'sequence': 90}, {'name': 'work_content', 'sequence': 100}, {'name': 'worker_qty', 'sequence': 110}, {'name': 'work_hours', 'sequence': 120}, {'name': 'price_unit', 'sequence': 130}, {'name': 'amount_total', 'sequence': 140, 'readonly': True}, {'name': 'settlement_state', 'sequence': 150}, {'name': 'note', 'sequence': 160}, {'name': 'attachment_ids', 'sequence': 170}, {'name': 'recorder_id', 'sequence': 180}, {'name': 'create_date', 'sequence': 190, 'readonly': True}]}}}}"/>
+            <field name="contract_json" eval="{'view_orchestration': {'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'}, 'views': {'form': {'title': '方单', 'composition_mode': 'native_semantic_surface'}}}}"/>
         </record>
         <record id="business_config_contract_labor_usage_casual_productized_form_v1" model="ui.business.config.contract">
             <field name="name">labor_usage_casual_productized_form_v1</field>
             <field name="model">sc.labor.usage</field>
             <field name="view_type">form</field>
             <field name="action_id" ref="smart_construction_core.action_sc_labor_usage_casual"/>
-            <field name="priority">50</field>
+            <field name="priority">800</field>
             <field name="company_id" eval="False"/>
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval="{'view_orchestration': {'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'}, 'views': {'form': {'title': '零星用工', 'composition_mode': 'entry_semantic_surface', 'fields': [{'name': 'state', 'sequence': 10, 'readonly': True}, {'name': 'name', 'sequence': 20}, {'name': 'usage_type', 'sequence': 30, 'readonly': True}, {'name': 'usage_date', 'sequence': 40}, {'name': 'project_id', 'sequence': 50}, {'name': 'contractor_id', 'sequence': 60}, {'name': 'labor_team', 'sequence': 70}, {'name': 'work_type', 'sequence': 80}, {'name': 'construction_part', 'sequence': 90}, {'name': 'work_content', 'sequence': 100}, {'name': 'worker_qty', 'sequence': 110}, {'name': 'work_hours', 'sequence': 120}, {'name': 'price_unit', 'sequence': 130}, {'name': 'amount_total', 'sequence': 140, 'readonly': True}, {'name': 'settlement_state', 'sequence': 150}, {'name': 'note', 'sequence': 160}, {'name': 'attachment_ids', 'sequence': 170}, {'name': 'recorder_id', 'sequence': 180}, {'name': 'create_date', 'sequence': 190, 'readonly': True}]}}}}"/>
+            <field name="contract_json" eval="{'view_orchestration': {'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'}, 'views': {'form': {'title': '零星用工', 'composition_mode': 'native_semantic_surface'}}}}"/>
         </record>
     </data>
 </odoo>

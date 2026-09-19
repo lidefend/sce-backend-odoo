@@ -1081,6 +1081,47 @@ function assertFullWidthDetail({ contract, facts, treeWidth, label, observations
     `${label}: a page-level relation collection must span the whole form body`);
 }
 
+// The low-code entry is a capability of the delivered surface, not of the
+// mechanism that retired the legacy bodies: the page either offers 「表单设置」
+// to this administrator or it does not, and that is a fact the batch has to
+// measure on the entry it actually ships.  A previous batch concluded the entry
+// was absent for a group of transient dispatch workspaces, and that conclusion
+// is scoped to *those* entries; it must never be replayed as "the group has no
+// legal form-configuration path".  Measured read-only: the header overflow menu
+// is opened and read.  The item is never clicked, so no change set is opened,
+// staged, previewed, published, discarded or rolled back by this probe.
+async function assertDesignerEntryAvailability({ page, label, observations }) {
+  const overflow = page.getByRole('button', { name: '更多操作', exact: true });
+  assert.equal(await overflow.count(), 1, `${label}: the create surface must expose exactly one 更多操作 carrier`);
+  await overflow.click();
+  const item = page.getByText('表单设置', { exact: true });
+  // The overflow panel mounts after the trigger settles, so a single read taken
+  // on the click's own tick would report "the entry is missing" for a page that
+  // simply had not painted it yet.  Poll a bounded number of times instead.
+  let count = 0;
+  for (let attempt = 0; attempt < 25 && count === 0; attempt += 1) {
+    count = await item.count();
+    if (!count) await page.waitForTimeout(80);
+  }
+  let visible = false;
+  let enabled = false;
+  if (count > 0) {
+    visible = await item.last().isVisible();
+    enabled = await item.last().isEnabled().catch(() => false);
+  }
+  // Close the menu again so the surface is left exactly as it was read.
+  await page.keyboard.press('Escape').catch(() => {});
+  const measured = { menu_opened: true, item_count: count, available: Boolean(count > 0 && visible), visible, enabled };
+  observations.designer_entry = measured;
+  // A measured capability is only evidence when the measurement was definite.
+  // The availability verdict itself stays a recorded fact (an entry without the
+  // item is a registered capability limit, not a silent pass); an item that is
+  // present but not usable is a defect, because the user sees an entry that
+  // cannot be operated.
+  assert(!(measured.available && !enabled), `${label}: the 表单设置 entry is visible but not operable`);
+  return measured;
+}
+
 // The empty collection surface and the create entry describe one capability.
 // A surface the user can create on must never present the read-only copy that
 // claims the account has no create right, because the entry control the user
@@ -1246,6 +1287,9 @@ export async function runRepresentativeSurface({ page, scope, contract, out, rep
         // renderer actually promoted to nodes.  Read-only, bounded, no secrets;
         // it turns a section-presence difference into an attributable fact
         // instead of a guessed cause.
+        if (checks.designer_entry && route.kind === 'create') {
+          surfaceReport.designer_entry = await assertDesignerEntryAvailability({ page, label, observations });
+        }
         const renderedFieldNames = await page.evaluate(() => [...new Set(
           [...document.querySelectorAll('[data-field-name]')].map((node) => node.getAttribute('data-field-name')),
         )].filter(Boolean).sort());

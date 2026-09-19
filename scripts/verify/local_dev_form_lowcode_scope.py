@@ -144,6 +144,26 @@ TOPIC_IDENTITIES = {
         ("action_sc_product_current_account_v1", "view_sc_current_account_workspace_form", "menu_sc_product_current_account_v1"),
         ("action_sc_product_company_project_refund_v1", "view_sc_company_project_refund_workspace_form", "menu_sc_product_company_project_refund_v1"),
     ),
+    # U-C4 G09: the 用量与履约登记 group gives one shared native body per model
+    # (1461 sc.labor.usage / 1476 sc.equipment.usage / 1491 sc.subcontract.register)
+    # and each authorised entry resolves to the form of its own model.  The
+    # registration is deliberately wider than the three authorised actions: 871,
+    # 570 and 575 are only the entries the ledger names, while the delivered
+    # navigation hands the same bodies to the bypass entries (562 方单 / 563
+    # 零星用工 on 1461, 851 机械台班记录 on 1476) and to a second menu carrier
+    # (509 设备使用登记, 518 分包登记).  A representative pass that only opened
+    # the three ledger rows would report a single-consumer body for a form four
+    # entries actually share, so every delivered consumer is registered read-only.
+    "usage_performance": (
+        ("action_sc_product_labor_cost_v1", "view_sc_labor_usage_form", "menu_sc_product_labor_cost_v1"),
+        ("action_sc_labor_usage_ticket", "view_sc_labor_usage_form", "menu_sc_labor_usage_acceptance"),
+        ("action_sc_labor_usage_casual", "view_sc_labor_usage_form", "menu_sc_labor_casual_acceptance"),
+        ("action_sc_equipment_usage", "view_sc_equipment_usage_form", "menu_sc_product_equipment_shift_v1"),
+        ("action_sc_equipment_usage", "view_sc_equipment_usage_form", "menu_sc_equipment_usage"),
+        ("action_sc_equipment_usage_shift_user_confirmed", "view_sc_equipment_usage_form", "menu_sc_equipment_shift_acceptance"),
+        ("action_sc_subcontract_register", "view_sc_subcontract_register_form", "menu_sc_product_subcontract_cost_v1"),
+        ("action_sc_subcontract_register", "view_sc_subcontract_register_form", "menu_sc_subcontract_register"),
+    ),
 }
 TOPIC_SAMPLE_FIELDS = {
     "invoice": ["direction", "source_kind", "source_origin", "note"],
@@ -157,6 +177,7 @@ TOPIC_SAMPLE_FIELDS = {
     "tax_deduction": ["state", "deduction_scope", "deduction_flow_label", "source_origin"],
     "payroll": ["state", "fact_type", "period_year", "period_month", "legacy_document_no"],
     "context_workspace": ["project_id", "partner_id", "business_date", "note"],
+    "usage_performance": ["state", "project_id", "note", "amount", "contract_id"],
 }
 # Mechanism assertions for the read-only representative pass.  Names are the
 # registered display copies / canonical sources of the same business fact; the
@@ -282,6 +303,23 @@ TOPIC_REPRESENTATIVE = {
     # It does not mean the model has no record surface -- a transient model does
     # carry rows and has a legal edit state; the pass simply does not create one.
     "context_workspace": {"section_navigation": True, "dispatch_only": True},
+    # U-C4 G09: the three rebuilt bodies carry two anchored native groups each
+    # (1461 用工主信息 / 用工与计价, 1476 设备与项目 / 使用与计价, 1491
+    # 登记主信息 / 分包单位与金额), so the same read-only section-navigation
+    # battery is the mechanism assertion: every 章节入口 must resolve and reveal
+    # its target, and the command bar / navigation / body bands must stay
+    # separated at 1088 and 390.  `record_surface` replays it on a governed
+    # sample of the same action, because a container condition can only resolve
+    # on an existing record.  Read-only; no change set is touched and no record
+    # is written.
+    #
+    # `designer_entry` measures the low-code path on the delivered entry instead
+    # of inheriting it: the three models are ordinary persisted models (not the
+    # transient dispatch workspaces the previous batch measured), so whether the
+    # administrator reaches 「表单设置」 from 871／570／575 is a fact about these
+    # entries.  The probe opens the header overflow menu and reads the item; it
+    # never clicks through it, so it opens no change set and writes nothing.
+    "usage_performance": {"section_navigation": True, "record_surface": True, "designer_entry": True},
 }
 if topic not in TOPIC_IDENTITIES:
     raise RuntimeError("unregistered formal form topic")

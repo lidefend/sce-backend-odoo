@@ -3200,3 +3200,185 @@ success `classify`／`frontend_release_gate`／`merge_policy_gate`／`profession
 操作说明）、配置闭环（8.34.11-③ 的 878 五步闭环与三条拒绝面）与授权差异（8.34.11-④ 的两行导航
 差异表与三个拒绝反例）。其中 8.34.11-③ 的闭环口径已按 8.34.12-④ 修正为
 「测试事务内执行，未持久化配置变更」。
+
+## 8.35 G09 用量与履约登记整组原生结构迁移（2026-09-19）
+
+### 8.35.1 归属与唯一写入者（本批）
+
+| 层 | 唯一写入者（路径） | 说明 |
+|---|---|---|
+| P1 行业标准产品 | `addons/smart_construction_core/views/core/labor_management_views.xml`、`…/equipment_management_views.xml`、`…/subcontract_management_views.xml` | 原生 arch 承接本组三个模型的业务章节身份（每组 2 个 `data-sc-anchor`，共 6 个），未改任何业务事实、必填、只读或明细列 |
+| P1 行业标准产品 | `addons/smart_construction_core/data/labor_usage_form_productization_contract.xml`、`…/equipment_usage_form_productization_contract.xml`、`…/subcontract_register_settlement_form_productization_contract.xml` | 入口级发布转 `native_semantic_surface`（只留 `title` ＋ `composition_mode`）并补 871 的入口级发布；`view_orchestration.context` 原样保留 |
+| P1 行业标准产品 | `addons/smart_construction_core/data/view_orchestration_form_section_contract_data.xml` | 三条模型级 sections 契约 `active=False`（纯章节元数据，`fields` 为空） |
+| P1 行业标准产品 | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py`、`tests/__init__.py` | 新增 17 测（tag `uc4_native_lowcode`） |
+| P4 运维交付工具 | `scripts/verify/local_dev_form_lowcode_scope.py`、`frontend/apps/web/scripts/formal_form_representative_journey.mjs` | 只读代表面 `usage_performance` topic 注册 ＋ 只读「表单设置」可用性实测（见 8.35.5） |
+
+本批候选为 **11 条路径**（L1 读数 `changedPathCount=11`，其中 10 条未映射、1 条映射到
+`verify.frontend.typecheck.strict`）。**未触碰**其它模块、前端产品代码、契约模型、菜单、动作载体或数据。
+
+### 8.35.2 入口矩阵（L3 运行时实测，`sc_dev_demo`，action／view／menu 为库内真实值）
+
+| 入口 | 菜单 | action | 模型 | 原生主表单 | 台账登记 |
+|---|---|---|---|---|---|
+| 871 劳务成本登记 | 689 项目中心/劳务成本 | `action_sc_product_labor_cost_v1` | `sc.labor.usage` | **1461** `view_sc_labor_usage_form` | 是（本批 3 条之一） |
+| 562 方单 | 504 材料成本/劳务管理 | `action_sc_labor_usage_ticket` | `sc.labor.usage` | **1461**（同一 form arch） | **否（台账 0 次）** |
+| 563 零星用工 | 505 材料成本/劳务管理 | `action_sc_labor_usage_casual` | `sc.labor.usage` | **1461**（同一 form arch） | **否（台账 0 次）** |
+| 570 机械台班登记 | **692 机械成本 ＋ 509 材料成本/机械设备** | `action_sc_equipment_usage` | `sc.equipment.usage` | **1476** `view_sc_equipment_usage_form` | 是（仅 menu 692 一条） |
+| 851 机械台班记录 | 510 材料成本/机械设备 | `action_sc_equipment_usage_shift_user_confirmed` | `sc.equipment.usage` | **1476**（同一 form arch） | 否 |
+| 575 分包成本登记 | **693 分包成本 ＋ 518 材料成本/专业分包** | `action_sc_subcontract_register` | `sc.subcontract.register` | **1491** `view_sc_subcontract_register_form` | 是（仅 menu 693 一条） |
+
+- 562／563／851 钉的是各自的 **tree** 视图（2049／2050／2051），表单落到模型主表单，
+  因此与 871／570 消费**同一份 form arch**（运行时确认，非推断）。
+- 561 劳务用工（`action_sc_labor_usage`）**无菜单、无契约**，不在本批范围内；其章节来源是
+  模型级 `entry_semantic_surface` 声明，章节为空是它**自身的既存缺口**，与本批无关。
+- 每条 form 都是该模型**唯一**的 active 主表单（`inherit_id=False`）。
+
+### 8.35.3 台账口径与实际影响面的差异（如实登记，不缩范围）
+
+台账 `docs/ops/iterations/form_structure_compatibility_consumers_v1.json` 按**菜单**登记，
+本组**正好 3 条**（871/menu 689、570/menu 692、575/menu 693）。实际受影响面是 **8 个消费入口**：
+
+- **共享表单**：1461 被 3 个 action 消费、1476 被 2 个、1491 被 2 个（含 570／575 的第二菜单）。
+- **旁路入口从未登记**：562／563 在台账中出现 **0 次**。
+- **双菜单载体只登记其中一条**：570、575 各有第二个菜单（509／518）未登记。
+
+本批**按已登记条目扣减**（合入后 22 → 19，独立文档提交），同时把上述 4 条兄弟入口级契约
+（227／228／229／233）、旁路入口、双菜单载体与新发现的 3 条生成镜像补登进台账审计字段，
+**不扩大扣减范围**。
+
+### 8.35.4 修改范围、前后差异与关键决策
+
+**原生 arch（P1）**：三个 form 各自的第一个概览组补 `name` ＋ `data-sc-anchor` ＋ `string`，
+第二个概览组补 `name` ＋ `data-sc-anchor` ＋ `string`，外层包装组补 `name`。新增锚点：
+
+- 1461：`labor_usage_processing_main`「用工主信息」／`labor_usage_labor_amount`「用工与计价」
+- 1476：`equipment_usage_identity`「设备与项目」／`equipment_usage_usage_amount`「使用与计价」
+- 1491：`subcontract_register_main`「登记主信息」／`subcontract_register_parties_amount`「分包单位与金额」
+
+**计数口径（必须路径限定）**：`git diff -U0 -- <view> | grep -c '^+.*<group .*data-sc-anchor='` ＝ **每文件 2**、
+合计 **6**。同一命令用 `grep -c '^+.*data-sc-anchor'` 会读到 **每文件 3**，因为本批在 arch 内写了
+**说明注释**、注释文本含 `data-sc-anchor` 字样——**该读数不得用于分组计数**（同 8.33.3 的口径教训）。
+
+**入口级发布（P1，库内 id）**：
+
+| id | 契约 | action | 本批变化 |
+|---|---|---|---|
+| 682 | `labor_usage_register_productized_form_v1` | 871 | **新增**（871 此前无入口级发布，回落模型级平面） |
+| 227 | `labor_usage_ticket_productized_form_v1` | 562 | `50 → 800`；`entry_semantic_surface`（19 个 fields）→ `native_semantic_surface`（只留 `title`） |
+| 228 | `labor_usage_casual_productized_form_v1` | 563 | 同上 |
+| 230 | `equipment_usage_register_productized_form_v1` | 570 | 同上（12 个 fields → 只留 `title`） |
+| 229 | `equipment_usage_shift_productized_form_v1` | 851 | 同上 |
+| 232 | `subcontract_register_productized_form_v1` | 575 | 同上（14 个 fields → 只留 `title`） |
+
+**关键决策与依据**：
+
+1. **入口级契约只留 `title` ＋ `composition_mode: native_semantic_surface`**，`view_orchestration.context`
+   原样保留，**不手工递增 `version_no`**（U-C3／G07 先例）。
+2. **补 871 的入口级发布**：871 此前**没有**入口级发布，消费模型级 `sc_labor_usage_form_sections_v1`
+   的平面，渲染的不是本入口的业务任务面（同 G07 为 858 补 `hr_payroll_management_productized_form_v1`）。
+3. **优先级 `50 → 800`（本批的关键修正）**：本组入口发布原先排在模型级载体（sections 20／
+   p1 facts 88／生成镜像 104–165）**之前**，导致 `resolve_form_structure_governance` 的**最后一个结构
+   写入者**是模型级 `entry_semantic_surface` 声明，与运行时实际生效的 native 权威**不一致**
+   （G02 用 700、G07 用 700–800，均"入口发布排最后"）。提为 800 后入口的 native 声明成为最后写入者，
+   两处解析口径一致；入口发布不携带结构键，故该次序变化**不改变呈现**。三个 XML 顶部各记录该理由。
+4. **模型级 sections 契约退役**（`active=False`，库内 154／160／156，priority 20，`fields` 为空）：
+   纯章节元数据，同 G02／G03 先例；升级后确认**完全消失**、不再进入 configs。
+5. **模型级 p1-facts 契约保留 active**（库内 15／21／17，priority 88）：它们是这三个模型上**唯一**声明
+   业务事实 `readonly` 策略的载体，原生 arch 未重述。实测该 `readonly` **确实生效**
+   （`_apply_field_display_policy` 把 `readonly=True` 写进 field node）。退役它们需要原生 arch 先承接
+   同名策略，**属策略变更而非结构变更**，本批不做（见 8.35.9）。
+6. **生成镜像 ×3 保留 active**（库内 86／71／126，priority 121／104／165，`fields`-only 稀疏序注解）：
+   同 G06 的 129、G05 的 72、G07 的 79 口径。
+7. **233 `subcontract_settlement_productized_form_v1`（576 分包结算）不动**：另一模型、另一原生表单、
+   另一台账分组，不在 871／570／575 授权内。
+8. **不做 876 类"补入口发布"**：被授权入口全部已解析到 native；其余入口（561／562／563／851）已各有发布。
+
+### 8.35.5 低代码路径：本组实测，不沿用上一批的临时模型结论
+
+上一批（G08）测得「三个临时工作台入口页无『表单设置』」，该结论**只对其自身的 transient 模型成立**
+（注入条件含 `ir.model.transient` 判负）。本组三个模型是**普通持久化模型**，因此该结论
+**不得**被复用来回答"本组有没有合法低代码路径"；本批按 G09 自己的入口**重新实测**。
+
+- 新增**只读**探针 `assertDesignerEntryAvailability`（`formal_form_representative_journey.mjs`，由 topic 的
+  `designer_entry` 开关启用）：打开页头「更多操作」并按有界轮询读取「表单设置」条目，
+  **不点击进入**，因此不打开、不暂存、不预览、不发布、不丢弃、不回滚任何变更集。
+- 实测结果：**871／570／575 新建页「表单设置」均存在、可见、可操作**（`item_count=1`）。
+  该探针曾因"点击后当帧读取"得到过一次 `item_count=0` 的**假阴性**，定位为渲染竞态后改为有界轮询；
+  该次假阴性是本轮唯一一次探测偏差，**未产生任何配置写入**。
+- **设计器写入闭环（选择 → 编辑 → 存草稿 → 预览 → 发布 → 刷新 → 回滚）本批未执行**：
+  它属写入路径（并会按工具既有设计留下一张未发布复核草稿），超出本批"只读范围核对"的授权口径，
+  如实登记为未执行项（见 8.35.8），**不以只读可用性代替写入闭环的通过结论**。
+
+### 8.35.6 分层验证结果
+
+| 层 | 入口 | 身份 | 结果 |
+|---|---|---|---|
+| L1 | `make ci.local.iteration` | 本批 HEAD＋dirty | **PASS**：16 静态测 OK；`baseline_iteration_execution_policy_guard` PASS；`change_state=dirty`、`coverage=L1_only`、`receipt=none`；`changedPathCount=11`、`unmappedPathCount=10`；`next=risk_selected_non_zero_L2_targets_required` |
+| L2（本批类） | `make local.dev.test MODULE=smart_construction_core TEST_TAGS='uc4_native_lowcode/smart_construction_core:TestUsagePerformanceNativeLowcode'` | 同上 | **PASS**：**17 测 0 failed 0 error**。过程中 1 例 `ERROR` 与 1 例失败已修后重跑（首偏差见 8.35.7） |
+| L2（全组回归） | `make local.dev.test MODULE=smart_construction_core TEST_TAGS='uc4_native_lowcode/smart_construction_core'` | 同上 | **PASS**：**114 测 0 failed 0 error**（G02–G09 全组，证明无跨批回归，非零测试） |
+| L3 | `make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1` | `sc_dev_demo` | **PASS**：exit 0，含 `local.dev.verify_authority` PASS |
+| L4（只读代表面） | `FORM_LOWCODE_TOPIC=usage_performance FORM_LOWCODE_REPRESENTATIVE=1 make local.dev.form_lowcode.browser` | 同上 | **PASS**：`ok=true`、`restored=true`、`browser_errors=[]`、业务指纹未变；报告 `artifacts/lowcode-form-loop/browser/representative-report-usage_performance.json` |
+
+**L4 只读代表面明细（8 个已登记入口）**：
+
+- **871／570（menu 692）／575（menu 693）：`create` ＋ `record` 双档位通过**，
+  结构责任断言 `duplicated`／`empty_containers`／`decorated_layout_groups`／`titled_layout_groups` **全为空**。
+- **章节导航**（1088×900 与 390×844）：871 create＝用工主信息／用工与计价（＋协作记录）、
+  record 另含历史审计；570＝设备与项目／使用与计价（＋协作记录，record 另含历史审计）；
+  575＝登记主信息／分包单位与金额／登记明细（＋协作记录，record 另含历史审计）。
+  每条入口都实测「操作行底 < 导航顶」的分离（如 575 record @390：`actions.bottom=377 < nav.top=390`），
+  跳转后目标标题落在视口内；575 record @390 章节轨溢出时有 **10 步**按压序列（含末→首、首→末、
+  手动滚动后、轨滚动后）通过，其余档位章节轨不溢出故记 `not_applicable`（**非通过、非失败**）。
+- **页签结构**：1461 四个页、1476 三个页、1491 五个页全部激活且带内容，无空页。
+- **「表单设置」**：871／570／575 三处新建页均为**存在、可见、可操作**（见 8.35.5）。
+
+**L4 被角色路由权威拒绝的 5 个入口（登记为角色边界，不计产品缺陷、不写成通过）**：
+
+| 入口 | 菜单 | 拒绝原因 |
+|---|---|---|
+| 562 方单 | 504 材料成本/劳务管理 | `NAVIGATION_AUTHORITY_DENIED` |
+| 563 零星用工 | 505 材料成本/劳务管理 | 同上 |
+| 570 第二菜单 | 509 材料成本/机械设备 | 同上 |
+| 851 机械台班记录 | 510 材料成本/机械设备 | 同上 |
+| 575 第二菜单 | 518 材料成本/专业分包 | 同上 |
+
+被授权入口走的是「项目中心/劳务成本」「机械成本」「分包成本」分支（对受管身份
+`sc_test_admin` 可达）；上述 5 条走「材料成本/*」分支，运行角色路由权威不含该分支，
+故拒绝来自**角色级路由权威**而非分组缺失。这 5 条的原生结构与契约由 L2 断言覆盖
+（同一 action／同一原生树／同一契约 id）。
+
+### 8.35.7 过程中的首次偏差（如实登记）
+
+| # | 现象 | 定位 | 处置 |
+|---|---|---|---|
+| 1 | L2 `test_every_rendered_fact_belongs_to_its_own_model` 报 `ERROR` | 测试辅助 `_arch_field_owners` 把 `fields.Field` 当 dict 用（`(field or {}).get("relation")`），取 relation 时抛 `AttributeError` | 改为 `getattr(field, "relation", None)`；重跑 17 测全绿 |
+| 2 | 同测试类早前 1 例失败（1491 呈现中立性） | 1491 的**内联 tree 列**（`sequence`／`work_scope`／`work_content`／`contract_qty`／`unit_name`）属同一 arch 的文档序，pin 未覆盖 | 补入 pin；列归属按 comodel 校验而非表单模型 |
+| 3 | 「表单设置」只读探针首次读到 `item_count=0`（假阴性） | 点击「更多操作」后**当帧**读取 DOM，溢出面板尚未挂载 | 改为有界轮询（≤25 次／约 2s）后复测为 `item_count=1`；该次未产生任何配置写入 |
+
+### 8.35.8 未覆盖项与剩余阻断（如实登记，不造数据）
+
+- **562 记录态（`record_surface`）未覆盖**：该 action 域内 **0 行**（模型内 1 行），
+  登记为 `state=empty_action_domain`，**未为补样本造数据**。
+- **5 条旁路／第二菜单入口未做浏览器复核**（8.35.6 表），原因 `NAVIGATION_AUTHORITY_DENIED`。
+- **设计器写入闭环未执行**（见 8.35.5），只完成只读可用性实测。
+- **动作载体（按钮）、字段策略面、共享吸顶与窄屏的其它形状未单独探测**。
+- **未执行项（保持未执行）**：最终 Quick（冻结后一次）、推送、建 PR、合并、部署、台账扣减提交、
+  89 入口整体交付、历史工作树／分支清理、`sync_demo`／fixture reset／发布快照。
+- **台账**：本批提交**不扣减**；扣减（22 → 19）与补登留作合入后的独立文档提交。
+
+### 8.35.9 保留边界（不随本批关闭）
+
+- **三条模型级 p1-facts 契约保留 active**（15／21／17）：承载业务事实 `readonly` 策略。
+  退役前提是**原生 arch 先承接同名只读策略**——1491 上有 **11 个纯策略字段**不在原生 arch 上，
+  直接退役会**丢失只读口径**（策略变更，不在本批授权内）。
+- **三条生成镜像保留 active**（86／71／126）：`noupdate="1"` 的稀疏序注解。若复核要求退役，
+  须走精确 ORM `<function>`（G02 先例，且该 function 必须位于**另一个** `noupdate=0` 文件）。
+- **233（576 分包结算）未动**；561 劳务用工的既存空章节缺口未动。
+
+### 8.35.10 状态
+
+状态：**G09 批次验收完成（本批范围）｜未冻结｜未集成｜未部署｜89 入口整体交付未完成｜台账 22**。
+**G08 主线集成 ≠ 部署 ≠ 89 入口整体交付完成**，本批同理。
+
+下一步（**待执行**）：冻结候选（clean HEAD＋完整指纹）→ **一次** exact-head Quick → 独立复核与
+外部归档 → `make pr.push` → draft PR → ready → **仅在明确授权后**合并 → 合入后台账 22 → 19 与补登。

@@ -313,7 +313,8 @@
             <field name="view_type">form</field>
             <field name="priority">20</field>
             <field name="company_id" eval="False"/>
-            <field name="active" eval="True"/>
+            <!-- U-C4 G09: retired; the rebuilt native form view_sc_labor_usage_form（库内 1461） owns the section identity. -->
+            <field name="active" eval="False"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
             <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "工种/表单信息"}]}}}}'/>
@@ -335,7 +336,8 @@
             <field name="view_type">form</field>
             <field name="priority">20</field>
             <field name="company_id" eval="False"/>
-            <field name="active" eval="True"/>
+            <!-- U-C4 G09: retired; the rebuilt native form view_sc_subcontract_register_form（库内 1491） owns the section identity. -->
+            <field name="active" eval="False"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
             <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "合同清单"}]}}}}'/>
@@ -379,7 +381,8 @@
             <field name="view_type">form</field>
             <field name="priority">20</field>
             <field name="company_id" eval="False"/>
-            <field name="active" eval="True"/>
+            <!-- U-C4 G09: retired; the rebuilt native form view_sc_equipment_usage_form（库内 1476） owns the section identity. -->
+            <field name="active" eval="False"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
             <field name="contract_json" eval='{"view_orchestration": {"context": {"source": "smart_construction_core.product_release", "source_status": "product_release"}, "views": {"form": {"composition_mode": "entry_semantic_surface","sections": [{"title": "表单信息"}]}}}}'/>

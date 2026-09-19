@@ -363,15 +363,19 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,confirmed"/>
                 </header>
                 <sheet>
-                    <group>
-                        <group>
+                    <!-- U-C4 G09: 原生 arch 持有本入口的章节身份。 两个概览组带稳定
+                         `data-sc-anchor`，消费方按它生成本入口的业务章节与章节导航；
+                         `view_sc_labor_usage_form` 同时是 871（menu 689）、562（menu 504）、
+                         563（menu 505）三条入口的原生承载。 -->
+                    <group name="labor_usage_overview">
+                        <group name="labor_usage_processing_main" data-sc-anchor="labor_usage_processing_main" string="用工主信息">
                             <field name="name"/>
                             <field name="project_id"/>
                             <field name="usage_date"/>
                             <field name="usage_type"/>
                             <field name="labor_team"/>
                         </group>
-                        <group>
+                        <group name="labor_usage_labor_amount" data-sc-anchor="labor_usage_labor_amount" string="用工与计价">
                             <field name="contractor_id"/>
                             <field name="foreman_name"/>
                             <field name="recorder_id"/>
