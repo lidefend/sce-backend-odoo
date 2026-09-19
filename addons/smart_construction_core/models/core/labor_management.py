@@ -2,6 +2,11 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
+from .equipment_management import (
+    _COST_SOURCE_STATE_CONTEXT_KEY,
+    _COST_SOURCE_STATE_TOKEN,
+)
+
 
 class ScLaborPlan(models.Model):
     _name = "sc.labor.plan"
@@ -327,6 +332,21 @@ class ScLaborUsage(models.Model):
     _description = "劳务用工"
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "usage_date desc, id desc"
+    # U-C4 G09 可办理性修正：业务事实只在草稿窗口内可录入（原生 arch 的
+    # `readonly="state != 'draft'"` 是交互面），离开草稿后必须由后端拒绝修改，
+    # 不能只靠 XML 只读宣称安全。窗口取 arch 的同一口径 `state != 'draft'`：
+    # 若后端比交互面更宽（例如只在 submitted／confirmed 拒绝），被取消的记录即可
+    # 绕过页面直接改事实。同组 570 `sc.equipment.usage` 的保留守卫更窄，本批按授权
+    # 不改它，差异以测试显式固定。
+    # `note`／`attachment_ids` 是可在任何状态补充的依据类事实，不在本集内；
+    # `settlement_state` 由结算流程承接，也不在本集内。
+    # 事实守卫单独存在不够：`state` 必须同时只能由受控业务动作推进（与 570 同形的
+    # 上下文令牌），否则一次 `write({"state": "draft"})` 就能重新打开写入窗口。
+    _FACT_IMMUTABLE_FIELDS = {
+        "project_id", "usage_type", "usage_date", "labor_team", "contractor_id",
+        "work_type", "construction_part", "work_content", "worker_qty",
+        "work_hours", "price_unit", "currency_id",
+    }
 
     name = fields.Char(string="用工单号", required=True, default="新建", tracking=True)
     project_id = fields.Many2one("project.project", string="项目", required=True, index=True, tracking=True)
@@ -394,18 +414,44 @@ class ScLaborUsage(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if (
+            self.env.context.get(_COST_SOURCE_STATE_CONTEXT_KEY) is not _COST_SOURCE_STATE_TOKEN
+            and any(vals.get("state", "draft") != "draft" for vals in vals_list)
+        ):
+            raise UserError(_("劳务用工状态只能通过受控业务动作推进。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
             if vals.get("name", "新建") == "新建":
                 vals["name"] = seq.next_by_code("sc.labor.usage") or _("劳务用工")
         return super().create(vals_list)
 
+    def write(self, vals):
+        if (
+            "state" in vals
+            and self.env.context.get(_COST_SOURCE_STATE_CONTEXT_KEY) is not _COST_SOURCE_STATE_TOKEN
+        ):
+            raise UserError(_("劳务用工状态只能通过受控业务动作推进。"))
+        if self._FACT_IMMUTABLE_FIELDS & set(vals):
+            if self.filtered(lambda record: record.state != "draft"):
+                raise UserError(_("非草稿状态的劳务用工事实不可修改；请通过受控状态流程处理。"))
+        return super().write(vals)
+
+    def _write_cost_source_state(self, vals):
+        return self.with_context(
+            **{_COST_SOURCE_STATE_CONTEXT_KEY: _COST_SOURCE_STATE_TOKEN}
+        ).write(vals)
+
+    def unlink(self):
+        if self.filtered(lambda record: record.state != "draft"):
+            raise UserError(_("非草稿状态的劳务用工事实不可删除。"))
+        return super().unlink()
+
     def action_submit(self):
         for record in self:
             if record.state != "draft":
                 raise UserError(_("只有草稿用工单可以提交。"))
             record._check_values()
-            record.write({"state": "submitted"})
+            record._write_cost_source_state({"state": "submitted"})
         return True
 
     def action_confirm(self):
@@ -413,21 +459,21 @@ class ScLaborUsage(models.Model):
             if record.state != "submitted":
                 raise UserError(_("只有已提交用工单可以确认。"))
             record._check_values()
-            record.write({"state": "confirmed"})
+            record._write_cost_source_state({"state": "confirmed"})
         return True
 
     def action_cancel(self):
         for record in self:
             if record.state not in ("draft", "submitted"):
                 raise UserError(_("只有草稿或已提交用工单可以取消。"))
-            record.write({"state": "cancel"})
+            record._write_cost_source_state({"state": "cancel"})
         return True
 
     def action_reset_draft(self):
         for record in self:
             if record.state != "cancel":
                 raise UserError(_("只有已取消用工单可以重置为草稿。"))
-            record.write({"state": "draft"})
+            record._write_cost_source_state({"state": "draft"})
         return True
 
     @api.depends("worker_qty", "work_hours", "price_unit")

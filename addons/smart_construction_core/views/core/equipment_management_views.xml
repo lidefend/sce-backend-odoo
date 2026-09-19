@@ -270,8 +270,11 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,confirmed"/>
                 </header>
                 <sheet>
-                    <group>
-                        <group>
+                    <!-- U-C4 G09: 原生 arch 持有本入口的章节身份。 两个概览组带稳定
+                         `data-sc-anchor`；`view_sc_equipment_usage_form` 同时是 570（menus 692／509）
+                         与 851（menu 510）两条入口的原生承载。 原 `state != 'draft'` 只读口径不变。 -->
+                    <group name="equipment_usage_overview">
+                        <group name="equipment_usage_identity" data-sc-anchor="equipment_usage_identity" string="设备与项目">
                             <field name="name"/>
                             <field name="project_id" readonly="state != 'draft'"/>
                             <field name="request_id" readonly="state != 'draft'"/>
@@ -281,7 +284,7 @@
                             <field name="specification" readonly="state != 'draft'"/>
                             <field name="uom_text" readonly="state != 'draft'"/>
                         </group>
-                        <group>
+                        <group name="equipment_usage_usage_amount" data-sc-anchor="equipment_usage_usage_amount" string="使用与计价">
                             <field name="usage_location" readonly="state != 'draft'"/>
                             <field name="operator_name" readonly="state != 'draft'"/>
                             <field name="usage_qty" readonly="state != 'draft'"/>
@@ -300,10 +303,15 @@
                         <page string="附件">
                             <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
                         </page>
-                        <page string="办理提示">
-                            <field name="processing_advisory" readonly="1" nolabel="1"/>
-                        </page>
                     </notebook>
+                    <!-- U-C4 G09 表达修正：`processing_advisory` 是计算出来的辅助反馈，不是业务事实，
+                         不能占一个业务章节／页签（仓内既有约定见
+                         tests/test_context_workspace_native_lowcode.py::test_the_prompt_is_feedback_not_a_section）。
+                         改由渲染器已有的反馈面承载：不是 group／page，因此永远不会成为章节或导航项；
+                         空提示（新建态计算未跑）时整块不显示，而不是显示一个占位的 “—”。 -->
+                    <div class="alert alert-info" role="status" invisible="not processing_advisory">
+                        <field name="processing_advisory" readonly="1" nolabel="1"/>
+                    </div>
                 </sheet>
                 <chatter/>
             </form>

@@ -16,7 +16,19 @@ const EDITABLE_CONTROL = 'textarea:not([disabled]):not([readonly]), input:not([d
 // not disabled, so a disabled or readonly presentation still measures zero and
 // the readonly guard stays strict.
 const PICKER_CONTROL = '[data-semantic-driver$="-picker"]:not(.t-is-disabled) input:not([disabled])';
+// The third delivered control shape: a `selection` fact is driven through the
+// design system's own select, whose inner `input` is `readonly` by construction
+// (the option list owns the value, not the keyboard) - so the strict selector
+// above counts it as zero although the user can set the value by opening the
+// list.  The shape is claimed through the design system's own markers
+// (`data-semantic-component="ScSelect"`, its `data-option-count`, its
+// `data-readonly`), never through a TDesign internal class, and a locked fact
+// renders the read-only branch instead of the select, so a genuinely locked
+// presentation still measures zero.  `assertCreateEntryAcceptsInput` proves the
+// claim on the delivered page by opening the list and choosing an option.
+const SELECT_CONTROL = '[data-semantic-component="ScSelect"]:not([data-readonly]):not([data-option-count="0"]) input:not([disabled]):not([aria-disabled="true"])';
 const RELATION_TYPES = new Set(['one2many', 'many2many']);
+const SELECT_TYPES = new Set(['selection']);
 
 const CHILD_KEYS = ['children', 'tabs', 'pages', 'nodes', 'items'];
 
@@ -866,6 +878,7 @@ async function collectRenderedFacts(page) {
     else facts[name] = {
       editable: Math.max(previous.editable, data.editable),
       picker: Math.max(previous.picker, data.picker),
+      select: Math.max(previous.select || 0, data.select || 0),
       detail: Math.max(previous.detail, data.detail),
       detail_width: Math.max(previous.detail_width, data.detail_width),
       width: Math.max(previous.width, data.width),
@@ -895,6 +908,7 @@ async function collectRenderedFacts(page) {
           name: el.getAttribute('data-field-name'),
           editable: el.querySelectorAll(selectors.editable).length,
           picker: el.querySelectorAll(selectors.picker).length,
+          select: el.querySelectorAll(selectors.select).length,
           detail: details.length,
           detail_width: Math.round(Math.max(0, ...detailWidths)),
           width: Math.round(Math.max(0, ...widths)),
@@ -903,7 +917,7 @@ async function collectRenderedFacts(page) {
         };
       }),
     };
-  }, { editable: EDITABLE_CONTROL, picker: PICKER_CONTROL });
+  }, { editable: EDITABLE_CONTROL, picker: PICKER_CONTROL, select: SELECT_CONTROL });
   const first = await snapshot('body');
   for (const row of first.fields) record(row.name, row, 'body');
   for (let index = 0; index < total; index += 1) {
@@ -972,21 +986,22 @@ function assertReadonlyValues({ contract, facts, label, observations }) {
   // Either delivered shape would let the user write a fact the profile declares
   // read-only, so both the plain control and the picker trigger must be absent.
   const writable = rendered
-    .filter((node) => facts[node.name].editable > 0 || facts[node.name].picker > 0)
+    .filter((node) => facts[node.name].editable > 0 || facts[node.name].picker > 0 || (facts[node.name].select || 0) > 0)
     .map((node) => node.name);
   observations.readonly_checked = rendered.map((node) => node.name);
   assert(rendered.length > 0, `${label}: at least one readonly fact must be present on the rendered page`);
   assert.deepEqual(writable, [], `${label}: readonly facts must not expose editable controls`);
 }
 
-// A required fact must be fillable on the surface that requires it.  The
-// delivered profile owns the decision: a fact it leaves authorable cannot also
-// be required-without-a-control, because the user would then have no way to
-// complete the record.  A required fact the profile itself marks read-only is a
-// different question - its value has to arrive from a default or another
-// carrier - so it is recorded with its exact declaration instead of being
-// conflated with this defect.
-function assertRequiredFactsAreFillable({ contract, facts, label, observations }) {
+// A required fact must be obtainable on the surface that requires it.  The
+// delivered profile owns the decision: a fact it leaves authorable must expose a
+// control, because the user would otherwise have no way to complete the record.
+// A fact the profile itself marks read-only is a different question - its value
+// has to arrive from a default, a compute, the sequence or the workflow - so the
+// surface may keep it locked, but only when a legal carrier actually supplies it
+// and the topic declares that carrier.  The criterion is therefore "the required
+// value is obtainable by a legal path", never `必填 ∩ 可填` alone.
+function assertRequiredFactsAreFillable({ contract, facts, label, observations, carriers = {} }) {
   const profile = widgetProfile(contract);
   const required = [...new Map(fieldNodes(contract).filter((node) => {
     const status = profile.get(node.name);
@@ -997,32 +1012,197 @@ function assertRequiredFactsAreFillable({ contract, facts, label, observations }
   const rows = required.map((node) => {
     const status = profile.get(node.name) || {};
     const fact = facts[node.name];
+    const policyReadonly = status.readonly === true;
+    const carrier = carriers[node.name] || null;
+    const select = fact ? (fact.select || 0) : 0;
+    const control = fact ? fact.editable + fact.picker + select : 0;
     return {
       name: node.name,
-      policy_readonly: status.readonly === true,
+      policy_readonly: policyReadonly,
       body_readonly: node.readonly === true || node.modifiers?.readonly === true,
       rendered: Boolean(fact),
       editable: fact ? fact.editable : 0,
       picker: fact ? fact.picker : 0,
-      fillable: fact ? fact.editable + fact.picker : 0,
+      select,
+      fillable: control,
+      carrier,
+      path: control > 0 ? 'control' : (policyReadonly && carrier ? `carrier:${carrier}` : 'none'),
     };
   });
   observations.required_facts = rows;
   observations.required_facts_not_rendered = rows.filter((row) => !row.rendered).map((row) => row.name);
   observations.required_facts_without_control = rows
     .filter((row) => row.rendered && row.fillable === 0)
-    .map((row) => `${row.name}:policy_readonly=${row.policy_readonly}:body_readonly=${row.body_readonly}`);
-  const contradiction = rows
-    .filter((row) => row.rendered && !row.policy_readonly && row.fillable === 0)
+    .map((row) => `${row.name}:policy_readonly=${row.policy_readonly}:body_readonly=${row.body_readonly}:carrier=${row.carrier || 'none'}`);
+  // A required fact is obtainable through a legal path - and the criterion is not
+  // `必填 ∩ 可填`.  `name`, the date facts and the workflow state are required and
+  // read-only by policy, yet the sequence, the context default or the workflow
+  // supplies the value, so refusing them would falsely condemn a correct surface.
+  // The path is either a control the user can drive on the delivered page, or a
+  // legal non-user carrier behind the read-only presentation.  A declared carrier
+  // is not an unchecked exemption: the topic declares it in its scope, and the
+  // backend create-state test verifies the same classification against the
+  // delivered model definition (`_legal_carrier`).
+  const unobtainable = rows
+    .filter((row) => row.rendered && row.path === 'none')
     .map((row) => row.name);
   assert.deepEqual(
-    contradiction, [],
-    `${label}: the delivered profile leaves these required facts authorable but renders no control for them`,
+    unobtainable, [],
+    `${label}: every required fact must be obtainable by a legal path - a control the user can fill, or a declared carrier that supplies the value`,
+  );
+  // A carrier may only excuse a fact the delivered profile itself keeps read-only.
+  // Declaring one for a fact the profile leaves authorable would mask exactly the
+  // missing-control defect this battery exists to catch.
+  const masked = rows.filter((row) => row.carrier && !row.policy_readonly).map((row) => row.name);
+  assert.deepEqual(
+    masked, [],
+    `${label}: only a fact the delivered profile keeps read-only may be excused by a carrier`,
+  );
+  const unknown = Object.keys(carriers).filter((name) => !required.some((row) => row.name === name));
+  assert.deepEqual(
+    unknown, [],
+    `${label}: a declared carrier must name a required fact of this surface`,
+  );
+  // The mirror contradiction: the policy leaves the fact authorable, but the
+  // presentation locks it unconditionally.  The user then owes a value the page
+  // refuses to accept.  A conditional window (`state != 'draft'`) is not such a
+  // lock - the create window is exactly where it opens - so only an
+  // unconditional body read-only is counted here.
+  observations.required_facts_locked_by_body = rows
+    .filter((row) => row.rendered && !row.policy_readonly && row.body_readonly)
+    .map((row) => row.name);
+  assert.deepEqual(
+    observations.required_facts_locked_by_body, [],
+    `${label}: the delivered profile leaves these required facts authorable but the page locks them`,
   );
   // A fact counted through its picker trigger only is returned so the caller can
   // prove that trigger is reachable on the delivered page instead of trusting
   // the selector.
-  return { pickerBacked: rows.filter((row) => row.fillable > 0 && row.editable === 0).map((row) => row.name) };
+  return { pickerBacked: rows.filter((row) => row.picker > 0 && row.editable === 0).map((row) => row.name) };
+}
+
+// Reveal a fact whose 页签 is not the active one: walk the delivered notebook
+// pages until the fact is mounted.  Returns false only when no page carries it,
+// which keeps a genuinely absent fact a recorded defect instead of a silent skip.
+async function revealFactOnNotebookPage(page, name) {
+  const tabs = page.locator('[data-section-tab]:visible');
+  const total = await tabs.count();
+  for (let index = 0; index < total; index += 1) {
+    await tabs.nth(index).click().catch(() => null);
+    await page.waitForTimeout(200);
+    if (await page.locator(`[data-field-name="${name}"]`).count()) return true;
+  }
+  return false;
+}
+
+// A create surface only "办理"s if the facts the delivered profile owes the user
+// actually accept input.  The earlier rounds measured `必填 ∩ 可填` (a control
+// exists) and the readonly policy (a fact is not authorable); neither proves the
+// user can complete the record.  This probe stages values in the delivered
+// controls - typed facts, one date chosen through the delivered calendar, and one
+// option chosen through the delivered select - and never submits, so no record,
+// draft or change set is created and the wrapper's before/after business
+// fingerprint stays the proof that nothing was written.  It is opt-in per topic
+// because driving controls is a per-surface cost.
+async function assertCreateEntryAcceptsInput({ page, contract, label, observations }) {
+  const profile = widgetProfile(contract);
+  const TEXTUAL = new Set(['char', 'text']);
+  const NUMERIC = new Set(['integer', 'float', 'monetary']);
+  const DATE = new Set(['date', 'datetime']);
+  const authorable = [...new Map(fieldNodes(contract).filter((node) => {
+    const status = profile.get(node.name);
+    if (!status || status.visible === false || status.readonly) return false;
+    if (status.required !== true) return false;
+    const type = String(node.fieldInfo?.type || '');
+    return TEXTUAL.has(type) || NUMERIC.has(type) || DATE.has(type) || SELECT_TYPES.has(type);
+  }).map((node) => [node.name, node])).values()];
+  observations.create_entry_authorable_required = authorable.map((node) => node.name);
+  const staged = [];
+  const skipped = [];
+  for (const node of authorable) {
+    const type = String(node.fieldInfo?.type || '');
+    // A 页签-hosted fact is mounted only while its page is active.  The body
+    // snapshot can still see it while the notebook happens to open on that page,
+    // but by the time the probe stages values the notebook has been walked to its
+    // last page and the pane is unmounted - so the probe reveals the fact on its
+    // own page instead of reporting a reachable fact as missing.
+    const host = page.locator(`[data-field-name="${node.name}"]`).first();
+    if (!(await host.count()) && !(await revealFactOnNotebookPage(page, node.name))) {
+      skipped.push(`${node.name}(not-rendered)`);
+      continue;
+    }
+    if (DATE.has(type)) {
+      const trigger = host.locator(PICKER_CONTROL).first();
+      const input = host.locator('input').first();
+      if (!(await trigger.count()) || !(await input.count())) { skipped.push(`${node.name}(no-date-trigger)`); continue; }
+      const before = await input.inputValue();
+      await trigger.click().catch(() => null);
+      const cell = page.locator('.t-date-picker__panel .t-date-picker__cell:not(.t-date-picker__cell--disabled)').first();
+      const opened = await cell.waitFor({ state: 'visible', timeout: 10000 }).then(() => true).catch(() => false);
+      if (!opened) {
+        skipped.push(`${node.name}(calendar-not-opened)`);
+        await page.keyboard.press('Escape').catch(() => null);
+        continue;
+      }
+      await cell.click().catch(() => null);
+      await page.keyboard.press('Escape').catch(() => null);
+      const after = await input.inputValue();
+      staged.push({ field: node.name, kind: 'date-picked', before, after, accepted: after !== before });
+      continue;
+    }
+    if (SELECT_TYPES.has(type)) {
+      // The delivered select owns its value through the option list, so the proof
+      // is the list itself: open it, choose an option, and require the control to
+      // carry that option afterwards.  The control is claimed through the design
+      // system's own marker (`SELECT_CONTROL`); the opened list is addressed
+      // through the primitive's dropdown container, exactly the way the date
+      // branch above addresses the delivered calendar panel.  The container must be
+      // visibly open - its items stay in the DOM while it is closed, so their mere
+      // presence proves nothing - and the chosen text must come back on the
+      // control, so a click that does not write the value fails loudly.
+      const control = host.locator(SELECT_CONTROL).first();
+      if (!(await control.count())) { skipped.push(`${node.name}(no-select-control)`); continue; }
+      const before = await control.inputValue();
+      let option = null;
+      let chosen = '';
+      for (let attempt = 0; attempt < 2 && !option; attempt += 1) {
+        // A leftover open list from an earlier interaction toggles closed on the
+        // next click, so each attempt starts from the closed state.
+        await page.keyboard.press('Escape').catch(() => null);
+        await host.click().catch(() => null);
+        const list = page.locator('.t-select__dropdown:visible').last();
+        const opened = await list.waitFor({ state: 'visible', timeout: 8000 }).then(() => true).catch(() => false);
+        if (!opened) continue;
+        const candidate = list.locator('li:not([aria-disabled="true"])').filter({ hasText: /\S/ }).first();
+        if (await candidate.count()) {
+          option = candidate;
+          chosen = String((await candidate.innerText()) || '').trim();
+        }
+      }
+      if (!option) {
+        skipped.push(`${node.name}(option-list-not-opened)`);
+        await page.keyboard.press('Escape').catch(() => null);
+        continue;
+      }
+      await option.click().catch(() => null);
+      await page.keyboard.press('Escape').catch(() => null);
+      const after = await control.inputValue();
+      staged.push({ field: node.name, kind: 'option-chosen', before, chosen, after, accepted: after === chosen });
+      continue;
+    }
+    const control = host.locator(EDITABLE_CONTROL).first();
+    if (!(await control.count())) { skipped.push(`${node.name}(no-control)`); continue; }
+    await control.fill(NUMERIC.has(type) ? '1' : 'G09');
+    staged.push({ field: node.name, kind: 'typed', value: await control.inputValue(), accepted: true });
+  }
+  observations.create_entry_staged = staged;
+  observations.create_entry_skipped = skipped;
+  assert(staged.length > 0,
+    `${label}: the create surface must accept input for at least one required authorable fact`);
+  const refused = staged.filter((row) => row.accepted !== true).map((row) => row.field);
+  assert.deepEqual(refused, [],
+    `${label}: a required authorable fact must accept the value the delivered profile owes`);
+  return staged;
 }
 
 // A trigger counted as fillable must be reachable, the same way a plain control
@@ -1079,6 +1259,47 @@ function assertFullWidthDetail({ contract, facts, treeWidth, label, observations
   assert(pageLevel.length > 0, `${label}: at least one relation collection must render on a page-level surface`);
   assert.deepEqual(pageLevel.filter((row) => row.tree_ratio < 0.9).map((row) => row.field), [],
     `${label}: a page-level relation collection must span the whole form body`);
+}
+
+// The low-code entry is a capability of the delivered surface, not of the
+// mechanism that retired the legacy bodies: the page either offers 「表单设置」
+// to this administrator or it does not, and that is a fact the batch has to
+// measure on the entry it actually ships.  A previous batch concluded the entry
+// was absent for a group of transient dispatch workspaces, and that conclusion
+// is scoped to *those* entries; it must never be replayed as "the group has no
+// legal form-configuration path".  Measured read-only: the header overflow menu
+// is opened and read.  The item is never clicked, so no change set is opened,
+// staged, previewed, published, discarded or rolled back by this probe.
+async function assertDesignerEntryAvailability({ page, label, observations }) {
+  const overflow = page.getByRole('button', { name: '更多操作', exact: true });
+  assert.equal(await overflow.count(), 1, `${label}: the create surface must expose exactly one 更多操作 carrier`);
+  await overflow.click();
+  const item = page.getByText('表单设置', { exact: true });
+  // The overflow panel mounts after the trigger settles, so a single read taken
+  // on the click's own tick would report "the entry is missing" for a page that
+  // simply had not painted it yet.  Poll a bounded number of times instead.
+  let count = 0;
+  for (let attempt = 0; attempt < 25 && count === 0; attempt += 1) {
+    count = await item.count();
+    if (!count) await page.waitForTimeout(80);
+  }
+  let visible = false;
+  let enabled = false;
+  if (count > 0) {
+    visible = await item.last().isVisible();
+    enabled = await item.last().isEnabled().catch(() => false);
+  }
+  // Close the menu again so the surface is left exactly as it was read.
+  await page.keyboard.press('Escape').catch(() => {});
+  const measured = { menu_opened: true, item_count: count, available: Boolean(count > 0 && visible), visible, enabled };
+  observations.designer_entry = measured;
+  // A measured capability is only evidence when the measurement was definite.
+  // The availability verdict itself stays a recorded fact (an entry without the
+  // item is a registered capability limit, not a silent pass); an item that is
+  // present but not usable is a defect, because the user sees an entry that
+  // cannot be operated.
+  assert(!(measured.available && !enabled), `${label}: the 表单设置 entry is visible but not operable`);
+  return measured;
 }
 
 // The empty collection surface and the create entry describe one capability.
@@ -1232,8 +1453,18 @@ export async function runRepresentativeSurface({ page, scope, contract, out, rep
         }
         if (checks.readonly_values) assertReadonlyValues({ contract: compiled, facts: rendered.facts, label, observations });
         if (writable && checks.required_fillable) {
-          const { pickerBacked } = assertRequiredFactsAreFillable({ contract: compiled, facts: rendered.facts, label, observations });
+          const { pickerBacked } = assertRequiredFactsAreFillable({
+            contract: compiled, facts: rendered.facts, label, observations,
+            carriers: (checks.create_carriers || {})[surface.model] || {},
+          });
           await assertPickerTriggersAreReachable({ page, names: pickerBacked, label, observations });
+        }
+        // Unsaved entry is a create fact: the probe stages values, picks a date
+        // through the delivered calendar and never submits.  It runs on the
+        // create route only, after the structural batteries, so a staged value
+        // cannot change what they measured.
+        if (writable && route.kind === 'create' && checks.create_entry_probe) {
+          await assertCreateEntryAcceptsInput({ page, contract: compiled, label, observations });
         }
         if (writable && checks.notebook) assertNotebookNavigation({ pages: rendered.pages, label, observations });
         if (writable && checks.full_width_detail) assertFullWidthDetail({ contract: compiled, facts: rendered.facts, treeWidth: rendered.treeWidth, label, observations });
@@ -1246,6 +1477,9 @@ export async function runRepresentativeSurface({ page, scope, contract, out, rep
         // renderer actually promoted to nodes.  Read-only, bounded, no secrets;
         // it turns a section-presence difference into an attributable fact
         // instead of a guessed cause.
+        if (checks.designer_entry && route.kind === 'create') {
+          surfaceReport.designer_entry = await assertDesignerEntryAvailability({ page, label, observations });
+        }
         const renderedFieldNames = await page.evaluate(() => [...new Set(
           [...document.querySelectorAll('[data-field-name]')].map((node) => node.getAttribute('data-field-name')),
         )].filter(Boolean).sort());

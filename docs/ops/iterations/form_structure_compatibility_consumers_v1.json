@@ -4000,7 +4000,9 @@
           "current_account_workspace_form_v1",
           "team_loan_deduction_workspace_form_v1"
         ],
-        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
+        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated",
+        "indexStatus": "historical_source",
+        "indexNote": "G08 was integrated on the mainline by PR #498 (squash of the G08 topic); its three consumer entries were removed from `entries` (25 -> 22) and the group index above is kept only as the historical preparation source. The index is NOT the current consumer set: do not schedule G08 from it. The three names in `legacyConfigurations` are still published runtime contracts, but they are the retirement carriers of the completed G08 batch, not pending work."
       },
       {
         "id": "G09",
@@ -4027,7 +4029,19 @@
           "sc_subcontract_register_p1_form_business_facts_v1",
           "subcontract_register_productized_form_v1"
         ],
-        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
+        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated",
+        "indexStatus": "mixed_historical_and_current",
+        "indexNote": "This prepared list is NOT the G09 retirement set. Only the three `*_form_sections_v1` names are the carriers retired by the G09 topic; the other five are still active runtime consumers and must stay listed as consumers. Per-name classification below is bound to sc_dev_demo (read-only, 2026-09-19).",
+        "legacyConfigurationStatus": {
+          "equipment_usage_register_productized_form_v1": "current_consumer",
+          "sc_equipment_usage_form_sections_v1": "retired_by_g09_topic",
+          "sc_equipment_usage_p1_form_business_facts_v1": "current_consumer",
+          "sc_labor_usage_form_sections_v1": "retired_by_g09_topic",
+          "sc_labor_usage_p1_form_business_facts_v1": "current_consumer",
+          "sc_subcontract_register_form_sections_v1": "retired_by_g09_topic",
+          "sc_subcontract_register_p1_form_business_facts_v1": "current_consumer",
+          "subcontract_register_productized_form_v1": "current_consumer"
+        }
       },
       {
         "id": "G10",

@@ -102,6 +102,7 @@ from . import test_tax_deduction_native_lowcode
 from . import test_social_fund_capability
 from . import test_hr_payroll_native_lowcode
 from . import test_context_workspace_native_lowcode
+from . import test_usage_performance_native_lowcode
 from . import test_product_system_settings
 from . import test_data_permission_surface
 from . import test_product_numbering_rule

@@ -144,6 +144,26 @@ TOPIC_IDENTITIES = {
         ("action_sc_product_current_account_v1", "view_sc_current_account_workspace_form", "menu_sc_product_current_account_v1"),
         ("action_sc_product_company_project_refund_v1", "view_sc_company_project_refund_workspace_form", "menu_sc_product_company_project_refund_v1"),
     ),
+    # U-C4 G09: the 用量与履约登记 group gives one shared native body per model
+    # (1461 sc.labor.usage / 1476 sc.equipment.usage / 1491 sc.subcontract.register)
+    # and each authorised entry resolves to the form of its own model.  The
+    # registration is deliberately wider than the three authorised actions: 871,
+    # 570 and 575 are only the entries the ledger names, while the delivered
+    # navigation hands the same bodies to the bypass entries (562 方单 / 563
+    # 零星用工 on 1461, 851 机械台班记录 on 1476) and to a second menu carrier
+    # (509 设备使用登记, 518 分包登记).  A representative pass that only opened
+    # the three ledger rows would report a single-consumer body for a form four
+    # entries actually share, so every delivered consumer is registered read-only.
+    "usage_performance": (
+        ("action_sc_product_labor_cost_v1", "view_sc_labor_usage_form", "menu_sc_product_labor_cost_v1"),
+        ("action_sc_labor_usage_ticket", "view_sc_labor_usage_form", "menu_sc_labor_usage_acceptance"),
+        ("action_sc_labor_usage_casual", "view_sc_labor_usage_form", "menu_sc_labor_casual_acceptance"),
+        ("action_sc_equipment_usage", "view_sc_equipment_usage_form", "menu_sc_product_equipment_shift_v1"),
+        ("action_sc_equipment_usage", "view_sc_equipment_usage_form", "menu_sc_equipment_usage"),
+        ("action_sc_equipment_usage_shift_user_confirmed", "view_sc_equipment_usage_form", "menu_sc_equipment_shift_acceptance"),
+        ("action_sc_subcontract_register", "view_sc_subcontract_register_form", "menu_sc_product_subcontract_cost_v1"),
+        ("action_sc_subcontract_register", "view_sc_subcontract_register_form", "menu_sc_subcontract_register"),
+    ),
 }
 TOPIC_SAMPLE_FIELDS = {
     "invoice": ["direction", "source_kind", "source_origin", "note"],
@@ -157,6 +177,7 @@ TOPIC_SAMPLE_FIELDS = {
     "tax_deduction": ["state", "deduction_scope", "deduction_flow_label", "source_origin"],
     "payroll": ["state", "fact_type", "period_year", "period_month", "legacy_document_no"],
     "context_workspace": ["project_id", "partner_id", "business_date", "note"],
+    "usage_performance": ["state", "project_id", "note", "amount", "contract_id"],
 }
 # Mechanism assertions for the read-only representative pass.  Names are the
 # registered display copies / canonical sources of the same business fact; the
@@ -282,6 +303,65 @@ TOPIC_REPRESENTATIVE = {
     # It does not mean the model has no record surface -- a transient model does
     # carry rows and has a legal edit state; the pass simply does not create one.
     "context_workspace": {"section_navigation": True, "dispatch_only": True},
+    # U-C4 G09: the three rebuilt bodies carry two anchored native groups each
+    # (1461 用工主信息 / 用工与计价, 1476 设备与项目 / 使用与计价, 1491
+    # 登记主信息 / 分包单位与金额), so the same read-only section-navigation
+    # battery is the mechanism assertion: every 章节入口 must resolve and reveal
+    # its target, and the command bar / navigation / body bands must stay
+    # separated at 1088 and 390.  `record_surface` replays it on a governed
+    # sample of the same action, because a container condition can only resolve
+    # on an existing record.  Read-only; no change set is touched and no record
+    # is written.
+    #
+    # `designer_entry` measures the low-code path on the delivered entry instead
+    # of inheriting it: the three models are ordinary persisted models (not the
+    # transient dispatch workspaces the previous batch measured), so whether the
+    # administrator reaches 「表单设置」 from 871／570／575 is a fact about these
+    # entries.  The probe opens the header overflow menu and reads the item; it
+    # never clicks through it, so it opens no change set and writes nothing.
+    #
+    # `required_fillable` is the create-state assertion this batch adds to the
+    # group: the retained model-wide `p1_form_business_facts_v1` carriers declared
+    # every business fact unconditionally read-only, `project_id` included, while
+    # the same declaration marked it required - so the create page offered 提交
+    # with no legal path to the project.  The check asks the delivered create
+    # profile instead of the declarations: a fact the profile leaves authorable
+    # must expose a control the user can reach and fill, and a fact it marks
+    # required must be obtainable through a legal path (typed by the user, or
+    # carried by a default/compute/sequence behind the read-only presentation).
+    #
+    # `readonly_values` keeps the reverse example on the record surface: on the
+    # delivered 已确认 / 已登记 record, a fact the policy marks read-only must not
+    # expose an editable control.  `create_entry_probe` is the unsaved-entry
+    # proof - it stages values and picks a date through the delivered calendar on
+    # the create route and never submits, so no record, draft or change set is
+    # created and the wrapper's before/after fingerprint stays the guard.
+    "usage_performance": {
+        "section_navigation": True,
+        "record_surface": True,
+        "designer_entry": True,
+        "required_fillable": True,
+        "readonly_values": True,
+        "create_entry_probe": True,
+        # `create_carriers` names, per surface model, the required facts the
+        # delivered create profile keeps read-only *and* that a legal non-user
+        # carrier supplies, so the create-state battery can ask "is the required
+        # value obtainable by a legal path?" instead of the cruder "必填 ∩ 可填".
+        # `name` arrives from the document sequence and `settlement_state` from the
+        # model default; both are verified against the delivered field definition
+        # by the backend create-state test
+        # (`test_every_required_create_fact_is_obtainable_by_a_legal_path`, whose
+        # `FACT_CARRIERS` is the same classification).  The browser pass refuses a
+        # carrier declared for a fact the profile leaves authorable, so the
+        # declaration cannot mask a missing control.  575 declares none: its
+        # required facts (`project_id`, `register_date`, `subcontract_scope`,
+        # `currency_id`) are all authorable on the create surface, and its
+        # post-registration edit rule is still pending.
+        "create_carriers": {
+            "sc.labor.usage": {"name": "sequence", "settlement_state": "default"},
+            "sc.equipment.usage": {"name": "sequence"},
+        },
+    },
 }
 if topic not in TOPIC_IDENTITIES:
     raise RuntimeError("unregistered formal form topic")

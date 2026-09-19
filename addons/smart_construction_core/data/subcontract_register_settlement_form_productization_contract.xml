@@ -1,76 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
+    <!-- U-C4 G09: 用量与履约登记整组原生结构迁移（sc.subcontract.register）。
+
+         唯一正式入口 575 分包成本登记（menus 693 项目中心/分包成本、518 项目中心/材料成本/专业分包）
+         消费原生主表单 `view_sc_subcontract_register_form`（库内 view 1491）。原生 arch 已呈现登记主
+         信息、项目与合同、分包单位与责任人、履约期间与登记明细，并把管理要求／附件／备注／办理提示
+         收进 notebook。本批把结构权威交给原生 arch：入口契约只保留 `title` 与
+         `composition_mode: native_semantic_surface`，退役 8 章 sections 与 fields 副本；
+         `view_orchestration.context` 原样保留，不手工递增 `version_no`（U-C3／G07 先例）。
+
+         优先级：入口级发布由 `50` 提为 `800`。本组的入口发布原先排在模型级载体
+         （sections 20／p1 facts 88／生成镜像 104-165）之前，导致结构权威解析的最后一个写入者
+         是模型级 `entry_semantic_surface` 声明，与运行时实际生效的 native 权威不一致（G02 进项
+         700、G07 工资 700-800 两族即按"入口发布排最后"写成）。提为 800 后入口的 native 声明成为
+         最后一个结构写入者，两处解析口径一致；入口发布不携带结构键，因此该次序变化不改变呈现。
+         回滚：`git revert`（纯声明改动，无数据迁移）。
+
+         注 1：模型级 `sc_subcontract_register_p1_form_business_facts_v1`（库内 id 17）本批**保留
+         active**，理由同 labor／equipment：它是业务事实只读策略的唯一声明载体，退役属策略变更。
+         注 2：同文件的 576 分包结算（`sc.subcontract.settlement`，另一模型、另一原生表单、另一台账
+         分组）**本批不动**，不在 871／570／575 授权范围内。 -->
     <data noupdate="0">
         <record id="business_config_contract_subcontract_register_productized_form_v1" model="ui.business.config.contract">
             <field name="name">subcontract_register_productized_form_v1</field>
             <field name="model">sc.subcontract.register</field>
             <field name="view_type">form</field>
             <field name="action_id" ref="smart_construction_core.action_sc_subcontract_register"/>
-            <field name="priority">50</field>
+            <field name="priority">800</field>
             <field name="company_id" eval="False"/>
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval="{
-                'view_orchestration': {
-                    'context': {
-                        'source': 'smart_construction_core.product_release',
-                        'source_status': 'product_release'
-                    },
-                    'views': {
-                        'form': {
-                            'title': '分包登记',
-                            'composition_mode': 'entry_semantic_surface',
-                            'columns': 2,
-                            'sections': [
-                                {'title': '办理主信息', 'sequence': 10, 'columns': 2, 'fields': ['state', 'name', 'subcontract_register_document_no_display', 'subcontract_register_title_display']},
-                                {'title': '项目与合同', 'sequence': 20, 'columns': 2, 'fields': ['project_id', 'request_id', 'contract_id', 'subcontract_scope', 'subcontract_register_subcontract_content_display']},
-                                {'title': '分包单位与责任人', 'sequence': 30, 'columns': 2, 'fields': ['subcontractor_id', 'responsible_id']},
-                                {'title': '履约期间', 'sequence': 40, 'columns': 2, 'fields': ['register_date', 'sign_date', 'start_date', 'end_date']},
-                                {'title': '金额与履约边界', 'sequence': 50, 'columns': 2, 'fields': ['registered_amount', 'amount_total', 'quantity_total', 'invoice_amount', 'paid_amount', 'unpaid_amount', 'uninvoiced_amount', 'currency_id']},
-                                {'title': '登记明细', 'sequence': 60, 'columns': 2, 'fields': ['line_ids']},
-                                {'title': '说明与附件', 'sequence': 70, 'columns': 2, 'fields': ['management_note', 'note', 'message_attachment_count']},
-                                {'title': '来源追溯', 'sequence': 80, 'columns': 2, 'fields': ['legacy_fact_model', 'legacy_fact_id', 'legacy_fact_type', 'source_created_by', 'source_created_at', 'active']}
-                            ],
-                            'fields': [
-                                {'name': 'state', 'sequence': 10, 'group_title': '办理主信息', 'readonly': True},
-                                {'name': 'name', 'sequence': 20, 'group_title': '办理主信息'},
-                                {'name': 'subcontract_register_document_no_display', 'sequence': 30, 'group_title': '办理主信息', 'readonly': True},
-                                {'name': 'subcontract_register_title_display', 'sequence': 40, 'group_title': '办理主信息', 'readonly': True},
-                                {'name': 'project_id', 'sequence': 50, 'group_title': '项目与合同'},
-                                {'name': 'request_id', 'sequence': 60, 'group_title': '项目与合同'},
-                                {'name': 'contract_id', 'sequence': 70, 'group_title': '项目与合同'},
-                                {'name': 'subcontract_scope', 'sequence': 80, 'group_title': '项目与合同'},
-                                {'name': 'subcontract_register_subcontract_content_display', 'sequence': 90, 'group_title': '项目与合同', 'readonly': True},
-                                {'name': 'subcontractor_id', 'sequence': 100, 'group_title': '分包单位与责任人'},
-                                {'name': 'responsible_id', 'sequence': 110, 'group_title': '分包单位与责任人'},
-                                {'name': 'register_date', 'sequence': 120, 'group_title': '履约期间'},
-                                {'name': 'sign_date', 'sequence': 130, 'group_title': '履约期间', 'readonly': True},
-                                {'name': 'start_date', 'sequence': 140, 'group_title': '履约期间'},
-                                {'name': 'end_date', 'sequence': 150, 'group_title': '履约期间'},
-                                {'name': 'registered_amount', 'sequence': 160, 'group_title': '金额与履约边界', 'readonly': True},
-                                {'name': 'amount_total', 'sequence': 170, 'group_title': '金额与履约边界', 'readonly': True},
-                                {'name': 'quantity_total', 'sequence': 180, 'group_title': '金额与履约边界', 'readonly': True},
-                                {'name': 'invoice_amount', 'sequence': 190, 'group_title': '金额与履约边界', 'readonly': True},
-                                {'name': 'paid_amount', 'sequence': 200, 'group_title': '金额与履约边界', 'readonly': True},
-                                {'name': 'unpaid_amount', 'sequence': 210, 'group_title': '金额与履约边界', 'readonly': True},
-                                {'name': 'uninvoiced_amount', 'sequence': 220, 'group_title': '金额与履约边界', 'readonly': True},
-                                {'name': 'currency_id', 'sequence': 230, 'group_title': '金额与履约边界', 'readonly': True},
-                                {'name': 'line_ids', 'sequence': 240, 'group_title': '登记明细'},
-                                {'name': 'management_note', 'sequence': 250, 'group_title': '说明与附件'},
-                                {'name': 'note', 'sequence': 260, 'group_title': '说明与附件'},
-                                {'name': 'message_attachment_count', 'sequence': 270, 'group_title': '说明与附件', 'readonly': True},
-                                {'name': 'legacy_fact_model', 'sequence': 280, 'group_title': '来源追溯', 'readonly': True},
-                                {'name': 'legacy_fact_id', 'sequence': 290, 'group_title': '来源追溯', 'readonly': True},
-                                {'name': 'legacy_fact_type', 'sequence': 300, 'group_title': '来源追溯', 'readonly': True},
-                                {'name': 'source_created_by', 'sequence': 310, 'group_title': '来源追溯', 'readonly': True},
-                                {'name': 'source_created_at', 'sequence': 320, 'group_title': '来源追溯', 'readonly': True},
-                                {'name': 'active', 'sequence': 330, 'group_title': '来源追溯'}
-                            ]
-                        }
-                    }
-                }
-            }"/>
+            <field name="contract_json" eval="{'view_orchestration': {'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'}, 'views': {'form': {'title': '分包登记', 'composition_mode': 'native_semantic_surface'}}}}"/>
         </record>
 
         <record id="business_config_contract_subcontract_settlement_productized_form_v1" model="ui.business.config.contract">
