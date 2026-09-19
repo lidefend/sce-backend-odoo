@@ -3308,6 +3308,8 @@ success `classify`／`frontend_release_gate`／`merge_policy_gate`／`profession
 - **设计器写入闭环（选择 → 编辑 → 存草稿 → 预览 → 发布 → 刷新 → 回滚）本批未执行**：
   它属写入路径（并会按工具既有设计留下一张未发布复核草稿），超出本批"只读范围核对"的授权口径，
   如实登记为未执行项（见 8.35.8），**不以只读可用性代替写入闭环的通过结论**。
+  **该状态已在有界复核轮更新**：代表入口 871 已补做合法配置闭环（发布 ＋ 回滚 ＋ 隔离），
+  见 8.35.12-②；本段保留为只读轮的历史口径。
 
 ### 8.35.6 分层验证结果
 
@@ -3332,7 +3334,7 @@ success `classify`／`frontend_release_gate`／`merge_policy_gate`／`profession
 - **页签结构**：1461 四个页、1476 三个页、1491 五个页全部激活且带内容，无空页。
 - **「表单设置」**：871／570／575 三处新建页均为**存在、可见、可操作**（见 8.35.5）。
 
-**L4 被角色路由权威拒绝的 5 个入口（登记为角色边界，不计产品缺陷、不写成通过）**：
+**L4 被角色路由权威拒绝的 5 个入口（原写"角色边界／不计产品缺陷"，已按 8.35.12-⑥ 更正）**：
 
 | 入口 | 菜单 | 拒绝原因 |
 |---|---|---|
@@ -3343,9 +3345,11 @@ success `classify`／`frontend_release_gate`／`merge_policy_gate`／`profession
 | 575 第二菜单 | 518 材料成本/专业分包 | 同上 |
 
 被授权入口走的是「项目中心/劳务成本」「机械成本」「分包成本」分支（对受管身份
-`sc_test_admin` 可达）；上述 5 条走「材料成本/*」分支，运行角色路由权威不含该分支，
-故拒绝来自**角色级路由权威**而非分组缺失。这 5 条的原生结构与契约由 L2 断言覆盖
-（同一 action／同一原生树／同一契约 id）。
+`sc_test_admin` 可达）；上述 5 条走「材料成本/*」分支，运行角色路由权威不含该分支。
+**口径更正（见 8.35.12-⑥）**：拒绝只登记为**该角色下未覆盖**；原文"不计产品缺陷"在没有
+预期角色依据时**不得**使用，现撤回该定性。这 5 条中 562／563／851 的入口契约与共享原生树
+由 L2 的 `ENTRIES`／`RETIRED_SECTION_CARRIERS` 断言覆盖（**声明层**，不是浏览器渲染结论）；
+570 的第二菜单 509 与 575 的第二菜单 518 是同一 action 的第二个菜单载体，另无独立断言。
 
 ### 8.35.7 过程中的首次偏差（如实登记）
 
@@ -3359,8 +3363,10 @@ success `classify`／`frontend_release_gate`／`merge_policy_gate`／`profession
 
 - **562 记录态（`record_surface`）未覆盖**：该 action 域内 **0 行**（模型内 1 行），
   登记为 `state=empty_action_domain`，**未为补样本造数据**。
-- **5 条旁路／第二菜单入口未做浏览器复核**（8.35.6 表），原因 `NAVIGATION_AUTHORITY_DENIED`。
-- **设计器写入闭环未执行**（见 8.35.5），只完成只读可用性实测。
+- **5 条旁路／第二菜单入口未做浏览器复核**（8.35.6 表），原因 `NAVIGATION_AUTHORITY_DENIED`，
+  按 8.35.12-⑥ 只登记为**该角色下未覆盖**（不作非缺陷定性）。
+- **设计器写入闭环未执行**（见 8.35.5），只完成只读可用性实测；
+  **该缺口已在有界复核轮补上**（代表入口 871，见 8.35.12-②）。
 - **动作载体（按钮）、字段策略面、共享吸顶与窄屏的其它形状未单独探测**。
 - **未执行项（保持未执行）**：最终 Quick（冻结后一次）、推送、建 PR、合并、部署、台账扣减提交、
   89 入口整体交付、历史工作树／分支清理、`sync_demo`／fixture reset／发布快照。
@@ -3377,8 +3383,12 @@ success `classify`／`frontend_release_gate`／`merge_policy_gate`／`profession
 
 ### 8.35.10 状态
 
-状态：**G09 批次验收完成（本批范围）｜未冻结｜未集成｜未部署｜89 入口整体交付未完成｜台账 22**。
+状态：**自验与冻结门禁通过、待集中产品复核（本批范围）｜已完成有界复核轮二（身份／角色／工具补验，见 §8.35.13）｜本轮新候选由提交后回执记录（原候选 `6511134c586320b8c07f1be8aa9d60ecb9d046d3` 已被本轮提交取代）｜未集成｜未部署｜89 入口整体交付未完成｜台账 22**。
 **G08 主线集成 ≠ 部署 ≠ 89 入口整体交付完成**，本批同理。
+
+**口径更正（见 8.35.12-①）**：本段原写「G09 批次验收完成」，现更正为「自验与冻结门禁通过、待集中产品复核」。
+按 AGENTS.md「Completion Status Boundaries」，`批次验收完成` 只能在 scoped changes ＋ targeted tests ＋
+**batch product review** 三者都通过后使用；集中产品复核尚未完成，故不得使用该措辞。
 
 ### 8.35.11 冻结前复核补证：退役载体对**所有**消费者的 A/B 只读对比
 
@@ -3403,3 +3413,410 @@ success `classify`／`frontend_release_gate`／`merge_policy_gate`／`profession
 
 下一步（**待执行**）：冻结候选（clean HEAD＋完整指纹）→ **一次** exact-head Quick → 独立复核与
 外部归档 → `make pr.push` → draft PR → ready → **仅在明确授权后**合并 → 合入后台账 22 → 19 与补登。
+
+### 8.35.12 有界复核轮（2026-09-19，只补复核缺口，不重跑整批）
+
+授权口径：本轮**只补**集中复核提出的三项缺口（产品复核依据／低代码合法闭环与独立复核／台账与影响面），
+**保持候选 `6511134c586320b8c07f1be8aa9d60ecb9d046d3`、PR #499 与运行现场不变**；
+**不重跑 Quick、不重跑浏览器矩阵、不扩展产品改动**。冻结门禁（§8.35.11 下一步）已在上一轮完成，
+本轮不重复执行。
+
+本轮 dirty 范围（相对候选 commit）：`frontend/apps/web/scripts/formal_form_designer_journey.mjs`、
+`frontend/apps/web/scripts/formal_form_lowcode_loop.mjs`、本文件。前两项是**为产出 8.35.12-② 闭环证据**
+而做的 P4 工具修正（见 -② 末与 -⑧），三者**均未进入候选**；因此 PR #499 头指针仍为 `6511134c…`。
+
+#### 8.35.12-① 状态口径更正
+
+§8.35.10 与交付摘要中的「G09 批次验收完成」**更正为「自验与冻结门禁通过、待集中产品复核」**。
+本批当前可达状态：分层自验通过（L1／L2／L3／L4）＋ 冻结门禁通过（clean HEAD ＋ 完整指纹 ＋
+exact-head Quick）；**集中产品复核未完成**。`未集成`／`未部署`／`89 入口整体交付未完成`／`台账 22`
+与**G08 主线集成 ≠ 部署 ≠ 89 入口整体交付完成**的边界不变。
+
+#### 8.35.12-② 代表入口 871：合法配置闭环（发布 ＋ 刷新 ＋ 回滚）与现场绑定身份
+
+**工况**：`FORM_LOWCODE_TOPIC=usage_performance FORM_LOWCODE_DESIGNER=1 make local.dev.form_lowcode.browser`
+→ **EXIT=0**、`PASS formal designer journey`、`business fingerprints unchanged`。
+报告：`artifacts/lowcode-form-loop/browser/designer-report.json`（`ok=true`、`restored=true`、
+`candidate=6511134c…`、`change_set_id=487`、`cleanup_guard.decision=proceed`、`recovery_state.released=true`）。
+截图：`designer-draft.png`／`designer-preview.png`／`designer-published.png`／`designer-rollback.png`／
+`designer-outside-scope.png`。
+
+**闭环路径**：产品界面 → 设计器 → 编辑 → 存草稿 → 预览 → **发布** → 刷新业务面 → **回滚**。
+报告 `stages.designer` 五段全 `passed`（`browser`／`publication`／`final_contract`／`workflow`／`isolation`），
+`stages.outside_page` 与 `stages.isolation_page` 见 -③。
+
+**授权的 3 条补丁（全部为配置面，不触碰产品代码）**：
+
+| # | 目标（locator） | 期望 | 设置 |
+|---|---|---|---|
+| 1 | `/form[1]/sheet[1]/group[1]/group[1]/field[5]` | `field` `labor_team` occ.1 | `label = 受管班组` |
+| 2 | `/form[1]/sheet[1]/group[1]/group[1]` | `group` `labor_usage_processing_main` occ.1 | `order`（field[1]／[2]／**[5]**／[3]／[4]）＋ `configuration-group:designer`「受管用工配置」成员 field[5] |
+| 3 | `/form[1]/sheet[1]/notebook[1]/page[1]/group[1]/field[2]` | `field` `construction_part` occ.1 | `label = 施工部位`、`visible = false` |
+
+**可验证断言**：
+
+- **视觉序生效**：`visual_order.status=passed`，`configured_y=550 < displaced_y=636`；未触碰字段
+  `name`／`project_id`／`usage_type` 仍保持原生序。
+- **预览结构**：`preview_structure.parent=labor_usage_processing_main`，`configuration-group:designer`
+  就位于 `project_id` 与 `usage_date` 之间。
+- **发布后业务面**：`usage_performance_business_surface.navigation_target=
+  [data-form-section-target="node:labor_usage_processing_main:business-section"]`、
+  `hidden_field_present=false`、`hidden_fact_in_contract=true`（隐藏字段在契约中仍是事实、只是不呈现）。
+- **回滚生效**：`rollback_page.text` 恢复原生标签（`班组`／`施工部位` 回归、`受管用工配置` 分组消失）。
+
+**现场绑定身份（供浏览器实检）**：前端 `http://127.0.0.1:5174`；登录 `sc_test_admin`（`res.users` id 51）；
+库 `sc_dev_demo`；公司 `My Company`(id 1)；解析角色 `system_admin`；compose 项目 `sc-local-dev`；
+模块 `smart_construction_core` 17.0.0.168。
+
+| 入口 | 新建页（完整链接） | 记录页（完整链接） | 现场记录 |
+|---|---|---|---|
+| 871 劳务成本登记 | `/f/sc.labor.usage/new?action_id=871&menu_id=689` | `/f/sc.labor.usage/1?action_id=871&menu_id=689` | `sc.labor.usage` id 1 `S87-LU-001`（`confirmed`） |
+| 570 机械台班登记 | `/f/sc.equipment.usage/new?action_id=570&menu_id=692` | `/f/sc.equipment.usage/1?action_id=570&menu_id=692` | `sc.equipment.usage` id 1 `S80-EU-001`（`confirmed`） |
+| 575 分包成本登记 | `/f/sc.subcontract.register/new?action_id=575&menu_id=693` | `/f/sc.subcontract.register/1?action_id=575&menu_id=693` | `sc.subcontract.register` id 1 `S85-SREG-001`（`active`） |
+
+（链接为相对根路径，前缀 `http://127.0.0.1:5174`。三条记录是**库内受管样本**：
+`create_date=2026-09-07`、`create_uid=1`，**非本轮经 UI 新建**；本轮的写入范围只限设计器配置，
+新建页只打开并断言，未提交业务记录，业务指纹未变。570 的第二菜单 509、575 的第二菜单 518
+在本角色下被路由权威拒绝，见 -⑥。）
+
+**本次闭环留下的变更集（如实登记，不清理）**：库内 `ui.business.config.change.set`
+**487 superseded**、**488 published（回滚发布）**、**489 `ready` 未发布复核草稿**（`create_date=2026-09-19 02:45:58`
+（UTC）、`expires_at=2026-09-19 10:45:58`，8 小时窗口；截至本轮仍为 `ready`）＋上一轮
+**486 published（回滚）**／**485 superseded**／**483、484 discarded**。其中 489 是受管工具
+**按既有设计留下**的复核草稿，会按 8 小时规则**阻断同目标的下一次运行**——如实登记，未手工清理。
+
+**过程偏差**：闭环首两次运行 `EXIT=2` 失败，原因是校验工具把**必填**字段 `work_content` 当作隐藏目标
+（产品按设计返回 `CONFIG_REQUIRED_FIELD_HIDDEN`，属**工具缺陷而非产品缺陷**）；改为非必填
+`construction_part` 后通过。失败现场已恢复：483／484 为 `discarded`，7 个消费者解析结果未变（见 -③）。
+该修正位于 `formal_form_designer_journey.mjs`／`formal_form_lowcode_loop.mjs`，**属工作树范围**（见 -⑧）。
+
+#### 8.35.12-③ 隔离证据（浏览器级 ＋ 契约级）
+
+**浏览器级**（同一 representative 套件，已发布态）：
+
+- 隔离入口取**可达的兄弟入口** `570 机械台班登记 / menu 692`：`stages.isolation_page.status=passed`
+  —— 已发布的 871 配置**未泄漏**到该入口（截图 `designer-outside-scope.png`）。
+- 越界入口取 `562 方单 / menu 504`：`stages.outside_page.status=navigation_authority_denied`
+  （`reason=NAVIGATION_AUTHORITY_DENIED`）—— 以**导航拒绝**登记，原因见 -⑥，**不作为隔离通过证据使用**。
+
+**契约级**（只读，`/tmp/g09/config_ab.py` → `config_ab.txt`）：把已发布的 871 配置载体
+（`view_orchestration:sc.labor.usage:form:action:871:view:1461:role:system_admin`，priority 100）
+拼回全部 7 个消费者（871／562／563／561／570／851／575）的候选序列后，
+`resolve_form_structure_governance` 的**解析结果六项（结构权威／呈现模式／章节数／字段数／标签／分组数）
+与 baseline 逐项相同**。差异只出现在**候选载体列表**本身（多出那条已发布配置），
+即：`changed=true` 由载体列表引起，**不由解析结构引起**。
+
+**对照前后**：`/tmp/g09/iso_now.json`（闭环前）与 `/tmp/g09/iso_after.json`（闭环后）对 7 个 action 的
+`carriers`／`authority`／`mode`／`sections`／`fields`／`labels` 输出 `IDENTICAL`。
+
+**结论**：代表入口的合法配置闭环**不改变**其余消费者的解析结构；「同一入口发布 ＋ 共享视图隔离」
+两个方向都有证据，其中浏览器级隔离落在 570（可达），562／563／851／509／518 一侧为**角色路由拒绝**（见 -⑥）。
+
+#### 8.35.12-④ 8 个消费入口的影响面与验证方式（集中复核表）
+
+| # | 正式入口 | 共享视图 | 是否在台账 | 本批配置退役影响 | 验证方式 |
+|---|---|---|---|---|---|
+| 1 | 871 劳务成本登记（menu 689） | 1461 `view_sc_labor_usage_form` | **是**（本批 3 条之一） | 154 `sc_labor_usage_form_sections_v1` 退役 | L2 17 测 ＋ **设计器闭环**（-②）＋ 只读代表面 create／record |
+| 2 | 562 方单（menu 504） | 1461（同一 form arch） | **否（0 次）** | 同 154 | L2 **声明层**断言（`ENTRIES`／`SHARED_FORMS`／`RETIRED_SECTION_CARRIERS`）＋ 导航态实测为**拒绝** |
+| 3 | 563 零星用工（menu 505） | 1461（同一 form arch） | **否（0 次）** | 同 154 | 同 562 |
+| 4 | 570 机械台班登记（menu 692） | 1476 `view_sc_equipment_usage_form` | **是**（仅 menu 692） | 160 `sc_equipment_usage_form_sections_v1` 退役 | L2 ＋ **浏览器级隔离入口**（-③）＋ 只读代表面 create／record |
+| 5 | 851 机械台班记录（menu 510） | 1476（同一 form arch） | **否** | 同 160 | 同 562 |
+| 6 | 575 分包成本登记（menu 693） | 1491 `view_sc_subcontract_register_form` | **是**（仅 menu 693） | 156 `sc_subcontract_register_form_sections_v1` 退役 | L2 ＋ 只读代表面 create／record |
+| 7 | 575 第二菜单 518 分包登记 | 1491（同一 form arch） | **否** | 同 156 | **无独立断言**（同一 action 的第二菜单载体） |
+| 8 | **561 劳务用工**（`action_sc_labor_usage`） | **无可用 form 视图绑定**（`views=[('False','tree'),('False','form')]`，即模型默认视图） | **否** | **不受影响**：154 退役前后解析结果相同 | 只读实读 ＋ A／B（`/tmp/g09/iso_*.json`） |
+
+**对照口径说明（避免两组「7」混用）**：
+
+- §8.35.11 与本页 -③ 的 A／B 覆盖 **7 个 action**：871／562／563／**561**／570／851／575。
+- §8.35.3 的「8 个消费入口」是**入口级**计数：871／562／563／570-692／851／575-693／**575-518** ＋ **561**。
+- **第 8 个＝561 劳务用工**：**无菜单、无 form 视图绑定、无入口级契约**，`authority=entry_semantic_surface`
+  来自它自己的模型级 p1-facts 回落（88）。它**不在**本批「共享原生 form arch」这条路上，
+  其空章节是**自身既存缺口**（§8.35.2／§8.35.9）；A／B 证明 154 退役对它无影响。
+- 因此「7 个保持不变」只覆盖**声明了 form 视图的入口**；把它当成「本组 8 个入口都已被同一条路径覆盖」
+  是错的，561 必须单列。
+
+#### 8.35.12-⑤ 台账与影响面口径更正
+
+上一轮口头报告把「G13／G14 条目完整保留」与「未出现在 22 条中」并列表述，**该写法错误**，现按稳定条目标识更正：
+
+| 对象 | `#498` 前（`cefeff1f`） | `#498` 后（`4b4a47fe`） | 当前工作树 | 结论 |
+|---|---|---|---|---|
+| 台账消费者条目 `entries` | **25** | **22** | **22** | 仅**删除 875／877／878**，**新增 0**；其余条目逐项未变 |
+| `nextBatch.groups` 组索引 | **15**（G01–G15） | **15**（G01–G15） | **15** | G13／G14 **组名未缺失** |
+| G13「日常合同与结算」actions | 687／876 | 687／876 | 687／876 | 条目 **687 日常合同**、**876 日常合同结算** 均在 22 条中 |
+| G14「台账汇总与保证金」actions | 523／522／646／778 | 同左 | 同左 | 条目 **523 成本归集**、**522 项目盈亏分析**、**646 资金汇总**、**778 投标保证金** 均在 22 条中 |
+
+**正确表述**：G13／G14 的**组名与消费者条目都未缺失**；被 `#498` 扣除的三条（875 班组借/扣款登记、
+877 往来款登记、878 公司&项目退款）属于 **G08「上下文办理工作台」**，与 G13／G14 无关。
+
+**本轮新发现（只登记，不改台账）**：`nextBatch.groups` 中 **G08 组索引仍列 `actions=[875,877,878]`**，
+而对应消费者条目已随 `#498` 删除——**组索引与条目存在不一致**；同理 G09 组的 `legacyConfigurations`
+仍列本批三条 `*_form_sections_v1` 退役载体。两者都属合入后台账审计的输入，本轮**不动台账**。
+
+**核减口径（不变）**：台账 **22 → 19 仅作预期核减**；§8.35.3 已登记的旁路入口（562／563／851、509／518）
+与新发现条目**单列补登**，**不与核减混算**；合入后按**实际三个退役消费者**独立审计。
+
+#### 8.35.12-⑥ 路由拒绝口径更正（撤回「不计产品缺陷」）
+
+原文（§8.35.6 旧版）把 5 条 `NAVIGATION_AUTHORITY_DENIED` 入口写成「角色边界／不计产品缺陷」。本轮核清后更正：
+
+1. **该角色下未覆盖**：5 条被拒菜单（504／505／509／510／518）的持组都是
+   `SC 基础 - 内部用户`（`group_sc_internal_user`）；现场身份 `sc_test_admin`（user 51）**确实持该组**，
+   但其解析角色是 `system_admin`。
+2. **角色面本身不含这些入口**：`system_admin` 的 role_surface 为
+   `exposure_policy_declared=true`、`discover_installed_capabilities=true`、`menu_xmlids=[]`、
+   `primary_menu_xmlids=[]`、`admin_menu_xmlids=[menu_ui_menu_config_policy_business_config]`；
+   运行态 `build_route_authority` 在无交付 nav 时 **0 条 primary_actions**（仅有配置面 admin 路由）。
+   即：**8 个消费入口在本角色下全部未进入路由权威**，871／570／575 的可达靠**直连路由**（页面级），
+   而 5 条旁路／第二菜单入口以**菜单点击**触发，于是表现为拒绝。
+3. **没有任何角色声明这 5 个菜单**：`ROLE_SURFACE_OVERRIDES`（P1 角色导航面）里没有
+   `menu_sc_labor_usage_acceptance`／`menu_sc_labor_casual_acceptance`／`menu_sc_equipment_usage`／
+   `menu_sc_equipment_shift_acceptance`／`menu_sc_subcontract_register` 任一项。
+4. **但存在一份「用户确认」的菜单面基线把它们列为正式菜单**：
+   `scripts/verify/baselines/user_confirmed_formal_menu_policy_62.json`
+   （`locked_reason=user_confirmed_acceptance_surface_do_not_drift`，产品 `construction.standard`）
+   的 `menu_groups[4]「construction.物资与分包」` 明确包含 **504 方单／505 零星用工／510 机械台班记录**；
+   **509 设备使用登记／518 分包登记**不在该基线内，只出现在场景注册表／物资中心 provider
+   （`smart_construction_scene` 的 `equipment.usage`／`subcontract.register` 场景映射）。
+
+**更正后的登记口径**：这 5 条一律登记为**该角色（`system_admin`）下未覆盖**；
+**撤回**「不计产品缺陷」定性。同时如实登记依据 4 的口径差异：
+**运行态拒绝与一份用户确认的菜单面基线并不一致**，该差异的定性属**集中产品复核**范围，本批不自行结论，
+也不据此改产品代码。562／563／851 的入口契约与共享原生树由 L2 的 `ENTRIES`／`SHARED_FORMS`／
+`RETIRED_SECTION_CARRIERS` 断言覆盖（**声明层**，不是浏览器渲染结论）；**509／518 无独立断言**。
+
+#### 8.35.12-⑦ 独立复核报告（绑定冻结候选 `6511134c…`）
+
+报告正文：`tmp/uc4-g09-evidence/review-bound-6511134c.md`（与候选身份一起归档）。
+
+**绑定身份**：候选 head `6511134c586320b8c07f1be8aa9d60ecb9d046d3`、tree `9eb84acb153080f35620066231a86c341452b194`、
+基线 main `4b4a47fed43799019e7fa449084d87afbeb48de5`；PR #499 base/head 与候选一致，
+`MERGEABLE`／`CLEAN`，**5 个 GitHub Actions 工作流的 `head_sha` 全部等于候选 head**（必检 9 pass／3 skipped／0 fail）；
+评审线程与 review 均为 **0**；exact-head Quick 回执 `.git/codex/evidence/ci.local.quick/6511134c….json`
+（`tree=9eb84acb…`）。
+
+**结论：`REQUEST_CHANGES`**（详见该报告）：存在 1 条 **S1** 与 2 条 **S2** 级发现，均为**本次复核新提出**，
+不涉及 S0；且**修复动作只能落在新的提交**上，故当前 head 不宜直接合并。未关闭问题：
+
+- **S1**：**当前 head 仍带着本轮证据推翻的两处口径**（§8.35.6「不计产品缺陷」、§8.35.10「批次验收完成」）。
+  更正只存在于**工作树**（未进入候选），因此 PR #499 头指针上的文本仍是错的。
+- **S2**：**验收角色单一**。L4 只读代表面与本次闭环全部只用 `system_admin`（`sc_test_admin`），
+  而 `.agent/context.yaml` 登记的验收身份是 `business_config_admin`；
+  8 个消费入口在**登记验收角色**下的可达性**未被观测**。
+  **本轮更新（见 8.35.13-③/-④）**：登记身份在本库无载体、无用户（`environment_defect`）；
+  改用库内唯一 `business_config_admin`（`sc_business_admin`，id 6）走真实 `SystemInit` 路径实测，
+  **871／570／575 在该角色下同为授权**（`DISCOVERED_PRIMARY_NAV`），
+  且配置入口（737／749／110／727／736）为该角色 `ADMIN_ROUTE`。该项由"未观测"变为"已观测"，
+  但仍**不构成入口级产品复核**；独立复核须在**新候选**上重新绑定。
+- **S2**：**角色口径与用户确认菜单面基线不一致**（-⑥ 依据 4），尚无集中复核结论；
+  原「不计产品缺陷」定性已撤回但**尚未在 head 上撤回**。
+- **POST_MERGE_FOLLOWUP**：未发布草稿 489 的到期清理；台账 G08 组索引与条目不一致；
+  561 无 form 视图绑定的既存缺口；`509／518` 无独立断言。
+
+**声明**：该报告由**实施方自检**完成，**不等于独立第三方复核**，**不能用 Quick 回执替代**；
+它绑定的是候选 `6511134c…`，若候选随后变化（见 -⑧），须重新绑定。
+**该自检身份不因本轮推进而改变**：8.35.13 同样由实施方完成，**仍标注为自检**；
+真正独立于实施者的复核见 8.35.13-⑦ 的收口顺序。
+
+#### 8.35.12-⑧ 本批新增／受影响文件与「需重新冻结」说明
+
+| 层 | 文件 | 状态 |
+|---|---|---|
+| P1 | `addons/smart_construction_core/data/labor_usage_form_productization_contract.xml` | 在候选内 |
+| P1 | `addons/smart_construction_core/data/equipment_usage_form_productization_contract.xml` | 在候选内 |
+| P1 | `addons/smart_construction_core/data/subcontract_register_settlement_form_productization_contract.xml` | 在候选内 |
+| P1 | `addons/smart_construction_core/data/view_orchestration_form_section_contract_data.xml` | 在候选内（3 条模型级 sections 载体 `active=False`） |
+| P1 | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py`、`tests/__init__.py` | 在候选内（17 测） |
+| P1 | `addons/smart_construction_core/views/core/{labor,equipment,subcontract}_management_views.xml` | 在候选内（6 个 `data-sc-anchor`） |
+| P1 | `docs/engineering_convergence/complexity_budget_report.md`、本文件 | 在候选内 |
+| P4 | `frontend/apps/web/scripts/formal_form_representative_journey.mjs`、`scripts/verify/local_dev_form_lowcode_scope.py` | 在候选内（只读注册 ＋ 只读探针） |
+| **P4** | **`frontend/apps/web/scripts/formal_form_designer_journey.mjs`、`frontend/apps/web/scripts/formal_form_lowcode_loop.mjs`** | **仅在工作树**（-② 的闭环工具修正） |
+| — | **本文件 §8.35.12／§8.35.13 与 §8.35.10 更正** | **仅在工作树** |
+| P4 | `docs/ops/iterations/form_structure_compatibility_consumers_v1.json` | **仅在工作树**（8.35.13-⑥ 只加注：G08 `indexStatus=historical_source`、G09 `indexStatus=mixed_historical_and_current` ＋ 逐条 `legacyConfigurationStatus`；**count／entries 保持 22**） |
+
+**因此**：候选 commit／PR #499 头指针**未变**（`6511134c…`），但**工作树已不等于候选**。
+若要把本轮结论与闭环工具修正纳入交付，必须：`commit` → **重新冻结（clean HEAD ＋ 完整指纹）** →
+**一次 exact-head Quick** → 重新归档 → `make pr.push`；**候选一旦改变，-⑦ 的复核须重新绑定**。
+在上述动作**获得明确授权前**，不合并、不推送、不清理现场。
+
+> 边界重申：**G09 自验与冻结门禁通过 ≠ 集中产品复核完成 ≠ 部署 ≠ 89 入口整体交付完成**。
+
+### 8.35.13 有界复核轮二：身份、角色与入口核对（2026-09-19；已授权补验＋提交＋更新 PR，**未授权合并**）
+
+授权口径：本轮**只**补集中复核提出的缺口（候选身份矛盾／两个 P4 工具修正的补验／登记角色与入口可达性／
+台账索引定性／文档更正），并把结果提交进**新候选**。**不重复 Quick、不重跑浏览器矩阵、不扩展产品改动、
+不发布／撤销／删除任何草稿**（含 489）、**不扣台账（保持 22）**、**不合并 #499**。
+
+本轮 dirty 范围（相对候选 `6511134c…`）：两个 P4 工具（-②）、本文件、台账
+`docs/ops/iterations/form_structure_compatibility_consumers_v1.json`（-⑥，仅加注不定量）。
+
+#### 8.35.13-① 候选身份：Tree 矛盾已核清，撤回 `c1c8771a…`
+
+上一轮对话记录中出现的 Tree 值 `c1c8771a…` **是错误记录**，以 Git 实际结果为准：
+
+| 事实 | 命令 | 结果 |
+|---|---|---|
+| 候选 head | `git rev-parse HEAD` | `6511134c586320b8c07f1be8aa9d60ecb9d046d3` |
+| 候选 tree | `git rev-parse HEAD^{tree}` | `9eb84acb153080f35620066231a86c341452b194` |
+| commit 头部对象 | `git cat-file -p HEAD` 第 1 行 | `tree 9eb84acb153080f35620066231a86c341452b194` |
+| index tree | `git write-tree` | 同值（无 staged 差异） |
+| `c1c8771a` 命中 | `grep -r c1c8771a tmp/uc4-g09-evidence/ 归档目录 docs/` | **0 命中** |
+
+归档 `archive-receipt.json` **只记 `candidateHead`，不含 tree**，因此不存在"归档绑定了另一个 tree"的事实。
+**结论**：`c1c8771a…` 属**上一轮对话中的错误记录**，**任何绑定该值的复核不计入有效证据**；
+本轮 §8.35.12-⑦ 及其归档绑定的 **`9eb84acb…` 正确**，-⑦ 候选身份部分**继续有效**（其余结论按 -⑧ 重新绑定）。
+
+#### 8.35.13-② 两个 P4 脚本：测量缺口的修复、断言／草稿归属／清理行为审查与补验
+
+**修改对象**（仅工作树，未进入 `6511134c…`）：
+`frontend/apps/web/scripts/formal_form_designer_journey.mjs`（md5 `bb00f2b4149ed9daad1b192eb7e7e2fb`）、
+`frontend/apps/web/scripts/formal_form_lowcode_loop.mjs`（md5 `81da4571961704b24dcff1830dc590c9`）。
+
+**修复的测量缺口**（三者都不是产品语义）：
+
+1. **隐藏样本选错字段**：原工具把**必填** `work_content` 当隐藏目标，产品按设计拒绝
+   `CONFIG_REQUIRED_FIELD_HIDDEN`——测到的是守卫而不是迁移。改为隐藏**非必填** `construction_part`，
+   并把重命名样本定为 `labor_team`（`受管班组`／`受管用工配置`）。**分类：validation_tool_defect**。
+2. **用量组缺视觉序与业务面断言**：新增 `visual_order`（`configured_y=550 < displaced_y=636`，
+   且未触碰的 `name／project_id／usage_type` 保持原生序）与发布后业务面断言
+   （`data-form-section-target` 可点、隐藏字段不进 DOM、契约仍含隐藏事实）。**分类：覆盖率缺口**。
+3. **越界入口不可达时的处理**：562 的可见性取决于角色，原工具要求其必须渲染；
+   现改为**登记** `NAVIGATION_AUTHORITY_DENIED`（`stages.outside_page` **不再写 `passed`**），
+   浏览器级隔离改在**同组可达兄弟入口 570/menu 692** 上做。**分类：validation_tool_defect**。
+
+**断言／草稿归属／清理行为审查（逐行删除审计）**：`git diff -U0 | grep '^-'` 只有 **5 行**——
+函数签名行、`identities` 首行、`if (invoiceTopic)` 分派行、末段 `report.stages.outside_page = …passed`
+赋值行、调用处传参行。**没有任何既有断言被删除或放宽**；`drafts.delete(reviewOpen.data.token)`、
+`designer_draft_ownership.mjs`、`designer_popup_readiness.mjs` 与
+`scripts/verify/local_dev_form_lowcode_scope.py` **逐字节未改**（`git diff --stat HEAD -- <这些路径>` 为空）。
+
+**补验（只跑受影响检查，非整批）**：
+
+| 项 | 命令 | 结果 |
+|---|---|---|
+| 语法 | `node --check` ×2 | PASS |
+| 设计器草稿保护单测 | `node …/designer_draft_ownership_test.mjs` | **PASS cases=9** |
+| 弹窗就绪单测 | `node …/designer_popup_readiness_test.mjs` | **PASS cases=6** |
+| 草稿作用域竞态单测 | `node …/business_config_draft_scope_race_test.mjs` | **PASS cases=9** |
+| 既有闭环证据可否复用 | `designer-report.json` mtime `10:46:07` vs 工具 mtime `10:40／10:45` | **由修正后的工具产出**（含 `visual_order.displaced_y`、`isolation_page 570/692`、`outside_page.status=navigation_authority_denied`）→ 复用 |
+
+**草稿保护实测**（只读）：489 `ready`（`write_date == create_date == 02:45:58`，**未被写入**）、
+488 `published`、487 `superseded`、486 `published`、485 `superseded`、484／483 `discarded`、397 `ready`
+——**全部保持原状**；本轮**未发布、未撤销、未删除**任何草稿。
+
+#### 8.35.13-③ 登记验收身份实测：`business_config_admin` 在本库**不可用**（如实登记）
+
+`.agent/context.yaml` 声明 `acceptance_identity`：`login=fixture_role_config_admin`、
+`role=business_config_admin`、`carrier=smart_construction_acceptance_fixture.fe_user_config_admin`。
+
+| 检查（`sc_dev_demo`，只读） | 结果 |
+|---|---|
+| 模块 `smart_construction_acceptance_fixture` | **installed** |
+| xmlid `…fe_user_config_admin`（登记值） | **不存在** |
+| xmlid `…fe_fe_config_admin`（历史拼写） | **不存在** |
+| 用户 `fixture_role_config_admin` | **不存在** |
+| 当前库内 `business_config_admin` 用户 | **`sc_business_admin`（id 6）** |
+
+**结论**：登记的验收身份在 `sc_dev_demo` **无载体、无用户**，**无法按声明登录**；
+本批此前的浏览器证据使用 `sc_test_admin`（`system_admin`），**与登记角色不同**（§8.35.12-⑦ S2 成立）。
+**最小修正范围**：属**环境／验收夹具**问题（`environment_defect`），最小修正是补齐该模块的
+fixture 用户与持组载体（P4／环境授权范围内），**不涉及产品代码**；本轮**不实施**，只登记。
+
+#### 8.35.13-④ 角色 → 入口 可达性（走真实 `SystemInit` 代码路径，只读）
+
+方法：在 `sc_dev_demo` 用真实 handler 路径（`SystemInitHandler` → `DeliveryEngine` →
+`build_route_authority(role_surface, nav=…)`）对每个身份求**交付态导航权威**，再按 action／menu 命中。
+（注：手工只构造 `role_surface` 而不带 `nav` 的探针**会低估**该权威——`system_admin` 实测 89 条，
+不带 nav 的探针只给 6 条，故**以 handler 路径为准**。）
+
+| 身份 | 角色 | `primary_actions` | 命中的本组 action |
+|---|---|---|---|
+| `sc_test_admin` | `system_admin` | 89 | **871／570／575** |
+| `demo_full` | `business_full` | 86 | **871／570／575** |
+| **`sc_business_admin`** | **`business_config_admin`（登记角色）** | **84** | **871／570／575** |
+| `demo_role_project_manager`／`demo_role_project_user` | `project_member` | 7 | 无 |
+| `demo_role_pm` | `pm` | 23 | 无 |
+| `demo_role_finance`／`demo_finance` | `finance` | 44 | 无 |
+| `demo_cost` | `cost` | 4 | 无 |
+| `demo_role_owner` | `owner` | 5 | 无 |
+| `demo_role_executive` | `executive` | 0 | 无 |
+| `sc_contract_read`／`sc_material_read` | `restricted` | 0 | 无 |
+
+**登记角色（`business_config_admin`）的配置入口**（同一路径，全部 `ADMIN_ROUTE` 可达）：
+`737/431` 表单配置、`749/445` 字段管理、`110/432` 菜单配置、`727/424` 流程审批配置、`736/430` 人员档案。
+三个模型的模型级 ACL 对该身份均为 `read／create／write／unlink = allowed`。
+
+**结论**：三代表入口在**登记验收角色**下**同样是授权的**（`DISCOVERED_PRIMARY_NAV`），
+因此 §8.35.12-⑦ 的 S2 中"登记角色可达性未观测"这一项**本轮已观测并消解**；
+但**观测不等于入口级产品复核**——浏览器实检仍由产品方执行（§8.35.13-⑦）。
+
+#### 8.35.13-⑤ 62 菜单文件 vs 89 入口范围：权威关系，以及 504／505／510 的预期角色与拒绝原因
+
+| 维度 | 89 入口范围 | 62 菜单面 |
+|---|---|---|
+| 文件 | `scripts/verify/baselines/formal_business_product_menu_policy_v1.json` | `scripts/verify/baselines/user_confirmed_formal_menu_policy_62.json` |
+| `locked_reason` | `full_formal_product_menu_scope_native_authority_do_not_drift` | `user_confirmed_acceptance_surface_do_not_drift` |
+| `source` | runtime `ProductPolicyService … enforce_release=True` | `artifacts/menu_baseline/dev_locked_product_policy_62.json` |
+| 规模 | **89 menus／89 capabilities**（`construction.standard`＋`preview`） | **60 menus／63 capabilities** |
+| 分组 | 工作台／项目中心／合同中心／财务中心／成本中心／会计账务中心／税务中心／报表中心／行政中心／产品配置 | 施工管理／物资与分包／项目中心／合同中心／财务中心／资料证照／人事行政／基础资料／基础设置 |
+| 与另一份重叠 | **overlap 15**、`89-only 74` | `62-only 45` |
+| 性质 | **当前运行时产品菜单权威**（locked 契约、被 `locked_menu_policy_contract.py`／`product_policy_sync.py`／release guard 消费） | **用户确认的验收面快照**（历史来源；按 `do_not_drift` 锁定，但不是当前消费者集合） |
+
+**本组三条正式入口**：`menu_sc_product_labor_cost_v1`／`menu_sc_product_equipment_shift_v1`／
+`menu_sc_product_subcontract_cost_v1` 只出现在 **89** 的「项目中心」组——与运行时（menu 689／692／693）
+一致，故**在交付导航权威内**（§8.35.13-④ 已实测）。
+
+**504／505／510 的预期角色与拒绝原因**（本轮定性，**不是**"不计缺陷"）：
+
+| 菜单 | xmlid | 62 基线（历史） | 89 基线 | 运行时父级（实测） | 原生持组 |
+|---|---|---|---|---|---|
+| 504 方单 | `menu_sc_labor_usage_acceptance` | ✅ 物资与分包，action **964**／menu **779** | ❌ 不在 | 项目中心/材料成本/劳务管理 | `SC 基础 - 内部用户` |
+| 505 零星用工 | `menu_sc_labor_casual_acceptance` | ✅ 物资与分包，action **965**／menu **780** | ❌ 不在 | 项目中心/材料成本/劳务管理 | `SC 基础 - 内部用户` |
+| 510 机械台班记录 | `menu_sc_equipment_shift_acceptance` | ✅ 物资与分包，action **968**／menu **782** | ❌ 不在 | 项目中心/材料成本/机械设备 | `SC 基础 - 内部用户` |
+| 509 设备使用登记 | `menu_sc_equipment_usage` | ❌ 不在 | ❌ 不在 | 项目中心/材料成本/机械设备 | `SC 基础 - 内部用户` |
+| 518 分包登记 | `menu_sc_subcontract_register` | ❌ 不在 | ❌ 不在 | 项目中心/材料成本/专业分包 | `SC 基础 - 内部用户` |
+
+- **预期角色依据不存在于当前权威**：上述 5 条在**全部被测角色**（含 `system_admin`、`business_config_admin`、
+  `business_full`）的交付导航权威中**均不出现**（既无 action 命中，也无 menu 命中）。
+- **62 基线不能作为放宽依据**：62 给 504／505／510 的是 **964／965／968 与 menu 779／780／782**，
+  与运行时 **562／563／851 与 menu 504／505／510** **不同**——62 是**另一运行时的验收面快照**，
+  **不得因文件名含"用户确认"就据此放宽权限或反推当前应有入口**。
+- **登记口径（按授权要求）**：这 5 条一律登记为**该角色下未覆盖**；**不写成通过，也不写成"非缺陷"**。
+  运行态拒绝与"用户确认菜单面"的分歧属**集中产品复核**范围，本批不自行结论，也不据此改产品代码。
+
+#### 8.35.13-⑥ 台账索引定性：G08 组索引＝历史来源；G09 旧配置清单＝混合（3 退役 ＋ 5 当前消费者）
+
+本轮**只加注、不定量**（`count` 保持 **22**、`entries` 保持 **22**）：
+
+- **G08「上下文办理工作台」组索引＝历史来源**：`actions=[875,877,878]` 是该组的**准备来源**，
+  对应消费者条目已随 `#498` 从 `entries` 删除（25 → 22）；**不得再由该索引调度 G08**。
+  其 `legacyConfigurations` 三条（`team_loan_deduction_workspace_form_v1` id 173／
+  `current_account_workspace_form_v1` id 175／`company_project_refund_workspace_form_v1` id 176）
+  在运行时仍是 `published／active`，但属**已完成批次的退役载体**，不是待办。
+- **G09「用量与履约登记」旧配置清单＝混合**：8 条中**只有 3 条**
+  （`sc_labor_usage_form_sections_v1` id 154、`sc_equipment_usage_form_sections_v1` id 160、
+  `sc_subcontract_register_form_sections_v1` id 156，全部 `active=false`）是本组**实际退役载体**；
+  其余 **5 条**（`*_register_productized_form_v1` 两条、`*_p1_form_business_facts_v1` 三条，
+  均 `published／active=true`）**是当前消费者**，退役清单**不得**把它们当作退役对象。
+- 两者都已在台账中以 `indexStatus`／`indexNote`／`legacyConfigurationStatus` 字段**显式标注**
+  （本文件与台账同时进入新候选）。
+
+**核减口径（不变）**：台账 **22 → 19 仅作预期核减**，合入后按**实际三个退役消费者**独立审计；
+旁路／第二菜单入口（562／563／851、509／518）与补登条目**单列**，**不与核减混算**。
+
+#### 8.35.13-⑦ 本轮边界、未做项与下一步
+
+- **未做（保持未做）**：浏览器产品实检（**由产品方执行**，见 §8.35.12-② 的链接与现场身份；
+  按 -④，登记角色 `business_config_admin` 亦可直达三入口）、集中产品复核结论、合并 #499、
+  部署、89 入口整体交付、草稿 489 的到期清理、fixture 补齐、台账扣减提交、工作树／分支清理。
+- **未改产品代码**：本轮无 P0–P3 变更；两个 P4 工具与台账／文档为本轮 dirty 范围，
+  不存在需要按影响面补验的产品面变更。
+- **随后执行**：`commit` → **重新冻结（clean HEAD ＋ 完整指纹）** → **一次新 HEAD 的
+  `make ci.local.quick`** → **独立于实施者的复核**（原实施方自检**继续标注为自检，不改名**）→
+  外部归档 → `make pr.push` 更新 #499。**合并仍需用户明确授权**；本轮候选身份与指纹在提交后
+  写入 `tmp/uc4-g09-evidence/identity.json` 与归档回执，文档不预写自身提交 SHA。
+- **风险**：登记验收身份缺失（-③）使"登记角色下的浏览器实检"当前**无法按声明执行**——
+  这是本轮**最大残留风险**，也是产品复核前建议先补的环境项。
+
+> 边界重申：**G09 自验与冻结门禁通过 ≠ 集中产品复核完成 ≠ 部署 ≠ 89 入口整体交付完成**；
+> **更新 PR ≠ 产品验收通过**。
