@@ -3148,7 +3148,18 @@
           "sc_quality_acceptance_handling_form_v1",
           "sc_safety_issue_handling_form_v1"
         ],
-        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
+        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated",
+        "indexStatus": "mixed_historical_and_current",
+        "indexNote": "This prepared list is NOT the G10 retirement set. The G10 topic retires only the entry *bodies* of three entries - 164 sc_safety_issue_handling_form_v1 (682), 165 sc_quality_acceptance_handling_form_v1 (867) and 245 construction_diary_productized_form_v1 (729) - and publishes two NEW entry releases for the two actions that had none (597 action_sc_project_document -> sc_project_document_productized_form_v1, 527 action_project_progress_entry -> project_progress_entry_productized_form_v1, both priority 800, title plus native_semantic_surface only). The four generated mirrors and the two diary auxiliary carriers stay ACTIVE, because the regression rule forbids retiring a model-wide carrier that is still the last structure writer for any other action on the same model: 61 serves 730/731/732, 104 serves 598-601, 45 serves 586, 115 is 682's own model plane, 25/148 are the diary fact policy and sparse field order. Read-only A/B on sc_dev_demo (2026-09-21) rejected the first plan of retiring mirror 61: it shrank 730/731/732 from 23 to 14 rendered facts. Per-name classification below is bound to sc_dev_demo (read-only, 2026-09-21). The count deduction (19 -> 14) and the published audit land in the post-merge document commit, per the G03-G09 precedent.",
+        "legacyConfigurationStatus": {
+          "construction_diary_productized_form_v1": "entry_body_retired_by_g10_topic",
+          "project_progress_entry_form_structure_generated_v1": "current_consumer",
+          "sc_construction_diary_form_structure_generated_v1": "current_consumer",
+          "sc_construction_diary_p1_form_business_facts_v1": "current_consumer",
+          "sc_project_document_form_structure_generated_v1": "current_consumer",
+          "sc_quality_acceptance_handling_form_v1": "entry_body_retired_by_g10_topic",
+          "sc_safety_issue_handling_form_v1": "entry_body_retired_by_g10_topic"
+        }
       },
       {
         "id": "G11",

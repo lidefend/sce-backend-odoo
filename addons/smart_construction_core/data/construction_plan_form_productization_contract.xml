@@ -1,5 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
+    <!-- U-C4 G10: 施工日志入口（729 / menu 426 / action `action_sc_construction_diary`）的
+         结构权威交给原生主表单 view 1893 `view_sc_construction_diary_form`。
+
+         本文件是 `noupdate="1"` 的历史载体：`construction_diary_productized_form_v1`（库内 245）
+         在库内的 `ir.model.data.noupdate` 为 **true**，所以只改下面的 `<record>` 不会在升级时生效。
+         文件尾部的 `ui.business.config.contract.write` 调用是按合入源码精确重放该记录的既成写法
+         （同 U-C3 `view_orchestration_contract_data.xml` 的 noupdate 处理、G02 进项发票与
+         G03 收款收入镜像退役的同一形状：声明改动只做一次 ORM 写入，不做数据迁移）。
+
+         本批把入口 body（sections／fields／columns）退役，只保留 `title` 与
+         `composition_mode: native_semantic_surface`，`view_orchestration.context` 原样保留；
+         优先级 700 → 800，使入口的 native 声明成为最后结构写入者（本模型上还有模型级
+         生成镜像 61 priority 94／p1 字段序 148 priority 21／p1 业务事实 25 priority 88）。
+
+         字段级只读口径交给原生 arch：`state` 由状态条承载，`name`（日志单据编号）原生
+         `readonly="1"`，其余业务事实原生按 `state == 'legacy_confirmed'` 收口。
+
+         回滚：`git revert`（纯声明改动，无数据迁移）。 -->
     <data noupdate="1">
         <record id="business_config_contract_construction_plan_productized_form_v1" model="ui.business.config.contract">
             <field name="name">construction_plan_productized_form_v1</field>
@@ -39,7 +57,7 @@
             <field name="model">sc.construction.diary</field>
             <field name="view_type">form</field>
             <field name="action_id" ref="smart_construction_core.action_sc_construction_diary"/>
-            <field name="priority">700</field>
+            <field name="priority">800</field>
             <field name="company_id" eval="False"/>
             <field name="active" eval="True"/>
             <field name="status">published</field>
@@ -50,16 +68,7 @@
                     'views': {
                         'form': {
                             'title': '施工日志',
-                            'composition_mode': 'entry_semantic_surface',
-                            'columns': 2,
-                            'sections': [
-                                {'title': '日志主信息', 'sequence': 10, 'columns': 2, 'fields': ['state', 'source_origin', 'name', 'project_id', 'date_diary', 'title', 'diary_type', 'category']},
-                                {'title': '期间与经办', 'sequence': 20, 'columns': 2, 'fields': ['report_period_start', 'report_period_end', 'document_no', 'handler_name', 'construction_unit', 'project_manager']},
-                                {'title': '现场情况', 'sequence': 30, 'columns': 2, 'fields': ['weather', 'manpower_count', 'attendance_equipment', 'quality_name']},
-                                {'title': '日志内容', 'sequence': 40, 'columns': 1, 'fields': ['description', 'material_inspection_note', 'design_change_note', 'test_block_note', 'safety_note', 'hidden_acceptance_note', 'next_plan', 'header_description']},
-                                {'title': '备注与附件', 'sequence': 50, 'columns': 1, 'fields': ['note', 'attachment_ids', 'active']}
-                            ],
-                            'fields': [{'name': 'state', 'sequence': 10, 'readonly': True}, {'name': 'source_origin', 'sequence': 20, 'readonly': True}, {'name': 'name', 'sequence': 30, 'readonly': True}, {'name': 'project_id', 'sequence': 40}, {'name': 'date_diary', 'sequence': 50}, {'name': 'title', 'sequence': 60}, {'name': 'diary_type', 'sequence': 70}, {'name': 'category', 'sequence': 80}, {'name': 'report_period_start', 'sequence': 90}, {'name': 'report_period_end', 'sequence': 100}, {'name': 'document_no', 'sequence': 110}, {'name': 'handler_name', 'sequence': 120}, {'name': 'construction_unit', 'sequence': 130}, {'name': 'project_manager', 'sequence': 140}, {'name': 'weather', 'sequence': 150}, {'name': 'manpower_count', 'sequence': 160}, {'name': 'attendance_equipment', 'sequence': 170}, {'name': 'quality_name', 'sequence': 180}, {'name': 'description', 'sequence': 190}, {'name': 'material_inspection_note', 'sequence': 200}, {'name': 'design_change_note', 'sequence': 210}, {'name': 'test_block_note', 'sequence': 220}, {'name': 'safety_note', 'sequence': 230}, {'name': 'hidden_acceptance_note', 'sequence': 240}, {'name': 'next_plan', 'sequence': 250}, {'name': 'header_description', 'sequence': 260}, {'name': 'note', 'sequence': 270}, {'name': 'attachment_ids', 'sequence': 280}, {'name': 'active', 'sequence': 290}]
+                            'composition_mode': 'native_semantic_surface'
                         }
                     }
                 }
@@ -98,4 +107,16 @@
             }"/>
         </record>
     </data>
+    <!-- U-C4 G10: `business_config_contract_construction_diary_productized_form_v1`（库内 245）
+         由本文件的 `<data noupdate="1">` 建立，`ir.model.data.noupdate` 为 true，因此上面的
+         `<record>` 只在首次安装时写入。本批要把该入口的 body 退役到原生 arch，必须让新声明在
+         升级时也生效：这里用按合入源码精确重放该记录的既成写法补一次 ORM 更新
+         （同 U-C3 `view_orchestration_contract_data.xml`、U-C4 G02 进项发票入口的写入形状）。
+         `contract_json` 与上面的 `<record>` 逐字一致，`priority` 700 → 800 使入口的 native 声明
+         成为最后结构写入者。该调用不改 `noupdate` 标记，也不新增记录：记录不存在时 `ref` 直接
+         失败（fail-closed），不会静默创建第二条契约。 -->
+    <function model="ui.business.config.contract" name="write">
+        <value eval="[ref('smart_construction_core.business_config_contract_construction_diary_productized_form_v1')]"/>
+        <value eval="{'priority': 800, 'contract_json': {'view_orchestration': {'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'}, 'views': {'form': {'title': '施工日志', 'composition_mode': 'native_semantic_surface'}}}}}"/>
+    </function>
 </odoo>

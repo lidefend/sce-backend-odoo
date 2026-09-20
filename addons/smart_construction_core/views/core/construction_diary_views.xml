@@ -69,8 +69,19 @@
                                statusbar_visible="draft,confirmed,done,legacy_confirmed,cancel"/>
                     </header>
                     <sheet>
-                        <group>
-                            <group>
+                        <!-- U-C4 G10: 原生 arch 持有本入口的章节身份。四个业务组带稳定
+                             `data-sc-anchor`，消费方按它生成本入口的业务章节与章节导航；
+                             `view_sc_construction_diary_form` 是 729（施工日志）的原生承载。
+                             入口契约 245 的 body 副本已退役（只留 title 与 native_semantic_surface），
+                             字段级只读口径由原生承接：`name` 原生 `readonly="1"`，其余业务事实
+                             在 `legacy_confirmed` 后只读，`state` 由状态条承载。
+                             同族的 730／731／732（日报表／周报表／月报表）共用本表单，但它们
+                             继续消费模型级镜像 61／148 的结构面（退役属另一组的工作），
+                             本批只为本表单补齐章节锚点。
+                             尾组（`note`／`attachment_ids`／`active`）是随时可补的依据类事实与
+                             归档标记，不承载可编辑业务事实，故按 G08／G09 口径**不设**章节锚点。 -->
+                        <group name="construction_diary_overview">
+                            <group name="construction_diary_log_main" data-sc-anchor="construction_diary_log_main" string="日志主信息">
                                 <field name="name" readonly="1"/>
                                 <field name="date_diary" readonly="state == 'legacy_confirmed'"/>
                                 <field name="report_period_start" readonly="state == 'legacy_confirmed'"/>
@@ -78,14 +89,14 @@
                                 <field name="document_no" readonly="state == 'legacy_confirmed'"/>
                                 <field name="title" readonly="state == 'legacy_confirmed'"/>
                             </group>
-                            <group>
+                            <group name="construction_diary_period_handler" data-sc-anchor="construction_diary_period_handler" string="期间与经办">
                                 <field name="project_id" readonly="state == 'legacy_confirmed'"/>
                                 <field name="diary_type" readonly="state == 'legacy_confirmed'"/>
                                 <field name="category" readonly="state == 'legacy_confirmed'"/>
                                 <field name="handler_name" readonly="state == 'legacy_confirmed'"/>
                             </group>
                         </group>
-                        <group string="现场信息">
+                        <group name="construction_diary_site_information" data-sc-anchor="construction_diary_site_information" string="现场信息">
                             <field name="construction_unit" readonly="state == 'legacy_confirmed'"/>
                             <field name="project_manager" readonly="state == 'legacy_confirmed'"/>
                             <field name="weather" readonly="state == 'legacy_confirmed'"/>
@@ -93,7 +104,7 @@
                             <field name="attendance_equipment" readonly="state == 'legacy_confirmed'"/>
                             <field name="quality_name" readonly="state == 'legacy_confirmed'"/>
                         </group>
-                        <group string="日志内容">
+                        <group name="construction_diary_log_content" data-sc-anchor="construction_diary_log_content" string="日志内容">
                             <field name="description" readonly="state == 'legacy_confirmed'"/>
                             <field name="material_inspection_note" readonly="state == 'legacy_confirmed'"/>
                             <field name="design_change_note" readonly="state == 'legacy_confirmed'"/>

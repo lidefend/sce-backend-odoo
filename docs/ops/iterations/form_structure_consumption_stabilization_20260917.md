@@ -5808,3 +5808,130 @@ skipped `classify`（候选检查变体）／`fast`／`wait_for_candidate_checks
 
 状态：**G09 主线集成完成（PR #499，squash 同树）｜批次状态：自验与冻结门禁通过；集中产品复核结论以产品方登记为准｜
 未部署｜89 入口整体交付未完成｜台账 19｜G10 未启动**。
+
+### 8.36 G10 工程过程与资料：入口发布承接原生结构（2026-09-21；**实施＋分层验证轮**；未冻结、未跑 Quick、未归档、未建 PR、未合并）
+
+**范围与层级**：Formal Product Layer **P1**（施工行业标准产品默认面）；Layer Target 为
+`smart_construction_core` 的入口契约、原生视图与测试；标准口径（全部施工部署继承）。**不属** P0
+（`smart_core` 不承载行业语义），不属 P2／P3／P4。爆炸半径为本组 5 个入口 action
+（682／867／729／597／527）与其兄弟入口（598–601、586、730／731／732）；回滚方式为 `git revert`
+（纯声明变更，无数据迁移）。
+
+**机制（这批为什么能真正降低台账计数）**：台账计数的是 `layoutPolicy != container_tree_authority`
+的兼容消费者；`ui_contract_v2` 只有在 `governance["form_structure_authority"] == "native_authority"`
+时才给出 `container_tree_authority`，而该字段由入口契约的
+`composition_mode ∈ {native_semantic_surface, semantic_native_surface}` 决定
+（`form_structure_authority.py`）。因此本批不靠"把结构副本挪个位置"，而是让**本入口的发布成为本入口
+的最后结构写入者**并声明原生语义面，兼容重组路径对这批 action 不再适用。
+
+**修改范围（候选 15 条路径：代码／契约／测试 13 条 = 11 条改动 ＋ 2 条新增，另加本记录与切换日志 2 条）**：
+
+1. 164 `sc_safety_issue_handling_form_v1`（682）／165 `sc_quality_acceptance_handling_form_v1`（867）
+   只留 `title` ＋ `composition_mode: native_semantic_surface`，优先级保持 **900**（高于本模型所有模型级
+   载体的最高值 115→154），body（sections／fields／columns）退役。
+2. 245 `construction_diary_productized_form_v1`（729）同样退役 body，优先级 **700 → 800**；该记录由
+   `<odoo noupdate="1">` 承载，普通 record 不会覆盖，故以
+   `<function model="ui.business.config.contract" name="write">` 写同一 `contract_json` 补写。
+   升级后实测 `priority=800`、`noupdate=true`、`version_no=2`。
+3. **新增** `data/engineering_process_form_productization_contract.xml`（`<odoo noupdate="0">`），为
+   **原本没有任何入口发布**的 597（`action_sc_project_document`）与 527
+   （`action_project_progress_entry`）发布 `sc_project_document_productized_form_v1`／
+   `project_progress_entry_productized_form_v1`（priority 800，只留 title ＋ native_semantic_surface），
+   并在 `__manifest__.py` 按位置登记；运行库实测 dbId 777／778。
+4. 五个原生表单补 **16 个** `data-sc-anchor` 业务章节（1741→2、1550→4、1893→4、1560→3、1389→3），
+   把退役 body 声明的章节身份与字段级只读口径交回原生 arch；`view_sc_safety_issue_form` 的空
+   「来源追溯」页（`<page>` 内只有空 `<group>`）随本批移除（同 G09 对 1461 的处理），`hazard_source_id`
+   仍由「隐患信息」页承载。计算类分组（质量验收「办理提示」、进度计量「录入口径」、日志尾部「依据类事实」）
+   **故意不加锚点**，它们不是可编辑业务章节。
+5. **新增** `tests/test_engineering_process_native_lowcode.py`（tag `uc4_native_lowcode`，542 行／17 测试），
+   并在 `tests/__init__.py` 登记；测试以"原生 arch 为地面真值"钉住渲染字段集与锚点章节集。
+
+**关键决策：只读实测否决了第一版「退役模型级镜像」计划**。第一版计划按台账 `legacyConfigurations`
+逐名退役（含日记镜像 61、文档镜像 104、进度镜像 45），失败点是把"本批计数"误当成"该载体只服务本批"。
+冻结态只读 A／B（`sc_dev_demo`，`SAVEPOINT g10_dry_run` ＋ `ROLLBACK TO SAVEPOINT`，
+`rollback_residual` 证明 **0 写入**：无新增发布行、245 优先级回到 700、164 仍带 sections）给出的实测：
+
+| action | 归属 | 基线（权威／字段／章节／诊断） | 本批后 |
+| --- | --- | --- | --- |
+| 682 安全问题闭环 | 本批 | `entry_semantic_surface`／23／4／`LEGACY_STRUCTURE_KEY_OVERRIDE` | `native_authority`／container_tree ／`LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW` |
+| 867 质量验收 | 本批 | `entry_semantic_surface`／15／4／— | `native_authority`／container_tree |
+| 597 工程资料 | 本批 | `""`／16／0／— | `native_authority`／container_tree |
+| 729 施工日志 | 本批 | `entry_semantic_surface`／30／9／`KEY_OVERRIDE` | `native_authority`／container_tree |
+| 527 进度计量 | 本批 | `""`／8／0／— | `native_authority`／container_tree |
+| 730／731／732 日报表／周报表／月报表 | 兄弟 | `entry_semantic_surface`／23／4／`KEY_OVERRIDE` | **完全不变** |
+| 598／599／600／601 资料分页 | 兄弟 | `""`／16／0／—（`compatibility_regrouping`） | **完全不变** |
+| 586 进度计量（工作台） | 兄弟 | `""`／8／0／—（`compatibility_regrouping`） | **完全不变** |
+
+被否决的正是"退役日记镜像 61"：61 同时是 730／731／732 的**最后结构写入者**，退役后这三个入口渲染
+事实从 **23 降到 14**——即用本组计数去换另一组入口的事实缺失。因此本批只退役**自己条目**的 body，
+四个生成镜像（45／61／104／115）与两个日记辅助载体（25 政策载体、148 稀疏字段序）**保持 active**。
+
+**必须守住的回归规则（写进测试）**：**只要某模型级载体仍是同一模型上任一其它 action 的最后结构
+写入者，就不得退役**。每个减量只退役自己条目的 body。测试
+`test_the_model_wide_carriers_stay_active_for_their_sibling_actions`／
+`test_the_diary_auxiliary_carriers_are_retained`／
+`test_the_sibling_actions_still_exist_and_reach_their_own_form` 逐条登记该规则，
+`test_a_scoped_competing_declaration_is_refused` 证明带 `action_id`／`view_id` 的竞争结构仍按 fail-closed
+拒绝（G10 的四个镜像在生成文件中均为模型级、无 action／view 绑定，因此只降级为
+`LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW`，不报错）。
+
+**呈现中立性**：`test_the_native_arch_is_presentation_neutral` 钉住每个原生表单的渲染字段集与顺序
+（1741→23、1550→15、1893→28、1560→17、1389→9），`test_every_retired_fact_is_still_reachable_from_the_native_arch`
+逐项核对退役 body 声明的全部事实：或由原生 arch 渲染，或登记为从未在原生面呈现的迁移来源标记
+（`sc.construction.diary.source_origin`，与 G09 丢弃 `legacy_fact_*` 同类），**不允许静默消失**；
+`test_no_retired_declaration_referenced_a_missing_fact` 另证退役声明引用的字段在模型中真实存在。
+
+**分层验证结果（如实登记，逐项可复现）**：
+
+- **L0 身份**：`scripts/contract/complete_worktree_fingerprint.py --baseline ec2c56e5…`
+  → `status=PASS`，`path_count=7521`，digest `e170424f…`（**文档轮之前的代码态**；冻结轮的完整
+  tracked＋untracked 指纹另存并以冻结回执为准，不以此值冒充冻结绑定）。
+- **L1 静态**：`make ci.local.iteration` **PASS**（16 项静态测试通过；提交前 `changedPathCount=15`、`unmappedPathCount=15`、`manualNonZeroL2Required=true`——两个计数**同义**，本批 15 条路径均未命中前端增量自动推荐映射，故需**人工选择非零 L2**，不代表门禁失败）；
+  `make fe.install.cached` PASS（新建工作树无前端依赖，必须先装）。
+- **L1 生成物**：`make ci.delivery.freeze.prepare` **PASS**
+  （`component_driver_takeover_inventory PASS required=35 missing=0`、
+  `contract_form_split_evidence PASS lines=1905`、`ci.generated_evidence.preflight PASS`）。
+- **L2 定向非零测试**：`make local.dev.test`
+  `TEST_TAGS='uc4_native_lowcode/smart_construction_core:TestEngineeringProcessNativeLowcode'`
+  → **17 tests, 0 failed, 0 error(s)**；整组回归
+  `TEST_TAGS='uc4_native_lowcode/smart_construction_core'` → **146 tests（164 统计口径）, 0 failed, 0 error(s)**。
+- **L2 守卫**：`verify.form_structure.contract.guard`／`verify.form_view.native_structure.boundary_guard`／
+  `verify.view.orchestration_boundary_guard`／`verify.form_view.scope.boundary_guard` 均 **PASS**。
+- **L3 运行库**：`make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1`
+  → exit 0（含 `local.dev.verify_authority PASS`）；随后只读探针（`sc_dev_demo`）核对：5 条入口发布
+  `active=true`／`status=published`／priority 900·900·800·800·800／`composition_mode=native_semantic_surface`／
+  **无任何 sections·fields·columns 结构键**／`context` 原样保留；6 条历史载体仍 `active=true`；
+  682／867／597／729／527 的 `form_structure_authority=native_authority`、
+  `layoutPolicy=container_tree_authority`；730／731／732、598–601、586 与基线逐项一致；原生 arch 锚点数
+  2／4／4／3／3，且五个视图 `archSha256` 与该次升级一致。
+- **L4 首次 exact-head Quick 失败与整改（如实登记）**：候选 `896226d2` 的 `make ci.local.quick` 在
+  `verify.tenant.product_payload_boundary` 失败（`FIXED_CUSTOMER_IDENTIFIERS=2`），两条路径被判定为
+  `customer_identity_or_brand_reference`——本记录与切换日志在登记环境缺陷时写了**客户定制仓库的具名
+  标识**。整改：改为"客户定制 addon 仓库（不在本仓库边界内）"的通用表述，`make verify.tenant.product_payload_boundary`
+  重跑 PASS（`FIXED_CUSTOMER_IDENTIFIERS=0`、`files=7522`），随后 amend 该提交并重跑一次 exact-head Quick；
+  失败与整改均保留，**不以失败前的读数充当最终回执**。该失败**不属产品面**，产品代码／契约／页面／测试
+  未因此改动。
+- **L4 未跑**（如实登记为未覆盖，不写成通过）：本批**未**跑 `FORM_LOWCODE_TOPIC` 浏览器代表面复验
+  （不写入通过）；冻结后的 exact-head Quick 回执、独立复核与外部归档属收口轮，结果以冻结回执为准。
+- **工作树 `artifacts/` 环境缺陷与整改（如实登记）**：第二次 Quick 在
+  `verify.unified_page_contract.v2.web_architecture` 失败——该守卫把报告写到 `artifacts/backend`，而本
+  工作树的 `artifacts/` 是**非软链的 root 属主空目录**（主仓库的 `artifacts` 是指向
+  `/home/lidefend/workspace/sce-offrepo/artifacts` 的软链），故 `PermissionError`。整改：按主仓库既有
+  注册口径把工作树 `artifacts` 换成指向同一共享 artifacts 权威的软链（`artifacts` 属 `.gitignore` 第 106
+  行，**不属候选面**，改动后完整指纹 `path_count` 不变为 7521），并复验可写；工作树内已无 root 属主
+  路径。该缺陷属**环境一致性**问题，不是产品缺陷，产品代码／契约／页面／测试未因此改动。
+
+**未覆盖项与环境缺陷（登记，不在本批修）**：`make verify.contract.view_structure` 在新工作树失败，
+两条根因均为**既存环境缺陷**、已在干净主工作树复现：(a) 工作树 `artifacts/` 非软链且属 `root`，
+guard 写 `artifacts/contract` 时 `PermissionError`；(b) 该 guard 期望 `local.clean`／`sc_clean` 的权威指纹
+证据，本工作树以 `ec2c56e5` 为基线，故 `baseline_sha`／`scope_manifest_sha256`／`digest`／`branch`
+四项比对不匹配。`make verify.user_form.preference.boundary_guard` 失败于
+`addons/smart_construction_custom/models/user_preferences.py` 不存在——该模块属**客户定制 addon 仓库**，
+不在本仓库边界内。两者**均非本批改动引入**，不修、不隐去，按环境缺陷登记。
+
+**保留边界（不随本批关闭）**：模型级镜像 115（682 自身模型面，其唯一兄弟场景即 682）／104（598–601）／
+61（730／731／732）／45（586）与日记辅助载体 25／148 保持 active——退役它们属于**别组的计数**，
+且必须先让原生 arch 承接其政策口径（政策变更，非结构变更）；`retirementComplete=false` 不变。
+
+**状态**：**G10 实施与分层验证完成（L0／L1／L2／L3 通过；L4 首轮失败已整改并重跑）｜冻结与 Quick 回执以
+收口轮为准｜未归档｜未建 PR｜未合并｜台账 19（本批扣减 19 → 14 属合并后文档单职责提交，沿用 G03–G09 先例）**。

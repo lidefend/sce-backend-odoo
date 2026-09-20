@@ -9687,3 +9687,49 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   取得独立复核后经 `make pr.push` → `make pr.create` 发布；合并获授权后，用
   `CLEAN_WORKTREE_RETIREMENT_RECORD`／`CLEAN_WORKTREE_RECOVERY_BUNDLE` 整体退役两个无证据
   工作树（含远端同名分支的 lease 删除），用既有 receipt 退役 uc2 工作树，之后回到 G10 主线执行。
+
+## 2026-09-21 — U-C4 G10 工程过程与资料
+
+- 分支 `feature/uc4-g10-engineering-process-native-v1`，基线 `origin/main@ec2c56e5d34900f67c6f899af8f53bbcd4278fcd`（PR #499 之后）。
+  Formal Product Layer 为 **P1**；Layer Target 为 `smart_construction_core` 的入口契约、原生视图与测试；
+  标准口径，全部施工部署继承。不属 P0（`smart_core` 不承载行业语义）／P2／P3／P4。回滚为 `git revert`（纯声明变更）。
+- 目标：让本组 5 个入口（682 安全检查／867 质量验收／729 施工日志／597 工程资料／527 进度计量）
+  的**入口发布成为本入口最后结构写入者**并声明 `native_semantic_surface`，使
+  `form_structure_authority=native_authority`、`layoutPolicy=container_tree_authority`，
+  兼容重组路径对这 5 个 action 不再适用（台账口径由此可扣减 19 → 14；扣减本身属**合并后**文档单职责提交）。
+- 变更（候选 15 条路径：代码／契约／测试 13 条＝11 改＋2 新增，另加本记录与切换日志 2 条）：164／165 只留 `title`＋`native_semantic_surface`（priority 保持 900，body 退役）；
+  245 同样退役 body 且 priority 700 → 800，因该记录在 `<odoo noupdate="1">` 内，另以
+  `<function model="ui.business.config.contract" name="write">` 补写同一 `contract_json`（升级后实测 priority=800、noupdate=true）；
+  **新增** `data/engineering_process_form_productization_contract.xml` 为原本无入口发布的 597／527 发布两条入口契约
+  （priority 800，dbId 777／778）并在 `__manifest__.py` 登记；五个原生表单补 16 个 `data-sc-anchor` 业务章节
+  （1741→2、1550→4、1893→4、1560→3、1389→3）承接章节身份与只读口径，移除 `view_sc_safety_issue_form` 的空
+  「来源追溯」页；新增 `tests/test_engineering_process_native_lowcode.py`（tag `uc4_native_lowcode`，17 测试）。
+- 关键决策：第一版「按台账逐名退役模型级镜像」计划被**冻结态只读 A／B 否决**（`sc_dev_demo`，
+  `SAVEPOINT`＋`ROLLBACK TO SAVEPOINT`，`rollback_residual` 0 写入）。日记镜像 61 同时是 730／731／732 的
+  最后结构写入者，退役后其渲染事实 23 → 14；本批因此只退役自己条目的 body，45／61／104／115 与 25／148 全部保持 active。
+  回归规则（写进测试，防后续批次重犯）：**某模型级载体只要仍是同模型上任一其它 action 的最后结构写入者就不得退役**。
+- 验证：L0 指纹 PASS（`path_count=7521`，digest `e170424f…`，为文档轮之前的代码态）；L1 `make ci.local.iteration` PASS
+  （16 静态测试，`changedPathCount=15`）、`make fe.install.cached` PASS、`make ci.delivery.freeze.prepare` PASS
+  （`component_driver_takeover_inventory required=35 missing=0`／`contract_form_split_evidence lines=1905`）；L2 新测试
+  17／17 通过、整组回归 146 通过（0 failed 0 error）、四个形式结构守卫 PASS；L3 `local.dev.upgrade` exit 0 且只读探针
+  逐项核对：5 条入口 active／published／priority 900·900·800·800·800／`native_semantic_surface`／无结构键／context 保留，
+  6 条历史载体仍 active，682／867／597／729／527 → `native_authority`＋`container_tree_authority`，
+  730／731／732、598–601、586 与基线逐项一致。
+- 首轮 exact-head Quick 失败并整改（如实登记）：候选 `896226d2` 的 `make ci.local.quick` 失败于
+  `verify.tenant.product_payload_boundary`（`FIXED_CUSTOMER_IDENTIFIERS=2`），根因是本记录与迭代记录在登记
+  环境缺陷时写了客户定制仓库的具名标识，触发 `customer_identity_or_brand_reference`。改为通用表述后该守卫
+  PASS（`files=7522`），随后 amend 提交并重跑一次 exact-head Quick；产品代码／契约／页面／测试未因该失败改动。
+- 未覆盖（不写成通过）：本批未跑 `FORM_LOWCODE_TOPIC` 浏览器代表面复验；冻结后的 Quick 回执、独立复核与
+  外部归档属收口轮，以冻结回执为准。
+- 工作树环境缺陷与整改（如实登记）：第二次 Quick 失败于 `verify.unified_page_contract.v2.web_architecture`，
+  原因是本工作树 `artifacts/` 为 root 属主空目录（主仓库该路径是指向 `sce-offrepo/artifacts` 的软链），
+  守卫写 `artifacts/backend` 报 `PermissionError`。已按主仓库注册口径把工作树 `artifacts` 改为指向同一
+  共享权威的软链（`.gitignore` 路径，不属候选面，完整指纹 `path_count` 不变为 7521），工作树内已无 root 属主路径。
+- 环境缺陷登记（非本批引入，已在干净主工作树复现，不修）：`verify.contract.view_structure` 因工作树 `artifacts/` 非软链且属 `root`
+  导致 `PermissionError`，且其权威指纹期望 `local.clean`／`sc_clean` 证据而本工作树以 `ec2c56e5` 为基线；
+  `verify.user_form.preference.boundary_guard` 依赖 `smart_construction_custom/models/user_preferences.py`（该
+  模块属客户定制 addon 仓库，不在本仓库边界内）。
+- 边界：不改 ACL／记录规则／菜单可见性，不改模型字段，不改运行环境、数据库或端口；`retirementComplete=false` 不变。
+- Next Step：冻结本候选 HEAD（完整 tracked＋untracked fingerprint），运行一次 exact-head `make ci.local.quick`，
+  取得独立只读复核后经 `make workspace.evidence.archive` → `make pr.push` → `make pr.create` 发布；
+  合并获授权后执行**仅 2 条路径**的文档单职责提交（台账 19 → 14 ＋ 迭代记录 8.36／8.37），再回到 G11 主线执行。

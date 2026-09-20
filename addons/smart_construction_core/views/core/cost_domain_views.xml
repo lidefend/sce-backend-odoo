@@ -617,12 +617,25 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted"/>
                 </header>
                 <sheet>
-                    <group>
+                    <!-- U-C4 G10: 原生 arch 持有本入口的章节身份。三个业务组带稳定
+                         `data-sc-anchor`，消费方按它生成本入口的业务章节与章节导航；
+                         `view_project_progress_entry_form` 是 527 进度计量
+                         （menu 520 / action `action_project_progress_entry`）的原生承载。
+                         本入口此前没有入口级发布，只消费模型级生成镜像 45
+                         （`project_progress_entry_form_structure_generated_v1`，priority 76），
+                         结构权威停在空串；本批按 G07／G09 写法为它补一条入口级 native 发布
+                         （`project_progress_entry_productized_form_v1`，priority 800，纯语义声明），
+                         入口自己的声明成为该 action 的最后结构写入者。
+                         「录入口径」组是计算出的提示态（`label` ＋ 越界告警），不承载可编辑
+                         业务事实，故按 G08／G09 口径**不设**章节锚点。
+                         模型级镜像 45 本批保持 active：它是同模型上 586 唯一的结构载体，
+                         退役属另一组的工作。 -->
+                    <group name="project_progress_entry_object" data-sc-anchor="project_progress_entry_object" string="计量对象">
                         <field name="project_id" required="1"/>
                         <field name="wbs_id" required="1" domain="[('project_id','=',project_id)]"/>
                         <field name="date"/>
                     </group>
-                    <group>
+                    <group name="project_progress_entry_measure" data-sc-anchor="project_progress_entry_measure" string="计量数据">
                         <field name="qty_done"/>
                         <field name="qty_cum"/>
                         <field name="progress_rate"
@@ -639,7 +652,7 @@
                             </span>
                         </div>
                     </group>
-                    <group>
+                    <group name="project_progress_entry_note_attachment" data-sc-anchor="project_progress_entry_note_attachment" string="备注与附件">
                         <field name="note"/>
                         <field name="attachment_ids" widget="many2many_binary"/>
                     </group>
