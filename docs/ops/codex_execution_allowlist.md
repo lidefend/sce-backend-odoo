@@ -317,9 +317,15 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
 以下命令 **任何情况下都禁止**：
 
 * ❌ `git push`
-  （**除非** 通过 `make pr.push` / `make branch.cleanup.feature` 执行）
+  （**除非** 通过 `make pr.push` / `make branch.cleanup.feature` 执行；退役路径
+  `make workspace.worktree.cleanup CLEAN_WORKTREE_RETIREMENT_RECORD=...` 另有一项
+  受限例外：只删除被证明已合入的主题的远端同名分支，且必须携带精确
+  `--force-with-lease` lease）
 * ❌ `git push --force / -f`
-  （唯一例外：获得仓库所有者逐次明确授权后，通过
+  （例外一：退役路径
+  `make workspace.worktree.cleanup CLEAN_WORKTREE_RETIREMENT_RECORD=...` 对已证明
+  合入主题的远端同名分支所做的精确 `--force-with-lease=refs/heads/<branch>:<sha>`
+  删除，见上一条受限例外；例外二：获得仓库所有者逐次明确授权后，通过
   `make main.cutover.controlled` 执行双远端 `main` 历史切换。该入口必须使用完整
   SHA 精确 lease、外部不可变恢复 bundle、配对完成或回退、保护规则恢复及
   候选发布资格复验；禁止直接调用底层 push。）
@@ -332,8 +338,9 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
   （**除非** 通过 `make branch.cleanup.feature` 执行）
 * ❌ 裸用 `git worktree`
   （创建只能通过 `make workspace.worktree.create`，清理只能通过
-  `make workspace.worktree.cleanup`；两个入口均为本地操作并执行路径、分支、
-  精确基线和状态校验）
+  `make workspace.worktree.cleanup`；两个入口均执行路径、分支与状态校验，创建入口
+  另要求精确 40 位基线 SHA。创建入口与 receipt／detach 清理路径为本地操作；退役
+  路径除本地操作外，只按上一条受限例外处理远端同名分支）
 * ❌ `git config`
 * ❌ `git clean -fdx`
 
@@ -386,6 +393,39 @@ make workspace.worktree.cleanup \
 
 该模式只删除工作树目录并验证本地分支引用保持不变，因此允许未合并分支和受保护的
 `release/main` 分支；目标为主工作树、状态非干净或 SHA 漂移时均拒绝执行。
+
+已合入但**从未归档交付证据**的历史工作树没有可迁移证据，只能在受审治理记录与外部恢复
+bundle 同时就位时整体清理：
+
+```bash
+make workspace.worktree.cleanup \
+  CLEAN_WORKTREE=/absolute/linked/path \
+  CLEAN_WORKTREE_RETIREMENT_RECORD=/absolute/repo/docs/ops/iterations/workspace_worktree_legacy_retirement_v1.json \
+  CLEAN_WORKTREE_RECOVERY_BUNDLE=/absolute/evidence/workspace-archives/<date>/legacy-worktree-retirement/<branch>.bundle \
+  APPLY=1 \
+  CLEAN_WORKTREE_CONFIRM=RETIRE_SQUASH_INTEGRATED_WORKTREE_WITHOUT_ARCHIVED_EVIDENCE
+```
+
+* squash 同树承接是唯一准入证明：必须有已合并 PR 的 `headRefOid` 精确等于工作树 HEAD，
+  其 merge commit 位于 `origin/main`、是**单亲**提交，且该提交的树与工作树 HEAD 的树
+  逐字节一致；任一条件不成立即拒绝（`gh` 不可用或查询失败按无证明处理）。
+* 治理记录必须是仓库内**被 Git 跟踪**的文件（因此必须随候选评审合入），逐条声明
+  `path`／`branch`／`head`／`evidenceStatus=absent`／原因／`mergedPr`（严格整数，浮点、
+  字符串与布尔一律拒绝）／`mergeCommit`／`tree`／恢复 bundle 路径与 SHA-256；入口会重读
+  记录并重算 bundle 哈希，校验其覆盖该 HEAD 且通过 `git bundle verify`。
+* 记录内容以**提交在 `HEAD` 的 blob 为准**：工作区或索引里的未提交改动一律被忽略
+  （既不能扩大也不能缩小一次退役）；仅 staged 而未提交的新记录文件一律拒绝。
+* 退役是**整体清理**：入口通过一次 `git ls-remote` 询问真实远端状态，远端查询失败按
+  拒绝处理；远端分支已漂移到非记录 HEAD 时拒绝；与记录 HEAD 完全一致时以精确
+  `--force-with-lease=refs/heads/<branch>:<sha>` lease 删除，lease 过期即拒绝。远端
+  不存在该分支时只做本地清理。
+* 全部校验先于任何破坏性动作完成；其后按固定顺序执行破坏性步骤：远端 lease 删除 →
+  移除工作树 → 删除本地分支。因此远端删除可能先于某个本地步骤失败而生效；此时入口在
+  拒绝信息中列出已完成的破坏性步骤。重跑会完整重做全部校验，且不会发出第二次远端删除
+  （远端已不存在即跳过）。
+* 退役被拒绝时的恢复：远端漂移、远端或 `gh` 不可读、lease 过期都属于硬拒绝，本入口不
+  自动放宽；恢复远端可读性后重跑，或对残留引用使用 `make branch.cleanup.feature`。
+* 无归档证据必须由记录显式披露；禁止用任意文件、重跑或补造文件替代原候选证据。
 
 > 解释：
 > PR 的代码更新 **必须通过 `make pr.push`**，

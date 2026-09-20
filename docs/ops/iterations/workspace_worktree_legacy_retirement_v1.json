@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "topic": "legacy-worktree-retirement",
+  "recordedAt": "2026-09-21",
+  "purpose": "Retire merged product worktrees that never held archived delivery evidence. The absence is disclosed here instead of being replaced by fabricated evidence.",
+  "admissionProof": "merged PR headRefOid equals the worktree HEAD; the PR merge commit is on origin/main, is a single-parent commit, and its tree equals the worktree HEAD tree byte for byte",
+  "worktrees": [
+    {
+      "path": "/home/lidefend/workspace/sce-backend-odoo-contract-work-reading-efficiency-v1",
+      "branch": "codex/detail-trace-responsibility-v1",
+      "head": "9572436a7cb80a678310d99ec6a924f1d98d1d25",
+      "deliveredAt": "2026-09-14",
+      "evidenceStatus": "absent",
+      "reason": "Delivered before delivery-evidence archiving was mandatory for worktree cleanup; the worktree holds no file bound to this HEAD and .codex-evidence/workspace-archives has no receipt or manifest for it or its topic.",
+      "mergedPr": 475,
+      "mergeCommit": "0eb4776391a31779898d4d17f0317e132b6c4f7a",
+      "tree": "34a26917ea10f914db4ad3bbcd9973806c299d29",
+      "recoveryBundle": {
+        "path": "/home/lidefend/workspace/.codex-evidence/workspace-archives/20260921/legacy-worktree-retirement/codex-detail-trace-responsibility-v1.bundle",
+        "sha256": "cfd84d4560d4885644247a85f7b9a4c90150011b739221e059c17847a4699e42",
+        "size": 21271768
+      }
+    },
+    {
+      "path": "/home/lidefend/workspace/sce-backend-odoo-material-handling-v1",
+      "branch": "fix/p4-governed-frozen-sync-generated-drop-v1",
+      "head": "a8fe1c155a40ba5b2268f0bbaf3d1025f2b758ee",
+      "deliveredAt": "2026-09-15",
+      "evidenceStatus": "absent",
+      "reason": "Delivered before delivery-evidence archiving was mandatory for worktree cleanup; the worktree holds no file bound to this HEAD and no external receipt or manifest references this candidate.",
+      "mergedPr": 478,
+      "mergeCommit": "12f6256c3fbf8c6a211d3aa80b23ea14ba3e2fd3",
+      "tree": "75acb2913b6883044be4f0e5ea2ee628d21ed46f",
+      "recoveryBundle": {
+        "path": "/home/lidefend/workspace/.codex-evidence/workspace-archives/20260921/legacy-worktree-retirement/fix-p4-governed-frozen-sync-generated-drop-v1.bundle",
+        "sha256": "df9ceacd9f6cfd57ca1aadb1e4cb8dd0f5ae4fc6b8b33549b6ac9671a0008345",
+        "size": 21284775
+      }
+    }
+  ],
+  "notes": [
+    "feature/uc2-material-native-v1 is not listed: its worktree keeps the verified external receipt .codex-evidence/workspace-archives/20260916/uc2-material-native/25cb3cd106ead9dd09b3f2b68ed152fbd413da0f/archive-receipt.json and is retired through that receipt instead.",
+    "Every entry's squash integration is re-verified from git and gh at cleanup time; this record can neither add nor widen a retirement."
+  ]
+}
