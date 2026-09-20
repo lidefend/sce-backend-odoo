@@ -9651,15 +9651,29 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   保持 fail-closed），并为从未归档证据的历史工作树提供“仓库内被跟踪的治理记录 + 外部恢复
   bundle + 精确确认短语”退役路径；`make/codex.mk` 透传 `CLEAN_WORKTREE_RETIREMENT_RECORD`／
   `CLEAN_WORKTREE_RECOVERY_BUNDLE`；工作区执行规则与白名单同步更新。
-- 验证：`make verify.workspace.worktree.guard` 58 项通过，其中新增 12 项反例覆盖树不一致、
-  merge 不在 main、双亲 merge、记录未被 Git 跟踪、bundle 哈希漂移、恢复 bundle 未覆盖 HEAD、
-  远端同名分支仍存在等拒绝路径；原有 receipt 路径与 detach 路径断言保持不变。
+- 独立复核与整改：第一轮独立只读复核对 `b27b729db35e3ecff7a251e1957a1f7b796711e9` 给出
+  REQUEST_CHANGES，主因是文档声明的“远端同名分支仍存在即拒绝”在本仓库窄 fetch refspec
+  （`+refs/heads/main:refs/remotes/origin/main`）下永不触发，等于写了无法执行的门禁。整改后：
+  退役路径用一次 `git ls-remote` 读取**真实**远端状态，读取失败即拒绝；远端与记录 HEAD 一致时
+  按精确 `--force-with-lease=refs/heads/<branch>:<sha>` lease 删除（漂移即拒绝），远端不存在该
+  分支时只做本地清理；治理记录改读**已提交的 `HEAD` blob**，未提交或仅 staged 的记录一律拒绝；
+  删除本地分支前复验 `refs/heads/<branch>` 仍等于工作树 HEAD；`mergedPr` 非整数按拒绝处理；
+  `git bundle list-heads` 改为按精确 OID 比对；白名单同步登记该受限 push 例外。
+- 验证：`make verify.workspace.worktree.guard` 65 项通过（清理入口模块 57 项、创建入口模块 8 项）。
+  本批在清理入口模块新增 18 个测试方法，其中 13 个为拒绝路径（树不一致、merge 不在 main、双亲
+  merge、确认短语不符、记录未被 Git 跟踪、记录仅 staged 未提交、bundle 哈希漂移、bundle 未覆盖
+  HEAD、`mergedPr` 非整数、远端状态不可读、远端分支漂移、删除前本地分支引用漂移），5 个为正向
+  路径（squash 承接证明、receipt 路径复用、远端同 HEAD 时按 lease 删除、未提交改动不得生效）；
+  原有 receipt 路径与 detach 路径断言保持不变。
 - 证据：记录 `docs/ops/iterations/workspace_worktree_legacy_retirement_v1.json`（2 条
   `evidenceStatus=absent`，禁止补造证据）；恢复 bundle 位于
   `/home/lidefend/workspace/.codex-evidence/workspace-archives/20260921/legacy-worktree-retirement/`。
 - 边界：本批只改治理脚本、Make 透传与规则文档，不改产品源码、页面、契约、运行环境或数据库；
-  三个工作树的实际退役在本次合并之后执行，因此本批不宣称工作树已清理。
+  远端变更仅限退役路径对“已证明合入主题”的远端同名分支做精确 lease 删除，其余清理路径行为不变；
+  receipt 清理路径沿用既有契约（不含确认短语、不动远端），其远端引用清理仍由
+  `make branch.cleanup.feature` 单独完成。三个工作树的实际退役在本次合并之后执行，因此本批不
+  宣称工作树已清理。
 - Next Step：冻结本候选 HEAD（完整 fingerprint），运行一次 exact-head `make ci.local.quick`，
   取得独立复核后经 `make pr.push` → `make pr.create` 发布；合并获授权后，用
-  `CLEAN_WORKTREE_RETIREMENT_RECORD`／`CLEAN_WORKTREE_RECOVERY_BUNDLE` 退役两个无证据工作树，
-  用既有 receipt 退役 uc2 工作树，之后回到 G10 主线执行。
+  `CLEAN_WORKTREE_RETIREMENT_RECORD`／`CLEAN_WORKTREE_RECOVERY_BUNDLE` 整体退役两个无证据
+  工作树（含远端同名分支的 lease 删除），用既有 receipt 退役 uc2 工作树，之后回到 G10 主线执行。

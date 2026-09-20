@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """Govern removal of clean, non-primary linked worktrees.
 
-This is deliberately local-only: it removes neither remote branches nor
-standalone clones.  The caller must opt in with ``--apply``.
+Removal is local by default and never touches standalone clones.  The single
+remote mutation in this entry is the legacy retirement path: once a topic is
+proven integrated and its reviewed retirement record plus recovery bundle
+verify, the corresponding ``origin/<branch>`` ref is deleted under an exact
+``--force-with-lease`` lease so a moved remote branch can never be destroyed.
+The caller must opt in with ``--apply``.
 """
 
 from __future__ import annotations
@@ -251,6 +255,32 @@ def prove_integration(root: Path, selected: Worktree) -> IntegrationProof:
     )
 
 
+def remote_branch_sha(root: Path, branch: str) -> str | None:
+    """Return the SHA of ``origin/<branch>``, or ``None`` when it is absent.
+
+    The locally cached ``refs/remotes/origin/*`` namespace is not authoritative
+    here: this repository fetches only ``main``, so a live remote topic branch
+    would look absent and a retired topic would look gone.  The retirement path
+    therefore asks the remote itself, once, and fails closed: an unreadable
+    answer is a denial rather than an assumption.
+    """
+    process = run(
+        root, "ls-remote", "--heads", "origin", f"refs/heads/{branch}", check=False
+    )
+    if process.returncode:
+        raise CleanupError(
+            f"cannot read origin/{branch} (remote state must be known): "
+            f"{process.stdout.strip()}"
+        )
+    rows = [line.split() for line in process.stdout.splitlines() if line.strip()]
+    if not rows:
+        return None
+    sha = rows[0][0] if rows[0] else ""
+    if not FULL_SHA.fullmatch(sha):
+        raise CleanupError(f"unexpected ls-remote result for origin/{branch}: {rows[0]!r}")
+    return sha
+
+
 def verify_retirement_record(
     root: Path,
     selected: Worktree,
@@ -264,6 +294,9 @@ def verify_retirement_record(
     have no archived evidence to preserve. Retiring them therefore requires a
     reviewed repository record that discloses the absence and pins an external
     recovery bundle; the original evidence must never be fabricated.
+
+    The record is read from the committed ``HEAD`` blob, not from the working
+    tree, so an uncommitted edit can neither widen nor narrow a retirement.
     """
     root = root.resolve()
     record_path = record_path.resolve()
@@ -273,12 +306,19 @@ def verify_retirement_record(
             raise CleanupError("retirement record and recovery bundle must be outside the worktree")
     if run(root, "ls-files", "--error-unmatch", "--", str(record_path), check=False).returncode:
         raise CleanupError("retirement record must be a tracked repository file")
+    try:
+        relative_record = record_path.relative_to(root).as_posix()
+    except ValueError as exc:
+        raise CleanupError("retirement record must live inside the repository") from exc
+    committed = run(root, "show", f"HEAD:{relative_record}", check=False)
+    if committed.returncode:
+        raise CleanupError("retirement record must be committed at HEAD")
     if not bundle_path.is_file() or bundle_path.stat().st_size <= 0:
         raise CleanupError("recovery bundle is missing or empty")
     try:
-        record = json.loads(record_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise CleanupError(f"cannot read retirement record: {exc}") from exc
+        record = json.loads(committed.stdout)
+    except json.JSONDecodeError as exc:
+        raise CleanupError(f"cannot read committed retirement record: {exc}") from exc
     if record.get("schemaVersion") != 1:
         raise CleanupError("retirement record schemaVersion must be 1")
     rows = record.get("worktrees")
@@ -301,7 +341,11 @@ def verify_retirement_record(
         raise CleanupError("retirement record entry must declare evidenceStatus=absent")
     if not str(entry.get("reason") or "").strip():
         raise CleanupError("retirement record entry must state why no evidence exists")
-    if int(entry.get("mergedPr") or 0) != proof.pull_request:
+    try:
+        declared_pr = int(entry.get("mergedPr") or 0)
+    except (TypeError, ValueError) as exc:
+        raise CleanupError("retirement record mergedPr must be an integer") from exc
+    if declared_pr != proof.pull_request:
         raise CleanupError("retirement record merged PR does not match the verified merge proof")
     if str(entry.get("mergeCommit") or "") != proof.merge_commit:
         raise CleanupError("retirement record merge commit does not match the verified merge proof")
@@ -313,8 +357,12 @@ def verify_retirement_record(
     digest = hashlib.sha256(bundle_path.read_bytes()).hexdigest()
     if digest != bundle.get("sha256"):
         raise CleanupError("recovery bundle hash does not match the retirement record")
-    heads = run(root, "bundle", "list-heads", str(bundle_path)).stdout
-    if selected.head not in heads:
+    listed = {
+        line.split()[0]
+        for line in run(root, "bundle", "list-heads", str(bundle_path)).stdout.splitlines()
+        if line.split()
+    }
+    if selected.head not in listed:
         raise CleanupError("recovery bundle does not cover the worktree HEAD")
     verified = run(root, "bundle", "verify", str(bundle_path), check=False)
     if verified.returncode:
@@ -393,6 +441,7 @@ def cleanup(
 ) -> Worktree:
     selected = plan_cleanup(root, candidate)
     proof = prove_integration(root, selected)
+    branch = selected.branch or ""
     if apply:
         if evidence_receipt is not None:
             verify_evidence_receipt(selected, evidence_receipt)
@@ -404,23 +453,37 @@ def cleanup(
                 )
             if proof.kind != "squash":
                 raise CleanupError("retirement record is only admissible for squash integrations")
-            if selected.branch and run(
-                root,
-                "show-ref",
-                "--verify",
-                "--quiet",
-                f"refs/remotes/origin/{selected.branch}",
-                check=False,
-            ).returncode == 0:
-                raise CleanupError(f"remote branch still exists: origin/{selected.branch}")
+            # A retirement retires the whole topic, so the remote ref is part of
+            # the transaction: delete it under an exact lease, and refuse when it
+            # has moved away from the integrated HEAD.
+            remote_sha = remote_branch_sha(root, branch)
+            if remote_sha is not None and remote_sha != selected.head:
+                raise CleanupError(
+                    f"origin/{branch} moved: expected={selected.head} actual={remote_sha}"
+                )
             verify_retirement_record(root, selected, retirement_record, recovery_bundle, proof)
+            if remote_sha is not None:
+                run(
+                    root,
+                    "push",
+                    "origin",
+                    "--delete",
+                    f"--force-with-lease=refs/heads/{branch}:{remote_sha}",
+                    "--",
+                    branch,
+                )
         else:
             raise CleanupError(
                 "apply requires an external verified evidence receipt or a tracked "
                 "retirement record with a recovery bundle"
             )
         run(root, "worktree", "remove", "--", str(selected.path))
-        run(root, "branch", "-D" if proof.kind == "squash" else "-d", "--", selected.branch or "")
+        ref_head = run(root, "rev-parse", "--verify", f"refs/heads/{branch}").stdout.strip()
+        if ref_head != selected.head:
+            raise CleanupError(
+                f"branch ref moved before deletion: expected={selected.head} actual={ref_head}"
+            )
+        run(root, "branch", "-D" if proof.kind == "squash" else "-d", "--", branch)
     return selected
 
 

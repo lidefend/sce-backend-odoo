@@ -317,7 +317,10 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
 以下命令 **任何情况下都禁止**：
 
 * ❌ `git push`
-  （**除非** 通过 `make pr.push` / `make branch.cleanup.feature` 执行）
+  （**除非** 通过 `make pr.push` / `make branch.cleanup.feature` 执行；退役路径
+  `make workspace.worktree.cleanup CLEAN_WORKTREE_RETIREMENT_RECORD=...` 另有一项
+  受限例外：只删除被证明已合入的主题的远端同名分支，且必须携带精确
+  `--force-with-lease` lease）
 * ❌ `git push --force / -f`
   （唯一例外：获得仓库所有者逐次明确授权后，通过
   `make main.cutover.controlled` 执行双远端 `main` 历史切换。该入口必须使用完整
@@ -332,8 +335,9 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
   （**除非** 通过 `make branch.cleanup.feature` 执行）
 * ❌ 裸用 `git worktree`
   （创建只能通过 `make workspace.worktree.create`，清理只能通过
-  `make workspace.worktree.cleanup`；两个入口均为本地操作并执行路径、分支、
-  精确基线和状态校验）
+  `make workspace.worktree.cleanup`；两个入口均执行路径、分支、精确基线和状态
+  校验。创建入口与 receipt／detach 清理路径为本地操作；退役路径除本地操作外，
+  只按上一条受限例外处理远端同名分支）
 * ❌ `git config`
 * ❌ `git clean -fdx`
 
@@ -406,8 +410,13 @@ make workspace.worktree.cleanup \
   `path`／`branch`／`head`／`evidenceStatus=absent`／原因／`mergedPr`／`mergeCommit`／
   `tree`／恢复 bundle 路径与 SHA-256；入口会重读记录并重算 bundle 哈希，校验其覆盖该
   HEAD 且通过 `git bundle verify`。
-* 无归档证据必须由记录显式披露；禁止用任意文件、重跑或补造文件替代原候选证据。远端同名
-  分支仍然存在时拒绝执行。
+* 记录内容以**提交在 `HEAD` 的 blob 为准**：只有 staged 而未提交、或工作区被本地改动
+  但未提交的记录一律拒绝；因此本地未提交修改既不能扩大也不能缩小一次退役。
+* 退役是**整体清理**，远端同名分支属于同一事务：入口通过一次 `git ls-remote` 询问真实
+  远端状态，远端查询失败按拒绝处理；远端分支已漂移到非记录 HEAD 时拒绝；与记录 HEAD
+  完全一致时以精确 `--force-with-lease=refs/heads/<branch>:<sha>` lease 删除，lease
+  过期即拒绝。远端不存在该分支时只做本地清理。
+* 无归档证据必须由记录显式披露；禁止用任意文件、重跑或补造文件替代原候选证据。
 
 > 解释：
 > PR 的代码更新 **必须通过 `make pr.push`**，
