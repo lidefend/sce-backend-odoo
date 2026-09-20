@@ -6,7 +6,7 @@
     "operation": "model",
     "renderProfile": "create"
   },
-  "count": 22,
+  "count": 19,
   "fullRescan": false,
   "sourceInventory": "artifacts/form-structure-unification/customer-browser-final/compatibility-consumers.json",
   "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
@@ -1293,931 +1293,6 @@
         "hiddenFieldNames": [],
         "groupColumns": {},
         "groupVisibility": {}
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_product_labor_cost_v1",
-      "label": "劳务成本登记",
-      "model": "sc.labor.usage",
-      "actionId": 871,
-      "menuId": 689,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "overview_then_task_slots",
-      "actualView": {
-        "model": "sc.labor.usage",
-        "viewId": 1461
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 154,
-            "name": "sc_labor_usage_form_sections_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          },
-          {
-            "id": 15,
-            "name": "sc_labor_usage_p1_form_business_facts_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1461,
-        "resolvedActionId": 871,
-        "structureDiagnostics": [
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.labor.usage",
-              "action_id": 871,
-              "view_id": 1461
-            },
-            "key": "sections",
-            "node": "view_orchestration.views.form.sections",
-            "nodes": [
-              "0",
-              "1",
-              "2",
-              "3"
-            ],
-            "configuration": {
-              "id": 15,
-              "name": "sc_labor_usage_p1_form_business_facts_v1"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 154,
-                "name": "sc_labor_usage_form_sections_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.labor.usage",
-              "action_id": 871,
-              "view_id": 1461
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "state",
-              "name",
-              "usage_type",
-              "project_id",
-              "usage_date",
-              "contractor_id",
-              "labor_team",
-              "work_type",
-              "construction_part",
-              "work_content",
-              "worker_qty",
-              "work_hours",
-              "price_unit",
-              "amount_total",
-              "settlement_state",
-              "note",
-              "attachment_ids",
-              "recorder_id",
-              "create_date"
-            ],
-            "configuration": {
-              "id": 15,
-              "name": "sc_labor_usage_p1_form_business_facts_v1"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 86,
-                "name": "sc_labor_usage_form_structure_generated_v1"
-              }
-            ]
-          }
-        ],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "state",
-          "name",
-          "project_id",
-          "usage_date",
-          "labor_team",
-          "contractor_id",
-          "foreman_name",
-          "recorder_id",
-          "worker_qty",
-          "work_hours",
-          "work_content",
-          "note",
-          "usage_type",
-          "work_type",
-          "construction_part",
-          "price_unit",
-          "amount_total",
-          "settlement_state",
-          "attachment_ids",
-          "create_date"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [],
-        "sectionTitles": [
-          "工种/表单信息",
-          "单据识别",
-          "业务对象",
-          "金额与办理",
-          "附件与来源"
-        ],
-        "fieldGroups": {},
-        "hiddenFieldNames": [],
-        "groupColumns": {},
-        "groupVisibility": {}
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_product_equipment_shift_v1",
-      "label": "机械台班登记",
-      "model": "sc.equipment.usage",
-      "actionId": 570,
-      "menuId": 692,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.equipment.usage",
-        "viewId": 1476
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 160,
-            "name": "sc_equipment_usage_form_sections_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          },
-          {
-            "id": 21,
-            "name": "sc_equipment_usage_p1_form_business_facts_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          },
-          {
-            "id": 230,
-            "name": "equipment_usage_register_productized_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1476,
-        "resolvedActionId": 570,
-        "structureDiagnostics": [
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.equipment.usage",
-              "action_id": 570,
-              "view_id": 1476
-            },
-            "key": "sections",
-            "node": "view_orchestration.views.form.sections",
-            "nodes": [
-              "0",
-              "1",
-              "2",
-              "3"
-            ],
-            "configuration": {
-              "id": 21,
-              "name": "sc_equipment_usage_p1_form_business_facts_v1"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 160,
-                "name": "sc_equipment_usage_form_sections_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.equipment.usage",
-              "action_id": 570,
-              "view_id": 1476
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "state",
-              "project_id",
-              "name",
-              "usage_date",
-              "supplier_id",
-              "equipment_name",
-              "specification",
-              "uom_text",
-              "usage_qty",
-              "usage_hours",
-              "price_unit",
-              "amount",
-              "attachment_ids",
-              "note",
-              "recorder_id",
-              "create_date"
-            ],
-            "configuration": {
-              "id": 21,
-              "name": "sc_equipment_usage_p1_form_business_facts_v1"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 71,
-                "name": "sc_equipment_usage_form_structure_generated_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.equipment.usage",
-              "action_id": 570,
-              "view_id": 1476
-            },
-            "key": "sections",
-            "node": "view_orchestration.views.form.sections",
-            "nodes": [
-              "0",
-              "1",
-              "2",
-              "3",
-              "4",
-              "5"
-            ],
-            "configuration": {
-              "id": 230,
-              "name": "equipment_usage_register_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 21,
-                "name": "sc_equipment_usage_p1_form_business_facts_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.equipment.usage",
-              "action_id": 570,
-              "view_id": 1476
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "state",
-              "name",
-              "usage_date",
-              "project_id",
-              "supplier_id",
-              "request_id",
-              "recorder_id",
-              "equipment_name",
-              "equipment_code",
-              "specification",
-              "uom_text",
-              "usage_location",
-              "operator_name",
-              "usage_qty",
-              "usage_hours",
-              "price_unit",
-              "amount",
-              "currency_id",
-              "note",
-              "attachment_ids",
-              "create_date"
-            ],
-            "configuration": {
-              "id": 230,
-              "name": "equipment_usage_register_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 21,
-                "name": "sc_equipment_usage_p1_form_business_facts_v1"
-              }
-            ]
-          }
-        ],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "state",
-          "name",
-          "project_id",
-          "request_id",
-          "usage_date",
-          "equipment_name",
-          "equipment_code",
-          "usage_location",
-          "operator_name",
-          "usage_qty",
-          "usage_hours",
-          "supplier_id",
-          "recorder_id",
-          "note",
-          "specification",
-          "uom_text",
-          "price_unit",
-          "amount",
-          "attachment_ids",
-          "create_date",
-          "currency_id"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:办理主信息",
-            "key": "",
-            "title": "办理主信息",
-            "fields": [
-              "state",
-              "name",
-              "usage_date"
-            ]
-          },
-          {
-            "identity": "title:项目与供应单位",
-            "key": "",
-            "title": "项目与供应单位",
-            "fields": [
-              "project_id",
-              "supplier_id",
-              "request_id",
-              "recorder_id"
-            ]
-          },
-          {
-            "identity": "title:设备信息",
-            "key": "",
-            "title": "设备信息",
-            "fields": [
-              "equipment_name",
-              "equipment_code",
-              "specification",
-              "uom_text"
-            ]
-          },
-          {
-            "identity": "title:使用情况",
-            "key": "",
-            "title": "使用情况",
-            "fields": [
-              "usage_location",
-              "operator_name",
-              "usage_qty",
-              "usage_hours"
-            ]
-          },
-          {
-            "identity": "title:金额与计价",
-            "key": "",
-            "title": "金额与计价",
-            "fields": [
-              "price_unit",
-              "amount",
-              "currency_id"
-            ]
-          },
-          {
-            "identity": "title:说明与附件",
-            "key": "",
-            "title": "说明与附件",
-            "fields": [
-              "note",
-              "attachment_ids",
-              "create_date"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "表单信息",
-          "单据识别",
-          "业务对象",
-          "金额与办理",
-          "附件与来源",
-          "办理主信息",
-          "项目与供应单位",
-          "设备信息",
-          "使用情况",
-          "金额与计价",
-          "说明与附件"
-        ],
-        "fieldGroups": {
-          "办理主信息": [
-            "state",
-            "name",
-            "usage_date"
-          ],
-          "项目与供应单位": [
-            "project_id",
-            "supplier_id",
-            "request_id",
-            "recorder_id"
-          ],
-          "设备信息": [
-            "equipment_name",
-            "equipment_code",
-            "specification",
-            "uom_text"
-          ],
-          "使用情况": [
-            "usage_location",
-            "operator_name",
-            "usage_qty",
-            "usage_hours"
-          ],
-          "金额与计价": [
-            "price_unit",
-            "amount",
-            "currency_id"
-          ],
-          "说明与附件": [
-            "note",
-            "attachment_ids",
-            "create_date"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "办理主信息": 2,
-          "项目与供应单位": 2,
-          "设备信息": 2,
-          "使用情况": 2,
-          "金额与计价": 2,
-          "说明与附件": 2
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_product_subcontract_cost_v1",
-      "label": "分包成本登记",
-      "model": "sc.subcontract.register",
-      "actionId": 575,
-      "menuId": 693,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.subcontract.register",
-        "viewId": 1491
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 156,
-            "name": "sc_subcontract_register_form_sections_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          },
-          {
-            "id": 17,
-            "name": "sc_subcontract_register_p1_form_business_facts_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          },
-          {
-            "id": 232,
-            "name": "subcontract_register_productized_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1491,
-        "resolvedActionId": 575,
-        "structureDiagnostics": [
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.subcontract.register",
-              "action_id": 575,
-              "view_id": 1491
-            },
-            "key": "sections",
-            "node": "view_orchestration.views.form.sections",
-            "nodes": [
-              "0",
-              "1",
-              "2",
-              "3"
-            ],
-            "configuration": {
-              "id": 17,
-              "name": "sc_subcontract_register_p1_form_business_facts_v1"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 156,
-                "name": "sc_subcontract_register_form_sections_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.subcontract.register",
-              "action_id": 575,
-              "view_id": 1491
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "subcontract_register_document_no_display",
-              "sign_date",
-              "subcontract_register_title_display",
-              "subcontract_register_subcontract_content_display",
-              "quantity_total",
-              "subcontract_register_amount_display",
-              "subcontract_register_contract_no_display",
-              "invoice_amount",
-              "paid_amount",
-              "unpaid_amount",
-              "uninvoiced_amount",
-              "project_id",
-              "note",
-              "message_attachment_count",
-              "source_created_by",
-              "source_created_at"
-            ],
-            "configuration": {
-              "id": 17,
-              "name": "sc_subcontract_register_p1_form_business_facts_v1"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 126,
-                "name": "sc_subcontract_register_form_structure_generated_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.subcontract.register",
-              "action_id": 575,
-              "view_id": 1491
-            },
-            "key": "sections",
-            "node": "view_orchestration.views.form.sections",
-            "nodes": [
-              "0",
-              "1",
-              "2",
-              "3",
-              "4",
-              "5",
-              "6",
-              "7"
-            ],
-            "configuration": {
-              "id": 232,
-              "name": "subcontract_register_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 17,
-                "name": "sc_subcontract_register_p1_form_business_facts_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.subcontract.register",
-              "action_id": 575,
-              "view_id": 1491
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "state",
-              "name",
-              "subcontract_register_document_no_display",
-              "subcontract_register_title_display",
-              "project_id",
-              "request_id",
-              "contract_id",
-              "subcontract_scope",
-              "subcontract_register_subcontract_content_display",
-              "subcontractor_id",
-              "responsible_id",
-              "register_date",
-              "sign_date",
-              "start_date",
-              "end_date",
-              "registered_amount",
-              "amount_total",
-              "quantity_total",
-              "invoice_amount",
-              "paid_amount",
-              "unpaid_amount",
-              "uninvoiced_amount",
-              "currency_id",
-              "line_ids",
-              "management_note",
-              "note",
-              "message_attachment_count",
-              "legacy_fact_model",
-              "legacy_fact_id",
-              "legacy_fact_type",
-              "source_created_by",
-              "source_created_at",
-              "active"
-            ],
-            "configuration": {
-              "id": 232,
-              "name": "subcontract_register_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 17,
-                "name": "sc_subcontract_register_p1_form_business_facts_v1"
-              }
-            ]
-          }
-        ],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "state",
-          "name",
-          "project_id",
-          "request_id",
-          "contract_id",
-          "register_date",
-          "start_date",
-          "end_date",
-          "subcontract_scope",
-          "subcontractor_id",
-          "responsible_id",
-          "currency_id",
-          "registered_amount",
-          "line_ids",
-          "management_note",
-          "note",
-          "subcontract_register_document_no_display",
-          "sign_date",
-          "subcontract_register_title_display",
-          "subcontract_register_subcontract_content_display",
-          "quantity_total",
-          "subcontract_register_amount_display",
-          "subcontract_register_contract_no_display",
-          "invoice_amount",
-          "paid_amount",
-          "unpaid_amount",
-          "uninvoiced_amount",
-          "message_attachment_count",
-          "source_created_by",
-          "source_created_at",
-          "amount_total",
-          "legacy_fact_model",
-          "legacy_fact_id",
-          "legacy_fact_type",
-          "active"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:办理主信息",
-            "key": "",
-            "title": "办理主信息",
-            "fields": [
-              "state",
-              "name",
-              "subcontract_register_document_no_display",
-              "subcontract_register_title_display"
-            ]
-          },
-          {
-            "identity": "title:项目与合同",
-            "key": "",
-            "title": "项目与合同",
-            "fields": [
-              "project_id",
-              "request_id",
-              "contract_id",
-              "subcontract_scope",
-              "subcontract_register_subcontract_content_display"
-            ]
-          },
-          {
-            "identity": "title:分包单位与责任人",
-            "key": "",
-            "title": "分包单位与责任人",
-            "fields": [
-              "subcontractor_id",
-              "responsible_id"
-            ]
-          },
-          {
-            "identity": "title:履约期间",
-            "key": "",
-            "title": "履约期间",
-            "fields": [
-              "register_date",
-              "sign_date",
-              "start_date",
-              "end_date"
-            ]
-          },
-          {
-            "identity": "title:金额与履约边界",
-            "key": "",
-            "title": "金额与履约边界",
-            "fields": [
-              "registered_amount",
-              "amount_total",
-              "quantity_total",
-              "invoice_amount",
-              "paid_amount",
-              "unpaid_amount",
-              "uninvoiced_amount",
-              "currency_id"
-            ]
-          },
-          {
-            "identity": "title:登记明细",
-            "key": "",
-            "title": "登记明细",
-            "fields": [
-              "line_ids"
-            ]
-          },
-          {
-            "identity": "title:说明与附件",
-            "key": "",
-            "title": "说明与附件",
-            "fields": [
-              "management_note",
-              "note",
-              "message_attachment_count"
-            ]
-          },
-          {
-            "identity": "title:来源追溯",
-            "key": "",
-            "title": "来源追溯",
-            "fields": [
-              "legacy_fact_model",
-              "legacy_fact_id",
-              "legacy_fact_type",
-              "source_created_by",
-              "source_created_at",
-              "active"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "合同清单",
-          "单据识别",
-          "业务对象",
-          "金额与办理",
-          "附件与来源",
-          "办理主信息",
-          "项目与合同",
-          "分包单位与责任人",
-          "履约期间",
-          "金额与履约边界",
-          "登记明细",
-          "说明与附件",
-          "来源追溯"
-        ],
-        "fieldGroups": {
-          "办理主信息": [
-            "state",
-            "name",
-            "subcontract_register_document_no_display",
-            "subcontract_register_title_display"
-          ],
-          "项目与合同": [
-            "project_id",
-            "request_id",
-            "contract_id",
-            "subcontract_scope",
-            "subcontract_register_subcontract_content_display"
-          ],
-          "分包单位与责任人": [
-            "subcontractor_id",
-            "responsible_id"
-          ],
-          "履约期间": [
-            "register_date",
-            "sign_date",
-            "start_date",
-            "end_date"
-          ],
-          "金额与履约边界": [
-            "registered_amount",
-            "amount_total",
-            "quantity_total",
-            "invoice_amount",
-            "paid_amount",
-            "unpaid_amount",
-            "uninvoiced_amount",
-            "currency_id"
-          ],
-          "登记明细": [
-            "line_ids"
-          ],
-          "说明与附件": [
-            "management_note",
-            "note",
-            "message_attachment_count"
-          ],
-          "来源追溯": [
-            "legacy_fact_model",
-            "legacy_fact_id",
-            "legacy_fact_type",
-            "source_created_by",
-            "source_created_at",
-            "active"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "办理主信息": 2,
-          "项目与合同": 2,
-          "分包单位与责任人": 2,
-          "履约期间": 2,
-          "金额与履约边界": 2,
-          "登记明细": 2,
-          "说明与附件": 2,
-          "来源追溯": 2
-        },
-        "groupVisibility": {},
-        "formColumns": 2
       },
       "compatibilityLogic": [
         "legacy structure slots",
@@ -3651,7 +2726,7 @@
     "countCorrection": 4,
     "migrationReduction": 3
   },
-  "localVerifiedCount": 22,
+  "localVerifiedCount": 19,
   "uc1PublishedAudit": {
     "auditedAt": "2026-09-16",
     "auditedReleaseHead": "28b7695dc9f1cebbbe9bd5d715e951c6dec8a4da",
@@ -3824,12 +2899,14 @@
     "name": "U-C4",
     "status": "scope_confirmed_implementation_started",
     "priorityActions": [
-      871,
-      570,
-      575
+      682,
+      867,
+      729,
+      597,
+      527
     ],
-    "selectedGroup": "G09",
-    "sourceMainlineHead": "cefeff1fa48888bc54c60b7d01d144b18a5aaea8",
+    "selectedGroup": "G10",
+    "sourceMainlineHead": "988e9a87dad3768d1de3358860a904ff618b842c",
     "fullRescan": false,
     "groups": [
       {
@@ -4030,8 +3107,8 @@
           "subcontract_register_productized_form_v1"
         ],
         "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated",
-        "indexStatus": "mixed_historical_and_current",
-        "indexNote": "This prepared list is NOT the G09 retirement set. Only the three `*_form_sections_v1` names are the carriers retired by the G09 topic; the other five are still active runtime consumers and must stay listed as consumers. Per-name classification below is bound to sc_dev_demo (read-only, 2026-09-19).",
+        "indexStatus": "historical_source",
+        "indexNote": "G09 was integrated on the mainline by PR #499 (squash of the G09 topic); its three consumer entries were removed from `entries` (22 -> 19) and the group index above is kept only as the historical preparation source. The index is NOT the current consumer set: do not schedule G09 from it. Only the three `*_form_sections_v1` carriers were retired by the topic; the other five names stay live as current consumers, as `legacyConfigurationStatus` records. Per-name classification is bound to sc_dev_demo (read-only, 2026-09-19).",
         "legacyConfigurationStatus": {
           "equipment_usage_register_productized_form_v1": "current_consumer",
           "sc_equipment_usage_form_sections_v1": "retired_by_g09_topic",
@@ -4181,7 +3258,7 @@
         "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
       }
     ],
-    "scopeNote": "Eighth group prepared from the merged mainline: context handling workspace native form migration (875 team loan deduction workspace, 877 current account workspace, 878 company project refund workspace; three distinct models sharing one configuration shape, views 1932/1933/1934). The group lists three legacyConfigurations (company_project_refund_workspace_form_v1, current_account_workspace_form_v1, team_loan_deduction_workspace_form_v1) whose entry-level structures are to be retired onto their native forms. Scope is prepared in the G08 task card (external analysis location); implementation, L2/L3/L4 and the count reduction stay pending. No new business rules or permission expansion.",
+    "scopeNote": "Ninth group prepared from the merged mainline: engineering process and documents (682 safety, 867 quality, 729 construction diary, 597 project documents, 527 progress; views 1741/1550/1893/1560/1389; handling forms plus generated-structure subgroups). The group lists seven legacyConfigurations whose entry-level structures are to be retired onto their native forms. Scope is prepared in the G10 task card (external analysis location); implementation, L2/L3/L4 and the count reduction stay pending. No new business rules or permission expansion.",
     "retirementCondition": "Each selected formal action must independently show native authority, no active structural override/dependency and representative browser acceptance before any count reduction.",
     "executionSequence": [
       "continuous_group_implementation_and_targeted_validation",
@@ -4191,7 +3268,7 @@
     "planningRecord": "docs/ops/iterations/form_structure_consumption_stabilization_20260917.md"
   },
   "retirementCondition": "Only after every formal consumer of a compatibility regrouping path is zero and other roles/companies/states are covered, remove that regrouping logic and its test exemptions.",
-  "mainlineRemainingCount": 22,
+  "mainlineRemainingCount": 19,
   "mainlineRemainingLabel": "主线剩余兼容消费者（不代表部署发布或89入口整体交付）",
   "uc3LocalMigrationAudit": {
     "status": "mainline_integrated",
@@ -4749,6 +3826,140 @@
       "native_primary_forms_1932_1933_1934_stay_live_as_the_rendering_target_of_their_own_entry",
       "three_workspace_models_stay_live_as_transient_dispatch_carriers",
       "role_navigation_surface_declarations_added_by_this_batch_are_not_ledger_consumers"
+    ]
+  }
+,
+  "uc4G09PublishedAudit": {
+    "auditedAt": "2026-09-21",
+    "auditedReleaseHead": "988e9a87dad3768d1de3358860a904ff618b842c",
+    "mergedPr": {
+      "number": 499,
+      "squashHead": "988e9a87dad3768d1de3358860a904ff618b842c",
+      "sourceHead": "3b4106ce3c9c3a05d8fd0ea1406544a757052b03",
+      "tree": "4dcb97794d4ca841a119ec8eb32d59cb01398acc"
+    },
+    "iterationRecord": "docs/ops/iterations/form_structure_consumption_stabilization_20260917.md",
+    "requiredChecks": [
+      "classify=success",
+      "frontend_release_gate=success",
+      "merge_policy_gate=success",
+      "professional_authorization=success",
+      "professional_quality_gate=success",
+      "public_guard=success",
+      "public_guard_classify=success",
+      "python310_runtime_compatibility=success",
+      "release_candidate_gate=success"
+    ],
+    "skippedChecks": [
+      "classify",
+      "fast",
+      "wait_for_candidate_checks"
+    ],
+    "reduction": {
+      "before": 22,
+      "after": 19,
+      "retiredActions": [871, 570, 575],
+      "retiredViews": [1461, 1476, 1491],
+      "countMeaning": "mainline remaining compatibility consumers; deployment and overall user delivery are separate",
+      "retiredViewMeaning": "these ids label the three retired ledger entries; each view is the shared native primary form of its model (1461 also renders actions 562/563, 1476 also renders 851, 1491 also renders the second menu 518) and stays live as the rendering target of those other consumers, so the deduction retires three ledger entries and no view"
+    },
+    "exitEvidence": {
+      "sourceCheck": "each retired entry's contract now declares only view_orchestration.views.form.title plus composition_mode=native_semantic_surface bound to its own action: 682 labor_usage_register_productized_form_v1, 230 equipment_usage_register_productized_form_v1, 232 subcontract_register_productized_form_v1 (priority raised 50 -> 800 so the entry release is the last structure writer); no sections/fields/columns remain, so structural_form_declarations() yields nothing and diagnose_structure_ownership() can no longer emit LEGACY_STRUCTURE_KEY_OVERRIDE for these entries",
+      "semanticsKept": "all three entry contracts keep view_orchestration.context untouched; the retired carriers were the model-level section copies (154 sc_labor_usage_form_sections_v1, 160 sc_equipment_usage_form_sections_v1, 156 sc_subcontract_register_form_sections_v1, priority 20, now active=false), not the entries' declared fact scope",
+      "nativeStructureCheck": "the three native forms 1461/1476/1491 keep named business groups with data-sc-anchor and explicit col (6 added anchors, 2 per form), so entry authority is the native tree rather than a configured structure copy",
+      "retirementIsolationCheck": "read-only A/B at the frozen head replayed the retired carriers into the same action's candidate sequence for 7 actions (871/562/563/561/570/851/575): structure authority, presentation mode, section count, field count and group count are unchanged, because all three retired carriers sat at priority 20 behind the p1-facts (88) and generated-mirror (104/121/165) declarations and were never the last writer",
+      "scopeCheck": "the ledger counted these entries only for their config-side structure copy; the three models keep their live native primary forms (1461/1476/1491), and the sibling entries 562/563/851 plus the second menus 509/518 reach the same form arch without being counted entries, so nothing else retires",
+      "bypassCheck": "the unregistered sibling entry contracts 227/228/229 are recorded here (counted=false) with their own native_semantic_surface releases, matching the 8.35.3 statement that 562/563 occur 0 times in this ledger; registration does not widen the retirement set",
+      "reductionBoundaryCheck": "561 劳务用工 has no menu, no form view binding and no entry contract (its authority falls back to its own model-level p1-facts); the 8.35.11 A/B proves the retired carriers did not change its parse result, so it is neither counted nor silently dropped",
+      "roleSurfaceCheck": "this batch changed no ACL, record rule or menu visibility beyond the alignment recorded in 8.35.20-㉛; the three dispatch carriers keep their owning role surfaces"
+    },
+    "bypassConsumers": {
+      "scopeNote": "This ledger counts released compatibility consumers, not menus or actions that render an already-counted primary form. The G09 group has three never-registered bypass entries, two second menus on counted actions and three never-registered sibling entry contracts; they are recorded here instead of being counted or silently dropped, so 22 -> 19 stays the only reduction.",
+      "actions": [
+        {
+          "actionId": 562,
+          "label": "方单",
+          "menuId": 504,
+          "counted": false,
+          "whyNotCounted": "never registered in this ledger (0 occurrences); shares native form 1461 with the counted entry 871 through its own tree view 2049 and keeps its own entry-level release 227",
+          "authorityEvidence": "8.35.2 entry matrix (sc_dev_demo, read-only): action 562 action_sc_labor_usage_ticket -> views [(tree,2049),(form,1461)]; contract 227 labor_usage_ticket_productized_form_v1 moved 50 -> 800 with only title plus native_semantic_surface",
+          "browserAcceptance": "NAVIGATION_AUTHORITY_DENIED for the registered governed identity; recorded as a reachability fact, not a structure conclusion"
+        },
+        {
+          "actionId": 563,
+          "label": "零星用工",
+          "menuId": 505,
+          "counted": false,
+          "whyNotCounted": "never registered in this ledger (0 occurrences); shares native form 1461 with the counted entry 871 through its own tree view 2050 and keeps its own entry-level release 228",
+          "authorityEvidence": "8.35.2 entry matrix: action 563 action_sc_labor_usage_casual -> views [(tree,2050),(form,1461)]; contract 228 labor_usage_casual_productized_form_v1 moved 50 -> 800 with only title plus native_semantic_surface",
+          "browserAcceptance": "NAVIGATION_AUTHORITY_DENIED for the registered governed identity; recorded as a reachability fact, not a structure conclusion"
+        },
+        {
+          "actionId": 851,
+          "label": "机械台班记录",
+          "menuId": 510,
+          "counted": false,
+          "whyNotCounted": "never registered in this ledger; shares native form 1476 with the counted entry 570 through its own tree view 2051 and keeps its own entry-level release 229",
+          "authorityEvidence": "8.35.2 entry matrix: action 851 action_sc_equipment_usage_shift_user_confirmed -> views [(tree,2051),(form,1476)]; contract 229 equipment_usage_shift_productized_form_v1 moved 50 -> 800 with only title plus native_semantic_surface",
+          "browserAcceptance": "NAVIGATION_AUTHORITY_DENIED for the registered governed identity; recorded as a reachability fact, not a structure conclusion"
+        }
+      ],
+      "dualMenuCarriers": [
+        {
+          "menuId": 509,
+          "label": "材料成本/机械设备",
+          "actionId": 570,
+          "counted": false,
+          "whyNotCounted": "a second menu on the counted action 570, not a second consumer; the ledger counts the entry once and menu 509 releases no configuration of its own"
+        },
+        {
+          "menuId": 518,
+          "label": "材料成本/专业分包",
+          "actionId": 575,
+          "counted": false,
+          "whyNotCounted": "a second menu on the counted action 575, not a second consumer; menu 518 releases no configuration of its own and has no independent assertion in 8.35.12-④"
+        }
+      ],
+      "unregisteredEntryContracts": [
+        {
+          "id": 227,
+          "name": "labor_usage_ticket_productized_form_v1",
+          "actionId": 562,
+          "counted": false,
+          "whyNotCounted": "sibling entry release that was never a ledger entry; registered here so the retirement set is not silently widened"
+        },
+        {
+          "id": 228,
+          "name": "labor_usage_casual_productized_form_v1",
+          "actionId": 563,
+          "counted": false,
+          "whyNotCounted": "sibling entry release that was never a ledger entry; registered here so the retirement set is not silently widened"
+        },
+        {
+          "id": 229,
+          "name": "equipment_usage_shift_productized_form_v1",
+          "actionId": 851,
+          "counted": false,
+          "whyNotCounted": "sibling entry release that was never a ledger entry; registered here so the retirement set is not silently widened"
+        }
+      ]
+    },
+    "knownLimits": [
+      "562 record_surface stays uncovered: the action domain holds 0 rows and no sample data was created (state=empty_action_domain)",
+      "562/563/851/509/518 remain browser-uncovered under the registered governed identity (NAVIGATION_AUTHORITY_DENIED, recorded as a reachability fact, not written as passed)",
+      "561 劳务用工 keeps its pre-existing empty-section gap (no menu, no form view binding, no entry contract); not closed by G09",
+      "the model-level p1-facts contracts 15/21/17 and the generated mirrors 86/71/126 stay active; retiring them needs the native arch to carry the same readonly policy first (policy change, not structure change)",
+      "233 subcontract_settlement_productized_form_v1 (action 576) and the 8.35.20-㉟/㊱ authority-token work are outside this deduction"
+    ],
+    "notDeducted": [
+      "shared_native_forms_1461_1476_1491_stay_live_as_rendering_targets_of_their_own_and_sibling_entries",
+      "the_three_models_sc_labor_usage_sc_equipment_usage_sc_subcontract_register_stay_live",
+      "model_level_p1_facts_15_21_17_stay_active_readonly_policy_carriers",
+      "generated_mirrors_86_71_126_stay_active_sparse_ordering_annotations",
+      "entry_contracts_227_228_229_for_the_unregistered_bypass_entries_are_registered_not_counted",
+      "action_576_subcontract_settlement_productized_form_233_untouched_other_group",
+      "561_labor_usage_has_no_menu_and_no_entry_contract_a_pre_existing_gap",
+      "bypass_and_second_menu_surfaces_509_518_562_563_851_never_counted_in_this_ledger"
     ]
   }
 }
