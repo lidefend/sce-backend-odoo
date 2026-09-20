@@ -145,7 +145,35 @@
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_data_read')])]"/>
     </record>
     <record id="view_sc_product_job_tree_v1" model="ir.ui.view"><field name="name">hr.job.sc.product.tree.v1</field><field name="model">hr.job</field><field name="arch" type="xml"><tree string="岗位管理" delete="0"><field name="sc_job_code"/><field name="name"/><field name="department_id"/><field name="company_id"/><field name="no_of_employee"/><field name="expected_employees"/><field name="active"/></tree></field></record>
-    <record id="view_sc_product_job_form_v1" model="ir.ui.view"><field name="name">hr.job.sc.product.form.v1</field><field name="model">hr.job</field><field name="arch" type="xml"><form string="岗位管理" delete="0"><sheet><group><group string="岗位信息"><field name="sc_job_code"/><field name="name"/><field name="department_id"/><field name="company_id"/><field name="active"/></group><group string="编制信息"><field name="expected_employees"/><field name="no_of_employee" readonly="1"/></group></group><group string="岗位职责"><field name="sc_responsibility" nolabel="1"/></group><group string="任职要求"><field name="sc_qualification" nolabel="1"/></group></sheet></form></field></record>
+    <!-- U-C4 G11: 883 岗位管理（menu 705 / action `action_sc_product_job_management_v1`）
+         的原生承载。业务分组带稳定 `data-sc-anchor`，消费方按它生成本入口的业务章节与章节
+         导航（`nativeBusinessSectionIdentity` 要求 group 同时具备锚点与业务标题）。
+         本批退役入口发布 `product_job_form_v1` 的结构 body，结构权威回到本视图；
+         `no_of_employee` 的只读口径由原生承接。章节粒度以本视图的原生分组为准。 -->
+    <record id="view_sc_product_job_form_v1" model="ir.ui.view">
+      <field name="name">hr.job.sc.product.form.v1</field>
+      <field name="model">hr.job</field>
+      <field name="arch" type="xml">
+        <form string="岗位管理" delete="0">
+          <sheet>
+            <group>
+              <group name="sc_product_job_identity" data-sc-anchor="sc_product_job_identity" string="岗位信息">
+                <field name="sc_job_code"/><field name="name"/><field name="department_id"/><field name="company_id"/><field name="active"/>
+              </group>
+              <group name="sc_product_job_headcount" data-sc-anchor="sc_product_job_headcount" string="编制信息">
+                <field name="expected_employees"/><field name="no_of_employee" readonly="1"/>
+              </group>
+            </group>
+            <group name="sc_product_job_duty" data-sc-anchor="sc_product_job_duty" string="岗位职责">
+              <field name="sc_responsibility" nolabel="1"/>
+            </group>
+            <group name="sc_product_job_qualification" data-sc-anchor="sc_product_job_qualification" string="任职要求">
+              <field name="sc_qualification" nolabel="1"/>
+            </group>
+          </sheet>
+        </form>
+      </field>
+    </record>
     <record id="view_sc_product_job_search_v1" model="ir.ui.view"><field name="name">hr.job.sc.product.search.v1</field><field name="model">hr.job</field><field name="arch" type="xml"><search string="岗位管理"><field name="sc_job_code"/><field name="name"/><field name="department_id"/><field name="company_id"/><filter name="active" string="启用" domain="[('active', '=', True)]"/><filter name="group_department" string="按部门" context="{'group_by': 'department_id'}"/></search></field></record>
     <record id="action_sc_product_job_management_v1" model="ir.actions.act_window">
       <field name="name">岗位管理</field><field name="res_model">hr.job</field><field name="view_mode">tree,form</field><field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_product_job_tree_v1')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_product_job_form_v1')})]"/><field name="search_view_id" ref="smart_construction_core.view_sc_product_job_search_v1"/><field name="context">{'delete': False}</field>
@@ -168,9 +196,32 @@
       <field name="domain">[('sc_runtime_company_maintainable', '=', True)]</field><field name="context">{'active_test': False, 'sc_runtime_user_management': True, 'create': False, 'delete': False}</field>
       <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_config_admin')])]"/>
     </record>
+    <!-- U-C4 G11: 887 系统参数（menu 710 / action `action_sc_product_system_parameter_v1`）
+         的原生承载。三个业务分组带稳定 `data-sc-anchor`，消费方按它生成本入口的业务章节与
+         章节导航。本批退役入口发布 `product_system_settings_form_v1` 的结构 body，
+         结构权威回到本视图；`parameter_scope`／`operation_notice` 的只读口径由原生承接。 -->
     <record id="view_sc_product_system_settings_form_v1" model="ir.ui.view">
-      <field name="name">sc.product.system.settings.form.v1</field><field name="model">sc.product.system.settings</field>
-      <field name="arch" type="xml"><form string="系统参数"><sheet><group string="参数范围"><field name="parameter_scope"/></group><group string="成本台账"><field name="cost_ledger_source"/></group><group string="运行说明"><field name="operation_notice" nolabel="1"/></group><footer><button name="action_apply" type="object" string="应用参数" class="btn-primary"/><button string="取消" special="cancel"/></footer></sheet></form></field>
+      <field name="name">sc.product.system.settings.form.v1</field>
+      <field name="model">sc.product.system.settings</field>
+      <field name="arch" type="xml">
+        <form string="系统参数">
+          <sheet>
+            <group name="sc_product_system_settings_scope" data-sc-anchor="sc_product_system_settings_scope" string="参数范围">
+              <field name="parameter_scope" readonly="1"/>
+            </group>
+            <group name="sc_product_system_settings_cost_ledger" data-sc-anchor="sc_product_system_settings_cost_ledger" string="成本台账">
+              <field name="cost_ledger_source"/>
+            </group>
+            <group name="sc_product_system_settings_operation" data-sc-anchor="sc_product_system_settings_operation" string="运行说明">
+              <field name="operation_notice" nolabel="1" readonly="1"/>
+            </group>
+            <footer>
+              <button name="action_apply" type="object" string="应用参数" class="btn-primary"/>
+              <button string="取消" special="cancel"/>
+            </footer>
+          </sheet>
+        </form>
+      </field>
     </record>
     <record id="action_sc_product_system_parameter_v1" model="ir.actions.act_window">
       <field name="name">系统参数</field><field name="res_model">sc.product.system.settings</field><field name="view_mode">form</field>
@@ -181,9 +232,27 @@
       <field name="name">ir.sequence.sc.product.tree.v1</field><field name="model">ir.sequence</field>
       <field name="arch" type="xml"><tree string="编码规则" create="0" delete="0"><field name="name"/><field name="code"/><field name="prefix"/><field name="suffix"/><field name="padding"/><field name="number_increment"/><field name="number_next_actual"/><field name="company_id"/></tree></field>
     </record>
+    <!-- U-C4 G11: 888 编码规则（menu 711 / action `action_sc_product_numbering_rule_v1`）
+         的原生承载。两个业务分组带稳定 `data-sc-anchor`，消费方按它生成本入口的业务章节与
+         章节导航。本批退役入口发布 `product_numbering_rule_form_v1` 的结构 body，
+         结构权威回到本视图；`name`／`code`／`company_id` 的只读口径由原生承接。 -->
     <record id="view_sc_product_numbering_rule_form_v1" model="ir.ui.view">
-      <field name="name">ir.sequence.sc.product.form.v1</field><field name="model">ir.sequence</field>
-      <field name="arch" type="xml"><form string="编码规则" create="0" delete="0"><sheet><group><group string="规则标识"><field name="name" readonly="1"/><field name="code" readonly="1"/><field name="company_id" readonly="1"/></group><group string="编号格式"><field name="prefix"/><field name="suffix"/><field name="padding"/><field name="number_increment"/><field name="number_next_actual"/></group></group></sheet></form></field>
+      <field name="name">ir.sequence.sc.product.form.v1</field>
+      <field name="model">ir.sequence</field>
+      <field name="arch" type="xml">
+        <form string="编码规则" create="0" delete="0">
+          <sheet>
+            <group>
+              <group name="sc_product_numbering_rule_identity" data-sc-anchor="sc_product_numbering_rule_identity" string="规则标识">
+                <field name="name" readonly="1"/><field name="code" readonly="1"/><field name="company_id" readonly="1"/>
+              </group>
+              <group name="sc_product_numbering_rule_format" data-sc-anchor="sc_product_numbering_rule_format" string="编号格式">
+                <field name="prefix"/><field name="suffix"/><field name="padding"/><field name="number_increment"/><field name="number_next_actual"/>
+              </group>
+            </group>
+          </sheet>
+        </form>
+      </field>
     </record>
     <record id="view_sc_product_numbering_rule_search_v1" model="ir.ui.view">
       <field name="name">ir.sequence.sc.product.search.v1</field><field name="model">ir.sequence</field>

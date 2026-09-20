@@ -1,5 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+  <!-- U-C4 G11: 887 系统参数（menu 710 / action `action_sc_product_system_parameter_v1`
+       / view 2072 `view_sc_product_system_settings_form_v1`）的入口发布退役结构 body。
+
+       本批把 `product_system_settings_form_v1` 的 sections／fields／columns／actions 退役，
+       只保留 `title` 与 `composition_mode: native_semantic_surface`，`view_orchestration.context`
+       原样保留（`parameter_authority` / `write_facade` / `secret_policy` 语义不变）。入口声明
+       因此成为该 action 的最后结构写入者，解析口径为
+       `form_structure_authority=native_authority` → `layoutPolicy=container_tree_authority`，
+       字段位置／分组／可见性由原生 arch 持有。渲染字段集不变（3 个）。
+
+       本模型上只有这一条 active 载体，priority 800 已是最高；本模型只有 887 一个 action。
+       本入口是配置类表单，不承载业务单据事实，权限边界仍由 action 的 groups_id 持有。
+
+       回滚：`git revert`（纯声明改动，无数据迁移）。 -->
   <record id="business_config_contract_product_system_settings_form_v1" model="ui.business.config.contract">
     <field name="name">product_system_settings_form_v1</field>
     <field name="model">sc.product.system.settings</field>
@@ -17,18 +31,7 @@
           'secret_policy': 'deployment_only'
         },
         'views': {'form': {
-          'title': '系统参数', 'composition_mode': 'entry_semantic_surface', 'columns': 1,
-          'sections': [
-            {'title': '参数范围', 'sequence': 10, 'columns': 1, 'fields': ['parameter_scope']},
-            {'title': '成本台账', 'sequence': 20, 'columns': 1, 'fields': ['cost_ledger_source']},
-            {'title': '运行说明', 'sequence': 30, 'columns': 1, 'fields': ['operation_notice']}
-          ],
-          'fields': [
-            {'name': 'parameter_scope', 'sequence': 10, 'group_title': '参数范围', 'readonly': True},
-            {'name': 'cost_ledger_source', 'sequence': 20, 'group_title': '成本台账'},
-            {'name': 'operation_notice', 'sequence': 30, 'group_title': '运行说明', 'readonly': True}
-          ],
-          'actions': [{'name': 'action_apply', 'label': '应用参数', 'type': 'object', 'style': 'primary'}]
+          'title': '系统参数', 'composition_mode': 'native_semantic_surface'
         }}
       }
     }"/>

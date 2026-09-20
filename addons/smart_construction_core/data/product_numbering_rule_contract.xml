@@ -1,8 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+  <!-- U-C4 G11: 888 编码规则（menu 711 / action `action_sc_product_numbering_rule_v1`
+       / view 2074 `view_sc_product_numbering_rule_form_v1`）的入口发布退役结构 body。
+
+       本批把 `product_numbering_rule_form_v1` 的 sections／columns 与带 sequence／group_title
+       的 fields 行退役，只保留 `title` 与 `composition_mode: native_semantic_surface`，
+       `view_orchestration.context` 原样保留（`sequence_authority` / `scope_authority` 语义不变）。
+       入口声明因此成为该 action 的最后结构写入者，解析口径为
+       `form_structure_authority=native_authority` → `layoutPolicy=container_tree_authority`，
+       字段位置／分组由原生 arch 持有。渲染字段集不变（8 个）。
+
+       退役 body 里的**字段级只读口径**不回退：原生 arch 上 `name` / `code` / `company_id` 虽有
+       `readonly="1"`，实测只覆盖一部分字段节点（容器树节点仍解析为可写），因此以**稀疏语义覆盖**
+       （`fields` 只带 `name` ＋ `readonly`）把它们按退役前的口径钉在只读。这类只读行不含结构键，
+       `structural_form_declarations()` 判其为语义注解而非结构声明，故不产生
+       `NATIVE_SEMANTIC_SURFACE_STRUCTURE_CONFLICT`。
+
+       本模型上只有这一条 active 载体，priority 800 已是最高；兄弟 action 28（core「序列」）
+       不匹配本契约的 action 绑定，渲染事实不变。
+
+       回滚：`git revert`（纯声明改动，无数据迁移）。 -->
   <record id="business_config_contract_product_numbering_rule_form_v1" model="ui.business.config.contract">
     <field name="name">product_numbering_rule_form_v1</field><field name="model">ir.sequence</field><field name="view_type">form</field>
     <field name="action_id" ref="smart_construction_core.action_sc_product_numbering_rule_v1"/><field name="priority">800</field><field name="company_id" eval="False"/><field name="active" eval="True"/><field name="status">published</field><field name="version_no">1</field>
-    <field name="contract_json" eval="{'view_orchestration': {'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release', 'sequence_authority': 'ir.sequence', 'scope_authority': 'sc_product_configurable'}, 'views': {'form': {'title': '编码规则', 'composition_mode': 'entry_semantic_surface', 'columns': 2, 'sections': [{'title': '规则标识', 'sequence': 10, 'columns': 2, 'fields': ['name', 'code', 'company_id']}, {'title': '编号格式', 'sequence': 20, 'columns': 2, 'fields': ['prefix', 'suffix', 'padding', 'number_increment', 'number_next_actual']}], 'fields': [{'name': 'name', 'sequence': 10, 'group_title': '规则标识', 'readonly': True}, {'name': 'code', 'sequence': 20, 'group_title': '规则标识', 'readonly': True}, {'name': 'company_id', 'sequence': 30, 'group_title': '规则标识', 'readonly': True}, {'name': 'prefix', 'sequence': 40, 'group_title': '编号格式'}, {'name': 'suffix', 'sequence': 50, 'group_title': '编号格式'}, {'name': 'padding', 'sequence': 60, 'group_title': '编号格式'}, {'name': 'number_increment', 'sequence': 70, 'group_title': '编号格式'}, {'name': 'number_next_actual', 'sequence': 80, 'group_title': '编号格式'}]}}}}"/>
+    <field name="contract_json" eval="{'view_orchestration': {'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release', 'sequence_authority': 'ir.sequence', 'scope_authority': 'sc_product_configurable'}, 'views': {'form': {'title': '编码规则', 'composition_mode': 'native_semantic_surface', 'fields': [{'name': 'name', 'readonly': True}, {'name': 'code', 'readonly': True}, {'name': 'company_id', 'readonly': True}]}}}}"/>
   </record>
 </odoo>
