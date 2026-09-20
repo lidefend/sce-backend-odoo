@@ -5750,3 +5750,61 @@ exact-head Quick、**未**推送、#499 **未更新**（远端仍 `012c8ad4`）�
   再做一次独立复核与外部归档**，之后才 `pr.push`；**#499 仍不合并、不部署**。
 - 台账保持 **22**；22→19 仍是**预期核减**（合入后按三个退役消费者独立审计）。G10 不启动。
 - 四维口径不变：更新 PR ≠ 产品验收；独立复核 ≠ 产品验收；G08 主线集成 ≠ 部署 ≠ 89 入口整体交付完成。
+
+> 上述「#499 仍不合并、不部署／台账保持 22」已在本批后续阶段执行并闭合，最终口径见 **§8.35.21**。
+
+### 8.35.21 G09 主线集成与台账 22 → 19（2026-09-21）
+
+冻结候选 `3b4106ce3c9c3a05d8fd0ea1406544a757052b03`（tree `4dcb97794d4ca841a119ec8eb32d59cb01398acc`，
+相对 `main` 35 条路径，exact-head `ci.local.quick` PASS）经 **PR #499** 以 squash 合入 main
+`988e9a87dad3768d1de3358860a904ff618b842c`；`origin/main^{tree}` 与候选 tree **逐字节一致**
+（`mergedAt` 2026-09-20T18:02:44Z，本地 2026-09-21 02:02:44）。合并方式 **squash ＋ `--match-head-commit`**
+（用户在 2026-09-21 明确授权；`make pr.merge.local_quick_gate` 以同一 head 的 exact-head 回执**复用**，未重跑矩阵）。
+合入前该 head 上远端必检项 **9 success／3 skipped／0 fail**：success `classify`／`frontend_release_gate`／
+`merge_policy_gate`／`professional_authorization`／`professional_quality_gate`／`public_guard`／
+`public_guard_classify`／`python310_runtime_compatibility`／`release_candidate_gate`；
+skipped `classify`（候选检查变体）／`fast`／`wait_for_candidate_checks`。交付链前置证据：独立复核 **APPROVE**
+（无 S0–S2，`tmp/uc4-g09-creatability/review-independent-3b4106ce.md`）、外部归档 receipt **verified**
+（`.codex-evidence/workspace-archives/20260921/uc4-g09-usage-performance-native/3b4106ce…/`，11 文件）。
+
+台账 `docs/ops/iterations/form_structure_compatibility_consumers_v1.json` 扣减 **22 → 19**
+（本批在台账内**正好 3 条**：871 劳务成本登记（menu 689／view 1461）／570 机械台班登记（menu 692／1476）／
+575 分包成本登记（menu 693／1491）），退役 action 871／570／575，
+`count`／`localVerifiedCount`／`mainlineRemainingCount` 同步为 **19**，并新增 `uc4G09PublishedAudit`。
+**按已合入源码逐项核对**：
+
+- 三条入口契约（682 `labor_usage_register_productized_form_v1`／230 `equipment_usage_register_productized_form_v1`／
+  232 `subcontract_register_productized_form_v1`）只留 `title` ＋ `composition_mode: native_semantic_surface`，
+  各自绑定本入口 action，**优先级 50 → 800** 使入口发布成为最后结构写入者；**无 sections／fields／columns**，
+  兼容结构副本已退出，`diagnose_structure_ownership()` 不可能再为这三条产出 `LEGACY_STRUCTURE_KEY_OVERRIDE`。
+- 退役载体是**模型级 sections 副本**（库内 154／160／156，priority 20，现 `active=false`），**不是**入口声明的
+  业务事实范围；三条入口契约的 `view_orchestration.context` 原样保留。
+- **不额外计数**：三模型的原生主表单 1461／1476／1491 一模型一表单，且同时是 562／563／851 与第二菜单
+  509／518 的渲染目标，**不随扣减退役**（`reduction.retiredViewMeaning`）。
+- **退役隔离性**：§8.35.11 的只读 A／B 对 7 个 action（871／562／563／561／570／851／575）重放已退役载体，
+  结构权威、呈现模式、章节数、字段数与分组数**全部不变**——三条载体 priority 20，早已被 p1-facts（88）与
+  生成镜像（104／121／165）压过，退役的是"从未成为最后写入者"的冗余声明。
+
+**旁路与补登（单列，不与核减混算；`bypassConsumers`，`counted=false`）**：从未登记的旁路入口
+562 方单（menu 504／tree 2049）／563 零星用工（505／2050）／851 机械台班记录（510／2051）；
+计入条目的第二菜单载体 509（→ action 570）／518（→ action 575）；以及三条从未登记的兄弟入口级契约
+227 `labor_usage_ticket_productized_form_v1`（562）／228 `labor_usage_casual_productized_form_v1`（563）／
+229 `equipment_usage_shift_productized_form_v1`（851）。扣减范围因此保持 3 条，**未被静默扩大或丢弃**。
+
+**保留边界（不随本批关闭）**：模型级 p1-facts 15／21／17 仍 active（这三个模型上唯一声明业务事实
+`readonly` 策略的载体，原生 arch 未重述，退役属**策略变更**）；生成镜像 86／71／126 仍 active（稀疏序注解）；
+233 `subcontract_settlement_productized_form_v1`（576 分包结算）未动；561 劳务用工（无菜单、无 form 视图绑定、
+无入口契约）的空章节属其**自身既存缺口**；562 记录态 `empty_action_domain`（域内 0 行，未造数据）、
+562／563／851／509／518 浏览器**角色路由拒绝**（reachability fact，**不写成通过**）；`retirementComplete=false`。
+
+`nextBatch.selectedGroup` 前进到 **G10 工程过程与资料**（682／867／729／597／527，
+视图 1741／1550／1893／1560／1389），`priorityActions` 同步，`sourceMainlineHead` 更新为合入后 main；
+**G10 未启动**。G09 组索引就地标记 `indexStatus=historical_source`（不再是当前消费者集），
+`legacyConfigurationStatus` 保留逐名分类（只有三条 `*_form_sections_v1` 由本批退役，其余五条仍为当前消费者）。
+
+本提交为**文档类单职责提交**（台账 ＋ 本记录，路径集合固定为 2）；**未触碰**任何产品代码、契约、测试或
+验证工具输入，故不改动 §8.35.14–§8.35.20 的 L1–L4 结论；候选的 exact-head Quick 回执属于 `3b4106ce`，
+本提交自身的收据由受管门禁按 fail-closed 口径产生，**不冒充同一绑定**。
+
+状态：**G09 主线集成完成（PR #499，squash 同树）｜批次状态：自验与冻结门禁通过；集中产品复核结论以产品方登记为准｜
+未部署｜89 入口整体交付未完成｜台账 19｜G10 未启动**。
