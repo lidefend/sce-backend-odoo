@@ -3707,6 +3707,12 @@ exact-head Quick）；**集中产品复核未完成**。`未集成`／`未部署
 
 #### 8.35.13-③ 登记验收身份实测：`business_config_admin` 在本库**不可用**（如实登记）
 
+（**后续更正**：标题的「不可用」指的是**登记夹具载体**在 dev 库缺失——按 `.agent/context.yaml`
+的 `acceptance_identity.fixture_only: true`，这是**预期**而非 dev 库缺陷，缺口在**验收运行时未 provision**；
+库内另有退役残留账号 `sc_business_admin`（解析角色确为 `business_config_admin`）但无可用凭据，
+不得用作验收身份；登记身份的合法取得路径是验收运行时的 `make acceptance.frontend.fixture`——见
+§8.35.19-⑩。本节正文保留原文不回填。）
+
 `.agent/context.yaml` 声明 `acceptance_identity`：`login=fixture_role_config_admin`、
 `role=business_config_admin`、`carrier=smart_construction_acceptance_fixture.fe_user_config_admin`。
 
@@ -4045,3 +4051,1575 @@ fixture 用户与持组载体（P4／环境授权范围内），**不涉及产�
   未定性为「非缺陷」。
 - 边界重申：**更新 PR ≠ 产品验收通过**；**独立复核通过 ≠ 产品验收通过**；
   **G08 主线集成 ≠ 部署 ≠ 89 入口整体交付完成**。
+
+### 8.35.17 批次 A：`退回草稿` 声明与后端规则对齐（R2）＋ 570 后端窗口对齐原生 arch（R1）（2026-09-19，**实施轮**；未冻结、未跑 Quick、未更新 #499）
+
+**触发**：§8.35.13-⑦／§8.35.16-③ 登记的残留中，两项被产品方批准纳入批次 A（R1＝570 后端窗口，
+R2＝工作流按钮声明）。本轮的判据只有一条：
+
+> **声明了必然拒绝的动作，等于交付一个永远失败的按钮；隐藏模型唯一接受的入口，等于交付一条断路。**
+
+`退回草稿` 映射 `action_reset_draft`，而本组全部模型都**只在「已取消」**接受它。因此「已提交／已登记」
+声明它 = 死按钮，「已取消」不声明它 = 没有合法回路。同一动作在**两个面**上被渲染，两处都要与模型的
+前置条件一致：原生 arch 的 header（Odoo 原生表单）与工作流契约 `state_actions`（Vue 表单经
+`describe_record()` 读取）。
+
+#### 8.35.17-① R2 契约层：7 个模型的声明收口
+
+- `_submit_confirm_profiles`（服务 6 个模型：`sc.equipment.settlement`／`sc.equipment.usage`／
+  `sc.labor.settlement`／`sc.labor.usage`／`sc.material.settlement`／`sc.subcontract.settlement`）与
+  `sc.subcontract.register` 专用 profile：`submitted`／`active` 去掉 `reopen`，新增
+  `cancel: ["reopen"]`，`label_by_action` 补 `reopen: 退回草稿`。
+- **口径来源**：这不是新发明的规则，而是同文件 `_in_progress_done_profiles` 早已使用的写法
+  （`in_progress` 不声明 `reopen`，`cancel: ["reopen"]`），也是 871 在上一批对齐后的事实行为。
+- **未决定的事仍未决定**：575 的登记后修改规则保持待决（见 §8.35.16-③）。本项只把**声明**对齐到
+  「已交付规则」（模型 + arch 本来就已经是 `cancel`），未新增任何锁。
+
+#### 8.35.17-② R2 原生 arch 层：同一条动作的 header 表达式
+
+| 表单 | 模型 | 改前 | 改后 |
+| --- | --- | --- | --- |
+| `view_sc_labor_usage_form`（871／562／563） | `sc.labor.usage` | `state != 'submitted'` | `state != 'cancel'` |
+| `view_sc_labor_settlement_form` | `sc.labor.settlement` | `state != 'submitted'` | `state != 'cancel'` |
+| `view_sc_equipment_settlement_form` | `sc.equipment.settlement` | `state != 'submitted'` | `state != 'cancel'` |
+| `view_sc_material_settlement_form` | `sc.material.settlement` | `state != 'submitted'` | `state != 'cancel'` |
+| `view_sc_subcontract_settlement_form` | `sc.subcontract.settlement` | `state != 'submitted'` | `state != 'cancel'` |
+
+570（`view_sc_equipment_usage_form`）与 575（`view_sc_subcontract_register_form`）的该按钮**已经是**
+`state != 'cancel'`，本批未改。各 header 的 `action_cancel` 为 `state in ('confirmed','cancel')` 取反，
+即草稿／已提交可见，因此交付的回路是 **草稿／已提交 → 取消 → 退回草稿 → 草稿**，无断路。
+
+#### 8.35.17-③ R1：570 后端事实窗口对齐原生 arch
+
+- 权威判据是**原生声明**：`view_sc_equipment_usage_form` 对全部交付事实声明 `readonly="state != 'draft'"`。
+- `_FACT_IMMUTABLE_FIELDS` 纳入 `request_id`（arch 早已声明它在草稿窗口内，模型集合此前漏列，即
+  §8.35.13-② 记录的残留），`write()` 事实守卫与 `unlink()` 由 `state in ('submitted','confirmed')`
+  改为 `state != 'draft'`；文案与 871 同形（`非草稿状态的机械台班事实不可…`）。
+  由此 `set(_FACT_IMMUTABLE_FIELDS)` 与 arch 的草稿窗口字段集**逐字段相等**，原残留集由 `{"request_id"}`
+  变为 `∅`。
+- `unlink` 仍**严于**平台删除策略（`core_extension_policy_maps.py:860` 的 `DRAFT_DELETE_ALLOWED_STATES`
+  含 `cancel`，模型只放行 `draft`），与 871 一致。
+
+#### 8.35.17-④ 断言：新增 2 个，翻转 2 个（零删除）
+
+- 新增 `test_the_reset_to_draft_action_is_declared_where_it_runs`（本组）：871／570／575 三个入口逐一
+  比对 arch 表达式与契约声明，并把声明的动作**实际执行**（`已提交`／`已登记` 无 `reopen`；`已取消`
+  有 `reopen`、`enabled=True`、`method=action_reset_draft`，调用后回到草稿）。
+- 新增 `test_reset_to_draft_is_declared_where_the_model_accepts_it`（契约类）：7 个模型逐一断言
+  `{state | "reopen" in state_actions[state]} == {'cancel'}` 且 arch 表达式为 `state != 'cancel'`。
+- 翻转（原为「固定差异」，现改为「固定已对齐」）：`test_the_equipment_usage_window_matches_the_native_arch`
+  （原 `…_stays_narrower_and_is_pinned`）与 `test_the_policy_never_locks_a_fact_the_model_treats_as_user_entered`
+  的残留断言（`{"request_id"}` → `set()`）。字段完整性、结构同源、角色隔离、575 待决等断言全部保留。
+  （**后续**：§8.35.18-④ 把 `575 待决` 的 pin 改写为「规则已定义」的冻结窗口断言，其余三类保留不变。）
+
+#### 8.35.17-⑤ 分层验证（本轮 dirty 工作树，未绑定冻结身份）
+
+| 层 | 命令标签 | 结果 |
+| --- | --- | --- |
+| L2 本类 | `uc4_native_lowcode/smart_construction_core:TestUsagePerformanceNativeLowcode` | **30 测，0 failed／0 error**（改前 29 ＋ 新增 1） |
+| L2 全组 | `uc4_native_lowcode/smart_construction_core` | **127 测，0 failed／0 error** |
+| L2 P0 | `p0_state/smart_construction_core:TestP0StateClosure` | **78 测，0 failed／0 error**（与改前同） |
+| L3 回滚事务 | `tmp/g09-r5/g09_txn_verify.py` | **45／45 步通过**（原 40 步；570 残留步骤翻转为「已取消事实写被拒／来源链接写被拒／删除被拒／退回草稿后可写」，残留 0） |
+| 模块升级 | `local.dev.upgrade`（`CODEX_NEED_UPGRADE=1`） | PASS（含 `verify_authority`） |
+
+- `test.safe` 是 **no upgrade** 运行：视图 arch 存在库内，故本轮先升级模块再跑 L2，否则 arch 断言会读到旧表达式
+  （本轮实测即因此先红后绿）。
+- 契约类 `workflow_contract_backend` 在本库有 **8 项既有失败**（`sc.partner.import.review` 不在 registry、
+  `sc.expense.claim` 要求已归属公司的有效项目、`sc.receipt.income` 收款归集关系不可见等）。已用**未改工作树**的
+  同标签基线运行证明与本次改动无关：基线 `1 failed, 7 error(s) of 24 tests`，本批 `1 failed, 7 error(s) of 25 tests`，
+  **失败集合逐项一致**（本批新增的那 1 测通过）。
+
+#### 8.35.17-⑥ 残留登记（**未**纳入本批，如实登记，不缩范围）
+
+同一「模型只在 `cancel` 接受、arch 只在 `submitted` 显示」的死按钮模式，在**未受工作流契约治理**的表单上
+仍然存在（先只读核对了各模型 `action_reset_draft` 的前置条件）：
+
+| 表单 | 模型 | 模型接受状态 | arch 可见状态 | 判定 |
+| --- | --- | --- | --- | --- |
+| `view_sc_equipment_plan_form` | `sc.equipment.plan` | `cancel` | 仅 `submitted` | 死按钮＋无回路 |
+| `view_sc_equipment_request_form` | `sc.equipment.request` | `cancel` | 仅 `submitted` | 死按钮＋无回路 |
+| `view_sc_attendance_checkin_form` | `sc.attendance.checkin` | `cancel` | 仅 `submitted` | 死按钮＋无回路 |
+| `view_sc_subcontract_plan_form` | `sc.subcontract.plan` | `cancel` | 仅 `submitted` | 死按钮＋无回路 |
+| `view_sc_subcontract_request_form` | `sc.subcontract.request` | `cancel` | 仅 `submitted` | 死按钮＋无回路 |
+| `view_sc_material_purchase_request_form` | `sc.material.purchase.request` | `cancel` | 仅 `submitted` | 死按钮＋无回路 |
+| `view_sc_material_inbound_form` | `sc.material.inbound` | `cancel` | 仅 `submitted` | 死按钮＋无回路 |
+| `view_sc_material_outbound_form` | `sc.material.outbound` | `cancel` | 仅 `submitted` | 死按钮＋无回路 |
+| `view_sc_material_rfq_form` | `sc.material.rfq` | `cancel` | 仅 `submitted` | 死按钮＋无回路 |
+| `view_sc_material_rental_plan_form` | `sc.material.rental.plan` | `cancel` | 仅 `submitted` | 死按钮＋无回路 |
+| `view_sc_subcontract_price_form` | `sc.subcontract.price` | `inactive` | `!= inactive`（唯一合法态被隐藏） | 死按钮＋无回路 |
+| `view_sc_equipment_price_form` / `view_sc_labor_price_form` | `sc.equipment.price`／`sc.labor.price` | `inactive` | `!= draft` | 非合法态可见（价格启停语义，**不可**按 `cancel` 口径改） |
+
+- 这些表单纯属各自模块批次，且**不**由 `workflow_contract_service.py` 声明，纳入本批会扩出可验证边界
+  （10＋表单跨 5 个模块，需各自代表面验证）。建议作为**批次 C** 单独立项，逐表单核对前置条件后同形修正。
+- 语义**不同**的同名按钮（`sc.plan` 的 `state == 'draft'`、材料验收 `not in ('submitted','rejected')`、
+  价格类启停）必须逐个核对模型前置，**不得**批量套用 `cancel` 口径。
+
+#### 8.35.17-⑦ 状态与边界
+
+- **本轮未做且未授权**：冻结候选、`ci.local.quick`、独立复核、外部归档、更新／合并 #499、部署、G10、
+  89 入口整体交付、台账扣减／补登（**保持 22**）、草稿发布／撤销／删除、工作树／分支清理。
+- **待产品方决断**（**已于 §8.35.18 决断**）：575 `closed` 的 (b1) 提供留痕「重新打开」／(b2) 永久终态——
+  §8.35.17 本批零改动；§8.35.18 按 (b1) 实施，并把本节 `575 待决` 的 pin 改写为「规则已定义」。
+- 现场：开发库 `sc_dev_demo` 已升级到本轮工作树（arch 变更已落库），三入口可直接浏览器复核；
+  **实际浏览器产品复核未做**，故本轮只到「实施＋定向补验」。
+- 边界重申：**更新 PR ≠ 产品验收通过**；**独立复核通过 ≠ 产品验收通过**；
+  **G08 主线集成 ≠ 部署 ≠ 89 入口整体交付完成**。
+
+### 8.35.18 批次 B：575 `已关闭` 冻结窗口与受控「重新打开」（2026-09-19，**实施轮**；未冻结、未跑 Quick、未更新 #499）
+
+本批次关闭 §8.35.17-⑦ 留下的产品决断：575（`sc.subcontract.register`）在 `已关闭`(`closed`) 之后
+**冻结用户录入的登记事实与明细**，并给出受控动作「重新打开」回到 `已登记`(`active`)。之所以取
+「受控撤回」而不是「永久终态」：`sc.subcontract.settlement._check_business_anchor`
+（`models/core/subcontract_management.py:1427/1433`）接受来源登记 `state in ('active','closed')`，
+即 `已关闭` 仍是分包结算的合法来源，因此冻结必须可撤回；但撤回不得改写已被结算引用的事实。
+
+#### 8.35.18-① 冻结窗口：只冻 `closed`，`已登记` 保持可调整
+
+- `models/core/subcontract_management.py:364` 新增类级 `_FACT_IMMUTABLE_FIELDS`（11 项：`project_id`／
+  `request_id`／`contract_id`／`register_date`／`start_date`／`end_date`／`subcontract_scope`／
+  `subcontractor_id`／`responsible_id`／`currency_id`／`line_ids`）；`:369` `_FACT_IMMUTABLE_STATES = ("closed",)`。
+- `:501 write()` 增加后端冻结守卫：`locked = self._FACT_IMMUTABLE_FIELDS & set(vals)` 命中且记录在冻结状态时
+  抛 `UserError("已关闭的分包登记不可修改登记事实或明细；请先执行「重新打开」回到已登记状态。")`；
+  `sc_skip_subcontract_contract_authority` 内部上下文仍优先放行（合同一致性回写）。
+- **明确不采用「所有非草稿状态一律锁死」**：`已登记` 仍是可调整窗口（用户显式排除该口径）。该窗口内的
+  事实调整由既有累计数量／累计金额／合同范围／结算授权校验把关（`:986-1170`、`:1266-1400`），
+  而不是由状态名代替业务规则。
+- `note`／`attachment_ids`／`management_note`／`name` 不入冻结集：记录依据与管理要求，关闭后仍可补写。
+
+#### 8.35.18-② 「重新打开」是独立契约身份，不复用 `reopen`
+
+平台既有 `reopen` 的语义固定为「重置为草稿」（`cancel -> draft`，`action_reset_draft`，标签「退回草稿」，
+见 §8.35.17-①），其目标状态、方法与标签都与 575 需要的 `closed -> active` 不同。若复用会让同一动作键在
+同一模型上出现两种目标状态，因此另立身份并在契约测试中双向固定：
+
+- `models/support/workflow_contract_service.py:895` `ACTIONS` 新增
+  `"reactivate": {"label": "重新打开", "intent": "server.object", "kind": "transition"}`。
+- 同文件 `:640` / `:647` / `:654`：`sc.subcontract.register` 的 profile 只在 `closed` 声明 `reactivate`，
+  映射方法 `action_reopen`、标签「重新打开」；`reopen` 在该模型的声明未被改动。
+- `models/core/subcontract_management.py:725 action_reopen()`：要求 `closed` 入参（否则拒绝）；
+  登记明细一旦被结算引用（`line_ids.mapped("settlement_line_ids.settlement_id")` 非空）即拒绝重开，
+  指向结算调整——与明细 `unlink()` 的保护同形，保证结算依据不被改写。
+- `views/core/subcontract_management_views.xml:276`：header 新增
+  `<button name="action_reopen" string="重新打开" type="object" class="btn-primary" invisible="state != 'closed'" groups="smart_construction_core.group_sc_cap_project_manager"/>`。
+
+#### 8.35.18-③ arch 只读表达式：状态窗口，不是字段级全锁
+
+- `views/core/subcontract_management_views.xml:291-297`（`project_id`／`request_id`／`contract_id`／
+  `register_date`／`start_date`／`end_date`／`subcontract_scope`）、`:300-302`
+  （`subcontractor_id`／`responsible_id`／`currency_id`）、`:308`（`line_ids`）统一为 `readonly="state == 'closed'"`。
+- `processing_advisory` 保持 `readonly="1"`（系统生成的办理提示），`note`／附件不带状态表达式。
+- 与 §8.35.17-① 同口径：移除的是「用户录入字段的无条件只读」，**保留**计算、镜像与系统生成字段的约束；
+  原生视图负责交互约束，事实不可改由 `write()` 守卫承担（后端为事实权威）。
+
+#### 8.35.18-④ 断言：新增 1 个、改写 1 个、改写 2 个既有断言，**零删除**
+
+- 改写 `tests/test_usage_performance_native_lowcode.py:1088`
+  `test_the_subcontract_register_freezes_only_after_closing`（原 `…_post_registration_rule_stays_pending`）：
+  断言 `_FACT_IMMUTABLE_STATES == ("closed",)`；草稿可写；`确认登记`→`已登记` 后事实与明细仍可写；
+  `关闭`→`已关闭` 后事实／明细／锚点写入被拒而 `note` 可写；`重新打开` 回 `已登记` 后事实可写；
+  非 `closed` 调 `action_reopen` 被拒；构造结算引用后再 `关闭` 并断言 `action_reopen` 被拒。
+  ⇒ 原「规则待决」pin **记为「规则已定义」**：575 不再是「无守卫」表述，而是有明确冻结状态、撤回路径与
+  结算引用保护。
+- `:604` 新增类常量 `FACT_FREEZE_EXPRESSION`（871／570 `state != 'draft'`；575 `state == 'closed'`）；
+  `:733` 与 `:781` 两个既有断言改为按该表逐模型核对（`compared == 3`），并新增
+  `set(USER_SUPPLIED_FACTS[model]) - set(guard) == DRAFT_WINDOW_EXEMPT_FACTS ∩ USER_SUPPLIED_FACTS[model]`。
+- 新增 `tests/test_workflow_contract_backend.py:91` `test_the_subcontract_register_reopens_only_from_closed`：
+  契约层（`reactivate` 仅在 `closed` 声明、method／label 正确、`reopen` 身份未被改动）＋ arch 层
+  （按钮唯一、`invisible="state != 'closed'"`、`groups` 含 `group_sc_cap_project_manager`）＋ 运行态
+  （`draft`／`active` 不出现 `reactivate`；`closed` 出现且不含 `reopen`，实际执行回 `active`）。
+- 字段完整性、结构同源、角色隔离、可办理性（`create` 窗口）断言**全部保留**。
+
+#### 8.35.18-⑤ 分层验证（本轮 dirty 工作树，未绑定冻结身份）
+
+| 层 | 命令／标签 | 结果 |
+| --- | --- | --- |
+| L1 升级 | `local.dev.upgrade`（`CODEX_NEED_UPGRADE=1`） | PASS（78 modules，`[local.dev.ready] PASS`） |
+| L2 本组 | `uc4_native_lowcode/smart_construction_core:TestUsagePerformanceNativeLowcode` | **30 测，0 failed／0 error** |
+| L2 成本登记 | `subcontract_cost_registration/smart_construction_core:TestSubcontractCostRegistration` | **1 测，0 failed／0 error** |
+| L2 契约类 | `workflow_contract_backend/smart_construction_core:TestWorkflowContractBackend` | 26 测：**1 failed／7 error，与未改工作树基线逐项一致**（新增 1 测通过） |
+| L2 P0 | `p0_state/smart_construction_core:TestP0StateClosure` | **78 测，0 failed／0 error** |
+| L3 回滚事务 | `tmp/uc4-g09-batchB/g09_txn_verify.py` | **58／58 步通过**（含 17 条 575 新增步骤；rollback 后记录数 0） |
+| L4 只读契约探针 | `tmp/uc4-g09-batchB/live-contract-probe.py` | `draft→[确认登记,取消]`／`active→[关闭,取消]`／`closed→[重新打开]`／重开回 `active`；无残留 |
+
+- 契约类失败的 8 项为本库既有环境性失败（`sc.partner.import.review` 不在 registry、费用／扣款单据要求
+  已归属公司的有效项目等），已用未改工作树同标签基线（`1 failed／7 error of 24 tests`）证明与本批无关。
+- `test_product_reports.py` 的 1 项错误同为既有（夹具以 `state="confirmed"` 植入状态，被批次 A 的 S1 守卫
+  拒绝；该文件本批未改）。
+
+#### 8.35.18-⑥ 前端消费面验证（本批新增证据，只读）
+
+前一轮的 L4 探针只覆盖了契约层的动作集合，未覆盖 **前端执行适配器**。本轮补做：把真实
+`ui.contract.v2` 交付契约（3 个状态 × 系统身份／项目负责人身份 ＋ 重开后，共 8 份，
+`tmp/uc4-g09-batchB/v2-contract/`，SAVEPOINT/ROLLBACK 无残留）喂给真实前端 presenter：
+
+```
+decodeContractV2Snapshot → createContractV2Store → presentContractV2Form('edit')
+  → collectCanonicalFormActions / buildContractFormActions
+  → resolveCanonicalFormActionExecution / validateCanonicalFormActionExecutors
+```
+
+| 交付状态 | 解码 | 渲染器 reopen 引用 | 可见 | 执行适配器 | 原生 modifier | workflow 行 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `draft` | ok | 0 | 0 | n/a | 隐藏 | `submit`／`cancel` |
+| `active` | ok | 0 | 0 | n/a | 隐藏 | `complete`／`cancel` |
+| `closed` | ok | 1 | 1（`enabled=true`） | `contract-action` | 可见 | `reactivate` |
+| 重开后（`active`） | ok | 0 | 0 | n/a | 隐藏 | `complete`／`cancel` |
+
+- `closed` 交付契约上 `validateCanonicalFormActionExecutors` 返回 `null`：
+  「重新打开」**不**触发 `CANONICAL_FORM_ACTION_EXECUTION_ADAPTER_MISSING`（新增动作键的已知风险点已排除）。
+- 非 `closed`：`statusContract.buttonStatus` 对该后端身份给出 `visible=false` /
+  `ACTION_NOT_VISIBLE_IN_STATE`，原生 modifier `state != 'closed'` 求值为真（隐藏）。
+- 正对照：把原生 `native_locator` 换成未绑定的 `button[9]` 时解析立即返回
+  `CANONICAL_FORM_ACTION_EXECUTION_ADAPTER_MISSING` ⇒ 上述断言非空洞。
+- 证据：`tmp/uc4-g09-batchB/consume-probe.ts`（探针）、`consume-probe.log`（结果）、
+  `v2-contract-dump.py` / `v2-contract-dump.log`（契约投影），见 `tmp/uc4-g09-batchB/README.md`。
+
+#### 8.35.18-⑦ 残留登记（**未**纳入本批，如实登记，不缩范围）
+
+| 项 | 事实 | 最小修正范围 | 本批判定 |
+| --- | --- | --- | --- |
+| `575:state_write_bypass` | 「已关闭且有有效结算引用」的登记上 `write({"state": "active"})` 仍被接受，与 871／570 的 S1 守卫同类缺口 | P1 策略把 575 `state` 设为只读 ＋ `write()`／`create()` 状态守卫，并改掉以 `state=` 植入状态的既有夹具 | **未修**，需在下一轮带夹具改造一起做 |
+| 前端 transition 注册表 | `workflowActionAvailability.ts` 的 `knownKeys`／`workflowActionMethodAliases` 未登记 `reactivate`／`action_reopen`，非 `closed` 状态下可用性解析降级为 `unmanaged`（`isWorkflowTransitionMethod=false`、`shouldShowWorkflowAction=true`） | 在该注册表补 `reactivate` 键与 `action_reopen` 别名 | **未改**：该状态下的实际拦截来自交付状态契约＋原生 modifier，后端仍拒绝非法转移（fail-closed）；是否统一语义待产品方决定 |
+| `test_product_reports.py` | 既有失败：夹具以 `state="confirmed"` 植入状态被 S1 守卫拒绝 | 改夹具为执行合法转移 | 与本批无关，如实登记 |
+
+（**后续**：§8.35.19-⑧ 记该三项的最新状态——`575:state_write_bypass` 已关闭、`test_product_reports.py` 已修正；
+前端 transition 注册表仍未改。本表保留批次 B 当时的判定，不回填。）
+
+**产品口径待确认（非缺陷，取保守口径）**：`action_reopen` 在**任一**登记明细已被结算引用时即拒绝重开，
+即使本次想改的是未被引用的其它明细。之所以取该口径：重开动作的用途是「重新取得可编辑性」，后端无法
+从状态转移本身判断意图，而平台对结算引用明细的既有保护（`line.unlink()` 拒绝删除）已是「引用即不可改」
+的同形口径，故选择 fail-closed 并把出口指向结算调整。若产品方要求「可在被引用记录上重开、但被引用明细
+仍不可改」，则需改为**逐行冻结**（`settlement_line_ids` 命中的 `line_ids` 行级只读＋行级写入守卫），
+属下一轮范围。
+
+#### 8.35.18-⑧ 状态与边界
+
+- **本轮未做且未授权**：冻结候选、`ci.local.quick`、独立复核、外部归档、更新／合并 #499、部署、G10、
+  89 入口整体交付、台账扣减／补登（**保持 22**）、草稿发布／撤销／删除、工作树／分支清理、浏览器矩阵重跑。
+- 现场：开发库 `sc_dev_demo` 已升级到本轮工作树，575 三个状态可在浏览器直接复核
+  （重点：`已关闭` 态事实只读、「重新打开」按钮、有结算引用时被拒）。
+- 边界重申：**更新 PR ≠ 产品验收通过**；**独立复核通过 ≠ 产品验收通过**；
+  **G08 主线集成 ≠ 部署 ≠ 89 入口整体交付完成**。
+
+### 8.35.19 批次 C：575 状态写入窗口收口（受控动作之外不可写状态）（2026-09-19，**实施轮**；未冻结、未跑 Quick、未更新 #499）
+
+本批次关闭 §8.35.18-⑦ 登记的 `575:state_write_bypass`。批次 B 交付了 `已关闭` 的事实冻结与受控
+「重新打开」，但状态本身仍是可写字段：`write({"state": "active"})` 可以直接掀开冻结窗口，绕过
+`action_reopen()` 的三重前置（项目负责人权限、`closed` 入参、结算引用检查），也绕过
+`action_register()`／`action_close()` 的业务锚点与明细校验。缺口与 871／570 在 S1 修正前属同一类。
+
+#### 8.35.19-① `state` 不是可填字段：P1 载体与 871／570 对齐
+
+- `data/p1_daily_business_form_orchestration_contract_data.xml`：575 的交付载体
+  `sc_subcontract_register_p1_form_business_facts_v1` 的 form `fields` 首位新增
+  `{'name': 'state', 'sequence': 10, 'readonly': True}`。871／570 的同一载体早已有此声明，575 是遗漏。
+- 交付契约的**三处投影**（布局节点 `children[*]`、`fieldInfo` 描述符、`widgetList[*].fieldDescriptor`）
+  在 8 份契约（4 状态 × 系统身份／项目负责人身份）中由 `readonly=false` 全部转为 `true`
+  ⇒ `collectWritableValues` 的 `!node.readonly` 过滤与 `nativeStatusbar.readonly`
+  两条保存路径都不会再把 `state` 带进保存载荷（见本批 §8.35.19-⑥）。
+- 产品含义：575 的状态条与 871／570 一样退化为展示，状态推进只走 header 动作／workflow 行；
+  这是「状态由受控业务动作推进」在交付面上的一致表达，不是把表单锁死。
+
+#### 8.35.19-② 后端状态守卫：复用同一个 token，未新造机制
+
+- `models/core/subcontract_management.py` 顶部新增 `from .equipment_management import
+  _COST_SOURCE_STATE_CONTEXT_KEY, _COST_SOURCE_STATE_TOKEN`（S1 既有机制，871／570／材料验收共用）。
+- `:470 create()`：非 token 上下文且 `any(vals.get("state", "draft") != "draft")` 时抛
+  `UserError("分包登记状态只能通过受控业务动作推进。")`——创建入口不能植入已推进的状态。
+- `:511 write()`：`"state" in vals` 且非 token 上下文即拒绝；**守卫置于
+  `sc_skip_subcontract_contract_authority` 放行之前**，因为该内部上下文只用于合同一致性回写事实字段，
+  不应顺带获得状态写入能力。
+- `:730/:740/:758/:769/:777`：`action_register`／`action_close`／`action_reopen`／`action_cancel`／
+  `action_reset_draft` 的状态写入改为 `self._write_cost_source_state({...})`；`:780` 新增
+  `_write_cost_source_state()`（`with_context` 注入 token）。受控动作的语义、前置校验与顺序均未变。
+
+#### 8.35.19-③ 夹具改走合法路径（原「既有失败」随之消失）
+
+- `tests/test_product_reports.py`：夹具原以 `state="confirmed"` 植入 `sc.labor.usage`、以
+  `state="active"` 植入 `sc.subcontract.register`，被 S1 状态守卫（§8.35.17-③）拒绝。
+  现改为执行**合法转移**：`usage.action_submit(); usage.action_confirm();` 与
+  `register.action_register()`。这是批次 B 如实登记的既有失败，本批按「夹具不得绕过交付规则」收口。
+- `sc.subcontract.settlement` 仍以 `state="confirmed"` 创建——该模型不在本批窗口内，未改动。
+
+#### 8.35.19-④ 断言：新增、零删除
+
+- `tests/test_usage_performance_native_lowcode.py`：在 `test_the_subcontract_register_freezes_only_after_closing`
+  内新增——`create({"state": "active", ...})` 被拒；`write({"state": "active"})` 被拒且状态不变；
+  `closed` ＋ 有结算引用时 `write({"state": "active"})` 与
+  `with_context(sc_skip_subcontract_contract_authority=True).write({"state": "active"})` **均被拒**且仍为 `closed`。
+- 字段完整性、结构同源、角色隔离断言全部保留，**未删除任何断言**，也未把状态守卫写成
+  「必填 ∩ 可填」式的窄断言（`name`／日期等有合法生成来源的字段不在守卫范围内）。
+- **既有 pin 分类补登（非删除）**：§8.35.19-① 让 575 的 P1 载体新增了 `state` 只读声明，
+  `test_the_readonly_policy_keeps_only_facts_with_a_legal_carrier` 的「每个声明字段都必须被分类」不变量
+  因此变成红灯（`Items in the second set but not the first: 'state'`）。按该测试自身的口径补登
+  `FACT_CARRIERS["sc.subcontract.register"]["state"] = "workflow"` 与
+  `EXPECTED_READONLY_POLICY["sc.subcontract.register"] += ("state",)`——与 871／570 已有的同类登记
+  （`"state": "workflow"`）一致，**不是放宽断言**：`state` 由工作流供给而非用户录入，`_legal_carrier`
+  仍须给出非空来源，用户录入字段仍不得出现在策略只读集中。
+
+#### 8.35.19-⑤ 分层验证（本轮 dirty 工作树，未绑定冻结身份）
+
+| 层 | 内容 | 结果 | 证据 |
+| --- | --- | --- | --- |
+| L1 | `local.dev.upgrade`（`smart_construction_core`） | PASS（`[local.dev.ready] PASS` ＋ demo authority PASS） | `tmp/uc4-g09-batchC-upgrade.log` |
+| L2-1 | 本组入口类 ＋ 报表类 ＋ 分包成本登记类（**最终树**复跑） | 0 failed / 0 error of 32 | `tmp/uc4-g09-batchC-l2-1-final.log`（首轮 `-l2-1.log` 已作废，见下） |
+| L2-2 | `TestP0StateClosure` ＋ `TestWorkflowContractBackend`（**最终树**复跑） | 1 failed / 7 error of 104，**与批次 A 基线逐项一致** | `tmp/uc4-g09-batchC-l2-2-final.log`、基线 `tmp/uc4-g09-batchA/l2-contract-class-BASE.log` |
+| L2-3 | `smart_core` 两个分包契约类（累计结算 ORM、登记结算授权 ORM）（**最终树**复跑） | 0 failed / 0 error of 66 | `tmp/uc4-g09-batchC-l2-3-final.log` |
+| L2-4 | 源码级边界测试（AST 解析 `subcontract_management.py`） | 8 测全过 | `addons/smart_construction_core/tests/test_um_p3_subcontract_register_settlement_authority_boundaries` |
+
+- L2-2 的 1 failed / 7 error **不是本批引入**：错误签名与批次 A 基线用
+  `grep -o "ERROR: TestWorkflowContractBackend\.\w*"` 逐项 diff 为**完全一致**的空差集（各 7 条）；
+  唯一 1 failed 亦同名（`test_profile_methods_resolve_to_existing_model_methods`）。
+- 相比批次 B，`TestProductReports` 的既有失败因 §8.35.19-③ 的夹具修正而**消失**。
+- **首轮分层日志属陈旧证据**：`tmp/uc4-g09-batchC-{l2-1,l2-2,l2-3}.log` 的时间戳（18:48／18:49／18:51）
+  **早于**本轮 L1 升级日志（18:54），且 `test.safe` 是 no-upgrade 运行 ⇒ 那三份日志取自
+  **尚未装载 §8.35.19-① 载体改动的库内契约**，不能代表最终树。按「最终树复跑」处置：三组均复跑
+  （`-final.log`），旧日志作废。复跑暴露的正是 §8.35.19-④ 末条那条 pin 分类红灯——
+  **该红灯被此前三份「全绿」记录掩盖**，本轮如实登记并修复，不复用陈旧结论。
+
+#### 8.35.19-⑥ L3 回滚事务：64 步全过、`gaps` 清空
+
+`tmp/uc4-g09-batchC/g09_txn_verify.py`（批次 B 脚本的继承版，`tmp/uc4-g09-batchB/` 保留原脚本与原
+`l3-txn.log` 作为**修正前**证据，两者不混用）：
+
+- 批次 B：58 步全过，但 `gaps` 含 1 条 `575:state_write_bypass`（如实登记「观察到、未修」）。
+- 批次 C：**64 步全过、`failed=[]`、`gaps=[]`**（`tmp/uc4-g09-batchC-txn.log`）。移除 1 条 gap，
+  新增 6 步：`575:direct_state_write_refused`、`575:state_write_refused_under_authority_skip`、
+  `575:foreign_token_object_refused`、`575:create_non_draft_refused`、
+  `575:token_context_state_write_allowed`、`575:state_restored_after_positive_control`。
+- **正对照非空洞**：token 上下文里的状态写入仍然成功（`closed → active → closed`），证明上述拒绝是
+  **状态闸门**而不是「状态永不可写」的笼统封锁——这正是不采用「前端强行解除只读」的验证依据。
+- 全流程在 `SAVEPOINT`／`ROLLBACK` 内完成：`rollback:no_labor_usage_left`／`no_equipment_usage_left`／
+  `no_subcontract_left` 均为 0 残留，未创建任何业务样本。
+
+#### 8.35.19-⑦ 前端消费面复算（只读）
+
+用批次 C 重新投影的 8 份真实 `ui.contract.v2`（`tmp/uc4-g09-batchC/v2-contract/`，SAVEPOINT/ROLLBACK）
+复算批次 B 的全部消费面断言，并新增状态投影断言：
+
+| 交付状态 | 解码 | `state` 三处投影 | 渲染器 reopen 引用 | 可见 | 执行适配器 | modifier | workflow 行 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `draft` / `active` / 重开后 | ok | `readonly=true` | 0 | 0 | n/a | 隐藏 | `submit`+`cancel` / `complete`+`cancel` |
+| `closed` | ok | `readonly=true` | 1 | 1（`enabled=true`） | `contract-action` | 可见 | `reactivate` |
+
+（第二身份已在 §8.35.19-⑩ 的核清中由 `demo_role_project_manager` 更正为 `demo_role_pm`
+——前者解析角色是 `project_member`，后者才是 `pm`；用更正后的身份**整体复跑**，上表逐项不变。）
+
+- 前后对照（同一探针、同一记录）：批次 B 契约 `state` 三处投影为 `readonly=false`，批次 C 为
+  `readonly=true`，系统身份与项目负责人身份**逐项一致**。
+- `closed` 仍为 `validateCanonicalFormActionExecutors → null`（不触发
+  `CANONICAL_FORM_ACTION_EXECUTION_ADAPTER_MISSING`）；正对照（未绑定 `button[9]`）仍立即返回该错误码。
+- 证据：`tmp/uc4-g09-batchC/{v2-contract-dump.py,v2-contract-dump.log,v2-contract/,consume-probe.ts,consume-probe.log}`。
+
+#### 8.35.19-⑧ §8.35.18-⑦ 残留登记的状态更新
+
+| 项 | 批次 B 判定 | 批次 C 判定 |
+| --- | --- | --- |
+| `575:state_write_bypass` | 未修 | **已关闭**：P1 载体 `state` 只读（§8.35.19-①）＋ `create()`／`write()` 状态守卫（§8.35.19-②）＋ 夹具改走合法动作（§8.35.19-③），三层齐备并有 L3 正／反断言与前端投影对照 |
+| `test_product_reports.py` | 与本批无关，如实登记 | **已修正**（§8.35.19-③），L2-1 由「既有失败」转为 32 测全过 |
+| 前端 transition 注册表 | 未改，待产品方决定 | **仍未改**：非 `closed` 状态下 `isWorkflowTransitionMethod('action_reopen')=false`、`shouldShowWorkflowAction=true` 的降级事实在本批复算中**逐项重现**；实际拦截仍来自交付状态契约＋原生 modifier＋后端拒绝（fail-closed）。最小改动仍是在 `workflowActionAvailability.ts` 补 `reactivate` 键与 `action_reopen` 别名 |
+
+**产品口径待确认（非缺陷，取保守口径）**：沿用 §8.35.18-⑦ 的记载——`action_reopen` 在**任一**明细已被
+结算引用时整单拒绝重开；若产品方要求「可重开但被引用明细行级冻结」，属下一轮范围。
+
+#### 8.35.19-⑨ 状态与边界
+
+- **本轮未做且未授权**：冻结候选、`ci.local.quick`、独立复核、外部归档、更新／合并 #499、部署、G10、
+  89 入口整体交付、台账扣减／补登（**保持 22**）、草稿发布／撤销／删除、工作树／分支清理、浏览器矩阵重跑。
+- 现场：开发库 `sc_dev_demo` 已升级到本轮工作树；浏览器复核入口 `/f/sc.subcontract.register/1`、
+  `/f/sc.subcontract.register/new`（重点：新建页 `state` 不再是可填字段、状态条为展示、
+  `已关闭` 态事实只读且「重新打开」可用、有结算引用时被拒）。
+- 复核实名口径：登记验收身份为 `business_config_admin`——**登记夹具载体在 dev 库缺失**（环境缺陷），
+  合法取得路径见 -⑩；当前会话身份 `sc_test_admin`（解析角色 `system_admin`）**不计作登记验收身份通过**；
+  `记录人：Demo-全能力` 是字段值，不等于登录会话用户。
+- 边界重申：**更新 PR ≠ 产品验收通过**；**独立复核通过 ≠ 产品验收通过**；
+  **G08 主线集成 ≠ 部署 ≠ 89 入口整体交付完成**。
+
+#### 8.35.19-⑩ 登记验收身份核清（2026-09-20 只读复测；修正 -⑨ 的含糊表述）
+
+-⑨（以及批次 B 的 README）把登记身份写成「`business_config_admin` 在 `sc_dev_demo` **不可用**」。
+该表述**不准确**，且与 §8.35.13-③/-④ 的既有结论并列时会产生误导。按三层拆开重述，并给出合法取得路径。
+
+**第一层：dev 库 `sc_dev_demo` 的会话身份。**
+
+| 身份 | 解析角色 | 依据 | 结论 |
+| --- | --- | --- | --- |
+| `sc_test_admin`（uid 51，本次会话） | **`system_admin`** | 持 `base.group_system`；交付 profile 的 `role_precedence` 首位即 `system_admin`（实测 `["system_admin","business_full","business_config_admin","executive","owner","pm","finance","cost"]`） | **不是**登记验收身份（与产品方浏览器观察「当前岗位：系统管理员」一致，属**既定优先级**，非缺陷） |
+| `sc_business_admin`（uid 6） | `business_config_admin` | 持 `group_sc_cap_business_config_admin`；库内唯一该角色账号 | **不得**用作验收身份：它是 2026-09-07 已从产品面移除的**退役残留载体**（见 `delivery_context_switch_log_v1.md:8668`），且其密码**不是** demo 凭据（`SC_DEMO_USER_PASSWORD` 哈希校验 `false`；`sc_test_admin`／`demo_full`／`wutao`／`demo_role_project_manager` 均为 `true`） |
+
+**第二层：登记夹具载体在 dev 库缺失——按声明这是**预期**，缺口在验收运行时。**
+
+`smart_construction_acceptance_fixture` **installed**，而
+`…acceptance_fixture.fe_user_config_admin`、历史拼写 `fe_fe_config_admin` 与用户
+`fixture_role_config_admin` **均为空**（今日复测仍成立）。
+
+**权威依据**（`.agent/context.yaml:76-81`）：
+
+```yaml
+acceptance_identity:
+  login: fixture_role_config_admin
+  role: business_config_admin
+  carrier: smart_construction_acceptance_fixture.fe_user_config_admin
+  platform_admin_separate: true
+  fixture_only: true
+```
+
+且 `data_policy.acceptance` 为 `odoo_demo: false`／`demo_fixture: true`／`explicit_guard_required: true`，
+而持久 dev 库是 `synthetic_fixture: explicit_only`。⇒ 登记身份**按声明就不应存在于 dev 库**，
+dev 库无该用户**与声明一致，不构成 dev 库缺陷**；§8.35.13-③ 的 `environment_defect` 定性应收窄为
+「**验收运行时未 provision**，登记角色下的入口级复核尚未执行」。这与产品方所见的
+`sc_test_admin`＝`system_admin` 会话同源，两者都不推翻产品结论。
+
+**第三层：登记验收身份的合法取得路径 = 验收运行时，而非 dev 库。**
+
+- fixture 工具 `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py:967`
+  创建 `fixture_role_config_admin`，持 `smart_construction_core.group_sc_role_business_admin`；
+  该角色组**蕴含** `group_sc_cap_business_config_admin`（`security/sc_role_groups.xml:22`），
+  且 `core_extension_hook_facts.py:19` 把两者并列为 `business_config_admin` 的载体组
+  ⇒ 该夹具身份**解析角色确为登记角色 `business_config_admin`**。
+- 入口：`make acceptance.frontend.fixture`（`SC_ACCEPTANCE_FIXTURE_PASSWORD` 未设置时自动生成），
+  目标库 `FRONTEND_ACCEPTANCE_DB=sc_frontend_acceptance`、前端 `:5175`（`make/runtime_ops.mk:1770` /
+  `make/dev.mk:514`）。当前该运行时只有 redis 容器在跑，odoo／db 未起。
+
+**因此**：登记角色下的入口级验收应在**验收运行时**做（fixture 身份 + `sc_frontend_acceptance`），
+dev 库（`:5174`）上的复核必须显式标注为 `system_admin` 会话，**不能**替代登记身份结论。
+最小解封路径（**P4／环境范围，本轮未执行、仅登记**）：起验收运行时并跑一次
+`make acceptance.frontend.fixture`，即得登记角色身份。
+
+**同批修正（我方证据的标签精度，并已重跑）**：批次 B/C 前端探针把 `demo_role_project_manager` 读作
+「项目负责人身份」，但交付解析器对它给出的角色是 **`project_member`**（持 `group_sc_cap_project_read`）；
+本库真值为 `pm` 的具名会话是 **`demo_role_pm`**（同样持 `group_sc_cap_project_manager`）。
+已把 §8.35.19-⑦ 的第二身份改为 `demo_role_pm` 并**整体复跑契约投影与前端消费面**：
+`pm_role_code=pm`，`state` 三处投影 8 份全为 `readonly=true`，`closed` 的 reopen
+（1 引用／可见／`enabled=true`／解析为 `contract-action`／适配器校验 `null`）与正对照
+（未绑定 `button[9]` → `CANONICAL_FORM_ACTION_EXECUTION_ADAPTER_MISSING`）**与上一轮逐项一致**
+⇒ 结论不依赖被误标的那个会话。
+
+**可复现证据**：`tmp/uc4-g09-batchC/identity-probe.py` / `identity-probe.log`
+（只读；离线校验 demo 凭据哈希，不打印口令、不改任何数据）。
+
+
+### 8.35.20 补验轮：新建态可办理性（交付契约级，2026-09-20；**未冻结、未跑 Quick、未更新 #499、未合并**）
+
+**触发**：产品方浏览器复核在 `291c6ee7` 上给出阻断——「新建页能打开，却尚未证明能办理」。
+批次 A／B／C 证明的是**记录态**（字段只读策略、状态窗口、回滚事务），**没有**证明**新建态**下
+必需事实确实可获得；本补验只补这一层，**未改产品代码**。
+
+**状态**：工作树仍为 `012c8ad4`（dirty，12 文件；本轮仅新增本文件与 `tmp/` 证据），台账保持 **22**，
+#499 保持 **OPEN／未合并**（`headRefOid=012c8ad4…`、`mergeStateStatus=CLEAN`）。
+
+#### 8.35.20-① 方法：直接取交付面真正交给 `/new` 的契约
+
+- `render_profile="create"` ＋ `record_id="new"` 的真实 `ui.contract.v2` 投影；
+  4 个入口（871 劳务成本登记、570 机械台班两套入口、575 分包登记）× 2 个身份 = **8 份**；
+  全程 `SAVEPOINT → ROLLBACK`，未建业务样本。
+- 再把 8 份契约跑**真实前端管线**：`decodeContractV2Snapshot → createContractV2Store →
+  presentContractV2Form(store, 'create', {})`，断言落在 presenter 产出的节点上，而不是声明文本上。
+- 运行时：注册 dev profile（`sc-local-dev` / `sc_dev_demo`，:8070＋:5174），模块已在本树上于 18:54 升级
+  （`tmp/uc4-g09-batchC-upgrade.log`），本轮**未**再升级。
+
+#### 8.35.20-② 结果：8/8 通过
+
+| 契约面 | 模型 | 会话／解析角色 | pageAuth | 项目 | 用户事实可填数 | 空办理提示渲染 | sabotage 对照 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `equipment_usage_register` | `sc.equipment.usage` | `__system__` / **system** | `edit` | 必需·可填 | 10 | 否 | 拒绝（按预期） |
+| `equipment_usage_shift` | `sc.equipment.usage` | `__system__` / **system** | `edit` | 必需·可填 | 10 | 否 | 拒绝（按预期） |
+| `labor_cost_register` | `sc.labor.usage` | `__system__` / **system** | `edit` | 必需·可填 | 12 | 否 | 拒绝（按预期） |
+| `pm-equipment_usage_register` | `sc.equipment.usage` | `demo_role_pm` / **pm** | `edit` | 必需·可填 | 10 | 否 | 拒绝（按预期） |
+| `pm-equipment_usage_shift` | `sc.equipment.usage` | `demo_role_pm` / **pm** | `edit` | 必需·可填 | 10 | 否 | 拒绝（按预期） |
+| `pm-labor_cost_register` | `sc.labor.usage` | `demo_role_pm` / **pm** | `edit` | 必需·可填 | 12 | 否 | 拒绝（按预期） |
+| `pm-subcontract_register` | `sc.subcontract.register` | `demo_role_pm` / **pm** | `edit` | 必需·可填 | 2 | 否 | 拒绝（按预期） |
+| `subcontract_register` | `sc.subcontract.register` | `__system__` / **system** | `edit` | 必需·可填 | 2 | 否 | 拒绝（按预期） |
+
+必需事实（真实契约口径）：
+
+| 契约面 | 必需事实 |
+| --- | --- |
+| `equipment_usage_register` | `currency_id`、`equipment_name`、`name`、`operator_name`、`project_id`、`usage_date`、`usage_hours`、`usage_location`、`usage_qty` |
+| `equipment_usage_shift` | `currency_id`、`equipment_name`、`name`、`operator_name`、`project_id`、`usage_date`、`usage_hours`、`usage_location`、`usage_qty` |
+| `labor_cost_register` | `currency_id`、`labor_team`、`name`、`project_id`、`settlement_state`、`usage_date`、`usage_type`、`work_content`、`worker_qty` |
+| `pm-equipment_usage_register` | `currency_id`、`equipment_name`、`name`、`operator_name`、`project_id`、`usage_date`、`usage_hours`、`usage_location`、`usage_qty` |
+| `pm-equipment_usage_shift` | `currency_id`、`equipment_name`、`name`、`operator_name`、`project_id`、`usage_date`、`usage_hours`、`usage_location`、`usage_qty` |
+| `pm-labor_cost_register` | `currency_id`、`labor_team`、`name`、`project_id`、`settlement_state`、`usage_date`、`usage_type`、`work_content`、`worker_qty` |
+| `pm-subcontract_register` | `currency_id`、`name`、`project_id`、`register_date`、`subcontract_scope` |
+| `subcontract_register` | `currency_id`、`name`、`project_id`、`register_date`、`subcontract_scope` |
+
+**结论**：产品方看到的「项目为空且不可填」在交付契约上已不成立——`project_id` 在全部 8 个新建面上
+`required=true` **且** `readonly=false`，`state` 在新建面不可填。
+
+#### 8.35.20-③ 断言清单（新增，零删除）
+
+- **A** `project_id`：存在、必需、可填（正是产品方观察到的那个字段）。
+- **B** 全部「用户录入」事实在 create 面可填（871 12／570 10／575 2，与
+  `USER_SUPPLIED_FACTS` 同口径）。
+- **C** `state` 在 create 面**不可填**。
+- **D** 每个必需事实要么可填、要么由**具名**服务端载体供给（逐个列出，不做笼统豁免）。
+- **E** 新建保存载荷（`collectWritableValues` 在无 `recordId` 时的过滤条件）覆盖全部用户事实。
+- **F** 办理提示宿主为 `alert alert-info` / `role=status` 且绑定 `invisible="not processing_advisory"`；
+  不变量是**等价**（有内容才渲染、空计算不渲染），见 **-⑨**（本条最初写成「恒隐」，-⑨ 已更正）。
+- **sabotage 对照**：把契约副本的 `project_id` 改回 `readonly=true` 后，同一断言**立即失败**
+  ⇒ 绿色结果不是空断言。
+
+#### 8.35.20-④ 会话身份口径（避免与「记录人」字段值混用）
+
+- 本次两个身份：odoo shell `__system__`（与 dev 会话 profile 的 `system_admin` 优先级同源）与
+  `demo_role_pm`（交付解析器实测 **`pm`**）。
+- **未**使用 `demo_role_project_manager`：解析器读它是 `project_member`，不是 `pm`（见 §8.35.19-⑩）。
+- `记录人：Demo-全能力` 是**字段值**，不构成登录会话用户；本节的会话身份取自实际渲染环境。
+
+#### 8.35.20-⑤ 本补验**不**证明什么（明确边界，避免过度宣称）
+
+- **不是浏览器旅程**：未做未保存录入、日期控件、联动字段的交互验证，也未点击保存。
+- **不是登记验收身份**：`business_config_admin` 的入口级复核仍需验收运行时
+  （`make acceptance.frontend.fixture` ＋ `sc_frontend_acceptance`），见 §8.35.19-⑩；本轮未执行。
+- **`E` 为仿真口径**：按 `collectWritableValues` 的过滤条件复算，未调用该 composable 本身，也未执行服务端默认值。
+- **`name` 的默认值未在本层执行**：871／570 的 `name` 在 create 面 `readonly=true`（序列号载体），
+  其取值属服务端默认与 L3／新单实测范围。
+
+#### 8.35.20-⑥ 证据包更正（本轮）
+
+批次 C 证据包 `tmp/uc4-g09-batchC/README.md` 的「8 份契约 × `demo_role_project_manager`」与
+「契约投影探针 … `demo_role_project_manager`」两处**与重跑后的实际标签不一致**（重跑用的是
+`demo_role_pm`，8 份文件即 `pm-*.json`）。已就地更正为 `demo_role_pm` 并保留其下的「标签精度修正」段，
+未回填批次 B 自身的历史证据（批次 B 确系用 `demo_role_project_manager` 跑出）。
+
+#### 8.35.20-⑦ 状态与边界
+
+- **批次状态**：定向补验（新建态可办理性）完成；仍**不是**「批次验收完成」——产品复核未通过前不得冻结候选。
+- **主线／部署**：未合并、未部署、台账 **22** 不变（预期核减仅在合入后按实际退役消费者单独审计）。
+- **下一步（未执行，等待授权）**：① 产品方在 dev 会话（`:5174`，会话身份 `system_admin`）实际点击
+  `/f/sc.labor.usage/new`、`/f/sc.equipment.usage/new`、`/f/sc.subcontract.register/new`；
+  ② 如需登记角色口径，起验收运行时跑 `make acceptance.frontend.fixture`（P4／环境范围，需单独授权）；
+  ③ 产品复核通过后才：冻结候选 → 一次 exact-head Quick → 独立复核 → 外部归档 → 受管更新 #499。
+- **证据包**：`tmp/uc4-g09-creatability/`（`dump-create-contract.py`、`dump.log`、
+  `creatability-probe.ts`、`creatability-probe.log`、`creatability-summary.json`、
+  `v2-contract-create/*.json`、`README.md`）。
+
+
+#### 8.35.20-⑧ HTTP 服务路径层复核（浏览器实际收到的字节）
+
+**动机**：-① 走的是**进程内** handler 调用；产品方看到的是**页面**。两层可能不同（-⑨ 正是如此）。
+本层沿浏览器自己的路径取同一份契约：dev 前端（Vite，`:5174`）`/api/v1/intent` 代理 →
+平台意图层，`login` 意图取 Bearer token，再以 `ui.contract.v2` ＋ `render_profile="create"`
+取 871／851／570／575 的新建契约（**只读**：登录读接口 + 合同读接口，未写业务数据）。
+
+- 身份绑定：token 内的 `user_id` 与交付解析器给出的 uid **逐项相等**（`system_admin` uid 51、
+  `pm` uid 42），不是「谁登录了」的推断：
+```json
+{
+ "sc_test_admin": {
+  "ok": true,
+  "has_token": true,
+  "token_uid": 51,
+  "token_db": "sc_dev_demo",
+  "resolved_uid": 51,
+  "role_code": "system_admin",
+  "uid_binding": true
+ },
+ "demo_role_pm": {
+  "ok": true,
+  "has_token": true,
+  "token_uid": 42,
+  "token_db": "sc_dev_demo",
+  "resolved_uid": 42,
+  "role_code": "pm",
+  "uid_binding": true
+ }
+}
+```
+- 一处**调用口径**差异已记入：HTTP 侧**不能**带 `record_id="new"`
+  （意图层返回 `INTENT_NOT_FOUND 记录 new 不存在`）；前端新建页正是只发 `render_profile="create"`。
+  -① 的进程内探针带了 `record_id="new"` 仍可解析，故两处口径不同、结论相同。
+- 结果 **8/8**：`ok=true`、布局已交付、`project_id` 必需且可填、`state` 不可填、`pageAuth=edit`。
+
+| 契约面 | action | 会话／解析角色 | pageAuth | 项目 | 办理提示 | sabotage 对照 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `equipment_usage_register` | 570 | `sc_test_admin` / **system_admin** | edit | 必需·可填 | 有内容→可见 | 拒绝（按预期） |
+| `equipment_usage_shift` | 851 | `sc_test_admin` / **system_admin** | edit | 必需·可填 | 有内容→可见 | 拒绝（按预期） |
+| `labor_cost_register` | 871 | `sc_test_admin` / **system_admin** | edit | 必需·可填 | 有内容→可见 | 拒绝（按预期） |
+| `pm-equipment_usage_register` | 570 | `demo_role_pm` / **pm** | edit | 必需·可填 | 有内容→可见 | 拒绝（按预期） |
+| `pm-equipment_usage_shift` | 851 | `demo_role_pm` / **pm** | edit | 必需·可填 | 有内容→可见 | 拒绝（按预期） |
+| `pm-labor_cost_register` | 871 | `demo_role_pm` / **pm** | edit | 必需·可填 | 有内容→可见 | 拒绝（按预期） |
+| `pm-subcontract_register` | 575 | `demo_role_pm` / **pm** | edit | 必需·可填 | 有内容→可见 | 拒绝（按预期） |
+| `subcontract_register` | 575 | `sc_test_admin` / **system_admin** | edit | 必需·可填 | 有内容→可见 | 拒绝（按预期） |
+
+⇒ 新建态可办理性**不是**进程内幻觉：产品页面实际收到的契约同样给出可填的项目与不可填的状态。
+
+#### 8.35.20-⑨ 更正：办理提示的不变量是「有内容才渲染」，不是「恒隐」
+
+-①／-③ 的 **F** 原写成「空计算下 presenter 解析为不可见 ⇒ 空提示不再渲染」。该结论只在**进程内**那一面
+成立（runtimes 下 `processing_advisory` 计算为空）。HTTP 服务路径层交付的却是**非空**内容：
+
+```
+871 建议补充劳务单位；建议补充工种；建议补充施工部位；建议补充带班人；建议补充用工单价；建议上传用工依据
+570 建议关联来源设备申请；建议补充供应单位；建议补充设备编号；建议补充规格型号；建议上传台班依据
+575 建议关联来源分包申请；建议关联分包合同；建议补充履约期间；建议补充管理要求；建议上传分包成本依据
+```
+
+此时提示**应当可见**——它是「还缺什么」的办理指引，不是占位符。故不变量修正为
+**`办理提示可见 ⟺ 其值非空`**，并已在断言里按等价形式实现（含两侧对照）：
+
+| 面 | 提示值 | 渲染 | 结论 |
+| --- | --- | --- | --- |
+| 进程内（-①） | 空 | 不可见 | 符合 |
+| HTTP 服务路径（-⑧） | 非空（上列指引） | 可见 | 符合 |
+
+产品方在 `291c6ee7` 上看到的「办理提示 —」= **空值仍渲染成占位横线**，本批修的是该等价关系，
+而不是「把提示关掉」。**同一条 create 面在两个会话上下文下投影出不同的提示内容**，这也是本层必须存在的理由：
+仅凭进程内投影会对产品面作出错误结论。
+
+#### 8.35.20-⑩ 入口族定位更正：从手写 4 入口改为交付清单 7 入口
+
+-①～-⑨ 沿用手写的 4 入口标签（871／851／570／575）。这是**不精确的**：按交付实际，共享这三张表单的入口共
+**7 个**，且存在两个此前未被识别的兄弟关系：
+
+| 共享表单 | 模型 | 入口 |
+| --- | --- | --- |
+| `view_sc_labor_usage_form`（view 1461） | `sc.labor.usage` | a561 劳务用工、a562 方单、a563 零星用工、a871 劳务成本登记 |
+| `view_sc_equipment_usage_form`（view 1476） | `sc.equipment.usage` | a570 机械台班登记、a851 机械台班记录 |
+| `view_sc_subcontract_register_form`（view 1491） | `sc.subcontract.register` | a575 分包成本登记 |
+
+判据（`entry-family.py`，只读、运行库解析）：action 的 `view_mode` 含 `form`，且**未 pin 表单视图**（无 `view_id` ⇒ 落
+primary form；pin 的是 tree 等非表单视图 ⇒ form 仍回退 primary form）。pin 了**表单**的入口另立一面，本轮
+`excluded: []`（无此类入口）。原手写表误把「871／851／570／575」当作入口族，也误把「871／562／563」当作共享视图
+兄弟；真值见上表。**判据不写成代码就会漂移**，故三层探针统一消费 `entry-family.json`，断言里额外比对
+`summary` 的键集与交付清单**逐项相等**（漏采即失败）。
+
+#### 8.35.20-⑪ 全族两层结果：14/14 收齐，代表入口全绿
+
+7 入口 × 2 身份 = **14 份契约**，①②两层各自收齐、结论一致：`ok=true`、`pageAuth=edit`、`project_id` **必需且可填**、
+`state` 不可填、`name` 在 871／570／851／561／562／563 上由序列承载（`readonly` 且 `auth=read`）。
+
+| 入口 | 名称 | 可填可见字段（create） | 说明 |
+| --- | --- | --- | --- |
+| a871 | 劳务成本登记 | 15 | **代表入口**，本批 owning |
+| a570 | 机械台班登记 | 16 | **代表入口**，本批 owning |
+| a575 | 分包成本登记 | 14 | **代表入口**，本批 owning |
+| a562 | 方单 | 15 | 兄弟入口，与 a871 同表单 |
+| a563 | 零星用工 | 15 | 兄弟入口，与 a871 同表单 |
+| a851 | 机械台班记录 | 16 | 兄弟入口，与 a570 同表单 |
+| **a561** | **劳务用工** | **6** | **兄弟入口，新发现阻断（见 -⑫）** |
+
+`sabotage` 对照（把契约副本 `project_id` 改回只读 ⇒ 同一断言立即失败）在三张代表面上都通过，绿色不是空断言。
+兄弟入口不冒充代表入口的闭环，只跑全族共用的 A／C／D／F 并给出 `create_payload_size` 作隔离对照。
+
+#### 8.35.20-⑫ 发现：a561 劳务用工新建面**不可办理**（登记，未改）
+
+两层 × 两身份共 4 份契约一致给出：
+
+```
+a561  blocking_required = work_content(visible=false, readonly=true)
+```
+
+`work_content`（作业内容）在 `sc.labor.usage` 上 `required=True` 且**无默认值**（`default-carrier-probe.py` 实测
+`default=<none>`），却在交付面上不可见不可填 ⇒ 该入口新建**无法通过校验**。同表单的 a562／a563／a871 无此问题，
+可填可见字段 15 个；a561 只有 6 个。
+
+**首次偏差定位**（原生声明→模型约束→配置策略→最终契约→控件）：
+
+- 原生 arch 与模型约束无异常：`work_content` 在模型上正常可写、`required=True`。
+- 偏差在**配置策略层**。用 `field-policy-capture.py` 只读截获投影实际收到的 `field_policies`：
+  a561 是**模型全量 58 键**（含 `visible_profiles: ["edit", "readonly"]`，`create` 被排除）；
+  a871／a575 只有 5–9 个声明键、无 profile 限制（仅 `source_required`）。渲染 profile 为 `create`，
+  于是 a561 的字段被 `auth="none"`＋`visible=false` 落定。
+- **已排除的两条路径**（各自实测，避免把成因臆断成「运营手工隐藏」）：`policy-source-probe.py`
+  遍历库内全部已发布载体，**没有任何载体**为这些字段声明 `visible: false`；`lowcode-field-policy-probe.py`
+  显示 `ui.form.field.policy` 为**空表（0 行）**⇒ 不是存储式的低代码字段配置，而是**投影阶段合成**的策略。
+- 成因：a871／a562／a563 各有 **priority 800 的入口级发布**（`labor_usage_form_productization_contract.xml`，
+  `composition_mode: native_semantic_surface`），结构权威归原生 arch，模型级平面不再决定呈现；
+  **a561 没有入口级发布**，继续消费模型级平面。这与本批为 871 修掉的（§8.35.19 前言所述「871 此前没有入口级发布」）
+  是**同一类缺口**，只是 561 未被覆盖。
+- **未定性为非缺陷**：未找到「劳务用工必须由来源单据带入作业内容」的规则依据，无预期角色依据可支撑这一隐藏，
+  故按**阻断**登记，而不是当作有意设计。
+
+**最小修正范围（本批未实施，交产品方决定）**：在 `labor_usage_form_productization_contract.xml` 为
+`action_sc_labor_usage`（561）补一条 priority 800 的入口级发布，形状与既有的 a562／a563 两条记录**完全一致**
+（只带 `title` 与 `composition_mode: native_semantic_surface`）。纯声明、无数据迁移、`git revert` 可回滚。
+**a561 不在本批授权的 871／570／575 之内，故只登记不改**，符合「若确有权限缺陷，单独给出最小修正范围，
+再决定是否纳入本批」。
+
+**该发现是既有事实、非本批引入**：本批工作树 diff **未触碰** `sc.labor.usage` 的任何载体或策略——
+`git diff p1_daily_business_form_orchestration_contract_data.xml` 仅含 labor **settlement** 注释改写与
+subcontract register 的 `state` 一行；`labor_usage_form_productization_contract.xml` 未被修改（工作树 clean）。
+另：产品方观察到的「只读必填」在本轮被拆成 `readonly` 与 `visible` 两组独立标志分别核对，不再混为一谈。
+
+#### 8.35.20-⑬ a575 的 `currency_id`：只读且不可见，但**不是**缺陷
+
+`currency_id` 在 a575 上 `required=true, visible=false, auth=none`，表面与 a561 同症状，但模型上
+`required=True, default=lambda self: self.env.company.currency_id.id`（实测 `default=6`）——**必需值有合法来源**，
+符合 -③ 断言 **D**「必需值是否可通过合法路径取得」的口径。同口径的还有 `name`（`ir.sequence`）与
+`settlement_state`（默认 `unsettled`）。这正是产品方「不能把所有只读必填字段都判成错误」的可执行版本：
+判据是**载体实测**，不是字段名，也不是「必填 ∩ 可填」。
+
+#### 8.35.20-⑭ 断言结构调整：新增，零删除
+
+-③ 的 A～F **全部保留**，本轮只**增加**并分层：
+
+| 层 | 覆盖入口 | 断言 |
+| --- | --- | --- |
+| 全族 | 7 个 | A（`project_id` 必需可填）、C（`state` 不可填）、D（必需值可获）、F（办理提示等价） |
+| 代表入口 | a871／a570／a575 | 追加 B（用户事实全部可填**且可见**）、E（保存载荷覆盖）、sabotage 对照 |
+| 兄弟入口 | a561／a562／a563／a851 | 只跑全族层，并输出 `create_payload_size` 作隔离证据 |
+
+退出码口径：**代表入口全绿但存在兄弟入口阻断时，故意非零**，并在 stderr 打印
+`G09 CREATABILITY FINDING: …`。目的是让 a561 这类阻断**不能被误读成整批绿**；报告 JSON 同时给出
+`representative_blocked`（本批 owning 的入口）与 `findings`（含兄弟入口），二者不混算。
+
+#### 8.35.20-⑮ 状态与边界
+
+- #499 **继续暂停合并**；台账保持 **22**；未冻结候选、未跑 `ci.local.quick`、未更新 #499、未动草稿／分支；G10 未启动。
+- 本轮**未改产品代码**：新增内容全在证据包 `tmp/uc4-g09-creatability/` 与本文件。
+- **仍不是浏览器验收**：未做未保存录入、日期控件、联动与保存点击；`business_config_admin` 的入口级复核仍需
+  验收运行时（§8.35.19-⑩）。
+- a561 的成因**未做端到端调用链复现**：定位到 `field_policies` 差异与「缺入口级发布」这一结构事实，
+  未逐行展开发布解析器。
+
+#### 8.35.20-⑯ a561 修正轮：补入口级发布（实施 ＋ 定向补验，2026-09-20）
+
+产品方放行后，按 ⑫ 登记的**同一个**最小范围实施，改动面只多一条声明。⑮ 的「本轮未改产品代码」是对
+⑫～⑮ 那一轮的口径；本轮起该表述不再适用。
+
+**改动（1 条产品声明 ＋ 1 处测试登记）**
+
+- `addons/smart_construction_core/data/labor_usage_form_productization_contract.xml` 追加
+  `business_config_contract_labor_usage_work_productized_form_v1`：`action_id=action_sc_labor_usage`、
+  `priority=800`、`title=劳务用工`、`composition_mode=native_semantic_surface`，形状与既有
+  a562／a563／a871 三条逐字段一致，无数据迁移。
+- `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py`：把 561 纳入 `ENTRIES`
+  与 `SHARED_FORMS["view_sc_labor_usage_form"]`，并新增 `ENTRY_RELEASE_ACTIONS` ＋
+  `test_every_family_action_owns_an_entry_release`（**新增，零删除**）。该断言按 **action**（不是按模型）
+  要求「恰好一条入口级 native 发布、作用域指向该 action、优先级高于其模型级平面」——正是 dry run 认定的成因；
+  它是**声明态**的守卫，行为本身由 create 契约探针单独作证，二者不相互替代。
+
+**判据与实测（事务内 dry run → 落声明 → 升级 → 两层重跑）**
+
+| 观测 | 修正前 | 修正后 |
+| --- | --- | --- |
+| a561 create 的 `field_policies` 键数 | 57（模型全量） | 9（与 a871 逐项相同） |
+| `apply_field_policies_to_v2_status` 实际改写可见性的字段数 | 13 | 0 |
+| a561 可填可见字段 | 6 | 15（＝a562／a563／a871） |
+| 两层断言 | a561 `blocking_required=[work_content]`，退出码非零 | 14／14 两面 `findings=[]`，退出码 0 |
+| 其余 6 入口 | a570=16、a575=14、a851=16、a562=15、a563=15、a871=15 | 逐项未变 |
+
+事务内 dry run（把 a563 形状的记录挂到 561，`SAVEPOINT`／`ROLLBACK`，无落库）与升级后的实测给出同一结论，
+因此「缺入口级发布 ⇒ 消费模型级平面 ⇒ 必需事实不可见」这条因果**闭合到行为层**（仍**未**逐行跟踪发布解析器）。
+
+**边界**：只补声明，未删策略、未改前端、未动原生 arch；`work_content` 的 `required` 与模型守卫
+`_FACT_IMMUTABLE_FIELDS` 均未变，`state` 仍为可见只读；回滚＝`git revert`。
+
+#### 8.35.20-⑰ 入口可达性实测（并更正一处探针口径）
+
+`tmp/uc4-g09-creatability/entry-reachability-probe.py`（新，只读）实测：
+
+| 入口 | 菜单 | 父菜单 active | 导航可达 |
+| --- | --- | --- | --- |
+| 871 劳务成本登记 | 689 | True | **是** |
+| 570 机械台班登记 | 692／509 | True／False | **是**（经 692） |
+| 575 分包成本登记 | 693／518 | True／False | **是**（经 693） |
+| 562 方单 | 504 | **False** | 否 |
+| 563 零星用工 | 505 | **False** | 否 |
+| 851 机械台班记录 | 510 | **False** | 否 |
+| 561 劳务用工 | **无菜单** | — | 否 |
+
+交付导航只暴露 **871／570／575**，与台账命名的三个入口、与产品方实际打开的三个入口一致。
+
+**更正（假阴性）**：早前 `entry-actions.log` 记录「7 个 action 的 `menu_xmlids` 全为 `[]`」是**错的**，
+来自两处口径错误，两处均已修正并在脚本注释留痕：
+
+1. `ir.ui.menu.search()` 在本构建按用户分组过滤——不带 `ir.ui.menu.full_list` 上下文键时只返回 **204／717** 条，
+   504／505／509／510／518／689／692／693 因此看似不存在；
+2. `ir.ui.menu.action` 读回的是**记录集**（`ir.actions.act_window(561,)`），不是旧存储形态的 `model,id`
+   字符串，按字符串比较一条也匹配不上。
+
+凡引用「菜单 689／504／505」的表述，以本表为准。
+
+561 仍是 `sc.labor.usage` 的**模型级集成入口**（`models/support/product_policy_sync.py` 的
+`MERGE_BY_CATEGORY_INTEGRATION_ACTION_XMLIDS_BY_MODEL` 指向 `action_sc_labor_usage`），仍解析到同一张原生表单，
+故其 create 面仍需可办理；**是否给它菜单属产品决策，本轮不提请、不实施**。
+562／563／851 的父菜单 inactive 属既有导航状态，本轮**按原样登记**，不在本批改动范围。
+
+#### 8.35.20-⑱ 受影响检查与状态
+
+| 检查 | 命令／脚本 | 结果 |
+| --- | --- | --- |
+| 两层 create 断言 | `creatability-probe.ts`（①／②） | 14／14 两面，`findings=[]`、`representative_blocked=[]`，退出码 0 |
+| 契约投影策略 | `field-policy-capture.py` | a561 57 → 9 键，`changed_visible` 13 → 0 |
+| 记录态回滚事务 | `tmp/uc4-g09-batchC/g09_txn_verify.py` | **64／64**，无失败、无缺口 |
+| 受影响测试类 | `TestUsagePerformanceNativeLowcode` | 31 tests，0 failed，0 error |
+| 兄弟测试类 | `TestProductReports`／`TestLaborProductCapability`／`TestFormalFormLowcode` | 全通过 |
+| 兄弟测试类 | `TestWorkflowContractBackend` | 8 项**预存在**环境性失败，与本轮无关 |
+
+`TestWorkflowContractBackend` 的 8 项在改动前（`tmp/batchB-l2.log`，2026-09-19）即为 `1 failed, 7 error(s)`，
+失败点全部落在**构造夹具**上（`费用与扣款单据必须关联已归属公司的有效项目`、
+`收款归集关系不存在或当前用户无权访问`、`sc.partner.import.review` 模型不存在、
+`SC_GUARD:P0_PAYMENT_STATE_BYPASS_BLOCKED`），无一涉及 `sc.labor.usage`。
+
+**状态与边界**：#499 **继续暂停合并**；台账保持 **22**；未冻结候选、未跑 `ci.local.quick`、未更新 #499、未合并；
+未动草稿／分支／工作树；G10 未启动。**本轮仍不是产品验收**：两层断言证明的是**契约面可办理**，
+产品方浏览器复核（含登记身份 `business_config_admin` 的入口级复核，见 §8.35.19-⑩）尚未进行。
+
+#### 8.35.20-⑲ 输入未变依据、`reactivate` 前端缺口的独立再判定与现场可用性（2026-09-20 只读）
+
+**① 既有低代码闭环与前端消费证据的「输入未变」依据。** 本轮 dirty 增量按顶层归属只有两处：
+`addons/smart_construction_core` **12 文件** ＋ 本文件 **1 文件**；`addons/smart_core/` 与 `frontend/`
+均为 **0 文件**（`git diff --name-only HEAD`）。§8.35.12-② 的合法配置闭环运行的是 `smart_core`
+变更集机制与 `frontend/apps/web/scripts/*.mjs` 设计器工具，两侧输入**逐字节未变**；前端消费面证据
+（§8.35.18-⑥／§8.35.19-⑦）运行的是前端 presenter 源码，同样未变。故按产品方口径
+「已有完全适用的证据时给出输入未变的依据即可」复用，**不重跑**闭环与浏览器矩阵。
+
+**② `reactivate` 前端 transition 注册表缺口：独立再判定为不阻断，本轮仍不改。** §8.35.18-⑦／
+§8.35.19-⑧ 登记的是**降级事实**（非 `closed` 时 `isWorkflowTransitionMethod('action_reopen')=false`、
+`shouldShowWorkflowAction=true`）。本轮补上**后果**（批次 C 探针实测值）：非 `closed` 的 6 份交付契约
+（`draft`／`active`／重开后 × 两身份）`contractReopenRows=0`、`visibleReopen=0`、`hiddenByModifier=[true]`；
+`closed` 为 `1／1／enabled=true／workflowRows=['reactivate']`。即 `unmanaged` 回退**放行的对象根本不在
+交付动作集内**（无物可放），`closed` 态则按 `method` 命中行并解析为 managed。三道拦截中任意一道单独
+成立即可阻断：交付状态契约 `visible=false`／`ACTION_NOT_VISIBLE_IN_STATE`、原生 modifier
+`state != 'closed'`、后端 `action_reopen` 状态守卫。故**不改共享注册表**；最小改动范围
+（补 `reactivate` 键 ＋ `action_reopen` 别名）维持如实登记，待产品方决定语义是否统一。
+
+**③ 现场可用性（只读实测）。** `vite :5174`／`nginx :18081`／`odoo :8070` 与三个入口 `/new` 均返回 `200`；
+开发库最后一次升级为 18:24:26，晚于全部产品文件 mtime（最晚为
+`data/labor_usage_form_productization_contract.xml` 18:21:50）⇒ **dev 运行时与当前工作树一致**。
+复核入口（相对根路径，前缀 `http://127.0.0.1:5174`，`?action_id=…&menu_id=…` 见 §8.35.12-②）：
+`/f/sc.labor.usage/new?action_id=871&menu_id=689`、
+`/f/sc.equipment.usage/new?action_id=570&menu_id=692`、
+`/f/sc.subcontract.register/new?action_id=575&menu_id=693`。
+该会话解析角色为 `system_admin`（§8.35.19-⑩），**不构成**登记身份 `business_config_admin` 的入口级复核。
+
+#### 8.35.20-⑳ 独立复核唯一非阻断项（S2-1 `state.copy`）收口（2026-09-20 只读）
+
+- **结论：前提成立，依据在平台层而不在本仓。** `odoo/fields.py:431-434`（Odoo `17.0.0 FINAL`）：
+
+  ```python
+  if name == 'state':
+      # by default, `state` fields should be reset on copy
+      attrs['copy'] = attrs.get('copy', False)
+  ```
+
+  同文件 `:300` 是类默认 `copy = True`。该规则**只按字段名 `state` 生效**，所以本仓 `grep copy=False`
+  找不到任何依据——这正是 S2-1 所说「缺代码层依据」的成因，它缺的是**平台**依据的引用，不是仓库声明。
+- **实测**（`tmp/uc4-g09-creatability/state-copy-probe.py`，SAVEPOINT＋ROLLBACK；残留检查 0／0／0，
+  `state-copy-residual-check.{py,log}`）：`sc.labor.usage`／`sc.equipment.usage`／`sc.subcontract.register`
+  的 `_fields['state'].copy` 均为 `False`，三模型均**无** `copy()` 覆写；同模型对照组中唯二 `copy=False`
+  的是 `state` 与 `company_id`，其余样本字段（含 required／含 default／含 tracking）全为 `True`
+  ⇒ 归因是**字段名**，不是 `required`／`default`／`tracking`。`871` 已确认记录的 `copy_data()`
+  **不含 `state`**；`copy()` 落在 `draft` 且**未触发** `create()` 守卫（守卫不是承重点，属双重保护）。
+- **处置：不加 `copy=False`。** 显式声明在当前平台下与现状逐字等值（`attrs.get('copy', False)` 已给 `False`），
+  属**冗余**；而该默认是平台源码中**有意写下**并带语义注释的规则，不是偶然默认值。写入仓库会新增
+  `models/core/labor_management.py` 这一本批未涉及文件、扩大改动面，并把平台契约改写为仓库责任。
+- 故 S2-1 由「非阻断建议」转为**已收口**（平台依据 ＋ 可复算实测）；下一轮独立复核可直接核对该引文与探针。
+
+#### 8.35.20-㉑ 上轮独立复核「残留风险」清单的现状对照（供下一轮直接核验）
+
+上轮复核（对 `012c8ad4`）列出 4 条残留风险 ＋ S2-1。除通用残留外，其余均已由**当前工作树 delta**
+闭合，且多数有具名断言，不是口头声明：
+
+| 上轮残留风险 | 当前 delta 状态 | 具名断言／证据 |
+| --- | --- | --- |
+| 570 后端窗口窄于 arch（`cancel` 态仍可写）、`request_id` 未冻结 | **已闭合**：`_FACT_IMMUTABLE_FIELDS` 增 `request_id`；`write()` 由 `state in ("submitted","confirmed")` 改为 `state != "draft"` 拒绝 | `test_the_equipment_usage_window_matches_the_native_arch`（断言 `set(_FACT_IMMUTABLE_FIELDS) == arch 的 state != 'draft' 字段集`，**按名断言闭合**）＋ `test_the_equipment_usage_guard_is_retained`；L3 步骤 `570:cancel_fact_write_refused_like_the_arch`／`570:cancel_source_link_write_refused`（64／64） |
+| `workflow_contract_service` 的 `reopen` 声明在模型必然拒绝的状态上 | **已闭合**：结算族 `submitted` 去掉 `reopen`、新增 `cancel: ["reopen"]`；对应 arch 同步为 `invisible="state != 'cancel'"` | `test_reset_to_draft_is_declared_where_the_model_accepts_it`（**7 个模型 × 契约 `state_actions` 与原生 arch 两面**，断言 `declared == {"cancel"}` 且方法恒为 `action_reset_draft`）＋ `test_the_reset_to_draft_action_is_declared_where_it_runs`（实跑 `action_cancel` → `action_reset_draft`） |
+| 575「登记后」修改规则待决 | **已闭合**（产品方授权口径）：只冻 `closed`，`已登记` 仍可调整 | §8.35.18-①／§8.35.19-①；`test_the_subcontract_register_freezes_only_after_closing` |
+| SQL／ops 脚本直写 `state` 绕开 ORM 守卫 | **保留为通用残留**（复核已确认本仓无此类写 `state` 的脚本） | 复核原文；不属本批范围，不因本批新增而扩大 |
+| S2-1 `state.copy` 缺代码层依据 | **本批收口**（见 ⑳） | `state-copy-probe.py` / `.log` ＋ `odoo/fields.py:431-434` |
+
+#### 8.35.20-㉒ 登记验收身份与角色面的只读核对（本轮，**未起验收运行时、未升级、未写库**）
+
+**环境**：注册验收 profile=`local` 受管入口只读预检通过 ——
+`[acceptance.runtime.preflight] PASS profile=local project=sc-fe-r2-p1-01 db=sc_frontend_acceptance dbfilter=^sc_frontend_acceptance$`，
+volumes `sc_fe_r2_p1_01_{db,redis,odoo}`。5175／18082 **未监听**；本轮**只**做只读查询，未执行
+`acceptance.baseline.upgrade` / `backend.acceptance.up` / `frontend.acceptance.up`，未 reset fixture，未写库。
+
+**身份实测**（`sc_frontend_acceptance`）：`fixture_role_config_admin` = uid **34**，`active=t`；直授 ＋ 隐含闭包共 **46** 组，
+其中含 `SC 能力 - 项目中心只读`(82) 与 `SC 能力 - 业务配置管理员`(105) —— 即**三入口与配置工作台均落在该身份可达面内**。
+
+**编号是运行时局部的（本轮新发现，影响一切"登记身份复核"的入口写法）**：
+
+| 交付入口 | 验收基线 id／menu | dev 运行时 id／menu | xmlid（两库一致） |
+| --- | --- | --- | --- |
+| 劳务成本登记 | action **871** ／ menu **688** | action 871 ／ menu 689 | `action_sc_product_labor_cost_v1` |
+| 机械台班登记 | action **566** ／ menu **691** | action **570** ／ menu 692 | `action_sc_equipment_usage` |
+| 分包成本登记 | action **571** ／ menu **692** | action **575** ／ menu 693 | `action_sc_subcontract_register` |
+
+- 仅 871 在两库同值；`570` 在验收基线指向 `sc.subcontract.request`（分包申请）、`575` 指向 `tier.review`（待我审批），
+  与 dev 的 `sc.equipment.usage`／`sc.subcontract.register` **不是同一条目**。
+- ⇒ 登记身份的入口必须按 **xmlid** 逐运行时重导，**不得**把 871／570／575 当作跨运行时等价地址。
+
+**验收基线陈旧（当前阻断"登记身份浏览器实检"的直接原因）**：`smart_construction_core` 末次写入
+`2026-09-10 16:06:52`（`smart_core` `2026-09-10 16:04:18`）；库内版本 **`17.0.0.162`**，
+而本候选工作树 `addons/smart_construction_core/__manifest__.py` 为 **`17.0.0.168`** —— 即验收基线
+落后本候选 **6 个模块版本**，**不承载本候选**的 XML／低代码记录（版本差是硬依据，不依赖时间戳推断）。
+故按声明执行"登记角色浏览器实检"须先经受管 `make acceptance.baseline.upgrade`（`CODEX_NEED_UPGRADE=1`）
+把验收基线推进到本候选，再 `backend.acceptance.up` ＋ `frontend.acceptance.up`（5175）。**本轮未执行该升级**，
+现场保持未变；该步属**推进共享验收基线**，按授权边界**待产品方确认**（见文末）。
+
+**角色面只读结论（三入口）**：menu 与 action **双双**持 `group_sc_cap_project_read`（＝`SC 能力 - 项目中心只读`）——
+`views/menu_product_contract_completion_v1.xml:370/373/374`（三菜单 `groups=…group_sc_cap_project_read`）＋
+`security/action_groups_patch.xml:276/291`（对 `action_sc_equipment_usage`／`action_sc_subcontract_register` 用
+`(6, 0, [ref('…group_sc_cap_project_read')])` **覆盖** action 组）；dev 运行时实测同值（三 action 组均只含该项）。
+
+- 同一文件内其他"编辑／登记"面用的是 `group_sc_cap_project_user`／`manager`（项目信息编辑、标书管理、质量验收、
+  薪资核算清单／发放、班组借扣款登记等）⇒ **把"新建登记"面挂在"只读"能力组上，是角色口径不一致**。
+- 按授权**不因组名含"只读"就直接放宽权限**，也**不因新建页能打开就判合格**：本条**登记待产品方决策**，
+  最小修正范围（若判为缺陷）＝把三菜单／三 action 的组从 `group_sc_cap_project_read` 调整为项目中心经办能力组，
+  并同步 `action_groups_patch.xml` 与菜单声明；**本批不改**，台账不因此变动。
+
+**配置入口**：menu **431**「表单配置」→ action **737** `action_sc_business_config_workbench`
+（模型 `ui.business.config.contract`），组＝`Smart Core Business Config Admin | Smart Core Admin | SC 能力 - 业务配置管理员`；
+uid 34 持有 105 ⇒ **可达**（dev 与验收基线同构）。
+
+**504／505／510 的拒绝原因是"导航暴露"而非"权限拒绝"（本轮实测补正）**：dev 运行时 menu 504 方单／505 零星用工／
+510 机械台班记录**自身 `active=t`** 且持 `SC 基础 - 内部用户`；其**父级 319 劳务管理／320 机械设备 `active=f`**
+（另 316 目标与预算、317 动态成本亦 `active=f`）⇒ 不进导航树。按授权仍一律登记为**该角色下未覆盖**，
+**不写成通过、也不写成"非缺陷"**（§8.35.13-⑤ 口径不变）。
+
+**可办理性与角色无关（机制层依据，非口头声明）**：`addons/smart_core/utils/contract_governance_form_fields.py:208`
+`build_form_field_policies(data, *, contract_required_fields, is_project_form, project_form_profile, to_bool)` —— 入参
+**只有契约数据**（`fields`／`field_groups`／`readonly`／必填集合），**不含 `env.user`／组／角色**；
+应用端 `contract_governance_form_validation.py`／`enterprise_forms.py` 同样无角色过滤
+（其 `group` 键是字段**版式**分组 core／advanced，非安全组）。⇒ 本批 a561 的无条件 `readonly` 收口
+**对 `business_config_admin` 等价生效**。
+
+**角色键控低代码面（当前无按角色分叉）**：dev 全库 `view_orchestration:%:role:*` 唯一令牌为 `role:system_admin`，
+即 id **695**（`view_orchestration:sc.labor.usage:form:action:871:view:1461:role:system_admin`），`status=published`
+但 **`active=false`**；**不存在** `role:business_config_admin` 记录。三入口当前消费者配置为
+id 682／230／232（`*_register_productized_form_v1`，`published／active=t`）——即登记角色与 `system_admin`
+**回落到同一份角色无关配置**。
+
+**本轮边界**：未提交、未推送、未冻结、未跑 Quick、#499 未更新、台账保持 22、未起／未升级验收运行时、
+未改产品代码、未创建业务样本。**待产品方决定**：是否授权推进共享验收基线（`acceptance.baseline.upgrade`）
+并起 5175／18082，以取得"登记身份浏览器实检"证据；以及三入口"登记面挂只读能力组"是否判为缺陷。
+#### 8.35.20-㉓ 验收运行时已按最小范围推进到本候选，并取得登记身份描述符级证据（产品方已放行）
+
+**受管动作（全部走注册 Make 入口，无手工环境拼装）**
+
+- 先比版本定最小范围：`smart_core` 工作树 manifest `17.0.1.1.12` **＝** 库内值 ⇒ 无需升级；仅 `smart_construction_core` 落后（库 `17.0.0.162` ＜ manifest `17.0.0.168`）。
+- `CODEX_NEED_UPGRADE=1 make acceptance.module.upgrade MODULE=smart_construction_core` → **EXIT=0**（日志 `tmp/uc4-g09-creatability/acceptance-baseline-upgrade.log`，77 模块，registry 77.3s；升级前快照 `acceptance-pre-upgrade-state.txt`）。
+- `make backend.acceptance.up` → `PASS db=sc_frontend_acceptance port=18082`；`make frontend.acceptance.up` → `PASS mode=development url=http://127.0.0.1:5175 db=sc_frontend_acceptance`。
+
+**推进结果**：`smart_construction_core` **17.0.0.168 ＝ 工作树 manifest**（`write_date 09-20 13:33`）；`smart_core` 仍 `17.0.1.1.12`、`write_date` 保持 `09-10`（未被本步触碰）。
+
+**入口（验收运行时，按 xmlid 重导，不得沿用 dev 的 871／570／575）**
+
+| 入口 | action | menu | 组（menu 与 action 一致） |
+| --- | --- | --- | --- |
+| 劳务成本登记 | **871** | **688** | `SC 能力 - 项目中心只读` |
+| 机械台班登记 | **566** | **691** | `SC 能力 - 项目中心只读` |
+| 分包成本登记 | **571** | **692** | `SC 能力 - 项目中心只读` |
+| 配置入口 `action_sc_business_config_workbench` | **720** | **417**「表单配置」 | — |
+
+`fixture_role_config_admin`（uid 34）持有 `SC 能力 - 项目中心只读`／`SC 能力 - 业务配置管理员` ⇒ **该身份在验收运行时可达三入口与配置工作台**。**同一 xmlid 在两运行时的行 id 不同**（workbench 在 dev 是 737／431、在验收是 720／417）——再次确证 **DB 行 id 是安装历史产物、只有 xmlid 可移植**。
+
+**“可办理”描述符级实测**（运行时库内配置，`tmp/uc4-g09-creatability/acceptance-readonly-descriptors.txt`）
+
+| 入口 | 字段总数 | `readonly=true` | 只读集合 | 判读 |
+| --- | --- | --- | --- | --- |
+| 151 劳务成本登记 | 19 | **6** | `state`／`name`／`create_date`／`recorder_id`／`amount_total`／`settlement_state` | 全部为系统生成、默认提供、计算或镜像 ⇒ **用户输入事实（项目、班组、劳务单位、工时、单价等）非只读** |
+| 157 机械台班登记 | 16 | **5** | `state`／`name`／`create_date`／`recorder_id`／`amount` | 同口径 ⇒ 项目、设备、使用台时、单价可填 |
+| 153 分包成本登记 | 17 | **15** | `*_display` 镜像 5 项、`paid_amount`／`uninvoiced_amount`／`unpaid_amount`／`invoice_amount`／`quantity_total`（计算汇总）、`sign_date`／`source_created_at`／`source_created_by`（来源事实）、`state` | 仅 2 项可写（来源选择方向） |
+
+- **上次产品方观察到的“项目为空却仍只读”在验收运行时已不成立**（151 的 `project_id` 等不在只读集合内）。
+- 按授权口径，只读集合中的 `state`／`name`／日期类**只要有合法生成／默认来源就不算阻断**；本批**未**把“必填且只读”一律判错。
+- **仍未断言（不得由描述符推断）**：153（575）的“必要事实能否经来源申请／合同路径被完整承接”，属授权工作包 1 的待验项，本轮不结论。
+
+**身份口径与未做项（本轮边界）**
+
+- 本次是**描述符级**证据（运行时库内配置 ＋ 组授权），**不是**浏览器实检。
+- **未执行** `make acceptance.frontend.fixture`——它会按 `SC_ACCEPTANCE_FIXTURE_PASSWORD` 重置 fixture 凭据，故本轮**未取得** `fixture_role_config_admin` 的 HTTP 登录会话；验收运行时的**按身份浏览器实检**若要执行，需产品方先授权该凭据重置（另一步、另一次决定）。
+- 未提交、未推送、未冻结、未跑 Quick、#499 未更新、台账保持 **22**、未改产品代码、未写业务数据。
+- 运行态保持：`sc-fe-r2-p1-01`（db／redis／odoo）、`sc-backend-odoo-acceptance`（18082）、验收前端（5175，development）**在运行**；需要停止时走 `frontend.acceptance.down`／`backend.acceptance.down`。
+#### 8.35.20-㉔ 登记身份的 HTTP 登录证据（受管 fixture），以及导航面残留
+
+- 受管执行 `make acceptance.frontend.fixture`（`SC_ACCEPTANCE_FIXTURE_PASSWORD` 于**运行期生成、不落盘**）；
+  该入口为 `ensure_fixture` 幂等补齐，作用域仅验收库 `sc_frontend_acceptance`（`guard_frontend_acceptance_scope` ＋
+  lifecycle 锁），**未触碰 dev 库与既有草稿（含 489）**。
+- `/api/v1/intent` → `login`：**http=200**，`data.user.id=**34**`、`login=fixture_role_config_admin`、
+  `name=Acceptance Fixture Business Config Admin`、`company_id=8 "FE Company A"`、`lang=zh_CN`；
+  `entitlement.role_code=**internal_user**`、`principal.role_xmlids=**46**`（与 SQL 侧 46 组一致）、
+  `session.token` 存在、`Set-Cookie: session_id`。
+  ⇒ **登记身份在验收运行时解析为 uid 34 ＋ 46 个角色 xmlid**（含 `SC 能力 - 项目中心只读`／
+  `SC 能力 - 业务配置管理员`），**不是** dev 会话所显示的“系统管理员”。
+- **残留（未闭合，按实登记）**：以 `session_id` cookie 续调 `session.bootstrap`／`system.init`／`navigation`
+  均返回 **401**（登录响应未提供可用于 bootstrap 的 bearer 语义）⇒ **导航面未由本轮探针取得**。
+  该证据应由**注册工具** `scripts/verify/menu_governance_m4_browser_audit.mjs`（Playwright＋登录页，
+  `ROLES` 已含 `fixture_role_config_admin`）在需要时取得；本轮**不以自建探针冒充**该结论。
+  因此“三入口在该身份**导航面**可见”仍只有**组级**依据（§8.35.20-㉓），**无导航面实测**。
+- 证据：`tmp/uc4-g09-creatability/acceptance-identity-nav-probe.{py,log}`。
+#### 8.35.20-㉕ 575 的合法创建路径（代码级）与三入口“可见性 vs 办理”授权不一致
+
+**575 合法创建路径（模型 `sc.subcontract.register`）**
+
+- `project_id` **required** 且是**普通 Many2one**（非 related／compute）⇒ 在 `draft` 下**可直接录入**；
+  `_FACT_IMMUTABLE_FIELDS` 只在 `state == 'closed'` 冻结（`_FACT_IMMUTABLE_STATES = ("closed",)`）。
+- **从来源承接**：`create()` 中若给出 `contract_id`，用 `vals.setdefault` 由合同带出
+  `project_id`／`subcontractor_id`／`currency_id`；`request_id` 为来源分包申请。
+- **默认值**：`register_date`＝当日、`currency_id`＝公司币种、`responsible_id`＝当前用户、
+  `name`＝`sc.subcontract.register` 序列（默认“新建”时替换）。
+- **空白入口行为**：不选来源时 `project_id` 必填会阻断保存，不产出缺项记录；
+  `state` 非 `draft` 一律被 `create()` 守卫拒绝（`分包登记状态只能通过受控业务动作推进`）。
+- **首次偏差定位＝无偏差**：原生 arch `readonly="state == 'closed'"` ⇔ 模型 `_FACT_IMMUTABLE_FIELDS`／`("closed",)`
+  ⇔ 153 配置描述符（`project_id` **OPEN**、`note` OPEN）。即“项目为空且不可填写”在**当前候选**三层均不成立；
+  产品方上次观察属**前一次候选**，本批已收口（仍需产品方在浏览器确认）。
+- **仍未断言**：153 描述符只覆盖 17 个字段（`request_id`／`contract_id`／`subcontract_scope`／`register_date`
+  等**不在其中**，由原生 arch 呈现）⇒ “来源选择后必要事实正确承接”须以运行时来源路径实测，本轮未做。
+
+**三入口“可见性 vs 办理”授权不一致（本轮新发现，登记待决策）**
+
+| 入口 | 菜单／action 可见性 | 办理按钮门禁 |
+| --- | --- | --- |
+| 871 劳务成本登记 | `group_sc_cap_project_read` | **无 `groups` 门禁**（提交／确认／退回／取消全开） |
+| 570 机械台班登记 | `group_sc_cap_project_read` | 提交＝`project_user`／`manager`；确认台班＝`manager`；退回／取消＝`user`／`manager` |
+| 575 分包成本登记 | `group_sc_cap_project_read` | 确认登记／关闭／重新打开／退回＝`project_manager`；取消＝`user`／`manager` |
+
+- 即**同一交付组内**：可见性一律挂“只读”，而办理所需能力**三者各不相同**（871 无、570 部分、575 全部要经理）。
+- `fixture_role_config_admin`（uid 34）持 **82 只读＋83 经办＋84 审批＋105 业务配置管理员** ⇒ 三入口**可编辑且可办理**。
+- **只读-only 角色**：可打开三入口并在 `draft` 填字段，但在 570／575 **无任何办理按钮**、在 871 却可提交确认 ——
+  权限面自相矛盾。
+- **最小修正范围（若判为缺陷；本批未改）**：三入口菜单／action 的组由 `group_sc_cap_project_read` 调整为
+  `group_sc_cap_project_user`（经办），并为 871 的四个按钮补齐与 570／575 同口径的门禁；
+  同步 `views/menu_product_contract_completion_v1.xml`、`security/action_groups_patch.xml` 与三份 core views。
+  按授权**不因组名含“只读”或按钮缺失就自行放宽权限**，留产品方裁定。
+#### 8.35.20-㉖ 三入口来源承接的 L3 断言收口、金额重复标签的证据更正（2026-09-20）
+
+**1）来源承接：把「来源选择后必要事实正确承接」从代码级提升为回滚事务实测**
+
+§8.35.20-㉕ 登记的「仍未断言」项（153 描述符只含 17 字段，`request_id`／`contract_id`／
+`subcontract_scope`／`register_date` 由原生 arch 呈现）现以 `g09_txn_verify.py` 的 **7 条新断言**收口
+（**新增，零删除**；64 → **71**，`failed=[]`、`gaps=[]`、收尾 `rollback:no_*_left` 全过）：
+
+| 新断言 | 结论 | 机制／证据 |
+| --- | --- | --- |
+| `575:source_contract_supplies_context` | 只给 `contract_id` ＋范围＋明细即可建档；`project_id`／`subcontractor_id`／`currency_id` 由合同 `vals.setdefault` 带出 | 实测 `project=427(427)`、`partner=5387(5387)`、`currency=6(6)`，与合同逐项相等 |
+| `575:blank_entry_refused_without_project` | 无项目、无合同时**不产出缺项记录** | 平台 `psycopg2.errors.NotNullViolation`（`column "project_id"`） |
+| `575:explicit_project_conflicting_with_contract_refused` | 显式字段与合同范围冲突时被拒，**不是**静默以合同为准 | `ValidationError：分包登记显式字段与权威分包合同范围冲突。` |
+| `570:source_request_does_not_supply_project` | 来源设备申请**不**补齐上下文（它是来源追溯，不是录入替代） | 仅给 `request_id` 时 `project_id` 必填被库层阻断 |
+| `570:matching_source_request_submits` | 项目与来源申请一致时才可提交 | `state=submitted`，`request=25` |
+| `570:mismatched_source_project_refused_at_submit` | 项目与来源申请不一致在**提交时**被拒，记录留在 `draft` | `UserError：设备使用登记的项目必须与来源设备申请一致。` |
+| `871:blank_entry_refused_without_project` | 871 **无来源单据字段**：正式路径＝草稿窗口内直接录入；空白入口被阻断 | 平台 `NotNullViolation`（`column "project_id"`） |
+
+- 四条「拒绝」类断言的 detail **记录实际异常类**：平台机制（`NotNullViolation`）与业务校验
+  （`UserError`／`ValidationError`）分开登记，不把平台行为记成业务规则，也避免只测一种机制。
+- 每条尝试在**自有 savepoint**（`cr.savepoint()`）内执行：被拒的 `create` 即便已落到 `INSERT`
+  （575 的权威校验发生在 `super().create()` 之后）也不会污染后续断言或收尾计数。
+- 由此三条合法创建路径为：**871＝草稿内直接录入**；**570＝先选项目，来源申请只做一致性校验**；
+  **575＝选合同即建档，或先选项目再录入**。三者**都不需要**解除任何前端只读。
+
+**2）金额重复标签：引用证据更正，不变量改为可重复断言**
+
+§8.35.14-④ 记的「截图证据 `shot-price_unit.png`」**在当前工作树内不存在**（全仓查找无此文件；
+`tmp/` 被 gitignore，佐证不随分支保存）。因此该处「视觉上只显示一次」的**视觉结论降级为未证实**，
+不再作为「非缺陷」的依据；文本提取（`innerText` 等）出现重复仍属无障碍隐藏标签的正常产物。
+
+为把该不变量从「一次性截图」改为**可重复**，在既有受管入口
+`make verify.frontend.professional_business_value.unit` 的守护脚本中加入三项固定：
+
+- `ScMoney.vue` **必须保留**可访问名称载体（`class="sc-visually-hidden"` ＋ `{{ label }}：`），
+  且**不得**在其自身 style 块覆盖该共享类——禁止以删除无障碍语义换版面；
+- 共享类 `.sc-visually-hidden`（`styles/product-patterns.css`）**只允许声明一次**，且必须同时保留
+  `position:absolute`／`width:1px`／`height:1px`／`overflow:hidden`／`clip:rect(0,0,0,0)`／
+  `clip-path:inset(50%)`（均 `!important`）：任一属性丢失即失败，因为那正是「隐藏标签意外可见」的成因；
+- 断言**不依赖 TDesign 内部选择器**，只读本仓设计系统自身的类名与共享样式。
+
+改动落在 **P4 守护**（`scripts/verify/frontend_professional_business_value_guard.py` 及其单测），
+**未改产品代码、未改共享样式本身**（结构上已满足，故无改动必要）。新增两条 sabotage 对照
+（抽掉 `clip-path`、抽掉可访问名称载体各自失败）证明该固定不是空断言；
+`make verify.frontend.professional_business_value.unit` ⇒ **PASS**（`families=7`、单测 5/5、`EXIT=0`）。
+
+**3）状态与边界（本轮）**
+
+- 工作树 `HEAD` 仍为 `012c8ad43dde211e6e29f96d609665cfc48d71cb`；**未提交、未推送、未冻结、未跑 Quick、
+  未更新 #499、未合并**；台账保持 **22**（22→19 仍只是预期核减）；G10 未启动。
+- 本轮**产品代码改动＝0**：改动仅 P4 守护 ＋ 本记录（纯追加），`addons/smart_construction_core` 未动。
+- 本记录**不构成产品验收**：金额标签的**视觉**结论、三入口「可见性 vs 办理」的角色门禁裁定、
+  导航面实测，仍需产品方在浏览器确认。
+#### 8.35.20-㉗ 导航面残留的定性更正：401 是探针缺陷；导航面已按受管方法实测（2026-09-20）
+
+**1）更正：§8.35.20-㉔ 记的「导航面 401 ⇒ 该角色下未覆盖」不成立**
+
+按代码核对，那三条 401 **都不是权限结论**，而是探针的凭证／目标缺陷，必须改判，
+不得再当作「该角色看不到导航」的证据：
+
+| 探针当时调用 | 事实 | 判定 |
+| --- | --- | --- |
+| `session.bootstrap` | 是 **dev/test 专用**的 token 铸造端点（`handlers/session_bootstrap.py`：`ENV` 非 dev/test ⇒ 403；无 `SC_BOOTSTRAP_SECRET` ⇒ 404；secret 不符 ⇒ 401 `invalid bootstrap secret`）。它在验收运行时（`ENV=acceptance`）**必然**不返回导航，与角色无关 | 目标选错 |
+| `navigation` | 处理器目录内**不存在**该 intent（导航面只有 `system_init.py`／`menu_configuration.py`） | 目标不存在 |
+| `system.init` | 是**唯一的**登录态导航面（`REQUIRED_GROUPS = []`，登录用户可用；`data.navigation.nav` 即交付导航契约） | 目标正确 |
+| 三次调用的共同缺陷 | 探针拿到 token 后**没有发送** `Authorization: Bearer`——而 `get_principal_from_token()` 只认 `Authorization` 头或 Odoo session uid，login 走的是 token 而非 session——故 401 文案是 `AUTH_REQUIRED 认证失败或 token 无效` | **凭证未随请求发送** |
+
+⇒ 401 属**认证形态**结果（`AUTH_REQUIRED`），不是 `PERMISSION_DENIED`（403）。
+「该角色下未覆盖」的登记撤回，改记「探针未取得，原因＝凭证未随请求发送」。
+
+**2）更正后实测：导航面按批次已接受的同一条方法取得（dev，只读）**
+
+新探针 `nav-plane-probe.py` 沿用 `login → Bearer → intent`（与该批 `http-serve-probe.py` 完全同形），
+目标改为 `system.init`；入口集继续消费 `entry-family.json`，菜单身份取自交付台账，**不在探针里重述**。
+
+| 身份 | uid | `nav_meta.role_surface_code` | 导航节点 | a871 | a570 | a575 | a561／a562／a563／a851 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `sc_test_admin` | 51 | `system_admin` | **110** | **served** | **served** | **served** | 不 served |
+| `demo_role_pm` | 42 | `pm` | **30** | 不 served | 不 served | 不 served | 不 served |
+
+- 三个登记入口在 `sc_test_admin` 下**确实出现在导航中**，并带回完整父级路径：
+  `系统菜单 / 项目中心 / 劳务成本 / 劳务成本登记`、`… / 机械成本 / 机械台班登记`、`… / 分包成本 / 分包成本登记`
+  ⇒ 菜单身份与交付台账一致，「能打开」在导航层是可复现的，不是偶发。
+- `demo_role_pm` 的 `denied_menu_xmlids` 只有招投标 5 项（`menu_sc_tender_*`／`menu_sc_project_tender`），
+  **不含**三个入口 ⇒ PM 的不可见属**未授予**，不是**显式拒绝**；两类原因不可混记。
+- 登录响应的 `principal.role_xmlids` 本轮**首次落盘**（`sc_test_admin` 58 项／`demo_role_pm` 25 项），
+  补上上一轮「角色 xmlid 只有口头观察、无持久证据」的缺口。
+
+**3）登记角色的**声明面**（取自运行时的 `role_surface_map`，可移植）**
+
+| 角色 | `role_surface_code` | `menu_xmlids` | `primary` | `admin` | `denied` | 三个入口菜单是否在任一桶 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 业务配置管理员 | `business_config_admin` | 2 | 1 | 6 | 0 | **均不在** |
+| 项目经理 | `pm` | 3 | 25 | 0 | 5 | 均不在 |
+| 系统管理员 | `system_admin` | 0 | 0 | 1 | 0 | 均不在 |
+
+- 关键口径：`system_admin` 的声明桶几乎为空，却实测服务 110 个菜单 ⇒ 该声明面**不是**穷尽式白名单，
+  而是叠加在「基础菜单组门禁」之上的强调／例外声明（`exposure_policy_declared=true`、`deny_all_navigation=false`）。
+  因此**不能**由「声明面里没有」推断「看不到」。
+- 由此对登记身份（`business_config_admin`，uid 34，46 个角色 xmlid，含 项目中心只读／经办／审批 82／83／84）的
+  **推断（非实测）**：三个入口菜单的门禁是 `group_sc_cap_project_read`，uid 34 持该组且未被任何拒绝清单命中，
+  **预期可见**。该推断必须由产品方浏览器复核证实，本批**不据此改任何权限**。
+
+**4）仍未闭合**
+
+- 登记身份的**实测**导航面：需在验收运行时按同一方法重跑一次
+  （`G09NAV_BASE=http://127.0.0.1:18082`、`G09NAV_DB=sc_frontend_acceptance`、`G09NAV_ROLE=business_config_admin`），
+  而验收 fixture 口令**不在工作树内**（运行期生成）。本轮**未**轮换该口令，以免打断产品方正在进行的浏览器复核。
+- 三条「可见性 vs 办理」的角色门禁裁定仍待产品方决定（本批未改任何权限）。
+#### 8.35.20-㉘ 871 办理门禁与 570／575 的同族不一致：定性、最小修正范围与「未纳入」理由（2026-09-20 只读）
+
+**问题**：同属「成本登记三件套」的 871（`sc.labor.usage`）／570（`sc.equipment.usage`）／575（`sc.subcontract.register`），
+在办理动作上的角色门禁是否同口径？本节只做**只读**核定与登记，**未改任何权限、未改任何产品代码**，台账保持 **22**。
+
+**1）交付面：库内 `ir.ui.view.arch` 实测（不是源码阅读）**
+
+| 入口 | 原生表单 | 办理按钮 | `groups=` |
+| --- | --- | --- | --- |
+| 871 | `view_sc_labor_usage_form` | `action_submit` | **（无）** |
+| 871 | 同上 | `action_confirm` | **（无）** |
+| 871 | 同上 | `action_reset_draft` | **（无）** |
+| 871 | 同上 | `action_cancel` | **（无）** |
+| 570 | `view_sc_equipment_usage_form` | `action_submit` | `group_sc_cap_project_user,group_sc_cap_project_manager` |
+| 570 | 同上 | `action_confirm` | `group_sc_cap_project_manager` |
+| 570 | 同上 | `action_reset_draft` | `group_sc_cap_project_manager` |
+| 570 | 同上 | `action_cancel` | `group_sc_cap_project_user,group_sc_cap_project_manager` |
+| 575 | `view_sc_subcontract_register_form` | `action_register`／`action_close`／`action_reopen`／`action_reset_draft` | 均为 `group_sc_cap_project_manager` |
+| 575 | 同上 | `action_cancel` | `group_sc_cap_project_user,group_sc_cap_project_manager` |
+
+- 871 的四个办理按钮**在 XML 上没有任何 `groups` 门禁**；唯一继承该表单的视图
+  （`view_sc_labor_usage_product_advisory_form`）只追加 `办理提示` 区块，**不补门禁** ⇒ 这是该表单的完整交付面。
+
+**2）ACL 行**：570／575 各有 4 行（只读 r／经办 r,w,c／项目审批 r,w,c,u／超级管理员 r,w,c,u）；
+**871 只有 3 行**（只读 r／经办 r,w,c／项目审批 r,w,c,u），表面上**缺 `group_sc_super_admin` 行**；
+- 但该缺失**无功能影响**：`group_sc_super_admin` 的 `implied_ids` 含 `group_sc_cap_project_manager`
+  （实测闭包 57 个组、**传递持有**项目审批组），而 871 的项目审批行本身就是 r,w,c,u ⇒ 只持超级管理员组的用户
+  对 871／570／575 三者的 `check_access_rights("write")` **实测均为 True**。故 871 的该缺口属**冗余缺失**，
+  **不是**「比兄弟更严」，也不是可用的放宽空间。
+
+**3）组层级**：`只读` ⊂ `经办` ⊂ `审批`（`implied_ids` 实测严格递进）。
+⇒ 只读、经办、审批三层里，**经办与审批都持 write**，ACL 层面**无法表达**「经办不得审批」。
+
+**4）行级规则**：871 把 `read/write/create` 的「本人或项目成员」规则挂在**只读**组上；
+570／575 把该规则挂在**经办**组上、只读组只有 `read`。当前被 ACL 的 `write=0` 兜住，**无实际提权**，属结构错位。
+
+**5）运行态角色差异（决定性；三个角色均为临时用户，SAVEPOINT 内建自己的草稿后回滚）**
+
+| 入口 | 只读 | 经办（仅 `项目中心经办`） | 审批 |
+| --- | --- | --- | --- |
+| 871 | 建档即拒（`AccessError`，ACL 无 create） | 建档＋提交 **通过**；**审批 `action_confirm` 也通过** | 通过 |
+| 570 | 建档即拒（ACL 无 create） | 建档＋提交通过；审批被拒：`UserError: 只有项目审批人员可以确认机械台班。` | 通过 |
+| 575 | 建档即拒（ACL 无 create） | 建档＋提交被拒：`UserError: 只有项目审批人员可以确认分包成本登记。` | 通过 |
+
+- 探针 v1 曾把种子单据建在 `sudo` 名下，`create_uid` 不是被测用户，触发 `ir.rule` 的
+  「本人或项目成员」分支，**把行级拒绝伪装成方法级拒绝**；v2 改为「以被测身份建自己的草稿」后该混淆消除，
+  差异收敛到方法级门禁本身。两版差异与原因一并留档，避免后续把 v1 的 `top-secret records` 读成门禁结论。
+
+**6）定性**：871 **缺方法级办理门禁**，属**同族口径不一致（缺陷）**。
+理由：ACL 与行级规则都无法区分「经办」与「审批」（审批组蕴含经办组、两者都持 write），
+570／575 正是用方法级 `_check_project_operator()`／`_check_project_manager()` 补上这一层，871 没有 ⇒
+**经办可自审自批**，且只读角色在 871 上看得见办理按钮（570／575 由按钮 `groups` 隐藏）。
+**不采用**「ACL 已足够」的解释：ACL 只拦得住**没有 write 的角色**，拦不住**同为经办角色的自审**。
+
+**7）最小修正范围（本轮未实施，待产品方决定是否纳入本批）**
+
+- `models/core/labor_management.py`：新增 `_check_project_operator()`／`_check_project_manager()`
+  （与 570／575 同文同形，含 `group_sc_super_admin` 放行）；随后 `action_submit`→经办、
+  `action_confirm`→审批、`action_cancel`（`submitted`⇒审批／`draft`⇒经办）、`action_reset_draft`→审批。
+- `views/core/labor_management_views.xml` 的 `view_sc_labor_usage_form`：四个按钮补 `groups=`
+  （提交／取消＝经办,审批；确认／退回草稿＝审批）。
+- 测试：**新增**角色分离断言（经办能提交、不能确认；只读不能提交），
+  **保留**既有字段完整性与结构同源断言。
+- **不**改 ACL、**不**轮换角色、**不**放宽任何权限；`group_sc_super_admin` 缺行属**冗余缺失**
+  （超级管理员组蕴含项目审批组，实测 write 仍为 True，见 §2 更正）与行级规则挂错组
+  （当前被 ACL 的 `write=0` 兜住、无实际提权）两项只登记、不在本批处理。
+- 影响面：`view_sc_labor_usage_form` 是 **4 个入口共享**的原生主表单 ⇒ 修正会同时作用于所有消费者，
+  需在代表入口补验、兄弟入口只补受影响反例。
+
+**8）为什么不纳入本轮的「创建态可办理性」修复**
+
+- 871 的 `confirmed` **不**写入项目成本台账（`_sync_project_cost_ledger` 只存在于 570 的 `sc.equipment.usage`），
+  也**不**被劳务结算的台账锚点校验（`ScLaborSettlement._check_business_anchor` 只校验来源的 `settlement_state`）；
+- 其可观察后果是报表投影 `models/projection/labor_subcontract_report.py` 把该记录呈现为 `lifecycle_state='confirmed'`。
+- ⇒ 风险定级 **中低**（控制面不一致＋报表可见），但**不是**「新建页填不出必要字段」的同类问题，
+  故与创建态修复**分开**，本轮**未改**、**未放宽**、也**未**据此扣台账。
+
+**9）证据**
+
+| 文件 | 内容 |
+| --- | --- |
+| `tmp/uc4-g09-creatability/role-gate-probe.py` | 只读探针（`SAVEPOINT` ＋ `ROLLBACK`，无残留；三个界面桶全量落盘） |
+| `tmp/uc4-g09-creatability/role-gate-summary.json` | arch 13 条／ACL 11 条／角色断言 18 条／行级规则 11 条 |
+| `tmp/uc4-g09-creatability/role-gate-probe.log` | 原始运行日志（含 `EXIT=0` 与回滚核对 `no residual`） |
+| `tmp/uc4-g09-creatability/superadmin-acl-probe.py` / `.json` | 超级管理员组闭包实测：`SC 超级管理员（全能力）`
+  传递持有 `SC 能力 - 项目中心审批`；只持该组时三入口 `write` 均为 True（用于更正 §2 的初判） |
+
+- 运行方式：`docker exec -i sc-local-dev-odoo-1 odoo shell -d sc_dev_demo -c /var/lib/odoo/odoo.conf --log-level=error`
+  （**必须**带 `-c /var/lib/odoo/odoo.conf`：`addons_path` 里 `/mnt/source-addons` 指向工作树且优先于 `/mnt/product-addons`，
+  缺该参数会加载到不含本仓模块的库并使 `sc.labor.usage` 等模型不可见）。
+#### 8.35.20-㉙ 871 办理门禁按 §㉘ 的最小范围实施与定向补验（2026-09-20；**产品复核前**）
+
+产品方「同意 继续推进」⇒ 按 §8.35.20-㉘ 给出的最小范围**收紧** 871 的办理门禁。本次**只收紧**：
+不动 ACL、不动行级规则、不放宽任何权限、不动菜单与角色、记账台账**保持 22**。
+
+**1）改动（2 个产品文件，其余为测试）**
+
+| 文件 | 内容 |
+| --- | --- |
+| `models/core/labor_management.py` | `ScLaborUsage` 新增 `_check_project_operator()`／`_check_project_manager()`，与 570 `ScEquipmentUsage`、575 `ScSubcontractRegister` **同文同形**（含 `env.su` 与 `group_sc_super_admin` 放行）；`action_submit`→经办、`action_confirm`→审批、`action_cancel`（`submitted`⇒审批／`draft`⇒经办）、`action_reset_draft`→审批 |
+| `views/core/labor_management_views.xml` | `view_sc_labor_usage_form` 的四个办理按钮补 `groups=`（提交／取消＝`project_user,project_manager`；确认／退回草稿＝`project_manager`），与 570 同口径 |
+
+**影响面（必须由产品方确认的一点）**：`view_sc_labor_usage_form` 是 **871／562 方单／563 零星用工／
+561 劳务用工 四个入口共享**的主表单 ⇒ 门禁同时作用于这四个消费者。族载体
+`labor_usage_form_productization_contract.xml` **不声明任何角色／审批语义**（实测该文件无 `审批／经办／角色／权限` 字样），
+因此本次口径取自 570／575 的既有同族标准，而不是某个入口的独立声明。**该口径对 562／563／561 是否同样成立，列为产品复核关注点。**
+
+**2）新增断言（零删除）**
+
+| 文件 | 新增 |
+| --- | --- |
+| `tests/test_labor_product_capability.py` | `test_the_labor_usage_approval_is_capability_governed_like_its_siblings`（只读建档即拒／经办可提交不可确认／审批可确认，并固定「被拒的审批不得推进状态」）＋ `test_the_labor_usage_return_to_draft_and_cancel_are_capability_governed`（草稿取消＝经办范围内；已提交取消与已取消退回草稿＝需审批能力） |
+| `tests/test_usage_performance_native_lowcode.py` | `test_every_workflow_button_declares_its_capability_gate`：三入口的办理按钮 `groups` 必须与它们所调用的模型方法同口径 |
+
+**3）定向补验（受影响检查，非全系统矩阵）**
+
+| 项 | 结果 | 日志 |
+| --- | --- | --- |
+| 模块升级 | **PASS**（`local.dev.ready` ＋ `local.dev.demo.authority` PASS） | `871-gate-upgrade.log` |
+| 焦点类 | **35 测 0 failed 0 error**（`TestLaborProductCapability` 3 ＋ `TestUsagePerformanceNativeLowcode` 32），三个新测**均已实跑** | `871-gate-l2-focused-final.log` |
+| 受影响类 | `TestP0StateClosure` 78 测 **0 failed**、`TestProductReports` 1 测 **0 failed**；`TestUserFeedbackBusinessViews` 72 测 **28 failed = 已登记基线集合** | `871-gate-l2-affected.log` |
+| sabotage 对照 | 抽掉 871 `action_confirm` 的 `groups` 后新断言 **FAIL**（`[] != ['group_sc_cap_project_manager']`）；恢复后 PASS ⇒ 断言非空转 | `871-gate-sabotage-{upgrade,test}.log`、`871-gate-restore-upgrade.log` |
+| 运行态角色探针复跑 | 871 经办审批 **由「通过」变为被拒**：`UserError：只有项目审批人员可以确认劳务成本登记。`；审批通过；570／575 不变；**回滚无残留** | `role-gate-probe.log` |
+
+**4）`TestUserFeedbackBusinessViews` 28 项失败的归因（复用已登记证据，不重跑基线）**
+
+- 该类的 28 项失败是**已在基线态复现过的既有集合**（`uc4_tax_deduction_native_lowcode_20260918.md` §失败归因、
+  本文档 §8.14 第 1167 行：把该批产品文件 `git checkout` 回基线并重新 upgrade 后得到**完全相同**的 28 项集合，`diff` 为空）；
+  成因为**测试数据漂移**（`发票合同类型必须与发票业务类型一致`／`必须关联已归属公司的有效项目`／`currency_id` 可见性／`legacy_*` 列）。
+- 本轮**独立复核该归因仍然成立**：28 项失败断言全部落在 **tree 视图**与 `legacy_*` 列、费用／扣款项目归属、
+  currency 可见性、税务中心与自筹退款菜单上；该类**不读取** `view_sc_labor_usage_form` 的按钮
+  （例：`test_labor_equipment_subcontract_lists_expose_totals_and_source_type` 只读 17 个 **tree** 的 `arch_db`，
+  失败点为考勤 tree 缺 `legacy_fact_type`）。本次两个产品文件与该集合无交集。
+
+**5）未覆盖 / 待产品方裁定**
+
+- 该门禁对 **562／563／561** 三个兄弟消费者的产品语义尚未经产品方确认（见 §1 影响面）。
+- §8.35.20-㉘ 登记的另两处不对称（超管 ACL 行＝冗余缺失、行级规则挂错组）**仍未处理**，本次不扩大范围。
+- `verify.p1.daily_business_visible_contract.audit` **未跑**：它要求具名审计登录的 HTTP 运行凭据，
+  且其断言面是**列表／表单字段与章节**（`missing_list_fields`／`missing_form_fields`／`missing_form_sections`），
+  **不含按钮与 `groups`**，与本次改动无交集。
+
+**6）状态口径**：本轮=「实施 ＋ 定向补验完成，**待产品方浏览器复核**」；**未**冻结候选、**未**跑 exact-head Quick、
+**未**推送、#499 **未更新**（远端仍 `012c8ad4`）、**未**合并、台账 **22**、G10 未启动。
+
+#### 8.35.20-㉚ 575 明细级冻结闭合：单头冻结的旁路实测与最小修正（2026-09-20；**产品复核前**）
+
+**授权依据**：产品方「同意 继续推进」＋此前指令「若业务规则要求事实不可改，须核对后端写入约束，
+**不能仅靠 XML 只读宣称安全**」。本节是该指令的执行结果：先实测，再按**只收紧**补最小守卫。
+
+**1）实测缺口：单头冻结不覆盖明细模型**
+
+只读探针 `tmp/uc4-g09-creatability/575-line-freeze-probe.py`（`SAVEPOINT` ＋ `ROLLBACK`，
+显式传 `name` 以免消耗 `ir.sequence`）在**修复前**的实测结果：
+
+| 写入路径 | 修复前 | 修复后 |
+| --- | --- | --- |
+| `register.write({"subcontract_scope": ...})`（单头事实） | BLOCKED | BLOCKED |
+| `line.write({"work_scope"/"registered_amount"/"contract_qty"})` | **ALLOWED** | BLOCKED |
+| `line.create`（向已关闭登记补明细） | **ALLOWED** | BLOCKED |
+| `line.unlink()` | **ALLOWED** | BLOCKED |
+| `register.state` 经 `write()` 直接改 | BLOCKED | BLOCKED |
+
+- 即：`arch` 与单头 `write()` 都已声明「已关闭冻结」，但**明细模型自身**是可写入口——
+  `已关闭` 登记的登记金额／数量／明细集合仍能被改写、增补、删除。这正是「XML 只读 ≠ 安全」的实例。
+- 副作用实测：修复前该轮次结束时单头冻结已被绕过（`line_unlink` 成功、金额被改写）；
+  探针全部在回滚事务内，`residual_after_rollback = 0`，库内无残留。
+
+**2）最小修正（只收紧，不扩冻结集、不改状态机）**
+
+`addons/smart_construction_core/models/core/subcontract_management.py` → `ScSubcontractRegisterLine`：
+
+- 新增 `_sc_check_registers_frozen(registers)`：与单头**同冻结集**（`_FACT_IMMUTABLE_STATES`）、
+  **同提示语**（「已关闭的分包登记不可修改登记事实或明细；请先执行「重新打开」回到已登记状态。」）、
+  **同内部上下文放行**（`_COST_SOURCE_STATE_CONTEXT_KEY`）；
+- 挂到 `create()`（校验目标登记）、`write()`（校验当前登记**与**改挂目标）、`unlink()`。
+- **未**改动：冻结集本身、状态机、角色门禁、`draft`／`active` 的可调整性、任何字段或视图。
+
+**3）补验（定向，全部 PASS）**
+
+| 项 | 结果 | 日志（`tmp/uc4-g09-creatability/`） |
+| --- | --- | --- |
+| 升级 | PASS | `575-line-guard-upgrade.log` |
+| 探针复跑 | 单头＋明细 4 条路径全 BLOCKED；`active` 明细写 **ALLOWED**（正例）；内部上下文 **ALLOWED**（受控动作不被自己挡住）；`residual_after_rollback = 0` | `575-line-freeze-probe.log` |
+| 焦点类 | `/TestLaborProductCapability,/TestUsagePerformanceNativeLowcode` = **35 测 0 failed 0 error**（扩展后的 `test_the_subcontract_register_freezes_only_after_closing` 实跑通过） | `575-line-guard-l2-focused.log` |
+| 受影响类 | `TestSubcontractCostRegistration` ＋ `TestUmP3SubcontractRegisterSettlementAuthorityBoundaries` ＋ `TestP0StateClosure` ＋ `TestProductReports` = **80 测 0 failed 0 error** | `575-line-guard-l2-affected.log` |
+| sabotage | 抽掉 `write()` 内的守卫 ⇒ 目标测试 **FAIL**；恢复（`sha256 fa10c937…` 前后一致）后 **PASS** | `575-line-guard-sabotage-test.log`／`575-line-guard-restore-test.log` |
+
+**新增断言（零删除）**：`test_the_subcontract_register_freezes_only_after_closing` 内追加
+`line.write`／`line.write`（金额）／`line.create`／`line.unlink` 四条反例 ＋ 「明细未被删除、金额未变」正例。
+
+**4）未纳入／仍待裁定**
+
+- **`active` 明细可调整维持不变**：`已登记` 是分包结算的法定锚点，冻结集**只有** `closed`（与产品方指令一致）。
+- 仍待裁定：`closed` 之外是否还需对**已被结算引用**的明细加事实锁——当前只有 `unlink()`（保审计关系）
+  与 `action_reopen`（有结算引用即拒）表达该约束，事实字段本身仍可调整。
+- §8.35.20-㉘ 登记的另两处不对称（超管 ACL 行＝冗余缺失、行级规则挂错组）**仍未处理**。
+- 575 菜单 **518** 与 561 菜单、`reactivate` 前端键、登记身份实测导航面、三条「可见性 vs 办理」门禁裁定
+  **均未在本批**。
+
+**5）状态口径**：仍为「实施 ＋ 定向补验完成，**待产品方浏览器复核**」；**未**冻结候选、**未**跑
+exact-head Quick、**未**推送、#499 **未更新**（远端仍 `012c8ad4`）、**未**合并、台账 **22**、G10 未启动。
+
+#### 8.35.20-㉛ 871／570／575 权限面四处结构不对称的只读核定：哪一处有实际权限差（2026-09-20）
+
+**授权依据**：产品方「同意 继续推进」＋既有指令「若确有权限缺陷，单独给出最小修正范围，再决定是否纳入本批」。
+本节**只做只读核定**，不改规则、不改 ACL、不改前端；`security/**` 与 `frontend/**` 本轮**零改动**。
+
+**1）实测方法**
+
+`tmp/uc4-g09-creatability/readonly-visibility-ab-probe.py`（`SAVEPOINT` ＋ `ROLLBACK`，`residual=0`）：
+(a) 只持 `项目中心只读` 的临时用户，读「本人创建、但项目既非其负责也非其关注」的记录；
+(b) 同一用户读「项目负责人＝本人」的记录；(c) 只持 `业务配置管理员` 的用户读他人创建的记录。
+
+| 探针项 | 871 | 570 | 575 |
+| --- | --- | --- | --- |
+| 只读身份读「本人创建但非成员」 | **可见（1）** | 不可见（0） | 不可见（0） |
+| 只读身份读「本人负责项目」 | 可见（1） | 可见（1） | 可见（1） |
+| 只读身份尝试 `write` | BLOCKED | BLOCKED | BLOCKED |
+| 配置管理员读他人记录／写入 | 可见／ALLOWED | 可见／ALLOWED | 可见／ALLOWED |
+
+**2）四处不对称的逐项定性**
+
+| # | 不对称 | 871 现状 | 570／575 形态 | 实测是否有实际差 |
+| --- | --- | --- | --- | --- |
+| 1 | own-or-member 规则挂载组 | 挂**只读**（`group_sc_cap_project_read`） | 挂**经办**（`group_sc_cap_project_user`） | **有**（与 #2 同因） |
+| 2 | 只读缺「仅项目成员」读规则 | 无；只读沿用 own-or-member（含 `create_uid = user.id`） | 有独立 `...by project member` 规则、仅 `perm_read` | **有**：只读可见面偏松（见上表第 1 行） |
+| 3 | 超管 `ALL` 行级规则 | 缺（其 `ALL` 规则挂在**审批**） | 有（挂 `group_sc_super_admin`） | 无（超管闭包已持审批 ⇒ 同一 `ALL` 规则生效） |
+| 4 | 配置管理员 `ALL` 行级规则 | 缺 | 570 有、575 缺 | 无（配置管理员闭包已持审批＋经办，实测三处一致） |
+| — | 超管 ACL 行（`ir.model.access.csv`） | 缺 | 有 | 无（闭包已持审批 ⇒ `write=True`，见 §㉘） |
+
+- 结论：**只有 #1／#2 有可观测行为差**——871 的只读身份能看到「本人创建但已非项目成员」的历史记录，
+  570／575 看不到。**不是提权**（写权限三处一致被 ACL 拒绝），是**只读可见面偏松**。
+- #3／#4 与超管 ACL 行属**结构不对称**（命名与挂载组不同），实测无权限差；修复它们不产生行为变化，
+  但其中「补 ACL 授予行」在语义上是**新增授权**，与「只收紧不放宽」冲突，故**不建议**纳入。
+
+**3）最小修正范围（已写成提案，本轮未应用）**
+
+`tmp/uc4-g09-creatability/rule-align-871.proposed.patch` —— 单文件
+`addons/smart_construction_core/security/sc_record_rules.xml`，两处：
+
+1. `rule_sc_internal_labor_usage` 挂载组 `只读` → `经办`，名称对齐为
+   `SC Project User - labor usage own or project member`（域**不变**）；
+2. 新增 `rule_sc_project_read_labor_usage`（挂 `只读`、仅 `perm_read`、
+   域 `['|', ('project_id.user_id','=',user.id), ('project_id.message_follower_ids.partner_id','=',user.partner_id.id)]`），
+   与 570 的 `rule_sc_project_read_equipment_usage` 同形。
+
+- **预期行为变化（需产品方确认）**：只读身份不再能看到「本人创建但已非项目成员」的记录；
+  经办（继承 own-or-member）与审批（`ALL`）**不变**——经办域与现状逐字相同，故经办路径无回归。
+- **未应用原因**：该改动改变**只读可见面**（真实用户可见记录数变化），属产品可见行为，
+  超出「实施类」授权范围，须产品方明确纳入。
+
+**4）另发现一处待裁定（前端）**
+
+`frontend/apps/web/src/app/contracts/v2/workflowActionAvailability.ts`：
+`knownKeys` 与 `workflowActionMethodAliases()` **均未登记**本批新增的 `reactivate` 键（`action_reopen`）。
+
+- 现状：合同行存在时（`state_actions.closed: ["reactivate"]`）可正常解析；**行缺失／载荷过期**时
+  `isKnownTransition` 返回 `false` ⇒ 归为 `unmanaged` ⇒ 前端据 `contractFormPresenter` 第 597 行
+  **保持按钮可用**（fail-open），用户点击后才由后端拒绝，而不是显示「当前流程状态不允许执行该操作」。
+- 最小修正（2 行，严格收紧）：在 `workflowActionMethodAliases()` 增 `reactivate -> ['action_reopen']`，
+  并把 `reactivate` 加入 `knownKeys`。
+- **未应用原因**：属前端交付面（`frontend/**`），需 `pnpm lint && typecheck:strict && build` 前端门禁，
+  且会扩大本批交付面，须产品方明确纳入。
+
+**5）状态口径**：台账 **22**；**未**合并、**未**冻结、**未**跑 Quick、#499 远端仍 `012c8ad4`、G10 未启动；
+`security/**` 与 `frontend/**` 本轮零改动。
+
+#### 8.35.20-㉜ 登记验收身份的导航面闭合：服务端只读解析（2026-09-20；免口令）
+
+**背景**：§8.35.13-③／-④ 与本批多轮均把「登记身份（`business_config_admin`）的实测导航面」
+列为未闭合，原因是**缺验收 fixture 口令**（`.env*` 中无 `SC_ACCEPTANCE_FIXTURE_PASSWORD`，
+`frontend_productization_fixture.py:20` 明确要求该变量）。
+本轮改用**服务端只读解析**闭合：不需要口令，也不占据会话。
+
+**方法**：`tmp/uc4-g09-creatability/acceptance-identity-server-probe.py`（全 `search`／`read`，不写库），
+在验收容器 `sc-backend-odoo-acceptance` 上对 `db=sc_frontend_acceptance` 运行
+（须带 `-c /var/lib/odoo/odoo.conf`，否则落到本机 socket 而非 `db` 服务）。
+
+**结果（验收库 `sc_frontend_acceptance`）**
+
+| 项 | 值 |
+| --- | --- |
+| 载体 | **存在**：uid 34 `fixture_role_config_admin`（`Acceptance Fixture Business Config Admin`），`active=True` |
+| 解析角色 | **`business_config_admin`** —— 与 `.agent/context.yaml: acceptance_identity.role` 一致 |
+| 能力组 | 只读／经办／审批／业务配置管理员 **四项全持** |
+| 被服务菜单 | **414** 条（其中带 action 的 358 条） |
+| G09 三入口 | 871／570／575 **全部 VISIBLE** |
+| 入口路径 | 871 `项目中心 › 劳务成本 › 劳务成本登记`；570 `项目中心 › 机械成本 › 机械台班登记`；575 `项目中心 › 分包成本 › 分包成本登记` |
+| 配置入口 | 可见两条：`菜单 417 smart_construction_core.menu_sc_business_config_workbench`（表单配置）／`菜单 418 smart_construction_core.menu_ui_menu_config_policy_business_config`（菜单配置）；另有 `base.menu_grant_menu_access`（菜单项） |
+
+**口径修正（重要）**：此前登记的「登记身份在本库无载体」是**针对 dev 库 `sc_dev_demo`** 成立
+（该库无 `fixture_role_config_admin`，只有等价角色 `sc_business_admin` uid 6）；**验收库有载体**。
+两者不可混述。其余探测身份对照（同库）：`fixture_role_config_admin_peer` uid 35＝414、
+`sc_test_admin` uid 133＝177、`admin` uid 2＝177。
+
+**仍未闭合**：HTTP 面（`:18082` 的 `login → session.bootstrap` 导航树）需要验收口令，
+本轮**未**获取、**未**尝试猜测、**未**改动任何口令；该面仍属产品方浏览器复核范围。
+`security/**`、`frontend/**`、`fixture` 数据本轮**零改动**。
+
+**状态口径**：台账 **22**；**未**合并、**未**冻结、**未**跑 Quick、#499 远端仍 `012c8ad4`、G10 未启动。
+
+#### 8.35.20-㉝ 按 §㉛ 的最小范围实施：871 行级规则对齐 ＋ 前端 `reactivate` 键（2026-09-20；**产品复核前**）
+
+**授权依据**：产品方「同意 继续」。两项均严格**收紧**（§㉛ 已给出范围与预期行为变化）。
+
+**1）871 行级规则对齐（`security/sc_record_rules.xml`，单文件两处）**
+
+- `rule_sc_internal_labor_usage`：挂载组 只读 → **经办**，名称对齐为
+  `SC Project User - labor usage own or project member`（域**逐字不变**）。
+- 新增 `rule_sc_project_read_labor_usage`：挂 **只读**、仅 `perm_read`、
+  域 `['|', ('project_id.user_id','=',user.id), ('project_id.message_follower_ids.partner_id','=',user.partner_id.id)]`。
+
+**实施坑（重要，已写入代码注释）**：该文件的既有约定是 `groups eval="[(4, ref(...))]"`（**link 追加**语义）。
+对一条**已存在**的记录改挂组，`(4, …)` 只会**追加**、旧的 `只读` 仍保留 ⇒ 规则对只读继续生效。
+首次实施即命中：升级后探针显示 871 只读仍可见（1），规则组为
+`['项目中心只读', '项目中心经办']`。改为 **replace** 语义 `[(6, 0, [ref(...)])]` 后复跑归零。
+
+| 探针项（`readonly-visibility-ab-probe.py`） | 对齐前 | 对齐后 | 570／575 |
+| --- | --- | --- | --- |
+| 只读读「本人创建但非项目成员」 | 1 | **0** | 0 |
+| 只读读「本人负责项目」 | 1 | 1 | 1 |
+| 只读 `write` | BLOCKED | BLOCKED | BLOCKED |
+| 配置管理员读他人／写入 | 1／ALLOWED | 1／ALLOWED | 1／ALLOWED |
+| `residual_after_rollback` | 0 | 0 | — |
+
+**新增断言（零删除）**：`tests/test_labor_product_capability.py` 新增
+`test_the_labor_usage_record_rules_match_its_siblings`——固定「经办挂 own-or-member、只读挂仅成员读域」，
+并附一条行为反例（只读看不到自己创建但非其项目成员的项目下的记录）。
+
+**定向补验**
+
+| 项 | 结果 | 日志（`tmp/uc4-g09-creatability/`） |
+| --- | --- | --- |
+| 升级（首次，`(4,…)`） | PASS（但规则叠加，见上） | `rule-align-upgrade.log` |
+| 升级（改 `(6,0,[…])` 后） | PASS | `rule-align-upgrade2.log` |
+| 焦点类 | `TestLaborProductCapability` **4 测 0 failed** | `rule-align-l2-focused.log` |
+| 受影响类 | 6 个类 **116 测 0 failed 0 error** | `rule-align-l2-affected.log` |
+| sabotage | 绑定改回 `只读`＋升级 ⇒ 新断言 **FAIL**；恢复（`sha256 33238bfd…` 一致） | `rule-align-sabotage-{upgrade,test}.log`／`rule-align-restore-upgrade.log` |
+
+**2）前端 `reactivate` 键（`frontend/apps/web/src/app/contracts/v2/workflowActionAvailability.ts`，2 行）**
+
+- `workflowActionMethodAliases()` 增 `reactivate -> ['action_reopen']`；`knownKeys` 增 `'reactivate'`。
+- 效果：575「重新打开」成为**受合同治理**的迁移；合同无对应行时按钮 **fail-closed**（禁用＋提示），
+  不再回落为 `unmanaged` 而保持可点。未新增任何可用动作。
+
+**新增断言（零删除）**：`frontend/apps/web/scripts/canonical_form_presenter_test.ts`（node 断言夹具，已有执行目标）
+追加两条：`workflowActionMethodAliases('reactivate') === ['action_reopen']`；空 `availableActions` 下该动作 `enabled === false`。
+
+**补验**
+
+| 项 | 结果 | 日志 |
+| --- | --- | --- |
+| node 断言夹具 | **PASS cases=170** | 终端输出（`node /tmp/canonical-form-presenter-test.mjs`） |
+| sabotage | 撤回键登记 ⇒ **AssertionError**（`actual: []` ≠ `['action_reopen']`） | `frontend-reactivate-sabotage-test.log` |
+| 恢复 | **PASS cases=170**（`sha256 1fd348ce…`） | `frontend-reactivate-restore-test.log` |
+| `lint:src` | **0 error**（39 条既有 warning） | `frontend-reactivate-lint{,2}.log` |
+| `typecheck:strict` | PASS | `frontend-reactivate-typecheck{,2}.log` |
+| `build` | **PASS**（27.21s；仅有既有 chunk-size warning） | `frontend-reactivate-build.log` |
+| P4 守护自检 | `python3 -m unittest scripts.verify.test_frontend_professional_business_value_guard` **5 tests OK** | `frontend-p4-guard-selftest.log` |
+
+**3）未纳入（本轮仍不做）**
+
+- 871 缺超管 `ALL` 规则／缺配置管理员 `ALL` 规则／缺超管 ACL 行：§㉛ 实测**零权限差**，
+  且补 ACL 授予行语义上是**新增授权**，与「只收紧」冲突 ⇒ 保持现状。
+- HTTP 面（验收 `:18082` 登录后导航树）仍缺验收口令，未复核（服务端面见 §㉜）。
+- 台账 **22**；**未**合并、**未**冻结、**未**跑 Quick、#499 远端仍 `012c8ad4`、G10 未启动。
+
+**4）状态口径**：本轮＝「实施（规则对齐 ＋ 前端键）＋ 定向补验完成，**待产品方浏览器复核**」。
+
+#### 8.35.20-㉞ 产品复核通过后的交付链前置：验收运行时对齐、登记身份登录、摘要交叉核对（2026-09-20；本批范围）
+
+**1）产品复核结果（产品方）**
+
+- 产品方实际浏览器复核在本批范围内**通过**。此前「自验与冻结门禁通过、待集中产品复核」的口径随之失效，
+  本批范围改用 **批次验收完成**；主线集成、部署、89 入口整体交付**均未**完成，不因本次通过而改变。
+
+**2）本轮执行的受管动作（两项，均在验收运行时，作用域仅 `sc_frontend_acceptance`）**
+
+| 动作 | 入口 | 结果 | 日志 |
+| --- | --- | --- | --- |
+| 验收运行时对齐到本候选 | `CODEX_NEED_UPGRADE=1 make acceptance.module.upgrade MODULE=smart_construction_core` | **EXIT=0**；`17.0.0.168`，`write_date 2026-09-20 15:34:11Z`（对齐前 `13:33:49Z`） | `acceptance-realign-upgrade.log` |
+| 登记身份可登录 | `SC_ACCEPTANCE_FIXTURE_PASSWORD=… make acceptance.frontend.fixture` | **EXIT=0**；`/api/v1/intent → login` **http=200**，解析 `fixture_role_config_admin` | `acceptance-fixture-login-20260920.log`／`acceptance-identity-nav-probe-after-realign.log` |
+
+- 对齐原因：验收库原先落后工作树约 1.5 小时（dev 于 `15:06:11Z` 升级，验收停在 `13:33:49Z`）。
+  若直接用登记身份复核，复核对象是**旧树**，会得到与候选无关的结论。
+- 对齐后只读实测：`rule_sc_internal_labor_usage`→「SC 能力 - 项目中心经办」(r/w/c)；
+  `rule_sc_project_read_labor_usage`→「SC 能力 - 项目中心只读」(仅 read)；
+  三入口对 uid 34 **可见**（平台自身菜单求解 `_visible_menu_ids()`，非自建探针）：
+  验收侧 `menu 688 → action 871`、`691 → 566`、`692 → 571`（与 dev 的行 id 不同）；
+  事实契约只读集合 `19/6`、`16/5`、`17/15`，与当前候选一致（分包含 `state`）。
+- 登记身份（uid 34）在三模型的 `read/create/write/unlink` 全为 YES，但 `search_count = 0`：
+  读规则是项目域，fixture 项目不在其 own／follower 集合内 ⇒ **以该身份复核时三入口列表天然为空**，
+  这是读域结果、不是缺陷；「打开已有记录／只读反例」只能在 dev（系统管理员）完成。
+  该现象登记为**产品裁定项**（登记身份是否需要一条能看见自己经办记录的读路径），**不写入台账**。
+- 口令值由执行器显式给出（本机夹具值）；三个监听端口仅 `127.0.0.1`（5174／5175／18082）。
+  **未**触碰 dev 库、**未**触碰既有草稿（含 489）。
+- 导航面 401 仍属 §㉗ 已定性的**探针缺陷**，本轮不重复该结论。该证据应由注册工具
+  `scripts/verify/menu_governance_m4_browser_audit.mjs` 在需要时取得，且**当前不宜运行**：
+  它强制 `页面 sourceSha == GIT_SHA`，脏树时该等式只能取 HEAD，等于把脏树绑定成 HEAD（证据不诚实）。
+  故留到冻结为 clean HEAD 之后，再按需取导航面证据。
+
+**3）摘要交叉核对：sabotage／恢复证据「输入未变」的依据**
+
+| 记录中的摘要 | 文件 | 当前实测 | 结论 |
+| --- | --- | --- | --- |
+| `33238bfd…` | `addons/smart_construction_core/security/sc_record_rules.xml` | `33238bfd7de8eb56…` **一致** | §㉝ 的 sabotage／恢复输入未变 |
+| `1fd348ce…` | `frontend/apps/web/src/app/contracts/v2/workflowActionAvailability.ts` | `1fd348cec90c16b3…` **一致** | §㉝ 的 sabotage／恢复输入未变 |
+| `fa10c937…` | `addons/smart_construction_core/models/core/subcontract_management.py` | `fa10c937fda2e092…` **一致** | §㉚ 的 sabotage／恢复输入未变 |
+
+- 可复跑检查：`tmp/uc4-g09-creatability/evidence-digest-crosscheck.py` → **PASS cases=3**
+  （日志 `tmp/uc4-g09-creatability/evidence-digest-crosscheck.log`）。写入 gitignored 路径，冻结指纹不受影响。
+- 记录卫生：本轮新增的 1511 行中，40 位 SHA 仅出现 `012c8ad4…`（＝本候选 HEAD，`ancestor-of-HEAD`）；
+  无陈旧 Tree／HEAD 绑定；3 个短摘要均为**文件摘要**且与当前字节一致；整批差异无凭据类内容
+  （命中项均为 `_COST_SOURCE_STATE_TOKEN` 受控哨兵与正文「token」字样）。
+
+**4）复核辅助件**
+
+- `tmp/uc4-g09-creatability/review-crossref.md`：dev ↔ 验收对照单（入口深链、新建态逐项预期、
+  既有记录反例、应被拒操作、已知表达项）。位于 gitignored 路径，**不进入**本候选。
+
+**5）交付链前置**
+
+- `make ci.delivery.freeze.prepare` → **PASS**
+  （`candidate=unfrozen next=review_generated_changes_commit_freeze_then_run_quick_once`；日志 `freeze-prepare.log`）。
+  生成物变更 3 处，均为本批事实的正确反映：`docs/engineering_convergence/complexity_budget_report.md`
+  （`sc_record_rules.xml 3180→3193`、`subcontract_management.py 1738→1829`、`workflow_contract_service.py 1438→1452`、
+  `test_usage_performance_native_lowcode.py 1047→1444`、`test_workflow_contract_backend.py` 新增入表、
+  告警阈值以上 `95→96`）、`docs/engineering_convergence/split_plan_queue.md`（同上行数位移）、
+  `docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json`（`inputDigest` 随前端源码变化）。
+
+**6）状态与未做项**
+
+- 本批范围：**批次验收完成（本批范围，产品复核通过）**；主线集成、部署、89 入口整体交付均未完成。
+- 台账保持 **22**；875／877／878 的核减仍按既定规则**待合入后独立审计**，22→19 仍只是**预期核减**。
+- **未执行（保持未执行）**：最终 Quick、推送、PR 更新、合并、部署、冻结、G10 启动、浏览器全矩阵重跑。

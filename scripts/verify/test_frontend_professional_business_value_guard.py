@@ -21,6 +21,30 @@ class ProfessionalBusinessValueGuardTests(unittest.TestCase):
 
         self.assertTrue(any("forbidden product special case" in item for item in validate(read_text)))
 
+    def test_visible_money_label_fails(self):
+        """A shared style that no longer clips turns the accessible name into a visible duplicate."""
+
+        def read_text(path):
+            value = (self._root() / path).read_text(encoding="utf-8")
+            if path.endswith("styles/product-patterns.css"):
+                return value.replace("clip-path: inset(50%) !important;", "")
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("clip-path: inset(50%) !important" in item for item in failures), failures)
+
+    def test_dropped_accessible_name_fails(self):
+        """Removing the label carrier silences the screen reader instead of fixing the layout."""
+
+        def read_text(path):
+            value = (self._root() / path).read_text(encoding="utf-8")
+            if path.endswith("design-system/ScMoney.vue"):
+                return value.replace('class="sc-visually-hidden"', 'class="sc-design-money__label"')
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("accessible label carrier" in item for item in failures), failures)
+
     @staticmethod
     def _root():
         from pathlib import Path

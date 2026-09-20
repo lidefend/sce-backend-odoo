@@ -270,6 +270,10 @@
                 <header>
                     <button name="action_register" string="确认登记" type="object" class="btn-primary" invisible="state != 'draft'" groups="smart_construction_core.group_sc_cap_project_manager"/>
                     <button name="action_close" string="关闭" type="object" class="btn-primary" invisible="state != 'active'" groups="smart_construction_core.group_sc_cap_project_manager"/>
+                    <!-- U-C4 G09 575 状态规则：`已登记`(active) 是结算的合法锚点，
+                         事实仍可调整；`已关闭`(closed) 才冻结，回到可调整状态走这个
+                         受控动作（已登记明细被结算引用时后端拒绝重开）。 -->
+                    <button name="action_reopen" string="重新打开" type="object" class="btn-primary" invisible="state != 'closed'" groups="smart_construction_core.group_sc_cap_project_manager"/>
                     <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'cancel'" groups="smart_construction_core.group_sc_cap_project_manager"/>
                     <button name="action_cancel" string="取消" type="object" invisible="state in ('closed', 'cancel')" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,active,closed"/>
@@ -279,26 +283,29 @@
                          `data-sc-anchor`；`view_sc_subcontract_register_form` 是 575（menus 693／518）
                          的原生承载。 -->
                     <group name="subcontract_register_overview">
+                        <!-- U-C4 G09：登记事实的交互窗口与模型 `_FACT_IMMUTABLE_FIELDS`
+                             ＋`_FACT_IMMUTABLE_STATES` 一致——只有 `已关闭` 只读，
+                             `草稿`／`已登记` 均可录入与调整。 -->
                         <group name="subcontract_register_main" data-sc-anchor="subcontract_register_main" string="登记主信息">
                             <field name="name"/>
-                            <field name="project_id"/>
-                            <field name="request_id"/>
-                            <field name="contract_id"/>
-                            <field name="register_date"/>
-                            <field name="start_date"/>
-                            <field name="end_date"/>
-                            <field name="subcontract_scope"/>
+                            <field name="project_id" readonly="state == 'closed'"/>
+                            <field name="request_id" readonly="state == 'closed'"/>
+                            <field name="contract_id" readonly="state == 'closed'"/>
+                            <field name="register_date" readonly="state == 'closed'"/>
+                            <field name="start_date" readonly="state == 'closed'"/>
+                            <field name="end_date" readonly="state == 'closed'"/>
+                            <field name="subcontract_scope" readonly="state == 'closed'"/>
                         </group>
                         <group name="subcontract_register_parties_amount" data-sc-anchor="subcontract_register_parties_amount" string="分包单位与金额">
-                            <field name="subcontractor_id"/>
-                            <field name="responsible_id"/>
-                            <field name="currency_id" invisible="1"/>
+                            <field name="subcontractor_id" readonly="state == 'closed'"/>
+                            <field name="responsible_id" readonly="state == 'closed'"/>
+                            <field name="currency_id" invisible="1" readonly="state == 'closed'"/>
                             <field name="registered_amount"/>
                         </group>
                     </group>
                     <notebook>
                         <page string="登记明细">
-                            <field name="line_ids">
+                            <field name="line_ids" readonly="state == 'closed'">
                                 <tree editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="work_scope"/>
@@ -394,7 +401,7 @@
                 <header>
                     <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state != 'draft'"/>
                     <button name="action_confirm" string="确认结算" type="object" class="btn-primary" invisible="state != 'submitted'"/>
-                    <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'submitted'"/>
+                    <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'cancel'"/>
                     <button name="action_cancel" string="取消" type="object" invisible="state in ('confirmed', 'cancel')"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,confirmed"/>
                 </header>

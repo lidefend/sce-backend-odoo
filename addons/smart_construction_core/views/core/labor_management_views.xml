@@ -356,10 +356,10 @@
         <field name="arch" type="xml">
             <form string="劳务用工">
                 <header>
-                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state != 'draft'"/>
-                    <button name="action_confirm" string="确认用工" type="object" class="btn-primary" invisible="state != 'submitted'"/>
-                    <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'submitted'"/>
-                    <button name="action_cancel" string="取消" type="object" invisible="state in ('confirmed', 'cancel')"/>
+                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state != 'draft'" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
+                    <button name="action_confirm" string="确认用工" type="object" class="btn-primary" invisible="state != 'submitted'" groups="smart_construction_core.group_sc_cap_project_manager"/>
+                    <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'cancel'" groups="smart_construction_core.group_sc_cap_project_manager"/>
+                    <button name="action_cancel" string="取消" type="object" invisible="state in ('confirmed', 'cancel')" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,confirmed"/>
                 </header>
                 <sheet>
@@ -466,7 +466,7 @@
                 <header>
                     <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state != 'draft'"/>
                     <button name="action_confirm" string="确认结算" type="object" class="btn-primary" invisible="state != 'submitted'"/>
-                    <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'submitted'"/>
+                    <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'cancel'"/>
                     <button name="action_cancel" string="取消" type="object" invisible="state in ('confirmed', 'cancel')"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,confirmed"/>
                 </header>

@@ -447,6 +447,7 @@ class ScLaborUsage(models.Model):
         return super().unlink()
 
     def action_submit(self):
+        self._check_project_operator()
         for record in self:
             if record.state != "draft":
                 raise UserError(_("只有草稿用工单可以提交。"))
@@ -455,6 +456,7 @@ class ScLaborUsage(models.Model):
         return True
 
     def action_confirm(self):
+        self._check_project_manager()
         for record in self:
             if record.state != "submitted":
                 raise UserError(_("只有已提交用工单可以确认。"))
@@ -466,15 +468,34 @@ class ScLaborUsage(models.Model):
         for record in self:
             if record.state not in ("draft", "submitted"):
                 raise UserError(_("只有草稿或已提交用工单可以取消。"))
+            if record.state == "submitted":
+                record._check_project_manager()
+            else:
+                record._check_project_operator()
             record._write_cost_source_state({"state": "cancel"})
         return True
 
     def action_reset_draft(self):
+        self._check_project_manager()
         for record in self:
             if record.state != "cancel":
                 raise UserError(_("只有已取消用工单可以重置为草稿。"))
             record._write_cost_source_state({"state": "draft"})
         return True
+
+    def _check_project_operator(self):
+        if self.env.su or self.env.user.has_group(
+            "smart_construction_core.group_sc_cap_project_user"
+        ) or self.env.user.has_group("smart_construction_core.group_sc_super_admin"):
+            return
+        raise UserError(_("你没有权限办理劳务成本登记。"))
+
+    def _check_project_manager(self):
+        if self.env.su or self.env.user.has_group(
+            "smart_construction_core.group_sc_cap_project_manager"
+        ) or self.env.user.has_group("smart_construction_core.group_sc_super_admin"):
+            return
+        raise UserError(_("只有项目审批人员可以确认劳务成本登记。"))
 
     @api.depends("worker_qty", "work_hours", "price_unit")
     def _compute_amount_total(self):

@@ -56,6 +56,7 @@ export function workflowActionMethodAliases(key: string): string[] {
   }
   if (normalized === 'cancel') return ['action_cancel', 'button_cancel'];
   if (normalized === 'reopen') return ['action_reset_draft', 'button_draft'];
+  if (normalized === 'reactivate') return ['action_reopen'];
   return [];
 }
 
@@ -90,7 +91,7 @@ function rowMatchesIdentity(row: Pick<InspectedWorkflowRow, 'key' | 'method'>, a
 }
 
 function isKnownTransition(actionKey: string, methodName: string) {
-  const knownKeys = ['submit', 'approve', 'reject', 'activate', 'complete', 'cancel', 'reopen'];
+  const knownKeys = ['submit', 'approve', 'reject', 'activate', 'complete', 'cancel', 'reopen', 'reactivate'];
   return knownKeys.includes(actionKey) || knownKeys.some((key) => workflowActionMethodAliases(key).includes(methodName));
 }
 

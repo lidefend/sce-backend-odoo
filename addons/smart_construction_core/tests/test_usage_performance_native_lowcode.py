@@ -20,6 +20,7 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
       871 劳务成本登记 / menu 689 / action `action_sc_product_labor_cost_v1`
       562 方单         / menu 504 / action `action_sc_labor_usage_ticket`      -> 同一原生表单
       563 零星用工     / menu 505 / action `action_sc_labor_usage_casual`     -> 同一原生表单
+      561 劳务用工     / 无独立菜单   / action `action_sc_labor_usage`         -> 同一原生表单
         -> `sc.labor.usage` / `view_sc_labor_usage_form`
 
       570 机械台班登记 / menus 692+509 / action `action_sc_equipment_usage`
@@ -67,6 +68,14 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
         "business_config_contract_labor_usage_casual_productized_form_v1": (
             "action_sc_labor_usage_casual", "sc.labor.usage",
             "view_sc_labor_usage_form", "零星用工"),
+        # 561 carries the same native form through the model's product-policy
+        # integration action.  It has no menu of its own, so it was left out of
+        # the delivered-navigation registration - and that is exactly why it kept
+        # consuming the model-wide plane.  It stays in this list so the create
+        # surface of every action that renders the form is pinned.
+        "business_config_contract_labor_usage_work_productized_form_v1": (
+            "action_sc_labor_usage", "sc.labor.usage",
+            "view_sc_labor_usage_form", "劳务用工"),
         "business_config_contract_equipment_usage_shift_productized_form_v1": (
             "action_sc_equipment_usage_shift_user_confirmed", "sc.equipment.usage",
             "view_sc_equipment_usage_form", "机械台班记录"),
@@ -84,6 +93,7 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
             "action_sc_product_labor_cost_v1",
             "action_sc_labor_usage_ticket",
             "action_sc_labor_usage_casual",
+            "action_sc_labor_usage",
         ),
         "view_sc_equipment_usage_form": (
             "action_sc_equipment_usage",
@@ -486,8 +496,68 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
                         ("inherit_id", "=", False), ("active", "=", True),
                     ])
                     self.assertEqual(primary.ids, [
-                        self.env.ref("smart_construction_core.%s" % view_xmlid).id
-                    ])
+                       self.env.ref("smart_construction_core.%s" % view_xmlid).id
+                   ])
+
+    # Every action that renders one of these shared native forms must own an
+    # entry-level release.  An action without one falls back to the model-wide
+    # policy plane, and that plane is not the delivered create surface: on 561 the
+    # fallback projected 57 policy keys whose `advanced` fields exclude the create
+    # profile, so `work_content` (`required=True`, no model default) came out
+    # invisible while the page still offered 提交.  The behaviour itself is pinned
+    # by the create-contract probe (tmp/uc4-g09-creatability); this assertion pins
+    # the declaration state that probe identified as its cause.
+    ENTRY_RELEASE_ACTIONS = {
+        "sc.labor.usage": (
+            "action_sc_product_labor_cost_v1", "action_sc_labor_usage_ticket",
+            "action_sc_labor_usage_casual", "action_sc_labor_usage",
+        ),
+        "sc.equipment.usage": (
+            "action_sc_equipment_usage",
+            "action_sc_equipment_usage_shift_user_confirmed",
+        ),
+        "sc.subcontract.register": ("action_sc_subcontract_register",),
+    }
+
+    def test_every_family_action_owns_an_entry_release(self):
+        """No action of this group may fall back to the model-wide policy plane.
+
+        561 was the observed case: with no entry release of its own, the create
+        projection took the model-wide plane and the required fact `work_content`
+        was not obtainable through any legal path.  The guard is per action rather
+        than per model, because one model can be served by several actions and the
+        plane is resolved per action.
+        """
+        for model, action_xmlids in self.ENTRY_RELEASE_ACTIONS.items():
+            for action_xmlid in action_xmlids:
+                with self.subTest(model=model, action=action_xmlid):
+                    contracts = self._entry_contracts(model, action_xmlid)
+                    native = [
+                        config for config in contracts
+                        if (self._form_spec(config) or {}).get("composition_mode")
+                        in {"native_semantic_surface", "semantic_native_surface"}
+                    ]
+                    self.assertEqual(
+                        len(native), 1,
+                        "%s must own exactly one entry-level native release" % action_xmlid,
+                    )
+                    self.assertEqual(
+                        native[0].action_id,
+                        self.ref("smart_construction_core.%s" % action_xmlid),
+                        "the native release must be scoped to its own action",
+                    )
+                    # A release that answered for every entry could not be the
+                    # entry's own surface, and the priority is what makes it the
+                    # last structure writer for this action alone.
+                    self.assertGreater(
+                        native[0].priority,
+                        max(
+                            config.priority for config in contracts
+                            if config.name != native[0].name
+                        ),
+                        "%s must outrank its model-wide plane" % action_xmlid,
+                    )
+
     # -- create-state usability (U-C4 G09 可办理性修正, 2026-09-19) ------------
 
     # `user` is the fact set the create surface must let the user enter, so none of
@@ -538,6 +608,7 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
             "unpaid_amount": "computed", "uninvoiced_amount": "computed",
             "message_attachment_count": "computed",
             "source_created_by": "history", "source_created_at": "history",
+            "state": "workflow",
         },
     }
 
@@ -560,7 +631,7 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
             "subcontract_register_document_no_display",
             "subcontract_register_subcontract_content_display",
             "subcontract_register_title_display",
-            "source_created_at", "source_created_by",
+            "source_created_at", "source_created_by", "state",
             "uninvoiced_amount", "unpaid_amount",
         ),
     }
@@ -579,9 +650,10 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
 
     # The create window the native arch declares for the user-typed facts: the
     # interaction face of the same rule the model guard enforces.  871 and 570
-    # own an explicit draft window.  575's post-registration rule is still
-    # undecided, so this batch declares no state lock there and the pin below
-    # records that absence instead of inventing a rule.
+    # own an explicit draft window.  575 owns a different, narrower window -
+    # `已登记`(active) stays adjustable and only `已关闭`(closed) freezes - so its
+    # expression lives in `FACT_FREEZE_EXPRESSION` and is pinned by
+    # `test_the_subcontract_register_freezes_only_after_closing`.
     NATIVE_DRAFT_WINDOW = {
         "view_sc_labor_usage_form": (
             "project_id", "usage_date", "usage_type", "labor_team", "contractor_id",
@@ -593,6 +665,17 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
             "specification", "uom_text", "usage_location", "operator_name",
             "usage_qty", "usage_hours", "supplier_id", "currency_id", "price_unit",
         ),
+    }
+
+    # The arch expression that renders each model's freeze window, i.e. the states
+    # in which the delivered model refuses a write to the facts the user enters.
+    # 871/570 close the window everywhere outside the create state; 575 freezes
+    # only `已关闭`, because `已登记` is still a legal settlement anchor and a
+    # correction there is a real adjustment, not a historical rewrite.
+    FACT_FREEZE_EXPRESSION = {
+        "sc.labor.usage": "state != 'draft'",
+        "sc.equipment.usage": "state != 'draft'",
+        "sc.subcontract.register": "state == 'closed'",
     }
 
     # Basis facts stay writable after submission on both guarded models: they are
@@ -733,39 +816,64 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
             for name in self.DRAFT_WINDOW_EXEMPT_FACTS:
                 with self.subTest(view=view_xmlid, fact=name):
                     self.assertNotIn(name, arch_readonly, "basis facts stay writable after submission")
-        # 575: `已登记` is not automatically `不可修改`; the rule is pending, so no
-        # state lock is declared here.
-        pending = self._arch_readonly("view_sc_subcontract_register_form")
-        for name in ("project_id", "note", "subcontract_scope"):
+        # 575: `已登记` is not automatically `不可修改` - the delivered rule locks the
+        # register's facts and its detail lines in `已关闭` only.  The arch may
+        # therefore render exactly one conditional window, it must be
+        # `state == 'closed'`, and it must name the model's own frozen facts; the
+        # basis facts stay outside it.  The runtime behaviour is pinned by
+        # test_the_subcontract_register_freezes_only_after_closing.
+        register_window = self._arch_readonly("view_sc_subcontract_register_form")
+        with self.subTest(view="view_sc_subcontract_register_form", surface="window"):
+            self.assertEqual(
+                {
+                    name: expr for name, expr in register_window.items()
+                    if expr and expr != "1" and expr != "state == 'closed'"
+                },
+                {},
+                "575 may lock facts only in 已关闭; 已登记 stays adjustable",
+            )
+            self.assertEqual(
+                {name for name, expr in register_window.items() if expr == "1"},
+                {"processing_advisory"},
+                "no user fact stays unconditionally read-only on the delivered arch",
+            )
+            self.assertEqual(
+                {name for name, expr in register_window.items() if expr == "state == 'closed'"},
+                set(self.env["sc.subcontract.register"]._FACT_IMMUTABLE_FIELDS),
+                "the arch window and the model freeze must name the same facts",
+            )
+        for name in self.DRAFT_WINDOW_EXEMPT_FACTS + ("management_note", "name"):
             with self.subTest(view="view_sc_subcontract_register_form", fact=name):
-                self.assertNotIn("state", pending.get(name, ""))
+                self.assertNotIn(
+                    "state", register_window.get(name, ""),
+                    "%s is a basis fact and stays writable after closing" % name,
+                )
 
     def test_the_policy_never_locks_a_fact_the_model_treats_as_user_entered(self):
         """`配置策略` may not contradict `模型约束` about who enters the fact.
 
         The observed defect chain is 原生声明 -> 模型约束 -> 配置策略 -> 最终契约
         -> 控件.  `_FACT_IMMUTABLE_FIELDS` is the model's own definition of the
-        facts the user enters inside the draft window and the backend then
-        freezes; the native arch declares the same window with
-        `readonly="state != 'draft'"`.  A read-only policy on a fact inside that
-        window is therefore the first divergence, and it survived because the two
-        declarations were never compared.  `usage_type` was the observed case: the
-        older p1 carrier locked it unconditionally while the model guard and the
-        arch both treated it as a draft-window fact, so the create page rendered
-        it read-only while the delivered status contract still called it
-        authorable - the internal contradiction the user measured.
+        facts the user enters and the backend then freezes, and the native arch
+        declares the same window (`readonly="state != 'draft'"` on 871/570,
+        `readonly="state == 'closed'"` on 575 - see `FACT_FREEZE_EXPRESSION`).  A
+        read-only policy on a fact inside that window is therefore the first
+        divergence, and it survived because the two declarations were never
+        compared.  `usage_type` was the observed case: the older p1 carrier locked
+        it unconditionally while the model guard and the arch both treated it as a
+        draft-window fact, so the create page rendered it read-only while the
+        delivered status contract still called it authorable - the internal
+        contradiction the user measured.
         """
         compared = 0
         for model, view_xmlid in self.MODEL_VIEWS.items():
             guard = getattr(self.env[model], "_FACT_IMMUTABLE_FIELDS", None)
             if guard is None:
-                # 575's post-registration rule is undecided, so there is no guard to
-                # contradict.  Pinned by
-                # test_the_subcontract_register_post_registration_rule_stays_pending.
                 continue
             compared += 1
+            expression = self.FACT_FREEZE_EXPRESSION[model]
             arch_readonly = self._arch_readonly(view_xmlid)
-            window = {name for name, expr in arch_readonly.items() if expr == "state != 'draft'"}
+            window = {name for name, expr in arch_readonly.items() if expr == expression}
             with self.subTest(model=model):
                 self.assertEqual(
                     self._policy_readonly(model) & set(guard), set(),
@@ -773,22 +881,27 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
                 )
                 self.assertEqual(
                     set(guard) - window, set(),
-                    "every draft-window fact the model freezes must open on the native create surface",
+                    "every fact the model freezes must render the same window in the native arch",
                 )
                 self.assertEqual(
                     set(self.USER_SUPPLIED_FACTS[model]) - set(guard),
-                    set(self.DRAFT_WINDOW_EXEMPT_FACTS),
-                    "only the basis facts stay outside the model's own draft window",
+                    set(self.DRAFT_WINDOW_EXEMPT_FACTS) & set(self.USER_SUPPLIED_FACTS[model]),
+                    "only the basis facts stay outside the model's own freeze window",
                 )
-        self.assertEqual(compared, 2, "871 and 570 carry the draft-window guard")
-        # Recorded, not authorized: 570's arch keeps `request_id` inside the draft
-        # window while its retained guard does not freeze it.  This batch reuses
-        # 570's guard unchanged (the registered rule for that entry), so the
-        # residual is pinned here for the follow-up schedule instead of being
-        # silently widened or silently dropped.
+        self.assertEqual(
+            compared, 3, "871, 570 and 575 each declare a fact freeze with its window",
+        )
+        self.assertEqual(
+            set(self.FACT_FREEZE_EXPRESSION) - set(self.MODEL_VIEWS), set(),
+            "every declared freeze window names a governed create surface",
+        )
+        # Closed by the window alignment: the residual used to be `request_id`,
+        # which 570's arch locked inside the draft window while the guard did not
+        # freeze it.  The comparison stays so the two declarations cannot drift
+        # apart again silently.
         residual = {name for name, expr in self._arch_readonly("view_sc_equipment_usage_form").items()
                     if expr == "state != 'draft'"} - set(self.env["sc.equipment.usage"]._FACT_IMMUTABLE_FIELDS)
-        self.assertEqual(residual, {"request_id"})
+        self.assertEqual(residual, set())
 
     def test_the_prompt_is_feedback_not_a_section(self):
         """The computed 办理提示 is auxiliary feedback, never a business section.
@@ -982,24 +1095,29 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
         with self.assertRaises(UserError):
             copied.write({"state": "confirmed"})
 
-    def test_the_equipment_usage_window_stays_narrower_and_is_pinned(self):
-        """570's guard is retained unchanged, so its narrower window is recorded.
+    def test_the_equipment_usage_window_matches_the_native_arch(self):
+        """Interaction face and backend guard declare the same window.
 
-        `sc.equipment.usage` refuses a post-submission fact write only in
-        `submitted`/`confirmed`, while its arch locks on the wider
-        `state != 'draft'`.  This batch is not authorized to add a lock to 570, so
-        the divergence is pinned here for the follow-up schedule instead of being
-        silently widened or silently dropped.
+        570's arch locks every delivered fact on `state != 'draft'`, but the model
+        guard refused a fact write only in `submitted`/`confirmed`, so a `cancel`
+        record stayed writable behind a page that rendered it read-only - the same
+        divergence 871 carried before it was aligned.  570 now enforces the arch's
+        own window, so the former residual is asserted closed rather than pinned
+        open.
         """
         guard = self.env["sc.equipment.usage"]._FACT_IMMUTABLE_FIELDS
         arch = self._arch_readonly("view_sc_equipment_usage_form")
         window = {name for name, expr in arch.items() if expr == "state != 'draft'"}
         self.assertTrue(window, "570's arch must open a draft window")
-        # 570's backend window is the narrower one and this batch does not widen it.
-        self.assertIn("request_id", window - set(guard))
+        self.assertEqual(set(guard), window, "the backend window is the arch's window")
 
     def test_the_equipment_usage_guard_is_retained(self):
-        """570's delivered guard is untouched: the correction adds no new lock."""
+        """570's guard keeps acting, on the window its own arch declares.
+
+        The correction does not add a rule the page does not declare: it makes the
+        backend refuse exactly what the arch already renders read-only, so the
+        window survives the state that used to stay writable behind it.
+        """
         project = self.env["project.project"].search([], limit=1)
         self.assertTrue(project, "the governed database must carry a project")
         usage = self.env["sc.equipment.usage"].create({
@@ -1011,7 +1129,7 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
         })
         self.assertEqual(
             usage._FACT_IMMUTABLE_FIELDS,
-            {"project_id", "usage_date", "equipment_name", "equipment_code",
+            {"project_id", "request_id", "usage_date", "equipment_name", "equipment_code",
              "specification", "uom_text", "usage_location", "operator_name",
              "usage_qty", "usage_hours", "supplier_id", "currency_id", "price_unit"},
         )
@@ -1020,28 +1138,307 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
         self.assertEqual(usage.state, "submitted")
         with self.assertRaises(UserError):
             usage.write({"usage_hours": 9.0})
+        # Basis facts are not measured facts: the user completes them while the
+        # record waits for confirmation.
         usage.write({"note": "提交后补充依据"})
+        # The refusal now follows the arch's window, so cancelling does not reopen
+        # it; the sanctioned way back is the business action, not a write.
+        usage.action_cancel()
+        self.assertEqual(usage.state, "cancel")
+        with self.assertRaises(UserError):
+            usage.write({"usage_hours": 6.0})
+        with self.assertRaises(UserError):
+            usage.write({"request_id": False})
+        with self.assertRaises(UserError):
+            usage.unlink()
+        usage.action_reset_draft()
+        self.assertEqual(usage.state, "draft")
+        usage.write({"usage_hours": 6.0})
+        self.assertEqual(usage.usage_hours, 6.0)
 
-    def test_the_subcontract_register_post_registration_rule_stays_pending(self):
-        """`已登记` is not automatically `不可修改`.
+    def test_the_subcontract_register_freezes_only_after_closing(self):
+        """`已登记` is not automatically `不可修改`; `已关闭` is, until `重新打开`.
 
-        The delivered `sc.subcontract.register.write()` enforces contract
-        authority, the cumulative registered amount and the settlement
-        authorization; it carries no fact-immutability guard.  The
-        `draft/active/closed` edit rule for the register and its detail lines is
-        still undecided, so this batch adds no guard and no state lock.  Pinning
-        the absence keeps a later batch from reading this file as if the rule had
-        been settled here.
+        This replaces the pin that recorded an absence ("no guard, no state lock,
+        rule undecided").  The delivered rule is now defined: the register's facts
+        and its detail lines stay writable in `草稿` and `已登记`.  `已登记` keeps
+        the window open on purpose - it is still a legal settlement anchor
+        (`ScSubcontractSettlement._check_business_anchor` accepts `active` and
+        `closed`), so a correction there is a real adjustment, and the cumulative
+        registered amount and settlement authority checks are what bound it.
+        `已关闭` freezes those facts on both surfaces (model guard + arch window),
+        and the only legal way back to an adjustable record is the controlled
+        `重新打开` (closed -> active) action, which the model refuses once a
+        settlement references the register's detail lines - the same shape as the
+        delivered detail-line `unlink()` protection.  The run is exercised with
+        rollback-safe throwaway records; nothing is published, and no delivered
+        record is touched.
         """
         model = self.env["sc.subcontract.register"]
-        self.assertFalse(hasattr(model, "_FACT_IMMUTABLE_FIELDS"))
+        self.assertEqual(tuple(model._FACT_IMMUTABLE_STATES), ("closed",))
+        self.assertEqual(
+            set(model._FACT_IMMUTABLE_FIELDS) & set(self.DRAFT_WINDOW_EXEMPT_FACTS), set(),
+            "basis facts are not facts the register freezes",
+        )
         project = self.env["project.project"].search([], limit=1)
         self.assertTrue(project, "the governed database must carry a project")
+        subcontractor = self.env["res.partner"].create({"name": "G09 已关闭规则分包单位"})
+        # 结算关系要求登记单落在正式分包合同上（`_sc_validate_register_pair`）。
+        contract = self.env["construction.contract"].create({
+            "subject": "G09 已关闭规则分包合同",
+            "type": "in",
+            "project_id": project.id,
+            "partner_id": subcontractor.id,
+        })
         register = model.create({
             "project_id": project.id,
-            "subcontract_scope": "G09 可办理性分包范围",
+            "subcontractor_id": subcontractor.id,
+            "contract_id": contract.id,
+            "subcontract_scope": "G09 已关闭规则分包范围",
+            "line_ids": [(0, 0, {
+                "work_scope": "G09 已关闭规则工作范围",
+                "contract_qty": 1.0,
+                "unit_name": "项",
+                "registered_amount": 1000.0,
+            })],
         })
-        # No unconditional lock exists: a fact write is not refused by an
-        # immutability rule on the delivered model.
-        register.write({"note": "G09 可办理性备注"})
-        self.assertEqual(register.note, "G09 可办理性备注")
+
+        # 状态不是可写字段：与 871／570／材料验收同一条口径，`create()` 与 `write()`
+        # 都不能绕过受控动作（否则「已关闭」窗口可被 `write({"state": ...})` 直接掀开）。
+        with self.assertRaises(UserError):
+            model.create({
+                "project_id": project.id,
+                "subcontractor_id": subcontractor.id,
+                "contract_id": contract.id,
+                "subcontract_scope": "G09 非法植入状态",
+                "state": "active",
+            })
+        with self.assertRaises(UserError):
+            register.write({"state": "active"})
+        self.assertEqual(register.state, "draft")
+
+        # 草稿与已登记都可调整：冻结不是「非草稿」。
+        register.write({"subcontract_scope": "G09 草稿可调整范围"})
+        register.action_register()
+        self.assertEqual(register.state, "active")
+        register.write({"subcontract_scope": "G09 已登记可调整范围"})
+        line = register.line_ids
+        line.write({"work_scope": "G09 已登记可调整工作范围"})
+        self.assertEqual(register.subcontract_scope, "G09 已登记可调整范围")
+        self.assertEqual(line.work_scope, "G09 已登记可调整工作范围")
+
+        # 已关闭：事实与明细都拒绝写入，记录依据仍可补充。
+        register.action_close()
+        self.assertEqual(register.state, "closed")
+        with self.assertRaises(UserError):
+            register.write({"subcontract_scope": "G09 已关闭不可改写"})
+        with self.assertRaises(UserError):
+            register.write({"line_ids": [(1, line.id, {"work_scope": "G09 已关闭不可改写"})]})
+        # 冻结不能只在单头生效：明细模型自身的 create／write／unlink 也是写入路径，
+        # 否则「已关闭」窗口可被 `line.write()` 直接绕开（实测旁路，见
+        # `tmp/uc4-g09-creatability/575-line-freeze-probe.py`）。
+        with self.assertRaises(UserError):
+            line.write({"work_scope": "G09 已关闭明细不可改写"})
+        with self.assertRaises(UserError):
+            line.write({"registered_amount": 999.0})
+        with self.assertRaises(UserError):
+            self.env["sc.subcontract.register.line"].create({
+                "register_id": register.id,
+                "work_scope": "G09 已关闭不可补明细",
+                "contract_qty": 1.0,
+                "registered_amount": 10.0,
+            })
+        with self.assertRaises(UserError):
+            line.unlink()
+        self.assertTrue(line.exists(), "冻结的登记明细不得被删除")
+        self.assertEqual(line.registered_amount, 1000.0)
+        register.write({"note": "G09 已关闭仍可补充依据"})
+        self.assertEqual(register.note, "G09 已关闭仍可补充依据")
+
+        # 受控动作回到可调整状态，重开后同一事实再次可写。
+        register.action_reopen()
+        self.assertEqual(register.state, "active")
+        register.write({"subcontract_scope": "G09 重开后仍可调整"})
+        self.assertEqual(register.subcontract_scope, "G09 重开后仍可调整")
+
+        # 方法的前置条件：非 `已关闭` 拒绝重开，避免把它当成通用解锁开关。
+        with self.assertRaises(UserError):
+            register.action_reopen()
+        self.assertEqual(register.state, "active")
+
+        # 已被结算引用的登记不可重开：冻结之后不能改写结算依据。
+        settlement = self.env["sc.subcontract.settlement"].create({
+            "project_id": project.id,
+            "subcontractor_id": subcontractor.id,
+            "register_id": register.id,
+            "line_ids": [(0, 0, {
+                "work_scope": "G09 已关闭规则结算范围",
+                "register_line_id": line.id,
+                "qty": 1.0,
+                "unit_price": 100.0,
+            })],
+        })
+        register.action_close()
+        self.assertEqual(register.state, "closed")
+        with self.assertRaises(UserError):
+            register.action_reopen()
+        self.assertEqual(register.state, "closed")
+        # 受控动作之外的写入路径同样不能把冻结窗口掀开。
+        with self.assertRaises(UserError):
+            register.write({"state": "active"})
+        with self.assertRaises(UserError):
+            register.with_context(sc_skip_subcontract_contract_authority=True).write(
+                {"state": "active"}
+            )
+        self.assertEqual(register.state, "closed")
+        self.assertTrue(settlement.exists(), "the throwaway settlement is the settlement authority")
+
+    # The delivered `退回草稿` rule names the state each entry accepts the action
+    # in: `action_reset_draft` is refused outside `已取消` on every model below, and
+    # the native arch header of the same entry renders that same action.  The
+    # workflow contract is the second surface - the Vue form reads it through
+    # `describe_record()` - so both have to name the same state.
+    RESET_TO_DRAFT_ENTRIES = {
+        "view_sc_labor_usage_form": "sc.labor.usage",
+        "view_sc_equipment_usage_form": "sc.equipment.usage",
+        "view_sc_subcontract_register_form": "sc.subcontract.register",
+    }
+
+    def test_the_reset_to_draft_action_is_declared_where_it_runs(self):
+        """A control the model refuses is not an available action.
+
+        The delivered way back to the draft window is `取消` (`draft`/`submitted`
+        -> `cancel`) followed by `退回草稿` (`cancel` -> `draft`).  A contract that
+        offers `reopen` in `已提交`/`已登记` ships a button that can only fail, and
+        one that omits it in `已取消` hides the only legal return.  The arch header
+        and the declared `state_actions` are therefore compared to the model's own
+        precondition, and the declared action is then actually run.
+        """
+        service = self.env["sc.workflow.contract.service"]
+        project = self.env["project.project"].search([], limit=1)
+        self.assertTrue(project, "the governed database must carry a project")
+
+        labor = self.env["sc.labor.usage"].create({
+            "project_id": project.id,
+            "labor_team": "G09 回退路径班组",
+            "work_content": "G09 回退路径验证",
+            "worker_qty": 1.0,
+            "work_hours": 1.0,
+        })
+        equipment = self.env["sc.equipment.usage"].create({
+            "project_id": project.id,
+            "equipment_name": "G09 回退路径机械",
+            "usage_location": "G09 现场",
+            "operator_name": "G09 操作人员",
+            "usage_hours": 2.0,
+        })
+        # 575 needs its own business anchor before it can be registered: the
+        # delivered `action_register` refuses a register without 分包单位 and 明细.
+        subcontractor = self.env["res.partner"].create({"name": "G09 回退路径分包单位"})
+        register = self.env["sc.subcontract.register"].create({
+            "project_id": project.id,
+            "subcontractor_id": subcontractor.id,
+            "subcontract_scope": "G09 回退路径分包范围",
+            "line_ids": [(0, 0, {"work_scope": "G09 回退路径工作范围"})],
+        })
+
+        cases = (
+            (labor, labor.action_submit, labor.action_cancel),
+            (equipment, equipment.action_submit, equipment.action_cancel),
+            (register, register.action_register, register.action_cancel),
+        )
+        for record, submit, cancel in cases:
+            view_xmlid = next(
+                key for key, value in self.RESET_TO_DRAFT_ENTRIES.items() if value == record._name
+            )
+            with self.subTest(model=record._name, surface="arch"):
+                buttons = self._arch(view_xmlid).xpath(".//button[@name='action_reset_draft']")
+                self.assertEqual(len(buttons), 1, "the 退回草稿 button is declared once")
+                self.assertEqual(buttons[0].get("invisible"), "state != 'cancel'")
+
+            with self.subTest(model=record._name, surface="contract"):
+                submit()
+                record.invalidate_recordset()
+                rows = {row["key"]: row for row in service.describe_record(record)["availableActions"]}
+                self.assertNotIn(
+                    "reopen", rows,
+                    "已提交/已登记 may not declare the action the model refuses",
+                )
+                cancel()
+                record.invalidate_recordset()
+                self.assertEqual(record.state, "cancel")
+                rows = {row["key"]: row for row in service.describe_record(record)["availableActions"]}
+                self.assertIn("reopen", rows, "已取消 must declare the only legal return")
+                self.assertTrue(rows["reopen"]["enabled"], "the declared action must be enabled")
+                self.assertEqual(rows["reopen"]["method"], "action_reset_draft")
+                # Declared, and actually runnable: the same record goes back.
+                record.action_reset_draft()
+                self.assertEqual(record.state, "draft")
+
+    # G09: 871／570／575 是同一族的成本登记入口，办理动作的角色门禁必须同口径。
+    # `只读 ⊂ 经办 ⊂ 审批` 是严格蕴含，经办与审批都持 `write` ⇒ 审批分离无法由
+    # ACL 或行级规则表达，只能落在方法级门禁与按钮 `groups` 上。任一入口漏掉门禁，
+    # 经办即可自审自批，且只读角色会看到「点了必然失败」的按钮。
+    OPERATOR_AND_MANAGER = (
+        "smart_construction_core.group_sc_cap_project_user",
+        "smart_construction_core.group_sc_cap_project_manager",
+    )
+    MANAGER_ONLY = (
+        "smart_construction_core.group_sc_cap_project_manager",
+    )
+    CAPABILITY_GATED_BUTTONS = {
+        "view_sc_labor_usage_form": {
+            "action_submit": OPERATOR_AND_MANAGER,
+            "action_confirm": MANAGER_ONLY,
+            "action_reset_draft": MANAGER_ONLY,
+            "action_cancel": OPERATOR_AND_MANAGER,
+        },
+        "view_sc_equipment_usage_form": {
+            "action_submit": OPERATOR_AND_MANAGER,
+            "action_confirm": MANAGER_ONLY,
+            "action_reset_draft": MANAGER_ONLY,
+            "action_cancel": OPERATOR_AND_MANAGER,
+        },
+        "view_sc_subcontract_register_form": {
+            "action_register": MANAGER_ONLY,
+            "action_close": MANAGER_ONLY,
+            "action_reopen": MANAGER_ONLY,
+            "action_reset_draft": MANAGER_ONLY,
+            "action_cancel": OPERATOR_AND_MANAGER,
+        },
+    }
+
+    def test_every_workflow_button_declares_its_capability_gate(self):
+        """An ungated header ships the approval to whoever can write the record.
+
+        The three entries of this family share the same capability ladder and the
+        same separation of 经办 and 审批, so each header must declare the gate that
+        matches the model method it calls.  This pins the buttons to the model's
+        own refusals: `action_confirm`／`action_register`／`action_close`／
+        `action_reopen`／`action_reset_draft` are manager-only on the model, so they
+        are manager-only in the arch as well; `action_submit` and `action_cancel`
+        stay available to 经办.
+        """
+        for view_xmlid, expected in self.CAPABILITY_GATED_BUTTONS.items():
+            with self.subTest(view=view_xmlid):
+                declared = {}
+                for node in self._arch(view_xmlid).xpath(".//button[@type='object']"):
+                    name = node.get("name")
+                    if name in expected:
+                        declared[name] = tuple(
+                            group
+                            for group in (node.get("groups") or "").split(",")
+                            if group
+                        )
+                self.assertEqual(
+                    sorted(declared),
+                    sorted(expected),
+                    "every workflow button of %s must be declared exactly once" % view_xmlid,
+                )
+                for name, groups in expected.items():
+                    self.assertEqual(
+                        sorted(declared[name]),
+                        sorted(groups),
+                        "%s on %s must declare the same gate as the model method it calls"
+                        % (name, view_xmlid),
+                    )
