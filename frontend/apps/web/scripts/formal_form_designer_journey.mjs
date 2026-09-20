@@ -11,11 +11,16 @@ import {
 } from './designer_draft_ownership.mjs';
 import { resolvePopupReadiness } from './designer_popup_readiness.mjs';
 
-export async function runDesignerJourney({ page, entry, baseline, outsideBaseline, outside, contract, effective, out, report, pending, cs, drafts, draftPolicy, documentTopic = false, invoiceTopic = false, payrollTopic = false }) {
+export async function runDesignerJourney({ page, entry, baseline, outsideBaseline, outside, contract, effective, out, report, pending, cs, drafts, draftPolicy, documentTopic = false, invoiceTopic = false, payrollTopic = false, usagePerformanceTopic = false, isolationEntry = null }) {
   // Each registered topic names the real fields of the surface it designs, so the
   // journey authors patches against facts that exist on that entry instead of a
   // shared guess.  A topic without an identity here has no designer evidence.
-  const identities = payrollTopic
+  // The hidden sample must be a field the product does not also require: hiding a
+  // required fact is refused by design (`CONFIG_REQUIRED_FIELD_HIDDEN`), which would
+  // test the guard instead of the migration.
+  const identities = usagePerformanceTopic
+    ? { field: 'labor_team', hidden: 'construction_part', label: '受管班组', group: '受管用工配置' }
+    : payrollTopic
     ? { field: 'requester_id', hidden: 'contact_phone', label: '受管申请人', group: '受管申请信息' }
     : documentTopic
       ? { field: 'issue_authority', hidden: 'result_note', label: '配置发证单位', group: '配置发证信息' }
@@ -293,6 +298,31 @@ export async function runDesignerJourney({ page, entry, baseline, outsideBaselin
     assert(order.length >= 4 && shared.length >= 1,
       `untouched payroll fields lost their shared-column flow: ${JSON.stringify([...untouchedRows.values()])}`);
     report.visual_order = { status: 'passed', configured_y: configuredBox.y, untouched: order, untouched_rows: [...untouchedRows.values()] };
+  } else if (usagePerformanceTopic) {
+    // The labor overview group lays its facts out two per row.  The authored change moves
+    // the renamed field up inside that flow and hides a different, non-required field, so
+    // the durable product facts are: the renamed field renders, it now precedes the field
+    // it was moved above in reading order, and the untouched neighbours keep their native
+    // relative order instead of being re-paired by the configuration.
+    const precedes = (first, second) => (Math.abs(first.y - second.y) < 2 ? first.x < second.x : first.y < second.y);
+    const boxOf = (name) => preview.locator(`[data-field-name="${name}"]`).filter({ visible: true }).first().boundingBox();
+    const configuredBox = await boxOf(fieldName);
+    const displacedBox = await boxOf('usage_date');
+    assert(configuredBox && displacedBox && precedes(configuredBox, displacedBox),
+      'configured field did not move above the field it was reordered past');
+    const peers = ['name', 'project_id', 'usage_type'];
+    const boxes = new Map();
+    for (const peer of peers) {
+      const box = await boxOf(peer);
+      if (box) boxes.set(peer, box);
+    }
+    const order = peers.filter((name) => boxes.has(name));
+    assert.equal(order.length, peers.length, `untouched labor fields did not all render: ${JSON.stringify(order)}`);
+    for (let index = 1; index < order.length; index += 1) {
+      assert(precedes(boxes.get(order[index - 1]), boxes.get(order[index])),
+        `untouched labor fields lost their native order: ${order[index - 1]} -> ${order[index]}`);
+    }
+    report.visual_order = { status: 'passed', configured_y: configuredBox.y, displaced_y: displacedBox.y, untouched: order };
   } else {
   const configuredField = await preview.locator('[data-field-name="keeper_id"]').filter({ visible: true }).first().boundingBox();
   const followingField = await preview.locator('[data-field-name="dest_location_id"]').filter({ visible: true }).first().boundingBox();
@@ -452,6 +482,28 @@ export async function runDesignerJourney({ page, entry, baseline, outsideBaselin
     await business.getByText(configuredLabel, { exact: true }).first().waitFor({ state: 'visible' });
     report.payroll_business_surface = { navigation_target: targetSelector, configured_section_y: sectionBox.y,
       hidden_field_present: false, renamed_field_section: 'matched_navigation_target' };
+  } else if (usagePerformanceTopic) {
+    // The hidden sample lives on the first notebook page and the renamed field lives in an
+    // anchored overview group, so two durable facts are asserted instead of a fixed layout:
+    // the published contract really carries the hidden fact, and the page navigation
+    // addresses the section that carries the renamed field, so body and navigation agree.
+    const publishedContract = await contract();
+    const hiddenPatch = patches.find((patch) => patch.set && patch.set.visible === false);
+    const hiddenNode = [...walk(publishedContract.layoutContract.containerTree)]
+      .find((node) => node.nativeLocator === hiddenPatch.target);
+    assert(hiddenNode && hiddenNode.invisible === true, 'published contract does not carry the hidden fact');
+    await business.locator('[data-section-tab="作业内容"]').last().click();
+    assert.equal(await business.locator(`[data-field-name="${hiddenName}"]`).count(), 0,
+      'field hidden by configuration must not remain in the published page DOM');
+    const nav = business.locator('[data-form-section-navigation]');
+    const managedNav = nav.getByRole('button', { name: '用工主信息', exact: true });
+    const targetSelector = await managedNav.getAttribute('data-section-target');
+    assert(targetSelector, 'the section carrying the renamed field is not reachable from the page navigation');
+    await managedNav.click();
+    assert(await business.locator(targetSelector).first().locator(`[data-field-name="${fieldName}"]`).count() > 0,
+      'renamed field is not inside the section the navigation addresses');
+    report.usage_performance_business_surface = { navigation_target: targetSelector, hidden_field_present: false,
+      hidden_fact_in_contract: true, renamed_field_section: 'matched_navigation_target' };
   } else {
   await business.locator('[data-section-tab="说明与附件"]').last().click();
   assert.equal(await business.getByText('备注', { exact: true }).count(), 0);
@@ -510,7 +562,25 @@ export async function runDesignerJourney({ page, entry, baseline, outsideBaselin
   // The invoice outside scope is 787: its create-profile policy trims the
   // output-business group, so anchor on the always-rendered editable note
   // instead of a section title.
-  if (invoiceTopic) {
+  if (usagePerformanceTopic) {
+    // The shared-model sibling of this topic (562 on the same form view 1461) sits on a
+    // menu the delivered route authority denies for the governed role, so its on-screen
+    // isolation cannot be read from a browser at all.  The denial is recorded as a
+    // navigation coverage fact for this role -- it is not an isolation pass and it is not
+    // called a non-defect here.  The sibling's isolation is instead proven at contract
+    // level against `outsideBaseline` above, and the browser-level isolation claim is made
+    // on the reachable sibling entry of the same topic (a different model, view and action).
+    const deniedReason = new URL(page.url()).pathname === '/access-denied'
+      ? new URL(page.url()).searchParams.get('reason') || 'NAVIGATION_AUTHORITY_DENIED' : null;
+    assert(deniedReason, `usage_performance outside entry is no longer route-denied (${page.url()}); re-derive the isolation evidence`);
+    assert(isolationEntry, 'usage_performance isolation entry is not registered');
+    report.stages.outside_page = { action_id: outside.action_id, menu_id: outside.menu_id,
+      status: 'navigation_authority_denied', reason: deniedReason, url: page.url() };
+    await page.goto(`${base}/f/${isolationEntry.model}/new?menu_id=${isolationEntry.menu_id}&action_id=${isolationEntry.action_id}`, { waitUntil: 'domcontentloaded' });
+    await page.locator('[data-form-section-navigation]').getByRole('button', { name: '设备与项目', exact: true }).waitFor();
+    assert(await page.locator('[data-field-name]').count() > 0, 'isolation entry rendered no form fields');
+    report.stages.isolation_page = { action_id: isolationEntry.action_id, menu_id: isolationEntry.menu_id, status: 'passed' };
+  } else if (invoiceTopic) {
     await page.locator('[data-field-name="note"]').filter({ visible: true }).first().waitFor();
   } else if (payrollTopic) {
     // The outside entry shares the same native view, so the isolation fact is that its
@@ -521,7 +591,7 @@ export async function runDesignerJourney({ page, entry, baseline, outsideBaselin
   }
   assert.equal(await page.getByText(configuredLabel, { exact: true }).count(), 0);
   await page.screenshot({ path: path.join(out, 'designer-outside-scope.png'), fullPage: true });
-  report.stages.outside_page = { action_id: outside.action_id, status: 'passed' };
+  if (!usagePerformanceTopic) report.stages.outside_page = { action_id: outside.action_id, status: 'passed' };
   drafts.delete(reviewOpen.data.token);
   assert(!requests.some((name) => name === 'ui.form_field_policy.set' || name === 'ui.business_config.lowcode.apply'), 'designer used a second policy writer');
   report.stages.designer = { status: 'passed', publication: 'passed', final_contract: 'passed', browser: 'passed',

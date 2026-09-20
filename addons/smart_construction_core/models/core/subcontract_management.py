@@ -5,6 +5,28 @@ from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tools.float_utils import float_compare
 
+from .equipment_management import (
+    _COST_SOURCE_STATE_CONTEXT_KEY,
+    _COST_SOURCE_STATE_TOKEN,
+)
+
+
+# 合同一致性回写的内部放行标记。它是进程内对象身份，不是请求上下文里可伪造的布尔键：
+# 客户端可以自带 `context`（`smart_core` 的 `api.data` 会把请求 context 合并进 env），
+# 若按真值放行，`已关闭` 冻结窗口与合同／结算授权校验会被同一个键一起掀开。
+# 与 `equipment_management._COST_SOURCE_STATE_TOKEN`、tender／tax 的 authority token 同口径。
+_SC_CONTRACT_AUTHORITY_CONTEXT_KEY = "sc_skip_subcontract_contract_authority"
+_SC_CONTRACT_AUTHORITY_TOKEN = object()
+
+# 同址同形的另外两个内部放行标记，同口径：进程内对象身份，不是请求上下文可伪造的布尔键。
+# `_SETTLEMENT_AUTHORITY_*` 让结算 write() 直接放行；`_REGISTER_AUTHORITY_BATCH_*` 让
+# 结算／登记明细的批量路径跳过结算复核。两者都只由本模块内部调用点注入，
+# 客户端自带同名键一律无效（`smart_core` 的 `api.data` 会合并请求 context）。
+_SETTLEMENT_AUTHORITY_CONTEXT_KEY = "sc_skip_subcontract_register_authority"
+_SETTLEMENT_AUTHORITY_TOKEN = object()
+_REGISTER_AUTHORITY_BATCH_CONTEXT_KEY = "sc_subcontract_register_authority_batch"
+_REGISTER_AUTHORITY_BATCH_TOKEN = object()
+
 
 class ScSubcontractPlan(models.Model):
     _name = "sc.subcontract.plan"
@@ -355,6 +377,19 @@ class ScSubcontractRegister(models.Model):
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "register_date desc, id desc"
 
+    # U-C4 G09 575 事实窗口：`已登记`(active) 是分包结算的合法锚点
+    # （`ScSubcontractSettlement._check_business_anchor` 接受 active/closed），
+    # 因此 `已登记` 仍允许调整事实与明细——累计登记金额、结算授权、合同范围由既有
+    # 校验把关，而 `已关闭`(closed) 之后冻结用户录入的事实与明细。回到可调整状态
+    # 走受控动作 `重新打开`（closed -> active），不是写状态。
+    # `note`／`attachment_ids`／`management_note` 是记录依据与管理要求，不入冻结集。
+    _FACT_IMMUTABLE_FIELDS = {
+        "project_id", "request_id", "contract_id", "register_date", "start_date",
+        "end_date", "subcontract_scope", "subcontractor_id", "responsible_id",
+        "currency_id", "line_ids",
+    }
+    _FACT_IMMUTABLE_STATES = ("closed",)
+
     name = fields.Char(string="登记单号", required=True, default="新建", tracking=True)
     project_id = fields.Many2one("project.project", string="项目", required=True, index=True, tracking=True)
     company_id = fields.Many2one(
@@ -452,6 +487,11 @@ class ScSubcontractRegister(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if (
+            self.env.context.get(_COST_SOURCE_STATE_CONTEXT_KEY) is not _COST_SOURCE_STATE_TOKEN
+            and any(vals.get("state", "draft") != "draft" for vals in vals_list)
+        ):
+            raise UserError(_("分包登记状态只能通过受控业务动作推进。"))
         seq = self.env["ir.sequence"]
         explicit_fields_by_vals = []
         for vals in vals_list:
@@ -486,7 +526,29 @@ class ScSubcontractRegister(models.Model):
         return records
 
     def write(self, vals):
-        if self.env.context.get("sc_skip_subcontract_contract_authority"):
+        # 状态是受控业务动作的结果，不是可写字段：与 871／570／材料验收同一条口径
+        # （`equipment_management._COST_SOURCE_STATE_CONTEXT_KEY`）。该守卫置于内部
+        # 上下文放行之前，避免内部放行顺带绕过状态窗口。
+        if (
+            "state" in vals
+            and self.env.context.get(_COST_SOURCE_STATE_CONTEXT_KEY) is not _COST_SOURCE_STATE_TOKEN
+        ):
+            raise UserError(_("分包登记状态只能通过受控业务动作推进。"))
+        # 已关闭窗口的事实冻结：后端拒绝，而不是只靠 arch 只读。`已登记` 不锁，
+        # 因为登记单此时仍是结算的合法来源，事实调整由累计金额／结算授权校验把关。
+        # 冻结判定先于内部放行：合同一致性回写是内部路径，但它同样不得改写已关闭事实，
+        # 否则放行键就等价于把冻结窗口一起掀开。
+        locked = self._FACT_IMMUTABLE_FIELDS & set(vals)
+        if locked and self.filtered(
+            lambda record: record.state in self._FACT_IMMUTABLE_STATES
+        ):
+            raise UserError(
+                _("已关闭的分包登记不可修改登记事实或明细；请先执行「重新打开」回到已登记状态。")
+            )
+        if (
+            self.env.context.get(_SC_CONTRACT_AUTHORITY_CONTEXT_KEY)
+            is _SC_CONTRACT_AUTHORITY_TOKEN
+        ):
             return super().write(vals)
         explicit_fields = {
             name
@@ -578,7 +640,9 @@ class ScSubcontractRegister(models.Model):
             }
             if updates:
                 register.with_context(
-                    sc_skip_subcontract_contract_authority=True
+                    **{
+                        _SC_CONTRACT_AUTHORITY_CONTEXT_KEY: _SC_CONTRACT_AUTHORITY_TOKEN,
+                    }
                 ).write(updates)
 
     @api.model
@@ -687,7 +751,7 @@ class ScSubcontractRegister(models.Model):
             if not record.line_ids:
                 raise ValidationError(_("确认分包登记前必须维护登记明细。"))
             record.line_ids._check_values()
-        self.write({"state": "active"})
+        self._write_cost_source_state({"state": "active"})
         return True
 
     def action_close(self):
@@ -697,7 +761,25 @@ class ScSubcontractRegister(models.Model):
                 raise UserError(_("只有已登记状态的分包登记可以关闭。"))
             record._check_business_anchor()
             record.line_ids._check_values()
-        self.write({"state": "closed"})
+        self._write_cost_source_state({"state": "closed"})
+        return True
+
+    def action_reopen(self):
+        """已关闭 -> 已登记：冻结之后唯一合法的“回到可调整状态”路径。
+
+        `已关闭` 仍是分包结算的合法来源，所以撤回冻结不能让已被结算引用的事实漂移：
+        登记明细一旦被结算引用，重开即被拒，需要的更正走结算调整或另开登记，
+        而不是改写历史事实（与明细 `unlink()` 的保护同形）。
+        """
+        self._check_project_manager()
+        for record in self:
+            if record.state != "closed":
+                raise UserError(_("只有已关闭状态的分包登记可以重新打开。"))
+            if record.line_ids.mapped("settlement_line_ids.settlement_id"):
+                raise UserError(
+                    _("已有分包结算引用的分包登记不能重新打开，请通过结算调整处理。")
+                )
+        self._write_cost_source_state({"state": "active"})
         return True
 
     def action_cancel(self):
@@ -708,7 +790,7 @@ class ScSubcontractRegister(models.Model):
                 record._check_project_manager()
             else:
                 record._check_project_operator()
-        self.write({"state": "cancel"})
+        self._write_cost_source_state({"state": "cancel"})
         return True
 
     def action_reset_draft(self):
@@ -716,8 +798,13 @@ class ScSubcontractRegister(models.Model):
         for record in self:
             if record.state != "cancel":
                 raise UserError(_("只有已取消状态的分包登记可以重置为草稿。"))
-        self.write({"state": "draft"})
+        self._write_cost_source_state({"state": "draft"})
         return True
+
+    def _write_cost_source_state(self, vals):
+        return self.with_context(
+            **{_COST_SOURCE_STATE_CONTEXT_KEY: _COST_SOURCE_STATE_TOKEN}
+        ).write(vals)
 
     def _check_project_operator(self):
         if self.env.su or self.env.user.has_group(
@@ -812,6 +899,11 @@ class ScSubcontractRegisterLine(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        self._sc_check_registers_frozen(
+            self.env["sc.subcontract.register"].browse(
+                {vals.get("register_id") for vals in vals_list if vals.get("register_id")}
+            )
+        )
         records = super().create(vals_list)
         registers = records.mapped("register_id")
         registers._sc_validate_cumulative_registered_amounts(
@@ -823,6 +915,11 @@ class ScSubcontractRegisterLine(models.Model):
         if vals.get("register_id"):
             self.env["sc.subcontract.register"]._sc_caller_visible_relation(
                 "sc.subcontract.register", vals["register_id"]
+            )
+        self._sc_check_registers_frozen(self.mapped("register_id"))
+        if vals.get("register_id"):
+            self._sc_check_registers_frozen(
+                self.env["sc.subcontract.register"].browse(vals["register_id"])
             )
         registers = self.mapped("register_id")
         previous_contract_ids = set(registers.mapped("contract_id").ids)
@@ -847,6 +944,7 @@ class ScSubcontractRegisterLine(models.Model):
         return result
 
     def unlink(self):
+        self._sc_check_registers_frozen(self.mapped("register_id"))
         if self.settlement_line_ids:
             raise UserError(_("已有分包结算引用的登记明细不能删除，请保留审计关系。"))
         registers = self.mapped("register_id")
@@ -854,6 +952,23 @@ class ScSubcontractRegisterLine(models.Model):
         result = super().unlink()
         registers._sc_validate_cumulative_registered_amounts(contract_ids)
         return result
+
+    def _sc_check_registers_frozen(self, registers):
+        """已关闭登记的事实窗口：明细级写入只能走受控动作「重新打开」。
+
+        单头 `write()` 的冻结若只在单头生效，明细模型就是旁路：实测
+        `line.write()`／`line.create()`／`line.unlink()` 都能改写已关闭登记的事实
+        （见 `tmp/uc4-g09-creatability/575-line-freeze-probe.py`）。这里与单头同形：
+        相同的冻结集、相同的提示语、同样只给受控动作留内部上下文。
+        """
+        if self.env.context.get(_COST_SOURCE_STATE_CONTEXT_KEY) is _COST_SOURCE_STATE_TOKEN:
+            return
+        if registers.filtered(
+            lambda register: register.state in register._FACT_IMMUTABLE_STATES
+        ):
+            raise UserError(
+                _("已关闭的分包登记不可修改登记事实或明细；请先执行「重新打开」回到已登记状态。")
+            )
 
     @api.constrains("contract_qty", "registered_amount")
     def _check_values(self):
@@ -1206,7 +1321,9 @@ class ScSubcontractSettlement(models.Model):
                 vals["name"] = seq.next_by_code("sc.subcontract.settlement") or _("分包结算")
         batched_records = super(
             ScSubcontractSettlement,
-            self.with_context(sc_subcontract_register_authority_batch=True),
+            self.with_context(
+                **{_REGISTER_AUTHORITY_BATCH_CONTEXT_KEY: _REGISTER_AUTHORITY_BATCH_TOKEN}
+            ),
         ).create(vals_list)
         records = batched_records.with_env(self.env)
         for record, explicit_fields in zip(records, explicit_fields_by_vals):
@@ -1222,7 +1339,10 @@ class ScSubcontractSettlement(models.Model):
         return records
 
     def write(self, vals):
-        if self.env.context.get("sc_skip_subcontract_register_authority"):
+        if (
+            self.env.context.get(_SETTLEMENT_AUTHORITY_CONTEXT_KEY)
+            is _SETTLEMENT_AUTHORITY_TOKEN
+        ):
             return super().write(vals)
         affected_register_line_ids = set(
             self.line_ids.mapped("register_line_id").ids
@@ -1239,7 +1359,7 @@ class ScSubcontractSettlement(models.Model):
             if vals.get(name)
         }
         batched = self.with_context(
-            sc_subcontract_register_authority_batch=True
+            **{_REGISTER_AUTHORITY_BATCH_CONTEXT_KEY: _REGISTER_AUTHORITY_BATCH_TOKEN}
         )
         result = super(ScSubcontractSettlement, batched).write(vals)
         self._sc_validate_register_settlement_authority(
@@ -1279,7 +1399,9 @@ class ScSubcontractSettlement(models.Model):
                     settlement.register_id or settlement.contract_id
                 ):
                     settlement.with_context(
-                        sc_skip_subcontract_register_authority=True
+                        **{
+                            _SETTLEMENT_AUTHORITY_CONTEXT_KEY: _SETTLEMENT_AUTHORITY_TOKEN,
+                        }
                     ).write(
                         {
                             "register_id": False,
@@ -1340,7 +1462,9 @@ class ScSubcontractSettlement(models.Model):
                     updates[field_name] = target.id if target else False
             if updates:
                 settlement.with_context(
-                    sc_skip_subcontract_register_authority=True
+                    **{
+                        _SETTLEMENT_AUTHORITY_CONTEXT_KEY: _SETTLEMENT_AUTHORITY_TOKEN,
+                    }
                 ).write(updates)
 
     def action_submit(self):
@@ -1490,8 +1614,9 @@ class ScSubcontractSettlementLine(models.Model):
             )
         records = super().create(vals_list)
         records._sc_validate_register_relation_state()
-        if not self.env.context.get(
-            "sc_subcontract_register_authority_batch"
+        if not (
+            self.env.context.get(_REGISTER_AUTHORITY_BATCH_CONTEXT_KEY)
+            is _REGISTER_AUTHORITY_BATCH_TOKEN
         ):
             settlements = records.mapped("settlement_id")
             settlements._sc_validate_register_settlement_authority(
@@ -1518,8 +1643,9 @@ class ScSubcontractSettlementLine(models.Model):
         result = super().write(vals)
         self._sc_validate_register_relation_state()
         settlements |= self.mapped("settlement_id")
-        if not self.env.context.get(
-            "sc_subcontract_register_authority_batch"
+        if not (
+            self.env.context.get(_REGISTER_AUTHORITY_BATCH_CONTEXT_KEY)
+            is _REGISTER_AUTHORITY_BATCH_TOKEN
         ):
             settlements._sc_validate_register_settlement_authority(
                 relation_changed="register_line_id" in vals
@@ -1541,8 +1667,9 @@ class ScSubcontractSettlementLine(models.Model):
             raise UserError(_("已有正式登记来源的分包结算明细不能删除，请先保留或解除关系。"))
         settlements = self.mapped("settlement_id")
         result = super().unlink()
-        if not self.env.context.get(
-            "sc_subcontract_register_authority_batch"
+        if not (
+            self.env.context.get(_REGISTER_AUTHORITY_BATCH_CONTEXT_KEY)
+            is _REGISTER_AUTHORITY_BATCH_TOKEN
         ):
             settlements._sc_validate_register_settlement_authority(
                 relation_changed=True

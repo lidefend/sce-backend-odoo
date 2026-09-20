@@ -1,8 +1,24 @@
 # -*- coding: utf-8 -*-
+from lxml import etree
+
 from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase, tagged
 
 from odoo.addons.smart_construction_core import core_extension
+
+# The delivered `退回草稿` rule: `reopen` maps to `action_reset_draft`, and each of
+# these models accepts that method only on a cancelled record.  The map carries the
+# native form that renders the same action, so the contract declaration and the arch
+# header can be compared instead of drifting apart.
+RESET_TO_DRAFT_ENTRIES = {
+    "sc.equipment.settlement": "view_sc_equipment_settlement_form",
+    "sc.equipment.usage": "view_sc_equipment_usage_form",
+    "sc.labor.settlement": "view_sc_labor_settlement_form",
+    "sc.labor.usage": "view_sc_labor_usage_form",
+    "sc.material.settlement": "view_sc_material_settlement_form",
+    "sc.subcontract.register": "view_sc_subcontract_register_form",
+    "sc.subcontract.settlement": "view_sc_subcontract_settlement_form",
+}
 
 
 @tagged("post_install", "-at_install", "workflow_contract_backend")
@@ -31,6 +47,123 @@ class TestWorkflowContractBackend(TransactionCase):
             }
         )
         self.service = self.env["sc.workflow.contract.service"]
+
+    def test_reset_to_draft_is_declared_where_the_model_accepts_it(self):
+        """`声明了必然拒绝的动作` is a control that can only fail.
+
+        `reopen` maps to `action_reset_draft`, and every model in the map refuses
+        that method outside `已取消`, so a profile that declared it in
+        `已提交`/`已登记` shipped a dead button while `已取消` - the only state the
+        model accepts - declared no way back at all.  The Vue form reads the
+        contract and the native form renders the arch header, so both surfaces are
+        compared to the model's own precondition here; the entries that can build a
+        record also run the declared action in the entry test file
+        (`test_the_reset_to_draft_action_is_declared_where_it_runs`).
+        """
+        service = self.env["sc.workflow.contract.service"]
+        self.assertEqual(
+            set(RESET_TO_DRAFT_ENTRIES) - set(service.PROFILE_BY_MODEL), set(),
+            "every listed model must be contract-governed",
+        )
+        for model_name, view_xmlid in sorted(RESET_TO_DRAFT_ENTRIES.items()):
+            profile = service.PROFILE_BY_MODEL[model_name]
+            declared = {
+                state for state, actions in profile["state_actions"].items()
+                if "reopen" in actions
+            }
+            with self.subTest(model=model_name, surface="contract"):
+                self.assertEqual(
+                    declared, {"cancel"},
+                    "%s may declare 退回草稿 only where the model accepts it" % model_name,
+                )
+                self.assertEqual(
+                    profile["method_by_action"].get("reopen"), "action_reset_draft",
+                    "%s must keep the delivered method identity" % model_name,
+                )
+            with self.subTest(model=model_name, surface="arch"):
+                view = self.env.ref("smart_construction_core.%s" % view_xmlid)
+                buttons = etree.fromstring(view.arch.encode("utf-8")).xpath(
+                    ".//button[@name='action_reset_draft']"
+                )
+                self.assertEqual(len(buttons), 1, view_xmlid)
+                self.assertEqual(buttons[0].get("invisible"), "state != 'cancel'", view_xmlid)
+
+    def test_the_subcontract_register_reopens_only_from_closed(self):
+        """`已关闭` -> `已登记` is a declared transition with its own identity.
+
+        `reopen` in this platform means 重置为草稿 (`cancel` -> `draft`) and its
+        label is 退回草稿, so the register's closed transition needs a different
+        target state, a different method and a different label: declaring it under
+        `reopen` would have shipped one wrong label in one of the two states, and
+        declaring it in a state the model refuses would have shipped a button that
+        can only fail - the defect the sibling test pins.  The Vue form reads this
+        contract through `describe_record()`, so the declaration, the arch header
+        and the model's own precondition are compared here.
+        """
+        service = self.env["sc.workflow.contract.service"]
+        profile = service.PROFILE_BY_MODEL["sc.subcontract.register"]
+        with self.subTest(surface="contract declaration"):
+            self.assertIn("reactivate", service.ACTIONS)
+            self.assertEqual(
+                {
+                    state for state, actions in profile["state_actions"].items()
+                    if "reactivate" in actions
+                },
+                {"closed"},
+                "重新打开 belongs to 已关闭 only",
+            )
+            self.assertEqual(profile["method_by_action"].get("reactivate"), "action_reopen")
+            self.assertEqual(profile["label_by_action"].get("reactivate"), "重新打开")
+            # The delivered 退回草稿 identity is untouched.
+            self.assertEqual(profile["method_by_action"].get("reopen"), "action_reset_draft")
+            self.assertEqual(profile["label_by_action"].get("reopen"), "退回草稿")
+
+        view = self.env.ref("smart_construction_core.view_sc_subcontract_register_form")
+        buttons = etree.fromstring(view.arch.encode("utf-8")).xpath(
+            ".//button[@name='action_reopen']"
+        )
+        with self.subTest(surface="arch"):
+            self.assertEqual(len(buttons), 1, "the 重新打开 button is declared once")
+            self.assertEqual(buttons[0].get("invisible"), "state != 'closed'")
+            self.assertIn("group_sc_cap_project_manager", buttons[0].get("groups") or "")
+
+        register = self.env["sc.subcontract.register"].create(
+            {
+                "project_id": self.project.id,
+                "subcontractor_id": self.partner.id,
+                "subcontract_scope": "关闭重开范围",
+                "line_ids": [(0, 0, {"work_scope": "关闭重开工作范围"})],
+            }
+        )
+        with self.subTest(surface="runtime"):
+            def keys():
+                register.invalidate_recordset()
+                return {
+                    row["key"]: row
+                    for row in service.describe_record(register)["availableActions"]
+                }
+
+            self.assertNotIn(
+                "reactivate", keys(), "草稿 must not advertise 重新打开"
+            )
+            register.action_register()
+            self.assertEqual(register.state, "active")
+            self.assertNotIn(
+                "reactivate", keys(), "已登记 must not advertise 重新打开"
+            )
+            register.action_close()
+            self.assertEqual(register.state, "closed")
+            closed_keys = keys()
+            self.assertIn("reactivate", closed_keys, "已关闭 must declare the way back")
+            self.assertNotIn(
+                "reopen", closed_keys,
+                "已关闭 may not advertise 退回草稿: the model refuses it outside 已取消",
+            )
+            self.assertTrue(closed_keys["reactivate"]["enabled"])
+            self.assertEqual(closed_keys["reactivate"]["method"], "action_reopen")
+            # Declared, and actually runnable on the same record.
+            register.action_reopen()
+            self.assertEqual(register.state, "active")
 
     def test_expense_claim_draft_contract_is_editable_and_submittable(self):
         claim = self.env["sc.expense.claim"].create(

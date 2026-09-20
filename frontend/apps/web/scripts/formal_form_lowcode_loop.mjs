@@ -11,6 +11,14 @@ export async function runFormalFormLoop() {
   const documentTopic = scope.topic === 'document';
   const invoiceTopic = scope.topic === 'invoice';
   const payrollTopic = scope.topic === 'payroll';
+  const usagePerformanceTopic = scope.topic === 'usage_performance';
+  // The governed role can only navigate the three delivered menus of this topic.  The
+  // registered siblings that share a model and form view sit on menus the delivered route
+  // authority denies, so the browser-level isolation claim uses the reachable sibling of
+  // the same topic; the shared-view siblings keep their contract-level assertion.
+  const usagePerformanceIsolation = usagePerformanceTopic
+    ? scope.entries.find((item) => item.action_id === 570 && item.menu_id === 692) || null
+    : null;
   if (['material', 'document', 'invoice'].includes(scope.topic)) {
     assert.equal(entry.action_id, documentTopic ? 666 : invoiceTopic ? 785 : 546);
     assert.equal(outside.action_id, documentTopic ? 862 : invoiceTopic ? 787 : 547);
@@ -25,7 +33,12 @@ export async function runFormalFormLoop() {
     : invoiceTopic ? '../../../artifacts/uc4-invoice-lowcode/browser'
     : '../../../artifacts/lowcode-form-loop/browser');
   await fs.mkdir(out, { recursive: true });
-  const report = { candidate: process.env.CANDIDATE_GIT_HEAD, dirty: true, scope, stages: {}, restored: false, ok: false };
+  // `dirty` was a literal `true`, so a clean frozen candidate still produced a report
+  // that claimed an uncommitted worktree and could never be bound to the frozen SHA.
+  // The wrapper now measures it; an unset or unknown value stays `dirty` (fail-closed)
+  // rather than borrowing a cleanliness the run did not observe.
+  const reportDirty = process.env.CANDIDATE_DIRTY !== '0';
+  const report = { candidate: process.env.CANDIDATE_GIT_HEAD, dirty: reportDirty, scope, stages: {}, restored: false, ok: false };
   const navigationOnly = process.env.FORM_LOWCODE_NAV_ONLY === '1';
   const observeOnly = process.env.FORM_LOWCODE_PREVIEW_OBSERVE === '1';
   const closureOnly = process.env.FORM_LOWCODE_PREVIEW_CLOSURE === '1' || observeOnly;
@@ -371,7 +384,7 @@ export async function runFormalFormLoop() {
           throw new Error(draftPolicy.reason);
         }
         const { runDesignerJourney } = await import('./formal_form_designer_journey.mjs');
-        await runDesignerJourney({ page, entry, baseline, outsideBaseline: otherBaseline, outside, contract, effective, out, report, pending, cs, drafts, draftPolicy, documentTopic, invoiceTopic, payrollTopic });
+        await runDesignerJourney({ page, entry, baseline, outsideBaseline: otherBaseline, outside, contract, effective, out, report, pending, cs, drafts, draftPolicy, documentTopic, invoiceTopic, payrollTopic, usagePerformanceTopic, isolationEntry: usagePerformanceIsolation });
       }
     } else {
     const nodes = [...walk(tree(baseline))];

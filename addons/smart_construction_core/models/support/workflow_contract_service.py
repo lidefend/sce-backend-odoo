@@ -70,7 +70,8 @@ def _submit_confirm_profiles(model_names):
         },
         "state_actions": {
             "draft": ["submit", "cancel"],
-            "submitted": ["complete", "reopen", "cancel"],
+            "submitted": ["complete", "cancel"],
+            "cancel": ["reopen"],
         },
         "method_by_action": {
             "submit": "action_submit",
@@ -80,6 +81,7 @@ def _submit_confirm_profiles(model_names):
         },
         "label_by_action": {
             "complete": "确认",
+            "reopen": "退回草稿",
         },
     }
     return {name: dict(profile) for name in model_names}
@@ -629,19 +631,27 @@ class ScWorkflowContractService(models.AbstractModel):
                 "closed": "closed",
                 "cancel": "cancelled",
             },
+            # `已登记` 仍可调整事实（登记单是分包结算的合法来源）；`已关闭` 冻结后
+            # 唯一合法的回到可调整状态的路径是 `重新打开`（closed -> active），
+            # 与 `已取消` -> `草稿` 的 `退回草稿` 是两个不同的动作与标签。
             "state_actions": {
                 "draft": ["submit", "cancel"],
-                "active": ["complete", "reopen", "cancel"],
+                "active": ["complete", "cancel"],
+                "closed": ["reactivate"],
+                "cancel": ["reopen"],
             },
             "method_by_action": {
                 "submit": "action_register",
                 "complete": "action_close",
                 "reopen": "action_reset_draft",
+                "reactivate": "action_reopen",
                 "cancel": "action_cancel",
             },
             "label_by_action": {
                 "submit": "确认登记",
                 "complete": "关闭",
+                "reopen": "退回草稿",
+                "reactivate": "重新打开",
             },
         },
         "project.progress.entry": {
@@ -879,6 +889,10 @@ class ScWorkflowContractService(models.AbstractModel):
         "complete": {"label": "完成", "intent": "server.object", "kind": "transition"},
         "cancel": {"label": "取消", "intent": "server.object", "kind": "transition"},
         "reopen": {"label": "重置为草稿", "intent": "server.object", "kind": "transition"},
+        # `reopen` 在本平台语义是「重置为草稿」（`cancel` -> `draft`）。分包登记
+        # `已关闭` -> `已登记` 是另一个目标状态、另一个方法，所以用独立键，避免同一个
+        # 键在 `已取消` 与 `已关闭` 两个状态上声明两个互斥的方法与标签。
+        "reactivate": {"label": "重新打开", "intent": "server.object", "kind": "transition"},
     }
 
     TERMINAL_PHASES = {"done", "cancelled", "legacy_confirmed"}

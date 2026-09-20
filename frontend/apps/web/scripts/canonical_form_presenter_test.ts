@@ -47,6 +47,7 @@ import {
   applyWorkflowAvailability,
   normalizeNativeFormStatusbar,
   normalizeWorkflowActionRows,
+  workflowActionMethodAliases,
   workflowActionRowForMethod,
 } from '../src/pages/contractForm/workflowContract';
 import {
@@ -684,6 +685,24 @@ assert.equal(
   true,
   'an unrelated non-workflow action must remain outside workflow authority',
 );
+// 575 `已关闭 -> 已登记` 是独立键 `reactivate`（`reopen` 在本平台语义是 `已取消 -> 草稿`）。
+// 未登记该键时，合同无对应行会回落为 `unmanaged`、按钮保持可用（fail-open）。
+assert.deepEqual(
+  workflowActionMethodAliases('reactivate'),
+  ['action_reopen'],
+  'the closed -> active transition must keep its own key bound to action_reopen',
+);
+assert.equal(
+  applyWorkflowAvailability({
+    action: { ...workflowAction, key: 'reactivate', methodName: 'action_reopen' },
+    workflow: { availableActions: [] },
+    recordId: 7,
+    blockingMessage: 'Workflow authority unavailable',
+  }).enabled,
+  false,
+  'a declared managed transition must fail closed when the contract serves no row for it',
+);
+
 const legalSameLabelRows = {
   availableActions: [
     { key: 'submit', label: 'Continue', method: 'action_submit', enabled: true },

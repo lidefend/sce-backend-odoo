@@ -44,6 +44,7 @@ set +e
     FORM_LOWCODE_REPLAY="${FORM_LOWCODE_REPLAY:-0}" \
     FORM_LOWCODE_REPRESENTATIVE="${FORM_LOWCODE_REPRESENTATIVE:-0}" \
     CANDIDATE_GIT_HEAD="$(git -C "$ROOT_DIR" rev-parse HEAD)" \
+    CANDIDATE_DIRTY="$(if [ -n "$(git -C "$ROOT_DIR" status --porcelain)" ]; then echo 1; else echo 0; fi)" \
     node scripts/low_code_change_set_acceptance.mjs
 )
 status=$?

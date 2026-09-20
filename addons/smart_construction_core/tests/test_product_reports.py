@@ -6,9 +6,12 @@ from odoo.tests.common import TransactionCase, tagged
 class TestProductReports(TransactionCase):
     def test_report_actions_and_labor_projection(self):
         project = self.env["project.project"].create({"name": "劳务报表测试项目", "company_id": self.env.company.id})
-        usage = self.env["sc.labor.usage"].create({"name": "LAB-RPT-1", "project_id": project.id, "usage_date": "2026-07-10", "labor_team": "木工班组", "work_content": "模板安装", "worker_qty": 2, "work_hours": 8, "price_unit": 50, "state": "confirmed"})
+        usage = self.env["sc.labor.usage"].create({"name": "LAB-RPT-1", "project_id": project.id, "usage_date": "2026-07-10", "labor_team": "木工班组", "work_content": "模板安装", "worker_qty": 2, "work_hours": 8, "price_unit": 50})
+        usage.action_submit()
+        usage.action_confirm()
         partner = self.env["res.partner"].create({"name": "报表测试分包单位"})
-        register = self.env["sc.subcontract.register"].create({"name": "SUB-REG-1", "project_id": project.id, "register_date": "2026-07-12", "subcontract_scope": "模板工程", "subcontractor_id": partner.id, "state": "active", "line_ids": [(0, 0, {"work_scope": "模板工程", "contract_qty": 1, "registered_amount": 1200})]})
+        register = self.env["sc.subcontract.register"].create({"name": "SUB-REG-1", "project_id": project.id, "register_date": "2026-07-12", "subcontract_scope": "模板工程", "subcontractor_id": partner.id, "line_ids": [(0, 0, {"work_scope": "模板工程", "contract_qty": 1, "registered_amount": 1200})]})
+        register.action_register()
         settlement = self.env["sc.subcontract.settlement"].create({"name": "SUB-SET-1", "project_id": project.id, "subcontractor_id": partner.id, "settlement_date": "2026-07-20", "state": "confirmed", "line_ids": [(0, 0, {"work_scope": "模板工程", "qty": 1, "unit_price": 900})]})
         self.env.flush_all()
         row = self.env["sc.labor.subcontract.report"].search([("source_model", "=", "sc.labor.usage"), ("source_res_id", "=", usage.id)], limit=1)

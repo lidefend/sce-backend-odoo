@@ -292,7 +292,7 @@ class ScEquipmentUsage(models.Model):
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "usage_date desc, id desc"
     _FACT_IMMUTABLE_FIELDS = {
-        "project_id", "usage_date", "equipment_name", "equipment_code",
+        "project_id", "request_id", "usage_date", "equipment_name", "equipment_code",
         "specification", "uom_text", "usage_location", "operator_name",
         "usage_qty", "usage_hours", "supplier_id", "currency_id", "price_unit",
     }
@@ -372,8 +372,8 @@ class ScEquipmentUsage(models.Model):
         ):
             raise UserError(_("机械台班状态只能通过受控业务动作推进。"))
         if self._FACT_IMMUTABLE_FIELDS & set(vals):
-            if self.filtered(lambda record: record.state in ("submitted", "confirmed")):
-                raise UserError(_("已提交或已确认的机械台班事实不可修改；请通过受控状态流程处理。"))
+            if self.filtered(lambda record: record.state != "draft"):
+                raise UserError(_("非草稿状态的机械台班事实不可修改；请通过受控状态流程处理。"))
         return super().write(vals)
 
     def _write_cost_source_state(self, vals):
@@ -382,8 +382,8 @@ class ScEquipmentUsage(models.Model):
         ).write(vals)
 
     def unlink(self):
-        if self.filtered(lambda record: record.state in ("submitted", "confirmed")):
-            raise UserError(_("已提交或已确认的机械台班事实不可删除。"))
+        if self.filtered(lambda record: record.state != "draft"):
+            raise UserError(_("非草稿状态的机械台班事实不可删除。"))
         return super().unlink()
 
     def action_submit(self):
