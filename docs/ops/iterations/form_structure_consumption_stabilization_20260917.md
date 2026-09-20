@@ -4180,7 +4180,9 @@ R2＝工作流按钮声明）。本轮的判据只有一条：
   `subcontractor_id`／`responsible_id`／`currency_id`／`line_ids`）；`:369` `_FACT_IMMUTABLE_STATES = ("closed",)`。
 - `:501 write()` 增加后端冻结守卫：`locked = self._FACT_IMMUTABLE_FIELDS & set(vals)` 命中且记录在冻结状态时
   抛 `UserError("已关闭的分包登记不可修改登记事实或明细；请先执行「重新打开」回到已登记状态。")`；
-  `sc_skip_subcontract_contract_authority` 内部上下文仍优先放行（合同一致性回写）。
+  `sc_skip_subcontract_contract_authority` 内部上下文放行（合同一致性回写）。
+  **更正（见 §8.35.20-㉟）**：该放行键当时是**请求上下文可伪造的布尔键**，且放行判定排在冻结判定之前，
+  因此「已关闭」冻结窗口可被客户端自带的同名键掀开；现已改为进程内令牌，且冻结判定先于放行判定。
 - **明确不采用「所有非草稿状态一律锁死」**：`已登记` 仍是可调整窗口（用户显式排除该口径）。该窗口内的
   事实调整由既有累计数量／累计金额／合同范围／结算授权校验把关（`:986-1170`、`:1266-1400`），
   而不是由状态名代替业务规则。
@@ -4327,8 +4329,9 @@ decodeContractV2Snapshot → createContractV2Store → presentContractV2Form('ed
 - `:470 create()`：非 token 上下文且 `any(vals.get("state", "draft") != "draft")` 时抛
   `UserError("分包登记状态只能通过受控业务动作推进。")`——创建入口不能植入已推进的状态。
 - `:511 write()`：`"state" in vals` 且非 token 上下文即拒绝；**守卫置于
-  `sc_skip_subcontract_contract_authority` 放行之前**，因为该内部上下文只用于合同一致性回写事实字段，
-  不应顺带获得状态写入能力。
+  内部放行之前**，因为内部放行只用于合同一致性回写事实字段，不应顺带获得状态写入能力。
+  **更正（见 §8.35.20-㉟）**：当时只有状态守卫排在放行之前，**事实冻结仍排在放行之后**；
+  该顺序缺口已在本轮补齐（冻结判定先于放行判定）。
 - `:730/:740/:758/:769/:777`：`action_register`／`action_close`／`action_reopen`／`action_cancel`／
   `action_reset_draft` 的状态写入改为 `self._write_cost_source_state({...})`；`:780` 新增
   `_write_cost_source_state()`（`with_context` 注入 token）。受控动作的语义、前置校验与顺序均未变。
@@ -4347,6 +4350,8 @@ decodeContractV2Snapshot → createContractV2Store → presentContractV2Form('ed
   内新增——`create({"state": "active", ...})` 被拒；`write({"state": "active"})` 被拒且状态不变；
   `closed` ＋ 有结算引用时 `write({"state": "active"})` 与
   `with_context(sc_skip_subcontract_contract_authority=True).write({"state": "active"})` **均被拒**且仍为 `closed`。
+  **更正（见 §8.35.20-㉟）**：该断言当时**只覆盖 `state`**、未覆盖事实字段，所以没有发现放行键能掀开事实冻结；
+  本轮补上「已关闭 + 伪造放行键 + 事实字段」断言。
 - 字段完整性、结构同源、角色隔离断言全部保留，**未删除任何断言**，也未把状态守卫写成
   「必填 ∩ 可填」式的窄断言（`name`／日期等有合法生成来源的字段不在守卫范围内）。
 - **既有 pin 分类补登（非删除）**：§8.35.19-① 让 575 的 P1 载体新增了 `state` 只读声明，
@@ -5623,3 +5628,66 @@ exact-head Quick、**未**推送、#499 **未更新**（远端仍 `012c8ad4`）�
 - 本批范围：**批次验收完成（本批范围，产品复核通过）**；主线集成、部署、89 入口整体交付均未完成。
 - 台账保持 **22**；875／877／878 的核减仍按既定规则**待合入后独立审计**，22→19 仍只是**预期核减**。
 - **未执行（保持未执行）**：最终 Quick、推送、PR 更新、合并、部署、冻结、G10 启动、浏览器全矩阵重跑。
+
+#### 8.35.20-㉟ 独立复核 S1 收口：合同一致性放行键由「可伪造布尔键」改为「进程内令牌」（2026-09-21）
+
+**1）独立复核结论（绑定 `83f4ba61…`；只读、由实施者之外的复核者执行）**
+
+- 结论 `REQUEST_CHANGES`：1 项 `S1`、0 项 `S0/S2`；另 3 项 `POST_MERGE_FOLLOWUP`（记录卫生类，非代码缺陷）。
+- S1 要点：`models/core/subcontract_management.py:520` 的
+  `if self.env.context.get("sc_skip_subcontract_contract_authority"): return super().write(vals)`
+  排在 `:515` 状态守卫之后、`:524` 事实冻结之前，因此带该键的写入会连带跳过冻结与
+  `_sc_validate_subcontract_contract_authority`／`_sc_validate_register_settlement_authority`／
+  `_sc_validate_cumulative_registered_amounts`。
+- **可达性（复核者提出，本轮独立复验）**：`smart_core` 的 `api.data` 会把请求自带 `context` 合并进 env
+  （`handlers/api_data.py:175` `_request_context()` ← envelope／payload／params；`:2357`
+  `self.env[model].with_context(ctx)` 后 `write()`），而 `ApiDataHandler.REQUIRED_GROUPS` 只要求
+  `base.group_user`。故项目经办角色可自带该键改写**已关闭**登记事实，绕过只允许项目审批人执行的
+  `action_reopen`（`:743` 一带）。
+- 该缺陷**不是相对 `main` 的回归**（`main` 有放行键、无冻结），而是本批新增控制**未被一致应用**。
+
+**2）最小修正（只收紧，不放宽）**
+
+- `models/core/subcontract_management.py` 顶部新增
+  `_SC_CONTRACT_AUTHORITY_CONTEXT_KEY` 与 `_SC_CONTRACT_AUTHORITY_TOKEN = object()`（进程内对象身份）。
+- `write()`：**冻结判定先于放行判定**；放行改为身份比较（`is _SC_CONTRACT_AUTHORITY_TOKEN`）。
+  伪造的同名布尔键／字符串不再放行。
+- 内部合同一致性回写调用点改为注入该令牌。
+- **未改动**：冻结字段集、`closed` 为唯一冻结态、`已登记` 可调整窗口、受控动作语义与顺序、结算模型。
+- 采用仓库既有姿势（`_COST_SOURCE_STATE_TOKEN`、`_TENDER_GUARANTEE_AUTHORITY_TOKEN`、
+  `_TAX_FACT_AUTHORITY_TOKEN`），未新造机制。
+
+**3）验证（新增断言，零删除）**
+
+- `tests/test_usage_performance_native_lowcode.py`：新增「已关闭 ＋ 伪造放行键 ＋ **事实字段**」被拒、
+  且事实值不变；原 `state` 断言保留。
+- L2 定向：`TestSubcontractCostRegistration`＋`TestUmP3SubcontractRegisterSettlementAuthorityBoundaries`＋
+  `TestP0StateClosure`＋`TestProductReports`＋`TestLaborProductCapability`＋`TestUsagePerformanceNativeLowcode`
+  → **116 测 0 failed**（日志 `575-flag-token-l2-affected.log`）。
+- 破坏性验证（证明断言非空）：把放行键恢复为「真值判定 ＋ 排在冻结之前」，新增断言**失败**
+  （`AssertionError: UserError not raised`，日志 `575-flag-token-sabotage-test.log`）；恢复后 `0 failed`
+  （`575-flag-token-l2-restore.log`）。
+- L3 回滚事务探针（`575-flag-token-probe.py`：SAVEPOINT ＋ ROLLBACK，`residual_after_rollback=0`）：
+  伪造布尔键 `True`／`"1"` 改写已关闭事实 → **BLOCKED** 且值未变；内部令牌改写已关闭事实 →
+  **BLOCKED**（冻结先于放行）；受控动作 `closed→active` → **ALLOWED**；草稿／已登记事实写入 →
+  **ALLOWED**（无过度封锁）；令牌 `json_serializable=false`，请求上下文无法携带。
+- 同一探针在**修复前顺序**下运行：伪造布尔键 → **ALLOWED**，事实实际被改写为
+  `G09 伪造字符串改写`——证明该缺口真实可利用，且探针能捕获它（`575-flag-token-probe-prefix-sabotage.log`）。
+- 运行时对齐：`local.dev.upgrade` 与 `acceptance.module.upgrade` 均 EXIT=0；dev 与验收
+  `smart_construction_core` 同为 `17.0.0.168`。
+
+**4）同址同类缺陷：登记但**不**自动纳入本批**
+
+- `:1316 write()` 的 `sc_skip_subcontract_register_authority` 是同形的可伪造布尔键，位于**结算模型**：
+  带该键可跳过 `_sc_validate_register_settlement_authority`、
+  `_sc_validate_cumulative_registered_quantities`、`_sc_validate_cumulative_settlement_amounts`。
+- 该键在 `main` 上即存在（非本批引入），且守卫的是结算授权校验而非本批新增的冻结窗口，故按
+  「不扩展本批产品改动」处理：**登记为独立缺陷 ＋ 最小修正范围（同形令牌化）**，是否纳入另行裁定。
+- 同类候选项：`sc_subcontract_register_authority_batch`（同为布尔上下文键，用于批量创建放行）。
+
+**5）状态与口径**
+
+- 本候选新增 1 个提交（模型 ＋ 测试 ＋ 本记录），需**重新冻结、按 exact-head 跑一次 Quick、再做一次独立复核
+  与外部归档**，之后才 `pr.push`；**#499 仍不合并、不部署**。
+- 台账保持 **22**；22→19 仍只是**预期核减**（合入后按三个退役消费者独立审计）。G10 不启动。
+- 四维口径不变：更新 PR ≠ 产品验收；独立复核 ≠ 产品验收；G08 主线集成 ≠ 部署 ≠ 89 入口整体交付完成。

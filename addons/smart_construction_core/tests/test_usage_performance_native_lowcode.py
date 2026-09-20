@@ -1283,14 +1283,23 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
         with self.assertRaises(UserError):
             register.action_reopen()
         self.assertEqual(register.state, "closed")
-        # 受控动作之外的写入路径同样不能把冻结窗口掀开。
+        # 受控动作之外的写入路径同样不能把冻结窗口掀开：状态与事实都要拒。
+        frozen_scope = register.subcontract_scope
         with self.assertRaises(UserError):
             register.write({"state": "active"})
         with self.assertRaises(UserError):
             register.with_context(sc_skip_subcontract_contract_authority=True).write(
                 {"state": "active"}
             )
+        # 内部合同一致性回写标记是进程内令牌，不是请求上下文可伪造的布尔键：
+        # 客户端自带同名键既不能推状态，也不能改写已关闭事实
+        # （否则同一个键会把冻结窗口与合同／结算授权校验一起掀开）。
+        with self.assertRaises(UserError):
+            register.with_context(sc_skip_subcontract_contract_authority=True).write(
+                {"subcontract_scope": "G09 伪造放行键不得改写已关闭事实"}
+            )
         self.assertEqual(register.state, "closed")
+        self.assertEqual(register.subcontract_scope, frozen_scope)
         self.assertTrue(settlement.exists(), "the throwaway settlement is the settlement authority")
 
     # The delivered `退回草稿` rule names the state each entry accepts the action

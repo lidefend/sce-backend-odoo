@@ -11,6 +11,14 @@ from .equipment_management import (
 )
 
 
+# 合同一致性回写的内部放行标记。它是进程内对象身份，不是请求上下文里可伪造的布尔键：
+# 客户端可以自带 `context`（`smart_core` 的 `api.data` 会把请求 context 合并进 env），
+# 若按真值放行，`已关闭` 冻结窗口与合同／结算授权校验会被同一个键一起掀开。
+# 与 `equipment_management._COST_SOURCE_STATE_TOKEN`、tender／tax 的 authority token 同口径。
+_SC_CONTRACT_AUTHORITY_CONTEXT_KEY = "sc_skip_subcontract_contract_authority"
+_SC_CONTRACT_AUTHORITY_TOKEN = object()
+
+
 class ScSubcontractPlan(models.Model):
     _name = "sc.subcontract.plan"
     _description = "分包计划"
@@ -511,16 +519,16 @@ class ScSubcontractRegister(models.Model):
     def write(self, vals):
         # 状态是受控业务动作的结果，不是可写字段：与 871／570／材料验收同一条口径
         # （`equipment_management._COST_SOURCE_STATE_CONTEXT_KEY`）。该守卫置于内部
-        # 上下文放行之前，避免 `sc_skip_subcontract_contract_authority` 顺带绕过状态窗口。
+        # 上下文放行之前，避免内部放行顺带绕过状态窗口。
         if (
             "state" in vals
             and self.env.context.get(_COST_SOURCE_STATE_CONTEXT_KEY) is not _COST_SOURCE_STATE_TOKEN
         ):
             raise UserError(_("分包登记状态只能通过受控业务动作推进。"))
-        if self.env.context.get("sc_skip_subcontract_contract_authority"):
-            return super().write(vals)
         # 已关闭窗口的事实冻结：后端拒绝，而不是只靠 arch 只读。`已登记` 不锁，
         # 因为登记单此时仍是结算的合法来源，事实调整由累计金额／结算授权校验把关。
+        # 冻结判定先于内部放行：合同一致性回写是内部路径，但它同样不得改写已关闭事实，
+        # 否则放行键就等价于把冻结窗口一起掀开。
         locked = self._FACT_IMMUTABLE_FIELDS & set(vals)
         if locked and self.filtered(
             lambda record: record.state in self._FACT_IMMUTABLE_STATES
@@ -528,6 +536,11 @@ class ScSubcontractRegister(models.Model):
             raise UserError(
                 _("已关闭的分包登记不可修改登记事实或明细；请先执行「重新打开」回到已登记状态。")
             )
+        if (
+            self.env.context.get(_SC_CONTRACT_AUTHORITY_CONTEXT_KEY)
+            is _SC_CONTRACT_AUTHORITY_TOKEN
+        ):
+            return super().write(vals)
         explicit_fields = {
             name
             for name in (
@@ -618,7 +631,9 @@ class ScSubcontractRegister(models.Model):
             }
             if updates:
                 register.with_context(
-                    sc_skip_subcontract_contract_authority=True
+                    **{
+                        _SC_CONTRACT_AUTHORITY_CONTEXT_KEY: _SC_CONTRACT_AUTHORITY_TOKEN,
+                    }
                 ).write(updates)
 
     @api.model
