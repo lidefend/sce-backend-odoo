@@ -341,10 +341,9 @@ def verify_retirement_record(
         raise CleanupError("retirement record entry must declare evidenceStatus=absent")
     if not str(entry.get("reason") or "").strip():
         raise CleanupError("retirement record entry must state why no evidence exists")
-    try:
-        declared_pr = int(entry.get("mergedPr") or 0)
-    except (TypeError, ValueError) as exc:
-        raise CleanupError("retirement record mergedPr must be an integer") from exc
+    declared_pr = entry.get("mergedPr")
+    if not isinstance(declared_pr, int) or isinstance(declared_pr, bool):
+        raise CleanupError("retirement record mergedPr must be an integer")
     if declared_pr != proof.pull_request:
         raise CleanupError("retirement record merged PR does not match the verified merge proof")
     if str(entry.get("mergeCommit") or "") != proof.merge_commit:
@@ -443,47 +442,66 @@ def cleanup(
     proof = prove_integration(root, selected)
     branch = selected.branch or ""
     if apply:
-        if evidence_receipt is not None:
-            verify_evidence_receipt(selected, evidence_receipt)
-        elif retirement_record is not None and recovery_bundle is not None:
-            if confirmation != SQUASH_RETIREMENT_CONFIRMATION:
+        # Destructive steps are recorded as they succeed so that a later denial can
+        # name what already happened instead of only the step that failed.
+        completed: list[str] = []
+        try:
+            if evidence_receipt is not None:
+                verify_evidence_receipt(selected, evidence_receipt)
+            elif retirement_record is not None and recovery_bundle is not None:
+                if confirmation != SQUASH_RETIREMENT_CONFIRMATION:
+                    raise CleanupError(
+                        "squash retirement apply requires "
+                        f"confirmation={SQUASH_RETIREMENT_CONFIRMATION}"
+                    )
+                if proof.kind != "squash":
+                    raise CleanupError(
+                        "retirement record is only admissible for squash integrations"
+                    )
+                # A retirement retires the whole topic, so the remote ref is part of
+                # the transaction: delete it under an exact lease, and refuse when it
+                # has moved away from the integrated HEAD.  Every verification above
+                # and below runs before this, the first destructive step.
+                remote_sha = remote_branch_sha(root, branch)
+                if remote_sha is not None and remote_sha != selected.head:
+                    raise CleanupError(
+                        f"origin/{branch} moved: expected={selected.head} actual={remote_sha}"
+                    )
+                verify_retirement_record(
+                    root, selected, retirement_record, recovery_bundle, proof
+                )
+                if remote_sha is not None:
+                    run(
+                        root,
+                        "push",
+                        "origin",
+                        "--delete",
+                        f"--force-with-lease=refs/heads/{branch}:{remote_sha}",
+                        "--",
+                        branch,
+                    )
+                    completed.append(f"remote ref origin/{branch} deleted")
+            else:
                 raise CleanupError(
-                    "squash retirement apply requires "
-                    f"confirmation={SQUASH_RETIREMENT_CONFIRMATION}"
+                    "apply requires an external verified evidence receipt or a tracked "
+                    "retirement record with a recovery bundle"
                 )
-            if proof.kind != "squash":
-                raise CleanupError("retirement record is only admissible for squash integrations")
-            # A retirement retires the whole topic, so the remote ref is part of
-            # the transaction: delete it under an exact lease, and refuse when it
-            # has moved away from the integrated HEAD.
-            remote_sha = remote_branch_sha(root, branch)
-            if remote_sha is not None and remote_sha != selected.head:
+            run(root, "worktree", "remove", "--", str(selected.path))
+            completed.append(f"worktree removed ({selected.path})")
+            ref_head = run(root, "rev-parse", "--verify", f"refs/heads/{branch}").stdout.strip()
+            if ref_head != selected.head:
                 raise CleanupError(
-                    f"origin/{branch} moved: expected={selected.head} actual={remote_sha}"
+                    f"branch ref moved before deletion: expected={selected.head} actual={ref_head}"
                 )
-            verify_retirement_record(root, selected, retirement_record, recovery_bundle, proof)
-            if remote_sha is not None:
-                run(
-                    root,
-                    "push",
-                    "origin",
-                    "--delete",
-                    f"--force-with-lease=refs/heads/{branch}:{remote_sha}",
-                    "--",
-                    branch,
-                )
-        else:
+            run(root, "branch", "-D" if proof.kind == "squash" else "-d", "--", branch)
+            completed.append(f"local branch {branch} deleted")
+        except (CleanupError, subprocess.CalledProcessError) as exc:
+            if not completed:
+                raise
+            detail = str(exc).strip() or exc.__class__.__name__
             raise CleanupError(
-                "apply requires an external verified evidence receipt or a tracked "
-                "retirement record with a recovery bundle"
-            )
-        run(root, "worktree", "remove", "--", str(selected.path))
-        ref_head = run(root, "rev-parse", "--verify", f"refs/heads/{branch}").stdout.strip()
-        if ref_head != selected.head:
-            raise CleanupError(
-                f"branch ref moved before deletion: expected={selected.head} actual={ref_head}"
-            )
-        run(root, "branch", "-D" if proof.kind == "squash" else "-d", "--", branch)
+                f"{detail}; destructive steps already completed: {'; '.join(completed)}"
+            ) from exc
     return selected
 
 

@@ -9656,15 +9656,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   （`+refs/heads/main:refs/remotes/origin/main`）下永不触发，等于写了无法执行的门禁。整改后：
   退役路径用一次 `git ls-remote` 读取**真实**远端状态，读取失败即拒绝；远端与记录 HEAD 一致时
   按精确 `--force-with-lease=refs/heads/<branch>:<sha>` lease 删除（漂移即拒绝），远端不存在该
-  分支时只做本地清理；治理记录改读**已提交的 `HEAD` blob**，未提交或仅 staged 的记录一律拒绝；
-  删除本地分支前复验 `refs/heads/<branch>` 仍等于工作树 HEAD；`mergedPr` 非整数按拒绝处理；
-  `git bundle list-heads` 改为按精确 OID 比对；白名单同步登记该受限 push 例外。
-- 验证：`make verify.workspace.worktree.guard` 65 项通过（清理入口模块 57 项、创建入口模块 8 项）。
-  本批在清理入口模块新增 18 个测试方法，其中 13 个为拒绝路径（树不一致、merge 不在 main、双亲
+  分支时只做本地清理；治理记录改读**已提交的 `HEAD` blob**：未提交的改动被忽略（既不能扩大
+  也不能缩小一次退役），仅 staged 而未提交的新记录文件一律拒绝；删除本地分支前复验
+  `refs/heads/<branch>` 仍等于工作树 HEAD；`mergedPr` 改为严格整数类型判定（浮点、字符串、
+  布尔与缺失一律拒绝）；`git bundle list-heads` 改为按精确 OID 比对；白名单同步登记该受限
+  push 例外。
+- 第二轮独立只读复核对 `f41ba14cdb6da69458de2a0c2f42abd2b43ab33d` 再次给出 REQUEST_CHANGES，
+  确认第一轮全部整改有效，新增问题集中在“破坏性步骤顺序”的表述与拒绝信息：代码先做远端
+  lease 删除，再做本地移除，而两份治理文档声称“要么整体完成、要么在破坏性动作前停止”。
+  本次整改：文档改为陈述真实不变量（全部校验先于任何破坏性动作；远端删除可能先于某个本地
+  步骤失败而生效；重跑会重做全部校验且不会发出第二次远端删除），退役路径新增“已完成的破坏性
+  步骤”记录并写入拒绝信息，`mergedPr` 由 `int()` 强制转换改为严格 `isinstance(int)` 判定，
+  白名单 force-push 禁令补登退役 lease 例外，并补记被硬拒绝时的恢复入口。
+- 验证：`make verify.workspace.worktree.guard` 67 项通过（清理入口模块 59 项、创建入口模块 8 项）。
+  本批在清理入口模块新增 20 个测试方法，其中 15 个为拒绝路径（树不一致、merge 不在 main、双亲
   merge、确认短语不符、记录未被 Git 跟踪、记录仅 staged 未提交、bundle 哈希漂移、bundle 未覆盖
-  HEAD、`mergedPr` 非整数、远端状态不可读、远端分支漂移、删除前本地分支引用漂移），5 个为正向
-  路径（squash 承接证明、receipt 路径复用、远端同 HEAD 时按 lease 删除、未提交改动不得生效）；
-  原有 receipt 路径与 detach 路径断言保持不变。
+  HEAD、`mergedPr` 非整数、`mergedPr` 可被强转、远端状态不可读、远端分支漂移、删除前本地分支
+  引用漂移、记录声称的合并与证明不一致、拒绝信息缺失已完成破坏性步骤），5 个为正向路径
+  （squash 承接证明、receipt 路径复用、远端同 HEAD 时按 lease 删除、未提交改动不得生效、
+  记录与 bundle 允许整体退役）；原有 receipt 路径与 detach 路径断言保持不变。
 - 证据：记录 `docs/ops/iterations/workspace_worktree_legacy_retirement_v1.json`（2 条
   `evidenceStatus=absent`，禁止补造证据）；恢复 bundle 位于
   `/home/lidefend/workspace/.codex-evidence/workspace-archives/20260921/legacy-worktree-retirement/`。

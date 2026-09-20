@@ -482,6 +482,21 @@ class LegacyRetirementRecordTest(SafeWorktreeCleanupTest):
             self.retire(path, record, bundle)
         self.assertTrue(path.is_dir())
 
+    def test_coercible_merged_pr_values_are_denied(self) -> None:
+        for value in (501.5, 501.0, "501", True, None):
+            with self.subTest(value=value):
+                path, _head, _merge, record, bundle = self.prepare(
+                    f"codex/pr-field-{str(value).replace('.', '-').lower()}"
+                )
+                payload = self.record_payload(record)
+                payload["worktrees"][0]["mergedPr"] = value
+                self.recommit_record(record, payload)
+                with self.assertRaisesRegex(
+                    cleanup.CleanupError, "mergedPr must be an integer"
+                ):
+                    self.retire(path, record, bundle)
+                self.assertTrue(path.is_dir())
+
     def test_bundle_not_covering_head_is_denied(self) -> None:
         path, _head, _merge, record, bundle = self.prepare("codex/bundle-other-ref")
         other = Path(self.temp.name) / "other-ref.bundle"
@@ -538,6 +553,19 @@ class LegacyRetirementRecordTest(SafeWorktreeCleanupTest):
         self.assertEqual(
             git(self.root, "rev-parse", "refs/heads/codex/ref-moves-mid-flight"), stray
         )
+
+    def test_denial_reports_completed_destructive_steps(self) -> None:
+        path, _head, _merge, record, bundle = self.prepare("codex/locked-retirement")
+        git(self.root, "push", "origin", "codex/locked-retirement")
+        git(self.root, "worktree", "lock", str(path))
+        with self.assertRaisesRegex(
+            cleanup.CleanupError, "destructive steps already completed: remote ref origin/"
+        ):
+            self.retire(path, record, bundle)
+        self.assertEqual(
+            git(self.root, "ls-remote", "--heads", "origin", "codex/locked-retirement"), ""
+        )
+        self.assertTrue(path.is_dir())
 
 
 if __name__ == "__main__":
