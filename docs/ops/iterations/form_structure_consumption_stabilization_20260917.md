@@ -5676,18 +5676,77 @@ exact-head Quick、**未**推送、#499 **未更新**（远端仍 `012c8ad4`）�
 - 运行时对齐：`local.dev.upgrade` 与 `acceptance.module.upgrade` 均 EXIT=0；dev 与验收
   `smart_construction_core` 同为 `17.0.0.168`。
 
-**4）同址同类缺陷：登记但**不**自动纳入本批**
+**4）同址同类缺陷：当时登记为「另行裁定」，**后续已纳入本批**
 
 - `:1316 write()` 的 `sc_skip_subcontract_register_authority` 是同形的可伪造布尔键，位于**结算模型**：
   带该键可跳过 `_sc_validate_register_settlement_authority`、
   `_sc_validate_cumulative_registered_quantities`、`_sc_validate_cumulative_settlement_amounts`。
-- 该键在 `main` 上即存在（非本批引入），且守卫的是结算授权校验而非本批新增的冻结窗口，故按
+- 该键在 `main` 上即存在（非本批引入），且守卫的是结算授权校验而非本批新增的冻结窗口，故当时按
   「不扩展本批产品改动」处理：**登记为独立缺陷 ＋ 最小修正范围（同形令牌化）**，是否纳入另行裁定。
 - 同类候选项：`sc_subcontract_register_authority_batch`（同为布尔上下文键，用于批量创建放行）。
+- **裁定更新（见 §8.35.20-㊱）**：上述两个键**已在本批一并令牌化**；本条保留为当时的登记结论（历史来源），
+  不再代表当前处置。
 
 **5）状态与口径**
 
 - 本候选新增 1 个提交（模型 ＋ 测试 ＋ 本记录），需**重新冻结、按 exact-head 跑一次 Quick、再做一次独立复核
   与外部归档**，之后才 `pr.push`；**#499 仍不合并、不部署**。
 - 台账保持 **22**；22→19 仍只是**预期核减**（合入后按三个退役消费者独立审计）。G10 不启动。
+- 四维口径不变：更新 PR ≠ 产品验收；独立复核 ≠ 产品验收；G08 主线集成 ≠ 部署 ≠ 89 入口整体交付完成。
+
+#### 8.35.20-㊱ 同址同形放行键一并令牌化：结算放行键与登记批量放行键（2026-09-21）
+
+**1）裁定与范围（只收紧，不放宽）**
+
+- 把 §8.35.20-㉟(4) 登记为「另行裁定」的两个同形键**纳入本批**：结算放行键
+  `sc_skip_subcontract_register_authority`、登记／结算明细批量放行键
+  `sc_subcontract_register_authority_batch`。
+- 改动面仅 `models/core/subcontract_management.py` 与其静态边界测试；**未改**冻结字段集、
+  `closed` 唯一冻结态、`已登记` 可调整窗口、状态机与受控动作顺序、视图、前端、台账。
+
+**2）最小修正**
+
+- 新增 `_SETTLEMENT_AUTHORITY_CONTEXT_KEY`／`_SETTLEMENT_AUTHORITY_TOKEN` 与
+  `_REGISTER_AUTHORITY_BATCH_CONTEXT_KEY`／`_REGISTER_AUTHORITY_BATCH_TOKEN`（进程内对象身份）。
+- 结算 `write()`：放行由 `context.get("sc_skip_subcontract_register_authority")` 真值判断改为
+  `is _SETTLEMENT_AUTHORITY_TOKEN` 身份比较；内部 2 处合同一致性回写调用点改为注入令牌。
+- 结算 `create`／`write` 与结算明细 `create`／`write`／`unlink` 的批量放行同样改为身份比较
+  （结算明细 3 处、结算 2 处），批量注入点改为注入 `_REGISTER_AUTHORITY_BATCH_TOKEN`。
+
+**3）验证（新增断言，零删除）**
+
+- 静态边界测试 `tests/test_um_p3_subcontract_register_settlement_authority_boundaries.py`：
+  原断言「`write` 源含字面键名」改为「含 `is _SETTLEMENT_AUTHORITY_TOKEN`」，
+  并新增 `test_internal_authority_flags_are_process_tokens_not_request_booleans`
+  （三个键名与 `object()` 令牌均在模块级声明、类体内不得残留按键真值判断、三个令牌互不相同、
+  明细三方法均为身份比较）→ `python3` 直跑 **9 测 OK**（`575-batch-key-static-boundary.log`）。
+  破坏性验证：把放行判定退回真值判断后该测 **FAILED（2 项）**，恢复后 OK；
+  文件 md5 `bf178eccec18107a21bf69b4ff0f532b` 恢复一致。
+- L2 定向（与本批同 6 类）：**116 测 0 failed 0 error**（`575-batch-key-l2-affected.log`）。
+  说明：该静态类不由 Odoo 用例加载器收集（`Starting …` 计数 0），故其证据为上面的直跑，
+  L2 的 116 只覆盖其余 5 类。
+- L3 回滚事务探针（`575-batch-key-token-probe.py`；每次尝试**独立** SAVEPOINT ＋ ROLLBACK，
+  残留读取前 `invalidate_all()`）：
+  - P1 结算放行键：基线 **BLOCKED**（分包结算显式头部字段与完整登记合同范围冲突）→ 伪造 `True`／`"1"`
+    **BLOCKED** → 内部令牌 **ALLOWED**。
+  - P2a 批量放行键·累计数量（明细 255 数量置 15.0，登记数量 10.0）：基线 **BLOCKED**
+    （分包登记明细的有效累计结算数量不能超过登记数量）→ 伪造键 **BLOCKED** → 内部令牌 **ALLOWED**。
+  - P2b 批量放行键·跨合同改挂（明细 255 改挂另一合同的登记明细 127）：基线 **BLOCKED** → 伪造键
+    **BLOCKED** → 内部令牌 **ALLOWED**。
+  - 残留核对：结算 216 相对方 5343、明细 255 数量 6.0、登记明细 142 全部为原值；
+    `psql` 直查一致（`sc_subcontract_register_line` 142 = 10.00）。
+- **缺口真实可利用（修复前对照）**：同一探针在 `c28fa315` 上运行（`575-batch-key-prefix-probe.py`）
+  三项伪造键**全部 ALLOWED**——P1 相对方被实际改写、P2a 数量 15.0 落库、P2b 明细指向另一合同的登记明细
+  且结算头部仍留在原合同（关系与头部不一致）；基线仍为 BLOCKED。
+- **上一轮 P2「无效判别」的更正**：上一轮把该键的反例打在 `sc.subcontract.register.line` 的 `write()` 上，
+  而该掩码只守卫**结算明细**的批量路径，故基线即 ALLOWED、不构成反例；本轮换到结算明细路径后反例成立。
+  键的**可达性**不因上一轮探针失效而改变。
+- 上一轮记录中的 `residual_contract_qty=11.0` 是 ROLLBACK 后读到的 **ORM 缓存残留**而非库内残留；
+  本轮在残留读取前 `invalidate_all()`，并以 `psql` 直查复核为 10.00（原值）。
+
+**4）状态与口径**
+
+- 本候选在 `c28fa315` 之上新增 1 个提交（模型 ＋ 测试 ＋ 本记录），需**重新冻结、按 exact-head 跑一次 Quick、
+  再做一次独立复核与外部归档**，之后才 `pr.push`；**#499 仍不合并、不部署**。
+- 台账保持 **22**；22→19 仍是**预期核减**（合入后按三个退役消费者独立审计）。G10 不启动。
 - 四维口径不变：更新 PR ≠ 产品验收；独立复核 ≠ 产品验收；G08 主线集成 ≠ 部署 ≠ 89 入口整体交付完成。

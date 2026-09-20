@@ -98,8 +98,14 @@ class TestUmP3SubcontractRegisterSettlementAuthorityBoundaries(
             "_sc_validate_register_settlement_authority",
             self.settlement_methods["create"],
         )
+        # 内部批量放行标记是进程内令牌：写入路径的放行判定必须是身份比较，
+        # 不能退回真值判断，否则客户端自带同名字符串键即可跳过结算／登记复核。
         self.assertIn(
-            "sc_subcontract_register_authority_batch",
+            "is _SETTLEMENT_AUTHORITY_TOKEN",
+            self.settlement_methods["write"],
+        )
+        self.assertIn(
+            "_REGISTER_AUTHORITY_BATCH_TOKEN",
             self.settlement_methods["write"],
         )
         for method_name in ("create", "write", "unlink"):
@@ -115,6 +121,45 @@ class TestUmP3SubcontractRegisterSettlementAuthorityBoundaries(
             "_sc_validate_register_settlement_authority",
             self.contract_methods["write"],
         )
+
+    def test_internal_authority_flags_are_process_tokens_not_request_booleans(self):
+        module_source = MODEL.read_text(encoding="utf-8")
+        expectations = (
+            (
+                "sc_skip_subcontract_contract_authority",
+                "_SC_CONTRACT_AUTHORITY_TOKEN",
+                "ScSubcontractRegister",
+            ),
+            (
+                "sc_skip_subcontract_register_authority",
+                "_SETTLEMENT_AUTHORITY_TOKEN",
+                "ScSubcontractSettlement",
+            ),
+            (
+                "sc_subcontract_register_authority_batch",
+                "_REGISTER_AUTHORITY_BATCH_TOKEN",
+                "ScSubcontractSettlementLine",
+            ),
+        )
+        for key, token, class_name in expectations:
+            # 键名与令牌对象都在模块级声明：键名只作为上下文键使用，
+            # 放行依据是模块内 object() 令牌，客户端无法构造同名对象。
+            self.assertIn(f'"{key}"', module_source)
+            self.assertIn(f"{token} = object()", module_source)
+            class_body = getattr(self, {
+                "ScSubcontractRegister": "register",
+                "ScSubcontractSettlement": "settlement",
+                "ScSubcontractSettlementLine": "settlement_line",
+            }[class_name])
+            # 类体内不得残留按键真值判断的写法（键名字面量只应作为令牌对象存在）。
+            self.assertNotIn(f'context.get("{key}")', class_body)
+        # 三个令牌是相互独立的对象，一个键的令牌不会被另一个键接受。
+        self.assertEqual(len({token for _, token, _ in expectations}), 3)
+        for method_name in ("create", "write", "unlink"):
+            self.assertIn(
+                "is _REGISTER_AUTHORITY_BATCH_TOKEN",
+                self.settlement_line_methods[method_name],
+            )
 
     def test_relation_resolution_uses_caller_env_without_heuristics(self):
         resolver = self.register_methods["_sc_caller_visible_relation"]

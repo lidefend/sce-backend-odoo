@@ -18,6 +18,15 @@ from .equipment_management import (
 _SC_CONTRACT_AUTHORITY_CONTEXT_KEY = "sc_skip_subcontract_contract_authority"
 _SC_CONTRACT_AUTHORITY_TOKEN = object()
 
+# 同址同形的另外两个内部放行标记，同口径：进程内对象身份，不是请求上下文可伪造的布尔键。
+# `_SETTLEMENT_AUTHORITY_*` 让结算 write() 直接放行；`_REGISTER_AUTHORITY_BATCH_*` 让
+# 结算／登记明细的批量路径跳过结算复核。两者都只由本模块内部调用点注入，
+# 客户端自带同名键一律无效（`smart_core` 的 `api.data` 会合并请求 context）。
+_SETTLEMENT_AUTHORITY_CONTEXT_KEY = "sc_skip_subcontract_register_authority"
+_SETTLEMENT_AUTHORITY_TOKEN = object()
+_REGISTER_AUTHORITY_BATCH_CONTEXT_KEY = "sc_subcontract_register_authority_batch"
+_REGISTER_AUTHORITY_BATCH_TOKEN = object()
+
 
 class ScSubcontractPlan(models.Model):
     _name = "sc.subcontract.plan"
@@ -1312,7 +1321,9 @@ class ScSubcontractSettlement(models.Model):
                 vals["name"] = seq.next_by_code("sc.subcontract.settlement") or _("分包结算")
         batched_records = super(
             ScSubcontractSettlement,
-            self.with_context(sc_subcontract_register_authority_batch=True),
+            self.with_context(
+                **{_REGISTER_AUTHORITY_BATCH_CONTEXT_KEY: _REGISTER_AUTHORITY_BATCH_TOKEN}
+            ),
         ).create(vals_list)
         records = batched_records.with_env(self.env)
         for record, explicit_fields in zip(records, explicit_fields_by_vals):
@@ -1328,7 +1339,10 @@ class ScSubcontractSettlement(models.Model):
         return records
 
     def write(self, vals):
-        if self.env.context.get("sc_skip_subcontract_register_authority"):
+        if (
+            self.env.context.get(_SETTLEMENT_AUTHORITY_CONTEXT_KEY)
+            is _SETTLEMENT_AUTHORITY_TOKEN
+        ):
             return super().write(vals)
         affected_register_line_ids = set(
             self.line_ids.mapped("register_line_id").ids
@@ -1345,7 +1359,7 @@ class ScSubcontractSettlement(models.Model):
             if vals.get(name)
         }
         batched = self.with_context(
-            sc_subcontract_register_authority_batch=True
+            **{_REGISTER_AUTHORITY_BATCH_CONTEXT_KEY: _REGISTER_AUTHORITY_BATCH_TOKEN}
         )
         result = super(ScSubcontractSettlement, batched).write(vals)
         self._sc_validate_register_settlement_authority(
@@ -1385,7 +1399,9 @@ class ScSubcontractSettlement(models.Model):
                     settlement.register_id or settlement.contract_id
                 ):
                     settlement.with_context(
-                        sc_skip_subcontract_register_authority=True
+                        **{
+                            _SETTLEMENT_AUTHORITY_CONTEXT_KEY: _SETTLEMENT_AUTHORITY_TOKEN,
+                        }
                     ).write(
                         {
                             "register_id": False,
@@ -1446,7 +1462,9 @@ class ScSubcontractSettlement(models.Model):
                     updates[field_name] = target.id if target else False
             if updates:
                 settlement.with_context(
-                    sc_skip_subcontract_register_authority=True
+                    **{
+                        _SETTLEMENT_AUTHORITY_CONTEXT_KEY: _SETTLEMENT_AUTHORITY_TOKEN,
+                    }
                 ).write(updates)
 
     def action_submit(self):
@@ -1596,8 +1614,9 @@ class ScSubcontractSettlementLine(models.Model):
             )
         records = super().create(vals_list)
         records._sc_validate_register_relation_state()
-        if not self.env.context.get(
-            "sc_subcontract_register_authority_batch"
+        if not (
+            self.env.context.get(_REGISTER_AUTHORITY_BATCH_CONTEXT_KEY)
+            is _REGISTER_AUTHORITY_BATCH_TOKEN
         ):
             settlements = records.mapped("settlement_id")
             settlements._sc_validate_register_settlement_authority(
@@ -1624,8 +1643,9 @@ class ScSubcontractSettlementLine(models.Model):
         result = super().write(vals)
         self._sc_validate_register_relation_state()
         settlements |= self.mapped("settlement_id")
-        if not self.env.context.get(
-            "sc_subcontract_register_authority_batch"
+        if not (
+            self.env.context.get(_REGISTER_AUTHORITY_BATCH_CONTEXT_KEY)
+            is _REGISTER_AUTHORITY_BATCH_TOKEN
         ):
             settlements._sc_validate_register_settlement_authority(
                 relation_changed="register_line_id" in vals
@@ -1647,8 +1667,9 @@ class ScSubcontractSettlementLine(models.Model):
             raise UserError(_("已有正式登记来源的分包结算明细不能删除，请先保留或解除关系。"))
         settlements = self.mapped("settlement_id")
         result = super().unlink()
-        if not self.env.context.get(
-            "sc_subcontract_register_authority_batch"
+        if not (
+            self.env.context.get(_REGISTER_AUTHORITY_BATCH_CONTEXT_KEY)
+            is _REGISTER_AUTHORITY_BATCH_TOKEN
         ):
             settlements._sc_validate_register_settlement_authority(
                 relation_changed=True

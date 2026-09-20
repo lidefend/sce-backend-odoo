@@ -43,7 +43,7 @@ Generated from repository source files. This report is informational during the 
 | 1933 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1905 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1869 | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
-| 1844 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
+| 1865 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 1844 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1801 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1791 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
@@ -200,7 +200,7 @@ Generated from repository source files. This report is informational during the 
 | 1933 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1905 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1869 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
-| 1844 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
+| 1865 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 1844 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1801 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1791 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
