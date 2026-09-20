@@ -1,2 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo><record id="business_config_contract_product_job_form_v1" model="ui.business.config.contract"><field name="name">product_job_form_v1</field><field name="model">hr.job</field><field name="view_type">form</field><field name="action_id" ref="smart_construction_core.action_sc_product_job_management_v1"/><field name="priority">800</field><field name="company_id" eval="False"/><field name="active" eval="True"/><field name="status">published</field><field name="version_no">1</field><field name="contract_json" eval="{'view_orchestration': {'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release', 'job_authority': 'hr.job', 'employee_relation_authority': 'hr.employee'}, 'views': {'form': {'title': '岗位管理', 'composition_mode': 'entry_semantic_surface', 'columns': 2, 'sections': [{'title': '岗位信息', 'sequence': 10, 'columns': 2, 'fields': ['sc_job_code', 'name', 'department_id', 'company_id', 'active']}, {'title': '编制信息', 'sequence': 20, 'columns': 2, 'fields': ['expected_employees', 'no_of_employee']}, {'title': '岗位职责与要求', 'sequence': 30, 'columns': 1, 'fields': ['sc_responsibility', 'sc_qualification']}], 'fields': [{'name': 'sc_job_code', 'sequence': 10, 'group_title': '岗位信息'}, {'name': 'name', 'sequence': 20, 'group_title': '岗位信息'}, {'name': 'department_id', 'sequence': 30, 'group_title': '岗位信息'}, {'name': 'company_id', 'sequence': 40, 'group_title': '岗位信息'}, {'name': 'active', 'sequence': 50, 'group_title': '岗位信息'}, {'name': 'expected_employees', 'sequence': 60, 'group_title': '编制信息'}, {'name': 'no_of_employee', 'sequence': 70, 'group_title': '编制信息', 'readonly': True}, {'name': 'sc_responsibility', 'sequence': 80, 'group_title': '岗位职责与要求'}, {'name': 'sc_qualification', 'sequence': 90, 'group_title': '岗位职责与要求'}]}}}}"/></record></odoo>
+<odoo>
+  <!-- U-C4 G11: 883 岗位管理（menu 705 / action `action_sc_product_job_management_v1`
+       / view 2070 `view_sc_product_job_form_v1`）的入口发布退役结构 body。
+
+       本批把 `product_job_form_v1` 的 sections／fields／columns 退役，只保留 `title` 与
+       `composition_mode: native_semantic_surface`，`view_orchestration.context` 原样保留。
+       入口声明因此成为该 action 的最后结构写入者，解析口径为
+       `form_structure_authority=native_authority` → `layoutPolicy=container_tree_authority`，
+       字段位置／分组／可见性由原生 arch 持有。渲染字段集不变（9 个），章节粒度以原生分组为准。
+
+       本模型上只有这一条 active 载体，priority 800 已是最高；兄弟 action 205（core「工作岗位」）
+       不匹配本契约的 action 绑定，渲染事实不变。
+
+       回滚：`git revert`（纯声明改动，无数据迁移）。 -->
+  <record id="business_config_contract_product_job_form_v1" model="ui.business.config.contract">
+    <field name="name">product_job_form_v1</field>
+    <field name="model">hr.job</field>
+    <field name="view_type">form</field>
+    <field name="action_id" ref="smart_construction_core.action_sc_product_job_management_v1"/>
+    <field name="priority">800</field>
+    <field name="company_id" eval="False"/>
+    <field name="active" eval="True"/>
+    <field name="status">published</field>
+    <field name="version_no">1</field>
+    <field name="contract_json" eval="{'view_orchestration': {'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release', 'job_authority': 'hr.job', 'employee_relation_authority': 'hr.employee'}, 'views': {'form': {'title': '岗位管理', 'composition_mode': 'native_semantic_surface'}}}}"/>
+  </record>
+</odoo>

@@ -9733,3 +9733,48 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Next Step：冻结本候选 HEAD（完整 tracked＋untracked fingerprint），运行一次 exact-head `make ci.local.quick`，
   取得独立只读复核后经 `make workspace.evidence.archive` → `make pr.push` → `make pr.create` 发布；
   合并获授权后执行**仅 2 条路径**的文档单职责提交（台账 19 → 14 ＋ 迭代记录 8.36／8.37），再回到 G11 主线执行。
+
+## 2026-09-21 — U-C4 G11 轻表单与管理配置
+
+- 分支 `feature/uc4-g11-light-forms-configuration-v1`，基线 `origin/main@d96632a2d8a41dbfd1eac71a1d7797cd77acb6b8`。
+  Formal Product Layer 为 **P1**；Layer Target 为 `smart_construction_core` 的入口契约、原生视图与测试；
+  标准口径，全部施工部署继承。不属 P0（`smart_core` 不承载行业语义）／P2／P3／P4。回滚为 `git revert`（纯声明变更）。
+- 目标：让本组 6 个入口（860 消息通知／883 岗位管理／885 办公资产／727 流程审批配置／887 系统参数／
+  888 编码规则）的**入口发布成为本入口最后结构写入者**并声明 `native_semantic_surface`，使
+  `form_structure_authority=native_authority`、`layoutPolicy=container_tree_authority`，兼容重组路径对这
+  6 个 action 不再适用（台账口径由此可扣减 14 → 8；扣减本身属**合并后**文档单职责提交）。
+- 变更（候选 16 条路径：代码／契约／测试 13 条＝11 改＋2 新增，另加切换日志与迭代记录 2 条，以及随
+  `ci.delivery.freeze.prepare` 刷新的生成物 `docs/engineering_convergence/complexity_budget_report.md` 1 条）：860／883／885／887／888
+  五条入口契约只留 `title`＋`native_semantic_surface`（priority 保持 800，body 退役，`context` 原样保留）；
+  **新增** `data/light_forms_configuration_form_productization_contract.xml` 为原本无入口发布的 727 发布
+  `sc_approval_policy_productized_form_v1`（priority 800）并在 `__manifest__.py` 登记；六个原生表单补
+  **16 个** `data-sc-anchor` 业务章节（1910→2、2070→4、1908→3、1887→2、2072→3、2074→2）；
+  **新增** `tests/test_light_forms_configuration_native_lowcode.py`（tag `uc4_native_lowcode`，23 测试）。
+- 关键决策（实测驱动，非设计预判）：退役 body 的**字段级只读口径**在 `native_authority` 下不再从契约读取。
+  冻结态只读 A／B（`SAVEPOINT`＋`ROLLBACK TO SAVEPOINT`，`rollback_residual` 0 写入）实测三处真实回退：
+  860 的 `author_id`／`is_read`／`read_date`、885 的 `status`、888 的 `name`／`code`／`company_id`
+  （容器树节点；其余入口 0 回退）。处置为**稀疏语义覆盖**（`fields` 只带 `name`＋`readonly`，且**只列真实
+  回退的字段**；模型面本就只读的字段不重复声明），实测 `structural_form_declarations()` 仍返回空、
+  authority 仍为 `native_authority`、`diagnostics` 为空、只读口径完全恢复。
+- 保留边界：模型级生成镜像 52 保持 active（无 action 上下文时仍是 `sc.approval.policy` 唯一结构载体），
+  退役属别组工作；`retirementComplete=false`。
+- 验证：L0 基线／视图探针锁定六入口权威（860／883／885／887／888 `entry_semantic_surface`，727 `""`）；
+  L1 `make ci.delivery.freeze.prepare` PASS（`component_driver_takeover_inventory required=35 missing=0`、
+  `contract_form_split_evidence lines=1905`）；L2 新测试 23／23 通过、整组回归 189 通过（0 failed 0 error）、
+  `verify.formal_product_field_purity`／`verify.contract.structure_lock`（`domains=14`）／
+  `verify.product.configuration_center.wave1.guard`／`verify.tenant.payload_boundary`／
+  `verify.contract.page_v1_zero_residue.guard`／`verify.system_init.menu_boundary.guard` 全 PASS；
+  域回归只读重跑并与基线逐项 diff——collaboration 仅 1 处预期变化（`form_structure_authority` →
+  `native_authority`），base_configuration／administration **0 diff**，含 860 的 workbench_center PASS；
+  L3 `local.dev.upgrade` exit 0，只读探针逐项核对六条入口发布与两个原生权威。
+- 未覆盖（不写成通过）：本批未跑 `FORM_LOWCODE_TOPIC` 浏览器代表面复验、无截图证据；冻结后的 exact-head
+  Quick 回执、独立只读复核与外部归档属本轮收口步骤，以冻结回执为准。
+- 环境缺陷登记（非本批引入，已在干净主工作树 `main@ec2c56e5` 复现，不修）：`verify.contract.view_structure`
+  的权威指纹期望 `local.clean`／`sc_clean` 证据而本工作树以 `ec2c56e5` 为基线，`baseline_sha`／
+  `scope_manifest_sha256`／`digest`／`branch` 四项不匹配；`verify.product.menu.governance.m4.closure` 缺
+  `artifacts/menu-governance/menu-m4-runtime.REJECTED-wrong-sha.json`；`verify.user_form.preference.boundary_guard`
+  依赖 `smart_construction_custom/models/user_preferences.py`（该模块属客户定制 addon 仓库，不在本仓库边界内）。
+- 边界：不改 ACL／记录规则／菜单可见性，不改模型字段，不改运行环境、数据库或端口。
+- Next Step：冻结本候选 HEAD（完整 tracked＋untracked fingerprint），运行一次 exact-head `make ci.local.quick`，
+  取得独立只读复核后经 `make pr.push` → `make pr.create` 发布；合并获授权后执行**仅 2 条路径**的文档单职责提交
+  （台账 14 → 8 ＋ 迭代记录 8.38／8.39），清理本轮工作树与已合入分支，再启动 G12。

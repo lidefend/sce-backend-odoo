@@ -1,5 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+  <!-- U-C4 G11: 860 消息通知（menu 675 / action `action_sc_product_message_notification_v1`
+       / view 1910 `view_sc_product_mail_notification_form`）的入口发布退役结构 body。
+
+       本批把 `mail_notification_form_v1` 的**结构**body（sections／columns／actions 与带
+       sequence／group_title 的 fields 行）退役，只保留 `title` 与
+       `composition_mode: native_semantic_surface`，`view_orchestration.context` 原样保留。
+       入口声明因此成为该 action 的最后结构写入者，解析口径为
+       `form_structure_authority=native_authority` → `layoutPolicy=container_tree_authority`，
+       通用治理投影关闭，字段位置／分组／可见性由原生 arch 持有。
+
+       退役 body 里的**字段级只读口径**不回退：实测只有 `author_id`／`is_read`／`read_date`
+       三个字段在退役后由 readonly=true 回退为可写（其余四个字段——`sc_subject`／
+       `sc_message_date`／`sc_record_name`／`sc_body`——模型面本就是只读，不再重复声明），
+       因此这里以**稀疏语义覆盖**（`fields` 只带 `name` ＋ `readonly`，且只列这三个）把它们
+       继续钉在只读。这类只读行不含任何结构键，`structural_form_declarations()` 会把它判为
+       语义注解而非结构声明，故不会产生 `NATIVE_SEMANTIC_SURFACE_STRUCTURE_CONFLICT`，
+       本入口的结构权威仍为原生。
+
+       本模型上只有这一条 active 载体，priority 800 已是最高；兄弟 action 119（core「通知」）
+       不匹配本契约的 action 绑定，渲染事实不变。
+
+       回滚：`git revert`（纯声明改动，无数据迁移）。 -->
   <record id="business_config_contract_mail_notification_form_v1" model="ui.business.config.contract">
     <field name="name">mail_notification_form_v1</field>
     <field name="model">mail.notification</field>
@@ -11,6 +33,6 @@
     <field name="active" eval="True"/>
     <field name="status">published</field>
     <field name="version_no">1</field>
-    <field name="contract_json" eval="{'view_orchestration': {'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release', 'notification_authority': 'mail.notification', 'message_authority': 'mail.message'}, 'views': {'form': {'title': '消息通知', 'composition_mode': 'entry_semantic_surface', 'columns': 2, 'sections': [{'title': '消息信息', 'sequence': 10, 'columns': 2, 'fields': ['sc_subject', 'author_id', 'sc_message_date', 'is_read', 'read_date', 'sc_record_name']}, {'title': '消息内容', 'sequence': 20, 'columns': 1, 'fields': ['sc_body']}], 'fields': [{'name': 'sc_subject', 'sequence': 10, 'group_title': '消息信息', 'readonly': True}, {'name': 'author_id', 'sequence': 20, 'group_title': '消息信息', 'readonly': True}, {'name': 'sc_message_date', 'sequence': 30, 'group_title': '消息信息', 'readonly': True}, {'name': 'is_read', 'sequence': 40, 'group_title': '消息信息', 'readonly': True}, {'name': 'read_date', 'sequence': 50, 'group_title': '消息信息', 'readonly': True}, {'name': 'sc_record_name', 'sequence': 60, 'group_title': '消息信息', 'readonly': True}, {'name': 'sc_body', 'sequence': 70, 'group_title': '消息内容', 'readonly': True}], 'actions': [{'name': 'action_sc_mark_read', 'label': '标记已读', 'type': 'object', 'style': 'primary'}, {'name': 'action_sc_mark_unread', 'label': '标记未读', 'type': 'object'}, {'name': 'action_sc_open_source', 'label': '打开关联单据', 'type': 'object'}]}}}}"/>
+    <field name="contract_json" eval="{'view_orchestration': {'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release', 'notification_authority': 'mail.notification', 'message_authority': 'mail.message'}, 'views': {'form': {'title': '消息通知', 'composition_mode': 'native_semantic_surface', 'fields': [{'name': 'author_id', 'readonly': True}, {'name': 'is_read', 'readonly': True}, {'name': 'read_date', 'readonly': True}]}}}}"/>
   </record>
 </odoo>

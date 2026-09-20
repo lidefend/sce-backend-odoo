@@ -44,8 +44,16 @@
         <field name="model">sc.approval.policy</field>
         <field name="arch" type="xml">
             <form string="审批规则">
+                <!-- U-C4 G11: 727 流程审批配置（menu 424 / action `action_sc_approval_policy`）
+                     的原生承载。本入口此前没有入口级发布，只消费模型级生成镜像 52
+                     （`sc_approval_policy_form_structure_generated_v1`，priority 84），结构权威
+                     停在空串；本批按 G07／G09／G10 写法为它补一条入口级 native 发布
+                     （`sc_approval_policy_productized_form_v1`，priority 800，纯语义声明）。
+                     两个顶层业务分组带稳定 `data-sc-anchor`，消费方按它生成本入口的业务章节与
+                     章节导航；内层列组（适用业务／执行方式）与 one2many 步骤表单的分组是布局与
+                     子表口径，不承载入口章节身份，故不设锚点。 -->
                 <sheet>
-                    <group string="业务规则">
+                    <group name="sc_approval_policy_rules" data-sc-anchor="sc_approval_policy_rules" string="业务规则">
                         <group string="适用业务">
                             <field name="name" string="规则名称"/>
                             <field name="target_model" string="业务单据"/>
@@ -58,7 +66,7 @@
                             <field name="step_count" readonly="1" string="步骤数"/>
                         </group>
                     </group>
-                    <group string="系统承载">
+                    <group name="sc_approval_policy_runtime" data-sc-anchor="sc_approval_policy_runtime" string="系统承载">
                         <group>
                             <field name="runtime_state" string="执行状态"/>
                             <field name="active" string="规则有效"/>
