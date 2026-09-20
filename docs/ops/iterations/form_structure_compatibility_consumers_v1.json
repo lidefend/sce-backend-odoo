@@ -6,7 +6,7 @@
     "operation": "model",
     "renderProfile": "create"
   },
-  "count": 19,
+  "count": 14,
   "fullRescan": false,
   "sourceInventory": "artifacts/form-structure-unification/customer-browser-final/compatibility-consumers.json",
   "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
@@ -398,891 +398,6 @@
           "date",
           "amount",
           "currency_id"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [],
-        "sectionTitles": [],
-        "fieldGroups": {},
-        "hiddenFieldNames": [],
-        "groupColumns": {},
-        "groupVisibility": {}
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_safety_issue",
-      "label": "安全检查",
-      "model": "sc.safety.issue",
-      "actionId": 682,
-      "menuId": 526,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.safety.issue",
-        "viewId": 1741
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 164,
-            "name": "sc_safety_issue_handling_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1741,
-        "resolvedActionId": 682,
-        "structureDiagnostics": [
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.safety.issue",
-              "action_id": 682,
-              "view_id": 1741
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "state",
-              "name",
-              "project_id",
-              "issue_category",
-              "issue_level",
-              "issue_date",
-              "location",
-              "coordinate",
-              "responsible_party_id",
-              "owner_id",
-              "rechecker_id",
-              "cc_user_ids",
-              "rectification_deadline",
-              "reminder_before_days",
-              "closed_date",
-              "overdue_days",
-              "is_overdue",
-              "description",
-              "voice_text",
-              "attachment_ids",
-              "photo_batch_ids",
-              "hazard_source_id"
-            ],
-            "configuration": {
-              "id": 164,
-              "name": "sc_safety_issue_handling_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 115,
-                "name": "sc_safety_issue_form_structure_generated_v1"
-              }
-            ]
-          }
-        ],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "state",
-          "name",
-          "project_id",
-          "issue_category",
-          "source_channel",
-          "issue_level",
-          "issue_date",
-          "location",
-          "coordinate",
-          "responsible_party_id",
-          "owner_id",
-          "rechecker_id",
-          "cc_user_ids",
-          "rectification_deadline",
-          "reminder_before_days",
-          "closed_date",
-          "overdue_days",
-          "is_overdue",
-          "description",
-          "voice_text",
-          "attachment_ids",
-          "photo_batch_ids",
-          "hazard_source_id"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:问题识别",
-            "key": "",
-            "title": "问题识别",
-            "fields": [
-              "state",
-              "name",
-              "project_id",
-              "issue_category",
-              "issue_level",
-              "issue_date"
-            ]
-          },
-          {
-            "identity": "title:位置与责任",
-            "key": "",
-            "title": "位置与责任",
-            "fields": [
-              "location",
-              "coordinate",
-              "responsible_party_id",
-              "owner_id",
-              "rechecker_id",
-              "cc_user_ids"
-            ]
-          },
-          {
-            "identity": "title:整改要求",
-            "key": "",
-            "title": "整改要求",
-            "fields": [
-              "rectification_deadline",
-              "reminder_before_days",
-              "closed_date",
-              "overdue_days",
-              "is_overdue"
-            ]
-          },
-          {
-            "identity": "title:描述与证据",
-            "key": "",
-            "title": "描述与证据",
-            "fields": [
-              "description",
-              "voice_text",
-              "attachment_ids",
-              "photo_batch_ids",
-              "hazard_source_id"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "问题识别",
-          "位置与责任",
-          "整改要求",
-          "描述与证据"
-        ],
-        "fieldGroups": {
-          "问题识别": [
-            "state",
-            "name",
-            "project_id",
-            "issue_category",
-            "issue_level",
-            "issue_date"
-          ],
-          "位置与责任": [
-            "location",
-            "coordinate",
-            "responsible_party_id",
-            "owner_id",
-            "rechecker_id",
-            "cc_user_ids"
-          ],
-          "整改要求": [
-            "rectification_deadline",
-            "reminder_before_days",
-            "closed_date",
-            "overdue_days",
-            "is_overdue"
-          ],
-          "描述与证据": [
-            "description",
-            "voice_text",
-            "attachment_ids",
-            "photo_batch_ids",
-            "hazard_source_id"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "问题识别": 2,
-          "位置与责任": 2,
-          "整改要求": 2,
-          "描述与证据": 1
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_product_quality_acceptance_v1",
-      "label": "质量验收",
-      "model": "sc.quality.acceptance",
-      "actionId": 867,
-      "menuId": 686,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.quality.acceptance",
-        "viewId": 1550
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 165,
-            "name": "sc_quality_acceptance_handling_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1550,
-        "resolvedActionId": 867,
-        "structureDiagnostics": [],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "state",
-          "project_id",
-          "name",
-          "acceptance_type",
-          "acceptance_date",
-          "location",
-          "responsible_id",
-          "participant_ids",
-          "result",
-          "rectification_deadline",
-          "standard",
-          "conclusion",
-          "issue_ids",
-          "attachment_ids",
-          "processing_advisory"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:验收对象",
-            "key": "",
-            "title": "验收对象",
-            "fields": [
-              "state",
-              "project_id",
-              "name",
-              "acceptance_type",
-              "acceptance_date",
-              "location"
-            ]
-          },
-          {
-            "identity": "title:责任与结果",
-            "key": "",
-            "title": "责任与结果",
-            "fields": [
-              "responsible_id",
-              "participant_ids",
-              "result",
-              "rectification_deadline"
-            ]
-          },
-          {
-            "identity": "title:依据与意见",
-            "key": "",
-            "title": "依据与意见",
-            "fields": [
-              "standard",
-              "conclusion"
-            ]
-          },
-          {
-            "identity": "title:问题与资料",
-            "key": "",
-            "title": "问题与资料",
-            "fields": [
-              "issue_ids",
-              "attachment_ids",
-              "processing_advisory"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "验收对象",
-          "责任与结果",
-          "依据与意见",
-          "问题与资料"
-        ],
-        "fieldGroups": {
-          "验收对象": [
-            "state",
-            "project_id",
-            "name",
-            "acceptance_type",
-            "acceptance_date",
-            "location"
-          ],
-          "责任与结果": [
-            "responsible_id",
-            "participant_ids",
-            "result",
-            "rectification_deadline"
-          ],
-          "依据与意见": [
-            "standard",
-            "conclusion"
-          ],
-          "问题与资料": [
-            "issue_ids",
-            "attachment_ids",
-            "processing_advisory"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "验收对象": 2,
-          "责任与结果": 2,
-          "依据与意见": 1,
-          "问题与资料": 1
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_project_documents",
-      "label": "工程资料",
-      "model": "sc.project.document",
-      "actionId": 597,
-      "menuId": 412,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "native_authority",
-      "actualView": {
-        "model": "sc.project.document",
-        "viewId": 1560
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 104,
-            "name": "sc_project_document_form_structure_generated_v1",
-            "priority": 142,
-            "view_type": "form"
-          }
-        ],
-        "resolvedViewId": 1560,
-        "resolvedActionId": 597,
-        "structureDiagnostics": [],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "",
-        "formPresentationMode": "workspace",
-        "fieldNames": [
-          "state",
-          "name",
-          "document_kind",
-          "project_id",
-          "wbs_id",
-          "task_id",
-          "contract_id",
-          "doc_type_id",
-          "doc_subtype_id",
-          "is_mandatory",
-          "date_doc",
-          "version",
-          "responsible_id",
-          "company_id",
-          "note",
-          "attachment_ids"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [],
-        "sectionTitles": [],
-        "fieldGroups": {},
-        "hiddenFieldNames": [],
-        "groupColumns": {},
-        "groupVisibility": {}
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_construction_diary",
-      "label": "施工日志",
-      "model": "sc.construction.diary",
-      "actionId": 729,
-      "menuId": 426,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.construction.diary",
-        "viewId": 1893
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 61,
-            "name": "sc_construction_diary_form_structure_generated_v1",
-            "version_no": 2,
-            "status": "published",
-            "source_kind": "published"
-          },
-          {
-            "id": 25,
-            "name": "sc_construction_diary_p1_form_business_facts_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          },
-          {
-            "id": 245,
-            "name": "construction_diary_productized_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1893,
-        "resolvedActionId": 729,
-        "structureDiagnostics": [
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.construction.diary",
-              "action_id": 729,
-              "view_id": 1893
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "name",
-              "project_id",
-              "title",
-              "manpower_count",
-              "attendance_equipment",
-              "weather",
-              "description",
-              "handler_name",
-              "quality_name",
-              "note"
-            ],
-            "configuration": {
-              "id": 148,
-              "name": "sc_construction_diary_form_p1_fields_v1"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 61,
-                "name": "sc_construction_diary_form_structure_generated_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.construction.diary",
-              "action_id": 729,
-              "view_id": 1893
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "state",
-              "project_id",
-              "name",
-              "date_diary",
-              "title",
-              "manpower_count",
-              "attendance_equipment",
-              "weather",
-              "description",
-              "handler_name",
-              "quality_name",
-              "note",
-              "attachment_ids",
-              "create_date"
-            ],
-            "configuration": {
-              "id": 25,
-              "name": "sc_construction_diary_p1_form_business_facts_v1"
-            },
-            "explicit_structure_scope": false,
-            "competing_owners": [
-              {
-                "id": 148,
-                "name": "sc_construction_diary_form_p1_fields_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.construction.diary",
-              "action_id": 729,
-              "view_id": 1893
-            },
-            "key": "sections",
-            "node": "view_orchestration.views.form.sections",
-            "nodes": [
-              "0",
-              "1",
-              "2",
-              "3",
-              "4"
-            ],
-            "configuration": {
-              "id": 245,
-              "name": "construction_diary_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 25,
-                "name": "sc_construction_diary_p1_form_business_facts_v1"
-              }
-            ]
-          },
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "sc.construction.diary",
-              "action_id": 729,
-              "view_id": 1893
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "state",
-              "source_origin",
-              "name",
-              "project_id",
-              "date_diary",
-              "title",
-              "diary_type",
-              "category",
-              "report_period_start",
-              "report_period_end",
-              "document_no",
-              "handler_name",
-              "construction_unit",
-              "project_manager",
-              "weather",
-              "manpower_count",
-              "attendance_equipment",
-              "quality_name",
-              "description",
-              "material_inspection_note",
-              "design_change_note",
-              "test_block_note",
-              "safety_note",
-              "hidden_acceptance_note",
-              "next_plan",
-              "header_description",
-              "note",
-              "attachment_ids",
-              "active"
-            ],
-            "configuration": {
-              "id": 245,
-              "name": "construction_diary_productized_form_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 25,
-                "name": "sc_construction_diary_p1_form_business_facts_v1"
-              }
-            ]
-          }
-        ],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "state",
-          "project_id",
-          "date_diary",
-          "diary_type",
-          "title",
-          "weather",
-          "construction_unit",
-          "project_manager",
-          "manpower_count",
-          "attendance_equipment",
-          "description",
-          "material_inspection_note",
-          "hidden_acceptance_note",
-          "next_plan",
-          "quality_name",
-          "safety_note",
-          "test_block_note",
-          "design_change_note",
-          "handler_name",
-          "note",
-          "name",
-          "attachment_ids",
-          "create_date",
-          "source_origin",
-          "category",
-          "report_period_start",
-          "report_period_end",
-          "document_no",
-          "header_description",
-          "active"
-        ],
-        "fieldLabels": {
-          "project_id": "项目",
-          "date_diary": "日志日期",
-          "diary_type": "日志类型",
-          "title": "日志标题",
-          "weather": "天气",
-          "construction_unit": "施工单位",
-          "project_manager": "项目经理",
-          "manpower_count": "现场人数",
-          "attendance_equipment": "出勤机械",
-          "description": "今日施工内容",
-          "material_inspection_note": "材料进场/送检",
-          "hidden_acceptance_note": "隐蔽工程验收",
-          "next_plan": "下步计划",
-          "quality_name": "质量事项",
-          "safety_note": "安全情况",
-          "test_block_note": "试块制作",
-          "design_change_note": "设计变更/技术核定",
-          "handler_name": "经办人",
-          "note": "备注"
-        },
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:日志主信息",
-            "key": "",
-            "title": "日志主信息",
-            "fields": [
-              "state",
-              "source_origin",
-              "name",
-              "project_id",
-              "date_diary",
-              "title",
-              "diary_type",
-              "category"
-            ]
-          },
-          {
-            "identity": "title:期间与经办",
-            "key": "",
-            "title": "期间与经办",
-            "fields": [
-              "report_period_start",
-              "report_period_end",
-              "document_no",
-              "handler_name",
-              "construction_unit",
-              "project_manager"
-            ]
-          },
-          {
-            "identity": "title:现场情况",
-            "key": "",
-            "title": "现场情况",
-            "fields": [
-              "weather",
-              "manpower_count",
-              "attendance_equipment",
-              "quality_name"
-            ]
-          },
-          {
-            "identity": "title:日志内容",
-            "key": "",
-            "title": "日志内容",
-            "fields": [
-              "description",
-              "material_inspection_note",
-              "design_change_note",
-              "test_block_note",
-              "safety_note",
-              "hidden_acceptance_note",
-              "next_plan",
-              "header_description"
-            ]
-          },
-          {
-            "identity": "title:备注与附件",
-            "key": "",
-            "title": "备注与附件",
-            "fields": [
-              "note",
-              "attachment_ids",
-              "active"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "单据识别",
-          "业务对象",
-          "现场与施工",
-          "附件与来源",
-          "日志主信息",
-          "期间与经办",
-          "现场情况",
-          "日志内容",
-          "备注与附件"
-        ],
-        "fieldGroups": {
-          "日志主信息": [
-            "state",
-            "source_origin",
-            "name",
-            "project_id",
-            "date_diary",
-            "title",
-            "diary_type",
-            "category"
-          ],
-          "期间与经办": [
-            "report_period_start",
-            "report_period_end",
-            "document_no",
-            "handler_name",
-            "construction_unit",
-            "project_manager"
-          ],
-          "现场情况": [
-            "weather",
-            "manpower_count",
-            "attendance_equipment",
-            "quality_name"
-          ],
-          "日志内容": [
-            "description",
-            "material_inspection_note",
-            "design_change_note",
-            "test_block_note",
-            "safety_note",
-            "hidden_acceptance_note",
-            "next_plan",
-            "header_description"
-          ],
-          "备注与附件": [
-            "note",
-            "attachment_ids",
-            "active"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "日志主信息": 2,
-          "期间与经办": 2,
-          "现场情况": 2,
-          "日志内容": 1,
-          "备注与附件": 1
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_construction_progress",
-      "label": "施工进度",
-      "model": "project.progress.entry",
-      "actionId": 527,
-      "menuId": 520,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "native_authority",
-      "actualView": {
-        "model": "project.progress.entry",
-        "viewId": 1389
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 45,
-            "name": "project_progress_entry_form_structure_generated_v1",
-            "priority": 76,
-            "view_type": "form"
-          }
-        ],
-        "resolvedViewId": 1389,
-        "resolvedActionId": 527,
-        "structureDiagnostics": [],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "",
-        "formPresentationMode": "workspace",
-        "fieldNames": [
-          "state",
-          "project_id",
-          "wbs_id",
-          "date",
-          "qty_done",
-          "qty_cum",
-          "note",
-          "attachment_ids"
         ],
         "fieldLabels": {},
         "fieldSemanticRoles": {},
@@ -2726,7 +1841,7 @@
     "countCorrection": 4,
     "migrationReduction": 3
   },
-  "localVerifiedCount": 19,
+  "localVerifiedCount": 14,
   "uc1PublishedAudit": {
     "auditedAt": "2026-09-16",
     "auditedReleaseHead": "28b7695dc9f1cebbbe9bd5d715e951c6dec8a4da",
@@ -2899,14 +2014,15 @@
     "name": "U-C4",
     "status": "scope_confirmed_implementation_started",
     "priorityActions": [
-      682,
-      867,
-      729,
-      597,
-      527
+      860,
+      883,
+      885,
+      727,
+      887,
+      888
     ],
-    "selectedGroup": "G10",
-    "sourceMainlineHead": "988e9a87dad3768d1de3358860a904ff618b842c",
+    "selectedGroup": "G11",
+    "sourceMainlineHead": "294fa47881f1fd1ab272a55860e5fd1b815110cc",
     "fullRescan": false,
     "groups": [
       {
@@ -3149,8 +2265,8 @@
           "sc_safety_issue_handling_form_v1"
         ],
         "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated",
-        "indexStatus": "mixed_historical_and_current",
-        "indexNote": "This prepared list is NOT the G10 retirement set. The G10 topic retires only the entry *bodies* of three entries - 164 sc_safety_issue_handling_form_v1 (682), 165 sc_quality_acceptance_handling_form_v1 (867) and 245 construction_diary_productized_form_v1 (729) - and publishes two NEW entry releases for the two actions that had none (597 action_sc_project_document -> sc_project_document_productized_form_v1, 527 action_project_progress_entry -> project_progress_entry_productized_form_v1, both priority 800, title plus native_semantic_surface only). The four generated mirrors and the two diary auxiliary carriers stay ACTIVE, because the regression rule forbids retiring a model-wide carrier that is still the last structure writer for any other action on the same model: 61 serves 730/731/732, 104 serves 598-601, 45 serves 586, 115 is 682's own model plane, 25/148 are the diary fact policy and sparse field order. Read-only A/B on sc_dev_demo (2026-09-21) rejected the first plan of retiring mirror 61: it shrank 730/731/732 from 23 to 14 rendered facts. Per-name classification below is bound to sc_dev_demo (read-only, 2026-09-21). The count deduction (19 -> 14) and the published audit land in the post-merge document commit, per the G03-G09 precedent.",
+        "indexStatus": "historical_source",
+        "indexNote": "G10 is published and merged (PR #502, squash, origin/main^{tree} byte-identical to the candidate tree b79e4cfb). The G10 topic retired only the entry *bodies* of three entries - 164 sc_safety_issue_handling_form_v1 (682), 165 sc_quality_acceptance_handling_form_v1 (867) and 245 construction_diary_productized_form_v1 (729) - and published two NEW entry releases for the two actions that had none (597 action_sc_project_document -> sc_project_document_productized_form_v1, 527 action_project_progress_entry -> project_progress_entry_productized_form_v1, both priority 800, title plus native_semantic_surface only). The four generated mirrors and the two diary auxiliary carriers stay ACTIVE, because the regression rule forbids retiring a model-wide carrier that is still the last structure writer for any other action on the same model: 61 serves 730/731/732, 104 serves 598-601, 45 serves 586, 115 is the safety model plane, 25/148 are the diary fact policy and sparse field order. Read-only A/B on sc_dev_demo (2026-09-21) rejected the first plan of retiring mirror 61: it shrank 730/731/732 from 23 to 14 rendered facts. Five ledger entries retired (19 -> 14): 682/867/597/729/527. Per-name classification below is bound to sc_dev_demo (read-only, 2026-09-21) and to the merged head 294fa47881f1fd1ab272a55860e5fd1b815110cc; the published audit is uc4G10PublishedAudit.",
         "legacyConfigurationStatus": {
           "construction_diary_productized_form_v1": "entry_body_retired_by_g10_topic",
           "project_progress_entry_form_structure_generated_v1": "current_consumer",
@@ -3279,7 +2395,7 @@
     "planningRecord": "docs/ops/iterations/form_structure_consumption_stabilization_20260917.md"
   },
   "retirementCondition": "Only after every formal consumer of a compatibility regrouping path is zero and other roles/companies/states are covered, remove that regrouping logic and its test exemptions.",
-  "mainlineRemainingCount": 19,
+  "mainlineRemainingCount": 14,
   "mainlineRemainingLabel": "主线剩余兼容消费者（不代表部署发布或89入口整体交付）",
   "uc3LocalMigrationAudit": {
     "status": "mainline_integrated",
@@ -3971,6 +3087,191 @@
       "action_576_subcontract_settlement_productized_form_233_untouched_other_group",
       "561_labor_usage_has_no_menu_and_no_entry_contract_a_pre_existing_gap",
       "bypass_and_second_menu_surfaces_509_518_562_563_851_never_counted_in_this_ledger"
+    ]
+  },
+  "uc4G10PublishedAudit": {
+    "auditedAt": "2026-09-21",
+    "auditedReleaseHead": "294fa47881f1fd1ab272a55860e5fd1b815110cc",
+    "mergedPr": {
+      "number": 502,
+      "squashHead": "294fa47881f1fd1ab272a55860e5fd1b815110cc",
+      "sourceHead": "f3df441ae57047a010bb39263751a11be58ca51b",
+      "tree": "b79e4cfbefdc5a269463bc8ddb5453b0c0a7c424"
+    },
+    "iterationRecord": "docs/ops/iterations/form_structure_consumption_stabilization_20260917.md",
+    "requiredChecks": [
+      "classify=success",
+      "frontend_release_gate=success",
+      "merge_policy_gate=success",
+      "professional_authorization=success",
+      "professional_quality_gate=success",
+      "public_guard=success",
+      "public_guard_classify=success",
+      "python310_runtime_compatibility=success",
+      "release_candidate_gate=success"
+    ],
+    "skippedChecks": [
+      "classify",
+      "fast",
+      "wait_for_candidate_checks"
+    ],
+    "reduction": {
+      "before": 19,
+      "after": 14,
+      "retiredActions": [
+        682,
+        867,
+        597,
+        729,
+        527
+      ],
+      "retiredViews": [
+        1741,
+        1550,
+        1560,
+        1893,
+        1389
+      ],
+      "countMeaning": "mainline remaining compatibility consumers; deployment and overall user delivery are separate",
+      "retiredViewMeaning": "these ids label the five retired ledger entries; each view is the shared native primary form of its model and stays live: 1560 also renders the sibling document entries 598/599/600/601, 1893 also renders the diary siblings 730/731/732, 1389 also renders the workspace sibling 586, while 1741 and 1550 are the single native primary form of their own models; the deduction retires five ledger entries and no view"
+    },
+    "exitEvidence": {
+      "sourceCheck": "682/867/729: the entry contracts 164 sc_safety_issue_handling_form_v1, 165 sc_quality_acceptance_handling_form_v1 and 245 construction_diary_productized_form_v1 now declare only view_orchestration.views.form.title plus composition_mode=native_semantic_surface, keep their view_orchestration.context, and carry no sections/fields/columns, so structural_form_declarations() yields nothing for them",
+      "releasePriorityCheck": "the entry release must outrank every model-wide carrier still active on its own model: 164/165 stay at 900 (highest carrier on sc.safety.issue is mirror 115 at 154), and 245 moved 700 -> 800 (highest on sc.construction.diary is policy 25 at 88 / mirror 61 at 94 / sparse order 148 at 21). Because 245 lives in an odoo noupdate=1 carrier, the new declaration is applied by an explicit ui.business.config.contract.write call in the same file whose contract_json is byte-identical to its record; the runtime probe confirms priority=800 and noupdate=true",
+      "noupdateWorkaroundCheck": "the write call only updates the existing record (ref() fails closed if the record is missing) and does not clear the noupdate flag, so no second contract row can be created silently",
+      "entryPublishedCheck": "597/527 had NO entry release at all and consumed only the model-wide generated mirrors 104 (priority 142) and 45 (priority 76), which left form_structure_authority empty. The new releases sc_project_document_productized_form_v1 and project_progress_entry_productized_form_v1 (priority 800, title plus native_semantic_surface only, action-scoped, registered in the manifest) become the last structure writer for their own actions",
+      "nativeStructureCheck": "the five native forms carry 16 named business groups with data-sc-anchor (1741 -> 2, 1550 -> 4, 1893 -> 4, 1560 -> 3, 1389 -> 3) so entry authority is the native tree; the empty safety page was removed and hazard_source_id is still rendered by the 隐患信息 page; computed groups (办理提示 / 录入口径 / trailing 依据类事实) deliberately carry no anchor",
+      "presentationNeutralityCheck": "test_the_native_arch_is_presentation_neutral pins the rendered field set per form (1741 -> 23, 1550 -> 15, 1893 -> 28, 1560 -> 17, 1389 -> 9) and test_every_retired_fact_is_still_reachable_from_the_native_arch accounts for every fact a retired body declared: each is either rendered by the native arch or registered as a provenance marker never shown on the native surface (sc.construction.diary.source_origin)",
+      "retirementIsolationCheck": "read-only A/B at the frozen head (sc_dev_demo, SAVEPOINT + ROLLBACK TO SAVEPOINT, rollback_residual records zero writes) showed 682/867/597/729/527 moving to native_authority + container_tree_authority and 730/731/732, 598/599/600/601 and 586 unchanged; the rejected alternative of retiring the diary mirror 61 would have shrunk 730/731/732 from 23 to 14 rendered facts",
+      "failClosedCheck": "the four G10 mirrors in the generated carrier file are model-level (no action_id/view_id), so they degrade to LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW; an action/view-scoped competing declaration is still refused with ValueError, which test_a_scoped_competing_declaration_is_refused asserts as a negative control",
+      "verificationCheck": "L0 complete worktree fingerprint PASS (path_count=7521), L1 make ci.local.iteration PASS, make ci.delivery.freeze.prepare PASS, L2 new test class 17/17 and the uc4_native_lowcode group 146 tests 0 failed/0 error, L3 local.dev.upgrade exit 0 with a read-only runtime probe matching the ledger, and one exact-head make ci.local.quick PASS whose receipt is bound to the candidate fingerprint"
+    },
+    "bypassConsumers": {
+      "scopeNote": "This ledger counts released compatibility consumers, not sibling actions that render an already-counted primary form. G10 retires five entries; the sibling actions of the same models keep consuming the retained carriers and are recorded here (counted=false) instead of being silently retired or dropped.",
+      "actions": [
+        {
+          "actionId": 730,
+          "label": "日报表",
+          "model": "sc.construction.diary",
+          "counted": false,
+          "whyNotCounted": "renders the same native form 1893 but keeps consuming mirror 61, sparse order 148 and the p1 fact policy 25, so form_structure_authority stays entry_semantic_surface; retiring those carriers would drop its rendered facts from 23 to 14",
+          "authorityEvidence": "read-only probe (sc_dev_demo, 2026-09-21): authority=entry_semantic_surface, layoutPolicy=compatibility_regrouping, 23 facts, diagnostic LEGACY_STRUCTURE_KEY_OVERRIDE"
+        },
+        {
+          "actionId": 731,
+          "label": "周报表",
+          "model": "sc.construction.diary",
+          "counted": false,
+          "whyNotCounted": "same carriers and same rendered fact set as 730; unchanged by G10",
+          "authorityEvidence": "read-only probe (sc_dev_demo, 2026-09-21): authority=entry_semantic_surface, layoutPolicy=compatibility_regrouping, 23 facts"
+        },
+        {
+          "actionId": 732,
+          "label": "月报表",
+          "model": "sc.construction.diary",
+          "counted": false,
+          "whyNotCounted": "same carriers and same rendered fact set as 730; unchanged by G10",
+          "authorityEvidence": "read-only probe (sc_dev_demo, 2026-09-21): authority=entry_semantic_surface, layoutPolicy=compatibility_regrouping, 23 facts"
+        },
+        {
+          "actionId": 598,
+          "label": "安全资料",
+          "model": "sc.project.document",
+          "counted": false,
+          "whyNotCounted": "renders the same native form 1560 but consumes only mirror 104, so it stays on the compatibility regrouping path; 104 is the only structure carrier for this action",
+          "authorityEvidence": "read-only probe (sc_dev_demo, 2026-09-21): authority empty, layoutPolicy=compatibility_regrouping, 16 facts"
+        },
+        {
+          "actionId": 599,
+          "label": "质量资料",
+          "model": "sc.project.document",
+          "counted": false,
+          "whyNotCounted": "same carrier 104 as 598; unchanged by G10",
+          "authorityEvidence": "read-only probe (sc_dev_demo, 2026-09-21): authority empty, layoutPolicy=compatibility_regrouping, 16 facts"
+        },
+        {
+          "actionId": 600,
+          "label": "自检资料",
+          "model": "sc.project.document",
+          "counted": false,
+          "whyNotCounted": "same carrier 104 as 598; unchanged by G10",
+          "authorityEvidence": "read-only probe (sc_dev_demo, 2026-09-21): authority empty, layoutPolicy=compatibility_regrouping, 16 facts"
+        },
+        {
+          "actionId": 601,
+          "label": "归档备案",
+          "model": "sc.project.document",
+          "counted": false,
+          "whyNotCounted": "same carrier 104 as 598; unchanged by G10",
+          "authorityEvidence": "read-only probe (sc_dev_demo, 2026-09-21): authority empty, layoutPolicy=compatibility_regrouping, 16 facts"
+        },
+        {
+          "actionId": 586,
+          "label": "进度计量（工作台）",
+          "model": "project.progress.entry",
+          "counted": false,
+          "whyNotCounted": "a second workspace action on the same model that consumes only mirror 45; unchanged by G10, which published the entry release for 527 only",
+          "authorityEvidence": "read-only probe (sc_dev_demo, 2026-09-21): authority empty, layoutPolicy=compatibility_regrouping, 8 facts"
+        }
+      ],
+      "retainedLegacyConfigurations": [
+        {
+          "name": "sc_construction_diary_form_structure_generated_v1",
+          "id": 61,
+          "model": "sc.construction.diary",
+          "counted": false,
+          "whyNotCounted": "still the last structure writer for the sibling actions 730/731/732; measured A/B rejected retiring it (their rendered facts would fall from 23 to 14)"
+        },
+        {
+          "name": "sc_project_document_form_structure_generated_v1",
+          "id": 104,
+          "model": "sc.project.document",
+          "counted": false,
+          "whyNotCounted": "only structure carrier for the sibling document actions 598/599/600/601; retiring it belongs to another group"
+        },
+        {
+          "name": "project_progress_entry_form_structure_generated_v1",
+          "id": 45,
+          "model": "project.progress.entry",
+          "counted": false,
+          "whyNotCounted": "only structure carrier for the workspace sibling action 586"
+        },
+        {
+          "name": "sc_safety_issue_form_structure_generated_v1",
+          "id": 115,
+          "model": "sc.safety.issue",
+          "counted": false,
+          "whyNotCounted": "the model plane of sc.safety.issue; it declares the sparse field order and has no other sibling action, so retiring it is a separate structure change"
+        },
+        {
+          "name": "sc_construction_diary_p1_form_business_facts_v1",
+          "id": 25,
+          "model": "sc.construction.diary",
+          "counted": false,
+          "whyNotCounted": "readonly fact policy carrier (priority 88); the native arch does not restate the same policy, so retiring it is a policy change, not a structure change"
+        },
+        {
+          "name": "sc_construction_diary_form_p1_fields_v1",
+          "id": 148,
+          "model": "sc.construction.diary",
+          "counted": false,
+          "whyNotCounted": "sparse field-order annotation consumed by 729/730/731/732; kept active on purpose"
+        }
+      ]
+    },
+    "knownLimits": [
+      "730/731/732, 598/599/600/601 and 586 stay on the compatibility regrouping path by design; they are recorded as bypass consumers (counted=false) and are not part of this deduction",
+      "after G10 the 729 entry surface renders the 28 native arch facts; two read-only trace fields that the active model-level carriers used to contribute (source_origin, the migration provenance marker, and create_date, the system creation timestamp) are no longer on the native surface; every fact a retired body declared is still reachable, so the presentation-neutrality claim holds, but the ownership of these two trace fields is an open follow-up",
+      "the batch ran no FORM_LOWCODE browser representative acceptance and produced no screenshots; structure delivery is evidenced at L0-L4 (fingerprint, static, targeted tests, runtime probe, exact-head ci.local.quick)",
+      "two pre-existing environment defects were reproduced on a clean main worktree and are not fixed here: verify.contract.view_structure fails on a root-owned artifacts/ plus a local.clean/sc_clean authority-fingerprint mismatch, and verify.user_form.preference.boundary_guard depends on smart_construction_custom/models/user_preferences.py, which is not in this repository",
+      "the first exact-head ci.local.quick failed on verify.tenant.product_payload_boundary because two documents carried a customer brand token; it was remediated by generic wording, and the second failed on the worktree artifacts permission defect; both are recorded in 8.36 and neither changed product code"
+    ],
+    "notDeducted": [
+      "shared_native_forms_1741_1550_1560_1893_1389_stay_live_as_rendering_targets_of_their_own_and_sibling_actions",
+      "generated_mirrors_45_61_104_115_stay_active_sibling_structure_carriers",
+      "model_level_p1_facts_25_and_sparse_order_148_stay_active_diary_policy_carriers",
+      "sibling_actions_730_731_732_598_599_600_601_586_never_counted_in_this_ledger",
+      "the_two_new_entry_releases_sc_project_document_productized_form_v1_and_project_progress_entry_productized_form_v1_are_the_release_that_retires_the_count_not_a_new_consumer"
     ]
   }
 }

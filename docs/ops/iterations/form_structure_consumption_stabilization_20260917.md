@@ -5935,3 +5935,73 @@ guard 写 `artifacts/contract` 时 `PermissionError`；(b) 该 guard 期望 `loc
 
 **状态**：**G10 实施与分层验证完成（L0／L1／L2／L3 通过；L4 首轮失败已整改并重跑）｜冻结与 Quick 回执以
 收口轮为准｜未归档｜未建 PR｜未合并｜台账 19（本批扣减 19 → 14 属合并后文档单职责提交，沿用 G03–G09 先例）**。
+
+### 8.37 G10 主线集成与台账 19 → 14（2026-09-21）
+
+冻结候选 `f3df441ae57047a010bb39263751a11be58ca51b`（tree `b79e4cfbefdc5a269463bc8ddb5453b0c0a7c424`，
+相对 `main` 15 条路径，exact-head `make ci.local.quick` **PASS**，回执绑定该候选完整指纹
+`a9625139f2ca30abdf73f897d8277b119ed5ce04e599d51130918c2c149e8963`／`path_count=7521`）经 **PR #502**
+以 squash 合入 main `294fa47881f1fd1ab272a55860e5fd1b815110cc`；`origin/main^{tree}` 与候选 tree **逐字节一致**
+（`mergedAt` 2026-09-20T21:13:08Z，本地 2026-09-21 05:13:08）。合并方式 **squash ＋ `--match-head-commit`**
+（`make pr.merge`），merge 前的本地 Quick 以同一 head 的 exact-head 回执**复用**，未重跑矩阵。
+合入前该 head 上远端必检项 **9 success／3 skipped／0 fail**：success `classify`／`frontend_release_gate`／
+`merge_policy_gate`／`professional_authorization`／`professional_quality_gate`／`public_guard`／
+`public_guard_classify`／`python310_runtime_compatibility`／`release_candidate_gate`；
+skipped `classify`（候选检查变体）／`fast`／`wait_for_candidate_checks`。交付链前置证据：独立只读复核
+**POST_MERGE_FOLLOWUP**（无 S0–S2，`tmp/g10-evidence/review-independent-f3df441a.md`，只读、未改任何被跟踪文件）。
+
+台账 `docs/ops/iterations/form_structure_compatibility_consumers_v1.json` 扣减 **19 → 14**
+（本批在台账内**正好 5 条**：682 安全检查／867 质量验收／597 工程资料／729 施工日志／527 施工进度），
+退役 action 682／867／597／729／527，`count`／`localVerifiedCount`／`mainlineRemainingCount` 同步为 **14**，
+并新增 `uc4G10PublishedAudit`。**按已合入源码逐项核对**：
+
+- 682／867／729 的入口契约（164 `sc_safety_issue_handling_form_v1`／165
+  `sc_quality_acceptance_handling_form_v1`／245 `construction_diary_productized_form_v1`）只留 `title` ＋
+  `composition_mode: native_semantic_surface`，各自绑定本入口 action，`view_orchestration.context` 原样保留；
+  **无 sections／fields／columns**，`structural_form_declarations()` 对其返回空，
+  `diagnose_structure_ownership()` 不可能再为这三条产出 `LEGACY_STRUCTURE_KEY_OVERRIDE`。
+- 597／527 **原本没有入口级发布**（只消费模型级镜像 104 priority 142／45 priority 76），本批发布
+  `sc_project_document_productized_form_v1`／`project_progress_entry_productized_form_v1`（priority 800，
+  action 绑定，只留 title ＋ native_semantic_surface），成为各自 action 的最后结构写入者。
+- 245 位于 `<odoo noupdate="1">` 载体，故新声明由同文件尾部
+  `<function model="ui.business.config.contract" name="write">` 补写（`contract_json` 与 `<record>` 逐字一致，
+  `ref()` 找不到记录即 fail-closed），升级后实测 `priority=800`、`noupdate=true`、`version_no=2`。
+- **不额外计数**：五个原生主表单 1741／1550／1560／1893／1389 一模型一表单，且同时是 730／731／732、
+  598–601、586 的渲染目标，**不随扣减退役**（`reduction.retiredViewMeaning`）。
+- **退役隔离性**：只读 A／B（`sc_dev_demo`，`SAVEPOINT` ＋ `ROLLBACK`，`rollback_residual` 0 写入）重放
+  682／867／597／729／527 与 730／731／732、598–601、586：本批五个 action 变为
+  `native_authority` ＋ `container_tree_authority`，其余八个 action 的结构权威、呈现模式、字段数与分组数
+  **逐项不变**；第一版「退役模型级镜像」计划因日记镜像 61 仍是 730／731／732 的最后结构写入者
+  （退役后其渲染事实 23 → 14）被实测否决。
+
+**旁路与补登（单列，不与核减混算；`bypassConsumers`，`counted=false`）**：同模型兄弟 action 730 日报表／
+731 周报表／732 月报表（继续消费 61／148／25）、598 安全资料／599 质量资料／600 自检资料／601 归档备案
+（消费 104）、586 进度计量工作台（消费 45）；保留载体 45／61／104／115 与日记辅助载体 25／148 逐条给出
+`whyNotCounted`。扣减范围因此保持 5 条，**未被静默扩大或丢弃**。
+
+**保留边界与已知限制（不随本批关闭）**：730／731／732、598–601、586 仍在兼容重组路径；G10 后 729 入口的
+原生面渲染 **28** 项原生 arch 事实，模型级载体曾贡献的两个**技术踪迹字段**（`source_origin` 迁移来源标记、
+`create_date` 系统创建时间戳）不再出现在原生面——退役 body 声明的**业务**事实全部可达（呈现中立性结论不变），
+但这两个踪迹字段的归属登记为**遗留项**（独立复核的 POST_MERGE_FOLLOWUP 项之一）；本批**未跑**
+`FORM_LOWCODE_TOPIC` 浏览器代表面复验、**无截图证据**（结构交付以 L0–L4 为证据）；两个既存环境缺陷
+（`verify.contract.view_structure` 的 `artifacts/` 属主与 `local.clean`／`sc_clean` 指纹期望、
+`verify.user_form.preference.boundary_guard` 依赖不在本仓库的定制模块）如实登记、不修；
+`retirementComplete=false`。
+
+**过程偏差（如实登记）**：候选 `896226d2` 与 `ea9bd88d` 上各有一次 Quick 失败（客户品牌词命中
+`verify.tenant.product_payload_boundary`；工作树 `artifacts/` 属主导致的 `PermissionError`），均在冻结前整改
+（文案通用化、工作树 `artifacts` 指向共享权威软链）并重跑；两次失败均未触碰产品面。候选内文档的
+「未建 PR／未归档」措辞是**冻结时点**的表述，本节为合并后事实，二者不矛盾但以本节为准（独立复核已把该措辞
+登记为 POST_MERGE_FOLLOWUP）。
+
+`nextBatch.selectedGroup` 前进到 **G11 轻表单与管理配置**（860／883／885／727／887／888，
+视图 1887／1908／1910／2070／2072／2074），`priorityActions` 同步，`sourceMainlineHead` 更新为合入后 main；
+**G11 未启动**。G10 组索引就地标记 `indexStatus=historical_source`（不再是当前消费者集），
+`legacyConfigurationStatus` 保留逐名分类（三条入口 body 由本批退役，四条仍为当前消费者）。
+
+本提交为**文档类单职责提交**（台账 ＋ 本记录，路径集合固定为 2）；**未触碰**任何产品代码、契约、测试或
+验证工具输入，故不改动 §8.36 的 L0–L4 结论；候选的 exact-head Quick 回执属于 `f3df441a`，
+本提交自身的收据由受管门禁按 fail-closed 口径产生，**不冒充同一绑定**。
+
+状态：**G10 主线集成完成（PR #502，squash 同树）｜批次状态：自验与冻结门禁通过；集中产品复核结论以产品方登记为准｜
+未部署｜89 入口整体交付未完成｜台账 14｜G11 未启动**。
