@@ -387,6 +387,28 @@ make workspace.worktree.cleanup \
 该模式只删除工作树目录并验证本地分支引用保持不变，因此允许未合并分支和受保护的
 `release/main` 分支；目标为主工作树、状态非干净或 SHA 漂移时均拒绝执行。
 
+已合入但**从未归档交付证据**的历史工作树没有可迁移证据，只能在受审治理记录与外部恢复
+bundle 同时就位时整体清理：
+
+```bash
+make workspace.worktree.cleanup \
+  CLEAN_WORKTREE=/absolute/linked/path \
+  CLEAN_WORKTREE_RETIREMENT_RECORD=/absolute/repo/docs/ops/iterations/workspace_worktree_legacy_retirement_v1.json \
+  CLEAN_WORKTREE_RECOVERY_BUNDLE=/absolute/evidence/workspace-archives/<date>/legacy-worktree-retirement/<branch>.bundle \
+  APPLY=1 \
+  CLEAN_WORKTREE_CONFIRM=RETIRE_SQUASH_INTEGRATED_WORKTREE_WITHOUT_ARCHIVED_EVIDENCE
+```
+
+* squash 同树承接是唯一准入证明：必须有已合并 PR 的 `headRefOid` 精确等于工作树 HEAD，
+  其 merge commit 位于 `origin/main`、是**单亲**提交，且该提交的树与工作树 HEAD 的树
+  逐字节一致；任一条件不成立即拒绝（`gh` 不可用或查询失败按无证明处理）。
+* 治理记录必须是仓库内**被 Git 跟踪**的文件（因此必须随候选评审合入），逐条声明
+  `path`／`branch`／`head`／`evidenceStatus=absent`／原因／`mergedPr`／`mergeCommit`／
+  `tree`／恢复 bundle 路径与 SHA-256；入口会重读记录并重算 bundle 哈希，校验其覆盖该
+  HEAD 且通过 `git bundle verify`。
+* 无归档证据必须由记录显式披露；禁止用任意文件、重跑或补造文件替代原候选证据。远端同名
+  分支仍然存在时拒绝执行。
+
 > 解释：
 > PR 的代码更新 **必须通过 `make pr.push`**，
 > 以便统一注入分支校验、GitHub/Gitee 双远端同步、远端保护与审计日志。

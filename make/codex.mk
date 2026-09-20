@@ -497,6 +497,8 @@ CLEAN_WORKTREE_KEEP_BRANCH ?=
 CLEAN_WORKTREE_EXPECTED_HEAD ?=
 CLEAN_WORKTREE_CONFIRM ?=
 CLEAN_WORKTREE_EVIDENCE_RECEIPT ?=
+CLEAN_WORKTREE_RETIREMENT_RECORD ?=
+CLEAN_WORKTREE_RECOVERY_BUNDLE ?=
 WORKSPACE_BRANCH_SYNC_ROOT ?= $(ROOT_DIR)
 EXPECTED_BRANCH ?=
 EXPECTED_OLD_BASE ?=
@@ -575,8 +577,11 @@ workspace.worktree.cleanup: guard.prod.forbid
 	@python3 scripts/ops/safe_worktree_cleanup.py \
 		--path "$(CLEAN_WORKTREE)" \
 		$(if $(CLEAN_WORKTREE_EVIDENCE_RECEIPT),--evidence-receipt "$(CLEAN_WORKTREE_EVIDENCE_RECEIPT)",) \
+		$(if $(CLEAN_WORKTREE_RETIREMENT_RECORD),--retirement-record "$(CLEAN_WORKTREE_RETIREMENT_RECORD)",) \
+		$(if $(CLEAN_WORKTREE_RECOVERY_BUNDLE),--recovery-bundle "$(CLEAN_WORKTREE_RECOVERY_BUNDLE)",) \
 		$(if $(filter 1,$(APPLY)),--apply,) \
-		$(if $(filter 1,$(CLEAN_WORKTREE_KEEP_BRANCH)),--detach-keep-branch --expected-head "$(CLEAN_WORKTREE_EXPECTED_HEAD)" --confirm "$(CLEAN_WORKTREE_CONFIRM)",)
+		$(if $(filter 1,$(CLEAN_WORKTREE_KEEP_BRANCH)),--detach-keep-branch --expected-head "$(CLEAN_WORKTREE_EXPECTED_HEAD)",) \
+		$(if $(CLEAN_WORKTREE_CONFIRM),--confirm "$(CLEAN_WORKTREE_CONFIRM)",)
 
 workspace.branch.sync-main: guard.prod.forbid
 	@test -d "$(WORKSPACE_BRANCH_SYNC_ROOT)" || { echo "❌ WORKSPACE_BRANCH_SYNC_ROOT is not a directory"; exit 2; }

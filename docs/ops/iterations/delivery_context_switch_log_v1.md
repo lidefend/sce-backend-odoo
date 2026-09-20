@@ -9638,3 +9638,28 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - P4补控件状态诊断和受管失败截图／JSON上传，保留原输入断言。25测试含2新增证据测试通过，CI/security守卫通过。未改产品、不宣称修复；待新现场定位owner。777未通过、53→50及U-C1仅准备保持。
 
 - 2026-09-15｜PR480付款创建态收口：P0 a45f80d6补齐原生计算条件依赖，167纯测试、真实Odoo单方法双分支及付款创建桌面通过；独立增量复核无代码阻断。集中生成准备后才冻结/Quick/受管更新，action777未通过与53→50保持。详情见form_structure_ua_ub_limited_closeout_20260915.md §9.5；后续状态仅维护既有RESULT.json和PR文本。
+
+### 2026-09-21 — P4 工作树清理：squash 同树承接证明与历史证据缺失退役
+
+- 分支 `refactor/p4-worktree-cleanup-squash-proof-v1`，基线 `origin/main@b08b099345f0c25a957259455dc7c5b45b93a9a7`。
+  Formal Product Layer 为 P4；Layer Target 为 `make workspace.worktree.cleanup` 的合并证明与证据门槛。
+- 起因：三个已合入的 linked 工作树（PR #475／#478／#482）HEAD 均不在 `origin/main` 祖先链上
+  （squash 承接），受管入口对三者一律 DENY；其中两个在证据归档成为清理前置条件之前交付，
+  工作树内已无任何绑定该 HEAD 的文件，也没有任何外部 receipt／manifest。
+- 变更：`safe_worktree_cleanup.py` 增加 squash 同树承接证明（精确 `headRefOid`、merge commit
+  位于 `origin/main`、单亲提交、树与工作树 HEAD 逐字节一致；`gh` 不可用或查询失败按无证明处理，
+  保持 fail-closed），并为从未归档证据的历史工作树提供“仓库内被跟踪的治理记录 + 外部恢复
+  bundle + 精确确认短语”退役路径；`make/codex.mk` 透传 `CLEAN_WORKTREE_RETIREMENT_RECORD`／
+  `CLEAN_WORKTREE_RECOVERY_BUNDLE`；工作区执行规则与白名单同步更新。
+- 验证：`make verify.workspace.worktree.guard` 58 项通过，其中新增 12 项反例覆盖树不一致、
+  merge 不在 main、双亲 merge、记录未被 Git 跟踪、bundle 哈希漂移、恢复 bundle 未覆盖 HEAD、
+  远端同名分支仍存在等拒绝路径；原有 receipt 路径与 detach 路径断言保持不变。
+- 证据：记录 `docs/ops/iterations/workspace_worktree_legacy_retirement_v1.json`（2 条
+  `evidenceStatus=absent`，禁止补造证据）；恢复 bundle 位于
+  `/home/lidefend/workspace/.codex-evidence/workspace-archives/20260921/legacy-worktree-retirement/`。
+- 边界：本批只改治理脚本、Make 透传与规则文档，不改产品源码、页面、契约、运行环境或数据库；
+  三个工作树的实际退役在本次合并之后执行，因此本批不宣称工作树已清理。
+- Next Step：冻结本候选 HEAD（完整 fingerprint），运行一次 exact-head `make ci.local.quick`，
+  取得独立复核后经 `make pr.push` → `make pr.create` 发布；合并获授权后，用
+  `CLEAN_WORKTREE_RETIREMENT_RECORD`／`CLEAN_WORKTREE_RECOVERY_BUNDLE` 退役两个无证据工作树，
+  用既有 receipt 退役 uc2 工作树，之后回到 G10 主线执行。

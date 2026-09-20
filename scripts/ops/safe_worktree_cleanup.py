@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 import re
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -22,6 +23,7 @@ import archive_worktree_delivery_evidence as evidence_archive
 ALLOWED_BRANCH = re.compile(r"^(feature|fix|refactor|audit|codex)/.+$")
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 DETACH_CONFIRMATION = "DETACH_VERIFIED_WORKTREE_KEEP_BRANCH"
+SQUASH_RETIREMENT_CONFIRMATION = "RETIRE_SQUASH_INTEGRATED_WORKTREE_WITHOUT_ARCHIVED_EVIDENCE"
 
 
 class CleanupError(RuntimeError):
@@ -33,6 +35,16 @@ class Worktree:
     path: Path
     branch: str | None
     head: str
+
+
+@dataclass(frozen=True)
+class IntegrationProof:
+    """How a worktree HEAD is known to be integrated into ``origin/main``."""
+
+    kind: str
+    tree: str
+    merge_commit: str = ""
+    pull_request: int = 0
 
 
 def run(root: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -157,17 +169,156 @@ def plan_cleanup(root: Path, candidate: Path) -> Worktree:
         raise CleanupError(f"worktree is not clean: {selected.path}")
 
     run(root, "fetch", "--prune", "origin")
-    merged = run(
-        root,
-        "merge-base",
-        "--is-ancestor",
-        selected.head,
-        "origin/main",
-        check=False,
-    )
-    if merged.returncode != 0:
-        raise CleanupError(f"worktree HEAD is not merged into origin/main: {selected.head}")
+    prove_integration(root, selected)
     return selected
+
+
+def merged_pull_request(root: Path, branch: str, head: str) -> dict | None:
+    """Return the exact-head merged PR for ``branch``, or ``None``.
+
+    A squash integration leaves the candidate HEAD outside ``origin/main``'s
+    ancestry, so the same proof the branch cleanup entry already uses applies:
+    a merged PR whose ``headRefOid`` is the exact worktree HEAD.
+    """
+    if not branch or shutil.which("gh") is None:
+        return None
+    process = subprocess.run(
+        [
+            "gh", "pr", "list", "--state", "merged", "--head", branch,
+            "--json", "number,headRefOid,mergeCommit,state",
+        ],
+        cwd=root,
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if process.returncode:
+        # Fail closed: an unverifiable merge is treated as "no proof" so the
+        # caller denies the cleanup instead of assuming integration.
+        return None
+    try:
+        rows = json.loads(process.stdout or "[]")
+    except json.JSONDecodeError as exc:
+        raise CleanupError("gh pr list returned unreadable JSON") from exc
+    for row in rows:
+        if not isinstance(row, dict) or str(row.get("state") or "").upper() != "MERGED":
+            continue
+        if str(row.get("headRefOid") or "") != head:
+            continue
+        merge = row.get("mergeCommit")
+        merge_oid = str(merge.get("oid") or "") if isinstance(merge, dict) else ""
+        if FULL_SHA.fullmatch(merge_oid):
+            return {"number": int(row.get("number") or 0), "mergeCommit": merge_oid}
+    return None
+
+
+def prove_integration(root: Path, selected: Worktree) -> IntegrationProof:
+    """Prove the worktree HEAD is integrated into ``origin/main``.
+
+    Fast path: the HEAD is an ancestor of ``origin/main``. Otherwise the only
+    admissible evidence is a merged PR for the exact HEAD whose single-parent
+    merge commit is on ``origin/main`` and whose tree is byte-identical to the
+    worktree HEAD tree, i.e. a squash integration that carried the whole
+    candidate.
+    """
+    tree = run(root, "rev-parse", f"{selected.head}^{{tree}}").stdout.strip()
+    if run(
+        root, "merge-base", "--is-ancestor", selected.head, "origin/main", check=False
+    ).returncode == 0:
+        return IntegrationProof(kind="ancestor", tree=tree)
+    row = merged_pull_request(root, selected.branch or "", selected.head)
+    if row is None:
+        raise CleanupError(f"worktree HEAD is not merged into origin/main: {selected.head}")
+    merge_commit = row["mergeCommit"]
+    if run(
+        root, "merge-base", "--is-ancestor", merge_commit, "origin/main", check=False
+    ).returncode:
+        raise CleanupError(f"squash merge commit is not on origin/main: {merge_commit}")
+    ancestry = run(root, "rev-list", "--parents", "-n", "1", merge_commit).stdout.split()
+    if len(ancestry) != 2:
+        raise CleanupError(f"squash proof requires a single-parent merge commit: {merge_commit}")
+    merge_tree = run(root, "rev-parse", f"{merge_commit}^{{tree}}").stdout.strip()
+    if merge_tree != tree:
+        raise CleanupError(
+            f"squash merge tree does not match the worktree HEAD tree: {merge_commit}"
+        )
+    return IntegrationProof(
+        kind="squash",
+        tree=tree,
+        merge_commit=merge_commit,
+        pull_request=row["number"],
+    )
+
+
+def verify_retirement_record(
+    root: Path,
+    selected: Worktree,
+    record_path: Path,
+    bundle_path: Path,
+    proof: IntegrationProof,
+) -> None:
+    """Verify the tracked legacy retirement record and its recovery bundle.
+
+    Legacy product worktrees delivered before delivery-evidence archiving existed
+    have no archived evidence to preserve. Retiring them therefore requires a
+    reviewed repository record that discloses the absence and pins an external
+    recovery bundle; the original evidence must never be fabricated.
+    """
+    root = root.resolve()
+    record_path = record_path.resolve()
+    bundle_path = bundle_path.resolve()
+    for candidate_path in (record_path, bundle_path):
+        if selected.path == candidate_path or selected.path in candidate_path.parents:
+            raise CleanupError("retirement record and recovery bundle must be outside the worktree")
+    if run(root, "ls-files", "--error-unmatch", "--", str(record_path), check=False).returncode:
+        raise CleanupError("retirement record must be a tracked repository file")
+    if not bundle_path.is_file() or bundle_path.stat().st_size <= 0:
+        raise CleanupError("recovery bundle is missing or empty")
+    try:
+        record = json.loads(record_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise CleanupError(f"cannot read retirement record: {exc}") from exc
+    if record.get("schemaVersion") != 1:
+        raise CleanupError("retirement record schemaVersion must be 1")
+    rows = record.get("worktrees")
+    if not isinstance(rows, list):
+        raise CleanupError("retirement record worktrees must be a list")
+    entry = next(
+        (
+            row
+            for row in rows
+            if isinstance(row, dict)
+            and row.get("path") == str(selected.path)
+            and row.get("branch") == selected.branch
+            and row.get("head") == selected.head
+        ),
+        None,
+    )
+    if entry is None:
+        raise CleanupError("retirement record has no entry for this worktree identity")
+    if entry.get("evidenceStatus") != "absent":
+        raise CleanupError("retirement record entry must declare evidenceStatus=absent")
+    if not str(entry.get("reason") or "").strip():
+        raise CleanupError("retirement record entry must state why no evidence exists")
+    if int(entry.get("mergedPr") or 0) != proof.pull_request:
+        raise CleanupError("retirement record merged PR does not match the verified merge proof")
+    if str(entry.get("mergeCommit") or "") != proof.merge_commit:
+        raise CleanupError("retirement record merge commit does not match the verified merge proof")
+    if str(entry.get("tree") or "") != proof.tree:
+        raise CleanupError("retirement record tree does not match the verified merge proof")
+    bundle = entry.get("recoveryBundle")
+    if not isinstance(bundle, dict) or str(bundle.get("path") or "") != str(bundle_path):
+        raise CleanupError("retirement record recovery bundle path does not match")
+    digest = hashlib.sha256(bundle_path.read_bytes()).hexdigest()
+    if digest != bundle.get("sha256"):
+        raise CleanupError("recovery bundle hash does not match the retirement record")
+    heads = run(root, "bundle", "list-heads", str(bundle_path)).stdout
+    if selected.head not in heads:
+        raise CleanupError("recovery bundle does not cover the worktree HEAD")
+    verified = run(root, "bundle", "verify", str(bundle_path), check=False)
+    if verified.returncode:
+        raise CleanupError(f"recovery bundle failed verification: {verified.stdout.strip()}")
 
 
 def plan_detach(root: Path, candidate: Path, *, expected_head: str) -> Worktree:
@@ -231,15 +382,45 @@ def detach_worktree(
 
 
 def cleanup(
-    root: Path, candidate: Path, *, apply: bool, evidence_receipt: Path | None = None
+    root: Path,
+    candidate: Path,
+    *,
+    apply: bool,
+    evidence_receipt: Path | None = None,
+    retirement_record: Path | None = None,
+    recovery_bundle: Path | None = None,
+    confirmation: str = "",
 ) -> Worktree:
     selected = plan_cleanup(root, candidate)
+    proof = prove_integration(root, selected)
     if apply:
-        if evidence_receipt is None:
-            raise CleanupError("apply requires an external verified evidence receipt")
-        verify_evidence_receipt(selected, evidence_receipt)
+        if evidence_receipt is not None:
+            verify_evidence_receipt(selected, evidence_receipt)
+        elif retirement_record is not None and recovery_bundle is not None:
+            if confirmation != SQUASH_RETIREMENT_CONFIRMATION:
+                raise CleanupError(
+                    "squash retirement apply requires "
+                    f"confirmation={SQUASH_RETIREMENT_CONFIRMATION}"
+                )
+            if proof.kind != "squash":
+                raise CleanupError("retirement record is only admissible for squash integrations")
+            if selected.branch and run(
+                root,
+                "show-ref",
+                "--verify",
+                "--quiet",
+                f"refs/remotes/origin/{selected.branch}",
+                check=False,
+            ).returncode == 0:
+                raise CleanupError(f"remote branch still exists: origin/{selected.branch}")
+            verify_retirement_record(root, selected, retirement_record, recovery_bundle, proof)
+        else:
+            raise CleanupError(
+                "apply requires an external verified evidence receipt or a tracked "
+                "retirement record with a recovery bundle"
+            )
         run(root, "worktree", "remove", "--", str(selected.path))
-        run(root, "branch", "-d", "--", selected.branch or "")
+        run(root, "branch", "-D" if proof.kind == "squash" else "-d", "--", selected.branch or "")
     return selected
 
 
@@ -251,6 +432,8 @@ def main() -> int:
     parser.add_argument("--expected-head", default="")
     parser.add_argument("--confirm", default="")
     parser.add_argument("--evidence-receipt", default="")
+    parser.add_argument("--retirement-record", default="")
+    parser.add_argument("--recovery-bundle", default="")
     args = parser.parse_args()
     try:
         root = Path(
@@ -276,6 +459,11 @@ def main() -> int:
                 Path(args.path),
                 apply=args.apply,
                 evidence_receipt=Path(args.evidence_receipt) if args.evidence_receipt else None,
+                retirement_record=(
+                    Path(args.retirement_record) if args.retirement_record else None
+                ),
+                recovery_bundle=Path(args.recovery_bundle) if args.recovery_bundle else None,
+                confirmation=args.confirm,
             )
     except (CleanupError, subprocess.CalledProcessError) as exc:
         print(f"[workspace.worktree.cleanup] DENY {exc}", file=sys.stderr)
