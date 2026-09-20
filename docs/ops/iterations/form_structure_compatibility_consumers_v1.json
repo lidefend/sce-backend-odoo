@@ -6,112 +6,11 @@
     "operation": "model",
     "renderProfile": "create"
   },
-  "count": 14,
+  "count": 8,
   "fullRescan": false,
   "sourceInventory": "artifacts/form-structure-unification/customer-browser-final/compatibility-consumers.json",
   "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-  "entries": [{
-      "menuXmlid": "smart_construction_core.menu_sc_product_message_notification_v1",
-      "label": "消息通知",
-      "model": "mail.notification",
-      "actionId": 860,
-      "menuId": 675,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "mail.notification",
-        "viewId": 1910
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 185,
-            "name": "mail_notification_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1910,
-        "resolvedActionId": 860,
-        "structureDiagnostics": [],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "sc_subject",
-          "author_id",
-          "sc_message_date",
-          "is_read",
-          "read_date",
-          "sc_record_name",
-          "sc_body"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:消息信息",
-            "key": "",
-            "title": "消息信息",
-            "fields": [
-              "sc_subject",
-              "author_id",
-              "sc_message_date",
-              "is_read",
-              "read_date",
-              "sc_record_name"
-            ]
-          },
-          {
-            "identity": "title:消息内容",
-            "key": "",
-            "title": "消息内容",
-            "fields": [
-              "sc_body"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "消息信息",
-          "消息内容"
-        ],
-        "fieldGroups": {
-          "消息信息": [
-            "sc_subject",
-            "author_id",
-            "sc_message_date",
-            "is_read",
-            "read_date",
-            "sc_record_name"
-          ],
-          "消息内容": [
-            "sc_body"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "消息信息": 2,
-          "消息内容": 1
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
+  "entries": [
     {
       "menuXmlid": "smart_construction_core.menu_sc_project_initiation",
       "label": "新项目立项",
@@ -1158,546 +1057,6 @@
       "compatibilityConsumer": true,
       "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
       "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_product_job_management_v1",
-      "label": "岗位管理",
-      "model": "hr.job",
-      "actionId": 883,
-      "menuId": 705,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "hr.job",
-        "viewId": 2070
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 183,
-            "name": "product_job_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 2070,
-        "resolvedActionId": 883,
-        "structureDiagnostics": [],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "sc_job_code",
-          "name",
-          "department_id",
-          "company_id",
-          "active",
-          "expected_employees",
-          "no_of_employee",
-          "sc_responsibility",
-          "sc_qualification"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:岗位信息",
-            "key": "",
-            "title": "岗位信息",
-            "fields": [
-              "sc_job_code",
-              "name",
-              "department_id",
-              "company_id",
-              "active"
-            ]
-          },
-          {
-            "identity": "title:编制信息",
-            "key": "",
-            "title": "编制信息",
-            "fields": [
-              "expected_employees",
-              "no_of_employee"
-            ]
-          },
-          {
-            "identity": "title:岗位职责与要求",
-            "key": "",
-            "title": "岗位职责与要求",
-            "fields": [
-              "sc_responsibility",
-              "sc_qualification"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "岗位信息",
-          "编制信息",
-          "岗位职责与要求"
-        ],
-        "fieldGroups": {
-          "岗位信息": [
-            "sc_job_code",
-            "name",
-            "department_id",
-            "company_id",
-            "active"
-          ],
-          "编制信息": [
-            "expected_employees",
-            "no_of_employee"
-          ],
-          "岗位职责与要求": [
-            "sc_responsibility",
-            "sc_qualification"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "岗位信息": 2,
-          "编制信息": 2,
-          "岗位职责与要求": 1
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_product_office_asset_v1",
-      "label": "办公资产",
-      "model": "sc.office.asset",
-      "actionId": 885,
-      "menuId": 707,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.office.asset",
-        "viewId": 1908
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 184,
-            "name": "office_asset_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1908,
-        "resolvedActionId": 885,
-        "structureDiagnostics": [],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "status",
-          "asset_code",
-          "name",
-          "category",
-          "specification",
-          "serial_no",
-          "company_id",
-          "department_id",
-          "custodian_id",
-          "location",
-          "active",
-          "purchase_date",
-          "purchase_value",
-          "currency_id",
-          "note",
-          "attachment_ids"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:资产信息",
-            "key": "",
-            "title": "资产信息",
-            "fields": [
-              "status",
-              "asset_code",
-              "name",
-              "category",
-              "specification",
-              "serial_no",
-              "company_id"
-            ]
-          },
-          {
-            "identity": "title:使用信息",
-            "key": "",
-            "title": "使用信息",
-            "fields": [
-              "department_id",
-              "custodian_id",
-              "location",
-              "active"
-            ]
-          },
-          {
-            "identity": "title:购置信息",
-            "key": "",
-            "title": "购置信息",
-            "fields": [
-              "purchase_date",
-              "purchase_value",
-              "currency_id"
-            ]
-          },
-          {
-            "identity": "title:备注与附件",
-            "key": "",
-            "title": "备注与附件",
-            "fields": [
-              "note",
-              "attachment_ids"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "资产信息",
-          "使用信息",
-          "购置信息",
-          "备注与附件"
-        ],
-        "fieldGroups": {
-          "资产信息": [
-            "status",
-            "asset_code",
-            "name",
-            "category",
-            "specification",
-            "serial_no",
-            "company_id"
-          ],
-          "使用信息": [
-            "department_id",
-            "custodian_id",
-            "location",
-            "active"
-          ],
-          "购置信息": [
-            "purchase_date",
-            "purchase_value",
-            "currency_id"
-          ],
-          "备注与附件": [
-            "note",
-            "attachment_ids"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "资产信息": 2,
-          "使用信息": 2,
-          "购置信息": 2,
-          "备注与附件": 1
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_approval_policy",
-      "label": "流程审批配置",
-      "model": "sc.approval.policy",
-      "actionId": 727,
-      "menuId": 424,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "native_authority",
-      "actualView": {
-        "model": "sc.approval.policy",
-        "viewId": 1887
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 52,
-            "name": "sc_approval_policy_form_structure_generated_v1",
-            "priority": 84,
-            "view_type": "form"
-          }
-        ],
-        "resolvedViewId": 1887,
-        "resolvedActionId": 727,
-        "structureDiagnostics": [],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "",
-        "formPresentationMode": "workspace",
-        "fieldNames": [
-          "name",
-          "target_model",
-          "approval_required",
-          "trigger",
-          "mode",
-          "manager_scope_key",
-          "runtime_state",
-          "company_id",
-          "manager_group_id",
-          "step_ids",
-          "note"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [],
-        "sectionTitles": [],
-        "fieldGroups": {},
-        "hiddenFieldNames": [],
-        "groupColumns": {},
-        "groupVisibility": {}
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_product_system_parameter_v1",
-      "label": "系统参数",
-      "model": "sc.product.system.settings",
-      "actionId": 887,
-      "menuId": 710,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "sc.product.system.settings",
-        "viewId": 2072
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 180,
-            "name": "product_system_settings_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 2072,
-        "resolvedActionId": 887,
-        "structureDiagnostics": [],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "parameter_scope",
-          "cost_ledger_source",
-          "operation_notice"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:参数范围",
-            "key": "",
-            "title": "参数范围",
-            "fields": [
-              "parameter_scope"
-            ]
-          },
-          {
-            "identity": "title:成本台账",
-            "key": "",
-            "title": "成本台账",
-            "fields": [
-              "cost_ledger_source"
-            ]
-          },
-          {
-            "identity": "title:运行说明",
-            "key": "",
-            "title": "运行说明",
-            "fields": [
-              "operation_notice"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "参数范围",
-          "成本台账",
-          "运行说明"
-        ],
-        "fieldGroups": {
-          "参数范围": [
-            "parameter_scope"
-          ],
-          "成本台账": [
-            "cost_ledger_source"
-          ],
-          "运行说明": [
-            "operation_notice"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "参数范围": 1,
-          "成本台账": 1,
-          "运行说明": 1
-        },
-        "groupVisibility": {},
-        "formColumns": 1
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_product_numbering_rule_v1",
-      "label": "编码规则",
-      "model": "ir.sequence",
-      "actionId": 888,
-      "menuId": 711,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "ir.sequence",
-        "viewId": 2074
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 182,
-            "name": "product_numbering_rule_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 2074,
-        "resolvedActionId": 888,
-        "structureDiagnostics": [],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "name",
-          "code",
-          "company_id",
-          "prefix",
-          "suffix",
-          "padding",
-          "number_increment",
-          "number_next_actual"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:规则标识",
-            "key": "",
-            "title": "规则标识",
-            "fields": [
-              "name",
-              "code",
-              "company_id"
-            ]
-          },
-          {
-            "identity": "title:编号格式",
-            "key": "",
-            "title": "编号格式",
-            "fields": [
-              "prefix",
-              "suffix",
-              "padding",
-              "number_increment",
-              "number_next_actual"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "规则标识",
-          "编号格式"
-        ],
-        "fieldGroups": {
-          "规则标识": [
-            "name",
-            "code",
-            "company_id"
-          ],
-          "编号格式": [
-            "prefix",
-            "suffix",
-            "padding",
-            "number_increment",
-            "number_next_actual"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "规则标识": 2,
-          "编号格式": 2
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
     }],
   "otherStateConsumers": [
     {
@@ -1841,7 +1200,7 @@
     "countCorrection": 4,
     "migrationReduction": 3
   },
-  "localVerifiedCount": 14,
+  "localVerifiedCount": 8,
   "uc1PublishedAudit": {
     "auditedAt": "2026-09-16",
     "auditedReleaseHead": "28b7695dc9f1cebbbe9bd5d715e951c6dec8a4da",
@@ -2014,15 +1373,10 @@
     "name": "U-C4",
     "status": "scope_confirmed_implementation_started",
     "priorityActions": [
-      860,
-      883,
-      885,
-      727,
-      887,
-      888
+      724
     ],
-    "selectedGroup": "G11",
-    "sourceMainlineHead": "294fa47881f1fd1ab272a55860e5fd1b815110cc",
+    "selectedGroup": "G12",
+    "sourceMainlineHead": "dac2aaf1bd747b12b28ea7d3e0412b7f67895a3a",
     "fullRescan": false,
     "groups": [
       {
@@ -2306,7 +1660,17 @@
           "product_system_settings_form_v1",
           "sc_approval_policy_form_structure_generated_v1"
         ],
-        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
+        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated",
+        "indexStatus": "historical_source",
+        "indexNote": "G11 is published and merged (PR #504, squash, origin/main^{tree} byte-identical to the candidate tree 6033d719). The G11 topic retired the entry *bodies* of five entries - mail_notification_form_v1 (860), product_job_form_v1 (883), office_asset_form_v1 (885), product_system_settings_form_v1 (887), product_numbering_rule_form_v1 (888) - and published ONE new entry release for the action that had none (727 action_sc_approval_policy -> sc_approval_policy_productized_form_v1, priority 800, title plus native_semantic_surface only). The model-wide generated mirror sc_approval_policy_form_structure_generated_v1 (priority 84, no action binding) stays ACTIVE, because the regression rule forbids retiring a model-wide carrier that is still the last structure writer for any surface resolved without an action context. Three entries keep a SPARSE read-only overlay (fields rows carrying name + readonly only) for the exact fields whose read-only policy the native arch does not restate: 860 -> author_id/is_read/read_date, 885 -> status, 888 -> name/code/company_id. Fields the model already reports read-only are deliberately NOT restated. Six ledger entries retired (14 -> 8): 860/883/885/727/887/888. Per-name classification below is bound to sc_dev_demo (read-only, 2026-09-21) and to the merged head dac2aaf1bd747b12b28ea7d3e0412b7f67895a3a; the published audit is uc4G11PublishedAudit.",
+        "legacyConfigurationStatus": {
+          "mail_notification_form_v1": "entry_body_retired_by_g11_topic",
+          "office_asset_form_v1": "entry_body_retired_by_g11_topic",
+          "product_job_form_v1": "entry_body_retired_by_g11_topic",
+          "product_numbering_rule_form_v1": "entry_body_retired_by_g11_topic",
+          "product_system_settings_form_v1": "entry_body_retired_by_g11_topic",
+          "sc_approval_policy_form_structure_generated_v1": "current_consumer"
+        }
       },
       {
         "id": "G12",
@@ -2395,7 +1759,7 @@
     "planningRecord": "docs/ops/iterations/form_structure_consumption_stabilization_20260917.md"
   },
   "retirementCondition": "Only after every formal consumer of a compatibility regrouping path is zero and other roles/companies/states are covered, remove that regrouping logic and its test exemptions.",
-  "mainlineRemainingCount": 14,
+  "mainlineRemainingCount": 8,
   "mainlineRemainingLabel": "主线剩余兼容消费者（不代表部署发布或89入口整体交付）",
   "uc3LocalMigrationAudit": {
     "status": "mainline_integrated",
@@ -3272,6 +2636,123 @@
       "model_level_p1_facts_25_and_sparse_order_148_stay_active_diary_policy_carriers",
       "sibling_actions_730_731_732_598_599_600_601_586_never_counted_in_this_ledger",
       "the_two_new_entry_releases_sc_project_document_productized_form_v1_and_project_progress_entry_productized_form_v1_are_the_release_that_retires_the_count_not_a_new_consumer"
+    ]
+  },
+  "uc4G11PublishedAudit": {
+    "auditedAt": "2026-09-21",
+    "auditedReleaseHead": "dac2aaf1bd747b12b28ea7d3e0412b7f67895a3a",
+    "mergedPr": {
+      "number": 504,
+      "squashHead": "dac2aaf1bd747b12b28ea7d3e0412b7f67895a3a",
+      "sourceHead": "a740fcf8bb3f381b43aba3a980c880c5fd66d5ae",
+      "tree": "6033d7190d352f2cb2edbd2198ca3deefcd87588"
+    },
+    "iterationRecord": "docs/ops/iterations/form_structure_consumption_stabilization_20260917.md",
+    "requiredChecks": [
+      "classify=success",
+      "frontend_release_gate=success",
+      "merge_policy_gate=success",
+      "professional_authorization=success",
+      "professional_quality_gate=success",
+      "public_guard=success",
+      "public_guard_classify=success",
+      "python310_runtime_compatibility=success",
+      "release_candidate_gate=success"
+    ],
+    "skippedChecks": [
+      "classify",
+      "fast",
+      "wait_for_candidate_checks"
+    ],
+    "reduction": {
+      "before": 14,
+      "after": 8,
+      "retiredActions": [
+        860,
+        883,
+        885,
+        727,
+        887,
+        888
+      ],
+      "retiredViews": [
+        1910,
+        2070,
+        1908,
+        1887,
+        2072,
+        2074
+      ],
+      "countMeaning": "mainline remaining compatibility consumers; deployment and overall user delivery are separate",
+      "retiredViewMeaning": "these ids label the six retired ledger entries; each view is the shared native primary form of its model and stays live as a rendering target (1910 is also rendered through action 860's workbench entry, 2074 through action 28's core sibling only by view_mode, not by this entry)"
+    },
+    "exitEvidence": {
+      "sourceCheck": "five entry contracts retired their structural bodies: mail_notification_form_v1 (860), product_job_form_v1 (883), office_asset_form_v1 (885), product_system_settings_form_v1 (887), product_numbering_rule_form_v1 (888) keep only title + composition_mode: native_semantic_surface, priority 800, each still bound to its own action; view_orchestration.context is value-identical to the pre-batch contract",
+      "entryPublishedCheck": "727 had NO entry release at all and consumed only the model-wide generated mirror sc_approval_policy_form_structure_generated_v1 (priority 84, no action_id), so form_structure_authority stopped at the compatibility floorplan; G11 publishes business_config_contract_sc_approval_policy_productized_form_v1 (priority 800) in the new data/light_forms_configuration_form_productization_contract.xml, registered in __manifest__.py",
+      "releasePriorityCheck": "every G11 entry release is at priority 800 and outranks every other active carrier on its own model (the highest other carrier is mirror 52 at priority 84); each of the six models holds exactly one active scoped carrier after the batch",
+      "sparseOverlayCheck": "three entries keep a SPARSE semantic overlay - fields rows carrying name + readonly only - for the exact fields whose read-only policy the native arch does not restate: 860 -> author_id/is_read/read_date, 885 -> status, 888 -> name/code/company_id. structural_form_declarations() drops such a row (semantic_keys union {name,field,field_name}), so diagnose_structure_ownership() cannot raise NATIVE_SEMANTIC_SURFACE_STRUCTURE_CONFLICT and the native authority stands",
+      "readonlyMeasuredCheck": "the retired bodies also pinned a field-level read-only policy that the native_authority path no longer reads. Read-only A/B at the frozen head (sc_dev_demo, SAVEPOINT g11_ab + ROLLBACK TO SAVEPOINT, rollback_residual records zero writes) found exactly three real regressions: 860 author_id/is_read/read_date, 885 status, 888 name/code/company_id (the arch readonly='1' covers only part of the container nodes and ir.sequence reports readonly=False). 883/887/727 regressed nothing. Shipped-state re-probe confirms all ten fields render read-only again with authority still native_authority, layoutPolicy container_tree_authority and empty diagnostics",
+      "nativeStructureCheck": "the six native forms carry 16 named business groups with data-sc-anchor (1910 -> 2, 2070 -> 4, 1908 -> 3, 1887 -> 2, 2072 -> 3, 2074 -> 2); 887 also backfills readonly='1' on parameter_scope and operation_notice, which renders identically to the retired declaration",
+      "presentationNeutralityCheck": "test_the_native_arch_is_presentation_neutral pins the native arch field set per form (1910 -> 9, 2070 -> 9, 1908 -> 16, 1887 -> 20, 2072 -> 3, 2074 -> 8), so a retired declaration cannot silently drop a fact",
+      "retirementIsolationCheck": "read-only domain rollout re-runs differ from the pre-batch baseline in exactly one expected line: collaboration form_structure_authority entry_semantic_surface -> native_authority (presentation_mode and effective_render_profile unchanged); base_configuration (6 actions) and administration (8 actions) are byte-identical; the workbench_center rollout, which also carries 860, passes",
+      "failClosedCheck": "the retained mirror 52 is model-level (no action_id/view_id), so it degrades to LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW on the six entry surfaces while staying the structure plane for any surface resolved without an action context",
+      "verificationCheck": "L0 baseline/view probes, L1 make ci.delivery.freeze.prepare PASS (component_driver_takeover_inventory required=35 missing=0, contract_form_split_evidence lines=1905), L2 targeted 23/23 and group 189 tests 0 failed 0 error plus six guards PASS, L3 make local.dev.upgrade exit 0 with read-only confirmation, L4 exact-head make ci.local.quick PASS bound to the candidate HEAD"
+    },
+    "bypassConsumers": {
+      "scopeNote": "This ledger counts released compatibility consumers, not sibling actions that render an already-counted primary form. The sibling actions below were never counted in this ledger and are unchanged by G11.",
+      "actions": [
+        {
+          "actionId": 119,
+          "xmlid": "mail.mail_notification_action",
+          "label": "通知",
+          "model": "mail.notification",
+          "counted": false,
+          "whyNotCounted": "core sibling entry on the same model; the retired contract mail_notification_form_v1 is action-scoped to 860, so 119 keeps its own native rendering and was never represented by this ledger entry"
+        },
+        {
+          "actionId": 205,
+          "xmlid": "hr.action_hr_job",
+          "label": "工作岗位",
+          "model": "hr.job",
+          "counted": false,
+          "whyNotCounted": "core sibling entry on the same model; product_job_form_v1 is action-scoped to 883 and never matched 205"
+        },
+        {
+          "actionId": 28,
+          "xmlid": "base.ir_sequence_form",
+          "label": "序列",
+          "model": "ir.sequence",
+          "counted": false,
+          "whyNotCounted": "core sibling entry on the same model; product_numbering_rule_form_v1 is action-scoped to 888 and never matched 28"
+        }
+      ],
+      "retainedLegacyConfigurations": [
+        {
+          "name": "sc_approval_policy_form_structure_generated_v1",
+          "model": "sc.approval.policy",
+          "priority": 84,
+          "counted": false,
+          "whyNotCounted": "generated model-level mirror with no action_id; it is still the only structure carrier of sc.approval.policy for any surface resolved without an action context, so retiring it belongs to another group. G11 publishes the entry release that outranks it (800 > 84) instead"
+        }
+      ],
+      "singleActionModels": [
+        "sc.office.asset (885)",
+        "sc.product.system.settings (887)"
+      ]
+    },
+    "knownLimits": [
+      "the batch ran no FORM_LOWCODE browser representative acceptance and produced no screenshots; structure delivery is evidenced at L0-L4 (baseline probes, fingerprint/static, targeted tests, runtime probe, exact-head ci.local.quick)",
+      "the independent read-only review returned POST_MERGE_FOLLOWUP with no S0/S1/S2; its evidence-hygiene findings (the recorded A/B probes predated the shipped overlay, and the only stored L2 log was a pre-final failing 20-test run) were closed by re-recording the delivered-state probe and the passing 23/23 and group logs; the earlier failing run stays on record and is not hidden",
+      "the base_configuration and administration rollout reports carry no form_structure_authority key, so their byte-identical output proves menu/capability and summary stability, not render-level authority parity for 727/887/888/883/885; render-level coverage for 727/883/887 was added by a dedicated probe, and 727 has no A/B case",
+      "the probes ran as a single admin principal on sc_dev_demo; the fail-closed diagnose_structure_ownership ValueError path was not re-measured on a tenant/low-code surface (same residual as G10)",
+      "pre-existing environment defects reproduced on a clean main worktree (main@ec2c56e5) and not fixed here: verify.contract.view_structure fails on a local.clean/sc_clean authority-fingerprint mismatch, verify.product.menu.governance.m4.closure misses artifacts/menu-governance/menu-m4-runtime.REJECTED-wrong-sha.json, and verify.user_form.preference.boundary_guard depends on smart_construction_custom/models/user_preferences.py, which is not in this repository boundary"
+    ],
+    "notDeducted": [
+      "shared_native_forms_1910_2070_1908_1887_2072_2074_stay_live_as_rendering_targets_of_their_own_and_sibling_actions",
+      "generated_mirror_52_sc_approval_policy_form_structure_generated_v1_stays_active_as_the_unscoped_model_structure_plane",
+      "sibling_actions_119_205_28_never_counted_in_this_ledger",
+      "the_new_entry_release_sc_approval_policy_productized_form_v1_is_the_release_that_retires_the_count_not_a_new_consumer",
+      "technical_trace_fields_on_1910_sc_source_model_and_sc_source_res_id_stay_invisible_and_are_not_business_sections"
     ]
   }
 }

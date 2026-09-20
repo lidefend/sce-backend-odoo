@@ -6105,3 +6105,77 @@ active——在没有 action 上下文的面上它仍是 `sc.approval.policy` �
 **状态**：**G11 实施与分层验证完成（L0／L1／L2／L3 通过）｜冻结、exact-head Quick、独立只读复核与 PR 属本轮
 收口步骤，回执以冻结与 CI 为准｜未归档｜未建 PR｜未合并｜台账 14（本批扣减 14 → 8 属合并后文档单职责提交，
 沿用 G03–G10 先例）**。
+
+### 8.39 G11 主线集成与台账 14 → 8（2026-09-21）
+
+冻结候选 `a740fcf8bb3f381b43aba3a980c880c5fd66d5ae`（tree `6033d7190d352f2cb2edbd2198ca3deefcd87588`，
+相对 `main@d96632a2` **16 条路径**、单提交）经 **PR #504** 以 squash 合入 main
+`dac2aaf1bd747b12b28ea7d3e0412b7f67895a3a`；`origin/main^{tree}` 与候选 tree **逐字节一致**
+（`mergedAt` 2026-09-20T22:57:55Z，本地 2026-09-21 06:57:55）。合并方式 **squash ＋ `--match-head-commit`**
+（`make pr.merge`）。候选的 exact-head `make ci.local.quick` 在该 head 上运行并以**运行退出码**为通过判据，
+回执绑定 `head=a740fcf8…`／`tree=6033d719…`／`suite=ci.local.quick`／`producer=atomic-ci-local-quick-runner-v1`；
+**该回执不含结果字段**，只能证明 Quick 在该 head 上跑过、不能自证通过——这一口径限制如实登记（独立复核已指出）。
+合入前该 head 上远端必检项 **9 success／3 skipped／0 fail**：success `classify`／`frontend_release_gate`／
+`merge_policy_gate`／`professional_authorization`／`professional_quality_gate`／`public_guard`／
+`public_guard_classify`／`python310_runtime_compatibility`／`release_candidate_gate`；
+skipped `classify`（候选检查变体）／`fast`／`wait_for_candidate_checks`。交付链前置证据：独立只读复核
+**POST_MERGE_FOLLOWUP**（**无 S0／S1／S2**，`tmp/g11-evidence/review-independent-a740fcf8.md`，只读、未改任何被跟踪文件）。
+
+台账 `docs/ops/iterations/form_structure_compatibility_consumers_v1.json` 扣减 **14 → 8**
+（本批在台账内**正好 6 条**：860 消息通知／883 岗位管理／885 办公资产／727 流程审批配置／887 系统参数／888 编码规则），
+`count`／`localVerifiedCount`／`mainlineRemainingCount` 同步为 **8**，并新增 `uc4G11PublishedAudit`；
+`nextBatch.selectedGroup`／`priorityActions`／`sourceMainlineHead` 同步前进（见下）。**按已合入源码逐项核对**：
+
+- 860／883／885／887／888 的入口契约（`mail_notification_form_v1`／`product_job_form_v1`／`office_asset_form_v1`／
+  `product_system_settings_form_v1`／`product_numbering_rule_form_v1`）只留 `title` ＋
+  `composition_mode: native_semantic_surface` ＋ 原样的 `view_orchestration.context`，各自仍绑定本入口 action、
+  priority 800；**无 sections／columns／layout／actions**，`structural_form_declarations()` 对其返回空，
+  `diagnose_structure_ownership()` 不可能再为这五条产出 `LEGACY_STRUCTURE_KEY_OVERRIDE`。
+- 727 **原本没有入口级发布**（只消费模型级生成镜像 52，priority 84、`action_id` 为空，结构权威停在兼容地板），
+  本批发布 `sc_approval_policy_productized_form_v1`（priority 800、`action_sc_approval_policy` 绑定、
+  只留 title ＋ native_semantic_surface），成为该 action 的最后结构写入者。
+- 字段级只读口径以**稀疏语义覆盖**承接：860 三条（`author_id`／`is_read`／`read_date`）、885 一条（`status`）、
+  888 三条（`name`／`code`／`company_id`），每行只有 `name` ＋ `readonly`、不含结构键，故不产生
+  `NATIVE_SEMANTIC_SURFACE_STRUCTURE_CONFLICT`；模型面本已只读的字段**不重复声明**。
+- **不额外计数**：六个原生主表单 1887／1908／1910／2070／2072／2074 一模型一表单，且仍同时是其自身与兄弟
+  action 的渲染目标，**不随扣减退役**（`reduction.retiredViewMeaning`）。
+
+**旁路与补登（单列，不与核减混算；`bypassConsumers`，`counted=false`）**：同模型兄弟 action 119 core「通知」／
+205「工作岗位」／28「序列」逐条给出 `whyNotCounted`（原契约按 action 作用域绑定 860／883／888，从未覆盖它们）；
+保留载体 `sc_approval_policy_form_structure_generated_v1`（priority 84、无 action 绑定）保持 active——在没有
+action 上下文的面上它仍是 `sc.approval.policy` 唯一的结构载体，退役属**别组的计数**。扣减范围因此保持 6 条，
+**未被静默扩大或丢弃**。
+
+**保留边界与已知限制（不随本批关闭）**：本批**未跑** `FORM_LOWCODE_TOPIC` 浏览器代表面复验、**无截图证据**
+（结构交付以 L0–L4 为证据）；三个既存环境缺陷（`verify.contract.view_structure` 的 `local.clean`／`sc_clean`
+权威指纹期望、`verify.product.menu.governance.m4.closure` 缺 `artifacts/menu-governance/menu-m4-runtime.REJECTED-wrong-sha.json`、
+`verify.user_form.preference.boundary_guard` 依赖**客户定制 addon 仓库（不在本仓库边界内）**的模块）如实登记、**不修**；
+`retirementComplete=false`。
+
+**过程偏差与独立复核项（如实登记）**：候选内 L2 曾有一次**失败后整改**的运行（本地 05:52，容器 UTC 21:52，
+`1 failed … of 20 tests`；失败断言为 `Lists differ: ['sc_source_model', 'sc_source_res_id'] != []`，
+即当时要求技术踪迹不出现在面上）。该断言已拆分整改：技术踪迹口径移入
+`test_the_technical_traces_stay_invisible_and_outside_every_section`，原
+`test_every_retired_fact_is_still_reachable_from_the_native_arch` 收窄为业务事实集 `RETIRED_ENTRY_FACTS`。
+其后重跑并留档 **23／23**（`l2-g11-class.log`）与**整组 169**（`l2-g11-group.log`，0 failed／0 error）；
+**失败运行不隐藏**。
+独立复核的 F1–F6 均为非阻断项，其中 F1／F2（只读 A／B 摄于最终覆盖之前、唯一留存的 L2 日志是失败运行）与
+F3（727 无 A／B 用例；base_configuration／administration 的 rollout 不含 `form_structure_authority` 键，
+byte-identical 只证明菜单／能力与摘要稳定）已由冻结后补测留档：交付态只读覆盖实测
+（`probe-g11-overlay-shipped.json`，`residual_restored=true`：860 退役 body 声明的 **7** 个只读字段
+——其中稀疏覆盖只声明 **3** 条——以及 885 `status`、888 三条，在交付态实测仍为只读）、
+727／883／887 的**渲染级**探针（`probe-g11-render-extra.json`：`native_authority` ＋ `container_tree_authority`，
+渲染字段 12／9／3 且 `missing` 为空）；F4（单库单角色探针面，与 G10 同残留）、F5（887 的 `readonly="1"`
+回填已在候选内显式声明）、F6（文案措辞）**保持登记、不随本批关闭**。
+
+`nextBatch.selectedGroup` 前进到 **G12 项目立项**（action 724，视图 1503，`legacyConfigurations`
+`project_project_form_structure_v1`，risk high），`priorityActions` 同步为 `[724]`，`sourceMainlineHead`
+更新为合入后 main；**G12 未启动**。G11 组索引就地标记 `indexStatus=historical_source`（不再是当前消费者集），
+并补 `legacyConfigurationStatus` 逐名分类（五条入口 body 由本批退役，模型级生成镜像仍为当前消费者）。
+
+本提交为**文档类单职责提交**（台账 ＋ 本记录，路径集合固定为 2）；**未触碰**任何产品代码、契约、测试或
+验证工具输入，故不改动 §8.38 的 L0–L4 结论；候选的 exact-head Quick 回执属于 `a740fcf8`，
+本提交自身的收据由受管门禁按 fail-closed 口径产生，**不冒充同一绑定**。
+
+状态：**G11 主线集成完成（PR #504，squash 同树）｜批次状态：自验与冻结门禁通过；集中产品复核结论以产品方登记为准｜
+未部署｜89 入口整体交付未完成｜台账 8｜G12 未启动**。
