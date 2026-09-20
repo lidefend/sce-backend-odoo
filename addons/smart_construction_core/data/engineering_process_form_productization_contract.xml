@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo noupdate="0">
+    <!-- U-C4 G10: 工程过程与资料整组中原先**没有入口级发布**的两条入口，本批补齐同族形状的
+         入口发布，使它们的结构权威落在原生主表单上。
+
+           597 工程资料 / menu 412 / action `action_sc_project_document`  -> view 1560 `view_sc_project_document_form`
+           527 进度计量 / menu 520 / action `action_project_progress_entry` -> view 1389 `view_project_progress_entry_form`
+
+         两条入口此前只消费模型级生成镜像（104 `sc_project_document_form_structure_generated_v1`
+         priority 142 / 45 `project_progress_entry_form_structure_generated_v1` priority 76），
+         于是结构权威解析停在 `""`，`ui_contract_v2` 走通用治理投影（`layoutPolicy=native_authority`
+         但仍在"兼容地板"路径上）。补一条入口级 native 声明后，入口自己的声明成为该 action 的
+         最后结构写入者（priority 800 > 142／76），解析口径与外层一致：
+         `form_structure_authority=native_authority` → `layoutPolicy=container_tree_authority`，
+         通用治理投影关闭，字段位置与可见性由原生视图持有。
+
+         形状与 G07 为 858 补发布、G09 为 871 补发布的写法一致：只有 `title` ＋
+         `composition_mode: native_semantic_surface` ＋ `context` 语义声明，不含任何结构键，
+         因此 `structural_form_declarations()` 对其返回空，不会再生出
+         `LEGACY_STRUCTURE_KEY_OVERRIDE`。
+
+         保留边界：模型级生成镜像 104／45 本批**保持 active**——它们是同一个模型上
+         （598/599/600/601 与 586）唯一的结构载体，退役属另一组的工作；原生 arch 已按
+         `data-sc-anchor` 承接本组的章节身份。
+
+         回滚：`git revert`（纯声明，无数据迁移）。 -->
+    <record id="business_config_contract_sc_project_document_productized_form_v1" model="ui.business.config.contract">
+        <field name="name">sc_project_document_productized_form_v1</field>
+        <field name="model">sc.project.document</field>
+        <field name="view_type">form</field>
+        <field name="action_id" ref="smart_construction_core.action_sc_project_document"/>
+        <field name="priority">800</field>
+        <field name="company_id" eval="False"/>
+        <field name="active" eval="True"/>
+        <field name="status">published</field>
+        <field name="version_no">1</field>
+        <field name="contract_json" eval="{
+            'view_orchestration': {
+                'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},
+                'views': {
+                    'form': {
+                        'title': '工程资料',
+                        'composition_mode': 'native_semantic_surface'
+                    }
+                }
+            }
+        }"/>
+    </record>
+
+    <record id="business_config_contract_project_progress_entry_productized_form_v1" model="ui.business.config.contract">
+        <field name="name">project_progress_entry_productized_form_v1</field>
+        <field name="model">project.progress.entry</field>
+        <field name="view_type">form</field>
+        <field name="action_id" ref="smart_construction_core.action_project_progress_entry"/>
+        <field name="priority">800</field>
+        <field name="company_id" eval="False"/>
+        <field name="active" eval="True"/>
+        <field name="status">published</field>
+        <field name="version_no">1</field>
+        <field name="contract_json" eval="{
+            'view_orchestration': {
+                'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},
+                'views': {
+                    'form': {
+                        'title': '进度计量',
+                        'composition_mode': 'native_semantic_surface'
+                    }
+                }
+            }
+        }"/>
+    </record>
+</odoo>

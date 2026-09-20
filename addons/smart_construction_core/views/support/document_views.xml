@@ -51,7 +51,20 @@
                 </header>
 
                 <sheet>
-                    <group>
+                    <!-- U-C4 G10: 原生 arch 持有本入口的章节身份。三个业务组带稳定
+                         `data-sc-anchor`，消费方按它生成本入口的业务章节与章节导航；
+                         `view_sc_project_document_form` 是 597 工程资料
+                         （menu 412 / action `action_sc_project_document`）的原生承载。
+                         本入口此前没有入口级发布，只消费模型级生成镜像 104
+                         （`sc_project_document_form_structure_generated_v1`，priority 142），
+                         结构权威停在空串；本批按 G07／G09 写法为它补一条入口级 native 发布
+                         （`sc_project_document_productized_form_v1`，priority 800，纯语义声明），
+                         入口自己的声明成为该 action 的最后结构写入者。
+                         字段级只读口径由原生承接：`attachment_count`／`company_id` 原生
+                         `readonly="1"`，`state` 由状态条承载。
+                         模型级镜像 104 本批保持 active：它是同模型上 598／599／600／601
+                         （安全资料／质量资料／自检资料／归档备案）唯一的结构载体，退役属另一组的工作。 -->
+                    <group name="project_document_main" data-sc-anchor="project_document_main" string="资料主信息">
                         <field name="name"/>
                         <field name="document_kind"/>
                         <field name="project_id" required="1"/>
@@ -60,7 +73,7 @@
                         <field name="contract_id"/>
                     </group>
 
-                    <group>
+                    <group name="project_document_classification" data-sc-anchor="project_document_classification" string="业务分类">
                         <field name="doc_type_id" required="1"/>
                         <field name="doc_subtype_id"/>
                         <field name="is_mandatory"/>
@@ -68,7 +81,7 @@
                         <field name="version"/>
                     </group>
 
-                    <group>
+                    <group name="project_document_responsibility" data-sc-anchor="project_document_responsibility" string="责任与归档">
                         <field name="responsible_id"/>
                         <field name="attachment_count" readonly="1"/>
                         <field name="company_id" readonly="1"/>

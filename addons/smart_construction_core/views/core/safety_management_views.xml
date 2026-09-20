@@ -383,8 +383,16 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,rectifying,rechecking,closed"/>
                 </header>
                 <sheet>
-                    <group>
-                        <group>
+                    <!-- U-C4 G10: 原生 arch 持有本入口的章节身份。两个概览组带稳定
+                         `data-sc-anchor`，消费方按它生成本入口的业务章节与章节导航；
+                         `view_sc_safety_issue_form` 同时是 682（menu 526）的原生承载。
+                         入口契约 164 的 body 副本已退役（只留 title 与 native_semantic_surface），
+                         字段级只读口径由原生承接：`closed_date`／`overdue_days`／`is_overdue`
+                         原生 `readonly="1"`，`state` 由状态条承载；被退役 body 声明的
+                         `hazard_source_id` 仍由「隐患信息」页呈现。空白的「来源追溯」页
+                         不再承载任何事实，随本批移除（同 G09 对 1461 的处理）。 -->
+                    <group name="safety_issue_overview">
+                        <group name="safety_issue_identification" data-sc-anchor="safety_issue_identification" string="问题识别">
                             <field name="name"/>
                             <field name="project_id"/>
                             <field name="issue_category"/>
@@ -392,7 +400,7 @@
                             <field name="issue_level"/>
                             <field name="issue_date"/>
                         </group>
-                        <group>
+                        <group name="safety_issue_location_responsibility" data-sc-anchor="safety_issue_location_responsibility" string="位置与责任">
                             <field name="location"/>
                             <field name="coordinate"/>
                             <field name="responsible_party_id"/>
@@ -419,10 +427,6 @@
                         </page>
                         <page string="隐患信息">
                             <field name="hazard_source_id"/>
-                        </page>
-                        <page string="来源追溯">
-                            <group>
-                            </group>
                         </page>
                     </notebook>
                 </sheet>

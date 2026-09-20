@@ -2,5 +2,53 @@
 <odoo>
   <record id="view_sc_quality_acceptance_search" model="ir.ui.view"><field name="name">sc.quality.acceptance.search</field><field name="model">sc.quality.acceptance</field><field name="arch" type="xml"><search string="质量验收"><field name="name"/><field name="project_id"/><field name="location"/><field name="responsible_id"/><filter name="draft" string="草稿" domain="[('state','=','draft')]"/><filter name="group_project" string="按项目" context="{'group_by':'project_id'}"/><filter name="group_type" string="按验收类型" context="{'group_by':'acceptance_type'}"/><filter name="group_result" string="按结论" context="{'group_by':'result'}"/></search></field></record>
   <record id="view_sc_quality_acceptance_tree" model="ir.ui.view"><field name="name">sc.quality.acceptance.tree</field><field name="model">sc.quality.acceptance</field><field name="arch" type="xml"><tree string="质量验收" default_order="acceptance_date desc, id desc" decoration-success="result == 'passed'" decoration-danger="result == 'failed'"><field name="acceptance_date"/><field name="project_id"/><field name="acceptance_type"/><field name="name"/><field name="location"/><field name="responsible_id"/><field name="result"/><field name="state"/><field name="processing_advisory" optional="hide"/></tree></field></record>
-  <record id="view_sc_quality_acceptance_form" model="ir.ui.view"><field name="name">sc.quality.acceptance.form</field><field name="model">sc.quality.acceptance</field><field name="arch" type="xml"><form string="质量验收"><header><button name="action_confirm" type="object" string="确认验收" class="btn-primary" invisible="state != 'draft'"/><button name="action_cancel" type="object" string="取消" invisible="state == 'cancelled'"/><button name="action_reset_draft" type="object" string="重置草稿" invisible="state != 'cancelled'"/><field name="state" widget="statusbar" statusbar_visible="draft,confirmed,cancelled"/></header><sheet><group><group><field name="project_id"/><field name="name"/><field name="acceptance_type"/><field name="acceptance_date"/><field name="location"/></group><group><field name="responsible_id"/><field name="participant_ids" widget="many2many_tags"/><field name="result"/><field name="rectification_deadline" invisible="result not in ['conditional','failed']"/></group></group><group string="验收依据与意见"><field name="standard"/><field name="conclusion"/></group><group string="问题与资料"><field name="issue_ids" widget="many2many_tags"/><field name="attachment_ids" widget="many2many_binary"/></group><group string="办理提示"><field name="processing_advisory" readonly="1" nolabel="1"/></group></sheet><chatter/></form></field></record>
+  <record id="view_sc_quality_acceptance_form" model="ir.ui.view">
+    <field name="name">sc.quality.acceptance.form</field>
+    <field name="model">sc.quality.acceptance</field>
+    <field name="arch" type="xml">
+      <!-- U-C4 G10: 原生 arch 持有本入口的章节身份。两个概览组带稳定 `data-sc-anchor`，
+           消费方按它生成本入口的业务章节与章节导航；`view_sc_quality_acceptance_form` 是
+           867（menu 686 / action `action_sc_product_quality_acceptance_v1`）的原生承载。
+           入口契约 165 的 body 副本已退役（只留 title 与 native_semantic_surface），字段级
+           只读口径由原生承接：`state` 由状态条承载，`processing_advisory` 原生 `readonly="1"`。
+           「办理提示」是计算出的提示态，不承载可编辑业务事实，故按 G08／G09 口径**不设**章节锚点。 -->
+      <form string="质量验收">
+        <header>
+          <button name="action_confirm" type="object" string="确认验收" class="btn-primary" invisible="state != 'draft'"/>
+          <button name="action_cancel" type="object" string="取消" invisible="state == 'cancelled'"/>
+          <button name="action_reset_draft" type="object" string="重置草稿" invisible="state != 'cancelled'"/>
+          <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,cancelled"/>
+        </header>
+        <sheet>
+          <group name="quality_acceptance_overview">
+            <group name="quality_acceptance_object" data-sc-anchor="quality_acceptance_object" string="验收对象">
+              <field name="project_id"/>
+              <field name="name"/>
+              <field name="acceptance_type"/>
+              <field name="acceptance_date"/>
+              <field name="location"/>
+            </group>
+            <group name="quality_acceptance_responsibility_result" data-sc-anchor="quality_acceptance_responsibility_result" string="责任与结果">
+              <field name="responsible_id"/>
+              <field name="participant_ids" widget="many2many_tags"/>
+              <field name="result"/>
+              <field name="rectification_deadline" invisible="result not in ['conditional','failed']"/>
+            </group>
+          </group>
+          <group name="quality_acceptance_basis_opinion" data-sc-anchor="quality_acceptance_basis_opinion" string="验收依据与意见">
+            <field name="standard"/>
+            <field name="conclusion"/>
+          </group>
+          <group name="quality_acceptance_issue_attachment" data-sc-anchor="quality_acceptance_issue_attachment" string="问题与资料">
+            <field name="issue_ids" widget="many2many_tags"/>
+            <field name="attachment_ids" widget="many2many_binary"/>
+          </group>
+          <group string="办理提示">
+            <field name="processing_advisory" readonly="1" nolabel="1"/>
+          </group>
+        </sheet>
+        <chatter/>
+      </form>
+    </field>
+  </record>
 </odoo>
