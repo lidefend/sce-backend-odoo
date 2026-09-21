@@ -11,137 +11,9 @@
   "sourceInventory": "artifacts/form-structure-unification/customer-browser-final/compatibility-consumers.json",
   "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
   "entries": [],
-  "otherStateConsumers": [
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_product_data_permission_v1",
-      "actionId": 886,
-      "menuId": 709,
-      "model": "res.users",
-      "status": "passed",
-      "runtimeHead": "967ff6f425436c5e8792fddbde0fc3a58060e30b",
-      "fingerprint": "9816cfadeac5fa870c0380f033c1155910671d3cd455f76e006ae3c745f116a8",
-      "evidence": "identity-886/desktop-identity-886-record-identity.json",
-      "formalRoute": "http://127.0.0.1:5176/f/res.users/445?menu_id=709&action_id=886",
-      "renderProfile": "edit",
-      "actualViewId": 1904,
-      "nativeViewXmlid": "smart_construction_core.view_sc_data_permission_user_form",
-      "viewSourceEvidence": {
-        "path": "$.data.actionContract.actionRuleList.7.target.params.view_id",
-        "value": 1904
-      },
-      "policy": "business_config_sections",
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 181,
-            "name": "data_permission_form_v1",
-            "version_no": 2
-          }
-        ],
-        "resolvedViewId": 1904,
-        "resolvedActionId": 886,
-        "structureDiagnostics": [],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "name",
-          "login",
-          "active",
-          "company_id",
-          "company_ids",
-          "sc_user_permission_group_ids",
-          "sc_project_member_assignment_ids"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:人员身份",
-            "key": "",
-            "title": "人员身份",
-            "fields": [
-              "name",
-              "login",
-              "active"
-            ]
-          },
-          {
-            "identity": "title:主公司与允许公司",
-            "key": "",
-            "title": "主公司与允许公司",
-            "fields": [
-              "company_id",
-              "company_ids"
-            ]
-          },
-          {
-            "identity": "title:业务权限角色",
-            "key": "",
-            "title": "业务权限角色",
-            "fields": [
-              "sc_user_permission_group_ids"
-            ]
-          },
-          {
-            "identity": "title:项目数据范围",
-            "key": "",
-            "title": "项目数据范围",
-            "fields": [
-              "sc_project_member_assignment_ids"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "人员身份",
-          "主公司与允许公司",
-          "业务权限角色",
-          "项目数据范围"
-        ],
-        "fieldGroups": {
-          "人员身份": [
-            "name",
-            "login",
-            "active"
-          ],
-          "主公司与允许公司": [
-            "company_id",
-            "company_ids"
-          ],
-          "业务权限角色": [
-            "sc_user_permission_group_ids"
-          ],
-          "项目数据范围": [
-            "sc_project_member_assignment_ids"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "人员身份": 2,
-          "主公司与允许公司": 2,
-          "业务权限角色": 1,
-          "项目数据范围": 1
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "mutationCount": 0,
-      "pageErrors": [],
-      "pageFailures": [],
-      "compatibilityConsumerInObservedState": true,
-      "recordId": 445,
-      "effectiveCreate": false,
-      "effectiveWrite": true,
-      "countScope": "existing-record edit, separate from create denominator"
-    }
-  ],
+  "otherStateConsumers": [],
   "retirementComplete": false,
-  "retirementCompleteReason": "PR #512 took the ledger to 0 remaining compatibility consumers, which satisfies only the first half of retirementCondition. This batch does NOT remove the compatibility regrouping logic or its test exemptions, because the second half is still open: the ledger is measured as one governed principal (system_admin / company 1 / renderProfile create) and otherStateConsumers still carries one entry_semantic_surface consumer (action 886 / menu 709 / data_permission_form_v1, status=passed). Removing the regrouping path needs its own decision and evidence batch.",
+  "retirementCompleteReason": "The ledger's formal compatibility consumers reached 0 in PR #512 and this batch empties the LAST otherStateConsumer as well (886 data permission / menu 709 / data_permission_form_v1, retired in place by PR #514), so BOTH halves of the consumer count are now zero. retirementComplete nevertheless stays FALSE, because retirementCondition has a second, independent half: the ledger is measured as one governed principal (system_admin / company 1 / renderProfile create) and other roles, companies and record states are NOT covered by this evidence. Removing the compatibility regrouping logic and its test exemptions therefore needs its own decision and evidence batch; nothing about this batch authorises that removal.",
   "deliveryName": "唯一结构机制及首批代表面迁移",
   "originalScope": {
     "before": 49,
@@ -328,8 +200,8 @@
     "status": "path_clear",
     "priorityActions": [],
     "selectedGroup": null,
-    "clearanceNote": "The U-C4 priority-group plan is exhausted: the last remaining compatibility consumer (880 sc.tax.filing / menu 702 / view 1659 / entry contract 186 tax_filing_form_v1) was retired in place by PR #512, so entries=[] and count=0. selectedGroup is null because no group is selected for a next batch; every group keeps its planning record and G09-G15 are marked historical_source. path_clear means no formal compatibility consumer remains in THIS ledger; it does NOT authorise deleting the compatibility regrouping logic, because retirementCondition also requires other roles/companies/states to be covered and otherStateConsumers still lists one entry_semantic_surface consumer (action 886 / menu 709 / data_permission_form_v1).",
-    "sourceMainlineHead": "257252cc6854e9dd6db46b4b4b6ffe7cff8f1200",
+    "clearanceNote": "The U-C4 priority-group plan is exhausted: the last ledger entry (880 sc.tax.filing / menu 702 / view 1659 / entry contract 186 tax_filing_form_v1) was retired in place by PR #512, and PR #514 has now retired the last otherStateConsumer (886 data permission / menu 709 / view 1904 / entry contract 181 data_permission_form_v1) in place as well, so entries=[], count=0, mainlineRemainingCount=0 and otherStateConsumers=[]. selectedGroup stays null because no group remains. path_clear means no formal compatibility consumer AND no other-state compatibility consumer remains in THIS ledger; it does NOT authorise deleting the compatibility regrouping logic, because retirementCondition also requires other roles/companies/states to be covered. G13-G16 release records and the uc4GxxPublishedAudit blocks stay as the audit trail.",
+    "sourceMainlineHead": "42686275532d3342ffebc21a455e1868c9106bd6",
     "fullRescan": false,
     "groups": [
       {
@@ -2100,6 +1972,87 @@
       "the_published_entry_contract_186_tax_filing_form_v1_row_itself_stays_published_and_bound_to_action_880_only_its_structural_body_was_retired",
       "the_immutable_version_history_of_entry_186_is_kept_v1_still_carries_the_retired_entry_semantic_surface_and_is_reachable_through_the_administrator_version_list",
       "the_other_state_consumer_action_886_menu_709_data_permission_form_v1_still_carries_entry_semantic_surface_and_is_the_remaining_candidate_topic"
+    ]
+  },
+  "uc4G16PublishedAudit": {
+    "auditedAt": "2026-09-21",
+    "auditedReleaseHead": "42686275532d3342ffebc21a455e1868c9106bd6",
+    "mergedPr": {
+      "number": 514,
+      "squashHead": "42686275532d3342ffebc21a455e1868c9106bd6",
+      "sourceHead": "acccb0ea469dea1889926880532fc110a4174e98",
+      "tree": "ed8d571ec82409a253a3b7f7e5ab88614e6dc735"
+    },
+    "iterationRecord": "docs/ops/iterations/form_structure_consumption_stabilization_20260917.md",
+    "requiredChecks": [
+      "classify=success",
+      "frontend_release_gate=success",
+      "merge_policy_gate=success",
+      "professional_authorization=success",
+      "professional_quality_gate=success",
+      "public_guard=success",
+      "public_guard_classify=success",
+      "python310_runtime_compatibility=success",
+      "release_candidate_gate=success"
+    ],
+    "skippedChecks": [
+      "classify",
+      "fast",
+      "wait_for_candidate_checks"
+    ],
+    "reduction": {
+      "countsField": "otherStateConsumers",
+      "before": 1,
+      "after": 0,
+      "retiredActions": [
+        886
+      ],
+      "retiredViews": [
+        1904
+      ],
+      "retiredConfigurations": [
+        "data_permission_form_v1"
+      ],
+      "countMeaning": "the ledger's otherStateConsumers array (compatibility consumers held outside the mainline priority groups); the mainline count/entries were already zeroed by PR #513 and are unchanged by this batch. Deployment and overall user delivery are separate",
+      "retiredViewMeaning": "1904 (view_sc_data_permission_user_form) labels the single retired otherStateConsumer row; the view stays live as the native primary form of res.users for action 886 and is now the authoritative structure plane",
+      "arithmeticNote": "the 1 -> 0 counts retired ACTIONS in otherStateConsumers (1 = the only remaining other-state consumer). The mainline counters count and mainlineRemainingCount stay 0 (already zero after PR #513); entries stays []"
+    },
+    "exitEvidence": {
+      "carrierCheck": "res.users had exactly one entry-level business config contract carrier before this batch: 181 data_permission_form_v1 (action 886 / menu 709). The sibling entry 736 action_sc_runtime_user_management (view 1901, personnel profile) resolves NO business config contract at all (_effective_view_orchestration_contracts -> []), so it cannot inherit the retired entry and was not touched",
+      "inPlaceRetirementCheck": "the SAME record was retired IN PLACE (G13/G15 shape): composition_mode entry_semantic_surface -> native_semantic_surface with sections (4 groups / 7 fields) / columns / fields dropped, while priority=800, action_id, status=published, version_no key, title and the five view_orchestration.context keys were kept verbatim; after the retirement both the edit and the create profile resolve authority=native_authority / layoutPolicy=container_tree_authority / mode=native_structured_form / diagnostics=[] with 7 fields / 4 groups / 0 buttons / 0 anchors",
+      "contractCountCheck": "the contract table stays at 289 rows because the retirement is in place and not additive; no new entry release was added",
+      "publicationSnapshotCheck": "published-body edits append an immutable snapshot and bump the live version_no (addons/smart_core/model/ui_business_config_contract.py:844-888). The after-probe measured: live row version_no=3; three immutable snapshots for entry 181 (v1 2026-09-07 and v2 2026-09-13 both entry_semantic_surface carrying the four section titles; v3 2026-09-21 native without sections); structure resolution reads the LIVE row, so the retained older snapshots are audit/rollback artifacts and not active declarations. The unit tests therefore pin version_no with assertGreaterEqual(record.version_no, 1) plus the reason comment. The whole-table version row count is a point-in-time reading of the shared development database (779 at 14:22, 783 when an independent reviewer re-read it) and is deliberately NOT quoted as a frozen constant; entry 181 itself held exactly 3 rows on both reads",
+      "createProfileAssemblyCheck": "USER-VISIBLE BEHAVIOUR CHANGE, registered and not softened: BEFORE the retirement the create profile of this entry could not be assembled at all - unified_page_contract_v2_assembler.validate_occurrences raised ValueError (field='name' lacking native_locator/occurrence_index). AFTER the retirement the create profile is isomorphic to the edit profile (unit test test_the_create_profile_delivers_the_same_field_plane_as_edit asserts it in both directions). The entry is a read-only resolved identity (arch create=\"0\" delete=\"0\" plus action context 'create': False, 'delete': False), so the browser never requests that profile; the batch therefore turned an assembly failure into an assembled profile rather than hiding a deliverable page",
+      "abProbeCheck": "frozen read-only A/B probe on sc_dev_demo (SAVEPOINT + ROLLBACK, zero writes, tmp/g16-evidence/probe-g16-ab.json): formStructureAuthority '' -> native_authority, layoutPolicy business_config_sections -> container_tree_authority, mode -> native_structured_form, diagnostics [] -> [], 7 fields / 0 anchors and the modifiers identical to the baseline; the five context keys and title are byte-identical before and after",
+      "representativeRouteCheck": "L4 browser representative pass at the frozen head: candidate=acccb0ea, dirty=false, ok=true, restored=true, browser_errors=[], recovery=[], cleanup_guard=proceed; the 886 RECORD route was measured with 7 rendered field nodes, 4 sections, readonly_checked=[name, login, active] and every findings bucket empty; sample_state=available (domain_rows=47, readable_samples=3) and the business fingerprints were unchanged across the run",
+      "createRouteCheck": "the 886 CREATE route is recorded as a DECLARED CAPABILITY FACT (denied / render_profile_denied / FORM_CREATE_NOT_ALLOWED), not as a structural failure: the refusal comes from the arch and the entry (viewCapabilities.create=false, entryCapabilities.create=false, effectiveRecordCapabilities.create=false) while the res.users model ACL still allows create for the governed identity (modelRights.create=true). That is exactly the class the ledger registered as the PR #510 S3 forward risk. Attribution record: tmp/g16-evidence/l4-attribution.md",
+      "predicateAlignmentCheck": "the representative runner predicate moved from modelRights?.create !== true to effectiveRecordCapabilities?.create !== true while keeping the viewCapabilities clause (frontend/apps/web/scripts/formal_form_representative_journey.mjs:1453). FORM_CREATE_NOT_ALLOWED has exactly ONE producer (addons/smart_core/core/unified_page_contract_v2_assembler.py:1084-1088) whose condition includes effective_record_capabilities.create is not True, and effective = view AND model AND record AND entry (addons/smart_core/utils/contract_governance_form_render.py:99-130,151), so the swapped clause is a logical implication of the retained triple guard: the skip surface was neither widened nor narrowed. The only real change is the removal of the modelRights clause, which previously misreported an arch/entry-declared refusal as a structural failure. The uncovered record now carries view_capability_create / entry_capability_create / effective_record_create fact slots",
+      "renderedSurfaceCheck": "the entry renders from the native arch with zero data-sc-anchor section rails (7 fields / 4 groups / 0 buttons), so the data_permission topic deliberately does NOT declare section_navigation - the assertion cannot hold for this entry and is covered by other topics elsewhere",
+      "domainRegressionCheck": "read-only re-run of the committed domain rollouts: base_configuration_domain (6 actions including 886) PASS with structural_form_count=6 and gap_count=0, and the tracked rollout report plus the untracked runtime artifact were restored BYTE-IDENTICAL afterwards (sha256 -c OK on all three files); the only difference observed was the shared development database id drift (menu/action ids shifted by 2), which is not attributable to this batch",
+      "quickGateCheck": "make ci.local.quick on the exact candidate head acccb0ea passed and the receipt is bound to that head and to tree ed8d571e; pr.merge reused that verified receipt (REUSE path) instead of re-running, and the receipt was independently re-verified with python3 scripts/ops/local_quick_evidence.py verify --expected-head acccb0ea...",
+      "reviewCheck": "two independent read-only review rounds bound to the frozen head acccb0ea (each independently recomputing the 6/6 path bytes+sha256 and the tree and reviewing the L1-L5 trail); BOTH returned APPROVE with no S0/S1 and no S2 in the tracked content. The two S2s raised (missing archive-manifest.json; the ledger before/after label scope) were closed before publication, and the remaining S3/S4 items are registered in tmp/g16-evidence/review.md and in this record's knownLimits",
+      "archiveCheck": "external evidence archived with make workspace.evidence.archive (APPLIED, status=verified, 5 files covering identity/summary/review and 2 representative screenshots); fingerprint sha256 de93ec9bb3b069e0bac3d4f0d73e51179bb199ab8adfb4e25b31a94e222ed337 is the raw-bytes hash of tmp/g16-evidence/final-fingerprint.json and is carried in identity.json",
+      "ledgerScopeCheck": "the reduction in this block is scoped to otherStateConsumers. The ledger's mainline count, localVerifiedCount, mainlineRemainingCount and entries were already zero after the G15 post-merge audit (PR #513) and are byte-unchanged here; this batch empties the otherStateConsumers array"
+    },
+    "knownLimits": [
+      "retirementComplete stays FALSE even though both consumer counts are now zero: retirementCondition also requires other roles/companies/states to be covered, and this batch is measured as one governed principal (system_admin / company 1 / renderProfile create). Nothing here authorises removing the compatibility regrouping logic or its test exemptions",
+      "the ledger counts the declaration, not the delivery: the retired row was carried forward from the 3d644a79 inventory (formStructureAuthority=entry_semantic_surface, policy=business_config_sections), while the after-probe measured native_authority / container_tree_authority",
+      "the create profile of entry 181 changed from 'cannot be assembled' (ValueError in unified_page_contract_v2_assembler.validate_occurrences) to 'assembled and isomorphic to edit'. The entry is read-only so no user-facing page changed, but the assembly fix is a real behavioural change and is registered rather than dismissed as structure-only",
+      "two comment-level inaccuracies inside TRACKED files are registered and deliberately NOT fixed inside the frozen candidate: the XML comment in addons/smart_construction_core/data/data_permission_contract.xml:40 names the sibling entry as action 857 while the real id is 736, and scripts/verify/local_dev_form_lowcode_scope.py:268 states the record expectation in the future tense while the run already measured it. A comment-only edit would move the head and invalidate the head+tree-bound L1/L3/L4/L5 evidence and both review rounds, so they are queued as a separate follow-up commit",
+      "the changed frontend runner (frontend/apps/web/scripts/formal_form_representative_journey.mjs) still has NO automated syntax gate: the make/ci.mk:950-955 node --check list does not include it and frontend/apps/web/package.json:9 lints only .ts/.vue. Review r2 verified it manually with node --check (passed) and git diff --check was clean; widening the gate is separate P4 work",
+      "the effectiveRecordCapabilities key is optional in the frontend schema (frontend/apps/web/src/app/contracts/v2/schema.ts:1861); a response missing it would evaluate undefined !== true as true, leaving only the retained reasonCode triple guard. The residual surface is a platform-side reasonCode error",
+      "the unit pins embed Chinese group titles and readonly expression strings (CONTAINER_SKELETON / DELIVERED_MODIFIERS), so wording or normalisation changes will fail the low-code test as noise - the price of the discriminating assertions",
+      "the whole-version-table row total on the shared development database (779 -> 783) is drift, not a property of the candidate, and must not be quoted as a frozen constant",
+      "the probes ran as a single admin principal on sc_dev_demo and did not re-measure a tenant/low-code surface (same residual as G10-G15)",
+      "six pre-existing environment/baseline defects are registered and NOT fixed here: verify.contract.view_structure expects a stale generated fingerprint (contracts/generated/product_view_structure_contract.json still carries 36 view_sc_data_permission_user_form references and is deliberately not refreshed); verify.product.menu.governance.m4.closure misses artifacts/menu-governance/menu-m4-runtime.REJECTED-wrong-sha.json; verify.user_form.preference.boundary_guard depends on a customer custom addon repository that is not in this repository boundary; the component test in verify.frontend.professionalization.collaboration_domain.runtime still asserts entry_semantic_surface (G11 leftover); docs/frontend_productization/domain-rollout/project-domain-coverage-v1.json is stale for action_sc_product_project_edit_v1; and the user_data_boundary tag (test_role_surface_project_member.py) has 4 of 25 tests failing on the current mainline with no CI gate running that tag (proven pre-existing and unrelated: the finance override lists menu_sc_settlement_adjustment in primary_menu_xmlids but not in the 21 contextual_menu_xmlids, and the test asserts contract_version == 'route_authority.v1' while the handler emits '2.0.0'; route_authority_validate.py was last changed 2026-08-23 by PR #277 and is untouched here)"
+    ],
+    "notDeducted": [
+      "shared_native_form_1904_view_sc_data_permission_user_form_stays_live_as_the_primary_form_of_res_users_for_action_886_and_is_now_the_authoritative_structure_plane",
+      "sibling_entry_736_action_sc_runtime_user_management_view_1901_personnel_profile_stays_live_and_untouched_it_resolves_no_business_config_contract",
+      "the_published_entry_contract_181_data_permission_form_v1_row_itself_stays_published_and_bound_to_action_886_only_its_structural_body_was_retired",
+      "the_immutable_version_history_of_entry_181_is_kept_v1_and_v2_still_carry_the_retired_entry_semantic_surface_and_are_reachable_through_the_administrator_version_list",
+      "the_res_users_model_acl_and_record_rules_are_not_touched_modelRights_create_and_recordRights_create_stay_true_the_denial_comes_from_the_view_and_entry_declarations",
+      "the_compatibility_regrouping_logic_and_its_test_exemptions_are_not_removed_by_this_batch"
     ]
   }
 }

@@ -6909,3 +6909,130 @@ action 数**计——G15 组 action 集合为 `[880]` **共 1 条**，故正确�
 状态：**G15 主线集成完成（PR #512，squash 同树）｜批次状态：自验与冻结门禁通过；集中产品复核结论以产品方登记为准｜
 未部署｜用户交付未完成｜台账 0（`count=0`）｜`retirementComplete=false`（其他角色／状态未覆盖）｜
 剩余候选主题：886／menu 709／`data_permission_form_v1`**。
+
+### 8.48 G16 数据权限：入口契约**原地退役**结构声明与代表面登记（2026-09-21；**实施＋分层验证轮**；冻结／Quick／独立复核／归档／PR 属本轮收口步骤）
+
+**范围与层级**：Formal Product Layer **P1**（施工行业标准产品默认面）；Layer Target 为 `smart_construction_core`
+的入口契约 `data/data_permission_contract.xml`、定向测试与原生视图口径，另含一处 **P4 最小扩展**——既有只读
+代表面入口 `scripts/verify/local_dev_form_lowcode_scope.py` 登记 `data_permission` topic，以及代表面 runner
+`frontend/apps/web/scripts/formal_form_representative_journey.mjs` 的 create 拒绝谓词对齐（复用已注册 Compose
+项目 `sc-local-dev`／`sc_dev_demo`／受管身份与数据权威，只读，不写任何配置），另有随冻结刷新的
+`docs/engineering_convergence/complexity_budget_report.md`。**Why Here**：886 的兼容结构权威由
+`smart_construction_core` 自己发布的入口契约 181 `data_permission_form_v1` 持有。**Why Not Elsewhere**：这是行业
+标准默认面的结构权威收口，前端只做通用契约渲染、不得按模型写死；低代码运行时不是长期属主；`smart_core`
+不承载行业语义（本批对平台内核只做只读分析，**一行未改**）。**Blast Radius**：入口 action **886**
+（`action_sc_product_data_permission_v1`，menu 709「数据权限」）、原生表单 **1904**
+（`view_sc_data_permission_user_form`）、契约 **181**（`data_permission_form_v1`）、模型 `res.users`。
+**回滚**：`git revert`（纯声明变更，无数据迁移）。**排除项**：同模型兄弟入口 **736**
+`action_sc_runtime_user_management`／view 1901（「人员档案」，`_effective_view_orchestration_contracts` 返回 `[]`）、
+`smart_core` 内核改动、前端源码与 CI 配置、**客户定制 addon 仓库（不在本仓库边界内）**、ACL／记录规则／
+菜单可见性／模型字段／原生视图 arch。
+
+**目标**：让入口 action **886** 的入口发布成为本入口**最后的结构写入者**并声明 `native_semantic_surface`，使
+`form_structure_authority=native_authority`、`layoutPolicy=container_tree_authority`，兼容重组路径对 886 不再适用
+（台账口径由此可扣减 `otherStateConsumers` **1 → 0**；扣减本身属**合并后**文档单职责提交）。
+
+**修改范围（候选 6 条路径，单提交：4 改 ＋ 1 新增 ＋ 1 改）**：
+
+| 路径 | 动作 | 内容 |
+| --- | --- | --- |
+| `addons/smart_construction_core/data/data_permission_contract.xml` | 改 | 同名 record **原地退役**（见下） |
+| `addons/smart_construction_core/tests/test_data_permission_native_lowcode.py` | **新增** | 16 测试，tag `uc4_native_lowcode` |
+| `addons/smart_construction_core/tests/__init__.py` | 改 | 登记上述测试模块 |
+| `scripts/verify/local_dev_form_lowcode_scope.py` | 改 | 登记 `data_permission` topic（P4 最小扩展） |
+| `frontend/apps/web/scripts/formal_form_representative_journey.mjs` | 改 | create 拒绝谓词对齐（P4，见「关键决策 6」） |
+| `docs/engineering_convergence/complexity_budget_report.md` | 改 | 扫描文件 4401 → **4402** |
+
+**原地退役内容**：`composition_mode` 由 `entry_semantic_surface` 改为 `native_semantic_surface`，**退役**
+`sections`（4 组 7 字段）／`columns`／`fields`（7 行），**保留** `priority=800`／`action_id`／`status=published`／
+`version_no` 键／`title='数据权限'`／`view_orchestration.context` 5 键（`source`／`source_status`／
+`identity_authority`／`role_authority`／`project_scope_authority`，逐值不变）。外形与 G13／G15 的原地退役一致。
+
+**关键决策（实测驱动，非设计预判）**：
+
+1. **为什么必须原地退役**：`res.users` 在本模块内**只有一条**入口级业务配置契约载体（181，绑定 action 886），
+   兄弟入口 736 不解析任何业务配置契约（`[]`），故不存在可接管结构的第二条载体；另建变体同样会被
+   `diagnose_structure_ownership` 以冲突拒绝。结论：只能**原地退役**（G13／G15 形态）。
+2. **契约表计数不变（289）**：原地退役是**非增量**，`ui.business.config.contract` 仍 **289** 行。
+3. **发布快照机制（运行实例级证据）**：published 契约改 body 会**追加不可变发布快照**并把活行 `version_no`
+   递增（`addons/smart_core/model/ui_business_config_contract.py:844-888`）。after 探针实测：活行 `version_no=3`；
+   入口 181 在 `ui.business.config.contract.version` 中占 **3 条**（v1 2026-09-07、v2 2026-09-13 均为
+   `entry_semantic_surface`，仍带 4 个章节标题；v3 2026-09-21 本批 native、无 sections）；**运行时结构解析读活行**，
+   故旧声明残留**仅**存在于不可变快照（审计／回滚用途）。测试据此以
+   `assertGreaterEqual(record.version_no, 1)` ＋ 理由注释钉住。版本表**整表**行数为**采集时刻**读数
+   （14:22 = 779；复核者复读 = 783；同一共享开发库漂移，入口 181 两次均为 3 行），**不作为冻结常量**。
+4. **create 档组装修复（如实登记，不淡化）**：退役**前**该入口 create 档在
+   `unified_page_contract_v2_assembler.validate_occurrences` 抛 `ValueError`（`field='name'` 缺 `native_locator`／
+   `occurrence_index`），即**无法组装**；退役**后** create 与 edit 同为原生容器树（单测
+   `test_the_create_profile_delivers_the_same_field_plane_as_edit` 双向断言）。入口 arch 声明
+   `create="0" delete="0"`、action context 声明 `'create': False, 'delete': False`（只读入口），浏览器不会请求该档位；
+   本批把一个「无法组装」变为「可组装且与 edit 同构」，**不是**把一个可交付页面藏起来。
+5. **代表面口径**：`data_permission` topic 登记 `action_sc_product_data_permission_v1` ＋
+   `view_sc_data_permission_user_form` ＋ `menu_sc_product_data_permission_v1`，样本字段 `name`／`company_id`，
+   机制键 `readonly_values` ＋ `record_surface`，**不申报** `section_navigation`（原生视图 1904 零 `data-sc-anchor`）。
+   身份非纸面声明：探针以 `env.ref()` 解析三个 xmlid，并在 `menu.action != action or view.model != action.res_model`
+   时 `raise RuntimeError`。
+6. **P4 谓词对齐（台账预登记 S3 前向风险的落地，方向 fail-closed）**：`formal_form_representative_journey.mjs:1453`
+   由 `modelRights?.create !== true` 改为 `effectiveRecordCapabilities?.create !== true`（保留
+   `viewCapabilities?.create !== true`）。`FORM_CREATE_NOT_ALLOWED` 全仓**唯一生产者**为
+   `unified_page_contract_v2_assembler.py:1084-1088`（条件含 `effective_record_capabilities.create is not True`），
+   且 `effective = view ∧ model ∧ record ∧ entry`（`contract_governance_form_render.py:99-130,151`），故换入项是三件套
+   （`pageVisible=false` ∧ `pageAuth='none'` ∧ `reasonCode`）的**逻辑蕴含**，**跳过面既未扩大也未缩小**；实际改变的
+   只是删掉 `modelRights` 一项，新增被接纳类＝「arch／view 已交付 create 拒绝 ∧ 模型 ACL 仍允许 create」，即**已交付的
+   声明**而非结构退化。uncovered 记录新增 `view_capability_create`／`entry_capability_create`／
+   `effective_record_create` 三个事实位。
+
+**交付面读数（如实登记）**：record 路由（`/f/res.users/6?action_id=886&menu_id=709`）实测 `fields=7`／
+`sections=4`／`presentation_mode=edit`／`readonly_checked=[name, login, active]`／各 `findings` 桶全空；
+样本 `sample_state=available`（`domain_rows=47`、`readable_samples=3`），业务指纹前后未变。**create 路由不写成通过**：
+按平台自身交付裁决登记为**已声明的能力事实**（`denied`／`render_profile_denied`／`FORM_CREATE_NOT_ALLOWED`），拒绝来自
+arch／入口（`viewCapabilities.create=false`、`entryCapabilities.create=false`、`effectiveRecordCapabilities.create=false`），
+而 `res.users` 的模型 ACL 对治理身份仍允许 create（`modelRights.create=true`）——归因记录
+`tmp/g16-evidence/l4-attribution.md`。
+
+**边界**：兄弟入口 736／view 1901 未被本批修改（不接收退役的入口契约）；不改 ACL／记录规则／菜单可见性，
+不改模型字段，不改原生视图 arch，不改运行环境、数据库或端口；`addons/smart_core/**` **一行未改**；发布历史**不删除**
+（旧 `entry_semantic_surface` 声明仍可在版本快照与管理员版本列表中读到）；`retirementComplete=false`。
+
+**Next Step**：合并后执行**文档单职责提交**（台账 `otherStateConsumers` 1 → 0 ＋ 迭代记录 8.48／8.49 ＋ 本轮切换日志），
+台账内 `retirementComplete` **保守保持 `false`**（`retirementCondition` 的「其他角色／公司／状态覆盖」一半仍未满足）；
+两条**被跟踪文件内的注释串**（契约 XML 注释写「人员档案 857」实为 **736**；`scope.py:268` 注释时态）为复核登记项，
+不在冻结候选内改（改则移动 head 并使绑定 head＋tree 的证据与两轮复核失效），另以小的跟进提交承接。
+
+### 8.49 G16 主线集成与 `otherStateConsumers` 1 → 0（2026-09-21）
+
+G16 主题经 PR **#514** 以 **squash** 合入主线，合并提交 `42686275532d3342ffebc21a455e1868c9106bd6`，其树与候选
+`acccb0ea469dea1889926880532fc110a4174e98` 的树 `ed8d571ec82409a253a3b7f7e5ab88614e6dc735` **逐字节一致**（同树承接）。
+合并前必需检查全部通过（`classify`、`frontend_release_gate`、`merge_policy_gate`、`professional_authorization`、
+`professional_quality_gate`、`public_guard`、`public_guard_classify`、`python310_runtime_compatibility`、
+`release_candidate_gate`），`fast`／`wait_for_candidate_checks` 按规则 skipping；`pr.merge` 的 exact-head Quick 门禁
+走 **REUSE** 路径复用候选 `acccb0ea` 的已验回执（回执绑定 head＋tree）。外部证据已按 `make workspace.evidence.archive`
+归档（**5** 文件、四类角色齐备、`status=verified`）。独立只读复核**两轮**绑定冻结头 `acccb0ea`（各自独立重算
+6/6 路径 bytes＋sha256 与 tree，并复核 L1–L5 留痕），**均判 `APPROVE`、无 S0／S1，且被跟踪内容无 S2**；两轮提出的
+两条 S2（缺 `archive-manifest.json`；台账 `before/after` 标签口径）已在发布前闭合，其余 S3／S4 项登记在
+`tmp/g16-evidence/review.md` 与台账 `uc4G16PublishedAudit.knownLimits`。合入后已按 `make branch.cleanup.feature`
+清理已合入分支 `feature/uc4-g16-data-permission-native-v1`（本地＋远端，exact-head squash PR 校验通过）。
+
+台账 `docs/ops/iterations/form_structure_compatibility_consumers_v1.json` 扣减 `otherStateConsumers` **1 → 0**
+（本批在该数组内**正好 1 条**：886 数据权限），数组清空为 `[]`，并新增 `uc4G16PublishedAudit`
+（含 `reduction.countsField="otherStateConsumers"` 显式口径）；`nextBatch.sourceMainlineHead` → `42686275…`，
+`clearanceNote` 就地改写为「本台账的正式兼容消费者与**其他状态消费者均已归零**，但**不**授权删除兼容重组逻辑」。
+台账的主线计数字段（`count`／`localVerifiedCount`／`mainlineRemainingCount` 与 `entries=[]`）在 G15 审计（PR #513）
+即已归零，**本批逐字节未改**。
+
+**扣减口径（易误读处显式澄清）**：台账里「1 → 0」指的是 `otherStateConsumers` 数组（该数组不属于主线优先级分组），
+**不是**主线 `count` 再次变化——主线 `count` 在 PR #513 已为 **0**。扣减按本组**退役的 action 数**计：886 **共 1 条**。
+
+**`retirementComplete` 保守保持 `false`（如实登记，不因两侧归零而提前置真）**：台账自身的 `retirementCondition`
+要求**两半同时成立**——①每条兼容重组路径的正式消费者归零；②其他角色／公司／状态已覆盖。本批使**①**（主线计数
+＋ `otherStateConsumers`）**两侧均归零**，但**②仍未满足**：证据按受管身份 `system_admin`／company 1／
+`renderProfile=create` 单一口径测量。因此**本批不删除**任何兼容重组逻辑与测试豁免，并把该理由写入台账的
+`retirementCompleteReason` 字段。
+
+本提交为**文档类单职责提交**（台账 ＋ 本记录 ＋ 切换日志，路径集合固定为 3）；**未触碰**任何产品代码、契约、
+测试或验证工具输入，故不改动 §8.48 的 L0–L5 结论；候选的 exact-head Quick 回执属于 `acccb0ea…`，
+本提交自身的收据由受管门禁按 fail-closed 口径产生，**不冒充同一绑定**。
+
+状态：**G16 主线集成完成（PR #514，squash 同树）｜批次状态：自验与冻结门禁通过；集中产品复核结论以产品方登记为准｜
+未部署｜用户交付未完成｜主线台账 0（`count=0`）｜`otherStateConsumers=[]`｜
+`retirementComplete=false`（其他角色／状态未覆盖）｜u4 兼容消费者主题清空**。
