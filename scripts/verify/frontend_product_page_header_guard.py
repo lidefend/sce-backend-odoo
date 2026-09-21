@@ -19,18 +19,21 @@ def _matches_recipe(line: str, program: str, args: tuple[str, ...]) -> bool:
     但程序根本不执行该文件。
 
     因此这里要求：**先摘掉 shell 重定向**（`2>&1`／`>/dev/null` 不是链式分隔符），再按
-    `;`／`&&`／`||`／`|`／`&` 切段——必须**恰好只剩一段**，且该段「首 token 就是该程序」并且
+    `;`／`&&`／`||`／`|`／`&` 切段——必须**恰好只剩一段**（**不丢弃空段**，否则尾随 `&` 的后台化
+    会伪装成「只有一段」），且该段「首 token 就是该程序」并且
     「其后紧跟的前 `len(args)` 个 token 与预期参数**逐个相等且同序**」。
     比「参数集合包含」强：参数被换位、被替换成 `--version`／`-c` 之类的空转开关都会失败。
 
     「恰好一段」是必需的而不是洁癖：`false && <step>`／`true || <step>` 让步骤**永不执行**，
-    而 `<step> || true`／`<step> ; true` 让步骤执行但**失败不再传播**，两者都能让门禁形同虚设。
+    而 `<step> || true`／`<step> ; true`／`<step> &` 让步骤执行但**失败不再传播**（`&` 后台化后
+    shell 立刻以 0 退出），三者都能让门禁形同虚设。重定向的剥离必须**不吞分隔符**：
+    `>/dev/null||true`（分隔符紧跟重定向、无空白）与 `>/dev/null; echo x` 同样必须失败。
     代价是 `|| true` 这类「真实步骤的尾部修饰」也会失败——按失败关闭方向处理，并在文档残限中登记。
     """
     body = line.lstrip("@").split("#")[0]
     body = re.sub(r"\d*>&\s*\d+", " ", body)
-    body = re.sub(r"\d*>>?\s*\S+", " ", body)
-    segments = [segment for segment in re.split(r"&&|\|\||[;|&]", body) if segment.strip()]
+    body = re.sub(r"\d*>>?\s*[^\s;|&]+", " ", body)
+    segments = re.split(r"&&|\|\||[;|&]", body)
     if len(segments) != 1:
         return False
     tokens = segments[0].split()
@@ -44,10 +47,13 @@ def _matches_recipe(line: str, program: str, args: tuple[str, ...]) -> bool:
 def _code_view(text: str, mask_strings: bool) -> str:
     """按**标记模式**生成「只剩真实代码」的视图（长度与原文一致、下标对齐）。
 
-    模式：模板正文／标签内部／`<script>`・`<style>` 原始段，以及模板 `{{ }}` 插值。
+    模式：模板正文／标签内部／`<script>`・`<style>` 原始段／`<textarea>`・`<title>`（RCDATA），
+    以及模板 `{{ }}` 插值。
     - 正文里的裸撇号（`<p>owner's</p>`）不得打开引号状态，否则其后的 `<!-- -->` 会被当成实现（假失败）；
     - 正文里的 `<!--` 只在**插值之外**才是注释，`{{ '<!--' }}` 里的字符是数据不是注释——
       否则它就是又一条「在字符串里写一段注释符把真实代码夹掉」的静默通道；
+    - `textarea`／`title` 是 **RCDATA**：其中的 `<!--` 是**文本**而不是注释；否则
+      `<textarea><!--</textarea>` 会把其后**真实渲染**的整段模板吞成注释（真实调用点对门禁隐身）；
     - 标签内部与 `{{ }}` 内**引号感知**：`'https://…'` 里的 `//` 不会被误当成注释；
     - 行注释与块注释只在脚本语义里成立：模板正文里的斜杠是文本，把整行 `//` 一律当注释
       会让「同一行里 `//` 之后的真实标签／绑定」被静默夹掉；
@@ -59,6 +65,7 @@ def _code_view(text: str, mask_strings: bool) -> str:
     mode = "text"
     interpolation = 0
     raw_tag = False
+    rcdata = False
     length = len(text)
 
     def blank(from_at: int, to_at: int) -> None:
@@ -93,6 +100,18 @@ def _code_view(text: str, mask_strings: bool) -> str:
                 continue
             index += 1
             continue
+        if mode == "text" and interpolation == 0 and rcdata:
+            if re.match(r"</(?:textarea|title)\b", text[index:], re.IGNORECASE):
+                rcdata = False
+                mode = "tag"
+                index += 1
+                continue
+            if text.startswith("{{", index):
+                interpolation = 1
+                index += 2
+                continue
+            index += 1
+            continue
         if mode == "text" and interpolation == 0:
             if text.startswith("<!--", index):
                 end = text.find("-->", index + 4)
@@ -106,6 +125,7 @@ def _code_view(text: str, mask_strings: bool) -> str:
                 continue
             if char == "<":
                 raw_tag = re.match(r"<(?:script|style)\b", text[index:], re.IGNORECASE) is not None
+                rcdata = re.match(r"<(?:textarea|title)\b", text[index:], re.IGNORECASE) is not None
                 mode = "tag"
                 index += 1
                 continue
@@ -157,8 +177,12 @@ def _active_recipe_lines(makefile: str, target: str) -> list[str]:
 
     只做子串存在性检查会让「注释掉烘焙／执行行、保留文件名」这种静默摘除逃过门禁，
     因此这里必须按 Makefile 结构取目标块，并剔除以 `#` 开头的 recipe 行。
+
+    Make 会把**以 `\\` 结尾的物理行**与下一行拼成一条逻辑行后再交给同一个 shell；逐物理行判定
+    会让 `\\t@node x.mjs \\` ＋ `\\t|| true` 这类续行修饰对门禁不可见（shell 实际执行 `node x.mjs || true`，
+    失败被吞掉而守卫仍 PASS）。因此这里先按 Make 的规则拼逻辑行，再剔除整条逻辑行的 `#` 注释行。
     """
-    active: list[str] = []
+    physical: list[str] = []
     inside = False
     for line in makefile.splitlines():
         if re.match(rf"^{re.escape(target)}\s*:", line):
@@ -167,14 +191,22 @@ def _active_recipe_lines(makefile: str, target: str) -> list[str]:
         if not inside:
             continue
         if line.startswith("\t"):
-            body = line.strip()
-            if body and not body.startswith("#"):
-                active.append(body)
+            physical.append(line.strip())
             continue
         if not line.strip():
             continue
         break
-    return active
+    logical: list[str] = []
+    buffer = ""
+    for body in physical:
+        if body.endswith("\\"):
+            buffer += body[:-1] + " "
+            continue
+        logical.append((buffer + body).strip())
+        buffer = ""
+    if buffer.strip():
+        logical.append(buffer.strip())
+    return [line for line in logical if line and not line.startswith("#")]
 
 
 def validate() -> list[str]:
@@ -214,7 +246,9 @@ def validate() -> list[str]:
     # ① 具名符号（`$attrs`／`attrs`／`useAttrs`）只在**字面量内容已掩码**的视图里判；
     # ② 模板属性 `v-bind="…attrs…"` 的取值是真代码（不在①的视图里），因此在未掩码视图上单独判。
     attrs_symbol = re.compile(r"\buseAttrs\b|\battrs\b")
-    attrs_binding = re.compile(r"v-bind\s*=\s*[\"'][^\"']*attrs", re.IGNORECASE)
+    # `v-bind.prop=`／`v-bind.camel=`／`v-bind.attr=` 与 `v-bind=` 是同一个「整对象展开」通道
+    # （编译器都输出 `_guardReactiveProps(_ctx.attrs)`），修饰符不得让判据失明。
+    attrs_binding = re.compile(r"v-bind(?:\.[\w-]+)*\s*=\s*[\"'][^\"']*attrs", re.IGNORECASE)
 
     def attrs_fallback(text: str) -> bool:
         return bool(attrs_symbol.search(_code_only(text)) or attrs_binding.search(_strip_comments(text)))
@@ -305,8 +339,14 @@ def validate() -> list[str]:
         )
     # 门禁挂点本身也要防摘除：把 unit 目标从 quick／release 门禁的前置里删掉，比改 recipe 更隐蔽。
     for gate_target in ("verify.frontend.quick.gate", "verify.frontend.release.unit"):
-        gate_lines = [line for line in makefile.splitlines() if re.match(rf"^{re.escape(gate_target)}\s*:", line)]
-        if not gate_lines or wired_target not in gate_lines[0]:
+        # 必须按**前置 token** 比对而不是子串：把 unit 目标从真实前置里删掉、只留在行尾 `#` 注释里，
+        # 子串判定仍会 PASS（`#` 在前置行里就是注释）；同一目标的多处定义也要一并计入。
+        gate_prerequisites: set[str] = set()
+        for line in makefile.splitlines():
+            if not re.match(rf"^{re.escape(gate_target)}\s*:", line):
+                continue
+            gate_prerequisites.update(line.split(":", 1)[1].split("#")[0].split())
+        if wired_target not in gate_prerequisites:
             failures.append(
                 "header entry contract test is not wired into verify.frontend.product_page_header.unit "
                 f"({gate_target} no longer depends on it: the gate hook itself can be silently detached)"

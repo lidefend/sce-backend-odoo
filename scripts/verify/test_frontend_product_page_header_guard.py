@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from scripts.verify.frontend_product_page_header_guard import validate
+from scripts.verify.frontend_product_page_header_guard import _strip_comments, validate
 
 
 class ProductPageHeaderGuardTest(unittest.TestCase):
@@ -642,6 +642,110 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
 
         with patch("pathlib.Path.read_text", redirected):
             self.assertEqual(validate(), [])
+
+    def test_contract_test_wiring_rejects_a_redirect_tight_against_the_separator(self):
+        """`>/dev/null|| true` 把分隔符**紧贴**在重定向后：剥离重定向时吞掉分隔符会让失败不再传播。"""
+        real = Path.read_text
+        for suffix, note in (
+            (" >/dev/null|| true", "no-space ||"),
+            (" 2>/dev/null; echo ok", "no-space ;"),
+            (" >/dev/null&&false", "no-space &&"),
+            (" >/dev/null|true", "no-space |"),
+        ):
+            def squeezed(path, *args, **kwargs):
+                value = real(path, *args, **kwargs)
+                if path.name == "frontend.mk":
+                    return value.replace(
+                        "\t@node /tmp/product-page-header-adapter-contract-test.mjs",
+                        "\t@node /tmp/product-page-header-adapter-contract-test.mjs" + suffix,
+                    )
+                return value
+
+            with patch("pathlib.Path.read_text", squeezed):
+                failures = validate()
+            self.assertTrue(
+                any("node execution step missing or disabled" in item for item in failures),
+                f"{note}: {failures}",
+            )
+
+    def test_contract_test_wiring_rejects_a_backgrounded_step(self):
+        """`<step> &` 后台化后 shell 立刻以 0 退出：步骤的失败不再传播，必须与 `|| true` 同等对待。"""
+        real = Path.read_text
+
+        def backgrounded(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value.replace(
+                    "\t@node /tmp/product-page-header-adapter-contract-test.mjs",
+                    "\t@node /tmp/product-page-header-adapter-contract-test.mjs &",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", backgrounded):
+            failures = validate()
+        self.assertTrue(any("node execution step missing or disabled" in item for item in failures), failures)
+
+    def test_contract_test_wiring_rejects_a_continued_line_suffix(self):
+        """Make 会把以 `\\` 结尾的行与下一行拼成同一条 shell 命令：续行修饰不得对门禁不可见。"""
+        real = Path.read_text
+
+        def continued(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value.replace(
+                    "\t@node /tmp/product-page-header-adapter-contract-test.mjs",
+                    "\t@node /tmp/product-page-header-adapter-contract-test.mjs \\\n\t\t|| true",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", continued):
+            failures = validate()
+        self.assertTrue(any("node execution step missing or disabled" in item for item in failures), failures)
+
+    def test_gate_hook_cannot_be_hidden_in_a_trailing_comment(self):
+        """把 unit 目标从真实前置里删掉、只留在行尾 `#` 注释中：子串判定会 PASS，token 判定必须失败。"""
+        real = Path.read_text
+
+        def commented(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value.replace(
+                    "verify.frontend.quick.gate: verify.frontend.official_icon.unit",
+                    "verify.frontend.quick.gate: verify.frontend.official_icon.unit # was verify.frontend.product_page_header.unit",
+                ).replace(
+                    " verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit",
+                    " verify.frontend.navigation_shell.unit",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", commented):
+            failures = validate()
+        self.assertTrue(
+            any("gate hook itself can be silently detached" in item for item in failures),
+            failures,
+        )
+
+    def test_attrs_bound_through_a_v_bind_modifier_is_rejected(self):
+        """`v-bind.prop=`／`v-bind.camel=`／`v-bind.attr=` 与 `v-bind=` 是同一个整对象展开通道。"""
+        real = Path.read_text
+        for modifier in (".prop", ".camel", ".attr"):
+            def bound(path, *args, **kwargs):
+                value = real(path, *args, **kwargs)
+                if path.name == "ScPageHeader.vue":
+                    return value.replace(
+                        ':presentation-mode="collectionMode"',
+                        f':presentation-mode="collectionMode" v-bind{modifier}="attrs"',
+                    )
+                return value
+
+            with patch("pathlib.Path.read_text", bound):
+                failures = validate()
+            self.assertTrue(any("useAttrs()" in item for item in failures), f"{modifier}: {failures}")
+
+    def test_rcdata_element_content_is_not_a_comment(self):
+        """`textarea`／`title` 是 RCDATA：其中的 `<!--` 是文本，不得把其后真实模板吞成注释。"""
+        text = '<textarea><!--</textarea>\n<ProductPageHeader v-bind="attrs" />'
+        self.assertIn('v-bind="attrs"', _strip_comments(text))
 
     def test_attrs_bound_through_a_plain_identifier_is_rejected(self):
         """`const attrs = useAttrs()` 之外，`v-bind="attrs"` 本身也是兜底转发通道。"""

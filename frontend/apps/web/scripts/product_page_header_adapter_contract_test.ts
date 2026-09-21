@@ -27,9 +27,10 @@ function declaredPropsOf(relative: string): string[] {
   const code = codeOnly(raw);
   // Options API 的 `props: { … }` 只有**在其所在 `<script>` 段同时声明 `export default`** 时才是声明面；
   // 否则 `type Meta = { props: { title: string } }` 这类类型字面量会被误判（假失败）。
-  const optionsApi = [...raw.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)]
-    .map((match) => stripComments(match[1]))
-    .some((block) => /\bexport\s+default\b/.test(block) && /\bprops\s*:\s*\{/.test(block));
+  // 判据必须走**已掩码**且**脚本模式**的整文件视图：在未掩码视图上判，一句普通字符串
+  // （`const doc = "export default { props: { title: String } }"`）就会触发硬失败。
+  const optionsApi = [...code.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)]
+    .some((block) => /\bexport\s+default\b/.test(block[1]) && /\bprops\s*:\s*\{/.test(block[1]));
   assert.ok(
     !optionsApi,
     `${relative} 使用 Options API 的 props 声明：声明面无法静态枚举，必须改为字面量 defineProps<{ … }> 并登记`,
@@ -44,7 +45,30 @@ function declaredPropsOf(relative: string): string[] {
     return [];
   }
   assert.equal(literals.length, 1, `${relative} 必须只有一处 defineProps<{ … }> 字面量声明`);
-  return [...literals[0][1].matchAll(/([A-Za-z_]\w*)\??:/g)].map((match) => match[1]);
+  return declaredPropNames(literals[0][1]);
+}
+
+/**
+ * 只取**顶层**键。类型字面量里允许嵌套对象（`meta: { a: string }`）与函数类型
+ * （`onSave?: (payload: { id: string }) => void`）：把嵌套层级的键也当顶层 prop 会同时造成
+ * 「声明了未登记输入」的**假失败**，并让「调用方传参 ⊆ 入口声明面」在嵌套键恰好与轴同名时**变松**。
+ */
+function declaredPropNames(body: string): string[] {
+  const masked = [...body];
+  const stack: string[] = [];
+  for (let index = 0; index < body.length; index += 1) {
+    const char = body[index];
+    if (char === '{' || char === '(' || char === '[') {
+      stack.push(char);
+      continue;
+    }
+    if (char === '}' || char === ')' || char === ']') {
+      stack.pop();
+      continue;
+    }
+    if (stack.length > 0) masked[index] = ' ';
+  }
+  return [...masked.join('').matchAll(/(?:^|[;,\s])\s*([A-Za-z_$][\w$]*)\s*\??\s*:/g)].map((match) => match[1]);
 }
 
 const MASK = '\u0001';
@@ -54,10 +78,13 @@ const MASK = '\u0001';
  * - `<!-- -->`／块注释／`//` 注释（含**行尾**内联形态）逐字符替换为空格：注释里的「委托渲染」「登记表解析」不是实现；
  * - `maskStrings` 为真时，字符串与模板字面量的**内容**逐字符替换为占位符：写在字面量里的
  *   `'<PageHeader />'` 或 `"const x = resolveProductPageHeaderFixedMode('page')"` 是文档诱饵，不是实现。
- * 扫描器按**标记模式**推进（模板正文／标签内部／`<script>`・`<style>` 原始段，以及模板 `{{ }}` 插值）：
+ * 扫描器按**标记模式**推进（模板正文／标签内部／`<script>`・`<style>` 原始段／`<textarea>`・`<title>`
+ * （RCDATA），以及模板 `{{ }}` 插值）：
  * - 正文里的裸撇号（`<p>owner's</p>`）不得打开引号状态，否则其后的 `<!-- -->` 会被当成实现（假失败）；
  * - 正文里的 `<!--` 只在**插值之外**才是注释，`{{ '<!--' }}` 里的字符是数据不是注释——
  *   否则它和 `'/*'` 一样，都是「在字符串里写一段注释符把真实代码夹掉」的静默通道；
+ * - `textarea`／`title` 是 **RCDATA**：其中的 `<!--` 是**文本**而不是注释；否则
+ *   `<textarea><!--</textarea>` 会把其后**真实渲染**的整段模板吞成注释（真实调用点对门禁隐身）；
  * - 标签内部与 `{{ }}` 内仍**引号感知**，所以 `'https://…'` 里的 `//` 不会被误当成注释，`'/*'` 也不会开启块注释；
  * - 行注释与块注释只在脚本语义（`<script>`・`<style>` 段或模板插值）里成立：模板正文里的斜杠是**文本**，
  *   把整行 `//` 一律当注释会让「同一行里 `//` 之后的真实标签／绑定」被静默夹掉。
@@ -73,6 +100,7 @@ function codeView(source: string, maskStrings: boolean): string {
   let mode: 'text' | 'tag' | 'script' = 'text';
   let interpolation = 0;
   let rawTag = false;
+  let rcdata = false;
   let index = 0;
   let quote: string | null = null;
   while (index < source.length) {
@@ -110,6 +138,21 @@ function codeView(source: string, maskStrings: boolean): string {
       index += 1;
       continue;
     }
+    if (mode === 'text' && interpolation === 0 && rcdata) {
+      if (/^<\/(?:textarea|title)\b/i.test(source.slice(index, index + 11))) {
+        rcdata = false;
+        mode = 'tag';
+        index += 1;
+        continue;
+      }
+      if (source.startsWith('{{', index)) {
+        interpolation = 1;
+        index += 2;
+        continue;
+      }
+      index += 1;
+      continue;
+    }
     if (mode === 'text' && interpolation === 0) {
       if (source.startsWith('<!--', index)) {
         const end = source.indexOf('-->', index + 4);
@@ -125,6 +168,7 @@ function codeView(source: string, maskStrings: boolean): string {
       }
       if (char === '<') {
         rawTag = /^<(?:script|style)\b/i.test(source.slice(index, index + 8));
+        rcdata = /^<(?:textarea|title)\b/i.test(source.slice(index, index + 12));
         mode = 'tag';
         index += 1;
         continue;
@@ -248,9 +292,7 @@ const entrySource = (relative: string) => stripComments(read(relative));
 const entryCode = (relative: string) => codeOnly(read(relative));
 const authoritySource = stripComments(read(AUTHORITY));
 const authorityCode = codeOnly(read(AUTHORITY));
-const authorityProps = [
-  ...(authorityCode.match(/defineProps<\{([\s\S]*?)\}>/) ?? ['', ''])[1].matchAll(/([A-Za-z_]\w*)\??:/g),
-].map((match) => match[1]);
+const authorityProps = declaredPropNames((authorityCode.match(/defineProps<\{([\s\S]*?)\}>/) ?? ['', ''])[1]);
 
 /**
  * 从掩码视图里读出「简单字面量」并按**对齐下标**还原原文真值。
@@ -365,7 +407,9 @@ assertRegisteredSlots(
 // ① 具名符号（`$attrs`／`attrs`／`useAttrs`）只在**字面量内容已掩码**的视图里判——`const note = 'no attrs here'` 不是实现；
 // ② 模板属性 `v-bind="…attrs…"` 的取值是真代码（不在①的视图里），因此在未掩码视图上单独判。
 const ATTRS_SYMBOL = /\buseAttrs\b|\battrs\b/;
-const ATTRS_BINDING = /v-bind\s*=\s*["'][^"']*attrs/i;
+// `v-bind.prop=`／`v-bind.camel=`／`v-bind.attr=` 与 `v-bind=` 是同一个「整对象展开」通道
+// （编译器都输出 `_guardReactiveProps(_ctx.attrs)`），修饰符不得让判据失明。
+const ATTRS_BINDING = /v-bind(?:\.[\w-]+)*\s*=\s*["'][^"']*attrs/i;
 for (const relative of [AUTHORITY, ...PRODUCT_PAGE_HEADER_ENTRIES.map((entry) => entry.path)]) {
   assert.ok(
     !ATTRS_SYMBOL.test(entryCode(relative)) && !ATTRS_BINDING.test(entrySource(relative)),
@@ -430,7 +474,8 @@ for (const entry of PRODUCT_PAGE_HEADER_ENTRIES) {
     const declaration = maskedLiteral(
       raw,
       masked,
-      new RegExp(`const\\s+${constName}\\s*=\\s*${resolver}\\(\\s*'(${MASK}+)'\\s*\\)`),
+      // 单引号与双引号都是合法的字符串字面量；守卫侧早已同时接受，契约测试只认单引号会让两个门禁互相矛盾。
+      new RegExp(`const\\s+${constName}\\s*=\\s*${resolver}\\(\\s*['\"](${MASK}+)['\"]\\s*\\)`),
     );
     assert.ok(
       declaration && declaration.value === entry.id,
@@ -525,6 +570,12 @@ function attributePairs(block: string): { name: string; value: string }[] {
   return pairs;
 }
 const attributeNames = (block: string) => attributePairs(block).map((pair) => pair.name);
+/**
+ * `v-bind="obj"` 的对象展开判据必须按**基名**而不是全名：`v-bind.prop`／`v-bind.camel`／`v-bind.attr`
+ * 与 `v-bind` 是同一个整对象展开通道（编译器都输出 `_guardReactiveProps(_ctx.obj)` ＋ FULL_PROPS），
+ * 而 `v-bind:is` 是**具名**绑定、不是对象展开。
+ */
+const isObjectSpreadName = (rawName: string) => /^v-bind(\.[\w-]+)*$/.test(rawName);
 
 const ENTRY_BASENAMES = new Set([
   ...PRODUCT_PAGE_HEADER_ENTRIES.map((entry) => path.posix.basename(entry.path, '.vue')),
@@ -568,7 +619,7 @@ for (const file of sourceFiles) {
         : attribute.name.startsWith('v-bind:')
           ? attribute.name.slice('v-bind:'.length)
           : attribute.name;
-      if (attribute.name !== 'v-bind' && bound.split('.')[0] !== 'is') continue;
+      if (!isObjectSpreadName(attribute.name) && bound.split('.')[0] !== 'is') continue;
       for (const identifier of attribute.value.matchAll(/[A-Za-z_$][\w$]*/g)) {
         assert.ok(
           !tagToEntry.has(identifier[0]),
@@ -586,7 +637,10 @@ for (const file of sourceFiles) {
     for (const block of tagAttributeBlocks(source, [tag, kebab(tag)])) {
       discoveredCallSites.push(`${file}#${tag}`);
       for (const rawName of attributeNames(block)) {
-        assert.ok(rawName !== 'v-bind', `${file} 对 ${entry.id} 使用 v-bind 对象展开，调用面无法静态枚举；必须改为显式具名属性`);
+        assert.ok(
+          !isObjectSpreadName(rawName),
+          `${file} 对 ${entry.id} 使用 v-bind 对象展开，调用面无法静态枚举；必须改为显式具名属性`,
+        );
         if (rawName.startsWith('#') || rawName.startsWith('@') || rawName.startsWith('v-on:')) continue;
         const name = normaliseBoundAttribute(rawName);
         if (name === null) continue;
@@ -612,7 +666,7 @@ assert.deepEqual(
 for (const file of sourceFiles) {
   for (const block of tagAttributeBlocks(stripComments(read(file)), ['ProductPageHeader', 'product-page-header'])) {
     assert.ok(
-      !attributeNames(block).includes('v-bind'),
+      !attributeNames(block).some(isObjectSpreadName),
       `${file} 对权威 ProductPageHeader 使用 v-bind 对象展开，调用面无法静态枚举；必须改为显式具名属性`,
     );
   }
