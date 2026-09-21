@@ -10487,6 +10487,13 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   两个扫描器显式跳过 tab 开头的 recipe 行，§6④ 措辞收窄并登记 `$(call …)` 一类多层拼装残限。守卫单测 **63 → 69 例**，
   影子副本矩阵 **132 → 139 项（114 项 CAUGHT ＋ 25 项假失败防线锁定 STILL-PASS）**，矩阵数字与历史括注口径统一。
   第九轮修订产生新 HEAD，L1／exact-head L5 与 A⁹／B⁹ 复核按新冻结候选重跑与重绑。详见迭代文档 §8。
+  随后 round A⁹／B⁹（复核 head `fe9e153d`；**A⁹ APPROVE（判定合并就绪）、B⁹ REQUEST_CHANGES（仅文档）**，均**无 S0–S3**）——
+  A⁹ 确认 A⁸ 三项全部真实关闭，另记两条 **S4 级 fail-closed 潜在假失败**（`$(eval …)` 内任意 `\.[A-Z]+:` 含良性 `.PHONY`
+  也失败；`define … endef` 宏体被当作生效指令），本仓当前零影响，登记为**下一批候选**；B⁹ 指出切换日志本批条目的
+  「验证」bullet 是**活口径块**（曾被 `20526ff0` 原地刷新）却仍写「守卫单测 **51 例**」「注入 **112 项矩阵（96＋16）**」，
+  与同条目「口径统一」自述冲突。已订正：该 bullet 刷新为 **69 例**／**139 项（114＋25）** 并补沿革括注，
+  迭代文档 §3 的「14 → 51 例」补箭头链到 69。第十轮修订（纯文档）产生新 HEAD，L1／exact-head L5 与
+  A¹⁰／B¹⁰ 复核按新冻结候选重跑与重绑。详见迭代文档 §8。
 - 上一批复核 A′／B′ 点名的**登记完整性**在本批一并补上：`productMyWorkPresentation`／`ApiKeyManagementView`／
   `PaymentSettlementIntroduceDialog`／`BoqImportPreviewPanel`／`RelationSearchDialog` 的本地回退与格式化事实，
   在 `frontend_localized_display_contract_test.ts` 中以**正锁**（缺一即失败）登记，任何漂移都必须重新决策。
@@ -10512,6 +10519,6 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `include $(VAR)` 这类**动态 include** 与条件 include 无法静态展开，属如实登记的残限；
   受管例外入口的领域属性面不在「属性 ⊆ 登记轴」约束内；无 `local.dev` 运行态抽验。`scene_component_bridge`／`style_system`（`ContractFormPage`
   1905>1900）／`release_navigation_policy`（菜单投影）三项在本批之前即为失败，本批不修、不掩盖。
-- Next Step：冻结本批 HEAD → L1 → exact-head `make ci.local.quick` 回执 → 独立只读复核（九轮共 18 次；本轮修订后再由
-  A⁹／B⁹ 验证＝20 次）→ 显式合并授权 →
+- Next Step：冻结本批 HEAD → L1 → exact-head `make ci.local.quick` 回执 → 独立只读复核（十轮共 20 次；本轮修订后再由
+  A¹⁰／B¹⁰ 验证＝22 次）→ 显式合并授权 →
   `make pr.push`／`pr.create`／`pr.ready`／`pr.merge` → 主仓库 `make main.sync` → `make branch.cleanup.feature`。

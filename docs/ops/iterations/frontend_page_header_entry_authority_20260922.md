@@ -244,14 +244,17 @@ STILL-PASS（N17–N20）：`sinclude`／续行 include／带引号 include 各�
 - 仍未做（下一批候选）：①上述文件**并入权威**（需要产品措辞决定 ＋ 运行态抽验）；②`normalizeFieldType` 对非字符串
   `ttype` 的越契约输入收紧为 `string`；③登记式约束从「按文件成员放行」改为「按内容指纹锁定」；④13 个并行组件族
   权威边界声明；⑤权限判定单一权威；⑥`make/codex.mk` 里关于「四门靠 `workflow_dispatch`」的注释与实际
-  `pull_request` 事件路径不一致，属下一批的决策项（本批按 PR 事件路径执行，未改该注释）。
+  `pull_request` 事件路径不一致，属下一批的决策项（本批按 PR 事件路径执行，未改该注释）；
+  ⑦`$(eval …)` 判据里的 `\.[A-Z]+:` 子条件收窄到真正的失败传播项（`.ONESHELL`／`.IGNORE`），
+  避免 `$(eval .PHONY: x)` 这类良性写法误报；⑧扫描时区分 `define … endef` **宏体**（宏体只在被展开时才生效，
+  当前按失败关闭一并判失败）。
 - Next Step：冻结本批 HEAD → L1 → exact-head `ci.local.quick` 回执 → 独立只读复核（A／B → A′／B′ → A″／B″ → A‴／B‴ →
-  A⁗／B⁗ → A⁵／B⁵ → A⁶／B⁶ → A⁷／B⁷ → A⁸／B⁸ 共 18 次；本轮修订后再由 A⁹／B⁹ 验证，合计 20 次）→ 显式合并授权 →
+  A⁗／B⁗ → A⁵／B⁵ → A⁶／B⁶ → A⁷／B⁷ → A⁸／B⁸ → A⁹／B⁹ 共 20 次；本轮修订后再由 A¹⁰／B¹⁰ 验证，合计 22 次）→ 显式合并授权 →
   `make pr.push`／`pr.create`／`pr.ready`／`pr.merge` → 主仓库 `make main.sync` → `make branch.cleanup.feature`。
 
-## 8. 独立只读复核与修订（对 `cc36a37a`／`a4b5c094`／`4ea84a5b`／`86b48ac3`／`23beb55c` 等历次冻结候选）
+## 8. 独立只读复核与修订（对 `cc36a37a`／`a4b5c094`／`4ea84a5b`／`86b48ac3`／`23beb55c`／`fe9e153d` 等历次冻结候选）
 
-九轮共 18 次复核（A／B → A′／B′ → A″／B″ → A‴／B‴ → A⁗／B⁗ → A⁵／B⁵ → A⁶／B⁶ → A⁷／B⁷ → A⁸／B⁸）均对本批**产品代码**给出安全结论
+十轮共 20 次复核（A／B → A′／B′ → A″／B″ → A‴／B‴ → A⁗／B⁗ → A⁵／B⁵ → A⁶／B⁶ → A⁷／B⁷ → A⁸／B⁸ → A⁹／B⁹）均对本批**产品代码**给出安全结论
 （`cc36a37a..HEAD` 零 `src` 改动、无能力回退、无新增类型错误、L5 回执真实、
 `PRODUCT_PAGE_HEADER_DIRECT_CONSUMERS` 与真实 import 集合完全一致），且都在 base 上逐字复现了三项既有失败。
 **无 S0／S1**；问题集中在**门禁强度**与**文档数字**：
@@ -327,6 +330,8 @@ STILL-PASS（N17–N20）：`sinclude`／续行 include／带引号 include 各�
 | Round A⁸ S4-1 | `_failure_propagation_overrides` 扫 `\` 续行后的**逻辑行**时未排除 recipe 行（tab 被 `^\s*` 吃掉），故 `\tSHELL=/bin/bash cmd` 这类 recipe 行环境变量会被误判成 make 级重定义 → **假失败** | 两个扫描器都显式跳过以 tab 开头的行（Make 里 tab 即 recipe）；注入 N21 锁定 STILL-PASS |
 | Round A⁸ S4-2 / Round B⁸（文档，REQUEST_CHANGES） | 迭代文档「修订后重跑」段仍写「守卫单测 55 例」（同文件他处为 63），§8 历史括注也只到「112／119 项」 | 本轮统一：该段改为 **69 例**，历史括注补到 `112／119／132／139 项`，矩阵统一为 **139 项（114＋25）** |
 | Round B⁸（其余项 APPROVE） | 回执／例数／矩阵／生成物／干净度／排除项均逐条为真；唯一阻断为上一行的文档残留旧数字 | 见上一行 |
+| Round A⁹（APPROVE） | A⁸ 的 S3-1／S4-1／S4-2 全部真实关闭并有干净对照；`validate()==[]`、守卫 PASS、单测 69 例 OK、L5 回执 VERIFIED。新发现两条 **S4 级 fail-closed 潜在假失败**（`$(eval …)` 内任意 `\.[A-Z]+:` 含良性 `.PHONY` 也失败；`define … endef` 宏体被当作生效指令），本仓当前均为零影响 | 两条登记为**下一批候选**（§7 ⑦／⑧），本轮不改判据以免再次扰动冻结候选；`$(eval $(call …))` 多层拼装已按残限登记 |
+| Round B⁹（REQUEST_CHANGES，仅文档） | 切换日志本批条目的「验证」bullet 是**活口径块**（曾被 `20526ff0` 原地刷新），却仍写「守卫单测 **51 例**」「注入 **112 项矩阵（96＋16）**」，与同条目「矩阵数字与历史括注口径统一」自述冲突 | 该 bullet 刷新为 **69 例**／**139 项（114＋25）** 并补沿革括注（矩阵 95→112→119→132→139；单测 14→27→31→37→45→51→55→63→69）；§3 的「14 → 51 例」补箭头链到 69 |
 
 修订后重跑：`verify.frontend.product_page_header.unit`（模型 28 例 ＋ 契约测试 `call_sites=6` ＋ 守卫单测 69 例 ＋ 守卫
 `adapters=3`）、`verify.frontend.localized_display.unit`、`navigation_shell`／`product_page_pattern`／
