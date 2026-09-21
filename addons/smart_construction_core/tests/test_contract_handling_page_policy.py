@@ -267,11 +267,20 @@ class TestSettlementNativeStructure(TransactionCase):
             self.assertEqual(native.contract_json["view_orchestration"]["views"]["form"],
                              {"composition_mode": "native_semantic_surface"})
         # Other same-model entries retain their own compatibility ownership.
-        for xmlid in ("business_config_contract_daily_contract_settlement_form_v1",
-                      "business_config_contract_settlement_order_productized_form_v1"):
-            other = self.env.ref("smart_construction_core." + xmlid)
-            self.assertTrue(other.active)
-            self.assertTrue(other.contract_json["view_orchestration"]["views"]["form"]["sections"])
+        other = self.env.ref(
+            "smart_construction_core.business_config_contract_settlement_order_productized_form_v1")
+        self.assertTrue(other.active)
+        self.assertTrue(other.contract_json["view_orchestration"]["views"]["form"]["sections"])
+        # U-C4 G13 retired the entry-level sections of the daily-contract
+        # settlement entry: the native arch 1764 already renders the surface, so
+        # the entry now only annotates it and no longer owns sections.
+        retired_sections = self.env.ref(
+            "smart_construction_core.business_config_contract_daily_contract_settlement_form_v1")
+        self.assertTrue(retired_sections.active)
+        self.assertEqual(
+            retired_sections.contract_json["view_orchestration"]["views"]["form"]["composition_mode"],
+            "native_semantic_surface")
+        self.assertNotIn("sections", retired_sections.contract_json["view_orchestration"]["views"]["form"])
 
     def test_shared_native_form_keeps_conditional_contract_columns_and_attachment_ownership(self):
         from lxml import etree
