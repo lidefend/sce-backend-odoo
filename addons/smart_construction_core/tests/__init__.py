@@ -106,6 +106,7 @@ from . import test_usage_performance_native_lowcode
 from . import test_engineering_process_native_lowcode
 from . import test_product_system_settings
 from . import test_data_permission_surface
+from . import test_data_permission_native_lowcode
 from . import test_product_numbering_rule
 from . import test_product_job
 from . import test_office_asset

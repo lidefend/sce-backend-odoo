@@ -1,9 +1,70 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-  <record id="business_config_contract_data_permission_form_v1" model="ui.business.config.contract">
-    <field name="name">data_permission_form_v1</field><field name="model">res.users</field><field name="view_type">form</field>
-    <field name="action_id" ref="smart_construction_core.action_sc_product_data_permission_v1"/><field name="priority">800</field>
-    <field name="company_id" eval="False"/><field name="active" eval="True"/><field name="status">published</field><field name="version_no">1</field>
-    <field name="contract_json" eval="{'view_orchestration': {'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release', 'identity_authority': 'res.users', 'role_authority': 'res.groups', 'project_scope_authority': 'sc.project.member.assignment'}, 'views': {'form': {'title': '数据权限', 'composition_mode': 'entry_semantic_surface', 'columns': 2, 'sections': [{'title': '人员身份', 'sequence': 10, 'columns': 2, 'fields': ['name', 'login', 'active']}, {'title': '主公司与允许公司', 'sequence': 20, 'columns': 2, 'fields': ['company_id', 'company_ids']}, {'title': '业务权限角色', 'sequence': 30, 'columns': 1, 'fields': ['sc_user_permission_group_ids']}, {'title': '项目数据范围', 'sequence': 40, 'columns': 1, 'fields': ['sc_project_member_assignment_ids']}], 'fields': [{'name': 'name', 'sequence': 10, 'group_title': '人员身份', 'readonly': True}, {'name': 'login', 'sequence': 20, 'group_title': '人员身份', 'readonly': True}, {'name': 'active', 'sequence': 30, 'group_title': '人员身份', 'readonly': True}, {'name': 'company_id', 'sequence': 40, 'group_title': '主公司与允许公司'}, {'name': 'company_ids', 'sequence': 50, 'group_title': '主公司与允许公司'}, {'name': 'sc_user_permission_group_ids', 'sequence': 60, 'group_title': '业务权限角色'}, {'name': 'sc_project_member_assignment_ids', 'sequence': 70, 'group_title': '项目数据范围'}]}}}}"/>
-  </record>
+    <!-- U-C4 G16: 数据权限 (886 / menu 709 `menu_sc_product_data_permission_v1` / action
+         `action_sc_product_data_permission_v1` / view 1904
+         `view_sc_data_permission_user_form`) 退役入口级结构声明 —— 沿用 G13／G15 的原地
+         退役形状（同名 record、`priority=800` 与 `action_id` 保持不变、只退役结构键）。
+
+         G16 之前本入口的 `form_structure_authority` 解析为 `entry_semantic_surface`、
+         `layoutPolicy=business_config_sections`、`presentationMode=task`：结构权威来自这份
+         入口契约的 4 个 sections（7 字段）＋ `columns: 2` ＋ 7 行 field 声明（其中
+         `name`／`login`／`active` 声明 `readonly: True`）。原生视图 1904 本就按同样 4 个
+         业务分组渲染（`sc_permission_identity` 人员身份／`sc_permission_company_scope`
+         主公司与允许公司／`sc_permission_business_roles` 业务权限角色／
+         `sc_permission_project_scope` 项目数据范围），并自带同样的只读口径
+         （`name`／`login`／`active` 的 `readonly="1"`），即这份声明是重复的结构写入者。
+
+         运行库只读 A/B 探针（sc_dev_demo，`SAVEPOINT g16_ab` ＋ `ROLLBACK TO SAVEPOINT`；
+         `entryActiveAfter=true`、`contractsAfterRollback=289` 证明 0 写入）：
+         - 退役后两个渲染 profile 的字段集（7）、`readonly`／`invisible` 修饰符与锚点集合
+           与退役**前**的 edit 档**逐项相同**；退役体声明的 3 条只读与原生 arch 一致，
+           实测**不需要任何稀疏字段覆盖**；
+         - 退役后结构权威落到原生视图：`form_structure_authority=native_authority` →
+           `layoutPolicy=container_tree_authority`、`mode=native_structured_form`，结构诊断为空；
+         - **本批同时修掉一个预置的 create 档失败**：退役前该入口的 create profile 在
+           `unified_page_contract_v2_assembler._assemble_native_form_projection` 的
+           `validate_occurrences` 处抛 `ValueError`（`layout[0].children[0].children[0]`
+           的 `field='name'` 缺 `native_locator`／`occurrence_index`），即交付面在 create
+           档**无法组装**；退役后 create 与 edit 一样落到原生容器树并通过组装
+           （`ok=true`、`native_authority`）。该失败在退役前后均与本批的可达真实面无关：
+           原生 arch 与 action context 都声明 `create=0`（只读入口），故浏览器不会请求该
+           档位，但 page contract 组装器不应以异常代替拒绝，此处**如实登记**。
+
+         退役后结构权威落到原生视图 1904：4 个业务分组、**0 个按钮**、**0 个 `data-sc-anchor`**、
+         继承扇出 0，兼容重排路径对 886 关闭。
+
+         保留边界：`view_orchestration.context` 5 键逐值不变（`source`／`source_status`／
+         `identity_authority`／`role_authority`／`project_scope_authority`）、`title` 保留入口
+         标题、`priority=800`／`status=published`／`version_no` 不变。`res.users` 在本模块内
+         **没有**模型级生成镜像，本入口契约是同模型唯一入口契约，因此本批不涉及镜像退役，
+         同模型兄弟入口（人员档案 857 `action_sc_runtime_user_management`，自持其入口面）
+         不随本批改动。回滚：`git revert`（纯声明，无数据迁移）。 -->
+    <record id="business_config_contract_data_permission_form_v1" model="ui.business.config.contract">
+        <field name="name">data_permission_form_v1</field>
+        <field name="model">res.users</field>
+        <field name="view_type">form</field>
+        <field name="action_id" ref="smart_construction_core.action_sc_product_data_permission_v1"/>
+        <field name="priority">800</field>
+        <field name="company_id" eval="False"/>
+        <field name="active" eval="True"/>
+        <field name="status">published</field>
+        <field name="version_no">1</field>
+        <field name="contract_json" eval="{
+            'view_orchestration': {
+                'context': {
+                    'source': 'smart_construction_core.product_release',
+                    'source_status': 'product_release',
+                    'identity_authority': 'res.users',
+                    'role_authority': 'res.groups',
+                    'project_scope_authority': 'sc.project.member.assignment'
+                },
+                'views': {
+                    'form': {
+                        'title': '数据权限',
+                        'composition_mode': 'native_semantic_surface'
+                    }
+                }
+            }
+        }"/>
+    </record>
 </odoo>
