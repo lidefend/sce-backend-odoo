@@ -9836,3 +9836,58 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   取得独立只读复核并经 `make workspace.evidence.archive` 归档后 `make pr.push` → `make pr.create` 发布；
   合并获授权后执行**仅 2 条路径**的文档单职责提交（台账 8 → 7 ＋ 迭代记录 8.40／8.41），清理本轮工作树与
   已合入分支，再启动 G13（日常合同与结算）。
+
+## 2026-09-21 — U-C4 G13 日常合同与结算
+
+- 分支 `feature/uc4-g13-daily-contract-settlement-v1`，基线 `origin/main@7a8ec8a3986f89f8834b7233ac8a371aeb979312`
+  （G12 主题 PR #506 squash 与台账审计 PR #507 的合入点）。Formal Product Layer 为 **P1**；Layer Target 为
+  `smart_construction_core` 的入口契约、既有测试与原生视图口径，另含一处 **P4 最小扩展**（既有只读代表面入口
+  `scripts/verify/local_dev_form_lowcode_scope.py` 登记 `daily_contract` topic，复用已注册环境／身份与数据权威，
+  只读且不写配置）。不属 P0（`smart_core` 不承载行业语义）／P2／P3。回滚为 `git revert`（纯声明变更）。
+- 目标：让入口 action **687**（menu 663「日常合同」，`sc.general.contract`，视图 1757）与 **876**
+  （menu 698「日常合同结算」，`sc.settlement.order`，视图 1764）的**入口发布成为本入口最后结构写入者**并声明
+  `native_semantic_surface`，使 `form_structure_authority=native_authority`、`layoutPolicy=container_tree_authority`，
+  兼容重组路径对两个入口不再适用（台账口径由此可扣减 7 → 5；扣减本身属**合并后**文档单职责提交）。
+- 变更（候选 8 条路径，单提交）：**新增** `data/daily_contract_form_productization_contract.xml` 为 687 补入口发布
+  `daily_contract_form_native_v1`（绑定 action 687 ＋ view 1757，priority 800，published，只含 `title` ＋
+  `composition_mode: native_semantic_surface` ＋ `context`，无结构键）并在 `__manifest__.py` 登记；入口契约 174
+  `daily_contract_settlement_form_v1` 退役 4 sections／`columns`／30 条 fields（`title`／`action_id`／`priority`／
+  `context` 逐值保留），只留 **2 条稀疏只读覆盖**（`currency_id`／`state`）；**新增**
+  `tests/test_daily_contract_settlement_native_lowcode.py`（tag `uc4_native_lowcode`，20 测试）并在
+  `tests/__init__.py` 登记；更新 `tests/test_contract_handling_page_policy.py` 的 174 断言；只读代表面入口登记
+  `daily_contract` topic；`complexity_budget_report.md` 随冻结刷新（4396 → 4398）。
+- 关键决策（实测驱动，非设计预判）：①687 批前**没有任何入口发布**（只消费模型级镜像 77，priority 1000），
+  `form_structure_authority` 停在 `""` 而页面本就由原生 arch 渲染（31 字段／0 锚点），与 G10 的 597／527、
+  G11 的 727 同型；②镜像 77 **保持 active**（权威判定与优先级无关），实测抑制诊断
+  `LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW`；镜像 122 早在 `28b7695d` 已 `active=False`，**不是本批动作**，
+  故台账 876 行的 `structureDiagnostics`／`competing_owners=[122]` 属**陈旧登记**并已登记；③契约 174 声明的
+  4 个章节从未进入渲染树（只到 `sourceSectionTitles`），原生 arch（10 锚点／60 节点）即地面真值，**不补新面**；
+  ④退役体声明的 17 条 `readonly` 中实测只有 2 条真实回退，其余 15 条由原生 arch 或模型面承载，**不重复声明**。
+- 保留边界：同 view 1757 的入口 629、同 view 1764 且自持 9 sections 的入口 693（契约 195）、已原生化的
+  603／781／782 均未被触碰；`retirementComplete=false`。
+- 验证：L0 只读探针（`SAVEPOINT g13_ab` ＋ `ROLLBACK`，`rollback_residual` 全 true、0 写入）锁定基线权威、
+  同域竞争镜像与渲染真相；L1 `make ci.delivery.freeze.prepare` PASS（`required=35 missing=0`、
+  `contract_form_split_evidence lines=1905`）；L2 新测试 **8** 通过、整组回归 **204** 通过（0 failed 0 error）、
+  策略回归 **12** 通过、六条具名守卫全 PASS；L2 域回归 project 域 30 个 action 逐项 diff（29 条仅 DB 身份漂移，
+  唯一语义差异 `action_sc_product_project_edit_v1` 属**既存报告陈旧**）、base_configuration 域 6 个 action
+  **语义差异 0**（域脚本生成物跑后逐字节还原）；L3 `local.dev.upgrade` exit 0，只读探针核对两入口
+  `native_authority` ＋ `container_tree_authority`、容器树与 widget 差异 **0**、契约 174 `fields=2`
+  且 `readonly=[currency_id, state]`、镜像 122 仍 `active=False`、镜像 77 仍 active 且被原生面抑制；
+  **L4 浏览器代表面本轮已跑且在冻结 HEAD 上重跑**——`FORM_LOWCODE_TOPIC=daily_contract
+  FORM_LOWCODE_REPRESENTATIVE=1` → exit 0／`ok=true`／`restored=true`／`candidate=aacadb38`，
+  687 创建＋记录与 876 创建三条路由 `status=passed`，业务指纹未变；**876 记录态路由如实登记为
+  `UNCOVERED/empty_action_domain`（`domain_rows=0`，模型实有 33 行），不写成通过**；L5 exact-head
+  `make ci.local.quick` PASS（回执绑定 `head=aacadb38…`／`tree=16fe0dad…`）。
+- 过程偏差（不隐藏）：L2 定向首跑因库未升级失败、整组首跑因只读口径按 17 条整批断言而失败、L4 浏览器首跑因
+  `section_navigation` 断言无法在 687 上成立而失败，三处均按实测收敛后复跑通过；独立只读复核**无 S0／S1／S2**，
+  3 项 S3 已处置。
+- 环境缺陷登记（非本批引入，不修）：G08–G11 已登记三条（`verify.contract.view_structure` 的 `local.clean`／
+  `sc_clean` 权威指纹期望、`verify.product.menu.governance.m4.closure` 缺
+  `menu-m4-runtime.REJECTED-wrong-sha.json`、`verify.user_form.preference.boundary_guard` 依赖**客户定制 addon
+  仓库**（不在本仓库边界内）的模块）以及 G12 登记第四条（G11 遗留的
+  `verify.frontend.professionalization.collaboration_domain.runtime` 组件单测仍断言 `entry_semantic_surface`）；
+  本批另登记 `docs/frontend_productization/domain-rollout/project-domain-coverage-v1.json` 对
+  `action_sc_product_project_edit_v1` 陈旧（既存）。
+- 边界：不改 ACL／记录规则／菜单可见性，不改模型字段，不改运行环境、数据库或端口。
+- Next Step：合并获授权后执行**文档单职责提交**（台账 7 → 5 ＋ 迭代记录 8.42／8.43 ＋ 本轮切换日志），
+  清理已合入分支，再启动 G14（台账汇总与保证金：523／522／646／778）。
