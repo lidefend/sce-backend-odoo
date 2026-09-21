@@ -1,4 +1,11 @@
-import { resolveLocalizedDisplayValue } from '../../utils/display';
+import { resolveLocalizedDisplayValue } from '../../utils/display.ts';
+import {
+  COLLECTION_NUMERIC_EMPTY_TEXT,
+  FIELD_VALUE_EMPTY_TEXT,
+  FIELD_VALUE_FALSE_TEXT,
+  FIELD_VALUE_TRUE_TEXT,
+  formatTemporalFieldValue,
+} from '../../utils/fieldSemantics.ts';
 
 export type ListStatusTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 
@@ -41,13 +48,8 @@ export function isListTemporalColumn(input: ColumnSemanticInput) {
 }
 
 export function formatListTemporalValue(value: unknown, input: ColumnSemanticInput) {
-  const text = normalized(value);
-  if (!text || !isListTemporalColumn(input)) return '';
-  const match = text.match(/^(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?)?(?:Z|[+-]\d{2}:?\d{2})?$/);
-  if (!match) return '';
-  const [, date, hour = '00', minute = '00', second = '00'] = match;
-  if (`${hour}:${minute}:${second}` === '00:00:00') return date;
-  return `${date} ${hour}:${minute}`;
+  if (!isListTemporalColumn(input)) return '';
+  return formatTemporalFieldValue(value, 'compact');
 }
 
 export function isListStatusColumn(input: ColumnSemanticInput) {
@@ -67,9 +69,9 @@ export function presentListCell(input: CellPresentationInput) {
     selectionText = '',
     numericText = '',
     attachmentText = '',
-    emptyText = '--',
-    trueText = '是',
-    falseText = '否',
+    emptyText = FIELD_VALUE_EMPTY_TEXT,
+    trueText = FIELD_VALUE_TRUE_TEXT,
+    falseText = FIELD_VALUE_FALSE_TEXT,
     numeric = false,
     toneByValue = {},
   } = input;
@@ -80,8 +82,8 @@ export function presentListCell(input: CellPresentationInput) {
   const missing = displayRaw === null || displayRaw === undefined || displayRaw === '';
   let text: string;
   if (selectionText) text = selectionText;
-  else if (missing) text = numeric ? '0' : emptyText;
-  else if ((displayRaw === false || rawText.trim() === '--') && numeric) text = '0';
+  else if (missing) text = numeric ? COLLECTION_NUMERIC_EMPTY_TEXT : emptyText;
+  else if ((displayRaw === false || rawText.trim() === FIELD_VALUE_EMPTY_TEXT) && numeric) text = COLLECTION_NUMERIC_EMPTY_TEXT;
   else if (typeof displayRaw === 'boolean') text = fieldType === 'boolean' ? (displayRaw ? trueText : falseText) : emptyText;
   else text = attachmentText || temporalText || numericText || String(displayRaw);
   const toneKey = normalized(displayRaw);

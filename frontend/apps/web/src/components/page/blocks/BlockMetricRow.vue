@@ -31,6 +31,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { FIELD_VALUE_EMPTY_TEXT } from '../../../utils/fieldSemantics.ts';
 import type { PageBlockActionEvent, PageOrchestrationBlock } from '../../../app/pageOrchestration';
 import ScButton from '../../design-system/ScButton.vue';
 import ScEmptyState from '../../design-system/ScEmptyState.vue';
@@ -65,7 +66,7 @@ const metrics = computed<MetricItem[]>(() => {
       return {
         key: String(row.key || `metric-${index + 1}`),
         label: String(row.label || `指标 ${index + 1}`),
-        value: String(row.value ?? '--'),
+        value: String(row.value ?? FIELD_VALUE_EMPTY_TEXT),
         delta: String(row.delta || ''),
         hint: String(row.hint || ''),
         tone: normalizeMetricTone(row.tone),
@@ -82,7 +83,7 @@ const metrics = computed<MetricItem[]>(() => {
     return [{
       key: String((props.block as { key?: string }).key || 'metric'),
       label: String(props.block.title || ''),
-      value: String(blockValue ?? '--'),
+      value: String(blockValue ?? FIELD_VALUE_EMPTY_TEXT),
       delta: '',
       hint: String(props.block.subtitle || ''),
       tone: normalizeMetricTone(props.block.tone),
@@ -97,7 +98,7 @@ const metrics = computed<MetricItem[]>(() => {
     .map(([key, value]) => ({
       key,
       label: key,
-      value: typeof value === 'object' ? JSON.stringify(value) : String(value ?? '--'),
+      value: typeof value === 'object' ? JSON.stringify(value) : String(value ?? FIELD_VALUE_EMPTY_TEXT),
       tone: 'neutral',
     }));
 });

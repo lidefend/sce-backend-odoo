@@ -1,5 +1,6 @@
 import { resolveUnifiedPageContractV2 } from './unifiedPageContractV2';
 import { formatMonetaryDisplayValue, normalizeMonetaryDigits, resolveCurrencyDisplayLabel } from '../../components/template/formSection.mapper';
+import { FIELD_VALUE_EMPTY_TEXT, isScalarRelationFieldType, normalizeFieldType } from '../../utils/fieldSemantics.ts';
 
 type Dict = Record<string, unknown>;
 
@@ -85,12 +86,16 @@ function staticInvisible(attributes: Dict, modifiers: unknown): { hidden: boolea
 }
 
 export function activityCellText(value: unknown, field?: ActivitySurfaceField, record: Dict = {}): string {
-  if (value === null || value === undefined || value === false || value === '') return '-';
+  if (value === null || value === undefined || value === false || value === '') return FIELD_VALUE_EMPTY_TEXT;
   if (field?.widget === 'monetary') {
     const currencyLabel = resolveCurrencyDisplayLabel(record[field.currencyField]);
     return formatMonetaryDisplayValue(value, field.digits, currencyLabel);
   }
-  if (Array.isArray(value) && field?.fieldType === 'many2one') return value.length > 1 ? text(value[1]) || String(value[0] ?? '-') : String(value[0] ?? '-');
+  if (Array.isArray(value) && isScalarRelationFieldType(normalizeFieldType(field?.fieldType))) {
+    return value.length > 1
+      ? text(value[1]) || String(value[0] ?? FIELD_VALUE_EMPTY_TEXT)
+      : String(value[0] ?? FIELD_VALUE_EMPTY_TEXT);
+  }
   if (Array.isArray(value)) return JSON.stringify(value);
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);

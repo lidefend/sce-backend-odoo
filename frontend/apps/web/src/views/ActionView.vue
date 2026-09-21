@@ -733,6 +733,7 @@
 </template>
 <script setup lang="ts">
 import { listColumnVisibilityBlockReason } from '../pages/listPage/listColumnVisibility';
+import { FIELD_VALUE_FALSE_TEXT, FIELD_VALUE_TRUE_TEXT } from '../utils/fieldSemantics.ts';
 import { computed, inject, onActivated, onBeforeUnmount, onDeactivated, onErrorCaptured, onMounted, ref, watch, type Ref } from 'vue';
 import { applyBusinessListCustomFilter, applyBusinessListGroup, clearBusinessListCustomFilter, clearBusinessListGroup, clearBusinessListQueryState, countBusinessListConditions } from '../app/runtime/businessListQueryRuntime';
 import { useRoute, useRouter } from 'vue-router';
@@ -1523,7 +1524,7 @@ function normalizeGroupCell(field: string, value: unknown) {
     return { value: null, label: pageText('group_label_unset', '未设置') };
   }
   if (typeof value === 'boolean') {
-    return { value, label: pageText(value ? 'boolean_true' : 'boolean_false', value ? '是' : '否') };
+    return { value, label: pageText(value ? 'boolean_true' : 'boolean_false', value ? FIELD_VALUE_TRUE_TEXT : FIELD_VALUE_FALSE_TEXT) };
   }
   const key = String(value ?? '').trim();
   const selectionLabel = Array.isArray(option?.selection)

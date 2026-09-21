@@ -105,6 +105,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
+import { FIELD_VALUE_FALSE_TEXT, FIELD_VALUE_TRUE_TEXT } from '../../utils/fieldSemantics.ts';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScTable from '../../components/design-system/ScTable.vue';
 import ScDialog from '../../components/design-system/ScDialog.vue';
@@ -203,7 +204,7 @@ function relationSearchCell(row: RelationSearchRow, columnName: string) {
     const rec = value as Record<string, unknown>;
     return String(rec.display_name || rec.name || rec.id || '');
   }
-  if (typeof value === 'boolean') return value ? '是' : '否';
+  if (typeof value === 'boolean') return value ? FIELD_VALUE_TRUE_TEXT : FIELD_VALUE_FALSE_TEXT;
   return String(value);
 }
 

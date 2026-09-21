@@ -1,4 +1,5 @@
 import { resolveLocalizedDisplayValue } from '../../utils/display.ts';
+import { FIELD_VALUE_EMPTY_TEXT } from '../../utils/fieldSemantics.ts';
 
 export type ListColumnLayoutRole =
   | 'identity'
@@ -105,7 +106,7 @@ export function deriveListColumnWidth(input: ColumnWidthInput) {
 
   const candidates = [...(input.values || []).slice(0, 30), ...(input.selectionLabels || [])]
     .map(displayValue)
-    .filter((value) => value !== null && value !== undefined && value !== '' && value !== '--')
+    .filter((value) => value !== null && value !== undefined && value !== '' && value !== FIELD_VALUE_EMPTY_TEXT)
     .map((value) => textWidth(value) + 24);
   const sampledWidth = percentile(candidates, 0.8);
   const contentWidth = !input.primary && ['identity', 'description', 'relation'].includes(input.role)

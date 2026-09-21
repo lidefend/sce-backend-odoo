@@ -1,4 +1,5 @@
 import { resolveUnifiedPageContractV2 } from './unifiedPageContractV2';
+import { FIELD_VALUE_EMPTY_TEXT } from '../../utils/fieldSemantics.ts';
 
 type Dict = Record<string, unknown>;
 export type AnalysisViewType = 'pivot' | 'graph';
@@ -37,8 +38,8 @@ function fields(value: unknown): AnalysisField[] {
 }
 
 function displayValue(value: unknown): string {
-  if (Array.isArray(value)) return String(value[1] ?? value[0] ?? '-');
-  if (value === null || value === undefined || value === false || value === '') return '-';
+  if (Array.isArray(value)) return String(value[1] ?? value[0] ?? FIELD_VALUE_EMPTY_TEXT);
+  if (value === null || value === undefined || value === false || value === '') return FIELD_VALUE_EMPTY_TEXT;
   return String(value);
 }
 

@@ -13,6 +13,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { FIELD_VALUE_EMPTY_TEXT } from '../utils/fieldSemantics.ts';
 import { useRoute, useRouter } from 'vue-router';
 import type { NavNode } from '@sc/schema';
 import { intentRequest } from '../api/intents';
@@ -113,7 +114,7 @@ const blocks = computed<SceneBlock[]>(() => {
     type: 'metric_card',
     title: asText(row.label) || asText(row.key) || `指标 ${index + 1}`,
     subtitle: asText(row.copy),
-    value: row.value ?? '--',
+    value: row.value ?? FIELD_VALUE_EMPTY_TEXT,
     tone: 'neutral',
   }));
   const stubBlocks: SceneBlock[] = (pageBlocks.length ? pageBlocks : rootBlocks).map((stub) => {
@@ -226,7 +227,7 @@ const pageContract = computed<PageOrchestrationContract>(() => {
     block_type: 'metric_card',
     title: asText((row as Record<string, unknown>).label) || asText((row as Record<string, unknown>).key) || `指标 ${index + 1}`,
     subtitle: asText((row as Record<string, unknown>).copy),
-    value: (row as Record<string, unknown>).value ?? '--',
+    value: (row as Record<string, unknown>).value ?? FIELD_VALUE_EMPTY_TEXT,
     tone: 'neutral',
   }));
   for (const stub of entryBlocks) {

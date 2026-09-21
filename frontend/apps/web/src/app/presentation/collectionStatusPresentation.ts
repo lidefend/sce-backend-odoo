@@ -1,3 +1,5 @@
+import { FIELD_VALUE_EMPTY_TEXT } from '../../utils/fieldSemantics.ts';
+
 export type CollectionStatusTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 
 export type CollectionStatusDescriptor = {
@@ -27,7 +29,7 @@ export function resolveCollectionStatusPresentation(input: {
   toneByValue?: Record<string, string>;
 }): CollectionStatusDescriptor {
   const value = authorityKey(input.value);
-  const label = input.selection?.find((item) => item.value === value)?.label || text(input.value) || '--';
+  const label = input.selection?.find((item) => item.value === value)?.label || text(input.value) || FIELD_VALUE_EMPTY_TEXT;
   const candidate = String(input.toneByValue?.[value] || '').trim().toLowerCase() as CollectionStatusTone;
   return {
     value,

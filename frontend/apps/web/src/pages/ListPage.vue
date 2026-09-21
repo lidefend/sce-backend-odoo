@@ -318,6 +318,16 @@ import ScEmptyState from '../components/design-system/ScEmptyState.vue';
 import { resolveEmptyCopy, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import type { SceneListProfile } from '../app/resolvers/sceneRegistry';
 import { formatAttachmentReferenceValue, parseAttachmentReferenceLinks } from '../utils/display';
+import {
+  COLLECTION_NUMERIC_EMPTY_TEXT,
+  FIELD_VALUE_EMPTY_TEXT,
+  FIELD_VALUE_FALSE_TEXT,
+  FIELD_VALUE_TRUE_TEXT,
+  containsAttachmentReference,
+  formatNumericFieldValue,
+  isNumericFieldType,
+  numericFieldValue,
+} from '../utils/fieldSemantics.ts';
 import { attachmentLinkDownloadParams, openExternalAttachmentUrl } from '../utils/filePreview';
 import { isListBusinessIdentifierColumn, isListStatusColumn, isListTemporalColumn, presentListCell, resolveListDisplayField } from './listPage/listCellPresentation';
 import {
@@ -687,15 +697,6 @@ function scalarTexts(value: unknown): string[] {
   const text = String(value ?? '').trim();
   return text ? [text] : [];
 }
-function rowNumericCellValue(value: unknown): number | null {
-  const raw = Array.isArray(value) ? (value.length > 1 ? value[1] : value[0]) : value;
-  if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
-  if (typeof raw !== 'string') return null;
-  const cleaned = raw.replace(/,/g, '').trim();
-  if (!cleaned) return null;
-  const numeric = Number(cleaned);
-  return Number.isFinite(numeric) ? numeric : null;
-}
 function selectionLabel(option: ColumnOption | null, value: unknown) {
   const raw = normalizeCellRawValue(value);
   const key = String(raw ?? '').trim();
@@ -705,11 +706,11 @@ function selectionLabel(option: ColumnOption | null, value: unknown) {
 function semanticCell(field: string, value: unknown, relationItems: Array<{ id: number; label: string }> = [], row?: Record<string, unknown>) {
   const option = columnOption(field);
   if (option?.widget === 'many2many_tags') {
-    return { text: relationItems.map((item) => item.label).join('、') || '--', tone: 'neutral' };
+    return { text: relationItems.map((item) => item.label).join('、') || FIELD_VALUE_EMPTY_TEXT, tone: 'neutral' };
   }
   const raw = normalizeCellRawValue(value);
   const rawText = typeof raw === 'string' ? raw : '';
-  const attachmentText = rawText && /\|\s*(?:legacy-file-id|legacy-file|https?|file):\/\//i.test(rawText)
+  const attachmentText = rawText && containsAttachmentReference(rawText)
     ? formatAttachmentReferenceValue(rawText)
     : '';
   return presentListCell({
@@ -718,8 +719,8 @@ function semanticCell(field: string, value: unknown, relationItems: Array<{ id: 
     selectionText: selectionLabel(option, value),
     numericText: formatNumericCellValue(field, raw, row),
     attachmentText,
-    trueText: uiLabel('boolean_true', '是'),
-    falseText: uiLabel('boolean_false', '否'),
+    trueText: uiLabel('boolean_true', FIELD_VALUE_TRUE_TEXT),
+    falseText: uiLabel('boolean_false', FIELD_VALUE_FALSE_TEXT),
     numeric: isNumericDisplayColumn(field),
     toneByValue: option?.toneByValue,
   });
@@ -1889,7 +1890,7 @@ const pageVisibleRows = computed(() => {
 function isNumericColumn(field: string) {
   const option = columnOption(field);
   const type = String(option?.dataType || option?.type || '').trim();
-  return type === 'integer' || type === 'float' || type === 'monetary';
+  return isNumericFieldType(type);
 }
 
 function isMoneyDisplayColumn(field: string) {
@@ -1911,19 +1912,10 @@ function isNumericDisplayColumn(field: string) {
   return isNumericColumn(field);
 }
 
-function numericCellValue(value: unknown) {
-  const raw = normalizeCellRawValue(value);
-  if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
-  if (typeof raw !== 'string') return null;
-  const normalized = raw.replace(/,/g, '').trim();
-  if (!normalized) return null;
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
 function formatNumericCellValue(field: string, value: unknown, row?: Record<string, unknown>) {
   if (!isNumericColumn(field)) return '';
-  const numeric = numericCellValue(value);
+  const raw = normalizeCellRawValue(value);
+  const numeric = numericFieldValue(raw);
   if (numeric === null) return '';
   const option = columnOption(field);
   const type = String(option?.dataType || option?.type || '').trim();
@@ -1933,19 +1925,13 @@ function formatNumericCellValue(field: string, value: unknown, row?: Record<stri
       : '';
     return formatMonetaryDisplayValue(numeric, option?.digits, currencyLabel);
   }
-  return numeric.toLocaleString('zh-CN', {
-    maximumFractionDigits: type === 'integer' ? 0 : 2,
-    minimumFractionDigits: type === 'integer' ? 0 : 2,
-  });
+  return formatNumericFieldValue(raw, type) ?? '';
 }
 
 function formatFooterNumber(value: number, field: string) {
   const option = columnOption(field);
   const type = String(option?.dataType || option?.type || '').trim();
-  return value.toLocaleString('zh-CN', {
-    maximumFractionDigits: type === 'integer' ? 0 : 2,
-    minimumFractionDigits: type === 'integer' ? 0 : 2,
-  });
+  return formatNumericFieldValue(value, type) ?? '';
 }
 
 const pageFooterStats = computed(() =>
@@ -1957,7 +1943,7 @@ const pageFooterStats = computed(() =>
         name: field,
         label: uiLabel('page_footer_summary', '{column} 汇总', { column: columnLabel(field) }),
         count: authoritative === null ? 0 : pageVisibleRows.value.length,
-        sumText: authoritative === null ? '--' : formatFooterNumber(authoritative, field),
+        sumText: authoritative === null ? FIELD_VALUE_EMPTY_TEXT : formatFooterNumber(authoritative, field),
       };
     })
     .filter((item) => item.count > 0),
@@ -2014,10 +2000,10 @@ function pageAggregateValue(field: string) {
 function footerCellText(field: string, scope: 'page' | 'total') {
   if (!isAggregateColumn(field)) return '';
   if (scope === 'page') {
-    return pageFooterStatsMap.value[field]?.sumText || '--';
+    return pageFooterStatsMap.value[field]?.sumText || FIELD_VALUE_EMPTY_TEXT;
   }
   const value = totalAggregateValue(field);
-  return value === null ? '--' : formatFooterNumber(value, field);
+  return value === null ? FIELD_VALUE_EMPTY_TEXT : formatFooterNumber(value, field);
 }
 
 function footerValues(scope: 'page' | 'total') {
@@ -2062,10 +2048,10 @@ function groupFooterCellText(
   if (!isAggregateColumn(field)) return '';
   if (scope === 'page') {
     const value = groupPageAggregateValue(group, field);
-    return value === null ? '--' : formatFooterNumber(value, field);
+    return value === null ? FIELD_VALUE_EMPTY_TEXT : formatFooterNumber(value, field);
   }
   const value = groupAggregateValue(group, field);
-  return value === null ? '--' : formatFooterNumber(value, field);
+  return value === null ? FIELD_VALUE_EMPTY_TEXT : formatFooterNumber(value, field);
 }
 
 function groupFooterValues(
