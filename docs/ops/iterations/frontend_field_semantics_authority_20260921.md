@@ -58,8 +58,12 @@
 - `scripts/verify/frontend_localized_display_contract_test.ts`：新增跨面一致性行为断言与非重复化源码断言
   （遍历 `frontend/apps/web/src` 下 `.ts`／`.vue`／`.js`，排除权威自身，禁止空值／布尔文案字面量与重写的
   附件检测、日期解析正则）。
+- `scripts/verify/action_view_responsibility_map_guard.py` 与
+  `docs/engineering_convergence/action_view_responsibility_map.md`：`ActionView.vue` 行数锁按既有 Stage
+  约定重基线 `<=3769` → `<=3770`（新增 Stage 9 Re-baseline 段；唯一增量是权威 import 一行，等价改写不引入
+  任何职责、副作用或编排分支）。
 - `docs/engineering_convergence/complexity_budget_report.md`、`split_plan_queue.md`：
-  L1 重生成（扫描 4404 → **4405**；`ActionView.vue` 3769 → 3773；`ListPage.vue` 2135 → **2123**；
+  L1 重生成（扫描 4404 → **4405**；`ActionView.vue` 3769 → **3770**；`ListPage.vue` 2135 → **2123**；
   `ActionSurfaceToolbar.vue` 1040 → 1041）。
 - `docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json`：
   经 `make refresh.frontend.component_driver_takeover.inventory` 刷新（新增模块改变源码摘要）。
@@ -103,6 +107,12 @@
   一致；逐条核对 `SceneContractBlockGridView.vue` 为 `L169-173 → L170-174`、`L211 → L212` 的整体 +1 行位移
   （即本批新增的 import 行），错误码不变，**零新增类型错误**。
 - L1 `make ci.delivery.freeze.prepare`：**PASS**，`ci.generated_evidence.preflight` PASS。
+- exact-head `make ci.local.quick` 第 1 次运行**抓到本批自身缺陷并已在本批内修复**：
+  `action_view_responsibility_map_guard` 报 `ActionView.vue line budget exceeded: 3773 > 3769`。
+  该守卫不在 L1 preflight 与 `verify.frontend.*` 集合内，是精确候选上的 L5 才暴露的行数锁。处置为把本批改动的
+  布尔标签分支压回单行等价写法（唯一增量为权威 import 一行，3770），并按既有 Stage 约定重基线
+  `<=3770`（Stage 9 段 ＋ 守卫 token／budget 同步更新），不使用「抬预算掩盖增长」的写法：本次增量是单一
+  import，不是新增职责。修复后该守卫、其余 L5 步骤与 L1 全部 **PASS**。
 
 ## 6. 排除项与残限
 
@@ -116,6 +126,12 @@
   机型标识与治理字段而非业务取值，故**显式排除**在权威口径外；守卫只约束 `--` 与布尔文案，不与之冲突。
 - 记录／表单路径的 `datetime` 由直出 ISO 改为 `full` 档，属可见表达变化；本批以单元与源码守卫证明口径统一，
   尚未做浏览器运行态复核（见 §7）。
+- **已登记但本批未改动**：`pages/contractForm/one2manyUtils.ts` 的 `one2manyColumnDisplayValue` 仍自带
+  `datetime`（`Intl.DateTimeFormat('zh-CN')` → `2026/09/21 10:17`）与数值（最多 6 位小数）两条本地分支。
+  原因：该函数同时充当内联单元格**输入框**的 `model-value`（`components/template/One2ManyCellEditor.vue`
+  以 `:type="one2manyColumnInputType(column)"` 绑定），并入权威的记录／表单呈现档位会改变可编辑行的取值显示；
+  且其 `datetime` 分支产出并非 `datetime-local` 输入可接受的格式，疑为既有缺陷。需单独决策 ＋ 运行态复核后另批处理，
+  本批不擅自改动（不掩盖、不静默统一）。
 
 ## 7. 未做与下一步
 

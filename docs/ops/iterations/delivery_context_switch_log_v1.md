@@ -10288,9 +10288,20 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   错误文件集合一致，逐条核对为 `SceneContractBlockGridView.vue` 因新增 import 的整体 +1 行位移，**零新增类型错误**；
   L1 `make ci.delivery.freeze.prepare` **PASS**。
 - L1 重生成产物：`docs/engineering_convergence/complexity_budget_report.md`、`split_plan_queue.md`
-  （扫描 4404 → **4405**；`ActionView.vue` 3769 → 3773；`ListPage.vue` 2135 → **2123**；
+  （扫描 4404 → **4405**；`ActionView.vue` 3769 → **3770**；`ListPage.vue` 2135 → **2123**；
   `ActionSurfaceToolbar.vue` 1040 → 1041）；`docs/frontend_productization/rendering-detail/
   component-driver-takeover-inventory-v1.json` 经 `make refresh.frontend.component_driver_takeover.inventory` 刷新。
+- L5 自捕获与本批内修复：exact-head `make ci.local.quick` 第 1 次运行在
+  `action_view_responsibility_map_guard` 报 `ActionView.vue line budget exceeded: 3773 > 3769`（该守卫不在
+  L1 preflight 与 `verify.frontend.*` 集合内，只有精确候选的 L5 才暴露）。处置为把本批改动的布尔标签分支压回
+  **单行等价写法**（唯一增量为权威 import 一行 → 3770），并按既有 Stage 约定重基线 `<=3769` → `<=3770`
+  （`docs/engineering_convergence/action_view_responsibility_map.md` 新增 Stage 9 Re-baseline 段；
+  `scripts/verify/action_view_responsibility_map_guard.py` 的 `LINE_BUDGET` 与 token 同步）。不用「抬预算掩盖
+  增长」的写法：本次增量是单一 import，未移动或新增任何职责、副作用与编排分支。修复后该守卫与其余 L5 步骤全部 PASS。
+- 已登记但本批未改动：`pages/contractForm/one2manyUtils.ts` 的 `one2manyColumnDisplayValue` 仍自带 `datetime`
+  （`Intl.DateTimeFormat('zh-CN')` → `2026/09/21 10:17`）与数值（最多 6 位小数）本地分支——该函数同时充当内联
+  单元格输入框的 `model-value`，并入权威记录／表单档位会改变可编辑行取值显示，且其 `datetime` 分支产出并非
+  `datetime-local` 输入可接受格式（疑为既有缺陷），需单独决策 ＋ 运行态复核后另批处理，不擅自改动也不掩盖。
 - 排除项与残限：`verify.frontend.scene_component_bridge.guard` 失败已在干净基线 `main@f9c73588` 同命令复现同一
   消息，判为**本批之前既有失败**，不在本批范围，不修、不掩盖；全域 32 条类型错误为既有类型债
   （`tsconfig.json` 自述 `LEGACY_TYPE_DEBT`，门禁用 `typecheck:strict` 窄覆盖）；技术／诊断只读面

@@ -1524,10 +1524,7 @@ function normalizeGroupCell(field: string, value: unknown) {
     return { value: null, label: pageText('group_label_unset', '未设置') };
   }
   if (typeof value === 'boolean') {
-    return {
-      value,
-      label: pageText(value ? 'boolean_true' : 'boolean_false', value ? FIELD_VALUE_TRUE_TEXT : FIELD_VALUE_FALSE_TEXT),
-    };
+    return { value, label: pageText(value ? 'boolean_true' : 'boolean_false', value ? FIELD_VALUE_TRUE_TEXT : FIELD_VALUE_FALSE_TEXT) };
   }
   const key = String(value ?? '').trim();
   const selectionLabel = Array.isArray(option?.selection)

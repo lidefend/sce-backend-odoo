@@ -181,6 +181,20 @@ settlement without moving transaction or navigation ownership:
 - future work must modify existing owned paths or extract responsibilities
   rather than increasing the route orchestration shell.
 
+## Stage 9 Re-baseline (2026-09-21)
+
+The field-semantics authority iteration (`utils/fieldSemantics.ts`) removed the
+locally hard-coded boolean text from the action-view group cell label path:
+the view now consumes the authority constants instead of the `是`/`否` literals
+so that collection, record, and form surfaces cannot diverge again:
+
+- `ActionView.vue` is locked at `<=3770` lines and remains tracked as P1
+  extraction debt in `split_plan_queue.md`;
+- the single added line is the authority import; no responsibility, side
+  effect, or orchestration branch was moved or added;
+- future work must still modify existing owned paths or extract
+  responsibilities rather than increasing the route orchestration shell.
+
 ## Verification Gaps
 
 Before moving transaction-heavy methods, add or confirm behavior coverage for:
