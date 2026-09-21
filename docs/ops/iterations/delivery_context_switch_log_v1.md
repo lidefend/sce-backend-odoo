@@ -10080,3 +10080,38 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Next Step：台账 `otherStateConsumers` 1 → 0 的**合并后文档单职责提交**已在 PR #514 合并后执行（主线 `count` 已在
   PR #513 归零，本批逐字节未改主线计数字段）；`retirementComplete` **保守保持 `false`**（`retirementCondition` 的
   「其他角色／公司／状态覆盖」一半仍未满足，故不删除兼容重组逻辑与测试豁免）；u4 兼容消费者主题已清空。
+
+## 2026-09-21 — U-C4 G16 后续硬化（P4）：被改动 `.mjs` 的自动化语法门
+
+- 分支 `fix/node-automation-syntax-gate-v1`，基线 `origin/main@8c7a4e1d48fdf4a35f429cee87b1893a05227ef4`
+  （G16 正文 PR #514、台账审计 PR #515、注释订正 PR #516 的合入点）。Formal Product Layer 为 **P4**
+  （运维交付工具）；Layer Target 为门禁工具面 `scripts/ci/` 与 `make/ci.mk` 的既有入口接线。不属 P0／P1／P2／P3；
+  **未触碰**产品代码、契约、测试口径、前端渲染与环境（无新环境／凭据／端口／库）。回滚为 `git revert`。
+- 触发：G16 复核 r2 **S3.1**（登记在台账 `uc4G16PublishedAudit.knownLimits`）——PR #514 改了代表面 runner
+  `frontend/apps/web/scripts/formal_form_representative_journey.mjs` 的 create 拒绝谓词，但该 `.mjs` **没有自动化
+  语法门**（`test.contract` 只有 5 个手工 `node --check` 文件、前端 `lint` 只覆盖 `.ts`/`.vue`），复核当时只能手工取证。
+- 变更（3 条代码路径 ＋ 3 条受跟踪生成物）：新增 `scripts/ci/node_syntax_check.py`（默认口径 = `git ls-files` 的
+  **全部受跟踪** `.mjs`/`.cjs`，148 个，逐文件 `node --check`，失败行 `path:line: SyntaxError: …`，node 缺失或
+  无目标时 fail-closed）与 `scripts/ci/test_node_syntax_check.py`（15 测试，含**接线逐字回归**、**语料成员资格独立枚举相等**与**语料常量字面量钉死**：`test.contract`／
+  `ci.local.quick.run` 必须含 sweep 且不得保留手工清单、`test.unit` 必须跑自检）；`make/ci.mk` 的
+  `test.contract` 由 5 行手工清单改为 1 行 sweep（完全包含被替换文件）、`test.unit` ＋1 行自检、
+  `ci.local.quick.run` ＋1 行 sweep；L1 刷新的生成物（复杂度报告、测试清单与汇总）随本轮提交。
+- 缺陷类与口径边界：手工清单对**未被列举但被改动**的脚本零覆盖，清单漂移即静默失效；sweep 只做**语法（解析）级**
+  验证，不执行文件、不校验具名导出一致性（该类缺陷由既有登记入口 `designer_draft_ownership_test.mjs` 反例 9 覆盖），
+  也不替代 runner 自身的浏览器代表面验收。
+- 验证：L1 `make ci.delivery.freeze.prepare` PASS（生成物无漂移）；L2 `make test.contract` PASS
+  （`Node syntax check passed (148 files)`）、`make test.unit` PASS（Python 1156 文件、Node 自检 15 tests、render conf
+  6 tests）；只读预扫 148 文件 0 失败；L5 exact-head `make ci.local.quick` 回执与复验结论见本批 PR。
+- 台账口径：`uc4G16PublishedAudit` **逐字节不变**（已发布审计文本不重写）；本轮追加 `uc4G16FollowupSyntaxGate`
+  记录该 known limit 的关账事实与证据，主线计数字段（`count=0`／`entries=[]`／`otherStateConsumers=[]`／
+  `retirementComplete=false`）本轮未改。
+- 环境缺陷登记：本轮**未新增**；既有六条（`verify.contract.view_structure` 指纹期望、
+  `verify.product.menu.governance.m4.closure` 缺 `REJECTED-wrong-sha.json`、`verify.user_form.preference.boundary_guard`
+  依赖**客户定制 addon 仓库（不在本仓库边界内）**、`verify.frontend.professionalization.collaboration_domain.runtime`、
+  `project-domain-coverage-v1.json` 陈旧、`user_data_boundary` 4 例在 mainline 即失败且无 CI gate）继续保持登记、不修。
+- Next Step：冻结本批 HEAD 后跑一次 exact-head `make ci.local.quick`；经独立只读复核与显式合并授权后执行
+  `make pr.merge`，再 `make main.sync` 与分支清理；G16 台账侧**不扣减**任何消费者计数（本轮无消费者变化），
+  `retirementComplete` 继续保守保持 `false`。
+- 复核后修订（独立复核 r2 **S2-1** 闭合）：接线回归断言由**子串**匹配改为 **recipe 行逐字相等且唯一**，并新增接线校验器负例与语料枚举 fail-closed 测试（10 → 13 测试）。原断言在 `/tmp` 影子副本下对「调用点被加窄目录参数」有确定性假阴性（窄参数 sweep 报 44 文件、漏检 `scripts/verify/*.mjs` 的破坏）；修订后同一场景两个调用点（`test.contract`／`ci.local.quick.run`）均 **FAILED**。语料、口径与 fail-closed 语义未变，该修订产生新 HEAD，故 L1／L2／L5 与独立复核需按新冻结候选重跑与重绑。
+- 复核后修订二（r2b **S3-1** / r1b **S4-2** 闭合）：新增「语料成员资格与 `git ls-files` 独立枚举集合相等」测试，堵住「检查器内部被收窄为子集而自检仍绿」的路径（影子副本实测：收窄为 `frontend/` ＋ `scripts/verify/` 后自检 FAILED）；并把验证叙述里的「10 tests」刷为最终冻结候选的测试数。语料范围、口径与审计链未变。
+- 复核后修订三（r2c **S3-1** 闭合）：新增**语料常量字面量断言**，堵住「`TRACKED_PATTERNS` 常量被改窄时断言与实现两侧同步缩小而自检仍绿」的路径（影子副本实测：常量改窄 → 语料 148 → 141、自检 **FAILED（failures=2）**，真 sweep 仍能抓出被丢弃目录的破坏）。共 15 测试。

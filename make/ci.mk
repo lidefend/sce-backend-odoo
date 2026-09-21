@@ -932,6 +932,7 @@ ci.local.quick.run: guard.prod.forbid ci.generated_evidence.preflight verify.con
 	@python3 scripts/verify/frontend_shared_surface_semantic_boundary_guard.py
 	@python3 scripts/verify/product_client_action_boundary_guard.py
 	@python3 scripts/verify/test_frontend_release_evidence_bundle.py
+	@python3 scripts/ci/node_syntax_check.py
 	@git diff --check
 	@echo "[OK] local quick gate passed"
 
@@ -942,17 +943,14 @@ test.frontend: guard.prod.forbid verify.menu_config_tree_editor.behavior
 
 test.unit: guard.prod.forbid
 	@python3 scripts/ci/python_syntax_check.py addons/smart_core addons/smart_construction_core scripts/ci scripts/audit scripts/common scripts/e2e
+	@python3 scripts/ci/test_node_syntax_check.py
 	@python3 scripts/test_render_odoo_conf.py
 
 test.odoo.integration: guard.prod.forbid
 	@$(MAKE) --no-print-directory ci.smoke
 
 test.contract: guard.prod.forbid
-	@node --check frontend/apps/web/scripts/config_workbench_operation_acceptance.mjs
-	@node --check frontend/apps/web/scripts/business_form_user_perspective_acceptance.mjs
-	@node --check frontend/apps/web/scripts/system_user_experience_shell_acceptance.mjs
-	@node --check frontend/apps/web/scripts/user_page_visual_coverage.cjs
-	@node --check frontend/apps/web/scripts/system_user_experience_full_browser_summary_guard.mjs
+	@python3 scripts/ci/node_syntax_check.py
 
 test.e2e.preflight: guard.prod.forbid
 	@python3 scripts/e2e/e2e_boq_import_fixed_data_preflight.py >/dev/null
