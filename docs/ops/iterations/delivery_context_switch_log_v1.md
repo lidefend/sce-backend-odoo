@@ -10092,7 +10092,7 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   语法门**（`test.contract` 只有 5 个手工 `node --check` 文件、前端 `lint` 只覆盖 `.ts`/`.vue`），复核当时只能手工取证。
 - 变更（3 条代码路径 ＋ 3 条受跟踪生成物）：新增 `scripts/ci/node_syntax_check.py`（默认口径 = `git ls-files` 的
   **全部受跟踪** `.mjs`/`.cjs`，148 个，逐文件 `node --check`，失败行 `path:line: SyntaxError: …`，node 缺失或
-  无目标时 fail-closed）与 `scripts/ci/test_node_syntax_check.py`（14 测试，含**接线逐字回归**与**语料成员资格独立枚举相等**：`test.contract`／
+  无目标时 fail-closed）与 `scripts/ci/test_node_syntax_check.py`（15 测试，含**接线逐字回归**、**语料成员资格独立枚举相等**与**语料常量字面量钉死**：`test.contract`／
   `ci.local.quick.run` 必须含 sweep 且不得保留手工清单、`test.unit` 必须跑自检）；`make/ci.mk` 的
   `test.contract` 由 5 行手工清单改为 1 行 sweep（完全包含被替换文件）、`test.unit` ＋1 行自检、
   `ci.local.quick.run` ＋1 行 sweep；L1 刷新的生成物（复杂度报告、测试清单与汇总）随本轮提交。
@@ -10100,7 +10100,7 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   验证，不执行文件、不校验具名导出一致性（该类缺陷由既有登记入口 `designer_draft_ownership_test.mjs` 反例 9 覆盖），
   也不替代 runner 自身的浏览器代表面验收。
 - 验证：L1 `make ci.delivery.freeze.prepare` PASS（生成物无漂移）；L2 `make test.contract` PASS
-  （`Node syntax check passed (148 files)`）、`make test.unit` PASS（Python 1156 文件、Node 自检 14 tests、render conf
+  （`Node syntax check passed (148 files)`）、`make test.unit` PASS（Python 1156 文件、Node 自检 15 tests、render conf
   6 tests）；只读预扫 148 文件 0 失败；L5 exact-head `make ci.local.quick` 回执与复验结论见本批 PR。
 - 台账口径：`uc4G16PublishedAudit` **逐字节不变**（已发布审计文本不重写）；本轮追加 `uc4G16FollowupSyntaxGate`
   记录该 known limit 的关账事实与证据，主线计数字段（`count=0`／`entries=[]`／`otherStateConsumers=[]`／
@@ -10113,4 +10113,5 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `make pr.merge`，再 `make main.sync` 与分支清理；G16 台账侧**不扣减**任何消费者计数（本轮无消费者变化），
   `retirementComplete` 继续保守保持 `false`。
 - 复核后修订（独立复核 r2 **S2-1** 闭合）：接线回归断言由**子串**匹配改为 **recipe 行逐字相等且唯一**，并新增接线校验器负例与语料枚举 fail-closed 测试（10 → 13 测试）。原断言在 `/tmp` 影子副本下对「调用点被加窄目录参数」有确定性假阴性（窄参数 sweep 报 44 文件、漏检 `scripts/verify/*.mjs` 的破坏）；修订后同一场景两个调用点（`test.contract`／`ci.local.quick.run`）均 **FAILED**。语料、口径与 fail-closed 语义未变，该修订产生新 HEAD，故 L1／L2／L5 与独立复核需按新冻结候选重跑与重绑。
-- 复核后修订二（r2b **S3-1** / r1b **S4-2** 闭合）：新增「语料成员资格与 `git ls-files` 独立枚举集合相等」测试，堵住「检查器内部被收窄为子集而自检仍绿」的路径（影子副本实测：收窄为 `frontend/` ＋ `scripts/verify/` 后自检 FAILED）；并把验证叙述里的「10 tests」刷为最终冻结候选的 **14 tests**。语料范围、口径与审计链未变。
+- 复核后修订二（r2b **S3-1** / r1b **S4-2** 闭合）：新增「语料成员资格与 `git ls-files` 独立枚举集合相等」测试，堵住「检查器内部被收窄为子集而自检仍绿」的路径（影子副本实测：收窄为 `frontend/` ＋ `scripts/verify/` 后自检 FAILED）；并把验证叙述里的「10 tests」刷为最终冻结候选的测试数。语料范围、口径与审计链未变。
+- 复核后修订三（r2c **S3-1** 闭合）：新增**语料常量字面量断言**，堵住「`TRACKED_PATTERNS` 常量被改窄时断言与实现两侧同步缩小而自检仍绿」的路径（影子副本实测：常量改窄 → 语料 148 → 141、自检 **FAILED（failures=2）**，真 sweep 仍能抓出被丢弃目录的破坏）。共 15 测试。

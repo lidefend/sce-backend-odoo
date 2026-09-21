@@ -94,6 +94,17 @@ class NodeSyntaxCheckTests(unittest.TestCase):
         for path in actual:
             self.assertIn(path.suffix, node_syntax_check.NODE_SUFFIXES)
 
+    def test_corpus_patterns_are_pinned_by_literals(self) -> None:
+        """Pin the patterns themselves, not just the function body.
+
+        Sharing ``TRACKED_PATTERNS`` with the implementation would let a
+        constant-level narrowing shrink both sides of
+        ``test_tracked_corpus_matches_an_independent_git_enumeration`` while the
+        gate silently drops whole directories.
+        """
+        self.assertEqual(tuple(node_syntax_check.TRACKED_PATTERNS), ("*.mjs", "*.cjs"))
+        self.assertEqual(tuple(node_syntax_check.NODE_SUFFIXES), (".mjs", ".cjs"))
+
     def test_directory_scan_keeps_only_node_suffixes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

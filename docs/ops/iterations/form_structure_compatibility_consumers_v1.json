@@ -2099,7 +2099,7 @@
       "l1": "make ci.delivery.freeze.prepare PASS (contract structure fingerprint is current; tracked generated reports are current; ci.generated_evidence.preflight PASS; generated drift committed with this batch)",
       "l2": [
         "make test.contract PASS: [OK] Node syntax check passed (148 files)",
-        "make test.unit PASS: Python syntax 1156 files + node syntax self-test 14 tests + render conf 6 tests",
+        "make test.unit PASS: Python syntax 1156 files + node syntax self-test 15 tests + render conf 6 tests",
         "read-only pre-scan: every tracked .mjs/.cjs parses (148 files, 0 failures)"
       ],
       "l5": "exact-head make ci.local.quick receipt and re-verification are recorded in this batch's PR"
@@ -2110,7 +2110,8 @@
       "fix": "the wiring assertion now requires the exact recipe line (@python3 scripts/ci/node_syntax_check.py, no argument) to appear exactly once per gate, with negative self-tests for a narrowed call, a duplicate call and a missing line, plus a fail-closed enumeration test (git missing or git ls-files failing -> exit 2 instead of an uncaught traceback)",
       "reverification": "in the same /tmp shadow copy the revised self-test FAILS (failures=1) for a narrowed test.contract call and for a narrowed ci.local.quick.run call",
       "reviewRound2": "review r2b S3-1 / r1b S4-2: corpus membership was pinned only by sample paths, so narrowing tracked_node_files() to a subset (frontend/ + scripts/verify/, 148 -> 144) kept the self-test green while the 4 single-file surfaces scripts/dev|ops|release|ui could be dropped silently; the self-test now asserts set equality against an independent git ls-files enumeration (verified in the same shadow copy: narrowed -> FAILED) and the stale 10-test verification sentences were refreshed to the frozen candidate's 14 tests",
-      "selfTestCount": 14,
+            "reviewRound3": "review r2c S3-1: the membership assertion shared TRACKED_PATTERNS with the implementation, so narrowing that constant shrank both sides and kept all 14 self-tests green while the corpus dropped 148 -> 141 and whole directories were silently skipped; the self-test now also pins TRACKED_PATTERNS == (*.mjs, *.cjs) and NODE_SUFFIXES == (.mjs, .cjs) by literal (15 tests), verified in the same shadow copy (constant narrowed -> FAILED, failures=2), so the claim that internal narrowing is guarded is no longer broader than the assertions that back it",
+      "selfTestCount": 15,
       "unchanged": "corpus, scope and fail-closed semantics are unchanged; the fix moves the candidate head, so L1/L2/L5 and the independent review are re-run and re-bound against the new frozen candidate"
     },
     "residualKnownLimits": [
