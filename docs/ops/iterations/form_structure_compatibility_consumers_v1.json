@@ -2110,7 +2110,7 @@
       "fix": "the wiring assertion now requires the exact recipe line (@python3 scripts/ci/node_syntax_check.py, no argument) to appear exactly once per gate, with negative self-tests for a narrowed call, a duplicate call and a missing line, plus a fail-closed enumeration test (git missing or git ls-files failing -> exit 2 instead of an uncaught traceback)",
       "reverification": "in the same /tmp shadow copy the revised self-test FAILS (failures=1) for a narrowed test.contract call and for a narrowed ci.local.quick.run call",
       "reviewRound2": "review r2b S3-1 / r1b S4-2: corpus membership was pinned only by sample paths, so narrowing tracked_node_files() to a subset (frontend/ + scripts/verify/, 148 -> 144) kept the self-test green while the 4 single-file surfaces scripts/dev|ops|release|ui could be dropped silently; the self-test now asserts set equality against an independent git ls-files enumeration (verified in the same shadow copy: narrowed -> FAILED) and the stale 10-test verification sentences were refreshed to the frozen candidate's 14 tests",
-            "reviewRound3": "review r2c S3-1: the membership assertion shared TRACKED_PATTERNS with the implementation, so narrowing that constant shrank both sides and kept all 14 self-tests green while the corpus dropped 148 -> 141 and whole directories were silently skipped; the self-test now also pins TRACKED_PATTERNS == (*.mjs, *.cjs) and NODE_SUFFIXES == (.mjs, .cjs) by literal (15 tests), verified in the same shadow copy (constant narrowed -> FAILED, failures=2), so the claim that internal narrowing is guarded is no longer broader than the assertions that back it",
+      "reviewRound3": "review r2c S3-1: the membership assertion shared TRACKED_PATTERNS with the implementation, so narrowing that constant shrank both sides and kept the self-tests green while whole directories were silently skipped; measured with the same shadow-copy method, the escape that stayed green under the 14-test suite was the 144-file set that keeps .cjs (148 -> 144), while the 141-file set that also drops .cjs was already caught (FAILED, failures=1) by the historical .cjs assertion; the self-test now also pins TRACKED_PATTERNS == (*.mjs, *.cjs) and NODE_SUFFIXES == (.mjs, .cjs) by literal (15 tests), verified in the same shadow copy (constant narrowed -> FAILED, failures=2), so the claim that implementation-body or constant-level internal narrowing is guarded is no longer broader than the assertions that back it",
       "selfTestCount": 15,
       "unchanged": "corpus, scope and fail-closed semantics are unchanged; the fix moves the candidate head, so L1/L2/L5 and the independent review are re-run and re-bound against the new frozen candidate"
     },
@@ -2120,6 +2120,62 @@
       "the CI job that runs this gate (professional_quality_gate.yml, runs-on ubuntu-latest) does not pin a node version; the repository's only pin is frontend_release_gate.yml 22.17.0; .mjs/.cjs parse goals are extension-determined, so version sensitivity is low (148/148 pass on both 22.17.0 and 24.16.0)",
       "node --check is parse-level only: it accepts CommonJS-only syntax inside a .mjs file and rejects ESM syntax inside a .cjs file, and it does not validate named exports or imports (that defect class stays registered with designer_draft_ownership_test.mjs counter-example 9)"
     ],
-    "nextRoundAudit": "a later audit round records this batch's merged PR number, squash head and required check results, as uc4G16PublishedAudit did for PR #514"
+    "nextRoundAudit": "satisfied by uc4G16FollowupSyntaxGateAudit in the audit round that followed this batch: merged PR #517, squash head cdb14d41bfa4657a1754bcb1740036cbe4b16b65, the required checks and the post-merge push-to-main runs are recorded there; the only item left open is the .js widening decision in residualKnownLimits[1]"
+  },
+  "uc4G16FollowupSyntaxGateAudit": {
+    "auditedAt": "2026-09-21",
+    "auditRound": "U-C4 G16 follow-up closeout audit (P4 evidence round)",
+    "branch": "audit/uc4-g16-followup-syntax-gate-v1",
+    "auditedMainlineHead": "cdb14d41bfa4657a1754bcb1740036cbe4b16b65",
+    "mergedPr": {
+      "number": 517,
+      "squashHead": "cdb14d41bfa4657a1754bcb1740036cbe4b16b65",
+      "sourceHead": "22518a2ad7911f16cb0b2354670e345282a87fd3",
+      "tree": "d3a9c7ea5d2db2cfc6ac27c15250b4a07d28aff6",
+      "base": "8c7a4e1d48fdf4a35f429cee87b1893a05227ef4",
+      "mergedAt": "2026-09-21T08:43:27Z",
+      "mergeMethod": "squash",
+      "independentReview": "read-only review r1d APPROVE and r2d APPROVE, both bound to the frozen source head 22518a2a (S0/S1/S2 = 0); r2d additionally exhausted escape constructions (constant narrowing, .cjs removal, narrow NODE_SUFFIXES, decoupled new constant, implementation-body post-filter, :(exclude) path magic, root switch), all FAILED"
+    },
+    "requiredChecks": [
+      "classify=success",
+      "frontend_release_gate=success",
+      "merge_policy_gate=success",
+      "professional_authorization=success",
+      "professional_quality_gate=success",
+      "public_guard=success",
+      "public_guard_classify=success",
+      "python310_runtime_compatibility=success",
+      "release_candidate_gate=success"
+    ],
+    "skippedChecks": [
+      "classify",
+      "fast",
+      "wait_for_candidate_checks"
+    ],
+    "postMergeMainRuns": {
+      "head": "cdb14d41bfa4657a1754bcb1740036cbe4b16b65",
+      "event": "push to main",
+      "runs": [
+        "merge_policy_gate=success (35579394597)",
+        "professional_quality_gate=success (35579394644)",
+        "public_guard=success (35579394630)",
+        "frontend_release_gate=success (35579394672)"
+      ]
+    },
+    "gateLiveOnMain": {
+      "runOn": "cdb14d41bfa4657a1754bcb1740036cbe4b16b65",
+      "sweep": "python3 scripts/ci/node_syntax_check.py -> [OK] Node syntax check passed (148 files), exit 0",
+      "selfTest": "python3 scripts/ci/test_node_syntax_check.py -> Ran 15 tests, OK",
+      "meaning": "the tracked .mjs/.cjs sweep is now the test.contract entry that replaced the 5-file hand list, so the closed known limit stays closed on the mainline; this is a read-only re-run of the merged gate, not new acceptance evidence"
+    },
+    "recordCorrections": {
+      "s3_1": "the previous record paired the corpus example 148 -> 141 with all 14 self-tests green. Measured with the same shadow-copy method, the set that stayed green under the 14-test suite was 148 -> 144 (corpus narrowed while keeping .cjs); 148 -> 141 (also dropping .cjs) was already FAILED (failures=1) through the historical .cjs assertion. reviewRound3 and the iteration record were corrected to state which set belongs to which measurement; the gate, its scope and the closure conclusion are unchanged",
+      "s4_1": "the claim that internal narrowing is guarded now reads implementation-body or constant-level internal narrowing in reviewRound3 and in the switch log, matching the implementation-body wording already used by the iteration record",
+      "s4_2": "the reviewRound3 key of postReviewRevision was indented at 12 spaces next to 6-space sibling keys; it now uses the sibling indentation (the JSON was well-formed either way, so this is formatting only)",
+      "unchanged": "uc4G16PublishedAudit is byte-identical; the mainline counter fields count=0 / entries=[] / otherStateConsumers=[] / retirementComplete=false are untouched by this audit round, which changes no consumer"
+    },
+    "branchCleanup": "fix/node-automation-syntax-gate-v1 was deleted locally and on origin through make branch.cleanup.feature after the exact-head squash check (the branch head 22518a2a is not an ancestor of the mainline under squash merge, so the branch was verified against merged PR #517 by exact head); the candidate worktree was detached to cdb14d41 and kept",
+    "nextRoundAudit": "no further audit is required for this gate; the one remaining open decision is the .js widening recorded in uc4G16FollowupSyntaxGate.residualKnownLimits[1], which needs an explicit node-version floor and a module-type decision before .js files can join the sweep"
   }
 }

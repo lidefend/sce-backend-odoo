@@ -7098,6 +7098,45 @@ L2 `make test.contract` **PASS**（`[OK] Node syntax check passed (148 files)`�
 同一常量收窄下自检 **FAILED（failures=2）**，故本记录与台账对「防止内部收窄」的承诺现由实现体与常量两处断言
 分别支撑，措辞不再宽于事实。
 
-状态：**G16 后续硬化完成（P4 工具轮，待冻结／Quick／PR 收口）｜批次状态：本批自验通过；集中产品复核结论以产品方
-登记为准｜未部署｜用户交付未完成｜主线台账未变（`count=0`）｜`otherStateConsumers=[]`｜
+### 8.51 收口审计：语法门合入核对与记录订正（2026-09-21；**P4 证据轮**；只改台账／本记录／切换日志）
+
+- 触发：台账 `uc4G16FollowupSyntaxGate.nextRoundAudit` 的预留项——审计轮记录本批 merged PR、squash head 与必检结果。
+- 合入核对：PR **#517**（`feat(ci): gate every tracked .mjs/.cjs on node --check`）以 squash 合入，squash head
+  **`cdb14d41b…`**（= 台账 `uc4G16FollowupSyntaxGateAudit.mergedPr.squashHead`），source head `22518a2a…`、
+  tree `d3a9c7ea…`、base `8c7a4e1d…`，合并时间 2026-09-21T08:43:27Z。独立只读复核 r1d／r2d 在该 source head 上
+  均为 **APPROVE**（S0/S1/S2 = 0）。
+- 必检结果：PR 侧 9 项 pass（`classify`／`frontend_release_gate`／`merge_policy_gate`／`professional_authorization`／
+  `professional_quality_gate`／`public_guard`／`public_guard_classify`／`python310_runtime_compatibility`／
+  `release_candidate_gate`）、3 项 skip（`classify`／`fast`／`wait_for_candidate_checks`）；合入后 mainline push
+  4 个 run 全 **success**（`merge_policy_gate` 35579394597、`professional_quality_gate` 35579394644、
+  `public_guard` 35579394630、`frontend_release_gate` 35579394672）。
+- 合入后实测（只读重跑已合入门禁，**非**新验收证据）：`python3 scripts/ci/node_syntax_check.py` →
+  `[OK] Node syntax check passed (148 files)`；`python3 scripts/ci/test_node_syntax_check.py` → `Ran 15 tests … OK`。
+- **记录订正（上轮复核 r1d／r2d 的 S3-1／S4-1／S4-2，均不触碰门禁与关账结论）**：①**S3-1**：上面对「148 → 141」
+  与「原 14 测试全绿」的配对与实测不符——14 测试下仍全绿的是**保留 `.cjs` 的 144 集合**（148 → 144），而**丢弃
+  `.cjs` 的 141 集合**当时已被历史 `.cjs` 断言拦下（**FAILED，failures=1**）；订正后两条测量各归其位。
+  ②**S4-1**：把「检查器内部被收窄」的承诺限定为**实现体或常量级**收窄（与 §8.50 表格中的措辞一致）。
+  ③**S4-2**：台账 `reviewRound3` 缩进由 12 空格改回同层 6 空格（JSON 原本即良构，纯格式）。
+- 台账口径：新增 `uc4G16FollowupSyntaxGateAudit`（合入事实、必检与合入后 run、记录订正、分支清理，`nextRoundAudit`
+  指回该块）；`uc4G16PublishedAudit` **逐字节不变**；主线计数字段（`count=0`／`entries=[]`／
+  `otherStateConsumers=[]`／`retirementComplete=false`）本轮未改（本轮无消费者变化）。本提交为**文档类单职责提交**
+  （台账 ＋ 本记录 ＋ 切换日志，路径集合固定为 3），**未触碰**产品代码、契约、测试口径与门禁工具输入。
+- 清理：`fix/node-automation-syntax-gate-v1` 经 `make branch.cleanup.feature` 本地＋远端删除（squash 合入下按
+  exact-head 与 merged PR #517 核对），候选工作树 detach 到 `cdb14d41` 并保留。
+- 残限：4 条保持登记（受跟踪 `.js` 201 个未纳入 sweep、运行本门的 CI job 未钉 node 版本、`node --check` 仅解析级、
+  本门只约束被点名的两个 make target）。
+- **范围外预存失败（登记为排除项，本轮不修）**：`make verify.product.delivery.governance_truth` 在本批基线上
+  **FAIL（exit 2）**，两条 error 都指向 `docs/product/delivery/v1/delivery_readiness_scoreboard_v1.md` 的快照陈旧——
+  其 `snapshot.commit_ref = 68f5224b` 之后 mainline 已累计 **745** 个文件变动（含 **20** 个 `.agent/**`）并触发
+  `scoreboard_snapshot_stale>168h`。该失败**与本批无关且可独立复现**：在干净基线 `cdb14d41` 上用
+  `git diff --name-only 68f5224b..cdb14d41` 即得同一批 `.agent/**` 路径，本批 3 个路径**均不在** error 列表内。
+  分类为 **baseline_evidence_defect（记分板快照陈旧）**，属既有六条登记之外的新观察项；本轮不刷新记分板、
+  不改 `.agent/**`，仅登记（该目标不是 PR 必检项）。
+
+状态：**G16 后续硬化**收口完成（PR #517 已合入 mainline `cdb14d41`）**｜批次状态：自验与冻结门禁通过；集中产品复核
+结论以产品方登记为准｜未部署｜用户交付未完成｜主线台账 0（`count=0`）｜`otherStateConsumers=[]`｜
+`retirementComplete=false`（其他角色／状态未覆盖）｜被改 `.mjs` 语法门缺口已关闭且已合入**。
+
+状态（§8.50 时点，已由 §8.51 收口）：**G16 后续硬化完成（P4 工具轮，待冻结／Quick／PR 收口）｜批次状态：本批自验通过；
+集中产品复核结论以产品方登记为准｜未部署｜用户交付未完成｜主线台账未变（`count=0`）｜`otherStateConsumers=[]`｜
 `retirementComplete=false`（其他角色／状态未覆盖）｜被改 `.mjs` 语法门缺口已关闭**。
