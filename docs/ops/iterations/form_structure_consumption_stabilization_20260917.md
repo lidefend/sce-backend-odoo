@@ -7127,7 +7127,7 @@ L2 `make test.contract` **PASS**（`[OK] Node syntax check passed (148 files)`�
 - 清理：`fix/node-automation-syntax-gate-v1` 经 `make branch.cleanup.feature` 本地＋远端删除（squash 合入下按
   exact-head 与 merged PR #517 核对），候选工作树 detach 到 `cdb14d41` 并保留。
 - 残限：4 条保持登记（受跟踪 `.js` 201 个未纳入 sweep、运行本门的 CI job 未钉 node 版本、`node --check` 仅解析级、
-  本门只约束被点名的两个 make target）。
+  本门只约束被点名的两个 make target）（后续处置见 §8.52：受跟踪 `.js` 未纳入 sweep 与运行本门的 CI 作业未钉 node 版本两条**已关闭**，`node --check` 仅解析级**保持并细化**，本门只约束被点名的两个 make target **保持**）。
 - **范围外预存失败（登记为排除项，本轮不修）**：`make verify.product.delivery.governance_truth` 在本批基线上
   **FAIL（exit 2）**，两条 error 都指向 `docs/product/delivery/v1/delivery_readiness_scoreboard_v1.md` 的快照陈旧——
   其 `snapshot.commit_ref = 68f5224b` 之后 mainline 已累计 **745** 个文件变动（含 **20** 个 `.agent/**`）并触发
@@ -7143,3 +7143,60 @@ L2 `make test.contract` **PASS**（`[OK] Node syntax check passed (148 files)`�
 状态（§8.50 时点，已由 §8.51 收口）：**G16 后续硬化完成（P4 工具轮，待冻结／Quick／PR 收口）｜批次状态：本批自验通过；
 集中产品复核结论以产品方登记为准｜未部署｜用户交付未完成｜主线台账未变（`count=0`）｜`otherStateConsumers=[]`｜
 `retirementComplete=false`（其他角色／状态未覆盖）｜被改 `.mjs` 语法门缺口已关闭**。
+
+### 8.52 G16 `.js` 扩围决策与实现（2026-09-21；**P4 工具轮**；冻结／Quick／PR 属本轮收口步骤）
+
+**触发**：用户指令「接着推进 .js 扩围决策」。上一轮把该决策登记为 `uc4G16FollowupSyntaxGate.residualKnownLimits[1]`
+（受跟踪 `.js` 201 个未纳入 sweep；需要显式 node 版本下界与 module-type 决策才能纳入）。
+
+**决策（三项，逐条附实证）**
+- **D1 语料口径**：以扁平 pattern `*.js` 纳入**全部** 201 个受跟踪 `.js`，**不做任何路径豁免**。分布：
+  `scripts/verify/` 161、`addons/smart_construction_core/` 22、`frontend/apps/web/` 8、`addons/smart_construction_portal/` 5、
+  `addons_external/oca_server_ux/` 3、`scripts/ops/` 1、`scripts/audit/` 1；受跟踪 Node 语料 **148 → 349**。
+  **越层问题不成立**：本门是**只读解析**，与既有 `python_syntax_check.py addons/smart_core addons/smart_construction_core …`
+  （`make/ci.mk` 的 `test.unit`）对 P0/P1 源码的做法同构，不修改任何产品文件；反之若改用路径豁免，等于把上一轮复核 r2d
+  已否掉的 `:(exclude)` 式路径魔法重新引入。
+- **D2 解析契约（本轮关键发现）**：**`node --check <file>.js` 不足以作为 `.js` 的门**——当运行时按**内容探测**把该文件
+  解析为 ES module 时，`node --check` **返回 0 且根本不解析该文件**。实测（node 22.17.0 与 24.16.0 一致）：故意写坏的
+  module 源 `node --check` exit 0、`node <file>` exit 1；同一文件放进 `package.json type=module` 目录时 `node --check`
+  反而正常报错，说明跳过只发生在「按内容探测判定」这条路径。故只把 `*.js` 加进 pattern 会让 **31 个需要 module 文法**的
+  `.js` 得到**空洞覆盖**。实现改为：`.js` 一律从 stdin 以显式 `--input-type` 解析，**先 `commonjs` 后 `module`**，任一通过
+  即通过——这正是运行时自身接受的集合（CommonJS 解析因 ES module 文法失败时，运行时才按 module 重试）；`.mjs`/`.cjs`
+  保持原生 `node --check <file>`（扩展名已声明格式，实测确被解析）。全语料强制解析实测：**170** 个两种格式均可解析、
+  **31** 个仅 module 可解析、**0** 个仅 commonjs、**0** 个两者皆失败。
+- **D3 运行时契约**：`.js` 路径依赖运行时接受 `--input-type`。检查器新增 `format_capability_failure()` 做一次性**功能探测**，
+  不满足即 **fail-closed（exit 2）＋单条消息**点名 node 22.17.0（而不是把每个 `.js` 报成语法错）；同时给唯一运行本门的 CI
+  作业（`professional_quality_gate.yml`，`ubuntu-latest`）钉上 `actions/setup-node` **22.17.0**，与仓库既有两处钉法一致
+  （`frontend_release_gate.yml` setup-node 22.17.0、`demo-ci.yml` `node:22.17.0` 基础镜像）。runner 镜像本身已带
+  Node.js 22.23.2（actions/runner-images Ubuntu2404／Ubuntu2204 readme），故**钉版前下界也已成立**，钉版是把隐含契约显式化。
+
+**代价与边界**：sweep 148 → 349 文件、3.0s → 8.9s（**382** 次 node 调用：148 次原生 `.mjs`/`.cjs` 检查 ＋ 232 次 `.js` 解析（170 个首次 commonjs 即通过、31 个走第二次）＋ 2 次能力探测；墙钟与主机相关，独立复核在本机测得同为 ~2.6–3 倍比值）。
+`.js` 的「任一候选格式可解析」属**解析级**语义（如 sloppy-mode 重复参数函数在 commonjs 下合法、在 module 下非法，仍判通过），
+已并入残限第 4 条；TS／Vue 与 `.css`／`.xml` 资产不在本门内（`frontend/apps/web` 由 `verify.frontend.lint.src` 覆盖）。
+
+**本批改动（P4，5 个文件）**：`scripts/ci/node_syntax_check.py`（`NODE_SUFFIXES`／`TRACKED_PATTERNS` 增 `.js`；
+`check_plans()` 对 `.js` 强制候选格式；`format_capability_failure()` 能力探测）、`scripts/ci/test_node_syntax_check.py`
+（**15 → 24** 测试：钉死字面量含 `.js`、语料锚点（`scripts/verify` 与 Odoo 浏览器资产）、module-only／commonjs-only 解析用例、
+**被 `node --check` 跳过的坏 module `.js` 回归用例**、能力探测与单消息 fail-closed）、
+`.github/workflows/professional_quality_gate.yml`（钉 node 版本）、`scripts/ci/test_ci_risk_workflow_contract.py`
+（钉版契约断言）、`docs/engineering_convergence/complexity_budget_report.md`（L1 重生成：该 workflow 310 → 319 行）。
+
+**验证**：L1 `make ci.delivery.freeze.prepare` **PASS**（唯一被重生成的受跟踪产物是复杂度报告的 1 行行数行）；
+L2 `make test.unit test.contract` **PASS**（Python 语法 1156 文件、node 自检 **24 测试**、Node sweep **349 文件**）；
+守卫 `test_ci_risk_workflow_contract.py` 12 测试 PASS、`github_actions_security_guard.py` PASS（actions=pinned）。
+L5 exact-head `make ci.local.quick` 与两轮独立只读复核在本轮收口步骤内执行，并按新 head 重绑。
+
+**残限（本轮后状态）**：① 本门只约束被点名的两个 make target —— **保持**；② 受跟踪 `.js` 201 个未纳入 sweep ——
+**关闭**（已并入 `TRACKED_PATTERNS`）；③ 运行本门的 CI 作业未钉 node 版本 —— **关闭**（钉 22.17.0 ＋ 契约断言）；
+④ `node --check` 仅解析级 —— **保持并细化**（新增 `.js`「任一候选格式」条款）。
+
+**台账口径**：新增 `uc4G16JsCorpusExpansion`（决策三项、实证、关闭项、细化项、文件清单、L1／L2 结果与代价）；
+`uc4G16PublishedAudit` **逐字节不变**；主线计数字段（`count=0`／`entries=[]`／`otherStateConsumers=[]`／
+`retirementComplete=false`）本轮未改（本轮无消费者变化）。
+
+**范围外预存失败（登记为排除项，本轮不修）**：`make verify.product.delivery.governance_truth`（记分板快照陈旧，见 §8.51）
+仍为既有登记项；本轮不刷新记分板、不改 `.agent/**`。
+
+状态（§8.52 时点）：**G16 `.js` 扩围**（P4 工具轮）**实现与 L1／L2 自验通过，待冻结／Quick／PR 收口**｜批次状态：本批自验通过；
+集中产品复核结论以产品方登记为准｜未部署｜用户交付未完成｜主线台账 0（`count=0`）｜`otherStateConsumers=[]`｜
+`retirementComplete=false`（其他角色／状态未覆盖）｜受跟踪 `.js` 201 个已纳入语法门**。

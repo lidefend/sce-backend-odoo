@@ -1,12 +1,28 @@
 #!/usr/bin/env python3
-"""Parse first-party Node automation files without executing them.
+"""Parse first-party Node sources without executing them.
 
-Peer of ``python_syntax_check.py`` for the ``.mjs``/``.cjs`` delivery corpus.
-Frontend acceptance runners and Node verify scripts are only executed by the
-surface-specific make target that owns them, so a file that breaks
+Peer of ``python_syntax_check.py`` for the ``.mjs``/``.cjs``/``.js`` delivery
+corpus. Frontend acceptance runners, Node verify scripts and the Odoo browser
+assets under ``addons/**/static/src`` are only executed by the surface-specific
+make target (or the browser) that owns them, so a file that breaks
 syntactically can land through any other change with no gate observing it.
-This checker keeps one cheap corpus-wide gate: every tracked first-party
-``.mjs``/``.cjs`` file must parse.
+This checker keeps one cheap corpus-wide gate: every tracked first-party Node
+file must parse.
+
+``.mjs`` and ``.cjs`` declare their module format, so ``node --check <file>``
+parses them directly. ``.js`` does not: the runtime resolves it to CommonJS, or
+retries it as an ES module when the CommonJS parse fails on ES-module syntax.
+``node --check <file>.js`` returns 0 *without parsing the file at all* whenever
+that resolution picks the ES module (measured on node 22.17.0 and 24.16.0), so
+trusting it would leave a detected module's syntax errors unobserved. Every
+``.js`` file is therefore parsed from stdin with an explicit ``--input-type``:
+CommonJS first, then the ES module. A file passes when either format parses,
+which is the set the runtime itself accepts.
+
+The runtime has to accept ``--input-type`` for both formats; node 22.17.0, the
+version this repository pins, does. The checker proves that capability once and
+fails closed with a single message instead of reporting every ``.js`` file as
+broken.
 
 Usage:
     python3 scripts/ci/node_syntax_check.py             # every tracked file
@@ -21,8 +37,16 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-NODE_SUFFIXES = (".mjs", ".cjs")
-TRACKED_PATTERNS = ("*.mjs", "*.cjs")
+NODE_SUFFIXES = (".mjs", ".cjs", ".js")
+TRACKED_PATTERNS = ("*.mjs", "*.cjs", "*.js")
+# A ``.js`` file is CommonJS unless its CommonJS parse rejects ES-module syntax,
+# which is exactly when the runtime retries it as a module; keep that order.
+JS_INPUT_TYPES = ("commonjs", "module")
+# Stand-in sources that must parse when the runtime can check both ``.js`` formats.
+NODE_FORMAT_PROBES = (
+    ("commonjs", b"module.exports = 1;\n"),
+    ("module", b"export const ok = 1;\n"),
+)
 
 
 def _relative(path: Path) -> str:
@@ -74,24 +98,86 @@ def iter_node_files(paths: list[str]) -> list[Path]:
     return out
 
 
-def check_file(path: Path) -> str | None:
-    """Return ``line: message`` for ``path``, or None when it parses."""
-    result = subprocess.run(
-        ["node", "--check", str(path)],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode == 0:
-        return None
-    lines = [line.strip() for line in (result.stderr or result.stdout).splitlines()]
-    header = next((line for line in lines if line.startswith(f"{path}:")), "")
+def check_plans(path: Path) -> list[tuple[list[str], bytes | None, str, str]]:
+    """``(argv, stdin source, message prefix, format label)`` per node invocation."""
+    if path.suffix == ".js":
+        source = path.read_bytes()
+        return [
+            (
+                ["node", "--input-type", input_type, "--check"],
+                source,
+                "[stdin]:",
+                input_type,
+            )
+            for input_type in JS_INPUT_TYPES
+        ]
+    return [(["node", "--check", str(path)], None, f"{path}:", "")]
+
+
+def _detail(result: subprocess.CompletedProcess, prefix: str) -> str:
+    stderr = result.stderr.decode("utf-8", "replace")
+    stdout = result.stdout.decode("utf-8", "replace")
+    lines = [line.strip() for line in (stderr or stdout).splitlines()]
+    header = next((line for line in lines if line.startswith(prefix)), "")
     line_number = header.rsplit(":", 1)[-1] if header else "0"
     message = next(
         (line for line in lines if line.startswith(("SyntaxError", "Error"))),
         f"node --check exited {result.returncode}",
     )
     return f"{line_number}: {message}"
+
+
+def check_file(path: Path) -> str | None:
+    """Return ``line: message`` for ``path``, or None when it parses."""
+    failures: list[str] = []
+    for argv, stdin_source, prefix, label in check_plans(path):
+        result = subprocess.run(
+            argv,
+            cwd=ROOT,
+            capture_output=True,
+            input=stdin_source,
+        )
+        if result.returncode == 0:
+            return None
+        detail = _detail(result, prefix)
+        failures.append(f"{detail} (as {label})" if label else detail)
+    return " / ".join(failures)
+
+
+def _node_version() -> str:
+    try:
+        result = subprocess.run(
+            ["node", "--version"], cwd=ROOT, capture_output=True, text=True
+        )
+    except FileNotFoundError:
+        return "unknown"
+    return result.stdout.strip() or "unknown"
+
+
+def format_capability_failure() -> str | None:
+    """Reason this runtime cannot parse ``.js`` sources through ``--input-type``."""
+    for input_type, source in NODE_FORMAT_PROBES:
+        try:
+            result = subprocess.run(
+                ["node", "--input-type", input_type, "--check"],
+                cwd=ROOT,
+                capture_output=True,
+                input=source,
+            )
+        except FileNotFoundError:
+            return "the node runtime is not on PATH"
+        if result.returncode != 0:
+            detail = [
+                line.strip()
+                for line in result.stderr.decode("utf-8", "replace").splitlines()
+                if line.strip()
+            ]
+            return (
+                f"node {_node_version()} cannot parse {input_type} sources through "
+                f"--input-type ({detail[0] if detail else result.returncode}); "
+                "node 22.17.0 or newer is required"
+            )
+    return None
 
 
 def main(argv: list[str]) -> int:
@@ -103,6 +189,12 @@ def main(argv: list[str]) -> int:
     if not targets:
         print("[FAIL] Node syntax check found no files to check", file=sys.stderr)
         return 2
+
+    if any(path.suffix == ".js" for path in targets):
+        capability = format_capability_failure()
+        if capability:
+            print(f"[FAIL] Node syntax check: {capability}", file=sys.stderr)
+            return 2
 
     failures: list[str] = []
     for path in targets:

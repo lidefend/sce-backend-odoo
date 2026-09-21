@@ -5,6 +5,8 @@ import json
 import unittest
 from pathlib import Path
 
+import yaml
+
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -111,6 +113,31 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("verify.frontend.navigation_shell.unit", merge_units)
         self.assertIn("verify.frontend.state_dashboard.unit", merge_units)
         self.assertNotIn("verify.frontend.professional_audit.unit", merge_units)
+
+    def test_professional_gate_pins_the_node_runtime_of_the_syntax_sweep(self) -> None:
+        """The sweep behind ``test.unit``/``test.contract`` parses ``.js`` files.
+
+        Those targets check ``.js`` through ``node --input-type``, so the job
+        that runs them must pin the runtime instead of inheriting whatever the
+        runner image ships. The step is read from the parsed workflow, so a
+        changed version, an unpinned ``@v4`` action, a commented-out version or
+        an ``if: false`` guard cannot satisfy it by matching text.
+        """
+        workflow = yaml.safe_load(self.text("professional_quality_gate.yml"))
+        steps = workflow["jobs"]["professional_quality_gate"]["steps"]
+        names = [step.get("name") for step in steps]
+        pin_name = "Install pinned Node.js runtime for the syntax sweep"
+        self.assertEqual(names.count(pin_name), 1, "the sweep job must pin the node runtime once")
+        pin = steps[names.index(pin_name)]
+        self.assertEqual(pin.get("uses"), "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020")
+        self.assertEqual(pin.get("with"), {"node-version": "22.17.0"})
+        self.assertNotIn("if", pin)
+        for gate in (
+            "Run full professional quality gate (serialized artifact writers)",
+            "Run standard backend quality gate",
+        ):
+            self.assertIn(gate, names)
+            self.assertLess(names.index(pin_name), names.index(gate), f"{gate} must run after the pin")
 
     def test_public_guard_skips_history_scan_only_for_fast_lane(self) -> None:
         text = self.text("public_guard.yml")
