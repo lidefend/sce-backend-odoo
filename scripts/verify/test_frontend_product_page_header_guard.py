@@ -33,10 +33,11 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
             return value
 
         with patch("pathlib.Path.read_text", altered):
-            self.assertEqual(
-                validate(),
-                ["header adapter hardcodes presentation mode instead of the entry registry: components/design-system/ScPageHeader.vue"],
-            )
+            failures = validate()
+        self.assertIn(
+            "header adapter hardcodes presentation mode instead of the entry registry: components/design-system/ScPageHeader.vue",
+            failures,
+        )
 
         def unbound(path, *args, **kwargs):
             value = real(path, *args, **kwargs)
@@ -49,6 +50,99 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
         with patch("pathlib.Path.read_text", unbound):
             failures = validate()
         self.assertTrue(any("single-source its fixed presentation mode" in item for item in failures), failures)
+
+    def test_adapter_must_not_bind_presentation_mode_to_a_literal(self):
+        real = Path.read_text
+
+        def literal(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "ScPageHeader.vue":
+                return value.replace(':presentation-mode="collectionMode"', ":presentation-mode=\"'collection'\"")
+            return value
+
+        with patch("pathlib.Path.read_text", literal):
+            failures = validate()
+        self.assertTrue(any("binds presentation mode to a literal" in item for item in failures), failures)
+
+    def test_adapter_must_not_forward_unregistered_axes_through_attrs(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "ScPageHeader.vue":
+                return value.replace(':presentation-mode="collectionMode"', ':presentation-mode="collectionMode" v-bind="$attrs"')
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            failures = validate()
+        self.assertTrue(any("must not forward unregistered axes through $attrs" in item for item in failures), failures)
+
+    def test_authority_must_not_forward_unregistered_axes_through_attrs(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "ProductPageHeader.vue":
+                return value.replace("data-product-page-header", 'data-product-page-header v-bind="$attrs"')
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            failures = validate()
+        self.assertIn("ProductPageHeader must not forward unregistered axes through $attrs", failures)
+
+    def test_adapter_fixed_mode_constant_must_come_from_its_own_entry(self):
+        real = Path.read_text
+
+        def drifted(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "ScPageHeader.vue":
+                return value.replace(
+                    "resolveProductPageHeaderFixedMode('design-system')",
+                    "resolveProductPageHeaderFixedMode('page')",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", drifted):
+            failures = validate()
+        self.assertTrue(any("single-source its fixed presentation mode" in item for item in failures), failures)
+
+    def test_contract_test_wiring_must_not_be_commented_out(self):
+        real = Path.read_text
+
+        def commented(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value.replace(
+                    "\t@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
+                    "\t#@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", commented):
+            failures = validate()
+        self.assertTrue(
+            any("not wired into verify.frontend.product_page_header.unit" in item for item in failures),
+            failures,
+        )
+
+    def test_contract_test_node_step_must_not_be_commented_out(self):
+        real = Path.read_text
+
+        def commented(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value.replace(
+                    "\t@node /tmp/product-page-header-adapter-contract-test.mjs",
+                    "\t#@node /tmp/product-page-header-adapter-contract-test.mjs",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", commented):
+            failures = validate()
+        self.assertTrue(
+            any("not wired into verify.frontend.product_page_header.unit" in item for item in failures),
+            failures,
+        )
 
     def test_entry_contract_test_must_stay_wired(self):
         real = Path.read_text

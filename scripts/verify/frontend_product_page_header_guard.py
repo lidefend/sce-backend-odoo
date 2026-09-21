@@ -9,6 +9,31 @@ def source(path: str) -> str:
     return (ROOT / path).read_text(encoding="utf-8")
 
 
+def _active_recipe_lines(makefile: str, target: str) -> list[str]:
+    """返回 `target` 目标下**未被注释掉**的 recipe 行。
+
+    只做子串存在性检查会让「注释掉烘焙／执行行、保留文件名」这种静默摘除逃过门禁，
+    因此这里必须按 Makefile 结构取目标块，并剔除以 `#` 开头的 recipe 行。
+    """
+    active: list[str] = []
+    inside = False
+    for line in makefile.splitlines():
+        if re.match(rf"^{re.escape(target)}\s*:", line):
+            inside = True
+            continue
+        if not inside:
+            continue
+        if line.startswith("\t"):
+            body = line.strip()
+            if body and not body.startswith("#"):
+                active.append(body)
+            continue
+        if not line.strip():
+            continue
+        break
+    return active
+
+
 def validate() -> list[str]:
     failures: list[str] = []
     component = source("frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue")
@@ -42,12 +67,29 @@ def validate() -> list[str]:
         "components/page/PageHeader.vue": "page",
         "components/design-system/ScPageHeader.vue": "design-system",
     }
+    if "$attrs" in component:
+        failures.append("ProductPageHeader must not forward unregistered axes through $attrs")
     for adapter_path, entry_id in fixed_mode_adapters.items():
         adapter_source = source(f"frontend/apps/web/src/{adapter_path}")
-        if f"resolveProductPageHeaderFixedMode('{entry_id}')" not in adapter_source:
-            failures.append(f"header adapter does not single-source its fixed presentation mode: {adapter_path}")
+        if "$attrs" in adapter_source:
+            failures.append(f"header adapter must not forward unregistered axes through $attrs: {adapter_path}")
         if re.search(r"(?<![:\w-])presentation-mode=\"", adapter_source):
             failures.append(f"header adapter hardcodes presentation mode instead of the entry registry: {adapter_path}")
+        if re.search(r":presentation-mode=\"\s*['\"]", adapter_source):
+            failures.append(f"header adapter binds presentation mode to a literal: {adapter_path}")
+        binding = re.search(r":presentation-mode=\"([A-Za-z_$][\w$]*)\"", adapter_source)
+        if binding is None:
+            failures.append(
+                f"header adapter does not single-source its fixed presentation mode (no identifier binding): {adapter_path}"
+            )
+        elif not re.search(
+            rf"const\s+{re.escape(binding.group(1))}\s*=\s*resolveProductPageHeaderFixedMode\('{entry_id}'\)",
+            adapter_source,
+        ):
+            failures.append(
+                "header adapter does not single-source its fixed presentation mode "
+                f"(constant {binding.group(1)} must come from resolveProductPageHeaderFixedMode('{entry_id}')): {adapter_path}"
+            )
         if f"'{adapter_path}'" not in registry:
             failures.append(f"header entry registry misses adapter path: {adapter_path}")
     for entry_path in (
@@ -61,8 +103,24 @@ def validate() -> list[str]:
     contract_test = "frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts"
     if not (ROOT / contract_test).exists():
         failures.append("header entry contract test is missing")
-    if "product_page_header_adapter_contract_test.ts" not in source("make/frontend.mk"):
-        failures.append("header entry contract test is not wired into verify.frontend.product_page_header.unit")
+    recipe = _active_recipe_lines(source("make/frontend.mk"), "verify.frontend.product_page_header.unit")
+    if not any("esbuild" in line and "product_page_header_adapter_contract_test.ts" in line for line in recipe):
+        failures.append(
+            "header entry contract test is not wired into verify.frontend.product_page_header.unit "
+            "(esbuild bundle step missing or disabled)"
+        )
+    if not any(line.startswith("@node") and "product-page-header-adapter-contract-test" in line for line in recipe):
+        failures.append(
+            "header entry contract test is not wired into verify.frontend.product_page_header.unit "
+            "(node execution step missing or disabled)"
+        )
+    if not any("test_frontend_product_page_header_guard.py" in line and "unittest" in line for line in recipe) or not any(
+        line.startswith("@python3 scripts/verify/frontend_product_page_header_guard.py") for line in recipe
+    ):
+        failures.append(
+            "header entry contract test is not wired into verify.frontend.product_page_header.unit "
+            "(guard unit test or guard script step missing or disabled)"
+        )
     contract = source("frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue")
     for marker in (':presentation-mode="presentationMode"', ':render-profile="mode"', ':dirty-state="headerDirtyState"'):
         if marker not in contract:
