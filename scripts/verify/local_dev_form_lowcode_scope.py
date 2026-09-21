@@ -265,8 +265,9 @@ TOPIC_IDENTITIES = {
     # be exercised on the record surface.  That makes `record_surface` the
     # decisive assertion here, not a fallback - the action domain
     # (`sc_runtime_company_maintainable=True`) is reachable in the governed
-    # database, so the resolver is expected to replay a measured record rather
-    # than report `empty_action_domain`.  The read-only口径 the delivered page
+    # database, so the resolver replays a measured record rather than reporting
+    # `empty_action_domain` (G16 measured `sample_state=available` with 47 domain
+    # rows and a 7-field / 4-section record route).  The read-only口径 the delivered page
     # keeps is the native arch's (the retired body declared no field policy the
     # arch did not already carry), and `readonly_values` asks the rendered page
     # whether every fact the delivered profile marks read-only really carries no

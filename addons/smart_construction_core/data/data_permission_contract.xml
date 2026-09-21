@@ -37,7 +37,7 @@
          `identity_authority`／`role_authority`／`project_scope_authority`）、`title` 保留入口
          标题、`priority=800`／`status=published`／`version_no` 不变。`res.users` 在本模块内
          **没有**模型级生成镜像，本入口契约是同模型唯一入口契约，因此本批不涉及镜像退役，
-         同模型兄弟入口（人员档案 857 `action_sc_runtime_user_management`，自持其入口面）
+         同模型兄弟入口（人员档案 `action_sc_runtime_user_management`，action **736**／menu 430，自持其入口面）
          不随本批改动。回滚：`git revert`（纯声明，无数据迁移）。 -->
     <record id="business_config_contract_data_permission_form_v1" model="ui.business.config.contract">
         <field name="name">data_permission_form_v1</field>
