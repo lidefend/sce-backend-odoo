@@ -6,259 +6,11 @@
     "operation": "model",
     "renderProfile": "create"
   },
-  "count": 5,
+  "count": 1,
   "fullRescan": false,
   "sourceInventory": "artifacts/form-structure-unification/customer-browser-final/compatibility-consumers.json",
   "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
   "entries": [
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_tender_guarantee",
-      "label": "投标保证金",
-      "model": "tender.guarantee",
-      "actionId": 778,
-      "menuId": 474,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "native_authority",
-      "actualView": {
-        "model": "tender.guarantee",
-        "viewId": 1540
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 137,
-            "name": "tender_guarantee_form_structure_generated_v1",
-            "priority": 176,
-            "view_type": "form"
-          }
-        ],
-        "resolvedViewId": 1540,
-        "resolvedActionId": 778,
-        "structureDiagnostics": [],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "",
-        "formPresentationMode": "workspace",
-        "fieldNames": [
-          "state",
-          "receipt_bank_account_id",
-          "bank_account_id",
-          "remark",
-          "attachment_ids",
-          "bid_id",
-          "project_id",
-          "type",
-          "date",
-          "amount",
-          "currency_id"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [],
-        "sectionTitles": [],
-        "fieldGroups": {},
-        "hiddenFieldNames": [],
-        "groupColumns": {},
-        "groupVisibility": {}
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_p1_cost_ledger",
-      "label": "成本归集",
-      "model": "project.cost.ledger",
-      "actionId": 523,
-      "menuId": 668,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "native_authority",
-      "actualView": {
-        "model": "project.cost.ledger",
-        "viewId": 1379
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 39,
-            "name": "project_cost_ledger_form_structure_generated_v1",
-            "priority": 70,
-            "view_type": "form"
-          }
-        ],
-        "resolvedViewId": 1379,
-        "resolvedActionId": 523,
-        "structureDiagnostics": [],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "",
-        "formPresentationMode": "workspace",
-        "fieldNames": [
-          "note",
-          "project_id",
-          "date",
-          "period",
-          "wbs_id",
-          "cost_code_id",
-          "qty",
-          "uom_id",
-          "amount",
-          "partner_id"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [],
-        "sectionTitles": [],
-        "fieldGroups": {},
-        "hiddenFieldNames": [],
-        "groupColumns": {},
-        "groupVisibility": {}
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_p1_profit_analysis",
-      "label": "项目盈亏分析",
-      "model": "project.profit.compare",
-      "actionId": 522,
-      "menuId": 669,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "native_authority",
-      "actualView": {
-        "model": "project.profit.compare",
-        "viewId": 1377
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 44,
-            "name": "project_profit_compare_form_structure_generated_v1",
-            "priority": 75,
-            "view_type": "form"
-          }
-        ],
-        "resolvedViewId": 1377,
-        "resolvedActionId": 522,
-        "structureDiagnostics": [],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "",
-        "formPresentationMode": "workspace",
-        "fieldNames": [
-          "project_id",
-          "period",
-          "wbs_id",
-          "currency_id",
-          "revenue_budget_amount",
-          "revenue_actual_amount",
-          "gross_profit_budget",
-          "cost_budget_amount",
-          "cost_actual_amount",
-          "gross_profit_actual"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [],
-        "sectionTitles": [],
-        "fieldGroups": {},
-        "hiddenFieldNames": [],
-        "groupColumns": {},
-        "groupVisibility": {}
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_funding_plan_summary",
-      "label": "资金汇总",
-      "model": "project.funding.baseline",
-      "actionId": 646,
-      "menuId": 542,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "native_authority",
-      "actualView": {
-        "model": "project.funding.baseline",
-        "viewId": 1669
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 41,
-            "name": "project_funding_baseline_form_structure_generated_v1",
-            "priority": 72,
-            "view_type": "form"
-          }
-        ],
-        "resolvedViewId": 1669,
-        "resolvedActionId": 646,
-        "structureDiagnostics": [],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "",
-        "formPresentationMode": "workspace",
-        "fieldNames": [
-          "state",
-          "project_id",
-          "total_amount",
-          "currency_id",
-          "attachment_ids"
-        ],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [],
-        "sectionTitles": [],
-        "fieldGroups": {},
-        "hiddenFieldNames": [],
-        "groupColumns": {},
-        "groupVisibility": {}
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
     {
       "menuXmlid": "smart_construction_core.menu_sc_product_tax_filing_v1",
       "label": "税务申报",
@@ -547,7 +299,7 @@
     "countCorrection": 4,
     "migrationReduction": 3
   },
-  "localVerifiedCount": 5,
+  "localVerifiedCount": 1,
   "uc1PublishedAudit": {
     "auditedAt": "2026-09-16",
     "auditedReleaseHead": "28b7695dc9f1cebbbe9bd5d715e951c6dec8a4da",
@@ -720,13 +472,10 @@
     "name": "U-C4",
     "status": "scope_confirmed_implementation_started",
     "priorityActions": [
-      523,
-      522,
-      646,
-      778
+      880
     ],
-    "selectedGroup": "G14",
-    "sourceMainlineHead": "ca83fbd9d5a678382bba153f9ae6715b00124eae",
+    "selectedGroup": "G15",
+    "sourceMainlineHead": "dc2788e1d1b217a9da7f10cdd5025e262a41d833",
     "fullRescan": false,
     "groups": [
       {
@@ -1092,7 +841,15 @@
           "project_profit_compare_form_structure_generated_v1",
           "tender_guarantee_form_structure_generated_v1"
         ],
-        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
+        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated",
+        "indexStatus": "historical_source",
+        "indexNote": "G14 is published and merged (PR #510, squash dc2788e1, origin/main^{tree} byte-identical to the candidate tree 1415f9c8). The G14 topic retired all four of its ledger entries. 523 (project.cost.ledger / view 1379 / menu 668 / contract 523), 522 (project.profit.compare / view 1377 / menu 669), 646 (project.funding.baseline / view 1669 / menu 542) and 778 (tender.guarantee / view 1540 / menu 474) each had NO entry release before this batch: they consumed only their model-level generated mirror (39 priority 70 / 44 priority 75 / 41 priority 72 / 137 priority 176, all with action_id empty), so form_structure_authority resolved to \"\" and ui_contract_v2 stayed on the compatibility floorplan path while the pages were already rendered by the native arch. G14 added one entry release per action (project_cost_ledger_form_native_v1 / project_profit_compare_form_native_v1 / project_funding_baseline_form_native_v1 / tender_guarantee_form_native_v1; runtime dbIds 870/871/872/873, priority 800, published, version_no 1), each carrying only title + composition_mode: native_semantic_surface + context, with no structural key. NO sparse readonly override was needed this time: the four model-level mirrors declare zero readonly and zero visible:false rows and the read-only A/B probe measured resolvedReadonly=[] and resolvedHidden=0 on all four surfaces (contrast with G13, where 876 needed exactly 2 sparse rows). FOUR ledger entries retired (5 -> 1): 523, 522, 646 and 778. 522 is the read-only member of the group: its native form arch declares create=\"false\" (views/core/cost_domain_views.xml:256) and project.profit.compare has no ACL granting create (security/ir.model.access.csv:118,119), so the platform returns pageVisible=false / pageAuth=none / reasonCode=FORM_CREATE_NOT_ALLOWED for the create profile; the read-only attribution probe (SAVEPOINT + ROLLBACK, contractsAfterRollback=289, allEntriesActiveAfterRollback=true) measured that this is IDENTICAL with the entry release active and deactivated, i.e. a pre-existing product declaration rather than a batch change, and the entry's real delivery surface is the read-only record surface (10 fields, pageAuth=read). The published audit is uc4G14PublishedAudit. STALE INDEX FIELDS REGISTERED, NOT CARRIED: this group was frozen from the older 3d644a79 inventory, so the four rows carry structureDiagnostics=[] but formStructureAuthority=\"\" and layoutPolicy=native_authority, which are the pre-batch runtime values; the frozen after-probe measured authority=native_authority with a single diagnostic LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW owned by the model-level mirror on each entry. The 522 row also carried no readonly declaration, consistent with the zero-override finding.",
+        "legacyConfigurationStatus": {
+          "project_cost_ledger_form_structure_generated_v1": "model_level_mirror_kept_active_and_suppressed_by_the_new_native_view_entry_release",
+          "project_funding_baseline_form_structure_generated_v1": "model_level_mirror_kept_active_and_suppressed_by_the_new_native_view_entry_release",
+          "project_profit_compare_form_structure_generated_v1": "model_level_mirror_kept_active_and_suppressed_by_the_new_native_view_entry_release",
+          "tender_guarantee_form_structure_generated_v1": "model_level_mirror_kept_active_and_suppressed_by_the_new_native_view_entry_release"
+        }
       },
       {
         "id": "G15",
@@ -1121,7 +878,7 @@
     "planningRecord": "docs/ops/iterations/form_structure_consumption_stabilization_20260917.md"
   },
   "retirementCondition": "Only after every formal consumer of a compatibility regrouping path is zero and other roles/companies/states are covered, remove that regrouping logic and its test exemptions.",
-  "mainlineRemainingCount": 5,
+  "mainlineRemainingCount": 1,
   "mainlineRemainingLabel": "主线剩余兼容消费者（不代表部署发布或89入口整体交付）",
   "uc3LocalMigrationAudit": {
     "status": "mainline_integrated",
@@ -2331,6 +2088,83 @@
       "shared_native_form_1764_view_sc_settlement_order_form_stays_live_as_the_primary_form_of_sc_settlement_order_and_is_now_the_authoritative_structure_plane_for_action_876",
       "sibling_entries_629_same_view_1757_and_693_same_view_1764_with_its_own_9_section_contract_195_stay_untouched",
       "model_level_mirror_77_stays_active_and_converged_orchestration_context_of_contract_174_is_preserved_value_identically"
+    ]
+  },
+  "uc4G14PublishedAudit": {
+    "auditedAt": "2026-09-21",
+    "auditedReleaseHead": "dc2788e1d1b217a9da7f10cdd5025e262a41d833",
+    "mergedPr": {
+      "number": 510,
+      "squashHead": "dc2788e1d1b217a9da7f10cdd5025e262a41d833",
+      "sourceHead": "a5c851987639e072f09a82e4850ecca4046a9a1e",
+      "tree": "1415f9c8396a9cfe68158ed6317a8c682f783a44"
+    },
+    "iterationRecord": "docs/ops/iterations/form_structure_consumption_stabilization_20260917.md",
+    "requiredChecks": [
+      "classify=success",
+      "frontend_release_gate=success",
+      "merge_policy_gate=success",
+      "professional_authorization=success",
+      "professional_quality_gate=success",
+      "public_guard=success",
+      "public_guard_classify=success",
+      "python310_runtime_compatibility=success",
+      "release_candidate_gate=success"
+    ],
+    "skippedChecks": [
+      "classify",
+      "fast",
+      "wait_for_candidate_checks"
+    ],
+    "reduction": {
+      "before": 5,
+      "after": 1,
+      "retiredActions": [
+        523,
+        522,
+        646,
+        778
+      ],
+      "retiredViews": [
+        1379,
+        1377,
+        1669,
+        1540
+      ],
+      "countMeaning": "mainline remaining compatibility consumers; deployment and overall user delivery are separate",
+      "retiredViewMeaning": "1379 (view_project_cost_ledger_form), 1377 (view_project_profit_compare_form), 1669 (view_project_funding_baseline_form) and 1540 (view_tender_guarantee_form) label the four retired ledger entries; all four views stay live as the native primary forms of their models and are now the authoritative structure planes for actions 523/522/646/778",
+      "arithmeticNote": "the deduction counts retired ACTIONS (4 of the 5 remaining entries), not published entry releases; the earlier draft wording 7 -> 6 for this group was an arithmetic error and the G13 record already corrected the convention"
+    },
+    "exitEvidence": {
+      "entryReleaseCheck": "none of the four actions had any ui.business.config.contract bound to it before this batch (grep over addons/smart_construction_core/data returned none), so form_structure_authority resolved to \"\" and ui_contract_v2 stayed on the compatibility floorplan path while the pages were already rendered by the native arch; G14 adds one entry release per action (priority 800, published, version_no 1, title + composition_mode: native_semantic_surface + context only, no structural key), the same shape used for 858 (G07), 871 (G09), 597/527 (G10), 727 (G11), 687 (G13)",
+      "manifestOrderCheck": "the new data file is registered at manifest index 256, after every view/action file it refs (cost_domain_views.xml 48, tender_views.xml 79, funding_baseline_views.xml 116, menu_business_taxonomy.xml 191)",
+      "noSparseReadonlyCheck": "the four model-level mirrors declare 0 readonly rows and 0 visible:false rows; the read-only A/B probe measured resolvedReadonly=[] -> [] and resolvedHidden=0 -> 0 on all four entries with containerFields/widgetFields/containerAnchors identical, so this batch needs NO sparse readonly override (G13's 876 needed exactly 2)",
+      "mirrorCheck": "the four model-level mirrors (39 priority 70 / 44 priority 75 / 41 priority 72 / 137 priority 176) stay active in this batch: form_structure_authority does not depend on priority, and they keep serving the action-less model surface. The measured diagnostic for each after the new entry release is LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW (normal, not a conflict)",
+      "abProbeCheck": "frozen read-only A/B on sc_dev_demo (SAVEPOINT + ROLLBACK): authority \"\" -> native_authority, layoutPolicy native_authority -> container_tree_authority, presentationMode workspace -> task, and the only added diagnostic is LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW; the rendered field sets (23/11/21/11) and the zero anchors are unchanged, as are the container tree and widget profiles",
+      "createDenialCheck": "522's create route is empty because the delivered contract itself declares the denial (view_project_profit_compare_form arch create=\"false\" at views/core/cost_domain_views.xml:256 and no ACL granting create on project.profit.compare at security/ir.model.access.csv:118,119), producing pageVisible=false / pageAuth=none / reasonCode=FORM_CREATE_NOT_ALLOWED through unified_page_contract_v2_assembler.py:1085-1088; the read-only attribution probe (SAVEPOINT + ROLLBACK, contractsAfterRollback=289, allEntriesActiveAfterRollback=true) measured the same three fields with the entry release active and deactivated, so it is pre-existing and NOT introduced by this batch. 523/646/778 measured pageVisible=true / pageAuth=edit / create=true in both states",
+      "renderedSurfaceCheck": "all four entries render from the native arch with zero data-sc-anchor section rails (523: 23 fields / 0 anchors; 522: 11 / 0; 646: 21 / 0; 778: 11 / 0), so the ledger_summary topic deliberately does NOT declare section_navigation - the assertion cannot hold for these entries and is already covered by other topics elsewhere",
+      "domainRegressionCheck": "read-only re-run of the committed domain rollouts: project domain 30 actions and base_configuration domain 6 actions, byte-identical restoration after the run (32/32 sha256 OK); the single semantic difference action_sc_product_project_edit_v1 on the project domain is a PRE-EXISTING STALE REPORT whose behaviour this batch fixes (the report is not part of the frozen surface)",
+      "quickGateCheck": "make ci.local.quick on the exact candidate head a5c85198 passed and the receipt is bound to that head and tree 1415f9c8; pr.merge reused that verified receipt (REUSE path) instead of re-running",
+      "reviewCheck": "two independent read-only review rounds: round 1 at a6a2461c (mergeable_with_notes, no S0/S1, one S2 - the runner's new create-route branch attributed too broadly) and round 2 at a5c85198 (delta re-review, S2 closed by narrowing the predicate to the platform-declared denial, no new S0/S1/S2). One S3 forward risk and four S4 bookkeeping notes are recorded in tmp/g14-evidence/archive-files/review.md"
+    },
+    "knownLimits": [
+      "retirementComplete=false; the G14 batch ran no deployment and no user delivery acceptance",
+      "the ledger counts the declaration, not the delivery: the frozen rows carried formStructureAuthority=\"\" / layoutPolicy=native_authority from the 3d644a79 inventory, while the after-probe measured native_authority / container_tree_authority on all four entries",
+      "S3 FORWARD RISK (not triggered by this batch, direction fail-closed): the representative runner records a denied create route only when the platform declares FORM_CREATE_NOT_ALLOWED AND pageAuth=none AND neither the view nor the model source grants create; the platform decides from effectiveRecordCapabilities.create, which also includes recordRights and entryCapabilities. An entry whose denial comes from entryCapabilities.create (action context no_create) would therefore be reported as a structural failure rather than a declared capability fact. Suggested follow-up: align the predicate with effectiveRecordCapabilities.create, which is already copied into globalStatus",
+      "five pre-existing environment/baseline defects are registered and NOT fixed here: verify.contract.view_structure expects a local.clean/sc_clean authority fingerprint; verify.product.menu.governance.m4.closure misses artifacts/menu-governance/menu-m4-runtime.REJECTED-wrong-sha.json; verify.user_form.preference.boundary_guard depends on a customer custom addon repository that is not in this repository boundary; the component test test_notification_contract_is_bound_to_exact_action_and_view in verify.frontend.professionalization.collaboration_domain.runtime fails on the merged baseline because G11 shipped native_semantic_surface while that test still asserts entry_semantic_surface; and docs/frontend_productization/domain-rollout/project-domain-coverage-v1.json is stale for action_sc_product_project_edit_v1",
+      "the browser representative surface for 523 record is uncovered: the action_project_cost_ledger domain holds 86 rows on sc_dev_demo but no row is readable under the governed identity (record_rule_denied, business_row_count=0), registered as a data fact and NOT claimed as a measured route",
+      "the 522 create route is uncovered by design (declared denial, see createDenialCheck); its real delivery surface is the read-only record route (10 fields, pageAuth=read) and that route was measured",
+      "the probes ran as a single admin principal on sc_dev_demo and did not re-measure a tenant/low-code surface (same residual as G10/G11/G12/G13)",
+      "the two runner changes land in P4 tooling (frontend/apps/web/scripts/formal_form_representative_journey.mjs and scripts/verify/local_dev_form_lowcode_scope.py); no product code, contract, view arch, ACL, record rule or menu visibility file was touched by the candidate"
+    ],
+    "notDeducted": [
+      "shared_native_form_1379_view_project_cost_ledger_form_stays_live_as_the_primary_form_of_project_cost_ledger_and_is_now_the_authoritative_structure_plane_for_action_523",
+      "shared_native_form_1377_view_project_profit_compare_form_stays_live_as_the_read_only_primary_form_of_project_profit_compare_and_is_now_the_authoritative_structure_plane_for_action_522",
+      "shared_native_form_1669_view_project_funding_baseline_form_stays_live_as_the_primary_form_of_project_funding_baseline_and_is_now_the_authoritative_structure_plane_for_action_646",
+      "shared_native_form_1540_view_tender_guarantee_form_stays_live_as_the_primary_form_of_tender_guarantee_and_is_now_the_authoritative_structure_plane_for_action_778",
+      "model_level_mirrors_39_41_44_137_stay_active_and_only_serve_the_action_less_model_surface",
+      "sibling_entries_585_and_524_cost_ledger_645_funding_plan_854_tender_guarantee_refund_stay_untouched",
+      "the_last_remaining_ledger_entry_880_sc_tax_filing_is_the_G15_topic"
     ]
   }
 }
