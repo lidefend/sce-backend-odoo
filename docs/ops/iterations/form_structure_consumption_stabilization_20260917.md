@@ -6179,3 +6179,120 @@ byte-identical 只证明菜单／能力与摘要稳定）已由冻结后补测�
 
 状态：**G11 主线集成完成（PR #504，squash 同树）｜批次状态：自验与冻结门禁通过；集中产品复核结论以产品方登记为准｜
 未部署｜89 入口整体交付未完成｜台账 8｜G12 未启动**。
+
+### 8.40 G12 项目立项：入口发布承接原生结构、同域竞争镜像一并退役与浏览器代表面复验（2026-09-21；**实施＋分层验证轮**；冻结／Quick／PR 属本轮收口步骤）
+
+**范围与层级**：Formal Product Layer **P1**（施工行业标准产品默认面）；Layer Target 为
+`smart_construction_core` 的入口契约、原生视图与测试，另含一处 **P4 最小扩展**——既有的只读代表面入口
+`scripts/verify/local_dev_form_lowcode_scope.py` 登记 `project` topic（复用已注册的 Compose 项目、数据库、
+身份与数据权威，只读、不写任何配置，只让一个已交付页面进入既有只读比对范围）。**不属** P0
+（`smart_core` 不承载行业语义），不属 P2／P3。爆炸半径：入口 action **724**（menu 379「新项目立项」）、
+原生视图 **1503**（`view_project_create_form`）、**同 action 同 view 的生成镜像 46**
+（`project_project_form_structure_generated_v1`）、兄弟入口 725（「快速创建项目」，自持视图
+`view_project_create_form_quick`）、模型 `project.project`；回滚方式为 `git revert`（纯声明变更，无数据迁移）。
+
+**机制（这批为什么能真正降低台账计数）**：与 G07／G09／G10／G11 同一条机制。台账计数的是
+`layoutPolicy != container_tree_authority` 的兼容消费者；`ui_contract_v2` 只有在
+`governance["form_structure_authority"] == "native_authority"` 时才给出 `container_tree_authority`，而该字段由
+入口契约的 `composition_mode ∈ {native_semantic_surface, semantic_native_surface}` 决定
+（`form_structure_authority.py`）。因此本批让**本入口的发布成为本入口的最后结构写入者**并声明原生语义面，
+兼容重组路径对 724 不再适用。
+
+**修改范围（候选 8 条路径：代码／契约／测试 5 条＝4 改＋1 新增，另加本记录与切换日志 2 条，以及随
+`ci.delivery.freeze.prepare` 刷新的生成物 `docs/engineering_convergence/complexity_budget_report.md` 1 条）**：
+
+1. `views/core/project_views.xml`（1503）补 **4 个** `data-sc-anchor` 业务分组——`current_task`「当前任务」／
+   `intake_risk`「立项条件」／`project_create_required`「项目创建（必填）」／`project_create_optional`
+   「项目标识（可选）」；原「当前任务」分组内的两个只读字段拆成两个带 key 的分组并**保留 `readonly="1"`**；
+   `manager_id` 复述 `string="项目负责人"`。**不增不删任何字段**（渲染字段集保持 12 条不变；本批改变的是
+   分组口径——把原先的无标题嵌套分组提为带锚点的业务章节，并把两个只读字段拆成独立分组）。
+2. `data/view_orchestration_form_section_contract_data.xml`：入口契约 139
+   （`business_config_contract_project_project_form_structure_v1`）只留 `title` ＋
+   `composition_mode: native_semantic_surface`（priority **90 → 800**，`view_orchestration.context` 原样保留），
+   11 个 sections／54 条 fields／`semantic_anchors` 全部退役；同域竞争镜像 **46** 用既有
+   `<function model="ui.business.config.contract" name="write">` 先例一并退役（`active: False`）。
+3. **新增** `tests/test_project_initiation_native_lowcode.py`（tag `uc4_native_lowcode`，**15 测试**），
+   并在 `tests/__init__.py` 登记；测试以「原生 arch 为地面真值」钉住渲染字段集、锚点章节集、只读口径、
+   迁移 label、退役声明不可达与兄弟面（725 自持视图 7 字段）不变。
+4. `scripts/verify/local_dev_form_lowcode_scope.py`：登记只读 `project` topic（724／1503／menu 379）与
+   `{"section_navigation": True, "record_surface": True}` 两个既有断言电池，使本批的章节身份与 label
+   在**交付页面**上被实测，而不是只在契约层被断言。
+
+**关键决策（全部由实测驱动，不是设计时预判）**：
+
+- **1503 无继承扇出**：运行库 `ir.ui.view.inherit_id = 1503` 命中 **0**，仓内 `inherit_id ref=view_project_create_form`
+  亦 0 条（台账 `structureRelation=project_create_view_with_inheritance_fanout` 的"扇出"在运行库不成立）。
+- **同域竞争镜像必须一并处置**：镜像 46（priority 77、15 字段）与入口 139 **绑定同一个 action 与同一个 view**。
+  `SAVEPOINT g12_ab` ＋ `ROLLBACK TO SAVEPOINT` 的 A／B 实测（`rollback_residual` 全 true，证明 0 写入）：
+  只退役 139 → **渲染直接不再解析**（`ok=false`），因为 46 成为该 action 的最后结构写入者、
+  `diagnose_structure_ownership` 拒绝该 scoped 冲突；退役 139 ＋ 退役 46 body ／ `active=False` → `ok=true`，
+  `container_tree_authority` ＋ `native_structured_form`。
+- **退役声明与交付面本来就是两套事实**：契约 139 声明 11 个 sections（其中 **9 个无任何字段**）、54 条
+  fields（**25 条 `visible:false`**）与 2 个 `semantic_anchors`，而实测渲染容器树实为 **3 个有标题业务组
+  ＋ 3 个无标题嵌套组 / 12 个字段**——声明的章节与隐藏字段**从未进入渲染面**。故本批的迁移口径是"原生
+  arch 即地面真值"：只把**入口自身声明的**章节身份（`current_task`／`intake_risk`）与**真实回退**的 label
+  交回原生 arch，
+  9 个无字段章节与 25 个隐藏字段**如实登记为"声明但未渲染"，不补成新面**。
+- **唯一 label 差异**：契约声明 `manager_id` 的中文 label 为「项目负责人」，而 arch 未复述 → 页面回落模型自身
+  string「项目经理」。已在 arch 复述；**浏览器实测页面上显示「项目负责人」**（见 L4）。
+
+**分层验证结果**：
+
+- **L0 侦察**（只读探针 `tmp/g12-evidence/probe_g12_baseline.py`／`probe_g12_ab.py` → `probe-g12-baseline.json`／
+  `probe-g12-after.json`／`probe-g12-ab.json`）：确立 724 的基线权威（`layoutPolicy=business_config_sections`、
+  `formPresentationMode=task`、`formStructureAuthority=entry_semantic_surface`）、镜像 46 为**同 action 同 view**
+  竞争载体、1503 扇出为 0、兄弟 725 的 7 字段渲染面与 P0 自持视图。
+- **L1 生成物**：`make ci.delivery.freeze.prepare` **PASS**（`component_driver_takeover_inventory PASS required=35
+  missing=0 bridge_only=0 raw=0`、`contract_form_split_evidence PASS lines=1905`、
+  `ci.generated_evidence.preflight PASS all content-bound generated evidence is current`）；
+  `docs/engineering_convergence/complexity_budget_report.md` 随刷新由 4395 → **4396**。
+- **L2 定向非零测试**：`make local.dev.test`
+  `TEST_TAGS='uc4_native_lowcode/smart_construction_core:TestProjectInitiationNativeLowcode'` → **15 tests,
+  0 failed, 0 error(s)**（`tmp/g12-evidence/l2-g12-class.log`）；整组回归
+  `TEST_TAGS='uc4_native_lowcode/smart_construction_core'` → **184 tests（169 统计口径）, 0 failed, 0 error(s)**
+  （`tmp/g12-evidence/l2-g12-group.log`，G02–G11 全组无跨批回归）。
+- **L2 守卫**：`verify.formal_product_field_purity`／`verify.contract.structure_lock`（`domains=14`）／
+  `verify.contract.page_v1_zero_residue.guard`／`verify.system_init.menu_boundary.guard`／
+  `verify.product.configuration_center.wave1.guard`／`verify.tenant.payload_boundary` 均 **PASS**。
+- **L2 域回归（只读重跑并与已提交基线逐项 diff）**：**project 域 30 个 action** 全部逐项比对——29 条只出现
+  **DB 身份漂移**（本工作树 `sc_dev_demo` 经升级后 menuId／actionId 重编号），724 本身亦**只有身份漂移**
+  （本批不改它对外声明的事实面）；**唯一语义差异**为 `action_sc_product_project_edit_v1` 的默认表单视图
+  （`project.edit_project` → `smart_construction_core.view_sc_product_project_information_edit_form_v1`），
+  属**既存报告陈旧**而非本批改动：该 action 不定 `view_id`（按模型默认表单解析），而引入该原生表单的
+  `dbf1e171` 晚于已提交报告 `e76d2a3c` 的生成时点。**base_configuration 域 6 个 action 语义差异 0**
+  （`{"status": "PASS", "actions": 6}`）。
+- **L3 运行库**：`make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1
+  CODEX_MODULES=smart_construction_core` → exit 0（含 `[local.dev.demo.authority] PASS`）；随后只读探针
+  （`probe-g12-after.json`）逐项核对：139 active／priority **800**／`composition_mode=native_semantic_surface`、
+  镜像 **46 `active=false`**、入口解析为 `native_authority` ＋ `container_tree_authority` ＋
+  `presentationMode=task`、`effectiveContracts` 只剩 139、**`diagnostics` 为空**、渲染容器树 4 个锚点与
+  12 字段及两个只读字段口径**逐项一致**；交付态未变项（1503 扇出、兄弟 action）与基线 identical。
+- **L4 浏览器代表面复验（本批已跑，非未覆盖）**：`FORM_LOWCODE_TOPIC=project FORM_LOWCODE_REPRESENTATIVE=1
+  make local.dev.form_lowcode.browser` → **exit 0 / `ok=true` / `restored=true`**；代表面 entry 级
+  `status=passed`、创建与记录两条路由的循环全部 PASS，「当前任务」「立项条件」「项目创建（必填）」
+  「项目标识（可选）」四个业务章节入口
+  与「协作记录」**全部 resolve 且可见**，章节导航在 1088／390 两视口共 **28 次**位置测量无遮挡；
+  包装层打印 `[local.dev.form_lowcode.browser] business fingerprints unchanged`（业务配置指纹未变）。
+  证据：`artifacts/lowcode-form-loop/browser/representative-report-project.json`、
+  `representative-project-724-create.png`、`representative-project-724-record.png`（截图外置于
+  `sce-offrepo/artifacts`，并复制入本工作树 `tmp/g12-evidence/` 供交付证据归档）。
+
+**未覆盖项与环境缺陷（如实登记，不写成通过）**：`retirementComplete=false`。四条**既存环境／基线缺陷**
+（前三条为 G08–G11 已登记项，本批**不修**）：`verify.contract.view_structure` 的权威指纹期望
+`local.clean`／`sc_clean` 证据而本工作树以 `ec2c56e5` 为基线；`verify.product.menu.governance.m4.closure`
+缺 `artifacts/menu-governance/menu-m4-runtime.REJECTED-wrong-sha.json`；`verify.user_form.preference.boundary_guard`
+依赖**客户定制 addon 仓库**（不在本仓库边界内）的模块。**本批新登记第 4 条**：
+`verify.frontend.professionalization.collaboration_domain.runtime` 的组件级单测
+`test_notification_contract_is_bound_to_exact_action_and_view` 在**合并后基线**上失败——G11 已把该契约发为
+`native_semantic_surface`（＋ 3 条稀疏只读覆盖）而该单测仍断言 `entry_semantic_surface`，属 **G11 遗留的
+基线缺陷**（本批未触碰该契约与其测试，按"只修所属层"口径登记不修）；因此本批的**零变化域对照**改用
+`base_configuration` 域（6 action，语义差异 0），不以失效的 collaboration 域作对照。
+
+**保留边界（不随本批关闭）**：兄弟入口 725 与其自持视图 `view_project_create_form_quick` 未被本批修改，
+7 字段渲染面由单测钉住；725 在治理角色的**交付导航权限**下返回 `NAVIGATION_AUTHORITY_DENIED`，故其浏览器
+覆盖由单测而非代表面路由承担（如实登记，不写成代表面通过）。本批不改 ACL／记录规则／菜单可见性，
+不改模型字段，不改运行环境、数据库或端口。
+
+**状态**：**G12 实施与分层验证完成（L0／L1／L2／L3／L4 通过）｜冻结、exact-head Quick、独立只读复核、
+外部归档与 PR 属本轮收口步骤，回执以冻结与 CI 为准｜未建 PR｜未合并｜台账 8（本批扣减 8 → 7 属合并后
+文档单职责提交，沿用 G03–G11 先例）**。

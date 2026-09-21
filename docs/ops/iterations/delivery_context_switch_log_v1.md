@@ -9778,3 +9778,61 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Next Step：冻结本候选 HEAD（完整 tracked＋untracked fingerprint），运行一次 exact-head `make ci.local.quick`，
   取得独立只读复核后经 `make pr.push` → `make pr.create` 发布；合并获授权后执行**仅 2 条路径**的文档单职责提交
   （台账 14 → 8 ＋ 迭代记录 8.38／8.39），清理本轮工作树与已合入分支，再启动 G12。
+
+## 2026-09-21 — U-C4 G12 项目立项
+
+- 分支 `feature/uc4-g12-project-initiation-v1`，基线 `origin/main@94d5166ae970c89ba4443b77d98849e6ebe228c3`
+  （G11 主题 PR #504 squash 与台账审计 PR #505 的合入点）。Formal Product Layer 为 **P1**；Layer Target 为
+  `smart_construction_core` 的入口契约、原生视图与测试，另含一处 **P4 最小扩展**（既有只读代表面入口
+  `scripts/verify/local_dev_form_lowcode_scope.py` 登记 `project` topic，复用已注册环境／身份与数据权威，
+  只读且不写配置）。不属 P0（`smart_core` 不承载行业语义）／P2／P3。回滚为 `git revert`（纯声明变更）。
+- 目标：让入口 action **724**（menu 379「新项目立项」，视图 1503 `view_project_create_form`，模型
+  `project.project`）的**入口发布成为本入口最后结构写入者**并声明 `native_semantic_surface`，使
+  `form_structure_authority=native_authority`、`layoutPolicy=container_tree_authority`，兼容重组路径对 724
+  不再适用（台账口径由此可扣减 8 → 7；扣减本身属**合并后**文档单职责提交）。
+- 变更（候选 8 条路径：代码／契约／测试 5 条＝4 改＋1 新增，另加切换日志与迭代记录 2 条，以及随
+  `ci.delivery.freeze.prepare` 刷新的生成物 `docs/engineering_convergence/complexity_budget_report.md` 1 条）：
+  1503 补 4 个 `data-sc-anchor` 业务分组（当前任务／立项条件／项目创建（必填）／项目标识（可选））、
+  两个只读字段拆成带 key 分组并保留 `readonly="1"`、`manager_id` 复述 `string="项目负责人"`（**不增不删字段**，
+  渲染字段集保持 12 条不变，改动为分组细化：无标题嵌套分组提为带锚点业务章节）；入口契约 139 只留 `title`
+  ＋ `native_semantic_surface`（priority 90 → 800，`context` 原样保留，11 sections／54 fields／
+  `semantic_anchors` 退役）；**同 action 同 view** 的生成镜像 46 用既有
+  `<function model="ui.business.config.contract" name="write">` 先例一并退役（`active: False`）；
+  **新增** `tests/test_project_initiation_native_lowcode.py`（tag `uc4_native_lowcode`，15 测试）并在
+  `tests/__init__.py` 登记；只读代表面入口登记 `project` topic。
+- 关键决策（实测驱动，非设计预判）：①1503 在运行库 **无继承扇出**（`inherit_id=1503` 命中 0，仓内 grep 0 条），
+  台账 `structureRelation` 的"扇出"不成立；②镜像 46 与入口 139 **绑定同一 action 与同一 view**，`SAVEPOINT`
+  ＋`ROLLBACK` 的 A／B 实测（`rollback_residual` 全 true，0 写入）显示**只退役 139 会让渲染直接不再解析**
+  （`ok=false`，46 成为最后结构写入者、`diagnose_structure_ownership` 拒绝 scoped 冲突），故二者必须一并处置；
+  ③退役声明与交付面本是两套事实——契约声明 11 个章节（9 个无字段）与 54 条 fields（25 条 `visible:false`），
+  而实测渲染面是 3 个有标题业务组 ＋ 3 个无标题嵌套组 / 12 字段，故只把**入口自身声明的**章节身份与
+  **真实回退**的 label 交回原生 arch，其余如实登记为"声明但未渲染"，**不补成新面**；
+  ④唯一 label 差异 `manager_id`「项目负责人」已由 arch 复述，
+  浏览器实测页面确认。
+- 保留边界：兄弟入口 725 与其自持视图 `view_project_create_form_quick` 未被修改（7 字段渲染面由单测钉住）；
+  725 在治理角色的交付导航权限下返回 `NAVIGATION_AUTHORITY_DENIED`，其覆盖由单测承担而非代表面路由；
+  `retirementComplete=false`。
+- 验证：L0 只读探针锁定基线权威、同域竞争镜像与渲染真相；L1 `make ci.delivery.freeze.prepare` PASS
+  （`required=35 missing=0`、`contract_form_split_evidence lines=1905`、生成物 4395 → 4396）；L2 新测试
+  **15／15** 通过、整组回归 **184** 通过（0 failed 0 error）、六条守卫全 PASS；L2 域回归 project 域 30 个
+  action 逐项 diff（29 条仅 DB 身份漂移，唯一语义差异 `action_sc_product_project_edit_v1` 属**既存报告陈旧**——
+  该 action 不定 `view_id`，引入新原生表单的 `dbf1e171` 晚于已提交报告 `e76d2a3c` 的生成时点）、
+  base_configuration 域 6 个 action **语义差异 0**；L3 `local.dev.upgrade` exit 0，只读探针核对 139 priority 800／
+  46 `active=false`／`native_authority` ＋ `container_tree_authority`／`diagnostics` 空／4 锚点＋12 字段＋只读
+  口径逐项一致；**L4 浏览器代表面复验本轮已跑**——`FORM_LOWCODE_TOPIC=project FORM_LOWCODE_REPRESENTATIVE=1`
+  → exit 0／`ok=true`／`restored=true`，代表面 entry 级 `status=passed`、创建与记录两条路由循环 PASS，
+  四个业务章节入口全部 resolve 且可见，1088／390 两视口 28 次测量无遮挡，包装层打印业务指纹未变；
+  报告与 2 张截图见
+  `artifacts/lowcode-form-loop/browser/representative-report-project.json`。
+- 环境缺陷登记（非本批引入，不修）：G08–G11 已登记三条（`verify.contract.view_structure` 的
+  `local.clean`／`sc_clean` 权威指纹期望、`verify.product.menu.governance.m4.closure` 缺
+  `menu-m4-runtime.REJECTED-wrong-sha.json`、`verify.user_form.preference.boundary_guard` 依赖**客户定制 addon
+  仓库**（不在本仓库边界内）的模块）；本批**新登记第四条**：`verify.frontend.professionalization.collaboration_domain.runtime`
+  的组件级单测 `test_notification_contract_is_bound_to_exact_action_and_view` 在合并后基线上失败（G11 已发
+  `native_semantic_surface` 而该单测仍断言 `entry_semantic_surface`，属 G11 遗留基线缺陷），故零变化域对照
+  改用 `base_configuration` 域。
+- 边界：不改 ACL／记录规则／菜单可见性，不改模型字段，不改运行环境、数据库或端口。
+- Next Step：冻结本候选 HEAD（完整 tracked＋untracked fingerprint），运行一次 exact-head `make ci.local.quick`，
+  取得独立只读复核并经 `make workspace.evidence.archive` 归档后 `make pr.push` → `make pr.create` 发布；
+  合并获授权后执行**仅 2 条路径**的文档单职责提交（台账 8 → 7 ＋ 迭代记录 8.40／8.41），清理本轮工作树与
+  已合入分支，再启动 G13（日常合同与结算）。
