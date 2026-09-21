@@ -5,6 +5,7 @@ import re
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
@@ -15,6 +16,14 @@ import node_syntax_check
 
 ROOT = node_syntax_check.ROOT
 MAKE_CI = ROOT / "make" / "ci.mk"
+
+SWEEP_SCRIPT = "scripts/ci/node_syntax_check.py"
+# The exact recipe line every gate must carry: the corpus-wide sweep with NO
+# argument. Matching the whole line (not a substring) is what stops the calling
+# point from being silently narrowed to a subset of the corpus.
+SWEEP_RECIPE = f"\t@python3 {SWEEP_SCRIPT}"
+SWEEP_SELF_TEST_RECIPE = "\t@python3 scripts/ci/test_node_syntax_check.py"
+SWEEP_CALL_RE = re.compile(rf"(?:^|\s){re.escape(SWEEP_SCRIPT)}(?:\s|$)")
 
 # The hand-maintained list test.contract used before this gate existed. The
 # sweep must keep covering every one of them.
@@ -28,7 +37,17 @@ HISTORIC_CONTRACT_FILES = (
 # Regression anchor: changed by the U-C4 G16 data permission round while no
 # syntax gate covered it.
 REGRESSION_ANCHOR = "frontend/apps/web/scripts/formal_form_representative_journey.mjs"
-SWEEP_COMMAND = "python3 scripts/ci/node_syntax_check.py"
+
+
+def sweep_invocation_failures(body: str) -> list[str]:
+    """Reasons ``body`` does not invoke the corpus-wide sweep once, verbatim."""
+    lines = [line.rstrip() for line in body.splitlines() if line.strip()]
+    calls = [line for line in lines if SWEEP_CALL_RE.search(line)]
+    if not calls:
+        return [f"{SWEEP_RECIPE!r} is missing"]
+    if calls != [SWEEP_RECIPE]:
+        return [f"unexpected sweep invocation(s): {calls!r}"]
+    return []
 
 
 def _target_body(target: str) -> str:
@@ -113,14 +132,45 @@ class NodeSyntaxCheckTests(unittest.TestCase):
     def test_contract_and_quick_gates_invoke_the_sweep(self) -> None:
         for target in ("test.contract", "ci.local.quick.run"):
             body = _target_body(target)
-            self.assertIn(SWEEP_COMMAND, body, f"{target} must run the node syntax sweep")
+            self.assertEqual(
+                sweep_invocation_failures(body),
+                [],
+                f"{target} must invoke the corpus-wide sweep verbatim",
+            )
             self.assertNotIn("node --check frontend/apps/web/scripts/", body, f"{target} keeps a hand-maintained file list")
 
-    def test_unit_gate_runs_this_self_test(self) -> None:
-        self.assertIn(
-            "python3 scripts/ci/test_node_syntax_check.py",
-            _target_body("test.unit"),
+    def test_wiring_validator_rejects_a_narrowed_call(self) -> None:
+        self.assertEqual(sweep_invocation_failures(f"test.contract: x\n{SWEEP_RECIPE}\n"), [])
+        self.assertTrue(sweep_invocation_failures("test.contract: x\n\t@echo ok\n"))
+        self.assertTrue(
+            sweep_invocation_failures(
+                f"test.contract: x\n{SWEEP_RECIPE} frontend/apps/web/scripts\n"
+            )
         )
+        self.assertTrue(
+            sweep_invocation_failures(f"test.contract: x\n{SWEEP_RECIPE}\n{SWEEP_RECIPE}\n")
+        )
+
+    def test_self_reference_is_not_mistaken_for_the_sweep(self) -> None:
+        self.assertIsNone(SWEEP_CALL_RE.search(SWEEP_SELF_TEST_RECIPE))
+
+    def test_unit_gate_runs_this_self_test(self) -> None:
+        body_lines = {line.rstrip() for line in _target_body("test.unit").splitlines()}
+        self.assertIn(SWEEP_SELF_TEST_RECIPE, body_lines)
+
+    def test_corpus_enumeration_fails_closed_without_git(self) -> None:
+        with mock.patch.object(node_syntax_check.subprocess, "run", side_effect=FileNotFoundError):
+            with self.assertRaisesRegex(RuntimeError, "git is required"):
+                node_syntax_check.tracked_node_files()
+        failure = mock.Mock(returncode=128, stderr=b"fatal: not a git repository\n")
+        with mock.patch.object(node_syntax_check.subprocess, "run", return_value=failure):
+            with self.assertRaisesRegex(RuntimeError, "git ls-files failed"):
+                node_syntax_check.tracked_node_files()
+        with mock.patch.object(
+            node_syntax_check, "tracked_node_files", side_effect=RuntimeError("git is required")
+        ), redirect_stdout(StringIO()), redirect_stderr(StringIO()) as errors:
+            self.assertEqual(node_syntax_check.main([]), 2)
+        self.assertIn("git is required", errors.getvalue())
 
 
 if __name__ == "__main__":

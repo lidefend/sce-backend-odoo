@@ -10092,7 +10092,7 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   语法门**（`test.contract` 只有 5 个手工 `node --check` 文件、前端 `lint` 只覆盖 `.ts`/`.vue`），复核当时只能手工取证。
 - 变更（3 条代码路径 ＋ 3 条受跟踪生成物）：新增 `scripts/ci/node_syntax_check.py`（默认口径 = `git ls-files` 的
   **全部受跟踪** `.mjs`/`.cjs`，148 个，逐文件 `node --check`，失败行 `path:line: SyntaxError: …`，node 缺失或
-  无目标时 fail-closed）与 `scripts/ci/test_node_syntax_check.py`（10 测试，含**接线回归**：`test.contract`／
+  无目标时 fail-closed）与 `scripts/ci/test_node_syntax_check.py`（13 测试，含**接线逐字回归**：`test.contract`／
   `ci.local.quick.run` 必须含 sweep 且不得保留手工清单、`test.unit` 必须跑自检）；`make/ci.mk` 的
   `test.contract` 由 5 行手工清单改为 1 行 sweep（完全包含被替换文件）、`test.unit` ＋1 行自检、
   `ci.local.quick.run` ＋1 行 sweep；L1 刷新的生成物（复杂度报告、测试清单与汇总）随本轮提交。
@@ -10112,3 +10112,4 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Next Step：冻结本批 HEAD 后跑一次 exact-head `make ci.local.quick`；经独立只读复核与显式合并授权后执行
   `make pr.merge`，再 `make main.sync` 与分支清理；G16 台账侧**不扣减**任何消费者计数（本轮无消费者变化），
   `retirementComplete` 继续保守保持 `false`。
+- 复核后修订（独立复核 r2 **S2-1** 闭合）：接线回归断言由**子串**匹配改为 **recipe 行逐字相等且唯一**，并新增接线校验器负例与语料枚举 fail-closed 测试（10 → 13 测试）。原断言在 `/tmp` 影子副本下对「调用点被加窄目录参数」有确定性假阴性（窄参数 sweep 报 44 文件、漏检 `scripts/verify/*.mjs` 的破坏）；修订后同一场景两个调用点（`test.contract`／`ci.local.quick.run`）均 **FAILED**。语料、口径与 fail-closed 语义未变，该修订产生新 HEAD，故 L1／L2／L5 与独立复核需按新冻结候选重跑与重绑。

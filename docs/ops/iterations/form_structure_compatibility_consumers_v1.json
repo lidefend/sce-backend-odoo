@@ -2067,7 +2067,8 @@
       "status": "closed",
       "closedBy": "scripts/ci/node_syntax_check.py wired into make test.contract, make test.unit and make ci.local.quick.run (corpus = every tracked .mjs/.cjs; 148 files at this head)",
       "publishedTextUnchanged": true,
-      "note": "the published uc4G16PublishedAudit block is left byte-identical as the historical audit; the closure is recorded here instead of rewriting published text"
+      "note": "the published uc4G16PublishedAudit block is left byte-identical as the historical audit; the closure is recorded here instead of rewriting published text",
+      "lineReferenceNote": "the make/ci.mk:950-955 range inside the quoted claim is the PRE-CHANGE location of the hand-maintained list; after this round that range holds the single corpus-wide sweep line, so the quoted range must not be read as the current gate content"
     },
     "scope": {
       "codePaths": [
@@ -2098,11 +2099,24 @@
       "l1": "make ci.delivery.freeze.prepare PASS (contract structure fingerprint is current; tracked generated reports are current; ci.generated_evidence.preflight PASS; generated drift committed with this batch)",
       "l2": [
         "make test.contract PASS: [OK] Node syntax check passed (148 files)",
-        "make test.unit PASS: Python syntax 1156 files + node syntax self-test 10 tests + render conf 6 tests",
+        "make test.unit PASS: Python syntax 1156 files + node syntax self-test 13 tests + render conf 6 tests",
         "read-only pre-scan: every tracked .mjs/.cjs parses (148 files, 0 failures)"
       ],
       "l5": "exact-head make ci.local.quick receipt and re-verification are recorded in this batch's PR"
     },
+    "postReviewRevision": {
+      "trigger": "independent review r2 S2-1",
+      "finding": "the first wiring regression assertion used a substring match (assertIn) on the make recipe, so narrowing a calling point to a subset directory passed all self-tests while the real gate punched a hole: breaking scripts/verify/boq_baseline_browser_acceptance.mjs was caught by the default sweep (exit 1) but missed by the narrowed call (exit 0, 44 files)",
+      "fix": "the wiring assertion now requires the exact recipe line (@python3 scripts/ci/node_syntax_check.py, no argument) to appear exactly once per gate, with negative self-tests for a narrowed call, a duplicate call and a missing line, plus a fail-closed enumeration test (git missing or git ls-files failing -> exit 2 instead of an uncaught traceback)",
+      "reverification": "in the same /tmp shadow copy the revised self-test FAILS (failures=1) for a narrowed test.contract call and for a narrowed ci.local.quick.run call",
+      "selfTestCount": 13,
+      "unchanged": "corpus, scope and fail-closed semantics are unchanged; the fix moves the candidate head, so L1/L2/L5 and the independent review are re-run and re-bound against the new frozen candidate"
+    },
+    "residualKnownLimits": [
+      "tracked .js files (201 at this head, 0 failing on node 22.17.0 and 24.16.0) are NOT covered by this sweep: the .js parse goal depends on Node module detection (import/export in a .js file parses as ESM only on Node >= 22.7), so widening to .js needs an explicit node-version floor plus a module-type decision, and it would also pull addons/**/static/src/** product assets (P1 surface) into a P4 gate",
+      "the CI job that runs this gate (professional_quality_gate.yml, runs-on ubuntu-latest) does not pin a node version; the repository's only pin is frontend_release_gate.yml 22.17.0; .mjs/.cjs parse goals are extension-determined, so version sensitivity is low (148/148 pass on both 22.17.0 and 24.16.0)",
+      "node --check is parse-level only: it accepts CommonJS-only syntax inside a .mjs file and rejects ESM syntax inside a .cjs file, and it does not validate named exports or imports (that defect class stays registered with designer_draft_ownership_test.mjs counter-example 9)"
+    ],
     "nextRoundAudit": "a later audit round records this batch's merged PR number, squash head and required check results, as uc4G16PublishedAudit did for PR #514"
   }
 }

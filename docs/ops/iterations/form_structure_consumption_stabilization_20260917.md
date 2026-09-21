@@ -7059,7 +7059,7 @@ G16 主题经 PR **#514** 以 **squash** 合入主线，合并提交 `4268627553
 | 路径 | 动作 | 内容 |
 | --- | --- | --- |
 | `scripts/ci/node_syntax_check.py` | **新增** | 默认口径为 `git ls-files` 的**全部受跟踪** `.mjs`/`.cjs`（gitignored 语料天然排除），亦可显式传文件／目录；逐文件 `node --check`，失败聚合为 `path:line: SyntaxError: …`；node 运行时缺失或无目标文件时 **fail-closed**（exit 2） |
-| `scripts/ci/test_node_syntax_check.py` | **新增** | 10 测试：受跟踪语料覆盖历史 5 文件与回归锚点 `formal_form_representative_journey.mjs`、语料扩展到 `scripts/verify/` 且不含 `tmp/`、目录扫描后缀过滤、ESM 专属语法错误定位、运行器退出码 0/1/2，以及**接线回归**（`test.contract`／`ci.local.quick.run` 必须含 sweep 且不得保留手工清单；`test.unit` 必须运行本自检） |
+| `scripts/ci/test_node_syntax_check.py` | **新增** | 13 测试：受跟踪语料覆盖历史 5 文件与回归锚点 `formal_form_representative_journey.mjs`、语料扩展到 `scripts/verify/` 且不含 `tmp/`、目录扫描后缀过滤、ESM 专属语法错误定位、运行器退出码 0/1/2、**接线逐字回归**（`test.contract`／`ci.local.quick.run` 的 sweep recipe 行必须逐字相等且唯一、不得保留手工清单；`test.unit` 必须逐字运行本自检）、**接线校验器的负例**（加窄参数／重复调用／缺行必须被判失败；自检行不得被误认为 sweep）与**语料枚举 fail-closed**（git 缺失或 `git ls-files` 失败 → exit 2，不抛未捕获异常） |
 | `make/ci.mk` | 改 | `test.contract`：5 行手工 `node --check` 清单 → 1 行 sweep（**完全包含**被替换的 5 个文件）；`test.unit` ＋1 行自检；`ci.local.quick.run` ＋1 行 sweep |
 | `docs/engineering_convergence/complexity_budget_report.md`、`docs/engineering_convergence/test_inventory.csv`、`docs/engineering_convergence/test_inventory_summary.md` | 改（生成物） | 由 L1 `refresh.generated_reports` 重生成：受扫文件 **4402 → 4404**（＋2 新增 `.py`）、测试资产 **1373 → 1374**（＋1 新增自检） |
 
@@ -7075,6 +7075,14 @@ L2 `make test.contract` **PASS**（`[OK] Node syntax check passed (148 files)`�
 
 **口径边界**：sweep 只做**语法（解析）级**验证——不执行文件、不校验具名导出与导入的一致性（该类缺陷已有既有
 登记入口 `designer_draft_ownership_test.mjs` 的反例 9 覆盖），也不替代任何 runner 自身的浏览器代表面验收。
+
+**复核后修订（独立复核 r2 S2-1 闭合）**：首版接线回归断言为**子串**匹配（`assertIn("python3 scripts/ci/node_syntax_check.py", body)`），
+只挡住「删行」与「换回手工清单」，挡不住「调用点被加窄目录参数」——复核者在 `/tmp` 影子副本把 `test.contract` 改为
+`… node_syntax_check.py frontend/apps/web/scripts` 时 10 测试全绿，而实测该收窄**真的打洞**（破坏
+`scripts/verify/boq_baseline_browser_acceptance.mjs` 后默认 sweep exit 1、窄参数 sweep exit 0 且报 44 文件）。
+修订把断言改为**recipe 行逐字相等且唯一**（`\t@python3 scripts/ci/node_syntax_check.py`，无参数），并新增
+接线校验器负例测试与语料枚举 fail-closed 测试（13 测试）；同一影子场景下修订版自检对「加窄 `test.contract`」与
+「加窄 `ci.local.quick.run`」均 **FAILED（failures=1）**。**未削弱**其余结论：语料、口径与 fail-closed 语义不变。
 
 状态：**G16 后续硬化完成（P4 工具轮，待冻结／Quick／PR 收口）｜批次状态：本批自验通过；集中产品复核结论以产品方
 登记为准｜未部署｜用户交付未完成｜主线台账未变（`count=0`）｜`otherStateConsumers=[]`｜

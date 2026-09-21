@@ -34,12 +34,20 @@ def _relative(path: Path) -> str:
 
 def tracked_node_files() -> list[Path]:
     """Every tracked first-party Node file; gitignored corpora stay out."""
-    result = subprocess.run(
-        ["git", "ls-files", "-z", "--", *TRACKED_PATTERNS],
-        cwd=ROOT,
-        check=True,
-        capture_output=True,
-    )
+    try:
+        result = subprocess.run(
+            ["git", "ls-files", "-z", "--", *TRACKED_PATTERNS],
+            cwd=ROOT,
+            capture_output=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        raise RuntimeError("git is required to enumerate the tracked Node corpus") from None
+    if result.returncode != 0:
+        detail = result.stderr.decode("utf-8", "replace").strip().splitlines()
+        raise RuntimeError(
+            f"git ls-files failed ({detail[0] if detail else result.returncode})"
+        )
     names = result.stdout.decode("utf-8").split("\0")
     return sorted(ROOT / name for name in names if name)
 
@@ -89,7 +97,7 @@ def check_file(path: Path) -> str | None:
 def main(argv: list[str]) -> int:
     try:
         targets = iter_node_files(argv) if argv else tracked_node_files()
-    except FileNotFoundError as exc:
+    except (FileNotFoundError, RuntimeError) as exc:
         print(f"[FAIL] Node syntax check: {exc}", file=sys.stderr)
         return 2
     if not targets:
