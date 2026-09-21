@@ -10370,9 +10370,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   Python 守卫同步升级：固定档位单一来源 ＋ 不得硬编码 ＋ 登记表必须包含全部入口路径 ＋ 入口契约测试必须存在且
   仍接在门禁上（防静默摘除）。
 - 验证：入口契约 `entries=4 axes=15 call_sites=6 direct_consumers=3` PASS；`verify.frontend.product_page_header.unit`
-  PASS（守卫单测 **51 例**）；取值呈现守卫 `sources=686 consumers=18` PASS；`lint:src` 0 error／39 条既有 warning；
+  PASS（守卫单测 **69 例**）；取值呈现守卫 `sources=686 consumers=18` PASS；`lint:src` 0 error／39 条既有 warning；
   `typecheck:strict` PASS；全量 `vue-tsc --noEmit` 仍为 32 条既有类型债、文件集合与 base 一致。
-  **门禁非空洞实证**：在 `/tmp` 影子副本上注入 **112 项矩阵（96 项 CAUGHT ＋ 16 项假失败防线锁定 STILL-PASS），全部符合预期**，工作树文件未被修改。除首批形态之外，
+  **门禁非空洞实证**：在 `/tmp` 影子副本上注入 **139 项矩阵（114 项 CAUGHT ＋ 25 项假失败防线锁定 STILL-PASS），全部符合预期**
+  （该块按本轮冻结口径刷新：矩阵沿革 95 → 112 → 119 → 132 → 139 项，守卫单测 14 → 27 → 31 → 37 → 45 → 51 → 55 → 63 → 69 例），工作树文件未被修改。除首批形态之外，
   第二轮独立只读复核点名的盲区（kebab 标签、barrel 具名导入、`<component :is>`、`v-bind` 对象展开、
   契约测试接线被注释掉、固定轴绑定字面量、固定轴常量解析错入口 id、只留 `import` 丢掉模板渲染、`$attrs` 兜底转发）
   都已纳入同一批注入并被抓到；第三轮复核点名的**诱饵类**形态（单引号 `<component :is='X'>`、字符串注释符
