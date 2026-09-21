@@ -10279,16 +10279,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 守卫：`scripts/verify/frontend_localized_display_contract_test.ts` 扩展为**行为断言 ＋ 源码断言**——空值／布尔／
   数值／日期跨面一致性、`datetime` 双档位、不泄漏 ISO 机器格式、集合数值 `0`、附件检测；并遍历
   `frontend/apps/web/src` 下 `.ts`／`.vue`／`.js`（排除权威自身）禁止自行定义空值／布尔文案字面量与重写的
-  附件检测、日期解析正则。
+  附件检测、日期解析正则；**复核后加固**为「解码 `\uXXXX` 转义 ＋ 压缩空白后的等价写法检测」（覆盖
+  `'-'+'-'`、`'-'.repeat(2)`、`` `--` ``、`'\u662f'`），并新增已收口消费方「必须 import 权威且不得自行重写
+  数值／时间格式化」断言、附件引用来源与日期解析规则的**登记式**约束、表单只读空值回退登记锁。
 - 非空守卫实测：向 `utils/semantic.ts` 注入 `'--'` 字面量后守卫**失败**（`utils/semantic.ts 不得自行定义空值
   文案`，退出码 1），随即回滚；守卫非空。
 - 验证证据：`make verify.frontend.localized_display.unit` **PASS**（`FRONTEND_FIELD_SEMANTICS_AUTHORITY=PASS
-  sources=685` ＋ `FRONTEND_LOCALIZED_DISPLAY_CONTRACT=PASS`）；集合类 4 项与表达／专业面 21 项目标 **PASS**；
-  `lint:src` **0 error**（39 条既有风格 warning）；`vue-tsc --noEmit`（非门禁口径）本分支与基线均 **32** 条错误、
-  错误文件集合一致，逐条核对为 `SceneContractBlockGridView.vue` 因新增 import 的整体 +1 行位移，**零新增类型错误**；
+  sources=685 consumers=18` ＋ `FRONTEND_LOCALIZED_DISPLAY_CONTRACT=PASS`）；集合类 4 项与表达／专业面 21 项目标
+  **PASS**；`lint:src` **0 error**（39 条既有风格 warning）；`typecheck:strict`（门禁口径）**PASS**；
+  `vue-tsc --noEmit`（非门禁口径）本分支与基线均 **32** 条错误、错误文件集合一致，逐条核对为
+  `SceneContractBlockGridView.vue` 因新增 import 的整体 +1 行位移，**零新增类型错误**；
   L1 `make ci.delivery.freeze.prepare` **PASS**。
+- 守卫加固实测（`/tmp` 影子副本，真实工作树未改动）：`'-'+'-'`／`'-'.repeat(2)`／`` `--` ``／`'\u662f'`
+  四类等价写法与消费方内 `toLocaleString`／`toISOString` 重写**全部被抓到**；附件来源重写
+  （`/(?:https?:\/\/|\/web\/content\/)/`、`startsWith('/web/content/')`）与日期解析重写
+  （`/^(\d{4})-(\d{2})-(\d{2})/`、宽松 `\d{4}-\d{2}-\d{2}`）**全部被抓到**（登记式约束）。
+  已知仍未覆盖：`getFullYear/padStart` 式手写日期格式化与 `.vue` 模板裸文本 `是`／`否`（登记为守卫边界，
+  根治方向是「渲染入口必须 import 权威」的入口级断言）。
 - L1 重生成产物：`docs/engineering_convergence/complexity_budget_report.md`、`split_plan_queue.md`
-  （扫描 4404 → **4405**；`ActionView.vue` 3769 → **3770**；`ListPage.vue` 2135 → **2123**；
+  （扫描 4404 → **4405**；`ActionView.vue` 3769 → **3770**；`ListPage.vue` 2135 → **2121**；
   `ActionSurfaceToolbar.vue` 1040 → 1041）；`docs/frontend_productization/rendering-detail/
   component-driver-takeover-inventory-v1.json` 经 `make refresh.frontend.component_driver_takeover.inventory` 刷新。
 - L5 自捕获与本批内修复：exact-head `make ci.local.quick` 第 1 次运行在
@@ -10319,3 +10328,19 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `components/design-system/ScPageHeader.vue`、`components/page/PageHeader.vue` 为无门薄适配，
   `pages/contractForm/ContractFormProductHeader.vue` 独立实现归属未声明）；②13 个并行组件族权威边界未声明；
   ③权限判定散布 19+ 文件、无单一权威。
+- 复核后修订（绑定 `d86ab0ba263e53a74b5cda027124176ae395ed46`：两轮独立只读复核 round A／round B
+  均判 **REQUEST_CHANGES**，无 S0，均未改动工作树）：两条主线意见一致——①本批「空值文案已全部统一」的宣称**过宽**
+  （记录／表单业务取值面仍为 `-`／`—`／`未填写` 且未登记）；②守卫为字面量级防线，等价重写可绕过。逐条处置：
+  ①**范围订正**：§1／§4 改为按面陈述（记录／详情与活动／分析此前是 `-`，集合／区块／状态是 `--`），
+  并把**表单只读事实**空值登记为**契约权威例外**——其权威是契约字段声明 `sc_readonly_empty_text →
+  readonly_empty_text`，未声明页面保持既有回退（2026-09-14 受管决定），并入前端 `--` 属产品措辞决定，
+  需单独决策 ＋ 运行态抽验；守卫新增该回退的**登记锁**与 `resolveReadonlyEmptyText` 行为断言。
+  ②**守卫加固**：等价写法检测（转义解码 ＋ 空白压缩，覆盖 `'-'+'-'`、`'-'.repeat(2)`、`` `--` ``、`'是'`）、
+  已收口消费方「必须 import 权威且不得重写数值／时间格式化」、附件来源与日期解析**登记式**约束；
+  影子副本实测全部抓到，未覆盖项（`getFullYear/padStart` 手写格式化、模板裸文本 `是`／`否`）如实登记为守卫边界。
+  ③**代码订正**：`normalizeFieldType` 恢复既有 `ttype || type` 语义（空 `ttype` 回退 `type`，修复
+  `{ ttype: '', type: 'boolean' }` 丢失布尔语义）；`ListPage.vue` 的 `isNumericColumn`／`formatFooterNumber`
+  改走权威（输出等价，2123 → **2121**）；`collectionStatusPresentation.ts` import 归位到顶部。
+  ④**已登记未收口清单**：`professionalBusinessValueModel`／`boqImportPreview`／`professionalCollaborationModel`／
+  `professionalAuditModel`／`formSection.mapper`（带币种）／`HierarchicalWorksheet` 等，作为下一批候选登记。
+  该修订产生新 HEAD，L1／L2／L5 与两轮独立只读复核按新冻结候选重跑与重绑；口径范围、契约例外与残限登记已同步更正。

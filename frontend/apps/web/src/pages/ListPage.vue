@@ -325,6 +325,7 @@ import {
   FIELD_VALUE_TRUE_TEXT,
   containsAttachmentReference,
   formatNumericFieldValue,
+  isNumericFieldType,
   numericFieldValue,
 } from '../utils/fieldSemantics.ts';
 import { attachmentLinkDownloadParams, openExternalAttachmentUrl } from '../utils/filePreview';
@@ -1889,7 +1890,7 @@ const pageVisibleRows = computed(() => {
 function isNumericColumn(field: string) {
   const option = columnOption(field);
   const type = String(option?.dataType || option?.type || '').trim();
-  return type === 'integer' || type === 'float' || type === 'monetary';
+  return isNumericFieldType(type);
 }
 
 function isMoneyDisplayColumn(field: string) {
@@ -1930,10 +1931,7 @@ function formatNumericCellValue(field: string, value: unknown, row?: Record<stri
 function formatFooterNumber(value: number, field: string) {
   const option = columnOption(field);
   const type = String(option?.dataType || option?.type || '').trim();
-  return value.toLocaleString('zh-CN', {
-    maximumFractionDigits: type === 'integer' ? 0 : 2,
-    minimumFractionDigits: type === 'integer' ? 0 : 2,
-  });
+  return formatNumericFieldValue(value, type) ?? '';
 }
 
 const pageFooterStats = computed(() =>

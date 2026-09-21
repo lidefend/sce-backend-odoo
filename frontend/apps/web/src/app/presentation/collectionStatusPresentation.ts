@@ -1,3 +1,5 @@
+import { FIELD_VALUE_EMPTY_TEXT } from '../../utils/fieldSemantics.ts';
+
 export type CollectionStatusTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 
 export type CollectionStatusDescriptor = {
@@ -35,4 +37,3 @@ export function resolveCollectionStatusPresentation(input: {
     tone: TONES.has(candidate) ? candidate : 'neutral',
   };
 }
-import { FIELD_VALUE_EMPTY_TEXT } from '../../utils/fieldSemantics.ts';

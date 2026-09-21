@@ -65,13 +65,23 @@ export type FieldTypeSource =
   | null
   | undefined;
 
+function firstNonEmptyText(...candidates: unknown[]): string {
+  for (const candidate of candidates) {
+    if (candidate === null || candidate === undefined) continue;
+    const text = String(candidate).trim();
+    if (text) return text;
+  }
+  return '';
+}
+
 export function normalizeFieldType(source: FieldTypeSource): CanonicalFieldType {
+  // 既有消费方用 `ttype || type` 解析字段类型：`ttype` 为空串时必须回退到 `type`，
+  // 否则 `{ ttype: '', type: 'boolean' }` 会丢失布尔语义。
   const raw = typeof source === 'string'
     ? source
-    : String(
-      (source as { ttype?: unknown } | null | undefined)?.ttype
-      ?? (source as { type?: unknown } | null | undefined)?.type
-      ?? '',
+    : firstNonEmptyText(
+      (source as { ttype?: unknown } | null | undefined)?.ttype,
+      (source as { type?: unknown } | null | undefined)?.type,
     );
   const normalized = raw.trim().toLowerCase();
   return (CANONICAL_FIELD_TYPES.has(normalized) ? normalized : 'unknown') as CanonicalFieldType;

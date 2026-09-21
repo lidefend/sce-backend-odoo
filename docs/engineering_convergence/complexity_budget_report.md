@@ -35,7 +35,7 @@ Generated from repository source files. This report is informational during the 
 | 2349 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 2340 | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2205 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
-| 2123 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
+| 2121 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2068 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2001 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
@@ -192,7 +192,7 @@ Generated from repository source files. This report is informational during the 
 | 2349 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 2340 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2205 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
-| 2123 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
+| 2121 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2068 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2001 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
