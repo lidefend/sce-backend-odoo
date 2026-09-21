@@ -17,16 +17,44 @@ def _read_makefile(path: str) -> str | None:
         return None
 
 
+def _logical_lines(text: str) -> list[str]:
+    r"""按 Make 的规则把行尾 `\` ＋换行拼成**逻辑行**（只用于指令级扫描，不用于 recipe 形状判定）。"""
+    lines: list[str] = []
+    buffer = ""
+    for raw in text.splitlines():
+        if raw.endswith("\\"):
+            buffer += raw[:-1]
+            continue
+        lines.append(buffer + raw)
+        buffer = ""
+    if buffer:
+        lines.append(buffer)
+    return lines
+
+
+def _unquote(token: str) -> str:
+    if len(token) >= 2 and token[0] == token[-1] and token[0] in "\"'":
+        return token[1:-1]
+    return token
+
+
 def _include_tokens(text: str) -> list[str]:
+    r"""`include`／`-include`／`sinclude` 的**静态**路径 token。
+
+    GNU make 有三个同义拼写（`include`、`-include`、`sinclude`），并且路径可以：
+    用 `\` ＋换行续行、加引号、一行写多个。它们全是**静态可解析**的，若只认行首
+    `-?include` ＋单物理行 ＋无引号，就等于给「在片段里重定义被守卫目标」留了整类拼写通道。
+    含 `$(…)`／`${…}` 的动态 token 仍只能跳过（已在文档残限登记）。
+    """
     tokens: list[str] = []
-    for line in text.splitlines():
-        match = re.match(r"^\s*-?include\s+(.+?)\s*$", line)
+    for line in _logical_lines(text):
+        match = re.match(r"^\s*(?:-|s)?include\s+(.+?)\s*$", line)
         if not match:
             continue
         for token in match.group(1).split("#")[0].split():
             if "$" in token:
                 continue
-            tokens.append(token)
+            tokens.append(_unquote(token))
     return tokens
 
 
@@ -67,13 +95,17 @@ def _ignore_error_forms(chain: dict[str, str]) -> list[str]:
     """
     failures: list[str] = []
     for path, text in chain.items():
-        for line in text.splitlines():
+        for line in _logical_lines(text):
             if re.match(r"^\.IGNORE\s*:", line):
                 failures.append(
                     "header entry contract test wiring loses failure propagation "
                     f"({path} declares the .IGNORE special target: a failing step stops failing the gate)"
                 )
-            match = re.match(r"^\s*(?:GNU)?MAKEFLAGS\s*[:+?]?=\s*(.*)$", line)
+            # `override`／`export` 前缀与 `\` 续行不改变语义：`override MAKEFLAGS += -i`
+            # 与 `MAKEFLAGS += \<换行>-i` 都能给整棵 make 加上 `-i`。
+            match = re.match(
+                r"^\s*(?:override\s+|export\s+|unexport\s+)*(?:GNU)?MAKEFLAGS\s*[:+?]?=\s*(.*)$", line
+            )
             if not match:
                 continue
             value = match.group(1).split("#")[0]
@@ -85,6 +117,59 @@ def _ignore_error_forms(chain: dict[str, str]) -> list[str]:
                         f"({path} sets MAKEFLAGS {token}: a failing step stops failing the gate)"
                     )
                     break
+    return failures
+
+
+def _failure_propagation_overrides(chain: dict[str, str]) -> list[str]:
+    """另外两条不改 recipe 字面内容、却能让失败不传播的 Make 级通道。
+
+    - `.ONESHELL:`：整条 recipe 交给**一个** shell 执行，Make 只看**最后一行**的退出码，
+      于是在 recipe 尾部补一行 `@true` 就能让前面的失败不再让门禁失败；
+    - `SHELL`／`.SHELLFLAGS` 被**重定义**：把 `SHELL` 指到恒返回 0 的程序（如 `/bin/true`）
+      或让 `.SHELLFLAGS` 丢掉 `-e`，同样让步骤失败不传播。因此与「被守卫目标只定义一次」同口径：
+      这两者跨 include 链**最多只能定义一次**（重定义即要求显式登记）。
+    """
+    failures: list[str] = []
+    assignments: dict[str, list[str]] = {}
+    for path, text in chain.items():
+        for line in _logical_lines(text):
+            if re.match(r"^\.ONESHELL\s*:", line):
+                failures.append(
+                    "header entry contract test wiring loses failure propagation "
+                    f"({path} enables .ONESHELL: only the last recipe line's status is observed, "
+                    "so a trailing no-op can hide a failing step)"
+                )
+            match = re.match(r"^\s*(?:override\s+|export\s+|unexport\s+)*(SHELL|\.SHELLFLAGS)\s*[:?+]?=", line)
+            if match:
+                assignments.setdefault(match.group(1), []).append(path)
+    for name, paths in sorted(assignments.items()):
+        if len(paths) > 1:
+            failures.append(
+                "header entry contract test wiring loses failure propagation "
+                f"({name} is redefined across the include chain in {len(paths)} places "
+                f"[{', '.join(sorted(set(paths)))}]: a fragment can silently change recipe failure semantics)"
+            )
+    return failures
+
+
+def _non_literal_targets(chain: dict[str, str]) -> list[str]:
+    """`$(VAR):` 这类**非字面量目标名**可以在被 include 的片段里顶掉被守卫目标。
+
+    目标名是变量展开时，静态侧看不到它到底展开成什么，因此按失败关闭方向处理：
+    链上任何一条非字面量目标定义都要求显式登记（本仓库当前为零）。
+    """
+    failures: list[str] = []
+    for path, text in chain.items():
+        for line in _logical_lines(text):
+            if not line or line.startswith("\t") or line.lstrip().startswith("#"):
+                continue
+            match = re.match(r"^([^:=\t#]+):(?!=)", line)
+            if match and "$" in match.group(1):
+                failures.append(
+                    "header entry contract test wiring cannot be checked statically "
+                    f"({path} defines a non-literal target '{match.group(1).strip()}': "
+                    "a variable target can silently redefine the guarded recipe)"
+                )
     return failures
 
 
@@ -387,6 +472,8 @@ def validate() -> list[str]:
         failures.append("header entry contract test is missing")
     makefile_chain = _makefile_chain()
     failures.extend(_ignore_error_forms(makefile_chain))
+    failures.extend(_failure_propagation_overrides(makefile_chain))
+    failures.extend(_non_literal_targets(makefile_chain))
     wired_target = "verify.frontend.product_page_header.unit"
     definition_files = [
         path

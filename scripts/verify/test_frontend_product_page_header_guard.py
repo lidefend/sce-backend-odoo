@@ -918,6 +918,99 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
             failures,
         )
 
+    def _with_fragment_include(self, include_stmt, fragment_body, mutate=None):
+        """在 `make/frontend.mk` 末尾 include 一个片段（片段内容由参数给出），返回 `validate()` 的失败列表。"""
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            if path.name == "_inj_frag.mk":
+                return fragment_body
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                if mutate is not None:
+                    value = mutate(value)
+                return value + "\n" + include_stmt + "\n"
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            return validate()
+
+    def test_sinclude_must_not_hide_a_redefinition(self):
+        """`sinclude` 是 GNU `-include` 的正式同义词，同样是**静态可解析**的 include 拼写。"""
+        failures = self._with_fragment_include(
+            "sinclude make/_inj_frag.mk",
+            "verify.frontend.product_page_header.unit:\n\t@echo overridden\n",
+        )
+        self.assertTrue(any("must be defined exactly once" in item for item in failures), failures)
+
+    def test_continued_include_line_must_not_hide_a_redefinition(self):
+        """`include \\` ＋换行是 Make 的续行：只按物理行匹配就会漏掉整条 include。"""
+        failures = self._with_fragment_include(
+            "include \\\nmake/_inj_frag.mk",
+            "verify.frontend.product_page_header.unit:\n\t@echo overridden\n",
+        )
+        self.assertTrue(any("must be defined exactly once" in item for item in failures), failures)
+
+    def test_quoted_include_path_must_not_hide_a_redefinition(self):
+        failures = self._with_fragment_include(
+            'include "make/_inj_frag.mk"',
+            "verify.frontend.product_page_header.unit:\n\t@echo overridden\n",
+        )
+        self.assertTrue(any("must be defined exactly once" in item for item in failures), failures)
+
+    def test_variable_target_name_must_not_shadow_the_guarded_target(self):
+        """`$(VAR):` 目标名静态不可知，按失败关闭方向处理（要求显式登记）。"""
+        failures = self._with_fragment_include(
+            "include make/_inj_frag.mk",
+            "_HT := verify.frontend.product_page_header.unit\n$(_HT):\n\t@echo overridden\n",
+        )
+        self.assertTrue(any("non-literal target" in item for item in failures), failures)
+
+    def test_redefined_shell_must_be_rejected(self):
+        """片段把 `SHELL` 指到恒返回 0 的程序：recipe 一字未改，失败却不再传播。"""
+        failures = self._with_fragment_include("include make/_inj_frag.mk", "SHELL := /bin/true\n")
+        self.assertTrue(any("SHELL is redefined" in item for item in failures), failures)
+
+    def test_oneshell_must_be_rejected(self):
+        """`.ONESHELL:` 让整条 recipe 共用一个 shell、只看最后一行的状态。"""
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value.replace(
+                    "\t@python3 scripts/verify/frontend_product_page_header_guard.py",
+                    "\t@python3 scripts/verify/frontend_product_page_header_guard.py\n\t@true",
+                ) + "\n.ONESHELL:\n"
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            failures = validate()
+        self.assertTrue(any(".ONESHELL" in item for item in failures), failures)
+
+    def test_prefixed_makeflags_forms_must_be_rejected(self):
+        """`override`／`export` 前缀与续行都不改变 `MAKEFLAGS += -i` 的语义。"""
+        real = Path.read_text
+
+        def flag(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value + "\noverride MAKEFLAGS += -i\nexport MAKEFLAGS := -i\nMAKEFLAGS += \\\n-i\n"
+            return value
+
+        with patch("pathlib.Path.read_text", flag):
+            failures = validate()
+        self.assertGreaterEqual(
+            sum(1 for item in failures if "sets MAKEFLAGS" in item),
+            3,
+            failures,
+        )
+
+    def test_harmless_included_fragment_is_still_legal(self):
+        """反向锁定：`sinclude` 一个只声明无关变量的片段不得假失败。"""
+        self.assertEqual(self._with_fragment_include("sinclude make/_inj_frag.mk", "OTHER_AXIS := 1\n"), [])
+
+
 from pathlib import Path
 
 if __name__ == "__main__":
