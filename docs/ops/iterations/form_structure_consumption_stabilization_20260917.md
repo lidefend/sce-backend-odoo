@@ -6296,3 +6296,100 @@ byte-identical 只证明菜单／能力与摘要稳定）已由冻结后补测�
 **状态**：**G12 实施与分层验证完成（L0／L1／L2／L3／L4 通过）｜冻结、exact-head Quick、独立只读复核、
 外部归档与 PR 属本轮收口步骤，回执以冻结与 CI 为准｜未建 PR｜未合并｜台账 8（本批扣减 8 → 7 属合并后
 文档单职责提交，沿用 G03–G11 先例）**。
+
+### 8.41 G12 主线集成与台账 8 → 7（2026-09-21）
+
+冻结候选 `72fdff27cd2cde91d3438ba1516217fe3e0dd476`（tree `b6100bebbe935ce9734bc5976e6c08ec491b805a`，
+相对 `main@94d5166a` **8 条路径**、单提交）经 **PR #506** 以 squash 合入 main
+`d37fe522859fea0c14cd5f9b779981743321740e`；`origin/main^{tree}` 与候选 tree **逐字节一致**
+（`mergedAt` 2026-09-21T01:07:18Z，本地 2026-09-21 09:07:18）。合并方式 **squash ＋ `--match-head-commit`**
+（`make pr.merge`，`PR_MERGE_METHOD=squash`、`EXPECTED_HEAD=72fdff27…`）。候选的 exact-head
+`make ci.local.quick` 在该 head 上运行并以**运行退出码**为通过判据（`[OK] local quick gate passed`），
+回执绑定 `head=72fdff27…`／`tree=b6100beb…`／`suite=ci.local.quick`／`producer=atomic-ci-local-quick-runner-v1`
+／`schema_version=2`；**该回执不含结果字段**，只能证明 Quick 在该 head 上跑过、不能自证通过——这一口径限制
+如实登记（与 §8.39 同一限制）。合入前该 head 上远端必检项 **9 success／3 skipped／0 fail**：success
+`classify`／`frontend_release_gate`／`merge_policy_gate`／`professional_authorization`／
+`professional_quality_gate`／`public_guard`／`public_guard_classify`／`python310_runtime_compatibility`／
+`release_candidate_gate`；skipped `classify`（候选检查变体）／`fast`／`wait_for_candidate_checks`。
+交付链前置证据：独立只读复核 **无 S0／S1／S2、可合入**（`tmp/g12-evidence/review-independent-72fdff27.md`，
+只读、未改任何被跟踪文件）；交付证据经 `make workspace.evidence.archive` 归档
+（`…/.codex-evidence/workspace-archives/20260921/uc4-g12-project-initiation-native/72fdff27…/archive-receipt.json`，
+5 文件、`status=verified`）。
+
+台账 `docs/ops/iterations/form_structure_compatibility_consumers_v1.json` 扣减 **8 → 7**
+（本批在台账内**正好 1 条**：724 新项目立项），`count`／`localVerifiedCount`／`mainlineRemainingCount`
+同步为 **7**，并新增 `uc4G12PublishedAudit`；`nextBatch.selectedGroup`／`priorityActions`／`sourceMainlineHead`
+同步前进（见下）。**按已合入源码逐项核对**：
+
+- 入口契约 `project_project_form_structure_v1`（139，action 724）只留 `title`「项目立项」＋
+  `composition_mode: native_semantic_surface`，priority **90 → 800**，`view_orchestration.context` 与原声明
+  **逐值相同**；结构键 `sections`／`fields`／`semantic_anchors`／`columns`／`layout` 全部消失，
+  `structural_form_declarations()` 对其返回空，`diagnose_structure_ownership()` 不可能再为 724 产出
+  `LEGACY_STRUCTURE_KEY_OVERRIDE`。
+- **同域竞争镜像随入口一并退役**：`project_project_form_structure_generated_v1`（46，priority 77）**绑定同一个
+  action 724 与同一个 view 1503**，用该数据文件既有的
+  `<function model="ui.business.config.contract" name="write">` 先例置 `active: False`。理由由冻结态只读 A／B 实测
+  给出（`sc_dev_demo`，`SAVEPOINT g12_ab` ＋ `ROLLBACK TO SAVEPOINT`，`rollback_residual` 全 true、0 写入）：
+  **只退役 139 会使渲染直接不再解析**（`ok=false`）——46 会成为该 action 的最后结构写入者，
+  `diagnose_structure_ownership()` 拒绝该 scoped 冲突；退役 139 ＋ 46 → `ok=true`、
+  `form_structure_authority=native_authority`、`layoutPolicy=container_tree_authority`、`presentationMode=task`。
+- **1503 无继承扇出**：运行库 `ir.ui.view.inherit_id = 1503` 命中 **0**，仓内 `inherit_id` 引用亦 0 条；
+  台账 `structureRelation=project_create_view_with_inheritance_fanout` 的"扇出"在本视图**不成立**（如实登记，
+  不改台账既有 `structureRelation` 字段，仅在 `indexNote` 记明）。
+- **退役声明与交付面本是两套事实**：契约 139 声明 11 个 sections（其中 **9 个无任何字段**）、**54** 条 fields
+  （**25** 条 `visible:false`）与 2 个 `semantic_anchors`，而交付面实测渲染为 **12 个字段 / 3 个有标题业务组
+  ＋ 3 个无标题嵌套组**。故只把**入口自身声明的**章节身份（`current_task`／`intake_risk`）与**真实回退**的
+  label（`manager_id`＝「项目负责人」）交回原生 arch，其余**如实登记为"声明但未渲染"，不补成新面**。
+- **原生面**：1503 补 4 个 `data-sc-anchor` 业务分组（`current_task`「当前任务」／`intake_risk`「立项条件」／
+  `project_create_required`「项目创建（必填）」／`project_create_optional`「项目标识（可选）」），两个只读字段
+  拆成带 key 分组并保留 `readonly="1"`；**渲染字段集不增不删（12 条）**，测试钉住 `RENDERED_FIELDS`，
+  退役声明不能静默丢事实。
+- **运行库交付态**：`make local.dev.upgrade` exit 0 后只读探针记录 139 priority **800**、
+  `composition_mode=native_semantic_surface`、镜像 **46 `active=false`**、`native_authority` ＋
+  `container_tree_authority`、`effectiveContracts` 只剩 139、**`diagnostics` 空**，渲染容器树 4 锚点／12 字段／
+  两个只读字段口径逐项一致。
+- **浏览器代表面**：`FORM_LOWCODE_TOPIC=project FORM_LOWCODE_REPRESENTATIVE=1` → exit 0、`ok=true`、
+  `restored=true`、`dirty=false`、`candidate=72fdff27`；代表面 entry 级 `status=passed`，创建与记录两条路由
+  四个业务章节入口＋「协作记录」全部 resolve 且可见，1088／390 两视口共 28 次测量无遮挡，业务指纹未变。
+- **不额外计数**：共享原生主表单 1503 仍是 `project.project` 的渲染目标，且**现在就是 action 724 的结构权威面**，
+  不随扣减退役（`reduction.retiredViewMeaning`）；**兄弟入口 725**（`view_project_create_form_quick`，7 字段）
+  未被本批修改，其覆盖由单测承担（治理导航角色下 725 返回 `NAVIGATION_AUTHORITY_DENIED`）。
+
+**域回归（只读重跑＋已提交基线逐项 diff）**：project 域 30 个 action 中 29 条仅 **DB 身份漂移**，唯一语义差异
+`action_sc_product_project_edit_v1`（默认表单 `project.edit_project` → `…view_sc_product_project_information_edit_form_v1`）
+判为**既存报告陈旧**——该 action 不定 `view_id`，引入该原生表单的 `dbf1e171` 晚于已提交报告 `e76d2a3c` 的生成时点；
+**base_configuration 域 6 个 action 语义差异 0**（零变化对照）。
+
+**过程偏差与独立复核项（如实登记，不隐藏）**：本候选在冻结过程中经**两次同候选 amend**（`8a60311a` →
+`3cd4aebb` → `72fdff27`），均为**文档／注释／测试 docstring 层面的 S3 订正**，非产品面改动：第一次订正 5 项
+（字段行数 53→54 四处、「呈现中性」措辞、退役前渲染面描述、代表面 `status` 口径、子串式断言改 arch 元素级），
+第二次订正独立复核指出的最后一处英文 docstring 措辞（「each wrapping」→「with … under two of them」）。
+`project_views.xml`／`tests/__init__.py`／`complexity_budget_report.md`／
+`scripts/verify/local_dev_form_lowcode_scope.py` 四条路径在两次 amend 中**逐字节未变**，故 L3 运行库事实与域回归
+结论继续成立；每一次 amend 后均**重跑** L1／L2（15＋184）／守卫／L4 浏览器代表面／exact-head Quick，并以
+最终 head 的独立只读复核收口。**失败与返工运行不隐藏**（`tmp/g12-evidence/l2-g12-*.log`、`l4-*.log`、
+`review-independent-*.md`）。
+
+**保留边界与已知限制（不随本批关闭）**：`retirementComplete=false`；本批**未部署**、**用户交付未完成**。
+四条**既存环境／基线缺陷**如实登记、**不修**：`verify.contract.view_structure` 期望 `local.clean`／`sc_clean`
+权威指纹证据而本工作树以 `ec2c56e5` 为基线；`verify.product.menu.governance.m4.closure` 缺
+`artifacts/menu-governance/menu-m4-runtime.REJECTED-wrong-sha.json`；`verify.user_form.preference.boundary_guard`
+依赖**客户定制 addon 仓库（不在本仓库边界内）**的模块；**本批新登记第 4 条**——
+`verify.frontend.professionalization.collaboration_domain.runtime` 的组件级单测
+`test_notification_contract_is_bound_to_exact_action_and_view` 在**合并后基线**上失败（G11 已把该契约发为
+`native_semantic_surface` 而该单测仍断言 `entry_semantic_surface`，属 **G11 遗留基线缺陷**），故零变化域对照
+改用 `base_configuration` 域。探针为单库单管理员角色，未重测租户／低代码面（与 G10／G11 同残留）；
+"54" 为契约 JSON 静态计数，若运行库曾对该 JSON 做行级改写则不成立。
+
+`nextBatch.selectedGroup` 前进到 **G13 日常合同与结算**（actions 687／876，视图 1757／1764，
+`legacyConfigurations` `daily_contract_settlement_form_v1`／`sc_general_contract_company_handling_form_v2`，
+risk high），`priorityActions` 同步为 `[687, 876]`，`sourceMainlineHead` 更新为合入后 main；**G13 未启动**。
+G12 组索引就地标记 `indexStatus=historical_source`（不再是当前消费者集），并补 `legacyConfigurationStatus`
+逐名分类（入口 body 由本批退役；同 action 同 view 的生成镜像随入口一并退役）。
+
+本提交为**文档类单职责提交**（台账 ＋ 本记录，路径集合固定为 2）；**未触碰**任何产品代码、契约、测试或
+验证工具输入，故不改动 §8.40 的 L0–L4 结论；候选的 exact-head Quick 回执属于 `72fdff27`，
+本提交自身的收据由受管门禁按 fail-closed 口径产生，**不冒充同一绑定**。
+
+状态：**G12 主线集成完成（PR #506，squash 同树）｜批次状态：自验与冻结门禁通过；集中产品复核结论以产品方登记为准｜
+未部署｜用户交付未完成｜台账 7｜G13 未启动**。
