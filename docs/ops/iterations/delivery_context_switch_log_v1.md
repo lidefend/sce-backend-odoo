@@ -9952,3 +9952,66 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `action_sc_product_project_edit_v1` 陈旧（既存）。
 - Next Step：合并获授权后执行**文档单职责提交**（台账 5 → 1 ＋ 迭代记录 8.44／8.45 ＋ 本轮切换日志），
   清理已合入分支，再启动 G15（税务申报：880）。
+
+## 2026-09-21 — U-C4 G15 税务申报（入口契约原地退役结构声明，最后一组兼容消费者归零）
+
+- 分支 `feature/uc4-g15-tax-filing-native-v1`，基线 `origin/main@af9c80331bbca205639f8b1591b3db0e3865429b`
+  （G14 正文 PR #510 与 G14 台账审计 PR #511 的合入点）。Formal Product Layer 为 **P1**；Layer Target 为
+  `smart_construction_core` 的入口契约 `data/tax_filing_contract.xml`、定向测试与原生视图口径，另含一处 **P4
+  最小扩展**（既有只读代表面入口 `scripts/verify/local_dev_form_lowcode_scope.py` 登记 `tax_filing` topic，
+  复用已注册环境／身份与数据权威，只读且不写配置）。不属 P0（`smart_core` 不承载行业语义）／P2／P3。
+  回滚为 `git revert`（纯声明变更）。
+- 目标：让入口 action **880**（menu 702「税务申报」，`sc.tax.filing`，视图 1659）的入口发布成为本入口
+  **最后的结构写入者**并声明 `native_semantic_surface`，使 `form_structure_authority=native_authority`、
+  `layoutPolicy=container_tree_authority`，兼容重组路径对 880 不再适用（台账由此可扣减 **1 → 0**，成为最后一条
+  兼容消费者；扣减属**合并后**文档单职责提交）。
+- 变更（候选 5 条路径，单提交：4 改 ＋ 1 新增）：**原地退役**入口契约 186 `tax_filing_form_v1` 的结构声明
+  （`composition_mode: entry_semantic_surface → native_semantic_surface`，退役 `sections` 4 组 22 字段／`columns`／
+  `actions` 5 条，保留 `priority=800`／`action_id`／`status=published`／`version_no` 键／`title='税务申报'`／
+  `context` 5 键逐值）；**新增** `tests/test_tax_filing_native_lowcode.py`（tag `uc4_native_lowcode`，16 测试）并
+  登记 `tests/__init__.py`；只读代表面入口登记 `tax_filing` topic（样本字段 `state`／`currency_id`，机制键
+  `readonly_values` ＋ `record_surface`，**刻意不含** `section_navigation`）；`complexity_budget_report.md` 随冻结
+  刷新（4400 → 4401）。
+- 关键决策（实测驱动，非设计预判）：①本模型入口级载体**只有两条**（186 本入口／187 兄弟报表
+  `tax_report_list_v1`，action 881，`pivot,graph,tree` 无 form），为同一 action **另建** `native_semantic_surface`
+  record 的变体被 `diagnose_structure_ownership` 以 `NATIVE_SEMANTIC_SURFACE_STRUCTURE_CONFLICT` **拒绝**，故只能
+  **原地退役**（G13 形态），**不能**沿用 G12／G14 的「新增入口发布」形态；②原地退役意味着**非增量**，
+  `ui.business.config.contract` 仍 **289** 行，G14 阶段手稿的「289 → 290」预测**不成立**；③published 契约改 body
+  会**追加不可变发布快照**并把活行 `version_no` 递增——实测活行 `version_no=2`、入口 186 占 **2** 条快照
+  （v2 无章节／**v1 仍带退役前的 4 个章节标题**）、版本表 **774** 行，**运行时读活行**，故旧声明残留仅存在于
+  审计／回滚快照；④平台既有原生入口 876／687／523／522／646／778 的 edit 与 create **双平面**均为
+  `fieldSemantics=0`／`surfacePolicies={}`，作为「退役后回到平台常态」的对照判据。
+- 交付面可见变化（如实登记，不写成「仅结构权威变更」）：`create` 路由相对基线**可见字段 8 → 20**，新增可见的
+  12 个字段中 **9 个只读**（税额测算／时间戳等）＋ **3 个可编辑**（`note`／`attachment_ids`／
+  `other_tax_adjustment`），即 create 页新增 **3 个录入控件**；`readonlyFieldCount`（12）与 `editableFieldNames`
+  （9 项）退役前后**均不变**（变化的只是可见性，不得据此推断新增项全部只读）；同视图 1659 的 **edit** 路由
+  退役前后**逐项相同**。若验收认为 create 页应保持稀疏，需另立 P1 稀疏只读覆盖任务（本批不声明需要覆盖）。
+- 保留边界：兄弟载体 187／action 881／menu 703 未触碰；不改 ACL／记录规则／菜单可见性，不改模型字段与
+  原生视图 arch；发布历史**不删除**（旧声明仍可在版本快照与管理员版本列表中读到）；`retirementComplete=false`。
+- 验证：L0 只读探针（`SAVEPOINT` ＋ `ROLLBACK`，零写入）锁定基线权威与平台对照面、台账条数确认 **1**；
+  L1 `make ci.delivery.freeze.prepare` PASS（复杂度 4400 → 4401）；L2 新测试 **16** 通过、整组回归 **234** 通过
+  （0 failed 0 error，G14 为 218）、策略回归 **12** 通过、六条具名守卫 **6/6**、域回归 tax_center 9／project 30／
+  base_configuration 6 全 PASS 且跑后逐字节还原；L3 `local.dev.upgrade` exit 0，只读探针核对契约表仍 **289**、
+  入口 186 章节／动作归零、edit 与 create 均 `native_authority` ＋ `container_tree_authority` ＋
+  `native_structured_form` ＋ `diagnostics=[]`、**21 字段／0 锚点**、修饰符与基线逐项相同；
+  **L4 浏览器代表面在冻结 HEAD 上跑通**——`FORM_LOWCODE_TOPIC=tax_filing FORM_LOWCODE_REPRESENTATIVE=1` →
+  exit 0／`ok=true`／`restored=true`／`candidate=cb3cb82c`／`dirty=false`／`browser_errors=[]`，create 路由 passed
+  （19 字段节点、11 只读核验、各 finding 桶全空）；**880 record 路由如实登记为 `UNCOVERED`
+  （`record_surface`／`empty_action_domain`：action 域 0 行、模型 0 行），不写成通过；L5 exact-head
+  `make ci.local.quick` PASS（回执绑定 `head=cb3cb82c…`／`tree=a9e1b0ab…`，并经 `local_quick_evidence.py verify`
+  复验 VERIFIED）。
+- 过程偏差（不隐藏）：head 曾为 `9b113275`，第一组独立只读复核提出 **2 条 S2**（create 可见字段变化未登记；
+  `create_fields == edit_fields` 非判别性），作者在同一提交内补正并 amend 为 `cb3cb82c`（2 文件 +38/−13）；
+  第二组复核确认**无 S0／S1／S2**，另提一条 **S2-N1**（交付文档误写「新增 12 字段全部只读」，实为 9 只读 ＋
+  3 可编辑）已修正并确认闭合；L4 首轮曾把 create 面变化写成「仅结构权威变更」，已按实测改写为**用户可见变化**；
+  L2／L5 日志 stats 行与 result 行计数口径不同，记录统一取 result 行。
+- 环境缺陷登记（非本批引入，不修）：G08–G11 已登记三条（`verify.contract.view_structure` 的 `local.clean`／
+  `sc_clean` 权威指纹期望、`verify.product.menu.governance.m4.closure` 缺
+  `menu-m4-runtime.REJECTED-wrong-sha.json`、`verify.user_form.preference.boundary_guard` 依赖**客户定制 addon
+  仓库**（不在本仓库边界内）的模块）以及 G12 登记第四条（G11 遗留的
+  `verify.frontend.professionalization.collaboration_domain.runtime` 组件单测仍断言 `entry_semantic_surface`）；
+  本批另登记 `docs/frontend_productization/domain-rollout/project-domain-coverage-v1.json` 对
+  `action_sc_product_project_edit_v1` 陈旧（既存）。
+- Next Step：合并获授权后执行**文档单职责提交**（台账 1 → 0 ＋ 迭代记录 8.46／8.47 ＋ 本轮切换日志），
+  清理已合入分支，再收口 `otherStateConsumers` 中剩余的**其他状态消费者**（886／menu 709／
+  `data_permission_form_v1`）。

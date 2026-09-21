@@ -6,157 +6,11 @@
     "operation": "model",
     "renderProfile": "create"
   },
-  "count": 1,
+  "count": 0,
   "fullRescan": false,
   "sourceInventory": "artifacts/form-structure-unification/customer-browser-final/compatibility-consumers.json",
   "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-  "entries": [
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_product_tax_filing_v1",
-      "label": "税务申报",
-      "model": "sc.tax.filing",
-      "actionId": 880,
-      "menuId": 702,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "overview_then_task_slots",
-      "actualView": {
-        "model": "sc.tax.filing",
-        "viewId": 1659
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 186,
-            "name": "tax_filing_form_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1659,
-        "resolvedActionId": 880,
-        "structureDiagnostics": [],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [],
-        "fieldLabels": {},
-        "fieldSemanticRoles": {},
-        "sectionSemanticRoles": {},
-        "configuredSections": [
-          {
-            "identity": "title:申报信息",
-            "key": "",
-            "title": "申报信息",
-            "fields": [
-              "state",
-              "name",
-              "company_id",
-              "period_start",
-              "period_end",
-              "handler_id",
-              "declaration_no"
-            ]
-          },
-          {
-            "identity": "title:税额测算",
-            "key": "",
-            "title": "税额测算",
-            "fields": [
-              "output_tax_amount",
-              "input_tax_amount",
-              "deductible_tax_amount",
-              "prepaid_tax_amount",
-              "surcharge_amount",
-              "vat_payable_amount",
-              "other_tax_adjustment",
-              "declared_payable_amount"
-            ]
-          },
-          {
-            "identity": "title:来源与治理",
-            "key": "",
-            "title": "来源与治理",
-            "fields": [
-              "invoice_source_count",
-              "deduction_source_count",
-              "calculated_at",
-              "submitted_at",
-              "accepted_at"
-            ]
-          },
-          {
-            "identity": "title:说明与附件",
-            "key": "",
-            "title": "说明与附件",
-            "fields": [
-              "note",
-              "attachment_ids"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "申报信息",
-          "税额测算",
-          "来源与治理",
-          "说明与附件"
-        ],
-        "fieldGroups": {
-          "申报信息": [
-            "state",
-            "name",
-            "company_id",
-            "period_start",
-            "period_end",
-            "handler_id",
-            "declaration_no"
-          ],
-          "税额测算": [
-            "output_tax_amount",
-            "input_tax_amount",
-            "deductible_tax_amount",
-            "prepaid_tax_amount",
-            "surcharge_amount",
-            "vat_payable_amount",
-            "other_tax_adjustment",
-            "declared_payable_amount"
-          ],
-          "来源与治理": [
-            "invoice_source_count",
-            "deduction_source_count",
-            "calculated_at",
-            "submitted_at",
-            "accepted_at"
-          ],
-          "说明与附件": [
-            "note",
-            "attachment_ids"
-          ]
-        },
-        "hiddenFieldNames": [],
-        "groupColumns": {
-          "申报信息": 2,
-          "税额测算": 4,
-          "来源与治理": 2,
-          "说明与附件": 1
-        },
-        "groupVisibility": {},
-        "formColumns": 2
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    }],
+  "entries": [],
   "otherStateConsumers": [
     {
       "menuXmlid": "smart_construction_core.menu_sc_product_data_permission_v1",
@@ -287,6 +141,7 @@
     }
   ],
   "retirementComplete": false,
+  "retirementCompleteReason": "PR #512 took the ledger to 0 remaining compatibility consumers, which satisfies only the first half of retirementCondition. This batch does NOT remove the compatibility regrouping logic or its test exemptions, because the second half is still open: the ledger is measured as one governed principal (system_admin / company 1 / renderProfile create) and otherStateConsumers still carries one entry_semantic_surface consumer (action 886 / menu 709 / data_permission_form_v1, status=passed). Removing the regrouping path needs its own decision and evidence batch.",
   "deliveryName": "唯一结构机制及首批代表面迁移",
   "originalScope": {
     "before": 49,
@@ -299,7 +154,7 @@
     "countCorrection": 4,
     "migrationReduction": 3
   },
-  "localVerifiedCount": 1,
+  "localVerifiedCount": 0,
   "uc1PublishedAudit": {
     "auditedAt": "2026-09-16",
     "auditedReleaseHead": "28b7695dc9f1cebbbe9bd5d715e951c6dec8a4da",
@@ -470,12 +325,11 @@
   "runtimeEvidenceRoot": "artifacts/form-structure-unification/ub-tender-hierarchy-identities",
   "nextBatch": {
     "name": "U-C4",
-    "status": "scope_confirmed_implementation_started",
-    "priorityActions": [
-      880
-    ],
-    "selectedGroup": "G15",
-    "sourceMainlineHead": "dc2788e1d1b217a9da7f10cdd5025e262a41d833",
+    "status": "path_clear",
+    "priorityActions": [],
+    "selectedGroup": null,
+    "clearanceNote": "The U-C4 priority-group plan is exhausted: the last remaining compatibility consumer (880 sc.tax.filing / menu 702 / view 1659 / entry contract 186 tax_filing_form_v1) was retired in place by PR #512, so entries=[] and count=0. selectedGroup is null because no group is selected for a next batch; every group keeps its planning record and G09-G15 are marked historical_source. path_clear means no formal compatibility consumer remains in THIS ledger; it does NOT authorise deleting the compatibility regrouping logic, because retirementCondition also requires other roles/companies/states to be covered and otherStateConsumers still lists one entry_semantic_surface consumer (action 886 / menu 709 / data_permission_form_v1).",
+    "sourceMainlineHead": "257252cc6854e9dd6db46b4b4b6ffe7cff8f1200",
     "fullRescan": false,
     "groups": [
       {
@@ -865,7 +719,12 @@
         "legacyConfigurations": [
           "tax_filing_form_v1"
         ],
-        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
+        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated",
+        "indexStatus": "historical_source",
+        "indexNote": "G15 is published and merged (PR #512, squash 257252cc, origin/main^{tree} byte-identical to the candidate tree a9e1b0ab). 880 (sc.tax.filing / view 1659 / menu 702 / entry contract 186 tax_filing_form_v1) was the last ledger entry. UNLIKE G12-G14 this batch added NO new entry release: sc.tax.filing has exactly two entry-level carriers (186 tax_filing_form_v1 for action 880 and 187 tax_report_list_v1 for the sibling report action 881), and creating a second carrier for the same action was rejected by diagnose_structure_ownership with NATIVE_SEMANTIC_SURFACE_STRUCTURE_CONFLICT, so the SAME record was retired IN PLACE (composition_mode entry_semantic_surface -> native_semantic_surface with sections/columns/actions dropped, while priority=800, action_id, status=published, title and the five context keys were kept verbatim). The contract table therefore stays at 289 rows instead of growing by one. Changing the body of a published contract appended an immutable publication snapshot: the version table holds 774 rows and entry 186 has two of them (v2 native without sections; v1 the retired entry_semantic_surface still carrying its four section titles), while the live row moved to version_no=2; structure resolution reads the live row, so the retained snapshot is an audit/rollback artifact only. Both the edit and the create profile now resolve authority=native_authority / layoutPolicy=container_tree_authority / mode=native_structured_form / diagnostics=[] with 21 fields and 0 anchors, and the sibling carrier 187 / action 881 / menu 703 is untouched.",
+        "legacyConfigurationStatus": {
+          "tax_filing_form_v1": "entry_contract_retired_in_place_into_native_semantic_surface_and_kept_published"
+        }
       }
     ],
     "scopeNote": "Ninth group prepared from the merged mainline: engineering process and documents (682 safety, 867 quality, 729 construction diary, 597 project documents, 527 progress; views 1741/1550/1893/1560/1389; handling forms plus generated-structure subgroups). The group lists seven legacyConfigurations whose entry-level structures are to be retired onto their native forms. Scope is prepared in the G10 task card (external analysis location); implementation, L2/L3/L4 and the count reduction stay pending. No new business rules or permission expansion.",
@@ -878,7 +737,7 @@
     "planningRecord": "docs/ops/iterations/form_structure_consumption_stabilization_20260917.md"
   },
   "retirementCondition": "Only after every formal consumer of a compatibility regrouping path is zero and other roles/companies/states are covered, remove that regrouping logic and its test exemptions.",
-  "mainlineRemainingCount": 1,
+  "mainlineRemainingCount": 0,
   "mainlineRemainingLabel": "主线剩余兼容消费者（不代表部署发布或89入口整体交付）",
   "uc3LocalMigrationAudit": {
     "status": "mainline_integrated",
@@ -2165,6 +2024,82 @@
       "model_level_mirrors_39_41_44_137_stay_active_and_only_serve_the_action_less_model_surface",
       "sibling_entries_585_and_524_cost_ledger_645_funding_plan_854_tender_guarantee_refund_stay_untouched",
       "the_last_remaining_ledger_entry_880_sc_tax_filing_is_the_G15_topic"
+    ]
+  },
+  "uc4G15PublishedAudit": {
+    "auditedAt": "2026-09-21",
+    "auditedReleaseHead": "257252cc6854e9dd6db46b4b4b6ffe7cff8f1200",
+    "mergedPr": {
+      "number": 512,
+      "squashHead": "257252cc6854e9dd6db46b4b4b6ffe7cff8f1200",
+      "sourceHead": "cb3cb82c6a0ee5e5960ead3a1ac7dc8e77af5b56",
+      "tree": "a9e1b0abc53aa3e0f8f439d27b8578cc3d12a9de"
+    },
+    "iterationRecord": "docs/ops/iterations/form_structure_consumption_stabilization_20260917.md",
+    "requiredChecks": [
+      "classify=success",
+      "frontend_release_gate=success",
+      "merge_policy_gate=success",
+      "professional_authorization=success",
+      "professional_quality_gate=success",
+      "public_guard=success",
+      "public_guard_classify=success",
+      "python310_runtime_compatibility=success",
+      "release_candidate_gate=success"
+    ],
+    "skippedChecks": [
+      "classify",
+      "fast",
+      "wait_for_candidate_checks"
+    ],
+    "reduction": {
+      "before": 1,
+      "after": 0,
+      "retiredActions": [
+        880
+      ],
+      "retiredViews": [
+        1659
+      ],
+      "retiredConfigurations": [
+        "tax_filing_form_v1"
+      ],
+      "countMeaning": "mainline remaining compatibility consumers; deployment and overall user delivery are separate",
+      "retiredViewMeaning": "1659 (view_sc_tax_filing_form) labels the single retired ledger entry; the view stays live as the native primary form of sc.tax.filing and is now the authoritative structure plane for action 880",
+      "arithmeticNote": "the deduction counts retired ACTIONS (1 = the only remaining entry), not published entry releases; this batch retires the LAST ledger entry, so entries=[] and count=localVerifiedCount=mainlineRemainingCount=0"
+    },
+    "exitEvidence": {
+      "carrierCheck": "sc.tax.filing had exactly two entry-level carriers before this batch: 186 tax_filing_form_v1 (action 880, this topic) and 187 tax_report_list_v1 (sibling report action 881 / menu 703, pivot,graph,tree, no form). The 880 ledger row was the only remaining compatibility consumer, and its compatibility authority lived in the same repository that publishes it (smart_construction_core/data/tax_filing_contract.xml)",
+      "inPlaceRetirementCheck": "variant B (a second record carrying native_semantic_surface) was probed and REJECTED by diagnose_structure_ownership with NATIVE_SEMANTIC_SURFACE_STRUCTURE_CONFLICT, so the batch retires the SAME record in place (G13 shape) instead of adding an entry release (G12/G14 shape); after the retirement both profiles report diagnostics=[]",
+      "contractCountCheck": "the contract table stays at 289 rows because the retirement is in place and not additive; entry 186 moved composition_mode entry_semantic_surface -> native_semantic_surface with sections/columns/actions dropped while priority=800, action_id, status=published, version_no key, title and the five context keys were kept verbatim",
+      "publicationSnapshotCheck": "published-body edits append an immutable snapshot and bump the live version_no (addons/smart_core/model/ui_business_config_contract.py:844-888). The after-probe measured: live row version_no=2; two immutable snapshots for entry 186 (v2 native without sections, v1 the retired entry_semantic_surface still carrying the four section titles); 774 rows in ui.business.config.contract.version; structure resolution reads the LIVE row, so the retained v1 snapshot is an audit/rollback artifact and not an active declaration. The unit tests therefore pin version_no with assertGreaterEqual(record.version_no, 1) plus the reason comment",
+      "platformNormalityCheck": "the platform's own native entries 876/687/523/522/646/778 carry fieldSemantics=0 and surfacePolicies={} on BOTH the edit and the create plane (tmp/g15-evidence/probe-g15-ab4.json), which is the control that classifies the 880 create-plane change below as the platform's native behaviour rather than a regression introduced here",
+      "abProbeCheck": "frozen read-only A/B probe on sc_dev_demo (SAVEPOINT + ROLLBACK, zero writes): authority '' -> native_authority, layoutPolicy -> container_tree_authority, mode -> native_structured_form, diagnostics [] -> [], edit route 21 fields / 0 anchors and the conditional modifiers identical to the baseline",
+      "createSurfaceChangeCheck": "USER-VISIBLE CHANGE, registered and not softened: the create route's visible field set grew 8 -> 20. Of the 12 newly visible fields, 9 are read-only (accepted_at, declared_payable_amount, deductible_tax_amount, input_tax_amount, output_tax_amount, prepaid_tax_amount, submitted_at, surcharge_amount, vat_payable_amount) and 3 are editable (note, attachment_ids, other_tax_adjustment) - i.e. the create page gains 3 input controls. readonlyFieldCount (12) and editableFieldNames (9) are unchanged before/after; only VISIBILITY moved, so 'the read-only total did not move' must not be read as 'every newly visible field is read-only'. hiddenFieldNames dropped from 13 to 1 (currency_id). The edit route on the same view 1659 is item-by-item identical before and after, which is what attributes the change to the removal of the create-plane compatibility surface",
+      "createRouteCheck": "the representative runner passed the 880 create route at the frozen head: 19 rendered field nodes, 11 read-only checks, sections=0, and every finding bucket empty; readonlyFieldCount 12 of 20 visible nodes is consistent with the attribution above",
+      "recordRouteCheck": "the 880 record route is UNCOVERED and is recorded as a data fact, not as a measured route: the action domain holds 0 rows for the governed identity (sc_test_admin / system_admin / company 1) and sc.tax.filing holds 0 rows in sc_dev_demo, so no row was fabricated. Consequently the four conditional arch modifiers are pinned at declaration level only (registered as a forward risk)",
+      "renderedSurfaceCheck": "the entry renders from the native arch with zero data-sc-anchor section rails (21 fields / 0 anchors), so the tax_filing topic deliberately does NOT declare section_navigation - the assertion cannot hold for this entry and is covered by other topics elsewhere",
+      "domainRegressionCheck": "read-only re-run of the committed domain rollouts: tax_center (9 actions), project_domain (30 actions) and base_configuration_domain (6 actions) all PASS and were restored byte-identical; the only non-id difference is the already-registered stale project report entry action_sc_product_project_edit_v1, which the report still records wrongly",
+      "quickGateCheck": "make ci.local.quick on the exact candidate head cb3cb82c passed and the receipt is bound to that head and to tree a9e1b0ab; pr.merge reused that verified receipt (REUSE path) instead of re-running, and the receipt was independently re-verified with python3 scripts/ops/local_quick_evidence.py verify --expected-head cb3cb82c...",
+      "reviewCheck": "two independent read-only review rounds bound to the frozen head cb3cb82c (plus four retained reports for the pre-amendment head 9b113275 and the frozen head); both rounds returned mergeable_with_notes with NO S0/S1/S2 remaining. The two S2s raised against 9b113275 (the create-plane visibility change was not registered; create_fields == edit_fields was not discriminating) were closed by amendment, and the delivery-document error found in round 1 at cb3cb82c (12 newly visible fields described as all read-only) was corrected and confirmed closed in round 2. Residual: forward risks plus bookkeeping notes, recorded in tmp/g15-evidence/archive-files/review.md",
+      "archiveCheck": "external evidence archived with make workspace.evidence.archive (4 files covering identity/summary/review/screenshot, status=verified); fingerprint sha256 d045a2a5... is the raw-bytes hash of tmp/g15-evidence/final-fingerprint.json and is carried in identity.json"
+    },
+    "knownLimits": [
+      "retirementComplete stays FALSE: the ledger reached 0 consumers, but this batch does not remove the compatibility regrouping logic and its test exemptions, and the coverage half of retirementCondition (other roles/companies/states) is still open",
+      "the ledger counts the declaration, not the delivery: the frozen ledger row was carried forward from the 3d644a79 inventory (formStructureAuthority=entry_semantic_surface), while the after-probe measured native_authority / container_tree_authority",
+      "the create route's visible field set grows 8 -> 20 (3 new input controls) - a user-visible change inside the declared blast radius, registered above and NOT dismissed as structure-only",
+      "the 880 record route could not be measured (action domain 0 rows, model 0 rows under the governed identity), so the four conditional arch modifiers are pinned at declaration level only",
+      "two ledger/planning artifacts are stale by construction and are not part of the frozen candidate: tmp/g15-evidence/g15-plan.md still predicts 'contracts 289 -> 290' and 'A/B pending', and nextBatch.scopeNote still describes the ninth (G10) group",
+      "the probes ran as a single admin principal on sc_dev_demo and did not re-measure a tenant/low-code surface (same residual as G10-G14)",
+      "the two runner/carrier touches land in P4 tooling (scripts/verify/local_dev_form_lowcode_scope.py and the complexity budget report); no product code, ACL, record rule, menu visibility, model field or native view arch was touched by the candidate",
+      "five pre-existing environment/baseline defects are registered and NOT fixed here: verify.contract.view_structure expects a local.clean/sc_clean authority fingerprint; verify.product.menu.governance.m4.closure misses artifacts/menu-governance/menu-m4-runtime.REJECTED-wrong-sha.json; verify.user_form.preference.boundary_guard depends on a customer custom addon repository that is not in this repository boundary; the component test in verify.frontend.professionalization.collaboration_domain.runtime still asserts entry_semantic_surface (G11 leftover); and docs/frontend_productization/domain-rollout/project-domain-coverage-v1.json is stale for action_sc_product_project_edit_v1"
+    ],
+    "notDeducted": [
+      "shared_native_form_1659_view_sc_tax_filing_form_stays_live_as_the_primary_form_of_sc_tax_filing_and_is_now_the_authoritative_structure_plane_for_action_880",
+      "sibling_entry_187_tax_report_list_v1_action_881_menu_703_stays_live_and_untouched_it_is_a_report_surface_pivot_graph_tree_without_a_form",
+      "the_published_entry_contract_186_tax_filing_form_v1_row_itself_stays_published_and_bound_to_action_880_only_its_structural_body_was_retired",
+      "the_immutable_version_history_of_entry_186_is_kept_v1_still_carries_the_retired_entry_semantic_surface_and_is_reachable_through_the_administrator_version_list",
+      "the_other_state_consumer_action_886_menu_709_data_permission_form_v1_still_carries_entry_semantic_surface_and_is_the_remaining_candidate_topic"
     ]
   }
 }
