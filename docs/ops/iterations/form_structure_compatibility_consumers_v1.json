@@ -2231,6 +2231,82 @@
       "fix": "the self-test now pins NODE_FORMAT_PROBES literally and requires every forced format to be proven by it; the cost is recorded as 382 node invocations with the breakdown; the section 8.51 pointer states each disposition inline; the contract assertion reads the parsed workflow and asserts the pin step is inside the professional_quality_gate job, is the sole step with that name, carries the pinned action SHA and node-version 22.17.0, has no if guard, and precedes both sweep-running gate steps (all five constructions re-measured as caught in a shadow copy)",
       "reverification": "the fixes move the head, so L1, L2, L5 and both independent rounds are re-run and re-bound against the new frozen candidate; the gate, corpus, decision and residual conclusions are unchanged"
     },
-    "nextRoundAudit": "post-merge facts (squash head, required checks, push-to-main runs, branch cleanup) belong to the audit round that follows this batch, as with the previous syntax-gate rounds"
+    "nextRoundAudit": "recorded by the post-merge audit round in uc4G16JsCorpusExpansionAudit (merged PR #519 with squash head 81346ad4, required checks, push-to-main runs and branch cleanup); the three residuals left registered are the two-make-target scope, the parse-level-only semantics, and the TypeScript/Vue plus .css/.xml surface outside the sweep, and four parked hardening suggestions for the workflow pin assertion are recorded there"
+  },
+  "uc4G16JsCorpusExpansionAudit": {
+    "auditedAt": "2026-09-21",
+    "auditRound": "U-C4 G16 .js corpus widening closeout audit (P4 evidence round)",
+    "branch": "audit/uc4-g16-js-corpus-expansion-v1",
+    "auditedMainlineHead": "81346ad4321831b6a7b056fbb4fb46eb00a846b4",
+    "mergedPr": {
+      "number": 519,
+      "squashHead": "81346ad4321831b6a7b056fbb4fb46eb00a846b4",
+      "sourceHead": "45d1c31fbae972f25433b850524180fbdd7d5d72",
+      "tree": "591e08a46e9d29b36c693b0937f178012be90bf1",
+      "base": "ac9133ed04c82c54cb3567881675485b4d9360db",
+      "mergedAt": "2026-09-21T10:17:01Z",
+      "mergeMethod": "squash",
+      "independentReview": "read-only round A' APPROVE and round B' APPROVE, both bound to the frozen source head 45d1c31f (S0/S1/S2 = 0); the two round reports are external read-only reviews kept outside this repository, exactly as with the previous closeout audit, whose verdicts are likewise recorded without any in-repo review artifact; round A' re-measured the S2-1 constructions (drop the module probe, drop the CommonJS probe, narrow JS_INPUT_TYPES, add an unprobed forced format, swap probe order and payload) and the S4-1 constructions (floating @v4 tag, commented-out version, if: false guard, step moved into another job, step moved after the gate), all FAILED against the baseline green; round B' independently reproduced the five S4-1 constructions and the probe-drop construction in its own shadow copy"
+    },
+    "requiredChecks": [
+      "classify=success",
+      "frontend_release_gate=success",
+      "merge_policy_gate=success",
+      "professional_authorization=success",
+      "professional_quality_gate=success",
+      "public_guard=success",
+      "public_guard_classify=success",
+      "python310_runtime_compatibility=success",
+      "release_candidate_gate=success"
+    ],
+    "skippedChecks": [
+      "classify (release_candidate_gate)",
+      "fast",
+      "wait_for_candidate_checks"
+    ],
+    "postMergeMainRuns": {
+      "head": "81346ad4321831b6a7b056fbb4fb46eb00a846b4",
+      "event": "push to main",
+      "runs": [
+        "merge_policy_gate=success (35587916392)",
+        "professional_quality_gate=success (35587916762)",
+        "public_guard=success (35587916379)",
+        "frontend_release_gate=success (35587916670)"
+      ]
+    },
+    "gateLiveOnMain": {
+      "runOn": "81346ad4321831b6a7b056fbb4fb46eb00a846b4",
+      "sweep": "python3 scripts/ci/node_syntax_check.py -> [OK] Node syntax check passed (349 files), exit 0",
+      "selfTest": "python3 scripts/ci/test_node_syntax_check.py -> Ran 24 tests, OK",
+      "runtime": "this read-only re-run used the host default node (24.16.0), not the version the CI job pins; the pinned 22.17.0 runtime is the one exercised by professional_quality_gate, and uc4G16JsCorpusExpansion.measuredEvidence records the corpus classification on both 22.17.0 and 24.16.0",
+      "meaning": "the tracked .js corpus is now part of the test.contract entry, so closesResidual.tracked_js_not_covered stays closed on the mainline; this is a read-only re-run of the merged gate, not new acceptance evidence"
+    },
+    "recordCorrections": {
+      "none": "neither post-merge round required a change to the merged batch's own record or to the merged source: no S3 finding touched the gate, the corpus, the decision or the merged commit, and the residual registry itself kept its three entries unchanged - the only residual-related finding was about the two nextRoundAudit summaries miscounting them. The corrections this audit draft itself needed are listed in postReviewRevision",
+      "unchanged": "uc4G16PublishedAudit, uc4G16FollowupSyntaxGate and uc4G16FollowupSyntaxGateAudit are byte-identical; the mainline counter fields count=0 / entries=[] / otherStateConsumers=[] / retirementComplete=false are untouched by this audit round, which changes no consumer"
+    },
+    "parkedHardeningSuggestions": [
+      "round B' S4-1: the workflow contract asserts with == {'node-version': '22.17.0'}, which is stricter than needed, so a future legitimate extra with key such as cache: would fail the guard spuriously",
+      "round B' S4-2: the same assertion pins the two gate step display names, so a benign step rename fails it",
+      "round A' S4-1: uniqueness is counted per step name only, so a differently named actions/setup-node step added after the pinned one would still pass even though a later setup-node rewrites PATH",
+      "round A' S4-2: test_cache_keys_bind_lockfile_and_runtime still binds frontend_release_gate.yml through plain assertIn text matching, the same weakness class this batch fixed for the sweep job; that assertion is pre-existing code rather than something this batch introduced, and it is registered here so it is not silently dropped"
+    ],
+    "excludedFindings": {
+      "yaml_dependency": "round A' S4-3 and round B' S4-3: the new import yaml in test_ci_risk_workflow_contract.py is not declared in a requirements file, but scripts/ci/generate_contract_structure_fingerprint.py already imports yaml at the base commit and runs inside the same CI job, so PyYAML is a pre-existing hard dependency and no new dependency is introduced"
+    },
+    "branchCleanup": "feature/uc4-g16-node-syntax-js-corpus-v1 was deleted locally and on origin through make branch.cleanup.feature after the exact-head squash check (the source head 45d1c31f is not an ancestor of the mainline under the squash merge, so it was verified against merged PR #519 by exact head). Local absence is directly verifiable (git branch --list returns nothing) and remote absence is verifiable read-only (git ls-remote --heads origin returns no such ref, and the branches API for that name returns 404). The candidate worktree was detached to 81346ad4 and kept, and its detached tree 591e08a4 equals the merge tree",
+    "postReviewRevision": {
+      "trigger": "independent read-only rounds bound to the frozen audit candidate f602bc362969e6190d75e0137fce0e5c2434cb2b: round A returned REQUEST_CHANGES (no S0/S1/S2) with two S3 record-accuracy findings and three S4 observations, round B returned APPROVE (no S0/S1/S2) with four S4 observations; both independently reproduced the merged-batch facts, the required and skipped checks, the four post-merge runs and the byte-level invariants",
+      "findings": "S3-1 (round A): both nextRoundAudit strings said the gate keeps two residuals, but uc4G16JsCorpusExpansion.remainingResiduals holds three and section 8.53 and the switch log list three kept residuals, so a ledger-only reader would lose the third; S3-2 (round A): the parked suggestion about the hard-coded gate step display names was attributed to round A' S4-2, but round A' S4-2 is the pre-existing frontend_release_gate text assertion and the display-name point is round B' S4-2, while the name-scoped uniqueness point is round A' S4-1 rather than round B' S4-3 (which is the yaml finding); round B added S4-1 (the excluded yaml finding was missing from the ledger although the prose records carry it), S4-2 (the field name acceptedHardeningSuggestions reads as adopted) and S4-4 (the kept-residual enumeration order differed between the switch log and section 8.53); round A added S4-1 (the remote branch deletion was stated without a verifiable basis), S4-2 (the reviewer verdicts are not substantiable from repository artifacts, which matches the previous closeout audit) and S4-3 (the gate re-run did not record its runtime version)",
+      "fix": "both nextRoundAudit strings now say three kept residuals and name all three; the parked suggestions are re-attributed to the rounds that actually raised them, the pre-existing frontend_release_gate text assertion is registered as a fourth parked item so nothing is dropped, and the yaml finding is registered under excludedFindings with its base-commit evidence; the field is renamed parkedHardeningSuggestions so it cannot read as adopted; the kept-residual enumeration order is aligned with section 8.53; branchCleanup names the read-only commands that prove the remote ref is gone; gateLiveOnMain records the runtime used; and mergedPr.independentReview now states that the two round reports are external read-only reviews, as with the previous closeout audit",
+      "reverification": "this revision moves the head, so L1, L2, L5 and both independent rounds are re-run and re-bound against the new frozen candidate; the merged-batch facts, the byte-level invariants and the residual registry are unchanged",
+      "reviewRound2": {
+        "trigger": "independent read-only rounds bound to the revised audit candidate a6a55c3bc3a5bf09e61275e5b6ec11fb1ce6a653: both returned REQUEST_CHANGES with no S0/S1/S2 after confirming five of the six delegated items fully closed and the sixth only partially (the ledger did not yet state that the round reports are external)",
+        "findings": "S3-1 (both rounds): the two ledger-summary parentheses still said three S4 suggestions while the block had grown to four parked suggestions plus one excluded finding, so the same document carried two mutually exclusive counts; S3-2 (round A): postReviewRevision.fix claimed this block states that the round reports are external read-only reviews, but no such sentence existed anywhere in the block; S4-1 (round A): recordCorrections.none denied any S3 finding about the residual registry although the residual-related S3 was about its two nextRoundAudit summaries miscounting the entries",
+        "fix": "both summaries now read four parked suggestions plus one excluded finding; mergedPr.independentReview now states that the two round reports are external read-only reviews, as with the previous closeout audit, and the fix wording points at that field instead of a sentence that did not exist; recordCorrections.none now says no finding required a change to the registry's content, that the three entries are unchanged, and names the summary miscount as the finding that was actually made",
+        "reverification": "this second revision moves the head again, so L1, L2, L5 and both independent rounds are re-run and re-bound against the new frozen candidate; the merged-batch facts, the byte-level invariants and the residual registry remain unchanged"
+      }
+    },
+    "nextRoundAudit": "no further audit is required for this batch; the three kept residuals (the gate covers only the two named make targets, node --check and the .js candidate-format parse are parse-level only, and TypeScript/Vue plus .css/.xml stay outside the sweep) remain registered in uc4G16JsCorpusExpansion, and the four parked hardening suggestions above are available to a future hardening round if guard precision matters"
   }
 }

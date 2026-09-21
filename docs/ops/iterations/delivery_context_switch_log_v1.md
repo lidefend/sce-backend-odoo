@@ -10200,3 +10200,55 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   ③**S3-2（A）**：§8.51 残限行的指针按本节 ①–④ 编号陈述处置，与相邻列表顺序不符；
   ④**S4-1（A＋B）**：workflow 钉版断言是纯文本匹配，浮动 tag／被注释遮蔽的版本／`if: false`／步骤被移入别的 job／步骤被移到门之后都抓不到。
   修订：自检改为**逐字钉死** `NODE_FORMAT_PROBES` 并要求「凡被强制的格式都必须被探测覆盖」；代价改为 **382** 次并给出分解；§8.51 指针改为**逐条就地陈述处置**；契约断言改为**解析 workflow** 后断言步骤位于 `professional_quality_gate` job 内、唯一、`uses` 为钉死 SHA、`with.node-version == 22.17.0`、无 `if`、且先于两个跑 sweep 的门步骤（五类构造已在影子副本复测为**均被抓到**）。该修订产生新 HEAD，L1／L2／L5 与两轮独立复核按新冻结候选重跑与重绑；门、语料、决策与残限结论不变。
+
+## 2026-09-21 — U-C4 G16 `.js` 扩围收口审计（P4 证据轮）
+
+- 分支 `audit/uc4-g16-js-corpus-expansion-v1`，基线 `origin/main@81346ad4321831b6a7b056fbb4fb46eb00a846b4`
+  （G16 `.js` 扩围 PR #519 的 squash 合入点）。Formal Product Layer 为 **P4**（运维交付工具与证据）；Layer Target 为
+  台账／迭代记录的证据面。**未触碰**产品代码、契约、测试口径、门禁工具输入与环境（无新环境／凭据／端口／库）。
+  回滚为 `git revert`（文档类单职责提交，路径集合固定为 3：台账 ＋ 迭代记录 ＋ 本切换日志）。
+- 触发：台账 `uc4G16JsCorpusExpansion.nextRoundAudit` 的预留项——审计轮记录本批 merged PR、squash head、必检结果
+  与分支清理事实。
+- 合入事实：PR **#519** squash 合入，squash head `81346ad4…`、source head `45d1c31f…`（tree `591e08a4…`）、
+  base `ac9133ed…`，mergedAt 2026-09-21T10:17:01Z；**合入树与候选树逐字节相同**；独立只读复核 round A′／B′ 在冻结
+  source head 上均 **APPROVE**（S0/S1/S2 = 0）。
+- 必检与合入后：PR 侧 9 项 pass／3 项 skip；合入后 mainline push 4 个 run 全 **success**
+  （`merge_policy_gate` 35587916392、`professional_quality_gate` 35587916762、`public_guard` 35587916379、
+  `frontend_release_gate` 35587916670）。
+- 合入后实测（只读重跑已合入门禁，**非**新验收证据）：`scripts/ci/node_syntax_check.py` →
+  `[OK] Node syntax check passed (349 files)`（exit 0）；`scripts/ci/test_node_syntax_check.py` → `Ran 24 tests … OK`。
+- 记录订正：两轮复核**均未提出针对已合入批次或其来源提交的 S3 级订正**。**四条 guard 精度建议**登记为 parked
+  （不静默采纳、也不丢弃）——①`with` 严格字典相等（未来加合法键如 `cache:` 会误报，round B′ S4-1）；②断言硬编码
+  两个门步骤显示名（改名即失败，round B′ S4-2）；③「唯一」只按同名步骤计数（其后另插一个不同名的
+  `actions/setup-node` 仍会通过，round A′ S4-1）；④`test_cache_keys_bind_lockfile_and_runtime` 对
+  `frontend_release_gate.yml` 仍是纯文本 `assertIn`（**既有**代码、非本批引入，round A′ S4-2，登记以免被静默丢弃）。
+  **排除项**：「新增 `import yaml` 未在 requirements 声明」（round A′ S4-3 ＝ round B′ S4-3）——base 的
+  `scripts/ci/generate_contract_structure_fingerprint.py` 即已依赖 PyYAML 并在同一 CI 作业内执行。
+- 台账口径：新增 `uc4G16JsCorpusExpansionAudit`（合入事实、必检与合入后 run、合入后门实测、无订正声明、四条 parked 建议（另 1 条 `excludedFindings` 排除项）、
+  分支清理），其 `nextRoundAudit` 声明本批无需再审；`uc4G16JsCorpusExpansion.nextRoundAudit` 改指回该块；
+  `uc4G16PublishedAudit`／`uc4G16FollowupSyntaxGate`／`uc4G16FollowupSyntaxGateAudit` **逐字节不变**；主线计数字段
+  （`count=0`／`entries=[]`／`otherStateConsumers=[]`／`retirementComplete=false`）本轮未改。
+- 清理：`feature/uc4-g16-node-syntax-js-corpus-v1` 经 `make branch.cleanup.feature` 本地＋远端删除（squash 合入下按
+  exact-head 与 merged PR #519 核对），候选工作树 detach 到 `81346ad4` 并保留。
+- 残限：①本门只约束被点名的两个 make target、④`node --check` 仅解析级（含 `.js`「任一候选格式」条款）、
+  ⑤TS／Vue 与 `.css`／`.xml` 资产不在本门内 —— **保持登记**；②受跟踪 `.js` 未纳入 sweep 与 ③运行本门的 CI 作业
+  未钉 node 版本 —— **已关闭并合入**。
+- 范围外预存失败（登记为排除项，不修）：`make verify.product.delivery.governance_truth`（记分板快照陈旧，见 §8.51）
+  仍为既有登记项；本轮不刷新记分板、不改 `.agent/**`。
+- Next Step：冻结本批 HEAD → exact-head `make ci.local.quick` → 两轮独立只读复核 → 显式合并授权 → `make pr.merge` →
+  主仓库 `make main.sync` → `make branch.cleanup.feature`。
+- 复核后修订（绑定 `f602bc36…`：round A 判 **REQUEST_CHANGES**（无 S0／S1／S2，两条 S3），round B 判 **APPROVE**
+  （无 S0／S1／S2／S3，四条 S4））：①**S3-1**：台账两处 `nextRoundAudit` 称本门保持「two」条残限，而
+  `remainingResiduals` 与 §8.53／本日志均列**三条**——两处均改为**三条并逐条点名**；②**S3-2**：parked 建议**署名编号
+  错位**——「硬编码门步骤显示名」属 round B′ S4-2、「同名唯一性计数」属 round A′ S4-1，现按实际提出轮次重新署名，
+  并把既有项登记为第 4 条 parked、把 yaml 项移入 `excludedFindings`；③吸收 round B 的 S4-1／S4-2／S4-4（补登被
+  排除项、字段更名 `parkedHardeningSuggestions`、残限枚举顺序与 §8.53 对齐）；④吸收 round A 的 S4-1／S4-3
+  （`branchCleanup` 补明远端 ref 已删的只读可证口径、`gateLiveOnMain` 补记重跑运行时为**主机默认 node 24.16.0**）。
+  该修订产生新 HEAD，L1／L2／L5 与两轮独立复核按新冻结候选重跑与重绑；合入事实、字节级不变量与残限登记不变。
+- 复核后修订二（绑定 `a6a55c3b…`：两轮均判 **REQUEST_CHANGES**，无 S0／S1／S2）：①**S3-1（两轮）**：§8.53 与本日志
+  的「台账口径」括注仍写「三条 S4 建议」，与台账块（**4 条 parked ＋ 1 条 `excludedFindings`**）矛盾——两处均改为
+  「四条 parked 建议（另 1 条 `excludedFindings` 排除项）」；②**S3-2（A）**：`postReviewRevision.fix` 自指「本块声明
+  两轮报告为仓库外只读复核」但块内无该句——现把该陈述写入 `mergedPr.independentReview`，`fix` 改为指向该字段；
+  ③**S4-1（A）**：`recordCorrections.none` 原称「无涉及残限登记的 S3」，而该 S3 正是关于残限**摘要计数**——现改为
+  「无任何发现要求改动残限登记内容、三条条目未变」。该第二修订再次产生新 HEAD，L1／L2／L5 与两轮独立复核按新冻结
+  候选重跑与重绑；合入事实、字节级不变量与残限登记不变。
