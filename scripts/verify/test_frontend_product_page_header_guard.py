@@ -88,7 +88,7 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
 
         with patch("pathlib.Path.read_text", altered):
             failures = validate()
-        self.assertIn("ProductPageHeader must not forward unregistered axes through $attrs", failures)
+        self.assertIn("ProductPageHeader must not forward unregistered axes through $attrs/useAttrs()/attrs", failures)
 
     def test_contract_test_must_stay_a_quick_gate_prerequisite(self):
         real = Path.read_text
@@ -468,7 +468,7 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
         with patch("pathlib.Path.read_text", decoy):
             failures = validate()
         self.assertIn(
-            "header adapter must not forward unregistered axes through $attrs: components/design-system/ScPageHeader.vue",
+            "header adapter must not forward unregistered axes through $attrs/useAttrs()/attrs: components/design-system/ScPageHeader.vue",
             failures,
         )
 
@@ -487,6 +487,111 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
         with patch("pathlib.Path.read_text", decoy):
             failures = validate()
         self.assertTrue(any("hardcodes presentation mode" in item for item in failures), failures)
+
+    def test_contract_test_wiring_rejects_a_shell_chained_node_decoy(self):
+        real = Path.read_text
+
+        def chained(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value.replace(
+                    "\t@node /tmp/product-page-header-adapter-contract-test.mjs",
+                    "\t@node --version; echo product-page-header-adapter-contract-test",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", chained):
+            failures = validate()
+        self.assertTrue(any("node execution step missing or disabled" in item for item in failures), failures)
+
+    def test_contract_test_wiring_rejects_a_shell_chained_unittest_decoy(self):
+        real = Path.read_text
+
+        def chained(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value.replace(
+                    "\t@python3 -m unittest scripts/verify/test_frontend_product_page_header_guard.py",
+                    "\t@python3 -c 'pass'; echo unittest test_frontend_product_page_header_guard.py",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", chained):
+            failures = validate()
+        self.assertTrue(
+            any("guard unit test or guard script step missing or disabled" in item for item in failures),
+            failures,
+        )
+
+    def test_use_attrs_fallback_is_rejected_in_an_adapter(self):
+        real = Path.read_text
+
+        def fallback(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "ScPageHeader.vue":
+                return value.replace(
+                    ':presentation-mode="collectionMode"',
+                    ':presentation-mode="collectionMode" v-bind="forwardedAttrs"',
+                ).replace(
+                    "import ProductPageHeader from '../product-page-header/ProductPageHeader.vue';",
+                    "import ProductPageHeader from '../product-page-header/ProductPageHeader.vue';\nimport { useAttrs } from 'vue';\nconst forwardedAttrs = useAttrs();",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", fallback):
+            failures = validate()
+        self.assertTrue(any("useAttrs()" in item for item in failures), failures)
+
+    def test_contract_test_wiring_rejects_a_noop_flag_before_the_real_argument(self):
+        real = Path.read_text
+
+        def noop(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value.replace(
+                    "\t@node /tmp/product-page-header-adapter-contract-test.mjs",
+                    "\t@node --version /tmp/product-page-header-adapter-contract-test.mjs",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", noop):
+            failures = validate()
+        self.assertTrue(any("node execution step missing or disabled" in item for item in failures), failures)
+
+    def test_contract_test_wiring_rejects_a_unittest_help_invocation(self):
+        real = Path.read_text
+
+        def help_only(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value.replace(
+                    "\t@python3 -m unittest scripts/verify/test_frontend_product_page_header_guard.py",
+                    "\t@python3 -m unittest --help scripts/verify/test_frontend_product_page_header_guard.py",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", help_only):
+            failures = validate()
+        self.assertTrue(
+            any("guard unit test or guard script step missing or disabled" in item for item in failures),
+            failures,
+        )
+
+    def test_contract_test_wiring_rejects_an_esbuild_version_probe(self):
+        real = Path.read_text
+
+        def probe(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value.replace(
+                    "\t@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
+                    "\t@frontend/apps/web/node_modules/.bin/esbuild --version frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", probe):
+            failures = validate()
+        self.assertTrue(any("esbuild bundle step missing or disabled" in item for item in failures), failures)
 
     def test_content_heading_authority_is_required(self):
         real = Path.read_text

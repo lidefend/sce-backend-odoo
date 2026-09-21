@@ -17,12 +17,28 @@ const AUTHORITY = 'components/product-page-header/ProductPageHeader.vue';
 const read = (relative: string) => readFileSync(path.join(SRC, relative), 'utf8');
 const kebab = (value: string) => value.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 const camel = (value: string) => value.replace(/-([a-z])/g, (_, char: string) => char.toUpperCase());
-const declaredPropsOf = (relative: string): string[] =>
-  [
-    ...(codeOnly(read(relative)).match(/defineProps<\{([\s\S]*?)\}>/) ?? ['', ''])[1].matchAll(
-      /([A-Za-z_]\w*)\??:/g,
-    ),
-  ].map((match) => match[1]);
+/**
+ * 解析薄入口的声明面。只承认**字面量类型**的 `defineProps<{ … }>`：
+ * `props: { … }`（Options API）、`defineProps<Props>`／交叉类型／别名会让「声明面 ⊆ 登记面」整体空转，
+ * 于是薄入口可以静默新增未登记输入，因此这些形态一律**硬失败**而不是静默放行。
+ */
+function declaredPropsOf(relative: string): string[] {
+  const code = codeOnly(read(relative));
+  assert.ok(
+    !/\bprops\s*:\s*\{/.test(code),
+    `${relative} 使用 Options API 的 props 声明：声明面无法静态枚举，必须改为字面量 defineProps<{ … }> 并登记`,
+  );
+  const literals = [...code.matchAll(/defineProps<\{([\s\S]*?)\}>/g)];
+  if (literals.length === 0) {
+    assert.ok(
+      !/defineProps\s*</.test(code),
+      `${relative} 的 defineProps 不是字面量类型（类型别名／交叉类型）：声明面无法静态枚举，必须先显式登记该形态`,
+    );
+    return [];
+  }
+  assert.equal(literals.length, 1, `${relative} 必须只有一处 defineProps<{ … }> 字面量声明`);
+  return [...literals[0][1].matchAll(/([A-Za-z_]\w*)\??:/g)].map((match) => match[1]);
+}
 
 const MASK = '\u0001';
 
@@ -194,12 +210,14 @@ const authoritySlots = [...authoritySource.matchAll(/<slot\s+name="([A-Za-z_]\w*
  */
 function assertRegisteredSlots(owner: string, source: string, allowed: ReadonlySet<string>): void {
   for (const tag of [...source.matchAll(/<slot\b[^>]*>/g)].map((match) => match[0])) {
-    const named = tag.match(/^<slot\s+name="([A-Za-z_]\w*)"/);
+    // 单引号与双引号都是合法的静态具名槽；只认双引号会把 `<slot name='actions' />` 误判为非法。
+    const named = tag.match(/^<slot\s+name\s*=\s*(?:'([A-Za-z_]\w*)'|"([A-Za-z_]\w*)")/);
     assert.ok(
       named,
       `${owner} 的 ${tag} 不是静态具名槽：默认槽与动态槽名无法静态校验，必须显式登记（权威只有 3 个具名槽、无默认槽）`,
     );
-    assert.ok(allowed.has(named[1]), `${owner} 暴露了未登记的槽 ${named[1]}：槽位必须与登记表一致`);
+    const slotName = named[1] ?? named[2];
+    assert.ok(allowed.has(slotName), `${owner} 暴露了未登记的槽 ${slotName}：槽位必须与登记表一致`);
   }
 }
 
@@ -279,11 +297,16 @@ assertRegisteredSlots(
   new Set(SLOT_AXES.map((axis) => axisToSlot(axis) as string)),
 );
 
-// A3. 权威不得用 `$attrs` 兜底转发未登记轴：这会绕过「未登记轴必须显式决策」并让调用方静默注入。
-assert.ok(
-  !/\$attrs/.test(authoritySource),
-  'ProductPageHeader 不得用 $attrs 兜底转发未登记轴：未登记轴必须在登记表中显式决策',
-);
+// A3. `$attrs`／`useAttrs()`／`attrs` 三者等效，都是**静态不可枚举的兜底转发**通道，权威与全部入口一律禁止。
+// 只盯 `$attrs` 字面量会让 `const attrs = useAttrs()` ＋ `<ProductPageHeader v-bind="attrs">`
+// 把 `not_exposed` 的轴整段偷渡进权威（例如 `design-system` 登记为不暴露的 `hideTitle`）。
+const ATTRS_FALLBACK = /\$attrs\b|\buseAttrs\b|\battrs\b/;
+for (const relative of [AUTHORITY, ...PRODUCT_PAGE_HEADER_ENTRIES.map((entry) => entry.path)]) {
+  assert.ok(
+    !ATTRS_FALLBACK.test(entrySource(relative)),
+    `${relative} 不得用 $attrs／useAttrs()／attrs 兜底转发未登记轴：未登记轴必须在登记表中显式决策`,
+  );
+}
 
 // B. 每个入口都必须存在、必须在模板中真实渲染上游（权威或已登记入口），且不得自建 header DOM。
 for (const entry of PRODUCT_PAGE_HEADER_ENTRIES) {
@@ -357,7 +380,6 @@ for (const entry of PRODUCT_PAGE_HEADER_ENTRIES) {
 for (const entry of PRODUCT_PAGE_HEADER_ENTRIES) {
   if (entry.kind !== 'adapter') continue;
   const source = entrySource(entry.path);
-  assert.ok(!/\$attrs/.test(source), `${entry.id} 不得用 $attrs 透传未登记轴：未登记轴必须在登记表中显式决策`);
   const allowed = new Set(
     entry.axes
       .filter((disposition) => disposition.handling !== 'not_exposed')
@@ -451,7 +473,9 @@ const KNOWN_CALL_SITES = [
 
 const discoveredCallSites: string[] = [];
 for (const file of sourceFiles) {
-  const source = read(file);
+  // 枚举面走注释清零视图：模板注释 `<!-- <PageHeader /> -->` 里的标签不是调用点，
+  // 用原文扫描会把注释算进 `discoveredCallSites`（假失败）并把注释里的动态绑定当成真实绑定。
+  const source = stripComments(read(file));
   const tagToEntry = new Map<string, ProductPageHeaderEntryRegistry>();
   for (const symbol of importsOf(file)) {
     const target = delegationTarget(file, symbol);
@@ -460,9 +484,12 @@ for (const file of sourceFiles) {
   if (tagToEntry.size === 0) continue;
 
   // F1. 动态组件绑定无法静态枚举调用面：绑定到已登记入口即失败，必须显式登记该形态。
+  // 取值与 `=` 之间允许空白（`:is = "X"` 与 `:is="X"` 等价），取值引号不敏感（含反引号模板字面量），
+  // 且静态字符串形态 `is="X"` 同样按名字解析组件——三者漏一个都是一 token 绕过。
+  const DYNAMIC_BINDING = /(?::|v-bind:)?\b(?:is|v-bind)\s*=\s*(?:'([^']*)'|"([^"]*)"|`([^`]*)`)/g;
   for (const block of tagAttributeBlocks(source, ['component', 'Component'])) {
-    for (const dynamic of block.matchAll(/:is=(?:'([^']+)'|"([^"]+)")|v-bind=(?:'([^']+)'|"([^"]+)")/g)) {
-      const expression = dynamic[1] ?? dynamic[2] ?? dynamic[3] ?? dynamic[4] ?? '';
+    for (const dynamic of block.matchAll(DYNAMIC_BINDING)) {
+      const expression = dynamic[1] ?? dynamic[2] ?? dynamic[3] ?? '';
       for (const identifier of expression.matchAll(/[A-Za-z_$][\w$]*/g)) {
         assert.ok(
           !tagToEntry.has(identifier[0]),
@@ -500,6 +527,17 @@ assert.deepEqual(
   [...KNOWN_CALL_SITES].sort(),
   '薄入口调用点集合必须与 KNOWN_CALL_SITES 完全一致：新增调用点或改变标签／导入形态都必须显式登记',
 );
+
+// F4. 权威入口自身也不得被 `v-bind="obj"` 对象展开渲染：调用面无法静态枚举，且薄入口可以用它
+// 绕过「调用方属性 ⊆ 入口声明面」。权威不是被登记的入口之一，因此不在 `tagToEntry` 的标签扫描面内。
+for (const file of sourceFiles) {
+  for (const block of tagAttributeBlocks(stripComments(read(file)), ['ProductPageHeader', 'product-page-header'])) {
+    assert.ok(
+      !attributeNames(block).includes('v-bind'),
+      `${file} 对权威 ProductPageHeader 使用 v-bind 对象展开，调用面无法静态枚举；必须改为显式具名属性`,
+    );
+  }
+}
 
 // F2. 以入口组件同名符号导入、却解析不到登记入口的说明符（未登记的别名、包路径等）必须显式登记，
 // 否则该调用点会同时躲过 F 与 G。命中判据必须同时看**导入符号名**与**说明符末段**：
@@ -544,10 +582,13 @@ for (const file of sourceFiles) {
 // 一并硬失败，避免用类型导入给运行期动态渲染打掩护。
 for (const file of sourceFiles) {
   const source = stripComments(read(file));
-  for (const dynamic of source.matchAll(/import\s*\(\s*'([^']+)'\s*\)/g)) {
+  // 说明符必须**引号不敏感**：只认单引号会让 `import("…/ScPageHeader.vue")` 直接逃逸。
+  const DYNAMIC_SPECIFIER = /(?:import|require)\s*\(\s*(?:'([^']+)'|"([^"]+)"|`([^`]+)`)\s*\)/g;
+  for (const dynamic of source.matchAll(DYNAMIC_SPECIFIER)) {
+    const specifier = dynamic[1] ?? dynamic[2] ?? dynamic[3] ?? '';
     assert.ok(
-      !ENTRY_BASENAMES.has(specifierBasename(dynamic[1])),
-      `${file} 动态导入入口 '${dynamic[1]}'：调用面无法静态枚举，必须先显式登记该形态`,
+      !ENTRY_BASENAMES.has(specifierBasename(specifier)),
+      `${file} 动态导入／require 入口 '${specifier}'：调用面无法静态枚举，必须先显式登记该形态`,
     );
   }
 }

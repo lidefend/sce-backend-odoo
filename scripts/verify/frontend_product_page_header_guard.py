@@ -9,20 +9,28 @@ def source(path: str) -> str:
     return (ROOT / path).read_text(encoding="utf-8")
 
 
-def _is_real_command(line: str, program: str, *needles: str) -> bool:
-    """判定 recipe 行是否**真的**执行了 `program`。
+def _matches_recipe(line: str, program: str, args: tuple[str, ...]) -> bool:
+    """判定 recipe 行是否**真的**按预期形状执行 `program`。
 
-    只做子串存在性检查会让 `@echo <整条命令行>` 或 `@node --version # <文件名>` 这类伪命令满足断言：
-    前者是回显、后者把文件名塞进注释，两者都不会执行契约测试。因此这里要求：
-    首个 token（去掉输出重定向与 `#` 注释之后）必须**就是**该程序，且其余 needle 落在命令行主体内。
+    任何「子串存在性」判定都有伪命令通道，至少四类：
+    `@echo <整条命令行>` 只是回显；`@node --version # <文件名>` 把文件名塞进注释；
+    `@node --version; echo <文件名>` 用 shell 分隔符把真程序与文件名拆到两段；
+    `@node --version <文件名>`／`@python3 -c "pass" unittest <文件名>` 让首 token 与文件名同时在场，
+    但程序根本不执行该文件。因此这里要求：按 `;`／`&&`／`||`／`|`／`&` 切段后，**存在某一段**满足
+    「首 token 就是该程序」且「其后紧跟的前 `len(args)` 个 token 与预期参数**逐个相等且同序**」。
+    比「参数集合包含」强：参数被换位、被替换成 `--version`／`-c` 之类的空转开关都会失败。
     """
-    command = line.lstrip("@").split(">")[0].split("#")[0].strip()
-    tokens = command.split()
-    if not tokens:
-        return False
-    if not re.search(rf"(^|/){re.escape(program)}$", tokens[0]):
-        return False
-    return all(needle in command for needle in needles)
+    for segment in re.split(r"&&|\|\||[;|&]", line.lstrip("@").split("#")[0]):
+        tokens = segment.split()
+        if not tokens:
+            continue
+        if not re.search(rf"(^|/){re.escape(program)}$", tokens[0]):
+            continue
+        if len(tokens) < len(args) + 1:
+            continue
+        if all(tokens[1 + offset] == expected for offset, expected in enumerate(args)):
+            return True
+    return False
 
 
 def _strip_comments(text: str) -> str:
@@ -126,12 +134,17 @@ def validate() -> list[str]:
         "components/page/PageHeader.vue": "page",
         "components/design-system/ScPageHeader.vue": "design-system",
     }
-    if "$attrs" in _strip_comments(component):
-        failures.append("ProductPageHeader must not forward unregistered axes through $attrs")
+    attrs_fallback = re.compile(r"\$attrs\b|\buseAttrs\b|\battrs\b")
+    if attrs_fallback.search(_strip_comments(component)):
+        failures.append(
+            "ProductPageHeader must not forward unregistered axes through $attrs/useAttrs()/attrs"
+        )
     for adapter_path, entry_id in fixed_mode_adapters.items():
         adapter_source = _strip_comments(source(f"frontend/apps/web/src/{adapter_path}"))
-        if "$attrs" in adapter_source:
-            failures.append(f"header adapter must not forward unregistered axes through $attrs: {adapter_path}")
+        if attrs_fallback.search(adapter_source):
+            failures.append(
+                f"header adapter must not forward unregistered axes through $attrs/useAttrs()/attrs: {adapter_path}"
+            )
         if re.search(r"(?<![:\w-])presentation-mode=\"", adapter_source):
             failures.append(f"header adapter hardcodes presentation mode instead of the entry registry: {adapter_path}")
         if re.search(r":presentation-mode=\"\s*['\"]", adapter_source):
@@ -172,24 +185,34 @@ def validate() -> list[str]:
             "guarded recipe)"
         )
     recipe = _active_recipe_lines(makefile, wired_target)
+    # 三条接线必须按**预期形状**真实执行：程序 ＋ 紧跟其后的预期参数（同序、逐个相等）。
     if not any(
-        _is_real_command(line, "esbuild", "product_page_header_adapter_contract_test.ts", "--bundle") for line in recipe
+        _matches_recipe(
+            line,
+            "esbuild",
+            (
+                "frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
+                "--bundle",
+                "--platform=node",
+                "--format=esm",
+            ),
+        )
+        for line in recipe
     ):
         failures.append(
             "header entry contract test is not wired into verify.frontend.product_page_header.unit "
             "(esbuild bundle step missing or disabled)"
         )
-    if not any(
-        _is_real_command(line, "node", "product-page-header-adapter-contract-test") for line in recipe
-    ):
+    if not any(_matches_recipe(line, "node", ("/tmp/product-page-header-adapter-contract-test.mjs",)) for line in recipe):
         failures.append(
             "header entry contract test is not wired into verify.frontend.product_page_header.unit "
             "(node execution step missing or disabled)"
         )
     if not any(
-        _is_real_command(line, "python3", "test_frontend_product_page_header_guard.py", "unittest") for line in recipe
+        _matches_recipe(line, "python3", ("-m", "unittest", "scripts/verify/test_frontend_product_page_header_guard.py"))
+        for line in recipe
     ) or not any(
-        _is_real_command(line, "python3", "scripts/verify/frontend_product_page_header_guard.py") for line in recipe
+        _matches_recipe(line, "python3", ("scripts/verify/frontend_product_page_header_guard.py",)) for line in recipe
     ):
         failures.append(
             "header entry contract test is not wired into verify.frontend.product_page_header.unit "
