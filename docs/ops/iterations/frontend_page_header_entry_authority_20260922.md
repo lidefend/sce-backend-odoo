@@ -109,12 +109,12 @@ Compose/profile、端口或凭据；不新增渲染主链。
 | 层 | 入口 | 结果 |
 | --- | --- | --- |
 | 入口契约 | `product_page_header_adapter_contract_test.ts` | **PASS** `entries=4 axes=15 call_sites=6 direct_consumers=3` |
-| 守卫 | `verify.frontend.product_page_header.unit` | **PASS**（Node 模型 28 例；契约测试；守卫单测 **63 例**；守卫脚本 `adapters=3`） |
+| 守卫 | `verify.frontend.product_page_header.unit` | **PASS**（Node 模型 28 例；契约测试；守卫单测 **69 例**；守卫脚本 `adapters=3`） |
 | 取值呈现 | `scripts/verify/frontend_localized_display_contract_test.ts` | **PASS** `sources=686 consumers=18` |
 | 静态 | `lint:src` | **PASS**（0 error／39 条既有风格 warning） |
 | 类型 | `typecheck:strict` | **PASS** |
 
-**门禁非空洞实证（影子副本 132 项：110 项 CAUGHT ＋ 22 项「假失败防线」STILL-PASS）**：除首批形态（调用方传未声明属性／薄入口少转发声明轴／
+**门禁非空洞实证（影子副本 139 项：114 项 CAUGHT ＋ 25 项「假失败防线」STILL-PASS）**：除首批形态（调用方传未声明属性／薄入口少转发声明轴／
 薄入口自建 `h1`／薄入口自建 `header`／未登记的权威直接消费者／权威新增 prop 未登记／薄入口新增未登记输入／
 薄入口硬编码固定轴／登记表漏某入口一条轴决策／受管例外失去对权威的委托／薄入口删掉固定轴解析调用／
 `not_exposed` 不给理由）之外，第二轮复核点名的**全部既有盲区**都被同一批注入覆盖并抓到：
@@ -154,7 +154,12 @@ Options API `props: { … }` 与非字面量 `defineProps<T>`、`:is` 的 `=` �
 `override MAKEFLAGS += -i`／`export MAKEFLAGS := -i`／以续行承载的 `MAKEFLAGS += -i`；反向新增 4 项防线锁定
 STILL-PASS（N17–N20）：`sinclude`／续行 include／带引号 include 各引入一个只声明无关变量的片段不得假失败，
 `.SILENT:`／`.NOTPARALLEL:` 不是失败传播通道。
-矩阵扩到 **132 项（110 项 CAUGHT ＋ 22 项假失败防线 STILL-PASS）**；守卫单测 51 → 55 → **63 例**。
+第九轮复核点名的 **动态指令包装与误报**再并入 4 项 CAUGHT：`$(eval SHELL := /bin/true)`、
+`$(eval MAKEFLAGS += -i)`、`define SHELL … endef`、以及变量值间接（`IGN := -i` ＋ `MAKEFLAGS += $(IGN)`）——
+这些都藏在行首匹配之外；另反向新增 3 项防线锁定 STILL-PASS（N21–N23）：recipe 行里的 `\tSHELL=/bin/bash cmd`
+只是给一条命令设环境变量（不是 make 级重定义）、`.POSIX:` 与无赋值的 `export SHELL` 合法、
+`override MAKEFLAGS += --no-print-directory` 这类无关开关合法。
+矩阵扩到 **139 项（114 项 CAUGHT ＋ 25 项假失败防线 STILL-PASS）**；守卫单测 51 → 55 → 63 → **69 例**。
 每例在 `/tmp` 影子副本上注入并重跑（esbuild 就地重烘焙，保证登记表改动也被覆盖；影子已镜像根 `Makefile` 与
 `make/` 目录，因为 `include` 链本身现在是判据面的一部分），工作树文件未被修改。
 
@@ -169,7 +174,7 @@ STILL-PASS（N17–N20）：`sinclude`／续行 include／带引号 include 各�
 - **`breadcrumb`／`variant` 无任何入口转发**：同上，登记表逐条给出理由。
 - **`ContractFormProductHeader` 的 365 行领域内容**（契约动作证据、原生状态栏、移动端动作结算）不在本批收口：
   它需要领域面自己的批次；本批只声明它是**受管例外**且必须继续委托权威渲染。
-- **门禁不是 AST 分析**：下面**已登记的边界**全部有注入实证（132 项矩阵：110 项 CAUGHT ＋ 22 项假失败防线锁定 STILL-PASS），**仍未静态覆盖的形态**另列如下，两者不得混为一谈：
+- **门禁不是 AST 分析**：下面**已登记的边界**全部有注入实证（139 项矩阵：114 项 CAUGHT ＋ 25 项假失败防线锁定 STILL-PASS），**仍未静态覆盖的形态**另列如下，两者不得混为一谈：
   - 调用点解析覆盖默认导入、具名导入与 barrel 再导出，另覆盖相对路径与 `@/` 别名；标签覆盖 PascalCase 与 kebab；
     属性名归一到 Vue 实际输入名（`:x` ≡ `v-bind:x`，`v-model` → `modelValue`）；调用点集合被**钉死**为 6 个
     （`ContractFormPage`／`KanbanPage`／`ContractFormProductHeader`／`ApiKeyManagementView`／`NotFoundView`／
@@ -196,8 +201,11 @@ STILL-PASS（N17–N20）：`sinclude`／续行 include／带引号 include 各�
     「`.IGNORE:`／`MAKEFLAGS` 的 `-i`／`--ignore-errors`」「`quick.gate`／`release.unit` 前置 token（覆盖整条
     `include` 链，并与 `make/runtime_ops.mk` 的可累加前置合并）」都纳入断言，但**仍无法阻止有人同时改 recipe 与断言**；
     include 拼写按 `include`／`-include`／`sinclude`（含 `\` 续行、引号路径、一行多路径）**逐个静态解析**，
-    `$(VAR):` 这类**变量目标名**、`.ONESHELL:`、以及 `SHELL`／`.SHELLFLAGS` 在链上的**重定义**同样一律硬失败
-    （安全方向，需显式登记）；`include $(VAR)` 这类**动态 include** 与条件 include 无法静态展开，即本条残限）；
+    `$(VAR):` 这类**变量目标名**、`.ONESHELL:`、`SHELL`／`.SHELLFLAGS` 在链上的**重定义**、`$(eval …)` 包裹的
+    指令、`define SHELL`／`define MAKEFLAGS` 多行体、以及**值带变量**的 `MAKEFLAGS`／`SHELL` 赋值
+    （`MAKEFLAGS += $(IGN)`）**一律硬失败**（安全方向，需显式登记；直接赋值／直接 include 形态之外仍可能有
+    `$(call …)` 一类多层拼装，静态不可枚举）；`include $(VAR)` 这类**动态 include** 与条件 include 无法静态展开，
+    即本条残限）；
     ⑤受管例外入口的领域属性面（见上）；⑥计算出的说明符（`import(path)`
     或 `v-bind:is` 里的变量）在解析阶段不可知——工具链只对**字面量**说明符生效，因此运行期拼出的入口路径
     仍需人工评审；⑦配方行的形状判定是「先摘掉 shell 重定向，再按 `;`／`&&`／`||`／`|`／`&` 切段后**恰好只剩一段**，
@@ -238,12 +246,12 @@ STILL-PASS（N17–N20）：`sinclude`／续行 include／带引号 include 各�
   权威边界声明；⑤权限判定单一权威；⑥`make/codex.mk` 里关于「四门靠 `workflow_dispatch`」的注释与实际
   `pull_request` 事件路径不一致，属下一批的决策项（本批按 PR 事件路径执行，未改该注释）。
 - Next Step：冻结本批 HEAD → L1 → exact-head `ci.local.quick` 回执 → 独立只读复核（A／B → A′／B′ → A″／B″ → A‴／B‴ →
-  A⁗／B⁗ → A⁵／B⁵ → A⁶／B⁶ → A⁷／B⁷ 共 16 次；本轮修订后再由 A⁸／B⁸ 验证，合计 18 次）→ 显式合并授权 →
+  A⁗／B⁗ → A⁵／B⁵ → A⁶／B⁶ → A⁷／B⁷ → A⁸／B⁸ 共 18 次；本轮修订后再由 A⁹／B⁹ 验证，合计 20 次）→ 显式合并授权 →
   `make pr.push`／`pr.create`／`pr.ready`／`pr.merge` → 主仓库 `make main.sync` → `make branch.cleanup.feature`。
 
-## 8. 独立只读复核与修订（对 `cc36a37a`／`a4b5c094`／`4ea84a5b`／`86b48ac3` 等历次冻结候选）
+## 8. 独立只读复核与修订（对 `cc36a37a`／`a4b5c094`／`4ea84a5b`／`86b48ac3`／`23beb55c` 等历次冻结候选）
 
-八轮共 16 次复核（A／B → A′／B′ → A″／B″ → A‴／B‴ → A⁗／B⁗ → A⁵／B⁵ → A⁶／B⁶ → A⁷／B⁷）均对本批**产品代码**给出安全结论
+九轮共 18 次复核（A／B → A′／B′ → A″／B″ → A‴／B‴ → A⁗／B⁗ → A⁵／B⁵ → A⁶／B⁶ → A⁷／B⁷ → A⁸／B⁸）均对本批**产品代码**给出安全结论
 （`cc36a37a..HEAD` 零 `src` 改动、无能力回退、无新增类型错误、L5 回执真实、
 `PRODUCT_PAGE_HEADER_DIRECT_CONSUMERS` 与真实 import 集合完全一致），且都在 base 上逐字复现了三项既有失败。
 **无 S0／S1**；问题集中在**门禁强度**与**文档数字**：
@@ -295,7 +303,7 @@ STILL-PASS（N17–N20）：`sinclude`／续行 include／带引号 include 各�
 | Round A⁗ S4-1 / Round B⁗ S4-3 | `/\battrs\b/` 命中普通字符串（`'no attrs here'`）与无关命名 → **假失败** | 判据拆成两个视图：具名符号在**字面量已掩码**的视图里判、模板 `v-bind="…attrs…"` 在未掩码视图里判（契约测试与守卫两侧）；注入 N6／N6g 锁定 STILL-PASS |
 | Round A⁗ S4-2 / Round B⁗ S4-3 | `!\|\bprops\s*:\s*\{/` 命中 TS **类型字面量** `type M = { props: { … } }` → **假失败**；`defineProps<\n{` 也被当成非字面量 | Options API 判定限定为「所在 `<script>` 段同时声明 `export default`」；`defineProps<` 与 `{` 之间允许空白；注入 N7／N7g／N9 锁定 STILL-PASS |
 | Round A⁗ S4-3 | §6 的「对象展开一律硬失败」比实现宽：`v-bind="obj"`（变量承载）并未硬失败 | §6 措辞限定为**字面量**对象展开，变量形态归入残限③（需数据流分析），不再夸大 |
-| Round B⁗ S4-4 | §5 的「80 项注入，全部 CAUGHT；另有 4 项」与 §6 的「80/80 CAUGHT」口径冲突 | 统一为「95 项矩阵：84 项 CAUGHT ＋ 11 项假失败防线 STILL-PASS」（**当轮口径**；此后逐轮扩到 112／119 项，见 §5），并在 §5 给出分组计数 |
+| Round B⁗ S4-4 | §5 的「80 项注入，全部 CAUGHT；另有 4 项」与 §6 的「80/80 CAUGHT」口径冲突 | 统一为「95 项矩阵：84 项 CAUGHT ＋ 11 项假失败防线 STILL-PASS」（**当轮口径**；此后逐轮扩到 112／119／132／139 项，见 §5），并在 §5 给出分组计数 |
 | Round A⁵ S2-1 | `_matches_recipe` 仍可被三种形态绕过：①重定向**紧贴**分隔符（`>/dev/null\|\| true`）时剥离重定向会连分隔符一起吞掉；②尾随 `&` 后台化（`<步骤> &`）后 shell 立刻以 0 退出；③Make 的 `\` 续行把 `… \` ＋ `\|\| true` 拼成一条命令，而判定只看物理行 | 重定向剥离改为不吞分隔符（`[^\s;\|&]+`）且**不丢弃空段**（尾随 `&` 即两段）；`_active_recipe_lines` 先按 Make 规则拼**逻辑行**；注入 W23／W24／W25／W26／W27／W28 覆盖（含消息级断言），`2>&1`／`2>/dev/null`／`>/dev/null` 仍被接受 |
 | Round A⁵ S2-1（挂点） | 门禁挂点用**子串**判定 `gate_lines[0]`：把 unit 目标从真实前置里删掉、只留成行尾 `#` 注释仍然 PASS | 改为按**前置 token** 比对（先截掉 `#` 注释，并统计该目标的多处定义行）；注入 W29 覆盖 |
 | Round A⁵ S4-1 | Options API 判定走**未掩码**视图：一句普通字符串（`const doc = "export default { props: { title: String } }"`）即触发硬失败 | 改用**整文件掩码视图**的 `<script>` 段判定；注入 N11 锁定 STILL-PASS |
@@ -315,12 +323,16 @@ STILL-PASS（N17–N20）：`sinclude`／续行 include／带引号 include 各�
 | Round A⁷ S4-1 | `MAKEFLAGS` 的 `override`／`export` 前缀与续行承载形态未被匹配（`override MAKEFLAGS += -i` 等） | `_ignore_error_forms` 的正则补上 `override`／`export`／`unexport` 前缀并改在**逻辑行**上判定；注入 W41／W42／W43 覆盖 |
 | Round A⁷ S4-2 | §5／§6 仍以**上一轮**的 112 项（96＋16）充当当前矩阵数，与 §5 末尾／切换日志的 119 项冲突 | 本轮统一为 **132 项（110 项 CAUGHT ＋ 22 项 STILL-PASS）**；守卫单测统一为 **63 例** |
 | Round B⁷（APPROVE） | 逐条核验回执／例数／矩阵／文档／生成物／干净度／排除项七类声明**全部为真**，无夸大、无掩盖、无 S0–S4 发现 | 无需修订；另更正了作者口述的两个非文档数字（守卫单测为 924 行而非约 960 行） |
+| Round A⁸ S3-1 | 把 make 级指令藏进行首匹配之外仍能失败不传播：`$(eval SHELL := /bin/true)`、`$(eval MAKEFLAGS += -i)`、`define SHELL … endef`、`MAKEFLAGS += $(IGN)`（变量值间接）实测守卫均 **PASS**；而 §6④ 用了「一律硬失败」的过宽措辞 | 新增 `_dynamic_directive_wrappers`（`$(eval …)` 内出现 `SHELL`／`.SHELLFLAGS`／`MAKEFLAGS` 赋值或 `.…:` 特殊目标、`define SHELL`／`.SHELLFLAGS`／`MAKEFLAGS` 即失败）；`MAKEFLAGS`／`SHELL` 赋值**值带变量**即失败；§6④ 措辞收窄并登记 `$(call …)` 一类多层拼装残限；注入 W44／W45／W46／W47 覆盖 |
+| Round A⁸ S4-1 | `_failure_propagation_overrides` 扫 `\` 续行后的**逻辑行**时未排除 recipe 行（tab 被 `^\s*` 吃掉），故 `\tSHELL=/bin/bash cmd` 这类 recipe 行环境变量会被误判成 make 级重定义 → **假失败** | 两个扫描器都显式跳过以 tab 开头的行（Make 里 tab 即 recipe）；注入 N21 锁定 STILL-PASS |
+| Round A⁸ S4-2 / Round B⁸（文档，REQUEST_CHANGES） | 迭代文档「修订后重跑」段仍写「守卫单测 55 例」（同文件他处为 63），§8 历史括注也只到「112／119 项」 | 本轮统一：该段改为 **69 例**，历史括注补到 `112／119／132／139 项`，矩阵统一为 **139 项（114＋25）** |
+| Round B⁸（其余项 APPROVE） | 回执／例数／矩阵／生成物／干净度／排除项均逐条为真；唯一阻断为上一行的文档残留旧数字 | 见上一行 |
 
-修订后重跑：`verify.frontend.product_page_header.unit`（模型 28 例 ＋ 契约测试 `call_sites=6` ＋ 守卫单测 55 例 ＋ 守卫
+修订后重跑：`verify.frontend.product_page_header.unit`（模型 28 例 ＋ 契约测试 `call_sites=6` ＋ 守卫单测 69 例 ＋ 守卫
 `adapters=3`）、`verify.frontend.localized_display.unit`、`navigation_shell`／`product_page_pattern`／
 `page_pattern_reference_parity` 定向、`lint:src`（0 error／39 warning）、`typecheck:strict`、全量 `vue-tsc --noEmit`
 （仍 32 条、文件集合与 base 一致；全部修订未触碰任何 `src` 文件）、L1、exact-head L5 回执，以及影子副本
-**132 项**注入矩阵（110 项 CAUGHT ＋ 22 项假失败防线锁定 STILL-PASS）；守卫单测 45 → 51 → 55 → **63 例**。
+**139 项**注入矩阵（114 项 CAUGHT ＋ 25 项假失败防线锁定 STILL-PASS）；守卫单测 45 → 51 → 55 → 63 → **69 例**。
 
 **已知让步（Round B′ 确认可接受，仍如实登记）**：受管例外入口 `ContractFormPage → ContractFormProductHeader`
 传约 55 条领域属性，因该入口是 `exception_implementation` 而跳过「属性 ⊆ 登记轴」比对，故其拼写错误的 prop

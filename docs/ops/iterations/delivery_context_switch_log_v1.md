@@ -10476,6 +10476,16 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   跨链最多定义一次，重定义即失败）；`_ignore_error_forms` 补上前缀并改按逻辑行判定。守卫单测 **55 → 63 例**，
   影子副本矩阵 **119 → 132 项（110 项 CAUGHT ＋ 22 项假失败防线锁定 STILL-PASS）**，矩阵数字口径统一。
   第八轮修订产生新 HEAD，L1／exact-head L5 与 A⁸／B⁸ 复核按新冻结候选重跑与重绑。详见迭代文档 §8。
+  随后 round A⁸／B⁸（复核 head `23beb55c`；**A⁸ POST_MERGE_FOLLOWUP、B⁸ REQUEST_CHANGES（仅文档残留）**，
+  均**无 S0／S1／S2**）——A⁸ ①**S3-1** 指出把 make 级指令藏进行首匹配之外仍能失败不传播：`$(eval SHELL := /bin/true)`、
+  `$(eval MAKEFLAGS += -i)`、`define SHELL … endef`、`MAKEFLAGS += $(IGN)`（变量值间接），而 §6④ 用了「一律硬失败」
+  的过宽措辞；②**S4-1** 指出扫逻辑行时未排除 **recipe 行**，`\tSHELL=/bin/bash cmd` 会被误判成 make 级重定义（假失败）；
+  ③**S4-2／B⁸** 指出迭代文档「修订后重跑」段仍写「守卫单测 55 例」、§8 历史括注只到「112／119 项」。
+  已逐条修掉：新增 `_dynamic_directive_wrappers`（`$(eval …)` 内的 `SHELL`／`.SHELLFLAGS`／`MAKEFLAGS` 赋值或
+  `.…:` 特殊目标、`define SHELL`／`.SHELLFLAGS`／`MAKEFLAGS` 即失败），`MAKEFLAGS`／`SHELL` 赋值**值带变量**即失败，
+  两个扫描器显式跳过 tab 开头的 recipe 行，§6④ 措辞收窄并登记 `$(call …)` 一类多层拼装残限。守卫单测 **63 → 69 例**，
+  影子副本矩阵 **132 → 139 项（114 项 CAUGHT ＋ 25 项假失败防线锁定 STILL-PASS）**，矩阵数字与历史括注口径统一。
+  第九轮修订产生新 HEAD，L1／exact-head L5 与 A⁹／B⁹ 复核按新冻结候选重跑与重绑。详见迭代文档 §8。
 - 上一批复核 A′／B′ 点名的**登记完整性**在本批一并补上：`productMyWorkPresentation`／`ApiKeyManagementView`／
   `PaymentSettlementIntroduceDialog`／`BoqImportPreviewPanel`／`RelationSearchDialog` 的本地回退与格式化事实，
   在 `frontend_localized_display_contract_test.ts` 中以**正锁**（缺一即失败）登记，任何漂移都必须重新决策。
@@ -10493,12 +10503,14 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `2>&1`／`2>/dev/null` 等真实重定向仍被接受，`\` 续行按 Make 规则拼成逻辑行后判定），
   门禁挂点按**前置 token** 比对（行尾 `#` 注释里的目标名不算依赖），
   Make 级的失败忽略通道（recipe 行 `-` 前缀、`.IGNORE:`、`MAKEFLAGS` 的 `-i`／`--ignore-errors`，含
-  `override`／`export` 前缀与续行形态）、`SHELL`／`.SHELLFLAGS` 在 `include` 链上的**重定义**、`.ONESHELL:`、
-  链上的**变量目标名**（`$(VAR):`）与「被守卫目标在 `include` 链上被重定义」一律**硬失败**（安全方向）；
+  `override`／`export` 前缀与续行形态）、`SHELL`／`.SHELLFLAGS` 在 `include` 链上的**重定义**与**值带变量**的赋值、
+  `.ONESHELL:`、`$(eval …)` 包裹的指令、`define SHELL`／`define MAKEFLAGS` 多行体、链上的**变量目标名**（`$(VAR):`）
+  与「被守卫目标在 `include` 链上被重定义」一律**硬失败**（安全方向；recipe 行里的 `\tSHELL=… cmd` 是给单条命令
+  设环境变量，显式排除）；
   `include` 的静态拼写（`include`／`-include`／`sinclude`，含续行、引号路径、一行多路径）逐个展开，
   `include $(VAR)` 这类**动态 include** 与条件 include 无法静态展开，属如实登记的残限；
   受管例外入口的领域属性面不在「属性 ⊆ 登记轴」约束内；无 `local.dev` 运行态抽验。`scene_component_bridge`／`style_system`（`ContractFormPage`
   1905>1900）／`release_navigation_policy`（菜单投影）三项在本批之前即为失败，本批不修、不掩盖。
-- Next Step：冻结本批 HEAD → L1 → exact-head `make ci.local.quick` 回执 → 独立只读复核（八轮共 16 次；本轮修订后再由
-  A⁸／B⁸ 验证＝18 次）→ 显式合并授权 →
+- Next Step：冻结本批 HEAD → L1 → exact-head `make ci.local.quick` 回执 → 独立只读复核（九轮共 18 次；本轮修订后再由
+  A⁹／B⁹ 验证＝20 次）→ 显式合并授权 →
   `make pr.push`／`pr.create`／`pr.ready`／`pr.merge` → 主仓库 `make main.sync` → `make branch.cleanup.feature`。
