@@ -213,6 +213,25 @@ for (const source of presentationSources) {
   }
 }
 
+// 复核点名「尚未收口」的取值呈现消费方：逐条锁定其本地回退与格式化事实。
+// 锁定即「已知、有意保留、需单独决策」；任何漂移都必须先更新登记，不得静默变化。
+const PENDING_VALUE_PRESENTATION_CONSUMERS: Record<string, readonly string[]> = {
+  'app/presentation/productMyWorkPresentation.ts': ["'未填写'", "'未知'", '.slice(0, 16)'],
+  'views/ApiKeyManagementView.vue': ["'—'", 'toISOString().slice(0, 19)'],
+  'components/professional-fields/PaymentSettlementIntroduceDialog.vue': ["'—'"],
+  'components/boq/BoqImportPreviewPanel.vue': ["'—'"],
+  'pages/contractForm/RelationSearchDialog.vue': ["'未填写'"],
+};
+for (const [relativePath, markers] of Object.entries(PENDING_VALUE_PRESENTATION_CONSUMERS)) {
+  const text = sourceText(relativePath);
+  for (const marker of markers) {
+    assert.ok(
+      text.includes(marker),
+      `${relativePath} 的未收口取值呈现事实已变化（缺少 ${marker}）；必须重新决策，不得静默漂移`,
+    );
+  }
+}
+
 // 已收口消费方必须 import 权威，且不得自行重写数值／时间格式化；
 // 例外必须登记在此（含理由），登记即意味着「已知、有意保留、需另行决策」，不是静默放过。
 const AUTHORITY_CONSUMERS = [
