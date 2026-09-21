@@ -7059,14 +7059,14 @@ G16 主题经 PR **#514** 以 **squash** 合入主线，合并提交 `4268627553
 | 路径 | 动作 | 内容 |
 | --- | --- | --- |
 | `scripts/ci/node_syntax_check.py` | **新增** | 默认口径为 `git ls-files` 的**全部受跟踪** `.mjs`/`.cjs`（gitignored 语料天然排除），亦可显式传文件／目录；逐文件 `node --check`，失败聚合为 `path:line: SyntaxError: …`；node 运行时缺失或无目标文件时 **fail-closed**（exit 2） |
-| `scripts/ci/test_node_syntax_check.py` | **新增** | 13 测试：受跟踪语料覆盖历史 5 文件与回归锚点 `formal_form_representative_journey.mjs`、语料扩展到 `scripts/verify/` 且不含 `tmp/`、目录扫描后缀过滤、ESM 专属语法错误定位、运行器退出码 0/1/2、**接线逐字回归**（`test.contract`／`ci.local.quick.run` 的 sweep recipe 行必须逐字相等且唯一、不得保留手工清单；`test.unit` 必须逐字运行本自检）、**接线校验器的负例**（加窄参数／重复调用／缺行必须被判失败；自检行不得被误认为 sweep）与**语料枚举 fail-closed**（git 缺失或 `git ls-files` 失败 → exit 2，不抛未捕获异常） |
+| `scripts/ci/test_node_syntax_check.py` | **新增** | 14 测试：受跟踪语料覆盖历史 5 文件与回归锚点 `formal_form_representative_journey.mjs`、语料扩展到 `scripts/verify/` 且不含 `tmp/`、目录扫描后缀过滤、ESM 专属语法错误定位、运行器退出码 0/1/2、**接线逐字回归**（`test.contract`／`ci.local.quick.run` 的 sweep recipe 行必须逐字相等且唯一、不得保留手工清单；`test.unit` 必须逐字运行本自检）、**接线校验器的负例**（加窄参数／重复调用／缺行必须被判失败；自检行不得被误认为 sweep）、**语料成员资格与 `git ls-files` 独立枚举集合相等**（防止检查器内部被收窄为子集而自检仍绿）与**语料枚举 fail-closed**（git 缺失或 `git ls-files` 失败 → exit 2，不抛未捕获异常） |
 | `make/ci.mk` | 改 | `test.contract`：5 行手工 `node --check` 清单 → 1 行 sweep（**完全包含**被替换的 5 个文件）；`test.unit` ＋1 行自检；`ci.local.quick.run` ＋1 行 sweep |
 | `docs/engineering_convergence/complexity_budget_report.md`、`docs/engineering_convergence/test_inventory.csv`、`docs/engineering_convergence/test_inventory_summary.md` | 改（生成物） | 由 L1 `refresh.generated_reports` 重生成：受扫文件 **4402 → 4404**（＋2 新增 `.py`）、测试资产 **1373 → 1374**（＋1 新增自检） |
 
 **验证**：L1 `make ci.delivery.freeze.prepare` **PASS**（`contract structure fingerprint is current`、
 `tracked generated reports are current`、`ci.generated_evidence.preflight PASS`；生成物漂移已随本轮提交）；
 L2 `make test.contract` **PASS**（`[OK] Node syntax check passed (148 files)`）、`make test.unit` **PASS**
-（Python 1156 文件 ＋ Node 自检 10 tests ＋ render conf 6 tests）；全量只读预扫：受跟踪 `.mjs`/`.cjs` **148 个、
+（Python 1156 文件 ＋ Node 自检 14 tests ＋ render conf 6 tests）；全量只读预扫：受跟踪 `.mjs`/`.cjs` **148 个、
 0 失败**；L5 exact-head `make ci.local.quick` 回执与复验结论见本批 PR。
 
 **不做什么**：不改产品代码、契约、测试口径、前端渲染与运行环境；不删除任何兼容重组逻辑与测试豁免；不改
@@ -7082,7 +7082,14 @@ L2 `make test.contract` **PASS**（`[OK] Node syntax check passed (148 files)`�
 `scripts/verify/boq_baseline_browser_acceptance.mjs` 后默认 sweep exit 1、窄参数 sweep exit 0 且报 44 文件）。
 修订把断言改为**recipe 行逐字相等且唯一**（`\t@python3 scripts/ci/node_syntax_check.py`，无参数），并新增
 接线校验器负例测试与语料枚举 fail-closed 测试（13 测试）；同一影子场景下修订版自检对「加窄 `test.contract`」与
-「加窄 `ci.local.quick.run`」均 **FAILED（failures=1）**。**未削弱**其余结论：语料、口径与 fail-closed 语义不变。
+「加窄 `ci.local.quick.run`」均 **FAILED（failures=1）**。
+
+**复核后修订二（r2b S3-1 / r1b S4-2 闭合）**：r2b 指出语料**成员资格**只被样本路径钉住——若把
+`tracked_node_files()` 内部收窄为 `frontend/` ＋ `scripts/verify/`（148 → 144），原自检仍全绿，而
+`scripts/dev`／`ops`／`release`／`ui` 各 1 个文件可被静默丢弃（破坏其中文件时窄口径 sweep exit 0、默认 sweep exit 1）。
+修订新增「语料成员资格与 `git ls-files` 独立枚举集合**相等**」测试（14 测试），并在影子副本**复证**：同一收窄下
+自检 **FAILED（failures=1）**。r1b 指出的两处验证叙述仍写「10 tests」已刷为最终冻结候选的 **14 tests**。
+**未削弱**其余结论：语料范围、口径、fail-closed 语义与审计链不变。
 
 状态：**G16 后续硬化完成（P4 工具轮，待冻结／Quick／PR 收口）｜批次状态：本批自验通过；集中产品复核结论以产品方
 登记为准｜未部署｜用户交付未完成｜主线台账未变（`count=0`）｜`otherStateConsumers=[]`｜

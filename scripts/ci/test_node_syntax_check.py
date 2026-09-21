@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -69,6 +70,29 @@ class NodeSyntaxCheckTests(unittest.TestCase):
         self.assertTrue(tracked)
         self.assertTrue(any(path.startswith("scripts/verify/") for path in tracked))
         self.assertFalse([path for path in tracked if path.startswith("tmp/")])
+
+    def test_tracked_corpus_matches_an_independent_git_enumeration(self) -> None:
+        """Corpus membership is asserted against git, not against sample paths.
+
+        Narrowing ``tracked_node_files`` to a subset (for example dropping the
+        scripts/dev|ops|release|ui entries) would keep every sample-point
+        assertion above green while silently shrinking the gate, so the corpus
+        is compared to an independent enumeration instead.
+        """
+        listed = subprocess.run(
+            ["git", "ls-files", "-z", "--", *node_syntax_check.TRACKED_PATTERNS],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+        ).stdout.decode("utf-8").split("\0")
+        expected = {Path(name) for name in listed if name}
+
+        actual = {path.relative_to(ROOT) for path in node_syntax_check.tracked_node_files()}
+
+        self.assertEqual(actual, expected)
+        self.assertTrue(expected)
+        for path in actual:
+            self.assertIn(path.suffix, node_syntax_check.NODE_SUFFIXES)
 
     def test_directory_scan_keeps_only_node_suffixes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
