@@ -6,17 +6,7 @@
     :data-collection-state="status"
     :aria-busy="loading || undefined"
   >
-    <PageHeader
-      v-if="status === 'error'"
-      :title="title"
-      :subtitle="subtitle"
-      :status="status"
-      :status-label="statusLabel"
-      :loading="loading"
-      :on-reload="onReload"
-      :mode-label="modeLabelText"
-      :record-count="records.length"
-    />
+    <PageHeader v-if="status === 'error'" :title="title" :subtitle="subtitle" />
 
     <ProductLoadingSkeleton
       v-if="loading && !hasRetainedContent"
@@ -115,7 +105,6 @@ import CollectionKanbanRecordCard, { type CollectionKanbanFact, type CollectionK
 import CollectionPaginationFooter from '../components/product-list/CollectionPaginationFooter.vue';
 import CollectionKanbanLane from '../components/product-list/CollectionKanbanLane.vue';
 import { resolveEmptyCopy, resolveErrorCopy, type StatusError } from '../composables/useStatus';
-import { pageModeLabel } from '../app/pageMode';
 import { semanticValueByField } from '../utils/semantic';
 import { groupCollectionRecords } from '../app/runtime/collectionViewRuntime';
 import { resolveCollectionStatusPresentation } from '../app/presentation/collectionStatusPresentation';
@@ -209,7 +198,6 @@ const secondaryMetaFields = computed(() => {
     .slice(0, 3);
 });
 
-const modeLabelText = computed(() => pageModeLabel(props.pageMode || 'workspace'));
 const paginationLabels = {
   region: '卡片分页', previous: '上一页', next: '下一页', groupPrevious: '上一组', groupNext: '下一组',
   pageInput: '输入页码', jump: '跳转', pageSize: '每页', pageSizeInput: '输入每页条数', pageSizeSelect: '选择每页条数',
