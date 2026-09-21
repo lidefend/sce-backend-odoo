@@ -23,6 +23,49 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
         with patch("pathlib.Path.read_text", altered):
             self.assertTrue(any("status-interactive" in item for item in validate()))
 
+    def test_adapter_must_single_source_its_fixed_presentation_mode(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "ScPageHeader.vue":
+                return value.replace(':presentation-mode="collectionMode"', 'presentation-mode="collection"')
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertEqual(
+                validate(),
+                ["header adapter hardcodes presentation mode instead of the entry registry: components/design-system/ScPageHeader.vue"],
+            )
+
+        def unbound(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "ScPageHeader.vue":
+                return value.replace(":presentation-mode=\"collectionMode\"", "presentation-mode=\"collection\"").replace(
+                    "const collectionMode = resolveProductPageHeaderFixedMode('design-system');", ""
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", unbound):
+            failures = validate()
+        self.assertTrue(any("single-source its fixed presentation mode" in item for item in failures), failures)
+
+    def test_entry_contract_test_must_stay_wired(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value.replace(
+                    "frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
+                    "frontend/apps/web/scripts/removed_contract_test.ts",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            failures = validate()
+        self.assertTrue(any("not wired into verify.frontend.product_page_header.unit" in item for item in failures), failures)
+
     def test_missing_semantic_marker_fails(self):
         real = Path.read_text
 

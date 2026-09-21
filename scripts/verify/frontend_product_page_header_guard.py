@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -36,8 +37,32 @@ def validate() -> list[str]:
     ):
         if "ProductPageHeader" not in source(adapter):
             failures.append(f"header adapter bypasses ProductPageHeader: {adapter}")
-    if "presentation-mode=\"collection\"" not in source("frontend/apps/web/src/components/design-system/ScPageHeader.vue"):
-        failures.append("collection header does not declare collection presentation mode")
+    registry = source("frontend/apps/web/src/app/presentation/productPageHeaderAdapters.ts")
+    fixed_mode_adapters = {
+        "components/page/PageHeader.vue": "page",
+        "components/design-system/ScPageHeader.vue": "design-system",
+    }
+    for adapter_path, entry_id in fixed_mode_adapters.items():
+        adapter_source = source(f"frontend/apps/web/src/{adapter_path}")
+        if f"resolveProductPageHeaderFixedMode('{entry_id}')" not in adapter_source:
+            failures.append(f"header adapter does not single-source its fixed presentation mode: {adapter_path}")
+        if re.search(r"(?<![:\w-])presentation-mode=\"", adapter_source):
+            failures.append(f"header adapter hardcodes presentation mode instead of the entry registry: {adapter_path}")
+        if f"'{adapter_path}'" not in registry:
+            failures.append(f"header entry registry misses adapter path: {adapter_path}")
+    for entry_path in (
+        "components/template/PageHeader.vue",
+        "pages/contractForm/ContractFormProductHeader.vue",
+    ):
+        if f"'{entry_path}'" not in registry:
+            failures.append(f"header entry registry misses entry path: {entry_path}")
+    if "PRODUCT_PAGE_HEADER_DIRECT_CONSUMERS" not in registry or "PRODUCT_PAGE_HEADER_AXES" not in registry:
+        failures.append("header entry registry does not declare axes and direct consumers")
+    contract_test = "frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts"
+    if not (ROOT / contract_test).exists():
+        failures.append("header entry contract test is missing")
+    if "product_page_header_adapter_contract_test.ts" not in source("make/frontend.mk"):
+        failures.append("header entry contract test is not wired into verify.frontend.product_page_header.unit")
     contract = source("frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue")
     for marker in (':presentation-mode="presentationMode"', ':render-profile="mode"', ':dirty-state="headerDirtyState"'):
         if marker not in contract:

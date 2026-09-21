@@ -152,6 +152,8 @@ verify.frontend.overview_rich_text.unit: guard.prod.forbid
 verify.frontend.product_page_header.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_page_header_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/product-page-header-model-test.mjs >/dev/null
 	@node /tmp/product-page-header-model-test.mjs
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts --bundle --platform=node --format=esm --outfile=/tmp/product-page-header-adapter-contract-test.mjs >/dev/null
+	@node /tmp/product-page-header-adapter-contract-test.mjs
 	@python3 -m unittest scripts/verify/test_frontend_product_page_header_guard.py
 	@python3 scripts/verify/frontend_product_page_header_guard.py
 
