@@ -6735,3 +6735,177 @@ G13 记录已更正该口径，本提交沿用更正后的按 action 计数约�
 
 状态：**G14 主线集成完成（PR #510，squash 同树）｜批次状态：自验与冻结门禁通过；集中产品复核结论以产品方登记为准｜
 未部署｜用户交付未完成｜台账 1｜G15 未启动**。
+
+### 8.46 G15 税务申报：入口契约**原地退役**结构声明与代表面登记（2026-09-21；**实施＋分层验证轮**；冻结／Quick／独立复核／归档／PR 属本轮收口步骤）
+
+**范围与层级**：Formal Product Layer **P1**（施工行业标准产品默认面）；Layer Target 为 `smart_construction_core`
+的入口契约 `data/tax_filing_contract.xml`、定向测试与原生视图口径，另含一处 **P4 最小扩展**——既有只读代表面
+入口 `scripts/verify/local_dev_form_lowcode_scope.py` 登记 `tax_filing` topic（复用已注册 Compose 项目
+`sc-local-dev`／`sc_dev_demo`／受管身份与数据权威，只读，不写任何配置），以及随冻结刷新的
+`docs/engineering_convergence/complexity_budget_report.md`。**Why Here**：880 的兼容结构权威由
+`smart_construction_core` 自己发布的入口契约 186 `tax_filing_form_v1` 持有。**Why Not Elsewhere**：这是行业标准
+默认面的结构权威收口，前端只做通用契约渲染、不得按模型写死；低代码运行时不是长期属主；`smart_core`
+不承载行业语义（本批对平台内核只做只读分析）。**Blast Radius**：入口 action **880**
+（`action_sc_product_tax_filing_v1`，menu 702「税务申报」）、原生表单 **1659**（`view_sc_tax_filing_form`）、
+契约 **186**（`tax_filing_form_v1`）、模型 `sc.tax.filing`。**回滚**：`git revert`（纯声明变更，无数据迁移）。
+**排除项**：兄弟载体 187 `tax_report_list_v1`／action 881／menu 703（`pivot,graph,tree`，无 form）、`smart_core`
+内核改动、前端源码与 CI 配置、**客户定制 addon 仓库（不在本仓库边界内）**、ACL／记录规则／菜单可见性／
+模型字段／原生视图 arch。
+
+**目标**：让入口 action **880** 的入口发布成为本入口**最后的结构写入者**并声明 `native_semantic_surface`，使
+`form_structure_authority=native_authority`、`layoutPolicy=container_tree_authority`，兼容重组路径对 880 不再适用
+（台账口径由此可扣减 **1 → 0**，成为最后一条兼容消费者；扣减本身属**合并后**文档单职责提交）。
+
+**修改范围（候选 5 条路径，单提交：4 改 ＋ 1 新增）**：
+
+| 路径 | 动作 | 内容 |
+| --- | --- | --- |
+| `addons/smart_construction_core/data/tax_filing_contract.xml` | 改 | 同名 record **原地退役**（见下） |
+| `addons/smart_construction_core/tests/test_tax_filing_native_lowcode.py` | **新增** | 16 测试，tag `uc4_native_lowcode` |
+| `addons/smart_construction_core/tests/__init__.py` | 改 | 登记上述测试模块 |
+| `scripts/verify/local_dev_form_lowcode_scope.py` | 改 | 登记 `tax_filing` topic（P4 最小扩展） |
+| `docs/engineering_convergence/complexity_budget_report.md` | 改 | 扫描文件 4400 → **4401** |
+
+**原地退役内容**：`composition_mode` 由 `entry_semantic_surface` 改为 `native_semantic_surface`，**退役**
+`sections`（4 组 22 字段）／`columns`／`actions`（5 条），**保留** `priority=800`／`action_id`／`status=published`／
+`version_no` 键／`title='税务申报'`／`context` 5 键（`source`／`source_status`／`filing_authority`／
+`invoice_authority`／`deduction_authority`，逐值不变）。外形与 G13 的原地退役一致。
+
+**关键决策（实测驱动，非设计预判）**：
+
+1. **为什么必须原地退役**：本模型的入口级载体**只有两条**——186 `tax_filing_form_v1`（本入口 880）与
+   187 `tax_report_list_v1`（兄弟报表 action 881）。A／B 探针实测：为同一 action **另建**一条 `native_semantic_surface`
+   record 的变体被 `diagnose_structure_ownership` 以 `NATIVE_SEMANTIC_SURFACE_STRUCTURE_CONFLICT` **拒绝**，
+   故本批**不能**沿用 G12／G14 的「新增入口发布」形态，只能**原地退役**（G13 形态）。
+2. **契约表计数不变（289）**：原地退役意味着**非增量**——`ui.business.config.contract` 仍 **289** 行（G14 收口值），
+   G14 阶段手稿中「289 → 290」的预测**不成立**，已在最终结果索引与 `g15-plan.md` 的陈旧预测登记中如实标注。
+3. **发布快照机制（运行实例级证据）**：published 契约改 body 会**追加不可变发布快照**并把活行 `version_no`
+   递增（`addons/smart_core/model/ui_business_config_contract.py:844-888`）。after 探针实测：活行 `version_no=2`；
+   入口 186 在 `ui.business.config.contract.version` 中占 **2 条**（v2 退役后无章节／v1 退役前的
+   `entry_semantic_surface`，仍带 4 个章节标题：申报信息／税额测算／来源与治理／说明与附件）；版本表共 **774** 行；
+   **运行时结构解析读活行**，故旧声明残留**仅**存在于不可变快照（审计／回滚用途）。测试据此以
+   `assertGreaterEqual(record.version_no, 1)` ＋ 理由注释钉住，而不硬编码为 1。
+4. **平台常态对照**：平台既有原生入口 876／687／523／522／646／778 的 **edit 与 create 双平面**均为
+   `fieldSemantics=0`／`surfacePolicies={}`（`tmp/g15-evidence/probe-g15-ab4.json`），本批以此作为「退役后回到
+   平台常态」而非「本批引入的退化」的判据。
+5. **代表面口径**：`tax_filing` topic 登记 `action_sc_product_tax_filing_v1` ＋ `view_sc_tax_filing_form` ＋
+   `menu_sc_product_tax_filing_v1`，样本字段 `state`／`currency_id`，机制键 `readonly_values` ＋ `record_surface`，
+   **不申报** `section_navigation`（原生视图 1659 零 `data-sc-anchor`，该断言在本入口不可能成立）。
+
+**交付面可见变化（如实登记，不写成「仅结构权威变更」）**：`create` 路由相对基线**可见字段由 8 增至 20**——
+新增可见的 12 个字段中 **9 个只读**（`accepted_at`／`declared_payable_amount`／`deductible_tax_amount`／
+`input_tax_amount`／`output_tax_amount`／`prepaid_tax_amount`／`submitted_at`／`surcharge_amount`／
+`vat_payable_amount`）＋ **3 个可编辑**（`note`／`attachment_ids`／`other_tax_adjustment`，后者为金额字段），
+即 create 页新增 **3 个录入控件**；`hiddenFieldNames` 由 13 项收敛为 1 项（`currency_id`）；
+`readonlyFieldCount`（12）与 `editableFieldNames`（9 项）在退役前后**均不变**——**变化的只是可见性**，
+故不得用「只读总数不变」推断「新增项全部只读」。同一视图 1659 的 **edit** 路由在退役前后**逐项相同**
+（20 可见／`currency_id` 隐藏／16 只读），这正是把变化归因到「create 兼容平面消失」的依据。若交付验收认为
+create 页应保持稀疏，需**另立** P1 稀疏只读覆盖任务（本批**不**声明需要覆盖：退役体本身未声明任何字段策略）。
+明细见 `tmp/g15-evidence/l4-attribution.md`。
+
+**验证（全部在冻结头 `cb3cb82c`）**：
+
+- **L0 只读侦察**：只读探针（`SAVEPOINT` ＋ `ROLLBACK`，零写入）锁定基线权威、同域载体面与平台对照面；
+  台账条数确认 **1**（唯一剩余条目 880）。
+- **L1** `ci.delivery.freeze.prepare`：**PASS**（无生成证据漂移；复杂度扫描 4400 → 4401）。
+- **L2**：定向 **16 passed / 0 failed / 0 error**（`TestTaxFilingNativeLowcode`）；整组回归 **234 passed**
+  （0 failed 0 error；G14 为 218，本批 +16）；策略回归 **12 passed**；六条具名守卫 **6/6 exit 0**；
+  域回归 tax_center **9** 个 action／project 域 **30** 个／base_configuration 域 **6** 个全 PASS 且跑后
+  **逐字节还原**（唯一非 id 差异仍是既存陈旧的 `action_sc_product_project_edit_v1` 报告条目）。
+- **L3** `local.dev.upgrade`：exit 0；只读 after 探针核对：契约表仍 **289**、入口 186
+  `composition_mode=entry_semantic_surface → native_semantic_surface`、`sections`／`actions` 归零；
+  edit 与 create 两 profile 均 `authority=native_authority`／`layoutPolicy=container_tree_authority`／
+  `mode=native_structured_form`／`diagnostics=[]`，**21 字段／0 锚点**，修饰符与基线逐项相同；
+  原生 arch 与兄弟面未变。
+- **L4 浏览器代表面（冻结头）**：exit 0／`candidate=cb3cb82c`／`dirty=false`／`ok=true`／`restored=true`／
+  `browser_errors=[]`；**create 路由 passed**（19 个渲染字段节点、11 个只读字段逐项核验、各 finding 桶全空）；
+  **record 路由如实登记为未覆盖**（`uncovered / record_surface / empty_action_domain`：受管身份下 action 域
+  `domain_rows=0`、模型在 `sc_dev_demo` 亦 0 行），**不为补证据造数据**。
+- **L5** exact-head `make ci.local.quick`：exit 0，回执绑定 `head=cb3cb82c…`／`tree=a9e1b0ab…`，并经
+  `local_quick_evidence.py verify --expected-head cb3cb82c…` 独立复验为 **VERIFIED**（G14 同型记账项：日志内
+  含一条内部 `evidence disabled: worktree was not clean at suite start` 标记，但套件结束时唯一 `RECORDED`，
+  回执绑定不受影响）。
+- **外部证据归档**：`make workspace.evidence.archive` APPLIED／`status=verified`（4 文件覆盖
+  identity／summary／review／screenshot 四类角色）；指纹 `tmp/g15-evidence/final-fingerprint.json` 原始字节
+  sha256 = `d045a2a57af5d259a7e11e1d16ce91b26f2bd9bb59ddcf04a4bc944622dae786`。
+
+**过程偏差（不隐藏）**：
+
+1. 首版候选为 `9b113275`；第一组独立只读复核提出 **2 条 S2**（①create 可见字段变化未登记；②
+   `create_fields == edit_fields` 非判别性断言）与 3 条 S3，作者在**同一提交内补正并 amend** 为 `cb3cb82c`
+   （`git diff 9b113275 cb3cb82c` = 2 文件 +38/−13）：测试改名为 `test_the_create_profile_delivers_the_same_field_plane_as_edit`
+   并新增两条判别性断言（`assertFalse(runtimeContract.fieldSemantics)`／`assertFalse(actionContract.surfacePolicies)`）、
+   兄弟面改为 `assertIsNone(composition_mode)` ＋ `structural_form_declarations(spec) == {}`、scope 注释改为
+   如实陈述 record 路由 `empty_action_domain`／不可达。
+2. 第二组复核（对象 `cb3cb82c`）**无 S0／S1／S2** 残留；round 2 提出一条 **S2-N1**（交付文档 4 处误写
+   「新增 12 字段全部只读」，实为 **9 只读 ＋ 3 可编辑**），已修正并被 round 2 逐项确认**闭合**；另按建议把
+   措辞收紧为「与**原生视图＋模型字段声明**一致」。残留 4 条前向／记账风险（见下）。
+3. L2／L5 日志内的 stats 行与 result 行计数口径不同（16/18、234/264、12/16），本记录**统一引用 result 行**。
+4. L4 浏览器与 L3 升级均在本轮**实际执行**（非复用 G14 结论）；record 路由不可达属**数据事实**，未以造数据方式消除。
+
+**前向风险登记（本批未触发，方向 fail-closed）**：
+
+1. `frontend/apps/web/scripts/formal_form_representative_journey.mjs:1435-1441`（G14 遗留）：运行器只校验 view 与
+   model 两个来源判定 create 拒绝，而平台用 `effectiveRecordCapabilities.create` 四源合取；来源为
+   `entryCapabilities.create` 的拒绝会被报成结构性失败（对 880 未触发：`representative_profile_denied=[]`
+   且 create 路由已渲染）。
+2. 4 条条件 arch 修饰符（`company_id`／`period_start`／`period_end` 的 `state != 'draft'`、
+   `other_tax_adjustment` 的 `state in ['submitted','accepted','cancelled']`）**仅声明级 pin**：浏览器记录面因
+   无可见行未实测求值；建议后续或为受管身份补一条样例数据（数据权威决策，不属本批），或补服务级求值测试。
+3. 回滚到版本快照 **v1** 会**复活**兼容 body（`ui_business_config_contract.py` 回滚路径，约 `:951`）。
+4. `tmp/g15-evidence/g15-plan.md` 的预测已被取代（非冻结面），最终结果索引为准。
+
+**环境缺陷登记（非本批引入，不修，沿用 G08–G14）**：`verify.contract.view_structure` 的 `local.clean`／`sc_clean`
+权威指纹期望；`verify.product.menu.governance.m4.closure` 缺 `menu-m4-runtime.REJECTED-wrong-sha.json`；
+`verify.user_form.preference.boundary_guard` 依赖**客户定制 addon 仓库（不在本仓库边界内）**的模块；G11 遗留的
+`verify.frontend.professionalization.collaboration_domain.runtime` 组件单测仍断言 `entry_semantic_surface`；
+`docs/frontend_productization/domain-rollout/project-domain-coverage-v1.json` 对 `action_sc_product_project_edit_v1`
+陈旧（既存）。
+
+**边界**：不改 ACL／记录规则／菜单可见性，不改模型字段，不改原生视图 arch，不改运行环境、数据库或端口；
+兄弟载体 187／action 881／menu 703 未被本批修改；发布历史**不删除**（旧 `entry_semantic_surface` 声明仍可在
+版本快照与管理员版本列表中读到）；`retirementComplete=false`。
+
+**Next Step**：合并获授权后执行**文档单职责提交**（台账 1 → 0 ＋ 迭代记录 8.46／8.47 ＋ 本轮切换日志），
+清理已合入分支，再收口 `otherStateConsumers` 中剩余的**其他状态消费者**（action **886**／menu 709／
+`data_permission_form_v1`，仍持 `entry_semantic_surface`）。
+
+### 8.47 G15 主线集成与台账 1 → 0（2026-09-21）
+
+G15 主题经 PR **#512** 以 **squash** 合入主线，合并提交 `257252cc6854e9dd6db46b4b4b6ffe7cff8f1200`，其树与候选
+`cb3cb82c6a0ee5e5960ead3a1ac7dc8e77af5b56` 的树 `a9e1b0abc53aa3e0f8f439d27b8578cc3d12a9de` **逐字节一致**（同树承接）。
+合并前必需检查全部通过（`classify`、`frontend_release_gate`、`merge_policy_gate`、`professional_authorization`、
+`professional_quality_gate`、`public_guard`、`public_guard_classify`、`python310_runtime_compatibility`、
+`release_candidate_gate`），`fast`／`wait_for_candidate_checks` 按规则 skipping；`pr.merge` 的 exact-head Quick 门禁
+走 **REUSE** 路径复用候选 `cb3cb82c` 的已验回执（回执绑定 head＋tree）。外部证据已按 `make workspace.evidence.archive`
+归档（4 文件、四类角色齐备、`status=verified`）。独立只读复核两轮绑定冻结头 `cb3cb82c`（另保留绑定 `9b113275`
+的两份前置报告），均判 `mergeable_with_notes`、**无 S0／S1／S2 残留**；上一节登记的前置 S2／S2-N1 均已闭合。
+合入后已按 `make branch.cleanup.feature` 清理已合入分支 `feature/uc4-g15-tax-filing-native-v1`（本地＋远端，
+exact-head squash PR 校验通过）。
+
+台账 `docs/ops/iterations/form_structure_compatibility_consumers_v1.json` 扣减 **1 → 0**（本批在台账内**正好 1 条**：
+880 税务申报），`count`／`localVerifiedCount`／`mainlineRemainingCount` 同步为 **0**，`entries` 清空为 `[]`，
+并新增 `uc4G15PublishedAudit`；`nextBatch.status` → **`path_clear`**、`priorityActions` → `[]`、
+`selectedGroup` → `null`（并新增 `clearanceNote` 说明「清空的是**本台账**的正式兼容消费者，**不**授权删除兼容重组
+逻辑」）、`sourceMainlineHead` → `257252cc…`；G15 组就地标记 `indexStatus=historical_source` 并登记 `indexNote`
+与 `legacyConfigurationStatus`（186 为「入口契约**原地**退役为 `native_semantic_surface` 且**保持 published**」，
+区别于 G14 组四条「模型级镜像保持 active」的口径）。
+
+**扣减口径**：台账计数的是**主线剩余兼容消费者**（`layoutPolicy != container_tree_authority`），扣减按本组**退役的
+action 数**计——G15 组 action 集合为 `[880]` **共 1 条**，故正确扣减为 **1 → 0**；台账行删除后 `entries` 与
+`count` 同为 **0**。
+
+**`retirementComplete` 保守保持 `false`（如实登记，不因「归零」而提前置真）**：台账自身的
+`retirementCondition` 要求**两半同时成立**——①每条兼容重组路径的正式消费者归零；②其他角色／公司／状态已覆盖。
+本批只满足**①**（本台账口径归零），**②仍未满足**：台账按受管身份 `system_admin`／company 1／`renderProfile=create`
+单一口径测量，且 `otherStateConsumers` 仍存 **1** 条 `entry_semantic_surface` 消费者（action **886**／menu 709／
+`data_permission_form_v1`）。因此**本批不删除**任何兼容重组逻辑与测试豁免，并把该理由写入台账的
+`retirementCompleteReason` 字段。
+
+本提交为**文档类单职责提交**（台账 ＋ 本记录 ＋ 切换日志，路径集合固定为 3）；**未触碰**任何产品代码、契约、
+测试或验证工具输入，故不改动 §8.46 的 L0–L5 结论；候选的 exact-head Quick 回执属于 `cb3cb82c…`，
+本提交自身的收据由受管门禁按 fail-closed 口径产生，**不冒充同一绑定**。
+
+状态：**G15 主线集成完成（PR #512，squash 同树）｜批次状态：自验与冻结门禁通过；集中产品复核结论以产品方登记为准｜
+未部署｜用户交付未完成｜台账 0（`count=0`）｜`retirementComplete=false`（其他角色／状态未覆盖）｜
+剩余候选主题：886／menu 709／`data_permission_form_v1`**。
