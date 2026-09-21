@@ -10373,7 +10373,8 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   PASS（守卫单测 **69 例**）；取值呈现守卫 `sources=686 consumers=18` PASS；`lint:src` 0 error／39 条既有 warning；
   `typecheck:strict` PASS；全量 `vue-tsc --noEmit` 仍为 32 条既有类型债、文件集合与 base 一致。
   **门禁非空洞实证**：在 `/tmp` 影子副本上注入 **139 项矩阵（114 项 CAUGHT ＋ 25 项假失败防线锁定 STILL-PASS），全部符合预期**
-  （该块按本轮冻结口径刷新：矩阵沿革 95 → 112 → 119 → 132 → 139 项，守卫单测 14 → 27 → 31 → 37 → 45 → 51 → 55 → 63 → 69 例），工作树文件未被修改。除首批形态之外，
+  （该块按本轮冻结口径刷新：矩阵沿革 95 → 112 → 119 → 132 → 139 项，守卫单测 14 → 20 → 27 → 34 → 40 → 45 → 51 → 55 → 63 → 69 例——
+  单测数为逐冻结候选实测的 `def test_` 计数），工作树文件未被修改。除首批形态之外，
   第二轮独立只读复核点名的盲区（kebab 标签、barrel 具名导入、`<component :is>`、`v-bind` 对象展开、
   契约测试接线被注释掉、固定轴绑定字面量、固定轴常量解析错入口 id、只留 `import` 丢掉模板渲染、`$attrs` 兜底转发）
   都已纳入同一批注入并被抓到；第三轮复核点名的**诱饵类**形态（单引号 `<component :is='X'>`、字符串注释符
@@ -10494,6 +10495,12 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   与同条目「口径统一」自述冲突。已订正：该 bullet 刷新为 **69 例**／**139 项（114＋25）** 并补沿革括注，
   迭代文档 §3 的「14 → 51 例」补箭头链到 69。第十轮修订（纯文档）产生新 HEAD，L1／exact-head L5 与
   A¹⁰／B¹⁰ 复核按新冻结候选重跑与重绑。详见迭代文档 §8。
+  随后 round A¹⁰／B¹⁰（复核 head `b7ed7131`；**均 REQUEST_CHANGES（仅文档）**，无 S0–S3，且**代码在 `fe9e153d` 后零改动**）——
+  两轮独立复核都只指出同一处：第十轮为订正旧数字而**新写入**的「沿革」括注里，守卫单测链写成
+  `14 → 27 → 31 → 37 → …`，而逐冻结候选实测为 `14 → 20 → 27 → 34 → 40 → 45 → 51 → 55 → 63 → 69` 例（31／37 从未在任何提交存在，
+  且漏掉 20、把 34／40 写成 31／37）；矩阵沿革 `95 → 112 → 119 → 132 → 139` 经核对正确。已订正两处括注
+  （切换日志末条与迭代文档 §8），并注明单测数取自逐候选 `def test_` 实测。第十一轮修订（纯文档）产生新 HEAD，
+  L1／exact-head L5 与 A¹¹／B¹¹ 复核按新冻结候选重跑与重绑。详见迭代文档 §8。
 - 上一批复核 A′／B′ 点名的**登记完整性**在本批一并补上：`productMyWorkPresentation`／`ApiKeyManagementView`／
   `PaymentSettlementIntroduceDialog`／`BoqImportPreviewPanel`／`RelationSearchDialog` 的本地回退与格式化事实，
   在 `frontend_localized_display_contract_test.ts` 中以**正锁**（缺一即失败）登记，任何漂移都必须重新决策。
@@ -10519,6 +10526,6 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `include $(VAR)` 这类**动态 include** 与条件 include 无法静态展开，属如实登记的残限；
   受管例外入口的领域属性面不在「属性 ⊆ 登记轴」约束内；无 `local.dev` 运行态抽验。`scene_component_bridge`／`style_system`（`ContractFormPage`
   1905>1900）／`release_navigation_policy`（菜单投影）三项在本批之前即为失败，本批不修、不掩盖。
-- Next Step：冻结本批 HEAD → L1 → exact-head `make ci.local.quick` 回执 → 独立只读复核（十轮共 20 次；本轮修订后再由
-  A¹⁰／B¹⁰ 验证＝22 次）→ 显式合并授权 →
+- Next Step：冻结本批 HEAD → L1 → exact-head `make ci.local.quick` 回执 → 独立只读复核（十一轮共 22 次；本轮修订后再由
+  A¹¹／B¹¹ 验证＝24 次）→ 显式合并授权 →
   `make pr.push`／`pr.create`／`pr.ready`／`pr.merge` → 主仓库 `make main.sync` → `make branch.cleanup.feature`。
