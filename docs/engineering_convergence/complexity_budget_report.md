@@ -117,6 +117,7 @@ Generated from repository source files. This report is informational during the 
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
 | 1041 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
 | 1023 | Python source | `addons/smart_core/tests/test_business_config_change_set.py` |
+| 1017 | Python source | `scripts/verify/test_frontend_product_page_header_guard.py` |
 | 1016 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
 | 1013 | Python source | `addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py` |
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
@@ -125,7 +126,6 @@ Generated from repository source files. This report is informational during the 
 | 958 | Python source | `addons/smart_construction_core/tests/test_cost_fact_model_v2.py` |
 | 955 | Python source | `scripts/release/test_release_publication.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
-| 924 | Python source | `scripts/verify/test_frontend_product_page_header_guard.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 916 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 911 | Python source | `scripts/ops/codex_agent_controller.py` |
