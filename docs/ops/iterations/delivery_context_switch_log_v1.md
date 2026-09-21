@@ -10370,16 +10370,16 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   Python 守卫同步升级：固定档位单一来源 ＋ 不得硬编码 ＋ 登记表必须包含全部入口路径 ＋ 入口契约测试必须存在且
   仍接在门禁上（防静默摘除）。
 - 验证：入口契约 `entries=4 axes=15 call_sites=6 direct_consumers=3` PASS；`verify.frontend.product_page_header.unit`
-  PASS（守卫单测 **34 例**）；取值呈现守卫 `sources=686 consumers=18` PASS；`lint:src` 0 error／39 条既有 warning；
+  PASS（守卫单测 **40 例**）；取值呈现守卫 `sources=686 consumers=18` PASS；`lint:src` 0 error／39 条既有 warning；
   `typecheck:strict` PASS；全量 `vue-tsc --noEmit` 仍为 32 条既有类型债、文件集合与 base 一致。
-  **门禁非空洞实证**：在 `/tmp` 影子副本上注入 **59 类回归，全部被抓到**，工作树文件未被修改。除首批形态之外，
+  **门禁非空洞实证**：在 `/tmp` 影子副本上注入 **80 类回归（另有 4 项假失败防线锁定 STILL-PASS），全部被抓到**，工作树文件未被修改。除首批形态之外，
   第二轮独立只读复核点名的盲区（kebab 标签、barrel 具名导入、`<component :is>`、`v-bind` 对象展开、
   契约测试接线被注释掉、固定轴绑定字面量、固定轴常量解析错入口 id、只留 `import` 丢掉模板渲染、`$attrs` 兜底转发）
   都已纳入同一批注入并被抓到；第三轮复核点名的**诱饵类**形态（单引号 `<component :is='X'>`、字符串注释符
   `{{ '/*' }}…{{ '*/' }}`、默认槽／动态槽名／单引号槽名、改名默认导入、动态 `import()`、行尾 `//` 与
   双引号／模板字面量常量诱饵、字符串里的假模板委托、`@echo <整条命令行>`／`@node --version # <文件名>`）
   同样全部被抓到。
-- **两轮独立只读复核后的修订**（复核对产品代码无异议，问题全在门禁强度与文档数字）：F 覆盖 kebab 标签与具名／barrel
+- **复核后的修订（首轮 → 第四轮）**（复核对产品代码无异议，问题全在门禁强度与文档数字）：F 覆盖 kebab 标签与具名／barrel
   导入并把调用点集合钉死（现 6 个，含 `ContractFormPage` 这一受管例外调用点）；B 从「源码含标识符」改为「模板中真实
   渲染上游」；D 要求固定轴绑定值必须引用 `resolveProductPageHeaderFixedMode('<本入口 id>')` 的返回值；权威与薄入口
   禁止 `$attrs`；`<component :is>`／对象展开改为硬失败并要求显式登记；Python 守卫改为按 Makefile 结构解析
@@ -10402,14 +10402,30 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   说明符末段纳入入口命中判据并新增「改名导入必须显式登记」与「动态 `import()` 硬失败」、
   槽位只接受**静态具名槽**（默认槽／动态槽名硬失败，权威侧同钉）、动态组件绑定改为**引号不敏感**、
   接线判定改为「首个 token 就是该程序」并剔除 `#` 注释；守卫单测 **27 → 34 例**，影子副本注入矩阵
-  **39 → 59 项**且全部 CAUGHT。详见迭代文档 §8。
+  **39 → 59 项**且全部 CAUGHT。
+  随后 round A‴／B‴（head `2f5b2c94`，均 REQUEST_CHANGES、**无 S0／S1**）又点名七处，已经我逐条实证并修掉：
+  ①`useAttrs()`／`attrs` 与 `$attrs` 等效，薄入口可用它绕过「不得兜底转发未登记轴」，而薄入口又不在
+  `v-bind="obj"` 扫描面内——A3 升级为三者等效硬失败（覆盖权威与全部登记入口），并新增 F4 钉住**权威标签自身**
+  的对象展开；②recipe 判定可被 `;`／`&&` 链式诱饵绕过（`@node --version; echo <文件名>`、`@node <real> || true`），
+  与文档 §6⑦ 自述矛盾——`_is_real_command` 改写为 `_matches_recipe`：按 `;`／`&&`／`||`／`|`／`&` 切段后要求
+  「某段首 token 就是该程序 ＋ 紧随参数逐个相等同序」；③F3 只认单引号动态说明符——改为引号不敏感并覆盖 `require()`；
+  ④F1 的 `:is` 不容忍 `=` 两侧空白、且不认静态 `is="X"`——已补齐；⑤`declaredPropsOf` 只解析 `defineProps<{…}>`，
+  同文件并存 Options API `props: {…}` 或 `defineProps<T>()` 可静默新增未登记输入——改为只承认**恰好一处**字面量声明，
+  其余形态硬失败；⑥F1 走原文使模板注释里的 `<component :is>` **假失败**——F 循环改走 `stripComments`；
+  ⑦槽断言硬编码 `name="` 使合法的单引号具名槽**假失败**——改为引号不敏感。复核者点名的 D 断言过严（`resolve…(\`page\`)`
+  等误判）**接受为安全方向、不改**。守卫单测 **34 → 40 例**，影子副本注入矩阵 **59 → 80 项**且全部 CAUGHT，
+  另锁定 4 项**假失败防线**必须 STILL-PASS（模板注释里的动态绑定、单引号具名槽、真实步骤尾部的 `|| true`／`2>/dev/null`）。
+  第四轮修订产生新 HEAD，L1／exact-head L5 与第五轮复核按新冻结候选重跑与重绑。详见迭代文档 §8。
 - 上一批复核 A′／B′ 点名的**登记完整性**在本批一并补上：`productMyWorkPresentation`／`ApiKeyManagementView`／
   `PaymentSettlementIntroduceDialog`／`BoqImportPreviewPanel`／`RelationSearchDialog` 的本地回退与格式化事实，
   在 `frontend_localized_display_contract_test.ts` 中以**正锁**（缺一即失败）登记，任何漂移都必须重新决策。
 - 残限（如实登记）：薄入口仍不暴露的轴是**显式决策**而非遗漏；`breadcrumb`／`variant` 目前无任何入口转发；
   `ContractFormProductHeader` 的领域内容不在本批收口；门禁 F／G 用属性名与标签解析而非 AST，
-  `<component :is>`／`v-bind="obj"`／`$attrs` 三种静态不可枚举形态被设计为**硬失败**（要求显式登记），
+  `<component :is>`（含静态 `is=` 与 `:is =` 空白变体）／`v-bind="obj"`（含权威标签自身）／
+  `$attrs`・`useAttrs()`・`attrs` 三类静态不可枚举形态被设计为**硬失败**（要求显式登记），
+  非字面量 `defineProps` 与 Options API `props` 同样硬失败；recipe 形状判定下 `$(ESBUILD)`／`sh -c`／参数换序／
+  `cd <子目录>` 后改用相对路径会**假失败**（安全方向，需显式登记），
   受管例外入口的领域属性面不在「属性 ⊆ 登记轴」约束内；无 `local.dev` 运行态抽验。`scene_component_bridge`／`style_system`（`ContractFormPage`
   1905>1900）／`release_navigation_policy`（菜单投影）三项在本批之前即为失败，本批不修、不掩盖。
-- Next Step：冻结本批 HEAD → L1 → exact-head `make ci.local.quick` 回执 → 两轮独立只读复核 → 显式合并授权 →
+- Next Step：冻结本批 HEAD → L1 → exact-head `make ci.local.quick` 回执 → 独立只读复核（四轮共 8 次）→ 显式合并授权 →
   `make pr.push`／`pr.create`／`pr.ready`／`pr.merge` → 主仓库 `make main.sync` → `make branch.cleanup.feature`。

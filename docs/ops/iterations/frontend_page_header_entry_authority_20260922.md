@@ -39,34 +39,39 @@ Compose/profile、端口或凭据；不新增渲染主链。
   `modeLabelText` 计算属性与 `pageModeLabel` 导入。`ProductPageHeader` 根元素不再承载 `status`／`status-label`／
   `loading`／`on-reload`／`mode-label`／`record-count` 这些无意义 DOM 属性。**无视觉变化、无业务语义变化**。
 - **结构性门禁** `frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts`（接入
-  `verify.frontend.product_page_header.unit`）：A 权威正式面 ≡ 登记轴（权威另不得用 `$attrs` 兜底转发）；
+  `verify.frontend.product_page_header.unit`）：A 权威正式面 ≡ 登记轴（权威另不得用 `$attrs`／`useAttrs()`／`attrs` 兜底转发）；
   B 入口存在且**在模板中真实渲染**上游（只留 `import` 不算委托）、不得自建 `header`／`h1`；
   C 声明转发必须真实转发；D 固定轴不得留静态字面量、**绑定值必须引用由登记表解析出的常量**
-  （挡住「装饰性调用 ＋ 字面量绑定」的静默分叉）；E 薄入口声明面 ⊆ 登记面且不得 `$attrs`；
+  （挡住「装饰性调用 ＋ 字面量绑定」的静默分叉）；E 薄入口声明面 ⊆ 登记面且同样不得 `$attrs`／`useAttrs()`／`attrs`；
   F **调用方传入属性 ⊆ 入口声明面**（D1 这一类缺陷的直接封堵）＋**调用点全集钉死**；G 直接消费权威的文件集合 ≡ 登记表；
   H 轴决策完整、id 唯一、`not_exposed`／`fixed` 必须给理由。
   F 与 G 的入口解析同时覆盖**默认导入、具名导入与 barrel 再导出**（`import { ScPageHeader } from '../components/design-system'`），
   标签形态同时覆盖 **PascalCase 与 kebab**，属性扫描**感知引号**（不再把属性值内部的标识符误判为属性名）；
   `<component :is>`（**大小写不敏感**：Vue 把 `Component` 与 `component` 都当动态组件）动态渲染已登记入口、
-  以及对已登记入口使用 `v-bind` 对象展开，一律失败并要求显式登记为守卫边界。属性名统一归一到 Vue 实际使用的输入名
+  对已登记入口使用 `v-bind` 对象展开、以及**权威标签自身**的对象展开，一律失败并要求显式登记为守卫边界；
+  动态绑定匹配**引号不敏感且允许 `=` 两侧空白**（`:is='X'`／`:is = "X"`／`` :is=`X` ``／静态 `is="X"` 同等对待）。
+  属性名统一归一到 Vue 实际使用的输入名
   （`:x` ≡ `v-bind:x`，`v-model` → `modelValue`，`v-model:x` → `x`，`.modifier` 不改变 prop 名），
   不再因 `v-` 前缀整体跳过；模块说明符解析同时覆盖相对路径与 vite `@/` 别名；以入口组件同名符号导入却解析不到
   登记入口的说明符**硬失败**（别名／包路径等未登记形态不得让调用点同时躲过 F 与 G）。
   入口源码在分析前先经**引号感知**的逐字扫描器：注释（HTML／块／行尾 `//`）清零，字符串与模板字面量的
   **内容**掩码——注释或字面量里的「委托渲染」「登记表解析」都不是实现，而掩码视图与原文等长，
   需要真值的断言（固定轴入口 id、绑定标识符）按对齐下标回原文取回。开标签属性块同样**引号感知地**取到真正的
-  `>`（属性值里的 `>`／`>=` 不得截断标签）；薄入口与权威暴露的槽位必须是**静态具名槽**且受登记表约束
-  （默认槽与 `:name` 动态槽名硬失败）；入口说明符按**末段**识别，改名导入必须显式登记，动态 `import()` 命中入口即硬失败。
-- **Python 守卫升级** `scripts/verify/frontend_product_page_header_guard.py`：固定档位单一来源检查（不得硬编码、
-  不得绑定字符串字面量、**绑定常量必须由本入口 id 解析**）、薄入口与权威均不得 `$attrs`、
+  `>`（属性值里的 `>`／`>=` 不得截断标签）；模板注释里的动态绑定/标签不算调用点（否则是**假失败**）；
+  薄入口与权威暴露的槽位必须是**静态具名槽**且受登记表约束（默认槽与 `:name` 动态槽名硬失败，
+  单引号与双引号具名槽都合法）；薄入口的声明面只承认**字面量类型**的 `defineProps<{ … }>`——
+  `props: { … }`（Options API）与非字面量 `defineProps<T>` 无法静态枚举，一律**硬失败**而不是静默放行；
+  入口说明符按**末段**识别，改名导入必须显式登记，动态 `import()`／`require()` 命中入口（含双引号与模板字面量说明符）即硬失败。
+  不得绑定字符串字面量、**绑定常量必须由本入口 id 解析**）、薄入口与权威均不得 `$attrs`／`useAttrs()`／`attrs`、
   登记表必须包含全部入口路径、入口契约测试必须**以未被注释的 recipe 行**仍接在
   `verify.frontend.product_page_header.unit` 上（按 Makefile 结构取目标块并剔除以 `#` 开头的行，
   防止「注释掉烘焙／执行行、保留文件名」的静默摘除）；另要求接线目标**只定义一次**（重复目标会让后续 recipe
   覆盖被守卫的那一份）、且该目标必须仍是 `verify.frontend.quick.gate` 与 `verify.frontend.release.unit` 的前置
-  （门禁挂点本身也会被静默摘除）；三条 recipe 必须**真的执行**——先剔除 `#` 注释与输出重定向，再要求
-  首个 token 就是该程序（`@echo <整条命令行>`／`@node --version # <文件名>` 这类伪命令不算）；固定档位相关检查
-  同样先经引号感知的注释剥离。
-  新增 **20** 条负例单元测试（14 → **34 例**）。
+  （门禁挂点本身也会被静默摘除）；三条 recipe 必须**真的按预期形状执行**——先剔除 `#` 注释后按
+  `;`／`&&`／`||`／`|`／`&` 切段，要求存在某一段「首 token 就是该程序」且「其后紧跟的前 N 个 token 与预期参数
+  **逐个相等且同序**」（`@echo <整条命令行>`／`@node --version # <文件名>`／`@node --version <文件名>`／
+  `@node --version; echo <文件名>` 这类伪命令与 shell 链式诱饵都不算）；固定档位相关检查同样先经引号感知的注释剥离。
+  新增 **26** 条负例单元测试（14 → **40 例**）。
 
 ## 4. 入口决策表（摘要）
 
@@ -90,12 +95,12 @@ Compose/profile、端口或凭据；不新增渲染主链。
 | 层 | 入口 | 结果 |
 | --- | --- | --- |
 | 入口契约 | `product_page_header_adapter_contract_test.ts` | **PASS** `entries=4 axes=15 call_sites=6 direct_consumers=3` |
-| 守卫 | `verify.frontend.product_page_header.unit` | **PASS**（Node 模型 28 例；契约测试；守卫单测 **34 例**；守卫脚本 `adapters=3`） |
+| 守卫 | `verify.frontend.product_page_header.unit` | **PASS**（Node 模型 28 例；契约测试；守卫单测 **40 例**；守卫脚本 `adapters=3`） |
 | 取值呈现 | `scripts/verify/frontend_localized_display_contract_test.ts` | **PASS** `sources=686 consumers=18` |
 | 静态 | `lint:src` | **PASS**（0 error／39 条既有风格 warning） |
 | 类型 | `typecheck:strict` | **PASS** |
 
-**门禁非空洞实证（影子副本 59 项注入，全部 CAUGHT）**：除首批形态（调用方传未声明属性／薄入口少转发声明轴／
+**门禁非空洞实证（影子副本 80 项注入，全部 CAUGHT；另有 4 项「假失败防线」必须仍 PASS）**：除首批形态（调用方传未声明属性／薄入口少转发声明轴／
 薄入口自建 `h1`／薄入口自建 `header`／未登记的权威直接消费者／权威新增 prop 未登记／薄入口新增未登记输入／
 薄入口硬编码固定轴／登记表漏某入口一条轴决策／受管例外失去对权威的委托／薄入口删掉固定轴解析调用／
 `not_exposed` 不给理由）之外，第二轮复核点名的**全部既有盲区**都被同一批注入覆盖并抓到：
@@ -106,6 +111,13 @@ kebab 标签形态（`<page-header :bogus-attr="1">`）、barrel 具名导入的
 `{{ '/*' }}` 字符串注释符诱饵（契约测试与守卫两侧）、默认槽／动态槽名／单引号槽名、权威默认槽、
 改名默认导入（可解析与不可解析说明符两种）、动态 `import()` 入口、行尾 `//`／双引号／模板字面量三种常量诱饵、
 字符串里的假模板委托，以及 recipe 侧的 `@echo <整条命令行>`／`@node --version # <文件名>`／`@true # <文件名> --bundle`。
+第四轮复核点名的**绕过与假失败**也都纳入同一批矩阵：`$attrs` 之外的 `useAttrs()`／`attrs` 兜底转发、权威标签自身的 `v-bind` 对象展开、
+Options API `props: { … }` 与非字面量 `defineProps<T>`、`:is` 的 `=` 两侧空白变体与静态 `is="X"`、模板字面量 `:is`、
+双引号／`require()` 动态说明符，以及 recipe 伪命令与 shell 链式诱饵（`@node --version <文件>`、`@python3 -c "pass"; echo <文件>`、
+`@python3 -m unittest --help <文件>`、`@esbuild --version <文件> --bundle`、`;`／`&&` 后接 `echo`）共 **17 项新注入**，全部 CAUGHT
+（原 59 ＋ 17 ＝ 76 项注入）。
+反向的**假失败防线** 4 项同时锁定为 STILL-PASS：模板注释里的动态绑定不得失败、单引号静态具名槽必须合法、
+真实步骤尾部的 `|| true` 与 `2>/dev/null` 仍算真实执行（76 ＋ 4 ＝ 80，即矩阵总数）。
 每例在 `/tmp` 影子副本上注入并重跑（esbuild 就地重烘焙，保证登记表改动也被覆盖），工作树文件未被修改。
 
 `KanbanPage` 死属性的实证：改前 `git show de9a230d:...KanbanPage.vue` 的 `PageHeader` 绑定为 **9 条属性**
@@ -119,20 +131,30 @@ kebab 标签形态（`<page-header :bogus-attr="1">`）、barrel 具名导入的
 - **`breadcrumb`／`variant` 无任何入口转发**：同上，登记表逐条给出理由。
 - **`ContractFormProductHeader` 的 365 行领域内容**（契约动作证据、原生状态栏、移动端动作结算）不在本批收口：
   它需要领域面自己的批次；本批只声明它是**受管例外**且必须继续委托权威渲染。
-- **门禁不是 AST 分析**：下面**已登记的边界**全部有注入实证（59/59 CAUGHT），**仍未静态覆盖的形态**另列如下，两者不得混为一谈：
+- **门禁不是 AST 分析**：下面**已登记的边界**全部有注入实证（80/80 CAUGHT，另有 4 项假失败防线锁定 STILL-PASS），**仍未静态覆盖的形态**另列如下，两者不得混为一谈：
   - 调用点解析覆盖默认导入、具名导入与 barrel 再导出，另覆盖相对路径与 `@/` 别名；标签覆盖 PascalCase 与 kebab；
     属性名归一到 Vue 实际输入名（`:x` ≡ `v-bind:x`，`v-model` → `modelValue`）；调用点集合被**钉死**为 6 个
     （`ContractFormPage`／`KanbanPage`／`ContractFormProductHeader`／`ApiKeyManagementView`／`NotFoundView`／
     `BusinessConfigContextBar`），新增或改形都必须先改 `KNOWN_CALL_SITES`。
-  - `<component :is>`（含大写 `Component`）动态渲染已登记入口、对已登记入口使用 `v-bind="obj"`、以及入口用
-    `$attrs` 兜底转发，三者都**静态不可枚举**，因此被设计为**硬失败**（要求显式登记），而不是静默放行。
+  - `<component :is>`（含大写 `Component`、含静态 `is="X"` 与 `:is = "X"` 空白变体）动态渲染已登记入口、
+    对已登记入口（**含权威标签自身**）使用 `v-bind="obj"`、以及入口用 `$attrs`／`useAttrs()`／`attrs` 兜底转发，
+    都**静态不可枚举**，因此被设计为**硬失败**（要求显式登记），而不是静默放行。
+  - 薄入口的声明面只承认**字面量类型**的 `defineProps<{ … }>`：`props: { … }`（Options API）与非字面量
+    `defineProps<T>`（类型别名／交叉类型）无法静态枚举，同样**硬失败**——否则「声明面 ⊆ 登记面」会整体空转，
+    薄入口可静默新增未登记输入。槽位断言对**单引号与双引号具名槽一视同仁**（单引号是合法的静态具名槽，
+    不得假失败），模板注释里的标签／动态绑定同样不算调用点（不得假失败）。
   - **仍未静态覆盖的形态（如实登记，逐条）**：①`v-if`／`v-show` 门控掉的真实渲染分支；②把输入名拼在运行时
     字符串里再 `v-bind` 展开；③需要数据流分析才能判定的间接转发（例如把 prop 名从对象键推导出来）；
     ④门禁自身的挂点仍可被有意编辑（本批已把「recipe 行」与「`quick.gate`／`release.unit` 前置」两处都纳入断言，
     但无法阻止有人同时改 recipe 与断言）；⑤受管例外入口的领域属性面（见上）；⑥计算出的说明符（`import(path)`
     或 `v-bind:is` 里的变量）在解析阶段不可知——工具链只对**字面量**说明符生效，因此运行期拼出的入口路径
-    仍需人工评审；⑦配方行只接受「首个 token 就是该程序」的形态：换成 `cd x && esbuild …`、`$(ESBUILD)` 变量
-    中继等**同样能执行**的写法会**假失败**（安全方向，但需要显式登记才能通过）；⑧静态不可枚举的形态
+    仍需人工评审；⑦配方行的形状判定是「按 `;`／`&&`／`||`／`|`／`&` 切段后，存在某段**首 token 就是该程序**
+    且**紧随的前 N 个参数逐个相等且同序**」：这挡住了 `@echo <整条命令行>`／`@node --version <文件>`／
+    `@node --version; echo <文件>`／`@python3 -c '…'; echo unittest <文件>`／`@python3 -m unittest --help <文件>`／
+    `@esbuild --version <文件> --bundle` 这类伪命令与链式诱饵（`|| true`／`2>/dev/null` 这类真实步骤的尾部修饰
+    仍被接受，不再假失败）；代价是若干**同样能执行但换了形状**的写法会**假失败**（安全方向，需要显式登记才能通过）：
+    `$(ESBUILD)` 变量中继、`sh -c '…'` 包装、把 `--bundle` 等参数换序，以及 `cd <子目录> && esbuild …` 后
+    参数变成**相对新 cwd 的路径**（若 `cd` 后仍用仓库根相对路径调用则照旧通过）；⑧静态不可枚举的形态
     （动态组件／对象展开／动态 `import()`／改名导入）一律**硬失败**，代价是任何新增的合法形态都必须先改门禁。
     运行态回归的最后一道网是 `verify.frontend.product_page_header.browser`，它**不在** `quick.gate` 内，
     本批亦无 `local.dev` 抽验。
@@ -153,13 +175,14 @@ kebab 标签形态（`<page-header :bogus-attr="1">`）、barrel 具名导入的
   已在 `frontend_localized_display_contract_test.ts` 中以**正锁**（缺一即失败）登记，任何漂移都必须重新决策。
 - 仍未做（下一批候选）：①上述文件**并入权威**（需要产品措辞决定 ＋ 运行态抽验）；②`normalizeFieldType` 对非字符串
   `ttype` 的越契约输入收紧为 `string`；③登记式约束从「按文件成员放行」改为「按内容指纹锁定」；④13 个并行组件族
-  权威边界声明；⑤权限判定单一权威。
-- Next Step：冻结本批 HEAD → L1 → exact-head `ci.local.quick` 回执 → 独立只读复核（A／B／A′／B′／A″／B″ 六轮）→ 显式合并授权 →
+  权威边界声明；⑤权限判定单一权威；⑥`make/codex.mk` 里关于「四门靠 `workflow_dispatch`」的注释与实际
+  `pull_request` 事件路径不一致，属下一批的决策项（本批按 PR 事件路径执行，未改该注释）。
+- Next Step：冻结本批 HEAD → L1 → exact-head `ci.local.quick` 回执 → 独立只读复核（A／B → A′／B′ → A″／B″ → A‴／B‴ 共 8 次）→ 显式合并授权 →
   `make pr.push`／`pr.create`／`pr.ready`／`pr.merge` → 主仓库 `make main.sync` → `make branch.cleanup.feature`。
 
-## 8. 四轮独立只读复核与修订（对 `0045c110`／`fe7f0fb1`／`d93bb013`）
+## 8. 独立只读复核与修订（对 `0045c110`／`fe7f0fb1`／`d93bb013`／`2f5b2c94`）
 
-四轮复核（A／B／A′／B′／A″／B″）均对本批**产品代码**给出安全结论（无能力回退、无新增类型错误、L5 回执真实、
+四轮共 8 次复核（A／B → A′／B′ → A″／B″ → A‴／B‴）均对本批**产品代码**给出安全结论（无能力回退、无新增类型错误、L5 回执真实、
 `PRODUCT_PAGE_HEADER_DIRECT_CONSUMERS` 与真实 import 集合完全一致），且都在 base 上逐字复现了三项既有失败。
 **无 S0／S1**；问题集中在**门禁强度**与**文档数字**：
 
@@ -193,11 +216,22 @@ kebab 标签形态（`<page-header :bogus-attr="1">`）、barrel 具名导入的
 | Round B″ S3-C | 薄入口的默认槽／动态槽名无任何约束 | 槽位约束改为「只接受静态具名槽」，默认槽与 `:name` **硬失败**；权威侧同样钉死；注入 A4／E4／E5／E6 覆盖 |
 | Round B″ S3-D | §6 标题「已知边界已全部显式登记」与紧随其后的「仍未静态覆盖」自相矛盾 | §6 标题改写为「已登记的边界有注入实证／仍未覆盖的形态逐条另列」，并把第三轮实证形态补进残限 |
 | Round B″ S4-B / Round A″ S4-2 | 「39 项注入全部 CAUGHT」与「已知边界已全部登记」措辞过宽 | 矩阵扩到 **59 项**（8 类新形态）并全部 CAUGHT；措辞按「已登记边界」限定 |
+| Round A‴ B-1 | `useAttrs()`／`getCurrentInstance().attrs` 可绕过「薄入口不得兜底转发未登记轴」，而薄入口又不在 F1 的 `v-bind="obj"` 扫描面内 | A3 升级为 `$attrs`／`useAttrs()`／`attrs` **三者等效硬失败**，覆盖权威与全部登记入口；新增 F4 钉住**权威标签自身**的对象展开；注入 B5／B5g／B6 覆盖 |
+| Round A‴ B-2 / Round B‴ B-3 | recipe 判定可被 `;`／`&&` 链式诱饵绕过（`@node --version; echo <文件名>`、`@node <real> || true`、`@echo`），并与文档 §6⑦ 自述矛盾 | `_is_real_command` 改写为 `_matches_recipe`：按 `;`／`&&`／`||`／`|`／`&` 切段后要求「某段首 token 就是该程序 ＋ 紧随参数**逐个相等且同序**」；注入 W11／W12／W13／W14／W15／W16／W17 覆盖；文档 §6⑦ 按切段规则重写 |
+| Round A‴ B-3 / Round B‴ B-2 | F3 只认单引号动态说明符 → 双引号／模板字面量 `import("…")` 与 `require()` 完全不扫 | F3 改为**引号不敏感**并覆盖 `require`；注入 F18／F19 覆盖 |
+| Round B‴ B-1 | F1 的 `:is` 正则不允许 `=` 两侧空白 → `:is = "ScPageHeader"` 绕过 | F1 改为 `=` 两侧空白可选、引号不敏感，并覆盖静态 `is="X"`；注入 F20／F21／F22 覆盖 |
+| Round B‴ B-4 | `declaredPropsOf` 只解析 `defineProps<{…}>`：同文件并存 Options API `props: {…}` 或 `defineProps<T>()` 可静默新增未登记输入 | 只承认**恰好一处**字面量 `defineProps<{ … }>`；`props: {` 与非字面量 `defineProps<` 一律硬失败；注入 E7／E8 覆盖 |
+| Round A‴ B-4（理论项） | 改名导入 ＋ 非入口 basename 说明符仍不可静态判定 | 维持「解析不到入口即硬失败」＋人工评审，如实登记为残限（未新增机制） |
+| Round B‴ B-5（S4） | F1 走原文 → 模板注释里的 `<component :is>` 是**假失败** | F 循环改走 `stripComments`（模板注释里的标签不再是调用点）；注入 N1 锁定 STILL-PASS |
+| Round B‴ B-6（S4） | 槽断言硬编码 `name="` → `<slot name='actions' />`（合法）被**假失败** | 槽位匹配改为**引号不敏感**；注入 N2 锁定 STILL-PASS |
+| Round B‴ B-7（S4） | D 断言过严（`resolve…(`page`)`／字符串拼接／`let` 声明会误判） | **接受为安全方向，不改**（如实登记，不掩盖） |
+| Round B‴ O-1（过程） | 复核期间观察到 3 个门禁文件被并发改动（即本轮 A‴／B‴ 修订），HEAD/tree 未动 | 第四轮修订提交后**重新冻结并重绑 L1＋L5**，再以新 head 进入第五轮复核 |
 
-修订后重跑：`verify.frontend.product_page_header.unit`（模型 28 例 ＋ 契约测试 `call_sites=6` ＋ 守卫单测 34 例 ＋ 守卫
+修订后重跑：`verify.frontend.product_page_header.unit`（模型 28 例 ＋ 契约测试 `call_sites=6` ＋ 守卫单测 40 例 ＋ 守卫
 `adapters=3`）、`verify.frontend.localized_display.unit`、`navigation_shell`／`product_page_pattern`／
 `page_pattern_reference_parity` 定向、`lint:src`（0 error／39 warning）、`typecheck:strict`、全量 `vue-tsc --noEmit`
-（仍 32 条、文件集合与 base 一致；全部修订未触碰任何 `src` 文件）、L1、exact-head L5 回执，以及影子副本 59 项注入矩阵。
+（仍 32 条、文件集合与 base 一致；全部修订未触碰任何 `src` 文件）、L1、exact-head L5 回执，以及影子副本 80 项注入矩阵
+（另有 4 项假失败防线锁定 STILL-PASS）。
 
 **已知让步（Round B′ 确认可接受，仍如实登记）**：受管例外入口 `ContractFormPage → ContractFormProductHeader`
 传约 55 条领域属性，因该入口是 `exception_implementation` 而跳过「属性 ⊆ 登记轴」比对，故其拼写错误的 prop
