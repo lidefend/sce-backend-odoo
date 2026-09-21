@@ -1,4 +1,21 @@
 import type { FieldDescriptor } from '@sc/schema';
+import {
+  ATTACHMENT_REFERENCE_URL_SOURCE,
+  FIELD_VALUE_EMPTY_TEXT,
+  FIELD_VALUE_FALSE_TEXT,
+  FIELD_VALUE_TRUE_TEXT,
+  containsAttachmentReference,
+  containsAttachmentReferenceIn,
+  formatNumericFieldValue,
+  formatTemporalFieldValue,
+  isEmptyFieldValue,
+  isBooleanFieldType,
+  isNumericFieldType,
+  isScalarRelationFieldType,
+  isSelectionFieldType,
+  isTemporalFieldType,
+  normalizeFieldType,
+} from './fieldSemantics.ts';
 
 export type DisplayFormatOptions = {
   emptyText?: string;
@@ -9,9 +26,9 @@ export type DisplayFormatOptions = {
 };
 
 const DEFAULT_OPTIONS: Required<DisplayFormatOptions> = {
-  emptyText: '-',
-  booleanTrueText: '是',
-  booleanFalseText: '否',
+  emptyText: FIELD_VALUE_EMPTY_TEXT,
+  booleanTrueText: FIELD_VALUE_TRUE_TEXT,
+  booleanFalseText: FIELD_VALUE_FALSE_TEXT,
   locale: '',
   fallbackLocales: ['zh_CN', 'en_US'],
 };
@@ -129,15 +146,6 @@ export function resolveLocalizedDisplayValue(
   return selectLocalizedMappingValue(mapping, options);
 }
 
-function numericValue(value: unknown): number | null {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value !== 'string') return null;
-  const normalized = value.replace(/,/g, '').trim();
-  if (!normalized) return null;
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
 function relationalTupleDisplayValue(
   value: unknown,
   options: Required<DisplayFormatOptions>,
@@ -163,7 +171,7 @@ export function parseAttachmentReferenceLinks(value: unknown): Array<{ name: str
   const rawItems = Array.isArray(value) ? value.map((item) => String(item ?? '')) : [String(value ?? '')];
   const seen = new Set<string>();
   const links: Array<{ name: string; url: string }> = [];
-  const urlStartPattern = '(?:legacy-file-id|legacy-file|https?|file):\\/\\/|\\/web\\/content\\/';
+  const urlStartPattern = ATTACHMENT_REFERENCE_URL_SOURCE;
   const itemBoundary = new RegExp(`\\s+(?=[^\\s|]+\\s+\\|\\s+(?:${urlStartPattern}))`, 'i');
   const itemPattern = new RegExp(`^(.*?)\\s+\\|\\s+((?:${urlStartPattern}).+)$`, 'i');
 
@@ -191,14 +199,14 @@ export function formatDisplayValue(
   options?: DisplayFormatOptions,
 ): string {
   const normalized = normalizeOptions(options);
-  const fieldType = field?.ttype || field?.type;
+  const fieldType = normalizeFieldType(field);
   value = resolveLocalizedDisplayValue(value, normalized);
 
-  if (value === null || value === undefined || value === '') {
+  if (isEmptyFieldValue(value)) {
     return normalized.emptyText;
   }
 
-  if (fieldType === 'boolean') {
+  if (isBooleanFieldType(fieldType)) {
     return value ? normalized.booleanTrueText : normalized.booleanFalseText;
   }
 
@@ -206,22 +214,23 @@ export function formatDisplayValue(
     return value ? String(value) : normalized.emptyText;
   }
 
-  if (fieldType === 'selection' && Array.isArray(field?.selection)) {
+  if (isTemporalFieldType(fieldType)) {
+    if (value === false) return normalized.emptyText;
+    const temporal = formatTemporalFieldValue(value, 'full');
+    if (temporal) return temporal;
+  }
+
+  if (isSelectionFieldType(fieldType) && Array.isArray(field?.selection)) {
     const match = field.selection.find((item) => item[0] === value);
     return match ? String(match[1]) : String(value);
   }
 
-  if (fieldType === 'integer' || fieldType === 'float' || fieldType === 'monetary') {
-    const parsed = numericValue(value);
-    if (parsed !== null) {
-      return parsed.toLocaleString('zh-CN', {
-        maximumFractionDigits: fieldType === 'integer' ? 0 : 2,
-        minimumFractionDigits: fieldType === 'integer' ? 0 : 2,
-      });
-    }
+  if (isNumericFieldType(fieldType)) {
+    const formatted = formatNumericFieldValue(value, fieldType);
+    if (formatted !== null) return formatted;
   }
 
-  if (fieldType === 'many2one' && Array.isArray(value)) {
+  if (isScalarRelationFieldType(fieldType) && Array.isArray(value)) {
     const relationalLabel = relationalTupleDisplayValue(value, normalized);
     if (relationalLabel !== null) return relationalLabel;
     if (value[0] != null) {
@@ -237,7 +246,7 @@ export function formatDisplayValue(
     const relationalLabel = relationalTupleDisplayValue(value, normalized);
     if (relationalLabel !== null) return relationalLabel;
     const attachmentText = formatAttachmentReferenceValue(value);
-    if (attachmentText && value.some((item) => /\|\s*(?:(?:legacy-file-id|legacy-file|https?|file):\/\/|\/web\/content\/)/i.test(String(item ?? '')))) {
+    if (attachmentText && containsAttachmentReferenceIn(value)) {
       return attachmentText;
     }
     return value.map((item) => String(item)).join(', ');
@@ -249,7 +258,7 @@ export function formatDisplayValue(
 
   const rawText = stripInternalMigrationMetadata(String(value));
   if (!rawText) return normalized.emptyText;
-  if (/\|\s*(?:(?:legacy-file-id|legacy-file|https?|file):\/\/|\/web\/content\/)/i.test(rawText)) {
+  if (containsAttachmentReference(rawText)) {
     return formatAttachmentReferenceValue(rawText) || rawText;
   }
   return rawText;

@@ -13,6 +13,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { FIELD_VALUE_EMPTY_TEXT } from '../../../utils/fieldSemantics.ts';
 import type { PageOrchestrationBlock } from '../../../app/pageOrchestration';
 import ScTable from '../../design-system/ScTable.vue';
 import ScEmptyState from '../../design-system/ScEmptyState.vue';
@@ -59,7 +60,7 @@ function columnLabel(col: string, index: number) {
 }
 
 function stringify(value: unknown) {
-  if (value === null || value === undefined) return '--';
+  if (value === null || value === undefined) return FIELD_VALUE_EMPTY_TEXT;
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);
 }

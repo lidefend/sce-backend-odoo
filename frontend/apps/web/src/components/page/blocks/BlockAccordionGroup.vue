@@ -14,6 +14,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { FIELD_VALUE_EMPTY_TEXT } from '../../../utils/fieldSemantics.ts';
 import type { PageOrchestrationBlock } from '../../../app/pageOrchestration';
 import ScEmptyState from '../../design-system/ScEmptyState.vue';
 import ScDisclosure from '../../design-system/ScDisclosure.vue';
@@ -39,7 +40,7 @@ const rows = computed(() => {
   return Object.entries(props.dataset as Record<string, unknown>).slice(0, 8).map(([key, value]) => ({
     key,
     title: key,
-    description: typeof value === 'object' ? JSON.stringify(value) : String(value ?? '--'),
+    description: typeof value === 'object' ? JSON.stringify(value) : String(value ?? FIELD_VALUE_EMPTY_TEXT),
   }));
 });
 </script>

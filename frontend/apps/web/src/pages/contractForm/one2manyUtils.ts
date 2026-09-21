@@ -1,4 +1,5 @@
 import { buildOne2ManyInlineCommands } from '../../app/x2manyCommands';
+import { FIELD_VALUE_FALSE_TEXT, FIELD_VALUE_TRUE_TEXT } from '../../utils/fieldSemantics.ts';
 import { fieldType, fromDatetimeInputValue, normalizeRelationIds, toDateInputValue, toDatetimeInputValue } from './fieldUtils';
 import type { One2ManyColumn, One2ManyInlineRow } from './types';
 import type { FieldDescriptor } from '@sc/schema';
@@ -649,7 +650,7 @@ export function one2manyColumnDisplayValue(column: One2ManyColumn, value: unknow
       maximumFractionDigits: ttype === 'integer' ? 0 : 6,
     }).format(ttype === 'integer' ? Math.trunc(numeric) : numeric);
   }
-  if (ttype === 'boolean') return value ? '是' : '否';
+  if (ttype === 'boolean') return value ? FIELD_VALUE_TRUE_TEXT : FIELD_VALUE_FALSE_TEXT;
   if (ttype === 'selection') {
     const option = (column.selection || []).find(([key]) => String(key) === String(value));
     if (option) return String(option[1]);

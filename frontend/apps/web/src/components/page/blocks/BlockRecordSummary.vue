@@ -26,6 +26,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { FIELD_VALUE_EMPTY_TEXT } from '../../../utils/fieldSemantics.ts';
 import type { PageOrchestrationBlock } from '../../../app/pageOrchestration';
 import type { PageBlockActionEvent } from '../../../app/pageOrchestration';
 import ScButton from '../../design-system/ScButton.vue';
@@ -54,7 +55,7 @@ const rows = computed(() => {
     return {
       key: String(row.key || `summary-${index + 1}`),
       label: String(row.label || row.title || `项 ${index + 1}`),
-      value: rawValue === null || rawValue === undefined || typeof rawValue === 'object' ? '--' : String(rawValue),
+      value: rawValue === null || rawValue === undefined || typeof rawValue === 'object' ? FIELD_VALUE_EMPTY_TEXT : String(rawValue),
     };
   });
 });

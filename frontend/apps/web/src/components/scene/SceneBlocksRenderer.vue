@@ -148,6 +148,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { FIELD_VALUE_EMPTY_TEXT } from '../../utils/fieldSemantics.ts';
 import ScButton from '../design-system/ScButton.vue';
 
 type SceneBlockAction = {
@@ -249,7 +250,7 @@ function overviewItems(block: SceneBlock) {
     .map((item) => ({
       key: String(item.key || item.label || '').trim(),
       label: String(item.label || item.key || '').trim(),
-      value: String(item.value ?? item.count ?? '--').trim(),
+      value: String(item.value ?? item.count ?? FIELD_VALUE_EMPTY_TEXT).trim(),
     }))
     .filter((item) => item.key);
 }

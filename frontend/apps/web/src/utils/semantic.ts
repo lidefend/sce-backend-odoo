@@ -1,3 +1,10 @@
+import {
+  FIELD_VALUE_EMPTY_TEXT,
+  FIELD_VALUE_FALSE_TEXT,
+  FIELD_VALUE_TRUE_TEXT,
+  isEmptyFieldValue,
+} from './fieldSemantics.ts';
+
 export type SemanticTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info';
 
 type SemanticCell = {
@@ -46,7 +53,7 @@ export function semanticStatus(value: unknown): SemanticCell {
     ? (value.length > 1 ? value[1] : value[0])
     : value;
   const raw = String(normalizedValue ?? '').trim();
-  if (!raw) return { text: '--', tone: 'neutral' };
+  if (!raw) return { text: FIELD_VALUE_EMPTY_TEXT, tone: 'neutral' };
   const key = raw.toLowerCase();
   if (raw.includes('风险') || raw.includes('逾期') || raw.includes('异常')) {
     return { text: raw, tone: 'danger' };
@@ -64,14 +71,14 @@ export function semanticStatus(value: unknown): SemanticCell {
 }
 
 export function semanticBoolean(value: unknown): string {
-  if (value === true || value === 1 || String(value).toLowerCase() === 'true') return '是';
-  if (value === false || value === 0 || String(value).toLowerCase() === 'false') return '否';
-  return '--';
+  if (value === true || value === 1 || String(value).toLowerCase() === 'true') return FIELD_VALUE_TRUE_TEXT;
+  if (value === false || value === 0 || String(value).toLowerCase() === 'false') return FIELD_VALUE_FALSE_TEXT;
+  return FIELD_VALUE_EMPTY_TEXT;
 }
 
 export function formatAmountCN(value: unknown): string {
   const amount = Number(value || 0);
-  if (!Number.isFinite(amount)) return '--';
+  if (!Number.isFinite(amount)) return FIELD_VALUE_EMPTY_TEXT;
   const abs = Math.abs(amount);
   if (abs >= 100000000) return `${(amount / 100000000).toFixed(2)}亿`;
   if (abs >= 10000) return `${(amount / 10000).toFixed(2)}万`;
@@ -106,8 +113,8 @@ export function semanticValueByField(field: string, value: unknown): SemanticCel
       return { text: String(value[0]), tone: 'neutral' };
     }
   }
-  if (value === null || value === undefined || value === '') {
-    return { text: '--', tone: 'neutral' };
+  if (isEmptyFieldValue(value)) {
+    return { text: FIELD_VALUE_EMPTY_TEXT, tone: 'neutral' };
   }
   return { text: String(value), tone: 'neutral' };
 }
