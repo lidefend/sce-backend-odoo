@@ -2183,5 +2183,48 @@
     },
     "branchCleanup": "fix/node-automation-syntax-gate-v1 was deleted locally and on origin through make branch.cleanup.feature after the exact-head squash check (the branch head 22518a2a is not an ancestor of the mainline under squash merge, so the branch was verified against merged PR #517 by exact head); the candidate worktree was detached to cdb14d41 and kept",
     "nextRoundAudit": "no further audit is required for this gate; the one remaining open decision is the .js widening recorded in uc4G16FollowupSyntaxGate.residualKnownLimits[1], which needs an explicit node-version floor and a module-type decision before .js files can join the sweep"
+  },
+  "uc4G16JsCorpusExpansion": {
+    "recordedAt": "2026-09-21",
+    "round": "U-C4 G16 .js corpus widening decision and implementation (P4 tooling round)",
+    "branch": "feature/uc4-g16-node-syntax-js-corpus-v1",
+    "mainlineBase": "ac9133ed04c82c54cb3567881675485b4d9360db",
+    "closesResidual": {
+      "tracked_js_not_covered": "closes uc4G16FollowupSyntaxGate.residualKnownLimits[1]: the 201 tracked .js files now belong to the sweep, and the module-type decision it asked for is recorded under decision.parseContract; the earlier record that 0 of the 201 fail on node 22.17.0 and 24.16.0 stays true but its method (node --check <file>.js) was vacuous for the 31 files the runtime resolves to a module, so the discriminating measurement is the forced-parse classification in measuredEvidence",
+      "ci_node_not_pinned": "closes uc4G16FollowupSyntaxGate.residualKnownLimits[2]: the job that runs test.unit/test.contract pins actions/setup-node to node 22.17.0 instead of inheriting the runner image runtime"
+    },
+    "decision": {
+      "corpus": "adopt every tracked .js file through the flat pattern *.js, with no path carve-out: the sweep stays a first-party parse-only observation, exactly like the existing python_syntax_check.py call over addons/smart_core and addons/smart_construction_core, so pulling addons/**/static/src/** (P1 product assets) and addons_external/oca_server_ux/** into a P4 gate crosses no layer and modifies no product file; a path carve-out would also reintroduce the :(exclude) style escape that review r2d rejected for the .mjs/.cjs corpus",
+      "parseContract": "node --check <file>.js is NOT sufficient: it exits 0 without parsing the file whenever the runtime resolves the .js file to an ES module (by content detection), so the widening would have produced vacuous coverage for the 31 .js files that need the module grammar. .js is therefore parsed from stdin with an explicit --input-type, commonjs first and then module, and passes when either parse succeeds (the set the runtime itself accepts, since node retries as a module exactly when the CommonJS parse rejects ES-module syntax); .mjs/.cjs keep the native node --check <file> invocation because their extension declares the format and node does parse them",
+      "runtimeContract": "the .js path needs a runtime that accepts --input-type for both formats; the checker proves that capability once (format_capability_failure) and fails closed with exit 2 and one message naming node 22.17.0 instead of reporting every .js file as broken, and the CI job now pins that version"
+    },
+    "measuredEvidence": {
+      "corpus": "git ls-files -- '*.js' -> 201 tracked files (scripts/verify 161, addons/smart_construction_core 22, frontend/apps/web 8, addons/smart_construction_portal 5, addons_external/oca_server_ux 3, scripts/ops 1, scripts/audit 1); the tracked Node corpus grows 148 -> 349",
+      "parseClassification": "forced parses at node 22.17.0 over the whole .js corpus: 170 files parse as both CommonJS and module, 31 parse only as a module, 0 parse only as CommonJS, 0 fail both",
+      "vacuityMeasurement": "with a deliberately broken module source in tmp/: node --check broken_module.js exits 0 (skipped), node broken_module.js exits 1, and the new checker exits 1 reporting both candidate formats; reproduced on node 22.17.0 and 24.16.0; the same file inside a package.json type=module directory IS parsed and reported by node --check, so the skip is specific to runtime resolution by content detection",
+      "runtimeAvailability": "node 22.17.0 (the repository pin: frontend_release_gate.yml setup-node 22.17.0, demo-ci.yml NODE_BASE_IMAGE node:22.17.0) and node 24.16.0 both accept --input-type=commonjs and --input-type=module; the only CI surface that runs the sweep is professional_quality_gate.yml on ubuntu-latest, whose image ships Node.js 22.23.2 (actions/runner-images Ubuntu2404 and Ubuntu2204 readmes), so the floor held before the pin as well",
+      "sweepCost": "349/349 files pass on node 22.17.0 and 24.16.0; the sweep moves from 148 files / 3.0s to 349 files / 8.9s through roughly 233 node invocations instead of 148 (170 .js files pass on the first CommonJS parse, 31 need the second parse)"
+    },
+    "refinesResidual": {
+      "parse_level_only": "uc4G16FollowupSyntaxGate.residualKnownLimits[3] stays open and gains a .js clause: a .js file passes when either candidate format parses, so a CommonJS-only source such as a sloppy-mode duplicate-parameter function still passes while the module grammar would reject it; named exports and imports are still not validated"
+    },
+    "remainingResiduals": [
+      "the gate guards admission and membership only for the two named make targets; a new sibling target that runs a runner without the sweep is not automatically covered",
+      "node --check is parse-level only, now including .js: either candidate format may satisfy the gate, so module-resolution and export-surface defects stay unobserved",
+      "frontend TypeScript/Vue sources and Odoo .xml/.css assets remain outside this sweep; frontend/apps/web is covered by verify.frontend.lint.src, addons/**/static/src/** .css/.xml are not covered by any parse gate"
+    ],
+    "files": {
+      "scripts/ci/node_syntax_check.py": "NODE_SUFFIXES and TRACKED_PATTERNS gain .js; check_plans() forces the candidate formats for .js and keeps the native file check for .mjs/.cjs; format_capability_failure() proves --input-type support once and fails closed",
+      "scripts/ci/test_node_syntax_check.py": "15 -> 24 tests: pinned literals now include .js, corpus anchors for scripts/verify and the Odoo browser assets, module-only and CommonJS-only .js parse cases, a broken module .js that node --check alone would have skipped, capability-probe cases and a single-message capability failure",
+      ".github/workflows/professional_quality_gate.yml": "pinned actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 with node-version 22.17.0 in the job that runs the sweep",
+      "scripts/ci/test_ci_risk_workflow_contract.py": "contract assertion binding the node pin and its step to professional_quality_gate.yml",
+      "docs/engineering_convergence/complexity_budget_report.md": "regenerated by L1: professional_quality_gate.yml 310 -> 319 lines"
+    },
+    "verification": {
+      "L1": "make ci.delivery.freeze.prepare PASS; the only regenerated tracked artifact is complexity_budget_report.md (one line-count row moved), and ci.generated_evidence.preflight reports every generated artifact current",
+      "L2": "make test.unit test.contract PASS: python syntax 1156 files, node self-test 24 tests, tracked Node sweep 349 files, guards test_ci_risk_workflow_contract.py 12 tests and github_actions_security_guard.py PASS actions=pinned",
+      "not_run": "no Odoo module upgrade, fixture reset, browser journey or deployment is required: this round changes a host-side CI checker, its self-test and one workflow step, and touches no product runtime, module, data or view"
+    },
+    "nextRoundAudit": "post-merge facts (squash head, required checks, push-to-main runs, branch cleanup) belong to the audit round that follows this batch, as with the previous syntax-gate rounds"
   }
 }

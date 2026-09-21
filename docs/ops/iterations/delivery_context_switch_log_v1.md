@@ -10156,3 +10156,40 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   **在原处**订正（常量收窄为保留 `.cjs` 的 144 集合时 14 测试仍全绿＝静默逃逸；丢弃 `.cjs` 的 141 集合当时已被
   历史 `.cjs` 断言拦下）；③**S4-1**：把范围外失败的判据改为上述可判别口径。该修订产生新 HEAD，L1／L2／L5 与
   独立复核按新冻结候选重跑与重绑。
+
+## 2026-09-21 — U-C4 G16 `.js` 扩围决策与实现（P4 工具轮）
+
+- 触发：用户指令「接着推进 .js 扩围决策」（＝上一轮登记在 `uc4G16FollowupSyntaxGate.residualKnownLimits[1]` 的开放决策）。
+- 决策 D1（语料口径）：全部 **201** 个受跟踪 `.js` 以扁平 pattern `*.js` 纳入，**不做任何路径豁免**；受跟踪 Node 语料
+  **148 → 349**。越层担忧不成立：本门只读解析，与既有 `python_syntax_check.py addons/smart_core addons/smart_construction_core …`
+  同构；改用路径豁免等于重引上一轮 r2d 已否掉的 `:(exclude)` 式路径魔法。
+- 决策 D2（解析契约，本轮关键发现）：`node --check <file>.js` 在运行时**按内容探测**判定为 ES module 时**返回 0 且不解析该文件**
+  （实测 node 22.17.0 与 24.16.0：故意写坏的 module 源 `node --check` exit 0、`node <file>` exit 1；同一文件放在
+  `package.json type:module` 目录下 `node --check` 反而正常报错）。故只把 `*.js` 加进 pattern 会给 **31 个仅 module 可解析**的
+  `.js` 造成**空洞覆盖**。实现：`.js` 一律从 stdin 以显式 `--input-type` 解析，**先 `commonjs` 后 `module`**，任一通过即通过
+  （＝运行时自身接受的集合）；`.mjs`/`.cjs` 保持原生 `node --check <file>`。全语料强制解析实测：**170** 两种格式均可解析、
+  **31** 仅 module、**0** 仅 commonjs、**0** 两者皆失败（`node 22.17.0`／`24.16.0` 各跑一遍 349/349 PASS）。
+- 决策 D3（运行时契约）：新增一次性**功能探测** `format_capability_failure()`，不满足即 **fail-closed（exit 2）＋单条消息**
+  点名 node 22.17.0（不是把每个 `.js` 报成语法错）；并给唯一运行本门的 CI 作业（`professional_quality_gate.yml`／`ubuntu-latest`）
+  钉 `actions/setup-node` **22.17.0**（与 `frontend_release_gate.yml`、`demo-ci.yml` 既有钉法一致），把隐含契约显式化——
+  runner 镜像本身已带 Node.js 22.23.2（actions/runner-images Ubuntu2404／Ubuntu2204 readme），钉版前下界亦成立。
+- 代价与边界：sweep **148 → 349** 文件、**3.0s → 8.9s**（约 233 次 node 调用）。`.js` 的「任一候选格式可解析」属**解析级**语义
+  （sloppy-mode 重复参数函数仍判通过），已并入残限第 4 条；TS／Vue 与 `.css`／`.xml` 资产不在本门内
+  （`frontend/apps/web` 由 `verify.frontend.lint.src` 覆盖）。
+- 改动（5 文件 ＝ 3 工具 ＋ 1 契约测试 ＋ 1 生成物）：`scripts/ci/node_syntax_check.py`（`NODE_SUFFIXES`／`TRACKED_PATTERNS` 增 `.js`、
+  `check_plans()` 强制候选格式、能力探测）、`scripts/ci/test_node_syntax_check.py`（**15 → 24** 测试，含「被 `node --check` 跳过
+  的坏 module `.js`」回归用例与语料锚点）、`.github/workflows/professional_quality_gate.yml`（钉 node）、
+  `scripts/ci/test_ci_risk_workflow_contract.py`（钉版契约断言）、`docs/engineering_convergence/complexity_budget_report.md`
+  （L1 重生成：该 workflow 310 → 319 行）。
+- 验证：L1 `make ci.delivery.freeze.prepare` **PASS**；L2 `make test.unit test.contract` **PASS**（Python 语法 1156 文件、
+  Node 自检 **24 tests**、Node sweep **349 files**）；`test_ci_risk_workflow_contract.py` 12 tests PASS、
+  `github_actions_security_guard.py` PASS（actions=pinned）。L5 exact-head `make ci.local.quick` 回执与两轮独立只读复核见本批 PR，
+  并按新冻结候选重绑。
+- 台账口径：新增 `uc4G16JsCorpusExpansion`（决策三项、实证、关闭项、细化项、文件清单、L1／L2 结果与代价）；
+  `uc4G16PublishedAudit` **逐字节不变**；主线计数字段（`count=0`／`entries=[]`／`otherStateConsumers=[]`／
+  `retirementComplete=false`）本轮未改。
+- 残限变化：② 受跟踪 `.js` 未纳入 sweep —— **关闭**；③ 运行本门的 CI 作业未钉 node 版本 —— **关闭**；④ `node --check` 仅解析级
+  —— **保持并细化**（新增 `.js` 条款）；① 本门只约束被点名的两个 make target —— **保持**。（§8.51 的「残限 4 条」表述已在原处
+  加指针指向 §8.52。）
+- Next Step：冻结本批 HEAD → exact-head `make ci.local.quick` → 两轮独立只读复核 → 显式合并授权 → `make pr.merge` →
+  主仓库 `make main.sync` → `make branch.cleanup.feature`。
