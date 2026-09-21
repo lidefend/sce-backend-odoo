@@ -164,6 +164,22 @@ TOPIC_IDENTITIES = {
         ("action_sc_subcontract_register", "view_sc_subcontract_register_form", "menu_sc_product_subcontract_cost_v1"),
         ("action_sc_subcontract_register", "view_sc_subcontract_register_form", "menu_sc_subcontract_register"),
     ),
+    # U-C4 G12: 项目立项 (724 / menu 379) fixes the native create form
+    # `project.project.form.sc.create` (`view_project_create_form`, db view
+    # 1503).  The entry used to consume a declared legacy body that named eleven
+    # sections and 53 field rows, of which nine sections carried no field and 25
+    # fields never reached the page; the batch retires that body and the native
+    # arch carries the four `data-sc-anchor` business sections the entry itself
+    # declared.  The delivered page is therefore the only place the shipped
+    # section identities and the migrated field label can be read, which is what
+    # this read-only route measures.  The quick-create sibling (725) is pinned by
+    # the batch's unit tests instead of a browser route: the governed role's
+    # delivered navigation authority answers it with `NAVIGATION_AUTHORITY_DENIED`,
+    # so a route here would report a blocked surface instead of a measured one.
+    # Read-only; no change set is touched.
+    "project": (
+        ("action_project_initiation", "view_project_create_form", "menu_sc_project_initiation"),
+    ),
 }
 TOPIC_SAMPLE_FIELDS = {
     "invoice": ["direction", "source_kind", "source_origin", "note"],
@@ -178,6 +194,7 @@ TOPIC_SAMPLE_FIELDS = {
     "payroll": ["state", "fact_type", "period_year", "period_month", "legacy_document_no"],
     "context_workspace": ["project_id", "partner_id", "business_date", "note"],
     "usage_performance": ["state", "project_id", "note", "amount", "contract_id"],
+    "project": ["name"],
 }
 # Mechanism assertions for the read-only representative pass.  Names are the
 # registered display copies / canonical sources of the same business fact; the
@@ -362,6 +379,18 @@ TOPIC_REPRESENTATIVE = {
             "sc.equipment.usage": {"name": "sequence"},
         },
     },
+    # U-C4 G12: the 项目立项 create form is the surface this batch rebinds.  The
+    # retired entry body declared eleven sections and 53 field rows while the
+    # delivered page rendered three groups and twelve fields, so the batch moves
+    # the entry's own section identities into the native arch and the same
+    # read-only section-navigation battery is the mechanism assertion: every
+    # 章节入口 must resolve and reveal its target, and the command bar /
+    # navigation / body bands must stay separated at 1088 and 390.  The four
+    # anchors are unconditional in the edit profile, so `record_surface` only
+    # adds the second measured surface - the same entry opened on a governed
+    # sample of its own action - instead of standing in for a conditional
+    # section.  Read-only; no change set is touched and no record is written.
+    "project": {"section_navigation": True, "record_surface": True},
 }
 if topic not in TOPIC_IDENTITIES:
     raise RuntimeError("unregistered formal form topic")
