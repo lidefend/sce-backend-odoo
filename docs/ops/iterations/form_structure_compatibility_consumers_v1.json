@@ -2231,6 +2231,65 @@
       "fix": "the self-test now pins NODE_FORMAT_PROBES literally and requires every forced format to be proven by it; the cost is recorded as 382 node invocations with the breakdown; the section 8.51 pointer states each disposition inline; the contract assertion reads the parsed workflow and asserts the pin step is inside the professional_quality_gate job, is the sole step with that name, carries the pinned action SHA and node-version 22.17.0, has no if guard, and precedes both sweep-running gate steps (all five constructions re-measured as caught in a shadow copy)",
       "reverification": "the fixes move the head, so L1, L2, L5 and both independent rounds are re-run and re-bound against the new frozen candidate; the gate, corpus, decision and residual conclusions are unchanged"
     },
-    "nextRoundAudit": "post-merge facts (squash head, required checks, push-to-main runs, branch cleanup) belong to the audit round that follows this batch, as with the previous syntax-gate rounds"
+    "nextRoundAudit": "recorded by the post-merge audit round in uc4G16JsCorpusExpansionAudit (merged PR #519 with squash head 81346ad4, required checks, push-to-main runs and branch cleanup); the residuals left open there are the two-make-target scope and the parse-level-only semantics, plus three single-owner S4 hardening suggestions for the workflow pin assertion"
+  },
+  "uc4G16JsCorpusExpansionAudit": {
+    "auditedAt": "2026-09-21",
+    "auditRound": "U-C4 G16 .js corpus widening closeout audit (P4 evidence round)",
+    "branch": "audit/uc4-g16-js-corpus-expansion-v1",
+    "auditedMainlineHead": "81346ad4321831b6a7b056fbb4fb46eb00a846b4",
+    "mergedPr": {
+      "number": 519,
+      "squashHead": "81346ad4321831b6a7b056fbb4fb46eb00a846b4",
+      "sourceHead": "45d1c31fbae972f25433b850524180fbdd7d5d72",
+      "tree": "591e08a46e9d29b36c693b0937f178012be90bf1",
+      "base": "ac9133ed04c82c54cb3567881675485b4d9360db",
+      "mergedAt": "2026-09-21T10:17:01Z",
+      "mergeMethod": "squash",
+      "independentReview": "read-only round A' APPROVE and round B' APPROVE, both bound to the frozen source head 45d1c31f (S0/S1/S2 = 0); round A' re-measured the S2-1 constructions (drop the module probe, drop the CommonJS probe, narrow JS_INPUT_TYPES, add an unprobed forced format, swap probe order and payload) and the S4-1 constructions (floating @v4 tag, commented-out version, if: false guard, step moved into another job, step moved after the gate), all FAILED against the baseline green; round B' independently reproduced the five S4-1 constructions and the probe-drop construction in its own shadow copy"
+    },
+    "requiredChecks": [
+      "classify=success",
+      "frontend_release_gate=success",
+      "merge_policy_gate=success",
+      "professional_authorization=success",
+      "professional_quality_gate=success",
+      "public_guard=success",
+      "public_guard_classify=success",
+      "python310_runtime_compatibility=success",
+      "release_candidate_gate=success"
+    ],
+    "skippedChecks": [
+      "classify (release_candidate_gate)",
+      "fast",
+      "wait_for_candidate_checks"
+    ],
+    "postMergeMainRuns": {
+      "head": "81346ad4321831b6a7b056fbb4fb46eb00a846b4",
+      "event": "push to main",
+      "runs": [
+        "merge_policy_gate=success (35587916392)",
+        "professional_quality_gate=success (35587916762)",
+        "public_guard=success (35587916379)",
+        "frontend_release_gate=success (35587916670)"
+      ]
+    },
+    "gateLiveOnMain": {
+      "runOn": "81346ad4321831b6a7b056fbb4fb46eb00a846b4",
+      "sweep": "python3 scripts/ci/node_syntax_check.py -> [OK] Node syntax check passed (349 files), exit 0",
+      "selfTest": "python3 scripts/ci/test_node_syntax_check.py -> Ran 24 tests, OK",
+      "meaning": "the tracked .js corpus is now part of the test.contract entry, so closesResidual.tracked_js_not_covered stays closed on the mainline; this is a read-only re-run of the merged gate, not new acceptance evidence"
+    },
+    "recordCorrections": {
+      "none": "neither post-revision round raised an S3 record correction: both closed with APPROVE and only S4 single-owner hardening suggestions, which are registered under acceptedHardeningSuggestions instead of being silently adopted or dropped",
+      "unchanged": "uc4G16PublishedAudit, uc4G16FollowupSyntaxGate and uc4G16FollowupSyntaxGateAudit are byte-identical; the mainline counter fields count=0 / entries=[] / otherStateConsumers=[] / retirementComplete=false are untouched by this audit round, which changes no consumer"
+    },
+    "acceptedHardeningSuggestions": [
+      "round B' S4-1: the workflow contract asserts with == {'node-version': '22.17.0'}, which is stricter than needed, so a future legitimate extra with key such as cache: would fail the guard spuriously",
+      "round A' S4-2 / round B' S4-2: the same assertion pins the two gate step display names, so a benign step rename fails it",
+      "round A' S4-1 / round B' S4-3: uniqueness is counted per step name only, so a differently named actions/setup-node step added after the pinned one would still pass even though a later setup-node rewrites PATH"
+    ],
+    "branchCleanup": "feature/uc4-g16-node-syntax-js-corpus-v1 was deleted locally and on origin through make branch.cleanup.feature after the exact-head squash check (the source head 45d1c31f is not an ancestor of the mainline under the squash merge, so it was verified against merged PR #519 by exact head); the candidate worktree was detached to 81346ad4 and kept, and its detached tree 591e08a4 equals the merge tree",
+    "nextRoundAudit": "no further audit is required for this batch; the two kept residuals (the gate covers only the two named make targets, and node --check / the .js candidate-format parse are parse-level only) stay registered in uc4G16JsCorpusExpansion, and the three S4 hardening suggestions above are available to a future hardening round if guard precision matters"
   }
 }

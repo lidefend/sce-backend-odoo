@@ -7197,6 +7197,47 @@ L5 exact-head `make ci.local.quick` 与两轮独立只读复核在本轮收口�
 **范围外预存失败（登记为排除项，本轮不修）**：`make verify.product.delivery.governance_truth`（记分板快照陈旧，见 §8.51）
 仍为既有登记项；本轮不刷新记分板、不改 `.agent/**`。
 
-状态（§8.52 时点）：**G16 `.js` 扩围**（P4 工具轮）**实现与 L1／L2 自验通过，待冻结／Quick／PR 收口**｜批次状态：本批自验通过；
+状态（§8.52 时点，已由 §8.53 收口）：**G16 `.js` 扩围**（P4 工具轮）**实现与 L1／L2 自验通过，待冻结／Quick／PR 收口**｜批次状态：本批自验通过；
 集中产品复核结论以产品方登记为准｜未部署｜用户交付未完成｜主线台账 0（`count=0`）｜`otherStateConsumers=[]`｜
 `retirementComplete=false`（其他角色／状态未覆盖）｜受跟踪 `.js` 201 个已纳入语法门**。
+
+### 8.53 收口审计：`.js` 扩围合入核对与残限现状（2026-09-21；**P4 证据轮**；只改台账／本记录／切换日志）
+
+- 触发：台账 `uc4G16JsCorpusExpansion.nextRoundAudit` 的预留项——审计轮记录本批 merged PR、squash head、必检结果
+  与分支清理事实。
+- 合入核对：PR **#519** 以 squash 合入，squash head **`81346ad4…`**（= 台账
+  `uc4G16JsCorpusExpansionAudit.mergedPr.squashHead`）、source head `45d1c31f…`（tree `591e08a4…`）、
+  base `ac9133ed…`，合并时间 2026-09-21T10:17:01Z；**合入树与候选树逐字节相同**。独立只读复核 round A′／B′ 在该
+  source head 上均为 **APPROVE**（S0/S1/S2 = 0）。
+- 必检结果：PR 侧 9 项 pass（`classify`／`frontend_release_gate`／`merge_policy_gate`／`professional_authorization`／
+  `professional_quality_gate`／`public_guard`／`public_guard_classify`／`python310_runtime_compatibility`／
+  `release_candidate_gate`）、3 项 skip（`classify`／`fast`／`wait_for_candidate_checks`）；合入后 mainline push
+  4 个 run 全 **success**（`merge_policy_gate` 35587916392、`professional_quality_gate` 35587916762、
+  `public_guard` 35587916379、`frontend_release_gate` 35587916670）。
+- 合入后实测（只读重跑已合入门禁，**非**新验收证据）：`python3 scripts/ci/node_syntax_check.py` →
+  `[OK] Node syntax check passed (349 files)`（exit 0）；`python3 scripts/ci/test_node_syntax_check.py` →
+  `Ran 24 tests … OK`。
+- 记录订正：本轮两轮复核**均未提出 S3 级订正**（无事实或口径错误需改）。三条**单方守卫精度建议**登记为待收口项，
+  不静默采纳、也不丢弃：①round B′ S4-1——钉版断言的 `with` 采用**严格字典相等**，未来加入合法键（如 `cache:`）
+  会误报；②round A′ S4-2 ＝ round B′ S4-2——同一断言**硬编码**两个跑 sweep 的门步骤显示名，改名即失败；
+  ③round A′ S4-1 ＝ round B′ S4-3——「唯一」**只按同名步骤计数**，若在钉版步骤之后另插一个**不同名**的
+  `actions/setup-node@v4` 仍会通过（后者会改写 PATH）。均为守卫精度问题，非交付物缺陷。另 round A′ 的
+  「新增 `import yaml` 未在 requirements 声明」已排除：base 的 `scripts/ci/generate_contract_structure_fingerprint.py`
+  即已依赖 PyYAML。
+- 台账口径：新增 `uc4G16JsCorpusExpansionAudit`（合入事实、必检与合入后 run、合入后门实测、无订正声明、三条 S4
+  建议、分支清理），其 `nextRoundAudit` 声明本批无需再审；`uc4G16JsCorpusExpansion.nextRoundAudit` 改指回该块；
+  `uc4G16PublishedAudit`／`uc4G16FollowupSyntaxGate`／`uc4G16FollowupSyntaxGateAudit` **逐字节不变**；主线计数字段
+  （`count=0`／`entries=[]`／`otherStateConsumers=[]`／`retirementComplete=false`）本轮未改（本轮无消费者变化）。
+  本提交为**文档类单职责提交**（台账 ＋ 本记录 ＋ 切换日志，路径集合固定为 3），**未触碰**产品代码、契约、
+  测试口径与门禁工具输入。
+- 清理：`feature/uc4-g16-node-syntax-js-corpus-v1` 经 `make branch.cleanup.feature` 本地＋远端删除（squash 合入下按
+  exact-head 与 merged PR #519 核对），候选工作树 detach 到 `81346ad4` 并保留（其 tree `591e08a4` 与合入树相同）。
+- 残限（本轮后状态）：① 本门只约束被点名的两个 make target —— **保持**；② 受跟踪 `.js` 201 个未纳入 sweep ——
+  **已关闭并合入**；③ 运行本门的 CI 作业未钉 node 版本 —— **已关闭并合入**；④ `node --check` 仅解析级
+  （含 `.js`「任一候选格式」条款）—— **保持**；⑤ TS／Vue 与 `.css`／`.xml` 资产不在本门内 —— **保持**。
+- 范围外预存失败（登记为排除项，本轮不修）：`make verify.product.delivery.governance_truth`（记分板快照陈旧，
+  见 §8.51）仍为既有登记项；本轮不刷新记分板、不改 `.agent/**`。
+
+状态：**G16 `.js` 扩围**收口完成（PR #519 已合入 mainline `81346ad4`）**｜批次状态：自验与冻结门禁通过；集中产品复核
+结论以产品方登记为准｜未部署｜用户交付未完成｜主线台账 0（`count=0`）｜`otherStateConsumers=[]`｜
+`retirementComplete=false`（其他角色／状态未覆盖）｜受跟踪 `.js` 201 个的语法门已关闭并合入 mainline**。
