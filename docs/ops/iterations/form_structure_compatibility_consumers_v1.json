@@ -6,252 +6,11 @@
     "operation": "model",
     "renderProfile": "create"
   },
-  "count": 8,
+  "count": 7,
   "fullRescan": false,
   "sourceInventory": "artifacts/form-structure-unification/customer-browser-final/compatibility-consumers.json",
   "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
   "entries": [
-    {
-      "menuXmlid": "smart_construction_core.menu_sc_project_initiation",
-      "label": "新项目立项",
-      "model": "project.project",
-      "actionId": 724,
-      "menuId": 379,
-      "batch": "U-B/U-C",
-      "browserAcceptance": "not_run",
-      "path": "compatibility",
-      "layoutPolicy": "business_config_sections",
-      "actualView": {
-        "model": "project.project",
-        "viewId": 1503
-      },
-      "configuration": {
-        "source": "business_view_orchestration",
-        "ownerLayer": "business_view_orchestration",
-        "businessConfigContracts": [
-          {
-            "id": 139,
-            "name": "project_project_form_structure_v1",
-            "version_no": 1,
-            "status": "published",
-            "source_kind": "published"
-          }
-        ],
-        "resolvedViewId": 1503,
-        "resolvedActionId": 724,
-        "structureDiagnostics": [
-          {
-            "code": "LEGACY_STRUCTURE_KEY_OVERRIDE",
-            "entry": {
-              "model": "project.project",
-              "action_id": 724,
-              "view_id": 1503
-            },
-            "key": "fields",
-            "node": "view_orchestration.views.form.fields",
-            "nodes": [
-              "intake_next_action_display",
-              "intake_blocking_reason_display",
-              "name",
-              "project_code",
-              "short_name",
-              "lifecycle_state",
-              "partner_id",
-              "initiation_date",
-              "project_type_id",
-              "project_environment",
-              "project_category_id",
-              "specialty_type_name",
-              "operation_strategy",
-              "business_nature",
-              "owner_contact",
-              "location",
-              "detail_address",
-              "contract_no",
-              "start_date",
-              "end_date",
-              "project_profile",
-              "project_overview",
-              "project_area",
-              "manager_id",
-              "cost_manager_id",
-              "doc_manager_id",
-              "responsibility_ids",
-              "collaborator_ids",
-              "contract_count",
-              "contract_income_total",
-              "contract_expense_total",
-              "contract_amount",
-              "subcontract_amount",
-              "dashboard_revenue_actual",
-              "dashboard_cost_actual",
-              "dashboard_profit_actual",
-              "dashboard_invoice_amount",
-              "dashboard_payment_in",
-              "dashboard_payment_out",
-              "dashboard_progress_rate",
-              "dashboard_document_completion",
-              "document_count",
-              "document_required_count",
-              "document_missing_count",
-              "analytic_account_id",
-              "company_id",
-              "message_needaction",
-              "display_name",
-              "label_tasks",
-              "tag_ids",
-              "task_ids",
-              "contract_ids",
-              "document_ids",
-              "tender_bid_ids"
-            ],
-            "configuration": {
-              "id": 139,
-              "name": "project_project_form_structure_v1"
-            },
-            "explicit_structure_scope": true,
-            "competing_owners": [
-              {
-                "id": 46,
-                "name": "project_project_form_structure_generated_v1"
-              }
-            ]
-          }
-        ],
-        "compatibilityDependencies": [],
-        "legacyFieldPolicyOverlay": false,
-        "formLayoutOverlay": false,
-        "formStructureAuthority": "entry_semantic_surface",
-        "formPresentationMode": "task",
-        "fieldNames": [
-          "analytic_account_id",
-          "lifecycle_state",
-          "name",
-          "partner_id",
-          "user_id",
-          "date_start",
-          "date",
-          "description",
-          "collaborator_ids",
-          "intake_next_action_display",
-          "intake_blocking_reason_display",
-          "project_code",
-          "short_name",
-          "initiation_date",
-          "project_type_id",
-          "project_environment",
-          "project_category_id",
-          "specialty_type_name",
-          "operation_strategy",
-          "business_nature",
-          "owner_contact",
-          "location",
-          "detail_address",
-          "contract_no",
-          "start_date",
-          "end_date",
-          "project_profile",
-          "project_overview",
-          "project_area",
-          "manager_id",
-          "cost_manager_id",
-          "doc_manager_id",
-          "responsibility_ids"
-        ],
-        "fieldLabels": {
-          "partner_id": "业主单位",
-          "manager_id": "项目负责人",
-          "responsibility_ids": "项目责任分工",
-          "collaborator_ids": "项目协作成员"
-        },
-        "fieldSemanticRoles": {
-          "intake_next_action_display": "task",
-          "intake_blocking_reason_display": "risk"
-        },
-        "sectionSemanticRoles": {
-          "current_task": "task",
-          "intake_risk": "risk"
-        },
-        "configuredSections": [
-          {
-            "identity": "key:current_task",
-            "key": "current_task",
-            "title": "当前任务",
-            "fields": [
-              "intake_next_action_display"
-            ]
-          },
-          {
-            "identity": "key:intake_risk",
-            "key": "intake_risk",
-            "title": "立项条件",
-            "fields": [
-              "intake_blocking_reason_display"
-            ]
-          }
-        ],
-        "sectionTitles": [
-          "当前任务",
-          "立项条件",
-          "项目基本信息",
-          "业务关系与类型",
-          "参建单位与联系人",
-          "合同与工期",
-          "财税与账户",
-          "成本与进度",
-          "补充资料",
-          "来源核对",
-          "驾驶舱"
-        ],
-        "fieldGroups": {
-          "当前任务": [
-            "intake_next_action_display"
-          ],
-          "立项条件": [
-            "intake_blocking_reason_display"
-          ]
-        },
-        "hiddenFieldNames": [
-          "company_id",
-          "contract_amount",
-          "contract_count",
-          "contract_expense_total",
-          "contract_ids",
-          "contract_income_total",
-          "dashboard_cost_actual",
-          "dashboard_document_completion",
-          "dashboard_invoice_amount",
-          "dashboard_payment_in",
-          "dashboard_payment_out",
-          "dashboard_profit_actual",
-          "dashboard_progress_rate",
-          "dashboard_revenue_actual",
-          "display_name",
-          "document_count",
-          "document_ids",
-          "document_missing_count",
-          "document_required_count",
-          "label_tasks",
-          "message_needaction",
-          "subcontract_amount",
-          "tag_ids",
-          "task_ids",
-          "tender_bid_ids"
-        ],
-        "groupColumns": {
-          "当前任务": 1,
-          "立项条件": 1
-        },
-        "groupVisibility": {}
-      },
-      "compatibilityLogic": [
-        "legacy structure slots",
-        "frontend compatibility floorplan"
-      ],
-      "compatibilityConsumer": true,
-      "sourceHead": "3d644a796b51ec24669b4241359a3a3e75913968",
-      "evidenceStatus": "carried_forward_prior_inventory"
-    },
     {
       "menuXmlid": "smart_construction_core.menu_sc_tender_guarantee",
       "label": "投标保证金",
@@ -1200,7 +959,7 @@
     "countCorrection": 4,
     "migrationReduction": 3
   },
-  "localVerifiedCount": 8,
+  "localVerifiedCount": 7,
   "uc1PublishedAudit": {
     "auditedAt": "2026-09-16",
     "auditedReleaseHead": "28b7695dc9f1cebbbe9bd5d715e951c6dec8a4da",
@@ -1373,10 +1132,11 @@
     "name": "U-C4",
     "status": "scope_confirmed_implementation_started",
     "priorityActions": [
-      724
+      687,
+      876
     ],
-    "selectedGroup": "G12",
-    "sourceMainlineHead": "dac2aaf1bd747b12b28ea7d3e0412b7f67895a3a",
+    "selectedGroup": "G13",
+    "sourceMainlineHead": "d37fe522859fea0c14cd5f9b779981743321740e",
     "fullRescan": false,
     "groups": [
       {
@@ -1686,7 +1446,13 @@
         "legacyConfigurations": [
           "project_project_form_structure_v1"
         ],
-        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated"
+        "evidenceStatus": "grouped_from_existing_44_entry_ledger_not_runtime_revalidated",
+        "indexStatus": "historical_source",
+        "indexNote": "G12 is published and merged (PR #506, squash, origin/main^{tree} byte-identical to the candidate tree b6100beb). The G12 topic retired the entry *structure body* of the single entry project_project_form_structure_v1 (action 724 / menu 379 / view 1503): the entry release keeps only title + composition_mode: native_semantic_surface at priority 800, and view_orchestration.context is value-identical to the pre-batch contract. The same-action/same-view generated mirror project_project_form_structure_generated_v1 (db id 46, priority 77) was retired with it (active: False), because the frozen read-only A/B probe (sc_dev_demo, SAVEPOINT g12_ab + ROLLBACK TO SAVEPOINT, rollback_residual true) showed that retiring 139 alone makes the surface stop resolving altogether (ok=false) - mirror 46 would have become the last structure writer and diagnose_structure_ownership() refuses that scoped conflict. The retired declaration never reached the page: it declared 11 sections (9 with no field), 54 field rows (25 of them visible: false) and 2 semantic_anchors, while the delivered surface renders 12 fields in 3 titled business groups over 3 untitled nested groups. Only the entry's own declared section identities (current_task / intake_risk) and the one real label fallback (manager_id = 项目负责人) were moved back onto the native arch; everything else is recorded as declared-but-not-rendered and was NOT invented as a new surface. Sibling entry 725 (view_project_create_form_quick, 7 fields) is untouched. One ledger entry retired (8 -> 7): 724. The published audit is uc4G12PublishedAudit.",
+        "legacyConfigurationStatus": {
+          "project_project_form_structure_v1": "entry_structure_body_retired_by_g12_topic",
+          "project_project_form_structure_generated_v1": "mirror_retired_with_same_action_same_view_entry_by_g12_topic"
+        }
       },
       {
         "id": "G13",
@@ -1759,7 +1525,7 @@
     "planningRecord": "docs/ops/iterations/form_structure_consumption_stabilization_20260917.md"
   },
   "retirementCondition": "Only after every formal consumer of a compatibility regrouping path is zero and other roles/companies/states are covered, remove that regrouping logic and its test exemptions.",
-  "mainlineRemainingCount": 8,
+  "mainlineRemainingCount": 7,
   "mainlineRemainingLabel": "主线剩余兼容消费者（不代表部署发布或89入口整体交付）",
   "uc3LocalMigrationAudit": {
     "status": "mainline_integrated",
@@ -2753,6 +2519,95 @@
       "sibling_actions_119_205_28_never_counted_in_this_ledger",
       "the_new_entry_release_sc_approval_policy_productized_form_v1_is_the_release_that_retires_the_count_not_a_new_consumer",
       "technical_trace_fields_on_1910_sc_source_model_and_sc_source_res_id_stay_invisible_and_are_not_business_sections"
+    ]
+  },
+  "uc4G12PublishedAudit": {
+    "auditedAt": "2026-09-21",
+    "auditedReleaseHead": "d37fe522859fea0c14cd5f9b779981743321740e",
+    "mergedPr": {
+      "number": 506,
+      "squashHead": "d37fe522859fea0c14cd5f9b779981743321740e",
+      "sourceHead": "72fdff27cd2cde91d3438ba1516217fe3e0dd476",
+      "tree": "b6100bebbe935ce9734bc5976e6c08ec491b805a"
+    },
+    "iterationRecord": "docs/ops/iterations/form_structure_consumption_stabilization_20260917.md",
+    "requiredChecks": [
+      "classify=success",
+      "frontend_release_gate=success",
+      "merge_policy_gate=success",
+      "professional_authorization=success",
+      "professional_quality_gate=success",
+      "public_guard=success",
+      "public_guard_classify=success",
+      "python310_runtime_compatibility=success",
+      "release_candidate_gate=success"
+    ],
+    "skippedChecks": [
+      "classify",
+      "fast",
+      "wait_for_candidate_checks"
+    ],
+    "reduction": {
+      "before": 8,
+      "after": 7,
+      "retiredActions": [
+        724
+      ],
+      "retiredViews": [
+        1503
+      ],
+      "countMeaning": "mainline remaining compatibility consumers; deployment and overall user delivery are separate",
+      "retiredViewMeaning": "1503 (project.project.form.sc.create / view_project_create_form) labels the single retired ledger entry; the view itself stays live as the shared native primary form of project.project and is now the authoritative structure plane for action 724"
+    },
+    "exitEvidence": {
+      "sourceCheck": "project_project_form_structure_v1 (contract 139, action 724) keeps only title 项目立项 + composition_mode: native_semantic_surface, priority 90 -> 800; view_orchestration.context is value-identical to the pre-batch contract; the structural keys sections/fields/semantic_anchors/columns/layout are gone",
+      "mirrorRetirementCheck": "project_project_form_structure_generated_v1 (contract 46, priority 77) is bound to the SAME action 724 and the SAME view 1503; it is retired through the existing <function model=\"ui.business.config.contract\" name=\"write\"> pattern (active: False), matching the precedent already used elsewhere in the same data file",
+      "competitionMeasuredCheck": "frozen read-only A/B on sc_dev_demo (SAVEPOINT g12_ab + ROLLBACK TO SAVEPOINT, rollback_residual records zero writes): retire 139 only -> ok=false (46 becomes the last structure writer, diagnose_structure_ownership rejects the scoped conflict); retire 139 + 46 -> ok=true, form_structure_authority=native_authority, layoutPolicy=container_tree_authority, presentationMode=task",
+      "noFanoutCheck": "ir.ui.view.inherit_id = 1503 matched 0 rows at runtime and the repository has 0 inherit_id refs to view_project_create_form, so the ledger structureRelation project_create_view_with_inheritance_fanout does not hold for this view",
+      "renderedSurfaceCheck": "the retired declaration declared 11 sections (9 of them with no field at all), 54 field rows (25 of them visible: false) and 2 semantic_anchors; the delivered surface actually rendered 12 fields (2 read-only display fields + 10 business fields) in 3 titled business groups with 3 untitled nested groups under two of them. The declared sections and hidden fields never entered the render tree, so they are recorded as declared-but-not-rendered rather than backfilled",
+      "fieldSetCheck": "the native arch edit adds 4 data-sc-anchor business groups (current_task / intake_risk / project_create_required / project_create_optional), splits the two read-only fields into keyed groups while keeping readonly=\"1\", and restates manager_id string=\"项目负责人\"; the rendered field set is unchanged at 12 rows (none added, none removed) and the test pins RENDERED_FIELDS so a retired declaration cannot silently drop a fact",
+      "labelCheck": "the only label delta was manager_id: the contract declared 项目负责人 while the arch fell back to the model string; the arch now restates it and the browser run shows 项目负责人 on the delivered page",
+      "runtimeCheck": "after make local.dev.upgrade MODULE=smart_construction_core (exit 0, [local.dev.demo.authority] PASS) the read-only probe recorded: 139 active at priority 800 with composition_mode native_semantic_surface, mirror 46 active=false, entry resolves to native_authority + container_tree_authority + presentationMode=task, effectiveContracts = [139] only, diagnostics empty, and the rendered container tree matched the 4 anchors / 12 fields / two read-only fields item by item",
+      "browserCheck": "FORM_LOWCODE_TOPIC=project FORM_LOWCODE_REPRESENTATIVE=1 make local.dev.form_lowcode.browser -> exit 0, ok=true, restored=true, dirty=false, candidate=72fdff27; the representative entry reports status=passed and both the create and record routes resolved and showed all five section entries (当前任务 / 立项条件 / 项目创建（必填） / 项目标识（可选） / 协作记录) with 28 occlusion measurements across the 1088 and 390 viewports and an unchanged business fingerprint",
+      "domainRolloutCheck": "read-only domain rollout re-runs differ from the pre-batch baseline in exactly one line across the project domain's 30 actions (29 are pure DB identity drift after the local upgrade): action_sc_product_project_edit_v1 default form view project.edit_project -> view_sc_product_project_information_edit_form_v1, which is a STALE PRECOMMITTED REPORT rather than a batch change - that action pins no view_id and the commit that introduced that native form postdates the committed report; the base_configuration domain (6 actions) is a zero semantic diff",
+      "quickGateCheck": "make ci.local.quick on the exact candidate head 72fdff27 passed and its receipt is bound to that head and tree b6100beb; the merge reused that verified receipt"
+    },
+    "bypassConsumers": {
+      "scopeNote": "This ledger counts released compatibility consumers, not sibling entries that render an already-counted primary form. The sibling actions below were never counted in this ledger and are unchanged by G12.",
+      "actions": [
+        {
+          "actionId": 725,
+          "xmlid": "smart_construction_core.action_project_initiation_quick",
+          "label": "快速创建项目",
+          "model": "project.project",
+          "counted": false,
+          "whyNotCounted": "sibling entry on the same model with its own view view_project_create_form_quick (7 rendered fields); G12 did not modify it, its rendered facts are pinned by unit tests, and under the governance navigation role it returns NAVIGATION_AUTHORITY_DENIED so its coverage is carried by tests rather than a representative browser route"
+        }
+      ],
+      "retainedLegacyConfigurations": [
+        {
+          "name": "project_project_form_structure_generated_v1",
+          "model": "project.project",
+          "priority": 77,
+          "counted": false,
+          "whyNotCounted": "retired with the entry (active: False) because it shares action 724 and view 1503 with project_project_form_structure_v1; had it stayed active it would have become the last structure writer for this scoped surface"
+        }
+      ],
+      "singleActionModels": [
+        "project.project (724 + sibling 725)"
+      ]
+    },
+    "knownLimits": [
+      "retirementComplete=false; the G12 batch ran no deployment and no user delivery acceptance",
+      "the batch retired a same-action/same-view mirror, so the ledger entry for 724 could not be closed by a partial change: the frozen A/B probe showed the surface stops resolving (ok=false) if only the entry body is retired",
+      "four pre-existing environment/baseline defects are registered and NOT fixed here: verify.contract.view_structure expects a local.clean/sc_clean authority fingerprint while this worktree is based on ec2c56e5; verify.product.menu.governance.m4.closure misses artifacts/menu-governance/menu-m4-runtime.REJECTED-wrong-sha.json; verify.user_form.preference.boundary_guard depends on a customer custom addon repository that is not in this repository boundary; and the component test test_notification_contract_is_bound_to_exact_action_and_view in verify.frontend.professionalization.collaboration_domain.runtime fails on the merged baseline because G11 shipped native_semantic_surface while that test still asserts entry_semantic_surface (a G11 leftover), so the zero-change domain control uses base_configuration instead",
+      "the probes ran as a single admin principal on sc_dev_demo and did not re-measure a tenant/low-code surface (same residual as G10/G11)",
+      "the contract JSON is counted statically (54 top-level field rows); if the runtime ever rewrote that JSON line-wise the static count would not match"
+    ],
+    "notDeducted": [
+      "shared_native_form_1503_view_project_create_form_stays_live_as_the_primary_form_of_project_project_and_is_now_the_authoritative_structure_plane_for_action_724",
+      "sibling_entry_725_and_view_project_create_form_quick_stay_untouched_with_their_own_7_field_rendering",
+      "converged_orchestration_context_of_contract_139_is_preserved_value_identically"
     ]
   }
 }
