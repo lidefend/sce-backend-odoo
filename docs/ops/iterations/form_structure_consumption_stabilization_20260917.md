@@ -6583,3 +6583,155 @@ L0–L4 结论；候选的 exact-head Quick 回执属于 `aacadb38…`，本提�
 
 状态：**G13 主线集成完成（PR #508，squash 同树）｜批次状态：自验与冻结门禁通过；集中产品复核结论以产品方登记为准｜
 未部署｜用户交付未完成｜台账 5｜G14 未启动**。
+
+### 8.44 G14 台账汇总与保证金：四条入口补发布承接原生结构（2026-09-21；**实施＋分层验证轮**；冻结／Quick／独立复核／归档／PR 属本轮收口步骤）
+
+**范围与层级**：Formal Product Layer **P4**（交付面入口声明与只读范围校验登记）；Layer Target 为
+`smart_construction_core` 的四条入口契约、定向测试与既有只读代表面入口 `scripts/verify/local_dev_form_lowcode_scope.py`
+（登记 `ledger_summary` topic，复用已注册 Compose 项目、`sc_dev_demo`、身份与数据权威，只读、不写任何配置），
+另含代表面运行器对「交付权威本身已声明的拒绝」的诚实登记。**不属** P0（`smart_core` 不承载行业语义），不属 P2／P3。
+爆炸半径：入口 **523**（`action_project_cost_ledger`，menu 668「成本归集」，`project.cost.ledger`，视图 1379）、
+**522**（`action_project_profit_compare`，menu 669「项目盈亏分析」，`project.profit.compare`，视图 1377）、
+**646**（`action_project_funding_baseline`，menu 542「资金计划汇总」，`project.funding.baseline`，视图 1669）、
+**778**（`action_sc_tender_guarantee`，menu 474「投标保证金」，`tender.guarantee`，视图 1540），以及四条模型级生成镜像
+（39／44／41／137）。回滚方式为 `git revert`（纯声明变更，无数据迁移）。
+
+**机制（这批为什么能真正降低台账计数）**：与 G07／G09／G10／G11／G12／G13 同一条机制。台账计数的是
+`layoutPolicy != container_tree_authority` 的兼容消费者；`ui_contract_v2` 只有在
+`governance["form_structure_authority"] == "native_authority"` 时才给出 `container_tree_authority`，而该字段由
+入口契约的 `composition_mode ∈ {native_semantic_surface, semantic_native_surface}` 决定
+（`smart_core/core/form_structure_authority.py`），**与契约优先级无关**。因此本批为四个入口各补一条入口发布，
+使其成为本入口的最后结构写入者并声明原生语义面。
+
+**修改范围（候选 7 条路径，单提交）**：
+
+1. **新增** `data/ledger_summary_guarantee_native_contract.xml`：为 523／522／646／778 各补一条入口发布
+   （record `business_config_contract_project_cost_ledger_form_native_v1`／`…_project_profit_compare_…`／
+   `…_project_funding_baseline_…`／`…_tender_guarantee_…`，运行时 dbId **870／871／872／873**），绑定各自
+   action ＋ form view，`priority=800`、`status=published`、`version_no=1`；`contract_json` 只含
+   `views.form.title` ＋ `composition_mode: native_semantic_surface` ＋
+   `context.{source,source_status,fact_authority}`，**无任何结构键**——与 G07 为 858、G09 为 871、G10 为 597／527、
+   G11 为 727、G13 为 687 补发布的形状一致。`__manifest__.py` 按位置登记该 XML（manifest idx **256**，晚于其
+   `ref` 的全部 view／action 文件 48／79／116／191）。
+2. **新增** `tests/test_ledger_summary_guarantee_native_lowcode.py`（tag `uc4_native_lowcode`，**14 测试**／
+   单测试类），在 `tests/__init__.py` 登记；以「原生 arch 即地面真值」钉住四个入口的发布形状、解析面
+   （`native_authority` → `container_tree_authority`、`task`、唯一诊断 `LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW`）、
+   必被入口发布压过的模型级镜像、镜像保持 active 且结构被抑制、兄弟入口隔离、渲染字段集按视图钉容器树字段顺序、
+   交付态 `readonly`／`invisible` 逐项口径（523 20／522 11／646 20／778 2），以及「原生 arch 零 `data-sc-anchor`、
+   零继承子视图」。
+3. `scripts/verify/local_dev_form_lowcode_scope.py`：登记只读 `ledger_summary` topic（四个身份三元组），
+   `TOPIC_SAMPLE_FIELDS["ledger_summary"]=["state","currency_id"]`（**并集声明、按模型取子集**，执行侧以
+   `if name in model._fields` 过滤），代表面断言取 `{"readonly_values": True, "record_surface": True}`；
+   **刻意不含 `section_navigation`**——四个原生表单都没有 `data-sc-anchor` 章节轨道，该断言对这四条入口不成立。
+4. `frontend/apps/web/scripts/formal_form_representative_journey.mjs`：create 路由**只在平台显式声明的建单拒绝**下
+   登记未覆盖并跳过——条件为五元合取（`kind==='create'` ∧ `pageVisible===false` ∧ `pageAuth==='none'` ∧
+   `reasonCode==='FORM_CREATE_NOT_ALLOWED'` ∧ `modelRights?.create!==true` ∧ `viewCapabilities?.create!==true`），
+   `denied` 路由独立分类并与 uncovered 逐条断言相等；**其余任何 `pageVisible=false` 仍走 45s 就绪门禁并硬失败**，
+   未放宽任何既有断言。
+5. `docs/engineering_convergence/complexity_budget_report.md`：随 `ci.delivery.freeze.prepare` 刷新
+   （复杂度扫描 **4398 → 4400**）。
+
+**关键决策（全部由实测驱动，不是设计时预判）**：
+
+- **四个入口此前都没有入口发布**：全仓库 `data/` 下没有任何 `ui.business.config.contract` 绑定这四个 action，
+  它们各自只消费一条模型级生成镜像（39 priority 70／44 priority 75／41 priority 72／137 priority 176，
+  `action_id` 全为空），于是 `form_structure_authority` 停在 `""`、走兼容地板路径，而页面**本来就是原生 arch 在渲染**
+  （23／11／21／11 字段、0 锚点，容器树逐节点等于 arch）——与 G10 的 597／527、G11 的 727、G13 的 687 完全同型。
+- **本批不需要任何稀疏只读覆盖**：四条模型级镜像声明 **0 条** `readonly`、**0 条** `visible:false`，只读 A／B 探针实测
+  四入口 `resolvedReadonly=[] → []`、`resolvedHidden=0 → 0`、`containerFields`／`widgetFields`／`containerAnchors`
+  `identical=True`；与 G13 的 876 需要 2 条稀疏覆盖形成对照。
+- **522 的创建路由为空的归因（实测，不猜）**：`view_project_profit_compare_form` 的 arch 声明 `create="false"`
+  （`views/core/cost_domain_views.xml:256`）且 `project.profit.compare` 无任何 ACL 授予 create
+  （`security/ir.model.access.csv:118,119` 两行 create 位为 0），平台因此在 create profile 返回
+  `pageVisible=false`／`pageAuth=none`／`reasonCode=FORM_CREATE_NOT_ALLOWED`
+  （`addons/smart_core/core/unified_page_contract_v2_assembler.py:1085-1088`），前端把 `visible=false` 传播到每个节点，
+  页面呈现为空树（`data-state="empty"`）。**只读归因探针**（`SAVEPOINT` ＋ `ROLLBACK`，
+  `contractsAfterRollback=289`、`allEntriesActiveAfterRollback=true`）证明该判定在**入口发布生效与关闭两种状态下完全相同**，
+  属既有产品只读声明而非本批变更；对照 523／646／778 两态均 `pageVisible=true`／`pageAuth=edit`／`create=true`。
+  该入口的真实交付面是只读记录面（`pageAuth=read`、10 字段、`data-state=ready`）。
+- **只登记，不粉饰**：522 的 create 路由按 `uncovered / create_surface / render_profile_denied` 如实登记（含
+  `reason_code`／`page_auth`／`model_rights_create`），**不写成通过**；523 的 record 路由因
+  `action_project_cost_ledger` 的 action domain 在 `sc_dev_demo` 有 86 行而治理身份无一条可读
+  （`record_rule_denied`，`business_row_count=0`），同样登记为数据事实而非「通过的路由」。
+- **代表面运行器的记分口径**：运行器只在平台**自己声明**建单拒绝时登记 denied 路由；任何其他 `pageVisible=false`
+  （含 record profile 被隐藏、`reasonCode` 变化）仍触发 45s 就绪门禁并硬失败，收尾断言
+  （`filter(row=>!row.status)` 为空、`inspected+blocked===总数`、`inspected>0||blocked>0`）与
+  `formal_form_lowcode_loop.mjs:541` 的 `assert(report.ok && report.restored)` 均未放宽。
+
+**验证（L0–L5，全部绑定冻结候选 `a5c85198`）**：
+
+- **L0** 只读探针 `probe_g14_realpath.py`／`probe_g14_titles.py`／`probe_g14_ab.py`／`probe_g14_presenter.ts`：
+  浏览器真实请求形状（`op=action_open`，不带 `view_id`）下四入口 `authority '' → native_authority`；带／不带 `view_id`
+  载荷**逐字节相同**；四入口基线同型（`authority=''`、`layoutPolicy=native_authority`、`mode=native_structured_form`、
+  `presentationMode=workspace`、0 条 readonly／0 条 hidden），镜像 39／44／41／137（p70／75／72／176）。
+- **L1** `make ci.delivery.freeze.prepare` → PASS（`component_driver_takeover_inventory required=35 missing=0`、
+  `contract_form_split_evidence`、`ci.generated_evidence.preflight` 全部 current）；复杂度扫描 4398 → **4400**。
+- **L2 定向** `uc4_native_lowcode/smart_construction_core:TestLedgerSummaryGuaranteeNativeLowcode` →
+  **14 tests／0 failed／0 error**；**L2 整组** → **218 tests／0 failed／0 error**（G13 为 204）；**策略回归**
+  （`contract_handling_page_policy` ＋ `settlement_native_structure`）→ **12 tests／0 failed／0 error**；
+  **六条具名守卫**全 PASS；**L2 域回归**只读重跑 project 域 30 action／base_configuration 域 6 action，
+  跑后**逐字节还原**（`baseline-domain-rollout/` 32 文件 sha256 全 OK）。
+- **L3** `make local.dev.upgrade MODULE=smart_construction_core` ＋ 只读 after 探针 → **exit 0**（含
+  `[local.dev.demo.authority] PASS`）；契约数 285 → **289**，四条入口发布 dbId **870／871／872／873**（priority 800）；
+  四入口 `authority '' → native_authority`、`layoutPolicy=container_tree_authority`、`presentationMode=task`、
+  唯一诊断 `LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW`；字段数 23／11／21／11、锚点 0，与基线相同。
+- **L4 浏览器代表面**（在冻结 HEAD 上）→ `exit 0`／**`ok=true`／`restored=true`／`candidate=a5c85198`／`dirty=false`／
+  `browser_errors=[]`**，业务指纹未变；523 create **22 字段**；522 create 登记 `denied/FORM_CREATE_NOT_ALLOWED`、
+  record **10 字段**；646 create／record **18／18**；778 create／record **9／6**；未覆盖：523 `record_surface`
+  （`record_rule_denied`，`domain_rows=86`）与 522 `create_surface`（`render_profile_denied`）。
+- **L5** exact-head `make ci.local.quick` → PASS（回执绑定 `head=a5c85198…`／`tree=1415f9c8…`，
+  `local_quick_evidence verify --expected-head` 返回 VERIFIED）；合并时门禁走 **REUSE** 路径复用该已验回执。
+
+**过程偏差（不隐藏）**：head 曾为 `a6a2461c`，第一轮独立只读复核提出唯一 **S2**（运行器新增 create 分支的归因条件
+过宽：只看 `pageVisible===false`，未校验 `reasonCode`／建单权），作者在该提交内把谓词收敛为上述五元合取并 amend 为
+`a5c85198`，随后重跑 L4 与 exact-head Quick；第二轮机独立只读复核确认 **S2 闭合**，无 S0／S1／S2，另记 1 条 **S3**
+（**前向**风险：平台用 `effectiveRecordCapabilities.create` 判定而运行器只看 view＋model 两源，方向 fail-closed、
+对本批四入口未触发）与 4 项 S4 记账项。L4 浏览器**首跑**因 522 create 命中 45s `waitFor` 超时失败
+（`l4-browser.log`），归因后按「只登记平台显式声明的拒绝」收敛并复跑通过。
+
+**环境缺陷登记（非本批引入，不修，沿用 G08–G13）**：`verify.contract.view_structure` 的 `local.clean`／`sc_clean`
+权威指纹期望；`verify.product.menu.governance.m4.closure` 缺 `menu-m4-runtime.REJECTED-wrong-sha.json`；
+`verify.user_form.preference.boundary_guard` 依赖**客户定制 addon 仓库（不在本仓库边界内）**的模块；
+G11 遗留的 `verify.frontend.professionalization.collaboration_domain.runtime` 组件单测仍断言 `entry_semantic_surface`；
+`docs/frontend_productization/domain-rollout/project-domain-coverage-v1.json` 对 `action_sc_product_project_edit_v1`
+陈旧（本批行为已修复该缺陷，报告未纳入本批冻结面）。
+
+**边界**：不改 ACL／记录规则／菜单可见性，不改模型字段，不改原生视图 arch，不改运行环境、数据库或端口；
+四条模型级生成镜像保持 active（承载无 action 上下文的模型面策略）；同模型兄弟入口（成本台账 585／524、资金计划 645、
+保证金退回 854）自持其入口面，未被本批修改；`retirementComplete=false`。
+
+**Next Step**：合并获授权后执行**文档单职责提交**（台账 5 → 1 ＋ 迭代记录 8.44／8.45 ＋ 本轮切换日志），
+清理已合入分支与工作树，再启动 G15（税务申报：880）。
+
+### 8.45 G14 主线集成与台账 5 → 1（2026-09-21）
+
+G14 主题经 PR **#510** 以 **squash** 合入主线，合并提交 `dc2788e1d1b217a9da7f10cdd5025e262a41d833`，其树与候选
+`a5c851987639e072f09a82e4850ecca4046a9a1e` 的树 `1415f9c8396a9cfe68158ed6317a8c682f783a44` **逐字节一致**（同树承接）。
+合并前必需检查全部通过（`classify`、`frontend_release_gate`、`merge_policy_gate`、`professional_authorization`、
+`professional_quality_gate`、`public_guard`、`public_guard_classify`、`python310_runtime_compatibility`、
+`release_candidate_gate`），`fast`／`wait_for_candidate_checks` 按规则 skipping；`pr.merge` 的 exact-head Quick 门禁
+走 **REUSE** 路径复用候选 `a5c85198` 的已验回执（回执绑定 head＋tree）。外部证据已按 `make workspace.evidence.archive`
+归档（9 文件、四类角色齐备、`status=verified`）。独立只读复核两轮：round 1（对象 `a6a2461c`）与 round 2
+（对象 `a5c85198`，增量差分）均判 `mergeable_with_notes`，**无 S0／S1／S2**；round 1 的唯一 S2 已在 `a5c85198`
+闭合，残留 1 条 S3（前向风险）与 4 项 S4 记账项，均记录在 `review.md`。合入后已按 `make branch.cleanup.feature`
+清理已合入分支 `feature/uc4-g14-ledger-summary-guarantee-v1`（本地＋远端，exact-head squash PR 校验通过）。
+
+台账 `docs/ops/iterations/form_structure_compatibility_consumers_v1.json` 扣减 **5 → 1**
+（本批在台账内**正好 4 条**：523 成本归集、522 项目盈亏分析、646 资金计划汇总、778 投标保证金），
+`count`／`localVerifiedCount`／`mainlineRemainingCount` 同步为 **1**，`entries` 剩 `[880]`，并新增
+`uc4G14PublishedAudit`；`nextBatch.selectedGroup` → **G15**、`priorityActions` → `[880]`、
+`sourceMainlineHead` → `dc2788e1…`；G14 组就地标记 `indexStatus=historical_source`，并逐条登记
+`legacyConfigurationStatus`（四条模型级镜像保持 active、只服务无 action 上下文的模型面）。
+
+**扣减口径与算术更正**：台账计数的是**主线剩余兼容消费者**（`layoutPolicy != container_tree_authority`），
+扣减按本组**退役的 action 数**计——G14 组 action 集合为 `[523, 522, 646, 778]` **共 4 条**，故正确扣减为
+**5 → 1**。上一批手稿中曾出现的「7 → 6」是算术错误（G13 组实为 2 条 action，正确扣减为 7 → 5），
+G13 记录已更正该口径，本提交沿用更正后的按 action 计数约定；台账行删除后 `entries` 与 `count` 同为 **1**，
+仅剩 G15 税务申报 880。
+
+本提交为**文档类单职责提交**（台账 ＋ 本记录 ＋ 切换日志，路径集合固定为 3）；**未触碰**任何产品代码、契约、
+测试或验证工具输入，故不改动 §8.44 的 L0–L5 结论；候选的 exact-head Quick 回执属于 `a5c85198…`，
+本提交自身的收据由受管门禁按 fail-closed 口径产生，**不冒充同一绑定**。
+
+状态：**G14 主线集成完成（PR #510，squash 同树）｜批次状态：自验与冻结门禁通过；集中产品复核结论以产品方登记为准｜
+未部署｜用户交付未完成｜台账 1｜G15 未启动**。

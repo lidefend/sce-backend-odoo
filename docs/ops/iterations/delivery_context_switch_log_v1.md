@@ -9891,3 +9891,64 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - 边界：不改 ACL／记录规则／菜单可见性，不改模型字段，不改运行环境、数据库或端口。
 - Next Step：合并获授权后执行**文档单职责提交**（台账 7 → 5 ＋ 迭代记录 8.42／8.43 ＋ 本轮切换日志），
   清理已合入分支，再启动 G14（台账汇总与保证金：523／522／646／778）。
+
+## 2026-09-21 — U-C4 G14 台账汇总与保证金（成本归集／项目盈亏／资金汇总／投标保证金）
+
+- 分支 `feature/uc4-g14-ledger-summary-guarantee-v1`，基线 `origin/main@2c2fdfb6ab7ba4910d8a92e344efb2b4a1f6fdf7`
+  （G12 主题 PR #506 与 G13 台账审计 PR #509 的合入点）。Formal Product Layer 为 **P4**；Layer Target 为
+  `smart_construction_core` 的四条入口契约、定向测试与既有只读代表面入口
+  `scripts/verify/local_dev_form_lowcode_scope.py`（登记 `ledger_summary` topic，复用已注册环境／身份与数据权威，
+  只读且不写配置），另含代表面运行器对「交付权威本身已声明的拒绝」的诚实登记。不属 P0（`smart_core`
+  不承载行业语义）／P2／P3。回滚为 `git revert`（纯声明变更）。
+- 目标：让入口 action **523**（menu 668「成本归集」，`project.cost.ledger`，视图 1379）、**522**（menu 669
+  「项目盈亏分析」，`project.profit.compare`，视图 1377）、**646**（menu 542「资金计划汇总」，
+  `project.funding.baseline`，视图 1669）、**778**（menu 474「投标保证金」，`tender.guarantee`，视图 1540）的
+  **入口发布成为本入口最后结构写入者**并声明 `native_semantic_surface`，使
+  `form_structure_authority=native_authority`、`layoutPolicy=container_tree_authority`，兼容重组路径对四个入口
+  不再适用（台账口径由此可扣减 5 → 1；扣减本身属**合并后**文档单职责提交）。
+- 变更（候选 7 条路径，单提交）：**新增** `data/ledger_summary_guarantee_native_contract.xml` 为四个入口各补一条
+  入口发布（dbId 870／871／872／873，绑定各自 action ＋ form view，priority 800，published，version_no 1，
+  只含 `title` ＋ `composition_mode: native_semantic_surface` ＋ `context`，无结构键）并在 `__manifest__.py`
+  登记；**新增** `tests/test_ledger_summary_guarantee_native_lowcode.py`（tag `uc4_native_lowcode`，14 测试）
+  并在 `tests/__init__.py` 登记；只读代表面入口登记 `ledger_summary` topic（样本字段并集声明
+  `state`／`currency_id`，机制键 `readonly_values` ＋ `record_surface`，**刻意不含** `section_navigation`）；
+  代表面运行器把 create 路由的「平台显式声明的建单拒绝」独立分类为 `denied` 并与 uncovered 逐条断言相等；
+  `complexity_budget_report.md` 随冻结刷新（4398 → 4400）。
+- 关键决策（实测驱动，非设计预判）：①四个入口批前**都没有入口发布**，只消费各自模型级生成镜像
+  （39／44／41／137，priority 70／75／72／176，`action_id` 全空），`form_structure_authority` 停在 `""`
+  而页面本就由原生 arch 渲染（23／11／21／11 字段、0 锚点），与 G10 的 597／527、G11 的 727、G13 的 687 同型；
+  ②**本批不需要任何稀疏只读覆盖**（四条镜像声明 0 条 readonly／0 条 visible:false，A／B 实测
+  `resolvedReadonly=[]`、`resolvedHidden=0`），与 G13 的 876 需要 2 条稀疏覆盖形成对照；③522 的 create 路由为空
+  是**既有产品只读声明**——arch `create="false"` ＋ 无建单 ACL → `pageVisible=false`／`pageAuth=none`／
+  `FORM_CREATE_NOT_ALLOWED`，只读归因探针证明其在发布生效与关闭两态**完全相同**，其真实交付面是只读记录面；
+  ④运行器只在平台**自己声明**建单拒绝时登记 denied 路由，其余 `pageVisible=false` 仍 45s 硬失败，
+  **未放宽任何断言**。
+- 保留边界：四条模型级镜像保持 active（承载无 action 上下文的模型面策略）；同模型兄弟入口（成本台账 585／524、
+  资金计划 645、保证金退回 854）未被触碰；不改 ACL／记录规则／菜单可见性，不改模型字段与原生视图 arch；
+  `retirementComplete=false`。
+- 验证：L0 只读探针（`SAVEPOINT` ＋ `ROLLBACK`，`contractsAfterRollback=289`）锁定基线权威、镜像面与真实请求形状
+  （带／不带 `view_id` 载荷逐字节相同）；L1 `make ci.delivery.freeze.prepare` PASS（`required=35 missing=0`，
+  复杂度 4398 → 4400）；L2 新测试 **14** 通过、整组回归 **218** 通过（0 failed 0 error，G13 为 204）、策略回归
+  **12** 通过、六条具名守卫全 PASS、域回归跑后逐字节还原（32／32 sha256 OK）；L3 `local.dev.upgrade` exit 0，
+  只读探针核对契约数 285 → 289、四条入口 `native_authority` ＋ `container_tree_authority`、presentationMode `task`、
+  唯一诊断 `LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW`、字段数 23／11／21／11 与锚点 0 不变；
+  **L4 浏览器代表面在冻结 HEAD 上跑通**——`FORM_LOWCODE_TOPIC=ledger_summary FORM_LOWCODE_REPRESENTATIVE=1`
+  → exit 0／`ok=true`／`restored=true`／`candidate=a5c85198`／`dirty=false`／`browser_errors=[]`，业务指纹未变，
+  523 create 22 字段、522 record 10 字段、646 create／record 18／18、778 create／record 9／6；
+  **523 record 与 522 create 两条路由如实登记为 `UNCOVERED`（`record_rule_denied`，`domain_rows=86`；
+  `render_profile_denied`），不写成通过**；L5 exact-head `make ci.local.quick` PASS（回执绑定
+  `head=a5c85198…`／`tree=1415f9c8…`）。
+- 过程偏差（不隐藏）：head 曾为 `a6a2461c`，第一轮独立只读复核提出唯一 **S2**（运行器新增 create 分支的归因条件
+  过宽），作者在该提交内收敛为五元合取并 amend 为 `a5c85198`，随后重跑 L4 与 exact-head Quick；第二轮增量复核确认
+  S2 闭合、**无 S0／S1／S2**，另记 1 条 **S3**（前向风险：对齐平台 `effectiveRecordCapabilities.create`，
+  方向 fail-closed、本批未触发）与 4 项 S4；L4 浏览器**首跑**因 522 create 命中 45s `waitFor` 超时失败，
+  归因后收敛并复跑通过。
+- 环境缺陷登记（非本批引入，不修）：G08–G11 已登记三条（`verify.contract.view_structure` 的
+  `local.clean`／`sc_clean` 权威指纹期望、`verify.product.menu.governance.m4.closure` 缺
+  `menu-m4-runtime.REJECTED-wrong-sha.json`、`verify.user_form.preference.boundary_guard` 依赖**客户定制 addon
+  仓库**（不在本仓库边界内）的模块）以及 G12 登记第四条（G11 遗留的
+  `verify.frontend.professionalization.collaboration_domain.runtime` 组件单测仍断言 `entry_semantic_surface`）；
+  本批另登记 `docs/frontend_productization/domain-rollout/project-domain-coverage-v1.json` 对
+  `action_sc_product_project_edit_v1` 陈旧（既存）。
+- Next Step：合并获授权后执行**文档单职责提交**（台账 5 → 1 ＋ 迭代记录 8.44／8.45 ＋ 本轮切换日志），
+  清理已合入分支，再启动 G15（税务申报：880）。
