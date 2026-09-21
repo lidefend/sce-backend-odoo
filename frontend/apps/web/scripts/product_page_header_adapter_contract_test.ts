@@ -22,6 +22,46 @@ const declaredPropsOf = (relative: string): string[] =>
     (match) => match[1],
   );
 
+/**
+ * 去掉 HTML 注释、块注释与整行 `//` 注释。注释里的「委托渲染」「登记表解析」不是实现：
+ * 不剥离注释会让契约测试被诱饵满足（例如把解析调用注释掉、只留绑定的标识符）。
+ */
+function stripComments(source: string): string {
+  return source
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n')
+    .filter((line) => !line.trimStart().startsWith('//'))
+    .join('\n');
+}
+
+/**
+ * 引号感知地取出开标签内的属性块。**不能**用非贪婪正则直接扫到第一个 `>`：
+ * 属性值里的 `>`／`>=`／`=>`（如 `:title="a > b"`）会提前截断标签，使该标签内后续的未声明属性静默漏检。
+ */
+function tagAttributeBlocks(source: string, names: readonly string[]): string[] {
+  const blocks: string[] = [];
+  const pattern = new RegExp(`<(?:${names.join('|')})(?=[\\s/>])`, 'g');
+  for (const match of source.matchAll(pattern)) {
+    const start = match.index + match[0].length;
+    let index = start;
+    let quote: string | null = null;
+    while (index < source.length) {
+      const char = source[index];
+      if (quote) {
+        if (char === quote) quote = null;
+      } else if (char === '"' || char === "'") {
+        quote = char;
+      } else if (char === '>') {
+        break;
+      }
+      index += 1;
+    }
+    blocks.push(source.slice(start, index));
+  }
+  return blocks;
+}
+
 const SLOT_AXES: ProductPageHeaderAxis[] = ['metaSlot', 'statusSlot', 'actionsSlot'];
 const axisToProp = (axis: ProductPageHeaderAxis) => (axis.endsWith('Slot') ? null : axis);
 const axisToSlot = (axis: ProductPageHeaderAxis) => (axis.endsWith('Slot') ? axis.slice(0, -'Slot'.length) : null);
@@ -62,7 +102,8 @@ function parseImports(source: string): ImportedSymbol[] {
   return found;
 }
 
-const authoritySource = read(AUTHORITY);
+const entrySource = (relative: string) => stripComments(read(relative));
+const authoritySource = stripComments(read(AUTHORITY));
 const authorityProps = [...(authoritySource.match(/defineProps<\{([\s\S]*?)\}>/) ?? ['', ''])[1].matchAll(/([A-Za-z_]\w*)\??:/g)].map(
   (match) => match[1],
 );
@@ -75,10 +116,20 @@ const ADAPTER_ENTRY_BY_PATH = new Map<string, ProductPageHeaderEntryRegistry>(
   PRODUCT_PAGE_HEADER_ENTRIES.filter((entry) => entry.kind === 'adapter').map((entry) => [entry.path, entry]),
 );
 
+/**
+ * 解析模块说明符到 `src` 相对路径。相对路径与 `@/` 别名（vite `resolve.alias['@'] = src`）都必须覆盖：
+ * 只认相对路径会让别名导入的调用点从覆盖中消失。
+ */
+function specifierBase(fromFile: string, specifier: string): string | null {
+  if (specifier.startsWith('@/')) return path.posix.normalize(specifier.slice(2));
+  if (specifier.startsWith('.')) return path.posix.normalize(path.posix.join(path.posix.dirname(fromFile), specifier));
+  return null;
+}
+
 /** 把某个导入符号解析到权威或已登记入口；无法解析时返回 null。 */
 function delegationTarget(fromFile: string, symbol: ImportedSymbol): 'authority' | ProductPageHeaderEntryRegistry | null {
-  if (!symbol.specifier.startsWith('.')) return null;
-  const base = path.posix.normalize(path.posix.join(path.posix.dirname(fromFile), symbol.specifier));
+  const base = specifierBase(fromFile, symbol.specifier);
+  if (base === null) return null;
   for (const candidate of [base, `${base}.vue`, `${base}.ts`]) {
     if (candidate === AUTHORITY) return 'authority';
     const entry = ENTRY_BY_PATH.get(candidate);
@@ -136,7 +187,7 @@ assert.ok(
 // B. 每个入口都必须存在、必须在模板中真实渲染上游（权威或已登记入口），且不得自建 header DOM。
 for (const entry of PRODUCT_PAGE_HEADER_ENTRIES) {
   assert.ok(existsSync(path.join(SRC, entry.path)), `登记入口不存在: ${entry.path}`);
-  const source = read(entry.path);
+  const source = entrySource(entry.path);
   const upstream = delegatedTargets(entry.path);
   assert.ok(upstream.length > 0, `${entry.id} 未导入 ProductPageHeader 或任何已登记入口`);
   assert.ok(
@@ -149,7 +200,7 @@ for (const entry of PRODUCT_PAGE_HEADER_ENTRIES) {
 
 // C. 声明为 forwarded 的轴必须在入口里真实转发。
 for (const entry of PRODUCT_PAGE_HEADER_ENTRIES) {
-  const source = read(entry.path);
+  const source = entrySource(entry.path);
   for (const axis of resolveProductPageHeaderForwardedAxes(entry.id)) {
     const prop = axisToProp(axis);
     if (prop) {
@@ -164,7 +215,7 @@ for (const entry of PRODUCT_PAGE_HEADER_ENTRIES) {
 // D. 声明为 fixed 的轴必须由登记表解析，且绑定值必须引用该解析常量——不留「装饰性调用 ＋ 字面量绑定」的静默分叉。
 const FIXED_RESOLVER: Record<string, string> = { presentationMode: 'resolveProductPageHeaderFixedMode' };
 for (const entry of PRODUCT_PAGE_HEADER_ENTRIES) {
-  const source = read(entry.path);
+  const source = entrySource(entry.path);
   for (const disposition of entry.axes) {
     if (disposition.handling !== 'fixed') continue;
     const resolver = FIXED_RESOLVER[disposition.axis] ?? 'resolveProductPageHeaderFixedAxis';
@@ -181,7 +232,7 @@ for (const entry of PRODUCT_PAGE_HEADER_ENTRIES) {
     assert.ok(binding, `${entry.id} 的固定轴 ${disposition.axis} 必须以标识符引用形式绑定，而不是字面量`);
     const constName = binding[1];
     assert.ok(
-      new RegExp(`const\\s+${constName}\\s*=\\s*${resolver}\\(\\s*'${entry.id}'\\s*\\)`).test(source),
+      new RegExp(`const\\s+${constName}\\s*=\\s*${resolver}\\(\\s*['\"]${entry.id}['\"]\\s*\\)`).test(source),
       `${entry.id} 的固定轴 ${disposition.axis} 绑定值 ${constName} 必须来自 ${resolver}('${entry.id}')，不得由装饰性调用遮蔽`,
     );
     assert.equal(resolveProductPageHeaderFixedAxis(entry.id, disposition.axis), disposition.value);
@@ -191,7 +242,7 @@ for (const entry of PRODUCT_PAGE_HEADER_ENTRIES) {
 // E. 薄入口的声明面不得超出登记表，且不得用 `$attrs` 透传未登记轴。
 for (const entry of PRODUCT_PAGE_HEADER_ENTRIES) {
   if (entry.kind !== 'adapter') continue;
-  const source = read(entry.path);
+  const source = entrySource(entry.path);
   assert.ok(!/\$attrs/.test(source), `${entry.id} 不得用 $attrs 透传未登记轴：未登记轴必须在登记表中显式决策`);
   const allowed = new Set(
     entry.axes
@@ -202,10 +253,35 @@ for (const entry of PRODUCT_PAGE_HEADER_ENTRIES) {
   for (const prop of declaredPropsOf(entry.path)) {
     assert.ok(allowed.has(prop as ProductPageHeaderAxis), `${entry.id} 声明了未登记输入 ${prop}`);
   }
+  // 槽位同样是「输入面」：薄入口不得暴露未登记／未转发的槽。
+  const forwardedSlots = new Set(
+    entry.axes
+      .filter((disposition) => disposition.handling === 'forwarded' && disposition.axis.endsWith('Slot'))
+      .map((disposition) => axisToSlot(disposition.axis)),
+  );
+  for (const slot of [...source.matchAll(/<slot\s+name="([A-Za-z_]\w*)"/g)].map((match) => match[1])) {
+    assert.ok(forwardedSlots.has(slot), `${entry.id} 暴露了未登记的槽 ${slot}：槽位必须与登记表一致`);
+  }
 }
 
 // F. 调用方的调用面必须逐点固定：标签形态（PascalCase／kebab）、导入形态（默认／具名／barrel）与集合本身都被钉死。
 const PASS_THROUGH = new Set(['class', 'style', 'key', 'ref', 'is', 'slot', 'id']);
+
+/**
+ * 把属性名归一为「入口必须声明的输入名」。`:x` 与 `v-bind:x` 等价，`v-model`／`v-model:x` 落到 Vue 实际
+ * 使用的 prop（`modelValue`／`x`），`.modifier` 不改 prop 名；`v-if`／`v-for` 等非输入面指令返回 null。
+ * 只跳过 `v-` 前缀会让 `v-bind:x`／`v-model` 成为「静默丢参」的一 token 绕过。
+ */
+function normaliseBoundAttribute(rawName: string): string | null {
+  let name: string;
+  if (rawName === 'v-model') name = 'modelValue';
+  else if (rawName.startsWith('v-model:')) name = rawName.slice('v-model:'.length);
+  else if (rawName.startsWith('v-bind:')) name = rawName.slice('v-bind:'.length);
+  else if (rawName.startsWith(':')) name = rawName.slice(1);
+  else if (rawName.startsWith('v-')) return null;
+  else name = rawName;
+  return name.split('.')[0] || null;
+}
 
 /**
  * 逐字扫描开标签内的属性名。**必须感知引号**：正则式扫描会把属性值内部的标识符
@@ -264,8 +340,8 @@ for (const file of walkVue(SRC)) {
   if (tagToEntry.size === 0) continue;
 
   // F1. 动态组件绑定无法静态枚举调用面：绑定到已登记入口即失败，必须显式登记该形态。
-  for (const usage of source.matchAll(/<component\b([\s\S]*?)\/?>/g)) {
-    for (const dynamic of usage[1].matchAll(/:is="([^"]+)"|v-bind="([^"]+)"/g)) {
+  for (const block of tagAttributeBlocks(source, ['component', 'Component'])) {
+    for (const dynamic of block.matchAll(/:is="([^"]+)"|v-bind="([^"]+)"/g)) {
       for (const identifier of (dynamic[1] ?? dynamic[2] ?? '').matchAll(/[A-Za-z_$][\w$]*/g)) {
         assert.ok(
           !tagToEntry.has(identifier[0]),
@@ -280,15 +356,16 @@ for (const file of walkVue(SRC)) {
     // 不做「属性 ⊆ 登记轴」比对；薄入口才是「调用方属性 ⊆ 声明面」的强约束对象。
     const strictFace = ADAPTER_ENTRY_BY_PATH.has(entry.path);
     const declared = new Set(declaredPropsOf(entry.path));
-    for (const usage of source.matchAll(new RegExp(`<(?:${tag}|${kebab(tag)})\\b([\\s\\S]*?)\\/?>`, 'g'))) {
+    for (const block of tagAttributeBlocks(source, [tag, kebab(tag)])) {
       discoveredCallSites.push(`${file}#${tag}`);
-      for (const rawName of attributeNames(usage[1])) {
+      for (const rawName of attributeNames(block)) {
         assert.ok(rawName !== 'v-bind', `${file} 对 ${entry.id} 使用 v-bind 对象展开，调用面无法静态枚举；必须改为显式具名属性`);
-        if (rawName.startsWith('#') || rawName.startsWith('v-') || rawName.startsWith('@')) continue;
-        if (!strictFace) continue;
-        const name = rawName.replace(/^(:|@|#|v-bind:|v-on:)/, '');
+        if (rawName.startsWith('#') || rawName.startsWith('@') || rawName.startsWith('v-on:')) continue;
+        const name = normaliseBoundAttribute(rawName);
+        if (name === null) continue;
         if (name.startsWith('data-') || name.startsWith('aria-')) continue;
         if (PASS_THROUGH.has(name)) continue;
+        if (!strictFace) continue;
         assert.ok(
           declared.has(camel(name)),
           `${file} 向 ${entry.id} 传入 ${name}，但该入口未声明：静默丢参必须改为显式登记或显式转发`,
@@ -302,6 +379,22 @@ assert.deepEqual(
   [...KNOWN_CALL_SITES].sort(),
   '薄入口调用点集合必须与 KNOWN_CALL_SITES 完全一致：新增调用点或改变标签／导入形态都必须显式登记',
 );
+
+// F2. 以入口组件同名符号导入、却解析不到登记入口的说明符（未登记的别名、包路径等）必须显式登记，
+// 否则该调用点会同时躲过 F 与 G。
+const ENTRY_BASENAMES = new Set([
+  ...PRODUCT_PAGE_HEADER_ENTRIES.map((entry) => path.posix.basename(entry.path, '.vue')),
+  path.posix.basename(AUTHORITY, '.vue'),
+]);
+for (const file of walkVue(SRC)) {
+  for (const symbol of parseImports(read(file))) {
+    if (!ENTRY_BASENAMES.has(symbol.imported) && !ENTRY_BASENAMES.has(symbol.local)) continue;
+    assert.ok(
+      delegationTarget(file, symbol) !== null,
+      `${file} 以入口组件同名符号 ${symbol.local} 从 '${symbol.specifier}' 导入，却解析不到登记入口；该导入形态必须显式登记`,
+    );
+  }
+}
 
 // G. 入口集合必须与登记表完全一致：新入口不得静默出现，登记入口不得失去委托。
 const authorityConsumers = walkVue(SRC).filter((file) =>

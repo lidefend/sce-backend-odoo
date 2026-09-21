@@ -90,6 +90,71 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
             failures = validate()
         self.assertIn("ProductPageHeader must not forward unregistered axes through $attrs", failures)
 
+    def test_contract_test_must_stay_a_quick_gate_prerequisite(self):
+        real = Path.read_text
+
+        def unhooked(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return "\n".join(
+                    line.replace(" verify.frontend.product_page_header.unit", "")
+                    if line.startswith("verify.frontend.quick.gate:") else line
+                    for line in value.splitlines()
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", unhooked):
+            failures = validate()
+        self.assertTrue(any("gate hook itself can be silently detached" in item for item in failures), failures)
+
+    def test_authority_marker_removal_is_reported(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "ProductPageHeader.vue":
+                return value.replace("data-render-profile", "data-removed-render-profile")
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertTrue(any("data-render-profile" in item for item in validate()))
+
+    def test_registry_must_declare_axes_and_direct_consumers(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "productPageHeaderAdapters.ts":
+                return value.replace("PRODUCT_PAGE_HEADER_DIRECT_CONSUMERS", "DIRECT_CONSUMERS")
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertIn("header entry registry does not declare axes and direct consumers", validate())
+
+    def test_registry_must_name_every_entry_path(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "productPageHeaderAdapters.ts":
+                return value.replace("'components/template/PageHeader.vue'", "'components/template/RemovedPageHeader.vue'")
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertIn("header entry registry misses entry path: components/template/PageHeader.vue", validate())
+
+    def test_missing_contract_test_file_is_reported(self):
+        real_exists = Path.exists
+
+        def missing(path):
+            if path.name == "product_page_header_adapter_contract_test.ts":
+                return False
+            return real_exists(path)
+
+        with patch("pathlib.Path.exists", missing):
+            failures = validate()
+        self.assertIn("header entry contract test is missing", failures)
+
     def test_adapter_fixed_mode_constant_must_come_from_its_own_entry(self):
         real = Path.read_text
 
@@ -122,6 +187,41 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
             failures = validate()
         self.assertTrue(
             any("not wired into verify.frontend.product_page_header.unit" in item for item in failures),
+            failures,
+        )
+
+    def test_contract_test_wiring_target_must_not_be_duplicated(self):
+        real = Path.read_text
+
+        def duplicated(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value + "\nverify.frontend.product_page_header.unit:\n\t@echo detached\n"
+            return value
+
+        with patch("pathlib.Path.read_text", duplicated):
+            failures = validate()
+        self.assertTrue(
+            any("must be defined exactly once" in item for item in failures),
+            failures,
+        )
+
+    def test_contract_test_wiring_esbuild_line_must_be_a_real_invocation(self):
+        real = Path.read_text
+
+        def faked(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value.replace(
+                    "\t@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
+                    "\t@echo esbuild frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", faked):
+            failures = validate()
+        self.assertTrue(
+            any("esbuild bundle step missing or disabled" in item for item in failures),
             failures,
         )
 

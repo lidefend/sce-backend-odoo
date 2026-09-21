@@ -10368,11 +10368,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   「声明转发必须真实转发」「固定轴不得留字面量」「薄入口声明面 ⊆ 登记面」「**调用方传参 ⊆ 入口声明面**」
   「直接消费权威的文件集合 ≡ 登记表」「轴决策完整、id 唯一、例外必须给理由」八类断言变为可执行。
   Python 守卫同步升级：固定档位单一来源 ＋ 不得硬编码 ＋ 登记表必须包含全部入口路径 ＋ 入口契约测试必须存在且
-  仍接在门禁上（防静默摘除），并新增 2 条负例单元测试（共 14 例）。
+  仍接在门禁上（防静默摘除）。
 - 验证：入口契约 `entries=4 axes=15 call_sites=6 direct_consumers=3` PASS；`verify.frontend.product_page_header.unit`
-  PASS（守卫单测 20 例）；取值呈现守卫 `sources=686 consumers=18` PASS；`lint:src` 0 error／39 条既有 warning；
+  PASS（守卫单测 27 例）；取值呈现守卫 `sources=686 consumers=18` PASS；`lint:src` 0 error／39 条既有 warning；
   `typecheck:strict` PASS；全量 `vue-tsc --noEmit` 仍为 32 条既有类型债、文件集合与 base 一致。
-  **门禁非空洞实证**：在 `/tmp` 影子副本上注入 25 类回归，**全部被抓到**，工作树文件未被修改。除首批形态之外，
+  **门禁非空洞实证**：在 `/tmp` 影子副本上注入 39 类回归，**全部被抓到**，工作树文件未被修改。除首批形态之外，
   第二轮独立只读复核点名的盲区（kebab 标签、barrel 具名导入、`<component :is>`、`v-bind` 对象展开、
   契约测试接线被注释掉、固定轴绑定字面量、固定轴常量解析错入口 id、只留 `import` 丢掉模板渲染、`$attrs` 兜底转发）
   都已纳入同一批注入并被抓到。
@@ -10381,7 +10381,15 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   渲染上游」；D 要求固定轴绑定值必须引用 `resolveProductPageHeaderFixedMode('<本入口 id>')` 的返回值；权威与薄入口
   禁止 `$attrs`；`<component :is>`／对象展开改为硬失败并要求显式登记；Python 守卫改为按 Makefile 结构解析
   **未被注释**的 recipe 行；属性扫描改为引号感知；文档「10 条属性」订正为「9 条属性」、「4 属性＋1 槽」订正为
-  「3 属性＋1 槽」。详见迭代文档 §8。
+  「3 属性＋1 槽」。随后 round B′ 又指出两处 S2 绕过（`<Component :is>` 大写 C 与 Vue 官方同名、`v-bind:prop`／
+  `v-model` 因 `v-` 前缀被跳过），已一并修掉：动态组件扫描改为大小写不敏感、属性名统一归一
+  （`:x` ≡ `v-bind:x`，`v-model` → `modelValue`，`.modifier` 不改变 prop 名）、模块说明符解析补上 `@/` 别名，
+  守卫另要求接线目标**只定义一次**且 esbuild 行必须是真实调用（`@echo esbuild …` 不算）；
+  随后 round A′ 又指出 F 的标签块正则会被属性值里的 `>` 截断（S2）、薄入口槽位无 ⊆ 约束、
+  未登记别名导入形态对 F／G 隐身、注释诱饵可满足委托与常量解析断言、以及 unit 目标被从 `quick.gate` 前置摘除
+  仍全绿（S3），已一并修掉：标签属性块改为**引号感知**扫描、入口源码分析前**剥离注释**、槽位纳入登记表约束、
+  解析不到的入口同名导入硬失败、守卫增加「必须仍是 `quick.gate`／`release.unit` 前置」断言；
+  守卫单测 27 例，影子副本注入矩阵扩到 **39 项**，全部 CAUGHT。详见迭代文档 §8。
 - 上一批复核 A′／B′ 点名的**登记完整性**在本批一并补上：`productMyWorkPresentation`／`ApiKeyManagementView`／
   `PaymentSettlementIntroduceDialog`／`BoqImportPreviewPanel`／`RelationSearchDialog` 的本地回退与格式化事实，
   在 `frontend_localized_display_contract_test.ts` 中以**正锁**（缺一即失败）登记，任何漂移都必须重新决策。

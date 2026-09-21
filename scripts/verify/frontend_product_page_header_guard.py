@@ -9,6 +9,13 @@ def source(path: str) -> str:
     return (ROOT / path).read_text(encoding="utf-8")
 
 
+def _strip_comments(text: str) -> str:
+    """去掉 HTML 注释、块注释与整行 `//` 注释；注释里的「登记表解析」不是实现。"""
+    text = re.sub(r"<!--[\s\S]*?-->", "", text)
+    text = re.sub(r"/\*[\s\S]*?\*/", "", text)
+    return "\n".join(line for line in text.splitlines() if not line.lstrip().startswith("//"))
+
+
 def _active_recipe_lines(makefile: str, target: str) -> list[str]:
     """返回 `target` 目标下**未被注释掉**的 recipe 行。
 
@@ -67,10 +74,10 @@ def validate() -> list[str]:
         "components/page/PageHeader.vue": "page",
         "components/design-system/ScPageHeader.vue": "design-system",
     }
-    if "$attrs" in component:
+    if "$attrs" in _strip_comments(component):
         failures.append("ProductPageHeader must not forward unregistered axes through $attrs")
     for adapter_path, entry_id in fixed_mode_adapters.items():
-        adapter_source = source(f"frontend/apps/web/src/{adapter_path}")
+        adapter_source = _strip_comments(source(f"frontend/apps/web/src/{adapter_path}"))
         if "$attrs" in adapter_source:
             failures.append(f"header adapter must not forward unregistered axes through $attrs: {adapter_path}")
         if re.search(r"(?<![:\w-])presentation-mode=\"", adapter_source):
@@ -83,7 +90,7 @@ def validate() -> list[str]:
                 f"header adapter does not single-source its fixed presentation mode (no identifier binding): {adapter_path}"
             )
         elif not re.search(
-            rf"const\s+{re.escape(binding.group(1))}\s*=\s*resolveProductPageHeaderFixedMode\('{entry_id}'\)",
+            rf"const\s+{re.escape(binding.group(1))}\s*=\s*resolveProductPageHeaderFixedMode\(\s*['\"]{entry_id}['\"]\s*\)",
             adapter_source,
         ):
             failures.append(
@@ -103,8 +110,17 @@ def validate() -> list[str]:
     contract_test = "frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts"
     if not (ROOT / contract_test).exists():
         failures.append("header entry contract test is missing")
-    recipe = _active_recipe_lines(source("make/frontend.mk"), "verify.frontend.product_page_header.unit")
-    if not any("esbuild" in line and "product_page_header_adapter_contract_test.ts" in line for line in recipe):
+    makefile = source("make/frontend.mk")
+    wired_target = "verify.frontend.product_page_header.unit"
+    definitions = [line for line in makefile.splitlines() if re.match(rf"^{re.escape(wired_target)}\s*:", line)]
+    if len(definitions) != 1:
+        failures.append(
+            "header entry contract test is not wired into verify.frontend.product_page_header.unit "
+            f"(target must be defined exactly once, found {len(definitions)}: a later duplicate target overrides the "
+            "guarded recipe)"
+        )
+    recipe = _active_recipe_lines(makefile, wired_target)
+    if not any(".bin/esbuild" in line and "product_page_header_adapter_contract_test.ts" in line for line in recipe):
         failures.append(
             "header entry contract test is not wired into verify.frontend.product_page_header.unit "
             "(esbuild bundle step missing or disabled)"
@@ -121,6 +137,14 @@ def validate() -> list[str]:
             "header entry contract test is not wired into verify.frontend.product_page_header.unit "
             "(guard unit test or guard script step missing or disabled)"
         )
+    # 门禁挂点本身也要防摘除：把 unit 目标从 quick／release 门禁的前置里删掉，比改 recipe 更隐蔽。
+    for gate_target in ("verify.frontend.quick.gate", "verify.frontend.release.unit"):
+        gate_lines = [line for line in makefile.splitlines() if re.match(rf"^{re.escape(gate_target)}\s*:", line)]
+        if not gate_lines or wired_target not in gate_lines[0]:
+            failures.append(
+                "header entry contract test is not wired into verify.frontend.product_page_header.unit "
+                f"({gate_target} no longer depends on it: the gate hook itself can be silently detached)"
+            )
     contract = source("frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue")
     for marker in (':presentation-mode="presentationMode"', ':render-profile="mode"', ':dirty-state="headerDirtyState"'):
         if marker not in contract:
