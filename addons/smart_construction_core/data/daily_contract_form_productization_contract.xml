@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo noupdate="0">
+    <!-- U-C4 G13: 日常合同 (687 / menu 663 `menu_sc_p1_daily_contract` /
+         action `action_sc_general_contract`) 原先**没有入口级发布**，本批补齐
+         同族形状的入口发布，使它的结构权威落在原生主表单上。
+
+         action 687 不定 `view_id`，按模型主表单解析到 view 1757
+         (`view_sc_general_contract_form`, `sc.general.contract.form`)。此前
+         它只消费模型级生成镜像 77 (`sc_general_contract_company_handling_form_v2`
+         priority 1000，`action_id` 为空)，于是 `form_structure_authority` 解析
+         停在 `""`，`ui_contract_v2` 走"兼容地板"路径，前台渲染落在
+         `layoutPolicy=native_authority` + 兼容重组逻辑上。
+
+         补一条入口级 native 语义声明后，该 action 的结构权威由原生视图持有
+         (与优先级无关：`form_structure_authority` 由声明 `composition_mode`
+         的契约决定)，解析口径与外层一致：
+         `form_structure_authority=native_authority` →
+         `layoutPolicy=container_tree_authority`、`mode=native_structured_form`，
+         兼容重组路径对 687 关闭，字段位置与可见性由原生视图持有。
+
+         形状与 G07 为 858 补发布、G09 为 871 补发布、G10 为 597／527 补发布、
+         G11 为 727 补发布的写法一致：只有 `title` ＋
+         `composition_mode: native_semantic_surface` ＋ `context` 语义声明，
+         不含任何结构键，因此 `structural_form_declarations()` 对其返回空，
+         不会在原生面上再生出 `LEGACY_STRUCTURE_KEY_OVERRIDE`。
+
+         保留边界：模型级生成镜像 77 本批**保持 active**——它承载的字段策略
+         (label / required / visible) 继续服务该模型无 action 上下文的渲染面，
+         退役它属另一组的工作；本批实测它被原生面抑制的诊断是
+         `LEGACY_STRUCTURE_SUPPRESSED_BY_NATIVE_VIEW`（正常口径，非冲突）。
+         同模型的兄弟入口 629 (`action_sc_tier_review_my_general_contract`)
+         仍消费它自己的入口面，本批不改动。
+
+         回滚：`git revert`（纯声明，无数据迁移）。 -->
+    <record id="business_config_contract_daily_contract_form_native_v1" model="ui.business.config.contract">
+        <field name="name">daily_contract_form_native_v1</field>
+        <field name="model">sc.general.contract</field>
+        <field name="view_type">form</field>
+        <field name="action_id" ref="smart_construction_core.action_sc_general_contract"/>
+        <field name="view_id" ref="smart_construction_core.view_sc_general_contract_form"/>
+        <field name="priority">800</field>
+        <field name="company_id" eval="False"/>
+        <field name="active" eval="True"/>
+        <field name="status">published</field>
+        <field name="version_no">1</field>
+        <field name="contract_json" eval="{
+            'view_orchestration': {
+                'context': {
+                    'source': 'smart_construction_core.product_release',
+                    'source_status': 'product_release',
+                    'fact_authority': 'sc.general.contract'
+                },
+                'views': {
+                    'form': {
+                        'title': '日常合同',
+                        'composition_mode': 'native_semantic_surface'
+                    }
+                }
+            }
+        }"/>
+    </record>
+</odoo>

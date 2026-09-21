@@ -180,6 +180,27 @@ TOPIC_IDENTITIES = {
     "project": (
         ("action_project_initiation", "view_project_create_form", "menu_sc_project_initiation"),
     ),
+    # U-C4 G13: 日常合同 (687 / menu 663) and 日常合同结算 (876 / menu 698) are the
+    # two registered consumers of the daily-contract family.  Both were carried by
+    # entry-level declarations that no longer own the rendered structure: 876
+    # named four compatibility sections (办理主信息 / 项目与日常合同 /
+    # 结算金额与明细 / 办理依据) that never reached the rendered container tree,
+    # and 687 had no entry release at all, so its structure authority resolved
+    # empty while the native arch 1757 already rendered the page.  The batch
+    # retires the unused sections and publishes the 687 entry release, so the
+    # delivered page is again the only place the native section identities, the
+    # sparse readonly口径 and the field label can be read: `section_navigation`
+    # measures the ten native `data-sc-anchor` groups of 1764, `readonly_values`
+    # measures the two sparse readonly overrides (currency_id / state) that the
+    # retired body used to carry, and `record_surface` replays the same
+    # read-only battery on a governed sample so container conditions that only
+    # resolve on an existing record are observed as legal hiding.  Read-only; no
+    # change set is touched.
+    "daily_contract": (
+        ("action_sc_general_contract", "view_sc_general_contract_form", "menu_sc_p1_daily_contract"),
+        ("action_sc_product_general_contract_settlement_v1", "view_sc_settlement_order_form",
+         "menu_sc_product_general_contract_settlement_v1"),
+    ),
 }
 TOPIC_SAMPLE_FIELDS = {
     "invoice": ["direction", "source_kind", "source_origin", "note"],
@@ -195,6 +216,7 @@ TOPIC_SAMPLE_FIELDS = {
     "context_workspace": ["project_id", "partner_id", "business_date", "note"],
     "usage_performance": ["state", "project_id", "note", "amount", "contract_id"],
     "project": ["name"],
+    "daily_contract": ["state"],
 }
 # Mechanism assertions for the read-only representative pass.  Names are the
 # registered display copies / canonical sources of the same business fact; the
@@ -391,6 +413,20 @@ TOPIC_REPRESENTATIVE = {
     # sample of its own action - instead of standing in for a conditional
     # section.  Read-only; no change set is touched and no record is written.
     "project": {"section_navigation": True, "record_surface": True},
+    # U-C4 G13: the batch's measured mechanism is the read-only口径 of the two
+    # delivered surfaces - 876 restores `currency_id` / `state` with a sparse
+    # semantic override and 687 takes the native profile - so `readonly_values`
+    # is the assertion here; `record_surface` adds the second measured surface on
+    # a governed sample of each action (the settlement action's own domain is
+    # empty in the governed database, which the pass records as a data fact
+    # instead of a passed route).  Section navigation is deliberately not claimed
+    # for this topic: the daily-contract native form 1757 declares no
+    # `data-sc-anchor` track at all, so the requirement "the sticky command bar
+    # and the 章节导航 must both render" cannot hold for both registered
+    # identities.  The ten native sections of 1764 stay covered by the
+    # registered `settlement` topic, whose 781/782 routes render that same view.
+    # Read-only; no change set is touched.
+    "daily_contract": {"readonly_values": True, "record_surface": True},
 }
 if topic not in TOPIC_IDENTITIES:
     raise RuntimeError("unregistered formal form topic")
