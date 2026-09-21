@@ -10452,6 +10452,19 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   D 断言同步接受 `['"]`。守卫单测 **45 → 51 例**，影子副本矩阵 **95 → 112 项（96 项 CAUGHT ＋ 16 项假失败
   防线锁定 STILL-PASS）**。第六轮修订产生新 HEAD，L1／exact-head L5 与第七轮复核按新冻结候选重跑与重绑。
   详见迭代文档 §8。
+  随后 round A⁶／B⁶（复核 head `4ea84a5b`，均 REQUEST_CHANGES、**无 S0／S1**）点名**两类 Make 级失败通道**＋据实性：
+  ①**A⁶ S2-1** 守卫只解析 `make/frontend.mk`——把 `verify.frontend.product_page_header.unit` 在被 `include` 的片段里
+  重定义，Make 取**最后一份** recipe（只给一条 warning），断言里的 recipe 被整条替换而原文件一字未动；
+  ②**A⁶ S3-1** Make 的**失败忽略**通道此前完全没查——recipe 行的 `-` 前缀（`@-esbuild …`／`-@/usr/bin/node …`）、
+  `.IGNORE:` 特殊目标、`MAKEFLAGS += -i` 都让步骤「执行但失败不传播」，且完全不改 shell 形状；
+  ③**A⁶ S3-2／B⁶ S2-1** 复核时刻冻结候选上尚无 exact-head L5 回执（复核者只能只读，无法代跑）；
+  ④**B⁶ S4-1／A⁶ O-1** 切换日志计数与迭代文档 §6④ 口径。已逐条修掉：守卫改为按 `include`／`-include` 展开
+  **Makefile 链**（跳过 `$(…)` 动态 token），要求被守卫目标在链上**只定义一次**，门禁挂点前置也改为在整条链上
+  收集（并与 `make/runtime_ops.mk` 的可累加前置合并）；`_matches_recipe` 的前缀字符集含 `-` 即判失败，新增
+  `_ignore_error_forms` 拒绝 `.IGNORE:` 与 `MAKEFLAGS` 的 `-i`／`--ignore-errors`；L5 回执已在 `4ea84a5b`
+  （tree `96faa246`）上重跑并 **VERIFIED**。守卫单测 **51 → 55 例**，影子副本矩阵 **112 → 119 项
+  （101 项 CAUGHT ＋ 18 项假失败防线锁定 STILL-PASS）**。第七轮修订产生新 HEAD，L1／exact-head L5 与
+  A⁷／B⁷ 复核按新冻结候选重跑与重绑。详见迭代文档 §8。
 - 上一批复核 A′／B′ 点名的**登记完整性**在本批一并补上：`productMyWorkPresentation`／`ApiKeyManagementView`／
   `PaymentSettlementIntroduceDialog`／`BoqImportPreviewPanel`／`RelationSearchDialog` 的本地回退与格式化事实，
   在 `frontend_localized_display_contract_test.ts` 中以**正锁**（缺一即失败）登记，任何漂移都必须重新决策。
@@ -10468,7 +10481,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   以及紧贴分隔符的 `>/dev/null|| true` 会**假失败**（安全方向，需显式登记；
   `2>&1`／`2>/dev/null` 等真实重定向仍被接受，`\` 续行按 Make 规则拼成逻辑行后判定），
   门禁挂点按**前置 token** 比对（行尾 `#` 注释里的目标名不算依赖），
- 受管例外入口的领域属性面不在「属性 ⊆ 登记轴」约束内；无 `local.dev` 运行态抽验。`scene_component_bridge`／`style_system`（`ContractFormPage`
+  Make 级的失败忽略通道（recipe 行 `-` 前缀、`.IGNORE:`、`MAKEFLAGS` 的 `-i`／`--ignore-errors`）与
+  「被守卫目标在 `include` 链上被重定义」一律**硬失败**（安全方向）；`include $(VAR)` 这类**动态 include**
+  与条件 include 无法静态展开，属如实登记的残限；
+  受管例外入口的领域属性面不在「属性 ⊆ 登记轴」约束内；无 `local.dev` 运行态抽验。`scene_component_bridge`／`style_system`（`ContractFormPage`
   1905>1900）／`release_navigation_policy`（菜单投影）三项在本批之前即为失败，本批不修、不掩盖。
-- Next Step：冻结本批 HEAD → L1 → exact-head `make ci.local.quick` 回执 → 独立只读复核（六轮共 12 次）→ 显式合并授权 →
+- Next Step：冻结本批 HEAD → L1 → exact-head `make ci.local.quick` 回执 → 独立只读复核（七轮共 14 次；本轮修订后再由
+  A⁷／B⁷ 验证＝16 次）→ 显式合并授权 →
   `make pr.push`／`pr.create`／`pr.ready`／`pr.merge` → 主仓库 `make main.sync` → `make branch.cleanup.feature`。
