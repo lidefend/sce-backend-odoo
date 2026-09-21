@@ -10113,5 +10113,46 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `make pr.merge`，再 `make main.sync` 与分支清理；G16 台账侧**不扣减**任何消费者计数（本轮无消费者变化），
   `retirementComplete` 继续保守保持 `false`。
 - 复核后修订（独立复核 r2 **S2-1** 闭合）：接线回归断言由**子串**匹配改为 **recipe 行逐字相等且唯一**，并新增接线校验器负例与语料枚举 fail-closed 测试（10 → 13 测试）。原断言在 `/tmp` 影子副本下对「调用点被加窄目录参数」有确定性假阴性（窄参数 sweep 报 44 文件、漏检 `scripts/verify/*.mjs` 的破坏）；修订后同一场景两个调用点（`test.contract`／`ci.local.quick.run`）均 **FAILED**。语料、口径与 fail-closed 语义未变，该修订产生新 HEAD，故 L1／L2／L5 与独立复核需按新冻结候选重跑与重绑。
-- 复核后修订二（r2b **S3-1** / r1b **S4-2** 闭合）：新增「语料成员资格与 `git ls-files` 独立枚举集合相等」测试，堵住「检查器内部被收窄为子集而自检仍绿」的路径（影子副本实测：收窄为 `frontend/` ＋ `scripts/verify/` 后自检 FAILED）；并把验证叙述里的「10 tests」刷为最终冻结候选的测试数。语料范围、口径与审计链未变。
+- 复核后修订二（r2b **S3-1** / r1b **S4-2** 闭合）：新增「语料成员资格与 `git ls-files` 独立枚举集合相等」测试，堵住「检查器的**实现体**被收窄为子集而自检仍绿」的路径（影子副本实测：`tracked_node_files()` 收窄为 `frontend/` ＋ `scripts/verify/` 后自检 FAILED）；并把验证叙述里的「10 tests」刷为最终冻结候选的测试数。语料范围、口径与审计链未变。
 - 复核后修订三（r2c **S3-1** 闭合）：新增**语料常量字面量断言**，堵住「`TRACKED_PATTERNS` 常量被改窄时断言与实现两侧同步缩小而自检仍绿」的路径（影子副本实测：常量改窄 → 语料 148 → 141、自检 **FAILED（failures=2）**，真 sweep 仍能抓出被丢弃目录的破坏）。共 15 测试。
+
+## 2026-09-21 — U-C4 G16 后续硬化收口审计（P4 证据轮）
+
+- 分支 `audit/uc4-g16-followup-syntax-gate-v1`，基线 `origin/main@cdb14d41bfa4657a1754bcb1740036cbe4b16b65`
+  （G16 后续硬化 PR #517 的 squash 合入点）。Formal Product Layer 为 **P4**（运维交付工具与证据）；Layer Target 为
+  台账／迭代记录的证据面。**未触碰**产品代码、契约、测试口径、门禁工具输入与环境（无新环境／凭据／端口／库）。
+  回滚为 `git revert`（文档类单职责提交，路径集合固定为 3：台账 ＋ 迭代记录 ＋ 本切换日志）。
+- 触发：台账 `uc4G16FollowupSyntaxGate.nextRoundAudit` 的预留项（审计轮记录本批 merged PR、squash head 与必检结果），
+  以及上轮独立只读复核 r1d／r2d 的三条**记录级**观察项（S3-1／S4-1／S4-2）。
+- 合入事实：PR **#517** squash 合入，squash head `cdb14d41…`、source head `22518a2a…`（tree `d3a9c7ea…`）、
+  base `8c7a4e1d…`，mergedAt 2026-09-21T08:43:27Z；r1d／r2d 在冻结 source head 上均 **APPROVE**（S0/S1/S2 = 0）。
+- 必检与合入后：PR 侧 9 项 pass／3 项 skip；合入后 mainline push 4 个 run 全 **success**
+  （`merge_policy_gate` 35579394597、`professional_quality_gate` 35579394644、`public_guard` 35579394630、
+  `frontend_release_gate` 35579394672）。
+- 合入后实测（只读重跑已合入门禁，**非**新验收证据）：`scripts/ci/node_syntax_check.py` →
+  `[OK] Node syntax check passed (148 files)`；`scripts/ci/test_node_syntax_check.py` → `Ran 15 tests … OK`。
+- 记录订正：①**S3-1**：把「148 → 141」与「原 14 测试全绿」的配对改为与实测一致——14 测试套件下把
+  `TRACKED_PATTERNS` 收窄为**保留 `.cjs` 的 144 集合**时自检仍全绿（静默逃逸成立），而收窄为**同时丢弃 `.cjs`
+  的 141 集合**时已被历史 `.cjs` 断言拦下（FAILED，failures=1）；该订正同时在 **§8.50 原处**生效；
+  ②**S4-1**：本日志「复核后修订二」条目与台账 `reviewRound3` 的「内部被收窄」承诺限定为**实现体或常量级**收窄；
+  ③**S4-2**：台账 `reviewRound3` 缩进由 12 空格改回同层 6 空格（JSON 原本即良构）。
+- 台账口径：新增 `uc4G16FollowupSyntaxGateAudit`（合入事实、必检与合入后 run、记录订正、分支清理），其
+  `nextRoundAudit` 指回该块；`uc4G16PublishedAudit` **逐字节不变**；主线计数字段（`count=0`／`entries=[]`／
+  `otherStateConsumers=[]`／`retirementComplete=false`）本轮未改（本轮无消费者变化）。
+- 清理：`fix/node-automation-syntax-gate-v1` 经 `make branch.cleanup.feature` 本地＋远端删除（squash 合入下按
+  exact-head 与 merged PR #517 核对），候选工作树 detach 到 `cdb14d41` 并保留。
+- Next Step：冻结本批 HEAD 后跑一次 exact-head `make ci.local.quick`；经独立只读复核与显式合并授权后执行
+  `make pr.merge`，再 `make main.sync` 与分支清理。台账侧**不扣减**任何消费者计数，残限 4 条（含受跟踪 `.js`
+  201 个未纳入 sweep）继续保持登记。
+- 范围外预存失败（登记为排除项，不修）：`make verify.product.delivery.governance_truth` 在基线 **FAIL（exit 2）**——
+  `docs/product/delivery/v1/delivery_readiness_scoreboard_v1.md` 的 `snapshot.commit_ref = 68f5224b` 之后 mainline
+  累计 **745** 个文件变动（含 **20** 个 `.agent/**`）并触发 `scoreboard_snapshot_stale>168h`。预存证据采用
+  **可判别口径**：在干净基线 `cdb14d41` 的隔离副本上复跑同一守卫得到**完全相同**的 2 条 error、记分板文件
+  base↔HEAD 逐字节相同；该守卫 error 列表在 20 条处截断（`.agent/**` 先序），故「本批路径不在列表内」不作为
+  判据。分类 **baseline_evidence_defect**，本轮不刷新记分板、不改 `.agent/**`；该目标不是 PR 必检项。
+- 复核后修订（绑定 `11863196…` 的独立只读复核 r1／r2 均判 **REQUEST_CHANGES**，无 S0／S1，两条事实核心已由两轮
+  分别在影子副本独立复现）：①**S2-1**：本文件先前把新增的收口审计段插入到上一段末条 bullet **之前**，导致「复核后
+  修订三」条目在本文件重复出现（base 仅 1 处），现删除错位重复项；②**S3-1**：§8.50 正文仍保留旧配对，现按实测
+  **在原处**订正（常量收窄为保留 `.cjs` 的 144 集合时 14 测试仍全绿＝静默逃逸；丢弃 `.cjs` 的 141 集合当时已被
+  历史 `.cjs` 断言拦下）；③**S4-1**：把范围外失败的判据改为上述可判别口径。该修订产生新 HEAD，L1／L2／L5 与
+  独立复核按新冻结候选重跑与重绑。
