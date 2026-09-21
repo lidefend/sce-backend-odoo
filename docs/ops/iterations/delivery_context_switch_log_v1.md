@@ -10131,8 +10131,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `frontend_release_gate` 35579394672）。
 - 合入后实测（只读重跑已合入门禁，**非**新验收证据）：`scripts/ci/node_syntax_check.py` →
   `[OK] Node syntax check passed (148 files)`；`scripts/ci/test_node_syntax_check.py` → `Ran 15 tests … OK`。
-- 记录订正：①**S3-1**：把「148 → 141」与「原 14 测试全绿」的配对改为与实测一致——14 测试下仍全绿的是**保留
-  `.cjs` 的 144 集合**，丢弃 `.cjs` 的 141 集合当时已被历史 `.cjs` 断言拦下（FAILED，failures=1）；
+- 记录订正：①**S3-1**：把「148 → 141」与「原 14 测试全绿」的配对改为与实测一致——14 测试套件下把
+  `TRACKED_PATTERNS` 收窄为**保留 `.cjs` 的 144 集合**时自检仍全绿（静默逃逸成立），而收窄为**同时丢弃 `.cjs`
+  的 141 集合**时已被历史 `.cjs` 断言拦下（FAILED，failures=1）；该订正同时在 **§8.50 原处**生效；
   ②**S4-1**：本日志「复核后修订二」条目与台账 `reviewRound3` 的「内部被收窄」承诺限定为**实现体或常量级**收窄；
   ③**S4-2**：台账 `reviewRound3` 缩进由 12 空格改回同层 6 空格（JSON 原本即良构）。
 - 台账口径：新增 `uc4G16FollowupSyntaxGateAudit`（合入事实、必检与合入后 run、记录订正、分支清理），其
@@ -10145,7 +10146,13 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   201 个未纳入 sweep）继续保持登记。
 - 范围外预存失败（登记为排除项，不修）：`make verify.product.delivery.governance_truth` 在基线 **FAIL（exit 2）**——
   `docs/product/delivery/v1/delivery_readiness_scoreboard_v1.md` 的 `snapshot.commit_ref = 68f5224b` 之后 mainline
-  累计 **745** 个文件变动（含 **20** 个 `.agent/**`）并触发 `scoreboard_snapshot_stale>168h`；该失败与本批无关，
-  在干净基线 `cdb14d41` 上可独立复现（本批 3 个路径均不在 error 列表内），分类 **baseline_evidence_defect**，
-  本轮不刷新记分板、不改 `.agent/**`；该目标不是 PR 必检项。
-- 复核后修订三（r2c **S3-1** 闭合）：新增**语料常量字面量断言**，堵住「`TRACKED_PATTERNS` 常量被改窄时断言与实现两侧同步缩小而自检仍绿」的路径（影子副本实测：常量改窄 → 语料 148 → 141、自检 **FAILED（failures=2）**，真 sweep 仍能抓出被丢弃目录的破坏）。共 15 测试。
+  累计 **745** 个文件变动（含 **20** 个 `.agent/**`）并触发 `scoreboard_snapshot_stale>168h`。预存证据采用
+  **可判别口径**：在干净基线 `cdb14d41` 的隔离副本上复跑同一守卫得到**完全相同**的 2 条 error、记分板文件
+  base↔HEAD 逐字节相同；该守卫 error 列表在 20 条处截断（`.agent/**` 先序），故「本批路径不在列表内」不作为
+  判据。分类 **baseline_evidence_defect**，本轮不刷新记分板、不改 `.agent/**`；该目标不是 PR 必检项。
+- 复核后修订（绑定 `11863196…` 的独立只读复核 r1／r2 均判 **REQUEST_CHANGES**，无 S0／S1，两条事实核心已由两轮
+  分别在影子副本独立复现）：①**S2-1**：本文件先前把新增的收口审计段插入到上一段末条 bullet **之前**，导致「复核后
+  修订三」条目在本文件重复出现（base 仅 1 处），现删除错位重复项；②**S3-1**：§8.50 正文仍保留旧配对，现按实测
+  **在原处**订正（常量收窄为保留 `.cjs` 的 144 集合时 14 测试仍全绿＝静默逃逸；丢弃 `.cjs` 的 141 集合当时已被
+  历史 `.cjs` 断言拦下）；③**S4-1**：把范围外失败的判据改为上述可判别口径。该修订产生新 HEAD，L1／L2／L5 与
+  独立复核按新冻结候选重跑与重绑。

@@ -7092,8 +7092,10 @@ L2 `make test.contract` **PASS**（`[OK] Node syntax check passed (148 files)`�
 **未削弱**其余结论：语料范围、口径、fail-closed 语义与审计链不变。
 
 **复核后修订三（r2c S3-1 闭合）**：r2c 指出成员资格断言与实现**共享 `TRACKED_PATTERNS` 常量**——把常量改窄
-（如 `("frontend/**/*.mjs", "scripts/verify/*.mjs")`）时两侧**同步缩小**，原 14 测试全绿而语料 148 → 141、
-`scripts/ops` 等目录被静默丢弃（影子副本实测：破坏被丢弃文件后窄 sweep exit 0、真 sweep exit 1）。修订新增
+（如 `("frontend/**/*.mjs", "scripts/verify/*.mjs")`）时两侧**同步缩小**，`scripts/ops` 等目录可被静默丢弃
+（影子副本实测：破坏被丢弃文件后窄 sweep exit 0、真 sweep exit 1）。**逃逸归属（本轮收口审计按实测订正）**：
+14 测试套件下把常量收窄为**保留 `.cjs` 的 144 集合**时自检**仍然全绿**（静默逃逸成立）；而收窄为**同时丢弃
+`.cjs` 的 141 集合**时已被历史 `.cjs` 断言拦下（**FAILED，failures=1**），并非静默。修订新增
 **语料常量字面量断言**（`TRACKED_PATTERNS == ("*.mjs", "*.cjs")` 且 `NODE_SUFFIXES == (".mjs", ".cjs")`，15 测试）；
 同一常量收窄下自检 **FAILED（failures=2）**，故本记录与台账对「防止内部收窄」的承诺现由实现体与常量两处断言
 分别支撑，措辞不再宽于事实。
@@ -7112,9 +7114,10 @@ L2 `make test.contract` **PASS**（`[OK] Node syntax check passed (148 files)`�
   `public_guard` 35579394630、`frontend_release_gate` 35579394672）。
 - 合入后实测（只读重跑已合入门禁，**非**新验收证据）：`python3 scripts/ci/node_syntax_check.py` →
   `[OK] Node syntax check passed (148 files)`；`python3 scripts/ci/test_node_syntax_check.py` → `Ran 15 tests … OK`。
-- **记录订正（上轮复核 r1d／r2d 的 S3-1／S4-1／S4-2，均不触碰门禁与关账结论）**：①**S3-1**：上面对「148 → 141」
-  与「原 14 测试全绿」的配对与实测不符——14 测试下仍全绿的是**保留 `.cjs` 的 144 集合**（148 → 144），而**丢弃
-  `.cjs` 的 141 集合**当时已被历史 `.cjs` 断言拦下（**FAILED，failures=1**）；订正后两条测量各归其位。
+- **记录订正（上轮复核 r1d／r2d 的 S3-1／S4-1／S4-2，均不触碰门禁与关账结论）**：①**S3-1**：§8.50 与台账原把
+  「148 → 141」与「原 14 测试全绿」配对，与实测不符——14 测试套件下把 `TRACKED_PATTERNS` 收窄为**保留 `.cjs` 的
+  144 集合**时自检仍全绿（静默逃逸成立），而收窄为**同时丢弃 `.cjs` 的 141 集合**时已被历史 `.cjs` 断言拦下
+  （**FAILED，failures=1**）。本批**在 §8.50 原处**订正，并在 §8.51 与台账 `reviewRound3` 记录订正后的归属。
   ②**S4-1**：把「检查器内部被收窄」的承诺限定为**实现体或常量级**收窄（与 §8.50 表格中的措辞一致）。
   ③**S4-2**：台账 `reviewRound3` 缩进由 12 空格改回同层 6 空格（JSON 原本即良构，纯格式）。
 - 台账口径：新增 `uc4G16FollowupSyntaxGateAudit`（合入事实、必检与合入后 run、记录订正、分支清理，`nextRoundAudit`
@@ -7128,10 +7131,10 @@ L2 `make test.contract` **PASS**（`[OK] Node syntax check passed (148 files)`�
 - **范围外预存失败（登记为排除项，本轮不修）**：`make verify.product.delivery.governance_truth` 在本批基线上
   **FAIL（exit 2）**，两条 error 都指向 `docs/product/delivery/v1/delivery_readiness_scoreboard_v1.md` 的快照陈旧——
   其 `snapshot.commit_ref = 68f5224b` 之后 mainline 已累计 **745** 个文件变动（含 **20** 个 `.agent/**`）并触发
-  `scoreboard_snapshot_stale>168h`。该失败**与本批无关且可独立复现**：在干净基线 `cdb14d41` 上用
-  `git diff --name-only 68f5224b..cdb14d41` 即得同一批 `.agent/**` 路径，本批 3 个路径**均不在** error 列表内。
-  分类为 **baseline_evidence_defect（记分板快照陈旧）**，属既有六条登记之外的新观察项；本轮不刷新记分板、
-  不改 `.agent/**`，仅登记（该目标不是 PR 必检项）。
+  `scoreboard_snapshot_stale>168h`。**预存证据（采用可判别口径）**：在干净基线 `cdb14d41` 的隔离副本上复跑同一
+  守卫，得到**完全相同**的 2 条 error，且记分板文件本身 base↔HEAD 逐字节相同；守卫的 error 列表在 20 条处截断
+  （`.agent/**` 先序），故「本批 3 个路径不在列表内」**不作为**判据。分类为 **baseline_evidence_defect（记分板快照
+  陈旧）**，属既有六条登记之外的新观察项；本轮不刷新记分板、不改 `.agent/**`，仅登记（该目标不是 PR 必检项）。
 
 状态：**G16 后续硬化**收口完成（PR #517 已合入 mainline `cdb14d41`）**｜批次状态：自验与冻结门禁通过；集中产品复核
 结论以产品方登记为准｜未部署｜用户交付未完成｜主线台账 0（`count=0`）｜`otherStateConsumers=[]`｜
