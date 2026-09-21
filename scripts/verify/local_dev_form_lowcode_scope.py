@@ -230,6 +230,33 @@ TOPIC_IDENTITIES = {
          "menu_sc_funding_plan_summary"),
         ("action_sc_tender_guarantee", "view_tender_guarantee_form", "menu_sc_tender_guarantee"),
     ),
+    # U-C4 G15: 税务申报 (880 / menu 702 `menu_sc_product_tax_filing_v1`) is the
+    # last ledger entry that carried a compatibility regrouping path.  Its entry
+    # release `tax_filing_form_v1` declared an `entry_semantic_surface` body (four
+    # sections, 22 field rows, five actions) which the G15 batch retires in place,
+    # so the delivered authority moves from `entry_semantic_surface` /
+    # `overview_then_task_slots` to the native container tree.  The native form
+    # 1659 declares four business groups, six buttons and **zero**
+    # `data-sc-anchor` tracks with no inherited children, so the requirement "the
+    # sticky command bar and the 章节导航 must both render" cannot hold here and
+    # `section_navigation` is deliberately not claimed for this topic.  The
+    # mechanism assertion is the read-only `readonly_values` battery: the retired
+    # body declared no field policy at all, so the read-only口径 the delivered
+    # page keeps is the native arch's, and `record_surface` replays the same
+    # battery on a governed sample.  Entry 880 keeps `create` enabled (the arch
+    # declares `delete="0"` only), so the create route carries structure and is
+    # measured; the record route cannot be reached for this scope identity - the
+    # action domain holds zero rows and the model itself holds zero rows in
+    # `sc_dev_demo` - so the operator report registers it as
+    # `uncovered / record_surface / empty_action_domain` instead of a passing
+    # route, and the conditional modifiers the arch declares (`state != 'draft'`
+    # on company/period, `state in [...]` on the tax adjustment) are owned by the
+    # unit tests and the read-only contract probe rather than observed here.
+    # Read-only; no change set is touched.
+    "tax_filing": (
+        ("action_sc_product_tax_filing_v1", "view_sc_tax_filing_form",
+         "menu_sc_product_tax_filing_v1"),
+    ),
 }
 # Declared per topic, not per entry: the resolver keeps only the names the
 # registered model actually declares (`if name in model._fields`), so a topic whose
@@ -252,6 +279,7 @@ TOPIC_SAMPLE_FIELDS = {
     "project": ["name"],
     "daily_contract": ["state"],
     "ledger_summary": ["state", "currency_id"],
+    "tax_filing": ["state", "currency_id"],
 }
 # Mechanism assertions for the read-only representative pass.  Names are the
 # registered display copies / canonical sources of the same business fact; the
@@ -477,6 +505,23 @@ TOPIC_REPRESENTATIVE = {
     # views carry zero `data-sc-anchor` groups, so the navigation battery has no
     # registered identity to resolve.
     "ledger_summary": {"readonly_values": True, "record_surface": True},
+    # U-C4 G15: the single remaining ledger entry (880 税务申报) retires its
+    # compatibility body in place, so the only thing the batch changes is which
+    # declaration owns the structure.  The delivered page is measured, not
+    # asserted from the declaration: `readonly_values` asks the rendered page
+    # whether every fact the delivered profile marks read-only really carries no
+    # editable control (the retired body declared no field policy, so the口径 is
+    # the native arch's), and `record_surface` replays the same battery on a
+    # governed sample, because the arch declares three conditional
+    # `state != 'draft'` modifiers and one `state in [...]` modifier that only
+    # resolve on an existing record and a create-only route would observe them as
+    # absent.  Declaring `record_surface` does not promise a measured record
+    # route: the resolver reports `empty_action_domain` when the governed
+    # identity's action domain holds no readable row, which is the state this
+    # entry is in.  Read-only; no change set is touched.  `section_navigation` is
+    # deliberately not claimed: the native view carries zero `data-sc-anchor`
+    # groups, so the navigation battery has no registered identity to resolve.
+    "tax_filing": {"readonly_values": True, "record_surface": True},
 }
 if topic not in TOPIC_IDENTITIES:
     raise RuntimeError("unregistered formal form topic")

@@ -111,6 +111,7 @@ from . import test_product_job
 from . import test_office_asset
 from . import test_product_message_notification
 from . import test_tax_filing
+from . import test_tax_filing_native_lowcode
 from . import test_product_reports
 from . import test_payment_settlement_component_profile
 from . import test_p1_finance_projection_authority
