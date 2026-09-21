@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4404`
+- Scanned files: `4405`
 - Files requiring split plan: `51`
 - Files above warning threshold: `96`
 
@@ -18,7 +18,7 @@ Generated from repository source files. This report is informational during the 
 | 4274 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4122 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3916 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
-| 3769 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
+| 3773 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3624 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3476 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3390 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
@@ -35,7 +35,7 @@ Generated from repository source files. This report is informational during the 
 | 2349 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 2340 | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2205 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
-| 2135 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
+| 2123 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2068 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2001 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
@@ -115,7 +115,7 @@ Generated from repository source files. This report is informational during the 
 | 1086 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
 | 1060 | Python source | `addons/smart_construction_core/models/core/payment_ledger.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
-| 1040 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
+| 1041 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
 | 1023 | Python source | `addons/smart_core/tests/test_business_config_change_set.py` |
 | 1016 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
 | 1013 | Python source | `addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py` |
@@ -175,7 +175,7 @@ Generated from repository source files. This report is informational during the 
 | 4274 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4122 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3916 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
-| 3769 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
+| 3773 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3624 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3476 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3390 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
@@ -192,7 +192,7 @@ Generated from repository source files. This report is informational during the 
 | 2349 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 2340 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2205 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
-| 2135 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
+| 2123 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2068 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2001 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |

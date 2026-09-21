@@ -10252,3 +10252,59 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   ③**S4-1（A）**：`recordCorrections.none` 原称「无涉及残限登记的 S3」，而该 S3 正是关于残限**摘要计数**——现改为
   「无任何发现要求改动残限登记内容、三条条目未变」。该第二修订再次产生新 HEAD，L1／L2／L5 与两轮独立复核按新冻结
   候选重跑与重绑；合入事实、字节级不变量与残限登记不变。
+
+## 2026-09-21 — 自定义前端字段语义单一权威（P0 表达收口）
+
+- 分支 `feature/frontend-field-semantics-authority-v1`，基线 `origin/main@f9c73588210937dcce8fb96e1e736fe0eef0bf37`
+  （G16 `.js` 扩围收口审计 PR #520 的 squash 合入点）。Formal Product Layer 为 **P0**（平台通用表达机制），
+  本记录与守卫脚本属 **P4**；Layer Target 为 `frontend/apps/web` 共享取值呈现与集合单元格表达。
+- 触发：用户指令「先统一自定义前端的逻辑，还存在明显的不足」。只读侦察确认同一字段语义在 8 处以上各写一份，
+  同一条记录在列表与详情可以给出**不同取值**：数值列空值集合显示 `0`／记录显示 `-`；`datetime` 集合为
+  `2026-09-21 10:17`、记录与表单直接泄漏机器格式 `2026-09-21T10:17:01Z`；附件引用检测在集合路径缺
+  `/web/content/` 分支。故选为第一刀：建立字段语义单一权威。
+- 实现：新增唯一权威 `frontend/apps/web/src/utils/fieldSemantics.ts`（字段类型归一与分类、空值判定、布尔与空值
+  文案、数值解析与格式化、日期／时间解析与两档呈现、附件引用检测）；18 个消费方改为只消费该权威、不得再自行
+  分支——`utils/display.ts`、`utils/semantic.ts`、`pages/listPage/listCellPresentation.ts`、
+  `pages/listPage/listColumnWidth.ts`、`pages/ListPage.vue`、`app/contracts/actionViewActivityContract.ts`、
+  `app/contracts/actionViewAnalysisContract.ts`、`app/presentation/collectionStatusPresentation.ts`、
+  `pages/contractForm/one2manyUtils.ts`、`pages/contractForm/RelationSearchDialog.vue`、`views/ActionView.vue`、
+  `components/action/ActionSurfaceToolbar.vue`、`components/page/blocks/{BlockRecordTable,BlockMetricRow,
+  BlockRecordSummary,BlockAccordionGroup}.vue`、`components/scene/SceneBlocksRenderer.vue`、
+  `views/SceneContractBlockGridView.vue`。
+- 统一口径：空值文案全路径 `--`（`FIELD_VALUE_EMPTY_TEXT`）；布尔全路径 `是`／`否`（契约 `uiLabel` 仍可覆盖）；
+  `date` 两路径均 `2026-09-21`；`datetime` 集合 `compact`＝`2026-09-21 10:17`、记录／表单 `full`＝
+  `2026-09-21 10:17:01`（**同一解析函数 ＋ 声明式档位**，非各写一套）；数值 `zh-CN`（`integer` 0 位、
+  `float`／`monetary` 2 位）；附件引用检测含 `/web/content/`。集合数值列空值 `0` **保留**并登记为
+  `COLLECTION_NUMERIC_EMPTY_TEXT` 声明式集合密度策略（登记而非擅改）。
+- 守卫：`scripts/verify/frontend_localized_display_contract_test.ts` 扩展为**行为断言 ＋ 源码断言**——空值／布尔／
+  数值／日期跨面一致性、`datetime` 双档位、不泄漏 ISO 机器格式、集合数值 `0`、附件检测；并遍历
+  `frontend/apps/web/src` 下 `.ts`／`.vue`／`.js`（排除权威自身）禁止自行定义空值／布尔文案字面量与重写的
+  附件检测、日期解析正则。
+- 非空守卫实测：向 `utils/semantic.ts` 注入 `'--'` 字面量后守卫**失败**（`utils/semantic.ts 不得自行定义空值
+  文案`，退出码 1），随即回滚；守卫非空。
+- 验证证据：`make verify.frontend.localized_display.unit` **PASS**（`FRONTEND_FIELD_SEMANTICS_AUTHORITY=PASS
+  sources=685` ＋ `FRONTEND_LOCALIZED_DISPLAY_CONTRACT=PASS`）；集合类 4 项与表达／专业面 21 项目标 **PASS**；
+  `lint:src` **0 error**（39 条既有风格 warning）；`vue-tsc --noEmit`（非门禁口径）本分支与基线均 **32** 条错误、
+  错误文件集合一致，逐条核对为 `SceneContractBlockGridView.vue` 因新增 import 的整体 +1 行位移，**零新增类型错误**；
+  L1 `make ci.delivery.freeze.prepare` **PASS**。
+- L1 重生成产物：`docs/engineering_convergence/complexity_budget_report.md`、`split_plan_queue.md`
+  （扫描 4404 → **4405**；`ActionView.vue` 3769 → 3773；`ListPage.vue` 2135 → **2123**；
+  `ActionSurfaceToolbar.vue` 1040 → 1041）；`docs/frontend_productization/rendering-detail/
+  component-driver-takeover-inventory-v1.json` 经 `make refresh.frontend.component_driver_takeover.inventory` 刷新。
+- 排除项与残限：`verify.frontend.scene_component_bridge.guard` 失败已在干净基线 `main@f9c73588` 同命令复现同一
+  消息，判为**本批之前既有失败**，不在本批范围，不修、不掩盖；全域 32 条类型错误为既有类型债
+  （`tsconfig.json` 自述 `LEGACY_TYPE_DEBT`，门禁用 `typecheck:strict` 窄覆盖）；技术／诊断只读面
+  （`layouts/AppShell.vue` 研发上下文、action_view HUD、`ReleaseOperatorView`、`SceneHealthView`、
+  business-config 审计面板、contract form 技术 meta 行）仍用单破折号 `-` —— 呈现机型标识与治理字段而非业务取值，
+  **显式排除**在权威口径外（守卫只约束 `--` 与布尔文案，不冲突）；记录／表单 `datetime` 由直出 ISO 改为 `full`
+  档属可见表达变化，本批以单元与源码守卫证明口径统一，**尚未**做浏览器运行态复核（见批次文档 §7）。
+- 范围外注记：`docs/ops/iterations/frontend_expression_mainline_acceptance_20260911.md` 宣告的「前端表达专业化阶段
+  完成」基于 `main@8f709938`（09-11），已被 #482–#520 的大量改动推翻，该验收分支从未合入 —— 属旧结论失效，
+  本批不改该文件。
+- 批次记录：`docs/ops/iterations/frontend_field_semantics_authority_20260921.md`。
+- Next Step：冻结本批 HEAD → exact-head `make ci.local.quick` 回执 → 两轮独立只读复核 → 显式合并授权 →
+  `make pr.push`／`pr.create`／`pr.ready`／`pr.merge` → 主仓库 `make main.sync` → `make branch.cleanup.feature`。
+- 后续待办（用户已认可方向，本批未做）：①页头／壳层入口统一（`ProductPageHeader.vue` 为唯一真实实现且有门，
+  `components/design-system/ScPageHeader.vue`、`components/page/PageHeader.vue` 为无门薄适配，
+  `pages/contractForm/ContractFormProductHeader.vue` 独立实现归属未声明）；②13 个并行组件族权威边界未声明；
+  ③权限判定散布 19+ 文件、无单一权威。
