@@ -1433,11 +1433,24 @@ export async function runRepresentativeSurface({ page, scope, contract, out, rep
         // that hides a delivered page can never be laundered into an uncovered
         // capability fact.
         const routeGlobalStatus = (compiled && compiled.statusContract && compiled.statusContract.globalStatus) || {};
+        // The platform decides create from `effectiveRecordCapabilities.create`,
+        // which folds the model ACL, the record rule, the view/arch and the entry
+        // declaration.  The earlier predicate required the model and the view
+        // source to deny *together*, so an entry denied by its own declaration
+        // (action context `'create': False`) or by the native arch on a model whose
+        // ACL still permits create fell through to the readiness gate and was
+        // reported as a structural failure instead of a declared capability fact.
+        // That was registered as the S3 forward risk of the PR #510 ledger note,
+        // whose suggested follow-up is exactly this alignment; the delivered
+        // verdict itself (`pageVisible=false` / `pageAuth='none'` /
+        // `FORM_CREATE_NOT_ALLOWED`) stays mandatory, so a hidden page that the
+        // authority does not declare as a create denial still fails as a structure
+        // result.
         const createProfileDenied = route.kind === 'create'
           && routeGlobalStatus.pageVisible === false
           && routeGlobalStatus.pageAuth === 'none'
           && routeGlobalStatus.reasonCode === 'FORM_CREATE_NOT_ALLOWED'
-          && routeGlobalStatus.modelRights?.create !== true
+          && routeGlobalStatus.effectiveRecordCapabilities?.create !== true
           && routeGlobalStatus.viewCapabilities?.create !== true;
         if (createProfileDenied) {
           uncovered.push({
@@ -1447,6 +1460,9 @@ export async function runRepresentativeSurface({ page, scope, contract, out, rep
             reason_code: routeGlobalStatus.reasonCode,
             page_auth: routeGlobalStatus.pageAuth,
             model_rights_create: (routeGlobalStatus.modelRights || {}).create ?? null,
+            view_capability_create: (routeGlobalStatus.viewCapabilities || {}).create ?? null,
+            entry_capability_create: (routeGlobalStatus.entryCapabilities || {}).create ?? null,
+            effective_record_create: (routeGlobalStatus.effectiveRecordCapabilities || {}).create ?? null,
             reason: 'the delivered route authority declares no create right for this profile, so the create route carries no structure to measure',
           });
           surfaceReport.uncovered = uncovered;

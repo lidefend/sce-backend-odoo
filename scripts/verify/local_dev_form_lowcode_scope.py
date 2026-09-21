@@ -257,6 +257,28 @@ TOPIC_IDENTITIES = {
         ("action_sc_product_tax_filing_v1", "view_sc_tax_filing_form",
          "menu_sc_product_tax_filing_v1"),
     ),
+    # U-C4 G16: the last remaining ledger consumer (886 数据权限 / menu 709) retires
+    # its compatibility body in place, so the only thing the batch changes is which
+    # declaration owns the structure.  The entry is a read-only resolved identity
+    # on `res.users`: the arch declares `create="0" delete="0"` and the action
+    # context declares `'create': False, 'delete': False`, so this topic can only
+    # be exercised on the record surface.  That makes `record_surface` the
+    # decisive assertion here, not a fallback - the action domain
+    # (`sc_runtime_company_maintainable=True`) is reachable in the governed
+    # database, so the resolver is expected to replay a measured record rather
+    # than report `empty_action_domain`.  The read-only口径 the delivered page
+    # keeps is the native arch's (the retired body declared no field policy the
+    # arch did not already carry), and `readonly_values` asks the rendered page
+    # whether every fact the delivered profile marks read-only really carries no
+    # editable control - including the conditional `readonly="not id"` on
+    # `sc_project_member_assignment_ids`, which only resolves on an existing
+    # record.  `section_navigation` is deliberately not claimed: the four native
+    # business groups carry zero `data-sc-anchor` tracks.  Read-only; no change
+    # set is touched.
+    "data_permission": (
+        ("action_sc_product_data_permission_v1", "view_sc_data_permission_user_form",
+         "menu_sc_product_data_permission_v1"),
+    ),
 }
 # Declared per topic, not per entry: the resolver keeps only the names the
 # registered model actually declares (`if name in model._fields`), so a topic whose
@@ -280,6 +302,7 @@ TOPIC_SAMPLE_FIELDS = {
     "daily_contract": ["state"],
     "ledger_summary": ["state", "currency_id"],
     "tax_filing": ["state", "currency_id"],
+    "data_permission": ["name", "company_id"],
 }
 # Mechanism assertions for the read-only representative pass.  Names are the
 # registered display copies / canonical sources of the same business fact; the
@@ -522,6 +545,18 @@ TOPIC_REPRESENTATIVE = {
     # deliberately not claimed: the native view carries zero `data-sc-anchor`
     # groups, so the navigation battery has no registered identity to resolve.
     "tax_filing": {"readonly_values": True, "record_surface": True},
+    # U-C4 G16: same shape as G15's tax_filing topic, with one measured
+    # difference - this entry's action domain is reachable, so `record_surface`
+    # must resolve a real governed sample instead of recording
+    # `empty_action_domain`.  `readonly_values` asks the rendered page whether
+    # every fact the delivered profile marks read-only really carries no editable
+    # control; the retired body declared no field policy, so the口径 is the
+    # native arch's, and the model's own `readonly="not id"` on
+    # `sc_project_member_assignment_ids` only resolves on an existing record.
+    # `section_navigation` is deliberately not claimed: the four native business
+    # groups carry zero `data-sc-anchor` tracks, so the navigation battery has no
+    # registered identity to resolve.  Read-only; no change set is touched.
+    "data_permission": {"readonly_values": True, "record_surface": True},
 }
 if topic not in TOPIC_IDENTITIES:
     raise RuntimeError("unregistered formal form topic")
