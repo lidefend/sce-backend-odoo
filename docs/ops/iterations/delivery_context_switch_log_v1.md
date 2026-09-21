@@ -10015,3 +10015,68 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Next Step：合并获授权后执行**文档单职责提交**（台账 1 → 0 ＋ 迭代记录 8.46／8.47 ＋ 本轮切换日志），
   清理已合入分支，再收口 `otherStateConsumers` 中剩余的**其他状态消费者**（886／menu 709／
   `data_permission_form_v1`）。
+
+## 2026-09-21 — U-C4 G16 数据权限（入口契约原地退役结构声明，其他状态兼容消费者归零）
+
+- 分支 `feature/uc4-g16-data-permission-native-v1`，基线 `origin/main@dd13f72475d32c824f792275cd4954f4ef3b9128`
+  （G15 正文 PR #512 与 G15 台账审计 PR #513 的合入点）。Formal Product Layer 为 **P1**；Layer Target 为
+  `smart_construction_core` 的入口契约 `data/data_permission_contract.xml`、定向测试与原生视图口径，另含 **P4
+  最小扩展**（既有只读代表面入口 `scripts/verify/local_dev_form_lowcode_scope.py` 登记 `data_permission` topic，
+  以及代表面 runner 的 create 拒绝谓词对齐；复用已注册环境／身份与数据权威，只读且不写配置）。不属 P0
+  （`smart_core` 不承载行业语义，本批对内核一行未改）／P2／P3。回滚为 `git revert`（纯声明变更）。
+- 目标：让入口 action **886**（menu 709「数据权限」，`res.users`，视图 1904）的入口发布成为本入口
+  **最后的结构写入者**并声明 `native_semantic_surface`，使 `form_structure_authority=native_authority`、
+  `layoutPolicy=container_tree_authority`，兼容重组路径对 886 不再适用（台账由此可扣减 `otherStateConsumers`
+  **1 → 0**；扣减属**合并后**文档单职责提交）。
+- 变更（候选 6 条路径，单提交：4 改 ＋ 1 新增 ＋ 1 改）：**原地退役**入口契约 181 `data_permission_form_v1` 的结构声明
+  （`composition_mode: entry_semantic_surface → native_semantic_surface`，退役 `sections` 4 组 7 字段／`columns`／
+  `fields` 7 行，保留 `priority=800`／`action_id`／`status=published`／`version_no` 键／`title='数据权限'`／
+  `view_orchestration.context` 5 键逐值）；**新增** `tests/test_data_permission_native_lowcode.py`
+  （tag `uc4_native_lowcode`，16 测试）并登记 `tests/__init__.py`；只读代表面入口登记 `data_permission` topic
+  （样本字段 `name`／`company_id`，机制键 `readonly_values` ＋ `record_surface`，**刻意不含** `section_navigation`）；
+  `complexity_budget_report.md` 随冻结刷新（4401 → 4402）。
+- 关键决策（实测驱动，非设计预判）：①`res.users` 在本模块内**只有一条**入口级业务配置契约载体（181／action 886），
+  兄弟入口 736（view 1901「人员档案」）不解析任何业务配置契约（`[]`），故只能**原地退役**（G13／G15 形态）；
+  ②原地退役意味着**非增量**，`ui.business.config.contract` 仍 **289** 行；③published 契约改 body 会**追加不可变发布
+  快照**并把活行 `version_no` 递增——实测活行 `version_no=3`、入口 181 占 **3** 条快照（v1／v2 仍带退役前的 4 个章节
+  标题，v3 本批 native）、**运行时读活行**，故旧声明残留仅存在于审计／回滚快照；版本表整表行数为**采集时刻**读数
+  （779／复读 783，共享库漂移，不作冻结常量）；④**create 档组装修复**：退役前该档在
+  `unified_page_contract_v2_assembler.validate_occurrences` 抛 `ValueError` 无法组装，退役后与 edit 同构
+  （入口为只读，浏览器不请求该档位）——如实登记，不写成「仅结构权威变更」。
+- P4 谓词对齐（台账预登记 S3 前向风险的落地）：代表面 runner 的 create 拒绝谓词由「model 与 view 同时拒绝」
+  改为平台自身的 `effectiveRecordCapabilities.create`（保留 view 项）。`FORM_CREATE_NOT_ALLOWED` 唯一生产者
+  （`unified_page_contract_v2_assembler.py:1084-1088`）的条件即 `effective…create is not True`，且
+  `effective = view ∧ model ∧ record ∧ entry`，故换入项是既有三元组护栏的**逻辑蕴含**，跳过面**既未扩大也未缩小**；
+  实际改变的只是「arch／入口已声明的拒绝」不再被误报为结构失败。
+- 交付面读数（如实登记）：record 路由（`/f/res.users/6?action_id=886&menu_id=709`）实测 `fields=7`／`sections=4`／
+  `readonly_checked=[name, login, active]`／各 `findings` 桶全空，样本 `sample_state=available`（`domain_rows=47`），
+  业务指纹前后未变；**create 路由不写成通过**——按平台交付裁决登记为**已声明的能力事实**
+  （`denied`／`render_profile_denied`／`FORM_CREATE_NOT_ALLOWED`；拒绝来自 arch／入口，而 `res.users` 模型 ACL
+  对治理身份仍允许 create）。
+- 验证：L1 `make ci.delivery.freeze.prepare` PASS（复杂度 4401 → 4402，正是新增的 1 个受扫文件）；L2 新测试 **16**
+  通过、整组回归 **250** 通过（0 failed 0 error，G15 为 234）、策略回归 **36** 通过、六条具名守卫 **6/6**、
+  域回归 base_configuration 6 actions（含 886，`structural_form_count=6`／`gap_count=0`）PASS 且被跟踪 rollout 报告与
+  未跟踪运行产物**跑后逐字节还原**（`sha256 -c` 三行全 OK）；L3 `local.dev.upgrade` exit 0，含
+  `[local.dev.demo.authority] PASS`，edit 与 create 均 `native_authority` ＋ `container_tree_authority` ＋
+  `native_structured_form` ＋ `diagnostics=[]`、**7 字段／4 分组／0 按钮／0 锚点**、修饰符与基线逐项相同；L4 浏览器
+  代表面**在冻结 HEAD 上跑通**——`FORM_LOWCODE_TOPIC=data_permission FORM_LOWCODE_REPRESENTATIVE=1` → exit 0／
+  `ok=true`／`restored=true`／`candidate=acccb0ea`／`dirty=false`／`browser_errors=[]`／`recovery=[]`／
+  `cleanup_guard=proceed`；L5 exact-head `make ci.local.quick` PASS（回执绑定 `head=acccb0ea…`／`tree=ed8d571e…`，
+  并经 `local_quick_evidence.py verify` 复验 VERIFIED）。
+- 独立只读复核：**两轮**绑定冻结头 `acccb0ea`（各自独立重算 6/6 路径 bytes＋sha256 与 tree、复核 L1–L5 留痕），
+  **均判 `APPROVE`、无 S0／S1、被跟踪内容无 S2**；两轮提出的两条 S2（缺 `archive-manifest.json`；台账
+  `before/after` 标签口径）已在发布前闭合；其余 S3／S4 项（谓词换源的残余面、被改 `.mjs` 无自动化语法门、
+  pin 与文案耦合、被跟踪注释串 857／736 与时态、版本表整表读数漂移）逐条登记在 `tmp/g16-evidence/review.md` 与
+  台账 `uc4G16PublishedAudit.knownLimits`。
+- 环境缺陷登记（非本批引入，不修）：G08–G11 已登记的 `verify.contract.view_structure` 权威指纹期望、
+  `verify.product.menu.governance.m4.closure` 缺 `menu-m4-runtime.REJECTED-wrong-sha.json`、
+  `verify.user_form.preference.boundary_guard` 依赖**客户定制 addon 仓库（不在本仓库边界内）**、
+  `verify.frontend.professionalization.collaboration_domain.runtime`（G11 遗留）与
+  `project-domain-coverage-v1.json` 对 `action_sc_product_project_edit_v1` 陈旧之外，**本批新增登记第六条**：
+  `user_data_boundary`（`test_role_surface_project_member.py`）25 例中 **4 例在 mainline 上即失败**且无 CI gate 运行该
+  tag（静态证据：finance 覆盖 `primary_menu_xmlids` 含 `menu_sc_settlement_adjustment` 但 `contextual_menu_xmlids`
+  21 条不含；测试断言 `contract_version == "route_authority.v1"` 而 handler 输出 `"2.0.0"`，
+  `route_authority_validate.py` 末次改动为 2026-08-23 PR #277）。
+- Next Step：台账 `otherStateConsumers` 1 → 0 的**合并后文档单职责提交**已在 PR #514 合并后执行（主线 `count` 已在
+  PR #513 归零，本批逐字节未改主线计数字段）；`retirementComplete` **保守保持 `false`**（`retirementCondition` 的
+  「其他角色／公司／状态覆盖」一半仍未满足，故不删除兼容重组逻辑与测试豁免）；u4 兼容消费者主题已清空。
