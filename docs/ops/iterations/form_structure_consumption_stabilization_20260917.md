@@ -7217,13 +7217,16 @@ L5 exact-head `make ci.local.quick` 与两轮独立只读复核在本轮收口�
 - 合入后实测（只读重跑已合入门禁，**非**新验收证据）：`python3 scripts/ci/node_syntax_check.py` →
   `[OK] Node syntax check passed (349 files)`（exit 0）；`python3 scripts/ci/test_node_syntax_check.py` →
   `Ran 24 tests … OK`。
-- 记录订正：本轮两轮复核**均未提出 S3 级订正**（无事实或口径错误需改）。三条**单方守卫精度建议**登记为待收口项，
-  不静默采纳、也不丢弃：①round B′ S4-1——钉版断言的 `with` 采用**严格字典相等**，未来加入合法键（如 `cache:`）
-  会误报；②round A′ S4-2 ＝ round B′ S4-2——同一断言**硬编码**两个跑 sweep 的门步骤显示名，改名即失败；
-  ③round A′ S4-1 ＝ round B′ S4-3——「唯一」**只按同名步骤计数**，若在钉版步骤之后另插一个**不同名**的
-  `actions/setup-node@v4` 仍会通过（后者会改写 PATH）。均为守卫精度问题，非交付物缺陷。另 round A′ 的
-  「新增 `import yaml` 未在 requirements 声明」已排除：base 的 `scripts/ci/generate_contract_structure_fingerprint.py`
-  即已依赖 PyYAML。
+- 记录订正：两轮复核**均未提出针对已合入批次或其来源提交的 S3 级订正**（门、语料、决策、残限登记与合入提交均无需改）。
+  **四条 guard 精度建议**登记为 parked（不静默采纳、也不丢弃）：①round B′ S4-1——钉版断言的 `with` 采用**严格字典
+  相等**，未来加入合法键（如 `cache:`）会误报；②round B′ S4-2——同一断言**硬编码**两个跑 sweep 的门步骤显示名，
+  改名即失败；③round A′ S4-1——「唯一」**只按同名步骤计数**，若在钉版步骤之后另插一个**不同名**的
+  `actions/setup-node@v4` 仍会通过（后者会改写 PATH）；④round A′ S4-2——`test_cache_keys_bind_lockfile_and_runtime`
+  对 `frontend_release_gate.yml` 仍是纯文本 `assertIn`（**既有**代码、非本批引入，同类弱点，登记以免被静默丢弃）。
+  均为守卫精度问题，非交付物缺陷。**排除项**：round A′ S4-3 ＝ round B′ S4-3 的「新增 `import yaml` 未在
+  requirements 声明」——base 的 `scripts/ci/generate_contract_structure_fingerprint.py` 即已依赖 PyYAML 并在同一
+  CI 作业内执行，故不构成新依赖。此外 `gateLiveOnMain` 记明该只读重跑用的是**主机默认 node（24.16.0）**、非 CI 钉版
+  版本；两轮复核报告为**仓库外只读复核**（与上轮收口审计同一性质，仓库内无可核产物）。
 - 台账口径：新增 `uc4G16JsCorpusExpansionAudit`（合入事实、必检与合入后 run、合入后门实测、无订正声明、三条 S4
   建议、分支清理），其 `nextRoundAudit` 声明本批无需再审；`uc4G16JsCorpusExpansion.nextRoundAudit` 改指回该块；
   `uc4G16PublishedAudit`／`uc4G16FollowupSyntaxGate`／`uc4G16FollowupSyntaxGateAudit` **逐字节不变**；主线计数字段
@@ -7241,3 +7244,15 @@ L5 exact-head `make ci.local.quick` 与两轮独立只读复核在本轮收口�
 状态：**G16 `.js` 扩围**收口完成（PR #519 已合入 mainline `81346ad4`）**｜批次状态：自验与冻结门禁通过；集中产品复核
 结论以产品方登记为准｜未部署｜用户交付未完成｜主线台账 0（`count=0`）｜`otherStateConsumers=[]`｜
 `retirementComplete=false`（其他角色／状态未覆盖）｜受跟踪 `.js` 201 个的语法门已关闭并合入 mainline**。
+
+- 复核后修订（绑定 `f602bc36…`：round A 判 **REQUEST_CHANGES**（无 S0／S1／S2，两条 S3 记录准确性），round B 判 **APPROVE**
+  （无 S0／S1／S2／S3，四条 S4 观察）；两轮各自独立复现了合入事实、必检 9／3、四个合入后 run 与四条字节级不变量）：
+  ①**S3-1**：两处 `nextRoundAudit` 称本门保持「two」条残限，而 `remainingResiduals` 与 §8.53／切换日志均列**三条**
+  （两个 make target 范围／仅解析级／TS／Vue 与 `.css`／`.xml` 在本门外），仅读台账者会漏掉第三条——现两处均改为
+  **三条并逐条点名**；②**S3-2**：parked 建议的**署名编号错位**——「硬编码门步骤显示名」应属 round B′ S4-2（round A′
+  S4-2 实为既有的 `frontend_release_gate.yml` 文本断言），「同名唯一性计数」应属 round A′ S4-1（round B′ S4-3 实为
+  yaml 依赖项）——现按实际提出轮次重新署名，并把既有项登记为第 4 条 parked、把 yaml 项移入 `excludedFindings`；
+  ③吸收 round B 的 S4-1／S4-2／S4-4：台账补登被排除项、字段更名 `parkedHardeningSuggestions`（避免读成「已采纳」）、
+  保持残限枚举顺序与本节一致；④吸收 round A 的 S4-1／S4-3：`branchCleanup` 补明远端 ref 已删的**只读可证口径**
+  （`git ls-remote --heads origin` 无该 ref；branches API 404），`gateLiveOnMain` 补记重跑所用运行时。该修订产生新
+  HEAD，L1／L2／L5 与两轮独立复核按新冻结候选重跑与重绑；合入事实、字节级不变量与残限登记不变。
