@@ -10345,7 +10345,7 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `professionalAuditModel`／`formSection.mapper`（带币种）／`HierarchicalWorksheet` 等，作为下一批候选登记。
   该修订产生新 HEAD，L1／L2／L5 与两轮独立只读复核按新冻结候选重跑与重绑；口径范围、契约例外与残限登记已同步更正。
 
-## 2026-09-21 — 自定义前端页头入口权威统一（P0 表达收口第二刀）
+## 2026-09-22 — 自定义前端页头入口权威统一（P0 表达收口第二刀）
 
 - 分支 `feature/frontend-page-header-entry-authority-v1`，基线 `origin/main@de9a230d3faab18dd60a219f445f932a8af9d7f5`
   （自定义前端字段语义单一权威 PR #521 的 squash 合入点）。Formal Product Layer 为 **P0**（平台通用表达机制），
@@ -10370,12 +10370,15 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   Python 守卫同步升级：固定档位单一来源 ＋ 不得硬编码 ＋ 登记表必须包含全部入口路径 ＋ 入口契约测试必须存在且
   仍接在门禁上（防静默摘除）。
 - 验证：入口契约 `entries=4 axes=15 call_sites=6 direct_consumers=3` PASS；`verify.frontend.product_page_header.unit`
-  PASS（守卫单测 27 例）；取值呈现守卫 `sources=686 consumers=18` PASS；`lint:src` 0 error／39 条既有 warning；
+  PASS（守卫单测 **34 例**）；取值呈现守卫 `sources=686 consumers=18` PASS；`lint:src` 0 error／39 条既有 warning；
   `typecheck:strict` PASS；全量 `vue-tsc --noEmit` 仍为 32 条既有类型债、文件集合与 base 一致。
-  **门禁非空洞实证**：在 `/tmp` 影子副本上注入 39 类回归，**全部被抓到**，工作树文件未被修改。除首批形态之外，
+  **门禁非空洞实证**：在 `/tmp` 影子副本上注入 **59 类回归，全部被抓到**，工作树文件未被修改。除首批形态之外，
   第二轮独立只读复核点名的盲区（kebab 标签、barrel 具名导入、`<component :is>`、`v-bind` 对象展开、
   契约测试接线被注释掉、固定轴绑定字面量、固定轴常量解析错入口 id、只留 `import` 丢掉模板渲染、`$attrs` 兜底转发）
-  都已纳入同一批注入并被抓到。
+  都已纳入同一批注入并被抓到；第三轮复核点名的**诱饵类**形态（单引号 `<component :is='X'>`、字符串注释符
+  `{{ '/*' }}…{{ '*/' }}`、默认槽／动态槽名／单引号槽名、改名默认导入、动态 `import()`、行尾 `//` 与
+  双引号／模板字面量常量诱饵、字符串里的假模板委托、`@echo <整条命令行>`／`@node --version # <文件名>`）
+  同样全部被抓到。
 - **两轮独立只读复核后的修订**（复核对产品代码无异议，问题全在门禁强度与文档数字）：F 覆盖 kebab 标签与具名／barrel
   导入并把调用点集合钉死（现 6 个，含 `ContractFormPage` 这一受管例外调用点）；B 从「源码含标识符」改为「模板中真实
   渲染上游」；D 要求固定轴绑定值必须引用 `resolveProductPageHeaderFixedMode('<本入口 id>')` 的返回值；权威与薄入口
@@ -10389,7 +10392,17 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   未登记别名导入形态对 F／G 隐身、注释诱饵可满足委托与常量解析断言、以及 unit 目标被从 `quick.gate` 前置摘除
   仍全绿（S3），已一并修掉：标签属性块改为**引号感知**扫描、入口源码分析前**剥离注释**、槽位纳入登记表约束、
   解析不到的入口同名导入硬失败、守卫增加「必须仍是 `quick.gate`／`release.unit` 前置」断言；
-  守卫单测 27 例，影子副本注入矩阵扩到 **39 项**，全部 CAUGHT。详见迭代文档 §8。
+  守卫单测 27 例，影子副本注入矩阵扩到 39 项，全部 CAUGHT。随后 round A″／B″（head `d93bb013`，均
+  REQUEST_CHANGES、**无 S0／S1**）又点名六处**诱饵类**绕过並经我逐条实证：①两个门禁的注释剥离都不是字面量感知，
+  `{{ '/*' }}v-bind="$attrs"{{ '*/' }}` 可把真实代码从门禁眼里夹掉；②改名默认导入（`import Foo from '…/ScPageHeader.vue'`）
+  与动态 `import()` 入口让调用点整体隐身；③行尾 `//`／双引号／模板字面量三种常量诱饵可满足固定轴断言；
+  ④`@node --version # <文件名>`／`@echo <整条命令行>` 是伪命令却满足接线断言；⑤默认槽／动态槽名无约束；
+  ⑥单引号 `<component :is='ScPageHeader'>` 绕过动态组件硬失败。已全部修掉：注释剥离与掩码视图都改为
+  **引号感知**的逐字扫描器（掩码视图与原文等长，只认它判断「实现是否存在」，字面量真实值按对齐下标回原文取回）、
+  说明符末段纳入入口命中判据并新增「改名导入必须显式登记」与「动态 `import()` 硬失败」、
+  槽位只接受**静态具名槽**（默认槽／动态槽名硬失败，权威侧同钉）、动态组件绑定改为**引号不敏感**、
+  接线判定改为「首个 token 就是该程序」并剔除 `#` 注释；守卫单测 **27 → 34 例**，影子副本注入矩阵
+  **39 → 59 项**且全部 CAUGHT。详见迭代文档 §8。
 - 上一批复核 A′／B′ 点名的**登记完整性**在本批一并补上：`productMyWorkPresentation`／`ApiKeyManagementView`／
   `PaymentSettlementIntroduceDialog`／`BoqImportPreviewPanel`／`RelationSearchDialog` 的本地回退与格式化事实，
   在 `frontend_localized_display_contract_test.ts` 中以**正锁**（缺一即失败）登记，任何漂移都必须重新决策。
