@@ -7036,3 +7036,46 @@ G16 主题经 PR **#514** 以 **squash** 合入主线，合并提交 `4268627553
 状态：**G16 主线集成完成（PR #514，squash 同树）｜批次状态：自验与冻结门禁通过；集中产品复核结论以产品方登记为准｜
 未部署｜用户交付未完成｜主线台账 0（`count=0`）｜`otherStateConsumers=[]`｜
 `retirementComplete=false`（其他角色／状态未覆盖）｜u4 兼容消费者主题清空**。
+
+### 8.50 G16 后续硬化：被改动 `.mjs` 的自动化语法门（2026-09-21；**P4 工具轮**；冻结／Quick／PR 属本轮收口步骤）
+
+**范围与层级**：Formal Product Layer **P4**（运维交付工具）；Layer Target 为门禁工具面——`scripts/ci/` 新增
+只读语法检查器与其自检、`make/ci.mk` 的既有入口接线，以及随 L1 刷新的 3 个受跟踪生成物。**Why Here**：语法门
+属交付工具链职责，被检查对象是交付自动化脚本语料，不是产品语义。**Why Not Elsewhere**：不改产品代码、契约、
+测试口径与前端渲染；`frontend/apps/web/package.json` 的 `lint` 只覆盖 `.ts`/`.vue`，把交付脚本并入前端产品 lint
+属越层。**Blast Radius**：`make test.unit`、`make test.contract`、`make ci.local.quick.run` 三个既有入口各
++1～2 行；检查对象为仓库内**全部受跟踪** `.mjs`/`.cjs`（148 个）。**回滚**：`git revert`。
+
+**触发**：G16 复核 r2 **S3.1**（登记在台账 `uc4G16PublishedAudit.knownLimits`）。PR #514 改了代表面 runner
+`frontend/apps/web/scripts/formal_form_representative_journey.mjs`（create 拒绝谓词换源），而该 `.mjs` **没有任何
+自动化语法门**：`test.contract` 的 `node --check` 只覆盖 5 个手工列举文件，`frontend/apps/web/package.json` 的
+`lint` 只覆盖 `.ts`/`.vue`，复核者当时只能手工执行 `node --check`（通过）并依赖 `git diff --check`（干净）。
+
+**缺陷类**：手工文件清单对**未被列举但被改动**的脚本零覆盖；清单与语料一旦漂移，门禁即静默失效——G16 的实例
+（148 个受跟踪 Node 文件中被清单覆盖 5 个）正是该类。
+
+**修改范围（3 条代码路径 ＋ 3 条受跟踪生成物）**：
+
+| 路径 | 动作 | 内容 |
+| --- | --- | --- |
+| `scripts/ci/node_syntax_check.py` | **新增** | 默认口径为 `git ls-files` 的**全部受跟踪** `.mjs`/`.cjs`（gitignored 语料天然排除），亦可显式传文件／目录；逐文件 `node --check`，失败聚合为 `path:line: SyntaxError: …`；node 运行时缺失或无目标文件时 **fail-closed**（exit 2） |
+| `scripts/ci/test_node_syntax_check.py` | **新增** | 10 测试：受跟踪语料覆盖历史 5 文件与回归锚点 `formal_form_representative_journey.mjs`、语料扩展到 `scripts/verify/` 且不含 `tmp/`、目录扫描后缀过滤、ESM 专属语法错误定位、运行器退出码 0/1/2，以及**接线回归**（`test.contract`／`ci.local.quick.run` 必须含 sweep 且不得保留手工清单；`test.unit` 必须运行本自检） |
+| `make/ci.mk` | 改 | `test.contract`：5 行手工 `node --check` 清单 → 1 行 sweep（**完全包含**被替换的 5 个文件）；`test.unit` ＋1 行自检；`ci.local.quick.run` ＋1 行 sweep |
+| `docs/engineering_convergence/complexity_budget_report.md`、`docs/engineering_convergence/test_inventory.csv`、`docs/engineering_convergence/test_inventory_summary.md` | 改（生成物） | 由 L1 `refresh.generated_reports` 重生成：受扫文件 **4402 → 4404**（＋2 新增 `.py`）、测试资产 **1373 → 1374**（＋1 新增自检） |
+
+**验证**：L1 `make ci.delivery.freeze.prepare` **PASS**（`contract structure fingerprint is current`、
+`tracked generated reports are current`、`ci.generated_evidence.preflight PASS`；生成物漂移已随本轮提交）；
+L2 `make test.contract` **PASS**（`[OK] Node syntax check passed (148 files)`）、`make test.unit` **PASS**
+（Python 1156 文件 ＋ Node 自检 10 tests ＋ render conf 6 tests）；全量只读预扫：受跟踪 `.mjs`/`.cjs` **148 个、
+0 失败**；L5 exact-head `make ci.local.quick` 回执与复验结论见本批 PR。
+
+**不做什么**：不改产品代码、契约、测试口径、前端渲染与运行环境；不删除任何兼容重组逻辑与测试豁免；不改
+`python_syntax_check.py` 的既有目录清单；不把交付脚本并入前端产品 lint；不改写台账已发布文本
+（`uc4G16PublishedAudit` 逐字节不变，关账事实另立 `uc4G16FollowupSyntaxGate` 追加块）。
+
+**口径边界**：sweep 只做**语法（解析）级**验证——不执行文件、不校验具名导出与导入的一致性（该类缺陷已有既有
+登记入口 `designer_draft_ownership_test.mjs` 的反例 9 覆盖），也不替代任何 runner 自身的浏览器代表面验收。
+
+状态：**G16 后续硬化完成（P4 工具轮，待冻结／Quick／PR 收口）｜批次状态：本批自验通过；集中产品复核结论以产品方
+登记为准｜未部署｜用户交付未完成｜主线台账未变（`count=0`）｜`otherStateConsumers=[]`｜
+`retirementComplete=false`（其他角色／状态未覆盖）｜被改 `.mjs` 语法门缺口已关闭**。
