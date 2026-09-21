@@ -842,6 +842,81 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
                 validate(),
             )
 
+    def test_make_ignore_error_prefix_on_a_guarded_step_is_rejected(self):
+        """`@-esbuild …`／`-@node …`：shell 形状完全正常，但 Make 会忽略该步骤的失败。"""
+        real = Path.read_text
+
+        def prefixed(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value.replace(
+                    "\t@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
+                    "\t@-frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
+                ).replace(
+                    "\t@node /tmp/product-page-header-adapter-contract-test.mjs",
+                    "\t-@node /tmp/product-page-header-adapter-contract-test.mjs",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", prefixed):
+            failures = validate()
+        self.assertTrue(
+            any("ignore-error prefix" in item for item in failures),
+            failures,
+        )
+
+    def test_make_ignore_special_target_is_rejected(self):
+        """`.IGNORE:` 让全部 recipe 的失败不再让 make 失败，且不改任何 recipe 行。"""
+        real = Path.read_text
+
+        def ignored(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value + "\n.IGNORE:\n"
+            return value
+
+        with patch("pathlib.Path.read_text", ignored):
+            failures = validate()
+        self.assertTrue(
+            any(".IGNORE special target" in item for item in failures),
+            failures,
+        )
+
+    def test_makeflags_ignore_errors_is_rejected(self):
+        """`MAKEFLAGS += -i` 等价于给整棵 make 加 `-i`，同样不改 recipe 行。"""
+        real = Path.read_text
+
+        def flag(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value + "\nMAKEFLAGS += -i\n"
+            return value
+
+        with patch("pathlib.Path.read_text", flag):
+            failures = validate()
+        self.assertTrue(
+            any("sets MAKEFLAGS -i" in item for item in failures),
+            failures,
+        )
+
+    def test_included_makefile_must_not_redefine_the_wired_target(self):
+        """Make 取同一目标的**最后一份** recipe：在 `include` 的片段里重定义可整条替换被测 recipe。"""
+        real = Path.read_text
+
+        def overriding(path, *args, **kwargs):
+            if path.name == "frontend_override.mk":
+                return "verify.frontend.product_page_header.unit:\n\t@echo overridden\n"
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value + "\ninclude make/frontend_override.mk\n"
+            return value
+
+        with patch("pathlib.Path.read_text", overriding):
+            failures = validate()
+        self.assertTrue(
+            any("must be defined exactly once" in item for item in failures),
+            failures,
+        )
 
 from pathlib import Path
 

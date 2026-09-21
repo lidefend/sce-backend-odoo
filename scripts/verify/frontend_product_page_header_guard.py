@@ -9,6 +9,90 @@ def source(path: str) -> str:
     return (ROOT / path).read_text(encoding="utf-8")
 
 
+def _read_makefile(path: str) -> str | None:
+    """读取 Makefile 片段；不存在时返回 None（`-include` 与条件 include 都可能是可选的）。"""
+    try:
+        return (ROOT / path).read_text(encoding="utf-8")
+    except (FileNotFoundError, IsADirectoryError, NotADirectoryError, PermissionError):
+        return None
+
+
+def _include_tokens(text: str) -> list[str]:
+    tokens: list[str] = []
+    for line in text.splitlines():
+        match = re.match(r"^\s*-?include\s+(.+?)\s*$", line)
+        if not match:
+            continue
+        for token in match.group(1).split("#")[0].split():
+            if "$" in token:
+                continue
+            tokens.append(token)
+    return tokens
+
+
+def _expand_include(token: str) -> list[str]:
+    if any(char in token for char in "*?["):
+        return sorted(str(path.relative_to(ROOT)) for path in ROOT.glob(token))
+    return [token]
+
+
+def _makefile_chain(root: str = "Makefile") -> dict[str, str]:
+    """按 `include`／`-include` 展开 Makefile 链（跳过 `$(…)` 动态 token）。**只读仓库，不执行 make。**
+
+    只看被守卫的那一个文件是不够的：Make 对同一目标取**最后一份 recipe**（并只给一条 warning），
+    因此在被 include 的片段里重定义被守卫的目标就能整条替换断言里的 recipe，而原文件一字未动。
+    动态 include（`include $(ENV_FILE_RESOLVED)`）与条件 include 无法静态展开，已在文档残限登记。
+    """
+    chain: dict[str, str] = {}
+    pending = [root]
+    while pending:
+        path = pending.pop(0)
+        if path in chain:
+            continue
+        text = _read_makefile(path)
+        if text is None:
+            continue
+        chain[path] = text
+        for token in _include_tokens(text):
+            for target in _expand_include(token):
+                if target not in chain:
+                    pending.append(target)
+    return chain
+
+
+def _ignore_error_forms(chain: dict[str, str]) -> list[str]:
+    """Make 级「失败不传播」通道：`.IGNORE` 特殊目标与 `MAKEFLAGS` 里的 `-i`／`--ignore-errors`。
+
+    这两者都不改 recipe 的 shell 形状，却让整条（或全部）recipe 的失败不再让门禁失败。
+    """
+    failures: list[str] = []
+    for path, text in chain.items():
+        for line in text.splitlines():
+            if re.match(r"^\.IGNORE\s*:", line):
+                failures.append(
+                    "header entry contract test wiring loses failure propagation "
+                    f"({path} declares the .IGNORE special target: a failing step stops failing the gate)"
+                )
+            match = re.match(r"^\s*(?:GNU)?MAKEFLAGS\s*[:+?]?=\s*(.*)$", line)
+            if not match:
+                continue
+            value = match.group(1).split("#")[0]
+            for token in value.replace("(", " ").replace(")", " ").split():
+                letters = token[1:] if token.startswith("-") and not token.startswith("--") else ""
+                if token == "--ignore-errors" or (letters and "i" in letters):
+                    failures.append(
+                        "header entry contract test wiring loses failure propagation "
+                        f"({path} sets MAKEFLAGS {token}: a failing step stops failing the gate)"
+                    )
+                    break
+    return failures
+
+
+def _ignored_recipe_prefix(line: str) -> bool:
+    """Make 的 `-` 前缀（`@-`／`-@` 等前缀字符集里含 `-`）让该步骤的失败被忽略。"""
+    return "-" in re.match(r"^[@+\-\s]*", line).group(0)
+
+
 def _matches_recipe(line: str, program: str, args: tuple[str, ...]) -> bool:
     """判定 recipe 行是否**真的**按预期形状执行 `program`。
 
@@ -29,8 +113,15 @@ def _matches_recipe(line: str, program: str, args: tuple[str, ...]) -> bool:
     shell 立刻以 0 退出），三者都能让门禁形同虚设。重定向的剥离必须**不吞分隔符**：
     `>/dev/null||true`（分隔符紧跟重定向、无空白）与 `>/dev/null; echo x` 同样必须失败。
     代价是 `|| true` 这类「真实步骤的尾部修饰」也会失败——按失败关闭方向处理，并在文档残限中登记。
+
+    另有一条 Make 级通道与 shell 形状无关：recipe 行的 **`-` 前缀**（`@-esbuild …`／`-@node …`）让
+    Make 忽略该步骤的退出码，「失败不传播」而 shell 形状完全正常。因此前缀字符集里出现 `-` 一律失败；
+    `.IGNORE` 特殊目标与 `MAKEFLAGS` 里的 `-i`／`--ignore-errors` 由 `_ignore_error_forms` 单独判定。
     """
-    body = line.lstrip("@").split("#")[0]
+    prefix = re.match(r"^[@+\-\s]*", line).group(0)
+    if _ignored_recipe_prefix(line):
+        return False
+    body = line[len(prefix):].split("#")[0]
     body = re.sub(r"\d*>&\s*\d+", " ", body)
     body = re.sub(r"\d*>>?\s*[^\s;|&]+", " ", body)
     segments = re.split(r"&&|\|\||[;|&]", body)
@@ -294,16 +385,31 @@ def validate() -> list[str]:
     contract_test = "frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts"
     if not (ROOT / contract_test).exists():
         failures.append("header entry contract test is missing")
-    makefile = source("make/frontend.mk")
+    makefile_chain = _makefile_chain()
+    failures.extend(_ignore_error_forms(makefile_chain))
     wired_target = "verify.frontend.product_page_header.unit"
-    definitions = [line for line in makefile.splitlines() if re.match(rf"^{re.escape(wired_target)}\s*:", line)]
-    if len(definitions) != 1:
+    definition_files = [
+        path
+        for path, text in makefile_chain.items()
+        for line in text.splitlines()
+        if re.match(rf"^{re.escape(wired_target)}\s*:", line)
+    ]
+    if len(definition_files) != 1:
         failures.append(
             "header entry contract test is not wired into verify.frontend.product_page_header.unit "
-            f"(target must be defined exactly once, found {len(definitions)}: a later duplicate target overrides the "
-            "guarded recipe)"
+            f"(target must be defined exactly once across the include chain, found {len(definition_files)}: "
+            "a later duplicate target — including one introduced through `include` — overrides the guarded recipe)"
         )
-    recipe = _active_recipe_lines(makefile, wired_target)
+    recipe = (
+        _active_recipe_lines(makefile_chain[definition_files[0]], wired_target)
+        if len(definition_files) == 1
+        else []
+    )
+    if any(_ignored_recipe_prefix(line) for line in recipe):
+        failures.append(
+            "header entry contract test wiring loses failure propagation "
+            "(a guarded recipe line uses Make's `-` ignore-error prefix: the step can fail without failing the gate)"
+        )
     # 三条接线必须按**预期形状**真实执行：程序 ＋ 紧跟其后的预期参数（同序、逐个相等）。
     if not any(
         _matches_recipe(
@@ -341,11 +447,13 @@ def validate() -> list[str]:
     for gate_target in ("verify.frontend.quick.gate", "verify.frontend.release.unit"):
         # 必须按**前置 token** 比对而不是子串：把 unit 目标从真实前置里删掉、只留在行尾 `#` 注释里，
         # 子串判定仍会 PASS（`#` 在前置行里就是注释）；同一目标的多处定义也要一并计入。
+        # 前置在 Make 里是**可累加**的：同目标的多次定义合并前置，因此要按 include 链的全集收集。
         gate_prerequisites: set[str] = set()
-        for line in makefile.splitlines():
-            if not re.match(rf"^{re.escape(gate_target)}\s*:", line):
-                continue
-            gate_prerequisites.update(line.split(":", 1)[1].split("#")[0].split())
+        for text in makefile_chain.values():
+            for line in text.splitlines():
+                if not re.match(rf"^{re.escape(gate_target)}\s*:", line):
+                    continue
+                gate_prerequisites.update(line.split(":", 1)[1].split("#")[0].split())
         if wired_target not in gate_prerequisites:
             failures.append(
                 "header entry contract test is not wired into verify.frontend.product_page_header.unit "
