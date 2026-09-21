@@ -10355,7 +10355,7 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   ①`KanbanPage.vue` 向 `components/page/PageHeader.vue` 传 `status`／`status-label`／`loading`／`on-reload`／
   `mode-label`／`record-count` 六个属性，而该入口只声明 `title`／`subtitle`——Vue 属性穿透把它们落成根元素上的
   无意义 DOM 属性，作者以为已接线的错误态页头事实**从未被消费**；②三个薄入口能力面不一致且无声明（`template`
-  转发 9 属性＋3 槽，`design-system` 4 属性＋1 槽，`page` 仅 2 属性）；③`page` 与 `design-system` 各自硬编码
+  转发 9 属性＋3 槽，`design-system` 3 属性＋1 槽，`page` 仅 2 属性）；③`page` 与 `design-system` 各自硬编码
   `presentation-mode="collection"`，固定档位无单一事实来源；④权威新增正式轴时没有任何机制要求入口作出决策。
 - 实现：新增唯一权威 `frontend/apps/web/src/app/presentation/productPageHeaderAdapters.ts` —— 15 条正式轴 ＋
   四个入口（`page`／`template`／`design-system`／`contract-form`）对**每条轴**的显式处置（`forwarded`／`fixed`＋理由／
@@ -10369,18 +10369,26 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   「直接消费权威的文件集合 ≡ 登记表」「轴决策完整、id 唯一、例外必须给理由」八类断言变为可执行。
   Python 守卫同步升级：固定档位单一来源 ＋ 不得硬编码 ＋ 登记表必须包含全部入口路径 ＋ 入口契约测试必须存在且
   仍接在门禁上（防静默摘除），并新增 2 条负例单元测试（共 14 例）。
-- 验证：入口契约 `entries=4 axes=15 call_sites=4 direct_consumers=3` PASS；`verify.frontend.product_page_header.unit`
-  PASS；取值呈现守卫 `sources=686 consumers=18` PASS；`lint:src` 0 error／39 条既有 warning；`typecheck:strict` PASS。
-  **门禁非空洞实证**：在 `/tmp` 影子副本上注入 14 类回归（调用方传未声明属性、薄入口少转发声明轴、自建 `h1`／
-  `header`、未登记的权威直接消费者、权威新增 prop 未登记、薄入口新增未登记输入、硬编码固定轴、登记表漏轴决策／
-  指向不存在文件／重复入口、受管例外失去委托、删掉固定轴解析调用、`not_exposed` 不给理由），**全部被抓到**，
-  工作树文件未被修改。
+- 验证：入口契约 `entries=4 axes=15 call_sites=6 direct_consumers=3` PASS；`verify.frontend.product_page_header.unit`
+  PASS（守卫单测 20 例）；取值呈现守卫 `sources=686 consumers=18` PASS；`lint:src` 0 error／39 条既有 warning；
+  `typecheck:strict` PASS；全量 `vue-tsc --noEmit` 仍为 32 条既有类型债、文件集合与 base 一致。
+  **门禁非空洞实证**：在 `/tmp` 影子副本上注入 25 类回归，**全部被抓到**，工作树文件未被修改。除首批形态之外，
+  第二轮独立只读复核点名的盲区（kebab 标签、barrel 具名导入、`<component :is>`、`v-bind` 对象展开、
+  契约测试接线被注释掉、固定轴绑定字面量、固定轴常量解析错入口 id、只留 `import` 丢掉模板渲染、`$attrs` 兜底转发）
+  都已纳入同一批注入并被抓到。
+- **两轮独立只读复核后的修订**（复核对产品代码无异议，问题全在门禁强度与文档数字）：F 覆盖 kebab 标签与具名／barrel
+  导入并把调用点集合钉死（现 6 个，含 `ContractFormPage` 这一受管例外调用点）；B 从「源码含标识符」改为「模板中真实
+  渲染上游」；D 要求固定轴绑定值必须引用 `resolveProductPageHeaderFixedMode('<本入口 id>')` 的返回值；权威与薄入口
+  禁止 `$attrs`；`<component :is>`／对象展开改为硬失败并要求显式登记；Python 守卫改为按 Makefile 结构解析
+  **未被注释**的 recipe 行；属性扫描改为引号感知；文档「10 条属性」订正为「9 条属性」、「4 属性＋1 槽」订正为
+  「3 属性＋1 槽」。详见迭代文档 §8。
 - 上一批复核 A′／B′ 点名的**登记完整性**在本批一并补上：`productMyWorkPresentation`／`ApiKeyManagementView`／
   `PaymentSettlementIntroduceDialog`／`BoqImportPreviewPanel`／`RelationSearchDialog` 的本地回退与格式化事实，
   在 `frontend_localized_display_contract_test.ts` 中以**正锁**（缺一即失败）登记，任何漂移都必须重新决策。
 - 残限（如实登记）：薄入口仍不暴露的轴是**显式决策**而非遗漏；`breadcrumb`／`variant` 目前无任何入口转发；
-  `ContractFormProductHeader` 的领域内容不在本批收口；门禁 F 用属性名比对而非 AST，`v-bind="obj"` 形态无法枚举
-  （本批四个调用点均无此形态）；无 `local.dev` 运行态抽验。`scene_component_bridge`／`style_system`（`ContractFormPage`
+  `ContractFormProductHeader` 的领域内容不在本批收口；门禁 F／G 用属性名与标签解析而非 AST，
+  `<component :is>`／`v-bind="obj"`／`$attrs` 三种静态不可枚举形态被设计为**硬失败**（要求显式登记），
+  受管例外入口的领域属性面不在「属性 ⊆ 登记轴」约束内；无 `local.dev` 运行态抽验。`scene_component_bridge`／`style_system`（`ContractFormPage`
   1905>1900）／`release_navigation_policy`（菜单投影）三项在本批之前即为失败，本批不修、不掩盖。
 - Next Step：冻结本批 HEAD → L1 → exact-head `make ci.local.quick` 回执 → 两轮独立只读复核 → 显式合并授权 →
   `make pr.push`／`pr.create`／`pr.ready`／`pr.merge` → 主仓库 `make main.sync` → `make branch.cleanup.feature`。
