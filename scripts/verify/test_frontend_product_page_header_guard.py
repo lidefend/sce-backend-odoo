@@ -370,6 +370,124 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
                 validate(),
             )
 
+    def test_contract_test_wiring_esbuild_cannot_be_an_echo_of_the_real_command(self):
+        real = Path.read_text
+
+        def echoed(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value.replace(
+                    "\t@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
+                    "\t@echo frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts --bundle",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", echoed):
+            failures = validate()
+        self.assertTrue(any("esbuild bundle step missing or disabled" in item for item in failures), failures)
+
+    def test_contract_test_wiring_node_cannot_be_an_echo_of_the_real_command(self):
+        real = Path.read_text
+
+        def echoed(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value.replace(
+                    "\t@node /tmp/product-page-header-adapter-contract-test.mjs",
+                    "\t@echo node /tmp/product-page-header-adapter-contract-test.mjs",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", echoed):
+            failures = validate()
+        self.assertTrue(any("node execution step missing or disabled" in item for item in failures), failures)
+
+    def test_contract_test_wiring_unittest_cannot_be_an_echo_of_the_real_command(self):
+        real = Path.read_text
+
+        def echoed(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value.replace(
+                    "\t@python3 -m unittest scripts/verify/test_frontend_product_page_header_guard.py",
+                    "\t@echo python3 -m unittest scripts/verify/test_frontend_product_page_header_guard.py",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", echoed):
+            failures = validate()
+        self.assertTrue(
+            any("guard unit test or guard script step missing or disabled" in item for item in failures),
+            failures,
+        )
+
+    def test_contract_test_wiring_rejects_a_filename_smuggled_into_a_recipe_comment(self):
+        real = Path.read_text
+
+        def smuggled(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value.replace(
+                    "\t@node /tmp/product-page-header-adapter-contract-test.mjs",
+                    "\t@node --version # product-page-header-adapter-contract-test",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", smuggled):
+            failures = validate()
+        self.assertTrue(any("node execution step missing or disabled" in item for item in failures), failures)
+
+    def test_contract_test_wiring_rejects_an_esbuild_filename_smuggled_into_a_recipe_comment(self):
+        real = Path.read_text
+
+        def smuggled(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value.replace(
+                    "\t@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
+                    "\t@true # frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts --bundle",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", smuggled):
+            failures = validate()
+        self.assertTrue(any("esbuild bundle step missing or disabled" in item for item in failures), failures)
+
+    def test_comment_decoy_cannot_hide_unregistered_attrs_forwarding(self):
+        real = Path.read_text
+
+        def decoy(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "ScPageHeader.vue":
+                return value.replace(
+                    ':presentation-mode="collectionMode"',
+                    '{{ \'/*\' }}v-bind="$attrs"{{ \'*/\' }} :presentation-mode="collectionMode"',
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", decoy):
+            failures = validate()
+        self.assertIn(
+            "header adapter must not forward unregistered axes through $attrs: components/design-system/ScPageHeader.vue",
+            failures,
+        )
+
+    def test_comment_decoy_cannot_hide_a_hardcoded_presentation_mode(self):
+        real = Path.read_text
+
+        def decoy(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "ScPageHeader.vue":
+                return value.replace(
+                    ':presentation-mode="collectionMode"',
+                    '{{ \'/*\' }}presentation-mode="collection"{{ \'*/\' }}',
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", decoy):
+            failures = validate()
+        self.assertTrue(any("hardcodes presentation mode" in item for item in failures), failures)
+
     def test_content_heading_authority_is_required(self):
         real = Path.read_text
 

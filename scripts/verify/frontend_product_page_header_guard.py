@@ -9,11 +9,63 @@ def source(path: str) -> str:
     return (ROOT / path).read_text(encoding="utf-8")
 
 
+def _is_real_command(line: str, program: str, *needles: str) -> bool:
+    """判定 recipe 行是否**真的**执行了 `program`。
+
+    只做子串存在性检查会让 `@echo <整条命令行>` 或 `@node --version # <文件名>` 这类伪命令满足断言：
+    前者是回显、后者把文件名塞进注释，两者都不会执行契约测试。因此这里要求：
+    首个 token（去掉输出重定向与 `#` 注释之后）必须**就是**该程序，且其余 needle 落在命令行主体内。
+    """
+    command = line.lstrip("@").split(">")[0].split("#")[0].strip()
+    tokens = command.split()
+    if not tokens:
+        return False
+    if not re.search(rf"(^|/){re.escape(program)}$", tokens[0]):
+        return False
+    return all(needle in command for needle in needles)
+
+
 def _strip_comments(text: str) -> str:
-    """去掉 HTML 注释、块注释与整行 `//` 注释；注释里的「登记表解析」不是实现。"""
-    text = re.sub(r"<!--[\s\S]*?-->", "", text)
-    text = re.sub(r"/\*[\s\S]*?\*/", "", text)
-    return "\n".join(line for line in text.splitlines() if not line.lstrip().startswith("//"))
+    """把 `<!-- -->`／块注释／`//` 注释（含**行尾**内联形态）逐字符替换为空格；注释里的实现不是实现。
+
+    必须**引号感知**：用正则直接删 `/*…*/` 会留下 `{{ '/*' }}v-bind="$attrs"{{ '*/' }}` 这类
+    「在字符串里写一段注释符把真实代码夹掉」的静默通道。整行 `//` 过滤也会漏掉行尾诱饵。
+    """
+    out = list(text)
+    index = 0
+    quote = None
+    length = len(text)
+    while index < length:
+        char = text[index]
+        if quote is not None:
+            if char == "\\" and index + 1 < length:
+                index += 2
+                continue
+            if char == quote:
+                quote = None
+            index += 1
+            continue
+        if char in "\"'`":
+            quote = char
+            index += 1
+            continue
+        if text.startswith("<!--", index):
+            end = text.find("-->", index + 4)
+            stop = length if end == -1 else end + 3
+        elif char == "/" and text.startswith("/*", index):
+            end = text.find("*/", index + 2)
+            stop = length if end == -1 else end + 2
+        elif char == "/" and text.startswith("//", index) and (index == 0 or text[index - 1] != ":"):
+            end = text.find("\n", index)
+            stop = length if end == -1 else end
+        else:
+            index += 1
+            continue
+        for at in range(index, stop):
+            if out[at] != "\n":
+                out[at] = " "
+        index = stop
+    return "".join(out)
 
 
 def _active_recipe_lines(makefile: str, target: str) -> list[str]:
@@ -120,18 +172,24 @@ def validate() -> list[str]:
             "guarded recipe)"
         )
     recipe = _active_recipe_lines(makefile, wired_target)
-    if not any(".bin/esbuild" in line and "product_page_header_adapter_contract_test.ts" in line for line in recipe):
+    if not any(
+        _is_real_command(line, "esbuild", "product_page_header_adapter_contract_test.ts", "--bundle") for line in recipe
+    ):
         failures.append(
             "header entry contract test is not wired into verify.frontend.product_page_header.unit "
             "(esbuild bundle step missing or disabled)"
         )
-    if not any(line.startswith("@node") and "product-page-header-adapter-contract-test" in line for line in recipe):
+    if not any(
+        _is_real_command(line, "node", "product-page-header-adapter-contract-test") for line in recipe
+    ):
         failures.append(
             "header entry contract test is not wired into verify.frontend.product_page_header.unit "
             "(node execution step missing or disabled)"
         )
-    if not any("test_frontend_product_page_header_guard.py" in line and "unittest" in line for line in recipe) or not any(
-        line.startswith("@python3 scripts/verify/frontend_product_page_header_guard.py") for line in recipe
+    if not any(
+        _is_real_command(line, "python3", "test_frontend_product_page_header_guard.py", "unittest") for line in recipe
+    ) or not any(
+        _is_real_command(line, "python3", "scripts/verify/frontend_product_page_header_guard.py") for line in recipe
     ):
         failures.append(
             "header entry contract test is not wired into verify.frontend.product_page_header.unit "
