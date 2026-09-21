@@ -96,6 +96,9 @@ def _ignore_error_forms(chain: dict[str, str]) -> list[str]:
     failures: list[str] = []
     for path, text in chain.items():
         for line in _logical_lines(text):
+            if line.startswith("\t"):
+                # recipe 行不是 make 级指令：`\tSHELL=… cmd` 只是给某条命令设环境变量。
+                continue
             if re.match(r"^\.IGNORE\s*:", line):
                 failures.append(
                     "header entry contract test wiring loses failure propagation "
@@ -109,6 +112,13 @@ def _ignore_error_forms(chain: dict[str, str]) -> list[str]:
             if not match:
                 continue
             value = match.group(1).split("#")[0]
+            if "$" in value:
+                # 值里带变量（`MAKEFLAGS += $(IGN)`）静态看不到展开结果，按失败关闭处理。
+                failures.append(
+                    "header entry contract test wiring loses failure propagation "
+                    f"({path} sets MAKEFLAGS through a variable: the expanded flags cannot be checked statically)"
+                )
+                continue
             for token in value.replace("(", " ").replace(")", " ").split():
                 letters = token[1:] if token.startswith("-") and not token.startswith("--") else ""
                 if token == "--ignore-errors" or (letters and "i" in letters):
@@ -133,15 +143,24 @@ def _failure_propagation_overrides(chain: dict[str, str]) -> list[str]:
     assignments: dict[str, list[str]] = {}
     for path, text in chain.items():
         for line in _logical_lines(text):
+            if line.startswith("\t"):
+                continue
             if re.match(r"^\.ONESHELL\s*:", line):
                 failures.append(
                     "header entry contract test wiring loses failure propagation "
                     f"({path} enables .ONESHELL: only the last recipe line's status is observed, "
                     "so a trailing no-op can hide a failing step)"
                 )
-            match = re.match(r"^\s*(?:override\s+|export\s+|unexport\s+)*(SHELL|\.SHELLFLAGS)\s*[:?+]?=", line)
+            match = re.match(
+                r"^\s*(?:override\s+|export\s+|unexport\s+)*(SHELL|\.SHELLFLAGS)\s*[:?+]?=\s*(.*)$", line
+            )
             if match:
                 assignments.setdefault(match.group(1), []).append(path)
+                if "$" in match.group(2).split("#")[0]:
+                    failures.append(
+                        "header entry contract test wiring loses failure propagation "
+                        f"({path} sets {match.group(1)} through a variable: the resolved value cannot be checked statically)"
+                    )
     for name, paths in sorted(assignments.items()):
         if len(paths) > 1:
             failures.append(
@@ -149,6 +168,35 @@ def _failure_propagation_overrides(chain: dict[str, str]) -> list[str]:
                 f"({name} is redefined across the include chain in {len(paths)} places "
                 f"[{', '.join(sorted(set(paths)))}]: a fragment can silently change recipe failure semantics)"
             )
+    return failures
+
+
+def _dynamic_directive_wrappers(chain: dict[str, str]) -> list[str]:
+    """把 make 级指令藏进 `$(eval …)` 或 `define` 体的形态：行首匹配看不见它们的内容。
+
+    `$(eval SHELL := /bin/true)`／`$(eval MAKEFLAGS += -i)` 与 `override define SHELL … endef`
+    都不是「直接赋值形态」，静态不可枚举，按失败关闭方向处理（要求显式登记）。
+    """
+    failures: list[str] = []
+    guarded = re.compile(r"\b(?:SHELL|\.SHELLFLAGS|MAKEFLAGS)\b\s*[:+?]?=|\.[A-Z]+\s*:")
+    for path, text in chain.items():
+        for line in _logical_lines(text):
+            if line.startswith("\t") or line.lstrip().startswith("#"):
+                continue
+            if re.search(r"\$\(\s*eval\b", line) and guarded.search(line):
+                failures.append(
+                    "header entry contract test wiring loses failure propagation "
+                    f"({path} wraps a make directive in $(eval …): the wrapped directive cannot be checked statically)"
+                )
+                continue
+            match = re.match(r"^\s*(?:override\s+|export\s+)*define\s+(\S+)", line)
+            if match and re.fullmatch(
+                r"SHELL|\.SHELLFLAGS|MAKEFLAGS|GNUMAKEFLAGS|\.ONESHELL|\.IGNORE", match.group(1)
+            ):
+                failures.append(
+                    "header entry contract test wiring loses failure propagation "
+                    f"({path} defines {match.group(1)} through define/endef: the resolved value cannot be checked statically)"
+                )
     return failures
 
 
@@ -473,6 +521,7 @@ def validate() -> list[str]:
     makefile_chain = _makefile_chain()
     failures.extend(_ignore_error_forms(makefile_chain))
     failures.extend(_failure_propagation_overrides(makefile_chain))
+    failures.extend(_dynamic_directive_wrappers(makefile_chain))
     failures.extend(_non_literal_targets(makefile_chain))
     wired_target = "verify.frontend.product_page_header.unit"
     definition_files = [

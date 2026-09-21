@@ -1011,6 +1011,54 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
         self.assertEqual(self._with_fragment_include("sinclude make/_inj_frag.mk", "OTHER_AXIS := 1\n"), [])
 
 
+    def test_eval_wrapped_directives_must_be_rejected(self):
+        """`$(eval SHELL := …)` / `$(eval MAKEFLAGS += -i)`：行首匹配看不见被包裹的指令内容。"""
+        for body in ("$(eval SHELL := /bin/true)\n", "$(eval MAKEFLAGS += -i)\n", "$(eval .ONESHELL:)\n"):
+            failures = self._with_fragment_include("include make/_inj_frag.mk", body)
+            self.assertTrue(
+                any("$(eval" in item for item in failures),
+                (body, failures),
+            )
+
+    def test_define_wrapped_directives_must_be_rejected(self):
+        """`define SHELL … endef`：多行体的值静态不可枚举，按失败关闭处理。"""
+        failures = self._with_fragment_include(
+            "include make/_inj_frag.mk", "define SHELL\n/bin/true\nendef\n"
+        )
+        self.assertTrue(any("define/endef" in item for item in failures), failures)
+
+    def test_variable_carried_makeflags_must_be_rejected(self):
+        """`IGN := -i` ＋ `MAKEFLAGS += $(IGN)`：直接赋值形态匹配不到，但展开结果才是真相。"""
+        failures = self._with_fragment_include(
+            "include make/_inj_frag.mk", "IGN := -i\nMAKEFLAGS += $(IGN)\n"
+        )
+        self.assertTrue(any("through a variable" in item for item in failures), failures)
+
+    def test_variable_carried_shell_must_be_rejected(self):
+        failures = self._with_fragment_include(
+            "include make/_inj_frag.mk", "MY_SHELL := /bin/true\nSHELL := $(MY_SHELL)\n"
+        )
+        self.assertTrue(any("through a variable" in item for item in failures), failures)
+
+    def test_recipe_line_environment_assignment_is_not_a_make_directive(self):
+        """反向锁定：`\tSHELL=/bin/bash cmd` 只是给一条命令设环境变量，不得当作 make 级重定义。"""
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value + "\n_tmp.recipe.probe:\n\tSHELL=/bin/bash run-other\n"
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertEqual(validate(), [])
+
+    def test_posix_and_export_shell_without_assignment_are_legal(self):
+        """反向锁定：`.POSIX:` 与 `export SHELL`（无赋值）不是失败传播通道。"""
+        failures = self._with_fragment_include("include make/_inj_frag.mk", ".POSIX:\nexport SHELL\n")
+        self.assertEqual(failures, [])
+
+
 from pathlib import Path
 
 if __name__ == "__main__":
