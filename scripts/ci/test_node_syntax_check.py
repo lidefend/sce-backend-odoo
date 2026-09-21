@@ -114,6 +114,17 @@ class NodeSyntaxCheckTests(unittest.TestCase):
         self.assertEqual(tuple(node_syntax_check.TRACKED_PATTERNS), ("*.mjs", "*.cjs", "*.js"))
         self.assertEqual(tuple(node_syntax_check.NODE_SUFFIXES), (".mjs", ".cjs", ".js"))
         self.assertEqual(tuple(node_syntax_check.JS_INPUT_TYPES), ("commonjs", "module"))
+        self.assertEqual(
+            tuple((mode, source) for mode, source in node_syntax_check.NODE_FORMAT_PROBES),
+            (("commonjs", b"module.exports = 1;\n"), ("module", b"export const ok = 1;\n")),
+        )
+        # Every format the sweep forces must be proven by the capability probe,
+        # otherwise a format can be added (or a probe dropped) while the
+        # documented single-message fail-closed contract silently degrades.
+        self.assertEqual(
+            tuple(mode for mode, _ in node_syntax_check.NODE_FORMAT_PROBES),
+            tuple(node_syntax_check.JS_INPUT_TYPES),
+        )
 
     def test_tracked_corpus_covers_the_javascript_anchors(self) -> None:
         tracked = {path.relative_to(ROOT).as_posix() for path in node_syntax_check.tracked_node_files()}

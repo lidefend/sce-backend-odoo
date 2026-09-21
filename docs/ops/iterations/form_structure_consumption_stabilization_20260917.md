@@ -7127,7 +7127,7 @@ L2 `make test.contract` **PASS**（`[OK] Node syntax check passed (148 files)`�
 - 清理：`fix/node-automation-syntax-gate-v1` 经 `make branch.cleanup.feature` 本地＋远端删除（squash 合入下按
   exact-head 与 merged PR #517 核对），候选工作树 detach 到 `cdb14d41` 并保留。
 - 残限：4 条保持登记（受跟踪 `.js` 201 个未纳入 sweep、运行本门的 CI job 未钉 node 版本、`node --check` 仅解析级、
-  本门只约束被点名的两个 make target）（该 4 条的后续处置见 §8.52：第 2、3 条已关闭，第 4 条已细化，第 1 条保持）。
+  本门只约束被点名的两个 make target）（后续处置见 §8.52：受跟踪 `.js` 未纳入 sweep 与运行本门的 CI 作业未钉 node 版本两条**已关闭**，`node --check` 仅解析级**保持并细化**，本门只约束被点名的两个 make target **保持**）。
 - **范围外预存失败（登记为排除项，本轮不修）**：`make verify.product.delivery.governance_truth` 在本批基线上
   **FAIL（exit 2）**，两条 error 都指向 `docs/product/delivery/v1/delivery_readiness_scoreboard_v1.md` 的快照陈旧——
   其 `snapshot.commit_ref = 68f5224b` 之后 mainline 已累计 **745** 个文件变动（含 **20** 个 `.agent/**`）并触发
@@ -7170,7 +7170,7 @@ L2 `make test.contract` **PASS**（`[OK] Node syntax check passed (148 files)`�
   （`frontend_release_gate.yml` setup-node 22.17.0、`demo-ci.yml` `node:22.17.0` 基础镜像）。runner 镜像本身已带
   Node.js 22.23.2（actions/runner-images Ubuntu2404／Ubuntu2204 readme），故**钉版前下界也已成立**，钉版是把隐含契约显式化。
 
-**代价与边界**：sweep 148 → 349 文件、3.0s → 8.9s（约 233 次 node 调用：170 个 `.js` 首次 commonjs 即通过，31 个走第二次）。
+**代价与边界**：sweep 148 → 349 文件、3.0s → 8.9s（**382** 次 node 调用：148 次原生 `.mjs`/`.cjs` 检查 ＋ 232 次 `.js` 解析（170 个首次 commonjs 即通过、31 个走第二次）＋ 2 次能力探测；墙钟与主机相关，独立复核在本机测得同为 ~2.6–3 倍比值）。
 `.js` 的「任一候选格式可解析」属**解析级**语义（如 sloppy-mode 重复参数函数在 commonjs 下合法、在 module 下非法，仍判通过），
 已并入残限第 4 条；TS／Vue 与 `.css`／`.xml` 资产不在本门内（`frontend/apps/web` 由 `verify.frontend.lint.src` 覆盖）。
 

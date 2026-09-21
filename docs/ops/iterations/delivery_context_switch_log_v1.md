@@ -10173,7 +10173,7 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   点名 node 22.17.0（不是把每个 `.js` 报成语法错）；并给唯一运行本门的 CI 作业（`professional_quality_gate.yml`／`ubuntu-latest`）
   钉 `actions/setup-node` **22.17.0**（与 `frontend_release_gate.yml`、`demo-ci.yml` 既有钉法一致），把隐含契约显式化——
   runner 镜像本身已带 Node.js 22.23.2（actions/runner-images Ubuntu2404／Ubuntu2204 readme），钉版前下界亦成立。
-- 代价与边界：sweep **148 → 349** 文件、**3.0s → 8.9s**（约 233 次 node 调用）。`.js` 的「任一候选格式可解析」属**解析级**语义
+- 代价与边界：sweep **148 → 349** 文件、**3.0s → 8.9s**（**382** 次 node 调用：148 次原生 `.mjs`/`.cjs` ＋ 232 次 `.js` 解析（170 首次／31 二次）＋ 2 次能力探测；墙钟与主机相关）。`.js` 的「任一候选格式可解析」属**解析级**语义
   （sloppy-mode 重复参数函数仍判通过），已并入残限第 4 条；TS／Vue 与 `.css`／`.xml` 资产不在本门内
   （`frontend/apps/web` 由 `verify.frontend.lint.src` 覆盖）。
 - 改动（5 文件 ＝ 3 工具 ＋ 1 契约测试 ＋ 1 生成物）：`scripts/ci/node_syntax_check.py`（`NODE_SUFFIXES`／`TRACKED_PATTERNS` 增 `.js`、
@@ -10193,3 +10193,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   加指针指向 §8.52。）
 - Next Step：冻结本批 HEAD → exact-head `make ci.local.quick` → 两轮独立只读复核 → 显式合并授权 → `make pr.merge` →
   主仓库 `make main.sync` → `make branch.cleanup.feature`。
+
+- 复核后修订（绑定 `0374abee…`：round A 判 **REQUEST_CHANGES**、round B 判 **APPROVE**，两轮各自独立复现了空洞跳过的实测、201／349 语料、170／31／0／0 分类与两条字节级不变量）：
+  ①**S2-1（A）**：`NODE_FORMAT_PROBES` 未被自检钉死——删掉 module 探测时 24 测试仍全绿，而已文档化的「单条消息 ＋ exit 2」fail-closed 契约会退化为「每文件一条 ＋ exit 1」；
+  ②**S3-1（A＋B）**：代价记叙为「整个 sweep 约 233 次 node 调用」，而 233 只是 `.js` 子项——实测总数为 **382**（148 ＋ 232 ＋ 2）；
+  ③**S3-2（A）**：§8.51 残限行的指针按本节 ①–④ 编号陈述处置，与相邻列表顺序不符；
+  ④**S4-1（A＋B）**：workflow 钉版断言是纯文本匹配，浮动 tag／被注释遮蔽的版本／`if: false`／步骤被移入别的 job／步骤被移到门之后都抓不到。
+  修订：自检改为**逐字钉死** `NODE_FORMAT_PROBES` 并要求「凡被强制的格式都必须被探测覆盖」；代价改为 **382** 次并给出分解；§8.51 指针改为**逐条就地陈述处置**；契约断言改为**解析 workflow** 后断言步骤位于 `professional_quality_gate` job 内、唯一、`uses` 为钉死 SHA、`with.node-version == 22.17.0`、无 `if`、且先于两个跑 sweep 的门步骤（五类构造已在影子副本复测为**均被抓到**）。该修订产生新 HEAD，L1／L2／L5 与两轮独立复核按新冻结候选重跑与重绑；门、语料、决策与残限结论不变。
