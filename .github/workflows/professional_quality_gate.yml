@@ -216,6 +216,15 @@ jobs:
           restore-keys: |
             pip-${{ runner.os }}-python-
 
+      # `make test.unit` / `make test.contract` run the tracked Node syntax
+      # sweep, which parses `.js` files through `node --input-type` and
+      # therefore depends on the runtime version. Pin it instead of inheriting
+      # whatever the runner image happens to ship.
+      - name: Install pinned Node.js runtime for the syntax sweep
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.17.0
+
       - name: Run full professional quality gate (serialized artifact writers)
         if: env.PROFESSIONAL_MODE == 'full'
         run: |

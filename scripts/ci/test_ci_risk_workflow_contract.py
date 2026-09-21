@@ -112,6 +112,20 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("verify.frontend.state_dashboard.unit", merge_units)
         self.assertNotIn("verify.frontend.professional_audit.unit", merge_units)
 
+    def test_professional_gate_pins_the_node_runtime_of_the_syntax_sweep(self) -> None:
+        """The sweep behind ``test.unit``/``test.contract`` parses ``.js`` files.
+
+        Those targets check ``.js`` through ``node --input-type``, so the job
+        that runs them must pin the runtime instead of inheriting whatever the
+        runner image ships.
+        """
+        text = self.text("professional_quality_gate.yml")
+        pinned = text.split("- name: Install pinned Node.js runtime for the syntax sweep", 1)
+        self.assertEqual(len(pinned), 2, "professional_quality_gate must pin the node runtime")
+        step = pinned[1].split("- name:", 1)[0]
+        self.assertIn("actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020", step)
+        self.assertIn("node-version: 22.17.0", step)
+
     def test_public_guard_skips_history_scan_only_for_fast_lane(self) -> None:
         text = self.text("public_guard.yml")
         self.assertIn("name: public_guard_classify", text)
