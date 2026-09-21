@@ -7227,8 +7227,8 @@ L5 exact-head `make ci.local.quick` 与两轮独立只读复核在本轮收口�
   requirements 声明」——base 的 `scripts/ci/generate_contract_structure_fingerprint.py` 即已依赖 PyYAML 并在同一
   CI 作业内执行，故不构成新依赖。此外 `gateLiveOnMain` 记明该只读重跑用的是**主机默认 node（24.16.0）**、非 CI 钉版
   版本；两轮复核报告为**仓库外只读复核**（与上轮收口审计同一性质，仓库内无可核产物）。
-- 台账口径：新增 `uc4G16JsCorpusExpansionAudit`（合入事实、必检与合入后 run、合入后门实测、无订正声明、三条 S4
-  建议、分支清理），其 `nextRoundAudit` 声明本批无需再审；`uc4G16JsCorpusExpansion.nextRoundAudit` 改指回该块；
+- 台账口径：新增 `uc4G16JsCorpusExpansionAudit`（合入事实、必检与合入后 run、合入后门实测、无订正声明、四条 parked 建议（另 1 条 `excludedFindings` 排除项）、
+  分支清理），其 `nextRoundAudit` 声明本批无需再审；`uc4G16JsCorpusExpansion.nextRoundAudit` 改指回该块；
   `uc4G16PublishedAudit`／`uc4G16FollowupSyntaxGate`／`uc4G16FollowupSyntaxGateAudit` **逐字节不变**；主线计数字段
   （`count=0`／`entries=[]`／`otherStateConsumers=[]`／`retirementComplete=false`）本轮未改（本轮无消费者变化）。
   本提交为**文档类单职责提交**（台账 ＋ 本记录 ＋ 切换日志，路径集合固定为 3），**未触碰**产品代码、契约、
@@ -7256,3 +7256,10 @@ L5 exact-head `make ci.local.quick` 与两轮独立只读复核在本轮收口�
   保持残限枚举顺序与本节一致；④吸收 round A 的 S4-1／S4-3：`branchCleanup` 补明远端 ref 已删的**只读可证口径**
   （`git ls-remote --heads origin` 无该 ref；branches API 404），`gateLiveOnMain` 补记重跑所用运行时。该修订产生新
   HEAD，L1／L2／L5 与两轮独立复核按新冻结候选重跑与重绑；合入事实、字节级不变量与残限登记不变。
+- 复核后修订二（绑定 `a6a55c3b…`：两轮均判 **REQUEST_CHANGES**，无 S0／S1／S2，此前六项委托中五项完全闭合、第六项部分闭合）：
+  ①**S3-1（两轮）**：§8.53 与切换日志的「台账口径」括注仍写「三条 S4 建议」，而台账块已增至 **4 条 parked ＋ 1 条
+  `excludedFindings`**——同一文档出现两个互斥计数，现两处均改为「四条 parked 建议（另 1 条 `excludedFindings` 排除项）」；
+  ②**S3-2（A）**：`postReviewRevision.fix` 自指「本块声明两轮报告为仓库外只读复核」，而块内**并无该句**——现把该陈述
+  **写入 `mergedPr.independentReview`**，并把 `fix` 措辞改为指向该字段；③**S4-1（A）**：`recordCorrections.none` 原称
+  「无涉及残限登记的 S3」，而本轮 S3-1 正是关于残限**摘要计数**——现改为「无任何发现要求改动残限登记内容、三条条目
+  未变，实际发现是两处摘要计数有误」。该第二修订再次产生新 HEAD，L1／L2／L5 与两轮独立复核按新冻结候选重跑与重绑。

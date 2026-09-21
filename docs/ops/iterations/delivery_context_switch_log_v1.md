@@ -10224,8 +10224,8 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `frontend_release_gate.yml` 仍是纯文本 `assertIn`（**既有**代码、非本批引入，round A′ S4-2，登记以免被静默丢弃）。
   **排除项**：「新增 `import yaml` 未在 requirements 声明」（round A′ S4-3 ＝ round B′ S4-3）——base 的
   `scripts/ci/generate_contract_structure_fingerprint.py` 即已依赖 PyYAML 并在同一 CI 作业内执行。
-- 台账口径：新增 `uc4G16JsCorpusExpansionAudit`（合入事实、必检与合入后 run、合入后门实测、无订正声明、三条 S4
-  建议、分支清理），其 `nextRoundAudit` 声明本批无需再审；`uc4G16JsCorpusExpansion.nextRoundAudit` 改指回该块；
+- 台账口径：新增 `uc4G16JsCorpusExpansionAudit`（合入事实、必检与合入后 run、合入后门实测、无订正声明、四条 parked 建议（另 1 条 `excludedFindings` 排除项）、
+  分支清理），其 `nextRoundAudit` 声明本批无需再审；`uc4G16JsCorpusExpansion.nextRoundAudit` 改指回该块；
   `uc4G16PublishedAudit`／`uc4G16FollowupSyntaxGate`／`uc4G16FollowupSyntaxGateAudit` **逐字节不变**；主线计数字段
   （`count=0`／`entries=[]`／`otherStateConsumers=[]`／`retirementComplete=false`）本轮未改。
 - 清理：`feature/uc4-g16-node-syntax-js-corpus-v1` 经 `make branch.cleanup.feature` 本地＋远端删除（squash 合入下按
@@ -10245,3 +10245,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   排除项、字段更名 `parkedHardeningSuggestions`、残限枚举顺序与 §8.53 对齐）；④吸收 round A 的 S4-1／S4-3
   （`branchCleanup` 补明远端 ref 已删的只读可证口径、`gateLiveOnMain` 补记重跑运行时为**主机默认 node 24.16.0**）。
   该修订产生新 HEAD，L1／L2／L5 与两轮独立复核按新冻结候选重跑与重绑；合入事实、字节级不变量与残限登记不变。
+- 复核后修订二（绑定 `a6a55c3b…`：两轮均判 **REQUEST_CHANGES**，无 S0／S1／S2）：①**S3-1（两轮）**：§8.53 与本日志
+  的「台账口径」括注仍写「三条 S4 建议」，与台账块（**4 条 parked ＋ 1 条 `excludedFindings`**）矛盾——两处均改为
+  「四条 parked 建议（另 1 条 `excludedFindings` 排除项）」；②**S3-2（A）**：`postReviewRevision.fix` 自指「本块声明
+  两轮报告为仓库外只读复核」但块内无该句——现把该陈述写入 `mergedPr.independentReview`，`fix` 改为指向该字段；
+  ③**S4-1（A）**：`recordCorrections.none` 原称「无涉及残限登记的 S3」，而该 S3 正是关于残限**摘要计数**——现改为
+  「无任何发现要求改动残限登记内容、三条条目未变」。该第二修订再次产生新 HEAD，L1／L2／L5 与两轮独立复核按新冻结
+  候选重跑与重绑；合入事实、字节级不变量与残限登记不变。
