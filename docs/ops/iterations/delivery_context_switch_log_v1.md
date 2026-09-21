@@ -10370,9 +10370,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   Python 守卫同步升级：固定档位单一来源 ＋ 不得硬编码 ＋ 登记表必须包含全部入口路径 ＋ 入口契约测试必须存在且
   仍接在门禁上（防静默摘除）。
 - 验证：入口契约 `entries=4 axes=15 call_sites=6 direct_consumers=3` PASS；`verify.frontend.product_page_header.unit`
-  PASS（守卫单测 **40 例**）；取值呈现守卫 `sources=686 consumers=18` PASS；`lint:src` 0 error／39 条既有 warning；
+  PASS（守卫单测 **45 例**）；取值呈现守卫 `sources=686 consumers=18` PASS；`lint:src` 0 error／39 条既有 warning；
   `typecheck:strict` PASS；全量 `vue-tsc --noEmit` 仍为 32 条既有类型债、文件集合与 base 一致。
-  **门禁非空洞实证**：在 `/tmp` 影子副本上注入 **80 类回归（另有 4 项假失败防线锁定 STILL-PASS），全部被抓到**，工作树文件未被修改。除首批形态之外，
+  **门禁非空洞实证**：在 `/tmp` 影子副本上注入 **95 项矩阵（84 项 CAUGHT ＋ 11 项假失败防线锁定 STILL-PASS），全部符合预期**，工作树文件未被修改。除首批形态之外，
   第二轮独立只读复核点名的盲区（kebab 标签、barrel 具名导入、`<component :is>`、`v-bind` 对象展开、
   契约测试接线被注释掉、固定轴绑定字面量、固定轴常量解析错入口 id、只留 `import` 丢掉模板渲染、`$attrs` 兜底转发）
   都已纳入同一批注入并被抓到；第三轮复核点名的**诱饵类**形态（单引号 `<component :is='X'>`、字符串注释符
@@ -10416,16 +10416,38 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   等误判）**接受为安全方向、不改**。守卫单测 **34 → 40 例**，影子副本注入矩阵 **59 → 80 项**且全部 CAUGHT，
   另锁定 4 项**假失败防线**必须 STILL-PASS（模板注释里的动态绑定、单引号具名槽、真实步骤尾部的 `|| true`／`2>/dev/null`）。
   第四轮修订产生新 HEAD，L1／exact-head L5 与第五轮复核按新冻结候选重跑与重绑。详见迭代文档 §8。
+  随后 round A⁗／B⁗（复核 head `cc36a37a`，均 REQUEST_CHANGES、**无 S0／S1**）再点名六类：
+  ①**A⁗ S2-1／S3-1** recipe 形状判定只要求「存在某一段匹配」，于是 `false && <步骤>`／`true || <步骤>` 让步骤
+  **永不执行**、`<步骤> || true`／`<步骤> ; true` 让**失败不传播**，两类都能让门禁形同虚设；
+  ②**B⁗ S2-1** F1 漏掉**无引号**取值 `:is=ScPageHeader` 与 `:is.camel`／`:is.prop`／`:is.attr` 修饰符
+  （Vue 对它们全按动态组件渲染，而 `vue/html-quotes` 只是 warn、修饰符无任何 lint 信号）；
+  ③**B⁗ S4-1／S4-2** F1 误判 `data-is="X"`（普通静态属性）、模板正文裸撇号（`<p>owner's</p>`）
+  打乱引号状态致其后的模板注释被当成实现，两者都是**假失败**；
+  ④**A⁗ S4-1／B⁗ S4-3** `/\battrs\b/` 误伤普通字符串（`'no attrs here'`）与无关命名；
+  ⑤**A⁗ S4-2／B⁗ S4-3** `!\|\bprops\s*:\s*\{/` 误伤 TS 类型字面量（`type M = { props: { … } }`），
+  `defineProps<\n{` 也被当成非字面量；
+  ⑥**A⁗ S4-3／B⁗ S4-4** §6「对象展开一律硬失败」比实现宽（`v-bind="obj"` 变量形态并未硬失败）、
+  §5／§6 的注入口径（80／80）自相冲突。已逐条修掉：recipe 判定收紧为「先摘掉 shell 重定向，再切段后
+  **恰好只剩一段**」（上一轮 4 项防线中的 `|| true` 一项按失败关闭**转为必须抓到**，`2>&1`／`2>/dev/null`
+  仍被接受为真实步骤）；F1 改为**属性级**解析（覆盖四种取值形态与 `.camel`／`.prop`／`.attr` 修饰符，
+  `data-is` 天然排除）；注释扫描器改为**模式感知**（模板正文／标签内部／`<script>`・`<style>` 原始段／
+  `{{ }}` 插值）；`attrs` 判据拆成「具名符号看**字面量已掩码**视图、`v-bind="…attrs…"` 看未掩码视图」
+  两个视图；Options API 判定限定为「所在 `<script>` 段同时声明 `export default`」。守卫单测 **40 → 45 例**，
+  影子副本矩阵 **80 → 95 项（84 项 CAUGHT ＋ 11 项假失败防线锁定 STILL-PASS）**。第五轮修订产生新 HEAD，
+  L1／exact-head L5 与第六轮复核按新冻结候选重跑与重绑。详见迭代文档 §8。
 - 上一批复核 A′／B′ 点名的**登记完整性**在本批一并补上：`productMyWorkPresentation`／`ApiKeyManagementView`／
   `PaymentSettlementIntroduceDialog`／`BoqImportPreviewPanel`／`RelationSearchDialog` 的本地回退与格式化事实，
   在 `frontend_localized_display_contract_test.ts` 中以**正锁**（缺一即失败）登记，任何漂移都必须重新决策。
 - 残限（如实登记）：薄入口仍不暴露的轴是**显式决策**而非遗漏；`breadcrumb`／`variant` 目前无任何入口转发；
   `ContractFormProductHeader` 的领域内容不在本批收口；门禁 F／G 用属性名与标签解析而非 AST，
-  `<component :is>`（含静态 `is=` 与 `:is =` 空白变体）／`v-bind="obj"`（含权威标签自身）／
+  `<component :is>`（含静态 `is=`、`:is =` 空白变体、**无引号** `:is=X` 与 `:is.camel`／`:is.prop`／`:is.attr`
+  修饰符）／**字面量** `v-bind="obj"`（含权威标签自身；变量形态需数据流分析，另行登记）／
   `$attrs`・`useAttrs()`・`attrs` 三类静态不可枚举形态被设计为**硬失败**（要求显式登记），
-  非字面量 `defineProps` 与 Options API `props` 同样硬失败；recipe 形状判定下 `$(ESBUILD)`／`sh -c`／参数换序／
-  `cd <子目录>` 后改用相对路径会**假失败**（安全方向，需显式登记），
-  受管例外入口的领域属性面不在「属性 ⊆ 登记轴」约束内；无 `local.dev` 运行态抽验。`scene_component_bridge`／`style_system`（`ContractFormPage`
+  非字面量 `defineProps` 与 Options API `props`（仅当所在 `<script>` 段声明 `export default`）同样硬失败；
+  recipe 形状判定要求「切段后**恰好只剩一段**」，故 `$(ESBUILD)`／`sh -c`／参数换序／
+  `cd <子目录>` 后改用相对路径／真实步骤尾部的 `<步骤> || true`・`<步骤> ; true` 会**假失败**
+  （安全方向，需显式登记；`2>&1`／`2>/dev/null` 等真实重定向仍被接受），
+ 受管例外入口的领域属性面不在「属性 ⊆ 登记轴」约束内；无 `local.dev` 运行态抽验。`scene_component_bridge`／`style_system`（`ContractFormPage`
   1905>1900）／`release_navigation_policy`（菜单投影）三项在本批之前即为失败，本批不修、不掩盖。
-- Next Step：冻结本批 HEAD → L1 → exact-head `make ci.local.quick` 回执 → 独立只读复核（四轮共 8 次）→ 显式合并授权 →
+- Next Step：冻结本批 HEAD → L1 → exact-head `make ci.local.quick` 回执 → 独立只读复核（五轮共 10 次）→ 显式合并授权 →
   `make pr.push`／`pr.create`／`pr.ready`／`pr.merge` → 主仓库 `make main.sync` → `make branch.cleanup.feature`。
