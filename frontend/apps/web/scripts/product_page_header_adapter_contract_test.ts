@@ -23,12 +23,19 @@ const camel = (value: string) => value.replace(/-([a-z])/g, (_, char: string) =>
  * 于是薄入口可以静默新增未登记输入，因此这些形态一律**硬失败**而不是静默放行。
  */
 function declaredPropsOf(relative: string): string[] {
-  const code = codeOnly(read(relative));
+  const raw = read(relative);
+  const code = codeOnly(raw);
+  // Options API 的 `props: { … }` 只有**在其所在 `<script>` 段同时声明 `export default`** 时才是声明面；
+  // 否则 `type Meta = { props: { title: string } }` 这类类型字面量会被误判（假失败）。
+  const optionsApi = [...raw.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)]
+    .map((match) => stripComments(match[1]))
+    .some((block) => /\bexport\s+default\b/.test(block) && /\bprops\s*:\s*\{/.test(block));
   assert.ok(
-    !/\bprops\s*:\s*\{/.test(code),
+    !optionsApi,
     `${relative} 使用 Options API 的 props 声明：声明面无法静态枚举，必须改为字面量 defineProps<{ … }> 并登记`,
   );
-  const literals = [...code.matchAll(/defineProps<\{([\s\S]*?)\}>/g)];
+  // `defineProps<` 与 `{` 之间的换行是排版差异，不是「非字面量」——只认类型本身。
+  const literals = [...code.matchAll(/defineProps<\s*\{([\s\S]*?)\}\s*>/g)];
   if (literals.length === 0) {
     assert.ok(
       !/defineProps\s*</.test(code),
@@ -47,8 +54,13 @@ const MASK = '\u0001';
  * - `<!-- -->`／块注释／`//` 注释（含**行尾**内联形态）逐字符替换为空格：注释里的「委托渲染」「登记表解析」不是实现；
  * - `maskStrings` 为真时，字符串与模板字面量的**内容**逐字符替换为占位符：写在字面量里的
  *   `'<PageHeader />'` 或 `"const x = resolveProductPageHeaderFixedMode('page')"` 是文档诱饵，不是实现。
- * 扫描器**引号感知**，所以 `'https://…'` 里的 `//` 不会被误当成注释，`'/*'` 也不会开启块注释——
- * 用正则做这两件事都会留下「字符串里写一段注释符把真实代码夹掉」的静默通道。
+ * 扫描器按**标记模式**推进（模板正文／标签内部／`<script>`・`<style>` 原始段，以及模板 `{{ }}` 插值）：
+ * - 正文里的裸撇号（`<p>owner's</p>`）不得打开引号状态，否则其后的 `<!-- -->` 会被当成实现（假失败）；
+ * - 正文里的 `<!--` 只在**插值之外**才是注释，`{{ '<!--' }}` 里的字符是数据不是注释——
+ *   否则它和 `'/*'` 一样，都是「在字符串里写一段注释符把真实代码夹掉」的静默通道；
+ * - 标签内部与 `{{ }}` 内仍**引号感知**，所以 `'https://…'` 里的 `//` 不会被误当成注释，`'/*'` 也不会开启块注释；
+ * - 行注释与块注释只在脚本语义（`<script>`・`<style>` 段或模板插值）里成立：模板正文里的斜杠是**文本**，
+ *   把整行 `//` 一律当注释会让「同一行里 `//` 之后的真实标签／绑定」被静默夹掉。
  * 需要读取字面量**真实值**的断言（固定轴入口 id）按对齐下标在原文上取回。
  */
 function codeView(source: string, maskStrings: boolean): string {
@@ -58,6 +70,9 @@ function codeView(source: string, maskStrings: boolean): string {
       if (out[at] !== '\n') out[at] = ' ';
     }
   };
+  let mode: 'text' | 'tag' | 'script' = 'text';
+  let interpolation = 0;
+  let rawTag = false;
   let index = 0;
   let quote: string | null = null;
   while (index < source.length) {
@@ -80,16 +95,62 @@ function codeView(source: string, maskStrings: boolean): string {
       index += 1;
       continue;
     }
-    if (char === '"' || char === "'" || char === '`') {
-      quote = char;
+    if (mode === 'tag') {
+      if (char === '"' || char === "'" || char === '`') {
+        quote = char;
+        index += 1;
+        continue;
+      }
+      if (char === '>') {
+        mode = rawTag ? 'script' : 'text';
+        rawTag = false;
+        index += 1;
+        continue;
+      }
       index += 1;
       continue;
     }
-    if (source.startsWith('<!--', index)) {
-      const end = source.indexOf('-->', index + 4);
-      const stop = end === -1 ? source.length : end + '-->'.length;
-      blank(index, stop);
-      index = stop;
+    if (mode === 'text' && interpolation === 0) {
+      if (source.startsWith('<!--', index)) {
+        const end = source.indexOf('-->', index + 4);
+        const stop = end === -1 ? source.length : end + '-->'.length;
+        blank(index, stop);
+        index = stop;
+        continue;
+      }
+      if (source.startsWith('{{', index)) {
+        interpolation = 1;
+        index += 2;
+        continue;
+      }
+      if (char === '<') {
+        rawTag = /^<(?:script|style)\b/i.test(source.slice(index, index + 8));
+        mode = 'tag';
+        index += 1;
+        continue;
+      }
+      index += 1;
+      continue;
+    }
+    if (interpolation > 0) {
+      if (source.startsWith('{{', index)) {
+        interpolation += 1;
+        index += 2;
+        continue;
+      }
+      if (source.startsWith('}}', index)) {
+        interpolation -= 1;
+        index += 2;
+        continue;
+      }
+    } else if (/^<\/(?:script|style)\b/i.test(source.slice(index, index + 10))) {
+      mode = 'tag';
+      index += 1;
+      continue;
+    }
+    if (char === '"' || char === "'" || char === '`') {
+      quote = char;
+      index += 1;
       continue;
     }
     if (char === '/' && source[index + 1] === '*') {
@@ -300,10 +361,14 @@ assertRegisteredSlots(
 // A3. `$attrs`／`useAttrs()`／`attrs` 三者等效，都是**静态不可枚举的兜底转发**通道，权威与全部入口一律禁止。
 // 只盯 `$attrs` 字面量会让 `const attrs = useAttrs()` ＋ `<ProductPageHeader v-bind="attrs">`
 // 把 `not_exposed` 的轴整段偷渡进权威（例如 `design-system` 登记为不暴露的 `hideTitle`）。
-const ATTRS_FALLBACK = /\$attrs\b|\buseAttrs\b|\battrs\b/;
+// 判据分两个视图，避免「合法文案／无关命名」被误伤（假失败）：
+// ① 具名符号（`$attrs`／`attrs`／`useAttrs`）只在**字面量内容已掩码**的视图里判——`const note = 'no attrs here'` 不是实现；
+// ② 模板属性 `v-bind="…attrs…"` 的取值是真代码（不在①的视图里），因此在未掩码视图上单独判。
+const ATTRS_SYMBOL = /\buseAttrs\b|\battrs\b/;
+const ATTRS_BINDING = /v-bind\s*=\s*["'][^"']*attrs/i;
 for (const relative of [AUTHORITY, ...PRODUCT_PAGE_HEADER_ENTRIES.map((entry) => entry.path)]) {
   assert.ok(
-    !ATTRS_FALLBACK.test(entrySource(relative)),
+    !ATTRS_SYMBOL.test(entryCode(relative)) && !ATTRS_BINDING.test(entrySource(relative)),
     `${relative} 不得用 $attrs／useAttrs()／attrs 兜底转发未登记轴：未登记轴必须在登记表中显式决策`,
   );
 }
@@ -420,9 +485,11 @@ function normaliseBoundAttribute(rawName: string): string | null {
 /**
  * 逐字扫描开标签内的属性名。**必须感知引号**：正则式扫描会把属性值内部的标识符
  * （如 `v-if="... && status !== 'error'"` 里的 `status`）误判为属性名，从而产生假失败／假放行。
+ * 动态 `:is`／`v-bind` 需要**取值**才能判定「是否渲染已登记入口」，因此这里同时返回原始取值：
+ * 取值同样引号感知，无引号取值（`:is=ScPageHeader`）也必须取到——Vue 对两者都按动态组件渲染。
  */
-function attributeNames(block: string): string[] {
-  const names: string[] = [];
+function attributePairs(block: string): { name: string; value: string }[] {
+  const pairs: { name: string; value: string }[] = [];
   const isSpace = (char: string | undefined) => char !== undefined && /\s/.test(char);
   let index = 0;
   const skipWhitespace = () => {
@@ -435,23 +502,29 @@ function attributeNames(block: string): string[] {
     while (index < block.length && !/[\s=/>]/.test(block[index])) index += 1;
     const name = block.slice(start, index);
     skipWhitespace();
+    let value = '';
     if (block[index] === '=') {
       index += 1;
       skipWhitespace();
       const quote = block[index];
       if (quote === '"' || quote === "'") {
         index += 1;
+        const valueStart = index;
         while (index < block.length && block[index] !== quote) index += 1;
+        value = block.slice(valueStart, index);
         index += 1;
       } else {
+        const valueStart = index;
         while (index < block.length && !isSpace(block[index])) index += 1;
+        value = block.slice(valueStart, index);
       }
     }
-    if (name) names.push(name);
+    if (name) pairs.push({ name, value });
     skipWhitespace();
   }
-  return names;
+  return pairs;
 }
+const attributeNames = (block: string) => attributePairs(block).map((pair) => pair.name);
 
 const ENTRY_BASENAMES = new Set([
   ...PRODUCT_PAGE_HEADER_ENTRIES.map((entry) => path.posix.basename(entry.path, '.vue')),
@@ -484,13 +557,19 @@ for (const file of sourceFiles) {
   if (tagToEntry.size === 0) continue;
 
   // F1. 动态组件绑定无法静态枚举调用面：绑定到已登记入口即失败，必须显式登记该形态。
-  // 取值与 `=` 之间允许空白（`:is = "X"` 与 `:is="X"` 等价），取值引号不敏感（含反引号模板字面量），
-  // 且静态字符串形态 `is="X"` 同样按名字解析组件——三者漏一个都是一 token 绕过。
-  const DYNAMIC_BINDING = /(?::|v-bind:)?\b(?:is|v-bind)\s*=\s*(?:'([^']*)'|"([^"]*)"|`([^`]*)`)/g;
+  // 按**属性**解析而不是正则扫子串，才能同时覆盖：取值与 `=` 之间的空白、四种取值形态
+  // （单引号／双引号／反引号／**无引号**——`:is=ScPageHeader` 在 Vue 里同样编译成
+  // `_resolveDynamicComponent(...)`）、以及 `:is.camel`／`:is.prop`／`:is.attr` 这类**合法修饰符**
+  // （全部按动态组件渲染），同时不把 `data-is="…"`（静态属性）误判成动态绑定。
   for (const block of tagAttributeBlocks(source, ['component', 'Component'])) {
-    for (const dynamic of block.matchAll(DYNAMIC_BINDING)) {
-      const expression = dynamic[1] ?? dynamic[2] ?? dynamic[3] ?? '';
-      for (const identifier of expression.matchAll(/[A-Za-z_$][\w$]*/g)) {
+    for (const attribute of attributePairs(block)) {
+      const bound = attribute.name.startsWith(':')
+        ? attribute.name.slice(1)
+        : attribute.name.startsWith('v-bind:')
+          ? attribute.name.slice('v-bind:'.length)
+          : attribute.name;
+      if (attribute.name !== 'v-bind' && bound.split('.')[0] !== 'is') continue;
+      for (const identifier of attribute.value.matchAll(/[A-Za-z_$][\w$]*/g)) {
         assert.ok(
           !tagToEntry.has(identifier[0]),
           `${file} 用动态绑定渲染已登记入口 ${identifier[0]}，调用面无法静态枚举；必须先显式登记该形态`,

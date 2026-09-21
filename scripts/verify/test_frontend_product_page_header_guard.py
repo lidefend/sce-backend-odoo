@@ -593,6 +593,93 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
             failures = validate()
         self.assertTrue(any("esbuild bundle step missing or disabled" in item for item in failures), failures)
 
+    def test_contract_test_wiring_rejects_a_failure_swallowing_suffix(self):
+        """`<step> || true` 会让步骤**执行但失败不再传播**——必须与伪命令同等对待。"""
+        real = Path.read_text
+
+        def swallowed(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value.replace(
+                    "\t@node /tmp/product-page-header-adapter-contract-test.mjs",
+                    "\t@node /tmp/product-page-header-adapter-contract-test.mjs || true",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", swallowed):
+            failures = validate()
+        self.assertTrue(any("node execution step missing or disabled" in item for item in failures), failures)
+
+    def test_contract_test_wiring_rejects_a_short_circuited_step(self):
+        """`false && <step>` 让步骤**永不执行**，却仍让首 token 与参数同时在场。"""
+        real = Path.read_text
+
+        def short_circuited(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value.replace(
+                    "\t@node /tmp/product-page-header-adapter-contract-test.mjs",
+                    "\t@false && node /tmp/product-page-header-adapter-contract-test.mjs",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", short_circuited):
+            failures = validate()
+        self.assertTrue(any("node execution step missing or disabled" in item for item in failures), failures)
+
+    def test_contract_test_wiring_accepts_a_plain_redirection(self):
+        """`2>&1`／`>/dev/null` 是重定向而不是链式分隔符：不得因此假失败。"""
+        real = Path.read_text
+
+        def redirected(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "frontend.mk":
+                return value.replace(
+                    "\t@node /tmp/product-page-header-adapter-contract-test.mjs",
+                    "\t@node /tmp/product-page-header-adapter-contract-test.mjs 2>&1",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", redirected):
+            self.assertEqual(validate(), [])
+
+    def test_attrs_bound_through_a_plain_identifier_is_rejected(self):
+        """`const attrs = useAttrs()` 之外，`v-bind="attrs"` 本身也是兜底转发通道。"""
+        real = Path.read_text
+
+        def bound(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "ScPageHeader.vue":
+                return value.replace(
+                    ':presentation-mode="collectionMode"',
+                    ':presentation-mode="collectionMode" v-bind="attrs"',
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", bound):
+            failures = validate()
+        self.assertTrue(
+            any("useAttrs()" in item for item in failures),
+            failures,
+        )
+
+    def test_a_plain_string_mentioning_attrs_is_not_a_fallback(self):
+        """合法文案（`'no attrs here'`）不得被误判成兜底转发。"""
+        real = Path.read_text
+
+        def commented(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "ScPageHeader.vue":
+                return value.replace(
+                    "const collectionMode = resolveProductPageHeaderFixedMode('design-system');",
+                    "const collectionMode = resolveProductPageHeaderFixedMode('design-system');\n"
+                    "const _note = 'no attrs here';",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", commented):
+            self.assertEqual(validate(), [])
+
     def test_content_heading_authority_is_required(self):
         real = Path.read_text
 

@@ -16,51 +16,119 @@ def _matches_recipe(line: str, program: str, args: tuple[str, ...]) -> bool:
     `@echo <整条命令行>` 只是回显；`@node --version # <文件名>` 把文件名塞进注释；
     `@node --version; echo <文件名>` 用 shell 分隔符把真程序与文件名拆到两段；
     `@node --version <文件名>`／`@python3 -c "pass" unittest <文件名>` 让首 token 与文件名同时在场，
-    但程序根本不执行该文件。因此这里要求：按 `;`／`&&`／`||`／`|`／`&` 切段后，**存在某一段**满足
-    「首 token 就是该程序」且「其后紧跟的前 `len(args)` 个 token 与预期参数**逐个相等且同序**」。
+    但程序根本不执行该文件。
+
+    因此这里要求：**先摘掉 shell 重定向**（`2>&1`／`>/dev/null` 不是链式分隔符），再按
+    `;`／`&&`／`||`／`|`／`&` 切段——必须**恰好只剩一段**，且该段「首 token 就是该程序」并且
+    「其后紧跟的前 `len(args)` 个 token 与预期参数**逐个相等且同序**」。
     比「参数集合包含」强：参数被换位、被替换成 `--version`／`-c` 之类的空转开关都会失败。
+
+    「恰好一段」是必需的而不是洁癖：`false && <step>`／`true || <step>` 让步骤**永不执行**，
+    而 `<step> || true`／`<step> ; true` 让步骤执行但**失败不再传播**，两者都能让门禁形同虚设。
+    代价是 `|| true` 这类「真实步骤的尾部修饰」也会失败——按失败关闭方向处理，并在文档残限中登记。
     """
-    for segment in re.split(r"&&|\|\||[;|&]", line.lstrip("@").split("#")[0]):
-        tokens = segment.split()
-        if not tokens:
-            continue
-        if not re.search(rf"(^|/){re.escape(program)}$", tokens[0]):
-            continue
-        if len(tokens) < len(args) + 1:
-            continue
-        if all(tokens[1 + offset] == expected for offset, expected in enumerate(args)):
-            return True
-    return False
+    body = line.lstrip("@").split("#")[0]
+    body = re.sub(r"\d*>&\s*\d+", " ", body)
+    body = re.sub(r"\d*>>?\s*\S+", " ", body)
+    segments = [segment for segment in re.split(r"&&|\|\||[;|&]", body) if segment.strip()]
+    if len(segments) != 1:
+        return False
+    tokens = segments[0].split()
+    if not tokens or not re.search(rf"(^|/){re.escape(program)}$", tokens[0]):
+        return False
+    if len(tokens) < len(args) + 1:
+        return False
+    return all(tokens[1 + offset] == expected for offset, expected in enumerate(args))
 
 
-def _strip_comments(text: str) -> str:
-    """把 `<!-- -->`／块注释／`//` 注释（含**行尾**内联形态）逐字符替换为空格；注释里的实现不是实现。
+def _code_view(text: str, mask_strings: bool) -> str:
+    """按**标记模式**生成「只剩真实代码」的视图（长度与原文一致、下标对齐）。
 
-    必须**引号感知**：用正则直接删 `/*…*/` 会留下 `{{ '/*' }}v-bind="$attrs"{{ '*/' }}` 这类
-    「在字符串里写一段注释符把真实代码夹掉」的静默通道。整行 `//` 过滤也会漏掉行尾诱饵。
+    模式：模板正文／标签内部／`<script>`・`<style>` 原始段，以及模板 `{{ }}` 插值。
+    - 正文里的裸撇号（`<p>owner's</p>`）不得打开引号状态，否则其后的 `<!-- -->` 会被当成实现（假失败）；
+    - 正文里的 `<!--` 只在**插值之外**才是注释，`{{ '<!--' }}` 里的字符是数据不是注释——
+      否则它就是又一条「在字符串里写一段注释符把真实代码夹掉」的静默通道；
+    - 标签内部与 `{{ }}` 内**引号感知**：`'https://…'` 里的 `//` 不会被误当成注释；
+    - 行注释与块注释只在脚本语义里成立：模板正文里的斜杠是文本，把整行 `//` 一律当注释
+      会让「同一行里 `//` 之后的真实标签／绑定」被静默夹掉；
+    - `mask_strings` 为真时字符串与模板字面量的**内容**被掩码（字面量里的实现不是实现）。
     """
     out = list(text)
     index = 0
     quote = None
+    mode = "text"
+    interpolation = 0
+    raw_tag = False
     length = len(text)
+
+    def blank(from_at: int, to_at: int) -> None:
+        for at in range(from_at, min(to_at, length)):
+            if out[at] != "\n":
+                out[at] = " "
+
     while index < length:
         char = text[index]
         if quote is not None:
             if char == "\\" and index + 1 < length:
+                if mask_strings:
+                    out[index] = "\u0001"
+                    out[index + 1] = "\u0001"
                 index += 2
                 continue
             if char == quote:
                 quote = None
+            elif mask_strings:
+                out[index] = "\u0001"
+            index += 1
+            continue
+        if mode == "tag":
+            if char in "\"'`":
+                quote = char
+                index += 1
+                continue
+            if char == ">":
+                mode = "script" if raw_tag else "text"
+                raw_tag = False
+                index += 1
+                continue
+            index += 1
+            continue
+        if mode == "text" and interpolation == 0:
+            if text.startswith("<!--", index):
+                end = text.find("-->", index + 4)
+                stop = length if end == -1 else end + 3
+                blank(index, stop)
+                index = stop
+                continue
+            if text.startswith("{{", index):
+                interpolation = 1
+                index += 2
+                continue
+            if char == "<":
+                raw_tag = re.match(r"<(?:script|style)\b", text[index:], re.IGNORECASE) is not None
+                mode = "tag"
+                index += 1
+                continue
+            index += 1
+            continue
+        if interpolation > 0:
+            if text.startswith("{{", index):
+                interpolation += 1
+                index += 2
+                continue
+            if text.startswith("}}", index):
+                interpolation -= 1
+                index += 2
+                continue
+        elif re.match(r"</(?:script|style)\b", text[index:], re.IGNORECASE):
+            mode = "tag"
             index += 1
             continue
         if char in "\"'`":
             quote = char
             index += 1
             continue
-        if text.startswith("<!--", index):
-            end = text.find("-->", index + 4)
-            stop = length if end == -1 else end + 3
-        elif char == "/" and text.startswith("/*", index):
+        if char == "/" and text.startswith("/*", index):
             end = text.find("*/", index + 2)
             stop = length if end == -1 else end + 2
         elif char == "/" and text.startswith("//", index) and (index == 0 or text[index - 1] != ":"):
@@ -69,11 +137,19 @@ def _strip_comments(text: str) -> str:
         else:
             index += 1
             continue
-        for at in range(index, stop):
-            if out[at] != "\n":
-                out[at] = " "
+        blank(index, stop)
         index = stop
     return "".join(out)
+
+
+def _strip_comments(text: str) -> str:
+    """注释清零、字面量原样：模板属性值里的 `$attrs` 这类「结构标记」只能在这个视图里读。"""
+    return _code_view(text, False)
+
+
+def _code_only(text: str) -> str:
+    """注释清零、字面量内容掩码：判断「实现是否存在」只能用这个视图，字面量诱饵不算实现。"""
+    return _code_view(text, True)
 
 
 def _active_recipe_lines(makefile: str, target: str) -> list[str]:
@@ -134,17 +210,26 @@ def validate() -> list[str]:
         "components/page/PageHeader.vue": "page",
         "components/design-system/ScPageHeader.vue": "design-system",
     }
-    attrs_fallback = re.compile(r"\$attrs\b|\buseAttrs\b|\battrs\b")
-    if attrs_fallback.search(_strip_comments(component)):
+    # 判据分两个视图，避免「合法文案／无关命名」被误伤（假失败）：
+    # ① 具名符号（`$attrs`／`attrs`／`useAttrs`）只在**字面量内容已掩码**的视图里判；
+    # ② 模板属性 `v-bind="…attrs…"` 的取值是真代码（不在①的视图里），因此在未掩码视图上单独判。
+    attrs_symbol = re.compile(r"\buseAttrs\b|\battrs\b")
+    attrs_binding = re.compile(r"v-bind\s*=\s*[\"'][^\"']*attrs", re.IGNORECASE)
+
+    def attrs_fallback(text: str) -> bool:
+        return bool(attrs_symbol.search(_code_only(text)) or attrs_binding.search(_strip_comments(text)))
+
+    if attrs_fallback(component):
         failures.append(
             "ProductPageHeader must not forward unregistered axes through $attrs/useAttrs()/attrs"
         )
     for adapter_path, entry_id in fixed_mode_adapters.items():
-        adapter_source = _strip_comments(source(f"frontend/apps/web/src/{adapter_path}"))
-        if attrs_fallback.search(adapter_source):
+        adapter_raw = source(f"frontend/apps/web/src/{adapter_path}")
+        if attrs_fallback(adapter_raw):
             failures.append(
                 f"header adapter must not forward unregistered axes through $attrs/useAttrs()/attrs: {adapter_path}"
             )
+        adapter_source = _strip_comments(adapter_raw)
         if re.search(r"(?<![:\w-])presentation-mode=\"", adapter_source):
             failures.append(f"header adapter hardcodes presentation mode instead of the entry registry: {adapter_path}")
         if re.search(r":presentation-mode=\"\s*['\"]", adapter_source):
