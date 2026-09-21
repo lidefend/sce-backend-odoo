@@ -1421,6 +1421,43 @@ export async function runRepresentativeSurface({ page, scope, contract, out, rep
           render_profile: route.profile,
           ...(route.record_id ? { record_id: route.record_id } : {}),
         });
+        // A registered profile the delivered authority denies is a capability
+        // fact, not a structure result: the platform's own create verdict
+        // (`effective_render_profile=create` with no create right) hides every
+        // node, so the page renders an empty surface with no structure to
+        // measure.  Record the authority's declared reason instead of reporting a
+        // timeout, and keep running the routes this entry does deliver (the
+        // read-only record surface).  The skip is bound to that single declared
+        // verdict — every other hidden page keeps falling through to the
+        // readiness gate below and fails as a structure result — so a regression
+        // that hides a delivered page can never be laundered into an uncovered
+        // capability fact.
+        const routeGlobalStatus = (compiled && compiled.statusContract && compiled.statusContract.globalStatus) || {};
+        const createProfileDenied = route.kind === 'create'
+          && routeGlobalStatus.pageVisible === false
+          && routeGlobalStatus.pageAuth === 'none'
+          && routeGlobalStatus.reasonCode === 'FORM_CREATE_NOT_ALLOWED'
+          && routeGlobalStatus.modelRights?.create !== true
+          && routeGlobalStatus.viewCapabilities?.create !== true;
+        if (createProfileDenied) {
+          uncovered.push({
+            fact: 'create_surface',
+            route_kind: route.kind,
+            state: 'render_profile_denied',
+            reason_code: routeGlobalStatus.reasonCode,
+            page_auth: routeGlobalStatus.pageAuth,
+            model_rights_create: (routeGlobalStatus.modelRights || {}).create ?? null,
+            reason: 'the delivered route authority declares no create right for this profile, so the create route carries no structure to measure',
+          });
+          surfaceReport.uncovered = uncovered;
+          surfaceReport.routes.push({
+            kind: route.kind, profile: route.profile, url: route.url, status: 'denied',
+            reason_code: routeGlobalStatus.reasonCode,
+            page_auth: routeGlobalStatus.pageAuth,
+            effective_render_profile: routeGlobalStatus.effectiveRenderProfile || null,
+          });
+          continue;
+        }
         await page.setViewportSize({ width: 1440, height: 960 });
         await page.goto(route.url, { waitUntil: 'domcontentloaded', timeout: 30000 });
         // A registered entry that the delivered route authority does not carry is a
@@ -1522,6 +1559,20 @@ export async function runRepresentativeSurface({ page, scope, contract, out, rep
   report.representative_uncovered = report.stages.representative
     .filter((row) => row.uncovered)
     .flatMap((row) => row.uncovered.map((item) => ({ action_id: row.action_id, ...item })));
+  // A denied route is neither inspected nor blocked, so it keeps its own class:
+  // every denial must carry the recorded uncovered reason that explains it.  The
+  // two lists are asserted equal instead of merely printed, so a skipped route
+  // can never be indistinguishable from a measured one.
+  const profileDenied = report.stages.representative.flatMap((row) => (row.routes || [])
+    .filter((route) => route.status === 'denied')
+    .map((route) => ({ action_id: row.action_id, route_kind: route.kind, reason_code: route.reason_code })));
+  report.representative_profile_denied = profileDenied;
+  assert.deepEqual(
+    profileDenied.map((row) => `${row.action_id}:${row.route_kind}:${row.reason_code}`).sort(),
+    (report.representative_uncovered || []).filter((item) => item.route_kind)
+      .map((item) => `${item.action_id}:${item.route_kind}:${item.reason_code}`).sort(),
+    `representative topic ${scope.topic}: every denied route must keep its recorded reason`,
+  );
   const inspected = report.stages.representative.filter((row) => row.status === 'passed');
   // Every surface either produced structure results, or was recorded as blocked
   // by the delivered route authority.  Nothing is silently skipped and the

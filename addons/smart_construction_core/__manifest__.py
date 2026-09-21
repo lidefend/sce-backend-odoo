@@ -296,6 +296,7 @@
         'data/engineering_process_form_productization_contract.xml',
         'data/light_forms_configuration_form_productization_contract.xml',
         'data/daily_contract_form_productization_contract.xml',
+        'data/ledger_summary_guarantee_native_contract.xml',
         'data/remaining_p2_form_productization_contract.xml',
         'data/settlement_adjustment_form_productization_contract.xml',
         'data/remaining_p3_form_productization_contract.xml',

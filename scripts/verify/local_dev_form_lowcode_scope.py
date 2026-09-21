@@ -201,7 +201,41 @@ TOPIC_IDENTITIES = {
         ("action_sc_product_general_contract_settlement_v1", "view_sc_settlement_order_form",
          "menu_sc_product_general_contract_settlement_v1"),
     ),
+    # U-C4 G14: 成本归集 (523 / menu 668), 项目盈亏分析 (522 / menu 669), 资金计划汇总
+    # (646 / menu 542) and 投标保证金 (778 / menu 474) are four registered entries
+    # that carried no entry release at all: each consumed only its own model-level
+    # generated mirror, so `form_structure_authority` resolved empty while the
+    # native arch already rendered the page.  None of the four actions pins a form
+    # view, so each identity resolves the model primary form through the entry's
+    # own action.  All four native views declare **zero** `data-sc-anchor` groups
+    # and no inherited children, so the requirement "the sticky command bar and the
+    # 章节导航 must both render" cannot hold here and `section_navigation` is
+    # deliberately not claimed for this topic.  The mechanism assertion is the
+    # read-only `readonly_values` battery: the entry releases declare no field
+    # policy, so the read-only口径 the delivered page keeps is the native arch's,
+    # and `record_surface` replays the same battery on a governed sample so the
+    # conditional container modifiers (`state != 'draft'` on the funding baseline)
+    # are observed as legal hiding instead of a lost fact.  Entry 522 is a
+    # delivered read-only aggregation surface: its native form arch declares
+    # `create="false"` and no ACL grants create on `project.profit.compare`, so the
+    # delivered authority answers `FORM_CREATE_NOT_ALLOWED` / `pageVisible=false`
+    # on the create profile with the entry release active **and** deactivated.  The
+    # create route therefore carries no structure for that identity and the runner
+    # records it as an uncovered capability fact, while the read-only record
+    # surface stays the measured surface.  Read-only; no change set is touched.
+    "ledger_summary": (
+        ("action_project_cost_ledger", "view_project_cost_ledger_form", "menu_sc_p1_cost_ledger"),
+        ("action_project_profit_compare", "view_project_profit_compare_form", "menu_sc_p1_profit_analysis"),
+        ("action_project_funding_baseline_summary", "view_project_funding_baseline_form",
+         "menu_sc_funding_plan_summary"),
+        ("action_sc_tender_guarantee", "view_tender_guarantee_form", "menu_sc_tender_guarantee"),
+    ),
 }
+# Declared per topic, not per entry: the resolver keeps only the names the
+# registered model actually declares (`if name in model._fields`), so a topic whose
+# entries sit on four different models declares the union and each entry reads the
+# subset it owns (here `state` is read on the funding baseline and the tender
+# guarantee only).
 TOPIC_SAMPLE_FIELDS = {
     "invoice": ["direction", "source_kind", "source_origin", "note"],
     "payment": ["amount", "state"],
@@ -217,6 +251,7 @@ TOPIC_SAMPLE_FIELDS = {
     "usage_performance": ["state", "project_id", "note", "amount", "contract_id"],
     "project": ["name"],
     "daily_contract": ["state"],
+    "ledger_summary": ["state", "currency_id"],
 }
 # Mechanism assertions for the read-only representative pass.  Names are the
 # registered display copies / canonical sources of the same business fact; the
@@ -427,6 +462,21 @@ TOPIC_REPRESENTATIVE = {
     # registered `settlement` topic, whose 781/782 routes render that same view.
     # Read-only; no change set is touched.
     "daily_contract": {"readonly_values": True, "record_surface": True},
+    # U-C4 G14: the four entries (523 / 522 / 646 / 778) publish the native
+    # semantic surface for actions that had no entry release at all, so the only
+    # thing the batch changes is which declaration owns the structure.  The
+    # delivered page is measured, not asserted from the declarations:
+    # `readonly_values` asks the rendered page whether every fact the delivered
+    # profile marks read-only really carries no editable control (the entry
+    # releases declare no field policy, so the口径 is the native arch's), and
+    # `record_surface` replays the same battery on a governed sample of each
+    # action, because the funding baseline declares five conditional
+    # `state != 'draft'` modifiers that only resolve on an existing record and a
+    # create-only route would observe them as absent.  Read-only; no change set is
+    # touched.  `section_navigation` is deliberately not claimed: the four native
+    # views carry zero `data-sc-anchor` groups, so the navigation battery has no
+    # registered identity to resolve.
+    "ledger_summary": {"readonly_values": True, "record_surface": True},
 }
 if topic not in TOPIC_IDENTITIES:
     raise RuntimeError("unregistered formal form topic")
