@@ -44,8 +44,11 @@ GitHub 的情况下使用既有 `gitee-mirror`；本节是下文“GitHub 唯一
   证据缺失/过期/漂移均零推送；不使用布尔跳过。普通 integration 路径约束不变。
 - `make gitee.ci.gates.plan EXPECTED_HEAD=<sha> GITEE_EXPECTED_MAIN=<sha> GITEE_SOURCE_BRANCH=<branch> GITEE_PR_NUMBER=<number>`：只读正式门禁计划；要求 clean 控制分支，包含删除和重命名两端，复用现有风险分类。PR 编号为调用方输入，计划不证明平台身份、不执行检查、不授予集成资格。`GITEE_CANDIDATE=1` 显式选择候选级检查。
 - `make gitee.ci.pr.inspect ...`：复用 `GITEE_CHECKS_TOKEN_FILE` 私有文件，只读核验指定 PR、同仓源分支与受保护 main 的精确 SHA，前后两轮漂移拒绝。计划入口可通过同一变量附加实时核验；结果仅为观察快照，不授权合并，不宣称原子绑定。
-- `make verify.gitee.formal_queue.unit`：正式任务持久队列、执行器适配与四项检查回传的离线生命周期测试；API 为受控 fake，不写平台。该模块尚未由线上 receiver/worker 启用；不得将离线生命周期通过称为真实 PR 门禁验收。
-- `make verify.gitee.formal_executor.unit`：普通 PR 静态门禁执行核心的离线测试，使用真实 bubblewrap 验证网络／凭据隔离、非零计数、取消、超时及结果失效。执行核心尚未接入线上队列；本入口不执行真实产品门禁、不安装服务、不新增部署资格。
+- `make verify.gitee.formal_worker.unit verify.gitee.formal_pr.unit`：现有签名事件接入和有界 PR 创建控制器的离线测试。
+- `make gitee.ci.server.update ... GITEE_FORMAL=1 GITEE_NODE_ARCHIVE=<reviewed archive>`：本会话授权的既有执行器正式静态门禁接入；仍要求精确 clean SHA、预演摘要、备份/恢复与原确认值。只写固定版本目录、固定 Node 22.17.0 二进制及既有服务配置；包白名单和归档/二进制双哈希强制校验。不启用数据库、部署、前端依赖或完整候选车道；未准备的车道以非成功检查终止。
+- `make gitee.ci.pr.create EXPECTED_HEAD=<sha> GITEE_EXPECTED_MAIN=<sha> GITEE_CHECKS_TOKEN_FILE=<private path>`：默认只读预演。`APPLY=1` 只为当前 Gitee 集成专题创建或复用同仓 main PR，要求精确远端身份、clean 候选和 Quick 回执；创建前持久化不确定结果标记，不重复 POST、不合并、不部署。
+- `make verify.gitee.formal_queue.unit`：正式任务持久队列、执行器适配与四项检查回传的离线生命周期测试；API 为受控 fake，不写平台。仅显式 formal-static 模式接入；不得将离线生命周期通过称为真实 PR 门禁验收。
+- `make verify.gitee.formal_executor.unit`：普通 PR 静态门禁执行核心的离线测试，使用真实 bubblewrap 验证网络／凭据隔离、非零计数、取消、超时及结果失效。执行核心仅由显式 formal-static 模式接入；本入口不执行真实产品门禁、不安装服务、不新增部署资格。
 - `make verify.gitee.gates.unit`：离线门禁选择和真实临时 Git 删除／重命名测试，无平台或业务数据写入。
 - `make verify.gitee.checks.unit`：离线 Check Runs 回传、精确 SHA、断线恢复及凭据隔离测试；不写平台。回传模块默认关闭；新增凭据、安装范围及启用须完成当前独立 P4 授权与精确更新计划。
 - `make verify.gitee.publication_gate.unit`：平台证据、时效、篡改及密钥替换的本地纯测试。

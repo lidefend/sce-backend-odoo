@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse
 import base64
 import hashlib
+import io
+import tarfile
 import json
 import os
 import pwd
@@ -24,18 +26,38 @@ CREDENTIALS = ('/etc/gitee-ci/id_ed25519','/etc/gitee-ci/id_ed25519.pub','/etc/g
 PACKAGE = 'bubblewrap=0.9.0-1ubuntu0.3'
 DB = '/var/lib/gitee-ci/jobs.sqlite3'
 CHECKS_TOKEN = '/etc/gitee-ci/checks.token'
+FORMAL_FILES = tuple('scripts/ci/'+n for n in ('gitee_ci_acceptance.py','gitee_ci_checks.py','gitee_pr_identity.py','gitee_gate_plan.py','ci_risk_classifier.py','gitee_formal_executor.py','gitee_formal_queue.py','gitee_formal_worker.py')) + tuple('.github/workflows/'+n+'.yml' for n in ('public_guard','merge_policy_gate','professional_quality_gate','frontend_release_gate')) + ('config/ci/risk_tiering_v1.json',)
+NODE_PATH = '/opt/gitee-ci/node-v22.17.0/bin/node'
+NODE_ARCHIVE_SHA = '325c0f1261e0c61bcae369a1274028e9cfb7ab7949c05512c5b1e630f7e80e12'
+NODE_SHA = '8071ae0fca095a272ad698a90c7061801a86fb6392ddb81e922b68a91a4374b9'
+
+
+def node_binary(encoded):
+    raw=base64.b64decode(encoded,validate=True)
+    if digest(raw)!=NODE_ARCHIVE_SHA: raise ValueError('node archive digest mismatch')
+    with tarfile.open(fileobj=io.BytesIO(raw),mode='r:xz') as archive:
+        member=archive.getmember('node-v22.17.0-linux-x64/bin/node')
+        if not member.isfile() or member.size!=121609656: raise ValueError('node archive member rejected')
+        data=archive.extractfile(member).read()
+    if digest(data)!=NODE_SHA: raise ValueError('node binary digest mismatch')
+    return data
+
 
 
 def digest(data): return hashlib.sha256(data).hexdigest()
 def canonical(value): return json.dumps(value,sort_keys=True,separators=(',',':')).encode()
 
 
-def env_update(data, worker=False):
+def env_update(data, worker=False, formal_root=None):
     lines=data.splitlines(keepends=True)
     if sum(line.startswith(b'GITEE_CI_MODE=') for line in lines)>1: raise ValueError('duplicate mode setting')
     drop=(b'GITEE_CI_MODE=',b'GITEE_MIRROR_SOURCE_REPO=') if worker else (b'GITEE_CI_MODE=',)
+    drop=drop+(b'GITEE_FORMAL_ROOT=',)
     kept=b''.join(line for line in lines if not line.startswith(drop))
     if kept and not kept.endswith(b'\n'): kept+=b'\n'
+    if formal_root:
+        if not re.fullmatch('/opt/gitee-ci/formal/[0-9a-f]{40}',formal_root): raise ValueError('invalid formal root')
+        return kept+('GITEE_CI_MODE=formal-static\nGITEE_FORMAL_ROOT='+formal_root+'\n').encode()
     return kept+b'GITEE_CI_MODE=ci-only\n'
 
 
@@ -52,7 +74,7 @@ class Update:
 
     def path(self, path):
         p=self.root/path.lstrip('/')
-        if p.is_symlink(): raise ValueError('symlink target rejected')
+        if any(x.is_symlink() for x in (p,*p.parents) if x!=self.root): raise ValueError('symlink target rejected')
         return p
 
     def run(self,*args):
@@ -78,7 +100,17 @@ class Update:
             data=base64.b64decode(item['content'],validate=True)
             if digest(data)!=item['sha256']: raise ValueError('module digest mismatch')
             changes[INSTALL+name]=data
-        for index,name in enumerate(ENVS): changes[name]=env_update(self.path(name).read_bytes(),worker=index==1)
+        formal_root=None
+        if payload.get('formal') is not None:
+            formal_root='/opt/gitee-ci/formal/'+payload['source_sha']
+            if set(payload['formal'])!=set(FORMAL_FILES): raise ValueError('formal package allowlist mismatch')
+            for name,item in payload['formal'].items():
+                data=base64.b64decode(item['content'],validate=True)
+                if digest(data)!=item['sha256']: raise ValueError('formal package digest mismatch')
+                changes[formal_root+'/'+name]=data
+            changes[NODE_PATH]=node_binary(payload['node_archive'])
+        elif 'node_archive' in payload: raise ValueError('node requires formal package')
+        for index,name in enumerate(ENVS): changes[name]=env_update(self.path(name).read_bytes(),worker=index==1,formal_root=formal_root)
         if payload.get('checks_token') is not None:
             token=base64.b64decode(payload['checks_token'],validate=True)
             if not re.fullmatch(rb'[A-Za-z0-9_-]{16,256}',token): raise ValueError('invalid checks token format')
@@ -86,7 +118,7 @@ class Update:
             lines=changes[ENVS[1]].splitlines(keepends=True)
             if sum(x.startswith(b'GITEE_CHECKS_TOKEN_FILE=') for x in lines)>1: raise ValueError('duplicate checks token setting')
             changes[ENVS[1]]=b''.join(x for x in lines if not x.startswith(b'GITEE_CHECKS_TOKEN_FILE='))+('GITEE_CHECKS_TOKEN_FILE='+CHECKS_TOKEN+'\n').encode()
-        changes[ENVS[1]]=env_update(changes[ENVS[1]],worker=True)
+        changes[ENVS[1]]=env_update(changes[ENVS[1]],worker=True,formal_root=formal_root)
         changes[UNIT]=unit_update(self.path(UNIT).read_bytes())
         return changes
 
@@ -94,8 +126,8 @@ class Update:
         with sqlite3.connect('file:'+str(self.path(DB))+'?mode=ro',uri=True) as db:
             tables={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             total=0
-            for name in ('jobs','ci_acceptance_jobs'):
-                if name in tables: total+=db.execute(f"SELECT count(*) FROM {name} WHERE status IN ('pending','running')").fetchone()[0]
+            for name in ('jobs','ci_acceptance_jobs','formal_jobs','formal_inbox'):
+                if name in tables: total+=db.execute(f"SELECT count(*) FROM {name} WHERE status IN ('pending','running','preparing')").fetchone()[0]
             return total
 
     def plan(self,payload):
@@ -143,6 +175,9 @@ class Update:
 
     def atomic_write(self,path,data,metadata=None):
         target=self.path(path)
+        if path.startswith('/opt/gitee-ci/formal/') or path==NODE_PATH:
+            target.parent.mkdir(parents=True,exist_ok=True,mode=0o755)
+            self.path(path)
         with tempfile.NamedTemporaryFile(dir=target.parent,delete=False) as f:
             tmp=Path(f.name);f.write(data);f.flush();os.fsync(f.fileno())
         try:
@@ -205,7 +240,7 @@ class Update:
             self.install_package();self.probe()
             self.verify_plan_inputs(plan)
             for path,data in desired.items():
-                metadata=self.token_metadata() if path==CHECKS_TOKEN else plan['files'][path]['before']
+                metadata=self.token_metadata() if path==CHECKS_TOKEN else ({'mode':0o755 if path==NODE_PATH else 0o644,'uid':0,'gid':0} if path==NODE_PATH or path.startswith('/opt/gitee-ci/formal/') else plan['files'][path]['before'])
                 self.atomic_write(path,data,metadata)
             if any(self.snapshot(f)!=v for f,v in original_credentials.items()): raise ValueError('credential drift')
             for path,data in desired.items():
@@ -235,7 +270,7 @@ def entry(payload,apply=False,expected_plan='',confirm=''):
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--expected-head',required=True);p.add_argument('--apply',action='store_true');p.add_argument('--plan-sha256',default='');p.add_argument('--confirm',default='');p.add_argument('--probe-only',action='store_true');p.add_argument('--checks-token-file');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--expected-head',required=True);p.add_argument('--apply',action='store_true');p.add_argument('--plan-sha256',default='');p.add_argument('--confirm',default='');p.add_argument('--probe-only',action='store_true');p.add_argument('--checks-token-file');p.add_argument('--formal',action='store_true');p.add_argument('--node-archive');a=p.parse_args()
     if a.probe_only and a.apply: raise ValueError('probe and apply are mutually exclusive')
     root=Path(__file__).resolve().parents[2]
     def git(*args): return subprocess.check_output(['git',*args],cwd=root,text=True).strip()
@@ -256,6 +291,16 @@ def main():
         data=subprocess.check_output(['git','show',a.expected_head+':scripts/ci/'+name],cwd=root)
         if a.apply and (root/'scripts/ci'/name).read_bytes()!=data: raise ValueError('module dirty')
         payload['modules'][name]={'content':base64.b64encode(data).decode(),'sha256':digest(data)}
+    if a.formal:
+        if not a.node_archive: raise ValueError('pinned node archive required')
+        payload['formal']={}
+        for name in FORMAL_FILES:
+            data=subprocess.check_output(['git','show',a.expected_head+':'+name],cwd=root)
+            if a.apply and (root/name).read_bytes()!=data: raise ValueError('formal package dirty')
+            payload['formal'][name]={'content':base64.b64encode(data).decode(),'sha256':digest(data)}
+        payload['node_archive']=base64.b64encode(Path(a.node_archive).read_bytes()).decode()
+        node_binary(payload['node_archive'])
+    elif a.node_archive: raise ValueError('node requires explicit formal mode')
     source=Path(__file__).read_text().rsplit("\nif __name__ == '__main__':",1)[0]
     invocation='\nprint(json.dumps(entry('+repr(payload)+','+repr(a.apply)+','+repr(a.plan_sha256)+','+repr(a.confirm)+'),sort_keys=True))\n'
     if a.probe_only:

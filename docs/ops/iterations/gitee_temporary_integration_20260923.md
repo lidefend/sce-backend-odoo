@@ -588,3 +588,25 @@ P4 仅新增公开历史扫描与受管增量更新能力。3dd58b82 原检查�
 - 发布前在线门禁发现worker env追加token路径后不满足env_update幂等顺序；没有推送。cc52a69f的Quick已取消，不作为通过证据。修复为追加路径后统一规范化，补实际安装后二次规范化不变断言，18项安装测试通过；需重新安装并重验该门禁。
 
 - 顺序修复已按精确计划安装，唯一内容变化为worker env行顺序；备份incremental-9pmv1eqv。live_state在线发布门禁已通过，原SSH凭据保持；安装源7c9a7ffb。后续只刷新文档/生成报告形成新冻结候选，旧Quick取消证据保留。
+
+
+## 正式 PR 接入收口（2026-09-23，安装前候选）
+
+历史主线补齐已经完成：Gitee main 为 de9a230d3faab18dd60a219f445f932a8af9d7f5。
+既有真实 Push 和 CI-only Check Run 26931507 在 29f1a1beba9cb6b4a24193d65e4c2fc43c614123 上通过（42 tests），不代表正式四门禁通过。
+
+本轮 P4 实现范围是 scripts/ci 正式事件/队列/执行/回传、scripts/ops 精确增量安装与 PR 创建、对应 Make 与测试。
+基线 4e169412e733d7e24dab90d1da586597c0cad628 + owned dirty；无 P0—P3 产品、数据库或业务配置变更。
+复用原 receiver/worker、SQLite、凭据、端口和服务用户；不建设第二执行器。
+
+- 显式 formal-static 模式接收签名 PR 事件，以平台身份、源 SHA、main SHA 和风险策略生成计划；未支持的完整候选/前端依赖车道失败关闭。
+- 四项检查绑定真实 PR ID、name、head、base、计划指纹；创建结果不确定时不重复 POST；旧任务分页轮询不会永久丢失。
+- clone 远端名为受策略允许的 gitee-mirror；执行在无网络/凭据 bubblewrap 中。Node 22.17.0 官方归档及二进制双哈希，固定路径只读挂载；不替换系统 Node。
+- 安装只处理固定白名单和两个既有服务；精确旧/新哈希、文件/队列备份、活动任务拒绝、失败恢复并保持停止。旧 GitHub runner、反向镜像隔离保持。
+- 同 SHA 添加 ci:candidate 后旧普通成功失效；当前不支持的请求不能继续继承四绿。
+- PR 创建默认只读，实际操作要求 clean 精确候选及 Quick；创建前持久化标记，不确定时只读核查，不盲目重试、不自动合并。
+
+L1 iteration 16 tests 通过。L2 当前结果：plan/identity 26、executor 13、queue 18、worker 8、updater 23、PR controller 6；原 worker 18、mirror 4、cutover 9、CI-only 18 回归通过。后续代码改动只重验受影响集合。
+审查已修复远端名政策冲突、最终回读身份缺失、旧任务分页遗漏和 candidate 标签变更未失效。
+最终冻结/Quick、受管发布、正式安装、真实 PR 四门禁及保护规则行为尚待执行；实际回执写入原外部 formal-integration-checkpoint.md，不改写已归档 checks-closeout.md。
+主线历史已对齐；本专题未合并，产品未部署，89 入口产品验收未扩展。

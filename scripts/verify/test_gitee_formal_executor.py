@@ -1,5 +1,8 @@
 import copy
 import os
+import json
+import subprocess
+import time
 from pathlib import Path
 import tempfile
 import unittest
@@ -112,6 +115,26 @@ print('OK')
             for key, value in [('checks',[]),('source_hashes',{}),('toolchain',{})]:
                 altered=copy.deepcopy(p);altered[key]=value
                 with self.subTest(key=key),self.assertRaises(ValueError): executor.validate_selection(altered)
+
+    def test_checkout_uses_policy_approved_remote_name(self):
+        from scripts.verify.repository_clean_history_guard import remote_errors
+        from scripts.ci.gitee_ci_acceptance import REMOTE
+        root=Path(__file__).resolve().parents[2]
+        policy=json.loads((root/'config/security/repository_clean_history_policy.v1.json').read_text())
+        with tempfile.TemporaryDirectory() as temp:
+            workspace=Path(temp);executor=FormalExecutor(workspace/'logs');seen=[]
+            def command(args,*unused):
+                seen.append(args)
+                if args[1]=='clone':
+                    subprocess.run(['git','init',str(workspace/'repo')],check=True,capture_output=True)
+                    subprocess.run(['git','-C',str(workspace/'repo'),'remote','add',args[3],args[-2]],check=True)
+                if args[-3:-1]==['checkout','--detach']:
+                    (workspace/'repo/.git/HEAD').write_text(args[-1]+'\n')
+                return 0
+            with patch.object(executor,'command',side_effect=command), (workspace/'log').open('wb') as log:
+                self.assertEqual(executor.checkout(workspace,'a'*40,log,lambda:False,time.monotonic()+5),'a'*40)
+            self.assertEqual(remote_errors(workspace/'repo',policy['allowed_remotes']),set())
+            self.assertIn('gitee-mirror',seen[1])
 
     def test_static_guards_are_not_test_counts(self):
         commands=recipes('public_guard','required','a'*40)

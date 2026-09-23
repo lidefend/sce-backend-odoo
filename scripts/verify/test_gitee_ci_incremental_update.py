@@ -141,6 +141,45 @@ class UpdateTests(unittest.TestCase):
         with self.assertRaises(RuntimeError): self.apply()
         self.assertEqual(p.read_bytes(),b'old-fixture-token');self.assertEqual(p.stat().st_mode&0o777,0o600)
 
+    def test_formal_package_scope_env_and_node(self):
+        from unittest.mock import patch
+        from scripts.ops.gitee_ci_incremental_update import FORMAL_FILES, NODE_PATH
+        self.payload['formal']={n:{'content':base64.b64encode(b'fixture-module').decode(),'sha256':digest(b'fixture-module')} for n in FORMAL_FILES}
+        self.payload['node_archive']='fixture'
+        with patch('scripts.ops.gitee_ci_incremental_update.node_binary',return_value=b'fixture-node'):
+            desired=self.u.desired(self.payload)
+            self.assertEqual(desired[NODE_PATH],b'fixture-node')
+            self.assertIn(b'GITEE_CI_MODE=formal-static',desired[ENVS[1]])
+            self.assertIn(b'GITEE_FORMAL_ROOT=/opt/gitee-ci/formal/'+b'a'*40,desired[ENVS[0]])
+            self.assertEqual(len([x for x in desired if '/formal/' in x]),len(FORMAL_FILES))
+            self.payload['formal']['../../escape']={}
+            with self.assertRaises(ValueError):self.u.desired(self.payload)
+
+    def test_formal_start_failure_removes_new_package_and_node(self):
+        from unittest.mock import patch
+        from scripts.ops.gitee_ci_incremental_update import FORMAL_FILES, NODE_PATH
+        self.payload['formal']={n:{'content':base64.b64encode(b'fixture-module').decode(),'sha256':digest(b'fixture-module')} for n in FORMAL_FILES}
+        self.payload['node_archive']='fixture';self.u.fail_start=True
+        with patch('scripts.ops.gitee_ci_incremental_update.node_binary',return_value=b'fixture-node'), patch('scripts.ops.gitee_ci_incremental_update.os.chown'):
+            with self.assertRaises(RuntimeError):self.apply()
+        self.assert_restored();self.assertFalse(self.u.path(NODE_PATH).exists())
+        for name in FORMAL_FILES:self.assertFalse(self.u.path('/opt/gitee-ci/formal/'+'a'*40+'/'+name).exists())
+
+    def test_formal_pending_or_preparing_blocks_update(self):
+        for table,state in [('formal_jobs','pending'),('formal_inbox','preparing')]:
+            with sqlite3.connect(self.u.path(DB)) as db:
+                db.execute('CREATE TABLE '+table+'(status TEXT)');db.execute('INSERT INTO '+table+' VALUES (?)',(state,))
+            with self.assertRaises(ValueError):self.apply()
+            with sqlite3.connect(self.u.path(DB)) as db:db.execute('DROP TABLE '+table)
+
+    def test_parent_symlink_rejected(self):
+        folder=self.u.root/'opt/unsafe';folder.symlink_to(self.u.root/'etc',target_is_directory=True)
+        with self.assertRaises(ValueError):self.u.path('/opt/unsafe/file')
+
+    def test_invalid_node_archive_rejected(self):
+        from scripts.ops.gitee_ci_incremental_update import node_binary
+        with self.assertRaises(ValueError):node_binary(base64.b64encode(b'wrong archive').decode())
+
     def test_env_patch_idempotence_and_preservation(self):
         source=b'# keep\nOTHER=hello\nGITEE_CI_MODE=legacy\n'
         changed=env_update(source);self.assertEqual(changed,env_update(changed));self.assertIn(b'OTHER=hello\n',changed)

@@ -319,13 +319,30 @@ class Application:
         self.log_dir = Path(os.environ.get("GITEE_CI_LOG_DIR", "/var/log/gitee-ci"))
         if worker_enabled:
             self.log_dir.mkdir(parents=True, exist_ok=True)
+        self.formal = os.environ.get("GITEE_CI_MODE") == "formal-static"
+        self.formal_worker = None
+        if self.formal:
+            import sys
+            package = os.environ.get("GITEE_FORMAL_ROOT", "")
+            if not re.fullmatch(r"/opt/gitee-ci/formal/[0-9a-f]{40}", package):
+                raise RuntimeError("invalid trusted formal package")
+            trusted=Path(package)
+            if not trusted.is_dir(): raise RuntimeError('formal package missing')
+            for path in (*trusted.parents,trusted,*trusted.rglob('*')):
+                info=path.lstat()
+                if path.is_symlink() or info.st_uid!=0 or info.st_mode & 0o022:
+                    raise RuntimeError('formal package is not root-owned immutable code')
+            sys.path.insert(0, package)
         self.acceptance = os.environ.get("GITEE_CI_MODE", "legacy") == "ci-only"
-        if os.environ.get("GITEE_CI_MODE", "legacy") not in {"legacy", "ci-only"}:
+        if os.environ.get("GITEE_CI_MODE", "legacy") not in {"legacy", "ci-only", "formal-static"}:
             raise RuntimeError("unknown CI mode")
         queue_type = Queue
         if self.acceptance:
             from gitee_ci_acceptance import AcceptanceQueue
             queue_type = AcceptanceQueue
+        if self.formal:
+            from scripts.ci.gitee_formal_worker import Inbox
+            queue_type = Inbox
         self.queue = queue_type(
             Path(os.environ.get("GITEE_CI_DB", "/var/lib/gitee-ci/jobs.sqlite3")),
             recover_running=worker_enabled,
@@ -333,7 +350,11 @@ class Application:
 
         self.reporter = None
         token_file = os.environ.get("GITEE_CHECKS_TOKEN_FILE")
-        if worker_enabled and token_file:
+        if worker_enabled and self.formal:
+            if not token_file: raise RuntimeError("formal checks token required")
+            from scripts.ci.gitee_formal_worker import Worker
+            self.formal_worker = Worker(self.queue.path, self.log_dir, token_file)
+        elif worker_enabled and token_file:
             if not self.acceptance:
                 raise RuntimeError("check reporter requires ci-only mode")
             from gitee_ci_checks import API, Reporter
@@ -373,7 +394,10 @@ class Application:
             allowed_sender=self.allowed_sender,
             allowed_pr_sender=self.allowed_pr_sender,
         )
-        if self.acceptance:
+        if self.formal:
+            try: inserted = self.queue.enqueue(job, timestamp)
+            except ValueError as exc: raise Rejected(str(exc)) from exc
+        elif self.acceptance:
             from gitee_ci_acceptance import validate
             job["ref"] = payload.get("ref")
             try:
@@ -397,6 +421,8 @@ class Application:
     def execute_once(self) -> bool:
         if self.runner is None:
             raise RuntimeError("worker is disabled")
+        if self.formal:
+            return self.formal_worker.tick()
         self.report_checks()
         job = self.queue.claim()
         if job is None:

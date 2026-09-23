@@ -759,7 +759,7 @@ verify.gitee.ci_only.unit: guard.prod.forbid
 
 .PHONY: gitee.ci.server.update verify.gitee.ci_update.unit
 gitee.ci.server.update: guard.prod.forbid
-	@python3 scripts/ops/gitee_ci_incremental_update.py --expected-head "$(EXPECTED_HEAD)" $(if $(filter 1,$(APPLY)),--apply,) --plan-sha256 "$(GITEE_UPDATE_PLAN_SHA256)" --confirm "$(GITEE_UPDATE_CONFIRM)" $(if $(GITEE_CHECKS_TOKEN_FILE),--checks-token-file "$(GITEE_CHECKS_TOKEN_FILE)",)
+	@python3 scripts/ops/gitee_ci_incremental_update.py --expected-head "$(EXPECTED_HEAD)" $(if $(filter 1,$(GITEE_FORMAL)),--formal --node-archive "$(GITEE_NODE_ARCHIVE)",) $(if $(filter 1,$(APPLY)),--apply,) --plan-sha256 "$(GITEE_UPDATE_PLAN_SHA256)" --confirm "$(GITEE_UPDATE_CONFIRM)" $(if $(GITEE_CHECKS_TOKEN_FILE),--checks-token-file "$(GITEE_CHECKS_TOKEN_FILE)",)
 
 verify.gitee.ci_update.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_gitee_ci_incremental_update
@@ -808,3 +808,13 @@ verify.gitee.formal_executor.unit: guard.prod.forbid
 .PHONY: verify.gitee.formal_queue.unit
 verify.gitee.formal_queue.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_gitee_formal_queue
+
+.PHONY: verify.gitee.formal_worker.unit
+verify.gitee.formal_worker.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_formal_worker
+
+.PHONY: gitee.ci.pr.create verify.gitee.formal_pr.unit
+gitee.ci.pr.create: guard.prod.forbid
+	@python3 -m scripts.ops.gitee_formal_pr --expected-head "$(EXPECTED_HEAD)" --expected-main "$(GITEE_EXPECTED_MAIN)" --token-file "$(GITEE_CHECKS_TOKEN_FILE)" $(if $(filter 1,$(APPLY)),--apply,)
+verify.gitee.formal_pr.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_formal_pr

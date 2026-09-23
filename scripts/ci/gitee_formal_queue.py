@@ -38,6 +38,8 @@ class FormalQueue:
             db.execute('CREATE TABLE IF NOT EXISTS formal_jobs (id TEXT PRIMARY KEY, plan TEXT NOT NULL, status TEXT NOT NULL, cancel INTEGER NOT NULL DEFAULT 0, receipt TEXT)')
             db.execute('CREATE TABLE IF NOT EXISTS formal_deliveries (delivery TEXT PRIMARY KEY, job TEXT NOT NULL)')
             db.execute('CREATE TABLE IF NOT EXISTS formal_reports (job TEXT NOT NULL, name TEXT NOT NULL, marker TEXT NOT NULL, phase TEXT NOT NULL, remote_id INTEGER, delivered TEXT, retry_at REAL NOT NULL DEFAULT 0, error TEXT, PRIMARY KEY(job,name))')
+            db.execute('CREATE TABLE IF NOT EXISTS formal_report_cursor (id INTEGER PRIMARY KEY, position INTEGER NOT NULL)')
+            db.execute('INSERT OR IGNORE INTO formal_report_cursor VALUES (1,0)')
             if recover_running:
                 db.execute("UPDATE formal_jobs SET status='environment_error',receipt=NULL WHERE status='running'")
 
@@ -135,8 +137,12 @@ class FormalReporter:
             try: fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
             except BlockingIOError: return False
             with self.queue.connect() as db:
-                jobs=db.execute('SELECT id,plan,status,receipt FROM formal_jobs ORDER BY rowid DESC LIMIT 128').fetchall()
-            for key,raw,state,result in jobs:
+                position=db.execute('SELECT position FROM formal_report_cursor WHERE id=1').fetchone()[0]
+                jobs=db.execute('SELECT rowid,id,plan,status,receipt FROM formal_jobs WHERE rowid>? ORDER BY rowid LIMIT 128',(position,)).fetchall()
+                if not jobs:
+                    db.execute('UPDATE formal_report_cursor SET position=0 WHERE id=1')
+                    jobs=db.execute('SELECT rowid,id,plan,status,receipt FROM formal_jobs ORDER BY rowid LIMIT 128').fetchall()
+            for rowid,key,raw,state,result in jobs:
                 plan=json.loads(raw)
                 current=None
                 for name in CHECKS:
@@ -176,16 +182,18 @@ class FormalReporter:
                         if not self.bound(remote,desired,marker):raise ReportError('remote_identity_mismatch')
                         with self.queue.connect() as db:
                             db.execute("UPDATE formal_reports SET phase='bound',remote_id=? WHERE job=? AND name=?",(remote_id,key,name))
-                        if not self.matches(remote,desired):
+                        if not self.matches(remote,desired,remote_id):
                             self.api.request('PATCH',f'/check-runs/{remote_id}',{k:v for k,v in desired.items() if k!='head_sha'})
                             remote=self.api.request('GET',f'/check-runs/{remote_id}')
-                        if not self.matches(remote,desired):raise ReportError('readback_mismatch')
+                        if not self.matches(remote,desired,remote_id):raise ReportError('readback_mismatch')
                         with self.queue.connect() as db:
                             db.execute('UPDATE formal_reports SET delivered=?,error=NULL,retry_at=? WHERE job=? AND name=?',(encoded,self.clock()+30,key,name))
                     except ReportError as exc:
                         with self.queue.connect() as db:
                             db.execute('UPDATE formal_reports SET error=?,retry_at=? WHERE job=? AND name=?',(str(exc),self.clock()+30,key,name))
                     return True
+                with self.queue.connect() as db:
+                    db.execute('UPDATE formal_report_cursor SET position=? WHERE id=1',(rowid,))
             return False
 
     @staticmethod
@@ -196,8 +204,8 @@ class FormalReporter:
                 remote['output'].get('summary')==desired['output']['summary'])
 
     @staticmethod
-    def matches(remote,desired):
-        return (remote.get('status')==desired['status'] and
+    def matches(remote,desired,expected_id):
+        return (FormalReporter.bound(remote,desired,'') and remote['id']==expected_id and remote.get('status')==desired['status'] and
                 remote.get('conclusion')==desired.get('conclusion') and
                 isinstance(remote.get('output'),dict) and
                 all(remote['output'].get(k)==v for k,v in desired['output'].items()) and

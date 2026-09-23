@@ -405,3 +405,14 @@ Final Quick/push remain pending until online readback.
 - Pre-push live gate detected noncanonical worker-env ordering after token path append; no push. Quick for cc52a69f was cancelled, not passed. Normalize after token-path insertion; add post-install idempotence assertion.18 updater tests passed; reinstall and recheck the owning gate before refreeze.
 
 - Canonical-order repair installed via exact plan; only worker-env line ordering changed. Backup incremental-9pmv1eqv, source7c9a7ffb. live_state publication preflight passed; original SSH credentials preserved. Refreeze after documentation/generated-report refresh; retain cancelled Quick evidence.
+
+
+## Formal PR integration closeout (2026-09-23, pre-install candidate)
+
+Historical main catchup is complete at de9a230d3faab18dd60a219f445f932a8af9d7f5. CI-only Check Run 26931507 passed for 29f1a1beba9cb6b4a24193d65e4c2fc43c614123 with 42 tests; this is not acceptance of the four formal gates.
+
+P4 scope: existing signed receiver, durable formal queue/reporter, isolated ordinary-PR recipes, exact incremental updater and bounded PR creation. Stage identity: 4e169412e733d7e24dab90d1da586597c0cad628 plus owned dirty changes. No business database, product semantic or deployment changes; the existing worker, credentials and services are reused.
+
+Explicit formal-static mode binds platform PR identity, source/base SHA and trusted risk policy. Unsupported runtime lanes fail closed. Candidate label changes invalidate old ordinary success. Durable reports reconcile uncertain creation without duplicate POST, validate final ID/name/SHA/PR readback, and page through old tasks. Checkout uses the approved gitee-mirror remote. Node 22.17.0 is pinned by official archive and binary hashes and read-only bound into the network/credential-isolated sandbox. Updates preserve configuration and credentials, back up files/queue, reject active work, and restore files with services stopped after failure. PR creation requires exact clean identity and Quick, persists create intent, and never merges.
+
+Current L1: 16 tests. L2: plan/identity 26, executor 13, queue 18, worker 8, updater 23, PR controller 6; regressions: legacy worker 18, mirror 4, cutover 9, CI-only 18. Final freeze/Quick, publication, formal installation, real PR checks and protected-rule behavior remain pending. Actual receipts go to the existing external formal-integration-checkpoint.md; the archived checks-closeout.md is immutable. Historical main is aligned; this topic is not merged and no product release or expanded 89-entry acceptance is claimed.

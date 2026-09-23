@@ -15,17 +15,17 @@ goal:
     - remote_url_rewrite
     - automatic_pr_merge_or_force_push
     - deployment
-  feasibility_verdict: currently_not_implementable_with_available_evidence
+  feasibility_verdict: ordinary_pr_static_chain_implemented_live_acceptance_pending
   channel_role: real_push_ci_only_verified_formal_integration_pending
-  ci_rebuild: full_gate_migration_deferred
+  ci_rebuild: ordinary_static_gates_selected_full_runtime_lanes_fail_closed
   ci_chain_executor: existing_worker
-  ci_chain_acceptance: real_push_exact_sha_verified_77c5efe1_42_tests
+  ci_chain_acceptance: real_push_exact_sha_verified_29f1a1be_42_tests
   ci_blockers:
     - full_required_gate_equivalence_not_verified
     - protected_exact_head_merge_not_available
   repository_visibility: public_user_confirmed
-  primary_objective: real_gitee_push_acceptance_on_existing_worker
+  primary_objective: formal_pr_gate_acceptance_on_existing_worker
   resume:
-    - freeze_and_publish_reporter_candidate_for_fresh_push_verification
-    - select_required_gate_mapping_before_formal_product_integration
+    - freeze_publish_install_formal_static_candidate
+    - accept_real_pr_checks_and_protected_rule_behavior
     - handle_formal_merge_as_independent_blocker

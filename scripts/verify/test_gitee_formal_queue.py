@@ -116,6 +116,30 @@ class FormalQueueTests(unittest.TestCase):
         with self.q.connect() as db:
             self.assertEqual(db.execute('SELECT status FROM formal_jobs').fetchone()[0],'environment_error')
 
+    def test_final_readback_rejects_malformed_and_wrong_identity(self):
+        self.terminal();self.reporter.sync_once()
+        desired=self.api.rows[1]
+        for value in [None, [], {**desired,'id':99}, {**desired,'name':'wrong'},
+                      {**desired,'head_sha':'c'*40}]:
+            with self.subTest(value=value):
+                self.assertFalse(FormalReporter.matches(value,desired,1))
+
+    def test_cursor_visits_jobs_beyond_first_page(self):
+        for number in range(2,131): self.q.enqueue(candidate(pr=number),str(number))
+        # Mark page one temporarily throttled. A durable cursor must reach page
+        # two without discarding the old page; restart keeps the position.
+        with self.q.connect() as db:
+            for key, in db.execute('SELECT id FROM formal_jobs ORDER BY rowid LIMIT 128').fetchall():
+                for name in CHECKS:
+                    db.execute("INSERT INTO formal_reports(job,name,marker,phase,retry_at) VALUES (?,?,?,'new',999)",
+                               (key,name,'fixture-'+key+name))
+        self.assertFalse(self.reporter.sync_once())
+        other=FormalReporter(self.q,self.api,self.refresh,clock=lambda:self.now)
+        self.assertTrue(other.sync_once())
+        self.assertEqual(self.api.rows[1]['pull_request_id'],252)
+        with self.q.connect() as db:
+            self.assertEqual(db.execute('SELECT count(*) FROM formal_jobs').fetchone()[0],130)
+
     def test_worker_to_reporter_lifecycle(self):
         worker=Mock();worker.execute_plan.return_value=receipt(self.p)
         self.assertTrue(execute_once(self.q,worker,self.refresh));self.assertFalse(execute_once(self.q,worker,self.refresh))

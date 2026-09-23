@@ -6,13 +6,14 @@ Candidate/full and frontend dependency lanes fail closed instead of downgrading.
 from __future__ import annotations
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
 import tempfile
 import time
 
-from scripts.ci.gitee_ci_acceptance import Executor, Interrupted
+from scripts.ci.gitee_ci_acceptance import Executor, Interrupted, REMOTE
 from scripts.ci.gitee_gate_plan import CHECKS, digest, plan as build_plan, changed_paths
 
 PUBLIC_TESTS = (
@@ -28,6 +29,8 @@ PUBLIC_TESTS = (
 )
 PUBLIC_COMPILE = ('scripts/verify/repository_clean_history_guard.py', 'scripts/verify/test_repository_clean_history_guard.py', 'scripts/verify/github_actions_security_guard.py', 'scripts/verify/test_github_actions_security_guard.py', 'scripts/ci/ci_risk_classifier.py', 'scripts/ci/test_ci_risk_classifier.py', 'scripts/ci/test_ci_risk_workflow_contract.py', 'scripts/ci/test_merge_policy_gate.py', 'scripts/ci/test_release_candidate_gate.py', 'scripts/ci/select_authoritative_workflow_run.py', 'scripts/ci/test_select_authoritative_workflow_run.py', 'scripts/ci/frontend_professional_extension_guard.py', 'scripts/ci/test_frontend_professional_extension_guard.py', 'scripts/release/frontend_release_evidence.py', 'scripts/release/generate_frontend_release_evidence_bundle.py', 'scripts/verify/frontend_release_evidence_bundle.py', 'scripts/verify/test_frontend_release_evidence_bundle.py')
 FAST_TESTS = PUBLIC_TESTS[:4] + ("scripts/ci/test_select_authoritative_workflow_run.py",)
+NODE_PATH = '/opt/gitee-ci/node-v22.17.0/bin/node'
+NODE_SHA256 = '8071ae0fca095a272ad698a90c7061801a86fb6392ddb81e922b68a91a4374b9'
 IDENTITY_KEYS = ("repository", "source_branch", "target_branch", "head_sha", "base_sha", "pr_number")
 
 
@@ -90,12 +93,28 @@ class FormalExecutor(Executor):
     def __init__(self, artifacts, *, timeout=5400):
         super().__init__(artifacts, timeout=timeout)
 
+    def checkout(self, workspace, sha, log, cancelled, deadline):
+        env={'PATH':'/usr/bin:/bin','HOME':str(workspace),'GIT_CONFIG_NOSYSTEM':'1',
+             'GIT_CONFIG_GLOBAL':'/dev/null','GIT_TERMINAL_PROMPT':'0'}
+        if os.environ.get('GIT_SSH_COMMAND'): env['GIT_SSH_COMMAND']=os.environ['GIT_SSH_COMMAND']
+        for args in [['git','clone','--origin','gitee-mirror','--no-checkout','--no-tags',REMOTE,str(workspace/'repo')],
+                     ['git','-C',str(workspace/'repo'),'fetch','--no-tags','gitee-mirror',sha],
+                     ['git','-C',str(workspace/'repo'),'checkout','--detach',sha]]:
+            if self.command(args,workspace,log,cancelled,deadline,env): raise RuntimeError('checkout failed')
+        return (workspace/'repo/.git/HEAD').read_text().strip()
+
     def sandbox_command(self, workspace, command):
+        node=[]
+        if getattr(self,'needs_node',False):
+            path=Path(NODE_PATH); info=path.stat()
+            if path.is_symlink() or info.st_uid!=0 or info.st_mode & 0o022 or hashlib.sha256(path.read_bytes()).hexdigest()!=NODE_SHA256:
+                raise ValueError('untrusted_node_runtime')
+            node=['--ro-bind',NODE_PATH,'/usr/bin/node']
         return ['/usr/bin/bwrap', '--unshare-all', '--die-with-parent', '--new-session',
                 '--ro-bind', '/usr', '/usr', '--symlink', 'usr/bin', '/bin',
                 '--symlink', 'usr/lib', '/lib', '--symlink', 'usr/lib64', '/lib64',
                 '--proc', '/proc', '--dev', '/dev', '--tmpfs', '/tmp',
-                '--bind', str(workspace/'repo'), '/work', '--chdir', '/work', *command]
+                '--bind', str(workspace/'repo'), '/work', *node, '--chdir', '/work', *command]
 
     def validate_selection(self, candidate):
         expected = build_plan(head=candidate['head_sha'], base=candidate['base_sha'],
@@ -145,7 +164,8 @@ class FormalExecutor(Executor):
                         raise ValueError("policy_path_escape")
                     if hashlib.sha256(source.read_bytes()).hexdigest() != expected_hash:
                         raise ValueError("policy_source_mismatch")
-                if any(c['mode'] == 'standard_backend' for c in plan['checks']):
+                self.needs_node = any(c['mode'] == 'standard_backend' for c in plan['checks'])
+                if self.needs_node:
                     node_log = attempt/'node.log'
                     with node_log.open('wb') as stream:
                         code = self.command(self.sandbox_command(workspace, ['node','--version']), workspace,
