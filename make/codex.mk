@@ -800,3 +800,7 @@ verify.gitee.gates.unit: guard.prod.forbid
 .PHONY: gitee.ci.pr.inspect
 gitee.ci.pr.inspect: guard.prod.forbid
 	@python3 -m scripts.ci.gitee_pr_identity --token-file "$(GITEE_CHECKS_TOKEN_FILE)" --head "$(EXPECTED_HEAD)" --base "$(GITEE_EXPECTED_MAIN)" --source-branch "$(GITEE_SOURCE_BRANCH)" --pr-number "$(GITEE_PR_NUMBER)"
+
+.PHONY: verify.gitee.formal_executor.unit
+verify.gitee.formal_executor.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_formal_executor
