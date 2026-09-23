@@ -33,5 +33,10 @@ class ScopeTests(unittest.TestCase):
     def test_binary_not_silently_skipped(self):
         (self.root/'asset.bin').write_bytes(b'\x00binary');head=self.commit();r=self.audit(head,self.base+' refs/heads/main\n')
         self.assertEqual(len(r['binary_review_pending']),1);self.assertEqual(r['new_blob_count'],1)
+    def test_authoritative_customer_rule_is_reused(self):
+        (self.root/'identity.txt').write_text(scope.CUSTOMER_IDENTITY_TOKENS[0]);head=self.commit()
+        r=self.audit(head,self.base+' refs/heads/main\n')
+        self.assertEqual(len(r['customer_reference_review']),1)
+        self.assertEqual(r['publication'],'blocked')
 
 if __name__=='__main__':unittest.main()

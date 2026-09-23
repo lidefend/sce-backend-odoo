@@ -11,6 +11,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'scripts/ci'))
 import secret_scan
 import personal_data_scan
+sys.path.insert(0, str(ROOT))
+from scripts.verify.tenant_product_payload_boundary_guard import CUSTOMER_IDENTITY_TOKENS
 
 
 def git(*args):
@@ -61,14 +63,14 @@ def audit(candidate, refs):
             if f.fingerprint_id in normal_ids:
                 normal_text.append({'blob':sha,'paths':names,'catalog_id':f.fingerprint_id,'disposition':'NORMAL_TEXT'})
             else: hits.add('known_legacy_credential:'+f.fingerprint_id)
-        if re.search(r'baosheng|宝盛|保胜',text,re.I):
+        if any(token.lower() in text.lower() for token in CUSTOMER_IDENTITY_TOKENS):
             customer_refs.append({'blob':sha,'paths':names,'classification':'named_customer_reference_requires_public_authorization_review','public_authorization':'not_established'})
         if hits:findings.append({'blob':sha,'paths':names,'rules':sorted(hits),'classification':'requires_secret_triage_no_values_recorded'})
         for name in names:
             for f in personal_data_scan.scan_text(text,name,sha):
                 key=(f.rule_id,f.path,f.blob_id,f.classification)
                 if key not in exceptions: personal.append({'blob':sha,**f.public_metadata()})
-        restricted_names=[n for n in names if any(x in n.lower() for x in ['customer_addons/','baosheng','宝盛','保胜','legacy-source','legacy_source'])]
+        restricted_names=[n for n in names if any(x in n.lower() for x in ('customer_addons/','legacy-source','legacy_source',*CUSTOMER_IDENTITY_TOKENS))]
         if restricted_names:
             restricted.append({'blob':sha,'paths':restricted_names,'owner':'customer/project owner; exact rights not established','public_authorization':'not_found_in_available_evidence'})
         if binary:unparsed.append({'blob':sha,'paths':names,'reason':'raw-byte secret scan performed; binary/archive semantics require content-specific review'})
@@ -77,7 +79,7 @@ def audit(candidate, refs):
 
 
 def digest_source():
-    return {str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [Path(__file__),ROOT/"scripts/ci/secret_scan.py",ROOT/"scripts/ci/personal_data_scan.py",ROOT/"config/security/legacy_credential_fingerprints.json",ROOT/"scripts/ci/personal_data_false_positives.json"]}
+    return {str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [Path(__file__),ROOT/"scripts/verify/tenant_product_payload_boundary_guard.py",ROOT/"scripts/ci/secret_scan.py",ROOT/"scripts/ci/personal_data_scan.py",ROOT/"config/security/legacy_credential_fingerprints.json",ROOT/"scripts/ci/personal_data_false_positives.json"]}
 
 
 def main():

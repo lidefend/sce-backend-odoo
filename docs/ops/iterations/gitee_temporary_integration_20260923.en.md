@@ -4,6 +4,11 @@
 
 ## Desktop execution update
 
+Quick at `2f7d58fb` stopped on duplicate customer identifiers in the publication scanner (P4 tool defect,
+not leaked customer payload). The scanner now imports authoritative `CUSTOMER_IDENTITY_TOKENS`, without
+adding exemptions. Focused scan tests (5) and boundary tests (10+11) pass. The final publication scope is
+rescanned with the updated rule source; unchanged online executor modules are not reinstalled.
+
 Incremental installation at `1feb780b95e910c905fb4d95ed7447f40db7ef0b` succeeded after the
 bounded upstream AppArmor profile repair. Backup: `incremental-s0g_x39h`; receiver/worker active
 in CI-only mode. The user saved the new webhook signing secret; the governed server rotation

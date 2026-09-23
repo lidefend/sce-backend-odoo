@@ -4,6 +4,12 @@
 
 ### 实际线上执行结果
 
+- `2f7d58fb` 首次最终 Quick 在 `verify.tenant.product_payload_boundary` 失败：公开扫描工具
+  重复硬编码客户标识，属于 P4 工具边界缺陷；不是客户正文/秘密命中。修复为导入既有边界守卫的
+  `CUSTOMER_IDENTITY_TOKENS`，不添加豁免，扫描来源摘要新增该权威文件。定向公开扫描 5 项及
+  边界守卫 10+11 项通过。因检测规则来源变化，最终公开范围重新全量扫描，不复用旧规则的客户命中结论。
+  新候选只重做受影响检查与一次最终 Quick；不重新安装未变化的线上执行器。
+
 - `1feb780b95e910c905fb4d95ed7447f40db7ef0b` 增量更新成功，精确计划摘要
   `d42b4ee5cc5d55cf434c93b1a65e947164387a01675af7312590b4f1a42b8682`，备份
   `/var/lib/gitee-ci/update-backups/incremental-s0g_x39h`。原凭据保持，receiver/worker active、ci-only。
