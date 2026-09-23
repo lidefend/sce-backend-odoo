@@ -24,11 +24,13 @@ goal:
     - platform_push_side_effects_unproven
     - ci_only_apply_blocked_pending_platform_evidence
     - online_worker_isolation_and_runtime_identity_unverified
+  repository_visibility: public_user_confirmed
+  primary_objective: real_gitee_push_acceptance_on_existing_worker
   resume:
-    - close_ci_equivalence_and_platform_configuration_evidence_gaps
-    - prove_atomic_source_and_target_merge_binding
-    - govern_reverse_mirror_pause_and_single_writer_window_before_remote_writes
-    - review_historical_main_catchup_and_obtain_exact_write_authorization
-    - verify_gitee_required_checks_and_reviewed_head_merge_capability
-    - retain_frozen_topics_until_their_own_integration_gates_pass
-    - resume_formal_89_entry_delivery_after_workspace_closure
+    - confirm_two_named_customer_identifier_publication_items
+    - obtain_existing_platform_configuration_read_access_or_admin_export
+    - review_incremental_updater_and_freeze_only_after_blockers_closed
+    - isolate_approved_automation_and_install_existing_worker_update
+    - publish_exact_ci_only_candidate_and_accept_real_push_chain
+    - extend_full_required_checks_after_initial_chain_acceptance
+    - handle_formal_merge_as_independent_blocker

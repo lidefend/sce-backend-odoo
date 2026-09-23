@@ -752,3 +752,14 @@ main.cutover.controlled: guard.prod.forbid
 .PHONY: verify.gitee.ci_only.unit
 verify.gitee.ci_only.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_gitee_ci_acceptance
+
+.PHONY: gitee.ci.server.update verify.gitee.ci_update.unit
+gitee.ci.server.update: guard.prod.forbid
+	@python3 scripts/ops/gitee_ci_incremental_update.py --expected-head "$(EXPECTED_HEAD)" $(if $(filter 1,$(APPLY)),--apply,) --plan-sha256 "$(GITEE_UPDATE_PLAN_SHA256)" --confirm "$(GITEE_UPDATE_CONFIRM)"
+
+verify.gitee.ci_update.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_ci_incremental_update
+
+.PHONY: verify.gitee.publication_scope.unit
+verify.gitee.publication_scope.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_publication_scope

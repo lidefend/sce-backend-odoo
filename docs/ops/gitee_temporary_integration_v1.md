@@ -101,3 +101,23 @@ Gitee 暂定位为历史镜像／候选保存通道；保存候选仍须先完�
 - 现阶段 CI-only 的 APPLY 一律拒绝平台自动化证据缺失；保留普通发布 Quick、身份、漂移、普通 FF 和不确定回读机制。
   后续打开实际 CI-only transport 必须是基于真实配置证据的受审改动，不能靠自行填写“已隔离”绕过。
 - 安装打包只补齐两个服务端模块，不设置模式、不安装新 runtime、不改变线上默认行为；本轮未安装。
+
+
+## 保留配置的增量更新入口
+
+使用 `make gitee.ci.server.update EXPECTED_HEAD=<本地完整HEAD>` 生成只读预演，不调用旧 install。
+预演列出旧/新文件 hash、source SHA、工具 hash、配置及凭据状态摘要、服务和任务状态、固定包版本。
+实际执行还要求：公开范围与平台隔离已批准、clean source、最新精确 plan hash，及
+`APPLY=1 GITEE_UPDATE_PLAN_SHA256=<摘要> GITEE_UPDATE_CONFIRM=APPLY_REVIEWED_CI_INCREMENTAL_UPDATE`。
+参数不是审批替代；当前禁止 APPLY。
+
+只允许三个 CI 代码文件、两个既有 env 和 worker unit 的已确认差异。secret、SSH 身份、端口、数据库、
+其他配置保留；旧 runner 不处理。停 receiver admission 后核对队列，备份目标文件/权限并验证，
+使用 SQLite backup API 验证 CI 元数据备份，不操作业务数据库。安装固定 bubblewrap 包后，在 gitee-ci
+用户及受限 systemd 探针下验证 namespace/网络/凭据隔离；不支持就停止并恢复目标文件，不能无沙箱执行。
+探针设 RuntimeMaxSec=30/TimeoutStopSec=5/KillMode=control-group，不新增常驻执行器。
+
+恢复保留旧文件字节/权限/所有者，移除本次新增文件并回读；外来修改或损坏备份则停止恢复，不能覆盖。
+恢复后保持 CI 服务停止，避免重新启动 legacy 副作用；包不会自动 purge/autoremove，须核查消费者后决定。
+输送或回读不确定时明确 uncertain、禁止自动重试，先检查服务器备份/包状态/服务。
+实际平台配置隔离与正式候选推送仍需按批次执行单完成；安装成功也不是线上 CI 验收通过。

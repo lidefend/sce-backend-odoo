@@ -103,3 +103,21 @@ It reports all commits and paths relative to observed main, possible additional 
 of dirty changes. Apply remains hard-denied pending real platform isolation evidence; no boolean bypass.
 Default integration constraints are unchanged. Installation packaging includes new modules but does not
 enable the mode. No online installation or configuration was performed.
+
+
+## Incremental update preserving registered configuration
+
+Use `make gitee.ci.server.update EXPECTED_HEAD=<full local HEAD>` for a read-only plan. It does not
+call the legacy initializer. The plan binds source/tool hashes, exact before/after file state,
+credential-state digest, service/job state and the fixed bubblewrap package. Apply additionally
+requires clean source, the exact plan digest and explicit reviewed confirmation, after publication
+and platform-isolation approvals. Those prerequisites remain unavailable; do not apply.
+
+Only three code modules, two existing env files' mode/handoff settings and the worker write-path
+setting may change. Preserve secrets, keys, unrelated configuration, ports and database authority.
+Back up and verify file metadata/bytes and the CI SQLite database; install the pinned package and
+probe isolation as gitee-ci under matching systemd hardening with a bounded lifetime. No unsandboxed
+fallback. Restore exact owned files on failure and leave CI services stopped; corrupt backups or
+unowned changes stop recovery. Do not auto-purge packages or re-enable reverse synchronization.
+The old GitHub runner and product databases are untouched. Transport uncertainty requires inspection,
+not blind retry. Installation is not real-event CI acceptance.

@@ -412,3 +412,80 @@ allowlist 变更后定向重验 `make verify.baseline.iteration.execution.policy
 **18 tests passed / 1.708s**，原始 `l2-ci-only-replay.log`；39 项发布和 18 项 legacy 结果继续承接。
 本地检查点预演现包含 **134 个提交、1247 个差异路径**（相对 b9e main），dirty=false；
 结果仍非集成资格，实际远端写入为零。本地检查点不是最终冻结，不触发 Quick。
+
+
+## 真实 Push 目标：公开范围与增量更新实现（第 1—3 步）
+
+用户已决定保持公开；本轮不补齐 main、不合并产品专题、不部署产品。使用原自建 receiver/worker，
+P4 仅新增公开历史扫描与受管增量更新能力。3dd58b82 原检查点保留，新改动另建提交。
+
+### 公开范围精确裁决（仅绑定 3dd58b82）
+
+重新读取 41 个远端 refs；对原来缺失的 4 个 PR MERGE 对象执行受管仓库的精确 fetch
+（不创建仓库，不更新分支，不写远端，`--no-tags --no-write-fetch-head`）。扫描前后 refs 文本一致。
+现在全部远端对象可解析。候选相对这些 refs 新增 **134 commits / 2739 blobs**；
+相对 main 的 1247 diff paths 与新增内容对象数不是同一指标。
+
+原始 `artifacts/gitee-temporary-integration/publication-history-scan-3dd58b82-final.json` 包含：全部新增提交 SHA、
+每个新增 blob 的完整 SHA/内容 SHA256/大小/全部历史路径、commit 内容 hash、扫描器与规则目录 hash。
+按 Git 对象扫描，无后缀/大小跳过；历史中间版本均覆盖。此范围无二进制跳过，也无在候选最终树完全消失的新增 blob 路径；
+已删除内容仍经遍历历史树纳入判定，已在远端可达的旧内容不算新增公开内容。删除中间秘密的反例测试通过。
+
+| 分类 | 结果／裁决 |
+| --- | --- |
+| 凭据/秘密 | 当前高置信规则确认命中 0；初始 6 个 blob 的 7 个旧指纹匹配来自 LC-006/LC-008，规则目录明确 NORMAL_TEXT；按既有目录分类，不打印正文或添加豁免 |
+| 个人数据规则 | 未豁免命中 0，精确使用既有 full-blob/path/rule/classification 豁免登记；不扩展豁免范围 |
+| 客户资产/受限材料 | 未发现新增客户文件载荷；有下述两个普通 P4 文件含具名客户标识引用，缺少这些标识对外公开的明确依据，保留具体授权项 |
+| 普通项目代码 | 2739 新增内容对象及 134 commit 元数据已遍历；模式扫描不是对未知秘密的数学证明，扫描覆盖和局限均保留；不能据此自动放行后续新候选 |
+
+**具体待确认清单（不泛问全部历史）：**
+
+- `scripts/verify/tenant_product_payload_boundary_guard.py`，blob `0f66fd4257b98c7dd119e8ef71ec1c1c48b780a7`：
+  具名客户标识处于 `CUSTOMER_IDENTITY_TOKENS` 防泄漏规则常量；技术所有权=P4，标识公开授权属于项目/客户资产责任人，现有材料未提供。
+- `scripts/verify/test_tenant_product_payload_boundary_guard.py`，blob `0273b43eac554933dc04ef28a73f12d8c770ab27`：
+  对应客户模块/归档命名拒绝测试及指纹日志测试；无客户业务正文。需明确允许这些具名测试标识随公开源码发布，或另行治理历史范围。
+
+结论：**3dd58b82 不予发布放行**；当前阻塞是上述精确标识公开依据与平台配置权限，不是发现已确认的活跃密钥。
+不删除最新文件来冒充历史清理，不改写历史、不新建仓库或另行上传绕过。
+
+### 平台触发清单
+
+此前凭据文件路径/注明仓库和时间的管理员导出仍未到位，不再次索要令牌。
+已知 Push→receiver→worker，满足 SHA=main 时可能交接 mirror；镜像 timer 仍是既有隔离对象。
+所有 Push/PR hooks 的 ID/订阅/active/分支过滤、Go 触发器、自动合并身份、部署/反向同步全部路径，
+以及本次候选分支会命中哪些规则，仍缺配置读取权限；不能补写“无其他触发器”。
+第 2 步明确 blocked/configuration_access；不做猜测性平台探测，不执行隔离。
+
+### 增量更新实际实现
+
+- `scripts/ops/gitee_ci_incremental_update.py`：新受管入口默认只读；固定 host、三个模块及六个目标路径；
+  source SHA+工具 hash+旧/新内容/凭据状态摘要绑定预演。只编辑模式与 mirror 交接项、worker 写路径，保留其他 env 字节和凭据。
+- `scripts/ops/gitee_publication_scope.py`：精确远端 refs 差集的历史内容扫描，复用现有秘密/个人数据规则，不输出匹配值。
+- 两个 `scripts/verify/test_gitee_*` 新测试文件、`make/codex.mk`、规程/allowlist 同步。
+- 线上流程代码包含固定 bubblewrap 包、受限 namespace 探针、文件+CI SQLite 备份校验、服务启动回读、失败恢复。
+  apply 前核验 mirror 停用和队列为空；不自动替用户隔离未知平台规则。
+- 旧 `gitee.ci.server.install` 未调用；secret/SSH key/端口/业务 DB 不重建，不修改旧 runner。
+
+### 定向验证与预演
+
+基线 3dd58b82 + 本轮 owned dirty；L1 `make ci.local.iteration` passed，证据 l1-incremental-update.log。
+新 Python 语法检查通过。L2 新增更新测试从 12 项扩展到 **15 passed / 0.337s**（l2-incremental-update-reviewed.log），
+验证计划漂移/凭据漂移零写、配置保留、备份可读完整、sandbox 失败停止、服务失败恢复、损坏备份拒绝、默认预演无写。
+这些测试使用临时文件/SQLite 与 fake systemctl/apt，不冒称线上恢复演练。
+扫描测试初次因空对象集合处理错误失败（4 项中 1 error），owning P4；修复空集后 **4 passed / 0.166s**
+（l2-publication-scope-final.log）：已删历史秘密、远端已有对象排除、缺对象失败关闭、二进制不静默跳过。
+扫描器修改后仅重跑受影响扫描与其测试。原 18/39/18 组及 worker 源未改，承接不重跑。
+
+已执行 `make gitee.ci.server.update EXPECTED_HEAD=3dd58b82...` 只读预演，证据 incremental-install-plan.json：
+现有两服务 active、CI 活动任务 0、bwrap 不存在、固定包 bubblewrap=0.9.0-1ubuntu0.3、writes=0。
+该预演绑定开发时 updater hash；最终本地新提交后重新生成 source/head/hash 对齐的预演（incremental-install-plan-checkpoint.json）。
+工具通过 SSH stdin 做只读检查，没有持久安装文件、创建备份、安装软件包或启停服务。
+
+当前仅第 1—3 步：公开授权和平台配置未齐，L3 线上安装、L4真实事件、L5冻结/Quick/独立交付审查全部 not_run。
+新本地提交是可审阅开发检查点，不覆盖3dd58b82；第4步必须重新按最终冻结候选生成公开范围，不能自动沿用本次结论。
+
+
+补充统计：2739 个新增 blob 对应 1245 个不同历史路径；另两项 main diff 路径不等于新内容暴露。
+扫描前后 refs 一致性已通过 byte compare。allowlist 变更后受影响政策定向检查通过（l1-update-policy.log）。
+本地新文件源码 hash 和两组测试输入关联保存在 incremental-update-local-evidence.json；提交不改变这些输入，
+后续只重做绑定新 source SHA 的只读安装预演，不重跑未变化测试。

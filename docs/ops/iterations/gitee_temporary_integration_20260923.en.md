@@ -255,3 +255,58 @@ duplicate SHA deliveries deduplicate, while reusing the timestamp for another SH
 Final affected acceptance suite: **18 passed / 1.708s**, l2-ci-only-replay.log; publication 39 and legacy 18
 results carry forward unchanged. Clean local checkpoint preview includes **134 commits / 1247 changed paths**
 relative to b9e main, still with zero remote writes and no integration eligibility. No final freeze or Quick.
+
+
+## Steps 1–3: exact public exposure and incremental updater
+
+Public visibility is user-confirmed. Existing self-hosted CI remains the target; no main catchup,
+product-topic merge or deployment. Preserve 3dd58b82 and create a new local implementation commit.
+
+Exposure is bound only to 3dd58b82. All 41 advertised refs were re-read; the four missing PR MERGE
+objects were fetched exactly with no tags/ref updates/FETCH_HEAD writes. Ref observations before and
+after match. Candidate exposure is **134 commits / 2739 novel blobs**, distinct from 1247 diff paths.
+`publication-history-scan-3dd58b82-final.json` records every commit and blob identity/content hash,
+historical paths, sizes and scanner/rule hashes. Intermediate/deleted versions are considered with
+no suffix/size skip; no novel binary content or novel paths absent at final HEAD were found.
+A test proves a secret introduced and subsequently deleted is still caught. Existing remotely reachable
+content is excluded from new exposure.
+
+Confirmed pattern matches: zero secret and zero unexempted personal-data findings. Six blobs initially
+matched seven LC-006/LC-008 occurrences; the existing catalog explicitly classifies them NORMAL_TEXT,
+with no new exemptions or sensitive values printed. Two ordinary P4 files contain named customer markers:
+`tenant_product_payload_boundary_guard.py` blob 0f66fd4257b98c7dd119e8ef71ec1c1c48b780a7 and
+`test_tenant_product_payload_boundary_guard.py` blob 0273b43eac554933dc04ef28a73f12d8c770ab27.
+These are exclusion constants and negative naming tests, not customer business content. Publication
+of those exact named identifiers lacks explicit authorization and is submitted as the concrete pending
+list. No broad request to publish all history; no history rewrite or alternate repository/upload.
+Pattern scanning is not a mathematical guarantee against unknown secrets.
+
+Platform configuration remains unavailable: the existing credential-path/admin-export request is
+unchanged. Complete hook IDs/events/filters, Go triggers, auto-merge identities, deployment/reverse-sync
+rules and exact candidate matches remain unknown. Step 2 is blocked on configuration access, not guessed safe.
+
+New P4 implementation: gitee_ci_incremental_update.py, gitee_publication_scope.py, two focused test
+files, Make entrypoints and governance docs. The incremental updater has a read-only default, exact
+plan drift checks including credentials, a fixed six-path update, package/isolation probe, verified
+file/CI-metadata backups and conservative rollback. It never invokes the old initializer, regenerates
+keys or stops the unrelated runner. Apply checks mirror isolation and empty queues, but those local
+checks do not substitute for platform approval.
+
+Validation: ci.local.iteration passed (l1-incremental-update.log). Incremental updater **15 tests passed**
+(0.337s, l2-incremental-update-reviewed.log), using temporary filesystem/SQLite and fake system/package
+commands. Scanner initially failed its empty-object-set case; that owning-layer bug was fixed, then
+**4 tests passed** (0.166s, l2-publication-scope-final.log). Changed scanner results were regenerated;
+unchanged worker/publication 18/39/18 evidence was retained. No production/runtime tests or final Quick.
+Read-only server plan reports two active services, zero queued/running jobs, missing bwrap, pinned
+bubblewrap=0.9.0-1ubuntu0.3 and writes=0. Development plan is incremental-install-plan.json; a new local
+checkpoint gets incremental-install-plan-checkpoint.json. No installation, backup creation, package write,
+service change or candidate push occurred. Online installation, real events and final freeze/review are
+not_run. Final publication scope must be regenerated for the eventually frozen candidate, not inherited
+from 3dd58b82.
+
+
+The 2739 novel blobs map to 1245 distinct historical paths; the two remaining main-diff paths are
+not novel content exposure. Remote ref observations match byte-for-byte. Focused policy validation
+passed after the allowlist update (l1-update-policy.log). New source hashes and test-input bindings
+are saved in incremental-update-local-evidence.json. Commit creation does not invalidate those inputs;
+only the source-SHA-bound read-only installation plan is regenerated.

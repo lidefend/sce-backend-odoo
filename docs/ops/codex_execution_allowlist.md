@@ -26,6 +26,13 @@ GitHub 的情况下使用既有 `gitee-mirror`；本节是下文“GitHub 唯一
 - `make verify.gitee.ci_only.unit` 是本地 P4 定向测试：使用临时 SQLite/Git 与现有 bubblewrap，
   不连接业务数据库、不写远端、不修改线上服务。`GITEE_CI_MODE=ci-only` 只允许受管配置显式启用；
   本批没有线上启用授权。
+- `make gitee.ci.server.update EXPECTED_HEAD=<sha>`：既有 host/receiver/worker 的增量预演，默认只读。
+  仅修改登记的三个代码文件、两个 env 的模式/交接项和 worker 写路径；不调用旧初始化安装入口。
+  APPLY 要求 clean 精确 source、精确预演摘要和 `GITEE_UPDATE_CONFIRM=APPLY_REVIEWED_CI_INCREMENTAL_UPDATE`；
+  此参数不代替公开范围、平台自动化隔离和精确线上方案批准。当前这些条件未齐备，不得实际执行。
+  bubblewrap 固定软件包、受限 sandbox 探针、备份/恢复均属于同一入口；失败不得无沙箱降级。
+- `make verify.gitee.ci_update.unit verify.gitee.publication_scope.unit`：本地临时目录/Git/SQLite 定向测试，
+  线上服务/包管理调用由受控 fake 替代，不改业务数据。公开范围工具只读候选及已观测远端对象，不推送。
 - 不使用固定历史 SHA 的 `gitee.pr.bot.merge` 处理新候选。Gitee PR 必须绑定源 HEAD／目标
   main，完成所需验证和独立审查后，由所有者批准并在受保护 PR 流程合入；暂不提供自动合并入口。
 
