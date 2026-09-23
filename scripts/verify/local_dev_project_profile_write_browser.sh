@@ -23,7 +23,7 @@ guard_prod_forbid
 [[ "${ODOO_DBFILTER:-}" == "^sc_dev_demo$" ]] || { echo "[DENY] expected exact sc_dev_demo dbfilter" >&2; exit 2; }
 [[ "${SC_ENVIRONMENT:-}" == "dev" ]] || { echo "[DENY] expected SC_ENVIRONMENT=dev" >&2; exit 2; }
 [[ "${FRONTEND_URL:-http://127.0.0.1:5176}" == "http://127.0.0.1:5176" ]] || { echo "[DENY] expected candidate frontend 5176" >&2; exit 2; }
-for flag_name in READ_ONLY PREFLIGHT_ONLY NETWORK_FAILURE_RECOVERY PERMISSION_ONLY RELATION_ONLY; do
+for flag_name in READ_ONLY PREFLIGHT_ONLY NETWORK_FAILURE_RECOVERY PERMISSION_ONLY RELATION_ONLY RELATION_WRITE_ONLY; do
   flag_value="${!flag_name:-0}"
   [[ "$flag_value" =~ ^[01]$ ]] || { echo "[DENY] ${flag_name} must be 0 or 1" >&2; exit 2; }
 done

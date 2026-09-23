@@ -191,7 +191,7 @@ def _summary(env, sha, batch, mode, project=None):
         },
         "responsibilities": responsibilities,
         "role_candidates": candidates,
-        "write_scope": ["name", "date_start", "date", "description", "responsibility_ids"],
+        "write_scope": ["name", "date_start", "date", "description", "responsibility_ids", "partner_id"],
         "recovery": "cleanup verifies XMLID/code ownership, scans external many2one references, removes only this project and its responsibility rows",
     }
     if project:

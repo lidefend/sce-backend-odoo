@@ -20,6 +20,7 @@ const PREFLIGHT_ONLY = process.env.PREFLIGHT_ONLY === '1';
 const NETWORK_FAILURE_RECOVERY = process.env.NETWORK_FAILURE_RECOVERY === '1';
 const PERMISSION_ONLY = process.env.PERMISSION_ONLY === '1';
 const RELATION_ONLY = process.env.RELATION_ONLY === '1';
+const RELATION_WRITE_ONLY = process.env.RELATION_WRITE_ONLY === '1';
 const VALIDATE_ONLY = process.env.P4_RUNNER_VALIDATE_ONLY === '1';
 const PM_LOGIN = process.env.PM_LOGIN || 'demo_role_project_manager';
 
@@ -177,7 +178,9 @@ if ((READ_ONLY || PREFLIGHT_ONLY) && NETWORK_FAILURE_RECOVERY) deny('read-only p
 const WRITE_MODE = !READ_ONLY && !PREFLIGHT_ONLY;
 if (PERMISSION_ONLY && (!WRITE_MODE || NETWORK_FAILURE_RECOVERY)) deny('permission checks require dedicated write authority and no recovery injection');
 if (RELATION_ONLY && (!WRITE_MODE || NETWORK_FAILURE_RECOVERY || PERMISSION_ONLY)) deny('relation checks require dedicated authority and an exclusive mode');
+if (RELATION_WRITE_ONLY && (!WRITE_MODE || RELATION_ONLY || NETWORK_FAILURE_RECOVERY || PERMISSION_ONLY)) deny('relation write checks require dedicated authority and an exclusive mode');
 const WRITE_AUTHORITY = WRITE_MODE ? loadWriteAuthority(PROJECT_ID) : null;
+if (RELATION_WRITE_ONLY && !WRITE_AUTHORITY?.write_scope?.includes('partner_id')) deny('relation write scope must explicitly include partner_id');
 const configuredProjectName = String(process.env.PROJECT_NAME ?? '').trim();
 if (WRITE_MODE && configuredProjectName && configuredProjectName !== WRITE_AUTHORITY.project.name) deny('PROJECT_NAME does not match governed authority');
 const PROJECT_NAME = WRITE_MODE ? WRITE_AUTHORITY.project.name : configuredProjectName;
@@ -652,6 +655,69 @@ async function verifyCustomerRelation(page, report, beforeFacts) {
   report.scenarios.push({ name: 'customer_narrow_escape_no_write', status: 'PASS', viewport: 390, option_unobscured: true, authoritative_unchanged: true, mutation_requests: mutations.length });
 }
 
+async function verifyCustomerRelationWrite(page, report, beforeFacts) {
+  const mutations = [];
+  const writes = recordWriteRequests(page);
+  report.writes = writes;
+  page.on('request', request => {
+    let body; try { body = request.postDataJSON(); } catch { return; }
+    if ((body?.intent === 'api.data' && ['write', 'create', 'unlink'].includes(body.params?.op)) || body?.intent === 'api.data.write') mutations.push(body);
+  });
+  const input = field(page, 'partner_id').locator('input').first();
+  await input.fill('');
+  await input.click();
+  const option = page.locator('.many2one-option-panel:visible .many2one-option-row').first();
+  await option.waitFor();
+  const selectedId = Number(await option.getAttribute('data-record-id'));
+  if (!Number.isSafeInteger(selectedId) || selectedId <= 0) throw new Error('customer_option_has_no_record_identity');
+  const label = normalize(await option.innerText());
+  let blocked = false;
+  await page.route('**/api/v1/intent*', async route => {
+    const body = route.request().postDataJSON();
+    const mutation = (body?.intent === 'api.data' && ['write', 'create', 'unlink'].includes(body.params?.op)) || body?.intent === 'api.data.write';
+    if (mutation) {
+      const expected = body.intent === 'api.data' && body.params?.op === 'write'
+        && body.params.model === 'project.project' && sameJson(body.params.ids, [PROJECT_ID])
+        && sameJson(Object.keys(body.params.vals || {}), ['partner_id']) && body.params.vals.partner_id === selectedId;
+      if (!expected) return route.abort('blockedbyclient');
+      if (!blocked) { blocked = true; return route.abort('failed'); }
+    }
+    return route.continue();
+  });
+  await option.click();
+  if (!await dirty(page) || normalize(await input.inputValue()) !== label) throw new Error('explicit_customer_selection_not_in_draft');
+  if (mutations.length) throw new Error('customer_selection_mutated_before_save');
+  const button = page.getByRole('button', { name: /^保存(?:修改)?$/, exact: true }).first();
+  await button.click();
+  const failedWrite = await waitForWriteOutcome(page, writes, 0);
+  const error = page.locator('.submission-feedback--error:visible, [data-semantic-component="ProductFormErrorSummary"]:visible').first();
+  await error.waitFor();
+  const failurePassed = blocked && failedWrite.outcome === 'network_blocked'
+    && writes[0]?.body?.params?.vals?.partner_id === selectedId
+    && normalize(await input.inputValue()) === label && await dirty(page)
+    && await input.isEditable() && !await button.isDisabled()
+    && sameJson(beforeFacts, await readProjectFacts(page));
+  report.scenarios.push({ name: 'customer_selected_save_failure_preserves_draft', status: failurePassed ? 'PASS' : 'FAIL', selected_id: selectedId, backend_unchanged: failurePassed });
+  if (!failurePassed) throw new Error('customer_failure_recovery_not_proven');
+  await save(page);
+  const retry = await waitForWriteOutcome(page, writes, 1);
+  const after = await readProjectFacts(page);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await field(page, 'partner_id').waitFor();
+  const refreshed = await readProjectFacts(page);
+  const refreshedLabel = normalize(await field(page, 'partner_id').locator('input').first().inputValue());
+  const onlyExpectedWrites = mutations.length === 2 && mutations.every(body => body.intent === 'api.data'
+    && body.params?.op === 'write' && body.params.model === 'project.project'
+    && sameJson(body.params.ids, [PROJECT_ID]) && sameJson(Object.keys(body.params.vals || {}), ['partner_id'])
+    && body.params.vals.partner_id === selectedId);
+  const expected = { ...beforeFacts, project: { ...beforeFacts.project, partner_id: selectedId } };
+  const passed = onlyExpectedWrites && refreshedLabel === label && writes.length === 2 && retry.outcome === 'business_success'
+    && sameJson(writes[0].body.params.vals, writes[1].body.params.vals)
+    && sameJson(expected, after) && sameJson(after, refreshed);
+  report.scenarios.push({ name: 'customer_explicit_selection_retry_and_refresh', status: passed ? 'PASS' : 'FAIL', selected_id: selectedId, selected_id_source: 'clicked_option.data-record-id', mutation_requests: mutations.length, only_expected_project_writes: onlyExpectedWrites, refreshed_ui_matches_selection: refreshedLabel === label, backend_successful_submissions: writes.filter(row => row.outcome === 'business_success').length, authoritative_after: after, refreshed });
+  if (!passed) throw new Error('customer_selection_readback_not_proven');
+}
+
 async function verifyFieldValidation(page, report, beforeFacts) {
   const code = field(page, 'project_code');
   await code.waitFor({ state: 'visible', timeout: 10000 });
@@ -761,6 +827,10 @@ async function main() {
     if (!before || before.id !== PROJECT_ID) throw new Error(`project ${PROJECT_ID} authoritative read failed`);
     if (WRITE_MODE) assertOwnedProjectFacts(WRITE_AUTHORITY, beforeFacts);
     report.preflight = { page_state: pageState, authoritative_read: before, authoritative_facts: beforeFacts };
+    if (RELATION_WRITE_ONLY) {
+      await verifyCustomerRelationWrite(page, report, beforeFacts);
+      return;
+    }
     if (RELATION_ONLY) {
       await verifyCustomerRelation(page, report, beforeFacts);
       return;

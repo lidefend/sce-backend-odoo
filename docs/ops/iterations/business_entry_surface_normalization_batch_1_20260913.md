@@ -36,6 +36,14 @@ B01第二次复验候选`7f85e700daad441641760d86bd636e28b9c05de4`：L1迭代、
 
 窄屏诊断进一步收敛：初次窄屏进入的只读对照scrollWidth=390；完整桌面搜索取消→390px序列在等待布局条件后仍超时，不能归因测量过早。`/tmp/frontend-f1-relation-overflow-diagnostic-r2-20260923/summary.json`记录scrollWidth=542，可见元素没有对应542px边界；关系输入内部AutoComplete无候选内容但会创建visibility:hidden浮层，沿本地依赖源码确认popupProps可覆盖内部visible。P0仅在ProfessionalMany2oneFieldControl关闭该重复候选层，继续由现有外层ScPopover承接真实关系选项，不改变其他AutoComplete消费者。P4增加窄屏几何条件等待及失败尺寸采集；首次尺寸采集误放预检位置未取得失败尺寸，修到catch后才使用证据。待新载体复验；全部中间失败仍保留，不用静态通过替代业务通过。
 
+`74f5de1e`受管复验三场景passed（`/tmp/frontend-f1-relation-browser-r4-20260923/summary.json`）：query/blur不修改、搜索取消与无遮挡、桌面取消后390px重开/ESC；零业务写请求，权威facts不变。独立复核接受修复边界，最终以本次实测消除窄屏疑点。不能因此关闭明确选择、保存及失败恢复。
+
+接续P4限定既有runner `.mjs/.sh` 和其unit文件追加互斥`RELATION_WRITE_ONLY`，使用同专用项目3928、同数据库/公司/filestore及同受管凭据；只从契约返回的可选关系中明确选中既有记录，不创建客户。阻断一次该项目write验证保留客户草稿，再重试保存、权威回读与刷新比对全部项目/责任事实；对象沿原batch cleanup。此为验收工具层，非业务规则，权限/对象门禁不变。L1与35条runner单测passed，产品源码仍74f5de1e，P4工具dirty三路径；原三场景证据不受新分支影响，不重跑其矩阵。
+
+客户选择写入初测仅为诊断（`/tmp/frontend-f1-customer-write-20260923/summary.json`，产品74f5de1e、P4三路径dirty）：pm1明确选择契约候选6390，模拟首次项目write网络失败后客户草稿可编辑且权威facts不变；同载荷重试仅一次业务成功，刷新与后端全facts一致，生命周期draft及责任33/34不变。未创建或修改客户6390，只改专用项目3928关联。前述三场景为有效实测，本次两场景因下述验收工具缺口撤回passed结论，尚不覆盖查询失败页面恢复、重复名称列、创建权限消费者及F2离页/竞态。只读角色直接write403原9b3证据可携带：本次后端改动仅查询domain构造、不改write权限/路由；这不是新候选全量权限验收。
+
+独立复核撤回客户写入初测的验收资格：旧fixture的write_scope漏partner_id，候选ID又取自提交载荷而非所点候选，全变更监听在选择后启动，刷新缺UI值断言。该次仅登记诊断，项目3928/责任33/34已cleanup且inspect确认existing_batch=false（`/tmp/frontend-f1-rel-cleanup-20260923.log`、`/tmp/frontend-f1-rel-after-cleanup-20260923.log`）。本次明确的P4授权扩展在原fixture.write_scope登记partner_id，runner在浏览器前强制该字段范围；P0选项仅增加data-record-id供绑定真实候选，无行为变化。选择前监听全部api变更并阻断非目标单字段写入，期望ID取自候选，验证isEditable和刷新UI标签。失败注入仅拦本项目预期partner_id写入；成功只允许一次。同域非零定向36测试及关系L2通过，准备新精确载体重新验证写入；原只读3场景源代码行为未变可携带。
+
 边界：客户状态和浮层为P0现有ProfessionalMany2oneFieldControl/useRecordFormState/useRelationRuntime及RelationSearchDialog；查询/错误分类为P0 smart_core通用handler，后端拥有搜索/错误语义，前端只执行。会计JSON先核验类型契约来源再决定Resolver/Registry或后端修复；导航沿现有Runtime，不写客户/会计/收款特例。风险覆盖所有many2one消费者，L1语法/静态→L2关系字段/生命周期非零定向测试→受管客户真实旅程；原F1名称/权限证据只在相关输入未变时携带。广泛浏览器矩阵、完整Quick和远端发布在已知前层阻断消除前不运行。
 
 基线运行结果绑定 `61b8d712`；修复后运行结果绑定 `9b3d65d2`，定向测试绑定提交前相同源码及明确 dirty 范围。后续仅文档变化不使产品测试失效。L0/L1/L2 是本地迭代证据，不代表部署或远端 CI。
