@@ -69,3 +69,23 @@ MemorySwapMax2G、OOMPolicy=kill和LimitCORE=0；使用现有2GB swap，不增�
 P4 / CI reporting: PR6 merged into f3c97b9194159a8de717d8ddb6dbd7262d659ee5 after all four current-source checks succeeded. The periodic reporter subsequently rejected the normal merged lifecycle as a stale open-PR snapshot. Split reporting-only historical identity from execution identity. Two platform reads must agree on merged state, merge timestamp, original PR/repository/ref/head/base and PR ID; only an exact valid successful stored receipt can restore historical success. Open-PR drift, API failure, closed/unmerged PRs and failed/incomplete receipts remain fail-closed. No new task execution or merge eligibility is granted by the historical snapshot.
 
 Validation: 46 focused identity/queue/worker tests passed, including historical restoration and identity/receipt rejection. Full CI remains remote. Update and readback evidence will remain in existing external artifacts. PR6 source receipt is retained; do not rerun its product build to repair presentation.
+
+## 剩余历史控制器资产的最小承接
+
+P4 控制器提取自 113ad564 的两个实现/测试文件，父版本与当前主线完全一致；
+不承接旧 demo、浏览器验收和过时上下文日志。增加 agent_progress 的健壮性修复。
+
+已完成：恢复提示携带历史上下文；无 final 的失败仍保存可读进度；日志缺失、
+非对象事件或读取失败不阻断失败终态持久化。无 session 重启仅接受任务目录、
+完整 Git 身份和干净工作区匹配，且事件流只含启动/明确失败事件的情况。
+任何命令开始、命令完成、未知或畸形事件均拒绝自动重启，需先核对已发生的写入。
+已有 session 的恢复机制保留，完整防重放目标仍为 active，不宣称已经完成。
+
+36 项隔离控制器测试通过，独立复核通过；未启动真实控制器、发送通知或修改运行服务。
+完整 CI 仍交远端。历史审计和工作流改动已由后续主线承接；旧 detail-operation
+对原生集合一刀切禁删的方案已被后续按动作区分的权威实现替代，保留原分支供追溯，
+不恢复旧行为。原始分支分类与指纹证据保存在 local-historical-review.md。
+
+本次承接基线为 d7433e95（含 PR6、PR7）。控制器及测试内容与已复核的315a2561一致，CI状态修复保留。最终验证、发布和合并结果见既有外部证据索引。
+
+当前基线定向验证：python3 -m unittest scripts.verify.test_codex_agent_controller 实际运行30项并通过；历史36项保持原证据范围，不作为本次新计数。一次尝试不存在的test_agent_progress模块仅为命令选择错误，已核对agent_progress测试位于上述控制器套件；未据其生成通过证据。ci.local.iteration及generated_reports刷新通过。
