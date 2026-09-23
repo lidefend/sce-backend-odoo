@@ -41,3 +41,14 @@ esbuild 的匿名驻留内存约 691 MiB；主机物理内存约 1.7 GiB。Worke
 GOMAXPROCS2、Node old-space512MiB、UV线程2和make串行。此为资源调优而非
 硬内存隔离承诺；不删除测试、放宽门禁或把完整CI移到本地。最终有效性以新SHA
 在远端完成同一门禁为准；失败仍阻断合并。
+
+## 专用 CI 主机收敛与构建预算
+
+所有者确认1.95.2.123仅用于CI，非CI数据无需保留，授权删除旧业务负载。
+移除两套历史Odoo栈的8个容器和6个卷，清除闲置Docker镜像/构建缓存；
+停用Docker/containerd及旧GitHub runner自启动，删除旧部署目录和runner工作缓存。
+保留Gitee receiver/worker、凭据、固定运行时、离线依赖、Nginx TLS入口及系统安全服务。
+
+b026的远端单元测试已完成，但Vite构建命中人为512MiB Node堆上限；
+清理后将可信Node old-space预算调至1024MiB，其他Go/并发限制保持。
+此前运行和维护中断不能作成功证据，新提交必须重新完成全部远端门禁。
