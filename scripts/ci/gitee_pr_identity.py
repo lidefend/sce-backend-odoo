@@ -101,6 +101,28 @@ def observe(api, *, number, source, head, base, clock=time.time):
             "atomic_merge_guarantee": False, "integration_eligible": False}
 
 
+
+def observe_merged(api, plan):
+    """Historical reporting only: never produces an execution snapshot."""
+    first = None
+    for _ in range(2):
+        row = api.get('/pulls/' + str(plan['pr_number']))
+        if row.get('state') != 'merged' or not row.get('merged_at'):
+            raise ReportError('pr_not_merged')
+        # Reuse exact PR/repository/ref/SHA validation, without testing mutable
+        # live branch refs: main advances and source branches may be deleted.
+        identity = pr_identity({**row, 'state': 'open'}, number=plan['pr_number'],
+                               source=plan['source_branch'], head=plan['head_sha'],
+                               base=plan['base_sha'])
+        if identity['pr_id'] != plan['platform_snapshot']['pr_id']:
+            raise ReportError('pr_id_mismatch')
+        current = {**identity, 'merged_at': row['merged_at']}
+        if first is not None and current != first:
+            raise ReportError('merged_identity_drift')
+        first = current
+    return {**first, 'historical_merged': True}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--token-file", required=True)

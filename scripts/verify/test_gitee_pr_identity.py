@@ -91,6 +91,35 @@ class IdentityTests(unittest.TestCase):
                 self.run_observe(clock=lambda: next(ticks))
 
 
+
+class MergedIdentityTests(unittest.TestCase):
+    def test_historical_snapshot_does_not_read_live_branches_or_authorize_execution(self):
+        from scripts.ci.gitee_pr_identity import observe_merged
+        from scripts.ci.gitee_formal_executor import verify_snapshot
+        row=rows()[0];row.update(state='merged',merged_at='2026-09-23T09:00:00Z')
+        p=dict(pr_number=7,source_branch=SOURCE,head_sha=HEAD,base_sha=BASE,
+               repository=REPOSITORY,target_branch='main',platform_snapshot={'pr_id':123})
+        api=Mock();api.get.side_effect=[row,copy.deepcopy(row)]
+        result=observe_merged(api,p)
+        self.assertTrue(result['historical_merged'])
+        self.assertEqual([c.args[0] for c in api.get.call_args_list],['/pulls/7']*2)
+        with self.assertRaises(ValueError): verify_snapshot(p,result)
+
+    def test_merged_identity_rejects_drift_closed_fork_and_wrong_sha(self):
+        from scripts.ci.gitee_pr_identity import observe_merged
+        p=dict(pr_number=7,source_branch=SOURCE,head_sha=HEAD,base_sha=BASE,platform_snapshot={'pr_id':123})
+        good=rows()[0];good.update(state='merged',merged_at='2026-09-23T09:00:00Z')
+        variants=[]
+        for key,value in [('state','closed'),('state','open'),('merged_at',None),('id',999),('number',8)]:
+            r=copy.deepcopy(good);r[key]=value;variants.append(r)
+        for side in ['head','base']:
+            r=copy.deepcopy(good);r[side]['sha']='c'*40;variants.append(r)
+            r=copy.deepcopy(good);r[side]['repo']['id']=999;variants.append(r)
+        for r in variants:
+            api=Mock();api.get.side_effect=[good,r]
+            with self.subTest(row=r),self.assertRaises(ReportError):observe_merged(api,p)
+
+
 class ReadAPITests(unittest.TestCase):
     def api(self):
         api = object.__new__(ReadAPI)
