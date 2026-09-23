@@ -18,6 +18,7 @@ const DB_NAME = process.env.DB_NAME || EXPECTED_DB;
 const READ_ONLY = process.env.READ_ONLY === '1';
 const PREFLIGHT_ONLY = process.env.PREFLIGHT_ONLY === '1';
 const NETWORK_FAILURE_RECOVERY = process.env.NETWORK_FAILURE_RECOVERY === '1';
+const PERMISSION_ONLY = process.env.PERMISSION_ONLY === '1';
 const VALIDATE_ONLY = process.env.P4_RUNNER_VALIDATE_ONLY === '1';
 const PM_LOGIN = process.env.PM_LOGIN || 'demo_role_project_manager';
 
@@ -173,6 +174,7 @@ if (FRONTEND_URL !== EXPECTED_FRONTEND_URL) deny(`FRONTEND_URL must be exactly $
 validateProductCandidate();
 if ((READ_ONLY || PREFLIGHT_ONLY) && NETWORK_FAILURE_RECOVERY) deny('read-only preflight cannot enable failure injection or retry');
 const WRITE_MODE = !READ_ONLY && !PREFLIGHT_ONLY;
+if (PERMISSION_ONLY && (!WRITE_MODE || NETWORK_FAILURE_RECOVERY)) deny('permission checks require dedicated write authority and no recovery injection');
 const WRITE_AUTHORITY = WRITE_MODE ? loadWriteAuthority(PROJECT_ID) : null;
 const configuredProjectName = String(process.env.PROJECT_NAME ?? '').trim();
 if (WRITE_MODE && configuredProjectName && configuredProjectName !== WRITE_AUTHORITY.project.name) deny('PROJECT_NAME does not match governed authority');
@@ -578,6 +580,93 @@ async function saveWithFailureRecovery(page, writes, report, draftBeforeFailure)
   if (!retryPassed) throw new Error(`retry_evidence_incomplete:${JSON.stringify({ writes: writes.length, outcome: retryWrite.outcome, samePayload, changedFromInitial, refreshConsistent, operationsApplied })}`);
 }
 async function dirty(page) { return /未保存|已修改\s*\d+\s*项/.test(normalize(await page.locator('.record-header-context:visible').innerText().catch(() => ''))); }
+async function verifyFieldValidation(page, report, beforeFacts) {
+  const code = field(page, 'project_code');
+  await code.waitFor({ state: 'visible', timeout: 10000 });
+  const writableCode = await code.locator('input:not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly]), [contenteditable="true"]').count();
+  report.scenarios.push({ name: 'system_code_readonly', status: writableCode === 0 ? 'PASS' : 'FAIL', editable_controls: writableCode });
+  if (writableCode) throw new Error('system_code_is_editable');
+  const writes = recordWriteRequests(page);
+  report.writes = writes;
+  await fillField(page, 'name', '');
+  await page.getByRole('button', { name: /^保存(?:修改)?$/, exact: true }).first().click();
+  const feedback = page.locator('[data-semantic-component="ProductFormErrorSummary"]:visible, .submission-feedback--error:visible').first();
+  await feedback.waitFor({ state: 'visible', timeout: 10000 });
+  const invalid = await field(page, 'name').locator('[aria-invalid="true"]').count();
+  const unchanged = sameJson(beforeFacts, await readProjectFacts(page));
+  await page.screenshot({ path: path.join(OUT, 'required-field-error.png'), fullPage: true });
+  await fillField(page, 'name', beforeFacts.project.name);
+  const recovered = await field(page, 'name').locator('input').first().inputValue() === beforeFacts.project.name;
+  const passed = invalid > 0 && unchanged && recovered && writes.length === 0;
+  report.scenarios.push({ name: 'required_field_error_and_draft_recovery', status: passed ? 'PASS' : 'FAIL', invalid_controls: invalid, write_attempts: writes.length, authoritative_unchanged: unchanged, draft_editable_after_error: recovered });
+  if (!passed) throw new Error('required_field_recovery_not_proven');
+  const rejected = await intent(page, 'api.data', {
+    op: 'write', model: 'project.project', ids: [PROJECT_ID],
+    vals: { name: '', description: 'This rejected request must not persist' }, context: {},
+  }, true);
+  const serverUnchanged = sameJson(beforeFacts, await readProjectFacts(page));
+  const serverRejected = !rejected.ok && rejected.status >= 400
+    && JSON.stringify(rejected.error).includes('项目名称不能为空') && serverUnchanged;
+  report.scenarios.push({ name: 'server_required_field_rejected_without_partial_write', status: serverRejected ? 'PASS' : 'FAIL', http_status: rejected.status, reason_code: rejected.error?.code, authoritative_unchanged: serverUnchanged });
+  if (!serverRejected) throw new Error('server_required_field_rejection_not_proven');
+  const validName = `${beforeFacts.project.name} · 已核验`;
+  await fillField(page, 'name', validName);
+  await save(page);
+  const savedFacts = await readProjectFacts(page);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('[data-field-name="name"]').first().waitFor({ timeout: 30000 });
+  const refreshedFacts = await readProjectFacts(page);
+  const recoveredSave = savedFacts.project.name === validName
+    && savedFacts.project.lifecycle_state === beforeFacts.project.lifecycle_state
+    && sameJson(savedFacts, refreshedFacts);
+  report.scenarios.push({ name: 'valid_save_after_field_error_and_refresh', status: recoveredSave ? 'PASS' : 'FAIL', authoritative_name: savedFacts.project.name, refresh_consistent: sameJson(savedFacts, refreshedFacts), lifecycle_unchanged: savedFacts.project.lifecycle_state === beforeFacts.project.lifecycle_state });
+  if (!recoveredSave) throw new Error('valid_save_after_field_error_not_proven');
+  return refreshedFacts;
+}
+async function verifyPermissionBoundary(browser, writerPage, report, beforeFacts) {
+  const reader = WRITE_AUTHORITY.role_candidates.project_read_only.find((row) => row.login === READ_LOGIN);
+  const access = WRITE_AUTHORITY.effective_project_access.project_read_only.find((row) => row.login === READ_LOGIN);
+  if (!reader || reader.id === WRITE_AUTHORITY.writer.id || !access || access.acl_write !== false || !access.acl_read || !access.record_read) {
+    deny('permission principal must be a distinct governed reader with denied write ACL');
+  }
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' });
+  const page = await context.newPage();
+  report.roles.readonly = { login: READ_LOGIN, diagnostics: recordDiagnostics(page) };
+  try {
+    const identity = await login(page, READ_LOGIN);
+    if (Number(identity.init?.user?.id) !== Number(reader.id) || Number(identity.init?.user?.company_id) !== Number(reader.company_id)) deny('reader runtime identity mismatch');
+    const before = await readProject(page);
+    if (before?.id !== PROJECT_ID) deny('reader cannot read exact dedicated project');
+    // A direct, same-value request tests server enforcement without advancing a
+    // lifecycle or changing business facts even if enforcement is broken.
+    const rejected = await intent(page, 'api.data', {
+      op: 'write', model: 'project.project', ids: [PROJECT_ID], vals: { name: before.name }, context: {},
+    }, true);
+    const code = String(rejected.error?.code || '');
+    const unchanged = sameJson(beforeFacts, await readProjectFacts(writerPage));
+    const passed = rejected.ok === false && /ACCESS|FORBIDDEN|PERMISSION|DENIED/i.test(code) && unchanged;
+    report.scenarios.push({ name: 'readonly_direct_write_denied', status: passed ? 'PASS' : 'FAIL', principal_id: reader.id, company_id: reader.company_id, role_code: identity.init?.role_surface?.role_code, http_status: rejected.status, reason_code: code, authoritative_unchanged: unchanged });
+    if (!passed) throw new Error(`readonly_write_denial_not_proven:${JSON.stringify({ code, ok: rejected.ok, unchanged })}`);
+    // Deliberately revisit the writer's URL as a refusal counterexample.
+    const targetUrl = new URL(writerPage.url());
+    const targetRoute = targetUrl.pathname + targetUrl.search;
+    await page.goto(targetUrl.href, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForURL((url) => url.pathname === '/access-denied'
+      && url.searchParams.get('reason') === 'NAVIGATION_AUTHORITY_DENIED'
+      && url.searchParams.get('from') === targetRoute, { timeout: 30000 });
+    await page.getByText(/无权限|没有权限|访问受限|权限不足/).first().waitFor({ state: 'visible', timeout: 10000 });
+    const enabledWrites = await page.getByRole('button', { name: /^(保存修改|保存|提交立项)$/ }).evaluateAll((buttons) => buttons.filter((button) => !button.disabled && button.getClientRects().length).length);
+    report.scenarios.push({ name: 'readonly_write_actions_unavailable', status: enabledWrites === 0 ? 'PASS' : 'FAIL', enabled_write_actions: enabledWrites, target_route: targetRoute, reason_code: 'NAVIGATION_AUTHORITY_DENIED', url: page.url() });
+    await page.screenshot({ path: path.join(OUT, 'readonly-denial.png'), fullPage: true });
+    if (enabledWrites) throw new Error('readonly_write_action_enabled');
+  } catch (error) {
+    report.roles.readonly.failure_context = await page.evaluate(() => ({ url: location.href, text: (document.body.innerText || '').slice(0, 1500) })).catch(() => ({ url: page.url() }));
+    await page.screenshot({ path: path.join(OUT, 'readonly-failure.png'), fullPage: true }).catch(() => {});
+    throw error;
+  } finally {
+    await context.close();
+  }
+}
 async function main() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' });
@@ -600,6 +689,11 @@ async function main() {
     if (!before || before.id !== PROJECT_ID) throw new Error(`project ${PROJECT_ID} authoritative read failed`);
     if (WRITE_MODE) assertOwnedProjectFacts(WRITE_AUTHORITY, beforeFacts);
     report.preflight = { page_state: pageState, authoritative_read: before, authoritative_facts: beforeFacts };
+    if (PERMISSION_ONLY) {
+      const validatedFacts = await verifyFieldValidation(page, report, beforeFacts);
+      await verifyPermissionBoundary(browser, page, report, validatedFacts);
+      return;
+    }
     if (PREFLIGHT_ONLY) {
       report.scenarios.push({ name: 'readonly_save_preflight', status: pageState.fields.length > 0 && before.id === PROJECT_ID ? 'PASS' : 'FAIL', save_controls: await page.locator('.template-page-header-actions button').allTextContents() });
       return;
@@ -640,13 +734,16 @@ async function main() {
     else {
       const roleInput = createdRow.locator('input[placeholder="请选择角色"]').first();
       if (await roleInput.count()) { await roleInput.click(); await page.locator('.t-select-option').filter({ hasText: '项目经理' }).first().click(); }
-      const userInput = createdRow.locator('input[placeholder="请选择责任人"]').first();
-      if (await userInput.count()) { await userInput.click(); await page.locator('.t-select-option').filter({ hasText: 'Demo-项目经理A' }).first().click(); }
+      // Empty relation controls change their placeholder before the first query.
+      // Bind the accessible field identity and require the real selection.
+      const userInput = createdRow.getByRole('textbox', { name: '责任人', exact: true });
+      await userInput.click();
+      await page.locator('.t-select-option:visible').filter({ hasText: 'Demo-项目经理A' }).first().click();
     }
     const rowInputs = createdRow.locator('input');
     if (await rowInputs.count()) await rowInputs.last().fill('P4 责任新增');
     const roleValue = await createdRow.locator('input[placeholder="请选择角色"]').inputValue().catch(() => '');
-    const userValue = await createdRow.locator('input[placeholder="请选择责任人"]').inputValue().catch(() => '');
+    const userValue = await createdRow.getByRole('textbox', { name: '责任人', exact: true }).inputValue().catch(() => '');
     if (await roleSelect.count() === 0 && (!roleValue || !userValue)) throw new Error(`responsibility_selection_missing:${JSON.stringify({ role: Boolean(roleValue), user: Boolean(userValue) })}`);
     if (!await dirty(page)) throw new Error('draft did not become dirty');
     const draftBeforeFailure = NETWORK_FAILURE_RECOVERY ? await captureDraftSnapshot(page) : null;

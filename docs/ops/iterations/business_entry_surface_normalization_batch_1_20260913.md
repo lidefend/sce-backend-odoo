@@ -1,5 +1,56 @@
 # Batch-1 项目资料办理面交付记录
 
+## 2026-09-23 F0 → F1 当前批次（本节优先于历史验收结论）
+
+目标：自定义前端成为正式业务入口；89 个正式入口均有去向，按职责取得真实操作及权限证据。
+基线 `61b8d7121b28d1e1f9126e7c03ab01bce57cee62`；分支
+`feature/frontend-business-entry-closure`；当前为迭代身份，基线 HEAD 加下述 P0/P1/P4 dirty 范围，未冻结。
+
+- 唯一入口矩阵：[frontend_business_entry_acceptance_v1.csv](../../product/frontend_business_entry_acceptance_v1.csv)。复用锁定菜单策略的 89 个稳定 XML ID，关联旧覆盖数据，不重新扫描全仓。旧数字 action/menu ID 不作为当前环境权威。
+- 唯一缺口清单：[frontend_shared_foundation_gap_audit_20260909.md](frontend_shared_foundation_gap_audit_20260909.md) 的 F0/F1 当前节；本文件为唯一当前批次记录。历史归档不重写为本轮通过。
+- F0 去向：86 项本轮验收（项目资料 F1，其余 F3）；3 项会计入口因旧覆盖表缺少同身份行，明确阻塞 G-F0-02。零无归属、零未经确认排除。旧表额外的 WBS 和旧业务映射不扩大本轮范围。
+- 角色列保留后端菜单链与 action group 权威，不能当作登录角色或最终写权限；实际账号、company、ACL、record rule 随每项旅程绑定。`ready/structural/readable_fallback` 仅为历史实现描述，所有业务验收状态起始 `not_run`。
+- F1 范围：项目资料进入、查询、名称/日期/说明/责任明细编辑、保存、刷新回读、错误定位、权限拒绝及失败草稿恢复。未保存草稿跨刷新持久化不在承诺范围；保存不推进项目生命周期。
+
+所有权：F0 证据登记与环境恢复属 P4；项目标准规则属 P1 `smart_construction_core`；通用执行属 P0 `frontend/apps/web`。沿 Decoder → Store → Resolver → Runtime → Registry；规则由后端裁决，前端不补业务语义。当前只修真实反例暴露的项目名称校验：P0 编辑提交按契约 required 校验实际提交字段；P1 `project_core.write` 在副作用前拒绝显式空名称。不改 schema、权限、数据库结构或默认路由，不加入前端模型名判断；无须模块升级，受管重启加载 Python。F2 竞态/occurrence 与 F4 美化后置。
+
+本轮文件边界：P0 `saveRecordHelpers.ts`、`valueUtils.ts` 与已有 `create_record_user_journey_test.ts`；P1 `models/core/project_core.py` 与已注册 `test_project_state_transition_validation.py`；P4 既有项目写入 browser `.mjs/.sh`、fixture `.py`、对应单元测试，以及本文、缺口清单、89 项矩阵。风险：共享编辑校验影响所有契约表单；通过非零 required 类型/局部更新反例和项目实测控制影响。回滚按 P0/P1/P4 提交分别回退，测试对象按命名空间清理。
+
+环境：复用 `local.dev` / `sc-local-dev` / `sc_dev_demo` / `^sc_dev_demo$` / 18081，候选静态前端 5176；数据库角色为隔离持久开发租户，非客户生产、非控制库、非行业目录。filestore 为 `sc_local_dev_odoo_data`，数据库和 Redis 卷沿用 `sc_local_dev_*`。凭据只来自受管 `.env.dev`，不复制、不轮换。测试对象仅 `codex_p4_project_profile_write` 命名空间的 `frontend-f1-20260923`；不重置数据、不创建用户。
+
+### 当前结果索引
+
+所有结果绑定上述 HEAD；后续仅文档变化不使产品测试失效。L0/L1/L2 是本地迭代证据，不代表部署或远端 CI。
+
+| 层 | 命令/证据 | 结果 | 归因和下一步 |
+| --- | --- | --- | --- |
+| L0 | preflight + worktree/HEAD | passed：起始 clean，唯一工作树 | 从 main 精确基线建立专题分支 |
+| L1 | `make ci.local.iteration` | passed：16 tests | 推荐器按旧 origin/main 提示 86 个历史路径；本轮不采纳为扩大范围的依据 |
+| L2 | `python3 -m unittest scripts.verify.test_local_dev_project_profile_write_fixture` | passed：29 tests | 验收工具原有安全边界 |
+| L2 | `make verify.frontend.create_record_user_journey.unit verify.frontend.canonical_form_presenter.unit` | passed：6 旅程检查点；170+10 呈现用例 | `/tmp/frontend-f1-l2-20260923.log`；不替代真实写入 |
+| L0 环境 | `make local.dev.ready local.dev.health` | 首次 failed：HTTP 403 | environment_defect：运行容器仍挂载已退役的旧专题目录 |
+| L0 恢复 | `make local.dev.up`；`SC_SOURCE_REVISION=<基线完整 SHA> make local.dev.up` | passed | 复用原 project/库/卷，重新挂载当前代码；补齐运行态版本声明，无模块升级 |
+| L0 恢复核验 | `make local.dev.health` | passed | `/tmp/frontend-f0-health-20260923.log` |
+| L3 载体 | `CANDIDATE_GIT_HEAD=<基线 SHA> CONFIRM_LOCAL_DEV_CANDIDATE_FRONTEND=SERVE_FROZEN_LOCAL_DEV_CANDIDATE make local.dev.candidate.frontend.up` | passed | `/tmp/frontend-f1-carrier-20260923.log`，只构建当前业务验收载体 |
+| L0 精确运行身份 | 同上身份参数 `make local.dev.candidate.frontend.health` | passed（首次因版本未声明拒绝，恢复事实见上） | `/tmp/frontend-f1-identity-recovered-20260923.log`；后端源码/版本/库/filestore 同候选 |
+| L3 对象准备 | `make local.dev.project_profile_write_fixture P4_PROJECT_PROFILE_MODE=prepare P4_PROJECT_PROFILE_BATCH=frontend-f1-20260923 P4_PROJECT_PROFILE_CONFIRM=PREPARE` | passed | 项目 3919、公司 1、责任明细 26/27；pm1 写 ACL/规则允许；只读账号 ACL 拒绝。`/tmp/frontend-f1-prepare-20260923.log` |
+| 批次业务复核 | `local.dev.project_profile_write_browser`，项目 3919 | passed（保存/恢复子范围） | `/tmp/frontend-f1-browser-r2-20260923/summary.json`：网络失败草稿保留、真实重试、完整明细回读与刷新一致；生命周期未变 |
+| 清理 | 同批次 `cleanup` → `inspect` | passed | `/tmp/frontend-f1-cleanup-20260923.log`、`/tmp/frontend-f1-after-cleanup-20260923.log`；项目3919及责任明细27/28已清理，批次不存在 |
+| 权限子范围 | `PERMISSION_ONLY=1 … local.dev.project_profile_write_browser`，项目3920 | passed | `/tmp/frontend-f1-permission-r2-20260923/summary.json`：user37/company1，实际 role_code=project_member；直接同值 write 403/PERMISSION_DENIED、权威事实不变；精确目标转入NAVIGATION_AUTHORITY_DENIED拒绝页 |
+| F0 安装版本 | fixture inspect | passed | `/tmp/frontend-f0-installed-version-20260923.log`：smart_core 17.0.1.1.12、smart_construction_core 17.0.0.168，state=installed，与源码一致 |
+| F1 字段反例 | 项目3920清空名称并保存 | failed：product_defect | `/tmp/frontend-f1-counterexamples-20260923/summary.json`：系统编号只读通过；name空字符串却写入成功，触发P0/P1修复。该专用对象已cleanup，见`/tmp/frontend-f1-auth-cleanup-20260923.log` |
+| L2 P0 修复 | `make verify.frontend.create_record_user_journey.unit` | passed | 编辑空文本/隐藏已提交字段/关系必填/未修改历史空字段，独立审查又补required boolean=false合法反例；`/tmp/frontend-f1-required-l2-boolean-20260923.log`，10新增用例+原6检查点 |
+| L2 P1 修复 | `make local.dev.test MODULE=smart_construction_core TEST_TAGS=<3个完整方法>` | passed（3方法合计） | 首次前缀选择0 tests判失败；精确选择3方法中批量拒绝通过，2方法因Html规范化断言失败；只改测试比较规范化前值，重跑2方法通过。原始日志`/tmp/frontend-f1-name-l2-exact-20260923.log`、`/tmp/frontend-f1-name-l2-html-20260923.log`，不掩盖失败 |
+| L2 P4 | `python3 -m unittest scripts.verify.test_local_dev_project_profile_write_fixture` | passed：31 tests | 增加专用对象权限反例模式的越界拒绝测试；原有范围/身份门禁保持 |
+| L3/F1 修复后 | 新候选载体 + 字段失败/服务端拒绝/恢复后保存/权限拒绝 | not_run | 等待本地责任提交和新载体加载；不沿用旧版本字段反例结果 |
+| L5 | 独立复核 / 远端 CI / 合并 | not_run（源码消费者只读审查进行中） | 必需业务前层未完成；不运行本地完整 Quick 或重建 CI |
+
+高风险写入前已确认对象命名空间、库与公司及原始明细；收尾必须用同批次 `cleanup` 检查引用、清理并 `inspect` 回读。开发实测不升级为目标环境部署验收。
+
+独立复核：已确认P0布尔false不能视空并补反例，P4按钮计数必须绑定精确拒绝页（已修），5个form-only入口不虚构列表职责（已修）。项目原生视图来源可承接；较历史候选变化的decoder/presenter/页头/关系/导航只保留历史观察，不冒称当前验证。新字段校验仅影响保存前置；已有网络错误处理/明细序列化未改，正向原证据保留来源，修复后补实际保存与刷新。
+
+当前状态：F0 范围去向已登记、受管版本核验完成；F1 名称校验及失败恢复补丁待修复后实测，F1全部验收未完成｜未合入｜未部署｜用户验收未完成。初步排期以工作量而非组件数估算：本补丁需1次受影响真实复验与独立复核；F2至少2个独立机制修复（竞态、occurrence），各需定向反例与项目回归；F3按89项职责逐域排期，3项会计入口先解除身份阻塞，目前不承诺整体完成日期。
+
 [English](business_entry_surface_normalization_batch_1_20260913.en.md)
 
 ## 1. 本轮变更

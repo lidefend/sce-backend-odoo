@@ -95,6 +95,7 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
             "READ_ONLY",
             "PREFLIGHT_ONLY",
             "NETWORK_FAILURE_RECOVERY",
+            "PERMISSION_ONLY",
             "P4_PROJECT_PROFILE_BATCH",
             "P4_TOOL_CANDIDATE_SHA",
             "P4_PROJECT_PROFILE_AUTHORITY_JSON",
@@ -354,6 +355,20 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
     def test_write_scope_is_explicit(self):
         for field in ("name", "date_start", "date", "description", "responsibility_ids"):
             self.assertIn('"%s"' % field, PY)
+
+    def test_permission_probe_requires_owned_write_scope(self):
+        self._assert_direct_denied(
+            "P4_PROJECT_PROFILE_BATCH must be explicit",
+            {"PERMISSION_ONLY": "1"}, remove=("P4_PROJECT_PROFILE_BATCH",),
+        )
+
+    def test_permission_probe_cannot_reuse_readonly_or_recovery_modes(self):
+        for mode in ("READ_ONLY", "PREFLIGHT_ONLY", "NETWORK_FAILURE_RECOVERY"):
+            with self.subTest(mode=mode):
+                self._assert_direct_denied(
+                    "permission checks require dedicated write authority",
+                    {"PERMISSION_ONLY": "1", mode: "1"},
+                )
 
     def test_recovery_report_cannot_reuse_normal_save_or_skip_failure_feedback(self):
         self.assertIn("if (!NETWORK_FAILURE_RECOVERY)", BROWSER_MJS)

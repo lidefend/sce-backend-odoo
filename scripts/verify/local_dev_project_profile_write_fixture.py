@@ -174,6 +174,9 @@ def _summary(env, sha, batch, mode, project=None):
         "environment": os.environ.get("SC_ENVIRONMENT"),
         "dbfilter": os.environ.get("ODOO_DBFILTER"),
         "candidate_sha": sha,
+        "installed_modules": env["ir.module.module"].sudo().search([
+            ("name", "in", ["smart_core", "smart_construction_core"]),
+        ], order="name").read(["name", "state", "latest_version"]),
         "batch": batch,
         "namespace": MODULE,
         "project": {
