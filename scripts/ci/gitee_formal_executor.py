@@ -34,7 +34,7 @@ NODE_SHA256 = '8071ae0fca095a272ad698a90c7061801a86fb6392ddb81e922b68a91a4374b9'
 # Trusted, fixed tuning for the small shared CI host. Go's limit is a soft GC
 # target, not a cgroup cap; gate failures and deadlines remain authoritative.
 RESOURCE_ENV = {'GOMEMLIMIT':'256MiB', 'GOGC':'50', 'GOMAXPROCS':'2',
-                'NODE_OPTIONS':'--max-old-space-size=1024', 'UV_THREADPOOL_SIZE':'2',
+                'NODE_OPTIONS':'--max-old-space-size=2048', 'UV_THREADPOOL_SIZE':'2',
                 'MAKEFLAGS':'-j1'}
 
 IDENTITY_KEYS = ("repository", "source_branch", "target_branch", "head_sha", "base_sha", "pr_number")

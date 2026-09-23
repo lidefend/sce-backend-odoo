@@ -51,7 +51,7 @@ assert 'PRIVATE_TEST_TOKEN' not in os.environ
 assert os.environ['GOMEMLIMIT'] == '256MiB'
 assert os.environ['GOMAXPROCS'] == '2'
 assert os.environ['MAKEFLAGS'] == '-j1'
-assert os.environ['NODE_OPTIONS'] == '--max-old-space-size=1024'
+assert os.environ['NODE_OPTIONS'] == '--max-old-space-size=2048'
 assert not pathlib.Path('/etc/gitee-ci').exists()
 assert not pathlib.Path('/var/run/docker.sock').exists()
 try: socket.create_connection(('1.1.1.1',443),timeout=.1)

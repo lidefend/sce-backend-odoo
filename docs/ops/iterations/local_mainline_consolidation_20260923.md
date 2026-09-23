@@ -52,3 +52,13 @@ GOMAXPROCS2、Node old-space512MiB、UV线程2和make串行。此为资源调优
 b026的远端单元测试已完成，但Vite构建命中人为512MiB Node堆上限；
 清理后将可信Node old-space预算调至1024MiB，其他Go/并发限制保持。
 此前运行和维护中断不能作成功证据，新提交必须重新完成全部远端门禁。
+
+## 构建工作集与主机总内存保护
+
+3f00749d远端回执：public_guard112测试、professional_quality_gate30测试、
+frontend单测145测试通过；Vite build退出134，实际达到1024MiB Node堆上限。
+原GitHub前端作业使用ubuntu-latest，并非这台2GB服务器。
+本轮Node堆预算2048MiB，既有worker增加MemoryHigh896M、MemoryMax1152M、
+MemorySwapMax2G、OOMPolicy=kill和LimitCORE=0；使用现有2GB swap，不增加磁盘
+或改变全机swappiness。主机物理内存受cgroup硬限额保护，超额仍失败，不减测试。
+这些数值仍需远端真实验收；不把清理完成或单项通过当成整轮通过。

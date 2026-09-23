@@ -5,18 +5,21 @@ from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
-from scripts.ops.gitee_ci_incremental_update import Update, MODULES, INSTALL, ENVS, UNIT, CREDENTIALS, DB, UNITS, digest, env_update
+from scripts.ops.gitee_ci_incremental_update import Update, MODULES, INSTALL, ENVS, UNIT, CREDENTIALS, DB, UNITS, digest, env_update, unit_update
 
 
 class FakeUpdate(Update):
     def __init__(self, root):
-        super().__init__(root);self.calls=[];self.fail_probe=False;self.fail_start=False;self.corrupt_backup=False
+        super().__init__(root);self.calls=[];self.fail_probe=False;self.fail_start=False;self.corrupt_backup=False;self.fail_resource_readback=False
         self.states={u:'active' for u in UNITS};self.mirror='inactive';self.package_installed=False
     def token_metadata(self): return {"mode":0o600,"uid":os.getuid(),"gid":os.getgid()}
     def run(self,*args):
         self.calls.append(args)
         if args[:2]==('systemctl','show'):
             if 'UnitFileState' in args[3]:return 'disabled'
+            values={'MemoryHigh':'939524096','MemoryMax':'1207959552','MemorySwapMax':'2147483648','OOMPolicy':'kill','LimitCORE':'0'}
+            key=args[3].removeprefix('--property=')
+            if key in values:return 'infinity' if self.fail_resource_readback else values[key]
             return self.states.get(args[2],self.mirror)
         if args[:2]==('systemctl','stop'):self.states[args[2]]='inactive'
         if args[:2]==('systemctl','start'):
@@ -34,6 +37,20 @@ class FakeUpdate(Update):
 
 
 class UpdateTests(unittest.TestCase):
+    def test_resource_limits_are_bounded_idempotent_and_reject_drift(self):
+        original=b'[Service]\nReadWritePaths=/var/lib/gitee-ci /var/log/gitee-ci\nNoNewPrivileges=true\n'
+        updated=unit_update(original)
+        self.assertEqual(unit_update(updated),updated)
+        for line in [b'MemoryHigh=896M',b'MemoryMax=1152M',b'MemorySwapMax=2G',b'OOMPolicy=kill',b'LimitCORE=0',b'NoNewPrivileges=true']:
+            self.assertIn(line,updated.splitlines())
+        for bad in [updated.replace(b'MemoryMax=1152M',b'MemoryMax=infinity'), updated+b'MemoryMax=1152M\n',original.replace(b'[Service]',b'[Unit]'), original+b'MemoryMax = infinity\n',original+b'[Install]\nMemoryMax=1152M\n',original.replace(b'\n',b'\r\n')]:
+            with self.assertRaises(ValueError):unit_update(bad)
+
+    def test_effective_limit_mismatch_restores_installation(self):
+        self.u.fail_resource_readback=True
+        with self.assertRaises(RuntimeError):self.apply()
+        self.assert_restored()
+
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
         self.u=FakeUpdate(Path(self.tmp.name))
