@@ -401,3 +401,5 @@ Final Quick/push remain pending until online readback.
 - Implementation independent review passed. Recovery preserves reporter queue markers;
   restoring files does not undo remote checks. Full gate equivalence, branch rules and
   exact-head integration remain separate pending items; no business deployment.
+
+- Pre-push live gate detected noncanonical worker-env ordering after token path append; no push. Quick for cc52a69f was cancelled, not passed. Normalize after token-path insertion; add post-install idempotence assertion.18 updater tests passed; reinstall and recheck the owning gate before refreeze.

@@ -86,6 +86,7 @@ class Update:
             lines=changes[ENVS[1]].splitlines(keepends=True)
             if sum(x.startswith(b'GITEE_CHECKS_TOKEN_FILE=') for x in lines)>1: raise ValueError('duplicate checks token setting')
             changes[ENVS[1]]=b''.join(x for x in lines if not x.startswith(b'GITEE_CHECKS_TOKEN_FILE='))+('GITEE_CHECKS_TOKEN_FILE='+CHECKS_TOKEN+'\n').encode()
+        changes[ENVS[1]]=env_update(changes[ENVS[1]],worker=True)
         changes[UNIT]=unit_update(self.path(UNIT).read_bytes())
         return changes
 

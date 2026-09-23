@@ -124,6 +124,9 @@ class UpdateTests(unittest.TestCase):
         self.assertEqual(self.u.path(CHECKS_TOKEN).stat().st_mode&0o777,0o600)
         self.assertIn(b'GITEE_CHECKS_TOKEN_FILE=',self.u.path(ENVS[1]).read_bytes())
         self.assertNotIn(b'GITEE_CHECKS_TOKEN_FILE=',self.u.path(ENVS[0]).read_bytes())
+        worker=self.u.path(ENVS[1]).read_bytes()
+        self.assertEqual(worker,env_update(worker,worker=True))
+        self.assertEqual(self.u.desired(self.payload)[ENVS[1]],worker)
     def test_failed_checks_install_restores_and_removes_new_token(self):
         from scripts.ops.gitee_ci_incremental_update import CHECKS_TOKEN
         self.payload['checks_token']=base64.b64encode(b'fixture-checks-token-only').decode()
