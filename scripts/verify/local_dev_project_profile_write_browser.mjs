@@ -19,6 +19,7 @@ const READ_ONLY = process.env.READ_ONLY === '1';
 const PREFLIGHT_ONLY = process.env.PREFLIGHT_ONLY === '1';
 const NETWORK_FAILURE_RECOVERY = process.env.NETWORK_FAILURE_RECOVERY === '1';
 const PERMISSION_ONLY = process.env.PERMISSION_ONLY === '1';
+const RELATION_ONLY = process.env.RELATION_ONLY === '1';
 const VALIDATE_ONLY = process.env.P4_RUNNER_VALIDATE_ONLY === '1';
 const PM_LOGIN = process.env.PM_LOGIN || 'demo_role_project_manager';
 
@@ -175,6 +176,7 @@ validateProductCandidate();
 if ((READ_ONLY || PREFLIGHT_ONLY) && NETWORK_FAILURE_RECOVERY) deny('read-only preflight cannot enable failure injection or retry');
 const WRITE_MODE = !READ_ONLY && !PREFLIGHT_ONLY;
 if (PERMISSION_ONLY && (!WRITE_MODE || NETWORK_FAILURE_RECOVERY)) deny('permission checks require dedicated write authority and no recovery injection');
+if (RELATION_ONLY && (!WRITE_MODE || NETWORK_FAILURE_RECOVERY || PERMISSION_ONLY)) deny('relation checks require dedicated authority and an exclusive mode');
 const WRITE_AUTHORITY = WRITE_MODE ? loadWriteAuthority(PROJECT_ID) : null;
 const configuredProjectName = String(process.env.PROJECT_NAME ?? '').trim();
 if (WRITE_MODE && configuredProjectName && configuredProjectName !== WRITE_AUTHORITY.project.name) deny('PROJECT_NAME does not match governed authority');
@@ -326,7 +328,7 @@ async function intent(page, name, params, allowError = false) {
 async function readProject(page) {
   const result = await intent(page, 'api.data', {
     op: 'read', model: 'project.project', ids: [PROJECT_ID],
-    fields: ['id', 'name', 'project_code', 'date_start', 'date', 'description', 'lifecycle_state', 'responsibility_ids'], context: {},
+    fields: ['id', 'name', 'project_code', 'partner_id', 'date_start', 'date', 'description', 'lifecycle_state', 'responsibility_ids'], context: {},
   });
   return result.data.records?.[0] || null;
 }
@@ -357,6 +359,7 @@ async function readProjectFacts(page) {
       id: Number(project?.id),
       name: String(project?.name || ''),
       project_code: String(project?.project_code || ''),
+      partner_id: many2oneId(project?.partner_id),
       date_start: project?.date_start || false,
       date: project?.date || false,
       description: project?.description || false,
@@ -580,6 +583,65 @@ async function saveWithFailureRecovery(page, writes, report, draftBeforeFailure)
   if (!retryPassed) throw new Error(`retry_evidence_incomplete:${JSON.stringify({ writes: writes.length, outcome: retryWrite.outcome, samePayload, changedFromInitial, refreshConsistent, operationsApplied })}`);
 }
 async function dirty(page) { return /未保存|已修改\s*\d+\s*项/.test(normalize(await page.locator('.record-header-context:visible').innerText().catch(() => ''))); }
+async function verifyCustomerRelation(page, report, beforeFacts) {
+  const input = field(page, 'partner_id').locator('input').first();
+  const mutations = [];
+  page.on('request', (request) => {
+    let body; try { body = request.postDataJSON(); } catch { return; }
+    if (body?.intent === 'api.data' && ['write', 'create', 'unlink'].includes(body.params?.op)) {
+      mutations.push({ model: body.params.model, op: body.params.op });
+    }
+  });
+  await input.fill('AB');
+  await field(page, 'name').locator('input').first().click();
+  const unchangedDraft = await page.getByText('尚未修改', { exact: true }).isVisible();
+  if (!unchangedDraft || mutations.length) throw new Error('query_blur_mutated_relation');
+  report.scenarios.push({ name: 'customer_query_blur_preserves_draft', status: 'PASS', mutation_requests: 0 });
+
+  await input.click();
+  const popup = page.locator('.many2one-option-panel:visible');
+  await popup.waitFor({ state: 'visible' });
+  const more = popup.getByRole('button', { name: /搜索更多/ });
+  const unobscured = await more.evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    return element.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2));
+  });
+  if (!unobscured) throw new Error('relation_option_obscured');
+  await page.screenshot({ path: path.join(OUT, 'customer-popup.png'), fullPage: true });
+  const response = page.waitForResponse((res) => {
+    let body; try { body = res.request().postDataJSON(); } catch { return false; }
+    return body?.intent === 'api.data' && body.params?.model === 'res.partner'
+      && body.params?.op === 'list' && body.params?.fields?.includes('email');
+  });
+  await more.click();
+  const searched = await response;
+  if (!searched.ok()) throw new Error(`customer_search_failed:${searched.status()}`);
+  const dialog = page.locator('.relation-dialog:visible');
+  await dialog.waitFor({ state: 'visible' });
+  await page.waitForFunction(() => !document.querySelector('.relation-dialog [aria-busy="true"]'));
+  if (await dialog.getByRole('alert').count()) throw new Error('customer_search_error_visible');
+  await dialog.getByRole('button', { name: '取消', exact: true }).click();
+  await dialog.waitFor({ state: 'hidden' });
+  await page.waitForFunction(() => document.querySelector('[data-field-name="partner_id"]')?.contains(document.activeElement));
+  if (await popup.count()) throw new Error('customer_cancel_reopened_dropdown');
+  if (!(await page.getByText('尚未修改', { exact: true }).isVisible()) || mutations.length) throw new Error('customer_cancel_mutated_relation');
+  report.scenarios.push({ name: 'customer_search_cancel_and_overlay', status: 'PASS', search_http_status: searched.status(), option_unobscured: unobscured, focus_restored: true, dropdown_reopened: false });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await input.click();
+  await popup.waitFor({ state: 'visible' });
+  const narrow = await more.evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    return { visible: element.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)), overflow: document.documentElement.scrollWidth > innerWidth };
+  });
+  await page.screenshot({ path: path.join(OUT, 'customer-popup-390.png'), fullPage: true });
+  await input.press('Escape');
+  if (!narrow.visible || narrow.overflow || await popup.count() || mutations.length) throw new Error('customer_narrow_popup_or_escape_failed');
+  const unchanged = sameJson(beforeFacts, await readProjectFacts(page));
+  if (!unchanged) throw new Error('customer_relation_probe_changed_backend');
+  report.scenarios.push({ name: 'customer_narrow_escape_no_write', status: 'PASS', viewport: 390, option_unobscured: true, authoritative_unchanged: true, mutation_requests: mutations.length });
+}
+
 async function verifyFieldValidation(page, report, beforeFacts) {
   const code = field(page, 'project_code');
   await code.waitFor({ state: 'visible', timeout: 10000 });
@@ -689,6 +751,10 @@ async function main() {
     if (!before || before.id !== PROJECT_ID) throw new Error(`project ${PROJECT_ID} authoritative read failed`);
     if (WRITE_MODE) assertOwnedProjectFacts(WRITE_AUTHORITY, beforeFacts);
     report.preflight = { page_state: pageState, authoritative_read: before, authoritative_facts: beforeFacts };
+    if (RELATION_ONLY) {
+      await verifyCustomerRelation(page, report, beforeFacts);
+      return;
+    }
     if (PERMISSION_ONLY) {
       const validatedFacts = await verifyFieldValidation(page, report, beforeFacts);
       await verifyPermissionBoundary(browser, page, report, validatedFacts);

@@ -28,7 +28,7 @@ class ProfessionalRelationFieldGuardTests(unittest.TestCase):
             if path.endswith("ProfessionalMany2oneFieldControl.vue"):
                 return value.replace('<ScButton\n                type="button"', '<button\n                type="button"', 1)
             return value
-        self.assertTrue(any("five shared ScButton" in item for item in validate(read_text)))
+        self.assertTrue(any("six shared ScButton" in item for item in validate(read_text)))
 
     def test_many2one_option_cannot_regress_to_private_button(self):
         def read_text(path):

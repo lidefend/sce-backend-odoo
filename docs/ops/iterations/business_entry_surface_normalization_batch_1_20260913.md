@@ -22,6 +22,16 @@
 
 ### 当前结果索引
 
+2026-09-23用户补充巡检后调整：`fd6fb975076c81ba4d6d61db3b773b9b604e3354`已完成独立复核和推送预演，未推送/未创建PR。新证据暴露F1客户交互阻断，暂停发布和最终收口；继续同分支/同台账迭代，不继承该候选的整体可发布结论。已通过的名称校验与权限结果仍保留原身份，后续按共享依赖影响选择复验。
+
+接续顺序：①F1客户完整任务，先分离查询/选中/明确创建，补输入后blur/ESC/取消不修改、明确选中/创建、查询失败恢复与有效保存；同时修下拉遮挡和焦点自动重开。②紧接处理B02日记账JSON详情阻断，归属F3提前解除入口阻塞，不能以文本控件吞JSON。③F2处理B03通用返回与既有竞态/occurrence，补两种来源路径及取消/离页反例。三个主题顺序执行，不并行美化；新增缺口统一登记G-F1-07/08/09、G-F3-02、G-F2-04。
+
+B01首轮修复（迭代身份`fd6fb975`加19路径dirty）：普通输入/blur/无候选Enter及fallback change不登记创建；只有显式创建产生独立pending意图，真实reload/discard清除，收藏保存不取消。响应式pending投影统一参与hasChanges、字段计数及离页保护。搜索弹窗错误不呈现空态或允许确认旧行，列加载/行查询均有取消代次。复用ScPopover解决祖先层叠，保留焦点恢复并抑制自动重新展开。后端通用搜索不自动纳入原生搜索视图的非存储虚拟过滤器（显式投影/扩展仍保留）；受管日志`/tmp/frontend-f1-relation-diagnostic-20260923.log`确认旧请求由phone_mobile_search短词校验抛UserError。无业务模型特例、无schema/数据库升级。
+
+本轮定向结果：实际关系状态9反例、dirty/离页5反例及原required10/旅程6检查点通过；关系生命周期原12例+搜索失败/乱序/关闭3例+列延迟取消重开1例通过（`/tmp/frontend-f1-relation-state-l2-20260923.log`）。后端38例中新增测试首次缺fake env，补测试依赖后该1例通过，原37例复用（`/tmp/frontend-f1-relation-search-l2-20260923.log`、`/tmp/frontend-f1-relation-search-l2-r2-20260923.log`）。关系呈现/生命周期门禁通过；新增明确清除按钮后同步现有guard期望。受管runner33例通过。首次关系旅程脚本变量重名构建失败已改块级作用域，结果见`/tmp/frontend-f1-relation-intent-l2-r2-20260923.log`。独立复核发现的fallback提交、草稿对象误作代次、失败确认旧行和延迟列污染均已修复；实测仍not_run，准备新候选载体。P4仅在既有runner增加专用对象RELATION_ONLY互斥模式并回读partner_id，不触碰用户管理员会话或草稿。
+
+边界：客户状态和浮层为P0现有ProfessionalMany2oneFieldControl/useRecordFormState/useRelationRuntime及RelationSearchDialog；查询/错误分类为P0 smart_core通用handler，后端拥有搜索/错误语义，前端只执行。会计JSON先核验类型契约来源再决定Resolver/Registry或后端修复；导航沿现有Runtime，不写客户/会计/收款特例。风险覆盖所有many2one消费者，L1语法/静态→L2关系字段/生命周期非零定向测试→受管客户真实旅程；原F1名称/权限证据只在相关输入未变时携带。广泛浏览器矩阵、完整Quick和远端发布在已知前层阻断消除前不运行。
+
 基线运行结果绑定 `61b8d712`；修复后运行结果绑定 `9b3d65d2`，定向测试绑定提交前相同源码及明确 dirty 范围。后续仅文档变化不使产品测试失效。L0/L1/L2 是本地迭代证据，不代表部署或远端 CI。
 
 | 层 | 命令/证据 | 结果 | 归因和下一步 |

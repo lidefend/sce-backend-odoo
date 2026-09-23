@@ -96,6 +96,7 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
             "PREFLIGHT_ONLY",
             "NETWORK_FAILURE_RECOVERY",
             "PERMISSION_ONLY",
+            "RELATION_ONLY",
             "P4_PROJECT_PROFILE_BATCH",
             "P4_TOOL_CANDIDATE_SHA",
             "P4_PROJECT_PROFILE_AUTHORITY_JSON",
@@ -368,6 +369,20 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
                 self._assert_direct_denied(
                     "permission checks require dedicated write authority",
                     {"PERMISSION_ONLY": "1", mode: "1"},
+                )
+
+    def test_relation_probe_requires_owned_scope(self):
+        self._assert_direct_denied(
+            "P4_PROJECT_PROFILE_BATCH must be explicit",
+            {"RELATION_ONLY": "1"}, remove=("P4_PROJECT_PROFILE_BATCH",),
+        )
+
+    def test_relation_probe_mode_is_exclusive(self):
+        for mode in ("READ_ONLY", "PREFLIGHT_ONLY", "NETWORK_FAILURE_RECOVERY", "PERMISSION_ONLY"):
+            with self.subTest(mode=mode):
+                self._assert_direct_denied(
+                    "relation checks require dedicated authority",
+                    {"RELATION_ONLY": "1", mode: "1"},
                 )
 
     def test_recovery_report_cannot_reuse_normal_save_or_skip_failure_feedback(self):

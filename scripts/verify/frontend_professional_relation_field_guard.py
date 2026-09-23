@@ -31,8 +31,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
             failures.append(f"professional relation field missing marker {marker}")
     if section.count("<ProfessionalRelationFieldControl") < 2:
         failures.append("FormSection does not route many2one and many2many through the relation family")
-    if "import ScButton from '../design-system/ScButton.vue'" not in many2one or many2one.count("<ScButton") != 5:
-        failures.append("many2one options and lifecycle commands must consume five shared ScButton primitives")
+    if "import ScButton from '../design-system/ScButton.vue'" not in many2one or many2one.count("<ScButton") != 6:
+        failures.append("many2one options and lifecycle commands must consume six shared ScButton primitives")
     if "import ScInput from '../design-system/ScInput.vue'" not in section or '<ScInput\n              v-else-if="fieldConfigEditable"' not in section:
         failures.append("field configuration label editor must consume the shared ScInput primitive")
     if ".field-label-editor {\n  flex: 1 1 140px;\n  min-width: 96px;\n  max-width: 220px;\n  height:" in section:
