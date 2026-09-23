@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: AGENT-CONTROLLER-CHECKPOINT-RECOVERY
   title: agent_controller_checkpoint_recovery_without_write_replay
-  status: planned
+  status: active
   formal_product_layer: P4
   layer_target: governed_agent_controller_failed_recoverable_restart
   module: scripts/ops
@@ -28,6 +28,11 @@ goal:
     - require_checkpoint_identity_and_resume_boundary
     - fail_closed_when_checkpoint_evidence_is_missing_or_ambiguous
     - test_only_in_isolated_controller_fixtures
+  implementation_boundary: >-
+    Checkpoint context and fallback failure evidence are preserved. Sessionless
+    restart is limited to explicit pre-command failure with matching clean Git
+    identity and complete task logs. This is not full write-replay prevention.
   next_exact_step: >-
-    Open a separate P4 implementation batch after the historical retirement and
-    archive delivery is complete; do not cherry-pick or merge the old branch.
+    Integrate the narrow controller extraction through protected Gitee PR and
+    remote CI. Keep recovery after possibly executed writes blocked until an
+    authoritative per-operation reconciliation design is accepted.
