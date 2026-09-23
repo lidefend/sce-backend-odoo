@@ -382,7 +382,6 @@ import {
   resolveContractV2MainData,
   resolveContractV2ActionRules,
   resolveContractV2FormFieldMap,
-  resolveContractV2FormStructureContract,
   resolveContractV2RuntimeContract,
   resolveContractV2SearchContract,
   resolveContractV2WorkflowContract,
@@ -723,10 +722,12 @@ import {
 import {
   buildWorkflowTransitions,
   buildRouteContractContext,
-  collectRuntimeCapabilities,
+  buildContractFormPolicyContext,
   normalizeContractWarnings,
   normalizeSearchFilters,
   resolveBusinessCategoryContext,
+  resolveNativeStructureAuthority,
+  resolveRuntimeRoleCode,
   type FormContractReadiness,
 } from './contractForm/contractRuntimeVm';
 const route = useRoute();
@@ -1500,19 +1501,10 @@ const contractMetaLine = computed(() => resolveContractFormMetaLine({
 
 const showDebugActions = computed(() => renderProfile.value !== 'create');
 const showDebugActionsVisible = computed(() => showHud.value && showDebugActions.value);
-const runtimeRoleCode = computed(() => String(session.roleSurface?.role_code || '').trim().toLowerCase());
-const runtimeRoleCodes = computed(() => {
-  const configured = session.roleSurface?.role_codes || [];
-  const roles = configured.length ? configured : [runtimeRoleCode.value];
-  return roles.map((item) => String(item || '').trim().toLowerCase()).filter(Boolean);
-});
-const runtimeCapabilities = computed(() => collectRuntimeCapabilities(session));
-const policyContext = computed(() => ({
-  profile: renderProfile.value,
-  formData: formData as Record<string, unknown>,
-  capabilities: runtimeCapabilities.value,
-  roleCode: runtimeRoleCode.value,
-  roleCodes: runtimeRoleCodes.value,
+const runtimeRoleCode = computed(() => resolveRuntimeRoleCode(session.roleSurface));
+const policyContext = computed(() => buildContractFormPolicyContext({
+  profile: renderProfile.value, formData: formData as Record<string, unknown>,
+  session, roleSurface: session.roleSurface,
 }));
 const warnings = computed(() => normalizeContractWarnings(undefined));
 const contractAccessPolicy = computed<ContractAccessPolicy>(() => {
@@ -1525,12 +1517,7 @@ const workflowTransitions = computed(() => buildWorkflowTransitions({
   showHud: showHud.value,
 }));
 const searchFilters = computed(() => normalizeSearchFilters(resolveContractV2SearchContract(v2ContractStore.value).filters));
-// Structure authority declared by the runtime contract.  A surface whose form
-// structure is owned natively keeps its body for form facts only, no matter
-// whether the frontend composes the tree itself or the backend serves it.
-const nativeStructureAuthority = computed(() => String(
-  resolveContractV2FormStructureContract(v2ContractStore.value)?.sourceAuthority?.governance_source?.formStructureAuthority || '',
-));
+const nativeStructureAuthority = computed(() => resolveNativeStructureAuthority(v2ContractStore.value));
 // Record-list queries stay on the record list, and action placeholders close
 // only when their actions provably have another carrier (the native tree or
 // the rendered header action row).  Structure authority alone never closes an

@@ -65,7 +65,29 @@ def unit_update(data):
     old=b'ReadWritePaths=/var/lib/gitee-ci /var/log/gitee-ci /var/lib/gitee-mirror/source.git'
     new=b'ReadWritePaths=/var/lib/gitee-ci /var/log/gitee-ci'
     if data.count(old)!=1 and data.count(new)!=1: raise ValueError('unexpected worker unit write paths')
-    return data.replace(old,new)
+    data=data.replace(old,new)
+    limits={b'MemoryAccounting':b'true', b'MemoryHigh':b'896M', b'MemoryMax':b'1152M',
+            b'MemorySwapMax':b'2G', b'OOMPolicy':b'kill', b'LimitCORE':b'0'}
+    if b'\r' in data or b'\\\n' in data or data.splitlines().count(b'[Service]')!=1:
+        raise ValueError('unexpected service format')
+    section=None
+    configured={key:[] for key in limits}
+    for line in data.splitlines():
+        stripped=line.strip()
+        if stripped.startswith(b'[') and stripped.endswith(b']'):
+            if stripped!=line: raise ValueError('noncanonical section')
+            section=stripped
+        match=re.match(rb'\s*([A-Za-z]+)\s*=',line)
+        if match and match[1] in limits:
+            if section!=b'[Service]': raise ValueError('resource key outside Service')
+            configured[match[1]].append(line)
+    additions=[]
+    for key,value in limits.items():
+        existing=configured[key]
+        if existing and existing!=[key+b'='+value]: raise ValueError('unreviewed resource limit')
+        if not existing: additions.append(key+b'='+value)
+    if additions: data=data.replace(b'[Service]\n',b'[Service]\n'+b'\n'.join(additions)+b'\n',1)
+    return data
 
 
 class Update:
@@ -121,6 +143,13 @@ class Update:
         changes[ENVS[1]]=env_update(changes[ENVS[1]],worker=True,formal_root=formal_root)
         changes[UNIT]=unit_update(self.path(UNIT).read_bytes())
         return changes
+
+    def verify_resources(self):
+        expected={'MemoryHigh':'939524096','MemoryMax':'1207959552',
+                  'MemorySwapMax':'2147483648','OOMPolicy':'kill','LimitCORE':'0'}
+        for key,value in expected.items():
+            actual=self.run('systemctl','show','gitee-ci-worker.service','--property='+key,'--value')
+            if actual!=value: raise ValueError('effective resource limit mismatch: '+key)
 
     def active_jobs(self):
         with sqlite3.connect('file:'+str(self.path(DB))+'?mode=ro',uri=True) as db:
@@ -252,6 +281,7 @@ class Update:
             for unit in reversed(UNITS): self.run('systemctl','start',unit)
             for unit in UNITS:
                 if self.run('systemctl','show',unit,'--property=ActiveState','--value')!='active': raise ValueError('service not active')
+            self.verify_resources()
             if any(self.snapshot(f)!=v for f,v in original_credentials.items()): raise ValueError('credential drift after start')
             return {'status':'installed','source_sha':payload['source_sha'],'backup':str(folder),'credentials_unchanged':True,'online_ci_acceptance':'not_run'}
         except Exception:

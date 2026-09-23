@@ -31,6 +31,12 @@ PUBLIC_COMPILE = ('scripts/verify/repository_clean_history_guard.py', 'scripts/v
 FAST_TESTS = PUBLIC_TESTS[:4] + ("scripts/ci/test_select_authoritative_workflow_run.py",)
 NODE_PATH = '/opt/gitee-ci/node-v22.17.0/bin/node'
 NODE_SHA256 = '8071ae0fca095a272ad698a90c7061801a86fb6392ddb81e922b68a91a4374b9'
+# Trusted, fixed tuning for the small shared CI host. Go's limit is a soft GC
+# target, not a cgroup cap; gate failures and deadlines remain authoritative.
+RESOURCE_ENV = {'GOMEMLIMIT':'256MiB', 'GOGC':'50', 'GOMAXPROCS':'2',
+                'NODE_OPTIONS':'--max-old-space-size=2048', 'UV_THREADPOOL_SIZE':'2',
+                'MAKEFLAGS':'-j1'}
+
 IDENTITY_KEYS = ("repository", "source_branch", "target_branch", "head_sha", "base_sha", "pr_number")
 
 
@@ -158,6 +164,8 @@ class FormalExecutor(Executor):
         receipt.update(plan_sha256=expected, checks=[], status="environment_error", integration_eligible=False)
         env = {"PATH": "/tools:/usr/bin:/bin", "HOME": "/tmp", "ENV": "test", "CI": "1",
                "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": "/dev/null", "PYTHONDONTWRITEBYTECODE": "1"}
+        env.update(RESOURCE_ENV)
+        receipt["resource_environment"] = dict(RESOURCE_ENV)
         deadline = time.monotonic() + self.timeout
         try:
             with tempfile.TemporaryDirectory(prefix="formal-checkout-") as temp, (attempt/'checkout.log').open('wb') as log:

@@ -61,7 +61,7 @@ verify.frontend.chart_engine.guard: guard.prod.forbid
 	@python3 scripts/verify/frontend_chart_engine_guard.py
 
 
-verify.frontend.scene_component_bridge.unit: guard.prod.forbid
+verify.frontend.scene_component_bridge.unit: guard.prod.forbid verify.frontend.contract_form_collaboration_authority.unit
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/scene_component_driver_bridge_test.ts --bundle --platform=node --format=esm --outfile=/tmp/scene-component-driver-bridge-test.mjs >/dev/null
 	@node /tmp/scene-component-driver-bridge-test.mjs
 	@$(MAKE) --no-print-directory verify.frontend.canonical_form_presenter.unit
@@ -152,6 +152,8 @@ verify.frontend.overview_rich_text.unit: guard.prod.forbid
 verify.frontend.product_page_header.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_page_header_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/product-page-header-model-test.mjs >/dev/null
 	@node /tmp/product-page-header-model-test.mjs
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts --bundle --platform=node --format=esm --outfile=/tmp/product-page-header-adapter-contract-test.mjs >/dev/null
+	@node /tmp/product-page-header-adapter-contract-test.mjs
 	@python3 -m unittest scripts/verify/test_frontend_product_page_header_guard.py
 	@python3 scripts/verify/frontend_product_page_header_guard.py
 
@@ -360,6 +362,11 @@ verify.frontend.form_structure_contract_projection.unit: guard.prod.forbid
 verify.frontend.native_form_structure_responsibility.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/native_form_structure_responsibility_test.ts --bundle --platform=node --format=esm --outfile=/tmp/native-form-structure-responsibility-test.mjs >/dev/null
 	@node /tmp/native-form-structure-responsibility-test.mjs
+
+.PHONY: verify.frontend.contract_form_collaboration_authority.unit
+verify.frontend.contract_form_collaboration_authority.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_form_collaboration_authority_test.ts --bundle --platform=node --format=esm --outfile=/tmp/contract-form-collaboration-authority-test.mjs >/dev/null
+	@node /tmp/contract-form-collaboration-authority-test.mjs
 
 .PHONY: verify.frontend.contract_v2_render_authority.unit
 verify.frontend.contract_v2_render_authority.unit: guard.prod.forbid

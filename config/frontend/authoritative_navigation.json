@@ -8,7 +8,7 @@
   "identity": "menu_xmlid|action_xmlid|model",
   "roles": {
     "finance": {
-      "expected_count": 43,
+      "expected_count": 45,
       "leaf_keys": [
         "smart_construction_core.menu_payment_request_receive|smart_construction_core.action_payment_request_receive|payment.request",
         "smart_construction_core.menu_sc_bid_deposit_pay|smart_construction_core.action_sc_bid_deposit_pay|sc.expense.claim",
@@ -38,6 +38,8 @@
         "smart_construction_core.menu_sc_invoice_registration_user|smart_construction_core.action_sc_invoice_registration_user|sc.invoice.registration",
         "smart_construction_core.menu_sc_partner_payment|smart_construction_core.action_sc_payment_execution_partner_payment|sc.payment.execution",
         "smart_construction_core.menu_sc_payment_execution|smart_construction_core.action_sc_payment_execution_actual_outflow|sc.payment.execution",
+        "smart_construction_core.menu_sc_product_company_project_refund_v1|smart_construction_core.action_sc_product_company_project_refund_v1|sc.company.project.refund.workspace",
+        "smart_construction_core.menu_sc_product_current_account_v1|smart_construction_core.action_sc_product_current_account_v1|sc.current.account.workspace",
         "smart_construction_core.menu_sc_project_borrow_company|smart_construction_core.action_sc_financing_loan_project_borrow_company|sc.financing.loan",
         "smart_construction_core.menu_sc_project_expense_claim|smart_construction_core.action_sc_expense_claim_project|sc.expense.claim",
         "smart_construction_core.menu_sc_project_repay_company|smart_construction_core.action_sc_expense_claim_project_repay_company|sc.expense.claim",
@@ -127,7 +129,7 @@
       ]
     },
     "project_a_member": {
-      "expected_count": 9,
+      "expected_count": 10,
       "leaf_keys": [
         "smart_construction_core.menu_sc_certificate_registration|smart_construction_core.action_sc_certificate_registration|sc.document.admin.document",
         "smart_construction_core.menu_sc_company_document_archive|smart_construction_core.action_sc_company_document_archive|sc.document.admin.document",
@@ -137,6 +139,7 @@
         "smart_construction_core.menu_sc_general_contract|smart_construction_core.action_sc_general_contract|sc.general.contract",
         "smart_construction_core.menu_sc_plan_report|smart_construction_core.action_sc_plan_report|sc.plan.report",
         "smart_construction_core.menu_sc_plan|smart_construction_core.action_sc_plan|sc.plan",
+        "smart_construction_core.menu_sc_product_team_loan_deduction_v1|smart_construction_core.action_sc_product_team_loan_deduction_v1|sc.team.loan.deduction.workspace",
         "smart_construction_core.menu_sc_project_project|smart_construction_core.action_sc_project_list|project.project"
       ],
       "browser_expected_count": 4,

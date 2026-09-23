@@ -1,5 +1,6 @@
 import type { FieldDescriptor } from '@sc/schema';
 import type { CanonicalFormPresentationMode, CanonicalFormRenderMode } from '../../app/presentation/canonicalFormRenderModel';
+import type { ProfessionalComponentRenderer } from '../../app/presentation/professionalComponentRegistry';
 
 export type TemplateFieldType =
   | 'char'
@@ -34,7 +35,7 @@ export type FormSectionFieldSchema = {
   componentConfig?: Record<string, unknown>;
   componentKey?: string;
   componentReadiness?: 'ready' | 'readable_fallback' | 'fail_closed';
-  componentRenderer?: string;
+  componentRenderer?: ProfessionalComponentRenderer;
   contractAdapter?: string;
   contractVersion?: string;
   componentFallback?: string | null;

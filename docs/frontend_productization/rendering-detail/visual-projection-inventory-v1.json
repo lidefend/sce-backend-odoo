@@ -215,7 +215,7 @@
     },
     {
       "category": "other",
-      "digest": "9b2feedd3c0b889b970dfbcf52f7fe4afba93b11acfaae88eaa4cf93590d2f22",
+      "digest": "6de2dcebbb188b3e0e794aa397ab63e088b3a3f83091e7539dc49195c30b2e2d",
       "nativeStyleSelectors": [],
       "path": "components/action/ActionSurfaceToolbar.vue",
       "referenceNativeStyleSelectors": [
@@ -1067,7 +1067,7 @@
     },
     {
       "category": "other",
-      "digest": "d2e7e1cb6b6d2f94bcbd01c60bf5d1689b24ca1343929a62940435bd229bbb81",
+      "digest": "ae9626a12ba5f7f65e68621ee280dbb96452a599194b5e5c6f4e7999aef3a309",
       "nativeStyleSelectors": [],
       "path": "components/page/blocks/BlockAccordionGroup.vue",
       "referenceNativeStyleSelectors": [],
@@ -1139,7 +1139,7 @@
     },
     {
       "category": "dashboard",
-      "digest": "956eb812b8e3fb496cf1d09bdd13525050961f4a3b81de71ef5bfd74b1db76c2",
+      "digest": "a2801740db02bcb90d20cd94955742c726bbe86790c1c320b9991aa16f63c667",
       "nativeStyleSelectors": [],
       "path": "components/page/blocks/BlockMetricRow.vue",
       "referenceNativeStyleSelectors": [
@@ -1167,7 +1167,7 @@
     },
     {
       "category": "other",
-      "digest": "8f9c76fe75ad0bb330bf3e2f09c9a499ee9e8bd08eb659c6dc0ab60a7c20c853",
+      "digest": "038197057afcdaa3162fc01f6dbdd3fd4e14ef27473ae1cc8009bbe1c43323a6",
       "nativeStyleSelectors": [],
       "path": "components/page/blocks/BlockRecordSummary.vue",
       "referenceNativeStyleSelectors": [],
@@ -1180,7 +1180,7 @@
     },
     {
       "category": "other",
-      "digest": "11b9ee16974c816959cfd81ab3df15da5e3c84cfbad3dc682c0ac2723457fd57",
+      "digest": "dc00432dbc97f0931c0795e9fe3f71d64bdd109a339cbc344e6a85dce6886e2b",
       "nativeStyleSelectors": [],
       "path": "components/page/blocks/BlockRecordTable.vue",
       "referenceNativeStyleSelectors": [],
@@ -1764,7 +1764,7 @@
     },
     {
       "category": "other",
-      "digest": "48aaf234c44e147e22a42af05c8977d7b3ac1cd96c970ff5a75d5563e3bcab79",
+      "digest": "fb4cc819a2816b150129ae71e65c4f5f3307d3018b14340e3830f14e0627dc11",
       "nativeStyleSelectors": [],
       "path": "components/scene/SceneBlocksRenderer.vue",
       "referenceNativeStyleSelectors": [],
@@ -2007,7 +2007,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "af60f510bfbccf733cd61d2fa38a51f64afc29460b59819fa3a8722da7ac3aaf",
+      "digest": "209464338d8bcd050cda06672390f77fdc5882a478a5010ed1708552dfd492fe",
       "nativeStyleSelectors": [],
       "path": "pages/ContractFormPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2031,7 +2031,7 @@
     },
     {
       "category": "collection",
-      "digest": "f20ccbacb99cf33229875de28fdb957bdd6777e1448301ef81ca7ee2f60db236",
+      "digest": "4568bd7ed6ca1961bd0e6085dbf9fc3736f586d34bb584aab16c8333b2530203",
       "nativeStyleSelectors": [],
       "path": "pages/ListPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2133,7 +2133,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "e8f831bbd3c497b7a28eb919c23fe8f77104e1b8ab59ba56f3f90f8500531335",
+      "digest": "67354386e4623c117b80afdd46867c1df88af7b4a3d7e79ce143ac6860b716d1",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormDriverHost.vue",
       "referenceNativeStyleSelectors": [
@@ -2386,7 +2386,7 @@
     },
     {
       "category": "relations-x2many",
-      "digest": "707a1fab7acc289a5b5b16425aaa8fd202c58b1672470ac12a486199d89ec321",
+      "digest": "fd123aa117bd39f5073c99563de0618a79360d80b98d6eda775f2ae7243f41cb",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/RelationSearchDialog.vue",
       "referenceNativeStyleSelectors": [],
@@ -2445,7 +2445,7 @@
     },
     {
       "category": "collection",
-      "digest": "12be3b794481f46b1822ab11c84c3f4d70c9472416fc0150af74b1393b135c47",
+      "digest": "3df018dcfc975f876edc11c64bf0af4dd31362ba3dbaf55f0cb927ff0aa89854",
       "nativeStyleSelectors": [],
       "path": "views/ActionView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2627,7 +2627,7 @@
     },
     {
       "category": "other",
-      "digest": "ef423f170dc6cc8d2d5cd129e952d8798ffc0dfda1a149b1d9f73a2c628afd9e",
+      "digest": "6c38382ae77dd206a73dc16d5b32959da3c6e43feadf7161ba24c20fa46243f2",
       "nativeStyleSelectors": [],
       "path": "views/SceneContractBlockGridView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2880,7 +2880,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "e036af0154eafc61bffe7c56f5758e2525fc1fb80b128563b9fc8a5db2bed637",
+  "currentInputDigest": "0afbd52d6313f566cc87bc55418f4b165495a503afaf56310590a45ff79e47d8",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

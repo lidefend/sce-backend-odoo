@@ -1,5 +1,5 @@
 import type { ContractAction } from './types';
-import { resolveContractV2SourceContext } from '../../app/contracts/v2/store';
+import { resolveContractV2FormStructureContract, resolveContractV2SourceContext } from '../../app/contracts/v2/store';
 import type { ContractV2NormalizedStore } from '../../app/contracts/v2/types';
 import { normalizeRouteDefault } from './valueUtils';
 
@@ -166,4 +166,97 @@ export function buildWorkflowTransitions(params: {
     if (/^\d+$/.test(label)) return false;
     return true;
   });
+}
+
+export type ContractFormRuntimeRoleSurface = {
+  role_code?: unknown;
+  role_codes?: unknown;
+};
+
+export type ContractFormPolicyContext = {
+  profile: string;
+  formData: Record<string, unknown>;
+  capabilities: Set<string>;
+  roleCode: string;
+  roleCodes: string[];
+};
+
+/** Single authority for the runtime role code carried by the session surface. */
+export function resolveRuntimeRoleCode(roleSurface?: ContractFormRuntimeRoleSurface | null): string {
+  return String(roleSurface?.role_code || '').trim().toLowerCase();
+}
+
+/** Runtime role codes fall back to the primary role code, then normalize each entry. */
+export function resolveRuntimeRoleCodes(
+  roleSurface?: ContractFormRuntimeRoleSurface | null,
+  runtimeRoleCode = resolveRuntimeRoleCode(roleSurface),
+): string[] {
+  const configured = (roleSurface?.role_codes as unknown[]) || [];
+  const roles = configured.length ? configured : [runtimeRoleCode];
+  return roles.map((item) => String(item || '').trim().toLowerCase()).filter(Boolean);
+}
+
+/** Runtime policy inputs consumed by the contract form surface. */
+export function buildContractFormPolicyContext(input: {
+  profile: string;
+  formData: Record<string, unknown>;
+  session: Parameters<typeof collectRuntimeCapabilities>[0];
+  roleSurface?: ContractFormRuntimeRoleSurface | null;
+}): ContractFormPolicyContext {
+  const roleCode = resolveRuntimeRoleCode(input.roleSurface);
+  return {
+    profile: input.profile,
+    formData: input.formData,
+    capabilities: collectRuntimeCapabilities(input.session),
+    roleCode,
+    roleCodes: resolveRuntimeRoleCodes(input.roleSurface, roleCode),
+  };
+}
+
+/**
+ * Structure authority declared by the runtime contract.  A surface whose form
+ * structure is owned natively keeps its body for form facts only, no matter
+ * whether the frontend composes the tree itself or the backend serves it.
+ */
+export function resolveNativeStructureAuthority(
+  store: Parameters<typeof resolveContractV2FormStructureContract>[0],
+): string {
+  return String(
+    resolveContractV2FormStructureContract(store)?.sourceAuthority?.governance_source?.formStructureAuthority || '',
+  );
+}
+
+/**
+ * Subordinate node kinds that own a collaboration surface.  This list is the
+ * single declaration: `isCollaborationSurfaceKind` consumes it directly, so a
+ * declared kind can never become inert data next to the predicate.
+ */
+export const COLLABORATION_SURFACE_KINDS = ['chatter', 'activity'] as const;
+
+/** Single authority for "is this node kind a collaboration surface kind". */
+export function isCollaborationSurfaceKind(kind: unknown): boolean {
+  return (COLLABORATION_SURFACE_KINDS as readonly string[]).includes(
+    String(kind || '').trim().toLowerCase(),
+  );
+}
+
+/** Single authority for "does the subordinate zone carry a collaboration node". */
+export function hasCollaborationNode(
+  nodes: readonly { kind?: unknown }[] | null | undefined,
+): boolean {
+  return Boolean(nodes?.some((node) => isCollaborationSurfaceKind(node.kind)));
+}
+
+/**
+ * Single authority for the collaboration region visibility: the runtime
+ * capability is an *alternative* to the subordinate node authority, never a
+ * condition that can disable it.  Suppression only gates the node authority.
+ */
+export function resolveCollaborationVisibility(input: {
+  capability?: unknown;
+  suppressed?: boolean;
+  nodes: readonly { kind?: unknown }[] | null | undefined;
+}): boolean {
+  return Boolean(input.capability)
+    || (!input.suppressed && hasCollaborationNode(input.nodes));
 }

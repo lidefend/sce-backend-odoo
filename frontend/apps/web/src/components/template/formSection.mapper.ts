@@ -215,7 +215,7 @@ export function buildFormSectionFieldSchemas(
       : { relationCreateMode: 'none' as const };
     const many2manyCapabilities = isMany2manyTagField
       ? {
-          componentRenderer: 'ProfessionalRelationFieldControl',
+          componentRenderer: 'ProfessionalRelationFieldControl' as const,
           componentKey: 'sc.select.tags',
           relationCreateMode: options.resolveRelationCreateMode(field.name, field.descriptor),
           relationInlineCreate: options.resolveRelationInlineCreate(field.name, field.descriptor),
