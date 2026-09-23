@@ -818,3 +818,19 @@ gitee.ci.pr.create: guard.prod.forbid
 	@python3 -m scripts.ops.gitee_formal_pr --expected-head "$(EXPECTED_HEAD)" --expected-main "$(GITEE_EXPECTED_MAIN)" --token-file "$(GITEE_CHECKS_TOKEN_FILE)" $(if $(filter 1,$(APPLY)),--apply,)
 verify.gitee.formal_pr.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_gitee_formal_pr
+
+.PHONY: gitee.ci.frontend.prepare verify.gitee.frontend_cache.unit
+gitee.ci.frontend.prepare: guard.prod.forbid
+	@python3 -m scripts.ops.gitee_frontend_cache --output "$(GITEE_FRONTEND_OUTPUT)" --node-archive "$(GITEE_NODE_ARCHIVE)" --pnpm-archive "$(GITEE_PNPM_ARCHIVE)" --store "$(GITEE_PNPM_STORE)"
+verify.gitee.frontend_cache.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_frontend_cache
+
+.PHONY: gitee.ci.frontend.verify
+gitee.ci.frontend.verify: guard.prod.forbid
+	@python3 -m scripts.ops.gitee_frontend_cache --verify --output "$(GITEE_FRONTEND_OUTPUT)" --node-archive "$(GITEE_NODE_ARCHIVE)"
+
+.PHONY: gitee.ci.frontend.cache.install verify.gitee.frontend_cache_install.unit
+gitee.ci.frontend.cache.install: guard.prod.forbid
+	@python3 -m scripts.ops.gitee_frontend_cache_install --expected-head "$(EXPECTED_HEAD)" --prepared "$(GITEE_FRONTEND_OUTPUT)" --archive-sha256 "$(GITEE_FRONTEND_ARCHIVE_SHA256)" $(if $(filter 1,$(APPLY)),--apply,) --confirm "$(GITEE_FRONTEND_CONFIRM)"
+verify.gitee.frontend_cache_install.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_frontend_cache_install

@@ -5,6 +5,20 @@
 
 ## 临时 Gitee 主线集成车道（2026-09-23）
 
+当前续跑授权普通前端 CI 完善。`make gitee.ci.frontend.prepare` 仅在既有外部证据目录
+制作依赖包，固定 Node22.17.0/pnpm9.12.3 哈希、只读现有离线 store、bwrap 断网及禁用安装脚本；
+绑定锁文件、workspace 与 package manifests，拒绝不支持的 hook/patch/外部依赖。
+`make verify.gitee.frontend_cache.unit` 验证输入、包和路径拒绝边界。
+`make gitee.ci.frontend.verify` 对已准备包执行当前提交的 lint、严格类型、单元测试和构建，
+复用既有外部证据目录；临时无网络/无凭据沙箱不接数据库，任一步失败均非成功。
+`make gitee.ci.frontend.cache.install` 默认只读预演；本轮前端 CI 授权允许
+`APPLY=1 GITEE_FRONTEND_CONFIRM=INSTALL_REVIEWED_FRONTEND_CACHE` 按精确归档 SHA 安装已复核依赖包。
+只追加 `/opt/gitee-ci/frontend/<dependency-key>`，root 所有、0644只读归档；不以root解包/执行，
+不覆盖已存在不同内容、不改服务/凭据/数据库。旧缓存保留，失败不改变现有运行配置。
+`make verify.gitee.frontend_cache_install.unit` 验证摘要、重复安装和冲突边界。
+准备成功不代表服务器安装、完整前端检查或发布验收。
+
+
 本次续跑所有者已明确要求直接执行现有 CI 线上更新及 CI-only 真实事件验收。用户截图和登录后的页面
 已确认 WebHook 2106026、平台镜像为空、Gitee Go 未开通；历史公开范围及同组客户标识授权沿用本会话。
 本轮用户已完成仓库限定 API 令牌并要求继续收口，授权现有 worker 的检查回传安装与验收。
@@ -45,7 +59,7 @@ GitHub 的情况下使用既有 `gitee-mirror`；本节是下文“GitHub 唯一
 - `make gitee.ci.gates.plan EXPECTED_HEAD=<sha> GITEE_EXPECTED_MAIN=<sha> GITEE_SOURCE_BRANCH=<branch> GITEE_PR_NUMBER=<number>`：只读正式门禁计划；要求 clean 控制分支，包含删除和重命名两端，复用现有风险分类。PR 编号为调用方输入，计划不证明平台身份、不执行检查、不授予集成资格。`GITEE_CANDIDATE=1` 显式选择候选级检查。
 - `make gitee.ci.pr.inspect ...`：复用 `GITEE_CHECKS_TOKEN_FILE` 私有文件，只读核验指定 PR、同仓源分支与受保护 main 的精确 SHA，前后两轮漂移拒绝。计划入口可通过同一变量附加实时核验；结果仅为观察快照，不授权合并，不宣称原子绑定。
 - `make verify.gitee.formal_worker.unit verify.gitee.formal_pr.unit`：现有签名事件接入和有界 PR 创建控制器的离线测试。
-- `make gitee.ci.server.update ... GITEE_FORMAL=1 GITEE_NODE_ARCHIVE=<reviewed archive>`：本会话授权的既有执行器正式静态门禁接入；仍要求精确 clean SHA、预演摘要、备份/恢复与原确认值。只写固定版本目录、固定 Node 22.17.0 二进制及既有服务配置；包白名单和归档/二进制双哈希强制校验。不启用数据库、部署、前端依赖或完整候选车道；未准备的车道以非成功检查终止。
+- `make gitee.ci.server.update ... GITEE_FORMAL=1 GITEE_NODE_ARCHIVE=<reviewed archive>`：本会话授权的既有执行器正式静态门禁接入；仍要求精确 clean SHA、预演摘要、备份/恢复与原确认值。只写固定版本目录、固定 Node 22.17.0 二进制及既有服务配置；包白名单和归档/二进制双哈希强制校验。不启用数据库、部署或完整候选车道；本次普通前端车道仅消费已受管安装且匹配候选输入的离线依赖缓存，缺失/漂移拒绝。
 - `make gitee.ci.pr.create EXPECTED_HEAD=<sha> GITEE_EXPECTED_MAIN=<sha> GITEE_CHECKS_TOKEN_FILE=<private path>`：默认只读预演。`APPLY=1` 只为当前 Gitee 集成专题创建或复用同仓 main PR，要求精确远端身份、clean 候选和 Quick 回执；创建前持久化不确定结果标记，不重复 POST、不合并、不部署。
 - `make verify.gitee.formal_queue.unit`：正式任务持久队列、执行器适配与四项检查回传的离线生命周期测试；API 为受控 fake，不写平台。仅显式 formal-static 模式接入；不得将离线生命周期通过称为真实 PR 门禁验收。
 - `make verify.gitee.formal_executor.unit`：普通 PR 静态门禁执行核心的离线测试，使用真实 bubblewrap 验证网络／凭据隔离、非零计数、取消、超时及结果失效。执行核心仅由显式 formal-static 模式接入；本入口不执行真实产品门禁、不安装服务、不新增部署资格。

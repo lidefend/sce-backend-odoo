@@ -95,9 +95,21 @@ print('OK')
         self.assertEqual(nonzero_tests('Ran 3 tests in 1s\nOK (skipped=1)'),2)
 
     def test_full_and_frontend_lanes_not_downgraded(self):
-        for name,mode in [('professional_quality_gate','full'),('frontend_release_gate','full'),
-                          ('frontend_release_gate','standard')]:
+        for name,mode in [('professional_quality_gate','full'),('frontend_release_gate','full')]:
             with self.subTest(name=name,mode=mode),self.assertRaises(ValueError): recipes(name,mode,'a'*40)
+
+    def test_standard_frontend_commands_preserve_required_steps(self):
+        commands=recipes('frontend_release_gate','standard','a'*40)
+        self.assertEqual([c[-1] for c,_ in commands[1:]],['lint:src','typecheck:strict','test','build'])
+        self.assertTrue(commands[3][1])
+    def test_standard_frontend_quality_preserves_workflow_guards(self):
+        commands=recipes("professional_quality_gate","standard_frontend","a"*40)
+        flat=" ".join(" ".join(c) for c,_ in commands)
+        for target in ["frontend_professional_extension_guard.py", "test_ci_risk_classifier.py",
+                       "test_github_actions_security_guard.py", "verify.product.release.version",
+                       "ci.generated_reports.guard", "architecture.complexity_baseline_lock"]:
+            self.assertIn(target,flat)
+        self.assertTrue(any(test for _,test in commands))
 
     def test_supported_backend_recipe_keeps_all_required_targets(self):
         commands=recipes('professional_quality_gate','standard_backend','a'*40)

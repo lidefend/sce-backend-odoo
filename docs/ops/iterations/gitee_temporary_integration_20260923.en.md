@@ -426,3 +426,16 @@ The real signed PR event executed pinned Node22.17.0 in isolation, public_guard 
 Single-check GET omits pull_request_id, so strict reporting retained readback_mismatch. The official commit-check PR filter returned exactly this PR's four checks and zero for another PR. The adapter now requires uniquely matching ID/SHA/name/status/output in a bounded PR-filtered list before recording delivery, and still validates any explicitly returned PR ID. Queue20 and reporter18 targeted tests plus independent implementation review passed. New freeze/Quick and installation remain required.
 
 User-authorized UI saved four mandatory checks in main rule2770794, preserving other permissions, weight and standard mode. PR readback shows all four required; human review/test remain pending. Public API exposes only the protection toggle, not the required-check rule fields. No merge, review approval or product deployment performed.
+
+## Ordinary frontend CI continuation after 630e89b8
+
+P4 scope: existing self-hosted worker standard frontend lane; no product pages, business data or other product topics changed.
+Dependency identity binds lockfile, restricted workspace patterns, all package manifests, Linux x86_64 and pinned Node22.17.0/pnpm9.12.3 hashes.
+Offline bwrap restored639 packages from read-only store with zero downloads and installation scripts disabled. Initial real checks passed: lint zero errors/39warnings, strict types,145Python tests plus raw Node assertions, and Vite build.
+
+Corrections cover /tools launcher, isolated attempt terminal receipts/log hashes, existing dependency target and archive escape rejection, and restricted workspace patterns.
+Process lifecycle reuses Executor.command group/PID namespace teardown. Formal runner consumes only root-owned non-writable caches with exact archive/input identity, copying dependencies into private tasks; missing caches fail closed.
+Cache installation appends opaque archives under content-key directories, never extracting/executing as root or modifying services/credentials/databases. Existing conflicting content is rejected.
+Professional standard_frontend is included. Full/candidate database/browser acceptance remains unsupported; no full GitHub gate equivalence claimed.
+
+This is a development increment; final runtime/freeze/online receipts remain in the existing external batch evidence directory. Prior630e89b8 online evidence applies only to unchanged inputs.

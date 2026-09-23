@@ -1,7 +1,7 @@
 """Trusted-parent execution for ordinary PR static gates, never a merge authority.
 
-Not wired to the production queue until installation and gate behavior acceptance.
-Candidate/full and frontend dependency lanes fail closed instead of downgrading.
+Used by the formal-static worker. Candidate/full lanes remain fail-closed.
+Frontend standard execution requires a separately verified offline dependency cache.
 """
 from __future__ import annotations
 import hashlib
@@ -58,10 +58,19 @@ def recipes(check, mode, base):
             static("make", "verify.product.release.version"), static("git", "diff", "--check")]
     if check == "merge_policy_gate" and mode == "required": return []
     if check == "frontend_release_gate" and mode == "skip": return []
+    if check == "frontend_release_gate" and mode == "standard":
+        return [static("python3", "scripts/ci/frontend_professional_extension_guard.py"),
+                static("pnpm", "-C", "frontend/apps/web", "lint:src"),
+                static("pnpm", "-C", "frontend/apps/web", "typecheck:strict"),
+                (["pnpm", "-C", "frontend/apps/web", "test"], True),
+                static("pnpm", "-C", "frontend/apps/web", "build")]
     if check == "professional_quality_gate" and mode == "fast": return common
     if check == "professional_quality_gate" and mode == "governance":
         return common + [py("scripts/ci/test_ci_risk_workflow_contract.py"),
                          static("make", "ci.generated_reports.guard", "architecture.complexity_baseline_lock")]
+    if check == "professional_quality_gate" and mode == "standard_frontend":
+        return [static("python3", "scripts/ci/frontend_professional_extension_guard.py")] + common + [
+            static("make", "ci.generated_reports.guard", "architecture.complexity_baseline_lock")]
     if check == "professional_quality_gate" and mode == "standard_backend":
         return [(["make", "test.unit"], True), static("make", "test.contract", "test.e2e.preflight"),
                 static("make", "verify.tenant.data_responsibility_boundary", "verify.tenant.module_set_matrix",
@@ -105,6 +114,10 @@ class FormalExecutor(Executor):
 
     def sandbox_command(self, workspace, command):
         node=[]
+        frontend=[]
+        if getattr(self,'needs_frontend',False):
+            frontend=['--ro-bind',str(workspace/'tools'),'/tools',
+                      '--ro-bind',str(workspace/'repo/pnpm'),'/pnpm']
         if getattr(self,'needs_node',False):
             path=Path(NODE_PATH); info=path.stat()
             if path.is_symlink() or info.st_uid!=0 or info.st_mode & 0o022 or hashlib.sha256(path.read_bytes()).hexdigest()!=NODE_SHA256:
@@ -114,7 +127,7 @@ class FormalExecutor(Executor):
                 '--ro-bind', '/usr', '/usr', '--symlink', 'usr/bin', '/bin',
                 '--symlink', 'usr/lib', '/lib', '--symlink', 'usr/lib64', '/lib64',
                 '--proc', '/proc', '--dev', '/dev', '--tmpfs', '/tmp',
-                '--bind', str(workspace/'repo'), '/work', *node, '--chdir', '/work', *command]
+                '--bind', str(workspace/'repo'), '/work', *node, *frontend, '--chdir', '/work', *command]
 
     def validate_selection(self, candidate):
         expected = build_plan(head=candidate['head_sha'], base=candidate['base_sha'],
@@ -143,7 +156,7 @@ class FormalExecutor(Executor):
         attempt = Path(tempfile.mkdtemp(prefix="formal-", dir=self.artifacts))
         receipt = {k: plan[k] for k in IDENTITY_KEYS}
         receipt.update(plan_sha256=expected, checks=[], status="environment_error", integration_eligible=False)
-        env = {"PATH": "/usr/bin:/bin", "HOME": "/tmp", "ENV": "test", "CI": "1",
+        env = {"PATH": "/tools:/usr/bin:/bin", "HOME": "/tmp", "ENV": "test", "CI": "1",
                "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": "/dev/null", "PYTHONDONTWRITEBYTECODE": "1"}
         deadline = time.monotonic() + self.timeout
         try:
@@ -164,7 +177,9 @@ class FormalExecutor(Executor):
                         raise ValueError("policy_path_escape")
                     if hashlib.sha256(source.read_bytes()).hexdigest() != expected_hash:
                         raise ValueError("policy_source_mismatch")
-                self.needs_node = any(c['mode'] == 'standard_backend' for c in plan['checks'])
+                frontend_required = any(c['name']=='frontend_release_gate' and c['mode']=='standard' for c in plan['checks'])
+                self.needs_frontend = False
+                self.needs_node = frontend_required or any(c['mode'] == 'standard_backend' for c in plan['checks'])
                 if self.needs_node:
                     node_log = attempt/'node.log'
                     with node_log.open('wb') as stream:
@@ -173,6 +188,14 @@ class FormalExecutor(Executor):
                     if code or node_log.read_text().strip() != 'v22.17.0':
                         raise ValueError("pinned_node_unavailable_in_sandbox")
                 for check, commands in zip(plan['checks'], command_sets):
+                    if check['name']=='frontend_release_gate' and check['mode']=='standard':
+                        from scripts.ops.gitee_frontend_cache import runtime_cache
+                        receipt['frontend_cache']=runtime_cache(workspace/'repo')
+                        (workspace/'tools').mkdir()
+                        launcher=workspace/'tools/pnpm'
+                        launcher.write_text('#!/bin/sh\nexec node /pnpm/bin/pnpm.cjs "$@"\n')
+                        launcher.chmod(0o755)
+                        self.needs_frontend=True
                     check_deadline = min(deadline, time.monotonic() + {
                         'public_guard':900, 'merge_policy_gate':1800,
                         'professional_quality_gate':5400, 'frontend_release_gate':7200}[check['name']])

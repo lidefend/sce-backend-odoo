@@ -20,7 +20,7 @@ CHECKS = ("public_guard", "merge_policy_gate", "professional_quality_gate", "fro
 SOURCES = tuple(".github/workflows/" + name + ".yml" for name in CHECKS)
 INPUTS = SOURCES + ("config/ci/risk_tiering_v1.json", "scripts/ci/ci_risk_classifier.py",
                     "scripts/ci/gitee_gate_plan.py", "scripts/ci/gitee_pr_identity.py",
-                    "scripts/ci/gitee_ci_checks.py", "scripts/ci/gitee_formal_executor.py", "scripts/ci/gitee_formal_queue.py", "scripts/ci/gitee_formal_worker.py")
+                    "scripts/ci/gitee_ci_checks.py", "scripts/ci/gitee_formal_executor.py", "scripts/ci/gitee_formal_queue.py", "scripts/ci/gitee_formal_worker.py", "scripts/ops/gitee_frontend_cache.py")
 SHA = re.compile(r"[0-9a-f]{40}")
 
 

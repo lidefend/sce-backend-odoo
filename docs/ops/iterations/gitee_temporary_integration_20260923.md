@@ -620,3 +620,16 @@ e2c337af 的 Quick、同指纹独立审查、公开增量扫描及受管推送�
 线上发现单项Check Run GET不返回pull_request_id，旧严格回读保持readback_mismatch。官方commit/check-runs的pull_request_id过滤已实测：本PR返回四项，其他PR返回空。适配为交付记录前强制分页验证PR过滤列表中的唯一ID及完整SHA/name/status/output；若单项提供PR ID仍强校验。定向queue20+reporter18通过，独立实现审查通过。此修复尚待重新冻结/Quick和安装回读；不将旧Quick冒充新候选通过。
 
 main规则2770794已在用户授权的登录网页保存四个必须通过项，其他权限/权重/标准模式保持；PR页面回读显示四项“必须通过项”，人工审查/测试仍待完成。官方公开API仅提供分支保护开关，未提供此规则检查项配置字段；保留网页操作证据。未点击合并或审查通过，未部署产品。
+
+## 普通前端 CI 续跑（630e89b8 后的 P4 增量）
+
+范围为既有自托管 worker 的 ordinary standard 前端车道；不变更产品页面、业务数据或两个产品专题。
+依赖输入包含锁文件、固定 workspace 模式、全部 package manifests、Linux x86_64、Node22.17.0/pnpm9.12.3哈希。
+离线 bwrap 从只读 store 恢复639包，下载0、安装脚本关闭。首次完整前端检查通过：lint0错误/39警告、strict类型、145项Python测试及Node原始断言日志、Vite构建。
+
+工具修复包括 /tools pnpm入口、独立attempt终态及日志哈希、拒绝已有依赖目录/逃逸归档、受限workspace模式。
+进程生命周期复用既有 Executor.command 的进程组及PID namespace清理。正式runner仅消费root所有、不可写、摘要/输入匹配的归档；复制到私有任务后执行，缺缓存失败关闭。
+依赖安装器仅向content-key目录追加opaque归档，不以root解包/运行，不改服务/凭据/数据库；已有不同内容拒绝覆盖。
+普通professional_frontend同步补齐；full/candidate、数据库、浏览器验收仍未开放，不宣称全量GitHub门禁等效。
+
+当前为开发增量，最终运行/冻结/线上回执在既有外部批次证据目录补记；旧630e89b8线上通过只对其原输入有效。
