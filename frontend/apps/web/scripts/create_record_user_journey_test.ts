@@ -9,6 +9,23 @@ import { sanitizeUiErrorMessage } from '../src/pages/contractForm/fieldUtils.ts'
 import { useRecordFormState } from '../src/pages/contractForm/useRecordFormState.ts';
 import { useRecordFormProgress } from '../src/pages/contractForm/useRecordFormProgress.ts';
 
+// A relation control can emit an unchanged value during hydration. Saving an
+// unrelated field must not clear or rewrite that relation; intentional clears remain writes.
+for (const [before, after, expected] of [
+  [[], [], {}],
+  [[7, 9], [9, 7], {}],
+  [[7], [], { links: [[6, 0, []]] }],
+  [[], [9], { links: [[6, 0, [9]]] }],
+] as const) {
+  assert.deepEqual(buildSaveRecordPayload({
+    recordId: 501, formFields: { links: { type: 'many2many' } },
+    dirtyFieldSet: new Set(['links']), editableMap: { links: [[6, 0, [...after]]] },
+    formData: { links: [...after] }, originalValues: { links: [...before] },
+    comparableFieldValue: (_name, value) => JSON.stringify([...(value as number[])].sort((a, b) => a - b)),
+  }), expected);
+}
+console.log('[create_record_user_journey] unchanged relation payload: 4 cases PASS');
+
 // Exercise the real relation draft runtime: query text is not a saved value or
 // a deferred create request, even when the contract permits inline creation.
 {

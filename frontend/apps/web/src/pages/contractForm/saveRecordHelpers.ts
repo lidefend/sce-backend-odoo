@@ -166,6 +166,10 @@ export function buildSaveRecordPayload(params: SaveRecordPayloadBuildInput) {
       return acc;
     }
     const ttype = fieldType(params.formFields[key]);
+    if (ttype === 'many2many'
+      && params.comparableFieldValue(key, params.formData[key]) === params.comparableFieldValue(key, params.originalValues[key])) {
+      return acc;
+    }
     if (ttype === 'many2many' || ttype === 'one2many') {
       if (Array.isArray(value) && value.length) {
         acc[key] = value;
