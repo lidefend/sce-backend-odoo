@@ -1,5 +1,19 @@
 ````md
 
+## 所有者 CI 通过即合并规则（2026-09-23，本节优先）
+
+适用范围：本仓库普通 Gitee PR。所有者已授权必需 CI 通过后直接通过受保护 PR 流程合并，
+不再逐 PR 请求人工审查、人工测试确认或重复合并授权；平台审查/测试最低人数设为 0，
+新建 PR 不自动附加人工审批门槛。此规则覆盖下文相反的人工批准要求，GitHub 原流程不变。
+保留 main 保护及 public_guard、merge_policy_gate、professional_quality_gate、
+frontend_release_gate 四项必需检查。成功必须属于当前 PR 的最新源提交及当前目标基线；
+失败、缺失、运行中、旧提交或基线漂移均不得合并。按可信风险分类产生的显式 skip 可以接受。
+保留既有独立代码复核、公开范围检查；不将其变成所有者点击审批步骤。
+合并前重新核验源/目标身份及检查结果，使用平台受保护 PR 合并；不得直接推送 main、
+强推、关闭必需 CI 或伪造人工审核。平台若不能绑定合并对象，应明确报告实现限制，
+不得宣称已具备无人值守原子自动合并。合并后回读 PR 状态、合并提交及 main；合并不触发产品部署。
+平台审批配置的实际降低仍须满足工具要求的操作时确认；本段记录所有者目标，不代表平台已更新。
+
 ## 所有者最新执行分工（2026-09-23，本节优先）
 
 本地是代码迭代环境，普通 Gitee PR 候选发布不再要求本地完整 `ci.local.quick` 或完整生成证据门禁。
@@ -7,7 +21,7 @@
 `pr.push.gitee` 和 `gitee.ci.pr.create` 不得再因缺少本地 Quick receipt 拒绝候选。
 完整公共扫描、生成报告检查、风险选择的前后端集成检查交由远端 PR 执行；远端检查完成前不得
 宣称主线集成或合并资格。clean 精确 SHA、独立审查、公开范围审查、远端身份/快进约束与
-main 的必需检查/人工审核保持。新候选不得继承旧 SHA 的远端成功。
+main 的必需检查保持；人工审核按上方最新合并规则执行。新候选不得继承旧 SHA 的远端成功。
 此项覆盖本文旧的“先完整本地 Quick 再普通 Gitee 候选推送”顺序；历史 ci-only bootstrap、
 正式版本发布/数据库验收及 GitHub 原入口暂不改变。本地 Quick 可显式诊断，不是普通推送前置。
 # Codex Execution Allowlist (Autonomous Mode)
@@ -88,7 +102,7 @@ GitHub 的情况下使用既有 `gitee-mirror`；本节是下文“GitHub 唯一
 - `make verify.gitee.ci_update.unit verify.gitee.publication_scope.unit`：本地临时目录/Git/SQLite 定向测试，
   线上服务/包管理调用由受控 fake 替代，不改业务数据。公开范围工具只读候选及已观测远端对象，不推送。
 - 不使用固定历史 SHA 的 `gitee.pr.bot.merge` 处理新候选。Gitee PR 必须绑定源 HEAD／目标
-  main，完成所需验证和独立审查后，由所有者批准并在受保护 PR 流程合入；暂不提供自动合并入口。
+  main，完成所需验证和独立审查后，按上方 CI 通过即合并规则在受保护 PR 流程合入；旧机器人不得用于新候选。
 
 操作步骤及恢复 GitHub 的边界见 [临时集成规程](gitee_temporary_integration_v1.md)。
 现有 `pr.push`、`mirror.main.gitee` 和 `candidate.mirror.gitee` 保持原语义。

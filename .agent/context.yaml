@@ -125,6 +125,10 @@ execution:
   gitee_pr_local_gate: lightweight_iteration_and_affected_targeted_tests
   gitee_pr_full_integration_gate: remote_required_checks
   gitee_pr_requires_local_quick: false
+  gitee_pr_merge_authorization: standing_owner_authorization_after_current_required_ci
+  gitee_pr_human_review_required: false
+  gitee_pr_human_test_approval_required: false
+  gitee_pr_merge_via_protected_pr_only: true
 
 run_statuses:
   - planned
