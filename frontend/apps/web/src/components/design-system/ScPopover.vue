@@ -7,7 +7,7 @@
     :disabled="disabled"
     :overlay-class-name="overlayClassName"
     :overlay-style="overlayStyle"
-    destroy-on-close
+    :destroy-on-close="destroyOnClose"
   >
     <template #content>
       <slot />
@@ -44,6 +44,7 @@ withDefaults(
     placement?: ScPopoverPlacement;
     showArrow?: boolean;
     disabled?: boolean;
+    destroyOnClose?: boolean;
     overlayClassName?: string;
     overlayStyle?: ScPopoverOverlayStyle;
   }>(),
@@ -52,6 +53,7 @@ withDefaults(
     placement: 'bottom',
     showArrow: false,
     disabled: false,
+    destroyOnClose: true,
   },
 );
 </script>

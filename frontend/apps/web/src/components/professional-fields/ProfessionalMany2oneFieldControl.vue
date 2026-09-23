@@ -10,6 +10,7 @@
       <div class="many2one-combobox">
         <ScPopover
           :visible="isOpen"
+          :destroy-on-close="false"
           placement="bottom-left"
           trigger="focus"
           :overlay-style="{ maxWidth: 'calc(100vw - 24px)' }"

@@ -30,6 +30,8 @@ B01首轮修复（迭代身份`fd6fb975`加19路径dirty）：普通输入/blur/
 
 本轮定向结果：实际关系状态9反例、dirty/离页5反例及原required10/旅程6检查点通过；关系生命周期原12例+搜索失败/乱序/关闭3例+列延迟取消重开1例通过（`/tmp/frontend-f1-relation-state-l2-20260923.log`）。后端38例中新增测试首次缺fake env，补测试依赖后该1例通过，原37例复用（`/tmp/frontend-f1-relation-search-l2-20260923.log`、`/tmp/frontend-f1-relation-search-l2-r2-20260923.log`）。关系呈现/生命周期门禁通过；新增明确清除按钮后同步现有guard期望。受管runner33例通过。首次关系旅程脚本变量重名构建失败已改块级作用域，结果见`/tmp/frontend-f1-relation-intent-l2-r2-20260923.log`。独立复核发现的fallback提交、草稿对象误作代次、失败确认旧行和延迟列污染均已修复；实测仍not_run，准备新候选载体。P4仅在既有runner增加专用对象RELATION_ONLY互斥模式并回读partner_id，不触碰用户管理员会话或草稿。
 
+B01受管复验绑定`ae69871e0cb619d9eab579acee08b7f747ed71b4`，专用批次`frontend-f1-rel-20260923`、项目3928：查询AB后失焦，草稿未修改且写请求为0；随后再次展开失败，整次结果为failed（`/tmp/frontend-f1-relation-browser-20260923/summary.json`），不继承单测通过为验收通过。只读诊断初次聚焦浮层存在，再聚焦aria-expanded=true但浮层DOM缺失（`/tmp/frontend-f1-relation-refocus-diagnostic-20260923/summary.json`）；依赖源码确认关闭动画onAfterLeave在destroyOnClose下卸载容器。恢复变更限定P0 ScPopover可配置挂载策略，默认保持原值，many2one快速关闭/重开保留浮层容器；内容仍由isOpen控制。风险为所有关系选择消费者，不改业务/契约/数据，最早验证L1+关系L2，随后仅复验受影响客户旅程。诊断脚本临时采集已移除；用户管理员草稿未操作。
+
 边界：客户状态和浮层为P0现有ProfessionalMany2oneFieldControl/useRecordFormState/useRelationRuntime及RelationSearchDialog；查询/错误分类为P0 smart_core通用handler，后端拥有搜索/错误语义，前端只执行。会计JSON先核验类型契约来源再决定Resolver/Registry或后端修复；导航沿现有Runtime，不写客户/会计/收款特例。风险覆盖所有many2one消费者，L1语法/静态→L2关系字段/生命周期非零定向测试→受管客户真实旅程；原F1名称/权限证据只在相关输入未变时携带。广泛浏览器矩阵、完整Quick和远端发布在已知前层阻断消除前不运行。
 
 基线运行结果绑定 `61b8d712`；修复后运行结果绑定 `9b3d65d2`，定向测试绑定提交前相同源码及明确 dirty 范围。后续仅文档变化不使产品测试失效。L0/L1/L2 是本地迭代证据，不代表部署或远端 CI。
