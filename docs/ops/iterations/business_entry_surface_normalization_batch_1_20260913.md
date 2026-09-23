@@ -4,7 +4,7 @@
 
 目标：自定义前端成为正式业务入口；89 个正式入口均有去向，按职责取得真实操作及权限证据。
 基线 `61b8d7121b28d1e1f9126e7c03ab01bce57cee62`；分支
-`feature/frontend-business-entry-closure`；产品运行候选为 clean `9b3d65d201ec1198e7c867909b83677570b66d9c`，由 P1 `92885722`、P0 `78367373`、P4 `9b3d65d2` 三提交组成；此后更新三份台账及 P4 发布工具三路径，不改变产品运行证据输入。尚未完成 PR 最终冻结与远端验证。
+`feature/frontend-business-entry-closure`；当前产品运行候选为 clean `babce9d963b00e501f6889a003447483434eba39`；原名称/权限子范围证据来自`9b3d65d2`，客户交互证据来源及影响分析见当前结果索引。后续仅台账更新不改变运行证据输入。尚未完成 PR 最终冻结与远端验证。
 
 - 唯一入口矩阵：[frontend_business_entry_acceptance_v1.csv](../../product/frontend_business_entry_acceptance_v1.csv)。复用锁定菜单策略的 89 个稳定 XML ID，关联旧覆盖数据，不重新扫描全仓。旧数字 action/menu ID 不作为当前环境权威。
 - 唯一缺口清单：[frontend_shared_foundation_gap_audit_20260909.md](frontend_shared_foundation_gap_audit_20260909.md) 的 F0/F1 当前节；本文件为唯一当前批次记录。历史归档不重写为本轮通过。
@@ -45,6 +45,10 @@ B01第二次复验候选`7f85e700daad441641760d86bd636e28b9c05de4`：L1迭代、
 独立复核撤回客户写入初测的验收资格：旧fixture的write_scope漏partner_id，候选ID又取自提交载荷而非所点候选，全变更监听在选择后启动，刷新缺UI值断言。该次仅登记诊断，项目3928/责任33/34已cleanup且inspect确认existing_batch=false（`/tmp/frontend-f1-rel-cleanup-20260923.log`、`/tmp/frontend-f1-rel-after-cleanup-20260923.log`）。本次明确的P4授权扩展在原fixture.write_scope登记partner_id，runner在浏览器前强制该字段范围；P0选项仅增加data-record-id供绑定真实候选，无行为变化。选择前监听全部api变更并阻断非目标单字段写入，期望ID取自候选，验证isEditable和刷新UI标签。失败注入仅拦本项目预期partner_id写入；成功只允许一次。同域非零定向36测试及关系L2通过，准备新精确载体重新验证写入；原只读3场景源代码行为未变可携带。
 
 `0e0935a1`严格写入复验failed（`/tmp/frontend-f1-customer-write-scoped-20260923/summary.json`）：只选择客户但请求含`tag_ids:[[6,0,[]]]`，超出本次单字段范围，路由已按预期阻断。旧report误以整体验证布尔填backend_unchanged，已改为独立权威比较，不能把该false当落库证据。归属P0 buildSaveRecordPayload：多选关系无论与原值是否一致均序列化命令，可能由控件初始化触发dirty。最小修复按现有comparableFieldValue跳过未变化many2many，保留显式清空、变更及one2many命令；不按visible过滤，不改写契约，不扩大fixture范围。新增空值/同集合不同顺序/明确清空/新增四反例，随后复验同项目3929，无须重置fixture。
+
+最终客户写入局部复验：`babce9d9`两场景passed（`/tmp/frontend-f1-customer-write-scoped-r2-20260923/summary.json`），真实pm1/user7/company1在专用项目3929选择既有客户6390。所点候选ID独立绑定；全程仅两次预期partner_id请求，第一次模拟网络失败后权威不变、草稿可编辑，第二次业务成功；刷新UI客户标签与候选一致，权威项目/责任35/36事实一致，生命周期仍draft。此次成功可携带74f5de1e三项无写入交互证据：后续P0仅DOM身份属性及保存载荷省略等值many2many，不影响查询/浮层/取消输入。原错误运行仍failed/diagnostic，不回填为pass。L1、4个多选关系载荷反例及原9+5+10+6项目检查、36个runner测试passed；独立复核确认最小修复后允许该精确候选实测。
+
+本次精确受管命令：`PM_LOGIN=pm1 READ_LOGIN=demo_role_project_read PROJECT_ID=3929 P4_PROJECT_PROFILE_BATCH=frontend-f1-rel-20260923 RELATION_WRITE_ONLY=1 ARTIFACT_DIR=/tmp/frontend-f1-customer-write-scoped-r2-20260923 make local.dev.project_profile_write_browser PRODUCT_CANDIDATE_SHA=babce9d963b00e501f6889a003447483434eba39 FRONTEND_URL=http://127.0.0.1:5176`；工具与产品均为该clean HEAD，环境身份见`/tmp/frontend-f1-payload-identity-20260923.log`。独立复核回读summary、两次载荷和facts后确认局部证据有效。已通过原fixture入口cleanup3929/责任35/36，再inspect确认existing_batch=false；日志`/tmp/frontend-f1-customer-scoped-cleanup-20260923.log`、`/tmp/frontend-f1-customer-scoped-after-cleanup-20260923.log`。用户项目4、管理员会话和保留草稿未操作。当前F1仍partial，创建/明确清除/查询错误恢复/完整键盘及F2反例继续开放；未推送PR、未远端CI、未合入、未目标环境部署或整体验收。
 
 边界：客户状态和浮层为P0现有ProfessionalMany2oneFieldControl/useRecordFormState/useRelationRuntime及RelationSearchDialog；查询/错误分类为P0 smart_core通用handler，后端拥有搜索/错误语义，前端只执行。会计JSON先核验类型契约来源再决定Resolver/Registry或后端修复；导航沿现有Runtime，不写客户/会计/收款特例。风险覆盖所有many2one消费者，L1语法/静态→L2关系字段/生命周期非零定向测试→受管客户真实旅程；原F1名称/权限证据只在相关输入未变时携带。广泛浏览器矩阵、完整Quick和远端发布在已知前层阻断消除前不运行。
 
