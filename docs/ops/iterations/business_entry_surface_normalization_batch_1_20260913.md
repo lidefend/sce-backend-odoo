@@ -44,6 +44,8 @@ B01第二次复验候选`7f85e700daad441641760d86bd636e28b9c05de4`：L1迭代、
 
 独立复核撤回客户写入初测的验收资格：旧fixture的write_scope漏partner_id，候选ID又取自提交载荷而非所点候选，全变更监听在选择后启动，刷新缺UI值断言。该次仅登记诊断，项目3928/责任33/34已cleanup且inspect确认existing_batch=false（`/tmp/frontend-f1-rel-cleanup-20260923.log`、`/tmp/frontend-f1-rel-after-cleanup-20260923.log`）。本次明确的P4授权扩展在原fixture.write_scope登记partner_id，runner在浏览器前强制该字段范围；P0选项仅增加data-record-id供绑定真实候选，无行为变化。选择前监听全部api变更并阻断非目标单字段写入，期望ID取自候选，验证isEditable和刷新UI标签。失败注入仅拦本项目预期partner_id写入；成功只允许一次。同域非零定向36测试及关系L2通过，准备新精确载体重新验证写入；原只读3场景源代码行为未变可携带。
 
+`0e0935a1`严格写入复验failed（`/tmp/frontend-f1-customer-write-scoped-20260923/summary.json`）：只选择客户但请求含`tag_ids:[[6,0,[]]]`，超出本次单字段范围，路由已按预期阻断。旧report误以整体验证布尔填backend_unchanged，已改为独立权威比较，不能把该false当落库证据。归属P0 buildSaveRecordPayload：多选关系无论与原值是否一致均序列化命令，可能由控件初始化触发dirty。最小修复按现有comparableFieldValue跳过未变化many2many，保留显式清空、变更及one2many命令；不按visible过滤，不改写契约，不扩大fixture范围。新增空值/同集合不同顺序/明确清空/新增四反例，随后复验同项目3929，无须重置fixture。
+
 边界：客户状态和浮层为P0现有ProfessionalMany2oneFieldControl/useRecordFormState/useRelationRuntime及RelationSearchDialog；查询/错误分类为P0 smart_core通用handler，后端拥有搜索/错误语义，前端只执行。会计JSON先核验类型契约来源再决定Resolver/Registry或后端修复；导航沿现有Runtime，不写客户/会计/收款特例。风险覆盖所有many2one消费者，L1语法/静态→L2关系字段/生命周期非零定向测试→受管客户真实旅程；原F1名称/权限证据只在相关输入未变时携带。广泛浏览器矩阵、完整Quick和远端发布在已知前层阻断消除前不运行。
 
 基线运行结果绑定 `61b8d712`；修复后运行结果绑定 `9b3d65d2`，定向测试绑定提交前相同源码及明确 dirty 范围。后续仅文档变化不使产品测试失效。L0/L1/L2 是本地迭代证据，不代表部署或远端 CI。

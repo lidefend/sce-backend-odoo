@@ -692,12 +692,13 @@ async function verifyCustomerRelationWrite(page, report, beforeFacts) {
   const failedWrite = await waitForWriteOutcome(page, writes, 0);
   const error = page.locator('.submission-feedback--error:visible, [data-semantic-component="ProductFormErrorSummary"]:visible').first();
   await error.waitFor();
+  const backendUnchanged = sameJson(beforeFacts, await readProjectFacts(page));
   const failurePassed = blocked && failedWrite.outcome === 'network_blocked'
     && writes[0]?.body?.params?.vals?.partner_id === selectedId
     && normalize(await input.inputValue()) === label && await dirty(page)
     && await input.isEditable() && !await button.isDisabled()
-    && sameJson(beforeFacts, await readProjectFacts(page));
-  report.scenarios.push({ name: 'customer_selected_save_failure_preserves_draft', status: failurePassed ? 'PASS' : 'FAIL', selected_id: selectedId, backend_unchanged: failurePassed });
+    && backendUnchanged;
+  report.scenarios.push({ name: 'customer_selected_save_failure_preserves_draft', status: failurePassed ? 'PASS' : 'FAIL', selected_id: selectedId, backend_unchanged: backendUnchanged });
   if (!failurePassed) throw new Error('customer_failure_recovery_not_proven');
   await save(page);
   const retry = await waitForWriteOutcome(page, writes, 1);
