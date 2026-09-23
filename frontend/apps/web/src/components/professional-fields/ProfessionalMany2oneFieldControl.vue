@@ -8,6 +8,13 @@
         {{ avatarText(many2oneTextValue) }}
       </span>
       <div class="many2one-combobox">
+        <ScPopover
+          :visible="isOpen"
+          placement="bottom-left"
+          trigger="focus"
+          :overlay-style="{ maxWidth: 'calc(100vw - 24px)' }"
+        >
+        <template #trigger>
         <ScRelationField
           :id="controlId"
           class="input"
@@ -24,9 +31,11 @@
           :aria-activedescendant="activeDescendant"
           @update:model-value="emitQuery"
           @focus="focusField"
+          @pointerdown="openFromPointer"
           @keydown="handleKeydown"
           @blur="blurField"
         />
+        </template>
         <div v-if="isOpen" :id="listboxId" class="many2one-option-panel" role="listbox">
           <div v-if="visibleOptions.length" class="many2one-option-list" role="presentation">
             <div
@@ -52,6 +61,14 @@
             </div>
           </div>
           <div class="many2one-actions">
+            <ScButton
+              v-if="field.inputValue"
+              type="button"
+              appearance="menu-item"
+              variant="ghost"
+              @mousedown.prevent
+              @click="emitSelect('', $event)"
+            >清除选择</ScButton>
             <ScButton
               v-if="field.many2oneOpenToken"
               type="button"
@@ -102,6 +119,7 @@
             </ScButton>
           </div>
         </div>
+        </ScPopover>
       </div>
     </div>
   </ProfessionalRelationFieldControl>
@@ -110,6 +128,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import ScButton from '../design-system/ScButton.vue';
+import ScPopover from '../design-system/ScPopover.vue';
 import ScRelationField from '../design-system/ScRelationField.vue';
 import type { FormSectionFieldSchema } from '../template/formSection.types';
 import ProfessionalRelationFieldControl from './ProfessionalRelationFieldControl.vue';
@@ -130,6 +149,7 @@ const emit = defineEmits<{
 
 const focused = ref(false);
 const activeIndex = ref(-1);
+let suppressRestoredFocus = false;
 
 const normalizedWidget = computed(() => String(props.field.widget || '').trim().toLowerCase());
 const visibleOptions = computed(() => (props.field.relationOptions || []).filter(Boolean).slice(0, 8));
@@ -174,12 +194,14 @@ function collapseDropdown(event: Event) {
 function emitSelect(value: string | number | boolean | null, event: Event) {
   focused.value = false;
   activeIndex.value = -1;
+  suppressRestoredFocus = [props.field.many2oneSearchToken, props.field.many2oneCreateToken, props.field.many2oneOpenToken].includes(String(value));
   emit('select', value);
   collapseDropdown(event);
 }
 
 function emitQuery(value: string) {
   activeIndex.value = -1;
+  focused.value = true;
   emit('query', value);
 }
 
@@ -189,23 +211,29 @@ function emitCommit(value: string) {
 }
 
 function focusField() {
+  if (suppressRestoredFocus) {
+    suppressRestoredFocus = false;
+    return;
+  }
   focused.value = true;
   activeIndex.value = -1;
   if (!visibleOptions.value.length) emitQuery(many2oneTextValue.value);
 }
 
-function blurField(event: FocusEvent) {
-  if (!focused.value) return;
-  const targetValue = event.target instanceof HTMLInputElement ? event.target.value : '';
-  emitCommit(targetValue);
-  window.setTimeout(() => {
-    focused.value = false;
-  }, 0);
+function openFromPointer() {
+  suppressRestoredFocus = false;
+  focusField();
+}
+
+function blurField() {
+  focused.value = false;
+  activeIndex.value = -1;
 }
 
 function handleKeydown(event: KeyboardEvent) {
   if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && visibleOptions.value.length) {
     event.preventDefault();
+    focused.value = true;
     const delta = event.key === 'ArrowDown' ? 1 : -1;
     activeIndex.value = (activeIndex.value + delta + visibleOptions.value.length) % visibleOptions.value.length;
     return;
@@ -215,7 +243,6 @@ function handleKeydown(event: KeyboardEvent) {
     const option = activeIndex.value >= 0 ? visibleOptions.value[activeIndex.value] : undefined;
     const inputEl = event.target instanceof HTMLInputElement ? event.target : null;
     if (option) emit('select', option.value);
-    else emitCommit(inputEl ? inputEl.value : '');
     focused.value = false;
     activeIndex.value = -1;
     inputEl?.blur();
@@ -230,6 +257,8 @@ function handleKeydown(event: KeyboardEvent) {
 
 function emitInlineCreate(event: Event) {
   emitCommit(many2oneTextValue.value);
+  focused.value = false;
+  activeIndex.value = -1;
   collapseDropdown(event);
 }
 </script>
@@ -266,10 +295,10 @@ function emitInlineCreate(event: Event) {
 }
 
 .many2one-option-panel {
-  position: absolute;
-  z-index: var(--sc-component-relation-dropdown-z-index, 40);
-  inset-inline: 0;
-  bottom: calc(100% + 6px);
+  min-width: min(280px, calc(100vw - 40px));
+  max-width: min(480px, calc(100vw - 40px));
+  max-height: min(360px, 60vh);
+  overflow-y: auto;
   display: grid;
   gap: 6px;
   padding: 8px;

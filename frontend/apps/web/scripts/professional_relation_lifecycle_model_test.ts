@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { useRelationRuntime } from '../src/pages/contractForm/useRelationRuntime';
 import {
   buildProfessionalRelationCancelledMessage,
   buildProfessionalRelationCreatedMessage,
@@ -50,3 +51,41 @@ assert.equal(settleProfessionalRelationLifecycle({
 }), true);
 assert.equal(restoreCount, 1);
 console.log('[professional_relation_lifecycle_model_test] PASS cases=12 exact_once=1 dirty_preservation=1');
+
+const runtime = useRelationRuntime();
+Object.assign(runtime.relationSearchDialog, { open: true, fieldName: 'owner_id', rows: [{ id: 1, label: 'Old' }], selectedId: 1 });
+const sanitizeError = () => 'Query failed';
+await runtime.runRelationSearch({ fetchRows: async () => { throw new Error('offline'); }, sanitizeError });
+assert.equal(runtime.relationSearchDialog.selectedId, null);
+assert.deepEqual(runtime.relationSearchDialog.rows, []);
+runtime.confirmRelationSearchSelection(() => assert.fail('a failed search cannot confirm an old row'), { id: 1, label: 'Old' } as never);
+let completeOld!: (rows: never[]) => void;
+const oldSearch = runtime.runRelationSearch({ fetchRows: () => new Promise((resolve) => { completeOld = resolve; }), sanitizeError });
+await runtime.runRelationSearch({ fetchRows: async () => [{ id: 2, label: 'New', values: {} }], sanitizeError });
+completeOld([{ id: 1, label: 'Old', values: {} }] as never[]);
+await oldSearch;
+assert.equal(runtime.relationSearchDialog.rows[0]?.id, 2);
+let completeClosed!: (rows: never[]) => void;
+const closedSearch = runtime.runRelationSearch({ fetchRows: () => new Promise((resolve) => { completeClosed = resolve; }), sanitizeError });
+runtime.closeRelationSearchDialog();
+completeClosed([{ id: 3, label: 'Closed', values: {} }] as never[]);
+await closedSearch;
+assert.equal(runtime.relationSearchDialog.open, false);
+assert.deepEqual(runtime.relationSearchDialog.rows, []);
+console.log('[professional_relation_lifecycle_model_test] PASS search-failure-order-cancel=3');
+
+let completeColumns!: (columns: never[]) => void;
+let staleSearches = 0;
+const opening = runtime.openRelationSearch({ fieldName: 'old_id', descriptor: undefined, labels: {}, keyword: '', columns: [], createMode: 'none',
+  loadColumns: () => new Promise((resolve) => { completeColumns = resolve; }), runSearch: async () => { staleSearches += 1; },
+});
+runtime.closeRelationSearchDialog();
+await runtime.openRelationSearch({ fieldName: 'new_id', descriptor: undefined, labels: {}, keyword: '', columns: [], createMode: 'none',
+  loadColumns: async () => [{ name: 'name', label: 'New name' }], runSearch: async () => {},
+});
+completeColumns([{ name: 'stale', label: 'Old name' }] as never[]);
+await opening;
+assert.equal(runtime.relationSearchDialog.fieldName, 'new_id');
+assert.equal(runtime.relationSearchDialog.columns[0]?.name, 'name');
+assert.equal(staleSearches, 0);
+console.log('[professional_relation_lifecycle_model_test] PASS delayed-columns-cancel-reopen=1');

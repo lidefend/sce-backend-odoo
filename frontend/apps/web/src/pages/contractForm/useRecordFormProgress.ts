@@ -16,6 +16,7 @@ export function useRecordFormProgress(params: {
   canonicalFormFields: ComputedRef<Record<string, FieldDescriptor>>;
   formData: Record<string, unknown>;
   originalValues: Ref<Record<string, unknown>>;
+  pendingInlineCreateFields?: Ref<string[]>;
   relationKeywords: Record<string, string>;
   fieldType: (descriptor?: FieldDescriptor) => string;
   relationInlineCreate: (descriptor?: FieldDescriptor) => { enabled: boolean; createOnNoMatch: boolean };
@@ -29,15 +30,8 @@ export function useRecordFormProgress(params: {
   comparableFieldValue: (name: string, value: unknown) => unknown;
 }) {
   function hasPendingInlineRelationChange() {
-    return params.layoutNodes().some((node) => {
-      if (node.kind !== 'field' || node.readonly) return false;
-      const descriptor = params.canonicalFormFields.value[node.name];
-      if (params.fieldType(descriptor) !== 'many2one') return false;
-      const inline = params.relationInlineCreate(descriptor);
-      if (!inline.enabled || !inline.createOnNoMatch) return false;
-      const currentId = Number(params.formData[node.name] || 0);
-      return !(Number.isFinite(currentId) && currentId > 0) && Boolean(params.relationKeyword(node.name).trim());
-    });
+    return (params.pendingInlineCreateFields?.value || []).some((name) =>
+      params.isFieldWritable(name) && !params.formData[name]);
   }
 
   function hasPendingMany2manyTagCreate() {

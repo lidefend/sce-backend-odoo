@@ -1,11 +1,106 @@
 import assert from 'node:assert/strict';
-import { ref } from 'vue';
+import { reactive, ref } from 'vue';
 import { resolveCreateDefaults, resolveCreateRouteRelationLabels } from '../src/pages/contractForm/createDefaults.ts';
 import { applyIncomingFormFieldValue } from '../src/pages/contractForm/recordHydration.ts';
 import { evaluateNativeModifierValue } from '../src/app/modifierEngine.ts';
 import { buildSaveRecordPayload, createSingleFlightSave, validateBeforeSaveRecord } from '../src/pages/contractForm/saveRecordHelpers.ts';
 import { usePrimaryFormActionRuntime } from '../src/pages/contractForm/usePrimaryFormActionRuntime.ts';
 import { sanitizeUiErrorMessage } from '../src/pages/contractForm/fieldUtils.ts';
+import { useRecordFormState } from '../src/pages/contractForm/useRecordFormState.ts';
+import { useRecordFormProgress } from '../src/pages/contractForm/useRecordFormProgress.ts';
+
+// Exercise the real relation draft runtime: query text is not a saved value or
+// a deferred create request, even when the contract permits inline creation.
+{
+const relationDescriptor = { type: 'many2one', relation: 'x.related', relation_entry: {
+  can_read: true, can_create: true, inline_create: { enabled: true, create_on_no_match: true },
+} };
+const relationDraft: Record<string, unknown> = { owner_id: 17 };
+const relationKeywords: Record<string, string> = {};
+const relationDirty = new Set<string>();
+const relationRecordId = ref(501);
+const relationOriginal = ref<Record<string, unknown>>({ owner_id: 17 });
+const createCalls: string[] = [];
+const pendingCreateFields = ref<string[]>([]);
+const relationState = useRecordFormState({
+  pendingInlineCreateFields: pendingCreateFields,
+  formFields: ref({ owner_id: relationDescriptor }), model: ref('x.main'), recordId: relationRecordId,
+  formData: relationDraft, originalValues: relationOriginal,
+  relationKeywords, invalidatedRelationKeywords: {}, clearedDynamicRelationFields: {},
+  relationOptions: ref({ owner_id: [{ id: 17, label: 'Selected' }] }),
+  validationFieldErrors: ref({}), validationErrors: ref([]), applyingOnchangePatch: ref(false),
+  dirtyFieldSet: relationDirty, changedFieldSet: new Set<string>(),
+  contractV2ActionRules: ref([]), canonicalFieldWritable: () => true,
+  layoutNodes: ref([{ kind: 'field', name: 'owner_id', descriptor: relationDescriptor, readonly: false }]),
+  getOnchangeTimer: () => null, setOnchangeTimer: () => {},
+  relationKeyword: (name: string) => relationKeywords[name] || '',
+  setRelationKeyword: (name: string, keyword: string) => { relationKeywords[name] = keyword; },
+  clearDynamicRelationDependents: () => {},
+  queryRelationOptions: async () => [],
+  quickCreateRelation: async (_name: string, _descriptor: unknown, label: string) => {
+    createCalls.push(label); relationDraft.owner_id = 28;
+  },
+  relationUiLabel: (_descriptor: unknown, _key: string, fallback: string) => fallback,
+} as never);
+relationState.queryMany2oneInline('owner_id', relationDescriptor as never, 'Query only');
+assert.equal(relationDraft.owner_id, 17);
+assert.equal(relationDirty.size, 0);
+await relationState.resolvePendingInlineRelationCreates();
+assert.deepEqual(createCalls, []);
+relationDraft.owner_id = false;
+await relationState.resolvePendingInlineRelationCreates();
+assert.deepEqual(createCalls, [], 'query on an empty relation must not create during save');
+await relationState.commitMany2oneInline('owner_id', relationDescriptor as never, 'Explicit new');
+assert.deepEqual(pendingCreateFields.value, ['owner_id'], 'false-to-false creation still has reactive pending state');
+relationState.queryMany2oneInline('owner_id', relationDescriptor as never, 'Later query');
+await relationState.resolvePendingInlineRelationCreates();
+assert.deepEqual(createCalls, ['Explicit new'], 'only the explicit create intent names the new record');
+await relationState.resolvePendingInlineRelationCreates();
+assert.equal(createCalls.length, 1, 'a completed intent is not replayed');
+await relationState.commitMany2oneInline('owner_id', relationDescriptor as never, 'Cancelled');
+relationState.setMany2oneField('owner_id', relationDescriptor as never, '');
+await relationState.resolvePendingInlineRelationCreates();
+assert.equal(createCalls.length, 1, 'explicit clear cancels a staged create');
+await relationState.commitMany2oneInline('owner_id', relationDescriptor as never, 'Old record');
+relationRecordId.value = 502;
+await relationState.resolvePendingInlineRelationCreates();
+assert.equal(createCalls.length, 1, 'pending create cannot cross record identity');
+await relationState.commitMany2oneInline('owner_id', relationDescriptor as never, 'Old draft');
+relationOriginal.value = { ...relationOriginal.value, is_favorite: true };
+await relationState.resolvePendingInlineRelationCreates();
+assert.deepEqual(createCalls, ['Explicit new', 'Old draft'], 'unrelated favorite persistence must not cancel creation');
+await relationState.commitMany2oneInline('owner_id', relationDescriptor as never, 'Discarded draft');
+relationState.resetPendingInlineRelationCreates();
+relationDirty.clear();
+await relationState.resolvePendingInlineRelationCreates();
+assert.equal(createCalls.length, 2, 'reload or discard invalidates the pending intent');
+assert.deepEqual(pendingCreateFields.value, []);
+console.log('[create-record-user-journey] PASS relation-intent-counterexamples=9');
+}
+
+{
+  const draft = reactive<Record<string, unknown>>({ owner_id: false });
+  const keywords = reactive({ owner_id: '' });
+  const pending = ref<string[]>([]);
+  const progress = useRecordFormProgress({
+    formData: draft, originalValues: ref({ owner_id: false }), relationKeywords: keywords,
+    pendingInlineCreateFields: pending, canonicalFormFields: ref({ owner_id: { type: 'many2one' } }),
+    layoutNodes: () => [], relationInlineCreate: () => ({ enabled: true, createOnNoMatch: true }),
+    relationModel: () => 'x.related', isFieldWritable: () => true,
+    fieldType: () => 'many2one', nativeStatusbar: () => ({}),
+    comparableFieldValue: (_name: string, value: unknown) => value,
+  } as never);
+  assert.equal(progress.hasChanges.value, false);
+  keywords.owner_id = 'Query only';
+  assert.equal(progress.hasChanges.value, false, 'search text is not an unsaved relation change');
+  pending.value = ['owner_id'];
+  assert.equal(progress.hasChanges.value, true, 'an explicit pending creation participates in leave protection');
+  pending.value = [];
+  assert.equal(progress.hasChanges.value, false);
+  draft.owner_id = 20;
+  assert.equal(progress.hasChanges.value, true);
+  console.log('[create-record-user-journey] PASS relation-dirty-state=5');
+}
 
 const fieldDescriptors = {
   amount: { name: 'amount', type: 'float' },

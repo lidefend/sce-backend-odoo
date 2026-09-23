@@ -217,7 +217,6 @@
                   :model-value="String(field.inputValue ?? '')"
                   :placeholder="selectPlaceholderText(field)"
                   @update:model-value="emitMany2oneQuery(field, $event)"
-                  @change="emitMany2oneCommit(field, ($event.target as HTMLInputElement).value)"
                 />
                 <div v-else-if="isDateRangeWidget(field)" class="native-date-range">
                   <div class="native-date-range__control">
