@@ -539,3 +539,40 @@ P4 仅新增公开历史扫描与受管增量更新能力。3dd58b82 原检查�
 扫描前后 refs 一致性已通过 byte compare。allowlist 变更后受影响政策定向检查通过（l1-update-policy.log）。
 本地新文件源码 hash 和两组测试输入关联保存在 incremental-update-local-evidence.json；提交不改变这些输入，
 后续只重做绑定新 source SHA 的只读安装预演，不重跑未变化测试。
+
+
+## 2026-09-23：真实 Push 后的检查回传增量（开发态）
+
+- 基线 `77c5efe111fb30b857bbb2b1c2a098b2f559630e`，本节为 dirty 开发态，未冻结。
+- 前阶段真实 Push、精确 SHA、42 项服务器测试及 Quick 已通过；原始证据沿用
+  `artifacts/gitee-temporary-integration/desktop-ci-acceptance-result.md` 和 `ci-live-result-final.json`。
+  此事实不等于正式门禁等效、主线合入、部署或产品验收。
+- Formal Product Layer=P4；Layer Target=现有 CI worker 检查回传；Module=`scripts/ci`。
+  它属于交付工具机制，不属于 P0-P3 业务规则；影响仅限显式启用的 CI-only 模式。
+- 新增可信父进程 Check Runs reporter、定向测试和 Make 入口；默认关闭。
+  创建前持久化 intent，丢失响应只按唯一 marker 查询恢复，不盲目重复 POST；
+  状态以 full SHA 绑定、回读后才记为已回传；零测试及不完整成功收据降为 action_required。
+  名称固定 `sce/ci-only-acceptance`，不冒充正式产品门禁；不上传候选日志或路径。
+- 平台 UI 已显示可要求门禁成功；正式规则尚未保存。API 合并仍无源/目标双 SHA 参数。
+- 令牌表单已准备为当前单仓库、30 天、projects 和强制 user_info；用户自行生成。
+  用户要求的空文件已创建在 Git 私有目录，权限600，不进入 tracked 文件或证据包。
+- L1 `make ci.local.iteration` 通过；L2 `make ENV=test verify.gitee.checks.unit verify.gitee.ci_only.unit`
+  初版16+18项通过。后续独立审查与受影响修订以本节追加结果为准。
+- 后层暂缓理由：API凭据未交付；安装工具仍只允许旧三个模块，尚未扩大安装范围或启用回传。
+  不运行 Quick、不推送、不改服务器；已有成功候选和两个产品专题保留。
+- 下一步：本地审查闭环 → 凭据就绪后限定安装/回读验收 → 正式门禁映射与受保护合入方案 → 产品专题。
+
+- 实现复核发现异常响应可能中断 worker，已补 output/summary 类型校验和 worker 回传异常隔离；
+  回传故障只打印固定代码，不丢弃测试任务、不回显异常正文。
+- 修订后 L2：`make ENV=test verify.gitee.checks.unit verify.gitee.webhook.ci` 通过，
+  reporter18、原 worker18、mirror4、cutover9；原沙箱18沿用输入未变结果。
+  本轮仍为本地 dirty 实现，安装/平台回读尚未验证，未形成冻结交付结论。
+
+
+### 检查回传安装收口续跑
+
+- WSL恢复后，只读API身份验证成功（当前仓库所有者），checks列表读取成功；不等于写权限已验收。
+- 现有增量安装器新增第四模块与可选私有令牌：固定路径、服务用户0600、仅worker引用；
+  计划不输出正文，失败恢复原文件/原配置，无原文件时清除新文件。
+- L1 local iteration通过，L2 updater18+reporter18通过；安装为后续L3，业务数据库/前端L4不适用。
+- 先形成干净安装源提交以满足既有入口，不冒称冻结发布候选；在线检查回读完成前不跑最终Quick或推送。

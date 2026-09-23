@@ -759,7 +759,7 @@ verify.gitee.ci_only.unit: guard.prod.forbid
 
 .PHONY: gitee.ci.server.update verify.gitee.ci_update.unit
 gitee.ci.server.update: guard.prod.forbid
-	@python3 scripts/ops/gitee_ci_incremental_update.py --expected-head "$(EXPECTED_HEAD)" $(if $(filter 1,$(APPLY)),--apply,) --plan-sha256 "$(GITEE_UPDATE_PLAN_SHA256)" --confirm "$(GITEE_UPDATE_CONFIRM)"
+	@python3 scripts/ops/gitee_ci_incremental_update.py --expected-head "$(EXPECTED_HEAD)" $(if $(filter 1,$(APPLY)),--apply,) --plan-sha256 "$(GITEE_UPDATE_PLAN_SHA256)" --confirm "$(GITEE_UPDATE_CONFIRM)" $(if $(GITEE_CHECKS_TOKEN_FILE),--checks-token-file "$(GITEE_CHECKS_TOKEN_FILE)",)
 
 verify.gitee.ci_update.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_gitee_ci_incremental_update
@@ -785,3 +785,7 @@ gitee.ci.mirror.isolate: guard.prod.forbid
 gitee.ci.sandbox.profile.install: guard.prod.forbid
 	@test "$(GITEE_SANDBOX_CONFIRM)" = "INSTALL_UPSTREAM_BWRAP_PROFILE" || (echo 'exact sandbox confirmation required'; exit 2)
 	@ssh -o BatchMode=yes root@1.95.2.123 'set -eu; test ! -e /etc/apparmor.d/bwrap-userns-restrict; test ! -e /etc/apparmor.d/bwrap; umask 022; tmp=$$(mktemp /etc/apparmor.d/.gitee-bwrap.XXXXXX); trap '\''rm -f "$$tmp"'\'' EXIT; cat > "$$tmp"; apparmor_parser -Q -T "$$tmp"; install -m 0644 "$$tmp" /etc/apparmor.d/bwrap-userns-restrict; apparmor_parser -r /etc/apparmor.d/bwrap-userns-restrict; sha256sum /etc/apparmor.d/bwrap-userns-restrict' < deploy/gitee-ci/bwrap-userns-restrict
+
+.PHONY: verify.gitee.checks.unit
+verify.gitee.checks.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_ci_checks

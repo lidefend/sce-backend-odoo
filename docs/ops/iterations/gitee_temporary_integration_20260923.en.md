@@ -344,3 +344,50 @@ unsupported check-run subscription removed; the page confirmed success. Push/PR 
 is archived; the signing secret needs rotation. The live installer plan still matches the checkpoint, with zero active jobs.
 The new bounded mirror-isolation Make target only disables/stops the registered reverse mirror and reads back its state.
 Scope is P4 existing CI infrastructure, excluding product data, the old runner and both unmerged topics.
+
+
+## 2026-09-23: post-Push check reporting increment (development)
+
+Baseline `77c5efe111fb30b857bbb2b1c2a098b2f559630e`; dirty, not frozen.
+The earlier real Push and exact-SHA 42-test server run passed; reuse the original
+`desktop-ci-acceptance-result.md` and `ci-live-result-final.json` artifacts. This is
+not full gate equivalence, main integration, deployment, or product acceptance.
+
+Ownership: P4, existing CI worker reporting, `scripts/ci`; no P0-P3 business changes.
+The opt-in trusted-parent reporter persists create intent before POST, reconciles
+unknown outcomes by a unique marker without duplicate POST, and requires exact-SHA
+readback. Zero tests or incomplete success receipts become action_required. The
+fixed name is `sce/ci-only-acceptance`; no build logs or local paths are published.
+
+The UI exposes required checks, but no protection rule was saved. The merge API
+still has no source/target dual-SHA parameters. A single-repository, 30-day token
+form with projects and mandatory user_info was prepared for user submission.
+The user-requested empty private Git token file was created with mode600; it is
+excluded from tracked files and evidence archives.
+
+L1 local iteration passed; initial L2 reporter16 + acceptance18 tests passed.
+Independent review and affected fixes follow below. Online installation remains
+pending: the credential is not delivered, and the existing installer still allows
+only its previous three modules. No Quick, push, server changes, or product-topic
+changes in this increment. Next: local review, bounded installation/readback,
+required-gate mapping and protected integration, then product iteration.
+
+- Implementation review found malformed API output could interrupt the worker.
+  Added output/summary type validation and worker-side reporting failure isolation;
+  only a fixed error code is logged, without discarding tests or revealing exceptions.
+- Revised L2 `make ENV=test verify.gitee.checks.unit verify.gitee.webhook.ci` passed:
+  reporter18, legacy worker18, mirror4, cutover9. Sandbox18 evidence is reused because
+  its execution inputs did not change. This remains dirty local implementation;
+  installation and platform readback are unverified, with no frozen delivery claim.
+
+
+### Check reporting installation closeout
+
+After WSL recovery, read-only authenticated API identity and checks listing passed;
+check-write permission is not yet accepted. The existing updater now includes the
+fourth module and an optional fixed-path service-owned0600 token referenced only by
+the worker. Plans exclude its value; failure restores old files/config or removes
+a newly created token. L1 iteration and L2 updater18+reporter18 passed. Installation
+is the next L3; business database/frontend L4 is out of scope. A clean installation
+source commit is needed by the existing updater, not a frozen publication claim.
+Final Quick/push remain pending until online readback.

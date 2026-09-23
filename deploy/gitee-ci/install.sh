@@ -10,6 +10,7 @@ test -f "${source_root}/scripts/ci/gitee_webhook_ci.py"
 test -f "${source_root}/scripts/ci/gitee_ci_run.sh"
 test -f "${source_root}/scripts/ci/gitee_ci_acceptance.py"
 test -f "${source_root}/scripts/ci/gitee_ci_acceptance_check.py"
+test -f "${source_root}/scripts/ci/gitee_ci_checks.py"
 test -f "${source_root}/deploy/gitee-ci/gitee-webhook-ci.service"
 test -f "${source_root}/deploy/gitee-ci/gitee-ci-worker.service"
 
@@ -33,6 +34,7 @@ install -o root -g root -m 0755 \
   /opt/gitee-ci/sce-product-odoo/gitee_webhook_ci.py
 install -o root -g root -m 0644 "${source_root}/scripts/ci/gitee_ci_acceptance.py" /opt/gitee-ci/sce-product-odoo/gitee_ci_acceptance.py
 install -o root -g root -m 0644 "${source_root}/scripts/ci/gitee_ci_acceptance_check.py" /opt/gitee-ci/sce-product-odoo/gitee_ci_acceptance_check.py
+install -o root -g root -m 0644 "${source_root}/scripts/ci/gitee_ci_checks.py" /opt/gitee-ci/sce-product-odoo/gitee_ci_checks.py
 install -o root -g root -m 0755 \
   "${source_root}/scripts/ci/gitee_ci_run.sh" \
   /opt/gitee-ci/sce-product-odoo/gitee_ci_run.sh

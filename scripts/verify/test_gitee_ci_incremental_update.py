@@ -1,5 +1,6 @@
 import base64
 import json
+import os
 from pathlib import Path
 import sqlite3
 import tempfile
@@ -11,6 +12,7 @@ class FakeUpdate(Update):
     def __init__(self, root):
         super().__init__(root);self.calls=[];self.fail_probe=False;self.fail_start=False;self.corrupt_backup=False
         self.states={u:'active' for u in UNITS};self.mirror='inactive';self.package_installed=False
+    def token_metadata(self): return {"mode":0o600,"uid":os.getuid(),"gid":os.getgid()}
     def run(self,*args):
         self.calls.append(args)
         if args[:2]==('systemctl','show'):
@@ -112,6 +114,30 @@ class UpdateTests(unittest.TestCase):
     def test_symlink_rejected(self):
         p=self.u.path(ENVS[0]);p.unlink();p.symlink_to('/etc/passwd')
         with self.assertRaises(ValueError):self.u.plan(self.payload)
+    def test_checks_token_plan_omits_value_and_install_private(self):
+        from scripts.ops.gitee_ci_incremental_update import CHECKS_TOKEN
+        self.payload['checks_token']=base64.b64encode(b'fixture-checks-token-only').decode()
+        plan=self.u.plan(self.payload)
+        self.assertNotIn('fixture-checks-token-only',json.dumps(plan))
+        self.apply()
+        self.assertEqual(self.u.path(CHECKS_TOKEN).read_bytes(),b'fixture-checks-token-only\n')
+        self.assertEqual(self.u.path(CHECKS_TOKEN).stat().st_mode&0o777,0o600)
+        self.assertIn(b'GITEE_CHECKS_TOKEN_FILE=',self.u.path(ENVS[1]).read_bytes())
+        self.assertNotIn(b'GITEE_CHECKS_TOKEN_FILE=',self.u.path(ENVS[0]).read_bytes())
+    def test_failed_checks_install_restores_and_removes_new_token(self):
+        from scripts.ops.gitee_ci_incremental_update import CHECKS_TOKEN
+        self.payload['checks_token']=base64.b64encode(b'fixture-checks-token-only').decode()
+        self.u.fail_start=True
+        with self.assertRaises(RuntimeError): self.apply()
+        self.assert_restored();self.assertFalse(self.u.path(CHECKS_TOKEN).exists())
+    def test_token_rotation_failure_restores_old_private_file(self):
+        from scripts.ops.gitee_ci_incremental_update import CHECKS_TOKEN
+        p=self.u.path(CHECKS_TOKEN);p.write_bytes(b'old-fixture-token');p.chmod(0o600)
+        self.payload['checks_token']=base64.b64encode(b'fixture-checks-token-only').decode()
+        self.u.fail_start=True
+        with self.assertRaises(RuntimeError): self.apply()
+        self.assertEqual(p.read_bytes(),b'old-fixture-token');self.assertEqual(p.stat().st_mode&0o777,0o600)
+
     def test_env_patch_idempotence_and_preservation(self):
         source=b'# keep\nOTHER=hello\nGITEE_CI_MODE=legacy\n'
         changed=env_update(source);self.assertEqual(changed,env_update(changed));self.assertIn(b'OTHER=hello\n',changed)

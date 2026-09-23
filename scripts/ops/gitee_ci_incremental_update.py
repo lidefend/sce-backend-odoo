@@ -5,6 +5,8 @@ import base64
 import hashlib
 import json
 import os
+import pwd
+import stat
 from pathlib import Path
 import re
 import shutil
@@ -14,13 +16,14 @@ import tempfile
 
 HOST = 'root@1.95.2.123'
 INSTALL = '/opt/gitee-ci/sce-product-odoo/'
-MODULES = ('gitee_webhook_ci.py', 'gitee_ci_acceptance.py', 'gitee_ci_acceptance_check.py')
+MODULES = ('gitee_webhook_ci.py', 'gitee_ci_acceptance.py', 'gitee_ci_acceptance_check.py', 'gitee_ci_checks.py')
 ENVS = ('/etc/gitee-ci/sce-product-odoo-receiver.env', '/etc/gitee-ci/sce-product-odoo-worker.env')
 UNIT = '/etc/systemd/system/gitee-ci-worker.service'
 UNITS = ('gitee-webhook-ci.service','gitee-ci-worker.service')
 CREDENTIALS = ('/etc/gitee-ci/id_ed25519','/etc/gitee-ci/id_ed25519.pub','/etc/gitee-ci/known_hosts')
 PACKAGE = 'bubblewrap=0.9.0-1ubuntu0.3'
 DB = '/var/lib/gitee-ci/jobs.sqlite3'
+CHECKS_TOKEN = '/etc/gitee-ci/checks.token'
 
 
 def digest(data): return hashlib.sha256(data).hexdigest()
@@ -63,6 +66,10 @@ class Update:
         s=p.stat()
         return {'sha256':digest(p.read_bytes()),'mode':s.st_mode&0o777,'uid':s.st_uid,'gid':s.st_gid}
 
+    def token_metadata(self):
+        user=pwd.getpwnam("gitee-ci")
+        return {"mode":0o600,"uid":user.pw_uid,"gid":user.pw_gid}
+
     def desired(self,payload):
         if not re.fullmatch('[0-9a-f]{40}',payload.get('source_sha','')): raise ValueError('full source SHA required')
         if set(payload.get('modules',{}))!=set(MODULES): raise ValueError('module allowlist mismatch')
@@ -72,6 +79,13 @@ class Update:
             if digest(data)!=item['sha256']: raise ValueError('module digest mismatch')
             changes[INSTALL+name]=data
         for index,name in enumerate(ENVS): changes[name]=env_update(self.path(name).read_bytes(),worker=index==1)
+        if payload.get('checks_token') is not None:
+            token=base64.b64decode(payload['checks_token'],validate=True)
+            if not re.fullmatch(rb'[A-Za-z0-9_-]{16,256}',token): raise ValueError('invalid checks token format')
+            changes[CHECKS_TOKEN]=token+b'\n'
+            lines=changes[ENVS[1]].splitlines(keepends=True)
+            if sum(x.startswith(b'GITEE_CHECKS_TOKEN_FILE=') for x in lines)>1: raise ValueError('duplicate checks token setting')
+            changes[ENVS[1]]=b''.join(x for x in lines if not x.startswith(b'GITEE_CHECKS_TOKEN_FILE='))+('GITEE_CHECKS_TOKEN_FILE='+CHECKS_TOKEN+'\n').encode()
         changes[UNIT]=unit_update(self.path(UNIT).read_bytes())
         return changes
 
@@ -88,7 +102,7 @@ class Update:
         for f in CREDENTIALS:
             if self.snapshot(f) is None: raise ValueError('registered credential missing')
         plan={'source_sha':payload['source_sha'],'host':HOST,'package':PACKAGE,
-              'files':{f:{'before':self.snapshot(f),'after_sha256':digest(v)} for f,v in desired.items()},
+              'files':{f:{'before':self.snapshot(f),'after_sha256':digest(v),'after_metadata':self.token_metadata() if f==CHECKS_TOKEN else None} for f,v in desired.items()},
               'credentials':'preserve bytes/mode/owner; values excluded',
               'credential_state_digest':digest(canonical({f:self.snapshot(f) for f in CREDENTIALS})),
               'updater_sha256':payload.get('updater_sha256','unit-test'),
@@ -189,10 +203,15 @@ class Update:
             folder,manifest=self.backup(desired)
             self.install_package();self.probe()
             self.verify_plan_inputs(plan)
-            for path,data in desired.items(): self.atomic_write(path,data,plan['files'][path]['before'])
+            for path,data in desired.items():
+                metadata=self.token_metadata() if path==CHECKS_TOKEN else plan['files'][path]['before']
+                self.atomic_write(path,data,metadata)
             if any(self.snapshot(f)!=v for f,v in original_credentials.items()): raise ValueError('credential drift')
             for path,data in desired.items():
                 if self.path(path).read_bytes()!=data: raise ValueError('installed content mismatch')
+                if path==CHECKS_TOKEN:
+                    actual=self.snapshot(path)
+                    if any(actual[k]!=v for k,v in self.token_metadata().items()): raise ValueError('checks token metadata mismatch')
             self.run('systemctl','daemon-reload')
             for unit in reversed(UNITS): self.run('systemctl','start',unit)
             for unit in UNITS:
@@ -215,7 +234,7 @@ def entry(payload,apply=False,expected_plan='',confirm=''):
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--expected-head',required=True);p.add_argument('--apply',action='store_true');p.add_argument('--plan-sha256',default='');p.add_argument('--confirm',default='');p.add_argument('--probe-only',action='store_true');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--expected-head',required=True);p.add_argument('--apply',action='store_true');p.add_argument('--plan-sha256',default='');p.add_argument('--confirm',default='');p.add_argument('--probe-only',action='store_true');p.add_argument('--checks-token-file');a=p.parse_args()
     if a.probe_only and a.apply: raise ValueError('probe and apply are mutually exclusive')
     root=Path(__file__).resolve().parents[2]
     def git(*args): return subprocess.check_output(['git',*args],cwd=root,text=True).strip()
@@ -223,6 +242,15 @@ def main():
     if git('rev-parse','HEAD')!=a.expected_head: raise ValueError('source HEAD drift')
     if a.apply and git('status','--porcelain'): raise ValueError('clean source required')
     payload={'source_sha':a.expected_head,'updater_sha256':digest(Path(__file__).read_bytes()),'modules':{}}
+    if a.checks_token_file:
+        fd=os.open(a.checks_token_file,os.O_RDONLY|os.O_NOFOLLOW)
+        try:
+            meta=os.fstat(fd)
+            if not stat.S_ISREG(meta.st_mode) or meta.st_mode&0o077 or meta.st_uid!=os.geteuid() or meta.st_size>4096: raise ValueError('private checks token file required')
+            token=os.read(fd,4096).strip()
+        finally: os.close(fd)
+        if not re.fullmatch(rb'[A-Za-z0-9_-]{16,256}',token): raise ValueError('invalid checks token format')
+        payload['checks_token']=base64.b64encode(token).decode()
     for name in MODULES:
         data=subprocess.check_output(['git','show',a.expected_head+':scripts/ci/'+name],cwd=root)
         if a.apply and (root/'scripts/ci'/name).read_bytes()!=data: raise ValueError('module dirty')

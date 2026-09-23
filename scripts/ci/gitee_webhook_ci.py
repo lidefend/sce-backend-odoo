@@ -331,6 +331,14 @@ class Application:
             recover_running=worker_enabled,
         )
 
+        self.reporter = None
+        token_file = os.environ.get("GITEE_CHECKS_TOKEN_FILE")
+        if worker_enabled and token_file:
+            if not self.acceptance:
+                raise RuntimeError("check reporter requires ci-only mode")
+            from gitee_ci_checks import API, Reporter
+            self.reporter = Reporter(self.queue, API(token_file))
+
     def accept(
         self,
         body: bytes,
@@ -377,14 +385,25 @@ class Application:
             inserted = self.queue.enqueue(job, timestamp)
         return inserted, job["sha"]
 
+    def report_checks(self) -> None:
+        if self.reporter is None:
+            return
+        try:
+            self.reporter.sync_once()
+        except Exception:
+            # Reporting failures never discard queued tests or expose API/token text.
+            print("[gitee_checks] reporting_unavailable", flush=True)
+
     def execute_once(self) -> bool:
         if self.runner is None:
             raise RuntimeError("worker is disabled")
+        self.report_checks()
         job = self.queue.claim()
         if job is None:
             return False
         sha = job["sha"]
         if self.acceptance:
+            self.report_checks()
             from gitee_ci_acceptance import Executor
             executor = Executor(self.log_dir / "ci-only")
             try:
@@ -394,6 +413,7 @@ class Application:
                           "exit_code": None, "tests": None, "log": None,
                           "reason": "executor_initialization_failed"}
             self.queue.finish(sha, result)
+            self.report_checks()
             return True
         log_path = self.log_dir / f"{sha}.log"
         safe_env = {

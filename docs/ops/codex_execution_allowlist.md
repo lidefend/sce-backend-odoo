@@ -7,6 +7,10 @@
 
 本次续跑所有者已明确要求直接执行现有 CI 线上更新及 CI-only 真实事件验收。用户截图和登录后的页面
 已确认 WebHook 2106026、平台镜像为空、Gitee Go 未开通；历史公开范围及同组客户标识授权沿用本会话。
+本轮用户已完成仓库限定 API 令牌并要求继续收口，授权现有 worker 的检查回传安装与验收。
+增量入口可通过 `GITEE_CHECKS_TOKEN_FILE` 从私有文件经 SSH stdin 安装到固定
+`/etc/gitee-ci/checks.token`，仅 gitee-ci 所有者0600，worker env只登记路径；
+原文件及配置纳入精确计划、备份和失败恢复；不进入沙箱、日志或公开仓库。
 该授权取代本节下文的“本批没有线上启用授权／条件未齐备”历史状态，但不取代精确计划、备份、隔离、
 沙箱与发布检查。正式合并、历史 main 补齐和产品部署仍不授权。
 `make gitee.ci.mirror.isolate GITEE_ISOLATION_CONFIRM=ISOLATE_EXISTING_REVERSE_MIRROR` 仅停用既有
@@ -38,12 +42,13 @@ GitHub 的情况下使用既有 `gitee-mirror`；本节是下文“GitHub 唯一
   `GITEE_CI_EVIDENCE`/`GITEE_CI_EVIDENCE_SHA256` 精确审阅回执；回执绑定候选/main、1小时内平台
   观察、公开范围授权及证据文件摘要。推送前在线核验隔离、活动服务、模式、安装代码和配置摘要。
   证据缺失/过期/漂移均零推送；不使用布尔跳过。普通 integration 路径约束不变。
+- `make verify.gitee.checks.unit`：离线 Check Runs 回传、精确 SHA、断线恢复及凭据隔离测试；不写平台。回传模块默认关闭；新增凭据、安装范围及启用须完成当前独立 P4 授权与精确更新计划。
 - `make verify.gitee.publication_gate.unit`：平台证据、时效、篡改及密钥替换的本地纯测试。
 - `make verify.gitee.ci_only.unit` 是本地 P4 定向测试：使用临时 SQLite/Git 与现有 bubblewrap，
   不连接业务数据库、不写远端、不修改线上服务。`GITEE_CI_MODE=ci-only` 只允许受管配置显式启用；
   本批没有线上启用授权。
 - `make gitee.ci.server.update EXPECTED_HEAD=<sha>`：既有 host/receiver/worker 的增量预演，默认只读。
-  仅修改登记的三个代码文件、两个 env 的模式/交接项和 worker 写路径；不调用旧初始化安装入口。
+  仅修改登记的四个代码文件、两个 env 的模式/交接项和 worker 写路径；不调用旧初始化安装入口。
   APPLY 要求 clean 精确 source、精确预演摘要和 `GITEE_UPDATE_CONFIRM=APPLY_REVIEWED_CI_INCREMENTAL_UPDATE`；
   此参数不代替公开范围、平台自动化隔离和精确线上方案批准。当前这些条件未齐备，不得实际执行。
   bubblewrap 固定软件包、受限 sandbox 探针、备份/恢复均属于同一入口；失败不得无沙箱降级。

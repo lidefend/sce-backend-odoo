@@ -16,21 +16,19 @@ goal:
     - automatic_pr_merge_or_force_push
     - deployment
   feasibility_verdict: currently_not_implementable_with_available_evidence
-  channel_role: historical_mirror_and_candidate_storage_pending_isolation
+  channel_role: real_push_ci_only_verified_formal_integration_pending
   ci_rebuild: full_gate_migration_deferred
   ci_chain_executor: existing_worker
-  ci_chain_acceptance: local_implementation_verified_online_not_run
+  ci_chain_acceptance: real_push_exact_sha_verified_77c5efe1_42_tests
   ci_blockers:
-    - platform_push_side_effects_unproven
-    - ci_only_apply_blocked_pending_platform_evidence
-    - online_worker_isolation_and_runtime_identity_unverified
+    - check_run_reporting_online_not_verified
+    - full_required_gate_equivalence_not_verified
+    - protected_exact_head_merge_not_available
   repository_visibility: public_user_confirmed
   primary_objective: real_gitee_push_acceptance_on_existing_worker
   resume:
-    - confirm_two_named_customer_identifier_publication_items
-    - obtain_existing_platform_configuration_read_access_or_admin_export
-    - review_incremental_updater_and_freeze_only_after_blockers_closed
-    - isolate_approved_automation_and_install_existing_worker_update
-    - publish_exact_ci_only_candidate_and_accept_real_push_chain
-    - extend_full_required_checks_after_initial_chain_acceptance
+    - implement_and_validate_opt_in_trusted_check_run_reporter
+    - user_creates_repo_scoped_api_credential_for_existing_worker
+    - extend_reviewed_incremental_installer_and_verify_platform_readback
+    - select_required_gate_mapping_before_formal_product_integration
     - handle_formal_merge_as_independent_blocker
