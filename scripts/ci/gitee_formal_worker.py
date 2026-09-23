@@ -8,7 +8,7 @@ import tempfile
 import time
 
 from scripts.ci.gitee_ci_checks import API
-from scripts.ci.gitee_pr_identity import ReadAPI, observe, valid_branch
+from scripts.ci.gitee_pr_identity import ReadAPI, observe, observe_merged, valid_branch
 from scripts.ci.gitee_gate_plan import plan, changed_paths, digest
 from scripts.ci.gitee_formal_executor import FormalExecutor
 from scripts.ci.gitee_formal_queue import FormalQueue, FormalReporter, execute_once
@@ -64,7 +64,13 @@ class Worker:
         self.queue=FormalQueue(path,recover_running=True)
         self.reader=ReadAPI(token_file)
         self.executor=FormalExecutor(Path(log_dir)/'formal')
-        self.reporter=FormalReporter(self.queue,API(token_file),self.refresh)
+        self.reporter=FormalReporter(self.queue,API(token_file),self.refresh_report)
+
+    def refresh_report(self,p):
+        pr=self.reader.get('/pulls/'+str(p['pr_number']))
+        if pr.get('state') == 'merged':
+            return observe_merged(self.reader,p)
+        return self.refresh(p)
 
     def refresh(self,p):
         pr=self.reader.get('/pulls/'+str(p['pr_number']))

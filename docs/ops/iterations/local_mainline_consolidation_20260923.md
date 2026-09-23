@@ -62,3 +62,10 @@ frontend单测145测试通过；Vite build退出134，实际达到1024MiB Node�
 MemorySwapMax2G、OOMPolicy=kill和LimitCORE=0；使用现有2GB swap，不增加磁盘
 或改变全机swappiness。主机物理内存受cgroup硬限额保护，超额仍失败，不减测试。
 这些数值仍需远端真实验收；不把清理完成或单项通过当成整轮通过。
+
+
+## Merged PR historical checks repair
+
+P4 / CI reporting: PR6 merged into f3c97b9194159a8de717d8ddb6dbd7262d659ee5 after all four current-source checks succeeded. The periodic reporter subsequently rejected the normal merged lifecycle as a stale open-PR snapshot. Split reporting-only historical identity from execution identity. Two platform reads must agree on merged state, merge timestamp, original PR/repository/ref/head/base and PR ID; only an exact valid successful stored receipt can restore historical success. Open-PR drift, API failure, closed/unmerged PRs and failed/incomplete receipts remain fail-closed. No new task execution or merge eligibility is granted by the historical snapshot.
+
+Validation: 46 focused identity/queue/worker tests passed, including historical restoration and identity/receipt rejection. Full CI remains remote. Update and readback evidence will remain in existing external artifacts. PR6 source receipt is retained; do not rerun its product build to repair presentation.

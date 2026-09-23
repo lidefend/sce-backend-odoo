@@ -91,6 +91,28 @@ class FormalQueueTests(unittest.TestCase):
             self.assertEqual(x['conclusion'],'success');self.assertEqual(x['pull_request_id'],124)
             self.assertIn(self.p['base_sha'],x['output']['summary'])
 
+    def test_merged_success_restores_previously_invalidated_checks(self):
+        self.terminal();self.refresh=lambda p:{};self.publish_all();self.now+=31
+        self.refresh=lambda p:{**{k:p[k] for k in IDENTITY_KEYS},'pr_id':124,
+                              'historical_merged':True,'merged_at':'2026-09-23'}
+        self.publish_all()
+        self.assertTrue(all(x['conclusion']=='success' for x in self.api.rows.values()))
+        self.now+=31;self.publish_all()
+        self.assertEqual(sum(x[0]=='POST' for x in self.api.calls),4)
+
+    def test_merged_flag_cannot_promote_missing_failed_or_mismatched_receipt(self):
+        from scripts.ci.gitee_formal_queue import payload
+        current={**{k:self.p[k] for k in IDENTITY_KEYS},'pr_id':124,
+                 'historical_merged':True,'merged_at':'2026-09-23'}
+        for state in ['running','pending','failed','cancelled','environment_error']:
+            self.assertEqual(payload(self.p,state,receipt(self.p),CHECKS[0],'m',current)['conclusion'],'action_required')
+        for key,value in [('head_sha','c'*40),('base_sha','c'*40),('plan_sha256','bad'),('checks',[]),('integration_eligible',True)]:
+            r=receipt(self.p);r[key]=value
+            self.assertEqual(payload(self.p,'success',r,CHECKS[0],'m',current)['conclusion'],'action_required')
+        for key,value in [('pr_id',999),('head_sha','c'*40),('base_sha','c'*40),('merged_at',None)]:
+            c={**current,key:value}
+            self.assertEqual(payload(self.p,'success',receipt(self.p),CHECKS[0],'m',c)['conclusion'],'action_required')
+
     def test_main_drift_revokes_previous_success(self):
         self.terminal();self.publish_all();self.now+=31
         self.refresh=lambda p:{**p['platform_snapshot'],'base_sha':'c'*40}

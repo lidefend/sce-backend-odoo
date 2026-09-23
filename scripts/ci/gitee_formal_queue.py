@@ -112,6 +112,24 @@ def payload(plan,status,receipt,name,marker,current):
     value={'name':name,'head_sha':plan['head_sha'],
            'pull_request_id':plan['platform_snapshot']['pr_id'],
            'output':{'title':'Formal gate: '+name,'summary':summary}}
+    historical = (isinstance(current,dict) and current.get('historical_merged') is True)
+    if historical:
+        bound = (all(current.get(k)==plan[k] for k in IDENTITY_KEYS) and
+                 current.get('pr_id')==plan['platform_snapshot']['pr_id'] and
+                 bool(current.get('merged_at')))
+        valid = (bound and status=='success' and isinstance(receipt,dict) and
+                 receipt.get('status')=='success' and
+                 all(receipt.get(k)==plan[k] for k in IDENTITY_KEYS) and
+                 receipt.get('plan_sha256')==plan['plan_sha256'] and
+                 receipt.get('integration_eligible') is False)
+        try:
+            if not valid: raise ValueError('invalid_historical_receipt')
+            validate_success(plan,receipt)
+            conclusion='success'
+        except (ValueError,TypeError,AttributeError):
+            conclusion='action_required'
+        value.update(status='completed',conclusion=conclusion)
+        return value
     fresh=True
     try: verify_snapshot(plan,current)
     except ValueError: fresh=False
