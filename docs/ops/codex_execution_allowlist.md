@@ -1,7 +1,111 @@
 ````md
+
+## 所有者 CI 通过即合并规则（2026-09-23，本节优先）
+
+适用范围：本仓库普通 Gitee PR。所有者已授权必需 CI 通过后直接通过受保护 PR 流程合并，
+不再逐 PR 请求人工审查、人工测试确认或重复合并授权；平台审查/测试最低人数设为 0，
+新建 PR 不自动附加人工审批门槛。此规则覆盖下文相反的人工批准要求，GitHub 原流程不变。
+保留 main 保护及 public_guard、merge_policy_gate、professional_quality_gate、
+frontend_release_gate 四项必需检查。成功必须属于当前 PR 的最新源提交及当前目标基线；
+失败、缺失、运行中、旧提交或基线漂移均不得合并。按可信风险分类产生的显式 skip 可以接受。
+保留既有独立代码复核、公开范围检查；不将其变成所有者点击审批步骤。
+合并前重新核验源/目标身份及检查结果，使用平台受保护 PR 合并；不得直接推送 main、
+强推、关闭必需 CI 或伪造人工审核。平台若不能绑定合并对象，应明确报告实现限制，
+不得宣称已具备无人值守原子自动合并。合并后回读 PR 状态、合并提交及 main；合并不触发产品部署。
+平台审批配置的实际降低仍须满足工具要求的操作时确认；本段记录所有者目标，不代表平台已更新。
+
+## 所有者最新执行分工（2026-09-23，本节优先）
+
+本地是代码迭代环境，普通 Gitee PR 候选发布不再要求本地完整 `ci.local.quick` 或完整生成证据门禁。
+本地只做 `ci.local.iteration`、按变更影响选择的非零定向测试及 diff/身份检查；普通
+`pr.push.gitee` 和 `gitee.ci.pr.create` 不得再因缺少本地 Quick receipt 拒绝候选。
+完整公共扫描、生成报告检查、风险选择的前后端集成检查交由远端 PR 执行；远端检查完成前不得
+宣称主线集成或合并资格。clean 精确 SHA、独立审查、公开范围审查、远端身份/快进约束与
+main 的必需检查保持；人工审核按上方最新合并规则执行。新候选不得继承旧 SHA 的远端成功。
+此项覆盖本文旧的“先完整本地 Quick 再普通 Gitee 候选推送”顺序；历史 ci-only bootstrap、
+正式版本发布/数据库验收及 GitHub 原入口暂不改变。本地 Quick 可显式诊断，不是普通推送前置。
 # Codex Execution Allowlist (Autonomous Mode)
 
 `CANONICAL_ALLOWED_WRITE_BRANCH_REGEX=^(feature|fix|refactor|audit|release|codex)/.+`
+
+## 临时 Gitee 主线集成车道（2026-09-23）
+
+当前续跑授权普通前端 CI 完善。`make gitee.ci.frontend.prepare` 仅在既有外部证据目录
+制作依赖包，固定 Node22.17.0/pnpm9.12.3 哈希、只读现有离线 store、bwrap 断网及禁用安装脚本；
+绑定锁文件、workspace 与 package manifests，拒绝不支持的 hook/patch/外部依赖。
+`make verify.gitee.frontend_cache.unit` 验证输入、包和路径拒绝边界。
+`make gitee.ci.frontend.verify` 对已准备包执行当前提交的 lint、严格类型、单元测试和构建，
+复用既有外部证据目录；临时无网络/无凭据沙箱不接数据库，任一步失败均非成功。
+`make gitee.ci.frontend.cache.install` 默认只读预演；本轮前端 CI 授权允许
+`APPLY=1 GITEE_FRONTEND_CONFIRM=INSTALL_REVIEWED_FRONTEND_CACHE` 按精确归档 SHA 安装已复核依赖包。
+只追加 `/opt/gitee-ci/frontend/<dependency-key>`，root 所有、0644只读归档；不以root解包/执行，
+不覆盖已存在不同内容、不改服务/凭据/数据库。旧缓存保留，失败不改变现有运行配置。
+`make verify.gitee.frontend_cache_install.unit` 验证摘要、重复安装和冲突边界。
+准备成功不代表服务器安装、完整前端检查或发布验收。
+
+
+本次续跑所有者已明确要求直接执行现有 CI 线上更新及 CI-only 真实事件验收。用户截图和登录后的页面
+已确认 WebHook 2106026、平台镜像为空、Gitee Go 未开通；历史公开范围及同组客户标识授权沿用本会话。
+本轮用户已完成仓库限定 API 令牌并要求继续收口，授权现有 worker 的检查回传安装与验收。
+增量入口可通过 `GITEE_CHECKS_TOKEN_FILE` 从私有文件经 SSH stdin 安装到固定
+`/etc/gitee-ci/checks.token`，仅 gitee-ci 所有者0600，worker env只登记路径；
+原文件及配置纳入精确计划、备份和失败恢复；不进入沙箱、日志或公开仓库。
+该授权取代本节下文的“本批没有线上启用授权／条件未齐备”历史状态，但不取代精确计划、备份、隔离、
+沙箱与发布检查。正式合并、历史 main 补齐和产品部署仍不授权。
+`make gitee.ci.mirror.isolate GITEE_ISOLATION_CONFIRM=ISOLATE_EXISTING_REVERSE_MIRROR` 仅停用既有
+gitee-to-github-mirror.timer/service 并回读 inactive/disabled/PID=0；不改旧 runner，不自动恢复镜像。
+服务历史 failed 但 MainPID=0 同样视为停止，timer 必须 inactive/disabled。
+`gitee.ci.sandbox.profile.install` 仅在无现有 bwrap profile 时安装已审上游 v4.0.3 配置；
+`gitee.ci.sandbox.probe` 使用现有 updater 的同服务约束探针验证网络/凭据隔离。不修改全局 sysctl，
+不使用 unconfined 通配豁免。配置来源及内容 hash 见批次记录；此为真实环境故障的限定修复。
+`make gitee.ci.secret.rotate` 仅轮换现有 receiver 的签名密钥；要求旧 env 精确摘要、私有文件和明确确认，
+通过 SSH stdin 传输，备份并原子替换后回读，禁止回显。浏览器一侧由用户完成凭据变更。
+
+GitHub 账号受限期间，仓库所有者授权调整集成流程。仅本节登记的入口可在不访问
+GitHub 的情况下使用既有 `gitee-mirror`；本节是下文“GitHub 唯一发布远端／Gitee 仅镜像”
+的有界例外，不修改 `origin`，不授权任意远端、强推、自动合并或部署。
+
+- `make gitee.integration.inspect EXPECTED_HEAD=<sha> GITEE_EXPECTED_MAIN=<sha>`：只读。
+- `make main.gitee.catchup ...`：默认预演；只允许把已集成的历史主线
+  `de9a230d3faab18dd60a219f445f932a8af9d7f5` 快进到 Gitee `main`，不集成未合并专题。
+  实际写入要求 clean 合规控制分支、两个本地历史主线锚点一致、远端精确旧 SHA、祖先证明、
+  已验证恢复 bundle，以及 `APPLY=1 GITEE_INTEGRATION_CONFIRM=FAST_FORWARD_HISTORICAL_GITEE_MAIN`。
+  仓库所有者审阅具体补齐范围后授权执行，不能把流程调整请求自动视为 main 写入批准。
+- `make pr.push.gitee ...`：默认预演；实际发布要求 clean 精确 HEAD、有效 Quick 回执、
+  只读生成证据门禁、已补齐的精确 Gitee main、同名分支快进检查和发布后回读，参数为
+  `APPLY=1 GITEE_INTEGRATION_CONFIRM=PUBLISH_EXACT_GITEE_CANDIDATE`。
+  发布前独立审查和外部证据归档仍按既有规则执行；推送成功不等于 CI／审查／合并通过。
+- CI-only 有界例外：`make pr.push.gitee GITEE_PUBLICATION_PURPOSE=ci-only ...` 仅允许
+  `fix/gitee-temporary-integration-v1` 候选；只读预演不要求历史 main 已补齐，输出相对实时 main
+  的全部提交与变更路径，并明确 dirty 内容未包含。实际 APPLY 要求 clean、Quick、生成证据及
+  `GITEE_CI_EVIDENCE`/`GITEE_CI_EVIDENCE_SHA256` 精确审阅回执；回执绑定候选/main、1小时内平台
+  观察、公开范围授权及证据文件摘要。推送前在线核验隔离、活动服务、模式、安装代码和配置摘要。
+  证据缺失/过期/漂移均零推送；不使用布尔跳过。普通 integration 路径约束不变。
+- `make gitee.ci.gates.plan EXPECTED_HEAD=<sha> GITEE_EXPECTED_MAIN=<sha> GITEE_SOURCE_BRANCH=<branch> GITEE_PR_NUMBER=<number>`：只读正式门禁计划；要求 clean 控制分支，包含删除和重命名两端，复用现有风险分类。PR 编号为调用方输入，计划不证明平台身份、不执行检查、不授予集成资格。`GITEE_CANDIDATE=1` 显式选择候选级检查。
+- `make gitee.ci.pr.inspect ...`：复用 `GITEE_CHECKS_TOKEN_FILE` 私有文件，只读核验指定 PR、同仓源分支与受保护 main 的精确 SHA，前后两轮漂移拒绝。计划入口可通过同一变量附加实时核验；结果仅为观察快照，不授权合并，不宣称原子绑定。
+- `make verify.gitee.formal_worker.unit verify.gitee.formal_pr.unit`：现有签名事件接入和有界 PR 创建控制器的离线测试。
+- `make gitee.ci.server.update ... GITEE_FORMAL=1 GITEE_NODE_ARCHIVE=<reviewed archive>`：本会话授权的既有执行器正式静态门禁接入；仍要求精确 clean SHA、预演摘要、备份/恢复与原确认值。只写固定版本目录、固定 Node 22.17.0 二进制及既有服务配置；包白名单和归档/二进制双哈希强制校验。不启用数据库、部署或完整候选车道；本次普通前端车道仅消费已受管安装且匹配候选输入的离线依赖缓存，缺失/漂移拒绝。
+- `make gitee.ci.pr.create EXPECTED_HEAD=<sha> GITEE_EXPECTED_MAIN=<sha> GITEE_CHECKS_TOKEN_FILE=<private path>`：默认只读预演。`APPLY=1` 只为当前 Gitee 集成专题创建或复用同仓 main PR，要求精确远端身份、clean 候选和 Quick 回执；创建前持久化不确定结果标记，不重复 POST、不合并、不部署。
+- `make verify.gitee.formal_queue.unit`：正式任务持久队列、执行器适配与四项检查回传的离线生命周期测试；API 为受控 fake，不写平台。仅显式 formal-static 模式接入；不得将离线生命周期通过称为真实 PR 门禁验收。
+- `make verify.gitee.formal_executor.unit`：普通 PR 静态门禁执行核心的离线测试，使用真实 bubblewrap 验证网络／凭据隔离、非零计数、取消、超时及结果失效。执行核心仅由显式 formal-static 模式接入；本入口不执行真实产品门禁、不安装服务、不新增部署资格。
+- `make verify.gitee.gates.unit`：离线门禁选择和真实临时 Git 删除／重命名测试，无平台或业务数据写入。
+- `make verify.gitee.checks.unit`：离线 Check Runs 回传、精确 SHA、断线恢复及凭据隔离测试；不写平台。回传模块默认关闭；新增凭据、安装范围及启用须完成当前独立 P4 授权与精确更新计划。
+- `make verify.gitee.publication_gate.unit`：平台证据、时效、篡改及密钥替换的本地纯测试。
+- `make verify.gitee.ci_only.unit` 是本地 P4 定向测试：使用临时 SQLite/Git 与现有 bubblewrap，
+  不连接业务数据库、不写远端、不修改线上服务。`GITEE_CI_MODE=ci-only` 只允许受管配置显式启用；
+  本批没有线上启用授权。
+- `make gitee.ci.server.update EXPECTED_HEAD=<sha>`：既有 host/receiver/worker 的增量预演，默认只读。
+  仅修改登记的四个代码文件、两个 env 的模式/交接项和 worker 写路径；不调用旧初始化安装入口。
+  APPLY 要求 clean 精确 source、精确预演摘要和 `GITEE_UPDATE_CONFIRM=APPLY_REVIEWED_CI_INCREMENTAL_UPDATE`；
+  此参数不代替公开范围、平台自动化隔离和精确线上方案批准。当前这些条件未齐备，不得实际执行。
+  bubblewrap 固定软件包、受限 sandbox 探针、备份/恢复均属于同一入口；失败不得无沙箱降级。
+- `make verify.gitee.ci_update.unit verify.gitee.publication_scope.unit`：本地临时目录/Git/SQLite 定向测试，
+  线上服务/包管理调用由受控 fake 替代，不改业务数据。公开范围工具只读候选及已观测远端对象，不推送。
+- 不使用固定历史 SHA 的 `gitee.pr.bot.merge` 处理新候选。Gitee PR 必须绑定源 HEAD／目标
+  main，完成所需验证和独立审查后，按上方 CI 通过即合并规则在受保护 PR 流程合入；旧机器人不得用于新候选。
+
+操作步骤及恢复 GitHub 的边界见 [临时集成规程](gitee_temporary_integration_v1.md)。
+现有 `pr.push`、`mirror.main.gitee` 和 `candidate.mirror.gitee` 保持原语义。
 
 **Codex 自治执行授权清单 · v4.3（Replace v4.2）**
 

@@ -110,6 +110,18 @@ def load_policy(path: Path) -> dict[str, object]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if payload.get("schema_version") != "sce.repository_clean_history_policy.v1":
         raise ValueError("unsupported clean-history policy")
+    documentation = set()
+    for entry in payload.get("repository_token_documentation_exceptions", []):
+        path = str(entry.get("path", ""))
+        blob = str(entry.get("blob_id", ""))
+        if (not path.startswith("docs/") or not path.endswith(".md")
+                or ".." in Path(path).parts or not re.fullmatch(r"[0-9a-f]{40}", blob)
+                or entry.get("rule_id") != "RH008"
+                or entry.get("classification") != "HISTORICAL_AUTOMATION_DOCUMENTATION"
+                or not entry.get("reason")):
+            raise ValueError("invalid exact historical documentation exception")
+        documentation.add((path, blob))
+    payload["_repository_token_documentation_exceptions"] = documentation
     return payload
 
 
@@ -355,6 +367,7 @@ def blob_findings(
         scan_repository_identity
         and row.path != policy_relative
         and row.path not in repository_token_exempt_paths
+        and (row.path, row.object_id) not in rules.get("_repository_token_documentation_exceptions", set())
         and any(token in data for token in forbidden_tokens)
     ):
         findings.add(Finding("RH008", display, f"{rule_prefix}OLD_REPOSITORY_REFERENCE"))

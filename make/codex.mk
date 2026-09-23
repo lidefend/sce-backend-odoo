@@ -357,6 +357,25 @@ pr.ready: guard.prod.forbid
 pr.push: guard.prod.forbid
 	@GITHUB_AUTH_REMOTE="$(or $(GITHUB_AUTH_REMOTE),origin)" bash scripts/ops/git_safe_push.sh
 
+# Temporary outage lane. The default is read-only; origin is never rewritten.
+.PHONY: gitee.integration.inspect main.gitee.catchup pr.push.gitee verify.gitee.integration.unit
+gitee.integration.inspect: guard.prod.forbid
+	@python3 scripts/ops/gitee_temporary_integration.py inspect --expected-head "$(EXPECTED_HEAD)" --expected-main "$(GITEE_EXPECTED_MAIN)"
+
+main.gitee.catchup: guard.prod.forbid
+	@python3 scripts/ops/gitee_temporary_integration.py catchup --expected-head "$(EXPECTED_HEAD)" --expected-main "$(GITEE_EXPECTED_MAIN)" $(if $(filter 1,$(APPLY)),--apply,) --confirm "$(GITEE_INTEGRATION_CONFIRM)"
+
+GITEE_PUBLICATION_PURPOSE ?= integration
+pr.push.gitee: guard.prod.forbid
+	@GITEE_CI_EVIDENCE="$(GITEE_CI_EVIDENCE)" GITEE_CI_EVIDENCE_SHA256="$(GITEE_CI_EVIDENCE_SHA256)" python3 scripts/ops/gitee_temporary_integration.py publish --purpose "$(GITEE_PUBLICATION_PURPOSE)" --expected-head "$(EXPECTED_HEAD)" --expected-main "$(GITEE_EXPECTED_MAIN)" $(if $(filter 1,$(APPLY)),--apply,) --confirm "$(GITEE_INTEGRATION_CONFIRM)"
+
+verify.gitee.integration.unit: guard.prod.forbid
+	@python3 -m unittest scripts.ops.test_gitee_temporary_integration
+
+.PHONY: verify.gitee.publication_gate.unit
+verify.gitee.publication_gate.unit: guard.prod.forbid
+	@python3 -m unittest scripts.ops.test_gitee_ci_publication_gate
+
 verify.pr.push.unit: guard.prod.forbid
 	@bash scripts/ops/git_safe_push.sh --self-test
 
@@ -733,3 +752,85 @@ main.cutover.controlled: guard.prod.forbid
 		--authorization-id "$(CUTOVER_AUTHORIZATION_ID)" \
 		$(if $(CUTOVER_RUN_ID),--run-id "$(CUTOVER_RUN_ID)",) \
 		$(if $(filter 1,$(APPLY)),--apply --confirm CONTROLLED_MAIN_CUTOVER_APPLY,)
+
+.PHONY: verify.gitee.ci_only.unit
+verify.gitee.ci_only.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_ci_acceptance
+
+.PHONY: gitee.ci.server.update verify.gitee.ci_update.unit
+gitee.ci.server.update: guard.prod.forbid
+	@python3 scripts/ops/gitee_ci_incremental_update.py --expected-head "$(EXPECTED_HEAD)" $(if $(filter 1,$(GITEE_FORMAL)),--formal --node-archive "$(GITEE_NODE_ARCHIVE)",) $(if $(filter 1,$(APPLY)),--apply,) --plan-sha256 "$(GITEE_UPDATE_PLAN_SHA256)" --confirm "$(GITEE_UPDATE_CONFIRM)" $(if $(GITEE_CHECKS_TOKEN_FILE),--checks-token-file "$(GITEE_CHECKS_TOKEN_FILE)",)
+
+verify.gitee.ci_update.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_ci_incremental_update
+
+.PHONY: gitee.ci.sandbox.probe
+gitee.ci.sandbox.probe: guard.prod.forbid
+	@python3 scripts/ops/gitee_ci_incremental_update.py --expected-head "$(EXPECTED_HEAD)" --probe-only
+
+.PHONY: gitee.ci.secret.rotate
+gitee.ci.secret.rotate: guard.prod.forbid
+	@python3 scripts/ops/gitee_ci_rotate_secret.py --secret-file "$(GITEE_ROTATION_FILE)" --expected-env-sha256 "$(GITEE_RECEIVER_ENV_SHA256)" --confirm "$(GITEE_ROTATION_CONFIRM)"
+
+.PHONY: verify.gitee.publication_scope.unit
+verify.gitee.publication_scope.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_publication_scope
+
+.PHONY: gitee.ci.mirror.isolate
+gitee.ci.mirror.isolate: guard.prod.forbid
+	@test "$(GITEE_ISOLATION_CONFIRM)" = "ISOLATE_EXISTING_REVERSE_MIRROR" || (echo 'exact isolation confirmation required'; exit 2)
+	@ssh -o BatchMode=yes root@1.95.2.123 'set -eu; systemctl show gitee-to-github-mirror.timer gitee-to-github-mirror.service --property=Id,ActiveState,UnitFileState,MainPID; systemctl disable --now gitee-to-github-mirror.timer; systemctl stop gitee-to-github-mirror.service; test "$$(systemctl show gitee-to-github-mirror.timer --property=UnitFileState --value)" = disabled; test "$$(systemctl show gitee-to-github-mirror.timer --property=ActiveState --value)" = inactive; case "$$(systemctl show gitee-to-github-mirror.service --property=ActiveState --value)" in inactive|failed) ;; *) exit 2;; esac; test "$$(systemctl show gitee-to-github-mirror.service --property=MainPID --value)" = 0; systemctl show gitee-to-github-mirror.timer gitee-to-github-mirror.service --property=Id,ActiveState,UnitFileState,MainPID'
+
+.PHONY: gitee.ci.sandbox.profile.install
+gitee.ci.sandbox.profile.install: guard.prod.forbid
+	@test "$(GITEE_SANDBOX_CONFIRM)" = "INSTALL_UPSTREAM_BWRAP_PROFILE" || (echo 'exact sandbox confirmation required'; exit 2)
+	@ssh -o BatchMode=yes root@1.95.2.123 'set -eu; test ! -e /etc/apparmor.d/bwrap-userns-restrict; test ! -e /etc/apparmor.d/bwrap; umask 022; tmp=$$(mktemp /etc/apparmor.d/.gitee-bwrap.XXXXXX); trap '\''rm -f "$$tmp"'\'' EXIT; cat > "$$tmp"; apparmor_parser -Q -T "$$tmp"; install -m 0644 "$$tmp" /etc/apparmor.d/bwrap-userns-restrict; apparmor_parser -r /etc/apparmor.d/bwrap-userns-restrict; sha256sum /etc/apparmor.d/bwrap-userns-restrict' < deploy/gitee-ci/bwrap-userns-restrict
+
+.PHONY: verify.gitee.checks.unit
+verify.gitee.checks.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_ci_checks
+
+.PHONY: gitee.ci.gates.plan verify.gitee.gates.unit
+gitee.ci.gates.plan: guard.prod.forbid
+	@python3 -m scripts.ci.gitee_gate_plan --head "$(EXPECTED_HEAD)" --base "$(GITEE_EXPECTED_MAIN)" --source-branch "$(GITEE_SOURCE_BRANCH)" --pr-number "$(GITEE_PR_NUMBER)" $(if $(filter 1,$(GITEE_CANDIDATE)),--candidate,) $(if $(GITEE_CHECKS_TOKEN_FILE),--token-file "$(GITEE_CHECKS_TOKEN_FILE)",)
+
+verify.gitee.gates.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_gate_plan scripts.verify.test_gitee_pr_identity
+
+.PHONY: gitee.ci.pr.inspect
+gitee.ci.pr.inspect: guard.prod.forbid
+	@python3 -m scripts.ci.gitee_pr_identity --token-file "$(GITEE_CHECKS_TOKEN_FILE)" --head "$(EXPECTED_HEAD)" --base "$(GITEE_EXPECTED_MAIN)" --source-branch "$(GITEE_SOURCE_BRANCH)" --pr-number "$(GITEE_PR_NUMBER)"
+
+.PHONY: verify.gitee.formal_executor.unit
+verify.gitee.formal_executor.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_formal_executor
+
+.PHONY: verify.gitee.formal_queue.unit
+verify.gitee.formal_queue.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_formal_queue
+
+.PHONY: verify.gitee.formal_worker.unit
+verify.gitee.formal_worker.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_formal_worker
+
+.PHONY: gitee.ci.pr.create verify.gitee.formal_pr.unit
+gitee.ci.pr.create: guard.prod.forbid
+	@python3 -m scripts.ops.gitee_formal_pr --expected-head "$(EXPECTED_HEAD)" --expected-main "$(GITEE_EXPECTED_MAIN)" --token-file "$(GITEE_CHECKS_TOKEN_FILE)" $(if $(filter 1,$(APPLY)),--apply,)
+verify.gitee.formal_pr.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_formal_pr
+
+.PHONY: gitee.ci.frontend.prepare verify.gitee.frontend_cache.unit
+gitee.ci.frontend.prepare: guard.prod.forbid
+	@python3 -m scripts.ops.gitee_frontend_cache --output "$(GITEE_FRONTEND_OUTPUT)" --node-archive "$(GITEE_NODE_ARCHIVE)" --pnpm-archive "$(GITEE_PNPM_ARCHIVE)" --store "$(GITEE_PNPM_STORE)"
+verify.gitee.frontend_cache.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_frontend_cache
+
+.PHONY: gitee.ci.frontend.verify
+gitee.ci.frontend.verify: guard.prod.forbid
+	@python3 -m scripts.ops.gitee_frontend_cache --verify --output "$(GITEE_FRONTEND_OUTPUT)" --node-archive "$(GITEE_NODE_ARCHIVE)"
+
+.PHONY: gitee.ci.frontend.cache.install verify.gitee.frontend_cache_install.unit
+gitee.ci.frontend.cache.install: guard.prod.forbid
+	@python3 -m scripts.ops.gitee_frontend_cache_install --expected-head "$(EXPECTED_HEAD)" --prepared "$(GITEE_FRONTEND_OUTPUT)" --archive-sha256 "$(GITEE_FRONTEND_ARCHIVE_SHA256)" $(if $(filter 1,$(APPLY)),--apply,) --confirm "$(GITEE_FRONTEND_CONFIRM)"
+verify.gitee.frontend_cache_install.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_frontend_cache_install
