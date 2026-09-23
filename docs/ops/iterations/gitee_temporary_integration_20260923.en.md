@@ -403,3 +403,5 @@ Final Quick/push remain pending until online readback.
   exact-head integration remain separate pending items; no business deployment.
 
 - Pre-push live gate detected noncanonical worker-env ordering after token path append; no push. Quick for cc52a69f was cancelled, not passed. Normalize after token-path insertion; add post-install idempotence assertion.18 updater tests passed; reinstall and recheck the owning gate before refreeze.
+
+- Canonical-order repair installed via exact plan; only worker-env line ordering changed. Backup incremental-9pmv1eqv, source7c9a7ffb. live_state publication preflight passed; original SSH credentials preserved. Refreeze after documentation/generated-report refresh; retain cancelled Quick evidence.
