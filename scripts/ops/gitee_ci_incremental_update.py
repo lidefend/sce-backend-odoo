@@ -215,7 +215,8 @@ def entry(payload,apply=False,expected_plan='',confirm=''):
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--expected-head',required=True);p.add_argument('--apply',action='store_true');p.add_argument('--plan-sha256',default='');p.add_argument('--confirm',default='');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--expected-head',required=True);p.add_argument('--apply',action='store_true');p.add_argument('--plan-sha256',default='');p.add_argument('--confirm',default='');p.add_argument('--probe-only',action='store_true');a=p.parse_args()
+    if a.probe_only and a.apply: raise ValueError('probe and apply are mutually exclusive')
     root=Path(__file__).resolve().parents[2]
     def git(*args): return subprocess.check_output(['git',*args],cwd=root,text=True).strip()
     if not re.fullmatch('(feature|fix|refactor|audit|release|codex)/.+',git('branch','--show-current')): raise ValueError('controller branch')
@@ -228,6 +229,8 @@ def main():
         payload['modules'][name]={'content':base64.b64encode(data).decode(),'sha256':digest(data)}
     source=Path(__file__).read_text().rsplit("\nif __name__ == '__main__':",1)[0]
     invocation='\nprint(json.dumps(entry('+repr(payload)+','+repr(a.apply)+','+repr(a.plan_sha256)+','+repr(a.confirm)+'),sort_keys=True))\n'
+    if a.probe_only:
+        invocation='\nUpdate().probe()\nprint(json.dumps({"sandbox_probe":"passed","source_sha":'+repr(a.expected_head)+'}))\n'
     try:
         r=subprocess.run(['ssh','-o','BatchMode=yes',HOST,'python3','-'],input=source+invocation,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=900)
     except subprocess.TimeoutExpired:

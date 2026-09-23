@@ -11,6 +11,10 @@
 沙箱与发布检查。正式合并、历史 main 补齐和产品部署仍不授权。
 `make gitee.ci.mirror.isolate GITEE_ISOLATION_CONFIRM=ISOLATE_EXISTING_REVERSE_MIRROR` 仅停用既有
 gitee-to-github-mirror.timer/service 并回读 inactive/disabled/PID=0；不改旧 runner，不自动恢复镜像。
+服务历史 failed 但 MainPID=0 同样视为停止，timer 必须 inactive/disabled。
+`gitee.ci.sandbox.profile.install` 仅在无现有 bwrap profile 时安装已审上游 v4.0.3 配置；
+`gitee.ci.sandbox.probe` 使用现有 updater 的同服务约束探针验证网络/凭据隔离。不修改全局 sysctl，
+不使用 unconfined 通配豁免。配置来源及内容 hash 见批次记录；此为真实环境故障的限定修复。
 
 GitHub 账号受限期间，仓库所有者授权调整集成流程。仅本节登记的入口可在不访问
 GitHub 的情况下使用既有 `gitee-mirror`；本节是下文“GitHub 唯一发布远端／Gitee 仅镜像”

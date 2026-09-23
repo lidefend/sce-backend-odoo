@@ -760,6 +760,10 @@ gitee.ci.server.update: guard.prod.forbid
 verify.gitee.ci_update.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_gitee_ci_incremental_update
 
+.PHONY: gitee.ci.sandbox.probe
+gitee.ci.sandbox.probe: guard.prod.forbid
+	@python3 scripts/ops/gitee_ci_incremental_update.py --expected-head "$(EXPECTED_HEAD)" --probe-only
+
 .PHONY: verify.gitee.publication_scope.unit
 verify.gitee.publication_scope.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_gitee_publication_scope
@@ -768,3 +772,8 @@ verify.gitee.publication_scope.unit: guard.prod.forbid
 gitee.ci.mirror.isolate: guard.prod.forbid
 	@test "$(GITEE_ISOLATION_CONFIRM)" = "ISOLATE_EXISTING_REVERSE_MIRROR" || (echo 'exact isolation confirmation required'; exit 2)
 	@ssh -o BatchMode=yes root@1.95.2.123 'set -eu; systemctl show gitee-to-github-mirror.timer gitee-to-github-mirror.service --property=Id,ActiveState,UnitFileState,MainPID; systemctl disable --now gitee-to-github-mirror.timer; systemctl stop gitee-to-github-mirror.service; test "$$(systemctl show gitee-to-github-mirror.timer --property=UnitFileState --value)" = disabled; test "$$(systemctl show gitee-to-github-mirror.timer --property=ActiveState --value)" = inactive; case "$$(systemctl show gitee-to-github-mirror.service --property=ActiveState --value)" in inactive|failed) ;; *) exit 2;; esac; test "$$(systemctl show gitee-to-github-mirror.service --property=MainPID --value)" = 0; systemctl show gitee-to-github-mirror.timer gitee-to-github-mirror.service --property=Id,ActiveState,UnitFileState,MainPID'
+
+.PHONY: gitee.ci.sandbox.profile.install
+gitee.ci.sandbox.profile.install: guard.prod.forbid
+	@test "$(GITEE_SANDBOX_CONFIRM)" = "INSTALL_UPSTREAM_BWRAP_PROFILE" || (echo 'exact sandbox confirmation required'; exit 2)
+	@ssh -o BatchMode=yes root@1.95.2.123 'set -eu; test ! -e /etc/apparmor.d/bwrap-userns-restrict; test ! -e /etc/apparmor.d/bwrap; umask 022; tmp=$$(mktemp /etc/apparmor.d/.gitee-bwrap.XXXXXX); trap '\''rm -f "$$tmp"'\'' EXIT; cat > "$$tmp"; apparmor_parser -Q -T "$$tmp"; install -m 0644 "$$tmp" /etc/apparmor.d/bwrap-userns-restrict; apparmor_parser -r /etc/apparmor.d/bwrap-userns-restrict; sha256sum /etc/apparmor.d/bwrap-userns-restrict' < deploy/gitee-ci/bwrap-userns-restrict

@@ -312,6 +312,13 @@ are saved in incremental-update-local-evidence.json. Commit creation does not in
 only the source-SHA-bound read-only installation plan is regenerated.
 # Desktop execution takeover (2026-09-23, baseline db160f72)
 
+Reverse mirror timer is disabled/inactive; the historical failed service has PID 0. The first incremental update installed
+bubblewrap and backed up to `/var/lib/gitee-ci/update-backups/incremental-od5jpxr3`, then its sandbox probe failed due to
+AppArmor capability denials. Original files were restored and CI services remain stopped. The upstream v4.0.3 ABI4 bwrap
+profile (SHA256 a964037f6cf0df1099f14226b037eaedde6237c86e715188e93eb460b30be859) was installed without changing global
+sysctls. A governed same-user/systemd-hardening probe now passes with network and credential isolation. This changed
+environment permits a fresh installer plan/retry. A private rotation file is kept only in Git metadata and excluded from archives.
+
 The owner explicitly requested execution of the existing CI update/isolation/CI-only acceptance plan. Historical main
 catchup, merging and product deployment remain excluded. Public-history/customer-identifier authorization is retained.
 User screenshots show no platform mirror and Gitee Go not activated. The authenticated hook 2106026 was paused and its

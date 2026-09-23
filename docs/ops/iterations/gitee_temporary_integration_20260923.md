@@ -2,6 +2,24 @@
 
 ## Desktop 接管执行（2026-09-23，基线 db160f72）
 
+### 实际线上执行结果
+
+- 镜像 timer 已 disabled/inactive；service 保留历史 failed，MainPID=0。首次工具将 failed 误判为未停止，
+  属 validation_tool_defect；修正为与 updater 一致接受 inactive/failed+PID=0，不再重复停用。
+- 以 5db04d9a 精确计划执行 update：已安装 bubblewrap=0.9.0-1ubuntu0.3，备份
+  `/var/lib/gitee-ci/update-backups/incremental-od5jpxr3` 完成。probe 因 AppArmor userns capabilities 拒绝失败；
+  原文件恢复，receiver/worker 保持停止，平台 WebHook 仍暂停。没有推送。
+- 归因 environment_defect：kernel audit 明确拒绝 bwrap 的 setpcap/net_admin；不是缺少包或项目测试失败。
+- 采用 Ubuntu 官方安全说明链接的上游专用 profile（ABI4），未改全局安全开关。
+  来源 https://gitlab.com/apparmor/apparmor/-/raw/v4.0.3/profiles/apparmor/profiles/extras/bwrap-userns-restrict
+  SHA256 `a964037f6cf0df1099f14226b037eaedde6237c86e715188e93eb460b30be859`，本地及线上一致。
+  profile 允许 bwrap 建立 namespace，但对子进程叠加 capability deny；不是通用 unconfined 豁免。
+- `make gitee.ci.sandbox.probe EXPECTED_HEAD=5db04d9a3f666cff1ef6011352ce7bbcb1d87caf` 线上 passed。
+  探针与 worker 的用户/主要 systemd hardening 一致，验证 `/etc/gitee-ci` 不可见及外网连接失败。
+  可据该环境恢复事实重新预演并执行 update；不复用旧计划摘要。
+- 私有轮换文件仅保存在 Git metadata 的 codex/private（0600），不属于源码或证据归档。浏览器凭据更改由
+  用户按工具 handoff 规则提交；绝不把截图中的原密钥归档或复述。
+
 用户要求本任务直接执行，授权沿用既有受管 CI 更新、镜像隔离及 CI-only 验收方案；不含 main 补齐、合并、
 产品部署。用户确认公开范围及同组客户标识授权继续有效。当前为 P4 日常开发与高风险运维受管执行，非冻结交付。
 
