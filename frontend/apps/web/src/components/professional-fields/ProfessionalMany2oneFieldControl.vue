@@ -44,6 +44,7 @@
               v-for="(option, optionIndex) in visibleOptions"
               :id="optionId(optionIndex)"
               :key="`${field.name}-option-${option.value}`"
+              :data-record-id="option.value"
               class="many2one-option-row"
               :data-active="activeIndex === optionIndex || undefined"
               role="option"
