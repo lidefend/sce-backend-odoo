@@ -47,7 +47,7 @@ class API:
         self.opener = urllib.request.build_opener(NoRedirect())
 
     def request(self, method, suffix, payload=None):
-        if not re.fullmatch(r"/(check-runs(?:/[0-9]+)?|commits/[0-9a-f]{40}/check-runs\?page=[0-9]+&per_page=100)", suffix):
+        if not re.fullmatch(r"/(check-runs(?:/[0-9]+)?|commits/[0-9a-f]{40}/check-runs\?page=[0-9]+&per_page=100(?:&pull_request_id=[1-9][0-9]*)?)", suffix):
             raise ReportError("endpoint_rejected")
         body = None
         if payload is not None:

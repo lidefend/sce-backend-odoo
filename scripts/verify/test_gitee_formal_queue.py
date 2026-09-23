@@ -3,10 +3,25 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+import urllib.parse
 from unittest.mock import Mock
 from scripts.ci.gitee_formal_queue import FormalQueue, FormalReporter, execute_once, job_key, IDENTITY_KEYS, CHECKS
 from scripts.ci.gitee_gate_plan import plan, digest
 from scripts.verify.test_gitee_ci_checks import FakeAPI
+
+
+class FormalFakeAPI(FakeAPI):
+    omit_pr=False
+    def request(self,method,path,payload=None):
+        value=super().request(method,path,payload)
+        if method=='GET' and path.startswith('/commits/') and 'pull_request_id=' in path:
+            pr=int(urllib.parse.parse_qs(urllib.parse.urlsplit(path).query)['pull_request_id'][0])
+            value['check_runs']=[x for x in value['check_runs'] if x.get('pull_request_id')==pr]
+        if self.omit_pr:
+            if isinstance(value,dict) and 'check_runs' in value:
+                for row in value['check_runs']:row.pop('pull_request_id',None)
+            elif isinstance(value,dict):value.pop('pull_request_id',None)
+        return value
 
 
 def candidate(base='b'*40,pr=1,observed=100):
@@ -27,7 +42,7 @@ class FormalQueueTests(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
         self.q=FormalQueue(Path(self.tmp.name)/'q.sqlite');self.p=candidate()
-        self.key,_=self.q.enqueue(self.p,'1');self.api=FakeAPI();self.now=100
+        self.key,_=self.q.enqueue(self.p,'1');self.api=FormalFakeAPI();self.now=100
         self.refresh=lambda p:p['platform_snapshot']
         self.reporter=FormalReporter(self.q,self.api,lambda p:self.refresh(p),clock=lambda:self.now)
 
@@ -103,6 +118,22 @@ class FormalQueueTests(unittest.TestCase):
         with self.q.connect() as db:
             row=db.execute('SELECT error FROM formal_reports WHERE name=?',(CHECKS[0],)).fetchone()
         self.assertEqual(row[0],'readback_mismatch')
+
+    def test_real_gitee_shape_uses_filtered_pr_association(self):
+        self.api.omit_pr=True;self.terminal();self.publish_all()
+        with self.q.connect() as db:
+            self.assertEqual(db.execute('SELECT count(*) FROM formal_reports WHERE delivered IS NOT NULL AND error IS NULL').fetchone()[0],4)
+        self.assertTrue(any('&pull_request_id=124' in x[1] for x in self.api.calls))
+
+    def test_missing_filtered_association_never_delivered(self):
+        original=self.api.request
+        def detached(method,path,payload=None):
+            if '&pull_request_id=' in path:return {'check_runs':[]}
+            return original(method,path,payload)
+        self.api.request=detached;self.terminal();self.reporter.sync_once()
+        with self.q.connect() as db:
+            row=db.execute('SELECT delivered,error FROM formal_reports WHERE name=?',(CHECKS[0],)).fetchone()
+        self.assertIsNone(row[0]);self.assertEqual(row[1],'pr_association_readback_mismatch')
 
     def test_worker_exception_is_terminal(self):
         worker=Mock();worker.execute_plan.side_effect=RuntimeError('private detail')

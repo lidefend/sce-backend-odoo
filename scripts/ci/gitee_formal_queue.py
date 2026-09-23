@@ -186,6 +186,7 @@ class FormalReporter:
                             self.api.request('PATCH',f'/check-runs/{remote_id}',{k:v for k,v in desired.items() if k!='head_sha'})
                             remote=self.api.request('GET',f'/check-runs/{remote_id}')
                         if not self.matches(remote,desired,remote_id):raise ReportError('readback_mismatch')
+                        self.verify_pr_association(remote_id,desired)
                         with self.queue.connect() as db:
                             db.execute('UPDATE formal_reports SET delivered=?,error=NULL,retry_at=? WHERE job=? AND name=?',(encoded,self.clock()+30,key,name))
                     except ReportError as exc:
@@ -195,6 +196,20 @@ class FormalReporter:
                 with self.queue.connect() as db:
                     db.execute('UPDATE formal_report_cursor SET position=? WHERE id=1',(rowid,))
             return False
+
+    def verify_pr_association(self,remote_id,desired):
+        # Gitee's single-check representation omits pull_request_id. Its official
+        # commit-check listing supports an authoritative PR-ID filter instead.
+        found=[]
+        for page in range(1,11):
+            value=self.api.request('GET',f"/commits/{desired['head_sha']}/check-runs?page={page}&per_page=100&pull_request_id={desired['pull_request_id']}")
+            items=value.get('check_runs') if isinstance(value,dict) else value
+            if not isinstance(items,list):raise ReportError('invalid_pr_check_list')
+            found.extend(x for x in items if isinstance(x,dict) and x.get('id')==remote_id)
+            if len(items)<100:break
+        else:raise ReportError('pr_check_list_limit')
+        if len(found)!=1 or not self.matches(found[0],desired,remote_id):
+            raise ReportError('pr_association_readback_mismatch')
 
     @staticmethod
     def bound(remote,desired,marker):
@@ -209,8 +224,8 @@ class FormalReporter:
                 remote.get('conclusion')==desired.get('conclusion') and
                 isinstance(remote.get('output'),dict) and
                 all(remote['output'].get(k)==v for k,v in desired['output'].items()) and
-                type(remote.get('pull_request_id')) is int and
-                remote['pull_request_id']==desired['pull_request_id'])
+                ('pull_request_id' not in remote or
+                 type(remote['pull_request_id']) is int and remote['pull_request_id']==desired['pull_request_id']))
 
 
 def execute_once(queue, executor, refresh_identity):

@@ -610,3 +610,13 @@ L1 iteration 16 tests 通过。L2 当前结果：plan/identity 26、executor 13�
 审查已修复远端名政策冲突、最终回读身份缺失、旧任务分页遗漏和 candidate 标签变更未失效。
 最终冻结/Quick、受管发布、正式安装、真实 PR 四门禁及保护规则行为尚待执行；实际回执写入原外部 formal-integration-checkpoint.md，不改写已归档 checks-closeout.md。
 主线历史已对齐；本专题未合并，产品未部署，89 入口产品验收未扩展。
+
+### 真实 PR !5 验收与 API 关联适配
+
+e2c337af 的 Quick、同指纹独立审查、公开增量扫描及受管推送通过；原线上 CI-only 42 tests 成功。formal-static 已安装，恢复备份 incremental-7ja5gzwz，原凭据不变。API 创建未获成功回执，保留 creating ledger并停止POST重试；API/网页确认无新PR后，经用户已授权的网页操作创建 !5（ID18545690），精确源/目标回读通过。
+
+现有worker收到真实签名PR事件：Node22.17.0隔离运行通过，public_guard 112 tests与professional standard_backend 30 tests成功；merge_policy required为分类裁决、frontend skip为风险不适用，均不是零测试命令冒充通过。
+
+线上发现单项Check Run GET不返回pull_request_id，旧严格回读保持readback_mismatch。官方commit/check-runs的pull_request_id过滤已实测：本PR返回四项，其他PR返回空。适配为交付记录前强制分页验证PR过滤列表中的唯一ID及完整SHA/name/status/output；若单项提供PR ID仍强校验。定向queue20+reporter18通过，独立实现审查通过。此修复尚待重新冻结/Quick和安装回读；不将旧Quick冒充新候选通过。
+
+main规则2770794已在用户授权的登录网页保存四个必须通过项，其他权限/权重/标准模式保持；PR页面回读显示四项“必须通过项”，人工审查/测试仍待完成。官方公开API仅提供分支保护开关，未提供此规则检查项配置字段；保留网页操作证据。未点击合并或审查通过，未部署产品。
