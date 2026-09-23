@@ -40,7 +40,8 @@ class FakeLane(Integration):
             return "VERIFIED"
         if args[0] == "make":
             if self.after_gate: self.after_gate()
-            if self.fail == "generated": raise Denied("stale generated evidence")
+            if self.fail == "generated" and "ci.generated_evidence.preflight" in args: raise Denied("stale generated evidence")
+            if self.fail == "iteration": raise Denied("local iteration failed")
             return "PASS"
         self.assert_git(args)
         cmd = args[1:]
@@ -61,6 +62,7 @@ class FakeLane(Integration):
             return ""
         if cmd[:2] == ("rev-list", "--count"): return "133"
         if cmd[:2] == ("rev-list", "--reverse"): return HEAD
+        if cmd[:2] == ("diff", "--check"): return ""
         if cmd[:2] == ("diff", "--name-only"): return "scripts/ops/example.py"
         if cmd[:2] == ("rev-parse", "--path-format=absolute"): return str(self.root)
         if cmd[:1] == ("rev-parse",): return self.anchor
@@ -165,12 +167,19 @@ class IntegrationTests(unittest.TestCase):
         self.lane.nonancestor.add((OLD, HEAD))
         self.denied()
 
-    def test_quick_missing_denied(self):
+    def test_ordinary_publication_does_not_require_full_local_quick(self):
         self.lane.fail = "quick"
-        self.denied()
+        self.assertTrue(self.publish()['applied'])
+        self.assertFalse(any('scripts/ops/local_quick_evidence.py' in c for c in self.lane.calls))
+        self.assertTrue(any('ci.local.iteration' in c for c in self.lane.calls))
 
-    def test_generated_stale_denied(self):
+    def test_ordinary_generated_validation_is_remote(self):
         self.lane.fail = "generated"
+        self.assertTrue(self.publish()['applied'])
+        self.assertFalse(any('ci.generated_evidence.preflight' in c for c in self.lane.calls))
+
+    def test_local_iteration_failure_still_blocks_publication(self):
+        self.lane.fail = "iteration"
         self.denied()
 
     def test_transport_failure_denied(self):

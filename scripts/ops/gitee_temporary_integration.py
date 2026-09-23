@@ -178,8 +178,15 @@ class Integration:
             return result
         if confirm != "PUBLISH_EXACT_GITEE_CANDIDATE":
             raise Denied("publish confirmation required")
-        self.run("python3", "scripts/ops/local_quick_evidence.py", "verify", "--expected-head", head)
-        self.run("make", "--no-print-directory", "ci.generated_evidence.preflight")
+        if purpose == "ci-only":
+            # Legacy bootstrap has no accepted PR lane; preserve its separate gate.
+            self.run("python3", "scripts/ops/local_quick_evidence.py", "verify", "--expected-head", head)
+            self.run("make", "--no-print-directory", "ci.generated_evidence.preflight")
+        else:
+            # Owner-directed local iteration / remote integration split. This only
+            # publishes a topic branch; required remote PR checks still own merge.
+            self.run("make", "--no-print-directory", "ci.local.iteration")
+            self.git("diff", "--check", main, head, "--")
         if self.identity(head, clean=True) != branch:
             raise Denied("branch drift after preflight")
         self.baseline(main, head)

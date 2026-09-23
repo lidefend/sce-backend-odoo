@@ -1,5 +1,16 @@
 # Codex Workspace Execution Rules (Hard Guard)
 
+## 所有者最新执行分工（2026-09-23，本节优先）
+
+本地是代码迭代环境，普通 Gitee PR 候选发布不再要求本地完整 `ci.local.quick` 或完整生成证据门禁。
+本地只做 `ci.local.iteration`、按变更影响选择的非零定向测试及 diff/身份检查；普通
+`pr.push.gitee` 和 `gitee.ci.pr.create` 不得再因缺少本地 Quick receipt 拒绝候选。
+完整公共扫描、生成报告检查、风险选择的前后端集成检查交由远端 PR 执行；远端检查完成前不得
+宣称主线集成或合并资格。clean 精确 SHA、独立审查、公开范围审查、远端身份/快进约束与
+main 的必需检查/人工审核保持。新候选不得继承旧 SHA 的远端成功。
+此项覆盖本文旧的“先完整本地 Quick 再普通 Gitee 候选推送”顺序；历史 ci-only bootstrap、
+正式版本发布/数据库验收及 GitHub 原入口暂不改变。本地 Quick 可显式诊断，不是普通推送前置。
+
 `CANONICAL_ALLOWED_WRITE_BRANCH_REGEX=^(feature|fix|refactor|audit|release|codex)/.+`
 
 ## 目标

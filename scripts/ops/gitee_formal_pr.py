@@ -18,7 +18,7 @@ BODY="""The GitHub outage left Gitee without verified integration gates. This ch
 
 Architecture Impact: P4 ops delivery tool.
 Layer Target: existing Gitee receiver, worker, and governed publication tooling.
-Validation: local targeted tests and exact-head Quick; real PR gate acceptance is recorded separately.
+Validation: local targeted tests; complete integration checks run remotely at the exact PR head.
 
 This PR does not authorize automatic merging or product deployment. Unsupported candidate and frontend runtime lanes fail closed.
 """
@@ -78,7 +78,7 @@ def main():
     def git(*args):return subprocess.check_output(['git',*args],cwd=root,text=True).strip()
     if any(not re.fullmatch('[0-9a-f]{40}',x) for x in (a.expected_head,a.expected_main)):raise ValueError('full_sha_required')
     if git('branch','--show-current')!=BRANCH or git('rev-parse','HEAD')!=a.expected_head or git('status','--porcelain'):raise ValueError('clean_exact_candidate_required')
-    if a.apply:subprocess.run(['python3','scripts/ops/local_quick_evidence.py','verify','--expected-head',a.expected_head],cwd=root,check=True,stdout=subprocess.DEVNULL)
+    if a.apply:subprocess.run(['git','diff','--check',a.expected_main,a.expected_head,'--'],cwd=root,check=True,stdout=subprocess.DEVNULL)
     ledger=Path(git('rev-parse','--absolute-git-dir'))/'codex/gitee-formal-pr-create.json'
     print(json.dumps(ensure(PRAPI(a.token_file),ReadAPI(a.token_file),a.expected_head,a.expected_main,ledger,a.apply),sort_keys=True))
 

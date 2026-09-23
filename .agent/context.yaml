@@ -122,6 +122,9 @@ execution:
   full_product_acceptance_trigger: selected_delivery_version
   require_non_zero_targeted_tests: true
   remote_writes_via_make_only: true
+  gitee_pr_local_gate: lightweight_iteration_and_affected_targeted_tests
+  gitee_pr_full_integration_gate: remote_required_checks
+  gitee_pr_requires_local_quick: false
 
 run_statuses:
   - planned

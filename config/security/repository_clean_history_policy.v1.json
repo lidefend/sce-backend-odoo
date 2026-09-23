@@ -87,6 +87,20 @@
       "blob_id": "0308376f666439c8188b0e576dbb85484489c461",
       "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
       "reason": "Same reviewed historical automation identities; appended real formal PR and API adaptation evidence. Exact immutable documentation; other rules remain enforced."
+    },
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/iterations/gitee_temporary_integration_20260923.md",
+      "blob_id": "113a11bf838bf401fa376da93cad20ce36bf832b",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Unchanged previously reviewed historical mirror/runner identity lines verified against 630e89b8; only ordinary frontend CI progress appended. Exact immutable documentation; all other rules remain enforced."
+    },
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/iterations/gitee_temporary_integration_20260923.en.md",
+      "blob_id": "f6ad815c98cd80c540df1ac29ffbc8a2fa70597b",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Unchanged previously reviewed historical mirror/runner identity lines verified against 630e89b8; only ordinary frontend CI progress appended. Exact immutable documentation; all other rules remain enforced."
     }
   ],
   "personal_data_false_positive_registry": "scripts/ci/personal_data_false_positives.json",
