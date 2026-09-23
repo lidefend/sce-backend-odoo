@@ -17,6 +17,7 @@
         >
         <template #trigger>
         <ScRelationField
+          :popup-props="{ visible: false }"
           :id="controlId"
           class="input"
           appearance="form-field"

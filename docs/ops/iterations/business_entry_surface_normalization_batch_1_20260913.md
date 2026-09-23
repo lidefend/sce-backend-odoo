@@ -32,6 +32,10 @@ B01首轮修复（迭代身份`fd6fb975`加19路径dirty）：普通输入/blur/
 
 B01受管复验绑定`ae69871e0cb619d9eab579acee08b7f747ed71b4`，专用批次`frontend-f1-rel-20260923`、项目3928：查询AB后失焦，草稿未修改且写请求为0；随后再次展开失败，整次结果为failed（`/tmp/frontend-f1-relation-browser-20260923/summary.json`），不继承单测通过为验收通过。只读诊断初次聚焦浮层存在，再聚焦aria-expanded=true但浮层DOM缺失（`/tmp/frontend-f1-relation-refocus-diagnostic-20260923/summary.json`）；依赖源码确认关闭动画onAfterLeave在destroyOnClose下卸载容器。恢复变更限定P0 ScPopover可配置挂载策略，默认保持原值，many2one快速关闭/重开保留浮层容器；内容仍由isOpen控制。风险为所有关系选择消费者，不改业务/契约/数据，最早验证L1+关系L2，随后仅复验受影响客户旅程。诊断脚本临时采集已移除；用户管理员草稿未操作。
 
+B01第二次复验候选`7f85e700daad441641760d86bd636e28b9c05de4`：L1迭代、关系L2和独立代码复核通过；受管carrier health通过（首次漏confirmation参数被拒，补齐参数后通过，未绕过门禁）。`/tmp/frontend-f1-relation-browser-r2-20260923/summary.json`确认query/blur零写入、重开与选项无遮挡、短词搜索HTTP200、取消焦点恢复且不重开均通过；390px分支因可见性/溢出/ESC组合断言失败，整次仍failed，待局部诊断。上述结果不覆盖明确选中/创建/保存及查询错误恢复，不关闭B01。数据库专用对象3928仍保留以便连续复验，未修改用户项目4或管理员草稿。
+
+窄屏诊断进一步收敛：初次窄屏进入的只读对照scrollWidth=390；完整桌面搜索取消→390px序列在等待布局条件后仍超时，不能归因测量过早。`/tmp/frontend-f1-relation-overflow-diagnostic-r2-20260923/summary.json`记录scrollWidth=542，可见元素没有对应542px边界；关系输入内部AutoComplete无候选内容但会创建visibility:hidden浮层，沿本地依赖源码确认popupProps可覆盖内部visible。P0仅在ProfessionalMany2oneFieldControl关闭该重复候选层，继续由现有外层ScPopover承接真实关系选项，不改变其他AutoComplete消费者。P4增加窄屏几何条件等待及失败尺寸采集；首次尺寸采集误放预检位置未取得失败尺寸，修到catch后才使用证据。待新载体复验；全部中间失败仍保留，不用静态通过替代业务通过。
+
 边界：客户状态和浮层为P0现有ProfessionalMany2oneFieldControl/useRecordFormState/useRelationRuntime及RelationSearchDialog；查询/错误分类为P0 smart_core通用handler，后端拥有搜索/错误语义，前端只执行。会计JSON先核验类型契约来源再决定Resolver/Registry或后端修复；导航沿现有Runtime，不写客户/会计/收款特例。风险覆盖所有many2one消费者，L1语法/静态→L2关系字段/生命周期非零定向测试→受管客户真实旅程；原F1名称/权限证据只在相关输入未变时携带。广泛浏览器矩阵、完整Quick和远端发布在已知前层阻断消除前不运行。
 
 基线运行结果绑定 `61b8d712`；修复后运行结果绑定 `9b3d65d2`，定向测试绑定提交前相同源码及明确 dirty 范围。后续仅文档变化不使产品测试失效。L0/L1/L2 是本地迭代证据，不代表部署或远端 CI。

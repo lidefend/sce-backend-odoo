@@ -630,12 +630,22 @@ async function verifyCustomerRelation(page, report, beforeFacts) {
   await page.setViewportSize({ width: 390, height: 844 });
   await input.click();
   await popup.waitFor({ state: 'visible' });
+  // Popup positioning follows viewport updates asynchronously; assert the settled layout.
+  await page.waitForFunction(() => {
+    const panel = [...document.querySelectorAll('.many2one-option-panel')].find(e => e.getBoundingClientRect().width > 0);
+    const button = panel?.querySelector('button');
+    if (!button) return false;
+    const box = button.getBoundingClientRect();
+    return button.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2))
+      && document.documentElement.scrollWidth <= innerWidth;
+  });
   const narrow = await more.evaluate((element) => {
     const box = element.getBoundingClientRect();
     return { visible: element.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)), overflow: document.documentElement.scrollWidth > innerWidth };
   });
   await page.screenshot({ path: path.join(OUT, 'customer-popup-390.png'), fullPage: true });
   await input.press('Escape');
+  await popup.waitFor({ state: 'hidden' });
   if (!narrow.visible || narrow.overflow || await popup.count() || mutations.length) throw new Error('customer_narrow_popup_or_escape_failed');
   const unchanged = sameJson(beforeFacts, await readProjectFacts(page));
   if (!unchanged) throw new Error('customer_relation_probe_changed_backend');
@@ -828,7 +838,19 @@ async function main() {
     }
     await page.screenshot({ path: path.join(OUT, NETWORK_FAILURE_RECOVERY ? 'recovery-after-refresh.png' : 'normal-save.png'), fullPage: true });
   } catch (error) {
-    report.failure_context = await page.evaluate(() => ({ url: location.href, title: document.title, text: (document.body.innerText || '').slice(0, 1200), fields: [...document.querySelectorAll('[data-field-name]')].map((el) => el.getAttribute('data-field-name')).slice(0, 80) })).catch(() => ({ url: page.url() }));
+    report.failure_context = await page.evaluate(() => ({
+      url: location.href, title: document.title,
+      text: (document.body.innerText || '').slice(0, 1200),
+      fields: [...document.querySelectorAll('[data-field-name]')].map(el => el.getAttribute('data-field-name')).slice(0, 80),
+      viewport: {
+        width: innerWidth, scrollWidth: document.documentElement.scrollWidth,
+        overflow: [...document.querySelectorAll('body *')]
+          .filter(el => el.getBoundingClientRect().right > innerWidth + 1 && getComputedStyle(el).visibility !== 'hidden')
+          .map(el => ({ tag: el.tagName, cls: String(el.className), right: el.getBoundingClientRect().right,
+            width: el.getBoundingClientRect().width, position: getComputedStyle(el).position, display: getComputedStyle(el).display }))
+          .slice(0, 30),
+      },
+    })).catch(() => ({ url: page.url() }));
     await page.screenshot({ path: path.join(OUT, 'failure.png'), fullPage: true }).catch(() => {});
     report.errors.push(error instanceof Error ? error.stack || error.message : String(error));
   } finally {
