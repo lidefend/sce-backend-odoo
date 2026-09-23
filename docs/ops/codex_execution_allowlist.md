@@ -3,6 +3,35 @@
 
 `CANONICAL_ALLOWED_WRITE_BRANCH_REGEX=^(feature|fix|refactor|audit|release|codex)/.+`
 
+## 临时 Gitee 主线集成车道（2026-09-23）
+
+GitHub 账号受限期间，仓库所有者授权调整集成流程。仅本节登记的入口可在不访问
+GitHub 的情况下使用既有 `gitee-mirror`；本节是下文“GitHub 唯一发布远端／Gitee 仅镜像”
+的有界例外，不修改 `origin`，不授权任意远端、强推、自动合并或部署。
+
+- `make gitee.integration.inspect EXPECTED_HEAD=<sha> GITEE_EXPECTED_MAIN=<sha>`：只读。
+- `make main.gitee.catchup ...`：默认预演；只允许把已集成的历史主线
+  `de9a230d3faab18dd60a219f445f932a8af9d7f5` 快进到 Gitee `main`，不集成未合并专题。
+  实际写入要求 clean 合规控制分支、两个本地历史主线锚点一致、远端精确旧 SHA、祖先证明、
+  已验证恢复 bundle，以及 `APPLY=1 GITEE_INTEGRATION_CONFIRM=FAST_FORWARD_HISTORICAL_GITEE_MAIN`。
+  仓库所有者审阅具体补齐范围后授权执行，不能把流程调整请求自动视为 main 写入批准。
+- `make pr.push.gitee ...`：默认预演；实际发布要求 clean 精确 HEAD、有效 Quick 回执、
+  只读生成证据门禁、已补齐的精确 Gitee main、同名分支快进检查和发布后回读，参数为
+  `APPLY=1 GITEE_INTEGRATION_CONFIRM=PUBLISH_EXACT_GITEE_CANDIDATE`。
+  发布前独立审查和外部证据归档仍按既有规则执行；推送成功不等于 CI／审查／合并通过。
+- CI-only 有界例外：`make pr.push.gitee GITEE_PUBLICATION_PURPOSE=ci-only ...` 仅允许
+  `fix/gitee-temporary-integration-v1` 候选；只读预演不要求历史 main 已补齐，输出相对实时 main
+  的全部提交与变更路径，并明确 dirty 内容未包含。实际 APPLY 仍要求 clean，且在平台自动化证据
+  未核验期间由工具硬拒绝；没有环境布尔开关可放行。普通 integration 路径约束不变。
+- `make verify.gitee.ci_only.unit` 是本地 P4 定向测试：使用临时 SQLite/Git 与现有 bubblewrap，
+  不连接业务数据库、不写远端、不修改线上服务。`GITEE_CI_MODE=ci-only` 只允许受管配置显式启用；
+  本批没有线上启用授权。
+- 不使用固定历史 SHA 的 `gitee.pr.bot.merge` 处理新候选。Gitee PR 必须绑定源 HEAD／目标
+  main，完成所需验证和独立审查后，由所有者批准并在受保护 PR 流程合入；暂不提供自动合并入口。
+
+操作步骤及恢复 GitHub 的边界见 [临时集成规程](gitee_temporary_integration_v1.md)。
+现有 `pr.push`、`mirror.main.gitee` 和 `candidate.mirror.gitee` 保持原语义。
+
 **Codex 自治执行授权清单 · v4.3（Replace v4.2）**
 
 ---

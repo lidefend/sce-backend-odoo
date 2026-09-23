@@ -1,0 +1,257 @@
+# Workspace takeover and temporary Gitee integration result index
+
+[中文](gitee_temporary_integration_20260923.md)
+
+Controller: `fix/gitee-temporary-integration-v1`, HEAD/base
+`de9a230d3faab18dd60a219f445f932a8af9d7f5`. This is dirty development work, not a frozen candidate.
+Owner authorized workspace takeover, closure before iteration, and adjustment for restricted GitHub access.
+P4 owns Git publication/catchup tooling, Make entries and governance records. No P0–P3 semantics, database,
+environment, origin URL, forced push, automatic merge or deployment changes. Remote APPLY is high-risk and
+requires exact identity, clean state, ancestry, recovery and readback. Existing publication/sync entries retain semantics.
+
+## Preserved state
+
+- Original main was clean; its ref remains unchanged after creating the controller branch.
+- Stability worktree `sce-backend-odoo-uc4-g10-engineering-process-native-v1` remains clean at
+  `baad61f12e6a7fff0e5b9953609be5f5d52fbdff`, 123 commits beyond main.
+- Header topic `22390c84f7d2447e055b6e1c67a194778ce9a10a` has 29 commits beyond main. Historical PR #522
+  cannot currently be verified remotely. Both topics share four paths and require serial integration.
+- 31 local branches retained, no stash ref or Git lock observed. No blanket deletion or claim all are merged.
+- Persistent/sample/clean environments passed governed health checks and remain running.
+- Orphan candidate process 709450, old material worktree SHA `25cb3cd106ead9dd09b3f2b68ed152fbd413da0f`,
+  was stopped through governed down after supplying exact controller SHA and confirmation. Initial missing-input
+  refusal made no change; the subsequent process identity check passed. PID file removed, no database mutation.
+
+## Results and original evidence
+
+- GitHub `make pr.status`: HTTP 403 account suspended; wrapper exit zero is not success.
+- Stability exact-head Quick receipt verified, not rerun. L1 style/bridge/navigation targets passed at baad61f1:
+  129 bridge checks, 262 self-checks, 85 navigation leaves across four roles. Original log is
+  `artifacts/workspace-takeover-20260923/l1.log` in that worktree. No independent/runtime acceptance claim.
+- New lane `make ci.local.iteration`: passed, 16 policy tests, dirty L1-only result;
+  `artifacts/gitee-temporary-integration/l1.log`.
+- First L2: 27 tests, one failure; missing remote ref after push lacked explicit readback-stage context. Fixed in P4.
+  Second L2: three fixture errors because a boolean shadowed the new method; fixture renamed.
+- Final `make verify.gitee.integration.unit`: passed, 27 tests;
+  `artifacts/gitee-temporary-integration/l2.log`. Covers zero-write refusals, exact refspec, bundle check and failed readback.
+- Live inspect: passed, zero writes, Gitee main b9e3e56a, 133 commits ahead; `inspect.json` in the same directory.
+- Historical catchup dry-run: fixed target de9a230d, `catchup-plan.json`; not authorization to execute.
+- Gitee CI server status: receiver/worker active, health ok, systemd reports disk configuration differs from loaded units;
+  `gitee-ci-status.log`. No restart/reload, candidate check equivalence not established.
+
+The readback fix only changes the new script and fixture; targeted tests plus syntax/diff checks cover it.
+Policy, Make recipes and environment inputs remain unchanged, so carry forward their L1 result.
+No module/runtime load change requires L3 upgrade. No product page change requires an L4 browser matrix.
+L5 remains not_run: uncommitted candidate, no independent review, final Quick, archive or publication.
+
+## Next boundary
+
+Review the exact historical catchup b9e3e56a→de9a230d (133 commits, proven ancestry) and obtain owner approval;
+recheck identity at execution. It includes neither unmerged topic nor this uncommitted tooling.
+Verify Gitee gate equivalence, protected exact-head PR merge and reverse-mirror service state before actual cutover.
+Do not reuse the fixed historical PR bot. GitHub recovery synchronization and local main synchronization from Gitee
+require governed closure; existing `main.sync` still uses GitHub.
+
+Batch verification_pending; mainline integration, deployment and user acceptance not_run.
+The 89-entry objective remains queued; 86/89 historical report associations are not business acceptance.
+Rollback uncommitted owned files only. Preserve frozen topics. A completed historical fast-forward is not reversed
+by rewriting remote history; retain its recovery bundle and use reviewed PRs for product rollback.
+
+
+## Acceptance steps 1–3, 2026-09-23
+
+Same baseline and owned dirty scope; no remote write, service mutation, commit or freeze.
+The detailed gate-by-gate mapping is maintained in the [Chinese section of this same record](gitee_temporary_integration_20260923.md).
+Raw evidence remains under `artifacts/gitee-temporary-integration/`, with no second reporting system.
+
+| Requirement | Observed Gitee behavior / evidence | Remaining gap |
+| --- | --- | --- |
+| Public Guard | Installed runner matches local code; two history/security test suites and legacy scans | Missing current risk/workflow/merge/candidate/evidence checks |
+| Professional Quality | PR runs unlocked dependency install and legacy `make ci`; Push skips | Not equivalent to current risk-routed workflow or governed module shards |
+| Frontend Release | No separate current release workflow execution | Toolchain, locked install, lint/typecheck/test/build/release coverage unproven |
+| Merge Policy | No equivalent aggregation or check-runs reporting | Missing |
+| Failure / zero tests | Nonzero exit fails queue; zero exit alone passes | Zero-test rejection absent |
+| Timeout / cancellation | No subprocess timeout, service runtime infinite, no cancellation protocol | Terminal-state behavior unproven |
+| Evidence integrity | PASS file written before mirror handoff; stale file not cleared | File can outlive a failed execution; cannot authorize merge |
+| Candidate binding | Exact detached SHA checked; queue keyed by SHA | No base/latest PR head binding or old-result invalidation |
+| Protected main | SSH cannot show enforcement; no registered read-only API credential supplied | Required checks, bypasses and platform hooks unproven |
+| Frozen local delivery | Local publication checks Quick/generated evidence | Current dirty candidate has no L5 evidence |
+
+`live-audit.json` captured UTC 03:30:47: receiver PID 2309968 and worker PID 2309973 started
+July 20; installed scripts match repository scripts, but installation has no Git metadata and
+no in-memory code attestation was performed. `live-queue-automation.json` records safe process
+configuration and read-only SQLite facts. Owner `leegege` is accepted for Push/PR, with PR also
+allowing `sce-ci-bot`. Current remote main's historical Push job failed with exit 2; historical
+successes are not candidate evidence.
+
+`automation-state.log` confirms the reverse timer enabled/active every minute and the old
+GitHub Actions runner enabled/running. The installed mirror targets `Leedefend/sce-product-odoo`;
+local source is disabled, installed source is not. The worker hands successful main Push jobs
+to the mirror source repository. A failed recent mirror invocation is not deactivation.
+Scoped host scanning found no separate merge/deploy service, but platform-side automation remains
+unknown. Proposed governed pause: preserve selected nonsecret configuration, stop/disable the exact
+mirror timer and stop its service, verify inactive/disabled/no live writer, retain CI/data, then
+resolve platform writers and reserve a single-writer window. Re-enable only after reconciling
+source and both remote SHAs under separate authorization. Nothing was stopped or reloaded.
+
+Exact merge is blocked: the old bot performs GET then PUT without source/base CAS. Official
+[Open API 5.4.93](https://gitee.com/api/v5/swagger_doc), saved as `api-swagger_doc.json`, exposes
+no expected source/base parameters on PUT merge. This is absence of proof for the inspected
+mechanisms, not a claim about every Gitee product. No equivalent lock has been validated.
+
+P4 changes distinguish attempted-push uncertainty (exit 3, retry_allowed=false), verify the
+bundle's historical SHA and recheck controller branch identity. Targeted tests now pass **36**
+cases (`l2-acceptance.log`, 0.180s test body, about 2s command), including actual local Git proving
+that intermediate fast-forward drift may be accepted while divergence is rejected, existing
+branch publication, main drift after preflight, accepted-write timeout and read-only recovery.
+Prior L1 policy results carry forward because their inputs are unchanged; syntax and whitespace
+checks pass for the revised scripts. No module/browser scope: L3/L4 skipped. Known integration
+blockers keep L5 preparation, Quick and freezing not_run.
+
+Latest read-only catchup preview (`catchup-plan-acceptance.json`) still targets exactly
+b9e3e56a→de9a230d, applied=false. Clean controller, verified recovery bundle, automation isolation
+and precise execution authorization are not all available. Two product topics remain untouched.
+Batch verification_pending; mainline integration, deployment and user acceptance not performed.
+
+
+## Isolation preparation and bounded merge feasibility decision
+
+Verdict: **currently not implementable with the available mechanisms and evidence**.
+Native merge has no proven atomic source/base conditions; equivalent locking lacks both remote
+configuration covering all writers (including administrator bypass) and race/recovery validation.
+This closes this investigation; no further interface search or full CI rebuild is scheduled.
+Gitee is provisionally a historical mirror/candidate storage channel, still blocked from writes
+until automation isolation and publication safeguards are satisfied.
+
+The [same record's Chinese execution sheet](gitee_temporary_integration_20260923.md) identifies
+exact objects, impact, pause/verify/restore requirements and unknown platform paths. New raw evidence
+`isolation-readonly.json` was captured at 2026-09-23 03:39:03 UTC. Its initial read-only parser failed
+on the runner registration BOM; decoding with utf-8-sig resolved that tooling issue without mutation.
+The mirror timer remains enabled; mirror service PID is 0 at sampling. The CI queue has no pending
+or running jobs; mirror source main is aaad9e06d5e0d70d92041b65b8a4ae9003fb7cda.
+Runner agentId 2, ci-1-95-2-123, pool Default is registered to
+https://github.com/Leedefend/sce-product-odoo, rooted at /opt/actions-runner.
+No Runner.Worker process was observed, but that does not prove no queued jobs or authorize stopping it.
+It remains untouched. Platform hook IDs, other integrations, permissions, bypasses and deployment
+jobs remain unknown without registered read-only platform access, and block all remote writes.
+
+No safe pause/restore Make entry exists yet. The proposed bounded P4 extension must capture original
+configuration, bind exact host/unit/hook, refuse active or unknown tasks, verify no remaining writers
+and restore only its own changes after checking queued work and exact remote SHAs. Existing install,
+seed, run and repository.configure commands are not isolation substitutes. Candidate CI can execute
+repository code; isolate admission and worker too unless its external-write capability is proven absent.
+Do not stop the old GitHub runner without confirming ownership, active/queued tasks and separate authorization.
+
+Prepared but unexecuted merge validation covers source/base drift during the merge window, every
+writer class, partial lock failure, crash/timeout and safe restoration. Remote mutation authorization
+is separate. Remaining P4 design covers governed isolation tools and publication prerequisites;
+CI design covers structured nonzero test counts, bounded attempts/cancellation, terminal receipts,
+complete required-check reporting, stale source/base invalidation, and uniform checkout/log/result identity.
+Each has negative tests and closure conditions in the execution sheet. Legacy make ci is not equivalence proof.
+
+This iteration changed documentation/goal only. Original 36 tests are retained, not rerun; source and
+Make inputs are unchanged. Documentation whitespace validation applies; no runtime/browser/freeze/Quick.
+Candidate stays dirty; both product topics are unchanged. Batch verification_pending; no mainline
+integration, deployment or user acceptance. Historical catchup remains paused with separate exact-range authorization.
+
+
+## Automatic CI preparation: separate from formal merge
+
+The latest scope removes exact merge feasibility from CI prerequisites. Local work may continue;
+remote pushes await complete side-effect evidence; formal merge remains blocked; deployment is excluded.
+The detailed four-part preparation is in the same Chinese batch record, not a second report.
+
+1. **Push side effects remain incomplete.** Registered read-only Gitee credentials/configuration exports
+were requested. Missing evidence: all hook IDs/events/enabled state/target purpose, Go pipelines and
+triggers/running jobs, members and inherited/admin bypass permissions, writable keys, bots/apps,
+deployment integrations. Do not infer absence from lack of access. Existing receiver accepts Push
+without a ref restriction; runner handoff depends on SHA equalling live main, not the branch name.
+PR invokes legacy make ci; tag delivery cannot be excluded by local configuration intent. Mirror and
+old runner disposition stay unchanged. No secret values or sensitive URL parameters are reported.
+2. **Choose the existing worker for the first minimal acceptance.** Gitee Go activation, repository
+permissions, quotas/concurrency/timeouts, execution images and credential isolation are unknown.
+Public official descriptions are not tenant evidence, so lower integration cost is unproven.
+Read-only `ci-executor-readonly.json` confirms host Python 3.12.3, Git 2.43.0 and Make 4.3, sufficient
+for the chosen pure tests; additional Node/pnpm/Docker CLI availability does not prove worker access
+or full gate compatibility. No Go pipeline creation, run or purchase; no duplicate implementation.
+3. **Concrete first acceptance:** real Push WebHook on the single registered P4 candidate branch,
+full frozen H, runs `ENV=test make verify.gitee.integration.unit` (currently 36 tests using mocks and
+local temporary Git repositories, no business data). Governed server-owned acceptance cases separately
+exercise deliberate unittest failure, empty suite rejection, timeout, exact-attempt cancellation and
+H2 not inheriting H1 success. Use structured test counts, independent attempts/logs/receipts and trusted
+status generation. Expected negative-case failures remain failures; only the acceptance summary may
+pass. Readable governed status plus original logs can validate this first chain, not required-check
+merge enforcement. Normal deadline proposed at 120s with 5s termination grace; negative timeout case
+uses a short controlled deadline. No product source sabotage, PR creation or main/tag push.
+4. **Remaining changes and recovery:** retain one worker, add bounded acceptance mode/ref filters,
+attempt/count/terminal states and isolate candidate execution from receiver/status secrets and mirror
+writes. All online installation/isolation changes require separately reviewed authorization and exact
+configuration backups. Platform IDs remain unknown, so no executable hook/Go changes can yet be issued.
+Keep queues/logs on failure; block admission, do not blindly downgrade incompatible queue schema or
+restore external automation. Clean only exact completed attempt directories; do not auto-delete branches.
+
+Historical catchup is not technically required for clone/fetch/detach H, but current pr.push.gitee
+explicitly requires de9a to be an ancestor of remote main; candidate.mirror.gitee requires matching
+GitHub state. No governed independent publication path currently exists. Design an explicit CI-only
+purpose within the existing entrypoint, preserving default integration restrictions and clean/Quick/
+review/archive/FF/readback safeguards. Bind branch/H/observed main/isolation configuration and deny
+main/tag, missing isolation and drift. Do not remove the assertion or push directly. This mode is not
+implemented; history catchup remains paused and off the CI critical path.
+
+Only documentation/goal changed this turn; executor selection needed no source revision. Original
+36 tests retained without rerun. Candidate stays dirty, unfrozen; no remote writes, service changes,
+CI jobs, merge or deployment. Both product topics untouched. Automatic CI acceptance remains not_run.
+
+
+## Local CI-only implementation and consolidated behavioral review
+
+P4 implementation now exists: existing receiver/worker mode routing and cancellation; new
+scripts/ci/gitee_ci_acceptance.py for fixed scope, separate queue, exact checkout, sandbox, timeout,
+cleanup and receipts; server-owned gitee_ci_acceptance_check.py for actual unittest counts;
+publication purpose/scope preview; behavior tests; installation packaging and Make entrypoints.
+Default legacy and ordinary publication behavior remain. No product or database changes.
+
+Validation at de9a230d plus owned dirty scope:
+- L1 make ci.local.iteration passed: l1-ci-only.log; focused syntax and shell syntax checks passed.
+- Acceptance tests: 11 initial, 14 expanded, **16 final passed** (1.624s), l2-ci-only-reviewed.log.
+  Tests use real bubblewrap, local Git checkout, cancellation and detached child cleanup. One test runs
+  the current publication suite inside the actual sandbox, using dynamic nonzero count.
+- Publication tests: **39 passed** (0.251s), l2-publication-ci-only.log. Shared publication behavior changed,
+  so this small original 36-case suite was rerun with three new cases.
+- Default receiver/worker regression: **18 passed** (0.497s), l2-worker-legacy.log; carried forward after
+  acceptance-only exception handling changes. No unrelated product tests, final Quick or freeze.
+
+Consolidated local review fixed cancellation/completion races, symlink/nonregular report rejection,
+missing installation packaging and initialization-error terminal state. Assertions verify real process
+absence, workspace cleanup, hidden credential paths/environment, denied network, identity and stale-SHA
+isolation, not just status names. This is not independent final delivery review or online attestation.
+Online bwrap/kernel/service permissions remain unverified; no fallback to an unsafe executor.
+
+Actual read-only preview ci-only-preview.json: observed main b9e3e56a… to HEAD de9a230d… includes
+**133 commits and 1234 changed paths**, listed in full. This can expose historical main code beyond
+CI changes; scope is relative to main, not proof of novel reachability across all remote refs.
+Dirty implementation is explicitly excluded. Re-preview a future committed candidate before publication.
+CI-only APPLY is hard-blocked until real platform evidence and reviewed enablement; ordinary path unchanged.
+
+Platform materials have not arrived. Accept only the already-requested credential file path or an admin
+configuration export identifying repository/time; uncovered items stay unknown. No repeated credential request.
+Outstanding online actions: complete automation isolation; verify sandbox/service identity; deploy explicit
+mode under reviewed configuration; authorize and implement evidence-bound CI-only transport; real Push and
+negative online acceptance. All remain not_run. Old runner and both product topics untouched.
+Outcome: **local implementation verified; online acceptance blocked by platform evidence**. Formal merge
+is separately blocked; deployment and user acceptance have not occurred.
+
+
+Final review also removes any pre-existing count report before execution, preventing an early exit
+from inheriting old success. Final acceptance suite: **17 passed / 1.750s**, l2-ci-only-closed.log.
+Existing 39/18-case results remain valid. The changed allowlist receives focused policy validation
+in l1-policy-ci-only.log. A local iteration checkpoint is prepared for review, not frozen delivery;
+no freeze.prepare or Quick. Post-checkpoint read-only scope goes to ci-only-preview-checkpoint.json,
+while the earlier 133-commit preview retains its historical context.
+
+
+Checkpoint review additionally preserves signed-timestamp replay protection in acceptance mode:
+duplicate SHA deliveries deduplicate, while reusing the timestamp for another SHA is rejected before enqueue.
+Final affected acceptance suite: **18 passed / 1.708s**, l2-ci-only-replay.log; publication 39 and legacy 18
+results carry forward unchanged. Clean local checkpoint preview includes **134 commits / 1247 changed paths**
+relative to b9e main, still with zero remote writes and no integration eligibility. No final freeze or Quick.

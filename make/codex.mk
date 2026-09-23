@@ -357,6 +357,21 @@ pr.ready: guard.prod.forbid
 pr.push: guard.prod.forbid
 	@GITHUB_AUTH_REMOTE="$(or $(GITHUB_AUTH_REMOTE),origin)" bash scripts/ops/git_safe_push.sh
 
+# Temporary outage lane. The default is read-only; origin is never rewritten.
+.PHONY: gitee.integration.inspect main.gitee.catchup pr.push.gitee verify.gitee.integration.unit
+gitee.integration.inspect: guard.prod.forbid
+	@python3 scripts/ops/gitee_temporary_integration.py inspect --expected-head "$(EXPECTED_HEAD)" --expected-main "$(GITEE_EXPECTED_MAIN)"
+
+main.gitee.catchup: guard.prod.forbid
+	@python3 scripts/ops/gitee_temporary_integration.py catchup --expected-head "$(EXPECTED_HEAD)" --expected-main "$(GITEE_EXPECTED_MAIN)" $(if $(filter 1,$(APPLY)),--apply,) --confirm "$(GITEE_INTEGRATION_CONFIRM)"
+
+GITEE_PUBLICATION_PURPOSE ?= integration
+pr.push.gitee: guard.prod.forbid
+	@python3 scripts/ops/gitee_temporary_integration.py publish --purpose "$(GITEE_PUBLICATION_PURPOSE)" --expected-head "$(EXPECTED_HEAD)" --expected-main "$(GITEE_EXPECTED_MAIN)" $(if $(filter 1,$(APPLY)),--apply,) --confirm "$(GITEE_INTEGRATION_CONFIRM)"
+
+verify.gitee.integration.unit: guard.prod.forbid
+	@python3 -m unittest scripts.ops.test_gitee_temporary_integration
+
 verify.pr.push.unit: guard.prod.forbid
 	@bash scripts/ops/git_safe_push.sh --self-test
 
@@ -733,3 +748,7 @@ main.cutover.controlled: guard.prod.forbid
 		--authorization-id "$(CUTOVER_AUTHORIZATION_ID)" \
 		$(if $(CUTOVER_RUN_ID),--run-id "$(CUTOVER_RUN_ID)",) \
 		$(if $(filter 1,$(APPLY)),--apply --confirm CONTROLLED_MAIN_CUTOVER_APPLY,)
+
+.PHONY: verify.gitee.ci_only.unit
+verify.gitee.ci_only.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_ci_acceptance
