@@ -2,6 +2,19 @@
 
 [中文](gitee_temporary_integration_20260923.md)
 
+## Desktop execution update
+
+Incremental installation at `1feb780b95e910c905fb4d95ed7447f40db7ef0b` succeeded after the
+bounded upstream AppArmor profile repair. Backup: `incremental-s0g_x39h`; receiver/worker active
+in CI-only mode. The user saved the new webhook signing secret; the governed server rotation
+succeeded with backup `secret-rotation-itahha8l`. No secret values enter source or evidence.
+The CI-only publication change binds a reviewed one-hour platform receipt to candidate/main,
+public-scope evidence hashes and current online files/isolation. Clean, Quick, generated evidence
+and remote readback remain mandatory. Targeted publication/receipt tests passed: 42 + 10.
+The trusted online harness executes the same unittest module directly, not the Make wrapper;
+do not claim the wrapper ran. Clone and execution share 120 seconds. Final frozen receipts and
+actual CI results belong in existing artifacts. Main catchup, merge and product deployment stay excluded.
+
 Controller: `fix/gitee-temporary-integration-v1`, HEAD/base
 `de9a230d3faab18dd60a219f445f932a8af9d7f5`. This is dirty development work, not a frozen candidate.
 Owner authorized workspace takeover, closure before iteration, and adjustment for restricted GitHub access.

@@ -4,6 +4,19 @@
 
 ### 实际线上执行结果
 
+- `1feb780b95e910c905fb4d95ed7447f40db7ef0b` 增量更新成功，精确计划摘要
+  `d42b4ee5cc5d55cf434c93b1a65e947164387a01675af7312590b4f1a42b8682`，备份
+  `/var/lib/gitee-ci/update-backups/incremental-s0g_x39h`。原凭据保持，receiver/worker active、ci-only。
+- 用户完成 Gitee 新签名密钥保存后，`make gitee.ci.secret.rotate` 完成服务端对应轮换；receiver active，
+  备份 `/var/lib/gitee-ci/update-backups/secret-rotation-itahha8l`。密钥不进入源码/日志/公开范围。
+- 新增 P4 发布证据校验替换 CI-only 写死拒绝，保留 clean/Quick/生成证据及远端回读。候选、平台观察、
+  证据文件摘要和线上实际模块/配置共同绑定；独立正式合并阻塞不变。
+- L2：`make verify.gitee.integration.unit verify.gitee.publication_gate.unit`，42+10 项通过，
+  身份为 1feb780b + 本轮 scripts/ops、make/codex.mk、本文及 allowlist dirty。不重复原验收/worker 测试。
+- 独立审查 1feb780b 未发现首次真实 Push 确定阻塞；实际线上运行可信 check harness，直接加载同一
+  unittest 模块，不声称执行 Make wrapper。完整 clone 与测试共用 120 秒，首次实测决定是否足够。
+  后续 frozen 回执及真实 CI 结果写 artifacts，避免为回写结果反复改变候选。
+
 - 镜像 timer 已 disabled/inactive；service 保留历史 failed，MainPID=0。首次工具将 failed 误判为未停止，
   属 validation_tool_defect；修正为与 updater 一致接受 inactive/failed+PID=0，不再重复停用。
 - 以 5db04d9a 精确计划执行 update：已安装 bubblewrap=0.9.0-1ubuntu0.3，备份

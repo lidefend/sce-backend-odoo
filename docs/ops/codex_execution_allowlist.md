@@ -15,6 +15,8 @@ gitee-to-github-mirror.timer/service 并回读 inactive/disabled/PID=0；不改�
 `gitee.ci.sandbox.profile.install` 仅在无现有 bwrap profile 时安装已审上游 v4.0.3 配置；
 `gitee.ci.sandbox.probe` 使用现有 updater 的同服务约束探针验证网络/凭据隔离。不修改全局 sysctl，
 不使用 unconfined 通配豁免。配置来源及内容 hash 见批次记录；此为真实环境故障的限定修复。
+`make gitee.ci.secret.rotate` 仅轮换现有 receiver 的签名密钥；要求旧 env 精确摘要、私有文件和明确确认，
+通过 SSH stdin 传输，备份并原子替换后回读，禁止回显。浏览器一侧由用户完成凭据变更。
 
 GitHub 账号受限期间，仓库所有者授权调整集成流程。仅本节登记的入口可在不访问
 GitHub 的情况下使用既有 `gitee-mirror`；本节是下文“GitHub 唯一发布远端／Gitee 仅镜像”
@@ -32,8 +34,11 @@ GitHub 的情况下使用既有 `gitee-mirror`；本节是下文“GitHub 唯一
   发布前独立审查和外部证据归档仍按既有规则执行；推送成功不等于 CI／审查／合并通过。
 - CI-only 有界例外：`make pr.push.gitee GITEE_PUBLICATION_PURPOSE=ci-only ...` 仅允许
   `fix/gitee-temporary-integration-v1` 候选；只读预演不要求历史 main 已补齐，输出相对实时 main
-  的全部提交与变更路径，并明确 dirty 内容未包含。实际 APPLY 仍要求 clean，且在平台自动化证据
-  未核验期间由工具硬拒绝；没有环境布尔开关可放行。普通 integration 路径约束不变。
+  的全部提交与变更路径，并明确 dirty 内容未包含。实际 APPLY 要求 clean、Quick、生成证据及
+  `GITEE_CI_EVIDENCE`/`GITEE_CI_EVIDENCE_SHA256` 精确审阅回执；回执绑定候选/main、1小时内平台
+  观察、公开范围授权及证据文件摘要。推送前在线核验隔离、活动服务、模式、安装代码和配置摘要。
+  证据缺失/过期/漂移均零推送；不使用布尔跳过。普通 integration 路径约束不变。
+- `make verify.gitee.publication_gate.unit`：平台证据、时效、篡改及密钥替换的本地纯测试。
 - `make verify.gitee.ci_only.unit` 是本地 P4 定向测试：使用临时 SQLite/Git 与现有 bubblewrap，
   不连接业务数据库、不写远端、不修改线上服务。`GITEE_CI_MODE=ci-only` 只允许受管配置显式启用；
   本批没有线上启用授权。

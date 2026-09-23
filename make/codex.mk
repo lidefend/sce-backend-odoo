@@ -367,10 +367,14 @@ main.gitee.catchup: guard.prod.forbid
 
 GITEE_PUBLICATION_PURPOSE ?= integration
 pr.push.gitee: guard.prod.forbid
-	@python3 scripts/ops/gitee_temporary_integration.py publish --purpose "$(GITEE_PUBLICATION_PURPOSE)" --expected-head "$(EXPECTED_HEAD)" --expected-main "$(GITEE_EXPECTED_MAIN)" $(if $(filter 1,$(APPLY)),--apply,) --confirm "$(GITEE_INTEGRATION_CONFIRM)"
+	@GITEE_CI_EVIDENCE="$(GITEE_CI_EVIDENCE)" GITEE_CI_EVIDENCE_SHA256="$(GITEE_CI_EVIDENCE_SHA256)" python3 scripts/ops/gitee_temporary_integration.py publish --purpose "$(GITEE_PUBLICATION_PURPOSE)" --expected-head "$(EXPECTED_HEAD)" --expected-main "$(GITEE_EXPECTED_MAIN)" $(if $(filter 1,$(APPLY)),--apply,) --confirm "$(GITEE_INTEGRATION_CONFIRM)"
 
 verify.gitee.integration.unit: guard.prod.forbid
 	@python3 -m unittest scripts.ops.test_gitee_temporary_integration
+
+.PHONY: verify.gitee.publication_gate.unit
+verify.gitee.publication_gate.unit: guard.prod.forbid
+	@python3 -m unittest scripts.ops.test_gitee_ci_publication_gate
 
 verify.pr.push.unit: guard.prod.forbid
 	@bash scripts/ops/git_safe_push.sh --self-test
@@ -763,6 +767,10 @@ verify.gitee.ci_update.unit: guard.prod.forbid
 .PHONY: gitee.ci.sandbox.probe
 gitee.ci.sandbox.probe: guard.prod.forbid
 	@python3 scripts/ops/gitee_ci_incremental_update.py --expected-head "$(EXPECTED_HEAD)" --probe-only
+
+.PHONY: gitee.ci.secret.rotate
+gitee.ci.secret.rotate: guard.prod.forbid
+	@python3 scripts/ops/gitee_ci_rotate_secret.py --secret-file "$(GITEE_ROTATION_FILE)" --expected-env-sha256 "$(GITEE_RECEIVER_ENV_SHA256)" --confirm "$(GITEE_ROTATION_CONFIRM)"
 
 .PHONY: verify.gitee.publication_scope.unit
 verify.gitee.publication_scope.unit: guard.prod.forbid

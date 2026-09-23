@@ -169,10 +169,11 @@ class Integration:
                           additional_visible_code_possible=bool(commits),
                           dirty=bool(self.git("status", "--porcelain=v1", "--untracked-files=all")),
                           excludes_uncommitted_changes=True, writes=0)
-            # No administrative boolean can prove remote automation isolation.
-            # Enable writes only in a later reviewed change bound to real platform evidence.
             if apply:
-                raise Denied("CI-only remote writes blocked pending platform automation evidence")
+                receipt = os.environ.get("GITEE_CI_EVIDENCE", "")
+                digest = os.environ.get("GITEE_CI_EVIDENCE_SHA256", "")
+                if not receipt or not re.fullmatch(r"[0-9a-f]{64}", digest):
+                    raise Denied("CI-only requires reviewed platform automation evidence")
         if not apply:
             return result
         if confirm != "PUBLISH_EXACT_GITEE_CANDIDATE":
@@ -184,8 +185,16 @@ class Integration:
         self.baseline(main, head)
         if self.remote_head(ref, absent=True) != old:
             raise Denied("remote candidate drift after preflight")
+        if purpose == "ci-only":
+            self.run("python3", "-m", "scripts.ops.gitee_ci_publication_gate", "--head", head,
+                     "--main", main, "--receipt", receipt, "--receipt-sha256", digest)
+            if self.identity(head, clean=True) != branch:
+                raise Denied("candidate changed during online evidence verification")
+            self.baseline(main, head)
+            if self.remote_head(ref, absent=True) != old:
+                raise Denied("remote candidate drift during online evidence verification")
         self.push_and_readback(ref, head)
-        return {**result, "applied": True}
+        return {**result, "applied": True, "writes": 1}
 
 
 def main() -> int:

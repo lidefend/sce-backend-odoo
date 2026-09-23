@@ -233,6 +233,32 @@ class IntegrationTests(unittest.TestCase):
             self.lane.publish(HEAD, HISTORICAL_MAIN, True, "PUBLISH_EXACT_GITEE_CANDIDATE", "ci-only")
         self.assertEqual(self.lane.pushes(), [])
 
+    def test_ci_only_with_reviewed_evidence_keeps_quick_and_readback(self):
+        self.lane.branch = "fix/gitee-temporary-integration-v1"
+        with patch.dict(os.environ, {'GITEE_CI_EVIDENCE': 'receipt.json', 'GITEE_CI_EVIDENCE_SHA256': 'f'*64}):
+            result = self.lane.publish(HEAD, HISTORICAL_MAIN, True, "PUBLISH_EXACT_GITEE_CANDIDATE", "ci-only")
+        self.assertTrue(result['applied'])
+        self.assertEqual(result['writes'], 1)
+        self.assertFalse(result['merge_authorized'])
+        self.assertEqual(self.lane.remote_branch, HEAD)
+        self.assertTrue(any('scripts/ops/local_quick_evidence.py' in c for c in self.lane.calls))
+        self.assertTrue(any('scripts.ops.gitee_ci_publication_gate' in c for c in self.lane.calls))
+
+    def test_ci_only_evidence_does_not_bypass_quick(self):
+        self.lane.branch = "fix/gitee-temporary-integration-v1"
+        self.lane.fail = 'quick'
+        with patch.dict(os.environ, {'GITEE_CI_EVIDENCE': 'receipt.json', 'GITEE_CI_EVIDENCE_SHA256': 'f'*64}):
+            with self.assertRaises(Denied):
+                self.lane.publish(HEAD, HISTORICAL_MAIN, True, "PUBLISH_EXACT_GITEE_CANDIDATE", "ci-only")
+        self.assertEqual(self.lane.pushes(), [])
+
+    def test_ci_only_invalid_receipt_digest_zero_writes(self):
+        self.lane.branch = "fix/gitee-temporary-integration-v1"
+        with patch.dict(os.environ, {'GITEE_CI_EVIDENCE': 'receipt.json', 'GITEE_CI_EVIDENCE_SHA256': 'invalid'}):
+            with self.assertRaises(Denied):
+                self.lane.publish(HEAD, HISTORICAL_MAIN, True, "PUBLISH_EXACT_GITEE_CANDIDATE", "ci-only")
+        self.assertEqual(self.lane.pushes(), [])
+
     def test_ci_only_wrong_scope_zero_writes(self):
         for branch in ["main", "refs/tags/v1", "fix/other"]:
             self.lane.branch = branch
