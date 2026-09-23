@@ -789,3 +789,10 @@ gitee.ci.sandbox.profile.install: guard.prod.forbid
 .PHONY: verify.gitee.checks.unit
 verify.gitee.checks.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_gitee_ci_checks
+
+.PHONY: gitee.ci.gates.plan verify.gitee.gates.unit
+gitee.ci.gates.plan: guard.prod.forbid
+	@python3 -m scripts.ci.gitee_gate_plan --head "$(EXPECTED_HEAD)" --base "$(GITEE_EXPECTED_MAIN)" --source-branch "$(GITEE_SOURCE_BRANCH)" --pr-number "$(GITEE_PR_NUMBER)" $(if $(filter 1,$(GITEE_CANDIDATE)),--candidate,)
+
+verify.gitee.gates.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_gate_plan

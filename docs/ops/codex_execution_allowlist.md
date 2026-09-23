@@ -42,6 +42,8 @@ GitHub 的情况下使用既有 `gitee-mirror`；本节是下文“GitHub 唯一
   `GITEE_CI_EVIDENCE`/`GITEE_CI_EVIDENCE_SHA256` 精确审阅回执；回执绑定候选/main、1小时内平台
   观察、公开范围授权及证据文件摘要。推送前在线核验隔离、活动服务、模式、安装代码和配置摘要。
   证据缺失/过期/漂移均零推送；不使用布尔跳过。普通 integration 路径约束不变。
+- `make gitee.ci.gates.plan EXPECTED_HEAD=<sha> GITEE_EXPECTED_MAIN=<sha> GITEE_SOURCE_BRANCH=<branch> GITEE_PR_NUMBER=<number>`：只读正式门禁计划；要求 clean 控制分支，包含删除和重命名两端，复用现有风险分类。PR 编号为调用方输入，计划不证明平台身份、不执行检查、不授予集成资格。`GITEE_CANDIDATE=1` 显式选择候选级检查。
+- `make verify.gitee.gates.unit`：离线门禁选择和真实临时 Git 删除／重命名测试，无平台或业务数据写入。
 - `make verify.gitee.checks.unit`：离线 Check Runs 回传、精确 SHA、断线恢复及凭据隔离测试；不写平台。回传模块默认关闭；新增凭据、安装范围及启用须完成当前独立 P4 授权与精确更新计划。
 - `make verify.gitee.publication_gate.unit`：平台证据、时效、篡改及密钥替换的本地纯测试。
 - `make verify.gitee.ci_only.unit` 是本地 P4 定向测试：使用临时 SQLite/Git 与现有 bubblewrap，
