@@ -310,3 +310,12 @@ not novel content exposure. Remote ref observations match byte-for-byte. Focused
 passed after the allowlist update (l1-update-policy.log). New source hashes and test-input bindings
 are saved in incremental-update-local-evidence.json. Commit creation does not invalidate those inputs;
 only the source-SHA-bound read-only installation plan is regenerated.
+# Desktop execution takeover (2026-09-23, baseline db160f72)
+
+The owner explicitly requested execution of the existing CI update/isolation/CI-only acceptance plan. Historical main
+catchup, merging and product deployment remain excluded. Public-history/customer-identifier authorization is retained.
+User screenshots show no platform mirror and Gitee Go not activated. The authenticated hook 2106026 was paused and its
+unsupported check-run subscription removed; the page confirmed success. Push/PR remain configured. No secret screenshot
+is archived; the signing secret needs rotation. The live installer plan still matches the checkpoint, with zero active jobs.
+The new bounded mirror-isolation Make target only disables/stops the registered reverse mirror and reads back its state.
+Scope is P4 existing CI infrastructure, excluding product data, the old runner and both unmerged topics.

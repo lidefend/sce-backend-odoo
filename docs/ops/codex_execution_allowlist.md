@@ -5,6 +5,13 @@
 
 ## 临时 Gitee 主线集成车道（2026-09-23）
 
+本次续跑所有者已明确要求直接执行现有 CI 线上更新及 CI-only 真实事件验收。用户截图和登录后的页面
+已确认 WebHook 2106026、平台镜像为空、Gitee Go 未开通；历史公开范围及同组客户标识授权沿用本会话。
+该授权取代本节下文的“本批没有线上启用授权／条件未齐备”历史状态，但不取代精确计划、备份、隔离、
+沙箱与发布检查。正式合并、历史 main 补齐和产品部署仍不授权。
+`make gitee.ci.mirror.isolate GITEE_ISOLATION_CONFIRM=ISOLATE_EXISTING_REVERSE_MIRROR` 仅停用既有
+gitee-to-github-mirror.timer/service 并回读 inactive/disabled/PID=0；不改旧 runner，不自动恢复镜像。
+
 GitHub 账号受限期间，仓库所有者授权调整集成流程。仅本节登记的入口可在不访问
 GitHub 的情况下使用既有 `gitee-mirror`；本节是下文“GitHub 唯一发布远端／Gitee 仅镜像”
 的有界例外，不修改 `origin`，不授权任意远端、强推、自动合并或部署。

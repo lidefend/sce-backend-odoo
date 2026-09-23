@@ -1,5 +1,18 @@
 # 工作区接管与临时 Gitee 集成结果索引
 
+## Desktop 接管执行（2026-09-23，基线 db160f72）
+
+用户要求本任务直接执行，授权沿用既有受管 CI 更新、镜像隔离及 CI-only 验收方案；不含 main 补齐、合并、
+产品部署。用户确认公开范围及同组客户标识授权继续有效。当前为 P4 日常开发与高风险运维受管执行，非冻结交付。
+
+- 用户截图确认平台 mirror 列表为空、Gitee Go 显示开通页；不再以平台读取 token 缺失作为这两项阻塞。
+- 登录后的 WebHook 2106026 页面已实时确认原 Push/PR/check-run active；执行暂停 active 并取消 check-run，
+  页面返回“更新成功”。保留 Push/PR，后续验收前恢复 active。receiver 仅接受 push_hooks/merge_request_hooks，
+  check-run 原本会被拒绝，不推定曾发生循环。密钥截图不归档，既有签名密钥须轮换。
+- 当前安装预演与 db160f72 checkpoint 完全一致：active_jobs=0、bwrap 不存在，plan_sha256=b225d22b7c4af3d3a61220f5ed102cc2f8d9b007804726ce114044be091aca80。
+- 边界：P4/scripts/ops、make/codex.mk、既有 CI host；不更改 P0—P3、业务 DB、旧 runner 或两个未合并专题。
+- 新增受管 mirror isolate 入口，固定主机与两个 unit；make -n 与 diff 检查通过。后续结果追加在本节对应原始证据中。
+
 [English](gitee_temporary_integration_20260923.en.md)
 
 ## 身份与边界

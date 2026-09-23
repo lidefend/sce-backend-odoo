@@ -763,3 +763,8 @@ verify.gitee.ci_update.unit: guard.prod.forbid
 .PHONY: verify.gitee.publication_scope.unit
 verify.gitee.publication_scope.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_gitee_publication_scope
+
+.PHONY: gitee.ci.mirror.isolate
+gitee.ci.mirror.isolate: guard.prod.forbid
+	@test "$(GITEE_ISOLATION_CONFIRM)" = "ISOLATE_EXISTING_REVERSE_MIRROR" || (echo 'exact isolation confirmation required'; exit 2)
+	@ssh -o BatchMode=yes root@1.95.2.123 'set -eu; systemctl show gitee-to-github-mirror.timer gitee-to-github-mirror.service --property=Id,ActiveState,UnitFileState,MainPID; systemctl disable --now gitee-to-github-mirror.timer; systemctl stop gitee-to-github-mirror.service; test "$$(systemctl show gitee-to-github-mirror.timer --property=UnitFileState --value)" = disabled; test "$$(systemctl show gitee-to-github-mirror.timer --property=ActiveState --value)" = inactive; case "$$(systemctl show gitee-to-github-mirror.service --property=ActiveState --value)" in inactive|failed) ;; *) exit 2;; esac; test "$$(systemctl show gitee-to-github-mirror.service --property=MainPID --value)" = 0; systemctl show gitee-to-github-mirror.timer gitee-to-github-mirror.service --property=Id,ActiveState,UnitFileState,MainPID'
