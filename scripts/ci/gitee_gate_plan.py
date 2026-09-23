@@ -19,7 +19,8 @@ REPOSITORY = "leegege/sce-product-odoo"
 CHECKS = ("public_guard", "merge_policy_gate", "professional_quality_gate", "frontend_release_gate")
 SOURCES = tuple(".github/workflows/" + name + ".yml" for name in CHECKS)
 INPUTS = SOURCES + ("config/ci/risk_tiering_v1.json", "scripts/ci/ci_risk_classifier.py",
-                    "scripts/ci/gitee_gate_plan.py")
+                    "scripts/ci/gitee_gate_plan.py", "scripts/ci/gitee_pr_identity.py",
+                    "scripts/ci/gitee_ci_checks.py")
 SHA = re.compile(r"[0-9a-f]{40}")
 
 
@@ -109,6 +110,7 @@ def main():
     parser.add_argument("--source-branch", required=True)
     parser.add_argument("--pr-number", required=True, type=int)
     parser.add_argument("--candidate", action="store_true")
+    parser.add_argument("--token-file", help="Optional owner-only file for live read-only PR verification")
     args = parser.parse_args()
     if git(ROOT, "rev-parse", "HEAD") != args.head:
         raise ValueError("controller HEAD mismatch")
@@ -120,6 +122,15 @@ def main():
     record = plan(head=args.head, base=args.base, source_branch=args.source_branch,
                   pr_number=args.pr_number, paths=changed_paths(ROOT, args.base, args.head),
                   candidate=args.candidate)
+    if args.token_file:
+        from scripts.ci.gitee_pr_identity import ReadAPI, observe
+        snapshot = observe(ReadAPI(args.token_file), number=args.pr_number,
+                           source=args.source_branch, head=args.head, base=args.base)
+        record["platform_snapshot"] = snapshot
+        record["pr_identity_verified"] = True
+        record["remote_refs_verified"] = True
+        record.pop("plan_sha256")
+        record["plan_sha256"] = digest(record)
     print(json.dumps(record, indent=2, sort_keys=True))
 
 
