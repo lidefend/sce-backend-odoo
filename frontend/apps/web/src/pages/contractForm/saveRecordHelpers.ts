@@ -77,13 +77,14 @@ export async function validateBeforeSaveRecord(params: {
     };
   }
   const editableMap = params.collectWritableValues();
-  if (!params.recordId) {
+  {
     const requiredValidation = collectRequiredFieldValidation({
       formData: params.formData,
       isWritableFieldVisible: params.isWritableFieldVisible,
       layoutNodes: params.layoutNodes,
       normalizeFieldValue: params.normalizeFieldValue,
       values: editableMap,
+      submittedFieldsOnly: Boolean(params.recordId),
     });
     if (requiredValidation.messages.length) {
       return {
@@ -118,9 +119,14 @@ export function collectRequiredFieldValidation(params: {
   layoutNodes: LayoutNode[];
   normalizeFieldValue: (name: string, value: unknown) => unknown;
   values: Record<string, unknown>;
+  submittedFieldsOnly?: boolean;
 }) {
   const missing = params.layoutNodes
-    .filter((node) => node.kind === 'field' && !node.readonly && params.isWritableFieldVisible(node.name))
+    .filter((node) => node.kind === 'field' && !node.readonly && (
+      params.submittedFieldsOnly
+        ? Object.prototype.hasOwnProperty.call(params.values, node.name)
+        : params.isWritableFieldVisible(node.name)
+    ))
     .filter((node) => {
       const descriptor = node.descriptor;
       if (!descriptor?.required) return false;

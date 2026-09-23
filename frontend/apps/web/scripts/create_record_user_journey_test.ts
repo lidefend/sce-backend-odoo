@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { resolveCreateDefaults, resolveCreateRouteRelationLabels } from '../src/pages/contractForm/createDefaults.ts';
 import { applyIncomingFormFieldValue } from '../src/pages/contractForm/recordHydration.ts';
 import { evaluateNativeModifierValue } from '../src/app/modifierEngine.ts';
-import { buildSaveRecordPayload, createSingleFlightSave } from '../src/pages/contractForm/saveRecordHelpers.ts';
+import { buildSaveRecordPayload, createSingleFlightSave, validateBeforeSaveRecord } from '../src/pages/contractForm/saveRecordHelpers.ts';
 import { usePrimaryFormActionRuntime } from '../src/pages/contractForm/usePrimaryFormActionRuntime.ts';
 import { sanitizeUiErrorMessage } from '../src/pages/contractForm/fieldUtils.ts';
 
@@ -12,6 +12,40 @@ const fieldDescriptors = {
   owner_id: { name: 'owner_id', type: 'many2one' },
   title: { name: 'title', type: 'char' },
 };
+
+// Editing a required field must obey the same contract as creation, including
+// submitted fields hidden by a presentation preference. Untouched legacy gaps
+// must not turn an unrelated partial update into a full-record repair.
+async function validateEdit(values: Record<string, unknown>, visible = true) {
+  return validateBeforeSaveRecord({
+    recordId: 501,
+    collectSceneValidationPrecheckErrors: () => [],
+    collectWritableValues: () => values,
+    formData: { title: 'Existing title', owner_id: false, ...values },
+    isWritableFieldVisible: () => visible,
+    layoutNodes: [
+      { kind: 'field', name: 'title', label: '标题', readonly: false, descriptor: { type: 'char', required: true } },
+      { kind: 'field', name: 'owner_id', label: '负责人', readonly: false, descriptor: { type: 'many2one', required: true } },
+      { kind: 'field', name: 'active', label: '启用', readonly: false, descriptor: { type: 'boolean', required: true } },
+    ] as never,
+    layoutFieldLabels: () => ({ title: '标题', owner_id: '负责人' }),
+    normalizeFieldValue: (_name, value) => value,
+    one2manyFieldErrors: {}, one2manyIssues: [],
+    resolvePendingInlineRelationCreates: async () => [],
+    resolvePendingMany2manyTagCreates: async () => [],
+  });
+}
+for (const empty of ['', '  ', false, null, undefined]) {
+  const rejected = await validateEdit({ title: empty });
+  assert.equal(rejected.ok, false, 'clearing a required field in edit mode must fail');
+  assert.equal(rejected.fieldErrors?.title, '标题不能为空');
+}
+assert.equal((await validateEdit({ title: '' }, false)).ok, false, 'hidden submitted required values still obey the contract');
+assert.equal((await validateEdit({ title: 'Updated title' })).ok, true, 'untouched missing owner must not block a partial update');
+assert.equal((await validateEdit({ owner_id: false })).ok, false, 'clearing a required relation must fail');
+assert.equal((await validateEdit({ active: false })).ok, true, 'a required boolean may be false');
+assert.equal((await validateEdit({ active: null })).ok, false, 'an absent required boolean still fails');
+console.log('[edit-required-validation] PASS cases=10');
 const v2ContractStore = {
   snapshot: {
     pageInfo: { contractVersion: '2.2.0', pageId: 'x.document.create', clientType: 'web' },
