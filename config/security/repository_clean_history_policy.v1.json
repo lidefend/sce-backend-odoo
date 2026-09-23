@@ -45,6 +45,20 @@
       "blob_id": "cc797fc30811e08fe92ca2d28a1118027e207d74",
       "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
       "reason": "Reviewed historical observation identifies old mirror and runner ownership before isolation. Immutable documentation only; other content rules remain enforced."
+    },
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/iterations/gitee_temporary_integration_20260923.md",
+      "blob_id": "dd3ed9a2a8c6e44e48ebb2f6b670627b84b0d651",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Same reviewed legacy mirror/runner ownership observations retained in the CI reporting closeout record. Exact immutable documentation only; other rules remain enforced."
+    },
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/iterations/gitee_temporary_integration_20260923.en.md",
+      "blob_id": "c3f5168a56e4ac8e7da60ee698d5de9978e6dd30",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Same reviewed legacy mirror/runner ownership observations retained in the CI reporting closeout record. Exact immutable documentation only; other rules remain enforced."
     }
   ],
   "personal_data_false_positive_registry": "scripts/ci/personal_data_false_positives.json",
