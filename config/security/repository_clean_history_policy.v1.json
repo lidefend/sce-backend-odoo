@@ -24,6 +24,29 @@
     "c93e40c5e2613c0b9389492f185365c1d498e7d2",
     "e8cbc880f692d504f2849f75d099aeabd0fb7220"
   ],
+  "repository_token_documentation_exceptions": [
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/gitee_temporary_integration_v1.en.md",
+      "blob_id": "9fe4093e105fb3691ff63e29bc278e7963202fb9",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Reviewed outage runbook describes the installed legacy reverse-mirror destination; not executable configuration. Other content rules remain enforced."
+    },
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/iterations/gitee_temporary_integration_20260923.en.md",
+      "blob_id": "7f7e7c6900746e303fe61ec6bb94d48c2a75ba92",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Reviewed historical observation identifies old mirror and runner ownership before isolation. Immutable documentation only; other content rules remain enforced."
+    },
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/iterations/gitee_temporary_integration_20260923.md",
+      "blob_id": "cc797fc30811e08fe92ca2d28a1118027e207d74",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Reviewed historical observation identifies old mirror and runner ownership before isolation. Immutable documentation only; other content rules remain enforced."
+    }
+  ],
   "personal_data_false_positive_registry": "scripts/ci/personal_data_false_positives.json",
   "oversized_blob_exception_registry": "config/security/repository_oversized_blob_exceptions.v1.json",
   "forbidden_path_prefixes": [

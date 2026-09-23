@@ -94,6 +94,38 @@ class RepositoryCleanHistoryGuardTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("reachable_scan=public_refs", result.stdout)
 
+    def documentation_exception(self, path, blob):
+        policy = json.loads(self.policy.read_text())
+        policy['repository_token_documentation_exceptions'] = [{
+            'path': path, 'blob_id': blob, 'rule_id': 'RH008',
+            'classification': 'HISTORICAL_AUTOMATION_DOCUMENTATION',
+            'reason': 'Reviewed immutable historical diagnostic documentation'}]
+        self.policy.write_text(json.dumps(policy)+'\n')
+
+    def test_historical_documentation_exception_is_exact_content(self):
+        path='docs/outage.md';self.write(path,'old-private-repository\n');self.commit('historical note')
+        blob=self.git('rev-parse','HEAD:'+path).stdout.strip()
+        self.documentation_exception(path,blob)
+        self.assertEqual(self.run_guard().returncode,0)
+        self.write(path,'old-private-repository changed\n');self.commit('new note')
+        self.assertIn('OLD_REPOSITORY_REFERENCE',self.run_guard().stderr)
+
+    def test_documentation_exception_does_not_cover_another_path(self):
+        self.write('docs/one.md','old-private-repository\n');self.commit('one')
+        blob=self.git('rev-parse','HEAD:docs/one.md').stdout.strip()
+        self.documentation_exception('docs/different.md',blob)
+        self.assertIn('OLD_REPOSITORY_REFERENCE',self.run_guard().stderr)
+
+    def test_documentation_exception_cannot_exempt_executable(self):
+        self.documentation_exception('scripts/tool.py','a'*40)
+        with self.assertRaises(ValueError):guard.load_policy(self.policy)
+
+    def test_documentation_exception_does_not_exempt_secret(self):
+        path='docs/outage.md';self.write(path,'old-private-repository\n'+'ghp_'+'Z'*36);self.commit('bad note')
+        blob=self.git('rev-parse','HEAD:'+path).stdout.strip()
+        self.documentation_exception(path,blob)
+        self.assertIn('SECRET_MATERIAL',self.run_guard().stderr)
+
     def test_trusted_base_scans_only_candidate_delta(self) -> None:
         self.write("frontend/change.ts", "export const clean = true;\n")
         self.commit("add clean candidate delta")
